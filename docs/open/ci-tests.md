@@ -259,19 +259,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   перевод на локальный день сдвинет ключ группировки относительно календарного
   дня благодарности, который приходит с сервера в UTC (правило №25). Решать
   вместе с тем, в какой системе координат живёт лента дневника.
-- **e2e на `AppModule` живут с настоящими `@Cron`** (`ScheduleModule.forRoot()`
-  тикает после `app.init()`). `test/payment-webhooks.e2e-spec.ts` с 2026-10-16
-  гасит их `stopCronJobs(app)` (`test/e2e-support/stop-cron-jobs.ts`): тик
-  `BookingNotifyService.sendReminders` (`*/5`) на границе пятиминутки слал
-  напоминания по броням из общей БД джобы `migrations`, и счётчик
-  `expect(tg).toHaveBeenCalledTimes(1)` видел 4 (CI PR #722, 03:35 UTC).
-  Остальным спекам расписание вредит, только если они считают вызовы шпионов на
-  уведомления админу. Проверено чтением: `notify-address.e2e-spec.ts` безопасен
-  (`ADMIN_EMAIL` в e2e не задан, `sendAdminNotification` выходит до `send`);
-  `body-limit.e2e-spec.ts:115` (`Logger.error` не вызван) упал бы только от
-  тика, завершившегося ошибкой — не воспроизводилось, не трогал. Новый e2e,
-  считающий `notifyAdmin`/почту при живом `AppModule`, обязан звать
-  `stopCronJobs`; механизма принуждения нет, держится ревью.
 
 **Сверка карты инвалидации кеша видит только `shared/src/api/*`** (найдено 2026-10-26 на офлайн-клиентах терапевта):
 - `shared/src/api/apiCacheRules.coverage.test.ts` (`SOURCES`) собирает мутации из `sharedApi.ts`,
