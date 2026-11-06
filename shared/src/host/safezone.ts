@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getHost } from './index';
+import { LATE_HOST_READS_MS } from './lateHostReads';
 
 // Высота полосы плавающих кнопок Telegram (закрыть/меню) НИЖЕ статус-бара в
 // полноэкранном режиме, когда клиент не прислал contentSafeAreaInset. На iOS
@@ -14,10 +15,6 @@ const IOS_FULLSCREEN_MIN = 100;
 // внятной полосы контента от него нет. Пилюля «Закрыть» на iPhone с Dynamic
 // Island заканчивается около 87pt — берём с запасом.
 const OVERLAY_MIN_TOP = 96;
-// Когда перечитывать хост и инсеты после монтирования. Не зависит от адаптера
-// намеренно: страховка не должна жить внутри той ветки, которая может не
-// запуститься.
-const LATE_HOST_READS_MS = [150, 500, 1500, 3000];
 
 function isIOS(): boolean {
   return /iPhone|iPad|iPod/.test(navigator.userAgent);
