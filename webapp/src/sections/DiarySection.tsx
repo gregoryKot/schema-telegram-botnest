@@ -132,22 +132,19 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
     />
   );
 
+  const drafts = DRAFT_TYPES.filter(t => loadDraft(t));
   return (
     <div className="ds-page cd-page">
       {loadFailed && <DiaryLoadFailedBanner onRetry={() => { void load(); }} />}
 
       <DiaryHeader onWrite={() => setQuickOpen(true)} />
 
-      <div className="cd-drafts">
-        {DRAFT_TYPES.filter(t => loadDraft(t)).map(type => (
-          <DiaryDraft
-            key={type + draftKey}
-            type={type}
-            onContinue={() => setNewEntry(type)}
-            onDelete={() => { clearDraft(type); setDraftKey(k => k + 1); }}
-          />
+      {drafts.length > 0 && <div className="cd-drafts">{/* пустая обёртка удваивала gap (page-rhythm.spec.ts) */}
+        {drafts.map(type => (
+          <DiaryDraft key={type + draftKey} type={type} onContinue={() => setNewEntry(type)}
+            onDelete={() => { clearDraft(type); setDraftKey(k => k + 1); }} />
         ))}
-      </div>
+      </div>}
 
       <div className="cd-bar">
         <div className="ds-seg ds-seg--scroll" role="group" aria-label="Тип записей">
