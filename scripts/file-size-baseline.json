@@ -2074,7 +2074,7 @@
   "webapp/src/pages/subscribe/subscribeDiscount.ts": 14,
   "webapp/src/pages/subscribe/SubscribeForm.tsx": 82,
   "webapp/src/pages/subscribe/useSubscriptionCancel.ts": 45,
-  "webapp/src/pages/SubscribePage.tsx": 126,
+  "webapp/src/pages/SubscribePage.tsx": 129,
   "webapp/src/pages/telegramAuthResult.ts": 78,
   "webapp/src/pages/TelegramWidgetCallback.tsx": 117,
   "webapp/src/pages/tests/QuizPage.tsx": 171,

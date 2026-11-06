@@ -298,6 +298,10 @@ describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () =
     render(<SubscribePage />);
     expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Спасибо за поддержку!');
     expect(screen.getByText(/Подписка оформлена/)).toBeTruthy();
+    // Письма со ссылкой управления нет (open/backend.md): обещать «пришлём» нельзя,
+    // путь к отмене — Telegram.
+    expect(screen.queryByText(/пришлём|в настройках/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Telegram' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
     expect(screen.getByRole('link', { name: 'На главную' })).toBeTruthy();
     expect(screen.getAllByRole('link', { name: /На главную/ }).filter((a) => a.className === 'ap-home')).toHaveLength(0); // под кнопкой не дублируется
     expect(screen.queryByRole('button', { name: /Оформить за/ })).toBeNull();
