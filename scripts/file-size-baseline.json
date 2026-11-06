@@ -23,7 +23,7 @@
   "e2e-browser/support/test.ts": 55,
   "eslint.a11y-labels.mjs": 29,
   "eslint.config.mjs": 137,
-  "playwright.config.ts": 77,
+  "playwright.config.ts": 80,
   "prisma.config.js": 7,
   "scripts/agent-docs-fs.mjs": 59,
   "scripts/agent-docs-rules.mjs": 167,
