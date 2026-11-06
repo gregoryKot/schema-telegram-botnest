@@ -194,8 +194,11 @@ export function clearApiCache(): void {
 
 // Обязаны быть свежими всегда: /api/auth/*, health и опрос брони по токену
 // после оплаты (`useBookingByToken`: из кеша он 15 с видел прежний HELD вместо
-// CONFIRMED, аудит 2026-10). apiClient.ts обоих фронтендов идёт мимо cachedGet().
-const NO_CACHE = /^\/(api\/auth\/|health(\/|$)|api\/booking\/by-token\/)/;
+// CONFIRMED, аудит 2026-10), схема случая клиента (терапевт выключил показ на
+// своём устройстве — клиент не видит её и из кеша). apiClient.ts обоих
+// фронтендов идёт мимо cachedGet().
+const NO_CACHE =
+  /^\/(api\/auth\/|health(\/|$)|api\/booking\/by-token\/|api\/therapy\/my-concept$)/;
 
 export function isCacheableGetPath(path: string): boolean {
   return !NO_CACHE.test(path);

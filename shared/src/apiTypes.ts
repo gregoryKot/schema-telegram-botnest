@@ -95,6 +95,7 @@ export interface TherapyRelationInfo {
   code: string;
   nextSession: string | null;
   meetingDays?: number[]; // клиенту — для upcomingSession; нет у старого кэша
+  conceptSharedAt?: string | null; // клиенту — терапевт показал схему случая («Мой терапевт»)
 }
 
 export interface TherapistNote {

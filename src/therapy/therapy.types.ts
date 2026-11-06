@@ -9,6 +9,7 @@ export interface TherapyRelationInfo {
   code: string;
   nextSession: string | null;
   meetingDays: number[]; // клиенту — дни встреч связи, терапевту — []
+  conceptSharedAt?: Date | null; // клиенту — когда терапевт показал схему случая
 }
 
 export interface TherapyClientSummary {

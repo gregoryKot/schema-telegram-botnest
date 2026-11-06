@@ -149,6 +149,9 @@ export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
 // Строка связи над холстом «Графических карт» (#963): «Добавить на карту» (поля → холст) и запись с холста в поля.
 export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
 export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
+// Схема случая клиенту: терапевт включил/выключил «Показать клиенту» (meta { on }), клиент открыл её в «Мой терапевт».
+export const CONCEPT_SHARED_EVENT = 'concept_shared';
+export const CLIENT_CONCEPT_OPENED_EVENT = 'client_concept_opened';
 
 // «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
 // (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.

@@ -8,9 +8,11 @@ import { ClientBookingBlock } from '../../components/booking/ClientBookingBlock'
 import { useClientBooking } from '../../components/booking/useClientBooking';
 import { nextBooking } from '../../components/booking/clientBookingModel';
 import { avatarInitial } from './profileModel';
+import { MyConceptRow } from './MyConceptRow';
 
 // Карточка «Терапевт» профиля. Связи нет, а терапевт отказался от роли — вместо
-// пустоты сообщение о бывшем терапевте (решение владельца 2026-10-22).
+// пустоты сообщение о бывшем терапевте (решение владельца 2026-10-22). Терапевт
+// показал схему случая — строка «Схема случая» (MyConceptRow) под записью.
 export function TherapistCard({ relation }: { relation: TherapyRelationInfo | null }) {
   if (!relation) return <FormerTherapistNote load={api.getFormerTherapist} enabled className="ds-card cpf-former" />;
   if (relation.role !== 'client' || !relation.partnerName) return null;
@@ -36,6 +38,7 @@ function ClientTherapistCard({ relation, partnerName }: { relation: TherapyRelat
         </div>
       )}
       <ClientBookingBlock overview={overview} onBooked={reload} writeUrl={relation.partnerId == null ? null : telegramChatUrl(relation.partnerId)} />
+      {relation.conceptSharedAt && <MyConceptRow />}
     </section>
   );
 }

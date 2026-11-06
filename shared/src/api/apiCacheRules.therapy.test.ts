@@ -196,6 +196,22 @@ describe('applyMutationInvalidation: офлайн-клиент сохранил 
     },
   );
 
+  it('PATCH «Показать клиенту» сбрасывает концептуализацию этого клиента, не соседнего', async () => {
+    const f = await seed([
+      '/api/therapy/conceptualization/57',
+      '/api/therapy/conceptualization/58',
+    ]);
+    applyMutationInvalidation(
+      'PATCH',
+      '/api/therapy/conceptualization/57/share',
+      '{"shared":true}',
+    );
+    expect(await refetched(f)).toEqual({
+      '/api/therapy/conceptualization/57': 2,
+      '/api/therapy/conceptualization/58': 1,
+    });
+  });
+
   it('дата сессии -57 сбрасывает данные клиента и список («Сегодня»)', async () => {
     const f = await seed([
       '/api/therapy/client-data/-57',

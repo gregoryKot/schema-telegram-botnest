@@ -109,6 +109,7 @@ jobs:
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
           test/diary-mode-from-case
           test/therapy-task-delete
+          test/concept-share
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим: сборочная цепочка
       # исполняется на раннере, а не у пользователя, её несёт Dependabot.
@@ -606,6 +607,7 @@ jobs:
           test/therapy-invite.e2e-spec.ts
           test/therapy-invite-attach.e2e-spec.ts
           test/therapy-task-delete.e2e-spec.ts
+          test/concept-share.e2e-spec.ts
           test/text-limits.e2e-spec.ts
           test/therapy-resign.e2e-spec.ts
           test/booking-admin-cancel.e2e-spec.ts

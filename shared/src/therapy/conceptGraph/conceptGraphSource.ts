@@ -3,12 +3,16 @@ import type { ConceptGraphSource } from './conceptGraphTypes';
 import { normalizeModeLinks } from './modeLinks';
 import { normalizeSchemaLinks } from './schemaLinks';
 
-/** Поля концептуализации, из которых строится схема (обе площадки). */
+/**
+ * Поля концептуализации, из которых строится схема: у терапевта — полные, у
+ * клиента (ClientSharedConcept) связи без истоков и задач терапии; недостающее
+ * поле связи нормализатор заполняет пустым.
+ */
 export interface ConceptGraphFields {
   schemaIds?: string[];
   modeIds?: string[];
-  modeLinks?: ConceptModeLink[];
-  schemaLinks?: ConceptSchemaLink[];
+  modeLinks?: Partial<ConceptModeLink>[];
+  schemaLinks?: Partial<ConceptSchemaLink>[];
   modeTransitions?: string | null;
 }
 

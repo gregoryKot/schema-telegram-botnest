@@ -8,17 +8,24 @@ import { FALLBACK_WIDTH } from './useContainerWidth';
 
 const graph = buildConceptGraph(source(RICH), (ty) => ty);
 
-const mount = (props: Partial<Parameters<typeof ConceptDiagram>[0]> = {}) =>
+type Edit = NonNullable<Parameters<typeof ConceptDiagram>[0]['edit']>;
+
+const mount = ({
+  graph: g = graph,
+  ...edit
+}: Partial<Edit> & { graph?: typeof graph } = {}) =>
   render(
     <ConceptDiagram
-      graph={graph}
-      openId={null}
-      addOpen={null}
-      panel={null}
-      onOpenMode={() => {}}
-      onOpenSchema={() => {}}
-      onAdd={() => {}}
-      {...props}
+      graph={g}
+      edit={{
+        openId: null,
+        addOpen: null,
+        panel: null,
+        onOpenMode: () => {},
+        onOpenSchema: () => {},
+        onAdd: () => {},
+        ...edit,
+      }}
     />,
   );
 

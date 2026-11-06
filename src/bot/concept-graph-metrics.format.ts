@@ -13,6 +13,24 @@ const IF_ANY: [keyof ConceptGraphMetrics, (n: number) => string][] = [
   ['syncFromMap30', (n) => `Холст дописывал в концептуализацию: ${n} раз`],
 ];
 
+/**
+ * Показ схемы случая клиенту (тумблер «Показать клиенту», «Мой терапевт»):
+ * строки только про то, что было, — без «0 раз». Чистая функция.
+ */
+export function conceptShareLines(m: ConceptGraphMetrics): string[] {
+  const lines: string[] = [];
+  if (m.sharedNow > 0)
+    lines.push(`Схему случая сейчас видят клиенты: ${m.sharedNow}`);
+  if (m.shareOn30 > 0)
+    lines.push(`Терапевты включали показ схемы клиенту: ${m.shareOn30} раз`);
+  if (m.shareOff30 > 0) lines.push(`Выключали показ: ${m.shareOff30} раз`);
+  if (m.clientOpens30 > 0)
+    lines.push(
+      `Клиенты смотрели свою схему ${m.clientOpens30} раз, клиентов: ${m.clientOpeners30}`,
+    );
+  return lines;
+}
+
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   const lines = [`🧩 <b>Графическая концептуализация</b> (за месяц)`];
@@ -29,5 +47,6 @@ export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   for (const [key, line] of IF_ANY) {
     if (m[key] > 0) lines.push(line(m[key]));
   }
+  lines.push(...conceptShareLines(m));
   return lines.join('\n');
 }

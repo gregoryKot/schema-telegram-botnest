@@ -10,7 +10,11 @@
 //   - у export-модели каждая колонка либо в `select` (уходит в файл), либо в
 //     `omit` с причиной — новая колонка не уедет в файл молча и не пропадёт
 //     молча (тот же принцип, что USER_EXPORT_SELECT у модели User);
-//   - enc-поля из `select` обязаны быть в `schema` (расшифровываются).
+//   - enc-поля из `select` обязаны быть в `schema` (расшифровываются);
+//   - `shown` — в файл уходит ровно то, что человек видит в кабинете, тем же
+//     белым списком, что и экран (что видит — то и выгружает); остальное в
+//     `withheld` с причиной. Сейчас так устроена только концептуализация:
+//     терапевт показывает клиенту схему случая тумблером.
 import type { EncryptSchema } from '../utils/crypto';
 import { FIELD_POLICY } from '../utils/encryption-policy';
 
@@ -22,7 +26,8 @@ export type ClientExportDecision =
       omit: Record<string, string>;
       schema?: EncryptSchema;
     }
-  | { status: 'withhold'; reason: string };
+  | { status: 'withhold'; reason: string }
+  | { status: 'shown'; reason: string };
 
 const THERAPIST_WORK_MATERIAL =
   'рабочие материалы специалиста о клиенте — решение об их выдаче ' +
@@ -79,9 +84,14 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
     status: 'withhold',
     reason: `заметки психолога о сессиях — ${THERAPIST_WORK_MATERIAL}`,
   },
+  // Схема случая, которую терапевт показал клиенту (sharedWithClientAt), —
+  // в файл тем же видом, что в «Мой терапевт» (src/therapy/client-concept-view.ts).
   ClientConceptualization: {
-    status: 'withhold',
-    reason: `концептуализация случая — ${THERAPIST_WORK_MATERIAL}`,
+    status: 'shown',
+    reason:
+      'концептуализация случая: в файле только схема, которую терапевт показал ' +
+      'в кабинете (схемы, режимы, потребности); истоки, задачи терапии, рабочие ' +
+      `поля и история версий — ${THERAPIST_WORK_MATERIAL}`,
   },
 };
 

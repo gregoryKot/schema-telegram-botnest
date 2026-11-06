@@ -132,6 +132,13 @@ export const THERAPY_RULES: Rule[] = [
     pattern: /^\/api\/therapy\/conceptualization\/(-?\d+)(?:\/append)?$/,
     targets: (m) => [`${T}/conceptualization/${m[1]}`, CLIENTS],
   },
+  // «Показать клиенту»: GET концептуализации несёт sharedWithClientAt — без строки
+  // вкладка после возврата 15 с показывала бы прежнее положение тумблера.
+  {
+    method: 'PATCH',
+    pattern: /^\/api\/therapy\/conceptualization\/(-?\d+)\/share$/,
+    targets: (m) => [`${T}/conceptualization/${m[1]}`],
+  },
   // Карты режимов (ModeMapSelector, «Открыть на холсте»): без строки новая
   // карта не попадала в список, а правки холста пропадали при возврате на
   // вкладку. PATCH/DELETE знают только mapId — список клиента неизвестен,
