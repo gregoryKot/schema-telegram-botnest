@@ -299,10 +299,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   (`node_modules/@nestjs/serve-static/dist/serve-static.providers.js`) — SPA-фолбэк и раздачу
   `webapp/dist` не видит ни один e2e, любой путь вне контроллеров там 404. Шов статики держит
   только `src/infra/site-static.spec.ts` (поднимает через `NestFactory.create`, как `main.ts`).
-- **Комментарий джобы `checks` про `check-deploy-paths.mjs` устарел.** `.github/workflows/ci.yml`
-  (~стр. 284): «назначение мини-аппа совпадает с rootPath ServeStaticModule в src/app.module.ts» —
-  мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
-  scripts/check-deploy-paths.mjs` пуст).
 
 **Pre-push хук собирает только `webapp`** (2026-11-05, осознанно): `scripts/git-hooks/pre-push`
 гоняет `tsc -b && vite build` сайта — то, что ломалось только на машине владельца (регистр имён,

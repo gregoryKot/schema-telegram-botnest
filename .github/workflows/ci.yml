@@ -295,9 +295,8 @@ jobs:
       # Деплой-шов (правило №14 CLAUDE.md): Dockerfile/.dockerignore/amvera.yml
       # не читает ни tsc, ни jest, ни eslint — они не .ts/.js. Гейт статически
       # проверяет, что то, что Dockerfile копирует (COPY/`cp -r`), существует
-      # в репозитории или производится сборкой, что назначение мини-аппа
-      # совпадает с rootPath ServeStaticModule в src/app.module.ts, что
-      # .dockerignore не исключает то, что COPY тут же копирует, и что
+      # в репозитории или производится сборкой (webapp/dist, game/dist, dist),
+      # что .dockerignore не исключает то, что COPY тут же копирует, и что
       # amvera.yml согласован с deploy/entrypoint.mjs. Это ловит рассинхрон
       # ПУТЕЙ за миллисекунды, но не докажет, что образ вообще собирается —
       # синтаксис Dockerfile, версии пакетов, реестр — за это отвечает джоба
@@ -825,7 +824,8 @@ jobs:
       # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
       # position: fixed + inset: 0 — инлайном или через CSS-класс — вызывает
       # useHistorySheet либо стоит в scripts/history-sheet-baseline.json с
-      # причиной. Классификация, флага --update нет; мини-апп не покрыт.
+      # причиной. Классификация, флага --update нет; смотрит webapp/src и
+      # shared/src.
       - run: node scripts/check-history-sheet.mjs
       # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
       # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с
