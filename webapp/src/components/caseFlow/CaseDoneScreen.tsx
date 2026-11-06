@@ -2,16 +2,26 @@ import { Ribbon } from '../art/PaperArt';
 import { ExScreen } from '../exercises/ExScreen';
 import { TherapyLine } from '../therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
+import { CaseSupportBlock } from './CaseSupportFoot';
 
-/** «Записано»: итог потока. Без примет — их нечем заполнить, пока разбор один. */
+/**
+ * «Записано»: итог потока. Без примет — их нечем заполнить, пока разбор один.
+ * Карточка поддержки — как на каждом шаге (правило №7): кризисный текст,
+ * набранный в разборе, после сохранения никуда не делся, и экран итога
+ * обязан её показать, а не только мелькнуть ею на время сохранения.
+ */
 export function CaseDoneScreen({
   name,
   onOpenMap,
   onClose,
+  crisis,
+  onHardNow,
 }: {
   name: string;
   onOpenMap: () => void;
   onClose: () => void;
+  crisis: boolean;
+  onHardNow: () => void;
 }) {
   const bridge = useTherapyBridgeTexts();
   return (
@@ -30,6 +40,7 @@ export function CaseDoneScreen({
           Карта себя
         </button>
       </div>
+      <CaseSupportBlock crisis={crisis} onHardNow={onHardNow} />
       <TherapyLine place="case_done" text={bridge.lineCase} />
     </ExScreen>
   );

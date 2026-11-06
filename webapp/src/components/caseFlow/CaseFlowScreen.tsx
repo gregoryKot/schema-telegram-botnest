@@ -98,6 +98,8 @@ function CaseFlowSteps(props: CaseQuickProps) {
             name={f.doneName}
             onOpenMap={props.onOpenMap}
             onClose={props.onClose}
+            crisis={f.crisis}
+            onHardNow={f.handleHardNow}
           />
         );
       default:
