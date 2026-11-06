@@ -11,7 +11,14 @@ import { hintStyle } from './graphStyles';
  * после тапа в выборе «+ режим», не сдвигает схему и выбор под пальцем (#887).
  * В картинку подсказки не идут — это повод для разговора, а не схема случая.
  */
-export function ConceptGraphFooter({ graph }: { graph: ConceptGraphModel }) {
+export function ConceptGraphFooter({
+  graph,
+  hints = true,
+}: {
+  graph: ConceptGraphModel;
+  /** Подсказки — терапевту; на схеме клиента (только чтение) их нет. */
+  hints?: boolean;
+}) {
   const classes = useFoldClasses();
   return (
     <>
@@ -20,7 +27,7 @@ export function ConceptGraphFooter({ graph }: { graph: ConceptGraphModel }) {
           <b>Как режимы сменяют друг друга:</b> <span>{graph.sequence}</span>
         </p>
       )}
-      {graph.gaps.length > 0 && (
+      {hints && graph.gaps.length > 0 && (
         <div data-export-skip>
           <Disclosure
             title={`Подсказки по схеме · ${graph.gaps.length}`}

@@ -12,6 +12,13 @@ export const labelStyle: CSSProperties = {
   color: 'var(--text-sub)',
 };
 
+/** Колонка схемы случая: диаграмма, редактор, порядок режимов — общая для правки и чтения. */
+export const graphColumnStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-12)',
+};
+
 export const hintStyle: CSSProperties = {
   fontSize: 12,
   lineHeight: 1.5,
