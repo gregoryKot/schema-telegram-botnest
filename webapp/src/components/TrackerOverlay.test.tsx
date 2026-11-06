@@ -153,6 +153,23 @@ describe('TrackerOverlay — ответ и автопереход', () => {
     expect(screen.getByRole('button', { name: 'Поправить ответы' })).toBeTruthy();
   });
 
+  // QA B-З9: на 5xx оценка ложится в очередь (ratingApi отвечает queued) — «Готово» говорит об этом.
+  it('оценка ушла в очередь — «Готово» говорит, что она отправится сама; без очереди — молчит', async () => {
+    mockApi.saveRating.mockResolvedValueOnce({ ok: true, allDone: false });
+    mockApi.saveRating.mockResolvedValueOnce({ ok: true, allDone: false, queued: true });
+    renderOverlay();
+    answer(/В основном да/);
+    await advance(AUTO_ADVANCE_MS);
+    answer(/Мало/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(screen.getByText('Трекер · сегодня')).toBeTruthy();
+    expect(screen.queryByText(/не дошли до сервера/)).toBeNull(); // вторая ещё в debounce
+    await advance(500);
+    expect(screen.getByRole('status').textContent).toBe(
+      'Оценки пока не дошли до сервера. Они сохранены на этом устройстве и отправятся сами',
+    );
+  });
+
   it('ответ на более раннюю потребность возвращает к пропущенной, а не завершает', async () => {
     renderOverlay({ initialNeedId: 'autonomy' });
     answer(/Полностью/);

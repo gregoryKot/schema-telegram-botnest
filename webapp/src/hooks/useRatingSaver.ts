@@ -12,11 +12,13 @@ export const RATING_SAVE_DELAY_MS = 500;
 // уезжает в завтра через полсекунды задержки (QA 2026-11-03, К3).
 // Без сети запрос всё равно уходит: упав, он кладёт оценку в офлайн-очередь
 // (shared/api/ratingApi), как и обещает плашка «Нет сети». Раньше без сети
-// оценка не сохранялась нигде и пропадала с перезагрузкой.
-export function useRatingSaver({ date, onSaved, onSavedAt, errorMessage, section }: {
+// оценка не сохранялась нигде и пропадала с перезагрузкой. Ушла в очередь — `onQueued`:
+// экран говорит «отправится позже», а не молча «готово» (QA B-З9).
+export function useRatingSaver(opts: {
   date?: string;
   onSaved?: (needId: string, streak?: StreakData) => void;
   onSavedAt?: () => void;
+  onQueued?: () => void;
   errorMessage: string;
   section: string;
 }) {
@@ -24,9 +26,9 @@ export function useRatingSaver({ date, onSaved, onSavedAt, errorMessage, section
   // Ждущие debounce значения: при закрытии экрана они уходят сразу, а не теряются —
   // после автоперехода трекера «На главную» на экране «Готово» легко нажать раньше 500 мс.
   const pending = useRef<Record<string, { value: number; day: string }>>({});
-  const latest = useRef({ date, onSaved, onSavedAt, errorMessage, section });
+  const latest = useRef(opts);
   useEffect(() => {
-    latest.current = { date, onSaved, onSavedAt, errorMessage, section };
+    latest.current = opts;
   });
 
   const send = useCallback(async (needId: string, value: number, day: string) => {
@@ -36,6 +38,7 @@ export function useRatingSaver({ date, onSaved, onSavedAt, errorMessage, section
       const res = await api.saveRating(needId, value, day);
       c.onSaved?.(needId, res.allDone ? res.streak : undefined);
       c.onSavedAt?.();
+      if (res.queued) c.onQueued?.();
     } catch (e) {
       // Сеть/5xx — в outbox (shared/api/ratingApi); сюда доходит только
       // настоящая ошибка запроса (4xx) — она редкая, потому видимая.

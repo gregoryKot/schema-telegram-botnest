@@ -99,6 +99,20 @@ describe('useRatingSaver', () => {
     expect(save).toHaveBeenCalledWith('play', 7, '2026-11-03');
   });
 
+  // QA B-З9: 5xx и обрыв сети кладут оценку в очередь и отвечают успехом — экрану нужен сигнал.
+  it('оценка ушла в очередь — onQueued; принята сервером — нет', async () => {
+    const onQueued = vi.fn();
+    const { result } = renderHook(() => useRatingSaver({ ...base, onQueued }));
+    save.mockResolvedValueOnce({ ok: true, allDone: false });
+    act(() => { result.current('play', 6); });
+    await flush();
+    expect(onQueued).not.toHaveBeenCalled();
+    save.mockResolvedValueOnce({ ok: true, allDone: false, queued: true });
+    act(() => { result.current('limits', 4); });
+    await flush();
+    expect(onQueued).toHaveBeenCalledOnce();
+  });
+
   it('сбой сохранения уходит в reportClientError со своей секцией', async () => {
     save.mockRejectedValue(new Error('x'));
     const { result } = renderHook(() => useRatingSaver({ ...base, section: 'tracker' }));
