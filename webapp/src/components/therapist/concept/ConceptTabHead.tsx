@@ -6,12 +6,14 @@ import { SaveStatusLine } from '../../../../../shared/src/therapy/SaveStatusLine
 import { actionStatusText, type GraphActions } from './conceptHeadText';
 import { ConceptMoreMenu } from './ConceptMoreMenu';
 import { ConceptBriefButton } from './ConceptBriefButton';
+import { ConceptShareRow } from './ConceptShareRow';
 
 // Шапка вкладки «Концептуализация» (#879, тест с терапевтом): в ней только переключатель «Схема · Поля» и статус
 // сохранения; экспорт, картинка, лист на весь экран и холст — в одном меню «⋯» (пять кнопок читались как панель
 // инструментов, и терапевт не находил главного). Меню закрывается по выбору пункта — занятость и отказ строкой под
 // шапкой (ActionStatus). Заголовок и «Ещё» — на ≥768 (телефон прячет CSS); статус, сегмент, «Главное» и «⋯» — группа
 // tcp-head-actions. «Главное» (2026-11) — своя кнопка: самое важное на одном экране, главный путь терапевта перед сессией.
+// Под шапкой — строка «Показать клиенту» (ConceptShareRow): видна в обоих видах, не теснит кнопки шапки.
 export interface ConceptTabHeadProps {
   detail: ClientDetail;
   view: ConceptView;
@@ -34,6 +36,7 @@ export function ConceptTabHead({ detail, view, onView, graph }: ConceptTabHeadPr
         </div>
       </div>
       <ActionStatus graph={graph} exportCopied={exportCopied} />
+      <ConceptShareRow key={String(detail.selectedClient?.telegramId)} detail={detail} />
     </>
   );
 }

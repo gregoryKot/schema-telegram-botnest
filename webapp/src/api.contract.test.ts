@@ -61,6 +61,8 @@ const MOCKED_API_METHODS = [
   // sections/DiarySection.test.tsx
   'deleteSchemaDiary', 'deleteModeDiary', 'deleteGratitudeDiary',
   'createSchemaDiary', 'createModeDiary', 'createGratitudeDiary',
+  // therapist/concept/ConceptShareRow.test.tsx, sections/profile/MyConceptSheet.test.tsx — схема случая клиенту
+  'shareConceptualization', 'getMyConcept',
 ] as const;
 
 describe('api.contract — мокаемые методы существуют в реальном api.ts', () => {

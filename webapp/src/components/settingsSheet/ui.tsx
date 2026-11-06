@@ -42,9 +42,9 @@ export function SRow({ title, sub, right, onClick, danger }: {
   );
 }
 
-function Switch({ on, onClick, small, label }: { on: boolean; onClick: () => void; small?: boolean; label: string }) {
+function Switch({ on, onClick, small, label, describedBy }: { on: boolean; onClick: () => void; small?: boolean; label: string; describedBy?: string }) {
   return (
-    <div onClick={onClick} role="switch" aria-checked={on} aria-label={label} tabIndex={0}
+    <div onClick={onClick} role="switch" aria-checked={on} aria-label={label} aria-describedby={describedBy} tabIndex={0}
       onKeyDown={onKeyActivate(onClick)}
       className={`ds-switch${small ? ' ds-switch--sm' : ''}`}>
       <div className="ds-switch-knob" />
@@ -52,8 +52,8 @@ function Switch({ on, onClick, small, label }: { on: boolean; onClick: () => voi
   );
 }
 
-export function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
-  return <Switch on={on} onClick={onClick} label={label} />;
+export function Toggle({ on, onClick, label, describedBy }: { on: boolean; onClick: () => void; label: string; describedBy?: string }) {
+  return <Switch on={on} onClick={onClick} label={label} describedBy={describedBy} />;
 }
 
 export function SmallToggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
