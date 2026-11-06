@@ -94,6 +94,7 @@ export interface UserProfile {
 // импортировать shared из-за rootDir=src: пара бэк↔shared, меняй оба).
 export interface TherapyClientSummary {
   telegramId: UserId;
+  urlCode?: string; // постоянный код адреса карточки /cabinet/<код> (utils/clientRef); нет у старого кэша и старого сервера
   name: string | null;
   clientAlias: string | null;
   streak: number;

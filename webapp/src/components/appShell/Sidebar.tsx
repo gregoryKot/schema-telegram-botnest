@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../auth/authContext';
 import type { TherapyClientSummary } from '../../api';
 import type { Need } from '../../types';
@@ -6,6 +6,7 @@ import { SECTION_HUE, hueStyle } from '../../lib/tone';
 import { ModeSwitch } from './ModeSwitch';
 import type { Section } from './navigation';
 import { SidebarClients } from './SidebarClients';
+import { isClientListPath } from '../therapist/clientTabRoute';
 import { useScreenShare } from './screenShareMode';
 import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
 
@@ -42,6 +43,8 @@ export function Sidebar({
 }: Props) {
   const { logout } = useAuth();
   const screenShare = useScreenShare();
+  // «Все клиенты» горит на обеих вкладках списка: /cabinet и доска /cabinet/tasks.
+  const onList = isClientListPath(useLocation().pathname);
   // Тот же индекс дня, что на плитке и в итоге трекера (shared/src/needs/dayIndex.ts).
   const idx = dayIndex(needs.map(n => n.id), ratings);
   return (
@@ -60,9 +63,9 @@ export function Sidebar({
         ))}
         {therapistMode && (<>
           <NavLink to="/cabinet/today" className={itemClass}><span>Сегодня</span></NavLink>
-          <NavLink to="/cabinet" end className={itemClass}>
+          <Link to="/cabinet" className={itemClass({ isActive: onList })} aria-current={onList ? 'page' : undefined}>
             <span>Все клиенты</span><span className="badge">{screenShare ? '' : therapistClients.length || ''}</span>
-          </NavLink>
+          </Link>
           {/* Клиенты — порядок, поиск и инициалы как в «Все клиенты» (appShell/SidebarClients). */}
           <SidebarClients clients={therapistClients} />
         </>)}

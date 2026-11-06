@@ -43,7 +43,7 @@ const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ defaul
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 
 import type { StreakData } from '../api';
-import { parseRouteUserId } from '../../../shared/src/utils/sameId';
+import { clientPath, parseClientRef } from '../../../shared/src/utils/clientRef';
 
 syncMotionAttr();
 
@@ -60,7 +60,7 @@ export function AppShell() {
   const setSection = useCallback((s: Section) => navigate('/' + s), [navigate]);
 
   const therapistMode = location.pathname.startsWith('/cabinet');
-  const openClientId = parseRouteUserId(clientIdParam);
+  const openClientRef = parseClientRef(clientIdParam); // код карточки или старый числовой id
 
   // Remember last path per mode so the toggle returns user to where they were
   useEffect(() => {
@@ -269,7 +269,7 @@ export function AppShell() {
           ratings={ratings}
           displayName={displayName}
           navigate={navigate}
-          openClientId={openClientId}
+          openClientRef={openClientRef} clients={therapistClients}
           switchTherapistMode={switchTherapistMode}
           therapistBackHandlerRef={therapistBackHandlerRef}
           setTherapistClients={setTherapistClients}
@@ -369,7 +369,7 @@ export function AppShell() {
           userRole={userRole}
           therapistMode={therapistMode}
           onToggleMode={() => switchTherapistMode(!therapistMode)}
-          onOpenClient={(id) => { navigate('/cabinet/' + id); }}
+          onOpenClient={(id) => { navigate(clientPath(id, therapistClients)); }}
           onQuickAction={ov.runQuickAction}
         />
       )}

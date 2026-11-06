@@ -100,6 +100,11 @@ describe('SidebarClients', () => {
     expect(screen.getByText('Анна Крылова').closest('a')?.getAttribute('href')).toBe(`/cabinet/${anna.telegramId}`);
   });
 
+  it('у клиента с постоянным кодом ссылка ведёт на /cabinet/<код>, а не на id', () => {
+    renderSidebar([client({ name: 'Вера', telegramId: -16, urlCode: 'abcdefgh' })]);
+    expect(screen.getByText('Вера').closest('a')?.getAttribute('href')).toBe('/cabinet/abcdefgh');
+  });
+
   it('точка «заполнил сегодня» — только у клиента с индексом дня', () => {
     renderSidebar([client({ name: 'Анна', todayIndex: 6.4 }), client({ name: 'Борис' })]);
     const dots = Array.from(document.querySelectorAll('.sb-client-item'))

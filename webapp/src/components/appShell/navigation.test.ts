@@ -90,6 +90,25 @@ describe('открытие и закрытие карточки клиента (
     expect(openClientRoute('/cabinet', 42)).toEqual({ to: '/cabinet/42', state: { fromList: true } });
     expect(openClientRoute('/cabinet/today', 42)).toEqual({ to: '/cabinet/42' });
   });
+  // Адрес карточки — постоянный код (shared/src/utils/clientRef.ts): у офлайн-клиента id менялся при подключении.
+  const withCode = [{ telegramId: -16, urlCode: 'abcdefgh' }, { telegramId: 7, urlCode: 'qrspnmkj' }];
+  it('клиент с кодом открывается по адресу с кодом', () => {
+    expect(openClientRoute('/cabinet', -16, withCode)).toEqual({ to: '/cabinet/abcdefgh', state: { fromList: true } });
+    expect(openClientRoute('/cabinet/today', '-16', withCode)).toEqual({ to: '/cabinet/abcdefgh' });
+    expect(openClientRoute('/cabinet/qrspnmkj', -16, withCode)).toEqual({ to: '/cabinet/abcdefgh' });
+  });
+  it('уже на карточке по коду или по старому числовому адресу — перехода нет', () => {
+    expect(openClientRoute('/cabinet/abcdefgh', -16, withCode)).toBeNull();
+    expect(openClientRoute('/cabinet/-16', -16, withCode)).toBeNull();
+    // Прямой вход по коду, список кабинета ещё не пришёл: карточку открыла сама ссылка.
+    expect(openClientRoute('/cabinet/abcdefgh', -16)).toBeNull();
+    // Ссылка на вкладку карточки: открытие не сбрасывает вкладку переходом на /cabinet/<код>.
+    expect(openClientRoute('/cabinet/abcdefgh/tasks', -16, withCode)).toBeNull();
+    expect(openClientRoute('/cabinet/-16/tasks', -16, withCode)).toBeNull();
+  });
+  it('с доски «Задания» (/cabinet/tasks) — тоже с меткой fromList: «Все клиенты» вернёт на доску', () => {
+    expect(openClientRoute('/cabinet/tasks', -16, withCode)).toEqual({ to: '/cabinet/abcdefgh', state: { fromList: true } });
+  });
   it('«Все клиенты»: пришли из списка — шаг назад, иначе — на список', () => {
     expect(leaveClientTarget({ fromList: true, __sheetStack: [] })).toBe(-1);
     expect(leaveClientTarget(null)).toBe('/cabinet');
