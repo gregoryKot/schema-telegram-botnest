@@ -59,7 +59,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
           <h3 className="ds-h3 sk-aside-title">
             <span className="ds-dot tone-fill" /> {needLabel}
           </h3>
-          <p className="ds-sub">Практика помогает восстановить потребность через конкретное действие</p>
+          <p className="ds-sub">Потребность восстанавливается через маленькое конкретное действие</p>
         </div>
       }
     >
@@ -67,12 +67,12 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
         <>
           {practicesFailed && (
             <div role="alert" className="sk-error">
-              {tr('Не удалось загрузить твои практики — ниже только готовые варианты', 'Не удалось загрузить ваши практики — ниже только готовые варианты')}
+              {tr('Не удалось загрузить твой список «Что меня питает» — ниже только готовые варианты', 'Не удалось загрузить ваш список «Что меня питает» — ниже только готовые варианты')}
             </div>
           )}
           {allOptions.length > 0 && (
             <div className="sk-field">
-              <div className="ds-label">Готовые варианты</div>
+              <div className="ds-label">Что питает</div>
               <div className="sk-list">
                 {allOptions.map(({ text, isUser, id }) => (
                   <div key={text} className="sk-opt-row">
@@ -121,7 +121,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
       {phase === 'confirm' && (
         <>
           <div className="sk-field">
-            <div className="ds-label">Практика</div>
+            <div className="ds-label">Действие</div>
             <div className="sk-chosen tone-tint" style={hueStyle(NEED_HUE[needId as NeedId])}>
               {selectedText}
             </div>

@@ -20,7 +20,7 @@ const SUMMARY_LABELS: Record<string, string> = {
   UserModeNote: 'Карточки режимов',
   UserLetter: 'Письма',
   UserFlashcard: 'Карточки',
-  PracticePlan: 'Планы практик',
+  PracticePlan: 'Планы на завтра',
   PracticeSession: 'Практики',
   YsqResult: 'Результаты теста',
   ChildhoodRating: 'Детские потребности',

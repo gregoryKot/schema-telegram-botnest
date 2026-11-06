@@ -22,20 +22,25 @@ describe('объяснения первых экранов', () => {
     expect(DAY_INDEX_DEFINITION).toMatch(/среднее из пяти оценок/);
   });
 
-  it('карта себя и практики называют источник — схема-терапию', () => {
+  it('карта себя и «Что меня питает» называют источник — схема-терапию', () => {
     expect(buildSelfMapIntro(ty)).toMatch(/схема-терапии/);
     expect(buildPracticesIntro(ty)).toMatch(/схема-терапии/);
+  });
+
+  // Слово «практика» значило три вещи: раздел, этот каталог и «Здесь и сейчас»
+  // (BACKLOG «Слово «практика» для трёх разных сущностей»). Каталог его не берёт.
+  it('«Что меня питает» объясняет маленькие действия без слова «практика»', () => {
+    for (const form of [ty, vy]) {
+      expect(buildPracticesIntro(form)).toMatch(/маленькие действия/);
+      expect(buildPracticesIntro(form)).not.toMatch(/практик/i);
+    }
   });
 
   it('обе формы обращения расходятся и согласованы', () => {
     expect(buildSelfMapIntro(ty)).toMatch(/из твоих разборов/);
     expect(buildSelfMapIntro(vy)).toMatch(/из ваших разборов/);
-    expect(buildPracticesIntro(ty)).toMatch(
-      /добавишь здесь.*будешь планировать/,
-    );
-    expect(buildPracticesIntro(vy)).toMatch(
-      /добавите здесь.*будете планировать/,
-    );
+    expect(buildPracticesIntro(ty)).toMatch(/добавишь.*будешь планировать/);
+    expect(buildPracticesIntro(vy)).toMatch(/добавите.*будете планировать/);
   });
 
   it('в «ты»-ветке нет мужского рода (правило «Род читателя»)', () => {

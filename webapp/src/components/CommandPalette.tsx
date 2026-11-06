@@ -30,7 +30,7 @@ const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'more',    label: 'Ещё',      sub: 'Всё остальное', hint: '⌘ 3' },
   { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '' },
   { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '' },
-  { id: 'practice', label: 'Практика', sub: 'Практики',  hint: '' },
+  { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
 ];
 
 // ── Icons ──────────────────────────────────────────────────────────────────────

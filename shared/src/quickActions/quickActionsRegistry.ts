@@ -106,7 +106,7 @@ export const QUICK_ACTIONS: QuickActionDef[] = [
   def('warm_words', 'Тёплые слова', 'Слова поддержки себе', ['tools']),
   def('childhood_wheel', 'Колесо детства', DYNAMIC_SUB, ['tools']),
   def('tasks', 'Мои цели', DYNAMIC_SUB, ['tools']),
-  def('practices', 'Практики', DYNAMIC_SUB, ['tools']),
+  def('practices', 'Что питает', DYNAMIC_SUB, ['tools']),
   def('plans', 'Планы', DYNAMIC_SUB, ['tools']),
 ];
 

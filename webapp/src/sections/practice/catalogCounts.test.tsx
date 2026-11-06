@@ -15,10 +15,10 @@ beforeEach(() => vi.clearAllMocks());
 
 describe('catalogCountLabel / catalogRowSub', () => {
   it('склоняет слова и называет пустое состояние', () => {
-    expect(catalogCountLabel('practices', 1)).toBe('1 практика');
-    expect(catalogCountLabel('practices', 3)).toBe('3 практики');
-    expect(catalogCountLabel('practices', 12)).toBe('12 практик');
-    expect(catalogCountLabel('practices', 0)).toBe('Нет практик');
+    expect(catalogCountLabel('practices', 1)).toBe('1 действие');
+    expect(catalogCountLabel('practices', 3)).toBe('3 действия');
+    expect(catalogCountLabel('practices', 12)).toBe('12 действий');
+    expect(catalogCountLabel('practices', 0)).toBe('Пока пусто');
     expect(catalogCountLabel('plans', 1)).toBe('1 план');
     expect(catalogCountLabel('plans', 2)).toBe('2 плана');
     expect(catalogCountLabel('plans', 5)).toBe('5 планов');

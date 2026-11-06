@@ -217,7 +217,7 @@ describe('buildJourneyCardRows', () => {
     expect(rows).toHaveLength(8);
     expect(rows[0]).toEqual({
       emoji: '✅',
-      label: 'Практика по плану',
+      label: 'Шаг по плану',
       day: '1 июля',
       hex: JOURNEY_GROUP_COLORS.practice.hex,
     });

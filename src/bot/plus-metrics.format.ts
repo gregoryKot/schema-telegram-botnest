@@ -29,7 +29,7 @@ export const QUICK_ACTION_LABELS: Record<string, string> = {
   warm_words: 'Тёплые слова',
   childhood_wheel: 'Колесо детства',
   tasks: 'Мои цели',
-  practices: 'Практики',
+  practices: 'Что питает',
   plans: 'Планы',
 };
 
