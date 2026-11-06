@@ -356,3 +356,9 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 благодаря локальному `webapp/.env` с `VITE_BOT_USERNAME`, которого в worktree нет. С хуком в репозитории
 (`scripts/git-hooks/pre-push`) он лишний: убрать из обоих `settings.local.json` или собирать
 `$(git rev-parse --show-toplevel)/webapp` с переменной.
+
+**Локальный `npm run smoke` в облачной песочнице агента не находит Chromium** (2026-11-06): в
+`playwright.config.ts` зашит `PREINSTALLED_CHROMIUM = /opt/pw-browsers/chromium-1194/...`, а в песочнице
+сейчас `/opt/pw-browsers/chromium` (ревизия 1243) — без `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`
+каждый тест падает с «executable doesn't exist». CI не задет (файла нет — Playwright ставит свой). Вариант:
+проверять по очереди `/opt/pw-browsers/chromium` и старый путь, а не одну ревизию.
