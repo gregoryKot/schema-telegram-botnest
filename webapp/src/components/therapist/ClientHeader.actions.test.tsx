@@ -12,7 +12,7 @@ import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'r
 import { ClientHeader } from './ClientHeader';
 import { ClientOverviewTab } from './ClientOverviewTab';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
-import type { ClientDetail } from './clientSheetTypes';
+import type { ClientDetail, ClientTab } from './clientSheetTypes';
 import type { TherapyClientSummary } from '../../api';
 
 const DESKTOP = 1024;
@@ -232,15 +232,14 @@ describe('шапка: имя и встреча', () => {
   });
 });
 
-// Холст «Карты режимов» на всю рабочую область, остальные вкладки — в колонке
-// кабинета. Шапка следует за вкладкой: на карте — во всю ширину (tk-head--wide),
-// иначе слева от «← Все клиенты» пустая полоса (владелец 2026-11-06).
-describe('ширина шапки по вкладке', () => {
-  it('«Карта режимов» — шапка во всю ширину, «Обзор» — в колонке', () => {
-    renderHeader(detailOf({ clientTab: 'mode_map' }));
-    expect(screen.getByText('← Все клиенты').closest('.tk-head')!.className).toBe('tk-head tk-head--wide');
-    cleanup();
-    renderHeader(detailOf({ clientTab: 'overview' }));
+// Шапка не следует за вкладкой (владелец 2026-11-06). В #962 на «Графических
+// картах» она уходила во всю ширину (tk-head--wide), и при переходе на любую
+// другую вкладку прыгала вбок. Теперь шапка одна на все вкладки, а в колонку
+// под неё встаёт полоса карт (therapist-card.css, сверка — therapistCard.test.ts).
+describe('шапка одна на все вкладки', () => {
+  const TABS: ClientTab[] = ['overview', 'concept', 'mode_map', 'sessions', 'tasks', 'ysq', 'client_notes'];
+  it.each(TABS)('%s — тот же класс .tk-head без модификаторов', (clientTab) => {
+    renderHeader(detailOf({ clientTab }));
     expect(screen.getByText('← Все клиенты').closest('.tk-head')!.className).toBe('tk-head');
   });
 });
