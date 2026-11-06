@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { TIME_ZONE_OPTIONS } from '../../../../shared/src/utils/timeZoneNames';
+import { VY, type Tr } from './slotsCopy';
 
 const linkSt: React.CSSProperties = {
   background: 'none', border: 'none', padding: 0, fontSize: 12,
@@ -10,13 +11,13 @@ const linkSt: React.CSSProperties = {
  * «не ваш часовой пояс?» — раскрывает выбор из словаря популярных поясов.
  * Ручной выбор перерисовывает ленту слотов (родитель держит state).
  */
-export function TimeZonePicker({ tz, onChange }: { tz: string; onChange: (tz: string) => void }) {
+export function TimeZonePicker({ tz, onChange, tr = VY }: { tz: string; onChange: (tz: string) => void; tr?: Tr }) {
   const [open, setOpen] = useState(false);
 
   if (!open) {
     return (
       <button type="button" style={linkSt} onClick={() => setOpen(true)}>
-        не ваш часовой пояс?
+        {tr('не твой часовой пояс?', 'не ваш часовой пояс?')}
       </button>
     );
   }
