@@ -26,7 +26,7 @@ interface Props {
 export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const {
     renamingAlias, setRenamingAlias, aliasInput, setAliasInput, aliasSaving, aliasError,
-    deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError, saveAlias,
+    deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError, saveAlias, clientTab,
   } = detail;
   const phone = useIsMobile();
   const removeCopy = removeClientConfirmCopy(selectedClient);
@@ -36,7 +36,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const startRename = () => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); };
 
   return (
-    <div className="tk-head">
+    <div className={`tk-head${clientTab === 'mode_map' ? ' tk-head--wide' : ''}`}>
       <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
         <div className="ds-avatar ds-avatar--serif tone-tint tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
