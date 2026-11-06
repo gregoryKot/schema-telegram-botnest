@@ -25,7 +25,7 @@ export const QUICK_ACTION_LABELS: Record<string, string> = {
   phrase_check: 'Критик или забота?',
   flashcard: 'Мне плохо',
   safe_place: 'Безопасное место',
-  letter_to_self: 'Письмо себе',
+  letter_to_self: 'Письмо себе в детстве',
   warm_words: 'Тёплые слова',
   childhood_wheel: 'Колесо детства',
   tasks: 'Мои цели',

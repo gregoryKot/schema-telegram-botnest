@@ -5,6 +5,11 @@
 // сохранялась как «Отмечать потребности 3 дней подряд» (QA-проход). Старые
 // записи не переписываются — меняется только сборка новых.
 import { pluralRu } from '../utils/pluralRu';
+import { exerciseCard } from '../exercises/exerciseCatalog';
+
+const letterTitle = exerciseCard('letter').title;
+/** Текст задания-письма: имя упражнения из каталога, «Написать письмо себе в детстве». */
+export const LETTER_TASK_TEXT = `Написать ${letterTitle[0].toLowerCase()}${letterTitle.slice(1)}`;
 
 export interface TaskPayloadInput {
   type: string;
@@ -30,7 +35,7 @@ export function taskPayloadText(p: TaskPayloadInput): string {
     case 'belief_check':
       return 'Проверить убеждение';
     case 'letter_to_self':
-      return 'Написать письмо Уязвимому Ребёнку';
+      return LETTER_TASK_TEXT;
     case 'safe_place':
       return 'Описать Безопасное место';
     case 'flashcard':

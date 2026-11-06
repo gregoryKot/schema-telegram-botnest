@@ -36,7 +36,7 @@ describe('buildToolRows — реестр строк', () => {
       ['plans', 'Планы'],
       ['belief_check', 'Проверка убеждений'],
       ['safe_place', 'Безопасное место'],
-      ['letter_to_self', 'Письмо себе'],
+      ['letter_to_self', 'Письмо себе в детстве'],
       ['flashcard', 'Мне плохо'],
       ['childhood_wheel', 'Колесо детства'],
       ['warm_words', 'Тёплые слова'],

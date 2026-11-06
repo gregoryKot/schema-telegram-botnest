@@ -31,7 +31,7 @@ describe('ClientTasksTab', () => {
   it('шаблон открывает назначение со своим типом и текстом', () => {
     const onAssign = vi.fn();
     render(<ClientTasksTab detail={{ clientTasks: [], selectedClient: { telegramId: 7 } } as unknown as ClientDetail} onAssign={onAssign} />);
-    fireEvent.click(screen.getByText('Письмо себе'));
+    fireEvent.click(screen.getByText('Письмо себе в детстве'));
     expect(onAssign).toHaveBeenLastCalledWith({ type: 'letter_to_self' });
     fireEvent.click(screen.getByText('Дневник режима'));
     expect(onAssign).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'custom', text: expect.stringContaining('Дневник режима') }));

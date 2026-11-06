@@ -12,6 +12,9 @@ import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
 import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
+// Имя — из каталога («Письмо себе в детстве»), первое слово над строкой курсивом.
+const [TITLE_HEAD, ...TITLE_TAIL] = exerciseCard('letter').title.split(' ');
+
 export function LetterEx({
   onBack,
   onComplete,
@@ -133,14 +136,14 @@ export function LetterEx({
       eyebrow={exerciseCard('letter').eyebrow}
       title={
         <>
-          Письмо
+          {TITLE_HEAD}
           <br />
-          <span className="it">Уязвимому Ребёнку</span>
+          <span className="it">{TITLE_TAIL.join(' ')}</span>
         </>
       }
       lede={tr(
-        'Мысленно сядь рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажи то, что тогда важно было услышать.',
-        'Мысленно сядьте рядом со своим внутренним ребёнком — тем, кому тогда было трудно. Скажите то, что тогда важно было услышать.',
+        'Мысленно сядь рядом со своим внутренним ребёнком — тем, кому тогда было трудно. В схема-терапии эту часть называют Уязвимым Ребёнком. Скажи то, что тогда важно было услышать.',
+        'Мысленно сядьте рядом со своим внутренним ребёнком — тем, кому тогда было трудно. В схема-терапии эту часть называют Уязвимым Ребёнком. Скажите то, что тогда важно было услышать.',
       )}
       aside={
         <>

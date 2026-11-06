@@ -11,6 +11,8 @@ import {
   dateStringParts,
   formatDateString,
 } from '../utils/calendarDate';
+import { exerciseCard } from '../exercises/exerciseCatalog';
+const LETTER = exerciseCard('letter').title; // одно имя письма — из каталога
 
 // Группы для фильтра ленты (чипы «что показать»).
 export type JourneyGroup =
@@ -35,7 +37,7 @@ export const JOURNEY_TYPE_META = {
   plan_done: { emoji: '✅', label: 'Шаг по плану', group: 'practice' },
   ysq: { emoji: '📋', label: 'Тест схем', group: 'test' },
   belief_check: { emoji: '⚖️', label: 'Проверка убеждения', group: 'exercise' },
-  letter: { emoji: '✉️', label: 'Письмо себе', group: 'exercise' },
+  letter: { emoji: '✉️', label: LETTER, group: 'exercise' },
   flashcard: { emoji: '🆘', label: 'Кризисная карточка', group: 'exercise' },
   safe_place: { emoji: '🏝', label: 'Безопасное место', group: 'exercise' },
   schema_note: { emoji: '🧩', label: 'Карточка схемы', group: 'cards' },

@@ -206,11 +206,6 @@
   нужна не только ручка `PATCH` с DTO и ownership-e2e, а режим правки у мастеров записи
   (`SchemaEntrySheet`/`ModeEntrySheet` у режимов восемь шагов, черновики),
   то есть отдельная задача. Решить с владельцем, нужна ли правка.
-- **Письмо называется по-разному**: экран упражнения — «Письмо Уязвимому Ребёнку»
-  (`webapp/src/components/exercises/LetterEx.tsx`), «Мой путь», задания и быстрые действия —
-  «Письмо себе» (`shared/src/journey/journeyMeta.ts:38`,
-  `shared/src/quickActions/quickActionsRegistry.ts:106`,
-  `webapp/src/components/taskCreate/taskOptions.ts:14`). Название — решение владельца.
 
 ### «Сегодня» клиента через полночь и офлайн-оценки (QA клиента 2026-11-03, остаток К3/З9)
 
