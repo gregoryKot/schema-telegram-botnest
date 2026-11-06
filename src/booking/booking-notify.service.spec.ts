@@ -498,7 +498,7 @@ describe('BookingNotifyService.sendReminders (@Cron) — окна 24ч/2ч', () 
       dueReminders: [due],
     });
     await service.sendReminders();
-    // due возвращается на оба окна (24ч и 2ч) фейковым findMany — 2 уведомления, 2 update.
+    // due возвращается на оба окна (24ч и 2ч) фейковым findMany — 2 уведомления, 2 захвата.
     expect(
       telegram.notifyAdmin.mock.calls.some((c: any) =>
         c[0].includes('Напоминание'),
@@ -508,12 +508,12 @@ describe('BookingNotifyService.sendReminders (@Cron) — окна 24ч/2ч', () 
       expect.stringContaining('Напоминание'),
       expect.any(String),
     );
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 5 },
-        data: expect.objectContaining({ reminder24SentAt: expect.any(Date) }),
-      }),
-    );
+    // Метка — условный захват до отправки (booking-reminders.ts), не update после.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 5, status: BookingStatus.CONFIRMED, reminder24SentAt: null },
+      data: { reminder24SentAt: expect.any(Date) },
+    });
+    expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 
   it('тик уже забрал другой инстанс — findMany не зовётся, ни DM, ни письмо не уходят', async () => {
