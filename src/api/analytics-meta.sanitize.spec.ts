@@ -712,6 +712,12 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('concept_sync_from_map', leak)).toBeUndefined();
   });
 
+  // «Показ экрана» в кабинете: событие только отмечает включение, имена клиентов не принимаются.
+  it('cabinet_screen_share_on: meta игнорируется', () => {
+    const leak = { clients: ['Анна'], clientId: '555' };
+    expect(sanitizeMeta('cabinet_screen_share_on', leak)).toBeUndefined();
+  });
+
   // quiz_started/quiz_completed/practice_link_click несут meta по реестру
   // (analytics.constants.ts), но санитизируются ТОЛЬКО в PublicEventsController
   // (анонимный /api/public-event) — эта функция обслуживает /api/event и

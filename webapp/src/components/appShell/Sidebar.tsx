@@ -6,6 +6,7 @@ import { SECTION_HUE, hueStyle } from '../../lib/tone';
 import { ModeSwitch } from './ModeSwitch';
 import type { Section } from './navigation';
 import { SidebarClients } from './SidebarClients';
+import { useScreenShare } from './screenShareMode';
 import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
 
 const itemClass = ({ isActive }: { isActive: boolean }) => `sb-item${isActive ? ' is-active' : ''}`;
@@ -40,6 +41,7 @@ export function Sidebar({
   needs, ratings, displayName, onOpenTracker, onOpenSettings,
 }: Props) {
   const { logout } = useAuth();
+  const screenShare = useScreenShare();
   // Тот же индекс дня, что на плитке и в итоге трекера (shared/src/needs/dayIndex.ts).
   const idx = dayIndex(needs.map(n => n.id), ratings);
   return (
@@ -59,7 +61,7 @@ export function Sidebar({
         {therapistMode && (<>
           <NavLink to="/cabinet/today" className={itemClass}><span>Сегодня</span></NavLink>
           <NavLink to="/cabinet" end className={itemClass}>
-            <span>Все клиенты</span><span className="badge">{therapistClients.length || ''}</span>
+            <span>Все клиенты</span><span className="badge">{screenShare ? '' : therapistClients.length || ''}</span>
           </NavLink>
           {/* Клиенты — порядок, поиск и инициалы как в «Все клиенты» (appShell/SidebarClients). */}
           <SidebarClients clients={therapistClients} />

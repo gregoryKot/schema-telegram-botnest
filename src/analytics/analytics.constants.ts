@@ -74,8 +74,7 @@
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
-//   concept_*            — схема случая в кабинете терапевта (без meta); реестр и
-//                         описания каждого — в concept-events.constants.ts.
+//   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
@@ -87,6 +86,7 @@
 //                         вообще находят и им пользуются, а не считать это
 //                         само собой разумеющимся.
 import { CASE_EVENTS } from './case-steps.constants';
+import { CABINET_EVENTS } from './cabinet-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
 import { GAME_EVENTS } from './game-events.constants';
 import { HOME_EVENTS } from './home-events.constants';
@@ -127,8 +127,8 @@ export const ANALYTICS_EVENTS = [
   // Серверные события (guard'ы/контроллеры) — реестр в server-events.constants.ts.
   ...SERVER_EVENTS,
   'profile_pattern_open',
-  // Схема случая в кабинете терапевта — реестр рядом с фичей (правило №10).
-  ...CONCEPT_EVENTS,
+  ...CONCEPT_EVENTS, // кабинет терапевта: реестры рядом с фичей (правило №10)
+  ...CABINET_EVENTS,
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
   'login_ticket_step',
   // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).

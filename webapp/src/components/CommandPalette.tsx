@@ -10,6 +10,7 @@ import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Section } from './appShell/navigation';
+import { useScreenShare } from './appShell/screenShareMode';
 import '../styles/command-palette.css';
 
 interface Props {
@@ -66,6 +67,8 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
+  // «Показ экрана» (сайдбар кабинета): имён клиентов нет и здесь, даже по поиску.
+  const screenShare = useScreenShare();
   const inputRef = useRef<HTMLInputElement>(null);
   // «Назад» браузера закрывает палитру; действие строки — goBack(action), после снятия
   // записи. Escape — через стек диалогов: поверх палитры закроет только верхнее окно.
@@ -88,7 +91,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   interface Row { type: RowType; label: string; sub?: string; activeToday?: boolean; hint?: string; action: () => void }
 
   const rows = useMemo<Row[]>(() => {
-    const clientRows: Row[] = clients.map(c => ({
+    const clientRows: Row[] = screenShare ? [] : clients.map(c => ({
       type: 'client' as const,
       label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
       ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: clientStatus(c).label }),
@@ -122,7 +125,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     const all: Row[] = [...clientRows, ...navRows, ...actionRows];
     // Регистр и «ё/е» не различаются — тот же поиск, что в списке клиентов.
     return all.filter(r => matchesSearch(`${r.label} ${r.sub ?? ''}`, q));
-  }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
+  }, [q, clients, screenShare, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -156,10 +159,11 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             className="ds-input ds-input--search"
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="Найти клиента, страницу или действие…"
+            placeholder={screenShare ? 'Найти страницу или действие…' : 'Найти клиента, страницу или действие…'}
           />
         </div>
         <div className="cmd-list">
+          {screenShare && userRole === 'THERAPIST' && <p className="ds-sub cmd-empty">Клиенты скрыты: включён показ экрана</p>}
           {rows.length === 0 && <p className="ds-empty cmd-empty">Ничего не найдено</p>}
           {rows.map((row, i) => (
             <div
