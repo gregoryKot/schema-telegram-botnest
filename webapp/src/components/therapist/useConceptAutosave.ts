@@ -28,6 +28,9 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
   const [conceptError, setConceptError] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [savedAt, setSavedAt] = useState<Date | null>(null); // момент последнего удачного сохранения
+  // Загрузка упала — правки закрыты: тело сохранения несёт ВСЕ поля, и правка поверх пустых затёрла бы
+  // сохранённое (docs/open/therapy.md, класс «сбой ≠ пусто»). `reloadConcept` — «Повторить».
+  const [load, setLoad] = useState({ failed: false, reloading: false });
   const isOpen = (id: UserId) => sameId(openClientIdRef.current, id);
 
   function setLocal(next: LocalConcept) {
@@ -74,7 +77,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
 
   function patchConcept(patch: LocalConcept) {
     const clientId = openClientIdRef.current;
-    if (clientId == null) return;
+    if (clientId == null || load.failed) return;
     const next = { ...localRef.current, ...patch };
     setLocal(next);
     setSaveStatus('pending');
@@ -105,15 +108,28 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     setConceptError('');
     setSaveStatus('idle'); // статус — состояние клиента: «Не сохранилось» прежнего не переезжает к новому (#879)
     setSavedAt(null);
+    setLoad({ failed: false, reloading: false });
   }
 
-  function loadConcept(fetched: ClientConceptualization | null) {
+  function loadConcept(fetched: ClientConceptualization | null, failed = false) {
+    setLoad({ failed, reloading: false });
     setConcept(fetched);
     if (fetched) setLocal(fetched);
   }
 
+  async function reloadConcept() {
+    const clientId = openClientIdRef.current;
+    if (clientId == null) return;
+    setLoad({ failed: true, reloading: true });
+    const fetched = await api.getConceptualization(clientId).then((c) => ({ c }), () => null);
+    if (!isOpen(clientId)) return; // поздний ответ прежнего клиента новую карточку не трогает
+    if (fetched) loadConcept(fetched.c);
+    else { setLoad({ failed: true, reloading: false }); reportClientError({ message: 'concept reload failed', section: SECTION }); }
+  }
+
   return {
     concept, localConcept, conceptError, saveStatus, savedAt, retrySave,
+    load, reloadConcept: () => void reloadConcept(),
     activeSchemaIds: (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[],
     activeModeIds: (localConcept.modeIds ?? concept?.modeIds ?? []) as string[],
     patchConcept,
