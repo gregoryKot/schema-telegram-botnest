@@ -55,7 +55,7 @@ describe('ModeMapEditor — поля → холст', () => {
     expect(document.querySelector('.react-flow__node[data-id^="cc_schema_failure"]')).toBeTruthy();
     expect(nodeEl('n1')?.style.transform).toBe(before);
     expect(trackEvent).toHaveBeenCalledWith('concept_sync_to_map');
-    expect(screen.getByText('Совпадает с концептуализацией')).toBeTruthy();
+    expect(screen.getByText('Карта совпадает с концептуализацией')).toBeTruthy();
 
     await act(async () => { await new Promise((r) => setTimeout(r, BACK_SYNC_DELAY_MS + 100)); });
     expect(appendConceptualization).not.toHaveBeenCalled();

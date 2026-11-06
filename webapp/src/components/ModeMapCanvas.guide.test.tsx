@@ -222,6 +222,18 @@ describe('ModeMapCanvas — подсказки не висят всегда', ()
     expect(guideOpen()).toBe(false);
   });
 
+  it('свободный холст подсказки сам не открывает — даже пустой и с сохранённым «1» (#963)', () => {
+    renderCanvas({ initialNodes: [], kind: 'free' });
+    expect(screen.queryByText('1. Детские режимы')).toBeNull();
+    cleanup();
+    localStorage.setItem('modemap_guide', '1');
+    renderCanvas({ initialNodes: [], kind: 'free' });
+    expect(screen.queryByText('1. Детские режимы')).toBeNull();
+    cleanup();
+    renderCanvas({ initialNodes: [], kind: 'concept' }); // остальные типы — как раньше
+    expect(screen.getByText('1. Детские режимы')).toBeTruthy();
+  });
+
   it('третий узел, добавленный при открытых подсказках, их не закрывает', () => {
     const { container } = renderCanvas({ initialNodes: nodes(2) });
     fireEvent.click(screen.getByText('2. Уязвимый Ребёнок').closest('button')!);

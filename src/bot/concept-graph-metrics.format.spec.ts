@@ -40,7 +40,7 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).toContain('Открывали 14 раз, терапевтов: 3');
     expect(text).toContain('Связи режимов заполняли 9 раз');
     expect(text).toContain('Убеждения и опыт схем записывали 6 раз');
-    expect(text).toContain('Переносили схему случая на холст 2 раз');
+    expect(text).toContain('Собирали карту из концептуализации 2 раз');
     expect(text).toContain('Разворачивали схему на весь экран 8 раз');
     expect(text).not.toContain('Пока никто');
     expect(text).not.toMatch(/NaN|undefined/);
@@ -84,7 +84,7 @@ describe('formatConceptGraphMetrics', () => {
   it('только перенос на холст: блок не пустой, строка про холст стоит, мусора нет', () => {
     const text = formatConceptGraphMetrics({ ...base, canvasOpen30: 5 });
     expect(text).not.toContain('Пока никто');
-    expect(text).toContain('Переносили схему случая на холст 5 раз');
+    expect(text).toContain('Собирали карту из концептуализации 5 раз');
     expect(text).not.toMatch(/NaN|undefined|null/);
   });
 
@@ -130,11 +130,11 @@ describe('formatConceptGraphMetrics', () => {
       syncFromMap30: 12,
     });
     expect(text).not.toContain('Пока никто');
-    expect(text).toContain('Дописано на карту из полей: 3');
-    expect(text).toContain('Дописано в концептуализацию с холста: 12');
+    expect(text).toContain('Дописывали на карту из полей: 3 раз');
+    expect(text).toContain('Холст дописывал в концептуализацию: 12 раз');
     const onlyFrom = formatConceptGraphMetrics({ ...base, syncFromMap30: 1 });
-    expect(onlyFrom).toContain('Дописано в концептуализацию с холста: 1');
-    expect(onlyFrom).not.toContain('Дописано на карту');
+    expect(onlyFrom).toContain('Холст дописывал в концептуализацию: 1 раз');
+    expect(onlyFrom).not.toContain('Дописывали на карту');
     expect(onlyFrom).not.toMatch(/NaN|undefined|null|полей: 0/);
   });
 

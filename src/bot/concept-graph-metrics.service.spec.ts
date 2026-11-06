@@ -107,7 +107,7 @@ describe('ConceptGraphMetricsService', () => {
       syncFromMap30: 0,
     });
     await expect(service.render()).resolves.toContain(
-      'Переносили схему случая на холст 7 раз',
+      'Собирали карту из концептуализации 7 раз',
     );
   });
 
@@ -161,8 +161,8 @@ describe('ConceptGraphMetricsService', () => {
       where: { name: 'concept_sync_from_map', createdAt: { gte: SINCE } },
     });
     const text = await service.render();
-    expect(text).toContain('Дописано на карту из полей: 4');
-    expect(text).toContain('Дописано в концептуализацию с холста: 9');
+    expect(text).toContain('Дописывали на карту из полей: 4 раз');
+    expect(text).toContain('Холст дописывал в концептуализацию: 9 раз');
   });
 
   it('терапевты — distinct по userId, анонимная строка (null) не в счёт', async () => {
@@ -212,7 +212,7 @@ describe('ConceptGraphMetricsService', () => {
       groups: [{ userId: 1n }, { userId: 2n }],
     });
     const text = await service.render();
-    expect(text).toContain('Переносили схему случая на холст 5 раз');
+    expect(text).toContain('Собирали карту из концептуализации 5 раз');
     expect(text).toContain('Разворачивали схему на весь экран 4 раз');
     expect(text).not.toContain('Повторяли сохранение'); // 0 повторов — строки нет
     expect(text).toContain('Открывали 6 раз, терапевтов: 2');

@@ -11,6 +11,7 @@ import { useModeMapConcept } from './clientConceptContext';
 import { BACK_SYNC_DELAY_MS } from './useConceptBackSync';
 import type { GraphEdge, GraphNode } from './conceptSync';
 import { CONCEPT_APPENDED_EVENT } from './conceptAppendedEvent';
+import { CONCEPT_SYNC_FROM_MAP_EVENT } from '../../../../shared/src/share/analytics';
 
 const getConceptualization = vi.fn();
 const appendConceptualization = vi.fn();
@@ -68,7 +69,7 @@ describe('useConceptSync — холст → поля', () => {
     await settle();
     await waitDelay();
     expect(appendConceptualization).not.toHaveBeenCalled();
-    expect(screen.getByText('Совпадает с концептуализацией')).toBeTruthy();
+    expect(screen.getByText('Карта совпадает с концептуализацией')).toBeTruthy();
   });
 
   it('поставил режим → append {modeIds} → провайдер видит его → «Добавлено в концептуализацию: …»', async () => {
@@ -83,6 +84,7 @@ describe('useConceptSync — холст → поля', () => {
     expect(screen.getByText('Добавлено в концептуализацию: Требовательный Критик')).toBeTruthy();
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith('concept_sync_from_map');
+    expect(CONCEPT_SYNC_FROM_MAP_EVENT).toBe('concept_sync_from_map'); // литерал в хуке видит трипваер analytics-sync
   });
 
   it('провёл линию схема → режим — уходит связь', async () => {
@@ -91,6 +93,50 @@ describe('useConceptSync — холст → поля', () => {
     rerender(<Harness nodes={[CHILD, SCHEMA]} edges={[{ source: 's1', target: 'm2' }]} />);
     await waitDelay();
     expect(appendConceptualization).toHaveBeenCalledWith(7, { modeLinks: [{ modeId: 'vulnerable_child', schemaIds: ['defectiveness'] }] });
+  });
+
+  it('два добавления внахлёст: второй запрос уходит только после ответа на первый, итог содержит оба', async () => {
+    // Сервер объединяет чтением-записью: запрос до ответа на прежний мог бы затереть его.
+    let server: { schemaIds: string[]; modeIds: string[]; modeLinks: never[] } = { ...CONCEPT };
+    let releaseFirst = () => {};
+    appendConceptualization.mockImplementation((_id: unknown, body: { modeIds?: string[]; schemaIds?: string[] }) => {
+      const reply = () => {
+        server = { ...server, modeIds: [...server.modeIds, ...(body.modeIds ?? [])], schemaIds: [...server.schemaIds, ...(body.schemaIds ?? [])] };
+        return server;
+      };
+      if (appendConceptualization.mock.calls.length > 1) return Promise.resolve(reply());
+      return new Promise((resolve) => { releaseFirst = () => resolve(reply()); });
+    });
+    const { rerender } = render(<Harness nodes={[CHILD]} />);
+    await settle();
+    rerender(<Harness nodes={[CHILD, CRITIC]} />);
+    await waitDelay();
+    expect(appendConceptualization).toHaveBeenCalledTimes(1);
+    rerender(<Harness nodes={[CHILD, CRITIC, SCHEMA]} />);
+    await waitDelay();
+    expect(appendConceptualization).toHaveBeenCalledTimes(1); // первый ещё в пути
+    await act(async () => { releaseFirst(); });
+    await settle();
+    expect(appendConceptualization).toHaveBeenCalledTimes(2);
+    expect(appendConceptualization).toHaveBeenLastCalledWith(7, { schemaIds: ['defectiveness'] });
+    expect(server).toEqual({ ...CONCEPT, modeIds: ['vulnerable_child', 'demanding_critic'], schemaIds: ['defectiveness'] });
+    expect(screen.getByTestId('probe').textContent).toBe('vulnerable_child,demanding_critic');
+    expect(screen.getByText('Добавлено в концептуализацию: Дефективность / Стыд')).toBeTruthy();
+  });
+
+  it('ушёл с карты, пока запрос в пути, — досылка уходит после ответа, keepalive', async () => {
+    let releaseFirst = () => {};
+    appendConceptualization.mockImplementationOnce(() => new Promise((resolve) => { releaseFirst = () => resolve(CONCEPT); }));
+    const { rerender, unmount } = render(<Harness nodes={[CHILD]} />);
+    await settle();
+    rerender(<Harness nodes={[CHILD, CRITIC]} />);
+    await waitDelay();
+    rerender(<Harness nodes={[CHILD, CRITIC, SCHEMA]} />);
+    unmount();
+    expect(appendConceptualization).toHaveBeenCalledTimes(1);
+    await act(async () => { releaseFirst(); });
+    await settle();
+    expect(appendConceptualization).toHaveBeenLastCalledWith(7, { schemaIds: ['defectiveness'] }, { keepalive: true });
   });
 
   it('удалил узел — поля не трогаются', async () => {

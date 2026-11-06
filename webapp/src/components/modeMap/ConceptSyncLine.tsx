@@ -29,7 +29,7 @@ export function ConceptSyncLine({ onAddToMap }: Props) {
     setAdding(true);
     sync.markToMap();
     try {
-      if (await onAddToMap()) api.trackEvent('concept_sync_to_map');
+      if (await onAddToMap()) api.trackEvent('concept_sync_to_map'); // литерал; константа сверяется в ConceptSyncLine.test
     } finally {
       setAdding(false);
     }

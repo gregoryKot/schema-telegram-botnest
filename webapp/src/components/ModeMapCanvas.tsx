@@ -61,7 +61,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   // (карта приходит вместе с редактором, ключ — id карты: узлы известны на монтировании).
   const [showGuide, setShowGuide] = useState(() => {
     const saved = localStorage.getItem('modemap_guide');
-    return saved === null ? nodes.length < 3 : saved !== '0';
+    return kind !== 'free' && (saved === null ? nodes.length < 3 : saved !== '0'); // свободный холст — без подсказок, пока их не позовут
   });
   const [showZones, setShowZones] = useState(() => localStorage.getItem('modemap_zones') === '1');
   const [tplOpen, setTplOpen] = useState(false);

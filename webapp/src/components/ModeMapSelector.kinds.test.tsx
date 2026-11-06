@@ -3,7 +3,7 @@
 // собирается из полей с сервера и недоступна, пока полей нет или они грузятся,
 // «Свободный холст» — пустая карта. Редактор — стаб (он покрыт своими тестами).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ModeMapSelector } from './ModeMapSelector';
 import { AddressFormContext } from '../utils/addressForm';
 import { conceptMapTitle } from './modeMap/mapKinds';
@@ -36,6 +36,7 @@ const created = (id: number, title: string, kind: string) =>
   ({ id, title, kind, nodes: [], edges: [], createdAt: '', updatedAt: '' });
 const kindButton = (label: string) => screen.getByText(label).closest('button') as HTMLButtonElement;
 const FILL_HINT = 'Заполни поля концептуализации, и карта соберётся сама';
+const LINK_NOTE = 'Карты связаны с концептуализацией клиента: режимы, схемы и линии схема — режим с карты дописываются в поля, а удаление с карты поля не трогает. Карта пары живёт отдельно.';
 
 async function renderEmpty(form: 'ty' | 'vy' = 'ty') {
   listModeMaps.mockResolvedValue([]);
@@ -88,11 +89,24 @@ describe('ModeMapSelector — типы графических карт', () => {
     expect(screen.getByText('Заполните поля концептуализации, и карта соберётся сама')).toBeTruthy();
   });
 
-  it('концептуализация не загрузилась — тип недоступен с той же подсказкой', async () => {
+  it('концептуализация не загрузилась — тип недоступен со своей подсказкой, не «заполни поля»', async () => {
     getConceptualization.mockRejectedValue(new Error('500'));
     await renderEmpty();
     expect(kindButton('Концептуализация').disabled).toBe(true);
-    expect(screen.getByText(FILL_HINT)).toBeTruthy();
+    expect(screen.getByText('Концептуализация не загрузилась — собрать карту из неё сейчас нельзя')).toBeTruthy();
+    expect(screen.queryByText(FILL_HINT)).toBeNull();
+  });
+
+  it('до первой карты сказано, что карты связаны с концептуализацией: на пустом экране и в меню «Новая карта»', async () => {
+    getConceptualization.mockResolvedValue(null);
+    await renderEmpty();
+    expect(document.querySelector('.mm2-kinds .mm2-kinds-note')?.textContent).toBe(LINK_NOTE);
+    cleanup();
+    listModeMaps.mockResolvedValue([{ id: 1, title: 'А', kind: 'problem', createdAt: '', updatedAt: '' }]);
+    getModeMap.mockResolvedValue(created(1, 'А', 'problem'));
+    await act(async () => { render(<ModeMapSelector clientId={4} />); });
+    fireEvent.click(screen.getByText('Новая карта'));
+    expect(document.querySelector('.mm2-kind-menu .mm2-kinds-note')?.textContent).toBe(LINK_NOTE);
   });
 
   it('пока поля грузятся — тип недоступен без спиннера и без подсказки «заполни»', async () => {

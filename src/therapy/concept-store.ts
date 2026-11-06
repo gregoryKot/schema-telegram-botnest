@@ -1,7 +1,7 @@
 // Хранение концептуализации клиента (ClientConceptualization): шифрование
 // полей, расшифровка для ответа и запись со снимком истории. Один путь записи
 // на «сохранить поля» (therapy-notes.service.ts) и «дописать с холста»
-// (concept-append.service.ts): история и шифрование не разъезжаются.
+// (concept-append.ts): история и шифрование не разъезжаются.
 import { Prisma, type ClientConceptualization } from '@prisma/client';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 import { nextConceptHistory } from './concept-history';

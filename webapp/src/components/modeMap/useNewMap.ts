@@ -6,11 +6,11 @@ import { useAddressForm } from '../../utils/addressForm';
 import { createConceptMap } from './createConceptMap';
 import { newMapTitle } from './mapKinds';
 
-/** Из чего собрать карту «Концептуализация»: поля ещё грузятся, собирать не из чего — или источник графа. */
-export type ConceptSource = 'loading' | 'empty' | ConceptGraphSource;
+/** Из чего собрать карту «Концептуализация»: поля ещё грузятся, собирать не из чего, не загрузились — или источник графа. */
+export type ConceptSource = 'loading' | 'empty' | 'failed' | ConceptGraphSource;
 
 /** Без режимов и схем карта вышла бы кругом потребностей без единой фигуры клиента — такой тип недоступен. */
-export function conceptSourceOf(c: ConceptGraphFields | null | undefined): Exclude<ConceptSource, 'loading'> {
+export function conceptSourceOf(c: ConceptGraphFields | null | undefined): Exclude<ConceptSource, 'loading' | 'failed'> {
   const source = conceptGraphSource(c ?? {});
   return source.modeIds.length > 0 || source.schemaIds.length > 0 ? source : 'empty';
 }
@@ -22,7 +22,7 @@ function useConceptSource(clientId: UserId): ConceptSource {
     let alive = true;
     api.getConceptualization(clientId)
       .then(c => { if (alive) setState({ id: clientId, value: conceptSourceOf(c) }); })
-      .catch(() => { if (alive) setState({ id: clientId, value: 'empty' }); }); // не загрузилась — собрать не из чего
+      .catch(() => { if (alive) setState({ id: clientId, value: 'failed' }); }); // не «пусто»: «Заполни поля» звучало бы ложью
     return () => { alive = false; };
   }, [clientId]);
   return state.id === clientId ? state.value : 'loading';

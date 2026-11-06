@@ -170,6 +170,32 @@ describe('applyMutationInvalidation: офлайн-клиент сохранил 
     });
   });
 
+  // #963: холст «Графических карт» дописывает в концептуализацию (/append) — вкладка
+  // полей и следующая открытая карта читают свежее так же, как после сохранения полей.
+  it.each([
+    '/api/therapy/conceptualization/-57',
+    '/api/therapy/conceptualization/-57/append',
+  ])(
+    'POST %s сбрасывает концептуализацию -57 и список клиентов, но не 57',
+    async (path) => {
+      const f = await seed([
+        '/api/therapy/conceptualization/-57',
+        '/api/therapy/conceptualization/57',
+        '/api/therapy/clients',
+      ]);
+      applyMutationInvalidation(
+        'POST',
+        path,
+        '{"modeIds":["demanding_critic"]}',
+      );
+      expect(await refetched(f)).toEqual({
+        '/api/therapy/conceptualization/-57': 2,
+        '/api/therapy/conceptualization/57': 1,
+        '/api/therapy/clients': 2,
+      });
+    },
+  );
+
   it('дата сессии -57 сбрасывает данные клиента и список («Сегодня»)', async () => {
     const f = await seed([
       '/api/therapy/client-data/-57',

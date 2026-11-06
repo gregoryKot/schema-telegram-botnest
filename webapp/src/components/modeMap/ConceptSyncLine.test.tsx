@@ -5,6 +5,7 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { ConceptSyncLine } from './ConceptSyncLine';
 import { ConceptSyncContext, type ConceptSyncState } from './conceptSyncContext';
 import { listNames } from './conceptSyncText';
+import { CONCEPT_SYNC_TO_MAP_EVENT } from '../../../../shared/src/share/analytics';
 
 const trackEvent = vi.fn();
 vi.mock('../../api', () => ({ api: { trackEvent: (...a: unknown[]) => trackEvent(...a) } }));
@@ -79,9 +80,9 @@ describe('ConceptSyncLine — состояния', () => {
     expect(screen.getByRole('button', { name: 'Добавить на карту' })).toBeTruthy();
   });
 
-  it('иначе — «Совпадает с концептуализацией»', () => {
+  it('иначе — «Карта совпадает с концептуализацией»', () => {
     const { container } = renderLine(state());
-    expect(text(container)).toBe('Совпадает с концептуализацией');
+    expect(text(container)).toBe('Карта совпадает с концептуализацией');
   });
 });
 
@@ -93,6 +94,7 @@ describe('ConceptSyncLine — «Добавить на карту»', () => {
     expect(s.markToMap).toHaveBeenCalledTimes(1);
     expect(generate).toHaveBeenCalledTimes(1);
     expect(trackEvent).toHaveBeenCalledWith('concept_sync_to_map');
+    expect(CONCEPT_SYNC_TO_MAP_EVENT).toBe('concept_sync_to_map'); // литерал в хуке видит трипваер analytics-sync
   });
 
   it('сборка не удалась — события нет', async () => {

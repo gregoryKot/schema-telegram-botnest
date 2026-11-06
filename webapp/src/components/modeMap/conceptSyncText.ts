@@ -49,5 +49,5 @@ export function syncLineView(s: ViewInput): SyncLineView {
     return { state: 'missing', text: added ? `${added}. ${text}` : text, action: 'add' };
   }
   if (added) return { state: 'added', text: added };
-  return { state: 'synced', text: 'Совпадает с концептуализацией' };
+  return { state: 'synced', text: 'Карта совпадает с концептуализацией' };
 }

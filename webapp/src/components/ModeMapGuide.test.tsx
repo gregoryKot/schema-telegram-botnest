@@ -77,19 +77,25 @@ describe('ModeMapGuide — шаги «couple» и «identity»', () => {
     expect(screen.getByText('5. Копинг Б → бьёт по А')).toBeTruthy();
   });
 
-  it('kind=identity показывает карту режимов с группами режимов', () => {
+  it('kind=identity (старое значение) показывает группы режимов', () => {
     renderGuide({ kind: 'identity' as never });
-    expect(screen.getByText('Карта режимов')).toBeTruthy();
+    expect(screen.getByText('Группы режимов')).toBeTruthy();
     expect(screen.getByText('1. Детские режимы')).toBeTruthy();
   });
 
-  it('«Концептуализация» и «Свободный холст» ведут себя как карта режимов: группы режимов (#963)', () => {
+  it('«Концептуализация» и «Свободный холст»: группы режимов, но заголовок не называет их «Картой режимов» (#963)', () => {
     for (const kind of ['concept', 'free'] as const) {
       renderGuide({ kind });
-      expect(screen.getByText('Карта режимов')).toBeTruthy();
+      expect(screen.getByText('Группы режимов')).toBeTruthy();
+      expect(screen.queryByText('Карта режимов')).toBeNull();
       expect(screen.getByText('1. Детские режимы')).toBeTruthy();
       cleanup();
     }
+  });
+
+  it('«Карта режимов» (personality) называется так и в подсказках', () => {
+    renderGuide({ kind: 'personality' });
+    expect(screen.getByText('Карта режимов')).toBeTruthy();
   });
 });
 
