@@ -31,8 +31,9 @@ interface Params {
       patch: SessionInfoPatch,
     ) => Promise<unknown>;
   };
-  /** Текст ошибки дат; `clearAfterMs` — снять его сам (мини-апп), иначе висит до следующей попытки. */
-  sessionError: { text: string; clearAfterMs?: number };
+  /** Текст ошибки дат; висит до следующей попытки. Самоснятие по таймеру (`clearAfterMs`) было только
+   *  у мини-аппа (удалён, #908) и жило голым setTimeout без очистки (docs/open/ci-tests.md) — убрано. */
+  sessionError: { text: string };
 }
 
 export function useSessionAliasEditing({
@@ -121,8 +122,6 @@ export function useSessionAliasEditing({
     } catch {
       if (!isOpen(clientId)) return false;
       setSessionInfoError(sessionError.text);
-      if (sessionError.clearAfterMs)
-        setTimeout(() => setSessionInfoError(''), sessionError.clearAfterMs);
       return false;
     } finally {
       if (isOpen(clientId)) setSessionInfoSaving(false);

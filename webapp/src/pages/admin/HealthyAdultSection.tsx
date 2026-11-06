@@ -17,12 +17,19 @@ export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
   const [testMsg, setTestMsg] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
 
+  // Пока список грузится, строк на экране нет — правка возможна только «Добавить» и импортом. Поздний
+  // ответ их не затирает: фразы, которых нет в ответе, остаются после загруженных. Ответ по прежнему
+  // ключу (смена ключа, размонтирование) не применяется вовсе.
   useEffect(() => {
+    let cancelled = false;
     api
       .adminListPhrases(adminKey)
-      .then(setPhrases)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Ошибка загрузки'))
-      .finally(() => setLoading(false));
+      .then((loaded) => {
+        if (!cancelled) setPhrases((local) => [...loaded, ...local.filter((r) => !loaded.some((l) => l.id === r.id))]);
+      })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Ошибка загрузки'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [adminKey]);
 
   const add = async () => {
