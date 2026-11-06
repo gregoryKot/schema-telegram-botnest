@@ -60,12 +60,6 @@
   расширении диапазона за 2^53 это округляющий `Number()` над userId. Снести
   поле и тип отдельным PR; рассылка и уведомление заявителя уже на bigint
   ([AUDIT_2026-10, «Кабинет психолога»](../AUDIT_2026-10_FINDINGS.md#кабинет-психолога)).
-- Спек `src/auth/auth.service.spec.ts:45` держит свою копию
-  `WEB_USER_ID_MAX = 9_000_000_000_000_000n` вместо импорта из
-  `src/auth/user-id-range.ts`: пин допущения «ниже 2^53» в
-  `user-id-range.spec.ts` смотрит на константу модуля, а спек генерации id — на
-  копию, и они могут разъехаться (правило №4). Перевести спек на импорт в
-  первом же PR, который тронет диапазон.
 - **Семь роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
   хотя аноним проходит** (`telegram/widget`, `telegram/redirect`, `merge`,
   `ticket/start`, `google`, `vk`, `telegram-oidc` в `src/auth/*.controller.ts`):
