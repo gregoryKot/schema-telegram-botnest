@@ -7,19 +7,24 @@ import type {
   JourneyEmptyHeroProps,
   JourneyHeroProps,
 } from '../../../../shared/src/journey/journeyHeroes';
+import { Cup } from '../art/PaperArt';
 import '../../styles/sheet-diary.css';
 
 export function WebJourneyEmptyHero({ tr, explainer }: JourneyEmptyHeroProps) {
   return (
-    <div className="ds-card sd-hero">
-      <h2 className="ds-h2">Путь ещё впереди</h2>
-      <p className="ds-sub sd-hero-text">
-        {explainer}{' '}
-        {tr(
-          'Начни с трекера или любого дневника — первый шаг появится здесь.',
-          'Начните с трекера или любого дневника — первый шаг появится здесь.',
-        )}
-      </p>
+    <div className="ds-card sd-hero pp-hero">
+      <div className="pp-hero-body">
+        <h2 className="ds-h2">Путь ещё впереди</h2>
+        <p className="ds-sub sd-hero-text">
+          {explainer}{' '}
+          {tr(
+            'Начни с трекера или любого дневника — первый шаг появится здесь.',
+            'Начните с трекера или любого дневника — первый шаг появится здесь.',
+          )}
+        </p>
+      </div>
+      {/* Пусто — чашка, как у остальных пустых состояний (PaperEmpty). */}
+      <Cup size="hero" />
     </div>
   );
 }

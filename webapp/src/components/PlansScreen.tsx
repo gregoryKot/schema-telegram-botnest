@@ -11,7 +11,7 @@ import '../styles/sheet-tasks.css';
 import { useTr } from '../utils/addressForm';
 import { planDateLabel, plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
 import { PlanNeedPicker } from './plans/PlanNeedPicker';
-import { Cup } from './art/PaperArt';
+import { PaperEmpty } from './art/PaperEmpty';
 
 interface Props {
   onClose: () => void;
@@ -79,7 +79,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           <Loader minHeight="30vh" />
         ) : plans.length === 0 ? (
           <div className="sk-group">
-            <div className="pp-empty"><Cup /><div><p className="ds-empty">Планов пока нет</p><p className="ds-empty">{plansEmptyText(tr)}</p></div></div>
+            <PaperEmpty title="Планов пока нет">{plansEmptyText(tr)}</PaperEmpty>
             <PlanNeedPicker onPlanned={load} />
             {onOpenTracker && (
               <button onClick={() => goBack(onOpenTracker)} className="ds-link sk-self-start">

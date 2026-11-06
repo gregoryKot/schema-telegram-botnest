@@ -8,7 +8,7 @@ import { toFlowNodes, toFlowEdges } from './modeMapFlow';
 import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
 import { MMIcon } from './modeMapIcons';
-import { Cup } from './art/PaperArt';
+import { PaperEmpty } from './art/PaperEmpty';
 import '../styles/sheet-modemap.css';
 
 function Canvas({ map }: { map: ModeMapFull }) {
@@ -61,7 +61,7 @@ export function ModeMapViewer() {
   if (!loading && maps.length === 0) {
     return (
       <div className="mm2-center">
-        <div className="pp-empty"><Cup /><div><p className="ds-empty">Карты режимов пока нет</p><p className="ds-empty">Терапевт создаёт её на сессии — она появится здесь.</p></div></div>
+        <PaperEmpty title="Карты режимов пока нет">Терапевт создаёт её на сессии — она появится здесь.</PaperEmpty>
       </div>
     );
   }
