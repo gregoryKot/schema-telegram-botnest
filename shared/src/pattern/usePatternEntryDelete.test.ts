@@ -22,13 +22,23 @@ afterEach(() => {
   deleteGratitudeDiary.mockReset();
 });
 
-const ENTRY = { id: 1, schemaIds: ['abandonment'] } as unknown as SchemaDiaryEntry;
-const MODE_ENTRY = { id: 7, modeId: 'vulnerable_child' } as unknown as ModeDiaryEntry;
+const ENTRY = {
+  id: 1,
+  schemaIds: ['abandonment'],
+} as unknown as SchemaDiaryEntry;
+const MODE_ENTRY = {
+  id: 7,
+  modeId: 'vulnerable_child',
+} as unknown as ModeDiaryEntry;
 
 function setup() {
   return renderHook(() => {
     const [schemaEntries, setSchemaEntries] = useState([ENTRY]);
-    const deleteEntry = usePatternEntryDelete({ api, kind: 'schema', setSchemaEntries });
+    const deleteEntry = usePatternEntryDelete({
+      api,
+      kind: 'schema',
+      setSchemaEntries,
+    });
     return { schemaEntries, deleteEntry };
   });
 }
@@ -37,12 +47,17 @@ function setup() {
 function setupMode() {
   return renderHook(() => {
     const [modeEntries, setModeEntries] = useState([MODE_ENTRY]);
-    const deleteEntry = usePatternEntryDelete({ api, kind: 'mode', setModeEntries });
+    const deleteEntry = usePatternEntryDelete({
+      api,
+      kind: 'mode',
+      setModeEntries,
+    });
     return { modeEntries, deleteEntry };
   });
 }
 
-const httpError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status });
+const httpError = (status: number) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
 
 describe('usePatternEntryDelete — схемы', () => {
   it('успех: запись уходит из списка после ответа сервера', async () => {
@@ -55,12 +70,21 @@ describe('usePatternEntryDelete — схемы', () => {
 
   it('пока запрос идёт, запись на месте (не оптимистично)', async () => {
     let resolve!: () => void;
-    deleteSchemaDiary.mockReturnValue(new Promise<void>((r) => { resolve = r; }));
+    deleteSchemaDiary.mockReturnValue(
+      new Promise<void>((r) => {
+        resolve = r;
+      }),
+    );
     const { result } = setup();
     let pending!: Promise<void>;
-    act(() => { pending = result.current.deleteEntry(1); });
+    act(() => {
+      pending = result.current.deleteEntry(1);
+    });
     expect(result.current.schemaEntries).toHaveLength(1);
-    await act(async () => { resolve(); await pending; });
+    await act(async () => {
+      resolve();
+      await pending;
+    });
     expect(result.current.schemaEntries).toHaveLength(0);
   });
 
@@ -95,7 +119,9 @@ describe('usePatternEntryDelete — режимы', () => {
     deleteModeDiary.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = setupMode();
     await act(async () => {
-      await expect(result.current.deleteEntry(7)).rejects.toThrow('Failed to fetch');
+      await expect(result.current.deleteEntry(7)).rejects.toThrow(
+        'Failed to fetch',
+      );
     });
     expect(result.current.modeEntries).toEqual([MODE_ENTRY]);
   });

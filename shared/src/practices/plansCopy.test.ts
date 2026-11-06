@@ -59,7 +59,10 @@ describe('planDateLabel — местный день человека в любо
 
   it('конец месяца и года: «Завтра» переходит через границу', () => {
     forEachTimeZone((tz) => {
-      expect(planDateLabel('2027-01-01', new Date(2026, 11, 31, 22, 0)), tz).toBe('Завтра');
+      expect(
+        planDateLabel('2027-01-01', new Date(2026, 11, 31, 22, 0)),
+        tz,
+      ).toBe('Завтра');
     });
   });
 });

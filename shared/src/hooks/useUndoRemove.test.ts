@@ -28,7 +28,9 @@ describe('useUndoRemove', () => {
   it('«Отменить» в окне возвращает строку на прежнее место', () => {
     const { result } = setup();
     act(() => result.current.remove(1));
-    act(() => { vi.advanceTimersByTime(UNDO_WINDOW_MS - 1); });
+    act(() => {
+      vi.advanceTimersByTime(UNDO_WINDOW_MS - 1);
+    });
     act(() => result.current.undo());
     expect(result.current.list).toEqual(['а', 'б', 'в']);
     expect(result.current.canUndo).toBe(false);
@@ -37,7 +39,9 @@ describe('useUndoRemove', () => {
   it('окно закрывается через 5 с — отменять нечего, список не меняется', () => {
     const { result } = setup();
     act(() => result.current.remove(0));
-    act(() => { vi.advanceTimersByTime(UNDO_WINDOW_MS); });
+    act(() => {
+      vi.advanceTimersByTime(UNDO_WINDOW_MS);
+    });
     expect(result.current.canUndo).toBe(false);
     act(() => result.current.undo());
     expect(result.current.list).toEqual(['б', 'в']);
@@ -54,11 +58,17 @@ describe('useUndoRemove', () => {
   it('окно второго удаления живёт полные 5 с, а не остаток первого', () => {
     const { result } = setup();
     act(() => result.current.remove(0));
-    act(() => { vi.advanceTimersByTime(3000); });
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
     act(() => result.current.remove(0));
-    act(() => { vi.advanceTimersByTime(3000); }); // первое окно уже истекло бы
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    }); // первое окно уже истекло бы
     expect(result.current.canUndo).toBe(true);
-    act(() => { vi.advanceTimersByTime(UNDO_WINDOW_MS - 3000); });
+    act(() => {
+      vi.advanceTimersByTime(UNDO_WINDOW_MS - 3000);
+    });
     expect(result.current.canUndo).toBe(false);
   });
 
