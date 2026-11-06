@@ -14,8 +14,16 @@
 // из shared/ чистил бы экземпляр shared, а тесты фронтенда рендерят через свой
 // — механизм молча ничего бы не делал. Три копии держит пин-тест рядом.
 import { afterAll, afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { settleUnmountTimers } from '../../../shared/src/test-support/settleUnmountTimers';
+
+// Бюджет findBy*/waitFor — на холодный `import()` ленивого чанка: дефолтные
+// 1000 мс он под нагрузкой превышает (`TrackerOverlay` 2,1 с при load average
+// 55–77 на 8 ядрах; тёплый — 1 мс), и тест краснел при живом экране. Сломанный
+// экран не появится и за 5 с — упадёт той же ошибкой. 5000 — вдвое ниже
+// `testTimeout` (vite.config.ts): findBy успевает дать свою ошибку с DOM.
+export const ASYNC_UTIL_TIMEOUT_MS = 5000;
+configure({ asyncUtilTimeout: ASYNC_UTIL_TIMEOUT_MS });
 
 afterEach(() => {
   cleanup();
