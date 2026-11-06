@@ -9,6 +9,7 @@ import { BookingRetentionMetricsService } from './booking-retention-metrics.serv
 import { CaseMetricsService } from './case-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
 import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
+import { CrawlerMetricsService } from './crawler-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
@@ -41,6 +42,7 @@ export const INTERNAL_PROVIDERS = [
   CaseMetricsService,
   ClientErrorMetricsService,
   ConceptGraphMetricsService,
+  CrawlerMetricsService,
   DataExportMetricsService,
   EntryDeleteMetricsService,
   GameMetricsService,

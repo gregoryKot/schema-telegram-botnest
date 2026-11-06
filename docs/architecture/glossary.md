@@ -61,7 +61,8 @@
 | «Телефон доверия», кризисная карточка | при тревожных маркерах | `src/bot/crisis-metrics.ts` | `shared/src/components/CrisisCard.tsx` |
 | игра, котик Мистер | отдельный пакет `game/` | `src/bot/game-metrics.service.ts` | `game/src/main.ts` |
 | **Сайт, вход, бот, канал** | | | |
-| лендинг | продуктовая главная сайта | — | `webapp/src/pages/ProductLandingPage.tsx` |
+| «роботы нейросетей», краулеры, заходы ботов | счётчик заходов поисковых и ИИ-роботов по User-Agent, блок `/stats` «Роботы нейросетей» (GEO.md) | `src/analytics/crawler-hits.ts` (счёт, сброс — `crawler-hits.service.ts`), роботы — `src/analytics/crawler-bots.ts`, отчёт — `src/bot/crawler-metrics.format.ts` | — |
+| лендинг | продуктовая главная сайта | текст — `src/articles/home-landing.content.ts` (его же сервер вкладывает в `#root` главной для робота без JS, `src/articles/home-seo.middleware.ts`) | `webapp/src/pages/ProductLandingPage.tsx`, вид по `id` — `webapp/src/pages/landing/productContent.ts` |
 | «Мини-тесты» | публичные тесты, `/tests` и в боте | `src/quiz/quiz-registry.ts`, `src/telegram/telegram.quiz.service.ts` | `webapp/src/pages/tests/TestsPage.tsx` |
 | «Статьи» | блог | `src/articles/articles.service.ts` | `webapp/src/pages/ArticlesPage.tsx` |
 | «Визитка» | `kotlarewski.gr`, отдаёт только свои страницы | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts` | `webapp/src/pages/LandingPage.tsx`, `webapp/src/App.tsx` |

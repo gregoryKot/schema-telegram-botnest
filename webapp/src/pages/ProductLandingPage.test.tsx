@@ -9,6 +9,9 @@ import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { ProductLandingPage } from './ProductLandingPage';
 import { AuthContext, type AuthState } from '../auth/authContext';
+import {
+  HOME_HERO, HOME_HEADINGS, HOME_STEPS, HOME_FEATURES, HOME_TRUST, HOME_FAQ, HOME_FINAL, type RichText,
+} from '../../../src/articles/home-landing.content';
 
 const listArticles = vi.fn();
 vi.mock('../api', () => ({
@@ -83,6 +86,27 @@ describe('ProductLandingPage — неавторизованный визитор
     const privacyLink = screen.getByText('Политика конфиденциальности') as HTMLAnchorElement;
     expect(offerLink.getAttribute('href')).toBe('/offer');
     expect(privacyLink.getAttribute('href')).toBe('/privacy');
+  });
+});
+
+describe('ProductLandingPage — тот же текст, что получает робот', () => {
+  // Сервер вкладывает home-landing.content.ts в #root главной (GEO.md). Если
+  // страница перестанет брать текст оттуда, робот и человек разойдутся.
+  const plain = (r: RichText) => r.map((p) => (typeof p === 'string' ? p : p.text)).join('');
+  const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+
+  it('каждая строка текста для робота есть на странице', () => {
+    const { container } = renderPage();
+    const page = norm(container.textContent ?? '');
+    const t = HOME_HERO.title;
+    const robot = [
+      t.before + t.accent + t.after, HOME_HERO.lead, ...Object.values(HOME_HEADINGS),
+      ...[...HOME_STEPS, ...HOME_FEATURES].flatMap((x) => [x.title, x.text]),
+      ...HOME_TRUST.flatMap((x) => [x.title, plain(x.text)]),
+      ...HOME_FAQ.flatMap((f) => [f.q, plain(f.a)]),
+      HOME_FINAL.title, HOME_FINAL.text,
+    ];
+    for (const s of robot) expect(page).toContain(norm(s));
   });
 });
 

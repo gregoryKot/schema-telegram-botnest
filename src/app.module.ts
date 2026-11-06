@@ -28,6 +28,7 @@ import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
 import { configureArticleSeo } from './articles/article-seo.routes';
+import { homeSeoMiddleware } from './articles/home-seo.middleware';
 import {
   practiceDomainMiddleware,
   PRACTICE_ALIAS_HOSTS,
@@ -100,6 +101,12 @@ export class AppModule implements NestModule {
         method: RequestMethod.GET,
       })),
     );
+
+    // Главная продукта: текст лендинга в #root для робота без JS (GEO.md);
+    // после practiceIndexMiddleware — главная визитки до сюда не доходит.
+    consumer
+      .apply(homeSeoMiddleware(html))
+      .forRoutes({ path: '/', method: RequestMethod.GET });
 
     // SEO для /articles* и sitemap.xml — после practiceDomainMiddleware.
     configureArticleSeo(consumer);

@@ -201,6 +201,12 @@ const BACKEND_ONLY: Record<string, string> = {
     'отзыве приглашения; ветки в sanitizeMeta нет — meta с клиента ' +
     'отбрасывается, а /stats считает только строки с step и kind из ' +
     'therapy-invite-events.constants.ts',
+  crawler_visits:
+    'серверное событие: пишет только крон CrawlerHitsService ' +
+    '(src/analytics/crawler-hits.service.ts) — счётчики заходов роботов ' +
+    'нейросетей по User-Agent за час, userId = null. Фронт его не шлёт: ' +
+    'заход робота видит только сервер; /stats считает только строки с ' +
+    'userId IS NULL, а sanitizeMeta пропускает лишь закрытые списки',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -271,6 +277,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
     // 35 — therapy_nudge (2026-10, мост к терапевту): тоже константа.
     // 36 — therapy_invite (2026-11, воронка приглашения клиента): серверное.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(36);
+    // 37 — crawler_visits (2026-11, GEO.md: заходы роботов нейросетей): серверное,
+    // заход робота — HTTP-запрос к сайту, у фронта такого действия нет.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(37);
   });
 });

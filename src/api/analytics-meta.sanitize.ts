@@ -17,6 +17,7 @@ import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
 import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
+import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -217,6 +218,7 @@ export function sanitizeMeta(
     return undefined;
   }
   if (name === 'data_export') return sanitizeDataExportMeta(meta);
+  if (name === 'crawler_visits') return sanitizeCrawlerMeta(meta);
   if (name === 'profile_pattern_open') {
     const kind = meta.kind;
     if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
