@@ -16,6 +16,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 function renderCelebration(props: Partial<Parameters<typeof Celebration>[0]> = {}, form: 'ty' | 'vy' = 'ty') {
@@ -84,6 +86,29 @@ describe('Celebration — диалог', () => {
     renderCelebration({ onDone });
     fireEvent.click(screen.getByText('5'));
     expect(onDone).not.toHaveBeenCalled();
+  });
+});
+
+// Регрессия 2026-11-06: «заполнил дневник — поздравление „1 день“, кнопка
+// „Поделиться“, само закрылось». useConfetti по концу анимации (~2 с) звал
+// onDone — окно уходило из-под пальца. Здесь анимация включена и прогоняется
+// до конца синхронным requestAnimationFrame на подменённом 2d-контексте.
+describe('Celebration — само не закрывается', () => {
+  it('конфетти догорело — окно на месте, onDone не звался', () => {
+    localStorage.removeItem('reduce_motion'); // matchMedia в jsdom нет → анимация включена
+    const ctx = { clearRect: vi.fn(), save: vi.fn(), restore: vi.fn(), translate: vi.fn(), rotate: vi.fn(), fillRect: vi.fn(), fillStyle: '', globalAlpha: 1 };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+    let frames = 0;
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { frames++; cb(0); return frames; });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
+    const onDone = vi.fn();
+    renderCelebration({ streak: 1, onDone });
+
+    expect(frames).toBeGreaterThan(60); // анимация действительно отыграла
+    expect(onDone).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByText('Поделиться')).toBeTruthy();
   });
 });
 
