@@ -41,7 +41,7 @@ export async function remindWindow(
       [field]: null,
     },
   });
-  let sent = 0;
+  let claimedCount = 0;
   for (const row of due) {
     const b = decryptRecord(row, BOOKING_SCHEMA) as unknown as PlainBooking;
     // CONFIRMED в WHERE: бронь, отменённую после выборки, не напоминаем.
@@ -50,9 +50,17 @@ export async function remindWindow(
       data: { [field]: new Date() },
     });
     if (claimed.count === 0) continue;
-    await d.sendAdmin(`⏰ <b>Напоминание: сессия ${when}</b>`, b);
-    sent++;
+    claimedCount++;
+    // Захват уже стоит: исключение здесь (сборка текста, не только сеть)
+    // теряет это напоминание — пусть потеря будет видна с id брони, а
+    // остальные строки тика отработают.
+    try {
+      await d.sendAdmin(`⏰ <b>Напоминание: сессия ${when}</b>`, b);
+    } catch (e) {
+      d.logger.error(`${field} reminder lost for booking ${b.id}: ${String(e)}`);
+    }
   }
-  if (sent) d.logger.log(`Sent ${sent} ${field} reminder(s)`);
-  return sent;
+  // «Захвачено», а не «отправлено»: доставку каналы пишут в лог сами.
+  if (claimedCount) d.logger.log(`Claimed ${claimedCount} ${field} reminder(s)`);
+  return claimedCount;
 }

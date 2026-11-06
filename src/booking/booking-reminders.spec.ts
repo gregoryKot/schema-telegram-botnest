@@ -87,14 +87,18 @@ describe('remindWindow — не больше одного напоминания
     expect(table.get(7)?.[FIELD]).toBeInstanceOf(Date);
   });
 
-  it('метка ставится ДО отправки: отправка упала — повтор не шлёт второй раз', async () => {
-    const { prisma, table } = makeDb([row()]);
-    const failing = jest.fn(async () => {
-      throw new Error('send failed');
-    });
-    const { d } = deps(prisma, failing);
+  it('метка ставится ДО отправки: отправка упала — потеря в логе с id брони, остальные строки идут, повтор не шлёт второй раз', async () => {
+    const { prisma, table } = makeDb([row(), row({ id: 8 })]);
+    const failing = jest
+      .fn<Promise<void>, [string, unknown]>()
+      .mockRejectedValueOnce(new Error('send failed'))
+      .mockResolvedValue(undefined);
+    const { d } = deps(prisma, failing as never);
+    const error = jest.spyOn(d.logger, 'error').mockImplementation(() => undefined);
 
-    await expect(remindWindow(d, SOON(), FIELD, 'завтра')).rejects.toThrow();
+    await expect(remindWindow(d, SOON(), FIELD, 'завтра')).resolves.toBe(2);
+    expect(failing).toHaveBeenCalledTimes(2); // вторая бронь не застряла за первой
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('booking 7'));
     expect(table.get(7)?.[FIELD]).toBeInstanceOf(Date);
 
     const { d: again, sendAdmin } = deps(prisma);
