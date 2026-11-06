@@ -23,23 +23,33 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
 import { runGate } from './gate-sandbox';
+import { importExport } from './pattern-loader';
 
 const REAL_SCRIPTS = join(__dirname, '..', '..', '..', 'scripts');
 const RATCHET = 'merge-json-ratchet.mjs';
+const RULES = 'merge-json-ratchet-rules.mjs';
+
+/** Драйвер вместе с модулем режимов — в `<tmp>/scripts/`, как в репозитории. */
+function copyDriver(tmp: string, extra: string[] = []): void {
+  mkdirSync(join(tmp, 'scripts'), { recursive: true });
+  for (const name of [RATCHET, RULES, ...extra]) {
+    copyFileSync(join(REAL_SCRIPTS, name), join(tmp, 'scripts', name));
+  }
+}
 
 /** Прогон драйвера напрямую на трёх версиях файла — так же, как его зовёт git
- *  (%O предок, %A наша версия и она же выход, %B их версия, %P имя для
- *  сообщений). Возвращает код выхода и слитый результат. */
+ *  (%O предок, %A наша версия и она же выход, %B их версия, %P путь файла —
+ *  для сообщений и исключений KEY_MODES). Возвращает код выхода и результат. */
 function mergeJson(
-  direction: 'min' | 'max',
+  direction: 'min' | 'max' | 'sum',
   ancestor: unknown,
   ours: unknown,
   theirs: unknown,
+  label = 'baseline.json',
 ): { status: number | null; merged: unknown; stderr: string } {
   const tmp = mkdtempSync(join(tmpdir(), 'ratchet-'));
   try {
-    mkdirSync(join(tmp, 'scripts'), { recursive: true });
-    copyFileSync(join(REAL_SCRIPTS, RATCHET), join(tmp, 'scripts', RATCHET));
+    copyDriver(tmp);
     const write = (name: string, value: unknown) => {
       const path = join(tmp, name);
       writeFileSync(
@@ -53,7 +63,7 @@ function mergeJson(
     const b = write('b.json', theirs);
     const res = spawnSync(
       'node',
-      [join(tmp, 'scripts', RATCHET), direction, o, a, b, 'baseline.json'],
+      [join(tmp, 'scripts', RATCHET), direction, o, a, b, label],
       { cwd: tmp, encoding: 'utf8' },
     );
     let merged: unknown = null;
@@ -66,6 +76,26 @@ function mergeJson(
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+}
+
+/** git-репозиторий в песочнице, драйверы в котором ставит НАСТОЯЩИЙ
+ *  `setup-merge-drivers.mjs` (тот, что зовёт npm `prepare`): режим, который
+ *  `.gitattributes` называет, а установка забыла, тест увидит так же, как
+ *  увидел бы агент, — текстовым конфликтом. */
+function repoWithRealDrivers(tmp: string) {
+  const git = (...args: string[]) =>
+    spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
+  git('init', '-q', '.');
+  git('config', 'user.email', 'test@example.com');
+  git('config', 'user.name', 'test');
+  copyDriver(tmp, ['setup-merge-drivers.mjs', 'merge-drivers-check.mjs']);
+  const setup = spawnSync('node', ['scripts/setup-merge-drivers.mjs'], {
+    cwd: tmp,
+    encoding: 'utf8',
+  });
+  if (setup.status !== 0)
+    throw new Error(`setup-merge-drivers: ${setup.stderr}`);
+  return git;
 }
 
 describe('merge-json-ratchet: слияние бейслайнов по семантике храповика', () => {
@@ -273,6 +303,169 @@ describe('merge-json-ratchet: слияние бейслайнов по сема�
   });
 });
 
+// 2026-11-06, шесть параллельных веток: обе дописали по блоку в один файл
+// (123→128 и 123→125, слитый файл — 130 строк), обе подняли `webapp:total-js`.
+// min ставил одно из двух значений, и CI после слияния краснел «вырос» — рост
+// второй стороны терялся. Счётчик складывается: база плюс обе дельты.
+describe('merge-json-ratchet sum: счётчик, сдвинутый обеими сторонами, складывается', () => {
+  const STATS = 'src/bot/stats-sections.ts';
+
+  it('обе стороны дописали в один файл — база плюс оба прироста', () => {
+    const args = [
+      { [STATS]: 123, 'b.ts': 40 },
+      { [STATS]: 128, 'b.ts': 40 },
+      { [STATS]: 125, 'b.ts': 44 },
+    ] as const;
+    const sum = mergeJson('sum', ...args);
+    expect(sum.status).toBe(0);
+    expect(sum.merged).toEqual({ [STATS]: 130, 'b.ts': 44 });
+    // контроль: прежний режим на том же входе — меньше, чем на слитом дереве
+    expect(mergeJson('min', ...args).merged).toEqual({
+      [STATS]: 125,
+      'b.ts': 44,
+    });
+  });
+
+  it('одна сторона ужала, другая дописала — дельты складываются со знаком', () => {
+    const args = [{ 'a.ts': 200 }, { 'a.ts': 210 }, { 'a.ts': 190 }] as const;
+    expect(mergeJson('sum', ...args).merged).toEqual({ 'a.ts': 200 });
+    // min отдал бы 190 — на дереве 200, гейт краснел бы на чужом росте
+    expect(mergeJson('min', ...args).merged).toEqual({ 'a.ts': 190 });
+  });
+
+  it('обе ужали разными починками — сохраняются оба ужатия', () => {
+    const args = [{ 'x.tsx': 4 }, { 'x.tsx': 3 }, { 'x.tsx': 2 }] as const;
+    expect(mergeJson('sum', ...args).merged).toEqual({ 'x.tsx': 1 });
+    // min молча терял ужатие одной стороны: планка 2 при дереве 1
+    expect(mergeJson('min', ...args).merged).toEqual({ 'x.tsx': 2 });
+  });
+
+  it('обе убрали одно и то же — планка не уходит ниже нуля', () => {
+    const { merged } = mergeJson(
+      'sum',
+      { 'x.tsx': 2 },
+      { 'x.tsx': 0 },
+      { 'x.tsx': 1 },
+    );
+    expect(merged).toEqual({ 'x.tsx': 0 });
+  });
+
+  it('новый ключ с обеих сторон — один файл, рождённый дважды: max, не сумма', () => {
+    const { status, merged } = mergeJson(
+      'sum',
+      { 'a.ts': 10 },
+      { 'a.ts': 10, 'new.ts': 40 },
+      { 'a.ts': 10, 'new.ts': 60 },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({ 'a.ts': 10, 'new.ts': 60 });
+  });
+
+  it('ключ, удалённый одной стороной, удаляется, даже если другая его растила', () => {
+    const { status, merged } = mergeJson(
+      'sum',
+      { 'a.ts': 10, 'gone.ts': 50 },
+      { 'a.ts': 12 },
+      { 'a.ts': 15, 'gone.ts': 70 },
+    );
+    expect(status).toBe(0);
+    expect(merged).toEqual({ 'a.ts': 17 });
+  });
+
+  it('вложенные счётчики (eslint byRule) складываются по своим ключам', () => {
+    const { merged } = mergeJson(
+      'sum',
+      { total: 5, byRule: { r1: 3, r2: 2 } },
+      { total: 4, byRule: { r1: 2, r2: 2 } },
+      { total: 6, byRule: { r1: 3, r2: 3 } },
+    );
+    expect(merged).toEqual({ total: 5, byRule: { r1: 2, r2: 3 } });
+  });
+
+  // Самый тяжёлый чанк — максимум по чанкам: сумма дельт приписала бы рост
+  // одного чанка другому. Исключение задано явно, по файлу (KEY_MODES в
+  // merge-json-ratchet-rules.mjs), а не по виду имени ключа.
+  const BUNDLE = 'scripts/bundle-size-baseline.json';
+  const bundle = [
+    { 'webapp:largest-chunk': 450000, 'webapp:total-js': 3500000 },
+    { 'webapp:largest-chunk': 450100, 'webapp:total-js': 3500512 },
+    { 'webapp:largest-chunk': 452000, 'webapp:total-js': 3508192 },
+  ] as const;
+
+  it('бандл: total-js — сумма дельт, largest-chunk — max', () => {
+    const { status, merged } = mergeJson('sum', ...bundle, BUNDLE);
+    expect(status).toBe(0);
+    expect(merged).toEqual({
+      'webapp:largest-chunk': 452000,
+      'webapp:total-js': 3508704,
+    });
+    // контроль: прежний min оставлял total-js одной стороны — на 8 КБ ниже дерева
+    expect(mergeJson('min', ...bundle, BUNDLE).merged).toEqual({
+      'webapp:largest-chunk': 450100,
+      'webapp:total-js': 3500512,
+    });
+  });
+
+  it('контроль: исключение привязано к файлу — тот же ключ в другом файле суммируется', () => {
+    const { merged } = mergeJson(
+      'sum',
+      ...bundle,
+      'scripts/other-baseline.json',
+    );
+    expect(merged).toEqual({
+      'webapp:largest-chunk': 452100,
+      'webapp:total-js': 3508704,
+    });
+  });
+
+  it('НЕ сводит строки-причины и в sum-режиме — конфликт человеку', () => {
+    const { status, stderr } = mergeJson(
+      'sum',
+      { k: 'исходная' },
+      { k: 'наша' },
+      { k: 'их' },
+    );
+    expect(status).toBe(1);
+    expect(stderr).toContain('несводимое расхождение');
+  });
+});
+
+describe('KEY_MODES сверен с настоящими бейслайнами и .gitattributes', () => {
+  // Два места, обязанные совпадать (правило №4): ключ переименовали в гейте —
+  // исключение молча перестаёт работать, и самый тяжёлый чанк начнёт
+  // складываться. Файл увели с ratchet-sum — исключение ничего не значит.
+  const REPO = join(REAL_SCRIPTS, '..');
+  const leaves = (v: unknown, p = ''): Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v)
+      ? Object.assign(
+          {},
+          ...Object.entries(v).map(([k, x]) => leaves(x, p ? `${p}.${k}` : k)),
+        )
+      : { [p]: v };
+
+  it('каждое исключение — про sum-файл, живой ключ-число и известный режим', () => {
+    const keyModes = JSON.parse(
+      importExport(RULES, 'KEY_MODES', '(x) => x'),
+    ) as Record<string, Record<string, string>>;
+    const modes = JSON.parse(
+      importExport(RULES, 'MODES', '(x) => x'),
+    ) as string[];
+    const attributes = readFileSync(join(REPO, '.gitattributes'), 'utf8');
+    expect(Object.keys(keyModes).length).toBeGreaterThan(0);
+    for (const [file, keys] of Object.entries(keyModes)) {
+      const line = attributes
+        .split('\n')
+        .find((l) => l.split(/\s+/)[0] === file);
+      expect(line?.trim().split(/\s+/)).toEqual([file, 'merge=ratchet-sum']);
+      const values = leaves(JSON.parse(readFileSync(join(REPO, file), 'utf8')));
+      for (const [key, mode] of Object.entries(keys)) {
+        expect(modes).toContain(mode);
+        expect(typeof values[key]).toBe('number');
+      }
+    }
+  });
+});
+
 describe('merge-json-ratchet: настоящее слияние git', () => {
   /** Репозиторий с двумя «агентами», правящими ОДНУ строку бейслайна.
    *  withDriver=false — контроль: без драйвера это обязано конфликтовать,
@@ -288,8 +481,7 @@ describe('merge-json-ratchet: настоящее слияние git', () => {
       git('init', '-q', '.');
       git('config', 'user.email', 'test@example.com');
       git('config', 'user.name', 'test');
-      mkdirSync(join(tmp, 'scripts'), { recursive: true });
-      copyFileSync(join(REAL_SCRIPTS, RATCHET), join(tmp, 'scripts', RATCHET));
+      copyDriver(tmp);
       if (withDriver) {
         git(
           'config',
@@ -351,8 +543,7 @@ describe('merge-json-ratchet: настоящее слияние git', () => {
         'merge.ratchet-min.driver',
         'node scripts/merge-json-ratchet.mjs min %O %A %B %P',
       );
-      mkdirSync(join(tmp, 'scripts'), { recursive: true });
-      copyFileSync(join(REAL_SCRIPTS, RATCHET), join(tmp, 'scripts', RATCHET));
+      copyDriver(tmp);
       writeFileSync(
         join(tmp, '.gitattributes'),
         'scripts/sizes.json merge=ratchet-min\n',
@@ -614,18 +805,7 @@ describe('настоящее .gitattributes сводит бейслайны, у 
   function twoBranches(withAttributes: boolean) {
     const tmp = mkdtempSync(join(tmpdir(), 'real-attrs-'));
     try {
-      const git = (...args: string[]) =>
-        spawnSync('git', args, { cwd: tmp, encoding: 'utf8' });
-      git('init', '-q', '.');
-      git('config', 'user.email', 'test@example.com');
-      git('config', 'user.name', 'test');
-      git(
-        'config',
-        'merge.ratchet-min.driver',
-        'node scripts/merge-json-ratchet.mjs min %O %A %B %P',
-      );
-      mkdirSync(join(tmp, 'scripts'), { recursive: true });
-      copyFileSync(join(REAL_SCRIPTS, RATCHET), join(tmp, 'scripts', RATCHET));
+      const git = repoWithRealDrivers(tmp);
       writeFileSync(
         join(tmp, '.gitattributes'),
         withAttributes
@@ -689,6 +869,69 @@ describe('настоящее .gitattributes сводит бейслайны, у 
   // Другая сторона тех же реестров: обе ветки переписали ОДНУ причину —
   // драйвер не выбирает «свою», а отдаёт конфликт человеку. Покрыто выше:
   // «НЕ сводит, когда обе стороны написали разные строки».
+});
+
+describe('настоящее .gitattributes: рост двух веток в file-size и бандле складывается', () => {
+  // Шов инцидента 2026-11-06 целиком: настоящий .gitattributes, драйверы от
+  // настоящей установки, git сам зовёт драйвер с %O %A %B %P.
+  const REPO = join(REAL_SCRIPTS, '..');
+  const SIZES = 'scripts/file-size-baseline.json';
+  const BUNDLE = 'scripts/bundle-size-baseline.json';
+  const STATS = 'src/bot/stats-sections.ts';
+  const write = (tmp: string, rel: string, value: unknown) =>
+    writeFileSync(join(tmp, rel), JSON.stringify(value, null, 2) + '\n');
+  const chunks = (largest: number, total: number) => ({
+    'webapp:largest-chunk': largest,
+    'webapp:total-js': total,
+  });
+
+  function twoGrowths(attributes: string) {
+    const tmp = mkdtempSync(join(tmpdir(), 'sum-attrs-'));
+    try {
+      const git = repoWithRealDrivers(tmp);
+      writeFileSync(join(tmp, '.gitattributes'), attributes);
+      write(tmp, SIZES, { 'src/a.ts': 50, [STATS]: 123 });
+      write(tmp, BUNDLE, chunks(450000, 3500000));
+      git('add', '-A');
+      git('commit', '-qm', 'base');
+      const base = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+
+      git('checkout', '-qb', 'agent-b');
+      write(tmp, SIZES, { 'src/a.ts': 50, [STATS]: 125 });
+      write(tmp, BUNDLE, chunks(452000, 3508192));
+      git('commit', '-qam', 'агент B: +2 строки, +8 КБ');
+
+      git('checkout', '-q', base);
+      write(tmp, SIZES, { 'src/a.ts': 48, [STATS]: 128 });
+      write(tmp, BUNDLE, chunks(450100, 3500512));
+      git('commit', '-qam', 'агент A: +5 строк, +0,5 КБ');
+
+      const merge = git('merge', 'agent-b', '-m', 'merge');
+      const read = (rel: string) =>
+        JSON.parse(readFileSync(join(tmp, rel), 'utf8'));
+      return { status: merge.status, sizes: read(SIZES), bundle: read(BUNDLE) };
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  it('с настоящими атрибутами: база плюс оба прироста, самый тяжёлый чанк — max', () => {
+    const res = twoGrowths(readFileSync(join(REPO, '.gitattributes'), 'utf8'));
+    expect(res.status).toBe(0);
+    expect(res.sizes).toEqual({ 'src/a.ts': 48, [STATS]: 130 });
+    expect(res.bundle).toEqual(chunks(452000, 3508704));
+  });
+
+  it('контроль: прежний ratchet-min на той же паре веток оставлял меньшее', () => {
+    const old = readFileSync(join(REPO, '.gitattributes'), 'utf8').replaceAll(
+      'merge=ratchet-sum',
+      'merge=ratchet-min',
+    );
+    const res = twoGrowths(old);
+    expect(res.status).toBe(0);
+    expect(res.sizes).toEqual({ 'src/a.ts': 48, [STATS]: 125 });
+    expect(res.bundle).toEqual(chunks(450100, 3500512));
+  });
 });
 
 describe('настоящее .gitattributes: журнал на дозапись сводится встроенным union', () => {
