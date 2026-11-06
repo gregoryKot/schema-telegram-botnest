@@ -13,7 +13,7 @@
   "deploy/wait-for-db.mjs": 108,
   "e2e-browser/live/helpers.ts": 107,
   "e2e-browser/live/playwright.config.ts": 24,
-  "e2e-browser/support/stubApi.ts": 142,
+  "e2e-browser/support/stubApi.ts": 140,
   "e2e-browser/support/stubFixtures.ts": 193,
   "e2e-browser/support/stubPublic.ts": 97,
   "e2e-browser/support/stubTherapy.ts": 68,

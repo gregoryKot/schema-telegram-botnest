@@ -310,17 +310,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   проверены. Чинить: `webapp/src/api.ts` в `SOURCES` с регэкспом без `t.`, найденное — правилом или
   записью `NO_INVALIDATION` с причиной.
 
-- **Кабинет с настоящим CSS не рендерит ни один тест.** Инцидент 2026-11-05 (текст без явного
-  `color` светлый на светлой бумаге внутри `.light-lock` при `html[data-theme="dark"]`,
-  `docs/INCIDENTS.md`) жил с редизайна 2026-10: vitest/jsdom каскад не считает,
-  `index.css.contrast.test.ts` сверяет токены внутри одного блока темы, а axe-смок
-  `e2e-browser/a11y-smoke.spec.ts` ходит только на `/` и `/articles` (бейслайн `a11y-baseline.json`)
-  и только ночью. Механизм, которого нет: прогон axe (`color-contrast`) по экранам кабинета
-  (`/today`, `/diary` через `stubApi`, как в `tracker-smoke.spec.ts`) с предусловием
-  `localStorage.app_theme = 'dark'` до загрузки (`page.addInitScript`) — именно это состояние
-  создаёт тумблер лендинга и `App.tsx`. Пока держат только `webapp/src/lightLock.test.ts` и тест в
-  `AppShell.render.test.tsx` (атрибут и правило CSS по отдельности, не вычисленный цвет).
-
 **Статика и браузерный смок — находки при починке перекоса ассетов** (инцидент 2026-11-04, #928):
 - **e2e не отдаёт статику вовсе.** `test/e2e-support/build-test-app.ts` и
   `build-real-db-test-app.ts` поднимают AppModule через `Test.createTestingModule(...).compile()`:
