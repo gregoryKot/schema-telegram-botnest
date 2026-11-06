@@ -26,7 +26,7 @@ function IssueList({ issues }: { issues: PhraseIssue[] }) {
   return (
     <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13.5, lineHeight: 1.7 }}>
       {issues.map((i, n) => (
-        <li key={n} style={{ color: i.severity === 'block' ? 'var(--c-rose)' : 'var(--text-sub)' }}>
+        <li key={n} style={{ color: i.severity === 'block' ? 'var(--accent-red)' : 'var(--text-sub)' }}>
           <b>{KIND_LABEL[i.kind] ?? i.kind}</b>: «{i.fragment}»
           {i.severity === 'warn' && ' — спорно, решать автору'}
         </li>
@@ -102,7 +102,7 @@ export function HealthyAdultCheck({ adminKey }: { adminKey: string }) {
       </div>
 
       {error && (
-        <p role="alert" style={{ marginTop: 10, fontSize: 13, color: 'var(--c-rose)' }}>
+        <p role="alert" style={{ marginTop: 10, fontSize: 13, color: 'var(--accent-red)' }}>
           {error}
         </p>
       )}
@@ -110,10 +110,10 @@ export function HealthyAdultCheck({ adminKey }: { adminKey: string }) {
       {issues !== null && (
         <div role="status" style={{ marginTop: 12, fontSize: 14 }}>
           {issues.length === 0 ? (
-            <span style={{ color: 'var(--c-moss)' }}>Чисто — придраться не к чему.</span>
+            <span style={{ color: 'var(--accent-green)' }}>Чисто — придраться не к чему.</span>
           ) : (
             <>
-              <span style={{ color: blocking > 0 ? 'var(--c-rose)' : 'var(--text-sub)' }}>
+              <span style={{ color: blocking > 0 ? 'var(--accent-red)' : 'var(--text-sub)' }}>
                 {blocking > 0
                   ? `Так сохранить не даст: ${blocking}`
                   : 'Сохранить даст, но стоит взглянуть:'}
@@ -127,7 +127,7 @@ export function HealthyAdultCheck({ adminKey }: { adminKey: string }) {
       {pool !== null && (
         <div role="status" style={{ marginTop: 12, fontSize: 14 }}>
           {pool.length === 0 ? (
-            <span style={{ color: 'var(--c-moss)' }}>Весь пул чист.</span>
+            <span style={{ color: 'var(--accent-green)' }}>Весь пул чист.</span>
           ) : (
             <>
               <span>Фраз с претензиями: {pool.length}. Править — в списке ниже.</span>

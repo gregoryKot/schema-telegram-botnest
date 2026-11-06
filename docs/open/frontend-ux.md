@@ -222,7 +222,6 @@
 
 **Ручки связи на карте режимов масштабируются вместе с холстом** (`webapp/src/index.css`, `.mm-handle`): на фит-зуме ~0,5 зона ручки 28px на экране ≈ 14px. Тянуть можно, но попасть пальцем труднее, чем в 44. Выход: размер ручки делить на текущий зум (`useStore(s => s.transform[2])`) или режим «Соединить» в панели узла. Не делали: достаточно видимых ручек и tap-tap (`connectOnClick`), решение о режиме «Соединить» — за владельцем.
 
-
 **Мобильная версия, контент экранов клиента — хвост QA 2026-11-04** (`MOBILE_FINDINGS_CLIENT`, починены З5, М1, М4,
 М5, М8, М9; здесь — осознанно не тронутое):
 - **Точки прогресса трекера 40×44** (`webapp/src/styles/tracker-question.css`, `.tq-dot-hit`): пять целей по 44 плюс
@@ -245,7 +244,6 @@
   на вызвавшую строку при закрытии, страница под листом — `inert`.
 - **Оверлеи с `ds-sheet-head` на компьютере остаются полосой во всю ширину** (ExScreen, JourneySheet, HistorySheet, ModeDoubtButton, SettingsSheet, SsSheet, OverlayFrame, TaskCreateSheet, SchemaFlashcardTopbar, ModeMapBanner): `ds-sheet-head--page` (ссылка над колонкой) включён только у страниц и листа «Зачем это всё»/«Поговорить». Колонки оверлеев разные (560–1160), общего `--sheet-col` у них нет; решить по снимкам 1280, нужна ли им ссылка над колонкой. Доказано: grep потребителей `ds-sheet-head`; снимки «после» на 1280 не снимались.
 
-
 ## Бумажная аппликация — хвост раскатки (#921, 2026-11-05)
 
 - **Ручная разметка пустого состояния вместо `PaperEmpty`.** `components/art/PaperEmpty.tsx` есть, но три места с двумя абзацами или заголовком вместо `ds-empty` — планы (PlansScreen), карта режимов (ModeMapViewer), «Записи» (DiaryEmptyExplainer) — пишут `.pp-empty` + `<Cup />` руками. Чем доказано: `grep -rn 'className="pp-empty"' webapp/src`. Дать `PaperEmpty` слот под второй абзац/заголовок и свести.
@@ -259,4 +257,3 @@
 
 - **`ui_prefs_migrated` гейту не виден.** `shared/src/prefs/uiPrefsSync.ts` пишет маркер через интерфейс `PrefStorage`, а не через `localStorage` напрямую, поэтому ключа нет в `scripts/local-cache-baseline.json`; файл объявлен движком с причиной. Если маркер получит второго писателя, гейт промолчит.
 
-- **Палитровые `--c-*` как цвет текста в инлайн-стилях tsx вне сверки контраста.** `webapp/src/styles/accentTextContrast.test.ts` обходит только `index.css` и `styles/*.css`; `color: 'var(--c-moss)'` и `'var(--c-rose)'` в `webapp/src/components/HealthyAdultCheck.tsx`, `--c-moss` в `ModeMapZones.tsx`, стрелка `--c-clay` в `ContentSections.tsx` (админка и лендинг) остались на палитровых оттенках — на бумаге те же 3.3–3.8:1. Починка: перевести на `--accent-*` и расширить тест на `style={{ color: 'var(--c-…)' }}` в `.tsx` (инцидент 2026-11-05, PR про `--c-*-strong`).
