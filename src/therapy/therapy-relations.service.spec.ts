@@ -191,6 +191,7 @@ interface FullRel {
   clientId: bigint | null;
   status: string;
   code: string;
+  urlCode?: string;
   clientAlias?: string | null;
   virtualClientName?: string | null;
   createdAt?: Date;
@@ -847,6 +848,41 @@ describe('getClients — список клиентов терапевта', () =
   it('без связей — пустой список', async () => {
     const { service } = makeFullService([]);
     await expect(service.getClients(T1)).resolves.toEqual([]);
+  });
+
+  // Адрес карточки в кабинете — /cabinet/<urlCode>: без поля в ответе сайт
+  // молча вернулся бы к числовому адресу, который у офлайн-клиента меняется.
+  it('отдаёт код адреса карточки и подключённому, и офлайн-клиенту', async () => {
+    const at = new Date();
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          urlCode: 'kdbgqafs',
+          createdAt: at,
+        },
+        {
+          id: 2,
+          therapistId: T1,
+          clientId: null,
+          status: 'active',
+          code: 'BBB222',
+          urlCode: 'mnpqrsgh',
+          virtualClientName: 'Офлайн',
+          createdAt: at,
+        },
+      ],
+      [{ id: CLIENT, firstName: 'Аня' }],
+    );
+    const list = await service.getClients(T1);
+    expect(list.map((c) => [String(c.telegramId), c.urlCode])).toEqual([
+      [String(CLIENT), 'kdbgqafs'],
+      ['-2', 'mnpqrsgh'],
+    ]);
   });
 
   // Мутационное усиление: where-фильтр `{ therapistId: tid, status: 'active' }`
