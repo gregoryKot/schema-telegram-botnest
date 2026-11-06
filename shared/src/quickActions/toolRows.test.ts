@@ -32,11 +32,11 @@ describe('buildToolRows — реестр строк', () => {
     expect(rows.map((r) => [r.id, r.label])).toEqual([
       ['phrase_check', 'Критик или забота?'],
       ['tasks', 'Мои цели'],
-      ['practices', 'Практики'],
+      ['practices', 'Что питает'],
       ['plans', 'Планы'],
       ['belief_check', 'Проверка убеждений'],
       ['safe_place', 'Безопасное место'],
-      ['letter_to_self', 'Письмо себе'],
+      ['letter_to_self', 'Письмо себе в детстве'],
       ['flashcard', 'Мне плохо'],
       ['childhood_wheel', 'Колесо детства'],
       ['warm_words', 'Тёплые слова'],
@@ -65,14 +65,14 @@ describe('buildToolRows — динамические sub', () => {
     expect(rows.find((r) => r.id === 'practices')?.sub).toBeUndefined();
   });
 
-  it('practiceCount=0 → «Нет практик»', () => {
+  it('practiceCount=0 → «Пока пусто»', () => {
     const rows = buildToolRows({ ...BASE_PROPS, practiceCount: 0 });
-    expect(rows.find((r) => r.id === 'practices')?.sub).toBe('Нет практик');
+    expect(rows.find((r) => r.id === 'practices')?.sub).toBe('Пока пусто');
   });
 
-  it('practiceCount=5 → «5 практик» (форма множественного числа)', () => {
+  it('practiceCount=5 → «5 действий» (форма множественного числа)', () => {
     const rows = buildToolRows({ ...BASE_PROPS, practiceCount: 5 });
-    expect(rows.find((r) => r.id === 'practices')?.sub).toBe('5 практик');
+    expect(rows.find((r) => r.id === 'practices')?.sub).toBe('5 действий');
   });
 
   it('planCount=0 → «История пуста»', () => {

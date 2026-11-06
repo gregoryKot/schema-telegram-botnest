@@ -15,6 +15,7 @@ import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { PaperEmpty } from './art/PaperEmpty';
 import { NEED_HUE, hueStyle } from '../lib/tone';
+import { pluralRu } from '../../../shared/src/utils/pluralRu';
 import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 const NEED_IDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'];
@@ -45,8 +46,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   }, []);
 
   // resetKey=needIdx → list flashes back to loading on tab switch, then fills.
-  // Внутреннего catch → [] больше нет: отказ загрузки рисовал «Пока пусто —
-  // добавь первую практику» человеку, у которого практики есть. Сбой ≠ пусто.
+  // Без внутреннего catch → []: отказ рисовал «Пока пусто» человеку со списком. Сбой ≠ пусто.
   const practicesFetcher = useCallback(
     () => api.getPractices(NEED_IDS[needIdx]),
     [needIdx],
@@ -93,8 +93,8 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
       <div className="sk-page sk-page--wide">
         <div className="ds-head-row sk-head">
           <div>
-            <div className="ds-eyebrow">Каталог практик</div>
-            <h1 className="ds-h2 sk-title">Мои<br /><em className="sk-it">практики</em></h1>
+            <div className="ds-eyebrow">Пять потребностей</div>
+            <h1 className="ds-h2 sk-title">Что меня<br /><em className="sk-it">питает</em></h1>
             <div className="ds-sub sk-lead sk-intro">
               {buildPracticesIntro(tr)}
               {onOpenTracker &&<> Что-то просело? <span {...pressable(onOpenTracker)} className="ds-link ds-link--inline">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
@@ -134,16 +134,16 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         <section className="sk-group">
           <div className="ds-head-row">
             <h3 className="ds-h3">{NEED_DATA[needId]?.name ?? NEED_NAMES[needId]}</h3>
-            {practices && <span className="ds-sub">{practices.length} {practices.length === 1 ? 'практика' : practices.length < 5 ? 'практики' : 'практик'}</span>}
+            {practices && <span className="ds-sub">{practices.length} {pluralRu(practices.length, 'действие', 'действия', 'действий')}</span>}
           </div>
           {practicesFailed ? (
             <div role="alert" className="sk-error">
-              {tr('Не удалось загрузить практики. Проверь соединение и обнови страницу', 'Не удалось загрузить практики. Проверьте соединение и обновите страницу')}
+              {tr('Не удалось загрузить список. Проверь соединение и обнови страницу', 'Не удалось загрузить список. Проверьте соединение и обновите страницу')}
             </div>
           ) : !practices ? (
             <Loader minHeight="20vh" />
           ) : practices.length === 0 ? (
-            <PaperEmpty>{tr('Пока пусто — добавь первую практику ниже.', 'Пока пусто — добавьте первую практику ниже.')}</PaperEmpty>
+            <PaperEmpty>{tr('Пока пусто — добавь первое действие ниже.', 'Пока пусто — добавьте первое действие ниже.')}</PaperEmpty>
           ) : (
             <div className="sk-list">
               {practices.map(p => (
@@ -157,7 +157,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
         </section>
 
         <section className="sk-group">
-          <div className="ds-label">Новая практика</div>
+          <div className="ds-label">Новое действие</div>
           <div className="ds-sub">
             Небольшое конкретное действие – например «позвонить другу» или «прогулка 20 минут»
           </div>
@@ -166,7 +166,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
-              placeholder="Добавить практику..."
+              placeholder="Добавить действие..."
               maxLength={PRACTICE_TEXT_MAX}
               className="ds-input"
             />

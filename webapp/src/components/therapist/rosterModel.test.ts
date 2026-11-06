@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TherapyClientSummary } from '../../api';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
-import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips, rosterName } from './rosterModel';
+import { filterRoster, sortRoster, meetingLabel, clientCaption, clientStatus, domainBar, schemaChips } from './rosterModel';
 
 const TODAY = '2026-10-03';
 
@@ -58,6 +58,13 @@ describe('filterRoster', () => {
     expect(filterRoster(all, 'ВЕР', 'all')).toEqual([activeOnline]);
   });
 
+  // Поиск — по той же подписи, что видна в списке: клиента без имени находит его номер.
+  it('клиента без имени находит «без имени» и номер из подписи', () => {
+    const noName = client({ telegramId: 77, name: null, clientAlias: null });
+    expect(filterRoster([noName, online], '77', 'all')).toEqual([noName]);
+    expect(filterRoster([noName, online], 'без имени', 'all')).toEqual([noName]);
+  });
+
   // QA 2026-11: «е» не находила «ё» и наоборот — терапевт набирает как привык.
   it('поиск не различает «е» и «ё» в обе стороны', () => {
     const pyotr = client({ telegramId: 3, clientAlias: 'Пётр' });
@@ -103,11 +110,11 @@ describe('sortRoster', () => {
     expect(sortRoster([past, today], TODAY).map((c) => c.telegramId)).toEqual([1, 2]);
   });
 
-  it('имя берётся из clientAlias; пустые поля не ломают порядок', () => {
+  it('порядок — по видимой подписи: алиас, имя, «Без имени · id»', () => {
     const a = client({ telegramId: 1, name: null, clientAlias: null });
     const b = client({ telegramId: 2, name: 'Вика' });
     const c = client({ telegramId: 3, name: 'Игорь', clientAlias: 'Аркадий' });
-    expect(sortRoster([b, c, a], TODAY).map((x) => x.telegramId)).toEqual([1, 3, 2]);
+    expect(sortRoster([b, c, a], TODAY).map((x) => x.telegramId)).toEqual([3, 1, 2]);
   });
 
   it('сортирует по русскому алфавиту (ё и е рядом)', () => {
@@ -267,9 +274,3 @@ describe('domainBar / schemaChips', () => {
   });
 });
 
-describe('rosterName', () => {
-  it('алиас важнее имени, без обоих — ID', () => {
-    expect(rosterName(client({ clientAlias: 'А.К.', name: 'Аня' }))).toBe('А.К.');
-    expect(rosterName(client({ name: null }))).toBe('ID 1');
-  });
-});

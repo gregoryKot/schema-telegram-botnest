@@ -109,13 +109,13 @@ afterEach(() => {
 describe('PracticeSection — ты/вы вилка', () => {
   it('подзаголовок звучит на «ты» по умолчанию', () => {
     renderSection({}, 'ty');
-    expect(screen.getByText(/Восемь практик схема-терапии плюс твои личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь упражнений схема-терапии плюс твои личные цели/)).toBeTruthy();
     expect(screen.queryByText(/ваши личные цели/)).toBeNull();
   });
 
   it('подзаголовок звучит на «вы», когда выбрана форма vy — «ваши», а не «твои»', () => {
     renderSection({}, 'vy');
-    expect(screen.getByText(/Восемь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь упражнений схема-терапии плюс ваши личные цели/)).toBeTruthy();
     expect(screen.queryByText(/твои личные цели/)).toBeNull();
   });
 
@@ -331,16 +331,16 @@ describe('PracticeSection — своя цель: «Готово» и серия 
 });
 
 describe('PracticeSection — счётчики в «Каталогах»', () => {
-  it('число практик и планов берётся из данных; без данных — только пояснение', async () => {
+  it('число своих действий и планов берётся из данных; без данных — только пояснение', async () => {
     renderSection();
     await screen.findByText('Каталоги');
-    expect(screen.getByText('Рекомендованные упражнения по потребностям')).toBeTruthy();
+    expect(screen.getByText('Маленькие действия для пяти потребностей')).toBeTruthy();
 
     cleanup();
     mockApi.getPractices.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     mockApi.getPlanHistory.mockResolvedValue([{ id: 1 }]);
     renderSection();
-    await screen.findByText('10 практик · Рекомендованные упражнения по потребностям');
+    await screen.findByText('10 действий · Маленькие действия для пяти потребностей');
     expect(screen.getByText('1 план · Планы поддержки и кризисов')).toBeTruthy();
   });
 });
@@ -426,7 +426,7 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(cardTitles()).toHaveLength(8);
     expect(screen.getByText('8 упражнений')).toBeTruthy();
     expect(screen.getByText('Мои цели')).toBeTruthy();
-    expect(screen.getByText('Практики')).toBeTruthy();
+    expect(screen.getByText('Что питает')).toBeTruthy();
     expect(screen.getByText('Планы')).toBeTruthy();
   });
 
@@ -452,10 +452,10 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.queryByText('+ Поставить цель')).toBeNull();
   });
 
-  it('скрытая «Практики» убирает свою строку, «Планы» остаются', () => {
+  it('скрытая «Что питает» убирает свою строку, «Планы» остаются', () => {
     hide('practices');
     renderSection();
-    expect(screen.queryByText('Практики')).toBeNull();
+    expect(screen.queryByText('Что питает')).toBeNull();
     expect(screen.getByText('Планы')).toBeTruthy();
     expect(screen.getByText('Каталоги')).toBeTruthy();
   });
@@ -486,7 +486,7 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     renderSection();
     expect(cardTitles()).toEqual([
       'Тёплые слова', 'Карточка схемы', 'Карточка режима', 'Критик или забота?',
-      'Проверка убеждения', 'Безопасное место', 'Письмо Уязвимому Ребёнку', 'Колесо детства',
+      'Проверка убеждения', 'Безопасное место', 'Письмо себе в детстве', 'Колесо детства',
     ]);
   });
 

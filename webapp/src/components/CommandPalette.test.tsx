@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
+import { DESKTOP_NAV_ITEMS } from './appShell/navItems';
 import { Dialog } from './Dialog';
 import type { TherapyClientSummary } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
@@ -49,9 +50,18 @@ describe('CommandPalette — диалог (К4)', () => {
 describe('CommandPalette — навигация', () => {
   it('без ввода показывает все пункты навигации клиента', () => {
     renderPalette();
-    for (const label of ['Сегодня', 'Записи', 'Ещё', 'Паттерны', 'Профиль', 'Практика']) {
+    for (const label of ['Сегодня', 'Записи', 'Ещё', 'Паттерны', 'Профиль', 'Практики']) {
       expect(screen.getByText(label)).toBeTruthy();
     }
+  });
+
+  // Раздел зовётся «Практики» везде: в нижней панели, в меню слева и в «Ещё».
+  // Палитра одна писала «Практика» — слово для трёх разных сущностей сводили.
+  it('раздел практик назван так же, как в меню слева', () => {
+    renderPalette();
+    const practice = DESKTOP_NAV_ITEMS.find(n => n.id === 'practice')!;
+    expect(screen.getByText(practice.label)).toBeTruthy();
+    expect(screen.queryByText('Практика')).toBeNull();
   });
 
   it('клик по пункту навигации зовёт onNavigate с его id и закрывает палитру', () => {

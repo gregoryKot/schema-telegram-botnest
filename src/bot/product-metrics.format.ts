@@ -133,7 +133,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
     '',
     `🧩 <b>Кто чем пользуется</b> (за всё время, число людей)`,
     `Дневники: ${m.adoption.diaries} · Тест схем: ${m.adoption.ysqDone} · ` +
-      `Упражнения: ${m.adoption.exercises} · Практики: ${m.adoption.practices} · ` +
+      `Упражнения: ${m.adoption.exercises} · «Что питает»: ${m.adoption.practices} · ` +
       `Колесо детства: ${m.adoption.childhood}`,
     '',
     `📋 <b>Тест схем: доходят ли до конца</b>`,

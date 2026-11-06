@@ -52,6 +52,6 @@ export const DETAIL_FIELDS: Record<string, [string, string][]> = {
   letter: [['text', '']],
   safe_place: [['description', '']],
   note: [['text', '']],
-  practice: [['text', 'Моя практика']],
-  plan_done: [['practiceText', 'Практика']],
+  practice: [['text', 'Что меня питает']],
+  plan_done: [['practiceText', 'Действие']],
 };

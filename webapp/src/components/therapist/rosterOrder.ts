@@ -8,6 +8,7 @@ import type { TherapyClientSummary } from '../../api';
 import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
 import { matchesSearch } from '../../../../shared/src/utils/searchNormalize';
+import { clientDisplayName as displayName } from '../../../../shared/src/therapy/clientInitials';
 
 /** Статус: клиент в боте (ok) или офлайн-карточка без бота — одна метка для списка и палитры. */
 export const clientStatus = (c: TherapyClientSummary): { label: string; inBot: boolean } =>
@@ -17,9 +18,7 @@ export const clientStatus = (c: TherapyClientSummary): { label: string; inBot: b
 export const plannedSession = (c: TherapyClientSummary, today: string): string | null =>
   upcomingSession(c.nextSession, [], today);
 
-const displayName = (c: TherapyClientSummary): string => c.clientAlias ?? c.name ?? '';
-
-/** Поиск по алиасу, иначе по имени — без регистра и «ё/е»; пустой запрос подходит всем. */
+/** Поиск по той же подписи, что видна в списке (алиас → имя → «Без имени · id»), без регистра и «ё/е». */
 export const matchesRosterSearch = (c: TherapyClientSummary, query: string): boolean =>
   matchesSearch(displayName(c), query);
 

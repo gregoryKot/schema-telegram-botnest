@@ -5,6 +5,10 @@
 // id режима («invincible_oc») вместо названия.
 import type { UserTask } from '../apiTypes';
 import { ALL_SCHEMAS, ALL_MODES } from '../schemaTherapy/schemaTherapyData';
+import { LETTER_TASK_TEXT } from './taskPayload';
+
+// Письмо до 2026-11 сохранялось под прежним именем; текст в БД не переписываем.
+const LEGACY_LETTER_TASK_TEXT = 'Написать письмо Уязвимому Ребёнку';
 
 export interface LegacyTaskTarget {
   type: 'schema' | 'mode';
@@ -22,6 +26,8 @@ export function getTaskDisplayText(type: string, text: string): string {
     const m = ALL_MODES.find((x) => x.id === text);
     return m ? `Карточка режима: ${m.name}` : 'Карточка режима';
   }
+  if (type === 'letter_to_self' && text === LEGACY_LETTER_TASK_TEXT)
+    return LETTER_TASK_TEXT;
   return text;
 }
 

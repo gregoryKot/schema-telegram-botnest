@@ -4,7 +4,7 @@ import { ClientHeaderBadges } from './ClientHeaderBadges';
 import { RenameDeleteMenu } from '../RenameDeleteMenu';
 import { ClientQuickActions } from './ClientQuickActions';
 import { ClientTabs } from './ClientTabs';
-import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
+import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import type { ClientDetail } from './clientSheetTypes';
 import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
 import { useIsMobile } from '../useIsMobile';
@@ -32,7 +32,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const removeCopy = removeClientConfirmCopy(selectedClient);
   const aliasInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (renamingAlias) aliasInputRef.current?.focus(); }, [renamingAlias]);
-  const displayName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
+  const displayName = clientDisplayName(selectedClient);
   const startRename = () => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); };
 
   return (
@@ -40,7 +40,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
       <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
         <div className="ds-avatar ds-avatar--serif tone-tint tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
-          {clientInitials(displayName)}
+          {clientAvatarInitials(selectedClient)}
         </div>
         <div className="tk-ident">
           {renamingAlias ? (

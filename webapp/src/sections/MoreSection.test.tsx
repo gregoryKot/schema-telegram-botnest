@@ -28,6 +28,15 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 vi.mock('../components/JourneySheet', () => ({
   JourneySheet: (p: { onClose: () => void }) => <div data-testid="journey"><button onClick={p.onClose}>закрыть путь</button></div>,
 }));
+vi.mock('../components/caseFlow/CaseFlowHost', () => ({
+  CaseFlowHost: (p: { start: string; onClose: () => void; onOpenTracker: () => void; onOpenSchema: (o?: { tab?: string }) => void }) => (
+    <div data-testid="case-flow" data-start={p.start}>
+      <button onClick={p.onClose}>закрыть карту</button>
+      <button onClick={p.onOpenTracker}>трекер с карты</button>
+      <button onClick={() => p.onOpenSchema({ tab: 'modes' })}>режимы с карты</button>
+    </div>
+  ),
+}));
 vi.mock('../components/WhySheet', () => ({
   WhySheet: (p: { onClose: () => void; auto?: boolean }) => <div data-testid="why" data-auto={String(!!p.auto)}><button onClick={p.onClose}>закрыть зачем</button></div>,
 }));
@@ -49,7 +58,7 @@ describe('MoreSection', () => {
   it('заголовок и все строки списка', () => {
     setup();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Всё остальное');
-    for (const t of ['Зачем это всё', 'Задания', 'Мои паттерны', 'Практики', 'Мой путь', 'Поговорить с кем-то', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
+    for (const t of ['Зачем это всё', 'Задания', 'Мои паттерны', 'Карта себя', 'Практики', 'Мой путь', 'Поговорить с кем-то', 'Тест на схемы', 'Настройки', 'Профиль', 'Мне очень плохо']) {
       expect(row(t)).toBeTruthy();
     }
   });
@@ -85,6 +94,26 @@ describe('MoreSection', () => {
     expect(screen.getByTestId('journey')).toBeTruthy();
     fireEvent.click(screen.getByText('закрыть путь'));
     expect(screen.queryByTestId('journey')).toBeNull();
+  });
+
+  // docs/open/frontend-ux.md: «Карту себя» было видно только с экрана «Записано» после
+  // разбора — постоянного входа не было. Строка стоит рядом с «Мои паттерны» и говорит,
+  // откуда карта и что на ней (правило онбординга).
+  it('«Карта себя» стоит после «Мои паттерны», объясняет себя и открывает карту, а не новый разбор', () => {
+    const h = setup();
+    const titles = screen.getAllByRole('button').map(b => b.textContent ?? '');
+    const at = titles.findIndex(t => t.startsWith('Мои паттерны'));
+    expect(titles[at + 1]).toMatch(/^Карта себя/);
+    expect(row('Карта себя').textContent).toContain('Из разборов: какие части включаются в трудные моменты');
+    expect(screen.queryByTestId('case-flow')).toBeNull();
+    fireEvent.click(row('Карта себя'));
+    expect(screen.getByTestId('case-flow').getAttribute('data-start')).toBe('map');
+    fireEvent.click(screen.getByText('трекер с карты'));
+    expect(h.onOpenTracker).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText('режимы с карты'));
+    expect(h.onOpenSchema).toHaveBeenCalledWith({ tab: 'modes' });
+    fireEvent.click(screen.getByText('закрыть карту'));
+    expect(screen.queryByTestId('case-flow')).toBeNull();
   });
 
   it('строки «Терапевт» нет: он внутри «Профиля», подпись об этом говорит', () => {

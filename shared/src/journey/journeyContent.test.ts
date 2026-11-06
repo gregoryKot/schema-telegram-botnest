@@ -102,7 +102,7 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
       item({ type: 'practice', id: 5, needId: 'play' }),
     );
     expect(result?.parts).toEqual([
-      { title: 'Моя практика', text: 'Порисовать' },
+      { title: 'Что меня питает', text: 'Порисовать' },
     ]);
   });
 
@@ -219,7 +219,7 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
     );
     expect(getPlanHistory).toHaveBeenCalledWith(365);
     expect(result?.parts).toEqual([
-      { title: 'Практика', text: 'Дыхание 4-4-6' },
+      { title: 'Действие', text: 'Дыхание 4-4-6' },
     ]);
   });
 

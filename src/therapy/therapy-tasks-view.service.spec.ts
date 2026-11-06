@@ -200,7 +200,7 @@ describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
     expect(result[0].tasks[0].text).toBe('от T1');
   });
 
-  it('виртуальный клиент: имя берётся из clientAlias, иначе virtualClientName, иначе "ID N"', async () => {
+  it('виртуальный клиент: имя берётся из clientAlias, иначе virtualClientName, иначе «Без имени · N»', async () => {
     const { service, relations, tasks } = makeService();
     relations.push({
       id: 42,
@@ -226,6 +226,34 @@ describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
     expect(result).toHaveLength(1);
     expect(result[0].clientId).toBe(-42n);
     expect(result[0].clientName).toBe('Оффлайн клиент');
+  });
+
+  // docs/open/therapy.md: клиент без имени звался «ID 123» в доске заданий и
+  // «#123» на «Сегодня». Форма одна с сайтом (client-display-name.sync.spec.ts).
+  it('без псевдонима и имени — «Без имени · N», номер без минуса', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push({
+      id: 42,
+      therapistId: T1,
+      clientId: null,
+      status: 'active',
+      virtualClientName: null,
+    });
+    tasks.push({
+      id: 1,
+      userId: -42n,
+      assignedBy: T1,
+      type: 'custom',
+      text: 'офлайн задача',
+      targetDays: null,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(),
+    });
+    const result = await service.getAllTasksForTherapist(T1);
+    expect(result[0].clientName).toBe('Без имени · 42');
   });
 
   // Регресс O2: userId: { lt: 0 } матчил ВСЕХ виртуальных клиентов терапевта
