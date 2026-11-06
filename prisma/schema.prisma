@@ -879,6 +879,11 @@ model Booking {
   // доводят повтор вебхука, ручное подтверждение и крон-добор. Ставит
   // `BookingNotifyService.onConfirmed` CAS-ом прямо перед отправкой DM.
   confirmEffectsDoneAt DateTime?
+  // Проход подтверждения заменил постоянную комнату клиента, создавая ссылку
+  // этой брони (старая перестала подходить). Пишется вместе с meetingUrl, чтобы
+  // повтор после падения (крон-добор, повтор вебхука) сказал владельцу в DM
+  // «комната заменена», а не потерял это вместе с локальной переменной.
+  roomReplacedAt  DateTime?
   // Reminders
   reminder24SentAt DateTime?
   reminder2SentAt  DateTime?

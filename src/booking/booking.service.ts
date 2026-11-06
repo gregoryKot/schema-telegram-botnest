@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
@@ -38,6 +39,7 @@ import {
 } from './booking.transitions';
 import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
 import type { BookingAccount, CreateBookingDto } from './booking.types';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 export type { CreateBookingDto };
 export { PaymentAmountMismatchError } from './booking-amount';
@@ -55,6 +57,7 @@ export class BookingService {
     private readonly pricing: PricingService,
     config: ConfigService,
     private readonly cronLeader: CronLeaderService,
+    @Optional() private readonly analytics?: AnalyticsService,
   ) {
     this.siteUrl = (
       config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
@@ -113,7 +116,12 @@ export class BookingService {
     // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
     // случай падения (лид уходит админу) — см. booking.create.ts.
     const booking = await createBookingGuarded(
-      { prisma: this.prisma, notify: this.notify, logger: this.logger },
+      {
+        prisma: this.prisma,
+        notify: this.notify,
+        logger: this.logger,
+        analytics: this.analytics,
+      },
       data,
       dto,
     );

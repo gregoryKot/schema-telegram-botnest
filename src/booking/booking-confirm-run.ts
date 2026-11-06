@@ -42,13 +42,19 @@ export async function runConfirmEffects(
   b: PlainBooking,
 ): Promise<void> {
   if (b.confirmEffectsDoneAt) return;
-  let replaced = false; // комната клиента сменилась — об этом скажет DM
+  // Комната клиента сменилась — об этом скажет DM. Признак живёт в строке
+  // (roomReplacedAt), а не только здесь: повтор после падения до DM видит
+  // записанную ссылку и иначе промолчал бы о замене (аудит 2026-10).
+  let replaced = b.roomReplacedAt != null;
   if (!b.meetingUrl) {
     ({ url: b.meetingUrl, replaced } = await d.meeting.createMeeting(b));
     await d.prisma.booking.update({
       where: { id: b.id },
       // В БД ссылка лежит зашифрованной (`?pwd=` пускает в комнату клиента).
-      data: { meetingUrl: encrypt(b.meetingUrl) },
+      data: {
+        meetingUrl: encrypt(b.meetingUrl),
+        roomReplacedAt: replaced ? new Date() : null,
+      },
     });
   }
   // Отмена могла прийти, пока шла ссылка: событие в календаре и «Запись

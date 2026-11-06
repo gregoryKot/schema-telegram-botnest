@@ -75,7 +75,7 @@
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 //   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
-//   client_booking_*     — запись клиента из приложения: client-booking-events.constants.ts.
+//   client_booking_*/booking_slot_taken — запись на сессию: booking-events.constants.ts.
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
@@ -85,7 +85,7 @@
 //                         текст там очень личный — видно, находят ли удаление вообще.
 import { CASE_EVENTS } from './case-steps.constants';
 import { CABINET_EVENTS } from './cabinet-events.constants';
-import { CLIENT_BOOKING_EVENTS } from './client-booking-events.constants';
+import { BOOKING_EVENTS } from './booking-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
 import { GAME_EVENTS } from './game-events.constants';
 import { HOME_EVENTS } from './home-events.constants';
@@ -137,7 +137,7 @@ export const ANALYTICS_EVENTS = [
   // Удалил запись из архива «Мой путь» — belief_check|letter|flashcard.
   'entry_deleted',
   ...HOME_EVENTS,
-  ...CLIENT_BOOKING_EVENTS,
+  ...BOOKING_EVENTS,
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 

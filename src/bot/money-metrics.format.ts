@@ -36,7 +36,8 @@ export interface MoneyMetrics {
   allTime: MoneyWindow;
 }
 
-const times = (n: number): string => `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
+export const times = (n: number): string =>
+  `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
 
 export function windowIsEmpty(w: MoneyWindow): boolean {
   return (

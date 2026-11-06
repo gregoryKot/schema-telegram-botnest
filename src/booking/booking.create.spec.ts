@@ -104,3 +104,48 @@ describe('createBookingGuarded — резерв для заявки (инцид�
     );
   });
 });
+
+// Доля «время уже заняли» в /stats (аудит 2026-10, r2-1#2): 409 законен при
+// гонке двух клиентов, поэтому важен не факт, а доля. Счётчик — серверное
+// событие booking_slot_taken без userId; пишется только на 409.
+describe('createBookingGuarded — счётчик «время уже заняли»', () => {
+  const withAnalytics = (opts: Parameters<typeof makeDeps>[0] = {}) => {
+    const made = makeDeps(opts);
+    const track = jest.fn(async () => undefined);
+    return { ...made, deps: { ...made.deps, analytics: { track } }, track };
+  };
+
+  it('слот занят → событие booking_slot_taken без userId, 409 уходит клиенту как был', async () => {
+    const { deps, track } = withAnalytics({ taken: true });
+
+    await expect(createBookingGuarded(deps, {} as any, LEAD)).rejects.toThrow(
+      ConflictException,
+    );
+
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith(null, 'booking_slot_taken');
+  });
+
+  it('контроль: бронь создана — события нет', async () => {
+    const { deps, track } = withAnalytics();
+
+    await expect(
+      createBookingGuarded(deps, { clientName: 'x' } as any, LEAD),
+    ).resolves.toEqual({ id: 7, clientName: 'x' });
+
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('контроль: падение БД — не «время заняли»: события нет, лид уходит админу', async () => {
+    const { deps, track, notify } = withAnalytics({
+      lockError: new Error('connection terminated'),
+    });
+
+    await expect(createBookingGuarded(deps, {} as any, LEAD)).rejects.toThrow(
+      'connection terminated',
+    );
+
+    expect(track).not.toHaveBeenCalled();
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+  });
+});

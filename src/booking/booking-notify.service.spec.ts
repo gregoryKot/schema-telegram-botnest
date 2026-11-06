@@ -103,7 +103,7 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 42 },
-        data: { meetingUrl: 'https://meet.jit.si/x' },
+        data: { meetingUrl: 'https://meet.jit.si/x', roomReplacedAt: null },
       }),
     );
   });
@@ -206,6 +206,53 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     const dm = telegram.notifyAdmin.mock.calls[0][0] as string;
     expect(dm).toContain(LINK_TO_FORWARD);
     expect(dm).not.toContain(ROOM_REPLACED);
+  });
+
+  // Аудит 2026-10: признак замены жил в локальной переменной, и повтор после
+  // падения до DM (крон-добор) молчал о замене. Теперь он в строке брони.
+  it('замена комнаты пишется в строку вместе со ссылкой; без замены — метки нет', async () => {
+    const replacedRun = makeService();
+    replacedRun.meeting.createMeeting.mockResolvedValueOnce({
+      url: 'https://meet.jit.si/new',
+      replaced: true,
+    });
+    await replacedRun.service.onConfirmed(booking());
+    const saved = replacedRun.prisma.booking.update.mock.calls[0][0].data;
+    expect(saved.roomReplacedAt).toBeInstanceOf(Date);
+    expect(saved.meetingUrl).toBeTruthy();
+
+    const plainRun = makeService();
+    await plainRun.service.onConfirmed(booking());
+    const plain = plainRun.prisma.booking.update.mock.calls[0][0].data;
+    expect(plain.roomReplacedAt).toBeNull();
+  });
+
+  it('сохранил → нашёл: первый проход заменил комнату и упал до DM — повтор говорит о замене', async () => {
+    const first = makeService();
+    first.meeting.createMeeting.mockResolvedValueOnce({
+      url: 'https://meet.jit.si/new',
+      replaced: true,
+    });
+    first.calDav.pushEvent.mockRejectedValueOnce(new Error('iCloud 503'));
+    await expect(first.service.onConfirmed(booking())).rejects.toThrow(
+      'iCloud 503',
+    );
+    expect(first.telegram.notifyAdmin).not.toHaveBeenCalled();
+    const saved = first.prisma.booking.update.mock.calls[0][0].data;
+
+    // Повтор читает строку из БД: ссылка уже есть, признак замены — тоже.
+    const retry = makeService();
+    await retry.service.onConfirmed(
+      booking({
+        meetingUrl: 'https://meet.jit.si/new',
+        roomReplacedAt: saved.roomReplacedAt,
+      }),
+    );
+
+    expect(retry.meeting.createMeeting).not.toHaveBeenCalled();
+    const dm = retry.telegram.notifyAdmin.mock.calls[0][0] as string;
+    expect(dm).toContain('https://meet.jit.si/new');
+    expect(dm).toContain(ROOM_REPLACED);
   });
 
   it('source (атрибуция лида) попадает в уведомление с HTML-экранированием', async () => {
@@ -498,7 +545,7 @@ describe('BookingNotifyService.sendReminders (@Cron) — окна 24ч/2ч', () 
       dueReminders: [due],
     });
     await service.sendReminders();
-    // due возвращается на оба окна (24ч и 2ч) фейковым findMany — 2 уведомления, 2 update.
+    // due возвращается на оба окна (24ч и 2ч) фейковым findMany — 2 уведомления, 2 захвата.
     expect(
       telegram.notifyAdmin.mock.calls.some((c: any) =>
         c[0].includes('Напоминание'),
@@ -508,12 +555,12 @@ describe('BookingNotifyService.sendReminders (@Cron) — окна 24ч/2ч', () 
       expect.stringContaining('Напоминание'),
       expect.any(String),
     );
-    expect(prisma.booking.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 5 },
-        data: expect.objectContaining({ reminder24SentAt: expect.any(Date) }),
-      }),
-    );
+    // Метка — условный захват до отправки (booking-reminders.ts), не update после.
+    expect(prisma.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 5, status: BookingStatus.CONFIRMED, reminder24SentAt: null },
+      data: { reminder24SentAt: expect.any(Date) },
+    });
+    expect(prisma.booking.update).not.toHaveBeenCalled();
   });
 
   it('тик уже забрал другой инстанс — findMany не зовётся, ни DM, ни письмо не уходят', async () => {
