@@ -295,12 +295,20 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
 (строка «Поговорить с кем-то»). Отчёт приписывает показы главной. Не правлено в том PR: смена подписи
 меняет смысл старых чисел за 30 дней, решить — переименовать подпись или завести новое место.
 
+**Удаление прошлого разбора фразы не пишет событие аналитики** (осознанно, 2026-11-06):
+кнопка в `webapp/src/components/exercises/phraseCheckEx/PhraseHistoryCard.tsx` (общий
+`DeleteBtn` дневника; удаление записей дневника события тоже не пишет). Готовое
+`entry_deleted` не подходит без переделки: `ENTRY_DELETE_TYPES`
+(`src/analytics/entry-delete.constants.ts`) сверен с `JourneyDeletableType` «Моего пути»
+(`src/security/analytics-sync.invariants.spec.ts`), а разбор фразы в «Моём пути» не
+удаляется. Понадобится «находят ли удаление» — развести тип события и тип «Моего пути»,
+добавить `phrase_check` и `diary` с подписями в `src/bot/entry-delete-metrics.format.ts`.
+
 **Остатки мини-аппа для старых клиентов** (удалён, #908):
 - **`source: 'miniapp'` в отчёте об ошибках клиента.** `src/api/dto/client-error.dto.ts` (`@IsIn(['webapp','miniapp'])`) и строка «приложение в мессенджере» в блоке ошибок `/stats` (`src/bot/client-error-metrics.*`) оставлены: открытое до удаления окно мини-аппа ещё может прислать отчёт. Новых источников нет — через месяц-два после удаления убрать значение и строку вместе со спеками и `test/raw-sql-live-stats.e2e-spec.ts`.
 
 **Роуты без вызова с сайта** (бывшие записи гейта паритета `check-feature-parity`, удалён вместе с мини-аппом, #908; сверка 2026-11-04, [#908](https://github.com/gregorykot/schema-telegram-botnest/issues/908)). Сайт их не ждёт; каждый решается отдельным PR — удалить или подключить:
 - **`GET/POST/DELETE /api/drafts*`** (`src/api/api.controller.ts`): мёртвый бэкенд, ни один фронт не вызывает. Черновики живут в localStorage (`shared/src/utils/drafts.ts`). Решение: удалить роуты, сервис и таблицу (миграция; убрать таблицу из `USER_DATA_TABLES`, `USER_OWNED_TABLES`, `UNIQUE_RULES` и экспорта); подключить — только если понадобятся черновики между устройствами (тогда с шифрованием и кризисной детекцией, №7).
-- **`DELETE /api/phrase-checks/:id`** (`src/api/phrase-check.controller.ts`): `deletePhraseCheck` объявлен в `webapp/src/api.ts`, но не вызывается. Решение: подключить кнопкой «Удалить» в `PhraseHistoryCard` (удаление записи пользователя должно быть доступно) либо удалить метод и ручку.
 - **`GET /api/link-token`** (`src/api/api.controller.ts`): не путать с `/api/auth/link-token` (`src/auth/auth.controller.ts`), который сайт вызывает. Решение: проверить, что вызывающих нет нигде (бот, `public/`), и удалить.
 - **`POST /api/user-flags`** (`src/api/api.controller.ts`): единственным писателем был мини-апп. `onboardingV2Done` теперь ставит `POST /api/disclaimer` (его читает строка «Дошли до конца» в `/stats`, `src/bot/bot.product-metrics.service.ts`); `childhoodWheelDone` бэкенд не читает (только слияние и экспорт); ещё 13 полей `UserFlags` не пишет никто. Решение: удалить ручку и DTO (`src/api/dto/user-flags.dto.ts`), колонки чистить отдельным PR с миграцией; затронет правила слияния (`src/auth/merge-user-rules.ts`) и экспорт (`src/account/export-policy.ts`).
 - **`GET /health`** остаётся: это HEALTHCHECK в Docker, не долг.
