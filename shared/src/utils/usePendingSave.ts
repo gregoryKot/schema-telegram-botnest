@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { onPageLeave } from './pageLeave';
 
 // Отложенное автосохранение, привязанное к ВЛАДЕЛЬЦУ правки (клиент, карта
 // режимов) и досылаемое при уходе. Одна механика на все автосохранения сайта
@@ -98,15 +99,9 @@ export function usePendingSave<K, P>(
   );
 
   useEffect(() => {
-    const onPageHide = () => saver.leave();
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') saver.leave();
-    };
-    window.addEventListener('pagehide', onPageHide);
-    document.addEventListener('visibilitychange', onVisibility);
+    const off = onPageLeave(() => saver.leave());
     return () => {
-      window.removeEventListener('pagehide', onPageHide);
-      document.removeEventListener('visibilitychange', onVisibility);
+      off();
       saver.leave();
     };
   }, [saver]);

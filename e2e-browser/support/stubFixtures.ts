@@ -11,6 +11,7 @@
 // краснит PR, а не ночной смок.
 import { ARTICLE_DIAGRAM_KEYS } from '../../src/articles/article-diagrams';
 import { ARTICLE_SEED } from '../../src/articles/articles.seed';
+import { SCREEN_FIXTURES } from './stubScreens';
 
 /** GET /api/needs — список BotService.needs (src/bot/bot.service.ts). */
 export const STUB_NEEDS = [
@@ -144,6 +145,7 @@ const ARTICLES = ARTICLE_SEED.map((a, i) => ({
  * остальное — 200), кроме ручек с `@HttpCode` из STATUS.
  */
 export const FIXTURES: Record<string, unknown> = {
+  ...SCREEN_FIXTURES, // «Профиль» и «Паттерны»: stubScreens.ts
   'GET /api/articles': ARTICLES,
   'GET /api/belief-checks': [], // exercises.controller.ts
   'GET /api/childhood-ratings': {}, // BotService.getChildhoodRatings
