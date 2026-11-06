@@ -221,6 +221,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-seg--full')).toContain('display: flex');
     expect(decls(phone, '.ds-seg--full')).toContain('width: 100%'); // растяжение — только телефон
     expect(decls(desk, '.ds-seg--full')).toContain('display: inline-flex'); // на компьютере по содержимому
+    expect(decls(desk, '.ds-seg--full > .ds-seg-btn')).toContain('min-width: max-content'); // и не уже подписи: basis 0 резал её многоточием
     expect(decls(top, '.ds-seg--full')).not.toContain('width');
     expect(decls(top, '.ds-seg--full > .ds-seg-btn')).toContain('flex: 1 1 0');
     expect(top).not.toContain('.ds-seg--scroll');

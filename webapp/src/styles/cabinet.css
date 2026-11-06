@@ -313,6 +313,10 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 :root { --sheet-col: 640px; --sheet-pad: 32px; } /* колонка и боковой отступ шапки-страницы; страница задаёт свои на корне */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .ds-seg--full { display: inline-flex; }
+  /* По содержимому — значит, кнопка не уже своей подписи: с flex-basis 0 и min-width: 0 ширина
+     inline-flex делилась поровну, и длинная подпись резалась многоточием («Клиент…», «Нед…»).
+     Растянутый сегмент (донат, .ap-seg) по-прежнему делит место поровну. */
+  .ds-seg--full > .ds-seg-btn { min-width: max-content; }
   /* Страница (не оверлей): «← Назад» стоит над колонкой контента, без полосы, линии и фона (до #906). */
   .ds-sheet-head--page {
     box-sizing: border-box; width: 100%; max-width: var(--sheet-col); min-height: 0; margin: 0 auto;
