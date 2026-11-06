@@ -178,7 +178,7 @@
 **QA клиента 2026-11 — трекер, история, тест на схемы: увиденное попутно и не тронутое**
 - **Индекс дня с точкой вне общего `fmtIndex`** (`shared/src/needs/dayIndex.ts`, «6,4», нет
   данных — «—»): карточка партнёра
-  `webapp/src/components/settingsSheet/PartnerCard.tsx:36`;
+  `webapp/src/components/settingsSheet/PartnerCard.tsx:39`;
   кабинет терапевта `webapp/src/components/therapist/ClientIndexCard.tsx:20`,
   `webapp/src/sections/TherapistTodayLists.tsx:44`;
   картинки шаринга `shared/src/share/cards/dayCard.ts:27,87`, `weeklyCard.ts:44,52,76,79`. Не тронуто:
