@@ -2,6 +2,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { MobileNavIcon, type MobileNavIconId } from './MobileNavIcon';
 import { navItemOf, type Section } from './navigation';
 import { useTextEntryFocus } from '../../hooks/useTextEntryFocus';
+import { isClientListPath } from '../therapist/clientTabRoute';
 
 // Нижняя навигация мобильной вёрстки AppShell — вынесена из AppShell.tsx
 // (правило №10: файл в храповике размера растёт только дроблением).
@@ -22,6 +23,13 @@ const link = (i: Item) => (
   <NavLink key={i.to} to={i.to} end={i.end} className={itemClass}>
     <MobileNavIcon id={i.icon} />{i.label}
   </NavLink>
+);
+// Пункт, который горит там, где NavLink его не матчит (вложенные разделы «Ещё»,
+// доска «Задания» /cabinet/tasks у «Клиентов»).
+const activeLink = (i: Item) => (
+  <Link key={i.to} to={i.to} className="mobile-nav-item active" aria-current="page">
+    <MobileNavIcon id={i.icon} />{i.label}
+  </Link>
 );
 const action = (icon: MobileNavIconId, label: string, onClick?: () => void) => (
   <button type="button" className="mobile-nav-item" onClick={onClick}>
@@ -45,7 +53,7 @@ export function MobileNav({ items, therapist = false, onSearch, onProfile }: {
     const [today, clients, profile] = THERAPIST_ITEMS;
     return (
       <nav className="mobile-nav">
-        {link(today)}{link(clients)}{action('search', 'Поиск', onSearch)}
+        {link(today)}{isClientListPath(pathname) ? activeLink(clients) : link(clients)}{action('search', 'Поиск', onSearch)}
         {onProfile ? action('profile', profile.label, onProfile) : link(profile)}
       </nav>
     );
@@ -53,9 +61,7 @@ export function MobileNav({ items, therapist = false, onSearch, onProfile }: {
   return (
     <nav className="mobile-nav">
       {items.map(i => (i.id === 'more' && inMoreSub
-        ? <Link key={i.id} to="/more" className="mobile-nav-item active" aria-current="page">
-          <MobileNavIcon id={i.id} />{i.label}
-        </Link>
+        ? activeLink({ to: '/more', icon: i.id, label: i.label })
         : link({ to: '/' + i.id, icon: i.id, label: i.label })))}
     </nav>
   );

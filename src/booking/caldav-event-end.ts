@@ -24,9 +24,9 @@ function isAllDay(ev: string): boolean {
   return /(?:^|\n)DTSTART[^:\n]*:\s*\d{8}\s*(?:\r|\n|$)/.test(ev);
 }
 
-// Вложенные компоненты (VALARM с REPEAT обязан нести свой DURATION, RFC 5545
-// §3.6.6) — не свойства события: их DURATION — пауза между напоминаниями.
-function ownProps(ev: string): string {
+// Вложенные компоненты (VALARM, RFC 5545 §3.6.6) — не свойства события: их
+// DURATION — пауза между напоминаниями, SUMMARY — тема письма-напоминания.
+export function ownProps(ev: string): string {
   return ev.replace(/BEGIN:VALARM[\s\S]*?END:VALARM/g, '');
 }
 

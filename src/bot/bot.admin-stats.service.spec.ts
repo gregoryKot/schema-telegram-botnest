@@ -66,14 +66,15 @@ function makeQueryRawMock(
       return Promise.resolve([{ c: BigInt(cfg.filledOnce30 ?? 0) }]);
     if (text.includes('WHERE date = '))
       return Promise.resolve([{ c: BigInt(cfg.todayCount ?? 0) }]);
-    if (text.includes('>= 1)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret1 ?? 0) }]);
-    if (text.includes('>= 3)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret3 ?? 0) }]);
-    if (text.includes('>= 7)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret7 ?? 0) }]);
-    if (text.includes('>= 30)'))
-      return Promise.resolve([{ cnt: BigInt(cfg.ret30 ?? 0) }]);
+    if (text.includes('AS ret1'))
+      return Promise.resolve([
+        {
+          ret1: BigInt(cfg.ret1 ?? 0),
+          ret3: BigInt(cfg.ret3 ?? 0),
+          ret7: BigInt(cfg.ret7 ?? 0),
+          ret30: BigInt(cfg.ret30 ?? 0),
+        },
+      ]);
     return Promise.resolve([]);
   });
 }
@@ -341,6 +342,12 @@ describe('BotAdminStatsService.getAdminStats — отчёт целиком', () 
     expect(report).toContain('Всего людей: 100');
     expect(report).toContain('Выключили напоминания: 3');
     expect(report).toContain('Сейчас вместе: 4');
+    // Воронка — четыре числа из одного SQL; строка отчёта та же, что при
+    // четырёх отдельных HAVING (равенство со старыми запросами на живой базе —
+    // test/raw-sql-live-admin-stats.e2e-spec.ts).
+    expect(report).toContain(
+      'Хотя бы 1 день: 60  ·  3 дня и больше: 30  ·  неделю и больше: 15  ·  месяц и больше: 5',
+    );
     // getAdminStats дописывает retention-блок (getRetentionStats)
     expect(report.length).toBeGreaterThan(200);
   });
@@ -349,5 +356,21 @@ describe('BotAdminStatsService.getAdminStats — отчёт целиком', () 
     const svc = new BotAdminStatsService(makePrisma());
     const report = await svc.getAdminStats();
     expect(report).not.toMatch(/NaN|undefined/);
+    expect(report).toContain('Хотя бы 1 день: 0  ·  3 дня и больше: 0');
+  });
+
+  it('воронка удержания — один запрос с FILTER по порогам 1/3/7/30, а не четыре HAVING', async () => {
+    const queryRaw = makeQueryRawMock();
+    await new BotAdminStatsService(
+      makePrisma({ $queryRaw: queryRaw }),
+    ).getAdminStats();
+    const sqls = queryRaw.mock.calls.map(([s]) =>
+      (s as TemplateStringsArray).join('|'),
+    );
+    const funnel = sqls.filter((t) => t.includes('COUNT(DISTINCT date)'));
+    expect(funnel).toHaveLength(1);
+    for (const n of [1, 3, 7, 30])
+      expect(funnel[0]).toContain(`FILTER (WHERE t.days >= ${n})`);
+    expect(sqls.some((t) => /HAVING/i.test(t))).toBe(false);
   });
 });

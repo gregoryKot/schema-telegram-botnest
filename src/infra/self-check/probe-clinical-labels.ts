@@ -34,7 +34,6 @@ export function clinicalLabelsProbe(
   return {
     id: 'clinicalLabels',
     title: 'Шифрование клинических меток',
-    critical: false,
     reportInHealth: false,
     run: () => Promise.resolve(evaluate()),
   };

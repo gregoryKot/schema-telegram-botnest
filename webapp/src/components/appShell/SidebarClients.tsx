@@ -10,6 +10,7 @@ import { clientHue, hueStyle } from '../../lib/tone';
 import { todayStr } from '../../utils/format';
 import { matchesRosterSearch, sortRoster } from '../therapist/rosterOrder';
 import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
+import { clientRef } from '../../../../shared/src/utils/clientRef';
 import { useScreenShare } from './screenShareMode';
 import { ScreenShareSwitch } from './ScreenShareSwitch';
 
@@ -33,7 +34,7 @@ export function SidebarClients({ clients }: { clients: TherapyClientSummary[] })
       {shown.map(c => {
         const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
         return (
-          <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
+          <NavLink key={c.telegramId} to={`/cabinet/${clientRef(c)}`}
                    className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
             <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{clientInitials(name)}</span>
             <span className="sb-client-name">{name}</span>

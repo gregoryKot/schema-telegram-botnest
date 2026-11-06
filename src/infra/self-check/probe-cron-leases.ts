@@ -21,7 +21,6 @@ export function cronLeasesProbe(
   return {
     id: 'cronLeases',
     title: 'Крон-аренды',
-    critical: false,
     async run() {
       const names = expectedLeases(); // крон за выключенной фичей не судим
       const now = Date.now();

@@ -46,7 +46,6 @@ export async function runProbes(
       return {
         id: p.id,
         title: p.title,
-        critical: p.critical,
         ok: r.ok,
         detail: r.detail,
         reportInHealth: p.reportInHealth !== false,

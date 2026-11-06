@@ -17,7 +17,6 @@ describe('runtimeModeProbe', () => {
       expect(r.ok).toBe(false);
       expect(r.detail).toMatch(/NODE_ENV не production/);
       if (mode) expect(r.detail).not.toContain(mode);
-      expect(probe.critical).toBe(true);
       expect(probe.reportInHealth).not.toBe(false);
     },
   );

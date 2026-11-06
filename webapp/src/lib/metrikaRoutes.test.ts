@@ -13,7 +13,7 @@ const isWebvisorRecordRoute = (p: string) => WEBVISOR_PATHS.test(p);
 const PRIVATE = [
   '/admin', '/login', '/auth/callback', '/auth/confirm', '/auth/telegram', '/auth/2fa',
   '/auth/error', '/link', '/account', '/account/merge',
-  '/today', '/diary', '/more', '/schemas', '/profile', '/practice', '/cabinet', '/cabinet/:clientId',
+  '/today', '/diary', '/more', '/schemas', '/profile', '/practice', '/cabinet', '/cabinet/:clientId', '/cabinet/:clientId/:tab',
 ];
 const REDIRECTS = ['/booking-admin', '/articles-admin', '/help', '/exercises', '*'];
 

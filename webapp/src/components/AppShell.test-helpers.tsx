@@ -168,9 +168,9 @@ vi.mock('./exercises/ChildhoodWheelEx', () => ({
   ),
 }));
 vi.mock('./TherapistClientSheet', () => ({
-  // state (view/openClientId) — routing-состояние кабинета, а не только «URL куда-то поменялся».
+  // state (view/openClientRef) — routing-состояние кабинета, а не только «URL куда-то поменялся».
   TherapistClientSheet: (p: ComponentProps<typeof TherapistClientSheetT>) => (
-    <Btns testid="therapist-client-sheet" state={{ view: p.view, openClientId: p.openClientId }} map={{
+    <Btns testid="therapist-client-sheet" state={{ view: p.view, openClientRef: p.openClientRef }} map={{
       close: () => p.onClose(),
       toList: () => p.onViewChange('list'),
       openClient: () => p.onOpenClient?.(42),
@@ -256,7 +256,7 @@ export function renderAppShell(initialPath = '/today') {
         <Route path="/profile" element={<AppShell />} />
         <Route path="/practice" element={<AppShell />} />
         <Route path="/cabinet" element={<AppShell />} />
-        <Route path="/cabinet/:clientId" element={<AppShell />} />
+        {['/cabinet/:clientId', '/cabinet/:clientId/:tab'].map((p) => <Route key={p} path={p} element={<AppShell />} />)}
         <Route path="*" element={<AppShell />} />
       </Routes>
     </MemoryRouter>,

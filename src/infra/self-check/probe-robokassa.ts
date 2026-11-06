@@ -63,7 +63,6 @@ export function robokassaConfigProbe(env: Env = process.env): Probe {
   return {
     id: 'robokassa',
     title: 'Приём оплаты (Robokassa): настройка',
-    critical: false,
     run: () => Promise.resolve(configResult(env)),
   };
 }
@@ -88,7 +87,6 @@ export function paymentWebhooksProbe(
   return {
     id: 'paymentWebhooks',
     title: 'Приём оплаты (Robokassa): приходят ли подтверждения',
-    critical: false,
     reportInHealth: false,
     async run() {
       if (!isProd(env)) return { ok: true, detail: 'не прод: пропущено' };

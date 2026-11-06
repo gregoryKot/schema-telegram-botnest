@@ -7,7 +7,6 @@
 export interface SelfCheckResultEntry {
   id: string;
   title: string;
-  critical: boolean;
   ok: boolean;
   detail: string;
   /** См. Probe.reportInHealth (types.ts) — false прячет падение от /health,

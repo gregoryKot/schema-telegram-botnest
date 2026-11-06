@@ -19,7 +19,6 @@ function okProbe(id: string): Probe {
   return {
     id,
     title: `Проба ${id}`,
-    critical: false,
     run: async () => ({ ok: true, detail: 'ок' }),
   };
 }
@@ -27,7 +26,6 @@ function failProbe(id: string, detail = 'сломано'): Probe {
   return {
     id,
     title: `Проба ${id}`,
-    critical: false,
     run: async () => ({ ok: false, detail }),
   };
 }
@@ -54,7 +52,6 @@ describe('SelfCheckService.run', () => {
       {
         id: 'db',
         title: 'Проба db',
-        critical: false,
         ok: true,
         detail: 'ок',
         reportInHealth: true,

@@ -17,7 +17,6 @@ export function telegramProbe(env: NodeJS.ProcessEnv = process.env): Probe {
   return {
     id: 'telegram',
     title: 'Бот Telegram',
-    critical: false,
     async run() {
       const token = env.BOT_TOKEN?.trim();
       if (!token) return { ok: true, detail: 'выключено' };

@@ -71,6 +71,8 @@ export const CLIENT_EXPORT_POLICY: Record<string, ClientExportDecision> = {
       meetingDays: 'ритм встреч терапевта; на экране клиента — ближайшая дата',
       attachToId:
         'ссылка приглашения на офлайн-карточку терапевта — внутренний id его строки, не данные клиента',
+      urlCode:
+        'код адреса карточки в кабинете терапевта — навигация терапевта, не данные клиента',
     },
   },
   TherapistNote: {

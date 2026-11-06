@@ -253,6 +253,17 @@ describe('parseBusy — SUMMARY события (только для отобра
       end: new Date('2026-07-13T17:50:00.000Z'),
     });
   });
+
+  it('VALARM с ACTION:EMAIL перед SUMMARY события — подпись от события, не от будильника', () => {
+    const alarm =
+      'BEGIN:VALARM\nTRIGGER:-PT15M\nACTION:EMAIL\nSUMMARY:Alarm subject\nEND:VALARM';
+    const xml = multistatus([
+      vevent(`DTSTART:20260713T170000Z\n${alarm}\nSUMMARY:Встреча`),
+      vevent(`DTSTART:20260714T170000Z\n${alarm}`),
+    ]);
+    const out = parseBusy(xml);
+    expect(out.map((i) => i.summary)).toEqual(['Встреча', undefined]);
+  });
 });
 
 // Находка аудита 2026-10-11: событие «весь день» без DTEND (и любое событие с

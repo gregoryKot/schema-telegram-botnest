@@ -93,13 +93,18 @@ export function makeFakePrisma() {
     // в сервисе — `undefined !== null` даёт true и ломает инвайт-флоу).
     therapyRelation: withUserJoin(
       // createdAt/meetingDays — @default схемы: getClients читает
-      // rel.createdAt.toISOString() у виртуальных клиентов.
-      withDefaults(makeTable(), {
+      // rel.createdAt.toISOString() у виртуальных клиентов. urlCode — свой
+      // на каждую строку, как dbgenerated в Postgres (8 букв без цифр).
+      withDefaults(makeTable(), () => ({
         status: 'pending',
         clientId: null,
         createdAt: new Date(),
         meetingDays: [],
-      }),
+        urlCode: Array.from(
+          { length: 8 },
+          () => 'abcdefghjkmnpqrs'[Math.floor(Math.random() * 16)],
+        ).join(''),
+      })),
       userTable,
     ),
     therapistNote: makeTable(),

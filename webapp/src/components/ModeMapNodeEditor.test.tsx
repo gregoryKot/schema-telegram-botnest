@@ -13,6 +13,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../utils/addressForm';
 import { ModeMapNodeEditor } from './ModeMapNodeEditor';
 import type { ModeMapNode } from '../api';
+import { MODE_MAP_NODE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 
 function baseNode(overrides: Partial<ModeMapNode> = {}): ModeMapNode {
   return {
@@ -291,5 +292,18 @@ describe('ModeMapNodeEditor — глобальные события фокуса
     renderEditor(baseNode({ type: 'child' }));
     window.dispatchEvent(new CustomEvent('modemap-focus-need'));
     expect(document.activeElement).toBe(screen.getByLabelText('Неудовлетворённая потребность'));
+  });
+});
+
+// Предел сервера (UpdateModeMapDto, @StringsWithin): поле без maxLength пускало
+// бы текст, который автосохранение потом не сохранит (400 и «не сохранено»).
+describe('ModeMapNodeEditor — предел длины текстовых полей', () => {
+  it('название, заметка, потребность и ответ Здорового Взрослого — maxLength из общего предела', () => {
+    renderEditor(baseNode({ type: 'child' }));
+    const fields = ['mm-node-name', 'mm-node-note', 'mm-node-need', 'mm-node-healthy'];
+    for (const id of fields) {
+      expect({ id, max: document.getElementById(id)?.getAttribute('maxLength') })
+        .toEqual({ id, max: String(MODE_MAP_NODE_TEXT_MAX) });
+    }
   });
 });
