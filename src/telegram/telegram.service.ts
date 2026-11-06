@@ -35,11 +35,7 @@ import { isLoginPayload } from './login-payload';
 import { isLinkPayload } from './link-payload';
 import { TelegramLoginService } from './telegram.login.service';
 import { TelegramLinkService } from './telegram.link.service';
-import {
-  isQuietHours,
-  nextQuietEnd,
-  tzOffsetAt,
-} from '../notification/notification.time';
+import { snoozeReminder, snoozeFailText } from './telegram.snooze';
 import { retryWithBackoff } from '../utils/retry';
 import { BotLauncher } from './telegram.launch';
 import { t, AddressForm } from '../notification/address-form';
@@ -85,6 +81,11 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       pending: this.pendingPairCodes,
       now: () => Date.now(),
     };
+  }
+
+  private snoozeDeps() {
+    const { accountService, botService, notificationService } = this;
+    return { accountService, botService, notificationService, now: Date.now };
   }
 
   /** Форма обращения по сырому telegramId — привязка общего помощника. */
@@ -275,7 +276,8 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // (этап 4.3 — на один шаг меньше до полезного контента).
     this.bot.action(/^accept:(ty|vy)$/, async (ctx) => {
       try {
-        await ctx.answerCbQuery('Принято ✅');
+        // Без текста: тост уходит до записи согласия; итог — приветствие ниже.
+        await ctx.answerCbQuery();
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const form = (ctx.match as RegExpMatchArray)[1] as AddressForm;
@@ -306,9 +308,10 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       } catch (err) {
         this.logger.error('accept action failed', err);
         // ctx.match не привязан к try — форма из callback_data доступна и тут.
+        // Новым сообщением: правка стёрла бы кнопки согласия, жать было бы нечего.
         const form = (ctx.match as RegExpMatchArray | undefined)?.[1] as
           AddressForm | undefined;
-        await ctx.editMessageText(acceptRetryText(form)).catch(() => null);
+        await ctx.reply(acceptRetryText(form)).catch(() => null);
       }
     });
 
@@ -316,7 +319,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // объединения экранов: принимаем согласие и спрашиваем форму отдельно.
     this.bot.action('accept_consent', async (ctx) => {
       try {
-        await ctx.answerCbQuery('Принято ✅');
+        await ctx.answerCbQuery(); // без текста: итог — выбор обращения ниже
         const rawId = ctx.from?.id;
         if (rawId) {
           const userId = await this.accountService.canonicalUserId(rawId);
@@ -331,48 +334,20 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept_consent action failed', err);
-        // Форма ещё не выбрана на этом шаге — «ты» по умолчанию, как весь флоу до выбора.
-        await ctx.editMessageText(acceptRetryText()).catch(() => null);
+        // Форма ещё не выбрана — «ты», как весь флоу до выбора; кнопка остаётся.
+        await ctx.reply(acceptRetryText()).catch(() => null);
       }
     });
 
     this.bot.action('snooze_reminder', async (ctx) => {
       try {
-        await ctx.answerCbQuery('⏰ Напомню через час');
+        await ctx.answerCbQuery(); // без текста: итог — время в сообщении
         const rawId = ctx.from?.id;
-        if (rawId) {
-          const userId = await this.accountService.canonicalUserId(rawId);
-          const settings = await this.botService.getUserSettings(userId);
-          const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-          const quietStart = settings?.notifyQuietStart ?? 22;
-          const quietEnd = settings?.notifyQuietEnd ?? 8;
-          let sendAt = new Date(Date.now() + 3_600_000);
-          // Тихие часы юзера: если «через час» попадает в тишину — переносим на их конец
-          if (isQuietHours(tz, quietStart, quietEnd, sendAt)) {
-            sendAt = nextQuietEnd(tz, quietEnd, sendAt);
-          }
-          await this.notificationService.cancel(userId, 'reminder');
-          await this.notificationService.schedule(
-            userId,
-            'pre_reminder',
-            sendAt,
-          );
-          const offsetSend = tzOffsetAt(tz, sendAt);
-          const localHourSend =
-            (((sendAt.getUTCHours() + offsetSend) % 24) + 24) % 24;
-          const localMinSend = sendAt.getUTCMinutes();
-          const timeStr = `${String(localHourSend).padStart(2, '0')}:${String(localMinSend).padStart(2, '0')}`;
-          await ctx
-            .editMessageText(`⏰ Напомню в ${timeStr}`)
-            .catch(() =>
-              ctx.editMessageReplyMarkup(undefined).catch(() => null),
-            );
-        } else {
-          await ctx.editMessageReplyMarkup(undefined).catch(() => null);
-        }
+        if (rawId) await snoozeReminder(this.snoozeDeps(), ctx, rawId);
+        else await ctx.editMessageReplyMarkup(undefined).catch(() => null);
       } catch (err) {
         this.logger.error('snooze_reminder action failed', err);
-        await ctx.editMessageText(ERROR_RETRY).catch(() => null);
+        await ctx.reply(snoozeFailText(err)).catch(() => null);
       }
     });
 
