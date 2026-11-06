@@ -347,12 +347,3 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 #933); `tsc` бэкенда, vitest `webapp`/`shared` и остальные сьюты остаются работой CI — в хуке они
 удвоили бы время каждого пуша, а класс «зелено в CI, красно у владельца» для них не наблюдался.
 Появится — расширять хук, не возвращать `--no-verify`.
-
-**Хук `PreToolUse` в `.claude/settings.local.json` собирает `webapp` главного дерева, а не пушимого**
-(2026-11-06, при #959): файл локальный (не в git; копия и в `.claude/worktrees/*/.claude/settings.local.json`),
-на любую Bash-команду с `git commit|push` гоняет `cd /Users/gregory/telegram-bot-2/webapp && npm run build` —
-главное дерево стоит на чужой ветке (`feat/graphic-maps`), и команда из worktree блокируется или проходит по
-её состоянию, не по своему (2026-11-06 блокировал при зелёном pre-push хуке worktree); зелёный там только
-благодаря локальному `webapp/.env` с `VITE_BOT_USERNAME`, которого в worktree нет. С хуком в репозитории
-(`scripts/git-hooks/pre-push`) он лишний: убрать из обоих `settings.local.json` или собирать
-`$(git rev-parse --show-toplevel)/webapp` с переменной.
