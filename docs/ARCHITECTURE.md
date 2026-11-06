@@ -88,7 +88,7 @@
 | `prisma/` | `prisma/schema.prisma`, миграции, `prisma/recover-p3009.sql` |
 | `test/` | e2e бэкенда (`test/*.e2e-spec.ts`), `test/e2e-support/`, записанные ответы площадок `test/fixtures/recorded/`, замер планов `test/perf/` |
 | `e2e-browser/` | Playwright-смоки (nightly) |
-| `scripts/` | Гейты CI `scripts/check-*.mjs`, их бейслайны, merge-драйверы, бэкапы |
+| `scripts/` | Гейты CI `scripts/check-*.mjs`, их бейслайны, merge-драйверы, хуки git (`scripts/git-hooks/`, ставит `scripts/setup-git-hooks.mjs`), бэкапы |
 | `deploy/` | Супервизор контейнера, VPS (`deploy/vps/`), Cloudflare Worker (`deploy/threads-relay/`) |
 | `docs/` | Документация: индекс — [docs/README.md](README.md), открытое — `docs/open/`, архив — `docs/archive/` |
 | `game/` | Игра (Phaser), заморожена: не трогать без прямой просьбы |

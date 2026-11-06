@@ -96,7 +96,9 @@ coverage-бейслайны — по 20. Просить
 замечает. То есть ручное разрешение конфликта в бейслайне почти всегда неверное.
 
 Механизм — merge-драйверы (`.gitattributes` + `scripts/setup-merge-drivers.mjs`,
-ставятся в `.git/config` из npm `prepare`, то есть сами на любом `npm install`):
+ставятся в `.git/config` из npm `prepare`, то есть сами на любом `npm install`;
+тем же `prepare` встаёт pre-push хук сборки `webapp` — `scripts/setup-git-hooks.mjs`,
+правило №1 в `process.md`):
 
 - **бейслайны храповиков** сводятся `merge-json-ratchet.mjs` по семантике
   храповика, и решение принимается пер-ключ, трёхсторонне: ключ изменила
