@@ -147,3 +147,8 @@ playwright.config.js.map
 
 # Журнал замера контекста агента (хук .claude/hooks/log-tool-use.mjs) — локальный, у каждой сессии свой.
 .claude/state/
+
+# Мини-апп удалён из репозитория (#917); у владельца остаётся старый клон
+# gregoryKot/schema-miniapp в корне — его node_modules иначе попадают в
+# неотслеживаемое и в чистое дерево precheck (ENOBUFS в check-unwatched-code).
+schema-miniapp/

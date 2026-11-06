@@ -29,9 +29,9 @@ const WATCHED_PREFIXES = [
 // Экспорт — ради теста гейта.
 export const EXCLUDED_PREFIXES = ['game/', '.github/'];
 function gitFiles() {
-  return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean);
+  // maxBuffer: дефолт 1 МиБ ронял гейт с ENOBUFS — см. unwatched-code-buffer.spec.ts
+  const opts = { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 };
+  return execFileSync('git', ['ls-files'], opts).split('\n').filter(Boolean);
 }
 function main() {
 const all = gitFiles();
