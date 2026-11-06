@@ -110,6 +110,11 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
   it('экран «Главное» — событие реестра (concept_brief_open)', () => {
     expect(CONCEPT_EVENTS).toContain('concept_brief_open');
   });
+
+  it('связь холста с полями — события реестра (concept_sync_to_map/from_map, #963)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_sync_to_map');
+    expect(CONCEPT_EVENTS).toContain('concept_sync_from_map');
+  });
 });
 
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {

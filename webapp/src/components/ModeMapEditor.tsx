@@ -224,7 +224,7 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
   );
 
   return (
-    <ModeMapConceptProvider clientId={clientId} kind={kind} nodes={nodes}><div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
+    <ModeMapConceptProvider clientId={clientId} kind={kind} nodes={nodes} edges={edges}><div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
       {paletteOpen ? paletteCol : (
         <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
           className="mm2-ear" style={{ ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>

@@ -125,6 +125,14 @@ describe('ModeMapsService — listModeMaps/createModeMap требуют акти
     expect(maps).toHaveLength(1);
   });
 
+  it('createModeMap: типы «Концептуализация» и «Свободный холст» сохраняются (#963)', async () => {
+    const { service } = makeService([relA]);
+    const concept = await service.createModeMap(T1, CLIENT_A, 'К', 'concept');
+    const free = await service.createModeMap(T1, CLIENT_A, 'Х', 'free');
+    expect(concept.kind).toBe('concept');
+    expect(free.kind).toBe('free');
+  });
+
   it('createModeMap: неизвестный kind подменяется на "problem"', async () => {
     const { service } = makeService([relA]);
     const map = await service.createModeMap(T1, CLIENT_A, 'X', 'bogus');

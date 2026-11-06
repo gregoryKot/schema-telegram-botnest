@@ -12,6 +12,8 @@ const base: ConceptGraphMetrics = {
   fullscreen30: 0,
   saveRetry30: 0,
   brief30: 0,
+  syncToMap30: 0,
+  syncFromMap30: 0,
 };
 
 describe('formatConceptGraphMetrics', () => {
@@ -38,7 +40,7 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).toContain('Открывали 14 раз, терапевтов: 3');
     expect(text).toContain('Связи режимов заполняли 9 раз');
     expect(text).toContain('Убеждения и опыт схем записывали 6 раз');
-    expect(text).toContain('Переносили схему случая на холст 2 раз');
+    expect(text).toContain('Собирали карту из концептуализации 2 раз');
     expect(text).toContain('Разворачивали схему на весь экран 8 раз');
     expect(text).not.toContain('Пока никто');
     expect(text).not.toMatch(/NaN|undefined/);
@@ -82,7 +84,7 @@ describe('formatConceptGraphMetrics', () => {
   it('только перенос на холст: блок не пустой, строка про холст стоит, мусора нет', () => {
     const text = formatConceptGraphMetrics({ ...base, canvasOpen30: 5 });
     expect(text).not.toContain('Пока никто');
-    expect(text).toContain('Переносили схему случая на холст 5 раз');
+    expect(text).toContain('Собирали карту из концептуализации 5 раз');
     expect(text).not.toMatch(/NaN|undefined|null/);
   });
 
@@ -119,5 +121,24 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).not.toContain('Пока никто');
     expect(text).toContain('Повторяли сохранение после ошибки 2 раз');
     expect(text).not.toMatch(/NaN|undefined|null/);
+  });
+
+  it('связь холста с полями (#963): обе строки, только когда было', () => {
+    const text = formatConceptGraphMetrics({
+      ...base,
+      syncToMap30: 3,
+      syncFromMap30: 12,
+    });
+    expect(text).not.toContain('Пока никто');
+    expect(text).toContain('Дописывали на карту из полей: 3 раз');
+    expect(text).toContain('Холст дописывал в концептуализацию: 12 раз');
+    const onlyFrom = formatConceptGraphMetrics({ ...base, syncFromMap30: 1 });
+    expect(onlyFrom).toContain('Холст дописывал в концептуализацию: 1 раз');
+    expect(onlyFrom).not.toContain('Дописывали на карту');
+    expect(onlyFrom).not.toMatch(/NaN|undefined|null|полей: 0/);
+  });
+
+  it('пустая БД не упоминает дописывание', () => {
+    expect(formatConceptGraphMetrics({ ...base })).not.toContain('Дописано');
   });
 });

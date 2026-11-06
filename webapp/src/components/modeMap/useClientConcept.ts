@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, type UserId } from '../../api';
-import { normalizeModeLinks } from '../../../../shared/src/therapy/conceptGraph/modeLinks';
 import type { ClientConceptState } from './clientConceptContext';
-
-const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+import { toClientConcept } from './conceptSync';
 
 /** Один запрос концептуализации на открытую карту; без clientId (личная карта клиента) не грузит. */
 export function useClientConcept(clientId: UserId | null | undefined): ClientConceptState {
@@ -12,7 +10,7 @@ export function useClientConcept(clientId: UserId | null | undefined): ClientCon
     if (clientId == null) return;
     let alive = true;
     api.getConceptualization(clientId)
-      .then(c => { if (alive) setState({ id: clientId, value: { schemaIds: strs(c?.schemaIds), modeIds: strs(c?.modeIds), modeLinks: normalizeModeLinks(c?.modeLinks) } }); })
+      .then(c => { if (alive) setState({ id: clientId, value: toClientConcept(c) }); })
       .catch(() => { if (alive) setState({ id: clientId, value: 'failed' }); }); // не пусто — иначе «схем нет» вместо «не загрузилось»
     return () => { alive = false; };
   }, [clientId]);

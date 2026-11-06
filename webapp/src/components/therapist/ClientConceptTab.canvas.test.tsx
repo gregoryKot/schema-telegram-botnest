@@ -94,7 +94,7 @@ beforeEach(() => {
   mockApi.getClientDiary.mockResolvedValue([]);
   mockApi.getConceptualization.mockResolvedValue(concept());
   mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => ({ ...concept(), ...body }));
-  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'personality' });
+  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'concept' });
   mockApi.updateModeMap.mockResolvedValue({});
   mockApi.deleteModeMap.mockResolvedValue(undefined);
 });
@@ -107,7 +107,7 @@ describe('«Открыть на холсте»: где есть кнопка', (
     const btn = canvasBtn();
     expect(btn.firstElementChild!.textContent).toBe('Открыть на холсте');
     // Подсказка — строкой под названием, видна без наведения (не в title).
-    expect(within(btn).getByText(/Новая карта режимов из этой схемы: можно двигать фигуры/)).toBeTruthy();
+    expect(within(btn).getByText(/Новая графическая карта из этой схемы: можно двигать фигуры/)).toBeTruthy();
     expect(btn.title).toBe('');
   });
 
@@ -133,8 +133,8 @@ describe('«Открыть на холсте»: создание карты', ()
     await waitFor(() => expect(onOpenCanvas).toHaveBeenCalledWith(41));
 
     const [clientId, title, kind] = mockApi.createModeMap.mock.calls[0];
-    expect([clientId, kind]).toEqual([7, 'personality']);
-    expect(title).toMatch(/^Схема случая · \d{1,2} \S+\.?$/);
+    expect([clientId, kind]).toEqual([7, 'concept']);
+    expect(title).toMatch(/^Концептуализация · \d{1,2} \S+\.?$/);
 
     const [mapId, body] = mockApi.updateModeMap.mock.calls[0];
     expect(mapId).toBe(41);

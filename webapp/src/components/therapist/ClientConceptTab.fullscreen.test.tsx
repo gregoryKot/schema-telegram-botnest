@@ -123,7 +123,7 @@ beforeEach(() => {
   mockApi.getClientDiary.mockResolvedValue([]);
   mockApi.getConceptualization.mockResolvedValue(concept());
   mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => ({ ...concept(), ...body }));
-  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'personality' });
+  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'concept' });
   mockApi.updateModeMap.mockResolvedValue({});
   mockApi.deleteModeMap.mockResolvedValue(undefined);
   toPng.mockResolvedValue('data:image/png;base64,AAAA');

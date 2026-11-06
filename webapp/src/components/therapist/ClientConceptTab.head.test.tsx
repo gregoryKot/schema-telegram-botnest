@@ -116,7 +116,7 @@ describe('шапка: меню «⋯ Ещё»', () => {
     expect(items).toEqual(['↗ Экспорт текстом', '↓ Скачать картинкой', '⤢ На весь экран', 'Открыть на холсте']);
     // Подсказки — строкой под названием, не в title: видны без наведения.
     expect(within(menu()!).getByText(/четыре колонки/)).toBeTruthy();
-    expect(within(menu()!).getByText(/Новая карта режимов из этой схемы/)).toBeTruthy();
+    expect(within(menu()!).getByText(/Новая графическая карта из этой схемы/)).toBeTruthy();
     expect(within(menu()!).queryAllByTitle(/./)).toEqual([]);
     fireEvent.click(within(menu()!).getByRole('menuitem', { name: /На весь экран/ }));
     expect(menu()).toBeNull();
@@ -263,7 +263,7 @@ describe('ширина под схему', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /На весь экран/ }));
     const dialog = screen.getByRole('dialog', { name: 'Схема случая' });
     expect(within(dialog).getByRole('button', { name: /Скачать картинкой/ })).toBeTruthy();
-    expect(within(dialog).getByRole('button', { name: 'Открыть на холсте' }).title).toMatch(/Новая карта режимов/);
+    expect(within(dialog).getByRole('button', { name: 'Открыть на холсте' }).title).toMatch(/Новая графическая карта/);
   });
 });
 

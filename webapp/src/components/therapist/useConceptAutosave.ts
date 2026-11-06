@@ -6,24 +6,18 @@ import { usePendingSave } from '../../../../shared/src/utils/usePendingSave';
 import type { SaveStatus } from '../../../../shared/src/therapy/SaveStatusLine';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import { useTr } from '../../utils/addressForm';
+import { useConceptAppended } from '../modeMap/conceptAppendedEvent';
+import { mergeAppended } from './conceptAppendMerge';
 
 type LocalConcept = Partial<ClientConceptualization>;
 const SECTION = 'therapist.clientDetail';
 
-// Концептуализация открытого клиента: локальные правки и автосохранение
-// через 700 мс. Вынесено из useClientDetail.ts (правило №10) вместе с
-// починкой инцидента 2026-10-26 (docs/INCIDENTS.md): таймер брал id клиента
-// из замыкания, а тело — из рефа, который к срабатыванию уже заполнил
-// следующий клиент. Теперь id и тело запоминаются вместе в момент правки
-// (shared usePendingSave): при смене клиента правка уходит прежнему с ЕГО
-// данными, при уходе со страницы — keepalive-досылкой. Ответ, пришедший
-// после смены клиента, state карточки не трогает — она уже чужая.
-//
-// Статус — для общей строки `SaveStatusLine` (issue #879): «✓ Сохранено в
-// ЧЧ:ММ» не гаснет до следующей правки, отказ — 'error' с «Повторить»
-// (`retrySave`). `conceptError` — причина отказа для строки (`errorText`):
-// поле длиннее предела сервера; без известной причины — пусто, и строка
-// пишет своё «Не сохранилось».
+// Концептуализация открытого клиента: локальные правки и автосохранение через 700 мс (вынесено из
+// useClientDetail.ts, правило №10). Инцидент 2026-10-26 (docs/INCIDENTS.md): таймер брал id клиента из замыкания,
+// а тело — из рефа следующего клиента; теперь id и тело запоминаются вместе (shared usePendingSave): при смене
+// клиента правка уходит прежнему с ЕГО данными, при уходе со страницы — keepalive-досылкой, поздний ответ чужую
+// карточку не трогает. Статус — для `SaveStatusLine` (#879): «✓ Сохранено в ЧЧ:ММ» не гаснет до следующей правки,
+// отказ — 'error' с «Повторить» (`retrySave`); `conceptError` — причина отказа (поле длиннее предела), иначе пусто.
 export function useConceptAutosave(openClientIdRef: { readonly current: UserId | null }) {
   const tr = useTr();
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
@@ -41,9 +35,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     setLocalConcept(next);
   }
 
-  // Досылка при уходе (`leaving`) — тот же путь, только keepalive: вкладка,
-  // скрытая и открытая снова, видит «✓ сохранено» или ошибку, а не вечное
-  // «автосохранение»; после размонтирования setState — no-op.
+  // Досылка при уходе (`leaving`) — тот же путь с keepalive: скрытая вкладка потом видит итог; после размонтирования setState — no-op.
   async function send(clientId: UserId, body: ConceptSaveBody, { leaving }: { leaving: boolean }) {
     if (isOpen(clientId)) setSaveStatus('saving');
     try {
@@ -70,6 +62,16 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     onLeaveError: () => reportClientError({ message: 'concept leave save failed', section: SECTION }),
   });
 
+  // Холст «Графических карт» дописал в поля (#963): списки — из ответа сервера, неотправленные правки — поверх.
+  // Ждущее сохранение пересобирается: иначе ушли бы старые списки и стёрли дописанное холстом.
+  useConceptAppended(({ clientId, concept: saved }) => {
+    if (!isOpen(clientId)) return;
+    const next = mergeAppended(concept, localRef.current, saved);
+    setConcept(saved);
+    setLocal(next);
+    if (saveStatus === 'pending' || saveStatus === 'saving') saver.schedule(clientId, conceptSaveBody(next));
+  });
+
   function patchConcept(patch: LocalConcept) {
     const clientId = openClientIdRef.current;
     if (clientId == null) return;
@@ -79,11 +81,9 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     saver.schedule(clientId, conceptSaveBody(next));
   }
 
-  // «Повторить» после ошибки: текущая версия правок открытого клиента уходит
-  // сразу (взведённый таймер заменяется — один запрос). Событие — литералом:
-  // так его видит трипваер analytics-sync (src/security); константа
-  // CONCEPT_SAVE_RETRY_EVENT — shared/src/share/analytics.ts, равенство
-  // сверяет ClientConceptTab.save.test.
+  // «Повторить» после ошибки: текущая версия правок открытого клиента уходит сразу (взведённый таймер
+  // заменяется — один запрос). Событие — литералом: так его видит трипваер analytics-sync (src/security);
+  // константа CONCEPT_SAVE_RETRY_EVENT — shared/src/share/analytics.ts, равенство сверяет ClientConceptTab.save.test.
   function retrySave() {
     const clientId = openClientIdRef.current;
     if (clientId == null) return;
