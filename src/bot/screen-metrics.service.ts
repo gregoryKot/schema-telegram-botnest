@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ScreenMetrics, formatScreenMetrics } from './screen-metrics.format';
+import {
+  ScreenMetrics,
+  formatScreenMetrics,
+  isShownScreen as live,
+} from './screen-metrics.format';
 import { countHomeMetrics } from './home-tiles.count';
 
-// Счётчики настройки экранов «Профиль»/«Паттерны»/«Сегодня» для /stats:
-// события screen_customize_open/screen_block_toggle/screen_block_move из
-// AnalyticsEvent. Свой домен — свой файл (правило №10), образец GROUP BY
-// meta — plus-metrics.service.ts.
+// Настройка экранов «Профиль»/«Паттерны» для /stats: screen_customize_open,
+// screen_block_toggle, screen_block_move из AnalyticsEvent (правило №10).
 @Injectable()
 export class ScreenMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -51,20 +53,18 @@ export class ScreenMetricsService {
     return {
       ...(await countHomeMetrics(this.prisma, since30)),
       opensByScreen: opensRows
-        .filter((r): r is { screen: string; c: bigint } => r.screen != null)
+        .filter(live)
         .map((r) => ({ screen: r.screen, count: Number(r.c) })),
       hiddenByScreenBlock: hiddenRows
-        .filter(
-          (r): r is { screen: string; block: string; c: bigint } =>
-            r.screen != null && r.block != null,
-        )
+        .filter(live)
+        .filter((r): r is typeof r & { block: string } => r.block != null)
         .map((r) => ({
           screen: r.screen,
           block: r.block,
           count: Number(r.c),
         })),
       movesByScreen: movesRows
-        .filter((r): r is { screen: string; c: bigint } => r.screen != null)
+        .filter(live)
         .map((r) => ({ screen: r.screen, count: Number(r.c) })),
       syncedUsers: Number(syncedRows[0]?.c ?? 0n),
     };
