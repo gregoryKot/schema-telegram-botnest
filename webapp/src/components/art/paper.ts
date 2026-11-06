@@ -11,4 +11,11 @@ export const PAPER = {
   plum: 'var(--c-plum)',
 } as const;
 
+/**
+ * Столбики дня на экране «Готово» трекера (DayBars): бумага полосок Strokes над ними, но без
+ * шалфея — на шалфейном листе экрана он даёт 1.7:1, а столбик — данные (WCAG 1.4.11, нужно 3:1).
+ * К листу oklch(0.915 0.03 135): мох 3.4, сланец 4.1, коричневый 7.6, глина 3.2, слива 4.2.
+ */
+export const BAR_PAPER = [PAPER.moss, PAPER.slate, PAPER.brown, PAPER.clay, PAPER.plum] as const;
+
 export interface ArtProps { size?: 'hero' | 'square' | 'row' | 'empty' }
