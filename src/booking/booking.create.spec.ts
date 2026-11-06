@@ -129,7 +129,9 @@ describe('createBookingGuarded — счётчик «время уже занял
   it('контроль: бронь создана — события нет', async () => {
     const { deps, track } = withAnalytics();
 
-    await createBookingGuarded(deps, {} as any, LEAD);
+    await expect(
+      createBookingGuarded(deps, { clientName: 'x' } as any, LEAD),
+    ).resolves.toEqual({ id: 7, clientName: 'x' });
 
     expect(track).not.toHaveBeenCalled();
   });

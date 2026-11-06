@@ -111,9 +111,10 @@ describe('remindWindow — не больше одного напоминания
       return real(args);
     });
 
-    await remindWindow(d, SOON(), FIELD, 'завтра');
+    await expect(remindWindow(d, SOON(), FIELD, 'завтра')).resolves.toBe(0);
 
     expect(sendAdmin).not.toHaveBeenCalled();
+    expect(table.get(7)?.[FIELD]).toBeNull(); // отменённую не метим
   });
 
   it('контроль: две свежие брони — по напоминанию на каждую, метки стоят', async () => {
