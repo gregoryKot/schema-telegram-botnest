@@ -5,7 +5,7 @@
 // поэтому сверяем строки cabinet.css (приём safeTop.test.ts): класс объявлен,
 // ключевые объявления на месте, цвета — только токенами.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
@@ -229,6 +229,25 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(count).toContain('background: none');
     expect(count).toContain('color: inherit');
     expect(decls(top, '.ds-page > .ds-seg')).toContain('align-self: flex-start');
+  });
+  // Голый ds-seg на телефоне стоит по ширине кнопок рядом с растянутыми соседями
+  // («Клиенты/Задания» над фильтром во всю ширину, «День/Неделя» в истории).
+  it('сегмент в разметке всегда с модификатором --full или --scroll', () => {
+    const roots = [join(__dirname, '..'), join(__dirname, '..', '..', '..', 'shared', 'src')];
+    const bare: string[] = [];
+    let seen = 0;
+    for (const root of roots) {
+      for (const f of readdirSync(root, { recursive: true }) as string[]) {
+        if (!f.endsWith('.tsx') || f.includes('.test.')) continue;
+        for (const [, cls] of readFileSync(join(root, f), 'utf8').matchAll(/['"`]([^'"`\n]*)['"`]/g)) {
+          if (!cls.split(/\s+/).includes('ds-seg')) continue;
+          seen++;
+          if (!/\bds-seg--(full|scroll)\b/.test(cls)) bare.push(`${f}: "${cls}"`);
+        }
+      }
+    }
+    expect(seen).toBeGreaterThanOrEqual(10);
+    expect(bare).toEqual([]);
   });
   it('поля: поиск и компактное, 16px под пальцем (и на iPad), resize: none остаётся', () => {
     expect(decls(top, '.ds-input--search')).toContain('height: 40px');
