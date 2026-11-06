@@ -7,7 +7,8 @@ import { therapistName } from './therapist-name';
 // остаются старые строки (A-3, аудит 2026-10). Клиент: бывшего терапевта здесь
 // нет (backend#33) — о нём говорит former-therapist-info.ts. Клиенту — и дни
 // встреч: ближайшую встречу экраны считают сами (shared upcomingSession), без
-// них прошедшая nextSession висела как «следующая» (2026-10-26).
+// них прошедшая nextSession висела как «следующая» (2026-10-26) — и момент,
+// когда терапевт показал схему случая (`conceptSharedAt`, null — не показал).
 export async function getRelationInfo(
   prisma: PrismaService,
   uid: bigint,
@@ -34,23 +35,49 @@ export async function getRelationInfo(
       meetingDays: [],
     };
   }
+  const asClient = await findClientRelation(prisma, uid);
+  if (!asClient) return null;
+  const therapistId = asClient.therapist?.id ?? null;
+  return {
+    role: 'client',
+    status: 'active',
+    partnerName: therapistName(asClient.therapist),
+    partnerId: therapistId,
+    code: asClient.code,
+    nextSession: asClient.nextSession ?? null,
+    meetingDays: meetingDaysOf(asClient.meetingDays),
+    conceptSharedAt: therapistId
+      ? await conceptSharedAt(prisma, therapistId, uid)
+      : null,
+  };
+}
+
+/**
+ * Активная связь клиента с действующим терапевтом — та, что видна в «Мой
+ * терапевт». Одна на «Мой терапевт» и на схему случая клиента
+ * (concept-share.ts): клиент видит схему того терапевта, что и в карточке.
+ */
+export async function findClientRelation(prisma: PrismaService, uid: bigint) {
   const rows = await prisma.therapyRelation.findMany({
     where: { clientId: uid, status: 'active' },
     include: {
       therapist: { select: { id: true, firstName: true, role: true } },
     },
   });
-  const asClient = rows.find((r) => r.therapist?.role === 'THERAPIST');
-  if (!asClient) return null;
-  return {
-    role: 'client',
-    status: 'active',
-    partnerName: therapistName(asClient.therapist),
-    partnerId: asClient.therapist?.id ?? null,
-    code: asClient.code,
-    nextSession: asClient.nextSession ?? null,
-    meetingDays: meetingDaysOf(asClient.meetingDays),
-  };
+  return rows.find((r) => r.therapist?.role === 'THERAPIST') ?? null;
+}
+
+// Показал ли терапевт схему случая (строка «Схема случая» в «Мой терапевт»).
+async function conceptSharedAt(
+  prisma: PrismaService,
+  therapistId: bigint,
+  clientId: bigint,
+): Promise<Date | null> {
+  const row = await prisma.clientConceptualization.findUnique({
+    where: { therapistId_clientId: { therapistId, clientId } },
+    select: { sharedWithClientAt: true },
+  });
+  return row?.sharedWithClientAt ?? null;
 }
 
 // Json-колонка: доверяем только массиву дней недели 0–6 (0 = Вс), остальное

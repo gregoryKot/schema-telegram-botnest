@@ -605,6 +605,9 @@ model ClientConceptualization {
   modeMapNodes    Json     @default("[]")  // ModeMapNode[] — encrypted JSON
   modeMapEdges    Json     @default("[]")  // ModeMapEdge[] — encrypted JSON
   history         Json     @default("[]")  // ConceptSnapshot[]
+  // Терапевт показал клиенту схему случая (тумблер «Показать клиенту», null — не показана):
+  // клиент видит её в «Мой терапевт» без истоков и задач терапии (src/therapy/client-concept-view.ts).
+  sharedWithClientAt DateTime?
   updatedAt       DateTime @updatedAt
 
   @@unique([therapistId, clientId])
