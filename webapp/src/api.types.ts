@@ -38,7 +38,7 @@ export type NewAvailabilityRule = {
 export interface AdminBooking {
   id: number; startsAt: string; durationMin: number; type: string; status: string;
   clientName: string; clientContact: string; clientChannel?: string | null; message: string | null;
-  cancelToken: string; meetingUrl: string | null;
+  cancelToken: string; meetingUrl: string | null; confirmEffectsDoneAt?: string | null; // null — эффекты подтверждения не доведены
 }
 /** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */
 export interface AdminBookingStatus {
