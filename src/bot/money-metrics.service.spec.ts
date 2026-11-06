@@ -17,7 +17,13 @@ describe('MoneyMetricsService.getMetrics', () => {
       chargeAll: Rows;
       bookingAll: Rows;
     },
-    { withoutLink = 0, paid7 = 0, paidAll = 0 } = {},
+    {
+      withoutLink = 0,
+      paid7 = 0,
+      paidAll = 0,
+      afterCancel7 = 0,
+      afterCancelAll = 0,
+    } = {},
   ) => {
     // window() запускает три groupBy и count оплаченных параллельно, дважды —
     // сначала за 7 дней (this.window(since7)), потом за всё время
@@ -39,10 +45,15 @@ describe('MoneyMetricsService.getMetrics', () => {
       .fn()
       .mockResolvedValueOnce(calls.booking7)
       .mockResolvedValueOnce(calls.bookingAll);
-    // count зовут трое: оплаченные за неделю, оплаченные за всё время и
-    // «застрявшие без ссылки». Различаем по where, а не по порядку вызовов.
+    // count зовут: оплаченные за неделю и за всё время, «застрявшие без
+    // ссылки», оплаченные по отменённым (неделя и всё время). Различаем по
+    // where, а не по порядку вызовов.
     const bookingCount = jest.fn(
       async ({ where }: { where: Record<string, unknown> }) => {
+        if (where.status === 'CANCELLED') {
+          const paidAt = where.paidAt as Record<string, unknown>;
+          return 'gte' in paidAt ? afterCancel7 : afterCancelAll;
+        }
         if (!('OR' in where)) return withoutLink;
         const [byPaidAt] = where.OR as Array<{
           paidAt: Record<string, unknown>;
@@ -238,5 +249,42 @@ describe('MoneyMetricsService.getMetrics', () => {
       ([a]) => 'confirmEffectsDoneAt' in a.where,
     );
     expect(stuckCalls).toHaveLength(1);
+  });
+
+  it('render() подклеивает «оплатили уже отменённую запись» — сохранил в CANCELLED с оплатой → нашёл в отчёте', async () => {
+    const { service } = build(
+      {
+        donation7: EMPTY,
+        charge7: EMPTY,
+        booking7: EMPTY,
+        donationAll: EMPTY,
+        chargeAll: EMPTY,
+        bookingAll: EMPTY,
+      },
+      { paid7: 1, paidAll: 1, afterCancel7: 1, afterCancelAll: 1 },
+    );
+
+    const out = await service.render();
+
+    expect(out).toContain('Оплатили сессию: 1 раз');
+    expect(out).toContain(
+      '⚠️ Оплатили уже отменённую запись за 7 дней: 1 раз (за всё время — 1 раз).',
+    );
+  });
+
+  it('render() на пустой базе — без строки про отменённые', async () => {
+    const { service } = build({
+      donation7: EMPTY,
+      charge7: EMPTY,
+      booking7: EMPTY,
+      donationAll: EMPTY,
+      chargeAll: EMPTY,
+      bookingAll: EMPTY,
+    });
+
+    const out = await service.render();
+
+    expect(out).toContain('Пока никто не платил.');
+    expect(out).not.toContain('отменённую');
   });
 });

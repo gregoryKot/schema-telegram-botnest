@@ -5,7 +5,12 @@ import {
   MoneyMetrics,
   MoneySourceStats,
   MoneyWindow,
+  windowIsEmpty,
 } from './money-metrics.format';
+import {
+  countPaidAfterCancel,
+  formatPaidAfterCancel,
+} from './money-metrics.paid-after-cancel';
 import { countPaidSessions } from './money-metrics.paid-sessions';
 import { renderMoneyBlock } from './money-metrics.without-link';
 
@@ -24,7 +29,16 @@ export class MoneyMetricsService {
 
   /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
-    return renderMoneyBlock(this.prisma, await this.getMetrics());
+    const metrics = await this.getMetrics();
+    const [base, afterCancel] = await Promise.all([
+      renderMoneyBlock(this.prisma, metrics),
+      countPaidAfterCancel(this.prisma),
+    ]);
+    const extra = formatPaidAfterCancel(
+      afterCancel,
+      windowIsEmpty(metrics.allTime),
+    );
+    return [base, ...(extra.length ? ['', ...extra] : [])].join('\n');
   }
 
   async getMetrics(): Promise<MoneyMetrics> {
