@@ -21,13 +21,13 @@ vi.mock('../../api', () => ({
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-// window.confirm — компонент спрашивает подтверждение перед удалением.
+// Ж4 (аудит 2026-08): подтверждение удаления — ConfirmDialog; шпион на
+// window.confirm ловит возврат к нативному диалогу.
 const confirmSpy = vi.fn(() => true);
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal('confirm', confirmSpy);
-  confirmSpy.mockReturnValue(true);
   mockApi.adminListPhrases.mockResolvedValue([
     { id: 1, text: 'Устал – значит устал.', enabled: true },
   ]);
@@ -144,26 +144,48 @@ describe('HealthyAdultSection — строка фразы (сохранить/в
     expect(mockApi.adminUpdatePhrase).toHaveBeenCalledWith('k', 1, { enabled: false });
   });
 
-  it('удаление без подтверждения (confirm=false) фразу НЕ убирает', async () => {
-    confirmSpy.mockReturnValue(false);
+  it('«Отмена» в диалоге фразу НЕ удаляет', async () => {
     render(<HealthyAdultSection adminKey="k" />);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     const row = textarea.closest('section')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
+    const dialog = screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    // Диалог вне карточки: opacity выключенной фразы не ложится на него.
+    expect(row.contains(dialog)).toBe(false);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Отмена' }));
 
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(mockApi.adminDeletePhrase).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
-  it('удаление с подтверждением убирает фразу из списка', async () => {
+  it('подтверждение в диалоге убирает фразу из списка', async () => {
     mockApi.adminDeletePhrase.mockResolvedValue(undefined);
     render(<HealthyAdultSection adminKey="k" />);
     const textarea = await screen.findByDisplayValue('Устал – значит устал.');
     const row = textarea.closest('section')!;
     fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
+    const dialog = screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
 
     await screen.findByText('Активных фраз: 0 / 0');
+    expect(mockApi.adminDeletePhrase).toHaveBeenCalledWith('k', 1);
     expect(screen.queryByDisplayValue('Устал – значит устал.')).toBeNull();
+    expect(confirmSpy).not.toHaveBeenCalled();
+  });
+
+  it('сбой удаления виден в диалоге, фраза остаётся', async () => {
+    mockApi.adminDeletePhrase.mockRejectedValue(new Error('API error: 500'));
+    render(<HealthyAdultSection adminKey="k" />);
+    const textarea = await screen.findByDisplayValue('Устал – значит устал.');
+    const row = textarea.closest('section')!;
+    fireEvent.click(within(row).getByRole('button', { name: 'Удалить' }));
+    const dialog = screen.getByRole('dialog', { name: 'Удалить фразу?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Удалить' }));
+
+    expect((await within(dialog).findByRole('alert')).textContent).toMatch(/Не удалось удалить — фраза на месте/);
+    expect(screen.getByDisplayValue('Устал – значит устал.')).toBeTruthy();
   });
 });
 
