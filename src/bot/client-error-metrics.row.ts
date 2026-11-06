@@ -18,6 +18,7 @@ export interface ClientErrorMetricsRow {
   help_week: bigint;
   cabinet_week: bigint;
   booking_week: bigint;
+  assets_week: bigint;
   other_week: bigint;
   webapp_week: bigint;
   miniapp_week: bigint;
