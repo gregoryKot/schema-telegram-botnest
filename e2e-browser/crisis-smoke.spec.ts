@@ -7,7 +7,7 @@
 // зелёный» и «пользователь видит помощь в кризисе». Терапевтический продукт
 // без доказанного кризисного пути — недопустим (правило №7).
 //
-// Путь до поля: AppShell → раздел «Практика» → каталог «Практики» →
+// Путь до поля: AppShell → раздел «Практики» → каталог «Что питает» →
 // PracticesScreen (components/PracticesScreen.tsx). Выбран как самый
 // стабильный: один явный текстовый инпут с placeholder'ом, без
 // многошаговых упражнений (LetterEx/SafePlaceEx полнее, но требуют пройти
@@ -30,10 +30,10 @@ const NEUTRAL_TEXT = 'вечерняя прогулка 20 минут перед
 
 async function openPracticesCatalog(page: import('@playwright/test').Page) {
   await page.goto('/practice');
-  const catalogItem = page.getByRole('button', { name: /^Практики/ });
+  const catalogItem = page.getByRole('button', { name: /^Что питает/ });
   await catalogItem.waitFor();
   await catalogItem.click();
-  const input = page.getByPlaceholder('Добавить практику...');
+  const input = page.getByPlaceholder('Добавить действие...');
   await input.waitFor();
   return input;
 }
