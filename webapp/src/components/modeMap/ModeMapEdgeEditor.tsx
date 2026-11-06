@@ -2,6 +2,7 @@ import { useState } from 'react';
 import '../../styles/sheet-modemap.css';
 import type { ModeMapEdge, EdgeType } from '../../api';
 import { EditorHead, SegRow, Swatches } from './EditorParts';
+import { MODE_MAP_NODE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 // Панель редактирования связи карты режимов.
 // Вынесено из ModeMapNodeEditor.tsx (правило №10).
@@ -95,7 +96,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
       </div>
 
       <label className="ds-label" htmlFor="mm-edge-label">Подпись (необязательно)</label>
-      <input id="mm-edge-label" className="ds-input"
+      <input id="mm-edge-label" className="ds-input" maxLength={MODE_MAP_NODE_TEXT_MAX}
         value={edge.label ?? ''}
         onChange={e => onChange({ ...edge, label: e.target.value || undefined })}
         placeholder="Текст на стрелке" />

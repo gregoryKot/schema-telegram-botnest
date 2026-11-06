@@ -4,6 +4,8 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { CustomModeDto } from './custom-mode.dto';
 import { CreateModeMapDto, UpdateModeMapDto } from './mode-maps.dto';
+import { stringsWithin } from './strings-within';
+import { MODE_MAP_NODE_TEXT_MAX } from '../../utils/text-limits';
 
 async function errorsFor(
   cls: new () => object,
@@ -49,5 +51,65 @@ describe('UpdateModeMapDto', () => {
     await expect(errorsFor(UpdateModeMapDto, { edges })).resolves.toContain(
       'edges',
     );
+  });
+});
+
+// Карта шлётся целиком на каждое автосохранение: заметка без границы упирала
+// тело в лимит 256 КБ (docs/open/backend.md, аудит 2026-07-20, L2).
+describe('UpdateModeMapDto — строки внутри узлов и связей ограничены', () => {
+  const node = (data: Record<string, unknown>) => ({
+    id: 'n1',
+    type: 'child',
+    position: { x: 0, y: 0 },
+    data: { label: 'Уязвимый Ребёнок', ...data },
+  });
+  const atLimit = 'я'.repeat(MODE_MAP_NODE_TEXT_MAX);
+  const overLimit = `${atLimit}я`;
+
+  it('заметка и ответ Здорового Взрослого ровно на пределе — проходят', async () => {
+    const nodes = [node({ note: atLimit, healthyResponse: atLimit })];
+    await expect(errorsFor(UpdateModeMapDto, { nodes })).resolves.toEqual([]);
+  });
+
+  it('заметка узла длиннее предела — отказ по nodes', async () => {
+    const nodes = [node({ note: overLimit })];
+    await expect(errorsFor(UpdateModeMapDto, { nodes })).resolves.toEqual([
+      'nodes',
+    ]);
+  });
+
+  it('подпись связи длиннее предела — отказ по edges', async () => {
+    const edges = [{ id: 'e1', source: 'a', target: 'b', label: overLimit }];
+    await expect(errorsFor(UpdateModeMapDto, { edges })).resolves.toEqual([
+      'edges',
+    ]);
+  });
+
+  it('неизвестное поле узла не срезается и тоже ограничено', async () => {
+    const nodes = [node({ futureField: { deep: [overLimit] } })];
+    await expect(errorsFor(UpdateModeMapDto, { nodes })).resolves.toEqual([
+      'nodes',
+    ]);
+    const ok = [node({ futureField: { deep: ['short'] }, settle: true })];
+    const dto = plainToInstance(UpdateModeMapDto, { nodes: ok });
+    await expect(validate(dto, { whitelist: true })).resolves.toEqual([]);
+    expect(dto.nodes).toEqual(ok);
+  });
+});
+
+describe('stringsWithin', () => {
+  it('ключ объекта длиннее предела — false', () => {
+    expect(stringsWithin({ [`k${'x'.repeat(10)}`]: 1 }, 10)).toBe(false);
+    expect(stringsWithin({ k: 'x'.repeat(10) }, 10)).toBe(true);
+  });
+
+  it('числа, null, булевы значения и пустые массивы не мешают', () => {
+    expect(stringsWithin([1, null, true, [], {}, undefined], 1)).toBe(true);
+  });
+
+  it('глубокая вложенность не роняет стек', () => {
+    let deep: unknown = 'x'.repeat(11);
+    for (let i = 0; i < 100_000; i++) deep = [deep];
+    expect(stringsWithin(deep, 10)).toBe(false);
   });
 });

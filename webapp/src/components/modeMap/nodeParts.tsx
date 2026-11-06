@@ -5,6 +5,7 @@ import { MMIcon } from '../modeMapIcons';
 import { SchemaPills } from './SchemaPills';
 import { useTr } from '../../utils/addressForm';
 import { fontPx, type ModeNodeData } from './nodeStyle';
+import { MODE_MAP_NODE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 // Общие части фигур карты режимов: тулбар выбранной ноды, бейдж партнёра, ручки
 // соединения и подпись. Вынесены из ModeMapNodes.tsx (правило №10), чтобы фигуры
@@ -130,7 +131,7 @@ export function NodeLabel({ id, data, light, hideSchema }: { id?: string; data: 
     <div style={{ textAlign: 'center', pointerEvents: 'all' }}>
       {editing ? (
         // Переносит строки, как подпись: узкий input прокручивался к концу и прятал начало («язвимый Ребёнок»).
-        <textarea ref={editRef} value={draft} rows={draft.length > 14 ? 2 : 1}
+        <textarea ref={editRef} value={draft} rows={draft.length > 14 ? 2 : 1} maxLength={MODE_MAP_NODE_TEXT_MAX}
           onChange={e => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') setEditing(false); e.stopPropagation(); }}
