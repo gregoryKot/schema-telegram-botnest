@@ -28,6 +28,7 @@ import { api } from '../../api';
 import { ClientConceptTab } from './ClientConceptTab';
 import { useClientDetail } from './useClientDetail';
 import { CONCEPT_SAVE_RETRY_EVENT } from '../../../../shared/src/share/analytics';
+import { ApiError } from '../../apiClient';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -130,5 +131,21 @@ describe('ClientConceptTab: видимое сохранение (#879)', () => {
     expect(CONCEPT_SAVE_RETRY_EVENT).toBe('concept_save_retry');
     expect(statusText()).toMatch(/^✓ Сохранено в \d{2}:\d{2}$/);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+// Находка #880 (docs/open/frontend-ux.md): причину строка называла только для поля
+// длиннее предела; обрыв сети, 5xx и 413 шли голым «Не сохранилось».
+describe('ClientConceptTab: причина отказа сохранения', () => {
+  it.each([
+    ['обрыв сети', new TypeError('Failed to fetch'), 'Не сохранилось. Нет связи с сервером'],
+    ['502 прокси', new ApiError(502, 'API error: 502'), 'Не сохранилось. Сервер не ответил. Повторить можно чуть позже'],
+    ['413 тело больше потолка', new ApiError(413, 'Слишком большой запрос'), 'Не сохранилось. Текст слишком длинный — сервер его не принял. Сохранится, если сократить'],
+  ])('%s — причина в строке статуса, «Повторить» на месте', async (_case, err, text) => {
+    mockApi.saveConceptualization.mockRejectedValueOnce(err);
+    await openTab();
+    fireEvent.click(screen.getByText('Эмоциональная депривация'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(screen.getByRole('alert').textContent).toBe(`${text}Повторить`);
   });
 });

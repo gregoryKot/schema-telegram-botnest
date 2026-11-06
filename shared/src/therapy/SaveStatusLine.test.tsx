@@ -9,6 +9,7 @@ import {
   formatSavedAt,
   savedAtLabel,
   saveStatusText,
+  saveFailureText,
 } from './SaveStatusLine';
 
 afterEach(() => cleanup());
@@ -137,5 +138,24 @@ describe('SaveStatusLine', () => {
     const el = screen.getByRole('status');
     expect(el.className).toBe('x-save');
     expect(el.style.justifyContent).toBe('flex-end');
+  });
+});
+
+// Находка #880: отказ автосохранения по сети и на 5xx шёл без причины — строка
+// говорила только «Не сохранилось». Причина — общим маппером, с тем же словом впереди.
+describe('saveFailureText', () => {
+  const withStatus = (status: number, message: string) => Object.assign(new Error(message), { status });
+
+  it('сеть, авария, длина тела — «Не сохранилось. <причина>»', () => {
+    expect(saveFailureText(new TypeError('Failed to fetch'))).toBe('Не сохранилось. Нет связи с сервером');
+    expect(saveFailureText(withStatus(503, 'API error: 503'))).toBe(
+      'Не сохранилось. Сервер не ответил. Повторить можно чуть позже',
+    );
+    expect(saveFailureText(withStatus(413, 'Слишком большой запрос'))).toMatch(/^Не сохранилось\. Текст слишком длинный/);
+  });
+
+  it('контроль: служебный английский 4xx и ошибка кода — пусто, строка скажет своё «Не сохранилось»', () => {
+    expect(saveFailureText(withStatus(400, 'goals must be shorter'))).toBe('');
+    expect(saveFailureText(new Error('network down'))).toBe('');
   });
 });

@@ -87,6 +87,27 @@ describe('useModeMapAutosave — пока смонтирован, поведен
     }
   });
 
+  // docs/open/backend.md: карта на потолке DTO с заметками упирается в 413 — строка
+  // говорила «Не сохранилось» без причины, повтор не помогал и это было не видно.
+  it('413 — причина в saveError («текст слишком длинный»); служебная ошибка — пусто', async () => {
+    updateModeMap.mockRejectedValueOnce(Object.assign(new Error('Слишком большой запрос'), { status: 413 }));
+    updateModeMap.mockRejectedValueOnce(new Error('network'));
+    const { result } = setup();
+    vi.useFakeTimers();
+    try {
+      act(() => result.current.scheduleSave([node('a')], []));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1300); });
+      expect(result.current.saveStatus).toBe('error');
+      expect(result.current.saveError).toMatch(/^Не сохранилось\. Текст слишком длинный/);
+
+      await act(async () => { result.current.retry(); });
+      expect(result.current.saveStatus).toBe('error');
+      expect(result.current.saveError).toBe(''); // контроль: причина не залипает от прошлого отказа
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('retry при взведённом таймере отменяет его: ровно один вызов api', async () => {
     const { result } = setup();
     vi.useFakeTimers();

@@ -3,7 +3,7 @@ import { api, reportClientError, type ClientConceptualization, type UserId } fro
 import { conceptSaveBody, type ConceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
 import { conceptOverLimitField, conceptOverLimitText } from '../../../../shared/src/therapy/conceptOverLimit';
 import { usePendingSave } from '../../../../shared/src/utils/usePendingSave';
-import type { SaveStatus } from '../../../../shared/src/therapy/SaveStatusLine';
+import { saveFailureText, type SaveStatus } from '../../../../shared/src/therapy/SaveStatusLine';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import { useTr } from '../../utils/addressForm';
 import { useConceptAppended } from '../modeMap/conceptAppendedEvent';
@@ -17,7 +17,7 @@ const SECTION = 'therapist.clientDetail';
 // а тело — из рефа следующего клиента; теперь id и тело запоминаются вместе (shared usePendingSave): при смене
 // клиента правка уходит прежнему с ЕГО данными, при уходе со страницы — keepalive-досылкой, поздний ответ чужую
 // карточку не трогает. Статус — для `SaveStatusLine` (#879): «✓ Сохранено в ЧЧ:ММ» не гаснет до следующей правки,
-// отказ — 'error' с «Повторить» (`retrySave`); `conceptError` — причина отказа (поле длиннее предела), иначе пусто.
+// отказ — 'error' с «Повторить» (`retrySave`); `conceptError` — причина отказа (поле длиннее предела, сеть, сервер).
 export function useConceptAutosave(openClientIdRef: { readonly current: UserId | null }) {
   const tr = useTr();
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
@@ -45,13 +45,13 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
       setConceptError('');
       setSavedAt(saved.updatedAt ? new Date(saved.updatedAt) : new Date());
       setSaveStatus('saved'); // не гаснет: «✓ Сохранено в ЧЧ:ММ» висит до следующей правки (issue #879, шаг A)
-    } catch {
+    } catch (e) {
       // Карточка уже другого клиента или закрыта — показать отказ негде, но молчать нельзя.
       if (leaving || !isOpen(clientId)) reportClientError({ message: 'concept save failed after leaving the client', section: SECTION });
       if (!isOpen(clientId)) return;
       setSaveStatus('error'); // «Не сохранилось» и «Повторить» рисует SaveStatusLine
       const over = conceptOverLimitField(body);
-      setConceptError(over ? conceptOverLimitText(over, tr) : '');
+      setConceptError(over ? conceptOverLimitText(over, tr) : saveFailureText(e)); // иначе причина — сеть, 5xx, 413
     }
   }
 

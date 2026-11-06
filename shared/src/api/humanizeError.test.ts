@@ -13,6 +13,7 @@ import {
   NO_CONNECTION_TEXT,
   SERVER_DOWN_TEXT,
   TOO_MANY_TEXT,
+  TOO_LARGE_TEXT,
 } from './humanizeError';
 
 const res = (body: string, status: number) => new Response(body, { status });
@@ -87,6 +88,14 @@ describe('readHumanError — разбор настоящего ответа', ()
     expect((await readHumanError(r, FALLBACK)).message).toBe(FALLBACK);
   });
 
+  // Находка 2026-11 (docs/open/backend.md): 413 нигде не разбирался — дневник
+  // длиннее потолка тела показывал общее «не сохранилось». Тело — то, что
+  // отдаёт GenericExceptionFilter (src/prisma/prisma-exception.filter.ts).
+  it('413 — «текст слишком длинный», хотя сервер ответил по-русски', async () => {
+    const r = res('{"statusCode":413,"message":"Слишком большой запрос"}', 413);
+    expect((await readHumanError(r, FALLBACK)).message).toBe(TOO_LARGE_TEXT);
+  });
+
   it('reason сервера сохраняется рядом с текстом', async () => {
     const r = res(
       '{"message":"Source account requires 2FA","reason":"source_totp_required"}',
@@ -147,5 +156,34 @@ describe('humanizeThrown', () => {
     ).toBe(FALLBACK);
     expect(humanizeThrown('строка', FALLBACK)).toBe(FALLBACK);
     expect(humanizeThrown(undefined, FALLBACK)).toBe(FALLBACK);
+  });
+});
+
+// Ошибка клиента API со статусом полем (`ApiError` сайта, `HttpStatusError`
+// оценки): автосохранение и экраны на api.* получают тот же разбор, что и
+// экраны с голым fetch (находка #880: концептуализация молчала о причине).
+class StatusError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+describe('humanizeThrown — ошибка со статусом', () => {
+  it('5xx — «сервер не ответил», 429 — лимит, 413 — «текст слишком длинный»', () => {
+    expect(humanizeThrown(new StatusError(502, 'API error: 502'), FALLBACK)).toBe(SERVER_DOWN_TEXT);
+    expect(humanizeThrown(new StatusError(429, 'ThrottlerException'), FALLBACK)).toBe(TOO_MANY_TEXT);
+    expect(humanizeThrown(new StatusError(413, 'Слишком большой запрос'), FALLBACK)).toBe(TOO_LARGE_TEXT);
+  });
+
+  it('4xx: русский текст сервера — как есть, служебный английский — fallback', () => {
+    expect(humanizeThrown(new StatusError(400, 'Код не найден или истёк'), FALLBACK)).toBe('Код не найден или истёк');
+    expect(humanizeThrown(new StatusError(400, 'text must be a string'), FALLBACK)).toBe(FALLBACK);
+  });
+
+  it('контроль: нечисловой status — не статус ответа', () => {
+    const odd = Object.assign(new Error('boom'), { status: '500' });
+    expect(humanizeThrown(odd, FALLBACK)).toBe(FALLBACK);
   });
 });
