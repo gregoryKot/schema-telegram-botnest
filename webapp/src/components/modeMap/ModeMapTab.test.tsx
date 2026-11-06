@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Вкладка «Карта режимов»: на телефоне — строка «на компьютере» вместо холста,
+// Вкладка «Графические карты»: на телефоне — строка «на компьютере» вместо холста,
 // на компьютере — селектор карт (владелец 2026-11-05).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
@@ -20,6 +20,7 @@ describe('ModeMapTab', () => {
   it('телефон: вместо холста — подсказка открыть на компьютере, селектор не монтируется', () => {
     renderAt(390);
     expect(screen.getByText(MODE_MAP_DESKTOP_ONLY)).toBeTruthy();
+    expect(MODE_MAP_DESKTOP_ONLY).toMatch(/^Графические карты открываются на компьютере или планшете/);
     expect(screen.queryByTestId('selector')).toBeNull();
   });
 

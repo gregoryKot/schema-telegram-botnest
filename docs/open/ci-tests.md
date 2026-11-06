@@ -333,8 +333,46 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   мини-апп удалён (#917), а скрипт `src/app.module.ts` не читает (`grep app.module
   scripts/check-deploy-paths.mjs` пуст).
 
+**Вторая ОС в nightly — находки при добавлении `macos-build`** (2026-11-05, #938):
+- **Локальный `vitest` в `webapp` на Mac краснеет от нагрузки машины, не от регистра** (проверка
+  критерия #933, 2026-11-05). После #933 `vite build`, `tsc -p webapp/tsconfig.app.json` и
+  `check-filename-case` на macOS зелёные, nightly `macos-build` зелёный дважды за день, а `npx vitest
+  run` в `webapp` на машине владельца при load average 55–77 на 8 ядрах (jest-воркеры другого проекта и
+  `tsc -b` главного дерева) дал 2, 17 и 11 красных тестов в трёх прогонах — каждый раз разные файлы,
+  все красные файлы в одиночку зелёные (10 файлов, 57/57; `shared` — 3 файла, 53/53). Измеренная
+  механика на `HistorySheet.test.tsx`: `waitFor` testing-library ждёт 1 с, а холодный первый импорт
+  ленивого чанка на загруженной машине дольше (`HistoryView` 1,4 с, `TrackerOverlay` 2,1 с; тёплый —
+  1 мс), `testTimeout: 10000` в `vite.config.ts` на это не влияет. Чинить: `asyncUtilTimeout` в
+  `src/test-support/rtlCleanup.ts` (настоящая поломка падает так же, медленный импорт — нет) или прогрев
+  ленивых чанков в setup; до этого локальный красный vitest на Mac — повод перегнать красные файлы в
+  одиночку, а не доказательство поломки. Отдельно: `node_modules` worktree отставали от лок-файла
+  (vitest 4.1 при 5.0 в `package-lock`), `npm ci` в `shared/` и `webapp/` картину не изменил.
+- **`precheck` в worktree красный на `check-unwatched-code.mjs` из-за остатка `schema-miniapp/node_modules`**
+  (2026-11-05, при проверке #933). После #917 каталог `schema-miniapp/` удалён из репозитория вместе со
+  строкой в `.gitignore`, но на машине владельца в главном дереве и в worktree остались его
+  `node_modules` (13 099 файлов) — теперь это неотслеживаемые и неигнорируемые файлы. `precheck-tree.mjs`
+  переносит неотслеживаемое в чистое дерево и делает `git add -A`, `git ls-files` там превышает 1 МиБ, и
+  `check-unwatched-code.mjs` (`execFileSync('git', ['ls-files'])` без `maxBuffer`) падает с ENOBUFS
+  вместо внятного сообщения; в рабочем дереве тот же гейт зелёный (125 файлов). Чинить: `maxBuffer`
+  у `git ls-files` в гейте (как в `check-filename-case.mjs`, 64 МиБ) и строка `schema-miniapp/` в
+  `.gitignore` или `rm -rf schema-miniapp` на машине владельца; остальные 51 гейт precheck зелёные.
+- **Ещё образец того же класса — `webapp/src/sections/SchemasSection.customize.test.tsx`** (найдено в #958,
+  2026-11-05): случай «шестерёнка открывает лист с двумя блоками» падает с `Unable to find role="dialog"
+  and name "Настроить экран"` через ~2,5 с при прогоне каталога `src/sections/schemas` с соседями и на
+  чистом `origin/main` (b5095427c) даже в одиночном прогоне; в ветке в одиночном прогоне зелёный. Тот же
+  холодный импорт ленивого листа `Suspense`; лечится тем же `asyncUtilTimeout` из записи выше.
+
 **Pre-push хук собирает только `webapp`** (2026-11-05, осознанно): `scripts/git-hooks/pre-push`
 гоняет `tsc -b && vite build` сайта — то, что ломалось только на машине владельца (регистр имён,
 #933); `tsc` бэкенда, vitest `webapp`/`shared` и остальные сьюты остаются работой CI — в хуке они
 удвоили бы время каждого пуша, а класс «зелено в CI, красно у владельца» для них не наблюдался.
 Появится — расширять хук, не возвращать `--no-verify`.
+
+**Хук `PreToolUse` в `.claude/settings.local.json` собирает `webapp` главного дерева, а не пушимого**
+(2026-11-06, при #959): файл локальный (не в git; копия и в `.claude/worktrees/*/.claude/settings.local.json`),
+на любую Bash-команду с `git commit|push` гоняет `cd /Users/gregory/telegram-bot-2/webapp && npm run build` —
+главное дерево стоит на чужой ветке (`feat/graphic-maps`), и команда из worktree блокируется или проходит по
+её состоянию, не по своему (2026-11-06 блокировал при зелёном pre-push хуке worktree); зелёный там только
+благодаря локальному `webapp/.env` с `VITE_BOT_USERNAME`, которого в worktree нет. С хуком в репозитории
+(`scripts/git-hooks/pre-push`) он лишний: убрать из обоих `settings.local.json` или собирать
+`$(git rev-parse --show-toplevel)/webapp` с переменной.

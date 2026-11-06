@@ -126,10 +126,10 @@ export const THERAPY_RULES: Rule[] = [
       ALL_TASKS,
     ],
   },
-  // Список клиентов несёт схемы из концептуализации (getClients, schemaIds).
+  // Список клиентов несёт схемы из концептуализации (getClients); /append — холст.
   {
     method: 'POST',
-    pattern: /^\/api\/therapy\/conceptualization\/(-?\d+)$/,
+    pattern: /^\/api\/therapy\/conceptualization\/(-?\d+)(?:\/append)?$/,
     targets: (m) => [`${T}/conceptualization/${m[1]}`, CLIENTS],
   },
   // Карты режимов (ModeMapSelector, «Открыть на холсте»): без строки новая

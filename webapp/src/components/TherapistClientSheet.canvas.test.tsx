@@ -60,7 +60,7 @@ beforeEach(() => {
   mockApi.getClientModeNotes.mockResolvedValue([]);
   mockApi.getTherapyClientHistory.mockResolvedValue([]);
   mockApi.getClientDiary.mockResolvedValue([]);
-  mockApi.createModeMap.mockResolvedValue({ id: 55, title: 'x', kind: 'personality' });
+  mockApi.createModeMap.mockResolvedValue({ id: 55, title: 'x', kind: 'concept' });
   mockApi.updateModeMap.mockResolvedValue({});
 });
 afterEach(() => cleanup());
@@ -71,7 +71,7 @@ function Wrapper() {
 }
 
 describe('TherapistClientSheet — «Открыть на холсте»', () => {
-  it('создаёт карту, переключает на «Карту режимов» и просит селектор открыть именно её', async () => {
+  it('создаёт карту, переключает на «Графические карты» и просит селектор открыть именно её', async () => {
     render(<Wrapper />);
     fireEvent.click(await screen.findByText('Анна'));
     await screen.findByText('Обзор');

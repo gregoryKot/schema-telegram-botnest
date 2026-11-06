@@ -60,6 +60,7 @@
 Кабинет терапевта: связь терапевт↔клиент (код-приглашение, виртуальные офлайн-клиенты), заметки по сессиям, концептуализация, карты режимов, задания клиенту, заявка на роль терапевта (`therapist-request.*`).
 - Входы:
   - `src/therapy/therapy-relations.service.ts` — связи; `assertHasClient`/`assertRelation` (барьер доступа)
+  - `src/therapy/concept-store.ts` — запись концептуализации с шифрованием и снимком истории (общий путь `saveConceptualization` и append); `src/therapy/concept-append.ts` + `concept-append.controller.ts` — `POST conceptualization/:clientId/append`: холст «Графических карт» дописывает режимы, схемы и связи, объединение без удалений (#963)
   - `src/therapy/client-map-authors.ts` — кого из авторов карт режимов клиент видит: связь `active` или `ended` (терапевт отказался от роли, #865); отключился сам — карт нет
   - `src/therapy/therapy-connection.controller.ts` — invite/join/relation/former-therapist/clients/request/become-therapist/therapist-role
   - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`

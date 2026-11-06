@@ -123,7 +123,7 @@ export interface ModeMapEdge {
   data?: { edgeType?: EdgeType; bidirectional?: boolean; color?: string; lineStyle?: LineStyle; width?: 'thin' | 'normal' | 'bold' };
 }
 
-export type ModeMapKind = 'personality' | 'problem' | 'couple';
+export type ModeMapKind = 'concept' | 'personality' | 'problem' | 'couple' | 'free';
 
 export interface ModeMapMeta {
   id: number;

@@ -2,7 +2,7 @@
 // T-11 (QA 2026-11): после перехода кнопкой с «Обзора» активная вкладка должна
 // оказаться в видимой части полосы. До правки полоса не прокручивалась.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ClientTabs } from './ClientTabs';
 import type { ClientDetail, ClientTab } from './clientSheetTypes';
 
@@ -24,5 +24,15 @@ describe('ClientTabs', () => {
     const last = scrollIntoView.mock.instances[scrollIntoView.mock.instances.length - 1] as HTMLElement;
     expect(last.textContent).toContain('Схемы');
     expect(scrollIntoView).toHaveBeenLastCalledWith(expect.objectContaining({ inline: 'center', block: 'nearest' }));
+  });
+
+  it('вкладка холстов — «Графические карты» между «Концептуализацией» и «Сессиями» (#963)', () => {
+    const detail = detailWith('overview');
+    render(<ClientTabs detail={detail} />);
+    const names = screen.getAllByRole('tab').map(t => t.textContent);
+    expect(names.slice(1, 4)).toEqual(['Концептуализация', 'Графические карты', 'Сессии']);
+    expect(screen.queryByRole('tab', { name: 'Карта режимов' })).toBeNull();
+    fireEvent.click(screen.getByRole('tab', { name: 'Графические карты' }));
+    expect(detail.setClientTab).toHaveBeenCalledWith('mode_map');
   });
 });

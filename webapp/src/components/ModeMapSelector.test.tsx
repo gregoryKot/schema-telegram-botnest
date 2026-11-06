@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-// ModeMapSelector — вкладки карт режимов клиента (3% покрытия). Сам
+// ModeMapSelector — графические карты клиента (3% покрытия). Сам
 // ModeMapEditor мокаем стабом (он тяжёлый, xyflow-based и уже отдельно
 // покрыт своими тестами) — здесь проверяем логику самого селектора: список
 // карт, создание/переименование/удаление, выбор типа новой карты, пустое
-// состояние.
+// состояние. Типы карт и сборка «Концептуализации» — ModeMapSelector.kinds.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -29,8 +29,10 @@ const getModeMap = vi.fn();
 const createModeMap = vi.fn();
 const deleteModeMap = vi.fn();
 const updateModeMap = vi.fn();
+const getConceptualization = vi.fn();
 vi.mock('../api', () => ({
   api: {
+    getConceptualization: (...a: unknown[]) => getConceptualization(...a),
     listModeMaps: (...a: unknown[]) => listModeMaps(...a),
     getModeMap: (...a: unknown[]) => getModeMap(...a),
     createModeMap: (...a: unknown[]) => createModeMap(...a),
@@ -64,6 +66,7 @@ function full(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getConceptualization.mockResolvedValue(null);
 });
 afterEach(() => cleanup());
 
@@ -77,8 +80,8 @@ describe('ModeMapSelector — пустое состояние', () => {
     await act(async () => {
       render(<ModeMapSelector clientId={1} />);
     });
-    expect(screen.getByText('Нет карт режимов')).toBeTruthy();
-    expect(screen.getByText('Карта личности')).toBeTruthy();
+    expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
+    expect(screen.getByText('Карта режимов')).toBeTruthy();
     expect(screen.getByText('Карта ситуации')).toBeTruthy();
     expect(screen.getByText('Карта пары')).toBeTruthy();
   });
@@ -108,15 +111,15 @@ describe('ModeMapSelector — пустое состояние', () => {
 
   it('клик по типу карты в пустом состоянии создаёт и открывает её', async () => {
     listModeMaps.mockResolvedValue([]);
-    createModeMap.mockResolvedValue(full(9, 'Карта личности', 'personality'));
+    createModeMap.mockResolvedValue(full(9, 'Карта режимов', 'personality'));
     await act(async () => {
       render(<ModeMapSelector clientId={1} />);
     });
-    expect(screen.getByText('Нет карт режимов')).toBeTruthy();
-    fireEvent.click(screen.getByText('Карта личности'));
+    expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
+    fireEvent.click(screen.getByText('Карта режимов'));
     expect(createModeMap).toHaveBeenCalledWith(
       1,
-      'Карта личности',
+      'Карта режимов',
       'personality',
     );
     await waitFor(() =>
@@ -361,6 +364,6 @@ describe('ModeMapSelector — загрузка', () => {
 
     await act(async () => { done([]); });
     expect(screen.queryByTestId('mm-skeleton')).toBeNull();
-    expect(screen.getByText('Нет карт режимов')).toBeTruthy();
+    expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
   });
 });

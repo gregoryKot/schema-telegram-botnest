@@ -200,6 +200,10 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
       () => c1.get(`/api/therapy/mode-maps/${C1_ID}`),
       () => c1.get('/api/therapy/tasks/all'),
       () => c1.get('/api/therapy/custom-modes'),
+      () =>
+        c1.post(`/api/therapy/conceptualization/${C1_ID}/append`, {
+          modeIds: ['x'],
+        }),
     ];
     for (const call of asTherapistOnly) {
       const res = await call();
@@ -248,6 +252,45 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
         (n: { text: string }) => n.text === 'заметка от чужого терапевта',
       ),
     ).toBe(false);
+  });
+
+  // ─── Сценарий 5а: «дописать с холста» (#963) — только свой клиент ────────
+
+  it('T1 дописывает в концептуализацию C1 с холста → GET находит, прежнее на месте', async () => {
+    const t1 = agentAs(T1);
+    const res = await t1.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      {
+        modeIds: ['vulnerable_child'],
+        modeLinks: [
+          { modeId: 'punitive_critic', schemaIds: ['defectiveness'] },
+        ],
+      },
+    );
+    expect(res.status).toBeLessThan(300);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.schemaIds).toEqual(['abandonment', 'defectiveness']);
+    expect(got.body.modeIds).toEqual(['vulnerable_child', 'punitive_critic']);
+    expect(got.body.earlyExperience).toBe('ранний опыт клиента');
+  });
+
+  it('T2 без связи с C1 не может дописать в концептуализацию — 403, строк не прибавилось', async () => {
+    const t2 = agentAs(T2);
+    const res = await t2.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      { modeIds: ['angry_child'], schemaIds: ['mistrust'] },
+    );
+    expect(res.status).toBe(403);
+    expect(JSON.stringify(res.body)).not.toContain('abandonment');
+    const rows = await prisma.clientConceptualization.findMany({
+      where: { clientId: C1 },
+    });
+    expect(rows.map((r) => r.therapistId)).toEqual([T1]);
+    // Концептуализация T1 не пополнилась чужим режимом.
+    const got = await agentAs(T1).get(
+      `/api/therapy/conceptualization/${C1_ID}`,
+    );
+    expect(got.body.modeIds).not.toContain('angry_child');
   });
 
   // ─── Сценарий 6: задачи не текут между терапевтами ────────────────────────

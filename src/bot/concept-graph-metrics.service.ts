@@ -4,20 +4,12 @@ import type { AnalyticsEventName } from '../analytics/analytics.constants';
 import { formatConceptGraphMetrics } from './concept-graph-metrics.format';
 import type { ConceptGraphMetrics } from './concept-graph-metrics.types';
 
-// Типизированные имена: опечатка не даст молча пустой отчёт (сверка с allow-list).
 const OPEN_EVENT: AnalyticsEventName = 'concept_graph_open';
-const LINKED_EVENT: AnalyticsEventName = 'concept_mode_linked';
-const SCHEMA_LINKED_EVENT: AnalyticsEventName = 'concept_schema_linked';
-const CANVAS_EVENT: AnalyticsEventName = 'concept_canvas_open';
-const FULLSCREEN_EVENT: AnalyticsEventName = 'concept_graph_fullscreen';
-const SAVE_RETRY_EVENT: AnalyticsEventName = 'concept_save_retry';
-const BRIEF_EVENT: AnalyticsEventName = 'concept_brief_open';
 
-// Счётчики графической концептуализации в кабинете терапевта для /stats: открыл схему
-// случая, заполнил связи, записал тексты схемы, перенёс на холст, развернул на весь экран,
-// повторял сохранение после ошибки
-// (события concept_* из AnalyticsEvent). Без сырого SQL — count/groupBy через Prisma (групп
-// немного). Свой домен — свой файл (правило №10), образец — profile-pattern-metrics.service.ts.
+// Счётчики графической концептуализации в кабинете терапевта для /stats (события concept_*
+// из AnalyticsEvent, смысл — src/analytics/concept-events.constants.ts). Имена типизированы
+// AnalyticsEventName: опечатка не даст молча пустой отчёт. Без сырого SQL — count/groupBy через
+// Prisma. Свой домен — свой файл (правило №10), образец — profile-pattern-metrics.service.ts.
 @Injectable()
 export class ConceptGraphMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -40,6 +32,8 @@ export class ConceptGraphMetricsService {
       fullscreen,
       saveRetry,
       brief,
+      syncToMap,
+      syncFromMap,
     ] = await Promise.all([
       countOf(OPEN_EVENT),
       // Одна группа на терапевта; анонимная строка (userId null) терапевтом
@@ -48,12 +42,14 @@ export class ConceptGraphMetricsService {
         by: ['userId'],
         where: { name: OPEN_EVENT, createdAt, userId: { not: null } },
       }),
-      countOf(LINKED_EVENT),
-      countOf(SCHEMA_LINKED_EVENT),
-      countOf(CANVAS_EVENT),
-      countOf(FULLSCREEN_EVENT),
-      countOf(SAVE_RETRY_EVENT),
-      countOf(BRIEF_EVENT),
+      countOf('concept_mode_linked'),
+      countOf('concept_schema_linked'),
+      countOf('concept_canvas_open'),
+      countOf('concept_graph_fullscreen'),
+      countOf('concept_save_retry'),
+      countOf('concept_brief_open'),
+      countOf('concept_sync_to_map'),
+      countOf('concept_sync_from_map'),
     ]);
     return {
       opens30: opens,
@@ -64,6 +60,8 @@ export class ConceptGraphMetricsService {
       fullscreen30: fullscreen,
       saveRetry30: saveRetry,
       brief30: brief,
+      syncToMap30: syncToMap,
+      syncFromMap30: syncFromMap,
     };
   }
 }

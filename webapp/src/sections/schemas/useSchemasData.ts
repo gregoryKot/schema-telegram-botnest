@@ -1,7 +1,7 @@
 // Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс теста, число карт режимов от терапевта и сохранение ручных выборов.
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY, cacheMySchemaIds, cacheMyModeIds } from '../../utils/storageKeys';
+import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY, cacheMySchemaIds, cacheMyModeIds, cacheMyPatternsFromProfile } from '../../utils/storageKeys';
 import { readLocalIds, type YsqScore } from './schemasModel';
 import { useSaveFailure } from '../../hooks/useSaveFailure';
 import { useYsqProgressListener, useYsqResultVersion } from '../../../../shared/src/hooks/ysqProgressStore';
@@ -37,9 +37,8 @@ export function useSchemasData() {
       const serverSchemas = Array.isArray(p?.mySchemaIds) ? p.mySchemaIds : [];
       const serverModes = Array.isArray(p?.myModeIds) ? p.myModeIds : [];
       setManualSchemaIds(serverSchemas);
-      if (serverSchemas.length > 0) cacheMySchemaIds(serverSchemas);
       setMyModeIds(serverModes);
-      if (serverModes.length > 0) cacheMyModeIds(serverModes);
+      if (p) cacheMyPatternsFromProfile(p); // пустой список с сервера — тоже правда (#939)
       setYsqSchemaIds(Array.isArray(p?.ysq?.activeSchemaIds) ? p.ysq.activeSchemaIds : []);
       setYsqCompletedAt(p?.ysq?.completedAt ?? null);
       // Баллы — из последнего прохождения YSQ.

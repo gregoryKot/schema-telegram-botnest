@@ -134,21 +134,21 @@ export type AccountLinkFailReason = 'expired' | 'error';
 export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
 export type ProfilePatternKind = 'schema' | 'mode';
 
-// Графическая концептуализация в кабинете терапевта (оба фронтенда): открыл схему случая, заполнил
-// связи режима (схемы, потребности, истоки) или записал убеждение / опыт схемы. Без меты (правило №7:
-// текста и id клиента нет). Шлёт их литералами useConceptGraphTracking (так их видит трипваер
-// analytics-sync), константы сверяет тест хука. Allow-list — src/analytics/concept-events.constants.ts.
+// Графическая концептуализация в кабинете терапевта. Без меты (правило №7); имя в api.trackEvent — строковым литералом,
+// так их видит трипваер analytics-sync. Смысл и место каждого — allow-list src/analytics/concept-events.constants.ts.
+// Первые три (схема случая, связи режима, тексты схемы) шлёт useConceptGraphTracking, константы сверяет тест хука.
 export const CONCEPT_GRAPH_OPEN_EVENT = 'concept_graph_open';
 export const CONCEPT_MODE_LINKED_EVENT = 'concept_mode_linked';
 export const CONCEPT_SCHEMA_LINKED_EVENT = 'concept_schema_linked';
-// Только сайт: перенос на холст (шлёт useOpenConceptCanvas) и разворот на весь экран (ClientConceptGraph, литералом).
+// Только сайт: карта из концептуализации (useOpenConceptCanvas, выбор типа «Концептуализация») и разворот на весь экран.
 export const CONCEPT_CANVAS_OPEN_EVENT = 'concept_canvas_open';
 export const CONCEPT_GRAPH_FULLSCREEN_EVENT = 'concept_graph_fullscreen';
-// Три места, оба фронтенда: «Повторить» в строке статуса сохранения (SaveStatusLine) после ошибки — вкладка сайта
-// (useClientDetail), холст (useModeMapAutosave) и кнопка мини-аппа (ConceptSaveBar). Шлётся литералом (трипваер analytics-sync).
+// «Повторить» после ошибки сохранения (SaveStatusLine): вкладка сайта, холст, кнопка мини-аппа. «Главное» — ConceptBriefButton.
 export const CONCEPT_SAVE_RETRY_EVENT = 'concept_save_retry';
-// Только сайт: открыл экран «Главное» (кнопка в шапке вкладки; шлёт ConceptBriefButton литералом).
 export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
+// Строка связи над холстом «Графических карт» (#963): «Добавить на карту» (поля → холст) и запись с холста в поля.
+export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
+export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
 
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает

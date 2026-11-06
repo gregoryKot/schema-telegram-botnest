@@ -8,7 +8,7 @@ export function ClientTabs({ detail }: { detail: ClientDetail }) {
   const tabs: [ClientTab, string, number | null][] = [
     ['overview', 'Обзор', null],
     ['concept', 'Концептуализация', null],
-    ['mode_map', 'Карта режимов', null],
+    ['mode_map', 'Графические карты', null],
     ['sessions', 'Сессии', notesPage.total],
     ['tasks', 'Задания', clientTasks.length],
     ['ysq', 'Схемы', clientData?.ysqHistory?.length ?? 0],
