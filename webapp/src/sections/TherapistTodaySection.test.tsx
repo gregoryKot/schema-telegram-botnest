@@ -91,11 +91,11 @@ describe('TherapistTodaySection — реальные данные клиенто
     expect(list.getAttribute('style')).toBeNull();
   });
 
-  it('клиентов без clientAlias/name показывает как "#telegramId" — не пустую строку', async () => {
+  it('клиента без clientAlias/name подписывает «Без имени · id» — не пустой строкой', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 555, name: null, clientAlias: null })]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getAllByText('#555').length).toBeGreaterThanOrEqual(1));
+    await waitFor(() => expect(screen.getAllByText('Без имени · 555').length).toBeGreaterThanOrEqual(1));
   });
 
   // QA 2026-11: имя в сетке строки — в колонке .tt-who (min-width: 0,

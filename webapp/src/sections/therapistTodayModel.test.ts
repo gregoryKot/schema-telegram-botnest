@@ -5,7 +5,7 @@ import type { TherapyClientSummary } from '../api';
 import { clientCaption } from '../components/therapist/rosterModel';
 import {
   activityStatus, daysSinceActive, hasSessionToday, latestIndex, needsAttention,
-  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, trackedClients, clientName,
+  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, trackedClients,
 } from './therapistTodayModel';
 
 // 12:00 UTC 15 октября 2026 — четверг (4) во всех зонах прогона CI.
@@ -26,11 +26,6 @@ function c(o: Partial<TherapyClientSummary> = {}): TherapyClientSummary {
 }
 
 describe('therapistTodayModel', () => {
-  it('имя: алиас важнее имени, иначе #id', () => {
-    expect(clientName(c({ clientAlias: 'А', name: 'Б' }))).toBe('А');
-    expect(clientName(c({ name: null }))).toBe('#1');
-  });
-
   it('daysSinceActive — значение сервера (календарь клиента), без пересчёта от «сейчас»', () => {
     expect(daysSinceActive(c())).toBeNull();
     expect(daysSinceActive(c({ lastActiveDate: '2026-10-01' }))).toBeNull(); // старый кэш без поля

@@ -91,12 +91,13 @@ describe('SidebarClients', () => {
     expect(search()).toBeTruthy();
   });
 
-  it('инициалы — первые буквы двух слов; без имени — «#»; ссылка ведёт в карточку', () => {
+  it('инициалы — первые буквы двух слов; без имени — «?» и «Без имени · id»; ссылка ведёт в карточку', () => {
     const anna = client({ name: 'Анна Крылова' });
     const noName = client({ name: null });
-    renderSidebar([anna, noName]);
+    renderSidebar([noName, anna]);
     const avatars = Array.from(document.querySelectorAll('.sb-client-av')).map((el) => el.textContent);
-    expect(avatars).toEqual(['#', 'АК']); // без имени сортируется как пустая строка — первым
+    expect(avatars).toEqual(['АК', '?']); // порядок — по видимой подписи: «Анна…», «Без имени…»
+    expect(screen.getByText(`Без имени · ${noName.telegramId}`)).toBeTruthy();
     expect(screen.getByText('Анна Крылова').closest('a')?.getAttribute('href')).toBe(`/cabinet/${anna.telegramId}`);
   });
 

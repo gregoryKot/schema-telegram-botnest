@@ -72,6 +72,3 @@ export function schemaChips(schemaIds: string[]): SchemaChip[] {
   );
 }
 
-/** Имя клиента для карточки: алиас → имя → ID. */
-export const rosterName = (c: TherapyClientSummary): string =>
-  c.clientAlias ?? c.name ?? `ID ${c.telegramId}`;
