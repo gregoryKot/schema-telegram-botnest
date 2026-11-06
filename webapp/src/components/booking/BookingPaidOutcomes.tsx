@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { reportClientError } from '../../api';
 import { CANCEL_SUPPORT_LINK, CANCEL_SUPPORT_HANDLE } from './cancelPolicy';
 import { h1, sub } from './bookingPageStyles';
 import { icon, ghostBtn } from './bookingPaidStyles';
@@ -19,8 +21,33 @@ export function BookingPaidAccepted() {
   );
 }
 
-/** Ссылка управления записью из письма/.ics, а не возврат с оплаты. */
-const isManageLink = () => window.location.pathname.startsWith('/booking/manage');
+/** Ссылка управления записью (календарь, .ics, «Отправить себе»), а не возврат с оплаты. */
+export const isManageLink = () => window.location.pathname.startsWith('/booking/manage');
+
+/**
+ * /booking/manage без ?token=: ссылку обрезал мессенджер или страницу
+ * перезагрузили (BookingPaidPage убирает токен из адреса после открытия).
+ * «Оплата принята» тут — неправда: человек пришёл не с оплаты (аудит 2026-10).
+ * Отчёт наверх (правило №14): если битые ссылки раздаём мы сами (.ics,
+ * Google Календарь), об этом скажет /stats, а не клиент.
+ */
+export function BookingManageLinkIncomplete() {
+  useEffect(() => {
+    reportClientError({ message: 'booking manage page: ссылка управления открыта без токена', section: 'booking' });
+  }, []);
+  return (
+    <>
+      <div style={icon}>?</div>
+      <h1 style={h1}>Ссылка неполная</h1>
+      <p style={sub}>
+        В адресе не хватает кода записи — так бывает, если мессенджер обрезал ссылку или страницу перезагрузили.
+        Откройте ссылку ещё раз оттуда, куда сохраняли запись: из события в календаре или из сообщения в Telegram.
+      </p>
+      <p style={sub}>Найти не получается — напишите мне, подскажу время встречи и помогу с отменой.</p>
+      <Btn href={CANCEL_SUPPORT_LINK} full radius="btn" size="lg">Написать в Telegram</Btn>
+    </>
+  );
+}
 
 /**
  * Бронь по токену не загрузилась. «Оплата принята» тут нельзя: страница не

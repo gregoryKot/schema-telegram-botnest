@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BookingConfirmedView } from '../components/booking/BookingConfirmedView';
 import { BookingPaidPending } from '../components/booking/BookingPaidPending';
-import { BookingPaidAccepted, BookingPaidLoadFailed } from '../components/booking/BookingPaidOutcomes';
+import { BookingManageLinkIncomplete, BookingPaidAccepted, BookingPaidLoadFailed, isManageLink } from '../components/booking/BookingPaidOutcomes';
 import { BookingPaidSkeleton } from '../components/booking/BookingPaidSkeleton';
 import { BookingCancelledView, BookingCompletedView } from '../components/booking/BookingEndedViews';
 import { useBookingByToken } from '../components/booking/useBookingByToken';
@@ -44,6 +44,10 @@ export function BookingPaidPage() {
         <Btn href="/#booking" full radius="btn" size="lg">Вернуться к записи</Btn>
       </>
     );
+  } else if (!token && isManageLink()) {
+    // Без токена с оплаты приходят законно (неподписанный редирект) — им
+    // «Оплата принята»; ссылка управления без токена — обрезанная ссылка.
+    body = <BookingManageLinkIncomplete />;
   } else if (!loaded) {
     body = <BookingPaidSkeleton />;
   } else if (phase === 'cancelled') {
