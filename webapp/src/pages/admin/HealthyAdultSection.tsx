@@ -6,6 +6,7 @@ import { HealthyAdultImport } from './HealthyAdultImport';
 import { HealthyAdultCheck } from './HealthyAdultCheck';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 
 /** Админ-вкладка: управление пулом фраз «Здорового Взрослого» для канала. */
 export function HealthyAdultSection({ adminKey }: { adminKey: string }) {
@@ -129,7 +130,7 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
 }) {
   const [text, setText] = useState(row.text);
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, flashSaved] = useTimedFlag(1500);
   const [error, setError] = useState<string | null>(null);
   const dirty = text.trim() !== row.text && text.trim().length > 0;
 
@@ -149,8 +150,7 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
     run(async () => {
       const updated = await api.adminUpdatePhrase(adminKey, row.id, { text: text.trim() });
       onPatch(updated);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      flashSaved();
     });
   const toggle = () =>
     run(async () => onPatch(await api.adminUpdatePhrase(adminKey, row.id, { enabled: !row.enabled })));

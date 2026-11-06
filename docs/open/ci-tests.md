@@ -41,21 +41,12 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 сервиса джобы. Переход — отдельный PR: сменить `runs-on`, прочитать логи, починить.
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
 
-**Тесты админки, зелёные на первом кадре** (найдено при починке мигающего `PhotoSection.test.tsx`, упавшего в CI на #725):
-- **«Пустое состояние» проверяется до ответа API в четырёх файлах:**
-  `MarqueeSection.test.tsx` («без строк в API»), `HealthyAdultSection.test.tsx`
-  («Активных фраз: 0 / 0»), `BookingSection.test.tsx` и `ArticlesSection.test.tsx`
-  («Записей нет.» / «Пока нет статей.»). Начальный state компонента уже пустой,
-  `findByText` находит его на первом кадре — тест не упадёт, что бы компонент ни
-  сделал с пустым ответом позже. Это не флак, а защита вхолостую (для
-  `PhotoSection` проверено мутацией: при ответе позже 50 мс старый тест её не
-  замечал). Лечится как в `PhotoSection.test.tsx` (`renderSettled`): дождаться
-  самого ответа, потом проверять.
-- **`PhotoSection.tsx`: запоздавший `getSiteContent` затирает только что
-  сохранённое фото** (`useEffect` без отмены, `setCurrent(c.heroPhoto)` приходит
-  после `setCurrent(preview)`). Вживую почти недостижимо — надо выбрать файл,
-  сжать и сохранить раньше ответа GET, — поэтому прод-код в том PR не трогали.
-  Воспроизводится в тесте при задержке ответа 50 мс.
+**Админка: загрузка без отмены** (остаток после закрытия гонки `PhotoSection.tsx`, 2026-11-06):
+`webapp/src/pages/admin/MarqueeSection.tsx:12` (`getSiteContent` → `setA`/`setB`) и
+`HealthyAdultSection.tsx:18` (`adminListPhrases` → `setPhrases`) — тот же `useEffect` без отмены:
+ответ, пришедший после правки (добавил пункт или фразу до конца загрузки), затирает её на экране
+(на сервере правка цела). Вживую почти недостижимо; лечится как в `PhotoSection.tsx` (флаг
+`loadCancelled`) с тестом на поздний ответ.
 
 **Merge-драйверы бейслайнов** (`scripts/merge-drivers-check.mjs`, `scripts/merge-json-ratchet.mjs`, #729):
 - **`scripts/file-size-baseline.json` отстал: 82 файла усохли, бейслайн не зафиксирован** (2026-11-04). `node scripts/check-file-size-ratchet.mjs` это печатает зелёным; `--update` переписывает ~280 строк (в том числе удалённые файлы мини-аппа и усохшие гейты). Не сделано в PR эталона «Сегодня», чтобы не топить дифф; закрывается отдельным PR одним `--update` без кода.
@@ -225,17 +216,15 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 - Тост-таймер без очистки при размонтировании (`setX(true); setTimeout(() =>
   setX(false), N)`): таймер срабатывает после сноса jsdom и роняет весь прогон
   vitest с `window is not defined` при зелёных тестах (CI main, run
-  36409902702, webapp под `TZ=Australia/Sydney`). Настройки
-  переведены на `shared/src/hooks/useTimedFlag.ts`; класс ещё живёт в
-  `webapp/src/components/PracticesScreen.tsx:62,66,78`,
-  `webapp/src/pages/admin/{PhotoSection,MarqueeSection,HealthyAdultSection}.tsx`,
-  `webapp/src/pages/tests/QuizPage.tsx:67`.
-  Переводить на тот же хук; гейта у класса нет. Подкласс «код чистит таймер корректно, но
+  36409902702, webapp под `TZ=Australia/Sydney`). Тосты сайта переведены на
+  `shared/src/hooks/useTimedFlag.ts` (настройки, `PracticesScreen`, админка, `QuizPage`, 2026-11-06);
+  класс ещё живёт в `shared/src/therapy/useSessionAliasEditing.ts:125` (ошибка гаснет по
+  `setTimeout` без очистки — найдено при переводе). Гейта у класса нет. Подкласс «код чистит таймер корректно, но
   тест не размонтировал компонент» закрыт механизмом: `setupFiles` с
   `afterEach(cleanup)` в каждом из фронтовых пакетов
   (`<пакет>/src/test-support/rtlCleanup.ts`, флак 2026-10-15, run 38707373186,
-  `LazySections.test.tsx` → `useSafeTop`). Перечисленные выше места этим НЕ
-  закрыты: размонтирование не гасит таймер, которого код не чистит. Подкласс
+  `LazySections.test.tsx` → `useSafeTop`). Место выше этим НЕ
+  закрыто: размонтирование не гасит таймер, которого код не чистит. Подкласс
   «размонтирование само ставит короткий таймер» (tiptap `scheduleDestroy`,
   `setTimeout(…, 1)`; CI 2026-10-15, run 38729454493, `ArticleEditor.test.tsx`)
   закрыт `afterAll(settleUnmountTimers)` в тех же `rtlCleanup.ts`: ждёт 10 мс

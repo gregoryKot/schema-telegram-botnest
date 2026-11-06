@@ -4,7 +4,7 @@
 // HealthyAdultImport — рендерится внутри секции, отдельного файла не заводим,
 // см. правило №10). Скелетон остатка пула вместо спиннера/нуля — тоже здесь.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within, waitFor } from '@testing-library/react';
 import { HealthyAdultSection } from './HealthyAdultSection';
 
 vi.mock('../../api', () => ({
@@ -43,7 +43,12 @@ describe('HealthyAdultSection — на чистом пуле пусто, не в
   it('без фраз в API — «Активных фраз: 0 / 0», список пуст', async () => {
     mockApi.adminListPhrases.mockResolvedValue([]);
     render(<HealthyAdultSection adminKey="k" />);
-    await screen.findByText('Активных фраз: 0 / 0');
+    // «0 / 0» стоит и до ответа (начальный state пуст): ждём конца загрузки,
+    // потом проверяем — иначе тест зелёный, что бы компонент ни сделал с ответом.
+    await waitFor(() => expect(screen.queryByText('Загрузка…')).toBeNull());
+    expect(mockApi.adminListPhrases).toHaveBeenCalledWith('k');
+    expect(screen.getByText('Активных фраз: 0 / 0')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Выключить' })).toBeNull();
   });
 });
 

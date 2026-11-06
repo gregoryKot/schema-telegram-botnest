@@ -108,6 +108,29 @@ describe('PhotoSection — загрузка и сохранение', () => {
     expect(screen.queryByAltText('Новое фото')).toBeNull();
   });
 
+  // Гонка: GET текущего фото ответил ПОСЛЕ сохранения. Эффект без отмены
+  // ставил старое фото поверх только что сохранённого (read-after-write).
+  it('запоздавший ответ GET не затирает только что сохранённое фото', async () => {
+    mockCompress.mockResolvedValue('data:image/jpeg;base64,NEW');
+    mockApi.adminSetHeroPhoto.mockResolvedValue({ ok: true });
+    let answer!: (v: { heroPhoto: string | null }) => void;
+    const late = new Promise<{ heroPhoto: string | null }>((r) => { answer = r; });
+    mockApi.getSiteContent.mockReturnValue(late);
+    render(<PhotoSection adminKey="k" />);
+    uploadFile(document.querySelector('input[type="file"]')!);
+    await screen.findByAltText('Новое фото');
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить фото/ }));
+    await screen.findByText('Фото сохранено ✓');
+    expect(currentSrc()).toBe('data:image/jpeg;base64,NEW');
+
+    // then компонента навешан раньше нашего await — к выходу из act он отработал.
+    await act(async () => {
+      answer({ heroPhoto: 'data:image/jpeg;base64,OLD' });
+      await late;
+    });
+    expect(currentSrc()).toBe('data:image/jpeg;base64,NEW');
+  });
+
   it('ошибка сохранения на сервере — видна, старое фото остаётся текущим (не молчаливый успех)', async () => {
     mockCompress.mockResolvedValue('data:image/jpeg;base64,NEW');
     mockApi.adminSetHeroPhoto.mockRejectedValue(new Error('Сервер недоступен'));
