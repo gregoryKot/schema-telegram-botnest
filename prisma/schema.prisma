@@ -516,6 +516,12 @@ model AnalyticsEvent {
 model TherapyRelation {
   id          Int      @id @default(autoincrement())
   code        String   @unique
+  // Постоянный код адреса карточки в кабинете терапевта: /cabinet/<urlCode>.
+  // 8 букв без цифр — не путается со старым числовым id в адресе
+  // (shared/src/utils/clientRef.ts). Ставит Postgres, поэтому код получит
+  // связь из любого пути создания; при подключении офлайн-карточки код
+  // переезжает на связь клиента (therapy-invite-attach.ts) — ссылка живёт.
+  urlCode     String   @unique @default(dbgenerated("translate(\"left\"((gen_random_uuid())::text, 8), '0123456789'::text, 'ghjkmnpqrs'::text)"))
   therapistId BigInt
   clientId    BigInt?
   status      RelationStatus @default(pending)
