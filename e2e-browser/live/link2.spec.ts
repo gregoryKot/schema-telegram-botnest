@@ -11,6 +11,7 @@ import {
   ensureConnected,
   tomorrow,
 } from './helpers';
+import { activeTask, doneTask, openClientTasks } from '../support/clientTasks';
 
 // Продолжение link.spec: C уже подключена к T. Приватность, задания, встреча,
 // отвязка клиентом. Дальше — link3.spec (повторное подключение, удаление,
@@ -102,13 +103,15 @@ test.describe.serial('связь: жизненный цикл', () => {
         return taskId;
       })
       .toBeGreaterThan(0);
+    // Задания клиента — в «Ещё» → «Задания» (с #941 на «Сегодня» их нет);
+    // путь общий со смоком PR-CI (support/clientTasks.ts).
     const cPage = await (await browser.newContext()).newPage();
     await login(cPage, USERS.C);
-    await cPage.goto('/today');
-    await expect(
-      cPage.getByText('Записать три благодарности').first(),
-    ).toBeVisible();
-    await expect(cPage.getByText('от терапевта').first()).toBeVisible();
+    await openClientTasks(cPage);
+    // .first(): повторный прогон на том же стенде оставляет прежние строки.
+    const assigned = activeTask(cPage, 'Записать три благодарности').first();
+    await expect(assigned).toBeVisible();
+    await expect(assigned.getByText('от терапевта')).toBeVisible();
     // Клиент выполняет — терапевт видит выполнение.
     const cApi = await apiAs(USERS.C);
     expect(
@@ -126,10 +129,16 @@ test.describe.serial('связь: жизненный цикл', () => {
         return tasks.find((x: { id: number }) => x.id === taskId)?.done;
       })
       .toBe(true);
-    // Выполненное не считается активным на «Сегодня» клиента.
-    await cPage.reload();
-    await expect(cPage.getByText('Трекер').first()).toBeVisible();
-    await expect(cPage.getByText('1 активное')).toHaveCount(0);
+    // Выполненное ушло из активных в «Выполнено». Сначала ждём строку истории:
+    // активные и история приходят одной загрузкой, поэтому отсутствие в
+    // активных проверяется уже на загруженном списке, а не на пустом.
+    await openClientTasks(cPage);
+    await expect(
+      doneTask(cPage, 'Записать три благодарности').first(),
+    ).toContainText('Выполнено');
+    await expect(activeTask(cPage, 'Записать три благодарности')).toHaveCount(
+      0,
+    );
   });
 
   test('6. терапевт ставит следующую сессию → клиент видит её в профиле', async ({
