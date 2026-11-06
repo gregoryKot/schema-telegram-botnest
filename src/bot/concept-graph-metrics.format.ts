@@ -2,6 +2,17 @@
 // отчёте, невидимо). Чистый форматтер, покрыт тестом, включая пустую БД; язык простой.
 import type { ConceptGraphMetrics } from './concept-graph-metrics.types';
 
+// Строки, которые видны, только если событие было: «0 раз» отчёт не печатает.
+const IF_ANY: [keyof ConceptGraphMetrics, (n: number) => string][] = [
+  ['schemaLinked30', (n) => `Убеждения и опыт схем записывали ${n} раз`],
+  ['canvasOpen30', (n) => `Собирали карту из концептуализации ${n} раз`],
+  ['fullscreen30', (n) => `Разворачивали схему на весь экран ${n} раз`],
+  ['saveRetry30', (n) => `Повторяли сохранение после ошибки ${n} раз`],
+  ['brief30', (n) => `Открывали «Главное» на одном экране ${n} раз`],
+  ['syncToMap30', (n) => `Дописывали на карту из полей: ${n} раз`],
+  ['syncFromMap30', (n) => `Холст дописывал в концептуализацию: ${n} раз`],
+];
+
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   const lines = [`🧩 <b>Графическая концептуализация</b> (за месяц)`];
@@ -15,20 +26,8 @@ export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
       ? `Связи режимов заполняли ${m.linked30} раз`
       : 'Связи режимов пока не заполняли',
   );
-  if (m.schemaLinked30 > 0) {
-    lines.push(`Убеждения и опыт схем записывали ${m.schemaLinked30} раз`);
-  }
-  if (m.canvasOpen30 > 0) {
-    lines.push(`Переносили схему случая на холст ${m.canvasOpen30} раз`);
-  }
-  if (m.fullscreen30 > 0) {
-    lines.push(`Разворачивали схему на весь экран ${m.fullscreen30} раз`);
-  }
-  if (m.saveRetry30 > 0) {
-    lines.push(`Повторяли сохранение после ошибки ${m.saveRetry30} раз`);
-  }
-  if (m.brief30 > 0) {
-    lines.push(`Открывали «Главное» на одном экране ${m.brief30} раз`);
+  for (const [key, line] of IF_ANY) {
+    if (m[key] > 0) lines.push(line(m[key]));
   }
   return lines.join('\n');
 }

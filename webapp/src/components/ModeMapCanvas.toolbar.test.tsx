@@ -33,16 +33,16 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('ModeMapCanvas — пустая карта', () => {
-  it('без узлов показывает подсказку «Карта режимов пуста»', () => {
+  it('без узлов показывает подсказку «Карта пуста»', () => {
     renderCanvas({ initialNodes: [] });
-    expect(screen.getByText('Карта режимов пуста')).toBeTruthy();
+    expect(screen.getByText('Карта пуста')).toBeTruthy();
   });
 
   it('с узлами подсказка не показывается', () => {
     renderCanvas({
       initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })],
     });
-    expect(screen.queryByText('Карта режимов пуста')).toBeNull();
+    expect(screen.queryByText('Карта пуста')).toBeNull();
   });
 });
 

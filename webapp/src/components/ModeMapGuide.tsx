@@ -105,7 +105,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
     <div className={`ds-card mm2-guide${min ? ' is-min' : ''}`}>
       <div className="mm2-guide-head">
         <button onClick={toggleMin} aria-expanded={!min} title={min ? 'Развернуть подсказки' : 'Свернуть подсказки'} className="mm2-guide-toggle">
-          <span className="ds-label">{kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : 'Карта личности'}</span>
+          <span className="ds-label">{kind === 'couple' ? 'Цикл-клэш пары' : kind === 'problem' ? 'Цепочка цикла' : kind === 'personality' ? 'Карта режимов' : 'Группы режимов'}</span>
           <span className="mm2-guide-n">{steps.filter(s => s.ok).length}/{steps.length}</span>
           <MMIcon name="caret" size={12} className={min ? 'mm2-guide-caret is-min' : 'mm2-guide-caret'} />
         </button>

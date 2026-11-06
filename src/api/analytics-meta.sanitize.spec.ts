@@ -704,6 +704,14 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('concept_brief_open', leak)).toBeUndefined();
   });
 
+  // Связь холста с полями (#963): ни id режимов и схем, ни их число в событие
+  // не попадают — событие только отмечает, что синхронизация была.
+  it('concept_sync_to_map/concept_sync_from_map: meta игнорируется', () => {
+    const leak = { clientId: '555', modeIds: ['punitive_critic'], modes: 2 };
+    expect(sanitizeMeta('concept_sync_to_map', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_sync_from_map', leak)).toBeUndefined();
+  });
+
   // quiz_started/quiz_completed/practice_link_click несут meta по реестру
   // (analytics.constants.ts), но санитизируются ТОЛЬКО в PublicEventsController
   // (анонимный /api/public-event) — эта функция обслуживает /api/event и

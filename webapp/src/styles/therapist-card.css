@@ -50,6 +50,13 @@
 .tk-head .tc-meeting { flex-basis: 100%; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
 .tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }
+/* «Карта режимов» — холст на всю рабочую область (не в колонке --tk-max), и
+   шапка над ним во всю ширину: иначе слева от «← Все клиенты» пустая полоса
+   шириной --tk-center (владелец 2026-11-06). Поле 16px — как у полосы карт
+   .mm2-bar (sheet-modemap.css), чтобы «← Все клиенты» и вкладки карт стояли
+   на одной вертикали. */
+.tk-head--wide { padding-inline: 16px; }
+.tk-head--wide .ds-tabs { margin: 0 -16px; padding: 0 16px; }
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
 /* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.
