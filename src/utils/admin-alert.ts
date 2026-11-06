@@ -8,6 +8,7 @@ import {
   noteAlertEmailResponse,
 } from './alert-email-health';
 import { practiceOwnerTelegramId } from './practice-owner';
+import { sendOnce } from '../telegram/telegram.send-once';
 
 /** Числовой ADMIN_ID из env (null, если не задан/некорректен). Разбор — practice-owner.ts. */
 export function adminIdNum(): number | null {
@@ -46,19 +47,28 @@ async function sendTelegram(text: string): Promise<boolean> {
   const chatId = practiceOwnerTelegramId();
   if (!token || chatId === null) return false;
   try {
-    const res = await fetch(
-      `https://api.telegram.org/bot${token}/sendMessage`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, text }),
-        signal: AbortSignal.timeout(10_000),
-      },
-    );
-    return res.ok;
+    // 429 — ожидание retry_after и один повтор; дольше бюджета — письмо.
+    await sendOnce(() => postMessage(token, chatId, text));
+    return true;
   } catch {
     return false;
   }
+}
+
+/** Ответ не ok — ошибка с телом ответа: по нему sendOnce узнаёт 429 и срок. */
+async function postMessage(token: string, chatId: number, text: string) {
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (res.ok) return;
+  // Тело — только у 429 (в нём срок). Не JSON — ошибка разбора, и сразу письмо.
+  const response: unknown = res.status === 429 ? await res.json() : null;
+  throw Object.assign(new Error(`Telegram ответил ${res.status}`), {
+    response,
+  });
 }
 
 async function sendEmail(subject: string, text: string): Promise<void> {

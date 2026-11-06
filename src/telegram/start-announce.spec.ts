@@ -218,7 +218,8 @@ describe('TelegramService.notifyAdmin — канал DM о старте', () => 
         startAnnouncement({ launch: '1' }),
       ),
     ).resolves.toBe(true);
-    expect(sendMessage).toHaveBeenCalledWith('42', '🚀 Деплой завершён', {
+    // Номер — числом из practice-owner.ts (единственный разбор ADMIN_ID).
+    expect(sendMessage).toHaveBeenCalledWith(42, '🚀 Деплой завершён', {
       parse_mode: 'HTML',
     });
   });

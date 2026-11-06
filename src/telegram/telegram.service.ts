@@ -37,6 +37,8 @@ import { TelegramLoginService } from './telegram.login.service';
 import { TelegramLinkService } from './telegram.link.service';
 import { snoozeReminder, snoozeFailText } from './telegram.snooze';
 import { retryWithBackoff } from '../utils/retry';
+import { practiceOwnerTelegramId } from '../utils/practice-owner';
+import { sendOnce } from './telegram.send-once';
 import { BotLauncher } from './telegram.launch';
 import { t, AddressForm } from '../notification/address-form';
 import {
@@ -52,8 +54,7 @@ export const WELCOME_TEXT = `Привет!
 
 Дело почти всегда в потребностях. «Всё по схеме» помогает это увидеть — трекер, дневники схема-терапии и тест на схемы в одном месте.`;
 
-// Запасные ответы команд на сбой: без кнопки (её URL Telegram может отклонить)
-// и без формы обращения из БД — то, что могло упасть, в них не участвует.
+// Запасные ответы команд на сбой: без кнопки и без формы обращения из БД.
 const DONATE_FALLBACK = `💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`;
 const THERAPIST_FALLBACK =
   '🩺 Заявка на роль психолога подаётся в приложении «Всё по схеме»: Настройки → «Я психолог — подать заявку».';
@@ -317,8 +318,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (err) {
         this.logger.error('accept action failed', err);
-        // ctx.match не привязан к try — форма из callback_data доступна и тут.
-        // Новым сообщением: правка стёрла бы кнопки согласия, жать было бы нечего.
+        // Форма — из callback_data (ctx.match вне try); новым сообщением: кнопки целы.
         const form = (ctx.match as RegExpMatchArray | undefined)?.[1] as
           AddressForm | undefined;
         await ctx.reply(acceptRetryText(form)).catch(() => null);
@@ -464,14 +464,14 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     // DM о старте — не здесь (это каждый рестарт, до listen): src/telegram/start-announce.ts.
   }
 
-  /** Отправить сообщение администратору. Возвращает true, если доставлено. */
+  /** Сообщение администратору; true — доставлено. 429 — ожидание и повтор (send-once). */
   async notifyAdmin(text: string): Promise<boolean> {
-    const adminId = process.env.ADMIN_ID;
-    if (!adminId || !this.bot) return false;
+    const adminId = practiceOwnerTelegramId();
+    const bot = this.bot;
+    if (adminId === null || !bot) return false;
     try {
-      await this.bot.telegram.sendMessage(adminId, text, {
-        parse_mode: 'HTML',
-      });
+      const opts = { parse_mode: 'HTML' } as const;
+      await sendOnce(() => bot.telegram.sendMessage(adminId, text, opts));
       return true;
     } catch (err) {
       this.logger.error('notifyAdmin failed', err);
