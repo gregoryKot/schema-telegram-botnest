@@ -164,6 +164,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
   // 20/30/40: блок телефона по ширине пальца на планшете не видел.
   it('.ds-tab — 44 на телефоне и под пальцем (pointer: coarse); десктоп с мышью не меняется', () => {
     expect(decls(tap, '.ds-tab')).toContain('min-height: 44px');
+    expect(decls(tap, '.ds-tab')).toContain('min-width: 44px'); // короткая вкладка «Обзор» была 42 в ширину
     expect(decls(top, '.ds-tab')).not.toContain('min-height');
     for (const sel of ['.ds-tab', '.ds-link', '.ds-seg-btn', '.ds-btn--sm']) {
       expect(decls(tap, sel), sel).toMatch(/(min-)?height: 44px/);

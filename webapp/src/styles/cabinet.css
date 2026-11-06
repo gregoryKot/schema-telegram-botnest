@@ -292,7 +292,7 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
    pointer: coarse при ширине больше 767). Десктоп с мышью остаётся компактным:
    вкладка ~35, сегмент 30, ссылка 20, малая кнопка 40. */
 @media (pointer: coarse), (max-width: 767px) {
-  .ds-tab { min-height: 44px; }
+  .ds-tab { min-height: 44px; min-width: 44px; justify-content: center; } /* «Обзор» был 42 в ширину */
   .ds-btn--icon { width: 44px; height: 44px; }
   .ds-seg-btn { min-height: 44px; }
   .ds-btn--sm { height: 44px; }
