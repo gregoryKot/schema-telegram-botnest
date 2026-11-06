@@ -119,13 +119,13 @@ describe('formatScreenMetrics — movesByScreen (переставляли бло
       ...FULL,
       // Вход нарочно не в порядке SCREENS_ORDER — форматтер пересортирует.
       movesByScreen: [
-        { screen: 'today', count: 2 },
+        { screen: 'patterns', count: 2 },
         { screen: 'profile', count: 6 },
       ],
       syncedUsers: 7,
     });
     const lines = text.split('\n');
-    const moveLine = 'Переставляют блоки: Профиль — 6 · Сегодня — 2';
+    const moveLine = 'Переставляют блоки: Профиль — 6 · Паттерны — 2';
     expect(lines).toContain(moveLine);
     expect(lines.indexOf(moveLine)).toBeLessThan(
       lines.indexOf('Настройки синхронизированы: 7 человек'),
@@ -137,14 +137,14 @@ describe('formatScreenMetrics — movesByScreen (переставляли бло
     const text = formatScreenMetrics({
       ...EMPTY,
       movesByScreen: [
-        { screen: 'patterns', count: 0 },
-        { screen: 'today', count: 3 },
+        { screen: 'profile', count: 0 },
+        { screen: 'patterns', count: 3 },
       ],
     });
     expect(text).toBe(
-      '🧩 Настройку экранов пока не трогали.\nПереставляют блоки: Сегодня — 3',
+      '🧩 Настройку экранов пока не трогали.\nПереставляют блоки: Паттерны — 3',
     );
-    expect(text).not.toMatch(/NaN|undefined|Паттерны/);
+    expect(text).not.toMatch(/NaN|undefined|Профиль/);
   });
 
   it('неизвестный экран в перестановках не роняет отчёт — печатается как есть', () => {

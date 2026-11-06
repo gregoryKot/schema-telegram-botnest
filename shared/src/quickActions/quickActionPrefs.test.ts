@@ -6,12 +6,13 @@ import {
   getHiddenActions,
   setActionHidden,
   isActionHidden,
-  PLUS_ACTIONS_HIDDEN_KEY,
   TOOLS_ACTIONS_HIDDEN_KEY,
 } from './quickActionPrefs';
 
-// В node-окружении vitest нет localStorage — простой in-memory стаб (как в
-// todayFocus.test.ts).
+// Второй произвольный ключ: механика generic по ключу, «плюса» больше нет.
+const OTHER_HIDDEN_KEY = 'quick_actions_hidden_other';
+
+// В node-окружении vitest нет localStorage — простой in-memory стаб.
 beforeEach(() => {
   const store = new Map<string, string>();
   globalThis.localStorage = {
@@ -70,32 +71,32 @@ describe('serializeHiddenActions', () => {
 
 describe('getHiddenActions / setActionHidden — read-after-write', () => {
   it('по умолчанию всё видно (пустой набор скрытых)', () => {
-    expect(getHiddenActions(PLUS_ACTIONS_HIDDEN_KEY)).toEqual([]);
+    expect(getHiddenActions(OTHER_HIDDEN_KEY)).toEqual([]);
   });
 
   it('скрытие пункта сохраняется и читается обратно', () => {
-    setActionHidden(PLUS_ACTIONS_HIDDEN_KEY, 'tracker', true);
-    expect(getHiddenActions(PLUS_ACTIONS_HIDDEN_KEY)).toEqual(['tracker']);
-    expect(isActionHidden(PLUS_ACTIONS_HIDDEN_KEY, 'tracker')).toBe(true);
+    setActionHidden(OTHER_HIDDEN_KEY, 'tracker', true);
+    expect(getHiddenActions(OTHER_HIDDEN_KEY)).toEqual(['tracker']);
+    expect(isActionHidden(OTHER_HIDDEN_KEY, 'tracker')).toBe(true);
   });
 
   it('повторное скрытие того же id не дублирует запись', () => {
-    setActionHidden(PLUS_ACTIONS_HIDDEN_KEY, 'tracker', true);
-    setActionHidden(PLUS_ACTIONS_HIDDEN_KEY, 'tracker', true);
-    expect(getHiddenActions(PLUS_ACTIONS_HIDDEN_KEY)).toEqual(['tracker']);
+    setActionHidden(OTHER_HIDDEN_KEY, 'tracker', true);
+    setActionHidden(OTHER_HIDDEN_KEY, 'tracker', true);
+    expect(getHiddenActions(OTHER_HIDDEN_KEY)).toEqual(['tracker']);
   });
 
   it('возврат пункта (hidden=false) убирает его из списка и очищает ключ', () => {
-    setActionHidden(PLUS_ACTIONS_HIDDEN_KEY, 'tracker', true);
-    setActionHidden(PLUS_ACTIONS_HIDDEN_KEY, 'tracker', false);
-    expect(getHiddenActions(PLUS_ACTIONS_HIDDEN_KEY)).toEqual([]);
-    expect(localStorage.getItem(PLUS_ACTIONS_HIDDEN_KEY)).toBeNull();
+    setActionHidden(OTHER_HIDDEN_KEY, 'tracker', true);
+    setActionHidden(OTHER_HIDDEN_KEY, 'tracker', false);
+    expect(getHiddenActions(OTHER_HIDDEN_KEY)).toEqual([]);
+    expect(localStorage.getItem(OTHER_HIDDEN_KEY)).toBeNull();
   });
 
   it('два ключа-поверхности не задевают друг друга', () => {
-    setActionHidden(PLUS_ACTIONS_HIDDEN_KEY, 'tracker', true);
+    setActionHidden(OTHER_HIDDEN_KEY, 'tracker', true);
     setActionHidden(TOOLS_ACTIONS_HIDDEN_KEY, 'plans', true);
-    expect(getHiddenActions(PLUS_ACTIONS_HIDDEN_KEY)).toEqual(['tracker']);
+    expect(getHiddenActions(OTHER_HIDDEN_KEY)).toEqual(['tracker']);
     expect(getHiddenActions(TOOLS_ACTIONS_HIDDEN_KEY)).toEqual(['plans']);
   });
 });

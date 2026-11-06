@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 // Read-after-write: настройка, сделанная на другом устройстве (лежит на сервере),
-// должна дойти до экрана «Сегодня» на сайте, а запись на сайте — не стереть
+// должна дойти до экрана на сайте, а запись на сайте — не стереть
 // ключи, которых на этом устройстве нет. Идём через настоящие: шлюз, общий
-// синхронизатор и хранилище настройки «Сегодня»; подменены только сеть и localStorage-фон.
+// синхронизатор и localStorage; подменены только сеть. Зонд читает флаг
+// `why_seen_v1` и переключает меню «Инструменты» (`quick_actions_hidden_tools`).
 import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
@@ -18,25 +19,21 @@ vi.mock('../api', () => ({
 import { api } from '../api';
 import { UiPrefsGate } from './UiPrefsGate';
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
-import {
-  isSecondaryHidden,
-  isStreakHidden,
-  setSecondaryHidden,
-} from '../../../shared/src/today/todayFocus';
 
 const getSettings = api.getSettings as unknown as ReturnType<typeof vi.fn>;
 const updateSettings = api.updateSettings as unknown as ReturnType<typeof vi.fn>;
 
-// Потребитель ключей настройки «Сегодня»: серия показана или скрыта + кнопка,
-// которая переключает блок и сообщает синхронизатору об изменении.
+// Потребитель ключей настройки: флаг «объяснение показано» + кнопка, которая
+// меняет скрытые пункты «Инструментов» и сообщает синхронизатору об изменении.
+const TOOLS_KEY = 'quick_actions_hidden_tools';
 function TodayProbe() {
   const [, bump] = useState(0);
   return (
     <div>
-      <span data-testid="streak">{isStreakHidden() ? 'hidden' : 'shown'}</span>
+      <span data-testid="streak">{localStorage.getItem('why_seen_v1') === '1' ? 'hidden' : 'shown'}</span>
       <button
         onClick={() => {
-          setSecondaryHidden(!isSecondaryHidden());
+          localStorage.setItem(TOOLS_KEY, '["tracker"]');
           notifyPrefsChanged();
           bump((n) => n + 1);
         }}
@@ -52,8 +49,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('UiPrefsGate + «Сегодня»', () => {
-  it('сервер прислал скрытую серию → «Сегодня» её не показывает; до ответа экран не монтируется', async () => {
+describe('UiPrefsGate + настройки экранов', () => {
+  it('сервер прислал скрытую серию → флаг скрыт; до ответа экран не монтируется', async () => {
     let answer!: (v: unknown) => void;
     getSettings.mockReturnValue(new Promise((r) => (answer = r)));
     render(
@@ -63,15 +60,15 @@ describe('UiPrefsGate + «Сегодня»', () => {
     );
     expect(screen.queryByTestId('streak')).toBeNull();
 
-    await act(async () => answer({ uiPrefs: { today_streak_hidden: '1' } }));
+    await act(async () => answer({ uiPrefs: { why_seen_v1: '1' } }));
     expect(screen.getByTestId('streak').textContent).toBe('hidden');
-    expect(localStorage.getItem('today_streak_hidden')).toBe('1');
+    expect(localStorage.getItem('why_seen_v1')).toBe('1');
     expect(updateSettings).not.toHaveBeenCalled();
   });
 
-  it('сервер очистил настройку → локальная скрытая серия снова показана (server wins)', async () => {
+  it('сервер очистил настройку → локальный флаг снят (server wins)', async () => {
     localStorage.setItem('ui_prefs_migrated', '1');
-    localStorage.setItem('today_streak_hidden', '1');
+    localStorage.setItem('why_seen_v1', '1');
     getSettings.mockResolvedValue({ uiPrefs: {} });
     render(
       <UiPrefsGate>
@@ -83,7 +80,7 @@ describe('UiPrefsGate + «Сегодня»', () => {
 
   it('изменение на сайте уходит на сервер вместе с ключами с других устройств, а не вместо них', async () => {
     getSettings.mockResolvedValue({
-      uiPrefs: { today_streak_hidden: '1', screen_order_today: '["phrase","focus"]' },
+      uiPrefs: { why_seen_v1: '1', screen_order_profile: '["portrait","journey"]' },
     });
     render(
       <UiPrefsGate>
@@ -104,9 +101,9 @@ describe('UiPrefsGate + «Сегодня»', () => {
     expect(updateSettings).toHaveBeenCalledTimes(1);
     expect(updateSettings).toHaveBeenCalledWith({
       uiPrefs: {
-        today_streak_hidden: '1',
-        screen_order_today: '["phrase","focus"]',
-        today_secondary_hidden: '0', // по умолчанию скрыто, тумблер показал блок
+        why_seen_v1: '1',
+        screen_order_profile: '["portrait","journey"]',
+        quick_actions_hidden_tools: '["tracker"]',
       },
     });
   });
@@ -116,7 +113,7 @@ describe('UiPrefsGate + «Сегодня»', () => {
   // повторял GET и reset() закрывал пуш до ответа — правка в это окно терялась
   // (так «мигал» тест выше в CI).
   it('ререндер шлюза не перезапрашивает настройки и не закрывает пуш', async () => {
-    getSettings.mockResolvedValue({ uiPrefs: { today_streak_hidden: '1' } });
+    getSettings.mockResolvedValue({ uiPrefs: { why_seen_v1: '1' } });
     const tree = (n: number) => (
       <UiPrefsGate key="gate">
         <TodayProbe />
@@ -140,7 +137,7 @@ describe('UiPrefsGate + «Сегодня»', () => {
   });
 
   it('первый ответ сервера пуст, а на устройстве уже есть настройка сайта → она мигрирует на сервер', async () => {
-    localStorage.setItem('today_phrase_hidden', '1');
+    localStorage.setItem('quick_actions_order_tools', '["tracker"]');
     getSettings.mockResolvedValue({ uiPrefs: {} });
     render(
       <UiPrefsGate>
@@ -148,14 +145,14 @@ describe('UiPrefsGate + «Сегодня»', () => {
       </UiPrefsGate>,
     );
     await waitFor(() =>
-      expect(updateSettings).toHaveBeenCalledWith({ uiPrefs: { today_phrase_hidden: '1' } }),
+      expect(updateSettings).toHaveBeenCalledWith({ uiPrefs: { quick_actions_order_tools: '["tracker"]' } }),
     );
     expect(screen.getByTestId('streak').textContent).toBe('shown');
   });
 
   it('GET настроек отказал → экран открывается с локальными значениями, на сервер ничего не уходит', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    localStorage.setItem('today_streak_hidden', '1');
+    localStorage.setItem('why_seen_v1', '1');
     getSettings.mockRejectedValue(new Error('offline'));
     render(
       <UiPrefsGate>

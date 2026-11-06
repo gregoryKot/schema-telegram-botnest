@@ -58,8 +58,25 @@ describe('трипваер: SYNCED_PREF_KEYS фронта и бэка совпа
     expect(new Set(SYNCED_PREF_KEYS).size).toBe(SYNCED_PREF_KEYS.length);
   });
 
-  it('бэкендный реестр — ровно 15 ключей зафиксированного контракта', () => {
-    expect(SYNCED_PREF_KEYS.length).toBe(15);
+  it('бэкендный реестр — ровно 7 ключей зафиксированного контракта', () => {
+    expect(SYNCED_PREF_KEYS.length).toBe(7);
+  });
+
+  // Мини-апп удалён, главная сайта этих ключей не читает (решение владельца
+  // 2026-11-04): вернуть их в реестр можно только вместе с читателем.
+  it('ключи бывшей главной мини-аппа не возвращаются в реестр', () => {
+    const removed = [
+      'today_focus_practice',
+      'today_streak_hidden',
+      'today_phrase_hidden',
+      'today_secondary_hidden',
+      'today_therapist_banner_hidden',
+      'screen_order_today',
+      'quick_actions_hidden_plus',
+      'quick_actions_order_plus',
+    ];
+    const all = [...SYNCED_PREF_KEYS, ...readFrontendKeys()] as string[];
+    expect(all.filter((k) => removed.includes(k))).toEqual([]);
   });
 
   it('каждый ключ бэкенда есть на фронте', () => {
