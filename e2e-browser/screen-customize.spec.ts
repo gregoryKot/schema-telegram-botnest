@@ -16,9 +16,10 @@ import { test, expect } from './support/test';
 import type { StubApiHandle } from './support/stubApi';
 
 // Настройка, сделанная на другом устройстве: обязана пережить чужую правку.
+// Ключ — из тех, что сервер синхронизирует (SYNCED_PREF_KEYS): ключи главной
+// (screen_order_today и соседи) #969 убрал, санитайзер стаба их выбрасывает.
 const OTHER_DEVICE = {
   why_seen_v1: '1',
-  screen_order_today: '["phrase","focus"]',
 };
 
 interface Screen {
