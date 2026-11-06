@@ -3,7 +3,6 @@
 // id поверхности: элементы из него — первыми (в его порядке), остальные —
 // следом в порядке реестра (stable), новый пункт реестра появляется сам.
 
-export const PLUS_ACTIONS_ORDER_KEY = 'quick_actions_order_plus';
 export const TOOLS_ACTIONS_ORDER_KEY = 'quick_actions_order_tools';
 
 // Разбор/сериализация — общий примитив stringArrayStorage (пустой порядок =

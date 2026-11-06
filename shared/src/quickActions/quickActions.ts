@@ -35,7 +35,6 @@ export {
   QUICK_ACTIONS,
   getQuickAction,
   buildPlusActions,
-  focusToQuickAction,
   type QuickAction,
   type QuickActionGroup,
   type QuickActionGroupId,

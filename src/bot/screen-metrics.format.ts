@@ -31,7 +31,6 @@ export interface ScreenMetrics {
 export const SCREEN_LABELS: Record<string, string> = {
   profile: 'Профиль',
   patterns: 'Паттерны',
-  today: 'Сегодня',
 };
 
 export const SCREEN_BLOCK_LABELS: Record<string, string> = {
@@ -42,17 +41,18 @@ export const SCREEN_BLOCK_LABELS: Record<string, string> = {
   insights: 'Наблюдения',
   heroes: 'Подсказки сверху',
   ysq_status: 'Карточка теста схем',
-  focus: 'Фокус дня',
-  phrase: 'Фраза взрослого',
-  secondary: 'Что ещё сегодня',
-  therapist_banner: 'Баннер терапевта',
   portrait: 'Мой портрет',
   warm_words: 'Тёплые слова',
 };
 
 // Порядок строк — как в настройке, а не по убыванию счёта (та же логика,
 // что у блока «Настройка экранов» в /stats).
-const SCREENS_ORDER = ['profile', 'patterns', 'today'];
+const SCREENS_ORDER = ['profile', 'patterns'];
+
+export const isShownScreen = <T extends { screen: string | null }>(
+  r: T,
+): r is T & { screen: string } =>
+  r.screen != null && SCREENS_ORDER.includes(r.screen);
 
 function formatScreenLine(
   screen: string,

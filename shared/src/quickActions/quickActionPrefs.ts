@@ -1,15 +1,13 @@
 // Скрытие пунктов реестра быстрых действий (utils/quickActions.ts). Модель —
 // opt-out: хранится список СКРЫТЫХ id, всё, чего в списке нет, — видно. Так
 // новое действие в реестре появляется на устройстве само, без миграции
-// (симметрично todayFocus.ts — скрытие тоже per-device в localStorage).
+// (скрытие per-device в localStorage).
 //
-// Generic по ключу: два ключа-поверхности («плюс» и «Инструменты», второй
-// понадобится отдельной задаче) используют одни и те же parse/get/set —
+// Generic по ключу: parse/get/set не привязаны к поверхности —
 // правило «одна механика — один компонент».
 
 export type QuickActionSurface = 'plus' | 'tools';
 
-export const PLUS_ACTIONS_HIDDEN_KEY = 'quick_actions_hidden_plus';
 export const TOOLS_ACTIONS_HIDDEN_KEY = 'quick_actions_hidden_tools';
 
 // Разбор/сериализация — общий примитив stringArrayStorage (пустой список =

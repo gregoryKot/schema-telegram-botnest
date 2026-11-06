@@ -92,20 +92,21 @@ describe('ScreenMetricsService.getMetrics', () => {
     });
   });
 
-  it('movesByScreen — группировка screen_block_move по экрану, bigint→number, null-экран отброшен', async () => {
+  it('movesByScreen — группировка screen_block_move по экрану, bigint→number, null-экран и ушедший «today» отброшены', async () => {
     const { service } = build(
       [],
       [],
       [
         { screen: 'profile', c: 9n },
-        { screen: 'today', c: 2n },
+        { screen: 'patterns', c: 2n },
+        { screen: 'today', c: 4n },
         { screen: null, c: 5n },
       ],
     );
     await expect(service.getMetrics()).resolves.toMatchObject({
       movesByScreen: [
         { screen: 'profile', count: 9 },
-        { screen: 'today', count: 2 },
+        { screen: 'patterns', count: 2 },
       ],
     });
   });
