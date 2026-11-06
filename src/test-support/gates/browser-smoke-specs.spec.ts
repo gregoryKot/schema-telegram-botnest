@@ -6,7 +6,10 @@
 // стаба, по построению вне правила (readdirSync без рекурсии).
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { smokeSpecViolations } from './browser-smoke-specs';
+import {
+  smokeSpecViolations,
+  specsMissingFromConfig,
+} from './browser-smoke-specs';
 
 const DIR = join(process.cwd(), 'e2e-browser');
 const specs = readdirSync(DIR).filter((f) => f.endsWith('.spec.ts'));
@@ -75,5 +78,32 @@ describe('настоящие спеки e2e-browser', () => {
 
   it.each(specs)('%s — на общем test, без своего перехвата /api', (f) => {
     expect(smokeSpecViolations(read(f))).toEqual([]);
+  });
+
+  it('каждый спек стоит в testMatch playwright.config.ts — иначе не запускается', () => {
+    const config = readFileSync(
+      join(process.cwd(), 'playwright.config.ts'),
+      'utf8',
+    );
+    expect(specsMissingFromConfig(config, specs)).toEqual([]);
+  });
+});
+
+describe('образцы: спек вне testMatch', () => {
+  const CONFIG = `testMatch: [\n  'a.spec.ts',\n  "b.spec.ts",\n],`;
+  it('все в списке — чисто', () => {
+    expect(specsMissingFromConfig(CONFIG, ['a.spec.ts', 'b.spec.ts'])).toEqual(
+      [],
+    );
+  });
+  it('спека нет в списке — назван', () => {
+    expect(
+      specsMissingFromConfig(CONFIG, ['a.spec.ts', 'today-fit.spec.ts']),
+    ).toEqual(['today-fit.spec.ts']);
+  });
+  it('имя-подстрока чужого не засчитывается (a.spec.ts ≠ aa.spec.ts)', () => {
+    expect(specsMissingFromConfig(`'aa.spec.ts'`, ['a.spec.ts'])).toEqual([
+      'a.spec.ts',
+    ]);
   });
 });

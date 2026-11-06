@@ -37,7 +37,7 @@ export function TodaySection({ needs, ratings, onOpenSchema, onOpenTracker, refr
   const firstName = profile?.name?.split(' ')[0] ?? '';
 
   return (
-    <div className="ds-page ct-page">
+    <div className="ds-page ds-page--fit ct-page">
       <TodayHead firstName={firstName} onWhy={why.open} />
 
       <HomeTiles

@@ -270,6 +270,14 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-btn--lg { width: 100%; }
   .ds-seg--full { width: 100%; }
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
+  /* Страница в один экран («Сегодня», владелец 2026-11-06): без нижнего поля — зазор над панелью даёт
+     .canvas; ритм сжимается по высоте за вычетом статус-бара и выреза. --fit-room — запас над 640px
+     (0…200) для отступов экрана, --fit-size (0…120) — для его кеглей и картинок; от 840px — как .ds-page. */
+  .ds-page--fit {
+    --fit-h: calc(100vh - var(--safe-top) - var(--safe-bottom) - 640px);
+    --fit-room: clamp(0px, var(--fit-h), 200px); --fit-size: clamp(0px, var(--fit-h), 120px);
+    padding-top: calc(8px + var(--fit-room) * .06); padding-bottom: 0; gap: calc(12px + var(--fit-room) * .06);
+  }
   .ds-h1 { font-size: 32px; }
   .ds-h2 { font-size: 22px; }
   .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; }
@@ -277,6 +285,8 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
   .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari увеличивает экран при фокусе на поле мельче 16px */
 }
+/* Видимая высота: в Safari 100vh выше экрана с открытой адресной строкой. Без dvh остаётся 100vh. */
+@supports (height: 100dvh) { .ds-page--fit { --fit-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 640px); } }
 /* Тап-цели 44 — один блок на телефон и на любой экран под пальцем (планшет:
    pointer: coarse при ширине больше 767). Десктоп с мышью остаётся компактным:
    вкладка ~35, сегмент 30, ссылка 20, малая кнопка 40. */
