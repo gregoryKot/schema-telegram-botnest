@@ -9,10 +9,9 @@ const run = (total: number, unresolved = 0, cdnMarked = 0) =>
   clientIpProbe(() => ({ total, unresolved, cdnMarked })).run();
 
 describe('clientIpProbe', () => {
-  it('описание пробы: id, не критична, виден в /health', () => {
+  it('описание пробы: id, виден в /health', () => {
     const p = clientIpProbe(() => ({ total: 0, unresolved: 0, cdnMarked: 0 }));
     expect(p.id).toBe('clientIp');
-    expect(p.critical).toBe(false);
     expect(p.reportInHealth).toBeUndefined();
   });
 

@@ -13,9 +13,9 @@ import { USER_DATA_TABLES } from './user-data-tables';
  * провайдеров входа, веб-сессии, заявки терапевта и саму строку User. Никакого
  * мягкого удаления с флагом.
  *
- * После транзакции — VACUUM по затронутым таблицам (внутри транзакции его
- * запустить нельзя). Он освобождает мёртвые кортежи, то есть Postgres быстрее
- * физически перезапишет данные.
+ * После транзакции — VACUUM только `"User"`: имя и id там открытым текстом, таблица
+ * небольшая. Остальные таблицы — шифротекст и служебные поля, их чистит автовакуум:
+ * проход по большим (Rating) на каждое удаление — под statement_timeout 30 с без обхода.
  */
 export async function deleteAllUserData(
   prisma: PrismaService,
@@ -111,7 +111,7 @@ export async function deleteAllUserData(
     prisma.user.delete({ where: { id: uid } }),
   ]);
 
-  // Асинхронный VACUUM только по затронутым таблицам (не блокирует, не FULL).
+  // Асинхронный VACUUM "User" (не блокирует, не FULL) — почему одной таблицы, см. выше.
   prisma
     .$executeRawUnsafe('VACUUM ANALYZE "User"')
     .catch((e) =>

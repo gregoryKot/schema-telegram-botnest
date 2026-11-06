@@ -19,7 +19,6 @@ export function runtimeModeProbe(
   return {
     id: 'runtimeMode',
     title: 'Режим работы прод-образа',
-    critical: true,
     run() {
       if (!isBuiltImage()) {
         return Promise.resolve({

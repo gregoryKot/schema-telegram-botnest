@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ModeMapEdgeEditor } from './ModeMapNodeEditor';
 import type { ModeMapEdge } from '../api';
+import { MODE_MAP_NODE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 
 function baseEdge(overrides: Partial<ModeMapEdge> = {}): ModeMapEdge {
   return { id: 'e1', source: 'n1', target: 'n2', ...overrides };
@@ -41,6 +42,12 @@ describe('ModeMapEdgeEditor — тип связи и подпись', () => {
     const { onChange } = renderEditor(baseEdge());
     fireEvent.change(screen.getByLabelText('Подпись (необязательно)'), { target: { value: 'будит критика' } });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ label: 'будит критика' }));
+  });
+
+  it('подпись ограничена пределом сервера (maxLength = MODE_MAP_NODE_TEXT_MAX)', () => {
+    renderEditor(baseEdge());
+    expect(screen.getByLabelText('Подпись (необязательно)').getAttribute('maxLength'))
+      .toBe(String(MODE_MAP_NODE_TEXT_MAX));
   });
 
   it('пустая подпись пишет undefined, а не пустую строку', () => {

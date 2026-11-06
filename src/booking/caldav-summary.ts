@@ -1,12 +1,12 @@
-// Раз-экранирование SUMMARY (RFC 5545) — зеркало escapeText из
-// caldav-event.util.ts, только в обратную сторону. Отдельный файл — иначе
-// caldav-busy.ts (в храповике на 87 строк) пробил бы потолок.
+// Раз-экранирование SUMMARY (RFC 5545) — зеркало escapeText из caldav-event.util.ts
+// в обратную сторону. Отдельный файл — чтобы caldav-busy.ts не пробил потолок.
+import { ownProps } from './caldav-event-end';
 const MAX_SUMMARY_LEN = 120;
 
-/** SUMMARY уже unfolded-текста VEVENT: раз-экранированный, со схлопнутыми
- *  пробелами и обрезанный. undefined — если поля нет или оно пустое. */
+/** SUMMARY события (не вложенного VALARM) из unfolded-текста VEVENT: раз-
+ *  экранированный, со схлопнутыми пробелами и обрезанный. undefined — нет/пусто. */
 export function readSummary(ev: string): string | undefined {
-  const m = ev.match(/(?:^|\n)SUMMARY(?:;[^:\n]*)?:([^\r\n]*)/);
+  const m = ownProps(ev).match(/(?:^|\n)SUMMARY(?:;[^:\n]*)?:([^\r\n]*)/);
   if (!m) return undefined;
   const text = unescapeText(m[1]).replace(/\s+/g, ' ').trim();
   if (!text) return undefined;

@@ -15,9 +15,9 @@
 //     повтор хуже страницы без стилей.
 //   • модуль — приложение не стартовало: перезагрузка, не больше трёх за
 //     2 минуты (паузы 1/4/15 с), метки — в sessionStorage.
-// Не помогло — отчёт в /api/client-errors. Секции 'assets' нет в
-// src/api/client-error-section.ts, она ляжет в 'other' — так и задумано:
-// список расширяют, когда 'other' станет заметной.
+// Не помогло — отчёт в /api/client-errors, секция 'assets' (свой бакет в
+// src/api/client-error-section.ts и своя строка «Файлы сайта не загрузились»
+// в блоке «Поломки на клиенте» отчёта /stats).
 // Тест: webapp/src/assetRecovery.test.ts; в браузере — e2e-browser/asset-recovery.spec.ts.
 (function () {
   var CSS_RETRY_DELAYS_MS = [1000, 2000, 4000, 8000, 16000, 32000, 64000];

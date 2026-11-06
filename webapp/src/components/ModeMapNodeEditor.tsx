@@ -11,6 +11,7 @@ import { SHAPE_OPTIONS, type ShapeOption } from './modeMap/shapeOptions';
 import { nodeTexts } from './modeMap/nodeTexts';
 import { COLOR_PRESETS } from './modeMap/editorStyles';
 import { EditorHead, SegRow, Swatches } from './modeMap/EditorParts';
+import { MODE_MAP_NODE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 
 // Панель редактирования связи жила в этом же файле — вынесена (правило №10);
 // ре-экспорт сохраняет прежний путь импорта у консьюмеров.
@@ -77,7 +78,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       <EditorHead title={texts.title} onClose={onClose} />
 
       <label className="ds-label" htmlFor="mm-node-name">Название</label>
-      <input id="mm-node-name" ref={nameRef} className="ds-input" value={node.data.label}
+      <input id="mm-node-name" ref={nameRef} className="ds-input" value={node.data.label} maxLength={MODE_MAP_NODE_TEXT_MAX}
         onChange={e => patchData({ label: e.target.value })} placeholder="Название режима" />
 
       {coupleMode && (
@@ -152,7 +153,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         onPickHealthy={() => { healthyRef.current?.focus(); healthyRef.current?.scrollIntoView({ block: 'nearest' }); }} />
 
       <label className="ds-label" htmlFor="mm-node-note">{texts.note}</label>
-      <textarea id="mm-node-note" ref={noteRef} className="ds-textarea" style={{ minHeight: 56 }} rows={3}
+      <textarea id="mm-node-note" ref={noteRef} className="ds-textarea" style={{ minHeight: 56 }} rows={3} maxLength={MODE_MAP_NODE_TEXT_MAX}
         value={node.data.note ?? ''} onChange={e => patchData({ note: e.target.value || undefined })}
         placeholder={texts.notePlaceholder} />
       {texts.hint && <div className="ds-sub mm2-field-hint">{texts.hint}</div>}
@@ -171,7 +172,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       {(node.type === 'child' || node.type === 'custom') && (
         <>
           <label className="ds-label" htmlFor="mm-node-need">Неудовлетворённая потребность</label>
-          <input id="mm-node-need" ref={needRef} className="ds-input" list="modemap-needs" value={node.data.unmetNeed ?? ''}
+          <input id="mm-node-need" ref={needRef} className="ds-input" list="modemap-needs" value={node.data.unmetNeed ?? ''} maxLength={MODE_MAP_NODE_TEXT_MAX}
             onChange={e => patchData({ unmetNeed: e.target.value || undefined })}
             placeholder={tr('Выбери или впиши свою…', 'Выберите или впишите свою…')} />
           <datalist id="modemap-needs">
@@ -183,7 +184,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       {(node.type === 'child' || node.type === 'critic' || node.type === 'coping') && (
         <>
           <label className="ds-label is-ok" htmlFor="mm-node-healthy">Что сказал бы Здоровый Взрослый</label>
-          <textarea id="mm-node-healthy" ref={healthyRef} className="ds-textarea is-ok" style={{ minHeight: 48 }} rows={2}
+          <textarea id="mm-node-healthy" ref={healthyRef} className="ds-textarea is-ok" style={{ minHeight: 48 }} rows={2} maxLength={MODE_MAP_NODE_TEXT_MAX}
             value={node.data.healthyResponse ?? ''} onChange={e => patchData({ healthyResponse: e.target.value || undefined })}
             placeholder={node.type === 'critic' ? tr('Ответ критику: «От тебя не требуется безупречность…»', 'Ответ критику: «От вас не требуется безупречность…»')
               : node.type === 'coping' ? 'Зачем защита? «Я могу выдержать эту боль…»'

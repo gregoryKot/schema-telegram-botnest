@@ -16,10 +16,9 @@ const run = (e: NodeJS.ProcessEnv = env, at: number = T0 + MIN) =>
   clinicalLabelsProbe(e, () => at).run();
 
 describe('clinicalLabelsProbe', () => {
-  it('не критична и не красит /health (строка под чужим ключом сама не уйдёт)', () => {
+  it('не красит /health (строка под чужим ключом сама не уйдёт)', () => {
     const p = clinicalLabelsProbe(env);
     expect(p.id).toBe('clinicalLabels');
-    expect(p.critical).toBe(false);
     expect(p.reportInHealth).toBe(false);
   });
 

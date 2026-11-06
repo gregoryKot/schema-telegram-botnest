@@ -8,12 +8,12 @@ import {
   IsInt,
   IsISO8601,
   IsOptional,
-  Matches,
   Max,
   Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsCalendarDay } from '../utils/calendar-day';
 
 /**
  * DTO для календаря слотов в админке (контракт «Календарь слотов в
@@ -21,10 +21,10 @@ import { Type } from 'class-transformer';
  * query/тело всё равно проверяются рантаймом.
  */
 export class AdminCalendarQueryDto {
-  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsCalendarDay()
   from!: string;
 
-  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  @IsCalendarDay()
   to!: string;
 }
 

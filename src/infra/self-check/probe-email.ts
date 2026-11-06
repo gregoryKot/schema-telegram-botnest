@@ -47,7 +47,6 @@ export function emailProbe(
   return {
     id: 'email',
     title: 'Резервные алерты на почту',
-    critical: false,
     run() {
       const cap = buildCapabilityReport(env).find((c) => c.id === 'alertEmail');
       if (!cap?.on) {

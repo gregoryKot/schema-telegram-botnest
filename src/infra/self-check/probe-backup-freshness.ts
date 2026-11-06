@@ -57,7 +57,6 @@ export function backupFreshnessProbe(
   return {
     id: 'backupFreshness',
     title: 'Бэкапы БД в Cloudflare R2',
-    critical: false,
     async run() {
       const misconfigured = backupMisconfigResult(env);
       if (misconfigured) return misconfigured;

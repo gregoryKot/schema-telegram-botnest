@@ -148,7 +148,8 @@ export class TelegramNotifyActionsService implements OnModuleInit {
 
     this.bot.action(/^notify:pause:(7|30)$/, async (ctx) => {
       try {
-        await ctx.answerCbQuery('⏸ Пауза включена');
+        // Без текста: тост уходит до записи паузы; итог — editMessageText ниже.
+        await ctx.answerCbQuery();
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const userId = await this.accountService.canonicalUserId(rawId);

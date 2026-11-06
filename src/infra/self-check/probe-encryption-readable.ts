@@ -102,7 +102,6 @@ export function encryptionReadableProbe(
   return {
     id: 'encryptionReadable',
     title: 'Читаемость шифрованных данных',
-    critical: false,
     reportInHealth: false,
     async run() {
       if (!env.ENCRYPTION_KEY?.trim()) return { ok: true, detail: 'выключено' };

@@ -111,7 +111,6 @@ export function googleOAuthProbe(env: Env = process.env): Probe {
   return {
     id: 'googleOAuth',
     title: 'Вход через Google',
-    critical: false,
     reportInHealth: false,
     async run() {
       const clientId = env.GOOGLE_CLIENT_ID?.trim();
@@ -131,7 +130,6 @@ export function vkOAuthProbe(env: Env = process.env): Probe {
   return {
     id: 'vkOAuth',
     title: 'Вход через VK',
-    critical: false,
     reportInHealth: false,
     async run() {
       if (!env.VK_APP_ID?.trim() || !env.VK_REDIRECT_URI?.trim())

@@ -8,7 +8,6 @@ function failed(id: string, detail = 'сломано'): SelfCheckResultEntry {
   return {
     id,
     title: `Проба ${id}`,
-    critical: false,
     ok: false,
     detail,
     reportInHealth: true,
@@ -27,7 +26,6 @@ describe('SelfCheckAlertTracker', () => {
     const entry: SelfCheckResultEntry = {
       id: 'caldav',
       title: 'Личный календарь (iCloud)',
-      critical: false,
       ok: false,
       detail: 'обнаружение не нашло календарей',
       reportInHealth: true,

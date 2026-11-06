@@ -14,7 +14,6 @@ export function throttleStorageProbe(prisma: PrismaService): Probe {
   return {
     id: 'throttleStorage',
     title: 'Хранилище лимитов запросов (Postgres)',
-    critical: false,
     async run() {
       try {
         const storage = new PostgresThrottleStorage(prisma);
