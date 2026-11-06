@@ -19,4 +19,11 @@ describe('ClientListHero', () => {
     fireEvent.click(btn);
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
+  it('одна залитая кнопка: при открытой форме главное — «Создать карточку», «+ Новый клиент» вторична', () => {
+    const { rerender } = render(<ClientListHero count={1} formVisible={false} onToggle={() => {}} />);
+    const btn = () => screen.getByRole('button', { name: /Новый клиент/ });
+    expect(btn().className).not.toContain('ds-btn--secondary');
+    rerender(<ClientListHero count={1} formVisible onToggle={() => {}} />);
+    expect(btn().className).toContain('ds-btn--secondary');
+  });
 });

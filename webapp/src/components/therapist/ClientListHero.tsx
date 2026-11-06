@@ -2,7 +2,8 @@ import { Sheets } from '../art/PaperArt';
 
 interface Props { count: number; formVisible: boolean; onToggle: () => void }
 
-/** Шапка «Клиенты»: то, что уже собрано (Sheets), и единственная залитая кнопка экрана. */
+/** Шапка «Клиенты»: то, что уже собрано (Sheets), и единственная залитая кнопка экрана —
+ *  пока форма открыта, главное действие — её «Создать карточку», и эта кнопка вторична. */
 export function ClientListHero({ count, formVisible, onToggle }: Props) {
   return (
     <div className="pp-block pp-block--head tc-hero">
@@ -13,7 +14,7 @@ export function ClientListHero({ count, formVisible, onToggle }: Props) {
         </div>
         <Sheets size="hero" />
       </div>
-      <button className="ds-btn tc-hero-btn" aria-expanded={formVisible} onClick={onToggle}>
+      <button className={formVisible ? 'ds-btn ds-btn--secondary tc-hero-btn' : 'ds-btn tc-hero-btn'} aria-expanded={formVisible} onClick={onToggle}>
         + Новый клиент
       </button>
     </div>
