@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Loader } from '../../components/Loader';
+import { ExScreenSkeleton } from '../../components/exercises/ExScreen';
 import { ExBackLabelContext, EX_BACK_DEFAULT } from '../../components/exercises/exBackLabel';
 import type { OpenExercise } from './useTaskLauncher';
 
@@ -29,7 +29,7 @@ export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker, back
   if (!open) return null;
   return (
     <ExBackLabelContext.Provider value={backLabel}>
-    <Suspense fallback={<Loader minHeight="100dvh" />}>
+    <Suspense fallback={<ExScreenSkeleton onBack={onBack} />}>
       {open.ex === 'belief' && <BeliefCheckEx onBack={onBack} onComplete={onComplete} />}
       {open.ex === 'schema' && <SchemaEx onBack={onBack} initialSchemaId={open.id} onComplete={onComplete} />}
       {open.ex === 'mode' && <ModeEx onBack={onBack} initialModeId={open.id} onComplete={onComplete} />}

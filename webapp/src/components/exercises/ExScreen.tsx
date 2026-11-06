@@ -3,6 +3,7 @@ import { Leaf } from '../art/PaperArtSigns';
 import { pressable } from '../../utils/a11y';
 import { TherapyCaution } from '../therapy/TherapyCaution';
 import { useExBackLabel } from './exBackLabel';
+import { Skeleton, SkeletonCard } from '../Skeleton';
 import '../../styles/sheet-exercises.css';
 
 // ── Shared SVG icons ─────────────────────────────────────────────────────────
@@ -65,6 +66,29 @@ export function ExScreen({ onBack, backLabel, eyebrow, art, title, lede, caution
           {foot}
         </div>
         {aside && <aside className="ex2-aside">{aside}</aside>}
+      </div>
+    </div>
+  );
+}
+
+// ── Силуэт экрана упражнения, пока грузится его чанк (Suspense в TaskExerciseHost) ──
+// Та же рамка: шапка с «Назад», надзаголовок, заголовок, абзац, карточка. Записи
+// истории ещё нет (её делает упражнение после загрузки), поэтому «Назад» — onBack хоста.
+export function ExScreenSkeleton({ onBack }: { onBack: () => void }) {
+  const hostBackLabel = useExBackLabel();
+  return (
+    <div className="ex2-screen">
+      <div className="ds-sheet-head ex2-top">
+        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{hostBackLabel}</button>
+      </div>
+      <div className="ex2-body ex2-body--single" aria-hidden>
+        <div className="ex2-main ex2-skel">
+          <Skeleton width={120} height={12} />
+          <Skeleton width="62%" height={30} />
+          <Skeleton width="92%" height={14} />
+          <Skeleton width="74%" height={14} />
+          <SkeletonCard height={220} />
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
-import { Loader } from './Loader';
+import { Skeleton, SkeletonList } from './Skeleton';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useAsyncData } from '../hooks/useAsyncData';
@@ -76,7 +76,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             </button>
           </div>
         ) : !plans ? (
-          <Loader minHeight="30vh" />
+          <div className="sk-group" aria-hidden><Skeleton width={150} height={12} /><SkeletonList rows={3} height={112} /></div>
         ) : plans.length === 0 ? (
           <div className="sk-group">
             <PaperEmpty title="Планов пока нет">{plansEmptyText(tr)}</PaperEmpty>

@@ -275,10 +275,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
 - Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
   `scripts/color-drift-baseline.json`). Брать ролями, а не файлами.
-- Загрузка спиннером вместо скелетона осталась в четырёх местах webapp (сверка
-  2026-11-05, `grep -rn "<Loader" webapp/src`): `PlansScreen.tsx`, `PracticesScreen.tsx`,
-  `SettingsSheet.tsx` и Suspense-fallback `sections/today/TaskExerciseHost.tsx`
-  ([AUDIT_2026-10, «Фронтенды и UX»](../AUDIT_2026-10_FINDINGS.md#фронтенды-и-ux)).
 
 **Удаление всех данных теста схем не пишет событие аналитики** (осознанно, 2026-10-24):
 `DELETE /api/ysq-data` (`src/api/ysq.controller.ts`, кнопка «Удалить результаты теста»)

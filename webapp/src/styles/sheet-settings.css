@@ -7,7 +7,6 @@
   position: fixed; inset: 0; z-index: 80; background: var(--bg);
   display: flex; flex-direction: column; overflow: hidden;
 }
-.st-overlay--loading { align-items: center; justify-content: center; }
 .st-toast { opacity: 0; transition: opacity .3s; }
 .st-toast.is-on { opacity: 1; }
 .st-toast.is-err { background: color-mix(in srgb, var(--accent-red) 12%, transparent); color: var(--accent-red); }

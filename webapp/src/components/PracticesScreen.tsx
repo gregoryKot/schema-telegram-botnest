@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import type { UserPractice } from '../api';
 import { useAsyncData } from '../hooks/useAsyncData';
-import { Loader } from './Loader';
+import { SkeletonList } from './Skeleton';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useConfirmTap } from '../../../shared/src/hooks/useConfirmTap';
 import { useTimedFlag } from '../../../shared/src/hooks/useTimedFlag';
@@ -141,7 +141,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
               {tr('Не удалось загрузить список. Проверь соединение и обнови страницу', 'Не удалось загрузить список. Проверьте соединение и обновите страницу')}
             </div>
           ) : !practices ? (
-            <Loader minHeight="20vh" />
+            <SkeletonList rows={3} height={56} />
           ) : practices.length === 0 ? (
             <PaperEmpty>{tr('Пока пусто — добавь первое действие ниже.', 'Пока пусто — добавьте первое действие ниже.')}</PaperEmpty>
           ) : (

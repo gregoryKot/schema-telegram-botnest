@@ -45,8 +45,8 @@ function hasRule(block: string, cls: string, decl: string): boolean {
 
 // Корни полноэкранных листов сайта (position: fixed; inset: 0 — grep по
 // styles/*.css и index.css). Подложки модалок и поповеров (.sheet-modal,
-// .cmd-backdrop, .sk-dialog-backdrop, .ds-backdrop) и спиннер .sk-loader--full
-// сюда не входят: их содержимое не у верхней кромки. У экрана упражнения
+// .cmd-backdrop, .sk-dialog-backdrop, .ds-backdrop) сюда не входят: их
+// содержимое не у верхней кромки. У экрана упражнения
 // отступ стоит на липкой шапке .ex2-top, а не на корне: sticky top: 0
 // считается от края скролл-контейнера, и padding корня уезжает при скролле.
 // Третий элемент: кто несёт отступ вместо корня (липкая шапка).
