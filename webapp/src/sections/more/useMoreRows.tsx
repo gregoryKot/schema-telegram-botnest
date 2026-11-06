@@ -3,7 +3,7 @@ import type { Section } from '../../components/appShell/navigation';
 import { useTherapyTarget } from '../../components/therapy/useTherapyTarget';
 import { useTherapyBridgeTexts } from '../../components/therapy/useTherapyBridgeTexts';
 import { Breath, Layers, Pebbles, Sheets } from '../../components/art/PaperArt';
-import { Beads, Check, Leaf, Talk } from '../../components/art/PaperArtSigns';
+import { Beads, Check, Cluster, Leaf, Talk } from '../../components/art/PaperArtSigns';
 
 export interface Row { id: string; art?: ReactNode; title: string; sub: string; onClick: () => void; href?: string; phoneOnly?: boolean }
 
@@ -14,6 +14,7 @@ export interface MoreRowsDeps {
   onOpenWhy: () => void;
   onOpenJourney: () => void;
   onOpenTasks: () => void;
+  onOpenSelfMap: () => void;
   userRole?: 'CLIENT' | 'THERAPIST';
   onOpenTherapistCabinet?: () => void;
 }
@@ -32,6 +33,8 @@ export function useMoreRows(d: MoreRowsDeps): { rows: Row[]; sheet: ReactNode } 
     { id: 'why', art: <Leaf size="row" />, title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: d.onOpenWhy },
     { id: 'tasks', art: <Check size="row" />, title: 'Задания', sub: 'От терапевта и свои цели', onClick: d.onOpenTasks },
     { id: 'schemas', art: <Layers size="row" />, title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => d.onNavigate('schemas'), phoneOnly: true },
+    // Единственный постоянный вход в «Карту себя»: иначе её видно только после разбора (CaseDoneScreen).
+    { id: 'selfmap', art: <Cluster size="row" />, title: 'Карта себя', sub: 'Из разборов: какие части включаются в трудные моменты', onClick: d.onOpenSelfMap },
     { id: 'practice', art: <Breath size="row" />, title: 'Практики', sub: 'Дыхание, упражнения, планы', onClick: () => d.onNavigate('practice'), phoneOnly: true },
     { id: 'journey', art: <Sheets size="row" />, title: 'Мой путь', sub: 'Всё, что уже собрано', onClick: d.onOpenJourney },
     ...talkRow,

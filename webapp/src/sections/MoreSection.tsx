@@ -10,12 +10,13 @@ import { HomeTherapyLine } from './more/HomeTherapyLine';
 import { useMoreRows } from './more/useMoreRows';
 import { MoreRows } from './more/MoreRows';
 import { TasksHub } from './tasks/TasksHub';
+import { CaseFlowHost } from '../components/caseFlow/CaseFlowHost';
 import '../styles/client-more.css';
 import { Heart } from '../components/art/PaperArtSigns';
 
 interface Props {
   onNavigate: (s: Section) => void;
-  onOpenSchema: (opts?: { startTest?: boolean }) => void;
+  onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs' | 'schemas' | 'modes'; highlight?: string }) => void;
   onOpenAdvanced: () => void;
   onOpenTracker: () => void;
   onOpenDiaries: () => void;
@@ -34,12 +35,14 @@ export function MoreSection(p: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
   const [tasks, setTasks] = useState(false);
+  const [selfMap, setSelfMap] = useState(false);
   const { modeEntries } = useTodayDiaries(p.refreshKey);
   const { rows, sheet } = useMoreRows({
     ...p,
     onOpenWhy: () => { trackHomeTile('why'); setWhy(true); },
     onOpenJourney: () => setJourney(true),
     onOpenTasks: () => setTasks(true),
+    onOpenSelfMap: () => setSelfMap(true),
   });
 
   return (
@@ -65,6 +68,9 @@ export function MoreSection(p: Props) {
       {why && <WhySheet onClose={() => setWhy(false)} />}
       {sheet}
       {journey && <JourneySheet onClose={() => setJourney(false)} />}
+      {selfMap && (
+        <CaseFlowHost start="map" onClose={() => setSelfMap(false)} onOpenTracker={p.onOpenTracker} onOpenSchema={p.onOpenSchema} />
+      )}
       {tasks && (
         <TasksHub
           onClose={() => setTasks(false)}

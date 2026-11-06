@@ -104,7 +104,7 @@ export function AppSections({
           <TodaySection
             needs={needs}
             ratings={ratings}
-            onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
+            onOpenSchema={ov.openSchema}
             onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
             refreshKey={todayRefreshKey}
           />
@@ -119,7 +119,7 @@ export function AppSections({
           <ErrorBoundary section="Ещё" key="more-boundary">
             <MoreSection
               onNavigate={setSection}
-              onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab('needs'); ov.setSchemaHighlight(undefined); ov.setShowSchemaInfo(true); }}
+              onOpenSchema={ov.openSchema}
               onOpenAdvanced={() => ov.setShowSettings(true)}
               onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
               onOpenDiaries={() => ov.setShowDiaries(true)}
@@ -134,7 +134,7 @@ export function AppSections({
         {section === 'schemas' && (
           <ErrorBoundary section="Паттерны" key="schemas-boundary">
             <SchemasSection
-              onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setSchemaHighlight(opts?.highlight); ov.setShowSchemaInfo(true); }}
+              onOpenSchema={ov.openSchema}
               childhoodRatings={childhoodRatings} onOpenSettings={() => ov.setShowSettings(true)}
               onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
             />
