@@ -23,6 +23,8 @@
   .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
   .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
+  /* «Графические карты»: холст во всю ширину, полоса карт — в колонке, на одной вертикали с шапкой. */
+  .tk-tabs-body .mm2-bar, .tk-tabs-body .mm2-create-err { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); }
 }
 
 /* ── Шапка ───────────────────────────────────────────────────────────────── */
@@ -50,13 +52,13 @@
 .tk-head .tc-meeting { flex-basis: 100%; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
 .tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }
-/* «Карта режимов» — холст на всю рабочую область (не в колонке --tk-max), и
-   шапка над ним во всю ширину: иначе слева от «← Все клиенты» пустая полоса
-   шириной --tk-center (владелец 2026-11-06). Поле 16px — как у полосы карт
-   .mm2-bar (sheet-modemap.css), чтобы «← Все клиенты» и вкладки карт стояли
-   на одной вертикали. */
-.tk-head--wide { padding-inline: 16px; }
-.tk-head--wide .ds-tabs { margin: 0 -16px; padding: 0 16px; }
+/* Шапка одна на все вкладки и не меняет поле. В #962 на «Графических картах»
+   она уходила во всю ширину (поле 16px), и при переходе на любую другую
+   вкладку или экран кабинета вся шапка прыгала вбок: на 32px на ноутбуке,
+   на 152px на мониторе 1920 (владелец 2026-11-06). Теперь холст по-прежнему
+   во всю ширину, а полоса карт над ним (.mm2-bar) и строка ошибки создания
+   встают в колонку кабинета, под «← Все клиенты» (правило — в блоке ≥768
+   выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
 /* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.
