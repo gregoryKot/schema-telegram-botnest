@@ -6,8 +6,10 @@
 .ct-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 .ct-head-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
 /* Имя из почты или ника без пробелов резалось краем экрана посреди слова (QA мобильной 2026-11, М5):
-   одна строка с многоточием, как имена кабинета в #911, без overflow-wrap: anywhere. */
-.ct-h1 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+   одна строка с многоточием, как имена кабинета в #911, без overflow-wrap: anywhere.
+   padding-bottom — под хвосты «р», «у», «д»: строка ds-h1 (1.05) ниже глифов, и overflow: hidden
+   срезал их («Привет, Григорий» без хвоста у «р», скриншот владельца 2026-11-06). */
+.ct-h1 { margin: 0; padding-bottom: .14em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ct-link {
   min-height: 44px; padding: 0; display: inline-flex; align-items: center; background: none; border: 0;
   cursor: pointer; font: 600 14px var(--sans); color: var(--accent);
@@ -19,6 +21,23 @@
    components/art/PaperArt.tsx. Здесь только то, что своё у главной. */
 .ct-home { display: flex; flex-direction: column; gap: 20px; }
 .ct-tile { border-radius: 20px; }
+
+/* Телефон: «Сегодня» — один экран без прокрутки (владелец 2026-11-06). Страница уезжала на ~70px
+   под статус-бар: нижнее поле .ds-page (40) стояло поверх зазора над панелью у .canvas (24). Поля и
+   ритм страницы даёт .ds-page--fit (cabinet.css); здесь по его шкале сжимаются блоки главной:
+   отступы — от --fit-room, кегли и картинки — от --fit-size, они уменьшаются последними.
+   От 840px высоты — исходные размеры. Сверка — e2e-browser/today-fit.spec.ts. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .ct-page .ct-head { margin-bottom: calc(var(--fit-room) * .04); }
+  .ct-page .ct-home { gap: calc(12px + var(--fit-room) * .04); }
+  .ct-main.pp-block { padding: calc(12px + var(--fit-room) * .06) 0 calc(14px + var(--fit-room) * .07); gap: calc(12px + var(--fit-room) * .05); }
+  .ct-main .pp-hero-body { gap: calc(6px + var(--fit-room) * .02); }
+  .ct-main .pp-hero-title { font-size: calc(26px + var(--fit-size) * .05); }
+  .ct-home .pp-square { min-height: 0; padding: calc(14px + var(--fit-room) * .03) 18px calc(12px + var(--fit-room) * .02); gap: calc(4px + var(--fit-room) * .02); }
+  .ct-home .pp-title { font-size: calc(22px + var(--fit-size) * .0333); }
+  .ct-home .pp-art--square { height: calc(36px + var(--fit-size) * .2); width: auto; aspect-ratio: 120 / 64; }
+  .ct-home .pp-square-foot { margin-top: calc(4px + var(--fit-room) * .03); }
+}
 
 /* Компьютер: блок трекера и квадраты — в два столбца с 1024; на 768–1023 всё столбиком (#925).
    Заданий и ленты на главной нет (владелец 2026-11-05: только три кнопки). */

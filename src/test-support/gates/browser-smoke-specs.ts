@@ -33,3 +33,17 @@ export function smokeSpecViolations(source: string): string[] {
   }
   return out;
 }
+
+/**
+ * Спеки каталога, которых нет в `testMatch` playwright.config.ts: `npx playwright
+ * test` их молча пропускает — спек лежит, ничего не защищая (тот же класс, что
+ * спек-сирота в `test/`, check-e2e-in-ci). Сверка по имени файла в кавычках.
+ */
+export function specsMissingFromConfig(
+  configSource: string,
+  specs: string[],
+): string[] {
+  return specs.filter(
+    (f) => !configSource.includes(`'${f}'`) && !configSource.includes(`"${f}"`),
+  );
+}
