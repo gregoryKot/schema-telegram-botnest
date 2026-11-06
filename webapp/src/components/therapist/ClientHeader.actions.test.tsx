@@ -231,3 +231,16 @@ describe('шапка: имя и встреча', () => {
     expect(container.querySelector('.tk-actions-main')).toBeNull();
   });
 });
+
+// Холст «Карты режимов» на всю рабочую область, остальные вкладки — в колонке
+// кабинета. Шапка следует за вкладкой: на карте — во всю ширину (tk-head--wide),
+// иначе слева от «← Все клиенты» пустая полоса (владелец 2026-11-06).
+describe('ширина шапки по вкладке', () => {
+  it('«Карта режимов» — шапка во всю ширину, «Обзор» — в колонке', () => {
+    renderHeader(detailOf({ clientTab: 'mode_map' }));
+    expect(screen.getByText('← Все клиенты').closest('.tk-head')!.className).toBe('tk-head tk-head--wide');
+    cleanup();
+    renderHeader(detailOf({ clientTab: 'overview' }));
+    expect(screen.getByText('← Все клиенты').closest('.tk-head')!.className).toBe('tk-head');
+  });
+});
