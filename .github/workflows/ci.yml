@@ -44,7 +44,10 @@ jobs:
       # джобу через actions/cache ниже — прокидывается явным --cacheDirectory
       # в каждый npx jest, потому что jest не читает env-переменную для этого
       # (в конфиге кэш-путь не задан, а package.json трогать нельзя — CI-4.2).
-      JEST_CACHE_DIR: .jest-cache
+      # Путь абсолютный: относительный jest резолвит от rootDir конфига
+      # (src/.jest-cache, test/.jest-cache), а actions/cache — от корня
+      # репозитория, и шаг «Кэш ts-jest» сохранял пустой каталог.
+      JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

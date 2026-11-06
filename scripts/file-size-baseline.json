@@ -1173,7 +1173,7 @@
   "src/quiz/quiz-voice.data.ts": 232,
   "src/quiz/quiz.types.ts": 44,
   "src/security/anonymous-routes.ts": 40,
-  "src/security/collect-source-files.ts": 69,
+  "src/security/collect-source-files.ts": 73,
   "src/security/controller-classification.ts": 80,
   "src/security/embedders.ts": 69,
   "src/security/helmet-config.ts": 62,
