@@ -67,6 +67,10 @@ export function sanitizeMeta(
       ? { hidden: meta.hidden }
       : undefined;
   }
+  // «Показать клиенту» схему случая: только включил/выключил, без id клиента.
+  if (name === 'concept_shared') {
+    return typeof meta.on === 'boolean' ? { on: meta.on } : undefined;
+  }
   if (name === 'onboarding_step') {
     const step = meta.step;
     if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {

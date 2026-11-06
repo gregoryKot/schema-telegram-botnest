@@ -1,6 +1,7 @@
 // События графической концептуализации в кабинете терапевта — реестр рядом с фичей (вынесен из
-// analytics.constants.ts по правилу №10, как CASE_EVENTS/GAME_EVENTS). Все без meta: тексты связей
-// и опыт схем — клиническая запись, id клиента и свободный текст в событие не попадают (правило №7).
+// analytics.constants.ts по правилу №10, как CASE_EVENTS/GAME_EVENTS). Все без meta, кроме булева
+// on у concept_shared: тексты связей и опыт схем — клиническая запись, id клиента и свободный
+// текст в событие не попадают (правило №7).
 // Блок в /stats — src/bot/concept-graph-metrics.*. Где не сказано иначе — только сайт.
 //   concept_graph_open / concept_mode_linked / concept_schema_linked — оба фронта: открыл схему
 //     случая; заполнил связи режима (схемы, потребности, истоки); записал убеждение / опыт схемы.
@@ -12,6 +13,9 @@
 //   concept_brief_open       — открыл экран «Главное» (кнопка в шапке вкладки).
 //   concept_sync_to_map      — «Добавить на карту» в строке связи над холстом: поля → холст (#963).
 //   concept_sync_from_map    — холст дописал в концептуализацию режим, схему или связь (#963).
+//   concept_shared           — терапевт включил или выключил «Показать клиенту»; meta { on: boolean },
+//                              других полей нет (src/api/analytics-meta.sanitize.ts).
+//   client_concept_opened    — клиент открыл схему случая из «Мой терапевт» (лист загрузился).
 export const CONCEPT_EVENTS = [
   'concept_graph_open',
   'concept_mode_linked',
@@ -22,4 +26,6 @@ export const CONCEPT_EVENTS = [
   'concept_brief_open',
   'concept_sync_to_map',
   'concept_sync_from_map',
+  'concept_shared',
+  'client_concept_opened',
 ] as const;

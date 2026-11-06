@@ -66,6 +66,16 @@ describe('sanitizeMeta', () => {
     });
   });
 
+  // «Показать клиенту» схему случая: только булев on; id клиента и прочее —
+  // мимо (правило №7), не-булев on — событие без meta.
+  it('concept_shared: только boolean on', () => {
+    expect(
+      sanitizeMeta('concept_shared', { on: false, clientId: 555, text: 'x' }),
+    ).toEqual({ on: false });
+    expect(sanitizeMeta('concept_shared', { on: 'true' })).toBeUndefined();
+    expect(sanitizeMeta('client_concept_opened', { on: true })).toBeUndefined();
+  });
+
   it('breath_start: meta игнорируется (событие без meta)', () => {
     expect(sanitizeMeta('breath_start', { junk: 'x' })).toBeUndefined();
   });
