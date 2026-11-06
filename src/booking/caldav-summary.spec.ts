@@ -68,3 +68,28 @@ describe('readSummary — обрезка длинных названий', () =>
     expect(readSummary(vevent(`SUMMARY:${exact}`))).toBe(exact);
   });
 });
+
+// RFC 5545 §3.6.6: у VALARM с ACTION:EMAIL свои SUMMARY и DESCRIPTION — тема
+// письма-напоминания. Подпись занятости берётся только у самого события.
+describe('readSummary — SUMMARY вложенного VALARM не название события', () => {
+  const start = 'DTSTART:20260713T170000Z';
+  const alarm =
+    'BEGIN:VALARM\nTRIGGER:-PT15M\nACTION:EMAIL\nSUMMARY:Alarm subject\n' +
+    'DESCRIPTION:Alarm body\nATTENDEE:mailto:a@b.c\nEND:VALARM';
+
+  it('SUMMARY события стоит после вложенного VALARM — берётся событие', () => {
+    expect(readSummary(vevent(`${start}\n${alarm}\nSUMMARY:Встреча`))).toBe(
+      'Встреча',
+    );
+  });
+
+  it('SUMMARY события стоит до VALARM — берётся событие', () => {
+    expect(readSummary(vevent(`SUMMARY:Встреча\n${start}\n${alarm}`))).toBe(
+      'Встреча',
+    );
+  });
+
+  it('у события SUMMARY нет, у VALARM есть — undefined, а не тема будильника', () => {
+    expect(readSummary(vevent(`${start}\n${alarm}`))).toBeUndefined();
+  });
+});

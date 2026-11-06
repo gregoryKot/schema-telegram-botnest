@@ -63,19 +63,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   ночной слот следующего дня. Так работает и ветка с DTEND; смена семантики
   требует протащить таймзону в `parseBusy` и решения владельца. Согласуется с
   правилом №25.
-- **`readSummary` читает SUMMARY по всему тексту VEVENT, включая вложенный
-  VALARM.** `src/booking/caldav-busy.ts:43` зовёт `readSummary`
-  (`src/booking/caldav-summary.ts:8`), регэксп берёт первое `SUMMARY` блока. У
-  VALARM с `ACTION:EMAIL` SUMMARY обязателен (RFC 5545 §3.6.6), и подпись
-  занятости в админ-календаре (`src/booking/admin-calendar-cell.ts:75`)
-  уходит из будильника, если у самого события SUMMARY нет (поле необязательное)
-  или будильник стоит раньше него. Доказано прогоном `readSummary` на VEVENT с
-  будильником `ACTION:EMAIL`: без SUMMARY у события вернулось «Alarm subject»;
-  будильник перед SUMMARY события — то же; в порядке грамматики §3.6.1 (сначала
-  свойства, потом будильники) — верно. Класс тот же, что #735 закрыл для
-  DURATION; лечится тем же `ownProps` из `src/booking/caldav-event-end.ts`
-  (экспортировать и звать в `readSummary`) и строкой с VALARM в спеке
-  `caldav-busy`. Занятость слота не страдает, только подпись.
 - **Компонента D в DURATION считается ровно как 24 часа.**
   `src/booking/caldav-event-end.ts:19` (`d * DAY_MS`): по RFC 5545 §3.3.6 день
   номинальный, поэтому в зоне с переводом часов событие с TZID и `DURATION:P1D`
