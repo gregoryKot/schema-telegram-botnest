@@ -165,6 +165,7 @@ describe('cabinet.css: примитивы листов (#906)', () => {
   it('.ds-tab — 44 на телефоне и под пальцем (pointer: coarse); десктоп с мышью не меняется', () => {
     expect(decls(tap, '.ds-tab')).toContain('min-height: 44px');
     expect(decls(tap, '.ds-tab')).toContain('min-width: 44px'); // короткая вкладка «Обзор» была 42 в ширину
+    expect(decls(tap, '.ds-tab')).toContain('flex-shrink: 0'); // иначе min-width снимает min-width: auto и лента сжимает вкладки
     expect(decls(top, '.ds-tab')).not.toContain('min-height');
     for (const sel of ['.ds-tab', '.ds-link', '.ds-seg-btn', '.ds-btn--sm']) {
       expect(decls(tap, sel), sel).toMatch(/(min-)?height: 44px/);
