@@ -10,12 +10,15 @@ import { defineConfig, devices } from '@playwright/test';
 // окружения). На CI-раннере такого браузера нет: там Playwright ставит свой,
 // и путь задавать НЕ надо. Поэтому выбираем по факту наличия файла, а не по
 // флагу окружения — так конфиг работает в обоих местах без правок.
-const PREINSTALLED_CHROMIUM =
-  '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+// Первый существующий из кандидатов: ревизия меняется с образом (1194 → 1243).
+const PREINSTALLED_CHROMIUM = [
+  '/opt/pw-browsers/chromium', // ссылка образа на текущую ревизию
+  '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+];
 // PW_CHROMIUM_PATH — локальный путь к браузеру (в CI не задан, конфиг не меняется).
 const executablePath =
   process.env.PW_CHROMIUM_PATH ||
-  (existsSync(PREINSTALLED_CHROMIUM) ? PREINSTALLED_CHROMIUM : undefined);
+  PREINSTALLED_CHROMIUM.find((p) => existsSync(p));
 
 // Общие настройки проектов.
 const commonUse = {

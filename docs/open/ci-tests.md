@@ -320,12 +320,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 удвоили бы время каждого пуша, а класс «зелено в CI, красно у владельца» для них не наблюдался.
 Появится — расширять хук, не возвращать `--no-verify`.
 
-**Локальный `npm run smoke` в облачной песочнице агента не находит Chromium** (2026-11-06): в
-`playwright.config.ts` зашит `PREINSTALLED_CHROMIUM = /opt/pw-browsers/chromium-1194/...`, а в песочнице
-сейчас `/opt/pw-browsers/chromium` (ревизия 1243) — без `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`
-каждый тест падает с «executable doesn't exist». CI не задет (файла нет — Playwright ставит свой). Вариант:
-проверять по очереди `/opt/pw-browsers/chromium` и старый путь, а не одну ревизию.
-
 **Живые спеки `e2e-browser/live/` ловят переезд экрана только ночью** (ci-alarm #965, 2026-11-06). Путь
 клиента к заданиям вынесен в общий `e2e-browser/support/clientTasks.ts` и проверяется смоком PR-CI
 (`therapy-smoke.spec.ts`); остальные пути живых спеков (кабинет терапевта: «+ Задание», «Действия с
