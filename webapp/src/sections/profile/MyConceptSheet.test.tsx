@@ -17,7 +17,11 @@ const { getMyConcept, trackEvent, reportClientError, FakeApiError } = vi.hoisted
   return { getMyConcept: vi.fn(), trackEvent: vi.fn(), reportClientError: vi.fn(), FakeApiError };
 });
 vi.mock('../../api', () => ({
-  api: { getMyConcept, trackEvent, getFormerTherapist: vi.fn() },
+  // Карточка терапевта зовёт и запись из приложения (#546) — здесь клиент не владельца.
+  api: {
+    getMyConcept, trackEvent, getFormerTherapist: vi.fn(),
+    getClientBooking: vi.fn(() => Promise.resolve({ eligible: false, upcoming: [] })),
+  },
   ApiError: FakeApiError,
   reportClientError,
 }));
