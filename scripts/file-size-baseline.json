@@ -1750,7 +1750,7 @@
   "webapp/src/components/settingsSheet/AboutSheet.tsx": 31,
   "webapp/src/components/settingsSheet/AboutWhy.tsx": 22,
   "webapp/src/components/settingsSheet/AppearanceSection.tsx": 65,
-  "webapp/src/components/settingsSheet/BecomeTherapistSection.tsx": 90,
+  "webapp/src/components/settingsSheet/BecomeTherapistSection.tsx": 91,
   "webapp/src/components/settingsSheet/DataSection.tsx": 73,
   "webapp/src/components/settingsSheet/ExportSummaryModal.tsx": 38,
   "webapp/src/components/settingsSheet/homeIconMode.ts": 29,
