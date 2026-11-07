@@ -54,11 +54,11 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   healthy_adult_imagery: 'grown',
 };
 
-/** Знак режима по группе; режим без группы (свой режим терапевта) — общий знак режимов. */
-export function modeSign(modeId: string): GuideSign {
-  const groupId = getModeById(modeId)?.groupId as ModeGroupId | undefined;
-  return (groupId && MODE_GROUP_SIGN[groupId]) || 'cluster';
-}
+/** Знак группы режимов по id (лист режима, заголовок группы в палитре холста); без группы — общий знак режимов. */
+export const modeGroupSign = (groupId: string | undefined): GuideSign =>
+  (groupId && MODE_GROUP_SIGN[groupId as ModeGroupId]) || 'cluster';
+/** Знак режима — знак его группы; режим без группы (свой режим терапевта) — общий знак режимов. */
+export const modeSign = (modeId: string): GuideSign => modeGroupSign(getModeById(modeId)?.groupId);
 
 /** Номер домена схемы 1–5 для DomainArt; неизвестная схема — 0, картинки нет. */
 export function schemaDomain(schemaId: string): number {

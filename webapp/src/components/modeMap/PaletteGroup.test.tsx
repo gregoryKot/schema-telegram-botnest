@@ -5,7 +5,7 @@ import { PaletteGroup } from './PaletteGroup';
 
 afterEach(() => cleanup());
 const draft = { id: 'x', type: 'schema' as const, data: { label: 'S' } };
-const base = { id: 'g', title: 'Группа', color: '#123456', total: 2, items: [{ id: 'i', name: 'Пункт', draft: () => draft }], onToggle: vi.fn(), onAdd: vi.fn() };
+const base = { id: 'g', title: 'Группа', color: '#123456', art: <svg data-testid="art" />, total: 2, items: [{ id: 'i', name: 'Пункт', draft: () => draft }], onToggle: vi.fn(), onAdd: vi.fn() };
 
 describe('PaletteGroup', () => {
   it('свёрнута: пунктов нет, счётчик виден; клик зовёт onToggle', () => {
@@ -22,6 +22,15 @@ describe('PaletteGroup', () => {
     fireEvent.click(screen.getByText('Группа'));
     expect(onToggle).not.toHaveBeenCalled();
     expect(screen.getByText('Пункт')).toBeTruthy();
+  });
+
+  it('в заголовке знак группы вместо точки; пункты держат точку цвета фигуры на холсте', () => {
+    const { container } = render(<PaletteGroup {...base} open searching={false} />);
+    const head = container.querySelector('.mm2-pal-head')!;
+    expect(head.querySelector('.pp-row-art [data-testid="art"]')).not.toBeNull();
+    expect(head.querySelector('.mm2-gdot')).toBeNull();
+    expect(container.querySelector('.mm2-pal-item .mm2-gdot')).not.toBeNull();
+    expect((container.firstChild as HTMLElement).style.getPropertyValue('--gc')).toBe('#123456');
   });
 
   it('клик по пункту добавляет заготовку, перетаскивание кладёт JSON', () => {

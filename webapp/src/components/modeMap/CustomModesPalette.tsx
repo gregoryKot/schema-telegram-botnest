@@ -7,7 +7,7 @@ import { MMIcon } from '../modeMapIcons';
 import type { NodeType } from '../modeMapData';
 import { ShapePicker } from './ShapePicker';
 import type { Draft } from './modeDraft';
-
+import { Sign } from '../therapist/SignArt';
 import type { CustomModesState } from './useCustomModes';
 
 function nodeData(m: TherapistCustomMode): ModeMapNode['data'] {
@@ -28,7 +28,7 @@ interface Props {
   onDragStart: (e: React.DragEvent, node: Draft) => void;
 }
 
-/** Секция палитры «Мои режимы»: список своих режимов терапевта и форма добавления. */
+/** Секция палитры «Мои режимы»: свои режимы терапевта (вне групп — общий знак режимов Cluster) и форма добавления. */
 export function CustomModesPalette({ state, setState, list, searching, onAdd, onDragStart }: Props) {
   const tr = useTr();
   const [adding, setAdding] = useState(false);
@@ -60,7 +60,7 @@ export function CustomModesPalette({ state, setState, list, searching, onAdd, on
   return (
     <div className="mm2-mine">
       <div className="mm2-mine-head">
-        <span className="mm2-pal-head-name">Мои режимы</span>
+        <Sign kind="cluster" /><span className="mm2-pal-head-name">Мои режимы</span>
         {!searching && (
           <button onClick={toggleForm} className="mm2-mine-plus" title="Добавить свой режим" aria-label="Добавить свой режим">
             <MMIcon name="plus" size={15} />

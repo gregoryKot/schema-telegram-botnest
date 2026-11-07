@@ -18,6 +18,7 @@ import type { TherapistCustomMode } from '../api';
 import { AddressFormContext } from '../utils/addressForm';
 import { TYPE_COLORS } from './modeMapData';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
+import { paperSignName } from '../test-support/paperSign';
 
 const getConceptualization = vi.fn();
 const listCustomModes = vi.fn();
@@ -149,6 +150,48 @@ describe('ModeMapPalette — цвет группы = цвет узла на хо
     renderPalette();
     const group = document.querySelector(`[data-group="${groupId}"]`) as HTMLElement;
     expect(group.style.getPropertyValue('--gc')).toBe(TYPE_COLORS[type]);
+  });
+});
+
+describe('ModeMapPalette — знаки бумажной аппликации (docs/design/PAPER_2026-11.md)', () => {
+  // Владелец 2026-11-07 по скриншоту палитры: «нет ничего из картинок стиля».
+  const headSign = (group: string) => paperSignName(document.querySelector(`[data-group="${group}"] .mm2-pal-head svg`));
+
+  it.each([
+    ['child', 'ChildCare'], ['critic', 'Looming'], ['coping_overcompensation', 'Shield'],
+    ['coping_avoidance', 'Shelter'], ['coping_surrender', 'Yield'], ['healthy', 'Together'],
+  ])('заголовок группы %s — знак группы %s', (groupId, sign) => {
+    renderPalette();
+    expect(headSign(groupId)).toBe(sign);
+  });
+
+  it.each([
+    ['rejection', 'Domain1'], ['autonomy', 'Domain2'], ['limits', 'Domain3'], ['other_directed', 'Domain4'], ['vigilance', 'Domain5'],
+  ])('заголовок домена %s — его знак %s', (domainId, sign) => {
+    renderPalette();
+    expect(headSign(`domain:${domainId}`)).toBe(sign);
+  });
+
+  it('раскрытая группа: строки режимов держат точку цвета фигуры, знака у строк нет', () => {
+    renderPalette();
+    fireEvent.click(screen.getByText('Детские режимы'));
+    const row = screen.getByText('Уязвимый Ребёнок').closest('button')!;
+    expect(row.querySelector('.mm2-gdot')).not.toBeNull();
+    expect(row.querySelector('svg')).toBeNull();
+  });
+
+  it('«Мои режимы» — Cluster, «Схемы клиента» — Layers; подписи блоков без знака (знаки групп сразу под ними)', async () => {
+    await act(async () => { renderPalette(); });
+    const head = (name: string) => screen.getByText(name).closest('.mm2-mine-head')!.querySelector('svg');
+    expect(paperSignName(head('Мои режимы'))).toBe('Cluster');
+    expect(paperSignName(head('Схемы клиента'))).toBe('Layers');
+    for (const h of screen.getAllByRole('heading')) expect(h.querySelector('svg'), h.textContent ?? '').toBeNull();
+  });
+
+  it('при поиске знак группы остаётся в заголовке', () => {
+    renderPalette();
+    fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), { target: { value: 'Упрямый' } });
+    expect(headSign('child')).toBe('ChildCare');
   });
 });
 

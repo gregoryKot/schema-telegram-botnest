@@ -8,7 +8,7 @@ import { render } from '@testing-library/react';
 import { ALL_MODES, MODE_GROUPS } from '../../schemaTherapyData';
 import { buildModeGuides, buildTechniqueGuides } from '../../../../shared/src/schemaTherapy/guide';
 import {
-  GUIDE_SIGNS, MODE_GROUP_SIGN, modeSign, schemaDomain, TECHNIQUE_SIGN,
+  GUIDE_SIGNS, MODE_GROUP_SIGN, modeGroupSign, modeSign, schemaDomain, TECHNIQUE_SIGN,
 } from './guideSignsModel';
 import { GuideSignArt } from './GuideSigns';
 
@@ -31,6 +31,13 @@ describe('знаки листов подсказок', () => {
     expect(modeSign('healthy_adult')).toBe('together');
     expect(modeSign('свой_режим')).toBe('cluster');
     for (const m of ALL_MODES) expect(modeSign(m.id), m.id).not.toBe('cluster');
+  });
+
+  it('знак группы по id (заголовок группы в палитре холста); неизвестная группа — общий знак режимов', () => {
+    for (const g of MODE_GROUPS) expect(modeGroupSign(g.id), g.id).toBe(MODE_GROUP_SIGN[g.id as keyof typeof MODE_GROUP_SIGN]);
+    expect(modeGroupSign('critic')).toBe('looming');
+    expect(modeGroupSign('нет_такой')).toBe('cluster');
+    expect(modeGroupSign(undefined)).toBe('cluster');
   });
 
   it('у каждого листа режима в подсказках есть знак группы', () => {

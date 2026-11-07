@@ -9,6 +9,9 @@ import { ClientModesPalette } from './modeMap/ClientModesPalette';
 import { CustomModesPalette } from './modeMap/CustomModesPalette';
 import { useCustomModes } from './modeMap/useCustomModes';
 import { PaletteGroup, type PaletteGroupItem } from './modeMap/PaletteGroup';
+import { GuideSignArt } from './art/GuideSigns';
+import { DomainArt } from './art/DomainArt';
+import { modeGroupSign } from './art/guideSignsModel';
 import { startNodeDrag } from './modeMap/nodeDrag';
 import { makeModeNode } from './modeMap/modeDraft';
 import { schemaNode } from './modeMap/schemaDraft';
@@ -45,16 +48,18 @@ export function ModeMapPalette({ onAdd, onAddMany }: Props) {
       id: i.id, name: i.name, title: i.short,
       draft: () => makeModeNode(i.id, meta.type, i.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}),
     }));
-    return [{ id: group.id, title: group.group, color: meta.color, total: group.items.length, items }];
+    const art = <GuideSignArt sign={modeGroupSign(group.id)} size="row" />; // тот же знак, что у листа режима в подсказках
+    return [{ id: group.id, title: group.group, color: meta.color, art, total: group.items.length, items }];
   });
-  const domains = SCHEMA_DOMAINS.flatMap(d => {
+  const domains = SCHEMA_DOMAINS.flatMap((d, i) => {
     const found = matchDomainSchemas(d, q);
     if (q && found.length === 0) return [];
     const items: PaletteGroupItem[] = found.map(s => ({
       id: s.id, name: s.name, title: s.desc,
       draft: () => schemaNode(s.id, s.name, d.color),
     }));
-    return [{ id: domainKey(d.id), title: d.domain, color: d.color, total: d.schemas.length, items }];
+    const art = <DomainArt domain={i + 1} size="row" />; // номер домена — порядок SCHEMA_DOMAINS, как в DomainMark
+    return [{ id: domainKey(d.id), title: d.domain, color: d.color, art, total: d.schemas.length, items }];
   });
 
   const showTrigger = matchesTrigger(q);
