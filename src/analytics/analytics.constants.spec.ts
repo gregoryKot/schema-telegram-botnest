@@ -125,6 +125,12 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
     expect(CONCEPT_EVENTS).toContain('concept_sync_to_map');
     expect(CONCEPT_EVENTS).toContain('concept_sync_from_map');
   });
+
+  it('подсказки терапевту — события реестра (concept_guide_*, #995)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_guide_mode_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_technique_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_assign');
+  });
 });
 
 describe('PUBLIC_ANALYTICS_EVENTS ⊆ ANALYTICS_EVENTS', () => {

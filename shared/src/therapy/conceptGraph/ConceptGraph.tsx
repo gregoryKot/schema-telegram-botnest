@@ -13,6 +13,7 @@ import { ConceptGraphFooter } from './ConceptGraphFooter';
 import { ConceptModeEditor } from './ConceptModeEditor';
 import { ConceptSchemaEditor } from './ConceptSchemaEditor';
 import { useTr } from '../../utils/addressForm';
+import type { ConceptGuideActions } from './conceptGuide';
 import { graphColumnStyle } from './graphStyles';
 
 type Open = { kind: 'mode' | 'schema'; id: string } | null;
@@ -21,7 +22,8 @@ type Open = { kind: 'mode' | 'schema'; id: string } | null;
  * Схема случая: диаграмма с кругом базовых потребностей в центре (схемы с
  * убеждением и опытом слева, режимы ещё левее, Здоровый Взрослый справа), под
  * ней редактор открытой фигуры, порядок смены режимов и мягкие подсказки
- * «чего не хватает». Пустая секция — часть картины, а не пробел.
+ * «чего не хватает». Пустая секция — часть картины, а не пробел. `guide` —
+ * листы и задания подсказок терапевту (#995); без него плашка — только текст.
  */
 export function ConceptGraph({
   source,
@@ -31,6 +33,7 @@ export function ConceptGraph({
   onToggleSchema,
   onAddSchema,
   track,
+  guide,
 }: {
   source: ConceptGraphSource;
   onToggleMode: (modeId: string) => void;
@@ -39,6 +42,7 @@ export function ConceptGraph({
   onToggleSchema: (schemaId: string) => void;
   onAddSchema: (schemaId: string) => void;
   track: (name: string, meta?: Record<string, unknown>) => void;
+  guide?: ConceptGuideActions;
 }) {
   const tr = useTr();
   const [open, setOpen] = useState<Open>(null);
@@ -109,6 +113,7 @@ export function ConceptGraph({
           onAddSchema={onAddSchema}
           onToggleMode={toggleMode}
           onClose={() => setOpen(null)}
+          guide={guide}
         />
       )}
       {schemaCard && (

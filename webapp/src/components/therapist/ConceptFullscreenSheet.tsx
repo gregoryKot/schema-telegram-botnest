@@ -16,12 +16,15 @@ interface Props {
   children: ReactNode;
 }
 
+/** Слой листов концептуализации; «Новое задание» из подсказок встаёт на него же, позже в DOM. */
+export const CONCEPT_SHEET_Z = 250;
+
 /**
- * Лист концептуализации на весь экран — один на схему случая, «Главное» и схему
- * у клиента (MyConceptSheet). В кабинете вокруг содержания стоят меню и список
- * клиентов, и на ноутбуке четыре колонки схемы в поток не помещаются; лист отдаёт всю
- * ширину окна, ничего не прячет в самом кабинете и закрывается кнопкой, Escape
- * или «Назад» браузера (useHistorySheet). Содержимое — то же, что в потоке, с
+ * Лист концептуализации на весь экран — один на схему случая («На весь экран»), экран
+ * «Главное», листы подсказок терапевту (guide/) и схему у клиента (MyConceptSheet). В кабинете
+ * вокруг содержания стоят меню и список клиентов, и на ноутбуке четыре колонки схемы в поток не
+ * помещаются; лист отдаёт всю ширину окна, ничего не прячет в самом кабинете и закрывается
+ * кнопкой, Escape или «Назад» браузера (useHistorySheet). Содержимое — то же, что в потоке, с
  * теми же обработчиками: правки сохраняются как в потоке.
  */
 export function ConceptFullscreenSheet({ title, closeLabel, onClose, backRef, toolbar, sub, children }: Props) {
@@ -37,7 +40,7 @@ export function ConceptFullscreenSheet({ title, closeLabel, onClose, backRef, to
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      style={{ position: 'fixed', inset: 0, zIndex: 250, background: 'var(--bg)', display: 'flex', flexDirection: 'column', paddingTop: 'var(--safe-top)' }}
+      style={{ position: 'fixed', inset: 0, zIndex: CONCEPT_SHEET_Z, background: 'var(--bg)', display: 'flex', flexDirection: 'column', paddingTop: 'var(--safe-top)' }}
     >
       <div style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-12)',

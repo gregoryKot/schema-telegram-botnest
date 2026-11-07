@@ -13,6 +13,9 @@
 //   concept_brief_open       — открыл экран «Главное» (кнопка в шапке вкладки).
 //   concept_sync_to_map      — «Добавить на карту» в строке связи над холстом: поля → холст (#963).
 //   concept_sync_from_map    — холст дописал в концептуализацию режим, схему или связь (#963).
+//   concept_guide_mode_open / concept_guide_technique_open — подсказки терапевту (#995): открыл лист
+//     режима («Подробнее о режиме» на плашке «Обычно в методе») / лист техники (с плашки или из листа режима).
+//   concept_guide_assign     — «Дать заданием» у пункта «Между сессиями» (плашка или лист режима).
 //   concept_shared           — терапевт включил или выключил «Показать клиенту»; meta { on: boolean },
 //                              других полей нет (src/api/analytics-meta.sanitize.ts).
 //   client_concept_opened    — клиент открыл схему случая из «Мой терапевт» (лист загрузился).
@@ -26,6 +29,9 @@ export const CONCEPT_EVENTS = [
   'concept_brief_open',
   'concept_sync_to_map',
   'concept_sync_from_map',
+  'concept_guide_mode_open',
+  'concept_guide_technique_open',
+  'concept_guide_assign',
   'concept_shared',
   'client_concept_opened',
 ] as const;

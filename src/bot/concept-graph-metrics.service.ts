@@ -8,6 +8,27 @@ const OPEN_EVENT: AnalyticsEventName = 'concept_graph_open';
 const SHARE_EVENT: AnalyticsEventName = 'concept_shared';
 const CLIENT_OPEN_EVENT: AnalyticsEventName = 'client_concept_opened';
 
+// Поле отчёта → событие, которое оно считает за 30 дней. NotCounted — не простой счёт: distinct
+// по userId (groupBy), показанные сейчас схемы, включения/выключения показа (meta.on).
+type NotCounted =
+  'therapists30' | 'clientOpeners30' | 'sharedNow' | 'shareOn30' | 'shareOff30';
+type CountedKey = Exclude<keyof ConceptGraphMetrics, NotCounted>;
+const COUNTED: [CountedKey, AnalyticsEventName][] = [
+  ['opens30', OPEN_EVENT],
+  ['linked30', 'concept_mode_linked'],
+  ['schemaLinked30', 'concept_schema_linked'],
+  ['canvasOpen30', 'concept_canvas_open'],
+  ['fullscreen30', 'concept_graph_fullscreen'],
+  ['saveRetry30', 'concept_save_retry'],
+  ['brief30', 'concept_brief_open'],
+  ['syncToMap30', 'concept_sync_to_map'],
+  ['syncFromMap30', 'concept_sync_from_map'],
+  ['guideModes30', 'concept_guide_mode_open'],
+  ['guideTechniques30', 'concept_guide_technique_open'],
+  ['guideAssign30', 'concept_guide_assign'],
+  ['clientOpens30', CLIENT_OPEN_EVENT],
+];
+
 // Счётчики графической концептуализации в кабинете терапевта для /stats (события concept_*
 // из AnalyticsEvent, смысл — src/analytics/concept-events.constants.ts). Имена типизированы
 // AnalyticsEventName: опечатка не даст молча пустой отчёт. Без сырого SQL — count/groupBy через
@@ -25,8 +46,12 @@ export class ConceptGraphMetricsService {
 
   async getMetrics(): Promise<ConceptGraphMetrics> {
     const createdAt = { gte: new Date(Date.now() - 30 * 86_400_000) };
-    const countOf = (name: AnalyticsEventName) =>
-      this.prisma.analyticsEvent.count({ where: { name, createdAt } });
+    // Одна группа на пользователя; анонимная строка (userId null) не считается.
+    const distinctUsers = (name: AnalyticsEventName) =>
+      this.prisma.analyticsEvent.groupBy({
+        by: ['userId'],
+        where: { name, createdAt, userId: { not: null } },
+      });
     // «Показать клиенту»: включения и выключения различает meta.on.
     const shareOf = (on: boolean) =>
       this.prisma.analyticsEvent.count({
@@ -36,65 +61,31 @@ export class ConceptGraphMetricsService {
           meta: { path: ['on'], equals: on },
         },
       });
-    const [
-      opens,
-      openers,
-      linked,
-      schemaLinked,
-      canvas,
-      fullscreen,
-      saveRetry,
-      brief,
-      syncToMap,
-      syncFromMap,
-      sharedNow,
-      shareOn,
-      shareOff,
-      clientOpens,
-      clientOpeners,
-    ] = await Promise.all([
-      countOf(OPEN_EVENT),
-      // Одна группа на терапевта; анонимная строка (userId null) терапевтом
-      // не считается.
-      this.prisma.analyticsEvent.groupBy({
-        by: ['userId'],
-        where: { name: OPEN_EVENT, createdAt, userId: { not: null } },
-      }),
-      countOf('concept_mode_linked'),
-      countOf('concept_schema_linked'),
-      countOf('concept_canvas_open'),
-      countOf('concept_graph_fullscreen'),
-      countOf('concept_save_retry'),
-      countOf('concept_brief_open'),
-      countOf('concept_sync_to_map'),
-      countOf('concept_sync_from_map'),
-      this.prisma.clientConceptualization.count({
-        where: { sharedWithClientAt: { not: null } },
-      }),
-      shareOf(true),
-      shareOf(false),
-      countOf(CLIENT_OPEN_EVENT),
-      this.prisma.analyticsEvent.groupBy({
-        by: ['userId'],
-        where: { name: CLIENT_OPEN_EVENT, createdAt, userId: { not: null } },
-      }),
-    ]);
+    const [openers, clientOpeners, sharedNow, shareOn, shareOff, counts] =
+      await Promise.all([
+        distinctUsers(OPEN_EVENT),
+        distinctUsers(CLIENT_OPEN_EVENT),
+        this.prisma.clientConceptualization.count({
+          where: { sharedWithClientAt: { not: null } },
+        }),
+        shareOf(true),
+        shareOf(false),
+        Promise.all(
+          COUNTED.map(([, name]) =>
+            this.prisma.analyticsEvent.count({ where: { name, createdAt } }),
+          ),
+        ),
+      ]);
+    const counted = Object.fromEntries(
+      COUNTED.map(([key], i) => [key, counts[i]]),
+    ) as Record<CountedKey, number>;
     return {
-      opens30: opens,
+      ...counted,
       therapists30: openers.length,
-      linked30: linked,
-      schemaLinked30: schemaLinked,
-      canvasOpen30: canvas,
-      fullscreen30: fullscreen,
-      saveRetry30: saveRetry,
-      brief30: brief,
-      syncToMap30: syncToMap,
-      syncFromMap30: syncFromMap,
+      clientOpeners30: clientOpeners.length,
       sharedNow,
       shareOn30: shareOn,
       shareOff30: shareOff,
-      clientOpens30: clientOpens,
-      clientOpeners30: clientOpeners.length,
     };
   }
 }

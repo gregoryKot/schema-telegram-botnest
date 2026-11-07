@@ -21,12 +21,12 @@ import '../styles/sheet-tasks.css';
 
 interface Props {
   clientId?: UserId; clientName?: string;
-  /** Тип и текст, с которыми лист открывается (шаблоны «Назначить из шаблона»). */
-  defaultType?: TaskType; defaultText?: string;
+  /** Тип и текст, с которыми лист открывается (шаблоны, «Дать заданием»); zIndex — над листами концептуализации. */
+  defaultType?: TaskType; defaultText?: string; zIndex?: number;
   onCreated: () => void; onClose: () => void;
 }
 
-export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, onCreated, onClose }: Props) {
+export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText, zIndex, onCreated, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
   // Офлайн-клиенту — только «Своё задание» (shared/tasks/assignCopy).
@@ -80,7 +80,7 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
   const canSave = type !== 'custom' || text.trim().length > 0;
 
   return (
-    <div className="sk-sheet">
+    <div className="sk-sheet" style={zIndex === undefined ? undefined : { zIndex }}>
       <div className="ds-sheet-head">
         <button type="button" className="ds-back" onClick={goBack}><GlyphArrowLeft /> {clientId !== undefined ? 'Назад к карточке' : 'Назад'}</button>
       </div>
