@@ -1,0 +1,44 @@
+# Чистка веток смерженных PR (аудит 2026-10, правило №13). Только ручной
+# запуск: Actions → «Чистка веток» → Run workflow. Без галочки «apply» —
+# только список; с ней — удаление. Какие ветки трогаются и почему — шапка
+# scripts/branch-cleanup.mjs (смерженный PR, после мержа в ветку ничего не
+# пушили, открытого PR нет). С 2026-11-07 новые ветки удаляет сам GitHub
+# (`delete_branch_on_merge`), воркфлоу — для накопленных до того.
+# Тест скрипта: src/test-support/gates/branch-cleanup.spec.ts.
+name: Чистка веток
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Удалить ветки (без галочки — только список)
+        type: boolean
+        default: false
+
+# По умолчанию только чтение; запись в refs — у одной джобы ниже.
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    # ~350 удалений с паузой 1 с (вторичный лимит GitHub) — около 6 минут.
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: список веток к удалению
+        if: ${{ !inputs.apply }}
+        run: node scripts/branch-cleanup.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: удаление веток смерженных PR
+        if: ${{ inputs.apply }}
+        run: node scripts/branch-cleanup.mjs --apply
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
