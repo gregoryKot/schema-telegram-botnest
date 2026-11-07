@@ -87,6 +87,8 @@
   - `src/booking/booking.transitions.ts` — переходы статуса брони (CAS)
   - `src/booking/slot.service.ts` — свободные слоты: правила, брони, override, CalDAV
   - `src/booking/payment.controller.ts` — вебхук Robokassa: брони, донаты, подписки
+  - `src/booking/payment.result-guard.ts` — разбор ResultURL до подтверждения: формат InvId (эхом только число, ответ `text/plain`), подпись, `IsTest=1` на боевом магазине не подтверждается
+  - `src/booking/rule-slot-match.ts` (`ruleOffersSlot`) — бронь принимается только ровно слотом сетки правила (длина = `sessionDuration`, старт на `expandRuleForDay`); зовёт `booking.availability.ts`
   - `src/booking/client-booking.controller.ts` + `client-booking.service.ts` — запись клиента владельца практики из приложения (#546): под `TelegramAuthGuard`, свой префикс `/api/client-booking` (на визитке не открывается), та же цепочка `BookingService.book` с `account` (пишет `Booking.userId` и `clientTelegramId` из подписи); имя и контакт — `client-booking.identity.ts`; владелец практики — `src/utils/practice-owner.ts` (`ADMIN_ID` с учётом слияния)
 - Связи: Prisma (Booking, AvailabilityRule, SlotOverride, BookingSetting, ClientMeeting, IntroLead); `src/booking/booking.registry.ts` собирает BookingModule вместе с `src/donation/` и `src/subscription/`; `src/booking/intro-lead.module.ts` — отдельный модуль (контроллер в `src/api/booking.controller.ts`); `src/booking/admin-key.util.ts` используют admin-контроллеры `src/articles/` и `src/site-content/`.
 - Подводные камни:
@@ -104,6 +106,7 @@
   - `src/infra/capability-report.ts` — реестр «фича молча выключена без env»
   - `src/infra/self-check/self-check.service.ts` — крон `43 * * * *` и прогон через 60 с после старта
   - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live.ts`)
+  - `src/infra/self-check/probe-dump-public.ts` (`dumpStillPublic`) — дамп БД из PR #128 ещё отдаётся GitHub (Git Trees API, без содержимого); только DM и `/stats`, не `/health`
 - Остальные сервисы (по строке на группу):
   - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-dedup.ts` (DM по смене набора упавших — аренда `self-check-alert:*` в `CronLease`; база недоступна — память процесса, `alert-tracker.ts`), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники)
   - `src/infra/db-outage.service.ts` — закрывает аварию БД и шлёт DM о восстановлении; `src/infra/session-retention.service.ts` — чистка WebSession/EmailToken
