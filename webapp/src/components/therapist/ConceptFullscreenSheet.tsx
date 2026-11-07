@@ -13,6 +13,10 @@ interface Props {
   toolbar?: ReactNode;
   /** Полоса под шапкой: подсказка и выбор блоков у «Главного». */
   sub?: ReactNode;
+  /** Колонка чтения (листы подсказок): шапка и содержимое одной ширины по центру — на компьютере не разъезжаются. */
+  column?: number;
+  /** Подпись в шапке вместо заголовка: заголовок рисует само содержимое (герой листа подсказок). */
+  label?: string;
   children: ReactNode;
 }
 
@@ -27,7 +31,7 @@ export const CONCEPT_SHEET_Z = 250;
  * кнопкой, Escape или «Назад» браузера (useHistorySheet). Содержимое — то же, что в потоке, с
  * теми же обработчиками: правки сохраняются как в потоке.
  */
-export function ConceptFullscreenSheet({ title, closeLabel, onClose, backRef, toolbar, sub, children }: Props) {
+export function ConceptFullscreenSheet({ title, closeLabel, onClose, backRef, toolbar, sub, column, label, children }: Props) {
   const goBack = useHistorySheet(onClose);
   useEffect(() => {
     if (!backRef) return;
@@ -42,16 +46,24 @@ export function ConceptFullscreenSheet({ title, closeLabel, onClose, backRef, to
       aria-label={title}
       style={{ position: 'fixed', inset: 0, zIndex: CONCEPT_SHEET_Z, background: 'var(--bg)', display: 'flex', flexDirection: 'column', paddingTop: 'var(--safe-top)' }}
     >
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-12)',
-        padding: 'var(--space-12) var(--space-20)', borderBottom: sub ? undefined : '1px solid var(--line)',
-      }}>
-        <h2 className="ds-h2" style={{ margin: 0, marginRight: 'auto' }}>{title}</h2>
-        {toolbar}
-        <button type="button" className="ds-btn ds-btn--secondary" onClick={goBack}>{closeLabel}</button>
+      <div style={{ padding: 'var(--space-12) var(--space-20)', borderBottom: sub || column ? undefined : '1px solid var(--line)' }}>
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-12)',
+          ...(column && { maxWidth: column, margin: '0 auto' }),
+        }}>
+          {label
+            ? <div className="ds-label" style={{ marginRight: 'auto' }}>{label}</div>
+            : <h2 className="ds-h2" style={{ margin: 0, marginRight: 'auto' }}>{title}</h2>}
+          {toolbar}
+          <button type="button" className="ds-btn ds-btn--secondary" onClick={goBack}>{closeLabel}</button>
+        </div>
       </div>
       {sub}
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', overscrollBehavior: 'contain', padding: 'var(--space-20)' }}>
+      <div style={{
+        flex: 1, minHeight: 0, overflow: 'auto', overscrollBehavior: 'contain', padding: 'var(--space-20)',
+        // колонка по центру и с полосой прокрутки стоит там же, где шапка без неё
+        ...(column && { scrollbarGutter: 'stable both-edges' }),
+      }}>
         {children}
       </div>
     </div>

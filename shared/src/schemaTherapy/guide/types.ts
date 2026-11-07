@@ -50,7 +50,18 @@ export type BetweenSessionsItem =
   | { kind: 'task'; type: GuideTaskType; title: string; note?: string }
   | { kind: 'custom'; title: string; text: string };
 
-export interface ModeGuide {
+/**
+ * Пилот живого языка (2026-11): поля переписанного раздела. Необязательные —
+ * раздел без них рисуется как раньше, пока его не переписали.
+ */
+export interface GuideVoiceFields {
+  /** «Как это звучит»: 1–2 реплики терапевта клиенту, через tr; кавычки ставит лист. */
+  voice?: string[];
+  /** То, что лист прячет под «Подробнее» (закрыто по умолчанию), пунктами. */
+  more?: string[];
+}
+
+export interface ModeGuide extends GuideVoiceFields {
   modeId: string;
   /** Цель работы одной строкой: плашка «Обычно в методе» и «Взять за основу». */
   goal: string;
@@ -71,7 +82,7 @@ export interface ModeGuide {
   sources: string;
 }
 
-export interface TechniqueGuide {
+export interface TechniqueGuide extends GuideVoiceFields {
   id: TechniqueId;
   name: string;
   /** Одна строка: что это и зачем. */
@@ -97,7 +108,7 @@ export interface SchemaCoping {
   overcompensation: string;
 }
 
-export interface SchemaGuide {
+export interface SchemaGuide extends GuideVoiceFields {
   /** id из shared/src/schemaTherapy/content/schemaDomains.ts. */
   schemaId: string;
   /** Что строим вместо схемы, одной фразой: плашка «Обычно в методе». */
@@ -111,7 +122,7 @@ export interface SchemaGuide {
   modeIds: string[];
   /** Как схема выглядит в кабинете: триггеры в отношениях с терапевтом. */
   inSession: string;
-  /** Фраза ограниченного репарентинга — реплика терапевта, через tr. */
+  /** Фраза ограниченного репарентинга — реплика терапевта, через tr; на листе это «Как это звучит». */
   reparenting: string;
   /** Интервенции пунктами, 2–6. */
   interventions: string[];

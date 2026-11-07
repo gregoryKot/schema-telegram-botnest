@@ -1,8 +1,7 @@
-// Вторая половина бумажной аппликации (см. PaperArt.tsx): мотивы-знаки.
-// Cluster — режимы (части, которые по очереди у руля); Leaf — рост, профиль,
-// «готово»; Talk — разговор с человеком, терапевт; Beads — настройки;
-// Check — задания и планы; Heart — «мне плохо», кризисный вход; Wheel — «Колесо
-// детства»: пять полосок-потребностей по кругу вокруг детства, из которого они растут.
+// Вторая половина бумажной аппликации (см. PaperArt.tsx): мотивы-знаки. Cluster — режимы
+// (части, которые по очереди у руля); Leaf — рост, профиль, «готово»; Talk — разговор с
+// человеком, терапевт (past — левая реплика бледная, из прошлого); Beads — настройки; Check —
+// задания и планы; Heart — «мне плохо», кризисный вход; Wheel — «Колесо детства», пять полосок.
 import { PAPER, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
 
@@ -26,11 +25,12 @@ export function Leaf({ size }: ArtProps) {
   );
 }
 
-export function Talk({ size }: ArtProps) {
+export function Talk({ size, past }: ArtProps & { past?: boolean }) {
+  const first = past ? { fill: PAPER.slate, fillOpacity: 0.45 } : { fill: PAPER.sage };
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <ellipse cx="46" cy="30" rx="34" ry="20" fill={PAPER.sage} />
-      <path d="M26 46 L 20 58 L 40 48 Z" fill={PAPER.sage} />
+      <ellipse cx="46" cy="30" rx="34" ry="20" {...first} />
+      <path d="M26 46 L 20 58 L 40 48 Z" {...first} />
       <ellipse cx="82" cy="36" rx="28" ry="17" fill={PAPER.clay} />
       <path d="M98 50 L 104 60 L 86 52 Z" fill={PAPER.clay} />
     </Svg>
