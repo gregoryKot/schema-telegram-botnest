@@ -75,7 +75,7 @@ export const buildCriticGuides: ModeGuideBuilder = (tr) => [
       {
         kind: 'task',
         type: 'flashcard',
-        title: 'Карточка «Мне плохо»',
+        title: 'Мне плохо',
         note: 'Когда Критик накрывает: назвать режим и ответить из Здорового Взрослого',
       },
       PHRASE_CHECK,
