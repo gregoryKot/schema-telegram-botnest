@@ -122,7 +122,7 @@ describe('холст карты режимов на телефоне (sheet-mode
     const px = (sel: string, prop: string) => Number.parseFloat(values(modemap, TOUCH, sel, prop).at(-1) ?? '0');
     const cases: Array<[string, string]> = [
       ['.ds-btn.mm2-tb-btn', 'height'], ['.ds-btn.mm2-tb-btn', 'min-width'], ['.mm2-pal-item', 'min-height'], ['.mm2-pal-head', 'min-height'],
-      ['.ds-btn.mm2-pal-add', 'height'], ['.mm2-nt-btn', 'min-width'], ['.mm2-nt-btn', 'min-height'], ['.mm2-ear', 'width'], ['.mm2-ear', 'height'],
+      ['.mm2-pal-link', 'min-height'], ['.mm2-nt-btn', 'min-width'], ['.mm2-nt-btn', 'min-height'], ['.mm2-ear', 'width'], ['.mm2-ear', 'height'],
       ['.mm2-swatch', 'width'], ['.mm2-swatch', 'height'], ['.mm2-x', 'width'], ['.mm2-x', 'height'], ['.ds-btn.mm2-del', 'height'],
     ];
     for (const [sel, prop] of cases) expect(px(sel, prop), `${sel} ${prop}`).toBeGreaterThanOrEqual(44);

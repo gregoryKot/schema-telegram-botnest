@@ -1,18 +1,26 @@
 // @vitest-environment jsdom
 // Знаки листов подсказок (docs/design/PAPER_2026-11.md): режим берёт знак своей группы
 // (каждая из шести групп — свой), техника — свой знак (общих нет), схема — номер домена
-// для DomainArt. Каждый знак рисуется SVG без растра и литеральных цветов: только палитра
-// бумаги. Сверка с данными: группы — MODE_GROUPS, техники — библиотека подсказок.
+// для DomainArt, раздел «Для терапевта» — свой знак. Каждый знак рисуется SVG без растра и
+// литеральных цветов: только палитра бумаги. Сверка с данными: группы — MODE_GROUPS, техники и
+// разделы «Для терапевта» — библиотека подсказок.
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { ALL_MODES, MODE_GROUPS } from '../../schemaTherapyData';
-import { buildModeGuides, buildTechniqueGuides } from '../../../../shared/src/schemaTherapy/guide';
+import { buildModeGuides, buildTechniqueGuides, practiceNotes } from '../../../../shared/src/schemaTherapy/guide';
 import {
-  GUIDE_SIGNS, MODE_GROUP_SIGN, modeGroupSign, modeSign, schemaDomain, TECHNIQUE_SIGN,
+  GUIDE_SIGNS, MODE_GROUP_SIGN, modeGroupSign, modeSign, PRACTICE_NOTE_SIGN, practiceNoteSign, schemaDomain,
+  TECHNIQUE_SIGN,
 } from './guideSignsModel';
 import { GuideSignArt } from './GuideSigns';
 
 const tr = (ty: string) => ty;
+
+/** Десять разделов «Для терапевта» (#1013). */
+const NOTE_IDS = [
+  'impasses', 'chatting', 'method_errors', 'therapist_schemas', 'group_therapy',
+  'deliberate_practice', 'frame_additions', 'angry_client', 'suicidal_thoughts', 'romance_and_partner',
+];
 
 describe('знаки листов подсказок', () => {
   it('у каждой группы режимов свой знак, и группы модели — ровно группы данных', () => {
@@ -58,6 +66,28 @@ describe('знаки листов подсказок', () => {
     expect(TECHNIQUE_SIGN.self_compassion).toBe('heart');
     expect(TECHNIQUE_SIGN.pattern_breaking).toBe('pattern_steps');
     expect(TECHNIQUE_SIGN.cognitive_work).toBe('pebbles');
+  });
+
+  it('у каждого раздела «Для терапевта» свой знак, общих между разделами нет', () => {
+    const signs = NOTE_IDS.map((id) => practiceNoteSign(id));
+    for (const [i, sign] of signs.entries()) expect(sign, NOTE_IDS[i]).not.toBeNull();
+    expect(new Set(signs).size).toBe(NOTE_IDS.length);
+    expect(Object.keys(PRACTICE_NOTE_SIGN).sort()).toEqual([...NOTE_IDS].sort());
+  });
+
+  it('разделы справочника — ровно разделы со знаком; неизвестный раздел — без знака', () => {
+    expect(practiceNotes(tr).map((n) => n.id).sort()).toEqual(Object.keys(PRACTICE_NOTE_SIGN).sort());
+    expect(practiceNoteSign('нет_такого')).toBeNull();
+    expect(practiceNoteSign('toString')).toBeNull();
+  });
+
+  it('«Для терапевта»: готовый мотив там, где он не врёт; знак техники — только с тем же смыслом', () => {
+    expect(practiceNoteSign('impasses')).toBe('ribbon');
+    expect(practiceNoteSign('therapist_schemas')).toBe('layers');
+    expect(practiceNoteSign('group_therapy')).toBe('cluster');
+    expect(practiceNoteSign('chatting')).not.toBe(TECHNIQUE_SIGN.chairwork);
+    const shared = Object.values(PRACTICE_NOTE_SIGN).filter((s) => Object.values(TECHNIQUE_SIGN).includes(s));
+    expect(shared.sort()).toEqual(['heart', 'heart_frame']);
   });
 
   it('схема — номер своего домена; неизвестная — 0', () => {

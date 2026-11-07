@@ -7,7 +7,7 @@ import { PracticeNoteSheet } from '../../components/therapist/guide/PracticeNote
 import { Skeleton, SkeletonList } from '../../components/Skeleton';
 import { GuideReferenceList } from './GuideReferenceList';
 import {
-  REFERENCE_TABS, buildReference, searchReference, type ReferenceItem, type ReferenceTab,
+  REFERENCE_TABS, buildReference, referenceLayout, searchReference, type ReferenceItem, type ReferenceTab,
 } from './guideReferenceModel';
 
 // Открытия листов из «Справочника» — свои события, не concept_guide_* схемы случая.
@@ -84,25 +84,29 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
       )}
       {searching && found.length === 0
         ? <p className="ds-empty">Ничего не нашлось</p>
-        : <GuideReferenceList groups={searching ? found : ref[tab]} onOpen={open} />}
+        : <GuideReferenceList groups={searching ? found : ref[tab]} layout={referenceLayout(tab, searching)} onOpen={open} />}
       {guide.sheets}
       {note && <PracticeNoteSheet note={note} onClose={() => setNoteId(null)} />}
     </div>
   );
 }
 
-/** Силуэт: строка поиска, переключатель и две группы строк. */
+/** Силуэт: строка поиска, переключатель и группы строк — в те же колонки, что группы режимов. */
 function GuideReferenceSkeleton() {
   return (
     <div aria-hidden style={columnStyle}>
       <Skeleton height={44} radius={22} />
       <Skeleton width={300} height={34} radius={20} style={{ maxWidth: '100%' }} />
-      {[4, 3].map((rows) => (
-        <div key={rows} style={{ ...columnStyle, gap: 'var(--space-8)' }}>
-          <Skeleton width="40%" height={12} />
-          <SkeletonList rows={rows} height={48} radius={12} gap={6} />
+      <div className="gr-wrap">
+        <div className="gr-list gr-list--groups">
+          {[4, 3].map((rows) => (
+            <div key={rows} className="gr-group">
+              <Skeleton width="40%" height={24} />
+              <SkeletonList rows={rows} height={48} radius={12} gap={6} />
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }

@@ -16,7 +16,7 @@ export function TherapistGuideSection() {
   const [attempt, setAttempt] = useState(0);
   useEffect(() => { api.trackEvent('cabinet_guide_open'); }, []);
   return (
-    <div className="ds-page animate-fade" style={{ maxWidth: 820 }}>
+    <div className="ds-page animate-fade" style={{ maxWidth: 960 }}>
       <div className="pp-block pp-block--head">
         <div className="pp-hero">
           <div className="pp-hero-body">
