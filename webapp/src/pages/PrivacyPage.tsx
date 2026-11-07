@@ -1,10 +1,10 @@
-import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
+import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL, OPERATOR_PD_REGISTRY_NO } from '../legal/operator';
 import { FOREIGN_PROCESSORS, METRIKA_PROCESSOR, processorLine } from './privacy/processors';
 import { ANALYTICS_COOKIES, TECHNICAL_COOKIES } from './privacy/cookies';
 import { Doc, Chapter, P, Ul, Table } from '../legal/LegalLayout';
 import { column, backLink, eyebrow, h1, lead, inlineLink } from '../legal/legalStyles';
 
-const EFFECTIVE_DATE = '31 октября 2026 г.';
+const EFFECTIVE_DATE = '7 ноября 2026 г.';
 const SITE_URL       = 'schemehappens.ru';
 
 export function PrivacyPage() {
@@ -31,6 +31,7 @@ export function PrivacyPage() {
             <Table rows={[
               ['ФИО', OPERATOR_NAME],
               ['ИНН', OPERATOR_INN],
+              ['Номер в реестре операторов персональных данных', OPERATOR_PD_REGISTRY_NO],
               ['Электронная почта', OPERATOR_EMAIL],
               ['Сайт', `kotlarewski.gr, ${SITE_URL}`],
             ]} />
@@ -101,7 +102,7 @@ export function PrivacyPage() {
               ['Предоставление доступа к веб-приложению «Всё по схеме» и обеспечение его работы', 'п. 5 ч. 1 ст. 6 ФЗ-152 – необходимость исполнения договора'],
               ['Направление уведомлений и напоминаний (при наличии согласия)', 'п. 1 ч. 1 ст. 6 ФЗ-152 – согласие субъекта'],
               ['Обработка пользовательского контента, который может содержать сведения о психоэмоциональном состоянии (п. 3.5)', 'п. 1 ч. 2 ст. 10 ФЗ-152 – отдельное согласие субъекта на обработку специальных категорий персональных данных'],
-              ['Ведение учёта оказанных услуг', 'п. 3 ч. 1 ст. 6 ФЗ-152 – обязанность Оператора по законодательству РФ (ФЗ-422 о НПД)'],
+              ['Ведение учёта оказанных услуг', 'п. 2 ч. 1 ст. 6 ФЗ-152 – обязанность Оператора по законодательству РФ (ФЗ-422 о НПД)'],
             ]} />
           </Chapter>
 
