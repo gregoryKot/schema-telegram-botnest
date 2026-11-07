@@ -1,5 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { ConceptGuideActions, ModeGuideView } from './conceptGuide';
+import type {
+  ConceptGuideActions,
+  GuideFrom,
+  GuideHintView,
+} from './conceptGuide';
 import { MethodHint } from './MethodHint';
 import { hintStyle, labelStyle } from './graphStyles';
 
@@ -29,25 +33,37 @@ const assignBtn: CSSProperties = {
   color: 'var(--text-sub)',
 };
 
+// «Подробнее…» ведёт в лист своего раздела.
+const MORE: Record<
+  GuideFrom['kind'],
+  { label: string; open: (a: ConceptGuideActions, id: string) => void }
+> = {
+  mode: { label: 'Подробнее о режиме', open: (a, id) => a.onOpenMode(id) },
+  schema: { label: 'Подробнее о схеме', open: (a, id) => a.onOpenSchema(id) },
+};
+
 /**
- * Плашка «Обычно в методе» для режима со своим разделом (#995): цель, техники
- * «На сессии», задания «Между сессиями» и «Подробнее». `take` — «Взять за
- * основу» (её показывает ConceptStrategy, пока поле пустое). Без `actions`
- * техники и задания — только текст, без кнопок.
+ * Плашка «Обычно в методе» для режима или схемы со своим разделом (#995):
+ * цель, техники «На сессии», задания «Между сессиями» и «Подробнее…». `from`
+ * — чей раздел: колбэки получают его, «Подробнее» ведёт в лист режима или
+ * схемы. `take` — «Взять за основу» (её показывает ConceptStrategy, пока
+ * поле пустое; у схемы своего поля нет). Без `actions` техники и задания —
+ * только текст, без кнопок.
  */
 export function ConceptGuideHint({
   view,
-  modeId,
+  from,
   actions,
   take,
 }: {
-  view: ModeGuideView;
-  modeId: string;
+  view: GuideHintView;
+  from: GuideFrom;
   actions?: ConceptGuideActions;
-  take: ReactNode;
+  take?: ReactNode;
 }) {
   const { guide, techniques } = view;
   const assign = actions?.onAssign;
+  const more = MORE[from.kind];
   return (
     <MethodHint text={guide.goal} take={take}>
       {techniques.length > 0 && (
@@ -68,7 +84,7 @@ export function ConceptGuideHint({
                   key={t.id}
                   type="button"
                   style={wordBtn}
-                  onClick={() => actions.onOpenTechnique(t.id, modeId)}
+                  onClick={() => actions.onOpenTechnique(t.id, from)}
                 >
                   {t.name}
                 </button>
@@ -110,7 +126,7 @@ export function ConceptGuideHint({
                     type="button"
                     style={{ ...assignBtn, fontSize: 12 }}
                     aria-label={`Дать заданием: ${item.title}`}
-                    onClick={() => assign(item, modeId)}
+                    onClick={() => assign(item, from)}
                   >
                     Дать заданием
                   </button>
@@ -124,9 +140,9 @@ export function ConceptGuideHint({
         <button
           type="button"
           style={{ ...wordBtn, margin: 0, fontSize: 13, fontWeight: 600 }}
-          onClick={() => actions.onOpenMode(modeId)}
+          onClick={() => more.open(actions, from.id)}
         >
-          Подробнее о режиме
+          {more.label}
         </button>
       )}
     </MethodHint>

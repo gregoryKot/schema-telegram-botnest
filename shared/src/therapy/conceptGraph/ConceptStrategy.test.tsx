@@ -43,9 +43,11 @@ function setup(opts: {
 
 const actions = () => ({
   onOpenMode: vi.fn(),
+  onOpenSchema: vi.fn(),
   onOpenTechnique: vi.fn(),
   onAssign: vi.fn(),
 });
+const FROM = { kind: 'mode', id: 'vulnerable_child' } as const;
 
 describe('ConceptStrategy: плашка «Обычно в методе»', () => {
   it('со своим разделом — цель режима, техники и пункты между сессиями вместо строки группы', () => {
@@ -118,22 +120,20 @@ describe('ConceptStrategy: плашка «Обычно в методе»', () =>
     );
     expect(a.onAssign).toHaveBeenCalledWith(
       FIXTURE_GUIDE.betweenSessions[1],
-      'vulnerable_child',
+      FROM,
     );
     fireEvent.click(
       screen.getByRole('button', { name: 'Дать заданием: Письмо себе' }),
     );
     expect(a.onAssign).toHaveBeenLastCalledWith(
       FIXTURE_GUIDE.betweenSessions[0],
-      'vulnerable_child',
+      FROM,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Работа со стульями' }));
-    expect(a.onOpenTechnique).toHaveBeenCalledWith(
-      'chairwork',
-      'vulnerable_child',
-    );
+    expect(a.onOpenTechnique).toHaveBeenCalledWith('chairwork', FROM);
     fireEvent.click(screen.getByRole('button', { name: 'Подробнее о режиме' }));
     expect(a.onOpenMode).toHaveBeenCalledWith('vulnerable_child');
+    expect(a.onOpenSchema).not.toHaveBeenCalled();
   });
 
   it('без колбэков наружу — только текст: ни ссылок техник, ни «Дать заданием», ни «Подробнее»', () => {

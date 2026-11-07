@@ -24,6 +24,7 @@ const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['syncToMap30', 'concept_sync_to_map'],
   ['syncFromMap30', 'concept_sync_from_map'],
   ['guideModes30', 'concept_guide_mode_open'],
+  ['guideSchemas30', 'concept_guide_schema_open'],
   ['guideTechniques30', 'concept_guide_technique_open'],
   ['guideAssign30', 'concept_guide_assign'],
   ['clientOpens30', CLIENT_OPEN_EVENT],

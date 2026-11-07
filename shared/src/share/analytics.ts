@@ -149,8 +149,9 @@ export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
 // Строка связи над холстом «Графических карт» (#963): «Добавить на карту» (поля → холст) и запись с холста в поля.
 export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
 export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
-// Подсказки терапевту (#995, guide/useConceptGuide): лист режима, лист техники, «Дать заданием». Только сайт.
+// Подсказки терапевту (#995, guide/useConceptGuide): лист режима, лист схемы, лист техники, «Дать заданием». Только сайт.
 export const CONCEPT_GUIDE_MODE_OPEN_EVENT = 'concept_guide_mode_open';
+export const CONCEPT_GUIDE_SCHEMA_OPEN_EVENT = 'concept_guide_schema_open';
 export const CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT =
   'concept_guide_technique_open';
 export const CONCEPT_GUIDE_ASSIGN_EVENT = 'concept_guide_assign';

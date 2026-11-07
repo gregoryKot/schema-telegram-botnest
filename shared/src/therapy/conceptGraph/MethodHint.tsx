@@ -14,8 +14,9 @@ export const takeStyle: CSSProperties = {
 };
 
 /**
- * Оболочка плашки «Обычно в методе»: подпись, текст (цель режима или строка
- * группы), «Взять за основу» и, у режима со своим разделом, всё остальное.
+ * Оболочка плашки «Обычно в методе»: подпись, текст (цель режима или схемы,
+ * строка группы), «Взять за основу» (только у режима) и, у раздела
+ * справочника, всё остальное.
  */
 export function MethodHint({
   text,
@@ -23,7 +24,7 @@ export function MethodHint({
   children,
 }: {
   text: string;
-  take: ReactNode;
+  take?: ReactNode;
   children?: ReactNode;
 }) {
   return (

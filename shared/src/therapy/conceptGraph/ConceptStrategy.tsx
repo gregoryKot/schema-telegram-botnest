@@ -37,7 +37,7 @@ export function ConceptStrategy({
     guide === undefined ? null : guide ? (
       <ConceptGuideHint
         view={guide}
-        modeId={card.modeId}
+        from={{ kind: 'mode', id: card.modeId }}
         actions={actions}
         take={take}
       />

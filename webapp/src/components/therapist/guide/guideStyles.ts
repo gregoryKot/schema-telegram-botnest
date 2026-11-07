@@ -17,3 +17,12 @@ export const guideColumnStyle: CSSProperties = {
   flexDirection: 'column',
   gap: 'var(--space-24)',
 };
+
+/** Список пунктов в абзаце справочника: шаги техники, интервенции схемы. */
+export const guideListStyle: CSSProperties = {
+  ...guideTextStyle,
+  paddingLeft: 'var(--space-24)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--space-6)',
+};

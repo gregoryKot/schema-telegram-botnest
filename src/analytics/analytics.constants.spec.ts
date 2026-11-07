@@ -128,6 +128,7 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
 
   it('подсказки терапевту — события реестра (concept_guide_*, #995)', () => {
     expect(CONCEPT_EVENTS).toContain('concept_guide_mode_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_schema_open');
     expect(CONCEPT_EVENTS).toContain('concept_guide_technique_open');
     expect(CONCEPT_EVENTS).toContain('concept_guide_assign');
   });

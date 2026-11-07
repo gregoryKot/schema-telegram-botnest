@@ -15,6 +15,7 @@ const IF_ANY: [keyof ConceptGraphMetrics, (n: number) => string][] = [
 // Подсказки терапевту (#995): одной строкой, нулевые части не печатаются.
 const GUIDE: [keyof ConceptGraphMetrics, string][] = [
   ['guideModes30', 'листы режимов'],
+  ['guideSchemas30', 'листы схем'],
   ['guideTechniques30', 'листы техник'],
   ['guideAssign30', '«Дать заданием»'],
 ];
