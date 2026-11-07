@@ -1,8 +1,8 @@
 // Какой знак у листа подсказок терапевту (docs/design/PAPER_2026-11.md, «Язык
-// знаков»): режим — знак его группы, техника — свой знак (четыре техники берут
+// знаков»): режим — знак его группы, техника — свой знак (пять техник берут
 // мотив языка, который им точно подходит: стулья — Talk, письма — Sheets,
-// осознанность — Breath, самосострадание — Heart), схема — знак домена
-// (DomainArt). Чистые функции; рисунки — GuideSigns.tsx (режимы) и
+// осознанность — Breath, самосострадание — Heart, когнитивная работа — Pebbles),
+// схема — знак домена (DomainArt). Чистые функции; рисунки — GuideSigns.tsx (режимы) и
 // GuideSignsTechniques.tsx (техники). Тип техники — только тип: тексты
 // подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
 import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
@@ -12,7 +12,7 @@ import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyD
 export const GUIDE_SIGNS = [
   'child_care', 'yield', 'shelter', 'shield', 'looming', 'together', 'cluster',
   'pattern_steps', 'rescript', 'horizon', 'talk', 'talk_past', 'flashcard', 'sheets',
-  'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown',
+  'breath', 'heart_frame', 'scales', 'spotlight', 'heart', 'grown', 'pebbles',
 ] as const;
 
 export type GuideSign = (typeof GUIDE_SIGNS)[number];
@@ -43,6 +43,7 @@ export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
   chairwork: 'talk',
   historical_role_play: 'talk_past',
   flashcards: 'flashcard',
+  cognitive_work: 'pebbles',
   letters: 'sheets',
   pattern_breaking: 'pattern_steps',
   mindfulness: 'breath',
