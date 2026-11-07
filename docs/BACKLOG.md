@@ -32,7 +32,8 @@
   задания «Между сессиями» с кнопкой «Дать заданием», лист раздела и лист
   техники; история заданий и отметка «Делали сегодня»; «Справочник» в меню
   терапевта. Содержание — справочник владельца по книгам. ТЗ —
-  [#995](https://github.com/gregoryKot/schema-telegram-botnest/issues/995).
+  [#995](https://github.com/gregoryKot/schema-telegram-botnest/issues/995); шаг 1 — PR
+  [#996](https://github.com/gregoryKot/schema-telegram-botnest/pull/996).
 
 ## Следующее
 
