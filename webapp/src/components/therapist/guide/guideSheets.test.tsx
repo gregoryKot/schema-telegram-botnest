@@ -92,3 +92,50 @@ describe('TechniqueSheet', () => {
     expect(regions()).toEqual(['Как проводить', 'Источники']);
   });
 });
+
+// История и «Делали сегодня» (#995): строки серым приходят готовыми (guideNotes),
+// кнопка отметки — только у листа техники, открытого из схемы случая клиента.
+describe('история в листах', () => {
+  it('лист режима: «делали …» под техникой, «давали …» под заданием', () => {
+    const notes = {
+      technique: (id: string) => (id === 'chairwork' ? 'делали 2 раза, последний 5 ноя' : null),
+      task: (item: { title: string }) => (item.title === 'Письмо себе' ? 'давали 12 окт · выполнено' : null),
+    };
+    render(
+      <MemoryRouter>
+        <ModeGuideSheet modeName="Уязвимый Ребёнок" view={FIXTURE_VIEW} notes={notes} onOpenTechnique={() => {}} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    const session = within(screen.getByRole('region', { name: 'На сессии' }));
+    expect(session.getByText('делали 2 раза, последний 5 ноя')).toBeTruthy();
+    expect(session.queryAllByText(/делали/)).toHaveLength(1);
+    const between = within(screen.getByRole('region', { name: 'Между сессиями' }));
+    expect(between.getByText('давали 12 окт · выполнено')).toBeTruthy();
+    expect(between.queryAllByText(/давали/)).toHaveLength(1);
+  });
+
+  it('лист техники без отметки (справочник) — кнопки нет', () => {
+    render(<MemoryRouter><TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} onClose={() => {}} /></MemoryRouter>);
+    expect(screen.queryByRole('button', { name: 'Делали сегодня' })).toBeNull();
+  });
+
+  it('лист техники: «Делали сегодня» зовёт отметку; отмечено сегодня — «Отменить сегодняшнюю отметку»', () => {
+    const onToggle = vi.fn();
+    const { rerender } = render(
+      <MemoryRouter>
+        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: null, today: false, onToggle }} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Пока не отмечали')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Делали сегодня' }));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    rerender(
+      <MemoryRouter>
+        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: 'делали 7 ноя', today: true, onToggle }} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('делали 7 ноя')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить сегодняшнюю отметку' }));
+    expect(onToggle).toHaveBeenCalledTimes(2);
+  });
+});

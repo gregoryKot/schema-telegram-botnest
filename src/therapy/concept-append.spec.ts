@@ -159,3 +159,23 @@ describe('appendToConcept', () => {
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });
+
+// «Делали сегодня» (#995): отметки — поле связи, которого холст не знает;
+// дописывание схем в ту же связь их не теряет.
+describe('appendToConcept — отметки техник в связи', () => {
+  it('дописал схему в связь с отметками → отметки и тексты на месте', async () => {
+    const done = [{ techniqueId: 'chairwork', day: '2026-11-05' }];
+    const { notes, append } = setup();
+    await notes.saveConceptualization(T1, CLIENT, {
+      modeIds: ['punitive_critic'],
+      modeLinks: [{ ...LINK, done }],
+    });
+    await append({
+      modeLinks: [{ modeId: 'punitive_critic', schemaIds: ['shame'] }],
+    });
+    const got = await notes.getConceptualization(T1, CLIENT);
+    expect(got!.modeLinks).toEqual([
+      { ...LINK, schemaIds: ['defectiveness', 'shame'], done },
+    ]);
+  });
+});

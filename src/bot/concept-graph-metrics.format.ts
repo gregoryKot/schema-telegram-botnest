@@ -18,6 +18,7 @@ const GUIDE: [keyof ConceptGraphMetrics, string][] = [
   ['guideSchemas30', 'листы схем'],
   ['guideTechniques30', 'листы техник'],
   ['guideAssign30', '«Дать заданием»'],
+  ['guideMarkDone30', 'отметили техник'],
 ];
 
 /**

@@ -120,6 +120,7 @@ export function ConceptSchemaEditor({
             view={method}
             from={{ kind: 'schema', id: card.id }}
             actions={guide}
+            marks={link.done}
           />
         )}
         <button

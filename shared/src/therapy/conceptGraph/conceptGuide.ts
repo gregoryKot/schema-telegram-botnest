@@ -15,6 +15,7 @@ import type {
 import type { Tr } from '../../needs/types';
 import { pickForm, useAddressForm } from '../../utils/addressForm';
 import { useGuide, type Guide } from './guideLoader';
+import type { GuideTask } from './guideHistory';
 
 /** Чей раздел: режима или схемы. Откуда пришёл пункт плашки или листа. */
 export interface GuideFrom {
@@ -35,6 +36,8 @@ export interface ConceptGuideActions {
   onOpenTechnique: (techniqueId: TechniqueId, from: GuideFrom) => void;
   /** «Дать заданием» у пункта «Между сессиями». */
   onAssign?: (item: BetweenSessionsItem, from: GuideFrom) => void;
+  /** Задания клиента — строки «давали …» (guideHistory.ts); нет — без истории. */
+  tasks?: readonly GuideTask[];
 }
 
 /** Общее у разделов режима и схемы — то, что видно на плашке «Обычно в методе». */

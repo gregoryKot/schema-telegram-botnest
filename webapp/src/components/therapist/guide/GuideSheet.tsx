@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { BetweenSessionsItem, TechniqueGuide, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { GuideHintView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
+import type { GuideNotes } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
 import { ConceptFullscreenSheet } from '../ConceptFullscreenSheet';
 import { GuideSection, GuideSources } from './GuideSection';
 import { guideColumnStyle, guideTextStyle } from './guideStyles';
@@ -11,6 +12,8 @@ export interface GuideSheetActions {
   /** «Дать заданием»; нет — лист без кнопок заданий (справочник без клиента). */
   onAssign?: (item: BetweenSessionsItem) => void;
   onClose: () => void;
+  /** История серым: «делали …» у техники, «давали …» у задания; нет — без строк. */
+  notes?: GuideNotes;
 }
 
 type Props = GuideSheetActions & {
@@ -27,18 +30,19 @@ type Props = GuideSheetActions & {
  * схемы: шапка и пояснение, свои разделы листа, затем общий хвост — «На
  * сессии» (тап по технике → лист техники поверх), «Между сессиями» с «Дать
  * заданием», «Где застревают» и «Источники». Пустой раздел не рисуется.
+ * У техники и задания — история серым (`notes`, guideHistory.ts).
  * Оболочка — ConceptFullscreenSheet (useHistorySheet, «Назад» браузера
  * закрывает лист).
  */
-export function GuideSheet({ title, intro, view, onOpenTechnique, onAssign, onClose, children }: Props) {
+export function GuideSheet({ title, intro, view, onOpenTechnique, onAssign, onClose, notes, children }: Props) {
   const { guide, techniques } = view;
   return (
     <ConceptFullscreenSheet title={title} closeLabel="Закрыть" onClose={onClose}>
       <div style={guideColumnStyle}>
         <p className="ds-sub" style={{ margin: 0 }}>{intro}</p>
         {children}
-        <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} />
-        <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} />
+        <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} notes={notes} />
+        <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} notes={notes} />
         <GuideSection title="Где застревают" text={guide.stuck} />
         <GuideSources text={guide.sources} />
       </div>
@@ -46,9 +50,9 @@ export function GuideSheet({ title, intro, view, onOpenTechnique, onAssign, onCl
   );
 }
 
-/** «На сессии»: техника — кнопка с описанием. */
-function GuideTechniques({ techniques, onOpen }: {
-  techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void;
+/** «На сессии»: техника — кнопка с описанием и «делали …». */
+function GuideTechniques({ techniques, onOpen, notes }: {
+  techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void; notes?: GuideNotes;
 }) {
   if (techniques.length === 0) return null;
   return (
@@ -58,6 +62,7 @@ function GuideTechniques({ techniques, onOpen }: {
           <li key={t.id}>
             <button type="button" className="tcp-guide-link" onClick={() => onOpen(t.id)}>{t.name}</button>
             <div className="ds-sub">{t.summary}</div>
+            <GuideNote text={notes?.technique(t.id)} />
           </li>
         ))}
       </ul>
@@ -65,9 +70,9 @@ function GuideTechniques({ techniques, onOpen }: {
   );
 }
 
-/** «Между сессиями»: название, серым пояснение или инструкция, «Дать заданием». */
-function GuideBetweenSessions({ items, onAssign }: {
-  items: BetweenSessionsItem[]; onAssign?: (item: BetweenSessionsItem) => void;
+/** «Между сессиями»: название, серым пояснение или инструкция и «давали …», «Дать заданием». */
+function GuideBetweenSessions({ items, onAssign, notes }: {
+  items: BetweenSessionsItem[]; onAssign?: (item: BetweenSessionsItem) => void; notes?: GuideNotes;
 }) {
   if (items.length === 0) return null;
   return (
@@ -80,6 +85,7 @@ function GuideBetweenSessions({ items, onAssign }: {
               <div style={{ minWidth: 0 }}>
                 <div style={{ ...guideTextStyle, fontWeight: 600 }}>{item.title}</div>
                 {sub && <div className="ds-sub">{sub}</div>}
+                <GuideNote text={notes?.task(item)} />
               </div>
               {onAssign && (
                 <button
@@ -95,4 +101,9 @@ function GuideBetweenSessions({ items, onAssign }: {
       </ul>
     </GuideSection>
   );
+}
+
+/** Строка истории: мелко и серым, нечего сказать — ничего. */
+function GuideNote({ text }: { text?: string | null }) {
+  return text ? <div className="ds-sub">{text}</div> : null;
 }

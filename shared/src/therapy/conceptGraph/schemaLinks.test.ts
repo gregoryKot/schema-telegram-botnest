@@ -94,3 +94,19 @@ describe('isSchemaLinkEmpty', () => {
     expect(isSchemaLinkEmpty(link('a', { needIds: ['play'] }))).toBe(false);
   });
 });
+
+describe('normalizeSchemaLinks: отметки техник (#995)', () => {
+  it('валидные отметки сохраняются, битые выбрасываются, без отметок поля нет', () => {
+    const [kept, bare] = normalizeSchemaLinks([
+      {
+        schemaId: 'abandonment',
+        done: [{ techniqueId: 'chairwork', day: '2026-11-05' }, 'x'],
+      },
+      { schemaId: 'mistrust', done: 'x' },
+    ]);
+    expect(kept.done).toEqual([
+      { techniqueId: 'chairwork', day: '2026-11-05' },
+    ]);
+    expect(bare).not.toHaveProperty('done');
+  });
+});

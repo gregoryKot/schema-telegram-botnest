@@ -1,20 +1,28 @@
+// @Type() (ниже) читает design-time метаданные через Reflect — полифилл
+// нужен явно: в юнит-тесте DTO грузится без бутстрапа Nest.
+import 'reflect-metadata';
 import {
   ArrayMaxSize,
   IsArray,
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import {
   CONCEPT_MODE_ALIAS_MAX,
   CONCEPT_MODE_TEXT_MAX,
   CONCEPT_SCHEMA_TEXT_MAX,
+  CONCEPT_TECHNIQUE_MARKS_MAX,
 } from '../../utils/text-limits';
+import { ConceptTechniqueMarkDto } from './concept-technique-mark.dto';
 
 // Вложенные DTO связей графической концептуализации вынесены из
 // conceptualization.dto.ts (правило №10: файл не растёт вместе со списком).
 // Вложенный объект: без @ValidateNested + @Type в родителе whitelist его не
-// тронул бы — лишние поля внутри связи прошли бы насквозь.
+// тронул бы — лишние поля внутри связи прошли бы насквозь. Так же вложены
+// отметки «Делали сегодня» (`done`, #995).
 
 /**
  * Связи одного режима в графической концептуализации (контракт —
@@ -60,6 +68,13 @@ export class ConceptModeLinkDto {
   @IsString()
   @MaxLength(CONCEPT_MODE_TEXT_MAX)
   strategy?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(CONCEPT_TECHNIQUE_MARKS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => ConceptTechniqueMarkDto)
+  done?: ConceptTechniqueMarkDto[];
 }
 
 /**
@@ -90,4 +105,11 @@ export class ConceptSchemaLinkDto {
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   needIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(CONCEPT_TECHNIQUE_MARKS_MAX)
+  @ValidateNested({ each: true })
+  @Type(() => ConceptTechniqueMarkDto)
+  done?: ConceptTechniqueMarkDto[];
 }

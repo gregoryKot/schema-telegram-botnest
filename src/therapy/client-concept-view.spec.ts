@@ -123,6 +123,20 @@ describe('clientConceptView — что видит клиент', () => {
     expect(JSON.stringify(view)).not.toContain('НОВОЕ');
   });
 
+  // «Делали сегодня» (#995) — рабочий журнал терапевта: какие техники и когда
+  // делали на сессиях, клиенту не показывается.
+  it('отметки техник (done) у связей режима и схемы клиенту не уходят', () => {
+    const done = [{ techniqueId: 'chairwork', day: '2026-11-05' }];
+    const enc = encryptConceptFields({
+      modeLinks: [{ ...modeLink, done }],
+      schemaLinks: [{ ...schemaLink, done }],
+    });
+    const view = clientConceptView(row(enc))!;
+    expect(view.modeLinks[0]).not.toHaveProperty('done');
+    expect(view.schemaLinks[0]).not.toHaveProperty('done');
+    expect(JSON.stringify(view)).not.toMatch(/chairwork|2026-11-05/);
+  });
+
   it('битые связи (не объект, не строки) не роняют вид', () => {
     const enc = encryptConceptFields({
       modeLinks: [null, 'x', { modeId: 'a', schemaIds: [1, 'b'] }],

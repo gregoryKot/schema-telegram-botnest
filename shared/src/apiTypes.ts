@@ -128,6 +128,14 @@ export interface ConceptModeLink {
   manifest: string;
   /** Что делаем с режимом в терапии. */
   strategy: string;
+  /** «Делали сегодня» у техник (#995); рабочий журнал терапевта, клиенту не уходит. */
+  done?: ConceptTechniqueMark[];
+}
+
+/** Отметка «Делали сегодня»: техника из библиотеки подсказок и местный день терапевта (`todayStr()`). */
+export interface ConceptTechniqueMark {
+  techniqueId: string;
+  day: string;
 }
 
 /**
@@ -145,6 +153,8 @@ export interface ConceptSchemaLink {
   origin: string;
   /** Какие потребности схема блокирует. NeedId из shared/src/needs/types.ts. */
   needIds: string[];
+  /** «Делали сегодня» у техник (#995), как у ConceptModeLink. */
+  done?: ConceptTechniqueMark[];
 }
 
 export interface ConceptSnapshot {
