@@ -139,9 +139,13 @@
 .mm2-guide-n { font-size: 11px; font-weight: 600; color: var(--text-faint); }
 .mm2-guide-caret { margin-left: auto; transition: transform .15s; }
 .mm2-guide-caret.is-min { transform: rotate(180deg); }
-/* Холст — контейнер размеров: панель подсказок (снизу справа) не выше холста
-   и не заходит на статус «✓ сохранено» в правом верхнем углу (QA 2026-10-26). */
-.mm2-canvas { container-type: size; }
+/* Холст — сетка: полоса статуса (.mm2-statusbar) строкой сверху, под ней React Flow
+   (.react-flow — 100% высоты своей строки). min-width: 0 — колонка редактора сжимается
+   вместе с окном и боковым меню, а React Flow пересчитывает размер сам. Контейнер
+   размеров — сам React Flow, а не .mm2-canvas: панель подсказок (снизу справа) не выше
+   холста под полосой статуса и не заходит на тулбар (QA 2026-10-26). */
+.mm2-canvas { flex: 1; min-width: 0; position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); background: var(--surface); }
+.mm2-canvas > .react-flow { container-type: size; }
 @supports (height: 1cqh) { .ds-card.mm2-guide { max-height: calc(100cqh - 76px); } }
 /* Тулбар шире узкого холста (телефон) — прокручивается, а не обрезается за
    краем. Только на узком: прокрутка обрезала бы подсказки кнопок под тулбаром. */
@@ -195,16 +199,25 @@
 .mm2-kind-card:disabled { opacity: .5; cursor: default; }
 .mm2-kind-card:disabled:hover { border-color: var(--line); box-shadow: none; }
 .mm2-create-err { margin: 0; padding: 6px 16px; font-size: 12.5px; color: var(--err); flex-shrink: 0; }
-.mm2-status { position: absolute; top: 12px; right: 12px; z-index: 10; font-size: 12px; color: var(--text-faint); pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 42%; text-align: right; }
-.mm2-status .is-err { color: var(--err); }
-/* Контейнер прозрачен для кликов (под ним холст), а «Повторить» из SaveStatusLine нажиматься обязан. */
-.mm2-status button { pointer-events: auto; }
-/* Строка связи с концептуализацией (ConceptSyncLine, #963): кнопка — строка текста, тап-цель 44 по высоте, как «Повторить» у SaveStatusLine. */
-.mm2-sync { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; column-gap: 4px; min-height: 20px; line-height: 1.4; color: var(--text-sub); } /* заметнее статуса сохранения: --text-sub задан в обеих темах (--text-muted — только в светлой) */
-.mm2-sync-btn { min-height: 44px; margin: -12px 0; padding: 0 8px; border: none; background: transparent; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+/* Полоса статуса над холстом (ModeMapCanvas): слева — связь с концептуализацией (ConceptSyncLine, #963),
+   справа — сохранение. В потоке, а не поверх холста: до 2026-11 статус стоял в правом верхнем углу
+   поверх холста и на ноутбуке с двумя боковыми панелями наезжал на тулбар — текст в три строки поверх
+   иконок (скриншот владельца). Одна линия при любой ширине: текст режет многоточие (все имена — в title
+   и по тапу, .is-open), кнопки и статус сохранения не сжимаются. Слева 15px — на одной вертикали с тулбаром. */
+.mm2-statusbar { display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 0 12px 0 15px; border-bottom: 1px solid var(--line); font-size: 12px; }
+.mm2-save { margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+.mm2-save.is-err { color: var(--err); }
+.mm2-sync { display: flex; align-items: center; min-width: 0; line-height: 1.4; color: var(--text-sub); } /* заметнее статуса сохранения: --text-sub задан в обеих темах (--text-muted — только в светлой) */
+.mm2-sync-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Текст со списком имён — кнопка: тап раскрывает строку целиком (title на касании не виден). Тап-цель 44 по высоте, как у «Добавить на карту». */
+button.mm2-sync-text { min-height: 44px; margin: -12px 0; padding: 0; border: none; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mm2-sync.is-open { align-items: flex-start; }
+.mm2-sync.is-open .mm2-sync-text { white-space: normal; padding-block: 14px; }
+/* Кнопка — строка текста, тап-цель 44 по высоте, как «Повторить» у SaveStatusLine. */
+.mm2-sync-btn { flex-shrink: 0; min-height: 44px; margin: -12px 0; padding: 0 8px; border: none; background: transparent; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; white-space: nowrap; cursor: pointer; }
 .mm2-sync.is-err .mm2-sync-btn { color: var(--err); }
 .mm2-sync-btn:disabled { opacity: .5; cursor: default; }
-.mm2-canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 0 24px; text-align: center; pointer-events: none; z-index: 5; }
+.mm2-canvas-empty { grid-area: 2 / 1; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 0 24px; text-align: center; pointer-events: none; z-index: 5; }
 
 /* ── Пара: подписи партнёров ── */
 .mm2-lane-bar { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; z-index: 4; pointer-events: none; }

@@ -59,9 +59,9 @@ describe('ConceptSyncLine — состояния', () => {
     expect(s.retry).toHaveBeenCalledTimes(1);
   });
 
-  it('в полях есть, на карте нет — человеческие имена и «Добавить на карту»', () => {
+  it('в полях есть, на карте нет — число впереди, человеческие имена и «Добавить на карту»', () => {
     const { container } = renderLine(state({ missing: { modeIds: ['demanding_critic'], schemaIds: ['defectiveness'] } }));
-    expect(text(container)).toContain('В концептуализации есть, на карте нет: Требовательный Критик, Дефективность / Стыд');
+    expect(text(container)).toBe('Нет на карте 2 из концептуализации: Требовательный Критик, Дефективность / СтыдДобавить на карту');
     expect(screen.getByRole('button', { name: 'Добавить на карту' })).toBeTruthy();
   });
 
@@ -76,13 +76,53 @@ describe('ConceptSyncLine — состояния', () => {
     const { container } = renderLine(state({
       lastAdded: { modeIds: ['punitive_critic'] }, missing: { modeIds: ['demanding_critic'], schemaIds: [] },
     }));
-    expect(text(container)).toContain('Добавлено в концептуализацию: Карающий Критик. В концептуализации есть, на карте нет: Требовательный Критик');
+    expect(text(container)).toContain('Добавлено в концептуализацию: Карающий Критик. Нет на карте 1 из концептуализации: Требовательный Критик');
     expect(screen.getByRole('button', { name: 'Добавить на карту' })).toBeTruthy();
   });
 
   it('иначе — «Карта совпадает с концептуализацией»', () => {
     const { container } = renderLine(state());
     expect(text(container)).toBe('Карта совпадает с концептуализацией');
+  });
+});
+
+// Скриншот владельца 2026-11: на ноутбуке строка наезжала на тулбар и ломалась в три строки.
+// Теперь — одна линия в полосе над холстом: короткий текст (CSS режет хвост многоточием),
+// число впереди, все имена — в title и по тапу, «Добавить на карту» — отдельной кнопкой справа.
+describe('ConceptSyncLine — одна линия над холстом', () => {
+  const MANY = { modeIds: ['vulnerable_child', 'demanding_critic', 'punitive_critic', 'angry_child', 'detached_protector'], schemaIds: ['defectiveness', 'failure'] };
+  const ALL = 'Уязвимый Ребёнок, Требовательный Критик, Карающий Критик, Сердитый Ребёнок, Отстранённый Защитник, Дефективность / Стыд, Неуспешность';
+  const lineText = () => document.querySelector<HTMLElement>('.mm2-sync-text')!;
+
+  it('короткий вид: число, три имени и «и ещё N»; ссылка — отдельная кнопка после текста', () => {
+    renderLine(state({ missing: MANY }));
+    expect(lineText().textContent).toBe('Нет на карте 7 из концептуализации: Уязвимый Ребёнок, Требовательный Критик, Карающий Критик и ещё 4');
+    const add = screen.getByRole('button', { name: 'Добавить на карту' });
+    expect(lineText().compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('полный список — в title, текст свёрнут', () => {
+    renderLine(state({ missing: MANY }));
+    expect(lineText().getAttribute('title')).toBe(`Нет на карте 7 из концептуализации: ${ALL}`);
+    expect(lineText().getAttribute('aria-expanded')).toBe('false');
+    expect(document.querySelector('.mm2-sync')!.classList.contains('is-open')).toBe(false);
+  });
+
+  it('тап по тексту раскрывает все имена, повторный — сворачивает (title на касании не виден)', () => {
+    renderLine(state({ missing: MANY }));
+    fireEvent.click(lineText());
+    expect(lineText().textContent).toBe(`Нет на карте 7 из концептуализации: ${ALL}`);
+    expect(lineText().getAttribute('aria-expanded')).toBe('true');
+    expect(document.querySelector('.mm2-sync')!.classList.contains('is-open')).toBe(true);
+    fireEvent.click(lineText());
+    expect(lineText().textContent).toContain('и ещё 4');
+    expect(generate).not.toHaveBeenCalled(); // тап по тексту — не «Добавить на карту»
+  });
+
+  it('у короткой строки без списка («Совпадает») текст не кнопка', () => {
+    renderLine(state());
+    expect(lineText().tagName).toBe('SPAN');
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });
 
