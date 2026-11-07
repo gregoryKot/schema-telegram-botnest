@@ -166,8 +166,9 @@ describe('e2e: экран после оплаты — success-redirect без в
         });
     const before = await metrics.getMetrics();
 
-    // 1. Бесплатное знакомство: сразу CONFIRMED, paidAt пуст.
-    const intro = await book('INTRO_15', 11, 15);
+    // 1. Бесплатное знакомство: сразу CONFIRMED, paidAt пуст. Длина — слота
+    // сетки (50), как шлёт сайт: другой длины /book не принимает.
+    const intro = await book('INTRO_15', 11, 50);
     expect([intro.status, intro.body.status]).toEqual([200, 'CONFIRMED']);
 
     // 2. Платная сессия, подтверждённая руками админа: CONFIRMED без paidAt.

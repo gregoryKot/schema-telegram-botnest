@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { loadPracticeJourney } from './journey-practice-sessions.util';
+import { modeDiaryLabel, schemaDiaryLabels } from './journey-diary-labels';
 type PracticeJourney = Awaited<ReturnType<typeof loadPracticeJourney>>;
 
 // «Мой путь» — сводный архив всей активности пользователя: сколько раз и когда
 // он заполнял трекер, дневники, практики, тесты и упражнения. Лента отдаёт
-// ТОЛЬКО нешифруемые поля (тип, дата, enum-идентификаторы needId/modeId/
-// schemaId) — свободный текст пользователя здесь не читается и не
-// расшифровывается вовсе. Счётчики — честные полные, из тех же выборок.
+// тип, дату и enum-идентификаторы (needId/modeId/schemaId); метки дневников
+// шифруются при записи — их расшифровывает journey-diary-labels.ts, свободный
+// текст здесь не читается вовсе. Счётчики — честные полные, из тех же выборок.
 
 export type JourneyItemType =
   | 'tracker_day'
@@ -67,8 +68,6 @@ export interface JourneyData {
 const FEED_LIMIT = 500;
 
 const iso = (d: Date): string => d.toISOString();
-const asIds = (v: unknown): string[] =>
-  Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : [];
 
 @Injectable()
 export class JourneyService {
@@ -213,13 +212,13 @@ export class JourneyService {
         type: 'schema_diary' as const,
         id: e.id,
         at: iso(e.createdAt),
-        schemaIds: asIds(e.schemaIds),
+        schemaIds: schemaDiaryLabels(e),
       })),
       ...modeDiary.map((e) => ({
         type: 'mode_diary' as const,
         id: e.id,
         at: iso(e.createdAt),
-        modeId: e.modeId,
+        modeId: modeDiaryLabel(e),
       })),
       ...gratitude.map((e) => ({
         type: 'gratitude' as const,

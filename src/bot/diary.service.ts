@@ -14,7 +14,7 @@ import { saveGratitudeDay } from './gratitude-merge';
 // списком вручную, и пропустил schemaIds/modeId — сайт получал шифротекст
 // вместо массива и ронял раздел на `schemaIds.map`. Сверка «ответ записи =
 // GET той же записи» с настоящим ключом — encrypted-write-response.spec.ts.
-const SCHEMA_DIARY_SCHEMA: EncryptSchema = {
+export const SCHEMA_DIARY_SCHEMA: EncryptSchema = {
   model: 'schemaDiaryEntry',
   strings: [
     'trigger',
@@ -31,7 +31,7 @@ const SCHEMA_DIARY_SCHEMA: EncryptSchema = {
   // (Prisma Json) decryptRecord отдаёт как есть.
   jsonArrays: ['emotions', 'schemaIds'],
 };
-const MODE_DIARY_SCHEMA: EncryptSchema = {
+export const MODE_DIARY_SCHEMA: EncryptSchema = {
   model: 'modeDiaryEntry',
   strings: [
     'modeId',

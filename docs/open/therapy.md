@@ -5,6 +5,14 @@
 > Запись добавляет PR, который нашёл; убирает PR, который закрыл. Файл не читают целиком —
 > `grep -n` по ключу, затем чтение куска.
 
+**Аудит 2026-11 — кабинет психолога и слияние** (детали и коды — [AUDIT_2026-11.md](../AUDIT_2026-11.md)):
+- **S8 · код из офлайн-карточки отдаёт её записи первому, кто его ввёл.** `src/therapy/therapy-invite.ts:125,143-145`, `therapy-invite-attach.ts:31-61`: `join` с `attachToId` сразу зовёт `attachOfflineCard` (в ветке `alreadyConnected` — тоже), без сверки. Б видит задания и карты режимов А и показывается психологу как «А». Чинить: связь «ждёт сверки», психолог подтверждает «Это А?».
+- **R3 · слияние молча удаляет записи источника при конфликте.** `src/auth/merge.service.ts:36-49` (`UNIQUE_RULES`), `:150-178` — `DELETE` строк источника, если у цели есть строка с тем же ключом (`Note`, `GratitudeDiaryEntry`, `UserSchemaNote`, `UserModeNote`, `UserSafePlace`, `YsqResult`); `summarize` (`:98-114`) их не вычитает, `webapp/src/pages/MergePage.tsx:41` обещает «все они переедут». Благодарности — `mergeGratitudeItems`, заметки — склеить, карточки — дополнять пустые поля; число конфликтов — на экран.
+- **S18 · id кабинета без `int32`.** `therapy-notes.controller.ts:30`, `therapy-tasks.controller.ts:29`, `mode-maps.controller.ts:30` (`allowNegative` без `int32`), `relation-where.ts:10` — `-3000000000` даёт 500 и DM. `deleteNote`/`deleteCustomMode` отвечают 200 на чужой id (класс C-8).
+- **U3 · приглашение только через Telegram.** `src/therapy/therapy-invite.ts:38`, `src/telegram/miniapp-link.ts:22`, `shared/src/share/shareTexts.ts:52-54` — ссылка `t.me/…`, кода в тексте нет; подсказка про «вкладку «Я» мини-приложения» (`shared/src/therapy/therapistLinkCopy.ts:14-15`); текст обещает «трекер», а психолог видит больше.
+- **U4 · «Терапевт рядом» без действия.** `webapp/src/components/therapy/TalkSheet.tsx:36-52`: у психолога без Telegram ссылка пустая (`shared/src/utils/therapistContact.ts:47-48`), строка в «Ещё» подписана «автор приложения» (`useMoreRows.tsx:27-31`).
+- **U11 · «Сегодня» психолога при сбое — «Нет клиентов».** `webapp/src/sections/TherapistTodaySection.tsx:23,57,76` (ошибки загрузки глушатся пустым `catch`); «подключённых к боту» и метка «в боте» (`rosterOrder.ts:15`) — для клиентов сайта неверно.
+
 **Слияние аккаунтов и связи терапевта** (дубли активных связей закрыты; остаток):
 - **Два разных терапевта у одного человека после merge — решение владельца.**
   Клиент S связан с терапевтом TH1, T — с другим терапевтом TH2; после merge S→T

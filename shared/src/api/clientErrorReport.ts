@@ -8,7 +8,7 @@ import { telemetryUrl } from '../utils/telemetryUrl';
 //
 // H0 (аудит 2026-07-20): в url — ТОЛЬКО путь, без query/fragment. Во фрагменте
 // живут секреты: у сайта после логина
-// `/auth/callback#access_token=<JWT>` (TTL 15 мин, хеш чистится лишь в
+// `/auth/callback#access_token=<JWT>` до 2026-11 (TTL 15 мин, хеш чистился в
 // useEffect), в удалённом мини-аппе был initData (`#tgWebAppData=…&hash=…`, реплей 1 ч =
 // имперсонация). Краш на фазе рендера успевал отправить секрет в логи сервера
 // и в DM админа — поэтому срезает telemetryUrl, а не сами фронтенды.

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { BookingStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ruleCoversSlot } from './availability-window';
+import { ruleOffersSlot } from './rule-slot-match';
 import { overlapsInterval, overrideInterval } from './slot-filters';
 
 // Проверки доступности слота: окно AvailabilityRule + ручной слой
@@ -10,9 +10,9 @@ import { overlapsInterval, overrideInterval } from './slot-filters';
 // для BLOCK, начавшегося раньше startsAt, но пересекающего его.
 const MAX_OVERRIDE_MIN = 180;
 
-// Слот обязан попадать в окно правила (его TZ) либо быть разрешён OPEN;
-// BLOCK отклоняет бронь ДАЖЕ если правило её разрешает. Правил нет вообще
-// (dev) — пропускаем как раньше.
+// Слот обязан быть слотом сетки правила (начало и длина — как в /slots) либо
+// ровно OPEN-оверрайдом; BLOCK отклоняет бронь ДАЖЕ если правило её разрешает.
+// Правил нет вообще (dev) — пропускаем как раньше.
 export async function assertWithinAvailability(
   prisma: PrismaService,
   startsAt: Date,
@@ -37,12 +37,12 @@ export async function assertWithinAvailability(
     where: { isActive: true },
   });
   if (rules.length === 0) return;
-  if (rules.some((r) => ruleCoversSlot(r, startsAt, durationMin))) return;
+  if (rules.some((r) => ruleOffersSlot(r, startsAt, durationMin))) return;
 
   const open = overrides.find(
     (o) => o.kind === 'OPEN' && o.startsAt.getTime() === startsAt.getTime(),
   );
-  if (open && durationMin <= open.durationMin) return;
+  if (open && durationMin === open.durationMin) return;
   throw new BadRequestException('OUTSIDE_AVAILABILITY');
 }
 

@@ -22,6 +22,8 @@ const MONDAY_10_19_MSK = {
   startMinute: 0,
   endHour: 19,
   endMinute: 0,
+  sessionDuration: 50, // сетка 10:00, 11:00, … — SLOT 16:00 на ней
+  bufferMin: 10,
   timezone: 'Europe/Moscow',
   isActive: true,
 };

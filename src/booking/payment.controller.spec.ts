@@ -19,6 +19,7 @@
 // donation.service.ts, security-log.service.ts) — там же, где резинка
 // зелёного теста рвётся молча.
 import { ConflictException, Logger } from '@nestjs/common';
+import { HEADERS_METADATA } from '@nestjs/common/constants';
 import { createHash } from 'crypto';
 import { PaymentController } from './payment.controller';
 import { PaymentAmountMismatchError } from './booking.service';
@@ -37,18 +38,18 @@ function md5(s: string): string {
   return createHash('md5').update(s, 'utf8').digest('hex');
 }
 
-function makeRobokassa() {
+function makeRobokassa(isTest = true) {
   const map: Record<string, string> = {
     ROBOKASSA_MERCHANT_LOGIN: 'shop_login',
     ROBOKASSA_PASSWORD1: PASS1,
     ROBOKASSA_PASSWORD2: PASS2,
-    ROBOKASSA_IS_TEST: 'true',
+    ROBOKASSA_IS_TEST: isTest ? 'true' : 'false',
   };
   return new RobokassaService({ get: (k: string) => map[k] } as any);
 }
 
-function makeController() {
-  const robokassa = makeRobokassa();
+function makeController(opts: { liveShop?: boolean } = {}) {
+  const robokassa = makeRobokassa(!opts.liveShop);
   const booking = {
     confirm: jest.fn(() => Promise.resolve({ ok: true })),
     getById: jest.fn(() => Promise.resolve({ cancelToken: 'ct-123' })),
@@ -102,30 +103,29 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     expect(booking.confirm).not.toHaveBeenCalled();
   });
 
-  // Текст этого лога специально стабильный (см. комментарий в
-  // payment.controller.ts): каждый Logger.error() в проде уходит в
-  // AlertLogger (main.ts: NestFactory.create(..., { logger: new AlertLogger() })),
-  // который дедуплицирует DM админу ПО ТЕКСТУ сообщения (60с окно). Если
-  // текст поплывёт — шквал неверных подписей перестанет схлопываться в один
-  // DM и снова замьютит админский чат (тот же класс, что и инцидент
-  // 2026-07-29). errorSpy стоит здесь, а не проверяется через мок AlertLogger,
-  // потому что контроллер в юнит-тесте инстанцирован напрямую, без бутстрапа
-  // Nest-приложения — сам факт вызова .error() с ТОЧНЫМ текстом и есть
-  // контракт с интеграцией.
-  it('неверная подпись → лог с точным, стабильным текстом (для дедупа AlertLogger)', async () => {
+  // Ручка публичная и принимает чужие формы: неверная подпись — это сканеры и
+  // автосабмиты (аудит 2026-11). Раньше здесь стоял Logger.error(), а каждый
+  // error в проде уходит владельцу DM через AlertLogger (main.ts) — мусорный
+  // POST будил владельца. Теперь warn со стабильным текстом (по нему серия
+  // ищется в логах), error не зовётся вовсе. Шпионы на Logger.prototype:
+  // контроллер в юнит-тесте инстанцирован напрямую, без бутстрапа Nest.
+  it('неверная подпись → warn с точным, стабильным текстом; error (DM владельцу) не зовётся', async () => {
+    const warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     try {
       const { controller } = makeController();
       await controller.handleResult('4000.00', '7', 'deadbeef');
-      expect(errorSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         'Robokassa webhook: invalid signature',
       );
+      expect(errorSpy).not.toHaveBeenCalled();
     } finally {
+      warnSpy.mockRestore();
       errorSpy.mockRestore();
     }
   });
 
-  it('InvId не число → "FAIL<InvId>" без обращения к booking', async () => {
+  it('InvId не число → "FAIL" без эха и без обращения к booking (даже с «верной» подписью)', async () => {
     const { controller, booking } = makeController();
     const outSum = '4000.00';
     const invId = 'not-a-number';
@@ -133,7 +133,7 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
 
     const res = await controller.handleResult(outSum, invId, sig);
 
-    expect(res).toBe(`FAILnot-a-number`);
+    expect(res).toBe('FAIL');
     expect(booking.confirm).not.toHaveBeenCalled();
   });
 
@@ -496,5 +496,164 @@ describe('PaymentController.failRedirect', () => {
     expect(res.redirect).toHaveBeenCalledWith(
       `${SITE_URL}/booking/paid?fail=1`,
     );
+  });
+});
+
+// Отражённая разметка (аудит 2026-11, P2): ответ шёл как text/html с InvId
+// эхом, а ручка принимает form-urlencoded без CSRF — чужой сайт автосабмитом
+// формы показывал свою разметку с адреса schemehappens.ru.
+describe('PaymentController.handleResult — ответ не отражает ввод', () => {
+  const EVIL = '<meta http-equiv=refresh content="0;url=https://evil">';
+
+  it('вредный InvId не попадает в ответ: "FAIL" без эха, booking не трогается, warn без error', async () => {
+    const { controller, booking } = makeController();
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    try {
+      const res = await controller.handleResult('1.00', EVIL, 'deadbeef');
+      expect(res).toBe('FAIL');
+      expect(res).not.toContain('<');
+      expect(booking.confirm).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith('Robokassa webhook: malformed InvId');
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it.each([
+    ['число с хвостом', '7<b>'],
+    ['пробел впереди', ' 7'],
+    ['11 цифр', '12345678901'],
+    ['пустая строка', ''],
+  ])('InvId «%s» → "FAIL" без эха', async (_name, invId) => {
+    const { controller, booking } = makeController();
+    const outSum = '4000.00';
+    const sig = md5(`${outSum}:${invId}:${PASS2}`);
+    await expect(controller.handleResult(outSum, invId, sig)).resolves.toBe(
+      'FAIL',
+    );
+    expect(booking.confirm).not.toHaveBeenCalled();
+  });
+
+  it('InvId массивом из формы (InvId[]=7) → "FAIL": не строка — не InvId', async () => {
+    const { controller, booking } = makeController();
+    const invId: unknown = ['7'];
+    const sig = md5(`4000.00:7:${PASS2}`);
+    await expect(
+      controller.handleResult('4000.00', invId as string, sig),
+    ).resolves.toBe('FAIL');
+    expect(booking.confirm).not.toHaveBeenCalled();
+  });
+
+  it('10 цифр — ещё InvId (диапазон подписок 2e9+): эхом "OK<InvId>"', async () => {
+    const { controller, subscription } = makeController();
+    const invId = String(SUBSCRIPTION_INVID_BASE + 5);
+    const outSum = '500.00';
+    const sig = md5(`${outSum}:${invId}:${PASS2}`);
+    await expect(controller.handleResult(outSum, invId, sig)).resolves.toBe(
+      `OK${invId}`,
+    );
+    expect(subscription.markChargePaidByInvId).toHaveBeenCalled();
+  });
+
+  it('числовой InvId по-прежнему эхом: "OK<id>" на верной подписи, "FAIL<id>" на неверной', async () => {
+    const { controller } = makeController();
+    const sig = md5(`4000.00:42:${PASS2}`);
+    await expect(controller.handleResult('4000.00', '42', sig)).resolves.toBe(
+      'OK42',
+    );
+    await expect(
+      controller.handleResult('4000.00', '42', 'deadbeef'),
+    ).resolves.toBe('FAIL42');
+  });
+
+  // @Header Nest пишет в метаданные метода; RouterResponseController ставит
+  // заголовок до res.send — express тогда не подменяет его на text/html.
+  // Живой HTTP-контракт — test/login-csrf.e2e-spec.ts.
+  it('ответ ручки объявлен text/plain; charset=utf-8 (метаданные @Header)', () => {
+    const headers = Reflect.getMetadata(
+      HEADERS_METADATA,
+      PaymentController.prototype.handleResult,
+    ) as { name: string; value: string }[];
+    expect(headers).toEqual([
+      { name: 'Content-Type', value: 'text/plain; charset=utf-8' },
+    ]);
+  });
+});
+
+// Тестовый платёж на боевом магазине (аудит 2026-11, P1 при условии): IsTest
+// стоит в ссылке оплаты вне подписи. Если тестовые пароли в кабинете совпадают
+// с боевыми, клиент меняет IsTest=0→1, платит тестовой картой — и бронь,
+// донат, подписка подтверждались без денег.
+describe('PaymentController.handleResult — IsTest=1 на боевом магазине', () => {
+  const OUT = '4000.00';
+  const signed = (invId: string) => md5(`${OUT}:${invId}:${PASS2}`);
+
+  it.each([
+    ['бронь', '7'],
+    ['донат', String(DONATION_INVID_BASE + 1)],
+    ['подписка', String(SUBSCRIPTION_INVID_BASE + 1)],
+  ])(
+    '%s: не подтверждается, владельцу алерт, ответ "OK<InvId>" (повтор не нужен)',
+    async (_name, invId) => {
+      const { controller, booking, donation, subscription, notify } =
+        makeController({ liveShop: true });
+      const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+      try {
+        const res = await controller.handleResult(
+          OUT,
+          invId,
+          signed(invId),
+          '1',
+        );
+        expect(res).toBe(`OK${invId}`);
+        expect(booking.confirm).not.toHaveBeenCalled();
+        expect(donation.markPaidByInvId).not.toHaveBeenCalled();
+        expect(subscription.markChargePaidByInvId).not.toHaveBeenCalled();
+        expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
+        const [text] = notify.alertAdmin.mock.calls[0] as unknown as [string];
+        expect(text).toContain(
+          `Тестовый платёж Robokassa на боевом магазине (InvId ${invId}) — не подтверждён`,
+        );
+        expect(text).toContain('тестовые пароли отличаются от боевых');
+        expect(error).not.toHaveBeenCalled(); // второй DM через AlertLogger
+      } finally {
+        error.mockRestore();
+      }
+    },
+  );
+
+  it('IsTest=1 с неверной подписью на боевом — "FAIL<InvId>", алерта нет (мусор не будит владельца)', async () => {
+    const { controller, booking, notify } = makeController({ liveShop: true });
+    const res = await controller.handleResult(OUT, '7', 'deadbeef', '1');
+    expect(res).toBe('FAIL7');
+    expect(booking.confirm).not.toHaveBeenCalled();
+    expect(notify.alertAdmin).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['IsTest=0', '0'],
+    ['без IsTest', undefined],
+  ])(
+    'боевой магазин, %s → подтверждается как обычно',
+    async (_name, isTest) => {
+      const { controller, booking, notify } = makeController({
+        liveShop: true,
+      });
+      const res = await controller.handleResult(OUT, '7', signed('7'), isTest);
+      expect(res).toBe('OK7');
+      expect(booking.confirm).toHaveBeenCalledWith(7, 4000);
+      expect(notify.alertAdmin).not.toHaveBeenCalled();
+    },
+  );
+
+  it('тестовый магазин (ROBOKASSA_IS_TEST=true), IsTest=1 → подтверждается как обычно, без алерта', async () => {
+    const { controller, booking, notify } = makeController();
+    const res = await controller.handleResult(OUT, '7', signed('7'), '1');
+    expect(res).toBe('OK7');
+    expect(booking.confirm).toHaveBeenCalledWith(7, 4000);
+    expect(notify.alertAdmin).not.toHaveBeenCalled();
   });
 });

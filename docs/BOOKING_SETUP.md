@@ -81,6 +81,9 @@ ROBOKASSA_PASSWORD1=...
 ROBOKASSA_PASSWORD2=...
 ROBOKASSA_IS_TEST=true   # на время тестов; убрать/false для боевого режима
 ```
+Тестовые пароли в кабинете Robokassa обязаны отличаться от боевых: иначе платёж
+с `IsTest=1`, вписанным в ссылку оплаты, проходит подпись боевого магазина (сервер
+такой платёж на боевом не подтверждает и шлёт алерт владельцу).
 В кабинете Robokassa указать ResultURL → `https://schemehappens.ru/api/payment/result`
 (канонический хост, метод POST). Работает и `https://kotlarewski.gr/api/payment/result`:
 `/api/payment` входит в `PRACTICE_API_PREFIXES` (`src/practice-domain.surface.ts`),

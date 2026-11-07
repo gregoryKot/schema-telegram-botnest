@@ -163,6 +163,10 @@
   не может.
 - OAuth-флоу защищён cookie `oauth_state` (`sameSite=lax`, нужен для top-level
   редиректа от Google/VK) + сверкой `state`.
+- Куки незаконченной привязки (`tg_link_user`, `link_token`) стираются вместе с
+  сессией (`clearCookies` в `src/auth/refresh-cookie.ts`: выход и 401 на refresh)
+  и анонимным `telegram/redirect`: иначе следующий вошедший на том же компьютере
+  привязался бы к чужому аккаунту (аудит 2026-11).
 - Access-токен на вебе хранится **только в памяти** (React `useState`),
   **никогда** в `localStorage`/`sessionStorage`. localStorage уязвим к краже
   через XSS; httpOnly-cookie с refresh-токеном — нет.
@@ -267,8 +271,12 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   Сверку запретов с API, которое зовут фронты, держит
   `src/security/permissions-policy.invariants.spec.ts`.
 - **Access-токен — только в памяти.** Хранится в React-state, не в
-  `localStorage`. Refresh-токен — в httpOnly-cookie. После OAuth токен приходит
-  во фрагменте URL и сразу вычищается (`AuthCallback.tsx`, `replaceState`).
+  `localStorage`. Refresh-токен — в httpOnly-cookie. После OAuth сервер ставит
+  refresh-куку и ведёт на `/auth/callback` (с билетом — `/auth/confirm?code=…`)
+  без токена в URL; фронт берёт сессию только refresh-ом. Токен из фрагмента не
+  принимается и стирается (login-CSRF, аудит 2026-11: чужая ссылка
+  `#access_token=…` заводила жертву в аккаунт атакующего). Повтор запроса после
+  refresh берёт токен синхронно (`getAccessToken`, `webapp/src/auth/TokenBridge.tsx`).
   Эту схему не менять — `localStorage` для токенов запрещён.
 - **`VITE_*`-переменные публичны.** Vite инлайнит их в бандл. Сейчас там только
   `VITE_API_URL` и `VITE_BOT_USERNAME` — не секреты. Секрет в `VITE_`-переменную
@@ -390,19 +398,15 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
     старые строки переводит проход на старте.
   - *`updateMany`/`deleteMany` с нулевым `count`* теперь отдают 404 (C-8);
     драфты — в том же PR.
-- **`@Cron`-джобы рассчитаны на одну реплику** (нет leader-election): рассылки
-  напоминаний о сессиях (`booking-notify`, `booking.service` hold-expiry),
-  посты канала «Здоровый Взрослый» (`channel-schedule`), продление подписок
-  (`subscription`), полуночный планировщик (`telegram.schedule`), дневной
-  digest аналитики. На двух+ репликах каждая джоба выполнится N раз — двойные
-  уведомления, двойные списания, дубли постов в канал. Amvera держит один
-  инстанс, поэтому accepted risk; при переходе на >1 реплику — распределённый
-  лок (advisory-lock Postgres или Redis) перед телом каждой джобы, иначе
-  побочки задвоятся молча. Идемпотентность части путей (hold-expiry — CAS по
-  статусу, антиреплей) смягчает, но не покрывает рассылки и посты.
-- **Верификация Google ID-token через `tokeninfo`** (debug-эндпоинт Google,
-  rate-limited). Для большого трафика — перейти на локальную проверку подписи
-  по JWKS.
+- **`@Cron`-джобы:** с аудита 2026-09 каждый leader-крон берёт аренду
+  `CronLeaderService.claimRun` (`src/infra/cron-leader.service.ts`, гейт
+  `check-cron-leader`) — запись прежнего «нет leader-election» устарела (аудит
+  2026-11). Остаток риска — exempt-кроны из `scripts/cron-leader-baseline.json`,
+  каждый с причиной идемпотентности.
+- **Google ID-token** проверяется локально по JWKS (`src/auth/google-id-token.ts`)
+  с офлайн-фолбэком для redirect-потока (токен получен по TLS от Google); для
+  One Tap офлайн-путь запрещён (`google-one-tap-nonce.ts`). Запись про
+  `tokeninfo` устарела (аудит 2026-11).
 - **merge-токен и `link_token` в URL** (query/fragment) — попадают в логи
   и историю браузера. TTL 10/15 мин ограничивает экспозицию.
 - **`VACUUM FULL` не выполняется** при удалении аккаунта — см. `CLAUDE.md`.

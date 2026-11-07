@@ -1,7 +1,7 @@
 // Сердце контракта «Календарь слотов в админке» — buildAdminCalendar чистая,
 // без единого похода в БД, поэтому тестируется без моков. timezone: 'UTC' в
 // фикстурах — упрощает арифметику часов в assert'ах (сама зона проверяется
-// отдельно в rule-expand.spec.ts/availability-window.spec.ts).
+// отдельно в rule-expand.spec.ts/rule-slot-match.spec.ts).
 import {
   buildAdminCalendar,
   AdminCalendarRuleInput,

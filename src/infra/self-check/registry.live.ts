@@ -2,6 +2,7 @@ import { Probe } from './types';
 import { telegramProbes } from './probe-telegram-polling';
 import { caldavProbe } from './probe-caldav';
 import { ciRunsProbe } from './probe-ci-runs';
+import { dumpStillPublicProbe } from './probe-dump-public';
 import { backupFreshnessProbe } from './probe-backup-freshness';
 import { googleOAuthProbe, vkOAuthProbe } from './probe-oauth-providers';
 
@@ -17,6 +18,7 @@ export function liveIntegrationProbes(): Probe[] {
     googleOAuthProbe(),
     vkOAuthProbe(),
     ciRunsProbe(),
+    dumpStillPublicProbe(),
     backupFreshnessProbe(),
   ];
 }

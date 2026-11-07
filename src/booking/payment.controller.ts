@@ -7,6 +7,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Header,
   Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -14,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { RobokassaService } from './robokassa.service';
 import { BookingService } from './booking.service';
 import { bookingWebhookReply } from './payment.booking-webhook';
+import { screenResultWebhook } from './payment.result-guard';
 import { BookingNotifyService } from './booking-notify.service';
 import { DonationService } from '../donation/donation.service';
 import { SubscriptionService } from '../subscription/subscription.service';
@@ -58,21 +60,19 @@ export class PaymentController {
    */
   @Post('result')
   @HttpCode(HttpStatus.OK)
+  @Header('Content-Type', 'text/plain; charset=utf-8') // не text/html: ответ не разметка
   async handleResult(
     @Body('OutSum') outSum: string,
     @Body('InvId') invId: string,
     @Body('SignatureValue') sig: string,
+    @Body('IsTest') isTest?: string,
   ): Promise<string> {
-    this.logger.log(`Payment webhook InvId=${invId} OutSum=${outSum}`);
-
-    if (!this.robokassa.validateWebhook(outSum, invId, sig)) {
-      // Stable message text so AlertLogger's per-message throttle dedupes bot noise.
-      this.logger.error('Robokassa webhook: invalid signature');
-      return `FAIL${invId}`;
-    }
-
-    const id = parseInt(invId, 10);
-    if (isNaN(id)) return `FAIL${invId}`;
+    const screen = await screenResultWebhook(
+      { robokassa: this.robokassa, notify: this.notify, logger: this.logger },
+      { outSum, invId, sig, isTest },
+    );
+    if ('reply' in screen) return screen.reply;
+    const { id } = screen;
     const paidAmount = Number.parseFloat(outSum);
     const paid = Number.isFinite(paidAmount) ? paidAmount : undefined;
 
