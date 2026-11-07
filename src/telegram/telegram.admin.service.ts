@@ -11,6 +11,7 @@ import {
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { failCallback } from './callback-failure';
+import { describeTelegramError } from './telegram-error';
 import { BroadcastRunner } from './telegram.broadcast-runner';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
@@ -53,13 +54,16 @@ export class TelegramAdminService implements OnModuleInit {
           return;
         }
         const t = renderTemplate('donate_reminder', { seed: 0 });
-        if (t)
-          await ctx.reply(
-            t.text,
-            t.keyboard ? { reply_markup: t.keyboard.reply_markup } : {},
-          );
+        await ctx.reply(
+          t?.text ?? 'Шаблон donate_reminder не собрался — превью нет.',
+          t?.keyboard ? { reply_markup: t.keyboard.reply_markup } : {},
+        );
       } catch (err) {
+        // Админу — причина: превью и нужно, чтобы увидеть отказ до рассылки.
         this.logger.error('testdonate command failed', err);
+        await ctx
+          .reply(`❌ Превью не отправилось: ${describeTelegramError(err)}`)
+          .catch(() => null);
       }
     });
 

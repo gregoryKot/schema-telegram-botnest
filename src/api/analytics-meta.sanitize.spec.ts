@@ -877,3 +877,13 @@ describe('client_booking_*', () => {
     ).toBeUndefined();
   });
 });
+
+// «⏰ Напомню через час» (аудит 2026-10, backend#16): событие пишет только бот,
+// /stats считает строки с quietShift — с клиента он не должен проходить.
+describe('reminder_snoozed', () => {
+  it('quietShift с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('reminder_snoozed', { quietShift: true }),
+    ).toBeUndefined();
+  });
+});

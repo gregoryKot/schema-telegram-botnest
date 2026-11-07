@@ -129,11 +129,25 @@ describe('TelegramService — accept_consent (легаси-кнопка)', () =>
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'accept_consent', { from: { id: 1 } });
     // acceptDisclaimer упал до editMessageText/reply — хендлер идёт в catch
-    // и пробует editMessageText-извинение; ловим реальный вызов, а не просто
-    // "не бросило".
-    expect(ctx.editMessageText).toHaveBeenCalledWith(
+    // и шлёт извинение НОВЫМ сообщением: правка стёрла бы кнопку согласия,
+    // и «нажать ещё раз» было бы нечего. Ловим реальный вызов, а не «не бросило».
+    expect(ctx.reply).toHaveBeenCalledWith(
       expect.stringContaining('Попробуй нажать ещё раз'),
     );
+    expect(ctx.editMessageText).not.toHaveBeenCalled();
+  });
+
+  // Аудит 2026-10 (по образцу паузы #978): тост «Принято ✅» уходил до записи.
+  it('тост пустой и уходит до записи согласия, выбор обращения — после', async () => {
+    const { service, fakeBot, botService } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'accept_consent', { from: { id: 1 } });
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
+    const [answered] = ctx.answerCbQuery.mock.invocationCallOrder;
+    const [saved] = botService.acceptDisclaimer.mock.invocationCallOrder;
+    const [edited] = ctx.editMessageText.mock.invocationCallOrder;
+    expect(answered).toBeLessThan(saved);
+    expect(saved).toBeLessThan(edited);
   });
 });
 
@@ -151,7 +165,7 @@ describe('TelegramService — accept:(ty|vy) катастрофические в
     );
   });
 
-  it('ошибка сохранения формы — логируется, editMessageText с извинением (перехвачен .catch)', async () => {
+  it('ошибка записи согласия — тост без текста, извинение новым сообщением, кнопки на месте', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const { service, fakeBot } = makeDeps({
       botService: {
@@ -159,10 +173,25 @@ describe('TelegramService — accept:(ty|vy) катастрофические в
       },
     });
     service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'accept:ty', { from: { id: 1 } });
-    expect(ctx.editMessageText).toHaveBeenCalledWith(
-      expect.stringContaining('Попробуй нажать ещё раз'),
+    const ctx = await runAction(fakeBot, 'accept:vy', { from: { id: 1 } });
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
+    expect(ctx.reply).toHaveBeenCalledWith(
+      'Что-то пошло не так. Попробуйте нажать ещё раз.',
     );
+    expect(ctx.editMessageText).not.toHaveBeenCalled();
+  });
+
+  it('тост пустой и уходит до записи, приветствие — после записи формы', async () => {
+    const { service, fakeBot, botService } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'accept:ty', { from: { id: 1 } });
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
+    const [answered] = ctx.answerCbQuery.mock.invocationCallOrder;
+    const [consent] = botService.acceptDisclaimer.mock.invocationCallOrder;
+    const [form] = botService.updateUserSettings.mock.invocationCallOrder;
+    const [edited] = ctx.editMessageText.mock.invocationCallOrder;
+    expect(answered).toBeLessThan(consent);
+    expect(form).toBeLessThan(edited);
   });
 });
 

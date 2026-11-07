@@ -245,6 +245,9 @@ export function sanitizeMeta(
   // через POST /api/event в отчёт /stats не попадёт.
   if (name === 'client_booking_opened' || name === 'client_booking_created')
     return undefined;
+  // «Напомню через час» пишет только бот (server-events.constants.ts): quietShift
+  // с клиента не принимается — подделка без него в /stats не считается.
+  if (name === 'reminder_snoozed') return undefined;
   // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
   // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned, booking_slot_taken (подделке — без чисел).
   // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.

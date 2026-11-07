@@ -39,6 +39,10 @@
 //   crawler_visits — заходы роботов нейросетей за час (crawler-hits.ts): пишет
 //                   только крон CrawlerHitsService, userId = null — /stats верит
 //                   лишь таким строкам; sanitizeMeta — закрытые списки.
+//   reminder_snoozed — «⏰ Напомню через час» под напоминанием: пишет только бот
+//                   после постановки в очередь (src/telegram/telegram.snooze.ts),
+//                   meta.quietShift — час попал в тихие часы. С клиента meta
+//                   отбрасывается, /stats считает только строки с quietShift.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -49,4 +53,5 @@ export const SERVER_EVENTS = [
   'therapist_resigned',
   'therapy_invite',
   'crawler_visits',
+  'reminder_snoozed',
 ] as const;
