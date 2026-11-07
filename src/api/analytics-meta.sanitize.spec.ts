@@ -747,6 +747,23 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('cabinet_screen_share_on', leak)).toBeUndefined();
   });
 
+  // «Справочник» терапевта (#995): событие отмечает только, что раздел или лист открыт, — без id режима, схемы, техники.
+  it.each([
+    'cabinet_guide_open',
+    'cabinet_guide_mode_open',
+    'cabinet_guide_schema_open',
+    'cabinet_guide_technique_open',
+    'cabinet_guide_note_open',
+  ])('%s: meta игнорируется', (name) => {
+    const leak = {
+      modeId: 'vulnerable_child',
+      techniqueId: 'chairwork',
+      noteId: 'group',
+      clientId: '555',
+    };
+    expect(sanitizeMeta(name, leak)).toBeUndefined();
+  });
+
   // quiz_started/quiz_completed/practice_link_click несут meta по реестру
   // (analytics.constants.ts), но санитизируются ТОЛЬКО в PublicEventsController
   // (анонимный /api/public-event) — эта функция обслуживает /api/event и

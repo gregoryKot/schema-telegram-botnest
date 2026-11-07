@@ -13,6 +13,7 @@ import { CrawlerMetricsService } from './crawler-metrics.service';
 import { DataExportMetricsService } from './data-export-metrics.service';
 import { EntryDeleteMetricsService } from './entry-delete-metrics.service';
 import { GameMetricsService } from './game-metrics.service';
+import { GuideReferenceMetricsService } from './guide-reference-metrics.service';
 import { IntroLeadMetricsService } from './intro-lead-metrics.service';
 import { TherapyInviteMetricsService } from './therapy-invite-metrics.service';
 import { ClientBookingMetricsService } from './client-booking-metrics.service';
@@ -47,6 +48,7 @@ export const INTERNAL_PROVIDERS = [
   DataExportMetricsService,
   EntryDeleteMetricsService,
   GameMetricsService,
+  GuideReferenceMetricsService,
   IntroLeadMetricsService,
   TherapyNudgeMetricsService,
   TherapyInviteMetricsService,

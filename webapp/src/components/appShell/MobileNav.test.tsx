@@ -46,6 +46,21 @@ describe('MobileNav', () => {
       expect(clients.getAttribute('aria-current')).toBe(on ? 'page' : null);
     });
 
+  // «Справочник» терапевта (#995): свой раздел /cabinet/guide, горит только на нём.
+  it.each([['/cabinet/guide', true], ['/cabinet', false], ['/cabinet/today', false]])(
+    'терапевт на %s: «Справочник» ведёт в /cabinet/guide, горит — %s', (path, on) => {
+      render(<MemoryRouter initialEntries={[path]}><MobileNav items={ITEMS} therapist /></MemoryRouter>);
+      const guide = screen.getByText('Справочник').closest('a')!;
+      expect(guide.getAttribute('href')).toBe('/cabinet/guide');
+      expect(guide.className.includes('active')).toBe(on);
+      expect(screen.getByText('Клиенты').closest('a')!.className.includes('active')).toBe(path === '/cabinet');
+    });
+
+  it('клиент: «Справочника» в его панели нет', () => {
+    render(<MemoryRouter><MobileNav items={ITEMS} /></MemoryRouter>);
+    expect(screen.queryByText('Справочник')).toBeNull();
+  });
+
   it('терапевт: «Поиск» открывает палитру команд', () => {
     const onSearch = vi.fn();
     render(<MemoryRouter><MobileNav items={ITEMS} therapist onSearch={onSearch} /></MemoryRouter>);
@@ -66,7 +81,7 @@ describe('MobileNav', () => {
     expect(onProfile).toHaveBeenCalledOnce();
     // порядок и состав пунктов от onProfile не зависят
     expect(Array.from(container.querySelectorAll('.mobile-nav-item')).map(n => n.textContent))
-      .toEqual(['Сегодня', 'Клиенты', 'Поиск', 'Профиль']);
+      .toEqual(['Сегодня', 'Клиенты', 'Справочник', 'Поиск', 'Профиль']);
   });
 
   it('клиент: onProfile раздел «Профиль» в его панель не добавляет', () => {

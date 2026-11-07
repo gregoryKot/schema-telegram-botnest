@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AnalyticsEventName } from '../analytics/analytics.constants';
+import { countEventsByKey } from './event-counts';
 import { formatConceptGraphMetrics } from './concept-graph-metrics.format';
 import type { ConceptGraphMetrics } from './concept-graph-metrics.types';
 
@@ -63,7 +64,7 @@ export class ConceptGraphMetricsService {
           meta: { path: ['on'], equals: on },
         },
       });
-    const [openers, clientOpeners, sharedNow, shareOn, shareOff, counts] =
+    const [openers, clientOpeners, sharedNow, shareOn, shareOff, counted] =
       await Promise.all([
         distinctUsers(OPEN_EVENT),
         distinctUsers(CLIENT_OPEN_EVENT),
@@ -72,15 +73,8 @@ export class ConceptGraphMetricsService {
         }),
         shareOf(true),
         shareOf(false),
-        Promise.all(
-          COUNTED.map(([, name]) =>
-            this.prisma.analyticsEvent.count({ where: { name, createdAt } }),
-          ),
-        ),
+        countEventsByKey(this.prisma, COUNTED, createdAt),
       ]);
-    const counted = Object.fromEntries(
-      COUNTED.map(([key], i) => [key, counts[i]]),
-    ) as Record<CountedKey, number>;
     return {
       ...counted,
       therapists30: openers.length,

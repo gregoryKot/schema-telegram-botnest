@@ -13,11 +13,12 @@ import { TechniqueSheet } from './TechniqueSheet';
 
 /**
  * Какие листы подсказок открыты: раздел (лист режима или схемы) и поверх него —
- * техника вместе с разделом, из которого её открыли (туда ложится «Делали сегодня»).
+ * техника вместе с разделом, из которого её открыли (туда ложится «Делали сегодня»;
+ * без раздела — из списка техник «Справочника» — отметки нет).
  */
 export interface GuideOpen {
   sheet: GuideFrom | null;
-  technique: { id: TechniqueId; from: GuideFrom } | null;
+  technique: { id: TechniqueId; from?: GuideFrom } | null;
 }
 
 /**
@@ -48,10 +49,11 @@ export function ConceptGuideSheets({ open, actions, journal, onCloseSheet, onClo
     onClose: onCloseSheet,
     notes: notesOf(from),
   });
-  const mark = journal && openTechnique && {
-    note: notesOf(openTechnique.from).technique(openTechnique.id),
-    today: journal.markedToday(openTechnique.id, openTechnique.from),
-    onToggle: () => journal.toggleToday(openTechnique.id, openTechnique.from),
+  const markFrom = openTechnique?.from;
+  const mark = journal && openTechnique && markFrom && {
+    note: notesOf(markFrom).technique(openTechnique.id),
+    today: journal.markedToday(openTechnique.id, markFrom),
+    onToggle: () => journal.toggleToday(openTechnique.id, markFrom),
   };
   return (
     <>

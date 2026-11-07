@@ -32,8 +32,8 @@ export interface ConceptGuideActions {
   onOpenMode: (modeId: string) => void;
   /** «Подробнее о схеме» — лист схемы. */
   onOpenSchema: (schemaId: string) => void;
-  /** Техника «На сессии» — лист техники. */
-  onOpenTechnique: (techniqueId: TechniqueId, from: GuideFrom) => void;
+  /** Техника «На сессии» — лист техники; без from — из списка техник «Справочника», вне раздела. */
+  onOpenTechnique: (techniqueId: TechniqueId, from?: GuideFrom) => void;
   /** «Дать заданием» у пункта «Между сессиями». */
   onAssign?: (item: BetweenSessionsItem, from: GuideFrom) => void;
   /** Задания клиента — строки «давали …» (guideHistory.ts); нет — без истории. */

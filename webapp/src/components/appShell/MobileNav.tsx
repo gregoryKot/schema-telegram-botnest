@@ -6,8 +6,8 @@ import { isClientListPath } from '../therapist/clientTabRoute';
 
 // Нижняя навигация мобильной вёрстки AppShell — вынесена из AppShell.tsx
 // (правило №10: файл в храповике размера растёт только дроблением).
-// В режиме терапевта — свои четыре пункта (редизайн 2026-10): раньше на
-// телефоне терапевт видел разделы клиента и не мог попасть в кабинет.
+// В режиме терапевта — свои пять пунктов (редизайн 2026-10, «Справочник» — #995):
+// раньше на телефоне терапевт видел разделы клиента и не мог попасть в кабинет.
 // «Профиль» с onProfile открывает лист настроек, а не /account (#902): в нём
 // единственный переключатель режима и остальные настройки, а сайдбар на
 // телефоне скрыт — иначе из кабинета нельзя вернуться в режим клиента.
@@ -15,6 +15,7 @@ type Item = { to: string; icon: MobileNavIconId; label: string; end?: boolean };
 const THERAPIST_ITEMS: Item[] = [
   { to: '/cabinet/today', icon: 'today', label: 'Сегодня' },
   { to: '/cabinet', icon: 'clients', label: 'Клиенты', end: true },
+  { to: '/cabinet/guide', icon: 'guide', label: 'Справочник' },
   { to: '/account', icon: 'profile', label: 'Профиль' },
 ];
 
@@ -50,10 +51,10 @@ export function MobileNav({ items, therapist = false, onSearch, onProfile }: {
   const inMoreSub = navItemOf(pathname) === 'more' && !pathname.startsWith('/more');
   if (typing) return null;
   if (therapist) {
-    const [today, clients, profile] = THERAPIST_ITEMS;
+    const [today, clients, guide, profile] = THERAPIST_ITEMS;
     return (
       <nav className="mobile-nav">
-        {link(today)}{isClientListPath(pathname) ? activeLink(clients) : link(clients)}{action('search', 'Поиск', onSearch)}
+        {link(today)}{isClientListPath(pathname) ? activeLink(clients) : link(clients)}{link(guide)}{action('search', 'Поиск', onSearch)}
         {onProfile ? action('profile', profile.label, onProfile) : link(profile)}
       </nav>
     );

@@ -63,6 +63,8 @@ export function Sidebar({
         ))}
         {therapistMode && (<>
           <NavLink to="/cabinet/today" className={itemClass}><span>Сегодня</span></NavLink>
+          {/* «Справочник» — до клиентов: их список под «Все клиенты» бывает длинным. */}
+          <NavLink to="/cabinet/guide" className={itemClass}><span>Справочник</span></NavLink>
           <Link to="/cabinet" className={itemClass({ isActive: onList })} aria-current={onList ? 'page' : undefined}>
             <span>Все клиенты</span><span className="badge">{screenShare ? '' : therapistClients.length || ''}</span>
           </Link>
