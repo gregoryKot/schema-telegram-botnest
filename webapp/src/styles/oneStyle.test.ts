@@ -58,6 +58,7 @@ const allRules = [...cssFiles.flatMap((f) => rules(cssText(f)).map((r) => ({ ...
 /** --line в border-top/bottom — только у контуров: край полосы или рамка самостоятельного блока. */
 const LINE_OUTLINES: Record<string, string> = {
   '.ds-sheet-head': 'нижний край шапки листа',
+  '.pl2-header': 'нижний край закреплённой шапки лендинга и мини-тестов',
   '.tk-head': 'нижний край шапки трекера',
   '.tq-bar': 'нижний край верхней полосы вопроса',
   '.ss-tabs': 'нижний край полосы вкладок справочника',
