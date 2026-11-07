@@ -12,7 +12,8 @@ import { useConceptGuide } from './guide/useConceptGuide';
 // Вид «Схема»: схема случая в потоке или, по «На весь экран», в листе; данные и правки —
 // useClientConceptGraph, одни на оба места. Действия (картинка, весь экран, холст) в потоке уходят
 // в меню шапки (head рисуется здесь ради graph), в листе — панель. Сводка digest (#902) — под шапкой.
-// Подсказки терапевту (#995): листы режима и техники — после схемы, «Дать заданием» — onAssign.
+// Подсказки терапевту (#995): листы режима и техники — после схемы, «Дать заданием» — onAssign,
+// история «давали …» — по заданиям клиента, «Делали сегодня» — правкой связей графа.
 export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, head, digest }: {
   detail: ClientDetail;
   onOpenCanvas?: (mapId: number) => void;
@@ -27,7 +28,7 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, head, diges
   const graphRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<(() => void) | null>(null);
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
-  const guide = useConceptGuide(onAssign);
+  const guide = useConceptGuide({ onAssign, tasks: detail.clientTasks, graph: g.graphProps });
   const expand = () => {
     api.trackEvent('concept_graph_fullscreen');
     setHeld(flowRef.current?.offsetHeight ?? 0);

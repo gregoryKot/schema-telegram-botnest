@@ -131,6 +131,7 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
     expect(CONCEPT_EVENTS).toContain('concept_guide_schema_open');
     expect(CONCEPT_EVENTS).toContain('concept_guide_technique_open');
     expect(CONCEPT_EVENTS).toContain('concept_guide_assign');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_mark_done');
   });
 });
 

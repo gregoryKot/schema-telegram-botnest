@@ -6,12 +6,13 @@
 // Разделы — фикстура, не тексты shared/src/schemaTherapy/guide/.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import { CONCEPT_SHEET_Z } from './therapist/ConceptFullscreenSheet';
 import {
   CONCEPT_GUIDE_ASSIGN_EVENT,
+  CONCEPT_GUIDE_MARK_DONE_EVENT,
   CONCEPT_GUIDE_MODE_OPEN_EVENT,
   CONCEPT_GUIDE_SCHEMA_OPEN_EVENT,
   CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT,
@@ -163,5 +164,56 @@ describe('TherapistClientSheet — подсказки терапевту', () =>
     const sheet = card.closest('.sk-sheet')!;
     expect(zOf(sheet)).toBe(String(CONCEPT_SHEET_Z));
     expect(isAfter(sheet, schema)).toBe(true);
+  });
+});
+
+// История (#995): «давали …» — из заданий клиента, которые карточка уже грузит;
+// «Делали сегодня» в листе техники — правка связи режима, которая уходит
+// автосохранением и после повторной загрузки видна как «делали …».
+describe('TherapistClientSheet — история подсказок', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-07T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('задание клиента по пункту — «давали …» на плашке и в листе режима', async () => {
+    mockApi.getTherapyTasksForClient.mockResolvedValue([{
+      id: 1, userId: 7, assignedBy: 1, type: 'letter_to_self', text: 'Написать письмо себе в детстве',
+      targetDays: null, needId: null, dueDate: null, done: true, completedAt: '2026-10-14T10:00:00.000Z',
+      createdAt: '2026-10-12T10:00:00.000Z',
+    }]);
+    await openPlaque();
+    expect(screen.getByText('давали 12 окт · выполнено')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Подробнее о режиме' }));
+    const mode = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
+    expect(within(mode).getByText('давали 12 окт · выполнено')).toBeTruthy();
+  });
+
+  it('«Делали сегодня» → связь режима с отметкой уходит в сохранение → после загрузки «делали 7 ноя»', async () => {
+    mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => ({
+      ...(await mockApi.getConceptualization()), ...body,
+    }));
+    await openPlaque();
+    fireEvent.click(screen.getByRole('button', { name: 'Работа со стульями' }));
+    const technique = screen.getByRole('dialog', { name: 'Работа со стульями' });
+    fireEvent.click(within(technique).getByRole('button', { name: 'Делали сегодня' }));
+    expect(tracked(CONCEPT_GUIDE_MARK_DONE_EVENT)).toBe(1);
+    expect(within(technique).getByRole('button', { name: 'Отменить сегодняшнюю отметку' })).toBeTruthy();
+    await waitFor(() => expect(mockApi.saveConceptualization).toHaveBeenCalled(), { timeout: 3000 });
+    const body = mockApi.saveConceptualization.mock.calls.at(-1)![1];
+    const done = [{ techniqueId: 'chairwork', day: '2026-11-07' }];
+    expect(body.modeLinks).toEqual([expect.objectContaining({ modeId: 'vulnerable_child', done })]);
+
+    // перезагрузка: карточка открывается заново и читает сохранённое с сервера
+    cleanup();
+    const saved = await mockApi.getConceptualization();
+    mockApi.getConceptualization.mockResolvedValue({ ...saved, modeLinks: body.modeLinks });
+    await openPlaque();
+    expect(screen.getByText('· делали 7 ноя')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Работа со стульями' }));
+    const again = screen.getByRole('dialog', { name: 'Работа со стульями' });
+    expect(within(again).getByText('делали 7 ноя')).toBeTruthy();
+    expect(within(again).getByRole('button', { name: 'Отменить сегодняшнюю отметку' })).toBeTruthy();
   });
 });

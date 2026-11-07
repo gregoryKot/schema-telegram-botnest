@@ -722,19 +722,23 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('concept_sync_from_map', leak)).toBeUndefined();
   });
 
-  // Подсказки терапевту (#995): ни клиент, ни режим, ни схема, ни текст задания
-  // в событие не попадают — событие отмечает только, что лист открыт или задание дано.
-  it('concept_guide_mode_open/schema_open/technique_open/assign: meta игнорируется', () => {
+  // Подсказки терапевту (#995): ни клиент, ни режим, ни схема, ни текст задания,
+  // ни техника с днём отметки в событие не попадают — событие отмечает только,
+  // что лист открыт, задание дано или техника отмечена «Делали сегодня».
+  it('concept_guide_mode_open/schema_open/technique_open/assign/mark_done: meta игнорируется', () => {
     const leak = {
       clientId: '555',
       modeId: 'vulnerable_child',
       schemaId: 'abandonment',
       text: 'Встреча со своим маленьким Я',
+      techniqueId: 'chairwork',
+      day: '2026-11-07',
     };
     expect(sanitizeMeta('concept_guide_mode_open', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_guide_schema_open', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_guide_technique_open', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_guide_assign', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_mark_done', leak)).toBeUndefined();
   });
 
   // «Показ экрана» в кабинете: событие только отмечает включение, имена клиентов не принимаются.

@@ -31,6 +31,19 @@ describe('mergeAppended', () => {
     ]);
   });
 
+  // «Делали сегодня» (#995): отметка, поставленная во вкладке и ещё не ушедшая, и
+  // отметка, уже лежащая на сервере, переживают запись с холста.
+  it('отметки техник (done) не теряются ни у локальной правки, ни у серверной связи', () => {
+    const done = [{ techniqueId: 'chairwork', day: '2026-11-05' }];
+    const base = { modeLinks: [link('demanding_critic', ['failure'])] };
+    const local = { modeLinks: [{ ...link('demanding_critic', ['failure']), done }] };
+    const server = { modeLinks: [link('demanding_critic', ['failure', 'shame']), { ...link('vulnerable_child', []), done }] };
+    expect(mergeAppended(base, local, server).modeLinks).toEqual([
+      { ...link('demanding_critic', ['failure', 'shame']), done },
+      { ...link('vulnerable_child', []), done },
+    ]);
+  });
+
   it('концептуализации ещё не было — локальные списки объединяются с серверными', () => {
     expect(mergeAppended(null, { modeIds: ['healthy_adult'] }, { modeIds: ['demanding_critic'] }).modeIds)
       .toEqual(['demanding_critic', 'healthy_adult']);

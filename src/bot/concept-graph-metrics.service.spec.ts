@@ -43,6 +43,7 @@ function makeService(opts: {
     concept_guide_schema_open: opts.guide?.[1] ?? 0,
     concept_guide_technique_open: opts.guide?.[2] ?? 0,
     concept_guide_assign: opts.guide?.[3] ?? 0,
+    concept_guide_mark_done: opts.guide?.[4] ?? 0,
     client_concept_opened: opts.clientOpens ?? 0,
   };
   // concept_shared различается по meta.on (включили / выключили показ).
@@ -104,6 +105,7 @@ describe('ConceptGraphMetricsService', () => {
       guideSchemas30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      guideMarkDone30: 0,
       ...NO_SHARE,
     });
   });
@@ -150,6 +152,7 @@ describe('ConceptGraphMetricsService', () => {
       guideSchemas30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      guideMarkDone30: 0,
       ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
@@ -174,6 +177,7 @@ describe('ConceptGraphMetricsService', () => {
       guideSchemas30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      guideMarkDone30: 0,
       ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
@@ -198,6 +202,7 @@ describe('ConceptGraphMetricsService', () => {
       guideSchemas30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      guideMarkDone30: 0,
       ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
@@ -221,27 +226,32 @@ describe('ConceptGraphMetricsService', () => {
     expect(text).toContain('Холст дописывал в концептуализацию: 9 раз');
   });
 
-  it('подсказки терапевту (#995): листы режима, схемы, техники и «Дать заданием» считаются отдельно и видны в /stats', async () => {
-    const { service, count } = makeService({ opens: 3, guide: [5, 4, 8, 2] });
+  it('подсказки терапевту (#995): листы режима, схемы, техники, «Дать заданием» и отметки техник считаются отдельно и видны в /stats', async () => {
+    const { service, count } = makeService({
+      opens: 3,
+      guide: [5, 4, 8, 2, 6],
+    });
     await expect(service.getMetrics()).resolves.toMatchObject({
       opens30: 3,
       guideModes30: 5,
       guideSchemas30: 4,
       guideTechniques30: 8,
       guideAssign30: 2,
+      guideMarkDone30: 6,
     });
     for (const name of [
       'concept_guide_mode_open',
       'concept_guide_schema_open',
       'concept_guide_technique_open',
       'concept_guide_assign',
+      'concept_guide_mark_done',
     ]) {
       expect(count).toHaveBeenCalledWith({
         where: { name, createdAt: { gte: SINCE } },
       });
     }
     await expect(service.render()).resolves.toContain(
-      'Подсказки терапевту — листы режимов: 5, листы схем: 4, листы техник: 8, «Дать заданием»: 2',
+      'Подсказки терапевту — листы режимов: 5, листы схем: 4, листы техник: 8, «Дать заданием»: 2, отметили техник: 6',
     );
   });
 
@@ -280,6 +290,7 @@ describe('ConceptGraphMetricsService', () => {
       guideSchemas30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      guideMarkDone30: 0,
       ...NO_SHARE,
     });
     const text = await service.render();

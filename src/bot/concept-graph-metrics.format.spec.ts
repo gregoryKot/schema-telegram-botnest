@@ -18,6 +18,7 @@ const base: ConceptGraphMetrics = {
   guideSchemas30: 0,
   guideTechniques30: 0,
   guideAssign30: 0,
+  guideMarkDone30: 0,
   sharedNow: 0,
   shareOn30: 0,
   shareOff30: 0,
@@ -207,6 +208,19 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).not.toMatch(/листы (режимов|техник)|NaN|undefined|null/);
   });
 
+  it('подсказки: «Делали сегодня» — «отметили техник: N», ноль не печатается', () => {
+    const text = formatConceptGraphMetrics({
+      ...base,
+      guideTechniques30: 7,
+      guideMarkDone30: 3,
+    });
+    expect(text).toContain(
+      'Подсказки терапевту — листы техник: 7, отметили техник: 3',
+    );
+    const none = formatConceptGraphMetrics({ ...base, guideTechniques30: 7 });
+    expect(none).not.toContain('отметили');
+  });
+
   it('схемой пользовались, а подсказки не открывали — сказано словами', () => {
     const text = formatConceptGraphMetrics({
       ...base,
@@ -216,9 +230,10 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).toContain('Подсказки терапевту пока не открывали');
   });
 
-  it('пустая БД не упоминает подсказки и листы схем', () => {
+  it('пустая БД не упоминает подсказки, листы схем и отметки техник', () => {
     const text = formatConceptGraphMetrics({ ...base });
     expect(text).not.toContain('Подсказки');
     expect(text).not.toContain('листы схем');
+    expect(text).not.toContain('отметили');
   });
 });

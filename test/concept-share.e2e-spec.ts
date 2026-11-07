@@ -2,7 +2,7 @@
 // PATCH /api/therapy/conceptualization/:clientId/share — только терапевт ЭТОЙ
 // связи; GET /api/therapy/my-concept — клиенту только своя схема, только пока
 // показ включён, и только видом клиента (без истоков, задач терапии, рабочих
-// полей и истории). Две пары терапевт/клиент: T1–C1 и T2–C2. Гоняется на
+// полей, истории и отметок «Делали сегодня» — журнала терапевта, #995). Две пары терапевт/клиент: T1–C1 и T2–C2. Гоняется на
 // фейковой Prisma (джоба backend) и на живом Postgres (джоба migrations).
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -19,6 +19,8 @@ describe('e2e ownership: схема случая клиенту (concept share)'
   const T2 = 4_300_000_000_000_003n;
   const C2 = 4_300_000_000_000_004n;
   const ALL = [T1, C1, T2, C2];
+  // Отметки техник: проходят DTO целиком, терапевт их видит, клиент — нет.
+  const DONE = [{ techniqueId: 'chairwork', day: '2026-11-05' }];
 
   const agentAs = (userId: bigint) => {
     const token = signAccessToken(userId, process.env.JWT_SECRET as string);
@@ -68,6 +70,7 @@ describe('e2e ownership: схема случая клиенту (concept share)'
             origin: 'ИСТОКИ режима',
             manifest: 'Страшно',
             strategy: 'ЗАДАЧА ТЕРАПИИ режима',
+            done: DONE,
           },
         ],
         schemaLinks: [
@@ -76,11 +79,15 @@ describe('e2e ownership: схема случая клиенту (concept share)'
             belief: 'Меня бросят',
             origin: 'ИСТОКИ схемы',
             needIds: ['attachment'],
+            done: DONE,
           },
         ],
       },
     );
     expect(saved.status).toBeLessThan(300);
+    // ValidationPipe({ whitelist: true }) отметки не вырезал: терапевт их читает.
+    expect(saved.body.modeLinks[0].done).toEqual(DONE);
+    expect(saved.body.schemaLinks[0].done).toEqual(DONE);
   });
 
   afterAll(async () => {
@@ -172,7 +179,9 @@ describe('e2e ownership: схема случая клиенту (concept share)'
         needIds: ['attachment'],
       },
     ]);
-    expect(JSON.stringify(mine.body)).not.toMatch(/ИСТОКИ|ЗАДАЧА ТЕРАПИИ/);
+    expect(JSON.stringify(mine.body)).not.toMatch(
+      /ИСТОКИ|ЗАДАЧА ТЕРАПИИ|chairwork/,
+    );
 
     const rel = await agentAs(C1).get('/api/therapy/relation');
     expect(rel.body.conceptSharedAt).toBe(on.body.sharedWithClientAt);

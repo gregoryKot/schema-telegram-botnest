@@ -40,6 +40,7 @@ export function ConceptStrategy({
         from={{ kind: 'mode', id: card.modeId }}
         actions={actions}
         take={take}
+        marks={link.done}
       />
     ) : card.strategyHint ? (
       <MethodHint text={card.strategyHint} take={take} />

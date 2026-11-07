@@ -4,6 +4,7 @@
 // upsert её не трогает (тот же приём, что в modeLinks.ts).
 import type { ConceptSchemaLink } from '../../apiTypes';
 import { laneOfMode } from './modeLanes';
+import { normalizeTechniqueMarks } from './techniqueMarks';
 
 export function emptySchemaLink(schemaId: string): ConceptSchemaLink {
   return { schemaId, belief: '', origin: '', needIds: [] };
@@ -40,11 +41,13 @@ export function normalizeSchemaLinks(raw: unknown): ConceptSchemaLink[] {
       continue;
     }
     seen.add(r.schemaId);
+    const done = normalizeTechniqueMarks(r.done);
     out.push({
       schemaId: r.schemaId,
       belief: str(r.belief),
       origin: str(r.origin),
       needIds: strings(r.needIds),
+      ...(done.length > 0 ? { done } : {}),
     });
   }
   return out;

@@ -1,37 +1,17 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type { ConceptTechniqueMark } from '../../apiTypes';
 import type {
   ConceptGuideActions,
   GuideFrom,
   GuideHintView,
 } from './conceptGuide';
+import { guideNotes } from './guideHistory';
 import { MethodHint } from './MethodHint';
-import { hintStyle, labelStyle } from './graphStyles';
-
-const sectionStyle: CSSProperties = { marginTop: 'var(--space-8)' };
-
-// Кнопка, которая выглядит словом: зона нажатия 44 по высоте, а в потоке —
-// строка текста (отрицательные поля компенсируют рост, как retryStyle в
-// SaveStatusLine). Цвет — текста, акцент на плашке один: «Взять за основу».
-const wordBtn: CSSProperties = {
-  minHeight: 44,
-  margin: '-12px 0',
-  padding: '0 2px',
-  border: 'none',
-  background: 'transparent',
-  color: 'var(--text)',
-  font: 'inherit',
-  textDecoration: 'underline',
-  textDecorationColor: 'rgba(var(--fg-rgb),0.3)',
-  textUnderlineOffset: 3,
-  cursor: 'pointer',
-};
-// «Дать заданием» стоит в своей строке, ей отрицательные поля не нужны.
-const assignBtn: CSSProperties = {
-  ...wordBtn,
-  margin: 0,
-  flexShrink: 0,
-  color: 'var(--text-sub)',
-};
+import {
+  HintBetweenSessions,
+  HintTechniques,
+  wordBtn,
+} from './ConceptGuideHintSections';
 
 // «Подробнее…» ведёт в лист своего раздела.
 const MORE: Record<
@@ -48,94 +28,39 @@ const MORE: Record<
  * — чей раздел: колбэки получают его, «Подробнее» ведёт в лист режима или
  * схемы. `take` — «Взять за основу» (её показывает ConceptStrategy, пока
  * поле пустое; у схемы своего поля нет). Без `actions` техники и задания —
- * только текст, без кнопок.
+ * только текст, без кнопок. История серым: «давали …» — по `actions.tasks`,
+ * «делали …» — по `marks`, отметкам связи этого режима или схемы.
  */
 export function ConceptGuideHint({
   view,
   from,
   actions,
   take,
+  marks,
 }: {
   view: GuideHintView;
   from: GuideFrom;
   actions?: ConceptGuideActions;
   take?: ReactNode;
+  marks?: ConceptTechniqueMark[];
 }) {
   const { guide, techniques } = view;
-  const assign = actions?.onAssign;
   const more = MORE[from.kind];
+  const notes = guideNotes(from, actions?.tasks, marks);
   return (
     <MethodHint text={guide.goal} take={take}>
-      {techniques.length > 0 && (
-        <div style={sectionStyle}>
-          <div style={labelStyle}>На сессии</div>
-          <div
-            style={{
-              ...hintStyle,
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              gap: '2px var(--space-10)',
-            }}
-          >
-            {techniques.map((t) =>
-              actions ? (
-                <button
-                  key={t.id}
-                  type="button"
-                  style={wordBtn}
-                  onClick={() => actions.onOpenTechnique(t.id, from)}
-                >
-                  {t.name}
-                </button>
-              ) : (
-                <span key={t.id} style={{ color: 'var(--text)' }}>
-                  {t.name}
-                </span>
-              ),
-            )}
-          </div>
-        </div>
-      )}
-      {guide.betweenSessions.length > 0 && (
-        <div style={sectionStyle}>
-          <div style={labelStyle}>Между сессиями</div>
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-            {guide.betweenSessions.map((item, i) => (
-              <li
-                key={`${i}:${item.title}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 'var(--space-8)',
-                  minHeight: assign ? 44 : undefined,
-                }}
-              >
-                <span style={{ ...hintStyle, color: 'var(--text)' }}>
-                  {item.title}
-                  {item.kind === 'task' && item.note && (
-                    <span style={{ color: 'var(--text-sub)' }}>
-                      {' '}
-                      · {item.note}
-                    </span>
-                  )}
-                </span>
-                {assign && (
-                  <button
-                    type="button"
-                    style={{ ...assignBtn, fontSize: 12 }}
-                    aria-label={`Дать заданием: ${item.title}`}
-                    onClick={() => assign(item, from)}
-                  >
-                    Дать заданием
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <HintTechniques
+        techniques={techniques}
+        from={from}
+        actions={actions}
+        notes={notes}
+      />
+      <HintBetweenSessions
+        items={guide.betweenSessions}
+        from={from}
+        assign={actions?.onAssign}
+        notes={notes}
+      />
       {actions && (
         <button
           type="button"
