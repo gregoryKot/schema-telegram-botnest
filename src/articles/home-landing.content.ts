@@ -25,7 +25,7 @@ export type RichText = readonly RichPart[];
 export const HOME_AUTHOR_SITE = 'https://kotlarewski.gr';
 
 export const HOME_HERO = {
-  /** Заголовок; `accent` сайт красит градиентом. */
+  /** Заголовок; `accent` сайт выделяет курсивом акцентного цвета. */
   title: {
     before: 'Почему со мной ',
     accent: 'снова',

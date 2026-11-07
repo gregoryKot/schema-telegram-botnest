@@ -221,15 +221,14 @@ describe('списки-исключения check-color-drift.mjs запинен
     );
   });
 
-  it('EXCLUDE_FILES содержит три ожидаемых пути', () => {
+  it('EXCLUDE_FILES — только canvas-рисование', () => {
     const files = loadStringList('check-color-drift.mjs', 'EXCLUDE_FILES');
-    expect(files).toEqual(
-      expect.arrayContaining([
-        'shared/src/share/',
-        'shared/src/hooks/useConfetti.ts',
-        'webapp/src/pages/landing/aurora.ts',
-      ]),
-    );
+    // Лендинг со своей палитрой (pages/landing/aurora.ts) переехал на токены
+    // бумаги в 2026-11 — исключения для маркетинга больше нет.
+    expect(files).toEqual([
+      'shared/src/share/',
+      'shared/src/hooks/useConfetti.ts',
+    ]);
   });
 
   it('EXCLUDE_LINE_PATTERNS непуст и матчит парную запись, но не одинокий hex:', () => {

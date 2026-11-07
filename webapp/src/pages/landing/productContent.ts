@@ -1,14 +1,15 @@
-import type { CSSProperties } from 'react';
-import { INK, VIOLET, PINK, CYAN, AMBER, EMERALD, ROSE, AURORA } from './aurora';
+import type { ReactElement } from 'react';
+import type { ArtProps } from '../../components/art/paper';
+import { Strokes, Ribbon, Breath, Sheets, Layers } from '../../components/art/PaperArt';
+import { Cluster, Leaf, Talk, Check, Heart, Wheel } from '../../components/art/PaperArtSigns';
+import { Limits } from '../../components/art/NeedArt';
 import {
   HOME_STEPS, HOME_FEATURES, HOME_TRUST, HOME_FAQ,
   type HomeStepId, type HomeFeatureId, type HomeTrustId,
 } from '../../../../src/articles/home-landing.content';
 
-// Данные и типографика продуктового лендинга «Всё по схеме». Non-component
-// модуль (react-refresh; .ts — JSX здесь нет): компоненты-потребители — в ProductKit.tsx и
-// ProductLandingPage.tsx. Вынесено из ProductLandingPage при добавлении блока
-// об авторе (файловый храповик: раздутый файл дробится, а не пухнет).
+// Данные продуктового лендинга «Всё по схеме». Non-component модуль (react-refresh;
+// .ts — JSX здесь нет): потребители — ProductKit.tsx и ProductLandingPage.tsx.
 
 // Единственный источник для десктоп-навбара и мобильного меню
 // (ProductMobileMenu.tsx) — раньше список ссылок жил только инлайном
@@ -22,34 +23,33 @@ export const NAV_LINKS: { label: string; href: string }[] = [
   { label: 'Вопросы', href: '#faq' },
 ];
 
-// Текст лендинга — src/articles/home-landing.content.ts: тот же модуль
-// вкладывает его в #root главной для робота без JS (GEO.md). Здесь только вид
-// по `id`: новый пункт без строки ниже не соберётся (tsc).
-const STEP_LOOK: Record<HomeStepId, { num: string; color: string; emoji: string }> = {
-  origin:  { num: '01', color: ROSE,  emoji: '🌱' },
-  trigger: { num: '02', color: AMBER, emoji: '🔁' },
-  notice:  { num: '03', color: CYAN,  emoji: '👁️' },
+type Art = (p: ArtProps) => ReactElement;
+// Текст — src/articles/home-landing.content.ts (его же сервер вкладывает в #root
+// для робота без JS, GEO.md); здесь только вид по `id` — без строки ниже пункт
+// не соберётся (tsc). Знак — по «Мотив → смысл» (docs/design/PAPER_2026-11.md).
+const STEP_LOOK: Record<HomeStepId, { num: string; Art: Art }> = {
+  origin:  { num: '01', Art: Wheel },  // потребности вокруг детства
+  trigger: { num: '02', Art: Ribbon }, // момент, который зацепил и закрутился
+  notice:  { num: '03', Art: Leaf },   // что выросло
 };
 export const STEPS = HOME_STEPS.map((s) => ({ ...s, ...STEP_LOOK[s.id] }));
 
-const FEATURE_LOOK: Record<HomeFeatureId, { emoji: string; color: string }> = {
-  diary:     { emoji: '📓', color: CYAN },
-  schemas:   { emoji: '🧩', color: VIOLET },
-  modes:     { emoji: '🎭', color: AMBER },
-  practices: { emoji: '✍️', color: EMERALD },
-  dynamics:  { emoji: '📈', color: PINK },
-  therapist: { emoji: '🤝', color: ROSE },
+const FEATURE_LOOK: Record<HomeFeatureId, { Art: Art }> = {
+  diary:     { Art: Strokes }, // чек-ин пяти потребностей = трекер
+  schemas:   { Art: Layers },
+  modes:     { Art: Cluster },
+  practices: { Art: Breath },
+  dynamics:  { Art: Sheets },  // то, что уже собрано
+  therapist: { Art: Talk },
 };
 export const FEATURES = HOME_FEATURES.map((f) => ({ ...f, ...FEATURE_LOOK[f.id] }));
 
-const TRUST_LOOK: Record<HomeTrustId, { icon: string; color: string }> = {
-  free:      { icon: '💛', color: AMBER },
-  encrypted: { icon: '🔒', color: CYAN },
-  leave:     { icon: '🚪', color: EMERALD },
+// Доверие — квадраты цветной бумаги (оттенок `--h`: персик 45, небо 240, шалфей 135).
+const TRUST_LOOK: Record<HomeTrustId, { Art: Art; hue: number }> = {
+  free:      { Art: Heart, hue: 45 },   // бережно
+  encrypted: { Art: Limits, hue: 240 }, // своя рамка — граница
+  leave:     { Art: Check, hue: 135 },  // сделано, без хвостов
 };
 export const TRUST = HOME_TRUST.map((t) => ({ ...t, ...TRUST_LOOK[t.id] }));
 
 export const FAQ = HOME_FAQ;
-
-export const H2: CSSProperties = { fontFamily: 'inherit', fontSize: 'clamp(28px, 3.6vw, 44px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.08, margin: 0, color: INK };
-export const EYEBROW: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', background: AURORA, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' };
