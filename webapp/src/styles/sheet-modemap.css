@@ -218,6 +218,8 @@ button.mm2-sync-text { min-height: 44px; margin: -12px 0; padding: 0; border: no
 .mm2-sync.is-err .mm2-sync-btn { color: var(--err); }
 .mm2-sync-btn:disabled { opacity: .5; cursor: default; }
 .mm2-canvas-empty { grid-area: 2 / 1; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 0 24px; text-align: center; pointer-events: none; z-index: 5; }
+/* Пустое состояние со знаком (PaperEmpty) стоит по центру холста, текст в нём — от левого края, к знаку. */
+.mm2-canvas-empty .pp-empty, .mm2-center .pp-empty { text-align: left; max-width: 520px; }
 
 /* ── Пара: подписи партнёров ── */
 .mm2-lane-bar { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; z-index: 4; pointer-events: none; }

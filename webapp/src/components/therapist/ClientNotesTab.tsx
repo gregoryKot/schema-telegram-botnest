@@ -4,6 +4,7 @@ import { buildNoteItems, countByFilter, filterNotes, FILTERS, type DiaryEntry, t
 import { NoteCard } from './NoteCard';
 import { TabTitle } from './TabTitle';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { Pebbles } from '../art/PaperArt';
 
 interface Props {
   clientSchemaNotesData: SchemaNoteData[];
@@ -19,7 +20,7 @@ export function ClientNotesTab({ clientSchemaNotesData, clientModeNotesData, cli
   if (all.length === 0) {
     return (
       <div className="ds-page tb-page--narrow">
-        <PaperEmpty>Клиент ещё не заполнял дневник</PaperEmpty>
+        <PaperEmpty art={Pebbles}>Клиент ещё не заполнял дневник</PaperEmpty>
       </div>
     );
   }

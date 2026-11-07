@@ -13,6 +13,8 @@ import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
 import { KIND_META } from './modeMap/mapKinds';
 import { MapKindPicker } from './modeMap/MapKindPicker';
 import { useNewMap } from './modeMap/useNewMap';
+import { PaperEmpty } from './art/PaperEmpty';
+import { Cluster } from './art/PaperArtSigns';
 
 interface Props { clientId: UserId; initialMapId?: number }  // initialMapId: карта, которую открыть первой (иначе первая в списке)
 
@@ -157,8 +159,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
         {loading && <ModeMapSkeleton />}
         {!loading && maps.length === 0 && (
           <div className="mm2-center">
-            <p className="ds-empty">Пока нет графических карт</p>
-            <p className="ds-empty">{tr('Выбери тип первой карты', 'Выберите тип первой карты')}</p>
+            <PaperEmpty art={Cluster} title="Пока нет графических карт">{tr('Выбери тип первой карты', 'Выберите тип первой карты')}</PaperEmpty>
             <div className="mm2-kinds">
               <MapKindPicker variant="cards" concept={newMap.concept} disabled={creating} onPick={createMap} />
             </div>

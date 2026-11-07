@@ -50,6 +50,7 @@ describe('знаки листов подсказок', () => {
     expect(TECHNIQUE_SIGN.mindfulness).toBe('breath');
     expect(TECHNIQUE_SIGN.self_compassion).toBe('heart');
     expect(TECHNIQUE_SIGN.pattern_breaking).toBe('pattern_steps');
+    expect(TECHNIQUE_SIGN.cognitive_work).toBe('pebbles');
   });
 
   it('схема — номер своего домена; неизвестная — 0', () => {

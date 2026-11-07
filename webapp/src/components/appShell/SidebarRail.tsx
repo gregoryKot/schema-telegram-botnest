@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom';
 import { Skeleton } from '../Skeleton';
+import { BrandMark } from '../art/BrandMark';
 import { MobileNavIcon, type MobileNavIconId } from './MobileNavIcon';
 import type { Section } from './navigation';
 import { setSidebarCollapsed, useSidebarCollapsed } from './sidebarCollapse';
@@ -24,13 +25,26 @@ export function SidebarToggle({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-/** Логотип и название — общие у меню и его силуэта на загрузке; у меню справа — кнопка «свернуть». */
+/** Знак и название — общие у меню и его силуэта на загрузке; у меню справа — кнопка «свернуть». */
 export function SidebarBrand({ toggle = false }: { toggle?: boolean }) {
   return (
     <div className="sb-brand">
-      <div className="sb-logo">В</div>
+      <BrandMark size={32} />
       <div className="sb-name">Всё по схеме</div>
       {toggle && <SidebarToggle collapsed={false} />}
+    </div>
+  );
+}
+
+const SIDEBAR_BAR = { background: 'var(--panel-2)' };
+
+/** Верх свёрнутой полоски: знак на месте развёрнутого (меню не прыгает), под ним шеврон;
+ *  в силуэте загрузки вместо шеврона — плашка. */
+function RailHead({ toggle }: { toggle: boolean }) {
+  return (
+    <div className="sb-rail-head">
+      <BrandMark size={32} />
+      {toggle ? <SidebarToggle collapsed /> : <Skeleton width={44} height={44} style={SIDEBAR_BAR} />}
     </div>
   );
 }
@@ -63,7 +77,7 @@ export function SidebarRail({ items, therapistMode, onList, displayName }: RailP
   const account = displayName || 'Профиль';
   return (
     <aside className="sidebar is-collapsed">
-      <SidebarToggle collapsed />
+      <RailHead toggle />
       <nav className="sb-nav">
         {therapistMode ? (<>
           {THERAPIST_ITEMS.map(railLink)}
@@ -81,15 +95,13 @@ export function SidebarRail({ items, therapistMode, onList, displayName }: RailP
   );
 }
 
-const SIDEBAR_BAR = { background: 'var(--panel-2)' };
-
 /** Силуэт меню на первой загрузке (AppShellSkeleton): свёрнутое — сразу полоской, без прыжка. */
 export function SidebarSkeleton() {
   const collapsed = useSidebarCollapsed();
   const square = collapsed ? 44 : undefined;
   return (
     <aside className={`sidebar${collapsed ? ' is-collapsed' : ''}`} aria-hidden="true">
-      {collapsed ? <Skeleton width={44} height={44} style={SIDEBAR_BAR} /> : <SidebarBrand />}
+      {collapsed ? <RailHead toggle={false} /> : <SidebarBrand />}
       <div className="sb-nav">
         {[0, 1, 2].map(i => <Skeleton key={i} width={square} height={44} style={SIDEBAR_BAR} />)}
       </div>

@@ -236,7 +236,12 @@ export const buildAutonomyGuides: SchemaDomainGuideBuilder = (tr) => ({
       more: [
         'Стоит расспросить про детство: не было ли СДВГ или дислексии и как на трудности реагировали взрослые [Кембридж, табл. 3.1].',
       ],
-      techniques: ['imagery_rescripting', 'pattern_breaking', 'flashcards'],
+      techniques: [
+        'imagery_rescripting',
+        'cognitive_work',
+        'pattern_breaking',
+        'flashcards',
+      ],
       betweenSessions: [
         {
           kind: 'task',
