@@ -112,6 +112,7 @@ export function googleOAuthProbe(env: Env = process.env): Probe {
     id: 'googleOAuth',
     title: 'Вход через Google',
     reportInHealth: false,
+    retryOnce: true, // живой authorize Google (Probe.retryOnce)
     async run() {
       const clientId = env.GOOGLE_CLIENT_ID?.trim();
       const redirectUri = env.GOOGLE_REDIRECT_URI?.trim();
@@ -131,6 +132,7 @@ export function vkOAuthProbe(env: Env = process.env): Probe {
     id: 'vkOAuth',
     title: 'Вход через VK',
     reportInHealth: false,
+    retryOnce: true, // живой authorize VK ID (Probe.retryOnce)
     async run() {
       if (!env.VK_APP_ID?.trim() || !env.VK_REDIRECT_URI?.trim())
         return { ok: true, detail: 'выключено' };
