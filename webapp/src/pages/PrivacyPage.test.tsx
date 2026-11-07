@@ -124,3 +124,13 @@ describe('PrivacyPage — окно «Продолжить как…» (Google On
     expect(screen.getByText(/Cookie Google на странице входа \(g_state\)/)).toBeTruthy();
   });
 });
+
+describe('PrivacyPage — сверка с уведомлениями РКН (2026-11-07)', () => {
+  it('показывает номер в реестре операторов, учёт услуг ссылается на п. 2 ч. 1 ст. 6', () => {
+    const { container } = render(<PrivacyPage />);
+    const text = container.textContent ?? '';
+    expect(text).toContain('77-26-561994');
+    expect(text).toContain('п. 2 ч. 1 ст. 6');
+    expect(text).not.toContain('п. 3 ч. 1 ст. 6');
+  });
+});
