@@ -10,14 +10,13 @@ interface Props {
 }
 
 /**
- * Строка связи холста с концептуализацией (#963) над холстом, рядом со
- * статусом сохранения. Видна всегда, пока открыта карта клиента: что ушло в
- * поля, что в полях есть, а на карте нет, или что всё совпадает. Пока
- * концептуализация грузится — скелетон строки, «Добавить на карту» недоступна.
+ * Строка связи холста с концептуализацией (#963) — левая часть полосы статуса над холстом (.mm2-statusbar):
+ * одна линия с многоточием; все имена — в title и по тапу на текст. Пока концептуализация грузится — скелетон.
  */
 export function ConceptSyncLine({ onAddToMap }: Props) {
   const sync = useConceptSyncState();
   const [adding, setAdding] = useState(false);
+  const [open, setOpen] = useState(false);
   if (!sync) return null;
   const view = syncLineView(sync);
   if (view.state === 'off') return null;
@@ -36,8 +35,9 @@ export function ConceptSyncLine({ onAddToMap }: Props) {
   };
   const isErr = view.state === 'error' || view.state === 'failed';
   return (
-    <div className={`mm2-sync${isErr ? ' is-err' : ''}`} {...(isErr ? { role: 'alert' } : { role: 'status', 'aria-live': 'polite' as const })}>
-      <span>{view.text}</span>
+    <div className={`mm2-sync${isErr ? ' is-err' : ''}${open ? ' is-open' : ''}`} {...(isErr ? { role: 'alert' } : { role: 'status', 'aria-live': 'polite' as const })}>
+      {view.full ? <button type="button" className="mm2-sync-text" title={view.full} aria-expanded={open} onClick={() => setOpen(o => !o)}>{open ? view.full : view.text}</button>
+        : <span className="mm2-sync-text">{view.text}</span>}
       {view.action === 'retry' && (
         <button type="button" className="mm2-sync-btn" onClick={sync.retry}>Повторить</button>
       )}
