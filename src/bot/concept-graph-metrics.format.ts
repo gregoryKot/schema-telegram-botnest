@@ -19,6 +19,8 @@ const GUIDE: [keyof ConceptGraphMetrics, string][] = [
   ['guideTechniques30', 'листы техник'],
   ['guideAssign30', '«Дать заданием»'],
   ['guideMarkDone30', 'отметили техник'],
+  ['guideJournalOpen30', 'переходили в журнал техник'],
+  ['guideJournalEntry30', 'открывали технику из журнала'],
 ];
 
 /**

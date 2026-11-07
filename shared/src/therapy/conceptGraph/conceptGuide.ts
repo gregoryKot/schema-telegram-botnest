@@ -38,6 +38,8 @@ export interface ConceptGuideActions {
   onAssign?: (item: BetweenSessionsItem, from: GuideFrom) => void;
   /** Задания клиента — строки «давали …» (guideHistory.ts); нет — без истории. */
   tasks?: readonly GuideTask[];
+  /** «журнал →» у строки «делали …»: вкладка «Задания», блок «На сессиях»; нет — строка без ссылки. */
+  onOpenJournal?: () => void;
 }
 
 /** Общее у разделов режима и схемы — то, что видно на плашке «Обычно в методе». */

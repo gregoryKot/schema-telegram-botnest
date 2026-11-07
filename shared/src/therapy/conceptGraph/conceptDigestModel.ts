@@ -67,7 +67,7 @@ export function clip(text: string, max: number): string {
 }
 
 /** Слова клиента, в скобках — название режима; без alias — только название. */
-export const modeName = (m: GraphModeCard): string =>
+export const modeName = (m: Pick<GraphModeCard, 'name' | 'alias'>): string =>
   m.alias ? `${m.alias} (${m.name})` : m.name;
 
 /** Hue группы режима — тон плашки и точки (MODE_GROUP_HUE). */

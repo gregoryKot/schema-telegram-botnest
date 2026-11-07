@@ -14,6 +14,8 @@ export interface ConceptGraphMetrics {
   guideTechniques30: number; // раз открывали лист техники
   guideAssign30: number; // раз жали «Дать заданием» у пункта «Между сессиями»
   guideMarkDone30: number; // раз отметили «Делали сегодня» у техники
+  guideJournalOpen30: number; // раз перешли «журнал →» в журнал техник вкладки «Задания»
+  guideJournalEntry30: number; // раз открыли технику строкой журнала
   sharedNow: number; // схем случая, которые сейчас показаны клиентам (тумблер «Показать клиенту»)
   shareOn30: number; // раз терапевты включали показ клиенту
   shareOff30: number; // раз выключали показ

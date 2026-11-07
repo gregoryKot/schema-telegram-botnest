@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError } from '../api';
 import type { TherapyClientSummary, UserId } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
@@ -105,6 +105,10 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
   } = detail;
   // «Назначить из шаблона» и «Дать заданием» подсказок — один лист; с концептуализации он встаёт над её листами.
   const openAssign = (preset?: AssignPreset) => { setAssignPreset(preset); setShowAssign(true); };
+  // «журнал →» в подсказках: «Задания» открываются на журнале техник «На сессиях» (прокрутка — один раз).
+  const journalFocus = useRef(false);
+  const openJournal = () => { journalFocus.current = true; detail.setClientTab('tasks'); };
+  const takeJournalFocus = () => { const f = journalFocus.current; journalFocus.current = false; return f; };
   const cardState = clientCardState({ loading, loadFailed, clients, selected: selectedClient, openClientRef });
 
   // ─── Render ───────────────────────────────────────────────────────────────────
@@ -150,7 +154,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
 
             {/* ── CONCEPT ──────────────────────────────────────────────────────── */}
             {clientTab === 'concept' && (
-              <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} onAssign={openAssign} />
+              <ClientConceptTab detail={detail} onOpenCanvas={(id) => { setCanvasMapId(id); detail.setClientTab('mode_map'); }} onAssign={openAssign} onOpenJournal={openJournal} />
             )}
 
             {/* ── MODE MAP — keep mounted to preserve React Flow state across tab switches */}
@@ -167,7 +171,10 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
 
             {/* ── TASKS ────────────────────────────────────────────────────────── */}
             {clientTab === 'tasks' && (
-              <ClientTasksTab detail={detail} onAssign={openAssign} onTasksChanged={board.invalidate} />
+              <ClientTasksTab
+                detail={detail} onAssign={openAssign} onTasksChanged={board.invalidate}
+                onOpenConcept={() => detail.setClientTab('concept')} takeJournalFocus={takeJournalFocus}
+              />
             )}
 
             {/* ── YSQ ──────────────────────────────────────────────────────────── */}

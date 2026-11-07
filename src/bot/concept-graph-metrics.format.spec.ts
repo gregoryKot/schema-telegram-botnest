@@ -19,6 +19,8 @@ const base: ConceptGraphMetrics = {
   guideTechniques30: 0,
   guideAssign30: 0,
   guideMarkDone30: 0,
+  guideJournalOpen30: 0,
+  guideJournalEntry30: 0,
   sharedNow: 0,
   shareOn30: 0,
   shareOff30: 0,
@@ -221,6 +223,20 @@ describe('formatConceptGraphMetrics', () => {
     expect(none).not.toContain('отметили');
   });
 
+  it('журнал техник: переходы «журнал →» и техники из журнала, нули не печатаются', () => {
+    const text = formatConceptGraphMetrics({
+      ...base,
+      guideMarkDone30: 3,
+      guideJournalOpen30: 2,
+      guideJournalEntry30: 5,
+    });
+    expect(text).toContain(
+      'Подсказки терапевту — отметили техник: 3, переходили в журнал техник: 2, открывали технику из журнала: 5',
+    );
+    const none = formatConceptGraphMetrics({ ...base, guideMarkDone30: 3 });
+    expect(none).not.toContain('журнал');
+  });
+
   it('схемой пользовались, а подсказки не открывали — сказано словами', () => {
     const text = formatConceptGraphMetrics({
       ...base,
@@ -235,5 +251,6 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).not.toContain('Подсказки');
     expect(text).not.toContain('листы схем');
     expect(text).not.toContain('отметили');
+    expect(text).not.toContain('журнал');
   });
 });

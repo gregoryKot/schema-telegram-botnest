@@ -4,7 +4,7 @@ import { ConceptGraph } from '../../../../shared/src/therapy/conceptGraph/Concep
 import type { ClientDetail } from './clientSheetTypes';
 import { useClientConceptGraph } from './useClientConceptGraph';
 import { ConceptGraphToolbar } from './ConceptGraphToolbar';
-import { ConceptFullscreenSheet } from './ConceptFullscreenSheet';
+import { ConceptFullscreenSheet, type SheetBack } from './ConceptFullscreenSheet';
 import { ConceptTabHead, type ConceptTabHeadProps } from './concept/ConceptTabHead';
 import type { AssignPreset } from './assignTemplates';
 import { useConceptGuide } from './guide/useConceptGuide';
@@ -13,11 +13,13 @@ import { useConceptGuide } from './guide/useConceptGuide';
 // useClientConceptGraph, одни на оба места. Действия (картинка, весь экран, холст) в потоке уходят
 // в меню шапки (head рисуется здесь ради graph), в листе — панель. Сводка digest (#902) — под шапкой.
 // Подсказки терапевту (#995): листы режима и техники — после схемы, «Дать заданием» — onAssign,
-// история «давали …» — по заданиям клиента, «Делали сегодня» — правкой связей графа.
-export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, head, digest }: {
+// история «давали …» — по заданиям клиента, «Делали сегодня» — правкой связей графа, «журнал →» —
+// onOpenJournal (вкладка «Задания»), листы до перехода закрываются, лист «На весь экран» — тоже.
+export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, onOpenJournal, head, digest }: {
   detail: ClientDetail;
   onOpenCanvas?: (mapId: number) => void;
   onAssign?: (preset: AssignPreset) => void;
+  onOpenJournal?: () => void;
   head: Omit<ConceptTabHeadProps, 'graph'>;
   digest?: ReactNode;
 }) {
@@ -26,9 +28,9 @@ export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, head, diges
   const [held, setHeld] = useState<number | null>(null);
   const flowRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<HTMLDivElement>(null);
-  const backRef = useRef<(() => void) | null>(null);
+  const backRef = useRef<SheetBack | null>(null);
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
-  const guide = useConceptGuide({ onAssign, tasks: detail.clientTasks, graph: g.graphProps });
+  const guide = useConceptGuide({ onAssign, tasks: detail.clientTasks, graph: g.graphProps, onOpenJournal, under: backRef });
   const expand = () => {
     api.trackEvent('concept_graph_fullscreen');
     setHeld(flowRef.current?.offsetHeight ?? 0);

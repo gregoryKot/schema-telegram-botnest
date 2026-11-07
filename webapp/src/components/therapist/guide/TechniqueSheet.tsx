@@ -1,6 +1,8 @@
+import type { MutableRefObject } from 'react';
 import type { TechniqueGuide } from '../../../../../shared/src/schemaTherapy/guide';
 import { GuideSignArt } from '../../art/GuideSigns';
 import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
+import type { SheetBack } from '../ConceptFullscreenSheet';
 import { GuideSection } from './GuideSection';
 import { GuidePage, GuidePoints, GuideVoice } from './GuideSheet';
 import { TechniqueMarkRow, type TechniqueMarkProps } from './TechniqueMarkRow';
@@ -10,15 +12,17 @@ import { TechniqueMarkRow, type TechniqueMarkProps } from './TechniqueMarkRow';
  * применять, шаги крупными номерами; под «Подробнее» — пункты `more`, когда не
  * делать и доказательность; мелко источники. Каркас — GuidePage, общий с листами
  * режима и схемы: лист техники рисуется позже в DOM и встаёт поверх листа режима.
- * `mark` — лист открыт из схемы случая клиента: под героем «Делали сегодня» и
- * сколько раз делали (TechniqueMarkRow); без клиента — нет.
+ * `mark` — лист открыт из схемы случая или журнала техник клиента: под героем
+ * «Делали сегодня» и сколько раз делали, за «делали …» — «журнал →»
+ * (TechniqueMarkRow); без клиента — нет. `backRef` — goBack листа для «журнал →»
+ * (useConceptGuide).
  */
-export function TechniqueSheet({ technique: t, mark, onClose }: {
-  technique: TechniqueGuide; mark?: TechniqueMarkProps; onClose: () => void;
+export function TechniqueSheet({ technique: t, mark, onClose, backRef }: {
+  technique: TechniqueGuide; mark?: TechniqueMarkProps; onClose: () => void; backRef?: MutableRefObject<SheetBack | null>;
 }) {
   return (
     <GuidePage
-      label="Техника" title={t.name} lede={t.summary} onClose={onClose}
+      label="Техника" title={t.name} lede={t.summary} onClose={onClose} backRef={backRef}
       art={<GuideSignArt sign={TECHNIQUE_SIGN[t.id]} size="hero" />}
       more={t.more} sources={t.sources}
       moreParts={[{ title: 'Когда не делать', text: t.cautions }, { title: 'Доказательность', text: t.evidence }]}

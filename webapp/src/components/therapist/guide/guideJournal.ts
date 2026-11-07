@@ -3,7 +3,7 @@ import type { GuideFrom } from '../../../../../shared/src/therapy/conceptGraph/c
 import { findModeLink } from '../../../../../shared/src/therapy/conceptGraph/modeLinks';
 import { findSchemaLink } from '../../../../../shared/src/therapy/conceptGraph/schemaLinks';
 import { isMarkedOn, toggleLinkMark } from '../../../../../shared/src/therapy/conceptGraph/techniqueMarks';
-import { todayStr } from '../../../../../shared/src/utils/format';
+import { fmtDate, todayStr } from '../../../../../shared/src/utils/format';
 
 /** Связи схемы случая и их правка — то же, что получает граф (useClientConceptGraph → graphProps). */
 export interface GuideGraph {
@@ -12,11 +12,13 @@ export interface GuideGraph {
   onChangeSchemaLink: (link: ConceptSchemaLink) => void;
 }
 
-/** Журнал «Делали сегодня» раздела режима или схемы. */
+/** Журнал «Делали сегодня» раздела режима или схемы; `day` не задан — сегодня. */
 export interface GuideJournal {
   marksOf: (from: GuideFrom) => ConceptTechniqueMark[] | undefined;
-  markedToday: (techniqueId: string, from: GuideFrom) => boolean;
-  toggleToday: (techniqueId: string, from: GuideFrom) => void;
+  marked: (techniqueId: string, from: GuideFrom, day?: string) => boolean;
+  toggle: (techniqueId: string, from: GuideFrom, day?: string) => void;
+  /** Местный день терапевта: им отметка ставится, его лист называет «сегодня». */
+  today: () => string;
 }
 
 const write = <L,>(r: { link: L; added: boolean }, save: (link: L) => void) => {
@@ -30,8 +32,10 @@ const write = <L,>(r: { link: L; added: boolean }, save: (link: L) => void) => {
  * на графе (onChangeLink / onChangeSchemaLink → patchConcept → автосохранение),
  * без своего эндпоинта. Связи ещё нет — берётся пустая (findModeLink /
  * findSchemaLink), upsert её добавит. Повторный тап в тот же день снимает
- * сегодняшнюю отметку; `onMarked` (событие concept_guide_mark_done) — только
- * когда отметка поставлена. «Сегодня» — местный день терапевта (`todayStr()`).
+ * сегодняшнюю отметку. Строка журнала техник открывает лист с днём отметки
+ * (`day`): тот же тап снимает отметку того дня и возвращает её. `onMarked`
+ * (событие concept_guide_mark_done) — только когда поставлена сегодняшняя.
+ * «Сегодня» — местный день терапевта (`todayStr()`).
  */
 export function guideJournal(graph: GuideGraph, onMarked: () => void, today: () => string = todayStr): GuideJournal {
   const { source } = graph;
@@ -39,13 +43,19 @@ export function guideJournal(graph: GuideGraph, onMarked: () => void, today: () 
     from.kind === 'mode' ? findModeLink(source.modeLinks, from.id).done : findSchemaLink(source.schemaLinks, from.id).done;
   return {
     marksOf,
-    markedToday: (techniqueId, from) => isMarkedOn(marksOf(from), techniqueId, today()),
-    toggleToday: (techniqueId, from) => {
-      const day = today();
+    today,
+    marked: (techniqueId, from, day = today()) => isMarkedOn(marksOf(from), techniqueId, day),
+    toggle: (techniqueId, from, day = today()) => {
       const added = from.kind === 'mode'
         ? write(toggleLinkMark(findModeLink(source.modeLinks, from.id), techniqueId, day), graph.onChangeLink)
         : write(toggleLinkMark(findSchemaLink(source.schemaLinks, from.id), techniqueId, day), graph.onChangeSchemaLink);
-      if (added) onMarked();
+      if (added && day === today()) onMarked();
     },
   };
+}
+
+/** Подпись кнопки отметки в листе техники: про сегодня или про день открытой строки журнала. */
+export function markButtonLabel(marked: boolean, day?: string): string {
+  if (!day) return marked ? 'Отменить сегодняшнюю отметку' : 'Делали сегодня';
+  return `${marked ? 'Снять' : 'Вернуть'} отметку за ${fmtDate(day)}`;
 }

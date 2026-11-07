@@ -724,8 +724,8 @@ describe('sanitizeMeta', () => {
 
   // Подсказки терапевту (#995): ни клиент, ни режим, ни схема, ни текст задания,
   // ни техника с днём отметки в событие не попадают — событие отмечает только,
-  // что лист открыт, задание дано или техника отмечена «Делали сегодня».
-  it('concept_guide_mode_open/schema_open/technique_open/assign/mark_done: meta игнорируется', () => {
+  // что лист открыт, задание дано, техника отмечена «Делали сегодня» или открыт журнал техник.
+  it('concept_guide_mode_open/schema_open/technique_open/assign/mark_done/journal_*: meta игнорируется', () => {
     const leak = {
       clientId: '555',
       modeId: 'vulnerable_child',
@@ -739,6 +739,8 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('concept_guide_technique_open', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_guide_assign', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_guide_mark_done', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_journal_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_journal_entry', leak)).toBeUndefined();
   });
 
   // «Показ экрана» в кабинете: событие только отмечает включение, имена клиентов не принимаются.

@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState, type RefObject } from 'react';
 import { api } from '../../../api';
-import type { BetweenSessionsItem } from '../../../../../shared/src/schemaTherapy/guide';
+import type { BetweenSessionsItem, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { ConceptGuideActions } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import type { GuideTask } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
+import type { TechniqueJournalEntry } from '../../../../../shared/src/therapy/conceptGraph/techniqueJournal';
+import type { SheetBack } from '../ConceptFullscreenSheet';
 import type { AssignPreset } from '../assignTemplates';
 import { guideAssignPreset } from './guideAssign';
 import { guideJournal, type GuideGraph } from './guideJournal';
@@ -28,17 +30,30 @@ const CONCEPT_TRACK: GuideOpenTrack = {
  * режима и со схемы одинаково: лист назначения режим или схему снаружи не
  * принимает; без onAssign кнопки нет. `tasks` — задания клиента для строк
  * «давали …»; `graph` — связи схемы случая и их правка: отметки «Делали
- * сегодня» (guideJournal), без него кнопки отметки нет. События —
- * concept_guide_* (src/analytics/concept-events.constants.ts), без меты;
- * «Справочник» передаёт свои (`track`), чтобы открытия не смешивались.
+ * сегодня» (guideJournal), без него кнопки отметки нет. `onOpenJournal` —
+ * «журнал →» за «делали …» (вкладка «Задания», блок «На сессиях»): сначала
+ * закрываются листы — goBack нижнего открытого снимает и всё, что над ним
+ * (`under` — схема «На весь экран» под листами подсказок), — затем переход;
+ * без него ссылки нет. `openMark` — строка журнала техник: лист техники с
+ * разделом и днём отметки; `anyOpen` — открыт ли какой-то лист. События — concept_guide_*
+ * (src/analytics/concept-events.constants.ts), без меты; «Справочник»
+ * передаёт свои (`track`), чтобы открытия не смешивались.
  */
-export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK }: {
+export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK, onOpenJournal, under }: {
   onAssign?: (preset: AssignPreset) => void;
   tasks?: readonly GuideTask[];
   graph?: GuideGraph;
   track?: GuideOpenTrack;
+  onOpenJournal?: () => void;
+  under?: RefObject<SheetBack | null>;
 } = {}) {
   const [open, setOpen] = useState<GuideOpen>(CLOSED);
+  const backRefs = { section: useRef<SheetBack | null>(null), technique: useRef<SheetBack | null>(null) };
+  const leaveThen = (then: () => void) => {
+    const back = under?.current ?? backRefs.section.current ?? backRefs.technique.current;
+    if (back) back(then);
+    else then();
+  };
   const actions: ConceptGuideActions = {
     onOpenMode: (id) => {
       track.mode();
@@ -57,14 +72,25 @@ export function useConceptGuide({ onAssign, tasks, graph, track = CONCEPT_TRACK 
       onAssign(guideAssignPreset(item));
     }),
     tasks,
+    onOpenJournal: onOpenJournal && (() => {
+      api.trackEvent('concept_guide_journal_open');
+      leaveThen(onOpenJournal);
+    }),
   };
   const journal = graph && guideJournal(graph, () => api.trackEvent('concept_guide_mark_done'));
   const sheets = (
     <ConceptGuideSheets
-      open={open} actions={actions} journal={journal}
+      open={open} actions={actions} journal={journal} backRefs={backRefs}
       onCloseSheet={() => setOpen(CLOSED)}
       onCloseTechnique={() => setOpen((o) => ({ ...o, technique: null }))}
     />
   );
-  return { actions, sheets };
+  // id отметки — строка из данных; техники нет в библиотеке — лист не откроется (techniqueGuide → null).
+  const openMark = ({ techniqueId, from, day }: TechniqueJournalEntry) => {
+    api.trackEvent('concept_guide_journal_entry');
+    setOpen({ sheet: null, technique: { id: techniqueId as TechniqueId, from, day } });
+  };
+  // Открыт ли лист: журнал держит листы, пока открыт лист снятой последней отметки.
+  const anyOpen = open.sheet !== null || open.technique !== null;
+  return { actions, sheets, openMark, anyOpen };
 }

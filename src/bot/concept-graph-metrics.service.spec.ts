@@ -21,7 +21,15 @@ function makeService(opts: {
   brief?: number;
   syncToMap?: number;
   syncFromMap?: number;
-  guide?: [modes: number, schemas: number, techniques: number, assign: number];
+  guide?: [
+    modes: number,
+    schemas: number,
+    techniques: number,
+    assign: number,
+    markDone?: number,
+    journalOpen?: number,
+    journalEntry?: number,
+  ];
   groups?: Array<{ userId: bigint | null }>;
   shareOn?: number;
   shareOff?: number;
@@ -44,6 +52,8 @@ function makeService(opts: {
     concept_guide_technique_open: opts.guide?.[2] ?? 0,
     concept_guide_assign: opts.guide?.[3] ?? 0,
     concept_guide_mark_done: opts.guide?.[4] ?? 0,
+    concept_guide_journal_open: opts.guide?.[5] ?? 0,
+    concept_guide_journal_entry: opts.guide?.[6] ?? 0,
     client_concept_opened: opts.clientOpens ?? 0,
   };
   // concept_shared различается по meta.on (включили / выключили показ).
@@ -106,6 +116,8 @@ describe('ConceptGraphMetricsService', () => {
       guideTechniques30: 0,
       guideAssign30: 0,
       guideMarkDone30: 0,
+      guideJournalOpen30: 0,
+      guideJournalEntry30: 0,
       ...NO_SHARE,
     });
   });
@@ -153,6 +165,8 @@ describe('ConceptGraphMetricsService', () => {
       guideTechniques30: 0,
       guideAssign30: 0,
       guideMarkDone30: 0,
+      guideJournalOpen30: 0,
+      guideJournalEntry30: 0,
       ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
@@ -178,6 +192,8 @@ describe('ConceptGraphMetricsService', () => {
       guideTechniques30: 0,
       guideAssign30: 0,
       guideMarkDone30: 0,
+      guideJournalOpen30: 0,
+      guideJournalEntry30: 0,
       ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
@@ -203,6 +219,8 @@ describe('ConceptGraphMetricsService', () => {
       guideTechniques30: 0,
       guideAssign30: 0,
       guideMarkDone30: 0,
+      guideJournalOpen30: 0,
+      guideJournalEntry30: 0,
       ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
@@ -226,10 +244,10 @@ describe('ConceptGraphMetricsService', () => {
     expect(text).toContain('Холст дописывал в концептуализацию: 9 раз');
   });
 
-  it('подсказки терапевту (#995): листы режима, схемы, техники, «Дать заданием» и отметки техник считаются отдельно и видны в /stats', async () => {
+  it('подсказки терапевту (#995): листы режима, схемы, техники, «Дать заданием», отметки техник и журнал считаются отдельно и видны в /stats', async () => {
     const { service, count } = makeService({
       opens: 3,
-      guide: [5, 4, 8, 2, 6],
+      guide: [5, 4, 8, 2, 6, 3, 7],
     });
     await expect(service.getMetrics()).resolves.toMatchObject({
       opens30: 3,
@@ -238,6 +256,8 @@ describe('ConceptGraphMetricsService', () => {
       guideTechniques30: 8,
       guideAssign30: 2,
       guideMarkDone30: 6,
+      guideJournalOpen30: 3,
+      guideJournalEntry30: 7,
     });
     for (const name of [
       'concept_guide_mode_open',
@@ -245,13 +265,15 @@ describe('ConceptGraphMetricsService', () => {
       'concept_guide_technique_open',
       'concept_guide_assign',
       'concept_guide_mark_done',
+      'concept_guide_journal_open',
+      'concept_guide_journal_entry',
     ]) {
       expect(count).toHaveBeenCalledWith({
         where: { name, createdAt: { gte: SINCE } },
       });
     }
     await expect(service.render()).resolves.toContain(
-      'Подсказки терапевту — листы режимов: 5, листы схем: 4, листы техник: 8, «Дать заданием»: 2, отметили техник: 6',
+      'Подсказки терапевту — листы режимов: 5, листы схем: 4, листы техник: 8, «Дать заданием»: 2, отметили техник: 6, переходили в журнал техник: 3, открывали технику из журнала: 7',
     );
   });
 
@@ -291,6 +313,8 @@ describe('ConceptGraphMetricsService', () => {
       guideTechniques30: 0,
       guideAssign30: 0,
       guideMarkDone30: 0,
+      guideJournalOpen30: 0,
+      guideJournalEntry30: 0,
       ...NO_SHARE,
     });
     const text = await service.render();

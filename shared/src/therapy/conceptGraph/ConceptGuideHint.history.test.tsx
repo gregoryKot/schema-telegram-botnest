@@ -2,13 +2,15 @@
 // Плашка «Обычно в методе» (#995): история серым у пунктов — «делали …» у
 // техники по отметкам связи и «давали …» у задания по заданиям клиента из
 // `actions.tasks`. Без заданий (справочник без клиента) строк «давали» нет.
+// За «делали …» — «журнал →» (actions.onOpenJournal), без колбэка — текст.
 // Раздел — фикстура (conceptGuide.fixture.ts).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ConceptGuideHint } from './ConceptGuideHint';
 import type { ConceptGuideActions } from './conceptGuide';
 import { FIXTURE_SCHEMA_VIEW, FIXTURE_VIEW } from './conceptGuide.fixture';
 import type { GuideTask } from './guideHistory';
+import { JOURNAL_LINK_LABEL } from './JournalLink';
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -113,5 +115,50 @@ describe('ConceptGuideHint — история', () => {
       />,
     );
     expect(screen.getByText('давали 12 окт · не вышло')).toBeTruthy();
+  });
+});
+
+describe('ConceptGuideHint — «журнал →»', () => {
+  it('за каждой строкой «делали …» — ссылка; тап зовёт переход', () => {
+    const onOpenJournal = vi.fn();
+    render(
+      <ConceptGuideHint
+        view={FIXTURE_VIEW}
+        from={MODE}
+        actions={{ ...actions(), onOpenJournal }}
+        marks={marks}
+      />,
+    );
+    const links = screen.getAllByRole('button', { name: JOURNAL_LINK_LABEL });
+    // «делали …» у двух техник из трёх — две ссылки
+    expect(links).toHaveLength(2);
+    expect(links[0].textContent).toBe('журнал →');
+    fireEvent.click(links[0]);
+    expect(onOpenJournal).toHaveBeenCalledTimes(1);
+  });
+
+  it('без колбэка (справочник) и без отметок — ссылки нет', () => {
+    const { unmount } = render(
+      <ConceptGuideHint
+        view={FIXTURE_VIEW}
+        from={MODE}
+        actions={actions()}
+        marks={marks}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: JOURNAL_LINK_LABEL }),
+    ).toBeNull();
+    unmount();
+    render(
+      <ConceptGuideHint
+        view={FIXTURE_VIEW}
+        from={MODE}
+        actions={{ ...actions(), onOpenJournal: vi.fn() }}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: JOURNAL_LINK_LABEL }),
+    ).toBeNull();
   });
 });

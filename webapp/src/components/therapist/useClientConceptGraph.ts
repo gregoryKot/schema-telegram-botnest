@@ -10,6 +10,22 @@ import { useOpenConceptCanvas } from './useOpenConceptCanvas';
 const noop = () => {};
 
 /**
+ * Связи схемы случая с несохранёнными правками и их правка (patchConcept →
+ * автосохранение) — одни на вид «Схема» и журнал техник вкладки «Задания».
+ */
+export function clientConceptLinks(detail: Pick<ClientDetail, 'concept' | 'localConcept' | 'activeSchemaIds' | 'patchConcept'>) {
+  const source = conceptGraphSource({ ...detail.concept, ...detail.localConcept });
+  const handlers = conceptGraphHandlers({
+    modeIds: source.modeIds,
+    modeLinks: source.modeLinks,
+    schemaLinks: source.schemaLinks,
+    schemaIds: detail.activeSchemaIds,
+    patch: detail.patchConcept,
+  });
+  return { source, handlers };
+}
+
+/**
  * Всё, что нужно виду «Схема» вкладки концептуализации, в одном месте: источник
  * схемы с несохранёнными правками, обработчики правок (те же patchConcept /
  * toggleModeId, что у вида «Поля»), «Скачать картинкой» и «Открыть на холсте».
@@ -27,17 +43,10 @@ export function useClientConceptGraph(
   graphRef: RefObject<HTMLDivElement | null>,
   onOpenCanvas?: (mapId: number) => void,
 ) {
-  const { concept, localConcept, activeSchemaIds, toggleModeId, patchConcept } = detail;
+  const { toggleModeId } = detail;
   const opened = useRef(false);
   const image = useConceptGraphImage(graphRef);
-  const source = conceptGraphSource({ ...concept, ...localConcept });
-  const handlers = conceptGraphHandlers({
-    modeIds: source.modeIds,
-    modeLinks: source.modeLinks,
-    schemaLinks: source.schemaLinks,
-    schemaIds: activeSchemaIds,
-    patch: patchConcept,
-  });
+  const { source, handlers } = clientConceptLinks(detail);
   const canvas = useOpenConceptCanvas({
     clientId: detail.selectedClient?.telegramId,
     source,
