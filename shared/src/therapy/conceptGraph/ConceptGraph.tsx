@@ -14,6 +14,7 @@ import { ConceptModeEditor } from './ConceptModeEditor';
 import { ConceptSchemaEditor } from './ConceptSchemaEditor';
 import { useTr } from '../../utils/addressForm';
 import type { ConceptGuideActions } from './conceptGuide';
+import { graphColumnStyle } from './graphStyles';
 
 type Open = { kind: 'mode' | 'schema'; id: string } | null;
 
@@ -75,22 +76,15 @@ export function ConceptGraph({
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-12)',
-      }}
-    >
+    <div style={graphColumnStyle}>
       <ConceptGraphIntro graph={graph} />
       <ConceptDiagram
         graph={graph}
-        openId={
-          open && (modeCard || schemaCard) ? `${open.kind}:${open.id}` : null
-        }
-        addOpen={add}
-        panel={
-          add && (
+        edit={{
+          openId:
+            open && (modeCard || schemaCard) ? `${open.kind}:${open.id}` : null,
+          addOpen: add,
+          panel: add && (
             <ConceptAddPanel
               section={add}
               modeIds={source.modeIds}
@@ -99,11 +93,12 @@ export function ConceptGraph({
               onToggleSchema={toggleSchema}
               onClose={() => setAdd(null)}
             />
-          )
-        }
-        onOpenMode={(id) => toggleOpen('mode', id)}
-        onOpenSchema={(id) => toggleOpen('schema', id)}
-        onAdd={(section) => setAdd((cur) => (cur === section ? null : section))}
+          ),
+          onOpenMode: (id) => toggleOpen('mode', id),
+          onOpenSchema: (id) => toggleOpen('schema', id),
+          onAdd: (section) =>
+            setAdd((cur) => (cur === section ? null : section)),
+        }}
       />
       {modeCard && (
         <ConceptModeEditor

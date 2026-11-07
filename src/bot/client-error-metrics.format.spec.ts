@@ -19,6 +19,7 @@ const empty: ClientErrorMetrics = {
     help: 0,
     cabinet: 0,
     booking: 0,
+    assets: 0,
     other: 0,
   },
   bySource: { webapp: 0, miniapp: 0 },
@@ -89,6 +90,18 @@ describe('formatClientErrorMetrics', () => {
     const line = text.split('\n').find((l) => l.startsWith('По разделам'))!;
     expect(line.indexOf('Кабинет')).toBeLessThan(line.indexOf('Профиль'));
     expect(line.indexOf('Профиль')).toBeLessThan(line.indexOf('Дневник'));
+  });
+
+  // asset-recovery.js (инцидент 2026-11-04, #928): файл сборки не догрузился —
+  // своя строка, а не «другое» вперемешку с незаведёнными экранами.
+  it('отчёты о недогруженных файлах сайта — отдельной строкой, а не «другое»', () => {
+    const text = formatClientErrorMetrics({
+      ...empty,
+      totalWeek: 3,
+      bySection: { ...empty.bySection, assets: 3 },
+    });
+    expect(text).toContain('По разделам: Файлы сайта не загрузились — 3.');
+    expect(text).not.toContain('другое —');
   });
 
   it('источник без событий (0) не упоминается в строке «Откуда»', () => {

@@ -65,7 +65,9 @@ export function TrackerOverlay({
   const NEED_DATA = useNeedData();
   const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
 
+  const [queued, setQueued] = useState(false); // оценка ждёт в очереди — «Готово» скажет «отправятся сами»
   const save = useRatingSaver({
+    onQueued: () => setQueued(true),
     date: isBackfill ? date : undefined,
     onSaved: isBackfill ? undefined : onSaved,
     errorMessage: isBackfill ? 'tracker backfill rating save failed' : 'tracker rating save failed',
@@ -114,7 +116,7 @@ export function TrackerOverlay({
       <CompletionScreen
         needs={needs}
         effectiveRatings={effectiveRatings}
-        isBackfill={isBackfill}
+        isBackfill={isBackfill} queued={queued}
         date={date}
         onDone={onDone}
         goBack={goBack}

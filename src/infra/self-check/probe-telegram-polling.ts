@@ -21,7 +21,6 @@ export function telegramPollingProbe(
   return {
     id: 'telegramPolling',
     title: 'Бот принимает сообщения',
-    critical: false,
     run: () => Promise.resolve(evaluate()),
   };
 

@@ -17,6 +17,7 @@ import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
 import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
+import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -65,6 +66,10 @@ export function sanitizeMeta(
     return typeof meta.hidden === 'boolean'
       ? { hidden: meta.hidden }
       : undefined;
+  }
+  // «Показать клиенту» схему случая: только включил/выключил, без id клиента.
+  if (name === 'concept_shared') {
+    return typeof meta.on === 'boolean' ? { on: meta.on } : undefined;
   }
   if (name === 'onboarding_step') {
     const step = meta.step;
@@ -217,6 +222,7 @@ export function sanitizeMeta(
     return undefined;
   }
   if (name === 'data_export') return sanitizeDataExportMeta(meta);
+  if (name === 'crawler_visits') return sanitizeCrawlerMeta(meta);
   if (name === 'profile_pattern_open') {
     const kind = meta.kind;
     if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
@@ -234,8 +240,16 @@ export function sanitizeMeta(
   if (name.startsWith('case_')) {
     return sanitizeCaseMeta(name, meta);
   }
+  // Запись из приложения (client-booking-events.constants.ts): opened — без
+  // meta; created пишет сервер, статус с клиента не принимается — подделка
+  // через POST /api/event в отчёт /stats не попадёт.
+  if (name === 'client_booking_opened' || name === 'client_booking_created')
+    return undefined;
+  // «Напомню через час» пишет только бот (server-events.constants.ts): quietShift
+  // с клиента не принимается — подделка без него в /stats не считается.
+  if (name === 'reminder_snoozed') return undefined;
   // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
-  // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned (подделке — без чисел).
+  // CONCEPT_EVENTS; серверные notify_queue_tick, therapist_resigned, booking_slot_taken (подделке — без чисел).
   // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.
   return sanitizeHomeMeta(name, meta);
 }

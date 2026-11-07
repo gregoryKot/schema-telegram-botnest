@@ -2,8 +2,8 @@ import { pressable } from '../../utils/a11y';
 import type { TherapyClientSummary } from '../../api';
 import { DOMAIN_HUE, clientHue, hueStyle } from '../../lib/tone';
 import { NextSessionLine } from './NextSessionLine';
-import { clientCaption, clientStatus, domainBar, meetingLabel, rosterName, schemaChips } from './rosterModel';
-import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
+import { clientCaption, clientStatus, domainBar, meetingLabel, schemaChips } from './rosterModel';
+import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 
 interface Props {
   client: TherapyClientSummary;
@@ -15,7 +15,7 @@ interface Props {
 // как в шапке карточки), чипы схем. Счётчиков сессий/заданий в сводке нет — футер без них;
 // на телефоне вместо футера «Открыть →» — шеврон в строке имени (компактный список).
 export function ClientCard({ client, today, onOpen }: Props) {
-  const name = rosterName(client);
+  const name = clientDisplayName(client);
   const status = clientStatus(client);
   const caption = clientCaption(client);
   const meeting = meetingLabel(client, today);
@@ -29,7 +29,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
       <div className="tc-body">
         <div className="tc-top">
           <div className="ds-avatar ds-avatar--serif tc-avatar" style={hueStyle(clientHue(client.telegramId))}>
-            {clientInitials(name)}
+            {clientAvatarInitials(client)}
           </div>
           <div className="tc-who">
             <div className="tc-name">{name}</div>

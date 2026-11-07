@@ -26,9 +26,10 @@
 | check-db-phrases.ts | мужской род и брак в пуле фраз «ЗВ» в БД | — | нет | — |
 | check-dead-files.mjs | файл без нетестовых потребителей (мёртвый код) | `scripts/dead-files-baseline.json` | да | checks |
 | check-deploy-lag.mjs | образ на проде старее последнего коммита main | — | нет | prod-smoke |
-| check-deploy-paths.mjs | рассинхрон путей Dockerfile, .dockerignore, app.module, amvera.yml | — | нет | checks |
+| check-deploy-paths.mjs | рассинхрон путей Dockerfile, .dockerignore, amvera.yml | — | нет | checks |
 | check-dto-string-bounds.mjs | строковое поле DTO без верхней границы длины | `scripts/dto-string-bounds-baseline.json` | нет | checks |
 | check-e2e-in-ci.mjs | `test/*.e2e-spec.ts`, который не запускается ни одним шагом workflow | — | нет | checks |
+| check-e2e-stop-cron.mjs | тест поднимает AppModule без `stopCronJobs(app)` после `app.init()` — настоящие `@Cron` тикают посреди спека | — | нет | checks |
 | check-env-registry.mjs | чтение env мимо реестра и протухшие записи реестра | — (реестр `src/infra/env-registry.entries*.ts`) | нет | checks |
 | check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint; полный режим — по каталогам верхнего уровня отдельными процессами (правила — `eslint-ratchet-rules.mjs`), локально `--changed` — только файлы против `origin/main` | `scripts/eslint-baseline.json` | да | eslint |
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
@@ -66,7 +67,7 @@
 | check-var-alpha-suffix.mjs | hex-суффикс альфы после `var()`, например `var(--x)18` | — | нет | webapp |
 | check-weak-assert-ratchet.mjs | тесты только с голым `toHaveBeenCalled()` без аргументов | `scripts/weak-assert-baseline.json` | да | backend |
 | check-webvisor-fields.mjs | текстовое поле визитки без метки `ym-disable-keys` | — | нет | webapp |
-| setup-merge-drivers.mjs --check | merge-драйвер или baseline без строки/скрипта в .gitattributes | — | нет (`--check` ничего не ставит) | checks |
+| setup-merge-drivers.mjs --check | merge-драйвер или baseline без строки/скрипта в .gitattributes. Режим слияния бейслайна — строка `.gitattributes`: `ratchet-sum` (счётчики: база + обе дельты), `ratchet-min`, `ratchet-max`; исключения по ключу — `scripts/merge-json-ratchet-rules.mjs` | — | нет (`--check` ничего не ставит) | checks |
 | git-hooks/pre-push (локально, не CI) | красная сборка `webapp` перед `git push` (`tsc -b && vite build` с `VITE_BOT_USERNAME`); ставится в `core.hooksPath` скриптом `setup-git-hooks.mjs` из npm `prepare`, работает из git worktree; `--no-verify` не используется | — | нет | — (тест: `src/test-support/gates/git-hooks.spec.ts`, джоба backend) |
 
 ### Команды

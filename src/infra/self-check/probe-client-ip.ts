@@ -22,7 +22,6 @@ export function clientIpProbe(
   return {
     id: 'clientIp',
     title: 'Реальный адрес посетителя за прокси',
-    critical: false,
     run() {
       const { total, unresolved, cdnMarked } = summary();
       if (total < MIN_SAMPLES) {

@@ -108,8 +108,9 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
   });
 
   // Аудит 2026-10, F3: записи на консультацию не удаляются (деньги, календарь),
-  // но привязка к Telegram-id обнуляется.
-  it('обнуляет Booking.clientTelegramId по адресу в Telegram, не удаляя записи', async () => {
+  // но привязка к Telegram-id и к аккаунту (Booking.userId — запись из
+  // приложения, #546) обнуляется.
+  it('обнуляет Booking.clientTelegramId и Booking.userId, не удаляя записи', async () => {
     const prisma = makePrisma();
     prisma.authProvider.findFirst = jest.fn(async () => ({
       providerId: '777000',
@@ -118,11 +119,13 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
     await service.deleteAllUserData(uid);
 
     const [args] = prisma._calls['booking'];
-    expect(args.data).toEqual({ clientTelegramId: null });
+    expect(args.data).toEqual({ clientTelegramId: null, userId: null });
+    const [byTelegram, byAccount] = args.where.OR;
     // и веб-id, и Telegram-id аккаунта (после слияния это разные числа)
-    expect(args.where.clientTelegramId.in).toEqual(
+    expect(byTelegram.clientTelegramId.in).toEqual(
       expect.arrayContaining([uid, 777000n]),
     );
+    expect(byAccount).toEqual({ userId: uid });
   });
 
   // Находка L3 аудита 2026-07-20, пункт «ещё модели мимо реестров»: у билета

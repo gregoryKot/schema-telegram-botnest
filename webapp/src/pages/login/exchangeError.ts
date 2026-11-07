@@ -1,4 +1,4 @@
-import { readHumanError } from '../../../../shared/src/api/humanizeError';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 // Текст провала обмена подписи мессенджера на сессию (экран «Попробовать
 // снова» в Telegram/MAX). Строка уходит и на экран, и в отчёт
@@ -15,4 +15,13 @@ export async function exchangeErrorText(res: Response): Promise<string> {
   }
   const body = await res.text().catch(() => '');
   return `Ошибка ${res.status}: ${body.slice(0, 120)}`;
+}
+
+// Обмен бросил, а не ответил (аудит 2026-10): сеть и русский текст разбирает
+// общий маппер, остальное — HTML прокси на 200 (`SyntaxError: Unexpected token
+// '<'…`) — раньше уходило на экран сырой строкой. Имя класса вместо текста:
+// человеку не мешает, а отчёту оставляет, чем именно сломалось.
+export function exchangeThrownText(err: unknown): string {
+  const kind = err instanceof Error ? err.name : typeof err;
+  return humanizeThrown(err, `Не удалось войти (${kind})`);
 }

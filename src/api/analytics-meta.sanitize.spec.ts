@@ -66,6 +66,16 @@ describe('sanitizeMeta', () => {
     });
   });
 
+  // «Показать клиенту» схему случая: только булев on; id клиента и прочее —
+  // мимо (правило №7), не-булев on — событие без meta.
+  it('concept_shared: только boolean on', () => {
+    expect(
+      sanitizeMeta('concept_shared', { on: false, clientId: 555, text: 'x' }),
+    ).toEqual({ on: false });
+    expect(sanitizeMeta('concept_shared', { on: 'true' })).toBeUndefined();
+    expect(sanitizeMeta('client_concept_opened', { on: true })).toBeUndefined();
+  });
+
   it('breath_start: meta игнорируется (событие без meta)', () => {
     expect(sanitizeMeta('breath_start', { junk: 'x' })).toBeUndefined();
   });
@@ -853,6 +863,40 @@ describe('account_link_* — площадка «сайт»', () => {
     ).toBeUndefined();
     expect(
       sanitizeMeta('account_link_started', { host: 'что угодно' }),
+    ).toBeUndefined();
+  });
+});
+
+// Запись из приложения (#546): created — серверное событие со статусом, с
+// клиента статус не принимается; opened — без meta.
+describe('client_booking_*', () => {
+  it('created: статус с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('client_booking_created', { status: 'held' }),
+    ).toBeUndefined();
+  });
+
+  it('opened: любая meta отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('client_booking_opened', { contact: 'me@example.com' }),
+    ).toBeUndefined();
+  });
+
+  // Серверное событие без meta (booking-events.constants.ts): что бы ни
+  // прислал клиент, в базу meta не уходит.
+  it('booking_slot_taken: meta с клиента отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('booking_slot_taken', { contact: '@maria', taken: 5 }),
+    ).toBeUndefined();
+  });
+});
+
+// «⏰ Напомню через час» (аудит 2026-10, backend#16): событие пишет только бот,
+// /stats считает строки с quietShift — с клиента он не должен проходить.
+describe('reminder_snoozed', () => {
+  it('quietShift с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('reminder_snoozed', { quietShift: true }),
     ).toBeUndefined();
   });
 });

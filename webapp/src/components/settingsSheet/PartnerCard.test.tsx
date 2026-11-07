@@ -77,6 +77,19 @@ describe('PartnerCard — «Написать»', () => {
     setup(make({ partnerTelegramId: 555 as Partner['partnerTelegramId'] }));
     expect(screen.getByText('Написать').closest('a')?.getAttribute('href')).toBe('tg://user?id=555');
   });
+  // docs/open/security.md: у веб-партнёра (Google/VK/MAX/почта, id в [1e15, 9e15))
+  // id связи — не Telegram-id, tg://user?id=<веб-id> вёл в никуда.
+  it.each([
+    ['веб-id числом', 1_000_000_000_000_001],
+    ['веб-id строкой', '8999999999999999'],
+  ])('%s — ссылки «Написать» нет', (_label, id) => {
+    setup(make({ partnerTelegramId: id }));
+    expect(screen.queryByText('Написать')).toBeNull();
+  });
+  it('Telegram-id строкой — ссылка на тот же чат', () => {
+    setup(make({ partnerTelegramId: '7123456789' }));
+    expect(screen.getByText('Написать').closest('a')?.getAttribute('href')).toBe('tg://user?id=7123456789');
+  });
 });
 
 describe('PartnerCard — выход с подтверждением', () => {

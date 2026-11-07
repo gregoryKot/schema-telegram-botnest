@@ -5,6 +5,11 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { LetterEx } from './LetterEx';
 import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
+import { getQuickAction } from '../../../../shared/src/quickActions/quickActions';
+import { journeyTypeMeta } from '../../../../shared/src/journey/journeyMeta';
+import { TASK_OPTIONS } from '../taskCreate/taskOptions';
+import { ASSIGN_TEMPLATES } from '../therapist/assignTemplates';
 
 vi.mock('../../api', () => ({
   api: {
@@ -37,6 +42,27 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+});
+
+// Одно упражнение звалось «Письмо Уязвимому Ребёнку» в библиотеке и «Письмо себе»
+// в «плюсе», заданиях и «Мой путь» (docs/open/frontend-ux.md). Имя одно — из
+// каталога упражнений; термин объясняет сам экран.
+describe('LetterEx — одно имя письма везде', () => {
+  const NAME = 'Письмо себе в детстве';
+
+  it('каталог, «Инструменты», задания, шаблоны терапевта и «Мой путь» зовут письмо одинаково', () => {
+    expect(exerciseCard('letter').title).toBe(NAME);
+    expect(getQuickAction('letter_to_self').label).toBe(NAME);
+    expect(TASK_OPTIONS.find(o => o.type === 'letter_to_self')?.label).toBe(NAME);
+    expect(ASSIGN_TEMPLATES.find(t => t.preset.type === 'letter_to_self')?.title).toBe(NAME);
+    expect(journeyTypeMeta('letter').label).toBe(NAME);
+  });
+
+  it('экран упражнения носит то же имя, а термин «Уязвимый Ребёнок» объясняет в подводке', () => {
+    renderSheet();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Письмосебе в детстве');
+    expect(screen.getByText(/В схема-терапии эту часть называют Уязвимым Ребёнком/)).toBeTruthy();
+  });
 });
 
 describe('LetterEx — приветствие без мужского рода', () => {

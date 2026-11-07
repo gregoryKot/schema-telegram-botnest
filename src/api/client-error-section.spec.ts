@@ -19,6 +19,7 @@ describe('classifyClientErrorSection', () => {
     expect(classifyClientErrorSection('appshell.bootstrap')).toBe('today');
     expect(classifyClientErrorSection('therapist.clients')).toBe('cabinet');
     expect(classifyClientErrorSection('booking')).toBe('booking');
+    expect(classifyClientErrorSection('assets')).toBe('assets');
     expect(classifyClientErrorSection('addressForm')).toBe('profile');
     expect(classifyClientErrorSection('tracker')).toBe('today');
     expect(classifyClientErrorSection('login.ticket')).toBe('login');

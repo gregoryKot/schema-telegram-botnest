@@ -4,7 +4,7 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { DayBars } from './DayBars';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { NEED_HUE } from '../../lib/tone';
+import { BAR_PAPER } from '../art/paper';
 import type { Need } from '../../types';
 
 afterEach(cleanup);
@@ -23,17 +23,20 @@ describe('DayBars', () => {
     expect(screen.getByLabelText('Автономия: Мало')).toBeTruthy();
   });
 
-  it('оценённый столбик — цвет потребности (tone-fill + --h из NEED_HUE), неоценённый — без них', () => {
-    const { container } = render(<DayBars needs={NEEDS} ratings={{ attachment: 6 }} />);
+  it('оценённый столбик — бумага BAR_PAPER по порядку (--bar), неоценённый — без неё', () => {
+    const { container } = render(<DayBars needs={NEEDS} ratings={{ autonomy: 6 }} />);
     const [a, b] = Array.from(container.querySelectorAll<HTMLElement>('.tq-bar-col'));
-    expect(a.classList.contains('tone-fill')).toBe(true);
-    expect(a.style.getPropertyValue('--h')).toBe(String(NEED_HUE.attachment));
-    expect(b.classList.contains('tone-fill')).toBe(false);
+    expect(b.classList.contains('is-rated')).toBe(true);
+    expect(b.style.getPropertyValue('--bar')).toBe(BAR_PAPER[1]);
+    expect(a.classList.contains('is-rated')).toBe(false);
+    expect(a.style.getPropertyValue('--bar')).toBe('');
+    expect(container.querySelector('.tone-fill')).toBeNull(); // цвета потребностей здесь больше нет
   });
 
-  it('CSS: серый фон у столбика только через :not(.tone-fill), иначе он перебивает цвет потребности', () => {
+  it('CSS: оценённый красится --bar, серый — только у неоценённого (:not), иначе перебил бы бумагу', () => {
     const css = readFileSync(resolve(__dirname, '../../styles/tracker-question.css'), 'utf8');
-    expect(css).toMatch(/\.tq-bar-col:not\(\.tone-fill\)\s*\{[^}]*background:\s*var\(--line\)/);
+    expect(css).toMatch(/\.tq-bar-col\.is-rated\s*\{[^}]*background:\s*var\(--bar\)/);
+    expect(css).toMatch(/\.tq-bar-col:not\(\.is-rated\)\s*\{[^}]*background:\s*var\(--line\)/);
     expect(css).not.toMatch(/\.tq-bar-col\s*\{[^}]*background/);
   });
 
@@ -41,7 +44,7 @@ describe('DayBars', () => {
     const { container } = render(<DayBars needs={NEEDS} ratings={{ attachment: 6 }} />);
     const empty = container.querySelectorAll<HTMLElement>('.tq-bar-col')[1];
     expect(empty.style.height).toBe('4px');
-    expect(empty.classList.contains('tone-fill')).toBe(false);
+    expect(empty.classList.contains('is-rated')).toBe(false);
     expect(screen.getByLabelText('Автономия: нет оценки')).toBeTruthy();
   });
 });

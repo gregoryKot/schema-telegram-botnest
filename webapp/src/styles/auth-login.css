@@ -10,7 +10,7 @@
 }
 .al-brand { display: flex; align-items: center; gap: 10px; }
 .al-logo {
-  width: 36px; height: 36px; border-radius: 9px; background: var(--accent-hot); color: #fff;
+  width: 36px; height: 36px; border-radius: 9px; background: var(--accent); color: var(--on-accent);
   display: grid; place-items: center; font-family: var(--serif); font-size: 17px; flex-shrink: 0;
 }
 .al-brand-name { font-family: var(--serif); font-size: 19px; }
@@ -37,8 +37,8 @@
 .al-ico { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
 .al-vk { background: #0077FF; color: #fff; border-radius: 7px; font-size: 11px; font-weight: 700; }
 .al-badge {
-  margin-left: auto; font-size: 11px; font-weight: 700; background: var(--accent-hot);
-  color: #fff; border-radius: 10px; padding: 3px 8px;
+  margin-left: auto; font-size: 11px; font-weight: 700; background: var(--on-accent);
+  color: var(--accent); border-radius: 10px; padding: 3px 8px; /* на кнопке --accent — вывернутая пара: 7.72:1 */
 }
 .al-ticket { background: var(--paper-sunk); border-radius: 14px; padding: 12px 16px; margin-top: 6px; }
 .al-ticket:empty { display: none; }

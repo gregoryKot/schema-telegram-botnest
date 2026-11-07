@@ -11,9 +11,6 @@ import { indexLevel, type IndexLevel } from '../lib/tone';
 /** С какого числа дней без активности клиент попадает в «Требуют внимания». */
 export const ATTENTION_DAYS = 3;
 
-export const clientName = (c: TherapyClientSummary): string =>
-  c.clientAlias ?? c.name ?? `#${c.telegramId}`;
-
 /** Дней от последней оценки до сегодня клиента (его календарь); null — не было. */
 export function daysSinceActive(c: TherapyClientSummary): number | null {
   return c.daysSinceActive ?? null;

@@ -191,6 +191,7 @@ interface FullRel {
   clientId: bigint | null;
   status: string;
   code: string;
+  urlCode?: string;
   clientAlias?: string | null;
   virtualClientName?: string | null;
   createdAt?: Date;
@@ -209,6 +210,7 @@ interface FakeConcept {
   therapistId: bigint;
   clientId: bigint;
   schemaIds: string | string[] | null;
+  sharedWithClientAt?: Date | null;
 }
 
 interface Overview {
@@ -301,6 +303,15 @@ function makeFullPrisma(
         concepts
           .filter((c) => c.therapistId === where.therapistId)
           .map((c) => ({ clientId: c.clientId, schemaIds: c.schemaIds })),
+      // «Мой терапевт» клиента: показал ли терапевт схему случая.
+      findUnique: jest.fn(async ({ where }: any) => {
+        const key = where.therapistId_clientId;
+        const c = concepts.find(
+          (x) =>
+            x.therapistId === key.therapistId && x.clientId === key.clientId,
+        );
+        return c ? { sharedWithClientAt: c.sharedWithClientAt ?? null } : null;
+      }),
     },
     user: {
       findUnique: async ({ where }: any) => findUser(where.id),
@@ -486,6 +497,7 @@ describe('getRelation — статус связи для терапевта и �
       code: 'AAA111',
       nextSession: '2026-08-01',
       meetingDays: [],
+      conceptSharedAt: null,
     });
     // CLIENT терапевтом не выступает — связи со стороны терапевта не ищутся
     // вовсе (A-3): findFirst не зовётся, единственный запрос — findMany по
@@ -592,6 +604,7 @@ describe('getRelation — статус связи для терапевта и �
       code: 'NEW222',
       nextSession: '2026-11-01',
       meetingDays: [],
+      conceptSharedAt: null,
     });
   });
 
@@ -746,6 +759,58 @@ describe('getRelation — статус связи для терапевта и �
     );
     await expect(service.getRelation(CLIENT)).resolves.toBeNull();
   });
+
+  // Строка «Схема случая» в «Мой терапевт»: момент показа — из концептуализации
+  // ЭТОЙ пары (терапевт связи + сам клиент), чужая пара не считается.
+  it('клиент видит, что терапевт показал схему случая, — только своей пары', async () => {
+    const at = new Date('2026-11-06T10:00:00Z');
+    const rels: FullRel[] = [
+      {
+        id: 1,
+        therapistId: T1,
+        clientId: CLIENT,
+        status: 'active',
+        code: 'AAA111',
+        createdAt: new Date(),
+      },
+    ];
+    const users: FakeUser[] = [{ id: T1, firstName: 'Т', role: 'THERAPIST' }];
+    const foreign: FakeConcept = {
+      therapistId: T2,
+      clientId: CLIENT,
+      schemaIds: [],
+      sharedWithClientAt: at,
+    };
+    const hidden = makeFullService(
+      rels.map((r) => ({ ...r })),
+      users,
+      [foreign],
+    );
+    await expect(hidden.service.getRelation(CLIENT)).resolves.toMatchObject({
+      conceptSharedAt: null,
+    });
+
+    const own: FakeConcept = {
+      therapistId: T1,
+      clientId: CLIENT,
+      schemaIds: [],
+      sharedWithClientAt: at,
+    };
+    const shown = makeFullService(
+      rels.map((r) => ({ ...r })),
+      users,
+      [foreign, own],
+    );
+    await expect(shown.service.getRelation(CLIENT)).resolves.toMatchObject({
+      conceptSharedAt: at,
+    });
+    expect(
+      shown.prisma.clientConceptualization.findUnique,
+    ).toHaveBeenCalledWith({
+      where: { therapistId_clientId: { therapistId: T1, clientId: CLIENT } },
+      select: { sharedWithClientAt: true },
+    });
+  });
 });
 
 describe('disconnect — клиент отключается сам', () => {
@@ -847,6 +912,41 @@ describe('getClients — список клиентов терапевта', () =
   it('без связей — пустой список', async () => {
     const { service } = makeFullService([]);
     await expect(service.getClients(T1)).resolves.toEqual([]);
+  });
+
+  // Адрес карточки в кабинете — /cabinet/<urlCode>: без поля в ответе сайт
+  // молча вернулся бы к числовому адресу, который у офлайн-клиента меняется.
+  it('отдаёт код адреса карточки и подключённому, и офлайн-клиенту', async () => {
+    const at = new Date();
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          urlCode: 'kdbgqafs',
+          createdAt: at,
+        },
+        {
+          id: 2,
+          therapistId: T1,
+          clientId: null,
+          status: 'active',
+          code: 'BBB222',
+          urlCode: 'mnpqrsgh',
+          virtualClientName: 'Офлайн',
+          createdAt: at,
+        },
+      ],
+      [{ id: CLIENT, firstName: 'Аня' }],
+    );
+    const list = await service.getClients(T1);
+    expect(list.map((c) => [String(c.telegramId), c.urlCode])).toEqual([
+      [String(CLIENT), 'kdbgqafs'],
+      ['-2', 'mnpqrsgh'],
+    ]);
   });
 
   // Мутационное усиление: where-фильтр `{ therapistId: tid, status: 'active' }`

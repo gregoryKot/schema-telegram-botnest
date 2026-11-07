@@ -101,6 +101,11 @@
 /* Строка под шапкой: занятость или отказ действия из меню, «Текст скопирован». */
 .tcp-status { font-size: 13px; color: var(--text-sub); margin: -16px 0 20px; }
 .tcp-status.is-err { color: var(--err); }
+/* «Показать клиенту» под шапкой: подпись слева, тумблер справа (ConceptShareRow). */
+.tcp-share { display: flex; align-items: center; gap: 12px; margin: -16px 0 20px; }
+.tcp-share-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.tcp-share-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.tcp-share-sub { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
 /* Телефон (#902): «Схема · Поля» слева, «⋯» справа; статус сохранения — своей
    строкой ниже, мелко, слева. justify-content с !important: SaveStatusLine
    (shared) ставит выравнивание инлайн по пропу align="right", нужному ноутбуку. */
@@ -108,6 +113,7 @@
   .tcp-head { margin-bottom: 16px; }
   .tcp-head-title, .tcp-more-txt { display: none; }
   .tcp-status { margin: -4px 0 16px; } /* на телефоне шапка ниже на 16px: отрицательный отступ строки статуса не должен съедать весь зазор */
+  .tcp-share { margin: -4px 0 16px; }
   .tcp-save { order: 1; width: 100%; min-width: 0; margin-left: 0; text-align: left; justify-content: flex-start !important; }
   .tcp-more { margin-left: auto; }
 }

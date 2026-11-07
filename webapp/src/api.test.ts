@@ -454,7 +454,7 @@ describe('saveRating — прямой fetch-вызов', () => {
     fetchMock.mockResolvedValue(jsonResponse(500, {}));
     const result = await api.saveRating('safety', 7, '2026-01-15');
 
-    expect(result).toEqual({ ok: true, allDone: false });
+    expect(result).toEqual({ ok: true, allDone: false, queued: true }); // queued — экран скажет «отправятся сами»
     expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
       { needId: 'safety', value: 7, date: '2026-01-15' },
     ]);
@@ -464,7 +464,7 @@ describe('saveRating — прямой fetch-вызов', () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
     const result = await api.saveRating('safety', 7, '2026-01-15');
 
-    expect(result).toEqual({ ok: true, allDone: false });
+    expect(result).toEqual({ ok: true, allDone: false, queued: true });
     expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
       { needId: 'safety', value: 7, date: '2026-01-15' },
     ]);

@@ -4,10 +4,11 @@ import { SlotService } from './slot.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { TelegramModule } from '../telegram/telegram.module';
 import { AuthModule } from '../auth/auth.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { BOOKING_CONTROLLERS, BOOKING_PROVIDERS } from './booking.registry';
 
 @Module({
-  imports: [TelegramModule, AuthModule],
+  imports: [TelegramModule, AuthModule, AnalyticsModule],
   controllers: BOOKING_CONTROLLERS,
   providers: BOOKING_PROVIDERS,
   exports: [BookingService, SlotService, SubscriptionService],

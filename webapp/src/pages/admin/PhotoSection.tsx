@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { card, btn } from './shared';
 import { compressImage } from './imageCompress';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 
 // Portrait hero photo — narrower and a touch tighter budget than article images.
 const compressPhoto = (file: File) => compressImage(file, 800, 200 * 1024);
@@ -12,9 +13,16 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saved, flashSaved] = useTimedFlag(1500);
+  // Ответ GET, пришедший после сохранения, не затирает только что
+  // сохранённое фото: сохранение отменяет его применение, как и размонтирование.
+  const loadCancelled = useRef(false);
 
-  useEffect(() => { api.getSiteContent().then(c => setCurrent(c.heroPhoto)).catch(() => {}); }, []);
+  useEffect(() => {
+    loadCancelled.current = false;
+    api.getSiteContent().then(c => { if (!loadCancelled.current) setCurrent(c.heroPhoto); }).catch(() => {});
+    return () => { loadCancelled.current = true; };
+  }, []);
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,10 +41,10 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
     setError(null);
     try {
       await api.adminSetHeroPhoto(adminKey, preview);
+      loadCancelled.current = true;
       setCurrent(preview);
       setPreview(null);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      flashSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {

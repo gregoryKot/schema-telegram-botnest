@@ -5,6 +5,7 @@ import { localDate, localMidnightUTC } from '../utils/tz';
 import { TherapyTasksService } from './therapy-tasks.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { STREAK_TASK_TYPES } from './streak-progress';
+import { unnamedClientLabel } from './client-display-name';
 
 // Терапевтский обзор задач: по всем клиентам сразу и по одному конкретному
 // клиенту. Стрик-прогресс не пересчитывается заново — берётся из
@@ -61,8 +62,10 @@ export class TherapyTasksViewService {
       // decrypt терапевт увидел бы в кабинете base64 вместо имени (T7).
       const alias = decrypt(rel.clientAlias);
       const clientName = rel.client
-        ? (alias ?? rel.client.firstName ?? `ID ${clientId}`)
-        : (alias ?? decrypt(rel.virtualClientName) ?? `ID ${-clientId}`);
+        ? (alias ?? rel.client.firstName ?? unnamedClientLabel(clientId))
+        : (alias ??
+          decrypt(rel.virtualClientName) ??
+          unnamedClientLabel(clientId));
       const tasks = tasksByUserId.get(String(userIdOf(rel))) ?? [];
 
       if (tasks.length > 0) {

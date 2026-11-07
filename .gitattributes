@@ -11,28 +11,33 @@
 # Сводятся по семантике храповика, а не построчно: прогресс обеих сторон
 # сохраняется, планка не может случайно опуститься. См. merge-json-ratchet.mjs.
 
-# меньше — лучше
-scripts/file-size-baseline.json           merge=ratchet-min
-scripts/robot-phrases-baseline.json       merge=ratchet-min
-scripts/gendered-forms-baseline.json      merge=ratchet-min
-scripts/address-form-baseline.json        merge=ratchet-min
-scripts/eslint-baseline.json              merge=ratchet-min
-scripts/weak-assert-baseline.json         merge=ratchet-min
-scripts/jscpd-baseline.json               merge=ratchet-min
-scripts/dead-files-baseline.json          merge=ratchet-min
-scripts/body-truncation-baseline.json     merge=ratchet-min
-scripts/dto-string-bounds-baseline.json   merge=ratchet-min
-scripts/public-scripts-baseline.json      merge=ratchet-min
-scripts/silent-catch-baseline.json        merge=ratchet-min
-scripts/tiny-fonts-baseline.json          merge=ratchet-min
-scripts/scale-drift-baseline.json         merge=ratchet-min
-scripts/bundle-size-baseline.json         merge=ratchet-min
-scripts/render-poison-baseline.json       merge=ratchet-min
-scripts/tap-targets-baseline.json         merge=ratchet-min
-scripts/color-drift-baseline.json         merge=ratchet-min
-scripts/second-person-baseline.json       merge=ratchet-min
-# Планки планов запросов: страницы и потолки времени — чем меньше, тем лучше,
-# поэтому та же семантика min (scripts/check-query-plans.mjs).
+# меньше — лучше, и число складывается: строки файла, байты всего JS, нарушения
+# в файле. Две ветки, дописавшие по блоку (или одна ужала, другая дописала), на
+# слитом дереве дают базу плюс обе дельты — её драйвер и ставит:
+# base + (ours − base) + (theirs − base). min тут терял рост одной стороны
+# (CI краснел «файл вырос», 2026-11-06) и ужатие другой (планка молча слабела).
+# Исключение по ключу (самый тяжёлый чанк бандла — max) — KEY_MODES в
+# scripts/merge-json-ratchet-rules.mjs.
+scripts/file-size-baseline.json           merge=ratchet-sum
+scripts/bundle-size-baseline.json         merge=ratchet-sum
+scripts/robot-phrases-baseline.json       merge=ratchet-sum
+scripts/gendered-forms-baseline.json      merge=ratchet-sum
+scripts/address-form-baseline.json        merge=ratchet-sum
+scripts/eslint-baseline.json              merge=ratchet-sum
+scripts/weak-assert-baseline.json         merge=ratchet-sum
+scripts/jscpd-baseline.json               merge=ratchet-sum
+scripts/silent-catch-baseline.json        merge=ratchet-sum
+scripts/tiny-fonts-baseline.json          merge=ratchet-sum
+scripts/scale-drift-baseline.json         merge=ratchet-sum
+scripts/render-poison-baseline.json       merge=ratchet-sum
+scripts/tap-targets-baseline.json         merge=ratchet-sum
+scripts/color-drift-baseline.json         merge=ratchet-sum
+scripts/second-person-baseline.json       merge=ratchet-sum
+
+# меньше — лучше, но число НЕ складывается — берётся min из двух.
+# Планки планов запросов: страницы зависят от выбранного плана, потолок времени
+# ставит человек (scripts/check-query-plans.mjs). a11y — число правил axe,
+# нарушенных на экране: одно правило, задетое двумя ветками, — одно нарушение.
 scripts/query-plan-baseline.json          merge=ratchet-min
 e2e-browser/a11y-baseline.json            merge=ratchet-min
 
@@ -43,6 +48,10 @@ e2e-browser/a11y-baseline.json            merge=ratchet-min
 # причину по-разному — выход 1, обычный конфликт человеку (выдумывать нечего).
 scripts/alert-throttle-baseline.json      merge=ratchet-min
 scripts/body-dto-baseline.json            merge=ratchet-min
+scripts/body-truncation-baseline.json     merge=ratchet-min
+scripts/dead-files-baseline.json          merge=ratchet-min
+scripts/dto-string-bounds-baseline.json   merge=ratchet-min
+scripts/public-scripts-baseline.json      merge=ratchet-min
 scripts/capability-registry-baseline.json merge=ratchet-min
 scripts/cron-leader-baseline.json         merge=ratchet-min
 scripts/history-sheet-baseline.json       merge=ratchet-min

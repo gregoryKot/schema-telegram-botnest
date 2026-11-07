@@ -12,4 +12,9 @@ export interface ConceptGraphMetrics {
   guideModes30: number; // подсказки терапевту (#995): раз открывали лист режима
   guideTechniques30: number; // раз открывали лист техники
   guideAssign30: number; // раз жали «Дать заданием» у пункта «Между сессиями»
+  sharedNow: number; // схем случая, которые сейчас показаны клиентам (тумблер «Показать клиенту»)
+  shareOn30: number; // раз терапевты включали показ клиенту
+  shareOff30: number; // раз выключали показ
+  clientOpens30: number; // раз клиенты открывали свою схему в «Мой терапевт»
+  clientOpeners30: number; // разных клиентов её открывало
 }

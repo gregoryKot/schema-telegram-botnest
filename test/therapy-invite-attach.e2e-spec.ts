@@ -105,6 +105,12 @@ describe('e2e: приглашение офлайн-клиента с перен�
   it('a) карточка → приглашение → join: данные переехали, карточка одна', async () => {
     const neg = await addCard('Мария К.');
     expect(neg < 0n).toBe(true);
+    // Адрес карточки в кабинете (/cabinet/<urlCode>) сохраняется терапевтом
+    // как ссылка — после подключения клиента он обязан открывать его же.
+    const cardCode = (await as(TH).get('/api/therapy/clients')).body.find(
+      (c: any) => String(c.telegramId) === String(neg),
+    ).urlCode;
+    expect(cardCode).toMatch(/^[a-hjkmnp-s]{8}$/);
     await seedCard(neg, 'мария-маркер');
     const ts = await as(TH).post(`/api/therapy/session-info/${neg}`, {
       therapyStartDate: '2026-03-03',
@@ -152,6 +158,7 @@ describe('e2e: приглашение офлайн-клиента с перен�
     expect(clients[0]).toMatchObject({
       clientAlias: 'Мария К.',
       therapyStartDate: '2026-03-03',
+      urlCode: cardCode,
     });
     expect(clients.some((c: any) => Number(c.telegramId) < 0)).toBe(false);
     expect((await as(TH).get('/api/therapy/invites')).body).toEqual([]);

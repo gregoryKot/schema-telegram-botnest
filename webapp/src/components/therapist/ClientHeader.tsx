@@ -4,7 +4,7 @@ import { ClientHeaderBadges } from './ClientHeaderBadges';
 import { RenameDeleteMenu } from '../RenameDeleteMenu';
 import { ClientQuickActions } from './ClientQuickActions';
 import { ClientTabs } from './ClientTabs';
-import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
+import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import type { ClientDetail } from './clientSheetTypes';
 import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
 import { useIsMobile } from '../useIsMobile';
@@ -26,21 +26,21 @@ interface Props {
 export function ClientHeader({ selectedClient, detail, switchView }: Props) {
   const {
     renamingAlias, setRenamingAlias, aliasInput, setAliasInput, aliasSaving, aliasError,
-    deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError, saveAlias, clientTab,
+    deleteClient, requestDeleteClient, cancelDeleteClient, confirmingDelete, deleteLoading, deleteError, saveAlias,
   } = detail;
   const phone = useIsMobile();
   const removeCopy = removeClientConfirmCopy(selectedClient);
   const aliasInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (renamingAlias) aliasInputRef.current?.focus(); }, [renamingAlias]);
-  const displayName = selectedClient.clientAlias ?? selectedClient.name ?? `ID ${selectedClient.telegramId}`;
+  const displayName = clientDisplayName(selectedClient);
   const startRename = () => { setRenamingAlias(true); setAliasInput(selectedClient.clientAlias ?? selectedClient.name ?? ''); };
 
   return (
-    <div className={`tk-head${clientTab === 'mode_map' ? ' tk-head--wide' : ''}`}>
+    <div className="tk-head">
       <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
         <div className="ds-avatar ds-avatar--serif tone-tint tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
-          {clientInitials(displayName)}
+          {clientAvatarInitials(selectedClient)}
         </div>
         <div className="tk-ident">
           {renamingAlias ? (

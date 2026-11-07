@@ -1,22 +1,27 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { GlyphPlus, GlyphX } from '../ExScreen';
+import { UndoBar } from '../../UndoBar';
+import { useUndoRemove } from '../../../../../shared/src/hooks/useUndoRemove';
 
 // Список доказательств (за/против) в проверке убеждения: строки с
-// удалением + поле добавления (правило №10). «×» видна всегда, зона 44×44.
+// удалением + поле добавления (правило №10). «×» видна всегда, зона 44×44;
+// удалённое 5 с можно вернуть «Отменить» (useUndoRemove).
 export function EviList({
   items,
-  onRemove,
+  setItems,
   input,
   onInput,
   onAdd,
   placeholder,
 }: {
   items: string[];
-  onRemove: (i: number) => void;
+  setItems: Dispatch<SetStateAction<string[]>>;
   input: string;
   onInput: (v: string) => void;
   onAdd: () => void;
   placeholder: string;
 }) {
+  const undo = useUndoRemove(items, setItems);
   return (
     <div className="ex2-evi">
       {items.map((f, i) => (
@@ -25,13 +30,14 @@ export function EviList({
           <span className="ex2-evi-text">{f}</span>
           <button
             className="ex2-evi-x"
-            onClick={() => onRemove(i)}
+            onClick={() => undo.remove(i)}
             aria-label="Удалить"
           >
             <GlyphX />
           </button>
         </div>
       ))}
+      {undo.canUndo && <UndoBar text="Доказательство удалено" onUndo={undo.undo} />}
       <div className="ex2-evi-add">
         <span className="ex2-evi-plus">
           <GlyphPlus />

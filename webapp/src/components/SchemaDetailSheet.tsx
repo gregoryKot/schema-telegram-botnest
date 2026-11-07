@@ -7,34 +7,15 @@ import { DOMAIN_HUE, hueStyle } from '../lib/tone';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY, cacheMySchemaIds } from '../utils/storageKeys';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
+import { useSaveFailure } from '../hooks/useSaveFailure';
+import { SelectionSaveNote } from '../sections/schemas/SelectionSaveNote';
+import { isUnwritableError } from '../../../shared/src/api/unwritableError';
+import { BELIEFS } from './schemaSheets/schemaBeliefs';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
 import { schemaShareText } from '../../../shared/src/share/shareTexts';
 import { botShortUrl } from '../utils/botConfig';
-
-const BELIEFS: Record<string, string[]> = {
-  emotional_deprivation:     ['Никто никогда по-настоящему не позаботится обо мне', 'Мне суждено остаться со своими переживаниями в одиночестве'],
-  abandonment:               ['Все рано или поздно уходят', 'Я не могу рассчитывать на близких'],
-  mistrust:                  ['Если открыться – обязательно предадут', 'Люди используют тех, кто им доверяет'],
-  defectiveness:             ['Со мной что-то фундаментально не так', 'Если узнают правду – отвергнут'],
-  social_isolation:          ['Я не как все', 'Я не вписываюсь ни в одну группу или сообщество'],
-  dependence:                ['Мне не справиться в одиночку', 'Без поддержки я ничего не могу'],
-  vulnerability:             ['Что-то плохое вот-вот случится', 'Мир опасен, и защиты у меня нет'],
-  enmeshment:                ['Без этого человека я не знаю, кто я', 'Мы должны делить всё и всегда быть рядом'],
-  failure:                   ['Я всегда проваливаюсь там, где другие успешны', 'Я глупее и некомпетентнее других'],
-  entitlement:               ['Правила существуют для других, не для меня', 'Я заслуживаю особого отношения'],
-  insufficient_self_control: ['Я не могу себя контролировать', 'Терпеть дискомфорт или откладывать удовольствие невыносимо'],
-  subjugation:               ['Если скажу что думаю – будет только хуже', 'Мои желания и чувства неважны'],
-  self_sacrifice:            ['Сначала все остальные, потом я', 'Думать о своём – это эгоизм'],
-  approval_seeking:          ['Мне очень важно, что обо мне думают', 'Если не нравлюсь – значит, со мной что-то не так'],
-  negativity:                ['Всё равно ничего хорошего не выйдет', 'Лучше не надеяться, чтобы не разочароваться'],
-  emotion_inhibition_fear:   ['Если дам волю злости – потеряю контроль', 'Мои сильные эмоции опасны для других'],
-  emotional_inhibition:      ['Показывать чувства – это слабость', 'Лучше держаться и не показывать вида'],
-  unrelenting_standards:     ['От меня требуется безупречность', 'Ошибаться – недопустимо'],
-  punitiveness_self:         ['Я заслуживаю наказания за ошибки', 'Прощать себя – значит оправдывать слабость'],
-  punitiveness_others:       ['Людей нужно жёстко наказывать за ошибки', 'Прощать слабости – значит поощрять их'],
-};
 
 function readSchemaIds(): string[] {
   try { return JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]'); } catch { return []; }
@@ -52,6 +33,8 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
   const [showShare, setShowShare] = useState(false);
+  // Отказ записи виден человеку, как на экране «Мои паттерны»: 409 «не читается» — свой текст.
+  const save = useSaveFailure();
   const isAdded = myIds.includes(schemaId);
 
   const drawShareCard = useCallback(
@@ -78,7 +61,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
       : [...myIds, schemaId];
     cacheMySchemaIds(next);
     setMyIds(next);
-    api.updateSettings({ mySchemaIds: next }).catch(() => {});
+    save.track(api.updateSettings({ mySchemaIds: next }), () => reportClientError({ message: 'schema sheet save mySchemaIds failed', section: 'schemas' }));
   }
 
   const lede = schema.libraryDesc ?? schema.desc;
@@ -122,6 +105,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
       )}
 
       <div className="ss-actions ss-actions--row">{actions}</div>
+      <SelectionSaveNote failed={save.failed} blocked={save.failed && isUnwritableError(save.error)} />
 
       {showShare && (
         <ShareCardSheet

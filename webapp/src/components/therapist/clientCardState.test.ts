@@ -9,24 +9,35 @@ const base = { loading: false, loadFailed: false, clients: [c(-57), c(5)], selec
 
 describe('clientCardState', () => {
   it('выбран клиент из адреса — карточка (id сверяется строкой: -57 и "-57")', () => {
-    expect(clientCardState({ ...base, selected: c(-57), openClientId: '-57' })).toBe('card');
+    expect(clientCardState({ ...base, selected: c(-57), openClientRef: '-57' })).toBe('card');
   });
 
   it('в адресе другой id, чем у выбранного: есть в списке — скелетон, нет — «не найден»', () => {
-    expect(clientCardState({ ...base, selected: c(-57), openClientId: '5' })).toBe('loading');
-    expect(clientCardState({ ...base, selected: c(-57), openClientId: '999' })).toBe('missing');
+    expect(clientCardState({ ...base, selected: c(-57), openClientRef: '5' })).toBe('loading');
+    expect(clientCardState({ ...base, selected: c(-57), openClientRef: '999' })).toBe('missing');
   });
 
   it('список ещё грузится — скелетон, а не «не найден»', () => {
-    expect(clientCardState({ ...base, loading: true, clients: [], openClientId: '999' })).toBe('loading');
+    expect(clientCardState({ ...base, loading: true, clients: [], openClientRef: '999' })).toBe('loading');
   });
 
   it('сбой загрузки списка — failed, а не missing', () => {
-    expect(clientCardState({ ...base, loadFailed: true, clients: [], openClientId: '-57' })).toBe('failed');
+    expect(clientCardState({ ...base, loadFailed: true, clients: [], openClientRef: '-57' })).toBe('failed');
   });
 
   it('удалённый клиент (нет в списке, выбор сброшен) — missing', () => {
-    expect(clientCardState({ ...base, clients: [c(5)], openClientId: '-57' })).toBe('missing');
+    expect(clientCardState({ ...base, clients: [c(5)], openClientRef: '-57' })).toBe('missing');
+  });
+
+  // Адрес с постоянным кодом (shared/src/utils/clientRef.ts) и старый числовой — один и тот же клиент.
+  it('код в адресе: свой — карточка, чужой выбранный — скелетон или «не найден»', () => {
+    const offline = { telegramId: -57, urlCode: 'abcdefgh' } as TherapyClientSummary;
+    const other = { telegramId: 5, urlCode: 'qrspnmkj' } as TherapyClientSummary;
+    const clients = [offline, other];
+    expect(clientCardState({ ...base, clients, selected: offline, openClientRef: 'abcdefgh' })).toBe('card');
+    expect(clientCardState({ ...base, clients, selected: offline, openClientRef: '-57' })).toBe('card');
+    expect(clientCardState({ ...base, clients, selected: offline, openClientRef: 'qrspnmkj' })).toBe('loading');
+    expect(clientCardState({ ...base, clients, selected: offline, openClientRef: 'bbbbbbbb' })).toBe('missing');
   });
 
   it('без id в адресе решает выбор', () => {

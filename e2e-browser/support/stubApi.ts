@@ -17,6 +17,11 @@ import { localDateStr, todayStr } from '../../shared/src/utils/format';
 import { FIXTURES, STATUS, STUB_NEEDS } from './stubFixtures';
 import { handlePublicRoute } from './stubPublic';
 import { handleTherapyRoute, type StubTherapyHandle } from './stubTherapy';
+import {
+  createSettingsState,
+  handleSettingsRoute,
+  type StubSettingsHandle,
+} from './stubSettings';
 
 export type StubSession = 'client' | 'anonymous';
 
@@ -33,6 +38,8 @@ export interface StubApiHandle {
   /** Ответ ручке для одного теста поверх FIXTURES чистого клиента (та же
    *  форма сервера, данные, которых у чистого аккаунта нет): ключ как в FIXTURES. */
   overrides: Map<string, unknown>;
+  /** uiPrefs «на сервере» и что сайт туда отправил (stubSettings.ts). */
+  settings: StubSettingsHandle;
 }
 
 /**
@@ -63,6 +70,7 @@ export async function stubApi(
   const ratingsByDay = new Map<string, Record<string, number>>();
   const therapy: StubTherapyHandle = { connected: false };
   const overrides = new Map<string, unknown>();
+  const settings = createSettingsState();
 
   await page.route('**/api/**', async (route) => {
     const req = route.request();
@@ -84,6 +92,7 @@ export async function stubApi(
       return nestError(401, 'Unauthorized', 'No refresh token');
     // Связь с терапевтом — состояние в памяти теста (подключился → отключился).
     if (await handleTherapyRoute(route, therapy)) return;
+    if (await handleSettingsRoute(route, settings)) return;
     if (await handlePublicRoute(key, url, reply)) return;
 
     // Без даты сервер берёт сегодняшний день пользователя; у стаба
@@ -136,5 +145,5 @@ export async function stubApi(
     return nestError(404, 'Not Found', `Cannot ${key}`);
   });
 
-  return { ratingsByDay, therapy, overrides };
+  return { ratingsByDay, therapy, overrides, settings };
 }

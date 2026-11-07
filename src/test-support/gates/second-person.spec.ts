@@ -244,6 +244,24 @@ describe('check-second-person.mjs', () => {
     );
   });
 
+  it('текст лендинга в src/ (его читает и сервер для робота) исключён как маркетинг', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/articles/home-landing.content.ts':
+        "export const T = 'Работаете с психологом? Поделитесь динамикой';\n",
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('КОНТРОЛЬ: соседний файл статей с тем же текстом — по-прежнему exit 1', () => {
+    const res = runGate('check-second-person.mjs', {
+      'scripts/second-person-baseline.json': JSON.stringify({}),
+      'src/articles/home-seo.render.ts':
+        "export const T = 'Работаете с психологом? Поделитесь динамикой';\n",
+    });
+    expect(res.status).toBe(1);
+  });
+
   it('владелец-only диагностика площадки канала (explain()) исключена', () => {
     // src/channel/targets/*.target.ts — подсказку читает только владелец в
     // логах/админке при сбое публикации поста, не подписчик канала.
@@ -536,6 +554,7 @@ describe('каждый паттерн и EXCLUDE-исключение пойма
       'shared/src/booking/clientTimeZone.ts',
       // Статьи сайта, канал (broadcast без userId).
       'src/articles/articles.seed.ts',
+      'src/articles/home-landing.content.ts',
       'src/bot/healthy-adult.data.ts',
       // Заявка терапевта в личку владельцу (adminPlainText).
       'src/therapy/therapist-request.notify.ts',

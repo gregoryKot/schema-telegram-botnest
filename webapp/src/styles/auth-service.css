@@ -8,7 +8,7 @@
 .as-card { width: 100%; max-width: 440px; border-radius: 28px; padding: 32px 32px 36px; display: flex; flex-direction: column; gap: 18px; }
 .as-brand { display: flex; align-items: center; gap: 10px; }
 .as-logo {
-  width: 28px; height: 28px; border-radius: 7px; background: var(--accent-hot); color: var(--on-accent);
+  width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--on-accent);
   display: grid; place-items: center; font-family: var(--serif); font-size: 14px; flex-shrink: 0;
 }
 .as-brand-name { font-family: var(--serif); font-size: 16px; }

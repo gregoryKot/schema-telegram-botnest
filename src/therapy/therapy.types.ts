@@ -9,10 +9,14 @@ export interface TherapyRelationInfo {
   code: string;
   nextSession: string | null;
   meetingDays: number[]; // клиенту — дни встреч связи, терапевту — []
+  conceptSharedAt?: Date | null; // клиенту — когда терапевт показал схему случая
 }
 
 export interface TherapyClientSummary {
   telegramId: bigint;
+  // Постоянный код адреса карточки в кабинете: /cabinet/<urlCode>
+  // (TherapyRelation.urlCode; при подключении офлайн-карточки не меняется).
+  urlCode: string;
   name: string | null;
   clientAlias: string | null;
   streak: number;

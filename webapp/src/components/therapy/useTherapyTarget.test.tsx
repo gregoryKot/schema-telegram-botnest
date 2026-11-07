@@ -17,6 +17,7 @@ describe('useTherapyTarget', () => {
   it('терапевт не подключён: write нет, open пишет событие и поднимает лист', () => {
     const { result } = renderHook(() => useTherapyTarget('more', 'crisis'), { wrapper });
     expect(result.current.hidden).toBe(false);
+    expect(result.current.connected).toBe(false);
     expect(result.current.write).toBeUndefined();
     expect(result.current.sheet).toBeNull();
     act(() => result.current.open());
@@ -28,9 +29,18 @@ describe('useTherapyTarget', () => {
     localStorage.setItem('therapy_contact_url', 'tg://user?id=42');
     localStorage.setItem('therapy_contact_name', 'терапевту');
     const { result } = renderHook(() => useTherapyTarget('home'), { wrapper });
+    expect(result.current.connected).toBe(true);
     expect(result.current.write?.url).toBe('tg://user?id=42');
     result.current.write?.onClick();
     expect(track).toHaveBeenCalledWith('home', 'write', undefined);
+  });
+
+  it('терапевт подключён без канала: connected, но write нет — open ведёт в лист', () => {
+    localStorage.setItem('therapy_contact_url', '');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    const { result } = renderHook(() => useTherapyTarget('home'), { wrapper });
+    expect(result.current.connected).toBe(true);
+    expect(result.current.write).toBeUndefined();
   });
 
   it('пользователь сам терапевт: hidden', () => {

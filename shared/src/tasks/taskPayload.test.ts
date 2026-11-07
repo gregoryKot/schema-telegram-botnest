@@ -40,4 +40,12 @@ describe('taskPayloadText', () => {
       taskPayloadText({ ...base, type: 'custom', text: 'Позвонить другу' }),
     ).toBe('Позвонить другу');
   });
+
+  // Одно имя упражнения (docs/open/frontend-ux.md, «Письмо называется по-разному»):
+  // задание называет письмо так же, как библиотека и «плюс».
+  it('письмо — по имени упражнения из каталога', () => {
+    expect(taskPayloadText({ ...base, type: 'letter_to_self' })).toBe(
+      'Написать письмо себе в детстве',
+    );
+  });
 });

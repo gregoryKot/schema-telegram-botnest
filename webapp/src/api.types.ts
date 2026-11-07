@@ -25,6 +25,10 @@ export type {
 // ─── Site-only types (booking, articles, mode-map) ───────────────────────────
 export type { AdminCalendar, AdminCalendarDay, AdminCalendarCell, AdminCalendarCellState, SlotOverrideKind, SlotOverrideItem, SlotOverridePatch } from './api.calendar.types';
 export interface BookingSlot { startsAt: string; endsAt: string; durationMin: number; }
+// Запись клиента из приложения (#546): GET /api/client-booking и POST …/book (src/booking/client-booking.service.ts).
+export interface ClientBookingView { startsAt: string; durationMin: number; status: 'HELD' | 'CONFIRMED'; heldUntil: string | null; manageUrl: string; }
+export interface ClientBookingOverview { eligible: boolean; upcoming: ClientBookingView[]; }
+export interface ClientBookResult { cancelToken: string; status: string; heldUntil: string | null; paymentUrl: string | null; manageUrl: string; }
 export interface SessionOption { type: 'INTRO_15' | 'SESSION_50'; label: string; durationMin: number; price: number; prices?: Record<Currency, number>; note: string; } // price — рубли (старое поле), prices — по валютам; в старом ответе сервера prices нет — тогда рубли
 export interface AvailabilityRule {
   id: number; dayOfWeek: number; startHour: number; startMinute: number;
@@ -38,7 +42,7 @@ export type NewAvailabilityRule = {
 export interface AdminBooking {
   id: number; startsAt: string; durationMin: number; type: string; status: string;
   clientName: string; clientContact: string; clientChannel?: string | null; message: string | null;
-  cancelToken: string; meetingUrl: string | null;
+  cancelToken: string; meetingUrl: string | null; confirmEffectsDoneAt?: string | null; // null — эффекты подтверждения не доведены
 }
 /** Diagnostics snapshot from GET /api/booking/admin/status (no secrets). */
 export interface AdminBookingStatus {

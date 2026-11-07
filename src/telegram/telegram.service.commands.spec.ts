@@ -7,6 +7,16 @@ import { Logger } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
 
+/** Ответ в чат: первый вызов падает (отказ Telegram/сеть), остальные проходят. */
+function failingFirstReply() {
+  let call = 0;
+  return jest.fn(() =>
+    ++call === 1
+      ? Promise.reject(new Error('Bad Request: BUTTON_URL_INVALID'))
+      : Promise.resolve(undefined),
+  );
+}
+
 function makeDeps(overrides: Record<string, any> = {}) {
   const botService = {
     getUserSettings: jest.fn().mockResolvedValue(null),
@@ -75,6 +85,19 @@ describe('TelegramService — /ping', () => {
     const ctx = await runCommand(fakeBot, 'ping');
     expect(ctx.reply).toHaveBeenCalledWith('OK');
   });
+
+  // Аудит 2026-10: сбой ответа команды только писался в лог — человек не
+  // видел ничего, это неотличимо от «бот лежит».
+  it('ответ упал — повтор, а не молчание', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { service, fakeBot } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'ping', {
+      reply: failingFirstReply(),
+    });
+    expect(ctx.reply).toHaveBeenCalledTimes(2);
+    expect(ctx.reply).toHaveBeenLastCalledWith('OK');
+  });
 });
 
 describe('TelegramService — /subscribe', () => {
@@ -85,6 +108,19 @@ describe('TelegramService — /subscribe', () => {
     const [text, opts] = ctx.reply.mock.calls[0];
     expect(text).toContain('Поддержать SchemeHappens');
     expect(opts.reply_markup.inline_keyboard[0][0].text).toBe('Разовый донат');
+  });
+
+  it('кнопку отклонили — ссылка текстом, без кнопки', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { service, fakeBot } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'subscribe', {
+      reply: failingFirstReply(),
+    });
+    expect(ctx.reply).toHaveBeenCalledTimes(2);
+    const [text, opts] = ctx.reply.mock.calls[1];
+    expect(text).toContain('http');
+    expect(opts).toEqual({ parse_mode: 'HTML' });
   });
 });
 
@@ -161,5 +197,21 @@ describe('TelegramService — /therapist (deprecated redirect)', () => {
     // Хендлер вообще не зависит от therapistRequestService (она уехала на
     // TelegramAdminService) — единственный сайд-эффект команды это reply.
     expect(ctx.reply).toHaveBeenCalledTimes(1);
+  });
+
+  it('форма обращения не прочиталась (БД) — всё равно ответ, безличным текстом', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { service, fakeBot } = makeDeps({
+      botService: {
+        getUserSettings: jest.fn().mockRejectedValue(new Error('db down')),
+      },
+    });
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'therapist', { from: { id: 1 } });
+    expect(ctx.reply).toHaveBeenCalledTimes(1);
+    const [text] = ctx.reply.mock.calls[0];
+    expect(text).toContain('«Я психолог — подать заявку»');
+    // Без «Открой»/«Откройте»: форма неизвестна, текст подходит обеим.
+    expect(text).not.toMatch(/Открой|заполни/);
   });
 });

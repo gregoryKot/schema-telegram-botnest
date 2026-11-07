@@ -29,6 +29,7 @@ function make(o: Opts) {
     o.card === undefined
       ? {
           id: 7,
+          urlCode: 'kdbgqafs',
           virtualClientName: 'enc:card',
           therapyStartDate: '2026-02-02',
           nextSession: '2026-12-01',
@@ -183,6 +184,20 @@ describe('attachOfflineCard', () => {
     });
     expect(m.tx.therapyRelation.delete).toHaveBeenCalledWith({
       where: { id: 7 },
+    });
+  });
+
+  it('код адреса карточки переезжает на связь клиента — после удаления карточки', async () => {
+    // /cabinet/<urlCode>, сохранённый терапевтом, открывает подключённого
+    // клиента; код уникален, поэтому запись — только когда карточки нет.
+    const m = make({});
+    await attachOfflineCard(m.prisma, TH, CLIENT, 7);
+    expect(m.calls.lastIndexOf('rel.update')).toBeGreaterThan(
+      m.calls.indexOf('rel.delete'),
+    );
+    expect(m.tx.therapyRelation.update).toHaveBeenLastCalledWith({
+      where: { id: 100 },
+      data: { urlCode: 'kdbgqafs' },
     });
   });
 

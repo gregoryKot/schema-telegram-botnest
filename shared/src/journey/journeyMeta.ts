@@ -11,6 +11,8 @@ import {
   dateStringParts,
   formatDateString,
 } from '../utils/calendarDate';
+import { exerciseCard } from '../exercises/exerciseCatalog';
+const LETTER = exerciseCard('letter').title; // одно имя письма — из каталога
 
 // Группы для фильтра ленты (чипы «что показать»).
 export type JourneyGroup =
@@ -31,11 +33,11 @@ export const JOURNEY_TYPE_META = {
   schema_diary: { emoji: '📔', label: 'Схемный дневник', group: 'diary' },
   mode_diary: { emoji: '🎭', label: 'Дневник режимов', group: 'diary' },
   gratitude: { emoji: '🌱', label: 'Благодарность', group: 'diary' },
-  practice: { emoji: '🌿', label: 'Своя практика', group: 'practice' },
-  plan_done: { emoji: '✅', label: 'Практика по плану', group: 'practice' },
+  practice: { emoji: '🌿', label: 'Что меня питает', group: 'practice' },
+  plan_done: { emoji: '✅', label: 'Шаг по плану', group: 'practice' },
   ysq: { emoji: '📋', label: 'Тест схем', group: 'test' },
   belief_check: { emoji: '⚖️', label: 'Проверка убеждения', group: 'exercise' },
-  letter: { emoji: '✉️', label: 'Письмо себе', group: 'exercise' },
+  letter: { emoji: '✉️', label: LETTER, group: 'exercise' },
   flashcard: { emoji: '🆘', label: 'Кризисная карточка', group: 'exercise' },
   safe_place: { emoji: '🏝', label: 'Безопасное место', group: 'exercise' },
   schema_note: { emoji: '🧩', label: 'Карточка схемы', group: 'cards' },
@@ -109,7 +111,7 @@ export const JOURNEY_FILTERS: Array<{
   { id: 'all', label: 'Всё' },
   { id: 'tracker', label: 'Трекер' },
   { id: 'diary', label: 'Дневники' },
-  { id: 'practice', label: 'Практики' },
+  { id: 'practice', label: 'Что питает' },
   { id: 'test', label: 'Тесты' },
   { id: 'exercise', label: 'Упражнения' },
   { id: 'cards', label: 'Карточки' },

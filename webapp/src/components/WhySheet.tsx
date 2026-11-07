@@ -1,6 +1,7 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { WhyActions, WhyHero } from './why/WhyActions';
 import { WhyLegend } from './why/WhyLegend';
+import { TherapyLine } from './therapy/TherapyLine';
 import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
 import '../styles/client-why.css';
 
@@ -34,7 +35,7 @@ export function WhySheet({ auto = false, onClose }: Props) {
         <WhyLegend />
         <p className="cw-tip">Не нужно делать всё. Одно действие в день — уже работа.</p>
         <div className="cw-sticky"><button type="button" className="ds-btn ds-btn--lg" onClick={goBack}>Понятно, начнём</button></div>
-        <p className="ds-sub cw-foot">{bridge.whyNote}</p>
+        <TherapyLine place="why" text={bridge.lineHome} className="cw-foot" />
       </div>
     </div>
   );

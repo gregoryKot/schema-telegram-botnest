@@ -7,12 +7,17 @@ import type {
   JourneyEmptyHeroProps,
   JourneyHeroProps,
 } from '../../../../shared/src/journey/journeyHeroes';
+import { Cup } from '../art/PaperArt';
 import '../../styles/sheet-diary.css';
 
 export function WebJourneyEmptyHero({ tr, explainer }: JourneyEmptyHeroProps) {
   return (
     <div className="ds-card sd-hero">
-      <h2 className="ds-h2">Путь ещё впереди</h2>
+      {/* Пусто — чашка, как у остальных пустых состояний (PaperEmpty); рядом с заголовком, текст — во всю ширину. */}
+      <div className="pp-hero">
+        <h2 className="ds-h2">Путь ещё впереди</h2>
+        <Cup />
+      </div>
       <p className="ds-sub sd-hero-text">
         {explainer}{' '}
         {tr(

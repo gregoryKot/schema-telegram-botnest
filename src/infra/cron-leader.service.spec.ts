@@ -106,6 +106,36 @@ describe('CronLeaderService.claimRun — память отказов для пр
   });
 });
 
+// Дедуп алерта самопроверки (self-check/alert-dedup.ts, 2026-11-07): ему
+// «аренда чужая» и «база недоступна» значат разное — второе обязано всплыть.
+describe('CronLeaderService.claimRunOrThrow', () => {
+  it('тот же захват: 1 строка → true, 0 → false', async () => {
+    const executeRaw = jest
+      .fn()
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0);
+    const { leader } = makeLeader(executeRaw);
+    await expect(
+      leader.claimRunOrThrow('self-check-alert:db', 1),
+    ).resolves.toBe(true);
+    await expect(
+      leader.claimRunOrThrow('self-check-alert:db', 1),
+    ).resolves.toBe(false);
+    const [chunks] = executeRaw.mock.calls[0] as [string[]];
+    expect(chunks.join(' ')).toContain('ON CONFLICT');
+  });
+
+  it('база недоступна — ошибка всплывает и не пишется в память отказов кронов', async () => {
+    const { leader } = makeLeader(
+      jest.fn().mockRejectedValue(new Error("Can't reach database server")),
+    );
+    await expect(
+      leader.claimRunOrThrow('self-check-alert:telegram', LEASE_WINDOW.hourly),
+    ).rejects.toThrow("Can't reach database server");
+    expect(lastClaimDbFailureAt('self-check-alert:telegram')).toBeUndefined();
+  });
+});
+
 describe('LEASE_WINDOW', () => {
   it('каждое окно меньше своего периода — иначе законный тик не наступит', () => {
     expect(LEASE_WINDOW.everyMinute).toBeLessThan(60_000);

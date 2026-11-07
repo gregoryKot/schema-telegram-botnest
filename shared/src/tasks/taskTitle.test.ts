@@ -15,6 +15,16 @@ const FIRST_SCHEMA = ALL_SCHEMAS[0];
 const FIRST_MODE = ALL_MODES[0];
 
 describe('getTaskDisplayText — читаемое название по типу задания', () => {
+  it('письмо, сохранённое под старым именем, показывается под нынешним', () => {
+    expect(
+      getTaskDisplayText('letter_to_self', 'Написать письмо Уязвимому Ребёнку'),
+    ).toBe('Написать письмо себе в детстве');
+    // Своё задание с тем же текстом — не письмо-упражнение, текст как есть.
+    expect(
+      getTaskDisplayText('custom', 'Написать письмо Уязвимому Ребёнку'),
+    ).toBe('Написать письмо Уязвимому Ребёнку');
+  });
+
   it('schema_intro резолвит id в реальное название схемы', () => {
     expect(getTaskDisplayText('schema_intro', FIRST_SCHEMA.id)).toBe(
       `Карточка схемы: ${FIRST_SCHEMA.name}`,

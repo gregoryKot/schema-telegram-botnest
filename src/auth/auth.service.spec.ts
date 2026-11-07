@@ -32,6 +32,9 @@ import {
 // (decField(row.email)-тест переехал в email-token.service.spec.ts вместе с
 // consumeEmailToken).
 import { encrypt } from '../utils/crypto';
+// Диапазон — из модуля, а не копией: пин «ниже 2^53» в user-id-range.spec.ts
+// и проверка генерации id здесь обязаны смотреть на одно число (правило №4).
+import { WEB_USER_ID_MAX, WEB_USER_ID_MIN } from './user-id-range';
 
 jest.mock('../utils/crypto', () => {
   const actual = jest.requireActual('../utils/crypto');
@@ -41,8 +44,6 @@ jest.mock('../utils/crypto', () => {
 const JWT_SECRET = 'test-jwt-secret';
 const BOT_TOKEN = '12345:TEST_TOKEN';
 const FIXED_DATE = new Date('2026-07-16T12:00:00.000Z');
-const WEB_USER_ID_MIN = 1_000_000_000_000_000n;
-const WEB_USER_ID_MAX = 9_000_000_000_000_000n;
 
 // hash: undefined = подписать честно; 'omit' = без hash; иначе — как есть.
 function signInitData(opts: {

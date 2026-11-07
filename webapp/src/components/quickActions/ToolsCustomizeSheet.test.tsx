@@ -36,7 +36,7 @@ describe('ToolsCustomizeSheet', () => {
     expect(screen.getByText('Карточки в «Инструментах»')).toBeTruthy();
     expect(screen.getByText('Разделы страницы')).toBeTruthy();
     expect(screen.getByText('3 цели')).toBeTruthy();
-    expect(screen.getByText('4 практики')).toBeTruthy();
+    expect(screen.getByText('4 действия')).toBeTruthy();
     expect(screen.getByText('История пуста')).toBeTruthy();
   });
 

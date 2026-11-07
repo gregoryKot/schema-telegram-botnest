@@ -4,6 +4,7 @@ import { useTr } from '../utils/addressForm';
 import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
 import type { TherapyClientSummary, UserId } from '../api';
 import { isActiveToday } from '../../../shared/src/therapy/clientSheetHelpers';
+import { clientDisplayName } from '../../../shared/src/therapy/clientInitials';
 import { clientStatus } from './therapist/rosterOrder';
 import { matchesSearch } from '../../../shared/src/utils/searchNormalize';
 import { pressable } from '../utils/a11y';
@@ -30,7 +31,7 @@ const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'more',    label: 'Ещё',      sub: 'Всё остальное', hint: '⌘ 3' },
   { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '' },
   { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '' },
-  { id: 'practice', label: 'Практика', sub: 'Практики',  hint: '' },
+  { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
 ];
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
@@ -93,7 +94,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const rows = useMemo<Row[]>(() => {
     const clientRows: Row[] = screenShare ? [] : clients.map(c => ({
       type: 'client' as const,
-      label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
+      label: clientDisplayName(c),
       ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: clientStatus(c).label }),
       hint: 'Открыть карточку',
       action: () => onOpenClient?.(c.telegramId),

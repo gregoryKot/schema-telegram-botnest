@@ -15,6 +15,7 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
 import { installBigIntJson } from '../../src/utils/bigint-json';
 import { makeFakeBot } from './fake-bot';
+import { stopCronJobs } from './stop-cron-jobs';
 
 // BigInt в JSON-ответах — тот же установщик, что в src/main.ts и
 // build-test-app.ts.
@@ -48,5 +49,8 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
   // второй прогон и заведён.
   installBodyParsers(app);
   await app.init();
+  // Настоящие @Cron тикают после init прямо посреди спека (stop-cron-jobs.ts);
+  // гейт scripts/check-e2e-stop-cron.mjs.
+  await stopCronJobs(app);
   return { app, prisma: app.get(PrismaService) };
 }

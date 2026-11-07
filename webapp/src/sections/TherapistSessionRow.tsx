@@ -1,7 +1,8 @@
 import type { TherapyClientSummary, UserId } from '../api';
 import { clientHue, hueStyle } from '../lib/tone';
 import { Sign } from '../components/therapist/SignArt';
-import { activityStatus, clientName, sessionTime } from './therapistTodayModel';
+import { activityStatus, sessionTime } from './therapistTodayModel';
+import { clientDisplayName } from '../../../shared/src/therapy/clientInitials';
 
 interface RowProps { client: TherapyClientSummary; onOpen: (id: UserId) => void }
 
@@ -17,7 +18,7 @@ export function SessionRow({ client, onOpen }: RowProps) {
       <span className="tt-who tt-who--sign">
         <Sign kind="talk" />
         <span className="tt-who-text">
-          <span className="tt-name" style={{ display: 'block' }}>{clientName(client)}</span>
+          <span className="tt-name" style={{ display: 'block' }}>{clientDisplayName(client)}</span>
           {sub && <span className="tt-row-sub" style={{ display: 'block' }}>{sub}</span>}
         </span>
       </span>

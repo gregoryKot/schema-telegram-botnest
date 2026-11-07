@@ -8,6 +8,7 @@ import { PatternSheet } from './PatternSheet';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 import type { PatternEntries } from '../../sections/schemas/usePatternEntries';
 import type { MyCardItem } from '../../../../shared/src/pattern/useMyCards';
+import { deleteFailedText } from '../../../../shared/src/diary/diaryDelete';
 
 const deleteSchemaDiary = vi.fn().mockResolvedValue(undefined);
 const deleteModeDiary = vi.fn().mockResolvedValue(undefined);
@@ -138,6 +139,29 @@ describe('PatternSheet — записи дневника', () => {
     expect(deleteSchemaDiary).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Удалить навсегда'));
     await waitFor(() => expect(deleteSchemaDiary).toHaveBeenCalledWith(1));
+  });
+
+  // Раньше отказ уходил в console.error, запись молча возвращалась без слов.
+  it('сбой удаления: текст ошибки под кнопкой, запись на месте', async () => {
+    deleteSchemaDiary.mockRejectedValueOnce(Object.assign(new Error('HTTP 500'), { status: 500 }));
+    const entries = entriesOf({ schemaEntries: [schemaEntry(1, ['abandonment'])] });
+    renderSheet({ entries });
+    fireEvent.click(screen.getByText(/Триггер 1/));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+    expect((await screen.findByRole('alert')).textContent).toBe(deleteFailedText((ty) => ty));
+    expect(entries.setSchemaEntries).not.toHaveBeenCalled();
+    expect(screen.getByText(/Триггер 1/)).toBeTruthy();
+  });
+
+  it('успех: запись убирается из списка после ответа сервера', async () => {
+    const entries = entriesOf({ schemaEntries: [schemaEntry(1, ['abandonment'])] });
+    renderSheet({ entries });
+    fireEvent.click(screen.getByText(/Триггер 1/));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+    await waitFor(() => expect(entries.setSchemaEntries).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 

@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-// T-12 / T-13 (QA 2026-11): прямой вход на /cabinet/<id> не пушит лишнюю запись
+// T-12 / T-13 (QA 2026-11): прямой вход на /cabinet/<код> не пушит лишнюю запись
 // истории; «← Все клиенты» из списка возвращает записью истории (позиция
 // списка сохраняется), а не пушит новую.
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter, useNavigate, useLocation, type NavigateFunction } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { AppSections } from './AppSections';
+import { parseClientRef } from '../../../../shared/src/utils/clientRef';
+import type { TherapyClientSummary } from '../../api';
 
 interface SheetProps {
   onOpenClient: (id: number) => void;
@@ -22,6 +24,8 @@ vi.mock('../TherapistClientSheet', () => ({
 }));
 
 const snap = { loc: null as ReturnType<typeof useLocation> | null };
+let clients: TherapyClientSummary[] = [];
+beforeEach(() => { clients = []; });
 
 function Host() {
   const nav: NavigateFunction = useNavigate();
@@ -29,18 +33,18 @@ function Host() {
   useEffect(() => { snap.loc = loc; });
   const back = useRef(() => {});
   const seg = loc.pathname.split('/')[2];
-  const id = seg && seg !== 'today' ? Number(seg) : null;
+  const ref = seg && seg !== 'today' ? parseClientRef(seg) : null;
   return (
     <AppSections
       inert={false} therapistMode pathname={loc.pathname} section="today" needs={[]} ratings={{}} displayName={null}
-      navigate={nav} openClientId={id as never} switchTherapistMode={() => {}} therapistBackHandlerRef={back}
+      navigate={nav} openClientRef={ref} clients={clients} switchTherapistMode={() => {}} therapistBackHandlerRef={back}
       setTherapistClients={() => {}} setSection={() => {}} ov={{} as never} todayRefreshKey={0} userRole="THERAPIST"
       profileRefreshKey={0} childhoodRatings={{}} helpTasksKey={0} setHelpTasksKey={() => {}}
     />
   );
 }
 
-const mount = (entries: string[]) =>
+const mount = (entries: (string | { pathname: string; state: unknown })[]) =>
   render(<MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}><Host /></MemoryRouter>);
 
 const click = (el: HTMLElement) => act(() => { el.click(); });
@@ -62,6 +66,33 @@ describe('AppSections: карточка клиента', () => {
     await act(async () => {});
     expect(snap.loc!.pathname).toBe('/cabinet');
     expect(snap.loc!.key).toBe(listKey);
+  });
+
+  // Адрес карточки — постоянный код (shared/src/utils/clientRef.ts).
+  it('из списка клиент с кодом открывается по адресу с кодом', async () => {
+    clients = [{ telegramId: 42, urlCode: 'abcdefgh' } as TherapyClientSummary];
+    mount(['/cabinet']);
+    click(await screen.findByText('открыть 42'));
+    expect(snap.loc!.pathname).toBe('/cabinet/abcdefgh');
+  });
+
+  it('старый числовой адрес заменяется кодом без новой записи; метка fromList остаётся', async () => {
+    clients = [{ telegramId: 42, urlCode: 'abcdefgh' } as TherapyClientSummary];
+    mount(['/cabinet', { pathname: '/cabinet/42', state: { fromList: true } }]);
+    await act(async () => {});
+    expect(snap.loc!.pathname).toBe('/cabinet/abcdefgh');
+    expect(snap.loc!.state).toEqual({ fromList: true });
+    click(screen.getByText('все клиенты'));
+    await act(async () => {});
+    expect(snap.loc!.pathname).toBe('/cabinet');
+  });
+
+  it('прямой вход по коду, пока список кабинета не пришёл: открытие этой карточки ничего не пушит', async () => {
+    mount(['/cabinet/abcdefgh']);
+    const before = snap.loc!.key;
+    click(await screen.findByText('открыть 42'));
+    expect(snap.loc!.key).toBe(before);
+    expect(snap.loc!.pathname).toBe('/cabinet/abcdefgh');
   });
 
   it('без метки (пришли не из списка) «все клиенты» ведёт на список', async () => {

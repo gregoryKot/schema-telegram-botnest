@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom'; // вкладки кабинета живут в адресе (useClientTabRoute)
 import { TherapistClientSheet } from './TherapistClientSheet';
 
 vi.mock('../api', () => ({
@@ -72,7 +73,7 @@ function Wrapper() {
 
 describe('TherapistClientSheet — «Открыть на холсте»', () => {
   it('создаёт карту, переключает на «Графические карты» и просит селектор открыть именно её', async () => {
-    render(<Wrapper />);
+    render(<MemoryRouter><Wrapper /></MemoryRouter>);
     fireEvent.click(await screen.findByText('Анна'));
     await screen.findByText('Обзор');
     fireEvent.click(screen.getByText('Концептуализация'));
@@ -88,7 +89,7 @@ describe('TherapistClientSheet — «Открыть на холсте»', () => 
 
   it('отказ создания: остаёмся на вкладке с сообщением, селектор не открывается', async () => {
     mockApi.createModeMap.mockRejectedValue(new Error('500'));
-    render(<Wrapper />);
+    render(<MemoryRouter><Wrapper /></MemoryRouter>);
     fireEvent.click(await screen.findByText('Анна'));
     await screen.findByText('Обзор');
     fireEvent.click(screen.getByText('Концептуализация'));

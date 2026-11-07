@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AccountService } from '../bot/account.service';
 import { EmailService } from '../auth/email.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
+import { practiceOwnerTelegramId } from '../utils/practice-owner';
 import { escapeHtml as he } from '../utils/escape-html';
 import { DecisionRequest, deliverDecision } from './therapist-request.deliver';
 
@@ -69,9 +70,7 @@ export class TherapistRequestNotifyService {
   }
 
   private get adminId(): number | null {
-    const raw = process.env.ADMIN_ID;
-    const n = raw ? Number(raw) : NaN;
-    return Number.isFinite(n) ? n : null;
+    return practiceOwnerTelegramId();
   }
 
   async notifyAdmin(req: {

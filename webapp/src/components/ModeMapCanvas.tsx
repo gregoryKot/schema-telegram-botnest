@@ -40,7 +40,7 @@ export interface CanvasProps {
   onEdgesChange: ReturnType<typeof useEdgesState<FlowEdge>>[2];
   setSelectedNodeId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
-  saveStatus: SaveStatus; savedAt: Date | null; onRetrySave: () => void; // строка статуса — SaveStatusLine (issue #879)
+  saveStatus: SaveStatus; savedAt: Date | null; saveError?: string; onRetrySave: () => void; // SaveStatusLine (#879)
   scheduleSave: (ns: FlowNode[], es: FlowEdge[]) => void;
   pushHistory: () => void;
   nodesRef: React.MutableRefObject<FlowNode[]>;
@@ -50,7 +50,7 @@ export interface CanvasProps {
 }
 
 export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
-  setSelectedNodeId, setSelectedEdgeId, saveStatus, savedAt, onRetrySave, scheduleSave,
+  setSelectedNodeId, setSelectedEdgeId, saveStatus, savedAt, saveError, onRetrySave, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
   const { screenToFlowPosition, zoomIn, zoomOut, setViewport } = useReactFlow();
   const space = useCanvasSpace(); // свободное место и «Показать всё» с учётом панелей
@@ -292,7 +292,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       <div className="mm2-status">
         <ConceptSyncLine onAddToMap={fromConcept.generate} />
         {fromConcept.failed ? <span role="alert" className="is-err">Не получилось собрать схему из концептуализации</span>
-          : <SaveStatusLine status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} align="right" />}
+          : <SaveStatusLine status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} errorText={saveError} align="right" />}
       </div>
       {nodes.length === 0 && <CanvasEmpty />}
       <NodeActionsContext.Provider value={nodeActions}>

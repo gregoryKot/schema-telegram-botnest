@@ -115,6 +115,17 @@ describe('createRatingApi.saveRating — границы классификаци
     const res = await makeApi().saveRating('safety', 5);
     expect(res.ok).toBe(true);
     expect(res.allDone).toBe(false);
+    expect(res.queued).toBe(true); // QA B-З9: экран обязан знать, что оценка не дошла
+  });
+
+  it('контроль: ответ сервера 200 — без пометки queued', async () => {
+    authedFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true, allDone: false }),
+    });
+    const res = await makeApi().saveRating('safety', 5);
+    expect(res.queued).toBeUndefined();
   });
 
   it('ошибка не instanceof HttpStatusError со «случайным» полем status — всё равно в outbox', async () => {

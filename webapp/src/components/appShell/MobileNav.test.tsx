@@ -38,6 +38,14 @@ describe('MobileNav', () => {
     expect(screen.getByText('Профиль').closest('a')?.getAttribute('href')).toBe('/account');
   });
 
+  it.each([['/cabinet', true], ['/cabinet/tasks', true], ['/cabinet/abcdefgh', false], ['/cabinet/today', false]])(
+    'терапевт на %s: «Клиенты» горит — %s (доска «Задания» — вкладка списка)', (path, on) => {
+      render(<MemoryRouter initialEntries={[path]}><MobileNav items={ITEMS} therapist /></MemoryRouter>);
+      const clients = screen.getByText('Клиенты').closest('a')!;
+      expect(clients.className.includes('active')).toBe(on);
+      expect(clients.getAttribute('aria-current')).toBe(on ? 'page' : null);
+    });
+
   it('терапевт: «Поиск» открывает палитру команд', () => {
     const onSearch = vi.fn();
     render(<MemoryRouter><MobileNav items={ITEMS} therapist onSearch={onSearch} /></MemoryRouter>);

@@ -17,8 +17,10 @@ import type { Tr } from '../practices/quickPractices';
 import type { QuickActionId } from './quickActions';
 import type { QuickActionSurface } from './quickActionPrefs';
 import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../flashcard/flashcardNames';
+import { exerciseCard } from '../exercises/exerciseCatalog';
 
 export type QuickActionGroupId = 'case' | 'capture' | 'rate' | 'calm';
+const LETTER = exerciseCard('letter').title; // одно имя письма — из каталога
 
 // Подпись, которую реестр не знает: она считается по данным пользователя
 // (счётчик целей/практик/планов, пройдено ли колесо детства) в toolRows.ts.
@@ -102,11 +104,11 @@ export const QUICK_ACTIONS: QuickActionDef[] = [
   ),
   def('flashcard', FLASHCARD_TITLE, FLASHCARD_SUB, ['tools']),
   def('safe_place', 'Безопасное место', 'Ресурс в тревожный момент', ['tools']),
-  def('letter_to_self', 'Письмо себе', 'Уязвимому Ребёнку', ['tools']),
+  def('letter_to_self', LETTER, 'Что тогда важно было услышать', ['tools']),
   def('warm_words', 'Тёплые слова', 'Слова поддержки себе', ['tools']),
   def('childhood_wheel', 'Колесо детства', DYNAMIC_SUB, ['tools']),
   def('tasks', 'Мои цели', DYNAMIC_SUB, ['tools']),
-  def('practices', 'Практики', DYNAMIC_SUB, ['tools']),
+  def('practices', 'Что питает', DYNAMIC_SUB, ['tools']),
   def('plans', 'Планы', DYNAMIC_SUB, ['tools']),
 ];
 

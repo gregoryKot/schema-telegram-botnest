@@ -32,7 +32,7 @@ const client = (
   ...o,
 });
 
-function setup(opts: { fail?: boolean; clearAfterMs?: number } = {}) {
+function setup(opts: { fail?: boolean } = {}) {
   const ref = { current: 1 as UserId | null };
   const renameClient = vi.fn(async () => {
     if (opts.fail) throw new Error('x');
@@ -53,10 +53,7 @@ function setup(opts: { fail?: boolean; clearAfterMs?: number } = {}) {
       setClients,
       openClientIdRef: ref,
       send: { renameClient, updateSessionInfo },
-      sessionError: {
-        text: 'Не удалось сохранить дату',
-        clearAfterMs: opts.clearAfterMs,
-      },
+      sessionError: { text: 'Не удалось сохранить дату' },
     });
     return { edit, selectedClient, clients, setSelectedClient };
   });
@@ -145,9 +142,11 @@ describe('useSessionAliasEditing — даты сессий', () => {
     expect(result.current.edit.sessionInfoSaving).toBe(false);
   });
 
-  it('сбой — исход false и текст ошибки; с clearAfterMs ошибка снимается сама', async () => {
+  // Самоснятие ошибки голым setTimeout убрано (таймер без очистки стрелял после сноса jsdom,
+  // docs/open/ci-tests.md): ошибка висит до следующей попытки и гаснет на ней же.
+  it('сбой — исход false и текст ошибки; висит, пока не повторить, и гаснет на удачной попытке', async () => {
     vi.useFakeTimers();
-    const { result } = setup({ fail: true, clearAfterMs: 3000 });
+    const { result, updateSessionInfo } = setup({ fail: true });
     let ok = true;
     await act(async () => {
       ok = await result.current.edit.saveSessionInfo({
@@ -159,19 +158,18 @@ describe('useSessionAliasEditing — даты сессий', () => {
       'Не удалось сохранить дату',
     );
     act(() => {
-      vi.advanceTimersByTime(3000);
+      vi.advanceTimersByTime(60_000);
     });
-    expect(result.current.edit.sessionInfoError).toBe('');
-  });
-
-  it('без clearAfterMs ошибка висит до следующей попытки', async () => {
-    const { result } = setup({ fail: true });
-    await act(() =>
-      result.current.edit.saveSessionInfo({ therapyStartDate: null }),
-    );
+    expect(vi.getTimerCount()).toBe(0); // хук не заводит таймеров — гаснуть после размонтирования нечему
     expect(result.current.edit.sessionInfoError).toBe(
       'Не удалось сохранить дату',
     );
+
+    updateSessionInfo.mockResolvedValueOnce(undefined);
+    await act(async () => {
+      await result.current.edit.saveSessionInfo({ therapyStartDate: null });
+    });
+    expect(result.current.edit.sessionInfoError).toBe('');
   });
 
   it('сбой после перехода к другому клиенту — false без ошибки в чужой карточке', async () => {

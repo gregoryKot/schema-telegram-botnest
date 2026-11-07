@@ -181,11 +181,10 @@ describe('encryptionReadableProbe', () => {
     expect(res.detail).toContain('user (connection refused)');
   });
 
-  it('проба не в /health и не critical (остаток не уходит сам, красный /health держал бы смок)', () => {
+  it('проба не в /health (остаток не уходит сам, красный /health держал бы смок)', () => {
     const p = probe({});
     expect(p).toMatchObject({
       id: 'encryptionReadable',
-      critical: false,
       reportInHealth: false,
     });
   });

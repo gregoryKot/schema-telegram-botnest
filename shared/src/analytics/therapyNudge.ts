@@ -17,7 +17,8 @@ export type TherapyNudgePlace =
   | 'practice'
   | 'diary'
   | 'exercise_start'
-  | 'test_start';
+  | 'test_start'
+  | 'why';
 
 /** shown — показали; open — открыли лист; book — «Записаться»; write — написали (Telegram/терапевту); dismiss — «Не сейчас». */
 export type TherapyNudgeAction =

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/sheet-settings.css';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, type UserSettings } from '../api';
-import { Loader } from './Loader';
+import { SettingsSkeleton } from './settingsSheet/SettingsSkeleton';
 import { useSaveBadge } from './settingsSheet/useSaveBadge';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
@@ -97,13 +97,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     { id: 's-data', label: 'Данные' },
   ];
 
-  if (!settings) {
-    return (
-      <div className="settings-overlay st-overlay st-overlay--loading">
-        <Loader minHeight="40vh" />
-      </div>
-    );
-  }
+  if (!settings) return <div {...dialogA11y} className="settings-overlay st-overlay"><SettingsSkeleton onClose={goBack} /></div>;
 
   const tzLabel = timezoneLabel(settings.notifyTimezone);
 

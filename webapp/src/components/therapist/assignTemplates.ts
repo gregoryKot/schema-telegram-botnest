@@ -1,4 +1,5 @@
 import type { TaskType } from '../taskCreate/taskOptions';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 /** С чем открывается лист назначения: тип и, для «Своего задания», текст. */
 export interface AssignPreset { type: TaskType; text?: string }
@@ -19,6 +20,6 @@ export const ASSIGN_TEMPLATES: AssignTemplate[] = [
     sub: '5–7 эпизодов, фокус на конкретном режиме',
     preset: { type: 'custom', text: 'Дневник режима: записать 5–7 эпизодов, когда включается режим ' },
   },
-  { title: 'Письмо себе', sub: 'От Здорового Взрослого к Уязвимому Ребёнку', preset: { type: 'letter_to_self' } },
+  { title: exerciseCard('letter').title, sub: 'От Здорового Взрослого к Уязвимому Ребёнку', preset: { type: 'letter_to_self' } },
   { title: 'Безопасное место', sub: 'Описать образ и возвращаться к нему', preset: { type: 'safe_place' } },
 ];

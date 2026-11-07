@@ -17,6 +17,7 @@ export const CLIENT_ERROR_SECTIONS = [
   'help',
   'cabinet',
   'booking',
+  'assets',
   'other',
 ] as const;
 export type ClientErrorSection = (typeof CLIENT_ERROR_SECTIONS)[number];
@@ -49,6 +50,8 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   // Сбой отправки заявки на запись (инцидент 2026-09-13): сервер видит только
   // те заявки, что до него дошли; сетевой отказ виден лишь отсюда.
   booking: 'booking', // webapp/src/components/bookingFailure.ts
+  // Файл сборки не догрузился и повторы не помогли (инцидент 2026-11-04, #928).
+  assets: 'assets', // webapp/public/asset-recovery.js
 };
 
 /** Чистая функция: сырой `section` → канонический бакет. */

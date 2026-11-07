@@ -59,6 +59,7 @@ describe('formatTherapyNudge', () => {
       diary: 5,
       exercise_start: 4,
       test_start: 3,
+      why: 2,
     };
     const out = formatTherapyNudge(
       metrics({
@@ -69,10 +70,32 @@ describe('formatTherapyNudge', () => {
       }),
     );
     expect(out).toContain(
-      'карточкой на главной 7, в «Практиках» 6, в «Записях» 5, на входе в упражнение 4, на входе в тест 3',
+      'карточкой на главной 7, в «Практиках» 6, в «Записях» 5, на входе в упражнение 4, на входе в тест 3, в листе «Зачем это всё» 2',
     );
     expect(out).not.toContain('exercise_start');
     expect(out).not.toContain('test_start');
+    expect(out).not.toMatch(/\bwhy\b/);
+  });
+
+  // Место без подписи молча пропадает из отчёта (nonZero идёт по подписям):
+  // каждое место реестра, кроме карточки по сигналу со своей строкой, подписано.
+  it('у каждого места реестра есть подпись, кроме карточки по сигналу', () => {
+    const lined = THERAPY_NUDGE_PLACES.filter((p) => p !== 'signal_card');
+    const out = formatTherapyNudge(
+      metrics({
+        shownByPlace: THERAPY_NUDGE_PLACES.map((place) => ({
+          place,
+          count: place === 'signal_card' ? 0 : 1,
+        })),
+      }),
+    );
+    const line = out.split('\n').find((l) => l.startsWith('Показали строку: '));
+    const parts = line!
+      .replace('Показали строку: ', '')
+      .replace(/\.$/, '')
+      .split(', ');
+    expect(parts).toHaveLength(lined.length);
+    for (const place of lined) expect(out).not.toContain(place);
   });
 
   it('карточка по сигналу: отдельная строка с разрезом по причинам', () => {

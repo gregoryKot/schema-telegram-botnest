@@ -106,10 +106,11 @@ describe('холст карты режимов на телефоне (sheet-mode
     for (const r of fresh) expect(r.body, r.selectors.join(',')).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
   });
 
-  it('поля холста на ≤767 — 16px (iOS не увеличивает экран при фокусе), на ноутбуке прежние', () => {
+  it('поля холста под пальцем (и iPad шире 767) — 16px: iOS не увеличивает экран при фокусе; с мышью прежние', () => {
+    const TOUCH = '@media (pointer: coarse), (max-width: 767px)';
     const sels = ['.mm2-add-form .ds-input', '.mm2-panel .ds-input', '.mm2-panel .ds-textarea',
       '.mm2-panel select.ds-input', '.ds-input.mm2-add-emoji', '.ds-input.mm2-lane-input'];
-    for (const sel of sels) expect(values(modemap, PHONE, sel, 'font-size'), sel).toEqual(['16px']);
+    for (const sel of sels) expect(values(modemap, TOUCH, sel, 'font-size'), sel).toEqual(['16px']);
     expect(values(modemap, null, '.mm2-panel .ds-input', 'font-size')).toEqual(['13px']);
   });
 

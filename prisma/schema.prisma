@@ -175,6 +175,7 @@ model User {
   gratitudeDiaries       GratitudeDiaryEntry[]
   appActivities          AppActivity[]
   analyticsEvents        AnalyticsEvent[]
+  bookings               Booking[]
 }
 
 // Email magic-link tokens — вход по ссылке и привязка адреса.
@@ -516,6 +517,12 @@ model AnalyticsEvent {
 model TherapyRelation {
   id          Int      @id @default(autoincrement())
   code        String   @unique
+  // Постоянный код адреса карточки в кабинете терапевта: /cabinet/<urlCode>.
+  // 8 букв без цифр — не путается со старым числовым id в адресе
+  // (shared/src/utils/clientRef.ts). Ставит Postgres, поэтому код получит
+  // связь из любого пути создания; при подключении офлайн-карточки код
+  // переезжает на связь клиента (therapy-invite-attach.ts) — ссылка живёт.
+  urlCode     String   @unique @default(dbgenerated("translate(\"left\"((gen_random_uuid())::text, 8), '0123456789'::text, 'ghjkmnpqrs'::text)"))
   therapistId BigInt
   clientId    BigInt?
   status      RelationStatus @default(pending)
@@ -598,6 +605,9 @@ model ClientConceptualization {
   modeMapNodes    Json     @default("[]")  // ModeMapNode[] — encrypted JSON
   modeMapEdges    Json     @default("[]")  // ModeMapEdge[] — encrypted JSON
   history         Json     @default("[]")  // ConceptSnapshot[]
+  // Терапевт показал клиенту схему случая (тумблер «Показать клиенту», null — не показана):
+  // клиент видит её в «Мой терапевт» без истоков и задач терапии (src/therapy/client-concept-view.ts).
+  sharedWithClientAt DateTime?
   updatedAt       DateTime @updatedAt
 
   @@unique([therapistId, clientId])
@@ -817,7 +827,15 @@ model Booking {
   clientContact   String        // phone or telegram @handle
   clientChannel   String?       // канал связи: telegram | whatsapp | email — не PII, открыто
   message         String?
-  clientTelegramId BigInt?      // if client came from Telegram
+  // Telegram-адрес клиента. Анонимная форма его не пишет (C-9); пишет только
+  // клиентская запись из приложения — из проверенной подписи, не из тела.
+  clientTelegramId BigInt?
+  // Аккаунт клиента, записавшегося из приложения («Мой терапевт» → «Записаться
+  // на сессию», src/booking/client-booking.service.ts). Публичная форма без
+  // входа его не пишет. Удаление аккаунта отвязывает бронь (SetNull + явный
+  // updateMany в account.delete.ts), слияние переносит (USER_OWNED_TABLES).
+  userId          BigInt?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   cancelToken     String        @unique  // random UUID for self-cancel link
   meetingUrl      String?       // Zoom/Телемост link, set after confirmation
   // CalDAV sync
@@ -861,6 +879,11 @@ model Booking {
   // доводят повтор вебхука, ручное подтверждение и крон-добор. Ставит
   // `BookingNotifyService.onConfirmed` CAS-ом прямо перед отправкой DM.
   confirmEffectsDoneAt DateTime?
+  // Проход подтверждения заменил постоянную комнату клиента, создавая ссылку
+  // этой брони (старая перестала подходить). Пишется вместе с meetingUrl, чтобы
+  // повтор после падения (крон-добор, повтор вебхука) сказал владельцу в DM
+  // «комната заменена», а не потерял это вместе с локальной переменной.
+  roomReplacedAt  DateTime?
   // Reminders
   reminder24SentAt DateTime?
   reminder2SentAt  DateTime?
@@ -869,6 +892,7 @@ model Booking {
 
   @@index([startsAt, status])
   @@index([heldUntil, status])
+  @@index([userId, startsAt])
 }
 
 // Заявка с простой формы знакомства на визитке (POST /api/booking, без слота).

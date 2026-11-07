@@ -80,11 +80,17 @@ describe('StatsReportService.render', () => {
     const therapyInvites = {
       render: jest.fn().mockResolvedValue('приглашения клиентов: пока ничего'),
     };
+    const clientBooking = {
+      render: jest.fn().mockResolvedValue('запись из приложения: пока никто'),
+    };
     const notifyQueue = {
       render: jest.fn().mockResolvedValue('напоминания из бота: ушло 9'),
     };
     const therapistExit = {
       render: jest.fn().mockResolvedValue('терапевты уходят: 2'),
+    };
+    const crawlers = {
+      render: jest.fn().mockResolvedValue('роботы нейросетей: 4'),
     };
     return {
       blocks: {
@@ -108,8 +114,10 @@ describe('StatsReportService.render', () => {
         introLeads,
         therapyNudge,
         therapyInvites,
+        clientBooking,
         notifyQueue,
         therapistExit,
+        crawlers,
       },
       service: new StatsReportService(
         product as never,
@@ -137,8 +145,10 @@ describe('StatsReportService.render', () => {
         introLeads as never,
         therapyNudge as never,
         therapyInvites as never,
+        clientBooking as never,
         notifyQueue as never,
         therapistExit as never,
+        crawlers as never,
       ),
     };
   };
@@ -160,7 +170,7 @@ describe('StatsReportService.render', () => {
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nпоказ экрана: 2\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3\n\nмост к терапевту: пока ничего\n\nприглашения клиентов: пока ничего\n\nтерапевты уходят: 2',
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3\n\nмост к терапевту: пока ничего\n\nприглашения клиентов: пока ничего\n\nзапись из приложения: пока никто\n\nтерапевты уходят: 2\n\nроботы нейросетей: 4',
     );
     // Хвост — блоки о здоровье системы (считаются из process.env и состояния
     // самопроверки, не мокаются через blocks): порядок календарь → Настройки →
@@ -168,7 +178,7 @@ describe('StatsReportService.render', () => {
     const settings = out.indexOf('⚙️ <b>Настройки</b>');
     const env = out.indexOf('Настройки: переменные</b>');
     const selfCheck = out.indexOf('🩺 <b>Самопроверка</b>');
-    expect(settings).toBeGreaterThan(out.indexOf('терапевты уходят: 2'));
+    expect(settings).toBeGreaterThan(out.indexOf('роботы нейросетей: 4'));
     expect(env).toBeGreaterThan(settings);
     expect(selfCheck).toBeGreaterThan(env);
     expect(out.indexOf('🩺', selfCheck + 1)).toBe(-1);

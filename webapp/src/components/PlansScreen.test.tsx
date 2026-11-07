@@ -8,6 +8,8 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlansScreen } from './PlansScreen';
+import { todayStr } from '../../../shared/src/utils/format';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const getPlanHistory = vi.fn();
 const checkinPlan = vi.fn();
@@ -47,7 +49,8 @@ function renderScreen(onOpenTracker = vi.fn(), form: 'ty' | 'vy' = 'ty') {
   );
 }
 
-const today = new Date().toISOString().split('T')[0];
+// Местный день устройства: им сервер пишет scheduledDate (правило №25).
+const today = todayStr();
 
 describe('PlansScreen — пустое состояние', () => {
   it('на чистом аккаунте (нет планов) показывает объяснение и путь в трекер, не выдуманные данные', async () => {
@@ -141,6 +144,28 @@ describe('PlansScreen — список планов', () => {
     ]);
     renderScreen();
     expect(await screen.findByText('Сегодня')).toBeTruthy();
+  });
+
+  // docs/open/frontend-ux.md: «Сегодня» считалось днём UTC (toISOString), прочие
+  // даты — new Date('YYYY-MM-DD') в местной зоне: в Сиднее после полуночи план на
+  // сегодня шёл «Завтра», в Лос-Анджелесе 5 ноября показывалось «4 нояб.».
+  it('в любой зоне: «Сегодня» — местный день, прошлый день — своим числом', async () => {
+    await forEachTimeZoneAsync(async (tz) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 6, 0, 30)); // 00:30 6 ноября по зоне
+      getPlanHistory.mockResolvedValue([
+        { id: 1, needId: 'attachment', practiceText: 'Позвонить другу', scheduledDate: '2026-11-06', reminderUtcHour: null, done: null },
+        { id: 2, needId: 'autonomy', practiceText: 'Прогулка', scheduledDate: '2026-11-05', reminderUtcHour: null, done: true },
+      ]);
+      try {
+        renderScreen();
+        expect(await screen.findByText('Сегодня'), tz).toBeTruthy();
+        expect(screen.getByText('5 нояб.'), tz).toBeTruthy();
+      } finally {
+        cleanup();
+        vi.useRealTimers();
+      }
+    });
   });
 });
 

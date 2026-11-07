@@ -126,6 +126,7 @@ export class TherapyRelationsService {
         const todayIndex = recentIndexHistory[0];
         return {
           telegramId: clientId,
+          urlCode: rel.urlCode,
           name: rel.client!.firstName,
           clientAlias: decryptName(rel.clientAlias),
           streak,
@@ -146,6 +147,7 @@ export class TherapyRelationsService {
       .filter((rel) => rel.client === null && rel.virtualClientName)
       .map((rel) => ({
         telegramId: -BigInt(rel.id),
+        urlCode: rel.urlCode,
         name: decryptName(rel.virtualClientName) as string,
         clientAlias: decryptName(rel.clientAlias),
         streak: 0,

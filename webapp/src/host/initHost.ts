@@ -1,9 +1,5 @@
 import { getHost } from '../../../shared/src/host';
-
-// Когда перечитывать хост, если на старте он ещё не определился:
-// telegram-web-app.js в index.html грузится асинхронно, и модуль приложения
-// может выполниться раньше SDK. Те же задержки — у useSafeTop в shared.
-export const LATE_HOST_READS_MS = [150, 500, 1500, 3000];
+import { LATE_HOST_READS_MS } from '../../../shared/src/host/lateHostReads';
 
 let done = false;
 /** Только для тестов. */

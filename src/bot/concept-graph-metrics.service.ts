@@ -5,12 +5,15 @@ import { formatConceptGraphMetrics } from './concept-graph-metrics.format';
 import type { ConceptGraphMetrics } from './concept-graph-metrics.types';
 
 const OPEN_EVENT: AnalyticsEventName = 'concept_graph_open';
+const SHARE_EVENT: AnalyticsEventName = 'concept_shared';
+const CLIENT_OPEN_EVENT: AnalyticsEventName = 'client_concept_opened';
 
-// Поле отчёта → событие, которое оно считает за 30 дней (кроме therapists30 — это groupBy).
-const COUNTED: [
-  Exclude<keyof ConceptGraphMetrics, 'therapists30'>,
-  AnalyticsEventName,
-][] = [
+// Поле отчёта → событие, которое оно считает за 30 дней. NotCounted — не простой счёт: distinct
+// по userId (groupBy), показанные сейчас схемы, включения/выключения показа (meta.on).
+type NotCounted =
+  'therapists30' | 'clientOpeners30' | 'sharedNow' | 'shareOn30' | 'shareOff30';
+type CountedKey = Exclude<keyof ConceptGraphMetrics, NotCounted>;
+const COUNTED: [CountedKey, AnalyticsEventName][] = [
   ['opens30', OPEN_EVENT],
   ['linked30', 'concept_mode_linked'],
   ['schemaLinked30', 'concept_schema_linked'],
@@ -23,12 +26,15 @@ const COUNTED: [
   ['guideModes30', 'concept_guide_mode_open'],
   ['guideTechniques30', 'concept_guide_technique_open'],
   ['guideAssign30', 'concept_guide_assign'],
+  ['clientOpens30', CLIENT_OPEN_EVENT],
 ];
 
 // Счётчики графической концептуализации в кабинете терапевта для /stats (события concept_*
 // из AnalyticsEvent, смысл — src/analytics/concept-events.constants.ts). Имена типизированы
 // AnalyticsEventName: опечатка не даст молча пустой отчёт. Без сырого SQL — count/groupBy через
 // Prisma. Свой домен — свой файл (правило №10), образец — profile-pattern-metrics.service.ts.
+// Показ схемы клиенту — события concept_shared / client_concept_opened и число показанных сейчас
+// схем (ClientConceptualization.sharedWithClientAt).
 @Injectable()
 export class ConceptGraphMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -40,23 +46,46 @@ export class ConceptGraphMetricsService {
 
   async getMetrics(): Promise<ConceptGraphMetrics> {
     const createdAt = { gte: new Date(Date.now() - 30 * 86_400_000) };
-    const [openers, counts] = await Promise.all([
-      // Одна группа на терапевта; анонимная строка (userId null) терапевтом
-      // не считается.
+    // Одна группа на пользователя; анонимная строка (userId null) не считается.
+    const distinctUsers = (name: AnalyticsEventName) =>
       this.prisma.analyticsEvent.groupBy({
         by: ['userId'],
-        where: { name: OPEN_EVENT, createdAt, userId: { not: null } },
-      }),
-      Promise.all(
-        COUNTED.map(([, name]) =>
-          this.prisma.analyticsEvent.count({ where: { name, createdAt } }),
+        where: { name, createdAt, userId: { not: null } },
+      });
+    // «Показать клиенту»: включения и выключения различает meta.on.
+    const shareOf = (on: boolean) =>
+      this.prisma.analyticsEvent.count({
+        where: {
+          name: SHARE_EVENT,
+          createdAt,
+          meta: { path: ['on'], equals: on },
+        },
+      });
+    const [openers, clientOpeners, sharedNow, shareOn, shareOff, counts] =
+      await Promise.all([
+        distinctUsers(OPEN_EVENT),
+        distinctUsers(CLIENT_OPEN_EVENT),
+        this.prisma.clientConceptualization.count({
+          where: { sharedWithClientAt: { not: null } },
+        }),
+        shareOf(true),
+        shareOf(false),
+        Promise.all(
+          COUNTED.map(([, name]) =>
+            this.prisma.analyticsEvent.count({ where: { name, createdAt } }),
+          ),
         ),
-      ),
-    ]);
-    const metrics = { therapists30: openers.length } as ConceptGraphMetrics;
-    COUNTED.forEach(([key], i) => {
-      metrics[key] = counts[i];
-    });
-    return metrics;
+      ]);
+    const counted = Object.fromEntries(
+      COUNTED.map(([key], i) => [key, counts[i]]),
+    ) as Record<CountedKey, number>;
+    return {
+      ...counted,
+      therapists30: openers.length,
+      clientOpeners30: clientOpeners.length,
+      sharedNow,
+      shareOn30: shareOn,
+      shareOff30: shareOff,
+    };
   }
 }

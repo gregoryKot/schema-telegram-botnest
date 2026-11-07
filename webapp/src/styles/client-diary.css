@@ -48,9 +48,6 @@
 .cd-field-label { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 3px; }
 .cd-field-label.is-accent { color: var(--accent); }
 .cd-field-text { font-size: 13px; color: var(--text-sub); line-height: 1.55; overflow-wrap: anywhere; }
-.cd-del { margin-top: 4px; }
-.cd-del-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-.cd-del-err { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--err); }
 .cd-grat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .cd-grat li { overflow-wrap: anywhere; }
 .cd-grat-num { font-size: 11px; color: var(--text-ghost); margin-right: 10px; }

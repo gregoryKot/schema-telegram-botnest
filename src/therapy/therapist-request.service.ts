@@ -11,6 +11,7 @@ import { AccountService } from '../bot/account.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { TherapistRequestNotifyService } from './therapist-request.notify';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
+import { practiceOwnerTelegramId } from '../utils/practice-owner';
 
 // ФИО, квалификация, контакты и сопроводительное письмо — PII в свободном
 // тексте, шифруются как и остальной пользовательский текст (правило
@@ -32,9 +33,7 @@ export class TherapistRequestService {
   ) {}
 
   private get adminId(): number | null {
-    const raw = process.env.ADMIN_ID;
-    const n = raw ? Number(raw) : NaN;
-    return Number.isFinite(n) ? n : null;
+    return practiceOwnerTelegramId();
   }
 
   // Anyone can submit one request. Re-submitting while pending is rejected.

@@ -154,10 +154,18 @@ export const CONCEPT_GUIDE_MODE_OPEN_EVENT = 'concept_guide_mode_open';
 export const CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT =
   'concept_guide_technique_open';
 export const CONCEPT_GUIDE_ASSIGN_EVENT = 'concept_guide_assign';
+// Схема случая клиенту: терапевт включил/выключил «Показать клиенту» (meta { on }), клиент открыл её в «Мой терапевт».
+export const CONCEPT_SHARED_EVENT = 'concept_shared';
+export const CLIENT_CONCEPT_OPENED_EVENT = 'client_concept_opened';
 
 // «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
 // (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.
 export const CABINET_SCREEN_SHARE_ON_EVENT = 'cabinet_screen_share_on';
+
+// Запись клиента из приложения (#546): открыл лист «Записаться на сессию» из «Мой терапевт», без меты; шлётся
+// литералом из ClientBookingSheet (его видит analytics-sync). Созданную бронь (`client_booking_created`) пишет
+// сервер. Allow-list — src/analytics/client-booking-events.constants.ts.
+export const CLIENT_BOOKING_OPENED_EVENT = 'client_booking_opened';
 
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает

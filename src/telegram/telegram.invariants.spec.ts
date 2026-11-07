@@ -27,9 +27,11 @@ interface Handler {
 
 // Захватывает this.bot.command(<pattern>, async (ctx) => { — паттерн это
 // либо строковый литерал, либо regex-литерал без внутренних '/'
-// (все паттерны в проекте такие — см. sanity-тест ниже).
+// (все паттерны в проекте такие — см. sanity-тест ниже). Без `this.` —
+// регистрация функцией с ботом в параметре (`registerStatsHandlers(bot, …)`
+// в stats-command.ts): до 2026-11 такие хендлеры инвариант не видел вовсе.
 const HANDLER_START_RE =
-  /this\.bot\.(command|action)\(\s*(\/(?:[^\n/]|\\\/)*\/[a-z]*|'[^']*'|"[^"]*")\s*,\s*async\s*\(ctx\)\s*=>\s*\{/g;
+  /\b(?:this\.)?bot\.(command|action)\(\s*(\/(?:[^\n/]|\\\/)*\/[a-z]*|'[^']*'|"[^"]*")\s*,\s*async\s*\(ctx\)\s*=>\s*\{/g;
 
 function extractHandlers(file: string, src: string): Handler[] {
   const handlers: Handler[] = [];
@@ -116,9 +118,10 @@ function repeatsAnswerInCatch(body: string): boolean {
   );
 }
 
-// Исход сбоя человеку: хелпер callback-failure.ts или прямой ответ в чат.
+// Исход сбоя человеку: хелпер callback-failure.ts, ответ /stats (failStats
+// в stats-command.ts — текст ошибки админу) или прямой ответ в чат.
 const OUTCOME_RE =
-  /\b(failCallback|failSettings)\(|\bctx\s*\.\s*(reply\w*|editMessageText)\(/;
+  /\b(failCallback|failSettings|failStats)\(|\bctx\s*\.\s*(reply\w*|editMessageText)\(/;
 
 /**
  * catch внешнего try без исхода — только лог. Спиннер уже погашен
@@ -229,6 +232,29 @@ describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обрабо�
     expect(violations).toEqual([]);
   });
 
+  // Аудит 2026-10: /ping, /subscribe, /therapist, /testdonate при сбое только
+  // писали в лог. Человек отправил команду и не получил ничего — со стороны
+  // это неотличимо от «бот лежит». Исход у команды — ответ в чат: запасной
+  // текст без того, что могло упасть (кнопка, форма обращения из БД), или
+  // повтор ответа. Аллоулиста у команд нет и заводить его не надо.
+  it('в catch каждого bot.command есть исход для человека, а не только лог', () => {
+    const violations = allHandlers
+      .filter((h) => h.kind === 'command' && catchWithoutOutcome(h.body))
+      .map(
+        (h) =>
+          `${h.file}: command(${h.name}) — catch только пишет в лог, человек ` +
+          `не получил ответа на команду; ответь запасным текстом (ctx.reply)`,
+      );
+    expect(violations).toEqual([]);
+  });
+
+  it('sanity: парсер видит команды и хендлеры, зарегистрированные функцией с ботом в параметре', () => {
+    const keys = allHandlers.map(handlerKey);
+    expect(keys).toContain("stats-command.ts:command:'stats'");
+    expect(keys).toContain("telegram.service.ts:command:'ping'");
+    expect(keys).toContain("telegram.admin.service.ts:command:'testdonate'");
+  });
+
   it('аллоулист «без исхода» указывает на живые хендлеры и только сокращается', () => {
     const keys = allHandlers.map(handlerKey);
     for (const k of NO_OUTCOME_ALLOWLIST) expect(keys).toContain(k);
@@ -244,6 +270,11 @@ describe('Telegram-хендлеры ↔ правило CLAUDE.md «Обрабо�
     expect(catchWithoutOutcome(edit)).toBe(false);
     const reply = `{ try { await go(); } catch { await ctx.reply('x'); } }`;
     expect(catchWithoutOutcome(reply)).toBe(false);
+    const stats = `{ try { await go(); } catch (err) { await failStats(ctx, 'x', err, logger); } }`;
+    expect(catchWithoutOutcome(stats)).toBe(false);
+    // контроль: похожее имя без вызова хелпера исходом не считается
+    const statsLogOnly = `{ try { await go(); } catch (err) { logger.error('failStats', err); } }`;
+    expect(catchWithoutOutcome(statsLogOnly)).toBe(true);
   });
 
   it('callback-failure.ts не зовёт answerCbQuery (иначе повтор спрятался бы в хелпере от инварианта)', () => {

@@ -11,7 +11,6 @@ export function alertsProbe(env: Env = process.env): Probe {
   return {
     id: 'alerts',
     title: 'Сигнализация владельцу',
-    critical: true,
     run() {
       const dead = isAlertChannelDead(buildCapabilityReport(env));
       return Promise.resolve({
@@ -30,7 +29,6 @@ export function oauthRedirectsProbe(env: Env = process.env): Probe {
   return {
     id: 'oauthRedirects',
     title: 'Адрес возврата OAuth',
-    critical: false,
     run() {
       const cap = buildCapabilityReport(env).find(
         (c) => c.id === 'oauthRedirectSane',

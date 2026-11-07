@@ -58,7 +58,7 @@ describe('PracticesScreen — список практик', () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
     expect(
-      await screen.findByText('Пока пусто — добавь первую практику ниже.'),
+      await screen.findByText('Пока пусто — добавь первое действие ниже.'),
     ).toBeTruthy();
   });
 
@@ -83,7 +83,7 @@ describe('PracticesScreen — список практик', () => {
     getPractices.mockRejectedValue(new Error('network'));
     renderScreen();
     expect(await screen.findByRole('alert')).toBeTruthy();
-    expect(screen.getByText(/Не удалось загрузить практики/)).toBeTruthy();
+    expect(screen.getByText(/Не удалось загрузить список/)).toBeTruthy();
     expect(screen.queryByText(/Пока пусто/)).toBeNull();
   });
 
@@ -103,7 +103,7 @@ describe('PracticesScreen — добавление практики', () => {
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
 
     const input = screen.getByPlaceholderText(
-      'Добавить практику...',
+      'Добавить действие...',
     ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Прогулка 20 минут' } });
     fireEvent.click(screen.getByText('+ Добавить'));
@@ -125,7 +125,7 @@ describe('PracticesScreen — добавление практики', () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
 
-    const input = screen.getByPlaceholderText('Добавить практику...');
+    const input = screen.getByPlaceholderText('Добавить действие...');
     fireEvent.change(input, { target: { value: 'Что-то' } });
     fireEvent.click(screen.getByText('+ Добавить'));
 
@@ -205,7 +205,7 @@ describe('PracticesScreen — кризисная детекция поля «д�
   it('тревожный текст в поле показывает карточку помощи ДО отправки', async () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
+    fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), {
       target: { value: 'не хочу жить' },
     });
     expect(
@@ -216,7 +216,7 @@ describe('PracticesScreen — кризисная детекция поля «д�
   it('нейтральный текст карточку не показывает', async () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    fireEvent.change(screen.getByPlaceholderText('Добавить практику...'), {
+    fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), {
       target: { value: 'прогулка 20 минут' },
     });
     expect(screen.queryByText(new RegExp(CRISIS_HOTLINE_DISPLAY))).toBeNull();

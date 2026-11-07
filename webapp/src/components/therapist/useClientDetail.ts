@@ -113,7 +113,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     setTabLoading(false);
     setClientTasks(tasks);
     if (fetchedNotes) notes.setNotesPage(fetchedNotes); else notes.resetNotesPage();
-    conceptSave.loadConcept(fetchedConcept);
+    conceptSave.loadConcept(fetchedConcept, failed.includes('концептуализация')); // сбой ≠ пусто: правки закрыты
     setClientData(fetchedData);
     setClientSchemaNotesData(sn);
     setClientModeNotesData(mn);
@@ -156,7 +156,7 @@ export function useClientDetail({ onOpenClient, switchView, setClients }: Params
     clientSchemaNotesData, clientModeNotesData,
     clientTasks, setClientTasks,
     notes: notes.notesPage.notes, notesPage: notes.notesPage, noteError: notes.noteError,
-    concept, clientData, clientHistory, clientDiary,
+    concept, conceptLoad: conceptSave.load, reloadConcept: conceptSave.reloadConcept, clientData, clientHistory, clientDiary,
     localConcept, conceptError: conceptSave.conceptError, expandedSnapshot, setExpandedSnapshot,
     saveStatus: conceptSave.saveStatus, savedAt: conceptSave.savedAt, retrySave: conceptSave.retrySave,
     newNoteText: notes.newNoteText, setNewNoteText: notes.setNewNoteText,

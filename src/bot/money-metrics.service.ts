@@ -5,7 +5,13 @@ import {
   MoneyMetrics,
   MoneySourceStats,
   MoneyWindow,
+  windowIsEmpty,
 } from './money-metrics.format';
+import {
+  countPaidAfterCancel,
+  formatPaidAfterCancel,
+} from './money-metrics.paid-after-cancel';
+import { countSlotTaken, formatSlotTaken } from './booking-slot-taken-metrics';
 import { countPaidSessions } from './money-metrics.paid-sessions';
 import { renderMoneyBlock } from './money-metrics.without-link';
 
@@ -24,7 +30,17 @@ export class MoneyMetricsService {
 
   /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
-    return renderMoneyBlock(this.prisma, await this.getMetrics());
+    const metrics = await this.getMetrics();
+    const [base, afterCancel, slotTaken] = await Promise.all([
+      renderMoneyBlock(this.prisma, metrics),
+      countPaidAfterCancel(this.prisma),
+      countSlotTaken(this.prisma),
+    ]);
+    const extras = [
+      formatPaidAfterCancel(afterCancel, windowIsEmpty(metrics.allTime)),
+      formatSlotTaken(slotTaken),
+    ].filter((lines) => lines.length > 0);
+    return [base, ...extras.flatMap((lines) => ['', ...lines])].join('\n');
   }
 
   async getMetrics(): Promise<MoneyMetrics> {

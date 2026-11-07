@@ -146,3 +146,24 @@ describe('therapist-card.css: «Обзор» — компьютер и теле�
     expect(decls(phone, '.tk-groups')).toBe('');
   });
 });
+
+// Владелец 2026-11-06: при уходе с «Графических карт» шапка прыгала вбок —
+// #962 давал ей там поле 16px вместо колонки кабинета. Шапка одна на все
+// вкладки; полоса карт над холстом встаёт в колонку с тем же полем, что у
+// шапки. Два места обязаны совпадать — сверка здесь (правило №4).
+describe('therapist-card.css: шапка не прыгает между вкладками (2026-11-06)', () => {
+  const col = block(css, `@media ${DESKTOP_MEDIA} {\n  .tk-tabs-body`);
+
+  it('модификатора ширины у шапки нет', () => {
+    expect(css).not.toContain('.tk-head--');
+  });
+
+  it('полоса карт и строка ошибки создания — поле шапки, только под ≥768', () => {
+    const field = decls(css, '.tk-head').match(/padding:\s*28px\s+(calc\(.+?\))\s+0;/)?.[1];
+    expect(field).toBe('calc(var(--tk-center) + var(--tk-gutter))');
+    for (const sel of ['.tk-tabs-body .mm2-bar', '.tk-tabs-body .mm2-create-err']) {
+      expect(decls(col, sel)).toBe(`padding-inline: ${field};`);
+      expect(decls(phone, sel)).toBe('');
+    }
+  });
+});

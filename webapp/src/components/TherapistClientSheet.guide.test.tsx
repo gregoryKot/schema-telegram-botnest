@@ -112,7 +112,8 @@ describe('TherapistClientSheet — подсказки терапевту', () =>
     const mode = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
     fireEvent.click(within(mode).getByRole('button', { name: 'Дать заданием: Письмо себе' }));
     await screen.findByText('Задание · Анна');
-    const letter = screen.getAllByText('Письмо себе').map((n) => n.closest('[aria-pressed]')).find(Boolean)!;
+    // тип в «Новом задании» — имя из каталога упражнений (#984), а не пункт раздела режима
+    const letter = screen.getAllByText('Письмо себе в детстве').map((n) => n.closest('[aria-pressed]')).find(Boolean)!;
     expect(letter.getAttribute('aria-pressed')).toBe('true');
     const sheet = letter.closest('.sk-sheet')!;
     // без подъёма .sk-sheet (z 90) лёг бы под лист режима: кнопка «не работает»

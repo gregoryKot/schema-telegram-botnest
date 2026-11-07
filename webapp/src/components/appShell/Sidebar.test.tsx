@@ -24,9 +24,9 @@ const clients: TherapyClientSummary[] = NAMES.map((name, i) => ({
   nextSession: null, meetingDays: [], schemaIds: [],
 }));
 
-function renderSidebar() {
+function renderSidebar(path = '/cabinet/1') {
   return render(
-    <MemoryRouter initialEntries={['/cabinet/1']}>
+    <MemoryRouter initialEntries={[path]}>
       <Sidebar items={[]} therapistMode userRole="THERAPIST" onSwitchMode={vi.fn()} therapistClients={clients}
                needs={[]} ratings={{}} displayName="Григорий" onOpenTracker={vi.fn()} onOpenSettings={vi.fn()} />
     </MemoryRouter>,
@@ -35,6 +35,16 @@ function renderSidebar() {
 const badge = () => screen.getByText('Все клиенты').closest('a')!.querySelector('.badge')!.textContent;
 const toggle = () => screen.getByRole('switch', { name: /Показ экрана/ });
 const visibleNames = (root: HTMLElement) => NAMES.filter((n) => root.textContent!.includes(n));
+
+describe('Sidebar — «Все клиенты» горит на обеих вкладках списка', () => {
+  it.each([['/cabinet', true], ['/cabinet/tasks', true], ['/cabinet/1', false], ['/cabinet/today', false]])(
+    '%s: горит — %s', (path, on) => {
+      renderSidebar(path);
+      const all = screen.getByText('Все клиенты').closest('a')!;
+      expect(all.className.includes('is-active')).toBe(on);
+      expect(all.getAttribute('aria-current')).toBe(on ? 'page' : null);
+    });
+});
 
 describe('Sidebar — «Показ экрана»', () => {
   it('выключен: имена, число клиентов и поиск на месте; тумблер объясняет, что сделает', () => {

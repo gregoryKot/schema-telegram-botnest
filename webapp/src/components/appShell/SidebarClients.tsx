@@ -1,6 +1,6 @@
 // Клиенты в сайдбаре кабинета. Порядок и поиск — те же, что у «Все клиенты»
 // (therapist/rosterOrder: сначала ближайшие встречи, «е» находит «ё»),
-// инициалы — общий clientInitials. QA 2026-11: сайдбар шёл в порядке сервера,
+// подпись и инициалы — общие clientDisplayName/clientAvatarInitials. QA 2026-11: сайдбар шёл в порядке сервера,
 // искал по точной подстроке и резал имя slice(0, 2) («Анна Крылова» → «АН»).
 // «Показ экрана» (screenShareMode) прячет имена и поиск; без клиентов прятать нечего — блока нет.
 import { useState } from 'react';
@@ -9,7 +9,8 @@ import type { TherapyClientSummary } from '../../api';
 import { clientHue, hueStyle } from '../../lib/tone';
 import { todayStr } from '../../utils/format';
 import { matchesRosterSearch, sortRoster } from '../therapist/rosterOrder';
-import { clientInitials } from '../../../../shared/src/therapy/clientInitials';
+import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
+import { clientRef } from '../../../../shared/src/utils/clientRef';
 import { useScreenShare } from './screenShareMode';
 import { ScreenShareSwitch } from './ScreenShareSwitch';
 
@@ -31,11 +32,11 @@ export function SidebarClients({ clients }: { clients: TherapyClientSummary[] })
                onChange={e => setSearch(e.target.value)} />
       )}
       {shown.map(c => {
-        const name = c.clientAlias ?? c.name ?? `#${c.telegramId}`;
+        const name = clientDisplayName(c);
         return (
-          <NavLink key={c.telegramId} to={`/cabinet/${c.telegramId}`}
+          <NavLink key={c.telegramId} to={`/cabinet/${clientRef(c)}`}
                    className={({ isActive }) => `sb-item sb-client-item${isActive ? ' is-active' : ''}`}>
-            <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{clientInitials(name)}</span>
+            <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{clientAvatarInitials(c)}</span>
             <span className="sb-client-name">{name}</span>
             {c.todayIndex != null && <span className="sb-active-dot" />}
           </NavLink>

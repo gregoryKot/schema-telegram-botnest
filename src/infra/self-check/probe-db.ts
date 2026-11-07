@@ -13,7 +13,6 @@ export function dbProbe(prisma: PrismaService): Probe {
   return {
     id: 'db',
     title: 'База данных',
-    critical: true,
     async run() {
       try {
         await prisma.cronLease.count();

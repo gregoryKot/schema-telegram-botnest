@@ -201,6 +201,29 @@ const BACKEND_ONLY: Record<string, string> = {
     'отзыве приглашения; ветки в sanitizeMeta нет — meta с клиента ' +
     'отбрасывается, а /stats считает только строки с step и kind из ' +
     'therapy-invite-events.constants.ts',
+  crawler_visits:
+    'серверное событие: пишет только крон CrawlerHitsService ' +
+    '(src/analytics/crawler-hits.service.ts) — счётчики заходов роботов ' +
+    'нейросетей по User-Agent за час, userId = null. Фронт его не шлёт: ' +
+    'заход робота видит только сервер; /stats считает только строки с ' +
+    'userId IS NULL, а sanitizeMeta пропускает лишь закрытые списки',
+  client_booking_created:
+    'серверное событие: пишет только ClientBookingService ' +
+    '(src/booking/client-booking.service.ts) после созданной брони, meta — ' +
+    'статус held|confirmed; ветка sanitizeMeta отбрасывает meta с клиента, ' +
+    'а /stats считает только строки со статусом из ' +
+    'client-booking-events.constants.ts',
+  booking_slot_taken:
+    'серверное событие: пишет только createBookingGuarded ' +
+    '(src/booking/booking.create.ts), когда запись ответила 409 «время уже ' +
+    'заняли», userId = null, без meta. Фронт его не шлёт: отказ — ответ на ' +
+    'HTTP-запрос записи; /stats считает только строки с userId = null',
+  reminder_snoozed:
+    'серверное событие: пишет только бот после постановки отложенного ' +
+    'напоминания в очередь (src/telegram/telegram.snooze.ts), meta — булев ' +
+    'quietShift. Кнопка «Напомню через час» живёт под сообщением бота, у ' +
+    'сайта такого действия нет; ветка sanitizeMeta отбрасывает meta с ' +
+    'клиента, а /stats считает только строки с quietShift',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -271,6 +294,14 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
     // 35 — therapy_nudge (2026-10, мост к терапевту): тоже константа.
     // 36 — therapy_invite (2026-11, воронка приглашения клиента): серверное.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(36);
+    // 37 — crawler_visits (2026-11, GEO.md: заходы роботов нейросетей): серверное,
+    // заход робота — HTTP-запрос к сайту, у фронта такого действия нет.
+    // 38 — client_booking_created (2026-11, запись из приложения, #546):
+    // серверное — бронь создаёт HTTP-запрос, событие пишет сервис после неё.
+    // 39 — booking_slot_taken (2026-11, аудит 2026-10 r2-1#2): серверное —
+    // отказ «время уже заняли» есть только в ответе сервера на запись.
+    // 40 — reminder_snoozed (2026-11, аудит 2026-10 backend#16): серверное —
+    // кнопка под сообщением бота, у сайта такого действия нет.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(40);
   });
 });

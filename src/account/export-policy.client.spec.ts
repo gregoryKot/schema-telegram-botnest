@@ -75,16 +75,17 @@ describe('Реестр выгрузки для clientId-моделей ↔ schem
     expect(problems).toEqual([]);
   });
 
-  it('withhold-записи имеют внятную причину', () => {
+  it('withhold- и shown-записи имеют внятную причину', () => {
     for (const d of Object.values(CLIENT_EXPORT_POLICY))
-      if (d.status === 'withhold') expect(d.reason.length).toBeGreaterThan(20);
+      if (d.status !== 'export') expect(d.reason.length).toBeGreaterThan(20);
   });
 
-  it('записи психолога (заметки, концептуализация) остаются withhold', () => {
+  // Заметки — рабочий материал целиком. Концептуализация уходит только видом
+  // клиента (что терапевт показал в кабинете), а не колонками строки:
+  // select/omit у неё нет, вид режет белый список client-concept-view.ts.
+  it('заметки психолога — withhold, концептуализация — только показанное клиенту', () => {
     expect(CLIENT_EXPORT_POLICY.TherapistNote.status).toBe('withhold');
-    expect(CLIENT_EXPORT_POLICY.ClientConceptualization.status).toBe(
-      'withhold',
-    );
+    expect(CLIENT_EXPORT_POLICY.ClientConceptualization.status).toBe('shown');
   });
 
   // Пометка терапевта о клиенте принадлежит терапевту, а не человеку.

@@ -35,8 +35,10 @@ import { BookingRetentionMetricsService } from '../../src/bot/booking-retention-
 import { IntroLeadMetricsService } from '../../src/bot/intro-lead-metrics.service';
 import { TherapyNudgeMetricsService } from '../../src/bot/therapy-nudge-metrics.service';
 import { TherapyInviteMetricsService } from '../../src/bot/therapy-invite-metrics.service';
+import { ClientBookingMetricsService } from '../../src/bot/client-booking-metrics.service';
 import { NotifyQueueMetricsService } from '../../src/bot/notify-queue-metrics.service';
 import { TherapistExitMetricsService } from '../../src/bot/therapist-exit-metrics.service';
+import { CrawlerMetricsService } from '../../src/bot/crawler-metrics.service';
 
 /** Продуктовый блок /stats (второе сообщение команды). */
 export function buildStatsReport(prisma: PrismaService): StatsReportService {
@@ -73,7 +75,9 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new IntroLeadMetricsService(prisma),
     new TherapyNudgeMetricsService(prisma),
     new TherapyInviteMetricsService(prisma),
+    new ClientBookingMetricsService(prisma),
     new NotifyQueueMetricsService(prisma),
     new TherapistExitMetricsService(prisma),
+    new CrawlerMetricsService(prisma),
   );
 }

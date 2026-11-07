@@ -89,7 +89,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
         )}
 
         <div className="ds-card">
-          <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Практика'}</div>
+          <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Что питает'}</div>
           <div className="tk2-tips">
             {tips.map((tip, i) => (
               <div key={i} className="tk2-tip">

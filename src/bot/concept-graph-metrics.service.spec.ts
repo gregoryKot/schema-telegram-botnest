@@ -1,6 +1,14 @@
 import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 
 const NOW = new Date('2026-10-15T12:00:00.000Z');
+// Показ схемы клиенту — нули там, где кейс про другое.
+const NO_SHARE = {
+  sharedNow: 0,
+  shareOn30: 0,
+  shareOff30: 0,
+  clientOpens30: 0,
+  clientOpeners30: 0,
+};
 const SINCE = new Date(NOW.getTime() - 30 * 86_400_000);
 
 function makeService(opts: {
@@ -15,6 +23,11 @@ function makeService(opts: {
   syncFromMap?: number;
   guide?: [modes: number, techniques: number, assign: number];
   groups?: Array<{ userId: bigint | null }>;
+  shareOn?: number;
+  shareOff?: number;
+  sharedNow?: number;
+  clientOpens?: number;
+  clientGroups?: Array<{ userId: bigint | null }>;
 }) {
   const byName: Record<string, number> = {
     concept_graph_open: opts.opens ?? 0,
@@ -29,16 +42,34 @@ function makeService(opts: {
     concept_guide_mode_open: opts.guide?.[0] ?? 0,
     concept_guide_technique_open: opts.guide?.[1] ?? 0,
     concept_guide_assign: opts.guide?.[2] ?? 0,
+    client_concept_opened: opts.clientOpens ?? 0,
   };
-  const count = jest.fn(({ where }: { where: { name: string } }) =>
-    Promise.resolve(byName[where.name]),
+  // concept_shared различается по meta.on (включили / выключили показ).
+  const count = jest.fn(
+    ({ where }: { where: { name: string; meta?: { equals: boolean } } }) =>
+      Promise.resolve(
+        where.meta
+          ? ((where.meta.equals ? opts.shareOn : opts.shareOff) ?? 0)
+          : byName[where.name],
+      ),
   );
-  const groupBy = jest.fn(() => Promise.resolve(opts.groups ?? []));
-  const prisma = { analyticsEvent: { count, groupBy } };
+  const groupBy = jest.fn(({ where }: { where: { name: string } }) =>
+    Promise.resolve(
+      (where.name === 'client_concept_opened'
+        ? opts.clientGroups
+        : opts.groups) ?? [],
+    ),
+  );
+  const conceptCount = jest.fn(() => Promise.resolve(opts.sharedNow ?? 0));
+  const prisma = {
+    analyticsEvent: { count, groupBy },
+    clientConceptualization: { count: conceptCount },
+  };
   return {
     service: new ConceptGraphMetricsService(prisma as never),
     count,
     groupBy,
+    conceptCount,
   };
 }
 
@@ -71,6 +102,7 @@ describe('ConceptGraphMetricsService', () => {
       guideModes30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      ...NO_SHARE,
     });
   });
 
@@ -96,7 +128,7 @@ describe('ConceptGraphMetricsService', () => {
     expect(count).toHaveBeenCalledWith({
       where: { name: 'concept_save_retry', createdAt: { gte: SINCE } },
     });
-    expect(groupBy).toHaveBeenCalledTimes(1);
+    expect(groupBy).toHaveBeenCalledTimes(2); // терапевты схемы и клиенты, открывшие свою
   });
 
   it('переносы на холст считаются отдельно: чужие события в их счёт не попадают', async () => {
@@ -115,6 +147,7 @@ describe('ConceptGraphMetricsService', () => {
       guideModes30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
       'Собирали карту из концептуализации 7 раз',
@@ -137,6 +170,7 @@ describe('ConceptGraphMetricsService', () => {
       guideModes30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
       'Разворачивали схему на весь экран 6 раз',
@@ -159,6 +193,7 @@ describe('ConceptGraphMetricsService', () => {
       guideModes30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      ...NO_SHARE,
     });
     await expect(service.render()).resolves.toContain(
       'Повторяли сохранение после ошибки 3 раз',
@@ -237,10 +272,49 @@ describe('ConceptGraphMetricsService', () => {
       guideModes30: 0,
       guideTechniques30: 0,
       guideAssign30: 0,
+      ...NO_SHARE,
     });
     const text = await service.render();
     expect(text).toContain('Пока никто из терапевтов не открывал');
     expect(text).not.toMatch(/NaN|undefined|null/);
+  });
+
+  it('показ схемы клиенту: включения и выключения по meta.on, показанные сейчас, клиенты', async () => {
+    const { service, count, groupBy, conceptCount } = makeService({
+      shareOn: 5,
+      shareOff: 2,
+      sharedNow: 3,
+      clientOpens: 8,
+      clientGroups: [{ userId: 11n }, { userId: 12n }],
+    });
+    await expect(service.getMetrics()).resolves.toMatchObject({
+      sharedNow: 3,
+      shareOn30: 5,
+      shareOff30: 2,
+      clientOpens30: 8,
+      clientOpeners30: 2,
+    });
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        name: 'concept_shared',
+        createdAt: { gte: SINCE },
+        meta: { path: ['on'], equals: true },
+      },
+    });
+    expect(conceptCount).toHaveBeenCalledWith({
+      where: { sharedWithClientAt: { not: null } },
+    });
+    expect(groupBy).toHaveBeenCalledWith({
+      by: ['userId'],
+      where: {
+        name: 'client_concept_opened',
+        createdAt: { gte: SINCE },
+        userId: { not: null },
+      },
+    });
+    const text = await service.render();
+    expect(text).toContain('Схему случая сейчас видят клиенты: 3');
+    expect(text).toContain('Клиенты смотрели свою схему 8 раз, клиентов: 2');
   });
 
   it('render() склеивает метрики в блок для /stats', async () => {

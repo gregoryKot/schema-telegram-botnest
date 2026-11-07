@@ -8,6 +8,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BookingPaidPage } from './BookingPaidPage';
 import { MEETING_LINK_LATER } from '../components/booking/BookingSaveBlock';
 import { ApiError } from '../apiClient';
+import { reportClientError } from '../api';
 
 const getBookingByToken = vi.fn();
 const cancelBooking = vi.fn();
@@ -46,6 +47,29 @@ describe('BookingPaidPage — без токена', () => {
     setUrl('');
     render(<BookingPaidPage />);
     expect(screen.getByText('Оплата принята')).toBeTruthy();
+    expect(screen.queryByText('Ссылка неполная')).toBeNull();
+  });
+
+  // Аудит 2026-10: обрезанная ссылка управления (или перезагрузка — токен
+  // убирается из адреса) рисовала «Оплата принята», хотя человек пришёл не с оплаты.
+  it('/booking/manage без токена: «Ссылка неполная», что делать и куда написать — и отчёт наверх', () => {
+    window.history.pushState({}, '', '/booking/manage');
+    render(<BookingPaidPage />);
+    expect(screen.getByText('Ссылка неполная')).toBeTruthy();
+    expect(screen.getByText(/из события в календаре или из сообщения в Telegram/)).toBeTruthy();
+    expect(screen.getByText('Написать в Telegram').closest('a')?.getAttribute('href')).toBe('https://t.me/kotlarewski');
+    expect(screen.queryByText('Оплата принята')).toBeNull();
+    expect(getBookingByToken).not.toHaveBeenCalled();
+    expect(reportClientError).toHaveBeenCalledWith(expect.objectContaining({ section: 'booking' }));
+  });
+
+  it('контрольный: /booking/manage с токеном грузит бронь, а не «Ссылка неполная»', async () => {
+    window.history.pushState({}, '', '/booking/manage?token=tok');
+    getBookingByToken.mockResolvedValue(BOOKING);
+    render(<BookingPaidPage />);
+    expect(await screen.findByText('Оплата прошла')).toBeTruthy();
+    expect(screen.queryByText('Ссылка неполная')).toBeNull();
+    expect(reportClientError).not.toHaveBeenCalled();
   });
 });
 

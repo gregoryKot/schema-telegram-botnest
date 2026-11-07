@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { deleteFailedText, useDeleteAction } from '../../../../shared/src/diary/diaryDelete';
+import '../../styles/delete-btn.css';
 
-// «Удалить» → «Удалить навсегда» в карточке записи. Пока запрос идёт, кнопка
-// выключена; сбой — строка под кнопками, запись остаётся (QA 2026-11, З2).
+// «Удалить» → «Удалить навсегда» в карточке записи (дневник, прошлый разбор
+// фразы). Пока запрос идёт, кнопка выключена; сбой — строка под кнопками,
+// запись остаётся (QA 2026-11, З2).
 export function DeleteBtn({ onClick }: { onClick: () => void | Promise<void> }) {
   const tr = useTr();
   const [confirm, setConfirm] = useState(false);

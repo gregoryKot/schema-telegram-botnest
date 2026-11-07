@@ -15,6 +15,7 @@ import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
 import { clientIpSampler } from './infra/client-ip-sample';
+import { crawlerHitCounter } from './analytics/crawler-hits';
 import { TRUSTED_PROXY_HOPS } from './infra/trust-proxy';
 import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
@@ -49,6 +50,7 @@ async function bootstrap() {
   // Выборка адресов для пробы clientIp ставится до редиректов, чтобы видеть и их.
   app.set('trust proxy', TRUSTED_PROXY_HOPS);
   app.use(clientIpSampler);
+  app.use(crawlerHitCounter); // заходы роботов нейросетей, тоже до редиректов
 
   // Domain + protocol redirects (production only) — host list lives in
   // src/infra/canonical-host.ts (правило «одна механика — один компонент»,

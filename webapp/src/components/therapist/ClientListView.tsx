@@ -30,7 +30,7 @@ interface Props {
   loading: boolean;
   loadFailed: boolean;
   listTab: 'clients' | 'kanban';
-  setListTab: React.Dispatch<React.SetStateAction<'clients' | 'kanban'>>;
+  setListTab: (t: 'clients' | 'kanban') => void;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   filterStatus: RosterStatus;
@@ -64,7 +64,7 @@ export function ClientListView({
 
         <div className="tc-toolbar">
           <div className="tc-modes">
-            <div className="ds-seg" role="tablist">
+            <div className="ds-seg ds-seg--full" role="tablist">
               <button role="tab" aria-selected={listTab === 'clients'} className={`ds-seg-btn ${listTab === 'clients' ? 'is-active' : ''}`}
                       onClick={() => setListTab('clients')}>Клиенты</button>
               <button role="tab" aria-selected={listTab === 'kanban'} className={`ds-seg-btn ${listTab === 'kanban' ? 'is-active' : ''}`}

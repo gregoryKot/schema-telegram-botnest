@@ -37,6 +37,11 @@ const DRIVERS = {
     script: 'scripts/merge-json-ratchet.mjs',
     args: 'max %O %A %B %P',
   },
+  'ratchet-sum': {
+    name: 'JSON-бейслайн храповика: счётчик, рост двух сторон складывается',
+    script: 'scripts/merge-json-ratchet.mjs',
+    args: 'sum %O %A %B %P',
+  },
 };
 
 if (CHECK) {

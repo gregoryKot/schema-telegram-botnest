@@ -96,9 +96,9 @@ export function buildJourneyResultParts(
     case 'note':
       return part(str('text'));
     case 'practice':
-      return part(str('text'), 'Моя практика');
+      return part(str('text'), 'Что меня питает');
     case 'plan_done':
-      return part(str('practiceText'), 'Практика');
+      return part(str('practiceText'), 'Действие');
     case 'tracker_day': {
       // entry = Record<needId, value> — оценки дня из /api/ratings?date=…
       const line = Object.entries(JOURNEY_NEED_NAMES)

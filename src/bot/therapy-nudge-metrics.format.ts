@@ -35,6 +35,7 @@ const PLACE_LABELS: Record<string, string> = {
   diary: 'в «Записях»',
   exercise_start: 'на входе в упражнение',
   test_start: 'на входе в тест',
+  why: 'в листе «Зачем это всё»',
 };
 
 const TRIGGER_LABELS: Record<string, string> = {

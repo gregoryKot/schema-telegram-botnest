@@ -17,6 +17,11 @@ const base: ConceptGraphMetrics = {
   guideModes30: 0,
   guideTechniques30: 0,
   guideAssign30: 0,
+  sharedNow: 0,
+  shareOn30: 0,
+  shareOff30: 0,
+  clientOpens30: 0,
+  clientOpeners30: 0,
 };
 
 describe('formatConceptGraphMetrics', () => {
@@ -139,6 +144,32 @@ describe('formatConceptGraphMetrics', () => {
     expect(onlyFrom).toContain('Холст дописывал в концептуализацию: 1 раз');
     expect(onlyFrom).not.toContain('Дописывали на карту');
     expect(onlyFrom).not.toMatch(/NaN|undefined|null|полей: 0/);
+  });
+
+  it('показ схемы клиенту: строки только о том, что было, — без «0 раз»', () => {
+    const text = formatConceptGraphMetrics({
+      ...base,
+      sharedNow: 2,
+      shareOn30: 3,
+      clientOpens30: 5,
+      clientOpeners30: 2,
+    });
+    expect(text).not.toContain('Пока никто');
+    expect(text).toContain('Схему случая сейчас видят клиенты: 2');
+    expect(text).toContain('Терапевты включали показ схемы клиенту: 3 раз');
+    expect(text).toContain('Клиенты смотрели свою схему 5 раз, клиентов: 2');
+    expect(text).not.toContain('Выключали');
+    expect(text).not.toMatch(/NaN|undefined|null/);
+    // Только выключение — строка про него есть, про остальное нет.
+    const off = formatConceptGraphMetrics({ ...base, shareOff30: 1 });
+    expect(off).toContain('Выключали показ: 1 раз');
+    expect(off).not.toContain('видят клиенты');
+  });
+
+  it('пустая БД не упоминает показ клиенту', () => {
+    const text = formatConceptGraphMetrics({ ...base });
+    expect(text).not.toContain('показ');
+    expect(text).not.toContain('Клиенты смотрели');
   });
 
   it('пустая БД не упоминает дописывание', () => {

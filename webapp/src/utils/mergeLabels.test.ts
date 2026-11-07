@@ -8,6 +8,8 @@ describe('tableLabel', () => {
   it('переводит известные таблицы на человеческий', () => {
     expect(tableLabel('Rating')).toBe('оценки потребностей');
     expect(tableLabel('UserLetter')).toBe('письма себе');
+    // Бронь из приложения (#546) переезжает при слиянии — USER_OWNED_TABLES.
+    expect(tableLabel('Booking')).toBe('записи на сессию');
   });
 
   it('незнакомую таблицу показывает как есть, а не прячет', () => {

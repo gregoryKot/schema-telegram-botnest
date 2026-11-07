@@ -8,6 +8,8 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { BecomeTherapistSection } from './BecomeTherapistSection';
 import { withAddressForm, fillTherapistRequestForm } from './SettingsSheet.test-helpers';
 import * as LIM from '../../../../shared/src/limits/textLimits';
+import { postJson, setRefreshHandler, setTokenProvider } from '../../apiClient';
+import { NO_CONNECTION_TEXT, SERVER_DOWN_TEXT } from '../../../../shared/src/api/humanizeError';
 
 vi.mock('../../api', () => ({
   api: {
@@ -136,6 +138,54 @@ describe('BecomeTherapistSection — отправка заявки', () => {
     fireEvent.click(screen.getByText('Отмена'));
     expect(screen.getByText('Я психолог — подать заявку')).toBeTruthy();
     expect(screen.queryByText('Заполни ФИО, квалификацию и контакты')).toBeNull();
+  });
+});
+
+// На шве (правило №14): настоящий Response идёт через транспорт сайта
+// (apiClient.postJson → ApiError), а не заранее разобранная ошибка. Раньше
+// экран клал на себя String(e) — «TypeError: Failed to fetch» при обрыве сети
+// и английский текст сервера при 500 (docs/open/audit-2026-10.md).
+describe('BecomeTherapistSection — текст ошибки отправки человеческий', () => {
+  beforeEach(() => {
+    setTokenProvider(() => null);
+    setRefreshHandler(() => Promise.resolve(false));
+    mockApi.getTherapistRequest.mockResolvedValue(null);
+    mockApi.submitTherapistRequest.mockImplementation((body: unknown) =>
+      postJson('/api/therapy/request', body),
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function submitWith(fetchImpl: () => Promise<Response>) {
+    vi.stubGlobal('fetch', vi.fn(fetchImpl));
+    renderWithForm();
+    fireEvent.click(await screen.findByText('Я психолог — подать заявку'));
+    fillTherapistRequestForm();
+    fireEvent.click(screen.getByText('Отправить заявку'));
+  }
+
+  it('русский текст сервера (409) показывается как есть', async () => {
+    await submitWith(async () =>
+      new Response(JSON.stringify({ statusCode: 409, message: 'Заявка уже на рассмотрении' }), { status: 409 }),
+    );
+    await screen.findByText('Заявка уже на рассмотрении');
+  });
+
+  // Ошибка клиента API несёт статус (ApiError.status): 5xx разбирается как авария сервера —
+  // тот же текст, что у экранов с голым fetch (readHumanError), а не запасной текст экрана.
+  it('500 с английским текстом — «сервер не ответил», без служебного английского', async () => {
+    await submitWith(async () =>
+      new Response(JSON.stringify({ statusCode: 500, message: 'Internal server error' }), { status: 500 }),
+    );
+    await screen.findByText(SERVER_DOWN_TEXT);
+    expect(screen.queryByText(/Internal server error/)).toBeNull();
+    expect(screen.getByPlaceholderText('ФИО')).toBeTruthy();
+  });
+
+  it('обрыв сети — «Нет связи с сервером», а не «TypeError: Failed to fetch»', async () => {
+    await submitWith(() => Promise.reject(new TypeError('Failed to fetch')));
+    await screen.findByText(NO_CONNECTION_TEXT);
+    expect(screen.queryByText(/TypeError/)).toBeNull();
   });
 });
 

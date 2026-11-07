@@ -6,14 +6,13 @@ import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
-import { decryptRecord } from '../utils/crypto';
-import { BOOKING_SCHEMA } from './booking.schema';
 import { awaitingPaymentTitle } from './booking-admin-note';
 import { bookingCardText, subjectFromTitle } from './booking-notify.format';
 import type { PriceFields } from './booking-notify.price';
-import { BookingStatus, SessionType } from '@prisma/client';
+import { SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 import { runConfirmEffects } from './booking-confirm-run';
+import { remindWindow } from './booking-reminders';
 
 export interface PlainBooking extends PriceFields {
   id: number;
@@ -32,6 +31,8 @@ export interface PlainBooking extends PriceFields {
   calDavUid?: string | null;
   /** Эффекты подтверждения доведены до конца — onConfirmed ничего не делает. */
   confirmEffectsDoneAt?: Date | null;
+  /** Ссылку этой брони дала заменённая комната клиента — повтор DM скажет об этом. */
+  roomReplacedAt?: Date | null;
 }
 
 /** All side-effects of the booking lifecycle: Telegram, CalDAV, reminders. */
@@ -94,7 +95,7 @@ export class BookingNotifyService {
   @Cron('*/5 * * * *')
   async sendReminders(): Promise<void> {
     // Без аренды второй инстанс шлёт то же напоминание о сессии второй раз —
-    // клиент получает два одинаковых DM.
+    // админ получает два одинаковых DM (захват строки — booking-reminders.ts).
     if (
       !(await this.cronLeader.claimRun(
         'bookingReminders',
@@ -102,36 +103,24 @@ export class BookingNotifyService {
       ))
     )
       return;
+    const deps = {
+      prisma: this.prisma,
+      logger: this.logger,
+      sendAdmin: (title: string, b: PlainBooking) => this.sendAdmin(title, b),
+    };
     const now = Date.now();
-    await this.remindWindow(now + 24 * 3_600_000, 'reminder24SentAt', 'завтра');
-    await this.remindWindow(
+    await remindWindow(
+      deps,
+      now + 24 * 3_600_000,
+      'reminder24SentAt',
+      'завтра',
+    );
+    await remindWindow(
+      deps,
       now + 2 * 3_600_000,
       'reminder2SentAt',
       'через 2 часа',
     );
-  }
-
-  private async remindWindow(
-    beforeMs: number,
-    field: 'reminder24SentAt' | 'reminder2SentAt',
-    when: string,
-  ) {
-    const due = await this.prisma.booking.findMany({
-      where: {
-        status: BookingStatus.CONFIRMED,
-        startsAt: { gt: new Date(), lte: new Date(beforeMs) },
-        [field]: null,
-      },
-    });
-    for (const row of due) {
-      const b = decryptRecord(row, BOOKING_SCHEMA) as unknown as PlainBooking;
-      await this.sendAdmin(`⏰ <b>Напоминание: сессия ${when}</b>`, b);
-      await this.prisma.booking.update({
-        where: { id: b.id },
-        data: { [field]: new Date() },
-      });
-    }
-    if (due.length) this.logger.log(`Sent ${due.length} ${field} reminder(s)`);
   }
 
   // Разделение (2026-09-15): события брони — оба канала всегда (деньги/

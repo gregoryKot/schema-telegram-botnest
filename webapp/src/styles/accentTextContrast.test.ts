@@ -8,7 +8,7 @@
 // разрешённого значения к бумаге (--bg, --surface) в обеих темах.
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { contrastRatio, extractBlock, parseColor, resolveToken } from '../test-support/cssContrast';
 import { allCssRules, indexCssRules, type Rule } from './cssRules.test-helpers';
@@ -61,7 +61,35 @@ function collectCases(): Case[] {
   return out;
 }
 
-const CASES = collectCases();
+/**
+ * Инлайн-стили .tsx (сайт и shared): `color: 'var(--c-…)'`, в том числе в тернарнике.
+ * Палитровый оттенок текстом стоял в админке, на холсте карты режимов и на лендинге
+ * (docs/open/frontend-ux.md, 2026-11) — CSS-скан выше этих мест не видит. Размер в
+ * инлайне не разбираем: текст считается мелким (4.5:1).
+ */
+function tsxPaletteText(src: string): string[] {
+  const out: string[] = [];
+  for (const [, value] of src.matchAll(/\bcolor:\s*([^,}\n]*)/g)) {
+    for (const [, token] of value.matchAll(/'var\((--c-[a-z-]+)\)'/g)) out.push(token);
+  }
+  return out;
+}
+
+function tsxCases(): Case[] {
+  const roots = { 'webapp/src': join(__dirname, '..'), 'shared/src': join(__dirname, '..', '..', '..', 'shared', 'src') };
+  const out: Case[] = [];
+  for (const [name, root] of Object.entries(roots)) {
+    for (const f of readdirSync(root, { recursive: true }) as string[]) {
+      if (!f.endsWith('.tsx') || f.includes('.test.')) continue;
+      for (const token of tsxPaletteText(readFileSync(join(root, f), 'utf8'))) {
+        out.push({ file: `${name}/${f}`, selector: 'style={{ color }}', token, threshold: 4.5 });
+      }
+    }
+  }
+  return out;
+}
+
+const CASES = [...collectCases(), ...tsxCases()];
 
 describe('a11y: текст акцентным или палитровым токеном читается на бумаге (WCAG AA)', () => {
   it('скан находит правила с акцентным текстом (иначе проверка пуста)', () => {
@@ -109,6 +137,12 @@ describe('порог AA по размеру правила', () => {
     ['font-size: 24px', 3],
   ])('«%s» → %s', (body, threshold) => {
     expect(aaThreshold(body)).toBe(threshold);
+  });
+
+  it('инлайн .tsx: палитровый --c-* в color (и в тернарнике) найден; заливка, рамка и --accent-* — нет', () => {
+    expect(tsxPaletteText("<i style={{ color: ok ? 'var(--c-moss)' : 'var(--c-rose)' }} />")).toEqual(['--c-moss', '--c-rose']);
+    expect(tsxPaletteText("<i style={{ fontSize: 12, color: 'var(--c-clay)', margin: 0 }} />")).toEqual(['--c-clay']);
+    expect(tsxPaletteText("<i style={{ background: 'var(--c-moss)', borderColor: 'var(--c-rose)', color: 'var(--accent-green)' }} />")).toEqual([]);
   });
 
   it('заливка тем же акцентом — текст не на бумаге, правило пропускается; color-mix — нет', () => {

@@ -4,7 +4,8 @@ import type { DiagramSection } from './diagramTypes';
 /**
  * Заголовок секции: название, подсказка «о чём это» и своя кнопка добавления
  * (data-export-skip — в картинку схемы не идёт). Заголовок — часть картины:
- * по нему видно, чем секция отличается от соседней.
+ * по нему видно, чем секция отличается от соседней. Без `onAdd` (схема только
+ * для чтения) кнопки нет.
  */
 export function DiagramSectionHeader({
   section,
@@ -13,7 +14,7 @@ export function DiagramSectionHeader({
 }: {
   section: DiagramSection;
   open: boolean;
-  onAdd: () => void;
+  onAdd?: () => void;
 }) {
   return (
     <div
@@ -43,7 +44,7 @@ export function DiagramSectionHeader({
           {section.hint}
         </div>
       </div>
-      {section.add && (
+      {section.add && onAdd && (
         <button
           type="button"
           data-export-skip

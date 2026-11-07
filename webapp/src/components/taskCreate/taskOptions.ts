@@ -18,7 +18,7 @@ const RAW_OPTIONS: RawOption[] = [
   { type: 'schema_intro',   label: 'Карточка схемы',       sub: 'Познакомиться со схемой – 7 вопросов',      time: libTime('schema_intro') },
   { type: 'mode_intro',     label: 'Карточка режима',      sub: 'Познакомиться со своим режимом',            time: libTime('mode_intro') },
   { type: 'belief_check',   label: 'Проверить убеждение',  sub: 'Собрать доказательства за и против',        time: libTime('belief_check') },
-  { type: 'letter_to_self', label: 'Письмо себе',          sub: 'Написать Уязвимому Ребёнку',               time: libTime('letter_to_self') },
+  { type: 'letter_to_self', label: exerciseCard('letter').title, sub: 'Что тогда важно было услышать', time: libTime('letter_to_self') },
   { type: 'safe_place',     label: 'Безопасное место',     sub: 'Описать и перечитывать',                   time: libTime('safe_place') },
   { type: 'diary_streak',   label: 'Дневник',              sub: 'Заполнять N дней подряд',                  hasStreak: true, time: '5–10 мин/день' },
   { type: 'flashcard',      label: 'Мне плохо',            sub: 'Три вдоха и четыре шага',                  time: '10 мин' },

@@ -43,7 +43,7 @@ const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ defaul
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 
 import type { StreakData } from '../api';
-import { parseRouteUserId } from '../../../shared/src/utils/sameId';
+import { clientPath, parseClientRef } from '../../../shared/src/utils/clientRef';
 
 syncMotionAttr();
 
@@ -60,7 +60,7 @@ export function AppShell() {
   const setSection = useCallback((s: Section) => navigate('/' + s), [navigate]);
 
   const therapistMode = location.pathname.startsWith('/cabinet');
-  const openClientId = parseRouteUserId(clientIdParam);
+  const openClientRef = parseClientRef(clientIdParam); // код карточки или старый числовой id
 
   // Remember last path per mode so the toggle returns user to where they were
   useEffect(() => {
@@ -183,13 +183,12 @@ export function AppShell() {
   const handleSaved = useCallback((needId: string, streak?: StreakData) => {
     setSaved(prev => ({ ...prev, [needId]: true }));
     // День праздника — живой день устройства (todayDate сменяется в полночь), а не день загрузки бандла.
+    // Заметка дня сама не открывается — она ссылкой на экране «Готово» трекера (2026-11-06).
     if (streak && !isCelebrated(todayDate)) {
       markCelebrated(todayDate);
       if (streak.currentStreak > 0) setCelebrationStreak(streak.currentStreak);
-      else ov.setShowTodayNote(true);
       if (streak.totalDays >= 5 && shouldShowChildhoodWheel()) setChildhoodWheelPending(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setShowTodayNote стабильный сеттер useState; ov как объект не нужен в deps
   }, [setSaved, todayDate]);
 
   // Сиблинги контейнера секций ниже (Tracker/History/Diaries/Celebration/
@@ -269,7 +268,7 @@ export function AppShell() {
           ratings={ratings}
           displayName={displayName}
           navigate={navigate}
-          openClientId={openClientId}
+          openClientRef={openClientRef} clients={therapistClients}
           switchTherapistMode={switchTherapistMode}
           therapistBackHandlerRef={therapistBackHandlerRef}
           setTherapistClients={setTherapistClients}
@@ -343,14 +342,15 @@ export function AppShell() {
           navigate={navigate}
           ratings={ratings}
           setChildhoodRatings={setChildhoodRatings}
-          childhoodWheelPending={childhoodWheelPending}
-          setChildhoodWheelPending={setChildhoodWheelPending}
           todayDate={todayDate}
         />
 
         {/* ── Celebration ── */}
         {celebrationStreak !== null && (
-          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => { setCelebrationStreak(null); ov.setShowTodayNote(true); }} />
+          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => {
+            setCelebrationStreak(null);
+            if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
+          }} />
         )}
 
         </div>{/* end canvas */}
@@ -369,7 +369,7 @@ export function AppShell() {
           userRole={userRole}
           therapistMode={therapistMode}
           onToggleMode={() => switchTherapistMode(!therapistMode)}
-          onOpenClient={(id) => { navigate('/cabinet/' + id); }}
+          onOpenClient={(id) => { navigate(clientPath(id, therapistClients)); }}
           onQuickAction={ov.runQuickAction}
         />
       )}

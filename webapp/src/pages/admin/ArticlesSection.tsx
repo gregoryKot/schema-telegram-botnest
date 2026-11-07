@@ -3,6 +3,8 @@ import { api } from '../../api';
 import type { Article } from '../../api';
 import { useAsyncData } from '../../hooks/useAsyncData';
 import { ArticleEditor } from './ArticleEditor';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { useConfirmedAction } from '../../../../shared/src/hooks/useConfirmedAction';
 import { card, btn, btnGhost } from './shared';
 
 /** Articles admin tab: list with create/edit/delete, backed by the WYSIWYG editor. */
@@ -11,6 +13,15 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
 
   const fetcher = useCallback(() => api.adminListArticles(adminKey), [adminKey]);
   const { data: articles, reload, failed } = useAsyncData<Article[]>(fetcher, []);
+  // Ж4 (аудит 2026-08): вместо нативного confirm() — общий ConfirmDialog;
+  // сбой удаления виден в диалоге, статья остаётся (раньше промис без catch).
+  const [toDelete, setToDelete] = useState<Article | null>(null);
+  const del = useConfirmedAction(
+    () => (toDelete ? api.adminDeleteArticle(adminKey, toDelete.id) : Promise.resolve()),
+    () => { setToDelete(null); reload(); },
+  );
+  const askDelete = (a: Article) => { setToDelete(a); del.ask(); };
+  const cancelDelete = () => { setToDelete(null); del.cancel(); };
 
   if (editing) {
     return (
@@ -40,11 +51,23 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
           </div>
           <button style={{ ...btnGhost, padding: '5px 12px', fontSize: 13 }} onClick={() => setEditing(a)}>Редактировать</button>
           <button aria-label="Удалить статью" style={{ ...btnGhost, padding: '5px 12px', fontSize: 13, color: 'var(--accent-red)' }}
-            onClick={() => { if (confirm(`Удалить статью «${a.title}»?`)) api.adminDeleteArticle(adminKey, a.id).then(reload); }}>
+            onClick={() => askDelete(a)}>
             ✕
           </button>
         </div>
       ))}
+      {toDelete && del.confirming && (
+        <ConfirmDialog
+          title="Удалить статью?"
+          message={`«${toDelete.title}» пропадёт со страницы статей.`}
+          confirmLabel="Удалить"
+          busyLabel="Удаляю…"
+          busy={del.busy}
+          error={del.failed ? 'Не удалось удалить — статья на месте. Возможно, неверный админ-ключ или нет соединения.' : undefined}
+          onConfirm={() => void del.confirm()}
+          onCancel={cancelDelete}
+        />
+      )}
     </section>
   );
 }

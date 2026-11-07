@@ -103,8 +103,8 @@
 | `src/telegram/` | Telegraf: `/start`, онбординг, тесты, настройки, админ-команды, отправка очереди уведомлений | backend-core |
 | `src/channel/` | Посты канала «Здоровый Взрослый» в Telegram, VK, MAX, Threads, Pinterest | backend-core |
 | `src/notification/` | Очередь и планировщик напоминаний, адаптивная частота, шаблоны, ты/вы бэкенда | backend-core |
-| `src/analytics/` | Allow-list событий и запись `AnalyticsEvent` | backend-core |
-| `src/articles/` | Статьи сайта, SEO для краулеров, `sitemap.xml` | backend-core |
+| `src/analytics/` | Allow-list событий и запись `AnalyticsEvent`; счётчик заходов роботов нейросетей (`crawler-hits.ts`) | backend-core |
+| `src/articles/` | Статьи сайта, SEO для краулеров (статьи и главная: текст в `#root`), `sitemap.xml`; текст продуктового лендинга — `home-landing.content.ts` (читают сайт и сервер) | backend-core |
 | `src/quiz/` | Публичные мини-тесты (бот и сайт) | backend-core |
 | `src/site-content/` | Редактируемые блоки лендинга | backend-core |
 | `src/account/` | Выгрузка всех данных пользователя | backend-core |

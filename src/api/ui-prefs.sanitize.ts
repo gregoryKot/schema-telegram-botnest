@@ -1,4 +1,13 @@
-import { QUICK_ACTION_ID_SET, SCREEN_BLOCK_ID_SET } from './dto/analytics.dto';
+import {
+  QUICK_ACTION_IDS,
+  SCREEN_BLOCK_IDS,
+} from '../analytics/analytics.constants';
+
+// Множества — из констант, а не из dto/analytics.dto.ts: там декораторы
+// class-validator, а этот санитайзер берёт и стаб браузерного смока
+// (e2e-browser/support/stubSettings.ts) — «сервер» смока чистит uiPrefs так же.
+const QUICK_ACTION_ID_SET: ReadonlySet<string> = new Set(QUICK_ACTION_IDS);
+const SCREEN_BLOCK_ID_SET: ReadonlySet<string> = new Set(SCREEN_BLOCK_IDS);
 
 // Реестр ключей кастомизации экранов, синхронизируемых с сервером
 // (User.uiPrefs). Парная константа на фронте — SYNCED_PREF_KEYS в

@@ -17,27 +17,30 @@ const PANEL_MARGIN = 8;
  * убеждением и опытом и ещё левее режимы, справа Здоровый Взрослый. Режим и
  * схема открывают свои редакторы, потребность включает подсветку своих линий
  * (✗ и ✓), заготовка пустой секции и «+» в заголовке зовут выбор.
+ *
+ * Без `edit` — только чтение (схема у клиента, ConceptGraphView): «+» нет,
+ * заготовка не нажимается, а тап по любой фигуре подсвечивает её линии, как у
+ * потребности. Рисование одно на оба вида — копии раскладки нет.
  */
 export function ConceptDiagram({
   graph,
-  openId,
-  addOpen,
-  panel,
-  onOpenMode,
-  onOpenSchema,
-  onAdd,
+  edit,
 }: {
   graph: ConceptGraphModel;
-  /** Открытый редактор: `mode:<id>` или `schema:<id>`. */
-  openId: string | null;
-  /** Секция, у которой сейчас открыт выбор («+ режим», «+ схема»). */
-  addOpen: AddSection | null;
-  /** Содержимое выбора; рисуется под заголовком открытой секции. */
-  panel: ReactNode;
-  onOpenMode: (modeId: string) => void;
-  onOpenSchema: (schemaId: string) => void;
-  onAdd: (section: AddSection) => void;
+  edit?: {
+    /** Открытый редактор: `mode:<id>` или `schema:<id>`. */
+    openId: string | null;
+    /** Секция, у которой сейчас открыт выбор («+ режим», «+ схема»). */
+    addOpen: AddSection | null;
+    /** Содержимое выбора; рисуется под заголовком открытой секции. */
+    panel: ReactNode;
+    onOpenMode: (modeId: string) => void;
+    onOpenSchema: (schemaId: string) => void;
+    onAdd: (section: AddSection) => void;
+  };
 }) {
+  const openId = edit?.openId ?? null;
+  const addOpen = edit?.addOpen ?? null;
   const [ref, width] = useContainerWidth();
   const uid = useId().replace(/:/g, '');
   const [pressedId, setPressedId] = useState<string | null>(null);
@@ -48,16 +51,16 @@ export function ConceptDiagram({
   const panelW = layout.wide ? PANEL_W : layout.width - 2 * PANEL_MARGIN;
 
   const tap = (n: DiagramNode) => {
-    if (n.kind === 'need') {
+    if (n.kind === 'need' || !edit) {
       setPressedId((cur) => (cur === n.id ? null : n.id));
       return;
     }
     setPressedId(null);
-    if (n.kind === 'mode' && n.modeId) onOpenMode(n.modeId);
+    if (n.kind === 'mode' && n.modeId) edit.onOpenMode(n.modeId);
     else if ((n.kind === 'schema' || n.kind === 'origin') && n.schemaId) {
-      onOpenSchema(n.schemaId);
+      edit.onOpenSchema(n.schemaId);
     } else if (n.kind === 'placeholder' && n.section !== 'needs')
-      onAdd(n.section);
+      edit.onAdd(n.section);
   };
 
   return (
@@ -99,7 +102,7 @@ export function ConceptDiagram({
           key={s.id}
           section={s}
           open={addOpen === s.id}
-          onAdd={() => onAdd(s.id)}
+          onAdd={edit && (() => edit.onAdd(s.id))}
         />
       ))}
       {layout.nodes.map((n) => (
@@ -112,7 +115,8 @@ export function ConceptDiagram({
             (n.kind === 'origin' && `schema:${n.schemaId}` === openId)
           }
           pressed={n.id === pressedId}
-          onTap={() => tap(n)}
+          onTap={edit || n.kind !== 'placeholder' ? () => tap(n) : undefined}
+          readOnly={!edit}
         />
       ))}
       {panelAt && (
@@ -131,7 +135,7 @@ export function ConceptDiagram({
               : PANEL_MARGIN,
           }}
         >
-          {panel}
+          {edit?.panel}
         </div>
       )}
     </div>

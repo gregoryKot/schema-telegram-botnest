@@ -171,6 +171,7 @@
 .mm2-legend-chip { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 3px 9px 3px 5px; border-radius: 8px; font-size: 12px; background: var(--paper-tint); color: var(--text-sub); }
 
 /* ── Селектор карт и вьюер ── */
+/* Поле 16px — у вьюера; в карточке клиента полоса стоит в колонке кабинета, под шапкой (therapist-card.css). */
 .mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
 .mm2-rename { width: 140px; flex-shrink: 0; }
 .mm2-bar > .ds-seg { min-width: 0; }
@@ -245,9 +246,6 @@
     height: max(320px, calc(100dvh - var(--mm2-chrome)));
   }
   .mm2-center { height: auto; min-height: 100%; padding: 24px 16px; }
-  /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS увеличивает экран при фокусе на поле мельче 16px. */
-  .mm2-add-form .ds-input, .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input,
-  .ds-input.mm2-add-emoji, .ds-input.mm2-lane-input { font-size: 16px; }
 }
 
 /* Касание: тап-цели холста карты режимов ≥ 44×44 (QA 2026-11, T-5). Мышь не
@@ -269,4 +267,8 @@
   .ds-btn.mm2-del { height: 44px; }
   .mm2-panel .ds-input, .mm2-panel .ds-btn, .mm2-panel select.ds-input, .mm2-add-form .ds-input, .mm2-pal-search .ds-input { min-height: 44px; }
   .mm2-ear { width: 44px !important; height: 44px !important; font-size: 18px !important; }
+  /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS (и iPad, где окно шире 767)
+     увеличивает экран при фокусе на поле мельче 16px. */
+  .mm2-add-form .ds-input, .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input,
+  .ds-input.mm2-add-emoji, .ds-input.mm2-lane-input { font-size: 16px; }
 }

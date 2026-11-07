@@ -12,6 +12,7 @@ import { momentDayKey } from '../utils/momentDate';
 import type { ClientConceptualizationBase } from './clientConceptualization';
 import { CONCEPT_FIELDS } from './clientSheetHelpers';
 import { formatConceptLinksExport } from './conceptGraph/conceptLinksExport';
+import { clientDisplayName } from './clientInitials';
 
 type Concept = Partial<ClientConceptualizationBase>;
 
@@ -58,8 +59,7 @@ export function buildConceptExport(input: ConceptExportInput): string {
   const { client, concept, activeSchemaIds, activeModeIds } = input;
   const c: Concept = { ...concept, ...input.localConcept };
   if (!client || isConceptEmpty(c, activeSchemaIds, activeModeIds)) return '';
-  const clientName =
-    client.clientAlias ?? client.name ?? `ID ${client.telegramId}`;
+  const clientName = clientDisplayName(client);
   const date = concept?.updatedAt
     ? fmtDate(momentDayKey(concept.updatedAt))
     : todayStr();

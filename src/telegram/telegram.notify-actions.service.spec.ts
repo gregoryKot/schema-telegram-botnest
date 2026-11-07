@@ -103,10 +103,13 @@ describe('TelegramNotifyActionsService — пауза', () => {
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause:7');
     expect(cadenceService.pause).toHaveBeenCalledWith(1n, 7);
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(
-      expect.stringContaining('Пауза'),
-    );
+    // Тост нейтральный: он уходит до записи; об успехе говорит только
+    // сообщение, отредактированное после неё.
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
     expect(ctx.editMessageText).toHaveBeenCalled();
+    expect(cadenceService.pause.mock.invocationCallOrder[0]).toBeLessThan(
+      ctx.editMessageText.mock.invocationCallOrder[0],
+    );
   });
 
   it('notify:pause:30 — месяц, текст отличается от недельного', async () => {
@@ -152,7 +155,9 @@ describe('TelegramNotifyActionsService — реже / скип', () => {
 });
 
 describe('TelegramNotifyActionsService — ошибки не роняют хендлер', () => {
-  it('cadenceService.pause падает — answerCbQuery отдан один раз, человеку — сообщение об ошибке', async () => {
+  // Аудит 2026-10 (docs/open/audit-2026-10.md): тост «⏸ Пауза включена»
+  // уходил до записи, и при её сбое человек видел успех, а следом — ошибку.
+  it('cadenceService.pause падает — тост без обещания успеха, человеку — сообщение об ошибке', async () => {
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     const botService = makeBotService();
     const { service, fakeBot } = makeService(botService, {
@@ -160,8 +165,9 @@ describe('TelegramNotifyActionsService — ошибки не роняют хен
     });
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'notify:pause:7');
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith('⏸ Пауза включена');
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
     expect(ctx.answerCbQuery).toHaveBeenCalledTimes(1);
+    expect(ctx.editMessageText).not.toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 });

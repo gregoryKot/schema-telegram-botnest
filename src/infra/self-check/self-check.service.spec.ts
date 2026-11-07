@@ -19,7 +19,6 @@ function okProbe(id: string): Probe {
   return {
     id,
     title: `Проба ${id}`,
-    critical: false,
     run: async () => ({ ok: true, detail: 'ок' }),
   };
 }
@@ -27,15 +26,38 @@ function failProbe(id: string, detail = 'сломано'): Probe {
   return {
     id,
     title: `Проба ${id}`,
-    critical: false,
     run: async () => ({ ok: false, detail }),
   };
 }
 
-function makeService(claimRun: jest.Mock = jest.fn().mockResolvedValue(true)) {
-  const prisma = {} as unknown as PrismaService;
-  const cronLeader = { claimRun } as unknown as CronLeaderService;
-  return { service: new SelfCheckService(prisma, cronLeader), claimRun };
+/** Строки CronLease, общие для «процессов» теста, — как база для инстансов. */
+type LeaseRows = Map<string, number>;
+
+function makeService(
+  claimRun: jest.Mock = jest.fn().mockResolvedValue(true),
+  rows: LeaseRows = new Map(),
+) {
+  const claimRunOrThrow = jest.fn((name: string, windowMs: number) => {
+    const at = rows.get(name);
+    if (at !== undefined && Date.now() - at < windowMs) return false;
+    rows.set(name, Date.now());
+    return true;
+  });
+  const deleteMany = jest.fn(
+    ({ where }: { where: { name: { startsWith: string } } }) => {
+      const names = [...rows.keys()].filter((n) =>
+        n.startsWith(where.name.startsWith),
+      );
+      names.forEach((n) => rows.delete(n));
+      return { count: names.length };
+    },
+  );
+  const prisma = { cronLease: { deleteMany } } as unknown as PrismaService;
+  const cronLeader = {
+    claimRun,
+    claimRunOrThrow,
+  } as unknown as CronLeaderService;
+  return { service: new SelfCheckService(prisma, cronLeader), claimRun, rows };
 }
 
 beforeEach(() => {
@@ -54,7 +76,6 @@ describe('SelfCheckService.run', () => {
       {
         id: 'db',
         title: 'Проба db',
-        critical: false,
         ok: true,
         detail: 'ок',
         reportInHealth: true,
@@ -88,6 +109,39 @@ describe('SelfCheckService.run', () => {
     expect(mockedNotify).toHaveBeenCalledTimes(1);
     expect(mockedNotify.mock.calls[0][0]).toContain('Проба caldav: сломано');
     expect(selfCheckState.get().results.map((r) => r.ok)).toEqual([false]);
+  });
+});
+
+// Инцидент 2026-11-07: каждый деплой присылал тот же DM заново — память
+// процесса терялась. Новый процесс = новый сервис и пустой трекер, база общая.
+describe('SelfCheckService.run — дедуп DM через рестарт', () => {
+  it('рестарт с тем же красным — без второго DM; зелёный — «снова зелёная» и строки удалены', async () => {
+    mockedBuildProbes.mockReturnValue([failProbe('ciRuns')]);
+    const rows: LeaseRows = new Map();
+    await makeService(undefined, rows).service.run('post-deploy');
+    selfCheckAlerts.reset(); // новый процесс — память пуста
+    await makeService(undefined, rows).service.run('post-deploy');
+    expect(mockedNotify).toHaveBeenCalledTimes(1);
+
+    mockedBuildProbes.mockReturnValue([okProbe('ciRuns')]);
+    selfCheckAlerts.reset();
+    await makeService(undefined, rows).service.run('hourly');
+    expect(mockedNotify).toHaveBeenCalledTimes(2);
+    expect(mockedNotify.mock.calls[1][0]).toContain('снова зелёная');
+    expect(rows.size).toBe(0);
+  });
+
+  it('база недоступна — DM решает память процесса, алерт не теряется', async () => {
+    mockedBuildProbes.mockReturnValue([failProbe('db', 'не отвечает')]);
+    const prisma = {} as unknown as PrismaService;
+    const cronLeader = {
+      claimRunOrThrow: jest.fn().mockRejectedValue(new Error('P1001')),
+    } as unknown as CronLeaderService;
+    const service = new SelfCheckService(prisma, cronLeader);
+    await service.run('hourly');
+    await service.run('hourly');
+    expect(mockedNotify).toHaveBeenCalledTimes(1);
+    expect(mockedNotify.mock.calls[0][0]).toContain('Проба db: не отвечает');
   });
 });
 

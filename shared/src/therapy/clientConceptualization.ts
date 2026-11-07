@@ -29,5 +29,22 @@ export interface ClientConceptualizationBase {
   /** Тексты схем графической концептуализации (legacy-строки — []). */
   schemaLinks: ConceptSchemaLink[];
   history: ConceptSnapshot[];
+  /** Когда терапевт показал клиенту схему случая; null — не показана (нет у старого кэша). */
+  sharedWithClientAt?: string | null;
+  updatedAt: string;
+}
+
+/**
+ * Схема случая глазами клиента (GET /api/therapy/my-concept): только вид
+ * «Схема» — без истоков (`origin`), задач терапии (`strategy`), рабочих полей
+ * и истории. Белый список режет сервер (src/therapy/client-concept-view.ts).
+ */
+export interface ClientSharedConcept {
+  schemaIds: string[];
+  modeIds: string[];
+  modeTransitions: string | null;
+  modeLinks: Omit<ConceptModeLink, 'origin' | 'strategy'>[];
+  schemaLinks: Omit<ConceptSchemaLink, 'origin'>[];
+  sharedWithClientAt: string;
   updatedAt: string;
 }

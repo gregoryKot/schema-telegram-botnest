@@ -11,6 +11,11 @@ import {
   CronLeaderService,
   LEASE_WINDOW,
 } from '../src/infra/cron-leader.service';
+import {
+  alertLeaseName,
+  alertLeaseStore,
+} from '../src/infra/self-check/alert-dedup';
+import { REMIND_EVERY_MS } from '../src/infra/self-check/alert-tracker';
 
 describe('CronLeaderService на реальном Postgres', () => {
   let prisma: PrismaService;
@@ -97,5 +102,73 @@ describe('CronLeaderService на реальном Postgres', () => {
     // Контрольная проверка того же с запасом: если бы захват был
     // check-then-act, при десяти параллельных победителей было бы несколько.
     expect(results.filter(Boolean)).toHaveLength(1);
+  });
+});
+
+// Дедуп DM самопроверки (src/infra/self-check/alert-dedup.ts, инцидент
+// 2026-11-07): та же аренда под именем набора упавших проб. На живой базе —
+// имя с двоеточием и запятыми, захват без глотания ошибки и чистка по префиксу,
+// которая не трогает аренды кронов.
+describe('Аренда алерта самопроверки на реальном Postgres', () => {
+  let prisma: PrismaService;
+  let leader: CronLeaderService;
+  const cronName = 'e2eAlertNeighbourCron';
+  const alertName = alertLeaseName([
+    { id: 'telegram', title: 't', ok: false, detail: '', reportInHealth: true },
+    {
+      id: 'googleOAuth',
+      title: 'g',
+      ok: false,
+      detail: '',
+      reportInHealth: true,
+    },
+  ]);
+
+  beforeAll(async () => {
+    prisma = new PrismaService();
+    await prisma.$connect();
+    leader = new CronLeaderService(prisma);
+  });
+
+  beforeEach(async () => {
+    await prisma.cronLease.deleteMany({
+      where: { name: { in: [cronName, alertName] } },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.cronLease.deleteMany({
+      where: { name: { in: [cronName, alertName] } },
+    });
+    await prisma.$disconnect();
+  });
+
+  it('рестарт с тем же набором в окне 6 ч — второй захват не удаётся', async () => {
+    const store = alertLeaseStore(leader, prisma);
+    await expect(store.claim(alertName, REMIND_EVERY_MS)).resolves.toBe(true);
+    // Новый процесс — новый экземпляр, база та же.
+    const next = alertLeaseStore(new CronLeaderService(prisma), prisma);
+    await expect(next.claim(alertName, REMIND_EVERY_MS)).resolves.toBe(false);
+    const row = await prisma.cronLease.findUnique({
+      where: { name: alertName },
+    });
+    expect(row?.name).toBe('self-check-alert:googleOAuth,telegram');
+  });
+
+  it('зелёный прогон удаляет строки алертов и не трогает аренду крона', async () => {
+    await leader.claimRun(cronName, LEASE_WINDOW.hourly);
+    const store = alertLeaseStore(leader, prisma);
+    await store.claim(alertName, REMIND_EVERY_MS);
+
+    await expect(store.clearAll()).resolves.toBeGreaterThanOrEqual(1);
+
+    await expect(
+      prisma.cronLease.findUnique({ where: { name: alertName } }),
+    ).resolves.toBeNull();
+    await expect(
+      prisma.cronLease.findUnique({ where: { name: cronName } }),
+    ).resolves.not.toBeNull();
+    // Строк нет — следующий такой же сбой алертит сразу.
+    await expect(store.claim(alertName, REMIND_EVERY_MS)).resolves.toBe(true);
   });
 });
