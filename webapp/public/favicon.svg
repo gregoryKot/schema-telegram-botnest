@@ -1,19 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Dark background -->
-  <circle cx="16" cy="16" r="16" fill="#16121e"/>
-
-  <!-- 5 petal wheel — 72° each, starting from top (-90°) -->
-  <!-- attachment: pink  -90° → -18° -->
-  <path d="M16 16 L16 3 A13 13 0 0 1 28.4 12 Z"   fill="#f472b6" stroke="#16121e" stroke-width="1.2" stroke-linejoin="round"/>
-  <!-- expression: amber  -18° → 54° -->
-  <path d="M16 16 L28.4 12 A13 13 0 0 1 23.6 26.5 Z" fill="#f59e0b" stroke="#16121e" stroke-width="1.2" stroke-linejoin="round"/>
-  <!-- play: green  54° → 126° -->
-  <path d="M16 16 L23.6 26.5 A13 13 0 0 1 8.4 26.5 Z" fill="#10b981" stroke="#16121e" stroke-width="1.2" stroke-linejoin="round"/>
-  <!-- autonomy: blue  126° → 198° -->
-  <path d="M16 16 L8.4 26.5 A13 13 0 0 1 3.6 12 Z"  fill="#4fa3f7" stroke="#16121e" stroke-width="1.2" stroke-linejoin="round"/>
-  <!-- limits: purple  198° → 270° -->
-  <path d="M16 16 L3.6 12 A13 13 0 0 1 16 3 Z"      fill="#a78bfa" stroke="#16121e" stroke-width="1.2" stroke-linejoin="round"/>
-
-  <!-- Center hub -->
-  <circle cx="16" cy="16" r="3.8" fill="#16121e"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#f6f2eb"/>
+  <g transform="translate(256 256) scale(1.18) translate(-250 -278)">
+    <path d="M367.9 237.7 A124 124 0 1 1 224.2 154.7" fill="none" stroke="#6b8156" stroke-width="70" stroke-linecap="round"/>
+    <circle cx="238" cy="300" r="60" fill="#b06f4a"/>
+  </g>
 </svg>

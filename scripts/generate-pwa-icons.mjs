@@ -1,77 +1,40 @@
 #!/usr/bin/env node
-// Одноразовый скрипт (PWA_PLAN.md фаза 1.3): генерирует иконки PWA из
-// существующего webapp/public/favicon.svg. Результат коммитится — скрипт не
-// гоняется в CI, только вручную при смене логотипа.
+// Иконки сайта из знака «Всё по схеме» (shared/src/share/kit/brandMark.ts): favicon.svg и
+// PNG в webapp/public. Результат коммитится — скрипт не гоняется в CI, только вручную при
+// смене знака: `node scripts/generate-pwa-icons.mjs` (Node ≥ 22.18 сам снимает типы с .ts).
+// Сверка favicon.svg с модулем знака и безопасной зоны maskable —
+// webapp/src/components/art/BrandMark.test.tsx; размеры и непрозрачность PNG —
+// webapp/src/pwaManifest.test.ts. Иконки визитки (*-personal*) этот скрипт не трогает.
 //
 // Иконки живут в webapp/public/ — `webapp/dist/*` раздаётся с корня, путь
 // вида `/icon-192.png` из манифеста резолвится в корень.
 import sharp from 'sharp';
-import { readFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { join } from 'path';
+import { BRAND_HEX, brandMarkSvg } from '../shared/src/share/kit/brandMark.ts';
 
-const ROOT = join(import.meta.dirname, '..');
-const PUBLIC_DIR = join(ROOT, 'webapp', 'public');
-const SVG_PATH = join(PUBLIC_DIR, 'favicon.svg');
-const APPLE_TOUCH_ICON = join(PUBLIC_DIR, 'apple-touch-icon.png');
+const PUBLIC_DIR = join(import.meta.dirname, '..', 'webapp', 'public');
 
-// Фон логотипа (см. favicon.svg: тёмный круг на весь viewBox) — используется
-// как подложка для maskable-иконки и как заплатка прозрачных углов
-// apple-touch-icon (iOS игнорирует альфа-канал и красит прозрачное чёрным/
-// белым непредсказуемо).
-const BG = '#16121e';
+// Вкладка браузера и выдача поисковика — 16–32 px: простой знак, без полоски фона.
+const FAVICON = brandMarkSvg({ simple: true });
+// Плитка со скруглёнными углами, углы прозрачные (purpose: any — форму решает ОС).
+const TILE = brandMarkSvg();
+// Квадрат без скругления: маску накладывает система (maskable у Android; iOS скругляет
+// apple-touch-icon сам). Дуга и круг целиком внутри безопасной зоны — круга 80 % холста.
+const BLEED = brandMarkSvg({ bleed: true });
 
-const svg = readFileSync(SVG_PATH);
-
-async function renderAny(size, outPath) {
-  // purpose: any — прозрачные углы осознанные (ОС сама решает форму круга).
-  await sharp(svg, { density: 384 }).resize(size, size).png().toFile(outPath);
-  console.log(`✓ ${outPath}`);
+async function png(svg, size, name, { opaque = false } = {}) {
+  let img = sharp(Buffer.from(svg), { density: 384 }).resize(size, size);
+  // iOS и маска лаунчера красят прозрачное чёрным: заливаем бумагой, альфа-канал уходит.
+  if (opaque) img = img.flatten({ background: BRAND_HEX.paper });
+  await img.png().toFile(join(PUBLIC_DIR, name));
+  console.log(`✓ ${name}`);
 }
 
-async function renderMaskable(size, outPath, safeRatio = 0.72) {
-  // Maskable-спека: контент обязан помещаться в круг диаметром ~80% холста
-  // (safe zone), иначе агрессивная маска лаунчера его обрежет. Круг в
-  // favicon.svg упирается в край viewBox — уменьшаем и кладём на подложку
-  // цвета фона логотипа, чтобы шов не был виден.
-  const inner = Math.round(size * safeRatio);
-  const iconBuf = await sharp(svg, { density: 384 })
-    .resize(inner, inner)
-    .png()
-    .toBuffer();
-  await sharp({
-    create: { width: size, height: size, channels: 4, background: BG },
-  })
-    .composite([{ input: iconBuf, gravity: 'center' }])
-    .png()
-    .toFile(outPath);
-  console.log(`✓ ${outPath}`);
-}
-
-async function fixAppleTouchIconIfTransparent() {
-  const img = sharp(APPLE_TOUCH_ICON);
-  const meta = await img.metadata();
-  if (!meta.hasAlpha) {
-    console.log('✓ apple-touch-icon.png уже непрозрачный — не трогаю');
-    return;
-  }
-  const stats = await img.stats();
-  const alphaChannel = stats.channels[3];
-  if (!alphaChannel || alphaChannel.min === 255) {
-    console.log('✓ apple-touch-icon.png технически с альфа-каналом, но без прозрачных пикселей — не трогаю');
-    return;
-  }
-  await sharp(APPLE_TOUCH_ICON)
-    .flatten({ background: BG })
-    .png()
-    .toFile(APPLE_TOUCH_ICON + '.tmp');
-  const { renameSync } = await import('fs');
-  renameSync(APPLE_TOUCH_ICON + '.tmp', APPLE_TOUCH_ICON);
-  console.log(
-    `✓ apple-touch-icon.png: прозрачные углы залиты фоном ${BG} (iOS игнорирует альфа-канал)`,
-  );
-}
-
-await renderAny(192, join(PUBLIC_DIR, 'icon-192.png'));
-await renderAny(512, join(PUBLIC_DIR, 'icon-512.png'));
-await renderMaskable(512, join(PUBLIC_DIR, 'icon-512-maskable.png'));
-await fixAppleTouchIconIfTransparent();
+writeFileSync(join(PUBLIC_DIR, 'favicon.svg'), FAVICON);
+console.log('✓ favicon.svg');
+await png(FAVICON, 96, 'favicon-96.png');
+await png(TILE, 192, 'icon-192.png');
+await png(TILE, 512, 'icon-512.png');
+await png(BLEED, 512, 'icon-512-maskable.png', { opaque: true });
+await png(BLEED, 180, 'apple-touch-icon.png', { opaque: true });

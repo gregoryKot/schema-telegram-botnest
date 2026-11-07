@@ -59,6 +59,13 @@ describe('ProductLandingPage — неавторизованный визитор
     expect(screen.queryByText(/Начать бесплатно/)).toBeNull();
   });
 
+  it('шапка и футер — знак продукта (тот же, что в меню и favicon), а не 🧠', () => {
+    const { container } = renderPage();
+    expect(container.querySelector('header a[href="/"] svg[data-brand-mark="full"]')).toBeTruthy();
+    expect(container.querySelector('footer svg[data-brand-mark="full"]')).toBeTruthy();
+    expect(container.textContent).not.toContain('🧠');
+  });
+
   it('рендерит блок «Как это работает» и «Возможности» без падений', () => {
     renderPage();
     expect(screen.getAllByText('Как это работает').length).toBeGreaterThan(0);

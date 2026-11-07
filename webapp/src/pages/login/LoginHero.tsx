@@ -1,4 +1,5 @@
 import { Strokes, Ribbon, Pebbles } from '../../components/art/PaperArt';
+import { BrandMark } from '../../components/art/BrandMark';
 
 // Панель входа: знак, слоган и три бумажных мотива (полоски, лента, камушки). Обращения
 // к читателю в тексте нет: экран показывается до входа, формы ты/вы ещё нет.
@@ -6,7 +7,7 @@ export function LoginHero() {
   return (
     <aside className="al-hero">
       <div className="al-brand">
-        <div className="al-logo">В</div>
+        <BrandMark size={36} className="al-logo" />
         <span className="al-brand-name">Всё по схеме</span>
       </div>
       <div className="al-pitch">

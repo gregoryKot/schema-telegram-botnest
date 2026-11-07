@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { ModeMapTab, MODE_MAP_DESKTOP_ONLY } from './ModeMapTab';
+import { paperSignName } from '../../test-support/paperSign';
 
 vi.mock('../ModeMapSelector', () => ({
   ModeMapSelector: ({ clientId }: { clientId: string }) => <div data-testid="selector">{clientId}</div>,
@@ -18,8 +19,9 @@ afterEach(() => cleanup());
 
 describe('ModeMapTab', () => {
   it('телефон: вместо холста — подсказка открыть на компьютере, селектор не монтируется', () => {
-    renderAt(390);
+    const { container } = renderAt(390);
     expect(screen.getByText(MODE_MAP_DESKTOP_ONLY)).toBeTruthy();
+    expect(paperSignName(container.querySelector('.pp-empty svg'))).toBe('Cluster');
     expect(MODE_MAP_DESKTOP_ONLY).toMatch(/^Графические карты открываются на компьютере или планшете/);
     expect(screen.queryByTestId('selector')).toBeNull();
   });

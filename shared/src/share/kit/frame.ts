@@ -11,6 +11,7 @@ import {
 } from './theme';
 import { clampLines, wrapLines } from './text';
 import { paintGlow } from './glow';
+import { drawBrandMark } from './brandMark';
 
 export interface Card {
   ctx: CanvasRenderingContext2D;
@@ -29,7 +30,7 @@ export const FOOTER_H = 62;
 export interface CardOpts {
   /** Основной цвет карточки ('#hex' или 'var(--accent-blue)'). */
   accent?: string;
-  /** Второй цвет для градиентов фона и брендовой метки. */
+  /** Второй цвет для градиентов фона. */
   accent2?: string;
   /** false — ровный цвет темы без градиента и свечений (editorial-карточки). */
   glow?: boolean;
@@ -204,7 +205,7 @@ export function header(c: Card, o: HeaderOpts): number {
 const BRAND = '@SchemeHappens';
 
 export interface FooterOpts {
-  /** Своя брендовая строка слева: без градиентного логотипа, спокойным цветом. */
+  /** Своя брендовая строка слева: без знака продукта, спокойным цветом. */
   brand?: string;
 }
 
@@ -233,20 +234,10 @@ export function footer(c: Card, label: string, o: FooterOpts = {}) {
   ctx.textAlign = 'left';
 }
 
-/** Фирменная метка: градиентный квадратик и @SchemeHappens. */
+/** Фирменная метка: знак продукта (20 px — простой, без полоски) и @SchemeHappens. */
 function drawLogoBrand(c: Card, y: number) {
   const { ctx, th } = c;
-  const grad = ctx.createLinearGradient(CARD_PAD, y - 13, CARD_PAD + 20, y + 5);
-  grad.addColorStop(0, c.accent);
-  grad.addColorStop(1, c.accent2);
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.roundRect(CARD_PAD, y - 13, 20, 20, 7);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.beginPath();
-  ctx.arc(CARD_PAD + 10, y - 3, 3.4, 0, Math.PI * 2);
-  ctx.fill();
+  drawBrandMark(ctx, CARD_PAD, y - 13, 20, true);
 
   ctx.font = cardFont(11.5, 'bold');
   ctx.fillStyle = th.fg(0.5);

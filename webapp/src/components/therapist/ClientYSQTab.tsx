@@ -10,6 +10,7 @@ import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExpo
 import { buildYsqRows, YSQ_TOP_N } from './ysqRows';
 import { TabTitle } from './TabTitle';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { Layers } from '../art/PaperArt';
 import { YSQTable } from './YSQTable';
 import { YSQDynamics } from './YSQDynamics';
 
@@ -34,12 +35,13 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
     return (
       <div className="ds-page tb-page--ysq">
         <div className="u-col8">
-          <PaperEmpty>YSQ ещё не проходился</PaperEmpty>
-          {virtual ? (
-            <div className="tb-meta">У офлайн-клиента нет аккаунта – тест пройти негде</div>
-          ) : (
+          <PaperEmpty art={Layers} title="YSQ ещё не проходился">
+            {virtual
+              ? 'У офлайн-клиента нет аккаунта – тест пройти негде'
+              : tr('Запроси тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан', 'Запросите тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан')}
+          </PaperEmpty>
+          {!virtual && (
             <>
-              <div className="ds-sub">{tr('Запроси тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан', 'Запросите тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан')}</div>
               <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn ds-btn--sm" style={{ alignSelf: 'flex-start' }}>
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
               </button>

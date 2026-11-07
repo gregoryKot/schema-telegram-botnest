@@ -7,6 +7,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { ModeMapSelector } from './ModeMapSelector';
 import { AddressFormContext } from '../utils/addressForm';
 import { conceptMapTitle } from './modeMap/mapKinds';
+import { paperSignName } from '../test-support/paperSign';
 
 const listModeMaps = vi.fn();
 const getModeMap = vi.fn();
@@ -59,6 +60,7 @@ describe('ModeMapSelector — типы графических карт', () => {
     getConceptualization.mockResolvedValue(null);
     await renderEmpty();
     expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
+    expect(paperSignName(document.querySelector('.mm2-center .pp-empty svg'))).toBe('Cluster'); // круги режимов, не чашка
     const names = Array.from(document.querySelectorAll('.mm2-kind-card .mm2-kind-name')).map(n => n.textContent);
     expect(names).toEqual(['Концептуализация', 'Карта режимов', 'Карта ситуации', 'Карта пары', 'Свободный холст']);
   });

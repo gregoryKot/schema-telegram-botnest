@@ -412,13 +412,6 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: var(--space-10);
   flex-shrink: 0;
 }
-.sb-logo {
-  width: 32px; height: 32px; border-radius: var(--r-8);
-  background: var(--accent); color: var(--on-accent);
-  display: grid; place-items: center;
-  font-family: var(--serif); font-size: 15px; font-weight: 500;
-  flex-shrink: 0;
-}
 .sb-name { font-family: var(--serif); font-size: 17px; color: var(--on-panel); }
 /* Кнопка «свернуть / развернуть меню» (SidebarRail.tsx). Тап-цель 44×44 и под мышью, и под
    пальцем; в шапке отрицательные поля держат высоту строки логотипа (32px) — меню не
@@ -439,7 +432,9 @@ a { color: inherit; text-decoration: none; }
    меняется без анимации: React Flow пересчитывал бы холст на каждом кадре. На
    телефоне .sidebar скрыт целиком (блок ≤767 ниже). */
 .app-shell:has(> .sidebar.is-collapsed) { --sidebar-w: 64px; }
-.sidebar.is-collapsed { align-items: center; gap: 18px; padding: 14px 10px; overflow-x: hidden; }
+/* Знак сверху на той же высоте, что в развёрнутом (отступ 20px), шеврон под ним. */
+.sidebar.is-collapsed { align-items: center; gap: 18px; padding: 20px 10px 14px; overflow-x: hidden; }
+.sb-rail-head { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
 .sidebar.is-collapsed .sb-toggle { margin: 0; }
 .sidebar.is-collapsed .sb-foot-wrap { align-items: center; }
 .sb-item.sb-rail-item, .sb-account.sb-rail-account { width: 44px; min-height: 44px; padding: 0; justify-content: center; }

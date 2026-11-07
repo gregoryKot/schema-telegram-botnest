@@ -9,10 +9,8 @@
   display: flex; flex-direction: column;
 }
 .al-brand { display: flex; align-items: center; gap: 10px; }
-.al-logo {
-  width: 36px; height: 36px; border-radius: 9px; background: var(--accent); color: var(--on-accent);
-  display: grid; place-items: center; font-family: var(--serif); font-size: 17px; flex-shrink: 0;
-}
+/* Знак — BrandMark; класс только меняет размер на телефоне. */
+.al-logo { width: 36px; height: 36px; }
 .al-brand-name { font-family: var(--serif); font-size: 19px; }
 .al-pitch { margin-top: auto; display: flex; flex-direction: column; gap: 20px; }
 .al-slogan { font-family: var(--serif); font-size: 56px; line-height: 1.05; font-weight: 400; margin: 0; }
@@ -85,7 +83,7 @@
   .al-brand-name, .al-lead { display: none; }
   .al-art { gap: 12px; margin-top: 4px; }
   .al-art .pp-art { width: 72px; height: 40px; }
-  .al-logo { width: 40px; height: 40px; border-radius: 10px; font-size: 19px; }
+  .al-logo { width: 40px; height: 40px; }
   .al-pitch { margin-top: 0; }
   .al-slogan { font-size: 34px; line-height: 1.08; }
   .al-side {

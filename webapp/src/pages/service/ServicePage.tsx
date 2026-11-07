@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import '../../styles/auth-service.css';
+import { BrandMark } from '../../components/art/BrandMark';
 
 // Оболочка служебных страниц входа вне AppShell: корень сам красит экран
 // (light-lock), по центру карточка со знаком «Всё по схеме» сверху.
@@ -9,7 +10,7 @@ export function ServicePage({ children, width }: { children: ReactNode; width?: 
     <div className="light-lock as-root">
       <div className="ds-card as-card" style={width ? { maxWidth: width } : undefined}>
         <div className="as-brand">
-          <div className="as-logo">В</div>
+          <BrandMark size={28} />
           <span className="as-brand-name">Всё по схеме</span>
         </div>
         {children}
