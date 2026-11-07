@@ -1,37 +1,36 @@
 import type { TechniqueGuide } from '../../../../../shared/src/schemaTherapy/guide';
-import { ConceptFullscreenSheet } from '../ConceptFullscreenSheet';
-import { GuideSection, GuideSources } from './GuideSection';
-import { guideColumnStyle, guideListStyle, guideTextStyle } from './guideStyles';
+import { GuideSignArt } from '../../art/GuideSigns';
+import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
+import { GuideSection } from './GuideSection';
+import { GuidePage, GuidePoints, GuideVoice } from './GuideSheet';
 import { TechniqueMarkRow, type TechniqueMarkProps } from './TechniqueMarkRow';
 
 /**
- * Лист техники (#995): что это, когда применять, шаги, когда не делать,
- * доказательность и источники. Открывается с плашки «Обычно в методе» и из
- * листа режима; оболочка та же, что у листа режима (ConceptFullscreenSheet,
- * один слой): лист техники рисуется позже в DOM и встаёт поверх листа режима.
- * `mark` — лист открыт из схемы случая клиента: под описанием «Делали
- * сегодня» и сколько раз делали (TechniqueMarkRow); без клиента — нет.
+ * Лист техники (#995): герой с сутью и знаком техники, «Как это звучит», когда
+ * применять, шаги крупными номерами; под «Подробнее» — пункты `more`, когда не
+ * делать и доказательность; мелко источники. Каркас — GuidePage, общий с листами
+ * режима и схемы: лист техники рисуется позже в DOM и встаёт поверх листа режима.
+ * `mark` — лист открыт из схемы случая клиента: под героем «Делали сегодня» и
+ * сколько раз делали (TechniqueMarkRow); без клиента — нет.
  */
 export function TechniqueSheet({ technique: t, mark, onClose }: {
   technique: TechniqueGuide; mark?: TechniqueMarkProps; onClose: () => void;
 }) {
   return (
-    <ConceptFullscreenSheet title={t.name} closeLabel="Закрыть" onClose={onClose}>
-      <div style={guideColumnStyle}>
-        <p style={guideTextStyle}>{t.summary}</p>
-        {mark && <TechniqueMarkRow {...mark} />}
-        <GuideSection title="Когда" text={t.when} />
-        {t.steps.length > 0 && (
-          <GuideSection title="Как проводить">
-            <ol style={guideListStyle}>
-              {t.steps.map((step, i) => <li key={i}>{step}</li>)}
-            </ol>
-          </GuideSection>
-        )}
-        <GuideSection title="Когда не делать" text={t.cautions} />
-        <GuideSection title="Доказательность" text={t.evidence} />
-        <GuideSources text={t.sources} />
-      </div>
-    </ConceptFullscreenSheet>
+    <GuidePage
+      label="Техника" title={t.name} lede={t.summary} onClose={onClose}
+      art={<GuideSignArt sign={TECHNIQUE_SIGN[t.id]} size="hero" />}
+      more={t.more} sources={t.sources}
+      moreParts={[{ title: 'Когда не делать', text: t.cautions }, { title: 'Доказательность', text: t.evidence }]}
+    >
+      {mark && <TechniqueMarkRow {...mark} />}
+      <GuideVoice lines={t.voice} />
+      <GuideSection title="Когда" text={t.when} />
+      {t.steps.length > 0 && (
+        <GuideSection title="Как проводить">
+          <GuidePoints items={t.steps} ordered />
+        </GuideSection>
+      )}
+    </GuidePage>
   );
 }

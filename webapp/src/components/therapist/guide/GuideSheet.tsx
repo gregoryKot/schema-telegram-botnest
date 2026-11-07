@@ -2,9 +2,95 @@ import type { ReactNode } from 'react';
 import type { BetweenSessionsItem, TechniqueGuide, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { GuideHintView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import type { GuideNotes } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
+import { GuideSignArt } from '../../art/GuideSigns';
+import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
+import { NeedFold } from '../../NeedFold';
 import { ConceptFullscreenSheet } from '../ConceptFullscreenSheet';
 import { GuideSection, GuideSources } from './GuideSection';
-import { guideColumnStyle, guideTextStyle } from './guideStyles';
+import { GUIDE_COLUMN, guideTextStyle } from './guideStyles';
+import '../../../styles/therapist-guide.css';
+
+/** Раздел под «Подробнее»: подпись и абзац или своё содержимое (копинг схемы). Пустой не рисуется. */
+export interface GuideMorePart { title: string; text?: string; children?: ReactNode }
+
+interface PageProps {
+  /** Что за лист — подпись в шапке: «Техника», «Режим», «Схема». */
+  label: string;
+  title: string;
+  /** Суть одной-двумя фразами — подпись героя. */
+  lede: string;
+  art: ReactNode;
+  onClose: () => void;
+  /** Пункты «Подробнее» из текста раздела (`more`). */
+  more?: string[];
+  /** Разделы «Подробнее» после пунктов. */
+  moreParts?: GuideMorePart[];
+  sources: string;
+  children: ReactNode;
+}
+
+/**
+ * Каркас листа подсказок (#995, пилот живого языка 2026-11) — один на листы техники,
+ * режима и схемы: в шапке подпись и «Закрыть», герой бумажной аппликации (заголовок
+ * Literata, суть, знак справа — docs/design/PAPER_2026-11.md), свои разделы листа,
+ * «Подробнее» (закрыто по умолчанию, NeedFold) и мелко «Источники». Шапка и
+ * содержимое стоят в одной колонке. Оболочка — ConceptFullscreenSheet
+ * (useHistorySheet, «Назад» браузера закрывает лист).
+ */
+export function GuidePage({ label, title, lede, art, onClose, more = [], moreParts = [], sources, children }: PageProps) {
+  const items = more.filter((m) => m.trim());
+  const parts = moreParts.filter((p) => p.children || p.text?.trim());
+  return (
+    <ConceptFullscreenSheet title={title} label={label} column={GUIDE_COLUMN} closeLabel="Закрыть" onClose={onClose}>
+      <div className="gd-page" style={{ maxWidth: GUIDE_COLUMN }}>
+        <div className="gd-hero">
+          <h2 className="pp-hero-title">{title}</h2>
+          {art}
+          {lede.trim() && <p className="pp-hero-text">{lede}</p>}
+        </div>
+        {children}
+        {(items.length > 0 || parts.length > 0) && (
+          <div className="gd-more">
+            <NeedFold title="Подробнее">
+              {items.length > 0 && <GuidePoints items={items} />}
+              {parts.map((p) => <GuideSection key={p.title} title={p.title} text={p.text}>{p.children}</GuideSection>)}
+            </NeedFold>
+          </div>
+        )}
+        <GuideSources text={sources} />
+      </div>
+    </ConceptFullscreenSheet>
+  );
+}
+
+/** «Как это звучит»: реплики терапевта на цветной бумаге; кавычки ставит лист, в данных их нет. */
+export function GuideVoice({ lines = [] }: { lines?: string[] }) {
+  const said = lines.filter((l) => l.trim());
+  if (said.length === 0) return null;
+  return (
+    <section aria-label="Как это звучит" className="pp-paper gd-voice">
+      <h3 className="ds-label" style={{ margin: 0 }}>Как это звучит</h3>
+      {said.map((line, i) => <blockquote key={i} className="gd-voice-line">«{line}»</blockquote>)}
+    </section>
+  );
+}
+
+/** Пункт списка: строка или подпись канала работы над строкой. */
+export type GuidePoint = string | { lead: string; text: string };
+
+/** Шаги (`ordered`: крупный номер слева) или главные пункты (кружок-маркер). */
+export function GuidePoints({ items, ordered }: { items: GuidePoint[]; ordered?: boolean }) {
+  const List = ordered ? 'ol' : 'ul';
+  return (
+    <List className={ordered ? 'gd-steps' : 'gd-points'}>
+      {items.map((item, i) => (
+        <li key={i}>
+          {typeof item === 'string' ? item : <><span className="gd-lead">{item.lead}</span>{item.text}</>}
+        </li>
+      ))}
+    </List>
+  );
+}
 
 /** Колбэки листа раздела (режима или схемы). */
 export interface GuideSheetActions {
@@ -16,41 +102,34 @@ export interface GuideSheetActions {
   notes?: GuideNotes;
 }
 
-type Props = GuideSheetActions & {
-  title: string;
-  /** Что это за лист, одной-двумя фразами под шапкой. */
-  intro: string;
-  view: GuideHintView & { guide: { stuck?: string; sources: string } };
-  /** Свои разделы листа: у режима — каналы работы, у схемы — суть, копинг, режимы… */
-  children: ReactNode;
+type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'> & {
+  voice?: string[];
+  view: GuideHintView & { guide: { stuck?: string; sources: string; more?: string[] } };
 };
 
 /**
- * Лист раздела справочника (#995) — одна оболочка на лист режима и лист
- * схемы: шапка и пояснение, свои разделы листа, затем общий хвост — «На
- * сессии» (тап по технике → лист техники поверх), «Между сессиями» с «Дать
- * заданием», «Где застревают» и «Источники». Пустой раздел не рисуется.
- * У техники и задания — история серым (`notes`, guideHistory.ts).
- * Оболочка — ConceptFullscreenSheet (useHistorySheet, «Назад» браузера
- * закрывает лист).
+ * Лист раздела справочника (#995) — режима или схемы: каркас GuidePage, «Как это
+ * звучит», свои разделы листа, затем общий хвост — «На сессии» (тап по технике →
+ * лист техники поверх), «Между сессиями» с «Дать заданием»; «Где застревают» —
+ * последним разделом «Подробнее». У техники и задания — история серым (`notes`,
+ * guideHistory.ts). Пустой раздел не рисуется.
  */
-export function GuideSheet({ title, intro, view, onOpenTechnique, onAssign, onClose, notes, children }: Props) {
+export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAssign, onClose, notes, children, ...page }: Props) {
   const { guide, techniques } = view;
   return (
-    <ConceptFullscreenSheet title={title} closeLabel="Закрыть" onClose={onClose}>
-      <div style={guideColumnStyle}>
-        <p className="ds-sub" style={{ margin: 0 }}>{intro}</p>
-        {children}
-        <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} notes={notes} />
-        <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} notes={notes} />
-        <GuideSection title="Где застревают" text={guide.stuck} />
-        <GuideSources text={guide.sources} />
-      </div>
-    </ConceptFullscreenSheet>
+    <GuidePage
+      {...page} onClose={onClose} sources={guide.sources} more={guide.more}
+      moreParts={[...moreParts, { title: 'Где застревают', text: guide.stuck }]}
+    >
+      <GuideVoice lines={voice} />
+      {children}
+      <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} notes={notes} />
+      <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} notes={notes} />
+    </GuidePage>
   );
 }
 
-/** «На сессии»: техника — кнопка с описанием и «делали …». */
+/** «На сессии»: знак техники, техника — кнопка с описанием и «делали …». */
 function GuideTechniques({ techniques, onOpen, notes }: {
   techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void; notes?: GuideNotes;
 }) {
@@ -59,10 +138,13 @@ function GuideTechniques({ techniques, onOpen, notes }: {
     <GuideSection title="На сессии">
       <ul className="tcp-guide-list">
         {techniques.map((t) => (
-          <li key={t.id}>
-            <button type="button" className="tcp-guide-link" onClick={() => onOpen(t.id)}>{t.name}</button>
-            <div className="ds-sub">{t.summary}</div>
-            <GuideNote text={notes?.technique(t.id)} />
+          <li key={t.id} className="gd-tech">
+            <span className="pp-row-art"><GuideSignArt sign={TECHNIQUE_SIGN[t.id]} size="row" /></span>
+            <div style={{ minWidth: 0 }}>
+              <button type="button" className="tcp-guide-link" onClick={() => onOpen(t.id)}>{t.name}</button>
+              <div className="ds-sub">{t.summary}</div>
+              <GuideNote text={notes?.technique(t.id)} />
+            </div>
           </li>
         ))}
       </ul>

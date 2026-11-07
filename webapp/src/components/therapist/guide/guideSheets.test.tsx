@@ -2,7 +2,10 @@
 // Листы подсказок терапевту (#995): лист режима рисует разделы справочника и
 // не рисует пустые (у режима бывают не все четыре канала), техники ведут в
 // лист техники, «Дать заданием» отдаёт пункт; лист техники — шаги нумерованным
-// списком. Содержание — фикстура, не тексты shared/src/schemaTherapy/guide/.
+// списком. Пилот живого языка (2026-11): герой с заголовком и сутью, «Как это
+// звучит», а «Где застревают», «Когда не делать», доказательность и пункты
+// `more` — под «Подробнее», закрытым по умолчанию. Содержание — фикстура, не
+// тексты shared/src/schemaTherapy/guide/.
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -15,6 +18,7 @@ import {
 } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 const regions = () => screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
+const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Подробнее' }));
 
 function renderMode(onAssign?: (item: unknown) => void) {
   const onOpenTechnique = vi.fn();
@@ -30,25 +34,51 @@ function renderMode(onAssign?: (item: unknown) => void) {
 }
 
 describe('ModeGuideSheet', () => {
-  it('разделы справочника по порядку; пустой канал («Поведенчески») не показывается', () => {
+  it('герой — название и суть; разделы по порядку; пустой канал («В жизни») не показывается', () => {
     renderMode(vi.fn());
-    expect(screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' })).toBeTruthy();
-    expect(regions()).toEqual([
-      'Что это', 'Цель', 'Отношения', 'Когнитивно', 'Экспериенциально',
-      'На сессии', 'Между сессиями', 'Где застревают', 'Источники',
-    ]);
+    const dialog = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
+    expect(within(dialog).getByRole('heading', { level: 2, name: 'Уязвимый Ребёнок' })).toBeTruthy();
+    expect(within(dialog).getByText('Режим')).toBeTruthy();
+    expect(screen.getByText(FIXTURE_GUIDE.what)).toBeTruthy();
+    expect(regions()).toEqual(['Цель', 'Как работать', 'На сессии', 'Между сессиями', 'Источники']);
     expect(within(screen.getByRole('region', { name: 'Цель' })).getByText(FIXTURE_GUIDE.goal)).toBeTruthy();
+    const leads = within(screen.getByRole('region', { name: 'Как работать' })).getAllByRole('listitem')
+      .map((li) => li.querySelector('.gd-lead')?.textContent);
+    expect(leads).toEqual(['В отношениях', 'Через понимание', 'Через чувства и образы']);
     expect(screen.getByText(FIXTURE_GUIDE.sources)).toBeTruthy();
   });
 
-  it('у режима без «Где застревают» и без каналов этих разделов нет вовсе', () => {
+  it('«Где застревают» — под «Подробнее»: закрыто, по тапу открывается', () => {
+    renderMode();
+    expect(screen.queryByText(FIXTURE_GUIDE.stuck!)).toBeNull();
+    openMore();
+    expect(within(screen.getByRole('region', { name: 'Где застревают' })).getByText(FIXTURE_GUIDE.stuck!)).toBeTruthy();
+  });
+
+  it('у режима без «Где застревают» и без каналов этих разделов и «Подробнее» нет вовсе', () => {
     const bare = { ...FIXTURE_GUIDE, relationship: undefined, cognitive: '  ', experiential: undefined, stuck: undefined };
     render(
       <MemoryRouter>
         <ModeGuideSheet modeName="Уязвимый Ребёнок" view={{ ...FIXTURE_VIEW, guide: bare }} onOpenTechnique={() => {}} onClose={() => {}} />
       </MemoryRouter>,
     );
-    expect(regions()).toEqual(['Что это', 'Цель', 'На сессии', 'Между сессиями', 'Источники']);
+    expect(regions()).toEqual(['Цель', 'На сессии', 'Между сессиями', 'Источники']);
+    expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
+  });
+
+  it('переписанный раздел: «Как это звучит» репликами в кавычках, пункты `more` — под «Подробнее»', () => {
+    const guide = { ...FIXTURE_GUIDE, voice: ['Я рядом', ' '], more: ['Оттенки режима'] };
+    render(
+      <MemoryRouter>
+        <ModeGuideSheet modeName="Уязвимый Ребёнок" view={{ ...FIXTURE_VIEW, guide }} onOpenTechnique={() => {}} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(regions()[0]).toBe('Как это звучит');
+    const lines = within(screen.getByRole('region', { name: 'Как это звучит' })).getAllByText(/^«/);
+    expect(lines.map((l) => [l.tagName, l.textContent])).toEqual([['BLOCKQUOTE', '«Я рядом»']]);
+    expect(screen.queryByText('Оттенки режима')).toBeNull();
+    openMore();
+    expect(screen.getByText('Оттенки режима')).toBeTruthy();
   });
 
   it('техника — кнопка с описанием; тап зовёт лист техники', () => {
@@ -77,19 +107,34 @@ describe('ModeGuideSheet', () => {
 });
 
 describe('TechniqueSheet', () => {
-  it('описание, «Когда», шаги нумерованным списком, «Когда не делать», доказательность, источники', () => {
+  it('герой — название и суть; «Когда», шаги нумерованным списком; «Когда не делать» и доказательность — под «Подробнее»', () => {
     render(<MemoryRouter><TechniqueSheet technique={FIXTURE_TECHNIQUES[0]} onClose={() => {}} /></MemoryRouter>);
-    expect(screen.getByRole('dialog', { name: 'Рескриптинг образов' })).toBeTruthy();
+    const dialog = screen.getByRole('dialog', { name: 'Рескриптинг образов' });
+    expect(within(dialog).getByRole('heading', { level: 2, name: 'Рескриптинг образов' })).toBeTruthy();
+    expect(within(dialog).getByText('Техника')).toBeTruthy();
     expect(screen.getByText(FIXTURE_TECHNIQUES[0].summary)).toBeTruthy();
-    expect(regions()).toEqual(['Когда', 'Как проводить', 'Когда не делать', 'Доказательность', 'Источники']);
+    expect(regions()).toEqual(['Когда', 'Как проводить', 'Источники']);
     const steps = within(screen.getByRole('region', { name: 'Как проводить' })).getByRole('list');
     expect(steps.tagName).toBe('OL');
     expect(within(steps).getAllByRole('listitem').map((li) => li.textContent)).toEqual(FIXTURE_TECHNIQUES[0].steps);
+    expect(screen.queryByText(FIXTURE_TECHNIQUES[0].cautions!)).toBeNull();
+    openMore();
+    expect(regions()).toEqual(['Когда', 'Как проводить', 'Когда не делать', 'Доказательность', 'Источники']);
   });
 
-  it('у техники без «Когда», предостережений и доказательности этих разделов нет', () => {
+  it('у техники без «Когда», предостережений и доказательности этих разделов и «Подробнее» нет', () => {
     render(<MemoryRouter><TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} onClose={() => {}} /></MemoryRouter>);
     expect(regions()).toEqual(['Как проводить', 'Источники']);
+    expect(screen.queryByRole('button', { name: 'Подробнее' })).toBeNull();
+  });
+
+  it('переписанная техника: «Как это звучит» до шагов, пункты `more` первыми под «Подробнее»', () => {
+    const t = { ...FIXTURE_TECHNIQUES[0], voice: ['Что самое маленькое?'], more: ['Срыв — повод разобраться'] };
+    render(<MemoryRouter><TechniqueSheet technique={t} onClose={() => {}} /></MemoryRouter>);
+    expect(regions()).toEqual(['Как это звучит', 'Когда', 'Как проводить', 'Источники']);
+    expect(screen.getByText('«Что самое маленькое?»')).toBeTruthy();
+    openMore();
+    expect(screen.getByText('Срыв — повод разобраться')).toBeTruthy();
   });
 });
 
