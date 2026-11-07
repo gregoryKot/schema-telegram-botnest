@@ -24,7 +24,7 @@ export class RobokassaService {
   private readonly login: string;
   private readonly pass1: string;
   private readonly pass2: string;
-  private readonly isTest: boolean;
+  readonly isTest: boolean;
   private readonly fiscal: boolean;
 
   constructor(config: ConfigService) {
