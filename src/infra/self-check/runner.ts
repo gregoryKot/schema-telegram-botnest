@@ -34,15 +34,36 @@ async function withTimeout(
   }
 }
 
+/** Пауза перед повтором пробы с `retryOnce` (types.ts): повтор сразу попал
+ * бы в ту же секундную дыру связи. */
+export const RETRY_PAUSE_MS = 3_000;
+
+const pauseBeforeRetry = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, RETRY_PAUSE_MS).unref());
+
+/** Вторая попытка — только упавшей пробе с `retryOnce`; итог — вторая. */
+async function attempt(
+  probe: Probe,
+  timeoutMs: number,
+  pause: () => Promise<void>,
+): Promise<ProbeResult> {
+  const first = await withTimeout(probe, timeoutMs);
+  if (first.ok || !probe.retryOnce) return first;
+  await pause();
+  return withTimeout(probe, timeoutMs);
+}
+
 /** Прогоняет все пробы параллельно, с таймаутом и агрегацией на каждую —
- * одна упавшая/зависшая проба не мешает увидеть остальные. */
+ * одна упавшая/зависшая проба не мешает увидеть остальные. `pause` —
+ * пауза перед повтором (тесты не спят). */
 export async function runProbes(
   probes: Probe[],
   timeoutMs: number = PROBE_TIMEOUT_MS,
+  pause: () => Promise<void> = pauseBeforeRetry,
 ): Promise<SelfCheckResultEntry[]> {
   return Promise.all(
     probes.map(async (p) => {
-      const r = await withTimeout(p, timeoutMs);
+      const r = await attempt(p, timeoutMs, pause);
       return {
         id: p.id,
         title: p.title,

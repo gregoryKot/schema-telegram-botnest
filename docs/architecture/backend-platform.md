@@ -105,7 +105,7 @@
   - `src/infra/self-check/self-check.service.ts` — крон `43 * * * *` и прогон через 60 с после старта
   - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live.ts`)
 - Остальные сервисы (по строке на группу):
-  - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-tracker.ts` (DM только по смене состояния), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники)
+  - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-dedup.ts` (DM по смене набора упавших — аренда `self-check-alert:*` в `CronLease`; база недоступна — память процесса, `alert-tracker.ts`), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники)
   - `src/infra/db-outage.service.ts` — закрывает аварию БД и шлёт DM о восстановлении; `src/infra/session-retention.service.ts` — чистка WebSession/EmailToken
   - HTTP-края: `src/infra/trust-proxy.ts` (один хоп), `src/infra/request-host.ts` (хост из Host), `src/infra/canonical-host.ts` (301 на apex), `src/infra/body-limit.ts` и `src/infra/body-parsers.ts` (потолок тела 256 КБ), `src/infra/static-cache.ts`
   - Бэкапы: `src/infra/backup-config.ts`, `src/infra/backup-capability.ts`, `src/infra/s3-sigv4.ts`, `src/infra/s3-list-objects.ts` (проба свежести в Cloudflare R2; сам прогон — `deploy/backup-scheduler.cjs`); `src/infra/deploy-target.ts` (`DEPLOY_TARGET=vps`)
