@@ -43,7 +43,7 @@ export function Sidebar({
   if (collapsed) return <SidebarRail items={items} therapistMode={therapistMode} onList={onList} displayName={displayName} />;
   return (
     <aside className="sidebar">
-      <SidebarBrand toggle />
+      <SidebarBrand menu={{ therapistMode }} />
 
       {userRole === 'THERAPIST' && (
         <ModeSwitch variant="sidebar" value={therapistMode} onChange={onSwitchMode} />
