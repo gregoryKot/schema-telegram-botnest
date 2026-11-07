@@ -13,6 +13,7 @@ function makeService(opts: {
   brief?: number;
   syncToMap?: number;
   syncFromMap?: number;
+  guide?: [modes: number, techniques: number, assign: number];
   groups?: Array<{ userId: bigint | null }>;
 }) {
   const byName: Record<string, number> = {
@@ -25,6 +26,9 @@ function makeService(opts: {
     concept_brief_open: opts.brief ?? 0,
     concept_sync_to_map: opts.syncToMap ?? 0,
     concept_sync_from_map: opts.syncFromMap ?? 0,
+    concept_guide_mode_open: opts.guide?.[0] ?? 0,
+    concept_guide_technique_open: opts.guide?.[1] ?? 0,
+    concept_guide_assign: opts.guide?.[2] ?? 0,
   };
   const count = jest.fn(({ where }: { where: { name: string } }) =>
     Promise.resolve(byName[where.name]),
@@ -64,6 +68,9 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      guideModes30: 0,
+      guideTechniques30: 0,
+      guideAssign30: 0,
     });
   });
 
@@ -105,6 +112,9 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      guideModes30: 0,
+      guideTechniques30: 0,
+      guideAssign30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Собирали карту из концептуализации 7 раз',
@@ -124,6 +134,9 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      guideModes30: 0,
+      guideTechniques30: 0,
+      guideAssign30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Разворачивали схему на весь экран 6 раз',
@@ -143,6 +156,9 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      guideModes30: 0,
+      guideTechniques30: 0,
+      guideAssign30: 0,
     });
     await expect(service.render()).resolves.toContain(
       'Повторяли сохранение после ошибки 3 раз',
@@ -163,6 +179,28 @@ describe('ConceptGraphMetricsService', () => {
     const text = await service.render();
     expect(text).toContain('Дописывали на карту из полей: 4 раз');
     expect(text).toContain('Холст дописывал в концептуализацию: 9 раз');
+  });
+
+  it('подсказки терапевту (#995): листы режима, техники и «Дать заданием» считаются отдельно и видны в /stats', async () => {
+    const { service, count } = makeService({ opens: 3, guide: [5, 8, 2] });
+    await expect(service.getMetrics()).resolves.toMatchObject({
+      opens30: 3,
+      guideModes30: 5,
+      guideTechniques30: 8,
+      guideAssign30: 2,
+    });
+    for (const name of [
+      'concept_guide_mode_open',
+      'concept_guide_technique_open',
+      'concept_guide_assign',
+    ]) {
+      expect(count).toHaveBeenCalledWith({
+        where: { name, createdAt: { gte: SINCE } },
+      });
+    }
+    await expect(service.render()).resolves.toContain(
+      'Подсказки терапевту — листы режимов: 5, листы техник: 8, «Дать заданием»: 2',
+    );
   });
 
   it('терапевты — distinct по userId, анонимная строка (null) не в счёт', async () => {
@@ -196,6 +234,9 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      guideModes30: 0,
+      guideTechniques30: 0,
+      guideAssign30: 0,
     });
     const text = await service.render();
     expect(text).toContain('Пока никто из терапевтов не открывал');

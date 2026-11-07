@@ -4,6 +4,7 @@ import { colorMix } from '../../utils/colorMix';
 import type { GraphModeCard } from './conceptGraphTypes';
 import { ConceptSchemaField } from './ConceptSchemaField';
 import { ConceptStrategy } from './ConceptStrategy';
+import { useModeGuide, type ConceptGuideActions } from './conceptGuide';
 import { ConceptTextField } from './ConceptTextField';
 import { ConceptAliasField } from './ConceptAliasField';
 import { ConceptNeedField } from './ConceptNeedField';
@@ -22,7 +23,7 @@ const gap = {
  * изменение сразу уходит в onChangeLink; связь режима, убранного с карты,
  * остаётся в данных. Что писать в текст режима, зависит от группы, а сам текст
  * виден на фигуре. Потребности (✓ на схеме) выбираются только у здоровых
- * режимов, схемы (⇄) — только у остальных.
+ * режимов, схемы (⇄) — только у остальных. `guide` — кнопки подсказок (#995).
  */
 export function ConceptModeEditor({
   card,
@@ -32,6 +33,7 @@ export function ConceptModeEditor({
   onAddSchema,
   onToggleMode,
   onClose,
+  guide,
 }: {
   card: GraphModeCard;
   link: ConceptModeLink;
@@ -40,11 +42,13 @@ export function ConceptModeEditor({
   onAddSchema: (schemaId: string) => void;
   onToggleMode: (modeId: string) => void;
   onClose: () => void;
+  guide?: ConceptGuideActions;
 }) {
   const set = (patch: Partial<ConceptModeLink>) =>
     onChangeLink({ ...link, ...patch });
   const healthy = card.lane === 'healthy';
   const manifestField = MANIFEST_FIELD[card.lane];
+  const method = useModeGuide(card.modeId);
   // Редактор открывается под диаграммой, а фигура может стоять высоко над ним.
   // Подвозим редактор к глазам.
   const ref = useRef<HTMLElement>(null);
@@ -125,6 +129,8 @@ export function ConceptModeEditor({
         <ConceptStrategy
           card={card}
           link={link}
+          guide={method}
+          actions={guide}
           onChange={(strategy) => set({ strategy })}
         />
         <button

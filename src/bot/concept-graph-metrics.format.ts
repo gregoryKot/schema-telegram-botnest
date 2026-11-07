@@ -12,6 +12,12 @@ const IF_ANY: [keyof ConceptGraphMetrics, (n: number) => string][] = [
   ['syncToMap30', (n) => `Дописывали на карту из полей: ${n} раз`],
   ['syncFromMap30', (n) => `Холст дописывал в концептуализацию: ${n} раз`],
 ];
+// Подсказки терапевту (#995): одной строкой, нулевые части не печатаются.
+const GUIDE: [keyof ConceptGraphMetrics, string][] = [
+  ['guideModes30', 'листы режимов'],
+  ['guideTechniques30', 'листы техник'],
+  ['guideAssign30', '«Дать заданием»'],
+];
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
@@ -29,5 +35,13 @@ export function formatConceptGraphMetrics(m: ConceptGraphMetrics): string {
   for (const [key, line] of IF_ANY) {
     if (m[key] > 0) lines.push(line(m[key]));
   }
+  const guide = GUIDE.filter(([k]) => m[k] > 0).map(
+    ([k, label]) => `${label}: ${m[k]}`,
+  );
+  lines.push(
+    guide.length > 0
+      ? `Подсказки терапевту — ${guide.join(', ')}`
+      : 'Подсказки терапевту пока не открывали',
+  );
   return lines.join('\n');
 }

@@ -6,13 +6,17 @@ import { useClientConceptGraph } from './useClientConceptGraph';
 import { ConceptGraphToolbar } from './ConceptGraphToolbar';
 import { ConceptFullscreenSheet } from './ConceptFullscreenSheet';
 import { ConceptTabHead, type ConceptTabHeadProps } from './concept/ConceptTabHead';
+import type { AssignPreset } from './assignTemplates';
+import { useConceptGuide } from './guide/useConceptGuide';
 
 // Вид «Схема»: схема случая в потоке или, по «На весь экран», в листе; данные и правки —
 // useClientConceptGraph, одни на оба места. Действия (картинка, весь экран, холст) в потоке уходят
 // в меню шапки (head рисуется здесь ради graph), в листе — панель. Сводка digest (#902) — под шапкой.
-export function ClientConceptGraph({ detail, onOpenCanvas, head, digest }: {
+// Подсказки терапевту (#995): листы режима и техники — после схемы, «Дать заданием» — onAssign.
+export function ClientConceptGraph({ detail, onOpenCanvas, onAssign, head, digest }: {
   detail: ClientDetail;
   onOpenCanvas?: (mapId: number) => void;
+  onAssign?: (preset: AssignPreset) => void;
   head: Omit<ConceptTabHeadProps, 'graph'>;
   digest?: ReactNode;
 }) {
@@ -23,12 +27,13 @@ export function ClientConceptGraph({ detail, onOpenCanvas, head, digest }: {
   const graphRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<(() => void) | null>(null);
   const g = useClientConceptGraph(detail, graphRef, onOpenCanvas && ((id) => { backRef.current?.(); onOpenCanvas(id); }));
+  const guide = useConceptGuide(onAssign);
   const expand = () => {
     api.trackEvent('concept_graph_fullscreen');
     setHeld(flowRef.current?.offsetHeight ?? 0);
   };
   const graph = (
-    <div ref={graphRef} className="tcp-graph"><ConceptGraph {...g.graphProps} /></div>
+    <div ref={graphRef} className="tcp-graph"><ConceptGraph {...g.graphProps} guide={guide.actions} /></div>
   );
   return (
     <>
@@ -47,6 +52,7 @@ export function ClientConceptGraph({ detail, onOpenCanvas, head, digest }: {
       ) : (
         <div ref={flowRef} style={{ minWidth: 0 }}>{graph}</div>
       )}
+      {guide.sheets}
     </>
   );
 }

@@ -149,6 +149,11 @@ export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
 // Строка связи над холстом «Графических карт» (#963): «Добавить на карту» (поля → холст) и запись с холста в поля.
 export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
 export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
+// Подсказки терапевту (#995, guide/useConceptGuide): лист режима, лист техники, «Дать заданием». Только сайт.
+export const CONCEPT_GUIDE_MODE_OPEN_EVENT = 'concept_guide_mode_open';
+export const CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT =
+  'concept_guide_technique_open';
+export const CONCEPT_GUIDE_ASSIGN_EVENT = 'concept_guide_assign';
 
 // «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
 // (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.

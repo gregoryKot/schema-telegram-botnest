@@ -712,6 +712,19 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('concept_sync_from_map', leak)).toBeUndefined();
   });
 
+  // Подсказки терапевту (#995): ни клиент, ни режим, ни текст задания в событие
+  // не попадают — событие отмечает только, что лист открыт или задание дано.
+  it('concept_guide_mode_open/concept_guide_technique_open/concept_guide_assign: meta игнорируется', () => {
+    const leak = {
+      clientId: '555',
+      modeId: 'vulnerable_child',
+      text: 'Встреча со своим маленьким Я',
+    };
+    expect(sanitizeMeta('concept_guide_mode_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_technique_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_assign', leak)).toBeUndefined();
+  });
+
   // «Показ экрана» в кабинете: событие только отмечает включение, имена клиентов не принимаются.
   it('cabinet_screen_share_on: meta игнорируется', () => {
     const leak = { clients: ['Анна'], clientId: '555' };

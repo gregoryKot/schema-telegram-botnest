@@ -35,7 +35,8 @@ describe.each([
 
   it('каждая техника раздела режима есть в библиотеке', () => {
     for (const g of modes) {
-      for (const id of g.techniques) expect(techniqueIds.has(id), `${g.modeId} → ${id}`).toBe(true);
+      for (const id of g.techniques)
+        expect(techniqueIds.has(id), `${g.modeId} → ${id}`).toBe(true);
     }
   });
 
@@ -52,7 +53,8 @@ describe.each([
       expect(g.betweenSessions.length, g.modeId).toBeLessThanOrEqual(4);
       for (const b of g.betweenSessions) {
         expect(b.title.trim(), g.modeId).not.toBe('');
-        if (b.kind === 'custom') expect(b.text.trim(), `${g.modeId}: ${b.title}`).not.toBe('');
+        if (b.kind === 'custom')
+          expect(b.text.trim(), `${g.modeId}: ${b.title}`).not.toBe('');
       }
     }
   });

@@ -6,6 +6,25 @@ import type { ConceptGraphMetrics } from './concept-graph-metrics.types';
 
 const OPEN_EVENT: AnalyticsEventName = 'concept_graph_open';
 
+// Поле отчёта → событие, которое оно считает за 30 дней (кроме therapists30 — это groupBy).
+const COUNTED: [
+  Exclude<keyof ConceptGraphMetrics, 'therapists30'>,
+  AnalyticsEventName,
+][] = [
+  ['opens30', OPEN_EVENT],
+  ['linked30', 'concept_mode_linked'],
+  ['schemaLinked30', 'concept_schema_linked'],
+  ['canvasOpen30', 'concept_canvas_open'],
+  ['fullscreen30', 'concept_graph_fullscreen'],
+  ['saveRetry30', 'concept_save_retry'],
+  ['brief30', 'concept_brief_open'],
+  ['syncToMap30', 'concept_sync_to_map'],
+  ['syncFromMap30', 'concept_sync_from_map'],
+  ['guideModes30', 'concept_guide_mode_open'],
+  ['guideTechniques30', 'concept_guide_technique_open'],
+  ['guideAssign30', 'concept_guide_assign'],
+];
+
 // Счётчики графической концептуализации в кабинете терапевта для /stats (события concept_*
 // из AnalyticsEvent, смысл — src/analytics/concept-events.constants.ts). Имена типизированы
 // AnalyticsEventName: опечатка не даст молча пустой отчёт. Без сырого SQL — count/groupBy через
@@ -21,47 +40,23 @@ export class ConceptGraphMetricsService {
 
   async getMetrics(): Promise<ConceptGraphMetrics> {
     const createdAt = { gte: new Date(Date.now() - 30 * 86_400_000) };
-    const countOf = (name: AnalyticsEventName) =>
-      this.prisma.analyticsEvent.count({ where: { name, createdAt } });
-    const [
-      opens,
-      openers,
-      linked,
-      schemaLinked,
-      canvas,
-      fullscreen,
-      saveRetry,
-      brief,
-      syncToMap,
-      syncFromMap,
-    ] = await Promise.all([
-      countOf(OPEN_EVENT),
+    const [openers, counts] = await Promise.all([
       // Одна группа на терапевта; анонимная строка (userId null) терапевтом
       // не считается.
       this.prisma.analyticsEvent.groupBy({
         by: ['userId'],
         where: { name: OPEN_EVENT, createdAt, userId: { not: null } },
       }),
-      countOf('concept_mode_linked'),
-      countOf('concept_schema_linked'),
-      countOf('concept_canvas_open'),
-      countOf('concept_graph_fullscreen'),
-      countOf('concept_save_retry'),
-      countOf('concept_brief_open'),
-      countOf('concept_sync_to_map'),
-      countOf('concept_sync_from_map'),
+      Promise.all(
+        COUNTED.map(([, name]) =>
+          this.prisma.analyticsEvent.count({ where: { name, createdAt } }),
+        ),
+      ),
     ]);
-    return {
-      opens30: opens,
-      therapists30: openers.length,
-      linked30: linked,
-      schemaLinked30: schemaLinked,
-      canvasOpen30: canvas,
-      fullscreen30: fullscreen,
-      saveRetry30: saveRetry,
-      brief30: brief,
-      syncToMap30: syncToMap,
-      syncFromMap30: syncFromMap,
-    };
+    const metrics = { therapists30: openers.length } as ConceptGraphMetrics;
+    COUNTED.forEach(([key], i) => {
+      metrics[key] = counts[i];
+    });
+    return metrics;
   }
 }

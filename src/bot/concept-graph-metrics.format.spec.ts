@@ -14,6 +14,9 @@ const base: ConceptGraphMetrics = {
   brief30: 0,
   syncToMap30: 0,
   syncFromMap30: 0,
+  guideModes30: 0,
+  guideTechniques30: 0,
+  guideAssign30: 0,
 };
 
 describe('formatConceptGraphMetrics', () => {
@@ -140,5 +143,40 @@ describe('formatConceptGraphMetrics', () => {
 
   it('пустая БД не упоминает дописывание', () => {
     expect(formatConceptGraphMetrics({ ...base })).not.toContain('Дописано');
+  });
+
+  it('подсказки терапевту (#995): листы и «Дать заданием» одной строкой', () => {
+    const text = formatConceptGraphMetrics({
+      ...base,
+      opens30: 4,
+      therapists30: 1,
+      guideModes30: 6,
+      guideTechniques30: 9,
+      guideAssign30: 2,
+    });
+    expect(text).toContain(
+      'Подсказки терапевту — листы режимов: 6, листы техник: 9, «Дать заданием»: 2',
+    );
+    expect(text).not.toMatch(/NaN|undefined|null/);
+  });
+
+  it('подсказки: нулевые части не печатаются, «: 0» в строке нет', () => {
+    const text = formatConceptGraphMetrics({ ...base, guideAssign30: 3 });
+    expect(text).toContain('Подсказки терапевту — «Дать заданием»: 3');
+    expect(text).not.toContain('листы');
+    expect(text).not.toMatch(/(режимов|техник|заданием»): 0/);
+  });
+
+  it('схемой пользовались, а подсказки не открывали — сказано словами', () => {
+    const text = formatConceptGraphMetrics({
+      ...base,
+      opens30: 5,
+      therapists30: 2,
+    });
+    expect(text).toContain('Подсказки терапевту пока не открывали');
+  });
+
+  it('пустая БД не упоминает подсказки', () => {
+    expect(formatConceptGraphMetrics({ ...base })).not.toContain('Подсказки');
   });
 });

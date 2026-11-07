@@ -10,9 +10,11 @@ import '../../styles/therapist-concept.css';
 import { useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { ConceptDigest, useConceptDigest } from '../../../../shared/src/therapy/conceptGraph/ConceptDigest';
 
-interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void }
+import type { AssignPreset } from './assignTemplates';
+
+interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void; onAssign?: (preset: AssignPreset) => void }
 // Вкладка «Концептуализация»: шапка, сводка, вид «Схема» или «Поля», раскрывашки; ds-вид — контекстом (CONCEPT_SITE_SKIN).
-export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
+export function ClientConceptTab({ detail, onOpenCanvas, onAssign }: Props) {
   const [view, setView] = useConceptView(detail.activeModeIds.length); // раз при открытии (см. хук)
   const head = { detail, view, onView: setView };
   const digest = <ConceptDigest rows={useConceptDigest(detail.concept, detail.localConcept)} />;
@@ -20,7 +22,7 @@ export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
     <ConceptSkinContext.Provider value={CONCEPT_SITE_SKIN}>
     <div className={`page-inner-wide tcp-page${view === 'graph' ? ' tcp--graph' : ''}`}>
       {view === 'graph' ? (
-        <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} head={head} digest={digest} />
+        <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} onAssign={onAssign} head={head} digest={digest} />
       ) : (
         <>
           <ConceptTabHead {...head} />

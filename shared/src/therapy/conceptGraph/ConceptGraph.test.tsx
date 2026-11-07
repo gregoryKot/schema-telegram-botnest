@@ -14,6 +14,14 @@ import { emptyModeLink } from './modeLinks';
 import { emptySchemaLink } from './schemaLinks';
 import { STRATEGY_HINTS } from './modeLanes';
 
+// Подсказки терапевту (#995) — в ConceptGraph.guide.test.tsx; здесь у режимов
+// своего раздела нет, и плашка «Обычно в методе» — строка группы.
+// guideLoader грузит модуль динамическим import() — мок действует и на него.
+vi.mock('../../schemaTherapy/guide', () => ({
+  modeGuide: () => null,
+  buildTechniqueGuides: () => [],
+}));
+
 const CASE = {
   modeIds: ['guilt_critic', 'detached_protector', 'healthy_adult'],
   schemaIds: ['emotional_deprivation', 'emotional_inhibition'],
@@ -519,11 +527,14 @@ describe('ConceptGraph: редактор режима', () => {
     ).toBe('мама уезжала');
   });
 
-  it('«Взять за основу» кладёт подсказку метода в поле и пропадает', () => {
+  it('«Взять за основу» кладёт подсказку метода в поле и пропадает', async () => {
     const onChangeLink = vi.fn();
     render(<Harness initial={base} spies={{ onChangeLink }} />);
     open('Уязвимый Ребёнок');
-    fireEvent.click(screen.getByRole('button', { name: 'Взять за основу' }));
+    // плашка ждёт тексты подсказок (отдельный чанк, guideLoader.ts)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Взять за основу' }),
+    );
     expect(onChangeLink).toHaveBeenLastCalledWith(
       expect.objectContaining({ strategy: STRATEGY_HINTS.vulnerable }),
     );
