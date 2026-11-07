@@ -2,6 +2,8 @@
 // rules.some→every, арифметика минут (startHour*60±startMinute), границы
 // >=/<= на старте/конце окна. Дополняет booking.availability.spec.ts,
 // который проверял поведение, но не эти конкретные операторы/границы.
+// С 2026-11 бронь — только слот сетки правила (rule-slot-match.ts), поэтому у
+// фикстур есть sessionDuration/bufferMin: без них сетка пуста.
 import { assertWithinAvailability } from './booking.availability';
 
 function makeService(rules: any[]) {
@@ -23,6 +25,8 @@ describe('BookingService.assertWithinAvailability — rules.some vs rules.every'
     startMinute: 0,
     endHour: 19,
     endMinute: 0,
+    sessionDuration: 50, // сетка 10:00, 11:00, … — 12:00 на ней
+    bufferMin: 10,
     timezone: 'Europe/Moscow',
     isActive: true,
   };
@@ -46,6 +50,7 @@ describe('BookingService.assertWithinAvailability — rules.some vs rules.every'
 
 describe('BookingService.assertWithinAvailability — арифметика минут (startMinute/endMinute≠0)', () => {
   // Окно 10:30–18:45 МСК (ненулевые минуты — отличает + от - в winStart/winEnd).
+  // Слоты по 15 мин без перерыва: 10:30, 10:45, … 18:30 (конец ровно 18:45).
   const RULE = {
     id: 1,
     dayOfWeek: 1,
@@ -53,6 +58,8 @@ describe('BookingService.assertWithinAvailability — арифметика ми�
     startMinute: 30,
     endHour: 18,
     endMinute: 45,
+    sessionDuration: 15,
+    bufferMin: 0,
     timezone: 'Europe/Moscow',
     isActive: true,
   };
@@ -83,6 +90,13 @@ describe('BookingService.assertWithinAvailability — арифметика ми�
   it('сессия заканчивается на 1 минуту позже 18:45 МСК — отказ', async () => {
     const { assert } = makeService([RULE]);
     await expect(assert(new Date('2026-07-13T15:30:00Z'), 16)).rejects.toThrow(
+      'OUTSIDE_AVAILABILITY',
+    );
+  });
+
+  it('слот 18:45 МСК (конец 19:00 за окном) сеткой не предлагается — отказ', async () => {
+    const { assert } = makeService([RULE]);
+    await expect(assert(new Date('2026-07-13T15:45:00Z'), 15)).rejects.toThrow(
       'OUTSIDE_AVAILABILITY',
     );
   });
