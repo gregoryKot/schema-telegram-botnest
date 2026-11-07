@@ -129,7 +129,7 @@ export function ProductLandingPage() {
                 <span className="pl2-eyebrow">Статьи</span>
                 <h2 className="pl2-h2 pl2-h2--flush">Разбираемся в схема-терапии — простым языком</h2>
               </div>
-              <a href="/articles" className="pl2-link">Все статьи →</a>
+              <a href="/articles" className="pl2-link pl2-link--solo">Все статьи →</a>
             </div>
             <div className="pl2-3">
               {articles.map((a) => <ArticleCard key={a.slug} a={a} />)}

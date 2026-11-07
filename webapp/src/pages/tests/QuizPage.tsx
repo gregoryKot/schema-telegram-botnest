@@ -73,8 +73,8 @@ export function QuizPage() {
 
       {quiz && !started && (
         <div>
-          <Link to="/tests" className="pl2-link" style={{ fontSize: 13 }}>← Все тесты</Link>
-          <div aria-hidden className="pl2-quiz-emoji" style={{ display: 'flex', margin: '20px 0 16px' }}>{quiz.emoji}</div>
+          <Link to="/tests" className="pl2-link pl2-link--solo" style={{ fontSize: 13 }}>← Все тесты</Link>
+          <div aria-hidden className="pl2-quiz-emoji" style={{ display: 'flex', margin: '8px 0 16px' }}>{quiz.emoji}</div>
           <h1 className="pl2-h1" style={{ fontSize: 'clamp(30px, 5vw, 44px)', margin: '0 0 18px' }}>{quiz.title}</h1>
           <p className="pl2-lead" style={{ whiteSpace: 'pre-line', maxWidth: 560, margin: '0 0 26px' }}>{quiz.intro}</p>
           <div className="pl2-actions">

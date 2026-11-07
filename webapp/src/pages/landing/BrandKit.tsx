@@ -2,7 +2,7 @@
 // Одна механика — один компонент: логотип — тот же, что в сайдбаре кабинета
 // (SidebarBrand), кнопка — ds-btn кабинета; размер лендинга — .pl2-cta--lg
 // (styles/product-landing.css). Наведение — CSS ds-btn, без JS-обработчиков.
-import { SidebarBrand } from '../../components/appShell/Sidebar';
+import { SidebarBrand } from '../../components/appShell/SidebarRail';
 
 export function Logo() {
   return <SidebarBrand />;

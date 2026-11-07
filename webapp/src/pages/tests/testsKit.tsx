@@ -41,7 +41,7 @@ export function QuizProgress({ index, total }: { index: number; total: number })
     <div style={{ margin: '0 0 22px' }}>
       <div className="pl2-card-meta" style={{ display: 'flex', justifyContent: 'space-between', margin: '0 0 8px' }}>
         <span>Вопрос {index + 1} из {total}</span>
-        <Link to="/tests" className="pl2-link">✕ выйти</Link>
+        <Link to="/tests" className="pl2-link pl2-link--solo">✕ выйти</Link>
       </div>
       <div className="pl2-progress">
         <span style={{ width: `${(index / total) * 100}%` }} />
