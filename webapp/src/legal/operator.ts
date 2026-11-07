@@ -7,3 +7,5 @@ export const OPERATOR_NAME = 'Котляревский Григорий Юрье
 export const OPERATOR_INN = '450163793969';
 export const OPERATOR_STATUS = 'Самозанятый';
 export const OPERATOR_EMAIL = 'gregorykot@gmail.com';
+// Номер записи в реестре операторов ПДн Роскомнадзора (pd.rkn.gov.ru), внесён 16.07.2026.
+export const OPERATOR_PD_REGISTRY_NO = '77-26-561994';
