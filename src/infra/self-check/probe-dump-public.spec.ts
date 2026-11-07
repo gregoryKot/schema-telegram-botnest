@@ -30,7 +30,9 @@ describe('dumpStillPublicProbe', () => {
   });
 
   it('настоящий ответ GitHub с дампом в дереве — красная, с подсказкой, что делать', async () => {
-    const fixture = JSON.parse(loadRecordedFixture('github-git-tree-dump.json'));
+    const fixture = JSON.parse(
+      loadRecordedFixture('github-git-tree-dump.json'),
+    );
     const fetchMock = mockFetch({ status: 200, ok: true, json: () => fixture });
 
     const res = await dumpStillPublicProbe().run();
@@ -52,7 +54,9 @@ describe('dumpStillPublicProbe', () => {
   });
 
   it('дерево есть, а файла в нём нет — зелёная', async () => {
-    const fixture = JSON.parse(loadRecordedFixture('github-git-tree-dump.json'));
+    const fixture = JSON.parse(
+      loadRecordedFixture('github-git-tree-dump.json'),
+    );
     fixture.tree = fixture.tree.filter(
       (e: { path: string }) => e.path !== 'railway_data.sql',
     );
