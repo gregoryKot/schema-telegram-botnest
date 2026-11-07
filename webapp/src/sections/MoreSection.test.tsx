@@ -63,7 +63,7 @@ describe('MoreSection', () => {
     }
   });
 
-  it('переходы: паттерны, практики, профиль (в нём же терапевт) — в свои разделы; «Мне очень плохо» — в практики', () => {
+  it('переходы: паттерны, практики, профиль (в нём же терапевт) — в свои разделы', () => {
     const h = setup();
     fireEvent.click(row('Мои паттерны'));
     expect(h.onNavigate).toHaveBeenLastCalledWith('schemas');
@@ -71,8 +71,16 @@ describe('MoreSection', () => {
     expect(h.onNavigate).toHaveBeenLastCalledWith('practice');
     fireEvent.click(row('Профиль'));
     expect(h.onNavigate).toHaveBeenLastCalledWith('profile');
+  });
+
+  // Аудит 2026-11, правило №7: «Мне очень плохо» вела в «Практики», где телефоны
+  // доверия прятались за второй такой же строкой — три касания и поиск. Теперь одно.
+  it('«Мне очень плохо» сразу открывает телефоны доверия, без перехода в другой раздел', () => {
+    const h = setup();
+    expect(screen.queryByText(/8-800-100-49-94/)).toBeNull();
     fireEvent.click(row('Мне очень плохо'));
-    expect(h.onNavigate).toHaveBeenLastCalledWith('practice');
+    expect(screen.getAllByText(/8-800-100-49-94/).length).toBeGreaterThan(0);
+    expect(h.onNavigate).not.toHaveBeenCalled();
   });
 
   it('тест на схемы запускается сразу, настройки открываются', () => {
