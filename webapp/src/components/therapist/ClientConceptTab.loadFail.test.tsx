@@ -4,7 +4,7 @@
 // правка уходила телом со ВСЕМИ полями (пустые — '') и затирала сохранённое на сервере.
 // Поверх НАСТОЯЩЕГО useClientDetail (мок только сети): плашка вместо полей, правки закрыты,
 // «Повторить» грузит заново, и правка после него несёт сохранённое (сохранил → нашёл).
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
@@ -37,11 +37,14 @@ const SAVED = {
 };
 
 // Хук наружу — для правки мимо разметки (поля закрыты, кнопок правки на экране нет).
+// Присвоение — в useLayoutEffect: он идёт в том же коммите, что и DOM. Пассивный useEffect под нагрузкой
+// CI отставал: findBy видел плашку раньше, чем эффект обновлял handle, и правка шла через замыкание
+// прошлого рендера, где load.failed ещё false (флак run 42317334738, main 3b705b69e).
 const handle: { current: ClientDetail | null } = { current: null };
 function Harness() {
   const detail = useClientDetail({ switchView: () => {}, setClients: () => {} });
   const opened = useRef(false);
-  useEffect(() => { handle.current = detail; });
+  useLayoutEffect(() => { handle.current = detail; });
   useEffect(() => {
     if (opened.current) return;
     opened.current = true;
@@ -76,6 +79,7 @@ describe('ClientConceptTab: концептуализация не загрузи
     render(<Harness />);
     expect((await screen.findByRole('alert')).textContent).toMatch(FAILED);
     expect(screen.queryByText('Актуальные схемы')).toBeNull();
+    expect(handle.current!.conceptLoad.failed).toBe(true); // handle — того же рендера, что плашка
 
     vi.useFakeTimers();
     act(() => { handle.current!.patchConcept({ goals: '' }); handle.current!.toggleSchemaId('defectiveness'); });
@@ -91,6 +95,7 @@ describe('ClientConceptTab: концептуализация не загрузи
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
     await screen.findByText('Актуальные схемы');
     expect(screen.queryByText(FAILED)).toBeNull();
+    expect(handle.current!.conceptLoad.failed).toBe(false); // handle — того же рендера, что поля
 
     vi.useFakeTimers();
     act(() => { handle.current!.patchConcept({ triggers: 'опоздания' }); });
