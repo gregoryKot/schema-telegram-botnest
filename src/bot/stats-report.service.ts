@@ -13,6 +13,7 @@ import { ScreenMetricsService } from './screen-metrics.service';
 import { ProfilePatternMetricsService } from './profile-pattern-metrics.service';
 import { ConceptGraphMetricsService } from './concept-graph-metrics.service';
 import { ScreenShareMetricsService } from './screen-share-metrics.service';
+import { GuideReferenceMetricsService } from './guide-reference-metrics.service';
 import { AuthHealthMetricsService } from './auth-health-metrics.service';
 import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 import { ClientErrorMetricsService } from './client-error-metrics.service';
@@ -53,6 +54,7 @@ export class StatsReportService {
     readonly profilePattern: ProfilePatternMetricsService,
     readonly conceptGraph: ConceptGraphMetricsService,
     readonly screenShare: ScreenShareMetricsService,
+    readonly guideReference: GuideReferenceMetricsService,
     readonly authHealth: AuthHealthMetricsService,
     readonly loginTicket: LoginTicketMetricsService,
     readonly clientErrors: ClientErrorMetricsService,

@@ -6,6 +6,7 @@
 import type {
   ModeGuide,
   ModeGuideBuilder,
+  PracticeNote,
   SchemaDomainGuide,
   SchemaDomainGuideBuilder,
   SchemaGuide,
@@ -31,6 +32,7 @@ import { buildAutonomyGuides } from './schemas/autonomy';
 import { buildLimitsGuides } from './schemas/limits';
 import { buildOtherDirectedGuides } from './schemas/otherDirected';
 import { buildVigilanceGuides } from './schemas/vigilance';
+import { buildPracticeNotes } from './practice';
 
 const MODE_BUILDERS: ModeGuideBuilder[] = [
   buildVulnerableChildGuides,
@@ -95,6 +97,11 @@ export function schemaGuide(
   return null;
 }
 
+/** Раздел «Для терапевта» «Справочника». */
+export function practiceNotes(tr: Tr): PracticeNote[] {
+  return buildPracticeNotes(tr);
+}
+
 export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
   return buildTechniqueGuides(tr).find((t) => t.id === id) ?? null;
 }
@@ -103,6 +110,7 @@ export type {
   BetweenSessionsItem,
   GuideTaskType,
   ModeGuide,
+  PracticeNote,
   SchemaCoping,
   SchemaDomainGuide,
   SchemaGuide,

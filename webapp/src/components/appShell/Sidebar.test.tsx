@@ -46,6 +46,18 @@ describe('Sidebar — «Все клиенты» горит на обеих вк�
     });
 });
 
+// «Справочник» терапевта (#995): пункт меню до клиентов — их список под «Все клиенты» бывает длинным.
+describe('Sidebar — «Справочник»', () => {
+  it.each([['/cabinet/guide', true], ['/cabinet', false]])('%s: пункт ведёт в /cabinet/guide, горит — %s', (path, on) => {
+    renderSidebar(path);
+    const guide = screen.getByText('Справочник').closest('a')!;
+    expect(guide.getAttribute('href')).toBe('/cabinet/guide');
+    expect(guide.className.includes('is-active')).toBe(on);
+    const items = Array.from(document.querySelectorAll('.sb-nav > .sb-item')).map((n) => n.textContent);
+    expect(items.indexOf('Справочник')).toBeLessThan(items.findIndex((t) => t?.startsWith('Все клиенты')));
+  });
+});
+
 describe('Sidebar — «Показ экрана»', () => {
   it('выключен: имена, число клиентов и поиск на месте; тумблер объясняет, что сделает', () => {
     const { container } = renderSidebar();
@@ -62,7 +74,7 @@ describe('Sidebar — «Показ экрана»', () => {
     expect(toggle().getAttribute('aria-checked')).toBe('true');
     expect(visibleNames(container)).toEqual([]);
     expect(container.querySelectorAll('.sb-client-item, .sb-client-av')).toHaveLength(0);
-    expect(container.querySelector('a[href^="/cabinet/"]:not([href="/cabinet"]):not([href="/cabinet/today"])')).toBeNull();
+    expect(container.querySelector('a[href^="/cabinet/"]:not([href="/cabinet"]):not([href="/cabinet/today"]):not([href="/cabinet/guide"])')).toBeNull();
     expect(screen.queryByPlaceholderText('Поиск клиента…')).toBeNull();
     expect(badge()).toBe('');
     expect(screen.getByText('Имена клиентов скрыты')).toBeTruthy();

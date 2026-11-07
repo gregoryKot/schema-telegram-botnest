@@ -133,7 +133,21 @@ export interface SchemaDomainGuide {
   schemas: SchemaGuide[];
 }
 
+/**
+ * Раздел «Для терапевта» в «Справочнике»: частые ошибки, тупики, свои
+ * схемы терапевта, групповой формат, намеренная практика.
+ */
+export interface PracticeNote {
+  /** Латиница, уникален: ключ раздела в списке. */
+  id: string;
+  title: string;
+  /** Абзацы или пункты, 1–6, каждый 1–3 фразы. */
+  paragraphs: string[];
+  sources: string;
+}
+
 export type ModeGuideBuilder = (tr: Tr) => ModeGuide[];
+export type PracticeNotesBuilder = (tr: Tr) => PracticeNote[];
 export type SchemaDomainGuideBuilder = (tr: Tr) => SchemaDomainGuide;
 export type TechniqueGuideBuilder = (tr: Tr) => TechniqueGuide[];
 export type { Tr };

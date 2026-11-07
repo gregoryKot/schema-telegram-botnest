@@ -23,6 +23,9 @@ const ProfileSection  = lazy(() => import('../../sections/ProfileSection').then(
 const PracticeSection = lazy(() => import('../../sections/PracticeSection').then(m => ({ default: m.PracticeSection })));
 const TherapistClientSheet  = lazy(() => import('../TherapistClientSheet').then(m => ({ default: m.TherapistClientSheet })));
 const TherapistTodaySection = lazy(() => import('../../sections/TherapistTodaySection').then(m => ({ default: m.TherapistTodaySection })));
+const TherapistGuideSection = lazy(() => import('../../sections/TherapistGuideSection').then(m => ({ default: m.TherapistGuideSection })));
+// Разделы меню терапевта со своим экраном; любой другой /cabinet* — список клиентов или карточка.
+const CABINET_PAGES = ['/cabinet/today', '/cabinet/guide'];
 
 interface Props {
   inert: boolean;
@@ -78,7 +81,10 @@ export function AppSections({
         />
       </ErrorBoundary>
     )}
-    {therapistMode && pathname !== '/cabinet/today' && (
+    {therapistMode && pathname === '/cabinet/guide' && (
+      <ErrorBoundary section="Кабинет" key="cabinet-guide-boundary"><TherapistGuideSection /></ErrorBoundary>
+    )}
+    {therapistMode && !CABINET_PAGES.includes(pathname) && (
       <ErrorBoundary section="Кабинет" key="cabinet-client-boundary">
         <TherapistClientSheet
           view={openClientRef ? 'client' : 'list'}

@@ -88,6 +88,16 @@ describe('реестры analytics.constants: без дублей и пусты�
 describe('CABINET_EVENTS ⊆ ANALYTICS_EVENTS', () => {
   it('«Показ экрана» есть в allow-list и закрыт для анонимов', () => {
     expect(CABINET_EVENTS).toContain('cabinet_screen_share_on');
+    // «Справочник» терапевта (#995): открытие и листы из него — отдельно от concept_guide_*.
+    expect(CABINET_EVENTS).toEqual(
+      expect.arrayContaining([
+        'cabinet_guide_open',
+        'cabinet_guide_mode_open',
+        'cabinet_guide_schema_open',
+        'cabinet_guide_technique_open',
+        'cabinet_guide_note_open',
+      ]),
+    );
     for (const name of CABINET_EVENTS) {
       expect(ANALYTICS_EVENTS).toContain(name);
       expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);

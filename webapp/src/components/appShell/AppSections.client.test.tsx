@@ -23,6 +23,10 @@ vi.mock('../TherapistClientSheet', () => ({
   ),
 }));
 
+vi.mock('../../sections/TherapistGuideSection', () => ({
+  TherapistGuideSection: () => <h1>Справочник</h1>,
+}));
+
 const snap = { loc: null as ReturnType<typeof useLocation> | null };
 let clients: TherapyClientSummary[] = [];
 beforeEach(() => { clients = []; });
@@ -100,5 +104,21 @@ describe('AppSections: карточка клиента', () => {
     click(await screen.findByText('все клиенты'));
     await act(async () => {});
     expect(snap.loc!.pathname).toBe('/cabinet');
+  });
+});
+
+// «Справочник» терапевта (#995): /cabinet/guide — свой экран, не список клиентов
+// (адрес подходит под /cabinet/:clientId, но клиентом «guide» не считается).
+describe('AppSections: «Справочник»', () => {
+  it('/cabinet/guide рисует справочник, без списка клиентов', async () => {
+    mount(['/cabinet/guide']);
+    expect(await screen.findByRole('heading', { name: 'Справочник' })).toBeTruthy();
+    expect(screen.queryByText('все клиенты')).toBeNull();
+  });
+
+  it('/cabinet — список клиентов, справочника нет', async () => {
+    mount(['/cabinet']);
+    expect(await screen.findByText('все клиенты')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Справочник' })).toBeNull();
   });
 });
