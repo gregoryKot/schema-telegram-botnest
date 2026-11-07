@@ -10,8 +10,8 @@ import { MethodHint } from './MethodHint';
 import {
   HintBetweenSessions,
   HintTechniques,
-  wordBtn,
 } from './ConceptGuideHintSections';
+import { wordBtn } from './graphStyles';
 
 // «Подробнее…» ведёт в лист своего раздела.
 const MORE: Record<

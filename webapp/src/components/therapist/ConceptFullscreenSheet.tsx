@@ -7,8 +7,8 @@ interface Props {
   /** Кнопка закрытия: «Свернуть» у схемы (она остаётся в потоке), «Закрыть» у экрана «Главное». */
   closeLabel: string;
   onClose: () => void;
-  /** Сюда лист кладёт свой goBack, пока открыт: им закрываются и действия вне листа (перенос на холст). */
-  backRef?: MutableRefObject<(() => void) | null>;
+  /** Сюда лист кладёт свой goBack, пока открыт: им закрываются и действия вне листа (перенос на холст, «журнал →»). */
+  backRef?: MutableRefObject<SheetBack | null>;
   /** Панель действий в шапке (скачать картинкой, открыть на холсте). */
   toolbar?: ReactNode;
   /** Полоса под шапкой: подсказка и выбор блоков у «Главного». */
@@ -19,6 +19,9 @@ interface Props {
   label?: string;
   children: ReactNode;
 }
+
+/** goBack листа (useHistorySheet): закрыть лист и всё, что над ним; `then` — когда запись снята. */
+export type SheetBack = (then?: () => void) => void;
 
 /** Слой листов концептуализации; «Новое задание» из подсказок встаёт на него же, позже в DOM. */
 export const CONCEPT_SHEET_Z = 250;

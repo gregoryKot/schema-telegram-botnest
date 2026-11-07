@@ -1,13 +1,14 @@
-import type { ReactNode } from 'react';
+import type { MutableRefObject, ReactNode } from 'react';
 import type { BetweenSessionsItem, TechniqueGuide, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { GuideHintView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import type { GuideNotes } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
 import { GuideSignArt } from '../../art/GuideSigns';
 import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
 import { NeedFold } from '../../NeedFold';
-import { ConceptFullscreenSheet } from '../ConceptFullscreenSheet';
+import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
 import { GuideSection, GuideSources } from './GuideSection';
 import { GUIDE_COLUMN, guideTextStyle } from './guideStyles';
+import { TechniqueDoneNote } from './TechniqueMarkRow';
 import '../../../styles/therapist-guide.css';
 
 /** Раздел под «Подробнее»: подпись и абзац или своё содержимое (копинг схемы). Пустой не рисуется. */
@@ -26,6 +27,8 @@ interface PageProps {
   /** Разделы «Подробнее» после пунктов. */
   moreParts?: GuideMorePart[];
   sources: string;
+  /** Сюда лист кладёт свой goBack: «журнал →» сначала закрывает листы (useConceptGuide). */
+  backRef?: MutableRefObject<SheetBack | null>;
   children: ReactNode;
 }
 
@@ -37,11 +40,11 @@ interface PageProps {
  * содержимое стоят в одной колонке. Оболочка — ConceptFullscreenSheet
  * (useHistorySheet, «Назад» браузера закрывает лист).
  */
-export function GuidePage({ label, title, lede, art, onClose, more = [], moreParts = [], sources, children }: PageProps) {
+export function GuidePage({ label, title, lede, art, onClose, more = [], moreParts = [], sources, backRef, children }: PageProps) {
   const items = more.filter((m) => m.trim());
   const parts = moreParts.filter((p) => p.children || p.text?.trim());
   return (
-    <ConceptFullscreenSheet title={title} label={label} column={GUIDE_COLUMN} closeLabel="Закрыть" onClose={onClose}>
+    <ConceptFullscreenSheet title={title} label={label} column={GUIDE_COLUMN} closeLabel="Закрыть" onClose={onClose} backRef={backRef}>
       <div className="gd-page" style={{ maxWidth: GUIDE_COLUMN }}>
         <div className="gd-hero">
           <h2 className="pp-hero-title">{title}</h2>
@@ -100,6 +103,10 @@ export interface GuideSheetActions {
   onClose: () => void;
   /** История серым: «делали …» у техники, «давали …» у задания; нет — без строк. */
   notes?: GuideNotes;
+  /** «журнал →» за «делали …» — журнал техник карточки клиента; нет — без ссылки. */
+  onOpenJournal?: () => void;
+  /** Сюда лист кладёт свой goBack: «журнал →» сначала закрывает листы (useConceptGuide). */
+  backRef?: MutableRefObject<SheetBack | null>;
 }
 
 type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'> & {
@@ -112,9 +119,10 @@ type Props = GuideSheetActions & Omit<PageProps, 'more' | 'sources' | 'onClose'>
  * звучит», свои разделы листа, затем общий хвост — «На сессии» (тап по технике →
  * лист техники поверх), «Между сессиями» с «Дать заданием»; «Где застревают» —
  * последним разделом «Подробнее». У техники и задания — история серым (`notes`,
- * guideHistory.ts). Пустой раздел не рисуется.
+ * guideHistory.ts), за «делали …» — «журнал →» (`onOpenJournal`); `backRef` идёт
+ * в каркас (GuidePage). Пустой раздел не рисуется.
  */
-export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAssign, onClose, notes, children, ...page }: Props) {
+export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAssign, onClose, notes, onOpenJournal, children, ...page }: Props) {
   const { guide, techniques } = view;
   return (
     <GuidePage
@@ -123,15 +131,15 @@ export function GuideSheet({ view, voice, moreParts = [], onOpenTechnique, onAss
     >
       <GuideVoice lines={voice} />
       {children}
-      <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} notes={notes} />
+      <GuideTechniques techniques={techniques} onOpen={onOpenTechnique} notes={notes} onOpenJournal={onOpenJournal} />
       <GuideBetweenSessions items={guide.betweenSessions} onAssign={onAssign} notes={notes} />
     </GuidePage>
   );
 }
 
-/** «На сессии»: знак техники, техника — кнопка с описанием и «делали …». */
-function GuideTechniques({ techniques, onOpen, notes }: {
-  techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void; notes?: GuideNotes;
+/** «На сессии»: знак техники, техника — кнопка с описанием, «делали …» и «журнал →». */
+function GuideTechniques({ techniques, onOpen, notes, onOpenJournal }: {
+  techniques: TechniqueGuide[]; onOpen: (id: TechniqueId) => void; notes?: GuideNotes; onOpenJournal?: () => void;
 }) {
   if (techniques.length === 0) return null;
   return (
@@ -143,7 +151,7 @@ function GuideTechniques({ techniques, onOpen, notes }: {
             <div style={{ minWidth: 0 }}>
               <button type="button" className="tcp-guide-link" onClick={() => onOpen(t.id)}>{t.name}</button>
               <div className="ds-sub">{t.summary}</div>
-              <GuideNote text={notes?.technique(t.id)} />
+              <TechniqueDoneNote text={notes?.technique(t.id)} onOpenJournal={onOpenJournal} />
             </div>
           </li>
         ))}

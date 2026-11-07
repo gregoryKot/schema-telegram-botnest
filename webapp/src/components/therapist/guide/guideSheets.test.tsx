@@ -11,6 +11,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ModeGuideSheet } from './ModeGuideSheet';
 import { TechniqueSheet } from './TechniqueSheet';
+import { markButtonLabel } from './guideJournal';
+import { JOURNAL_LINK_LABEL } from '../../../../../shared/src/therapy/conceptGraph/JournalLink';
 import {
   FIXTURE_GUIDE,
   FIXTURE_TECHNIQUES,
@@ -168,7 +170,7 @@ describe('история в листах', () => {
     const onToggle = vi.fn();
     const { rerender } = render(
       <MemoryRouter>
-        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: null, today: false, onToggle }} onClose={() => {}} />
+        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: null, marked: false, onToggle }} onClose={() => {}} />
       </MemoryRouter>,
     );
     expect(screen.getByText('Пока не отмечали')).toBeTruthy();
@@ -176,11 +178,64 @@ describe('история в листах', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
     rerender(
       <MemoryRouter>
-        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: 'делали 7 ноя', today: true, onToggle }} onClose={() => {}} />
+        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: 'делали 7 ноя', marked: true, onToggle }} onClose={() => {}} />
       </MemoryRouter>,
     );
     expect(screen.getByText('делали 7 ноя')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Отменить сегодняшнюю отметку' }));
     expect(onToggle).toHaveBeenCalledTimes(2);
+  });
+});
+
+// Журнал техник (#995): за «делали …» — «журнал →» в карточку клиента; лист,
+// открытый строкой журнала, — кнопка про день этой строки.
+describe('журнал техник в листах', () => {
+  const notes = { technique: () => 'делали 2 раза, последний 5 ноя', task: () => null };
+
+  it('лист режима: «журнал →» за «делали …» зовёт переход; без колбэка — строка без ссылки', () => {
+    const onOpenJournal = vi.fn();
+    const { rerender } = render(
+      <MemoryRouter>
+        <ModeGuideSheet modeName="Уязвимый Ребёнок" view={FIXTURE_VIEW} notes={notes} onOpenJournal={onOpenJournal} onOpenTechnique={() => {}} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    const session = within(screen.getByRole('region', { name: 'На сессии' }));
+    fireEvent.click(session.getAllByRole('button', { name: JOURNAL_LINK_LABEL })[0]);
+    expect(onOpenJournal).toHaveBeenCalledTimes(1);
+    rerender(
+      <MemoryRouter>
+        <ModeGuideSheet modeName="Уязвимый Ребёнок" view={FIXTURE_VIEW} notes={notes} onOpenTechnique={() => {}} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('button', { name: JOURNAL_LINK_LABEL })).toBeNull();
+    expect(screen.getAllByText('делали 2 раза, последний 5 ноя').length).toBeGreaterThan(0);
+  });
+
+  it('лист техники: «журнал →» только когда есть «делали …»', () => {
+    const onOpenJournal = vi.fn();
+    const { rerender } = render(
+      <MemoryRouter>
+        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: 'делали 5 ноя', marked: false, onToggle: () => {}, onOpenJournal }} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('делали 5 ноя')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: JOURNAL_LINK_LABEL }));
+    expect(onOpenJournal).toHaveBeenCalledTimes(1);
+    rerender(
+      <MemoryRouter>
+        <TechniqueSheet technique={FIXTURE_TECHNIQUES[1]} mark={{ note: null, marked: false, onToggle: () => {}, onOpenJournal }} onClose={() => {}} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('button', { name: JOURNAL_LINK_LABEL })).toBeNull();
+  });
+
+  it('день строки журнала: «Снять отметку за …», снятую — «Вернуть отметку за …»; без дня — про сегодня', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-07T12:00:00Z')); // день того же года — без года в подписи
+    expect(markButtonLabel(true, '2026-11-05')).toBe('Снять отметку за 5 ноя');
+    expect(markButtonLabel(false, '2026-11-05')).toBe('Вернуть отметку за 5 ноя');
+    expect(markButtonLabel(true)).toBe('Отменить сегодняшнюю отметку');
+    expect(markButtonLabel(false)).toBe('Делали сегодня');
+    vi.useRealTimers();
   });
 });

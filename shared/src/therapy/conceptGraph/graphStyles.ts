@@ -32,3 +32,20 @@ export const boxStyle: CSSProperties = {
   border: '1px solid rgba(var(--fg-rgb),0.1)',
   background: 'var(--surface)',
 };
+
+// Кнопка, которая выглядит словом: зона нажатия 44 по высоте, а в потоке —
+// строка текста (отрицательные поля компенсируют рост, как retryStyle в
+// SaveStatusLine). Цвет — текста, акцент на плашке один: «Взять за основу».
+export const wordBtn: CSSProperties = {
+  minHeight: 44,
+  margin: '-12px 0',
+  padding: '0 2px',
+  border: 'none',
+  background: 'transparent',
+  color: 'var(--text)',
+  font: 'inherit',
+  textDecoration: 'underline',
+  textDecorationColor: 'rgba(var(--fg-rgb),0.3)',
+  textUnderlineOffset: 3,
+  cursor: 'pointer',
+};

@@ -12,11 +12,14 @@ import { TherapistClientSheet } from './TherapistClientSheet';
 import { CONCEPT_SHEET_Z } from './therapist/ConceptFullscreenSheet';
 import {
   CONCEPT_GUIDE_ASSIGN_EVENT,
+  CONCEPT_GUIDE_JOURNAL_ENTRY_EVENT,
+  CONCEPT_GUIDE_JOURNAL_OPEN_EVENT,
   CONCEPT_GUIDE_MARK_DONE_EVENT,
   CONCEPT_GUIDE_MODE_OPEN_EVENT,
   CONCEPT_GUIDE_SCHEMA_OPEN_EVENT,
   CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT,
 } from '../../../shared/src/share/analytics';
+import { JOURNAL_LINK_LABEL } from '../../../shared/src/therapy/conceptGraph/JournalLink';
 
 vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
@@ -215,5 +218,67 @@ describe('TherapistClientSheet — история подсказок', () => {
     const again = screen.getByRole('dialog', { name: 'Работа со стульями' });
     expect(within(again).getByText('делали 7 ноя')).toBeTruthy();
     expect(within(again).getByRole('button', { name: 'Отменить сегодняшнюю отметку' })).toBeTruthy();
+  });
+});
+
+// Журнал техник (#995): «журнал →» за «делали …» ведёт на «Задания» к блоку
+// «На сессиях»; открытые листы до перехода закрываются (их записи истории
+// сняты). Строка журнала открывает тот же лист техники с днём отметки.
+describe('TherapistClientSheet — журнал техник', () => {
+  const marked = { modeId: 'vulnerable_child', alias: '', schemaIds: [], needIds: [], origin: '', manifest: '', strategy: '',
+    done: [{ techniqueId: 'chairwork', day: '2026-11-05' }] };
+  const ROW = '5 ноя: Работа со стульями — Уязвимый Ребёнок';
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-07T12:00:00Z'));
+    const base = await mockApi.getConceptualization();
+    mockApi.getConceptualization.mockResolvedValue({ ...base, modeLinks: [marked] });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const journal = () => screen.findByRole('region', { name: 'На сессиях' });
+
+  it('с плашки: «журнал →» — вкладка «Задания», в журнале строка отметки', async () => {
+    await openPlaque();
+    fireEvent.click(screen.getByRole('button', { name: JOURNAL_LINK_LABEL }));
+    expect(tracked(CONCEPT_GUIDE_JOURNAL_OPEN_EVENT)).toBe(1);
+    const block = await journal();
+    expect(within(block).getByRole('button', { name: ROW })).toBeTruthy();
+    expect(screen.queryByText('Обычно в методе')).toBeNull();
+  });
+
+  it('из листа техники поверх листа режима: оба листа закрываются, затем журнал', async () => {
+    await openPlaque();
+    fireEvent.click(screen.getByRole('button', { name: 'Подробнее о режиме' }));
+    const mode = screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' });
+    fireEvent.click(within(mode).getByRole('button', { name: 'Работа со стульями' }));
+    const technique = screen.getByRole('dialog', { name: 'Работа со стульями' });
+    fireEvent.click(within(technique).getByRole('button', { name: JOURNAL_LINK_LABEL }));
+    await journal();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('из схемы «На весь экран»: лист схемы тоже закрывается', async () => {
+    await openPlaque();
+    fireEvent.click(screen.getByRole('button', { name: 'Ещё действия' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /На весь экран/ }));
+    const full = await screen.findByRole('dialog', { name: 'Схема случая' });
+    fireEvent.click(within(full).getByRole('button', { name: 'Уязвимый Ребёнок: связи' }));
+    fireEvent.click(await within(full).findByRole('button', { name: JOURNAL_LINK_LABEL }));
+    await journal();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('строка журнала → лист техники с днём строки; «Снять отметку» уходит в сохранение', async () => {
+    await openPlaque();
+    fireEvent.click(screen.getByRole('button', { name: JOURNAL_LINK_LABEL }));
+    fireEvent.click(within(await journal()).getByRole('button', { name: ROW }));
+    expect(tracked(CONCEPT_GUIDE_JOURNAL_ENTRY_EVENT)).toBe(1);
+    const sheet = await screen.findByRole('dialog', { name: 'Работа со стульями' });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Снять отметку за 5 ноя' }));
+    expect(within(sheet).getByRole('button', { name: 'Вернуть отметку за 5 ноя' })).toBeTruthy();
+    await waitFor(() => expect(mockApi.saveConceptualization).toHaveBeenCalled(), { timeout: 3000 });
+    const body = mockApi.saveConceptualization.mock.calls.at(-1)![1];
+    expect(body.modeLinks[0].done ?? []).toEqual([]);
   });
 });
