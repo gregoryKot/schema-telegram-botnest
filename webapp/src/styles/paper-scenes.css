@@ -1,0 +1,14 @@
+/* Сцены — крупные картинки бумажной аппликации (components/art/sceneKit.tsx,
+   LandingScenes*.tsx; docs/design/PAPER_2026-11.md, «Сцены»). Префикс scn-.
+   Подложка — цветная бумага того же рецепта, что .pp-paper (oklch по --h),
+   только насыщеннее: сцена — главное пятно цвета в своей секции. Тень — сплошной
+   тон той же бумаги, сдвинутый слой, а не размытие (check-render-poison). */
+
+.scn { display: block; width: 100%; height: auto; overflow: visible; }
+.scn-blob { fill: oklch(0.9 0.05 var(--h)); }
+.scn-patch { fill: oklch(0.86 0.07 var(--h2)); }
+.scn-patch--sky { fill: oklch(0.88 0.05 240); }
+
+/* Копия фигур под ними — «бумага отбрасывает бумагу»: один тон на всю сцену. */
+.scn-shade [fill]:not([fill="none"]) { fill: oklch(0.79 0.06 var(--h)); fill-opacity: 1; }
+.scn-shade [stroke]:not([stroke="none"]) { stroke: oklch(0.79 0.06 var(--h)); stroke-opacity: 1; }

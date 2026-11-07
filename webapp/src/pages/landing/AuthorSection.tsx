@@ -4,12 +4,12 @@ import { AUTHOR_SITE, trackPracticeClick } from './practiceLink';
 // Блок «Кто это делает»: автор проекта работает в подходе схема-терапия, частная практика.
 // Клик по CTA — продуктовое событие practice_link_click (place: 'author'),
 // видно в /stats. Композиция своя, не копия Telegram-ленты (jscpd).
-// Вид — белая карточка кабинета (ds-card) + styles/product-landing.css.
+// Вид — бумага соломы (pp-paper), фото на слоях цветной бумаги — styles/product-landing.css.
 
 export function AuthorSection() {
   return (
     <section id="author" className="pl2-sec pl2-sec--tight">
-      <div className="pl2-wrap ds-card pl2-author">
+      <div className="pl2-wrap pp-paper pl2-author">
         <img
           className="pl2-author-photo"
           src="/gregory.jpg"

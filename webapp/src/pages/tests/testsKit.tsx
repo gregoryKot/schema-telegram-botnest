@@ -1,11 +1,11 @@
-// Общий каркас публичных страниц мини-тестов (/tests, /tests/:id): бумага
-// кабинета, как продуктовый лендинг (styles/product-landing.css), шапка,
-// футер-CTA в бота. Одна механика — один компонент: рамка живёт здесь,
-// страницы рисуют только содержимое.
+// Общий каркас публичных страниц мини-тестов (/tests, /tests/:id): бумага кабинета, как
+// продуктовый лендинг (styles/product-landing.css + product-tests.css), шапка, футер-CTA
+// в бота. Одна механика — один компонент: рамка живёт здесь, страницы рисуют содержимое.
 import { Link } from 'react-router-dom';
 import { Logo, Cta } from '../landing/BrandKit';
 import { botUrl } from '../../utils/botConfig';
 import '../../styles/product-landing.css';
+import '../../styles/product-tests.css';
 
 export function TestsFrame({ children }: { children: React.ReactNode }) {
   return (
@@ -18,7 +18,7 @@ export function TestsFrame({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <footer className="pl2-tests-foot">
-        <p className="pl2-card-text" style={{ maxWidth: 560, margin: '0 auto 18px' }}>
+        <p className="pl2-card-text pl2-tests-foot-text">
           Эти же тесты есть в телеграм-боте — вместе с трекером пяти
           потребностей, дневниками и большим тестом схем.
         </p>
@@ -26,7 +26,7 @@ export function TestsFrame({ children }: { children: React.ReactNode }) {
           <Cta href={botUrl} size="lg">Продолжить в Telegram</Cta>
           <Cta href="/login" variant="ghost" size="lg">Войти в приложение</Cta>
         </div>
-        <p className="pl2-fine" style={{ marginTop: 24 }}>
+        <p className="pl2-fine pl2-tests-foot-fine">
           Мини-тесты — игра-наблюдение по мотивам схема-терапии, а не
           диагностика и не замена психотерапии.
         </p>
@@ -38,8 +38,8 @@ export function TestsFrame({ children }: { children: React.ReactNode }) {
 /** Прогресс прохождения: «Вопрос X из N» + полоска акцентного цвета. */
 export function QuizProgress({ index, total }: { index: number; total: number }) {
   return (
-    <div style={{ margin: '0 0 22px' }}>
-      <div className="pl2-card-meta" style={{ display: 'flex', justifyContent: 'space-between', margin: '0 0 8px' }}>
+    <div className="pl2-quiz-progress">
+      <div className="pl2-card-meta pl2-quiz-progress-head">
         <span>Вопрос {index + 1} из {total}</span>
         <Link to="/tests" className="pl2-link pl2-link--solo">✕ выйти</Link>
       </div>

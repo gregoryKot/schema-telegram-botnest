@@ -1,19 +1,17 @@
 import type { ReactElement } from 'react';
 import type { ArtProps } from '../../components/art/paper';
-import { Strokes, Ribbon, Breath, Sheets, Layers } from '../../components/art/PaperArt';
-import { Cluster, Leaf, Talk, Check, Heart, Wheel } from '../../components/art/PaperArtSigns';
+import { Strokes, Breath, Sheets, Layers } from '../../components/art/PaperArt';
+import { Cluster, Talk, Check, Heart } from '../../components/art/PaperArtSigns';
 import { Limits } from '../../components/art/NeedArt';
+import { SceneChildhood, SceneTrigger, SceneNotice, SceneTogether } from '../../components/art/LandingScenes';
+import { SceneCheckIn } from '../../components/art/LandingScenesMore';
 import {
   HOME_STEPS, HOME_FEATURES, HOME_TRUST, HOME_FAQ,
   type HomeStepId, type HomeFeatureId, type HomeTrustId,
 } from '../../../../src/articles/home-landing.content';
 
-// Данные продуктового лендинга «Всё по схеме». Non-component модуль (react-refresh;
-// .ts — JSX здесь нет): потребители — ProductKit.tsx и ProductLandingPage.tsx.
-
-// Единственный источник для десктоп-навбара и мобильного меню
-// (ProductMobileMenu.tsx) — раньше список ссылок жил только инлайном
-// в ProductLandingPage, дублировать его во втором месте было бы разъездом.
+// Данные продуктового лендинга «Всё по схеме» (.ts — JSX здесь нет, react-refresh).
+// Единственный источник для десктоп-навбара и мобильного меню (ProductMobileMenu.tsx).
 export const NAV_LINKS: { label: string; href: string }[] = [
   { label: 'Как это работает', href: '#how' },
   { label: 'Возможности', href: '#features' },
@@ -24,23 +22,25 @@ export const NAV_LINKS: { label: string; href: string }[] = [
 ];
 
 type Art = (p: ArtProps) => ReactElement;
-// Текст — src/articles/home-landing.content.ts (его же сервер вкладывает в #root
-// для робота без JS, GEO.md); здесь только вид по `id` — без строки ниже пункт
-// не соберётся (tsc). Знак — по «Мотив → смысл» (docs/design/PAPER_2026-11.md).
-const STEP_LOOK: Record<HomeStepId, { num: string; Art: Art }> = {
-  origin:  { num: '01', Art: Wheel },  // потребности вокруг детства
-  trigger: { num: '02', Art: Ribbon }, // момент, который зацепил и закрутился
-  notice:  { num: '03', Art: Leaf },   // что выросло
+type Scene = (p: { hue?: number }) => ReactElement;
+// Текст — src/articles/home-landing.content.ts (его же сервер вкладывает в #root для
+// робота без JS, GEO.md); здесь только вид по `id` — без строки ниже пункт не соберётся
+// (tsc). Знак и сцена — по «Мотив → смысл» (docs/design/PAPER_2026-11.md); `hue` — бумага.
+const STEP_LOOK: Record<HomeStepId, { num: string; Scene: Scene; hue: number }> = {
+  origin:  { num: '01', Scene: SceneChildhood, hue: 45 },  // колесо потребностей вокруг детства
+  trigger: { num: '02', Scene: SceneTrigger, hue: 25 },    // лента закрутилась вокруг полоски
+  notice:  { num: '03', Scene: SceneNotice, hue: 135 },    // полоска выпрямилась, растёт лист
 };
 export const STEPS = HOME_STEPS.map((s) => ({ ...s, ...STEP_LOOK[s.id] }));
 
-const FEATURE_LOOK: Record<HomeFeatureId, { Art: Art }> = {
-  diary:     { Art: Strokes }, // чек-ин пяти потребностей = трекер
-  schemas:   { Art: Layers },
-  modes:     { Art: Cluster },
-  practices: { Art: Breath },
-  dynamics:  { Art: Sheets },  // то, что уже собрано
-  therapist: { Art: Talk },
+// Возможности: два крупных разворота со сценой (`Scene`) и четыре квадрата цветной бумаги.
+const FEATURE_LOOK: Record<HomeFeatureId, { Art: Art; hue: number; Scene?: Scene }> = {
+  diary:     { Art: Strokes, hue: 135, Scene: SceneCheckIn }, // чек-ин пяти потребностей = трекер
+  schemas:   { Art: Layers, hue: 70 },
+  modes:     { Art: Cluster, hue: 45, Scene: SceneTogether }, // Здоровый Взрослый рядом
+  practices: { Art: Breath, hue: 240 },
+  dynamics:  { Art: Sheets, hue: 300 }, // то, что уже собрано
+  therapist: { Art: Talk, hue: 195 },
 };
 export const FEATURES = HOME_FEATURES.map((f) => ({ ...f, ...FEATURE_LOOK[f.id] }));
 
@@ -51,5 +51,4 @@ const TRUST_LOOK: Record<HomeTrustId, { Art: Art; hue: number }> = {
   leave:     { Art: Check, hue: 135 },  // сделано, без хвостов
 };
 export const TRUST = HOME_TRUST.map((t) => ({ ...t, ...TRUST_LOOK[t.id] }));
-
 export const FAQ = HOME_FAQ;

@@ -1,21 +1,17 @@
 import { useState, type CSSProperties, type ReactElement } from 'react';
 import type { ArticleSummary } from '../../api';
 import type { ArtProps } from '../../components/art/paper';
+import { Sheets } from '../../components/art/PaperArt';
 import { FAQ } from './productContent';
 import { Rich } from './Rich';
 
-// Карточки продуктового лендинга (знак + заголовок + текст, карточка статьи,
-// FAQ). Вид — styles/product-landing.css и ds-card кабинета; данные — в
-// productContent.ts (react-refresh: раздельно).
+// Карточки продуктового лендинга (знак на цветной бумаге, карточка статьи, FAQ).
+// Вид — styles/product-landing.css; данные — productContent.ts (react-refresh: раздельно).
 
-// ─── Карточка со знаком: белая (ds-card) или цветная бумага (`hue`) ─────────
-export function InfoCard({ Art, hue, title, children }: { Art: (p: ArtProps) => ReactElement; hue?: number; title: string; children: React.ReactNode }) {
-  const paper = hue !== undefined;
+// ─── Квадрат цветной бумаги со знаком (оттенок `hue`), под ним слой тени ─────
+export function InfoCard({ Art, hue, title, children }: { Art: (p: ArtProps) => ReactElement; hue: number; title: string; children: React.ReactNode }) {
   return (
-    <div
-      className={paper ? 'pp-paper pl2-card pl2-card--paper' : 'ds-card pl2-card'}
-      style={paper ? ({ '--h': hue } as CSSProperties) : undefined}
-    >
+    <div className="pp-paper pl2-card pl2-card--paper" style={{ '--h': hue } as CSSProperties}>
       <Art size="square" />
       <p className="pl2-card-title">{title}</p>
       <p className="pl2-card-text">{children}</p>
@@ -23,12 +19,13 @@ export function InfoCard({ Art, hue, title, children }: { Art: (p: ArtProps) => 
   );
 }
 
-// ─── Карточка статьи ──────────────────────────────────────────────────────────
-export function ArticleCard({ a }: { a: ArticleSummary }) {
+// ─── Карточка статьи: обложка или, без неё, листы (Sheets) на бумаге по очереди ──
+const articleHue = (index: number) => [135, 45, 240][index % 3];
+export function ArticleCard({ a, index = 0 }: { a: ArticleSummary; index?: number }) {
   return (
     <a className="ds-card ds-card--flush ds-card--hover pl2-article" href={`/articles/${a.slug}`}>
-      <div className="pl2-article-img">
-        {a.heroImage && <img src={a.heroImage} alt="" loading="lazy" decoding="async" />}
+      <div className="pl2-article-img" style={{ '--h': articleHue(index) } as CSSProperties}>
+        {a.heroImage ? <img src={a.heroImage} alt="" loading="lazy" decoding="async" /> : <Sheets size="hero" />}
       </div>
       <div className="pl2-article-body">
         <p className="pl2-article-title">{a.title}</p>

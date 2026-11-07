@@ -1,11 +1,13 @@
 /* Продуктовый лендинг и мини-тесты (schemehappens.ru: «/», «/tests») — тот же
-   язык «бумажной аппликации», что у кабинета (docs/design/PAPER_2026-11.md):
-   бумага --bg, заголовки --serif, кнопки ds-btn, карточки ds-card, знаки
-   PaperArt, цвета только токенами. До 2026-11 здесь была своя «ночная»
-   айдентика (тёмный холст, аврора-градиенты, стекло, вечные анимации) —
-   владелец: «лендинг вырвиглаз, а сайт — спокойная бумага». Корень страницы
-   стоит на .light-lock: бумага нарисована только в светлой теме, как кабинет.
-   Подключают ProductLandingPage.tsx и pages/tests/testsKit.tsx. */
+   язык «бумажной аппликации», что у кабинета (docs/design/PAPER_2026-11.md),
+   свёрстанный как иллюстрированный журнал: бумага --bg, заголовки --serif,
+   кнопки ds-btn, у каждой секции своя цветная бумага (oklch по --h, как
+   .pp-paper) и крупная сцена (styles/paper-scenes.css). Глубина — сплошной
+   сдвинутый слой бумаги (box-shadow без размытия), не стекло и не блюр.
+   До 2026-11 здесь была «ночная» айдентика (тёмный холст, аврора, неон) —
+   владелец: «вырвиглаз»; после неё — «тускло и серо, нет рисуночков», отсюда
+   цвет и сцены. Корень на .light-lock: бумага только в светлой теме, как кабинет.
+   Разворот шагов, полоса возможностей и мини-тесты — product-landing-journal.css. */
 
 html:has(.pl2-root) { scroll-behavior: smooth; }
 
@@ -13,7 +15,7 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
   position: relative; display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 100dvh;
   overflow-x: hidden; background: var(--bg); color: var(--text); font-family: var(--sans);
 }
-.pl2-wrap { max-width: 1160px; margin: 0 auto; }
+.pl2-wrap { max-width: 1160px; margin: 0 auto; box-sizing: border-box; }
 
 /* ── Шапка: цвет страницы и линия снизу (без стекла — check-render-poison) ── */
 .pl2-header {
@@ -48,61 +50,60 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 /* Отдельная ссылка (не внутри абзаца) — зона нажатия 44px. */
 .pl2-link--solo { display: inline-flex; align-items: center; min-height: 44px; }
 
-/* ── Первый экран ───────────────────────────────────────────────────────── */
-.pl2-hero-sec { padding: 132px 24px 80px; }
-.pl2-hero { display: grid; grid-template-columns: 1.06fr 1fr; gap: 56px; align-items: center; }
+/* ── Первый экран: вопрос слева, мокап на коллаже справа ────────────────── */
+.pl2-hero-sec { padding: 120px 24px 72px; }
+.pl2-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
 .pl2-pill {
-  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;
-  padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line);
+  --h: 70; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;
+  padding: 7px 14px; border-radius: 999px; background: oklch(0.915 0.04 var(--h));
   font-size: 13px; font-weight: 600; color: var(--text-sub);
 }
-.pl2-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-hot); }
+.pl2-pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-clay); }
 .pl2-h1 {
-  margin: 0 0 22px; font-family: var(--serif); font-weight: 400; color: var(--text);
-  font-size: clamp(40px, 5.6vw, 66px); line-height: 1.04; letter-spacing: -.015em;
+  margin: 0 0 24px; font-family: var(--serif); font-weight: 400; color: var(--text);
+  font-size: clamp(40px, 5.6vw, 68px); line-height: 1.04; letter-spacing: -.015em;
 }
 .pl2-h1 em { font-style: italic; color: var(--accent); }
+/* «снова» — под словом завиток той же ленты, что петляет на коллаже. */
+.pl2-h1-loop { position: relative; display: inline-block; }
+.pl2-h1-swirl { position: absolute; left: -3%; bottom: -.3em; width: 106%; height: .3em; overflow: visible; }
+.pl2-h1-swirl path { fill: none; stroke: var(--c-clay); stroke-width: 5px; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .pl2-lead { margin: 0 0 32px; max-width: 500px; font-size: 17px; line-height: 1.65; color: var(--text-sub); }
 .pl2-fine { margin: 18px 0 0; font-size: 13px; color: var(--text-faint); }
 .pl2-in { animation: pl2-in .6s cubic-bezier(.16, 1, .3, 1) both; }
 .pl2-in--late { animation-delay: .12s; }
 @keyframes pl2-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.pl2-hero-art { position: relative; display: flex; justify-content: center; align-items: center; min-height: 500px; }
+.pl2-hero-collage { position: absolute; left: 50%; top: 50%; width: 112%; max-width: 620px; transform: translate(-50%, -50%); }
 
 /* ── Секции ─────────────────────────────────────────────────────────────── */
-.pl2-sec { padding: 72px 24px; scroll-margin-top: 70px; }
+.pl2-sec { padding: 80px 24px; scroll-margin-top: 70px; }
 .pl2-sec--tight { padding-top: 16px; }
 .pl2-eyebrow { display: block; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 .pl2-h2 {
-  margin: 12px 0 44px; max-width: 680px; font-family: var(--serif); font-weight: 400; color: var(--text);
-  font-size: clamp(28px, 3.4vw, 40px); line-height: 1.12; letter-spacing: -.01em;
+  margin: 12px 0 48px; max-width: 700px; font-family: var(--serif); font-weight: 400; color: var(--text);
+  font-size: clamp(30px, 3.6vw, 44px); line-height: 1.1; letter-spacing: -.01em;
 }
 .pl2-h2--flush { margin-bottom: 0; }
-.pl2-sub { margin: -28px 0 36px; max-width: 560px; font-size: 16px; line-height: 1.65; color: var(--text-sub); }
-.pl2-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-.pl2-3--wide { column-gap: 32px; }
+.pl2-sub { margin: -30px 0 36px; max-width: 560px; font-size: 16px; line-height: 1.65; color: var(--text-sub); }
+.pl2-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
 .pl2-3--above-actions { margin-bottom: 36px; }
 .pl2-head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
 
-/* Шаг «Как это работает»: блок под тонкой линией, номер и знак. */
-.pl2-step { display: flex; flex-direction: column; gap: 10px; padding-top: 22px; border-top: 1px solid var(--panel-line); }
-.pl2-step-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
-.pl2-step-num { font-family: var(--serif); font-size: 44px; line-height: 1; color: var(--accent); }
-
-/* Карточка: белая (ds-card) или цветная бумага (pp-paper + --h). */
+/* Карточка: белая (ds-card) или цветная бумага (pp-paper + --h) со сдвинутым слоем тени. */
 .pl2-card { display: flex; flex-direction: column; gap: 10px; }
 .pl2-card .pp-art { margin-bottom: 10px; }
-.pl2-card--paper { padding: 24px 22px; }
-.pl2-card-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.2; color: var(--text); }
+.pl2-card--paper { padding: 26px 24px; box-shadow: 8px 9px 0 oklch(0.84 0.05 var(--h)); }
+.pl2-card-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 23px; line-height: 1.2; color: var(--text); }
 .pl2-card-meta { margin: -4px 0 2px; font-size: 13px; font-weight: 600; color: var(--text-faint); }
 .pl2-card-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
 .pl2-card-list { margin: 0; padding: 0 0 0 18px; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.6; color: var(--text-sub); }
 
-/* ── Мокап экрана «Сегодня» (декор, aria-hidden) ────────────────────────── */
-.pl2-preview { position: relative; display: flex; justify-content: center; }
+/* ── Мокап экрана «Сегодня» на коллаже (декор, aria-hidden) ─────────────── */
+.pl2-preview { position: relative; z-index: 1; display: flex; justify-content: center; }
 .pl2-phone {
-  width: 300px; box-sizing: border-box; padding: 22px 20px 20px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 32px;
-  box-shadow: 0 34px 60px -34px rgba(var(--fg-rgb), .45);
+  width: 300px; box-sizing: border-box; padding: 22px 20px 20px; transform: rotate(-1.5deg);
+  background: var(--surface); border-radius: 32px; box-shadow: 12px 14px 0 oklch(0.8 0.07 45);
 }
 .pl2-phone-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
 .pl2-phone-sub { margin: 4px 0 18px; font-size: 12.5px; color: var(--text-sub); }
@@ -117,35 +118,45 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 .pl2-spark-head b { color: var(--text); }
 .pl2-spark-head span { color: var(--text-faint); }
 .pl2-note-card {
-  position: absolute; padding: 10px 14px; border-radius: 14px;
-  background: var(--surface); border: 1px solid var(--line);
-  box-shadow: 0 16px 30px -20px rgba(var(--fg-rgb), .5);
-  font-size: 12px; font-weight: 700;
+  position: absolute; z-index: 2; padding: 10px 14px; border-radius: 14px;
+  background: var(--surface); font-size: 12px; font-weight: 700;
+  box-shadow: 6px 7px 0 oklch(0.82 0.06 var(--h));
 }
 .pl2-note-card small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--text-sub); }
-.pl2-note-card--a { top: -18px; right: -28px; transform: rotate(2deg); color: var(--accent); }
-.pl2-note-card--b { bottom: 44px; left: -16px; transform: rotate(-2deg); color: var(--c-moss-strong); }
+.pl2-note-card--a { --h: 25; top: -14px; right: -18px; transform: rotate(3deg); color: var(--accent); }
+.pl2-note-card--b { --h: 135; bottom: 18px; left: -22px; transform: rotate(-3deg); color: var(--c-moss-strong); }
 
-/* ── Автор ──────────────────────────────────────────────────────────────── */
-.ds-card.pl2-author { display: grid; grid-template-columns: 300px 1fr; gap: 48px; align-items: center; padding: 44px; border-radius: 28px; }
+/* ── Автор: бумага соломы, фото на двух слоях цветной бумаги ────────────── */
+.pp-paper.pl2-author { --h: 70; display: grid; grid-template-columns: 300px 1fr; gap: 64px; align-items: center; padding: 52px 56px; border-radius: 32px; }
 .pl2-author-photo {
   width: 100%; max-width: 300px; aspect-ratio: 5 / 6; object-fit: cover; object-position: center top;
-  justify-self: center; border-radius: 20px; border: 1px solid var(--line);
+  justify-self: center; border-radius: 20px; transform: rotate(-2.5deg);
+  box-shadow: 12px 12px 0 oklch(0.8 0.08 45), 24px 22px 0 oklch(0.82 0.06 135);
 }
 .pl2-author .pl2-h2 { margin-bottom: 10px; }
 .pl2-author-role { margin: 0 0 16px; font-size: 14px; font-weight: 700; color: var(--accent); }
 .pl2-author-text { margin: 0 0 28px; max-width: 560px; font-size: 16px; line-height: 1.7; color: var(--text-sub); }
+/* На бумаге соломы --text-faint ниже 4.5:1 — мелкая подпись берёт --text-sub. */
+.pl2-author .pl2-fine { color: var(--text-sub); }
 
-/* ── Статьи ─────────────────────────────────────────────────────────────── */
+/* ── Статьи: без обложки — листы на цветной бумаге ──────────────────────── */
 .pl2-article { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
-.pl2-article-img { aspect-ratio: 16 / 9; overflow: hidden; background: var(--paper-sunk); }
+.pl2-article-img { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9; overflow: hidden; background: oklch(0.9 0.045 var(--h)); }
 .pl2-article-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pl2-article-img .pp-art { width: 44%; height: auto; }
 .pl2-article-body { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 18px 20px 20px; }
 .pl2-article-title { margin: 0; font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--text); }
 .pl2-article-desc { flex: 1; margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .pl2-article-meta { margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
 
-/* ── Вопросы: строки между линиями ──────────────────────────────────────── */
+/* ── Вопросы: слева заголовок и знак разговора, справа строки ───────────── */
+.pl2-faq-wrap { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+.pl2-faq-side .pl2-h2 { margin-bottom: 32px; }
+.pl2-faq-art {
+  display: flex; align-items: center; justify-content: center; width: 240px; height: 190px;
+  background: oklch(0.9 0.05 var(--h)); border-radius: 58% 42% 52% 48% / 46% 56% 44% 54%;
+}
+.pl2-faq-art .pp-art { width: 168px; height: 90px; }
 .pl2-faq { border-top: 1px solid var(--paper-sunk); }
 .pl2-faq-item { border-bottom: 1px solid var(--paper-sunk); }
 .pl2-faq-q {
@@ -160,13 +171,13 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 .pl2-faq-item.is-open .pl2-faq-plus { transform: rotate(45deg); }
 .pl2-faq-item.is-open .pl2-faq-a { grid-template-rows: 1fr; }
 
-/* ── Финальный призыв: песочная панель, одна залитая кнопка ─────────────── */
-.ds-card.pl2-final { padding: 72px 32px; border-radius: 28px; text-align: center; }
-.pl2-final-title {
-  margin: 0 0 16px; font-family: var(--serif); font-weight: 400; color: var(--on-panel);
-  font-size: clamp(30px, 4.2vw, 48px); line-height: 1.1;
+/* ── Финальный призыв: бумага соломы, сцена, одна залитая кнопка ────────── */
+.pp-paper.pl2-final {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 40px; align-items: center;
+  padding: 56px 64px; border-radius: 32px; box-shadow: 10px 12px 0 oklch(0.84 0.05 var(--h));
 }
-.pl2-final-text { margin: 0 auto 32px; max-width: 560px; font-size: 16px; line-height: 1.6; color: var(--on-panel-sub); }
+.pl2-final-title { margin: 0 0 16px; font-family: var(--serif); font-weight: 400; color: var(--text); font-size: clamp(32px, 4.2vw, 52px); line-height: 1.08; }
+.pl2-final-text { margin: 0 0 32px; max-width: 480px; font-size: 17px; line-height: 1.6; color: var(--text-sub); }
 
 /* ── Подвал ─────────────────────────────────────────────────────────────── */
 .pl2-footer { padding: 32px 24px; border-top: 1px solid var(--paper-sunk); }
@@ -176,38 +187,35 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 .pl2-footer-link:hover, .pl2-footer-link:focus-visible { color: var(--text); }
 .pl2-copy { font-size: 13px; color: var(--text-faint); }
 
-/* ── Мини-тесты (/tests, /tests/:id) ────────────────────────────────────── */
-.pl2-tests-main { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 40px 20px 56px; box-sizing: border-box; }
-.pl2-tests-foot { padding: 36px 20px 44px; border-top: 1px solid var(--paper-sunk); text-align: center; }
-.pl2-tests-foot .pl2-actions { justify-content: center; }
-.pl2-quiz-row { display: flex; gap: 18px; align-items: center; text-decoration: none; color: inherit; }
-.pl2-quiz-emoji {
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 56px; height: 56px; border-radius: 16px; font-size: 28px; background: var(--paper-tint);
-}
-.pl2-quiz-arrow { margin-left: auto; font-size: 20px; color: var(--accent); }
-.pl2-option {
-  display: block; width: 100%; padding: 16px 18px; border-radius: 16px; box-sizing: border-box;
-  background: var(--surface); border: 1px solid var(--line); cursor: pointer; text-align: left;
-  font: 600 15px/1.5 var(--sans); color: var(--text); transition: border-color .12s, background .12s;
-}
-.pl2-option:hover, .pl2-option:focus-visible { border-color: var(--line-hover); background: var(--paper-tint); }
-.pl2-progress { height: 6px; border-radius: 4px; background: var(--paper-sunk); }
-.pl2-progress > span { display: block; height: 100%; border-radius: 4px; background: var(--accent); transition: width .25s; }
-
 /* ── Раскладка ──────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .pl2-hero { grid-template-columns: 1fr; gap: 48px; }
+  .pl2-hero { grid-template-columns: 1fr; gap: 32px; }
+  .pl2-hero-art { min-height: 460px; }
   .pl2-3 { grid-template-columns: 1fr; }
-  .ds-card.pl2-author { grid-template-columns: 1fr; gap: 32px; padding: 32px 24px; }
-  .pl2-note-card { display: none; }
+  .pp-paper.pl2-author { grid-template-columns: 1fr; gap: 40px; padding: 36px 24px 32px; }
+  .pl2-author-photo { max-width: 260px; }
+  .pl2-faq-wrap { grid-template-columns: 1fr; gap: 8px; }
+  .pl2-faq-art { width: 180px; height: 140px; margin-bottom: 20px; }
+  .pl2-faq-art .pp-art { width: 124px; height: 66px; }
+  .pp-paper.pl2-final { grid-template-columns: 1fr; padding: 40px 24px 28px; gap: 8px; }
+  .pl2-final-art { order: -1; width: 100%; max-width: 280px; justify-self: center; }
+  /* Доверие на узком экране — строка: знак слева, текст справа, как квадраты возможностей. */
+  .pl2-trust .pl2-card--paper { display: grid; grid-template-columns: 76px minmax(0, 1fr); column-gap: 16px; row-gap: 6px; padding: 22px 20px; }
+  .pl2-trust .pp-art { grid-row: 1 / 3; width: 76px; height: 42px; margin: 4px 0 0; }
 }
 @media (min-width: 601px) and (max-width: 900px) { .pl2-3 { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 640px) {
   .pl2-nav { display: none; }
   .pl2-burger { display: flex; }
-  .pl2-hero-sec { padding-top: 112px; }
-  .ds-card.pl2-final { padding: 48px 22px; }
+  .pl2-hero-sec { padding: 104px 20px 48px; }
+  .pl2-sec { padding: 64px 20px; }
+  .pl2-sec--tight { padding-top: 12px; }
+  .pl2-hero-art { min-height: 420px; }
+  .pl2-hero-collage { width: 120%; }
+  /* Мокап чуть меньше — коллаж вокруг него виден, а не только краешками у кромки экрана. */
+  .pl2-preview { transform: scale(.86); }
+  .pl2-note-card--a { right: -6px; }
+  .pl2-note-card--b { left: -6px; }
 }
 @media (max-width: 480px) { .pl2-actions .ds-btn.pl2-cta--lg { width: 100%; } }
 @media (prefers-reduced-motion: reduce) {

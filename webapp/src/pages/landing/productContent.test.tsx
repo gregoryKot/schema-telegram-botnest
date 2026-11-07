@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Текст продуктового лендинга живёт в src/articles/home-landing.content.ts —
 // его же сервер вкладывает в #root главной для робота без JS (GEO.md). Здесь:
-// у каждого пункта есть вид (знак бумаги, у доверия — оттенок), адрес сайта практики в тексте тот
+// у каждого пункта есть вид (сцена или знак и оттенок бумаги), адрес сайта практики в тексте тот
 // же, что у трекинга клика, и ссылки внутри текста рисуются правильно.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
@@ -29,10 +29,22 @@ describe('productContent: вид по id поверх общего текста'
     expect(STEPS.map((s) => s.id)).toEqual(HOME_STEPS.map((s) => s.id));
     expect(FEATURES.map((f) => f.id)).toEqual(HOME_FEATURES.map((f) => f.id));
     expect(TRUST.map((t) => t.id)).toEqual(HOME_TRUST.map((t) => t.id));
-    // Знак — компонент бумажной картинки (PaperArt), у доверия ещё оттенок бумаги.
-    for (const x of [...STEPS, ...FEATURES, ...TRUST]) expect(typeof x.Art).toBe('function');
-    for (const t of TRUST) expect(t.hue).toBeGreaterThanOrEqual(0);
+    // Вид — картинка языка знаков и оттенок бумаги: у шага крупная сцена (LandingScenes),
+    // у возможности и доверия — знак (PaperArt); оттенок — hue oklch, 0…360.
+    for (const s of STEPS) expect(typeof s.Scene).toBe('function');
+    for (const x of [...FEATURES, ...TRUST]) expect(typeof x.Art).toBe('function');
+    for (const x of [...STEPS, ...FEATURES, ...TRUST]) expect(x.hue).toBeGreaterThanOrEqual(0);
+    for (const x of [...STEPS, ...FEATURES, ...TRUST]) expect(x.hue).toBeLessThan(360);
     expect(STEPS.map((s) => s.num)).toEqual(['01', '02', '03']);
+  });
+
+  it('возможности: два крупных разворота со сценой, остальные — квадраты; соседи не одной бумаги', () => {
+    expect(FEATURES.filter((f) => f.Scene).map((f) => f.id)).toEqual(['diary', 'modes']);
+    for (const f of FEATURES.filter((x) => x.Scene)) expect(typeof f.Scene).toBe('function');
+    const hues = FEATURES.map((f) => f.hue);
+    expect(new Set(hues).size).toBe(hues.length);
+    const stepHues = STEPS.map((s) => s.hue);
+    expect(new Set(stepHues).size).toBe(stepHues.length);
     expect(FAQ).toBe(HOME_FAQ);
   });
 

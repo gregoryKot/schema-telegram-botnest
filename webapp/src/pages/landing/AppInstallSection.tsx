@@ -22,7 +22,7 @@ export function AppInstallSection() {
 
   return (
     <section id="app" className="pl2-sec">
-      <div className="pl2-wrap">
+      <div className="pl2-wrap pl2-band">
         <span className="pl2-eyebrow">Приложение</span>
         <h2 className="pl2-h2">
           Значок на экране — без магазина приложений
@@ -35,7 +35,7 @@ export function AppInstallSection() {
           {(['ios', 'android', 'desktop'] as const).map((p) => {
             const b = INSTALL_STEPS[p];
             return (
-              <div key={p} className="ds-card pl2-card">
+              <div key={p} className="ds-card pl2-card pl2-install">
                 <p className="pl2-card-title">{b.title}</p>
                 <p className="pl2-card-meta">{b.browser}</p>
                 <ol className="pl2-card-list">

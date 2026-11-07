@@ -1,0 +1,66 @@
+/* Журнальные развороты продуктового лендинга (docs/design/PAPER_2026-11.md):
+   «Как это работает» — шаг со сценой то слева, то справа, крупный засечный номер;
+   «Возможности» — полоса из двух разворотов со сценой и четырёх квадратов цветной
+   бумаги; «Приложение» — лист небесной бумаги. Подключают HowSection.tsx,
+   FeaturesSection.tsx и AppInstallSection (через страницу). База — product-landing.css. */
+
+/* ── Как это работает ───────────────────────────────────────────────────── */
+.pl2-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 64px; }
+.pl2-spread { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 72px; align-items: center; }
+.pl2-spread:nth-child(even) { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.pl2-spread:nth-child(even) .pl2-spread-art { order: 2; }
+.pl2-spread-art { width: 100%; max-width: 420px; justify-self: center; }
+.pl2-spread-body { max-width: 500px; }
+.pl2-spread-num {
+  display: block; font-family: var(--serif); font-weight: 400; letter-spacing: -.04em;
+  font-size: clamp(76px, 9vw, 132px); line-height: .86;
+}
+/* Под номером — полоска бумаги того же оттенка, что пятно сцены. */
+.pl2-spread-num::after { content: ''; display: block; width: 64px; height: 10px; margin-top: 22px; border-radius: 5px; background: oklch(0.8 0.08 var(--h)); }
+.pl2-spread--origin .pl2-spread-num { color: var(--c-clay-strong); }
+.pl2-spread--trigger .pl2-spread-num { color: var(--c-rose-strong); }
+.pl2-spread--notice .pl2-spread-num { color: var(--c-moss-strong); }
+.pl2-spread-title { margin: 22px 0 14px; font-family: var(--serif); font-weight: 400; font-size: clamp(26px, 3vw, 36px); line-height: 1.1; color: var(--text); }
+.pl2-spread-text { margin: 0; font-size: 17px; line-height: 1.7; color: var(--text-sub); }
+
+/* ── Возможности: полоса 12 колонок ─────────────────────────────────────── */
+.pl2-bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; }
+.pl2-feat {
+  display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; min-width: 0;
+  padding: 26px 26px 28px; border-radius: 24px; box-shadow: 8px 9px 0 oklch(0.84 0.05 var(--h));
+}
+.pl2-feat--diary { grid-column: 1 / 8; grid-row: 1 / 3; }
+.pl2-feat--schemas { grid-column: 8 / 13; grid-row: 1; }
+.pl2-feat--practices { grid-column: 8 / 13; grid-row: 2; }
+.pl2-feat--modes { grid-column: 6 / 13; grid-row: 3 / 5; }
+.pl2-feat--dynamics { grid-column: 1 / 6; grid-row: 3; }
+.pl2-feat--therapist { grid-column: 1 / 6; grid-row: 4; }
+.pl2-feat--big { padding: 24px 36px 36px; }
+.pl2-feat-scene { width: 100%; max-width: 380px; align-self: center; }
+.pl2-feat-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 25px; line-height: 1.15; color: var(--text); }
+.pl2-feat--big .pl2-feat-title { font-size: clamp(28px, 3vw, 36px); }
+.pl2-feat-text { margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
+.pl2-feat--big .pl2-feat-text { max-width: 480px; font-size: 17px; }
+
+/* ── Приложение: лист небесной бумаги, белые карточки шагов ─────────────── */
+.pl2-band { --h: 240; padding: 56px 52px 52px; border-radius: 32px; background: oklch(0.93 0.03 var(--h)); box-shadow: 10px 12px 0 oklch(0.85 0.045 var(--h)); }
+.ds-card.pl2-install { border-color: transparent; }
+
+@media (max-width: 900px) {
+  .pl2-steps { gap: 56px; }
+  .pl2-spread, .pl2-spread:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
+  .pl2-spread:nth-child(even) .pl2-spread-art { order: 0; }
+  .pl2-spread-art { max-width: 340px; }
+  .pl2-spread-num { font-size: 76px; }
+  .pl2-spread-num::after { margin-top: 16px; }
+  .pl2-spread-title { margin-top: 18px; }
+  .pl2-spread-text { font-size: 16px; }
+  .pl2-bento { grid-template-columns: 1fr; gap: 20px; }
+  .pl2-bento .pl2-feat { grid-column: auto; grid-row: auto; }
+  .pl2-feat--big { padding: 20px 22px 26px; }
+  .pl2-feat-scene { max-width: 320px; }
+  /* Квадрат на телефоне — строка: знак слева, текст справа. */
+  .pl2-feat:not(.pl2-feat--big) { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 16px; align-items: start; padding: 22px 20px; }
+  .pl2-feat:not(.pl2-feat--big) .pp-art { width: 76px; height: 42px; margin-top: 4px; }
+  .pl2-band { padding: 36px 20px 28px; border-radius: 26px; }
+}
