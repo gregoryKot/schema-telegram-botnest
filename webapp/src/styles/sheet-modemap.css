@@ -38,6 +38,8 @@
 .mm2-pal-head.is-static { cursor: default; }
 .mm2-pal-head-name { flex: 1; font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
 .mm2-pal-head-n { font-size: 10px; color: var(--text-faint); }
+.mm2-pal-block { margin: 0; padding: 10px 12px 4px; border-top: 1px solid var(--paper-sunk); font: 700 11px/1.2 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+.mm2-pal-block:first-child { border-top: none; }
 .mm2-client { background: var(--paper-tint); padding-bottom: 0; }
 .mm2-client.is-open { padding-bottom: 4px; }
 .mm2-client-row { display: flex; align-items: center; padding: 4px 12px 4px 0; }
