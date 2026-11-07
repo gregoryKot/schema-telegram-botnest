@@ -413,6 +413,13 @@ a { color: inherit; text-decoration: none; }
   flex-shrink: 0;
 }
 .sb-name { font-family: var(--serif); font-size: 17px; color: var(--on-panel); }
+/* Знак меню — ссылка на главную раздела (BrandHome.tsx). Зона 44px по высоте при знаке 32px;
+   отрицательные поля держат высоту шапки, как у .sb-toggle. */
+.sb-home {
+  display: flex; align-items: center; gap: var(--space-10); min-height: 44px; margin: -6px 0;
+  color: inherit; text-decoration: none; border-radius: var(--r-8);
+}
+.sb-home:focus-visible { outline: 2px solid var(--on-panel); outline-offset: 2px; }
 /* Кнопка «свернуть / развернуть меню» (SidebarRail.tsx). Тап-цель 44×44 и под мышью, и под
    пальцем; в шапке отрицательные поля держат высоту строки логотипа (32px) — меню не
    прыгает после силуэта загрузки, где кнопки нет. */
@@ -436,6 +443,7 @@ a { color: inherit; text-decoration: none; }
 .sidebar.is-collapsed { align-items: center; gap: 18px; padding: 20px 10px 14px; overflow-x: hidden; }
 .sb-rail-head { display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; }
 .sidebar.is-collapsed .sb-toggle { margin: 0; }
+.sidebar.is-collapsed .sb-home { width: 44px; justify-content: center; }
 .sidebar.is-collapsed .sb-foot-wrap { align-items: center; }
 .sb-item.sb-rail-item, .sb-account.sb-rail-account { width: 44px; min-height: 44px; padding: 0; justify-content: center; }
 

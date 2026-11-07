@@ -131,6 +131,11 @@ describe('LoginPage — провал OAuth (?error=no_token)', () => {
     expect(screen.queryByText(/Вход не получился/)).toBeNull();
   });
 
+  it('знак в шапке входа ведёт на главную сайта (владелец 2026-11-07)', () => {
+    renderPage();
+    expect(screen.getByRole('link', { name: 'На главную' }).getAttribute('href')).toBe('/');
+  });
+
   it('провал уходит в телеметрию (не только сломанный вход в мессенджере)', async () => {
     mockGetHost.mockReturnValue({ id: 'web', sessionExchange: () => null });
     renderPage(authValue(), '/login?error=no_token');

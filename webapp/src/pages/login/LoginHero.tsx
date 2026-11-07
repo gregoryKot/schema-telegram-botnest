@@ -6,10 +6,10 @@ import { BrandMark } from '../../components/art/BrandMark';
 export function LoginHero() {
   return (
     <aside className="al-hero">
-      <div className="al-brand">
+      <a href="/" className="al-brand" aria-label="На главную" title="На главную">
         <BrandMark size={36} className="al-logo" />
         <span className="al-brand-name">Всё по схеме</span>
-      </div>
+      </a>
       <div className="al-pitch">
         <h2 className="al-slogan">
           От «что со мной не так» к <i>«какая схема включилась»</i>
