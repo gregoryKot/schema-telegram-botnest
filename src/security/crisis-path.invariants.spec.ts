@@ -278,8 +278,10 @@ const SHORT_INPUT_ALLOWLIST: Record<string, string> = {
   'webapp/src/components/ModeMapCoupleLanes.tsx':
     'карта режимов: имя партнёра на дорожке',
   'webapp/src/components/ModeMapPalette.tsx':
-    'карта режимов: поиск и название своего режима',
+    'карта режимов: поиск режима или схемы в палитре',
   'webapp/src/components/ModeMapSelector.tsx': 'карта режимов: название карты',
+  'webapp/src/components/modeMap/CustomModesPalette.tsx':
+    'карта режимов: название своего режима',
   'webapp/src/components/modeMap/ModeMapEdgeEditor.tsx':
     'карта режимов: подпись стрелки',
   // Админка — текст пишет владелец проекта.

@@ -1,24 +1,12 @@
-import type { ModeMapNode } from '../../api';
-import { getSchemaById } from '../../schemaTherapyData';
+import type { Draft } from './modeDraft';
+import { schemaDraft } from './schemaDraft';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { useModeMapConcept } from './clientConceptContext';
-
-type Draft = Omit<ModeMapNode, 'position'>;
 
 interface Props {
   onAdd: (node: Draft) => void;
   onDragStart: (e: React.DragEvent, node: Draft) => void;
 }
-
-// Формат узла схемы — как у conceptToModeMap: тип schema, название и schemaId.
-const schemaDraft = (schemaId: string): Draft | null => {
-  const s = getSchemaById(schemaId);
-  if (!s) return null;
-  return {
-    id: `schema_${schemaId}_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
-    type: 'schema', data: { label: s.name, schemaId, customColor: s.domainColor },
-  };
-};
 
 /** Секция палитры «Схемы клиента»: отмеченные в концептуализации схемы одним кликом ложатся на холст. */
 export function ClientSchemasPalette({ onAdd, onDragStart }: Props) {
