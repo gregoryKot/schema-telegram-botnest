@@ -79,9 +79,9 @@ describe('ModeMapPalette — секция «Схема случая»', () => {
     expect(setData).toHaveBeenCalledWith('application/modemap-node', expect.stringContaining('"type":"origin"'));
   });
 
-  it('поиск режима прячет секцию, чтобы «Режим не найден» не спорил с ней', () => {
+  it('поиск режима прячет секцию, чтобы «Ничего не найдено» не спорил с ней', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Поиск режима…'), { target: { value: 'Упрямый' } });
+    fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), { target: { value: 'Упрямый' } });
     expect(screen.queryByText('Схема случая')).toBeNull();
     expect(screen.queryByText('Круг потребностей')).toBeNull();
   });
@@ -109,19 +109,19 @@ describe('ModeMapPalette — поиск и добавление стандарт
 
   it('поиск фильтрует режимы группы по названию', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Поиск режима…'), {
+    fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), {
       target: { value: 'Упрямый' },
     });
     expect(screen.getByText('Упрямый Ребёнок')).toBeTruthy();
     expect(screen.queryByText('Одинокий Ребёнок')).toBeNull();
   });
 
-  it('поиск без совпадений показывает «Режим не найден»', () => {
+  it('поиск без совпадений показывает «Ничего не найдено»', () => {
     renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Поиск режима…'), {
+    fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), {
       target: { value: 'зюзюзюкод' },
     });
-    expect(screen.getByText('Режим не найден')).toBeTruthy();
+    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
   });
 
   it('раскрытие группы показывает её режимы, клик по режиму добавляет узел с копинг-подтипом', () => {
@@ -332,5 +332,101 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
       screen.getByText('Не удалось загрузить твои режимы'),
     ).toBeTruthy();
     expect(screen.queryByText(/Добавь режимы, с которыми/)).toBeNull();
+  });
+});
+
+describe('ModeMapPalette — порядок блоков и каталог схем', () => {
+  const PH = 'Режим или схема…';
+  const search = (v: string) => fireEvent.change(screen.getByPlaceholderText(PH), { target: { value: v } });
+  const before = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('блоки идут: Режимы → Схемы → Фигуры, внутри «клиента» раньше каталога', async () => {
+    getConceptualization.mockResolvedValue({ modeIds: ['vulnerable_child'], schemaIds: ['abandonment'] });
+    await act(async () => { renderPalette(); });
+    const order = [
+      screen.getByRole('heading', { name: 'Режимы' }),
+      screen.getByText('Режимы клиента'),
+      screen.getByText('Детские режимы'),
+      screen.getByText('Мои режимы'),
+      screen.getByRole('heading', { name: 'Схемы' }),
+      screen.getByText('Схемы клиента'),
+      screen.getByText('Нарушение связи и отвержение'),
+      screen.getByRole('heading', { name: 'Фигуры' }),
+      screen.getByText('Триггер / Ситуация'),
+      screen.getByText('Поведение / Последствие'),
+      screen.getByText('Схема случая'),
+    ];
+    order.slice(1).forEach((el, i) => expect(before(order[i], el), `${order[i].textContent} → ${el.textContent}`).toBe(true));
+  });
+
+  it('пять доменов свёрнуты; клик раскрывает схемы; клик по схеме добавляет узел с цветом домена', () => {
+    const { onAdd } = renderPalette();
+    const domains = document.querySelectorAll('[data-group^="domain:"]');
+    expect(domains).toHaveLength(5);
+    expect(screen.queryByText('Покинутость / Нестабильность')).toBeNull();
+    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
+    fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
+    const color = (domains[0] as HTMLElement).style.getPropertyValue('--gc');
+    expect(color).not.toBe('');
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'schema',
+      data: expect.objectContaining({ schemaId: 'abandonment', label: 'Покинутость / Нестабильность', customColor: color }),
+    }));
+  });
+
+  it('перетаскивание схемы кладёт JSON под ключ холста', () => {
+    renderPalette();
+    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
+    const setData = vi.fn();
+    fireEvent.dragStart(screen.getByText('Покинутость / Нестабильность'), { dataTransfer: { setData, effectAllowed: '' } });
+    expect(setData).toHaveBeenCalledWith('application/modemap-node', expect.stringContaining('"schemaId":"abandonment"'));
+  });
+
+  it('поиск схемы: схема и заголовок «Схемы» видны, «Режимов» нет', () => {
+    renderPalette();
+    // «покину» совпадает ещё и с режимом «Покинутый Ребёнок», поэтому берём «покинутость».
+    search('покинутость');
+    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Схемы' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Режимы' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Фигуры' })).toBeNull();
+  });
+
+  it('«покину» находит и схему, и режим: оба блока видны', () => {
+    renderPalette();
+    search('покину');
+    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
+    expect(screen.getByText('Покинутый Ребёнок')).toBeTruthy();
+  });
+
+  it('поиск режима: заголовка «Схемы» нет', () => {
+    renderPalette();
+    search('Упрямый');
+    expect(screen.getByText('Упрямый Ребёнок')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Режимы' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Схемы' })).toBeNull();
+  });
+
+  it('совпадение в «Моих режимах» видно, без «+» и без «не найдено»', async () => {
+    listCustomModes.mockResolvedValue([{ id: 5, therapistId: 1, name: 'Особый', emoji: '⭐', nodeType: 'custom', createdAt: '2026-01-01' }]);
+    await act(async () => { renderPalette(); });
+    search('особ');
+    expect(screen.getByText('Особый')).toBeTruthy();
+    expect(screen.queryByLabelText('Добавить свой режим')).toBeNull();
+    expect(screen.queryByText('Ничего не найдено')).toBeNull();
+  });
+
+  it('«Мои режимы» без совпадений при поиске — секции нет', async () => {
+    listCustomModes.mockResolvedValue([{ id: 5, therapistId: 1, name: 'Особый', emoji: '⭐', nodeType: 'custom', createdAt: '2026-01-01' }]);
+    await act(async () => { renderPalette(); });
+    search('Упрямый');
+    expect(screen.queryByText('Мои режимы')).toBeNull();
+  });
+
+  it('поиск без совпадений — «Ничего не найдено» и ни одного заголовка блока', () => {
+    renderPalette();
+    search('зюзюзюкод');
+    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
+    expect(screen.queryAllByRole('heading')).toHaveLength(0);
   });
 });
