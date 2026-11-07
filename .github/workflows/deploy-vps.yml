@@ -19,7 +19,7 @@
 # Гейт: src/test-support/gates/deploy-needs-ci.spec.ts (push-триггер на
 # воркфлоу с деплоем запрещён).
 # Ruleset на main (PR + все джобы ci.yml обязательны + strict) включён
-# 2026-10-22, копия — .github/rulesets/main.json. Остаток вне репозитория —
+# 2026-11-07, копия — .github/rulesets/main.json. Остаток вне репозитория —
 # автодеплой Amvera, решение владельца, docs/open/audit-2026-10.md.
 name: Деплой на VPS
 
