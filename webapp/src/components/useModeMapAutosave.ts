@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, reportClientError } from '../api';
 import { fromFlowNodes, fromFlowEdges } from './modeMapFlow';
 import type { FlowNode, FlowEdge } from './modeMapFlow';
-import type { SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
+import { saveFailureText, type SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
 import { usePendingSave } from '../../../shared/src/utils/usePendingSave';
 
 type Scheduled = { ns: FlowNode[]; es: FlowEdge[] };
@@ -28,6 +28,7 @@ export function useModeMapAutosave(
 ) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [saveError, setSaveError] = useState(''); // причина отказа: сеть, 5xx, 413 у карты на потолке DTO
   const isMounted = useRef(true);
   useEffect(() => {
     isMounted.current = true;
@@ -45,9 +46,9 @@ export function useModeMapAutosave(
     try {
       await api.updateModeMap(id, { nodes: fromFlowNodes(ns), edges: fromFlowEdges(es) });
       if (isMounted.current) { setSavedAt(new Date()); setSaveStatus('saved'); }
-    } catch {
+    } catch (e) {
       reportClientError({ message: 'mode map save failed', section: 'modeMap' });
-      if (isMounted.current) setSaveStatus('error');
+      if (isMounted.current) { setSaveError(saveFailureText(e)); setSaveStatus('error'); }
     }
   }
 
@@ -71,5 +72,5 @@ export function useModeMapAutosave(
     saver.flush();
   }, [mapId, saver, nodesRef, edgesRef]);
 
-  return { saveStatus, savedAt, retry, scheduleSave };
+  return { saveStatus, savedAt, saveError, retry, scheduleSave };
 }

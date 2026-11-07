@@ -87,3 +87,22 @@ describe('MarqueeSection — редактирование строки А', () =
     expect(screen.queryByText('Сохранено ✓')).toBeNull();
   });
 });
+
+// docs/open/ci-tests.md, «Админка: загрузка без отмены»: ответ GET, пришедший после правки,
+// затирал её на экране. Ответ — отложенный, правка — до него (как гонка в PhotoSection.test.tsx).
+describe('MarqueeSection — поздний ответ загрузки', () => {
+  const CONTENT = { marqueeTopicsA: [{ label: 'Тревога', href: '#a' }], marqueeTopicsB: [{ label: 'Границы', href: '#b' }] };
+
+  it('пункт, добавленный до ответа, не затирается — встаёт после загруженных', async () => {
+    let answer: (v: typeof CONTENT) => void = () => {};
+    const late = new Promise<typeof CONTENT>((r) => { answer = r; });
+    mockApi.getSiteContent.mockReturnValue(late);
+    render(<MarqueeSection adminKey="k" />);
+    fireEvent.click(screen.getAllByRole('button', { name: '+ Добавить пункт' })[0]);
+    fireEvent.change(screen.getByPlaceholderText('Текст'), { target: { value: 'Стыд' } });
+
+    await act(async () => { answer(CONTENT); await late; });
+    const labels = screen.getAllByPlaceholderText('Текст').map((el) => (el as HTMLInputElement).value);
+    expect(labels).toEqual(['Тревога', 'Стыд', 'Границы']);
+  });
+});

@@ -9,10 +9,17 @@ import { ConceptSkinContext } from '../../../../shared/src/therapy/conceptGraph/
 import '../../styles/therapist-concept.css';
 import { useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { ConceptDigest, useConceptDigest } from '../../../../shared/src/therapy/conceptGraph/ConceptDigest';
+import { ConceptLoadFailed } from './concept/ConceptLoadFailed';
 
 interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void }
 // Вкладка «Концептуализация»: шапка, сводка, вид «Схема» или «Поля», раскрывашки; ds-вид — контекстом (CONCEPT_SITE_SKIN).
-export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
+// Загрузка упала — вместо полей плашка с «Повторить»; тело монтируется, когда ответ пришёл, и вид выбирает по нему.
+export function ClientConceptTab(props: Props) {
+  const { conceptLoad, reloadConcept } = props.detail;
+  return conceptLoad.failed ? <ConceptLoadFailed load={conceptLoad} onRetry={reloadConcept} /> : <ConceptTabBody {...props} />;
+}
+
+function ConceptTabBody({ detail, onOpenCanvas }: Props) {
   const [view, setView] = useConceptView(detail.activeModeIds.length); // раз при открытии (см. хук)
   const head = { detail, view, onView: setView };
   const digest = <ConceptDigest rows={useConceptDigest(detail.concept, detail.localConcept)} />;

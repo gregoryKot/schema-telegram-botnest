@@ -16,6 +16,8 @@ export type SaveRatingResult = {
   ok: boolean;
   allDone: boolean;
   streak?: StreakData;
+  /** Сервер не принял — оценка ждёт в outbox (QA B-З9: экран молчал, что она не ушла). */
+  queued?: boolean;
 };
 
 // Статус ответа сервера (не сетевая ошибка) — отдельный класс, чтобы
@@ -62,7 +64,7 @@ export function createRatingApi(
           err.status < 500;
         if (isClientError) throw err;
         enqueueRating(item);
-        return { ok: true, allDone: false };
+        return { ok: true, allDone: false, queued: true };
       }
     },
     // Отправляет отложенные оценки (см. ../utils/ratingOutbox.ts). Вызывается

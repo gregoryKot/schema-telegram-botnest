@@ -9,6 +9,7 @@
 // Цвета — токены, общие для webapp и мини-аппа (`--accent-red`, `--text-faint`;
 // `--err` есть только на сайте, поэтому его здесь нет).
 import type { CSSProperties } from 'react';
+import { humanizeThrown } from '../api/humanizeError';
 
 export type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -45,6 +46,13 @@ export function savedAtLabel(
   if (sameDay) return `в ${time}`;
   const day = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   return `${day}, ${time}`;
+}
+
+/** `errorText` из отказа сохранения: сеть, авария, лимит и длина тела — общим маппером
+ *  (shared/src/api/humanizeError.ts); причины нет — пусто, и строка скажет «Не сохранилось». */
+export function saveFailureText(err: unknown): string {
+  const reason = humanizeThrown(err, '');
+  return reason && `Не сохранилось. ${reason}`;
 }
 
 /** Текст строки по статусу. Чистая функция — её и проверяет тест. */

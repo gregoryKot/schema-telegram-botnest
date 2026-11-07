@@ -9,8 +9,7 @@ import { LoginHero } from './login/LoginHero';
 import { LoginEmailForm } from './login/LoginEmailForm';
 import { TelegramRetry } from './login/TelegramRetry';
 import { LoginConsentNote } from './login/LoginConsentNote';
-import { exchangeErrorText } from './login/exchangeError';
-import { humanizeThrown } from '../../../shared/src/api/humanizeError';
+import { exchangeErrorText, exchangeThrownText } from './login/exchangeError';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/src/account/accountDeletion';
 import { useTr } from '../utils/addressForm';
@@ -74,7 +73,7 @@ export function LoginPage() {
       setAccessToken(accessToken, expiresIn);
       navigate('/today', { replace: true });
     } catch (e) {
-      setError(humanizeThrown(e, String(e)));
+      setError(exchangeThrownText(e));
     } finally {
       setMiniAppLoading(false);
     }

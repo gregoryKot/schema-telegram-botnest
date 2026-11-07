@@ -239,3 +239,44 @@ describe('HealthyAdultSection — массовый импорт (HealthyAdultImp
     expect(textarea.value).toBe('Фраза, которая не сохранится.');
   });
 });
+
+// docs/open/ci-tests.md, «Админка: загрузка без отмены»: фраза, добавленная до ответа списка,
+// пропадала с экрана — `.then(setPhrases)` затирал её поздним ответом (на сервере она цела).
+describe('HealthyAdultSection — поздний ответ списка', () => {
+  const LOADED = [{ id: 1, text: 'Устал – значит устал.', enabled: true }];
+
+  it('фраза, добавленная до ответа, остаётся; загруженные встают перед ней', async () => {
+    let answer: (v: typeof LOADED) => void = () => {};
+    const late = new Promise<typeof LOADED>((r) => { answer = r; });
+    mockApi.adminListPhrases.mockReturnValue(late);
+    mockApi.adminCreatePhrase.mockResolvedValue({ id: 2, text: 'Сил больше нет — пора отдохнуть.', enabled: true });
+    render(<HealthyAdultSection adminKey="k" />);
+    fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), {
+      target: { value: 'Сил больше нет — пора отдохнуть.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+    await waitFor(() => expect(mockApi.adminCreatePhrase).toHaveBeenCalled());
+
+    answer(LOADED);
+    await screen.findByDisplayValue('Устал – значит устал.');
+    expect(screen.getByDisplayValue('Сил больше нет — пора отдохнуть.')).toBeTruthy();
+    expect(screen.getByText('Активных фраз: 2 / 2')).toBeTruthy();
+  });
+
+  it('контроль: фраза, которую ответ уже содержит, не задваивается', async () => {
+    let answer: (v: unknown) => void = () => {};
+    const late = new Promise((r) => { answer = r; });
+    mockApi.adminListPhrases.mockReturnValue(late);
+    const ROW = { id: 2, text: 'Можно передохнуть.', enabled: true };
+    mockApi.adminCreatePhrase.mockResolvedValue(ROW);
+    render(<HealthyAdultSection adminKey="k" />);
+    fireEvent.change(screen.getByPlaceholderText(/Безличная поддерживающая фраза/), { target: { value: ROW.text } });
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+    await waitFor(() => expect(mockApi.adminCreatePhrase).toHaveBeenCalled());
+
+    answer([...LOADED, ROW]); // сервер обработал GET после создания — фраза уже в ответе
+    await screen.findByDisplayValue('Устал – значит устал.');
+    expect(screen.getAllByDisplayValue(ROW.text)).toHaveLength(1);
+    expect(screen.getByText('Активных фраз: 2 / 2')).toBeTruthy();
+  });
+});

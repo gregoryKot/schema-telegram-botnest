@@ -41,13 +41,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 сервиса джобы. Переход — отдельный PR: сменить `runs-on`, прочитать логи, починить.
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
 
-**Админка: загрузка без отмены** (остаток после закрытия гонки `PhotoSection.tsx`, 2026-11-06):
-`webapp/src/pages/admin/MarqueeSection.tsx:12` (`getSiteContent` → `setA`/`setB`) и
-`HealthyAdultSection.tsx:18` (`adminListPhrases` → `setPhrases`) — тот же `useEffect` без отмены:
-ответ, пришедший после правки (добавил пункт или фразу до конца загрузки), затирает её на экране
-(на сервере правка цела). Вживую почти недостижимо; лечится как в `PhotoSection.tsx` (флаг
-`loadCancelled`) с тестом на поздний ответ.
-
 **Merge-драйверы бейслайнов** (`scripts/merge-drivers-check.mjs`, `scripts/merge-json-ratchet.mjs`, #729):
 - **`.gitattributes` сам драйвером не сводится.** `--check` требует строку на
   каждый новый `scripts/*-baseline.json`, поэтому два PR с новыми гейтами
@@ -207,8 +200,8 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   vitest с `window is not defined` при зелёных тестах (CI main, run
   36409902702, webapp под `TZ=Australia/Sydney`). Тосты сайта переведены на
   `shared/src/hooks/useTimedFlag.ts` (настройки, `PracticesScreen`, админка, `QuizPage`, 2026-11-06);
-  класс ещё живёт в `shared/src/therapy/useSessionAliasEditing.ts:125` (ошибка гаснет по
-  `setTimeout` без очистки — найдено при переводе). Гейта у класса нет. Подкласс «код чистит таймер корректно, но
+  последнее найденное место — самоснятие ошибки дат в `shared/src/therapy/useSessionAliasEditing.ts`
+  (параметр `clearAfterMs`, нужный только удалённому мини-аппу) — убрано 2026-11-06. Гейта у класса нет. Подкласс «код чистит таймер корректно, но
   тест не размонтировал компонент» закрыт механизмом: `setupFiles` с
   `afterEach(cleanup)` в каждом из фронтовых пакетов
   (`<пакет>/src/test-support/rtlCleanup.ts`, флак 2026-10-15, run 38707373186,

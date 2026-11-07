@@ -3,7 +3,7 @@ import { api, reportClientError, type ClientConceptualization, type UserId } fro
 import { conceptSaveBody, type ConceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
 import { conceptOverLimitField, conceptOverLimitText } from '../../../../shared/src/therapy/conceptOverLimit';
 import { usePendingSave } from '../../../../shared/src/utils/usePendingSave';
-import type { SaveStatus } from '../../../../shared/src/therapy/SaveStatusLine';
+import { saveFailureText, type SaveStatus } from '../../../../shared/src/therapy/SaveStatusLine';
 import { sameId } from '../../../../shared/src/utils/sameId';
 import { useTr } from '../../utils/addressForm';
 import { useConceptAppended } from '../modeMap/conceptAppendedEvent';
@@ -17,7 +17,7 @@ const SECTION = 'therapist.clientDetail';
 // а тело — из рефа следующего клиента; теперь id и тело запоминаются вместе (shared usePendingSave): при смене
 // клиента правка уходит прежнему с ЕГО данными, при уходе со страницы — keepalive-досылкой, поздний ответ чужую
 // карточку не трогает. Статус — для `SaveStatusLine` (#879): «✓ Сохранено в ЧЧ:ММ» не гаснет до следующей правки,
-// отказ — 'error' с «Повторить» (`retrySave`); `conceptError` — причина отказа (поле длиннее предела), иначе пусто.
+// отказ — 'error' с «Повторить» (`retrySave`); `conceptError` — причина отказа (поле длиннее предела, сеть, сервер).
 export function useConceptAutosave(openClientIdRef: { readonly current: UserId | null }) {
   const tr = useTr();
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
@@ -28,6 +28,9 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
   const [conceptError, setConceptError] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [savedAt, setSavedAt] = useState<Date | null>(null); // момент последнего удачного сохранения
+  // Загрузка упала — правки закрыты: тело сохранения несёт ВСЕ поля, и правка поверх пустых затёрла бы
+  // сохранённое (docs/open/therapy.md, класс «сбой ≠ пусто»). `reloadConcept` — «Повторить».
+  const [load, setLoad] = useState({ failed: false, reloading: false });
   const isOpen = (id: UserId) => sameId(openClientIdRef.current, id);
 
   function setLocal(next: LocalConcept) {
@@ -45,13 +48,13 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
       setConceptError('');
       setSavedAt(saved.updatedAt ? new Date(saved.updatedAt) : new Date());
       setSaveStatus('saved'); // не гаснет: «✓ Сохранено в ЧЧ:ММ» висит до следующей правки (issue #879, шаг A)
-    } catch {
+    } catch (e) {
       // Карточка уже другого клиента или закрыта — показать отказ негде, но молчать нельзя.
       if (leaving || !isOpen(clientId)) reportClientError({ message: 'concept save failed after leaving the client', section: SECTION });
       if (!isOpen(clientId)) return;
       setSaveStatus('error'); // «Не сохранилось» и «Повторить» рисует SaveStatusLine
       const over = conceptOverLimitField(body);
-      setConceptError(over ? conceptOverLimitText(over, tr) : '');
+      setConceptError(over ? conceptOverLimitText(over, tr) : saveFailureText(e)); // иначе причина — сеть, 5xx, 413
     }
   }
 
@@ -74,7 +77,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
 
   function patchConcept(patch: LocalConcept) {
     const clientId = openClientIdRef.current;
-    if (clientId == null) return;
+    if (clientId == null || load.failed) return;
     const next = { ...localRef.current, ...patch };
     setLocal(next);
     setSaveStatus('pending');
@@ -105,15 +108,28 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     setConceptError('');
     setSaveStatus('idle'); // статус — состояние клиента: «Не сохранилось» прежнего не переезжает к новому (#879)
     setSavedAt(null);
+    setLoad({ failed: false, reloading: false });
   }
 
-  function loadConcept(fetched: ClientConceptualization | null) {
+  function loadConcept(fetched: ClientConceptualization | null, failed = false) {
+    setLoad({ failed, reloading: false });
     setConcept(fetched);
     if (fetched) setLocal(fetched);
   }
 
+  async function reloadConcept() {
+    const clientId = openClientIdRef.current;
+    if (clientId == null) return;
+    setLoad({ failed: true, reloading: true });
+    const fetched = await api.getConceptualization(clientId).then((c) => ({ c }), () => null);
+    if (!isOpen(clientId)) return; // поздний ответ прежнего клиента новую карточку не трогает
+    if (fetched) loadConcept(fetched.c);
+    else { setLoad({ failed: true, reloading: false }); reportClientError({ message: 'concept reload failed', section: SECTION }); }
+  }
+
   return {
     concept, localConcept, conceptError, saveStatus, savedAt, retrySave,
+    load, reloadConcept: () => void reloadConcept(),
     activeSchemaIds: (localConcept.schemaIds ?? concept?.schemaIds ?? []) as string[],
     activeModeIds: (localConcept.modeIds ?? concept?.modeIds ?? []) as string[],
     patchConcept,

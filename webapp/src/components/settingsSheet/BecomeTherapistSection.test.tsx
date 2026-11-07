@@ -9,7 +9,7 @@ import { BecomeTherapistSection } from './BecomeTherapistSection';
 import { withAddressForm, fillTherapistRequestForm } from './SettingsSheet.test-helpers';
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { postJson, setRefreshHandler, setTokenProvider } from '../../apiClient';
-import { NO_CONNECTION_TEXT } from '../../../../shared/src/api/humanizeError';
+import { NO_CONNECTION_TEXT, SERVER_DOWN_TEXT } from '../../../../shared/src/api/humanizeError';
 
 vi.mock('../../api', () => ({
   api: {
@@ -171,11 +171,13 @@ describe('BecomeTherapistSection — текст ошибки отправки ч
     await screen.findByText('Заявка уже на рассмотрении');
   });
 
-  it('500 с английским текстом — запасной текст экрана, без служебного английского', async () => {
+  // Ошибка клиента API несёт статус (ApiError.status): 5xx разбирается как авария сервера —
+  // тот же текст, что у экранов с голым fetch (readHumanError), а не запасной текст экрана.
+  it('500 с английским текстом — «сервер не ответил», без служебного английского', async () => {
     await submitWith(async () =>
       new Response(JSON.stringify({ statusCode: 500, message: 'Internal server error' }), { status: 500 }),
     );
-    await screen.findByText('Не удалось отправить заявку');
+    await screen.findByText(SERVER_DOWN_TEXT);
     expect(screen.queryByText(/Internal server error/)).toBeNull();
     expect(screen.getByPlaceholderText('ФИО')).toBeTruthy();
   });

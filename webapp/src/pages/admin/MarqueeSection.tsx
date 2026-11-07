@@ -9,8 +9,17 @@ export function MarqueeSection({ adminKey }: { adminKey: string }) {
   const [a, setA] = useState<MarqueeTopic[]>([]);
   const [b, setB] = useState<MarqueeTopic[]>([]);
 
+  // Ответ, пришедший после правки (пункт добавлен до конца загрузки), её не затирает: до ответа в строке
+  // могут быть только новые пункты — они встают после загруженных. Голая отмена, как в PhotoSection, здесь
+  // хуже: строка осталась бы без загруженных пунктов, и «Сохранить» стёр бы их на сервере.
   useEffect(() => {
-    api.getSiteContent().then(c => { setA(c.marqueeTopicsA); setB(c.marqueeTopicsB); }).catch(() => {});
+    let cancelled = false; // размонтирование (и двойной эффект StrictMode) — ответ не применяется
+    api.getSiteContent().then(c => {
+      if (cancelled) return;
+      setA(local => [...c.marqueeTopicsA, ...local]);
+      setB(local => [...c.marqueeTopicsB, ...local]);
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   return (

@@ -8,6 +8,10 @@ import { Strokes } from '../art/PaperArt';
 import { DayBars } from './DayBars';
 import { completionHeadline, lowestObservation, nextUnrated, summarizeDay } from './trackerFlow';
 
+// QA B-З9: на 5xx и без сети оценка ложится в очередь, а экран писал «Готово», не сказав, что
+// сервер её ещё не видел. Очередь уходит сама — на старте и по возврату сети (useOutboxFlushOnOnline).
+const QUEUED_TEXT = 'Оценки пока не дошли до сервера. Они сохранены на этом устройстве и отправятся сами';
+
 /** Экран «Готово»: индекс дня (или «N из M», пока оценены не все), пять столбиков, одно наблюдение (если оценены все), куда дальше. */
 export function CompletionScreen({
   needs,
@@ -19,6 +23,7 @@ export function CompletionScreen({
   onReview,
   onOpenNote,
   onOpenHistory,
+  queued,
 }: {
   needs: Need[];
   effectiveRatings: Record<string, number>;
@@ -31,6 +36,8 @@ export function CompletionScreen({
   onReview: (idx: number) => void;
   onOpenNote?: () => void;
   onOpenHistory?: () => void;
+  /** Хотя бы одна оценка не дошла до сервера и ждёт в очереди (shared/src/api/ratingApi.ts). */
+  queued?: boolean;
 }) {
   const NEED_DATA = useNeedData();
   const bridge = useTherapyBridgeTexts();
@@ -55,6 +62,7 @@ export function CompletionScreen({
           <p className="tq-obs">
             {complete && lowest ? lowestObservation(nameOf(lowest)) : 'Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.'}
           </p>
+          {queued && <p className="tq-index-cap" role="status">{QUEUED_TEXT}</p>}
           <DayBars needs={needs} ratings={effectiveRatings} />
           <div className="tq-acts">
             <button type="button" className="tq-btn tq-btn--main" onClick={close}>
