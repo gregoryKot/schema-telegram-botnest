@@ -10,6 +10,7 @@ export interface ConceptGraphMetrics {
   syncToMap30: number; // раз жали «Добавить на карту»: поля → холст (#963)
   syncFromMap30: number; // раз холст дописал в концептуализацию режим, схему или связь (#963)
   guideModes30: number; // подсказки терапевту (#995): раз открывали лист режима
+  guideSchemas30: number; // раз открывали лист схемы
   guideTechniques30: number; // раз открывали лист техники
   guideAssign30: number; // раз жали «Дать заданием» у пункта «Между сессиями»
   sharedNow: number; // схем случая, которые сейчас показаны клиентам (тумблер «Показать клиенту»)

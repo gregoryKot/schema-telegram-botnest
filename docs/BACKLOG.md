@@ -33,7 +33,8 @@
   техники; история заданий и отметка «Делали сегодня»; «Справочник» в меню
   терапевта. Содержание — справочник владельца по книгам. ТЗ —
   [#995](https://github.com/gregoryKot/schema-telegram-botnest/issues/995); шаг 1 — PR
-  [#996](https://github.com/gregoryKot/schema-telegram-botnest/pull/996).
+  [#996](https://github.com/gregoryKot/schema-telegram-botnest/pull/996) (смержен), шаг 2 (схемы) — PR
+  [#1001](https://github.com/gregoryKot/schema-telegram-botnest/pull/1001).
 
 ## Следующее
 

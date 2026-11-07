@@ -127,6 +127,7 @@ export function ConceptGraph({
           }}
           onRemove={toggleSchema}
           onClose={() => setOpen(null)}
+          guide={guide}
         />
       )}
       <ConceptGraphFooter graph={graph} />

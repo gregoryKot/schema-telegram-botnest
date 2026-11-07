@@ -1,7 +1,7 @@
 import type { TechniqueGuide } from '../../../../../shared/src/schemaTherapy/guide';
 import { ConceptFullscreenSheet } from '../ConceptFullscreenSheet';
 import { GuideSection, GuideSources } from './GuideSection';
-import { guideColumnStyle, guideTextStyle } from './guideStyles';
+import { guideColumnStyle, guideListStyle, guideTextStyle } from './guideStyles';
 
 /**
  * Лист техники (#995): что это, когда применять, шаги, когда не делать,
@@ -17,7 +17,7 @@ export function TechniqueSheet({ technique: t, onClose }: { technique: Technique
         <GuideSection title="Когда" text={t.when} />
         {t.steps.length > 0 && (
           <GuideSection title="Как проводить">
-            <ol style={{ ...guideTextStyle, paddingLeft: 'var(--space-24)', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+            <ol style={guideListStyle}>
               {t.steps.map((step, i) => <li key={i}>{step}</li>)}
             </ol>
           </GuideSection>

@@ -87,6 +87,53 @@ export interface TechniqueGuide {
   sources: string;
 }
 
+/** Копинг схемы тремя стилями. */
+export interface SchemaCoping {
+  /** Капитуляция: живёт так, будто схема права. */
+  surrender: string;
+  /** Избегание: не допускает активации. */
+  avoidance: string;
+  /** Гиперкомпенсация: действует так, будто верно обратное. */
+  overcompensation: string;
+}
+
+export interface SchemaGuide {
+  /** id из shared/src/schemaTherapy/content/schemaDomains.ts. */
+  schemaId: string;
+  /** Что строим вместо схемы, одной фразой: плашка «Обычно в методе». */
+  goal: string;
+  /** Суть: во что верит человек и откуда это. */
+  essence: string;
+  /** Какая потребность не закрыта. */
+  need: string;
+  coping: SchemaCoping;
+  /** Типичные режимы (id из modeGroups.ts). */
+  modeIds: string[];
+  /** Как схема выглядит в кабинете: триггеры в отношениях с терапевтом. */
+  inSession: string;
+  /** Фраза ограниченного репарентинга — реплика терапевта, через tr. */
+  reparenting: string;
+  /** Интервенции пунктами, 2–6. */
+  interventions: string[];
+  /** «На сессии»: 2–5 техник по важности. */
+  techniques: TechniqueId[];
+  /** «Между сессиями»: 1–4 пункта. */
+  betweenSessions: BetweenSessionsItem[];
+  /** Где застревают. */
+  stuck?: string;
+  sources: string;
+}
+
+/** Домен схем: общее для всех его схем и сами схемы. */
+export interface SchemaDomainGuide {
+  /** id домена из schemaDomains.ts. */
+  domainId: string;
+  /** «Общее для домена», 1–3 фразы. */
+  note: string;
+  schemas: SchemaGuide[];
+}
+
 export type ModeGuideBuilder = (tr: Tr) => ModeGuide[];
+export type SchemaDomainGuideBuilder = (tr: Tr) => SchemaDomainGuide;
 export type TechniqueGuideBuilder = (tr: Tr) => TechniqueGuide[];
 export type { Tr };

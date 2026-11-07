@@ -6,6 +6,9 @@
 import type {
   ModeGuide,
   ModeGuideBuilder,
+  SchemaDomainGuide,
+  SchemaDomainGuideBuilder,
+  SchemaGuide,
   TechniqueGuide,
   TechniqueGuideBuilder,
   TechniqueId,
@@ -23,6 +26,11 @@ import { buildImageryTechniques } from './techniques/imagery';
 import { buildChairTechniques } from './techniques/chairs';
 import { buildStanceTechniques } from './techniques/stance';
 import { buildHomeworkTechniques } from './techniques/homework';
+import { buildRejectionGuides } from './schemas/rejection';
+import { buildAutonomyGuides } from './schemas/autonomy';
+import { buildLimitsGuides } from './schemas/limits';
+import { buildOtherDirectedGuides } from './schemas/otherDirected';
+import { buildVigilanceGuides } from './schemas/vigilance';
 
 const MODE_BUILDERS: ModeGuideBuilder[] = [
   buildVulnerableChildGuides,
@@ -42,6 +50,14 @@ const TECHNIQUE_BUILDERS: TechniqueGuideBuilder[] = [
   buildHomeworkTechniques,
 ];
 
+const DOMAIN_BUILDERS: SchemaDomainGuideBuilder[] = [
+  buildRejectionGuides,
+  buildAutonomyGuides,
+  buildLimitsGuides,
+  buildOtherDirectedGuides,
+  buildVigilanceGuides,
+];
+
 /** Все разделы режимов в порядке групп. */
 export function buildModeGuides(tr: Tr): ModeGuide[] {
   return MODE_BUILDERS.flatMap((build) => build(tr));
@@ -57,6 +73,28 @@ export function modeGuide(tr: Tr, modeId: string): ModeGuide | null {
   return buildModeGuides(tr).find((g) => g.modeId === modeId) ?? null;
 }
 
+/** Домены схем в порядке справочника, со своими схемами. */
+export function buildSchemaDomainGuides(tr: Tr): SchemaDomainGuide[] {
+  return DOMAIN_BUILDERS.map((build) => build(tr));
+}
+
+/** Все разделы схем. */
+export function buildSchemaGuides(tr: Tr): SchemaGuide[] {
+  return buildSchemaDomainGuides(tr).flatMap((d) => d.schemas);
+}
+
+/** Раздел схемы и «общее для домена»; null — у схемы нет раздела. */
+export function schemaGuide(
+  tr: Tr,
+  schemaId: string,
+): { guide: SchemaGuide; domainNote: string } | null {
+  for (const d of buildSchemaDomainGuides(tr)) {
+    const guide = d.schemas.find((g) => g.schemaId === schemaId);
+    if (guide) return { guide, domainNote: d.note };
+  }
+  return null;
+}
+
 export function techniqueGuide(tr: Tr, id: TechniqueId): TechniqueGuide | null {
   return buildTechniqueGuides(tr).find((t) => t.id === id) ?? null;
 }
@@ -65,6 +103,9 @@ export type {
   BetweenSessionsItem,
   GuideTaskType,
   ModeGuide,
+  SchemaCoping,
+  SchemaDomainGuide,
+  SchemaGuide,
   TechniqueGuide,
   TechniqueId,
 } from './types';

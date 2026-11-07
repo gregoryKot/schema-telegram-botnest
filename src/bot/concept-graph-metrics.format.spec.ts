@@ -15,6 +15,7 @@ const base: ConceptGraphMetrics = {
   syncToMap30: 0,
   syncFromMap30: 0,
   guideModes30: 0,
+  guideSchemas30: 0,
   guideTechniques30: 0,
   guideAssign30: 0,
   sharedNow: 0,
@@ -182,11 +183,12 @@ describe('formatConceptGraphMetrics', () => {
       opens30: 4,
       therapists30: 1,
       guideModes30: 6,
+      guideSchemas30: 5,
       guideTechniques30: 9,
       guideAssign30: 2,
     });
     expect(text).toContain(
-      'Подсказки терапевту — листы режимов: 6, листы техник: 9, «Дать заданием»: 2',
+      'Подсказки терапевту — листы режимов: 6, листы схем: 5, листы техник: 9, «Дать заданием»: 2',
     );
     expect(text).not.toMatch(/NaN|undefined|null/);
   });
@@ -195,7 +197,14 @@ describe('formatConceptGraphMetrics', () => {
     const text = formatConceptGraphMetrics({ ...base, guideAssign30: 3 });
     expect(text).toContain('Подсказки терапевту — «Дать заданием»: 3');
     expect(text).not.toContain('листы');
-    expect(text).not.toMatch(/(режимов|техник|заданием»): 0/);
+    expect(text).not.toMatch(/(режимов|схем|техник|заданием»): 0/);
+  });
+
+  it('подсказки: только листы схем — строка про них, без режимов и техник', () => {
+    const text = formatConceptGraphMetrics({ ...base, guideSchemas30: 4 });
+    expect(text).not.toContain('Пока никто');
+    expect(text).toContain('Подсказки терапевту — листы схем: 4');
+    expect(text).not.toMatch(/листы (режимов|техник)|NaN|undefined|null/);
   });
 
   it('схемой пользовались, а подсказки не открывали — сказано словами', () => {
@@ -207,7 +216,9 @@ describe('formatConceptGraphMetrics', () => {
     expect(text).toContain('Подсказки терапевту пока не открывали');
   });
 
-  it('пустая БД не упоминает подсказки', () => {
-    expect(formatConceptGraphMetrics({ ...base })).not.toContain('Подсказки');
+  it('пустая БД не упоминает подсказки и листы схем', () => {
+    const text = formatConceptGraphMetrics({ ...base });
+    expect(text).not.toContain('Подсказки');
+    expect(text).not.toContain('листы схем');
   });
 });

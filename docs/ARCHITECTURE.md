@@ -39,7 +39,7 @@
 | Событие аналитики и блок `/stats` | `src/analytics/analytics.constants.ts`, `src/api/analytics-meta.sanitize.ts`, `src/bot/stats-report.service.ts`, `src/bot/stats-report.blocks.ts`, `src/bot/stats-sections.ts`, `shared/src/share/analytics.ts` | analytics |
 | Запись на консультацию, оплата | `src/booking/booking.service.ts`, `src/booking/slot.service.ts`, `src/booking/payment.controller.ts` | backend-api, data |
 | Кабинет терапевта | `src/therapy/therapy-relations.service.ts` (`assertHasClient`), `shared/src/therapy/` | security |
-| Подсказки терапевту по режимам и схемам («Обычно в методе», листы режима и техники) | `shared/src/schemaTherapy/guide/` (тексты), `shared/src/therapy/conceptGraph/conceptGuide.ts` (плашка), `webapp/src/components/therapist/guide/` (листы, «Дать заданием») | frontend, texts |
+| Подсказки терапевту по режимам и схемам («Обычно в методе» в редакторе режима и схемы, листы режима, схемы и техники) | `shared/src/schemaTherapy/guide/` (тексты: `modes/*`, `schemas/*`, `techniques/*`), `shared/src/therapy/conceptGraph/conceptGuide.ts` + `ConceptGuideHint.tsx` (плашка, одна на режим и схему), `webapp/src/components/therapist/guide/` (листы, «Дать заданием») | frontend, texts |
 | Env-переменная | `src/infra/env-registry.ts` + `docs/ENV.md` | ops |
 | Внешняя интеграция | проба в `src/infra/self-check/registry.ts` | ops |
 | Хост, редирект, визитка; что визитка показывает поисковикам | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts`, `src/practice-domain.seo.ts` (robots, sitemap, `PRACTICE_INDEXED_PAGES`), `src/practice-index-html.ts` (canonical), `src/infra/canonical-host.ts` | backend-api |
