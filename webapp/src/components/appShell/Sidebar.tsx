@@ -9,18 +9,10 @@ import { SidebarClients } from './SidebarClients';
 import { isClientListPath } from '../therapist/clientTabRoute';
 import { useScreenShare } from './screenShareMode';
 import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
+import { SidebarBrand, SidebarRail } from './SidebarRail';
+import { useSidebarCollapsed } from './sidebarCollapse';
 
 const itemClass = ({ isActive }: { isActive: boolean }) => `sb-item${isActive ? ' is-active' : ''}`;
-
-/** Логотип и название — общие у сайдбара и его скелетона на загрузке. */
-export function SidebarBrand() {
-  return (
-    <div className="sb-brand">
-      <div className="sb-logo">В</div>
-      <div className="sb-name">Всё по схеме</div>
-    </div>
-  );
-}
 
 interface Props {
   items: { id: Section; label: string }[];
@@ -36,7 +28,7 @@ interface Props {
 }
 
 // Сайдбар десктопа — вынесен из AppShell.tsx (правило №10). На телефоне скрыт
-// (index.css), там навигация — MobileNav.
+// (index.css), там навигация — MobileNav. Свёрнутый — полоска с иконками (SidebarRail).
 export function Sidebar({
   items, therapistMode, userRole, onSwitchMode, therapistClients,
   needs, ratings, displayName, onOpenTracker, onOpenSettings,
@@ -47,9 +39,11 @@ export function Sidebar({
   const onList = isClientListPath(useLocation().pathname);
   // Тот же индекс дня, что на плитке и в итоге трекера (shared/src/needs/dayIndex.ts).
   const idx = dayIndex(needs.map(n => n.id), ratings);
+  const collapsed = useSidebarCollapsed();
+  if (collapsed) return <SidebarRail items={items} therapistMode={therapistMode} onList={onList} displayName={displayName} />;
   return (
     <aside className="sidebar">
-      <SidebarBrand />
+      <SidebarBrand toggle />
 
       {userRole === 'THERAPIST' && (
         <ModeSwitch variant="sidebar" value={therapistMode} onChange={onSwitchMode} />

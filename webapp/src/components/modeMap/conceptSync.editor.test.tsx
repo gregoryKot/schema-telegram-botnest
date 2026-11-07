@@ -45,7 +45,7 @@ describe('ModeMapEditor — поля → холст', () => {
     await act(async () => {
       render(<ModeMapEditor mapId={1} clientId={7} kind="problem" initialNodes={[CHILD]} initialEdges={[]} />);
     });
-    const line = await screen.findByText('В концептуализации есть, на карте нет: Требовательный Критик');
+    const line = await screen.findByText('Нет на карте 1 из концептуализации: Требовательный Критик');
     expect(line).toBeTruthy();
     const before = nodeEl('n1')?.style.transform;
     expect(before).toContain('translate');

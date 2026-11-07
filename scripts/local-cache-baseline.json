@@ -205,6 +205,10 @@
       "kind": "mirror",
       "source": "User.uiPrefs (SYNCED_PREF_KEYS, uiPrefsSync, server wins)"
     },
+    "sidebar_collapsed": {
+      "owner": "webapp/src/components/appShell/sidebarCollapse.ts",
+      "kind": "local"
+    },
     "therapist_mode": {
       "owner": "webapp/src/components/appShell/therapistModeCache.ts",
       "kind": "mirror",
