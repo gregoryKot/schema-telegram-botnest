@@ -11,21 +11,11 @@ export interface DayHistory {
   ratings: Record<string, number>;
 }
 
-export const COLORS: Record<string, string> = {
-  attachment: '#f472b6',
-  autonomy: '#4fa3f7',
-  expression: '#f59e0b',
-  play: '#10b981',
-  limits: '#a78bfa',
-};
-
-export const YESTERDAY: Record<string, number> = {
-  attachment: 5,
-  autonomy: 6,
-  expression: 4,
-  play: 7,
-  limits: 6,
-};
+// Цвет потребности — только shared/src/needs/needColors.ts; здесь реэкспорт
+// для импортов `from '../types'`. Тут жила вторая, старая палитра COLORS:
+// колесо истории, карточки шаринга и весь мини-апп красили ею привязанность
+// в розовый, остальные экраны — тоном hue (QA 2026-11, B-З7).
+export { NEED_COLORS } from './needs/needColors';
 
 // ─── Diary types ──────────────────────────────────────────────────────────────
 
@@ -64,6 +54,8 @@ export interface ModeDiaryEntry {
   actualNeed?: string | null;
   childhoodMemories?: string | null;
   healthyResponse?: string | null;
+  /** Запись из потока «Что случилось»; старые записи — без поля или false. */
+  fromCase?: boolean;
 }
 
 export interface GratitudeDiaryEntry {
@@ -102,12 +94,14 @@ export interface UserProfile {
 // импортировать shared из-за rootDir=src: пара бэк↔shared, меняй оба).
 export interface TherapyClientSummary {
   telegramId: UserId;
+  urlCode?: string; // постоянный код адреса карточки /cabinet/<код> (utils/clientRef); нет у старого кэша и старого сервера
   name: string | null;
   clientAlias: string | null;
   streak: number;
-  lastActiveDate: string | null;
+  lastActiveDate: string | null; // день по календарю клиента, не терапевта
+  daysSinceActive?: number | null; // до сегодня клиента, считает сервер (isActiveToday); нет у старого кэша
   todayIndex: number | null;
-  recentIndexHistory: (number | null)[]; // 14 значений, index 0 = сегодня
+  recentIndexHistory: (number | null)[]; // 14 дней клиента, index 0 = его сегодня
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;

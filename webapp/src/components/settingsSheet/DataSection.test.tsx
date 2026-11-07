@@ -18,7 +18,9 @@ import {
 
 vi.mock('../../api', () => ({
   api: {
-    deleteYsqResult: vi.fn(),
+    deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
     deleteAllUserData: vi.fn(),
   },
 }));
@@ -26,6 +28,11 @@ import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 vi.mock('../../apiClient', () => ({ authedFetch: vi.fn() }));
+// Запись истории диалога удаления проверяет DeleteAccountDialog.test.tsx; здесь
+// URL подменён ради экспорта, и роутер на нём не живёт — goBack = onClose.
+vi.mock('../../hooks/useHistorySheet', () => ({
+  useHistorySheet: (onClose: () => void) => onClose,
+}));
 import { authedFetch } from '../../apiClient';
 const mockAuthedFetch = authedFetch as unknown as ReturnType<typeof vi.fn>;
 
@@ -45,6 +52,9 @@ let reloadSpy: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  // На сервере теста нет, пока тест не скажет иное.
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
   reloadSpy = mockLocationReload();
   vi.stubGlobal('URL', {
     ...URL,
@@ -73,40 +83,80 @@ describe('DataSection — конфиденциальность: модалка',
     await waitFor(() => expect(screen.queryByText('Данные и конфиденциальность')).toBeNull());
   });
 
-  it('нет сохранённого теста — кнопка удаления результатов не показана', () => {
+  it('теста нет ни тут, ни на сервере — кнопка удаления результатов не показана', async () => {
     renderWithForm();
     fireEvent.click(screen.getByText('Конфиденциальность'));
+    await waitFor(() => expect(mockApi.getYsqProgress).toHaveBeenCalledTimes(1));
+    await act(() => new Promise((r) => setTimeout(r, 0))); // ответы сервера разобраны
     expect(screen.queryByText('Удалить результаты теста')).toBeNull();
+  });
+
+  // Тест пройден на другой площадке: на этом устройстве пусто, на сервере
+  // история — без проверки сервера его нельзя было стереть отсюда.
+  it('только серверная история — кнопка видна', async () => {
+    mockApi.getYsqHistory.mockResolvedValue([{ id: 1, completedAt: '2026-10-01T00:00:00.000Z', scores: {} }]);
+    renderWithForm();
+    fireEvent.click(screen.getByText('Конфиденциальность'));
+    expect(await screen.findByText('Удалить результаты теста')).toBeTruthy();
   });
 });
 
+// Решение владельца 2026-10-22: кнопка стирает всё про тест (итог, историю,
+// прогресс — DELETE /api/ysq-data) и сначала спрашивает подтверждение.
 describe('DataSection — удаление результатов YSQ', () => {
   beforeEach(() => {
     localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ answers: [1] }));
+    localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ page: 2 }));
   });
 
-  it('успех: localStorage очищается только после подтверждённого удаления', async () => {
-    mockApi.deleteYsqResult.mockResolvedValue(undefined);
-    renderWithForm();
+  async function openYsqConfirm(form: 'ty' | 'vy' = 'ty') {
+    renderWithForm(form);
     fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+    fireEvent.click(await screen.findByText('Удалить результаты теста'));
+    await screen.findByText('Удалить все результаты теста?');
+  }
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
-    await waitFor(() => expect(mockApi.deleteYsqResult).toHaveBeenCalledTimes(1));
+  it('первый тап только спрашивает: видно подтверждение, запроса ещё нет', async () => {
+    await openYsqConfirm();
+    expect(screen.getByText(/все прошлые прохождения и незаконченные ответы/)).toBeTruthy();
+    expect(mockApi.deleteYsqData).not.toHaveBeenCalled();
+    expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
+  });
+
+  it('«Удалить всё»: DELETE /api/ysq-data, потом оба ключа очищены, окна закрыты', async () => {
+    mockApi.deleteYsqData.mockResolvedValue(undefined);
+    await openYsqConfirm();
+
+    fireEvent.click(screen.getByText('Удалить всё'));
+    await waitFor(() => expect(mockApi.deleteYsqData).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(localStorage.getItem(YSQ_RESULT_KEY)).toBeNull());
     expect(localStorage.getItem(YSQ_PROGRESS_KEY)).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Данные и конфиденциальность')).toBeNull());
+    expect(screen.queryByText('Удалить все результаты теста?')).toBeNull();
   });
 
-  it('ошибка API: localStorage НЕ очищается, видна ошибка, модалка не закрывается', async () => {
-    mockApi.deleteYsqResult.mockRejectedValue(new Error('network down'));
-    renderWithForm();
-    fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+  it('«Отмена»: запроса нет, ключи на месте, подтверждение закрыто', async () => {
+    await openYsqConfirm();
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
-    await screen.findByText(/Не удалось удалить/);
+    fireEvent.click(screen.getByText('Отмена'));
+    expect(screen.queryByText('Удалить все результаты теста?')).toBeNull();
+    expect(mockApi.deleteYsqData).not.toHaveBeenCalled();
     expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
-    expect(screen.getByText(/Удалить результаты теста|Удаляю/)).toBeTruthy();
+    expect(localStorage.getItem(YSQ_PROGRESS_KEY)).not.toBeNull();
+  });
+
+  it.each([
+    ['ty', 'Не удалось удалить. Попробуй ещё раз'],
+    ['vy', 'Не удалось удалить. Попробуйте ещё раз'],
+  ] as const)('ошибка API (%s): ключи на месте, видна ошибка, окно не закрылось', async (form, text) => {
+    mockApi.deleteYsqData.mockRejectedValue(new Error('network down'));
+    await openYsqConfirm(form);
+
+    fireEvent.click(screen.getByText('Удалить всё'));
+    expect((await screen.findByRole('alert')).textContent).toBe(text);
+    expect(localStorage.getItem(YSQ_RESULT_KEY)).not.toBeNull();
+    expect(localStorage.getItem(YSQ_PROGRESS_KEY)).not.toBeNull();
+    expect(screen.getByText('Удалить все результаты теста?')).toBeTruthy();
   });
 });
 
@@ -115,7 +165,7 @@ describe('DataSection — удаление аккаунта: подтвержд�
     renderWithForm();
     openDeleteSheet();
 
-    expect(screen.getByText('Необратимо.', { exact: false })).toBeTruthy();
+    expect(screen.getByText(/аккаунт целиком/)).toBeTruthy();
     expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
   });
 
@@ -161,7 +211,7 @@ describe('DataSection — удаление аккаунта: отказ серв
     renderWithForm();
     confirmAccountDeletion();
 
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
     await act(async () => {});
 
     expect(reloadSpy).not.toHaveBeenCalled();
@@ -174,25 +224,25 @@ describe('DataSection — удаление аккаунта: отказ серв
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm('ty');
     confirmAccountDeletion();
-    await screen.findByText('Не удалось удалить данные. Проверь связь и попробуй ещё раз');
+    await screen.findByText('Не удалось удалить аккаунт. Данные на месте — проверь соединение и попробуй ещё раз.');
     cleanup();
 
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm('vy');
     confirmAccountDeletion();
-    await screen.findByText('Не удалось удалить данные. Проверьте связь и попробуйте ещё раз');
+    await screen.findByText('Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.');
   });
 
   it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     renderWithForm();
     confirmAccountDeletion();
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
 
     fireEvent.click(screen.getByText('Отмена'));
     openDeleteSheet();
 
-    expect(screen.queryByText(/Не удалось удалить данные/i)).toBeNull();
+    expect(screen.queryByText(/Не удалось удалить аккаунт/i)).toBeNull();
   });
 });
 
@@ -304,9 +354,9 @@ describe('DataSection — закрытие модалки фоном сбрас�
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await screen.findByText('Точно? Восстановить невозможно.');
 
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sk-dialog-backdrop')!);
     await waitFor(() => expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull());
-    expect(screen.queryByText('Необратимо.', { exact: false })).toBeNull();
+    expect(screen.queryByText(/аккаунт целиком/)).toBeNull();
   });
 });
 

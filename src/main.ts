@@ -15,6 +15,7 @@ import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { canonicalRedirectTarget } from './infra/canonical-host';
 import { clientIpSampler } from './infra/client-ip-sample';
+import { crawlerHitCounter } from './analytics/crawler-hits';
 import { TRUSTED_PROXY_HOPS } from './infra/trust-proxy';
 import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
@@ -49,6 +50,7 @@ async function bootstrap() {
   // Выборка адресов для пробы clientIp ставится до редиректов, чтобы видеть и их.
   app.set('trust proxy', TRUSTED_PROXY_HOPS);
   app.use(clientIpSampler);
+  app.use(crawlerHitCounter); // заходы роботов нейросетей, тоже до редиректов
 
   // Domain + protocol redirects (production only) — host list lives in
   // src/infra/canonical-host.ts (правило «одна механика — один компонент»,
@@ -83,7 +85,7 @@ async function bootstrap() {
   // внешняя система, — в src/infra/body-parsers.ts (login-CSRF, security#6).
   installBodyParsers(app);
 
-  // CORS нужен только мини-аппу (другой origin): сайт на том же домене, localhost — dev.
+  // CORS: в проде только канонический хост, localhost — dev.
   const isProd = process.env.NODE_ENV === 'production';
   const origins =
     process.env.ALLOWED_ORIGINS?.split(',') ??
@@ -93,11 +95,7 @@ async function bootstrap() {
         // CORS ей не нужен; credentials-CORS для алиаса — лишняя поверхность
         // (аудит 2026-10, I1; правило №19).
         ['https://schemehappens.ru']
-      : [
-          'https://schema-miniapp.vercel.app',
-          'https://diary-miniapp-sigma.vercel.app',
-          'http://localhost:5173',
-        ]);
+      : ['http://localhost:5173']);
   app.enableCors({
     origin: origins,
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],

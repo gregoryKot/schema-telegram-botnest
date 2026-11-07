@@ -235,6 +235,23 @@ describe('EmailTokenService — consumeEmailToken', () => {
     );
   });
 
+  // Восстановление по запасной почте убрано (решение владельца 2026-10-22):
+  // токены 'recovery' / 'verify_email', выписанные до выкладки, по этой ручке
+  // не гасятся и сессию не дают — их отсекает белый список purpose.
+  it.each(['recovery', 'verify_email'])(
+    'старый токен восстановления (%s) не гасится → UnauthorizedException',
+    async (purpose) => {
+      const { svc, auth, emailTokens } = makeService();
+      await auth.requestEmailLogin('legacy@example.com');
+      emailTokens[0].purpose = purpose;
+      const raw = extractTokenFromLink(auth);
+      await expect(svc.consumeEmailToken(raw)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(emailTokens[0].usedAt).toBeFalsy();
+    },
+  );
+
   it('привязка (link_email_auth) без userId в токене → UnauthorizedException', async () => {
     const { svc, auth, emailTokens } = makeService();
     await auth.requestEmailLogin('nouser@example.com');

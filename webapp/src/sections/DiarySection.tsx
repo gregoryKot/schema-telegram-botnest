@@ -7,35 +7,43 @@ import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
 import { loadDraft, clearDraft } from '../utils/drafts';
 import { DiaryEmptyExplainer } from '../components/diary/DiaryEmptyExplainer';
 import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner';
+import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
+import { TherapyLine } from '../components/therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
 import { DiaryShareButton } from '../share/DiaryShareButton';
 import '../styles/client-diary.css';
-import { diaryRowMeta, trackerRowMeta } from '../../../shared/src/diary/diaryMeta';
-import { TODAY } from './diary/dateHelpers';
+import { diaryToday } from '../../../shared/src/diary/diaryDay';
+import { deleteDiaryEntry } from '../../../shared/src/diary/diaryDelete';
 import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
-import { DiaryQuickAdd } from './diary/DiaryQuickAdd';
-import { DiaryTrackerLink } from './diary/DiaryTrackerLink';
 import { DiaryTimeline, DiaryTimelineSkeleton } from './diary/DiaryTimeline';
+import { buildTrackerDays, type TrackerDay } from './diary/trackerEntries';
 import {
-  buildEntries, filterCounts, filterEntries, groupByDay, monthStats, streakDays,
+  buildEntries, filterCounts, filterEntries, groupByDay, streakLine,
   type DiaryFilter,
 } from './diary/diaryModel';
 
 const FILTERS: { id: DiaryFilter; label: string }[] = [
   { id: 'all', label: 'Все' },
-  { id: 'schema', label: 'Схемы' },
-  { id: 'mode', label: 'Режимы' },
-  { id: 'gratitude', label: 'Благодарность' },
+  { id: 'tracker', label: 'Трекер' },
+  { id: 'case', label: 'Случаи' },
+  { id: 'diary', label: 'Дневник' },
 ];
+// Год — потолок GET /api/history (HISTORY_MAX_DAYS, src/api/dto/history-query.dto.ts).
+const TRACKER_DAYS = 365;
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
-export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: () => void; onOpenTracker?: () => void } = {}) {
+export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onClose?: () => void; onOpenTrackerHistory?: () => void } = {}) {
+  const bridge = useTherapyBridgeTexts();
   const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
   const [activeSchemaIds,  setActiveSchemaIds]  = useState<string[] | undefined>(undefined);
-  // Последняя отметка трекера — из профиля; на чистом аккаунте строка «Пока пусто».
-  const [lastNeedsDate,    setLastNeedsDate]    = useState<string | undefined>(undefined);
+  const [trackerDays,      setTrackerDays]      = useState<TrackerDay[]>([]);
+  const [streak,           setStreak]           = useState(0);
+  const [quickOpen,        setQuickOpen]        = useState(false);
+  // Сбой истории трекера ≠ «отметок нет»: строки трекера не появятся, и об этом говорим.
+  const [trackerFailed,    setTrackerFailed]    = useState(false);
   const [loading,          setLoading]          = useState(true);
   const [filter,           setFilter]           = useState<DiaryFilter>('all');
   const [newEntry,         setNewEntry]         = useState<DiaryType | null>(null);
@@ -48,15 +56,18 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
       api.getSchemaDiary(),
       api.getModeDiary(),
       api.getGratitudeDiary(),
-      api.getProfile().catch(() => null), // профиль вспомогательный, его отказ не «сбой дневника»
-    ]).then(([schema, mode, gratitude, profile]) => {
+      api.getProfile().catch(() => null), // профиль и трекер вспомогательные, их отказ не «сбой дневника»
+      api.history(TRACKER_DAYS).then(days => ({ days, ok: true }), () => ({ days: [], ok: false })),
+    ]).then(([schema, mode, gratitude, profile, tracker]) => {
       setLoadFailed(false);
       setSchemaEntries(schema);
       setModeEntries(mode);
       setGratitudeEntries(gratitude);
+      setTrackerFailed(!tracker.ok);
+      setTrackerDays(buildTrackerDays(tracker.days));
       if (profile) {
         setActiveSchemaIds(profile.ysq.activeSchemaIds);
-        setLastNeedsDate(profile.lastActivity?.needsTracker ?? undefined);
+        setStreak(profile.streak);
       }
     }).catch((err) => { console.error(err); setLoadFailed(true); })
       .finally(() => setLoading(false)),
@@ -64,36 +75,24 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
 
   useEffect(() => { void load(); }, [load]);
 
-  const todayGratitude = gratitudeEntries.find(e => e.date === TODAY);
+  const today = diaryToday(); // местный день, на каждый рендер (не на загрузку)
+  const todayGratitude = gratitudeEntries.find(e => e.date === today);
 
+  // Сбой удаления доходит до кнопки (текст ошибки, запись на месте); 404 — записи уже нет.
   const handleDelete = async (type: DiaryType, id: number) => {
-    if (type === 'schema')    { await api.deleteSchemaDiary(id);    setSchemaEntries(p => p.filter(e => e.id !== id)); }
-    if (type === 'mode')      { await api.deleteModeDiary(id);      setModeEntries(p => p.filter(e => e.id !== id)); }
-    if (type === 'gratitude') { await api.deleteGratitudeDiary(id); setGratitudeEntries(p => p.filter(e => e.id !== id)); }
+    await deleteDiaryEntry(api, type, id);
+    if (type === 'schema')    setSchemaEntries(p => p.filter(e => e.id !== id));
+    if (type === 'mode')      setModeEntries(p => p.filter(e => e.id !== id));
+    if (type === 'gratitude') setGratitudeEntries(p => p.filter(e => e.id !== id));
   };
 
   const allEntries = useMemo(
-    () => buildEntries(schemaEntries, modeEntries, gratitudeEntries),
-    [schemaEntries, modeEntries, gratitudeEntries],
+    () => buildEntries(schemaEntries, modeEntries, gratitudeEntries, trackerDays),
+    [schemaEntries, modeEntries, gratitudeEntries, trackerDays],
   );
   const groups = useMemo(() => groupByDay(filterEntries(allEntries, filter)), [allEntries, filter]);
   const counts = useMemo(() => filterCounts(allEntries), [allEntries]);
-  const { daysWithEntry, daysInMonth } = monthStats(allEntries, TODAY);
-  const streak = streakDays(allEntries, TODAY);
-  const totalCount = allEntries.length;
-
-  const hubMeta = loading || loadFailed ? undefined : {
-    schema:    diaryRowMeta(schemaEntries.length, schemaEntries[0]?.createdAt),
-    mode:      diaryRowMeta(modeEntries.length, modeEntries[0]?.createdAt),
-    gratitude: diaryRowMeta(gratitudeEntries.length, gratitudeEntries[0]?.date),
-  };
-
-  // Мета для карточки шаринга «сводка дневника» — только для конкретного типа.
-  const SHARE_META: Record<DiaryType, { emoji: string; title: string; color: string; entries: { createdAt: string }[] }> = {
-    schema:    { emoji: '📓', title: 'Дневник схем',         color: 'var(--c-rose)',  entries: schemaEntries },
-    mode:      { emoji: '🔄', title: 'Дневник режимов',      color: 'var(--c-slate)', entries: modeEntries },
-    gratitude: { emoji: '🌱', title: 'Дневник благодарности', color: 'var(--c-moss)', entries: gratitudeEntries },
-  };
+  const streakText = loading ? null : streakLine(streak);
 
   // Show entry sheet instead of hub
   if (newEntry === 'schema') return (
@@ -120,10 +119,10 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
   if (newEntry === 'gratitude') return (
     <GratitudeEntrySheet
       onClose={() => setNewEntry(null)}
-      date={TODAY}
+      date={today}
       existingItems={todayGratitude?.items}
-      onSave={async (date, items) => {
-        const entry = await api.createGratitudeDiary(date, items);
+      onSave={async (date, items, base) => {
+        const entry = await api.createGratitudeDiary(date, items, base);
         setGratitudeEntries(prev => {
           const rest = prev.filter(e => e.date !== date);
           return [entry, ...rest].sort((a, b) => b.date.localeCompare(a.date));
@@ -133,29 +132,22 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
     />
   );
 
+  const drafts = DRAFT_TYPES.filter(t => loadDraft(t));
   return (
     <div className="ds-page cd-page">
       {loadFailed && <DiaryLoadFailedBanner onRetry={() => { void load(); }} />}
 
-      <DiaryHeader total={totalCount} daysWithEntry={daysWithEntry} daysInMonth={daysInMonth} streak={streak} />
+      <DiaryHeader onWrite={() => setQuickOpen(true)} />
 
-      <DiaryQuickAdd onOpen={setNewEntry} meta={hubMeta} />
-
-      {onOpenTracker && <DiaryTrackerLink onOpen={onOpenTracker} meta={loading || loadFailed ? undefined : trackerRowMeta(lastNeedsDate)} />}
-
-      <div className="cd-drafts">
-        {DRAFT_TYPES.filter(t => loadDraft(t)).map(type => (
-          <DiaryDraft
-            key={type + draftKey}
-            type={type}
-            onContinue={() => setNewEntry(type)}
-            onDelete={() => { clearDraft(type); setDraftKey(k => k + 1); }}
-          />
+      {drafts.length > 0 && <div className="cd-drafts">{/* пустая обёртка удваивала gap (page-rhythm.spec.ts) */}
+        {drafts.map(type => (
+          <DiaryDraft key={type + draftKey} type={type} onContinue={() => setNewEntry(type)}
+            onDelete={() => { clearDraft(type); setDraftKey(k => k + 1); }} />
         ))}
-      </div>
+      </div>}
 
       <div className="cd-bar">
-        <div className="ds-seg" role="group" aria-label="Тип записей">
+        <div className="ds-seg ds-seg--scroll" role="group" aria-label="Тип записей">
           {FILTERS.map(f => (
             <button
               key={f.id}
@@ -166,16 +158,29 @@ export function DiarySection({ onClose: _onClose, onOpenTracker }: { onClose?: (
             </button>
           ))}
         </div>
-        {totalCount > 0 && <span className="ds-label">Архив · {totalCount}</span>}
-        {filter !== 'all' && totalCount > 0 && <DiaryShareButton {...SHARE_META[filter]} />}
+        {filter === 'diary' && counts.diary > 0 && (
+          <DiaryShareButton emoji="📓" title="Мой дневник" color="var(--c-rose)" entries={[...schemaEntries, ...modeEntries, ...gratitudeEntries]} />
+        )}
       </div>
+
+      {trackerFailed && !loadFailed && (
+        <p className="cd-streak" role="status">
+          Отметки трекера не загрузились. <button type="button" className="cd-retry" onClick={() => { void load(); }}>Повторить</button>
+        </p>
+      )}
 
       {loading && <DiaryTimelineSkeleton />}
 
-      {/* Пустой архив: для новичка отвечает «что это и зачем», первое действие — карточки выше */}
+      {/* Пустая лента: для новичка отвечает «что это и зачем», первое действие — кнопка «Записать» выше */}
       {!loading && groups.length === 0 && <DiaryEmptyExplainer filter={filter} />}
 
-      {!loading && groups.length > 0 && <DiaryTimeline groups={groups} onDelete={handleDelete} />}
+      {!loading && groups.length > 0 && <DiaryTimeline groups={groups} onDelete={handleDelete} onOpenTrackerHistory={onOpenTrackerHistory} />}
+
+      {streakText && <p className="cd-streak">{streakText}</p>}
+
+      {quickOpen && <QuickEntrySheet onClose={() => setQuickOpen(false)} onSaved={() => { void load(); }} />}
+
+      <TherapyLine place="diary" text={bridge.lineDiaryList} />
     </div>
   );
 }

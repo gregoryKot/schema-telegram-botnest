@@ -6,6 +6,7 @@ import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
+import { NeedArtLine } from './NeedArtLine';
 import '../styles/sheet-tracker.css';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
@@ -72,6 +73,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
       }
     >
       <div className="tk2-opts" style={hueStyle(hue)}>
+        <NeedArtLine id={needId} />
         {relatedSchemas.length > 0 && (
           <div className="ds-card ds-card--row">
             <div className="ds-label">Связанные схемы</div>
@@ -87,7 +89,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
         )}
 
         <div className="ds-card">
-          <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Практика'}</div>
+          <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Что питает'}</div>
           <div className="tk2-tips">
             {tips.map((tip, i) => (
               <div key={i} className="tk2-tip">

@@ -24,6 +24,9 @@ const FULL: ScreenMetrics = {
   ],
   movesByScreen: [],
   syncedUsers: 0,
+  homeTiles: [],
+  trackerSkips: 0,
+  diaryQuick: { byTag: [], detailed: 0 },
 };
 
 const EMPTY: ScreenMetrics = {
@@ -31,6 +34,9 @@ const EMPTY: ScreenMetrics = {
   hiddenByScreenBlock: [],
   movesByScreen: [],
   syncedUsers: 0,
+  homeTiles: [],
+  trackerSkips: 0,
+  diaryQuick: { byTag: [], detailed: 0 },
 };
 
 describe('formatScreenMetrics', () => {
@@ -113,13 +119,13 @@ describe('formatScreenMetrics — movesByScreen (переставляли бло
       ...FULL,
       // Вход нарочно не в порядке SCREENS_ORDER — форматтер пересортирует.
       movesByScreen: [
-        { screen: 'today', count: 2 },
+        { screen: 'patterns', count: 2 },
         { screen: 'profile', count: 6 },
       ],
       syncedUsers: 7,
     });
     const lines = text.split('\n');
-    const moveLine = 'Переставляют блоки: Профиль — 6 · Сегодня — 2';
+    const moveLine = 'Переставляют блоки: Профиль — 6 · Паттерны — 2';
     expect(lines).toContain(moveLine);
     expect(lines.indexOf(moveLine)).toBeLessThan(
       lines.indexOf('Настройки синхронизированы: 7 человек'),
@@ -131,14 +137,14 @@ describe('formatScreenMetrics — movesByScreen (переставляли бло
     const text = formatScreenMetrics({
       ...EMPTY,
       movesByScreen: [
-        { screen: 'patterns', count: 0 },
-        { screen: 'today', count: 3 },
+        { screen: 'profile', count: 0 },
+        { screen: 'patterns', count: 3 },
       ],
     });
     expect(text).toBe(
-      '🧩 Настройку экранов пока не трогали.\nПереставляют блоки: Сегодня — 3',
+      '🧩 Настройку экранов пока не трогали.\nПереставляют блоки: Паттерны — 3',
     );
-    expect(text).not.toMatch(/NaN|undefined|Паттерны/);
+    expect(text).not.toMatch(/NaN|undefined|Профиль/);
   });
 
   it('неизвестный экран в перестановках не роняет отчёт — печатается как есть', () => {
@@ -170,5 +176,48 @@ describe('formatScreenMetrics — syncedUsers (серверное зеркало
       '🧩 Настройку экранов пока не трогали.\nНастройки синхронизированы: 5 человек',
     );
     expect(text).not.toMatch(/NaN|undefined/);
+  });
+});
+
+describe('formatScreenMetrics — плитки главной', () => {
+  it('строка плиток попадает в отчёт последней, после синхронизации', () => {
+    const text = formatScreenMetrics({
+      ...FULL,
+      syncedUsers: 2,
+      homeTiles: [{ tile: 'case', count: 4 }],
+    });
+    expect(text.split('\n').at(-1)).toBe('Главная: плитки — Что случилось 4');
+  });
+
+  it('на чистой БД плиток в отчёте нет', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toMatch(/Главная/);
+  });
+});
+
+describe('formatScreenMetrics — пропуски в трекере', () => {
+  it('на чистой БД строки про пропуски нет', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toMatch(/пропуск/);
+  });
+
+  it('строка пропусков идёт после плиток главной, последней', () => {
+    const text = formatScreenMetrics({
+      ...FULL,
+      homeTiles: [{ tile: 'tracker', count: 2 }],
+      trackerSkips: 5,
+    });
+    expect(text.split('\n').slice(-2)).toEqual([
+      'Главная: плитки — Трекер 2',
+      'Трекер: пропусков 5',
+    ]);
+  });
+
+  it('строка «Дневник одной страницей» попадает в блок только при данных', () => {
+    expect(formatScreenMetrics(EMPTY)).not.toContain('Дневник одной страницей');
+    const text = formatScreenMetrics({
+      ...EMPTY,
+      opensByScreen: [{ screen: 'profile', count: 1 }],
+      diaryQuick: { byTag: [{ tag: 'thought', count: 2 }], detailed: 1 },
+    });
+    expect(text).toContain('Дневник одной страницей: мыслей 2; подробно 1');
   });
 });

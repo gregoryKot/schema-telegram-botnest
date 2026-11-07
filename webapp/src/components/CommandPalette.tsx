@@ -3,12 +3,16 @@ import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
 import type { TherapyClientSummary, UserId } from '../api';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { isActiveToday } from '../../../shared/src/therapy/clientSheetHelpers';
+import { clientDisplayName } from '../../../shared/src/therapy/clientInitials';
+import { clientStatus } from './therapist/rosterOrder';
+import { matchesSearch } from '../../../shared/src/utils/searchNormalize';
 import { pressable } from '../utils/a11y';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
-import '../styles/sheet-tasks.css';
-
-type Section = 'today' | 'diary' | 'schemas' | 'profile' | 'practice';
+import { useHistorySheet } from '../hooks/useHistorySheet';
+import type { Section } from './appShell/navigation';
+import { useScreenShare } from './appShell/screenShareMode';
+import '../styles/command-palette.css';
 
 interface Props {
   section: Section;
@@ -23,10 +27,11 @@ interface Props {
 
 const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'today',   label: 'Сегодня',  sub: 'Главная',   hint: '⌘ 1' },
-  { id: 'diary',   label: 'Дневник',  sub: 'Записи',    hint: '⌘ 2' },
-  { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '⌘ 3' },
-  { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '⌘ 4' },
-  { id: 'practice', label: 'Практика', sub: 'Практики',  hint: '⌘ 5' },
+  { id: 'diary',   label: 'Записи',   sub: 'Дневники',  hint: '⌘ 2' },
+  { id: 'more',    label: 'Ещё',      sub: 'Всё остальное', hint: '⌘ 3' },
+  { id: 'schemas', label: 'Паттерны', sub: '20 схем',   hint: '' },
+  { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '' },
+  { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
 ];
 
 // ── Icons ──────────────────────────────────────────────────────────────────────
@@ -63,13 +68,14 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
+  // «Показ экрана» (сайдбар кабинета): имён клиентов нет и здесь, даже по поиску.
+  const screenShare = useScreenShare();
   const inputRef = useRef<HTMLInputElement>(null);
-  // Escape — через стек диалогов: поверх палитры он закроет только верхнее окно.
-  const dialogA11y = useDialogA11y({ onEscape: onClose });
-
-  // Reset the highlighted row to the top whenever the query changes. Adjusting
-  // state during render (not in an effect) is the documented pattern for
-  // deriving state from a changing value.
+  // «Назад» браузера закрывает палитру; действие строки — goBack(action), после снятия
+  // записи. Escape — через стек диалогов: поверх палитры закроет только верхнее окно.
+  const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y({ onEscape: goBack });
+  // Выделение — на первую строку при смене запроса (состояние в рендере, не в эффекте).
   const [prevQ, setPrevQ] = useState(q);
   if (q !== prevQ) { setPrevQ(q); setSel(0); }
 
@@ -86,13 +92,10 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   interface Row { type: RowType; label: string; sub?: string; activeToday?: boolean; hint?: string; action: () => void }
 
   const rows = useMemo<Row[]>(() => {
-    const today = todayCalendarDate();
-    const term = q.trim().toLowerCase();
-
-    const clientRows: Row[] = clients.map(c => ({
+    const clientRows: Row[] = screenShare ? [] : clients.map(c => ({
       type: 'client' as const,
-      label: c.clientAlias ?? c.name ?? `ID ${c.telegramId}`,
-      ...(c.lastActiveDate === today ? { sub: 'Активность сегодня', activeToday: true } : { sub: 'Клиент' }),
+      label: clientDisplayName(c),
+      ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: clientStatus(c).label }),
       hint: 'Открыть карточку',
       action: () => onOpenClient?.(c.telegramId),
     }));
@@ -121,67 +124,67 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     ];
 
     const all: Row[] = [...clientRows, ...navRows, ...actionRows];
-    if (!term) return all;
-    return all.filter(r => (r.label + ' ' + (r.sub ?? '')).toLowerCase().includes(term));
-  }, [q, clients, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
+    // Регистр и «ё/е» не различаются — тот же поиск, что в списке клиентов.
+    return all.filter(r => matchesSearch(`${r.label} ${r.sub ?? ''}`, q));
+  }, [q, clients, screenShare, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => Math.min(rows.length - 1, s + 1)); }
       if (e.key === 'ArrowUp')   { e.preventDefault(); setSel(s => Math.max(0, s - 1)); }
-      if (e.key === 'Enter')     { e.preventDefault(); rows[sel]?.action(); onClose(); }
+      if (e.key === 'Enter')     { e.preventDefault(); goBack(rows[sel]?.action); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [rows, sel, onClose]);
+  }, [rows, sel, goBack]);
 
   return (
-    <div className="sk-cmd-bg" onClick={onClose} role="button" tabIndex={0} aria-label="Закрыть"
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}>
+    <div className="cmd-backdrop" onClick={goBack} role="button" tabIndex={0} aria-label="Закрыть"
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goBack(); } }}>
       {/* onClick/onKeyDown — stopPropagation: клик или Enter/Space (печатая в
           поиске) не должны всплыть до бэкдропа и закрыть палитру. role="dialog"
           не входит в «интерактивные» роли jsx-a11y — ложное срабатывание. */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         {...dialogA11y}
-        className="ds-card ds-card--flush sk-cmd-panel"
+        className="ds-card ds-card--flush cmd-panel"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
-        <div className="sk-cmd-search">
-          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="sk-cmd-ic">
+        <div className="cmd-search">
+          <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="cmd-icon">
             <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" />
           </svg>
           <input
             ref={inputRef}
-            className="ds-input sk-cmd-input"
+            className="ds-input ds-input--search"
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="Найти клиента, страницу или действие…"
+            placeholder={screenShare ? 'Найти страницу или действие…' : 'Найти клиента, страницу или действие…'}
           />
-          <span className="kbd">Esc</span>
         </div>
-        <div className="sk-cmd-list">
-          {rows.length === 0 && <div className="ds-list-row sk-cmd-empty ds-sub">Ничего не найдено</div>}
+        <div className="cmd-list">
+          {screenShare && userRole === 'THERAPIST' && <p className="ds-sub cmd-empty">Клиенты скрыты: включён показ экрана</p>}
+          {rows.length === 0 && <p className="ds-empty cmd-empty">Ничего не найдено</p>}
           {rows.map((row, i) => (
             <div
               key={i}
-              className={`ds-list-row ds-list-row--hover sk-cmd-row${i === sel ? ' is-sel' : ''}`}
+              className={`ds-list-row ds-list-row--hover cmd-row${i === sel ? ' is-sel' : ''}`}
               onMouseEnter={() => setSel(i)}
-              {...pressable(() => { row.action(); onClose(); })}
+              {...pressable(() => goBack(row.action))}
             >
-              <span className="sk-cmd-ic">
+              <span className="cmd-icon">
                 {row.type === 'client' ? <IconPerson /> : row.type === 'nav' ? <IconArrow /> : <IconBolt />}
               </span>
-              <span className="sk-cmd-main">
-                <span className="sk-cmd-label">{row.label}</span>
+              <span className="cmd-main">
+                <span className="cmd-label">{row.label}</span>
                 {row.sub && (
-                  <span className={'sk-cmd-sub' + (row.activeToday ? ' is-ok' : '')}>
+                  <span className={'ds-sub cmd-sub' + (row.activeToday ? ' is-ok' : '')}>
                     {row.sub}
                   </span>
                 )}
               </span>
-              {row.hint && <span className="kbd">{row.hint}</span>}
+              {row.hint && <span className={row.hint.startsWith('⌘') ? 'ds-sub kbd-hint' : 'ds-sub'}>{row.hint}</span>}
             </div>
           ))}
         </div>

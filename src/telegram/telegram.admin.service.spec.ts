@@ -155,7 +155,10 @@ describe('TelegramAdminService — /stats падение аналитики', ()
       },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     const [first, second] = replies(ctx);
     expect(first).toContain('Главные цифры');
     expect(first).toContain(BLOCK_FAILED_MARK);
@@ -178,7 +181,10 @@ describe('TelegramAdminService — /stats падение аналитики', ()
       },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     const [first, second] = replies(ctx);
     expect(first).toBe('core stats');
     expect(second).toContain('продуктовые метрики');
@@ -194,7 +200,10 @@ describe('TelegramAdminService — /stats падение аналитики', ()
       statsReport: { render: jest.fn().mockRejectedValue(new Error('x')) },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     const [first, second] = replies(ctx);
     expect(first).toBe('core stats');
     expect(second).toContain('Остальной отчёт');
@@ -206,6 +215,7 @@ describe('TelegramAdminService — /stats падение аналитики', ()
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'stats', {
       from: { id: 999 },
+      message: { text: '/stats all' },
       reply: jest
         .fn()
         .mockRejectedValueOnce(new Error('tg down'))
@@ -238,7 +248,10 @@ describe('TelegramAdminService — /stats (только админ)', () => {
       },
     });
     service.onModuleInit();
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
     expect(statsReport.render).toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenNthCalledWith(1, 'core stats', {
       parse_mode: 'HTML',
@@ -270,7 +283,10 @@ describe('TelegramAdminService — /stats (только админ)', () => {
     });
     service.onModuleInit();
 
-    const ctx = await runCommand(fakeBot, 'stats', { from: { id: 999 } });
+    const ctx = await runCommand(fakeBot, 'stats', {
+      from: { id: 999 },
+      message: { text: '/stats all' },
+    });
 
     const calls = (ctx.reply as jest.Mock).mock.calls;
     expect(calls.length).toBeGreaterThan(2);
@@ -304,5 +320,32 @@ describe('TelegramAdminService — /testdonate (только админ)', () =>
     const [text] = ctx.reply.mock.calls[0] as [string];
     expect(text).not.toBe('⛔ Нет доступа');
     expect(text.length).toBeGreaterThan(20);
+  });
+
+  // Аудит 2026-10: отказ Telegram (чаще всего — URL кнопки) только писался в
+  // лог, админ не видел ничего — а превью нужно ровно затем, чтобы увидеть отказ.
+  it('Telegram отклонил превью — админ получает причину, а не тишину', async () => {
+    process.env.ADMIN_ID = '999';
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { service, fakeBot } = makeDeps();
+    service.onModuleInit();
+    let call = 0;
+    const reply = jest.fn(() =>
+      ++call === 1
+        ? Promise.reject(
+            Object.assign(new Error('400: Bad Request'), {
+              response: { error_code: 400, description: 'BUTTON_URL_INVALID' },
+            }),
+          )
+        : Promise.resolve(undefined),
+    );
+    const ctx = await runCommand(fakeBot, 'testdonate', {
+      from: { id: 999 },
+      reply,
+    });
+    expect(ctx.reply).toHaveBeenCalledTimes(2);
+    expect(ctx.reply).toHaveBeenLastCalledWith(
+      '❌ Превью не отправилось: 400: BUTTON_URL_INVALID',
+    );
   });
 });

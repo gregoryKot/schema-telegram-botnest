@@ -64,6 +64,15 @@ function makeDb() {
       }),
     },
     gratitudeDiaryEntry: {
+      findUnique: jest.fn(({ where }: any) =>
+        Promise.resolve(
+          gratitudeRows.find(
+            (r) =>
+              r.userId === where.userId_date.userId &&
+              r.date === where.userId_date.date,
+          ) ?? null,
+        ),
+      ),
       upsert: jest.fn(({ where, create, update }: any) => {
         const existing = gratitudeRows.find(
           (r) =>
@@ -93,6 +102,7 @@ function makeDb() {
       }),
     },
   };
+  db.$transaction = jest.fn((fn: (tx: any) => unknown) => fn(db));
   return { db, schemaRows, modeRows, gratitudeRows };
 }
 
@@ -212,6 +222,22 @@ describe('DiaryService — дневник режимов: сохранил → �
     expect(entry.feelings).toBe('страх');
   });
 
+  it('fromCase: сохранил → нашёл; без поля запись не считается разбором', async () => {
+    const { svc } = makeService();
+    await svc.createModeDiaryEntry(USER_A, {
+      modeId: 'vulnerable_child',
+      situation: 'разбор',
+      fromCase: true,
+    });
+    await svc.createModeDiaryEntry(USER_A, {
+      modeId: 'vulnerable_child',
+      situation: 'обычная',
+    });
+    const rows = await svc.getModeDiaryEntries(USER_A);
+    expect(rows.find((r) => r.situation === 'разбор')?.fromCase).toBe(true);
+    expect(rows.find((r) => r.situation === 'обычная')?.fromCase).toBe(false);
+  });
+
   it('пользователь A не видит записи режимов пользователя B', async () => {
     const { svc } = makeService();
     await svc.createModeDiaryEntry(USER_A, {
@@ -273,6 +299,38 @@ describe('DiaryService — дневник благодарности: сохра
     expect(entriesA[0].items).toEqual(['А']);
   });
 
+  // docs/open/frontend-ux.md (P0): пункт с другой вкладки терялся, потому что
+  // сохранение заменяло день целиком.
+  it('в дне [A]; клиент со старым состоянием [] добавляет B → в дне [A, B]', async () => {
+    const { svc, db } = makeService();
+    await svc.upsertGratitudeDiaryEntry(USER_A, '2026-07-16', ['A'], []);
+    const saved = await svc.upsertGratitudeDiaryEntry(
+      USER_A,
+      '2026-07-16',
+      ['B'],
+      [],
+    );
+    expect(saved.items).toEqual(['A', 'B']);
+    const [entry] = await svc.getGratitudeDiaryEntries(USER_A);
+    expect(entry.items).toEqual(['A', 'B']);
+    expect(db.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: 'Serializable',
+    });
+  });
+
+  it('удаление и правка пункта со слиянием работают: клиент видел [A, K], сохраняет [K2]', async () => {
+    const { svc } = makeService();
+    await svc.upsertGratitudeDiaryEntry(USER_A, '2026-07-16', ['A', 'K']);
+    await svc.upsertGratitudeDiaryEntry(
+      USER_A,
+      '2026-07-16',
+      ['K2'],
+      ['A', 'K'],
+    );
+    const [entry] = await svc.getGratitudeDiaryEntries(USER_A);
+    expect(entry.items).toEqual(['K2']);
+  });
+
   it('пустой массив items сохраняется и читается как пустой массив (не null/фолбэк)', async () => {
     const { svc } = makeService();
     await svc.upsertGratitudeDiaryEntry(USER_A, '2026-07-16', []);
@@ -281,22 +339,33 @@ describe('DiaryService — дневник благодарности: сохра
   });
 });
 
-// Находка для отчёта (не баг-фикс): createSchemaDiaryEntry() возвращает
-// schemaIds НЕ расшифрованным — взят «сырой» JSON из prisma.create, а не
-// data.schemaIds (emotions переопределён плейнтекстом, schemaIds — нет).
-// diary.controller.ts отдаёт этот же объект клиенту как есть: на POST
-// /diary/schema фронт получит schemaIds строкой вида '["abandonment"]',
-// а не массивом, хотя GET-путь (getSchemaDiaryEntries) отдаёт корректный
-// массив. См. отчёт.
-describe('DiaryService — create() отличается от чтения (находка)', () => {
-  it('create() возвращает schemaIds НЕ как исходный массив (сырую JSON-строку)', async () => {
+// Регресс инцидента 2026-10-26 (docs/INCIDENTS.md): create() отдавал
+// schemaIds/modeId строкой из БД — на проде шифротекстом, и сайт ронял раздел
+// на `schemaIds.map`. Раньше здесь это поведение было закреплено как
+// «находка». Ключа в этом спеке нет (encrypt — passthrough), поэтому видна
+// только форма; шифротекст с настоящим ключом ловит
+// src/utils/encrypted-write-response.spec.ts.
+describe('DiaryService — ответ create() совпадает с чтением', () => {
+  it('schemaIds — массив, ответ записи равен записи из GET', async () => {
     const { svc } = makeService();
     const created = await svc.createSchemaDiaryEntry(USER_A, {
       ...baseSchema,
       trigger: 'триггер',
       schemaIds: ['abandonment'],
     });
-    expect(created.schemaIds).not.toEqual(['abandonment']);
-    expect(created.schemaIds).toBe(JSON.stringify(['abandonment']));
+    expect(created.schemaIds).toEqual(['abandonment']);
+    const [read] = await svc.getSchemaDiaryEntries(USER_A);
+    expect(created).toEqual(read);
+  });
+
+  it('modeId — id режима, ответ записи равен записи из GET', async () => {
+    const { svc } = makeService();
+    const created = await svc.createModeDiaryEntry(USER_A, {
+      modeId: 'vulnerable_child',
+      situation: 'ситуация',
+    });
+    expect(created.modeId).toBe('vulnerable_child');
+    const [read] = await svc.getModeDiaryEntries(USER_A);
+    expect(created).toEqual(read);
   });
 });

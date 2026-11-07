@@ -1,52 +1,59 @@
 import { useEffect, useState } from 'react';
+import { useNavigationType } from 'react-router-dom';
 import { api, reportClientError } from '../api';
 import { useSetAddressForm } from '../utils/addressForm';
 import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFormChoice';
-import {
-  shouldAskAddressForm,
-  markAddressFormAsked,
-} from '../../../shared/src/settings/addressFormPrompt';
+import { shouldAskAddressForm, markAddressFormAsked } from '../../../shared/src/settings/addressFormPrompt';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { Dialog } from './Dialog';
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
- * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим в следующей сессии
- * (не блокируем вход). Сам грузит настройки; не чаще раза за сессию.
- *
- * Сохранение выбора — через общий shared/src/settings/useAddressFormChoice.ts
- * (правило №3): при отказе api.updateSettings диалог НЕ закрывается — иначе
- * человек видит выбранную форму применённой, а на деле она не долетела до
- * сервера и на следующей сессии перезатрётся обратно на дефолтную (инцидент,
- * см. комментарий в useAddressFormChoice.ts).
+ * «Позже» = мягкий пропуск: остаётся «ты» по умолчанию, спросим через неделю
+ * (не блокируем вход). Монтирует EntryFlows — первым шагом очереди, до согласий:
+ * иначе они звучат в форме по умолчанию до вопроса (QA 2026-11, A-З7). `onDone` — вопрос решён
+ * (ответ, «Позже», не нужен или настройки не загрузились): очередь идёт дальше.
+ * Сохранение — общий shared/src/settings/useAddressFormChoice.ts (правило №3): при
+ * отказе api.updateSettings диалог НЕ закрывается, иначе выбор, не долетевший до
+ * сервера, на следующей сессии перезатрётся дефолтом (см. useAddressFormChoice.ts).
  */
-export function AddressFormPicker() {
+export function AddressFormPicker({ onDone }: { onDone?: () => void } = {}) {
   const [show, setShow] = useState(false);
+  const [round, setRound] = useState(0);
 
   useEffect(() => {
     api.getSettings()
-      .then(s => { if (shouldAskAddressForm(s.addressForm)) setShow(true); })
-      .catch(() => {});
-  }, []);
+      .then(s => { if (shouldAskAddressForm(s.addressForm)) setShow(true); else onDone?.(); })
+      .catch(() => {
+        // Вопрос не запирает вход: очередь идёт дальше, сбой уходит наверх (№14).
+        reportClientError({ message: 'address picker: настройки не загрузились', section: 'appshell.bootstrap' });
+        onDone?.();
+      });
+  }, [onDone]);
 
-  function close() {
+  // Запись листа сняла чужая навигация (navigate с replace после разбора ссылки
+  // или бутстрапа) — человек не ответил: «спросили» не ставим, а открываем вопрос
+  // заново новой записью (key). QA 2026-11: пикер закрывался сам, addressForm — null.
+  function close(answered: boolean) {
+    if (!answered) { setRound(r => r + 1); return; }
     markAddressFormAsked();
     setShow(false);
+    onDone?.();
   }
 
   if (!show) return null;
-  // Оверлей вынесен в отдельный компонент, чтобы useHistorySheet (правило
-  // CLAUDE.md — обязателен для fixed/inset:0 листов) вызывался только пока
-  // диалог реально смонтирован, а не на каждом рендере AddressFormPicker.
-  return <AddressFormPickerModal onClose={close} />;
+  // Отдельный компонент: useHistorySheet (обязателен для fixed/inset:0 листов)
+  // живёт, только пока диалог смонтирован.
+  return <AddressFormPickerModal key={round} onClose={close} />;
 }
 
-function AddressFormPickerModal({ onClose }: { onClose: () => void }) {
+function AddressFormPickerModal({ onClose }: { onClose: (answered: boolean) => void }) {
   const setForm = useSetAddressForm();
-  const goBack = useHistorySheet(onClose);
-  // onSaved зовётся goBack — успешное сохранение закрывает диалог тем же
-  // путём, что и «Назад» браузера (CLAUDE.md: «если лист закрывается после
-  // сохранения, тоже goBack()»).
+  // «Позже», выбор, Escape и «Назад» браузера снимают запись шагом назад (POP);
+  // push/replace чужого navigate тоже её снимают, но ответом это не считается.
+  const navType = useNavigationType();
+  const goBack = useHistorySheet(() => onClose(navType === 'POP'));
+  // onSaved — тот же goBack, что у «Назад» браузера (CLAUDE.md: после сохранения — goBack()).
   const { failed, choose } = useAddressFormChoice(
     setForm,
     api.updateSettings,
@@ -55,7 +62,7 @@ function AddressFormPickerModal({ onClose }: { onClose: () => void }) {
   );
 
   return (
-    <Dialog label="Как удобнее общаться?" zIndex={200}>
+    <Dialog label="Как удобнее общаться?" zIndex={300}>
       <h2 className="dialog-title">Как удобнее общаться?</h2>
       <p className="dialog-text" style={{ marginBottom: 20 }}>
         Поменять можно в любой момент в настройках.

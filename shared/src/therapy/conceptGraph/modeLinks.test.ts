@@ -127,3 +127,32 @@ describe('isModeLinkEmpty', () => {
     }
   });
 });
+
+// «Делали сегодня» (#995): отметки едут со связью туда и обратно (черновик,
+// ответ сервера, тело POST); битые выбрасываются, пустого поля нет.
+describe('normalizeModeLinks: отметки техник', () => {
+  it('валидные отметки сохраняются, битые выбрасываются, без отметок поля нет', () => {
+    const [kept, bare] = normalizeModeLinks([
+      {
+        modeId: 'a',
+        done: [
+          { techniqueId: 'chairwork', day: '2026-11-05' },
+          { techniqueId: 'x' },
+        ],
+      },
+      { modeId: 'b', done: [{ day: '2026-11-05' }] },
+    ]);
+    expect(kept.done).toEqual([
+      { techniqueId: 'chairwork', day: '2026-11-05' },
+    ]);
+    expect(bare).not.toHaveProperty('done');
+  });
+
+  it('связь только с отметками на схеме пустая: отметки — журнал, а не текст', () => {
+    expect(
+      isModeLinkEmpty(
+        link('a', { done: [{ techniqueId: 'chairwork', day: '2026-11-05' }] }),
+      ),
+    ).toBe(true);
+  });
+});

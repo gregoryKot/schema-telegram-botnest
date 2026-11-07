@@ -7,8 +7,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TherapistTodaySection } from './TherapistTodaySection';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
-import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
+import { localDateStr } from '../../../shared/src/utils/format';
+import { forEachTimeZoneAsync, withTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 vi.mock('../api', () => ({
   api: {
@@ -18,13 +18,14 @@ vi.mock('../api', () => ({
 import { api } from '../api';
 const mockApi = api as unknown as { getTherapyClients: ReturnType<typeof vi.fn> };
 
-/** Вчера — относительно момента прогона: тесты не должны зависеть от даты. */
-const yesterday = () => new Date(Date.now() - 86400000).toISOString();
+/** Последняя оценка N дней назад по календарю клиента — так её отдаёт
+ *  сервер (daysSinceActive); дата для показа — любая прошедшая. */
+const activeDaysAgo = (n: number) => ({ lastActiveDate: '2026-08-01', daysSinceActive: n });
 
 function client(overrides: Partial<{
   telegramId: number; name: string | null; clientAlias: string | null;
-  streak: number; lastActiveDate: string | null; todayIndex: number | null;
-  nextSession: string | null; meetingDays: number[];
+  streak: number; lastActiveDate: string | null; daysSinceActive: number | null;
+  todayIndex: number | null; nextSession: string | null; meetingDays: number[];
 }> = {}) {
   return {
     telegramId: 1, name: 'Иван', clientAlias: null, streak: 0,
@@ -50,6 +51,9 @@ describe('TherapistTodaySection — пустой аккаунт (без хард
 
     await waitFor(() => expect(screen.getByText('Сессий не запланировано')).toBeTruthy());
     expect(screen.getByText('Нет клиентов')).toBeTruthy();
+    // Пустые состояния — общий ds-empty (#906), не курсив в пунктирной рамке.
+    expect(screen.getByText('Сессий не запланировано').classList.contains('ds-empty')).toBe(true);
+    expect(screen.getByText('Нет клиентов').classList.contains('ds-empty')).toBe(true);
     // Блок сводной статистики скрыт вовсе на пустом списке — не «0/0».
     expect(screen.queryByText('Активны сегодня')).toBeNull();
   });
@@ -66,10 +70,9 @@ describe('TherapistTodaySection — реальные данные клиенто
   it('показывает клиентов из api, точку "заполнил" для тех, у кого есть todayIndex сегодня', async () => {
     mockApi.getTherapyClients.mockResolvedValue([
       client({ telegramId: 1, name: 'Иван', todayIndex: 7.2 }),
-      // Дата относительная, а не «2026-08-01»: с абсолютной тест жил ровно до
-      // следующих суток, а потом клиентка уезжала в блок «требуют внимания»
-      // (3+ дня без активности) и её имя появлялось на экране дважды.
-      client({ telegramId: 2, name: 'Мария', todayIndex: null, lastActiveDate: yesterday() }),
+      // Давность — по календарю клиента от сервера (daysSinceActive), а не
+      // пересчёт от «сейчас»: так тест не стареет и не зависит от зоны.
+      client({ telegramId: 2, name: 'Мария', todayIndex: null, ...activeDaysAgo(1) }),
     ]);
     render(<TherapistTodaySection displayName="Терапевт" onOpenClient={vi.fn()} />);
 
@@ -78,13 +81,34 @@ describe('TherapistTodaySection — реальные данные клиенто
     expect(screen.getByText('7.2')).toBeTruthy();
     expect(screen.getByText('активность сегодня')).toBeTruthy();
     expect(screen.getByText('активность вчера')).toBeTruthy();
+    // Счётчики — ds-card--row с подписью ds-label (#906), без своего радиуса;
+    // список активности — та же карточка-строка, радиус не инлайном.
+    const counter = screen.getByText('Активны сегодня');
+    expect(counter.classList.contains('ds-label')).toBe(true);
+    expect(counter.closest('.ds-card')!.classList.contains('ds-card--row')).toBe(true);
+    const list = screen.getByText('Активность клиентов').parentElement!.querySelector('.ds-card--flush')!;
+    expect(list.classList.contains('ds-card--row')).toBe(true);
+    expect(list.getAttribute('style')).toBeNull();
   });
 
-  it('клиентов без clientAlias/name показывает как "#telegramId" — не пустую строку', async () => {
+  it('клиента без clientAlias/name подписывает «Без имени · id» — не пустой строкой', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 555, name: null, clientAlias: null })]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getAllByText('#555').length).toBeGreaterThanOrEqual(1));
+    await waitFor(() => expect(screen.getAllByText('Без имени · 555').length).toBeGreaterThanOrEqual(1));
+  });
+
+  // QA 2026-11: имя в сетке строки — в колонке .tt-who (min-width: 0,
+  // therapist-today.css), иначе одна строка с многоточием распирает трек.
+  it('имя в строках «Сессии» и «Активность» лежит в колонке .tt-who', async () => {
+    const today = localDateStr(new Date());
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Вера', nextSession: `${today}T14:30` })]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getAllByText('Вера').length).toBeGreaterThanOrEqual(2));
+    const names = [...document.querySelectorAll('.tt-session .tt-name, .tt-act .tt-act-name')];
+    expect(names).toHaveLength(2);
+    for (const n of names) expect(n.closest('.tt-who')).not.toBeNull();
   });
 
   it('клик по клиенту вызывает onOpenClient с его telegramId', async () => {
@@ -101,9 +125,9 @@ describe('TherapistTodaySection — реальные данные клиенто
 
 describe('TherapistTodaySection — сессии сегодня', () => {
   it('сессия с nextSession = сегодня показывается во "Сессии сегодня" с временем', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateStr(new Date()); // встреча — стенные часы терапевта
     mockApi.getTherapyClients.mockResolvedValue([
-      client({ telegramId: 1, name: 'Клиент А', nextSession: `${today}T14:30:00Z` }),
+      client({ telegramId: 1, name: 'Клиент А', nextSession: `${today}T14:30` }),
     ]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
@@ -122,6 +146,7 @@ describe('TherapistTodaySection — сессии сегодня', () => {
   });
 
   it('без явного nextSession, но с meetingDays на сегодня — клиент в "Сессии сегодня"', async () => {
+    // День встреч — местный день терапевта, как в модели (встреча — момент).
     const todayDow = new Date().getDay();
     mockApi.getTherapyClients.mockResolvedValue([
       client({ telegramId: 1, name: 'Клиент В', nextSession: null, meetingDays: [todayDow] }),
@@ -132,35 +157,51 @@ describe('TherapistTodaySection — сессии сегодня', () => {
     expect(screen.queryByText('Сессий не запланировано')).toBeNull();
   });
 
-  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): hasSessionToday/sessionTime
-  // сравнивают календарный день `nextSession` с «сегодня» — здесь уже через
-  // общий todayCalendarDate(), а не инлайн-копию помощника. Моменты
-  // зафиксированы там, где зоны заведомо расходятся с UTC — иначе тест
-  // зеленеет под TZ=UTC и молчит про регресс. Клиенты грузятся асинхронно,
-  // поэтому первичная загрузка идёт под текущей зоной процесса, а проверка
-  // по зонам — синхронный `rerender` (без повторного фетча), чтобы момент
-  // смены TZ совпадал с моментом пересчёта sessionsToday/sessionTime.
-  it('сессия на сегодняшний календарный день сервера видна в "Сессии сегодня" в любой зоне', async () => {
+  // РЕГРЕССИЯ (TZ-класс): встреча — стенные часы терапевта (datetime-local без
+  // зоны), «сегодня» — его местный день. До 2026-11 модель сверяла день с UTC,
+  // и в МСК с 00:00 до 03:00 «Сессии сегодня» показывали вчерашние встречи.
+  // Моменты — там, где зоны заведомо расходятся с UTC; каждая зона — свой
+  // рендер с загрузкой (forEachTimeZoneAsync держит зону через await).
+  it('встреча на местное «сегодня» — в "Сессии сегодня" в любой зоне, вчерашняя — нет', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
-        vi.setSystemTime(new Date(moment));
-        mockApi.getTherapyClients.mockResolvedValue([
-          client({ telegramId: 1, name: 'Клиент А', nextSession: `${todayCalendarDate()}T14:30:00Z` }),
-        ]);
-        const { unmount, rerender } = render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
-        await waitFor(() => expect(screen.getAllByText('Клиент А').length).toBeGreaterThanOrEqual(1));
-
-        forEachTimeZone(() => {
+        await forEachTimeZoneAsync(async (tz) => {
           vi.setSystemTime(new Date(moment));
-          rerender(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
-          expect(screen.getByText('14:30')).toBeTruthy();
-          expect(screen.queryByText('Сессий не запланировано')).toBeNull();
+          const day = (back: number) => localDateStr(new Date(Date.now() - back * 86_400_000));
+          mockApi.getTherapyClients.mockResolvedValue([
+            client({ telegramId: 1, name: 'Клиент А', nextSession: `${day(0)}T14:30` }),
+            client({ telegramId: 2, name: 'Клиент Б', nextSession: `${day(1)}T23:00` }),
+          ]);
+          const { unmount } = render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+          await waitFor(() => expect(screen.getByText('14:30')).toBeTruthy());
+          expect(screen.queryByText('23:00'), tz).toBeNull();
+          expect(screen.queryByText('Сессий не запланировано'), tz).toBeNull();
+          unmount();
         });
-
-        unmount();
       }
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('00:10 по Москве: встреча 27-го в 15:00 — сегодня, вчерашняя 23:00 — нет', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:10:00Z'));
+    const prevTz = process.env.TZ;
+    process.env.TZ = 'Europe/Moscow';
+    try {
+      mockApi.getTherapyClients.mockResolvedValue([
+        client({ telegramId: 1, name: 'Сегодняшняя', nextSession: '2026-10-27T15:00' }),
+        client({ telegramId: 2, name: 'Вчерашняя', nextSession: '2026-10-26T23:00' }),
+      ]);
+      render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+      await waitFor(() => expect(screen.getByText('15:00')).toBeTruthy());
+      expect(screen.queryByText('23:00')).toBeNull();
+      expect(screen.getByText('вторник, 27 октября')).toBeTruthy();
+    } finally {
+      if (prevTz === undefined) delete process.env.TZ;
+      else process.env.TZ = prevTz;
       vi.useRealTimers();
     }
   });
@@ -168,9 +209,8 @@ describe('TherapistTodaySection — сессии сегодня', () => {
 
 describe('TherapistTodaySection — требуют внимания', () => {
   it('клиент без активности 3+ дня и без todayIndex попадает в "Требуют внимания"', async () => {
-    const fourDaysAgo = new Date(Date.now() - 4 * 86400000).toISOString();
     mockApi.getTherapyClients.mockResolvedValue([
-      client({ telegramId: 9, name: 'Забытый клиент', lastActiveDate: fourDaysAgo, todayIndex: null }),
+      client({ telegramId: 9, name: 'Забытый клиент', ...activeDaysAgo(4), todayIndex: null }),
     ]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
@@ -186,7 +226,21 @@ describe('TherapistTodaySection — требуют внимания', () => {
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
     await screen.findByRole('heading', { name: 'Требуют внимания' });
-    expect(screen.getAllByText('нет данных').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('нет активности').length).toBeGreaterThanOrEqual(1);
+  });
+
+  // QA 2026-11: после недели тишины «Требуют внимания» писало «нет активности
+  // 12 дн.», а список клиентов — «активность 1 авг». Подпись одна на кабинет.
+  it('неделя без активности — та же подпись с датой, что и в списке клиентов', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([
+      client({ telegramId: 12, name: 'Давний клиент', ...activeDaysAgo(12) }),
+    ]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByRole('heading', { name: 'Требуют внимания' });
+    // «Активность клиентов» и «Требуют внимания» — одна и та же строка.
+    expect(screen.getAllByText(/^активность 1 авг( 2026)?$/)).toHaveLength(2);
+    expect(screen.queryByText(/нет активности/)).toBeNull();
   });
 
   it('активный сегодня клиент НЕ попадает в "Требуют внимания"', async () => {
@@ -197,6 +251,79 @@ describe('TherapistTodaySection — требуют внимания', () => {
 
     await waitFor(() => expect(screen.getAllByText('Активный').length).toBeGreaterThanOrEqual(1));
     expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
+  });
+});
+
+// QA 2026-11: офлайн-клиент (отрицательный id, без аккаунта) активности не
+// ведёт — daysSinceActive у него всегда null, и он вечно «требовал внимания»,
+// а в «Активны сегодня N / M» раздувал знаменатель. Встреча с ним — настоящая.
+describe('TherapistTodaySection — офлайн-клиенты', () => {
+  const offline = (o: Parameters<typeof client>[0] = {}) =>
+    client({ telegramId: -3, name: 'Ольга офлайн', ...o });
+
+  it('не требует внимания и не входит в «Активны» и список активности', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([
+      client({ telegramId: 1, name: 'Иван', todayIndex: 7 }),
+      offline(),
+    ]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByText('Иван');
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
+    expect(screen.getByText('Активны сегодня').parentElement!.textContent).toBe('Активны сегодня1 / 1');
+    expect(screen.getByText('Требуют внимания').parentElement!.textContent).toBe('Требуют внимания0');
+    expect(screen.queryByText('Ольга офлайн')).toBeNull();
+  });
+
+  it('встреча с офлайн-клиентом — в «Сессиях сегодня», без подписи «нет активности»', async () => {
+    const todayDow = new Date().getDay(); // местный день терапевта, как в модели
+    mockApi.getTherapyClients.mockResolvedValue([offline({ meetingDays: [todayDow] })]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    await screen.findByText('Ольга офлайн');
+    expect(screen.getByText('Сессий сегодня').parentElement!.textContent).toBe('Сессий сегодня1');
+    expect(screen.queryByText(/нет активности|нет данных/)).toBeNull();
+  });
+
+  it('только офлайн-клиенты — список активности объясняет, почему он пуст', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([offline()]);
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+
+    const note = await screen.findByText('Активность видна у клиентов, подключённых к боту');
+    expect(note.classList.contains('ds-empty')).toBe(true);
+    expect(screen.queryByText('Нет клиентов')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
+  });
+});
+
+// QA 2026-10-26: в 00:05 кабинет терапевта говорил «Доброе утро» (h < 12),
+// а клиентский «Сегодня» того же человека в ту же минуту — «Доброй ночи».
+// Теперь оба экрана берут одну функцию (today/helpers.homeGreeting): с #872
+// приветствие без времени суток — ошибиться часом ему не в чем.
+describe('TherapistTodaySection — приветствие и дата, как у клиентского «Сегодня»', () => {
+  afterEach(() => vi.useRealTimers());
+
+  for (const local of ['2026-10-27T00:05:00', '2026-10-27T05:00:00', '2026-10-27T12:00:00', '2026-10-27T23:00:00']) {
+    it(`${local.slice(11, 16)} — «Привет, Анна», без времени суток`, async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(local)); // без Z — местное время процесса
+      mockApi.getTherapyClients.mockResolvedValue([]);
+      render(<TherapistTodaySection displayName="Анна" onOpenClient={vi.fn()} />);
+      await waitFor(() => expect(mockApi.getTherapyClients).toHaveBeenCalled());
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Привет, Анна');
+    });
+  }
+
+  it('00:05 по Москве при 21:05 UTC — дата местного дня, а не дня UTC', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:05:00Z'));
+    mockApi.getTherapyClients.mockResolvedValue([]);
+    await withTimeZone('Europe/Moscow', async () => {
+      render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Привет');
+      expect(screen.getByText('вторник, 27 октября')).toBeTruthy();
+      await waitFor(() => expect(mockApi.getTherapyClients).toHaveBeenCalled());
+    });
   });
 });
 

@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, type ModeMapMeta, type ModeMapFull, type ModeMapKind, type UserId } from '../api';
 import { ModeMapEditor } from './ModeMapEditor';
+import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
+import { useCanvasTop } from './modeMap/useCanvasTop';
+import { Dropdown } from './Dropdown';
 import { MMIcon } from './modeMapIcons';
 import { useTr } from '../utils/addressForm';
 import '../styles/sheet-modemap.css';
-import { ConfirmDialog } from './ConfirmDialog';
+import { HistoryConfirmDialog } from './HistoryConfirmDialog';
+import { RenameDeleteMenu } from './RenameDeleteMenu';
 import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
+import { KIND_META } from './modeMap/mapKinds';
+import { MapKindPicker } from './modeMap/MapKindPicker';
+import { useNewMap } from './modeMap/useNewMap';
 
 interface Props { clientId: UserId; initialMapId?: number }  // initialMapId: карта, которую открыть первой (иначе первая в списке)
-
-const KIND_META: Record<ModeMapKind, { label: string; hint: string }> = {
-  personality: { label: 'Карта личности',  hint: 'Все основные режимы человека на одной странице — для общей ориентации' },
-  problem:     { label: 'Карта ситуации',  hint: 'Конкретная цепочка: триггер → режимы → последствия' },
-  couple:      { label: 'Карта пары',      hint: 'Цикл-клэш: как копинг одного партнёра запускает боль другого' },
-};
-const KINDS: ModeMapKind[] = ['personality', 'problem', 'couple'];
 
 export function ModeMapSelector({ clientId, initialMapId }: Props) {
   const tr = useTr();
@@ -22,23 +22,16 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
   const [activeId, setActiveId] = useState<number | null>(null);
   const [activeMap, setActiveMap] = useState<ModeMapFull | null>(null);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [pickKind, setPickKind] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const titleRef = useRef<HTMLInputElement>(null);
   const newBtnRef = useRef<HTMLButtonElement>(null);
-  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useCanvasTop(bodyRef);
 
-  function openKindPicker() {
-    const r = newBtnRef.current?.getBoundingClientRect();
-    if (r) setMenuPos({ x: r.left, y: r.bottom + 4 });
-    setPickKind(o => !o);
-  }
-
-  // Reset to the loading state when the viewed client changes. Adjusting state
-  // during render (not in an effect) is the documented pattern for deriving
-  // fresh state from a changing prop — no set-state-in-effect needed.
+  // Reset to the loading state when the viewed client changes: adjusting state
+  // during render (not in an effect) is the documented pattern for a changing prop.
   const [seenClient, setSeenClient] = useState(clientId);
   if (clientId !== seenClient) { setSeenClient(clientId); setLoading(true); }
 
@@ -74,18 +67,13 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
     } finally { setLoading(false); }
   }
 
-  async function createMap(kind: ModeMapKind) {
-    setCreating(true); setPickKind(false);
-    try {
-      const title = kind === 'personality' ? 'Карта личности'
-        : kind === 'couple' ? `Пара ${maps.filter(m => m.kind === 'couple').length + 1}`
-        : `Ситуация ${maps.filter(m => m.kind === 'problem').length + 1}`;
-      const m = await api.createModeMap(clientId, title, kind);
-      setMaps(prev => [...prev, { id: m.id, title: m.title, kind: m.kind, createdAt: m.createdAt, updatedAt: m.updatedAt }]);
-      setActiveId(m.id);
-      setActiveMap(m);
-    } finally { setCreating(false); }
-  }
+  const newMap = useNewMap(clientId, maps, (m) => {
+    setMaps(prev => [...prev, { id: m.id, title: m.title, kind: m.kind, createdAt: m.createdAt, updatedAt: m.updatedAt }]);
+    setActiveId(m.id);
+    setActiveMap(m);
+  });
+  const createMap = (kind: ModeMapKind) => { setPickKind(false); void newMap.create(kind); };
+  const creating = newMap.creating;
 
   // Ж4 (аудит 2026-08): нативный confirm() заменён на ConfirmDialog —
   // deleteTargetId хранит id карты, которую подтверждаем (null = закрыт).
@@ -103,7 +91,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
   }
 
   async function renameMap(id: number, title: string) {
-    const t = title.trim() || 'Карта режимов';
+    const t = title.trim() || KIND_META[maps.find(m => m.id === id)?.kind ?? 'free'].label;
     await api.updateModeMap(id, { title: t });
     setMaps(prev => prev.map(m => m.id === id ? { ...m, title: t } : m));
     setEditingId(null);
@@ -114,42 +102,38 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
     setTimeout(() => titleRef.current?.select(), 50);
   }
 
+  const activeMeta = maps.find(m => m.id === activeId);
+
   return (
     <div className="mm2-fill">
       {/* Map selector bar — pill-style tabs */}
       <div className="mm2-bar">
-        {maps.map(m => (
-          <div key={m.id} className="mm2-tb">
-            {editingId === m.id ? (
-              <input
-                ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
-                value={editTitle}
-                onChange={e => setEditTitle(e.target.value)}
-                onBlur={() => renameMap(m.id, editTitle)}
-                onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
-                className="ds-input mm2-rename"
-              />
-            ) : (
-              <div className={`ds-card mm2-map${activeId === m.id ? ' is-active' : ''}`}>
-                <button
-                  onClick={() => selectMap(m.id)}
-                  onDoubleClick={() => startEdit(m)}
-                  title={`${KIND_META[m.kind]?.label ?? ''} · двойной клик — переименовать`}
-                  className={`mm2-map-btn${maps.length > 1 && activeId === m.id ? ' has-x' : ''}`}
-                >
-                  {m.title}
-                </button>
-                {maps.length > 1 && activeId === m.id && (
-                  <button onClick={() => setDeleteTargetId(m.id)} title="Удалить карту" aria-label="Удалить карту" className="mm2-map-x">
-                    <MMIcon name="close" size={12} />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-        <button ref={newBtnRef} onClick={openKindPicker} disabled={creating}
-          className={`ds-btn ds-btn--secondary mm2-new${pickKind ? ' is-active' : ''}`}>
+        <div className="ds-seg ds-seg--scroll" role="group" aria-label="Графические карты">
+          {maps.map(m => editingId === m.id ? (
+            <input
+              key={m.id}
+              ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onBlur={() => renameMap(m.id, editTitle)}
+              onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
+              className="ds-input ds-input--sm mm2-rename"
+            />
+          ) : (
+            <button
+              key={m.id} type="button"
+              aria-pressed={activeId === m.id}
+              onClick={() => selectMap(m.id)}
+              title={KIND_META[m.kind]?.label}
+              className={`ds-seg-btn${activeId === m.id ? ' is-active' : ''}`}
+            >
+              {m.title}
+            </button>
+          ))}
+        </div>
+        {activeMeta && <RenameDeleteMenu label="Действия с картой" deleteLabel="Удалить карту" onRename={() => startEdit(activeMeta)} onDelete={maps.length > 1 ? () => setDeleteTargetId(activeMeta.id) : undefined} />}
+        <button ref={newBtnRef} onClick={() => setPickKind(o => !o)} disabled={creating}
+          className={`ds-btn ds-btn--secondary ds-btn--sm mm2-new${pickKind ? ' is-active' : ''}`}>
           {creating ? '…' : (
             <span>
               <MMIcon name="plus" size={13} />Новая карта<MMIcon name="caret" size={11} className="mm2-tb-caret" />
@@ -158,41 +142,25 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
         </button>
       </div>
 
-      {/* Kind picker — fixed so the tab bar's overflow can't clip it */}
-      {pickKind && menuPos && (
-        <>
-          <div role="button" tabIndex={0} aria-label="Закрыть"
-            onClick={() => setPickKind(false)}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPickKind(false); } }}
-            className="mm2-backdrop" style={{ zIndex: 60 }} />
-          <div className="ds-card mm2-kind-menu" style={{ left: menuPos.x, top: menuPos.y }}>
-            {KINDS.map(k => (
-              <button key={k} onClick={() => createMap(k)} className="mm2-item">
-                <div className="mm2-kind-name">{KIND_META[k].label}</div>
-                <div className="mm2-kind-hint">{KIND_META[k].hint}</div>
-              </button>
-            ))}
-          </div>
-        </>
+      {/* Тип новой карты: общее меню Dropdown прижимает себя к краям экрана (T-6) */}
+      {pickKind && (
+        <Dropdown anchorRef={newBtnRef} width={290} className="mm2-kind-menu" onClose={() => setPickKind(false)}>
+          <MapKindPicker variant="menu" concept={newMap.concept} onPick={createMap} />
+        </Dropdown>
       )}
 
+      {newMap.failed && (
+        <p role="alert" className="mm2-create-err">{tr('Не получилось создать карту. Попробуй ещё раз.', 'Не получилось создать карту. Попробуйте ещё раз.')}</p>
+      )}
       {/* Editor area */}
-      <div className="mm2-body">
-        {loading && <div className="mm2-loading">Загрузка…</div>}
+      <div ref={bodyRef} className="mm2-body">
+        {loading && <ModeMapSkeleton />}
         {!loading && maps.length === 0 && (
           <div className="mm2-center">
-            <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
-            <div className="mm2-empty-title">Нет карт режимов</div>
-            <div className="mm2-empty-sub">
-              {tr('Выбери тип первой карты', 'Выберите тип первой карты')}
-            </div>
+            <p className="ds-empty">Пока нет графических карт</p>
+            <p className="ds-empty">{tr('Выбери тип первой карты', 'Выберите тип первой карты')}</p>
             <div className="mm2-kinds">
-              {KINDS.map(k => (
-                <button key={k} onClick={() => createMap(k)} disabled={creating} className="ds-card ds-card--hover mm2-kind-card">
-                  <div className="mm2-kind-name">{KIND_META[k].label}</div>
-                  <div className="mm2-kind-hint">{KIND_META[k].hint}</div>
-                </button>
-              ))}
+              <MapKindPicker variant="cards" concept={newMap.concept} disabled={creating} onPick={createMap} />
             </div>
           </div>
         )}
@@ -208,8 +176,8 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
         )}
       </div>
       {deleteTargetId !== null && (
-        <ConfirmDialog
-          title="Удалить карту режимов?"
+        <HistoryConfirmDialog
+          title="Удалить карту?"
           message="Это действие нельзя отменить."
           confirmLabel="Удалить"
           onConfirm={() => deleteMap(deleteTargetId)}

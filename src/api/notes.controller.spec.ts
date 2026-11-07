@@ -93,6 +93,7 @@ describe('NotesController.upsertModeNote', () => {
       7n,
       'punitive_parent',
       expect.objectContaining({ needs: 'безопасность' }),
+      undefined,
     );
   });
 
@@ -110,6 +111,23 @@ describe('NotesController.upsertModeNote', () => {
         modeFunction: 'защищает от боли',
         needsMet: 'на время — да, по сути — нет',
       }),
+      undefined,
+    );
+  });
+
+  // QA 2026-11, К1: поля разбора «Что случилось» ложатся только в пустое место.
+  it('fillIfEmpty доходит до сервиса как есть', async () => {
+    const { controller, notesService } = makeController();
+    await controller.upsertModeNote(makeReq(7n), {
+      modeId: 'detached_protector',
+      triggers: 'Подруга не ответила',
+      fillIfEmpty: ['triggers', 'feelings', 'behavior'],
+    });
+    expect(notesService.upsertModeNote).toHaveBeenCalledWith(
+      7n,
+      'detached_protector',
+      expect.objectContaining({ triggers: 'Подруга не ответила' }),
+      ['triggers', 'feelings', 'behavior'],
     );
   });
 });

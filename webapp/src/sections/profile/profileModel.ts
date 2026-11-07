@@ -1,5 +1,6 @@
 // Чистые вычисления экрана «Профиль»: раскладка тепловой карты, уровни,
 // подписи месяцев, прогресс достижений, формат даты сессии, склонение.
+import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 
 export const HEAT_WEEKS = 18;
 /** Ширина, до которой кабинет считается телефонным (синхронно с @media в css). */
@@ -11,7 +12,6 @@ const HEAT_GAP = 3;
 // Поля вокруг сетки на телефоне: поля страницы 2×16 + карточка 2×16 + рамка 2 + колонка подписей дней 22.
 const HEAT_PHONE_CHROME = 88;
 export const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-const WEEKDAY_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
 /** Календарный день YYYY-MM-DD в UTC — так же, как история дней на сервере и
  *  «сегодня» приложения (правило №25 CLAUDE.md, shared/src/utils/calendarDate). */
@@ -75,11 +75,17 @@ export function monthLabels(weeks: HeatCell[][]): string[] {
 
 /** «день / дня / дней» по числу. */
 export function daysWord(n: number): string {
-  const m100 = n % 100, m10 = n % 10;
-  if (m100 >= 11 && m100 <= 14) return 'дней';
-  if (m10 === 1) return 'день';
-  if (m10 >= 2 && m10 <= 4) return 'дня';
-  return 'дней';
+  return pluralRu(n, 'день', 'дня', 'дней');
+}
+
+/** Счётчики «Прогресса» со склонением: «1 день стрика», а не «1 дней» (QA 2026-11-03). */
+export function counterItems(c: { streak: number; totalDays: number; diaryCount: number; ysqCount: number }): [number, string][] {
+  return [
+    [c.streak, `${daysWord(c.streak)} стрика`],
+    [c.totalDays, `${daysWord(c.totalDays)} всего`],
+    [c.diaryCount, `${pluralRu(c.diaryCount, 'запись', 'записи', 'записей')} дневника`],
+    [c.ysqCount, `${pluralRu(c.ysqCount, 'прохождение', 'прохождения', 'прохождений')} теста`],
+  ];
 }
 
 const PROGRESS_TARGET: Record<string, { kind: 'streak' | 'total'; goal: number }> = {
@@ -96,14 +102,6 @@ export function achievementProgress(id: string, earned: boolean, currentStreak: 
   if (!t) return null;
   const v = t.kind === 'streak' ? currentStreak : totalDays;
   return v > 0 ? `${v}/${t.goal}` : null;
-}
-
-/** «Чт, 3 сен · 14:30» из '2026-09-03T14:30:00' или '2026-09-03'. */
-export function formatNextSession(raw: string): string {
-  const [datePart, timePart] = raw.includes('T') ? raw.split('T') : [raw, null];
-  const [y, m, d] = datePart.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return `${WEEKDAY_SHORT[date.getDay()]}, ${d} ${MONTH_SHORT[m - 1]}${timePart ? ' · ' + timePart : ''}`;
 }
 
 /** Инициалы для аватара: первая буква имени (пусто → '•'). */

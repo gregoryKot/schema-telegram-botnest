@@ -15,6 +15,7 @@ vi.mock('../../api', () => ({
     saveChildhoodRatings: vi.fn(),
     getChildhoodRatings: vi.fn(),
     updateSettings: vi.fn(),
+    trackEvent: vi.fn(), // предупреждение моста к терапевту шлёт shown
   },
 }));
 import { api } from '../../api';
@@ -33,14 +34,21 @@ async function openFill() {
   fireEvent.click(await screen.findByRole('button', { name: /Оценить детство/ }));
 }
 
-function dragFirstTrackTo(clientX: number) {
-  const track = document.querySelectorAll('.ex2-cw-track')[0] as HTMLDivElement;
+function dragTrackTo(i: number, clientX: number) {
+  const track = document.querySelectorAll('.ex2-cw-track')[i] as HTMLDivElement;
   vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({
     left: 0, right: 200, width: 200, top: 0, bottom: 0, height: 0, x: 0, y: 0, toJSON() {},
   } as DOMRect);
   // jsdom не реализует Pointer Capture API — компонент его вызывает при drag-старте.
   track.setPointerCapture = vi.fn();
+  // Тап: значение ставит отпускание без сдвига (жест пальца — sliderGesture.ts).
   fireEvent.pointerDown(track, { clientX, pointerId: 1 });
+  fireEvent.pointerUp(track, { clientX, pointerId: 1 });
+}
+const dragFirstTrackTo = (clientX: number) => dragTrackTo(0, clientX);
+/** Выставить все пять руками: первую — в firstX, остальные — в середину (100/200 → 5). */
+function rateAll(firstX = 100) {
+  [firstX, 100, 100, 100, 100].forEach((x, i) => dragTrackTo(i, x));
 }
 
 beforeEach(() => {
@@ -60,11 +68,30 @@ describe('ChildhoodWheelEx — первое прохождение', () => {
     expect(document.querySelectorAll('.ex2-cw-track').length).toBe(0);
   });
 
-  it('все пять потребностей начинаются с середины шкалы (5/10)', async () => {
+  // BACKLOG «Колесо детства»: ничего не тронув, человек сохранял 5/5/5/5/5 как
+  // свои оценки. Середина ползунка — положение, а не ответ.
+  it('новый человек: все пять «не оценено», сохранить нельзя, подсказка считает остаток', async () => {
     renderEx();
     await openFill();
-    const values = screen.getAllByText('5', { selector: '.ex2-cw-value' });
-    expect(values.length).toBe(5);
+    expect(screen.getAllByText('—', { selector: '.ex2-cw-value' }).length).toBe(5);
+    const save = screen.getByRole('button', { name: /Посмотреть результат/ }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+    expect(screen.getByRole('status').textContent).toBe('Ещё не оценено: 5 из 5');
+    dragTrackTo(2, 100);
+    expect(screen.getByRole('status').textContent).toBe('Ещё не оценено: 4 из 5');
+    expect(screen.getAllByText('5', { selector: '.ex2-cw-value' }).length).toBe(1);
+    fireEvent.click(save);
+    expect(mockApi.saveChildhoodRatings).not.toHaveBeenCalled();
+  });
+
+  it('выставлены все пять — кнопка доступна, подсказки нет, уходят выставленные значения', async () => {
+    renderEx();
+    await openFill();
+    rateAll(20);
+    expect(screen.queryByRole('status')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
+    await screen.findByText(/1 зона ниже 5/);
+    expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith({ attachment: 1, autonomy: 5, expression: 5, play: 5, limits: 5 });
   });
 
   it('примеры раскрываются под потребностью, тап по примеру показывает историю', async () => {
@@ -121,9 +148,10 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
 });
 
 describe('ChildhoodWheelEx — результат и сохранение (read-after-write)', () => {
-  it('без изменений — среднее 5/10, все зоны выше 4, блок «Хорошее детство»', async () => {
+  it('все на середине — среднее 5/10, все зоны выше 4, блок «Хорошее детство»', async () => {
     renderEx();
     await openFill();
+    rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
 
     await screen.findByText(/Среднее 5\/10/);
@@ -138,6 +166,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     const onSaved = vi.fn();
     renderEx(onSaved);
     await openFill();
+    rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 5\/10/);
     expect(onSaved).toHaveBeenCalledWith({ attachment: 5, autonomy: 5, expression: 5, play: 5, limits: 5 });
@@ -146,6 +175,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
   it('«✎ Изменить» возвращает на экран слайдеров с теми же значениями', async () => {
     renderEx();
     await openFill();
+    rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 5\/10/);
 
@@ -163,6 +193,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     const onSaved = vi.fn();
     renderEx(onSaved);
     await openFill();
+    rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(screen.queryByText(/Среднее 5\/10/)).toBeNull();
@@ -173,6 +204,7 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     mockApi.saveChildhoodRatings.mockRejectedValueOnce(new Error('offline'));
     renderEx();
     await openFill();
+    rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByRole('alert');
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
@@ -190,6 +222,7 @@ describe('ChildhoodWheelEx — ты/вы: подсказка «Связать с
       </MemoryRouter>,
     );
     await openFill();
+    rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 5\/10/);
   }
@@ -217,7 +250,7 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
   it('низкая зона доезжает до результата: «1 зона ниже 5» и схемы привязанности', async () => {
     renderEx();
     await openFill();
-    dragFirstTrackTo(20);
+    rateAll(20);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/1 зона ниже 5/);
     expect(screen.getByText('Возможные активные схемы')).toBeTruthy();
@@ -228,7 +261,7 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
   it('тап по схеме открывает её описание', async () => {
     renderEx();
     await openFill();
-    dragFirstTrackTo(20);
+    rateAll(20);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     fireEvent.click(await screen.findByRole('button', { name: 'Дефективность / Стыд' }));
     expect(screen.getByRole('heading', { name: 'Дефективность / Стыд' })).toBeTruthy();
@@ -238,7 +271,7 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
     const onOpenSchemas = vi.fn();
     renderEx(vi.fn(), onOpenSchemas);
     await openFill();
-    dragFirstTrackTo(20);
+    rateAll(20);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     fireEvent.click(await screen.findByText('Подробнее о схемах'));
     expect(onOpenSchemas).toHaveBeenCalledTimes(1);
@@ -247,9 +280,64 @@ describe('ChildhoodWheelEx — низкие зоны', () => {
   it('без onOpenSchemas ссылки «Подробнее о схемах» нет', async () => {
     renderEx();
     await openFill();
-    dragFirstTrackTo(20);
+    rateAll(20);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText('Возможные активные схемы');
     expect(screen.queryByText('Подробнее о схемах')).toBeNull();
+  });
+});
+
+// QA 2026-11, З13: шкала была div с одними pointer-событиями — фокус на неё не
+// попадал, без мыши «Посмотреть результат» оставалась недоступной.
+describe('ChildhoodWheelEx — с клавиатуры', () => {
+  it('пять ползунков с именем потребности получают фокус и проходятся клавишами', async () => {
+    renderEx();
+    await openFill();
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders.map((s) => s.getAttribute('aria-label'))).toEqual(
+      ['Привязанность', 'Автономия', 'Выражение чувств', 'Спонтанность', 'Границы'],
+    );
+    sliders[0].focus();
+    expect(document.activeElement).toBe(sliders[0]);
+    expect(sliders[0].getAttribute('aria-valuetext')).toBe('не оценено');
+    fireEvent.keyDown(sliders[0], { key: 'Enter' }); // неоценённой — середина
+    fireEvent.keyDown(sliders[0], { key: 'ArrowLeft' });
+    expect(sliders[0].getAttribute('aria-valuenow')).toBe('4');
+    fireEvent.keyDown(sliders[1], { key: ' ' });
+    fireEvent.keyDown(sliders[2], { key: 'End' });
+    fireEvent.keyDown(sliders[3], { key: 'Home' });
+    fireEvent.keyDown(sliders[4], { key: 'ArrowRight' });
+    const save = screen.getByRole('button', { name: /Посмотреть результат/ }) as HTMLButtonElement;
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await screen.findByText(/Среднее/);
+    expect(mockApi.saveChildhoodRatings).toHaveBeenCalledWith({ attachment: 4, autonomy: 5, expression: 10, play: 0, limits: 6 });
+  });
+});
+
+// QA 2026-11, З12: подсказки заполнения обращались на «ты» к человеку с формой «вы».
+describe('ChildhoodWheelEx — ты/вы на заполнении', () => {
+  async function openFillAs(form: 'ty' | 'vy') {
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+          <ChildhoodWheelEx onBack={vi.fn()} onSaved={vi.fn()} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    await openFill();
+  }
+
+  it('форма «вы»: «Оцените», «Оценивайте», ни одного «Оцени»', async () => {
+    await openFillAs('vy');
+    expect(screen.getByText(/^Оцените пять базовых потребностей/)).toBeTruthy();
+    expect(screen.getByText(/Оценивайте не «как могло быть»/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/Оцени(вай)?\s/);
+  });
+
+  it('форма «ты»: «Оцени», «Оценивай»', async () => {
+    await openFillAs('ty');
+    expect(screen.getByText(/^Оцени пять базовых потребностей/)).toBeTruthy();
+    expect(screen.getByText(/Оценивай не «как могло быть»/)).toBeTruthy();
   });
 });

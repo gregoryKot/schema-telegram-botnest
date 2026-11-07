@@ -4,6 +4,8 @@ import { decrypt } from '../utils/crypto';
 import { localDate, localMidnightUTC } from '../utils/tz';
 import { TherapyTasksService } from './therapy-tasks.service';
 import { TherapyRelationsService } from './therapy-relations.service';
+import { STREAK_TASK_TYPES } from './streak-progress';
+import { unnamedClientLabel } from './client-display-name';
 
 // Терапевтский обзор задач: по всем клиентам сразу и по одному конкретному
 // клиенту. Стрик-прогресс не пересчитывается заново — берётся из
@@ -60,8 +62,10 @@ export class TherapyTasksViewService {
       // decrypt терапевт увидел бы в кабинете base64 вместо имени (T7).
       const alias = decrypt(rel.clientAlias);
       const clientName = rel.client
-        ? (alias ?? rel.client.firstName ?? `ID ${clientId}`)
-        : (alias ?? decrypt(rel.virtualClientName) ?? `ID ${-clientId}`);
+        ? (alias ?? rel.client.firstName ?? unnamedClientLabel(clientId))
+        : (alias ??
+          decrypt(rel.virtualClientName) ??
+          unnamedClientLabel(clientId));
       const tasks = tasksByUserId.get(String(userIdOf(rel))) ?? [];
 
       if (tasks.length > 0) {
@@ -107,11 +111,7 @@ export class TherapyTasksViewService {
     }
     const uid = clientId;
     const now = new Date();
-    const settings = await this.prisma.user.findUnique({
-      where: { id: uid },
-      select: { notifyTimezone: true },
-    });
-    const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+    const tz = await this.tasksService.clientTimezone(uid);
     const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
 
@@ -142,20 +142,8 @@ export class TherapyTasksViewService {
           ]);
           doneToday = s + m + g > 0;
         }
-        if (
-          task.targetDays &&
-          [
-            'tracker_streak',
-            'diary_streak',
-            'schema_diary',
-            'mode_diary',
-          ].includes(task.type)
-        ) {
-          progress = await this.tasksService.getStreakProgress(
-            uid,
-            task.type,
-            task.targetDays,
-          );
+        if (task.targetDays && STREAK_TASK_TYPES.includes(task.type)) {
+          progress = await this.tasksService.getStreakProgress(uid, task, tz);
         }
         return {
           ...task,

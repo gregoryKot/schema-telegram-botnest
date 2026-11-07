@@ -1,10 +1,10 @@
 // Пошаговый лист сайта: своя оболочка (BottomSheetShell + useHistorySheet —
 // иначе «Назад» браузера увела бы из приложения) + общее тело
-// shared/practices/StepFlowSiteBody (editorial-вёрстка). Парный по смыслу с
-// schema-miniapp/src/components/StepFlowSheet.tsx: тело одно на обе площадки
-// (правило №3), различается только шит — ровно как у ShareCardSheet.
+// shared/practices/StepFlowSiteBody (editorial-вёрстка). Тело общее
+// (правило №3), шит свой — как у ShareCardSheet.
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { BottomSheetShell } from '../BottomSheetShell';
+import { TherapyCaution } from '../therapy/TherapyCaution';
 import { StepFlowSiteBody } from '../../../../shared/src/practices/StepFlowSiteBody';
 import type { StepFlowProps } from '../../../../shared/src/practices/stepFlowTypes';
 
@@ -14,7 +14,7 @@ export function StepFlowSheet({ onClose, ...rest }: StepFlowProps) {
     <BottomSheetShell goBack={goBack} zIndex={300}>
       {/* Кнопка «Закрыть» внутри тела ведёт через goBack, а не onClose —
           иначе лист закрылся бы, а запись в истории осталась. */}
-      <StepFlowSiteBody {...rest} onClose={goBack} />
+      <StepFlowSiteBody {...rest} intro={<TherapyCaution place="exercise_start" />} onClose={goBack} />
     </BottomSheetShell>
   );
 }

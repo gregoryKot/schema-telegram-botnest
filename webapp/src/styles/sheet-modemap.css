@@ -1,6 +1,7 @@
 /* Обрамление карты режимов (префикс mm2-): тулбар, палитра, редакторы узла и
-   связи, меню, гид, легенда, селектор карт. Фигуры узлов, их геометрия,
-   рёбра и раскладка сюда не входят — они живут в nodeParts/ModeMapNodes. */
+   связи, меню, гид, легенда, селектор карт, скелетон холста и высота холста
+   на телефоне (блок в конце). Фигуры узлов, их геометрия, рёбра и раскладка
+   сюда не входят — они живут в nodeParts/ModeMapNodes. */
 
 /* ── Тулбар и выпадающие меню ── */
 .ds-card.mm2-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 4px; border-radius: 12px; }
@@ -12,38 +13,27 @@
 .mm2-tb-sep { width: 1px; background: var(--line); margin: 4px 2px; }
 .mm2-tip {
   position: absolute; top: 42px; left: 50%; transform: translateX(-50%); z-index: 40;
-  background: var(--ink); color: var(--on-ink); font-size: 11px; padding: 3px 8px; border-radius: 6px;
+  background: var(--text); color: var(--bg); font-size: 11px; padding: 3px 8px; border-radius: 6px;
   white-space: nowrap; pointer-events: none;
 }
-.mm2-backdrop { position: fixed; inset: 0; }
-.ds-card.mm2-drop { position: fixed; z-index: 40; width: 220px; padding: 4px; border-radius: 12px; box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
-.mm2-drop-head { padding: 6px 10px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }
-.mm2-drop-note { padding: 0 10px 6px; font-size: 11px; line-height: 1.35; color: var(--text-faint); }
+.mm2-drop-head { padding: 6px 10px 4px; }
+.mm2-drop-note { padding: 0 10px 6px; }
 .mm2-drop-note.is-err { color: var(--err); }
 .mm2-drop-sep { height: 1px; background: var(--line); margin: 4px 0; }
 .mm2-kbd-row { display: flex; justify-content: space-between; gap: 14px; padding: 5px 10px; font-size: 12px; color: var(--text-sub); }
 .mm2-kbd { font-family: inherit; font-size: 11.5px; color: var(--text); background: var(--paper-sunk); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
 
-/* ── Строка меню (дропдауны, контекстное меню, выбор типа карты) ── */
-.mm2-item {
-  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 7px 10px;
-  border: none; border-radius: 8px; background: none; text-align: left; cursor: pointer;
-  font: 12.5px var(--sans); color: var(--text);
-}
-.mm2-item:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
-.mm2-item:disabled { opacity: .55; cursor: default; }
-.mm2-item.is-danger { color: var(--err); }
-.ds-card.mm2-ctx { position: fixed; z-index: 1000; min-width: 170px; padding: 4px; border-radius: 12px; }
-.mm2-ctx-back { position: fixed; inset: 0; z-index: 999; }
+/* Меню общее: ds-menu, ds-menu-item, ds-backdrop из cabinet.css; здесь только место и размер. */
+.ds-menu.mm2-ctx { z-index: 1000; width: auto; min-width: 170px; }
+.mm2-ctx-back { z-index: 999; }
 
 /* ── Палитра режимов ── */
 .ds-card.mm2-pal { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; padding: 0; background: var(--surface); }
-.mm2-pal-search { padding: 10px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
-.mm2-pal-search .ds-input { padding: 8px 12px; font-size: 12.5px; border-radius: 10px; }
+.mm2-pal-search { padding: 10px; border-bottom: 1px solid var(--paper-sunk); flex-shrink: 0; }
 .mm2-pal-scroll { flex: 1; overflow-y: auto; }
 .mm2-pal-head {
   display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 6px 12px;
-  border: none; border-top: 1px solid var(--line); background: none; cursor: pointer; text-align: left;
+  border: none; border-top: 1px solid var(--paper-sunk); background: none; cursor: pointer; text-align: left;
 }
 .mm2-pal-head.is-static { cursor: default; }
 .mm2-pal-head-name { flex: 1; font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
@@ -59,13 +49,14 @@
 }
 .mm2-pal-item:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .mm2-pal-item.is-lg { font-size: 12.5px; }
-.mm2-pal-item.is-tone { background: oklch(0.97 0.02 var(--h)); }
+.mm2-pal-item.is-tone { background: color-mix(in srgb, var(--gc) 7%, var(--surface)); }
+.mm2-gdot { background: var(--gc); }
 .mm2-pal-item-name { flex: 1; }
 .ds-btn.mm2-pal-add { flex-shrink: 0; white-space: nowrap; height: 32px; padding: 0 12px; font-size: 11px; gap: 3px; }
 .mm2-pal-sub { padding: 4px 12px 10px; font-size: 11.5px; line-height: 1.4; color: var(--text-faint); }
 .mm2-pal-sub.is-err { color: var(--err); }
-.mm2-pal-empty { padding: 20px 14px; font-size: 12.5px; color: var(--text-faint); text-align: center; }
-.mm2-mine { border-top: 1px solid var(--line); margin-top: 4px; }
+.mm2-pal-empty { padding: 20px 14px; }
+.mm2-mine { border-top: 1px solid var(--paper-sunk); margin-top: 4px; }
 .mm2-mine-head { display: flex; align-items: center; padding: 6px 12px; }
 .mm2-mine-head .mm2-pal-head-name { font-size: 11.5px; }
 .mm2-mine-plus { width: 36px; height: 36px; border: none; background: none; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -92,6 +83,10 @@
 
 /* ── Редакторы узла и связи ── */
 .ds-card.mm2-panel { width: 250px; flex-shrink: 0; overflow-y: auto; display: flex; flex-direction: column; border-radius: 0; border-width: 0 0 0 1px; padding: 16px 14px; background: var(--surface); }
+/* Панель прокручивается сама, поэтому её строки не сжимаются: у .ds-seg свой
+   overflow-x: auto, и без этого min-height у него 0 — переключатели «Заливка»,
+   «Толщина», «Стиль линии» сплющивались до 6–9px, когда форма длиннее экрана. */
+.ds-card.mm2-panel > * { flex-shrink: 0; }
 .mm2-panel-head { display: flex; align-items: center; margin-bottom: 14px; }
 .mm2-panel-title { flex: 1; margin: 0; font: 400 17px/1.25 var(--serif); }
 .mm2-x { width: 40px; height: 40px; margin: -10px -10px -10px 0; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -99,13 +94,11 @@
 .mm2-panel .ds-label { display: block; margin-bottom: 6px; }
 .mm2-panel .ds-label.is-ok { color: var(--ok); }
 .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input { padding: 8px 10px; font-size: 13px; border-radius: 10px; margin-bottom: 14px; }
-.mm2-panel .ds-textarea { resize: vertical; }
 .mm2-panel .ds-textarea.is-ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
 .mm2-panel select.ds-input { cursor: pointer; }
-.mm2-seg { display: flex; margin-bottom: 14px; width: 100%; }
-.mm2-seg .ds-seg-btn { flex: 1; padding: 6px 4px; font-size: 11.5px; min-height: 32px; }
+.mm2-seg { margin-bottom: 14px; }
 .mm2-seg .ds-seg-btn.is-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; padding: 7px 2px; border-radius: 14px; }
-.mm2-seg .ds-seg-btn.is-icon.is-active i { background: var(--on-ink); }
+.mm2-seg .ds-seg-btn.is-icon.is-active i { background: var(--text); }
 .mm2-seg .ds-seg-btn i { display: block; width: 26px; border-radius: 4px; background: var(--text-sub); }
 .mm2-shape-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
 .mm2-shape-grid .mm2-pick { height: 50px; }
@@ -138,6 +131,22 @@
 /* ── Гид, легенда ── */
 .ds-card.mm2-guide { width: 270px; max-height: calc(100vh - 300px); overflow-y: auto; padding: 14px; border-radius: 16px; font-size: 12.5px; }
 .mm2-guide-head, .mm2-legend-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.mm2-guide.is-min { padding-block: 6px; }
+.mm2-guide.is-min .mm2-guide-head { margin-bottom: 0; }
+.mm2-guide-toggle { flex: 1; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0; border: none; background: none; cursor: pointer; text-align: left; color: var(--text-sub); }
+.mm2-guide-n { font-size: 11px; font-weight: 600; color: var(--text-faint); }
+.mm2-guide-caret { margin-left: auto; transition: transform .15s; }
+.mm2-guide-caret.is-min { transform: rotate(180deg); }
+/* Холст — контейнер размеров: панель подсказок (снизу справа) не выше холста
+   и не заходит на статус «✓ сохранено» в правом верхнем углу (QA 2026-10-26). */
+.mm2-canvas { container-type: size; }
+@supports (height: 1cqh) { .ds-card.mm2-guide { max-height: calc(100cqh - 76px); } }
+/* Тулбар шире узкого холста (телефон) — прокручивается, а не обрезается за
+   краем. Только на узком: прокрутка обрезала бы подсказки кнопок под тулбаром. */
+@container (max-width: 640px) {
+  .ds-card.mm2-toolbar { max-width: calc(100cqw - 30px); overflow-x: auto; scrollbar-width: none; }
+  .ds-card.mm2-toolbar > * { flex-shrink: 0; }
+}
 .mm2-guide-lead { font-size: 11px; line-height: 1.4; color: var(--text-faint); margin-bottom: 10px; }
 .mm2-step { display: flex; gap: 8px; align-items: flex-start; width: 100%; min-height: 40px; padding: 6px 5px; border: none; border-radius: 10px; background: none; text-align: left; cursor: default; }
 .mm2-step.is-click { cursor: pointer; }
@@ -152,7 +161,7 @@
 .mm2-alert { display: flex; gap: 7px; font-size: 11.5px; line-height: 1.4; color: var(--text); padding: 7px 9px; border-radius: 10px; background: var(--ok-bg); }
 .mm2-alert.is-warn { background: var(--warn-bg); color: var(--warn-ink); }
 .mm2-alert b { flex-shrink: 0; }
-.mm2-tips { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
+.mm2-tips { border-top: 1px solid var(--paper-sunk); margin-top: 10px; padding-top: 10px; }
 .mm2-tips-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
 .mm2-tips-head button { width: 32px; height: 32px; margin: -8px -6px -8px 0; border: none; background: none; color: var(--text-faint); font-size: 14px; cursor: pointer; }
 .mm2-tip-row { display: flex; gap: 8px; font-size: 11.5px; line-height: 1.4; color: var(--text-sub); margin-bottom: 8px; }
@@ -162,31 +171,38 @@
 .mm2-legend-chip { display: inline-flex; align-items: center; gap: 8px; width: fit-content; padding: 3px 9px 3px 5px; border-radius: 8px; font-size: 12px; background: var(--paper-tint); color: var(--text-sub); }
 
 /* ── Селектор карт и вьюер ── */
-.mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
-.ds-card.mm2-map { display: flex; align-items: center; flex-shrink: 0; padding: 0; min-height: 40px; border-radius: 12px; overflow: hidden; }
-.mm2-map.is-active { border-color: var(--accent); }
-.mm2-map-btn { border: none; background: none; cursor: pointer; white-space: nowrap; padding: 8px 14px; min-height: 40px; font: 600 13px var(--sans); color: var(--text-sub); }
-.mm2-map.is-active .mm2-map-btn { color: var(--text); }
-.mm2-map-btn.has-x { padding-right: 6px; }
-.mm2-map-x { width: 36px; height: 40px; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 4px 0 0; }
-.mm2-rename { width: 140px; flex-shrink: 0; padding: 8px 12px; font-size: 13px; border-radius: 12px; }
-.ds-btn.mm2-new { flex-shrink: 0; white-space: nowrap; height: 40px; padding: 0 14px; font-size: 12.5px; border-style: dashed; margin-left: 2px; }
+/* Поле 16px — у вьюера; в карточке клиента полоса стоит в колонке кабинета, под шапкой (therapist-card.css). */
+.mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
+.mm2-rename { width: 140px; flex-shrink: 0; }
+.mm2-bar > .ds-seg { min-width: 0; }
+/* Растяжение сегмента на всю полосу — только телефон; на компьютере он по содержимому. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .mm2-bar > .ds-seg { flex: 1 1 auto; } }
+.ds-btn.mm2-new { flex-shrink: 0; white-space: nowrap; margin-left: 2px; }
 .mm2-new > span { display: flex; align-items: center; gap: 5px; }
 .ds-btn.mm2-new.is-active { color: var(--accent); background: var(--paper-tint); }
-.ds-card.mm2-kind-menu { position: fixed; z-index: 61; width: 290px; padding: 6px; border-radius: 16px; }
-.mm2-kind-menu .mm2-item { flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; border-radius: 12px; }
+.ds-menu.mm2-kind-menu { z-index: 61; width: 290px; max-width: calc(100vw - 16px); }
+.mm2-kind-menu .ds-menu-item { flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 12px; border-radius: 12px; }
 .mm2-kind-name { font: 700 13px var(--sans); }
 .mm2-kind-hint { font-size: 11.5px; line-height: 1.35; color: var(--text-sub); }
+/* Строка о связи карт с концептуализацией под типами (MapKindPicker, #963): в карточках — во всю ширину ряда, в меню — последней строкой. */
+.mm2-kinds-note { flex-basis: 100%; max-width: 640px; margin: 4px 0 0; text-align: center; }
+.mm2-kind-menu .mm2-kinds-note { padding: 8px 12px 4px; text-align: left; }
 .mm2-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--text-sub); text-align: center; }
-.mm2-empty-ico { width: 52px; height: 52px; border-radius: 16px; background: var(--paper-tint); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--text-faint); }
-.mm2-empty-title { font: 400 18px var(--serif); color: var(--text); }
-.mm2-empty-sub { font-size: 13px; line-height: 1.5; max-width: 360px; }
 .mm2-kinds { display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
 .ds-card.mm2-kind-card { width: 200px; padding: 14px 16px; text-align: left; font-family: inherit; }
 .mm2-kind-card:disabled { opacity: .5; cursor: default; }
-.mm2-status { position: absolute; top: 12px; right: 12px; z-index: 10; font-size: 12px; color: var(--text-faint); pointer-events: none; }
+.mm2-kind-card:disabled:hover { border-color: var(--line); box-shadow: none; }
+.mm2-create-err { margin: 0; padding: 6px 16px; font-size: 12.5px; color: var(--err); flex-shrink: 0; }
+.mm2-status { position: absolute; top: 12px; right: 12px; z-index: 10; font-size: 12px; color: var(--text-faint); pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 42%; text-align: right; }
 .mm2-status .is-err { color: var(--err); }
-.mm2-canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; z-index: 5; }
+/* Контейнер прозрачен для кликов (под ним холст), а «Повторить» из SaveStatusLine нажиматься обязан. */
+.mm2-status button { pointer-events: auto; }
+/* Строка связи с концептуализацией (ConceptSyncLine, #963): кнопка — строка текста, тап-цель 44 по высоте, как «Повторить» у SaveStatusLine. */
+.mm2-sync { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; column-gap: 4px; min-height: 20px; line-height: 1.4; color: var(--text-sub); } /* заметнее статуса сохранения: --text-sub задан в обеих темах (--text-muted — только в светлой) */
+.mm2-sync-btn { min-height: 44px; margin: -12px 0; padding: 0 8px; border: none; background: transparent; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.mm2-sync.is-err .mm2-sync-btn { color: var(--err); }
+.mm2-sync-btn:disabled { opacity: .5; cursor: default; }
+.mm2-canvas-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 0 24px; text-align: center; pointer-events: none; z-index: 5; }
 
 /* ── Пара: подписи партнёров ── */
 .mm2-lane-bar { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; z-index: 4; pointer-events: none; }
@@ -195,11 +211,64 @@
 .mm2-lane-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--pc); }
 .mm2-lane-input { width: 140px; text-align: center; border-radius: 999px; padding: 6px 10px; font-size: 12.5px; font-weight: 600; border-color: var(--pc); }
 .mm2-lane-sep { font-size: 12px; color: var(--text-faint); }
-.ds-card.mm2-map.mm2-map-btn { padding: 8px 14px; flex-shrink: 0; }
 .mm2-fill { display: flex; flex-direction: column; height: 100%; }
 .mm2-body { flex: 1; overflow: hidden; }
-.mm2-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-faint); }
+/* Скелетон холста (ModeMapSkeleton): силуэт тулбара там, где стоит Panel
+   top-left (отступ 15px — margin панели React Flow), и плашки-узлы; плашки —
+   общий .skel, их положение задаёт компонент. */
+.mm2-skel { position: relative; height: 100%; overflow: hidden; background: var(--surface); }
+.mm2-skel-bar { position: absolute; top: 15px; left: 15px; display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .mm2-arrow { font-size: 16px; line-height: 1; }
 
 /* Подсказка под полем редактора узла (#743): текст не уходит в концептуализацию. */
 .mm2-field-hint { margin-top: 4px; line-height: 1.4; }
+
+/* ── Телефон (≤767): явная высота холста ───────────────────────────────────
+   На ноутбуке высоту даёт цепочка flex от .therapist-sheet (index.css, блок
+   ≥768); на телефоне страница течёт блоком, .mm2-fill { height: 100% } и
+   .mm2-body { flex: 1 } наследуют auto, и вкладка схлопывалась в 0 (#906).
+   min-height не лечит: процентные высоты внутри (корень редактора,
+   .react-flow) считаются только от явной height. Поэтому flex: none и высота =
+   экран минус то, что под холстом (нижняя навигация с safe-area) минус верх
+   холста от начала страницы. Верх — не оценка: --mm2-top замеряет
+   useCanvasTop (шапка меняется с именем в две строки и переносом встречи;
+   прежняя константа 240px давала уход под навигацию на 4–73px, QA 2026-11,
+   T-2). 240px остаётся запасным значением до первого замера. max(320px, …) —
+   пол для низких окон; 100vh — запасной вариант для браузера без dvh.
+   Пустое состояние в фиксированной высоте не центрируется насильно, а
+   растёт, и .mm2-body прокручивает его, если не влезло. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .mm2-body {
+    --mm2-top: 240px; /* запасное значение до первого замера; useCanvasTop перекрывает его инлайном */
+    --mm2-chrome: calc(var(--mm2-top) + var(--safe-bottom) + var(--mobile-nav-h));
+    flex: none; overflow: auto;
+    height: max(320px, calc(100vh - var(--mm2-chrome)));
+    height: max(320px, calc(100dvh - var(--mm2-chrome)));
+  }
+  .mm2-center { height: auto; min-height: 100%; padding: 24px 16px; }
+}
+
+/* Касание: тап-цели холста карты режимов ≥ 44×44 (QA 2026-11, T-5). Мышь не
+   меняется. Размеры задаёт экран под пальцем, а не ширина окна: планшет тоже
+   нажимает пальцем. Часть кнопок холста — с инлайн-размерами (ушки палитры,
+   кнопки над узлом), их перебивает !important. Цвета не трогаем. */
+@media (pointer: coarse), (max-width: 767px) {
+  .ds-btn.mm2-tb-btn { min-width: 44px; height: 44px; }
+  .mm2-tb-sep { margin-block: 8px; }
+  .mm2-pal-item, .mm2-pal-head { min-height: 44px; }
+  .ds-btn.mm2-pal-add { height: 44px; }
+  .mm2-mine-del { width: 44px; height: 44px; }
+  .mm2-add-form .ds-btn { height: 44px; }
+  .mm2-add-form .ds-btn--icon { width: 44px; }
+  .mm2-step, .mm2-hint-q, .mm2-guide-toggle { min-height: 44px; }
+  .mm2-swatch { width: 44px; height: 44px; border-width: 10px; }
+  .mm2-nt-btn { min-width: 44px; min-height: 44px; }
+  .mm2-x, .mm2-mine-plus { width: 44px; height: 44px; }
+  .ds-btn.mm2-del { height: 44px; }
+  .mm2-panel .ds-input, .mm2-panel .ds-btn, .mm2-panel select.ds-input, .mm2-add-form .ds-input, .mm2-pal-search .ds-input { min-height: 44px; }
+  .mm2-ear { width: 44px !important; height: 44px !important; font-size: 18px !important; }
+  /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS (и iPad, где окно шире 767)
+     увеличивает экран при фокусе на поле мельче 16px. */
+  .mm2-add-form .ds-input, .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input,
+  .ds-input.mm2-add-emoji, .ds-input.mm2-lane-input { font-size: 16px; }
+}

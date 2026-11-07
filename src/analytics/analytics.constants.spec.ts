@@ -11,7 +11,6 @@ import {
   PUBLIC_ANALYTICS_EVENTS,
   QUIZ_EVENT_SOURCES,
   PRACTICE_LINK_PLACES,
-  TODAY_BLOCKS,
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
@@ -19,11 +18,10 @@ import {
   ONBOARDING_STEPS,
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
-  TODAY_FOCUS_PRACTICES,
-  WEB_BANNER_IDS,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
 } from './analytics.constants';
+import { CABINET_EVENTS } from './cabinet-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
 import { CRISIS_SURFACES as CRISIS_SURFACES_DIRECT } from './crisis-surfaces.constants';
 import {
@@ -31,7 +29,6 @@ import {
   PUBLIC_CRISIS_SURFACES,
 } from './public-crisis.constants';
 import { SIGNUP_SOURCES as SIGNUP_SOURCES_DIRECT } from './signup-sources.constants';
-import { WEB_BANNER_IDS as WEB_BANNER_IDS_DIRECT } from './web-banner-ids.constants';
 import {
   GAME_EVENTS,
   GAME_CHAPTERS,
@@ -45,7 +42,6 @@ const REGISTRIES: Record<string, readonly string[]> = {
   PUBLIC_ANALYTICS_EVENTS,
   QUIZ_EVENT_SOURCES,
   PRACTICE_LINK_PLACES,
-  TODAY_BLOCKS,
   CUSTOMIZE_ENTRY_POINTS,
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
@@ -53,8 +49,6 @@ const REGISTRIES: Record<string, readonly string[]> = {
   ONBOARDING_STEPS,
   SHARE_CARD_KINDS,
   CRISIS_SURFACES,
-  TODAY_FOCUS_PRACTICES,
-  WEB_BANNER_IDS,
   SIGNUP_SOURCES,
   PROFILE_PATTERN_KINDS,
   GAME_EVENTS,
@@ -62,6 +56,7 @@ const REGISTRIES: Record<string, readonly string[]> = {
   GAME_CTA_PLACES,
   GAME_ENTRY_SOURCES,
   CONCEPT_EVENTS,
+  CABINET_EVENTS,
 };
 
 describe('реестры analytics.constants: без дублей и пустых значений', () => {
@@ -90,6 +85,26 @@ describe('реестры analytics.constants: без дублей и пусты�
   );
 });
 
+describe('CABINET_EVENTS ⊆ ANALYTICS_EVENTS', () => {
+  it('«Показ экрана» есть в allow-list и закрыт для анонимов', () => {
+    expect(CABINET_EVENTS).toContain('cabinet_screen_share_on');
+    // «Справочник» терапевта (#995): открытие и листы из него — отдельно от concept_guide_*.
+    expect(CABINET_EVENTS).toEqual(
+      expect.arrayContaining([
+        'cabinet_guide_open',
+        'cabinet_guide_mode_open',
+        'cabinet_guide_schema_open',
+        'cabinet_guide_technique_open',
+        'cabinet_guide_note_open',
+      ]),
+    );
+    for (const name of CABINET_EVENTS) {
+      expect(ANALYTICS_EVENTS).toContain(name);
+      expect(PUBLIC_ANALYTICS_EVENTS).not.toContain(name);
+    }
+  });
+});
+
 describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
   it('каждое событие схемы случая есть в общем allow-list и не открыто анонимно', () => {
     // Терапевт всегда авторизован: анонимный путь (POST /api/public-event) для
@@ -106,6 +121,27 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
 
   it('разворот на весь экран — событие реестра (concept_graph_fullscreen)', () => {
     expect(CONCEPT_EVENTS).toContain('concept_graph_fullscreen');
+  });
+
+  it('повтор сохранения после ошибки — событие реестра (concept_save_retry, #879)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_save_retry');
+  });
+
+  it('экран «Главное» — событие реестра (concept_brief_open)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_brief_open');
+  });
+
+  it('связь холста с полями — события реестра (concept_sync_to_map/from_map, #963)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_sync_to_map');
+    expect(CONCEPT_EVENTS).toContain('concept_sync_from_map');
+  });
+
+  it('подсказки терапевту — события реестра (concept_guide_*, #995)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_guide_mode_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_schema_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_technique_open');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_assign');
+    expect(CONCEPT_EVENTS).toContain('concept_guide_mark_done');
   });
 });
 
@@ -148,14 +184,6 @@ describe('SIGNUP_SOURCES реэкспортирован без искажени�
 
   it('содержит other — обязательный фолбэк для неизвестного/мусорного slug', () => {
     expect(SIGNUP_SOURCES).toContain('other');
-  });
-});
-
-describe('WEB_BANNER_IDS реэкспортирован без искажений', () => {
-  it('analytics.constants.ts отдаёт тот же массив, что и web-banner-ids.constants.ts', () => {
-    // Правило №10: WEB_BANNER_IDS вынесен в отдельный файл ради лимита строк
-    // (тот же приём, что и SIGNUP_SOURCES выше) — реэкспорт легко протухает.
-    expect(WEB_BANNER_IDS).toEqual(WEB_BANNER_IDS_DIRECT);
   });
 });
 

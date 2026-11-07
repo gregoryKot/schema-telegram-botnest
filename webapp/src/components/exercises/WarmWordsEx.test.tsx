@@ -77,4 +77,28 @@ describe('WarmWordsEx', () => {
       count: 0,
     });
   });
+
+  // QA клиента 2026-11, М7: переписанная фраза из «Критик или забота?» была
+  // подписана «Режим · карточка режима».
+  it('переписанная фраза подписана своим источником, а не карточкой режима', async () => {
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([
+      {
+        id: 3,
+        rewrite: 'Мне можно ошибаться',
+        inWarmWords: true,
+        createdAt: '2026-01-20T00:00:00.000Z',
+      },
+    ]);
+
+    renderSheet();
+    await act(async () => {});
+
+    expect(screen.getByText('Мне можно ошибаться')).toBeTruthy();
+    expect(screen.getByText('Переписанная фраза')).toBeTruthy();
+    expect(screen.getByText(/· разбор фразы$/)).toBeTruthy();
+    expect(screen.queryByText(/карточка режима$/)).toBeNull();
+    expect(screen.queryByText('Режим')).toBeNull();
+  });
 });

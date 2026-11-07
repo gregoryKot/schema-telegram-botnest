@@ -17,8 +17,8 @@ vi.mock('../../api', () => ({
 }));
 import { api, reportClientError } from '../../api';
 vi.mock('../caseFlow/CaseFlowHost', () => ({
-  CaseFlowHost: (p: { caseCount: number; onClose: () => void }) => (
-    <button onClick={p.onClose}>case-host-{p.caseCount}</button>
+  CaseFlowHost: (p: { start: string; onClose: () => void }) => (
+    <button onClick={p.onClose}>case-host-{p.start}</button>
   ),
 }));
 vi.mock('../practice/QuickPracticeSheet', () => ({
@@ -33,7 +33,7 @@ vi.mock('../diary/ModeEntrySheet', () => ({
   ModeEntrySheet: (p: { onClose: () => void }) => <button onClick={p.onClose}>mode-sheet</button>,
 }));
 vi.mock('../diary/GratitudeEntrySheet', () => ({
-  GratitudeEntrySheet: (p: { date: string; onClose: () => void }) => <button onClick={p.onClose}>gratitude-{p.date.length}</button>,
+  GratitudeEntrySheet: (p: { date: string; onClose: () => void }) => <button onClick={p.onClose}>gratitude-{p.date}</button>,
 }));
 
 const base = { onClose: vi.fn(), onOpenTracker: vi.fn(), onOpenSchema: vi.fn() };
@@ -44,9 +44,9 @@ describe('QuickActionOverlays', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('разбор случая получает число прошлых разборов', async () => {
+  it('«Что случилось» открывает поток сразу на шагах, не на карте', async () => {
     render(<QuickActionOverlays active="case" {...base} />);
-    expect(await screen.findByText('case-host-2')).toBeTruthy();
+    expect(await screen.findByText('case-host-flow')).toBeTruthy();
   });
 
   it('дневник схем получает активные схемы профиля', async () => {
@@ -66,7 +66,24 @@ describe('QuickActionOverlays', () => {
     expect(await screen.findByText('mode-sheet')).toBeTruthy();
     unmount();
     render(<QuickActionOverlays active="diary_gratitude" {...base} />);
-    expect(await screen.findByText('gratitude-10')).toBeTruthy();
+    expect(await screen.findByText(/^gratitude-\d{4}-\d{2}-\d{2}$/)).toBeTruthy();
+  });
+
+  // QA 2026-10-26: запись благодарности — день самого человека. День UTC в
+  // 00:10 по Москве ещё вчерашний, и запись уезжала во вчера.
+  it('благодарность пишется местным днём, а не днём UTC', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T21:10:00Z'));
+    const prevTz = process.env.TZ;
+    process.env.TZ = 'Europe/Moscow';
+    try {
+      render(<QuickActionOverlays active="diary_gratitude" {...base} />);
+      expect(await screen.findByText('gratitude-2026-10-27')).toBeTruthy();
+    } finally {
+      if (prevTz === undefined) delete process.env.TZ;
+      else process.env.TZ = prevTz;
+      vi.useRealTimers();
+    }
   });
 
   it.each(['breathing', 'grounding', 'stop'] as const)('%s открывает практику и закрывается', (id) => {

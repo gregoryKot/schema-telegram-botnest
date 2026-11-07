@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { Cluster } from '../art/PaperArtSigns';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import '../../styles/sheet-diary.css';
 import { haptic } from '../../haptic';
@@ -26,8 +27,7 @@ import {
  * Обновление 2026-08-04: заголовки карточек-пар больше не клинический
  * термин напрямую — сперва живая формулировка из getModeLeafLabel, а
  * исходное название остаётся мелким подзаголовком. Наверху добавлена
- * карточка-якорь текущего выбора, внизу — кнопка подтверждения. Парный файл:
- * schema-miniapp/ModeDoubtButton (правило №3 CLAUDE.md).
+ * карточка-якорь текущего выбора, внизу — кнопка подтверждения.
  */
 export function ModeDoubtButton({
   modeId,
@@ -59,11 +59,7 @@ export function ModeDoubtButton({
         )}
       </button>
       {open && (
-        <ModeDoubtSheet
-          modeId={modeId}
-          onSwitch={onSwitch}
-          onClose={() => setOpen(false)}
-        />
+        <ModeDoubtSheet modeId={modeId} onSwitch={onSwitch} onClose={() => setOpen(false)} />
       )}
     </>
   );
@@ -84,14 +80,15 @@ function ModeDoubtSheet({
 
   return (
     <div className="ex-screen">
-      <div className="ex-topbar">
-        <button className="ds-link sd-back" onClick={goBack}>
+      <div className="ds-sheet-head sd-top">
+        <button type="button" className="ds-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад
         </button>
       </div>
       <div className="page">
         <div className="sd-doubt">
           <div className="ds-card ds-card--row tone-soft sd-doubt-now" style={hueStyle(DIARY_HUE.mode)}>
+            <span className="pp-row-art"><Cluster size="row" /></span>
             <div className="sd-doubt-now-name">
               {mode && <IdentityDot color={mode.groupColor} />} {mode?.name ?? ''}
             </div>

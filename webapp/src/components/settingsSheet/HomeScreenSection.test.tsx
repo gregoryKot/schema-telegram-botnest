@@ -7,6 +7,15 @@ import { HomeScreenSection } from './HomeScreenSection';
 import { installTelegram, removeTelegram } from '../../host/tgStub.test-helpers';
 import { _resetInstallPromptForTests } from '../../utils/pwaInstall';
 
+vi.mock('../../api', () => ({ reportClientError: vi.fn() }));
+vi.mock('../../apiClient', () => ({
+  authedFetch: vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({ deviceCode: 'd'.repeat(64), expiresIn: 120 }),
+  }),
+}));
+
 afterEach(() => {
   cleanup();
   removeTelegram();
@@ -15,21 +24,22 @@ afterEach(() => {
 });
 
 describe('HomeScreenSection — внутри мессенджера', () => {
-  it('Android: кнопка зовёт нативный addToHomeScreen, подсказка про подтверждение', () => {
-    const addToHomeScreen = vi.fn();
-    installTelegram({ platform: 'android', addToHomeScreen });
+  it('Android: кнопка открывает /install через openLink, подсказка про браузер', () => {
+    const openLink = vi.fn();
+    installTelegram({ platform: 'android', openLink });
     render(<HomeScreenSection mode="messenger" />);
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить значок на экран' }));
-    expect(addToHomeScreen).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/Telegram спросит подтверждение/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Установить приложение' }));
+    expect(openLink).toHaveBeenCalledTimes(1);
+    expect(String(openLink.mock.calls[0][0])).toMatch(/\/install(#h=[0-9a-f]{64})?$/);
+    expect(screen.getByText(/Откроется сайт в браузере/)).toBeTruthy();
   });
 
-  it('iOS: настоящая ссылка на прыжковую страницу', () => {
-    installTelegram({ platform: 'ios', addToHomeScreen: vi.fn() });
+  it('iOS: настоящая ссылка на /install', () => {
+    installTelegram({ platform: 'ios' });
     render(<HomeScreenSection mode="messenger" />);
-    const a = screen.getByRole('link', { name: 'Добавить значок на экран' });
-    expect(a.getAttribute('href')).toMatch(/add-icon\.html$/);
-    expect(screen.getByText(/следуй инструкции/)).toBeTruthy();
+    const a = screen.getByRole('link', { name: 'Установить приложение' });
+    expect(a.getAttribute('href')).toMatch(/\/install(#h=[0-9a-f]{64})?$/);
+    expect(screen.getByText(/Откроется сайт в Safari/)).toBeTruthy();
   });
 });
 

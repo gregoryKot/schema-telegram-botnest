@@ -1,21 +1,53 @@
 // @vitest-environment jsdom
-// shouldShowChildhoodWheel — единственная функция здесь с логикой (ключи
-// сами — просто строки-константы). Проверяем чистое/грязное состояние
-// localStorage (пустой аккаунт vs уже пройденное «колесо детства»).
+// Единственный писатель кэша «моих» схем и режимов (зеркало User.mySchemaIds /
+// myModeIds): записал — в localStorage лежит JSON-список, который читают экраны.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CHILDHOOD_DONE_KEY, shouldShowChildhoodWheel } from './storageKeys';
+import {
+  cacheMySchemaIds,
+  cacheMyModeIds,
+  cacheMyPatternsFromProfile,
+  MY_SCHEMA_IDS_KEY,
+  MY_MODE_IDS_KEY,
+  shouldShowChildhoodWheel,
+  CHILDHOOD_DONE_KEY,
+} from './storageKeys';
 
-beforeEach(() => {
-  localStorage.clear();
-});
+beforeEach(() => localStorage.clear());
 
-describe('shouldShowChildhoodWheel', () => {
-  it('чистый аккаунт (ключа нет) — показывать колесо', () => {
-    expect(shouldShowChildhoodWheel()).toBe(true);
+describe('storageKeys: писатели кэша', () => {
+  it('cacheMySchemaIds: записал — прочитал тот же список', () => {
+    cacheMySchemaIds(['abandonment', 'mistrust']);
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]')).toEqual(
+      ['abandonment', 'mistrust'],
+    );
   });
-
-  it('после прохождения (ключ проставлен) — не показывать', () => {
+  it('cacheMyModeIds: пустой список тоже записывается, а не пропускается', () => {
+    cacheMyModeIds(['critic']);
+    cacheMyModeIds([]);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBe('[]');
+  });
+  it('shouldShowChildhoodWheel: true, пока флага нет', () => {
+    expect(shouldShowChildhoodWheel()).toBe(true);
     localStorage.setItem(CHILDHOOD_DONE_KEY, '1');
     expect(shouldShowChildhoodWheel()).toBe(false);
+  });
+});
+
+describe('cacheMyPatternsFromProfile — профиль как источник правды', () => {
+  it('пустые списки стирают старую копию', () => {
+    cacheMySchemaIds(['abandonment']);
+    cacheMyModeIds(['critic']);
+    cacheMyPatternsFromProfile({ mySchemaIds: [], myModeIds: [] });
+    expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]');
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBe('[]');
+  });
+  it('поля нет или оно не список строк — копия остаётся', () => {
+    cacheMySchemaIds(['abandonment']);
+    cacheMyPatternsFromProfile({});
+    cacheMyPatternsFromProfile({ mySchemaIds: 'abandonment', myModeIds: [1] });
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '')).toEqual([
+      'abandonment',
+    ]);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBeNull();
   });
 });

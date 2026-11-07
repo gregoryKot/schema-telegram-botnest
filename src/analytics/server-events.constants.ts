@@ -29,6 +29,20 @@
 //                   meta.tables/meta.rows.
 //   notify_queue_tick — итог прогона очереди уведомлений бота: только числа
 //                   (telegram.schedule-queue.tally.ts); пишет крон, userId = null.
+//   therapist_resigned — терапевт отказался от роли (TherapistExitService),
+//                   meta.clientsEnded. С клиента meta не принимается (ветки в
+//                   sanitizeMeta нет), /stats верит только строкам с числом.
+//   therapy_invite — шаг воронки приглашения клиента терапевтом: создал код,
+//                   клиент подключился, отозвал (meta.step + meta.kind, реестр
+//                   и причины — therapy-invite-events.constants.ts). Пишет
+//                   TherapyInviteService; ветки в sanitizeMeta нет.
+//   crawler_visits — заходы роботов нейросетей за час (crawler-hits.ts): пишет
+//                   только крон CrawlerHitsService, userId = null — /stats верит
+//                   лишь таким строкам; sanitizeMeta — закрытые списки.
+//   reminder_snoozed — «⏰ Напомню через час» под напоминанием: пишет только бот
+//                   после постановки в очередь (src/telegram/telegram.snooze.ts),
+//                   meta.quietShift — час попал в тихие часы. С клиента meta
+//                   отбрасывается, /stats считает только строки с quietShift.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -36,4 +50,8 @@ export const SERVER_EVENTS = [
   'signup_source',
   'data_export',
   'notify_queue_tick',
+  'therapist_resigned',
+  'therapy_invite',
+  'crawler_visits',
+  'reminder_snoozed',
 ] as const;

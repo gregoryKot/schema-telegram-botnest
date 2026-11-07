@@ -21,11 +21,12 @@ export function useOverlays() {
   const [showTrackerOverlay, setShowTrackerOverlay] = useState(false);
   const [trackerNeedId, setTrackerNeedId] = useState<string | null>(null);
   const [trackerTab, setTrackerTab] = useState<TrackerTab>('today');
-  const [showTrackerGoal, setShowTrackerGoal] = useState(false);
   const [showDiaries, setShowDiaries] = useState(false);
   const [showChildhoodWheel, setShowChildhoodWheel] = useState(false);
   const [showTodayNote, setShowTodayNote] = useState(false);
   const [showTherapistDisclaimer, setShowTherapistDisclaimer] = useState(false);
+  // «Мне плохо» топбара — карточка «Мне плохо» (флэшкарта) поверх текущего раздела.
+  const [showSosCard, setShowSosCard] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   // Быстрое действие «+»/⌘K, открытое оверлеем (дневники, разбор, практики).
   const [quickAction, setQuickAction] = useState<OverlayQuickActionId | null>(null);
@@ -54,11 +55,11 @@ export function useOverlays() {
     showTrackerOverlay, setShowTrackerOverlay,
     trackerNeedId, setTrackerNeedId,
     trackerTab, setTrackerTab,
-    showTrackerGoal, setShowTrackerGoal,
     showDiaries, setShowDiaries,
     showChildhoodWheel, setShowChildhoodWheel,
     showTodayNote, setShowTodayNote,
     showTherapistDisclaimer, setShowTherapistDisclaimer,
+    showSosCard, setShowSosCard,
     cmdOpen, setCmdOpen,
     quickAction, setQuickAction, runQuickAction, openSchema,
   };

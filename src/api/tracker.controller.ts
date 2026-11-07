@@ -19,6 +19,8 @@ import { TherapyTasksService } from '../therapy/therapy-tasks.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { SaveRatingDto } from './dto/ratings.dto';
 import { SaveNoteDto } from './dto/notes.dto';
+import { historyDays, HistoryQueryDto } from './dto/history-query.dto';
+import { buildExportSummary, EXPORT_DAYS } from './export-summary';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -65,11 +67,15 @@ export class TrackerController {
       .checkStreakTasks(uid(req))
       .catch((err) => this.logger.error('checkStreakTasks failed', err));
 
-    // Skip diary-complete logic for historical backfill
-    if (body.date) return { ok: true, allDone: false };
+    // Сайт и мини-апп всегда шлют дату (день устройства — она же уходит в
+    // офлайн-очередь), поэтому бэкфилл — это не «дата есть», а «день не
+    // сегодняшний». Раньше любая дата считалась бэкфиллом, и заполненный на
+    // сайте день не снимал напоминание и не давал серию (QA 2026-11-03).
+    const today = await this.botService.userToday(uid(req));
+    if (body.date && body.date !== today) return { ok: true, allDone: false };
 
     // Check if all needs are now rated today → trigger diary-complete logic
-    const ratings = await this.botService.getRatings(uid(req));
+    const ratings = await this.botService.getRatings(uid(req), today);
     const allDone = NEED_IDS.every((id) => ratings[id] !== undefined);
     if (allDone) {
       const [streak] = await Promise.all([
@@ -88,9 +94,8 @@ export class TrackerController {
   }
 
   @Get('history')
-  async getHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
-    const n = Math.min(Number(days) || 7, 30);
-    return this.analyticsService.getHistoryRatings(uid(req), n);
+  async getHistory(@Req() req: AuthRequest, @Query() q: HistoryQueryDto) {
+    return this.analyticsService.getHistoryRatings(uid(req), historyDays(q));
   }
 
   @Get('streak')
@@ -106,26 +111,12 @@ export class TrackerController {
   @Get('export')
   async getExport(@Req() req: AuthRequest) {
     const [history, streak] = await Promise.all([
-      this.analyticsService.getHistoryRatings(uid(req), 30),
+      this.analyticsService.getHistoryRatings(uid(req), EXPORT_DAYS),
       this.analyticsService.getStreakData(uid(req)),
     ]);
-    const needs = this.botService.getNeeds();
-    const lines: string[] = [
-      `📔 Трекер потребностей · последние ${history.length} дней`,
-      '',
-    ];
-    for (const day of [...history].reverse()) {
-      const vals = needs.map((n) => {
-        const v = day.ratings[n.id];
-        return v !== undefined ? `${n.emoji} ${v}/10` : `${n.emoji} –`;
-      });
-      lines.push(`${day.date}: ${vals.join('  ')}`);
-    }
-    lines.push('');
-    lines.push(
-      `Серия: ${streak.currentStreak} дн. · Рекорд: ${streak.longestStreak} · Всего: ${streak.totalDays}`,
-    );
-    return { text: lines.join('\n') };
+    return {
+      text: buildExportSummary(this.botService.getNeeds(), history, streak),
+    };
   }
 
   @Get('insights')

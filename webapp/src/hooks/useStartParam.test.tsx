@@ -13,17 +13,18 @@ import { useStartParam } from './useStartParam';
 function setup(param: string | null, entry: string, enabled = true) {
   startParam = param;
   const onAction = vi.fn();
+  const onHandled = vi.fn();
   const wrapper = ({ children }: { children: ReactNode }) => (
     <MemoryRouter initialEntries={[entry]}>{children}</MemoryRouter>
   );
   const view = renderHook(
     ({ on }: { on: boolean }) => {
-      useStartParam(on, onAction);
+      useStartParam(on, onAction, onHandled);
       return useLocation();
     },
     { wrapper, initialProps: { on: enabled } },
   );
-  return { onAction, ...view };
+  return { onAction, onHandled, ...view };
 }
 
 beforeEach(() => {
@@ -71,5 +72,18 @@ describe('useStartParam', () => {
     a.rerender({ on: false });
     a.rerender({ on: true });
     expect(a.onAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('onHandled — один раз после разбора, и с действием, и без (очередь входов знает, что ссылки нет)', () => {
+    const a = setup(null, '/today', false);
+    expect(a.onHandled).not.toHaveBeenCalled();
+    a.rerender({ on: true });
+    expect(a.onHandled).toHaveBeenCalledTimes(1);
+    a.rerender({ on: true });
+    expect(a.onHandled).toHaveBeenCalledTimes(1);
+    cleanup();
+    const b = setup('pair_AB12', '/today?startapp=pair_AB12');
+    expect(b.onAction).toHaveBeenCalledTimes(1);
+    expect(b.onHandled).toHaveBeenCalledTimes(1);
   });
 });

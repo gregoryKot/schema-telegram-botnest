@@ -42,6 +42,16 @@ describe('UpdateSettingsDto', () => {
     );
   });
 
+  // Пояс устройства вне списка выбора (QA 2026-11-03) — законный выбор.
+  it('настоящий пояс IANA вне списка выбора проходит, сверхдлинная строка — нет', async () => {
+    await expect(
+      errorsFor({ notifyTimezone: 'Europe/Paris' }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ notifyTimezone: 'Europe/' + 'x'.repeat(80) }),
+    ).resolves.toContain('notifyTimezone');
+  });
+
   it('addressForm вне ty/vy — отказ', async () => {
     await expect(errorsFor({ addressForm: 'plural' })).resolves.toContain(
       'addressForm',

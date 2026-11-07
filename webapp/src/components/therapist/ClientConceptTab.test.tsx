@@ -103,10 +103,16 @@ function Harness() {
 async function openTab(server: unknown) {
   mockApi.getConceptualization.mockResolvedValue(server);
   render(<Harness />);
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
 const saved = () => mockApi.saveConceptualization.mock.calls.at(-1)?.[1];
+// Второстепенные действия — в меню «⋯ Ещё» шапки (#879).
+const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Ещё действия' }));
+const exportViaMenu = () => {
+  openMore();
+  fireEvent.click(screen.getByRole('menuitem', { name: /Экспорт текстом/ }));
+};
 const card = (name: string) =>
   screen.getByRole('button', { name: `${name}: связи` });
 
@@ -144,6 +150,9 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
         .getByRole('button', { name: 'Схема' })
         .getAttribute('aria-pressed'),
     ).toBe('true');
+    // инструкция на заполненной схеме свёрнута — открывается «Как читать схему»
+    expect(screen.queryByText(/Схема случая: в центре базовые потребности/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Как читать схему/ }));
     expect(screen.getByText(/Схема случая: в центре базовые потребности/)).toBeTruthy();
     expect(screen.queryByText('Актуальные схемы')).toBeNull();
 
@@ -152,18 +161,18 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
     expect(screen.getByText('Карта режимов')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Схема' }));
-    expect(screen.getByText(/Схема случая: в центре базовые потребности/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Как читать схему/ })).toBeTruthy();
   });
 
-  it('«Скачать картинкой» есть только в виде «Схема»', async () => {
+  it('«Скачать картинкой» есть в меню «⋯ Ещё» только в виде «Схема»', async () => {
     await openTab(concept());
-    expect(
-      screen.getByRole('button', { name: /Скачать картинкой/ }),
-    ).toBeTruthy();
+    openMore();
+    expect(screen.getByRole('menuitem', { name: /Скачать картинкой/ })).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
-    expect(
-      screen.queryByRole('button', { name: /Скачать картинкой/ }),
-    ).toBeNull();
+    openMore();
+    expect(screen.queryByRole('menuitem', { name: /Скачать картинкой/ })).toBeNull();
+    expect(screen.getByRole('menuitem', { name: /Экспорт текстом/ })).toBeTruthy();
   });
 
   it('вид «Поля»: режим выбирается общим пикером и уходит в modeIds автосохранения', async () => {
@@ -173,6 +182,17 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
     expect(saved().modeIds).toEqual(['vulnerable_child']);
     // и вид не перепрыгнул на схему посреди выбора
     expect(screen.getByText('Карта режимов')).toBeTruthy();
+  });
+
+  it('вид «Поля» с выбранными режимами: чипы только выбранных, «Изменить» открывает пикер, клик по режиму уходит в modeIds', async () => {
+    await openTab(concept());
+    fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
+    expect(screen.queryByRole('button', { name: /Уязвимый Ребёнок/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Изменить: Карта режимов/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Уязвимый Ребёнок/ }));
+    await waitFor(() => expect(saved()).toBeTruthy(), { timeout: 2500 });
+    expect(saved().modeIds).toContain('vulnerable_child');
+    expect(screen.getByRole('button', { name: /Готово: Карта режимов/ })).toBeTruthy();
   });
 });
 
@@ -348,12 +368,11 @@ describe('ClientConceptTab: тексты схем — правка → авто�
     expect(saved().schemaLinks[0].belief).toBe('Я хуже других');
   });
 
-  it('в виде «Схема» боковой колонки рядом нет (схеме нужна вся ширина), в виде «Поля» она есть', async () => {
+  it('боковой колонки нет ни в одном виде: вкладка в одну колонку (#879)', async () => {
     await openTab(concept());
-    const grid = () => document.querySelector<HTMLElement>('.doc-grid')!;
-    expect(grid().style.gridTemplateColumns).toBe('minmax(0, 1fr)');
+    expect(document.querySelector('aside, .doc-grid')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
-    expect(grid().style.gridTemplateColumns).toBe('');
+    expect(document.querySelector('aside, .doc-grid')).toBeNull();
   });
 });
 
@@ -371,7 +390,7 @@ describe('ClientConceptTab: экспорт и аналитика', () => {
       writable: true,
     });
     await openTab(concept());
-    fireEvent.click(screen.getByRole('button', { name: /Экспорт/ }));
+    exportViaMenu();
     await waitFor(() => expect(writeText).toHaveBeenCalled());
     const text = writeText.mock.calls[0][0] as string;
     expect(text).toContain('РЕЖИМЫ: СВЯЗИ');
@@ -403,7 +422,7 @@ describe('ClientConceptTab: экспорт и аналитика', () => {
         ],
       }),
     );
-    fireEvent.click(screen.getByRole('button', { name: /Экспорт/ }));
+    exportViaMenu();
     await waitFor(() => expect(writeText).toHaveBeenCalled());
     const text = writeText.mock.calls[0][0] as string;
     expect(text).toContain('СХЕМЫ: УБЕЖДЕНИЯ И ОПЫТ');
@@ -427,7 +446,7 @@ describe('ClientConceptTab: экспорт и аналитика', () => {
       writable: true,
     });
     await openTab(concept({ modeLinks: [] }));
-    fireEvent.click(screen.getByRole('button', { name: /Экспорт/ }));
+    exportViaMenu();
     await waitFor(() => expect(writeText).toHaveBeenCalled());
     expect(writeText.mock.calls[0][0]).not.toContain('РЕЖИМЫ: СВЯЗИ');
     expect(writeText.mock.calls[0][0]).not.toContain('СХЕМЫ: УБЕЖДЕНИЯ');

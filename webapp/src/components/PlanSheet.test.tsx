@@ -261,10 +261,10 @@ describe('PlanSheet — сбой загрузки своих практик (с�
     await act(async () => {});
 
     expect(screen.getByRole('alert').textContent).toContain(
-      'Не удалось загрузить твои практики',
+      'Не удалось загрузить твой список «Что меня питает»',
     );
     // Кураторский список работает — деградация, не пустота.
-    expect(screen.getByText('Готовые варианты')).toBeTruthy();
+    expect(screen.getByText('Что питает')).toBeTruthy();
   });
 
   it('успешная загрузка — строки отказа нет', async () => {

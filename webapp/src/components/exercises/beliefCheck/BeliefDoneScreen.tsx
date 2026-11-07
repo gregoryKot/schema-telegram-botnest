@@ -1,4 +1,4 @@
-import { ExScreen, GlyphCheck } from '../ExScreen';
+import { ExScreen, ExDone, GlyphCheck } from '../ExScreen';
 import { fmtAgo } from '../../../utils/format';
 import type { api } from '../../../api';
 import { hueStyle } from '../../../lib/tone';
@@ -39,7 +39,7 @@ export function BeliefDoneScreen({
         <span className="it">Мысль проверена.</span>
       </>
     }
-    lede="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Сохранено в дневнике."
+    lede="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Проверка сохранена в разделе «Мой путь»."
     aside={
       <>
         <div className="ds-card ex2-note">
@@ -66,7 +66,7 @@ export function BeliefDoneScreen({
       </>
     }
   >
-    <div className="ds-card ds-card--ink ex2-done">
+    <ExDone>
       <div className="ex2-stamp">
         <GlyphCheck /> Сохранено ·{' '}
         {new Date().toLocaleDateString('ru-RU', {
@@ -100,7 +100,7 @@ export function BeliefDoneScreen({
           <div className="ex2-quote">«{reframe}»</div>
         </>
       )}
-    </div>
+    </ExDone>
     <div className="ex2-foot">
       <button className="ds-btn ds-btn--secondary" onClick={onRestart}>
         Проверить ещё одну

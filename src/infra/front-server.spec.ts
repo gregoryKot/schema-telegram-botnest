@@ -3,17 +3,31 @@
 // техработ (клиент не видит generic-503 Amvera); поднялось — прозрачно
 // проксирует. Запускаем реальным процессом (как в контейнере): это
 // dependency-free .mjs вне сборки Nest.
-import { spawn, ChildProcess } from 'child_process';
-import { createServer, Server } from 'http';
+import { execFileSync, spawn, ChildProcess } from 'child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { createServer, request, Server } from 'http';
 import { AddressInfo } from 'net';
+import { tmpdir } from 'os';
 import { join } from 'path';
+import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
+import { listenWithRetry, reservePort } from '../test-support/ephemeral-port';
 
 const FRONT = join(process.cwd(), 'deploy', 'front-server.mjs');
+const FRONT_STATIC = join(process.cwd(), 'deploy', 'front-static.mjs');
 
 // Поднимает front с заданным APP_PORT на эфемерном публичном порту (PORT=0),
-// вычитывает реальный порт из лога.
-function launchFront(appPort: number) {
-  const proc: ChildProcess = spawn('node', [FRONT], {
+// вычитывает реальный порт из лога. С distDir — через startFront() в
+// инлайн-модуле: так спек подкладывает свою сборку визитки вместо webapp/dist.
+function launchFront(appPort: number, distDir?: string) {
+  const args = distDir
+    ? [
+        '--input-type=module',
+        '-e',
+        `import { startFront } from ${JSON.stringify(FRONT)};` +
+          `startFront({ port: 0, appPort: ${appPort}, distDir: ${JSON.stringify(distDir)} });`,
+      ]
+    : [FRONT];
+  const proc: ChildProcess = spawn('node', args, {
     env: { ...process.env, PORT: '0', APP_PORT: String(appPort) },
   });
   const port = new Promise<number>((resolve, reject) => {
@@ -86,9 +100,10 @@ describe('front-server (публичный порт: техработы ⇄ пр
   }, 10000);
 
   it('старт: сперва техработы, апстрим поднялся позже → далее проброс (окно старта закрыто)', async () => {
-    // Фиксированный локальный порт под будущий апстрим (эфемерный не подойдёт —
-    // front надо стартовать до апстрима, зная его порт заранее).
-    const APP_PORT = 58123;
+    // Порт будущего апстрима нужен до его старта (front стартует первым).
+    // Константа (было 58123) лежала в эфемерном диапазоне и мигала: номер
+    // берётся у ядра, поздний бинд — с ретраями (test-support/ephemeral-port.ts).
+    const APP_PORT = await reservePort();
     const { proc, port } = launchFront(APP_PORT);
     alive.push(proc);
     const frontPort = await port;
@@ -98,14 +113,149 @@ describe('front-server (публичный порт: техработы ⇄ пр
     expect(await before.text()).toContain('технические работы');
 
     // Приложение «поднялось».
-    const upstream = createServer((_req, res) => res.end('APP-UP'));
-    servers.push(upstream);
-    await new Promise<void>((r) =>
-      upstream.listen(APP_PORT, '127.0.0.1', () => r()),
+    const upstream = await listenWithRetry(
+      () => createServer((_req, res) => res.end('APP-UP')),
+      APP_PORT,
     );
+    servers.push(upstream);
 
     // Новое соединение уже проксируется на приложение.
     const after = await fetch(`http://127.0.0.1:${frontPort}/`);
     expect(await after.text()).toBe('APP-UP');
   }, 10000);
+
+  describe('статика в окне старта (файлы сборки — всем, страницы — визитке)', () => {
+    let root: string;
+    let dist: string;
+    beforeAll(() => {
+      root = mkdtempSync(join(tmpdir(), 'front-static-'));
+      dist = join(root, 'dist');
+      mkdirSync(join(dist, 'assets'), { recursive: true });
+      writeFileSync(join(dist, 'index.html'), '<!doctype html>VISITKA-INDEX');
+      writeFileSync(
+        join(dist, 'assets', 'index-AbCdEf12.js'),
+        'console.log(1)',
+      );
+      writeFileSync(join(dist, 'robots.txt'), 'PRODUCT-ROBOTS');
+      writeFileSync(join(root, 'secret.txt'), 'SECRET');
+    });
+    afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+    type Hit = { status: number; type: string; cache: string; body: string };
+    // fetch не даёт подменить Host — сырой http.request.
+    function hit(port: number, path: string, host: string, method = 'GET') {
+      return new Promise<Hit>((resolve, reject) => {
+        const req = request(
+          { port, host: '127.0.0.1', path, method, headers: { Host: host } },
+          (res) => {
+            let body = '';
+            res.on('data', (c: Buffer) => (body += c.toString()));
+            res.on('end', () =>
+              resolve({
+                status: res.statusCode ?? 0,
+                type: String(res.headers['content-type']),
+                cache: String(res.headers['cache-control']),
+                body,
+              }),
+            );
+          },
+        );
+        req.on('error', reject);
+        req.end();
+      });
+    }
+
+    it('kotlarewski.gr: страницы — index.html, файлы сборки — с диска', async () => {
+      const { proc, port } = launchFront(59998, dist);
+      alive.push(proc);
+      const p = await port;
+
+      for (const path of ['/', '/book', '/articles/some-slug?utm=ad']) {
+        const res = await hit(p, path, 'kotlarewski.gr');
+        expect(res.status).toBe(200);
+        expect(res.type).toContain('text/html');
+        expect(res.body).toContain('VISITKA-INDEX');
+      }
+      const js = await hit(
+        p,
+        '/assets/index-AbCdEf12.js',
+        'kotlarewski.gr:443',
+      );
+      expect(js.type).toContain('javascript');
+      expect(js.body).toBe('console.log(1)');
+      expect((await hit(p, '/nope.png', 'kotlarewski.gr')).status).toBe(404);
+      // Выход из dist по закодированному «..» не читает соседний файл.
+      const escape = await hit(p, '/..%2fsecret.txt', 'kotlarewski.gr');
+      expect(escape.body).not.toContain('SECRET');
+    }, 10000);
+
+    it('продукт, API, /app, /health, robots и запись — техработы даже на визитке', async () => {
+      const { proc, port } = launchFront(59997, dist);
+      alive.push(proc);
+      const p = await port;
+
+      const cases: [string, string, string?][] = [
+        ['/', 'schemehappens.ru'],
+        ['/book', 'schemehappens.ru'],
+        ['/api/booking/options', 'kotlarewski.gr'],
+        ['/app', 'kotlarewski.gr'],
+        ['/health', 'kotlarewski.gr'],
+        ['/robots.txt', 'kotlarewski.gr'],
+        ['/', 'kotlarewski.gr', 'POST'],
+      ];
+      for (const [path, host, method] of cases) {
+        const res = await hit(p, path, host, method);
+        expect(res.status).toBe(200);
+        expect(res.body).toContain('технические работы');
+        expect(res.body).not.toContain('VISITKA-INDEX');
+      }
+    }, 10000);
+
+    // Инцидент 2026-11-04: HTML пришёл до окна выкладки, а его CSS/JS — сюда,
+    // пока Nest этого контейнера стартует или погашен. Файл сборки
+    // получает файл или 404, не HTML техработ: с nosniff браузер молча
+    // выбросил бы стиль, и страница открылась бы без стилей.
+    it('продукт: файл сборки — с диска или 404, страницы и API — техработы', async () => {
+      const { proc, port } = launchFront(59995, dist);
+      alive.push(proc);
+      const p = await port;
+      const host = 'schemehappens.ru';
+
+      const js = await hit(p, '/assets/index-AbCdEf12.js', host);
+      expect(js.status).toBe(200);
+      expect(js.type).toContain('javascript');
+      expect(js.body).toBe('console.log(1)');
+      // Чужой хеш — в этой сборке файла нет: 404, который не закэшируется.
+      const miss = await hit(p, '/assets/missing-AbCdEf12.css', host);
+      expect(miss.status).toBe(404);
+      expect(miss.cache).toBe('no-store');
+      expect(miss.body).not.toContain('технические работы');
+      // Контроль: страницам продукта, его .html и API нужен бэкенд.
+      const pages = ['/robots.txt', '/health', '/api/x', '/', '/donate'];
+      for (const path of [...pages, '/index.html']) {
+        const res = await hit(p, path, host);
+        expect(res.status).toBe(200);
+        expect(res.body).toContain('технические работы');
+      }
+    }, 10000);
+
+    it('сборки визитки нет → и на её хосте техработы, а не пустой ответ', async () => {
+      const { proc, port } = launchFront(59996, join(root, 'missing'));
+      alive.push(proc);
+      const res = await hit(await port, '/', 'kotlarewski.gr');
+      expect(res.body).toContain('технические работы');
+    }, 10000);
+
+    it('хосты визитки во front совпадают с PRACTICE_ALIAS_HOSTS (правило №4)', () => {
+      const out = execFileSync('node', [
+        '--input-type=module',
+        '-e',
+        `import { VISITKA_HOSTS } from ${JSON.stringify(FRONT_STATIC)};` +
+          'console.log(JSON.stringify([...VISITKA_HOSTS]));',
+      ]).toString();
+      expect((JSON.parse(out) as string[]).sort()).toEqual(
+        [...PRACTICE_ALIAS_HOSTS].sort(),
+      );
+    });
+  });
 });

@@ -1,20 +1,17 @@
 import type { TherapyClientSummary } from '../../api';
-import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
-import { calcTherapyDuration, isVirtualClient, nextSessionLabel } from './clientSheetHelpers';
+import { clientHeaderMeta, clientNextSession } from './clientHeaderMeta';
+import { isVirtualClient } from './clientSheetHelpers';
+import { NextSessionLine } from './NextSessionLine';
 
-/** Бейджи шапки: статус, срок терапии (только из данных), ближайшая сессия. */
+/** Шапка клиента: «офлайн» — плашка, остальное — строка текста; ближайшая встреча — «Встреча» + дата, как в списке клиентов. */
 export function ClientHeaderBadges({ client }: { client: TherapyClientSummary }) {
-  const duration = client.therapyStartDate ? calcTherapyDuration(client.therapyStartDate) : '';
-  const since = [duration && `в работе ${duration}`, client.streak > 0 && `${client.streak} дн. подряд`].filter(Boolean).join(' · ');
-  const next = client.nextSession ? nextSessionLabel(client.nextSession) : '';
+  const meta = clientHeaderMeta(client);
+  const next = clientNextSession(client);
   return (
     <div className="tk-badges">
-      {isVirtualClient(client)
-        ? <span className="ds-badge">оффлайн</span>
-        : <span className="ds-badge ds-badge--ok">в боте</span>}
-      {client.lastActiveDate === todayCalendarDate() && <span className="ds-badge">активность сегодня</span>}
-      {since && <span className="ds-badge ds-badge--line">{since}</span>}
-      {next && <span className="ds-badge ds-badge--accent">Сессия · {next}</span>}
+      {isVirtualClient(client) && <span className="ds-badge">офлайн</span>}
+      {meta && <span className="tk-meta">{meta}</span>}
+      {next && <NextSessionLine label={next} />}
     </div>
   );
 }

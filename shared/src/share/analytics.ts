@@ -92,7 +92,7 @@ export function modeEntrySavedMeta(
 }
 
 // 2026-08-31: needs_what/needs_why/needs_result/diaries_why/today_screen/author
-// сняты с визарда (schema-miniapp/src/components/disclaimer/steps.ts) — визард
+// сняты с визарда — визард
 // дублировал онбординг трекера и пустые состояния фичей, контент переехал
 // туда же. Тип НЕ сокращён — старые события с этими шагами лежат в БД, и
 // воронка /stats за прошлый период должна по-прежнему читаться (парный список
@@ -134,16 +134,49 @@ export type AccountLinkFailReason = 'expired' | 'error';
 export const PROFILE_PATTERN_OPEN_EVENT = 'profile_pattern_open';
 export type ProfilePatternKind = 'schema' | 'mode';
 
-// Графическая концептуализация в кабинете терапевта (оба фронтенда): открыл схему случая, заполнил
-// связи режима (схемы, потребности, истоки) или записал убеждение / опыт схемы. Без меты (правило №7:
-// текста и id клиента нет). Шлёт их литералами useConceptGraphTracking (так их видит трипваер
-// analytics-sync), константы сверяет тест хука. Allow-list — src/analytics/concept-events.constants.ts.
+// Графическая концептуализация в кабинете терапевта. Без меты (правило №7); имя в api.trackEvent — строковым литералом,
+// так их видит трипваер analytics-sync. Смысл и место каждого — allow-list src/analytics/concept-events.constants.ts.
+// Первые три (схема случая, связи режима, тексты схемы) шлёт useConceptGraphTracking, константы сверяет тест хука.
 export const CONCEPT_GRAPH_OPEN_EVENT = 'concept_graph_open';
 export const CONCEPT_MODE_LINKED_EVENT = 'concept_mode_linked';
 export const CONCEPT_SCHEMA_LINKED_EVENT = 'concept_schema_linked';
-// Только сайт: перенос на холст (шлёт useOpenConceptCanvas) и разворот на весь экран (ClientConceptGraph, литералом).
+// Только сайт: карта из концептуализации (useOpenConceptCanvas, выбор типа «Концептуализация») и разворот на весь экран.
 export const CONCEPT_CANVAS_OPEN_EVENT = 'concept_canvas_open';
 export const CONCEPT_GRAPH_FULLSCREEN_EVENT = 'concept_graph_fullscreen';
+// «Повторить» после ошибки сохранения (SaveStatusLine): вкладка сайта, холст, кнопка мини-аппа. «Главное» — ConceptBriefButton.
+export const CONCEPT_SAVE_RETRY_EVENT = 'concept_save_retry';
+export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
+// Строка связи над холстом «Графических карт» (#963): «Добавить на карту» (поля → холст) и запись с холста в поля.
+export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
+export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
+// Подсказки терапевту (#995, guide/useConceptGuide): лист режима, лист схемы, лист техники, «Дать заданием»,
+// «Делали сегодня» в листе техники (только постановка отметки, не снятие). Только сайт.
+export const CONCEPT_GUIDE_MODE_OPEN_EVENT = 'concept_guide_mode_open';
+export const CONCEPT_GUIDE_SCHEMA_OPEN_EVENT = 'concept_guide_schema_open';
+export const CONCEPT_GUIDE_TECHNIQUE_OPEN_EVENT =
+  'concept_guide_technique_open';
+export const CONCEPT_GUIDE_ASSIGN_EVENT = 'concept_guide_assign';
+export const CONCEPT_GUIDE_MARK_DONE_EVENT = 'concept_guide_mark_done';
+// Схема случая клиенту: терапевт включил/выключил «Показать клиенту» (meta { on }), клиент открыл её в «Мой терапевт».
+export const CONCEPT_SHARED_EVENT = 'concept_shared';
+export const CLIENT_CONCEPT_OPENED_EVENT = 'client_concept_opened';
+
+// «Показ экрана» в кабинете терапевта: сайдбар прячет список клиентов на время демонстрации экрана. Только сайт, без меты
+// (правило №7); шлётся при ВКЛЮЧЕНИИ, выключение не шлётся. Allow-list — src/analytics/cabinet-events.constants.ts.
+export const CABINET_SCREEN_SHARE_ON_EVENT = 'cabinet_screen_share_on';
+// «Справочник» терапевта (#995, /cabinet/guide): открыл раздел; оттуда — лист режима, схемы, техники, «Для терапевта».
+export const CABINET_GUIDE_OPEN_EVENT = 'cabinet_guide_open';
+export const CABINET_GUIDE_SHEET_EVENTS = {
+  mode: 'cabinet_guide_mode_open',
+  schema: 'cabinet_guide_schema_open',
+  technique: 'cabinet_guide_technique_open',
+  note: 'cabinet_guide_note_open',
+} as const;
+
+// Запись клиента из приложения (#546): открыл лист «Записаться на сессию» из «Мой терапевт», без меты; шлётся
+// литералом из ClientBookingSheet (его видит analytics-sync). Созданную бронь (`client_booking_created`) пишет
+// сервер. Allow-list — src/analytics/client-booking-events.constants.ts.
+export const CLIENT_BOOKING_OPENED_EVENT = 'client_booking_opened';
 
 // ── Разбор случая («Что это было») ─────────────────────────────────────────
 // Новая точка входа: человек за три минуты разбирает один случай и получает
@@ -156,15 +189,5 @@ export const CONCEPT_GRAPH_FULLSCREEN_EVENT = 'concept_graph_fullscreen';
 // Свободного текста в мете нет по построению: сцена, имя режима и «своё…»
 // остаются на клиенте и в зашифрованных полях карточки (правило №7).
 
-/** Вердикт критерия Jacob: meta.verdict у case_criterion. */
-export type CaseVerdictMeta = 'mode' | 'ordinary' | 'borderline';
-
 /** Откуда взялась сцена: meta.source у case_scene. */
 export type CaseSceneSource = 'own' | 'frame';
-
-/**
- * Откуда взялось имя режима: meta.source у mode_renamed. Доля `own` и `chip`
- * против `skipped` показывает, присваивает ли человек часть себе, — ради
- * этого шаг и существует.
- */
-export type ModeRenameSource = 'chip' | 'own' | 'skipped';

@@ -3,7 +3,7 @@
 // делал защищённым весь файл, и новый анонимный `@Post` рядом не краснел
 // ни в одном трипваере. Ключ — `файл:метод`, значение — почему анонимность
 // здесь законна. Реестр только НАЗЫВАЕТ уже существующие точки входа
-// (вход, OAuth-колбэки, восстановление, refresh/logout, poll тикета); новой
+// (вход, OAuth-колбэки, refresh/logout, poll тикета); новой
 // публичной поверхности он не создаёт. Список может только сокращаться,
 // добавлять — только с ревью безопасности (route-auth.invariants.spec.ts).
 export const ANONYMOUS_BY_DESIGN: Record<string, string> = {
@@ -19,15 +19,6 @@ export const ANONYMOUS_BY_DESIGN: Record<string, string> = {
   'auth/auth-account.controller.ts:telegramWebApp':
     'вход из мини-аппа Telegram: подписанный initData проверяется ' +
     'verifyTelegramWebAppData, CSRF-заголовок',
-  'auth/auth-2fa.controller.ts:recoveryEmailVerify':
-    'ссылка подтверждения резервного email из письма: одноразовый токен ' +
-    'гасится сервисом, ответ — только редирект с флагом результата',
-  'auth/auth-2fa.controller.ts:recoveryRequest':
-    'запрос ссылки восстановления доступа: человек вход потерял; ответ ' +
-    'одинаков для любого адреса, троттлинг по IP (3/мин, 10/сутки)',
-  'auth/auth-2fa.controller.ts:recoveryConfirm':
-    'погашение токена восстановления: одноразовый токен проверяет сервис, ' +
-    'CSRF-заголовок, троттлинг по IP',
   'auth/auth-2fa.controller.ts:totpChallenge':
     'второй шаг входа: подписанный challengeToken + код TOTP, ' +
     'CSRF-заголовок, троттлинг по IP; сессии до этого шага ещё нет',

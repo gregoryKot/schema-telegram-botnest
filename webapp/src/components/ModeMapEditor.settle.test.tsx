@@ -13,7 +13,7 @@ import type { FlowNode } from './modeMapFlow';
 
 const updateModeMap = vi.fn();
 vi.mock('../api', () => ({
-  api: { updateModeMap: (...a: unknown[]) => updateModeMap(...a) },
+  api: { updateModeMap: (...a: unknown[]) => updateModeMap(...a), getConceptualization: () => Promise.resolve(null) },
   reportClientError: vi.fn(),
 }));
 vi.mock('./ModeMapPalette', () => ({ ModeMapPalette: () => null }));

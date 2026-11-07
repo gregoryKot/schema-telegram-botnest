@@ -153,16 +153,19 @@ describe('PricingService.setPrice', () => {
     },
   );
 
-  it('знакомство: 0 законно (бесплатность — свойство типа), отрицательное и сверх потолка — 400', async () => {
+  // Бесплатность знакомства — свойство типа (isFree в booking.service.ts), цена
+  // в BookingSetting на него не влияет, а форма «Цены» её скрывает: API отказывает.
+  it('знакомство (INTRO_15): любая цена, включая 0, — 400 INTRO_IS_FREE, строка не пишется', async () => {
     const { service, store } = makeService();
-    await service.setPrice(SessionType.INTRO_15, 0);
-    expect(store.get('price:INTRO_15')).toBe('0');
-    await expect(service.setPrice(SessionType.INTRO_15, -1)).rejects.toThrow(
-      'INVALID_PRICE',
-    );
-    await expect(
-      service.setPrice(SessionType.INTRO_15, PRICE_MAX + 1),
-    ).rejects.toThrow('INVALID_PRICE');
+    for (const amount of [0, 1, -1, PRICE_MAX + 1]) {
+      await expect(
+        service.setPrice(SessionType.INTRO_15, amount),
+      ).rejects.toThrow('INTRO_IS_FREE');
+      await expect(
+        service.setPrice(SessionType.INTRO_15, amount, 'EUR'),
+      ).rejects.toThrow('INTRO_IS_FREE');
+    }
+    expect([...store.keys()].filter((k) => k.includes('INTRO_15'))).toEqual([]);
   });
 
   it('upsert — повторный вызов обновляет существующую строку', async () => {

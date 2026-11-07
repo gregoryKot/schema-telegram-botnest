@@ -1,6 +1,7 @@
-// Единая версия (docs/ONE_FRONTEND_PLAN.md, этап 2): мини-апп `/app/*`
-// уходит в кабинет сайта `/today`. Включается env-флагом UNIFIED_FRONTEND на
-// этапе 5 — решение владельца; пока флаг выключен, middleware ничего не делает.
+// Единая версия (docs/archive/ONE_FRONTEND_PLAN.md, этапы 2 и 5): мини-апп `/app/*`
+// уходит в кабинет сайта `/today`. Переход вечный и без флага: адрес `/app/`
+// вшит в кнопки старых сообщений бота, в ярлыки, в адрес приложения в
+// BotFather и в кабинет партнёра MAX.
 import { MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { SW_STUB_SOURCE } from './unified-frontend.sw-stub';
@@ -8,14 +9,6 @@ import { SW_STUB_SOURCE } from './unified-frontend.sw-stub';
 const APP_ROOT = '/app';
 const SW_PATH = '/app/sw.js';
 const TARGET = '/today';
-
-/** Единственное место чтения флага; env подменяется в тесте. */
-export function isUnifiedFrontendOn(
-  raw: string | undefined = process.env.UNIFIED_FRONTEND,
-): boolean {
-  const v = raw?.trim().toLowerCase();
-  return v === '1' || v === 'true';
-}
 
 /** Путь целиком: `/app` или `/app/...` (не `/apple-touch-icon.png`). */
 function isAppPath(path: string): boolean {
@@ -32,11 +25,7 @@ export function unifiedFrontendMiddleware(
   res: Response,
   next: () => void,
 ): void {
-  if (
-    (req.method !== 'GET' && req.method !== 'HEAD') ||
-    !isAppPath(req.path) ||
-    !isUnifiedFrontendOn()
-  ) {
+  if ((req.method !== 'GET' && req.method !== 'HEAD') || !isAppPath(req.path)) {
     next();
     return;
   }
@@ -50,7 +39,7 @@ export function unifiedFrontendMiddleware(
       .send(SW_STUB_SOURCE);
     return;
   }
-  // 302, не 301: решение обратимо, браузеры не должны кэшировать переход.
+  // 302, не 301: браузеры не кэшируют переход, его можно будет перенацелить.
   // Query (?startapp=, ?section=, ?from= и любые другие) переносится целиком.
   // Фрагмент #tgWebAppData сервер не видит: при редиректе без фрагмента в
   // Location браузер сохраняет исходный фрагмент сам.

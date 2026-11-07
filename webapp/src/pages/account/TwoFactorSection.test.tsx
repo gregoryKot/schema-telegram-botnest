@@ -42,7 +42,7 @@ describe('TwoFactorSection — включена (реальные данные)'
   it('показывает "Включена" и реальный остаток recovery-кодов из props, не выдуманный', () => {
     renderSection({ enabled: true, recoveryCodesLeft: 4 });
     expect(screen.getByText(/Включена/)).toBeTruthy();
-    expect(screen.getByText(/Recovery-кодов осталось: 4/)).toBeTruthy();
+    expect(screen.getByText(/Резервных кодов осталось: 4/)).toBeTruthy();
   });
 });
 
@@ -53,7 +53,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
 
     fireEvent.click(screen.getByRole('switch'));
 
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     expect(fetchMock.mock.calls[0][0]).toContain('/api/auth/2fa/setup');
   });
 
@@ -64,7 +64,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
     fireEvent.click(screen.getByRole('switch'));
 
     await screen.findByText('Сервис недоступен');
-    expect(screen.queryByAltText('TOTP QR')).toBeNull();
+    expect(screen.queryByAltText('QR-код для приложения-аутентификатора')).toBeNull();
   });
 
   it('подтверждение верным кодом вызывает /api/auth/2fa/enable и показывает recovery-коды', async () => {
@@ -74,7 +74,7 @@ describe('TwoFactorSection — настройка (setup)', () => {
     const { onChanged } = renderSection();
 
     fireEvent.click(screen.getByRole('switch'));
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '111111' } });
     fireEvent.click(screen.getByText('Подтвердить'));
 
@@ -93,12 +93,12 @@ describe('TwoFactorSection — настройка (setup)', () => {
     renderSection();
 
     fireEvent.click(screen.getByRole('switch'));
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '000000' } });
     fireEvent.click(screen.getByText('Подтвердить'));
 
     await screen.findByText('Неверный код');
-    expect(screen.queryByText(/Recovery-коды/)).toBeNull();
+    expect(screen.queryByText(/Резервные коды/)).toBeNull();
   });
 });
 
@@ -151,8 +151,42 @@ describe('TwoFactorSection — отключение', () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { qrDataUrl: 'data:image/png;base64,AAA', otpauthUrl: 'otpauth://x' }));
     renderSection();
     fireEvent.click(screen.getByRole('switch'));
-    await screen.findByAltText('TOTP QR');
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
     fireEvent.click(screen.getByRole('switch'));
-    expect(screen.queryByAltText('TOTP QR')).toBeNull();
+    expect(screen.queryByAltText('QR-код для приложения-аутентификатора')).toBeNull();
+  });
+});
+
+// Аудит 2026-10, «сырой текст на экранах аккаунта»: ответ клали на экран как
+// есть — «ThrottlerException…», «Invalid code», «TypeError: Failed to fetch»,
+// а лимит и авария выглядели как «Неверный код». Ответы — настоящие Response.
+describe('TwoFactorSection — человеческий текст вместо сырого', () => {
+  function submitDisable() {
+    renderSection({ enabled: true, recoveryCodesLeft: 5 });
+    fireEvent.click(screen.getByRole('switch'));
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отключить' }));
+  }
+
+  it('401 «Invalid code» (как отдаёт totp.service) — «Неверный код», без английского', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ statusCode: 401, message: 'Invalid code' }), { status: 401 }));
+    submitDisable();
+    await screen.findByText('Неверный код');
+    expect(screen.queryByText(/Invalid/)).toBeNull();
+  });
+
+  it('429 голой строкой — текст про лимит, не «Неверный код» и не «ThrottlerException»', async () => {
+    fetchMock.mockResolvedValue(new Response('"ThrottlerException: Too Many Requests"', { status: 429 }));
+    submitDisable();
+    await screen.findByText('Слишком много попыток подряд. Повторить можно чуть позже');
+    expect(screen.queryByText(/Неверный код|Throttler/)).toBeNull();
+  });
+
+  it('обрыв сети при старте настройки — «Нет связи с сервером», не «TypeError: Failed to fetch»', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { container } = renderSection();
+    fireEvent.click(screen.getByRole('switch'));
+    await screen.findByText('Нет связи с сервером');
+    expect(container.textContent).not.toMatch(/TypeError|Failed to fetch/);
   });
 });

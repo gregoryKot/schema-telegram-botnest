@@ -22,7 +22,8 @@
 #                           этот бакет (чтение нужно чистке и скачиванию при
 #                           аварии, scripts/backup-fetch-latest.sh)
 # Необязательные:
-#   BACKUP_RETENTION_DAYS   сколько дней хранить (по умолчанию 90, минимум 7)
+#   BACKUP_RETENTION_DAYS   сколько дней хранить (по умолчанию и не больше 30,
+#                           минимум 7)
 #   BACKUP_S3_REGION        регион подписи (по умолчанию auto — так требует R2)
 #   SKIP_UPLOAD=1           режим репетиции restore (nightly.yml, джоба
 #                           backup-restore, и src/infra/backup-restore.spec.ts):
@@ -38,10 +39,12 @@
 # тоже — соединение идёт через PG*-переменные (deploy/pg-url-env.cjs).
 # Незашифрованный дамп на диск не пишется: pg_dump | gzip | openssl.
 #
-# Хранение: после успешной загрузки удаляются файлы schemehappens-* старше
-# BACKUP_RETENTION_DAYS (по дате в имени) — право на удаление данных доезжает
-# до бэкапов, а не копится вечно. Версионирования у бакета R2 нет: удалённый
-# файл удалён целиком.
+# Хранение: после успешной загрузки удаляются файлы schemehappens-* возрастом
+# BACKUP_RETENTION_DAYS дней и старше (по дате в имени) — право на удаление
+# данных доезжает до бэкапов, а не копится вечно. Потолок 30 дней — обещание
+# политики конфиденциальности (глава 6): данные, удалённые из базы, исчезают из
+# копий за 30 дней. Версионирования у бакета R2 нет: удалённый файл удалён
+# целиком.
 #
 # Вывод: последняя строка stdout — `[backup] ok <файл>`; при сбое stderr
 # содержит `[backup] FAILED <причина>` и код выхода ≠ 0.
@@ -77,9 +80,15 @@ if [ "$SKIP_UPLOAD" != "1" ]; then
   need BACKUP_S3_ACCESS_KEY_ID
   need BACKUP_S3_SECRET_ACCESS_KEY
 fi
-RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-90}"
+RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 if ! { [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]] && [ "$RETENTION_DAYS" -ge 7 ]; }; then
   fail "BACKUP_RETENTION_DAYS должно быть целым числом не меньше 7"
+fi
+# Больше потолка — не отказ (бэкап важнее), а 30 дней и WARN; checkEnv на
+# старте тоже назовёт неверный формат.
+if [ "$RETENTION_DAYS" -gt 30 ]; then
+  echo "[backup] WARN: BACKUP_RETENTION_DAYS=$RETENTION_DAYS больше 30 — храню 30 (обещание политики конфиденциальности)" >&2
+  RETENTION_DAYS=30
 fi
 
 DATE=$(date -u +%Y-%m-%d)
@@ -135,7 +144,8 @@ s3_upload() { # s3_upload <файл> <ключ>
   [ "$etag" = "$md5" ] || fail "S3: контрольная сумма загруженного $key не совпала (ETag ${etag:-нет})"
 }
 
-# Удаляет файлы бэкапов старше срока хранения (по дате в имени).
+# Удаляет файлы бэкапов возрастом от срока хранения (по дате в имени): при
+# сроке 30 файл живёт не дольше 30 дней.
 # Явные `|| return 1` вместо set -e: внутри функции под `||` errexit молчит.
 s3_prune() {
   local cutoff key deleted=0 list="$TMP_DIR/list"
@@ -144,11 +154,11 @@ s3_prune() {
   s3_list "$PREFIX" "$list" || { echo "$S3_ERR" >&2; return 1; }
   while IFS=$'\t' read -r key _; do
     [[ "$key" =~ ^${PREFIX}([0-9]{4}-[0-9]{2}-[0-9]{2})\.sql\.gz\.enc(\.sha256)?$ ]] || continue
-    [[ "${BASH_REMATCH[1]}" < "$cutoff" ]] || continue
+    [[ ! "${BASH_REMATCH[1]}" > "$cutoff" ]] || continue
     s3_curl DELETE "/$key" "$EMPTY_SHA256" > /dev/null || return 1
     deleted=$((deleted + 1))
   done < "$list"
-  echo "[backup] хранение: удалено файлов старше $RETENTION_DAYS дн. (до $cutoff): $deleted"
+  echo "[backup] хранение: удалено файлов возрастом от $RETENTION_DAYS дн. (по $cutoff включительно): $deleted"
 }
 
 echo "[backup] загрузка в хранилище (бакет $BACKUP_S3_BUCKET)..."

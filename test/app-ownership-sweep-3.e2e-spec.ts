@@ -21,7 +21,9 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
   const secret = () => process.env.JWT_SECRET as string;
   const USER_A = 6_000_000_000_000_001n;
   const USER_B = 6_000_000_000_000_002n;
-  const ALL_USER_IDS = [USER_A, USER_B];
+  // Свой пользователь для поясов: A и B уже правят настройки выше.
+  const USER_TZ = 6_000_000_000_000_003n;
+  const ALL_USER_IDS = [USER_A, USER_B, USER_TZ];
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
@@ -158,28 +160,52 @@ describe('e2e smoke: ownership sweep 3 (tracker aggregates + settings)', () => {
   // видит и не может перезаписать настройку A через свой собственный вызов.
   it('/api/settings uiPrefs: сохранил → прочитал; B не видит и не пишет поверх настройки A', async () => {
     const updated = await a.post('/api/settings', {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: '["tracker"]' },
     });
     expect(updated.status).toBeLessThan(300);
     const got = await a.get('/api/settings');
     expect(got.status).toBe(200);
     expect(got.body.uiPrefs).toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
 
     const other = await b.get('/api/settings');
     expect(other.status).toBe(200);
     expect(other.body.uiPrefs).not.toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
 
-    await b.post('/api/settings', { uiPrefs: { today_streak_hidden: '0' } });
+    await b.post('/api/settings', { uiPrefs: { why_seen_v1: '0' } });
     const aAfterB = await a.get('/api/settings');
     expect(aAfterB.body.uiPrefs).toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
+  });
+
+  // Пояс устройства (QA 2026-11-03, src/bot/device-timezone.ts): /api/init
+  // пишет его в notifyTimezone одним условным UPDATE, пока
+  // notifyTimezoneChosen=false; выбор в настройках ставит признак. Юнит
+  // проверяет это на моке Prisma — здесь сохранил → нашёл через HTTP (DTO,
+  // ValidationPipe), а в джобе migrations — на живом Postgres: дефолт колонки
+  // из миграции и фильтр `NOT` исполняет база, а не мок.
+  it('пояс устройства: init → настройки отдают его; выбрал пояс сам → init его не меняет', async () => {
+    const tz = agentAs(USER_TZ);
+    const init = () => tz.post('/api/init', { timezone: 'Asia/Vladivostok' });
+
+    expect((await init()).status).toBeLessThan(300);
+    const adopted = await tz.get('/api/settings');
+    expect(adopted.status).toBe(200);
+    expect(adopted.body.notifyTimezone).toBe('Asia/Vladivostok');
+
+    const chosen = await tz.post('/api/settings', {
+      notifyTimezone: 'Europe/Moscow',
+    });
+    expect(chosen.status).toBeLessThan(300);
+    expect((await init()).status).toBeLessThan(300);
+    const kept = await tz.get('/api/settings');
+    expect(kept.body.notifyTimezone).toBe('Europe/Moscow');
   });
 });

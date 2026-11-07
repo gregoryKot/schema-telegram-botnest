@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../api';
 import { handleLoadFailure, reportHeldTimeout, type BookingLoadError } from './bookingLoadError';
 import { paidPhase, POLL_INTERVAL_MS, POLL_LIMIT_MS } from './paidPageModel';
+import { useRefreshFailure } from './useRefreshFailure';
 
 export type PublicBooking = Awaited<ReturnType<typeof api.getBookingByToken>>;
 
 /**
  * Бронь по токену для экрана возврата с оплаты. Пока бронь HELD, переспрашивает
  * сервер каждые POLL_INTERVAL_MS; через POLL_LIMIT_MS ставит `timedOut`. Отказ
- * запроса не стирает уже полученную бронь; пока брони нет, отдаётся `loadError`.
+ * запроса не стирает полученную бронь: до неё — `loadError`, после — `refreshFailed`.
  */
 export function useBookingByToken(token: string | null) {
   const [booking, setBooking] = useState<PublicBooking | null>(null);
@@ -19,6 +20,7 @@ export function useBookingByToken(token: string | null) {
   const [tick, setTick] = useState(0);
   const lastBooking = useRef<PublicBooking | null>(null);
   const errorReported = useRef(false);
+  const { refreshFailed, fail: refreshFail, clear: refreshClear } = useRefreshFailure();
 
   useEffect(() => {
     if (!token) return;
@@ -33,11 +35,9 @@ export function useBookingByToken(token: string | null) {
         .then((b) => {
           if (!alive) return;
           pending = paidPhase(b.status) === 'pending';
-          lastBooking.current = b;
-          setBooking(b);
-          setLoadError(null);
+          lastBooking.current = b; setBooking(b); setLoadError(null); refreshClear();
         })
-        .catch((err: unknown) => { if (alive && !lastBooking.current) setLoadError(handleLoadFailure(err, errorReported)); })
+        .catch((err: unknown) => { if (alive) { if (lastBooking.current) refreshFail(err); else setLoadError(handleLoadFailure(err, errorReported)); } })
         .finally(() => {
           if (!alive) return;
           setLoaded(true);
@@ -48,10 +48,10 @@ export function useBookingByToken(token: string | null) {
     };
     load();
     return () => { alive = false; clearTimeout(timer); };
-  }, [token, tick]);
+  }, [token, tick, refreshFail, refreshClear]);
 
   /** «Обновить»/«проверить ещё раз»: новый цикл; без брони — скелетон, пока идёт повторный запрос. */
-  const reload = useCallback(() => { setTimedOut(false); setLoadError(null); if (!lastBooking.current) setLoaded(false); setTick((t) => t + 1); }, []);
+  const reload = useCallback(() => { setTimedOut(false); setLoadError(null); refreshClear(); if (!lastBooking.current) setLoaded(false); setTick((t) => t + 1); }, [refreshClear]);
 
-  return { booking, loaded, timedOut, loadError, reload };
+  return { booking, loaded, timedOut, loadError, refreshFailed, reload };
 }

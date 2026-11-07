@@ -133,7 +133,7 @@ describe('компоненты с секретами: DOM под ym-hide-content
   it('BookingPaidPage: после загрузки по токену управление записью — под скрытым узлом', async () => {
     window.history.pushState({}, '', `/booking/manage?token=${TOKEN}`);
     vi.mocked(api.getBookingByToken).mockResolvedValue({
-      status: 'CONFIRMED', type: 'SESSION_50', startsAt, endsAt: startsAt, durationMin: 50,
+      status: 'CONFIRMED', paid: true, type: 'SESSION_50', startsAt, endsAt: startsAt, durationMin: 50,
     } as never);
     const { container } = render(<BookingPaidPage />);
     await screen.findByText('Оплата прошла');
@@ -157,6 +157,10 @@ const REGISTRY: Record<string, string> = {
   'api.types.ts': 'типы, DOM нет',
   'pages/admin/BookingsManager.tsx': 'передаёт meetingUrl в BookingMeetingLink; сам ссылку не рисует, /admin Вебвизор не пишет (metrika.test.ts)',
   'pages/admin/BookingMeetingLink.tsx': 'рендерит ссылку владельцу под ym-hide-content — тест выше',
+  // Запись из приложения (#546): кабинет под входом, Метрика там молчит (metrikaGate), но ссылки
+  // оплаты и управления (токен в manageUrl) всё равно под ym-hide-content — ClientBookingSheet.test.tsx.
+  'components/booking/ClientBookingSheet.tsx': 'рендерит оплату и управление записью под ym-hide-content — ClientBookingSheet.test.tsx',
+  'components/booking/clientBookingModel.ts': 'по наличию paymentUrl решает «к оплате или записано», DOM нет',
 };
 
 function sources(dir: string, acc: string[] = []): string[] {

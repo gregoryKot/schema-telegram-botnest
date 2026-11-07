@@ -33,6 +33,17 @@ const REPORT =
 const BASELINE =
   argValue('baseline') ?? join(ROOT, 'scripts', 'mutation-baseline.json');
 const update = process.argv.includes('--update');
+// --partial: PR-CI гоняет Stryker только по изменённым файлам золотой зоны
+// (scripts/mutation-changed-files.mjs), отчёт неполон. Пол сверяется только у
+// файлов, попавших в отчёт; файл бейслайна вне отчёта — не «пропал», а не
+// трогался. Полный режим (nightly) по-прежнему краснеет на пропавшем файле.
+const partial = process.argv.includes('--partial');
+if (partial && update) {
+  console.error(
+    '❌ --partial и --update несовместимы: бейслайн по неполному отчёту затёр бы полы остальных файлов.',
+  );
+  process.exit(2);
+}
 
 if (!existsSync(REPORT)) {
   console.error(
@@ -61,7 +72,9 @@ function scoreOf(mutants) {
 const report = JSON.parse(readFileSync(REPORT, 'utf8'));
 const files = report.files ?? {};
 if (Object.keys(files).length === 0) {
-  console.error('❌ отчёт пуст — Stryker не нашёл ни одного файла для мутаций.');
+  console.error(
+    '❌ отчёт пуст — Stryker не нашёл ни одного файла для мутаций.',
+  );
   process.exit(1);
 }
 
@@ -87,7 +100,8 @@ if (update) {
     `Бейслайн обновлён: mutation-score ${current.total}% ` +
       `(${total.detected}/${total.valid} мутантов обезврежено).`,
   );
-  for (const [f, pct] of Object.entries(perFile)) console.log(`   ${pct}%  ${f}`);
+  for (const [f, pct] of Object.entries(perFile))
+    console.log(`   ${pct}%  ${f}`);
   process.exit(0);
 }
 
@@ -111,9 +125,12 @@ const problems = [];
 const comparableMutants = Object.keys(base.files ?? {}).flatMap(
   (f) => mutantsByFile[f] ?? [],
 );
+// В частичном режиме общий пол не определён (в отчёте часть файлов), по
+// общему счёту не судим — только по файлам.
+const skipTotal = partial;
 const comparable = scoreOf(comparableMutants);
 const comparableTotal = Number(comparable.pct.toFixed(2));
-if (comparableTotal < base.total - TOLERANCE) {
+if (!skipTotal && comparableTotal < base.total - TOLERANCE) {
   problems.push(
     `общий счёт по файлам бейслайна: ${base.total}% → ${comparableTotal}% ` +
       `(допуск ${TOLERANCE} п.п. на недетерминизм таймаутов)`,
@@ -122,6 +139,7 @@ if (comparableTotal < base.total - TOLERANCE) {
 for (const [f, wasPct] of Object.entries(base.files ?? {})) {
   const nowPct = current.files[f];
   if (nowPct === undefined) {
+    if (partial) continue;
     problems.push(`файл пропал из прогона: ${f} (убрали из mutate в конфиге?)`);
   } else if (nowPct < wasPct - TOLERANCE) {
     problems.push(`${f}: ${wasPct}% → ${nowPct}%`);

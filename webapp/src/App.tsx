@@ -14,16 +14,15 @@ import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { LinkDevicePage } from './pages/LinkDevicePage';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
-import { RecoveryPage } from './pages/RecoveryPage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
+import { ScrollLock } from './hooks/ScrollLock';
+import { ScrollToTop } from './hooks/ScrollToTop';
 import { RouteErrorScreen } from './components/RouteErrorScreen';
 import { PracticeBrand } from './components/PracticeBrand';
 import { RequireAuth } from './components/RequireAuth';
 import { LandingPage } from './pages/LandingPage';
 import { ProductLandingPage } from './pages/ProductLandingPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { OfferPage } from './pages/OfferPage';
 import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
@@ -34,9 +33,10 @@ import { DonatePage } from './pages/DonatePage';
 import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
 const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
 const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ default: m.SubscribePage }))); // не в главном чанке: редкая страница по ссылке
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage }))); // юридические тексты — редкие страницы, ~20 КБ текста
+const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m.OfferPage })));
 
-// Apply saved theme before first render
-if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); // saved theme before first render
 
 // ── Token bridge (inside AuthProvider) ────────────────────────────────────────
 function TokenBridge() {
@@ -52,6 +52,8 @@ function Root() {
       <MetrikaTracker />
       <Outlet />
       <CookieBanner />
+      <ScrollLock />
+      <ScrollToTop />
     </AuthProvider>
   );
 }
@@ -78,8 +80,8 @@ const personalRoutes = [
       // что у /booking/paid: путь переименовывать нельзя, туда редиректит
       // Робокасса, а новая capability-ссылка ведёт на другой путь.
       { path: '/booking/manage', element: <BookingPaidRoute /> },
-      { path: '/privacy',        element: <PrivacyPage /> },
-      { path: '/offer',          element: <OfferPage /> },
+      { path: '/privacy',        element: <Suspense fallback={null}><PrivacyPage /></Suspense> },
+      { path: '/offer',          element: <Suspense fallback={null}><OfferPage /></Suspense> },
     ],
   },
   // Вне бренда визитки — осознанно:
@@ -103,6 +105,9 @@ const appRoutes = [
   { path: '/tests/:quizId',  element: <QuizPage /> },
   { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
   { path: '/donate',         element: <DonatePage /> },
+  // Юрстраницы — на обоих хостах (инцидент 2026-10-22); сверка: sitemap.middleware.spec.ts.
+  { path: '/privacy',        element: <PrivacyPage /> },
+  { path: '/offer',          element: <OfferPage /> },
   // Admin panel is gated by its own key (not the app login), so it's reachable
   // on the app domain too — otherwise /admin here falls through to the login/app.
   { path: '/admin',          element: <Suspense fallback={null}><AdminPage /></Suspense> },
@@ -113,10 +118,9 @@ const appRoutes = [
   { path: '/auth/confirm',   element: <AuthConfirmPage /> },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
-  { path: '/auth/recovery',         element: <RecoveryPage /> },
-  { path: '/auth/recovery/confirm', element: <RecoveryPage /> },
   { path: '/auth/error',     element: <AuthErrorPage /> },
   { path: '/link',           element: <LinkDevicePage /> },
+  { path: '/install',        lazy: async () => ({ Component: (await import('./pages/InstallPage')).InstallPage }) }, // рекламная посадочная: не в главном чанке
   {
     element: <RequireAuth />,
     children: [
@@ -127,6 +131,7 @@ const appRoutes = [
         children: [
           { path: '/today',             element: null },
           { path: '/diary',             element: null },
+          { path: '/more',              element: null },
           { path: '/schemas',           element: null },
           { path: '/profile',           element: null },
           { path: '/practice',          element: null },
@@ -134,6 +139,7 @@ const appRoutes = [
           { path: '/exercises',         element: <Navigate to="/practice" replace /> },
           { path: '/cabinet',           element: null },
           { path: '/cabinet/:clientId', element: null },
+          { path: '/cabinet/:clientId/:tab', element: null }, // вкладка карточки (therapist/clientTabRoute)
           { path: '*',                  element: <Navigate to="/today" replace /> },
         ],
       },

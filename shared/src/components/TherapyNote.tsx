@@ -5,6 +5,9 @@
 import { getTherapistContact } from '../utils/therapistContact';
 import { useTr } from '../utils/addressForm';
 
+// Ссылки ниже были 74×16 (QA мобильной версии 2026-11, М1): зона нажатия 44 по
+// высоте — отступом 14px; у строчной он не раздвигает строку, у блочной это
+// делает отрицательный margin.
 export function TherapyNote({ compact }: { compact?: boolean }) {
   const contact = getTherapistContact();
   const tr = useTr();
@@ -37,12 +40,13 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
                 'Вы работаете как терапевт — поддержка рядом.',
               )
             : 'Инструмент самоисследования, не замена психологу.'}{' '}
-          {!contact.isTherapist && (
+          {!contact.isTherapist && contact.url && (
             <a
               href={contact.url}
               target="_blank"
               rel="noopener noreferrer"
               className="u-link"
+              style={{ padding: '14px 0' }}
             >
               {contact.name === 'автору'
                 ? 'Записаться →'
@@ -80,21 +84,26 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
                 'Это инструмент самоисследования — не клиническая диагностика и не замена работе с психологом. Если чувствуете, что нужно разобраться глубже — терапия — это место, где безопасно.',
               )}
         </div>
-        <a
-          href={contact.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-block',
-            marginTop: 6,
-            fontSize: 12,
-            color: 'var(--accent)',
-            textDecoration: 'none',
-            fontWeight: 500,
-          }}
-        >
-          {linkLabel}
-        </a>
+        {/* Канала нет (терапевт с веб-аккаунтом, QA 2026-11 З6) — ссылки
+            «Написать терапевту» тоже нет: tg:// на веб-номер вёл в никуда. */}
+        {contact.url && (
+          <a
+            href={contact.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              padding: '14px 0',
+              margin: '-8px 0 -14px',
+              fontSize: 12,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}
+          >
+            {linkLabel}
+          </a>
+        )}
       </div>
     </div>
   );

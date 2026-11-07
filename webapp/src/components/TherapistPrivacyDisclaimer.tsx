@@ -1,8 +1,8 @@
+import { PrivacyArt, PrivacyItem } from './TherapistPrivacyParts';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { markTherapistDisclaimerSeen } from './therapistDisclaimerSeen';
 import '../styles/sheet-tasks.css';
-
-export const THERAPIST_DISCLAIMER_KEY = 'therapist_privacy_disclaimer_seen';
 
 interface Props {
   onDone: () => void;
@@ -18,7 +18,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
   const tr = useTr();
 
   function acknowledge() {
-    localStorage.setItem(THERAPIST_DISCLAIMER_KEY, '1');
+    markTherapistDisclaimerSeen();
     goBack();
   }
 
@@ -27,6 +27,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
       <div className="sk-priv-col">
 
         <div className="sk-priv-head">
+          <PrivacyArt />
           <h1 className="ds-h2 sk-priv-title">Немного о заботе о клиентах</h1>
           <p className="sk-priv-lead">
             {tr('Здесь будет твоя работа с людьми, которые тебе доверились. Одна маленькая привычка поможет бережно сохранить это доверие.', 'Здесь будет ваша работа с людьми, которые вам доверились. Одна маленькая привычка поможет бережно сохранить это доверие.')}
@@ -67,10 +68,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
               'Вход подтверждается подписью Telegram, а попытки подделать сессию мы отслеживаем и отклоняем.'],
             ['Полное удаление', tr('Если решишь удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.', 'Если решите удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.')],
           ].map(([title, text]) => (
-            <div key={title} className="ds-card ds-card--row">
-              <div className="sk-priv-item-title">{title}</div>
-              <div className="sk-priv-item-text">{text}</div>
-            </div>
+            <PrivacyItem key={title} title={title} text={text} />
           ))}
         </div>
 

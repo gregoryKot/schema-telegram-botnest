@@ -1,44 +1,55 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { endClientRelations } from './end-client-relations';
+import { THERAPIST_REMOVED } from './relation-end-reason';
 
-// Удаление клиента терапевта (правило №10: вынесено из TherapyClientDataService).
+// Удаление клиента терапевтом (правило №10: вынесено из TherapyClientDataService).
 // Насовсем стираются заметки по сессиям, концептуализация и именные карты
-// режимов (ModeMap) терапевта плюс сама связь. Карты без этого остались бы
-// сиротами (виртуальный клиент) или всплыли при повторном подключении к тому
-// же терапевту (клиент с аккаунтом). TherapistCustomMode — личная палитра
-// терапевта, а не данные клиента: не трогаем. Все WHERE ограничены therapistId — чужой терапевт ничего не заденет.
+// режимов (ModeMap) терапевта: это его записи о клиенте, и удаляет он их явно.
+// Иначе карты остались бы сиротами (офлайн-клиент) или всплыли при повторном
+// подключении того же клиента. TherapistCustomMode — личная палитра терапевта,
+// а не данные клиента: не трогаем. Все WHERE ограничены therapistId — чужой
+// терапевт ничего не заденет.
 //
-// Виртуальный клиент (clientId = -TherapyRelation.id) аккаунта не имеет: его
-// задания лежат в UserTask с отрицательным userId и БЕЗ FK, каскада нет —
-// без явного удаления остаются сиротами. У клиента с аккаунтом (clientId > 0)
-// задания принадлежат ему и остаются.
+// Клиент с аккаунтом (clientId > 0): связь не удаляется, а завершается
+// (`ended`, причина therapist_removed, end-client-relations.ts) — клиент
+// видит строку о бывшем терапевте, а открытые задания этого терапевта
+// становятся его личными целями (решение владельца 2026-11-05).
 //
-// Отрицательный id снимает связь только если она действительно виртуальная
+// Офлайн-клиент (clientId = -TherapyRelation.id) аккаунта не имеет: всё
+// удаляется, как раньше. Его задания лежат в UserTask с отрицательным userId
+// и БЕЗ FK, каскада нет — без явного удаления остались бы сиротами.
+// Отрицательный id снимает связь только если она действительно офлайн
 // (clientId IS NULL): иначе DELETE /clients/-<id связи с реальным клиентом>
-// сносил бы связь, оставляя заметки/концептуализацию/карты сиротами, которые
-// всплыли бы при повторном подключении.
+// сносил бы связь, оставляя заметки/концептуализацию/карты сиротами.
 export async function removeTherapistClient(
   prisma: PrismaService,
   therapistId: bigint,
   cid: bigint,
 ): Promise<void> {
-  const virtual = cid < 0n;
+  const own = { therapistId, clientId: cid };
+  if (cid > 0n) {
+    await prisma.$transaction(async (tx) => {
+      await tx.therapistNote.deleteMany({ where: own });
+      await tx.clientConceptualization.deleteMany({ where: own });
+      await tx.modeMap.deleteMany({ where: own });
+      await endClientRelations(tx, own, THERAPIST_REMOVED);
+    });
+    return;
+  }
   await prisma.$transaction([
-    prisma.therapistNote.deleteMany({ where: { therapistId, clientId: cid } }),
-    prisma.clientConceptualization.deleteMany({
-      where: { therapistId, clientId: cid },
+    prisma.therapistNote.deleteMany({ where: own }),
+    prisma.clientConceptualization.deleteMany({ where: own }),
+    prisma.modeMap.deleteMany({ where: own }),
+    prisma.userTask.deleteMany({
+      where: { userId: cid, assignedBy: therapistId },
     }),
-    prisma.modeMap.deleteMany({ where: { therapistId, clientId: cid } }),
-    ...(virtual
-      ? [
-          prisma.userTask.deleteMany({
-            where: { userId: cid, assignedBy: therapistId },
-          }),
-        ]
-      : []),
+    // Приглашения из карточки: на живой БД их снесёт каскад attachToId, у
+    // фейка (без FK) — единственный путь.
     prisma.therapyRelation.deleteMany({
-      where: virtual
-        ? { id: Number(-cid), therapistId, clientId: null }
-        : { therapistId, clientId: cid },
+      where: { therapistId, attachToId: Number(-cid) },
+    }),
+    prisma.therapyRelation.deleteMany({
+      where: { id: Number(-cid), therapistId, clientId: null },
     }),
   ]);
 }

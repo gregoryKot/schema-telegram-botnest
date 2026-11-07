@@ -117,9 +117,6 @@ describe('TelegramService — snooze_reminder', () => {
     const { service, fakeBot, notificationService } = makeDeps();
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'snooze_reminder');
-    expect(ctx.answerCbQuery).toHaveBeenCalledWith(
-      expect.stringContaining('через час'),
-    );
     expect(notificationService.cancel).toHaveBeenCalledWith(1n, 'reminder');
     expect(notificationService.schedule).toHaveBeenCalledWith(
       1n,
@@ -127,6 +124,68 @@ describe('TelegramService — snooze_reminder', () => {
       expect.any(Date),
     );
     expect(ctx.editMessageText).toHaveBeenCalled();
+  });
+
+  // Аудит 2026-10 (по образцу паузы #978): тост «Напомню через час» уходил
+  // до записи — при сбое человек видел обещание, а следом ошибку.
+  it('тост пустой и уходит до записи, «Напомню в …» — только после записи', async () => {
+    const { service, fakeBot, notificationService } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'snooze_reminder');
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
+    const [answered] = ctx.answerCbQuery.mock.invocationCallOrder;
+    const [scheduled] = notificationService.schedule.mock.invocationCallOrder;
+    const [edited] = ctx.editMessageText.mock.invocationCallOrder;
+    expect(answered).toBeLessThan(scheduled);
+    expect(scheduled).toBeLessThan(edited);
+    expect(ctx.editMessageText).toHaveBeenCalledWith(
+      expect.stringMatching(/^⏰ Напомню в \d\d:\d\d$/),
+    );
+  });
+
+  it('запись упала — обещания нет, отдельным сообщением «не получилось» в форме человека', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const { service, fakeBot } = makeDeps({
+      botService: {
+        getUserSettings: jest.fn().mockResolvedValue({ addressForm: 'vy' }),
+      },
+      notificationService: {
+        schedule: jest.fn().mockRejectedValue(new Error('db down')),
+      },
+    });
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'snooze_reminder');
+    expect(ctx.answerCbQuery).toHaveBeenCalledWith();
+    // Ни тостом, ни правкой: напоминание с кнопками остаётся — нажать ещё раз.
+    expect(ctx.editMessageText).not.toHaveBeenCalled();
+    expect(ctx.reply).toHaveBeenCalledWith(
+      'Не получилось отложить напоминание. Попробуйте нажать ещё раз.',
+    );
+  });
+
+  it('настройки не прочитались (БД) — «не получилось» в форме по умолчанию, без второго похода в БД', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const getUserSettings = jest.fn().mockRejectedValue(new Error('db down'));
+    const { service, fakeBot } = makeDeps({ botService: { getUserSettings } });
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'snooze_reminder');
+    expect(ctx.reply).toHaveBeenCalledWith(
+      'Не получилось отложить напоминание. Попробуй нажать ещё раз.',
+    );
+    expect(getUserSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('сообщение не правится (удалено) — итог новым сообщением, а не тишина', async () => {
+    const { service, fakeBot } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runAction(fakeBot, 'snooze_reminder', {
+      editMessageText: jest
+        .fn()
+        .mockRejectedValue(new Error('message to edit not found')),
+    });
+    expect(ctx.reply).toHaveBeenCalledWith(
+      expect.stringMatching(/^⏰ Напомню в /),
+    );
   });
 
   it('перенос в тихие часы сдвигается за их конец, а не остаётся в тишине', async () => {

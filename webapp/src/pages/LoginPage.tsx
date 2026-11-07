@@ -8,9 +8,10 @@ import { LoginProviderButtons } from './login/LoginProviderButtons';
 import { LoginHero } from './login/LoginHero';
 import { LoginEmailForm } from './login/LoginEmailForm';
 import { TelegramRetry } from './login/TelegramRetry';
-import { exchangeErrorText } from './login/exchangeError';
-import { humanizeThrown } from '../../../shared/src/api/humanizeError';
+import { LoginConsentNote } from './login/LoginConsentNote';
+import { exchangeErrorText, exchangeThrownText } from './login/exchangeError';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
+import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/src/account/accountDeletion';
 import { useTr } from '../utils/addressForm';
 import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
 import '../styles/auth-login.css';
@@ -33,6 +34,7 @@ export function LoginPage() {
       : null,
   );
   const isTelegramContext = !!getHost().sessionExchange();
+  const deleted = useAccountDeletedNotice(); // сразу после удаления — не «вход устарел» (К2)
 
   useEffect(() => {
     if (isAuthenticated) navigate('/today', { replace: true });
@@ -71,7 +73,7 @@ export function LoginPage() {
       setAccessToken(accessToken, expiresIn);
       navigate('/today', { replace: true });
     } catch (e) {
-      setError(humanizeThrown(e, String(e)));
+      setError(exchangeThrownText(e));
     } finally {
       setMiniAppLoading(false);
     }
@@ -90,8 +92,8 @@ export function LoginPage() {
           <h1 className="al-title">Всё по схеме</h1>
           {/* Новичку и человеку с истёкшей сессией нужно сказать разное
               (парная правка к LoginScreen мини-аппа, правило №3). */}
-          <p className="al-sub">
-            {hasAuthSeen()
+          <p className="al-sub" role={deleted ? 'status' : undefined}>
+            {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
               ? 'Вход устарел — данные на месте, нужно войти заново'
               : 'Войдите, чтобы продолжить. Telegram даёт тот же аккаунт, что в боте и мини-аппе'}
           </p>
@@ -117,17 +119,7 @@ export function LoginPage() {
 
           {error && <p className="al-error">{error}</p>}
 
-          <p className="al-foot">
-            <a href="/auth/recovery">Нет доступа ни к одному способу входа?</a>
-          </p>
-
-          <p className="al-note">
-            Нажимая «Войти», вы подтверждаете, что вам исполнилось 18 лет, и даёте согласие
-            на обработку персональных данных — включая сведения о психоэмоциональном состоянии
-            (дневники, ответы на опросники), которые вы добровольно вносите, —
-            в соответствии с{' '}
-            <a href="/privacy" target="_blank">Политикой конфиденциальности</a>
-          </p>
+          <LoginConsentNote />
 
           {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
           <p className="al-note">

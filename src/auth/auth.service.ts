@@ -18,10 +18,15 @@ import * as authPii from '../utils/auth-provider-crypto'; // D-9: email/имя �
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
 import { shouldSkipRotation } from './refresh-rotation';
+import { rejectInitData } from '../api/initdata-alert';
 import { resolveReuse } from './refresh-reuse';
 import { revokeFamilyQuiet } from './refresh-logout';
 import { unlinkProviderSafely } from './unlink-provider';
 import { verifyTelegramInitData } from './telegram-init-data';
+import {
+  ChallengeExpiredException,
+  type TotpChallenge,
+} from './totp-challenge';
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
@@ -57,19 +62,16 @@ export class AuthService {
 
   // ─── Telegram WebApp initData ──────────────────────────────────────────────
 
-  verifyTelegramWebAppData(initData: string): {
-    id: number;
-    firstName: string;
-  } {
+  // Тип ответа — { id, firstName }: выводится из return ниже.
+  verifyTelegramWebAppData(initData: string, ip?: string) {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN');
-    // Подпись, окно свежести и разбор user — один верификатор на все входы
-    // (telegram-init-data.ts); здесь только превращение отказа в 401.
+    // Один верификатор на все входы (telegram-init-data.ts); отказ — как у
+    // гарда: просрочка → 401 `initdata_expired`, подделка → `suspicious_initdata`.
     try {
       const { user } = verifyTelegramInitData(initData, botToken);
       return { id: user.id, firstName: user.first_name ?? '' };
     } catch (err) {
-      // Верификатор бросает только Error (см. шапку telegram-init-data.ts).
-      throw new UnauthorizedException((err as Error).message);
+      rejectInitData(err, ip, this.logger, this.securityLog);
     }
   }
 
@@ -299,11 +301,7 @@ export class AuthService {
     );
   }
 
-  verifyTotpChallengeToken(token: string): {
-    userId: bigint;
-    ip: string | null;
-    ua: string;
-  } {
+  verifyTotpChallengeToken(token: string): TotpChallenge {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
       const p = jwt.verify(token, secret, {
@@ -314,7 +312,7 @@ export class AuthService {
       if (p.kind !== 'totp_challenge') throw new Error('Wrong token kind');
       return { userId: BigInt(p.sub), ip: p.ip ?? null, ua: p.ua ?? '' };
     } catch {
-      throw new UnauthorizedException('Invalid or expired 2FA challenge token');
+      throw new ChallengeExpiredException();
     }
   }
 

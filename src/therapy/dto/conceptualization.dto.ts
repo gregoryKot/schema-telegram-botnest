@@ -11,12 +11,12 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
-
-const TEXT_MAX = 5000;
+import { CONCEPT_FIELD_TEXT_MAX as TEXT_MAX } from '../../utils/text-limits';
 
 /**
  * DTO для карты концептуализации терапевта (аудит 2026-07, 2г / правило
- * №6 CLAUDE.md). Лимиты (5000 символов текста, 64 символа на id, 200/500
+ * №6 CLAUDE.md). Лимиты (текст — `CONCEPT_FIELD_TEXT_MAX`, его же `maxLength`
+ * у полей обоих фронтов; 64 символа на id, 200/500
  * узлов/рёбер карты режимов) уже проверялись вручную — продублированы.
  * `modeMapNodes`/`modeMapEdges` — произвольная структура графа, форма
  * элементов не валидировалась и раньше — оставляем как есть.

@@ -79,15 +79,14 @@ describe('decisionMessage', () => {
     expect(ok).not.toContain('заново');
   });
 
-  // Подпись кнопки живёт в трёх местах фронтов (правило №3 и №4): страница
-  // /account сайта, настройки сайта и настройки мини-аппа. Письмо и сообщение в
+  // Подпись кнопки живёт в двух местах сайта (правило №4): страница
+  // /account и настройки. Письмо и сообщение в
   // Telegram называют её дословно — переименуют кнопку, человека поведёт «не туда».
   // Строка подписи должна стоять сама по себе (текст кнопки), а не мелькать в
   // комментарии рядом: иначе пин зелёный и после удаления кнопки.
   const BUTTON_SOURCES = [
     'webapp/src/pages/account/TherapistRequestSection.tsx',
     'webapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
-    'schema-miniapp/src/components/settingsSheet/BecomeTherapistSection.tsx',
   ];
   const hasButton = (src: string) =>
     new RegExp(`^\\s*${mod.APPLY_BUTTON}\\s*$`, 'm').test(src);
@@ -115,7 +114,10 @@ describe('decisionMessage', () => {
 describe('loadApplicantProfile', () => {
   const ID = 1_000_000_000_000_102n;
 
-  it('подтверждённый recoveryEmail сильнее провайдеров; форма читается из User', async () => {
+  // Восстановление по запасной почте убрано (#864): колонка recoveryEmail пуста
+  // у всех и не читается — адрес берётся у способов входа, даже если старая
+  // строка в базе вдруг заполнена.
+  it('адрес — у способа входа, не из recoveryEmail; форма читается из User', async () => {
     const prisma = prismaWith([{ provider: 'email', providerId: 'x@e.ru' }], {
       addressForm: 'vy',
       recoveryEmail: 'r@e.ru',
@@ -123,9 +125,11 @@ describe('loadApplicantProfile', () => {
     });
     expect(await mod.loadApplicantProfile(prisma, ID)).toEqual({
       form: 'vy',
-      email: 'r@e.ru',
+      email: 'x@e.ru',
     });
-    expect(prisma.authProvider.findMany).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique.mock.calls[0][0].select).toEqual({
+      addressForm: true,
+    });
   });
 
   it('email Google, лежащий шифротекстом, уходит в письмо расшифрованным', async () => {

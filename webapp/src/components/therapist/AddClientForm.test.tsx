@@ -13,6 +13,8 @@ vi.mock('../../api', () => ({
   api: {
     addVirtualClient: vi.fn(),
     createTherapyInvite: vi.fn(),
+    getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    revokeTherapyInvite: vi.fn(),
   },
 }));
 import { api } from '../../api';
@@ -42,8 +44,8 @@ describe('AddClientForm — отказ буфера при копировани�
 
     render(<Host />);
     fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Иван' } });
-    fireEvent.click(screen.getByLabelText('Сразу создать ссылку-приглашение в бот'));
-    await act(async () => { fireEvent.click(screen.getByText('Создать карточку')); });
+    fireEvent.click(screen.getByLabelText('Пригласить в приложение (ссылка и код)'));
+    await act(async () => { fireEvent.click(screen.getByText('Создать приглашение')); });
 
     await screen.findByText('https://example.com/invite');
     await act(async () => { fireEvent.click(screen.getByText('Скопировать')); });
@@ -62,14 +64,42 @@ describe('AddClientForm — отказ буфера при копировани�
 
     render(<Host />);
     fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Мария' } });
-    fireEvent.click(screen.getByLabelText('Сразу создать ссылку-приглашение в бот'));
-    await act(async () => { fireEvent.click(screen.getByText('Создать карточку')); });
+    fireEvent.click(screen.getByLabelText('Пригласить в приложение (ссылка и код)'));
+    await act(async () => { fireEvent.click(screen.getByText('Создать приглашение')); });
 
     await screen.findByText('https://example.com/ok');
     await act(async () => { fireEvent.click(screen.getByText('Скопировать')); });
 
     await screen.findByText('✓ Скопировано');
     expect(screen.queryByText(/Не удалось скопировать/)).toBeNull();
+  });
+});
+
+// Инцидент 2026-10-26: терапевт видел только ссылку t.me — клиенту на сайте
+// код приходилось вырезать из адреса; рядом создавалась вторая, офлайн-карточка.
+describe('AddClientForm — приглашение: код отдельно, офлайн-карточки нет', () => {
+  it('после создания виден код с «Скопировать код» и подсказкой, куда его вводить', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ code: '7F3A9C21B04E', url: 'https://t.me/b/diary?startapp=therapy_7F3A9C21B04E' });
+    render(<Host />);
+    fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Мария К.' } });
+    fireEvent.click(screen.getByLabelText('Пригласить в приложение (ссылка и код)'));
+    await act(async () => { fireEvent.click(screen.getByText('Создать приглашение')); });
+
+    expect(await screen.findByText('Приглашение создано')).toBeTruthy();
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByText('Скопировать код')).toBeTruthy();
+    expect(screen.getByText(/«Мой терапевт»/)).toBeTruthy();
+    expect(mockApi.createTherapyInvite).toHaveBeenCalledWith('Мария К.');
+    expect(mockApi.addVirtualClient).not.toHaveBeenCalled();
+  });
+
+  it('без галочки — «Создать карточку» и офлайн-клиент, приглашения нет', async () => {
+    mockApi.addVirtualClient.mockResolvedValue([]);
+    render(<Host />);
+    fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Пётр' } });
+    await act(async () => { fireEvent.click(screen.getByText('Создать карточку')); });
+    expect(await screen.findByText('Клиент добавлен')).toBeTruthy();
+    expect(mockApi.createTherapyInvite).not.toHaveBeenCalled();
   });
 });
 

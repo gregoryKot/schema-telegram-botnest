@@ -13,14 +13,16 @@
 // require-await в typed-линте.
 
 import { makeFakeExecuteRaw } from './fake-cron-lease';
-import { makeTable, withUserJoin, withDefaults } from './fake-prisma-engine';
-import { withUpdatedAt } from './fake-updated-at';
+import { makeTable, withDefaults } from './fake-prisma-engine';
+import { withUserJoin } from './fake-user-join';
+import { withCreatedAt, withUpdatedAt } from './fake-updated-at';
 
 /** Собирает фейковый PrismaService, готовый к .overrideProvider(PrismaService). */
 export function makeFakePrisma() {
-  const userTable = makeTable();
+  const tz = { notifyTimezone: 'Europe/Moscow', notifyTimezoneChosen: false };
+  const userTable = withDefaults(makeTable(), tz);
   const tables: Record<string, ReturnType<typeof makeTable>> = {
-    user: userTable,
+    user: userTable, // @default пояса — под условный UPDATE (device-timezone.ts)
     userSchemaNote: makeTable(),
     userModeNote: makeTable(),
     bookingSetting: makeTable([
@@ -78,7 +80,7 @@ export function makeFakePrisma() {
     ysqProgress: makeTable(),
     ysqResult: makeTable(),
     ysqResultHistory: makeTable(),
-    analyticsEvent: makeTable(),
+    analyticsEvent: withCreatedAt(makeTable()),
     diaryDraft: makeTable(),
     therapistRequest: makeTable(),
     // Therapy ownership smoke (test/therapy-ownership*.e2e-spec.ts, план
@@ -91,13 +93,18 @@ export function makeFakePrisma() {
     // в сервисе — `undefined !== null` даёт true и ломает инвайт-флоу).
     therapyRelation: withUserJoin(
       // createdAt/meetingDays — @default схемы: getClients читает
-      // rel.createdAt.toISOString() у виртуальных клиентов.
-      withDefaults(makeTable(), {
+      // rel.createdAt.toISOString() у виртуальных клиентов. urlCode — свой
+      // на каждую строку, как dbgenerated в Postgres (8 букв без цифр).
+      withDefaults(makeTable(), () => ({
         status: 'pending',
         clientId: null,
         createdAt: new Date(),
         meetingDays: [],
-      }),
+        urlCode: Array.from(
+          { length: 8 },
+          () => 'abcdefghjkmnpqrs'[Math.floor(Math.random() * 16)],
+        ).join(''),
+      })),
       userTable,
     ),
     therapistNote: makeTable(),

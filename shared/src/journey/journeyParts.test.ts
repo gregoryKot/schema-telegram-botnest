@@ -147,11 +147,11 @@ describe('buildJourneyResultParts', () => {
 
   it('practice/plan_done: одна часть со своим заголовком', () => {
     expect(buildJourneyResultParts('practice', { text: 'Прогулка' })).toEqual([
-      { title: 'Моя практика', text: 'Прогулка' },
+      { title: 'Что меня питает', text: 'Прогулка' },
     ]);
     expect(
       buildJourneyResultParts('plan_done', { practiceText: 'Дыхание 4-7-8' }),
-    ).toEqual([{ title: 'Практика', text: 'Дыхание 4-7-8' }]);
+    ).toEqual([{ title: 'Действие', text: 'Дыхание 4-7-8' }]);
   });
 
   it('tracker_day: строка оценок в фиксированном порядке потребностей', () => {

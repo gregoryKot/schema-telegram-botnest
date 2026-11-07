@@ -1,6 +1,8 @@
 // Блок «Настройка экранов «Профиль»/«Паттерны»» для /stats (правило №8).
 // Чистый форматтер, покрыт тестом (включая пустую БД). Язык — простой:
 // «открывали», «скрывают», без терминов и внутренних id.
+import { formatHomeLines } from './home-tiles.format';
+import type { DiaryQuickCounts } from './home-tiles.count';
 
 export interface ScreenMetrics {
   /** За месяц: сколько раз открыли «Настроить экран», по экранам. */
@@ -15,6 +17,12 @@ export interface ScreenMetrics {
   movesByScreen: Array<{ screen: string; count: number }>;
   /** Всего: сколько юзеров хоть раз сохранили серверное зеркало настроек. */
   syncedUsers: number;
+  /** За месяц: нажатия плиток и ссылок на главной сайта, по плиткам. */
+  homeTiles: Array<{ tile: string; count: number }>;
+  /** За месяц: «Пропустить» на вопросе трекера. */
+  trackerSkips: number;
+  /** За месяц: сохранения «Дневника одной страницей», по тегам и «подробно». */
+  diaryQuick: DiaryQuickCounts;
 }
 
 // Человеческие подписи экранов и блоков — в отчёте не должно быть id.
@@ -23,7 +31,6 @@ export interface ScreenMetrics {
 export const SCREEN_LABELS: Record<string, string> = {
   profile: 'Профиль',
   patterns: 'Паттерны',
-  today: 'Сегодня',
 };
 
 export const SCREEN_BLOCK_LABELS: Record<string, string> = {
@@ -34,17 +41,18 @@ export const SCREEN_BLOCK_LABELS: Record<string, string> = {
   insights: 'Наблюдения',
   heroes: 'Подсказки сверху',
   ysq_status: 'Карточка теста схем',
-  focus: 'Фокус дня',
-  phrase: 'Фраза взрослого',
-  secondary: 'Что ещё сегодня',
-  therapist_banner: 'Баннер терапевта',
   portrait: 'Мой портрет',
   warm_words: 'Тёплые слова',
 };
 
 // Порядок строк — как в настройке, а не по убыванию счёта (та же логика,
-// что у TODAY_BLOCKS.filter в product-metrics.format.ts).
-const SCREENS_ORDER = ['profile', 'patterns', 'today'];
+// что у блока «Настройка экранов» в /stats).
+const SCREENS_ORDER = ['profile', 'patterns'];
+
+export const isShownScreen = <T extends { screen: string | null }>(
+  r: T,
+): r is T & { screen: string } =>
+  r.screen != null && SCREENS_ORDER.includes(r.screen);
 
 function formatScreenLine(
   screen: string,
@@ -124,5 +132,6 @@ export function formatScreenMetrics(m: ScreenMetrics): string {
   if (m.syncedUsers > 0) {
     out.push(`Настройки синхронизированы: ${m.syncedUsers} человек`);
   }
+  out.push(...formatHomeLines(m));
   return out.join('\n');
 }

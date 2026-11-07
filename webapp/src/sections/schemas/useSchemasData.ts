@@ -1,10 +1,11 @@
-// Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс
-// теста, число карт режимов от терапевта и сохранение ручных выборов.
+// Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс теста, число карт режимов от терапевта и сохранение ручных выборов.
 import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY } from '../../utils/storageKeys';
+import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY, cacheMySchemaIds, cacheMyModeIds, cacheMyPatternsFromProfile } from '../../utils/storageKeys';
 import { readLocalIds, type YsqScore } from './schemasModel';
 import { useSaveFailure } from '../../hooks/useSaveFailure';
+import { useYsqProgressListener, useYsqResultVersion } from '../../../../shared/src/hooks/ysqProgressStore';
+import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => readLocalIds(localStorage.getItem(MY_SCHEMA_IDS_KEY)));
@@ -12,18 +13,19 @@ export function useSchemasData() {
   const [ysqSchemaIds, setYsqSchemaIds] = useState<string[]>([]);
   const [ysqScores, setYsqScores] = useState<Record<string, YsqScore>>({});
   const [ysqProgressAnswered, setYsqProgressAnswered] = useState<number | null>(null);
+  useYsqProgressListener(setYsqProgressAnswered); // тест открыт поверх экрана — карточка «Продолжить (N из 116)» живая
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [myMapCount, setMyMapCount] = useState(0);
   const [loading, setLoading] = useState(true);
   // Отказ записи виден человеку (SaveErrorNote в SchemasSection), не только телеметрии.
   const save = useSaveFailure();
+  const ysqVersion = useYsqResultVersion(); // тест сдан поверх экрана — перечитать профиль без F5 (QA 2026-11)
 
   useEffect(() => {
     Promise.all([
       api.getProfile(),
       api.getYsqHistory(),
-      // Прогресс незаконченного теста — необязательная подпись на карточке:
-      // без него экран работает, но сбой виден в отчётах.
+      // Прогресс теста — необязательная подпись карточки: без него экран работает, сбой — в отчётах.
       api.getYsqProgress().catch(() => {
         reportClientError({ message: 'schemas ysq progress load failed', section: 'schemas' });
         return null;
@@ -35,9 +37,8 @@ export function useSchemasData() {
       const serverSchemas = Array.isArray(p?.mySchemaIds) ? p.mySchemaIds : [];
       const serverModes = Array.isArray(p?.myModeIds) ? p.myModeIds : [];
       setManualSchemaIds(serverSchemas);
-      if (serverSchemas.length > 0) localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(serverSchemas));
       setMyModeIds(serverModes);
-      if (serverModes.length > 0) localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(serverModes));
+      if (p) cacheMyPatternsFromProfile(p); // пустой список с сервера — тоже правда (#939)
       setYsqSchemaIds(Array.isArray(p?.ysq?.activeSchemaIds) ? p.ysq.activeSchemaIds : []);
       setYsqCompletedAt(p?.ysq?.completedAt ?? null);
       // Баллы — из последнего прохождения YSQ.
@@ -50,23 +51,23 @@ export function useSchemasData() {
     }).catch(() => setLoading(false));
     api.listMyModeMaps().then(list => setMyMapCount(list.length))
       .catch(() => reportClientError({ message: 'schemas mode-map count load failed', section: 'schemas' }));
-  }, []);
+  }, [ysqVersion]);
 
   function saveSchemas(ids: string[]) {
-    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
+    cacheMySchemaIds(ids);
     setManualSchemaIds(ids);
     save.track(api.updateSettings({ mySchemaIds: ids }), () => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
   }
 
   function saveModes(ids: string[]) {
-    localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
+    cacheMyModeIds(ids);
     setMyModeIds(ids);
     save.track(api.updateSettings({ myModeIds: ids }), () => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
   }
 
   return {
     loading, manualSchemaIds, myModeIds, ysqSchemaIds, ysqScores,
-    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes,
-    saveFailed: save.failed,
+    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes, saveFailed: save.failed,
+    saveBlocked: save.failed && isUnwritableError(save.error), // 409: прежний список не читается — повтор не поможет
   };
 }

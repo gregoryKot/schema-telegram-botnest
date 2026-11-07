@@ -2,8 +2,7 @@
 // Тесты HTTP-слоя webapp (api.ts) — TEST_COVERAGE_PLAN этап 2 п.10.
 //
 // Сетевая инфраструктура (get/post/authedFetch/401-retry) переехала в
-// apiClient.ts (правило №10 — api.ts не имеет права расти сверх бейслайна;
-// правило №3 — зеркало schema-miniapp/src/apiClient.ts). api.ts зовёт
+// apiClient.ts (правило №10 — api.ts не имеет права расти сверх бейслайна). api.ts зовёт
 // setRefreshHandler() только через TokenBridge (App.tsx) в реальном
 // приложении — по умолчанию, пока его никто не вызвал, _refresh === null и
 // 401 ведёт себя как раньше: единственный запрос, без похода на
@@ -408,8 +407,8 @@ describe('adminReq — успешный статус без валидного J
 // ── saveRating — оффлайн-надёжность (правило №3 CLAUDE.md) ───────────────────
 // До 2026-08 сетевой сбой saveRating терялся молча: голый fetch без outbox,
 // а TrackerOverlay глушил отказ `catch {}` — центральное ежедневное действие
-// продукта было надёжным только в мини-аппе. Теперь тот же контракт, что там
-// (schema-miniapp/src/api.ts): 4xx — реальная ошибка запроса, пробрасывается;
+// продукта было надёжным только в удалённом мини-аппе. Теперь
+// контракт тот же: 4xx — реальная ошибка запроса, пробрасывается;
 // сеть/таймаут/5xx — оценка уходит в общую (shared) outbox-очередь и ответ
 // приходит успешным (сервер upsert-ит по (userId, date, needId), повтор
 // безопасен).
@@ -455,7 +454,7 @@ describe('saveRating — прямой fetch-вызов', () => {
     fetchMock.mockResolvedValue(jsonResponse(500, {}));
     const result = await api.saveRating('safety', 7, '2026-01-15');
 
-    expect(result).toEqual({ ok: true, allDone: false });
+    expect(result).toEqual({ ok: true, allDone: false, queued: true }); // queued — экран скажет «отправятся сами»
     expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
       { needId: 'safety', value: 7, date: '2026-01-15' },
     ]);
@@ -465,7 +464,7 @@ describe('saveRating — прямой fetch-вызов', () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
     const result = await api.saveRating('safety', 7, '2026-01-15');
 
-    expect(result).toEqual({ ok: true, allDone: false });
+    expect(result).toEqual({ ok: true, allDone: false, queued: true });
     expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
       { needId: 'safety', value: 7, date: '2026-01-15' },
     ]);
@@ -840,19 +839,27 @@ describe('личный контент — URL, метод, тело запрос
     expect(init.method).toBe('DELETE');
   });
 
-  it('getLetters / createLetter / deleteLetter', async () => {
+  it('getLetters / createLetter / updateLetter / deleteLetter', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, []));
     await api.getLetters();
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/letters');
 
-    fetchMock.mockResolvedValue(jsonResponse(200, {}));
-    await api.createLetter('дорогой я');
+    fetchMock.mockResolvedValue(jsonResponse(201, { id: 9, text: 'дорогой я' }));
+    // id созданного письма нужен «Изменить» — правка идёт в то же письмо (QA 2026-11, З4).
+    expect((await api.createLetter('дорогой я')).id).toBe(9);
     const [, init] = fetchMock.mock.calls[1];
     expect(JSON.parse(init.body)).toEqual({ text: 'дорогой я' });
 
+    fetchMock.mockResolvedValue(jsonResponse(200, { id: 9, text: 'иначе' }));
+    await api.updateLetter(9, 'иначе');
+    const [patchUrl, patchInit] = fetchMock.mock.calls[2];
+    expect(String(patchUrl)).toContain('/api/letters/9');
+    expect(patchInit.method).toBe('PATCH');
+    expect(JSON.parse(patchInit.body)).toEqual({ text: 'иначе' });
+
     fetchMock.mockResolvedValue(jsonResponse(204, undefined));
     await api.deleteLetter(9);
-    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/letters/9');
+    expect(String(fetchMock.mock.calls[3][0])).toContain('/api/letters/9');
   });
 
   it('getSafePlace / saveSafePlace', async () => {
@@ -1110,9 +1117,9 @@ describe('админские эндпоинты — оставшиеся мет�
 // ── setRefreshHandler — 401 перевыпускает сессию и повторяет запрос ──────────
 // Диагностика «постоянно нужно логиниться заново» (2026-08-21, пункт 4): у
 // сайта не было НИ ОДНОЙ попытки перевыпустить сессию на 401 обычного
-// запроса — мини-апп это уже умел (apiClient.ts:authedFetch), сайт просто
-// бросал ошибку. В проде хэндлер кладёт TokenBridge (App.tsx), здесь —
-// напрямую через setRefreshHandler (зеркало schema-miniapp/src/apiClient.test.ts).
+// запроса — удалённый мини-апп это уже умел, сайт просто бросал ошибку.
+// В проде хэндлер кладёт TokenBridge (App.tsx), здесь — напрямую через
+// setRefreshHandler.
 describe('setRefreshHandler — 401 → перевыпуск сессии → повтор запроса', () => {
   it('успешный refresh повторяет запрос и получает данные', async () => {
     setRefreshHandler(() => Promise.resolve(true));

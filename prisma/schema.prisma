@@ -50,9 +50,9 @@ enum UserRole {
 enum RelationStatus {
   pending
   active
-  // Связь завершена (терапевт отказался от роли). Строка и данные терапевта
-  // остаются, но во все «активные» выборки она не попадает и сама не оживает:
-  // новая связь — только через новое приглашение.
+  // Связь завершена: терапевт отказался от роли или убрал клиента, клиент
+  // отключился сам (endReason). Строка остаётся, но во все «активные» выборки
+  // она не попадает и сама не оживает: новая связь — только через новое приглашение.
   ended
 }
 
@@ -84,6 +84,7 @@ model User {
   notifyEnabled          Boolean  @default(true)
   notifyLocalHour        Int      @default(21)
   notifyTimezone         String   @default("Europe/Moscow")
+  notifyTimezoneChosen   Boolean  @default(false) // пояс выбран руками; false — следует за поясом устройства (/api/init)
   notifyReminderEnabled  Boolean  @default(true)
   // ── Adaptive notification cadence ────────────────────────────────────────
   notifyFrequency        Int      @default(0)  // выбор юзера: 0=каждый день,1=через день,2=2×/нед,3=раз/нед — потолок для адаптации
@@ -121,7 +122,7 @@ model User {
   modeIntrosShown          Json     @default("[]")  // string[] of mode ids whose intro was viewed
   therapistMode            Boolean  @default(false)
   defaultSection           String?  // last-selected bottom nav section
-  uiPrefs                  Json?    // серверное зеркало кастомизации мини-аппа (SYNCED_PREF_KEYS), src/api/ui-prefs.sanitize.ts
+  uiPrefs                  Json?    // серверное зеркало кастомизации экранов (SYNCED_PREF_KEYS), src/api/ui-prefs.sanitize.ts
   botBlockedAt           DateTime?
   deletedAt              DateTime?
 
@@ -157,9 +158,7 @@ model User {
   // (±1 шаг, ~90с) не должен приниматься дважды — verifyCode двигает значение
   // вперёд атомарно и отвергает шаг ≤ сохранённого. null = ещё не входил по TOTP.
   totpLastStep           Int?
-  // Recovery email — last-resort path in case user loses ALL their auth
-  // providers (Google/Telegram/VK all gone). Receives a magic link to add
-  // a new provider. Verified separately (verifiedAt).
+  // Не используется с #864: восстановление по почте убрано; удалить миграцией отдельным PR после выкладки (см. docs/open/audit-2026-10.md)
   recoveryEmail          String?  @unique
   recoveryEmailVerifiedAt DateTime?
 
@@ -176,16 +175,17 @@ model User {
   gratitudeDiaries       GratitudeDiaryEntry[]
   appActivities          AppActivity[]
   analyticsEvents        AnalyticsEvent[]
+  bookings               Booking[]
 }
 
-// Email magic-link tokens — for recovery, email verification, etc.
+// Email magic-link tokens — вход по ссылке и привязка адреса.
 // One-use, ~30 min TTL. Hash stored, raw token only in the email.
 model EmailToken {
   id        String   @id @default(cuid())
-  userId    BigInt?  // null = pre-verification (verify email before binding)
+  userId    BigInt?  // null = вход по почте для адреса, у которого ещё нет аккаунта
   tokenHash String   @unique
   email     String   // sent to this address
-  purpose   String   // 'recovery' | 'verify_email'
+  purpose   String   // 'login' | 'link_email_auth' (до #864 ещё 'recovery' | 'verify_email')
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
@@ -464,8 +464,10 @@ model ModeDiaryEntry {
   actualNeed        String?  // Что на самом деле было нужно
   childhoodMemories String?  // Детские воспоминания связанные с ситуацией
   healthyResponse   String?  // Что бы сказал Здоровый Взрослый (пишет клиент сам)
+  fromCase          Boolean  @default(false) // запись родилась из потока «Что случилось» (сайт, этап 4); старые — false
 
   @@index([userId, createdAt])
+  @@index([fromCase, createdAt]) // /stats: разборы за 30 дней (check-query-plans, stats-report)
 }
 
 model GratitudeDiaryEntry {
@@ -515,6 +517,12 @@ model AnalyticsEvent {
 model TherapyRelation {
   id          Int      @id @default(autoincrement())
   code        String   @unique
+  // Постоянный код адреса карточки в кабинете терапевта: /cabinet/<urlCode>.
+  // 8 букв без цифр — не путается со старым числовым id в адресе
+  // (shared/src/utils/clientRef.ts). Ставит Postgres, поэтому код получит
+  // связь из любого пути создания; при подключении офлайн-карточки код
+  // переезжает на связь клиента (therapy-invite-attach.ts) — ссылка живёт.
+  urlCode     String   @unique @default(dbgenerated("translate(\"left\"((gen_random_uuid())::text, 8), '0123456789'::text, 'ghjkmnpqrs'::text)"))
   therapistId BigInt
   clientId    BigInt?
   status      RelationStatus @default(pending)
@@ -524,12 +532,28 @@ model TherapyRelation {
   nextSession       String?  // YYYY-MM-DD, next scheduled session
   meetingDays       Json     @default("[]")  // number[] weekdays 0=Sun..6=Sat
   createdAt   DateTime @default(now())
+  // Когда и почему связь стала `ended` (src/therapy/relation-end-reason.ts).
+  // Причина — машинный код, не свободный текст: therapist_resigned /
+  // therapist_removed / client_left — по ней клиент видит строку о бывшем
+  // терапевте (GET /api/therapy/former-therapist).
+  // endedAt NULL у связей, завершённых до появления колонки (дата неизвестна).
+  endedAt     DateTime?
+  endReason   String?  @db.VarChar(32)
+  // Приглашение, созданное из карточки офлайн-клиента, помнит id этой карточки
+  // (src/therapy/therapy-invite-attach.ts): при подключении данные карточки
+  // переезжают на аккаунт; удаление карточки каскадом отзывает её приглашения.
+  attachToId  Int?
 
+  attachTo      TherapyRelation?  @relation("AttachInvite", fields: [attachToId], references: [id], onDelete: Cascade)
+  attachInvites TherapyRelation[] @relation("AttachInvite")
   therapist   User  @relation("TherapistOf", fields: [therapistId], references: [id], onDelete: Cascade)
   client      User? @relation("ClientOf",    fields: [clientId],    references: [id], onDelete: SetNull)
 
   @@index([therapistId, status])
   @@index([clientId, status])
+  // Каскад при удалении офлайн-карточки и поиск её живого приглашения
+  // (therapy-invite-from-card.ts) — без индекса это скан всей таблицы.
+  @@index([attachToId])
 }
 
 model UserTask {
@@ -581,6 +605,9 @@ model ClientConceptualization {
   modeMapNodes    Json     @default("[]")  // ModeMapNode[] — encrypted JSON
   modeMapEdges    Json     @default("[]")  // ModeMapEdge[] — encrypted JSON
   history         Json     @default("[]")  // ConceptSnapshot[]
+  // Терапевт показал клиенту схему случая (тумблер «Показать клиенту», null — не показана):
+  // клиент видит её в «Мой терапевт» без истоков и задач терапии (src/therapy/client-concept-view.ts).
+  sharedWithClientAt DateTime?
   updatedAt       DateTime @updatedAt
 
   @@unique([therapistId, clientId])
@@ -605,7 +632,7 @@ model ModeMap {
   therapistId BigInt
   clientId    BigInt
   title       String   @default("Карта режимов")
-  kind        String   @default("problem")  // 'personality' | 'problem'
+  kind        String   @default("problem")  // 'personality' | 'problem' | 'couple' | 'concept' | 'free' (MODE_MAP_KINDS)
   nodes       Json     @default("[]")
   edges       Json     @default("[]")
   createdAt   DateTime @default(now())
@@ -800,7 +827,15 @@ model Booking {
   clientContact   String        // phone or telegram @handle
   clientChannel   String?       // канал связи: telegram | whatsapp | email — не PII, открыто
   message         String?
-  clientTelegramId BigInt?      // if client came from Telegram
+  // Telegram-адрес клиента. Анонимная форма его не пишет (C-9); пишет только
+  // клиентская запись из приложения — из проверенной подписи, не из тела.
+  clientTelegramId BigInt?
+  // Аккаунт клиента, записавшегося из приложения («Мой терапевт» → «Записаться
+  // на сессию», src/booking/client-booking.service.ts). Публичная форма без
+  // входа его не пишет. Удаление аккаунта отвязывает бронь (SetNull + явный
+  // updateMany в account.delete.ts), слияние переносит (USER_OWNED_TABLES).
+  userId          BigInt?
+  user            User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   cancelToken     String        @unique  // random UUID for self-cancel link
   meetingUrl      String?       // Zoom/Телемост link, set after confirmation
   // CalDAV sync
@@ -844,6 +879,11 @@ model Booking {
   // доводят повтор вебхука, ручное подтверждение и крон-добор. Ставит
   // `BookingNotifyService.onConfirmed` CAS-ом прямо перед отправкой DM.
   confirmEffectsDoneAt DateTime?
+  // Проход подтверждения заменил постоянную комнату клиента, создавая ссылку
+  // этой брони (старая перестала подходить). Пишется вместе с meetingUrl, чтобы
+  // повтор после падения (крон-добор, повтор вебхука) сказал владельцу в DM
+  // «комната заменена», а не потерял это вместе с локальной переменной.
+  roomReplacedAt  DateTime?
   // Reminders
   reminder24SentAt DateTime?
   reminder2SentAt  DateTime?
@@ -852,6 +892,7 @@ model Booking {
 
   @@index([startsAt, status])
   @@index([heldUntil, status])
+  @@index([userId, startsAt])
 }
 
 // Заявка с простой формы знакомства на визитке (POST /api/booking, без слота).

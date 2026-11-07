@@ -11,13 +11,13 @@ import {
 import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { failCallback } from './callback-failure';
-import { describeBroadcastResult, runBroadcast } from './telegram.broadcast';
-import { replyLong } from './send-long-text';
+import { describeTelegramError } from './telegram-error';
+import { BroadcastRunner } from './telegram.broadcast-runner';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
-import { collectStatsMessages } from './stats-messages';
+import { registerStatsHandlers } from './stats-command';
 import { AccountService } from '../bot/account.service';
 import { TherapistRequestService } from '../therapy/therapist-request.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
@@ -27,6 +27,7 @@ import { adminIdNum, isAdminSender } from '../utils/admin-alert';
 @Injectable()
 export class TelegramAdminService implements OnModuleInit {
   private readonly logger = new Logger(TelegramAdminService.name);
+  readonly broadcast = new BroadcastRunner(); // фоном: telegram.broadcast-runner.ts
 
   constructor(
     @Inject(TELEGRAF_BOT)
@@ -53,39 +54,28 @@ export class TelegramAdminService implements OnModuleInit {
           return;
         }
         const t = renderTemplate('donate_reminder', { seed: 0 });
-        if (t)
-          await ctx.reply(
-            t.text,
-            t.keyboard ? { reply_markup: t.keyboard.reply_markup } : {},
-          );
+        await ctx.reply(
+          t?.text ?? 'Шаблон donate_reminder не собрался — превью нет.',
+          t?.keyboard ? { reply_markup: t.keyboard.reply_markup } : {},
+        );
       } catch (err) {
+        // Админу — причина: превью и нужно, чтобы увидеть отказ до рассылки.
         this.logger.error('testdonate command failed', err);
+        await ctx
+          .reply(`❌ Превью не отправилось: ${describeTelegramError(err)}`)
+          .catch(() => null);
       }
     });
 
-    this.bot.command('stats', async (ctx) => {
-      try {
-        if (!isAdminSender(ctx.from)) {
-          await ctx.reply('⛔ Нет доступа');
-          return;
-        }
-        // Двумя сообщениями — отчёт длиннее лимита Telegram (4096); replyLong
-        // рубит рост отчёта разбиением, а не падением целиком.
-        const { first, second } = await collectStatsMessages(
-          {
-            adminStats: this.adminStatsService,
-            statsReport: this.statsReport,
-            healthyAdult: this.healthyAdult,
-          },
-          this.logger,
-        );
-        await replyLong(ctx, first, { parse_mode: 'HTML' });
-        await replyLong(ctx, second, { parse_mode: 'HTML' });
-      } catch (err) {
-        this.logger.error('stats command failed', err);
-        await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);
-      }
-    });
+    registerStatsHandlers(
+      this.bot,
+      {
+        adminStats: this.adminStatsService,
+        statsReport: this.statsReport,
+        healthyAdult: this.healthyAdult,
+      },
+      this.logger,
+    );
 
     // Ручная публикация фразы «Здорового Взрослого» по всем настроенным
     // площадкам — проверка связки (env + права бота), т.к. по расписанию пост
@@ -227,10 +217,7 @@ export class TelegramAdminService implements OnModuleInit {
         // Раньше рассылка слала прямо по userId и каждый её прогон молча метил
         // таких людей botBlockedAt.
         const chatIds = await this.accountService.telegramIdsFor(userIds);
-        await ctx.reply(
-          `Начинаю рассылку для ${userIds.length} пользователей...`,
-        );
-        const result = await runBroadcast(
+        const started = this.broadcast.start(
           {
             bot: this.bot!,
             accountService: this.accountService,
@@ -239,8 +226,10 @@ export class TelegramAdminService implements OnModuleInit {
           userIds,
           chatIds,
           text,
+          (m) => ctx.reply(m),
         );
-        await ctx.reply(describeBroadcastResult(result));
+        if (!started)
+          await ctx.reply('⏳ Предыдущая рассылка ещё идёт, итог придёт сюда');
       } catch (err) {
         this.logger.error('broadcast command failed', err);
         await ctx.reply('❌ Ошибка рассылки').catch(() => null);

@@ -1,55 +1,50 @@
 import type { ConceptModeLink } from '../../apiTypes';
 import type { GraphModeCard } from './conceptGraphTypes';
+import type { ConceptGuideActions, ModeGuideView } from './conceptGuide';
+import { ConceptGuideHint } from './ConceptGuideHint';
+import { MethodHint, takeStyle } from './MethodHint';
 import { ConceptTextField } from './ConceptTextField';
-import { hintStyle, labelStyle } from './graphStyles';
 
 /**
- * «Что делаем в терапии»: над полем — что обычно делают с режимом этой группы
- * в методе. «Взять за основу» видна, пока поле пустое, и кладёт подсказку в
- * поле, чтобы терапевт переписал её своими словами.
+ * «Что делаем в терапии»: над полем — что обычно делают с режимом в методе.
+ * Есть свой раздел (#995) — цель режима, техники и задания (ConceptGuideHint);
+ * нет (свой режим терапевта) — строка группы режимов. «Взять за основу» видна,
+ * пока поле пустое, и кладёт в поле цель или строку группы, чтобы терапевт
+ * переписал её своими словами.
  */
 export function ConceptStrategy({
   card,
   link,
+  guide,
+  actions,
   onChange,
 }: {
   card: GraphModeCard;
   link: ConceptModeLink;
+  /** undefined — тексты подсказок ещё грузятся: плашки пока нет. */
+  guide: ModeGuideView | null | undefined;
+  actions?: ConceptGuideActions;
   onChange: (strategy: string) => void;
 }) {
-  const hint = card.strategyHint ? (
-    <div
-      style={{
-        margin: '0 0 var(--space-6)',
-        padding: 'var(--space-8) var(--space-12)',
-        borderRadius: 'var(--r-12)',
-        background: 'rgba(var(--fg-rgb),0.04)',
-      }}
-    >
-      <div style={labelStyle}>Обычно в методе</div>
-      <div style={{ ...hintStyle, color: 'var(--text)', margin: '2px 0' }}>
-        {card.strategyHint}
-      </div>
-      {link.strategy.trim() === '' && (
-        <button
-          type="button"
-          onClick={() => onChange(card.strategyHint)}
-          style={{
-            minHeight: 44,
-            padding: 0,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--accent)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Взять за основу
-        </button>
-      )}
-    </div>
-  ) : null;
+  const base = guide ? guide.guide.goal : card.strategyHint;
+  const take =
+    base && link.strategy.trim() === '' ? (
+      <button type="button" onClick={() => onChange(base)} style={takeStyle}>
+        Взять за основу
+      </button>
+    ) : null;
+  const hint =
+    guide === undefined ? null : guide ? (
+      <ConceptGuideHint
+        view={guide}
+        from={{ kind: 'mode', id: card.modeId }}
+        actions={actions}
+        take={take}
+        marks={link.done}
+      />
+    ) : card.strategyHint ? (
+      <MethodHint text={card.strategyHint} take={take} />
+    ) : null;
   return (
     <ConceptTextField
       label="Что делаем в терапии"

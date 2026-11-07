@@ -48,6 +48,29 @@ describe('AlertThrottle', () => {
       suppressed: 0,
     });
   });
+
+  it('переполнение карты вытесняет старые ключи, недавний повтор по-прежнему подавлен', () => {
+    // Регресс: при >maxKeys prune делал clear(), и повтор недавнего ключа
+    // проходил — перебор IP выключал троттл целиком.
+    const t = new AlertThrottle(WINDOW);
+    for (let i = 0; i < 501; i++) t.take(`ip-${i}`, i);
+    expect(t.take('ip-500', 600).allow).toBe(false);
+    expect(t.take('ip-250', 601).allow).toBe(false);
+    // Вытеснен ровно самый старый ключ — и только он.
+    expect(t.take('ip-1', 602).allow).toBe(false);
+    expect(t.take('ip-0', 603).allow).toBe(true);
+  });
+
+  it('повторно открытое окно переставляет ключ в конец — его не вытесняют первым', () => {
+    const t = new AlertThrottle(WINDOW, 3);
+    t.take('a', 0);
+    t.take('b', 1);
+    t.take('c', 2);
+    t.take('a', WINDOW); // окно 'a' открылось заново — он теперь самый свежий
+    t.take('d', WINDOW + 1); // переполнение: вытесняется 'b', а не 'a'
+    expect(t.take('a', WINDOW + 2).allow).toBe(false);
+    expect(t.take('b', WINDOW + 3).allow).toBe(true);
+  });
 });
 
 describe('AlertBudget', () => {
@@ -117,5 +140,13 @@ describe('AlertBudget', () => {
       allow: true,
       suppressed: 0,
     });
+  });
+
+  it('переполнение карты вытесняет старые ключи, недавний шквал по-прежнему глушится', () => {
+    const b = new AlertBudget(WINDOW, K);
+    for (let i = 0; i < 501; i++) b.take(`event-${i}`, i);
+    for (let n = 1; n < K; n++) b.take('event-500', 600 + n);
+    expect(b.take('event-500', 700).allow).toBe(false);
+    expect(b.take('event-0', 701)).toEqual({ allow: true, suppressed: 0 });
   });
 });

@@ -3,8 +3,8 @@
 # секьюрити-патчи копились без движения. Для соло-мейнтейнера автоматизация PR
 # важнее, чем для команды.
 #
-# Покрыты ВСЕ package-lock.json репозитория (корень, webapp, schema-miniapp,
-# shared, game) плюс сами actions — сверка тестом
+# Покрыты ВСЕ package-lock.json репозитория (корень, webapp, shared,
+# game) плюс сами actions — сверка тестом
 # src/test-support/gates/dependabot-coverage.spec.ts: lock-файл без записи или
 # запись без lock-файла роняют jest.
 #
@@ -17,9 +17,7 @@
 #    возврата (решения владельца — docs/open/ci-tests.md, «Мажоры зависимостей»).
 #
 # ВАЖНО про зелёность бот-PR. CI красит их по построению, и это не поломка:
-#  - PR с правкой зависимостей мини-аппа красен на «dist устарел» — dist
-#    коммитится в git, а бот его не пересобирает;
-#  - PR с правкой зависимостей webapp/мини-аппа может упереться в бандл-храповик.
+#  - PR с правкой зависимостей webapp может упереться в бандл-храповик.
 # Гейты для бота не ослаблены (правило №15). Доводка — вручную, порядок в
 # docs/open/audit-2026-10.md, «Dependabot: доводка бот-PR».
 #
@@ -74,7 +72,7 @@ updates:
       webapp-minor-patch:
         update-types: [minor, patch]
       # @vitest/coverage-v8 пинит точную версию vitest: вместе или никак.
-      # В shared и мини-аппе то же семейство (правило №3: пара версий едина).
+      # В shared то же семейство (пара версий едина).
       vitest-major:
         patterns: ['vitest', '@vitest/*']
         update-types: [major]
@@ -86,27 +84,7 @@ updates:
         update-types:
           - version-update:semver-major
 
-  - package-ecosystem: npm
-    directory: /schema-miniapp
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      miniapp-minor-patch:
-        update-types: [minor, patch]
-      # Причина та же, что у webapp: vitest и coverage-v8 идут парой.
-      vitest-major:
-        patterns: ['vitest', '@vitest/*']
-        update-types: [major]
-    # TypeScript 7 (нативный компилятор) не берём, пока typescript-eslint и
-    # ts-jest его не принимают; версия компилятора едина во всех пакетах
-    # (решение владельца 2026-10-22, docs/open/ci-tests.md).
-    ignore:
-      - dependency-name: typescript
-        update-types:
-          - version-update:semver-major
-
-  # shared/ собирается в оба фронтенда; его vitest и react разъезжаются с
+  # shared/ собирается в фронтенд; его vitest и react разъезжаются с
   # фронтовыми, если бамп пришёл в одном пакете без пары.
   - package-ecosystem: npm
     directory: /shared

@@ -9,7 +9,7 @@ export function PartnerInviteLink({ label, url }: { label: string; url: string }
     <div>
       <div className="st-text st-text--faint">{label}</div>
       <div className="st-mono st-mb10">{url}</div>
-      <button className={`ds-link${copy.copied ? ' is-ok' : copy.failed ? ' st-link-danger' : ''}`} onClick={() => void copy.copy(url)}>
+      <button className={`ds-link${copy.copied ? ' is-ok' : copy.failed ? ' ds-link--danger' : ''}`} onClick={() => void copy.copy(url)}>
         {copy.copied ? '✓ Скопировано' : copy.failed ? 'Не скопировалось — ссылка выше' : 'Скопировать ссылку'}
       </button>
     </div>

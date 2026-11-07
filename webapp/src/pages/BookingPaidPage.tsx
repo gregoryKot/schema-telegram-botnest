@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { BookingConfirmedView } from '../components/booking/BookingConfirmedView';
 import { BookingPaidPending } from '../components/booking/BookingPaidPending';
-import { BookingPaidAccepted, BookingPaidLoadFailed } from '../components/booking/BookingPaidOutcomes';
+import { BookingManageLinkIncomplete, BookingPaidAccepted, BookingPaidLoadFailed } from '../components/booking/BookingPaidOutcomes';
 import { BookingPaidSkeleton } from '../components/booking/BookingPaidSkeleton';
 import { BookingCancelledView, BookingCompletedView } from '../components/booking/BookingEndedViews';
 import { useBookingByToken } from '../components/booking/useBookingByToken';
-import { paidPhase } from '../components/booking/paidPageModel';
+import { isManageLink, paidPhase } from '../components/booking/paidPageModel';
 import { page, h1, sub, backLink } from '../components/booking/bookingPageStyles';
 import { icon } from '../components/booking/bookingPaidStyles';
 import { Btn } from '../components/landing-kit';
@@ -21,7 +21,7 @@ export function BookingPaidPage() {
   const [token] = useState<string | null>(() => new URLSearchParams(window.location.search).get('token'));
   const [failed] = useState<boolean>(() => new URLSearchParams(window.location.search).get('fail') === '1');
 
-  const { booking, loaded, timedOut, loadError, reload } = useBookingByToken(token);
+  const { booking, loaded, timedOut, loadError, refreshFailed, reload } = useBookingByToken(token);
   const [cancelledByClient, setCancelledByClient] = useState(false);
 
   // The token is a capability (view + cancel). Drop it from the visible URL so
@@ -44,6 +44,10 @@ export function BookingPaidPage() {
         <Btn href="/#booking" full radius="btn" size="lg">Вернуться к записи</Btn>
       </>
     );
+  } else if (!token && isManageLink()) {
+    // Без токена с оплаты приходят законно (неподписанный редирект) — им
+    // «Оплата принята»; ссылка управления без токена — обрезанная ссылка.
+    body = <BookingManageLinkIncomplete />;
   } else if (!loaded) {
     body = <BookingPaidSkeleton />;
   } else if (phase === 'cancelled') {
@@ -51,7 +55,7 @@ export function BookingPaidPage() {
   } else if (booking && phase === 'confirmed') {
     body = <BookingConfirmedView booking={booking} token={token} onCancelled={() => setCancelledByClient(true)} />;
   } else if (booking && phase === 'pending') {
-    body = <BookingPaidPending booking={booking} timedOut={timedOut} onRetry={reload} />;
+    body = <BookingPaidPending booking={booking} timedOut={timedOut} refreshFailed={refreshFailed} onRetry={reload} />;
   } else if (booking && phase === 'completed') {
     body = <BookingCompletedView booking={booking} />;
   } else if (loadError) {

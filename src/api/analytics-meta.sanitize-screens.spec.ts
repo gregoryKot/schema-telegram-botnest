@@ -168,21 +168,21 @@ describe('sanitizeScreenMeta', () => {
     ).toBeUndefined();
   });
 
-  it('screen_block_move: screen="today" + новый блок «Сегодня» проходит (только move реально шлётся с today)', () => {
+  it('screen_block_move: screen="today" (экрана больше нет) → отброшено', () => {
     expect(
       sanitizeScreenMeta('screen_block_move', {
         screen: 'today',
-        block: 'focus',
+        block: 'streak',
         dir: 'up',
       }),
-    ).toEqual({ screen: 'today', block: 'focus', dir: 'up' });
+    ).toBeUndefined();
   });
 
-  it('screen_block_move: screen="today" + неизвестный block → отброшено целиком', () => {
+  it('screen_block_move: блок бывшей главной («focus») → отброшено', () => {
     expect(
       sanitizeScreenMeta('screen_block_move', {
-        screen: 'today',
-        block: 'мусор',
+        screen: 'profile',
+        block: 'focus',
         dir: 'up',
       }),
     ).toBeUndefined();

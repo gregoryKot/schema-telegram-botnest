@@ -19,7 +19,17 @@ export const BACKUP_REQUIRED_ENV_VARS = [
   'BACKUP_ENCRYPTION_KEY',
 ] as const;
 
-/** Необязательные: срок хранения (90 дней) и регион подписи (у R2 — `auto`). */
+/**
+ * Срок хранения бэкапов: от недели до 30 дней, по умолчанию 30. Потолок —
+ * обещание политики конфиденциальности (глава 6: удалённые из базы данные
+ * исчезают из копий за 30 дней, ч. 4–5 ст. 21 152-ФЗ). Держат его
+ * scripts/backup-upload.sh и формат env; сверка с политикой —
+ * src/test-support/gates/backup-retention-policy.spec.ts.
+ */
+export const BACKUP_RETENTION_MIN_DAYS = 7;
+export const BACKUP_RETENTION_MAX_DAYS = 30;
+
+/** Необязательные: срок хранения (30 дней) и регион подписи (у R2 — `auto`). */
 export const BACKUP_OPTIONAL_ENV_VARS = [
   'BACKUP_RETENTION_DAYS',
   'BACKUP_S3_REGION',

@@ -15,7 +15,11 @@
 import { ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 
-const LAST_METHOD_MESSAGE = 'Cannot unlink the only authentication method';
+// Текст идёт на экран как есть (humanizeResponseError пропускает русский):
+// английская строка подменялась общим «Не удалось отвязать способ входа», и
+// человек не узнавал причину (QA 2026-11, М2).
+export const LAST_METHOD_MESSAGE =
+  'Это единственный способ входа — без него в аккаунт не войти. Сначала нужно привязать другой.';
 const SERIALIZATION_RETRIES = 3;
 
 function isSerializationFailure(err: unknown): boolean {

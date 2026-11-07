@@ -41,8 +41,8 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     totpSecret: enc('src/auth/totp.service.ts'),
     totpRecoveryCodes: enc('src/auth/totp.service.ts'),
     recoveryEmail: plain(
-      '@unique + WHERE-лукап при восстановлении — недетерминированное ' +
-        'шифрование сломает поиск; осознанный компромисс',
+      'по всей видимости пуста и не используется с #864 (восстановление по почте убрано); ' +
+        'колонку удаляет отдельная миграция — docs/open/audit-2026-10.md',
     ),
     uiPrefs: plain(
       'серверное зеркало кастомизации мини-аппа — плоский объект флагов/id ' +
@@ -54,7 +54,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   EmailToken: {
     id: ID,
     tokenHash: TOKEN,
-    email: enc('src/auth/email.service.ts'),
+    email: enc('src/auth/auth.service.ts'), // encryptEmail → magic-link.ts
     purpose: ID,
   },
   TherapistRequest: {
@@ -143,7 +143,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     childhoodMemories: enc(`${BOT}/diary.service.ts`),
     healthyResponse: enc(`${BOT}/diary.service.ts`),
   },
-  GratitudeDiaryEntry: { date: DATE, items: enc(`${BOT}/diary.service.ts`) },
+  GratitudeDiaryEntry: { date: DATE, items: enc(`${BOT}/gratitude-merge.ts`) },
   AppActivity: { date: DATE },
   AnalyticsEvent: {
     name: plain('allow-list имён событий (правило №8)'),
@@ -153,11 +153,15 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   TherapyRelation: {
     code: TOKEN,
+    urlCode: plain(
+      'случайный код адреса карточки в кабинете (8 букв), PII не содержит',
+    ),
     clientAlias: enc(`${TH}/therapy-relations.service.ts`),
     virtualClientName: enc(`${TH}/therapy-relations.service.ts`),
     therapyStartDate: DATE,
     nextSession: DATE,
     meetingDays: plain('номера дней недели'),
+    endReason: ID,
   },
   UserTask: {
     type: ID,
@@ -167,19 +171,19 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   TherapistNote: { date: DATE, text: enc(`${TH}/therapy-notes.service.ts`) },
   ClientConceptualization: {
-    schemaIds: enc(`${TH}/therapy-notes.service.ts`),
-    modeIds: enc(`${TH}/therapy-notes.service.ts`),
-    earlyExperience: enc(`${TH}/therapy-notes.service.ts`),
-    unmetNeeds: enc(`${TH}/therapy-notes.service.ts`),
-    triggers: enc(`${TH}/therapy-notes.service.ts`),
-    copingStyles: enc(`${TH}/therapy-notes.service.ts`),
-    goals: enc(`${TH}/therapy-notes.service.ts`),
-    currentProblems: enc(`${TH}/therapy-notes.service.ts`),
-    modeTransitions: enc(`${TH}/therapy-notes.service.ts`),
-    modeMapNodes: enc(`${TH}/therapy-notes.service.ts`),
-    modeMapEdges: enc(`${TH}/therapy-notes.service.ts`),
-    modeLinks: enc(`${TH}/therapy-notes.service.ts`),
-    schemaLinks: enc(`${TH}/therapy-notes.service.ts`),
+    schemaIds: enc(`${TH}/concept-store.ts`),
+    modeIds: enc(`${TH}/concept-store.ts`),
+    earlyExperience: enc(`${TH}/concept-store.ts`),
+    unmetNeeds: enc(`${TH}/concept-store.ts`),
+    triggers: enc(`${TH}/concept-store.ts`),
+    copingStyles: enc(`${TH}/concept-store.ts`),
+    goals: enc(`${TH}/concept-store.ts`),
+    currentProblems: enc(`${TH}/concept-store.ts`),
+    modeTransitions: enc(`${TH}/concept-store.ts`),
+    modeMapNodes: enc(`${TH}/concept-store.ts`),
+    modeMapEdges: enc(`${TH}/concept-store.ts`),
+    modeLinks: enc(`${TH}/concept-store.ts`),
+    schemaLinks: enc(`${TH}/concept-store.ts`),
     history: plain(
       'контейнер снапшотов; чувствительные поля каждого снапшота ' +
         'шифруются попольно (encryptConceptFields)',

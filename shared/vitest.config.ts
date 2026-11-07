@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 // shared/ не собирается само (нет dev/build — оба фронтенда резолвят его
 // относительными импортами, README.md). Этот конфиг только для тестов
 // (этап 2.2 TEST_IMPROVEMENT_PLAN.md): shared раньше проверялся лишь
-// транзитивно через тесты webapp/schema-miniapp, своих тестов не было.
+// транзитивно через тесты webapp, своих тестов не было.
 export default defineConfig({
   plugins: [react()],
   // environment/globals НЕ глобально: каждый *.test.ts(x) сам ставит `// @vitest-environment jsdom`.
@@ -17,7 +17,8 @@ export default defineConfig({
       // scripts/check-frontend-coverage-ratchet.mjs (по образцу webapp/miniapp).
       reporter: ['text', 'json-summary'],
       include: ['src/**'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+      // *.test-helpers.ts — тестовая обвязка фронтов, не код продукта.
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/**/*.test-helpers.ts'],
     },
   },
 });

@@ -2,6 +2,7 @@
 // сервера/черновика, поиск и замена по modeId. Связь режима, убранного с карты,
 // не стирается — вернул режим, вернулись и связи, поэтому upsert её не трогает.
 import type { ConceptModeLink } from '../../apiTypes';
+import { normalizeTechniqueMarks } from './techniqueMarks';
 
 export function emptyModeLink(modeId: string): ConceptModeLink {
   return {
@@ -42,6 +43,8 @@ export function normalizeModeLinks(raw: unknown): ConceptModeLink[] {
       continue;
     }
     seen.add(r.modeId);
+    // Отметки «Делали сегодня» (techniqueMarks.ts) — только если есть.
+    const done = normalizeTechniqueMarks(r.done);
     out.push({
       modeId: r.modeId,
       alias: str(r.alias),
@@ -50,6 +53,7 @@ export function normalizeModeLinks(raw: unknown): ConceptModeLink[] {
       origin: str(r.origin),
       manifest: str(r.manifest),
       strategy: str(r.strategy),
+      ...(done.length > 0 ? { done } : {}),
     });
   }
   return out;
@@ -72,6 +76,7 @@ export function upsertModeLink(
     : [...links, link];
 }
 
+/** Пуста ли связь на схеме; отметки техник — журнал, а не текст связи, не считаются. */
 export function isModeLinkEmpty(link: ConceptModeLink): boolean {
   return (
     link.alias.trim() === '' &&

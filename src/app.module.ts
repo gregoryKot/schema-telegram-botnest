@@ -12,9 +12,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AdminKeyAuditInterceptor } from './booking/admin-key-audit.interceptor';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import type { ServerResponse } from 'http';
-import { cacheControlFor } from './infra/static-cache';
-import type { Request, Response } from 'express';
+import { configureBuildAssets, siteStaticOptions } from './infra/site-static';
 import { UserThrottlerGuard } from './api/throttler.guard';
 import { TelegramModule } from './telegram/telegram.module';
 import { BotModule } from './bot/bot.module';
@@ -30,12 +28,14 @@ import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { ArticlesModule } from './articles/articles.module';
 import { configureArticleSeo } from './articles/article-seo.routes';
+import { homeSeoMiddleware } from './articles/home-seo.middleware';
 import {
   practiceDomainMiddleware,
   PRACTICE_ALIAS_HOSTS,
 } from './practice-domain.middleware';
 import { configureUnifiedFrontend } from './unified-frontend.middleware';
-import { practiceIndexHtml } from './practice-index-html';
+import { practiceIndexMiddleware } from './practice-index-html';
+import { PRACTICE_INDEXED_PAGES } from './practice-domain.seo';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
 import { SelfCheckService } from './infra/self-check/self-check.service';
@@ -53,21 +53,10 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
       inject: [PrismaService],
       useFactory: throttlerOptions,
     }),
-    // Single ServeStatic: site at / (webapp/dist), mini-app at /app/. SPA
-    // renderPath serves index.html for non-file paths; /api excluded.
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'webapp', 'dist'),
-      // path-to-regexp v6+ syntax: '/*path' (named wildcard), not bare '/*'
-      renderPath: '/*path',
-      exclude: ['/api/{*path}'],
-      // Cache-Control по типу файла (immutable — только то, чьё имя меняется
-      // вместе с содержимым; иначе max-age=0, замер 2026-08-22: 857мс).
-      serveStaticOptions: {
-        setHeaders: (res: ServerResponse, filePath: string) => {
-          res.setHeader('Cache-Control', cacheControlFor(filePath));
-        },
-      },
-    }),
+    // Сайт на / (webapp/dist): фолбэк, исключения и кэш — infra/site-static.ts.
+    ServeStaticModule.forRoot(
+      siteStaticOptions(join(__dirname, '..', 'webapp', 'dist')),
+    ),
     PrismaModule,
     ThrottleHitModule,
     CronLeaderModule,
@@ -91,7 +80,7 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
 })
 export class AppModule implements NestModule {
   // configure() runs before ServeStaticModule.onModuleInit(), so this
-  // middleware intercepts GET / before serve-static can respond.
+  // middleware intercepts GET of indexed practice pages before serve-static.
   configure(consumer: MiddlewareConsumer) {
     const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
@@ -105,14 +94,18 @@ export class AppModule implements NestModule {
       .forRoutes({ path: '{*path}', method: RequestMethod.ALL });
 
     configureUnifiedFrontend(consumer); // /app/* → /today за флагом
+    configureBuildAssets(consumer); // промах по файлу сборки — 404 no-store
+    consumer.apply(practiceIndexMiddleware(html, ALIAS_DOMAINS)).forRoutes(
+      ...PRACTICE_INDEXED_PAGES.map((path) => ({
+        path,
+        method: RequestMethod.GET,
+      })),
+    );
+
+    // Главная продукта: текст лендинга в #root для робота без JS (GEO.md);
+    // после practiceIndexMiddleware — главная визитки до сюда не доходит.
     consumer
-      .apply((req: Request, res: Response, next: () => void) => {
-        if (!html) return next();
-        if (!ALIAS_DOMAINS.has(req.hostname)) return next();
-        const modified = practiceIndexHtml(html, req.hostname);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.send(modified);
-      })
+      .apply(homeSeoMiddleware(html))
       .forRoutes({ path: '/', method: RequestMethod.GET });
 
     // SEO для /articles* и sitemap.xml — после practiceDomainMiddleware.

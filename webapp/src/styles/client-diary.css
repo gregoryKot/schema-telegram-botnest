@@ -1,26 +1,16 @@
-/* Экран «Дневник» клиента. Префикс cd-. */
+/* Экран «Записи» клиента (вкладка и лист «Дневники»). Префикс cd-. */
 .cd-page { max-width: 1100px; }
-.cd-head { align-items: flex-end; gap: 24px; }
-.cd-head-sub { margin-top: 8px; font-size: 14px; color: var(--text-sub); }
-.cd-stats { display: flex; gap: 28px; }
-.cd-stat { font-size: 40px; }
-.cd-stat span { font-size: 18px; color: var(--text-ghost); }
-.cd-stat--hot { color: var(--accent-hot); }
-.cd-stat-label { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
 
-.cd-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-.cd-quick-card {
-  border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 10px;
-  cursor: pointer; min-height: 170px; box-sizing: border-box; transition: transform .12s;
+/* «Записать» — ds-btn--lg (48/r24, во всю ширину на телефоне); на ноутбуке пилюля по тексту. */
+.cd-write { align-self: stretch; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .cd-write { width: auto; padding: 0 var(--space-24); } }
+
+/* Шапка (DiaryHeader): на ≥768 герой слева и «Записать» справа в одной строке, фильтры ниже (#925). */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .pp-block.cd-head { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-24); }
+  .cd-head .pp-hero-body { flex: 1; min-width: 0; }
+  .cd-head .cd-write { align-self: center; flex-shrink: 0; }
 }
-.cd-quick-card:hover { transform: translateY(-2px); }
-.cd-quick-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
-.cd-quick-title { font-family: var(--serif); font-size: 26px; line-height: 1.1; color: var(--text); }
-.cd-quick-desc { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
-.cd-quick-meta { font-size: 13px; line-height: 1.35; color: var(--text-muted); }
-.cd-quick-foot { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
-.cd-quick-foot b { font-weight: 700; white-space: nowrap; }
-.cd-quick-foot span { color: var(--text-muted); white-space: nowrap; }
 
 .cd-drafts { display: flex; flex-direction: column; gap: 10px; }
 .cd-draft {
@@ -37,7 +27,6 @@
 .cd-draft-preview { flex-basis: 100%; font-size: 13px; line-height: 1.45; color: var(--text-sub); overflow-wrap: anywhere; }
 
 .cd-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.cd-bar .ds-seg-btn { min-height: 44px; }
 
 .cd-timeline { display: flex; flex-direction: column; gap: 28px; }
 .cd-day { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 20px; }
@@ -53,53 +42,26 @@
 .cd-entry-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); overflow-wrap: anywhere; }
 .cd-entry-text:empty { display: none; }
 .cd-entry-meta { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
-.cd-entry-more { padding-top: 12px; border-top: 1px solid var(--line); cursor: default; }
+.cd-entry-more-hint { font-weight: 600; color: var(--accent); white-space: nowrap; }
+.cd-entry-more { padding-top: 12px; border-top: 1px solid var(--paper-sunk); cursor: default; }
 .cd-field { margin-bottom: 10px; }
 .cd-field-label { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 3px; }
 .cd-field-label.is-accent { color: var(--accent); }
 .cd-field-text { font-size: 13px; color: var(--text-sub); line-height: 1.55; overflow-wrap: anywhere; }
-.cd-del { margin-top: 4px; }
-.cd-del-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .cd-grat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .cd-grat li { overflow-wrap: anywhere; }
 .cd-grat-num { font-size: 11px; color: var(--text-ghost); margin-right: 10px; }
 .cd-grat-more { color: var(--text-faint); font-style: italic; }
 
-@media (max-width: 767px) {
-  /* Шапка как в мини-аппе: заголовок одной строкой, подпись, счётчики строкой */
-  .cd-page { gap: var(--space-16); padding-top: var(--space-16); }
-  .cd-head { flex-direction: column; align-items: stretch; gap: var(--space-8); }
-  .cd-head .ds-eyebrow { display: none; }
-  .cd-head h1 { margin: 0; font-size: 28px; line-height: 1.15; }
-  .cd-head-sub { margin-top: var(--space-4); }
-  .cd-stats { gap: var(--space-16); flex-wrap: wrap; }
-  .cd-stats > div { display: flex; align-items: baseline; gap: var(--space-6); }
-  .cd-stat { font-size: 20px; }
-  .cd-stat span { font-size: 14px; }
-  .cd-stat-label { margin-top: 0; font-size: 13px; color: var(--text-muted); }
+/* Дата группы на ≥768 — компактная подпись в колонке слева: «4 ноября» и под ней «среда» (#925). */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cd-day { grid-template-columns: 136px minmax(0, 1fr); gap: var(--space-24); }
+  .cd-day-date { font: 600 15px/1.3 var(--sans); white-space: nowrap; }
+  .cd-day-rel { font-size: 12px; margin-top: 2px; }
+}
 
-  /* Три кнопки «записать» в ряд по ширине экрана, ничего не обрезается */
-  .cd-quick { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }
-  .cd-quick-card { min-height: 96px; padding: var(--space-12) var(--space-8); gap: var(--space-4); border-radius: var(--r-16); }
-  .cd-quick-eyebrow { font-size: 11px; letter-spacing: 0; text-transform: none; line-height: 1.2; overflow-wrap: break-word; }
-  .cd-quick-title { font-size: 16px; line-height: 1.15; overflow-wrap: anywhere; }
-  .cd-quick-desc, .cd-quick-foot span { display: none; }
-  .cd-quick-meta { font-size: 12px; overflow-wrap: anywhere; }
-  .cd-quick-foot { font-size: 13px; }
-
-  /* Чипы-фильтры: активный — тёмный (ink), лента скроллится от края до края */
-  .cd-bar .ds-seg {
-    display: flex; flex: 0 0 auto; box-sizing: border-box; max-width: none;
-    width: calc(100% + 2 * var(--space-16)); margin: 0 calc(-1 * var(--space-16)); padding: 0 var(--space-16);
-    background: none; border-radius: 0; gap: var(--space-8);
-    scroll-snap-type: x proximity; scroll-padding: 0 var(--space-16);
-  }
-  .cd-bar .ds-seg-btn {
-    flex: 0 0 auto; scroll-snap-align: start; padding: 0 var(--space-12); border-radius: var(--r-20);
-    background: var(--paper-sunk); color: var(--text-muted);
-  }
-  .cd-bar .ds-seg-btn.is-active { background: var(--ink); color: var(--on-ink); }
-  .cd-bar .ds-count { margin-left: var(--space-4); padding: 0; background: none; font-size: 12px; color: inherit; opacity: .75; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* Кегль заголовка — ds-h1 (#906); .cd-head — обычный блок, своих flex-правил нет. */
 
   /* Записи: бейдж и время в одной строке, заголовок на всю ширину под ним */
   .cd-entry-head { flex-wrap: wrap; row-gap: var(--space-4); }
@@ -112,9 +74,11 @@
   .cd-day-date { font-size: 22px; }
 }
 
-/* Переход в трекер потребностей из хаба дневников */
-.cd-tracker { display: flex; flex-direction: column; gap: var(--space-8); margin-top: var(--space-16); }
-.cd-tracker-card { display: flex; align-items: center; gap: var(--space-16); min-height: 44px; }
-.cd-tracker-body { flex: 1; min-width: 0; }
-.cd-tracker-title { font-size: 15px; font-weight: 700; }
-.cd-tracker-meta { margin-top: var(--space-4); font-size: 13px; color: var(--text-muted); }
+/* Строка трекера в ленте дня и серия внизу */
+.cd-entry--tracker { flex-direction: row; align-items: center; gap: var(--space-8); font-size: 15px; font-weight: 600; }
+.cd-retry { min-height: 44px; padding: 0 var(--space-8); background: none; border: none; cursor: pointer; font: 600 13px var(--sans); color: var(--accent); }
+.cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
+
+/* Пустая лента: карточки «Схема» и «Режим» — цветная бумага с мотивом над текстом */
+.cd-explainer-card { padding: 16px 18px; }
+.cd-explainer-art { display: flex; justify-content: flex-start; width: auto; margin-bottom: 8px; }

@@ -15,34 +15,34 @@ import { api } from '../../api';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import { useGratitudeItems } from '../../../../shared/src/diary/useGratitudeItems';
+import { useSeedGratitudeItem } from './quickEntry/useSeedGratitudeItem';
 
 interface Props {
+  initialItem?: string; // текст из «Дневника одной страницей»: встаёт в первый пустой пункт
   onClose: () => void;
   date: string;
   existingItems?: string[];
-  onSave: (date: string, items: string[]) => Promise<void>;
+  onSave: (date: string, items: string[], base: string[]) => Promise<void>;
 }
 
-export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Props) {
+export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems, onSave }: Props) {
   const goBack = useHistorySheet(onClose);
-  // Форма сама поднимает сохранённый день: сервер заменяет пункты дня целиком,
-  // и вход без existingItems («плюс») иначе стирал бы прежнюю запись
-  // (инцидент 2026-10-18, docs/INCIDENTS.md).
-  const { items, setItems, status, retry } = useGratitudeItems({
+  // Форма сама поднимает сохранённый день (инцидент 2026-10-18), а base — то,
+  // с чего она начала: сервер сливает с ним сохранение и не теряет пункт,
+  // добавленный с другой вкладки (src/bot/gratitude-merge.ts).
+  const { items, setItems, base, status, retry } = useGratitudeItems({
     date,
     existingItems,
     load: () => api.getGratitudeDiary(),
   });
   const ready = status === 'ready';
   const [saving, setSaving] = useState(false);
-  // Отказ сохранения раньше сообщался ТОЛЬКО вибрацией haptic.error(), а лист
-  // всё равно закрывался: на десктопе вибрации нет вовсе, и человек считал,
-  // что запись сохранена. Текст уцелел бы черновиком, но об этом тоже никто
-  // не сообщал.
+  // Отказ раньше сообщался лишь вибрацией (в браузере её нет) и закрывал лист.
   const [saveError, setSaveError] = useState(false);
   const firstItemRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { if (ready) firstItemRef.current?.focus(); }, [ready]);
+  useSeedGratitudeItem(ready, initialItem, setItems);
 
   const update = (i: number, v: string) => setItems(prev => prev.map((it, idx) => idx === i ? v : it));
   const addItem = () => { haptic.select(); setItems(prev => prev.length < 5 ? [...prev, ''] : prev); };
@@ -56,7 +56,7 @@ export function GratitudeEntrySheet({ onClose, date, existingItems, onSave }: Pr
     haptic.success();
     setSaving(true);
     try {
-      await onSave(date, filled);
+      await onSave(date, filled, base);
       clearDraft('gratitude');
       goBack();
     } catch {

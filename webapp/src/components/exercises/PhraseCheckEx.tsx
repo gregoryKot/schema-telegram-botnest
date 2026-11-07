@@ -22,6 +22,7 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
 import { usePhraseCheckState } from '../../../../shared/src/phraseCheck/usePhraseCheckState';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 const TOTAL_STEPS = PHRASE_CRITERIA.length + 2; // фраза + 9 примет + переписать
 
@@ -36,7 +37,7 @@ export function PhraseCheckEx({
   const goBack = useHistorySheet(onBack);
   const {
     phrase, setPhrase, markIndex, setMarkIndex, marks,
-    rewrite, setRewrite, inWarmWords, setInWarmWords, answer, reset,
+    rewrite, setRewrite, inWarmWords, setInWarmWords, answer, reset, clearDraft,
   } = usePhraseCheckState();
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,6 +65,7 @@ export function PhraseCheckEx({
         rewrite: rewrite.trim() || undefined,
         inWarmWords: inWarmWords && Boolean(rewrite.trim()),
       });
+      clearDraft();
       onComplete?.();
       setDone(true);
       api.getPhraseChecks().then(setHistory).catch((e) => console.error('getPhraseChecks failed', e));
@@ -89,12 +91,14 @@ export function PhraseCheckEx({
   function updateHistoryEntry(id: number, newRewrite: string | null) {
     setHistory((prev) => prev.map((h) => (h.id === id ? { ...h, rewrite: newRewrite } : h)));
   }
+  const removeHistoryEntry = (id: number) => setHistory((prev) => prev.filter((h) => h.id !== id));
 
   const historyOverlay = openHistoryEntry && (
     <PhraseHistoryCard
       entry={openHistoryEntry}
       onClose={() => setOpenHistoryId(null)}
       onUpdated={updateHistoryEntry}
+      onDeleted={removeHistoryEntry}
       tr={tr}
     />
   );
@@ -143,12 +147,12 @@ export function PhraseCheckEx({
   return (
     <>
     <ExScreen
-      onBack={goBack}
-      eyebrow="№ 08 · Внутренний голос"
+      onBack={goBack} caution
+      eyebrow={exerciseCard('phrase').eyebrow}
       title={<>Критик<br /><span className="it">или забота?</span></>}
       lede={tr(
-        'Запиши фразу, которую сказал себе или услышал — дословно. Разбери её по девяти приметам и перепиши голосом, который помогает.',
-        'Запишите фразу, которую сказали себе или услышали — дословно. Разберите её по девяти приметам и перепишите голосом, который помогает.',
+        'Запиши дословно фразу, которую говоришь себе или слышишь от других. Разбери её по девяти приметам и перепиши голосом, который помогает.',
+        'Запишите дословно фразу, которую говорите себе или слышите от других. Разберите её по девяти приметам и перепишите голосом, который помогает.',
       )}
       aside={
         <div className="ds-card ex2-note">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MODE_GROUPS, getModeById } from '../schemaTherapyData';
-import { api, type ModeMapNode, type TherapistCustomMode, type UserId } from '../api';
+import { api, type ModeMapNode, type TherapistCustomMode } from '../api';
 import { CUSTOM_MODE_NAME_MAX } from '../../../shared/src/limits/textLimits';
 import { MMIcon } from './modeMapIcons';
 import { DRAG_TYPE, GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from './modeMapData';
@@ -9,22 +9,25 @@ import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 import { ShapePicker } from './modeMap/ShapePicker';
 import { ConceptPaletteItems } from './modeMap/ConceptPaletteItems';
+import { ClientSchemasPalette } from './modeMap/ClientSchemasPalette';
+import { useModeMapConcept } from './modeMap/clientConceptContext';
 import { findModeMeta } from './modeMap/modeNodeMeta';
-import { hueStyle, MODE_GROUP_HUE } from '../lib/tone';
 import '../styles/sheet-modemap.css';
 
 // Clinical display order: child → critic → coping(×3) → healthy
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
 
-interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void; clientId: UserId }
+interface Props { onAdd: (node: Omit<ModeMapNode, 'position'>) => void; onAddMany?: (nodes: Omit<ModeMapNode, 'position'>[]) => void }
 
-export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
+export function ModeMapPalette({ onAdd, onAddMany }: Props) {
   const tr = useTr();
   const [search, setSearch] = useState('');
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
   // 'failed' ≠ пустой список — сбой загрузки не равен «режимов нет» (см. CLAUDE.md).
   const [customModes, setCustomModes] = useState<TherapistCustomMode[] | 'failed'>([]);
-  const [clientModeIds, setClientModeIds] = useState<string[] | 'failed'>([]);
+  // Режимы клиента (из концептуализации) приезжают из общего контекста карты — один запрос на карту.
+  const concept = useModeMapConcept();
+  const clientModeIds: string[] | 'failed' = concept === 'failed' ? 'failed' : concept?.modeIds ?? [];
   const [clientOpen, setClientOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -37,13 +40,6 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
   useEffect(() => {
     api.listCustomModes().then(setCustomModes).catch(() => setCustomModes('failed'));
   }, []);
-
-  // Modes already identified for this client (from conceptualization)
-  useEffect(() => {
-    api.getConceptualization(clientId)
-      .then(c => setClientModeIds(Array.isArray(c?.modeIds) ? c.modeIds : []))
-      .catch(() => setClientModeIds('failed'));
-  }, [clientId]);
 
   const q = search.trim().toLowerCase();
   const customModesList = Array.isArray(customModes) ? customModes : [];
@@ -103,7 +99,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
     <div className="ds-card mm2-pal">
       {/* Search */}
       <div className="mm2-pal-search">
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…" className="ds-input" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Поиск режима…" className="ds-input ds-input--search" />
       </div>
 
       <div className="mm2-pal-scroll">
@@ -162,6 +158,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           </button>
         )}
 
+        {!q && <ClientSchemasPalette onAdd={onAdd} onDragStart={onDragStart} />}
         {!q && <ConceptPaletteItems onAdd={onAdd} onDragStart={onDragStart} />}
 
         {/* Standard mode groups — child → critic → coping → healthy (clinical order) */}
@@ -174,9 +171,10 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           if (q && items.length === 0) return null;
           const isOpen = q ? true : openGroups.has(group.id);
           return (
-            <div key={group.id} style={hueStyle(MODE_GROUP_HUE[group.id])}>
+            // Цвет группы = цвет её узла на холсте (GROUP_TO_TYPE ← TYPE_COLORS), не тон кабинета.
+            <div key={group.id} data-group={group.id} style={{ '--gc': meta.color } as React.CSSProperties}>
               <button onClick={() => !q && toggleGroup(group.id)} className={`mm2-pal-head${q ? ' is-static' : ''}`}>
-                <i className="ds-dot tone-fill" />
+                <i className="ds-dot mm2-gdot" />
                 <span className="mm2-pal-head-name">{group.group}</span>
                 {!q && <span className="mm2-pal-head-n">{isOpen ? '▲' : `▼ ${group.items.length}`}</span>}
               </button>
@@ -185,7 +183,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
                   onClick={() => onAdd(makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   draggable onDragStart={e => onDragStart(e, makeNode(item.id, meta.type, item.name, meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {}))}
                   className="mm2-pal-item is-tone" title={item.short}>
-                  <i className="ds-dot tone-fill" />
+                  <i className="ds-dot mm2-gdot" />
                   <span className="mm2-pal-item-name">{item.name}</span>
                 </button>
               ))}
@@ -255,7 +253,7 @@ export function ModeMapPalette({ onAdd, onAddMany, clientId }: Props) {
           const m = GROUP_TO_TYPE[g.id];
           return !m || !g.items.some(i => i.name.toLowerCase().includes(q) || i.short.toLowerCase().includes(q));
         }) && !customModesList.some(m => m.name.toLowerCase().includes(q)) && (
-          <div className="mm2-pal-empty">Режим не найден</div>
+          <p className="ds-empty mm2-pal-empty">Режим не найден</p>
         )}
       </div>
     </div>

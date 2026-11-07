@@ -1,5 +1,7 @@
 import type { UserSettings } from '../../api';
-import { TIMEZONES, HOURS, FREQ_LABELS, QUIET_PRESETS, pad } from '../../../../shared/src/settings/constants';
+import { hueStyle } from '../../lib/tone';
+import { HOURS, FREQ_LABELS, QUIET_PRESETS, pad } from '../../../../shared/src/settings/constants';
+import { timezoneOptions } from '../../../../shared/src/settings/timezones';
 
 export type SubView = 'main' | 'time' | 'tz' | 'freq' | 'quiet';
 
@@ -14,29 +16,20 @@ interface Props {
 // сохраняет его и возвращает на главный экран настроек.
 export function SettingsSubView({ subView, settings, patch, onDone }: Props) {
   const choose = (update: Partial<UserSettings>) => async () => { await patch(update); onDone(); };
-  const keys = (fn: () => Promise<void>) => async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await fn(); }
-  };
-  const option = (key: string | number, label: string, active: boolean, update: Partial<UserSettings>) => {
-    const fn = choose(update);
-    return (
-      <div key={key} onClick={fn} role="button" tabIndex={0} onKeyDown={keys(fn)}
-        className={`st-opt${active ? ' is-active' : ''}`}
-      >{label}{active && <span>✓</span>}</div>
-    );
-  };
+  const option = (key: string | number, label: string, active: boolean, update: Partial<UserSettings>) => (
+    <button key={key} type="button" aria-pressed={active} onClick={choose(update)}
+      className="ds-list-row ds-list-row--nav ds-list-row--inset ds-list-row--hover"
+    ><span className="ds-list-title">{label}</span>{active && <span className="st-check" aria-hidden="true">✓</span>}</button>
+  );
 
   if (subView === 'time') {
     return (
-      <div className="ds-card st-hours">
-        {HOURS.map(h => {
-          const fn = choose({ notifyLocalHour: h });
-          return (
-            <div key={h} onClick={fn} role="button" tabIndex={0} onKeyDown={keys(fn)}
-              className={`st-hour${h === settings.notifyLocalHour ? ' is-active' : ''}`}
-            >{pad(h)}:00</div>
-          );
-        })}
+      <div className="ds-card st-hours" style={hueStyle(undefined)}>
+        {HOURS.map(h => (
+          <button key={h} type="button" aria-pressed={h === settings.notifyLocalHour} onClick={choose({ notifyLocalHour: h })}
+            className={`ds-chip ds-chip--toggle${h === settings.notifyLocalHour ? ' is-on' : ''}`}
+          >{pad(h)}:00</button>
+        ))}
       </div>
     );
   }
@@ -59,18 +52,16 @@ export function SettingsSubView({ subView, settings, patch, onDone }: Props) {
           В тихие часы бот не пишет вообще — всё, что накопится, придёт утром.
         </div>
         <div className="st-opts">
-          {QUIET_PRESETS.map(p => option(
-            p.label, p.label,
+          {QUIET_PRESETS.map(p => option(p.label, p.label,
             p.start === (settings.notifyQuietStart ?? 22) && p.end === (settings.notifyQuietEnd ?? 8),
-            { notifyQuietStart: p.start, notifyQuietEnd: p.end },
-          ))}
+            { notifyQuietStart: p.start, notifyQuietEnd: p.end }))}
         </div>
       </div>
     );
   }
   return (
     <div className="ds-card st-opts">
-      {TIMEZONES.map(tz => option(tz.iana, tz.label, tz.iana === settings.notifyTimezone, { notifyTimezone: tz.iana }))}
+      {timezoneOptions(settings.notifyTimezone).map(tz => option(tz.iana, tz.label, tz.iana === settings.notifyTimezone, { notifyTimezone: tz.iana }))}
     </div>
   );
 }

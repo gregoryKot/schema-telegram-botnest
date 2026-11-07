@@ -11,8 +11,10 @@
 // фраза про вход там лишняя (входа на визитке нет). Продуктовый хост
 // рисуется как раньше.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { CookieBanner } from './CookieBanner';
+import { Dialog } from './Dialog';
+import { markSheetOpen } from '../hooks/openSheets';
 
 beforeEach(() => {
   localStorage.clear();
@@ -35,6 +37,18 @@ function stubHost(hostname: string) {
     writable: true,
   });
 }
+
+describe('CookieBanner — не закрывает нижнюю навигацию (C-З1)', () => {
+  it('обёртка баннера — класс cookie-banner-wrap; css поднимает её над .mobile-nav на телефоне', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const css = readFileSync(join(__dirname, '..', 'index.css'), 'utf8');
+    render(<CookieBanner />);
+    expect(document.querySelector('.cookie-banner-wrap')).not.toBeNull();
+    expect(css).toMatch(/body:has\(\.mobile-nav\) \.cookie-banner-wrap \{ bottom: calc\(var\(--mobile-nav-h\) \+ var\(--safe-bottom\)\)/);
+    expect(css).toMatch(/\.cookie-banner-wrap \{[^}]*padding: 0 16px calc\(20px \+ var\(--safe-bottom\)\)/);
+  });
+});
 
 describe('CookieBanner — первый визит', () => {
   it('на чистом localStorage баннер показан', () => {
@@ -130,5 +144,45 @@ describe('CookieBanner — продуктовый хост (schemehappens.ru): �
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(localStorage.getItem('cookie_consent')).toBe('all');
+  });
+});
+
+// QA 2026-11 (A-З7): баннер с zIndex 9999 лежал поверх экрана согласий и
+// закрывал «Далее» — новичок не мог пройти дальше, не нажав «Понятно».
+// Теперь он ждёт, пока закроются модальные слои (диалоги и листы).
+describe('CookieBanner — не перекрывает модальные шаги', () => {
+  function WithDialog({ open }: { open: boolean }) {
+    return (
+      <>
+        {open && <Dialog label="Согласия"><button type="button">Далее</button></Dialog>}
+        <CookieBanner />
+      </>
+    );
+  }
+  const banner = () => screen.queryByRole('dialog', { name: 'Уведомление об использовании куки' });
+
+  it('открыт диалог — баннера нет; диалог закрыт — баннер появляется', () => {
+    const { rerender } = render(<WithDialog open />);
+    expect(screen.getByRole('dialog', { name: 'Согласия' })).toBeTruthy();
+    expect(banner()).toBeNull();
+    rerender(<WithDialog open={false} />);
+    expect(banner()).toBeTruthy();
+  });
+
+  it('открыт лист (useHistorySheet отмечает его в реестре) — баннера нет', () => {
+    render(<CookieBanner />);
+    expect(banner()).toBeTruthy();
+    let unmark = () => {};
+    act(() => { unmark = markSheetOpen('why-sheet'); });
+    expect(banner()).toBeNull();
+    act(() => unmark());
+    expect(banner()).toBeTruthy();
+  });
+
+  it('контрольный: решение уже сохранено — после закрытия диалога баннер не возвращается', () => {
+    localStorage.setItem('cookie_consent', 'all');
+    const { rerender } = render(<WithDialog open />);
+    rerender(<WithDialog open={false} />);
+    expect(banner()).toBeNull();
   });
 });

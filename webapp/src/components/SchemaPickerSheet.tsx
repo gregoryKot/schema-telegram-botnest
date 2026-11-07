@@ -3,6 +3,7 @@ import { useTr } from '../utils/addressForm';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useAutosavedSelection } from '../../../shared/src/hooks/useAutosavedSelection';
 import { DOMAIN_HUE, hueStyle } from '../lib/tone';
+import { DomainMark } from './DomainMark';
 import { SsSheet, SsHead } from './schemaSheets/SsSheet';
 import { PickRow } from './schemaSheets/PickRow';
 
@@ -21,13 +22,13 @@ export function SchemaPickerSheet({ selected, onSave, onClose }: Props) {
     <SsSheet onBack={goBack}>
       <SsHead
         eyebrow="Схемы"
-        title="Мои схемы"
+        title="Мои схемы" layers
         lede={tr('Выбери схемы, которые тебе близки. Можно без теста – если ты уже знаешь свои. Выбор сохраняется сразу.', 'Выберите схемы, которые вам близки. Можно без теста – если вы уже знаете свои. Выбор сохраняется сразу.')}
       />
       {SCHEMA_DOMAINS.map(domain => (
         <div key={domain.id} className="ss-pick-group" style={hueStyle(DOMAIN_HUE[domain.id])}>
           <div className="ss-pick-eyebrow tone-ink">
-            <span className="ds-dot tone-fill" />
+            <DomainMark domainId={domain.id} />
             {domain.domain}
           </div>
           {domain.schemas.map(s => (

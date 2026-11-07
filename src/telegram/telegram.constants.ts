@@ -15,8 +15,8 @@ export const BOT_USERNAME = (process.env.BOT_USERNAME ?? '')
   .trim()
   .replace(/^@/, '');
 export const MINIAPP_APP_NAME = process.env.MINIAPP_APP_NAME ?? 'diary';
-// Слэш в конце обязателен: vite base '/app/', а 301 /app → /app/ теряет #tgWebAppData.
-export const MINIAPP_URL = process.env.MINIAPP_URL?.trim() || `${APP_URL}/app/`;
+export const CABINET_URL = `${APP_URL}/today`;
+export const CABINET_HELP_URL = `${APP_URL}/practice`;
 
 /** Меню команд бота (setMyCommands). Единый список — правится здесь. */
 export const BOT_COMMANDS = [
@@ -27,17 +27,6 @@ export const BOT_COMMANDS = [
   { command: 'about', description: 'О приложении и авторе ℹ️' },
 ];
 
-export const VALID_TIMEZONES = [
-  'America/Los_Angeles',
-  'America/New_York',
-  'Europe/London',
-  'Europe/Berlin',
-  'Europe/Kyiv',
-  'Asia/Jerusalem',
-  'Europe/Moscow',
-  'Asia/Dubai',
-  'Asia/Tashkent',
-  'Asia/Almaty',
-  'Asia/Shanghai',
-];
+// Список поясов — src/notification/notify-timezones.ts (один на бота, сайт и мини-апп).
+export { VALID_TIMEZONES } from '../notification/notify-timezones';
 export const ERROR_RETRY = 'Не получилось. Попробовать ещё раз.';

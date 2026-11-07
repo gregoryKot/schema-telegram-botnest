@@ -1,4 +1,4 @@
-// Мелкие эндпоинты api.controller.ts: link-token, typed UI-флаги, черновики
+// Мелкие эндпоинты api.controller.ts: typed UI-флаги, черновики
 // дневника (диревики), профиль, disclaimer. Прямой
 // потребитель PrismaService — фейкуем таблицы user/diaryDraft (см.
 // test-support/fake-prisma.spec-helper.ts), остальное — фейковые сервисы.
@@ -11,14 +11,10 @@ import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 import type { BotService } from '../bot/bot.service';
 import type { AccountService } from '../bot/account.service';
 import type { ProfileService } from '../bot/profile.service';
-import type { AuthService } from '../auth/auth.service';
+import type { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 
 function makeReq(userId = 1n, extra: Record<string, unknown> = {}) {
   return { webUser: { userId }, ...extra } as any;
-}
-
-function makeRes() {
-  return { cookie: jest.fn() } as any;
 }
 
 function makeController(
@@ -26,7 +22,7 @@ function makeController(
     botService?: Partial<BotService>;
     accountService?: Partial<AccountService>;
     profileService?: Partial<ProfileService>;
-    authService?: Partial<AuthService>;
+    scheduleService?: Partial<TelegramScheduleService>;
     userRows?: Record<string, unknown>[];
     draftRows?: Record<string, unknown>[];
   } = {},
@@ -46,10 +42,10 @@ function makeController(
     getProfile: jest.fn().mockResolvedValue({ name: 'Юзер' }),
     ...overrides.profileService,
   } as unknown as ProfileService;
-  const authService = {
-    buildLinkToken: jest.fn().mockReturnValue('link-token-abc'),
-    ...overrides.authService,
-  } as unknown as AuthService;
+  const scheduleService = {
+    rescheduleForUser: jest.fn().mockResolvedValue(undefined),
+    ...overrides.scheduleService,
+  } as unknown as TelegramScheduleService;
   const userTable = createFakeTable(overrides.userRows ?? []);
   const draftTable = createFakeTable(overrides.draftRows ?? [], {
     idField: 'id',
@@ -60,39 +56,18 @@ function makeController(
     accountService,
     profileService,
     prisma,
-    authService,
+    scheduleService,
   );
   return {
     controller,
+    scheduleService,
     botService,
     accountService,
     profileService,
-    authService,
     userTable,
     draftTable,
   };
 }
-
-describe('ApiController.issueLinkToken', () => {
-  it('выпускает токен под userId из req, ставит httpOnly-cookie с TTL 60с', () => {
-    const { controller, authService } = makeController();
-    const res = makeRes();
-    const result = controller.issueLinkToken(makeReq(5n), res);
-
-    expect(authService.buildLinkToken).toHaveBeenCalledWith(5n);
-    expect(result).toEqual({ linkToken: 'link-token-abc', expiresIn: 60 });
-    expect(res.cookie).toHaveBeenCalledWith(
-      'link_token',
-      'link-token-abc',
-      expect.objectContaining({
-        httpOnly: true,
-        secure: true,
-        maxAge: 60_000,
-        path: '/api/auth',
-      }),
-    );
-  });
-});
 
 describe('ApiController user-flags', () => {
   it('GET на пустом аккаунте (нет строки) → {}', async () => {
@@ -305,6 +280,32 @@ describe('ApiController profile / name / init / disclaimer', () => {
     );
   });
 
+  it('init: пояс устройства сменил пояс уведомлений → напоминание перепланируется', async () => {
+    const { controller, scheduleService } = makeController({
+      accountService: { registerUser: jest.fn().mockResolvedValue(true) },
+    });
+    await controller.init(makeReq(2n), { timezone: 'Asia/Vladivostok' });
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(2n);
+  });
+
+  it('init: пояс не сменился — расписание не трогается; сбой перепланирования init не роняет', async () => {
+    const same = makeController({
+      accountService: { registerUser: jest.fn().mockResolvedValue(false) },
+    });
+    await same.controller.init(makeReq(2n), { timezone: 'Europe/Moscow' });
+    expect(same.scheduleService.rescheduleForUser).not.toHaveBeenCalled();
+
+    const failing = makeController({
+      accountService: { registerUser: jest.fn().mockResolvedValue(true) },
+      scheduleService: {
+        rescheduleForUser: jest.fn().mockRejectedValue(new Error('queue down')),
+      },
+    });
+    await expect(
+      failing.controller.init(makeReq(2n), { timezone: 'Asia/Omsk' }),
+    ).resolves.toEqual({ ok: true });
+  });
+
   it('disclaimer GET/POST делегируют с userId из req', async () => {
     const { controller, botService } = makeController({
       botService: { hasAcceptedDisclaimer: jest.fn().mockResolvedValue(true) },
@@ -315,6 +316,7 @@ describe('ApiController profile / name / init / disclaimer', () => {
     expect(botService.hasAcceptedDisclaimer).toHaveBeenCalledWith(3n);
 
     await controller.acceptDisclaimer(makeReq(3n));
-    expect(botService.acceptDisclaimer).toHaveBeenCalledWith(3n);
+    // Экран согласий кабинета закрывает и онбординг (метрика /stats).
+    expect(botService.acceptDisclaimer).toHaveBeenCalledWith(3n, true);
   });
 });

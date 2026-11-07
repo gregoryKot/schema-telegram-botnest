@@ -2,6 +2,7 @@
 // только серверные строки (userId IS NULL, name = 'client_error'). Prisma
 // мокается — образец auth-health-metrics.service.spec.ts.
 import { ClientErrorMetricsService } from './client-error-metrics.service';
+import { CLIENT_ERROR_SECTIONS } from '../api/client-error-section';
 
 describe('ClientErrorMetricsService.getMetrics', () => {
   const build = (rows: Array<Record<string, unknown>>) => {
@@ -26,6 +27,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         help_week: 0n,
         cabinet_week: 4n,
         booking_week: 2n,
+        assets_week: 6n,
         other_week: 13n,
         webapp_week: 22n,
         miniapp_week: 18n,
@@ -48,6 +50,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         help: 0,
         cabinet: 4,
         booking: 2,
+        assets: 6,
         other: 13,
       },
       bySource: { webapp: 22, miniapp: 18 },
@@ -73,6 +76,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         help: 0,
         cabinet: 0,
         booking: 0,
+        assets: 0,
         other: 0,
       },
       bySource: { webapp: 0, miniapp: 0 },
@@ -110,5 +114,19 @@ describe('ClientErrorMetricsService.getMetrics', () => {
     ).join('?');
     expect(sql).toContain(`"name" = 'client_error'`);
     expect(sql).toContain('"userId" IS NULL');
+  });
+
+  // Правило №4: бакет, заведённый в CLIENT_ERROR_SECTIONS без колонки здесь,
+  // молча не попадал бы ни в свою строку, ни в «другое». 'auth' считается
+  // отдельной строкой (authDay/authWeek), поэтому в bySection его нет.
+  it('разделы отчёта — ровно бакеты CLIENT_ERROR_SECTIONS, кроме auth', async () => {
+    const { service, queryRaw } = build([]);
+    const metrics = await service.getMetrics();
+    const expected = CLIENT_ERROR_SECTIONS.filter((s) => s !== 'auth');
+    expect(Object.keys(metrics.bySection).sort()).toEqual([...expected].sort());
+    const sql = (queryRaw.mock.calls[0][0] as string[]).join('?');
+    for (const s of expected) {
+      expect(sql).toContain(`meta->>'section' = '${s}')::bigint AS ${s}_week`);
+    }
   });
 });

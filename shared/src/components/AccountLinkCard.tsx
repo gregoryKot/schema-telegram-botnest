@@ -1,4 +1,4 @@
-// Карточка «данные лежат в двух местах» — одна на сайт и на мини-апп
+// Карточка «данные лежат в двух местах» — общая для экранов сайта
 // (правило №3 и «одна механика — один компонент»). Механика билета своя не
 // заводится: под капотом тот же useLoginTicket, что и у входа, только с
 // intent='link' и другой ссылкой подтверждения.
@@ -41,7 +41,7 @@ const ACTION: React.CSSProperties = {
   borderRadius: 'var(--r-12)',
   border: 'none',
   background: 'var(--accent)',
-  color: '#fff',
+  color: 'var(--on-accent)',
   fontSize: 15,
   fontWeight: 600,
   cursor: 'pointer',
@@ -73,7 +73,7 @@ export interface AccountLinkCardProps {
   onRetry: () => void;
   /**
    * Скелетон рисует ФРОНТ: примитив живёт у каждого свой, а shared не имеет
-   * права импортировать из webapp/ или schema-miniapp/ — зависимость смотрит
+   * права импортировать из webapp — зависимость смотрит
    * в другую сторону.
    */
   renderSkeleton?: () => ReactNode;

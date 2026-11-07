@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   type NotifyQueueMetrics,
   type QueueTotals,
+  type SnoozeTotals,
   formatNotifyQueueMetrics,
 } from './notify-queue-metrics.format';
 
@@ -30,7 +31,8 @@ function add(into: QueueTotals, meta: unknown): void {
 }
 
 // Счётчики очереди уведомлений для /stats: событие notify_queue_tick (итог
-// прогона, пишет крон очереди — src/telegram/telegram.schedule-queue.tally.ts).
+// прогона, пишет крон очереди — src/telegram/telegram.schedule-queue.tally.ts)
+// и кнопка «Напомню через час» (reminder_snoozed, src/telegram/telegram.snooze.ts).
 // Свой домен — свой файл (правило №10).
 //
 // Без сырого SQL: строк не больше одной на тик (288 в сутки, ~2000 в неделю),
@@ -48,23 +50,58 @@ export class NotifyQueueMetricsService {
   async getMetrics(): Promise<NotifyQueueMetrics> {
     const now = Date.now();
     const since1 = new Date(now - DAY_MS);
+    const since7 = new Date(now - 7 * DAY_MS);
     // userId: null — строки пишет только сервер, без userId. POST /api/event
     // открыт авторизованным клиентам и пишет с их userId (и без meta: у
     // события нет ветки в sanitizeMeta), так что накрутить отчёт нельзя.
-    const rows = await this.prisma.analyticsEvent.findMany({
-      where: {
-        name: 'notify_queue_tick',
-        userId: null,
-        createdAt: { gte: new Date(now - 7 * DAY_MS) },
-      },
-      select: { meta: true, createdAt: true },
-    });
+    const [rows, snooze] = await Promise.all([
+      this.prisma.analyticsEvent.findMany({
+        where: {
+          name: 'notify_queue_tick',
+          userId: null,
+          createdAt: { gte: since7 },
+        },
+        select: { meta: true, createdAt: true },
+      }),
+      this.snoozeTotals(since7),
+    ]);
     const day = emptyTotals();
     const week = emptyTotals();
     for (const r of rows) {
       add(week, r.meta);
       if (r.createdAt >= since1) add(day, r.meta);
     }
-    return { day, week };
+    return { day, week, snooze };
+  }
+
+  /**
+   * «Напомню через час»: нажатия — по событию (пишет только бот, с булевым
+   * quietShift; строка с клиента приходит без meta и не считается), исход — по
+   * самим отложенным напоминаниям (тип pre_reminder ставит только эта кнопка).
+   * Окно напоминаний — по sendAt: так запрос идёт индексом очереди.
+   */
+  private async snoozeTotals(since: Date): Promise<SnoozeTotals> {
+    const window = { type: 'pre_reminder', sendAt: { gte: since } };
+    const [events, delivered, cancelled] = await Promise.all([
+      this.prisma.analyticsEvent.findMany({
+        where: { name: 'reminder_snoozed', createdAt: { gte: since } },
+        select: { meta: true },
+      }),
+      this.prisma.scheduledNotification.count({
+        where: { ...window, sentAt: { not: null } },
+      }),
+      this.prisma.scheduledNotification.count({
+        where: { ...window, cancelledAt: { not: null } },
+      }),
+    ]);
+    let snoozed = 0;
+    let quietShift = 0;
+    for (const { meta } of events) {
+      const q = (meta as { quietShift?: unknown } | null)?.quietShift;
+      if (typeof q !== 'boolean') continue;
+      snoozed++;
+      if (q) quietShift++;
+    }
+    return { snoozed, quietShift, delivered, cancelled };
   }
 }

@@ -89,8 +89,7 @@ function Harness({
         onEdgesChange={onEdgesChange}
         setSelectedNodeId={setSelectedNodeId}
         setSelectedEdgeId={setSelectedEdgeId}
-        selectedNodeId={selectedNodeId}
-        saveStatus="idle"
+        saveStatus="idle" savedAt={null} onRetrySave={() => {}}
         scheduleSave={scheduleSave}
         pushHistory={pushHistory}
         nodesRef={nodesRef}

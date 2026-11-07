@@ -12,7 +12,7 @@ import { planRetry } from './retry-plan';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { SlotAttempts } from '../bot/healthy-adult.attempts';
 import { ChannelPublisherService } from './channel-publisher.service';
-import { failedSummary, silentSummary } from './publish-report';
+import { shouldReportSlot, slotReportText } from './slot-report';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
@@ -116,7 +116,8 @@ export class ChannelScheduleService {
       const slot = dueSlot(now, await this.phrases.lastPostAt());
       // Слот закрыт: долг досылает только tickCatchUp (см. там), не этот тик.
       if (!slot) return;
-      const key = `${mskParts(now).dateKey}:${slot}`;
+      const day = mskParts(now).dateKey;
+      const key = `${day}:${slot}`;
       if (!this.attempts.allow(key)) return;
 
       const res = await this.publisher.publish(SLOT_NAME[slot]);
@@ -124,15 +125,10 @@ export class ChannelScheduleService {
         this.attempts.reset(key);
         // Частичный успех: слот закрыт (повтор дал бы дубль там, где пост уже
         // вышел), но про упавшую площадку владелец должен узнать — один раз.
-        if (res.failed.length > 0 || res.silent.length > 0)
-          await this.alert(
-            `Канал ЗВ (${SLOT_NAME[slot]}): дошло не везде\n` +
-              `${failedSummary(res.failed)}${silentSummary(res.silent)}` +
-              (res.failed.length > 0
-                ? '\nПробую дослать в ближайшие минуты.'
-                : ''),
-            res.failed,
-          );
+        // Молчащие (нет env) — раз в неделю, в понедельник утром: ежедневный
+        // одинаковый DM перестают читать, почему так — в slot-report.ts.
+        if (shouldReportSlot(res, day, slot))
+          await this.alert(slotReportText(SLOT_NAME[slot], res), res.failed);
         return;
       }
 

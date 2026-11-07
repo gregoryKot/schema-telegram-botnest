@@ -1,5 +1,6 @@
 import { PRACTICE_BOOKING_URL } from './landing/constants';
 import { Btn } from '../components/landing-kit';
+import { backLink } from '../legal/legalStyles';
 
 // ─── Почему на сайте нет отзывов – этическое обоснование ─────────────────────
 const REASONS = [
@@ -73,7 +74,6 @@ export function ReviewsPage() {
   );
 }
 
-const backLink: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 48 };
 const eyebrow: React.CSSProperties = { fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' };
 const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 5vw, 54px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-.01em' };
 const lead: React.CSSProperties = { fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: 0, maxWidth: 620 };

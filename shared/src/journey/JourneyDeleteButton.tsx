@@ -38,7 +38,7 @@ export function JourneyDeleteButton({
           role="alert"
           style={{
             fontSize: 13,
-            color: 'rgba(255,100,100,0.9)',
+            color: 'var(--accent-red)',
             marginBottom: 8,
             lineHeight: 1.5,
           }}
@@ -64,9 +64,9 @@ export function JourneyDeleteButton({
           cursor: del.busy ? 'default' : 'pointer',
           opacity: del.busy ? 0.6 : 1,
           background: pending
-            ? 'rgba(255,100,100,0.16)'
-            : 'rgba(255,100,100,0.1)',
-          color: 'rgba(255,100,100,0.9)',
+            ? 'color-mix(in srgb, var(--accent-red) 16%, transparent)'
+            : 'color-mix(in srgb, var(--accent-red) 10%, transparent)',
+          color: 'var(--accent-red)',
         }}
       >
         {label}

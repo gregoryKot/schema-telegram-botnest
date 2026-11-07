@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
-import { ExScreen, GlyphCheck } from './ExScreen';
+import { ExScreen, ExDone, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { hueStyle, DIARY_HUE } from '../../lib/tone';
+import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
+import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 
 // Безопасное место — ресурс, тон «здорового» (зелёный) как у благодарности.
 const SAFE_HUE = DIARY_HUE.gratitude;
@@ -43,15 +46,12 @@ export function SafePlaceEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const [overview, setOverview] = useState('');
-  const [senses, setSenses] = useState<Record<string, string>>({
-    see: '',
-    hear: '',
-    feel: '',
-    smell: '',
-  });
+  const [draft] = useState(() => restoreDraft<{ overview: string; senses: Record<string, string> }>(EXERCISE_DRAFT_KEYS.safePlace));
+  const [overview, setOverview] = useState(draft?.overview ?? '');
+  const [senses, setSenses] = useState<Record<string, string>>({ see: '', hear: '', feel: '', smell: '', ...draft?.senses });
   const [done, setDone] = useState(false);
   const overviewRef = useRef<HTMLInputElement>(null);
+  const clearDraft = useDraftAutosave(EXERCISE_DRAFT_KEYS.safePlace, { overview, senses });
 
   useEffect(() => {
     if (!done) overviewRef.current?.focus();
@@ -76,7 +76,7 @@ export function SafePlaceEx({
       ),
     ].join('\n');
     const ok = await run(() => api.saveSafePlace(desc));
-    if (ok) { onComplete?.(); setDone(true); }
+    if (ok) { clearDraft(); onComplete?.(); setDone(true); }
   }
 
   if (done) {
@@ -96,9 +96,9 @@ export function SafePlaceEx({
           'Возвращайтесь сюда, когда станет тревожно. Закройте глаза. Прочтите. Побудьте.',
         )}
       >
-        <div className="ds-card ds-card--ink ex2-done ex2-scene">
+        <ExDone className="ex2-scene">
           <div className="ex2-scene-text">«{overview}»</div>
-        </div>
+        </ExDone>
         <div className="ex2-senses">
           {SENSES.map((s) =>
             senses[s.k].trim() ? (
@@ -130,8 +130,8 @@ export function SafePlaceEx({
 
   return (
     <ExScreen
-      onBack={goBack}
-      eyebrow="№ 05 · Ресурс"
+      onBack={goBack} caution
+      eyebrow={exerciseCard('safe').eyebrow}
       title={
         <>
           Безопасное

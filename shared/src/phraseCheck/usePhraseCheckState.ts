@@ -6,9 +6,19 @@
 // у каждого фронтенда локально: у миниаппа и сайта разное поведение при
 // отказе сохранения (миниапп — оптимистичный переход на done с пометкой об
 // ошибке, сайт — блокирующее сохранение, как в остальных ex-упражнениях), это
-// не состояние формы, а разная политика UX.
+// не состояние формы, а разная политика UX. Форма пишется в черновик
+// (useDraftAutosave): F5 или «Назад» не стирают фразу (QA 2026-11, З3);
+// clearDraft площадка зовёт, когда сервер подтвердил сохранение.
 import { useState, type Dispatch, type SetStateAction } from 'react';
-import { type PhraseMarkId } from './criteria';
+import { PHRASE_MARK_IDS, type PhraseMarkId } from './criteria';
+import { EXERCISE_DRAFT_KEYS } from '../utils/drafts';
+import { restoreDraft, useDraftAutosave } from '../utils/useDraftAutosave';
+
+const KEY = EXERCISE_DRAFT_KEYS.phraseCheck;
+type Draft = Pick<
+  PhraseCheckState,
+  'phrase' | 'markIndex' | 'marks' | 'rewrite' | 'inWarmWords'
+>;
 
 export interface PhraseCheckState {
   phrase: string;
@@ -26,14 +36,32 @@ export interface PhraseCheckState {
   answer: (id: PhraseMarkId, critic: boolean) => void;
   /** Полный сброс к начальному состоянию — «проверить ещё одну» (webapp). */
   reset: () => void;
+  /** Стереть черновик — после подтверждённого сохранения. */
+  clearDraft: () => void;
 }
 
 export function usePhraseCheckState(): PhraseCheckState {
-  const [phrase, setPhrase] = useState('');
-  const [markIndex, setMarkIndex] = useState(-1);
-  const [marks, setMarks] = useState<PhraseMarkId[]>([]);
-  const [rewrite, setRewrite] = useState('');
-  const [inWarmWords, setInWarmWords] = useState(true);
+  const [d] = useState(() => restoreDraft<Draft>(KEY));
+  const [phrase, setPhrase] = useState(d?.phrase ?? '');
+  const [markIndex, setMarkIndex] = useState(() =>
+    typeof d?.markIndex === 'number' && d.phrase?.trim()
+      ? Math.min(Math.max(d.markIndex, -1), PHRASE_MARK_IDS.length)
+      : -1,
+  );
+  const [marks, setMarks] = useState<PhraseMarkId[]>(() =>
+    Array.isArray(d?.marks)
+      ? d.marks.filter((m) => PHRASE_MARK_IDS.includes(m))
+      : [],
+  );
+  const [rewrite, setRewrite] = useState(d?.rewrite ?? '');
+  const [inWarmWords, setInWarmWords] = useState(d?.inWarmWords ?? true);
+  const clearDraft = useDraftAutosave(KEY, {
+    phrase,
+    markIndex,
+    marks,
+    rewrite,
+    inWarmWords,
+  } satisfies Draft);
 
   function answer(id: PhraseMarkId, critic: boolean) {
     if (critic) setMarks((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -60,5 +88,6 @@ export function usePhraseCheckState(): PhraseCheckState {
     setInWarmWords,
     answer,
     reset,
+    clearDraft,
   };
 }

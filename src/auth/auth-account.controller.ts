@@ -146,12 +146,12 @@ export class AuthAccountController {
     requireCsrf(req, 'telegram/webapp', this.securityLog);
     const { initData } = dto;
     if (!initData) throw new BadRequestException('Missing initData');
-    const { id: telegramId, firstName } =
-      this.auth.verifyTelegramWebAppData(initData);
+    // IP — для троттлинга алерта о подделке подписи (rejectInitData).
+    const tg = this.auth.verifyTelegramWebAppData(initData, req.ip);
     const userId = await this.auth.findOrCreateUserByProvider(
       'telegram',
-      String(telegramId),
-      firstName,
+      String(tg.id),
+      tg.firstName,
     );
     const tokens = await this.auth.issueTokens(
       userId,

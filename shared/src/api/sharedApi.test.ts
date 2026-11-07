@@ -83,6 +83,21 @@ describe('ветвящиеся методы', () => {
     expect(calls[0].verb).toBe('postJson');
     expect(calls[0].path).toBe('/api/pair/invite');
   });
+
+  it('createGratitudeDiary: base уезжает в теле — сервер сливает с ним день', async () => {
+    await api.createGratitudeDiary('2026-10-31', ['б'], ['а']);
+    await api.createGratitudeDiary('2026-10-31', ['б']);
+    expect(calls[0]).toEqual({
+      verb: 'postJson',
+      path: '/api/diary/gratitude',
+      body: { date: '2026-10-31', items: ['б'], base: ['а'] },
+    });
+    // Без base в JSON поля нет — сервер ведёт себя по-старому (замена дня).
+    expect(JSON.parse(JSON.stringify(calls[1].body))).toEqual({
+      date: '2026-10-31',
+      items: ['б'],
+    });
+  });
 });
 
 // Аудит 2026-10, X-1: веб-id (> 2^53) приходит с сервера СТРОКОЙ и обязан

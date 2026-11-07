@@ -42,20 +42,20 @@ function make(
 
 describe('collectPrefs / applyServerPrefs', () => {
   it('collectPrefs: только присутствующие ключи реестра, чужие игнорирует', () => {
-    const s = fakeStorage({ today_streak_hidden: '1', theme: 'dark' });
-    expect(collectPrefs(s)).toEqual({ today_streak_hidden: '1' });
+    const s = fakeStorage({ why_seen_v1: '1', theme: 'dark' });
+    expect(collectPrefs(s)).toEqual({ why_seen_v1: '1' });
     expect(collectPrefs(fakeStorage({ theme: 'dark' }))).toEqual({});
   });
 
   it('applyServerPrefs: пишет присланное, удаляет ключи реестра без ответа, чужие не трогает', () => {
     const s = fakeStorage({
-      today_streak_hidden: '1',
-      quick_actions_hidden_plus: '["a"]',
+      why_seen_v1: '1',
+      quick_actions_hidden_tools: '["a"]',
       theme: 'dark',
     });
-    applyServerPrefs({ today_streak_hidden: '1' }, s);
-    expect(s.getItem('today_streak_hidden')).toBe('1');
-    expect(s.getItem('quick_actions_hidden_plus')).toBeNull();
+    applyServerPrefs({ why_seen_v1: '1' }, s);
+    expect(s.getItem('why_seen_v1')).toBe('1');
+    expect(s.getItem('quick_actions_hidden_tools')).toBeNull();
     expect(s.getItem('theme')).toBe('dark');
   });
 
@@ -70,19 +70,19 @@ describe('collectPrefs / applyServerPrefs', () => {
 
 describe('syncFromServer — первичная миграция (устройство не мигрировало)', () => {
   it('реальный контракт бэка — {} (НЕ null), локальные ключи есть → мигрирует, не стирает', async () => {
-    const { sync, storage } = make({ today_streak_hidden: '1' });
+    const { sync, storage } = make({ why_seen_v1: '1' });
     sync.syncFromServer({});
     expect(updateSettings).toHaveBeenCalledWith({
-      uiPrefs: { today_streak_hidden: '1' },
+      uiPrefs: { why_seen_v1: '1' },
     });
-    expect(storage.getItem('today_streak_hidden')).toBe('1');
+    expect(storage.getItem('why_seen_v1')).toBe('1');
     await vi.waitFor(() =>
       expect(storage.getItem('ui_prefs_migrated')).toBe('1'),
     );
   });
 
   it('null/undefined с локальными ключами → тоже мигрирует', () => {
-    make({ today_streak_hidden: '1' }).sync.syncFromServer(null);
+    make({ why_seen_v1: '1' }).sync.syncFromServer(null);
     expect(updateSettings).toHaveBeenCalledTimes(1);
   });
 
@@ -96,7 +96,7 @@ describe('syncFromServer — первичная миграция (устройс
   it('провал пуша миграции не отмечает устройство: следующая загрузка повторит', async () => {
     updateSettings.mockRejectedValueOnce(new Error('offline'));
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { sync, storage } = make({ today_streak_hidden: '1' });
+    const { sync, storage } = make({ why_seen_v1: '1' });
     sync.syncFromServer({});
     await vi.waitFor(() => expect(err).toHaveBeenCalled());
     expect(storage.getItem('ui_prefs_migrated')).toBeNull();
@@ -106,20 +106,20 @@ describe('syncFromServer — первичная миграция (устройс
 
 describe('syncFromServer — server wins', () => {
   it('реальные данные: применяет и НЕ пушит обратно только что применённое', () => {
-    const { sync, storage } = make({ today_streak_hidden: '1' });
-    sync.syncFromServer({ today_phrase_hidden: '1' });
-    expect(storage.getItem('today_phrase_hidden')).toBe('1');
-    expect(storage.getItem('today_streak_hidden')).toBeNull();
+    const { sync, storage } = make({ why_seen_v1: '1' });
+    sync.syncFromServer({ quick_actions_order_tools: '1' });
+    expect(storage.getItem('quick_actions_order_tools')).toBe('1');
+    expect(storage.getItem('why_seen_v1')).toBeNull();
     expect(updateSettings).not.toHaveBeenCalled();
   });
 
   it('уже мигрировавшее устройство: пустой ответ — это «везде очищено», стирает локальное', () => {
     const { sync, storage } = make({
       ui_prefs_migrated: '1',
-      today_streak_hidden: '1',
+      why_seen_v1: '1',
     });
     sync.syncFromServer({});
-    expect(storage.getItem('today_streak_hidden')).toBeNull();
+    expect(storage.getItem('why_seen_v1')).toBeNull();
     expect(updateSettings).not.toHaveBeenCalled();
   });
 });
@@ -129,7 +129,7 @@ describe('notifyPrefsChanged — debounce', () => {
   afterEach(() => vi.useRealTimers());
 
   it('серия изменений подряд схлопывается в один вызов, только после полного окна', () => {
-    const { sync } = make({ today_streak_hidden: '1' });
+    const { sync } = make({ why_seen_v1: '1' });
     sync.notifyPrefsChanged();
     sync.notifyPrefsChanged();
     vi.advanceTimersByTime(1499);
@@ -137,7 +137,7 @@ describe('notifyPrefsChanged — debounce', () => {
     vi.advanceTimersByTime(1);
     expect(updateSettings).toHaveBeenCalledTimes(1);
     expect(updateSettings).toHaveBeenCalledWith({
-      uiPrefs: { today_streak_hidden: '1' },
+      uiPrefs: { why_seen_v1: '1' },
     });
   });
 
@@ -153,16 +153,137 @@ describe('notifyPrefsChanged — debounce', () => {
     err.mockRestore();
   });
 
-  it('серверные настройки отменяют ожидающий пуш', () => {
+  // До #922 тут стояло «серверные настройки отменяют ожидающий пуш» — и
+  // правка, не успевшая уйти, стиралась серверной копией: тест пинил баг.
+  it('ответ сервера при ожидающем пуше не стирает правку: она уходит сразу, один раз', () => {
     const { sync, storage } = make({
       ui_prefs_migrated: '1',
-      today_streak_hidden: '1',
+      why_seen_v1: '1',
     });
     sync.notifyPrefsChanged();
-    sync.syncFromServer({ today_phrase_hidden: '1' });
+    sync.syncFromServer({ quick_actions_order_tools: '1' });
+    expect(storage.getItem('why_seen_v1')).toBe('1');
+    expect(storage.getItem('quick_actions_order_tools')).toBeNull();
     vi.advanceTimersByTime(5000);
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(updateSettings).toHaveBeenCalledWith({
+      uiPrefs: { why_seen_v1: '1' },
+    });
+  });
+
+  it('flush шлёт ожидающий пуш сейчас; без ожидающего — ничего', () => {
+    const { sync } = make({ why_seen_v1: '1' });
+    sync.flush();
     expect(updateSettings).not.toHaveBeenCalled();
-    expect(storage.getItem('today_streak_hidden')).toBeNull();
+    sync.notifyPrefsChanged();
+    sync.flush();
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(5000);
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+  });
+});
+
+// #922: скрыл блоки → закрыл лист → перезагрузил раньше, чем ушёл пуш
+// (окно debounce), или пуш упал → старт применял серверную копию без правки,
+// и блоки возвращались. Каждый тест — «прошлая загрузка» и «следующая» на
+// одном хранилище: синхронизатор новый, маркер правки — в storage.
+describe('недошедшая правка переживает перезагрузку (#922)', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const SERVER = { screen_order_profile: '["journey","portrait"]' };
+  const HIDDEN = '["portrait","journey"]';
+
+  function editThenReload(storage: PrefStorage, push: 'none' | 'fails') {
+    const before = createUiPrefsSync({
+      api: { updateSettings },
+      storage,
+      requireInitialSync: true,
+    });
+    before.syncFromServer(SERVER);
+    storage.setItem('screen_hidden_profile', HIDDEN);
+    before.notifyPrefsChanged();
+    if (push === 'fails') vi.advanceTimersByTime(1500); // пуш ушёл и упал
+    // перезагрузка: таймер прежней страницы умирает вместе с ней
+    return createUiPrefsSync({
+      api: { updateSettings },
+      storage,
+      requireInitialSync: true,
+    });
+  }
+
+  it('перезагрузка до пуша: старая серверная копия не затирает правку, следующий старт её досылает', async () => {
+    const storage = fakeStorage({ ui_prefs_migrated: '1' });
+    const after = editThenReload(storage, 'none');
+    after.syncFromServer(SERVER);
+    expect(storage.getItem('screen_hidden_profile')).toBe(HIDDEN);
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(updateSettings).toHaveBeenCalledWith({
+      uiPrefs: { ...SERVER, screen_hidden_profile: HIDDEN },
+    });
+    await vi.waitFor(() =>
+      expect(storage.getItem('ui_prefs_dirty')).toBeNull(),
+    );
+  });
+
+  it('пуш упал: правка остаётся отмеченной и уходит на следующем старте', async () => {
+    updateSettings.mockRejectedValueOnce(new Error('offline'));
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const storage = fakeStorage({ ui_prefs_migrated: '1' });
+    const after = editThenReload(storage, 'fails');
+    await vi.waitFor(() => expect(err).toHaveBeenCalled());
+    expect(storage.getItem('ui_prefs_dirty')).toBe('1');
+    after.syncFromServer(SERVER);
+    expect(storage.getItem('screen_hidden_profile')).toBe(HIDDEN);
+    expect(updateSettings).toHaveBeenLastCalledWith({
+      uiPrefs: { ...SERVER, screen_hidden_profile: HIDDEN },
+    });
+    err.mockRestore();
+  });
+
+  it('контроль: дошедший пуш снимает маркер — следующий старт снова server wins', async () => {
+    const storage = fakeStorage({ ui_prefs_migrated: '1' });
+    const sync = createUiPrefsSync({ api: { updateSettings }, storage });
+    storage.setItem('screen_hidden_profile', HIDDEN);
+    sync.notifyPrefsChanged();
+    vi.advanceTimersByTime(1500);
+    await vi.waitFor(() =>
+      expect(storage.getItem('ui_prefs_dirty')).toBeNull(),
+    );
+    createUiPrefsSync({ api: { updateSettings }, storage }).syncFromServer({});
+    expect(storage.getItem('screen_hidden_profile')).toBeNull();
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('правка во время запроса: ответ на старый пуш маркер не снимает', async () => {
+    let answer!: () => void;
+    updateSettings.mockReturnValueOnce(new Promise<void>((r) => (answer = r)));
+    const storage = fakeStorage({ ui_prefs_migrated: '1' });
+    const sync = createUiPrefsSync({ api: { updateSettings }, storage });
+    sync.notifyPrefsChanged();
+    vi.advanceTimersByTime(1500);
+    sync.notifyPrefsChanged(); // вторая правка, пока первый пуш в пути
+    answer();
+    await vi.waitFor(() =>
+      expect(storage.getItem('ui_prefs_migrated')).toBe('1'),
+    );
+    await Promise.resolve();
+    expect(storage.getItem('ui_prefs_dirty')).toBe('1');
+  });
+
+  it('правка до первого ответа на немигрировавшем устройстве уступает серверу (набор ключей неполный)', () => {
+    const storage = fakeStorage();
+    const sync = createUiPrefsSync({
+      api: { updateSettings },
+      storage,
+      requireInitialSync: true,
+    });
+    storage.setItem('screen_hidden_profile', HIDDEN);
+    sync.notifyPrefsChanged();
+    sync.syncFromServer(SERVER);
+    expect(storage.getItem('screen_hidden_profile')).toBeNull();
+    expect(storage.getItem('ui_prefs_dirty')).toBeNull();
+    expect(updateSettings).not.toHaveBeenCalled();
   });
 });
 
@@ -173,7 +294,7 @@ describe('requireInitialSync — не пушить до первого отве�
   afterEach(() => vi.useRealTimers());
 
   it('запись настройки до ответа сервера не уходит на сервер', () => {
-    const { sync } = make({ today_streak_hidden: '1' }, true);
+    const { sync } = make({ why_seen_v1: '1' }, true);
     sync.notifyPrefsChanged();
     vi.advanceTimersByTime(10_000);
     expect(updateSettings).not.toHaveBeenCalled();
@@ -183,16 +304,16 @@ describe('requireInitialSync — не пушить до первого отве�
     const { sync, storage } = make({}, true);
     sync.syncFromServer({
       screen_order_profile: '["a","b"]',
-      today_phrase_hidden: '1',
+      quick_actions_order_tools: '1',
     });
-    storage.setItem('today_streak_hidden', '1');
+    storage.setItem('why_seen_v1', '1');
     sync.notifyPrefsChanged();
     vi.advanceTimersByTime(1500);
     expect(updateSettings).toHaveBeenCalledWith({
       uiPrefs: {
         screen_order_profile: '["a","b"]',
-        today_phrase_hidden: '1',
-        today_streak_hidden: '1',
+        quick_actions_order_tools: '1',
+        why_seen_v1: '1',
       },
     });
   });
@@ -210,7 +331,7 @@ describe('requireInitialSync — не пушить до первого отве�
   });
 
   it('без requireInitialSync пуш открыт сразу (поведение мини-аппа)', () => {
-    const { sync } = make({ today_streak_hidden: '1' });
+    const { sync } = make({ why_seen_v1: '1' });
     sync.notifyPrefsChanged();
     vi.advanceTimersByTime(1500);
     expect(updateSettings).toHaveBeenCalledTimes(1);

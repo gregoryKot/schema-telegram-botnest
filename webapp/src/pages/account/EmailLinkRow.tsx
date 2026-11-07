@@ -1,11 +1,11 @@
-// Привязка email в кабинете: строка способа входа + форма адреса + экран
-// «письмо отправлено». Раньше всё это жило прямо в AccountPage вместе с
-// четырьмя своими useState (правило №10). После отправки не обещаем «письмо
-// отправлено»: ответ одинаков для свободного и занятого адреса (B-16).
+// Привязка email в кабинете: строка способа входа, «зачем» (почта — запасной
+// ключ), форма адреса и экран «письмо отправлено». После отправки не обещаем
+// «письмо отправлено»: ответ одинаков для свободного и занятого адреса (B-16).
 import { useEffect, useRef, useState } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 import { useTr } from '../../utils/addressForm';
 import { EmailIcon, ProviderRow } from './ProviderRows';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 export function EmailLinkRow({
   accessToken,
@@ -13,6 +13,7 @@ export function EmailLinkRow({
   email,
   busy,
   onUnlink,
+  unlinkBlocked,
   onError,
 }: {
   accessToken: string | null;
@@ -21,6 +22,7 @@ export function EmailLinkRow({
   email?: string | null;
   busy: boolean;
   onUnlink: () => void;
+  unlinkBlocked?: boolean;
   /** Ошибку показывает страница одним блоком на весь кабинет. */
   onError: (message: string | null) => void;
 }) {
@@ -50,13 +52,10 @@ export function EmailLinkRow({
         },
         body: JSON.stringify({ email: value }),
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: 'Ошибка' }));
-        throw new Error(body.message ?? `Ошибка ${res.status}`);
-      }
+      if (!res.ok) throw new Error((await readHumanError(res, 'Не удалось отправить письмо')).message);
       setSent(true);
     } catch (e) {
-      onError(String(e).replace('Error: ', ''));
+      onError(humanizeThrown(e, 'Не удалось отправить письмо'));
     } finally {
       setSending(false);
     }
@@ -72,12 +71,14 @@ export function EmailLinkRow({
         emptySubtitle="не привязан"
         subtitle={email ?? 'привязан'}
         onUnlink={onUnlink}
+        unlinkBlocked={unlinkBlocked}
         onLink={() => {
           setShowForm(true);
           setSent(false);
           setValue('');
         }}
       />
+      {!linked && <p className="aa-email-why">Пригодится, если пропадёт доступ к Telegram или другому способу входа.</p>}
       {showForm &&
         !linked &&
         (sent ? (

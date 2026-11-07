@@ -14,11 +14,13 @@ const task = (over: Partial<UserTask> = {}): UserTask => ({
 } as UserTask);
 
 describe('taskRowState', () => {
-  it('своя custom-цель: «Готово» есть, стрелки нет', () => {
+  // QA 2026-10-26: строка своего задания выглядела нажимаемой и не делала
+  // ничего — действие у неё одно, «Готово».
+  it('своя custom-цель: «Готово» есть, стрелки и открытия по тапу нет', () => {
     const st = taskRowState(task(), true);
     expect(st.showComplete).toBe(true);
     expect(st.showCta).toBe(false);
-    expect(st.openable).toBe(true);
+    expect(st.openable).toBe(false);
   });
 
   it('custom с id схемы открывает карточку, поэтому стрелка остаётся', () => {
@@ -40,6 +42,15 @@ describe('taskRowState', () => {
 });
 
 describe('TaskRow', () => {
+  it('compact: шеврон вместо текста cta, клик по строке открывает задание', () => {
+    const onOpen = vi.fn();
+    const { container } = render(<TaskRow task={task({ type: 'belief_check' })} cta="начать →" compact onOpen={onOpen} />);
+    expect(container.querySelector('.ds-chev')).toBeTruthy();
+    expect(screen.queryByText('начать →')).toBeNull();
+    fireEvent.click(screen.getByText('Позвонить другу'));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
   it('«Готово» вызывает onComplete и не открывает строку', async () => {
     const onOpen = vi.fn();
     const onComplete = vi.fn().mockResolvedValue(undefined);

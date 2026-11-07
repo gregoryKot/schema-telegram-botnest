@@ -4,7 +4,7 @@
 // карточки, «Мне плохо», «Мои цели» и каталоги; порядок — на карточки.
 import { useToolsState } from '../../../../shared/src/quickActions/useToolsState';
 import { notifyPrefsChanged } from '../../utils/uiPrefsSync';
-import { EXERCISES } from './exerciseLibrary';
+import { EXERCISES } from './exerciseLibraryModel';
 import { CARD_TOOL_IDS, arrangeExercises } from './toolsLayout';
 import { catalogRowSub, type CatalogCounts } from './catalogCounts';
 import type { CatalogRow } from './CatalogsBlock';
@@ -25,7 +25,7 @@ export function usePracticeTools({ goalsCount, catalog, childhoodDone, onOpenPra
   );
   const cards = arrangeExercises(EXERCISES, tools.groups[0].map(r => r.id), tools.hidden);
   const catalogRows: CatalogRow[] = [
-    { id: 'practices', label: 'Практики', sub: catalogRowSub('practices', catalog.practices, 'Рекомендованные упражнения по потребностям'), onClick: onOpenPractices },
+    { id: 'practices', label: 'Что питает', sub: catalogRowSub('practices', catalog.practices, 'Маленькие действия для пяти потребностей'), onClick: onOpenPractices },
     { id: 'plans',     label: 'Планы',    sub: catalogRowSub('plans', catalog.plans, 'Планы поддержки и кризисов'),                       onClick: onOpenPlans },
   ].filter(r => tools.isShown(r.id));
   return { tools, cards, catalogRows };

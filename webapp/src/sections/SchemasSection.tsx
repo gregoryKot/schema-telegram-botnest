@@ -6,7 +6,7 @@ import { SchemaDetailSheet } from '../components/SchemaDetailSheet';
 import { NeedDetailSheet } from '../components/NeedDetailSheet';
 import '../styles/client-schemas.css';
 import { useSchemasData } from './schemas/useSchemasData';
-import { SaveErrorNote } from '../components/SaveErrorNote';
+import { SelectionSaveNote } from './schemas/SelectionSaveNote';
 import { PatternsModesPane } from './schemas/PatternsModesPane';
 import { ModeMapBanner, MyModeMapSheet } from './schemas/ModeMapBanner';
 import { NeedsBlock } from './schemas/NeedsBlock';
@@ -26,9 +26,10 @@ interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
   childhoodRatings?: Record<string, number>;
   onOpenChildhoodWheel?: () => void;
+  onOpenSettings?: () => void;
 }
 
-export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel }: Props) {
+export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChildhoodWheel, onOpenSettings }: Props) {
   const d = useSchemasData();
   const blocks = useScreenBlocks('patterns');
   const [showSchemaPicker, setShowSchemaPicker] = useState(false);
@@ -42,16 +43,13 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   useEffect(() => { writeStoredTab(tab); }, [tab]);
   const show = visibleBlocks(tab, mobile);
   const startTest = () => onOpenSchema({ startTest: true });
-
   const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
 
   return (
     <div className="ds-page cs-page">
-      <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} />
+      <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} onOpenSettings={onOpenSettings} />
       {mobile && <PatternsTabsBar tab={tab} onChange={setTab} />}
-      {d.saveFailed && (
-        <SaveErrorNote ty="Выбор сохранён только на этом устройстве — проверь связь и попробуй ещё раз" vy="Выбор сохранён только на этом устройстве — проверьте связь и попробуйте ещё раз" />
-      )}
+      <SelectionSaveNote failed={d.saveFailed} blocked={d.saveBlocked} />
 
       {show.hero && (
         <PatternsTopStack

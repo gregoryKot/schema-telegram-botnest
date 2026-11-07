@@ -53,12 +53,36 @@ describe('EntryCards — aria-expanded на раскрывашках (Ж7)', () 
     expect(card.getAttribute('aria-expanded')).toBe('true');
   });
 
+  it('ModeEntry из разбора подписан «Разбор», обычная запись — «Режим»', () => {
+    const { unmount } = render(<ModeEntry entry={{ ...MODE_ENTRY, fromCase: true }} onDelete={() => {}} />);
+    expect(screen.getByText('Разбор')).toBeTruthy();
+    expect(screen.queryByText('Режим')).toBeNull();
+    unmount();
+    render(<ModeEntry entry={MODE_ENTRY} onDelete={() => {}} />);
+    expect(screen.getByText('Режим')).toBeTruthy();
+    expect(screen.queryByText('Разбор')).toBeNull();
+  });
+
   it('GratitudeEntry: aria-expanded переключается по клику', () => {
     render(<GratitudeEntry entry={GRATITUDE_ENTRY} onDelete={() => {}} />);
     const card = screen.getByText('Тёплый чай').closest('[role="button"]')!;
     expect(card.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(card);
     expect(card.getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('EntryCards — «Мысль» без схем и эмоций', () => {
+  it('заголовка «Без схемы» нет: бейдж «Мысль» и сразу текст', () => {
+    render(<SchemaEntry entry={SCHEMA_ENTRY} onDelete={() => {}} />);
+    expect(screen.getByText('Мысль')).toBeTruthy();
+    expect(screen.queryByText('Без схемы')).toBeNull();
+    expect(screen.getByText('Созвон с командой')).toBeTruthy();
+  });
+
+  it('запись с эмоциями, но без схем, остаётся «Дневником схем»', () => {
+    render(<SchemaEntry entry={{ ...SCHEMA_ENTRY, emotions: [{ id: 'anxiety', intensity: 3 } as never] }} onDelete={() => {}} />);
+    expect(screen.getByText('Дневник схем')).toBeTruthy();
   });
 });
 

@@ -32,6 +32,9 @@ import {
 // (decField(row.email)-тест переехал в email-token.service.spec.ts вместе с
 // consumeEmailToken).
 import { encrypt } from '../utils/crypto';
+// Диапазон — из модуля, а не копией: пин «ниже 2^53» в user-id-range.spec.ts
+// и проверка генерации id здесь обязаны смотреть на одно число (правило №4).
+import { WEB_USER_ID_MAX, WEB_USER_ID_MIN } from './user-id-range';
 
 jest.mock('../utils/crypto', () => {
   const actual = jest.requireActual('../utils/crypto');
@@ -41,8 +44,6 @@ jest.mock('../utils/crypto', () => {
 const JWT_SECRET = 'test-jwt-secret';
 const BOT_TOKEN = '12345:TEST_TOKEN';
 const FIXED_DATE = new Date('2026-07-16T12:00:00.000Z');
-const WEB_USER_ID_MIN = 1_000_000_000_000_000n;
-const WEB_USER_ID_MAX = 9_000_000_000_000_000n;
 
 // hash: undefined = подписать честно; 'omit' = без hash; иначе — как есть.
 function signInitData(opts: {
@@ -409,12 +410,50 @@ describe('AuthService — verifyTelegramWebAppData', () => {
     });
   });
 
-  it('нет hash → именно "Missing hash in initData" (не проваливается в другую ветку)', () => {
-    const { svc } = makeService();
+  it('нет hash → причина "Missing hash in initData" в алерте (не проваливается в другую ветку)', () => {
+    const { svc, securityLog } = makeService();
     const initData = signInitData({ user: { id: 1 }, hash: 'omit' });
-    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
-      'Missing hash in initData',
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.11'),
+    ).toThrow('Invalid initData');
+    expect(securityLog.log).toHaveBeenCalledWith('suspicious_initdata', {
+      reason: 'Missing hash in initData',
+      ip: '203.0.113.11',
+    });
+  });
+
+  // Регресс (docs/open/security.md): вход сайта внутри Telegram отвечал голым
+  // 401 — подделка подписи не будила админа, а просрочка не несла кода
+  // `initdata_expired`, в отличие от гарда (rejectInitData).
+  it('подделанная подпись → suspicious_initdata в журнал безопасности', () => {
+    const { svc, securityLog } = makeService();
+    const initData = signInitData({ user: { id: 42 }, hash: 'a'.repeat(64) });
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.12'),
+    ).toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '203.0.113.12' }),
     );
+  });
+
+  it('просроченная initData → 401 с кодом initdata_expired, без алерта', () => {
+    const { svc, securityLog } = makeService();
+    const initData = signInitData({
+      user: { id: 42 },
+      authDate: Math.floor(Date.now() / 1000) - 3700,
+    });
+    let caught: unknown;
+    try {
+      svc.verifyTelegramWebAppData(initData, '203.0.113.13');
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(UnauthorizedException);
+    expect((caught as UnauthorizedException).getResponse()).toMatchObject({
+      code: 'initdata_expired',
+    });
+    expect(securityLog.log).not.toHaveBeenCalled();
   });
 
   it('user отсутствует в initData целиком (не просто user.id) → UnauthorizedException, не TypeError', () => {
@@ -475,25 +514,33 @@ describe('AuthService — verifyTelegramWebAppData', () => {
   });
 
   it('hash с посторонним префиксом перед 64 hex-символами → "Malformed hash" (regex обязан быть заякорён с начала, не просто искать 64-hex где-то внутри)', () => {
-    const { svc } = makeService();
+    const { svc, securityLog } = makeService();
     const initData = signInitData({
       user: { id: 1 },
       hash: 'zz' + 'a'.repeat(64),
     });
-    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
-      'Malformed hash in initData',
-    );
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.21'),
+    ).toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith('suspicious_initdata', {
+      reason: 'Malformed hash in initData',
+      ip: '203.0.113.21',
+    });
   });
 
   it('hash с посторонним суффиксом после 64 hex-символов → "Malformed hash" (regex обязан требовать конец строки, не просто префикс)', () => {
-    const { svc } = makeService();
+    const { svc, securityLog } = makeService();
     const initData = signInitData({
       user: { id: 1 },
       hash: 'a'.repeat(64) + 'zz',
     });
-    expect(() => svc.verifyTelegramWebAppData(initData)).toThrow(
-      'Malformed hash in initData',
-    );
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '203.0.113.22'),
+    ).toThrow(UnauthorizedException);
+    expect(securityLog.log).toHaveBeenCalledWith('suspicious_initdata', {
+      reason: 'Malformed hash in initData',
+      ip: '203.0.113.22',
+    });
   });
 
   it('BOT_TOKEN с пробелами/переносом строки по краям (случайность env) — verify обязан использовать .trim()', () => {
@@ -1191,6 +1238,41 @@ describe('AuthService — 2FA challenge токены', () => {
     const decoded = svc.verifyTotpChallengeToken(token);
     expect(decoded.ua).toHaveLength(120);
     expect(decoded.ua).toBe(longUa.slice(0, 120));
+  });
+
+  // Аудит 2026-10: протухший вызов отвечал тем же 401, что неверный код, и
+  // экран 2FA показывал «Неверный код» — человек вводил код снова и снова.
+  const reasonOf = (fn: () => unknown): unknown => {
+    try {
+      fn();
+    } catch (err) {
+      expect(err).toBeInstanceOf(UnauthorizedException);
+      return (
+        (err as UnauthorizedException).getResponse() as { reason?: unknown }
+      ).reason;
+    }
+    throw new Error('verifyTotpChallengeToken не бросил');
+  };
+
+  it('вызов старше 5 минут → 401 с reason challenge_expired', () => {
+    const { svc } = makeService();
+    jest.useFakeTimers({ now: new Date('2026-10-01T10:00:00Z') });
+    try {
+      const token = svc.buildTotpChallengeToken(1n);
+      jest.setSystemTime(new Date('2026-10-01T10:05:01Z'));
+      expect(reasonOf(() => svc.verifyTotpChallengeToken(token))).toBe(
+        'challenge_expired',
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('битый токен вызова — та же причина: начать вход заново', () => {
+    const { svc } = makeService();
+    expect(reasonOf(() => svc.verifyTotpChallengeToken('not-a-jwt'))).toBe(
+      'challenge_expired',
+    );
   });
 });
 

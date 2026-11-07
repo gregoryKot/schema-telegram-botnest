@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Один лист на две пошаговые практики «Здесь и сейчас» (заземление и
-// «Стоп») на сайте — зеркало schema-miniapp/QuickPracticeSheet.test.tsx.
+// «Стоп») на сайте.
 // Правило №8: stop_start уходит РОВНО один раз и только у «Стопа» (у
 // заземления своего события нет). Плюс read-after-write: прохождение
 // записывается один раз, счётчик на done-экране — из ответа POST, а не из
@@ -16,6 +16,9 @@ import {
   cleanup,
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+
+// Предупреждение моста к терапевту на первом шаге шлёт своё событие через api.trackEvent — здесь считаем только события практики.
+vi.mock('../therapy/trackTherapyNudge', () => ({ trackTherapyNudge: vi.fn() }));
 import { QuickPracticeSheet } from './QuickPracticeSheet';
 
 vi.mock('../../api', () => ({

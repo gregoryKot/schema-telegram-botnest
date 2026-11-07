@@ -6,6 +6,7 @@ import {
   weekBars,
   PARTNER_EMPTY_TEXT,
 } from '../../../../shared/src/pair/partnerCard';
+import { telegramChatUrl } from '../../../../shared/src/utils/therapistContact';
 
 type Partner = PairsData['partners'][number];
 
@@ -26,6 +27,8 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
   const idx = partner.partnerIndex;
   const done = partner.partnerTodayDone && idx !== null;
   const bars = weekBars(partner.partnerWeekAvgs);
+  // Веб-аккаунт (Google/VK/MAX/почта) — не Telegram-id: tg:// вёл в никуда, ссылки нет.
+  const chatUrl = partner.partnerTelegramId === null ? null : telegramChatUrl(partner.partnerTelegramId);
 
   return (
     <div className="st-pc">
@@ -36,8 +39,8 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
             ? <div className={`st-pair-num st-pc-tone--${indexTone(idx)}`}>{idx.toFixed(1)}<small>/10</small></div>
             : <div className="st-text">{PARTNER_EMPTY_TEXT}</div>}
         </div>
-        {partner.partnerTelegramId && (
-          <a className="ds-btn ds-btn--sm ds-btn--secondary st-pc-write" href={`tg://user?id=${partner.partnerTelegramId}`}>Написать</a>
+        {chatUrl && (
+          <a className="ds-btn ds-btn--sm ds-btn--secondary" href={chatUrl}>Написать</a>
         )}
       </div>
 
@@ -62,7 +65,7 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
           <button className="ds-btn ds-btn--sm ds-btn--secondary st-btn-danger is-solid" onClick={() => onLeave(partner.code)}>Выйти</button>
         </div>
       ) : (
-        <button className="ds-link st-link-danger st-pc-leave" onClick={() => setConfirmLeaveCode(partner.code)}>Выйти из пары</button>
+        <button className="ds-link ds-link--danger" onClick={() => setConfirmLeaveCode(partner.code)}>Выйти из пары</button>
       )}
     </div>
   );

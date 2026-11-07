@@ -35,8 +35,8 @@ describe('useUiPrefsStartupSync', () => {
     expect(result.current).toBe(false);
     expect(sync).not.toHaveBeenCalled();
 
-    await act(async () => d.resolve({ uiPrefs: { today_streak_hidden: '1' } }));
-    expect(sync).toHaveBeenCalledWith({ today_streak_hidden: '1' });
+    await act(async () => d.resolve({ uiPrefs: { why_seen_v1: '1' } }));
+    expect(sync).toHaveBeenCalledWith({ why_seen_v1: '1' });
     expect(result.current).toBe(true);
     expect(reset.mock.invocationCallOrder[0]).toBeLessThan(sync.mock.invocationCallOrder[0]);
   });
@@ -65,8 +65,8 @@ describe('useUiPrefsStartupSync', () => {
     expect(result.current).toBe(true);
     expect(sync).not.toHaveBeenCalled();
 
-    await act(async () => d.resolve({ uiPrefs: { today_phrase_hidden: '1' } }));
-    expect(sync).toHaveBeenCalledWith({ today_phrase_hidden: '1' });
+    await act(async () => d.resolve({ uiPrefs: { quick_actions_order_tools: '1' } }));
+    expect(sync).toHaveBeenCalledWith({ quick_actions_order_tools: '1' });
   });
 
   it('ответ без uiPrefs (старый сервер) тоже проходит через sync — миграция сама решит', async () => {
@@ -84,7 +84,7 @@ describe('useUiPrefsStartupSync', () => {
       useUiPrefsStartupSync({ load: () => d.promise, sync, reset }),
     );
     unmount();
-    await act(async () => d.resolve({ uiPrefs: { today_streak_hidden: '1' } }));
+    await act(async () => d.resolve({ uiPrefs: { why_seen_v1: '1' } }));
     expect(sync).not.toHaveBeenCalled();
   });
 });

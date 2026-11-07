@@ -41,7 +41,7 @@ function argValue(flag: string): string | undefined {
 async function measure(
   prisma: PrismaService,
   client: Client,
-  ids: { therapistId: bigint; heavyUserId: bigint },
+  ids: Awaited<ReturnType<typeof resolveWorstCaseIds>>,
 ): Promise<ScenarioReport[]> {
   const out: ScenarioReport[] = [];
   for (const scenario of SCENARIOS) {

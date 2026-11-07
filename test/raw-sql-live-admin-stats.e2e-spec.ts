@@ -34,7 +34,12 @@ interface CoreNumbers {
   core: number;
   churn: number;
   bestDow: string;
+  /** Воронка удержания: 1+, 3+, 7+, 30+ разных дней заполнения. */
+  funnel: number[];
 }
+
+const FUNNEL_RE =
+  /Хотя бы 1 день: (\d+) {2}· {2}3 дня и больше: (\d+) {2}· {2}неделю и больше: (\d+) {2}· {2}месяц и больше: (\d+)/;
 
 function num(text: string, re: RegExp): number {
   const m = text.match(re);
@@ -50,7 +55,14 @@ function parse(text: string): CoreNumbers {
     core: num(text, /Ведут дневник регулярно \([^)]*\): (\d+) из/),
     churn: num(text, /Могут уйти \([^)]*\): (\d+)/),
     bestDow: text.match(/Чаще всего заполняют: ([^\n]+)/)?.[1] ?? '',
+    funnel: funnel(text),
   };
+}
+
+function funnel(text: string): number[] {
+  const m = text.match(FUNNEL_RE);
+  if (!m) throw new Error(`в отчёте нет строки воронки:\n${text}`);
+  return m.slice(1, 5).map(Number);
 }
 
 describe('/stats ядро на реальном Postgres: больше 5000 пар «человек–день»', () => {
@@ -125,6 +137,22 @@ describe('/stats ядро на реальном Postgres: больше 5000 па
       DOW[new Date(day(0) + 'T12:00:00Z').getUTCDay()],
     );
     expect(report).toContain(`· ${day(0)}`);
+
+    // Воронка удержания — один GROUP BY с FILTER вместо четырёх HAVING
+    // (docs/PERF_PLANS.md, P3). Дельты фикстуры: 300 ежедневных по 29 дней,
+    // OLD_DAYS_ID — 4 дня, CHURN_ID — 2 дня; до 30 дней не дотягивает никто.
+    expect(after.funnel.map((n, i) => n - before.funnel[i])).toEqual([
+      302, 301, 300, 0,
+    ]);
+    // Сверка со старой формой на той же базе (--runInBand, гонок нет): числа
+    // обязаны совпасть целиком, а не только по дельтам фикстуры.
+    const legacyFunnel: number[] = [];
+    for (const n of [1, 3, 7, 30]) {
+      const [row] = await prisma.$queryRaw<Array<{ cnt: bigint }>>`
+        SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= ${n}) t`;
+      legacyFunnel.push(Number(row.cnt));
+    }
+    expect(after.funnel).toEqual(legacyFunnel);
 
     // Контрольный образец (правило №15 п.2): прежняя выборка на той же базе
     // теряет самый свежий день — значит, фикстура действительно за порогом и

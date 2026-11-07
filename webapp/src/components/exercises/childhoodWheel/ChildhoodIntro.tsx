@@ -1,38 +1,34 @@
 import { ExScreen, GlyphArrowRight } from '../ExScreen';
+import { TherapyCaution } from '../../therapy/TherapyCaution';
 import { useTr } from '../../../utils/addressForm';
+import { Wheel } from '../../art/PaperArtSigns';
+import { exerciseCard } from '../../../../../shared/src/exercises/exerciseCatalog';
 import '../../../styles/sheet-childhood.css';
 
 /**
  * Вступление перед первым прохождением: откуда упражнение и зачем оно
  * (правило «откуда и зачем» до первого действия), главное действие одно.
  */
-export function ChildhoodIntro({
-  title,
-  onBack,
-  onStart,
-}: {
-  title: React.ReactNode;
-  onBack: () => void;
-  onStart: () => void;
-}) {
+export function ChildhoodIntro({ title, onBack, onStart }: { title: React.ReactNode; onBack: () => void; onStart: () => void }) {
   const tr = useTr();
   return (
     <ExScreen
       onBack={onBack}
-      eyebrow="№ 06 · Истоки"
+      eyebrow={exerciseCard('wheel').eyebrow} art={<Wheel size="square" />}
       title={title}
       lede="Те же пять потребностей – но про детство."
     >
-      <div className="ds-card cw-intro">
-        <p className="cw-intro-body">
+      <TherapyCaution place="test_start" />
+      <div className="ds-card chw-intro">
+        <p className="chw-intro-body">
           В схема-терапии считается, что схемы формируются, когда базовые потребности{' '}
           <b>систематически не удовлетворялись в детстве</b>. Это упражнение поможет увидеть,
           какие области могут быть особенно чувствительными – и почему дневник сегодня
           показывает то, что показывает.
         </p>
       </div>
-      <div className="ds-card cw-intro">
-        <p className="cw-intro-small">
+      <div className="ds-card chw-intro">
+        <p className="chw-intro-small">
           Это не диагностика – оценки приблизительны и субъективны. Результаты{' '}
           {tr('для твоего понимания', 'для вашего понимания')}, не для выводов.
         </p>
@@ -43,7 +39,7 @@ export function ChildhoodIntro({
         </button>
         <span className="ex2-spacer" />
         <button type="button" className="ds-btn" onClick={onStart}>
-          Оценить детство – 2 минуты <GlyphArrowRight />
+          Оценить детство – {exerciseCard('wheel').time} <GlyphArrowRight />
         </button>
       </div>
     </ExScreen>

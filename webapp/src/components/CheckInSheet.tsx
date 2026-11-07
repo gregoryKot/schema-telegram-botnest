@@ -9,9 +9,7 @@ import { BottomSheetShell } from './BottomSheetShell';
 
 interface Props {
   plan: PracticePlan;
-  needColor: string;
   needLabel: string;
-  color: string;
   onDone: () => void;
 }
 

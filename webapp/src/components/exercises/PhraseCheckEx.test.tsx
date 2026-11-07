@@ -18,6 +18,7 @@ vi.mock('../../api', () => ({
     getPhraseChecks: vi.fn(),
     createPhraseCheck: vi.fn(),
     updatePhraseCheck: vi.fn(),
+    deletePhraseCheck: vi.fn(),
     trackEvent: vi.fn(),
   },
 }));
@@ -34,6 +35,7 @@ function renderEx(onComplete?: () => void) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear(); // черновик упражнения не должен переезжать в следующий тест
   mockApi.getPhraseChecks.mockResolvedValue([]);
 });
 
@@ -270,6 +272,25 @@ describe('PhraseCheckEx — правка прошлого разбора (пар
     expect(screen.getByText(/Не сохранилось/)).toBeTruthy();
     expect(screen.getByText('Разбор фразы')).toBeTruthy();
   });
+
+  it('удаление зовёт api.deletePhraseCheck(id), карточка закрывается, строка уходит из «Прошлых разборов»', async () => {
+    mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
+    mockApi.deletePhraseCheck.mockResolvedValue(undefined);
+    renderEx();
+    await screen.findByText(/Прошлые разборы · 1/);
+    fireEvent.click(screen.getByLabelText('Открыть разбор: старая фраза'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Удалить навсегда' }));
+    });
+
+    expect(mockApi.deletePhraseCheck).toHaveBeenCalledWith(1);
+    // Read-after-write: список обновлён без перезахода за данными.
+    await waitFor(() => expect(screen.queryByText('Разбор фразы')).toBeNull());
+    expect(screen.queryByLabelText('Открыть разбор: старая фраза')).toBeNull();
+    expect(screen.queryByText(/Прошлые разборы/)).toBeNull();
+  });
 });
 
 describe('PhraseCheckEx — ты/вы', () => {
@@ -281,7 +302,7 @@ describe('PhraseCheckEx — ты/вы', () => {
         </AddressFormContext.Provider>
       </MemoryRouter>,
     );
-    expect(screen.getByText(/^Запиши фразу, которую сказал себе/)).toBeTruthy();
+    expect(screen.getByText(/^Запиши дословно фразу, которую говоришь себе/)).toBeTruthy();
   });
 
   it('вступление звучит на «вы»', () => {
@@ -292,6 +313,6 @@ describe('PhraseCheckEx — ты/вы', () => {
         </AddressFormContext.Provider>
       </MemoryRouter>,
     );
-    expect(screen.getByText(/^Запишите фразу, которую сказали себе/)).toBeTruthy();
+    expect(screen.getByText(/^Запишите дословно фразу, которую говорите себе/)).toBeTruthy();
   });
 });

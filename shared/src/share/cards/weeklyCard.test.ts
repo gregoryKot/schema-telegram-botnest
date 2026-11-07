@@ -1,6 +1,6 @@
 // Карточка недели трекера — чистые расчёты (среднее по потребности за
 // неделю, диапазон дат, индекс недели, текст шаринга кратким/детальным).
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   calcWeekAvg,
   weekRange,
@@ -40,6 +40,13 @@ describe('calcWeekAvg', () => {
 });
 
 describe('weekRange', () => {
+  // fmtDate показывает год, если он не текущий: часы закреплены за 2026.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-20T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it('две и более дат — «первая — последняя» по возрастанию', () => {
     expect(weekRange(history)).toBe('13 июл — 16 июл');
   });

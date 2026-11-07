@@ -14,6 +14,7 @@ import {
   resetAlertEmailHealth,
 } from './alert-email-health';
 import { Logger } from '@nestjs/common';
+import { loadRecordedFixture } from '../test-support/recorded-fixture';
 
 const ORIGINAL_ENV = { ...process.env };
 const originalFetch = global.fetch;
@@ -323,5 +324,55 @@ describe('Resend не принял письмо', () => {
     expect(getAlertEmailHealth()).toMatchObject({ ok: true, status: null });
     expect(getAlertEmailHealth().lastOkAt).not.toBeNull();
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+// Аудит 2026-10 (#812): последняя линия алерта не слушала 429 — на «слишком
+// часто» сразу уходила в почту, хотя через пять секунд Telegram принял бы.
+describe('notifyAdminWithFallback — ответ Telegram 429', () => {
+  const TG = 'https://api.telegram.org/bottest-token/sendMessage';
+  const body429 = (retryAfter: number) => {
+    const body = JSON.parse(
+      loadRecordedFixture('telegram-429-too-many-requests.json'),
+    );
+    body.parameters.retry_after = retryAfter;
+    return body;
+  };
+  function mockTelegram(responses: Array<{ ok: boolean; body?: unknown }>) {
+    const calls: string[] = [];
+    global.fetch = jest.fn((url: unknown) => {
+      calls.push(String(url));
+      const r = String(url).startsWith(TG)
+        ? (responses.shift() ?? { ok: true })
+        : { ok: true };
+      return Promise.resolve({
+        ok: r.ok,
+        status: r.ok ? 200 : 429,
+        json: () => Promise.resolve(r.body),
+      } as Response);
+    });
+    return calls;
+  }
+  beforeEach(() => {
+    process.env.BOT_TOKEN = 'test-token';
+    process.env.ADMIN_ID = '777';
+    process.env.RESEND_API_KEY = 'resend-key';
+    process.env.ADMIN_EMAIL = 'admin@example.com';
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('срок в бюджете — ждёт, повторяет и доставляет в Telegram, письма нет', async () => {
+    jest.useFakeTimers();
+    const calls = mockTelegram([{ ok: false, body: body429(5) }, { ok: true }]);
+    const done = notifyAdminWithFallback('алерт');
+    await jest.advanceTimersByTimeAsync(5000);
+    await done;
+    expect(calls).toEqual([TG, TG]);
+  });
+
+  it('срок дольше бюджета — не ждёт, сразу письмо', async () => {
+    const calls = mockTelegram([{ ok: false, body: body429(120) }]);
+    await notifyAdminWithFallback('алерт');
+    expect(calls).toEqual([TG, 'https://api.resend.com/emails']);
   });
 });

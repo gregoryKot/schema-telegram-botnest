@@ -9,7 +9,7 @@ import { AccountService } from '../bot/account.service';
 import { CONSENT_TEXT } from './telegram.consent-text';
 import { buildConsentKeyboard } from './telegram.keyboards';
 import {
-  MINIAPP_ONLY_KEYBOARD,
+  CABINET_KEYBOARD,
   pairJoinResultText,
   resolveForm,
 } from './telegram.reply-helpers';
@@ -54,5 +54,5 @@ export async function handlePairStart(
   }
   const ok = await deps.pairsService.joinPair(userId, code);
   const form = await resolveForm(deps.accountService, deps.botService, rawId);
-  await ctx.reply(pairJoinResultText(ok, form), MINIAPP_ONLY_KEYBOARD);
+  await ctx.reply(pairJoinResultText(ok, form), CABINET_KEYBOARD);
 }

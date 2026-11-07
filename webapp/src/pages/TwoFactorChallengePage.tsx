@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { OtpCells } from './login/OtpCells';
+import { RecoveryCodeField } from './login/RecoveryCodeField';
 import '../styles/auth-login.css';
 import { TwoFactorIntro } from './login/TwoFactorIntro';
-import { humanizeThrown, readHumanError } from '../../../shared/src/api/humanizeError';
+import { TwoFactorExpired } from './login/TwoFactorExpired';
+import { submitTwoFactorCode } from './login/twoFactorSubmit';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -19,6 +21,7 @@ export function TwoFactorChallengePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [recovery, setRecovery] = useState(false);
+  const [expired, setExpired] = useState(false);
   const challengeToken = params.get('token') ?? '';
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -32,24 +35,13 @@ export function TwoFactorChallengePage() {
     if (busy || !code.trim()) return;
     setBusy(true);
     setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/2fa/challenge`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-        body: JSON.stringify({ challengeToken, code: code.trim() }),
-      });
-      // 401 сервера — «Invalid 2FA code»; лимит и авария — свой текст, не «Неверный код».
-      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
-      const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
-      setAccessToken(accessToken, expiresIn);
-      navigate('/today', { replace: true });
-    } catch (err) {
-      setError(humanizeThrown(err, 'Не получилось войти'));
-      setBusy(false);
-      setCode('');
-      inputRef.current?.focus();
-    }
+    const out = await submitTwoFactorCode(API_BASE, challengeToken, code.trim());
+    if (out.kind === 'ok') { setAccessToken(out.accessToken, out.expiresIn); navigate('/today', { replace: true }); return; }
+    setBusy(false);
+    setCode('');
+    if (out.kind === 'expired') { setExpired(true); return; }
+    setError(out.message);
+    inputRef.current?.focus();
   };
 
   const switchMode = () => { setRecovery(r => !r); setCode(''); setError(null); };
@@ -58,21 +50,11 @@ export function TwoFactorChallengePage() {
   return (
     <div className="light-lock al-2fa">
       <div className="al-2fa-in">
-        <TwoFactorIntro />
+        {!expired && <TwoFactorIntro /> /* протух: «код из приложения» над «войти заново» сбивает */}
 
-        <form onSubmit={submit} className="al-form">
+        {expired ? <TwoFactorExpired /> : <form onSubmit={submit} className="al-form">
           {recovery ? (
-            <input
-              ref={inputRef}
-              type="text"
-              className="ds-input"
-              autoComplete="one-time-code"
-              aria-label="Recovery-код"
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              placeholder="recovery-код"
-              disabled={busy}
-            />
+            <RecoveryCodeField ref={inputRef} value={code} onChange={setCode} disabled={busy} />
           ) : (
             <OtpCells ref={inputRef} value={code} onChange={setCode} disabled={busy} label="Код из приложения" />
           )}
@@ -83,10 +65,10 @@ export function TwoFactorChallengePage() {
           <p className="al-foot" style={{ textAlign: 'center' }}>
             {recovery ? 'Есть телефон? ' : 'Нет телефона? '}
             <button type="button" className="al-linkbtn" onClick={switchMode}>
-              {recovery ? 'Ввести код из приложения' : 'Ввести recovery-код'}
+              {recovery ? 'Ввести код из приложения' : 'Ввести резервный код'}
             </button>
           </p>
-        </form>
+        </form>}
       </div>
     </div>
   );

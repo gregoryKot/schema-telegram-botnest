@@ -1,7 +1,6 @@
 // HTTP-инфраструктура сайта: базовый URL, заголовки, обёртки get/post/
 // postJson/patchJson/del с таймаутом и перевыпуском сессии на 401 (доменные
-// методы — в api.ts). Зеркало schema-miniapp/src/apiClient.ts (правило №3
-// CLAUDE.md) — то же имя файла и то же назначение на обоих фронтендах.
+// методы — в api.ts).
 //
 // Диагностика «постоянно нужно логиниться заново» (2026-08-21, пункт 4): у
 // сайта не было ни одной попытки перевыпустить сессию на 401 обычного
@@ -16,6 +15,7 @@ import { cachedGet, isCacheableGetPath } from '../../shared/src/api/apiCache';
 import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
 import { readJsonBody } from '../../shared/src/api/readJsonBody';
 import { readErrorBody } from '../../shared/src/api/readErrorBody';
+import { withKeepalive } from '../../shared/src/api/keepalive';
 
 export const BASE_RAW = (import.meta.env.VITE_API_URL as string) ?? '';
 export const BASE = BASE_RAW && !BASE_RAW.startsWith('http') ? `https://${BASE_RAW}` : BASE_RAW;
@@ -51,8 +51,7 @@ export async function fetchWithTimeout(input: string, init: RequestInit, ms = 15
 }
 
 // Ошибка HTTP-ответа со статусом ПОЛЕМ, а не подстрокой в message: потребители
-// (ArticlePage: «настоящий 404 или сеть?») ветвятся по `status`. Зеркало
-// HttpStatusError мини-аппа (apiClient.ts, правило №3).
+// (ArticlePage: «настоящий 404 или сеть?») ветвятся по `status`.
 export class ApiError extends Error {
   status: number;
   reason?: string; // машинный код причины из тела (`already_connected`)
@@ -70,8 +69,7 @@ async function apiError(res: Response): Promise<ApiError> {
 }
 
 // Единственная точка отправки. На 401 перевыпускает сессию (через
-// setRefreshHandler) один раз и повторяет запрос — зеркало
-// schema-miniapp/src/apiClient.ts:authedFetch.
+// setRefreshHandler) один раз и повторяет запрос.
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const send = () => fetchWithTimeout(`${BASE}${path}`, { ...init, headers: authHeaders() });
   const res = await send();
@@ -104,14 +102,18 @@ export async function post(path: string, body: unknown): Promise<void> {
   if (!res.ok) throw await apiError(res);
 }
 
-export async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await authedFetch(path, { method: 'POST', body: JSON.stringify(body) });
+// Досылка автосохранения при уходе со страницы (shared/src/utils/usePendingSave.ts)
+// идёт keepalive-запросом — его браузер не обрывает вместе со страницей.
+export interface SendOptions { keepalive?: boolean }
+
+export async function postJson<T>(path: string, body: unknown, opts?: SendOptions): Promise<T> {
+  const res = await authedFetch(path, withKeepalive({ method: 'POST', body: JSON.stringify(body) }, opts));
   if (!res.ok) throw await apiError(res);
   return readJsonBody<T>(res);
 }
 
-export async function patchJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await authedFetch(path, { method: 'PATCH', body: JSON.stringify(body) });
+export async function patchJson<T>(path: string, body: unknown, opts?: SendOptions): Promise<T> {
+  const res = await authedFetch(path, withKeepalive({ method: 'PATCH', body: JSON.stringify(body) }, opts));
   if (!res.ok) throw await apiError(res);
   return readJsonBody<T>(res);
 }

@@ -1,33 +1,48 @@
+import { useState } from 'react';
 import '../../styles/therapist-tabs.css';
+import { api, type UserTask } from '../../api';
 import { pressable } from '../../utils/a11y';
-import { fmtDate, todayStr } from '../../utils/format';
+import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
+import { MMIcon } from '../modeMapIcons';
+import { todayStr } from '../../utils/format';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
+import { ASSIGN_LEAD_OFFLINE } from '../../../../shared/src/tasks/assignCopy';
+import { isVirtualId } from '../../../../shared/src/utils/sameId';
+import { therapistClosesTask, useTherapistTaskActions } from '../../../../shared/src/therapy/useTherapistTaskActions';
 import { hueStyle } from '../../lib/tone';
 import type { ClientDetail } from './clientSheetTypes';
-import { STATUS_BADGE, STATUS_LABEL, taskStatus, templateHue } from './taskModel';
+import { isOpenStatus, orderTasks, taskMeta, taskStatus, templateHue } from './taskModel';
+import { TabArt, TaskArt } from './TabTitle';
+import { PaperEmpty } from '../art/PaperEmpty';
+import { useIsMobile } from '../useIsMobile';
+import { TaskStatusBadge } from '../TaskStatusBadge';
+import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
 
 interface Props {
   detail: ClientDetail;
+  /** Открыть лист назначения; шаблон передаёт тип и текст. */
+  onAssign: (preset?: AssignPreset) => void;
+  onTasksChanged?: () => void;
 }
 
-const TEMPLATES = [
-  { t: 'Схема-карточка', sub: 'Триггеры · чувства · мысли · корни · реальность · поведение' },
-  { t: 'Дневник режима', sub: '5–7 эпизодов, фокус на конкретном режиме' },
-  { t: 'Письмо себе', sub: 'От Здорового Взрослого к Уязвимому Ребёнку' },
-  { t: 'Imagery rescripting', sub: 'Аудио-практика, 12 минут' },
-];
-
-export function ClientTasksTab({ detail }: Props) {
-  const { clientTasks, setShowAssign } = detail;
+export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
+  const { clientTasks, setClientTasks, selectedClient } = detail;
   const today = todayStr();
-  const activeCount = clientTasks.filter(t => t.done !== true).length;
-  // В работе — сверху, выполненные — внизу; порядок внутри групп сохраняется.
-  const ordered = [...clientTasks.filter(t => t.done !== true), ...clientTasks.filter(t => t.done === true)];
+  const actions = useTherapistTaskActions(api, setClientTasks, onTasksChanged); // успех перечитывает доску «Задания»
+  // Одна залитая кнопка: на компьютере — «+ Задание» в шапке (ClientHeader), на телефоне её там нет.
+  const phone = useIsMobile();
+  const [confirmDelete, setConfirmDelete] = useState<UserTask | null>(null);
+  // Офлайн-клиенту — только «Своё задание»: упражнения приложения ему не подходят (shared/tasks/assignCopy).
+  const offline = !!selectedClient && isVirtualId(selectedClient.telegramId);
+  // Активное — то, что ещё ждёт клиента; «не вышло» закрыто и не считается.
+  const activeCount = clientTasks.filter(t => isOpenStatus(taskStatus(t, today))).length;
+  const ordered = orderTasks(clientTasks, today);
 
   return (
-    <div className="ds-page tb-page tb-tasks">
+    <div className="ds-page tb-tasks">
       <div className="tb-col">
-        <div className="tb-big">
+        <div className="tb-big"><TabArt motif="check" />
           <span className="ds-num tb-big-num">{activeCount}</span>
           <span className="tb-big-cap">
             {pluralRu(activeCount, 'активное домашнее задание', 'активных домашних задания', 'активных домашних заданий')}
@@ -36,44 +51,62 @@ export function ClientTasksTab({ detail }: Props) {
 
         {clientTasks.length === 0 ? (
           <div>
-            <div className="tb-empty">
-              Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.
-            </div>
-            <button onClick={() => setShowAssign(true)} className="ds-btn tb-mt16">Назначить первое задание</button>
+            <PaperEmpty>Нет назначенных заданий. Домашние практики помогают закрепить работу между сессиями.</PaperEmpty>
+            <button onClick={() => onAssign()} className={phone ? 'ds-btn tb-mt16' : 'ds-btn ds-btn--secondary tb-mt16'}>Назначить первое задание</button>
           </div>
         ) : (
           <div className="tb-task-list">
             {ordered.map(t => {
               const status = taskStatus(t, today);
               const done = status === 'done';
-              const meta = done && t.completedAt
-                ? `выполнено ${fmtDate(t.completedAt.slice(0, 10))}`
-                : t.dueDate ? `до ${fmtDate(t.dueDate)}` : `назначено ${fmtDate(t.createdAt.slice(0, 10))}`;
               return (
                 <div key={t.id} className={`ds-card ds-card--row tb-task${done ? ' is-done' : ''}`}>
-                  <span className={`tb-check${done ? ' is-done' : ''}`} aria-hidden="true">{done ? '✓' : ''}</span>
-                  <div className="tb-task-main">
-                    <div className="tb-task-text">{t.text}</div>
-                    <div className="tb-meta">{meta}</div>
+                  <TaskArt task={t} /><div className="tb-task-main">
+                    <div className="tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>
+                    <div className="tb-meta">{taskMeta(t, status)}</div>
                   </div>
-                  <span className={STATUS_BADGE[status]}>{STATUS_LABEL[status]}</span>
+                  <TaskStatusBadge status={status} />
+                  {therapistClosesTask(t) && (
+                    <button className="ds-btn ds-btn--sm ds-btn--secondary" disabled={actions.busyId === t.id} onClick={() => void actions.markDone(t.id)}>
+                      Выполнено
+                    </button>
+                  )}
+                  <button type="button" className="ds-btn ds-btn--icon" aria-label="Удалить задание" disabled={actions.busyId === t.id} onClick={() => setConfirmDelete(t)}><MMIcon name="trash" size={16} /></button>
                 </div>
               );
             })}
           </div>
         )}
+        {actions.error && !confirmDelete && <div className="tb-error" role="alert">{actions.error}</div>}
       </div>
 
       <div className="tb-col tb-col--tight">
-        <div className="ds-h3">Назначить из шаблона</div>
-        {TEMPLATES.map(card => (
-          <div key={card.t} className="tb-tpl tone-tint" style={hueStyle(templateHue(card.t))} {...pressable(() => setShowAssign(true))}>
-            <div className="tb-tpl-head"><span>{card.t}</span><span aria-hidden="true">+</span></div>
-            <div className="tb-tpl-sub">{card.sub}</div>
-          </div>
-        ))}
-        <button onClick={() => setShowAssign(true)} className="ds-btn ds-btn--secondary">+ Назначить</button>
+        {offline ? <div className="tb-meta">{ASSIGN_LEAD_OFFLINE}</div> : (
+          <>
+            <div className="ds-h3">Назначить из шаблона</div>
+            {ASSIGN_TEMPLATES.map(card => (
+              <div key={card.title} className="tb-tpl tone-tint" style={hueStyle(templateHue(card.title))} {...pressable(() => onAssign(card.preset))}>
+                <div className="tb-tpl-head"><span>{card.title}</span><span aria-hidden="true">+</span></div>
+                <div className="tb-tpl-sub">{card.sub}</div>
+              </div>
+            ))}
+          </>
+        )}
+        <button onClick={() => onAssign()} className="ds-btn ds-btn--secondary">+ Назначить</button>
       </div>
+
+      {confirmDelete && (
+        <HistoryConfirmDialog
+          title="Удалить задание?"
+          message={`«${resolveTaskDisplayText(confirmDelete, 'full')}» ${offline ? 'пропадёт из карточки' : 'пропадёт у клиента и из карточки'}. Вернуть его нельзя.`}
+          confirmLabel="Удалить"
+          busyLabel="Удаляю…"
+          busy={actions.busyId === confirmDelete.id}
+          error={actions.error}
+          run={() => actions.remove(confirmDelete.id)}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }

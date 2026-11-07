@@ -8,6 +8,8 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlansScreen } from './PlansScreen';
+import { todayStr } from '../../../shared/src/utils/format';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const getPlanHistory = vi.fn();
 const checkinPlan = vi.fn();
@@ -17,6 +19,16 @@ vi.mock('../api', () => ({
     getPlanHistory: (...a: unknown[]) => getPlanHistory(...a),
     checkinPlan: (...a: unknown[]) => checkinPlan(...a),
   },
+}));
+
+// Лист плана — свой тест (PlanSheet.test.tsx); здесь важно, что он открывается.
+vi.mock('./PlanSheet', () => ({
+  PlanSheet: ({ needLabel, onSaved }: { needLabel: string; onSaved: () => void }) => (
+    <div data-testid="plan-sheet">
+      {needLabel}
+      <button onClick={onSaved}>plan-saved</button>
+    </div>
+  ),
 }));
 
 beforeEach(() => {
@@ -37,7 +49,8 @@ function renderScreen(onOpenTracker = vi.fn(), form: 'ty' | 'vy' = 'ty') {
   );
 }
 
-const today = new Date().toISOString().split('T')[0];
+// Местный день устройства: им сервер пишет scheduledDate (правило №25).
+const today = todayStr();
 
 describe('PlansScreen — пустое состояние', () => {
   it('на чистом аккаунте (нет планов) показывает объяснение и путь в трекер, не выдуманные данные', async () => {
@@ -58,15 +71,28 @@ describe('PlansScreen — пустое состояние', () => {
     getPlanHistory.mockResolvedValue([]);
     renderScreen(vi.fn(), 'ty');
     expect(
-      await screen.findByText(/выбери потребность с низкой оценкой и нажми/),
+      await screen.findByText(/Выбери, о какой позаботиться/),
     ).toBeTruthy();
+  });
+
+  // QA 2026-11 (B-М8): подпись обещала кнопку «Запланировать практику», которой
+  // нет; путь к плану шёл только через трекер и ответ «Совсем нет».
+  it('пустой экран не обещает несуществующую кнопку, а сам открывает план', async () => {
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen();
+    await screen.findByText('Планов пока нет');
+    expect(screen.queryByText(/Запланировать практику/)).toBeNull();
+    fireEvent.click(screen.getByText('Автономия'));
+    expect(screen.getByTestId('plan-sheet').textContent).toContain('Автономия');
+    fireEvent.click(screen.getByText('plan-saved'));
+    await waitFor(() => expect(getPlanHistory).toHaveBeenCalledTimes(2)); // список перечитан
   });
 
   it('объяснение пустого состояния звучит на «вы»', async () => {
     getPlanHistory.mockResolvedValue([]);
     renderScreen(vi.fn(), 'vy');
     expect(
-      await screen.findByText(/выберите потребность с низкой оценкой и нажмите/),
+      await screen.findByText(/Выберите, о какой позаботиться/),
     ).toBeTruthy();
   });
 });
@@ -107,7 +133,7 @@ describe('PlansScreen — список планов', () => {
     renderScreen();
     expect(await screen.findByText('Ожидают выполнения')).toBeTruthy();
     expect(screen.getByText('Выполненные')).toBeTruthy();
-    expect(screen.getByText('1 активных · 1 завершённых')).toBeTruthy();
+    expect(screen.getByText('1 активный · 1 завершённый')).toBeTruthy();
     expect(screen.getByText('Позвонить другу')).toBeTruthy();
     expect(screen.getByText('Прогулка одному')).toBeTruthy();
   });
@@ -118,6 +144,28 @@ describe('PlansScreen — список планов', () => {
     ]);
     renderScreen();
     expect(await screen.findByText('Сегодня')).toBeTruthy();
+  });
+
+  // docs/open/frontend-ux.md: «Сегодня» считалось днём UTC (toISOString), прочие
+  // даты — new Date('YYYY-MM-DD') в местной зоне: в Сиднее после полуночи план на
+  // сегодня шёл «Завтра», в Лос-Анджелесе 5 ноября показывалось «4 нояб.».
+  it('в любой зоне: «Сегодня» — местный день, прошлый день — своим числом', async () => {
+    await forEachTimeZoneAsync(async (tz) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 10, 6, 0, 30)); // 00:30 6 ноября по зоне
+      getPlanHistory.mockResolvedValue([
+        { id: 1, needId: 'attachment', practiceText: 'Позвонить другу', scheduledDate: '2026-11-06', reminderUtcHour: null, done: null },
+        { id: 2, needId: 'autonomy', practiceText: 'Прогулка', scheduledDate: '2026-11-05', reminderUtcHour: null, done: true },
+      ]);
+      try {
+        renderScreen();
+        expect(await screen.findByText('Сегодня'), tz).toBeTruthy();
+        expect(screen.getByText('5 нояб.'), tz).toBeTruthy();
+      } finally {
+        cleanup();
+        vi.useRealTimers();
+      }
+    });
   });
 });
 

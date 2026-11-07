@@ -1,7 +1,7 @@
-// Тест гейта check-token-contract.mjs — контракт дизайн-токенов webapp ⇄
-// schema-miniapp (дизайн-аудит 2026-08, В11). Список имён "только имя"
+// Тест гейта check-token-contract.mjs — контракт дизайн-токенов webapp +
+// shared (дизайн-аудит 2026-08, В11). Список имён "только имя"
 // зашит в самом скрипте (SHARED_NAME_ONLY_TOKENS), поэтому позитивный кейс
-// дублирует его здесь — тот же приём, что PAIRS в check-paired-files.mjs:
+// дублирует его здесь:
 // если список в скрипте изменится, список ниже придётся обновить вместе.
 import { runGate } from './gate-sandbox';
 import { loadStringList } from './pattern-loader';
@@ -44,7 +44,6 @@ describe('check-token-contract.mjs', () => {
   it('нет shared/src/theme/tokens.css — exit 1, понятная ошибка', () => {
     const res = runGate('check-token-contract.mjs', {
       'webapp/src/index.css': validAppCss(),
-      'schema-miniapp/src/index.css': validAppCss(),
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('Не найден контракт токенов');
@@ -57,13 +56,12 @@ describe('check-token-contract.mjs', () => {
     const res = runGate('check-token-contract.mjs', {
       'shared/src/theme/tokens.css': VALID_TOKENS_CSS,
       'webapp/src/index.css': `:root {\n${nameOnly}\n}\n`, // без @import
-      'schema-miniapp/src/index.css': validAppCss(),
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('webapp/src/index.css: не импортирует');
   });
 
-  it('name-only токен объявлен только в одном index.css — exit 1, называет токен', () => {
+  it('name-only токен не объявлен в index.css — exit 1, называет токен', () => {
     const withoutAccentRed = SHARED_NAME_ONLY_TOKENS.filter(
       (n) => n !== '--accent-red',
     )
@@ -72,7 +70,6 @@ describe('check-token-contract.mjs', () => {
     const res = runGate('check-token-contract.mjs', {
       'shared/src/theme/tokens.css': VALID_TOKENS_CSS,
       'webapp/src/index.css': `@import '../../shared/src/theme/tokens.css';\n:root {\n${withoutAccentRed}\n}\n`,
-      'schema-miniapp/src/index.css': validAppCss(),
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain(
@@ -86,7 +83,6 @@ describe('check-token-contract.mjs', () => {
       'webapp/src/index.css':
         `@import '../../shared/src/theme/tokens.css';\n` +
         `.chip { color: var(--accent-red); }\n`, // ссылка, не объявление
-      'schema-miniapp/src/index.css': validAppCss(),
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain(
@@ -94,11 +90,10 @@ describe('check-token-contract.mjs', () => {
     );
   });
 
-  it('оба index.css соблюдают контракт — exit 0', () => {
+  it('index.css соблюдает контракт — exit 0', () => {
     const res = runGate('check-token-contract.mjs', {
       'shared/src/theme/tokens.css': VALID_TOKENS_CSS,
       'webapp/src/index.css': validAppCss(),
-      'schema-miniapp/src/index.css': validAppCss(),
     });
     expect(res.status).toBe(0);
     expect(res.stdout).toContain('✓ Контракт токенов соблюдён');
@@ -116,23 +111,22 @@ describe('check-token-contract.mjs — фолбэк в var()', () => {
     return runGate('check-token-contract.mjs', {
       'shared/src/theme/tokens.css': VALID_TOKENS_CSS,
       'webapp/src/index.css': validAppCss(),
-      'schema-miniapp/src/index.css': validAppCss(),
       [relPath]: source,
     });
   }
 
   it('фолбэк в .tsx — exit 1, называет файл, строку и токен', () => {
     const res = runWith(
-      'schema-miniapp/src/components/JoinConfirmSheet.tsx',
+      'webapp/src/components/JoinConfirmSheet.tsx',
       `export const s = { color: 'var(--danger, #c0392b)' };\n`,
     );
     expect(res.status).toBe(1);
     expect(res.stderr).toContain(
-      'schema-miniapp/src/components/JoinConfirmSheet.tsx:1: фолбэк в var(--danger, …)',
+      'webapp/src/components/JoinConfirmSheet.tsx:1: фолбэк в var(--danger, …)',
     );
   });
 
-  it('фолбэк в .css второго фронтенда тоже виден', () => {
+  it('фолбэк в .css тоже виден', () => {
     const res = runWith(
       'webapp/src/pages/landing.css',
       `.x { color: var(--c-rose, #c46b6b); }\n`,
@@ -177,13 +171,13 @@ describe('check-token-contract.mjs — фолбэк в var()', () => {
   // Без второй половины проверка ничего не доказывает (правило №15).
   it('--tg-* (свойство мессенджера) разрешено, наш --safe-bottom — нет', () => {
     const host = runWith(
-      'schema-miniapp/src/index2.css',
+      'webapp/src/index2.css',
       `:root { --safe-bottom: var(--tg-safe-area-inset-bottom, 0px); }\n`,
     );
     expect(host.status).toBe(0);
 
     const ours = runWith(
-      'schema-miniapp/src/components/UpdateToast.tsx',
+      'webapp/src/components/UpdateToast.tsx',
       `export const s = { bottom: 'calc(76px + var(--safe-bottom, 0px))' };\n`,
     );
     expect(ours.status).toBe(1);

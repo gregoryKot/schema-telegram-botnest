@@ -6,6 +6,7 @@ import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthTicketController } from './auth-ticket.controller';
+import { AuthTicketHandoffController } from './auth-ticket-handoff.controller';
 import { AuthLoginConfirmController } from './auth-login-confirm.controller';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
 import { LoginTicketReport } from './login-ticket/login-ticket.report';
@@ -62,6 +63,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AuthAccountController,
     AuthMaxController,
     AuthTicketController,
+    AuthTicketHandoffController,
     AuthLoginConfirmController,
     Auth2faController,
   ],

@@ -28,8 +28,10 @@ ENV npm_config_audit=false \
 # образа скрипт сам выходит нулём («не git-репозиторий, пропускаю»).
 # merge-drivers-check.mjs — его статический импорт (логика `--check`): без
 # него скрипт падает с ERR_MODULE_NOT_FOUND ещё до разбора аргументов.
+# setup-git-hooks.mjs — второй скрипт того же `prepare` (pre-push хук), та же
+# причина; в образе тоже выходит нулём без git.
 COPY package*.json ./
-COPY scripts/setup-merge-drivers.mjs scripts/merge-drivers-check.mjs scripts/
+COPY scripts/setup-merge-drivers.mjs scripts/merge-drivers-check.mjs scripts/setup-git-hooks.mjs scripts/
 RUN npm ci
 
 # Webapp dependencies
@@ -53,13 +55,15 @@ RUN npm run build
 # Build webapp (website) — output → webapp/dist/ → served at /
 # VITE_BOT_USERNAME is baked into the bundle so the Telegram Login Widget works
 ENV VITE_BOT_USERNAME=SchemeHappensBot
+# Google One Tap (webapp/src/hooks/useGoogleOneTap.ts): публичный client id
+# OAuth-клиента Google — тот же, что GOOGLE_CLIENT_ID бэкенда (он виден в
+# редиректе кнопки «Войти через Google»). Origin https://schemehappens.ru для
+# него разрешён в Google Cloud Console (проверено 2026-10-24: gsi/status → 200).
+# Без переменной окно «Продолжить как…» молча не показывалось никому (аудит
+# 2026-10, п.16). Сверка — src/test-support/gates/google-one-tap-build.spec.ts.
+ARG VITE_GOOGLE_CLIENT_ID=283410385894-d4fu4fmchc8baq5e0rla4n607shtihth.apps.googleusercontent.com
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run build --prefix webapp
-
-# Copy the pre-built Telegram mini-app into webapp/dist/app → served at /app by
-# the same ServeStaticModule. The mini-app is built from its committed source
-# (`npm run build --prefix schema-miniapp`) and its dist committed — this keeps
-# the Docker build fast (no extra install/build step here).
-RUN mkdir -p webapp/dist/app && cp -r schema-miniapp/dist/* webapp/dist/app/
 
 # Build the game (vite base '/game/') → served at /game by the same ServeStatic
 RUN npm run build --prefix game

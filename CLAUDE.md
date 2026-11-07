@@ -19,7 +19,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 .claude/rules/docs.md.
 -->
 
-Продукт по схема-терапии: NestJS-бэкенд (`src/`) + сайт `webapp/` (schemehappens.ru) + Telegram/MAX мини-апп `schema-miniapp/` (`/app/`) + общий код `shared/`. Данные у площадок общие, если совпадает `userId`. Проектом управляют ИИ-агенты; владелец не пишет код и не мержит.
+Продукт по схема-терапии: NestJS-бэкенд (`src/`) + сайт `webapp/` (schemehappens.ru: кабинет и PWA; в Telegram и MAX открывается он же, вход по подписи мессенджера) + общий код `shared/`. Данные у всех входов общие, если совпадает `userId`. Проектом управляют ИИ-агенты; владелец не пишет код и не мержит.
 
 **Принцип:** правило без механизма принуждения не работает — где можно, правило дублируется гейтом в CI или тестом.
 
@@ -27,7 +27,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 
 1. **Где это живёт:** слово владельца («Мой путь», «ЗВ», «визитка») — [docs/architecture/glossary.md](docs/architecture/glossary.md); тип задачи — таблица «Куда идти по задаче» в [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Код открывай, когда карта довела до файла. Поиск шире одного grep — субагенту `scout`: он ищет по карте и возвращает пути, а не файлы.
 2. **Полный текст правила подгружается сам** при работе с файлами его области (`.claude/rules/*.md`, маска `paths:`). Не подгрузился (Explore-агент, облачный проект) — открой файл из заголовка группы ниже, прежде чем трогать область.
-3. **Большой файл — кусками:** `grep -n` по ключу, затем Read с `offset`/`limit` (`docs/AUDIT_*`, `docs/open/*`, `docs/INCIDENTS.md`, `docs/RUNBOOKS.md`, `.github/workflows/*.yml`, `scripts/*-baseline.json`, `src/articles/articles.seed.ts`). `schema-miniapp/dist/`, `package-lock.json`, `docs/archive/` остаются вне чтения.
+3. **Большой файл — кусками:** `grep -n` по ключу, затем Read с `offset`/`limit` (`docs/AUDIT_*`, `docs/open/*`, `docs/INCIDENTS.md`, `docs/RUNBOOKS.md`, `.github/workflows/*.yml`, `scripts/*-baseline.json`, `src/articles/articles.seed.ts`). `package-lock.json` и `docs/archive/` остаются вне чтения.
 4. **Вывод команд — короткий:** тест — конкретный файл (`npx jest src/x.spec.ts --silent`), длинное — через `| tail -n 40` или `grep`, установка — `npm ci --silent`. Красный CI разбирает субагент `ci-doctor`: логи остаются у него. Перед пушем — `node scripts/agent/precheck.mjs`: быстрые гейты CI в чистом дереве, вывод — только красное.
 5. **Задача размыта — сначала договорись:** `/grill-me` (раунды вопросов с рекомендациями → ТЗ в issue). Переделка дороже вопросов.
 6. **Делегируй.** Основная модель планирует, ревьюит и отвечает за итог; реализация по ТЗ, механика и прогоны — субагентам (по умолчанию `sonnet`, `CLAUDE_CODE_SUBAGENT_MODEL` в `.claude/settings.json`; совсем механическое — `"haiku"`). Субагент не видит переписку: нужное ему повтори в ТЗ. Перед PR с кодом продукта — `rules-reviewer` по диффу: полные правила читает он, а не исполнитель; правке документов он не нужен.
@@ -36,34 +36,34 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 ## Правила: одна строка; полный текст — в файле группы
 
 ### Процесс → [.claude/rules/process.md](.claude/rules/process.md)
-- **№1** Ничего не мержится с красным CI: tsc, jest, eslint, сборки и vitest обоих фронтендов, `migrate deploy` на живом Postgres гоняет CI. Локально перед пушем — `node scripts/agent/precheck.mjs`, спеки изменённых модулей и `npx tsc --noEmit -p tsconfig.build.json` (голый `tsc` из корня падает на `e2e-browser/` — норма); полные сьюты — работа CI.
+- **№1** Ничего не мержится с красным CI: tsc, jest, eslint, сборка и vitest сайта и `shared/`, `migrate deploy` на живом Postgres гоняет CI. Локально перед пушем — `node scripts/agent/precheck.mjs`, спеки изменённых модулей и `npx tsc --noEmit -p tsconfig.build.json` (голый `tsc` из корня падает на `e2e-browser/` — норма); полные сьюты — работа CI. Сам `git push` идёт через pre-push хук репозитория `scripts/git-hooks/pre-push` (ставится из npm `prepare`, собирает `webapp` с именем бота) — `--no-verify` не используется.
 - **№1а** Мержит агент: открыл PR — дождись CI, красный чини, зелёный — сними драфт и смержи (squash) без вопроса. Мерж в `main` = деплой. Исключение — метка `do-not-merge` или «не мержить» в описании.
 - **№20** Починка инцидента приезжает со строкой в `docs/INCIDENTS.md`; один инцидент — один PR; вопрос ревью — «как система узнала бы сама?».
 - **№26** Находка вне задачи → строка в `docs/open/<область>.md` в том же PR (что сломано, где — путь, чем доказано), не в тело PR. Осознанно не сделанное — так же, с причиной. Закрыл — убери строку.
 - **Бэклог** — `docs/BACKLOG.md`: идея владельца — строка сразу; взял — 🔧 + PR; закрыл — в «Сделано» в том же PR.
 
 ### Гейты и параллельные агенты → [.claude/rules/gates.md](.claude/rules/gates.md)
-- **№9** eslint: число ошибок не растёт; `no-floating-promises` — error; новых `any` нет; каст Prisma-делегата на `any` запрещён.
+- **№9** eslint: число ошибок не растёт; `no-floating-promises` — error; новых `any` нет; каст Prisma-делегата на `any` запрещён. Локально — `node scripts/check-eslint-ratchet.mjs --changed` (файлы против `origin/main`).
 - **№10** Новый файл ~150 строк, потолок 300. Файл из `scripts/file-size-baseline.json` может только уменьшаться (`check-file-size-ratchet.mjs`; снизил — `--update`). Разросшийся гейт дробится на движок + `*-rules.mjs`.
 - **№11** Один маршрут — один контроллер (`check-route-collisions`); дубли ≥70 токенов не растут (`check-jscpd-ratchet`); у файла есть не-тестовый потребитель (`check-dead-files`); заменил компонент — удали старый в том же PR.
-- **№13** Конфликт сводится локально: `git fetch origin main && git merge origin/main` (не кнопкой GitHub). Бейслайны и `schema-miniapp/dist` сводят merge-драйверы — руками не разрешать. Новый `*-baseline.json` = строка в `.gitattributes`. `package-lock.json` — любая сторона + `npm install`. `main` под ruleset (`strict`, 9 джоб `ci.yml` обязательны): ветка отстала — обнови её с `main`, дождись CI заново, потом мерж или `enable_pr_auto_merge`.
+- **№13** Конфликт сводится локально: `git fetch origin main && git merge origin/main` (не кнопкой GitHub). Бейслайны сводят merge-драйверы — руками не разрешать. Новый `*-baseline.json` = строка в `.gitattributes`. `package-lock.json` — любая сторона + `npm install`. `main` под ruleset (`strict`, все джобы `ci.yml` обязательны): ветка отстала — обнови её с `main`, дождись CI заново, потом мерж или `enable_pr_auto_merge`.
 - **№15** Красный гейт чинят по существу: сначала пойми, почему он прав. Исключение — с причиной, тестом-образцом и контрольным образцом; рост бейслайна объясняется в теле коммита; код остаётся там, куда гейт смотрит (`game/`, `public/` — слепые зоны).
 - `PrismaModule` глобальный: `PrismaService` берут инъекцией, в `providers` других модулей его нет.
 
-### Фронтенды: код и сборка → [.claude/rules/frontend.md](.claude/rules/frontend.md)
-- **№2** Логика во фронтендах (ветвления, вычисления, данные) приезжает с тестом vitest + testing-library.
-- **№3** Файл с двойником во втором фронтенде правится в обоих в одном PR или переезжает в `shared/` (`check-paired-files`). Новый общий код — сразу в `shared/`.
-- **№16** Паритет — по роутам бэкенда: роут, доступный не с обеих площадок, — запись в `scripts/feature-parity-baseline.json` (`status`, честная `reason`, `since`) (`check-feature-parity`).
-- **Одна механика — один компонент:** перед новым контролом/списком/парсером — grep; дубль — вынос в общий модуль в том же PR.
+### Фронтенд: код и сборка → [.claude/rules/frontend.md](.claude/rules/frontend.md)
+- **№2** Логика во фронтенде (`webapp/`, `shared/`: ветвления, вычисления, данные) приезжает с тестом vitest + testing-library.
+- **№3** Одна механика — один модуль: перед новым контролом, списком, парсером — grep. Код, общий с бэкендом или между экранами, живёт в `shared/`; дубль — вынос туда в том же PR (`check-jscpd-ratchet`).
 - **Данные пользователя — только реальные:** нет данных → пусто, скелетон или «—».
-- **Загрузка — скелетон по форме контента** (`schema-miniapp/src/components/Skeleton.tsx`), спиннер — только у кнопок-действий.
+- **Загрузка — скелетон по форме контента** (`webapp/src/components/Skeleton.tsx`), спиннер — только у кнопок-действий.
 - **Полноэкранный лист в webapp** (`position: fixed; inset: 0`) → `const goBack = useHistorySheet(onClose)`, все «Назад/Закрыть» — через `goBack()`; без `history.pushState` (`check-history-sheet`).
-- **Мини-апп:** `dist/` коммитится — после правки `schema-miniapp/src` или `shared/` выполни `npm run build --prefix schema-miniapp` и закоммить `schema-miniapp/dist`. Сайт собирает Docker (его dist в git нет). Деплой = push в `main`.
+- **Под-лист стоит не ниже родителя:** листы одного уровня стыкуются порядком в DOM (поздний сиблинг выше при равном z-index), число — только чтобы встать выше чужого позднего сиблинга; лишний `zIndex` у родителя прячет под-лист (`check-overlay-stack`).
+- **Кэш в localStorage — один ключ, один писатель:** `setItem`/`removeItem` с ключом зовёт только модуль-владелец из `scripts/local-cache-baseline.json` (mirror|local), остальные — его функцию; кэш обновляется там же, где меняется источник (`check-local-cache-writers`).
+- **Сборка:** сайт собирает Docker (dist в git нет). Деплой = push в `main`.
 
 ### Фронтенды: очевидность и визуал → [.claude/rules/frontend-visual.md](.claude/rules/frontend-visual.md)
 - **Онбординг:** новая фича до первого действия отвечает «откуда это и зачем» прямо на пути пользователя; одно главное действие на экран; тап-цели ≥44×44 (`hitboxStyle`, `check-tap-targets`); раскрытие не только по `:hover` (`check-hover-only-reveal`).
 - **Фон под панелью — сплошной цвет, свечение — градиентом:** размытие (`backdrop-filter`, `filter: blur`) тормозит PWA и режется `check-render-poison`.
-- **Цвет — из токенов**, не литералом (`check-color-drift`); прозрачный токен — `color-mix(in srgb, var(--x) N%, transparent)`; `'var(--x)18'` невалидно (`check-var-alpha-suffix`).
+- **Цвет — из токенов**, не литералом (`check-color-drift`); прозрачный токен — `color-mix(in srgb, var(--x) N%, transparent)`; `'var(--x)18'` невалидно (`check-var-alpha-suffix`); `--c-*` — оттенок для заливок, текст — `--accent-*`/`*-strong` (`accentTextContrast.test.ts`).
 
 ### Тексты для пользователя → [.claude/rules/texts.md](.claude/rules/texts.md)
 - **ты/вы:** каждая строка с обращением — в обеих формах. Бэк: `t(form, 'ты', 'вы')` (`src/notification/address-form.ts`); фронт: `const tr = useTr(); tr('ты', 'вы')`; контент-файлы — билдер `buildX(tr)` + хук. «Вы»-строка целиком во множественном числе (`check-address-form`, `check-second-person`, `check-address-agreement`).
@@ -93,7 +93,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **№21** Новая внешняя интеграция = проба в `src/infra/self-check/` (живой вызов, таймаут, не бросает).
 - **№22** Новая env-переменная = запись в `src/infra/env-registry*.ts` + строка в `docs/ENV.md` (`check-env-registry`).
 - **№23** Парсер ответа внешней площадки — с записанной фикстурой в `test/fixtures/recorded/` (`check-recorded-fixtures`).
-- **№24** У каждой джобы есть `timeout-minutes`; открытая issue `ci-alarm` — работа на сейчас.
+- **№24** У каждой джобы есть `timeout-minutes`, образ раннера прибит версией, не `*-latest` (`runner-pin.spec.ts`); открытая issue `ci-alarm` — работа на сейчас.
 
 ### Аналитика → [.claude/rules/analytics.md](.claude/rules/analytics.md)
 - **№8** User-facing фича = событие: имя в `ANALYTICS_EVENTS` (`src/analytics/analytics.constants.ts`) + ветка в `sanitizeMeta` (только известные поля) + константа на фронте (`shared/src/share/analytics.ts`) + блок в `/stats` (чистый форматтер с тестом, включая пустую БД; язык без терминов).

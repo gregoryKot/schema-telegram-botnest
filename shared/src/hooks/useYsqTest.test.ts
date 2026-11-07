@@ -18,6 +18,13 @@ import {
 } from './useYsqTest';
 import { SCHEMAS } from './ysqSchemas';
 import { computeScores } from './ysqScoring';
+import {
+  YSQ_PROGRESS_EVENT,
+  YSQ_RESULT_EVENT,
+  clearYsqProgress,
+  useYsqLocalState,
+} from './ysqProgressStore';
+import { TASKS_CHANGED_EVENT } from '../tasks/tasksChanged';
 
 function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
   return {
@@ -313,6 +320,39 @@ describe('useYsqTest — сетевые сбои не должны молчат�
     expect(api.deleteYsqProgress).toHaveBeenCalled();
   });
 
+  // QA 2026-11, К1: сохранённый тест закрывает на сервере запрос терапевта
+  // (задание). Экран с заданиями узнаёт об этом только после ответа сервера:
+  // сбой — сигнала нет (задание не закрыто), повтор удался — сигнал есть.
+  it('итог сохранён → сигнал «перечитай задания»; сбой — без сигнала, повтор — с ним', async () => {
+    vi.useFakeTimers();
+    const onTasks = vi.fn();
+    window.addEventListener(TASKS_CHANGED_EVENT, onTasks);
+    const saveYsqResult = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(undefined);
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({
+        answers: Array(QUESTIONS.length).fill(3),
+        page: TOTAL_PAGES - 1,
+      }),
+    );
+    const api = makeApi({ saveYsqResult });
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(onTasks).not.toHaveBeenCalled();
+    await act(async () => {
+      result.current.retrySaveResult();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(onTasks).toHaveBeenCalledTimes(1);
+    window.removeEventListener(TASKS_CHANGED_EVENT, onTasks);
+  });
+
   it('провал проверки сохранённого на сервере прогресса при монтировании — resumeCheckFailed=true, phase остаётся intro', async () => {
     // Раньше .catch(() => {}) означал, что при сетевом сбое приложение
     // молча вело себя как чистый аккаунт: пользователь без прогресса на
@@ -424,5 +464,148 @@ describe('useYsqTest — отложенный переход не пережив
     };
     expect(saved.page).toBe(0);
     expect(api.saveYsqProgress).not.toHaveBeenCalled();
+  });
+});
+
+// QA 2026-10-26: «Начать тест» → 5 ответов → «✕» → на интро только «Начать
+// тест» (hasProgress не знал о новых ответах) → тест с вопроса 1, и первый же
+// ответ затирал на сервере 5 сохранённых.
+describe('useYsqTest — прервал и вернулся: продолжение, а не начало заново', () => {
+  it('5 ответов → «✕» → «Продолжить (5 из 116)» → ответ на 6-й вопрос, на сервере 6', async () => {
+    vi.useFakeTimers();
+    const api = makeApi();
+    const seen: (number | null)[] = [];
+    const onProgress = (e: Event) =>
+      seen.push((e as CustomEvent<number | null>).detail);
+    window.addEventListener(YSQ_PROGRESS_EVENT, onProgress);
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.handleStartFresh());
+    for (let q = 0; q < 5; q++) {
+      act(() => result.current.selectAnswer(q, 4));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+    }
+
+    act(() => result.current.setPhase('intro')); // «✕» в вопросе
+    expect(result.current.hasProgress).toBe(true);
+    expect(result.current.progressAnswered).toBe(5);
+
+    act(() => result.current.handleContinue());
+    expect(result.current.phase).toBe('test');
+    expect(result.current.page).toBe(5);
+    act(() => result.current.selectAnswer(5, 4));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    const [answers, page] = vi.mocked(api.saveYsqProgress).mock.calls.at(-1)!;
+    expect(answers.filter((a) => a > 0)).toHaveLength(6);
+    expect(page).toBe(6);
+    // Экран «Мои паттерны» под тестом узнаёт число ответов без перезагрузки.
+    expect(seen.at(-1)).toBe(6);
+    window.removeEventListener(YSQ_PROGRESS_EVENT, onProgress);
+  });
+
+  it('сдал тест — экран под ним узнаёт, что незаконченного теста нет', () => {
+    const seen: (number | null)[] = [];
+    const onProgress = (e: Event) =>
+      seen.push((e as CustomEvent<number | null>).detail);
+    window.addEventListener(YSQ_PROGRESS_EVENT, onProgress);
+    const { result } = renderHook(() => useYsqTest({ api: makeApi() }));
+    act(() => result.current.handleRetake());
+    expect(seen).toEqual([null]);
+    window.removeEventListener(YSQ_PROGRESS_EVENT, onProgress);
+  });
+});
+
+// QA 2026-11 (B-З5): «Мои паттерны» под тестом узнают об итоге событием —
+// после того, как сервер его сохранил и стёр прогресс (иначе экран успел бы
+// перечитать незаконченный тест «116 из 116»).
+describe('useYsqTest — итог на сервере: экраны под тестом узнают сразу', () => {
+  function onResult() {
+    const calls: string[] = [];
+    const h = () => calls.push('result');
+    window.addEventListener(YSQ_RESULT_EVENT, h);
+    return {
+      calls,
+      off: () => window.removeEventListener(YSQ_RESULT_EVENT, h),
+    };
+  }
+
+  it('последний ответ: событие после сохранения итога и удаления прогресса', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({
+        answers: Array(QUESTIONS.length).fill(3),
+        page: TOTAL_PAGES - 1,
+      }),
+    );
+    const order: string[] = [];
+    const api = makeApi({
+      saveYsqResult: vi.fn(async () => void order.push('save')),
+      deleteYsqProgress: vi.fn(async () => void order.push('deleteProgress')),
+    });
+    const ev = onResult();
+    const h = () => order.push('event');
+    window.addEventListener(YSQ_RESULT_EVENT, h);
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(ev.calls).toEqual(['result']);
+    expect(order).toEqual(['save', 'deleteProgress', 'event']);
+    ev.off();
+    window.removeEventListener(YSQ_RESULT_EVENT, h);
+  });
+
+  it('сервер не принял итог — события нет: экран не притворяется, что схемы есть', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({
+        answers: Array(QUESTIONS.length).fill(3),
+        page: TOTAL_PAGES - 1,
+      }),
+    );
+    const api = makeApi({
+      saveYsqResult: vi.fn().mockRejectedValue(new Error('net')),
+    });
+    const ev = onResult();
+    const { result } = renderHook(() => useYsqTest({ api, autoResume: true }));
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(result.current.resultSaveError).toBe(true);
+    expect(ev.calls).toEqual([]);
+    ev.off();
+  });
+
+  it('«Пройти заново» стирает итог на сервере — экраны тоже узнают', async () => {
+    const ev = onResult();
+    const { result } = renderHook(() => useYsqTest({ api: makeApi() }));
+    await act(async () => {
+      result.current.handleRetake();
+    });
+    expect(ev.calls).toEqual(['result']);
+    ev.off();
+  });
+});
+
+describe('useYsqLocalState — карточка под тестом живая', () => {
+  it('сдал тест — «Незаконченный тест» сменяется итогом без перезагрузки', () => {
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({ answers: [], page: 0 }),
+    );
+    const { result } = renderHook(() => useYsqLocalState());
+    expect(result.current).toEqual({ hasResult: false, hasProgress: true });
+    act(() => {
+      localStorage.setItem(YSQ_RESULT_KEY, JSON.stringify({ answers: [] }));
+      clearYsqProgress();
+    });
+    expect(result.current).toEqual({ hasResult: true, hasProgress: false });
   });
 });

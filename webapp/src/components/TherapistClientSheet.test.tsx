@@ -12,11 +12,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { TherapistClientSheet } from './TherapistClientSheet';
 import type { TherapyClientSummary } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { todayStr } from '../utils/format';
 import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 
 vi.mock('../api', () => ({
   api: {
     getTherapyClients: vi.fn(),
+    getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    revokeTherapyInvite: vi.fn(),
     getTherapyTasksForClient: vi.fn(),
     getTherapistNotes: vi.fn(),
     getConceptualization: vi.fn(),
@@ -94,9 +97,27 @@ function Wrapper() {
   return <TherapistClientSheet view={view} onViewChange={setView} onClose={vi.fn()} />;
 }
 
+// Router: подтверждение удаления клиента пишет запись в историю (HistoryConfirmDialog).
 function renderSheet() {
-  return render(<Wrapper />);
+  return render(<MemoryRouter><Wrapper /></MemoryRouter>);
 }
+
+// Инцидент 2026-10-26: приглашение из «Новый клиент» больше не создаёт
+// офлайн-карточку — до подключения человек виден в «Ждут подключения».
+describe('TherapistClientSheet — «Ждут подключения»', () => {
+  it('живое приглашение видно с именем терапевта и кодом; карточкой клиента оно не становится', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([]);
+    mockApi.getTherapyInvites.mockResolvedValueOnce([{
+      id: 5, code: '7F3A9C21B04E', url: 'https://t.me/b/diary?startapp=therapy_7F3A9C21B04E',
+      alias: 'Мария К.', createdAt: '2026-10-26T10:00:00.000Z', expiresAt: '2026-11-02T10:00:00.000Z', attachToId: null,
+    }]);
+    renderSheet();
+    expect(await screen.findByText('Ждут подключения · 1')).toBeTruthy();
+    expect(screen.getByText('Мария К.')).toBeTruthy();
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Клиенты');
+  });
+});
 
 describe('TherapistClientSheet — список клиентов: загрузка и пустое состояние', () => {
   it('пока getTherapyClients не резолвнулся — скелетоны карточек, а не онбординг', async () => {
@@ -174,20 +195,21 @@ describe('TherapistClientSheet — открытие карточки клиен�
     await screen.findByText(/Заполни концептуализацию, чтобы увидеть схемы и режимы клиента/);
   });
 
-  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): бейдж «активность сегодня» в
-  // ClientHeader сравнивал календарный день сервера (`lastActiveDate`,
-  // полночь UTC) с локальной датой машины (todayStr()). Моменты фиксированы
-  // там, где зоны заведомо расходятся с UTC. Список клиентов грузится
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17, QA 2026-10-26): бейдж
+  // «активность сегодня» сравнивал `lastActiveDate` с «сегодня» терапевта —
+  // сначала местным, потом UTC; оба не день клиента. Теперь его отдаёт сервер
+  // по календарю клиента (daysSinceActive === 0), и от зоны терапевта бейдж не
+  // зависит. Моменты фиксированы там, где зоны расходятся с UTC. Список клиентов грузится
   // асинхронно, поэтому загрузка идёт под текущей зоной процесса, а сама
   // проверка по зонам — синхронный клик (открыть карточку → назад → снова
   // открыть), чтобы момент смены TZ совпадал с моментом рендера бейджа.
-  it('бейдж «активность сегодня» учитывает календарный день сервера в любой зоне', async () => {
+  it('бейдж «активность сегодня» — по календарю клиента, в любой зоне терапевта', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
         vi.setSystemTime(new Date(moment));
         mockApi.getTherapyClients.mockResolvedValue([
-          client({ telegramId: 7, name: 'Анна', lastActiveDate: todayCalendarDate() }),
+          client({ telegramId: 7, name: 'Анна', lastActiveDate: todayCalendarDate(), daysSinceActive: 0 }),
         ]);
         renderSheet();
         // Клиент, активный сегодня, попадает и в дашборд «Активны сегодня»,
@@ -198,7 +220,7 @@ describe('TherapistClientSheet — открытие карточки клиен�
           vi.setSystemTime(new Date(moment));
           const [row] = screen.getAllByText('Анна');
           fireEvent.click(row);
-          expect(screen.getByText('активность сегодня')).toBeTruthy();
+          expect(document.querySelector('.tk-meta')?.textContent).toContain('активность сегодня');
           fireEvent.click(screen.getByText('← Все клиенты'));
         });
 
@@ -338,15 +360,15 @@ describe('TherapistClientSheet — вкладка «Схемы» (YSQ)', () => {
     await screen.findByText('✓ Запрос отправлен');
   });
 
-  it('оффлайн-клиент (telegramId < 0) не может запросить YSQ — кнопки нет вообще', async () => {
-    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: -5, name: null, clientAlias: 'Оффлайн Клиент' })]);
+  it('офлайн-клиент (telegramId < 0) не может запросить YSQ — кнопки нет вообще', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: -5, name: null, clientAlias: 'Офлайн Клиент' })]);
     renderSheet();
-    await screen.findByText('Оффлайн Клиент');
-    fireEvent.click(screen.getByText('Оффлайн Клиент'));
+    await screen.findByText('Офлайн Клиент');
+    fireEvent.click(screen.getByText('Офлайн Клиент'));
     await screen.findByText('Обзор');
 
     fireEvent.click(screen.getByText('Схемы'));
-    await screen.findByText('Клиент без Telegram – YSQ недоступен');
+    await screen.findByText('У офлайн-клиента нет аккаунта – тест пройти негде');
     expect(screen.queryByText('Запросить тест на схемы')).toBeNull();
   });
 });
@@ -354,8 +376,8 @@ describe('TherapistClientSheet — вкладка «Схемы» (YSQ)', () => {
 // Регрессия (см. useClientDetail.mutations.test.ts): autoSave раньше молча
 // проглатывал ошибку api.saveConceptualization — терапевт не видел, что
 // правка не сохранилась. Тест на уровне компонента подтверждает, что
-// ClientConceptTab реально показывает conceptError, а не только внутренний
-// стейт хука.
+// ClientConceptTab реально показывает ошибку (SaveStatusLine: «Не сохранилось»
+// + «Повторить», issue #879), а не только внутренний стейт хука.
 describe('TherapistClientSheet — вкладка «Концептуализация»: ошибка автосохранения видна', () => {
   it('клик по схеме → автосохранение падает → баннер ошибки виден пользователю', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна' })]);
@@ -372,16 +394,18 @@ describe('TherapistClientSheet — вкладка «Концептуализац
     fireEvent.click(screen.getByText('Эмоциональная депривация'));
 
     await waitFor(
-      () => expect(screen.getByText(/Не удалось сохранить изменения/)).toBeTruthy(),
+      () => expect(screen.getByRole('alert').textContent).toContain('Не сохранилось'),
       { timeout: 2000 },
     );
+    expect(screen.getByRole('button', { name: 'Повторить' })).toBeTruthy();
   });
 });
 
 describe('TherapistClientSheet — вкладка «Задания»', () => {
+  // В работе — `done: null`; `done: false` — закрыто «не вышло» (QA 2026-10-26).
   const taskFor7 = (over: Record<string, unknown>) => ({
     id: 1, userId: 7, assignedBy: 1, type: 'note', text: '', targetDays: null,
-    needId: null, dueDate: null, done: false, completedAt: null,
+    needId: null, dueDate: null, done: null, completedAt: null,
     createdAt: '2026-07-20T00:00:00.000Z', ...over,
   });
 
@@ -403,6 +427,16 @@ describe('TherapistClientSheet — вкладка «Задания»', () => {
     await screen.findByText('Обзор');
     fireEvent.click(screen.getByText('Задания'));
   }
+
+  // QA 2026-10-26: любой шаблон открывал лист с «Трекером потребностей».
+  it('шаблон «Письмо себе в детстве» открывает лист назначения с этим типом', async () => {
+    mockApi.getTherapyTasksForClient.mockResolvedValue([]);
+    await openAnnaTasks(true);
+    fireEvent.click(await screen.findByText('Письмо себе в детстве'));
+    await screen.findByText('Задание · Анна');
+    const card = screen.getAllByText('Письмо себе в детстве').map(n => n.closest('[aria-pressed]')).find(Boolean)!;
+    expect(card.getAttribute('aria-pressed')).toBe('true');
+  });
 
   it('без заданий — пустое состояние с призывом назначить, не выдуманный список', async () => {
     await openAnnaTasks();
@@ -472,11 +506,42 @@ describe('TherapistClientSheet — сайдбар «Обзор»: индекс �
     await screen.findByText('Не установлена');
 
     fireEvent.click(screen.getByText('Изменить →'));
-    const input = screen.getByDisplayValue('') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '2026-08-10T10:00' } });
+    fireEvent.change(screen.getByLabelText('День сессии'), { target: { value: '2026-08-10' } });
+    fireEvent.change(screen.getByLabelText('Время сессии, необязательно'), { target: { value: '10:00' } });
     fireEvent.click(screen.getByText('Сохранить'));
 
     await waitFor(() => expect(mockApi.updateSessionInfo).toHaveBeenCalledWith(7, { nextSession: '2026-08-10T10:00' }));
+  });
+
+  // QA 2026-10-26: одно поле datetime-local отдаёт '' на день без времени —
+  // уходило {nextSession: null}, и сохранённая сессия молча стиралась.
+  it('день без времени сохраняется днём, а не стирает сессию', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна', nextSession: null })]);
+    mockApi.updateSessionInfo.mockResolvedValue(undefined);
+    renderSheet();
+    await screen.findByText('Анна');
+    fireEvent.click(screen.getByText('Анна'));
+    await screen.findByText('Не установлена');
+
+    fireEvent.click(screen.getByText('Изменить →'));
+    fireEvent.change(screen.getByLabelText('День сессии'), { target: { value: '2026-08-10' } });
+    fireEvent.click(screen.getByText('Сохранить'));
+
+    await waitFor(() => expect(mockApi.updateSessionInfo).toHaveBeenCalledWith(7, { nextSession: '2026-08-10' }));
+  });
+
+  it('время без дня — «Сохранить» недоступно, подсказка видна', async () => {
+    mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Анна', nextSession: null })]);
+    renderSheet();
+    await screen.findByText('Анна');
+    fireEvent.click(screen.getByText('Анна'));
+    await screen.findByText('Не установлена');
+
+    fireEvent.click(screen.getByText('Изменить →'));
+    fireEvent.change(screen.getByLabelText('Время сессии, необязательно'), { target: { value: '10:00' } });
+    expect((screen.getByText('Сохранить') as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('alert').textContent).toMatch(/день встречи/);
+    expect(mockApi.updateSessionInfo).not.toHaveBeenCalled();
   });
 
   // РЕГРЕССИЯ (check-silent-catch): раньше кнопка «Сохранить» закрывала поле
@@ -493,8 +558,8 @@ describe('TherapistClientSheet — сайдбар «Обзор»: индекс �
     await screen.findByText('Не установлена');
 
     fireEvent.click(screen.getByText('Изменить →'));
-    const input = screen.getByDisplayValue('') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '2026-08-10T10:00' } });
+    fireEvent.change(screen.getByLabelText('День сессии'), { target: { value: '2026-08-10' } });
+    fireEvent.change(screen.getByLabelText('Время сессии, необязательно'), { target: { value: '10:00' } });
     fireEvent.click(screen.getByText('Сохранить'));
 
     await screen.findByRole('alert');
@@ -526,8 +591,8 @@ describe('TherapistClientSheet — насыщенная карточка кли�
       name: 'Анна', mySchemaIds: [], myModeIds: [], ysqCompletedAt: '2026-07-15T00:00:00.000Z',
       ysqActiveSchemaIds: ['abandonment'],
       ysqHistory: [
-        { id: 2, completedAt: '2026-07-15T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 70 }, { id: 'emotional_deprivation', pct5plus: 40 }] },
-        { id: 1, completedAt: '2026-06-01T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 50 }, { id: 'emotional_deprivation', pct5plus: 30 }] },
+        { id: 2, completedAt: '2026-07-15T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 70, avg: 4.6, active: true }, { id: 'emotional_deprivation', pct5plus: 40, avg: 3.4, active: false }] },
+        { id: 1, completedAt: '2026-06-01T00:00:00.000Z', scores: [{ id: 'abandonment', pct5plus: 50, avg: 4.2, active: true }, { id: 'emotional_deprivation', pct5plus: 30, avg: 3.2, active: false }] },
       ],
     });
     mockApi.getTherapistNotes.mockResolvedValue({ notes: [
@@ -562,7 +627,8 @@ describe('TherapistClientSheet — насыщенная карточка кли�
   it('«Концептуализация» показывает историю версий и сверку с YSQ', async () => {
     await openAnna();
     fireEvent.click(screen.getByText('Концептуализация'));
-    await screen.findByText('История версий · 1');
+    // История — свёрнутая раскрывашка под содержанием (#879): заголовок с числом.
+    fireEvent.click(await screen.findByRole('button', { name: 'История версий · 1' }));
 
     fireEvent.click(screen.getByText('Версия 1'));
     await screen.findByText('старая версия');
@@ -571,9 +637,12 @@ describe('TherapistClientSheet — насыщенная карточка кли�
   it('«Схемы» с двумя прохождениями рисует график динамики и таблицу с дельтой', async () => {
     await openAnna();
     fireEvent.click(screen.getByText('Схемы'));
-    await screen.findByText('Динамика топ-5 схем');
-    // 70% (текущее) против 50% (предыдущее) — дельта +20.
-    expect(screen.getByText('+20')).toBeTruthy();
+    await screen.findByText('Динамика топ-5 схем · средний балл');
+    // Средний балл 4.6 (текущее) против 4.2 (предыдущее) — дельта +0.4; обе меры критерия видны.
+    expect(screen.getByText('+0.4')).toBeTruthy();
+    expect(screen.getByText('4.6/6')).toBeTruthy();
+    expect(screen.getByText('70%')).toBeTruthy();
+    expect(screen.getByText('выражена')).toBeTruthy();
   });
 
   it('«Записи клиента» показывает схема- и режим-карточки терапевта', async () => {
@@ -587,6 +656,13 @@ describe('TherapistClientSheet — насыщенная карточка кли�
   });
 });
 
+// Редкие действия шапки — переименовать и удалить — в меню «⋯» (#906): открыть
+// меню, выбрать пункт.
+function pickHeaderAction(name: string) {
+  fireEvent.click(screen.getByRole('button', { name: 'Действия с карточкой' }));
+  fireEvent.click(screen.getByRole('menuitem', { name }));
+}
+
 describe('TherapistClientSheet — переименование клиента (алиас)', () => {
   it('сохранение нового имени вызывает api.renameClient и обновляет шапку', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Иван Петров' })]);
@@ -596,7 +672,7 @@ describe('TherapistClientSheet — переименование клиента (
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Переименовать'));
+    pickHeaderAction('Переименовать');
     const input = screen.getByDisplayValue('Иван Петров') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'И.П.' } });
     fireEvent.click(screen.getByText('OK'));
@@ -613,7 +689,7 @@ describe('TherapistClientSheet — переименование клиента (
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Переименовать'));
+    pickHeaderAction('Переименовать');
     fireEvent.change(screen.getByDisplayValue('Иван Петров'), { target: { value: 'Новое имя' } });
     fireEvent.click(screen.getByText('OK'));
 
@@ -627,23 +703,23 @@ describe('TherapistClientSheet — переименование клиента (
 
 describe('TherapistClientSheet — удаление клиента', () => {
   // Ж4 (аудит 2026-08): нативный window.confirm() заменён на ConfirmDialog —
-  // клик по кнопке-корзине открывает диалог, удаление подтверждается его
-  // собственной кнопкой «Удалить».
-  it('клик по кнопке-корзине открывает диалог, api не вызывается сразу', async () => {
+  // пункт «Удалить клиента» в меню «⋯» открывает диалог, удаление подтверждается
+  // его собственной кнопкой «Удалить».
+  it('пункт «Удалить клиента» в меню «⋯» открывает диалог, api не вызывается сразу', async () => {
     mockApi.getTherapyClients.mockResolvedValue([client({ telegramId: 7, name: 'Иван Петров' })]);
     renderSheet();
     await screen.findByText('Иван Петров');
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
 
     const dialog = screen.getByRole('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
     expect(within(dialog).getByText('Удалить клиента «Иван Петров»?')).toBeTruthy();
     // клиент с аккаунтом: честно про заметки и про то, что остаётся у клиента
     expect(within(dialog).getByText(/останутся в аккаунте клиента/)).toBeTruthy();
-    expect(within(dialog).getByText(/концептуализация и карты режимов/)).toBeTruthy();
+    expect(within(dialog).getByText(/концептуализация и графические карты/)).toBeTruthy();
     expect(within(dialog).queryByText(/Связь будет разорвана/)).toBeNull();
     expect(mockApi.removeClient).not.toHaveBeenCalled();
   });
@@ -655,10 +731,10 @@ describe('TherapistClientSheet — удаление клиента', () => {
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText(/Карточка, заметки по сессиям, концептуализация, карты режимов/)).toBeTruthy();
+    expect(within(dialog).getByText(/Карточка, заметки по сессиям, концептуализация, графические карты/)).toBeTruthy();
     expect(within(dialog).queryByText(/останутся в аккаунте/)).toBeNull();
   });
 
@@ -670,7 +746,7 @@ describe('TherapistClientSheet — удаление клиента', () => {
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Удалить'));
 
     await waitFor(() => expect(mockApi.removeClient).toHaveBeenCalledWith(7));
@@ -684,7 +760,7 @@ describe('TherapistClientSheet — удаление клиента', () => {
     fireEvent.click(screen.getByText('Иван Петров'));
     await screen.findByText('Обзор');
 
-    fireEvent.click(screen.getByLabelText('Удалить клиента'));
+    pickHeaderAction('Удалить клиента');
     fireEvent.click(within(screen.getByRole('dialog')).getByText('Отмена'));
 
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -710,18 +786,18 @@ describe('TherapistClientSheet — поиск и фильтр в списке к
     expect(screen.getByText('Ничего не найдено')).toBeTruthy();
   });
 
-  it('фильтр «Оффлайн» показывает только клиентов без Telegram (name: null)', async () => {
+  it('фильтр «Офлайн» показывает только клиентов без Telegram (name: null)', async () => {
     mockApi.getTherapyClients.mockResolvedValue([
       client({ telegramId: 1, name: 'Анна' }),
-      client({ telegramId: -2, name: null, clientAlias: 'Оффлайн-клиент' }),
+      client({ telegramId: -2, name: null, clientAlias: 'Офлайн-клиент' }),
     ]);
     renderSheet();
     await screen.findByText('Анна');
 
-    fireEvent.click(screen.getByText('Оффлайн'));
+    fireEvent.click(screen.getByText('Офлайн'));
 
     expect(screen.queryByText('Анна')).toBeNull();
-    expect(screen.getByText('Оффлайн-клиент')).toBeTruthy();
+    expect(screen.getByText('Офлайн-клиент')).toBeTruthy();
   });
 });
 
@@ -730,10 +806,11 @@ describe('TherapistClientSheet — встречи в списке клиенто
   // «Сегодня» кабинета (редизайн 2026-10); в списке встреча видна на карточке,
   // а клиенты с ближайшей встречей идут первыми.
   it('клиент со встречей стоит раньше клиента без неё, встреча — на карточке', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    // nextSession — настенное время терапевта: «сегодня» — его местный день.
+    const today = todayStr();
     mockApi.getTherapyClients.mockResolvedValue([
-      client({ telegramId: 2, name: 'Борис', lastActiveDate: today, todayIndex: 6.2 }),
-      client({ telegramId: 1, name: 'Анна', nextSession: `${today}T15:00:00.000Z`, streak: 3 }),
+      client({ telegramId: 2, name: 'Борис', lastActiveDate: today, daysSinceActive: 0, todayIndex: 6.2 }),
+      client({ telegramId: 1, name: 'Анна', nextSession: `${today}T15:00`, streak: 3 }),
     ]);
     renderSheet();
     const anna = await screen.findByText('Анна');

@@ -72,7 +72,6 @@ describe('HealthController', () => {
         {
           id: 'db',
           title: 'База данных',
-          critical: true,
           ok: true,
           detail: 'отвечает',
           reportInHealth: true,
@@ -80,7 +79,6 @@ describe('HealthController', () => {
         {
           id: 'caldav',
           title: 'Личный календарь',
-          critical: false,
           ok: false,
           detail: 'секретная подробность, которой не место наружу',
           reportInHealth: true,
@@ -107,7 +105,6 @@ describe('HealthController', () => {
         {
           id: 'db',
           title: 'База данных',
-          critical: true,
           ok: true,
           detail: 'отвечает',
           reportInHealth: true,
@@ -115,7 +112,6 @@ describe('HealthController', () => {
         {
           id: 'ciRuns',
           title: 'Ночная проверка и смок прода на GitHub',
-          critical: false,
           ok: false,
           detail: 'смок прода красный: https://…',
           reportInHealth: false,

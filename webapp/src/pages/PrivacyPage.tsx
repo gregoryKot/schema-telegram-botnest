@@ -1,13 +1,16 @@
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
 import { FOREIGN_PROCESSORS, METRIKA_PROCESSOR, processorLine } from './privacy/processors';
+import { ANALYTICS_COOKIES, TECHNICAL_COOKIES } from './privacy/cookies';
+import { Doc, Chapter, P, Ul, Table } from '../legal/LegalLayout';
+import { column, backLink, eyebrow, h1, lead, inlineLink } from '../legal/legalStyles';
 
-const EFFECTIVE_DATE = '17 сентября 2026 г.';
+const EFFECTIVE_DATE = '31 октября 2026 г.';
 const SITE_URL       = 'schemehappens.ru';
 
 export function PrivacyPage() {
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={{ maxWidth: 780, margin: '0 auto', padding: '64px 40px 96px' }}>
+      <div style={column}>
         <a href="/" style={backLink}>← На главную</a>
 
         <p style={eyebrow}>Редакция от {EFFECTIVE_DATE}</p>
@@ -112,14 +115,16 @@ export function PrivacyPage() {
 
           <Chapter n="6" title="Сроки хранения">
             <Table rows={[
-              ['Данные формы записи: имя, контакт, текст запроса', 'Обезличиваются через 12 месяцев после даты консультации: имя, контакт и текст запроса стираются автоматически, остаётся обезличенная запись о самом факте обращения. Раньше срока – по обращению субъекта данных'],
+              ['Данные формы записи: имя, контакт, текст запроса', 'Обезличиваются через 12 месяцев после даты консультации или подачи заявки, если консультации не было: имя, контакт и текст запроса стираются автоматически, остаётся обезличенная запись о самом факте обращения. Раньше срока – по обращению субъекта данных'],
               ['Данные учётной записи в приложении «Всё по схеме»', 'До удаления учётной записи пользователем или до отзыва согласия'],
               ['Пользовательский контент (записи, дневники)', 'До удаления пользователем или до удаления учётной записи'],
               ['Данные бухгалтерского учёта (при оплате услуг)', '5 лет – в соответствии с законодательством РФ о бухгалтерском учёте'],
             ]} />
             <P>
               По истечении срока хранения данные уничтожаются в течение 30 дней, если иной срок
-              не предусмотрен законодательством.
+              не предусмотрен законодательством. Резервные копии базы данных хранятся в
+              зашифрованном виде не дольше 30 дней и затем удаляются целиком, поэтому данные,
+              удалённые из базы, исчезают из резервных копий в тот же срок.
             </P>
           </Chapter>
 
@@ -136,7 +141,8 @@ export function PrivacyPage() {
             ]} />
             <P>
               <strong>Трансграничная передача данных.</strong> База данных и пользовательский
-              контент хранятся на серверах на территории Российской Федерации. Отдельные данные
+              контент хранятся на серверах на территории Российской Федерации. Зашифрованные
+              резервные копии базы данных хранятся в облачном хранилище Cloudflare R2. Отдельные данные
               передаются иностранным сервисам, обеспечивающим работу продукта, в объёме,
               минимально необходимом для работы соответствующей функции:
             </P>
@@ -183,15 +189,9 @@ export function PrivacyPage() {
 
           <Chapter n="10" title="Cookie-файлы" id="cookies">
             <P><strong>Обязательные (технические) cookie – не требуют согласия:</strong></P>
-            <Table rows={[
-              ['Сессионные cookie (авторизация)', 'Необходимы для входа в систему. Хранятся до закрытия браузера или истечения сессии.'],
-              ['Refresh-token cookie', 'Автоматическое обновление сессии. Хранится до 30 дней или до выхода из системы.'],
-              ['OAuth-cookie (oauth_state, tg_pkce_verifier)', 'Временные, только на время процедуры входа через Google или Telegram. Удаляются сразу после завершения авторизации (до 10 минут).'],
-            ]} />
+            <Table rows={[...TECHNICAL_COOKIES]} />
             <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: '16px 0 0' }}><strong>Аналитические cookie:</strong></p>
-            <Table rows={[
-              ['Яндекс Метрика (_ym_uid, _ym_d и др.)', 'Статистика посещений только на публичных страницах сайта (главная, статьи, тесты, оплата, юридические страницы). В приложении и личном кабинете счётчик не работает, а вошедшему в учётную запись пользователю не загружается вовсе. Запись действий на странице (Вебвизор) ведётся только на страницах сайта практики kotlarewski.gr; содержимое полей ввода при этом не записывается. Тепловые карты кликов и отслеживание переходов по ссылкам отключены. Устанавливаются при первом визите; отказаться можно средствами браузера — заблокировать сторонние скрипты и cookie или очистить данные сайта.'],
-            ]} />
+            <Table rows={[...ANALYTICS_COOKIES]} />
             <P>
               Рекламные и маркетинговые cookie-файлы на сайте <strong>не используются</strong>.
             </P>
@@ -239,52 +239,3 @@ export function PrivacyPage() {
     </div>
   );
 }
-
-// ─── Layout components ────────────────────────────────────────────────────────
-function Doc({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 40, marginTop: 48 }}>{children}</div>;
-}
-function Chapter({ n, title, id, children }: { n: string; title: string; id?: string; children: React.ReactNode }) {
-  return (
-    <section id={id}>
-      <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
-        <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
-      </h2>
-      <div className="u-col12">{children}</div>
-    </section>
-  );
-}
-function P({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.8, margin: 0 }}>{children}</p>;
-}
-function Ul({ items }: { items: string[] }) {
-  return (
-    <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {items.map((item, i) => (
-        <li key={i} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7 }}>{item}</li>
-      ))}
-    </ul>
-  );
-}
-function Table({ rows }: { rows: [string, string][] }) {
-  return (
-    <div style={{ border: '1px solid var(--line)', borderRadius: 'var(--r-12)', overflow: 'hidden' }}>
-      {rows.map(([label, value], i) => (
-        <div key={i} style={{
-          display: 'grid', gridTemplateColumns: '220px 1fr',
-          borderBottom: i < rows.length - 1 ? '1px solid var(--line)' : 'none',
-        }}>
-          <div style={{ padding: '12px 16px', background: 'rgba(var(--fg-rgb),.03)', fontSize: 13, fontWeight: 600, color: 'var(--text-faint)', borderRight: '1px solid var(--line)' }}>{label}</div>
-          <div style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{value}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Shared styles ────────────────────────────────────────────────────────────
-const backLink: React.CSSProperties = { fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 48 };
-const eyebrow: React.CSSProperties = { fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' };
-const h1: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 'clamp(32px, 5vw, 54px)', fontWeight: 400, lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-.01em' };
-const lead: React.CSSProperties = { fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.8, margin: 0, maxWidth: 680 };
-const inlineLink: React.CSSProperties = { color: 'var(--accent)', textDecoration: 'none' };

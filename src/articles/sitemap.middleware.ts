@@ -28,6 +28,7 @@ export function buildSitemapXml(articles: SeoArticleListItem[]): string {
         lastModified(a).toISOString().slice(0, 10),
       ),
     ),
+    url(`${SITE_URL}/install`),
     url(`${SITE_URL}/privacy`),
     url(`${SITE_URL}/offer`),
   ];
@@ -52,8 +53,7 @@ export class SitemapMiddleware implements NestMiddleware {
       list = await this.articles.list();
     } catch (err) {
       this.logger.warn(`sitemap unavailable: ${(err as Error).message}`);
-      // Не next(): ServeStatic ответил бы краулеру index.html на неизвестный
-      // путь. Повторяемый 503 лучше, чем HTML вместо XML.
+      // Не next(): ServeStatic отдал бы краулеру index.html; 503 лучше HTML вместо XML.
       res
         .status(503)
         .type('text/plain')

@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 // PatternSheet (сайт) — единый экран паттерна: тап по «Моим схемам/режимам»
-// больше не уводит сразу в упражнение или справку. Парный по смыслу с
-// schema-miniapp/src/components/patternSheet/PatternSheet.test.tsx.
+// больше не уводит сразу в упражнение или справку.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -9,6 +8,7 @@ import { PatternSheet } from './PatternSheet';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 import type { PatternEntries } from '../../sections/schemas/usePatternEntries';
 import type { MyCardItem } from '../../../../shared/src/pattern/useMyCards';
+import { deleteFailedText } from '../../../../shared/src/diary/diaryDelete';
 
 const deleteSchemaDiary = vi.fn().mockResolvedValue(undefined);
 const deleteModeDiary = vi.fn().mockResolvedValue(undefined);
@@ -19,17 +19,19 @@ vi.mock('../../api', () => ({
     trackEvent: vi.fn(),
   },
 }));
+// Моки под-листов носят классы настоящих оболочек (.ss-sheet, .ex2-screen):
+// тесты стека ниже сверяют порядок в DOM, а не только наличие.
 vi.mock('../SchemaDetailSheet', () => ({
   SchemaDetailSheet: ({ onClose }: { onClose: () => void }) => (
-    <div data-testid="schema-detail"><button onClick={onClose}>close-schema-detail</button></div>
+    <div className="ss-sheet" data-testid="schema-detail"><button onClick={onClose}>close-schema-detail</button></div>
   ),
 }));
 vi.mock('../exercises/FlashcardEx', () => ({
   SchemaEx: ({ initialSchemaId, initialData, onBack, onComplete }: { initialSchemaId?: string; initialData?: Record<string, string>; onBack: () => void; onComplete?: () => void }) => (
-    <div data-testid="schema-ex" data-initial={JSON.stringify(initialData ?? null)}>{initialSchemaId}
+    <div className="ex2-screen" data-testid="schema-ex" data-initial={JSON.stringify(initialData ?? null)}>{initialSchemaId}
       <button onClick={onComplete}>complete</button><button onClick={onBack}>back-ex</button></div>
   ),
-  ModeEx: ({ initialModeId }: { initialModeId?: string }) => <div data-testid="mode-ex">{initialModeId}</div>,
+  ModeEx: ({ initialModeId }: { initialModeId?: string }) => <div className="ex2-screen" data-testid="mode-ex">{initialModeId}</div>,
 }));
 vi.mock('../practice/QuickPracticeSheet', () => ({
   QuickPracticeSheet: ({ id }: { id: string }) => <div data-testid="practice">{id}</div>,
@@ -138,6 +140,29 @@ describe('PatternSheet — записи дневника', () => {
     fireEvent.click(screen.getByText('Удалить навсегда'));
     await waitFor(() => expect(deleteSchemaDiary).toHaveBeenCalledWith(1));
   });
+
+  // Раньше отказ уходил в console.error, запись молча возвращалась без слов.
+  it('сбой удаления: текст ошибки под кнопкой, запись на месте', async () => {
+    deleteSchemaDiary.mockRejectedValueOnce(Object.assign(new Error('HTTP 500'), { status: 500 }));
+    const entries = entriesOf({ schemaEntries: [schemaEntry(1, ['abandonment'])] });
+    renderSheet({ entries });
+    fireEvent.click(screen.getByText(/Триггер 1/));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+    expect((await screen.findByRole('alert')).textContent).toBe(deleteFailedText((ty) => ty));
+    expect(entries.setSchemaEntries).not.toHaveBeenCalled();
+    expect(screen.getByText(/Триггер 1/)).toBeTruthy();
+  });
+
+  it('успех: запись убирается из списка после ответа сервера', async () => {
+    const entries = entriesOf({ schemaEntries: [schemaEntry(1, ['abandonment'])] });
+    renderSheet({ entries });
+    fireEvent.click(screen.getByText(/Триггер 1/));
+    fireEvent.click(screen.getByText('Удалить'));
+    fireEvent.click(screen.getByText('Удалить навсегда'));
+    await waitFor(() => expect(entries.setSchemaEntries).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
 });
 
 describe('PatternSheet — справка и «О схеме»', () => {
@@ -158,7 +183,7 @@ describe('PatternSheet — справка и «О схеме»', () => {
 
   it('быстрая практика открывается из блока «Что поможет»', () => {
     renderSheet();
-    fireEvent.click(screen.getAllByRole('button').find((b) => b.className === 'ps-pill')!);
+    fireEvent.click(screen.getByRole('button', { name: /Дыхание 4-4-6/ }));
     expect(screen.getByTestId('practice')).toBeTruthy();
   });
 
@@ -166,5 +191,60 @@ describe('PatternSheet — справка и «О схеме»', () => {
     const p = renderSheet();
     fireEvent.click(screen.getByText('Назад'));
     await waitFor(() => expect(p.onClose).toHaveBeenCalled());
+  });
+});
+
+// Инцидент 2026-11-05: PatternSheet стоял на zIndex={205}, а опросник
+// «Дополнить» (.ex2-screen, z-index 200) и «О схеме» (SsSheet, 200)
+// рисовались ПОД ним — кнопка «не работала». Листы одного уровня стыкуются
+// порядком в DOM: сиблинг позже при равном z-index лежит выше, поэтому
+// у экрана паттерна нет инлайнового z-index, а под-лист идёт в DOM после него.
+// Гейт класса — scripts/check-overlay-stack.mjs.
+describe('PatternSheet — стек листов (инцидент 2026-11-05)', () => {
+  const patternSheet = () => document.querySelector<HTMLElement>('.ss-sheet')!;
+  const isAfter = (later: Element, earlier: Element) =>
+    Boolean(earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it('у экрана паттерна нет инлайнового z-index (иначе он перекроет под-листы на 200)', () => {
+    renderSheet();
+    expect(patternSheet().style.zIndex).toBe('');
+  });
+
+  it('«Дополнить»: опросник идёт в DOM после экрана паттерна', async () => {
+    renderSheet({ items: [FILLED] });
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('Дополнить'));
+    const ex = await screen.findByTestId('schema-ex');
+    expect(ex.classList.contains('ex2-screen')).toBe(true);
+    expect(isAfter(ex, sheet)).toBe(true);
+    expect(sheet.style.zIndex).toBe('');
+  });
+
+  it('режим, «Дополнить»: опросник режима после экрана паттерна', async () => {
+    renderSheet({ kind: 'mode', id: 'vulnerable_child', items: [{ ...FILLED, id: 'vulnerable_child' }] });
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('Дополнить'));
+    expect(isAfter(await screen.findByTestId('mode-ex'), sheet)).toBe(true);
+    expect(sheet.style.zIndex).toBe('');
+  });
+
+  it('«О схеме»: детальный лист после экрана паттерна, у обоих нет инлайнового z-index', () => {
+    renderSheet();
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('О схеме →'));
+    const detail = screen.getByTestId('schema-detail');
+    expect(isAfter(detail, sheet)).toBe(true);
+    expect(sheet.style.zIndex).toBe('');
+  });
+
+  it('«О режиме»: портрет режима (настоящий SsSheet) после экрана паттерна, без своего z-index', () => {
+    renderSheet({ kind: 'mode', id: 'vulnerable_child' });
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('О режиме →'));
+    const sheets = document.querySelectorAll<HTMLElement>('.ss-sheet');
+    expect(sheets.length).toBe(2);
+    expect(isAfter(sheets[1], sheet)).toBe(true);
+    expect(sheets[1].style.zIndex).toBe('');
+    expect(sheet.style.zIndex).toBe('');
   });
 });

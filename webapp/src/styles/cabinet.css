@@ -1,11 +1,13 @@
 /* ─────────────────────────────────────────────────────────────────────────
    Редизайн кабинетов 2026-10 — общие примитивы (ds-*) и тона по hue.
    Значения цветов — токены из index.css (светлый блок). Здесь только то, из
-   чего собираются экраны: карточки, кнопки, сегмент-фильтр, чипы, заголовки.
+   чего собираются экраны: карточки, кнопки, сегмент-фильтр, чипы, заголовки,
+   шапка листа и «Назад», строка-переход, раскрывашка, пустое состояние, меню «⋯»
+   (ds-menu, ds-menu-item, ds-backdrop) (#906). Сверка «один стиль» — styles/oneStyle.test.ts.
    Экранный компонент не пишет свои цвета/радиусы инлайном — берёт класс.
 
-   Тона: элемент задаёт `--h` (оттенок oklch, см. webapp/src/lib/tone.ts —
-   там же соответствие домен/группа режимов/тип записи → hue), класс .tone-*
+   Тона: элемент задаёт `--h` (оттенок oklch; таблица hue сущностей — в
+   shared/src/theme/entityHue.ts, webapp/src/lib/tone.ts её реэкспортирует), класс .tone-*
    считает цвет. L/C общие на всю гамму — домены различаются только оттенком.
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -46,7 +48,7 @@
 }
 .ds-label {
   font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-faint);
+  color: var(--text-faint); font-weight: 600;
 }
 .ds-h1 {
   margin: 8px 0 0; font-family: var(--serif); font-weight: 400;
@@ -55,13 +57,22 @@
 .ds-h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1.2; }
 .ds-h3 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.25; }
 .ds-num { font-family: var(--serif); font-weight: 400; line-height: 1; }
-.ds-sub { font-size: 13px; color: var(--text-muted); }
+.ds-sub, .ds-list-sub { font-size: 13px; color: var(--text-muted); }
 .ds-head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .ds-link {
   font-size: 13px; color: var(--accent); font-weight: 600; cursor: pointer;
   background: none; border: none; padding: 0; font-family: inherit; white-space: nowrap;
 }
 .ds-link:hover { color: var(--accent-hi); }
+/* Опасное действие текстом (#906, волна 3). */
+.ds-link--danger { color: var(--accent-red); }
+.ds-link--danger:hover { color: var(--accent-red); text-decoration: underline; }
+/* Ссылка внутри бегущего текста: остаётся в строке абзаца, без зоны 44 (#906). */
+.ds-link--inline { display: inline; }
+/* Пустое состояние списка/карточки: обычный текст, без рамки и курсива. */
+.ds-empty { margin: 0; padding: 0; font: 400 14px/1.5 var(--sans); font-style: normal; color: var(--text-muted); text-align: left; }
+/* «Удалено · Отменить» — окно отмены удаления строки (UndoBar, useUndoRemove). */
+.ds-undo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 0; padding: 2px 4px 2px 12px; border-radius: 8px; background: var(--paper-sunk); font-size: 14px; color: var(--text-muted); }
 
 /* ── Карточки ────────────────────────────────────────────────────────────── */
 .ds-card {
@@ -69,12 +80,20 @@
   border-radius: 20px; padding: 22px 24px; box-sizing: border-box; min-width: 0;
 }
 .ds-card--row { border-radius: 16px; padding: 16px 20px; }
+.ds-card--nav { display: flex; align-items: center; gap: 12px; min-height: 44px; box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; text-decoration: none; }
 .ds-card--flush { padding: 0; overflow: hidden; }
 .ds-card--hover { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
 .ds-card--hover:hover { border-color: var(--line-hover); box-shadow: 0 12px 30px -18px rgba(60, 40, 20, .4); }
-.ds-card--ink { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
-.ds-card--accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ds-card--panel { background: var(--panel); border-color: var(--panel-line); color: var(--on-panel); }
+.ds-card--accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* На акцентной заливке подпись, подпись-строка и ссылка — светлые (ниже они красятся для бумаги). */
+.ds-card--accent .ds-label, .ds-card--accent .ds-sub, .ds-card--accent .ds-link { color: var(--on-accent); }
+.ds-card--accent .ds-label, .ds-card--accent .ds-sub { opacity: .85; }
 .ds-card--warn { background: var(--warn-bg); border-color: var(--warn-bg); color: var(--warn-ink); }
+/* Кризисный вход: tint D1 (hue 28), без заливки --err. */
+.ds-card--crisis { --h: 28; background: oklch(0.94 0.035 var(--h)); border-color: oklch(0.88 0.05 var(--h)); color: oklch(0.38 0.1 var(--h)); }
+.ds-card--crisis .ds-list-title, .ds-card--crisis .ds-sub, .ds-card--crisis .ds-chev { color: inherit; }
+.ds-card--crisis .ds-sub { opacity: .85; }
 .ds-list-row {
   display: grid; align-items: center; gap: 14px;
   padding: 14px 18px; border-bottom: 1px solid var(--paper-sunk);
@@ -82,25 +101,89 @@
 .ds-list-row:last-child { border-bottom: none; }
 .ds-list-row--hover { cursor: pointer; }
 .ds-list-row--hover:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.ds-list-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.ds-list-row--danger .ds-list-title { color: var(--accent-red); }
+.ds-list-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.ds-list-row--nav { grid-template-columns: minmax(0, 1fr) auto; min-height: 44px; box-sizing: border-box; }
+.ds-list-row--inset { padding-left: 0; padding-right: 0; }
+.ds-list-row--inset.ds-list-row--hover:hover { background: none; }
+.ds-list-row--inset.ds-list-row--hover:hover .ds-list-title { color: var(--accent); }
+button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid var(--paper-sunk); background: none; font: inherit; color: inherit; text-align: left; text-decoration: none; }
+/* Правый слот строки-перехода: один глиф «›». Пустой <span class="ds-chev" aria-hidden>
+   получает глиф из ::before; span с «›» внутри (старая разметка) рисуется так же. */
+.ds-chev { flex-shrink: 0; margin-left: auto; font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s; }
+.ds-chev:empty::before { content: '›'; }
+[aria-expanded='true'] > .ds-chev { transform: rotate(90deg); }
+
+/* ── Раскрывашка ─────────────────────────────────────────────────────────── */
+/* <div class="ds-fold"><button class="ds-fold-btn" aria-expanded="…"><span class="ds-label">…</span>
+   <span class="ds-fold-chev" aria-hidden></span></button><div class="ds-fold-body">…</div></div>
+   Контейнер = ds-card--row без отступов; шеврон — тот же глиф «›», повёрнутый вниз,
+   при aria-expanded="true" переворачивается вверх. Span шеврона пустой.
+   Без overflow: hidden — кольцо фокуса кнопки во всю ширину (outline-offset
+   3px, index.css) рисуется снаружи её рамки и обрезалось бы. */
+.ds-fold { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-sizing: border-box; min-width: 0; }
+.ds-fold-btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; min-height: 48px; padding: 0 16px; box-sizing: border-box;
+  border: none; background: transparent; color: inherit; font-family: inherit; text-align: left; cursor: pointer;
+}
+.ds-fold-chev {
+  flex-shrink: 0; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s;
+}
+.ds-fold-chev::before { content: '›'; display: block; transform: rotate(90deg); }
+.ds-fold-btn[aria-expanded="true"] .ds-fold-chev { transform: rotate(180deg); }
+.ds-fold-body { padding: 0 16px 16px; }
 
 /* ── Кнопки ──────────────────────────────────────────────────────────────── */
 .ds-btn {
   height: 44px; padding: 0 20px; border-radius: 22px; border: none;
-  background: var(--ink); color: var(--on-ink);
+  background: var(--accent); color: var(--on-accent);
   font: 600 14px var(--sans); cursor: pointer; white-space: nowrap;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   transition: background .12s, border-color .12s;
 }
-.ds-btn:hover { background: var(--accent); }
+.ds-btn:hover { background: var(--accent-hi); }
 .ds-btn:disabled { opacity: .5; cursor: default; }
-.ds-btn:disabled:hover { background: var(--ink); }
+.ds-btn:disabled:hover { background: var(--accent); }
 .ds-btn--sm { height: 40px; padding: 0 18px; border-radius: 20px; }
+.ds-btn--lg { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; } /* на телефоне во всю колонку — в блоке ≤767; на компьютере по тексту */
 .ds-btn--secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
 .ds-btn--secondary:hover { background: var(--surface); border-color: var(--text-faint); }
-.ds-btn--accent { background: var(--accent); color: #fff; }
+.ds-btn--accent { background: var(--accent); color: var(--on-accent); }
 .ds-btn--accent:hover { background: var(--accent-hi); }
 .ds-btn--icon { width: 40px; height: 40px; padding: 0; border-radius: 50%; background: transparent; color: var(--text-faint); border: 1px solid var(--line-strong); }
 .ds-btn--icon:hover { background: var(--paper-tint); color: var(--text); }
+
+/* ── Шапка листа и «Назад» ───────────────────────────────────────────────── */
+/* [ds-back][ds-h2][правый слот]: заголовок растягивается
+   (flex: 1), последний ребёнок — статус «Сохранено», кнопка — прижат к правому
+   краю (margin-left: auto) и тогда, когда заголовок обёрнут в div без flex: 1.
+   Липкость (position: sticky; top: 0) и отступ --safe-top — у класса листа. */
+.ds-sheet-head {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  min-height: 56px; padding: 0 24px; box-sizing: border-box;
+  border-bottom: 1px solid var(--line); background: var(--bg);
+}
+.ds-sheet-head > .ds-h1, .ds-sheet-head > .ds-h2, .ds-sheet-head > .ds-h3 { margin: 0; flex: 1; min-width: 0; }
+.ds-sheet-head > :last-child { margin-left: auto; }
+.ds-sheet-head > .ds-back:first-child { margin-left: 0; } /* одинокий «← Назад» остаётся слева */
+.ds-back {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0;
+  border: none; background: none; font: 600 13px var(--sans); color: var(--accent);
+  cursor: pointer; white-space: nowrap; text-decoration: none;
+}
+.ds-back:hover { color: var(--accent-hi); }
+
+/* ── Меню «⋯» и подложка ─────────────────────────────────────────────────── */
+/* Подложка ловит тап мимо меню; z-index ставит потребитель. */
+.ds-backdrop { position: fixed; inset: 0; }
+.ds-menu { position: fixed; z-index: 40; width: 220px; box-sizing: border-box; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-2); }
+.ds-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; box-sizing: border-box; padding: 8px 10px; border: none; border-radius: 8px; background: none; text-align: left; cursor: pointer; font: 14px/1.3 var(--sans); color: var(--text); }
+.ds-menu-item:hover:not(:disabled) { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.ds-menu-item:disabled { opacity: .55; cursor: default; }
+.ds-menu-item.is-danger { color: var(--accent-red); }
 
 /* ── Сегмент-фильтр ──────────────────────────────────────────────────────── */
 .ds-seg { display: inline-flex; gap: 4px; background: var(--paper-sunk); border-radius: 20px; padding: 3px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
@@ -110,20 +193,26 @@
   font: 600 13px var(--sans); cursor: pointer;
   background: transparent; color: var(--text-muted);
 }
-.ds-seg-btn.is-active { background: var(--ink); color: var(--on-ink); }
+.ds-seg-btn.is-active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-1); }
+.ds-seg-btn .ds-count { margin-left: 4px; padding: 0; background: none; color: inherit; font-weight: 400; font-size: 12px; }
+.ds-seg--full { display: flex; box-sizing: border-box; } /* на компьютере — по содержимому (блок ≥768), на телефоне во всю колонку */
+.ds-seg--full > .ds-seg-btn { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; }
+.ds-page > .ds-seg { align-self: flex-start; }
 
 /* ── Чипы, бейджи, аватары ───────────────────────────────────────────────── */
 .ds-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 500; }
 .ds-chip--sm { font-size: 11px; font-weight: 700; padding: 4px 9px; }
+.ds-chip--toggle { min-height: 36px; box-sizing: border-box; border: 1px solid var(--line); background: var(--paper-tint); color: var(--text-muted); font-family: inherit; cursor: pointer; }
+.ds-chip--toggle.is-on { background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h)); border-color: oklch(0.58 0.12 var(--h)); font-weight: 600; }
 .ds-badge { display: inline-block; border-radius: 10px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--paper-sunk); color: var(--text-sub); }
 .ds-badge--ok { background: var(--ok-bg); color: var(--ok-ink); }
 .ds-badge--warn { background: var(--warn-bg); color: var(--warn-ink); }
-.ds-badge--accent { background: var(--accent); color: #fff; }
+.ds-badge--accent { background: var(--accent); color: var(--on-accent); }
 .ds-badge--line { background: var(--line); color: var(--text-sub); }
 .ds-count { font-size: 11px; background: var(--line-input); border-radius: 8px; padding: 1px 6px; margin-left: 6px; color: var(--text-sub); }
 .ds-avatar {
-  border-radius: 50%; flex-shrink: 0; color: #fff;
-  background: oklch(0.56 0.11 var(--h));
+  border-radius: 50%; flex-shrink: 0; color: oklch(0.38 0.1 var(--h));
+  background: oklch(0.94 0.035 var(--h));
   display: flex; align-items: center; justify-content: center; font-weight: 700;
 }
 .ds-avatar--serif { font-family: var(--serif); font-weight: 400; }
@@ -146,8 +235,14 @@
   padding: 12px 14px; font: 14px/1.5 var(--sans); color: var(--text); box-sizing: border-box; width: 100%;
 }
 .ds-textarea { resize: none; }
+.ds-input--search { height: 40px; padding: 0 16px; border-radius: 20px; }
+.ds-input--sm { width: auto; height: 40px; padding: 0 12px; }
 .ds-input:focus, .ds-textarea:focus { outline: none; border-color: var(--accent); }
 .ds-input::placeholder, .ds-textarea::placeholder { color: var(--text-ghost); }
+/* Поле на тёмной панели (#906, волна 3): после .ds-input:focus, чтобы перекрыть рамку фокуса. */
+.ds-input--on-panel { background: var(--surface); border-color: var(--panel-line); color: var(--text); }
+.ds-input--on-panel::placeholder { color: var(--on-panel-faint); }
+.ds-input--on-panel:focus { border-color: var(--accent); }
 
 /* ── Вкладки (шапка карточки клиента) ────────────────────────────────────── */
 .ds-tabs { display: flex; gap: 28px; font-size: 14px; overflow-x: auto; scrollbar-width: none; }
@@ -171,8 +266,60 @@
 .ds-idx-none { color: var(--text-ghost); }
 
 /* ── Адаптив ─────────────────────────────────────────────────────────────── */
-@media (max-width: 767px) {
+/* Раскладка телефона: отступы, кегли, прокрутка сегмента. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .ds-sheet-head { padding: 0 16px; }
+  .ds-btn--lg { width: 100%; }
+  .ds-seg--full { width: 100%; }
   .ds-page { padding: 20px 16px 40px; gap: 24px; }
+  /* Страница в один экран («Сегодня», владелец 2026-11-06): без нижнего поля — зазор над панелью даёт
+     .canvas; ритм сжимается по высоте за вычетом статус-бара и выреза. --fit-room — запас над 640px
+     (0…200) для отступов экрана, --fit-size (0…120) — для его кеглей и картинок; от 840px — как .ds-page. */
+  .ds-page--fit {
+    --fit-h: calc(100vh - var(--safe-top) - var(--safe-bottom) - 640px);
+    --fit-room: clamp(0px, var(--fit-h), 200px); --fit-size: clamp(0px, var(--fit-h), 120px);
+    padding-top: calc(8px + var(--fit-room) * .06); padding-bottom: 0; gap: calc(12px + var(--fit-room) * .06);
+  }
   .ds-h1 { font-size: 32px; }
   .ds-h2 { font-size: 22px; }
+  .ds-seg--scroll { display: flex; width: 100%; box-sizing: border-box; }
+  .ds-seg--scroll > .ds-seg-btn { flex: 0 0 auto; }
+  .ds-seg--scroll::after { content: ''; flex: 0 0 20px; }
+}
+/* Видимая высота: в Safari 100vh выше экрана с открытой адресной строкой. Без dvh остаётся 100vh. */
+@supports (height: 100dvh) { .ds-page--fit { --fit-h: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 640px); } }
+/* Тап-цели 44 — один блок на телефон и на любой экран под пальцем (планшет:
+   pointer: coarse при ширине больше 767). Десктоп с мышью остаётся компактным:
+   вкладка ~35, сегмент 30, ссылка 20, малая кнопка 40. */
+@media (pointer: coarse), (max-width: 767px) {
+  /* «Обзор» был 42 в ширину. flex-shrink: 0 обязателен: явный min-width снимает у flex-ребёнка min-width: auto,
+     и в ленте .ds-tabs вкладки сжимались до 44 и наезжали друг на друга (скриншот 390, 2026-11-06). */
+  .ds-tab { min-height: 44px; min-width: 44px; flex-shrink: 0; justify-content: center; }
+  .ds-btn--icon { width: 44px; height: 44px; }
+  .ds-seg-btn { min-height: 44px; }
+  .ds-btn--sm { height: 44px; }
+  .ds-input--search { height: 44px; border-radius: 22px; }
+  .ds-input--sm { height: 44px; }
+  .ds-input, .ds-textarea { font-size: 16px; } /* iOS Safari (и на iPad) увеличивает экран при фокусе на поле мельче 16px */
+  .ds-chip--toggle { min-height: 44px; }
+  .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
+  .ds-link--inline { display: inline; min-height: 0; }
+  /* Вне примитивов (QA 2026-11): поле имени «Новый клиент» (было 37) и сайдбар
+     кабинета на планшете под пальцем — режим, поиск, строки клиентов (34–38). */
+  .tc-add-name, .sb-mode-btn, .sb-search, .sb-client-item { min-height: 44px; }
+  .ds-menu-item { min-height: 44px; }
+}
+/* Компьютер (≥768): телефонные примитивы выше не растягиваются на колонку, шапка страницы — не полоса. */
+:root { --sheet-col: 640px; --sheet-pad: 32px; } /* колонка и боковой отступ шапки-страницы; страница задаёт свои на корне */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .ds-seg--full { display: inline-flex; }
+  /* По содержимому — значит, кнопка не уже своей подписи: с flex-basis 0 и min-width: 0 ширина
+     inline-flex делилась поровну, и длинная подпись резалась многоточием («Клиент…», «Нед…»).
+     Растянутый сегмент (донат, .ap-seg) по-прежнему делит место поровну. */
+  .ds-seg--full > .ds-seg-btn { min-width: max-content; }
+  /* Страница (не оверлей): «← Назад» стоит над колонкой контента, без полосы, линии и фона (до #906). */
+  .ds-sheet-head--page {
+    box-sizing: border-box; width: 100%; max-width: var(--sheet-col); min-height: 0; margin: 0 auto;
+    padding: 24px var(--sheet-pad) 0; border-bottom: none; background: none;
+  }
 }

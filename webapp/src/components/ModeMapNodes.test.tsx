@@ -86,6 +86,15 @@ describe('ModeMapNodes — переименование по двойному к
     expect(screen.getByText('Начало ссоры')).toBeTruthy();
   });
 
+  it('поле переносит строки и выделяет всё название — начало не прячется (QA: «язвимый Ребёнок»)', () => {
+    renderCanvas({ initialNodes: [mmNode('n1', 'child', { label: 'Уязвимый Ребёнок' })] });
+    fireEvent.doubleClick(screen.getByText('Уязвимый Ребёнок'));
+    const field = screen.getByDisplayValue('Уязвимый Ребёнок') as HTMLTextAreaElement;
+    expect(field.tagName).toBe('TEXTAREA');
+    expect(field.rows).toBe(2);
+    expect([field.selectionStart, field.selectionEnd]).toEqual([0, 'Уязвимый Ребёнок'.length]);
+  });
+
   it('Escape отменяет редактирование без изменений', () => {
     const { container } = renderCanvas({
       initialNodes: [mmNode('n1', 'trigger', { label: 'Триггер' })],

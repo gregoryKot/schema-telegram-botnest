@@ -3,6 +3,9 @@
 // Родилось из дыры PR #586: диалог обещал стереть «заметки и концептуализацию»,
 // а именные карты режимов (ModeMap) оставались — у клиента с аккаунтом они
 // всплывали при повторном подключении, у виртуального становились сиротами.
+// С 2026-11-05 связь клиента с аккаунтом не удаляется, а завершается (`ended`
+// с причиной), открытые задания терапевта становятся личными целями клиента
+// (end-client-relations.ts); что видит клиент — test/therapy-relation-end.e2e-spec.ts.
 //
 // Гоняется дважды: на фейковой Prisma (джоба backend) и на живом Postgres
 // (E2E_REAL_DB=1, джоба migrations): фильтрация по паре (therapistId, clientId),
@@ -60,14 +63,25 @@ describe('e2e: терапевт удаляет клиента (все сцена
       where: { userId: cid, assignedBy: t },
     }),
   });
+  // Живые связи (active/pending): завершённая строка доступа не даёт.
+  const LIVE = { in: ['active', 'pending'] };
   const relCount = (t: bigint, cid: bigint) =>
     cid < 0n
       ? prisma.therapyRelation.count({
           where: { id: Number(-cid), therapistId: t },
         })
       : prisma.therapyRelation.count({
-          where: { therapistId: t, clientId: cid },
+          where: { therapistId: t, clientId: cid, status: LIVE },
         });
+  // Причины завершённых связей пары — строка остаётся историей.
+  const endReasons = async (t: bigint, cid: bigint) =>
+    (
+      await prisma.therapyRelation.findMany({
+        where: { therapistId: t, clientId: cid, status: 'ended' },
+      })
+    )
+      .map((r: { endReason: string | null }) => r.endReason)
+      .sort();
   const clientIds = async (t: bigint): Promise<number[]> =>
     (await act(t).get('/api/therapy/clients')).body.map(
       (c: any) => c.telegramId,
@@ -213,12 +227,13 @@ describe('e2e: терапевт удаляет клиента (все сцена
       expect([res.status, res.body]).toEqual([200, { ok: true }]);
     });
 
-    it('у A для C исчезли заметки, концептуализация, карты режимов и связь; задание от A остаётся у клиента', async () => {
+    it('у A для C исчезли заметки, концептуализация и карты; связь ended с причиной, задание от A — личная цель клиента', async () => {
       expect(await relCount(A, C)).toBe(0);
-      expect(await data(A, C)).toEqual({ ...EMPTY, tasks: 1 });
+      expect(await endReasons(A, C)).toEqual(['therapist_removed']);
+      expect(await data(A, C)).toEqual(EMPTY);
     });
-    it('User и собственные данные C целы (дневник-оценка, заметка схемы, своё задание, задание от A)', async () => {
-      expect(await cOwn()).toEqual(C_OWN);
+    it('User и собственные данные C целы (дневник-оценка, заметка схемы, своё задание); задание от A стало своим', async () => {
+      expect(await cOwn()).toEqual({ ...C_OWN, selfTasks: 2, byA: 0 });
     });
     it('C пропал из списка клиентов A, остальные на месте', async () => {
       const ids = await clientIds(A);
@@ -284,12 +299,12 @@ describe('e2e: терапевт удаляет клиента (все сцена
         undefined,
       ]);
     });
-    // ФИКСАЦИЯ текущего поведения, не цель исправления: задание от A остаётся в
-    // аккаунте C (так обещает текст диалога), а tasks/client фильтрует по
-    // assignedBy, поэтому старое задание снова видно A после повторного join.
-    it('фиксация: старое задание, назначенное A, всплывает у A после повторного подключения', async () => {
+    // Было (до 2026-11-05): задание от A оставалось с assignedBy = A, и после
+    // повторного join A снова видел его в tasks/client. Теперь при удалении
+    // оно стало личной целью C — бывшему терапевту не возвращается.
+    it('старое задание, назначенное A, после повторного подключения у A не всплывает', async () => {
       const tasks = await act(A).get(`/api/therapy/tasks/client/${ID(C)}`);
-      expect([tasks.status, tasks.body.length]).toEqual([200, 1]);
+      expect([tasks.status, tasks.body.length]).toEqual([200, 0]);
     });
   });
 
@@ -339,7 +354,7 @@ describe('e2e: терапевт удаляет клиента (все сцена
       await prisma.userTask.deleteMany({ where: { userId: C, assignedBy: A } });
       await seed(A, C);
       const rel = await prisma.therapyRelation.findFirst({
-        where: { therapistId: A, clientId: C },
+        where: { therapistId: A, clientId: C, status: 'active' },
       });
       expect((await rm(A, -rel!.id)).status).toBe(200);
       expect(await relCount(A, C)).toBe(1);
@@ -373,9 +388,8 @@ describe('e2e: терапевт удаляет клиента (все сцена
       await seed(A, v4);
       for (const target of [v4, E]) {
         expect((await rm(A, target)).status).toBe(200);
-        expect(await data(A, target)).toEqual(
-          target < 0n ? EMPTY : { ...EMPTY, tasks: 1 },
-        );
+        // У клиента с аккаунтом задание от A — уже его цель, а не задание A.
+        expect(await data(A, target)).toEqual(EMPTY);
         expect((await rm(A, target)).status).toBe(200);
         expect(await relCount(A, target)).toBe(0);
       }
@@ -383,9 +397,10 @@ describe('e2e: терапевт удаляет клиента (все сцена
   });
 
   describe('7. Клиент сам отключается (DELETE /api/therapy/relation от C)', () => {
-    // disconnect() удаляет все связи, где пользователь — КЛИЕНТ (с 2026-10,
+    // disconnect() завершает все связи, где пользователь — КЛИЕНТ (с 2026-10,
     // аудит T2: связи в роли терапевта он больше не трогает), поэтому C рвёт
-    // сразу и A, и B. Данные терапевта по клиенту при этом остаются.
+    // сразу и A, и B. Записи терапевтов по клиенту остаются, открытые задания
+    // обоих — личные цели C (2026-11-05).
     beforeAll(async () => {
       expect(await data(A, C)).toEqual(FULL); // досеяно в сценарии 4
       expect(await data(B, C)).toEqual(FULL);
@@ -393,25 +408,41 @@ describe('e2e: терапевт удаляет клиента (все сцена
       expect([res.status, res.body]).toEqual([200, { ok: true }]);
     });
 
-    it('обе связи C (и с A, и с B) удалены', async () => {
+    it('обе связи C (и с A, и с B) завершены с причиной client_left', async () => {
       expect(await relCount(A, C)).toBe(0);
       expect(await relCount(B, C)).toBe(0);
+      expect(await endReasons(A, C)).toEqual([
+        'client_left',
+        'therapist_removed',
+      ]);
+      expect(await endReasons(B, C)).toEqual(['client_left']);
       expect(await clientIds(A)).not.toContain(ID(C));
       expect(await clientIds(B)).not.toContain(ID(C));
     });
-    it('у терапевтов заметки, концептуализация, карты и задания по C остаются, но недоступны через API', async () => {
-      expect(await data(A, C)).toEqual(FULL);
-      expect(await data(B, C)).toEqual(FULL);
+    it('у терапевтов заметки, концептуализация и карты по C остаются, но недоступны через API; задания — цели C', async () => {
+      expect(await data(A, C)).toEqual({ ...FULL, tasks: 0 });
+      expect(await data(B, C)).toEqual({ ...FULL, tasks: 0 });
       for (const t of [A, B])
         for (const route of ['notes', 'mode-maps', 'client-data'])
           expect(
             (await act(t).get(`/api/therapy/${route}/${ID(C)}`)).status,
           ).toBe(403);
     });
-    it('у клиента все данные целы, а карты терапевтов он продолжает видеть в my-mode-maps', async () => {
-      expect(await cOwn()).toEqual(C_OWN);
+    // Было: карты отключённых терапевтов оставались в my-mode-maps — фильтр
+    // шёл только по clientId (реестр docs/open/backend.md). Строки карт лежат
+    // в базе (выше), но клиенту без связи с автором не отдаются ни списком, ни
+    // по id. Отказ терапевта от роли — другое: карты остаются историей
+    // (test/therapy-resign.e2e-spec.ts, решение владельца 2026-10-22).
+    it('у клиента собственные данные целы, а карт отключённых терапевтов в my-mode-maps нет', async () => {
+      // Своё + задание A из сценария 1 + задания A и B, отпущенные сейчас.
+      expect(await cOwn()).toEqual({ ...C_OWN, selfTasks: 4, byA: 0, byB: 0 });
       const maps = await act(C).get('/api/therapy/my-mode-maps');
-      expect(maps.body).toHaveLength(2);
+      expect([maps.status, maps.body]).toEqual([200, []]);
+      const row = await prisma.modeMap.findFirst({
+        where: { therapistId: B, clientId: C },
+      });
+      const one = await act(C).get(`/api/therapy/my-mode-maps/${row!.id}`);
+      expect(one.status).toBe(403);
     });
     it('терапевт, вызвавший тот же DELETE /relation, НЕ теряет виртуального клиента и его данные (аудит 2026-10, T2)', async () => {
       const vf = await addVirtual(F, 'VF');

@@ -8,19 +8,13 @@
 // webapp/src/components/booking, и в бэкенд-форматтере уведомления админу
 // (там своя копия словаря городов из-за tsconfig.build.json, см. комментарий
 // в src/booking/client-timezone-names.ts).
-import { cityLabel, isValidTimeZone } from '../utils/timeZoneNames';
+import { cityLabel, deviceTimeZone } from '../utils/timeZoneNames';
 
 const MSK = 'Europe/Moscow';
 
 /** Определить часовой пояс посетителя; фолбэк — Europe/Moscow. */
 export function resolveClientTimeZone(): string {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz && isValidTimeZone(tz)) return tz;
-  } catch {
-    // Intl недоступен/бросил — берём фолбэк ниже.
-  }
-  return MSK;
+  return deviceTimeZone() ?? MSK;
 }
 
 /** Смещение зоны от UTC в минутах в момент `at` (учитывает DST на эту дату). */
@@ -131,11 +125,16 @@ export function mskTimeLabel(iso: string): string {
 /**
  * Подпись над лентой слотов: «Время указано по вашему часовому поясу
  * (Бангкок, UTC+7)» либо «Время указано по московскому времени», если
- * смещение зоны посетителя сейчас совпадает с московским.
+ * смещение зоны посетителя сейчас совпадает с московским. `yours` — форма
+ * обращения: визитка публичная («вашему»), в приложении — tr('твоему', 'вашему').
  */
-export function timeZoneCaption(tz: string, at: Date = new Date()): string {
+export function timeZoneCaption(
+  tz: string,
+  at: Date = new Date(),
+  yours = 'вашему',
+): string {
   if (isMoscowTimeZone(tz)) return 'Время указано по московскому времени.';
-  return `Время указано по вашему часовому поясу (${cityLabel(tz)}, ${offsetLabel(tz, at)}).`;
+  return `Время указано по ${yours} часовому поясу (${cityLabel(tz)}, ${offsetLabel(tz, at)}).`;
 }
 
 /** «(15:00 МСК)» рядом с выбранным слотом — пусто, только если зона и есть московская. */

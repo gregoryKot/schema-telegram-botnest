@@ -4,6 +4,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { ConceptualizationDto } from './conceptualization.dto';
 import {
+  CONCEPT_FIELD_TEXT_MAX,
   CONCEPT_MODE_TEXT_MAX,
   CONCEPT_SCHEMA_TEXT_MAX,
 } from '../../utils/text-limits';
@@ -19,11 +20,29 @@ describe('ConceptualizationDto', () => {
     await expect(errorsFor({})).resolves.toEqual([]);
   });
 
-  it('текстовое поле длиннее 5000 — отказ', async () => {
-    await expect(
-      errorsFor({ earlyExperience: 'x'.repeat(5001) }),
-    ).resolves.toContain('earlyExperience');
-  });
+  // Предел — та же константа, что `maxLength` полей вида «Поля» на обоих
+  // фронтах (shared/src/limits/textLimits.ts, сверка — text-limits.parity.spec.ts).
+  // Инцидент 2026-10-26: у полей предела не было, текст длиннее молча
+  // не сохранялся и блокировал сохранение остальных полей.
+  it.each([
+    'earlyExperience',
+    'unmetNeeds',
+    'triggers',
+    'copingStyles',
+    'goals',
+    'currentProblems',
+    'modeTransitions',
+  ])(
+    `текстовое поле %s длиннее ${CONCEPT_FIELD_TEXT_MAX} — отказ, ровно ${CONCEPT_FIELD_TEXT_MAX} — проходит`,
+    async (field) => {
+      await expect(
+        errorsFor({ [field]: 'x'.repeat(CONCEPT_FIELD_TEXT_MAX + 1) }),
+      ).resolves.toContain(field);
+      await expect(
+        errorsFor({ [field]: 'x'.repeat(CONCEPT_FIELD_TEXT_MAX) }),
+      ).resolves.toEqual([]);
+    },
+  );
 
   it('id в schemaIds длиннее 64 — отказ', async () => {
     await expect(errorsFor({ schemaIds: ['x'.repeat(65)] })).resolves.toContain(

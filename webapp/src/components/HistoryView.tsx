@@ -36,8 +36,8 @@ const DAYS_OPTIONS = [7, 14, 30];
 export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, days = 7, onChangeDays, onGoToToday, onBackfill }: Props) {
   const tr = useTr();
   const contact = getTherapistContact();
-  // Терапевту не предлагаем запись к самому себе (null); один элемент на оба блока.
-  const bookingLink = contact.isTherapist ? null : <ExternalLink href={contact.bookingUrl} className="ds-link">{BOOKING_CTA_LABEL}</ExternalLink>;
+  // Терапевту не предлагаем запись к самому себе, без канала связи — некуда (null); один элемент на оба блока.
+  const bookingLink = contact.isTherapist || !contact.bookingUrl ? null : <ExternalLink href={contact.bookingUrl} className="ds-link">{BOOKING_CTA_LABEL}</ExternalLink>;
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [subView, setSubView] = useState<'day' | 'week'>('day');
   const dateBtnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -85,7 +85,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       <DateStrip history={history} needs={needs} selectedIdx={selectedIdx} onSelect={setSelectedIdx} btnRefs={dateBtnRefs} />
 
       <div className="sd-toolbar">
-        <div className="ds-seg" role="group" aria-label="Вид">
+        <div className="ds-seg ds-seg--full" role="group" aria-label="Вид">
           {(['day', 'week'] as const).map(v => (
             <button key={v} onClick={() => setSubView(v)} className={'ds-seg-btn' + (subView === v ? ' is-active' : '')}>
               {v === 'day' ? 'День' : 'Неделя'}
@@ -93,7 +93,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
           ))}
         </div>
         {onChangeDays && (
-          <div className="ds-seg" role="group" aria-label="Период">
+          <div className="ds-seg ds-seg--full" role="group" aria-label="Период">
             {DAYS_OPTIONS.map(d => (
               <button key={d} onClick={() => onChangeDays(d)} className={'ds-seg-btn' + (days === d ? ' is-active' : '')}>{d}д</button>
             ))}

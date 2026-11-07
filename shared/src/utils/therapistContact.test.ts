@@ -10,6 +10,9 @@ import {
   getTherapistContact,
   cacheTherapistContact,
   contactCta,
+  hasConnectedTherapist,
+  telegramChatUrl,
+  cacheClientRelation,
 } from './therapistContact';
 
 beforeEach(() => {
@@ -140,5 +143,77 @@ describe('contactCta', () => {
       myName: null,
     });
     expect(contactCta().label).toBe('Написать терапевту →');
+  });
+});
+
+describe('hasConnectedTherapist', () => {
+  it('автор по умолчанию — не подключён', () => {
+    expect(hasConnectedTherapist()).toBe(false);
+  });
+
+  it('клиент с терапевтом — подключён; сам терапевт (name «вам») тоже не «автор»', () => {
+    localStorage.setItem('therapy_contact_url', 'tg://user?id=42');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    expect(hasConnectedTherapist()).toBe(true);
+    expect(
+      hasConnectedTherapist({
+        url: 'https://t.me/kotlarewski',
+        bookingUrl: 'https://kotlarewski.gr/#booking',
+        name: 'автору',
+        isTherapist: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+// QA 2026-11, З6: терапевт зарегистрирован через сайт (id из веб-диапазона),
+// а «Написать терапевту →» строил tg://user?id=<веб-id> — на десктопе ничего не
+// происходило, такого чата нет.
+describe('терапевт с веб-аккаунтом — написать из приложения некуда', () => {
+  it('telegramChatUrl: телеграмный номер — ссылка; веб-номер, офлайн-id и мусор — null', () => {
+    expect(telegramChatUrl(777)).toBe('tg://user?id=777');
+    expect(telegramChatUrl('999999999999999')).toBe(
+      'tg://user?id=999999999999999',
+    );
+    expect(telegramChatUrl(3073214303225013)).toBeNull();
+    expect(telegramChatUrl('1000000000000000')).toBeNull();
+    expect(telegramChatUrl(-5)).toBeNull();
+    expect(telegramChatUrl('abc')).toBeNull();
+  });
+
+  it('клиент: терапевт подключён, но ссылки и кнопки «Написать» нет', () => {
+    cacheTherapistContact({
+      role: 'CLIENT',
+      partnerId: '3073214303225013',
+      partnerName: 'Анна',
+      myId: 1,
+      myName: null,
+    });
+    const c = getTherapistContact();
+    expect(c.url).toBeNull();
+    expect(c.bookingUrl).toBeNull();
+    // Терапевт есть — не «Записаться на консультацию» к автору.
+    expect(hasConnectedTherapist(c)).toBe(true);
+    expect(contactCta(c).isSelf).toBe(true);
+    expect(localStorage.getItem('therapy_contact_url')).not.toMatch(/tg:/);
+  });
+});
+
+// QA 2026-11-05 (живой стенд): после «Отключиться от терапевта» мост в «Ещё»
+// до перезагрузки вёл к бывшему терапевту — кэш чистил только следующий старт.
+describe('cacheClientRelation — кэш клиента по его связи', () => {
+  it('связь есть → «Написать терапевту» по номеру партнёра', () => {
+    cacheClientRelation({ partnerId: 4300000000001, partnerName: 'Анна' });
+    expect(hasConnectedTherapist()).toBe(true);
+    expect(getTherapistContact().url).toBe('tg://user?id=4300000000001');
+    expect(getTherapistContact().name).toBe('терапевту');
+  });
+
+  it('null (отключился или связи нет) → кэш очищен, мост ведёт к автору', () => {
+    cacheClientRelation({ partnerId: 4300000000001, partnerName: 'Анна' });
+    cacheClientRelation(null);
+    expect(hasConnectedTherapist()).toBe(false);
+    expect(getTherapistContact().name).toBe('автору');
+    expect(localStorage.getItem('therapy_contact_url')).toBeNull();
   });
 });

@@ -7,11 +7,10 @@ import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { hideInstallOffers, subscribeAppInstalled } from '../../utils/pwaInstall';
 
-// Секция «значок на экране» продуктового лендинга: сайт ставится как
-// приложение прямо из браузера (манифест у корня ведёт в кабинет /today). Шаги — из
-// общего источника installSteps, те же, что в баннере кабинета (одна
-// механика — один источник текста). Аналитика анонимная: гость лендинга не
-// авторизован, событие уходит в POST /api/public-event (userId = null).
+// Секция «значок на экране» лендинга: сайт ставится как приложение из
+// браузера (манифест ведёт в /today; отдельная страница — /install). Шаги — из
+// installSteps (один источник текста). Аналитика анонимная: событие уходит в
+// POST /api/public-event (userId = null).
 const CARD_COLORS = { ios: CYAN, android: EMERALD, desktop: VIOLET } as const;
 
 const trackInstall = (action: 'add' | 'added') =>
@@ -76,6 +75,7 @@ export function AppInstallSection() {
         </div>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
           <Cta href="/today" size="lg">Открыть приложение</Cta>
+          <Cta href="/install" variant="ghost" size="lg">Страница установки</Cta>
           {canPrompt && (
             <Cta
               href="#app"

@@ -137,6 +137,14 @@ EXPLAIN с записанного SQL (`test/perf/run-plans.ts`) и гейт
   (`start:prod` из package.json контейнер не запускает).
 - **Дампы и бэкапы БД никогда не кладутся в репозиторий** — он публичный.
   Бэкапы — только через `scripts/backup-upload.sh` во внешнее хранилище (Cloudflare R2).
+- **Предел запроса — 30 с на каждый запрос** (`statement_timeout` сессии пула,
+  `src/prisma/statement-timeout.ts`; порог согласован владельцем 2026-10-22,
+  аудит 2026-10). Долгий легитимный путь берёт `withStatementTimeout(prisma, мс,
+  tx => …)` — `SET LOCAL` в своей транзакции, в пул не протекает, — а не поднимает
+  общий порог; отдельный процесс со своим `PrismaClient` — `buildPrismaAdapter(порог)`
+  (ротация ключа — 10 мин). Миграции ходят своим подключением по `DATABASE_URL` и
+  лимита не получают — поэтому порог не кладётся в URL. Доказательство на живой
+  базе — `test/statement-timeout.e2e-spec.ts` и `test/perf/long-paths.ts`.
 
 ## Миграции БД (ОБЯЗАТЕЛЬНО — по итогам инцидента 2026-07-16)
 
@@ -197,6 +205,11 @@ TypeScript проверит имена (`_VerifyTables`), а spec-сверка �
 const MY_SCHEMA: EncryptSchema = { strings: ['text', 'note'], jsonArrays: ['items'] };
 ```
 Использовать `encryptRecord(data, MY_SCHEMA)` при записи и `decryptRecord(row, MY_SCHEMA)` при чтении.
+Ответ ручки записи (create/upsert/update) — через ту же функцию расшифровки, что GET,
+а не пересборкой полей вручную: инцидент 2026-10-26 — POST дневника отдавал `schemaIds`
+шифротекстом, раздел сайта падал. Сверку «ответ записи = GET» с настоящим ключом держит
+`src/utils/encrypted-write-response.spec.ts` — новая модель с шифрованным полем
+получает там случай или причину, почему строка наружу не уходит.
 Не шифровать: `id`, `userId`, `createdAt`, `updatedAt`, типы-перечисления (modeId, schemaId, needId).
 
 Механизм принуждения: `src/utils/encryption-coverage.spec.ts` — реестр решений
@@ -216,3 +229,14 @@ user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 ```bash
 npx prisma generate
 ```
+
+## Новая колонка у модели из реестра выгрузки — классифицируй там же
+
+Модели с `userId`/`clientId` описаны в реестре выгрузки данных
+(`src/account/export-policy.ts`, `src/account/export-policy.client.ts`):
+каждая колонка либо в `select`, либо в `omit` с причиной. Новая колонка без
+записи роняет `src/account/export-policy*.spec.ts` — и только его, остальные
+спеки модуля молчат (2026-11-05, `TherapyRelation.attachToId`: нашлось полным
+прогоном jest, а не спеками `src/therapy`). Правка схемы = запись в реестре в
+том же PR.
+

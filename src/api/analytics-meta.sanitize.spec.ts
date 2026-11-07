@@ -60,28 +60,20 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('outbox_flush', { count: 0 })).toBeUndefined();
   });
 
-  it('today_focus_change: practice из allow-list', () => {
-    expect(
-      sanitizeMeta('today_focus_change', { practice: 'gratitude' }),
-    ).toEqual({ practice: 'gratitude' });
-    expect(
-      sanitizeMeta('today_focus_change', { practice: 'evil' }),
-    ).toBeUndefined();
-  });
-
   it('today_streak_toggle: boolean hidden', () => {
     expect(sanitizeMeta('today_streak_toggle', { hidden: true })).toEqual({
       hidden: true,
     });
   });
 
-  it('web_banner_open/dismiss: banner из allow-list', () => {
+  // «Показать клиенту» схему случая: только булев on; id клиента и прочее —
+  // мимо (правило №7), не-булев on — событие без meta.
+  it('concept_shared: только boolean on', () => {
     expect(
-      sanitizeMeta('web_banner_open', { banner: 'mode_map', extra: 'pii' }),
-    ).toEqual({ banner: 'mode_map' });
-    expect(
-      sanitizeMeta('web_banner_dismiss', { banner: 'evil' }),
-    ).toBeUndefined();
+      sanitizeMeta('concept_shared', { on: false, clientId: 555, text: 'x' }),
+    ).toEqual({ on: false });
+    expect(sanitizeMeta('concept_shared', { on: 'true' })).toBeUndefined();
+    expect(sanitizeMeta('client_concept_opened', { on: true })).toBeUndefined();
   });
 
   it('breath_start: meta игнорируется (событие без meta)', () => {
@@ -353,28 +345,6 @@ describe('sanitizeMeta', () => {
     ).toEqual({ type: 'letter' });
   });
 
-  it('plus_action: action из allow-list проходит', () => {
-    expect(sanitizeMeta('plus_action', { action: 'tracker' })).toEqual({
-      action: 'tracker',
-    });
-    expect(sanitizeMeta('plus_action', { action: 'plans' })).toEqual({
-      action: 'plans',
-    });
-  });
-
-  it('plus_action: неизвестный action → отброшено', () => {
-    expect(sanitizeMeta('plus_action', { action: 'evil' })).toBeUndefined();
-  });
-
-  it('plus_action: лишние поля срезаются', () => {
-    expect(
-      sanitizeMeta('plus_action', {
-        action: 'breathing',
-        note: 'секретный текст',
-      }),
-    ).toEqual({ action: 'breathing' });
-  });
-
   it('quick_action_toggle: валидные action + hidden + surface проходят', () => {
     expect(
       sanitizeMeta('quick_action_toggle', {
@@ -438,10 +408,6 @@ describe('sanitizeMeta', () => {
         note: 'секретный текст пользователя',
       }),
     ).toEqual({ action: 'plans', hidden: true, surface: 'plus' });
-  });
-
-  it('plus_open: meta игнорируется (событие без meta)', () => {
-    expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
   });
 
   it('quick_action_move: валидные action + surface + dir проходят', () => {
@@ -676,40 +642,6 @@ describe('sanitizeMeta', () => {
     ).toEqual({ step: 'privacy' });
   });
 
-  it('today_block_toggle: block + hidden из allow-list проходят', () => {
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'phrase', hidden: true }),
-    ).toEqual({ block: 'phrase', hidden: true });
-  });
-
-  it('today_block_toggle: неизвестный block → отброшено целиком', () => {
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'evil', hidden: true }),
-    ).toBeUndefined();
-  });
-
-  it('today_block_toggle: hidden не boolean → отброшено', () => {
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'streak', hidden: 'yes' }),
-    ).toBeUndefined();
-    expect(
-      sanitizeMeta('today_block_toggle', { block: 'streak' }),
-    ).toBeUndefined();
-  });
-
-  it('today_customize_open: via из allow-list проходит', () => {
-    expect(sanitizeMeta('today_customize_open', { via: 'longpress' })).toEqual({
-      via: 'longpress',
-    });
-  });
-
-  it('today_customize_open: неизвестный/отсутствующий via → отброшено', () => {
-    expect(
-      sanitizeMeta('today_customize_open', { via: 'evil' }),
-    ).toBeUndefined();
-    expect(sanitizeMeta('today_customize_open', {})).toBeUndefined();
-  });
-
   it('home_screen_offer: action + surface из allow-list проходят', () => {
     expect(
       sanitizeMeta('home_screen_offer', {
@@ -757,16 +689,16 @@ describe('sanitizeMeta', () => {
   });
 
   // ── Deny-list-by-default: события без meta не пропускают вообще ничего ──
-  it('stop_start/journey_open/ysq_help_open/plus_open: meta игнорируется', () => {
+
+  it('stop_start/journey_open/ysq_help_open: meta игнорируется', () => {
     expect(sanitizeMeta('stop_start', { junk: 'x' })).toBeUndefined();
     expect(sanitizeMeta('journey_open', { junk: 'x' })).toBeUndefined();
     expect(sanitizeMeta('ysq_help_open', { junk: 'x' })).toBeUndefined();
-    expect(sanitizeMeta('plus_open', { junk: 'x' })).toBeUndefined();
   });
 
   // Графическая концептуализация: текст связей режима — клиническая запись
   // (правило №7), в событие не попадает ни он, ни id клиента.
-  it('concept_graph_open/concept_mode_linked/concept_schema_linked/concept_canvas_open/concept_graph_fullscreen: meta игнорируется', () => {
+  it('concept_graph_open/concept_mode_linked/concept_schema_linked/concept_canvas_open/concept_graph_fullscreen/concept_save_retry/concept_brief_open: meta игнорируется', () => {
     const leak = {
       clientId: '555',
       origin: 'Голос отца',
@@ -778,6 +710,58 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('concept_schema_linked', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_canvas_open', leak)).toBeUndefined();
     expect(sanitizeMeta('concept_graph_fullscreen', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_save_retry', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_brief_open', leak)).toBeUndefined();
+  });
+
+  // Связь холста с полями (#963): ни id режимов и схем, ни их число в событие
+  // не попадают — событие только отмечает, что синхронизация была.
+  it('concept_sync_to_map/concept_sync_from_map: meta игнорируется', () => {
+    const leak = { clientId: '555', modeIds: ['punitive_critic'], modes: 2 };
+    expect(sanitizeMeta('concept_sync_to_map', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_sync_from_map', leak)).toBeUndefined();
+  });
+
+  // Подсказки терапевту (#995): ни клиент, ни режим, ни схема, ни текст задания,
+  // ни техника с днём отметки в событие не попадают — событие отмечает только,
+  // что лист открыт, задание дано или техника отмечена «Делали сегодня».
+  it('concept_guide_mode_open/schema_open/technique_open/assign/mark_done: meta игнорируется', () => {
+    const leak = {
+      clientId: '555',
+      modeId: 'vulnerable_child',
+      schemaId: 'abandonment',
+      text: 'Встреча со своим маленьким Я',
+      techniqueId: 'chairwork',
+      day: '2026-11-07',
+    };
+    expect(sanitizeMeta('concept_guide_mode_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_schema_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_technique_open', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_assign', leak)).toBeUndefined();
+    expect(sanitizeMeta('concept_guide_mark_done', leak)).toBeUndefined();
+  });
+
+  // «Показ экрана» в кабинете: событие только отмечает включение, имена клиентов не принимаются.
+  it('cabinet_screen_share_on: meta игнорируется', () => {
+    const leak = { clients: ['Анна'], clientId: '555' };
+    expect(sanitizeMeta('cabinet_screen_share_on', leak)).toBeUndefined();
+  });
+
+  // «Справочник» терапевта (#995): событие отмечает только, что раздел или лист открыт, — без id режима, схемы, техники.
+  it.each([
+    'cabinet_guide_open',
+    'cabinet_guide_mode_open',
+    'cabinet_guide_schema_open',
+    'cabinet_guide_technique_open',
+    'cabinet_guide_note_open',
+  ])('%s: meta игнорируется', (name) => {
+    const leak = {
+      modeId: 'vulnerable_child',
+      techniqueId: 'chairwork',
+      noteId: 'group',
+      clientId: '555',
+    };
+    expect(sanitizeMeta(name, leak)).toBeUndefined();
   });
 
   // quiz_started/quiz_completed/practice_link_click несут meta по реестру
@@ -831,7 +815,6 @@ describe('sanitizeMeta', () => {
   it('огромная строка вместо enum-значения не проходит (не DoS-хранится)', () => {
     const huge = 'a'.repeat(100_000);
     expect(sanitizeMeta('share_card', { kind: huge })).toBeUndefined();
-    expect(sanitizeMeta('web_banner_open', { banner: huge })).toBeUndefined();
   });
 
   it('meta с email/телефоном в незнакомых полях полностью отбрасывается', () => {
@@ -856,6 +839,14 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('outbox_flush', { count: NaN })).toBeUndefined();
     expect(sanitizeMeta('outbox_flush', { count: Infinity })).toBeUndefined();
     expect(sanitizeMeta('outbox_flush', { count: '5' })).toBeUndefined();
+  });
+
+  // Серверное событие: число пишет TherapistExitService, клиентский путь его
+  // не пропускает — иначе блок «Терапевты уходят» в /stats накручивался бы.
+  it('therapist_resigned: meta с клиента отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('therapist_resigned', { clientsEnded: 5 }),
+    ).toBeUndefined();
   });
 
   it('allow-list-сверка: у каждого события ANALYTICS_EVENTS есть предсказуемое поведение sanitizeMeta', () => {
@@ -895,6 +886,40 @@ describe('account_link_* — площадка «сайт»', () => {
     ).toBeUndefined();
     expect(
       sanitizeMeta('account_link_started', { host: 'что угодно' }),
+    ).toBeUndefined();
+  });
+});
+
+// Запись из приложения (#546): created — серверное событие со статусом, с
+// клиента статус не принимается; opened — без meta.
+describe('client_booking_*', () => {
+  it('created: статус с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('client_booking_created', { status: 'held' }),
+    ).toBeUndefined();
+  });
+
+  it('opened: любая meta отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('client_booking_opened', { contact: 'me@example.com' }),
+    ).toBeUndefined();
+  });
+
+  // Серверное событие без meta (booking-events.constants.ts): что бы ни
+  // прислал клиент, в базу meta не уходит.
+  it('booking_slot_taken: meta с клиента отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('booking_slot_taken', { contact: '@maria', taken: 5 }),
+    ).toBeUndefined();
+  });
+});
+
+// «⏰ Напомню через час» (аудит 2026-10, backend#16): событие пишет только бот,
+// /stats считает строки с quietShift — с клиента он не должен проходить.
+describe('reminder_snoozed', () => {
+  it('quietShift с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('reminder_snoozed', { quietShift: true }),
     ).toBeUndefined();
   });
 });

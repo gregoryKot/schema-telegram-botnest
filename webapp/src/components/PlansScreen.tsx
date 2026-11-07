@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
-import { Loader } from './Loader';
+import { Skeleton, SkeletonList } from './Skeleton';
 import { useNeedData } from '../needData';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useAsyncData } from '../hooks/useAsyncData';
@@ -9,6 +9,9 @@ import { NEED_HUE, hueStyle } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 import { useTr } from '../utils/addressForm';
+import { planDateLabel, plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
+import { PlanNeedPicker } from './plans/PlanNeedPicker';
+import { PaperEmpty } from './art/PaperEmpty';
 
 interface Props {
   onClose: () => void;
@@ -25,15 +28,6 @@ function statusIcon(done: boolean | null) {
   if (done === true)  return '✓';
   if (done === false) return '×';
   return '·';
-}
-
-function formatDate(dateStr: string): string {
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-  if (dateStr === today)    return 'Сегодня';
-  if (dateStr === tomorrow) return 'Завтра';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
@@ -58,7 +52,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             <div className="ds-eyebrow">Планы</div>
             <h1 className="ds-h2 sk-title">История<br /><em className="sk-it">планов</em></h1>
             {plans !== null && plans.length > 0 && (
-              <div className="ds-sub sk-lead">{pending.length} активных · {completed.length} завершённых</div>
+              <div className="ds-sub sk-lead">{plansSummary(pending.length, completed.length)}</div>
             )}
           </div>
           <button onClick={goBack} className="ds-btn ds-btn--secondary">Закрыть</button>
@@ -82,18 +76,13 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
             </button>
           </div>
         ) : !plans ? (
-          <Loader minHeight="30vh" />
+          <div className="sk-group" aria-hidden><Skeleton width={150} height={12} /><SkeletonList rows={3} height={112} /></div>
         ) : plans.length === 0 ? (
-          <div className="sk-empty">
-            <h2 className="ds-h2">Планов пока нет</h2>
-            <p className="ds-sub sk-empty-text">
-              {tr(
-                'Планы создаются в трекере — выбери потребность с низкой оценкой и нажми «Запланировать практику»',
-                'Планы создаются в трекере — выберите потребность с низкой оценкой и нажмите «Запланировать практику»',
-              )}
-            </p>
+          <div className="sk-group">
+            <PaperEmpty title="Планов пока нет">{plansEmptyText(tr)}</PaperEmpty>
+            <PlanNeedPicker onPlanned={load} />
             {onOpenTracker && (
-              <button onClick={() => { onOpenTracker?.(); goBack(); }} className="ds-link">
+              <button onClick={() => goBack(onOpenTracker)} className="ds-link sk-self-start">
                 Открыть трекер →
               </button>
             )}
@@ -145,7 +134,7 @@ function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Disp
             {needData?.name ?? plan.needId}
           </span>
           <span className="ds-sub">·</span>
-          <span className="ds-sub">{formatDate(plan.scheduledDate)}</span>
+          <span className="ds-sub">{planDateLabel(plan.scheduledDate)}</span>
         </div>
         <span className={statusClass(plan.done)}>{statusIcon(plan.done)}</span>
       </div>

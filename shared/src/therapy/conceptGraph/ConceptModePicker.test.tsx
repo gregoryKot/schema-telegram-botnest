@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ConceptModePicker } from './ConceptModePicker';
+import { MODE_GROUP_HUE, toneHex } from '../../theme/entityHue';
 
 describe('ConceptModePicker', () => {
   it('без фильтра показывает режимы всех групп', () => {
@@ -63,7 +64,9 @@ describe('ConceptModePicker', () => {
       />,
     );
     const html = container.innerHTML;
-    expect(html).toContain('color-mix(in srgb, var(--accent-red)');
+    expect(html).toContain(
+      `color-mix(in srgb, ${toneHex(MODE_GROUP_HUE.critic)}`,
+    );
     expect(html).not.toMatch(/var\(--[a-z-]+\)[0-9a-f]{2}\b/);
   });
 });

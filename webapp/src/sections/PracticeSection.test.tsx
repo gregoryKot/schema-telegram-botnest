@@ -8,8 +8,8 @@ import { render, screen, fireEvent, cleanup, waitFor, within, act } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PracticeSection } from './PracticeSection';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
-import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
+import { todayStr } from '../utils/format';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 // Мок фабрики `../api` возвращает только `{ api: {...} }` по умолчанию, но
 // хук useTaskActions (используемый внутри PracticeSection) импортирует ещё и
@@ -97,7 +97,7 @@ beforeEach(() => {
   mockApi.createTask.mockResolvedValue(undefined);
   mockApi.getFlashcards.mockResolvedValue([]);
   mockApi.createFlashcard.mockResolvedValue(undefined);
-  mockApi.createLetter.mockResolvedValue(undefined);
+  mockApi.createLetter.mockResolvedValue({ id: 1, text: '', createdAt: '' });
   mockApi.getPractices.mockRejectedValue(new Error('offline'));
   mockApi.getPlanHistory.mockRejectedValue(new Error('offline'));
 });
@@ -109,13 +109,13 @@ afterEach(() => {
 describe('PracticeSection — ты/вы вилка', () => {
   it('подзаголовок звучит на «ты» по умолчанию', () => {
     renderSection({}, 'ty');
-    expect(screen.getByText(/Восемь практик схема-терапии плюс твои личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь упражнений схема-терапии плюс твои личные цели/)).toBeTruthy();
     expect(screen.queryByText(/ваши личные цели/)).toBeNull();
   });
 
   it('подзаголовок звучит на «вы», когда выбрана форма vy — «ваши», а не «твои»', () => {
     renderSection({}, 'vy');
-    expect(screen.getByText(/Восемь практик схема-терапии плюс ваши личные цели/)).toBeTruthy();
+    expect(screen.getByText(/Восемь упражнений схема-терапии плюс ваши личные цели/)).toBeTruthy();
     expect(screen.queryByText(/твои личные цели/)).toBeNull();
   });
 
@@ -188,6 +188,22 @@ describe('PracticeSection — задания от терапевта', () => {
     expect(onOpenDiaries).toHaveBeenCalled();
   });
 
+  // QA 2026-10-26 (docs/INCIDENTS.md): «Своё задание» от терапевта стояло в
+  // блоке без «Готово», а тап по нему не делал ничего — закрыть было нечем.
+  it('«Своё задание» от терапевта закрывается кнопкой «Готово»', async () => {
+    const onTasksChanged = vi.fn();
+    mockApi.getTasks
+      .mockResolvedValueOnce([task({ id: 12, assignedBy: 99, type: 'custom', text: 'Позвонить маме' })])
+      .mockResolvedValue([]);
+    mockApi.completeTask.mockResolvedValue(undefined);
+    renderSection({ onTasksChanged });
+
+    await screen.findByText('От терапевта');
+    fireEvent.click(screen.getByText('Готово'));
+    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(12, true));
+    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
+  });
+
   it('клик на задание "tracker_streak" открывает трекер (onOpenTracker)', async () => {
     const onOpenTracker = vi.fn();
     mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 99, type: 'tracker_streak' })]);
@@ -250,7 +266,16 @@ describe('PracticeSection — мои цели', () => {
     renderSection();
 
     await screen.findByText('Моя цель');
-    expect(screen.getByText('1 активных')).toBeTruthy();
+    expect(screen.getByText('1 активная')).toBeTruthy();
+  });
+
+  it.each([
+    [2, '2 активные'],
+    [5, '5 активных'],
+  ])('счётчик своих целей: %i → «%s» (форма слова по числу)', async (n, text) => {
+    mockApi.getTasks.mockResolvedValue(Array.from({ length: n }, (_, i) => task({ id: i + 1, assignedBy: null, text: `Цель ${i + 1}` })));
+    renderSection();
+    await screen.findByText(text);
   });
 
   it('клик "+ Поставить цель" открывает TaskCreateSheet', async () => {
@@ -258,10 +283,10 @@ describe('PracticeSection — мои цели', () => {
     await screen.findByText('нет активных');
 
     fireEvent.click(screen.getByText('+ Поставить цель'));
-    await screen.findByText('Новое задание');
+    await screen.findByText('Новая цель');
   });
 
-  it('"все цели →" открывает AllGoalsOverlay со списком целей и историей', async () => {
+  it('"все цели →" открывает общий список заданий (AllTasksOverlay) с целями и историей', async () => {
     mockApi.getTasks.mockResolvedValue([
       task({ id: 1, text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
       task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
@@ -275,7 +300,8 @@ describe('PracticeSection — мои цели', () => {
     await screen.findByText('Все цели');
     expect(screen.getByText('Цель 5')).toBeTruthy();
     expect(screen.getByText('Готовая цель')).toBeTruthy();
-    expect(screen.getByText('готово')).toBeTruthy();
+    // Статус — тот же бейдж, что у «Все задания» на «Сегодня» (QA 2026-11, A-З8).
+    expect(screen.getByText('Выполнено', { selector: '.ds-badge' })).toBeTruthy();
   });
 });
 
@@ -300,21 +326,21 @@ describe('PracticeSection — своя цель: «Готово» и серия 
     renderSection();
     await screen.findByText('Сделано сегодня — завтра снова');
     expect(screen.queryByText('Готово')).toBeNull();
-    expect(screen.getByText('1 активных')).toBeTruthy();
+    expect(screen.getByText('1 активная')).toBeTruthy();
   });
 });
 
 describe('PracticeSection — счётчики в «Каталогах»', () => {
-  it('число практик и планов берётся из данных; без данных — только пояснение', async () => {
+  it('число своих действий и планов берётся из данных; без данных — только пояснение', async () => {
     renderSection();
     await screen.findByText('Каталоги');
-    expect(screen.getByText('Рекомендованные упражнения по потребностям')).toBeTruthy();
+    expect(screen.getByText('Маленькие действия для пяти потребностей')).toBeTruthy();
 
     cleanup();
     mockApi.getPractices.mockResolvedValue([{ id: 1 }, { id: 2 }]);
     mockApi.getPlanHistory.mockResolvedValue([{ id: 1 }]);
     renderSection();
-    await screen.findByText('10 практик · Рекомендованные упражнения по потребностям');
+    await screen.findByText('10 действий · Маленькие действия для пяти потребностей');
     expect(screen.getByText('1 план · Планы поддержки и кризисов')).toBeTruthy();
   });
 });
@@ -323,46 +349,36 @@ describe('PracticeSection — баннер ближайшей сессии', () 
   it('клиент с сессией сегодня видит "Сегодня встреча"', async () => {
     mockApi.getTherapyRelation.mockResolvedValue({
       role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
-      nextSession: new Date().toISOString(),
+      // Настенное время терапевта без зоны, как в базе: «сегодня» — местный день.
+      nextSession: `${todayStr()}T10:00`,
     });
     renderSection();
 
     await screen.findByText('● Сегодня встреча');
-    expect(screen.getByText(/с Анна/)).toBeTruthy();
+    // Имя без падежа («с Анна» ломалось на любом имени) — формула «Терапевт: имя».
+    expect(screen.getByText(/Терапевт: Анна/)).toBeTruthy();
+    expect(screen.queryByText(/с Анна/)).toBeNull();
   });
 
-  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): isToday сравнивал календарный
-  // день `nextSession` с «сегодня» через `new Date().toISOString().slice(0,10)`
-  // — уже UTC, но инлайн-копией; теперь общий todayCalendarDate(). Моменты
-  // зафиксированы там, где зоны заведомо расходятся с UTC. Данные грузятся
-  // асинхронно (api.getTherapyRelation), поэтому первичная загрузка идёт под
-  // текущей зоной процесса, а проверка по зонам — синхронный `rerender`, чтобы
-  // момент смены TZ совпадал с моментом пересчёта isToday.
-  it('сессия на сегодняшний календарный день сервера — «Сегодня встреча» в любой зоне', async () => {
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17, QA 2026-10-26): isToday
+  // сравнивал день `nextSession` с днём UTC. nextSession — настенное время,
+  // которое терапевт ввёл по своим часам, поэтому «сегодня» — местный день
+  // (isSessionToday). Моменты — там, где местный день расходится с UTC; в
+  // каждой зоне — своя загрузка, потому что «сегодня» в зонах разное.
+  it('сессия на местный сегодняшний день — «Сегодня встреча» в любой зоне', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {
       for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
-        vi.setSystemTime(new Date(moment));
-        mockApi.getTherapyRelation.mockResolvedValue({
-          role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
-          nextSession: `${todayCalendarDate()}T10:00:00Z`,
-        });
-        const { unmount, rerender } = renderSection();
-        await screen.findByText('● Сегодня встреча');
-
-        forEachTimeZone(() => {
+        await forEachTimeZoneAsync(async (tz) => {
           vi.setSystemTime(new Date(moment));
-          rerender(
-            <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-              <MemoryRouter>
-                <PracticeSection {...noopProps} />
-              </MemoryRouter>
-            </AddressFormContext.Provider>,
-          );
-          expect(screen.getByText('● Сегодня встреча')).toBeTruthy();
+          mockApi.getTherapyRelation.mockResolvedValue({
+            role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'x',
+            nextSession: `${todayStr()}T10:00`,
+          });
+          const { unmount } = renderSection();
+          expect(await screen.findByText('● Сегодня встреча'), `${moment} / ${tz}`).toBeTruthy();
+          unmount();
         });
-
-        unmount();
       }
     } finally {
       vi.useRealTimers();
@@ -376,7 +392,7 @@ describe('PracticeSection — баннер ближайшей сессии', () 
     renderSection();
 
     await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
-    expect(screen.queryByText(/встреча/)).toBeNull();
+    expect(screen.queryByText(/Следующая встреча|Сегодня встреча/)).toBeNull();
   });
 });
 
@@ -410,7 +426,7 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(cardTitles()).toHaveLength(8);
     expect(screen.getByText('8 упражнений')).toBeTruthy();
     expect(screen.getByText('Мои цели')).toBeTruthy();
-    expect(screen.getByText('Практики')).toBeTruthy();
+    expect(screen.getByText('Что питает')).toBeTruthy();
     expect(screen.getByText('Планы')).toBeTruthy();
   });
 
@@ -436,10 +452,10 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.queryByText('+ Поставить цель')).toBeNull();
   });
 
-  it('скрытая «Практики» убирает свою строку, «Планы» остаются', () => {
+  it('скрытая «Что питает» убирает свою строку, «Планы» остаются', () => {
     hide('practices');
     renderSection();
-    expect(screen.queryByText('Практики')).toBeNull();
+    expect(screen.queryByText('Что питает')).toBeNull();
     expect(screen.getByText('Планы')).toBeTruthy();
     expect(screen.getByText('Каталоги')).toBeTruthy();
   });
@@ -450,14 +466,14 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.queryByText('Каталоги')).toBeNull();
   });
 
-  it('скрытая «Схема включилась» убирает «Мне плохо» на десктопе; контакты помощи остаются', () => {
+  it('скрытая «Мне плохо» в «Инструментах» убирает карточку на десктопе; контакты помощи остаются', () => {
     hide('flashcard');
     renderSection();
     expect(screen.queryByText('Мне плохо')).toBeNull();
     expect(screen.getAllByText('Помощь рядом').length).toBeGreaterThan(0);
   });
 
-  it('скрытая «Схема включилась» убирает строку «Мне плохо» на телефоне, «Мне очень плохо» остаётся', () => {
+  it('скрытая «Мне плохо» в «Инструментах» убирает строку на телефоне, «Мне очень плохо» остаётся', () => {
     setWidth(390);
     hide('flashcard');
     renderSection();
@@ -470,14 +486,14 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     renderSection();
     expect(cardTitles()).toEqual([
       'Тёплые слова', 'Карточка схемы', 'Карточка режима', 'Критик или забота?',
-      'Проверка убеждения', 'Безопасное место', 'Письмо Уязвимому Ребёнку', 'Колесо детства',
+      'Проверка убеждения', 'Безопасное место', 'Письмо себе в детстве', 'Колесо детства',
     ]);
   });
 
-  it('шестерёнка (телефон) открывает лист со всеми десятью пунктами', async () => {
+  it('«Настроить инструменты» (телефон) открывает лист со всеми десятью пунктами', async () => {
     setWidth(390);
     renderSection();
-    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить инструменты' }));
     expect(await screen.findByRole('heading', { name: 'Какие инструменты показывать' })).toBeTruthy();
     expect(screen.getAllByRole('switch')).toHaveLength(10);
   });
@@ -498,7 +514,7 @@ describe('PracticeSection — «Инструменты»: скрытие и по
   it('лист: ручки «≡» только у карточек; у разделов страницы — одни тумблеры', async () => {
     setWidth(390);
     renderSection();
-    fireEvent.click(screen.getByRole('button', { name: 'Какие инструменты показывать' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Настроить инструменты' }));
     await screen.findByText('Разделы страницы');
     expect(document.querySelectorAll('.cz-handle')).toHaveLength(6);
     expect(screen.getByText('Разделы страницы')).toBeTruthy();
@@ -583,19 +599,6 @@ describe('PracticeSection — открытие карточки схемы по 
   });
 });
 
-describe('PracticeSection — флешкарта «Мне плохо» по навигационному state (кнопка топбара)', () => {
-  it('location.state.openFlashcard открывает SchemaFlashcard сразу', async () => {
-    render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter initialEntries={[{ pathname: '/practice', state: { openFlashcard: true } }]}>
-          <PracticeSection {...noopProps} />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-    await screen.findByText('Стало чуть лучше – разобраться →');
-  });
-});
-
 describe('PracticeSection — задания терапевта: остальные типы открывают правильное упражнение', () => {
   it('belief_check → открывает «Проверка убеждения», завершение обновляет список и вызывает onTasksChanged', async () => {
     const onTasksChanged = vi.fn();
@@ -639,7 +642,7 @@ describe('PracticeSection — задания терапевта: остальн�
     expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
   });
 
-  it('flashcard → открывает SchemaFlashcard («Мне сейчас плохо»)', async () => {
+  it('flashcard → открывает SchemaFlashcard («Мне плохо»)', async () => {
     mockApi.getTasks.mockResolvedValue([task({ id: 11, assignedBy: 9, type: 'flashcard' })]);
     renderSection();
     await screen.findByText('От терапевта');
@@ -711,24 +714,67 @@ describe('PracticeSection — баннер ближайшей сессии: да
   });
 });
 
+// Регрессия 2026-10-26: клиент видел прошедшую встречу как следующую —
+// nextSession после встречи никто не двигает. Баннер берёт ближайшую через
+// shared upcomingSession. Время фиксировано (понедельник 26-го), зоны —
+// второй CI-прогон под TZ=Australia/Sydney.
+describe('PracticeSection — баннер ближайшей сессии: прошедшая дата', () => {
+  const SAT = 6;
+  const relation = (nextSession: string | null, meetingDays?: number[]) => ({
+    role: 'client', status: 'active', partnerName: 'Игорь', partnerId: 2, code: 'y', nextSession, meetingDays,
+  });
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T09:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('прошедшая дата + дни встреч → ближайшая суббота', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation('2026-10-17T07:00', [SAT]));
+    renderSection();
+    await screen.findByText(/Следующая встреча: \S+ 31 окт/);
+    expect(screen.queryByText(/17 окт/)).toBeNull();
+  });
+
+  it('прошедшая дата без дней встреч → баннера нет', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation('2026-10-17T07:00', []));
+    renderSection();
+    await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.queryByText(/Следующая встреча|Сегодня встреча/)).toBeNull();
+  });
+
+  it('даты нет, только дни встреч → ближайшая суббота без сдвига дня', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation(null, [SAT]));
+    renderSection();
+    await screen.findByText(/Следующая встреча: сб,? 31 окт/i);
+  });
+
+  it('будущая дата — как была', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue(relation('2026-11-04T10:00', [SAT]));
+    renderSection();
+    await screen.findByText(/Следующая встреча: \S+ 4 нояб?/);
+  });
+});
+
 describe('PracticeSection — создание цели обновляет список read-after-write, «все цели» открывает выбранную', () => {
   it('после успешного создания цели список задач перезапрашивается', async () => {
     const onTasksChanged = vi.fn();
-    mockApi.getTasks.mockResolvedValueOnce([]).mockResolvedValue([task({ id: 20, text: 'Новая цель' })]);
+    mockApi.getTasks.mockResolvedValueOnce([]).mockResolvedValue([task({ id: 20, text: 'Гулять по вечерам' })]);
     mockApi.createTask.mockResolvedValue(undefined);
     renderSection({ onTasksChanged });
     await screen.findByText('нет активных');
 
     fireEvent.click(screen.getByText('+ Поставить цель'));
-    await screen.findByText('Новое задание');
-    fireEvent.click(screen.getByText('Назначить задание'));
-
-    await waitFor(() => expect(screen.queryByText('Новое задание')).toBeNull());
-    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
     await screen.findByText('Новая цель');
+    fireEvent.click(screen.getByText('Поставить цель'));
+
+    await waitFor(() => expect(screen.queryByText('Новая цель')).toBeNull());
+    await waitFor(() => expect(onTasksChanged).toHaveBeenCalledTimes(1));
+    await screen.findByText('Гулять по вечерам');
   });
 
-  it('открытие цели из AllGoalsOverlay закрывает оверлей и открывает нужное упражнение', async () => {
+  it('открытие цели из «Все цели» закрывает оверлей и открывает нужное упражнение', async () => {
     mockApi.getTasks.mockResolvedValue([
       task({ id: 1, type: 'belief_check', text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
       task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
@@ -743,7 +789,7 @@ describe('PracticeSection — создание цели обновляет сп�
     await waitFor(() => expect(screen.queryByText('Библиотека')).toBeNull());
   });
 
-  it('«+ Поставить цель» внутри AllGoalsOverlay открывает TaskCreateSheet поверх', async () => {
+  it('«+ Поставить цель» внутри «Все цели» открывает TaskCreateSheet поверх', async () => {
     mockApi.getTasks.mockResolvedValue([
       task({ id: 1, text: 'Цель 1' }), task({ id: 2, text: 'Цель 2' }),
       task({ id: 3, text: 'Цель 3' }), task({ id: 4, text: 'Цель 4' }), task({ id: 5, text: 'Цель 5' }),
@@ -755,6 +801,6 @@ describe('PracticeSection — создание цели обновляет сп�
 
     fireEvent.click(within(overlay).getByText('+ Поставить цель'));
     await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
-    await screen.findByText('Новое задание');
+    await screen.findByText('Новая цель');
   });
 });

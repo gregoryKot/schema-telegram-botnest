@@ -148,7 +148,8 @@ export class TelegramNotifyActionsService implements OnModuleInit {
 
     this.bot.action(/^notify:pause:(7|30)$/, async (ctx) => {
       try {
-        await ctx.answerCbQuery('⏸ Пауза включена');
+        // Без текста: тост уходит до записи паузы; итог — editMessageText ниже.
+        await ctx.answerCbQuery();
         const rawId = ctx.from?.id;
         if (!rawId) return;
         const userId = await this.accountService.canonicalUserId(rawId);
@@ -170,7 +171,7 @@ export class TelegramNotifyActionsService implements OnModuleInit {
         await ctx.answerCbQuery('Ок, без паузы');
         await ctx.editMessageReplyMarkup(undefined).catch(() => null);
       } catch (err) {
-        this.logger.error('notify:pause:cancel failed', err);
+        await failCallback(this.logger, ctx, 'notify:pause:cancel', err);
       }
     });
 

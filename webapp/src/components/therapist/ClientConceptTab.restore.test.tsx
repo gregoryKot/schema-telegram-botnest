@@ -99,7 +99,7 @@ function Harness() {
 async function openTab(server: unknown) {
   mockApi.getConceptualization.mockResolvedValue(server);
   render(<Harness />);
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
 const saved = () => mockApi.saveConceptualization.mock.calls.at(-1)?.[1];
@@ -134,6 +134,7 @@ afterEach(() => cleanup());
 
 async function openVersion() {
   await openTab(concept({ modeIds: [], modeLinks: [], schemaIds: [], history: [OLD] }));
+  fireEvent.click(screen.getByRole('button', { name: 'История версий · 1' }));
   fireEvent.click(screen.getByText('Версия 1'));
   fireEvent.click(screen.getByRole('button', { name: 'Восстановить эту версию' }));
 }

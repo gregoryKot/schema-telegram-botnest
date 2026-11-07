@@ -1,9 +1,10 @@
-/* Единый контракт токенов (акцент + шрифтовая пара) — webapp ⇄ miniapp.
+/* Единый контракт токенов (акцент + шрифтовая пара).
    ОБЯЗАН быть первым правилом файла (кроме @charset) — таково правило
    @import в CSS. Значения — shared/src/theme/tokens.css, не сюда. */
 @import '../../shared/src/theme/tokens.css';
 /* Примитивы и тона редизайна кабинетов 2026-10 (ds-*, tone-*). */
 @import './styles/cabinet.css';
+@import './styles/paper.css';
 @import './styles/touch-fixes.css';
 
 /* ── Instrument Serif — ТОЛЬКО для изолированной айдентики личного сайта
@@ -58,11 +59,18 @@
    Тёплая бумага · сдержанный индиго · много воздуха
    ───────────────────────────────────────────────────────────────────────── */
 
-/* Безопасные зоны. Снизу — вырез iOS через env() (парно с
-   schema-miniapp/src/index.css, там ещё страховка переменными Telegram). Сверху —
-   плавающие кнопки Telegram/MAX в полноэкранном Mini App: значение ставит
-   useHostSafeTop на <html>, в браузере остаётся 0. */
-:root { --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: 0px; }
+/* Безопасные зоны. Снизу — вырез iOS через env(). Сверху —
+   большее из двух (#902): статус-бар установленного с сайта приложения
+   (standalone, viewport-fit=cover в index.html; в браузере Safari inset сверху
+   0) и полоса плавающих кнопок Telegram/MAX в полноэкранном Mini App — её
+   useHostSafeTop пишет инлайн на <html> в --host-safe-top (в браузере 0px).
+   Хук не пишет сам --safe-top: инлайн-0px перекрывал бы env(), и в
+   установленном приложении содержимое уходило под статус-бар. */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --host-safe-top: 0px; /* инлайн на <html> от useHostSafeTop сильнее этого объявления */
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--host-safe-top));
+}
 
 :root, html[data-theme="light"], .light-lock {
   /* .light-lock — поддерево, которое держит светлую тему при любом
@@ -106,9 +114,9 @@
   --kbd-text:      rgba(28,25,22,0.70); /* 5.38:1 к сложенному фону .kbd */
 
   /* ── Accent — терракота. Базовые значения — shared/src/theme/tokens.css
-     (контракт webapp ⇄ miniapp, дизайн-аудит 2026-08 В11). Редизайн
+     (дизайн-аудит 2026-08 В11). Редизайн
      кабинетов 2026-10 углубляет акцент и меняет заголовочный шрифт ТОЛЬКО на
-     сайте (решение владельца 2026-10-15: мини-апп пока не трогаем), поэтому
+     сайте (решение владельца 2026-10-15: мини-апп тогда не трогали), поэтому
      светлая тема сайта переопределяет их здесь. Тёмная тема — как была. */
   --accent:        #8a3a2b; /* 6.92:1 к --bg, белый на нём 7.72:1 */
   --accent-rgb:    138, 58, 43;
@@ -116,20 +124,29 @@
   --accent-line:   rgba(138, 58, 43, 0.24);
   --accent-hi:     #5e2418;
   --accent-on-light: #8a3a2b;
-  --accent-hot:    #c8553d; /* логотип, кавычки, стрик — декор, не текст */
+  /* Декор (полоски стрика и прогресса), не фон текста: белый на нём 4.36:1, чернила
+     4.27:1 — оба ниже AA 4.5:1. Логотип и плашки с текстом — --accent + --on-accent
+     (onAccent.test.ts). */
+  --accent-hot:    #c8553d;
   --font-serif:    'Literata', 'Spectral', Georgia, serif;
 
-  /* ── Ink — тёмные поверхности редизайна (сайдбар, нижняя навигация,
-     тёмные карточки-акценты). Текст на них: --on-ink 15:1, --on-ink-sub
-     10.1:1, --on-ink-faint 5.6:1, --on-ink-danger 6.6:1 к --ink. */
-  --ink:            #1f1b17;
-  --ink-2:          #2c2722;
-  --ink-3:          #3a332c;
-  --ink-line:       #36302a;
-  --on-ink:         #f6f2eb;
-  --on-ink-sub:     #cfc6b8;
-  --on-ink-faint:   #9c9286;
-  --on-ink-danger:  #e08a75;
+  /* ── Panel — плотная песочная панель (сайдбар, нижняя навигация, герой
+     входа и оплаты, вводные карточки). До 2026-11 здесь был почти чёрный
+     «ink» редизайна 2026-10 (#1f1b17): владелец — «чёрный тяжёлый, добавляет
+     тяжести». Текст на панели — те же чернила, что на бумаге: --on-panel
+     13.6:1, --on-panel-sub 7.8:1, --on-panel-faint ≥4.5:1 к --panel и
+     --panel-2, --on-panel-danger 5.7:1 к --panel (сверка —
+     index.css.contrast.test.ts). Главное действие и выбранное состояние
+     панелью не красятся: кнопка — --accent, выбор — --accent-soft с контуром
+     --accent (docs/design/REDESIGN_2026-10.md, «Спокойная палитра 2026-11»). */
+  --panel:           #ebe5d9;
+  --panel-2:         #e2dbcc;
+  --panel-3:         #d9d0bf;
+  --panel-line:      #d3c9b8;
+  --on-panel:        #1f1b17;
+  --on-panel-sub:    #4a433b;
+  --on-panel-faint:  #5c544c;
+  --on-panel-danger: #9a3626;
 
   /* ── Плотные заливки редизайна (сегменты, шапка карточки клиента) ──── */
   --paper-sunk:     #ede7dd;
@@ -163,17 +180,28 @@
      --c-rose уже 6.60:1 к --bg, отдельного значения не нужно (переопределение
      ниже). */
   --c-rose-strong: #ad4545; /* 5.06:1 к --bg, 5.65:1 к --surface, 4.75:1 к --bg-rail */
+  /* Тот же класс (инцидент 2026-11-05: «Здоровый Взрослый отвечает» сливался
+     с бумагой): мох, янтарь и глина как мелкий текст на бумаге — 3.84:1,
+     2.79:1 и 3.61:1 к --bg. Отсюда «-strong» того же оттенка, которым можно
+     писать; --accent-green/-yellow/-orange ниже берут их. Какое правило чем
+     красит текст и с каким коэффициентом — styles/accentTextContrast.test.ts. */
+  --c-moss-strong:  #5a6e48; /* 5.01:1 к --bg, 5.50:1 к --surface, 4.69:1 к --bg-rail */
+  --c-amber-strong: #8c601e; /* 4.94:1 к --bg, 5.43:1 к --surface, 4.63:1 к --bg-rail */
+  --c-clay-strong:  #8f5b3c; /* 5.05:1 к --bg, 5.54:1 к --surface, 4.73:1 к --bg-rail */
 
   /* Legacy accent-color aliases (used in existing components).
      --accent-indigo теперь = --accent (shared/theme/tokens.css). */
   --accent-blue:   var(--c-slate);
-  --accent-green:  var(--c-moss);
-  --accent-yellow: var(--c-amber);
+  /* --accent-* — роли, которыми красят текст и статусы, поэтому у них
+     читаемые «-strong» значения, а не палитровые --c-* (те — для заливок,
+     графиков и color-mix-плашек). */
+  --accent-green:  var(--c-moss-strong);
+  --accent-yellow: var(--c-amber-strong);
   /* Роль «ошибка/опасность» — текст (сообщения об ошибке, «Выйти», «Удалить
      все данные»), поэтому берётся читаемый вариант, а не палитровый --c-rose:
      с ним ошибки рисовались на 3.32:1 и не проходили WCAG AA. */
   --accent-red:    var(--c-rose-strong);
-  --accent-orange: var(--c-clay);
+  --accent-orange: var(--c-clay-strong);
   --accent-pink:   var(--c-plum);
 
   /* Текст НА залитом --accent-red (кнопка «Снять роль», «Да, удалить всё
@@ -211,6 +239,21 @@
 
   /* ── Layout ──────────────────────────────────────────────────────────── */
   --sidebar-w: 240px;
+  /* Высота нижней навигации телефона без safe-area: по ней встают панели,
+     закреплённые над навигацией (кнопки карточки клиента, «+»). Равна
+     .mobile-nav-item (44px) + два паддинга --space-2 — меняешь их, меняй и её.
+     Было 64px (пункт 52 + 6 + 6): владелец 2026-11-05 — «панель широковата»;
+     с safe-area iOS выходило ~98px против 83px у системного таб-бара. */
+  --mobile-nav-h: 48px;
+}
+
+/* .light-lock переопределяет токены, но не `color`: цвет, унаследованный от
+   body, вычислен на уровне body, где при тёмной теме на <html> --text
+   светлый, и он проникает внутрь. Инцидент 2026-11-05: в кабинете внутри
+   Telegram текст без явного color был светлым на светлой бумаге. */
+.light-lock {
+  color: var(--text);
+  color-scheme: light;
 }
 
 html[data-theme="dark"] {
@@ -244,12 +287,17 @@ html[data-theme="dark"] {
   --c-slate:   #8ea0bd;
   --c-plum:    #b285ad;
   --c-clay:    #d18f6d;
+  /* То же для мха, янтаря и глины: тёмная тема их и так осветляет — 7.06:1,
+     8.21:1 и 6.87:1 к --bg, отдельные значения не нужны. */
+  --c-moss-strong:  var(--c-moss);
+  --c-amber-strong: var(--c-amber);
+  --c-clay-strong:  var(--c-clay);
 
   --accent-blue:   var(--c-slate);
-  --accent-green:  var(--c-moss);
-  --accent-yellow: var(--c-amber);
+  --accent-green:  var(--c-moss-strong);
+  --accent-yellow: var(--c-amber-strong);
   --accent-red:    var(--c-rose-strong);
-  --accent-orange: var(--c-clay);
+  --accent-orange: var(--c-clay-strong);
   --accent-pink:   var(--c-plum);
 
   /* Тёмная тема осветляет красный до #d68585, и белый текст на нём даёт
@@ -345,11 +393,12 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
 }
 
-/* ─── Sidebar — тёмный (редизайн 2026-10) ─────────────────────────────────
-   Цвета только из токенов --ink-… и --on-ink-… (контраст — в комментарии к токенам). */
+/* ─── Sidebar — песочная панель (2026-11; до того тёмный ink редизайна 2026-10) ──
+   Цвета только из токенов --panel-… и --on-panel-… (контраст — в комментарии к токенам). */
 .sidebar {
-  background: var(--ink);
-  color: var(--on-ink-sub);
+  background: var(--panel);
+  border-right: 1px solid var(--panel-line);
+  color: var(--on-panel-sub);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -365,57 +414,60 @@ a { color: inherit; text-decoration: none; }
 }
 .sb-logo {
   width: 32px; height: 32px; border-radius: var(--r-8);
-  background: var(--accent-hot); color: #fff;
+  background: var(--accent); color: var(--on-accent);
   display: grid; place-items: center;
   font-family: var(--serif); font-size: 15px; font-weight: 500;
   flex-shrink: 0;
 }
-.sb-name { font-family: var(--serif); font-size: 17px; color: var(--on-ink); }
+.sb-name { font-family: var(--serif); font-size: 17px; color: var(--on-panel); }
 
 .sb-mode-switch {
   display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--ink-2); border-radius: var(--r-10); padding: 3px;
+  background: var(--panel-2); border-radius: var(--r-10); padding: 3px;
   font-size: 13px;
   flex-shrink: 0;
 }
 .sb-mode-btn {
   padding: 7px 0; text-align: center;
-  color: var(--on-ink-faint);
+  color: var(--on-panel-faint);
   font-weight: 500; border-radius: var(--r-8);
   transition: color .12s, background .12s;
 }
-.sb-mode-btn:hover { color: var(--on-ink); }
-.sb-mode-btn.is-active { background: var(--on-ink); color: var(--ink); font-weight: 600; }
+.sb-mode-btn:hover { color: var(--on-panel); }
+.sb-mode-btn.is-active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-1); }
 
 .sb-section-label {
   padding: 0 10px 6px;
   font-size: 11px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--on-ink-faint);
+  text-transform: uppercase; color: var(--on-panel-faint);
 }
 .sb-nav { display: flex; flex-direction: column; gap: 2px; }
 .sb-item {
   display: flex; align-items: center; gap: var(--space-10);
   padding: 9px 10px; border-radius: var(--r-8);
-  color: var(--on-ink-sub);
+  color: var(--on-panel-sub);
   font-size: 14px; font-weight: 400;
   text-align: left; width: 100%;
   transition: background .1s, color .1s;
 }
-.sb-item:hover { background: var(--ink-2); color: var(--on-ink); }
-/* «Выйти» — роль «опасность» на тёмном: --on-ink-danger (6.6:1 к --ink). */
-.sb-item.sb-danger { color: var(--on-ink-danger); }
-.sb-item.sb-danger:hover { background: var(--ink-2); color: var(--on-ink-danger); }
-.sb-item.is-active { background: var(--ink-3); color: #fff; font-weight: 600; }
+.sb-item:hover { background: var(--panel-2); color: var(--on-panel); }
+/* «Выйти» — роль «опасность» на панели: --on-panel-danger (5.7:1 к --panel). */
+.sb-item.sb-danger { color: var(--on-panel-danger); }
+.sb-item.sb-danger:hover { background: var(--panel-2); color: var(--on-panel-danger); }
+.sb-item.is-active { background: var(--panel-3); color: var(--on-panel); font-weight: 600; }
 /* Цветной квадрат раздела клиента (оттенок задаёт --h на элементе). */
 .sb-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; background: oklch(0.58 0.12 var(--h)); }
-/* Sidebar items don't need focus ring — active/hover state is sufficient */
-.sb-item:focus-visible, .sb-account:focus-visible { outline: none; }
+/* Фокус с клавиатуры виден (WCAG 2.4.7): фон меняется только по :hover, поэтому кольцо
+   цветом текста панели, внутрь — соседние строки его не перекрывают. */
+.sb-item:focus-visible, .sb-account:focus-visible { outline: 2px solid var(--on-panel); outline-offset: -2px; }
 .sb-item .badge {
   margin-left: auto;
   font-size: 12px; font-weight: 500;
-  color: var(--on-ink-faint); min-width: 18px; text-align: right;
+  color: var(--on-panel-faint); min-width: 18px; text-align: right;
 }
-.sb-item.is-active .badge { color: var(--accent-hot); }
+/* Счётчик — текст, а не декор: --accent-hot на --panel-3 давал 2.85:1,
+   --accent — 5.04:1 (пара под index.css.contrast.test.ts). */
+.sb-item.is-active .badge { color: var(--accent); }
 
 .sb-clients { display: flex; flex-direction: column; gap: 4px; }
 .sb-client-item { padding: 7px 10px; font-size: 13px; }
@@ -429,38 +481,49 @@ a { color: inherit; text-decoration: none; }
   background: oklch(0.7 0.12 145); flex-shrink: 0; margin-left: auto;
 }
 .sb-client-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* «Показ экрана» над списком клиентов (appShell/ScreenShareSwitch): весь ряд — label тумблера. */
+.sb-share {
+  display: flex; align-items: center; gap: var(--space-10);
+  min-height: 44px; padding: 4px 10px; border-radius: var(--r-8);
+  cursor: pointer; transition: background .1s;
+}
+.sb-share:hover { background: var(--panel-2); }
+.sb-share-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.sb-share-title { font-size: 13px; color: var(--on-panel); }
+.sb-share-sub { font-size: 12px; color: var(--on-panel-faint); }
 
 /* Footer wrapper pushed to the bottom (margin-top: auto on the wrapper div, not .sb-foot) */
 .sb-foot-wrap { margin-top: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
 .sb-foot {
   padding-top: 12px;
-  border-top: 1px solid var(--ink-line);
+  border-top: 1px solid var(--panel-line);
 }
-/* Карточка «Сегодня» над подвалом — плашка --ink-2 */
+/* Карточка «Сегодня» над подвалом — плашка --panel-2 */
 .sb-today {
-  background: var(--ink-2); border-radius: 14px;
+  background: var(--panel-2); border-radius: 14px;
   padding: 14px;
 }
 .sb-today-label {
   font-size: 11px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--on-ink-faint); margin-bottom: var(--space-6);
+  text-transform: uppercase; color: var(--on-panel-faint); margin-bottom: var(--space-6);
 }
 .sb-today-index { display: flex; align-items: baseline; gap: 3px; }
 .sb-today-num {
   font-family: var(--serif); font-size: 40px; font-weight: 400;
-  color: var(--on-ink); line-height: 1;
+  color: var(--on-panel); line-height: 1;
 }
-.sb-today-denom { font-size: 12px; color: var(--on-ink-faint); padding-bottom: 3px; }
-.sb-today-sub { font-size: 12px; color: var(--on-ink-faint); margin-top: 3px; }
+.sb-today-denom { font-size: 12px; color: var(--on-panel-faint); padding-bottom: 3px; }
+.sb-today-sub { font-size: 12px; color: var(--on-panel-faint); margin-top: 3px; }
 .sb-today-cta {
-  width: 100%; margin-top: 10px; padding: 8px 10px; border-radius: var(--r-8);
-  background: var(--ink-3);
-  border: none; color: var(--on-ink);
+  width: 100%; min-height: 44px; margin-top: 10px; padding: 8px 10px; border-radius: var(--r-8);
+  background: var(--surface);
+  border: 1px solid var(--panel-line); color: var(--text);
   font-size: 13px; font-weight: 600; font-family: inherit;
   text-align: left; cursor: pointer;
-  transition: background .1s;
+  transition: border-color .1s;
 }
-.sb-today-cta:hover { background: var(--ink-line); }
+/* Тихая кнопка: единственная залитая кнопка экрана «Сегодня» — в главной плитке (HomeTiles). */
+.sb-today-cta:hover { border-color: var(--line-hover); }
 
 .sb-account {
   display: flex; align-items: center; gap: var(--space-10);
@@ -468,30 +531,40 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer; width: 100%; text-align: left;
   transition: background .1s;
 }
-.sb-account:hover, .sb-account.is-active { background: var(--ink-2); }
+.sb-account:hover, .sb-account.is-active { background: var(--panel-2); }
 .sb-avatar {
   width: 32px; height: 32px; border-radius: 50%;
-  background: var(--on-ink);
+  background: var(--accent-soft);
   display: grid; place-items: center;
-  font-size: 13px; font-weight: 700; color: var(--ink);
+  font-size: 13px; font-weight: 700; color: var(--accent-hi);
   flex-shrink: 0;
 }
-.sb-acc-name { font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--on-ink); }
-.sb-acc-role { font-size: 12px; color: var(--on-ink-faint); margin-top: var(--space-2); }
-/* Ряд мелких ссылок подвала: Настройки · Аккаунт · Выйти */
+.sb-acc-name { font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--on-panel); }
+.sb-acc-role { font-size: 12px; color: var(--on-panel-faint); margin-top: var(--space-2); }
+/* Ряд мелких ссылок подвала: Настройки · Аккаунт · Выйти. Текст мелкий, подложки у ссылок нет.
+   Мышь — как до #912 (отступ строки 6px) и зона не меньше 24px по высоте (WCAG 2.5.8);
+   под палец — 44 по высоте (QA 2026-11, A-М8: было 18), выросла только строка, видимый размер прежний. */
 .sb-links { display: flex; gap: 14px; padding: 6px 10px; }
-.sb-links .sb-item { width: auto; padding: 0; font-size: 12px; color: var(--on-ink-faint); background: none; }
-.sb-links .sb-item:hover { color: var(--on-ink); background: none; }
-.sb-links .sb-item.sb-danger { color: var(--on-ink-danger); }
-.sb-legal a { font-size: 11px; color: var(--on-ink-faint); text-decoration: none; }
-.sb-legal a:hover { color: var(--on-ink-sub); }
+.sb-links .sb-item { width: auto; min-height: 24px; padding: 0; font-size: 12px; color: var(--on-panel-faint); background: none; }
+.sb-links .sb-item:hover { color: var(--on-panel); background: none; }
+.sb-links .sb-item.sb-danger { color: var(--on-panel-danger); }
+.sb-legal a { display: inline-flex; align-items: center; min-height: 24px; font-size: 11px; color: var(--on-panel-faint); text-decoration: none; }
+.sb-legal a:hover { color: var(--on-panel-sub); }
+/* Тап-цели 44 в сайдбаре — только под палец (как блок в cabinet.css, #911): на компьютере с мышью
+   пункты компактные, как до #912, но не меньше 24px по высоте. */
+@media (pointer: coarse), (max-width: 767px) {
+  .sb-nav > .sb-item { min-height: 44px; }
+  .sb-links { padding: 0 10px; }
+  .sb-links .sb-item { min-width: 44px; min-height: 44px; }
+  .sb-legal a { min-width: 44px; min-height: 44px; }
+}
 .sb-search {
   margin: 0 0 4px; width: 100%; padding: 6px 10px; border-radius: var(--r-8);
-  border: 1px solid var(--ink-line); background: var(--ink-2);
-  color: var(--on-ink); font: 13px var(--sans); outline: none; box-sizing: border-box;
+  border: 1px solid var(--panel-line); background: var(--surface);
+  color: var(--text); font: 13px var(--sans); outline: none; box-sizing: border-box;
 }
-.sb-search::placeholder { color: var(--on-ink-faint); }
-.sb-search:focus { border-color: var(--on-ink-faint); }
+.sb-search::placeholder { color: var(--on-panel-faint); }
+.sb-search:focus { border-color: var(--accent); }
 
 /* ─── Main / topbar / canvas ─────────────────────────────────────────────── */
 .main {
@@ -499,11 +572,17 @@ a { color: inherit; text-decoration: none; }
   grid-template-rows: auto 1fr;
   min-width: 0; min-height: 0;
   overflow: hidden;
+  --tk-max: 1440px; --tk-gutter: clamp(20px, 4vw, 48px);
+  --tk-center: max(0px, (100vw - var(--sidebar-w) - var(--tk-max)) / 2);
 }
-/* Cabinet mode: topbar (search) + canvas, same as client mode */
-.main--cabinet {
-  grid-template-rows: auto 1fr;
-}
+/* Cabinet mode: topbar (search) + canvas, same as client mode.
+   Все экраны кабинета («Сегодня», «Все клиенты», карточка клиента) стоят в
+   одной колонке --tk-max по центру рабочей области (экран минус сайдбар):
+   на широком экране они не прижимаются влево с пустой половиной справа, и
+   переход между ними не сдвигает содержимое. --tk-center — отступ колонки
+   слева; уже рабочей области — ноль. Те же переменные — у клиентских страниц
+   (styles/client-frame.css), поэтому живут на .main, а не только в кабинете. */
+.main--cabinet { grid-template-rows: auto 1fr; }
 
 .topbar {
   height: 56px;
@@ -517,6 +596,7 @@ a { color: inherit; text-decoration: none; }
 .topbar .t-spacer { flex: 1; }
 
 .search-pill {
+  position: relative;
   display: flex; align-items: center; gap: var(--space-8);
   padding: 5px 10px;
   height: 34px; padding: 0 12px;
@@ -534,9 +614,14 @@ a { color: inherit; text-decoration: none; }
 /* «Мне плохо» — постоянный вход в помощь из любого раздела (редизайн 2026-10).
    Цвет — тон домена D1 (.tone-tint + --h на элементе). */
 .topbar-sos {
+  position: relative;
   border: none; border-radius: 16px; padding: 7px 14px; cursor: pointer;
   font: 700 13px var(--sans); white-space: nowrap; flex-shrink: 0;
 }
+/* Зона нажатия «Мне плохо» и «Перейти к…» — 44 по высоте без смены видимой
+   плашки (QA 2026-11, A-М8: были 32 и 34): прозрачный слой над кнопкой. Топбар
+   56px, слой в него помещается. */
+.topbar-sos::after, .search-pill::after { content: ''; position: absolute; inset: -6px 0; }
 .topbar-offline { font-size: 12px; color: var(--accent-red); font-weight: 500; }
 /* Плашка офлайна: только на мобильной вёрстке, где topbar скрыт */
 .offline-banner { display: none; }
@@ -553,7 +638,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
 }
 .page-inner-wide { padding: 48px 64px 96px; max-width: 1280px; margin: 0 auto; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .page-inner-wide { padding: 20px 16px 40px; }
 }
 
@@ -567,8 +652,8 @@ a { color: inherit; text-decoration: none; }
 /* ─── Buttons ─────────────────────────────────────────────────────────────── */
 /* Full-width legacy buttons (used in sheets, forms) */
 .btn-primary {
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent);
+  color: var(--on-accent);
   border: none;
   border-radius: var(--r-md);
   padding: 12px 22px;
@@ -578,7 +663,7 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   transition: background .12s, opacity .12s;
 }
-.btn-primary:hover  { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover  { background: var(--accent-hi); color: var(--on-accent); }
 .btn-primary:active { opacity: 0.85; }
 .btn-primary:disabled { opacity: 0.38; cursor: default; }
 
@@ -606,8 +691,8 @@ a { color: inherit; text-decoration: none; }
   transition: background .12s, color .12s, border-color .12s, opacity .12s;
   white-space: nowrap; cursor: pointer; border: none;
 }
-.btn.btn-primary { background: var(--text); color: var(--bg); font-weight: 600; width: auto; border-radius: 7px; padding: 7px 14px; font-size: 13px; }
-.btn.btn-primary:hover { background: var(--accent); }
+.btn.btn-primary { background: var(--accent); color: var(--on-accent); font-weight: 600; width: auto; border-radius: 7px; padding: 7px 14px; font-size: 13px; }
+.btn.btn-primary:hover { background: var(--accent-hi); }
 
 /* ─── Card ────────────────────────────────────────────────────────────────── */
 .card {
@@ -640,7 +725,7 @@ a { color: inherit; text-decoration: none; }
    значения токена, из-за чего фон/рамка чипов не следовали за тёмной темой,
    хотя text-цвет уже брался из var(--c-*). color-mix с тем же токеном — фон
    пересчитывается сам при смене темы, как в .sb-today-cta. */
-.chip-success { background: color-mix(in srgb, var(--c-moss) 10%, transparent); color: var(--c-moss); border-color: color-mix(in srgb, var(--c-moss) 22%, transparent); }
+.chip-success { background: color-mix(in srgb, var(--c-moss) 10%, transparent); color: var(--accent-green); border-color: color-mix(in srgb, var(--c-moss) 22%, transparent); }
 .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; background: currentColor; }
 
 /* ─── Section dividers ───────────────────────────────────────────────────── */
@@ -722,9 +807,10 @@ a { color: inherit; text-decoration: none; }
   font-family: 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0;
   flex-shrink: 0;
 }
-
-/* ─── Empty state ────────────────────────────────────────────────────────── */
-.empty { padding: 60px 20px; text-align: center; color: var(--text-faint); font-size: 14px; line-height: 1.7; }
+/* Подсказки для клавиатуры («⌘K», «Esc», «⌘ + Enter — сохранить») на устройстве
+   без наведения (телефон, планшет) не нужны: нажать их нечем. Один класс на
+   все такие подсказки; новую клавиатурную подсказку помечай им (QA 2026-11, T-14). */
+@media (hover: none) { .kbd-hint { display: none !important; } }
 
 /* ─── Layout helpers ─────────────────────────────────────────────────────── */
 .flex  { display: flex; }
@@ -732,7 +818,7 @@ a { color: inherit; text-decoration: none; }
 .row   { display: flex; flex-direction: row; }
 .doc-grid { display: grid; grid-template-columns: 1fr 320px; gap: 72px; align-items: start; }
 @media (max-width: 1240px) { .doc-grid { grid-template-columns: 1fr; gap: var(--space-48); } }
-@media (max-width: 767px) { .doc-grid { gap: var(--space-32); } }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .doc-grid { gap: var(--space-32); } }
 
 /* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
@@ -752,6 +838,15 @@ a { color: inherit; text-decoration: none; }
 .animate-slide { animation: slide-up .22s ease backwards; }
 
 /* ─── Cookie consent banner – editorial: сплошная бумага, тонкая рамка ───── */
+.cookie-banner-wrap {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+  padding: 0 16px calc(20px + var(--safe-bottom)); pointer-events: none;
+}
+/* На странице с нижней навигацией баннер стоит НАД ней, а не закрывает её
+   пункты (QA 2026-11, C-З1: центры «Сегодня/Записи/Ещё» попадали в баннер). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  body:has(.mobile-nav) .cookie-banner-wrap { bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); padding-bottom: var(--space-12); }
+}
 .cookie-banner {
   background: var(--bg-elev);
   border: 1px solid var(--line-strong);
@@ -766,8 +861,8 @@ a { color: inherit; text-decoration: none; }
   padding: 11px 22px;
   border: none;
   border-radius: var(--r-8);
-  background: var(--text);
-  color: var(--bg);
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -775,7 +870,7 @@ a { color: inherit; text-decoration: none; }
   transition: background .12s, color .12s;
   -webkit-tap-highlight-color: transparent;
 }
-.cookie-btn:hover { background: var(--accent); color: var(--on-accent); }
+.cookie-btn:hover { background: var(--accent-hi); color: var(--on-accent); }
 .cookie-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -806,7 +901,7 @@ a { color: inherit; text-decoration: none; }
    Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
    whole page scrolls like a regular section. Layout is kept in CSS (not inline
    styles) so mobile breakpoint can cleanly override without !important hacks. */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .therapist-sheet {
     flex: 1;
     min-width: 0;
@@ -835,7 +930,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Mobile: header padding + horizontal tab scroll */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tabs {
     padding: 0 16px;
     overflow-x: auto;
@@ -852,39 +947,33 @@ a { color: inherit; text-decoration: none; }
   /* Без backdrop-filter: в установленном на телефон приложении (PWA) iOS
      считает размытие программно, и каждый кадр экрана стоил ~1.4с —
      приложение вязло метрономом (замеры на устройстве владельца
-     2026-08-26). Парная правка — schema-miniapp/src/components/BottomNav.tsx,
-     там уже снято. Фон сплошной --ink. */
-  background: var(--ink);
+     2026-08-26). Фон — цвет страницы, граница сверху — --line (референс
+     владельца 2026-11-04: навигация не панель, а строка над краем экрана). */
+  background: var(--bg);
+  border-top: 1px solid var(--line);
   z-index: 49;
   display: flex;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-6) calc(var(--space-6) + var(--safe-bottom));
-  min-height: 64px; box-sizing: border-box;
+  padding: var(--space-2) var(--space-6) calc(var(--space-2) + var(--safe-bottom));
+  min-height: var(--mobile-nav-h); box-sizing: border-box;
 }
+/* 44px — порог тап-цели (check-tap-targets), ниже пункт не ужать. */
 .mobile-nav-item {
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: var(--space-4);
-  min-height: 52px; padding: var(--space-4) 0;
+  align-items: center; justify-content: center; gap: var(--space-2);
+  min-height: 44px; padding: 0;
   border: none; border-radius: var(--r-12);
-  color: var(--on-ink-faint); font-family: inherit; font-size: 11px; font-weight: 500;
+  color: var(--text-muted); font-family: inherit; font-size: 11px; font-weight: 500;
   letter-spacing: 0.01em; white-space: nowrap;
   cursor: pointer; transition: color .15s, background-color .15s;
   background: none; text-decoration: none;
   -webkit-tap-highlight-color: transparent;
 }
-/* Активный пункт — светлый текст и точка --accent-hot над подписью (без «таблетки»). */
-.mobile-nav-item { position: relative; }
-.mobile-nav-item.active { color: var(--on-ink); font-weight: 700; }
-.mobile-nav-item svg { transition: opacity .15s; }
-.mobile-nav-item:not(.active) svg { opacity: 0.6; }
-.mobile-nav-item.active::after {
-  content: ''; position: absolute; top: -2px; left: 50%;
-  width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%;
-  background: var(--accent-hot);
-}
+/* Активный пункт — терракота, без «таблетки» и точки (референс 2026-11-04). */
+.mobile-nav-item.active { color: var(--accent); font-weight: 600; }
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .app-shell {
     display: flex;
     flex-direction: column;
@@ -906,22 +995,26 @@ a { color: inherit; text-decoration: none; }
   }
   .canvas {
     overflow: visible; display: block;
-    /* Высота панели .mobile-nav (64px) + safe-area: низ контента не под ней.
-       flex-shrink: 0 — иначе canvas сжимался до экрана, страница вылезала
-       за него, и этот отступ ничего не давал (последние 64px лежали под
-       панелью). */
+    /* Высота панели .mobile-nav (--mobile-nav-h) + safe-area: низ контента не
+       под ней. flex-shrink: 0 — иначе canvas сжимался до экрана, страница
+       вылезала за него, и этот отступ ничего не давал (последняя высота панели
+       лежала под ней). */
     flex-shrink: 0; min-height: auto;
-    /* + 72px — запас под плавающую «+» (56px + отступ): последняя строка
-       не прячется под кнопкой. */
-    padding-bottom: calc(64px + 72px + var(--safe-bottom));
+    /* + 24px — обычный зазор над панелью: последняя строка не прижата к ней.
+       Раньше стояло 72px «под „+“», которой на сайте нет (QA 2026-11, C-М2);
+       плавающей кнопки внизу тоже нет (решение владельца 2026-11-03). */
+    padding-bottom: calc(var(--mobile-nav-h) + var(--space-24) + var(--safe-bottom));
   }
   .page { overflow: visible; height: auto; }
   /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
      overflow:visible override above would clip content behind ex-screen's
      overflow:hidden. Re-enable scroll for .page inside fixed overlays. */
   .ex-screen .page { overflow-y: auto !important; }
+  /* Старый экран упражнения — тоже полноэкранный корень: статус-бар установленного
+     приложения (#902; новые листы отступают в styles/sheet-*.css). */
+  .ex-screen { padding-top: var(--safe-top); }
 }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .mobile-nav { display: none !important; }
   /* Settings overlay: don't cover the sidebar on desktop */
   .settings-overlay { left: var(--sidebar-w) !important; }
@@ -975,12 +1068,9 @@ a { color: inherit; text-decoration: none; }
   /* Конец прокрутки листа не должен докручивать страницу под ним. */
   overscroll-behavior: contain;
 }
-.sheet-modal-handle {
-  width: 36px; height: 4px; border-radius: var(--r-2);
-  background: rgba(var(--fg-rgb), 0.12);
-  margin: 0 auto 20px;
-}
-@media (min-width: 768px) {
+/* «Ручки» у нижнего листа нет: она обещала свайп вниз, а свайпа нет (QA 2026-11,
+   C-М3). Закрывают кнопка, фон, Escape и «Назад». */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .sheet-modal { align-items: center; justify-content: center; padding: var(--space-32); }
   .sheet-modal-box {
     border-radius: var(--r-16);
@@ -990,7 +1080,6 @@ a { color: inherit; text-decoration: none; }
     box-shadow: 0 24px 64px -16px rgba(28,25,22,0.22);
     animation: modal-in 0.18s ease;
   }
-  .sheet-modal-handle { display: none; }
 }
 html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6); }
 
@@ -1005,20 +1094,20 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
   color: var(--text); margin: 0 0 10px;
 }
 .dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
-.dialog-error { font-size: 14px; line-height: 1.5; color: var(--c-rose); margin: 0 0 16px; }
+.dialog-error { font-size: 14px; line-height: 1.5; color: var(--accent-red); margin: 0 0 16px; }
 .dialog-actions { display: flex; gap: var(--space-10); }
 .dialog-actions > .btn-primary, .dialog-actions > .btn-outline { flex: 1; width: auto; }
 .dialog-actions > .btn-primary { padding: 12px 18px; }
 .dialog-actions > .btn-outline { padding: 11px 18px; }
-.dialog-link {
-  display: block; width: 100%; margin-top: 6px; padding: 10px 0;
+.dialog-link { /* 44 по высоте: «Позже» в выборе «ты/вы» было 40 (QA мобильной версии 2026-11, М1) */
+  display: block; width: 100%; min-height: 44px; margin-top: 6px; padding: 10px 0;
   background: none; border: none; cursor: pointer; font-family: inherit;
   font-size: 13px; color: var(--text-faint);
 }
 .dialog-link:hover { color: var(--text-sub); }
 /* Settings content area: center on desktop */
 .settings-content-inner { max-width: 600px; }
-@media (min-width: 768px) { .settings-content-inner { margin: 0 auto; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .settings-content-inner { margin: 0 auto; } }
 
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {
@@ -1041,18 +1130,6 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
   display: grid; grid-template-rows: auto 1fr;
   overflow: hidden;
 }
-.ex-topbar {
-  height: 52px; padding: 0 32px;
-  display: flex; align-items: center; gap: var(--space-16);
-  background: var(--bg); border-bottom: 1px solid var(--line); flex-shrink: 0;
-}
-.ex-back {
-  display: inline-flex; align-items: center; gap: var(--space-8);
-  font-size: 13px; color: var(--text-sub);
-  cursor: pointer; padding: 5px 8px; border-radius: 5px;
-  transition: background .1s, color .1s; background: none; border: none;
-}
-.ex-back:hover { background: var(--surface-2); color: var(--text); }
 
 /* Prompt */
 /* Prompt – shared by exercises and diary flows */
@@ -1069,17 +1146,13 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 
 /* Ex buttons (exercise-scoped) */
 .ex-btn { display: inline-flex; align-items: center; gap: var(--space-8); padding: 11px 22px; border-radius: var(--r-8); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; border: none; font-family: inherit; }
-.ex-btn-primary { background: var(--text); color: var(--bg); }
-.ex-btn-primary:hover { background: var(--accent); }
-.ex-btn-primary:disabled { opacity: 0.35; cursor: default; background: var(--text); }
+.ex-btn-primary { background: var(--accent); color: var(--on-accent); }
+.ex-btn-primary:hover { background: var(--accent-hi); }
+.ex-btn-primary:disabled { opacity: 0.35; cursor: default; background: var(--accent); }
 .ex-btn-ghost { color: var(--text-sub); background: none; }
 .ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 
 /* Flashcards */
-.tick-strip { display: flex; gap: var(--space-4); margin-bottom: 28px; }
-.tick { flex: 1; height: 3px; border-radius: var(--r-2); background: var(--surface-3); cursor: pointer; transition: background .15s; }
-.tick.filled, .tick.is-filled { background: var(--accent); }
-.tick.active, .tick.is-active { background: var(--accent); }
 .flash { border: 1px solid var(--line); border-radius: var(--r-16); padding: 36px 40px 32px; background: var(--surface); margin-bottom: 28px; }
 .flash-q { font-family: var(--serif); font-size: 32px; line-height: 1.15; letter-spacing: -0.015em; font-weight: 400; color: var(--text); margin-bottom: var(--space-14); }
 
@@ -1150,6 +1223,14 @@ textarea:focus-visible {
 }
 .react-flow__node:hover .mm-handle,
 .react-flow__node.selected .mm-handle { opacity: 1; }
+/* Без наведения (телефон, планшет) ручки видны всегда: показывать их по :hover
+   или у выделенного узла нечем, а выделенный узел на телефоне закрыт панелью
+   правки (QA 2026-11, T-4). Связь — потянуть точку к другому узлу или тапнуть
+   точку одного узла и точку другого (React Flow connectOnClick). Зона 28px —
+   компромисс: 44 соседние ручки узла перекрыли бы друг друга и сам узел. */
+@media (hover: none) {
+  .mm-handle { opacity: 1; width: 28px !important; height: 28px !important; } /* !important: размер ручки задан инлайн (nodeParts dotStyle) */
+}
 /* While dragging a connection, reveal all handles so targets are obvious */
 .react-flow.connecting .mm-handle { opacity: 0.85; }
 /* Keep the connect-cursor while actively dragging the line over the canvas */
@@ -1194,4 +1275,4 @@ html[data-reduce-motion="1"] *::after {
 }
 
 /* .skel/.skel::after/@keyframes skel-shimmer переехали в
-   shared/src/theme/tokens.css (общий источник с schema-miniapp). */
+   shared/src/theme/tokens.css. */

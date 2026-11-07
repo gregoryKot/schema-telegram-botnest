@@ -39,16 +39,9 @@ export const TELEGRAM_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'MINIAPP_APP_NAME',
     purpose:
-      'Slug мини-аппа в t.me/<bot>/<name> — дефолт «diary», если не задано.',
+      'Короткое имя Mini App бота в BotFather для ссылок-приглашений t.me/<bot>/<name>?startapp=… (открывают кабинет сайта внутри Telegram) — дефолт «diary», если не задано.',
     requiredInProd: false,
     format: formats.nonEmpty,
-    group: 'telegram',
-  },
-  {
-    name: 'MINIAPP_URL',
-    purpose: 'Адрес мини-аппа для webApp-кнопок; по умолчанию APP_URL + /app/.',
-    requiredInProd: false,
-    format: formats.httpsUrl,
     group: 'telegram',
   },
   {

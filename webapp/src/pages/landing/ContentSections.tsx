@@ -157,7 +157,7 @@ export function BoundariesSection() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {BOUNDARIES.map(b => (
                 <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <span style={{ color: 'var(--c-clay)', fontSize: 15, flexShrink: 0, lineHeight: 1.6 }}>→</span>
+                  <span style={{ color: 'var(--accent-orange)', fontSize: 15, flexShrink: 0, lineHeight: 1.6 }}>→</span>
                   <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b}</span>
                 </div>
               ))}

@@ -1,7 +1,6 @@
 // Горячие пути, у которых меряется план. Состав — из аудита (D-4 в
 // docs/archive/PROJECT_AUDIT_ADDENDUM.md: «первый кандидат в узкое место») и
-// из перечня, названного владельцем: список клиентов терапевта, история
-// 30 дней, админский отчёт /stats.
+// из перечня владельца: клиенты терапевта, история трекера, отчёт /stats.
 //
 // Сценарий — это вызов РЕАЛЬНОГО сервиса, а не SQL-строка: что именно уйдёт в
 // базу, решает код прода, и записывается это драйвером (record-sql.ts). Так
@@ -14,6 +13,7 @@ import { BLOCK_FAILED_MARK } from '../../src/bot/stats-settle';
 import { BotAnalyticsService } from '../../src/bot/bot.analytics.service';
 import { BotClientOverviewService } from '../../src/bot/bot.client-overview.service';
 import { TherapyRelationsService } from '../../src/therapy/therapy-relations.service';
+import { getFormerTherapistInfo } from '../../src/therapy/former-therapist-info';
 import { buildStatsReport } from '../e2e-support/stats-report.factory';
 
 export interface ScenarioContext {
@@ -22,6 +22,8 @@ export interface ScenarioContext {
   therapistId: bigint;
   /** Пользователь с самой длинной историей оценок. */
   heavyUserId: bigint;
+  /** Ничей не клиент — так профиль сайта видит клиента без терапевта. */
+  unattachedUserId: bigint;
 }
 
 export interface Scenario {
@@ -58,11 +60,20 @@ export const SCENARIOS: Scenario[] = [
         new BotClientOverviewService(prisma),
       ).getClients(therapistId),
   },
+  // 30 — экран истории; 365 — лента «Записи», потолок HISTORY_MAX_DAYS.
+  ...[30, 365].map((days) => ({
+    name: `history-${days}d`,
+    title: `История трекера за ${days} дн. (GET /api/history?days=${days})`,
+    run: ({ prisma, heavyUserId }: ScenarioContext) =>
+      new BotAnalyticsService(prisma).getHistoryRatings(heavyUserId, days),
+  })),
   {
-    name: 'history-30d',
-    title: 'История трекера за 30 дней (GET /api/tracker/history)',
-    run: ({ prisma, heavyUserId }) =>
-      new BotAnalyticsService(prisma).getHistoryRatings(heavyUserId, 30),
+    name: 'former-therapist',
+    title: 'Бывший терапевт клиента (GET /api/therapy/former-therapist)',
+    // Уходит при каждом открытии профиля сайта у клиента без терапевта. Связей
+    // `ended` в синтетике нет (docs/open/therapy.md) — меряется частый путь.
+    run: ({ prisma, unattachedUserId }) =>
+      getFormerTherapistInfo(prisma, unattachedUserId),
   },
 ];
 
@@ -73,7 +84,7 @@ export const SCENARIOS: Scenario[] = [
  */
 export async function resolveWorstCaseIds(
   client: Client,
-): Promise<{ therapistId: bigint; heavyUserId: bigint }> {
+): Promise<Omit<ScenarioContext, 'prisma'>> {
   const therapist = await client.query<{ id: string }>(
     `SELECT "therapistId"::text AS id FROM "TherapyRelation"
       WHERE status = 'active' GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
@@ -82,13 +93,23 @@ export async function resolveWorstCaseIds(
     `SELECT "userId"::text AS id FROM "Rating"
       GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
   );
+  // В синтетике это терапевт (клиенты — все остальные); план от роли не зависит.
+  const unattached = await client.query<{ id: string }>(
+    `SELECT u."id"::text AS id FROM "User" u WHERE NOT EXISTS (
+      SELECT 1 FROM "TherapyRelation" r WHERE r."clientId" = u."id") ORDER BY 1 LIMIT 1`,
+  );
   const therapistId = therapist.rows[0]?.id;
   const heavyUserId = heavy.rows[0]?.id;
-  if (!therapistId || !heavyUserId) {
+  const unattachedUserId = unattached.rows[0]?.id;
+  if (!therapistId || !heavyUserId || !unattachedUserId) {
     throw new Error(
       'В базе нет синтетики (терапевта с клиентами / юзера с оценками) — ' +
         'прогони сидер: test/perf/seed.ts',
     );
   }
-  return { therapistId: BigInt(therapistId), heavyUserId: BigInt(heavyUserId) };
+  return {
+    therapistId: BigInt(therapistId),
+    heavyUserId: BigInt(heavyUserId),
+    unattachedUserId: BigInt(unattachedUserId),
+  };
 }

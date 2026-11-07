@@ -19,7 +19,7 @@ export default defineConfig({
   // environment/globals НЕ глобально: каждый *.test.ts(x) сам ставит `// @vitest-environment jsdom`.
   // Очистка DOM после теста — setupFiles (test-support/rtlCleanup.ts), не память автора.
   test: {
-    setupFiles: ['./src/test-support/rtlCleanup.ts'],
+    setupFiles: ['./src/test-support/rtlCleanup.ts', './src/test-support/crashScreenGuard.ts'],
     // Запас на медленный раннер (самый долгий тест локально — 1.6с). Прежние
     // 15000 стояли ради `findByText(…, {timeout: 8000})` — их больше нет.
     testTimeout: 10000,

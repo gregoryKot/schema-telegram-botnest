@@ -8,16 +8,22 @@ export interface TherapyRelationInfo {
   partnerId: bigint | null;
   code: string;
   nextSession: string | null;
+  meetingDays: number[]; // клиенту — дни встреч связи, терапевту — []
+  conceptSharedAt?: Date | null; // клиенту — когда терапевт показал схему случая
 }
 
 export interface TherapyClientSummary {
   telegramId: bigint;
+  // Постоянный код адреса карточки в кабинете: /cabinet/<urlCode>
+  // (TherapyRelation.urlCode; при подключении офлайн-карточки не меняется).
+  urlCode: string;
   name: string | null;
   clientAlias: string | null;
   streak: number;
-  lastActiveDate: string | null;
+  lastActiveDate: string | null; // дни здесь — по календарю клиента (notifyTimezone)
+  daysSinceActive: number | null; // 0 — отмечался сегодня у себя; терапевт этого дня не знает
   todayIndex: number | null;
-  recentIndexHistory: (number | null)[]; // 14 values, index 0 = today
+  recentIndexHistory: (number | null)[]; // 14 days, index 0 = client's today
   relationCreatedAt: string;
   therapyStartDate: string | null;
   nextSession: string | null;

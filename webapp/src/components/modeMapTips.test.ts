@@ -97,6 +97,15 @@ describe('pickTips', () => {
     expect(leaked).toEqual([]);
   });
 
+  it('«Концептуализация» и «Свободный холст» берут советы карты режимов (#963): тот же портрет режимов', () => {
+    const personality = new Set(pickTips(MODE_MAP_TIPS, 'personality', 1000));
+    for (const kind of ['concept', 'free'] as const) {
+      const picked = pickTips(MODE_MAP_TIPS, kind, 1000);
+      expect(new Set(picked)).toEqual(personality);
+      expect(picked.some(text => MODE_MAP_TIPS.find(t => t.text === text)!.kind === 'personality')).toBe(true);
+    }
+  });
+
   it('n=0 возвращает пустой массив', () => {
     expect(pickTips(MODE_MAP_TIPS, 'problem', 0)).toEqual([]);
   });

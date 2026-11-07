@@ -53,7 +53,6 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'crisis_card_shown', meta: { via: 'diary' } },
   { name: 'outbox_flush', meta: { ok: 'true', recovered: 1 } },
   { name: 'onboarding_step', meta: { step: 'needs' } },
-  { name: 'today_block_toggle', meta: { block: 'needs' } },
   { name: 'breath_start' },
   { name: 'quiz_started', meta: { quiz: 'schemas', src: 'web' } },
   { name: 'quiz_completed', meta: { quiz: 'schemas', src: 'web' } },
@@ -66,11 +65,7 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'warm_words_open' },
   { name: 'account_link_started' },
   { name: 'account_link_confirmed' },
-  { name: 'plus_open' },
-  { name: 'plus_action', meta: { action: 'breath' } },
   { name: 'quick_action_move', meta: { action: 'breath' } },
-  { name: 'web_banner_open', meta: { banner: 'desktop' } },
-  { name: 'desktop_app_open', meta: { host: 'web' } },
   { name: 'screen_block_toggle', meta: { screen: 'today', block: 'needs' } },
   { name: 'profile_pattern_open', meta: { pattern: 'abandonment' } },
   // Графическая концептуализация: блок считает count/groupBy через Prisma
@@ -91,6 +86,7 @@ const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'login_ticket_step', meta: { step: 'issued' } },
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
+  { name: 'client_error', meta: { section: 'assets', source: 'webapp' } },
   // Шквал (находка аудита 2026-10-11): meta.suppressed суммируется приведением
   // ::int, meta.unlogged считается FILTER'ом — оба идут через драйвер.
   {
@@ -180,6 +176,8 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     // Секция 'booking' события client_error (инцидент 2026-09-13) считается
     // отдельным FILTER'ом в сыром SQL — на живой базе он обязан дать ≥1.
     expect(product).toContain('Запись на консультацию');
+    // Секция 'assets' (asset-recovery.js, инцидент 2026-11-04) — свой FILTER.
+    expect(product).toContain('Файлы сайта не загрузились');
     // Сумма meta.suppressed и счёт meta.unlogged: сырой SQL приводит jsonb-текст
     // к int на живой базе (мок $queryRaw этого не доказывает, правило №18).
     expect(product).toMatch(

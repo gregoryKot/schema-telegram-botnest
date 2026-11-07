@@ -1,5 +1,5 @@
 import { Markup } from 'telegraf';
-import { MINIAPP_URL } from './telegram.constants';
+import { CABINET_URL } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import {
@@ -9,8 +9,8 @@ import {
 } from '../notification/address-form';
 
 /** Единственная кнопка «Всё по схеме» — для мест без остальных кнопок welcome-экрана. */
-export const MINIAPP_ONLY_KEYBOARD = Markup.inlineKeyboard([
-  [Markup.button.webApp('🧠 Всё по схеме', MINIAPP_URL)],
+export const CABINET_KEYBOARD = Markup.inlineKeyboard([
+  [Markup.button.webApp('🧠 Всё по схеме', CABINET_URL)],
 ]);
 
 /** Текст результата пары — общий для /start?pair_ и resumePendingPair. */
@@ -18,8 +18,8 @@ export function pairJoinResultText(ok: boolean, form?: AddressForm): string {
   if (!ok) return 'Ссылка недействительна или уже использована.';
   return t(
     form,
-    'Вы в паре! 🤝 Теперь будешь видеть индекс дня друг друга.',
-    'Вы в паре! 🤝 Теперь будете видеть индекс дня друг друга.',
+    'Вы в паре! 🤝 Теперь будешь видеть индекс дня партнёра и как он менялся за неделю, а партнёр — твой. Дневники и заметки остаются у каждого свои.',
+    'Вы в паре! 🤝 Теперь будете видеть индекс дня партнёра и как он менялся за неделю, а партнёр — ваш. Дневники и заметки остаются у каждого свои.',
   );
 }
 

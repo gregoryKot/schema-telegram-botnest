@@ -64,3 +64,97 @@ describe('RULES: tasks с clientId веб-клиента', () => {
     expect(targets).toContain('/api/therapy/tasks/client/1000000000000000123');
   });
 });
+
+// Сообщение о бывшем терапевте (решение владельца 2026-10-22) зависит от живой
+// связи: после подключения по коду и после отключения кеш обязан сброситься,
+// иначе сообщение висит 15 секунд поверх нового «Мой терапевт».
+describe('бывший терапевт: join и отключение сбрасывают сообщение', () => {
+  const targetsOf = (method: string, path: string) => {
+    const rule = RULES.find(
+      (r) => r.method === method && r.pattern.test(path),
+    )!;
+    return rule.targets?.(path.match(rule.pattern)!, undefined) ?? [];
+  };
+  it.each([
+    ['POST', '/api/therapy/join'],
+    ['DELETE', '/api/therapy/relation'],
+  ])('%s %s', (method, path) => {
+    expect(targetsOf(method, path)).toEqual(
+      expect.arrayContaining([
+        '/api/therapy/relation',
+        '/api/therapy/former-therapist',
+      ]),
+    );
+  });
+  // 2026-11-05: открытые задания бывшего терапевта становятся личными целями.
+  it('отключение сбрасывает и задания клиента', () => {
+    expect(targetsOf('DELETE', '/api/therapy/relation')).toContain(
+      '/api/therapy/tasks',
+    );
+  });
+});
+
+// QA 2026-11, К1: сохранённый тест закрывает задание «пройти тест» от
+// терапевта — список заданий не должен 15 секунд показывать его открытым.
+describe('RULES: POST /api/ysq-result', () => {
+  it('сбрасывает итог, историю, «Мой путь», профиль и задания', () => {
+    const rule = RULES.find(
+      (r) => r.method === 'POST' && r.pattern.test('/api/ysq-result'),
+    );
+    expect(rule?.targets?.(FAKE_MATCH, undefined)).toEqual([
+      '/api/ysq-result',
+      '/api/ysq-history',
+      '/api/journey',
+      '/api/profile',
+      '/api/therapy/tasks',
+      '/api/therapy/tasks/history',
+    ]);
+  });
+});
+
+// Кнопка «Удалить результаты теста» (решение владельца 2026-10-22) стирает
+// итог, историю и прогресс: ни одна вкладка не должна ещё 15 секунд
+// показывать удалённый тест из кеша.
+describe('RULES: DELETE /api/ysq-data', () => {
+  it('сбрасывает итог, историю, прогресс, «Мой путь» и профиль', () => {
+    const rule = RULES.find(
+      (r) => r.method === 'DELETE' && r.pattern.test('/api/ysq-data'),
+    );
+    expect(rule?.targets?.(FAKE_MATCH, undefined)).toEqual([
+      '/api/ysq-result',
+      '/api/ysq-history',
+      '/api/ysq-progress',
+      '/api/journey',
+      '/api/profile',
+    ]);
+  });
+});
+
+// QA 2026-11 (B-З5): после теста «Мои паттерны» перечитывали профиль
+// (ysq.activeSchemaIds), но 15 секунд получали его из кеша — без схем.
+describe('RULES: итог YSQ сбрасывает профиль', () => {
+  const targetsOf = (method: string) => {
+    const rule = RULES.find(
+      (r) => r.method === method && r.pattern.test('/api/ysq-result'),
+    );
+    return rule?.targets?.(FAKE_MATCH, undefined) ?? [];
+  };
+  it('POST /api/ysq-result — профиль, история и «Мой путь»', () => {
+    expect(targetsOf('POST')).toEqual(
+      expect.arrayContaining([
+        '/api/profile',
+        '/api/ysq-history',
+        '/api/journey',
+      ]),
+    );
+  });
+  it('DELETE /api/ysq-result («Пройти заново») — профиль и «Мой путь»', () => {
+    expect(targetsOf('DELETE')).toEqual(
+      expect.arrayContaining([
+        '/api/ysq-result',
+        '/api/profile',
+        '/api/journey',
+      ]),
+    );
+  });
+});

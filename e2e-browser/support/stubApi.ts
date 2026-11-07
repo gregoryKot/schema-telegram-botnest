@@ -1,148 +1,149 @@
-// Общий стаб бэкенда для авторизованных браузерных смоков (правило «одна
-// механика — один компонент», CLAUDE.md). Раньше каждый спек заводил свою
-// копию перехвата `**/api/**` — tracker-smoke и crisis-smoke идут через один
-// и тот же вход (AuthProvider → /api/auth/refresh) и один и тот же бутстрап
-// AppShell, разъезд копий означал бы, что фикс контракта в одной приезжает
-// без второй.
+// Общий стаб бэкенда браузерного смока (правило «одна механика — один
+// компонент», CLAUDE.md): спеки получают его через общий `test` (test.ts), а
+// не заводят свой перехват `**/api/**` — разъезд копий означал бы, что фикс
+// контракта в одной приезжает без второй.
 //
-// AuthProvider монтируется НАД всеми маршрутами (и публичными тоже, см.
-// App.tsx: Root), поэтому /api/auth/refresh дёргается на каждой загрузке —
-// фейковый токен не мешает тестам, которым авторизация не нужна.
+// AuthProvider монтируется НАД всеми маршрутами (App.tsx: Root), поэтому
+// /api/auth/refresh дёргается на каждой загрузке: вошедший клиент получает
+// токен, гость ('anonymous') — 401, как от AuthController.refresh без куки.
+//
+// Ответы — форма настоящего контроллера (support/stubFixtures.ts). Ручка без
+// фикстуры получает 404, как от сервера на неизвестный маршрут. До ci-alarm
+// #903 здесь был «пустой успех» `{}` на всё: экран, ждущий массив, падал в
+// смоке на ответе, которого прод не пришлёт, а экран падения роутера с <h1>
+// смок принимал за страницу.
 import type { Page } from '@playwright/test';
+import { localDateStr, todayStr } from '../../shared/src/utils/format';
+import { FIXTURES, STATUS, STUB_NEEDS } from './stubFixtures';
+import { handlePublicRoute } from './stubPublic';
+import { handleTherapyRoute, type StubTherapyHandle } from './stubTherapy';
+import {
+  createSettingsState,
+  handleSettingsRoute,
+  type StubSettingsHandle,
+} from './stubSettings';
 
-export const STUB_NEEDS = [
-  {
-    id: 'attachment',
-    emoji: '🤝',
-    title: 'Привязанность',
-    chartLabel: 'Привяз.',
-  },
-  { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Автон.' },
-  { id: 'freedom', emoji: '🕊', title: 'Свобода', chartLabel: 'Свобода' },
-  { id: 'play', emoji: '🎨', title: 'Игра', chartLabel: 'Игра' },
-  { id: 'limits', emoji: '🧱', title: 'Границы', chartLabel: 'Границы' },
-];
-
-// Массивы бутстрапа AppShell/PracticeSection — без явной фикстуры они падают
-// не на «пустой ответ», а на .filter/.slice поверх дефолтного `{}` из
-// catch-all (правило «сбой ≠ пусто» касается и тестовых фикстур: пустой
-// массив — валидное пустое состояние, объект вместо массива — рантайм-ошибка).
-const EMPTY_ARRAY_ENDPOINTS = [
-  '/api/therapy/tasks',
-  '/api/therapy/tasks/history',
-  '/api/practices',
-  '/api/plan/pending',
-  '/api/schema-notes',
-  '/api/mode-notes',
-  '/api/belief-checks',
-  '/api/letters',
-];
+export type StubSession = 'client' | 'anonymous';
 
 export interface StubApiHandle {
   /**
-   * Оценки живут в памяти теста, а не в фикстуре-константе: сохранение
-   * должно реально доехать до «сервера» и вернуться при следующем чтении —
-   * иначе проверка «пережило перезагрузку» была бы самообманом.
+   * Оценки по дням (YYYY-MM-DD → needId → значение) живут в памяти теста, а
+   * не в фикстуре-константе: сохранение должно реально доехать до «сервера»
+   * и вернуться при следующем чтении — иначе проверка «пережило
+   * перезагрузку» была бы самообманом.
    */
-  ratings: Record<string, number>;
+  ratingsByDay: Map<string, Record<string, number>>;
+  /** Связь с терапевтом (stubTherapy.ts): состояние «подключён» живёт здесь. */
+  therapy: StubTherapyHandle;
+  /** Ответ ручке для одного теста поверх FIXTURES чистого клиента (та же
+   *  форма сервера, данные, которых у чистого аккаунта нет): ключ как в FIXTURES. */
+  overrides: Map<string, unknown>;
+  /** uiPrefs «на сервере» и что сайт туда отправил (stubSettings.ts). */
+  settings: StubSettingsHandle;
 }
 
 /**
- * Перехватывает `**\/api/**` фикстурами, которых достаточно, чтобы
- * авторизованный AppShell загрузился и не упал: вход, needs/ratings,
- * бутстрап-массивы, профиль/дисклеймер. Всё остальное — пустой успех: смок
- * не про полноту API, а про то, что сборка не падает на неожиданном ответе.
+ * Перехватывает `**\/api/**` ответами формы сервера для клиента без данных
+ * (или гостя): вход, профиль, бутстрап AppShell, разделы, публичные страницы.
+ * Ручка без фикстуры отвечает 404 и пишет предупреждение в лог прогона.
  */
-export async function stubApi(page: Page): Promise<StubApiHandle> {
+export async function stubApi(
+  page: Page,
+  { session = 'client' }: { session?: StubSession } = {},
+): Promise<StubApiHandle> {
   // CookieBanner — fixed-position оверлей поверх всего приложения, пока нет
   // согласия в localStorage; в реальном браузере это первый тап пользователя,
   // но смок проверяет не его, а кризисный путь/трекер — заранее отвечаем
   // «необходимые куки», чтобы клики не перехватывались баннером. addInitScript
   // выполняется до кода страницы на КАЖДОЙ навигации, включая page.reload().
   await page.addInitScript(() => {
-    localStorage.setItem('cookie_consent', 'necessary');
+    try {
+      localStorage.setItem('cookie_consent', 'necessary');
+    } catch {
+      // about:blank до первой навигации: у документа нет хранилища.
+    }
   });
 
-  const ratings: Record<string, number> = {};
+  // Как строки Rating: день — тот, что прислал клиент (сайт всегда шлёт день
+  // устройства, shared/src/api/ratingApi.ts). Одно хранилище на запись и оба
+  // чтения: /api/ratings отдаёт день, /api/history — дни с оценками.
+  const ratingsByDay = new Map<string, Record<string, number>>();
+  const therapy: StubTherapyHandle = { connected: false };
+  const overrides = new Map<string, unknown>();
+  const settings = createSettingsState();
 
   await page.route('**/api/**', async (route) => {
-    const url = new URL(route.request().url());
-    const path = url.pathname;
-    const method = route.request().method();
-    const json = (body: unknown) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(body),
-      });
+    const req = route.request();
+    const url = new URL(req.url());
+    const key = `${req.method()} ${url.pathname}`;
+    const reply = (status: number, body: unknown) =>
+      body === null
+        ? route.fulfill({ status })
+        : route.fulfill({
+            status,
+            contentType: 'application/json',
+            body: JSON.stringify(body),
+          });
+    // Тело ошибки Nest (HttpException): { message, error, statusCode }.
+    const nestError = (statusCode: number, error: string, message: string) =>
+      reply(statusCode, { message, error, statusCode });
 
-    if (path.endsWith('/api/auth/refresh') && method === 'POST') {
-      return json({ accessToken: 'e2e-test-token', expiresIn: 3600 });
+    if (session === 'anonymous' && key === 'POST /api/auth/refresh')
+      return nestError(401, 'Unauthorized', 'No refresh token');
+    // Связь с терапевтом — состояние в памяти теста (подключился → отключился).
+    if (await handleTherapyRoute(route, therapy)) return;
+    if (await handleSettingsRoute(route, settings)) return;
+    if (await handlePublicRoute(key, url, reply)) return;
+
+    // Без даты сервер берёт сегодняшний день пользователя; у стаба
+    // пользователь — браузер на этой же машине, его день — todayStr().
+    if (key === 'GET /api/ratings') {
+      const day = url.searchParams.get('date') ?? todayStr();
+      return reply(200, ratingsByDay.get(day) ?? {});
     }
-
-    if (path.endsWith('/api/needs')) return json(STUB_NEEDS);
-    if (path.endsWith('/api/ratings')) return json(ratings);
-    if (path.endsWith('/api/rating') && method === 'POST') {
-      const body = route.request().postDataJSON() as {
+    if (key === 'POST /api/rating') {
+      const body = req.postDataJSON() as {
         needId: string;
         value: number;
+        date?: string;
       };
-      ratings[body.needId] = body.value;
-      return json({
-        ok: true,
-        allDone: Object.keys(ratings).length === STUB_NEEDS.length,
-      });
+      const date = body.date ?? todayStr();
+      const day = { ...ratingsByDay.get(date), [body.needId]: body.value };
+      ratingsByDay.set(date, day);
+      const allDone =
+        date === todayStr() && Object.keys(day).length === STUB_NEEDS.length;
+      return reply(201, { ok: true, allDone });
     }
-    // addressForm НЕ null: иначе AddressFormPicker («Как удобнее общаться?»)
-    // рисует fixed-оверлей поверх всего приложения и перехватывает клики
-    // авторизованных сценариев (трекер/кризисный путь) — сам онбординг формы
-    // обращения тестируется отдельно юнитами AddressFormPicker.test.tsx.
-    if (path.endsWith('/api/settings'))
-      return json({ addressForm: 'ty', notifyEnabled: true });
-    if (path.endsWith('/api/streak'))
-      return json({ todayDone: false, totalDays: 0 });
-
-    if (EMPTY_ARRAY_ENDPOINTS.some((ep) => path.endsWith(ep))) return json([]);
-
-    // Полная форма UserProfile (shared/src/types.ts) — не сокращённая
-    // заглушка: TodaySection читает `profile.ysq.activeSchemaIds` без
-    // защитного `?.` на вложенном поле, и урезанный `{role:'CLIENT'}` ронял
-    // экран рантайм-ошибкой (поймано этим же смоком до фикса фикстуры).
-    if (path.endsWith('/api/profile')) {
-      return json({
-        name: null,
-        role: 'CLIENT',
-        ysq: { completedAt: null, activeSchemaIds: [] },
-        notifications: {
-          enabled: true,
-          reminderEnabled: true,
-          timezone: 'Europe/Moscow',
-          localHour: 20,
-        },
-        streak: 0,
-        lastActivity: {
-          needsTracker: null,
-          schemaDiary: null,
-          modeDiary: null,
-          gratitudeDiary: null,
-        },
-        mySchemaIds: [],
-        myModeIds: [],
-      });
+    // src/bot/bot.rating-history.ts getHistoryRatings: дни окна `days`
+    // (по умолчанию 7), только с оценками, свежие первыми.
+    if (key === 'GET /api/history') {
+      const from = new Date();
+      from.setDate(
+        from.getDate() - (Number(url.searchParams.get('days') ?? 7) - 1),
+      );
+      const since = localDateStr(from);
+      const days = [...ratingsByDay]
+        .filter(([date]) => date >= since)
+        .sort(([a], [b]) => b.localeCompare(a));
+      return reply(
+        200,
+        days.map(([date, ratings]) => ({ date, ratings })),
+      );
     }
-    if (path.endsWith('/api/disclaimer')) return json({ accepted: true });
+    // Отчёт клиента о сбое (@HttpCode(204)); красным его делает throwOnPageError (test.ts).
+    if (key === 'POST /api/client-errors')
+      return route.fulfill({ status: 204 });
 
-    // Всё остальное — пустой успех: смок не про полноту API, а про то, что
-    // приложение не падает на неожиданном ответе.
-    return json({});
+    if (overrides.has(key)) return reply(200, overrides.get(key));
+    if (key in FIXTURES) {
+      const status = STATUS[key] ?? (req.method() === 'POST' ? 201 : 200);
+      return reply(status, FIXTURES[key]);
+    }
+    console.warn(
+      `stubApi: нет фикстуры для ${key} — ответ 404, как у сервера на неизвестный маршрут`,
+    );
+    return nestError(404, 'Not Found', `Cannot ${key}`);
   });
 
-  return { ratings };
-}
-
-/** Ошибки рантайма — то, с чего начинается белый экран у пользователя. */
-export function throwOnPageError(page: Page): void {
-  page.on('pageerror', (err) => {
-    throw new Error(`Ошибка в рантайме страницы: ${err.message}`);
-  });
+  return { ratingsByDay, therapy, overrides, settings };
 }

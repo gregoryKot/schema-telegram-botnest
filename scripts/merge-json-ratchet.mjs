@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // git merge driver для JSON-бейслайнов храповиков (.gitattributes → merge=ratchet-min
-// / merge=ratchet-max). Ставится в .git/config скриптом scripts/setup-merge-drivers.mjs.
+// / -max / -sum). Ставится в .git/config скриптом scripts/setup-merge-drivers.mjs.
 //
 // Зачем. Бейслайны — самый частый источник конфликтов между параллельными
 // агентами: scripts/file-size-baseline.json меняли 44 раза из последних 300
@@ -17,29 +17,31 @@
 //   ключ изменила одна сторона — берём её значение как есть (вторая это место
 //     не трогала, спорить не о чем; почему это важно — см. merge3);
 //   ключ изменили ОБЕ — вот здесь и работает храповик:
-//     ratchet-min — метрика, где МЕНЬШЕ лучше (строки файлов, робофразы,
-//                   мужской род, дубли, слабые ассерты): берём min;
-//     ratchet-max — метрика, где БОЛЬШЕ лучше (покрытие, mutation score):
-//                   берём max.
+//     ratchet-sum — счётчик, который складывается (строки файлов, байты JS,
+//                   нарушения в файле): база плюс обе дельты;
+//     ratchet-min — меньше лучше, но не складывается (планы запросов, axe);
+//     ratchet-max — больше лучше (покрытие, mutation score).
+// Режимы и исключения по ключам — merge-json-ratchet-rules.mjs.
 // Так слияние сохраняет прогресс обеих сторон, не даёт случайно ослабить
 // планку и не выдаёт за прогресс чужое старое значение.
 //
 // Вызов (git подставляет %O %A %B %P):
-//   node scripts/merge-json-ratchet.mjs min  %O %A %B %P
+//   node scripts/merge-json-ratchet.mjs min|max|sum  %O %A %B %P
 // %O — общий предок, %A — «наша» версия И файл, куда пишется результат,
-// %B — «их» версия, %P — путь файла в рабочем дереве (только для сообщений).
+// %B — «их» версия, %P — путь файла в рабочем дереве (сообщения и ключ KEY_MODES).
 //
 // Выход 0 — слито, git считает конфликт разрешённым; выход 1 — не свелось,
 // git оставляет обычный конфликт человеку. Молча портить бейслайн нельзя:
 // любая неоднозначность — это выход 1, а не догадка.
 import { readFileSync, writeFileSync } from 'fs';
+import { MODES, combineMoved, leafMode } from './merge-json-ratchet-rules.mjs';
 
 const [direction, oPath, aPath, bPath, label = '<baseline>'] =
   process.argv.slice(2);
 
-if (direction !== 'min' && direction !== 'max') {
+if (!MODES.includes(direction)) {
   console.error(
-    `merge-json-ratchet: первым аргументом ожидается min|max, получено «${direction}»`,
+    `merge-json-ratchet: первым аргументом ожидается ${MODES.join('|')}, получено «${direction}»`,
   );
   process.exit(1);
 }
@@ -74,21 +76,20 @@ function load(path, what) {
 const isPlainObject = (v) =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
-const pick = direction === 'max' ? Math.max : Math.min;
 
 /**
- * Порядок ключей результата. Бейслайны пишутся двумя разными способами:
- * пофайловые (file-size, robot-phrases, …) — отсортированы по пути,
- * составные (mutation.files, coverage.floors) — в порядке появления.
- * Смотрим на «нашу» сторону: была отсортирована — держим сортировку,
- * не была — сохраняем её порядок, дописывая чужие новинки в хвост. Иначе
- * драйвер переупорядочил бы файл и следующий `--update` дал бы шум в диффе.
+ * Порядок ключей результата — как у «нашей» стороны: `--update` пофайловых
+ * (file-size, robot-phrases, …) сортирует `localeCompare`, реестр под гейтом
+ * порядка (raw-sql-live) — по code point, как `.sort()`; составные
+ * (mutation.files, coverage.floors) — в порядке появления, чужие новинки в
+ * хвост. `src/a/b_c.ts` и `b-c.ts` эти сортировки ставят по-разному: подошли
+ * обе — решает «их» сторона, потом code point (его сверяет гейт).
  */
-function orderKeys(keys, aKeys) {
-  const sortedA = [...aKeys].sort((x, y) => x.localeCompare(y));
-  if (aKeys.length > 1 && same(aKeys, sortedA)) {
-    return [...keys].sort((x, y) => x.localeCompare(y));
-  }
+const ORDERS = [(x, y) => (x < y ? -1 : x > y ? 1 : 0), (x, y) => x.localeCompare(y)];
+const sortedBy = (ks, cmp) => ks.length > 1 && same(ks, [...ks].sort(cmp));
+function orderKeys(keys, aKeys, bKeys) {
+  const fit = ORDERS.filter((cmp) => sortedBy(aKeys, cmp));
+  if (fit.length) return [...keys].sort(fit.find((cmp) => sortedBy(bKeys, cmp)) ?? fit[0]);
   const head = aKeys.filter((k) => keys.includes(k));
   return [...head, ...keys.filter((k) => !head.includes(k))];
 }
@@ -109,10 +110,10 @@ function merge3(o, a, b, path) {
 
   if (isPlainObject(a) && isPlainObject(b)) {
     const oo = isPlainObject(o) ? o : {};
-    const aKeys = Object.keys(a);
-    const keys = [...new Set([...aKeys, ...Object.keys(b)])];
+    const [aKeys, bKeys] = [Object.keys(a), Object.keys(b)];
+    const keys = [...new Set([...aKeys, ...bKeys])];
     const out = {};
-    for (const k of orderKeys(keys, aKeys)) {
+    for (const k of orderKeys(keys, aKeys, bKeys)) {
       const v = merge3(oo[k], a[k], b[k], `${path}.${k}`);
       if (v !== undefined) out[k] = v;
     }
@@ -134,11 +135,14 @@ function merge3(o, a, b, path) {
   if (same(b, o)) return a;
 
   // Обе стороны сдвинули значение относительно предка — вот теперь работает
-  // храповик: берём лучшее, чтобы сохранить прогресс обеих.
-  if (typeof a === 'number' && typeof b === 'number') return pick(a, b);
+  // храповик: сумма дельт или лучшее из двух, чтобы сохранить прогресс обеих.
+  if (typeof a === 'number' && typeof b === 'number') {
+    const v = combineMoved(leafMode(direction, label, path.slice(2)), o, a, b);
+    if (v !== undefined) return v;
+  }
 
   // Не числа (напр. причина-строка в dead-files-baseline) и обе стороны
-  // написали своё: храповой семантики тут нет, выдумывать нечего.
+  // написали своё — или у суммы нет базы-числа: выдумывать нечего.
   return bail(`несводимое расхождение в ${path}`);
 }
 

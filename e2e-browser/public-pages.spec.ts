@@ -8,50 +8,57 @@
 //
 // Юнит-тесты этого не ловят в принципе: они рендерят компонент, минуя
 // сборку, роутер и сервер статики.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/test';
 
-// Публичные маршруты из webapp/src/App.tsx (personalRoutes). Юридические
-// страницы включены намеренно: на них ведут ссылки из платёжной формы, и их
-// недоступность блокирует оплату.
+// Гость: refresh без куки — 401, как у сервера. Ответы API — формы сервера
+// (общий `test`, support/test.ts), падение страницы роняет тест. До ci-alarm
+// #903 здесь был свой перехват `{}` на всё: /articles и /subscribe рисовали
+// «Что-то пошло не так», и тест был зелёным — <h1> есть и у экрана падения,
+// а ошибку, пойманную роутером, `pageerror` не видит.
+test.use({ session: 'anonymous' });
+
+// Публичные маршруты из webapp/src/App.tsx. Набор роутов выбирает хост:
+// 127.0.0.1 — продукт schemehappens.ru (appRoutes), `?site=personal` — визитка
+// kotlarewski.gr (personalRoutes). Юридические страницы включены намеренно: на
+// них ведут ссылки из платёжной формы, входа и согласия, и их недоступность
+// блокирует оплату и регистрацию.
 const PUBLIC_ROUTES = [
-  { path: '/', name: 'лендинг' },
+  { path: '/', name: 'лендинг продукта' },
   { path: '/articles', name: 'список статей' },
-  { path: '/reviews', name: 'отзывы' },
+  { path: '/tests', name: 'мини-тесты' },
   { path: '/subscribe', name: 'подписка' },
   { path: '/donate', name: 'пожертвование' },
   { path: '/privacy', name: 'политика конфиденциальности' },
   { path: '/offer', name: 'оферта' },
+  { path: '/login', name: 'вход' },
+  { path: '/', query: '?site=personal', name: 'визитка' },
+  { path: '/reviews', query: '?site=personal', name: 'отзывы визитки' },
+  { path: '/privacy', query: '?site=personal', name: 'политика на визитке' },
+  { path: '/offer', query: '?site=personal', name: 'оферта на визитке' },
 ];
 
 test.describe('браузерный smoke: публичные страницы открываются прямой ссылкой', () => {
   for (const route of PUBLIC_ROUTES) {
-    test(`${route.name} (${route.path})`, async ({ page }) => {
-      const errors: string[] = [];
-      page.on('pageerror', (err) => errors.push(err.message));
-      // Бэкенда нет — отвечаем пустым успехом. Страница обязана открыться
-      // даже так: контент, который не пришёл, — не повод для белого экрана.
-      await page.route('**/api/**', (r) =>
-        r.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: '{}',
-        }),
-      );
-
-      const res = await page.goto(route.path);
+    test(`${route.name} (${route.path}${route.query ?? ''})`, async ({
+      page,
+    }) => {
+      const res = await page.goto(route.path + (route.query ?? ''));
       expect(res?.status(), `HTTP-статус ${route.path}`).toBeLessThan(400);
       await expect(page.locator('#root')).not.toBeEmpty();
-      // Ошибка рантайма — то, с чего начинается белый экран у пользователя.
-      expect(errors, `ошибки рантайма на ${route.path}`).toEqual([]);
+      // Непустой экран — ещё не та страница: путь, которого нет в наборе роутов
+      // хоста, `*` уводит на вход или главную, и экран там тоже непустой
+      // (инцидент 2026-10-22: /privacy на продукте открывал вход). Ждём
+      // заголовок: у подменённой страницы он появляется уже после ухода.
+      await expect(page.locator('h1').first()).toBeVisible();
+      expect(new URL(page.url()).pathname, `адрес после ${route.path}`).toBe(
+        route.path,
+      );
     });
   }
 
   test('несуществующий путь уводит на реальный экран, а не в пустоту', async ({
     page,
   }) => {
-    await page.route('**/api/**', (r) =>
-      r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }),
-    );
     const unknown = '/nesuschestvuyuschiy-put-12345';
     const res = await page.goto(unknown);
     expect(res?.status()).toBeLessThan(400);
@@ -74,13 +81,7 @@ test.describe('визитка практики: прокручивается о�
   test('после прокрутки window.scrollY > 0 и липкая панель показана', async ({
     page,
   }) => {
-    await page.route('**/api/**', (r) =>
-      r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }),
-    );
     await page.goto('/?site=personal', { waitUntil: 'networkidle' });
-    await page.evaluate(() =>
-      localStorage.setItem('cookie_consent', 'necessary'),
-    );
     const viewport = page.viewportSize()!;
     await page.mouse.move(viewport.width / 2, viewport.height / 2);
     await page.mouse.wheel(0, viewport.height * 2);
@@ -102,4 +103,29 @@ test.describe('визитка практики: прокручивается о�
     );
     expect(overflow).toBe(0);
   });
+});
+
+// Регрессия 2026-11: при ширине 390px /privacy и /offer были шире экрана —
+// `scrollWidth` 482 на продукте и 487 на визитке. Таблица реквизитов держала
+// колонку подписи в 220px, а длинные неразрывные значения раздвигали сетку
+// (`webapp/src/legal/LegalLayout.tsx`). jsdom ширину не меряет — ловит только
+// настоящий браузер.
+test.describe('юридические страницы укладываются в экран телефона', () => {
+  for (const route of PUBLIC_ROUTES.filter((r) =>
+    ['/privacy', '/offer'].includes(r.path),
+  )) {
+    test(`${route.name}: нет горизонтального скролла при 390px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(route.path + (route.query ?? ''));
+      await expect(page.locator('h1').first()).toBeVisible();
+      const overflow = await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      );
+      expect(overflow, `лишняя ширина ${route.path}`).toBe(0);
+    });
+  }
 });

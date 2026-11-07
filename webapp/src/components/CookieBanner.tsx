@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { isPracticeHost } from '../utils/domainChrome';
+import { useAnySheetOpen } from '../hooks/openSheets';
+import { useAnyDialogOpen } from '../../../shared/src/utils/dialogStack';
 
 const CONSENT_KEY = 'cookie_consent';
 
@@ -69,7 +71,11 @@ export function CookieBanner() {
   // (lib/metrikaGate) — только на публичных страницах и без сессии. Согласия
   // счётчик не ждёт (решение владельца), баннер — просто уведомление.
 
-  if (!visible) return null;
+  // Баннер ждёт, пока закроются диалоги и листы: поверх согласий (zIndex 400)
+  // он закрывал «Далее», и новичок видел три слоя сразу (QA 2026-11, A-З7).
+  const sheetOpen = useAnySheetOpen();
+  const dialogOpen = useAnyDialogOpen();
+  if (!visible || sheetOpen || dialogOpen) return null;
 
   const dismiss = () => {
     localStorage.setItem(CONSENT_KEY, 'all');
@@ -79,12 +85,7 @@ export function CookieBanner() {
   const compact = isPracticeHost();
 
   return (
-    <div style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0,
-      zIndex: 9999,
-      padding: '0 16px 20px',
-      pointerEvents: 'none',
-    }}>
+    <div className="cookie-banner-wrap">
       <div
         className="cookie-banner"
         role="dialog"

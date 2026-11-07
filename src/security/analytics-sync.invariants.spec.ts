@@ -13,18 +13,13 @@ import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
-// Директории фронтендов, где вообще есть трекинг (правило №3: пайплайн
+// Директории фронтендов, где вообще есть трекинг (пайплайн
 // событий общий, но реализация вызова живёт в каждом фронте + shared).
 // 'game/src' — третий фронтенд (Phaser, отдельный SPA): её trackEvent
 // ('game_…', …) (game/src/analytics.ts) шлёт события анонимно через
 // POST /api/public-event, литералы там обязаны быть в ANALYTICS_EVENTS —
-// как и у двух остальных фронтендов.
-const FRONTEND_DIRS = [
-  'webapp/src',
-  'schema-miniapp/src',
-  'shared/src',
-  'game/src',
-];
+// как и у остальных фронтендов.
+const FRONTEND_DIRS = ['webapp/src', 'shared/src', 'game/src'];
 
 // Литералы вида trackEvent('name'...) / api.trackEvent('name'...). НЕ ловит
 // вызовы через импортируемую константу (SHARE_CARD_EVENT и т.п.) и НЕ ловит
@@ -55,7 +50,7 @@ const BACKEND_ONLY: Record<string, string> = {
   share_card:
     'шлётся через импортируемую константу SHARE_CARD_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — ' +
-    'WeeklyCardSheet.tsx/Celebration.tsx/ShareCardSheet.tsx (оба фронта)',
+    'WeeklyCardSheet.tsx/ShareCardSheet.tsx',
   share_result:
     'константа SHARE_RESULT_EVENT, та же группа файлов, что и share_card',
   auth_rejected:
@@ -74,8 +69,8 @@ const BACKEND_ONLY: Record<string, string> = {
   crisis_hotline_tapped:
     'та же причина, что и crisis_card_shown — useCrisisCardTracking.ts',
   today_streak_toggle:
-    'легаси-имя: заменено на today_block_toggle (см. комментарий в ' +
-    'analytics.constants.ts), фронт больше не шлёт — оставлено в allow-list ' +
+    'легаси-имя: переключателей блоков «Сегодня» больше нет (см. ' +
+    'комментарий в analytics.constants.ts), фронт не шлёт — оставлено в allow-list ' +
     'только ради уже накопленных исторических строк в БД',
   onboarding_step:
     'константа ONBOARDING_STEP_EVENT (shared/src/share/analytics.ts), ' +
@@ -158,6 +153,31 @@ const BACKEND_ONLY: Record<string, string> = {
     'userId. Фронт его не шлёт: выгрузку запускает сам HTTP-запрос к ' +
     'эндпоинту, а не клиентское действие вроде клика — событие пишется в ' +
     'том же обработчике, что формирует файл',
+  home_tile:
+    'шлётся через импортируемую константу HOME_TILE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(HOME_TILE_EVENT, { tile }) по тапу на плитку главной ' +
+    '(простой клиент, этап 1, #872); тот же приём, что у entry_deleted',
+  tracker_skip:
+    'шлётся через импортируемую константу TRACKER_SKIP_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/sections/today/trackHomeTile.ts зовёт ' +
+    'api.trackEvent(TRACKER_SKIP_EVENT) по «Пропустить» на вопросе трекера ' +
+    '(простой клиент, этап 2); тот же приём, что у home_tile',
+  diary_quick_save:
+    'шлётся через импортируемую константу DIARY_QUICK_SAVE_EVENT ' +
+    '(shared/src/analytics/homeTile.ts), не строковым литералом — ' +
+    'webapp/src/components/diary/quickEntry/trackQuickSave.ts зовёт ' +
+    'api.trackEvent(DIARY_QUICK_SAVE_EVENT, { tag, detailed }) после ' +
+    'сохранения записи «Дневника одной страницей» (простой клиент, ' +
+    'этап 3); тот же приём, что у home_tile',
+  therapy_nudge:
+    'шлётся через импортируемую константу THERAPY_NUDGE_EVENT (shared/), ' +
+    'не строковым литералом — строки «это самопомощь, не замена терапии» ' +
+    'внизу экранов-итогов, карточка по сигналу на главной и лист «Поговорить ' +
+    'с кем-то» зовут api.trackEvent(THERAPY_NUDGE_EVENT, { place, action, ' +
+    'trigger? }) (мост к терапевту); тот же приём, что у home_tile',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
     '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
@@ -169,6 +189,41 @@ const BACKEND_ONLY: Record<string, string> = {
     '(src/telegram/telegram.schedule-queue.tally.ts), userId = null, meta — ' +
     'только числа прогона. Клиентского действия за ним нет вовсе: это итог ' +
     'отправки напоминаний, отчёт /stats считает строки с userId IS NULL',
+  therapist_resigned:
+    'серверное событие: пишет только TherapistExitService.resign после ' +
+    'транзакции отказа от роли (DELETE /api/therapy/therapist-role), meta — ' +
+    'число завершённых связей с клиентами. Фронт его не шлёт: отказ — сам ' +
+    'HTTP-запрос, а /stats считает только строки с числом в meta, которое ' +
+    'клиентский путь не пропускает (у события нет ветки в sanitizeMeta)',
+  therapy_invite:
+    'серверное событие: пишет только TherapyInviteService ' +
+    '(src/therapy/therapy-invite.service.ts) при создании, подключении и ' +
+    'отзыве приглашения; ветки в sanitizeMeta нет — meta с клиента ' +
+    'отбрасывается, а /stats считает только строки с step и kind из ' +
+    'therapy-invite-events.constants.ts',
+  crawler_visits:
+    'серверное событие: пишет только крон CrawlerHitsService ' +
+    '(src/analytics/crawler-hits.service.ts) — счётчики заходов роботов ' +
+    'нейросетей по User-Agent за час, userId = null. Фронт его не шлёт: ' +
+    'заход робота видит только сервер; /stats считает только строки с ' +
+    'userId IS NULL, а sanitizeMeta пропускает лишь закрытые списки',
+  client_booking_created:
+    'серверное событие: пишет только ClientBookingService ' +
+    '(src/booking/client-booking.service.ts) после созданной брони, meta — ' +
+    'статус held|confirmed; ветка sanitizeMeta отбрасывает meta с клиента, ' +
+    'а /stats считает только строки со статусом из ' +
+    'client-booking-events.constants.ts',
+  booking_slot_taken:
+    'серверное событие: пишет только createBookingGuarded ' +
+    '(src/booking/booking.create.ts), когда запись ответила 409 «время уже ' +
+    'заняли», userId = null, без meta. Фронт его не шлёт: отказ — ответ на ' +
+    'HTTP-запрос записи; /stats считает только строки с userId = null',
+  reminder_snoozed:
+    'серверное событие: пишет только бот после постановки отложенного ' +
+    'напоминания в очередь (src/telegram/telegram.snooze.ts), meta — булев ' +
+    'quietShift. Кнопка «Напомню через час» живёт под сообщением бота, у ' +
+    'сайта такого действия нет; ветка sanitizeMeta отбрасывает meta с ' +
+    'клиента, а /stats считает только строки с quietShift',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -231,6 +286,22 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // вместе с баннером кабинета, событие осталось на колбэке общего хука.
     // 30 — notify_queue_tick (аудит 2026-10, ответ 429): итог прогона очереди
     // уведомлений, пишет крон — у фронта такого действия нет по устройству.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(30);
+    // 31 — therapist_resigned (решение владельца 2026-10-22): отказ терапевта
+    // от роли — сам HTTP-запрос, событие пишет сервер после транзакции.
+    // 32 — home_tile (2026-10, главная простого клиента, #872): константное
+    // событие, как entry_deleted.
+    // 33 — tracker_skip (2026-10, простой клиент, этап 2): тоже константа.
+    // 34 — diary_quick_save (2026-10, простой клиент, этап 3): тоже константа.
+    // 35 — therapy_nudge (2026-10, мост к терапевту): тоже константа.
+    // 36 — therapy_invite (2026-11, воронка приглашения клиента): серверное.
+    // 37 — crawler_visits (2026-11, GEO.md: заходы роботов нейросетей): серверное,
+    // заход робота — HTTP-запрос к сайту, у фронта такого действия нет.
+    // 38 — client_booking_created (2026-11, запись из приложения, #546):
+    // серверное — бронь создаёт HTTP-запрос, событие пишет сервис после неё.
+    // 39 — booking_slot_taken (2026-11, аудит 2026-10 r2-1#2): серверное —
+    // отказ «время уже заняли» есть только в ответе сервера на запись.
+    // 40 — reminder_snoozed (2026-11, аудит 2026-10 backend#16): серверное —
+    // кнопка под сообщением бота, у сайта такого действия нет.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(40);
   });
 });

@@ -41,7 +41,7 @@ Postgres общим на все инстансы счётчиком; остал�
 
 Механизм принуждения — классификация, не поиск признака: **`scripts/check-persistent-throttle.mjs`**
 (CI, джоба `checks`) требует решения о КАЖДОЙ ручке контроллера, у которой есть
-`@Throttle(` либо в теле `verifyCode(`/`assertSourceTotp(`/`confirmSetup(`/`regenerateRecoveryCodes(`/`totp.disable(`/`consumeToken(`/`.approve(`/`.deny(`/`.submit(`:
+`@Throttle(` либо в теле `verifyCode(`/`assertSourceTotp(`/`confirmSetup(`/`regenerateRecoveryCodes(`/`totp.disable(`/`consumeEmailToken(`/`.approve(`/`.deny(`/`.submit(`:
 метка (`@PersistentThrottle()`, составной `@PersistentThrottleLimit(...)` из
 `src/api/persistent-throttle-limit.ts`, `AdminThrottle()` на классе) либо запись
 `exempt` с причиной ≥20 символов и `since` в `scripts/persistent-throttle-baseline.json`.
@@ -64,7 +64,7 @@ Inline-интерфейсы в `@Body()` дают только compile-time ил
 Два инцидента подряд на одном месте, и второй породил первый же фикс.
 
 8 сентября вход через Google падал с «OAuth state mismatch». Разбор по коду:
-сайт целиком — `/login`, `/api/auth/*`, мини-апп `/app/` — обслуживался ещё и
+сайт целиком — `/login`, `/api/auth/*`, старый адрес мини-аппа `/app/` — обслуживался ещё и
 с домена-алиаса `kotlarewski.gr` (визитка практики), а провайдер возвращает
 пользователя на `redirect_uri` канонического хоста. Кука `oauth_state`
 ставилась на алиасе, колбэк на `schemehappens.ru` её не видел. Починка —
@@ -85,7 +85,7 @@ legacy-домен `schemalab.ru`, который `main.ts` 301-ит обратн
 -->
 
 Решение владельца: **`schemehappens.ru` — единственный хост приложения**
-(сайт, вход, `/app/`, продуктовый API). **`kotlarewski.gr` — визитка практики
+(сайт, вход, продуктовый API; старый `/app/` — 302 в `/today`). **`kotlarewski.gr` — визитка практики
 для клиентов** и отдаёт только себя: главную, запись на консультацию, статьи,
 отзывы, оплату/подписку/донат, юридические страницы и админку. Всё остальное с
 алиаса — 301 на `schemehappens.ru` с тем же путём и query.

@@ -3,8 +3,9 @@
 // что afterEach из setupFiles отработал между it. Без setupFiles в конфиге
 // второй и четвёртый it краснеют. Порядок it внутри файла детерминирован.
 import { describe, it, expect, aroundAll } from 'vitest';
-import { render, renderHook } from '@testing-library/react';
+import { getConfig, render, renderHook } from '@testing-library/react';
 import { useEffect } from 'react';
+import { ASYNC_UTIL_TIMEOUT_MS } from './rtlCleanup';
 
 const state = { unmounted: false, unmountTimerFired: false };
 
@@ -57,6 +58,13 @@ describe('rtlCleanup (setupFiles)', () => {
 
   it('функция очистки эффекта вызвана после предыдущего it', () => {
     expect(state.unmounted).toBe(true);
+  });
+
+  it('бюджет findBy*/waitFor поднят под холодный импорт ленивого чанка', () => {
+    // Без configure в setupFiles — дефолтные 1000 мс, и тесты ленивых листов
+    // краснеют под нагрузкой машины (docs/open/ci-tests.md).
+    expect(getConfig().asyncUtilTimeout).toBe(ASYNC_UTIL_TIMEOUT_MS);
+    expect(ASYNC_UTIL_TIMEOUT_MS).toBeGreaterThan(1000);
   });
 
   it('последний тест: размонтирование ставит таймер на 1 мс', () => {

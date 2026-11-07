@@ -1,9 +1,8 @@
 // Дыхание 4-4-6 (экран «Здесь и сейчас», дизайн-макет; волна 2 нейродизайна).
 // Чистая логика фаз — отдельно от компонента, чтобы покрыть тестом
 // (правило CLAUDE.md «Тесты»): вдох 4 с → задержка 4 с → выдох 6 с, по кругу.
-// Жил в schema-miniapp/src/utils/breathing.ts, пока практики были только в
-// мини-аппе; переехал в shared при переносе «Здесь и сейчас» на сайт
-// (правило №3: один источник вместо копии на каждой площадке).
+// Жил в удалённом мини-аппе, пока практики были только в нём; переехал в
+// shared при переносе «Здесь и сейчас» на сайт (правило №3).
 
 export type BreathPhase = 'in' | 'hold' | 'out';
 
@@ -11,6 +10,9 @@ export const BREATH_IN_S = 4;
 export const BREATH_HOLD_S = 4;
 export const BREATH_OUT_S = 6;
 export const BREATH_CYCLE_S = BREATH_IN_S + BREATH_HOLD_S + BREATH_OUT_S;
+/** Карточка обещает «одна минута»: четыре полных круга (56 с) — и итог. */
+export const BREATH_SESSION_CYCLES = 4;
+export const BREATH_SESSION_S = BREATH_SESSION_CYCLES * BREATH_CYCLE_S;
 
 export interface BreathState {
   phase: BreathPhase;

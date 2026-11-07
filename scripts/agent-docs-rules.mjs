@@ -25,7 +25,7 @@ export const SKIP_SUB = new Set([
 // документы не наши.
 export const SKIP_CLAUDE = new Set([...SKIP_SUB, 'worktrees']);
 // Корни, чьи прямые подкаталоги карта обязана назвать полным путём.
-export const MAP_SUBDIR_ROOTS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
+export const MAP_SUBDIR_ROOTS = ['src', 'webapp/src', 'shared/src'];
 // Сегменты пути, которых в чистом чекауте может не быть (артефакты сборки):
 // токен `webapp/dist/` в тексте — не протухший путь.
 export const GENERATED_SEGMENTS = new Set(['node_modules', 'dist', 'coverage', 'build']);

@@ -3,14 +3,14 @@
 // активность схем здесь не пересчитывается (правило №4). Пустое состояние
 // отвечает «откуда и зачем» (правило «Онбординг»). Вся карточка — одно
 // действие (открыть лист); «Пройти тест» — вложенная кнопка с stopPropagation.
-// Парна schema-miniapp/src/sections/profile/PortraitCard.tsx (вёрстка своя,
-// тексты и расчёт — shared/src/portrait).
+// Тексты и расчёт — shared/src/portrait.
 import type { MouseEvent } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { hasPortraitData, type Portrait } from '../../../../shared/src/portrait/portraitData';
 import { portraitTexts, portraitTotalsText, portraitDeltaText } from '../../../../shared/src/portrait/portraitTexts';
+import { CardTitle } from './CardTitle';
 import { PortraitNeedBar } from './PortraitNeedBar';
 
 interface Props {
@@ -31,8 +31,8 @@ export function PortraitCard({ portrait, ysqCompletedAt, onOpenSheet, onTakeTest
   return (
     <section {...pressable(onOpenSheet)} aria-label={txt.title} className="ds-card ds-card--hover cpf-card">
       <div className="ds-head-row">
-        <h2 className="ds-h3">{txt.title}</h2>
-        <span className="ds-sub">{hasData ? `${portraitTotalsText(portrait)} →` : '→'}</span>
+        <CardTitle sign="portrait">{txt.title}</CardTitle>
+        <span className="ds-sub">{hasData && <>{portraitTotalsText(portrait)} </>}<span className="ds-chev" aria-hidden="true" /></span>
       </div>
       <div className="cpf-hint">{txt.hint}</div>
 

@@ -1,8 +1,7 @@
-// Оба исхода: флаг выключен — /app/* проходит как раньше; включён — 302 в
-// кабинет, заглушка SW, остальные методы и чужие пути не тронуты.
+// /app/* всегда: 302 в кабинет, заглушка SW; остальные методы и чужие пути
+// не тронуты.
 import {
   configureUnifiedFrontend,
-  isUnifiedFrontendOn,
   unifiedFrontendMiddleware,
 } from './unified-frontend.middleware';
 import { SW_STUB_SOURCE } from './unified-frontend.sw-stub';
@@ -42,25 +41,7 @@ function run(path: string, originalUrl = path, method = 'GET') {
 }
 
 describe('unifiedFrontendMiddleware', () => {
-  const prev = process.env.UNIFIED_FRONTEND;
-  afterEach(() => {
-    if (prev === undefined) delete process.env.UNIFIED_FRONTEND;
-    else process.env.UNIFIED_FRONTEND = prev;
-  });
-
-  it('флаг выключен: /app/x и /app/sw.js проходят дальше', () => {
-    delete process.env.UNIFIED_FRONTEND;
-    expect(run('/app/x').next).toBe(true);
-    expect(run('/app/sw.js').next).toBe(true);
-    process.env.UNIFIED_FRONTEND = '0';
-    expect(run('/app/').next).toBe(true);
-  });
-
-  describe('флаг включён', () => {
-    beforeEach(() => {
-      process.env.UNIFIED_FRONTEND = '1';
-    });
-
+  describe('переход без флага', () => {
     it('302 на /today с переносом query', () => {
       const r = run('/app/', '/app/?startapp=pair_abc&from=app');
       expect(r.redirect).toEqual([302, '/today?startapp=pair_abc&from=app']);
@@ -99,13 +80,6 @@ describe('unifiedFrontendMiddleware', () => {
       expect(run('/application').next).toBe(true);
       expect(run('/today').next).toBe(true);
     });
-  });
-
-  it('isUnifiedFrontendOn: 1/true включают, остальное нет', () => {
-    expect(isUnifiedFrontendOn('true')).toBe(true);
-    expect(isUnifiedFrontendOn(' 1 ')).toBe(true);
-    expect(isUnifiedFrontendOn('yes')).toBe(false);
-    expect(isUnifiedFrontendOn('')).toBe(false);
   });
 
   it('configureUnifiedFrontend вешает middleware на все маршруты', () => {

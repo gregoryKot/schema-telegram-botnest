@@ -1,4 +1,4 @@
-// Блоки экранов «Профиль»/«Паттерны»/«Сегодня», которые можно скрыть/
+// Блоки экранов «Профиль»/«Паттерны», которые можно скрыть/
 // переставить (meta.block для screen_block_toggle/screen_block_move), и сами
 // настраиваемые экраны (meta.screen для
 // screen_customize_open/screen_block_toggle/screen_block_move). Парный
@@ -9,11 +9,6 @@
 // analytics.constants.ts отдельным файлом (правило №10 — тот файл держим
 // минимальным). via переиспользует CUSTOMIZE_ENTRY_POINTS — отдельного
 // списка нет.
-//
-// focus/phrase/secondary/therapist_banner — блоки «Сегодня» (streak уже был
-// в списке). У «Сегодня» нет screen_block_toggle (видимость там регулируют
-// частные today_*_hidden-ключи, см. ui-prefs.sanitize.ts) — только
-// screen_block_move (перестановка, ключ screen_order_today).
 //
 // portrait/warm_words — блоки редизайна вкладки «Я» (identity-слой поверх
 // статистики профиля, 2026-08): «Мой портрет» (домены схем/режимов — тап
@@ -27,15 +22,11 @@ export const SCREEN_BLOCK_IDS = [
   'insights',
   'heroes',
   'ysq_status',
-  'focus',
-  'phrase',
-  'secondary',
-  'therapist_banner',
   'portrait',
   'warm_words',
 ] as const;
 export type ScreenBlockId = (typeof SCREEN_BLOCK_IDS)[number];
 
 // Экраны, у которых есть «Настроить экран» (шестерёнка/долгое нажатие).
-export const CUSTOMIZABLE_SCREENS = ['profile', 'patterns', 'today'] as const;
+export const CUSTOMIZABLE_SCREENS = ['profile', 'patterns'] as const;
 export type CustomizableScreen = (typeof CUSTOMIZABLE_SCREENS)[number];

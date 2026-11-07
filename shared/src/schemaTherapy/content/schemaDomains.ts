@@ -1,8 +1,8 @@
 import type { SchemaDomain } from '../types';
+import { DOMAIN_HUE, toneHex } from '../../theme/entityHue';
 
 // Единственный источник контента схема-терапии (правило №3 CLAUDE.md):
-// раньше дублировался построчно в webapp/src/schemaTherapyData.ts и
-// schema-miniapp/src/schemaTherapyData.ts, оба фронтенда берут его отсюда.
+// раньше дублировался построчно в обоих фронтендах, теперь берут отсюда.
 
 // ─── 20 Early Maladaptive Schemas / 5 domains (МИСТ — schema-therapy.ru) ───
 //
@@ -21,7 +21,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'rejection',
     domain: 'Нарушение связи и отвержение',
-    color: 'var(--accent-red)',
+    color: toneHex(DOMAIN_HUE.rejection),
     schemas: [
       {
         id: 'emotional_deprivation',
@@ -68,7 +68,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'autonomy',
     domain: 'Нарушенная автономия',
-    color: 'var(--accent-orange)',
+    color: toneHex(DOMAIN_HUE.autonomy),
     schemas: [
       {
         id: 'dependence',
@@ -107,7 +107,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'limits',
     domain: 'Нарушенные границы',
-    color: 'var(--accent-yellow)',
+    color: toneHex(DOMAIN_HUE.limits),
     schemas: [
       {
         id: 'entitlement',
@@ -130,7 +130,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'other_directed',
     domain: 'Направленность на других',
-    color: 'var(--accent-green)',
+    color: toneHex(DOMAIN_HUE.other_directed),
     schemas: [
       {
         id: 'subjugation',
@@ -161,7 +161,7 @@ export const SCHEMA_DOMAINS: SchemaDomain[] = [
   {
     id: 'vigilance',
     domain: 'Сверхбдительность и подавление эмоций',
-    color: 'var(--accent-indigo)',
+    color: toneHex(DOMAIN_HUE.vigilance),
     schemas: [
       {
         id: 'negativity',

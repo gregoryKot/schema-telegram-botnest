@@ -1,6 +1,7 @@
 import {
   formatNotifyQueueMetrics,
   type QueueTotals,
+  type SnoozeTotals,
 } from './notify-queue-metrics.format';
 
 const totals = (t: Partial<QueueTotals> = {}): QueueTotals => ({
@@ -12,9 +13,20 @@ const totals = (t: Partial<QueueTotals> = {}): QueueTotals => ({
   ...t,
 });
 
+const noSnooze: SnoozeTotals = {
+  snoozed: 0,
+  quietShift: 0,
+  delivered: 0,
+  cancelled: 0,
+};
+
 describe('formatNotifyQueueMetrics', () => {
   it('пустая база — одна понятная строка, без нулей и NaN', () => {
-    const out = formatNotifyQueueMetrics({ day: totals(), week: totals() });
+    const out = formatNotifyQueueMetrics({
+      day: totals(),
+      week: totals(),
+      snooze: noSnooze,
+    });
     expect(out).toBe(
       '📬 <b>Напоминания из бота</b>\nЗа неделю напоминаний из очереди не было.',
     );
@@ -25,6 +37,7 @@ describe('formatNotifyQueueMetrics', () => {
     const out = formatNotifyQueueMetrics({
       day: totals({ ticks: 4, sent: 12 }),
       week: totals({ ticks: 30, sent: 90 }),
+      snooze: noSnooze,
     });
     expect(out).toContain('За сутки ушло 12, сбоев не было.');
     expect(out).toContain('Telegram ни разу не просил подождать.');
@@ -44,6 +57,7 @@ describe('formatNotifyQueueMetrics', () => {
         deferred: 40,
       }),
       week: totals({ ticks: 40, sent: 300, transient: 3, waited: 1 }),
+      snooze: noSnooze,
     });
     expect(out).toContain('За сутки ушло 97, не ушло из-за сбоя 3 (3%).');
     expect(out).toContain(
@@ -58,6 +72,7 @@ describe('formatNotifyQueueMetrics', () => {
     const out = formatNotifyQueueMetrics({
       day: totals(),
       week: totals({ ticks: 2, sent: 5 }),
+      snooze: noSnooze,
     });
     expect(out).toContain('За сутки напоминаний не было.');
     expect(out).toContain('За неделю ушло 5');
@@ -67,7 +82,51 @@ describe('formatNotifyQueueMetrics', () => {
     const out = formatNotifyQueueMetrics({
       day: totals({ ticks: 1, transient: 4 }),
       week: totals({ ticks: 1, transient: 4 }),
+      snooze: noSnooze,
     });
     expect(out).toContain('За сутки ушло 0, не ушло из-за сбоя 4 (100%).');
+  });
+});
+
+// Аудит 2026-10, backend#16: рестарт стирал «⏰ Напомню через час», и заметил
+// это человек. Строка «отложили N — пришло M» делает поломку видной в /stats.
+describe('formatNotifyQueueMetrics — «Напомню через час»', () => {
+  const busyWeek = { day: totals(), week: totals({ ticks: 3, sent: 9 }) };
+
+  it('очередь работала, кнопкой не пользовались — словами, без нулей', () => {
+    const out = formatNotifyQueueMetrics({ ...busyWeek, snooze: noSnooze });
+    expect(out).toContain(
+      'Кнопкой «⏰ Напомню через час» за неделю не пользовались.',
+    );
+  });
+
+  it('отложили, пришло и не понадобилось — одной строкой', () => {
+    const out = formatNotifyQueueMetrics({
+      ...busyWeek,
+      snooze: { snoozed: 5, quietShift: 2, delivered: 3, cancelled: 1 },
+    });
+    expect(out).toContain(
+      'Кнопкой «⏰ Напомню через час» за неделю отложили 5 раз, из них 2 — к ' +
+        'концу тихих часов. Пришло 3, не понадобилось 1 (дневник уже заполнен или пауза).',
+    );
+  });
+
+  it('отложили, но ни одно не пришло — ноль виден: это и есть поломка', () => {
+    const out = formatNotifyQueueMetrics({
+      ...busyWeek,
+      snooze: { snoozed: 2, quietShift: 0, delivered: 0, cancelled: 0 },
+    });
+    expect(out).toContain('отложили 2 раза. Пришло 0.');
+    expect(out).not.toContain('тихих часов');
+  });
+
+  it('очередь молчала, а кнопкой пользовались — строка кнопки всё равно есть', () => {
+    const out = formatNotifyQueueMetrics({
+      day: totals(),
+      week: totals(),
+      snooze: { snoozed: 1, quietShift: 0, delivered: 1, cancelled: 0 },
+    });
+    expect(out).toContain('За неделю напоминаний из очереди не было.');
+    expect(out).toContain('отложили 1 раз. Пришло 1.');
   });
 });

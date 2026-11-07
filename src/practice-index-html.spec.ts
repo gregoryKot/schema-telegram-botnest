@@ -4,7 +4,10 @@
 // image) указывал на продуктовый домен — визитка представлялась чужим адресом.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { practiceIndexHtml } from './practice-index-html';
+import {
+  practiceIndexHtml,
+  practiceIndexMiddleware,
+} from './practice-index-html';
 
 const WEBAPP = join(__dirname, '..', 'webapp');
 const source = readFileSync(join(WEBAPP, 'index.html'), 'utf8');
@@ -84,19 +87,74 @@ describe('главная визитки kotlarewski.gr', () => {
     expect(faq['@id']).toBe('https://kotlarewski.gr/#faq');
   });
 
-  it('schemehappens — только канал в sameAs и приложение в FAQ', () => {
+  // FAQPage в разметке дословно равен видимому FAQ (FAQ_ITEMS, #900):
+  // вопрос «Что такое «Всё по схеме»?» жил только в JSON-LD — Google требует,
+  // чтобы разметка FAQ совпадала с текстом на странице.
+  it('schemehappens — только канал в sameAs', () => {
     const hits = html.match(/\S*schemehappens\S*/gi) ?? [];
-    expect(hits).toEqual([
-      '"https://t.me/SchemeHappens"',
-      'schemehappens.ru."',
-    ]);
-    expect(html).toContain('Доступно на schemehappens.ru.');
+    expect(hits).toEqual(['"https://t.me/SchemeHappens"']);
   });
 
   it('нет самоназвания «психолог»/«терапевт» (правило №12)', () => {
-    expect(html).not.toMatch(/терапевт/i);
+    // Направление к ДРУГОМУ врачу из ответа FAQ законно (правило №12:
+    // слово про других — можно); вырезаем ровно эту фразу, остальное — запрет.
+    const REFERRAL = 'психотерапевту с медицинским дипломом';
+    expect(html).toContain(REFERRAL);
+    expect(html.split(REFERRAL).join('')).not.toMatch(/терапевт/i);
     expect(html).not.toMatch(/психолог(?!ическ)/i);
     // Контроль: законная формула услуги по-прежнему на месте.
     expect(html).toMatch(/Психологическое консультирование/);
+  });
+});
+
+// Решение владельца 2026-10-24: /reviews визитки в поиске. Сырой HTML страницы
+// (его читают Telegram и поисковик без JS) обязан нести свой canonical, иначе
+// /reviews объявляет себя копией главной продукта и в выдачу не попадает.
+describe('practiceIndexMiddleware: страницы визитки в поиске', () => {
+  const run = (
+    hostname: string,
+    path: string,
+    page: string | null = source,
+  ) => {
+    const sent: { body?: string } = {};
+    let nextCalled = false;
+    const res = {
+      setHeader: () => undefined,
+      send: (body: string) => {
+        sent.body = body;
+      },
+    } as never;
+    practiceIndexMiddleware(page, new Set(['kotlarewski.gr']))(
+      { hostname, path } as never,
+      res,
+      () => {
+        nextCalled = true;
+      },
+    );
+    return {
+      canonical: /rel="canonical" href="([^"]+)"/.exec(sent.body ?? '')?.[1],
+      nextCalled,
+    };
+  };
+
+  it('/reviews и /reviews/ — canonical на саму страницу', () => {
+    expect(run('kotlarewski.gr', '/reviews').canonical).toBe(
+      'https://kotlarewski.gr/reviews',
+    );
+    expect(run('kotlarewski.gr', '/reviews/').canonical).toBe(
+      'https://kotlarewski.gr/reviews',
+    );
+  });
+
+  it('главная — canonical на главную визитки', () => {
+    expect(run('kotlarewski.gr', '/').canonical).toBe(
+      'https://kotlarewski.gr/',
+    );
+  });
+
+  it('продуктовый хост, страница вне поиска и нет сборки — дальше, к ServeStatic', () => {
+    expect(run('schemehappens.ru', '/reviews').nextCalled).toBe(true);
+    expect(run('kotlarewski.gr', '/book').nextCalled).toBe(true);
+    expect(run('kotlarewski.gr', '/reviews', null).nextCalled).toBe(true);
   });
 });

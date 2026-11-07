@@ -91,7 +91,7 @@ paths:
    Целиком не читаются: `docs/AUDIT_*`, `docs/open/*`, `docs/INCIDENTS.md`,
    `docs/RUNBOOKS.md`, `.github/workflows/*.yml`, `scripts/*-baseline.json`,
    `src/articles/articles.seed.ts`. Не читаются вовсе без прямой нужды:
-   `schema-miniapp/dist/`, `package-lock.json`, `docs/archive/`.
+   `package-lock.json`, `docs/archive/`.
 3. Для широкого поиска — субагент `Explore` (ему не нужен `CLAUDE.md`, он
    возвращает вывод, а не содержимое файлов). Субагенту в ТЗ передай пути из
    карты: «начни с `src/booking/booking.create.ts`» дешевле, чем «найди, где

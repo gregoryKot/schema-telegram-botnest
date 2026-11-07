@@ -183,3 +183,43 @@ describe('DonatePage — форма обращения', () => {
     expect(new Set([leadWith('ty'), leadWith('vy'), leadWith(null)]).size).toBe(1);
   });
 });
+
+// #906: страница прижата к верху — шапка «← На главную» на ds-sheet-head/ds-back,
+// eyebrow + ds-h1 слева, CTA — ds-btn--lg; центрирующих .ap-page--center/.ap-card нет.
+describe('DonatePage — шапка и кнопки (#906)', () => {
+  it('«← На главную» — ds-back внутри ds-sheet-head, заголовок ds-h1, CTA — ds-btn--lg', () => {
+    const { container } = render(<DonatePage />);
+    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
+    expect(back.className).toBe('ds-back');
+    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу, шапка скрыта
+    // Карточка 560 на компьютере: герой, форма и «← На главную» последней строкой; на телефоне обёртка — display: contents.
+    const shell = container.querySelector('.ap-main > .ap-donate-shell')!;
+    expect([...shell.children].map((e) => e.className)).toEqual(['ap-hero', 'ds-card ap-donate', 'ap-home']);
+    expect(container.querySelector('.ap-lead')!.className).toBe('ds-sub ap-lead'); // подзаголовок как в main
+    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
+    expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
+    expect(screen.getByRole('button', { name: /Поддержать 500/ }).classList.contains('ds-btn--lg')).toBe(true);
+    expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn, .ap-donate-cta')).toBeNull();
+  });
+});
+
+describe('DonatePage — возврат с оплаты (?donation=ok|fail)', () => {
+  it('?donation=ok: благодарность и ссылка на главную, формы нет', () => {
+    window.history.pushState({}, '', '/donate?donation=ok');
+    render(<DonatePage />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Спасибо за поддержку!');
+    expect(screen.getAllByRole('link', { name: '← На главную' }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: '1000 ₽' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Поддержать/ })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('?donation=fail: alert об отказе, заголовок и форма на месте', () => {
+    window.history.pushState({}, '', '/donate?donation=fail');
+    render(<DonatePage />);
+    expect(screen.getByRole('alert').textContent).toContain('Оплата не прошла');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Поддержать проект');
+    expect(screen.getByRole('button', { name: '1000 ₽' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Поддержать 500/ })).toBeTruthy();
+  });
+});

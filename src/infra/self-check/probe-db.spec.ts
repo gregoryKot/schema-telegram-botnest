@@ -21,9 +21,8 @@ describe('dbProbe', () => {
     expect(res.detail).toContain("Can't reach database server");
   });
 
-  it('critical: true — падение базы это авария ядра', () => {
+  it('id пробы — db: этот слаг уходит в /health.selfCheck.failed', () => {
     const probe = dbProbe({} as unknown as PrismaService);
-    expect(probe.critical).toBe(true);
     expect(probe.id).toBe('db');
   });
 });

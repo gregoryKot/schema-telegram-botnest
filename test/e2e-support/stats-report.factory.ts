@@ -18,11 +18,12 @@ import { PhraseCheckMetricsService } from '../../src/bot/phrase-check-metrics.se
 import { EntryDeleteMetricsService } from '../../src/bot/entry-delete-metrics.service';
 import { AccountLinkMetricsService } from '../../src/bot/account-link-metrics.service';
 import { PlusMetricsService } from '../../src/bot/plus-metrics.service';
-import { WebBannerMetricsService } from '../../src/bot/web-banner-metrics.service';
 import { SiteInstallMetricsService } from '../../src/bot/site-install-metrics.service';
 import { ScreenMetricsService } from '../../src/bot/screen-metrics.service';
 import { ProfilePatternMetricsService } from '../../src/bot/profile-pattern-metrics.service';
 import { ConceptGraphMetricsService } from '../../src/bot/concept-graph-metrics.service';
+import { ScreenShareMetricsService } from '../../src/bot/screen-share-metrics.service';
+import { GuideReferenceMetricsService } from '../../src/bot/guide-reference-metrics.service';
 import { AuthHealthMetricsService } from '../../src/bot/auth-health-metrics.service';
 import { LoginTicketMetricsService } from '../../src/bot/login-ticket-metrics.service';
 import { ClientErrorMetricsService } from '../../src/bot/client-error-metrics.service';
@@ -33,7 +34,12 @@ import { GameMetricsService } from '../../src/bot/game-metrics.service';
 import { DataExportMetricsService } from '../../src/bot/data-export-metrics.service';
 import { BookingRetentionMetricsService } from '../../src/bot/booking-retention-metrics.service';
 import { IntroLeadMetricsService } from '../../src/bot/intro-lead-metrics.service';
+import { TherapyNudgeMetricsService } from '../../src/bot/therapy-nudge-metrics.service';
+import { TherapyInviteMetricsService } from '../../src/bot/therapy-invite-metrics.service';
+import { ClientBookingMetricsService } from '../../src/bot/client-booking-metrics.service';
 import { NotifyQueueMetricsService } from '../../src/bot/notify-queue-metrics.service';
+import { TherapistExitMetricsService } from '../../src/bot/therapist-exit-metrics.service';
+import { CrawlerMetricsService } from '../../src/bot/crawler-metrics.service';
 
 /** Продуктовый блок /stats (второе сообщение команды). */
 export function buildStatsReport(prisma: PrismaService): StatsReportService {
@@ -53,11 +59,12 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new EntryDeleteMetricsService(prisma),
     new AccountLinkMetricsService(prisma),
     new PlusMetricsService(prisma),
-    new WebBannerMetricsService(prisma),
     new SiteInstallMetricsService(prisma),
     new ScreenMetricsService(prisma),
     new ProfilePatternMetricsService(prisma),
     new ConceptGraphMetricsService(prisma),
+    new ScreenShareMetricsService(prisma),
+    new GuideReferenceMetricsService(prisma),
     new AuthHealthMetricsService(prisma),
     new LoginTicketMetricsService(prisma),
     new ClientErrorMetricsService(prisma),
@@ -68,6 +75,11 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new DataExportMetricsService(prisma),
     new BookingRetentionMetricsService(prisma),
     new IntroLeadMetricsService(prisma),
+    new TherapyNudgeMetricsService(prisma),
+    new TherapyInviteMetricsService(prisma),
+    new ClientBookingMetricsService(prisma),
     new NotifyQueueMetricsService(prisma),
+    new TherapistExitMetricsService(prisma),
+    new CrawlerMetricsService(prisma),
   );
 }

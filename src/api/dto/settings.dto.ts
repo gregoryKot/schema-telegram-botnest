@@ -7,11 +7,12 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  IsTimeZone,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
-import { VALID_TIMEZONES } from '../../telegram/telegram.constants';
+import { TIMEZONE_MAX_LENGTH } from '../../notification/notify-timezones';
 
 /**
  * DTO для POST /api/settings (аудит 2026-07, 2г / правило №6 CLAUDE.md).
@@ -30,8 +31,13 @@ export class UpdateSettingsDto {
   @Max(23)
   notifyLocalHour?: number;
 
+  // Любой настоящий пояс IANA, не только из списка выбора: пояс, который
+  // определил браузер, показывается в выборе первым, и повторный тап по нему
+  // не должен давать 400 (QA 2026-11-03).
   @IsOptional()
-  @IsIn(VALID_TIMEZONES)
+  @IsString()
+  @MaxLength(TIMEZONE_MAX_LENGTH)
+  @IsTimeZone()
   notifyTimezone?: string;
 
   @IsOptional()

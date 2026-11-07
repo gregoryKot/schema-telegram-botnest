@@ -225,15 +225,41 @@ describe('PublicEventsController', () => {
     });
   });
 
-  it("home_screen_offer: 'shown'/'later'/'never' с site_landing дропаются — аноним не пишет состояния воронки, только add/added", async () => {
-    for (const action of ['shown', 'later', 'never']) {
-      await expect(
-        controller.track({
-          name: 'home_screen_offer',
-          meta: { action, surface: 'site_landing' },
-        }),
-      ).resolves.toEqual({ ok: true });
+  it("home_screen_offer: 'later'/'never' дропаются на обеих публичных поверхностях — аноним не пишет отказы", async () => {
+    for (const action of ['later', 'never']) {
+      for (const surface of ['site_landing', 'site_install']) {
+        await expect(
+          controller.track({
+            name: 'home_screen_offer',
+            meta: { action, surface },
+          }),
+        ).resolves.toEqual({ ok: true });
+      }
     }
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it.each(['shown', 'add', 'added', 'handoff_ok', 'handoff_failed'])(
+    'home_screen_offer: страница установки (site_install) принимает %s',
+    async (action) => {
+      await controller.track({
+        name: 'home_screen_offer',
+        meta: { action, surface: 'site_install' },
+      });
+      expect(track).toHaveBeenCalledWith(null, 'home_screen_offer', {
+        action,
+        surface: 'site_install',
+      });
+    },
+  );
+
+  it('home_screen_offer: handoff_ok с авторизованной поверхности (today) — дроп, ответ ok', async () => {
+    await expect(
+      controller.track({
+        name: 'home_screen_offer',
+        meta: { action: 'handoff_ok', surface: 'today' },
+      }),
+    ).resolves.toEqual({ ok: true });
     expect(track).not.toHaveBeenCalled();
   });
 

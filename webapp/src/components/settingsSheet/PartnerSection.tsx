@@ -5,15 +5,14 @@ import { pendingInviteUrl, canCreateInvite, inviteButtonLabel, freshInviteUrl } 
 import type { PairMechanics } from '../../../../shared/src/pair/usePairMechanics';
 import { PartnerCard } from './PartnerCard';
 import { PartnerInviteLink } from './PartnerInviteLink';
+import { PendingInvite } from './PendingInvite';
+import { joinConfirmExplain } from '../../../../shared/src/therapy/joinConfirmCopy';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
 
-// Раздел «Партнёр» — вынесен из SettingsSheet.tsx (правило №10). Состояние
-// пары живёт в родителе (общий хук shared/src/pair/usePairMechanics), здесь
-// только отображение; карточка с кодом после создания приглашения открывается
-// через onInviteCreated хука (та же, что в мини-аппе, правило №3).
-// Как в мини-аппе (PairPanel): партнёров может быть несколько, поэтому
-// «Пригласить ещё друга» и ввод кода доступны и при подключённом партнёре,
-// а ждущее приглашение показывается ссылкой для повторной отправки.
+// Раздел «Партнёр» (из SettingsSheet.tsx, №10): состояние — хук shared/src/pair/usePairMechanics.
+// Партнёров может быть несколько: «Позвать ещё одного» и ввод кода — и при подключённом.
+// Объём доступа честный (индекс дня и неделя); ввод кода — то же согласие, что у
+// ссылки (joinConfirmExplain); ждущее приглашение можно отменить.
 export function PartnerSection({ pair }: { pair: PairMechanics }) {
   const tr = useTr();
   const {
@@ -21,12 +20,12 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
     joinError, leaveError, createError, confirmLeaveCode, setConfirmLeaveCode,
     handleCreateInvite, handleJoin, handleLeave,
   } = pair;
-  const { copyLabel, pendingLabel } = pairTexts(tr);
+  const { copyLabel, pendingLabel, scopeHint } = pairTexts(tr);
   const pendingUrl = data ? pendingInviteUrl(data) : '';
-  const freshUrl = freshInviteUrl(inviteUrl, pendingUrl);
+  const freshUrl = data ? freshInviteUrl(inviteUrl, data) : '';
 
   return (
-    <SSection id="s-partner" label="Партнёр" help={<SettingsInfoHelp infoKey="pair" />} hint="Видите индексы дня друг друга — просто число, без деталей">
+    <SSection id="s-partner" label="Партнёр" help={<SettingsInfoHelp infoKey="pair" />} hint={scopeHint}>
       <div className="st-body-block">
         {!data && !loadError ? (
           <div className="st-text st-text--faint">Загрузка...</div>
@@ -40,10 +39,11 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
         ) : joinView === 'join' ? (
           <div className="st-body-block">
             <button className="ds-link" onClick={() => setJoinView('main')}>← Назад</button>
+            <p className="st-text" data-testid="pair-join-consent">{joinConfirmExplain(true, tr)}</p>
             <div className="st-actions">
               <input className={`ds-input st-grow st-code st-code--center${joinError ? ' st-input-err' : ''}`}
                 value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())} placeholder="Код" />
-              <button className="ds-btn" onClick={() => void handleJoin()} disabled={!joinCode.trim() || loading}>Войти</button>
+              <button className="ds-btn" onClick={() => void handleJoin()} disabled={!joinCode.trim() || loading}>Присоединиться</button>
             </div>
             {joinError && <div className="st-err">Код не найден или уже использован</div>}
           </div>
@@ -51,9 +51,9 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
           <>
             {data.partners.map(p => (
               <PartnerCard key={p.code} partner={p} confirmLeaveCode={confirmLeaveCode}
-                setConfirmLeaveCode={setConfirmLeaveCode} onLeave={handleLeave} leaveError={leaveError} />
+                setConfirmLeaveCode={setConfirmLeaveCode} onLeave={handleLeave} leaveError={leaveError === p.code} />
             ))}
-            {pendingUrl && <PartnerInviteLink label={pendingLabel} url={pendingUrl} />}
+            {data.pendingCode && <PendingInvite label={pendingLabel} url={pendingUrl} onCancel={() => void handleLeave(data.pendingCode!)} failed={leaveError === data.pendingCode} />}
             <div className="st-actions">
               {canCreateInvite(data) && (
                 <button className="ds-btn ds-btn--sm" onClick={handleCreateInvite} disabled={loading}>

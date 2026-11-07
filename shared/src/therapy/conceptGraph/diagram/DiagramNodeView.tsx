@@ -11,7 +11,11 @@ function buttonProps(
   node: DiagramNode,
   open?: boolean,
   pressed?: boolean,
+  readOnly?: boolean,
 ): ButtonHTMLAttributes<HTMLButtonElement> {
+  // Только чтение: тап по фигуре подсвечивает её линии, редактора нет; имя — текст фигуры.
+  if (readOnly && node.kind !== 'placeholder')
+    return { 'aria-pressed': !!pressed };
   switch (node.kind) {
     case 'mode':
       return {
@@ -42,7 +46,8 @@ function buttonProps(
 /**
  * Одна фигура диаграммы. Режим, схема, овал опыта, потребность и заготовка
  * пустой секции — кнопки: тап открывает редактор, включает подсветку линий или
- * зовёт выбор.
+ * зовёт выбор. Без `onTap` (заготовка на схеме только для чтения) кнопка
+ * выключена.
  */
 export function DiagramNodeView({
   node,
@@ -50,12 +55,14 @@ export function DiagramNodeView({
   open,
   pressed,
   onTap,
+  readOnly,
 }: {
   node: DiagramNode;
   opacity: number;
   open?: boolean;
   pressed?: boolean;
-  onTap: () => void;
+  onTap?: () => void;
+  readOnly?: boolean;
 }) {
   const hit = Math.max(node.h, MIN_HIT);
   const dy = (hit - node.h) / 2;
@@ -73,7 +80,7 @@ export function DiagramNodeView({
     color: 'var(--text)',
     font: 'inherit',
     textAlign: 'center',
-    cursor: 'pointer',
+    cursor: onTap ? 'pointer' : 'default',
   };
   return (
     <button
@@ -81,8 +88,9 @@ export function DiagramNodeView({
       data-shape={node.shape}
       data-node={node.id}
       onClick={onTap}
+      disabled={!onTap}
       style={style}
-      {...buttonProps(node, open, pressed)}
+      {...buttonProps(node, open, pressed, readOnly)}
     >
       <DiagramShapeSvg
         shape={node.shape}

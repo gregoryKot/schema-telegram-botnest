@@ -3,10 +3,25 @@ import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
 const NOW = new Date('2026-10-16T12:00:00Z').getTime();
 const hoursAgo = (h: number) => new Date(NOW - h * 3_600_000);
 
-function makeService(rows: Array<{ meta: unknown; createdAt: Date }>) {
-  const findMany = jest.fn().mockResolvedValue(rows);
-  const prisma = { analyticsEvent: { findMany } } as never;
-  return { service: new NotifyQueueMetricsService(prisma), findMany };
+type Row = { meta: unknown; createdAt: Date };
+
+/** Фейк Prisma: строки событий по имени, отложенные напоминания — счётчиками. */
+function makeService(
+  rows: Row[],
+  snoozes: Array<{ meta: unknown }> = [],
+  counts = { sent: 0, cancelled: 0 },
+) {
+  const findMany = jest.fn(async ({ where }: { where: { name: string } }) =>
+    where.name === 'reminder_snoozed' ? snoozes : rows,
+  );
+  const count = jest.fn(async ({ where }: { where: { sentAt?: unknown } }) =>
+    where.sentAt ? counts.sent : counts.cancelled,
+  );
+  const prisma = {
+    analyticsEvent: { findMany },
+    scheduledNotification: { count },
+  } as never;
+  return { service: new NotifyQueueMetricsService(prisma), findMany, count };
 }
 
 beforeEach(() => {
@@ -80,5 +95,48 @@ describe('NotifyQueueMetricsService', () => {
     expect(await service.render()).toContain(
       'За неделю напоминаний из очереди не было.',
     );
+  });
+});
+
+describe('NotifyQueueMetricsService — «Напомню через час»', () => {
+  it('нажатия — только строки бота (с булевым quietShift), исход — по очереди', async () => {
+    const { service, findMany, count } = makeService(
+      [],
+      [
+        { meta: { quietShift: true } },
+        { meta: { quietShift: false } },
+        // POST /api/event: sanitizeMeta срезал meta — подделка не считается
+        { meta: null },
+        { meta: { quietShift: 'yes' } },
+      ],
+      { sent: 1, cancelled: 1 },
+    );
+    const m = await service.getMetrics();
+    expect(m.snooze).toEqual({
+      snoozed: 2,
+      quietShift: 1,
+      delivered: 1,
+      cancelled: 1,
+    });
+    const since = new Date(NOW - 7 * 86_400_000);
+    expect(findMany).toHaveBeenCalledWith({
+      where: { name: 'reminder_snoozed', createdAt: { gte: since } },
+      select: { meta: true },
+    });
+    // Окно по sendAt — индекс очереди; тип pre_reminder ставит только эта кнопка.
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        type: 'pre_reminder',
+        sendAt: { gte: since },
+        sentAt: { not: null },
+      },
+    });
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        type: 'pre_reminder',
+        sendAt: { gte: since },
+        cancelledAt: { not: null },
+      },
+    });
   });
 });

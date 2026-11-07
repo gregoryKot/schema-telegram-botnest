@@ -1,20 +1,18 @@
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
 } from 'class-validator';
 import { DIARY_FIELD_MAX } from '../../utils/text-limits';
 
-/**
- * DTO для дневников (схема/режим/благодарность) в diary.controller.ts —
- * аудит 2026-07, 2г / правило №6 CLAUDE.md. Лимит свободного текста один,
- * здесь: превышение — 400, а не обрезка в контроллере (backend#29).
- * `emotions` — массив {id, intensity}, контроллер форму элементов не
- * проверяет — оставляем как есть, только ограничение количества.
- */
+// DTO дневников схем и режимов (diary.controller.ts; правило №6; благодарность —
+// gratitude-diary.dto.ts). Свободный текст — до DIARY_FIELD_MAX, превышение —
+// 400 (backend#29); `emotions` — только число.
+// id схем/режимов — формат каталога shared/src/schemaTherapy/content: [a-z_]{1,64}.
 export class SchemaDiaryDto {
   @IsString()
   @MaxLength(DIARY_FIELD_MAX)
@@ -41,7 +39,8 @@ export class SchemaDiaryDto {
 
   @IsArray()
   @ArrayMaxSize(50)
-  @IsString({ each: true })
+  @MaxLength(64, { each: true })
+  @Matches(/^[a-z_]{1,64}$/, { each: true })
   schemaIds!: string[];
 
   @IsOptional()
@@ -71,7 +70,8 @@ export class SchemaDiaryDto {
 }
 
 export class ModeDiaryDto {
-  @IsString()
+  @MaxLength(64)
+  @Matches(/^[a-z_]{1,64}$/)
   modeId!: string;
 
   @IsString()
@@ -113,16 +113,10 @@ export class ModeDiaryDto {
   @IsString()
   @MaxLength(DIARY_FIELD_MAX)
   healthyResponse?: string;
-}
 
-export class GratitudeDiaryDto {
-  @IsString()
-  date!: string;
-
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(20)
-  @IsString({ each: true })
-  @MaxLength(DIARY_FIELD_MAX, { each: true })
-  items!: string[];
+  // Запись родилась из потока «Что случилось» (сайт): по ней «Записи» строят
+  // фильтр «Случаи», а /stats — счётчик разборов. Без поля — обычная запись.
+  @IsOptional()
+  @IsBoolean()
+  fromCase?: boolean;
 }

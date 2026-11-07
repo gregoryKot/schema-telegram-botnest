@@ -118,6 +118,24 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(data.body.mySchemaIds).toEqual([]);
   });
 
+  // QA 2026-11: «запрос отправлен» переживает перезагрузку — признак приходит
+  // в client-data своего терапевта (сохранил → нашёл через HTTP).
+  it('T1 запрашивает YSQ у C1 → client-data отдаёт ysqRequestPending', async () => {
+    const t1 = agentAs(T1);
+    const before = await t1.get(`/api/therapy/client-data/${C1_ID}`);
+    expect(before.body.ysqRequestPending).toBe(false);
+    const req = await t1.post(`/api/therapy/request-ysq/${C1_ID}`, {});
+    expect(req.status).toBeLessThan(300);
+    const after = await t1.get(`/api/therapy/client-data/${C1_ID}`);
+    expect(after.body.ysqRequestPending).toBe(true);
+    // Запрос — задание клиенту (QA 2026-11, К1): его видят и терапевт, и
+    // клиент без Telegram; признак выше считается по нему же.
+    const tasks = await t1.get(`/api/therapy/tasks/client/${C1_ID}`);
+    expect(tasks.body.map((t: { type: string }) => t.type)).toEqual([
+      'ysq_test',
+    ]);
+  });
+
   it('T1 назначает задачу C1 и видит её через tasks/client/:clientId', async () => {
     const t1 = agentAs(T1);
     const task = await t1.post('/api/therapy/tasks', {
@@ -129,8 +147,11 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
 
     const list = await t1.get(`/api/therapy/tasks/client/${C1_ID}`);
     expect(list.status).toBe(200);
-    expect(list.body).toHaveLength(1);
-    expect(list.body[0].text).toBe('заполнить дневник схем');
+    // Плюс задание «пройти тест на схемы» из запроса YSQ шагом выше. Порядок
+    // — createdAt desc на живой базе; фейк его не держит, поэтому сортируем.
+    expect(list.body.map((t: { text: string }) => t.text).sort()).toEqual(
+      ['Пройти тест на схемы', 'заполнить дневник схем'].sort(),
+    );
   });
 
   it('T1 создаёт карту режимов для C1 и видит её в списке', async () => {
@@ -179,6 +200,10 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
       () => c1.get(`/api/therapy/mode-maps/${C1_ID}`),
       () => c1.get('/api/therapy/tasks/all'),
       () => c1.get('/api/therapy/custom-modes'),
+      () =>
+        c1.post(`/api/therapy/conceptualization/${C1_ID}/append`, {
+          modeIds: ['x'],
+        }),
     ];
     for (const call of asTherapistOnly) {
       const res = await call();
@@ -229,6 +254,45 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     ).toBe(false);
   });
 
+  // ─── Сценарий 5а: «дописать с холста» (#963) — только свой клиент ────────
+
+  it('T1 дописывает в концептуализацию C1 с холста → GET находит, прежнее на месте', async () => {
+    const t1 = agentAs(T1);
+    const res = await t1.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      {
+        modeIds: ['vulnerable_child'],
+        modeLinks: [
+          { modeId: 'punitive_critic', schemaIds: ['defectiveness'] },
+        ],
+      },
+    );
+    expect(res.status).toBeLessThan(300);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.schemaIds).toEqual(['abandonment', 'defectiveness']);
+    expect(got.body.modeIds).toEqual(['vulnerable_child', 'punitive_critic']);
+    expect(got.body.earlyExperience).toBe('ранний опыт клиента');
+  });
+
+  it('T2 без связи с C1 не может дописать в концептуализацию — 403, строк не прибавилось', async () => {
+    const t2 = agentAs(T2);
+    const res = await t2.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      { modeIds: ['angry_child'], schemaIds: ['mistrust'] },
+    );
+    expect(res.status).toBe(403);
+    expect(JSON.stringify(res.body)).not.toContain('abandonment');
+    const rows = await prisma.clientConceptualization.findMany({
+      where: { clientId: C1 },
+    });
+    expect(rows.map((r) => r.therapistId)).toEqual([T1]);
+    // Концептуализация T1 не пополнилась чужим режимом.
+    const got = await agentAs(T1).get(
+      `/api/therapy/conceptualization/${C1_ID}`,
+    );
+    expect(got.body.modeIds).not.toContain('angry_child');
+  });
+
   // ─── Сценарий 6: задачи не текут между терапевтами ────────────────────────
 
   it('T2 не видит задачу T1→C1 ни через tasks/all, ни через tasks/client/:clientId', async () => {
@@ -246,7 +310,9 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     const all = await t1.get('/api/therapy/tasks/all');
     expect(all.status).toBe(200);
     expect(all.body).toHaveLength(1);
-    expect(all.body[0].tasks[0].text).toBe('заполнить дневник схем');
+    expect(all.body[0].tasks.map((t: { text: string }) => t.text)).toContain(
+      'заполнить дневник схем',
+    );
   });
 
   // ─── Сценарий 7: custom-modes терапевта не текут другому терапевту ───────

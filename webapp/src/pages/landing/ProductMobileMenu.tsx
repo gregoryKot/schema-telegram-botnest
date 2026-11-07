@@ -32,7 +32,7 @@ export function ProductMobileMenu({ onClose, entry = entryCta(false) }: { onClos
       style={{
         position: 'fixed', inset: 0, zIndex: 200, background: '#0b0817',
         display: 'flex', flexDirection: 'column',
-        padding: '18px 24px calc(28px + env(safe-area-inset-bottom, 0px))',
+        padding: 'calc(18px + var(--safe-top)) 24px calc(28px + var(--safe-bottom))',
         color: INK, fontFamily: 'Inter, system-ui, sans-serif',
       }}
     >

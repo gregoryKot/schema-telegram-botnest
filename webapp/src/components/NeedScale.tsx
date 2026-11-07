@@ -1,38 +1,44 @@
 import '../styles/need-scale.css';
 import { hueStyle } from '../lib/tone';
-import { NEED_SCALE_MAX, isSegmentFilled } from './needScaleModel';
 import { haptic } from '../haptic';
+import { RATING_WORDS, wordForValue } from '../../../shared/src/needs/ratingWords';
 
-// Единственный ввод оценки потребности 0–10: десять сегментов-кнопок.
-// Используется на «Сегодня» и в листе оценки потребности (NeedTodaySheet).
-// Каждый сегмент — нативная кнопка с aria-label «N из 10», так что шкала
-// доступна с клавиатуры и экранным читалкам без дополнительной обвязки.
-
-interface Props {
+/** Единственный ввод оценки потребности (трекер, лист потребности): пять ответов словами во всю ширину, пишут 2/4/6/8/10 (shared/needs/ratingWords); справа пять «пипсов». */
+export function NeedScale({ value, hue, onChange, label, yesterday, sublabels }: {
   value: number | undefined;
   hue: number;
   onChange: (value: number) => void;
-  /** Название потребности — подпись группы для экранных читалок. */
   label: string;
-  size?: 'md' | 'lg';
-  /** Вчерашняя оценка — точка под сегментом (паритет с NeedRatingBar мини-аппа, В10 аудита 2026-08). */
   yesterday?: number;
-}
-
-const SEGMENTS = Array.from({ length: NEED_SCALE_MAX }, (_, i) => i + 1);
-
-export function NeedScale({ value, hue, onChange, label, size = 'md', yesterday }: Props) {
+  /** Подпись под словом (что означает ответ) — по индексу слова; undefined — без подписи. */
+  sublabels?: (string | undefined)[];
+}) {
+  const current = wordForValue(value)?.value;
+  const yesterdayWord = wordForValue(yesterday)?.value;
   return (
-    <div role="group" aria-label={label} className={`ns-scale ns-scale--${size}`} style={hueStyle(hue)}>
-      {SEGMENTS.map(n => (
+    <div role="group" aria-label={label} className="ns-words" style={hueStyle(hue)}>
+      {RATING_WORDS.map((w, i) => (
         <button
-          key={n}
+          key={w.value}
           type="button"
-          aria-label={`${n} из 10`}
-          aria-pressed={n === value}
-          className={'ns-seg' + (isSegmentFilled(n, value) ? ' is-on tone-fill' : '') + (n === yesterday ? ' is-yesterday' : '')}
-          onClick={() => { haptic.tap(); onChange(n); }}
-        />
+          aria-label={`${w.label} — ${w.value} из 10`}
+          aria-pressed={w.value === current}
+          className={'ns-word' + (w.value === current ? ' is-selected' : '')}
+          onClick={() => { haptic.tap(); onChange(w.value); }}
+        >
+          <span className="ns-word-main">
+            <span>{w.label}</span>
+            {sublabels?.[i] && <span className="ns-word-sub">{sublabels[i]}</span>}
+          </span>
+          <span className="ns-word-end">
+            {w.value === yesterdayWord && <span className="ns-word-y">вчера</span>}
+            <span className="ns-pips" aria-hidden="true">
+              {RATING_WORDS.map((p, j) => (
+                <i key={p.value} className={'ns-pip' + (j <= i ? ' is-on' : '')} />
+              ))}
+            </span>
+          </span>
+        </button>
       ))}
     </div>
   );

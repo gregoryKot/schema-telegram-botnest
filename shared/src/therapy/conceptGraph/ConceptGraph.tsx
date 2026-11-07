@@ -8,12 +8,13 @@ import { useConceptGraphTracking } from './useConceptGraphTracking';
 import { ConceptDiagram } from './diagram/ConceptDiagram';
 import { ConceptAddPanel } from './ConceptAddPanel';
 import type { AddSection } from './diagram/diagramTypes';
-import { ConceptGaps } from './ConceptGaps';
 import { ConceptGraphIntro } from './ConceptGraphIntro';
+import { ConceptGraphFooter } from './ConceptGraphFooter';
 import { ConceptModeEditor } from './ConceptModeEditor';
 import { ConceptSchemaEditor } from './ConceptSchemaEditor';
-import { hintStyle } from './graphStyles';
 import { useTr } from '../../utils/addressForm';
+import type { ConceptGuideActions } from './conceptGuide';
+import { graphColumnStyle } from './graphStyles';
 
 type Open = { kind: 'mode' | 'schema'; id: string } | null;
 
@@ -21,7 +22,8 @@ type Open = { kind: 'mode' | 'schema'; id: string } | null;
  * Схема случая: диаграмма с кругом базовых потребностей в центре (схемы с
  * убеждением и опытом слева, режимы ещё левее, Здоровый Взрослый справа), под
  * ней редактор открытой фигуры, порядок смены режимов и мягкие подсказки
- * «чего не хватает». Пустая секция — часть картины, а не пробел.
+ * «чего не хватает». Пустая секция — часть картины, а не пробел. `guide` —
+ * листы и задания подсказок терапевту (#995); без него плашка — только текст.
  */
 export function ConceptGraph({
   source,
@@ -31,6 +33,7 @@ export function ConceptGraph({
   onToggleSchema,
   onAddSchema,
   track,
+  guide,
 }: {
   source: ConceptGraphSource;
   onToggleMode: (modeId: string) => void;
@@ -39,6 +42,7 @@ export function ConceptGraph({
   onToggleSchema: (schemaId: string) => void;
   onAddSchema: (schemaId: string) => void;
   track: (name: string, meta?: Record<string, unknown>) => void;
+  guide?: ConceptGuideActions;
 }) {
   const tr = useTr();
   const [open, setOpen] = useState<Open>(null);
@@ -72,22 +76,15 @@ export function ConceptGraph({
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-12)',
-      }}
-    >
-      <ConceptGraphIntro />
+    <div style={graphColumnStyle}>
+      <ConceptGraphIntro graph={graph} />
       <ConceptDiagram
         graph={graph}
-        openId={
-          open && (modeCard || schemaCard) ? `${open.kind}:${open.id}` : null
-        }
-        addOpen={add}
-        panel={
-          add && (
+        edit={{
+          openId:
+            open && (modeCard || schemaCard) ? `${open.kind}:${open.id}` : null,
+          addOpen: add,
+          panel: add && (
             <ConceptAddPanel
               section={add}
               modeIds={source.modeIds}
@@ -96,11 +93,12 @@ export function ConceptGraph({
               onToggleSchema={toggleSchema}
               onClose={() => setAdd(null)}
             />
-          )
-        }
-        onOpenMode={(id) => toggleOpen('mode', id)}
-        onOpenSchema={(id) => toggleOpen('schema', id)}
-        onAdd={(section) => setAdd((cur) => (cur === section ? null : section))}
+          ),
+          onOpenMode: (id) => toggleOpen('mode', id),
+          onOpenSchema: (id) => toggleOpen('schema', id),
+          onAdd: (section) =>
+            setAdd((cur) => (cur === section ? null : section)),
+        }}
       />
       {modeCard && (
         <ConceptModeEditor
@@ -115,6 +113,7 @@ export function ConceptGraph({
           onAddSchema={onAddSchema}
           onToggleMode={toggleMode}
           onClose={() => setOpen(null)}
+          guide={guide}
         />
       )}
       {schemaCard && (
@@ -128,14 +127,10 @@ export function ConceptGraph({
           }}
           onRemove={toggleSchema}
           onClose={() => setOpen(null)}
+          guide={guide}
         />
       )}
-      {graph.sequence && (
-        <p style={{ ...hintStyle, margin: 0 }}>
-          <b>Как режимы сменяют друг друга:</b> <span>{graph.sequence}</span>
-        </p>
-      )}
-      <ConceptGaps gaps={graph.gaps} />
+      <ConceptGraphFooter graph={graph} />
     </div>
   );
 }

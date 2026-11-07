@@ -4,13 +4,13 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Post,
   Req,
-  Res,
   UseGuards,
 } from '@nestjs/common';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import { uid } from './request-utils';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
@@ -18,7 +18,7 @@ import { ProfileService } from '../bot/profile.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { AuthService } from '../auth/auth.service';
+import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
 import { UserFlagsDto } from './dto/user-flags.dto';
 import { encryptJson, decryptJson } from '../utils/crypto';
@@ -64,32 +64,10 @@ export class ApiController {
     private readonly accountService: AccountService,
     private readonly profileService: ProfileService,
     private readonly prisma: PrismaService,
-    private readonly authService: AuthService,
+    private readonly scheduleService: TelegramScheduleService,
   ) {}
 
-  // ─── Link token for mini-app users ────────────────────────────────────────
-  //
-  // The mini-app authenticates with `x-telegram-init-data`. To start an
-  // OAuth-style provider link (Google, VK, …) it needs a JWT to pass as
-  // ?link_token=… on the redirect. This endpoint issues one.
-
-  @Get('link-token')
-  issueLinkToken(
-    @Req() req: AuthRequest,
-    @Res({ passthrough: true }) res: Response,
-  ): { linkToken: string; expiresIn: number } {
-    const linkToken = this.authService.buildLinkToken(uid(req));
-    // httpOnly-cookie — основной канал (S-4, токен не в URL); тело ответа —
-    // обратная совместимость со старыми клиентами (?link_token=).
-    res.cookie('link_token', linkToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax' as const,
-      maxAge: 60_000,
-      path: '/api/auth',
-    });
-    return { linkToken, expiresIn: 60 };
-  }
+  private readonly logger = new Logger(ApiController.name);
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 
@@ -199,13 +177,20 @@ export class ApiController {
     return { ok: true };
   }
 
+  // body.timezone — пояс устройства; пока человек не выбрал пояс сам, он
+  // становится поясом уведомлений, и напоминание переносится на новый час.
   @Post('init')
   async init(@Req() req: AuthRequest, @Body() body: InitDto) {
-    await this.accountService.registerUser(
+    const tzChanged = await this.accountService.registerUser(
       uid(req),
       req.telegramFirstName,
       body.timezone,
     );
+    if (tzChanged) {
+      await this.scheduleService
+        .rescheduleForUser(uid(req))
+        .catch((err) => this.logger.error('init: reschedule failed', err));
+    }
     return { ok: true };
   }
 
@@ -219,7 +204,7 @@ export class ApiController {
 
   @Post('disclaimer')
   async acceptDisclaimer(@Req() req: AuthRequest) {
-    await this.botService.acceptDisclaimer(uid(req));
+    await this.botService.acceptDisclaimer(uid(req), true);
     return { ok: true };
   }
 

@@ -6,6 +6,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { alarmNeedsGaps, jobNeeds } from './alarm-needs';
+import { triggerBlocks } from './workflow-yaml';
 
 const read = (f: string) =>
   readFileSync(join(process.cwd(), '.github', 'workflows', f), 'utf8');
@@ -70,6 +71,43 @@ describe('гейт: alarm.needs покрывает все джобы воркф�
   it('nightly.yml: ночной npm-audit под alarm', () => {
     expect(jobNeeds(read('nightly.yml').split(/^ {2}alarm:/m)[1])).toContain(
       'npm-audit',
+    );
+  });
+
+  // Второе правило: у воркфлоу с alarm одно расписание. Alarm закрывает issue
+  // ci-alarm любым зелёным прогоном своего воркфлоу, а проба ciRuns берёт
+  // последний прогон: второй крон, гоняющий часть джоб (воскресный mutation-bot
+  // в nightly.yml до 2026-11), закрывал issue от красных будних и рапортовал
+  // пробе «зелёный». Другое расписание — свой воркфлоу (mutation-bot.yml).
+  describe('у воркфлоу с alarm одно расписание', () => {
+    const scheduleCrons = (text: string): string[] =>
+      [
+        ...(triggerBlocks(text).schedule ?? '').matchAll(
+          /-\s*cron:\s*['"]?([^'"\n]+?)['"]?\s*$/gm,
+        ),
+      ].map((m) => m[1]);
+    const on = (crons: string[]) =>
+      `name: X\n\non:\n  schedule:\n${crons
+        .map((c) => `    # коммент\n    - cron: '${c}'\n`)
+        .join('')}  workflow_dispatch:\n\njobs:\n`;
+
+    it('образец: второй крон виден', () => {
+      expect(scheduleCrons(on(['0 3 * * *', '0 4 * * 0']))).toEqual([
+        '0 3 * * *',
+        '0 4 * * 0',
+      ]);
+    });
+
+    it('контроль: один крон', () => {
+      expect(scheduleCrons(on(['0 3 * * *']))).toEqual(['0 3 * * *']);
+    });
+
+    it.each(['nightly.yml', 'prod-smoke.yml'])(
+      '%s: ровно один крон и ни одного if по github.event.schedule',
+      (f) => {
+        expect(scheduleCrons(read(f))).toHaveLength(1);
+        expect(read(f)).not.toMatch(/^[^#\n]*github\.event\.schedule/m);
+      },
     );
   });
 });

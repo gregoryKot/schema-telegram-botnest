@@ -9,17 +9,12 @@ import { formatCaseMetrics, CaseMetrics } from './case-metrics.format';
 
 const EMPTY: CaseMetrics = {
   started: 0,
+  saved: 0,
   finished: 0,
   sceneOwn: 0,
   sceneFrame: 0,
-  verdictMode: 0,
-  verdictOrdinary: 0,
-  verdictBorderline: 0,
   recognizedAgreed: 0,
   recognizedDoubted: 0,
-  namedOwn: 0,
-  namedChip: 0,
-  namedSkipped: 0,
   people: 0,
   peopleReturned: 0,
 };
@@ -27,17 +22,12 @@ const EMPTY: CaseMetrics = {
 const filled = (over: Partial<CaseMetrics> = {}): CaseMetrics => ({
   ...EMPTY,
   started: 40,
+  saved: 29,
   finished: 31,
   sceneOwn: 25,
   sceneFrame: 15,
-  verdictMode: 22,
-  verdictOrdinary: 6,
-  verdictBorderline: 3,
   recognizedAgreed: 20,
   recognizedDoubted: 11,
-  namedOwn: 14,
-  namedChip: 9,
-  namedSkipped: 8,
   people: 27,
   peopleReturned: 9,
   ...over,
@@ -49,14 +39,20 @@ describe('formatCaseMetrics', () => {
     expect(out).toContain('Пока никто не начинал');
     expect(out).not.toMatch(/NaN|undefined|null/);
     expect(out).not.toContain('Начали 0');
-    expect(out.split('\n')).toHaveLength(2);
+    // Заголовок, «пока никто» и строка про fromCase (0 — честное число).
+    expect(out).toContain('Разборов записано с сайта: 0 за 30 дней');
+    expect(out.split('\n')).toHaveLength(3);
   });
 
-  it('показывает воронку, сцену, вердикты и людей', () => {
+  it('показывает число сохранённых разборов по fromCase рядом с воронкой', () => {
+    const out = formatCaseMetrics(filled({ saved: 29 }));
+    expect(out).toContain('Разборов записано с сайта: 29 за 30 дней');
+  });
+
+  it('показывает воронку, сцену и людей', () => {
     const out = formatCaseMetrics(filled());
     expect(out).toContain('Начали 40 · дошли до конца 31');
     expect(out).toContain('Своими словами 25 · по готовой рамке 15');
-    expect(out).toContain('Похоже на часть 22');
     expect(out).toContain('Разных людей 27');
     expect(out).toMatch(/вернулись за вторым разбором 9 \(33%\)/);
   });

@@ -8,6 +8,7 @@
 import { Logger } from '@nestjs/common';
 import { TelegramLoginService } from './telegram.login.service';
 import { confirmText } from './telegram.login-card';
+import { ERROR_RETRY } from './telegram.constants';
 import { makeFakeBot, makeCtx, runAction } from './telegram.test-helpers.spec';
 import type { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import type { BotService } from '../bot/bot.service';
@@ -234,8 +235,9 @@ describe('устойчивость', () => {
     });
 
     // Сказать «вход отклонён», когда он не отклонён, — хуже, чем показать сбой.
-    expect(errors.mock.calls[0][0]).toContain('БД легла');
+    expect((errors.mock.calls[0][1] as Error).message).toBe('БД легла');
     expect(ctx.editMessageText).not.toHaveBeenCalled();
+    expect(ctx.reply).toHaveBeenCalledWith(ERROR_RETRY);
   });
 
   it('после серии промахов бот замолкает', async () => {

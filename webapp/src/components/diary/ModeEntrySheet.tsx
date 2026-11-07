@@ -15,6 +15,7 @@ import {
 } from '../../../../shared/src/share/analytics';
 import { type ModeEntrySaveData } from '../../../../shared/src/mode/modeDiarySteps';
 interface Props {
+  initialSituation?: string; // текст из «Дневника одной страницей»
   onClose: () => void;
   onSave: (data: ModeEntrySaveData) => Promise<void>;
 }
@@ -24,13 +25,13 @@ type DraftData = Record<
   string
 >;
 
-export function ModeEntrySheet({ onClose, onSave }: Props) {
+export function ModeEntrySheet({ initialSituation, onClose, onSave }: Props) {
   const goBack = useHistorySheet(onClose);
   const existing = loadDraft<DraftData>('mode');
   const d = existing?.data;
 
   const [modeId, setModeId] = useState(d?.modeId ?? '');
-  const [situation, setSituation] = useState(d?.situation ?? '');
+  const [situation, setSituation] = useState(initialSituation || (d?.situation ?? ''));
   const [thoughts, setThoughts] = useState(d?.thoughts ?? '');
   const [feelings, setFeelings] = useState(d?.feelings ?? '');
   const [bodyFeelings, setBodyFeelings] = useState(d?.bodyFeelings ?? '');
@@ -43,10 +44,8 @@ export function ModeEntrySheet({ onClose, onSave }: Props) {
     d?.healthyResponse ?? '',
   );
   const [saving, setSaving] = useState(false);
-  // Отказ раньше сообщался ТОЛЬКО вибрацией haptic.error() — на сайте в
-  // браузере (в отличие от Telegram/установленного PWA) вибрации нет вовсе,
-  // и человек считал, что запись сохранена, хотя черновик просто завис
-  // (тот же баг, что был в GratitudeEntrySheet, см. её комментарий).
+  // Отказ раньше сообщался ТОЛЬКО вибрацией haptic.error(), а в браузере её
+  // нет: человек считал запись сохранённой (тот же баг был в Gratitude).
   const [saveError, setSaveError] = useState(false);
   const [done, setDone] = useState(false);
   const [showPicker, setShowPicker] = useState(!d?.modeId);

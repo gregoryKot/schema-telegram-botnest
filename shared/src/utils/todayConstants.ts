@@ -2,10 +2,24 @@ import { localDateStr, todayStr } from './format';
 import type { DayHistory } from '../types';
 
 // Константы «сегодня/вчера» на момент загрузки бандла — единственная копия
-// (правило №3; жили дублем в schema-miniapp/utils/todayConstants.ts и
+// (правило №3; жили дублем в удалённом мини-аппе и
 // webapp/appShell/useBootstrapLoad.ts).
+/** Ключ «день заполнен, праздник показан» — по нему же сайт узнаёт, что история есть. */
+export const celebratedKey = (day: string) => 'celebrated_' + day;
+
+// Единственный писатель семейства celebrated_<день>.
+export function isCelebrated(day: string): boolean {
+  return !!localStorage.getItem(celebratedKey(day));
+}
+
+export function markCelebrated(day: string): void {
+  localStorage.setItem(celebratedKey(day), '1');
+}
+
+// Константы ниже заморожены при загрузке бандла: для экрана, который живёт
+// через полночь, — useLocalDay (./useLocalDay.ts) и useDayRatings.
 export const TODAY_DATE = todayStr();
-export const TODAY_KEY = 'celebrated_' + TODAY_DATE;
+export const TODAY_KEY = celebratedKey(TODAY_DATE);
 export const YESTERDAY_DATE = (() => {
   const [y, m, d] = TODAY_DATE.split('-').map(Number);
   return localDateStr(new Date(y, m - 1, d - 1));
@@ -13,7 +27,7 @@ export const YESTERDAY_DATE = (() => {
 
 // Заполнение дырок в истории трекера пустыми днями (read-after-write: сервер
 // хранит только дни с оценками, экраны истории показывают ровный календарь).
-// Раньше жила дублем в webapp/AppShell.tsx и schema-miniapp/todayConstants.ts
+// Раньше жила дублем в webapp
 // (правило №3, свип jscpd 2026-08) — единственная копия, оба фронтенда
 // импортируют отсюда.
 // Второй параметр — день, от которого функция считает «сегодня»: раньше

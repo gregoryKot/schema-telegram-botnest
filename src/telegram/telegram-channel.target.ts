@@ -3,6 +3,7 @@ import { Telegraf, Context } from 'telegraf';
 import { TELEGRAF_BOT } from './telegram.constants';
 import { describeTelegramError, telegramErrorCode } from './telegram-error';
 import type { ChannelPost, ChannelTarget } from '../channel/channel-target';
+import { sendOnce } from './telegram.send-once';
 
 /** Env с каналом: @username или -100…id. Без него площадка выключена. */
 const ENV_KEY = 'HEALTHY_ADULT_CHANNEL';
@@ -21,6 +22,12 @@ const ENV_KEY = 'HEALTHY_ADULT_CHANNEL';
  */
 const NETWORK_RETRIES = 2;
 const RETRY_PAUSE_MS = 1500;
+/**
+ * Ответ 429 «слишком часто» — отдельно от сети: ждём названный срок и
+ * повторяем один раз (telegram.send-once.ts). Пост — крон, а не запрос
+ * человека, поэтому ждать можно дольше, чем DM админу.
+ */
+const RATE_LIMIT_BUDGET_MS = 30_000;
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -63,7 +70,9 @@ export class TelegramChannelTarget implements ChannelTarget {
     let last: unknown;
     for (let attempt = 0; attempt <= NETWORK_RETRIES; attempt++) {
       try {
-        await bot.telegram.sendMessage(destination, post.text);
+        await sendOnce(() => bot.telegram.sendMessage(destination, post.text), {
+          budgetMs: RATE_LIMIT_BUDGET_MS,
+        });
         return;
       } catch (err) {
         last = err;

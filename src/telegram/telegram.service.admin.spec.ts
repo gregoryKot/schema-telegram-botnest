@@ -5,6 +5,8 @@
 import { Logger } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { makeFakeBot } from './telegram.test-helpers.spec';
+import { TelegramError } from 'telegraf';
+import { loadRecordedFixture } from '../test-support/recorded-fixture';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 const OLD_REDIRECT = process.env.BOT_REDIRECT_USERNAME;
@@ -82,11 +84,37 @@ describe('TelegramService — notifyAdmin', () => {
     const { service, fakeBot } = makeDeps();
     const ok = await service.notifyAdmin('🚨 инцидент');
     expect(ok).toBe(true);
+    // Номер — разбором practice-owner.ts (единственный разбор ADMIN_ID).
     expect(fakeBot.telegram.sendMessage).toHaveBeenCalledWith(
-      '999',
+      999,
       '🚨 инцидент',
       { parse_mode: 'HTML' },
     );
+  });
+
+  it('ADMIN_ID — мусор: не шлёт вовсе, а не «в чат abc»', async () => {
+    process.env.ADMIN_ID = 'abc';
+    const { service, fakeBot } = makeDeps();
+    await expect(service.notifyAdmin('x')).resolves.toBe(false);
+    expect(fakeBot.telegram.sendMessage).not.toHaveBeenCalled();
+  });
+
+  // Аудит 2026-10 (#812): единичные отправки шли мимо PacedSender, и DM админу
+  // на «слишком часто» терялся, хотя через пять секунд дошёл бы.
+  it('Telegram ответил 429 — ждёт retry_after и доставляет со второй попытки', async () => {
+    jest.useFakeTimers();
+    process.env.ADMIN_ID = '999';
+    const { service, fakeBot } = makeDeps();
+    fakeBot.telegram.sendMessage.mockRejectedValueOnce(
+      new TelegramError(
+        JSON.parse(loadRecordedFixture('telegram-429-too-many-requests.json')),
+      ),
+    );
+    const sent = service.notifyAdmin('🚨 инцидент');
+    await jest.advanceTimersByTimeAsync(5000);
+    await expect(sent).resolves.toBe(true);
+    expect(fakeBot.telegram.sendMessage).toHaveBeenCalledTimes(2);
+    jest.useRealTimers();
   });
 
   it('sendMessage падает — возвращает false, ошибка залогирована, не бросает', async () => {

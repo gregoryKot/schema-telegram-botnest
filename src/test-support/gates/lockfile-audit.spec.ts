@@ -1,5 +1,5 @@
 // Гейт «у каждого lock-файла есть шаг npm audit» (аудит 2026-10). До него
-// audit стоял один — на корень, ci.yml; lock-файлы webapp, мини-аппа, shared
+// audit стоял один — на корень, ci.yml; lock-файлы webapp, shared
 // и игры не проверял никто, а Dependabot (dependabot-coverage.spec.ts) только
 // предлагает обновления, мерж не блокирует. Правила — lockfile-audit.ts;
 // здесь оба исхода на образцах, прогон по настоящему ci.yml и ИСПОЛНЕНИЕ
@@ -120,6 +120,18 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
       ['continue-on-error: true', AUDIT, '        continue-on-error: true\n'],
       ['if: у шага', AUDIT, '        if: false\n'],
       ['npm audit fix — не проверка', 'npm audit fix', ''],
+      // Остаток #821 (docs/open/ci-tests.md): ключ в кавычках или с пробелом
+      // перед `:` js-yaml читает как обычный, а регэксп на `if:` — нет.
+      [
+        '"continue-on-error" в кавычках',
+        AUDIT,
+        '        "continue-on-error": true\n',
+      ],
+      ["'if' в кавычках", AUDIT, "        'if': false\n"],
+      ['if с пробелом перед :', AUDIT, '        if : false\n'],
+      ['shell с пробелом перед :', AUDIT, '        shell : bash {0}\n'],
+      // `${{ }}` разворачивается до shell: env может нести `|| true`.
+      ['выражение ${{ }} в команде', `${AUDIT} $\{{ env.AUDIT_TAIL }}`, ''],
     ])('не засчитывается: %s', (_n, cmd, extra) => {
       const text = ci(job('backend', run(cmd, extra)));
       expect(auditedDirectories(text)).toEqual([]);
@@ -131,6 +143,10 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
           job('b', run(AUDIT)).replace('    steps:', `    ${key}\n    steps:`),
         );
       expect(auditedDirectories(guarded('if: false'))).toEqual([]);
+      expect(auditedDirectories(guarded('"if": false'))).toEqual([]);
+      expect(auditedDirectories(guarded("'continue-on-error' : true"))).toEqual(
+        [],
+      );
       expect(auditedDirectories(guarded('continue-on-error: true'))).toEqual(
         [],
       );
@@ -288,8 +304,8 @@ describe('гейт: у каждого lock-файла есть npm audit в CI',
   });
 
   describe('настоящий ci.yml', () => {
-    it('lock-файлов не меньше пяти (иначе проверка пуста)', () => {
-      expect(locks.length).toBeGreaterThanOrEqual(5);
+    it('lock-файлов не меньше четырёх (иначе проверка пуста)', () => {
+      expect(locks.length).toBeGreaterThanOrEqual(4);
     });
 
     it('у каждого lock-файла есть засчитанный шаг, лишних нет', () => {

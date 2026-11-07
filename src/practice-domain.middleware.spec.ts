@@ -61,7 +61,7 @@ describe('practiceDomainMiddleware', () => {
     expect(sent.redirect).toEqual([301, 'https://kotlarewski.gr/']);
   });
 
-  it('kotlarewski.gr/sitemap.xml отдаёт мини-sitemap только с главной', () => {
+  it('kotlarewski.gr/sitemap.xml отдаёт мини-sitemap визитки, без продукта', () => {
     const { sent, nextCalled } = run('kotlarewski.gr', '/sitemap.xml');
     expect(sent.type).toBe('application/xml');
     expect(sent.body).toContain('<loc>https://kotlarewski.gr/</loc>');
@@ -290,6 +290,17 @@ describe('practiceDomainMiddleware', () => {
         301,
         'https://schemehappens.ru/api/auth/refresh',
       ]);
+      expect(nextCalled).toBe(false);
+    });
+
+    // Запись клиента из приложения (#546) — продуктовый API под входом, на
+    // визитке не открывается (правило №19). Контроль — сама /api/booking ниже.
+    it.each([
+      ['GET', '/api/client-booking'],
+      ['POST', '/api/client-booking/book'],
+    ])('%s %s на kotlarewski.gr → 301 на канонический хост', (method, path) => {
+      const { sent, nextCalled } = run('kotlarewski.gr', path, path, method);
+      expect(sent.redirect).toEqual([301, `https://schemehappens.ru${path}`]);
       expect(nextCalled).toBe(false);
     });
 

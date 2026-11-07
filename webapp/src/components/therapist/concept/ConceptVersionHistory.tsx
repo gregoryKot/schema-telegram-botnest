@@ -5,7 +5,8 @@ import { ConfirmDialog } from '../../ConfirmDialog';
 import type { ClientDetail } from '../clientSheetTypes';
 import { snapshotToConceptFields } from '../../../../../shared/src/therapy/conceptSnapshotRestore';
 
-// История версий концептуализации в боковой колонке (вынесено из
+// История версий концептуализации — содержимое раскрывашки «История версий»
+// под вкладкой (ConceptFoldouts; заголовок с числом там). Вынесено из
 // ClientConceptTab, правило №10) + «Восстановить»: паритет с мини-аппом
 // (ConceptHistoryPanel). Восстановление идёт через patchConcept → обычное
 // автосохранение; текущая версия при этом сама попадает в историю на сервере,
@@ -19,8 +20,6 @@ export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
 
   return (
     <>
-      <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
-      <div className="eyebrow u-mb12">История версий · {concept.history.length}</div>
       <div className="u-col6">
         {concept.history.slice(0, 5).map((h, i: number) => {
           const vNum = concept.history.length - i;

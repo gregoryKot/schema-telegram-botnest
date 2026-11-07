@@ -44,7 +44,10 @@ jobs:
       # джобу через actions/cache ниже — прокидывается явным --cacheDirectory
       # в каждый npx jest, потому что jest не читает env-переменную для этого
       # (в конфиге кэш-путь не задан, а package.json трогать нельзя — CI-4.2).
-      JEST_CACHE_DIR: .jest-cache
+      # Путь абсолютный: относительный jest резолвит от rootDir конфига
+      # (src/.jest-cache, test/.jest-cache), а actions/cache — от корня
+      # репозитория, и шаг «Кэш ts-jest» сохранял пустой каталог.
+      JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -98,10 +101,15 @@ jobs:
           test/app-auth test/app-ownership test/app-ownership-sweep
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
-          test/slot-override test/therapy-remove-client test/therapy-resign
+          test/slot-override test/therapy-remove-client test/therapy-resign test/therapy-invite test/therapy-invite-attach
+          test/therapy-relation-end test/notify-from-other
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
+          test/client-booking-ownership
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
+          test/diary-mode-from-case
+          test/therapy-task-delete
+          test/concept-share
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим: сборочная цепочка
       # исполняется на раннере, а не у пользователя, её несёт Dependabot.
@@ -154,8 +162,7 @@ jobs:
   # node:fs/node:path, без единой npm-зависимости — не нуждаются в npm ci
   # и node_modules. Вынесены из backend-джобы, чтобы не ждать полную
   # установку зависимостей ради двух быстрых проверок по grep-принципу.
-  # check-address-form.mjs и check-paired-files.mjs НЕ трогаем — они уже
-  # живут в джобе webapp.
+  # check-address-form.mjs НЕ трогаем — он уже живёт в джобе webapp.
   checks:
     runs-on: ubuntu-24.04
     # Потолок на джобу — страховка от зависшего шага (правило №24): без него
@@ -199,20 +206,8 @@ jobs:
       - run: node scripts/check-legacy-name.mjs
       # Мёртвые файлы: у каждого исходника должен быть потребитель в прод-коде.
       # Найдено этим гейтом: вторая копия prisma-exception.filter (правки в неё
-      # не доезжали до прода) и два неподключённых компонента мини-аппа.
+      # не доезжали до прода) и два неподключённых компонента.
       - run: node scripts/check-dead-files.mjs
-      # Паритет фич между фронтендами (правило №3, расследование 2026-08-21):
-      # check-paired-files.mjs (джоба webapp) видит только файлы из жёсткого
-      # списка PAIRS — файл, которого в списке нет, гейт не видит вообще, и
-      # PhraseCheck-упражнение/DiaryShareButton/.ics-экспорт жили только в
-      # мини-аппе незамеченными. check-dead-files.mjs выше считает единицей
-      # учёта ФАЙЛ — живой api.ts прикрывает собой мёртвый метод внутри
-      # (deleteBeliefCheck/deleteFlashcard/deleteLetter объявлены в обоих
-      # фронтендах и не вызываются НИОТКУДА, кроме тестов). Источник истины —
-      # роуты бэкенда (src/api/**/*.controller.ts, общие для обеих площадок):
-      # гейт проверяет, что каждый роут реально доступен с обеих площадок или
-      # осознанно заведён в scripts/feature-parity-baseline.json с причиной.
-      - run: node scripts/check-feature-parity.mjs
       # Leader-election кронов: крон без него дублируется на втором инстансе
       # (второй под, перекатывающийся деплой Amvera) — два процесса шлют одно и
       # то же сообщение дважды. Гейт не ищет признак «похоже на безопасное», а
@@ -221,6 +216,13 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      # Один ключ localStorage — один писатель (инцидент 2026-11-05, PR #935:
+      # кэш контакта терапевта писали два места, третье меняло источник правды
+      # на сервере и кэш не трогало). Каждый ключ классифицирован в
+      # scripts/local-cache-baseline.json (владелец, mirror|local, что на
+      # сервере); второй писатель, ключ без записи и протухшая запись красят
+      # CI. Флага --update нет: это решение человека, не счётчик долга.
+      - run: node scripts/check-local-cache-writers.mjs
       # Счётчик попыток в памяти процесса обнуляется деплоем и не общий между
       # инстансами (правило №5). Каждая ручка с лимитом или с проверкой кода /
       # заявкой несёт @PersistentThrottle (счёт в Postgres) либо запись exempt с
@@ -232,6 +234,11 @@ jobs:
       # наоборот: путь в CI без файла — переименованный спек, который jest
       # молча пропускает. Бейслайна нет, флага --update нет.
       - run: node scripts/check-e2e-in-ci.mjs
+      # Тест, поднявший AppModule, гасит настоящие @Cron (stopCronJobs после
+      # app.init(), test/e2e-support/stop-cron-jobs.ts): тик sendReminders
+      # посреди спека слал напоминания по общей БД, шпион видел 4 DM вместо 1
+      # (PR #722). Строители e2e это делают сами; гейт ловит обход. Без бейслайна.
+      - run: node scripts/check-e2e-stop-cron.mjs
       # Документы для агентов не врут: CLAUDE.md в бюджете (он грузится в каждую
       # сессию), у правил .claude/rules есть paths, карта кода называет все
       # каталоги и гейты, пути и ссылки живы. Бейслайна и --update нет.
@@ -258,6 +265,14 @@ jobs:
       # «Неуспешность» — правило без гейта уже возвращалось. Абсолютный
       # запрет, без бейслайна (класс размётся полностью прямо сейчас).
       - run: node scripts/check-schema-terms.mjs
+      # Орфография видимых строк: QA 2026-11 нашёл «оффлайн» вместо словарного
+      # «офлайн» в шести файлах двух фронтендов — ошибку копировали из
+      # соседнего файла. Комментарии и тесты гейт не смотрит; бейслайна нет.
+      - run: node scripts/check-spelling.mjs
+      # Имена файлов не различаются только регистром: на macOS Vite разрешил
+      # `./DiagramEdges` в `diagramEdges.ts` и кабинет терапевта падал в
+      # error boundary (2026-11-05); на Linux CI этого не видно. Без бейслайна.
+      - run: node scripts/check-filename-case.mjs
       # merge-драйверы (.gitattributes ↔ scripts/setup-merge-drivers.mjs):
       # атрибут без драйвера молча деградирует до текстового слияния, то есть
       # защита от конфликтов между параллельными агентами есть на бумаге и нет
@@ -287,9 +302,8 @@ jobs:
       # Деплой-шов (правило №14 CLAUDE.md): Dockerfile/.dockerignore/amvera.yml
       # не читает ни tsc, ни jest, ни eslint — они не .ts/.js. Гейт статически
       # проверяет, что то, что Dockerfile копирует (COPY/`cp -r`), существует
-      # в репозитории или производится сборкой, что назначение мини-аппа
-      # совпадает с rootPath ServeStaticModule в src/app.module.ts, что
-      # .dockerignore не исключает то, что COPY тут же копирует, и что
+      # в репозитории или производится сборкой (webapp/dist, game/dist, dist),
+      # что .dockerignore не исключает то, что COPY тут же копирует, и что
       # amvera.yml согласован с deploy/entrypoint.mjs. Это ловит рассинхрон
       # ПУТЕЙ за миллисекунды, но не докажет, что образ вообще собирается —
       # синтаксис Dockerfile, версии пакетов, реестр — за это отвечает джоба
@@ -446,6 +460,11 @@ jobs:
       # нашего кода. На фейке этот спек ничего бы не доказывал, поэтому только тут.
       - name: e2e leader-election кронов на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/cron-leader.e2e-spec.ts
+      # Заглушка браузерного смока (e2e-browser/support/stubFixtures.ts) против
+      # настоящих ответов: статус и тело каждой ручки (ci-alarm #903). Только тут:
+      # ручки читают сырым SQL, фейковая Prisma его не знает.
+      - name: e2e заглушка браузерного смока ↔ сервер на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/browser-stub-contract.e2e-spec.ts
       # Полуночный обход, оборванный рестартом (аудит 2026-10): хвост доделывает
       # старт нового процесса, дублей нет — день человека забирает один UPDATE с
       # условием, а это свойство Postgres, не нашего кода.
@@ -547,6 +566,11 @@ jobs:
           npx jest --config ./test/jest-e2e.json --runInBand
           test/raw-sql-live-stats.e2e-spec.ts test/raw-sql-live-infra.e2e-spec.ts
           test/raw-sql-live-admin-stats.e2e-spec.ts
+      # Аудит 2026-10: statement_timeout пула — параметр доходит до каждой
+      # сессии, база отвечает 57014, ожидание замка входит в лимит, SET LOCAL
+      # исключения не протекает в пул. Свойства драйвера, мок их не видит.
+      - name: e2e таймаут запроса к БД на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/statement-timeout.e2e-spec.ts
       # Инцидент 2026-09-13: троттлинг денежных/заявочных ручек в Postgres —
       # атомарность ON CONFLICT DO UPDATE (правило №18) проверяется только тут.
       - name: e2e троттлинг на реальном Postgres (Postgres-хранилище + HTTP)
@@ -567,21 +591,29 @@ jobs:
           test/app-ownership.e2e-spec.ts test/app-ownership-sweep.e2e-spec.ts
           test/app-ownership-sweep-2.e2e-spec.ts test/app-ownership-sweep-3.e2e-spec.ts
           test/therapy-ownership.e2e-spec.ts test/therapy-ownership-2.e2e-spec.ts test/therapy-web-client.e2e-spec.ts
+          test/client-booking-ownership.e2e-spec.ts
           test/app-auth.e2e-spec.ts test/public-quizzes.e2e-spec.ts
           test/phrase-check-ownership.e2e-spec.ts
           test/login-ticket.e2e-spec.ts
           test/refresh-rotation.e2e-spec.ts
           test/notify-address.e2e-spec.ts
+          test/notify-from-other.e2e-spec.ts
           test/merge-my-lists.e2e-spec.ts
           test/merge-relations.e2e-spec.ts
           test/merge-unique-rules.e2e-spec.ts
           test/account-export-ownership.e2e-spec.ts
           test/therapy-remove-client.e2e-spec.ts
+          test/therapy-relation-end.e2e-spec.ts
+          test/therapy-invite.e2e-spec.ts
+          test/therapy-invite-attach.e2e-spec.ts
+          test/therapy-task-delete.e2e-spec.ts
+          test/concept-share.e2e-spec.ts
           test/text-limits.e2e-spec.ts
           test/therapy-resign.e2e-spec.ts
           test/booking-admin-cancel.e2e-spec.ts
           test/exercise-delete-ownership.e2e-spec.ts
           test/max-auth.e2e-spec.ts
+          test/diary-mode-from-case.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие
@@ -680,6 +712,11 @@ jobs:
       - name: EXPLAIN (ANALYZE, BUFFERS) по горячим путям
         run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/run-plans.ts
       - run: node scripts/check-query-plans.mjs
+      # После замера: шаги удаляют данные. Ночная чистка событий и удаление
+      # самого тяжёлого аккаунта (с VACUUM) на объёме роста под прод-порогом
+      # statement_timeout — запрос сверх порога роняет джобу.
+      - name: долгие пути под прод-порогом statement_timeout
+        run: npx ts-node --compiler-options '{"module":"commonjs"}' test/perf/long-paths.ts
       # Отчёт с планами — артефактом: по красной джобе должно быть видно, какой
       # именно запрос и какой план, не переспрашивая CI.
       - name: отчёт замера артефактом
@@ -709,9 +746,7 @@ jobs:
           VITE_BOT_USERNAME: SchemeHappensBot
       # Байт-храповик размера бандлов (аудит 2026-07, пункт №5): сборка выше
       # печатает «chunks larger than 400 kB» и это молча игнорировалось —
-      # гейт меряет байты webapp/dist (свежесобран шагом выше) и уже
-      # закоммиченного schema-miniapp/dist (checkout принёс его вместе с
-      # репозиторием — джоба не собирает мини-апп отдельно). Шаг стоит СРАЗУ
+      # гейт меряет байты webapp/dist (свежесобран шагом выше). Шаг стоит СРАЗУ
       # после сборки: гейту нужен готовый webapp/dist, иначе он падает с
       # понятной подсказкой «сначала собери».
       - run: node scripts/check-bundle-size-ratchet.mjs
@@ -745,9 +780,6 @@ jobs:
       # `fontSize: N` ниже 11px — нижний читаемый порог. fs-only, тот же
       # принцип, что у check-second-person.mjs выше.
       - run: node scripts/check-tiny-fonts.mjs
-      # Драйв-гард парных файлов (правило №3): канонические пары
-      # webapp ↔ miniapp обязаны быть побайтово идентичны.
-      - run: node scripts/check-paired-files.mjs
       # Контракт дизайн-токенов (дизайн-аудит 2026-08, В11): оба index.css
       # обязаны импортировать shared/src/theme/tokens.css (акцент+шрифты) и
       # объявлять одни и те же имена для токенов, чьё значение намеренно
@@ -773,6 +805,11 @@ jobs:
       # ошибки в консоли). Абсолютный, без бейслайна: #520 вычистил класс
       # полностью, замораживать нечему. Смотрит и в .css.
       - run: node scripts/check-var-alpha-suffix.mjs
+      # Под-лист с z-index ниже родителя (инцидент 2026-11-05: «Дополнить» на
+      # экране паттерна открывал опросник ПОД ним). Листы одного уровня
+      # стыкуются порядком в DOM; число — только чтобы встать выше чужого
+      # позднего сиблинга. Абсолютный, без бейслайна.
+      - run: node scripts/check-overlay-stack.mjs
       # Спрятанное через opacity: 0 и раскрываемое только по :hover (находка
       # аудита 2026-10: кнопка удаления доказательства на телефоне). Нужны
       # два пути без hover: для пальца @media (hover: none), для клавиатуры
@@ -790,13 +827,14 @@ jobs:
       # jsx-a11y/control-has-associated-label глиф считает подписью, а роль из
       # спреда pressable() не видит — эту половину держит гейт. AST через
       # typescript из webapp/node_modules. Абсолютный, без бейслайна;
-      # webapp/src и shared/src, мини-апп не покрыт (ONE_FRONTEND_PLAN.md).
+      # webapp/src и shared/src.
       - run: node scripts/check-glyph-controls.mjs
       # Оверлей на весь экран обязан жить в истории браузера (находка аудита
       # 2026-10: чек-ин в ModesTab закрывал справочник целиком). `.tsx` с
       # position: fixed + inset: 0 — инлайном или через CSS-класс — вызывает
       # useHistorySheet либо стоит в scripts/history-sheet-baseline.json с
-      # причиной. Классификация, флага --update нет; мини-апп не покрыт.
+      # причиной. Классификация, флага --update нет; смотрит webapp/src и
+      # shared/src.
       - run: node scripts/check-history-sheet.mjs
       # Вебвизор визитки (аудит 2026-10, security#27): политика обещает «поля
       # ввода не записываются», а Вебвизор пишет клавиши везде, кроме полей с
@@ -811,9 +849,9 @@ jobs:
         timeout-minutes: 4
         run: node scripts/npm-audit.mjs webapp
 
-  # shared/ — общий пакет двух фронтендов (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
+  # shared/ — общий пакет (этап 2.2 TEST_IMPROVEMENT_PLAN.md):
   # до этой джобы 3431 строка shared-кода тестировалась только транзитивно
-  # через тесты webapp/miniapp — свои тесты и свой coverage-храповик не
+  # через тесты webapp — свои тесты и свой coverage-храповик не
   # существовали. Джоба гоняет vitest пакета через тот же
   # check-frontend-coverage-ratchet.mjs (--package shared).
   shared:
@@ -863,12 +901,10 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             webapp/package-lock.json
-            schema-miniapp/package-lock.json
             shared/package-lock.json
       - run: npm ci
       - run: npx prisma generate
       - run: npm ci --prefix webapp
-      - run: npm ci --prefix schema-miniapp
       # shared тоже линтуется храповиком, а зависимости ему не ставили —
       # правила, зависящие от типов (no-unnecessary-type-assertion и родня),
       # без node_modules разрешают TS иначе, чем локально. Итог: файл
@@ -879,42 +915,107 @@ jobs:
       - run: npm ci --prefix shared
       - run: node scripts/check-eslint-ratchet.mjs
 
-  miniapp:
+  # Браузерный смок прод-сборки в PR (2026-11-05): три поломки недели (#878,
+  # #921, #898) прошли зелёный PR-CI и всплыли только в ночном nightly уже
+  # после мержа — 8 ночей красного смока. Владелец одобрил время CI: сигнал
+  # приходит до мержа. Ночная джоба browser-smoke остаётся: она ловит флаки
+  # на main и кричит через alarm. ~4-6 минут (сборка сайта + Chromium из кэша).
+  browser-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: schema-miniapp/package-lock.json
-      - run: npm ci --prefix schema-miniapp
-      # build мини-аппа — голый `vite build` (без tsc, чтобы пересборка dist
-      # оставалась быстрой). Типы гоняем отдельным шагом через
-      # tsconfig.typecheck.json — иначе TS-ошибки в исходнике мини-аппа
-      # доезжают до прода (webapp имеет гейт через `tsc -b`).
-      - run: npm run typecheck --prefix schema-miniapp
-      - run: npm run build --prefix schema-miniapp
-      # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1) —
-      # см. комментарий в джобе webapp; здесь гоняет только свой пакет.
-      - run: node scripts/check-frontend-coverage-ratchet.mjs --package schema-miniapp
-      # Второй прогон под НЕ-UTC зоной — см. комментарий в джобе shared
-      # (инцидент 2026-09-17).
-      - name: vitest под не-UTC таймзоной
-        run: npm test --prefix schema-miniapp
+          cache-dependency-path: |
+            package-lock.json
+            webapp/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix webapp
+      # Без VITE_BOT_USERNAME production-сборка падает (shared/src/build/
+      # requireBotUsername.ts); значение то же, что в Dockerfile.
+      - run: npm run build --prefix webapp
         env:
-          TZ: Australia/Sydney
-      # dist коммитится в git (Docker его только копирует) — проверяем,
-      # что закоммиченный dist не разошёлся с исходником.
-      - name: dist актуален
-        run: |
-          if [ -n "$(git status --porcelain schema-miniapp/dist)" ]; then
-            echo '::error::schema-miniapp/dist устарел — пересобери: npm run build --prefix schema-miniapp и закоммить dist'
-            git status --short schema-miniapp/dist
-            exit 1
-          fi
-      # См. шаг audit в джобе backend.
-      - name: npm audit — schema-miniapp
-        timeout-minutes: 4
-        run: node scripts/npm-audit.mjs schema-miniapp
+          VITE_BOT_USERNAME: SchemeHappensBot
+      - name: версия Playwright для ключа кэша браузера
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # С кэшем скачивание браузера пропускается, системные зависимости
+      # (apt) ставятся всегда.
+      - run: npx playwright install --with-deps chromium
+      - name: браузерный smoke прод-сборки (Chromium)
+        run: npx playwright test
+      - name: трейс упавшего смока артефактом
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 14
+
+  # Мутации изменённых файлов золотых зон в PR (2026-11-05): храповик волны А
+  # (therapy-relations.service 97.95% → 94.96%) покраснел только ночью, после
+  # мержа #898 (ветка без теста). Здесь Stryker идёт ТОЛЬКО по изменённым
+  # файлам из `mutate` золотых конфигов (волна А — вход/шифрование, волна Б —
+  # деньги/бронирования), храповик — в режиме --partial: пол сверяется лишь у
+  # файлов отчёта, --update нет. PR без таких файлов — зелёный за секунды.
+  # Полный ночной прогон остаётся. Выбор файлов — scripts/mutation-changed-files.mjs.
+  mutation-changed:
+    # push в main не гоняем: там нет базы для сравнения, а ночь прогонит всё.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      # Каждый вызов `node scripts/…` — отдельный однострочный шаг: так его
+      # разбирает precheck (scripts/agent/precheck-lib.mjs, спек
+      # agent-precheck.spec.ts), а селектор сам пишет в $GITHUB_OUTPUT.
+      - run: git fetch origin main --quiet
+      - name: изменённые файлы волны А (вход, шифрование)
+        id: auth
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-auth.config.json --base=origin/main --github-output=files
+      - name: изменённые файлы волны Б (деньги, бронирования)
+        id: payments
+        run: node scripts/mutation-changed-files.mjs --config=stryker.golden-payments.config.json --base=origin/main --github-output=files
+      - name: нечего мутировать
+        if: steps.auth.outputs.files == '' && steps.payments.outputs.files == ''
+        run: echo "PR не трогает файлы золотых зон (mutate в stryker.golden-*.config.json) — мутации не нужны."
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+        run: npm ci
+      - if: steps.auth.outputs.files != '' || steps.payments.outputs.files != ''
+        run: npx prisma generate
+      - name: Stryker — волна А (${{ steps.auth.outputs.files }})
+        if: steps.auth.outputs.files != ''
+        env:
+          FILES: ${{ steps.auth.outputs.files }}
+        run: npx stryker run stryker.golden-auth.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна А, только файлы отчёта
+        if: steps.auth.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-auth.json --baseline=scripts/mutation-golden-auth-baseline.json
+      - name: Stryker — волна Б (${{ steps.payments.outputs.files }})
+        if: steps.payments.outputs.files != ''
+        env:
+          FILES: ${{ steps.payments.outputs.files }}
+        run: npx stryker run stryker.golden-payments.config.json --mutate "$FILES"
+      - name: храповик мутаций — волна Б, только файлы отчёта
+        if: steps.payments.outputs.files != ''
+        run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
+      - name: отчёт артефактом
+        if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '')
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-report-changed
+          path: reports/mutation/
+          retention-days: 14

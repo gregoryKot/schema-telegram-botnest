@@ -1,15 +1,26 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
+vi.mock('../api', () => ({ api: { trackEvent: vi.fn() }, reportClientError: vi.fn() }));
+vi.mock('../apiClient', () => ({ authedFetch: vi.fn() }));
 import { api } from '../api';
+import { authedFetch } from '../apiClient';
 import { HomeScreenOfferCard } from './HomeScreenOfferCard';
 import { installTelegram, removeTelegram } from '../host/tgStub.test-helpers';
 
 const MEMORY_KEY = 'home_screen_offer';
 
-beforeEach(() => localStorage.clear());
+const CODE = 'c'.repeat(64);
+
+beforeEach(() => {
+  localStorage.clear();
+  vi.mocked(authedFetch).mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({ deviceCode: CODE, expiresIn: 120 }),
+  } as unknown as Response);
+});
 afterEach(() => {
   cleanup();
   removeTelegram();
@@ -23,29 +34,35 @@ describe('HomeScreenOfferCard', () => {
     expect(api.trackEvent).not.toHaveBeenCalled();
   });
 
-  it('в Telegram на Android: показ, нативный add() и снуз на неделю', () => {
-    const addToHomeScreen = vi.fn();
-    installTelegram({ platform: 'android', addToHomeScreen, checkHomeScreenStatus: (cb: (s: string) => void) => cb('missed') });
+  it('в Telegram на Android: показ, openLink на /install с кодом и снуз на неделю', async () => {
+    const openLink = vi.fn();
+    installTelegram({ platform: 'android', openLink });
     render(<HomeScreenOfferCard />);
     expect(api.trackEvent).toHaveBeenCalledWith('home_screen_offer', { action: 'shown', surface: 'today' });
+    expect(screen.getByText(/открывается без Telegram/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить значок' }));
-    expect(addToHomeScreen).toHaveBeenCalledTimes(1);
+    // Адрес с кодом приезжает после ответа сервера; до него — без кода.
+    await waitFor(() => expect(authedFetch).toHaveBeenCalled());
+    await act(async () => { await Promise.resolve(); });
+    fireEvent.click(screen.getByRole('button', { name: 'Установить приложение' }));
+    expect(openLink).toHaveBeenCalledTimes(1);
+    expect(String(openLink.mock.calls[0][0])).toMatch(new RegExp(`/install#h=${CODE}$`));
     expect(api.trackEvent).toHaveBeenCalledWith('home_screen_offer', { action: 'add', surface: 'today' });
     expect(Number(localStorage.getItem(MEMORY_KEY))).toBeGreaterThan(Date.now());
-    expect(screen.queryByText('Добавить значок')).toBeNull();
+    expect(screen.queryByText('Установить приложение')).toBeNull();
   });
 
-  it('на iOS кнопка — настоящая ссылка на прыжковую страницу', () => {
-    installTelegram({ platform: 'ios', addToHomeScreen: vi.fn(), checkHomeScreenStatus: (cb: (s: string) => void) => cb('missed') });
+  it('на iOS кнопка — настоящая ссылка на /install', () => {
+    installTelegram({ platform: 'ios' });
     render(<HomeScreenOfferCard />);
-    const a = screen.getByRole('link', { name: 'Добавить значок' });
-    expect(a.getAttribute('href')).toMatch(/add-icon\.html$/);
+    const a = screen.getByRole('link', { name: 'Установить приложение' });
+    expect(a.getAttribute('href')).toMatch(/\/install(#h=[0-9a-f]{64})?$/);
     expect(a.getAttribute('target')).toBe('_blank');
+    expect(screen.getByText(/Safari/)).toBeTruthy();
   });
 
   it('«Не предлагать» запоминается навсегда, «Позже» скрывает карточку', () => {
-    installTelegram({ platform: 'android', addToHomeScreen: vi.fn(), checkHomeScreenStatus: (cb: (s: string) => void) => cb('missed') });
+    installTelegram({ platform: 'android' });
     const { unmount } = render(<HomeScreenOfferCard />);
     fireEvent.click(screen.getByRole('button', { name: 'Не предлагать' }));
     expect(localStorage.getItem(MEMORY_KEY)).toBe('never');
@@ -54,12 +71,8 @@ describe('HomeScreenOfferCard', () => {
     expect(again.container.firstChild).toBeNull();
   });
 
-  it('Telegram говорит «значок уже есть» — карточка скрывается', () => {
-    installTelegram({
-      platform: 'android',
-      addToHomeScreen: vi.fn(),
-      checkHomeScreenStatus: (cb: (s: string) => void) => cb('added'),
-    });
+  it('на десктопном Telegram карточки нет', () => {
+    installTelegram({ platform: 'tdesktop' });
     const { container } = render(<HomeScreenOfferCard />);
     expect(container.firstChild).toBeNull();
   });

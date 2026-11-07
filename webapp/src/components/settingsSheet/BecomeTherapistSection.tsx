@@ -4,6 +4,8 @@ import { useTr } from '../../utils/addressForm';
 import { SSection } from './ui';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
+import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
 
 // Раздел «Стать специалистом» — вынесен из SettingsSheet.tsx (правило №10,
 // файл-должник, пофайловый храповик размера). Состояние заявки полностью
@@ -41,7 +43,7 @@ export function BecomeTherapistSection() {
       await api.submitTherapistRequest({ fullName: reqFullName.trim(), qualification: reqQual.trim(), contacts: reqContacts.trim(), message: reqMsg.trim() || undefined });
       setTherapistReq({ status: 'pending', rejectReason: null });
       setShowReqForm(false);
-    } catch (e) { setReqError(String(e).replace('Error: ', '')); }
+    } catch (e) { setReqError(humanizeThrown(e, 'Не удалось отправить заявку')); } // не «TypeError: Failed to fetch»
     finally { setReqBusy(false); }
   }
 
@@ -58,11 +60,7 @@ export function BecomeTherapistSection() {
           </div>
         ) : !showReqForm ? (
           <div>
-            {therapistReq?.status === 'rejected' && (
-              <div className="st-err">
-                Заявка отклонена{therapistReq.rejectReason ? `: ${therapistReq.rejectReason}` : ''}. {tr('Можешь подать снова.', 'Можете подать снова.')}
-              </div>
-            )}
+            <TherapistRequestRejectedNote request={therapistReq} className="st-err" />
             <p className="st-text">
               {tr('Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.', 'Если вы практикующий специалист — подайте заявку. Администратор проверит и откроет доступ к кабинету.')}
             </p>

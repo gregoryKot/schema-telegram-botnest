@@ -1,8 +1,9 @@
-// Общие методы API обоих фронтендов (webapp ↔ schema-miniapp, правило №3).
+// Общие методы API (webapp, правило №3).
 // До 2026-08 эндпоинты жили копией в двух api.ts, и фиксы доезжали до одного;
-// теперь метод описан ОДИН раз здесь. Фронт отличается только транспортом (webapp —
-// JWT Bearer, мини-апп — initData) и платформенными методами своего api.ts (booking/
+// теперь метод описан ОДИН раз здесь. Сайт добавляет только транспорт (webapp —
+// JWT Bearer) и платформенные методы своего api.ts (booking/
 // статьи/админка — сайт; exercises, saveRating с outbox-датой, conceptualization — локально).
+import { THERAPY_RELATION_PATH } from '../therapy/freshRelation';
 import type {
   Need,
   UserProfile,
@@ -28,6 +29,11 @@ import type {
   ClientData,
   Insights,
 } from '../apiTypes';
+import type { FormerTherapistInfo } from '../therapy/formerTherapist';
+import {
+  THERAPY_INVITES_PATH,
+  type TherapyInvite,
+} from '../therapy/therapyInvites';
 import type {
   UserSchemaNote,
   UserModeNote,
@@ -46,7 +52,10 @@ export interface ApiTransport {
 }
 
 export const buildSharedApi = (t: ApiTransport) => ({
-  init: (tzOffset?: number) => t.post('/api/init', { tzOffset }),
+  // Пояс устройства (deviceTimeZone): пока человек не выбрал пояс сам, сервер
+  // считает по нему «сегодня» — серию, недельную полосу, напоминания. Раньше
+  // уходило число tzOffset, которого DTO не знает, и пояс у всех был московским.
+  init: (timezone?: string) => t.post('/api/init', { timezone }),
 
   // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
   // влияет на UX — ошибки/сеть глотаем, промис не пробрасываем.
@@ -121,6 +130,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.get<{ answers: number[]; completedAt: string } | null>('/api/ysq-result'),
   saveYsqResult: (answers: number[]) => t.post('/api/ysq-result', { answers }),
   deleteYsqResult: () => t.del('/api/ysq-result'),
+  /** Итог, вся история и прогресс теста разом — кнопка в настройках. */
+  deleteYsqData: () => t.del('/api/ysq-data'),
   getYsqHistory: () => t.get<YsqHistoryEntry[]>('/api/ysq-history'),
   getProfile: () => t.get<UserProfile>('/api/profile'),
   updateName: (name: string) =>
@@ -151,16 +162,44 @@ export const buildSharedApi = (t: ApiTransport) => ({
     actualNeed?: string;
     childhoodMemories?: string;
     healthyResponse?: string;
+    /** Запись из потока «Что случилось» (сайт). */
+    fromCase?: boolean;
   }) => t.postJson<ModeDiaryEntry>('/api/diary/mode', data),
   deleteModeDiary: (id: number) => t.del(`/api/diary/mode/${id}`),
   getGratitudeDiary: () => t.get<GratitudeDiaryEntry[]>('/api/diary/gratitude'),
-  createGratitudeDiary: (date: string, items: string[]) =>
-    t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', { date, items }),
+  // base — день до правки: сервер сливает с ним (src/bot/gratitude-merge.ts).
+  createGratitudeDiary: (date: string, items: string[], base?: string[]) => {
+    const body = { date, items, base };
+    return t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', body);
+  },
   deleteGratitudeDiary: (id: number) => t.del(`/api/diary/gratitude/${id}`),
-  createTherapyInvite: () =>
-    t.postJson<{ code: string; url: string }>('/api/therapy/invite', {}),
+  // Каждый вызов — новый код; alias — имя из «Новый клиент» (карточка после
+  // подключения называется так). Живые приглашения — списком, их можно отозвать.
+  createTherapyInvite: (alias?: string) =>
+    t.postJson<{ code: string; url: string }>(
+      '/api/therapy/invite',
+      alias ? { alias } : {},
+    ),
+  // Приглашение из карточки офлайн-клиента (clientId < 0): после подключения её
+  // данные переедут на аккаунт клиента. Повтор отдаёт то же живое приглашение.
+  createOfflineClientInvite: (clientId: UserId) =>
+    t.postJson<{ code: string; url: string }>(
+      `/api/therapy/clients/${clientId}/invite`,
+      {},
+    ),
+  getTherapyInvites: () => t.get<TherapyInvite[]>(THERAPY_INVITES_PATH),
+  revokeTherapyInvite: (id: number) => t.del(`/api/therapy/invites/${id}`),
+  // Чей код — до согласия клиента (экран JoinConfirmSheet).
+  previewTherapyInvite: (code: string) =>
+    t.postJson<{
+      therapistName: string | null;
+      connection?: 'none' | 'same' | 'other';
+    }>('/api/therapy/invite/preview', { code }),
   getTherapyRelation: () =>
-    t.get<TherapyRelationInfo | null>('/api/therapy/relation'),
+    t.get<TherapyRelationInfo | null>(THERAPY_RELATION_PATH),
+  // Терапевт отказался от роли — сообщение вместо «Мой терапевт».
+  getFormerTherapist: () =>
+    t.get<FormerTherapistInfo | null>('/api/therapy/former-therapist'),
   joinTherapy: (code: string) => t.post('/api/therapy/join', { code }),
   leaveTherapy: () => t.del('/api/therapy/relation'),
   getTherapyClients: () =>
@@ -201,6 +240,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
   getTaskHistory: () => t.get<UserTask[]>('/api/therapy/tasks/history'),
   completeTask: (id: number, done: boolean) =>
     t.post(`/api/therapy/tasks/${id}/complete`, { done }),
+  /** Терапевт удаляет назначенное им задание текущему клиенту. */
+  deleteTherapyTask: (id: number) => t.del(`/api/therapy/tasks/${id}`),
   getTherapyTasksForClient: (clientId: UserId) =>
     t.get<UserTask[]>(`/api/therapy/tasks/client/${clientId}`),
   getTherapistNotes: (clientId: UserId) =>
@@ -224,7 +265,7 @@ export const buildSharedApi = (t: ApiTransport) => ({
     t.post('/api/schema-notes', body),
   getModeNotes: () => t.get<UserModeNote[]>('/api/mode-notes'),
   saveModeNote: (body: SaveModeNoteBody) => t.post('/api/mode-notes', body),
-  // Разборы фразы (упражнение «Критик или забота?» живёт в мини-аппе) — сайту
+  // Разборы фразы (упражнение «Критик или забота?») — сайту
   // нужны для «Тёплых слов»: в коллекцию идут помеченные inWarmWords.
   getClientSchemaNotes: (clientId: UserId) =>
     t.get<UserSchemaNote[]>(`/api/therapy/client/${clientId}/schema-notes`),

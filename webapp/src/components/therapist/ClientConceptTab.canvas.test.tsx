@@ -5,7 +5,7 @@
 // (с несохранёнными правками) → create → update с нодами → событие → переход.
 import { useEffect, useRef } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 
 vi.mock('../../api', () => ({
@@ -72,10 +72,16 @@ async function openTab(props: { withHandler?: boolean; form?: AddressForm } = {}
       <Harness withHandler={props.withHandler} />
     </AddressFormContext.Provider>,
   );
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
-const canvasBtn = () => screen.getByRole('button', { name: /холсте|на холст/ });
+// Действие живёт в меню «⋯ Ещё» шапки (#879); выбор пункта закрывает меню,
+// поэтому каждый вызов открывает его заново.
+const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Ещё действия' }));
+const canvasBtn = () => {
+  openMore();
+  return screen.getByRole('menuitem', { name: /холсте/ });
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -88,29 +94,35 @@ beforeEach(() => {
   mockApi.getClientDiary.mockResolvedValue([]);
   mockApi.getConceptualization.mockResolvedValue(concept());
   mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => ({ ...concept(), ...body }));
-  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'personality' });
+  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'concept' });
   mockApi.updateModeMap.mockResolvedValue({});
   mockApi.deleteModeMap.mockResolvedValue(undefined);
 });
 afterEach(() => cleanup());
 
 describe('«Открыть на холсте»: где есть кнопка', () => {
-  it('в виде «Схема» с подписью, что она делает', async () => {
+  it('в виде «Схема» в меню «⋯ Ещё», с подсказкой, что она делает', async () => {
     await openTab();
-    expect(canvasBtn().textContent).toBe('Открыть на холсте');
-    expect(screen.getByText(/Новая карта режимов из этой схемы: можно двигать фигуры/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /холсте/ })).toBeNull();
+    const btn = canvasBtn();
+    expect(btn.firstElementChild!.textContent).toBe('Открыть на холсте');
+    // Подсказка — строкой под названием, видна без наведения (не в title).
+    expect(within(btn).getByText(/Новая графическая карта из этой схемы: можно двигать фигуры/)).toBeTruthy();
+    expect(btn.title).toBe('');
   });
 
   it('вкладке некуда вести (нет onOpenCanvas) — кнопки нет, «Скачать картинкой» остаётся', async () => {
     await openTab({ withHandler: false });
-    expect(screen.queryByRole('button', { name: /холсте/ })).toBeNull();
-    expect(screen.getByRole('button', { name: /Скачать картинкой/ })).toBeTruthy();
+    openMore();
+    expect(screen.queryByRole('menuitem', { name: /холсте/ })).toBeNull();
+    expect(screen.getByRole('menuitem', { name: /Скачать картинкой/ })).toBeTruthy();
   });
 
   it('в виде «Поля» кнопки нет', async () => {
     await openTab();
     fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
-    expect(screen.queryByRole('button', { name: /холсте/ })).toBeNull();
+    openMore();
+    expect(screen.queryByRole('menuitem', { name: /холсте/ })).toBeNull();
   });
 });
 
@@ -121,8 +133,8 @@ describe('«Открыть на холсте»: создание карты', ()
     await waitFor(() => expect(onOpenCanvas).toHaveBeenCalledWith(41));
 
     const [clientId, title, kind] = mockApi.createModeMap.mock.calls[0];
-    expect([clientId, kind]).toEqual([7, 'personality']);
-    expect(title).toMatch(/^Схема случая · \d{1,2} \S+\.?$/);
+    expect([clientId, kind]).toEqual([7, 'concept']);
+    expect(title).toMatch(/^Концептуализация · \d{1,2} \S+\.?$/);
 
     const [mapId, body] = mockApi.updateModeMap.mock.calls[0];
     expect(mapId).toBe(41);
@@ -146,13 +158,14 @@ describe('«Открыть на холсте»: создание карты', ()
     expect(critic.data.note).toBe('Ты опять всё испортил');
   });
 
-  it('пока карта создаётся, кнопка занята и подписана словами', async () => {
+  it('пока карта создаётся, под шапкой строка словами, а пункт меню занят', async () => {
     let finish!: (v: unknown) => void;
     mockApi.createModeMap.mockReturnValue(new Promise((r) => { finish = r; }));
     await openTab();
     fireEvent.click(canvasBtn());
-    const busy = await screen.findByRole('button', { name: 'Переношу на холст…' });
-    expect((busy as HTMLButtonElement).disabled).toBe(true);
+    expect(await screen.findByText('Переношу на холст…')).toBeTruthy();
+    expect((canvasBtn() as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.keyDown(document, { key: 'Escape' });
     finish({ id: 5 });
     await waitFor(() => expect(onOpenCanvas).toHaveBeenCalledWith(5));
     expect((canvasBtn() as HTMLButtonElement).disabled).toBe(false);

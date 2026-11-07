@@ -1,5 +1,5 @@
 // Общие DTO/типы ответов API — единый источник для обоих фронтендов
-// (webapp ↔ schema-miniapp, правило №3 CLAUDE.md); оба ре-экспортируют их из
+// (webapp, правило №3 CLAUDE.md); оба ре-экспортируют их из
 // своих api-модулей. Здесь ТОЛЬКО типы, совпадающие в обоих фронтендах;
 // расходящиеся остаются локальными (ClientConceptualization в webapp несёт
 // modeMapNodes/modeMapEdges — mode-map есть только на сайте).
@@ -24,6 +24,7 @@ export interface UserSettings {
   therapistShareCards: boolean;
   therapistShareProfile: boolean;
   uiPrefs?: UiPrefsPatch | null; // настройки экранов; POST заменяет объект целиком
+  notifyReachable?: boolean; // только GET: есть ли куда слать уведомления (Telegram)
 }
 
 export interface StreakData {
@@ -93,6 +94,8 @@ export interface TherapyRelationInfo {
   partnerId: UserId | null;
   code: string;
   nextSession: string | null;
+  meetingDays?: number[]; // клиенту — для upcomingSession; нет у старого кэша
+  conceptSharedAt?: string | null; // клиенту — терапевт показал схему случая («Мой терапевт»)
 }
 
 export interface TherapistNote {
@@ -125,6 +128,14 @@ export interface ConceptModeLink {
   manifest: string;
   /** Что делаем с режимом в терапии. */
   strategy: string;
+  /** «Делали сегодня» у техник (#995); рабочий журнал терапевта, клиенту не уходит. */
+  done?: ConceptTechniqueMark[];
+}
+
+/** Отметка «Делали сегодня»: техника из библиотеки подсказок и местный день терапевта (`todayStr()`). */
+export interface ConceptTechniqueMark {
+  techniqueId: string;
+  day: string;
 }
 
 /**
@@ -142,6 +153,8 @@ export interface ConceptSchemaLink {
   origin: string;
   /** Какие потребности схема блокирует. NeedId из shared/src/needs/types.ts. */
   needIds: string[];
+  /** «Делали сегодня» у техник (#995), как у ConceptModeLink. */
+  done?: ConceptTechniqueMark[];
 }
 
 export interface ConceptSnapshot {
@@ -163,7 +176,7 @@ export interface ConceptSnapshot {
 export interface YsqHistoryEntry {
   id: number;
   completedAt: string;
-  scores: { id: string; pct5plus: number; avg?: number }[];
+  scores: { id: string; pct5plus: number; avg?: number; active?: boolean }[];
 }
 
 export interface ClientData {
@@ -173,6 +186,8 @@ export interface ClientData {
   ysqCompletedAt: string | null;
   ysqActiveSchemaIds: string[];
   ysqHistory: YsqHistoryEntry[];
+  /** Запрос YSQ терапевта ещё не ушёл клиенту (src/therapy/ysq-request.ts). */
+  ysqRequestPending?: boolean;
 }
 
 export interface Insights {

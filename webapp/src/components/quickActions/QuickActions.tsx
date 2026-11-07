@@ -1,31 +1,23 @@
-// Точка подключения быстрых действий в AppShell: кнопка «+» (мобильная
-// вёрстка), её лист и оверлей выбранного действия. Состояние оверлея — в
-// useOverlays (ov.quickAction), палитра ⌘K открывает то же через
-// ov.runQuickAction.
-import { lazy, Suspense, useState } from 'react';
+// Хост оверлея быстрого действия в AppShell. Кнопки «+» на сайте нет (простой клиент,
+// этап 3): действие запускают палитра ⌘K (ov.runQuickAction) и start-параметры. Состояние
+// оверлея — в useOverlays (ov.quickAction).
+import { lazy, Suspense } from 'react';
 import type { useOverlays } from '../appShell/useOverlays';
-import { PlusButton } from './PlusButton';
 
-// Лист и оверлеи открываются по тапу — отдельными чанками, не в основном.
-const PlusMenuSheet = lazy(() => import('./PlusMenuSheet').then((m) => ({ default: m.PlusMenuSheet })));
+// Оверлеи открываются по действию — отдельным чанком, не в основном.
 const QuickActionOverlays = lazy(() => import('./QuickActionOverlays').then((m) => ({ default: m.QuickActionOverlays })));
 
-export function QuickActions({ ov, showButton }: { ov: ReturnType<typeof useOverlays>; showButton: boolean }) {
-  const [menu, setMenu] = useState(false);
+export function QuickActions({ ov }: { ov: ReturnType<typeof useOverlays> }) {
   return (
-    <>
-      {showButton && <PlusButton onOpen={() => setMenu(true)} />}
-      <Suspense fallback={null}>
-        {menu && <PlusMenuSheet onAction={ov.runQuickAction} onClose={() => setMenu(false)} />}
-        {ov.quickAction !== null && (
-          <QuickActionOverlays
-            active={ov.quickAction}
-            onClose={() => ov.setQuickAction(null)}
-            onOpenTracker={() => ov.runQuickAction('tracker')}
-            onOpenSchema={ov.openSchema}
-          />
-        )}
-      </Suspense>
-    </>
+    <Suspense fallback={null}>
+      {ov.quickAction !== null && (
+        <QuickActionOverlays
+          active={ov.quickAction}
+          onClose={() => ov.setQuickAction(null)}
+          onOpenTracker={() => ov.runQuickAction('tracker')}
+          onOpenSchema={ov.openSchema}
+        />
+      )}
+    </Suspense>
   );
 }

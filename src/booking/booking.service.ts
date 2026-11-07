@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
@@ -37,7 +38,8 @@ import {
   paymentAfterCancel,
 } from './booking.transitions';
 import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
-import type { CreateBookingDto } from './booking.types';
+import type { BookingAccount, CreateBookingDto } from './booking.types';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 export type { CreateBookingDto };
 export { PaymentAmountMismatchError } from './booking-amount';
@@ -55,6 +57,7 @@ export class BookingService {
     private readonly pricing: PricingService,
     config: ConfigService,
     private readonly cronLeader: CronLeaderService,
+    @Optional() private readonly analytics?: AnalyticsService,
   ) {
     this.siteUrl = (
       config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
@@ -70,8 +73,9 @@ export class BookingService {
    * SESSION_50 in rubles: HELD for 15 min; with Robokassa configured returns a
    * paymentUrl, the webhook calls confirm(). Without Robokassa: production
    * refuses (503) before the INSERT, dev confirms at once (payment-guard.ts).
+   * `account` — только запись клиента из приложения (client-booking.service.ts).
    */
-  async book(dto: CreateBookingDto) {
+  async book(dto: CreateBookingDto, account?: BookingAccount) {
     if (!dto.clientName || !dto.clientContact) {
       throw new BadRequestException('Name and contact required');
     }
@@ -107,12 +111,17 @@ export class BookingService {
     );
     const cancelToken = randomUUID();
 
-    const data = buildBookingData(dto, { ...price, cancelToken });
+    const data = buildBookingData(dto, { ...price, cancelToken }, account);
 
     // Лок + проверка занятости + INSERT в одной транзакции, с резервом на
     // случай падения (лид уходит админу) — см. booking.create.ts.
     const booking = await createBookingGuarded(
-      { prisma: this.prisma, notify: this.notify, logger: this.logger },
+      {
+        prisma: this.prisma,
+        notify: this.notify,
+        logger: this.logger,
+        analytics: this.analytics,
+      },
       data,
       dto,
     );

@@ -14,7 +14,7 @@
 
 ### К1. Живой баг «ты/вы»: отклик «Злой Ребёнок» в мини-аппе без `tr()`
 
-`schema-miniapp/src/components/schemaFlashcard/constants.ts:24-25` — из всех
+`constants.ts:24-25` (мини-апп, удалён) — из всех
 режимов флешкарты только этот отдаёт сырую строку с «Давай выясним», остальные
 обёрнуты в `tr()`. Пользователь с формой «вы» видит «ты»-текст. В webapp тот же
 контент обёрнут правильно (`webapp/src/components/SchemaFlashcard.tsx:28`) —
@@ -52,7 +52,7 @@ miniapp — `schemaFlashcard/constants.ts`), копии правились не�
 Стандарт в проекте есть (`GearButton`, `CustomizeButton`, `UpdateToast.tsx:64-70`
 с комментарием «цель нажатия ≥44×44»), но в служебных оверлеях он не применён:
 
-- `schema-miniapp/src/components/PracticesList.tsx:75-89` — **удаление
+- `PracticesList.tsx:75-89` (мини-апп, удалён) — **удаление
   практики: цель 30×30, подтверждения нет** (`usePracticesData.ts:61-65`
   зовёт `api.deletePractice` сразу, undo нет). Случайный тап = потеря данных.
 - `TrackerOverlay.tsx:250-353` — «Закрыть», «Заметка», «История» по 34×34.
@@ -71,7 +71,7 @@ miniapp — `schemaFlashcard/constants.ts`), копии правились не�
 
 `role="dialog"` / `aria-modal` в терапевтической части приложения — ноль
 (в webapp только `CookieBanner` и мобильное меню лендинга; в miniapp — нигде).
-Базовый `schema-miniapp/src/components/BottomSheet.tsx` (31 использование):
+Базовый `BottomSheet.tsx` (мини-апп, удалён) (31 использование):
 Escape есть, но нет `role="dialog"`, нет фокус-трапа (Tab уходит на фон под
 шитом), нет возврата фокуса после закрытия — `activeElement` по всему коду
 встречается только в тестах, то есть паттерна «вернуть фокус» нет ни в одной
@@ -100,7 +100,7 @@ Escape есть, но нет `role="dialog"`, нет фокус-трапа (Tab 
 
 ### В1. Шрифты 7–9px — подпороговый текст в десятках мест
 
-Худший случай — `schema-miniapp/src/sections/today/NeedMini.tsx:95`:
+Худший случай — `NeedMini.tsx:95` (мини-апп, удалён):
 `fontSize: 7`. В webapp — `fontSize: 8` в `ProfileSection.tsx:282,290,383`,
 `8.5` в `ModeMapNodeEditor.tsx:263`, и десятки мест 9–11px в обоих проектах.
 Даже официальная шкала `.text-xs` — 11px (miniapp) / 11.5px (webapp).
@@ -188,7 +188,7 @@ miniapp.
 
 ### В9. Слайдер «Колеса детства» недоступен с клавиатуры полностью
 
-`schema-miniapp/src/components/childhoodWheelSheet/Slider.tsx` — чисто
+`Slider.tsx` (мини-апп, удалён) — чисто
 pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрелок.
 Единственный способ поставить значение в упражнении. Контраст: `NeedRatingBar`
 сделан образцово (10 нативных кнопок с `aria-label`/`aria-pressed`).
@@ -298,11 +298,15 @@ pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрел
    класс отдельным гейтом («литерал белого в одном style-объекте с заливкой
    `var(--accent*)`») или расширить `check-color-drift.mjs` — сейчас он белый
    не считает намеренно, ахроматика у нас законный приём для теней.
+   **2026-11:** к волне 4 реестра литералов осталось ~19; белый на `var(--accent)`
+   переведён на `--on-accent` (`cabinet.css`, `AccountLinkCard`), CSS держит
+   `webapp/src/styles/onAccent.test.ts`; остаток — `docs/open/frontend-ux.md`.
 2. **Четыре `rgba(255,100,100,…)` в `shared/src/journey/JourneyDeleteButton.tsx`.**
    Тот самый литерал, который #516 перечисляет как вычищенный: свип читал
    глазами и это место пропустил, а гейт нашёл на первом прогоне. Лежит в
    бейслайне как долг. Перевод на `color-mix(in srgb, var(--accent-red) N%,
-   transparent)` — первая и самая дешёвая цель.
+   transparent)` — первая и самая дешёвая цель. **Закрыто (волна 4 реестра,
+   2026-11):** токен и `color-mix`, файл ушёл из бейслайна.
 3. **84 литерала дрейфа в самом приложении** (остаток 139 минус лендинги и
    палитры-реестры). Брать стоит ролями, а не файлами: один и тот же янтарный
    `rgba(251,191,36,…)` лежит в семи местах, зелёный `#06d6a0` — в восьми.
@@ -473,7 +477,7 @@ pointer-based div: без `role="slider"`, `tabIndex`, `aria-value*`, стрел
 | Ж1. Мёртвый `webapp/src/components/BottomNav.tsx` | done · #397 | Файл удалён, тип `Section` — в живом `appShell`. |
 | Ж2. Два входа в настройку «Инструментов» | done · волна 5 (текущая) | Оставлена шестерёнка `HelpHeader` (тот же паттерн, что «Сегодня»/«Паттерны»), пилюля «Настроить» убрана из `ToolsList` — решение и его причина зафиксированы в комментарии кода. |
 | Ж3. FloatingPill «+» против `TodayFocusCard` | done · волна 5 (текущая) | «+» скрыта на «Сегодня» (`section !== 'today'` в `AppDiaryNav.tsx`), на остальных трёх вкладках — видна, нижняя навигация видна всегда. |
-| Ж4. Нативный `confirm()` × 3 | done · волна 5 (текущая) | Общий `webapp/src/components/ConfirmDialog.tsx` (`useDialogA11y`, Escape) — `AccountPage` (отвязка провайдера — заодно починен старый баг с текстом диалога для VK/MAX/Email), `ModeMapSelector` (удаление карты), `useClientDetail`/`ClientHeader` (удаление клиента). `DeleteAccountDialog` переведён на тот же примитив. |
+| Ж4. Нативный `confirm()` × 3 (+2 в админке) | done · волна 5; админка — 2026-11-06 | Общий `webapp/src/components/ConfirmDialog.tsx` (`useDialogA11y`, Escape) — `AccountPage` (отвязка провайдера — заодно починен старый баг с текстом диалога для VK/MAX/Email), `ModeMapSelector` (удаление карты), `useClientDetail`/`ClientHeader` (удаление клиента). `DeleteAccountDialog` переведён на тот же примитив. Два оставшихся `confirm()` админки — удаление статьи (`pages/admin/ArticlesSection.tsx`) и фразы канала (`pages/admin/HealthyAdultSection.tsx`) — на `ConfirmDialog` + `useConfirmedAction`, сбой удаления виден в диалоге. Нативного `confirm()` в `webapp/src` больше нет. |
 | Ж5. Escape в `useHistorySheet` (webapp) | done · #398 | webapp слушает Escape через стек id смонтированных шитов (Escape закрывает верхний из наложенных). Мини-апп образцом не был: `BottomSheet` вешал свой слушатель на каждый шит, и Escape закрывал все разом — исправлено 2026-10 общим стеком диалогов в `useDialogA11y` (`shared/src/utils/dialogStack.ts`), им же теперь пользуются оба фронта. |
 | Ж6. `scrollIntoView({behavior:'smooth'})` игнорировал reduced-motion | done · #403 | Общий `shared/src/utils/scrollIntoView.ts` — 11 живых вызовов (9 webapp + 2 miniapp) переведены. |
 | Ж7. `aria-expanded`/`role="button"` на панелях | частично · #403 | a) `aria-expanded` — 2 явно названных в аудите места (`SchemasTab`, `EntryCards`); полного свипа всех раскрывашек не было. b) `role="button"` только ради `stopPropagation` — убран во всех найденных случаях (`NeedAdviceModal`, `CommandPalette`, `DonateNudge`, `InfoModal`). **Открыто**: остальные раскрывашки miniapp, упомянутые в аудите как «5 штук», но не перечисленные поимённо. |

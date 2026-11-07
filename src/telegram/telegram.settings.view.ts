@@ -8,20 +8,11 @@ import { Markup } from 'telegraf';
 import { BotService } from '../bot/bot.service';
 import { CADENCE_LABELS } from '../notification/notification.cadence.service';
 import { tzOffsetAt } from '../notification/notification.time';
+import { NOTIFY_TIMEZONES } from '../notification/notify-timezones';
+import { cityLabel } from '../booking/client-timezone';
 
-export const TIMEZONES: { label: string; tz: string }[] = [
-  { label: 'Лос-Анджелес', tz: 'America/Los_Angeles' },
-  { label: 'Нью-Йорк', tz: 'America/New_York' },
-  { label: 'Лондон', tz: 'Europe/London' },
-  { label: 'Берлин, Варшава', tz: 'Europe/Berlin' },
-  { label: 'Киев', tz: 'Europe/Kyiv' },
-  { label: 'Израиль', tz: 'Asia/Jerusalem' },
-  { label: 'Москва', tz: 'Europe/Moscow' },
-  { label: 'Дубай', tz: 'Asia/Dubai' },
-  { label: 'Ташкент', tz: 'Asia/Tashkent' },
-  { label: 'Алматы', tz: 'Asia/Almaty' },
-  { label: 'Пекин', tz: 'Asia/Shanghai' },
-];
+// Кнопки пояса — общий список выбора (src/notification/notify-timezones.ts).
+export const TIMEZONES = NOTIFY_TIMEZONES;
 
 export function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -40,7 +31,8 @@ export async function buildSettingsView(
     };
   }
   const tz =
-    TIMEZONES.find((t) => t.tz === s.notifyTimezone)?.label ?? s.notifyTimezone;
+    TIMEZONES.find((t) => t.tz === s.notifyTimezone)?.label ??
+    cityLabel(s.notifyTimezone);
   const offset = tzOffsetAt(s.notifyTimezone);
   const utcLabel = offset >= 0 ? `UTC+${offset}` : `UTC${offset}`;
   const quietLine =

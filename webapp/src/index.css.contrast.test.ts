@@ -11,89 +11,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { contrastRatio, extractBlock, luminance, overlay, parseColor, resolveToken, tokenInBlock } from './test-support/cssContrast';
 
 const CSS = readFileSync(join(__dirname, 'index.css'), 'utf8');
 
-type Rgb = [number, number, number];
-
-function hexToRgb(hex: string): Rgb {
-  const h = hex.replace('#', '');
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-
-// Разбирает и `#rrggbb`, и `rgba(r,g,b,a)` — оба формата встречаются в index.css.
-function parseColor(raw: string): { rgb: Rgb; alpha: number } {
-  const v = raw.trim();
-  const rgbaMatch = v.match(/rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
-  if (rgbaMatch) {
-    return { rgb: [+rgbaMatch[1], +rgbaMatch[2], +rgbaMatch[3]], alpha: +rgbaMatch[4] };
-  }
-  return { rgb: hexToRgb(v), alpha: 1 };
-}
-
-/** Значение токена в конкретном блоке темы (`:root, html[data-theme="light"]`
- *  либо `html[data-theme="dark"]`) — берём ПЕРВОЕ совпадение внутри блока,
- *  а не по всему файлу, иначе light/dark значения одного имени перепутаются. */
-function tokenInBlock(blockCss: string, name: string): string {
-  const re = new RegExp(`${name}:\\s*([^;]+);`);
-  const m = blockCss.match(re);
-  if (!m) throw new Error(`токен ${name} не найден в блоке темы`);
-  return m[1];
-}
-
-/** То же, но разворачивает ссылки `var(--other)` внутри того же блока темы
- *  (`--accent-red: var(--c-rose-strong)` → `var(--c-rose)` → `#d68585`).
- *  Цепочку ограничиваем — циклическая ссылка должна падать, а не висеть. */
-function resolveToken(blockCss: string, name: string, depth = 0): string {
-  if (depth > 5) throw new Error(`циклическая ссылка токенов на ${name}`);
-  const raw = tokenInBlock(blockCss, name).trim();
-  if (!raw.startsWith('var(')) return raw;
-  return resolveToken(blockCss, raw.slice(4, -1).trim(), depth + 1);
-}
-
-function extractBlock(css: string, startMarker: string): string {
-  const start = css.indexOf(startMarker);
-  if (start === -1) throw new Error(`маркер блока «${startMarker}» не найден в index.css`);
-  const openBrace = css.indexOf('{', start);
-  const closeBrace = css.indexOf('\n}', openBrace);
-  return css.slice(openBrace, closeBrace);
-}
-
-function srgbToLin(c: number): number {
-  const v = c / 255;
-  return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-}
-function luminance([r, g, b]: Rgb): number {
-  return 0.2126 * srgbToLin(r) + 0.7152 * srgbToLin(g) + 0.0722 * srgbToLin(b);
-}
-function contrastRatio(fg: Rgb, bg: Rgb): number {
-  const L1 = luminance(fg);
-  const L2 = luminance(bg);
-  const [hi, lo] = L1 > L2 ? [L1, L2] : [L2, L1];
-  return (hi + 0.05) / (lo + 0.05);
-}
-/** Накладывает полупрозрачный цвет на непрозрачную подложку (alpha-composite). */
-function overlay(fg: Rgb, alpha: number, bg: Rgb): Rgb {
-  return [0, 1, 2].map((i) => alpha * fg[i] + (1 - alpha) * bg[i]) as Rgb;
-}
-
 const LIGHT = extractBlock(CSS, ':root, html[data-theme="light"]');
 const DARK = extractBlock(CSS, 'html[data-theme="dark"]');
-
-// Мини-апп читается ТЕМ ЖЕ тестом, а не копией помощников рядом (правило №11
-// CLAUDE.md — повторённый блок выносится, а не дублируется; здесь проще
-// параметризовать один файл, чем городить общий модуль-помощник, у которого
-// не будет прод-потребителя). У мини-аппа темы разложены наоборот: голый
-// `:root` держит ТЁМНЫЕ значения, светлые — в `html[data-theme='light']`
-// (см. комментарий в его index.css).
-const MINIAPP_CSS = readFileSync(
-  join(__dirname, '..', '..', 'schema-miniapp', 'src', 'index.css'),
-  'utf8',
-);
-// Маркер — заголовок комментария перед блоком, а не `:root {`: голых `:root`
-// в файле два (первый — только --safe-bottom), и по имени блоки не отличить.
-const MINIAPP_DARK = extractBlock(MINIAPP_CSS, '── Dark theme (default)');
-const MINIAPP_LIGHT = extractBlock(MINIAPP_CSS, "html[data-theme='light']");
 
 describe('a11y: цвета токенов --kbd-text / --c-rose-strong держат ≥4.5:1', () => {
   it.each([
@@ -137,10 +60,8 @@ describe('a11y: цвета токенов --kbd-text / --c-rose-strong держ�
 // в комментарии.
 describe('a11y: текст на залитом --accent-red держит ≥4.5:1 в обеих темах', () => {
   it.each([
-    ['webapp light', LIGHT],
-    ['webapp dark', DARK],
-    ['miniapp light', MINIAPP_LIGHT],
-    ['miniapp dark', MINIAPP_DARK],
+    ['light', LIGHT],
+    ['dark', DARK],
   ] as const)('--on-accent-red на --accent-red — %s', (_label, block) => {
     const fill = parseColor(resolveToken(block, '--accent-red'));
     const ink = parseColor(resolveToken(block, '--on-accent-red'));
@@ -166,5 +87,65 @@ describe('a11y: .landing-personal-brand — текст на залитом --acc
 
     expect(fill.alpha).toBe(1);
     expect(contrastRatio(ink.rgb, fill.rgb)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+// Опасные действия (ds-link--danger, ds-list-row--danger, ds-menu-item.is-danger)
+// красятся --accent-red: у него есть тёмный вариант. Страницы вне AppShell
+// (/account) бывают в тёмной теме, а --err определён только в светлой: на тёмных
+// --bg/--surface он давал 3.11:1 и 2.84:1.
+describe('a11y: красный текст опасных действий на --bg и --surface ≥4.5:1 в обеих темах', () => {
+  it.each([
+    ['light', LIGHT],
+    ['dark', DARK],
+  ] as const)('--accent-red на --bg и --surface — тема %s', (_label, block) => {
+    const fg = parseColor(resolveToken(block, '--accent-red'));
+    for (const bgToken of ['--bg', '--surface']) {
+      const bg = parseColor(resolveToken(block, bgToken));
+      expect(contrastRatio(fg.rgb, bg.rgb), bgToken).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  it('опасные правила cabinet.css не берут --err (нет тёмного варианта)', () => {
+    const cabinet = readFileSync(join(__dirname, 'styles', 'cabinet.css'), 'utf8');
+    const bad = [...cabinet.matchAll(/([^{}]*danger[^{}]*)\{([^{}]*)\}/g)].filter((m) => /var\(--err\)/.test(m[2])).map((m) => m[1].trim());
+    expect(bad).toEqual([]);
+  });
+});
+
+// Песочная панель (2026-11): сайдбар, нижняя навигация, герой входа и оплаты,
+// вводные карточки — до того почти чёрный «ink» редизайна 2026-10, который
+// владелец снял («чёрный тяжёлый, добавляет тяжести»). Панель светлая, и
+// текст на ней — те же чернила, что на бумаге; этот тест держит пары
+// «текст на панели» на ≥4.5:1, чтобы --panel нельзя было тихо затемнить или
+// осветлить так, что подписи сайдбара и нижней навигации (--on-panel-faint)
+// или «Выйти» (--on-panel-danger) поплывут. Панель только в светлой теме:
+// кабинет под .light-lock, тёмная панель не объявлена.
+describe('a11y: текст на песочной --panel держит ≥4.5:1', () => {
+  it.each([
+    ['--on-panel', '--panel'],
+    ['--on-panel', '--panel-2'],
+    ['--on-panel', '--panel-3'],
+    ['--on-panel-sub', '--panel'],
+    ['--on-panel-sub', '--panel-2'],
+    ['--on-panel-faint', '--panel'],
+    ['--on-panel-faint', '--panel-2'],
+    ['--on-panel-danger', '--panel'],
+    ['--on-panel-danger', '--panel-2'],
+    // Счётчик активного пункта сайдбара (.sb-item.is-active .badge): до
+    // 2026-11-05 красился --accent-hot (декор-токен) — 2.85:1 на --panel-3.
+    ['--accent', '--panel-3'],
+  ])('%s на %s', (fgName, bgName) => {
+    const fg = parseColor(resolveToken(LIGHT, fgName)).rgb;
+    const bg = parseColor(resolveToken(LIGHT, bgName)).rgb;
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('панель светлее чернил и темнее бумаги: это плашка на бумаге, а не второй чёрный', () => {
+    const panel = luminance(parseColor(resolveToken(LIGHT, '--panel')).rgb);
+    const paper = luminance(parseColor(resolveToken(LIGHT, '--bg')).rgb);
+    const ink = luminance(parseColor(resolveToken(LIGHT, '--text')).rgb);
+    expect(panel).toBeLessThan(paper);
+    expect(panel).toBeGreaterThan(0.5);
+    expect(ink).toBeLessThan(0.1);
   });
 });

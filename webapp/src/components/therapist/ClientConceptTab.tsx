@@ -1,77 +1,46 @@
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import type { ClientDetail } from './clientSheetTypes';
 import { ClientConceptFields } from './ClientConceptFields';
 import { ClientConceptGraph } from './ClientConceptGraph';
-import { ConceptVersionHistory } from './concept/ConceptVersionHistory';
+import { ConceptTabHead } from './concept/ConceptTabHead';
+import { ConceptFoldouts } from './concept/ConceptFoldouts';
+import { ConceptModeIdsContext } from './concept/modeChain';
+import { CONCEPT_SITE_SKIN } from './concept/conceptSiteSkin';
+import { ConceptSkinContext } from '../../../../shared/src/therapy/conceptGraph/conceptSkin';
 import '../../styles/therapist-concept.css';
-import { ConceptViewSwitch, useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
+import { useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
+import { ConceptDigest, useConceptDigest } from '../../../../shared/src/therapy/conceptGraph/ConceptDigest';
+import { ConceptLoadFailed } from './concept/ConceptLoadFailed';
+import type { AssignPreset } from './assignTemplates';
 
-interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void }
+interface Props { detail: ClientDetail; onOpenCanvas?: (mapId: number) => void; onAssign?: (preset: AssignPreset) => void }
+// Вкладка «Концептуализация»: шапка, сводка, вид «Схема» или «Поля», раскрывашки; ds-вид — контекстом (CONCEPT_SITE_SKIN).
+// Загрузка упала — вместо полей плашка с «Повторить»; тело монтируется, когда ответ пришёл, и вид выбирает по нему.
+export function ClientConceptTab(props: Props) {
+  const { conceptLoad, reloadConcept } = props.detail;
+  return conceptLoad.failed ? <ConceptLoadFailed load={conceptLoad} onRetry={reloadConcept} /> : <ConceptTabBody {...props} />;
+}
 
-export function ClientConceptTab({ detail, onOpenCanvas }: Props) {
-  const {
-    saveStatus, exportCopied, handleExport, conceptError,
-    activeSchemaIds, activeModeIds,
-    ysqSchemaIds,
-  } = detail;
-  // Вид выбирается один раз при открытии вкладки (см. useConceptView).
-  const [view, setView] = useConceptView(activeModeIds.length);
-
+function ConceptTabBody({ detail, onOpenCanvas, onAssign }: Props) {
+  const [view, setView] = useConceptView(detail.activeModeIds.length); // раз при открытии (см. хук)
+  const head = { detail, view, onView: setView };
+  const digest = <ConceptDigest rows={useConceptDigest(detail.concept, detail.localConcept)} />;
   return (
-    <div className="page-inner-wide u-pt40">
-      <div className="ds-head-row tcp-head">
-        <div>
-          <h2 className="ds-h2">Концептуализация</h2>
-          <div className="ds-sub" style={{ marginTop: 4 }}>Схема-карта, цели терапии и связь с детским опытом</div>
-        </div>
-        <div className="tcp-head-actions">
-          <span className="tcp-save">
-            {saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : saveStatus === 'pending' ? 'автосохранение' : ''}
-          </span>
-          <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={handleExport}>
-            ↗ Экспорт{exportCopied ? ' ✓' : ''}
-          </button>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <ConceptViewSwitch view={view} onChange={setView} />
-      </div>
-
-      {conceptError && <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 'var(--r-8)', background: 'color-mix(in srgb, var(--c-rose) 10%, transparent)', color: 'var(--c-rose)', fontSize: 13 }}>{conceptError}</div>}
-
-      <div className="doc-grid" style={view === 'graph' ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
-        {view === 'graph' ? (
-          <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} />
-        ) : (
-          <ClientConceptFields detail={detail} />
-        )}
-
-        {/* Right sidebar */}
-        <aside>
-          {/* YSQ cross-reference */}
-          {ysqSchemaIds.length > 0 && (
-            <>
-              <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '28px 0' }} />
-              <div className="eyebrow u-mb14">Сверка с YSQ</div>
-              <div className="u-col8">
-                {ysqSchemaIds.slice(0, 6).map(id => {
-                  const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
-                  const inConcept = activeSchemaIds.includes(id);
-                  return (
-                    <div key={id} className="u-ac8">
-                      <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{s?.name ?? id}</span>
-                      {!inConcept && <span style={{ fontSize: 11, color: 'var(--c-amber)', fontWeight: 500 }}>+ добавить?</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          <ConceptVersionHistory detail={detail} />
-        </aside>
-      </div>
+    <ConceptSkinContext.Provider value={CONCEPT_SITE_SKIN}>
+    <div className={`page-inner-wide tcp-page${view === 'graph' ? ' tcp--graph' : ''}`}>
+      {view === 'graph' ? (
+        <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} onAssign={onAssign} head={head} digest={digest} />
+      ) : (
+        <>
+          <ConceptTabHead {...head} />
+          {digest}
+          {/* Цепочка «Переключение режимов» — из режимов клиента (modeChain.ts). */}
+          <ConceptModeIdsContext.Provider value={detail.activeModeIds}>
+            <ClientConceptFields detail={detail} onGoToGraph={() => setView('graph')} />
+          </ConceptModeIdsContext.Provider>
+        </>
+      )}
+      <ConceptFoldouts detail={detail} />
     </div>
+    </ConceptSkinContext.Provider>
   );
 }

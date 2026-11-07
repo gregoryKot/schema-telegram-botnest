@@ -13,8 +13,8 @@ export const TABLE_LABELS: Record<string, string> = {
   UserLetter: 'письма себе',
   UserSafePlace: 'безопасное место',
   UserFlashcard: 'флэшкарты',
-  UserPractice: 'практики',
-  PracticePlan: 'планы практик',
+  UserPractice: 'список «Что меня питает»',
+  PracticePlan: 'планы на завтра',
   PracticeSession: 'занятия практиками',
   ChildhoodRating: 'колесо детства',
   ScheduledNotification: 'уведомления',
@@ -26,6 +26,7 @@ export const TABLE_LABELS: Record<string, string> = {
   DiaryDraft: 'черновики',
   TherapyRelation: 'связи терапевт↔клиент',
   Pair: 'пары',
+  Booking: 'записи на сессию', // запись из приложения (#546) едет за аккаунтом
 };
 
 /** Название для строки сводки. Незнакомая таблица показывается как есть. */

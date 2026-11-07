@@ -1,9 +1,9 @@
 import { pressable } from '../../utils/a11y';
 import type { TherapyClientSummary } from '../../api';
 import { DOMAIN_HUE, clientHue, hueStyle } from '../../lib/tone';
-import {
-  clientCaption, clientStatus, domainBar, meetingLabel, rosterInitials, rosterName, schemaChips,
-} from './rosterModel';
+import { NextSessionLine } from './NextSessionLine';
+import { clientCaption, clientStatus, domainBar, meetingLabel, schemaChips } from './rosterModel';
+import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 
 interface Props {
   client: TherapyClientSummary;
@@ -11,13 +11,13 @@ interface Props {
   onOpen: (client: TherapyClientSummary) => void;
 }
 
-// Карточка клиента в сетке «Все клиенты»: полоса доменов схем, аватар, статус,
-// ближайшая встреча, чипы всех схем. Счётчиков сессий/заданий в сводке клиента
-// нет — футер без них (показываем только реальные данные).
+// Карточка в «Все клиенты»: полоса доменов схем, аватар, статус, встреча (NextSessionLine —
+// как в шапке карточки), чипы схем. Счётчиков сессий/заданий в сводке нет — футер без них;
+// на телефоне вместо футера «Открыть →» — шеврон в строке имени (компактный список).
 export function ClientCard({ client, today, onOpen }: Props) {
-  const name = rosterName(client);
+  const name = clientDisplayName(client);
   const status = clientStatus(client);
-  const caption = clientCaption(client, today);
+  const caption = clientCaption(client);
   const meeting = meetingLabel(client, today);
   return (
     <div className="ds-card ds-card--flush ds-card--hover tc-card" {...pressable(() => onOpen(client))}>
@@ -29,7 +29,7 @@ export function ClientCard({ client, today, onOpen }: Props) {
       <div className="tc-body">
         <div className="tc-top">
           <div className="ds-avatar ds-avatar--serif tc-avatar" style={hueStyle(clientHue(client.telegramId))}>
-            {rosterInitials(name)}
+            {clientAvatarInitials(client)}
           </div>
           <div className="tc-who">
             <div className="tc-name">{name}</div>
@@ -38,13 +38,9 @@ export function ClientCard({ client, today, onOpen }: Props) {
               {caption && <span>{caption}</span>}
             </div>
           </div>
+          <span className="ds-chev tc-chev" aria-hidden="true" />
         </div>
-        <div className="tc-meeting">
-          <span className="ds-label">Встреча</span>
-          <span className={meeting ? 'tc-meeting-val' : 'tc-meeting-val tc-meeting-val--none'}>
-            {meeting ?? 'не назначена'}
-          </span>
-        </div>
+        <NextSessionLine label={meeting} />
         {client.schemaIds.length > 0 && (
           <div className="tc-chips">
             {schemaChips(client.schemaIds).map((ch) => (

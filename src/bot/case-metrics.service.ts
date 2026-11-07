@@ -5,10 +5,13 @@ import { CaseMetrics } from './case-metrics.format';
 // Счётчики разбора случая для /stats. Свой домен — свой файл (правило №10,
 // образец: practice-metrics.service.ts).
 //
-// Считаем по AnalyticsEvent: у разбора нет собственной таблицы — он
-// сохраняется обычной записью дневника режимов, и отличить «запись из
-// разбора» от «записи из дневника» в ModeDiaryEntry нельзя. Событие здесь
-// единственный честный источник.
+// Воронку считаем по AnalyticsEvent: у разбора нет собственной таблицы — он
+// сохраняется записью дневника режимов. С этапа 4 «простого клиента»
+// (миграция 20261027120000_mode_diary_from_case) такая запись помечена
+// `fromCase`, и «сохранено разборов» берётся прямо из ModeDiaryEntry; записи
+// до этой даты помечены false, поэтому на ретро-срез это число не опирается.
+// События остаются источником воронки (начали/сцена/узнавание) — по ним видно
+// и тех, кто не дошёл до записи. Сайт/мини-апп по строкам — backend-core.md.
 //
 // «Вернулись за вторым разбором» считаем по людям, а не по событиям: один
 // человек с пятью разборами не должен выглядеть как пятеро вернувшихся.
@@ -41,18 +44,15 @@ export class CaseMetricsService {
       started,
       finished,
       scene,
-      verdict,
       recognized,
-      named,
       peopleRows,
       returnedRows,
+      saved,
     ] = await Promise.all([
       count('case_started'),
       count('case_finished'),
       byMetaKey('case_scene', 'source'),
-      byMetaKey('case_criterion', 'verdict'),
       byMetaKey('case_recognized', 'agreed'),
-      byMetaKey('mode_renamed', 'source'),
       this.prisma.$queryRaw<Array<{ c: bigint }>>`
         SELECT count(DISTINCT "userId")::bigint AS c FROM "AnalyticsEvent"
         WHERE "name" = 'case_started' AND "createdAt" >= ${since30}`,
@@ -62,22 +62,20 @@ export class CaseMetricsService {
           WHERE "name" = 'case_finished' AND "createdAt" >= ${since30}
           GROUP BY "userId" HAVING count(*) > 1
         ) t`,
+      this.prisma.modeDiaryEntry.count({
+        where: { fromCase: true, createdAt: { gte: since30 } },
+      }),
     ]);
 
     return {
       started,
       finished,
+      saved,
       sceneOwn: scene('own'),
       sceneFrame: scene('frame'),
-      verdictMode: verdict('mode'),
-      verdictOrdinary: verdict('ordinary'),
-      verdictBorderline: verdict('borderline'),
       // meta->>'agreed' отдаёт булев JSON как строку 'true'/'false'.
       recognizedAgreed: recognized('true'),
       recognizedDoubted: recognized('false'),
-      namedOwn: named('own'),
-      namedChip: named('chip'),
-      namedSkipped: named('skipped'),
       people: Number(peopleRows[0]?.c ?? 0),
       peopleReturned: Number(returnedRows[0]?.c ?? 0),
     };

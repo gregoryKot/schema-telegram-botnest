@@ -1,5 +1,6 @@
 import { api } from '../api';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
+import { Check } from './art/PaperArtSigns';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { NEED_HUE, hueStyle } from '../lib/tone';
@@ -7,10 +8,7 @@ import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-import {
-  usePlanSheetState,
-  REMINDER_OPTIONS,
-} from '../../../shared/src/practices/usePlanSheetState';
+import { usePlanSheetState, REMINDER_OPTIONS } from '../../../shared/src/practices/usePlanSheetState';
 
 interface Props {
   needId: string;
@@ -42,7 +40,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
     handleDeletePractice,
     handleSave,
     handleIcsDownload,
-  } = usePlanSheetState(needId, needLabel, api, onSaved);
+  } = usePlanSheetState(needId, needLabel, api, () => goBack(onSaved)); // лист снимает свою запись истории сам
 
   return (
     <ExScreen
@@ -56,11 +54,12 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
       lede={phase === 'pick' ? 'Один маленький конкретный шаг – уже много.' : undefined}
       aside={
         <div className="ds-card sk-aside" style={hueStyle(NEED_HUE[needId as NeedId])}>
+          <Check size="row" />
           <div className="ds-label">Потребность</div>
           <h3 className="ds-h3 sk-aside-title">
             <span className="ds-dot tone-fill" /> {needLabel}
           </h3>
-          <p className="ds-sub">Практика помогает восстановить потребность через конкретное действие</p>
+          <p className="ds-sub">Потребность восстанавливается через маленькое конкретное действие</p>
         </div>
       }
     >
@@ -68,12 +67,12 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
         <>
           {practicesFailed && (
             <div role="alert" className="sk-error">
-              {tr('Не удалось загрузить твои практики — ниже только готовые варианты', 'Не удалось загрузить ваши практики — ниже только готовые варианты')}
+              {tr('Не удалось загрузить твой список «Что меня питает» — ниже только готовые варианты', 'Не удалось загрузить ваш список «Что меня питает» — ниже только готовые варианты')}
             </div>
           )}
           {allOptions.length > 0 && (
             <div className="sk-field">
-              <div className="ds-label">Готовые варианты</div>
+              <div className="ds-label">Что питает</div>
               <div className="sk-list">
                 {allOptions.map(({ text, isUser, id }) => (
                   <div key={text} className="sk-opt-row">
@@ -122,7 +121,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
       {phase === 'confirm' && (
         <>
           <div className="sk-field">
-            <div className="ds-label">Практика</div>
+            <div className="ds-label">Действие</div>
             <div className="sk-chosen tone-tint" style={hueStyle(NEED_HUE[needId as NeedId])}>
               {selectedText}
             </div>

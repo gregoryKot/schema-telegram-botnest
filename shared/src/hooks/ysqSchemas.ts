@@ -63,31 +63,27 @@ export const DOMAIN_ORDER = [
   'limits',
 ];
 
-export function getSchemaForQuestion(qIdx: number): SchemaInfo | undefined {
-  return SCHEMAS.find((s) => s.questions.includes(qIdx + 1));
-}
-
 // Соответствие названия схемы её id в истории (`YsqHistoryEntry.scores`),
 // нужно только для дельты «изменилось с прошлого прохождения».
 export const SCHEMA_NAME_TO_ID: Record<string, string> = {
   'Эмоциональная депривация': 'emotional_deprivation',
-  'Покинутость/Нестабильность': 'abandonment',
-  'Недоверие/Ожидание жестокого обращения': 'mistrust',
-  'Социальная отчужденность': 'social_isolation',
-  'Дефективность/Стыд': 'defectiveness',
+  'Покинутость / Нестабильность': 'abandonment',
+  'Недоверие / Ожидание жестокого обращения': 'mistrust',
+  'Социальная отчуждённость': 'social_isolation',
+  'Дефективность / Стыд': 'defectiveness',
   Неуспешность: 'failure',
-  'Зависимость/Беспомощность': 'dependence',
+  'Зависимость / Беспомощность': 'dependence',
   Уязвимость: 'vulnerability',
-  'Спутанность/Неразвитая идентичность': 'enmeshment',
+  'Спутанность / Неразвитая идентичность': 'enmeshment',
   Покорность: 'subjugation',
   Самопожертвование: 'self_sacrifice',
   'Страх потери контроля над эмоциями': 'emotion_inhibition_fear',
   'Эмоциональная скованность': 'emotional_inhibition',
-  'Жёсткие стандарты/Придирчивость': 'unrelenting_standards',
-  'Привилегированность/Грандиозность': 'entitlement',
+  'Жёсткие стандарты / Придирчивость': 'unrelenting_standards',
+  'Привилегированность / Грандиозность': 'entitlement',
   'Недостаточность самоконтроля': 'insufficient_self_control',
   'Поиск одобрения': 'approval_seeking',
-  'Негативизм/Пессимизм': 'negativity',
+  'Негативизм / Пессимизм': 'negativity',
   'Пунитивность (на себя)': 'punitiveness_self',
   'Пунитивность (на других)': 'punitiveness_others',
 };

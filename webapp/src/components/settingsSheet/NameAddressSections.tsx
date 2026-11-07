@@ -44,7 +44,7 @@ export function AddressSection({ settings, patch }: { settings: UserSettings; pa
   return (
     <SSection id="s-address" label="Обращение">
       <div className="st-body-block">
-        <div className="ds-seg">
+        <div className="ds-seg ds-seg--full">
           {(['ty', 'vy'] as const).map(form => {
             const active = (settings.addressForm ?? 'ty') === form;
             return (

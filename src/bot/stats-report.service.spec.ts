@@ -29,9 +29,6 @@ describe('StatsReportService.render', () => {
     const plus = {
       render: jest.fn().mockResolvedValue('кнопка плюс: 4'),
     };
-    const webBanner = {
-      render: jest.fn().mockResolvedValue('баннеры-переходы: 6'),
-    };
     const siteInstall = {
       render: jest.fn().mockResolvedValue('установка с сайта: 8'),
     };
@@ -43,6 +40,12 @@ describe('StatsReportService.render', () => {
     };
     const conceptGraph = {
       render: jest.fn().mockResolvedValue('схема случая по режимам: 3'),
+    };
+    const screenShare = {
+      render: jest.fn().mockResolvedValue('показ экрана: 2'),
+    };
+    const guideReference = {
+      render: jest.fn().mockResolvedValue('справочник терапевта: 5'),
     };
     const authHealth = {
       render: jest.fn().mockResolvedValue('вход в мессенджере: всё хорошо'),
@@ -74,19 +77,35 @@ describe('StatsReportService.render', () => {
     const introLeads = {
       render: jest.fn().mockResolvedValue('заявки со знакомства: 3'),
     };
+    const therapyNudge = {
+      render: jest.fn().mockResolvedValue('мост к терапевту: пока ничего'),
+    };
+    const therapyInvites = {
+      render: jest.fn().mockResolvedValue('приглашения клиентов: пока ничего'),
+    };
+    const clientBooking = {
+      render: jest.fn().mockResolvedValue('запись из приложения: пока никто'),
+    };
     const notifyQueue = {
       render: jest.fn().mockResolvedValue('напоминания из бота: ушло 9'),
+    };
+    const therapistExit = {
+      render: jest.fn().mockResolvedValue('терапевты уходят: 2'),
+    };
+    const crawlers = {
+      render: jest.fn().mockResolvedValue('роботы нейросетей: 4'),
     };
     return {
       blocks: {
         entryDelete,
         accountLink,
         plus,
-        webBanner,
         siteInstall,
         screen,
         profilePattern,
         conceptGraph,
+        screenShare,
+        guideReference,
         authHealth,
         loginTicket,
         clientErrors,
@@ -97,7 +116,12 @@ describe('StatsReportService.render', () => {
         dataExport,
         bookingRetention,
         introLeads,
+        therapyNudge,
+        therapyInvites,
+        clientBooking,
         notifyQueue,
+        therapistExit,
+        crawlers,
       },
       service: new StatsReportService(
         product as never,
@@ -108,11 +132,12 @@ describe('StatsReportService.render', () => {
         entryDelete as never,
         accountLink as never,
         plus as never,
-        webBanner as never,
         siteInstall as never,
         screen as never,
         profilePattern as never,
         conceptGraph as never,
+        screenShare as never,
+        guideReference as never,
         authHealth as never,
         loginTicket as never,
         clientErrors as never,
@@ -123,7 +148,12 @@ describe('StatsReportService.render', () => {
         dataExport as never,
         bookingRetention as never,
         introLeads as never,
+        therapyNudge as never,
+        therapyInvites as never,
+        clientBooking as never,
         notifyQueue as never,
+        therapistExit as never,
+        crawlers as never,
       ),
     };
   };
@@ -139,13 +169,13 @@ describe('StatsReportService.render', () => {
       'разборы фраз: 7\n\nудаление записей: 2\n\nперенос данных: 2',
     );
     expect(out).toContain(
-      'кнопка плюс: 4\n\nбаннеры-переходы: 6\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
+      'кнопка плюс: 4\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
     );
     expect(out).toContain(
-      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nвход в мессенджере: всё хорошо',
+      'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nпоказ экрана: 2\n\nсправочник терапевта: 5\n\nвход в мессенджере: всё хорошо',
     );
     expect(out).toContain(
-      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3',
+      'вход в мессенджере: всё хорошо\n\nвход по коду: 74 из 74\n\nполомки на клиенте: не было\n\nнапоминания из бота: ушло 9\n\nденьги: поддержали 3 раза\n\nсессии не в рублях: 2\n\nновенькие по ссылкам: 5\n\nигра: открыли 12\n\nзабирают свои данные: 7\n\nданные записей: стёрто 5\n\nзаявки со знакомства: 3\n\nмост к терапевту: пока ничего\n\nприглашения клиентов: пока ничего\n\nзапись из приложения: пока никто\n\nтерапевты уходят: 2\n\nроботы нейросетей: 4',
     );
     // Хвост — блоки о здоровье системы (считаются из process.env и состояния
     // самопроверки, не мокаются через blocks): порядок календарь → Настройки →
@@ -153,7 +183,7 @@ describe('StatsReportService.render', () => {
     const settings = out.indexOf('⚙️ <b>Настройки</b>');
     const env = out.indexOf('Настройки: переменные</b>');
     const selfCheck = out.indexOf('🩺 <b>Самопроверка</b>');
-    expect(settings).toBeGreaterThan(out.indexOf('заявки со знакомства: 3'));
+    expect(settings).toBeGreaterThan(out.indexOf('роботы нейросетей: 4'));
     expect(env).toBeGreaterThan(settings);
     expect(selfCheck).toBeGreaterThan(env);
     expect(out.indexOf('🩺', selfCheck + 1)).toBe(-1);
@@ -233,11 +263,12 @@ describe('StatsReportService.render', () => {
     expect(blocks.entryDelete.render).toHaveBeenCalledTimes(1);
     expect(blocks.accountLink.render).toHaveBeenCalledTimes(1);
     expect(blocks.plus.render).toHaveBeenCalledTimes(1);
-    expect(blocks.webBanner.render).toHaveBeenCalledTimes(1);
     expect(blocks.siteInstall.render).toHaveBeenCalledTimes(1);
     expect(blocks.screen.render).toHaveBeenCalledTimes(1);
     expect(blocks.profilePattern.render).toHaveBeenCalledTimes(1);
     expect(blocks.conceptGraph.render).toHaveBeenCalledTimes(1);
+    expect(blocks.screenShare.render).toHaveBeenCalledTimes(1);
+    expect(blocks.guideReference.render).toHaveBeenCalledTimes(1);
     expect(blocks.authHealth.render).toHaveBeenCalledTimes(1);
     expect(blocks.loginTicket.render).toHaveBeenCalledTimes(1);
     expect(blocks.clientErrors.render).toHaveBeenCalledTimes(1);
@@ -247,11 +278,13 @@ describe('StatsReportService.render', () => {
     expect(blocks.dataExport.render).toHaveBeenCalledTimes(1);
     expect(blocks.bookingRetention.render).toHaveBeenCalledTimes(1);
     expect(blocks.introLeads.render).toHaveBeenCalledTimes(1);
+    expect(blocks.therapyNudge.render).toHaveBeenCalledTimes(1);
+    expect(blocks.therapyInvites.render).toHaveBeenCalledTimes(1);
     expect(blocks.notifyQueue.render).toHaveBeenCalledTimes(1);
+    expect(blocks.therapistExit.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('удаление записей: 2');
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');
-    expect(out).toContain('баннеры-переходы: 6');
     expect(out).toContain('установка с сайта: 8');
     expect(out).toContain('настройка экранов: 1');
     expect(out).toContain('паттерны со вкладки «Я»: 4');
@@ -266,6 +299,7 @@ describe('StatsReportService.render', () => {
     expect(out).toContain('данные записей: стёрто 5');
     expect(out).toContain('заявки со знакомства: 3');
     expect(out).toContain('напоминания из бота: ушло 9');
+    expect(out).toContain('терапевты уходят: 2');
   });
 
   it('упавший запрос заявок числится под своим именем и не гасит «Данные записей» (settleBlocks)', async () => {

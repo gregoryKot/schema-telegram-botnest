@@ -155,7 +155,7 @@ describe('настоящий ci.yml', () => {
       split.skipped.filter(
         (g) => g.script === 'check-frontend-coverage-ratchet.mjs',
       ),
-    ).toHaveLength(3);
+    ).toHaveLength(2);
   });
 
   it('контроль: неизвестный гейт не пропускается, известный из списка — пропускается с причиной', () => {

@@ -14,7 +14,7 @@ vi.mock('../../api', () => ({
     getTherapyClientHistory: vi.fn(), getClientDiary: vi.fn(),
     removeClient: vi.fn(), createTherapistNote: vi.fn(), deleteTherapistNote: vi.fn(),
     saveConceptualization: vi.fn(), renameClient: vi.fn(),
-    updateSessionInfo: vi.fn(), requestYsq: vi.fn(),
+    updateSessionInfo: vi.fn(), requestYsq: vi.fn(), trackEvent: vi.fn(),
   },
   reportClientError: vi.fn(),
 }));
@@ -63,9 +63,12 @@ afterEach(() => {
 describe('patchConcept / autoSave', () => {
   beforeEach(() => { vi.useFakeTimers(); });
 
-  it('patchConcept: pending → api вызывается через 700мс → saved → idle через 2с', async () => {
-    mockApi.saveConceptualization.mockResolvedValue({ id: 1, schemaIds: ['x'] });
+  // Issue #879: «✓ Сохранено» раньше гасло через 2 с — терапевт не знал, сохранилось
+  // ли. Теперь статус 'saved' держится до следующей правки, а savedAt — момент из ответа.
+  it('patchConcept: pending → api вызывается через 700мс → saved и НЕ гаснет, savedAt из ответа', async () => {
+    mockApi.saveConceptualization.mockResolvedValue({ id: 1, schemaIds: ['x'], updatedAt: '2026-10-28T11:07:00.000Z' });
     const { result } = await openedHook();
+    expect(result.current.savedAt).toBeNull();
 
     act(() => { result.current.toggleSchemaId('abandonment'); });
     expect(result.current.saveStatus).toBe('pending');
@@ -74,9 +77,18 @@ describe('patchConcept / autoSave', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1);
     expect(result.current.saveStatus).toBe('saved');
+    expect(result.current.savedAt?.toISOString()).toBe('2026-10-28T11:07:00.000Z');
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
-    expect(result.current.saveStatus).toBe('idle');
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    expect(result.current.saveStatus).toBe('saved');
+  });
+  it('ответ без updatedAt — savedAt = момент сохранения', async () => {
+    vi.setSystemTime(new Date('2026-10-28T09:00:00.000Z'));
+    mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
+    const { result } = await openedHook();
+    act(() => { result.current.toggleSchemaId('a'); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); }); // debounce 700мс → 09:00:00.700
+    expect(result.current.savedAt?.toISOString()).toBe('2026-10-28T09:00:00.700Z');
   });
   it('повторный patchConcept до истечения таймера сбрасывает debounce (ровно один вызов api)', async () => {
     mockApi.saveConceptualization.mockResolvedValue({ id: 1, schemaIds: [] });
@@ -106,31 +118,57 @@ describe('patchConcept / autoSave', () => {
   });
   // РЕГРЕССИЯ (был БАГ, найден при написании компонентных тестов
   // ClientConceptTab/TherapistClientSheet): catch у autoSave откатывал
-  // saveStatus в 'idle' и БОЛЬШЕ НИЧЕГО не делал — conceptError оставался
-  // пустым. Терапевт видел, что индикатор автосохранения погас, и решал,
-  // что правка сохранилась, хотя api.saveConceptualization упал и правка
-  // тихо потерялась. Теперь catch обязан заполнить conceptError.
-  it('autoSave при ошибке api откатывает saveStatus в idle И показывает conceptError (не тишина)', async () => {
+  // saveStatus в 'idle' и БОЛЬШЕ НИЧЕГО не делал. Терапевт видел, что индикатор
+  // автосохранения погас, и решал, что правка сохранилась, хотя
+  // api.saveConceptualization упал и правка тихо потерялась. Теперь catch
+  // ставит saveStatus = 'error' (строку «Не сохранилось» + «Повторить» рисует
+  // SaveStatusLine, issue #879), а retrySave повторяет отправку и шлёт событие.
+  it('autoSave при ошибке api ставит saveStatus = error (не тишина и не idle)', async () => {
     mockApi.saveConceptualization.mockRejectedValue(new Error('network'));
     const { result } = await openedHook();
     act(() => { result.current.toggleSchemaId('a'); });
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
-    expect(result.current.saveStatus).toBe('idle');
-    expect(result.current.conceptError).not.toBe('');
+    expect(result.current.saveStatus).toBe('error');
+    expect(result.current.savedAt).toBeNull();
   });
 
-  it('conceptError из прошлой ошибки сбрасывается следующим успешным autoSave', async () => {
+  it('retrySave после ошибки: второй вызов api, событие concept_save_retry, затем saved', async () => {
     mockApi.saveConceptualization.mockRejectedValueOnce(new Error('network'));
     const { result } = await openedHook();
     act(() => { result.current.toggleSchemaId('a'); });
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
-    expect(result.current.conceptError).not.toBe('');
+    expect(result.current.saveStatus).toBe('error');
 
     mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
-    act(() => { result.current.toggleSchemaId('b'); });
-    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
-    expect(result.current.conceptError).toBe('');
+    await act(async () => { result.current.retrySave(); });
+    expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(2);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('concept_save_retry');
+    expect(result.current.saveStatus).toBe('saved');
   });
+  // #879: статус сохранения — состояние клиента, а не вкладки: при смене клиента
+  // «Не сохранилось» гаснет. Взведённая правка прежнего клиента не теряется и не
+  // переезжает к новому: она сразу уходит ПРЕЖНЕМУ, с его данными (usePendingSave,
+  // инцидент 2026-10-26; весь класс — useClientDetail.switch.test.ts).
+  it('открытие другого клиента после ошибки: статус idle, savedAt null, отложенная правка уходит прежнему клиенту', async () => {
+    mockApi.saveConceptualization.mockRejectedValueOnce(new Error('network'));
+    const { result } = await openedHook();
+    act(() => { result.current.toggleSchemaId('a'); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(result.current.saveStatus).toBe('error');
+
+    mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
+    act(() => { result.current.toggleSchemaId('b'); }); // таймер взведён, до срабатывания — смена клиента
+    expect(result.current.saveStatus).toBe('pending');
+    await act(async () => { await result.current.openClient(makeClient({ telegramId: 2 })); });
+    expect(result.current.saveStatus).toBe('idle');
+    expect(result.current.savedAt).toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(700); });
+    expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(2); // упавший и досылка прежнему, новому — ничего
+    expect(mockApi.saveConceptualization.mock.calls[1][0]).toBe(1);
+    expect(mockApi.saveConceptualization.mock.calls[1][1]).toMatchObject({ schemaIds: ['a', 'b'] });
+    expect(result.current.saveStatus).toBe('idle'); // ответ прежнему клиенту карточку нового не трогает
+  });
+
   it('autoSave отправляет собранный payload со всеми полями конкретуализации', async () => {
     mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
     const { result } = await openedHook();
@@ -261,15 +299,24 @@ describe('saveSessionInfo', () => {
 describe('handleRequestYsq', () => {
   beforeEach(() => { vi.useFakeTimers(); });
 
-  it('выставляет ysqRequested и сбрасывает его через 3с', async () => {
+  // QA 2026-11: флаг гас через 3 с, хотя запрос висел на сервере, и терялся после F5.
+  it('выставляет ysqRequested и держит его, пока открыт тот же клиент', async () => {
     mockApi.requestYsq.mockResolvedValue(undefined);
     const { result } = await openedHook({ telegramId: 4 });
     await act(async () => { await result.current.handleRequestYsq(); });
     expect(mockApi.requestYsq).toHaveBeenCalledWith(4);
     expect(result.current.ysqRequested).toBe(true);
 
-    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
-    expect(result.current.ysqRequested).toBe(false);
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(result.current.ysqRequested).toBe(true);
+  });
+  it('висящий на сервере запрос (ysqRequestPending) виден сразу при открытии карточки', async () => {
+    mockApi.getTherapyClientData.mockResolvedValue({
+      name: null, mySchemaIds: [], myModeIds: [], ysqCompletedAt: null, ysqActiveSchemaIds: [], ysqHistory: [], ysqRequestPending: true,
+    });
+    const { result } = await openedHook({ telegramId: 4 });
+    expect(result.current.ysqRequested).toBe(true);
+    expect(mockApi.requestYsq).not.toHaveBeenCalled();
   });
   it('второй тап, пока первый запрос в полёте → api.requestYsq вызван один раз', async () => {
     let resolve!: () => void;
@@ -303,10 +350,23 @@ describe('handleExport', () => {
       value: { writeText: vi.fn().mockResolvedValue(undefined) }, configurable: true, writable: true,
     });
   });
-  it('без концептуализации ничего не делает (пустой текст)', async () => {
+  // QA 2026-11: пустой концепт — не тишина, а exportEmpty (кнопки недоступны с подсказкой).
+  it('без концептуализации: exportEmpty, буфер не трогается', async () => {
     const { result } = await openedHook();
+    expect(result.current.exportEmpty).toBe(true);
     await act(async () => { await result.current.handleExport(); });
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  });
+  it('текст — из общего билдера: подписи формы и «Переключение режимов»', async () => {
+    mockApi.getConceptualization.mockResolvedValue({
+      id: 1, schemaIds: [], modeIds: [], copingStyles: 'избегание', modeTransitions: 'Критик → Ребёнок', updatedAt: '2026-01-05T00:00:00.000Z',
+    });
+    const { result } = await openedHook();
+    expect(result.current.exportEmpty).toBe(false);
+    await act(async () => { await result.current.handleExport(); });
+    const text = (navigator.clipboard.writeText as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(text).toContain('СТИЛИ СОВЛАДАНИЯ\nизбегание');
+    expect(text).toContain('ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ\nКритик → Ребёнок');
   });
   it('копирует текст в буфер и сбрасывает exportCopied через 2.5с, когда navigator.share недоступен', async () => {
     mockApi.getConceptualization.mockResolvedValue({

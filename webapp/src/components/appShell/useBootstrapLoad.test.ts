@@ -6,6 +6,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useBootstrapLoad } from './useBootstrapLoad';
+import { MY_MODE_IDS_KEY, MY_SCHEMA_IDS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
+import { todayStr } from '../../../../shared/src/utils/format';
+import { shiftCalendarDay } from '../../../../shared/src/utils/calendarDate';
 
 vi.mock('../../api', () => ({
   api: {
@@ -128,6 +131,26 @@ describe('useBootstrapLoad — сбои фоновых источников не
   });
 });
 
+// QA 2026-11-03, К2: «сегодня» запрашивалось без даты — сервер отдавал СВОЙ
+// день (пояс уведомлений, по умолчанию Москва), а пояс устройства до сервера
+// не доходил: уходило число tzOffset, которое DTO отбрасывал.
+describe('useBootstrapLoad — день и пояс устройства', () => {
+  it('оценки «сегодня» и «вчера» — явными датами дня устройства, без запроса «день сервера»', async () => {
+    setup();
+    await flush();
+    const today = todayStr();
+    expect(mockApi.ratings).toHaveBeenCalledWith(today);
+    expect(mockApi.ratings).toHaveBeenCalledWith(shiftCalendarDay(today, -1));
+    expect(mockApi.ratings.mock.calls.every((c) => typeof c[0] === 'string')).toBe(true);
+  });
+
+  it('init несёт пояс устройства (IANA), а не смещение в часах', async () => {
+    setup();
+    await flush();
+    expect(mockApi.init).toHaveBeenCalledWith(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  });
+});
+
 // Правило №16 (гейт паритета фич): GET /api/user-flags был доступен только
 // мини-аппу. therapistMode оттуда — серверное предпочтение «кабинет vs
 // клиент», source of truth, единый с /api/therapy/therapist-view. Новый
@@ -140,7 +163,7 @@ describe('useBootstrapLoad — дефолтный роутинг терапев�
     const { navigate } = setup('/today');
     await flush();
     expect(navigate).not.toHaveBeenCalledWith('/cabinet');
-    expect(localStorage.getItem('therapist_mode')).toBe('0');
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
   });
 
   it('пустой localStorage + сервер отдал therapistMode:true — уводит в кабинет (как раньше)', async () => {
@@ -160,11 +183,66 @@ describe('useBootstrapLoad — дефолтный роутинг терапев�
   });
 
   it('явный локальный выбор «клиент» (therapist_mode=0) перекрывает сервер', async () => {
-    localStorage.setItem('therapist_mode', '0');
+    localStorage.setItem(THERAPIST_MODE_KEY, '0');
     mockApi.getProfile.mockResolvedValue({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     mockApi.getUserFlags.mockResolvedValue({ therapistMode: true });
     const { navigate } = setup('/today');
     await flush();
     expect(navigate).not.toHaveBeenCalledWith('/cabinet');
+  });
+});
+
+// Не-терапевт с устаревшим флагом режима: роль сняли на другой площадке (мини-апп),
+// а localStorage сайта никто не чистит. Флаг '1' вёл «← Назад» с /account в /cabinet,
+// откуда бутстрап отбрасывал обычным navigate: запись /cabinet оставалась в истории,
+// и браузерный «Назад» снова показывал клиенту кабинет.
+describe('useBootstrapLoad — не-терапевт с устаревшим флагом режима «кабинет»', () => {
+  beforeEach(() => {
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [] });
+  });
+
+  it('CLIENT + флаг «1» + старт на /cabinet — флаг сброшен в «0», отскок на /today заменяет запись истории', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
+    const { navigate } = setup('/cabinet');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
+    expect(navigate).toHaveBeenCalledWith('/today', { replace: true });
+  });
+
+  it('CLIENT + флаг «1» на /today — флаг сброшен в «0», навигации нет', async () => {
+    localStorage.setItem(THERAPIST_MODE_KEY, '1');
+    const { navigate } = setup('/today');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('CLIENT без флага — ключ не создаётся: явное «0» перекрыло бы серверный выбор, если аккаунт станет терапевтом', async () => {
+    const { navigate } = setup('/today');
+    await flush();
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBeNull();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+// Класс «кэш пережил источник правды» (#939): профиль при старте — источник
+// правды для «моих» схем и режимов, пустой список тоже.
+describe('useBootstrapLoad — кэш «моих» схем и режимов повторяет профиль', () => {
+  it('сервер отдал [] — старая локальная копия стёрта, режимы кэшируются тоже', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null, mySchemaIds: [], myModeIds: ['critic'] });
+    setup('/today');
+    await flush();
+    expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]');
+    expect(JSON.parse(localStorage.getItem(MY_MODE_IDS_KEY)!)).toEqual(['critic']);
+  });
+
+  it('в профиле нет полей — локальная копия остаётся', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
+    mockApi.getProfile.mockResolvedValue({ role: 'CLIENT', name: null });
+    setup('/today');
+    await flush();
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual(['abandonment']);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBeNull();
   });
 });

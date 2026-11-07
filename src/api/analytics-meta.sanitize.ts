@@ -2,11 +2,7 @@ import type { AnalyticsEventName } from '../analytics/analytics.constants';
 import {
   SHARE_CARD_KIND_SET,
   CRISIS_SURFACE_SET,
-  TODAY_FOCUS_PRACTICE_SET,
-  WEB_BANNER_ID_SET,
   ONBOARDING_STEP_SET,
-  TODAY_BLOCK_SET,
-  CUSTOMIZE_ENTRY_SET,
   HOME_SCREEN_ACTION_SET,
   HOME_SCREEN_SURFACE_SET,
   ACCOUNT_LINK_HOST_SET,
@@ -19,7 +15,9 @@ import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
+import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -64,53 +62,19 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name === 'today_focus_change') {
-    const practice = meta.practice;
-    if (
-      typeof practice === 'string' &&
-      TODAY_FOCUS_PRACTICE_SET.has(practice)
-    ) {
-      return { practice };
-    }
-    return undefined;
-  }
   if (name === 'today_streak_toggle') {
-    const hidden = meta.hidden;
-    if (typeof hidden === 'boolean') {
-      return { hidden };
-    }
-    return undefined;
+    return typeof meta.hidden === 'boolean'
+      ? { hidden: meta.hidden }
+      : undefined;
   }
-  if (name === 'web_banner_open' || name === 'web_banner_dismiss') {
-    const banner = meta.banner;
-    if (typeof banner === 'string' && WEB_BANNER_ID_SET.has(banner)) {
-      return { banner };
-    }
-    return undefined;
+  // «Показать клиенту» схему случая: только включил/выключил, без id клиента.
+  if (name === 'concept_shared') {
+    return typeof meta.on === 'boolean' ? { on: meta.on } : undefined;
   }
   if (name === 'onboarding_step') {
     const step = meta.step;
     if (typeof step === 'string' && ONBOARDING_STEP_SET.has(step)) {
       return { step };
-    }
-    return undefined;
-  }
-  if (name === 'today_block_toggle') {
-    const block = meta.block;
-    const hidden = meta.hidden;
-    if (
-      typeof block === 'string' &&
-      TODAY_BLOCK_SET.has(block) &&
-      typeof hidden === 'boolean'
-    ) {
-      return { block, hidden };
-    }
-    return undefined;
-  }
-  if (name === 'today_customize_open') {
-    const via = meta.via;
-    if (typeof via === 'string' && CUSTOMIZE_ENTRY_SET.has(via)) {
-      return { via };
     }
     return undefined;
   }
@@ -189,11 +153,7 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (
-    name === 'plus_action' ||
-    name === 'quick_action_toggle' ||
-    name === 'quick_action_move'
-  ) {
+  if (name === 'quick_action_toggle' || name === 'quick_action_move') {
     return sanitizeQuickActionMeta(name, meta);
   }
   if (name === 'login_ticket_step') return sanitizeLoginTicketMeta(meta);
@@ -262,6 +222,7 @@ export function sanitizeMeta(
     return undefined;
   }
   if (name === 'data_export') return sanitizeDataExportMeta(meta);
+  if (name === 'crawler_visits') return sanitizeCrawlerMeta(meta);
   if (name === 'profile_pattern_open') {
     const kind = meta.kind;
     if (typeof kind === 'string' && PROFILE_PATTERN_KIND_SET.has(kind)) {
@@ -276,10 +237,19 @@ export function sanitizeMeta(
     }
     return undefined;
   }
-  if (name.startsWith('case_') || name === 'mode_renamed') {
+  if (name.startsWith('case_')) {
     return sanitizeCaseMeta(name, meta);
   }
-  // breath_start / stop_start / journey_open / ysq_help_open / plus_open /
-  // CONCEPT_EVENTS (concept_graph_open … concept_graph_fullscreen) — без meta.
-  return undefined;
+  // Запись из приложения (client-booking-events.constants.ts): opened — без
+  // meta; created пишет сервер, статус с клиента не принимается — подделка
+  // через POST /api/event в отчёт /stats не попадёт.
+  if (name === 'client_booking_opened' || name === 'client_booking_created')
+    return undefined;
+  // «Напомню через час» пишет только бот (server-events.constants.ts): quietShift
+  // с клиента не принимается — подделка без него в /stats не считается.
+  if (name === 'reminder_snoozed') return undefined;
+  // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
+  // CONCEPT_EVENTS, CABINET_EVENTS; серверные notify_queue_tick, therapist_resigned, booking_slot_taken (подделке — без чисел).
+  // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.
+  return sanitizeHomeMeta(name, meta);
 }

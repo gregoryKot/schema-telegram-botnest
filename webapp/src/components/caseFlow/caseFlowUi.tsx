@@ -1,54 +1,36 @@
+import type { ReactNode } from 'react';
 import { CaseSupportBlock } from './CaseSupportFoot';
 
 /**
- * Примитивы, общие для всех экранов потока «Разбор случая» (webapp): нижняя
- * панель (Дописать потом / Дальше) + карточка поддержки со строкой «Тяжело
- * прямо сейчас» — на каждом экране потока (правило №7 CLAUDE.md), не только
- * там, где стоит текстовое поле. Twin по смыслу с schema-miniapp
- * CaseHeader/CaseSupportFoot, разметка — webapp-идиома (ds-btn/ex2-foot).
- * TertiaryLink переехала в caseLinks.tsx (иначе цикл модулей с
- * CaseSupportFoot); реэкспорт сохраняет прежний импорт для экранов.
- */
-export { TertiaryLink } from './caseLinks';
-
-/**
- * Нижняя панель шага: [Дописать потом] … [Дальше/Пропустить] сверху,
- * карточка поддержки и «Тяжело прямо сейчас →» снизу (CaseSupportBlock) —
- * одинаковая структура на scene/mode/body/impulse/criterion/recognition/
- * name/done, отличается только primaryLabel/primaryDisabled/onPrimary у
- * вызывающего экрана. onLater отсутствует на hook (там ещё нечего
- * дописывать) — экран сам решает.
+ * Нижняя панель шага потока «Что случилось» (webapp): главная кнопка справа,
+ * вторичное действие (children), карточка поддержки и «Тяжело прямо сейчас →»
+ * (CaseSupportBlock) — на каждом экране потока (правило №7 CLAUDE.md), не
+ * только там, где стоит текстовое поле. Черновик пишется сам, поэтому
+ * «Дописать потом» не нужно: «Назад» на первом шаге и есть выход.
+ * TertiaryLink живёт в caseLinks.tsx (иначе цикл модулей с CaseSupportFoot).
  */
 export function CaseFlowFoot({
   primaryLabel,
   primaryDisabled,
   onPrimary,
-  onLater,
   crisis,
   onHardNow,
+  children,
 }: {
   /** Опущен на экранах, где сам тап по варианту продвигает поток (выбор
    *  режима) — отдельной кнопки «Дальше» там нет. */
   primaryLabel?: string;
   primaryDisabled?: boolean;
   onPrimary?: () => void;
-  onLater?: () => void;
   crisis: boolean;
   onHardNow: () => void;
+  /** Вторичное действие шага («Не похоже…») — между кнопками и поддержкой. */
+  children?: ReactNode;
 }) {
   return (
     <>
-      {(onLater || primaryLabel) && (
+      {primaryLabel && (
         <div className="ex2-foot">
-          {onLater && (
-            <button
-              type="button"
-              className="ds-btn ex2-ghost"
-              onClick={onLater}
-            >
-              Дописать потом
-            </button>
-          )}
           <span className="ex2-spacer" />
           {primaryLabel && onPrimary && (
             <button
@@ -62,6 +44,7 @@ export function CaseFlowFoot({
           )}
         </div>
       )}
+      {children}
       <CaseSupportBlock crisis={crisis} onHardNow={onHardNow} />
     </>
   );

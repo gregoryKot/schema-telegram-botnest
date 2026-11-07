@@ -26,6 +26,7 @@ import { installBodyParsers } from '../../src/infra/body-parsers';
 import { makeFakePrisma, FakePrisma } from './fake-prisma';
 import { makeFakeBot } from './fake-bot';
 import { buildRealDbTestApp } from './build-real-db-test-app';
+import { stopCronJobs } from './stop-cron-jobs';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
 
@@ -87,5 +88,8 @@ export async function buildTestApp(): Promise<TestApp> {
   // ─────────────────────────────────────────────────────────────────────────
 
   await app.init();
+  // Как в build-real-db-test-app.ts: расписание спеку не нужно, ему нужны
+  // сами методы (гейт scripts/check-e2e-stop-cron.mjs).
+  await stopCronJobs(app);
   return { app, prisma };
 }

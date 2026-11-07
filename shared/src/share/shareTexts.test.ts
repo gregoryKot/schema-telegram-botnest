@@ -1,5 +1,5 @@
 // Тест practiceShareText и др. — часть shareTexts.ts не имела прямого теста
-// в shared (остальные покрыты через schema-miniapp/src/share/shareTexts.test.ts,
+// в shared (остальные покрывал тест удалённого мини-аппа,
 // зеркалящий эти же чистые функции — см. cardKit.test.ts про тот же принцип
 // раздельных прямых тестов). Собранные здесь функции ни разу не вызывались ни
 // в одном тесте shared (значились 0% строк) — journeyShareText/journeyItemShareText

@@ -3,6 +3,8 @@ import type { ConceptSchemaLink } from '../../apiTypes';
 import { CONCEPT_SCHEMA_TEXT_MAX } from '../../limits/textLimits';
 import { colorMix } from '../../utils/colorMix';
 import type { GraphSchemaCard } from './conceptGraphTypes';
+import { useSchemaGuide, type ConceptGuideActions } from './conceptGuide';
+import { ConceptGuideHint } from './ConceptGuideHint';
 import { ConceptNeedField } from './ConceptNeedField';
 import { ConceptTextField } from './ConceptTextField';
 import { boxStyle, hintStyle } from './graphStyles';
@@ -22,6 +24,8 @@ const button = {
  * (✗ на схеме). Открывается инлайн под диаграммой, как редактор режима.
  * Каждое изменение сразу уходит в onChangeLink. «Убрать схему» снимает её из
  * концептуализации, тексты остаются в данных: вернул схему — вернулись тексты.
+ * Под полями — плашка «Обычно в методе» из раздела схемы (#995); раздела нет
+ * или тексты ещё грузятся — плашки нет. `guide` — кнопки подсказок.
  */
 export function ConceptSchemaEditor({
   card,
@@ -29,15 +33,18 @@ export function ConceptSchemaEditor({
   onChangeLink,
   onRemove,
   onClose,
+  guide,
 }: {
   card: GraphSchemaCard;
   link: ConceptSchemaLink;
   onChangeLink: (link: ConceptSchemaLink) => void;
   onRemove: (schemaId: string) => void;
   onClose: () => void;
+  guide?: ConceptGuideActions;
 }) {
   const set = (patch: Partial<ConceptSchemaLink>) =>
     onChangeLink({ ...link, ...patch });
+  const method = useSchemaGuide(card.id);
   // Редактор стоит под диаграммой, а схема может быть высоко над ним.
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -108,6 +115,14 @@ export function ConceptSchemaEditor({
           needIds={link.needIds}
           onChange={(needIds) => set({ needIds })}
         />
+        {method && (
+          <ConceptGuideHint
+            view={method}
+            from={{ kind: 'schema', id: card.id }}
+            actions={guide}
+            marks={link.done}
+          />
+        )}
         <button
           type="button"
           onClick={() => {

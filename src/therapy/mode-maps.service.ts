@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { guardOverwrite } from '../utils/crypto-record';
+import { clientMapAuthors, clientSeesMap } from './client-map-authors';
+import { normalizeModeMapKind } from './mode-map-kinds';
 
 // Declarative encryption schemas — single source of truth, so a newly added
 // free-text field can't silently end up in plaintext (just add it here).
@@ -11,7 +13,6 @@ const MODE_MAP_SCHEMA: EncryptSchema = {
   jsonArrays: ['nodes', 'edges'],
 };
 const CUSTOM_MODE_SCHEMA: EncryptSchema = { strings: ['name'] };
-const MODE_MAP_KINDS = ['personality', 'problem', 'couple'] as const;
 
 // Карты режимов (mode maps) терапевта для клиента + кастомные режимы терапевта.
 // Доступ к чужому клиенту закрыт через TherapyRelationsService.assertHasClient.
@@ -65,9 +66,7 @@ export class ModeMapsService {
     kind?: string,
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const k = MODE_MAP_KINDS.includes(kind as (typeof MODE_MAP_KINDS)[number])
-      ? kind
-      : 'problem';
+    const k = normalizeModeMapKind(kind);
     const row = await this.prisma.modeMap.create({
       data: {
         therapistId,
@@ -128,8 +127,9 @@ export class ModeMapsService {
   // ─── Client's read-only view of their own maps ───────────────────────────────
 
   async listMyModeMaps(userId: bigint) {
+    const authors = await clientMapAuthors(this.prisma, userId);
     const rows = await this.prisma.modeMap.findMany({
-      where: { clientId: userId },
+      where: { clientId: userId, therapistId: { in: authors } },
       orderBy: { updatedAt: 'desc' },
       select: { id: true, title: true, kind: true, updatedAt: true },
     });
@@ -137,10 +137,8 @@ export class ModeMapsService {
   }
 
   async getMyModeMap(userId: bigint, mapId: number) {
-    const row = await this.prisma.modeMap.findUnique({
-      where: { id: mapId },
-    });
-    if (!row || row.clientId.toString() !== userId.toString())
+    const row = await this.prisma.modeMap.findUnique({ where: { id: mapId } });
+    if (!row || !(await clientSeesMap(this.prisma, userId, row)))
       throw new Error('Not found');
     return decryptRecord(row, MODE_MAP_SCHEMA);
   }

@@ -36,7 +36,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.error) return this.props.children;
     const isChunkError = isChunkLoadError(this.state.error.message);
     return (
-      <div className="sk-crash">
+      <div className="sk-crash" data-crash-screen="boundary">
         <div className="ds-card sk-crash-card">
           {isChunkError ? (
             <>

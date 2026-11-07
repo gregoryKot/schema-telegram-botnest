@@ -12,17 +12,10 @@
 //   crisis_card_shown   — показалась карточка помощи (meta.surface);
 //   crisis_hotline_tapped — нажал на телефон доверия (meta.surface);
 //   outbox_flush        — доехали записи, сделанные без интернета (meta.count);
-//   today_focus_change  — сменил главную практику экрана «Сегодня» (meta.practice);
 //   today_streak_toggle — скрыл/показал счётчик серии (meta.hidden);
 //   breath_start        — запустил дыхание «Здесь и сейчас» (без meta);
 //   stop_start          — запустил технику «Стоп» в «Здесь и сейчас» (без meta);
-//   web_banner_open     — нажал баннер-переход (meta.banner). Баннеры живут
-//                         в обоих фронтендах: кабинет мини-аппа зовёт на
-//                         сайт, мобильный сайт — в приложение (/app/);
-//   web_banner_dismiss  — скрыл баннер-переход (meta.banner), те же баннеры;
 //   onboarding_step     — новичок дошёл до шага обучения (meta.step);
-//   today_block_toggle  — показал/скрыл блок «Сегодня» (meta.block + meta.hidden);
-//   today_customize_open — открыл «Настроить экран» (meta.via: как открыл);
 //   home_screen_offer   — предложение значка на экран (meta.action + surface).
 //                         Поверхности мини-аппа (Telegram) шлют событие
 //                         авторизованно через POST /api/event. Сайт добавил
@@ -64,51 +57,38 @@
 //   account_link_failed — перенос не состоялся (meta.host + meta.reason:
 //                         expired|error). Без него в отчёте видно только
 //                         успехи, и «сколько людей не смогли» не измерить.
-//   plus_open           — открыл универсальное меню «плюс» (без meta).
-//   plus_action         — выбрал действие в меню «плюс» (meta.action —
-//                         QuickActionId).
 //   quick_action_toggle — скрыл/вернул пункт в настройке меню (meta.action +
 //                         meta.hidden + meta.surface: 'plus'|'tools').
 //   quick_action_move   — переставил пункт в настройке меню (meta.action +
 //                         meta.surface + meta.dir: 'up'|'down').
 //   screen_customize_open — открыл «Настроить экран» на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.via — переиспользует
-//                         CUSTOMIZE_ENTRY_POINTS). screen='today' сюда не
-//                         шлётся: вход в настройку «Сегодня» исторически
-//                         отчитывается своим today_customize_open.
+//                         CUSTOMIZE_ENTRY_POINTS).
 //   screen_block_toggle — показал/скрыл блок на «Профиле»/«Паттернах»
-//                         (meta.screen + meta.block + meta.hidden). Видимость
-//                         блоков «Сегодня» — отдельным путём (частные
-//                         today_*_hidden-ключи в ui-prefs.sanitize.ts), это
-//                         событие с screen='today' не приходит.
-//   screen_block_move   — переставил блок на «Профиле»/«Паттернах» и, с
-//                         добавлением screen_order_today, на «Сегодня»
+//                         (meta.screen + meta.block + meta.hidden).
+//   screen_block_move   — переставил блок на «Профиле»/«Паттернах»
 //                         (meta.screen + meta.block + meta.dir: 'up'|'down').
-//                         Единственное из трёх screen_*-событий, которое
-//                         реально шлётся с meta.screen='today'.
-//   auth_*/client_error/signup_source/data_export/notify_queue_tick —
-//                         СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
+//   auth_*/client_error/signup_source/data_export/notify_queue_tick/therapist_resigned
+//                         — СЕРВЕРНЫЕ события (пишет только бэкенд, не клиент)
 //                         — реестр и описания каждого в server-events.constants.ts
 //                         (правило №10, тот же приём, что у CASE_EVENTS ниже).
 //   profile_pattern_open — открыл лист схемы/режима с редизайна вкладки «Я»
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
-//   concept_*            — схема случая в кабинете терапевта (без meta); реестр и
-//                         описания каждого — в concept-events.constants.ts.
-//   desktop_app_open     — запустил установленное приложение на компьютере,
-//                         открылся кабинет сайта (без meta).
+//   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
+//   client_booking_*/booking_slot_taken — запись на сессию: booking-events.constants.ts.
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
 //                         каждого — game-events.constants.ts.
-//   entry_deleted        — удалил свою запись из архива «Мой путь» (проверка
-//                         убеждения / письмо себе / кризисная карточка,
-//                         meta.type — ENTRY_DELETE_TYPES). Записи там несут
-//                         очень личный текст — важно видеть, что удаление
-//                         вообще находят и им пользуются, а не считать это
-//                         само собой разумеющимся.
+//   entry_deleted        — удалил свою запись из архива «Мой путь» (проверка убеждения /
+//                         письмо себе / кризисная карточка, meta.type — ENTRY_DELETE_TYPES):
+//                         текст там очень личный — видно, находят ли удаление вообще.
 import { CASE_EVENTS } from './case-steps.constants';
+import { CABINET_EVENTS } from './cabinet-events.constants';
+import { BOOKING_EVENTS } from './booking-events.constants';
 import { CONCEPT_EVENTS } from './concept-events.constants';
 import { GAME_EVENTS } from './game-events.constants';
+import { HOME_EVENTS } from './home-events.constants';
 import { SERVER_EVENTS } from './server-events.constants';
 import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
 
@@ -118,15 +98,10 @@ export const ANALYTICS_EVENTS = [
   'crisis_card_shown',
   'crisis_hotline_tapped',
   'outbox_flush',
-  'today_focus_change',
   'today_streak_toggle',
   'breath_start',
   'stop_start',
-  'web_banner_open',
-  'web_banner_dismiss',
   'onboarding_step',
-  'today_block_toggle',
-  'today_customize_open',
   'home_screen_offer',
   'journey_open',
   'ysq_help_open',
@@ -143,8 +118,6 @@ export const ANALYTICS_EVENTS = [
   'account_link_started',
   'account_link_confirmed',
   'account_link_failed',
-  'plus_open',
-  'plus_action',
   'quick_action_toggle',
   'quick_action_move',
   'screen_customize_open',
@@ -153,9 +126,8 @@ export const ANALYTICS_EVENTS = [
   // Серверные события (guard'ы/контроллеры) — реестр в server-events.constants.ts.
   ...SERVER_EVENTS,
   'profile_pattern_open',
-  // Схема случая в кабинете терапевта — реестр рядом с фичей (правило №10).
-  ...CONCEPT_EVENTS,
-  'desktop_app_open',
+  ...CONCEPT_EVENTS, // кабинет терапевта: реестры рядом с фичей (правило №10)
+  ...CABINET_EVENTS,
   // Путь входа по билету: один шаг в meta.step (см. login-ticket-steps).
   'login_ticket_step',
   // Разбор случая — реестр рядом с фичей (правило №10, файл в храповике).
@@ -164,6 +136,8 @@ export const ANALYTICS_EVENTS = [
   ...GAME_EVENTS,
   // Удалил запись из архива «Мой путь» — belief_check|letter|flashcard.
   'entry_deleted',
+  ...HOME_EVENTS,
+  ...BOOKING_EVENTS,
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -197,18 +171,6 @@ export const PRACTICE_LINK_PLACES = [
 ] as const;
 export type PracticeLinkPlace = (typeof PRACTICE_LINK_PLACES)[number];
 
-// Блоки главного экрана, которые можно скрыть (meta.block). Заменяет частное
-// событие today_streak_toggle: блоков стало больше одного, и заводить событие
-// на каждый — плодить реестры. Старое имя остаётся в allow-list ради уже
-// накопленных строк, /stats суммирует оба.
-export const TODAY_BLOCKS = [
-  'streak',
-  'phrase',
-  'secondary',
-  'therapist_banner',
-] as const;
-export type TodayBlock = (typeof TODAY_BLOCKS)[number];
-
 // Как открыли «Настроить экран»: шестерёнка в шапке или долгое нажатие на
 // блок. Нужно, чтобы понять, находят ли жест вообще (он без аффорданса).
 export const CUSTOMIZE_ENTRY_POINTS = ['gear', 'longpress'] as const;
@@ -217,12 +179,17 @@ export type CustomizeEntryPoint = (typeof CUSTOMIZE_ENTRY_POINTS)[number];
 // Что произошло с предложением «добавить значок на экран» (meta.action) и где
 // оно показывалось (meta.surface). 'added' приходит событием от Telegram —
 // это единственный достоверный признак, что значок реально появился.
+// 'handoff_ok' / 'handoff_failed' — только страница установки /install: браузер
+// забрал сессию по ссылке из мессенджера / код истёк или не принят (страница
+// осталась анонимной).
 export const HOME_SCREEN_ACTIONS = [
   'shown',
   'add',
   'later',
   'never',
   'added',
+  'handoff_ok',
+  'handoff_failed',
 ] as const;
 export type HomeScreenAction = (typeof HOME_SCREEN_ACTIONS)[number];
 
@@ -247,22 +214,30 @@ export type AccountLinkFailReason = (typeof ACCOUNT_LINK_FAIL_REASONS)[number];
 // (webapp/src/pages/landing/AppInstallSection.tsx); с лендинга событие идёт
 // анонимно через POST /api/public-event, и там принимается ТОЛЬКО эта
 // поверхность (см. sanitize в public-events.controller.ts).
+// 'site_install' — страница установки /install (webapp/src/pages/InstallPage.tsx),
+// куда кнопка «Добавить значок» ведёт из Telegram/MAX во внешнем браузере;
+// событие анонимное, как у лендинга, поэтому в публичном пути её тоже принимают.
 export const HOME_SCREEN_SURFACES = [
   'onboarding',
   'today',
   'settings',
   'site_banner',
   'site_landing',
+  'site_install',
 ] as const;
 export type HomeScreenSurface = (typeof HOME_SCREEN_SURFACES)[number];
 
 // Подмножество HOME_SCREEN_SURFACES — поверхности сайта, а не мини-аппа.
 // Используется в двух местах: bot.product-metrics.service.ts фильтрует
 // сайтовые surface из воронки мини-аппа (иначе она пачкается баннером
-// кабинета и лендингом), site-install-metrics.service.ts группирует по этим
+// кабинета, лендингом и страницей установки), site-install-metrics.service.ts группирует по этим
 // же surface для отдельного блока «Установка с сайта». IN-список в обоих
 // $queryRaw собирается из этой константы, а не хардкодится дважды.
-export const SITE_INSTALL_SURFACES = ['site_banner', 'site_landing'] as const;
+export const SITE_INSTALL_SURFACES = [
+  'site_banner',
+  'site_landing',
+  'site_install',
+] as const;
 export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
 
 // ONBOARDING_STEPS/OnboardingStep — вынесены в onboarding-steps.constants.ts
@@ -301,20 +276,6 @@ export {
   type CrisisSurface,
 } from './crisis-surfaces.constants';
 
-// Главная практика экрана «Сегодня» (meta.practice для today_focus_change) —
-// парно с FocusPractice на фронте (shared/src/today/todayFocus.ts).
-export const TODAY_FOCUS_PRACTICES = [
-  'tracker',
-  'schema',
-  'mode',
-  'gratitude',
-] as const;
-export type TodayFocusPractice = (typeof TODAY_FOCUS_PRACTICES)[number];
-
-// WEB_BANNER_IDS/WebBannerId — вынесены в web-banner-ids.constants.ts
-// (правило №10, тот же приём, что у SIGNUP_SOURCES ниже).
-export { WEB_BANNER_IDS, type WebBannerId } from './web-banner-ids.constants';
-
 // QUICK_ACTION_IDS/QuickActionId/QUICK_ACTION_SURFACES/QuickActionSurface —
 // вынесены в quick-actions.constants.ts (правило №10: тот файл держим
 // минимальным, парность с фронтом описана прямо там).
@@ -337,12 +298,10 @@ export {
   type CustomizableScreen,
 } from './screen-blocks.constants';
 
-// SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts
-// (правило №10, тот же приём, что и с CRISIS_SURFACES выше).
+// SIGNUP_SOURCES/SignupSource — вынесены в signup-sources.constants.ts (правило №10).
 export { SIGNUP_SOURCES, type SignupSource } from './signup-sources.constants';
 
-// ENTRY_DELETE_TYPES/EntryDeleteType — вынесены в entry-delete.constants.ts
-// (правило №10, тот же приём, что и с SHARE_CARD_KINDS выше).
+// ENTRY_DELETE_TYPES/EntryDeleteType — вынесены в entry-delete.constants.ts (правило №10).
 export {
   ENTRY_DELETE_TYPES,
   type EntryDeleteType,

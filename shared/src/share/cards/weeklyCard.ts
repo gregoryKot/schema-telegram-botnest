@@ -1,7 +1,7 @@
 // Карточка недели трекера потребностей — единственная копия для обоих
 // фронтендов. Чистые расчёты (calcWeekAvg, weekIndex, weekRange,
 // buildWeeklyShareText) экспортируются для тестов.
-import { COLORS } from '../../types';
+import { NEED_COLORS } from '../../needs/needColors';
 import type { Need, DayHistory } from '../../types';
 import { fmtDate } from '../../utils/format';
 import { drawNeedsRadarCard } from './needsRadarCard';
@@ -71,7 +71,7 @@ export function drawWeeklyCard(
       return {
         emoji: n.emoji,
         label: n.chartLabel,
-        color: COLORS[n.id] ?? '#888',
+        color: NEED_COLORS[n.id] ?? '#888',
         value: avg,
         valueText: avg !== null ? avg.toFixed(1) : '—',
       };

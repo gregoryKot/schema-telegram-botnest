@@ -90,7 +90,7 @@ async function openTab(withHandler = true) {
       </AddressFormContext.Provider>
     </MemoryRouter>,
   );
-  await screen.findByText('Концептуализация');
+  await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
   await flushEffects();
 }
 
@@ -101,7 +101,13 @@ async function openTab(withHandler = true) {
  */
 const flushEffects = () => act(async () => {});
 
-const expandBtn = () => screen.getByRole('button', { name: /На весь экран/ });
+// «На весь экран» — пункт меню «⋯ Ещё» шапки (#879); выбор закрывает меню,
+// поэтому каждый вызов открывает его заново.
+const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Ещё действия' }));
+const expandBtn = () => {
+  openMore();
+  return screen.getByRole('menuitem', { name: /На весь экран/ });
+};
 const sheet = () => screen.queryByRole('dialog', { name: 'Схема случая' });
 const trackedCount = (name: string) => mockApi.trackEvent.mock.calls.filter((c) => c[0] === name).length;
 const history = () => screen.getByTestId('history').textContent;
@@ -117,7 +123,7 @@ beforeEach(() => {
   mockApi.getClientDiary.mockResolvedValue([]);
   mockApi.getConceptualization.mockResolvedValue(concept());
   mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => ({ ...concept(), ...body }));
-  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'personality' });
+  mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'concept' });
   mockApi.updateModeMap.mockResolvedValue({});
   mockApi.deleteModeMap.mockResolvedValue(undefined);
   toPng.mockResolvedValue('data:image/png;base64,AAAA');
@@ -126,9 +132,10 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('«На весь экран»: открытие и закрытие', () => {
-  it('в потоке есть кнопка; листа нет, пока её не нажали', async () => {
+  it('в потоке пункт в меню «⋯ Ещё»; листа нет, пока его не выбрали', async () => {
     await openTab();
-    expect(expandBtn().textContent).toBe('⤢ На весь экран');
+    expect(screen.queryByRole('button', { name: /На весь экран/ })).toBeNull();
+    expect(expandBtn().firstElementChild!.textContent).toBe('⤢ На весь экран'); // вторая строка пункта — подсказка
     expect(sheet()).toBeNull();
   });
 
@@ -250,7 +257,8 @@ describe('«На весь экран»: аналитика', () => {
 describe('«На весь экран»: действия панели', () => {
   it('«Скачать картинкой» в листе снимает граф из листа, в потоке — граф из потока', async () => {
     await openTab();
-    fireEvent.click(screen.getByRole('button', { name: /Скачать картинкой/ }));
+    openMore();
+    fireEvent.click(screen.getByRole('menuitem', { name: /Скачать картинкой/ }));
     await waitFor(() => expect(toPng).toHaveBeenCalledTimes(1));
     expect(toPng.mock.calls[0][0].textContent).toContain(CIRCLE);
     expect(toPng.mock.calls[0][0].closest('[role="dialog"]')).toBeNull();

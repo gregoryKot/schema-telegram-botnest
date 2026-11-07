@@ -24,11 +24,12 @@ jest.mock('../utils/admin-alert', () => ({
 const fallback = adminAlert.notifyAdminWithFallback as jest.Mock;
 
 interface Fixture {
-  recoveryEmail?: string | null;
-  verified?: boolean;
   providers?: Array<{ provider: string; providerId: string; email?: string }>;
   tgIds?: Record<string, bigint>;
 }
+
+// Вход по почте: providerId и есть адрес (therapist-request.applicant.ts).
+const ANYA = [{ provider: 'email', providerId: 'anya@example.com' }];
 
 function makeFakePrisma(
   addressForm: string | null | undefined,
@@ -36,13 +37,7 @@ function makeFakePrisma(
 ) {
   return {
     user: {
-      findUnique: jest.fn(() =>
-        Promise.resolve({
-          addressForm,
-          recoveryEmail: fx.recoveryEmail ?? null,
-          recoveryEmailVerifiedAt: fx.verified ? new Date() : null,
-        }),
-      ),
+      findUnique: jest.fn(() => Promise.resolve({ addressForm })),
     },
     authProvider: {
       findMany: jest.fn(() =>
@@ -295,11 +290,8 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
     jest.restoreAllMocks();
   });
 
-  it('веб-аккаунт без Telegram, с подтверждённой почтой → письмо, в Telegram не пишем', async () => {
-    const { svc, email } = makeService('vy', {
-      recoveryEmail: 'anya@example.com',
-      verified: true,
-    });
+  it('веб-аккаунт без Telegram, со входом по почте → письмо, в Telegram не пишем', async () => {
+    const { svc, email } = makeService('vy', { providers: ANYA });
     await svc.notifyApplicant(req(WEB_ID));
 
     expect(fetchMock).not.toHaveBeenCalled();
@@ -311,17 +303,6 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
     expect(text).toContain('https://schemehappens.ru/account');
     expect(text).not.toMatch(/Твоя|✅/);
     expect(errorSpy).not.toHaveBeenCalled();
-  });
-
-  it('неподтверждённый recoveryEmail не годится как адрес', async () => {
-    const { svc, email } = makeService(null, {
-      recoveryEmail: 'anya@example.com',
-      verified: false,
-    });
-    await svc.notifyApplicant(req(WEB_ID));
-
-    expect(email.send).not.toHaveBeenCalled();
-    expect(errorSpy.mock.calls[0][0]).toContain('нет почты');
   });
 
   it('вход по почте и email из профиля Google тоже дают адрес', async () => {
@@ -347,8 +328,7 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
   it('веб-аккаунт с привязанным Telegram → chat_id из привязки, а не userId; письма нет', async () => {
     const { svc, email } = makeService(null, {
       tgIds: { [WEB_ID.toString()]: 555n },
-      recoveryEmail: 'anya@example.com',
-      verified: true,
+      providers: ANYA,
     });
     await svc.notifyApplicant(req(WEB_ID));
 
@@ -366,8 +346,7 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
     });
     const { svc, email } = makeService(null, {
       tgIds: { [WEB_ID.toString()]: 555n },
-      recoveryEmail: 'anya@example.com',
-      verified: true,
+      providers: ANYA,
     });
     await svc.notifyApplicant(req(WEB_ID, 'rejected', 'нужен диплом'));
 
@@ -400,8 +379,7 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
     });
     const { svc, email } = makeService(null, {
       tgIds: { [WEB_ID.toString()]: 555n },
-      recoveryEmail: 'anya@example.com',
-      verified: true,
+      providers: ANYA,
     });
     email.send.mockRejectedValue(new Error('Email delivery failed'));
     await svc.notifyApplicant(req(WEB_ID));
@@ -412,10 +390,7 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
   });
 
   it('письмо не принято (send вернул false, например нет RESEND_API_KEY) → error с номером заявки', async () => {
-    const { svc, email } = makeService('vy', {
-      recoveryEmail: 'anya@example.com',
-      verified: true,
-    });
+    const { svc, email } = makeService('vy', { providers: ANYA });
     email.send.mockResolvedValue(false);
     await svc.notifyApplicant(req(WEB_ID));
 
@@ -429,13 +404,14 @@ describe('TherapistRequestNotifyService.notifyApplicant — адрес и зап
   it('id выше 2^53 доходит до базы и карты адресов точным bigint', async () => {
     const big = 2n ** 53n + 1n;
     const { svc, prisma, telegramIdsFor } = makeService('vy', {
-      recoveryEmail: 'anya@example.com',
-      verified: true,
+      providers: ANYA,
     });
     await svc.notifyApplicant(req(big));
 
     expect(prisma.user.findUnique.mock.calls[0][0].where.id).toBe(big);
-    expect(prisma.authProvider.findMany).not.toHaveBeenCalled();
+    expect(prisma.authProvider.findMany.mock.calls[0][0].where.userId).toBe(
+      big,
+    );
     expect(telegramIdsFor.mock.calls[0][0]).toEqual([big]);
   });
 });

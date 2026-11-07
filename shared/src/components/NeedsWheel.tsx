@@ -1,7 +1,9 @@
 // Колесо потребностей (история дня): лепестки-оценки, контур «колеса
-// детства», индекс в центре. Единственная копия (правило №3) — версии
-// фронтов были семантически идентичны и разошлись только форматом.
-import { COLORS, type Need } from '../types';
+// детства», индекс в центре (wheelCenter.ts). Единственная копия (правило №3);
+// цвет — needColors.ts, как на остальных экранах (QA 2026-11).
+import type { Need } from '../types';
+import { NEED_COLORS } from '../needs/needColors';
+import { wheelCenter } from '../history/wheelCenter';
 
 const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
 
@@ -60,12 +62,8 @@ export function NeedsWheel({
   const SPREAD = (34 * Math.PI) / 180,
     n = needs.length,
     CENTER_R = 41;
-  const avg =
-    n > 0 ? needs.reduce((s, nd) => s + (ratings[nd.id] ?? 0), 0) / n : 0;
-  const prevAvg =
-    Object.keys(prevRatings).length > 0
-      ? needs.reduce((s, nd) => s + (prevRatings[nd.id] ?? 0), 0) / n
-      : null;
+  const ids = needs.map((nd) => nd.id);
+  const center = wheelCenter(ids, ratings, prevRatings);
 
   return (
     <svg
@@ -94,7 +92,7 @@ export function NeedsWheel({
         const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
         const value = ratings[need.id] ?? 0;
         const r = Math.sqrt(value / 10) * R;
-        const color = COLORS[need.id] ?? '#888';
+        const color = NEED_COLORS[need.id] ?? '#888';
         const d = petalPath(cx, cy, r, angle, SPREAD);
         return d ? (
           <path
@@ -167,9 +165,9 @@ export function NeedsWheel({
         fontWeight={700}
         fill="var(--text)"
       >
-        {avg.toFixed(1)}
+        {center.index}
       </text>
-      {prevAvg !== null && prevAvg > 0 && (
+      {center.prev !== null && (
         <text
           x={cx}
           y={cy + 24}
@@ -177,7 +175,7 @@ export function NeedsWheel({
           fontSize={11}
           fill="rgba(var(--fg-rgb),0.35)"
         >
-          {avg >= prevAvg ? '↑' : '↓'} вчера {prevAvg.toFixed(1)}
+          {center.prev}
         </text>
       )}
       {onClickNeed &&

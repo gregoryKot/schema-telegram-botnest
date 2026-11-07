@@ -1,117 +1,81 @@
 /* Подписка и донат (/subscribe, /donate). Префикс ap-.
-   Страницы живут вне AppShell (и на визитке практики): корень сам красит экран. */
+   Страницы живут вне AppShell (и на визитке практики): корень сам красит экран.
+   Шапка «← На главную» — общая .ds-sheet-head/.ds-back, заголовок — ds-eyebrow +
+   ds-h1 + ds-sub слева, страница прижата к верху, кнопки — ds-btn (#906).
+   Суммы доната — ds-seg, поля доната — ds-input (#906); поле email — ds-input--on-panel. */
 .ap-page {
-  flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh;
+  --sheet-col: 640px; --sheet-pad: clamp(20px, 4vw, 56px);
+  padding-top: var(--safe-top);
+  flex: 1; width: 100%; box-sizing: border-box; min-height: 100dvh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
 }
-.ap-page--center { display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-
-.ap-h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 52px; line-height: 1.05; color: inherit; }
-.ap-h1 i { font-style: italic; }
-.ap-h1--sm { font-size: clamp(26px, 6vw, 32px); line-height: 1.15; margin: 0 0 10px; }
-.ap-lead { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text-sub); }
+.ds-page.ap-main { max-width: 640px; }
+.ap-hero { display: flex; flex-direction: column; align-items: flex-start; }
+.ap-hero > .ds-btn { margin-top: 16px; }
+.ap-lead { margin: 10px 0 0; line-height: 1.5; max-width: 480px; }
 .ap-err { margin: 0; font-size: 14px; line-height: 1.5; color: var(--err); }
-.ap-fine { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); text-align: center; }
-.ap-back { display: inline-block; font-size: 13px; color: var(--text-faint); text-decoration: none; }
-.ap-back:hover { color: var(--text); }
+.ap-hero > .ap-err, .ap-info > .ap-err { margin-top: 12px; }
+.ap-fine { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
 .ap-honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 /* Нативный инпут под оформлением: доступен с клавиатуры и скринридеру */
 .ap-native { position: absolute; opacity: 0; width: 100%; height: 100%; inset: 0; margin: 0; cursor: pointer; }
-
-/* ── Служебные состояния (спасибо, отмена, управление) ───────────────────── */
-.ap-card { width: 100%; max-width: 400px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.ap-card .ap-lead { font-size: 15px; line-height: 1.7; }
-.ap-card .ap-back { margin-top: 16px; }
-.ap-icon {
-  width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  background: var(--paper-sunk); color: var(--accent); font-size: 26px;
-}
-.ap-note { width: 100%; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-size: 14px; color: var(--text-sub); }
-.ap-btn {
-  display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; min-height: 48px;
-  border-radius: 24px; border: none; background: var(--ink); color: var(--on-ink);
-  font: 600 15px var(--sans); text-decoration: none; cursor: pointer;
-}
-.ap-btn:hover { background: var(--accent); }
+/* «Следующее списание» в управлении подпиской — ds-card--row */
+.ap-note { font-size: 14px; color: var(--text-sub); }
 
 /* ── Подписка: сплит ─────────────────────────────────────────────────────── */
-.ap-split { display: grid; grid-template-columns: 1.05fr 1fr; }
-.ap-info { padding: 56px; display: flex; flex-direction: column; gap: 18px; align-items: flex-start; box-sizing: border-box; min-width: 0; }
-.ap-info .ds-eyebrow { margin-top: 32px; }
-.ap-info .ap-lead { max-width: 480px; }
-.ap-checks { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+.ap-split { flex: 1; display: grid; grid-template-columns: 1.05fr 1fr; }
+.ap-info { padding: 40px 56px 56px; display: flex; flex-direction: column; align-items: flex-start; box-sizing: border-box; min-width: 0; }
+.ap-checks { list-style: none; margin: 24px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
 .ap-checks li { display: flex; gap: 12px; }
 .ap-checks span { color: var(--ok); font-weight: 700; }
-.ap-info .ap-back { margin-top: auto; padding-top: 24px; }
 
 .ap-pay {
-  background: var(--ink); color: var(--on-ink); padding: 56px; box-sizing: border-box; min-width: 0;
+  background: var(--panel); color: var(--on-panel); padding: 56px; box-sizing: border-box; min-width: 0;
   display: flex; flex-direction: column; justify-content: center; gap: 14px;
 }
+.ap-pay-art { display: flex; }
+.ap-pay-art .pp-art { margin-left: -22px; } /* лист отцентрован во вьюбоксе: выравниваем по левому краю контента */
 .ap-plans { display: flex; flex-direction: column; gap: 14px; }
 .ap-plan {
   position: relative; display: block; box-sizing: border-box; cursor: pointer;
-  padding: 20px 22px; border-radius: 18px; border: 2px solid var(--ink-line); background: var(--ink-2); color: var(--on-ink);
+  padding: 20px 22px; border-radius: 18px; border: 2px solid var(--panel-line); background: var(--panel-2); color: var(--on-panel);
 }
-.ap-plan.is-on { background: var(--on-ink); color: var(--ink); border-color: var(--accent-hot); }
-.ap-plan:focus-within { outline: 2px solid var(--on-ink-sub); outline-offset: 2px; }
+.ap-plan.is-on { background: var(--surface); color: var(--text); border-color: var(--accent); }
+.ap-plan:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ap-plan-top { display: flex; justify-content: space-between; align-items: center; }
 .ap-plan-name { font-size: 16px; font-weight: 700; }
-.ap-radio { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--on-ink-faint); }
-.ap-plan.is-on .ap-radio { border-color: var(--accent-hot); background: var(--accent-hot); box-shadow: inset 0 0 0 4px var(--on-ink); }
+.ap-radio { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--on-panel-faint); }
+.ap-plan.is-on .ap-radio { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 4px var(--surface); }
 .ap-plan-bottom { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .ap-plan-price { font-family: var(--serif); font-size: 44px; line-height: 1; }
 .ap-plan-per { font-size: 14px; opacity: .7; }
-.ap-badge { margin-left: auto; font-size: 12px; font-weight: 700; background: var(--accent-hot); color: #fff; border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
+.ap-badge { margin-left: auto; font-size: 12px; font-weight: 700; background: var(--accent); color: var(--on-accent); border-radius: 10px; padding: 3px 9px; white-space: nowrap; }
 
-.ap-field {
-  width: 100%; box-sizing: border-box; min-height: 48px; padding: 0 16px; border-radius: 14px;
-  border: 1px solid var(--ink-line); background: var(--ink-2); color: var(--on-ink); font: 15px var(--sans);
-}
-.ap-field::placeholder { color: var(--on-ink-faint); }
-.ap-field:focus { outline: none; border-color: var(--on-ink-sub); }
-
-.ap-consent { position: relative; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--on-ink-sub); cursor: pointer; min-height: 44px; margin-top: 6px; }
+.ap-consent { position: relative; display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; color: var(--on-panel-sub); cursor: pointer; min-height: 44px; margin-top: 6px; }
 .ap-box {
-  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; box-sizing: border-box; border: 2px solid var(--on-ink-faint);
-  display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px;
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; box-sizing: border-box; border: 2px solid var(--on-panel-faint);
+  display: flex; align-items: center; justify-content: center; color: var(--on-accent); font-size: 12px;
 }
-.ap-native:checked + .ap-box { background: var(--accent-hot); border-color: var(--accent-hot); }
-.ap-native:focus-visible + .ap-box { outline: 2px solid var(--on-ink-sub); outline-offset: 2px; }
-.ap-err--ink { color: var(--on-ink); background: var(--ink-2); border-radius: 12px; padding: 10px 14px; }
+.ap-native:checked + .ap-box { background: var(--accent); border-color: var(--accent); }
+.ap-native:focus-visible + .ap-box { outline: 2px solid var(--on-panel-sub); outline-offset: 2px; }
+.ap-err--panel { color: var(--on-panel); background: var(--panel-2); border-radius: 12px; padding: 10px 14px; }
 
-.ap-cta {
-  min-height: 56px; border-radius: 28px; border: none; background: var(--accent-hot); color: #fff;
-  font: 700 16px var(--sans); cursor: pointer; margin-top: 4px;
-}
-.ap-cta:hover:not(:disabled) { background: var(--accent); }
-.ap-cta:disabled { background: var(--ink-3); color: var(--on-ink-faint); cursor: default; }
-.ap-alt { margin: 0; text-align: center; font-size: 13px; color: var(--on-ink-faint); }
-.ap-alt a { color: var(--on-ink-sub); display: inline-block; padding: 12px 4px; }
+/* CTA — ds-btn--accent ds-btn--lg; неактивная кнопка на панели — --panel-3
+   (REDESIGN_2026-10, «Подписка»), а не полупрозрачный акцент. */
+.ap-cta { margin-top: 4px; }
+.ap-pay .ds-btn:disabled, .ap-pay .ds-btn:disabled:hover { background: var(--panel-3); color: var(--on-panel-faint); opacity: 1; }
+.ap-alt { margin: 0; font-size: 13px; color: var(--on-panel-faint); }
+.ap-alt a { color: var(--on-panel-sub); display: inline-block; padding: 12px 4px; }
 
 /* ── Донат ───────────────────────────────────────────────────────────────── */
-.ap-donate { width: 100%; max-width: 560px; border-radius: 28px; padding: 40px; display: flex; flex-direction: column; gap: 18px; }
-.ap-donate .ap-back { align-self: center; }
-.ap-thanks { text-align: center; padding: 24px 0; }
-.ap-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 6px; }
-.ap-amount {
-  height: 56px; border-radius: 14px; border: 1px solid var(--line-input); background: var(--bg); color: var(--text);
-  font: 700 16px var(--sans); cursor: pointer; white-space: nowrap;
-}
-.ap-amount:hover { border-color: var(--line-hover); }
-.ap-amount.is-on { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
-.ap-input { height: 52px; border-radius: 14px; padding: 0 18px; font-size: 16px; background: var(--bg); }
-.ap-donate-cta { height: 56px; border-radius: 28px; font-size: 16px; font-weight: 700; width: 100%; }
+/* Единственная модальная карточка r28 по документу; остальные радиусы — шкала ds-*. */
+.ap-donate { max-width: 560px; border-radius: 28px; padding: 32px; display: flex; flex-direction: column; gap: 18px; }
 
 /* ── Мобильный ───────────────────────────────────────────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ap-split { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .ap-info { padding: 24px 22px 16px; gap: 10px; }
-  .ap-info .ds-eyebrow { display: none; }
-  .ap-h1 { font-size: 32px; line-height: 1.08; }
-  .ap-lead { font-size: 14px; line-height: 1.5; }
-  .ap-checks { margin-top: 4px; font-size: 14px; gap: 6px; }
-  .ap-info .ap-back { padding-top: 8px; }
+  .ap-info { padding: 20px 16px; }
+  .ap-checks { margin-top: 16px; font-size: 14px; gap: 6px; }
   .ap-pay { border-radius: 28px 28px 0 0; padding: 22px; gap: 10px; justify-content: flex-start; }
   .ap-plans { gap: 10px; }
   .ap-plan { padding: 14px 16px; min-height: 44px; }
@@ -122,10 +86,39 @@
   .ap-plan-per { font-size: 13px; }
   .ap-badge { font-size: 11px; padding: 2px 8px; }
   .ap-consent { font-size: 12px; }
-  .ap-cta { min-height: 54px; font-size: 15px; margin-top: auto; }
-  .ap-page--center { padding: 24px 16px; }
-  .ap-donate { padding: 24px 20px; border-radius: 24px; gap: 14px; }
-  .ap-amounts { grid-template-columns: 1fr 1fr; }
-  .ap-amount { height: 52px; font-size: 15px; }
-  .ap-donate-cta { height: 54px; font-size: 15px; }
+  .ap-cta { margin-top: auto; }
+  .ap-donate { padding: 20px 16px; gap: 14px; }
 }
+
+/* ── Компьютер ───────────────────────────────────────────────────────────
+   Страницы по центру, как до #906: служебные состояния подписки — блок 400, донат — карточка 560,
+   форма подписки — сплит на весь экран. Шапки нет, «← На главную» внизу: под кнопкой, последней строкой
+   карточки, внизу левой колонки формы. Телефон (≤767) выше не затронут. */
+.ap-page--state { --sheet-col: 400px; --sheet-pad: 0px; }
+.ap-page--donate { --sheet-col: 560px; --sheet-pad: 0px; }
+.ap-page--form { --sheet-col: 100%; --sheet-pad: 56px; }
+.ap-home { display: none; } /* ссылка «← На главную» внизу — только на компьютере (state, donate, форма), на телефоне она в шапке */
+.ap-donate-shell { display: contents; } /* на телефоне обёртки нет: hero и карточка — прямые дети страницы */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .ds-page.ap-main--state { max-width: 400px; margin: auto; padding-left: 0; padding-right: 0; align-items: center; text-align: center; }
+  .ap-main--state .ap-hero { align-items: center; }
+  .ap-main--state .ap-lead { margin-left: auto; margin-right: auto; }
+  .ap-main--state .ds-btn--lg, .ap-donate .ds-btn--lg, .ap-pay .ds-btn--lg { width: 100%; }
+  .ap-page--donate .ds-page.ap-main { max-width: 560px; margin: auto; padding-left: 0; padding-right: 0; }
+  .ap-page--state .ds-sheet-head--page, .ap-page--donate .ds-sheet-head--page, .ap-page--form .ds-sheet-head--page { display: none; }
+  .ap-page--state .ap-home, .ap-page--donate .ap-home, .ap-page--form .ap-home {
+    display: inline-flex; align-items: center; justify-content: center; align-self: center; min-height: 44px;
+    font-size: 13px; color: var(--text-muted); text-decoration: none;
+  }
+  .ap-page--form .ap-home { align-self: flex-start; margin-top: auto; } /* сплит на весь экран: ссылка внизу левой колонки */
+  .ap-page--form .ap-info { padding-top: 88px; } /* шапка скрыта: верхний отступ держит колонка, 56 + 32 как до волн */
+  .ap-page--state .ap-home:hover, .ap-page--donate .ap-home:hover, .ap-page--form .ap-home:hover { color: var(--accent); }
+  .ap-donate-shell {
+    display: flex; flex-direction: column; gap: 24px; padding: 40px; border-radius: 28px;
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .ap-page--donate .ap-donate { max-width: none; padding: 0; border: none; border-radius: 0; background: none; }
+  .ap-page--donate .ap-seg { display: flex; }
+  .ap-page--donate .ap-fine { text-align: center; }
+}
+.ap-hero > .pp-art { margin-bottom: 12px; }

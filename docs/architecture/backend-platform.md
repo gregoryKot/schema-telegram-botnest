@@ -20,13 +20,13 @@
 - Потоки входа:
   - Mini-app Telegram: заголовок `x-telegram-init-data` → `TelegramAuthGuard` (`src/api/telegram-auth.guard.ts`, тело — `src/api/init-data-paths.ts`), подпись проверяет единый `src/auth/telegram-init-data.ts`; обмен на JWT-сессию — POST `/api/auth/telegram/webapp` (`src/auth/auth-account.controller.ts`). MAX mini-app: `x-max-init-data` (`src/auth/max-init-data.ts`, `src/auth/providers/max.provider.ts`, токен `MAX_BOT_TOKEN`), POST `/api/auth/max/webapp` (`src/auth/auth-max.controller.ts`).
   - Сайт, Telegram Login Widget: POST `/api/auth/telegram/widget` и GET `telegram/redirect` в `src/auth/auth-telegram.controller.ts`, проверка — `src/auth/providers/telegram.provider.ts` (окно подписи 15 мин); access-JWT приходит в теле ответа, refresh — в httpOnly-куке.
-  - Сайт, Google/VK OAuth: `src/auth/auth-oauth.controller.ts` (GET `google`, `vk` + `/callback`) → `AuthFlowService.oauthRedirect/oauthCallback`, `src/auth/providers/google.provider.ts`, `src/auth/providers/vk.provider.ts` (PKCE, `src/auth/providers/vk-state.ts`), `state` подписан (`src/auth/oauth-state.ts`); Google One Tap — `src/auth/auth-one-tap.controller.ts` + `src/auth/google-one-tap.service.ts`. E-mail magic link — `src/auth/magic-link.ts`, `src/auth/email-token.service.ts`; билет входа (PWA ↔ браузер/бот) — `src/auth/login-ticket/`, `src/auth/auth-ticket.controller.ts`, `src/auth/auth-login-confirm.controller.ts`.
+  - Сайт, Google/VK OAuth: `src/auth/auth-oauth.controller.ts` (GET `google`, `vk` + `/callback`) → `AuthFlowService.oauthRedirect/oauthCallback`, `src/auth/providers/google.provider.ts`, `src/auth/providers/vk.provider.ts` (PKCE, `src/auth/providers/vk-state.ts`), `state` подписан (`src/auth/oauth-state.ts`); Google One Tap — `src/auth/auth-one-tap.controller.ts` + `src/auth/google-one-tap.service.ts`. E-mail magic link — `src/auth/magic-link.ts`, `src/auth/email-token.service.ts`; билет входа (PWA ↔ браузер/бот) — `src/auth/login-ticket/`, `src/auth/auth-ticket.controller.ts`, `src/auth/auth-login-confirm.controller.ts`; передача сессии из сайта внутри Telegram/MAX во внешний браузер (кнопка «Установить приложение» → `/install#h=<код>`) — тот же билет, сразу подтверждённый, `intent: 'handoff'`, POST `/api/auth/ticket/handoff` (120 с, одноразовый, забирается обычным `ticket/poll`).
   - Слияние: при конфликте providerId `signInOrLinkOrMerge` отдаёт подписанный mergeToken → POST `/api/auth/merge` (`src/auth/auth-account.controller.ts`; OptionalJwtGuard + CallerIdentityService + TOTP источника) → `src/auth/merge.service.ts`.
   - Личность запроса: `JwtAuthGuard` (Bearer access-JWT 15 мин, проверяет что User жив), `OptionalJwtGuard` (аноним или link-кука), `TelegramAuthGuard` в `src/api/` (Bearer ИЛИ initData Telegram/MAX, ставит `req.webUser`); refresh 30 дн — POST `/api/auth/refresh` с ротацией (`src/auth/refresh-rotation.ts`).
 
 ### `src/api/`
 Пользовательский HTTP-API мини-аппа и сайта (`/api/*`): один гард на все контроллеры, глобальный троттлинг (в т.ч. общий Postgres-счётчик).
-- Контроллеры: api (user-flags, drafts, profile, disclaimer, link-token), ysq, pairs, plans/practices, exercises (healthy-phrase, belief-checks, letters, safe-place, flashcards), notes, tracker (needs, ratings, streak, insights, achievements), diary, phrase-checks, settings, journey, practice-sessions, analytics; без гарда: quiz, public-events, client-errors, health, booking (лид-форма); AccountApiModule — export/delete аккаунта.
+- Контроллеры: api (user-flags, drafts, profile, disclaimer), ysq, pairs, plans/practices, exercises (healthy-phrase, belief-checks, letters, safe-place, flashcards), notes, tracker (needs, ratings, streak, insights, achievements), diary, phrase-checks, settings, journey, practice-sessions, analytics; без гарда: quiz, public-events, client-errors, health, booking (лид-форма); AccountApiModule — export/delete аккаунта.
 - Входы:
   - `src/api/telegram-auth.guard.ts` — единый гард: Bearer JWT / Telegram / MAX initData
   - `src/api/init-data-paths.ts` — тела Telegram- и MAX-веток гарда
@@ -46,6 +46,7 @@
 - Входы:
   - `src/security/controller-classification.ts` — контроллеры: guarded / admin-key / PUBLIC_BY_DESIGN
   - `src/security/anonymous-routes.ts` — анонимные методы внутри guarded-контроллеров
+  - `src/test-support/free-text-inputs.ts` — признак однострочного поля свободного текста для трипваера `crisis-path.invariants.spec.ts` (правило №7)
   - `src/security/helmet-config.ts` — CSP и заголовки helmet (подключает main.ts)
   - `src/security/embedders.ts` — площадки-iframe: CSP frame-ancestors и SameSite=None
   - `src/security/collect-source-files.ts` — единственный обход дерева исходников
@@ -53,30 +54,44 @@
 - Подводные камни:
   - Новый `*.controller.ts` без `@UseGuards(TelegramAuthGuard|JwtAuthGuard|OptionalJwtGuard)`, `assertAdminKey` или записи в реестр — красный `src/security/route-auth.invariants.spec.ts`; allowlist'ы только сокращаются, добавление — с ревью безопасности.
   - Рекурсивный обход `src/` в спеках — только через `collectSourceFiles` (гейт `src/test-support/gates/source-walk.spec.ts`).
+  - Свободный порт для спеков, поднимающих сервер, — `src/test-support/ephemeral-port.ts` (не захардкоженный номер: гонка между сьютами).
 
 ### `src/therapy/`
 Кабинет терапевта: связь терапевт↔клиент (код-приглашение, виртуальные офлайн-клиенты), заметки по сессиям, концептуализация, карты режимов, задания клиенту, заявка на роль терапевта (`therapist-request.*`).
 - Входы:
   - `src/therapy/therapy-relations.service.ts` — связи; `assertHasClient`/`assertRelation` (барьер доступа)
-  - `src/therapy/therapy-connection.controller.ts` — invite/join/clients/request/become-therapist
+  - `src/therapy/concept-store.ts` — запись концептуализации с шифрованием и снимком истории (общий путь `saveConceptualization` и append); `src/therapy/concept-append.ts` + `concept-append.controller.ts` — `POST conceptualization/:clientId/append`: холст «Графических карт» дописывает режимы, схемы и связи, объединение без удалений (#963)
+  - `src/therapy/client-map-authors.ts` — кого из авторов карт режимов клиент видит: связь `active` или `ended` (терапевт отказался от роли, #865); отключился сам — карт нет
+  - `src/therapy/therapy-connection.controller.ts` — invite/join/relation/former-therapist/clients/request/become-therapist/therapist-role
+  - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
+  - `src/therapy/task-title.ts` — название задания для уведомления в боте («Карточка схемы: …»); названия схем/режимов — копия `shared` в `task-title.data.ts`, сверка `task-title.sync.spec.ts`
+  - `src/therapy/streak-progress.ts` — прогресс задания-серии: дни с дня назначения по календарю клиента; один расчёт для /tasks клиента, карточки у терапевта и авто-закрытия
+  - `src/therapy/assigned-task.ts` — удаление и отметка «выполнено» задания терапевтом (офлайн-клиенту выполнить его некому); доступ — задание назначено этим терапевтом и связь активна, иначе 403
+  - `src/therapy/dto/not-future-day.ts` — валидатор `NotFutureDay`: «начало терапии» не позже самого позднего «сегодня» на Земле (UTC+14)
   - `src/therapy/therapist-request.service.ts` — заявка на роль терапевта
-- Связи: Prisma (TherapyRelation, TherapistNote, ClientConceptualization, ModeMap, TherapistCustomMode, UserTask, TherapistRequest); импортирует Bot/Notification/Auth/Analytics; сервисы зовут `src/api/` (diary, tracker → TherapyTasksService) и `src/telegram/`; все 5 контроллеров — `/api/therapy/*` под `TelegramAuthGuard`.
+  - `src/therapy/therapist-exit.service.ts` — отказ от роли (`DELETE therapist-role`, событие `therapist_resigned`) и бывший терапевт клиента (`GET former-therapist`, `former-therapist-info.ts`)
+- Связи: Prisma (TherapyRelation, TherapistNote, ClientConceptualization, ModeMap, TherapistCustomMode, UserTask, TherapistRequest); импортирует Bot/Notification/Auth/Analytics; сервисы зовут `src/api/` (diary, tracker → TherapyTasksService) и `src/telegram/`; все 6 контроллеров — `/api/therapy/*` под `TelegramAuthGuard`.
 - Подводные камни:
   - Доступ терапевта к чужим клиническим данным закрыт только `assertHasClient`; виртуальный клиент = отрицательный id `-TherapyRelation.id` (`clientId: null`, `src/therapy/relation-where.ts`), его `UserTask` лежат с отрицательным userId без FK и чистятся вручную (`src/therapy/remove-client.ts`).
-  - `RelationStatus`: pending/active/ended — `ended` (отказ от роли, `src/therapy/end-therapist-relations.ts`) не оживает; срок кода-приглашения считается по `createdAt` (колонки expiresAt нет), захват кода атомарный (`src/therapy/therapy-invite-claim.ts`).
+  - `RelationStatus`: pending/active/ended — `ended` с `endedAt`/`endReason` (`src/therapy/relation-end-reason.ts`: отказ от роли — `src/therapy/end-therapist-relations.ts`; терапевт убрал клиента и клиент отключился сам — `src/therapy/end-client-relations.ts`, открытые задания терапевта там же становятся личными целями) не оживает и доступа не даёт; строка по причине — `src/therapy/former-therapist-info.ts`; карты бывшего терапевта клиент видит только после отказа от роли (`src/therapy/client-map-authors.ts`); срок кода-приглашения считается по `createdAt` (колонки expiresAt нет), захват кода атомарный (`src/therapy/therapy-invite-claim.ts`).
+  - Код приглашения — 12 hex-знаков, длина одна с полями ввода фронтов (`INVITE_CODE_LENGTH` ↔ `shared/src/therapy/inviteCode.ts`, сверка `src/therapy/therapy-invite-code.parity.spec.ts`). Каждый `POST invite` — новый код; живых не больше `MAX_LIVE_INVITES` (409 `too_many_invites`). Имя из «Новый клиент» едет в `clientAlias` приглашения — офлайн-карточка при этом не создаётся: её данные висят на `-TherapyRelation.id` и в связь с аккаунтом не переезжают (инцидент 2026-10-26).
 
 ### `src/booking/`
 Запись на консультации и деньги: слоты, бронь, оплата Robokassa, .ics, админка записи, календарь CalDAV, ссылки на встречи (Zoom/Jitsi), подписки/донаты, заявки с формы знакомства (IntroLead).
 - Входы:
   - `src/booking/booking.service.ts` — бронь: создание, подтверждение, отмена, cron `expireHolds`
+  - `src/booking/client-key.ts` + `contact-normal-form.ts` — ключ клиента из контакта (телефон с «+», почта); `client-key-rekey.service.ts` — проход на старте, переносит строки со старых ключей «только цифры»
+  - `src/booking/whole-price.ts` — строгий разбор целой цены (`1e+22`, мусор → отказ); на нём `parsePrice` и `src/subscription/subscription-price.ts`
   - `src/booking/booking.transitions.ts` — переходы статуса брони (CAS)
   - `src/booking/slot.service.ts` — свободные слоты: правила, брони, override, CalDAV
   - `src/booking/payment.controller.ts` — вебхук Robokassa: брони, донаты, подписки
+  - `src/booking/client-booking.controller.ts` + `client-booking.service.ts` — запись клиента владельца практики из приложения (#546): под `TelegramAuthGuard`, свой префикс `/api/client-booking` (на визитке не открывается), та же цепочка `BookingService.book` с `account` (пишет `Booking.userId` и `clientTelegramId` из подписи); имя и контакт — `client-booking.identity.ts`; владелец практики — `src/utils/practice-owner.ts` (`ADMIN_ID` с учётом слияния)
 - Связи: Prisma (Booking, AvailabilityRule, SlotOverride, BookingSetting, ClientMeeting, IntroLead); `src/booking/booking.registry.ts` собирает BookingModule вместе с `src/donation/` и `src/subscription/`; `src/booking/intro-lead.module.ts` — отдельный модуль (контроллер в `src/api/booking.controller.ts`); `src/booking/admin-key.util.ts` используют admin-контроллеры `src/articles/` и `src/site-content/`.
 - Подводные камни:
-  - Публичные ручки без JWT: доступ к брони — capability-токен (`by-token`, `ics`, `cancel/:token`); админка `/api/booking/admin/*` — заголовок `x-admin-key` = `ADMIN_BOOKING_KEY` (≥32 символов).
+  - Публичные ручки без JWT: доступ к брони — capability-токен (`by-token`, `ics`, `cancel/:token`); админка `/api/booking/admin/*` — заголовок `x-admin-key` = `ADMIN_BOOKING_KEY` (≥32 символов). Страница управления записью `/booking/manage?token=` есть только на визитке — ссылку на неё строит сервер от `SITE_URL`.
+  - Связь брони с аккаунтом — только у записи из приложения (`Booking.userId`): удаление аккаунта отвязывает (`src/bot/account.delete.ts`), слияние переносит (`USER_OWNED_TABLES`), выгрузка — `src/account/export-policy.booking.ts`.
   - Статус (HELD→CONFIRMED→CANCELLED/COMPLETED) меняется только CAS: `updateMany` с текущим статусом в WHERE, эффекты — по `count===1`; создание — под `pg_advisory_xact_lock` (`src/booking/booking-slot-lock.ts`); HELD сгорает по крону раз в минуту под leader-lease.
   - Один вебхук `/api/payment/result` роутит по диапазону InvId (подписки, донаты, брони); без настроенной Robokassa в проде платный путь отдаёт 503 (`src/booking/payment-guard.ts`); PII брони зашифрована (`src/booking/booking.schema.ts`) и затирается через 12 мес.
 
@@ -90,7 +105,7 @@
   - `src/infra/self-check/self-check.service.ts` — крон `43 * * * *` и прогон через 60 с после старта
   - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live.ts`)
 - Остальные сервисы (по строке на группу):
-  - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-tracker.ts` (DM только по смене состояния), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники)
+  - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-dedup.ts` (DM по смене набора упавших — аренда `self-check-alert:*` в `CronLease`; база недоступна — память процесса, `alert-tracker.ts`), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники)
   - `src/infra/db-outage.service.ts` — закрывает аварию БД и шлёт DM о восстановлении; `src/infra/session-retention.service.ts` — чистка WebSession/EmailToken
   - HTTP-края: `src/infra/trust-proxy.ts` (один хоп), `src/infra/request-host.ts` (хост из Host), `src/infra/canonical-host.ts` (301 на apex), `src/infra/body-limit.ts` и `src/infra/body-parsers.ts` (потолок тела 256 КБ), `src/infra/static-cache.ts`
   - Бэкапы: `src/infra/backup-config.ts`, `src/infra/backup-capability.ts`, `src/infra/s3-sigv4.ts`, `src/infra/s3-list-objects.ts` (проба свежести в Cloudflare R2; сам прогон — `deploy/backup-scheduler.cjs`); `src/infra/deploy-target.ts` (`DEPLOY_TARGET=vps`)
@@ -104,7 +119,8 @@
 ### `src/prisma/`
 Доступ к Postgres: глобальный PrismaService (Prisma + driver-adapter pg), фильтр Prisma-ошибок → 4xx, одноразовые «волны» дошифровки старых строк при старте. Схема и миграции — вне src: `prisma/schema.prisma`, `prisma/migrations/`.
 - Входы:
-  - `src/prisma/prisma.service.ts` — PrismaClient + пул pg (keepAlive, ретраи connect)
+  - `src/prisma/prisma.service.ts` — PrismaClient + пул pg (keepAlive, ретраи connect, `statement_timeout`), строка владельцу о таймауте (`$on('error')`)
+  - `src/prisma/statement-timeout.ts` — порог 30 с и рубильник `DB_STATEMENT_TIMEOUT_MS`, распознавание 57014, исключение `withStatementTimeout`
   - `src/prisma/prisma.module.ts` — @Global, экспортирует PrismaService
   - `src/prisma/prisma-exception.filter.ts` — коды Prisma → дружелюбные 4xx
   - `src/prisma/http-exception-body.ts` — тело HttpException в форме Nest (строка → `{ statusCode, message }`)
@@ -113,6 +129,7 @@
 - Связи: используется почти всеми модулями (PrismaModule глобальный); фильтр подключён в `src/main.ts` (`useGlobalFilters`); волны шифруют через `src/utils/encrypt-if-plain.ts` и хранят флаг-гард в `BookingSetting`.
 - Подводные камни:
   - Волны идемпотентны и не роняют старт при ошибке (флаг не ставится — повтор на следующем старте); wave3 обновляет условно (`where` со старым значением), чтобы не затереть свежую запись приложения.
+  - Предел — на каждый запрос, параметр сессии пула, а не `DATABASE_URL`: `prisma migrate deploy` его не получает. Свой `PrismaClient` вне `PrismaService` берёт `buildPrismaAdapter(порог)`; VACUUM в `withStatementTimeout` не обернуть (в транзакции запрещён).
   - В `logger.error` фильтра идёт только маскированный путь (`src/prisma/safe-request-path.ts`) + код ошибки: первый аргумент уходит в DM админу (AlertLogger), сырой `req.url` и `exception.message` туда нельзя.
 
 ### `src/utils/`
@@ -120,9 +137,12 @@
 - Входы:
   - `src/utils/crypto.ts` — encrypt/decrypt; ключи `ENCRYPTION_KEY` + `ENCRYPTION_KEY_OLD`
   - `src/utils/crypto-record.ts` — encryptRecord/decryptRecord по `EncryptSchema`
+  - `src/bot/encrypted-rows.ts` — `decryptRecord`/`read*` для ответа ручек записи: ответ create = GET той же записи, без шифротекста (сверка — `src/utils/encrypted-write-response.spec.ts`)
   - `src/utils/encryption-policy.ts` — `FIELD_POLICY`: каждое поле Prisma — enc или plain
   - `src/utils/admin-alert.ts` — notifyAdminWithFallback: Telegram, затем e-mail
   - `src/utils/text-limits.ts` — пределы длины текста (лимит только в DTO `@MaxLength`)
+  - `src/utils/calendar-day.ts` — валидатор `IsCalendarDay`: настоящий день `YYYY-MM-DD` в DTO (не `2026-02-31`), разбор в UTC (№25)
+  - `src/utils/ysq.ts` — скоринг YSQ; `isYsqScoreActive` — единственный критерий «схема выражена» (средний от 4 или больше половины «5–6»), флаг `active` у каждой схемы в ответе — его читают экраны терапевта (`shared/src/therapy/ysqExpression.ts`)
 - Связи: crypto/crypto-record/encryption-policy используют сервисы с PII (therapy/, booking/, auth/, bot/); `src/account/data-export.service.ts` читает `FIELD_POLICY` в рантайме; `src/utils/encrypt-migration.ts` запускает `src/main.ts` (статус → `src/infra/self-check/clinical-labels-status.ts`); `src/utils/admin-alert.ts` зовут `src/auth/security-log.service.ts` и `src/infra/self-check/`.
 - Подводные камни:
   - В проде без валидного `ENCRYPTION_KEY` (64 hex) процесс не стартует; вне prod шифрование молча пропускается; `decrypt()` на нераспознанном ключе возвращает вход как есть, поэтому «decrypt(v)===v» не признак plaintext (`src/utils/encrypt-migration.rows.ts`).

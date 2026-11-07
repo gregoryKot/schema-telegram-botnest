@@ -5,7 +5,9 @@
 // Разбирает `src/**/*.controller.ts` настоящим проходом по телу класса, а не
 // регэкспом по строкам: декораторы хендлера лежат и до, и после `@Post(...)`,
 // у метода бывает `Promise<{ ok: true }>` с фигурными скобками в типе, а
-// комментарий с упоминанием `@Throttle(` не должен считаться декоратором.
+// комментарий с упоминанием `@Throttle(` не должен считаться декоратором,
+// как и `verifyCode(` в тексте строки внутри тела (`blankStrings`).
+import { blankStrings } from './gate-blank-strings.mjs';
 
 const HTTP = /^(?:Get|Post|Patch|Put|Delete)$/;
 // Декораторы, после которых счётчик ручки живёт в Postgres (правило №5):
@@ -21,7 +23,7 @@ const TRIGGERS = new RegExp(
     '\\bconfirmSetup\\(', // подтверждение настройки 2FA кодом (2fa/enable)
     '\\bregenerateRecoveryCodes\\(', // код TOTP за новые резервные коды
     '\\btotp\\.disable\\(', // код TOTP за отключение 2FA (2fa/disable)
-    '\\bconsumeToken\\(', // погашение токена из письма (перебираемая строка)
+    '\\bconsumeEmailToken\\(', // погашение токена из письма (перебираемая строка)
     '\\.approve\\(',
     '\\bapproveLogin',
     '\\.deny\\(',
@@ -158,7 +160,7 @@ function parseClass(src, open, classDecs, handlers) {
         line: src.slice(0, i).split('\n').length,
         marked: classMarked || names.some((n) => MARKERS.has(n)),
         throttled: classThrottled || names.some((n) => THROTTLES.has(n)),
-        triggers: TRIGGERS.test(m.body ?? ''),
+        triggers: TRIGGERS.test(blankStrings(m.body ?? '')),
       });
     }
     decs = [];

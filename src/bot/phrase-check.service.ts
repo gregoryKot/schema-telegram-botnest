@@ -1,7 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { UserPhraseCheck } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt } from '../utils/crypto';
 import { isPhraseMarkId, type PhraseMarkId } from './phrase-check.constants';
+
+// Вид записи для клиента — один на GET и на ответ записи (сверка с
+// настоящим ключом — encrypted-write-response.spec.ts).
+const readPhraseCheck = (r: UserPhraseCheck) => ({
+  id: r.id,
+  createdAt: r.createdAt,
+  inWarmWords: r.inWarmWords,
+  phrase: decrypt(r.phrase) ?? r.phrase,
+  // Чужие/протухшие id молча отбрасываем: список примет со временем может
+  // меняться, а старая запись не должна ронять экран истории.
+  marks: (Array.isArray(r.marks) ? (r.marks as unknown[]) : [])
+    .filter((m): m is string => typeof m === 'string')
+    .filter(isPhraseMarkId),
+  rewrite: decrypt(r.rewrite),
+});
 
 // Упражнение «Разобрать фразу»: пользователь записывает реплику внутреннего
 // голоса, отмечает приметы самокритики и переписывает фразу в самокоррекцию.
@@ -22,18 +38,7 @@ export class PhraseCheckService {
       orderBy: { createdAt: 'desc' },
       take: 30,
     });
-    return rows.map((r) => ({
-      id: r.id,
-      createdAt: r.createdAt,
-      inWarmWords: r.inWarmWords,
-      phrase: decrypt(r.phrase) ?? r.phrase,
-      // Чужие/протухшие id молча отбрасываем: список примет со временем может
-      // меняться, а старая запись не должна ронять экран истории.
-      marks: (Array.isArray(r.marks) ? (r.marks as unknown[]) : [])
-        .filter((m): m is string => typeof m === 'string')
-        .filter(isPhraseMarkId),
-      rewrite: decrypt(r.rewrite),
-    }));
+    return rows.map(readPhraseCheck);
   }
 
   async createPhraseCheck(
@@ -56,14 +61,7 @@ export class PhraseCheckService {
         inWarmWords: Boolean(data.inWarmWords && data.rewrite?.trim()),
       },
     });
-    return {
-      id: row.id,
-      createdAt: row.createdAt,
-      phrase: data.phrase,
-      marks,
-      rewrite: data.rewrite ?? null,
-      inWarmWords: row.inWarmWords,
-    };
+    return readPhraseCheck(row);
   }
 
   // Правится только rewrite — фраза и приметы критика остаются фактом

@@ -108,11 +108,12 @@ describe('GratitudeEntrySheet — сохранённый день не зати�
     });
     fireEvent.click(screen.getByRole('button', { name: /Сохранить/ }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
-    expect(onSave).toHaveBeenCalledWith('2026-07-20', [
-      'Утренний кофе',
-      'Звонок маме',
-      'Вечерняя прогулка',
-    ]);
+    // Третий аргумент — день, с которого форма начала: с ним сервер сливает запись.
+    expect(onSave).toHaveBeenCalledWith(
+      '2026-07-20',
+      ['Утренний кофе', 'Звонок маме', 'Вечерняя прогулка'],
+      ['Утренний кофе', 'Звонок маме'],
+    );
   });
 
   it('запись другого дня не подмешивается', async () => {

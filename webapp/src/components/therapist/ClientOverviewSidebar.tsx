@@ -1,59 +1,43 @@
 import type { TherapyClientSummary } from '../../api';
-import { indexLevel, hueStyle } from '../../lib/tone';
+import { hueStyle } from '../../lib/tone';
+import { ClientIndexCard } from './ClientIndexCard';
 import { NextSessionCard, StartDateCard } from './ClientSessionInfoCards';
+import { OfflineInviteCard } from './OfflineInviteCard';
+import { SignHead } from './SignArt';
 import { MeetingDaysCard } from './MeetingDaysCard';
-import { indexSparkBars, needBars, weekDelta } from './clientOverviewModel';
+import { needBars } from './clientOverviewModel';
 import type { ClientDetail } from './clientSheetTypes';
+import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
+import { isVirtualClient } from '../../../../shared/src/therapy/clientSheetHelpers';
 
 interface Props {
   selectedClient: TherapyClientSummary;
   detail: ClientDetail;
 }
 
+// Сайдбар «Обзора» (#906): карточки-строки ds-card--row с подписью ds-label;
+// акцентная заливка — только у «Следующей сессии» (одна CTA на экран). Действия
+// внизу — строка кнопок без карточки: рамка вокруг рамочных кнопок — шум.
 export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
-  const { clientHistory, setClientTab, setShowAssign, exportCopied, handleExport } = detail;
+  const { clientHistory, setClientTab, exportCopied, exportEmpty, handleExport } = detail;
   const todayIndex = selectedClient.todayIndex;
-  const bars = clientHistory.length >= 3 ? indexSparkBars(clientHistory) : [];
-  const delta = todayIndex != null ? weekDelta(clientHistory, todayIndex) : null;
   const needs = needBars(clientHistory[0]?.ratings);
-  const actions: [string, () => void][] = [
-    ['+ Заметка сессии', () => setClientTab('sessions')],
-    ['+ Задание', () => setShowAssign(true)],
-    ['Запросить YSQ', () => setClientTab('ysq')],
-    [`Экспорт концепта${exportCopied ? ' ✓' : ''}`, handleExport],
-  ];
+  // «+ Задание» и «+ Заметка» — в шапке (ноутбук) или первой строкой «Обзора» (телефон,
+  // ClientQuickActions); здесь только остальные. Пустой концепт — экспорт недоступен с подсказкой;
+  // офлайн-клиенту YSQ не запросить (нет Telegram) — кнопки нет, а не путь в «YSQ недоступен».
+  const btn = 'ds-btn ds-btn--secondary ds-btn--sm';
 
   return (
     <aside className="tk-side">
       <NextSessionCard selectedClient={selectedClient} detail={detail} />
       <MeetingDaysCard key={String(selectedClient.telegramId)} selectedClient={selectedClient} detail={detail} />
       <StartDateCard selectedClient={selectedClient} detail={detail} />
+      {isVirtualClient(selectedClient) && <OfflineInviteCard selectedClient={selectedClient} />}
 
-      {todayIndex != null && (
-        <div className="ds-card">
-          <div className="tk-card-label">Индекс сегодня</div>
-          <div className="tk-index">
-            <span className={`ds-num ds-idx-${indexLevel(todayIndex)}`}>{todayIndex.toFixed(1)}</span>
-            {delta != null && (
-              <span className={`tk-delta ${delta >= 0 ? 'ds-idx-ok' : 'ds-idx-err'}`}>{delta >= 0 ? '+' : ''}{delta.toFixed(1)} к нед.</span>
-            )}
-          </div>
-          {bars.length > 0 && (
-            <>
-              <div className="ds-spark" aria-hidden>
-                {bars.map((b, i) => (
-                  <i key={i} className={b.level === 'none' ? undefined : `is-${b.level}`} style={{ height: b.heightPct > 0 ? `${b.heightPct}%` : undefined }} />
-                ))}
-              </div>
-              <div className="tk-hint">{bars.length} дн.</div>
-            </>
-          )}
-        </div>
-      )}
-
+      {todayIndex != null && <ClientIndexCard todayIndex={todayIndex} history={clientHistory} />}
       {needs.length > 0 && (
-        <div className="ds-card">
-          <div className="tk-card-label">Потребности сегодня</div>
+        <div className="ds-card ds-card--row">
+          <SignHead kind="strokes" className="ds-label">Потребности сегодня</SignHead>
           <div className="tk-needs">
             {needs.map(n => (
               <div key={n.id} className="tk-need">
@@ -66,11 +50,11 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
         </div>
       )}
 
-      <div className="ds-card tk-actions-grid">
-        {actions.map(([label, run]) => (
-          <button key={label} className="tk-action" onClick={run}>{label}</button>
-        ))}
+      <div className="tk-quick">
+        {!isVirtualClient(selectedClient) && <button className={btn} onClick={() => setClientTab('ysq')}>Запросить YSQ</button>}
+        <button className={btn} onClick={handleExport} disabled={exportEmpty}>Экспорт концепта{exportCopied ? ' ✓' : ''}</button>
       </div>
+      {exportEmpty && <p className="ds-sub">{CONCEPT_EXPORT_EMPTY}</p>}
     </aside>
   );
 }

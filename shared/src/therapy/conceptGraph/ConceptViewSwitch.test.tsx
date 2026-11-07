@@ -12,6 +12,18 @@ import {
   defaultConceptView,
   useConceptView,
 } from './ConceptViewSwitch';
+import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
+
+const SKIN: ConceptSkin = {
+  seg: { group: 'sk-seg', btn: 'sk-seg-btn' },
+  chip: 'sk-chip',
+  tag: 'sk-tag',
+  dot: 'sk-dot',
+  label: 'sk-label',
+  link: 'sk-link',
+  card: 'sk-card',
+  fold: { root: 'f-root', btn: 'f-btn', chev: 'f-chev', body: 'f-body' },
+};
 
 describe('ConceptViewSwitch', () => {
   it('две кнопки, активная помечена aria-pressed', () => {
@@ -38,6 +50,24 @@ describe('ConceptViewSwitch', () => {
     for (const name of ['Схема', 'Поля']) {
       expect(screen.getByRole('button', { name }).style.minHeight).toBe('44px');
     }
+  });
+});
+
+describe('ConceptViewSwitch со skin', () => {
+  it('классы сегмента, is-active по виду, инлайн-стилей нет', () => {
+    render(
+      <ConceptSkinContext.Provider value={SKIN}>
+        <ConceptViewSwitch view="fields" onChange={() => {}} />
+      </ConceptSkinContext.Provider>,
+    );
+    const group = screen.getByRole('group', { name: 'Вид концептуализации' });
+    expect(group.className).toBe('sk-seg');
+    expect(group.getAttribute('style')).toBeNull();
+    const graph = screen.getByRole('button', { name: 'Схема' });
+    const fields = screen.getByRole('button', { name: 'Поля' });
+    expect(graph.className).toBe('sk-seg-btn');
+    expect(fields.className).toBe('sk-seg-btn is-active');
+    expect(fields.getAttribute('style')).toBeNull();
   });
 });
 

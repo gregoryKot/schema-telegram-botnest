@@ -144,13 +144,13 @@ describe('BotService.getUserSettings / updateUserSettings — read-after-write �
     const svc = new BotService(db);
 
     await svc.updateUserSettings(1n, {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: '["tracker"]' },
     });
     const settings = await svc.getUserSettings(1n);
 
     expect(settings?.uiPrefs).toEqual({
-      today_streak_hidden: '1',
-      today_focus_practice: 'tracker',
+      why_seen_v1: '1',
+      quick_actions_order_tools: '["tracker"]',
     });
   });
 });
@@ -193,6 +193,24 @@ describe('BotService.acceptDisclaimer / hasAcceptedDisclaimer', () => {
 
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(false);
     await svc.acceptDisclaimer(1n);
+    expect(await svc.hasAcceptedDisclaimer(1n)).toBe(true);
+  });
+
+  it('acceptDisclaimer: из чата — только согласие; с экрана кабинета (viaApp) — ещё и onboardingV2Done одним update', async () => {
+    const db = makeDb({ disclaimerAccepted: false });
+    const svc = new BotService(db);
+
+    await svc.acceptDisclaimer(1n);
+    expect(db.user.update).toHaveBeenLastCalledWith({
+      where: { id: 1n },
+      data: { disclaimerAccepted: true },
+    });
+
+    await svc.acceptDisclaimer(1n, true);
+    expect(db.user.update).toHaveBeenLastCalledWith({
+      where: { id: 1n },
+      data: { disclaimerAccepted: true, onboardingV2Done: true },
+    });
     expect(await svc.hasAcceptedDisclaimer(1n)).toBe(true);
   });
 

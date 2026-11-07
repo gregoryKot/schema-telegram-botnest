@@ -4,8 +4,10 @@
 // истины — код бэкенда: что именно уходит каждому, написано по `src/auth/
 // email.service.ts` и `src/utils/admin-alert.ts` (Resend),
 // `src/booking/booking-notify.service.ts` (iCloud CalDAV),
-// `src/booking/meeting.service.ts` (Zoom). Новая интеграция, которой
-// передаются данные пользователя, — новая строка здесь в том же PR.
+// `src/booking/meeting.service.ts` (Zoom), `scripts/backup-upload.sh`
+// (Cloudflare R2; срок копий сверяет `src/test-support/gates/
+// backup-retention-policy.spec.ts`). Новая интеграция, которой передаются
+// данные пользователя, — новая строка здесь в том же PR.
 
 export interface Processor {
   name: string;
@@ -24,8 +26,8 @@ export const FOREIGN_PROCESSORS: readonly Processor[] = [
   },
   {
     name: 'Google LLC',
-    purpose: 'вход через Google, только при выборе этого способа входа',
-    data: 'адрес электронной почты, идентификатор учётной записи',
+    purpose: 'вход через Google: на странице входа браузер обращается к Google, чтобы предложить вход одним касанием («Продолжить как…»); данные учётной записи сайт получает, только если выбран этот способ входа',
+    data: 'при открытии страницы входа – IP-адрес, сведения о браузере и cookie Google; при входе через Google – адрес электронной почты, идентификатор учётной записи',
   },
   {
     name: 'Resend (Resend, Inc.)',
@@ -41,6 +43,11 @@ export const FOREIGN_PROCESSORS: readonly Processor[] = [
     name: 'Zoom (Zoom Video Communications, Inc.)',
     purpose: 'создание ссылки на видеовстречу для консультации',
     data: 'имя клиента в названии встречи',
+  },
+  {
+    name: 'Cloudflare R2 (Cloudflare, Inc.)',
+    purpose: 'хранение резервных копий базы данных для восстановления после сбоя',
+    data: 'полная копия базы, зашифрованная ключом Оператора до отправки; ключа у сервиса нет, прочитать копию он не может',
   },
 ];
 

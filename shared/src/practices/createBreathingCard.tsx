@@ -3,19 +3,18 @@
 // Вёрстку карточки (View) и подвала (Footer) вставляет площадка — мини-апп
 // (BreathingCard) или сайт (BreathingSiteCard), передавая их в
 // createBreathingCard; так чужая вёрстка не попадает в бандл.
-// Прохождение засчитывается через useQuickPractice, только если пройден хотя
-// бы один полный цикл (BREATH_CYCLE_S) — досрочная остановка не считается.
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+// Таймер, конец «через минуту» и засчитывание прохождения — useBreathingSession.
+import { useState, type ComponentType } from 'react';
 import {
   breathStateAt,
   BREATH_IN_S,
   BREATH_HOLD_S,
   BREATH_OUT_S,
-  BREATH_CYCLE_S,
 } from './breathing';
+import { breathCardText, type BreathCardText } from './breathingText';
+import { useBreathingSession, type BreathingApi } from './useBreathingSession';
 import { isReducedMotion } from '../utils/reducedMotion';
 import { useTr } from '../utils/addressForm';
-import { useQuickPractice, type QuickPracticeApi } from './useQuickPractice';
 import type { PracticeDoneFooterProps } from './PracticeDoneFooter';
 import { practiceCountLabel } from './practiceCountLabel';
 import { buildQuickPractice } from './quickPractices';
@@ -29,18 +28,19 @@ const PHASE_SCALE = { in: 1.25, hold: 1.25, out: 1 } as const;
 export const BREATHE_IDLE_KEYFRAMES = `@keyframes breathe-idle { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }`;
 
 export interface BreathingCardProps {
-  api: QuickPracticeApi & {
-    trackEvent: (name: string, meta?: Record<string, unknown>) => void;
-  };
+  api: BreathingApi;
   ShareCardSheet: ComponentType<ShareCardSheetProps>;
   botShortUrl: string;
 }
 
 /** Что рамка отдаёт вёрстке карточки. */
 export interface BreathingViewProps {
-  tr: (ty: string, vy: string) => string;
   active: boolean;
+  /** Минута пройдена — итог и «Ещё минуту». */
+  finished: boolean;
   st: ReturnType<typeof breathStateAt>;
+  /** Заголовок, подпись и кнопка — одни на обе вёрстки (breathingText). */
+  text: BreathCardText;
   /** Анимация круга (одна на обе вёрстки): пульс в покое, scale по фазам. */
   pulse: { animation: string; transform: string; transition: string };
   start: () => void;
@@ -57,33 +57,10 @@ export const createBreathingCard = (
     botShortUrl,
   }: BreathingCardProps) {
     const tr = useTr();
-    const [active, setActive] = useState(false);
-    const [elapsed, setElapsed] = useState(0);
+    const { active, finished, elapsed, count, start, stop } =
+      useBreathingSession(api);
     const [showShare, setShowShare] = useState(false);
-    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const { count, complete } = useQuickPractice('breathing', api);
     const practice = buildQuickPractice('breathing', tr);
-
-    useEffect(() => {
-      if (!active) return;
-      timerRef.current = setInterval(() => setElapsed((s) => s + 1), 1000);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
-    }, [active]);
-
-    function start() {
-      setElapsed(0);
-      setActive(true);
-      api.trackEvent('breath_start');
-    }
-
-    function stop() {
-      setActive(false);
-      // Засчитываем только полный круг — досрочный обрыв не практика.
-      if (elapsed >= BREATH_CYCLE_S) complete();
-      setElapsed(0);
-    }
 
     const st = breathStateAt(elapsed);
     const scale = active && !isReducedMotion() ? PHASE_SCALE[st.phase] : 1;
@@ -95,7 +72,8 @@ export const createBreathingCard = (
           : BREATH_OUT_S;
 
     const pulse = {
-      animation: active ? 'none' : 'breathe-idle 5s ease-in-out infinite',
+      animation:
+        active || finished ? 'none' : 'breathe-idle 5s ease-in-out infinite',
       transform: `scale(${scale})`,
       transition: `transform ${phaseDur}s ease-in-out`,
     };
@@ -104,8 +82,13 @@ export const createBreathingCard = (
     return (
       <>
         <View
-          tr={tr}
           active={active}
+          finished={finished}
+          text={breathCardText(
+            tr,
+            active ? 'active' : finished ? 'finished' : 'idle',
+            st,
+          )}
           st={st}
           pulse={pulse}
           start={start}

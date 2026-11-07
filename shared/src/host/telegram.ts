@@ -1,7 +1,6 @@
 // Адаптер Telegram: вся специфика мессенджера собрана здесь, ядро приложения
 // про `window.Telegram` больше не знает.
 import type {
-  HomeScreenStatus,
   HostBridge,
   HostCapabilities,
   HostInsets,
@@ -27,8 +26,6 @@ type TgWebApp = {
   disableVerticalSwipes?(): void;
   enableVerticalSwipes?(): void;
   openLink?(url: string): void;
-  addToHomeScreen?(): void;
-  checkHomeScreenStatus?(cb: (status: HomeScreenStatus) => void): void;
   BackButton?: {
     show(): void;
     hide(): void;
@@ -92,7 +89,6 @@ export function createTelegramHost(): HostBridge {
       return {
         haptics: !!w?.HapticFeedback,
         backButton: !!w?.BackButton,
-        homeScreen: !!w?.addToHomeScreen,
         close: true,
       };
     },
@@ -187,17 +183,6 @@ export function createTelegramHost(): HostBridge {
         if (!bb) return () => {};
         bb.onClick(cb);
         return () => bb.offClick(cb);
-      },
-    },
-
-    homeScreen: {
-      add: () => tg()?.addToHomeScreen?.(),
-      checkStatus: (cb) => tg()?.checkHomeScreenStatus?.(cb),
-      onAdded(cb) {
-        const w = tg();
-        if (!w) return () => {};
-        w.onEvent?.('homeScreenAdded', cb);
-        return () => w.offEvent?.('homeScreenAdded', cb);
       },
     },
   };

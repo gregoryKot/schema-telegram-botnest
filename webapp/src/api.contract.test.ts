@@ -18,7 +18,7 @@ const realApi = api as unknown as Record<string, any>;
 
 const MOCKED_API_METHODS = [
   // exercises/LetterEx.test.tsx
-  'getLetters', 'createLetter',
+  'getLetters', 'createLetter', 'updateLetter',
   // exercises/FlashcardEx.test.tsx
   'saveSchemaNote', 'saveModeNote',
   // exercises/BeliefCheckEx.test.tsx
@@ -31,6 +31,8 @@ const MOCKED_API_METHODS = [
   'trackEvent',
   // SettingsSheet.test.tsx
   'getSettings', 'getPair', 'getTherapyRelation', 'getTherapistRequest', 'getExport', 'deleteAllUserData',
+  // settingsSheet/DataSection.test.tsx
+  'deleteYsqData',
   // TrackerOverlay.test.tsx
   'ratings', 'saveRating',
   // BookingPicker.test.tsx
@@ -52,13 +54,15 @@ const MOCKED_API_METHODS = [
   'getProfile', 'getYsqHistory', 'getYsqProgress', 'updateSettings',
   // components/appShell/useBootstrapLoad.test.ts, AppShell.test-helpers.tsx
   'getUserFlags',
-  // components/PhraseShareCard.test.tsx, sections/TodaySection.test.tsx
+  // моков в webapp больше нет (карточка фразы осталась только в мини-аппе); метод держит паритет роута
   'getHealthyPhrase',
   // sections/TodaySection.test.tsx
   'getSchemaDiary', 'getModeDiary', 'getGratitudeDiary', 'history',
   // sections/DiarySection.test.tsx
   'deleteSchemaDiary', 'deleteModeDiary', 'deleteGratitudeDiary',
   'createSchemaDiary', 'createModeDiary', 'createGratitudeDiary',
+  // therapist/concept/ConceptShareRow.test.tsx, sections/profile/MyConceptSheet.test.tsx — схема случая клиенту
+  'shareConceptualization', 'getMyConcept',
 ] as const;
 
 describe('api.contract — мокаемые методы существуют в реальном api.ts', () => {

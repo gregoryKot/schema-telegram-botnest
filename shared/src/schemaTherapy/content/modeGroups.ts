@@ -1,8 +1,8 @@
 import type { ModeGroup } from '../types';
+import { MODE_GROUP_HUE, toneHex } from '../../theme/entityHue';
 
 // Единственный источник контента схема-терапии (правило №3 CLAUDE.md):
-// раньше дублировался построчно в webapp/src/schemaTherapyData.ts и
-// schema-miniapp/src/schemaTherapyData.ts, оба фронтенда берут его отсюда.
+// раньше дублировался построчно в обоих фронтендах, теперь берут отсюда.
 
 // ─── 35 Modes (schema-therapy.ru/modes, МИСТ) ──────────────────────────────
 
@@ -10,7 +10,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   {
     id: 'child',
     group: 'Детские режимы',
-    color: 'var(--accent-blue)',
+    color: toneHex(MODE_GROUP_HUE.child),
     items: [
       // Уязвимые
       {
@@ -81,7 +81,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   {
     id: 'coping_surrender',
     group: 'Копинг: Капитуляция',
-    color: '#94a3b8',
+    color: toneHex(MODE_GROUP_HUE.coping_surrender),
     items: [
       {
         id: 'compliant_surrenderer',
@@ -100,7 +100,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   {
     id: 'coping_avoidance',
     group: 'Копинг: Избегание',
-    color: 'var(--accent)',
+    color: toneHex(MODE_GROUP_HUE.coping_avoidance),
     items: [
       {
         id: 'detached_protector',
@@ -131,7 +131,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   {
     id: 'coping_overcompensation',
     group: 'Копинг: Гиперкомпенсация',
-    color: 'var(--accent-orange)',
+    color: toneHex(MODE_GROUP_HUE.coping_overcompensation),
     items: [
       {
         id: 'self_aggrandiser',
@@ -216,7 +216,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   {
     id: 'critic',
     group: 'Критикующие режимы',
-    color: 'var(--accent-red)',
+    color: toneHex(MODE_GROUP_HUE.critic),
     items: [
       {
         id: 'demanding_critic',
@@ -241,7 +241,7 @@ export const MODE_GROUPS: ModeGroup[] = [
   {
     id: 'healthy',
     group: 'Здоровые режимы',
-    color: 'var(--accent-green)',
+    color: toneHex(MODE_GROUP_HUE.healthy),
     items: [
       {
         id: 'happy_child',

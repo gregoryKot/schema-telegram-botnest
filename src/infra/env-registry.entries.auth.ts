@@ -24,7 +24,7 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'GOOGLE_CLIENT_ID',
     purpose:
-      'OAuth client id входа через Google — без него кнопка «Войти через Google» недоступна.',
+      'OAuth client id входа через Google — без него кнопка «Войти через Google» недоступна. Тот же id зашит в сборку сайта для окна «Продолжить как…» (`ARG VITE_GOOGLE_CLIENT_ID` в Dockerfile) — менять в обоих местах.',
     requiredInProd: false,
     format: formats.nonEmpty,
     group: 'auth',

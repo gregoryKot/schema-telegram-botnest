@@ -12,8 +12,8 @@ const isWebvisorRecordRoute = (p: string) => WEBVISOR_PATHS.test(p);
 // Редиректы (Navigate) и '*' сюда не входят — страницы у них нет.
 const PRIVATE = [
   '/admin', '/login', '/auth/callback', '/auth/confirm', '/auth/telegram', '/auth/2fa',
-  '/auth/recovery', '/auth/recovery/confirm', '/auth/error', '/link', '/account', '/account/merge',
-  '/today', '/diary', '/schemas', '/profile', '/practice', '/cabinet', '/cabinet/:clientId',
+  '/auth/error', '/link', '/account', '/account/merge',
+  '/today', '/diary', '/more', '/schemas', '/profile', '/practice', '/cabinet', '/cabinet/:clientId', '/cabinet/:clientId/:tab',
 ];
 const REDIRECTS = ['/booking-admin', '/articles-admin', '/help', '/exercises', '*'];
 
@@ -25,10 +25,10 @@ const sample = (path: string) => path.replace(/:[A-Za-z]+/g, 'x');
 
 describe('isPublicMetrikaRoute', () => {
   it.each(['/', '/articles', '/articles/some-slug', '/reviews', '/tests', '/tests/mode-quiz',
-    '/subscribe', '/donate', '/privacy', '/offer', '/book', '/booking/paid', '/booking/manage', '/articles/'])(
+    '/subscribe', '/donate', '/privacy', '/offer', '/install', '/book', '/booking/paid', '/booking/manage', '/articles/'])(
     '%s — публичный', (p) => expect(isPublicMetrikaRoute(p)).toBe(true));
 
-  it.each(['/today', '/diary', '/cabinet', '/cabinet/42', '/account', '/account/merge', '/login',
+  it.each(['/today', '/diary', '/more', '/cabinet', '/cabinet/42', '/account', '/account/merge', '/login',
     '/auth/callback', '/link', '/admin', '/app/', '/app/today', '/profile', '/practice'])(
     '%s — закрыт', (p) => expect(isPublicMetrikaRoute(p)).toBe(false));
 

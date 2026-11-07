@@ -16,9 +16,6 @@
 // cron-leader / raw-sql-live). Протухшая запись (файл получил хук, перестал быть
 // оверлеем или исчез) — красное: не уборка, а сигнал «сверься, что произошло».
 //
-// Мини-апп (schema-miniapp) НЕ покрыт сознательно: роутера там нет, «Назад»
-// устроен иначе — реестр closers + локальные слои (hooks/backLayers.ts), а не
-// useHistorySheet. Слепая зона названа в docs/README.md, «Что осталось открытым».
 // Тест гейта — src/test-support/gates/history-sheet.spec.ts.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';

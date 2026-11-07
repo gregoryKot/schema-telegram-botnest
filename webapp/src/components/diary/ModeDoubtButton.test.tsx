@@ -2,7 +2,7 @@
 // ModeDoubtButton (webapp) — «Сомневаешься? Сравни с похожими» на карточке
 // выбранного режима: кнопка видна, тап открывает лист с парами (fixed-оверлей
 // с useHistorySheet), «Это ближе» переключает выбор и шлёт mode_doubt_switched,
-// открытие шлёт mode_doubt_opened. Зеркало schema-miniapp ModeDoubtButton.test.tsx.
+// открытие шлёт mode_doubt_opened.
 //
 // Редизайн 2026-08-04 (жалоба владельца — из листа непонятно как выйти,
 // карточки вели клиническим термином): «← Назад» явно закрывает лист, якорь
@@ -71,6 +71,8 @@ describe('ModeDoubtButton (webapp)', () => {
     openSheet();
     expect(screen.getByText('сейчас выбран')).toBeTruthy();
     const back = screen.getByText('Назад');
+    expect(back.className).toBe('ds-back'); // шапка листа — общая ds-sheet-head/ds-back (#906)
+    expect(back.parentElement!.classList.contains('ds-sheet-head')).toBe(true);
     fireEvent.click(back);
     expect(screen.queryByText('сейчас выбран')).toBeNull();
   });

@@ -1,47 +1,45 @@
 import { IdentityDot } from '../../components/IdentityDot';
-import { colorMix } from '../../utils/colorMix';
+import { conceptChipLook } from './conceptChipStyle';
+import { useConceptSkin } from './conceptSkin';
 
-/**
- * Пилюля-переключатель с точкой цвета: режимы, схемы, потребности в графе и в
- * форме концептуализации — одна механика (правило «одна механика — один
- * компонент»). Текст выбранной пилюли — основной цвет, а не цвет группы:
- * жёлтый домен или потребность на светлой бумаге не читались бы. Цвет несёт
- * точка и кольцо, название всегда стоит рядом.
- */
+/** Чип-переключатель: на сайте ds-chip с tint по `hue`, в мини-аппе пилюля с точкой. */
 export function ConceptToggleChip({
   label,
   color,
+  hue,
   active,
   onClick,
   title,
+  readOnly = false,
 }: {
   label: string;
   color: string;
+  hue?: number;
   active: boolean;
-  onClick: () => void;
+  onClick?: () => void;
   title?: string;
+  /** Только показать: не кнопка, без зоны нажатия (спокойный вид «выбрано»). */
+  readOnly?: boolean;
 }) {
+  const skin = useConceptSkin();
+  const look = conceptChipLook(skin, color, active, readOnly, hue);
+  const content = skin ? (
+    label
+  ) : (
+    <>
+      <IdentityDot color={color} size={7} /> {label}
+    </>
+  );
+  if (readOnly) return <span {...look}>{content}</span>;
   return (
     <button
       type="button"
       aria-pressed={active}
       title={title}
       onClick={onClick}
-      style={{
-        minHeight: 44,
-        padding: '5px 12px',
-        borderRadius: 'var(--r-20)',
-        border: 'none',
-        cursor: 'pointer',
-        background: active ? colorMix(color, 22) : 'rgba(var(--fg-rgb),0.05)',
-        boxShadow: active ? `inset 0 0 0 1.5px ${colorMix(color, 60)}` : 'none',
-        color: active ? 'var(--text)' : 'var(--text-sub)',
-        fontSize: 12,
-        fontWeight: active ? 600 : 400,
-        transition: 'all 0.15s ease',
-      }}
+      {...look}
     >
-      <IdentityDot color={color} size={7} /> {label}
+      {content}
     </button>
   );
 }

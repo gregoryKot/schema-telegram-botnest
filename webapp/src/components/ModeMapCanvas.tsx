@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow, Background, BackgroundVariant, Panel,
-  addEdge, useReactFlow, ConnectionMode,
+  addEdge, useReactFlow, useNodesInitialized, ConnectionMode,
   type Connection, type NodeTypes, type Viewport,
   type useNodesState, type useEdgesState,
 } from '@xyflow/react';
-import type { ModeMapNode, ModeMapEdge, ModeMapKind, UserId } from '../api';
-import { api } from '../api';
+import { type ModeMapNode, type ModeMapEdge, type ModeMapKind, type UserId } from '../api';
 import { NODE_TYPES, EDGE_TYPES } from './modeMapRegistry';
 import { NODE_DEFAULT_SIZES, DRAG_TYPE } from './modeMapData';
-import { getSchemaById } from '../schemaTherapyData';
-import { hueStyle, DOMAIN_HUE } from '../lib/tone';
+import { SaveStatusLine, type SaveStatus } from '../../../shared/src/therapy/SaveStatusLine';
 import '../styles/sheet-modemap.css';
 import { ModeMapContextMenu, type MenuItem } from './ModeMapContextMenu';
 import { ModeMapLegend } from './ModeMapLegend';
@@ -24,15 +22,14 @@ import {
   edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
 } from './modeMapFlow';
 import { MMIcon } from './modeMapIcons';
-import { useTr } from '../utils/addressForm';
-import {
-  TbBtn,
-  TbSep,
-  Dropdown,
-} from './modeMap/ToolbarControls';
+import { TbBtn, TbSep } from './modeMap/ToolbarControls';
+import { Dropdown } from './Dropdown';
 import { DownloadMenu } from './modeMap/DownloadMenu';
 import { useHubDrag } from './modeMap/useHubDrag';
 import { useGenerateFromConcept } from './modeMap/useGenerateFromConcept';
+import { ConceptSyncLine } from './modeMap/ConceptSyncLine';
+import { CanvasEmpty } from './modeMap/CanvasEmpty';
+import { useCanvasSpace } from './modeMap/useCanvasSpace';
 
 export interface CanvasProps {
   clientId: UserId; mapId: number; kind: ModeMapKind;
@@ -43,8 +40,7 @@ export interface CanvasProps {
   onEdgesChange: ReturnType<typeof useEdgesState<FlowEdge>>[2];
   setSelectedNodeId: (id: string | null) => void;
   setSelectedEdgeId: (id: string | null) => void;
-  selectedNodeId: string | null;
-  saveStatus: 'idle' | 'saving' | 'saved';
+  saveStatus: SaveStatus; savedAt: Date | null; saveError?: string; onRetrySave: () => void; // SaveStatusLine (#879)
   scheduleSave: (ns: FlowNode[], es: FlowEdge[]) => void;
   pushHistory: () => void;
   nodesRef: React.MutableRefObject<FlowNode[]>;
@@ -54,36 +50,27 @@ export interface CanvasProps {
 }
 
 export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange,
-  setSelectedNodeId, setSelectedEdgeId, selectedNodeId, saveStatus, scheduleSave,
+  setSelectedNodeId, setSelectedEdgeId, saveStatus, savedAt, saveError, onRetrySave, scheduleSave,
   pushHistory, nodesRef, edgesRef, onUndo, onRedo, canUndo, canRedo }: CanvasProps) {
-  const { screenToFlowPosition, zoomIn, zoomOut, fitView, setViewport } = useReactFlow();
-  const tr = useTr();
+  const { screenToFlowPosition, zoomIn, zoomOut, setViewport } = useReactFlow();
+  const space = useCanvasSpace(); // свободное место и «Показать всё» с учётом панелей
 
   const [snap, setSnap] = useState(false);
   const [showLegend, setShowLegend] = useState(() => localStorage.getItem('modemap_legend') === '1');
-  const [showGuide, setShowGuide] = useState(() => localStorage.getItem('modemap_guide') !== '0');
+  // Сохранённый выбор — как есть; без него подсказки открыты только на почти пустой карте
+  // (карта приходит вместе с редактором, ключ — id карты: узлы известны на монтировании).
+  const [showGuide, setShowGuide] = useState(() => {
+    const saved = localStorage.getItem('modemap_guide');
+    return kind !== 'free' && (saved === null ? nodes.length < 3 : saved !== '0'); // свободный холст — без подсказок, пока их не позовут
+  });
   const [showZones, setShowZones] = useState(() => localStorage.getItem('modemap_zones') === '1');
   const [tplOpen, setTplOpen] = useState(false);
   const [dlOpen, setDlOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
-  const [schemasOpen, setSchemasOpen] = useState(false);
-  const [clientSchemaIds, setClientSchemaIds] = useState<string[] | 'failed' | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
-  const tplWrapRef = useRef<HTMLDivElement>(null);
-  const keysWrapRef = useRef<HTMLDivElement>(null);
-  const schemasWrapRef = useRef<HTMLDivElement>(null);
+  const tplWrapRef = useRef<HTMLDivElement>(null); const keysWrapRef = useRef<HTMLDivElement>(null);
 
-  // Схемы клиента грузятся при первом открытии панели; 'failed' ≠ пустой список
-  const openSchemas = useCallback(() => {
-    setSchemasOpen(o => !o); setTplOpen(false); setDlOpen(false);
-    if (clientSchemaIds === null) {
-      api.getConceptualization(clientId)
-        .then(c => setClientSchemaIds(Array.isArray(c?.schemaIds) ? c!.schemaIds : []))
-        .catch(() => setClientSchemaIds('failed')); // не [] — иначе «схем нет» вместо «не загрузилось»
-    }
-  }, [clientId, clientSchemaIds]);
-  // Desktop (fine pointer) — keyboard hints only make sense there
-  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches;
+  const isDesktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px) and (pointer: fine)').matches; // клавиши — только с мышью
 
   const toggleLegend = useCallback(() => {
     setShowLegend(s => { localStorage.setItem('modemap_legend', s ? '0' : '1'); return !s; });
@@ -98,17 +85,21 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   // ── Viewport persistence (per map, localStorage) ────────────────────────────
   const vpKey = `modemap_vp_${mapId}`;
   const restoredVp = useRef(false);
+  const nodesReady = useNodesInitialized();
   const onMoveEnd = useCallback((_: unknown, vp: Viewport) => {
     try { localStorage.setItem(vpKey, JSON.stringify(vp)); } catch { /* ignore */ }
   }, [vpKey]);
+  // Открытие карты: сохранённый вид, иначе «Показать всё» с отступами под панели
+  // (у fitView-пропа их нет — подсказки справа закрывали фигуры). Пустую карту
+  // не подгоняем: первая фигура ложится на свободное место без зума.
   useEffect(() => {
     if (restoredVp.current) return;
-    restoredVp.current = true;
-    try {
-      const saved = localStorage.getItem(vpKey);
-      if (saved) { const vp = JSON.parse(saved); setTimeout(() => setViewport(vp), 0); }
-    } catch { /* ignore */ }
-  }, [vpKey, setViewport]);
+    let saved: Viewport | null = null;
+    try { saved = JSON.parse(localStorage.getItem(vpKey) ?? 'null'); } catch { /* ignore */ }
+    if (saved) { const vp = saved; restoredVp.current = true; setTimeout(() => setViewport(vp), 0); }
+    else if (nodes.length === 0) restoredVp.current = true;
+    else if (nodesReady) { restoredVp.current = true; space.fit(0); }
+  }, [vpKey, setViewport, nodesReady, nodes.length, space]);
 
   const isValidConnection = useCallback((conn: Connection | FlowEdge) => {
     // Prevent self-connections
@@ -144,17 +135,14 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition, pushHistory]);
 
-  // Add a node from the guidance panel — drop it near the viewport centre
+  // Add a node from the guidance panel — on a free spot of the visible area
   const addNodeFromGuide = useCallback((partial: Omit<ModeMapNode, 'position'>) => {
-    const el = document.querySelector('.react-flow') as HTMLElement | null;
-    const r = el?.getBoundingClientRect();
-    const pos = r ? screenToFlowPosition({ x: r.left + r.width / 2 + (Math.random() * 80 - 40), y: r.top + r.height / 2 + (Math.random() * 80 - 40) })
-      : { x: 200 + Math.random() * 200, y: 150 };
+    const [pos] = space.place(nodesRef.current);
     const defaultSize = NODE_DEFAULT_SIZES[partial.type] ?? {};
     pushHistory();
     const newNodes = [...nodesRef.current, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown>, ...defaultSize }];
     setNodes(newNodes); scheduleSave(newNodes, edgesRef.current);
-  }, [screenToFlowPosition, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
+  }, [space, setNodes, scheduleSave, pushHistory, nodesRef, edgesRef]);
 
   // Open the unmet-need field on the Vulnerable Child node (from the guide's step 6)
   const onOpenNeed = useCallback(() => {
@@ -219,8 +207,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       : showZones ? layoutByZones(nodes) : autoLayout(nodes, edges);
     setNodes(laid); scheduleSave(laid, edges);
     // Only zoom out to fit — never magnify (maxZoom 1) so layout doesn't blow up the scale
-    setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory, fitView, showZones, kind]);
+    setTimeout(() => space.fit(400), 50);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory, space, showZones, kind]);
 
   // ── Node actions (toolbar + context menu) ────────────────────────────────────
   const duplicateNode = useCallback((id: string) => {
@@ -275,8 +263,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     const newEdges = [...edgesRef.current, ...flowEs];
     setNodes(newNodes); setEdges(newEdges);
     scheduleSave(newNodes, newEdges);
-    setTimeout(() => fitView({ padding: 0.2, duration: 400, maxZoom: 1 }), 50);
-  }, [setNodes, setEdges, scheduleSave, pushHistory, nodesRef, edgesRef, fitView]);
+    setTimeout(() => space.fit(400), 50);
+  }, [setNodes, setEdges, scheduleSave, pushHistory, nodesRef, edgesRef, space]);
 
   const fromConcept = useGenerateFromConcept({ clientId, nodesRef, edgesRef, insert: insertGraph });
   const hubDrag = useHubDrag({ nodesRef, setNodes });
@@ -286,9 +274,9 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
     e.preventDefault();
     setMenu({ x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY, items: [
       { label: 'Авто-расположение', onClick: onAutoLayout },
-      { label: 'Показать всё', onClick: () => fitView({ padding: 0.2, duration: 300 }) },
+      { label: 'Показать всё', onClick: () => space.fit() },
     ] });
-  }, [onAutoLayout, fitView]);
+  }, [onAutoLayout, space]);
 
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: FlowNode) => {
     e.preventDefault();
@@ -300,20 +288,13 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   }, [nodeActions, duplicateNode, removeNode]);
 
   return (
-    <div style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
+    <div className="mm2-canvas" style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
       <div className="mm2-status">
+        <ConceptSyncLine onAddToMap={fromConcept.generate} />
         {fromConcept.failed ? <span role="alert" className="is-err">Не получилось собрать схему из концептуализации</span>
-          : saveStatus === 'saving' ? 'сохраняю…' : saveStatus === 'saved' ? '✓ сохранено' : ''}
+          : <SaveStatusLine status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} errorText={saveError} align="right" />}
       </div>
-      {nodes.length === 0 && (
-        <div className="mm2-canvas-empty">
-          <div className="mm2-empty-ico"><MMIcon name="map" size={26} /></div>
-          <div className="mm2-empty-title">Карта режимов пуста</div>
-          <div className="mm2-empty-sub">
-            Кликай по режиму в панели слева или перетащи его на холст
-          </div>
-        </div>
-      )}
+      {nodes.length === 0 && <CanvasEmpty />}
       <NodeActionsContext.Provider value={nodeActions}>
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={NODE_TYPES as NodeTypes} edgeTypes={EDGE_TYPES}
         onNodesChange={onNodesChangeWithSave} onEdgesChange={onEdgesChange}
@@ -331,7 +312,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         snapToGrid={snap} snapGrid={[20, 20]}
         selectionKeyCode="Shift" multiSelectionKeyCode={['Meta', 'Shift']}
         zoomOnPinch panOnScroll={false}
-        fitView fitViewOptions={{ padding: 0.2 }} deleteKeyCode={null}
+        deleteKeyCode={null}
         nodesDraggable nodeDragThreshold={1}
       >
         <Background variant={BackgroundVariant.Dots} color="rgba(var(--fg-rgb),0.16)" gap={snap ? 20 : 22} size={1.5} />
@@ -347,7 +328,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
             {/* Zoom */}
             <TbBtn label="Отдалить" onClick={() => zoomOut()}><MMIcon name="minus" size={17} /></TbBtn>
             <TbBtn label="Приблизить" onClick={() => zoomIn()}><MMIcon name="plus" size={17} /></TbBtn>
-            <TbBtn label="Показать всё" onClick={() => fitView({ padding: 0.2 })}><MMIcon name="fit" size={17} /></TbBtn>
+            <TbBtn label="Показать всё" onClick={() => space.fit()}><MMIcon name="fit" size={17} /></TbBtn>
             <TbSep />
             {/* Tools */}
             <TbBtn label="Разложить автоматически" onClick={onAutoLayout} disabled={nodes.length === 0}><MMIcon name="auto" size={17} /></TbBtn>
@@ -357,40 +338,15 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
               <TbBtn label="Шаблоны и генерация" onClick={() => { setTplOpen(o => !o); setDlOpen(false); }} active={tplOpen} caret><MMIcon name="layers" size={17} /></TbBtn>
               {tplOpen && (
                 <Dropdown anchorRef={tplWrapRef} onClose={() => setTplOpen(false)}>
-                  <div className="mm2-drop-head">Шаблоны</div>
+                  <div className="ds-label mm2-drop-head">Шаблоны</div>
                   {TEMPLATES.map(t => (
                     <button key={t.id} onClick={() => { const g = templateToGraph(t); insertGraph(g.nodes, g.edges); setTplOpen(false); }}
-                      className="mm2-item">{t.name}</button>
+                      className="ds-menu-item">{t.name}</button>
                   ))}
                   <div className="mm2-drop-sep" />
-                  <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} className="mm2-item">
+                  <button onClick={() => { void fromConcept.generate(); setTplOpen(false); }} className="ds-menu-item">
                     Из концептуализации клиента
                   </button>
-                </Dropdown>
-              )}
-            </div>
-            <div ref={schemasWrapRef} className="mm2-tb">
-              <TbBtn label="Схемы клиента — привязать к выбранному режиму" onClick={openSchemas} active={schemasOpen} caret><MMIcon name="target" size={17} /></TbBtn>
-              {schemasOpen && (
-                <Dropdown anchorRef={schemasWrapRef} onClose={() => setSchemasOpen(false)}>
-                  <div className="mm2-drop-head">Схемы клиента</div>
-                  <div className="mm2-drop-note">
-                    {selectedNodeId ? tr('Нажми, чтобы привязать к выбранному режиму', 'Нажмите, чтобы привязать к выбранному режиму') : tr('Сначала выбери режим на холсте', 'Сначала выберите режим на холсте')}
-                  </div>
-                  {clientSchemaIds === null && <div className="mm2-drop-note">Загрузка…</div>}
-                  {clientSchemaIds === 'failed' ? <div className="mm2-drop-note is-err">Не удалось загрузить схемы клиента</div> : clientSchemaIds?.length === 0 && <div className="mm2-drop-note">У клиента пока нет отмеченных схем</div>}
-                  {Array.isArray(clientSchemaIds) && clientSchemaIds.map(sid => {
-                    const s = getSchemaById(sid);
-                    if (!s) return null;
-                    return (
-                      <button key={sid} disabled={!selectedNodeId}
-                        onClick={() => { if (selectedNodeId) { patchNodeData(selectedNodeId, { schemaId: sid }); setSchemasOpen(false); } }}
-                        className="mm2-item" style={hueStyle(DOMAIN_HUE[s.domainId])}>
-                        <i className="ds-dot tone-fill" />
-                        <span>{s.name}</span>
-                      </button>
-                    );
-                  })}
                 </Dropdown>
               )}
             </div>
@@ -405,7 +361,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
                 <TbBtn label="Горячие клавиши" onClick={() => setKeysOpen(o => !o)} active={keysOpen}><MMIcon name="keyboard" size={17} /></TbBtn>
                 {keysOpen && (
                   <Dropdown anchorRef={keysWrapRef} onClose={() => setKeysOpen(false)}>
-                    <div className="mm2-drop-head">Горячие клавиши</div>
+                    <div className="ds-label mm2-drop-head">Горячие клавиши</div>
                     {([
                       ['⌘Z / Ctrl+Z', 'Отменить'],
                       ['⌘⇧Z / Ctrl+Y', 'Вернуть'],

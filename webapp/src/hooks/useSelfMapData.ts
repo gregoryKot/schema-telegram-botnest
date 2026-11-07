@@ -12,8 +12,7 @@ import { collectWarmWords } from '../../../shared/src/warmWords/collectWarmWords
 /**
  * Данные карты себя: разборы (записи дневника режимов) и карточки режимов.
  * Отдельного хранилища у разбора нет — он сохраняется обычной записью, и
- * карта строится из неё. Twin schema-miniapp/src/hooks/useSelfMapData.ts
- * (правило №3) — отличается только транспорт (webapp api вместо миниапповского).
+ * карта строится из неё. Транспорт — webapp api.
  */
 export function useSelfMapData(refreshKey = 0): {
   map: MapInput | null;
@@ -24,6 +23,7 @@ export function useSelfMapData(refreshKey = 0): {
 
   useEffect(() => {
     let ignore = false;
+    // Все записи режимов: `fromCase` появился в этапе 4 простого клиента, фильтрация — отдельное решение (docs/open/frontend-ux.md).
     Promise.all([api.getModeDiary(), api.getModeNotes(), api.getProfile()])
       .then(([cases, notes, profile]) => {
         if (ignore) return;

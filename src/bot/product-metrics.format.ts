@@ -35,14 +35,9 @@ export interface ProductMetrics {
   crisis: CrisisMetrics;
   shareResult: { ok: number; fallback: number };
   outbox: { flushes: number; recovered: number };
-  // Настройка экрана «Сегодня» и дыхание «Здесь и сейчас» (за месяц).
+  // Главный экран «Сегодня» (за месяц): что прятали (старый счётчик серии).
   today: {
-    focusChanged: number;
-    // Сколько раз прятали каждый блок (цитата, счётчик серии и т.д.).
     blocksHidden: Array<{ block: string; count: number }>;
-    // Как открывали «Настроить экран»: шестерёнкой и долгим нажатием.
-    customizeGear: number;
-    customizeLongpress: number;
   };
   // Архив «Мой путь» (за месяц): сколько раз открывали свою историю.
   journey: { opens: number };
@@ -95,9 +90,6 @@ const SHARE_KIND_LABELS: Record<string, string> = {
 // Подписи блоков главного экрана — словами пользователя, не ключами.
 const TODAY_BLOCK_LABELS: Record<string, string> = {
   streak: '🔥 счётчик дней подряд',
-  phrase: '💬 цитата',
-  secondary: '🗂 «что ещё можно сегодня»',
-  therapist_banner: '🧑‍⚕️ баннер кабинета',
 };
 
 // Подписи шагов обучения — тем же простым языком, каким шаг звучит для юзера.
@@ -141,7 +133,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
     '',
     `🧩 <b>Кто чем пользуется</b> (за всё время, число людей)`,
     `Дневники: ${m.adoption.diaries} · Тест схем: ${m.adoption.ysqDone} · ` +
-      `Упражнения: ${m.adoption.exercises} · Практики: ${m.adoption.practices} · ` +
+      `Упражнения: ${m.adoption.exercises} · «Что питает»: ${m.adoption.practices} · ` +
       `Колесо детства: ${m.adoption.childhood}`,
     '',
     `📋 <b>Тест схем: доходят ли до конца</b>`,
@@ -176,10 +168,7 @@ export function formatProductMetrics(m: ProductMetrics): string {
     `📦 <b>Спасли записи, сделанные без интернета</b> (за месяц)`,
     `Случаев: ${m.outbox.flushes} · записей вернули: ${m.outbox.recovered}`,
     '',
-    `🎛 <b>Настраивают главный экран</b> (за месяц)`,
-    `Сменили главную практику: ${m.today.focusChanged}`,
-    `Заходили в настройку экрана: шестерёнкой ${m.today.customizeGear} · ` +
-      `долгим нажатием ${m.today.customizeLongpress}`,
+    `🎛 <b>Главный экран</b> (за месяц)`,
     m.today.blocksHidden.length === 0
       ? 'Блоки с главного пока не прятали'
       : 'Что прятали: ' +

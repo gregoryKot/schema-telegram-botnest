@@ -1,11 +1,11 @@
-// Дефолты MINIAPP_URL / BOT_USERNAME (аудит 2026-10, infra#18): раньше пустая
+// Адрес кабинета / BOT_USERNAME (аудит 2026-10, infra#18): раньше пустая
 // переменная молча вела webApp-кнопки на старый vercel-деплой, а ссылки
 // приглашений — в бота «SchemaLabBot». Константы вычисляются при загрузке
 // модуля, поэтому каждый кейс грузит их заново с заданным env.
 type Constants = typeof import('./telegram.constants');
 type Link = typeof import('./miniapp-link');
 
-const KEYS = ['APP_URL', 'MINIAPP_URL', 'BOT_USERNAME', 'MINIAPP_APP_NAME'];
+const KEYS = ['APP_URL', 'BOT_USERNAME', 'MINIAPP_APP_NAME'];
 
 function load(env: Record<string, string | undefined> = {}): {
   constants: Constants;
@@ -33,27 +33,17 @@ function load(env: Record<string, string | undefined> = {}): {
   }
 }
 
-describe('MINIAPP_URL', () => {
-  it('без env — канонический хост и /app/ со слэшем (vite base)', () => {
-    expect(load().constants.MINIAPP_URL).toBe('https://schemehappens.ru/app/');
-  });
-
-  it('выводится из APP_URL, а не зашит: staging получает свой хост', () => {
-    expect(load({ APP_URL: 'staging.example' }).constants.MINIAPP_URL).toBe(
-      'https://staging.example/app/',
+describe('CABINET_URL', () => {
+  it('без env — кабинет канонического хоста: /today', () => {
+    expect(load().constants.CABINET_URL).toBe('https://schemehappens.ru/today');
+    expect(load().constants.CABINET_HELP_URL).toBe(
+      'https://schemehappens.ru/practice',
     );
   });
 
-  it('явный MINIAPP_URL сильнее дефолта и обрезается по краям', () => {
-    expect(
-      load({ MINIAPP_URL: ' https://schemehappens.ru/app/ ' }).constants
-        .MINIAPP_URL,
-    ).toBe('https://schemehappens.ru/app/');
-  });
-
-  it('пустая строка в env не отключает дефолт', () => {
-    expect(load({ MINIAPP_URL: '  ' }).constants.MINIAPP_URL).toBe(
-      'https://schemehappens.ru/app/',
+  it('выводится из APP_URL, а не зашит: staging получает свой хост', () => {
+    expect(load({ APP_URL: 'staging.example' }).constants.CABINET_URL).toBe(
+      'https://staging.example/today',
     );
   });
 });

@@ -8,20 +8,22 @@
 import { lazy, Suspense } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { api } from '../../api';
+import { cacheTherapistMode } from './therapistModeCache';
+import { markTherapistDisclaimerSeen } from '../therapistDisclaimerSeen';
 import type { useOverlays } from './useOverlays';
 import { NoteSheet } from '../NoteSheet';
-import { TaskCreateSheet } from '../TaskCreateSheet';
 
 const SettingsSheet   = lazy(() => import('../SettingsSheet').then(m => ({ default: m.SettingsSheet })));
 const PracticesScreen = lazy(() => import('../PracticesScreen').then(m => ({ default: m.PracticesScreen })));
 const PlansScreen     = lazy(() => import('../PlansScreen').then(m => ({ default: m.PlansScreen })));
 const SchemaInfoSheet = lazy(() => import('../SchemaInfoSheet').then(m => ({ default: m.SchemaInfoSheet })));
 const ChildhoodWheelEx = lazy(() => import('../exercises/ChildhoodWheelEx').then(m => ({ default: m.ChildhoodWheelEx })));
+const SchemaFlashcard = lazy(() => import('../SchemaFlashcard').then(m => ({ default: m.SchemaFlashcard })));
 const TherapistPrivacyDisclaimer = lazy(() => import('../TherapistPrivacyDisclaimer').then(m => ({ default: m.TherapistPrivacyDisclaimer })));
 
 export function AppOverlays({
   ov, userRole, setUserRole, displayName, setDisplayName, therapistMode, switchTherapistMode,
-  navigate, ratings, setChildhoodRatings, childhoodWheelPending, setChildhoodWheelPending, todayDate,
+  navigate, ratings, setChildhoodRatings, todayDate,
 }: {
   ov: ReturnType<typeof useOverlays>;
   userRole: 'CLIENT' | 'THERAPIST';
@@ -33,8 +35,6 @@ export function AppOverlays({
   navigate: NavigateFunction;
   ratings: Record<string, number>;
   setChildhoodRatings: (r: Record<string, number>) => void;
-  childhoodWheelPending: boolean;
-  setChildhoodWheelPending: (v: boolean) => void;
   todayDate: string;
 }) {
   return (<>
@@ -47,13 +47,12 @@ export function AppOverlays({
           onNameChanged={setDisplayName}
           onOpenTherapistCabinet={() => { ov.setShowSettings(false); navigate('/cabinet'); }}
           therapistMode={therapistMode}
-          onToggleTherapistMode={() => switchTherapistMode(!therapistMode)}
+          onSetTherapistMode={(on) => switchTherapistMode(on)}
           onResignTherapist={async () => {
             await api.resignTherapist();
             setUserRole('CLIENT');
-            localStorage.setItem('therapist_mode', '0');
-            ov.setShowSettings(false);
-            navigate('/today');
+            cacheTherapistMode(false);
+            ov.setShowSettings(false); navigate('/today');
           }}
         />
       </Suspense>
@@ -97,17 +96,17 @@ export function AppOverlays({
       </div>
     )}
     {ov.showTodayNote && (
-      <NoteSheet date={todayDate} onClose={() => {
-        ov.setShowTodayNote(false);
-        if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
-      }} />
+      <NoteSheet date={todayDate} onClose={() => ov.setShowTodayNote(false)} />
     )}
-    {ov.showTrackerGoal && (
-      <TaskCreateSheet
-        defaultType="tracker_streak"
-        onCreated={() => ov.setShowTrackerGoal(false)}
-        onClose={() => ov.setShowTrackerGoal(false)}
-      />
+    {/* «Мне плохо» открывается поверх раздела, где человек был: «Назад» браузера
+        возвращает туда же, а не на /practice (QA 2026-11, A-М10). */}
+    {ov.showSosCard && (
+      <Suspense fallback={null}>
+        <SchemaFlashcard
+          onClose={() => ov.setShowSosCard(false)}
+          onOpenTracker={() => { ov.setShowSosCard(false); ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
+        />
+      </Suspense>
     )}
     {ov.showTherapistDisclaimer && (
       <Suspense fallback={null}>
@@ -115,8 +114,7 @@ export function AppOverlays({
           // Persist on ANY close path (button OR browser-back), otherwise a
           // back-button dismissal leaves the flag unset and the disclaimer
           // re-shows on every entry into the therapist cabinet.
-          localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
-          ov.setShowTherapistDisclaimer(false);
+          markTherapistDisclaimerSeen(); ov.setShowTherapistDisclaimer(false);
         }} />
       </Suspense>
     )}

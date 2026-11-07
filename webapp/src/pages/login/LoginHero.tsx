@@ -1,9 +1,6 @@
-import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
+import { Strokes, Ribbon, Pebbles } from '../../components/art/PaperArt';
 
-// Доли сегментов полосы — по макету.
-const SPAN: Record<string, number> = { rejection: 3, autonomy: 2, limits: 1, other_directed: 2, vigilance: 2 };
-
-// Тёмная панель входа: знак, слоган и полоса из пяти доменов схем. Обращения
+// Панель входа: знак, слоган и три бумажных мотива (полоски, лента, камушки). Обращения
 // к читателю в тексте нет: экран показывается до входа, формы ты/вы ещё нет.
 export function LoginHero() {
   return (
@@ -18,10 +15,10 @@ export function LoginHero() {
         </h2>
         <p className="al-lead">Инструмент схема-терапии для работы с мыслями, эмоциями и паттернами</p>
       </div>
-      <div className="al-strip" aria-hidden="true">
-        {Object.entries(DOMAIN_HUE).map(([id, hue]) => (
-          <span key={id} className="tone-fill" style={{ ...hueStyle(hue), flex: SPAN[id] ?? 1 }} />
-        ))}
+      <div className="al-art" aria-hidden="true">
+        <Strokes size="square" />
+        <Ribbon size="square" />
+        <Pebbles size="square" />
       </div>
     </aside>
   );

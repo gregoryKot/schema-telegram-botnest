@@ -14,6 +14,7 @@ import {
 // вчерашним днём (правило №25, аудит 2026-10).
 const REPORT_TZ = 'Europe/Moscow';
 type ActivityKey = 'month30' | 'week7' | 'churn' | 'core';
+type RetKey = 'ret1' | 'ret3' | 'ret7' | 'ret30';
 
 // Админский отчёт по всей базе (не по конкретному юзеру, в отличие от
 // BotAnalyticsService) — единственный потребитель: команда `/stats` в
@@ -164,30 +165,15 @@ export class BotAdminStatsService {
     const act = (k: ActivityKey): number => Number(activityRows[0]?.[k] ?? 0);
     const month30Count = act('month30');
 
-    // Retention funnel — count users with N+ distinct fill days (raw SQL for efficiency)
-    const retentionRows = await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
-      SELECT COUNT(*) AS cnt FROM (
-        SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 1
-      ) t`;
-    const ret1 = Number(retentionRows[0]?.cnt ?? 0);
-    const ret3 = Number(
-      (
-        await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
-      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 3) t`
-      )[0]?.cnt ?? 0,
-    );
-    const ret7 = Number(
-      (
-        await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
-      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 7) t`
-      )[0]?.cnt ?? 0,
-    );
-    const ret30 = Number(
-      (
-        await this.prisma.$queryRaw<Array<{ cnt: bigint }>>`
-      SELECT COUNT(*) AS cnt FROM (SELECT "userId" FROM "Rating" GROUP BY "userId" HAVING COUNT(DISTINCT date) >= 30) t`
-      )[0]?.cnt ?? 0,
-    );
+    // Воронка удержания: у скольких людей 1+, 3+, 7+ и 30+ разных дней
+    // заполнения — один GROUP BY по всей Rating вместо четырёх (по ~250 мс).
+    const [funnel] = await this.prisma.$queryRaw<Array<Record<RetKey, bigint>>>`
+      SELECT count(*) FILTER (WHERE t.days >= 1)::bigint AS ret1,
+             count(*) FILTER (WHERE t.days >= 3)::bigint AS ret3,
+             count(*) FILTER (WHERE t.days >= 7)::bigint AS ret7,
+             count(*) FILTER (WHERE t.days >= 30)::bigint AS ret30
+      FROM (SELECT COUNT(DISTINCT date) AS days FROM "Rating" GROUP BY "userId") t`;
+    const ret = (k: RetKey): number => Number(funnel?.[k] ?? 0);
 
     // Most neglected need (lowest avg this week)
     const lowestNeed = needAvgs[0];
@@ -216,10 +202,10 @@ export class BotAdminStatsService {
       activeCoreCount: act('core'),
       month30Count,
       churnRisk: act('churn'),
-      ret1,
-      ret3,
-      ret7,
-      ret30,
+      ret1: ret('ret1'),
+      ret3: ret('ret3'),
+      ret7: ret('ret7'),
+      ret30: ret('ret30'),
       lowestNeed,
       bestDow,
       activePairs,

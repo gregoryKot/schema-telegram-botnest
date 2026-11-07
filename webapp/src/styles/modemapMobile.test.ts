@@ -1,0 +1,136 @@
+// @vitest-environment node
+// Холст «Карта режимов» на телефоне (#906, волна 1). На ноутбуке высоту холсту
+// даёт цепочка flex от .therapist-sheet (index.css, ≥768); на телефоне страница
+// течёт блоком, .mm2-fill { height: 100% } и .mm2-body { flex: 1 } наследовали
+// auto, и вкладка была пустой — ни холста, ни тулбара, ни пустого состояния.
+// CSS в jsdom не исполняется, поэтому сверяем строки sheet-modemap.css: на
+// телефоне .mm2-body получает явную высоту (не min-height — проценты внутри
+// считаются только от height) из 100dvh за вычетом навигации и safe-area,
+// ноутбук не тронут, а переменные, от которых идёт расчёт, объявлены в :root.
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { PHONE_MEDIA } from '../utils/phoneLayout';
+
+interface Rule { group: string | null; selectors: string[]; body: string }
+
+/** Плоский список правил с именем охватывающей @-группы (@media и т.п.). */
+function parse(css: string): Rule[] {
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const out: Rule[] = [];
+  const groups: string[] = [];
+  let head = '';
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch === '{') {
+      const sel = head.trim();
+      head = '';
+      if (sel.startsWith('@') && !sel.startsWith('@font-face')) { groups.push(sel); continue; }
+      const end = src.indexOf('}', i);
+      out.push({ group: groups[groups.length - 1] ?? null, selectors: sel.split(',').map((s) => s.trim()), body: src.slice(i + 1, end) });
+      i = end;
+    } else if (ch === '}') groups.pop();
+    else head += ch;
+  }
+  return out;
+}
+
+/** Значения свойства `prop` во всех правилах селектора `sel` внутри группы `group` (в порядке файла). */
+function values(rules: Rule[], group: string | null, sel: string, prop: string): string[] {
+  return rules
+    .filter((r) => r.group === group && r.selectors.includes(sel))
+    .flatMap((r) => r.body.split(';'))
+    .map((d) => d.trim())
+    .filter((d) => d.startsWith(prop + ':'))
+    .map((d) => d.slice(prop.length + 1).trim());
+}
+
+const read = (f: string) => readFileSync(join(__dirname, f), 'utf8');
+const PHONE = `@media ${PHONE_MEDIA}`;
+const modemap = parse(read('sheet-modemap.css'));
+
+describe('холст карты режимов на телефоне (sheet-modemap.css)', () => {
+  it('.mm2-body на ≤767 — flex: none и явная height из 100dvh минус статус-бар, нижняя навигация и safe-area', () => {
+    expect(values(modemap, PHONE, '.mm2-body', 'flex')).toEqual(['none']);
+    const heights = values(modemap, PHONE, '.mm2-body', 'height');
+    expect(heights.some((h) => h.includes('100dvh'))).toBe(true);
+    expect(values(modemap, PHONE, '.mm2-body', 'min-height')).toEqual([]);
+    const chrome = values(modemap, PHONE, '.mm2-body', '--mm2-chrome').join('');
+    for (const token of ['var(--mm2-top)', 'var(--safe-bottom)', 'var(--mobile-nav-h)']) expect(chrome).toContain(token);
+    expect(heights.every((h) => h.includes('var(--mm2-chrome)'))).toBe(true);
+  });
+
+  it('запасной вариант на 100vh стоит перед 100dvh (браузер без dvh берёт первый, с dvh — второй)', () => {
+    const heights = values(modemap, PHONE, '.mm2-body', 'height');
+    expect(heights.findIndex((h) => h.includes('100vh'))).toBeLessThan(heights.findIndex((h) => h.includes('100dvh')));
+  });
+
+  it('ноутбук не тронут: вне медиа-блока .mm2-fill — height: 100%, .mm2-body — flex: 1 без своей высоты', () => {
+    expect(values(modemap, null, '.mm2-fill', 'height')).toEqual(['100%']);
+    expect(values(modemap, null, '.mm2-body', 'flex')).toEqual(['1']);
+    expect(values(modemap, null, '.mm2-body', 'height')).toEqual([]);
+  });
+
+  it('пустое состояние и скелетон заполняют холст: .mm2-center растёт от 100% на телефоне, .mm2-skel — height: 100%', () => {
+    expect(values(modemap, PHONE, '.mm2-center', 'min-height')).toEqual(['100%']);
+    expect(values(modemap, PHONE, '.mm2-center', 'height')).toEqual(['auto']);
+    expect(values(modemap, PHONE, '.mm2-body', 'overflow')).toEqual(['auto']);
+    expect(values(modemap, null, '.mm2-skel', 'height')).toEqual(['100%']);
+    expect(values(modemap, null, '.mm2-skel-bar', 'position')).toEqual(['absolute']);
+  });
+
+  it('переменные расчёта объявлены в :root index.css (--mobile-nav-h, --safe-top, --safe-bottom)', () => {
+    const root = parse(read('../index.css')).filter((r) => r.group === null && r.selectors.includes(':root')).map((r) => r.body).join(';');
+    for (const v of ['--mobile-nav-h', '--safe-top', '--safe-bottom']) expect(root, v).toMatch(new RegExp(`(^|;)\\s*${v}:`));
+  });
+
+  it('в sheet-modemap.css нет правил меню — .mm2-item, .mm2-drop, .mm2-backdrop: меню общее, ds-menu в cabinet.css', () => {
+    const all = modemap.flatMap((r) => r.selectors).join(' ');
+    expect(all).not.toMatch(/\.mm2-(item|drop|backdrop)(?![-\w])/);
+  });
+
+  it('сегмент карт в полосе тянется (flex: 1 1 auto) только на ≤767; на ≥768 по содержимому', () => {
+    const src = readFileSync(join(__dirname, 'sheet-modemap.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const stretch = `${PHONE} { .mm2-bar > .ds-seg { flex: 1 1 auto; } }`;
+    expect(src).toContain(stretch);
+    expect(src.replace(stretch, '')).not.toMatch(/\.mm2-bar > \.ds-seg \{[^}]*flex:/);
+  });
+
+  it('полоса карт .mm2-bar — боковой отступ 16 (один отступ на телефоне)', () => {
+    expect(values(modemap, null, '.mm2-bar', 'padding')).toEqual(['8px 16px']);
+  });
+
+  it('цвета новых правил — токенами, без hex/rgb-литералов', () => {
+    const fresh = modemap.filter((r) => r.group === PHONE || r.selectors.some((s) => s.startsWith('.mm2-skel')));
+    expect(fresh.length).toBeGreaterThan(0);
+    for (const r of fresh) expect(r.body, r.selectors.join(',')).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+  });
+
+  it('поля холста под пальцем (и iPad шире 767) — 16px: iOS не увеличивает экран при фокусе; с мышью прежние', () => {
+    const TOUCH = '@media (pointer: coarse), (max-width: 767px)';
+    const sels = ['.mm2-add-form .ds-input', '.mm2-panel .ds-input', '.mm2-panel .ds-textarea',
+      '.mm2-panel select.ds-input', '.ds-input.mm2-add-emoji', '.ds-input.mm2-lane-input'];
+    for (const sel of sels) expect(values(modemap, TOUCH, sel, 'font-size'), sel).toEqual(['16px']);
+    expect(values(modemap, null, '.mm2-panel .ds-input', 'font-size')).toEqual(['13px']);
+  });
+
+  // QA 2026-11, T-5: тулбар 36, пункты палитры 34, «Скрыть» 22, кнопки над узлом
+  // 31×23. Гейт check-tap-targets видит только инлайн-квадраты, CSS-классы ему
+  // не видны (docs/open/frontend-ux.md), поэтому размеры держит этот тест.
+  it('тап-цели холста под пальцем (pointer: coarse) и на телефоне — не меньше 44', () => {
+    const TOUCH = '@media (pointer: coarse), (max-width: 767px)';
+    const px = (sel: string, prop: string) => Number.parseFloat(values(modemap, TOUCH, sel, prop).at(-1) ?? '0');
+    const cases: Array<[string, string]> = [
+      ['.ds-btn.mm2-tb-btn', 'height'], ['.ds-btn.mm2-tb-btn', 'min-width'], ['.mm2-pal-item', 'min-height'], ['.mm2-pal-head', 'min-height'],
+      ['.ds-btn.mm2-pal-add', 'height'], ['.mm2-nt-btn', 'min-width'], ['.mm2-nt-btn', 'min-height'], ['.mm2-ear', 'width'], ['.mm2-ear', 'height'],
+      ['.mm2-swatch', 'width'], ['.mm2-swatch', 'height'], ['.mm2-x', 'width'], ['.mm2-x', 'height'], ['.ds-btn.mm2-del', 'height'],
+    ];
+    for (const [sel, prop] of cases) expect(px(sel, prop), `${sel} ${prop}`).toBeGreaterThanOrEqual(44);
+  });
+
+  it('ручки связи на (hover: none) видны всегда (T-4); на ноутбуке — по наведению', () => {
+    const idx = read('../index.css');
+    expect(idx).toMatch(/@media \(hover: none\)\s*\{\s*\.mm-handle\s*\{\s*opacity: 1/);
+    expect(idx).toMatch(/\.mm-handle\s*\{\s*opacity: 0;/);
+  });
+});

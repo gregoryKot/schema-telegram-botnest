@@ -4,14 +4,21 @@
 // scripts/backup-fetch-latest.sh (вход — scripts/s3-api.sh); в src/** их видят
 // проба самопроверки и реестр возможностей (backup-config.ts). Группа — infra.
 import { EnvVarSpec, formats } from './env-registry';
+import {
+  BACKUP_RETENTION_MAX_DAYS as MAX,
+  BACKUP_RETENTION_MIN_DAYS as MIN,
+} from './backup-config';
 
-/** Не меньше недели — то же ограничение держит scripts/backup-upload.sh. */
+/** Неделя–30 дней: те же границы держит scripts/backup-upload.sh. */
 const retentionDays = (value: string): string | null => {
   const notInteger = formats.integer(value);
   if (notInteger) return notInteger;
-  return Number(value) >= 7
+  const days = Number(value);
+  if (days < MIN)
+    return `меньше ${MIN} дней — скрипт бэкапа откажется работать`;
+  return days <= MAX
     ? null
-    : 'меньше 7 дней — скрипт бэкапа откажется работать';
+    : `больше ${MAX} дней — политика конфиденциальности обещает ${MAX}, скрипт бэкапа хранит ${MAX}`;
 };
 
 /** Адрес хранилища без бакета: скрипты сами дописывают `/<бакет>/<файл>`. */
@@ -48,8 +55,9 @@ export const BACKUP_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'BACKUP_RETENTION_DAYS',
     purpose:
-      'Сколько дней хранить бэкапы в бакете (по умолчанию 90, не меньше 7) — ' +
-      'старше удаляются после каждого успешного бэкапа.',
+      'Сколько дней хранить бэкапы в бакете (от 7 до 30, по умолчанию 30: ' +
+      'столько обещает политика конфиденциальности) — старше удаляются после ' +
+      'каждого успешного бэкапа.',
     requiredInProd: false,
     format: retentionDays,
     group: 'infra',

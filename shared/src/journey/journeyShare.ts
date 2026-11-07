@@ -3,7 +3,7 @@
 // (шаринг из детального вида записи).
 // Возвращает готовые пропсы для per-frontend ShareCardSheet.
 import { useMemo, useState } from 'react';
-import { COLORS } from '../types';
+import { NEED_COLORS } from '../needs/needColors';
 import {
   type JourneyItem,
   type JourneyPeriod,
@@ -47,7 +47,7 @@ export type JourneyShareState =
   | { kind: 'feed' }
   | { kind: 'item'; item: JourneyItem; result: JourneyResult | null };
 
-/** Строки радара из оценок дня трекера — порядок как в COLORS/JOURNEY_NEED_NAMES.
+/** Строки радара из оценок дня трекера — порядок как в NEED_COLORS/JOURNEY_NEED_NAMES.
  * Пропущенная потребность не превращается в ноль (правило «никаких заглушек»).
  * Чистая (тест: пустые/частичные оценки). */
 export function journeyRadarRows(
@@ -58,7 +58,7 @@ export function journeyRadarRows(
     return {
       emoji: JOURNEY_NEED_EMOJI[id],
       label: JOURNEY_NEED_NAMES[id],
-      color: COLORS[id] ?? '#888',
+      color: NEED_COLORS[id] ?? '#888',
       value: value ?? null,
       valueText: value !== undefined ? String(value) : '—',
     };

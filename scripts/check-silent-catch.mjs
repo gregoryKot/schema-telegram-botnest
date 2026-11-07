@@ -57,7 +57,7 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'silent-catch-baseline.json');
 const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
-const SCAN_DIRS = ['src', 'webapp/src', 'schema-miniapp/src', 'shared/src'];
+const SCAN_DIRS = ['src', 'webapp/src', 'shared/src'];
 
 /** Имя метода, чей промис ловится этим `.catch(` (null, если это не цепочка). */
 function caughtCallName(src, matchStart) {

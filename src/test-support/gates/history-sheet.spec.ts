@@ -126,14 +126,6 @@ describe('check-history-sheet.mjs — инлайновые оверлеи', () =
     });
     expect(res.status).toBe(0);
   });
-
-  it('мини-апп вне зоны гейта (там нет роутера, свой механизм)', () => {
-    const res = runGate(GATE, {
-      'schema-miniapp/src/Sheet.tsx': INLINE_NO_HOOK,
-      'scripts/history-sheet-baseline.json': baseline(),
-    });
-    expect(res.status).toBe(0);
-  });
 });
 
 describe('check-history-sheet.mjs — оверлей, заданный классом из CSS', () => {

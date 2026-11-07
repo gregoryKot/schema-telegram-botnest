@@ -1,7 +1,17 @@
 // Telegram как площадка канала: адрес из env, отправка через бота и разбор
 // ошибки. Всё телеграм-специфичное проверяется здесь — рассылка и расписание
 // про Telegram уже ничего не знают.
+import { TelegramError } from 'telegraf';
+import { loadRecordedFixture } from '../test-support/recorded-fixture';
 import { TelegramChannelTarget } from './telegram-channel.target';
+
+const error429 = (retryAfter: number) => {
+  const body = JSON.parse(
+    loadRecordedFixture('telegram-429-too-many-requests.json'),
+  );
+  body.parameters.retry_after = retryAfter;
+  return new TelegramError(body);
+};
 
 /** Пост канала: текст плюс ленивая картинка (нужна только Pinterest). */
 const post = (text: string) => ({
@@ -119,5 +129,30 @@ describe('TelegramChannelTarget', () => {
       ).rejects.toMatchObject({ response: { error_code: 400 } });
       expect(sendMessage).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+// Аудит 2026-10 (#812): пост канала шёл мимо PacedSender и на 429 падал сразу.
+describe('TelegramChannelTarget — ответ 429', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('ждёт названный срок и публикует со второй попытки', async () => {
+    jest.useFakeTimers();
+    const { bot, sendMessage } = makeBot();
+    sendMessage.mockRejectedValueOnce(error429(5));
+    const sent = new TelegramChannelTarget(bot).send(post('фраза'), '@ch');
+    await jest.advanceTimersByTimeAsync(5000);
+    await expect(sent).resolves.toBeUndefined();
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('срок дольше бюджета — не ждёт, причина 429 доходит до алерта', async () => {
+    const { bot, sendMessage } = makeBot();
+    sendMessage.mockRejectedValue(error429(120));
+    const target = new TelegramChannelTarget(bot);
+    const err = await target.send(post('фраза'), '@ch').catch((e) => e);
+    // 429 — ответ API, а не сеть: сетевых повторов тоже нет (риск дубля поста)
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(target.explain(err)).toContain('429: Too Many Requests');
   });
 });

@@ -9,21 +9,19 @@ export interface Rel {
   status: string;
   code: string;
   createdAt?: Date;
+  clientAlias?: string | null;
 }
 
-// where-условие поля: значение, null или оператор Prisma (`not`, `gte`).
+// where-условие поля: значение, null или оператор Prisma (`not`, `gte`, `in`).
 // Нужен реальный разбор операторов: мок, игнорирующий `{ not }` и `clientId:
 // null`, пропускал бы ровно те условия, на которых держатся T3/T4 (аудит
 // 2026-10) — тест зеленел бы при выброшенной проверке.
 function fieldMatches(actual: unknown, cond: unknown): boolean {
   if (cond === undefined) return true;
-  if (
-    cond !== null &&
-    typeof cond === 'object' &&
-    !(cond instanceof Date) &&
-    typeof cond !== 'bigint'
-  ) {
-    const c = cond as { not?: unknown; gte?: Date };
+  // typeof bigint — 'bigint', не 'object': отдельная проверка не нужна.
+  if (cond !== null && typeof cond === 'object' && !(cond instanceof Date)) {
+    const c = cond as { not?: unknown; gte?: Date; in?: unknown[] };
+    if ('in' in c) return (c.in ?? []).includes(actual);
     if ('not' in c) return actual !== c.not;
     if ('gte' in c) return (actual as Date) >= (c.gte as Date);
   }
@@ -51,6 +49,14 @@ export function makeRelationPrismaMock(rels: Rel[]) {
     therapyRelation: {
       findFirst: async ({ where }: any) =>
         rels.find((r) => relMatches(r, where)) ?? null,
+      // orderBy не разбирается: тестам списка приглашений порядок вставки
+      // известен, сортировку держит живой Postgres (test/therapy-invite.e2e-spec.ts).
+      findMany: async ({ where }: any) =>
+        rels
+          .filter((r) => relMatches(r, where))
+          .map((r) => ({ createdAt: new Date(), ...r })),
+      count: async ({ where }: any) =>
+        rels.filter((r) => relMatches(r, where)).length,
       // createdAt по умолчанию «сейчас» — как @default(now()) в схеме.
       findUnique: async ({ where }: any) => {
         const r = rels.find((x) => x.code === where.code);

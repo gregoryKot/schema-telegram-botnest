@@ -17,6 +17,7 @@ import {
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { LoginPage } from './LoginPage';
+import { wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
 
 vi.mock('../../../shared/src/host', () => ({
   getHost: vi.fn(() => ({ sessionExchange: () => null })),
@@ -74,6 +75,19 @@ function renderPage(auth: AuthState = authValue(), initialPath = '/login') {
     </MemoryRouter>,
   );
 }
+
+// QA 2026-11, К2: после удаления аккаунта экран входа писал «Вход устарел —
+// данные на месте»: человек решал, что удаление не прошло.
+describe('LoginPage — сразу после удаления аккаунта', () => {
+  it('говорит «Аккаунт удалён», а не «данные на месте»; отметка одноразовая', () => {
+    localStorage.setItem('auth_seen', '1');
+    wipeAfterAccountDeletion();
+    renderPage();
+    expect(screen.getByText(/^Аккаунт удалён/)).toBeTruthy();
+    expect(screen.queryByText(/данные на месте/)).toBeNull();
+    expect(localStorage.getItem('account_deleted')).toBeNull();
+  });
+});
 
 describe('LoginPage — уже вошедший пользователь', () => {
   it('isAuthenticated=true сразу уводит на /today', async () => {
@@ -346,6 +360,27 @@ describe('LoginPage — «Попробовать снова» в мессенд�
     fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
     await screen.findByText('Нет связи с сервером');
     expect(container.textContent).not.toMatch(/TypeError/);
+  });
+
+  // Аудит 2026-10: запасным текстом был сам String(e) — HTML прокси на 200
+  // давал на экране «SyntaxError: Unexpected token '<'…». Имя класса остаётся:
+  // строка уходит и в отчёт useAuthFailureReport.
+  it('200 с HTML вместо JSON — «Не удалось войти», без сырого текста разбора', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response('<html><body>Bad Gateway</body></html>', { status: 200 })));
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText('Не удалось войти (SyntaxError)');
+    expect(container.textContent).not.toMatch(/Unexpected token|<html|is not valid JSON/);
+    await waitFor(() => expect(reportClientError).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(reportClientError).mock.calls[0][0].message).toContain('SyntaxError');
+  });
+
+  it('контроль: русский текст исключения проходит как есть', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new Error('Сессия мессенджера устарела')));
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await screen.findByText('Сессия мессенджера устарела');
   });
 
   it('401 — тело сервера как есть: диагностика отказа подписи (инцидент 2026-08-08)', async () => {

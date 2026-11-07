@@ -9,8 +9,8 @@ export function AccountFooter({ logout }: { logout: (all?: boolean) => void | Pr
   return (
     <>
       <div className="aa-foot">
-        <button onClick={() => void logout()} className="ds-btn ds-btn--secondary">Выйти</button>
-        <button onClick={() => setLogoutAllOpen(true)} className="aa-foot-all">Выйти со всех устройств</button>
+        <button type="button" onClick={() => void logout()} className="ds-btn ds-btn--secondary">Выйти</button>
+        <button type="button" onClick={() => setLogoutAllOpen(true)} className="ds-link">Выйти со всех устройств</button>
       </div>
       {logoutAllOpen && (
         <ConfirmDialog

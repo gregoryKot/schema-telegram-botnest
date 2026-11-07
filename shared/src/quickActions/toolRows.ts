@@ -1,12 +1,14 @@
 import { getQuickAction, type QuickActionId } from './quickActions';
 import { pluralRu as plural } from '../utils/pluralRu';
+import { exerciseCard } from '../exercises/exerciseCatalog';
+import { planCountLabel, practiceCountLabel } from './catalogCountLabels';
 
 // Данные 10 строк «Инструментов» — единственный источник для мини-аппа
 // (ToolsList.tsx), сайта («Практика») и листа настройки видимости
 // (QuickActionCustomizeSheet, правило «одна механика — один компонент»).
 // Тексты (label/sub статичных строк) берутся из общего реестра
 // quickActions.ts — здесь только порядок строк и динамические
-// счётчики (цели/практики/планы, «Займёт 2 минуты» колеса детства), которых
+// счётчики (цели, «Что питает», планы, срок колеса детства из каталога упражнений), которых
 // в реестре нет. Без эмодзи (фидбек владельца): в листах настройки выбирают
 // по смыслу.
 
@@ -50,17 +52,15 @@ function rowSub(
     case 'practices':
       return props.practiceCount == null
         ? undefined
-        : props.practiceCount === 0
-          ? 'Нет практик'
-          : `${props.practiceCount} ${plural(props.practiceCount, 'практика', 'практики', 'практик')}`;
+        : practiceCountLabel(props.practiceCount);
     case 'plans':
       return props.planCount == null
         ? undefined
-        : props.planCount === 0
-          ? 'История пуста'
-          : `${props.planCount} ${plural(props.planCount, 'план', 'плана', 'планов')}`;
+        : planCountLabel(props.planCount);
     case 'childhood_wheel':
-      return props.childhoodDone ? 'Паттерны из прошлого' : 'Займёт 2 минуты';
+      return props.childhoodDone
+        ? 'Паттерны из прошлого'
+        : `Займёт ${exerciseCard('wheel').time}`;
     default:
       return staticSub;
   }

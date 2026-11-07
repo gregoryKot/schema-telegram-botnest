@@ -8,10 +8,7 @@ import {
   HOME_SCREEN_ACTIONS,
   HOME_SCREEN_SURFACES,
   ONBOARDING_STEPS,
-  TODAY_BLOCKS,
   SHARE_CARD_KINDS,
-  TODAY_FOCUS_PRACTICES,
-  WEB_BANNER_IDS,
   QUICK_ACTION_IDS,
   QUICK_ACTION_SURFACES,
   QUICK_ACTION_MOVE_DIRS,
@@ -40,14 +37,9 @@ export const SHARE_CARD_KIND_SET: ReadonlySet<string> = new Set(
   SHARE_CARD_KINDS,
 );
 export const CRISIS_SURFACE_SET: ReadonlySet<string> = new Set(CRISIS_SURFACES);
-export const TODAY_FOCUS_PRACTICE_SET: ReadonlySet<string> = new Set(
-  TODAY_FOCUS_PRACTICES,
-);
-export const WEB_BANNER_ID_SET: ReadonlySet<string> = new Set(WEB_BANNER_IDS);
 export const ONBOARDING_STEP_SET: ReadonlySet<string> = new Set(
   ONBOARDING_STEPS,
 );
-export const TODAY_BLOCK_SET: ReadonlySet<string> = new Set(TODAY_BLOCKS);
 export const CUSTOMIZE_ENTRY_SET: ReadonlySet<string> = new Set(
   CUSTOMIZE_ENTRY_POINTS,
 );

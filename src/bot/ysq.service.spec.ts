@@ -12,6 +12,7 @@ function makeDb() {
     ysqProgress: createFakeTable(),
     ysqResult: createFakeTable(),
     ysqResultHistory: createFakeTable(),
+    userTask: createFakeTable(),
     // saveYsqResult вызывает $transaction с массивом промисов (batch-форма).
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
@@ -102,13 +103,36 @@ describe('YsqService.saveYsqResult — история накапливается
     // Голое toHaveBeenCalledTimes(1) прошло бы и если из транзакции
     // «выпала» одна из двух операций (result или history) — счётчик
     // вызовов $transaction не изменился бы. Проверяем форму аргумента:
-    // ровно 2 промиса (upsert результата + create истории).
+    // ровно 3 промиса (upsert результата + create истории + закрытие
+    // запроса терапевта).
     expect(db.$transaction).toHaveBeenCalledTimes(1);
     const opsArg = db.$transaction.mock.calls[0][0];
     expect(Array.isArray(opsArg)).toBe(true);
-    expect(opsArg).toHaveLength(2);
+    expect(opsArg).toHaveLength(3);
     expect(db.ysqResult.upsert).toHaveBeenCalledTimes(1);
     expect(db.ysqResultHistory.create).toHaveBeenCalledTimes(1);
+    expect(db.userTask.updateMany).toHaveBeenCalledTimes(1);
+  });
+
+  // QA 2026-11, К1: запрос терапевта — задание ysq_test. Пройденный тест
+  // закрывает его, с какого бы экрана тест ни проходили; чужие задания и
+  // задания другого типа не трогаются.
+  it('закрывает открытые задания «пройти тест» этого человека, и только их', async () => {
+    const db = makeDb();
+    const open = { type: 'ysq_test', done: null, completedAt: null };
+    db.userTask = createFakeTable([
+      { id: 1, userId: 1n, assignedBy: 7n, ...open },
+      { id: 2, userId: 1n, assignedBy: 7n, ...open, type: 'custom' },
+      { id: 3, userId: 2n, assignedBy: 7n, ...open },
+      { id: 4, userId: 1n, assignedBy: 8n, ...open, done: false },
+    ]);
+    await new YsqService(db).saveYsqResult(1n, [1]);
+    const done = async (id: number) =>
+      (await db.userTask.findUnique({ where: { id } }))?.done;
+    expect(await done(1)).toBe(true);
+    expect(await done(2)).toBeNull();
+    expect(await done(3)).toBeNull();
+    expect(await done(4)).toBe(false);
   });
 
   it('deleteYsqResult убирает текущий результат, но не трогает историю прохождений', async () => {
@@ -120,6 +144,55 @@ describe('YsqService.saveYsqResult — история накапливается
 
     expect(await svc.getYsqResult(1n)).toBeNull();
     expect(await svc.getYsqHistory(1n)).toHaveLength(1);
+  });
+});
+
+// Кнопка «Удалить результаты теста» в настройках (решение владельца
+// 2026-10-22): стирает всё про тест — итог, всю историю и незаконченный
+// прогресс — и только у этого человека. «Пройти заново» по-прежнему зовёт
+// deleteYsqResult (тест выше: история остаётся).
+describe('YsqService.deleteAllYsqData — итог, история и прогресс разом', () => {
+  it('после удаления ничего не читается: ни итог, ни история, ни прогресс', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+    await svc.saveYsqResult(1n, [1]);
+    await svc.saveYsqResult(1n, [2]);
+    await svc.saveYsqProgress(1n, [3], 1);
+
+    await svc.deleteAllYsqData(1n);
+
+    expect(await svc.getYsqResult(1n)).toBeNull();
+    expect(await svc.getYsqHistory(1n)).toEqual([]);
+    expect(await svc.getYsqProgress(1n)).toBeNull();
+  });
+
+  it('чужие данные теста остаются на месте', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+    await svc.saveYsqResult(1n, [1]);
+    await svc.saveYsqResult(2n, [5]);
+    await svc.saveYsqProgress(2n, [4], 2);
+
+    await svc.deleteAllYsqData(1n);
+
+    expect((await svc.getYsqResult(2n))?.answers).toEqual([5]);
+    expect(await svc.getYsqHistory(2n)).toHaveLength(1);
+    expect(await svc.getYsqProgress(2n)).toEqual({ answers: [4], page: 2 });
+  });
+
+  it('три удаления идут одной транзакцией и каждое — по userId', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+
+    await svc.deleteAllYsqData(7n);
+
+    // Без проверки формы аргумента прошло бы и удаление, из которого
+    // «выпала» одна таблица: счётчик $transaction тот же.
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
+    expect(db.$transaction.mock.calls[0][0]).toHaveLength(3);
+    for (const table of [db.ysqResult, db.ysqResultHistory, db.ysqProgress]) {
+      expect(table.deleteMany).toHaveBeenCalledWith({ where: { userId: 7n } });
+    }
   });
 });
 

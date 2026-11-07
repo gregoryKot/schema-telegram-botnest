@@ -1,16 +1,19 @@
 // @vitest-environment jsdom
-// Проводка «Открыть на холсте» в кабинете терапевта: кнопка на вкладке
+// Проводка «Открыть на холсте» в кабинете терапевта: пункт меню «⋯ Ещё» на вкладке
 // «Концептуализация» создаёт карту, кабинет переключается на «Карту режимов» и
 // просит селектор открыть именно её (initialMapId). Сам селектор — стаб с
 // печатью пропсов: его выбор карты проверен в ModeMapSelector.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom'; // вкладки кабинета живут в адресе (useClientTabRoute)
 import { TherapistClientSheet } from './TherapistClientSheet';
 
 vi.mock('../api', () => ({
   api: {
     getTherapyClients: vi.fn(),
+    getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    revokeTherapyInvite: vi.fn(),
     getTherapyTasksForClient: vi.fn(),
     getTherapistNotes: vi.fn(),
     getConceptualization: vi.fn(),
@@ -58,7 +61,7 @@ beforeEach(() => {
   mockApi.getClientModeNotes.mockResolvedValue([]);
   mockApi.getTherapyClientHistory.mockResolvedValue([]);
   mockApi.getClientDiary.mockResolvedValue([]);
-  mockApi.createModeMap.mockResolvedValue({ id: 55, title: 'x', kind: 'personality' });
+  mockApi.createModeMap.mockResolvedValue({ id: 55, title: 'x', kind: 'concept' });
   mockApi.updateModeMap.mockResolvedValue({});
 });
 afterEach(() => cleanup());
@@ -69,27 +72,29 @@ function Wrapper() {
 }
 
 describe('TherapistClientSheet — «Открыть на холсте»', () => {
-  it('создаёт карту, переключает на «Карту режимов» и просит селектор открыть именно её', async () => {
-    render(<Wrapper />);
+  it('создаёт карту, переключает на «Графические карты» и просит селектор открыть именно её', async () => {
+    render(<MemoryRouter><Wrapper /></MemoryRouter>);
     fireEvent.click(await screen.findByText('Анна'));
     await screen.findByText('Обзор');
     fireEvent.click(screen.getByText('Концептуализация'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Открыть на холсте' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ещё действия' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Открыть на холсте' }));
 
     const stub = await screen.findByTestId('selector-stub');
     expect(stub.textContent).toBe('client:7 initial:55');
     // карта сначала сохранена, потом показана: на холсте не пусто
     expect(mockApi.updateModeMap).toHaveBeenCalledWith(55, expect.objectContaining({ nodes: expect.any(Array) }));
-    expect(screen.queryByRole('button', { name: 'Открыть на холсте' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ещё действия' })).toBeNull();
   });
 
   it('отказ создания: остаёмся на вкладке с сообщением, селектор не открывается', async () => {
     mockApi.createModeMap.mockRejectedValue(new Error('500'));
-    render(<Wrapper />);
+    render(<MemoryRouter><Wrapper /></MemoryRouter>);
     fireEvent.click(await screen.findByText('Анна'));
     await screen.findByText('Обзор');
     fireEvent.click(screen.getByText('Концептуализация'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Открыть на холсте' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ещё действия' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Открыть на холсте' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.queryByTestId('selector-stub')).toBeNull();

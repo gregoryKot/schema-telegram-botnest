@@ -1,4 +1,5 @@
 import { hueStyle } from '../../lib/tone';
+import { DomainMark } from '../../components/DomainMark';
 import { FreqMark, FreqHint } from './FreqMark';
 import type { MineGroup } from './mineGroups';
 import type { WeekPatternKind } from '../../../../shared/src/pattern/patternsSummary';
@@ -16,7 +17,7 @@ interface Props {
 
 /**
  * «Мои схемы / Мои режимы» на телефоне, как в мини-аппе: группы подписью капсом со счётчиком,
- * внутри строки «название + статус карточки + частота», внизу «+ Добавить» пунктиром.
+ * внутри строки «название + статус карточки + частота», внизу «+ Добавить» (ds-btn--secondary ds-btn--lg, #906).
  * Одна механика на схемы и режимы.
  */
 export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, statusFor, freq }: Props) {
@@ -25,25 +26,22 @@ export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, 
       {freq && <FreqHint kind={kind} freq={freq} />}
       {groups.map(g => (
         <div key={g.id} className="cs-grp-wrap" style={hueStyle(g.hue)}>
-          <div className="cs-grp-head tone-ink"><span>{g.title}</span><span>{g.ids.length}</span></div>
+          <div className="cs-grp-head tone-ink"><span className="cs-grp-title">{kind === 'schema' && <DomainMark domainId={g.id} />}<span>{g.title}</span></span><span>{g.ids.length}</span></div>
           <div className="cs-grp tone-tint tone-border">
             {g.ids.map(id => {
               const name = nameOf(id);
               if (!name) return null;
               return (
-                <button key={id} className="cs-row" onClick={() => onOpen(id)}>
-                  <span className="cs-row-text">
-                    <span className="cs-row-name tone-ink">{name}</span>
-                    {statusFor && <span className="cs-row-sub">{statusFor(id)}</span>}
-                  </span>
-                  {freq && <FreqMark freq={freq[id] ?? 0} />}
+                <button key={id} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={() => onOpen(id)}>
+                  <span className="ds-list-body"><span className="ds-list-title tone-ink">{name}</span>{statusFor && <span className="ds-list-sub">{statusFor(id)}</span>}</span>
+                  <span className="cs-grp-right">{freq && <FreqMark freq={freq[id] ?? 0} />}<span className="ds-chev" aria-hidden="true" /></span>
                 </button>
               );
             })}
           </div>
         </div>
       ))}
-      <button className="cs-add" onClick={onAdd}>{addLabel}</button>
+      <button type="button" className="ds-btn ds-btn--secondary ds-btn--lg" onClick={onAdd}>{addLabel}</button>
     </section>
   );
 }

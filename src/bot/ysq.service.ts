@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptJson, decryptJson } from '../utils/crypto';
+import { YSQ_TASK_TYPE } from '../therapy/ysq-request';
 
 // Тест на схемы — прогресс прохождения и итоговые результаты.
 // Ответы (116 оценок 0–6) — клинический профиль схем, хранятся зашифрованным
@@ -50,8 +51,19 @@ export class YsqService {
     return { answers: decAnswers(r.answers), completedAt: r.completedAt };
   }
 
+  // Только итог — для «Пройти заново» (handleRetake): история остаётся.
   async deleteYsqResult(userId: bigint): Promise<void> {
     await this.prisma.ysqResult.deleteMany({ where: { userId } });
+  }
+
+  // «Удалить результаты теста» в настройках (решение владельца 2026-10-22):
+  // итог, вся история и прогресс — одной транзакцией, без половины.
+  async deleteAllYsqData(userId: bigint): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.ysqResult.deleteMany({ where: { userId } }),
+      this.prisma.ysqResultHistory.deleteMany({ where: { userId } }),
+      this.prisma.ysqProgress.deleteMany({ where: { userId } }),
+    ]);
   }
 
   async saveYsqResult(userId: bigint, answers: number[]): Promise<void> {
@@ -65,6 +77,13 @@ export class YsqService {
       }),
       this.prisma.ysqResultHistory.create({
         data: { userId, answers: enc, completedAt: now },
+      }),
+      // Тест пройден — запрос терапевта выполнен (задание ysq_test,
+      // therapy/ysq-request.ts): закрывается здесь, с какого бы экрана ни
+      // проходили тест.
+      this.prisma.userTask.updateMany({
+        where: { userId, type: YSQ_TASK_TYPE, done: null },
+        data: { done: true, completedAt: now },
       }),
     ]);
   }

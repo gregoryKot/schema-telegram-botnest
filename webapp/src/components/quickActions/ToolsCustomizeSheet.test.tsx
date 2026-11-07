@@ -36,7 +36,7 @@ describe('ToolsCustomizeSheet', () => {
     expect(screen.getByText('Карточки в «Инструментах»')).toBeTruthy();
     expect(screen.getByText('Разделы страницы')).toBeTruthy();
     expect(screen.getByText('3 цели')).toBeTruthy();
-    expect(screen.getByText('4 практики')).toBeTruthy();
+    expect(screen.getByText('4 действия')).toBeTruthy();
     expect(screen.getByText('История пуста')).toBeTruthy();
   });
 
@@ -44,7 +44,7 @@ describe('ToolsCustomizeSheet', () => {
     setup();
     expect(document.querySelectorAll('.cz-handle')).toHaveLength(6);
     expect(screen.queryByRole('button', { name: 'Переставить: Мои цели' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Переставить: Схема включилась' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Переставить: Мне плохо' })).toBeNull();
   });
 
   it('перестановка с клавиатуры: порядок в ключ, quick_action_move с surface tools, notifyPrefsChanged', () => {

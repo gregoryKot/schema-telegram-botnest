@@ -15,6 +15,7 @@ Allow: /offer
 Allow: /login
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -37,6 +38,7 @@ User-agent: OAI-SearchBot
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -58,6 +60,7 @@ User-agent: ChatGPT-User
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -79,6 +82,7 @@ User-agent: GPTBot
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -100,6 +104,7 @@ User-agent: ClaudeBot
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -121,6 +126,7 @@ User-agent: Claude-SearchBot
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -142,6 +148,7 @@ User-agent: Claude-User
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -163,6 +170,7 @@ User-agent: PerplexityBot
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -184,6 +192,7 @@ User-agent: Perplexity-User
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -205,6 +214,7 @@ User-agent: Google-Extended
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -226,6 +236,7 @@ User-agent: Applebot
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -247,6 +258,7 @@ User-agent: Applebot-Extended
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice
@@ -268,6 +280,7 @@ User-agent: YandexBot
 Allow: /
 Disallow: /today
 Disallow: /diary
+Disallow: /more
 Disallow: /schemas
 Disallow: /profile
 Disallow: /practice

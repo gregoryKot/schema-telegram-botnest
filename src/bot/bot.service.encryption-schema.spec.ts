@@ -1,12 +1,13 @@
 // Волна В mutation-покрытия (2026-08): getUserSettings/updateUserSettings
-// объявляют EncryptSchema { jsonArrays: ['mySchemaIds', 'myModeIds'] } inline
-// в обоих методах — read-after-write тест в bot.service.settings.spec.ts
-// проходит даже если Stryker вырежет одно поле из массива, потому что в
+// объявляют EncryptSchema { jsonArrays: ['mySchemaIds', 'myModeIds'] }
+// (запись — в user-settings-write.ts) — read-after-write тест в
+// bot.service.settings.spec.ts проходит даже если Stryker вырежет одно поле из массива, потому что в
 // тестах ENCRYPTION_KEY не задан и fake-Prisma хранит значение по ссылке
 // (round-trip совпадает без реального шифрования). Здесь мы шпионим за
 // реальными encryptRecord/decryptRecord и проверяем ТОЧНУЮ схему, которую
 // им передают — только так ловится мутант, укорачивающий jsonArrays.
 import * as crypto from '../utils/crypto';
+import * as cryptoRecord from '../utils/crypto-record';
 import { BotService } from './bot.service';
 
 describe('BotService — точная EncryptSchema для настроек (mySchemaIds/myModeIds)', () => {
@@ -29,15 +30,22 @@ describe('BotService — точная EncryptSchema для настроек (myS
   });
 
   it('updateUserSettings вызывает encryptRecord ровно с jsonArrays: [mySchemaIds, myModeIds]', async () => {
-    const spy = jest.spyOn(crypto, 'encryptRecord');
-    const db: any = { user: { update: jest.fn(() => Promise.resolve({})) } };
+    // Запись идёт через user-settings-write.ts (сначала guardOverwrite
+    // читает текущие списки), он берёт encryptRecord из crypto-record.
+    const spy = jest.spyOn(cryptoRecord, 'encryptRecord');
+    const db: any = {
+      user: {
+        findUnique: jest.fn(() => ({ mySchemaIds: null, myModeIds: null })),
+        update: jest.fn(() => Promise.resolve({})),
+      },
+    };
     const svc = new BotService(db);
 
     await svc.updateUserSettings(1n, { mySchemaIds: ['defectiveness'] });
 
     expect(spy).toHaveBeenCalledWith(
       { mySchemaIds: ['defectiveness'] },
-      { jsonArrays: ['mySchemaIds', 'myModeIds'] },
+      { model: 'user', jsonArrays: ['mySchemaIds', 'myModeIds'] },
     );
   });
 });

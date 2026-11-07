@@ -2,12 +2,24 @@ import type { SelfCheckResultEntry } from './state';
 
 /** Пока красно — напоминание не чаще раза в 6 часов (тот же ритм, что
  * caldav-health.ts REMIND_EVERY_MS). */
-const REMIND_EVERY_MS = 6 * 3_600_000;
+export const REMIND_EVERY_MS = 6 * 3_600_000;
+
+export const SELF_CHECK_RECOVERED =
+  '✅ Самопроверка снова зелёная — всё в порядке.';
+
+/** Текст DM об упавших пробах — один для решения по базе и по памяти. */
+export function formatSelfCheckAlert(failed: SelfCheckResultEntry[]): string {
+  const header =
+    failed.length === 1
+      ? '🚨 Самопроверка нашла проблему:'
+      : `🚨 Самопроверка нашла проблемы (${failed.length}):`;
+  return `${header}\n${failed.map((f) => `• ${f.title}: ${f.detail}`).join('\n')}`;
+}
 
 /**
- * Состояние алерта самопроверки — по образцу CalDavHealthTracker
- * (../../booking/caldav-health.ts) и DbOutageTracker (../logger/db-outage.ts):
- * ОДНО состояние на процесс, DM по смене состояния, не на каждый прогон.
+ * Запасное состояние алерта — ОДНО на процесс, DM по смене состояния. Основное
+ * решение живёт в базе (alert-dedup.ts): память процесса теряется на каждом
+ * деплое. Сюда решение откатывается, когда база недоступна.
  */
 export class SelfCheckAlertTracker {
   private open = false;
@@ -22,17 +34,15 @@ export class SelfCheckAlertTracker {
     this.lastAlertAt = null;
   }
 
-  /** Решает, нужен ли DM по итогам прогона. null — молчать (лог остаётся
-   * на вызывающем). */
+  /** Решает, нужен ли DM по итогам прогона. null — молчать. */
   noteResult(
     failed: SelfCheckResultEntry[],
     now: number = Date.now(),
   ): string | null {
     if (failed.length === 0) {
       const wasOpen = this.open;
-      this.open = false;
-      this.lastAlertAt = null;
-      return wasOpen ? '✅ Самопроверка снова зелёная — всё в порядке.' : null;
+      this.reset();
+      return wasOpen ? SELF_CHECK_RECOVERED : null;
     }
     const remind =
       this.open &&
@@ -41,12 +51,7 @@ export class SelfCheckAlertTracker {
     if (this.open && !remind) return null;
     this.open = true;
     this.lastAlertAt = now;
-    const header =
-      failed.length === 1
-        ? '🚨 Самопроверка нашла проблему:'
-        : `🚨 Самопроверка нашла проблемы (${failed.length}):`;
-    const lines = failed.map((f) => `• ${f.title}: ${f.detail}`);
-    return `${header}\n${lines.join('\n')}`;
+    return formatSelfCheckAlert(failed);
   }
 }
 

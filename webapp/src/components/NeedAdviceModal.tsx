@@ -1,5 +1,6 @@
 import { getTherapistContact } from '../utils/therapistContact';
 import { BottomSheetShell } from './BottomSheetShell';
+import { NeedArtLine } from './NeedArtLine';
 import { ExternalLink } from '../host/ExternalLink';
 
 // Оверлей «О советах» под шитами потребности — общий для NeedHistorySheet и
@@ -10,16 +11,17 @@ const DISCLAIMER_CONTENT = [
   'Если что-то важное требует внимания — терапия это место, где можно разобраться по-настоящему, рядом с живым человеком.',
 ];
 
-export function NeedAdviceModal({ onClose }: { onClose: () => void }) {
+export function NeedAdviceModal({ onClose, needId }: { onClose: () => void; needId?: string }) {
   const contact = getTherapistContact();
   return (
     <BottomSheetShell goBack={onClose} zIndex={300}>
+        {needId && <NeedArtLine id={needId} />}
         <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>О советах</div>
         {DISCLAIMER_CONTENT.map((p, i) => (
           <p key={i} style={{ fontSize: 15, color: 'var(--text-sub)', lineHeight: 1.7, marginBottom: 14 }}>{p}</p>
         ))}
-        {/* Терапевту не предлагаем ссылку на самого себя. */}
-        {!contact.isTherapist && (
+        {/* Терапевту не предлагаем ссылку на самого себя; без канала — некуда (З6). */}
+        {!contact.isTherapist && contact.url && (
           <ExternalLink href={contact.url} style={{ display: 'inline-block', fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
             → Записаться на консультацию</ExternalLink>
         )}

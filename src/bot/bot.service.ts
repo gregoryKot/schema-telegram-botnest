@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDate } from '../utils/tz';
+import { encrypt, decrypt, decryptRecord } from '../utils/crypto';
 import {
-  encrypt,
-  decrypt,
-  encryptRecord,
-  decryptRecord,
-} from '../utils/crypto';
+  writeUserSettings,
+  type UserSettingsPatch,
+} from './user-settings-write';
 
 export const NEED_IDS = [
   'attachment',
@@ -81,6 +80,11 @@ export class BotService {
     return localDate(tz, base);
   }
 
+  /** Сегодня юзера — в его поясе уведомлений (у сайта и мини-аппа это пояс устройства). */
+  async userToday(userId: bigint): Promise<string> {
+    return this.localDateString(await this.userTimezone(userId));
+  }
+
   private async userTimezone(userId: bigint): Promise<string> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -89,11 +93,11 @@ export class BotService {
     return user?.notifyTimezone ?? 'Europe/Moscow';
   }
 
-  async acceptDisclaimer(userId: bigint): Promise<void> {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { disclaimerAccepted: true },
-    });
+  // viaApp — экран согласий кабинета: он ещё и завершает онбординг (/stats).
+  async acceptDisclaimer(userId: bigint, viaApp = false): Promise<void> {
+    const done = viaApp ? { onboardingV2Done: true } : {};
+    const data = { disclaimerAccepted: true, ...done };
+    await this.prisma.user.update({ where: { id: userId }, data });
   }
 
   async hasAcceptedDisclaimer(userId: bigint): Promise<boolean> {
@@ -136,31 +140,9 @@ export class BotService {
     });
   }
 
-  async updateUserSettings(
-    userId: bigint,
-    data: {
-      notifyEnabled?: boolean;
-      notifyLocalHour?: number;
-      notifyTimezone?: string;
-      notifyReminderEnabled?: boolean;
-      notifyFrequency?: number;
-      notifyQuietStart?: number;
-      notifyQuietEnd?: number;
-      notifyGamified?: boolean;
-      notifyPausedUntil?: Date | null;
-      addressForm?: string;
-      pairCardDismissed?: boolean;
-      mySchemaIds?: string[];
-      myModeIds?: string[];
-      therapistShareCards?: boolean;
-      therapistShareProfile?: boolean;
-      uiPrefs?: Record<string, string>;
-    },
-  ) {
-    const enc = encryptRecord(data as Record<string, unknown>, {
-      jsonArrays: ['mySchemaIds', 'myModeIds'],
-    });
-    await this.prisma.user.update({ where: { id: userId }, data: enc });
+  // Нечитаемые mySchemaIds/myModeIds не перезаписываются — 409 (см. файл).
+  async updateUserSettings(userId: bigint, data: UserSettingsPatch) {
+    await writeUserSettings(this.prisma, userId, data);
   }
 
   async getNote(

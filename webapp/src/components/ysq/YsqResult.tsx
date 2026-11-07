@@ -7,6 +7,7 @@ import type { contactCta } from '../../utils/therapistContact';
 import { NEED_HUE, hueStyle } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import type { ResultView, SchemaInfo, SchemaScore, YsqHistoryEntry } from '../../hooks/useYsqTest';
+import { YsqNeedHead } from './YsqNeedHead';
 import { YsqSchemaCard } from './YsqSchemaCard';
 import { YsqInactiveList, YsqHistory } from './YsqExtras';
 import { SsHead } from '../schemaSheets/SsSheet';
@@ -43,13 +44,13 @@ export function YsqResult(p: Props) {
       {/* «Как понимать» + «Поделиться» — с самого верха (правило онбординга) */}
       <YsqResultTopBar tr={p.tr} onShare={p.onShare} onHelpOpen={() => api.trackEvent('ysq_help_open')} />
 
-      <SsHead title={activeLabel} lede={dateLabel ? `Пройдено ${dateLabel}` : undefined} />
+      <SsHead paperHue={70} title={activeLabel} lede={dateLabel ? `Пройдено ${dateLabel}` : undefined} />
 
       {activeCount === 0 && <p className="ss-body">Выраженных схем нет — отличный результат.</p>}
 
       {activeByDomain.map(domain => (
         <div key={domain.needId} className="ss-res" style={hueStyle(NEED_HUE[domain.needId as NeedId])}>
-          <div className="ds-chip tone-tint" style={{ alignSelf: 'flex-start' }}>{domain.label}</div>
+          <YsqNeedHead needId={domain.needId} label={domain.label} />
           {domain.schemas.map(schema => {
             const s = p.scores[schema.name];
             return (

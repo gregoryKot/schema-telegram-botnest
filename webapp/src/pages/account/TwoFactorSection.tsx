@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { TwoFactorScopeNote } from './TwoFactorScopeNote';
+import { RecoveryCodesCard } from './RecoveryCodesCard';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
-// Секция двухфакторной аутентификации (TOTP). Вынесено из AccountPage.tsx
-// (правило №10).
+// Секция двухфакторной аутентификации (TOTP), вынесена из AccountPage.tsx (правило №10).
 export function TwoFactorSection({
   accessToken, totp, onChanged,
 }: {
@@ -28,12 +29,12 @@ export function TwoFactorSection({
     setBusy(true); setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/auth/2fa/setup`, { method: 'POST', credentials: 'include', headers: csrfHeaders() });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Не удалось начать настройку');
+      if (!res.ok) throw new Error((await readHumanError(res, 'Не удалось начать настройку')).message);
       const data = await res.json() as { qrDataUrl: string; otpauthUrl: string };
       setQrDataUrl(data.qrDataUrl);
       setOtpauthUrl(data.otpauthUrl);
       setSetupOpen(true);
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не удалось начать настройку')); }
     finally { setBusy(false); }
   };
 
@@ -44,13 +45,13 @@ export function TwoFactorSection({
         method: 'POST', credentials: 'include', headers: csrfHeaders(),
         body: JSON.stringify({ code: code.trim() }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Неверный код');
+      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
       const data = await res.json() as { recoveryCodes: string[] };
       setRecoveryCodes(data.recoveryCodes);
       setCode('');
       setQrDataUrl(null);
       onChanged();
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не получилось проверить код')); }
     finally { setBusy(false); }
   };
 
@@ -61,30 +62,15 @@ export function TwoFactorSection({
         method: 'POST', credentials: 'include', headers: csrfHeaders(),
         body: JSON.stringify({ code: code.trim() }),
       });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Неверный код');
+      if (!res.ok) throw new Error((await readHumanError(res, 'Неверный код')).message);
       setCode('');
       setDisableMode(false);
       onChanged();
-    } catch (e) { setError(String(e).replace('Error: ', '')); }
+    } catch (e) { setError(humanizeThrown(e, 'Не получилось проверить код')); }
     finally { setBusy(false); }
   };
 
-  if (recoveryCodes) {
-    return (
-      <div className="ds-card aa-tfa">
-        <h2 className="ds-h3">Recovery-коды</h2>
-        <div className="aa-small">
-          {tr('Сохрани эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряешь телефон.', 'Сохраните эти коды в надёжном месте (пароль-менеджер). Каждый можно использовать один раз вместо TOTP-кода, если потеряете телефон.')}
-        </div>
-        <div className="aa-codes">
-          {recoveryCodes.map(c => <div key={c}>{c}</div>)}
-        </div>
-        <button onClick={() => setRecoveryCodes(null)} className="ds-btn ds-btn--secondary" style={{ alignSelf: 'flex-start' }}>
-          Готово, коды сохранены
-        </button>
-      </div>
-    );
-  }
+  if (recoveryCodes) return <RecoveryCodesCard codes={recoveryCodes} onDone={() => setRecoveryCodes(null)} />;
 
   const cancelSetup = () => { setSetupOpen(false); setQrDataUrl(null); setCode(''); setError(null); };
   const cancelDisable = () => { setDisableMode(false); setCode(''); setError(null); };
@@ -126,7 +112,7 @@ export function TwoFactorSection({
       {totp.enabled && !disableMode && (
         <div className="aa-recovery-row">
           <span style={{ color: 'var(--ok-ink)' }}>✓ Включена.</span>
-          <span className="muted">Recovery-кодов осталось: {totp.recoveryCodesLeft}</span>
+          <span className="muted">Резервных кодов осталось: {totp.recoveryCodesLeft}</span>
         </div>
       )}
 
@@ -153,7 +139,7 @@ export function TwoFactorSection({
             {tr('3. Введи 6-значный код из приложения, чтобы завершить.', '3. Введите 6-значный код из приложения, чтобы завершить.')}
           </div>
           <div className="aa-qr">
-            <img src={qrDataUrl} alt="TOTP QR" width={200} height={200} />
+            <img src={qrDataUrl} alt="QR-код для приложения-аутентификатора" width={200} height={200} />
           </div>
           {otpauthUrl && (
             <details className="aa-small">

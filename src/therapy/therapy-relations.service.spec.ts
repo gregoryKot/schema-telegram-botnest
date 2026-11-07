@@ -191,6 +191,7 @@ interface FullRel {
   clientId: bigint | null;
   status: string;
   code: string;
+  urlCode?: string;
   clientAlias?: string | null;
   virtualClientName?: string | null;
   createdAt?: Date;
@@ -209,21 +210,36 @@ interface FakeConcept {
   therapistId: bigint;
   clientId: bigint;
   schemaIds: string | string[] | null;
+  sharedWithClientAt?: Date | null;
 }
 
 interface Overview {
   streak: number;
   daysSince: number;
+  lastDate: string | null;
+  recentDays: string[];
   history: Array<{ date: string; ratings: Record<string, number> }>;
 }
+
+/** 14 календарных дней клиента от его «сегодня» назад — как ClientOverview. */
+const recentDaysFrom = (today: string): string[] =>
+  Array.from({ length: 14 }, (_, i) =>
+    new Date(Date.parse(`${today}T00:00:00Z`) - i * 86400000)
+      .toISOString()
+      .slice(0, 10),
+  );
 
 function relMatches(r: FullRel, where: any = {}): boolean {
   if (where.OR) return (where.OR as any[]).some((cond) => relMatches(r, cond));
   return (
-    (where.id === undefined || r.id === where.id) &&
+    (where.id === undefined ||
+      (where.id.in ? where.id.in.includes(r.id) : r.id === where.id)) &&
     (where.therapistId === undefined || r.therapistId === where.therapistId) &&
     (where.clientId === undefined || r.clientId === where.clientId) &&
-    (where.status === undefined || r.status === where.status)
+    (where.status === undefined ||
+      (where.status.in
+        ? where.status.in.includes(r.status)
+        : r.status === where.status))
   );
 }
 
@@ -253,6 +269,8 @@ function makeFullPrisma(
         rels
           .filter((r) => relMatches(r, where))
           .map((r) => withIncludes(r, include)),
+      count: async ({ where }: any) =>
+        rels.filter((r) => relMatches(r, where)).length,
       create: async ({ data }: any) => {
         const rel: FullRel = {
           clientId: null,
@@ -285,10 +303,22 @@ function makeFullPrisma(
         concepts
           .filter((c) => c.therapistId === where.therapistId)
           .map((c) => ({ clientId: c.clientId, schemaIds: c.schemaIds })),
+      // «Мой терапевт» клиента: показал ли терапевт схему случая.
+      findUnique: jest.fn(async ({ where }: any) => {
+        const key = where.therapistId_clientId;
+        const c = concepts.find(
+          (x) =>
+            x.therapistId === key.therapistId && x.clientId === key.clientId,
+        );
+        return c ? { sharedWithClientAt: c.sharedWithClientAt ?? null } : null;
+      }),
     },
     user: {
       findUnique: async ({ where }: any) => findUser(where.id),
     },
+    // disconnect: открытые задания терапевта становятся личными
+    // (end-client-relations.ts, своя сверка where — в его спеке).
+    userTask: { updateMany: jest.fn(async () => ({ count: 0 })) },
   };
 }
 
@@ -299,6 +329,7 @@ function makeFullService(
   overviews: Map<string, Overview> = new Map(),
 ) {
   const prisma: any = makeFullPrisma(rels, users, concepts);
+  prisma.$transaction = (fn: (tx: unknown) => unknown) => fn(prisma);
   // jest.fn(), не голая async-функция: часть новых тестов (мутационное
   // усиление, см. "getClients — batch-загрузка overview...") проверяет,
   // КАКИЕ id реально передаются в overview-сервис (jest.spyOn требует, чтобы
@@ -350,6 +381,32 @@ describe('createInvite — генерация кода приглашения', 
   });
 });
 
+// Инцидент 2026-10-26: «+ Новый клиент» с галочкой приглашения создавал
+// офлайн-карточку «Мария К.» и независимое приглашение — после подключения в
+// списке было две карточки. Теперь имя едет в приглашении, офлайн-карточки нет.
+describe('приглашение из «Новый клиент» — после подключения одна карточка с именем терапевта', () => {
+  it('createInvite(alias) → клиент подключился → getClients: ровно одна карточка, clientAlias = введённое имя', async () => {
+    const { service, rels } = makeFullService(
+      [],
+      [{ id: CLIENT, firstName: 'Мария', role: 'CLIENT' }],
+    );
+    const { code } = await service.createInvite(T1, 'Мария К.');
+    // До подключения карточки нет — приглашение ждёт в списке приглашений.
+    await expect(service.getClients(T1)).resolves.toEqual([]);
+    // Захват кода — как claimTherapyInvite (этот фейк не разбирает `{ not }`;
+    // подключение через HTTP целиком — test/therapy-invite.e2e-spec.ts).
+    const invite = rels.find((r) => r.code === code)!;
+    Object.assign(invite, { clientId: CLIENT, status: 'active' });
+    const clients = await service.getClients(T1);
+    expect(clients).toHaveLength(1);
+    expect(clients[0]).toMatchObject({
+      telegramId: CLIENT,
+      name: 'Мария',
+      clientAlias: 'Мария К.',
+    });
+  });
+});
+
 describe('getRelation — статус связи для терапевта и клиента', () => {
   it('нет связи — null', async () => {
     const { service } = makeFullService([]);
@@ -386,6 +443,7 @@ describe('getRelation — статус связи для терапевта и �
       partnerId: CLIENT,
       code: 'AAA111',
       nextSession: null,
+      meetingDays: [],
     });
     expect(spy).toHaveBeenCalledWith({
       where: { therapistId: T1, status: 'active' },
@@ -438,6 +496,8 @@ describe('getRelation — статус связи для терапевта и �
       partnerId: T1,
       code: 'AAA111',
       nextSession: '2026-08-01',
+      meetingDays: [],
+      conceptSharedAt: null,
     });
     // CLIENT терапевтом не выступает — связи со стороны терапевта не ищутся
     // вовсе (A-3): findFirst не зовётся, единственный запрос — findMany по
@@ -543,6 +603,8 @@ describe('getRelation — статус связи для терапевта и �
       partnerId: T2,
       code: 'NEW222',
       nextSession: '2026-11-01',
+      meetingDays: [],
+      conceptSharedAt: null,
     });
   });
 
@@ -584,6 +646,53 @@ describe('getRelation — статус связи для терапевта и �
     expect(info?.partnerName).toBeNull();
     expect(info?.partnerId).toBe(T1);
     expect(info?.nextSession).toBeNull();
+  });
+
+  // 2026-10-26: клиент видел прошедшую встречу («Сб, 17 октября» при 26-м) —
+  // nextSession после встречи никто не двигает. Ближайшую экраны клиента
+  // считают сами (shared upcomingSession), а для этого им нужны дни встреч.
+  it('клиент получает дни встреч своей связи, терапевт — пустой список', async () => {
+    const rel = {
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT,
+      status: 'active',
+      code: 'AAA111',
+      nextSession: '2026-10-17T07:00',
+      meetingDays: [6, 3],
+      createdAt: new Date(),
+    };
+    const users: FakeUser[] = [
+      { id: T1, firstName: 'Т', role: 'THERAPIST' },
+      { id: CLIENT, firstName: 'Аня' },
+    ];
+    const { service } = makeFullService([rel], users);
+    const asClient = await service.getRelation(CLIENT);
+    expect(asClient?.meetingDays).toEqual([6, 3]);
+    expect(asClient?.nextSession).toBe('2026-10-17T07:00'); // как в базе
+    expect((await service.getRelation(T1))?.meetingDays).toEqual([]);
+  });
+
+  it('битые дни встреч в Json-колонке: остаются только целые 0–6, не массив → []', async () => {
+    const withDays = (meetingDays: unknown) =>
+      makeFullService(
+        [
+          {
+            id: 1,
+            therapistId: T1,
+            clientId: CLIENT,
+            status: 'active',
+            code: 'AAA111',
+            meetingDays: meetingDays as number[],
+            createdAt: new Date(),
+          },
+        ],
+        [{ id: T1, firstName: 'Т', role: 'THERAPIST' }],
+      ).service.getRelation(CLIENT);
+    const garbage = [6, 7, -1, 2.5, '3', null, 0];
+    expect((await withDays(garbage))?.meetingDays).toEqual([6, 0]);
+    expect((await withDays({ 0: 1 }))?.meetingDays).toEqual([]);
+    expect((await withDays(null))?.meetingDays).toEqual([]);
   });
 
   // backend#33: строка, осиротевшая до статуса `ended` (терапевт вышел из
@@ -650,10 +759,65 @@ describe('getRelation — статус связи для терапевта и �
     );
     await expect(service.getRelation(CLIENT)).resolves.toBeNull();
   });
+
+  // Строка «Схема случая» в «Мой терапевт»: момент показа — из концептуализации
+  // ЭТОЙ пары (терапевт связи + сам клиент), чужая пара не считается.
+  it('клиент видит, что терапевт показал схему случая, — только своей пары', async () => {
+    const at = new Date('2026-11-06T10:00:00Z');
+    const rels: FullRel[] = [
+      {
+        id: 1,
+        therapistId: T1,
+        clientId: CLIENT,
+        status: 'active',
+        code: 'AAA111',
+        createdAt: new Date(),
+      },
+    ];
+    const users: FakeUser[] = [{ id: T1, firstName: 'Т', role: 'THERAPIST' }];
+    const foreign: FakeConcept = {
+      therapistId: T2,
+      clientId: CLIENT,
+      schemaIds: [],
+      sharedWithClientAt: at,
+    };
+    const hidden = makeFullService(
+      rels.map((r) => ({ ...r })),
+      users,
+      [foreign],
+    );
+    await expect(hidden.service.getRelation(CLIENT)).resolves.toMatchObject({
+      conceptSharedAt: null,
+    });
+
+    const own: FakeConcept = {
+      therapistId: T1,
+      clientId: CLIENT,
+      schemaIds: [],
+      sharedWithClientAt: at,
+    };
+    const shown = makeFullService(
+      rels.map((r) => ({ ...r })),
+      users,
+      [foreign, own],
+    );
+    await expect(shown.service.getRelation(CLIENT)).resolves.toMatchObject({
+      conceptSharedAt: at,
+    });
+    expect(
+      shown.prisma.clientConceptualization.findUnique,
+    ).toHaveBeenCalledWith({
+      where: { therapistId_clientId: { therapistId: T1, clientId: CLIENT } },
+      select: { sharedWithClientAt: true },
+    });
+  });
 });
 
-describe('disconnect — клиент разрывает свои связи', () => {
-  it('удаляет только связи, где userId — КЛИЕНТ; связи в роли терапевта остаются (T2, аудит 2026-10)', async () => {
+describe('disconnect — клиент отключается сам', () => {
+  const ended = (rels: FullRel[]) =>
+    rels.map((r: any) => `${r.code}:${r.status}:${r.endReason ?? '-'}`);
+
+  it('завершает только связи, где userId — КЛИЕНТ; связи в роли терапевта живы (T2, аудит 2026-10)', async () => {
     const relAsTherapist: FullRel = {
       id: 1,
       therapistId: T1,
@@ -675,13 +839,72 @@ describe('disconnect — клиент разрывает свои связи', (
       status: 'active',
       code: 'CCC333',
     };
-    const { service, rels } = makeFullService([
+    const { service, rels, prisma } = makeFullService([
       relAsTherapist,
       relAsClient,
       unrelated,
     ]);
     await service.disconnect(T1);
-    expect(rels).toEqual([relAsTherapist, unrelated]);
+    // Строка не удаляется (решение владельца 2026-11-05): ended + client_left.
+    expect(ended(rels)).toEqual([
+      'AAA111:active:-',
+      'BBB222:ended:client_left',
+      'CCC333:active:-',
+    ]);
+    expect(prisma.userTask.updateMany).toHaveBeenCalledWith({
+      where: { userId: T1, assignedBy: { in: [T2] }, done: null },
+      data: { assignedBy: null },
+    });
+  });
+
+  // Связь, завершённая отказом терапевта от роли, остаётся с прежней
+  // причиной: по ней клиент видит карты бывшего терапевта как историю
+  // (решение владельца 2026-10-22).
+  it('ended (терапевт отказался от роли) не трогается, живая и pending — ended с причиной client_left', async () => {
+    const resigned = {
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT,
+      status: 'ended',
+      code: 'E1',
+      endReason: 'therapist_resigned',
+    } as FullRel;
+    const live: FullRel = {
+      id: 2,
+      therapistId: T2,
+      clientId: CLIENT,
+      status: 'active',
+      code: 'L1',
+    };
+    const pending: FullRel = {
+      id: 3,
+      therapistId: T2,
+      clientId: CLIENT,
+      status: 'pending',
+      code: 'P1',
+    };
+    const { service, rels } = makeFullService([resigned, live, pending]);
+    await service.disconnect(CLIENT);
+    expect(ended(rels)).toEqual([
+      'E1:ended:therapist_resigned',
+      'L1:ended:client_left',
+      'P1:ended:client_left',
+    ]);
+  });
+
+  it('живых связей нет — ничего не меняется, задания не трогаются', async () => {
+    const resigned = {
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT,
+      status: 'ended',
+      code: 'E1',
+      endReason: 'therapist_resigned',
+    } as FullRel;
+    const { service, prisma, rels } = makeFullService([resigned]);
+    await service.disconnect(CLIENT);
+    expect(ended(rels)).toEqual(['E1:ended:therapist_resigned']);
+    expect(prisma.userTask.updateMany).not.toHaveBeenCalled();
   });
 });
 
@@ -689,6 +912,41 @@ describe('getClients — список клиентов терапевта', () =
   it('без связей — пустой список', async () => {
     const { service } = makeFullService([]);
     await expect(service.getClients(T1)).resolves.toEqual([]);
+  });
+
+  // Адрес карточки в кабинете — /cabinet/<urlCode>: без поля в ответе сайт
+  // молча вернулся бы к числовому адресу, который у офлайн-клиента меняется.
+  it('отдаёт код адреса карточки и подключённому, и офлайн-клиенту', async () => {
+    const at = new Date();
+    const { service } = makeFullService(
+      [
+        {
+          id: 1,
+          therapistId: T1,
+          clientId: CLIENT,
+          status: 'active',
+          code: 'AAA111',
+          urlCode: 'kdbgqafs',
+          createdAt: at,
+        },
+        {
+          id: 2,
+          therapistId: T1,
+          clientId: null,
+          status: 'active',
+          code: 'BBB222',
+          urlCode: 'mnpqrsgh',
+          virtualClientName: 'Офлайн',
+          createdAt: at,
+        },
+      ],
+      [{ id: CLIENT, firstName: 'Аня' }],
+    );
+    const list = await service.getClients(T1);
+    expect(list.map((c) => [String(c.telegramId), c.urlCode])).toEqual([
+      [String(CLIENT), 'kdbgqafs'],
+      ['-2', 'mnpqrsgh'],
+    ]);
   });
 
   // Мутационное усиление: where-фильтр `{ therapistId: tid, status: 'active' }`
@@ -790,6 +1048,8 @@ describe('getClients — список клиентов терапевта', () =
         {
           streak: 3,
           daysSince: 0,
+          lastDate: today,
+          recentDays: recentDaysFrom(today),
           history: [
             {
               date: today,
@@ -830,6 +1090,7 @@ describe('getClients — список клиентов терапевта', () =
     expect(client.name).toBe('Аня');
     expect(client.streak).toBe(3);
     expect(client.lastActiveDate).toBe(today);
+    expect(client.daysSinceActive).toBe(0);
     expect(client.todayIndex).toBe(7); // (5+6+7+8+9)/5 = 7
     expect(client.recentIndexHistory[0]).toBe(7);
     expect(client.recentIndexHistory[1]).toBeNull();
@@ -857,20 +1118,20 @@ describe('getClients — список клиентов терапевта', () =
     ]);
   });
 
-  // Мутационное усиление (L145/L153, ArithmeticOperator): при daysSince=0
-  // "вчера-минус" и "вчера-плюс" дают одну и ту же дату (умножение на 0),
-  // мутанты `+`/`/` вместо `-`/`*` не отличимы. Нужен ненулевой daysSince и
-  // непустая точка в истории на ненулевом смещении.
-  it('lastActiveDate и история 14 дней считаются от daysSince, а не «сегодня» (граница ненулевого смещения)', async () => {
-    const twoDaysAgo = new Date(Date.now() - 2 * 86400000)
-      .toISOString()
-      .slice(0, 10);
+  // lastActiveDate и точки истории берутся из дней клиента (lastDate,
+  // recentDays), а не пересчитываются от Date.now(): ненулевое смещение
+  // проверяет, что индекс i истории — это recentDays[i], а не «сегодня».
+  it('lastActiveDate, daysSinceActive и история 14 дней — из дней клиента (ненулевое смещение)', async () => {
+    const today = '2026-10-27';
+    const twoDaysAgo = '2026-10-25';
     const overviews = new Map<string, Overview>([
       [
         String(CLIENT),
         {
           streak: 1,
           daysSince: 2, // клиент последний раз отмечался 2 дня назад
+          lastDate: twoDaysAgo,
+          recentDays: recentDaysFrom(today),
           history: [
             {
               date: twoDaysAgo,
@@ -902,10 +1163,12 @@ describe('getClients — список клиентов терапевта', () =
       overviews,
     );
     const [client] = await service.getClients(T1);
-    expect(client.lastActiveDate).toBe(twoDaysAgo); // Date.now() - 2*86400000, не + и не /
+    expect(client.lastActiveDate).toBe(twoDaysAgo);
+    expect(client.daysSinceActive).toBe(2);
     expect(client.recentIndexHistory[2]).toBe(10); // индекс дня 2 дня назад найден по правильной дате
     expect(client.recentIndexHistory[0]).toBeNull(); // сегодня оценок нет
     expect(client.recentIndexHistory[1]).toBeNull(); // 1 день назад — тоже пусто
+    expect(client.todayIndex).toBeNull();
   });
 
   it('реальный клиент без записи в overview-карте — дефолты (streak 0, daysSince -1 → lastActiveDate null)', async () => {
@@ -925,7 +1188,9 @@ describe('getClients — список клиентов терапевта', () =
     const [client] = await service.getClients(T1);
     expect(client.streak).toBe(0);
     expect(client.lastActiveDate).toBeNull();
+    expect(client.daysSinceActive).toBeNull();
     expect(client.todayIndex).toBeNull();
+    expect(client.recentIndexHistory).toEqual(Array(14).fill(null));
     expect(client.meetingDays).toEqual([]); // rel.meetingDays не задан
     expect(client.nextSession).toBeNull();
     expect(client.schemaIds).toEqual([]); // конспектуализации нет
@@ -939,6 +1204,8 @@ describe('getClients — список клиентов терапевта', () =
         {
           streak: 1,
           daysSince: 0,
+          lastDate: today,
+          recentDays: recentDaysFrom(today),
           history: [{ date: today, ratings: { attachment: 5, autonomy: 6 } }],
         },
       ],
@@ -1254,6 +1521,26 @@ describe('renameClient — псевдоним клиента (alias)', () => {
     expect(foreignVirtual.clientAlias).toBeUndefined(); // чужая связь не тронута
   });
 
+  // QA 2026-10-26: удалённого офлайн-клиента «переименовывали» — updateMany
+  // на 0 строк считался успехом, ручка отвечала 201.
+  it('удалённый офлайн-клиент или чужой клиент — бросает No active relation, ничего не пишет', async () => {
+    const foreign: FullRel = {
+      id: 2,
+      therapistId: T2,
+      clientId: CLIENT,
+      status: 'active',
+      code: 'BBB222',
+    };
+    const { service } = makeFullService([foreign]);
+    await expect(service.renameClient(T1, -142n, 'Имя')).rejects.toThrow(
+      'No active relation',
+    );
+    await expect(service.renameClient(T1, CLIENT, 'Имя')).rejects.toThrow(
+      'No active relation',
+    );
+    expect(foreign.clientAlias).toBeUndefined();
+  });
+
   it('пустой/пробельный alias — очищает clientAlias (null)', async () => {
     const rel: FullRel = {
       id: 1,
@@ -1305,7 +1592,7 @@ describe('renameClient — псевдоним клиента (alias)', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Реальное шифрование PII (decName / virtualClientName) — мутанты L10/L213
+// Реальное шифрование PII (decryptName / virtualClientName) — мутанты L10/L213
 // (`decrypt(v) ?? v` / `encrypt(x) ?? x`, заменённые на `&&`). Весь остальной
 // файл намеренно работает в дев-режиме без ENCRYPTION_KEY, где encrypt()
 // тождественна ("Ключ шифрования не задан" в шапке файла) — там decrypt(v)
@@ -1345,6 +1632,15 @@ function loadWithRealEncryption(): {
 }
 
 describe('расшифровка PII при реально настроенном ENCRYPTION_KEY', () => {
+  it('createInvite(alias): имя в приглашении сохраняется ЗАШИФРОВАННЫМ', async () => {
+    const { Service, crypto } = loadWithRealEncryption();
+    const rels: FullRel[] = [];
+    const service = new Service(makeFullPrisma(rels, [], []) as any, {} as any);
+    await service.createInvite(T1, 'Мария К.');
+    expect(rels[0].clientAlias).not.toBe('Мария К.');
+    expect(crypto.decrypt(rels[0].clientAlias ?? null)).toBe('Мария К.');
+  });
+
   it('getClients: clientAlias — расшифрованное значение, а не сырой шифротекст', async () => {
     const { Service, crypto } = loadWithRealEncryption();
     const ciphertext = crypto.encrypt('Настоящий алиас');

@@ -459,3 +459,47 @@ describe('TherapyNotesService.getConceptualization — legacy-строки бе�
     expect(loaded!.schemaLinks).toEqual([]);
   });
 });
+
+// «Делали сегодня» (#995): отметки техник — поле `done` связи режима и схемы.
+// Сохранил → нашёл, шифротекстом в «БД», переживают снимок истории.
+describe('TherapyNotesService.saveConceptualization — отметки техник (done)', () => {
+  const done = [
+    { techniqueId: 'chairwork', day: '2026-11-05' },
+    { techniqueId: 'imagery_rescripting', day: '2026-11-07' },
+  ];
+  const modeLinks = [{ ...LINKS[0], done }];
+  const schemaLinks = [
+    {
+      schemaId: 'defectiveness',
+      belief: 'Со мной что-то не так',
+      origin: '',
+      needIds: [],
+      done: [done[0]],
+    },
+  ];
+
+  it('сохранил отметки режима и схемы → getConceptualization вернул их же', async () => {
+    const { service, concept } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, { modeLinks, schemaLinks });
+    expect(concept.row.modeLinks).not.toContain('chairwork');
+    expect(concept.row.schemaLinks).not.toContain('chairwork');
+
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.modeLinks).toEqual(modeLinks);
+    expect(loaded!.schemaLinks).toEqual(schemaLinks);
+  });
+
+  it('снапшот истории несёт прежние отметки', async () => {
+    const { service } = makeKeyedService([activeRel]);
+    await service.saveConceptualization(T1, CLIENT, { modeLinks, schemaLinks });
+    await service.saveConceptualization(T1, CLIENT, {
+      modeLinks: [LINKS[0]],
+      schemaLinks: [],
+    });
+
+    const loaded = await service.getConceptualization(T1, CLIENT);
+    expect(loaded!.modeLinks).toEqual([LINKS[0]]);
+    expect(loaded!.history[0].modeLinks).toEqual(modeLinks);
+    expect(loaded!.history[0].schemaLinks).toEqual(schemaLinks);
+  });
+});

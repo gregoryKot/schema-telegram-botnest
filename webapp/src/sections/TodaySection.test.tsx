@@ -1,26 +1,14 @@
 // @vitest-environment jsdom
-// Компонентные тесты TodaySection (главный экран «Сегодня»): реальные оценки
-// потребностей (без хардкод-заглушек), скелетон загрузки последних записей,
-// ты/вы-вилка в подписи стрика, черновики дневника, ошибки API не роняют
-// экран, оверлей «Все задания», кабинет терапевта.
+// Главная «Сегодня»: три плитки (трекер / Что случилось / дневник) и «Зачем это?»,
+// больше ничего (владелец 2026-11-05). Задания — sections/tasks/TasksHub.test.tsx,
+// мост к терапевту — MoreSection.test.tsx. Только реальные данные: на чистом
+// аккаунте — «Ещё не заполнен», а не выдуманные цифры.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { TodaySection } from './TodaySection';
-import { saveDraft, clearDraft } from '../utils/drafts';
-import { MY_SCHEMA_IDS_KEY } from '../utils/storageKeys';
-import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
-
-/** Дата N дней назад от реального «сегодня» теста (без хардкода абсолютной даты). */
-function daysAgoStr(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+import { WHY_SEEN_KEY } from './today/whySeen';
 
 vi.mock('../components/exercises/FlashcardEx', () => ({
   SchemaEx: (p: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void }) => (
@@ -38,6 +26,28 @@ vi.mock('../components/exercises/FlashcardEx', () => ({
     </div>
   ),
 }));
+vi.mock('../components/caseFlow/CaseFlowHost', () => ({
+  CaseFlowHost: (p: { start: string; onClose: () => void }) => (
+    <div data-testid="case-flow">
+      <span data-testid="case-flow-start">{p.start}</span>
+      <button onClick={p.onClose}>Закрыть разбор</button>
+    </div>
+  ),
+}));
+vi.mock('../components/HomeScreenOfferCard', () => ({ HomeScreenOfferCard: () => null }));
+
+// Упражнения, которые открывают задания (TaskExerciseHost): заглушка с
+// «Назад» и «Сохранить», чтобы видеть, ЧТО открылось и закрылось ли задание.
+const exStub = (id: string) => (p: { onBack?: () => void; onClose?: () => void; onComplete?: () => void }) => (
+  <div data-testid={id}>
+    <button onClick={p.onBack ?? p.onClose}>Назад</button>
+    <button onClick={() => p.onComplete?.()}>Сохранить упражнение</button>
+  </div>
+);
+vi.mock('../components/exercises/BeliefCheckEx', () => ({ BeliefCheckEx: exStub('belief-ex') }));
+vi.mock('../components/exercises/LetterEx', () => ({ LetterEx: exStub('letter-ex') }));
+vi.mock('../components/exercises/SafePlaceEx', () => ({ SafePlaceEx: exStub('safe-ex') }));
+vi.mock('../components/SchemaFlashcard', () => ({ SchemaFlashcard: exStub('flashcard-ex') }));
 
 vi.mock('../api', () => ({
   api: {
@@ -45,14 +55,13 @@ vi.mock('../api', () => ({
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
-    getTherapyRelation: vi.fn(),
     history: vi.fn(),
     getTasks: vi.fn(),
     getTaskHistory: vi.fn(),
     completeTask: vi.fn(),
     createTask: vi.fn(),
     trackEvent: vi.fn(),
-    getHealthyPhrase: vi.fn().mockResolvedValue({ text: null }),
+    updateSettings: vi.fn().mockResolvedValue(undefined),
   },
   reportClientError: vi.fn(),
 }));
@@ -67,16 +76,16 @@ const NEEDS = [
   { id: 'play',       emoji: '🎈', title: 'Радость',      chartLabel: 'Радость' },
   { id: 'limits',     emoji: '🚧', title: 'Границы',      chartLabel: 'Границы' },
 ];
+const ALL_RATED = { attachment: 6, autonomy: 6, expression: 6, play: 6, limits: 6 };
 
-function profile(overrides: Partial<{ streak: number; name: string | null; mySchemaIds: string[]; activeSchemaIds: string[] }> = {}) {
+function profile(name: string | null = null) {
   return {
-    name: overrides.name ?? null, role: 'CLIENT' as const,
-    ysq: { completedAt: null, activeSchemaIds: overrides.activeSchemaIds ?? [] },
+    name, role: 'CLIENT' as const,
+    ysq: { completedAt: null, activeSchemaIds: [] },
     notifications: { enabled: false, reminderEnabled: false, timezone: 'UTC', localHour: 9 },
-    streak: overrides.streak ?? 0,
+    streak: 0,
     lastActivity: { needsTracker: null, schemaDiary: null, modeDiary: null, gratitudeDiary: null },
-    mySchemaIds: overrides.mySchemaIds ?? [],
-    myModeIds: [],
+    mySchemaIds: [], myModeIds: [],
   };
 }
 
@@ -89,36 +98,36 @@ function task(overrides: Partial<{ id: number; assignedBy: number | null; type: 
   };
 }
 
-function renderSection(props: Partial<{ ratings: Record<string, number>; yesterdayRatings: Record<string, number>; userRole: 'CLIENT' | 'THERAPIST'; onOpenTherapistCabinet: () => void }> = {}, form: 'ty' | 'vy' = 'ty') {
+const onOpenTracker = vi.fn();
+
+function renderSection(props: Partial<{ ratings: Record<string, number>; refreshKey: number }> = {}, form: 'ty' | 'vy' = 'ty') {
   return render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
       <MemoryRouter>
         <TodaySection
           needs={NEEDS}
           ratings={props.ratings ?? {}}
-          yesterdayRatings={props.yesterdayRatings}
-          onNavigate={vi.fn()}
+          refreshKey={props.refreshKey}
           onOpenSchema={vi.fn()}
-          onOpenAdvanced={vi.fn()}
-          onOpenTracker={vi.fn()}
-          onOpenDiaries={vi.fn()}
-          onOpenChildhoodWheel={vi.fn()}
-          userRole={props.userRole}
-          onOpenTherapistCabinet={props.onOpenTherapistCabinet}
+          onOpenTracker={onOpenTracker}
         />
       </MemoryRouter>
     </AddressFormContext.Provider>,
   );
 }
 
+const nowIso = () => new Date().toISOString();
+const daysAgoIso = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  // Возвращающийся пользователь по умолчанию: «Зачем это всё» уже видел, лист не мешает.
+  localStorage.setItem(WHY_SEEN_KEY, '1');
   mockApi.getProfile.mockResolvedValue(profile());
   mockApi.getSchemaDiary.mockResolvedValue([]);
   mockApi.getModeDiary.mockResolvedValue([]);
   mockApi.getGratitudeDiary.mockResolvedValue([]);
-  mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.history.mockResolvedValue([]);
   mockApi.getTasks.mockResolvedValue([]);
   mockApi.getTaskHistory.mockResolvedValue([]);
@@ -130,516 +139,179 @@ afterEach(() => {
   cleanup();
 });
 
-describe('TodaySection — пустой аккаунт (без хардкод-заглушек)', () => {
-  it('без оценок индекс дня "–", а не выдуманное число', async () => {
+describe('TodaySection — пустой аккаунт: ничего выдуманного', () => {
+  it('три плитки с честными подписями и больше ничего: ни ленты, ни заданий, ни «Подышим»', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, type: 'custom', text: 'Задание терапевта' })]);
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Индекс сегодня')).toBeTruthy();
-    expect(screen.getAllByText('–').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Трекер/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Что случилось/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Дневник/ })).toBeTruthy();
+    expect(screen.getByText('Ещё не заполнен · ≈1 мин')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
+    await screen.findByText('Пока записей нет');
+    expect(screen.getAllByRole('button')).toHaveLength(4); // три плитки и «Зачем это?»
+    expect(screen.queryByText(/Пока ничего/)).toBeNull();
+    expect(screen.queryByText('Задание терапевта')).toBeNull();
+    expect(screen.queryByText(/Подышим/)).toBeNull();
+    expect(screen.queryByText(/самопомощь, не замена терапии/)).toBeNull();
+    expect(mockApi.getTasks).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toMatch(/NaN|undefined/);
   });
 
-  it('без записей — нейтральная подсказка вместо пустого списка', async () => {
+  it('приветствие: с именем из профиля — «Привет, Анна», без имени — «Привет»', async () => {
+    mockApi.getProfile.mockResolvedValue(profile('Анна Иванова'));
     renderSection();
-    await screen.findByText('Замечать моменты, когда схема активируется – главная практика');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Привет, Анна' })).toBeTruthy();
+    cleanup();
+    mockApi.getProfile.mockResolvedValue(profile(null));
+    renderSection();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Привет');
+  });
+
+  it('пока дневники грузятся — плашка вместо подписи дневника, а не выдуманная подпись', () => {
+    mockApi.getSchemaDiary.mockReturnValue(new Promise(() => {}));
+    renderSection();
+    expect(screen.queryByText('Пока записей нет')).toBeNull();
+    expect(document.querySelector('.pp-meta--skeleton')).toBeTruthy();
   });
 });
 
-describe('TodaySection — скелетон "последних записей"', () => {
-  it('пока грузятся дневники — скелетон-строки, не пустой текст и не готовый список', async () => {
-    let resolveAll!: () => void;
-    mockApi.getGratitudeDiary.mockReturnValue(new Promise(r => { resolveAll = () => r([]); }));
-    const { container } = renderSection();
-
-    expect(screen.queryByText('Замечать моменты, когда схема активируется – главная практика')).toBeNull();
-    expect(container.querySelectorAll('.ct-section').length).toBeGreaterThan(0);
-
-    resolveAll();
-    await screen.findByText('Замечать моменты, когда схема активируется – главная практика');
+describe('TodaySection — плитка трекера по реальным оценкам', () => {
+  it('2 из 5 — «Заполнено 2 из 5 · продолжить»', () => {
+    renderSection({ ratings: { attachment: 4, play: 7 } });
+    expect(screen.getByText('Заполнено 2 из 5 · продолжить')).toBeTruthy();
+    expect(screen.getByText('Продолжить →')).toBeTruthy();
   });
+
+  it('все пять — «Готово · индекс 6,0»', () => {
+    renderSection({ ratings: ALL_RATED });
+    expect(screen.getByText('Готово · индекс 6,0')).toBeTruthy();
+    expect(screen.getByText('Посмотреть сегодня →')).toBeTruthy();
+  });
+
+  it('полоски картинки плотные только у оценённых потребностей', () => {
+    const { container } = renderSection({ ratings: { attachment: 4 } });
+    const strokes = container.querySelectorAll('.ct-main [data-need]');
+    expect(strokes).toHaveLength(5);
+    expect(container.querySelectorAll('.ct-main [data-rated="yes"]')).toHaveLength(1);
+  });
+
+  it('клик по плитке открывает трекер и шлёт home_tile', () => {
+    renderSection();
+    fireEvent.click(screen.getByRole('button', { name: /Трекер/ }));
+    expect(onOpenTracker).toHaveBeenCalledTimes(1);
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'tracker' });
+  });
+
 });
 
-describe('TodaySection — реальные оценки потребностей', () => {
-  it('индекс считается из реальных ratings, а не заглушки', async () => {
-    renderSection({ ratings: { attachment: 8, autonomy: 6, expression: 4, play: 10, limits: 2 } });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    // avg = (8+6+4+10+2)/5 = 6.0
-    await screen.findByText('6.0');
-  });
-
-  it('частично заполненные ratings не считают индекс (allRated=false) — "–"', async () => {
-    renderSection({ ratings: { attachment: 8 } });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getAllByText('–').length).toBeGreaterThan(0);
-  });
-
-  it('дельта к вчера показывает реальную разницу, а не выдуманную', async () => {
-    renderSection({
-      ratings: { attachment: 8, autonomy: 6, expression: 4, play: 10, limits: 2 },
-      yesterdayRatings: { attachment: 5 },
-    });
-    await screen.findByText('↑3');
-  });
-});
-
-describe('TodaySection — ты/вы вилка (стрик)', () => {
-  it('на «ты» без стрика показывает "Оцени потребности..."', async () => {
-    renderSection({}, 'ty');
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Оцени потребности – начнётся стрик')).toBeTruthy();
-  });
-
-  it('на «вы» без стрика — "Оцените потребности...", без "ты"-формы', async () => {
-    renderSection({}, 'vy');
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Оцените потребности – начнётся стрик')).toBeTruthy();
-    expect(screen.queryByText('Оцени потребности – начнётся стрик')).toBeNull();
-  });
-
-  it('с реальным стриком из профиля показывает число дней подряд', async () => {
-    mockApi.getProfile.mockResolvedValue(profile({ streak: 5 }));
+describe('TodaySection — плитка дневника', () => {
+  it('в дневнике режимов есть запись за сегодня — плитка «Что случилось» без счёта, только обещание', async () => {
+    mockApi.getModeDiary.mockResolvedValue([{ id: 3, situation: 'запись', createdAt: nowIso() }]);
     renderSection();
-    await screen.findByText('5');
-    expect(screen.getByText('дней подряд')).toBeTruthy();
+    expect(await screen.findByText('Сегодня 1 запись')).toBeTruthy();
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
+    expect(screen.queryByText(/Сегодня разобран/)).toBeNull();
   });
-});
 
-describe('TodaySection — ошибки API не роняют экран', () => {
-  it('ошибка getProfile — экран остаётся рабочим с дефолтными значениями', async () => {
-    mockApi.getProfile.mockRejectedValue(new Error('network down'));
+  it('плитка дневника открывает «Дневник одной страницей», а не список дневников', async () => {
     renderSection();
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.getByText('Потребности сегодня')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Дневник/ }));
+    expect(screen.getByRole('heading', { name: 'Что на уме?' })).toBeTruthy();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'diary' });
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Что на уме?' })).toBeNull());
   });
 
-  it('ошибка history не роняет экран — блок индекса остаётся без графика', async () => {
-    mockApi.history.mockRejectedValue(new Error('network down'));
-    renderSection();
-    await waitFor(() => expect(mockApi.history).toHaveBeenCalled());
-    expect(screen.getByText('Индекс сегодня')).toBeTruthy();
-  });
-
-  // РЕГРЕССИЯ (check-silent-catch): фоновые загрузки экрана «Сегодня» раньше
-  // глотали отказ молча (.catch(() => {})) — экран выглядел рабочим, но
-  // отказ не был виден нигде. Теперь каждый фоновый источник шлёт
-  // reportClientError, не показывая пользователю ошибку (экран по-прежнему
-  // работает с фолбэками — см. тесты выше).
-  it('отказ любого фонового источника уходит в reportClientError, не показывая ошибку на экране', async () => {
-    mockApi.getProfile.mockRejectedValue(new Error('network down'));
-    mockApi.getTherapyRelation.mockRejectedValue(new Error('network down'));
-    mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
-    mockApi.history.mockRejectedValue(new Error('network down'));
+  it('сбой любого дневника не роняет экран и уходит в отчёт', async () => {
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('500'));
     renderSection();
     await waitFor(() => expect(mockReport).toHaveBeenCalled());
-    const sections = mockReport.mock.calls.map((c) => c[0].section);
-    expect(sections.every((s) => s === 'today')).toBe(true);
-    expect(mockReport.mock.calls.length).toBeGreaterThanOrEqual(4);
-    expect(screen.getByText('Потребности сегодня')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Дневник/ })).toBeTruthy();
   });
-});
 
-describe('TodaySection — черновики дневника', () => {
-  it('незаконченный черновик схемы показывает баннер, продолжить открывает дневники', async () => {
-    saveDraft('schema', { trigger: 'триггер-черновик' });
-    const onOpenDiaries = vi.fn();
-    render(
+  it('refreshKey: смена ключа перечитывает дневники (сохранил → нашёл)', async () => {
+    const view = renderSection({ refreshKey: 0 });
+    await screen.findByText('Пока записей нет');
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'новая запись', schemaIds: ['abandonment'], emotions: [], createdAt: nowIso() }]);
+    view.rerender(
       <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
         <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={onOpenDiaries}
-            onOpenChildhoodWheel={vi.fn()}
-          />
+          <TodaySection needs={NEEDS} ratings={{}} refreshKey={1} onOpenSchema={vi.fn()} onOpenTracker={onOpenTracker} />
         </MemoryRouter>
       </AddressFormContext.Provider>,
     );
-
-    await screen.findByText('Незаконченные записи');
-    fireEvent.click(screen.getByText('продолжить →'));
-    expect(onOpenDiaries).toHaveBeenCalled();
-    clearDraft('schema');
+    expect(await screen.findByText('Сегодня 1 запись')).toBeTruthy();
   });
 });
 
-describe('TodaySection — задачи (практики на сегодня)', () => {
-  it('активные задачи считаются и открывают оверлей "Все задания" при >5', async () => {
-    mockApi.getTasks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, text: `Задача ${i + 1}` })));
+describe('TodaySection — «Что случилось»', () => {
+  it('плитка открывает поток; закрытие перечитывает дневники, плитка считает разбор за сегодня', async () => {
+    mockApi.getModeDiary.mockResolvedValue([{ id: 1, situation: 'давний', createdAt: daysAgoIso(3) }]);
     renderSection();
+    await screen.findByText('Последняя запись — 3 дн. назад');
+    fireEvent.click(screen.getByRole('button', { name: /Что случилось/ }));
+    expect((await screen.findByTestId('case-flow-start')).textContent).toBe('flow');
+    expect(screen.getByText('≈3 мин')).toBeTruthy();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'case' });
 
-    await screen.findByText('6 активных');
-    fireEvent.click(screen.getByText('Все задания (6) →'));
-    await screen.findByText('Все задания');
+    mockApi.getModeDiary.mockResolvedValue([
+      { id: 1, situation: 'давний', createdAt: daysAgoIso(3) },
+      { id: 2, situation: 'только что', createdAt: nowIso(), fromCase: true },
+    ]);
+    fireEvent.click(screen.getByText('Закрыть разбор'));
+    await waitFor(() => expect(screen.queryByTestId('case-flow')).toBeNull());
+    expect(await screen.findByText('Сегодня: 1 разбор')).toBeTruthy();
+    // QA 2026-11, М1: разбор — не запись дневника; «Записи» относят его к «Случаям».
+    expect(screen.getByText('Последняя запись — 3 дн. назад')).toBeTruthy();
+    expect(screen.queryByText('Сегодня 1 запись')).toBeNull();
   });
 
-  it('выполненная задача от терапевта помечена чертой и без кнопки "начать"', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, text: 'От терапевта', done: true })]);
+  // QA 2026-11, М1: «Просто мысль» на главной была «Схема», в «Записях» — «Мысль».
+});
+
+describe('TodaySection — «Зачем это?» и первый вход', () => {
+  it('новичку лист открывается сам один раз, после «Понятно» — флаг и больше не появляется', async () => {
+    localStorage.removeItem(WHY_SEEN_KEY);
     renderSection();
-
-    await screen.findByText('От терапевта');
-    // Раздел "Практики на сегодня" показан только если есть активные ИЛИ выполненные задачи.
-    expect(screen.getByText('Практики на сегодня')).toBeTruthy();
-  });
-});
-
-describe('TodaySection — кабинет терапевта', () => {
-  it('userRole=THERAPIST с onOpenTherapistCabinet показывает ссылку в кабинет', async () => {
-    const onOpenTherapistCabinet = vi.fn();
-    renderSection({ userRole: 'THERAPIST', onOpenTherapistCabinet });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-
-    fireEvent.click(screen.getByText('Кабинет терапевта'));
-    expect(onOpenTherapistCabinet).toHaveBeenCalled();
-  });
-
-  it('userRole=CLIENT не показывает ссылку в кабинет терапевта', async () => {
-    renderSection({ userRole: 'CLIENT' });
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    expect(screen.queryByText('Кабинет терапевта')).toBeNull();
-  });
-});
-
-describe('TodaySection — refreshKey: смена ключа снова показывает скелетон дневников (read-after-write)', () => {
-  it('после смены refreshKey профиль и дневники перезагружаются с нуля', async () => {
-    const { rerender } = render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
-            onOpenChildhoodWheel={vi.fn()} refreshKey={1}
-          />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-    await screen.findByText('Замечать моменты, когда схема активируется – главная практика');
-
-    mockApi.getGratitudeDiary.mockReturnValue(new Promise(() => {}));
-    rerender(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
-            onOpenChildhoodWheel={vi.fn()} refreshKey={2}
-          />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-    // Скелетон снова показан — состояние действительно сбросилось, а не
-    // осталось «старым готовым» списком.
-    expect(screen.queryByText('Замечать моменты, когда схема активируется – главная практика')).toBeNull();
-  });
-});
-
-describe('TodaySection — mySchemaIds из профиля синхронизируются в localStorage (правило №4)', () => {
-  it('непустой mySchemaIds из профиля пишется в MY_SCHEMA_IDS_KEY', async () => {
-    mockApi.getProfile.mockResolvedValue(profile({ mySchemaIds: ['abandonment', 'mistrust'] }));
+    expect(await screen.findByText('Первый раз здесь')).toBeTruthy();
+    await act(async () => { await Promise.resolve(); }); // запись истории листа успевает лечь до клика
+    fireEvent.click(screen.getByText('Понятно, начнём'));
+    await waitFor(() => expect(screen.queryByText('Первый раз здесь')).toBeNull());
+    expect(localStorage.getItem(WHY_SEEN_KEY)).toBe('1');
+    cleanup();
     renderSection();
-    await waitFor(() =>
-      expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]')).toEqual(['abandonment', 'mistrust']),
-    );
+    await screen.findByText('Пока записей нет');
+    expect(screen.queryByText('Первый раз здесь')).toBeNull();
   });
-});
 
-describe('TodaySection — «Последние записи»: реальные записи схем/режимов/благодарностей отсортированы по времени', () => {
-  it('показывает реальные записи (не пустое состояние), самая свежая — первой', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([{ trigger: 'коллега не ответил', createdAt: '2026-01-01T09:00:00Z' }]);
-    mockApi.getModeDiary.mockResolvedValue([{ situation: 'опоздал на встречу', createdAt: '2026-01-02T10:00:00Z' }]);
-    mockApi.getGratitudeDiary.mockResolvedValue([{ items: ['утренний кофе'], date: '2026-01-03' }]);
+  it('пока профиль не загрузился, лист не показывается (не мигает поверх скелетона)', () => {
+    localStorage.removeItem(WHY_SEEN_KEY);
+    mockApi.getProfile.mockReturnValue(new Promise(() => {}));
     renderSection();
-
-    await screen.findByText('опоздал на встречу');
-    expect(screen.getByText('коллега не ответил')).toBeTruthy();
-    expect(screen.getByText('утренний кофе')).toBeTruthy();
-    expect(screen.queryByText('Замечать моменты, когда схема активируется – главная практика')).toBeNull();
+    expect(screen.queryByText('Первый раз здесь')).toBeNull();
   });
-});
 
-describe('TodaySection — индекс дня: спарклайн из реальной истории (не заглушка)', () => {
-  it('7 дней с ненулевыми оценками (включая сегодня) — спарклайн виден с подписью «7 дней»', async () => {
-    // Сегодняшняя дата включена явно — иначе компонент сам добивает её
-    // отдельной записью и итог «съезжает» на день больше мокнутых.
-    mockApi.history.mockResolvedValue(
-      Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(6 - i), ratings: { attachment: 5 + i } })),
-    );
+  it('у кого уже есть оценки или записи, лист сам не открывается', async () => {
+    localStorage.removeItem(WHY_SEEN_KEY);
+    mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'давно', schemaIds: ['abandonment'], emotions: [], createdAt: daysAgoIso(30) }]);
     renderSection();
-    await screen.findByText('7 дней');
+    await screen.findByText(/Последняя запись/);
+    expect(screen.queryByText('Первый раз здесь')).toBeNull();
   });
 
-  it('неделя лучше предыдущей — показывает положительную дельту "+N.N за неделю"', async () => {
-    const days = [
-      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(13 - i), ratings: { attachment: 3 } })),
-      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(6 - i), ratings: { attachment: 8 } })),
-    ];
-    mockApi.history.mockResolvedValue(days);
+  it('кнопка «Зачем это?» открывает лист с другой подписью и считается', async () => {
     renderSection();
-    await screen.findByText('+5.0 за неделю');
+    fireEvent.click(screen.getByText('Зачем это?'));
+    expect(await screen.findByText('Три вещи, которые здесь можно делать')).toBeTruthy();
+    expect(screen.getByText('Зачем это всё')).toBeTruthy();
+    expect(screen.queryByText('Первый раз здесь')).toBeNull();
+    expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'why' });
   });
 });
 
-describe('TodaySection — сбой API отдал не массив (`{}`): экран не падает', () => {
-  it('history = {} — индекс и «—» за неделю вместо «e is not iterable»', async () => {
-    mockApi.history.mockResolvedValue({});
-    mockApi.getSchemaDiary.mockResolvedValue({});
-    mockApi.getTasks.mockResolvedValue({});
-    renderSection({ ratings: { attachment: 8, autonomy: 6, expression: 4, play: 10, limits: 2 } });
-    await screen.findByText('6.0');
-    expect(await screen.findByText('— за неделю')).toBeTruthy();
-    expect(screen.getByText('Индекс сегодня')).toBeTruthy();
-  });
 
-  it('дельта недели, округлённая до нуля, показывается без минуса', async () => {
-    const days = [
-      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(13 - i), ratings: { attachment: 5.04 } })),
-      ...Array.from({ length: 7 }, (_, i) => ({ date: daysAgoStr(6 - i), ratings: { attachment: 5 } })),
-    ];
-    mockApi.history.mockResolvedValue(days);
-    renderSection();
-    await screen.findByText('0.0 за неделю');
-  });
-});
 
-describe('TodaySection — терапевт: карточка «Встреча с терапевтом»', () => {
-  it('встреча завтра — заголовок «Завтра · время», имя и кнопка «Написать» видны', async () => {
-    const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
-    mockApi.getTherapyRelation.mockResolvedValue({
-      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'X', nextSession: tomorrow,
-    });
-    renderSection();
-    await screen.findByText('Анна');
-    await screen.findByText(/^Завтра · /);
-    expect(screen.getByText('Написать').getAttribute('href')).toBe('tg://user?id=42');
-  });
 
-  it('встреча сегодня — заголовок «Сегодня · время»', async () => {
-    const at = new Date();
-    at.setHours(23, 59, 0, 0);
-    mockApi.getTherapyRelation.mockResolvedValue({
-      role: 'client', status: 'active', partnerName: 'Анна', partnerId: 42, code: 'X', nextSession: at.toISOString(),
-    });
-    renderSection();
-    await screen.findByText(/^Сегодня · 23:59$/);
-  });
 
-  it('без терапевта карточки встречи нет', async () => {
-    renderSection();
-    await waitFor(() => expect(mockApi.getTherapyRelation).toHaveBeenCalled());
-    expect(screen.queryByText('Встреча с терапевтом')).toBeNull();
-  });
-});
 
-describe('TodaySection — оценка прямо со шкалы', () => {
-  it('клик по сегменту зовёт onRatingChange и через паузу сохраняет оценку', async () => {
-    mockApi.saveRating = vi.fn().mockResolvedValue({ allDone: false });
-    const onRatingChange = vi.fn();
-    render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
-            onOpenChildhoodWheel={vi.fn()} rating={{ onChange: onRatingChange, onSaved: vi.fn(), isOffline: false }}
-          />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-    const group = await screen.findByRole('group', { name: 'Привязанность' });
-    fireEvent.click(within(group).getByRole('button', { name: '6 из 10' }));
-    expect(onRatingChange).toHaveBeenCalledWith('attachment', 6);
-    await waitFor(() => expect(mockApi.saveRating).toHaveBeenCalledWith('attachment', 6));
-  });
-});
-
-describe('TodaySection — потребность: клик по строке открывает трекер сразу на этой потребности', () => {
-  it('onOpenTrackerAt получает id потребности из клика по строке', async () => {
-    const onOpenTrackerAt = vi.fn();
-    render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{ attachment: 5 }} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={vi.fn()} onOpenTracker={vi.fn()} onOpenDiaries={vi.fn()}
-            onOpenChildhoodWheel={vi.fn()} onOpenTrackerAt={onOpenTrackerAt}
-          />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    fireEvent.click(screen.getByText('Привязанность').closest('[role="button"]') ?? screen.getByText('Привязанность'));
-    expect(onOpenTrackerAt).toHaveBeenCalledWith('attachment');
-  });
-
-  it('без onOpenTrackerAt клик по строке падает на общий onOpenTracker', async () => {
-    const onOpenTracker = vi.fn();
-    render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{ attachment: 5 }} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={vi.fn()} onOpenTracker={onOpenTracker} onOpenDiaries={vi.fn()}
-            onOpenChildhoodWheel={vi.fn()}
-          />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-    await waitFor(() => expect(mockApi.getProfile).toHaveBeenCalled());
-    fireEvent.click(screen.getByText('Привязанность').closest('[role="button"]') ?? screen.getByText('Привязанность'));
-    expect(onOpenTracker).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('TodaySection — задания: каждый тип «начать →» открывает свой правильный экран', () => {
-  function renderWithHandlers(overrides: Partial<{ onOpenTracker: () => void; onOpenDiaries: () => void; onOpenChildhoodWheel: () => void; onOpenAdvanced: () => void }> = {}) {
-    return render(
-      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
-        <MemoryRouter>
-          <TodaySection
-            needs={NEEDS} ratings={{}} onNavigate={vi.fn()} onOpenSchema={vi.fn()}
-            onOpenAdvanced={overrides.onOpenAdvanced ?? vi.fn()}
-            onOpenTracker={overrides.onOpenTracker ?? vi.fn()}
-            onOpenDiaries={overrides.onOpenDiaries ?? vi.fn()}
-            onOpenChildhoodWheel={overrides.onOpenChildhoodWheel ?? vi.fn()}
-          />
-        </MemoryRouter>
-      </AddressFormContext.Provider>,
-    );
-  }
-
-  /** «начать →» встречается и в OnboardingWidget — скоуп через заголовок раздела задач. */
-  async function clickTaskStart() {
-    const heading = await screen.findByText('Практики на сегодня');
-    const section = heading.closest('.ct-section')!;
-    fireEvent.click(within(section).getByText('начать →'));
-  }
-
-  it('tracker_streak → onOpenTracker', async () => {
-    const onOpenTracker = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'tracker_streak', text: 'Трекать 7 дней' })]);
-    renderWithHandlers({ onOpenTracker });
-    await clickTaskStart();
-    expect(onOpenTracker).toHaveBeenCalledTimes(1);
-  });
-
-  it('diary_streak → onOpenDiaries', async () => {
-    const onOpenDiaries = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);
-    renderWithHandlers({ onOpenDiaries });
-    await clickTaskStart();
-    expect(onOpenDiaries).toHaveBeenCalledTimes(1);
-  });
-
-  it('childhood_wheel → onOpenChildhoodWheel', async () => {
-    const onOpenChildhoodWheel = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'childhood_wheel', text: 'Колесо детства' })]);
-    renderWithHandlers({ onOpenChildhoodWheel });
-    await clickTaskStart();
-    expect(onOpenChildhoodWheel).toHaveBeenCalledTimes(1);
-  });
-
-  it('belief_check/letter_to_self/safe_place → onOpenAdvanced', async () => {
-    const onOpenAdvanced = vi.fn();
-    mockApi.getTasks.mockResolvedValue([task({ type: 'letter_to_self', text: 'Письмо себе' })]);
-    renderWithHandlers({ onOpenAdvanced });
-    await clickTaskStart();
-    expect(onOpenAdvanced).toHaveBeenCalledTimes(1);
-  });
-
-  it('schema_intro → открывает карточку схемы с реальным id из задания, завершение вызывает completeTask', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 5, type: 'schema_intro', text: 'abandonment' })]);
-    renderWithHandlers();
-    await clickTaskStart();
-
-    expect((await screen.findByTestId('schema-ex-id')).textContent).toBe('abandonment');
-    fireEvent.click(screen.getByText('Завершить карточку схемы'));
-
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(5, true));
-    await waitFor(() => expect(screen.queryByTestId('schema-ex')).toBeNull());
-  });
-
-  it('schema_intro «Назад» закрывает карточку без завершения задания', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 5, type: 'schema_intro', text: 'abandonment' })]);
-    renderWithHandlers();
-    await clickTaskStart();
-    fireEvent.click(await screen.findByText('Назад'));
-
-    expect(screen.queryByTestId('schema-ex')).toBeNull();
-    expect(mockApi.completeTask).not.toHaveBeenCalled();
-  });
-
-  it('mode_intro → открывает карточку режима с реальным id из задания, завершение вызывает completeTask', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ id: 6, type: 'mode_intro', text: 'vulnerable_child' })]);
-    renderWithHandlers();
-    await clickTaskStart();
-
-    expect((await screen.findByTestId('mode-ex-id')).textContent).toBe('vulnerable_child');
-    fireEvent.click(screen.getByText('Завершить карточку режима'));
-
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(6, true));
-  });
-});
-
-describe('TodaySection — «+ Поставить цель» открывает создание задания дневника', () => {
-  it('клик открывает TaskCreateSheet, закрытие возвращает на экран', async () => {
-    mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);
-    renderSection();
-    fireEvent.click(await screen.findByText('+ Поставить цель'));
-    await screen.findByText('Новое задание');
-
-    fireEvent.click(screen.getByText('Назад к кабинету'));
-    await waitFor(() => expect(screen.queryByText('Новое задание')).toBeNull());
-  });
-});
-
-describe('TodaySection — оверлей «Все задания»: отметка выполненного и добавление новой цели', () => {
-  it('«Готово» у назначенной custom-задачи вызывает completeTask и уходит из активных', async () => {
-    mockApi.getTasks
-      .mockResolvedValueOnce(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, assignedBy: 9, type: 'custom', text: `Задача ${i + 1}` })))
-      .mockResolvedValue([]);
-    renderSection();
-    fireEvent.click(await screen.findByText('Все задания (6) →'));
-    await screen.findByText('Все задания');
-
-    fireEvent.click(screen.getAllByText('Готово')[0]);
-    await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(1, true));
-  });
-
-  it('«+ Поставить цель» внутри оверлея открывает TaskCreateSheet поверх него', async () => {
-    mockApi.getTasks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => task({ id: i + 1, text: `Задача ${i + 1}` })));
-    renderSection();
-    fireEvent.click(await screen.findByText('Все задания (6) →'));
-    await screen.findByText('Все задания');
-    fireEvent.click(document.querySelector('.sk-overlay .sk-wide-btn')!);
-
-    await screen.findByText('Новое задание');
-  });
-});
-
-// ── Регрессия «момент, показанный по Гринвичу» ───────────────────────────────
-// Зеркало инцидента 2026-09-17: календарный день там читали локальной
-// полночью, а МОМЕНТ здесь резали строкой — `createdAt.slice(0, 10)` давал
-// гринвичский день и сравнивался с локальным `todayStr()`, `slice(11, 16)`
-// показывал гринвичское время. Проверка замораживает «сейчас» на моментах,
-// где гринвичский день и локальный заведомо разные, и сама обходит зоны —
-// поэтому краснеет в любой час прогона, а не только во второй CI-джобе.
-describe('TodaySection — день и время записи в зоне читателя', () => {
-  const MOMENTS = ['2026-09-18T23:30:00.000Z', '2026-09-19T00:30:00.000Z'];
-
-  for (const iso of MOMENTS) {
-    it(`запись, сделанная в ${iso}, подписана «Сегодня» и локальным временем`, async () => {
-      await forEachTimeZoneAsync(async tz => {
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(new Date(iso));
-        try {
-          mockApi.getSchemaDiary.mockResolvedValue([{ id: 1, trigger: 'ссора с коллегой', createdAt: iso }]);
-          renderSection();
-          await screen.findByText('ссора с коллегой');
-          const at = new Date(iso);
-          const hhmm = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
-          expect(screen.getByText(`Сегодня · ${hhmm}`), tz).toBeTruthy();
-        } finally {
-          cleanup();
-          vi.useRealTimers();
-        }
-      });
-    });
-  }
-});

@@ -108,8 +108,9 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
   });
 
   // Аудит 2026-10, F3: записи на консультацию не удаляются (деньги, календарь),
-  // но привязка к Telegram-id обнуляется.
-  it('обнуляет Booking.clientTelegramId по адресу в Telegram, не удаляя записи', async () => {
+  // но привязка к Telegram-id и к аккаунту (Booking.userId — запись из
+  // приложения, #546) обнуляется.
+  it('обнуляет Booking.clientTelegramId и Booking.userId, не удаляя записи', async () => {
     const prisma = makePrisma();
     prisma.authProvider.findFirst = jest.fn(async () => ({
       providerId: '777000',
@@ -118,11 +119,13 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
     await service.deleteAllUserData(uid);
 
     const [args] = prisma._calls['booking'];
-    expect(args.data).toEqual({ clientTelegramId: null });
+    expect(args.data).toEqual({ clientTelegramId: null, userId: null });
+    const [byTelegram, byAccount] = args.where.OR;
     // и веб-id, и Telegram-id аккаунта (после слияния это разные числа)
-    expect(args.where.clientTelegramId.in).toEqual(
+    expect(byTelegram.clientTelegramId.in).toEqual(
       expect.arrayContaining([uid, 777000n]),
     );
+    expect(byAccount).toEqual({ userId: uid });
   });
 
   // Находка L3 аудита 2026-07-20, пункт «ещё модели мимо реестров»: у билета
@@ -161,7 +164,7 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
   });
 });
 
-describe('AccountService — режим/роль терапевта', () => {
+describe('AccountService — режим терапевта', () => {
   const uid = 777n;
 
   it('setTherapistMode пишет therapistMode в User', async () => {
@@ -174,57 +177,6 @@ describe('AccountService — режим/роль терапевта', () => {
       where: { id: uid },
       data: { therapistMode: false },
     });
-  });
-
-  it('resignTherapist: CLIENT + therapistMode=false + удаление заявки + завершение связей, всё в одной транзакции', async () => {
-    const userUpdate = jest.fn(() => Promise.resolve({}));
-    const reqDeleteMany = jest.fn(() => Promise.resolve({ count: 1 }));
-    const relUpdateMany = jest.fn(() => Promise.resolve({ count: 3 }));
-    const tx = {
-      user: { update: userUpdate },
-      therapistRequest: { deleteMany: reqDeleteMany },
-      therapyRelation: { updateMany: relUpdateMany },
-    };
-    const transaction = jest.fn((fn: (t: typeof tx) => unknown) => fn(tx));
-    const prisma = { $transaction: transaction } as never;
-    const service = new AccountService(prisma);
-
-    await service.resignTherapist(uid);
-
-    expect(transaction).toHaveBeenCalledTimes(1);
-    expect(userUpdate).toHaveBeenCalledWith({
-      where: { id: uid },
-      data: { role: 'CLIENT', therapistMode: false },
-    });
-    // Заявка удаляется, иначе status 'approved' заблокирует повторную подачу.
-    expect(reqDeleteMany).toHaveBeenCalledWith({ where: { userId: uid } });
-    // backend#33: связи терапевта (активные и неиспользованные приглашения)
-    // завершаются в той же транзакции, а не удаляются.
-    expect(relUpdateMany).toHaveBeenCalledWith({
-      where: {
-        therapistId: uid,
-        status: { in: ['pending', 'active'] },
-        // Офлайн-клиенты не завершаются (Step D слияния стёр бы их концептуализации).
-        OR: [{ clientId: { not: null } }, { virtualClientName: null }],
-      },
-      data: { status: 'ended' },
-    });
-  });
-
-  it('resignTherapist: сбой завершения связей откатывает транзакцию — ошибка уходит наружу', async () => {
-    const tx = {
-      user: { update: jest.fn(() => Promise.resolve({})) },
-      therapistRequest: { deleteMany: jest.fn(() => Promise.resolve({})) },
-      therapyRelation: {
-        updateMany: jest.fn(() => Promise.reject(new Error('db down'))),
-      },
-    };
-    const prisma = {
-      $transaction: jest.fn((fn: (t: typeof tx) => unknown) => fn(tx)),
-    } as never;
-    await expect(
-      new AccountService(prisma).resignTherapist(uid),
-    ).rejects.toThrow('db down');
   });
 });
 

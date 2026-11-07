@@ -6,7 +6,7 @@ import type { MapLane } from '../../../../shared/src/map/mapVm';
 /**
  * Одна полоса карты себя. Пустая полоса — не укор, а информация: в
  * схема-терапии незаполненная клетка карты режимов и есть цель работы.
- * Twin schema-miniapp SelfMapLane.tsx, разметка — webapp section/list-line.
+ * Разметка — webapp section/list-line.
  */
 export function SelfMapLane({
   lane,

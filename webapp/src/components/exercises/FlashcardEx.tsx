@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../../api';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
-import { ExScreen, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
+import { ExScreen, ExDone, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
@@ -14,9 +14,11 @@ import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaF
 import { buildModeIntroQuestions } from '../../../../shared/src/mode/modeIntroQuestions';
 import { getModeCard } from '../../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../../shared/src/share/analytics';
+import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 import { SCHEMA_QUESTIONS, type Q } from './flashcardQuestions';
 import { ModePortrait } from './ModePortrait';
 import { PickRow, PickGroupHead } from './PickRow';
+import { SavedNoteGate } from './SavedNoteGate';
 
 // Портрет режима показывается один раз на устройство — ключ в localStorage.
 const portraitSeenKey = (modeId: string) => `mode_portrait_seen_${modeId}`;
@@ -33,9 +35,8 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
   const q = questions[step];
   const isLast = step === questions.length - 1;
 
-  // Аудит 2026-08-22 (находка №2): раньше handleSave не показывал состояние
-  // отправки и не защищал от двойного нажатия, а сбой onSave падал молча —
-  // человек нажимал «Сохранить карточку» и не понимал, приняли ли нажатие.
+  // Аудит 2026-08-22 (находка №2): сохранение без состояния отправки, защиты от
+  // двойного нажатия и с молчаливым сбоем — человек не понимал, приняли ли нажатие.
   const { saving, error, run } = useSavingAction();
   async function handleSave() {
     const ok = await run(() => onSave(data));
@@ -44,7 +45,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
 
   if (done) {
     return (
-      <div className="ds-card ds-card--ink ex2-done animate-slide" style={hueStyle(hue)}>
+      <ExDone className="animate-slide">
         <div className="ex2-stamp"><GlyphCheck /> Карточка сохранена · {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</div>
         {questions.map((qq, i) => data[qq.key].trim() && (
           <div key={qq.key}>
@@ -53,7 +54,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
           </div>
         ))}
         <button className="ds-btn ds-btn--secondary ex2-gap" onClick={() => { setDone(false); setStep(0); }}>Изменить карточку</button>
-      </div>
+      </ExDone>
     );
   }
 
@@ -104,7 +105,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: {
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} eyebrow="№ 02 · Знакомство"
+      <ExScreen onBack={goBack} caution eyebrow={exerciseCard('schema').eyebrow}
         title={<>Карточка<br/><span className="it">схемы</span></>}
         lede={tr('Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.', 'Выберите одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.')}
         aside={<div className="ds-card ex2-note"><div className="ds-label">Зачем это</div><h3 className="ex2-note-h">Назвать – значит вернуть себе власть</h3><p className="ex2-note-body">{tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')}</p></div>}
@@ -125,7 +126,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: {
   }
 
   return (
-    <ExScreen onBack={goBack} eyebrow={picked.domain} title={picked.name} lede={picked.desc}
+    <ExScreen onBack={goBack} caution={Boolean(initialSchemaId)} eyebrow={picked.domain} title={picked.name} lede={picked.desc}
       aside={<>
         <div className="ds-card ex2-note ex2-tint" style={hueStyle(picked.hue)}>
           <div className="ds-label">Совет</div>
@@ -135,7 +136,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: {
         <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setPicked(null)}><GlyphArrowLeft /> Сменить схему</button>
       </>}
     >
-      <FlashcardFlow initial={initialData} questions={SCHEMA_QUESTIONS} hue={picked.hue} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} explainer={buildSchemaIntroExplainer(tr)} />
+      <SavedNoteGate kind="schema" id={picked.id} preset={initialData}>{initial => <FlashcardFlow initial={initial} questions={SCHEMA_QUESTIONS} hue={picked.hue} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} explainer={buildSchemaIntroExplainer(tr)} />}</SavedNoteGate>
     </ExScreen>
   );
 }
@@ -156,7 +157,7 @@ export function ModeEx({ onBack, initialModeId, onComplete, initialData }: { onB
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} eyebrow="№ 03 · Знакомство"
+      <ExScreen onBack={goBack} caution eyebrow={exerciseCard('mode').eyebrow}
         title={<>Карточка<br/><span className="it">режима</span></>}
         lede="Режим – это эмоциональное состояние, которое включается целиком. Описать его – значит научиться его узнавать в моменте."
         aside={<div className="ds-card ex2-note"><div className="ds-label">Совет</div><h3 className="ex2-note-h">{tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')}</h3><p className="ex2-note-body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</p></div>}
@@ -180,14 +181,14 @@ export function ModeEx({ onBack, initialModeId, onComplete, initialData }: { onB
   // seen — честная подпись кнопки при ручном возврате («Про режим»).
   const seen = Boolean(card) && Boolean(localStorage.getItem(portraitSeenKey(picked.id)));
   return (
-    <ExScreen onBack={goBack} eyebrow={picked.group} title={picked.name} lede={showPortrait && card ? card.about : picked.short}
+    <ExScreen onBack={goBack} caution={Boolean(initialModeId)} eyebrow={picked.group} title={picked.name} lede={showPortrait && card ? card.about : picked.short}
       aside={<>
         {!showPortrait && card && <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setShowPortrait(true)}>ⓘ Про режим</button>}
         {!showPortrait && <div className="ds-card ex2-note ex2-tint" style={hueStyle(picked.hue)}><div className="ds-label">Подсказка</div><h3 className="ex2-note-h">{tr('Говори в настоящем', 'Говорите в настоящем')}</h3><p className="ex2-note-body">«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания.</p></div>}
         <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setPicked(null)}><GlyphArrowLeft /> Сменить режим</button>
       </>}
     >
-      {showPortrait && card ? <ModePortrait card={card} hue={picked.hue} ctaLabel={seen ? 'Назад к вопросам →' : undefined} onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} /> : <FlashcardFlow initial={initialData} questions={buildModeIntroQuestions(card)} hue={picked.hue} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />}
+      {showPortrait && card ? <ModePortrait card={card} hue={picked.hue} ctaLabel={seen ? 'Назад к вопросам →' : undefined} onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} /> : <SavedNoteGate kind="mode" id={picked.id} preset={initialData}>{initial => <FlashcardFlow initial={initial} questions={buildModeIntroQuestions(card)} hue={picked.hue} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />}</SavedNoteGate>}
     </ExScreen>
   );
 }

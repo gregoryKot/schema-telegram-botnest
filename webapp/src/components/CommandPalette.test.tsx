@@ -5,8 +5,11 @@
 // «кабинет терапевта» — денормализованная сборка rows обязана отражать
 // therapistMode/userRole без рассинхрона.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { useEffect, useState } from 'react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
+import { DESKTOP_NAV_ITEMS } from './appShell/navItems';
 import { Dialog } from './Dialog';
 import type { TherapyClientSummary } from '../api';
 import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
@@ -27,8 +30,11 @@ afterEach(() => {
 });
 
 function renderPalette(props: Partial<Parameters<typeof CommandPalette>[0]> = {}) {
+  // Палитра кладёт запись истории (useHistorySheet) — нужен роутер.
   return render(
-    <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} {...props} />,
+    <MemoryRouter>
+      <CommandPalette onNavigate={vi.fn()} onClose={vi.fn()} {...props} />
+    </MemoryRouter>,
   );
 }
 
@@ -42,25 +48,34 @@ describe('CommandPalette — диалог (К4)', () => {
 });
 
 describe('CommandPalette — навигация', () => {
-  it('без ввода показывает все 5 пунктов навигации клиента', () => {
+  it('без ввода показывает все пункты навигации клиента', () => {
     renderPalette();
-    for (const label of ['Сегодня', 'Дневник', 'Паттерны', 'Профиль', 'Практика']) {
+    for (const label of ['Сегодня', 'Записи', 'Ещё', 'Паттерны', 'Профиль', 'Практики']) {
       expect(screen.getByText(label)).toBeTruthy();
     }
+  });
+
+  // Раздел зовётся «Практики» везде: в нижней панели, в меню слева и в «Ещё».
+  // Палитра одна писала «Практика» — слово для трёх разных сущностей сводили.
+  it('раздел практик назван так же, как в меню слева', () => {
+    renderPalette();
+    const practice = DESKTOP_NAV_ITEMS.find(n => n.id === 'practice')!;
+    expect(screen.getByText(practice.label)).toBeTruthy();
+    expect(screen.queryByText('Практика')).toBeNull();
   });
 
   it('клик по пункту навигации зовёт onNavigate с его id и закрывает палитру', () => {
     const onNavigate = vi.fn();
     const onClose = vi.fn();
     renderPalette({ onNavigate, onClose });
-    fireEvent.click(screen.getByText('Дневник'));
+    fireEvent.click(screen.getByText('Записи'));
     expect(onNavigate).toHaveBeenCalledWith('diary');
     expect(onClose).toHaveBeenCalled();
   });
 
   it('в режиме кабинета терапевта (therapistMode) навигация клиента скрыта', () => {
     renderPalette({ therapistMode: true, userRole: 'THERAPIST' });
-    expect(screen.queryByText('Дневник')).toBeNull();
+    expect(screen.queryByText('Записи')).toBeNull();
   });
 });
 
@@ -68,7 +83,7 @@ describe('CommandPalette — поиск', () => {
   it('фильтрует пункты по подстроке запроса (регистронезависимо)', () => {
     renderPalette();
     fireEvent.change(screen.getByPlaceholderText('Найти клиента, страницу или действие…'), { target: { value: 'дневник' } });
-    expect(screen.getByText('Дневник')).toBeTruthy();
+    expect(screen.getByText('Записи')).toBeTruthy();
     expect(screen.queryByText('Сегодня')).toBeNull();
   });
 
@@ -91,12 +106,12 @@ describe('CommandPalette — клавиатура', () => {
     const onClose = vi.fn();
     const onCloseDialog = vi.fn();
     render(
-      <>
+      <MemoryRouter>
         <CommandPalette onNavigate={vi.fn()} onClose={onClose} />
         <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
           <button>ок</button>
         </Dialog>
-      </>,
+      </MemoryRouter>,
     );
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onCloseDialog).toHaveBeenCalledTimes(1);
@@ -134,6 +149,38 @@ describe('CommandPalette — клиенты терапевта', () => {
     expect(await screen.findByText('Иван')).toBeTruthy();
   });
 
+  // QA 2026-11: «Семен» не находил «Семёна» — поиск общий с кабинетом (searchNormalize).
+  it('поиск клиента не различает «е» и «ё» в обе стороны', async () => {
+    getTherapyClients.mockResolvedValue([
+      { ...CLIENT, telegramId: 1, name: 'Семён' },
+      { ...CLIENT, telegramId: 2, name: 'Алена' },
+    ]);
+    renderPalette({ userRole: 'THERAPIST', therapistMode: true });
+    await screen.findByText('Семён');
+    const search = screen.getByPlaceholderText('Найти клиента, страницу или действие…');
+    fireEvent.change(search, { target: { value: 'семен' } });
+    expect(screen.getByText('Семён')).toBeTruthy();
+    expect(screen.queryByText('Алена')).toBeNull();
+    fireEvent.change(search, { target: { value: 'Алёна' } });
+    expect(screen.getByText('Алена')).toBeTruthy();
+    expect(screen.queryByText('Семён')).toBeNull();
+  });
+
+  // QA 2026-11 (T-19): офлайн-клиент подписывался «Клиент», как подключённый
+  // без активности, а в списке он «офлайн». Метка одна — clientStatus.
+  it('без активности сегодня — метка списка: «офлайн» у офлайн-карточки, «в боте» у подключённого', async () => {
+    getTherapyClients.mockResolvedValue([
+      { ...CLIENT, telegramId: -7, name: 'Офлайн Иван', streak: 0 },
+      { ...CLIENT, telegramId: 8, name: 'Света', daysSinceActive: 3 },
+    ]);
+    renderPalette({ userRole: 'THERAPIST', therapistMode: true });
+    const sub = async (name: string) =>
+      (await screen.findByText(name)).parentElement!.querySelector('.cmd-sub')!.textContent;
+    expect(await sub('Офлайн Иван')).toBe('офлайн');
+    expect(await sub('Света')).toBe('в боте');
+    expect(screen.queryByText('Клиент')).toBeNull();
+  });
+
   it('для роли CLIENT не запрашивает список клиентов', () => {
     renderPalette({ userRole: 'CLIENT' });
     expect(getTherapyClients).not.toHaveBeenCalled();
@@ -148,10 +195,11 @@ describe('CommandPalette — клиенты терапевта', () => {
     expect(onOpenClient).toHaveBeenCalledWith(42);
   });
 
-  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17): `lastActiveDate` — календарный
-  // день сервера (полночь UTC), а «сегодня» здесь раньше считалось локальной
-  // датой машины (todayStr()). Моменты зафиксированы там, где зоны заведомо
-  // расходятся с UTC — иначе тест зеленеет под TZ=UTC и молчит про регресс.
+  // РЕГРЕССИЯ (TZ-класс, инцидент 2026-09-17, QA 2026-10-26): «активен
+  // сегодня» сравнивал `lastActiveDate` со своим «сегодня» (местным, потом
+  // UTC) — ни то, ни другое не день клиента. Теперь флаг считает сервер по
+  // календарю клиента (daysSinceActive === 0), и от зоны терапевта он не
+  // зависит. Моменты — там, где зоны расходятся с UTC.
   // Клиент грузится асинхронно (api.getTherapyClients), поэтому первичная
   // загрузка идёт под текущей зоной процесса, а сама проверка по зонам —
   // синхронный пересчёт `rows` (смена текста поиска), чтобы момент смены TZ
@@ -162,7 +210,7 @@ describe('CommandPalette — клиенты терапевта', () => {
     try {
       for (const moment of ['2026-09-18T23:30:00Z', '2026-09-19T00:30:00Z']) {
         vi.setSystemTime(new Date(moment));
-        getTherapyClients.mockResolvedValue([{ ...CLIENT, lastActiveDate: todayCalendarDate() }]);
+        getTherapyClients.mockResolvedValue([{ ...CLIENT, lastActiveDate: todayCalendarDate(), daysSinceActive: 0 }]);
         const { unmount } = renderPalette({ userRole: 'THERAPIST' });
         await screen.findByText('Иван');
 
@@ -180,6 +228,14 @@ describe('CommandPalette — клиенты терапевта', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('CommandPalette — вид', () => {
+  it('нет плашки «Esc» (на телефоне такой клавиши нет), панель — .cmd-panel', () => {
+    renderPalette();
+    expect(screen.queryByText('Esc')).toBeNull();
+    expect(screen.getByRole('dialog').classList.contains('cmd-panel')).toBe(true);
   });
 });
 
@@ -212,5 +268,43 @@ describe('CommandPalette — быстрые действия («+» на тел�
   it('в кабинете терапевта клиентских действий нет', () => {
     renderPalette({ therapistMode: true });
     expect(screen.queryByText('Дыхание 4-4-6')).toBeNull();
+  });
+});
+
+// Запись истории (docs/open/one-frontend.md, бейслайн history-sheet): палитра
+// открывается и с мобильной нижней панели, и «Назад» браузера уводил со
+// страницы. Хост здесь настоящий — убирает палитру по onClose, как AppShell.
+describe('CommandPalette — «Назад» браузера и запись истории', () => {
+  const nav: { back: () => void } = { back: () => {} };
+  function BackSpy() {
+    const navigate = useNavigate();
+    useEffect(() => { nav.back = () => navigate(-1); });
+    return null;
+  }
+  function Host({ onNavigate = vi.fn() }: { onNavigate?: (s: string) => void }) {
+    const [open, setOpen] = useState(true);
+    return open
+      ? <CommandPalette onNavigate={onNavigate} onClose={() => setOpen(false)} />
+      : <div>PALETTE-CLOSED</div>;
+  }
+
+  it('«Назад» браузера закрывает палитру, а не уводит со страницы', () => {
+    render(<MemoryRouter><BackSpy /><Host /></MemoryRouter>);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    act(() => nav.back());
+    expect(screen.getByText('PALETTE-CLOSED')).toBeTruthy();
+  });
+
+  it('действие строки идёт после закрытия палитры (запись уже снята)', () => {
+    const log: string[] = [];
+    function LoggingHost() {
+      const [open, setOpen] = useState(true);
+      return open
+        ? <CommandPalette onNavigate={(s) => log.push('navigate:' + s)} onClose={() => { log.push('close'); setOpen(false); }} />
+        : null;
+    }
+    render(<MemoryRouter><LoggingHost /></MemoryRouter>);
+    fireEvent.click(screen.getByText('Записи'));
+    expect(log).toEqual(['close', 'navigate:diary']);
   });
 });

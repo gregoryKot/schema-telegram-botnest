@@ -1,12 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { localDateStr } from '../../../shared/src/utils/format';
+import { forEachTimeZone } from '../../../shared/src/utils/timeZone.test-helpers';
 import type { TherapyClientSummary } from '../api';
+import { clientCaption } from '../components/therapist/rosterModel';
 import {
-  activityStatus, daysSinceActive, initials, latestIndex, needsAttention,
-  sessionsTodaySorted, sparkPoints, todayCounts, clientName,
+  activityStatus, daysSinceActive, hasSessionToday, latestIndex, needsAttention,
+  sessionTime, sessionsTodaySorted, sparkPoints, todayCounts, trackedClients,
 } from './therapistTodayModel';
 
-const NOW = Date.parse('2026-10-15T12:00:00Z');
-const ago = (d: number) => new Date(NOW - d * 86400000).toISOString();
+// 12:00 UTC 15 октября 2026 — четверг (4) во всех зонах прогона CI.
+const NOW = '2026-10-15T12:00:00Z';
+const THU = 4;
+beforeEach(() => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(NOW)); });
+afterEach(() => vi.useRealTimers());
+// Дни с последней оценки считает сервер по календарю клиента (QA 2026-10-26).
+const ago = (d: number) => ({ daysSinceActive: d, lastActiveDate: '2026-10-01' });
 
 function c(o: Partial<TherapyClientSummary> = {}): TherapyClientSummary {
   return {
@@ -18,48 +26,58 @@ function c(o: Partial<TherapyClientSummary> = {}): TherapyClientSummary {
 }
 
 describe('therapistTodayModel', () => {
-  it('имя: алиас важнее имени, иначе #id', () => {
-    expect(clientName(c({ clientAlias: 'А', name: 'Б' }))).toBe('А');
-    expect(clientName(c({ name: null }))).toBe('#1');
-  });
-
-  it('инициалы', () => {
-    expect(initials('Анна Крылова')).toBe('АК');
-    expect(initials('иван')).toBe('И');
-    expect(initials('#555')).toBe('#');
-    expect(initials('  ')).toBe('?');
-  });
-
-  it('daysSinceActive', () => {
-    expect(daysSinceActive(c(), NOW)).toBeNull();
-    expect(daysSinceActive(c({ lastActiveDate: ago(4) }), NOW)).toBe(4);
-    expect(daysSinceActive(c({ lastActiveDate: ago(-1) }), NOW)).toBe(0);
+  it('daysSinceActive — значение сервера (календарь клиента), без пересчёта от «сейчас»', () => {
+    expect(daysSinceActive(c())).toBeNull();
+    expect(daysSinceActive(c({ lastActiveDate: '2026-10-01' }))).toBeNull(); // старый кэш без поля
+    expect(daysSinceActive(c(ago(4)))).toBe(4);
+    expect(daysSinceActive(c(ago(0)))).toBe(0);
   });
 
   it('needsAttention: 3+ дня, null — да, активный сегодня — нет', () => {
-    expect(needsAttention(c({ lastActiveDate: ago(2) }), NOW)).toBe(false);
-    expect(needsAttention(c({ lastActiveDate: ago(3) }), NOW)).toBe(true);
-    expect(needsAttention(c(), NOW)).toBe(true);
-    expect(needsAttention(c({ todayIndex: 5 }), NOW)).toBe(false);
+    expect(needsAttention(c(ago(2)))).toBe(false);
+    expect(needsAttention(c(ago(3)))).toBe(true);
+    expect(needsAttention(c())).toBe(true);
+    expect(needsAttention(c({ todayIndex: 5 }))).toBe(false);
   });
 
   it('счётчики', () => {
-    const dow = new Date().getDay();
     const list = [
-      c({ todayIndex: 7, meetingDays: [dow] }),
-      c({ lastActiveDate: ago(5) }),
-      c({ lastActiveDate: ago(1) }),
+      c({ todayIndex: 7, meetingDays: [THU] }),
+      c(ago(5)),
+      c(ago(1)),
     ];
-    expect(todayCounts(list, NOW)).toEqual({ active: 1, total: 3, sessions: 1, attention: 1 });
+    expect(todayCounts(list)).toEqual({ active: 1, total: 3, sessions: 1, attention: 1 });
   });
 
-  it('статус активности', () => {
-    expect(activityStatus(c({ todayIndex: 6 }), NOW)).toEqual({ text: 'активность сегодня', tone: 'ok' });
-    expect(activityStatus(c(), NOW)).toEqual({ text: 'нет данных', tone: 'warn' });
-    expect(activityStatus(c({ lastActiveDate: ago(0) }), NOW)).toEqual({ text: 'активность сегодня', tone: 'ok' });
-    expect(activityStatus(c({ lastActiveDate: ago(1) }), NOW)).toEqual({ text: 'активность вчера', tone: 'none' });
-    expect(activityStatus(c({ lastActiveDate: ago(2) }), NOW)).toEqual({ text: 'активность 2 дн. назад', tone: 'none' });
-    expect(activityStatus(c({ lastActiveDate: ago(5) }), NOW)).toEqual({ text: 'нет активности 5 дн.', tone: 'warn' });
+  // QA 2026-11: у офлайн-клиента daysSinceActive всегда null — он вечно
+  // «требовал внимания» и раздувал знаменатель «Активны». Встреча с ним настоящая.
+  it('офлайн-клиент: не требует внимания, не в «Активны», но его сессия считается', () => {
+    const offline = c({ telegramId: -3 as TherapyClientSummary['telegramId'], meetingDays: [THU] });
+    expect(needsAttention(offline)).toBe(false);
+    expect(trackedClients([c(), offline])).toEqual([c()]);
+    expect(todayCounts([c({ todayIndex: 7 }), c(), offline]))
+      .toEqual({ active: 1, total: 2, sessions: 1, attention: 1 });
+    expect(activityStatus(offline)).toEqual({ text: '', tone: 'none' });
+  });
+
+  it('статус активности: текст — давность, тон — сегодня / требует внимания', () => {
+    expect(activityStatus(c({ todayIndex: 6 }))).toEqual({ text: 'активность сегодня', tone: 'ok' });
+    expect(activityStatus(c())).toEqual({ text: 'нет активности', tone: 'warn' });
+    expect(activityStatus(c(ago(0)))).toEqual({ text: 'активность сегодня', tone: 'ok' });
+    expect(activityStatus(c(ago(1)))).toEqual({ text: 'активность вчера', tone: 'none' });
+    expect(activityStatus(c(ago(2)))).toEqual({ text: 'активность 2 дн. назад', tone: 'none' });
+    expect(activityStatus(c(ago(5)))).toEqual({ text: 'активность 5 дн. назад', tone: 'warn' });
+    expect(activityStatus(c(ago(14)))).toEqual({ text: 'активность 1 окт', tone: 'warn' });
+  });
+
+  // QA 2026-11: две функции подписывали одну давность по-разному — «Сегодня»
+  // «нет активности 12 дн.», список клиентов «активность 24 окт». Сверка
+  // (правило №4): для клиента без срока в работе и стрика строки совпадают.
+  it('«Сегодня» и список клиентов подписывают давность одной строкой', () => {
+    for (const o of [{}, { todayIndex: 6 }, ago(0), ago(1), ago(2), ago(5), ago(14)]) {
+      const client = c(o);
+      expect(activityStatus(client).text, JSON.stringify(o)).toBe(clientCaption(client));
+    }
   });
 
   it('спарклайн: от старой к новой, пустые дни — нулевая высота', () => {
@@ -79,14 +97,47 @@ describe('therapistTodayModel', () => {
     expect(latestIndex(c())).toBeNull();
   });
 
-  it('сессии сегодня сортируются по времени, без времени в конце', () => {
-    const d = new Date().toISOString().slice(0, 10);
-    const dow = new Date().getDay();
-    const res = sessionsTodaySorted([
-      c({ telegramId: 1 as never, meetingDays: [dow] }),
-      c({ telegramId: 2 as never, nextSession: `${d}T16:00:00Z` }),
-      c({ telegramId: 3 as never, nextSession: `${d}T09:00:00Z` }),
-    ]);
-    expect(res.map(x => x.telegramId)).toEqual([3, 2, 1]);
+  // Встреча — стенные часы терапевта (datetime-local без зоны), «сегодня» —
+  // его местный день (правило №25). По UTC в МСК с 00:00 до 03:00 экран
+  // показывал вчерашние встречи. 22:30Z — в Иерусалиме и Сиднее уже завтра.
+  const LATE_UTC = Date.parse('2026-10-15T22:30:00Z');
+  const atLocal = (fn: (today: string, yesterday: string, dow: number) => void) => {
+    vi.useFakeTimers({ now: LATE_UTC, toFake: ['Date'] });
+    try {
+      const now = new Date();
+      fn(localDateStr(now), localDateStr(new Date(now.getTime() - 86400000)), now.getDay());
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('сессии сегодня сортируются по времени, без времени в конце — в любой зоне', () => {
+    forEachTimeZone(() => atLocal((today, _y, dow) => {
+      const res = sessionsTodaySorted([
+        c({ telegramId: 1 as never, meetingDays: [dow] }),
+        c({ telegramId: 2 as never, nextSession: `${today}T16:00` }),
+        c({ telegramId: 3 as never, nextSession: `${today}T09:00` }),
+      ]);
+      expect(res.map(x => x.telegramId)).toEqual([3, 2, 1]);
+    }));
+  });
+
+  it('вчерашняя по местному дню встреча не «сегодня», даже если по UTC ещё вчера', () => {
+    forEachTimeZone((tz) => atLocal((today, yesterday) => {
+      const past = c({ nextSession: `${yesterday}T19:00` });
+      expect(hasSessionToday(past), tz).toBe(false);
+      const now = c({ nextSession: `${today}T10:00` });
+      expect(hasSessionToday(now), tz).toBe(true);
+      expect(sessionTime(now), tz).toBe('10:00');
+    }));
+  });
+
+  it('прошедшая nextSession не прячет встречу по дням: сегодня в списке, время прежнее', () => {
+    forEachTimeZone((tz) => atLocal((_t, _y, dow) => {
+      const stale = c({ nextSession: '2026-01-03T07:00', meetingDays: [dow] });
+      expect(hasSessionToday(stale), tz).toBe(true);
+      expect(sessionTime(stale), tz).toBe('07:00');
+      expect(hasSessionToday(c({ nextSession: '2026-01-03T07:00' })), tz).toBe(false);
+    }));
   });
 });

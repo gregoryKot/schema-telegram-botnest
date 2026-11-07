@@ -7,6 +7,7 @@ import { LoginTicketService } from '../auth/login-ticket/login-ticket.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { AccountService } from '../bot/account.service';
 import { viewerTelegramId } from './viewer-id';
+import { failCallback } from './callback-failure';
 
 export interface DenyDeps {
   tickets: LoginTicketService;
@@ -36,10 +37,7 @@ export async function handleTicketDeny(
   } catch (err) {
     // Сказать «отклонено», когда билет не погашен, хуже, чем показать сбой:
     // человек решит, что защитился, а код останется годным.
-    deps.logger.error(
-      `ticket deny (${reason}) failed: ${(err as Error).message}`,
-      (err as Error).stack,
-    );
+    await failCallback(deps.logger, ctx, `ticket deny (${reason})`, err);
   }
 }
 

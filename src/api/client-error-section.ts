@@ -17,13 +17,14 @@ export const CLIENT_ERROR_SECTIONS = [
   'help',
   'cabinet',
   'booking',
+  'assets',
   'other',
 ] as const;
 export type ClientErrorSection = (typeof CLIENT_ERROR_SECTIONS)[number];
 
-// Известные литералы обоих фронтендов → канонический бакет (сверено грепом
-// по webapp/src и schema-miniapp/src). Новый экран заведёт секцию не из
-// списка — она осядет в 'other', просто не разложится дальше; расширять
+// Известные литералы сайта → канонический бакет (сверено грепом по webapp/src;
+// ключи удалённого мини-аппа — для старых клиентов). Новый экран заведёт секцию
+// не из списка — она осядет в 'other', просто не разложится дальше; расширять
 // список стоит, когда 'other' в /stats станет заметной долей.
 const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   auth: 'auth', // AUTH_FAILURE_SECTION, shared/src/host/authFailureReport.ts
@@ -33,13 +34,13 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   'login.ticket': 'login', // LOGIN_TICKET_SECTION, shared/src/auth/useLoginTicket.ts
   'today.tasks': 'today', // webapp/src/sections/today/useTaskActions.ts
   'practice.tasks': 'practice', // webapp/src/sections/PracticeSection.tsx (useTaskActions)
-  Сегодня: 'today', // schema-miniapp/src/components/AppSections.tsx
+  Сегодня: 'today', // старые клиенты
   Дневник: 'diary', // webapp/src/components/AppShell.tsx, DiariesOverlay.tsx
-  Паттерны: 'schemas', // оба фронтенда
+  Паттерны: 'schemas', // webapp/src (раздел «Паттерны»)
   Практика: 'practice', // webapp/src/components/AppShell.tsx
-  Практики: 'practice', // schema-miniapp (тесты ErrorBoundary)
-  Профиль: 'profile', // schema-miniapp/src/components/AppSections.tsx
-  Помощь: 'help', // schema-miniapp/src/components/AppSections.tsx
+  Практики: 'practice', // старые клиенты
+  Профиль: 'profile', // старые клиенты
+  Помощь: 'help', // старые клиенты
   Кабинет: 'cabinet', // webapp/src/components/AppShell.tsx
   // 'today' — в момент флаша человек на главном экране; упавшие источники видны в тексте.
   'appshell.bootstrap': 'today', // webapp/src/components/appShell/useBootstrapLoad.ts
@@ -49,6 +50,8 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   // Сбой отправки заявки на запись (инцидент 2026-09-13): сервер видит только
   // те заявки, что до него дошли; сетевой отказ виден лишь отсюда.
   booking: 'booking', // webapp/src/components/bookingFailure.ts
+  // Файл сборки не догрузился и повторы не помогли (инцидент 2026-11-04, #928).
+  assets: 'assets', // webapp/public/asset-recovery.js
 };
 
 /** Чистая функция: сырой `section` → канонический бакет. */

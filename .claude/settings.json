@@ -7,7 +7,6 @@
   "bashOutputMaxChars": 12000,
   "permissions": {
     "deny": [
-      "Read(./schema-miniapp/dist/**/*)",
       "Read(./**/package-lock.json)"
     ]
   },

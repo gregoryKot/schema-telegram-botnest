@@ -1,6 +1,5 @@
 // Оверлей достижения (вынесен из ProfileSection). «Поделиться» открывает
 // share-карточку-картинку (shared/src/share) вместо голого текста.
-// Парный файл: schema-miniapp/src/components/AchievementDetail.tsx (вёрстка своя).
 // Окно — общий Dialog (единый editorial-вид центрированных диалогов сайта).
 import { useCallback, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';

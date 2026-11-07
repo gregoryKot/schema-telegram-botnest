@@ -33,6 +33,9 @@ export const USER_OWNED_TABLES = [
   'AnalyticsEvent',
   'TherapistRequest',
   'AuthProvider',
+  // Запись из приложения (#546): при слиянии бронь едет за человеком; при
+  // удалении аккаунта — отвязывается, а не удаляется (account.delete.ts).
+  'Booking',
 ] as const;
 // Note: Pair / TherapyRelation / TherapistNote / ClientConceptualization
 // handled separately below — multi-column refs (therapistId/clientId/userId1/userId2).

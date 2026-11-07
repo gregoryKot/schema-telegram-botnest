@@ -200,7 +200,7 @@ describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
     expect(result[0].tasks[0].text).toBe('от T1');
   });
 
-  it('виртуальный клиент: имя берётся из clientAlias, иначе virtualClientName, иначе "ID N"', async () => {
+  it('виртуальный клиент: имя берётся из clientAlias, иначе virtualClientName, иначе «Без имени · N»', async () => {
     const { service, relations, tasks } = makeService();
     relations.push({
       id: 42,
@@ -226,6 +226,34 @@ describe('TherapyTasksViewService.getAllTasksForTherapist', () => {
     expect(result).toHaveLength(1);
     expect(result[0].clientId).toBe(-42n);
     expect(result[0].clientName).toBe('Оффлайн клиент');
+  });
+
+  // docs/open/therapy.md: клиент без имени звался «ID 123» в доске заданий и
+  // «#123» на «Сегодня». Форма одна с сайтом (client-display-name.sync.spec.ts).
+  it('без псевдонима и имени — «Без имени · N», номер без минуса', async () => {
+    const { service, relations, tasks } = makeService();
+    relations.push({
+      id: 42,
+      therapistId: T1,
+      clientId: null,
+      status: 'active',
+      virtualClientName: null,
+    });
+    tasks.push({
+      id: 1,
+      userId: -42n,
+      assignedBy: T1,
+      type: 'custom',
+      text: 'офлайн задача',
+      targetDays: null,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(),
+    });
+    const result = await service.getAllTasksForTherapist(T1);
+    expect(result[0].clientName).toBe('Без имени · 42');
   });
 
   // Регресс O2: userId: { lt: 0 } матчил ВСЕХ виртуальных клиентов терапевта
@@ -342,6 +370,43 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
     expect(task.text).toBe('трекер каждый день');
     expect(task.doneToday).toBe(true);
     expect(task.progress).toBe(1); // одна отметка сегодня => прогресс 1 из 3
+  });
+
+  it('сверка (правило №4): «N из 7 дней» у терапевта и у клиента — одно число, с дня назначения', async () => {
+    const { service, tasksService, relations, tasks, users, ratings } =
+      makeService();
+    relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+    });
+    users.push({ id: CLIENT_A, notifyTimezone: 'Asia/Vladivostok' });
+    const now = Date.now();
+    for (let i = 0; i < 7; i++) {
+      const date = localDate(
+        'Asia/Vladivostok',
+        new Date(now - i * 86_400_000),
+      );
+      ratings.push({ userId: CLIENT_A, date });
+    }
+    tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T1,
+      type: 'tracker_streak',
+      text: encrypt('серия') ?? 'серия',
+      targetDays: 7,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date(now - 2 * 86_400_000), // назначено позавчера
+    });
+    const [therapistView] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    const [clientView] = await tasksService.getTasks(CLIENT_A);
+    expect(therapistView.progress).toBe(3); // позавчера, вчера, сегодня
+    expect(clientView.progress).toBe(therapistView.progress);
   });
 
   it('виртуальный клиент (отрицательный id): без активной связи по relation.id — null; с ней — задачи без doneToday/progress', async () => {

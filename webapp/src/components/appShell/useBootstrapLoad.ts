@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
-import { api, reportClientError } from '../../api';
-import type { PracticePlan, TherapyClientSummary } from '../../api';
+import { api, reportClientError, type PracticePlan, type TherapyClientSummary } from '../../api';
 import type { Need } from '../../types';
-import { cacheTherapistContact } from '../../utils/therapistContact';
-import { MY_SCHEMA_IDS_KEY, CHILDHOOD_DONE_KEY, YSQ_PROGRESS_KEY } from '../../utils/storageKeys';
-
-// Константы дат — из shared (правило №3); ре-экспорт для потребителей AppShell.
+import { cacheClientRelation, cacheTherapistContact } from '../../utils/therapistContact';
+import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
+import { CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY, cacheMyPatternsFromProfile } from '../../utils/storageKeys';
+import { cacheTherapistMode } from './therapistModeCache';
+import { writeYsqProgress } from '../../../../shared/src/hooks/ysqProgressStore';
+import { useDayRatings } from '../../../../shared/src/today/useDayRatings';
+import { deviceTimeZone } from '../../../../shared/src/utils/deviceTimeZone';
+// Ре-экспорт для AppShell. Это день ЗАГРУЗКИ бандла; живой день, который
+// сменяется в полночь, — `todayDate` из хука ниже.
 export { TODAY_DATE, TODAY_KEY } from '../../../../shared/src/utils/todayConstants';
-import { TODAY_KEY, YESTERDAY_DATE } from '../../../../shared/src/utils/todayConstants';
 
 interface Params {
   navigate: NavigateFunction;
@@ -23,12 +26,26 @@ interface Params {
 // имена упавших источников копим и шлём ОДНИМ отчётом на монтирование
 // (троттлинг: авария валит всё разом, отчёт на каждый источник = шум).
 export function useBootstrapLoad({ navigate, initialPathname }: Params) {
-  const [needs, setNeeds] = useState<Need[]>([]);
-  const [ratings, setRatings] = useState<Record<string, number>>({});
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
-  const [yesterdayRatings, setYesterdayRatings] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Оценки дня: день устройства явной датой, перечитывание в полночь, офлайн-
+  // очередь поверх ответа — shared/today/useDayRatings (одна механика с мини-аппом).
+  // Исход первой загрузки идёт в общий отчёт ниже (один отчёт на монтирование).
+  const [dayLoad] = useState(() => {
+    let resolve: (ok: boolean) => void = () => {};
+    const promise = new Promise<boolean>((r) => { resolve = r; });
+    return { promise, resolve };
+  });
+  const day = useDayRatings<Need>(api, {
+    onLoaded: () => dayLoad.resolve(true),
+    onError: (e, initial) => {
+      if (!initial) {
+        reportClientError({ message: 'appshell: оценки нового дня не загрузились', section: 'appshell.bootstrap' });
+        return;
+      }
+      setError(humanizeThrown(e, 'Не удалось загрузить потребности и оценки'));
+      dayLoad.resolve(false);
+    },
+  });
   const [userRole, setUserRole] = useState<'CLIENT' | 'THERAPIST'>('CLIENT');
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [pendingPlans, setPendingPlans] = useState<PracticePlan[]>([]);
@@ -40,7 +57,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
     const fail = (name: string) => { failed.push(name); };
 
     const initPromise = !sessionStorage.getItem('init_done')
-      ? api.init(Math.round(-new Date().getTimezoneOffset() / 60))
+      ? api.init(deviceTimeZone())
           .then(() => sessionStorage.setItem('init_done', '1'))
           .catch(() => fail('init'))
       : Promise.resolve();
@@ -54,20 +71,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
     // Согласия (getDisclaimer/acceptDisclaimer) — hooks/useConsentGate: молча
     // принимать их нельзя, нужен экран.
 
-    const needsRatingsPromise = Promise.all([api.needs(), api.ratings(), api.ratings(YESTERDAY_DATE)])
-      .then(([n, r, yR]) => {
-        setNeeds(n);
-        setRatings(r);
-        setYesterdayRatings(yR);
-        const initialSaved: Record<string, boolean> = {};
-        for (const key of Object.keys(r)) initialSaved[key] = true;
-        setSaved(initialSaved);
-        if (n.length > 0 && n.every((need: Need) => r[need.id] !== undefined)) {
-          localStorage.setItem(TODAY_KEY, '1');
-        }
-      })
-      .catch((e) => { setError(String(e)); fail('needs/ratings'); })
-      .finally(() => setLoading(false));
+    const needsRatingsPromise = dayLoad.promise.then((ok) => { if (!ok) fail('needs/ratings'); });
 
     const plansPromise = api.getPendingPlans().then(setPendingPlans).catch(() => fail('задания'));
 
@@ -80,7 +84,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
 
     const ysqPromise = Promise.all([api.getYsqProgress(), api.getYsqResult()]).then(([prog, result]) => {
       if (prog?.answers && !result?.answers) {
-        localStorage.setItem(YSQ_PROGRESS_KEY, JSON.stringify({ answers: prog.answers, page: prog.page }));
+        writeYsqProgress(prog.answers, prog.page);
       }
     }).catch(() => fail('YSQ'));
 
@@ -107,24 +111,24 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       // браузер видит терапевта впервые, сделанный на другой площадке
       // (мини-апп) — тот же аккаунт, серверный therapistMode===false.
       if (p.role === 'THERAPIST') {
-        const pref = localStorage.getItem('therapist_mode');
+        const pref = localStorage.getItem(THERAPIST_MODE_KEY);
         const wantsCabinet = pref !== null ? pref !== '0' : serverFlags.therapistMode !== false;
-        const onDefaultLanding =
-          initialPathname === '/' || initialPathname === '/today';
+        const onDefaultLanding = initialPathname === '/' || initialPathname === '/today';
         if (wantsCabinet && !initialPathname.startsWith('/cabinet') && onDefaultLanding) {
-          localStorage.setItem('therapist_mode', '1');
+          cacheTherapistMode(true);
           navigate('/cabinet');
         } else if (pref === null) {
-          localStorage.setItem('therapist_mode', wantsCabinet ? '1' : '0');
+          cacheTherapistMode(wantsCabinet);
         }
-      }
-      if (p.role !== 'THERAPIST' && initialPathname.startsWith('/cabinet')) {
-        navigate('/today');
+      } else {
+        // Не терапевт: флаг '1' мог остаться от снятой роли (её сняли на другой площадке) —
+        // сбрасываем, иначе «← Назад» с /account ведёт в /cabinet. replace: запись /cabinet
+        // не остаётся в истории, и браузерный «Назад» не вернёт клиента в кабинет.
+        if (localStorage.getItem(THERAPIST_MODE_KEY) === '1') cacheTherapistMode(false);
+        if (initialPathname.startsWith('/cabinet')) navigate('/today', { replace: true });
       }
       if (p.name) setDisplayName(p.name);
-      if (p.mySchemaIds?.length > 0) {
-        localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(p.mySchemaIds));
-      }
+      cacheMyPatternsFromProfile(p); // пустой список с сервера — тоже правда (#939)
       // Дальше — вложенные запросы. Возвращаем их промис из колбэка: иначе
       // profilePromise резолвится раньше, чем клиенты/связь с терапевтом
       // отработают, и их сбой не попадёт во флаш отчёта ниже.
@@ -132,9 +136,7 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
         cacheTherapistContact({ role: 'THERAPIST', partnerId: null, partnerName: null, myId: null, myName: p.name });
         return api.getTherapyClients().then(setTherapistClients).catch(() => fail('клиенты терапевта'));
       } else {
-        return api.getTherapyRelation().then(rel => {
-          cacheTherapistContact({ role: 'CLIENT', partnerId: rel?.partnerId ?? null, partnerName: rel?.partnerName ?? null, myId: null, myName: null });
-        }).catch(() => fail('связь с терапевтом'));
+        return api.getTherapyRelation().then(cacheClientRelation).catch(() => fail('связь с терапевтом'));
       }
     }).catch(() => fail('профиль'));
 
@@ -148,8 +150,10 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
   }, []);
 
   return {
-    needs, ratings, setRatings, saved, setSaved, yesterdayRatings,
-    loading, error,
+    needs: day.needs, ratings: day.ratings, setRatings: day.setRatings,
+    saved: day.saved, setSaved: day.setSaved, yesterdayRatings: day.yesterdayRatings,
+    todayDate: day.today,
+    loading: day.loading, error,
     userRole, setUserRole,
     displayName, setDisplayName,
     pendingPlans, setPendingPlans,

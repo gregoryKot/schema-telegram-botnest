@@ -1,39 +1,29 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
   Req,
   Res,
-  Query,
   UnauthorizedException,
-  Logger,
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, WebUser } from './jwt.guard';
 import { SecurityLogService } from './security-log.service';
 import { TotpService } from './totp.service';
 import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
-import { EmailBodyDto, TokenBodyDto } from './dto/auth-scalar.dto';
-import { EmailService } from './email.service';
 import type { Request, Response } from 'express';
 import { requireCsrf, setRefreshCookie } from './auth-http.util';
 import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
-import { CODE_THROTTLE, DAILY_MAIL_THROTTLE } from './auth-throttles';
+import { CODE_THROTTLE } from './auth-throttles';
 
 @Controller('api/auth')
 export class Auth2faController {
-  private readonly logger = new Logger(Auth2faController.name);
-
   constructor(
     private readonly auth: AuthService,
-    private readonly config: ConfigService,
     private readonly securityLog: SecurityLogService,
     private readonly totp: TotpService,
-    private readonly emailSvc: EmailService,
   ) {}
 
   // ─── 2FA (TOTP) management ────────────────────────────────────────────────
@@ -111,75 +101,6 @@ export class Auth2faController {
     return this.logTotpFailure(req, webUser.userId, '2fa/recovery-codes', () =>
       this.totp.regenerateRecoveryCodes(webUser.userId, dto.code),
     );
-  }
-
-  // ─── Recovery email ──────────────────────────────────────────────────────
-
-  @Post('recovery-email/start')
-  @UseGuards(JwtAuthGuard)
-  @PersistentThrottleLimit(DAILY_MAIL_THROTTLE)
-  @HttpCode(200)
-  async recoveryEmailStart(
-    @Req() req: Request,
-    @Body() dto: EmailBodyDto,
-  ): Promise<{ ok: true }> {
-    requireCsrf(req, 'recovery-email/start', this.securityLog);
-    const webUser: WebUser = req.webUser!;
-    return this.emailSvc.sendVerificationLink(webUser.userId, dto.email);
-  }
-
-  @Get('recovery-email/verify')
-  async recoveryEmailVerify(
-    @Query('token') token: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      await this.emailSvc.consumeToken(token, 'verify_email');
-      res.redirect(`${frontendBase}/account?verified=1`);
-    } catch (err) {
-      this.logger.error(
-        `recovery email verify failed: ${(err as Error).message}`,
-      );
-      res.redirect(`${frontendBase}/account?verified=0`);
-    }
-  }
-
-  // Public — anyone can request a recovery link by email. We silently
-  // succeed regardless to avoid leaking which emails are registered.
-  @Post('recovery/request')
-  @PersistentThrottleLimit(DAILY_MAIL_THROTTLE)
-  @HttpCode(200)
-  async recoveryRequest(@Body() dto: EmailBodyDto): Promise<{ ok: true }> {
-    return this.emailSvc.sendRecoveryLink(dto.email);
-  }
-
-  // Confirm a recovery magic link → issue a session for that user. They land
-  // on /account and can link a new provider before the original token expires.
-  @Post('recovery/confirm')
-  @PersistentThrottleLimit(CODE_THROTTLE)
-  @HttpCode(200)
-  async recoveryConfirm(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() dto: TokenBodyDto,
-  ): Promise<{ accessToken: string; expiresIn: number }> {
-    requireCsrf(req, 'recovery/confirm', this.securityLog);
-    const { userId } = await this.emailSvc.consumeToken(dto.token, 'recovery');
-    // Recovery DOES skip 2FA — the email proves possession of a separate
-    // factor. Otherwise losing TOTP + all providers = unrecoverable account.
-    const tokens = await this.auth.issueTokens(
-      userId,
-      req.ip,
-      req.headers['user-agent'],
-    );
-    setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, false);
-    this.securityLog.log('role_changed', {
-      userId,
-      event: 'recovery_login',
-      ip: req.ip,
-    });
-    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 
   // Verify a TOTP code in exchange for a real access token. Called by the

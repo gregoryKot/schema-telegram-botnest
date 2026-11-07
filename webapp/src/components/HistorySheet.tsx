@@ -1,12 +1,11 @@
 import { lazy, Suspense, useState } from 'react';
 import type { PracticePlan, StreakData } from '../api';
 import { api } from '../api';
-import { COLORS, type Need, type DayHistory } from '../types';
+import type { Need, DayHistory } from '../types';
 import { HistorySheetSkeleton } from './HistorySheetSkeleton';
 import { CheckInSheet } from './CheckInSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { needColor } from '../../../shared/src/needs/needColors';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { fillHistoryGaps } from './appShell/navigation';
 import '../styles/sheet-diary.css';
@@ -44,12 +43,12 @@ export function HistorySheet({
 
   return (
     <div {...dialogA11y} className="u-sheet-grid">
-      {/* ExScreen-style topbar */}
-      <div className="ex-topbar sd-topbar">
-        <button className="ex-back" onClick={goBack}>
+      {/* Шапка листа — ds-sheet-head/ds-back, «Оценить →» в правом слоте (#906) */}
+      <div className="ds-sheet-head">
+        <button type="button" className="ds-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад к трекеру
         </button>
-        <button onClick={() => { onOpenTracker(); goBack(); }} className="ds-btn ds-btn--sm">
+        <button type="button" onClick={() => goBack(onOpenTracker)} className="ds-btn ds-btn--sm">
           Оценить →
         </button>
       </div>
@@ -70,7 +69,7 @@ export function HistorySheet({
                 childhoodRatings={childhoodRatings}
                 onOpenSchemas={onOpenSchemas}
                 onOpenChildhoodWheel={onOpenChildhoodWheel}
-                onGoToToday={() => { onOpenTracker(); goBack(); }}
+                onGoToToday={() => goBack(onOpenTracker)}
                 onBackfill={(date) => setBackfillDate(date)}
               />
             </Suspense>
@@ -85,9 +84,7 @@ export function HistorySheet({
         return (
           <CheckInSheet
             plan={plan}
-            needColor={needColor(need.id)}
             needLabel={need.chartLabel}
-            color={COLORS[need.id] ?? '#888'}
             onDone={() => onDismissPlan(plan.id)}
           />
         );
@@ -96,7 +93,7 @@ export function HistorySheet({
       {backfillDate && (
         <Suspense fallback={null}>
           <TrackerOverlay
-            needs={needs} ratings={{}} saved={{}}
+            needs={needs} ratings={{}}
             onChange={() => {}} onSaved={() => {}}
             date={backfillDate}
             onClose={() => setBackfillDate(null)}

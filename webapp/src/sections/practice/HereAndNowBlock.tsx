@@ -1,9 +1,7 @@
 // Блок «Здесь и сейчас» раздела «Практика»: три быстрые практики на одну-три
-// минуты. Парный по смыслу с schema-miniapp/src/sections/helpSection/
-// HereAndNow.tsx — раздел жил только в мини-аппе и стоял осознанным долгом в
-// scripts/feature-parity-baseline.json, пока сайт до готовых роутов
-// /api/practice-session(s) не доставал (правило №16). Логика и контент —
-// общие (shared/src/practices), здесь только вёрстка сайта.
+// минуты. Раздел жил только в мини-аппе, пока сайт до готовых роутов
+// /api/practice-session(s) не доставал. Логика и контент — общие
+// (shared/src/practices), здесь только вёрстка сайта.
 //
 // Онбординг (правило «откуда это и зачем»): подпись над практиками отвечает,
 // что это и зачем, до первого действия — на самом пути, а не в спрятанном
@@ -16,6 +14,7 @@ import { QuickPracticeSheet } from '../../components/practice/QuickPracticeSheet
 import { practiceCountLabel } from '../../../../shared/src/practices/practiceCountLabel';
 import type { QuickPracticeId } from '../../../../shared/src/practices/quickPractices';
 import { pressable } from '../../utils/a11y';
+import { Breath } from '../../components/art/PaperArt';
 import { HereAndNowIntro } from './HereAndNowIntro';
 import '../../styles/client-practice.css';
 
@@ -56,15 +55,16 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
     <>
       <HereAndNowIntro compact={compact} />
 
-      {compact ? <div className="cp-breath"><BreathingCard /></div> : <BreathingCard />}
+      <div className="cp-open-card"><BreathingCard /></div>
 
       <div className="ds-label">Если нужно больше</div>
       {ROWS.map((row) => (
         <div
           key={row.id}
-          className="ds-card ds-card--row ds-card--hover cp-task"
+          className="ds-card ds-card--row ds-card--nav ds-card--hover cp-task"
           {...pressable(() => setActive(row.id))}
         >
+          <span className="pp-row-art"><Breath size="row" /></span>
           <div className="cp-task-body">
             <div className="cp-task-title">{row.label}</div>
             <div className="ds-sub">
@@ -72,7 +72,7 @@ export function HereAndNowBlock({ compact = false, extraRows }: { compact?: bool
             </div>
           </div>
           {compact
-            ? <span className="cp-chev" aria-hidden="true">›</span>
+            ? <span className="ds-chev" aria-hidden="true" />
             : <span className="ds-link">начать →</span>}
         </div>
       ))}

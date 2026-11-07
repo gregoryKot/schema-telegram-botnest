@@ -2,15 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotClientOverviewService } from '../bot/bot.client-overview.service';
 import { createTherapyInvite, joinTherapyAsClient } from './therapy-invite';
-import { getRelationInfo } from './therapy-relation-info';
-import { encrypt, decrypt, decryptJson } from '../utils/crypto';
-
-// Имена клиентов, введённые терапевтом (алиас и офлайн-клиент) — PII,
-// шифруются; легаси plaintext читается как есть (decrypt tolerant).
-const decName = (v: string | null): string | null =>
-  v == null ? null : (decrypt(v) ?? v);
+import {
+  listTherapyInvites,
+  previewTherapyInvite,
+  revokeTherapyInvite,
+  TherapyInviteView,
+} from './therapy-invite-list';
+import { getRelationInfo, meetingDaysOf } from './therapy-relation-info';
+import { decryptJson } from '../utils/crypto';
+import { decryptName, encryptName } from './client-name';
 import { randomBytes } from 'crypto';
 import { activeRelationWhere } from './relation-where';
+import { endClientRelations } from './end-client-relations';
+import { CLIENT_LEFT } from './relation-end-reason';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
 
 // Связи терапевт↔клиент: приглашения, подключение, список клиентов,
@@ -27,8 +31,24 @@ export class TherapyRelationsService {
 
   // ─── Connection ─────────────────────────────────────────────────────────────
 
-  createInvite(therapistId: bigint): Promise<{ code: string; url: string }> {
-    return createTherapyInvite(this.prisma, therapistId);
+  // Каждый вызов — новый код; alias — имя из «Новый клиент» (therapy-invite.ts).
+  createInvite(
+    therapistId: bigint,
+    alias?: string,
+  ): Promise<{ code: string; url: string }> {
+    return createTherapyInvite(this.prisma, therapistId, alias);
+  }
+
+  listInvites(therapistId: bigint): Promise<TherapyInviteView[]> {
+    return listTherapyInvites(this.prisma, therapistId);
+  }
+
+  revokeInvite(therapistId: bigint, id: number): Promise<boolean> {
+    return revokeTherapyInvite(this.prisma, therapistId, id);
+  }
+
+  previewInvite(clientId: bigint, code: string) {
+    return previewTherapyInvite(this.prisma, clientId, code);
   }
 
   // true — подключён, false — код не подошёл; бросает ALREADY_CONNECTED_ERROR
@@ -41,15 +61,13 @@ export class TherapyRelationsService {
     return getRelationInfo(this.prisma, userId);
   }
 
-  // Разрывает связи, где userId — КЛИЕНТ. Раньше удалялись и связи, где он
-  // терапевт: один вызов DELETE /api/therapy/relation от терапевта сносил всех
-  // его клиентов, офлайн-клиентов и приглашения, а заметки и карты оставались
-  // сиротами (аудит 2026-10, T2). Терапевт убирает клиентов по одному через
-  // DELETE clients/:clientId (removeClient).
+  // Завершает живые связи, где userId — КЛИЕНТ (client_left, задания терапевта —
+  // личные цели, end-client-relations.ts). Связи в роли терапевта не трогаются
+  // (аудит 2026-10, T2): терапевт убирает клиентов по одному (removeClient).
   async disconnect(userId: bigint): Promise<void> {
-    await this.prisma.therapyRelation.deleteMany({
-      where: { clientId: userId },
-    });
+    await this.prisma.$transaction((tx) =>
+      endClientRelations(tx, { clientId: userId }, CLIENT_LEFT),
+    );
   }
 
   async getClients(therapistId: bigint): Promise<TherapyClientSummary[]> {
@@ -87,27 +105,17 @@ export class TherapyRelationsService {
       .filter((rel) => rel.client !== null)
       .map((rel) => {
         const clientId = rel.client!.id;
-        const { streak, daysSince, history } = overviews.get(
-          String(clientId),
-        ) ?? {
-          streak: 0,
-          daysSince: -1,
-          history: [],
-        };
-        const lastActiveDate =
-          daysSince >= 0
-            ? new Date(Date.now() - daysSince * 86400000)
-                .toISOString()
-                .slice(0, 10)
-            : null;
-        const byDate = new Map(history.map((d) => [d.date, d.ratings]));
+        // Дни — по календарю клиента (ClientOverview): в 00:10 по Москве
+        // UTC-день ещё вчерашний, и сегодняшняя оценка выпадала (QA 2026-10-26).
+        const ov = overviews.get(String(clientId));
+        const streak = ov?.streak ?? 0;
+        const byDate = new Map(
+          (ov?.history ?? []).map((d) => [d.date, d.ratings]),
+        );
         const recentIndexHistory: (number | null)[] = Array.from(
           { length: 14 },
           (_, i) => {
-            const d = new Date(Date.now() - i * 86400000)
-              .toISOString()
-              .slice(0, 10);
-            const r = byDate.get(d);
+            const r = byDate.get(ov?.recentDays[i] ?? '');
             if (!r) return null;
             const vals = Object.values(r);
             return vals.length === 5
@@ -118,16 +126,18 @@ export class TherapyRelationsService {
         const todayIndex = recentIndexHistory[0];
         return {
           telegramId: clientId,
+          urlCode: rel.urlCode,
           name: rel.client!.firstName,
-          clientAlias: decName(rel.clientAlias),
+          clientAlias: decryptName(rel.clientAlias),
           streak,
-          lastActiveDate,
+          lastActiveDate: ov?.lastDate ?? null,
+          daysSinceActive: ov && ov.daysSince >= 0 ? ov.daysSince : null,
           todayIndex,
           recentIndexHistory,
           relationCreatedAt: rel.createdAt.toISOString(),
           therapyStartDate: rel.therapyStartDate ?? null,
           nextSession: rel.nextSession ?? null,
-          meetingDays: (rel.meetingDays as number[]) ?? [],
+          meetingDays: meetingDaysOf(rel.meetingDays),
           schemaIds: conceptMap.get(String(clientId)) ?? [],
         };
       });
@@ -137,16 +147,18 @@ export class TherapyRelationsService {
       .filter((rel) => rel.client === null && rel.virtualClientName)
       .map((rel) => ({
         telegramId: -BigInt(rel.id),
-        name: decName(rel.virtualClientName) as string,
-        clientAlias: decName(rel.clientAlias),
+        urlCode: rel.urlCode,
+        name: decryptName(rel.virtualClientName) as string,
+        clientAlias: decryptName(rel.clientAlias),
         streak: 0,
         lastActiveDate: null,
+        daysSinceActive: null,
         todayIndex: null,
         recentIndexHistory: Array(14).fill(null) as null[],
         relationCreatedAt: rel.createdAt.toISOString(),
         therapyStartDate: rel.therapyStartDate ?? null,
         nextSession: rel.nextSession ?? null,
-        meetingDays: (rel.meetingDays as number[]) ?? [],
+        meetingDays: meetingDaysOf(rel.meetingDays),
         schemaIds: conceptMap.get(String(-rel.id)) ?? [],
       }));
 
@@ -164,7 +176,7 @@ export class TherapyRelationsService {
         therapistId,
         clientId: null,
         status: 'active',
-        virtualClientName: encrypt(name.trim()) ?? name.trim(),
+        virtualClientName: encryptName(name),
       },
     });
     return this.getClients(therapistId);
@@ -193,10 +205,12 @@ export class TherapyRelationsService {
     clientId: bigint,
     alias: string,
   ): Promise<void> {
-    const encAlias = alias.trim() ? encrypt(alias.trim()) : null;
-    await this.prisma.therapyRelation.updateMany({
+    const { count } = await this.prisma.therapyRelation.updateMany({
       where: activeRelationWhere(therapistId, clientId),
-      data: { clientAlias: encAlias },
+      data: { clientAlias: encryptName(alias) },
     });
+    // 0 строк — связи нет (клиент удалён, чужой, выдуман): раньше это был
+    // тихий успех и «переименование» удалённого клиента (QA 2026-10-26).
+    if (count === 0) throw new Error('No active relation');
   }
 }

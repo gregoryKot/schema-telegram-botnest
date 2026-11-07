@@ -1,58 +1,47 @@
+import { Ribbon } from '../art/PaperArt';
 import { ExScreen } from '../exercises/ExScreen';
-import { buildDiaryPayoff } from '../../../../shared/src/case/caseRecognition';
-import { modeDisplayName } from '../../../../shared/src/mode/modeDisplayName';
-import type { CaseTraits, Tr } from '../../../../shared/src/case/caseTypes';
+import { TherapyLine } from '../therapy/TherapyLine';
+import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
+import { CaseSupportBlock } from './CaseSupportFoot';
 
-/** Нет реальных данных → «—», а не выдуманная строка (правило CLAUDE.md про
- *  хардкод-заглушки — тело/порыв могли остаться пустыми). */
-function TraitRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="ex2-trait">
-      <div className="ds-label">{label}</div>
-      <div className="ex2-trait-text">{value || '—'}</div>
-    </div>
-  );
-}
-
-/** Итог потока. Twin schema-miniapp CaseDoneScreen.tsx. */
+/**
+ * «Записано»: итог потока. Без примет — их нечем заполнить, пока разбор один.
+ * Карточка поддержки — как на каждом шаге (правило №7): кризисный текст,
+ * набранный в разборе, после сохранения никуда не делся, и экран итога
+ * обязан её показать, а не только мелькнуть ею на время сохранения.
+ */
 export function CaseDoneScreen({
-  modeId,
-  alias,
-  traits,
+  name,
   onOpenMap,
   onClose,
-  tr,
+  crisis,
+  onHardNow,
 }: {
-  modeId: string;
-  alias: string;
-  traits: CaseTraits;
+  name: string;
   onOpenMap: () => void;
   onClose: () => void;
-  tr: Tr;
+  crisis: boolean;
+  onHardNow: () => void;
 }) {
+  const bridge = useTherapyBridgeTexts();
   return (
-    <ExScreen
-      onBack={onClose}
-      backLabel="Закрыть"
-      eyebrow="Разбор случая"
-      title={modeDisplayName(modeId, alias)}
-    >
-      <div className="ds-card ds-card--ink ex2-chain">
-        <TraitRow label="Ранний сигнал" value={traits.body} />
-        <TraitRow label="Приходит, когда" value={traits.trigger} />
-        <TraitRow label="Тянет" value={traits.impulse} />
+    <ExScreen onBack={onClose} backLabel="Закрыть" eyebrow="Записано" title={name}>
+      <div className="pp-paper cq-done">
+        <Ribbon size="square" />
+        <p className="ds-sub">
+          Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.
+        </p>
       </div>
-
-      <p className="ds-sub ex2-gap-b">{buildDiaryPayoff(tr)}</p>
-
       <div className="ex2-foot">
-        <button type="button" className="ds-btn" onClick={onOpenMap}>
-          Открыть карту
+        <button type="button" className="ds-btn" onClick={onClose}>
+          На главную
         </button>
-        <button type="button" className="ds-btn ex2-ghost" onClick={onClose}>
-          Готово
+        <button type="button" className="ds-btn ex2-ghost" onClick={onOpenMap}>
+          Карта себя
         </button>
       </div>
+      <CaseSupportBlock crisis={crisis} onHardNow={onHardNow} />
+      <TherapyLine place="case_done" text={bridge.lineCase} />
     </ExScreen>
   );
 }

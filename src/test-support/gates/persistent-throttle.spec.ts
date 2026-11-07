@@ -124,7 +124,10 @@ describe('check-persistent-throttle.mjs', () => {
       'return this.totp.regenerateRecoveryCodes(uid, dto.code);',
     ],
     ['totp.disable(', 'await this.totp.disable(uid, dto.code);'],
-    ['consumeToken(', "await this.email.consumeToken(dto.token, 'recovery');"],
+    [
+      'consumeEmailToken(',
+      'return this.emailTokens.consumeEmailToken(dto.token, req.ip);',
+    ],
     ['.approve(', 'return this.links.approve(code, uid);'],
     ['approveLogin', 'await this.t.approveLoginIfPossible(c, u);'],
     ['.deny(', 'await this.t.deny(code);'],
@@ -183,6 +186,31 @@ describe('check-persistent-throttle.mjs', () => {
       ),
     });
     expect(res.status).toBe(0);
+  });
+
+  // Находка docs/open/backend.md: тело читалось вместе со строками, и
+  // `verifyCode(` в тексте ошибки сошёл бы за вызов (ложно-красное).
+  it.each([
+    "throw new BadRequestException('verifyCode( не вызван');",
+    'throw new Error("сначала .approve( у терапевта");',
+    'this.logger.warn(`ждём .submit( от ${uid}`);',
+  ])('контроль: триггер только в тексте строки — «%s» — зелёное', (line) => {
+    const res = gate({
+      'src/a.controller.ts': controller(
+        `  @Post('act')\n  async act(uid: string) { ${line} }`,
+      ),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('вызов внутри ${…} шаблонной строки — настоящий вызов: красное', () => {
+    const res = gate({
+      'src/a.controller.ts': controller(
+        "  @Post('act')\n  async act() { return `ok: ${await this.t.verifyCode(1)}`; }",
+      ),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('POST /api/x/act');
   });
 
   it('протухшая запись: маршрута нет — красное', () => {
@@ -337,10 +365,8 @@ describe('check-persistent-throttle.mjs', () => {
         join(ROOT, 'src', 'auth', 'auth-2fa.controller.ts'),
         'utf8',
       );
-      const baseline = {
-        'GET /api/auth/recovery-email/verify':
-          REAL_BASELINE['GET /api/auth/recovery-email/verify'],
-      };
+      // Исключений у контроллера нет: каждая ручка с кодом несёт метку.
+      const baseline = {};
       expect(gate({ 'src/auth/a.controller.ts': real }, baseline).status).toBe(
         0,
       );
@@ -429,6 +455,35 @@ describe('persistent-throttle-parse.mjs: parseControllerFile', () => {
       throttled: false,
       triggers: true,
     });
+  });
+
+  it('строка с триггером рядом с настоящим вызовом: вызов засчитан, текст — нет', () => {
+    const p = parse(
+      [
+        "@Controller('a')",
+        'export class A {',
+        "  @Post('str') s() { throw new Error('verifyCode( failed: \\' .deny( '); }",
+        "  @Post('call') c() { const m = 'текст'; return this.t.verifyCode(m); }",
+        "  @Post('tpl') t() { return `${'.deny('} ${`.approve(`}`; }",
+        '}',
+      ].join('\n'),
+    );
+    expect(p.handlers.map((h) => [h.key, h.triggers])).toEqual([
+      ['POST /a/str', false],
+      ['POST /a/call', true],
+      ['POST /a/tpl', false],
+    ]);
+  });
+
+  it('blankStrings (gate-blank-strings.mjs): длина и переводы строк сохраняются, кавычки остаются', () => {
+    const src =
+      "a('x.deny(y', \"it's\");\nb('\\'q\\'');\n`t ${c({ k: `n ${'z'}` })}\n`";
+    const out = callExport('gate-blank-strings.mjs', 'blankStrings', src);
+    expect(out).toHaveLength(src.length);
+    expect(out.split('\n')).toHaveLength(src.split('\n').length);
+    expect(out).toBe(
+      "a('        ', \"    \");\nb('     ');\n`  ${c({ k: `  ${' '}` })}\n`",
+    );
   });
 
   it('контроль: декоратор в комментарии не считается, а число хендлеров сходится с ожидаемым', () => {

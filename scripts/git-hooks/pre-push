@@ -1,0 +1,59 @@
+#!/bin/sh
+# Pre-push хук репозитория: перед каждым `git push` собирает сайт (`webapp`,
+# `tsc -b && vite build`) и блокирует пуш, если сборка красная.
+#
+# Почему он в репозитории, а не в .git/hooks. До 2026-11-05 хук жил только в
+# .git/hooks/pre-push на машине владельца и гонял сборку без VITE_BOT_USERNAME;
+# с #690 production-сборка без переменной падает («VITE_BOT_USERNAME не задан»),
+# хук был красным на любой машине, и агенты пушили с --no-verify — так пары
+# файлов, различавшихся только регистром (#933), ломали кабинет только у
+# владельца. Этот хук ставится из npm `prepare` (scripts/setup-git-hooks.mjs →
+# core.hooksPath), собирает с тем же именем бота, что Dockerfile и CI (сверка —
+# src/test-support/gates/bot-username-sources.spec.ts), и красный только по
+# делу. Поэтому `git push --no-verify` в проекте не используется.
+#
+# git запускает хук из корня пушимого рабочего дерева — из git worktree
+# (.claude/worktrees/*) из корня этого worktree, — так что собирается именно
+# то дерево, которое пушат, а не главный чекаут.
+#
+# stdin: строки `<local ref> <local sha> <remote ref> <remote sha>`. Пуш,
+# который только удаляет ветки на сервере (local ref = «(delete)»), ничего не
+# выкладывает — собирать нечего.
+set -u
+
+has_updates=0
+if [ -t 0 ]; then
+  has_updates=1
+else
+  while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_ref" = "(delete)" ] || has_updates=1
+  done
+fi
+[ "$has_updates" = 1 ] || exit 0
+
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+WEBAPP="$ROOT/webapp"
+
+if [ ! -d "$WEBAPP/node_modules" ]; then
+  echo "❌ pre-push: нет $WEBAPP/node_modules — собрать webapp нечем."
+  echo "   Поставь зависимости и повтори пуш: npm ci --prefix webapp"
+  exit 1
+fi
+
+# То же имя, что ENV VITE_BOT_USERNAME в Dockerfile и env сборок в ci.yml и
+# nightly.yml; расхождение краснит bot-username-sources.spec.ts.
+export VITE_BOT_USERNAME=SchemeHappensBot
+
+LOG="$(mktemp "${TMPDIR:-/tmp}/webapp-prepush.XXXXXX")" || exit 1
+echo "▶ pre-push: сборка webapp в $WEBAPP (tsc -b + vite build), лог: $LOG"
+if ! npm run build --prefix "$WEBAPP" >"$LOG" 2>&1; then
+  echo ""
+  echo "❌ pre-push: webapp не собирается — пуш заблокирован. Хвост лога:"
+  echo ""
+  tail -n 20 "$LOG"
+  echo ""
+  echo "Почини и повтори пуш. Воспроизвести: VITE_BOT_USERNAME=$VITE_BOT_USERNAME npm run build --prefix webapp"
+  exit 1
+fi
+rm -f "$LOG"
+echo "✅ pre-push: webapp собирается"

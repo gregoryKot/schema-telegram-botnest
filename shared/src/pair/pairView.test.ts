@@ -48,12 +48,14 @@ describe('inviteButtonLabel', () => {
     hasPartners: false,
     hasPending: false,
   };
+  // QA 2026-11, М7: не «Пригласить друга» — так зовётся приглашение в
+  // приложение в «Поделиться», а действие другое.
   it('первое приглашение', () => {
-    expect(inviteButtonLabel(base)).toBe('Пригласить друга');
+    expect(inviteButtonLabel(base)).toBe('Позвать в пару');
   });
-  it('партнёр уже подключён — «ещё друга»', () => {
+  it('партнёр уже подключён — «ещё одного человека»', () => {
     expect(inviteButtonLabel({ ...base, hasPartners: true })).toBe(
-      'Пригласить ещё друга',
+      'Позвать ещё одного человека',
     );
   });
   it('ждущее приглашение — «Новая ссылка»', () => {
@@ -72,13 +74,21 @@ describe('inviteButtonLabel', () => {
 });
 
 describe('freshInviteUrl', () => {
+  const pending = { pendingCode: 'AB12', pendingUrl: URL };
   it('не дублирует ссылку, совпавшую с ждущей', () => {
-    expect(freshInviteUrl(URL, URL)).toBe('');
+    expect(freshInviteUrl(URL, pending)).toBe('');
   });
-  it('новая ссылка показывается', () => {
-    expect(freshInviteUrl(URL, '')).toBe(URL);
+  it('новая ссылка показывается, пока приглашение ждёт', () => {
+    expect(freshInviteUrl(URL, { pendingCode: 'AB12', pendingUrl: null })).toBe(
+      URL,
+    );
   });
   it('пустая остаётся пустой', () => {
-    expect(freshInviteUrl('', URL)).toBe('');
+    expect(freshInviteUrl('', pending)).toBe('');
+  });
+  it('приглашение отменено или принято — ссылку больше не предлагаем', () => {
+    expect(freshInviteUrl(URL, { pendingCode: null, pendingUrl: null })).toBe(
+      '',
+    );
   });
 });

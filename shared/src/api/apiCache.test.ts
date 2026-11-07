@@ -180,9 +180,18 @@ describe('isCacheableGetPath', () => {
     expect(isCacheableGetPath('/health/db')).toBe(false);
   });
 
+  it('опрос брони по токену не кешируется: статус меняет вебхук оплаты', () => {
+    expect(isCacheableGetPath('/api/booking/by-token/abc')).toBe(false);
+  });
+
+  it('схема случая клиента не кешируется: показ выключает терапевт', () => {
+    expect(isCacheableGetPath('/api/therapy/my-concept')).toBe(false);
+    expect(isCacheableGetPath('/api/therapy/conceptualization/57')).toBe(true);
+  });
+
   it('обычные пользовательские GET кешируемы', () => {
     expect(isCacheableGetPath('/api/streak')).toBe(true);
-    expect(isCacheableGetPath('/api/booking/by-token/abc')).toBe(true);
+    expect(isCacheableGetPath('/api/booking/slots')).toBe(true);
   });
 });
 

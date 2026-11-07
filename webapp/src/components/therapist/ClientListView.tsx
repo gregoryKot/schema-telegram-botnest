@@ -1,26 +1,27 @@
-import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { api } from '../../api';
-import type { TherapyClientSummary, UserTask, UserId } from '../../api';
+import type { TherapyClientSummary } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
-// Не todayStr(): дни клиентов приезжают из API календарными (полночь UTC),
-// и локальная дата машины с ними не совпадает в половине зон — см. шапку
-// shared/src/utils/calendarDate.ts.
-import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
+// Местный день: с ним сравнивается nextSession — настенное время терапевта.
+// Активность клиента — по его календарю (isActiveToday), не по этому дню.
+import { todayStr } from '../../utils/format';
 import { Skeleton } from '../Skeleton';
 import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
+import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvitesList';
 import { ClientCard } from './ClientCard';
+import { PaperEmpty } from '../art/PaperEmpty';
+import { ClientListHero } from './ClientListHero';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
 import type { useAddClient } from './useAddClient';
+import type { TasksBoard } from './useTasksBoard';
+import type { ClientTab } from './clientSheetTypes';
 import '../../styles/therapist-clients.css';
-type AllTasks = { clientId: UserId; clientName: string; tasks: UserTask[] }[] | null;
 
 const FILTERS: { key: RosterStatus; label: string }[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активны' },
-  { key: 'wait', label: 'Ждут' },
-  { key: 'virtual', label: 'Оффлайн' },
+  { key: 'wait', label: 'Не сегодня' }, // в боте, но сегодня без активности; «Ждут» путалось с «Ждут подключения»
+  { key: 'virtual', label: 'Офлайн' },
 ];
 
 interface Props {
@@ -29,73 +30,48 @@ interface Props {
   loading: boolean;
   loadFailed: boolean;
   listTab: 'clients' | 'kanban';
-  setListTab: React.Dispatch<React.SetStateAction<'clients' | 'kanban'>>;
+  setListTab: (t: 'clients' | 'kanban') => void;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   filterStatus: RosterStatus;
   setFilterStatus: React.Dispatch<React.SetStateAction<RosterStatus>>;
-  allTasks: AllTasks;
-  allTasksLoading: boolean;
-  allTasksFailed: boolean;
-  setAllTasks: React.Dispatch<React.SetStateAction<AllTasks>>;
-  setAllTasksLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  setAllTasksFailed: React.Dispatch<React.SetStateAction<boolean>>;
-  openClient: (client: TherapyClientSummary) => void;
+  /** Доска «Задания» — её держит лист кабинета (useTasksBoard). */
+  board: TasksBoard;
+  openClient: (client: TherapyClientSummary, tab?: ClientTab) => void;
   addClient: ReturnType<typeof useAddClient>;
 }
 
 export function ClientListView({
   animKey, clients, loading, loadFailed, listTab, setListTab, searchQuery, setSearchQuery,
-  filterStatus, setFilterStatus, allTasks, allTasksLoading, allTasksFailed, setAllTasks, setAllTasksLoading, setAllTasksFailed,
-  openClient, addClient,
+  filterStatus, setFilterStatus, board, openClient, addClient,
 }: Props) {
   const tr = useTr();
-  const [addOpen, setAddOpen] = useState(false);
   // Пустой список — онбординг: форма открыта сразу. Созданного клиента не
   // прячем, пока терапевт не увидел ссылку-приглашение (created).
   const noClients = !loading && !loadFailed && clients.length === 0;
-  const formVisible = addOpen || noClients || addClient.created !== null;
+  const formVisible = addClient.open || noClients || addClient.created !== null;
 
-  // Сбой ≠ пусто: канбан не должен показать терапевту пустую доску без
-  // заданий на отказе запроса. Вынесено в функцию — переиспользуется и
-  // первым кликом по вкладке, и кнопкой повтора внутри KanbanView.
-  const loadAllTasks = () => {
-    setAllTasksFailed(false);
-    setAllTasksLoading(true);
-    api.getAllTherapyTasks().then(setAllTasks).catch(() => setAllTasksFailed(true)).finally(() => setAllTasksLoading(false));
-  };
-
-  const today = todayCalendarDate();
-  const filtered = sortRoster(filterRoster(clients, searchQuery, filterStatus, today), today);
+  const today = todayStr();
+  const filtered = sortRoster(filterRoster(clients, searchQuery, filterStatus), today);
 
   return (
     <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
       <div className="ds-page">
-        <div className="ds-head-row">
-          <div>
-            <div className="ds-eyebrow">Практика</div>
-            <h1 className="ds-h1">Клиенты{clients.length > 0 && <> <span className="tc-count">{clients.length}</span></>}</h1>
-          </div>
-          <button className="ds-btn" aria-expanded={formVisible} onClick={() => { setAddOpen(v => !v); }}>
-            + Новый клиент
-          </button>
-        </div>
+        <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} />
 
-        {formVisible && <AddClientForm addClient={addClient} onClose={() => setAddOpen(false)} />}
+        {formVisible && <AddClientForm addClient={addClient} />}
+        <PendingInvitesList pending={addClient.pending} className="tc-pending" />
 
         <div className="tc-toolbar">
           <div className="tc-modes">
-            <div className="ds-seg" role="tablist">
+            <div className="ds-seg ds-seg--full" role="tablist">
               <button role="tab" aria-selected={listTab === 'clients'} className={`ds-seg-btn ${listTab === 'clients' ? 'is-active' : ''}`}
                       onClick={() => setListTab('clients')}>Клиенты</button>
               <button role="tab" aria-selected={listTab === 'kanban'} className={`ds-seg-btn ${listTab === 'kanban' ? 'is-active' : ''}`}
-                      onClick={() => {
-                        setListTab('kanban');
-                        if (!allTasks && !allTasksLoading) loadAllTasks();
-                      }}>Задания</button>
+                      onClick={() => { setListTab('kanban'); board.open(); }}>Задания</button>
             </div>
             {listTab === 'clients' && (
-              <div className="ds-seg">
+              <div className="ds-seg ds-seg--scroll">
                 {FILTERS.map(f => (
                   <button key={f.key} className={`ds-seg-btn ${filterStatus === f.key ? 'is-active' : ''}`}
                           onClick={() => setFilterStatus(f.key)}>{f.label}</button>
@@ -105,19 +81,20 @@ export function ClientListView({
           </div>
           {listTab === 'clients' && (
             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                   placeholder="Найти клиента" aria-label="Найти клиента" className="tc-search" />
+                   placeholder="Найти клиента" aria-label="Найти клиента" className="ds-input ds-input--search tc-search" />
           )}
         </div>
 
         {listTab === 'kanban' && (
           <KanbanView
-            allTasks={allTasks}
-            loading={allTasksLoading}
-            loadFailed={allTasksFailed}
-            onRetry={loadAllTasks}
+            allTasks={board.tasks}
+            loading={board.loading}
+            loadFailed={board.failed}
+            onRetry={board.load}
+            // Клик по заданию ведёт к заданиям клиента, а не на «Обзор».
             onOpenClient={(clientId) => {
               const client = clients.find(c => sameId(c.telegramId, clientId));
-              if (client) openClient(client);
+              if (client) openClient(client, 'tasks');
             }}
           />
         )}
@@ -125,7 +102,7 @@ export function ClientListView({
         {listTab === 'clients' && (
           loading ? (
             <div className="tc-grid" aria-hidden>
-              {[0, 1, 2].map(i => <Skeleton key={i} height={260} radius={20} />)}
+              {[0, 1, 2].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={20} />)}
             </div>
           ) : loadFailed ? (
             // Сбой ≠ пусто (CLAUDE.md: никаких заглушек вместо данных) —
@@ -134,11 +111,9 @@ export function ClientListView({
               {tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')}
             </div>
           ) : clients.length === 0 ? (
-            <div className="tc-empty">
-              {tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}
-            </div>
+            <PaperEmpty>{tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}</PaperEmpty>
           ) : filtered.length === 0 ? (
-            <div className="tc-empty">Ничего не найдено</div>
+            <PaperEmpty>Ничего не найдено</PaperEmpty>
           ) : (
             <div className="tc-grid">
               {filtered.map(client => (

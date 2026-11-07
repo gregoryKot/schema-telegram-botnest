@@ -1,133 +1,146 @@
 /* ─────────────────────────────────────────────────────────────────────────
    Карточка клиента терапевта: шапка, вкладки, «Обзор». Префикс tk-.
    Примитивы (ds-*) и тона — styles/cabinet.css; здесь только раскладка.
+   Тихая карточка (#906, волна 1): один акцент на экран — дата встречи и tint
+   аватара; секция «Обзора» = ds-card с подписью ds-label, без плиток с
+   заливкой; редкие действия — в меню «⋯» (RenameDeleteMenu.tsx); закреплённой
+   панели «+ Задание / + Заметка» на телефоне нет (решение владельца
+   2026-11-02) — кнопки первой строкой «Обзора» (ClientQuickActions.tsx).
    ───────────────────────────────────────────────────────────────────────── */
 
 /* ── Обёртка карточки ────────────────────────────────────────────────────── */
+/* Шапка и все вкладки — в колонке кабинета (--tk-max, --tk-center, --tk-gutter
+   объявлены на .main--cabinet в index.css). До 2026-10 «Обзор» и «Задания»
+   прижимались влево с пустой половиной экрана справа, кнопки шапки уезжали к
+   правому краю, а «Концептуализация» стояла по центру. */
 .tk-sheet { background: var(--bg); }
 .tk-tabs-body { padding: 0; }
-.tk-load { padding: 40px clamp(20px, 4vw, 48px); display: flex; flex-direction: column; gap: 16px; max-width: 1240px; }
+.tk-load { padding: 40px var(--tk-gutter); display: flex; flex-direction: column; gap: 16px; max-width: var(--tk-max); box-sizing: border-box; }
+/* Клиента нет (удалён, чужой, выдуманный id) — ClientCardFallback.tsx. */
+.tk-missing { align-items: flex-start; }
+.tk-missing-text { margin: 0; font-size: 15px; line-height: 1.5; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
+  .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
+  .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
+  /* «Графические карты»: холст во всю ширину, полоса карт — в колонке, на одной вертикали с шапкой. */
+  .tk-tabs-body .mm2-bar, .tk-tabs-body .mm2-create-err { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); }
+}
 
 /* ── Шапка ───────────────────────────────────────────────────────────────── */
 .tk-head {
   background: var(--paper-tint); border-bottom: 1px solid var(--line);
-  padding: 28px clamp(20px, 4vw, 48px) 0; flex-shrink: 0;
+  padding: 28px calc(var(--tk-center) + var(--tk-gutter)) 0; flex-shrink: 0;
   display: flex; flex-direction: column; gap: 22px;
 }
-.tk-back { align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; white-space: nowrap; margin-bottom: -8px; }
-.tk-back:hover { color: var(--text); }
+.tk-head > .ds-back { align-self: flex-start; margin-bottom: -8px; }
 .tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .tk-avatar { width: 56px; height: 56px; font-size: 21px; }
 .tk-ident { flex: 1; min-width: 260px; }
-.tk-name-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.tk-name {
-  font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1.1; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
-}
-.tk-edit { background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 14px; padding: 6px; min-width: 32px; min-height: 32px; }
-.tk-edit:hover { color: var(--text); }
+/* Кегль имени — ds-h2; здесь только перенос: одна строка с многоточием. */
+.tk-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; color: var(--text); }
 .tk-alias-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tk-alias-input {
   font: 400 28px/1.2 var(--serif); color: var(--text); background: transparent;
   border: none; border-bottom: 2px solid var(--accent); outline: none; width: 260px; max-width: 100%; padding: 1px 0;
 }
 .tk-error { font-size: 12px; color: var(--err); }
-.tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; white-space: nowrap; }
+.tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; white-space: nowrap; }
+.tk-meta { font-size: 13px; color: var(--text-sub); white-space: normal; }
+/* Строка «Встреча» (NextSessionLine) в шапке — своей строкой под метой, без
+   подложки списка клиентов: акцент здесь только у даты. */
+.tk-head .tc-meeting { flex-basis: 100%; }
 .tk-actions { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
-.tk-actions-main { display: flex; gap: 8px; }
-.tk-head .ds-tabs { margin: 0 calc(-1 * clamp(20px, 4vw, 48px)); padding: 0 clamp(20px, 4vw, 48px); }
+.tk-head .ds-tabs { margin: 0 calc(-1 * (var(--tk-center) + var(--tk-gutter))); padding: 0 calc(var(--tk-center) + var(--tk-gutter)); }
+/* Шапка одна на все вкладки и не меняет поле. В #962 на «Графических картах»
+   она уходила во всю ширину (поле 16px), и при переходе на любую другую
+   вкладку или экран кабинета вся шапка прыгала вбок: на 32px на ноутбуке,
+   на 152px на мониторе 1920 (владелец 2026-11-06). Теперь холст по-прежнему
+   во всю ширину, а полоса карт над ним (.mm2-bar) и строка ошибки создания
+   встают в колонку кабинета, под «← Все клиенты» (правило — в блоке ≥768
+   выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
+/* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.
+   Две равные колонки делали сайдбар шириной с контент, а в основной колонке
+   переносились заголовки и режимы карты. Сайдбар — 30% в пределах 260–340px:
+   на среднем экране сжимается он, а не основная колонка. Узко — одна колонка. */
 .tk-ov {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 40px; padding: 40px clamp(20px, 4vw, 48px) 64px; max-width: 1240px; box-sizing: border-box;
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start;
+  gap: 48px; padding: 40px var(--tk-gutter) 64px; max-width: var(--tk-max); box-sizing: border-box;
 }
-.tk-col { display: flex; flex-direction: column; gap: 44px; min-width: 0; }
-.tk-block { display: flex; flex-direction: column; gap: 18px; }
-.tk-block--tight { gap: 14px; }
-.tk-goal { border-radius: 20px; padding: 28px 32px; display: grid; grid-template-columns: 44px 1fr; gap: 6px; }
-.tk-quote { font: 64px/.8 var(--serif); color: var(--accent-hot); }
-.tk-goal-text { font: 24px/1.4 var(--serif); color: var(--text); overflow-wrap: anywhere; }
-.tk-goal .ds-link { display: inline-block; margin-top: 14px; }
-.tk-goal .ds-label { margin-bottom: 10px; }
-.tk-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
-.tk-tile { border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
-.tk-tile-title { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
-.tk-tile-item { font-size: 14px; font-weight: 500; display: flex; gap: 8px; align-items: center; }
-.tk-tile-item .ds-dot { width: 7px; height: 7px; border-radius: 2px; }
-.tk-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-.tk-mode-col { border-top: 3px solid; padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
-.tk-mode-col > div { font-size: 14px; }
-.tk-mode-col .tk-tile-title { font-size: 11px; }
-.tk-empty { font-size: 13px; color: var(--text-ghost); }
-.tk-entry {
-  display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
-  padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line);
-}
+@media (max-width: 1023px) { .tk-ov { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+/* Действия узкого сайдбара («Запросить YSQ», «Экспорт концепта») — столбцом во
+   всю ширину: в ряд им нужно ~314px, и в 260–313 вторая кнопка падала вниз
+   другой ширины. В одну колонку (<1024) сайдбар широкий — кнопки в ряд. */
+@media (min-width: 1024px) { .tk-side .tk-quick { flex-direction: column; } }
+.tk-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tk-quick { display: flex; gap: 8px; flex-wrap: wrap; }
+.tk-card-head { margin-bottom: 12px; }
+.tk-text { margin: 10px 0 0; font: 400 15px/1.6 var(--sans); color: var(--text); overflow-wrap: anywhere; }
+.tk-goal .ds-link { display: inline-block; margin-top: 12px; }
+.tk-groups { display: flex; flex-direction: column; gap: 14px; }
+.tk-group { display: flex; flex-direction: column; gap: 6px; }
+.tk-item { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+.tk-entry { grid-template-columns: auto 1fr auto; padding: 12px 0; }
+.tk-entry:last-child { padding-bottom: 0; }
+.tk-entry > .ds-sub { white-space: nowrap; }
 .tk-entry-body { min-width: 0; }
-.tk-entry-title { font-size: 14px; font-weight: 600; }
-.tk-entry-excerpt { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tk-entry-date { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
-.tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; }
-.tk-hint { font-size: 13px; color: var(--text-faint); }
+.tk-entry-excerpt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tk-note-date { margin-top: 6px; }
+
+/* Компьютер (≥768): раскладка макета дизайнера (REDESIGN_2026-10, «Обзор») —
+   цель крупным текстом с засечками, схемы плитками до трёх в ряд, режимы
+   колонками по группам. Строки в одной карточке — только телефон (ниже).
+   Тон — тонкая подложка плитки и верхняя черта колонки, сплошной заливки нет. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .tk-goal .tk-text { font: 400 24px/1.4 var(--serif); margin-top: 12px; }
+  .tk-groups { display: grid; gap: 12px; }
+  .tk-groups--tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(200px, (100% - 24px) / 3)), 1fr)); }
+  .tk-groups--cols { grid-template-columns: repeat(auto-fill, minmax(max(140px, (100% - 32px) / 3), 1fr)); gap: 20px 16px; }
+  .tk-groups--tiles .tk-group {
+    gap: 10px; padding: 16px 18px; border-radius: 14px;
+    background: oklch(0.97 0.02 var(--h)); border: 1px solid oklch(0.9 0.04 var(--h));
+  }
+  .tk-groups--cols .tk-group { gap: 6px; padding-top: 12px; border-top: 3px solid oklch(0.58 0.12 var(--h)); }
+  .tk-group > .ds-sub { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+}
 
 /* ── Сайдбар Обзора ──────────────────────────────────────────────────────── */
-.tk-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.tk-side .ds-card { border-radius: 18px; padding: 20px 22px; }
-.tk-card-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
-.ds-card--accent .tk-card-label { color: var(--on-ink); opacity: .75; }
-.tk-next { font: 26px/1.2 var(--serif); color: #fff; margin-top: 6px; overflow-wrap: anywhere; }
-.tk-next-sub { font-size: 13px; opacity: .85; margin-top: 2px; }
-.tk-next-edit { margin-top: 12px; background: none; border: none; padding: 0; color: #fff; font: 600 13px var(--sans); cursor: pointer; min-height: 24px; }
+.tk-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tk-next { margin-top: 6px; overflow-wrap: anywhere; }
 .tk-edit-form { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .tk-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .tk-index { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; }
 .tk-index .ds-num { font-size: 52px; }
+.tk-delta { font-size: 12px; font-weight: 700; }
 .tk-side .ds-spark { height: 44px; gap: 3px; margin-top: 14px; }
-.tk-needs { display: flex; flex-direction: column; gap: 12px; }
+.tk-spark-sub { margin-top: 6px; }
+.tk-needs { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 .tk-need { display: grid; grid-template-columns: 1fr 80px 18px; gap: 10px; align-items: center; font-size: 13px; }
 .tk-need-bar { height: 6px; border-radius: 3px; background: var(--paper-sunk); overflow: hidden; }
 .tk-need-bar > div { height: 100%; border-radius: 3px; }
 .tk-need b { text-align: right; }
 .tk-need b.is-low { color: var(--err); }
-.tk-actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px !important; }
-.tk-action {
-  padding: 12px; border-radius: 12px; background: var(--bg); border: none; text-align: left;
-  font: 600 13px var(--sans); color: var(--text); cursor: pointer; min-height: 44px;
-}
-.tk-action:hover { background: var(--paper-sunk); }
 .tk-start { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
 
-/* ── Мобильный (<768): компактная шапка + закреплённая нижняя панель ─────── */
-@media (max-width: 767px) {
+/* ── Мобильный (<768): компактная шапка, «Обзор» в одну колонку ──────────── */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tk-head { padding: 6px 16px 0; gap: 12px; }
   .tk-head .ds-tabs { margin: 0 -16px; padding: 0 16px; gap: 20px; }
-  .tk-back { min-height: 44px; display: flex; align-items: center; margin-bottom: 0; font-size: 14px; }
+  .tk-head > .ds-back { margin-bottom: 0; }
   .tk-head-row { gap: 12px; flex-wrap: nowrap; }
-  .tk-avatar { width: 52px; height: 52px; font-size: 19px; }
+  .tk-avatar { width: 44px; height: 44px; font-size: 17px; }
   .tk-ident { min-width: 0; }
-  .tk-name { font-size: 26px; }
-  .tk-badges { gap: 6px; flex-wrap: wrap; }
-  .tk-actions-main {
-    position: fixed; left: 0; right: 0; bottom: calc(76px + var(--safe-bottom)); z-index: 48;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 20px;
-    background: var(--bg); border-top: 1px solid var(--line);
+  /* Две строки по пробелам; слово длиннее строки — многоточием, не разрывом
+     посреди слова (overflow-wrap: anywhere давал «Константинопо/льская»). */
+  .tk-name {
+    white-space: normal;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
   }
-  .tk-actions-main .ds-btn { height: 48px; border-radius: 24px; font-weight: 700; }
-  .tk-tabs-body { padding-bottom: 96px; }
+  .tk-badges { gap: 6px; }
   .tk-ov { padding: 20px 16px 24px; gap: 24px; }
-  .tk-col { gap: 28px; }
-  .tk-goal { padding: 18px 20px; grid-template-columns: 30px 1fr; }
-  .tk-quote { font-size: 40px; }
-  .tk-goal-text { font-size: 18px; }
   .tk-alias-input { font-size: 22px; width: 100%; }
 }
-.tk-delta { font-size: 12px; font-weight: 700; }
-.tk-needs { margin-top: 12px; }
-.tk-side .tk-hint { font-size: 11px; margin-top: 6px; }
-.tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
-.tk-day {
-  min-width: 44px; min-height: 44px; padding: 0 var(--space-10); border-radius: var(--r-20); border: none; cursor: pointer;
-  background: var(--paper-sunk); color: var(--text-sub); font: 600 13px var(--sans);
-}
-.tk-day.is-on { background: var(--ink); color: var(--on-ink); }

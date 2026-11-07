@@ -77,10 +77,25 @@ describe('ModeMapGuide — шаги «couple» и «identity»', () => {
     expect(screen.getByText('5. Копинг Б → бьёт по А')).toBeTruthy();
   });
 
-  it('kind=identity показывает карту личности с группами режимов', () => {
+  it('kind=identity (старое значение) показывает группы режимов', () => {
     renderGuide({ kind: 'identity' as never });
-    expect(screen.getByText('Карта личности')).toBeTruthy();
+    expect(screen.getByText('Группы режимов')).toBeTruthy();
     expect(screen.getByText('1. Детские режимы')).toBeTruthy();
+  });
+
+  it('«Концептуализация» и «Свободный холст»: группы режимов, но заголовок не называет их «Картой режимов» (#963)', () => {
+    for (const kind of ['concept', 'free'] as const) {
+      renderGuide({ kind });
+      expect(screen.getByText('Группы режимов')).toBeTruthy();
+      expect(screen.queryByText('Карта режимов')).toBeNull();
+      expect(screen.getByText('1. Детские режимы')).toBeTruthy();
+      cleanup();
+    }
+  });
+
+  it('«Карта режимов» (personality) называется так и в подсказках', () => {
+    renderGuide({ kind: 'personality' });
+    expect(screen.getByText('Карта режимов')).toBeTruthy();
   });
 });
 
@@ -119,6 +134,31 @@ describe('ModeMapGuide — советы и закрытие', () => {
     renderGuide({ onClose });
     fireEvent.click(screen.getByLabelText('Закрыть'));
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('ModeMapGuide — сворачивание (QA 2026-10-26: панель закрывала фигуры и статус)', () => {
+  afterEach(() => { localStorage.clear(); window.innerWidth = 1024; });
+
+  it('шапка сворачивает панель до строки с прогрессом и запоминает выбор', () => {
+    renderGuide({ kind: 'personality', nodes: [node('child')] });
+    expect(screen.getByText('Советы')).toBeTruthy();
+    fireEvent.click(screen.getByTitle('Свернуть подсказки'));
+    expect(screen.queryByText('Советы')).toBeNull();
+    expect(screen.getByText('1/4')).toBeTruthy();
+    expect(localStorage.getItem('modemap_guide_min')).toBe('1');
+    cleanup();
+    renderGuide({ kind: 'personality' });
+    expect(screen.queryByText('Советы')).toBeNull();
+    fireEvent.click(screen.getByTitle('Развернуть подсказки'));
+    expect(screen.getByText('Советы')).toBeTruthy();
+  });
+
+  it('на телефоне свёрнута сразу — узкий холст не закрыт', () => {
+    window.innerWidth = 390;
+    renderGuide({ kind: 'personality' });
+    expect(screen.queryByText('Советы')).toBeNull();
+    expect(screen.getByTitle('Развернуть подсказки')).toBeTruthy();
   });
 });
 

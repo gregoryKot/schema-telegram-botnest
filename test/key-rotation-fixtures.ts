@@ -50,7 +50,7 @@ export const BASE_ROWS: Record<string, Row> = {
   ysqResultHistory: { userId: USER },
   emailToken: {
     tokenHash: 'rot-e2e-token',
-    purpose: 'recovery',
+    purpose: 'login',
     expiresAt: new Date('2036-01-01T00:00:00Z'),
   },
   user: { id: USER },

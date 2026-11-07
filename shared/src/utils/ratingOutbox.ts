@@ -1,11 +1,10 @@
 // Оффлайн-очередь для оценок потребностей (правило №3 CLAUDE.md — единственная
-// копия для webapp И schema-miniapp; до 2026-08 существовала только в
-// мини-аппе, и оценка на сайте терялась молча при сетевом сбое — см.
-// webapp/src/apiRating.ts и schema-miniapp/src/api.ts, оба зовут отсюда).
+// копия; до 2026-08 существовала только в удалённом мини-аппе, и оценка на
+// сайте терялась молча при сетевом сбое — см. webapp/src/apiRating.ts).
 //
-// Ключ localStorage общий для обоих фронтендов НАМЕРЕННО, не по недосмотру:
-// webapp (schemehappens.ru) и schema-miniapp (schemehappens.ru/app/) — один
-// origin, и другие денормализованные ключи (MY_SCHEMA_IDS_KEY, YSQ_RESULT_KEY
+// Ключ localStorage не менялся НАМЕРЕННО: сайт (schemehappens.ru) и удалённый
+// мини-апп (schemehappens.ru/app/) жили на одном origin, и очередь, начатая в
+// мини-аппе, должна дойти с сайта; другие денормализованные ключи (MY_SCHEMA_IDS_KEY, YSQ_RESULT_KEY
 // в storageKeys.ts) уже используют этот же паттерн.
 //
 // Почему буферизуются ТОЛЬКО оценки, а не любые POST: сервер сохраняет
@@ -67,6 +66,22 @@ export function enqueueRating(item: OutboxItem): void {
   const items = readOutbox();
   items.push(item);
   writeOutbox(items);
+}
+
+/**
+ * Оценки дня `date`, ещё лежащие в очереди: needId → последнее значение.
+ * Экран дня кладёт их поверх ответа сервера (QA 2026-11-03, З9: после
+ * перезагрузки плитка показывала «1 из 5» — чтение обогнало выгрузку
+ * очереди, а в БД уже было 5 из 5). Снимок берётся ДО запроса оценок:
+ * очередь чистится только после того, как сервер принял всё отправленное,
+ * поэтому оценка либо есть в снимке, либо уже лежала на сервере к моменту
+ * чтения — щели между ними нет.
+ */
+export function pendingRatingsFor(date: string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const it of readOutbox())
+    if (it.date === date) out[it.needId] = it.value;
+  return out;
 }
 
 // Дедуп по (needId, date): побеждает последняя запись по этому ключу,

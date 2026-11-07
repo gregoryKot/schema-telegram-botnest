@@ -3,7 +3,7 @@
 // косвенно через AppShell.overlays.test.tsx — здесь дополнены граничные
 // случаи (пустая история, отсутствие «сегодня», дырка длиной больше суток).
 import { describe, it, expect } from 'vitest';
-import { sectionFromPath, fillHistoryGaps } from './navigation';
+import { sectionFromPath, fillHistoryGaps, navItemOf, openClientRoute, leaveClientTarget } from './navigation';
 import { TODAY_DATE } from './useBootstrapLoad';
 
 function addDays(dateStr: string, delta: number): string {
@@ -16,9 +16,16 @@ describe('sectionFromPath', () => {
   it('распознаёт известные разделы, включая вложенный путь', () => {
     expect(sectionFromPath('/today')).toBe('today');
     expect(sectionFromPath('/diary')).toBe('diary');
+    expect(sectionFromPath('/more')).toBe('more');
     expect(sectionFromPath('/schemas/abandonment')).toBe('schemas');
     expect(sectionFromPath('/practice')).toBe('practice');
     expect(sectionFromPath('/profile')).toBe('profile');
+  });
+
+  it('разделы, которых нет в меню, по-прежнему открываются по адресу', () => {
+    for (const s of ['schemas', 'practice', 'profile'] as const) {
+      expect(sectionFromPath('/' + s)).toBe(s);
+    }
   });
 
   it('легаси-пути /help и /exercises редиректят на «практика»', () => {
@@ -62,5 +69,49 @@ describe('fillHistoryGaps', () => {
     const result = fillHistoryGaps([{ date: yesterday, ratings: { safety: 3 } }]);
     expect(result.some(d => d.date === TODAY_DATE)).toBe(false);
     expect(result[0].date).toBe(yesterday);
+  });
+});
+
+describe('navItemOf', () => {
+  it('вложенные в «Ещё» разделы подсвечивают «Ещё»', () => {
+    expect(navItemOf('/practice')).toBe('more');
+    expect(navItemOf('/schemas')).toBe('more');
+    expect(navItemOf('/profile')).toBe('more');
+    expect(navItemOf('/diary')).toBe('diary');
+    expect(navItemOf('/')).toBe('today');
+  });
+});
+
+describe('открытие и закрытие карточки клиента (T-12, T-13)', () => {
+  it('уже на карточке — перехода нет (прямой вход не пушит лишнюю запись)', () => {
+    expect(openClientRoute('/cabinet/42', 42)).toBeNull();
+  });
+  it('из списка — переход с меткой fromList; из других мест — без метки', () => {
+    expect(openClientRoute('/cabinet', 42)).toEqual({ to: '/cabinet/42', state: { fromList: true } });
+    expect(openClientRoute('/cabinet/today', 42)).toEqual({ to: '/cabinet/42' });
+  });
+  // Адрес карточки — постоянный код (shared/src/utils/clientRef.ts): у офлайн-клиента id менялся при подключении.
+  const withCode = [{ telegramId: -16, urlCode: 'abcdefgh' }, { telegramId: 7, urlCode: 'qrspnmkj' }];
+  it('клиент с кодом открывается по адресу с кодом', () => {
+    expect(openClientRoute('/cabinet', -16, withCode)).toEqual({ to: '/cabinet/abcdefgh', state: { fromList: true } });
+    expect(openClientRoute('/cabinet/today', '-16', withCode)).toEqual({ to: '/cabinet/abcdefgh' });
+    expect(openClientRoute('/cabinet/qrspnmkj', -16, withCode)).toEqual({ to: '/cabinet/abcdefgh' });
+  });
+  it('уже на карточке по коду или по старому числовому адресу — перехода нет', () => {
+    expect(openClientRoute('/cabinet/abcdefgh', -16, withCode)).toBeNull();
+    expect(openClientRoute('/cabinet/-16', -16, withCode)).toBeNull();
+    // Прямой вход по коду, список кабинета ещё не пришёл: карточку открыла сама ссылка.
+    expect(openClientRoute('/cabinet/abcdefgh', -16)).toBeNull();
+    // Ссылка на вкладку карточки: открытие не сбрасывает вкладку переходом на /cabinet/<код>.
+    expect(openClientRoute('/cabinet/abcdefgh/tasks', -16, withCode)).toBeNull();
+    expect(openClientRoute('/cabinet/-16/tasks', -16, withCode)).toBeNull();
+  });
+  it('с доски «Задания» (/cabinet/tasks) — тоже с меткой fromList: «Все клиенты» вернёт на доску', () => {
+    expect(openClientRoute('/cabinet/tasks', -16, withCode)).toEqual({ to: '/cabinet/abcdefgh', state: { fromList: true } });
+  });
+  it('«Все клиенты»: пришли из списка — шаг назад, иначе — на список', () => {
+    expect(leaveClientTarget({ fromList: true, __sheetStack: [] })).toBe(-1);
+    expect(leaveClientTarget(null)).toBe('/cabinet');
+    expect(leaveClientTarget({})).toBe('/cabinet');
   });
 });

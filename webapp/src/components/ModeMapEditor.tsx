@@ -14,10 +14,10 @@ import {
 } from './modeMapFlow';
 import { useModeMapHistory } from './useModeMapHistory';
 import { useModeMapAutosave } from './useModeMapAutosave';
-import { useIsMobile } from './useIsMobile';
 import { collapseBtnStyle } from './modeMap/paletteStyle';
 import { useSettleFresh } from './modeMap/useSettleFresh';
-
+import { useCanvasSpace } from './modeMap/useCanvasSpace';
+import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
 
 // ─── Public component ─────────────────────────────────────────────────────────
 
@@ -29,16 +29,18 @@ interface Props {
   initialEdges: ModeMapEdge[];
 }
 
-export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdges }: Props) {
+// Провайдер снаружи: добавлению фигур из палитры нужен вьюпорт холста (useCanvasSpace).
+export function ModeMapEditor(props: Props) {
+  return <ReactFlowProvider><EditorBody {...props} /></ReactFlowProvider>;
+}
+
+function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(toFlowNodes(initialNodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
-  const mobile = useIsMobile();
-  // On phones the palette starts hidden so the canvas gets the full width.
-  const [paletteOpen, setPaletteOpen] = useState(() =>
-    mobile ? false : localStorage.getItem('modemap_palette') !== '0');
-  useEffect(() => { if (!mobile) localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen, mobile]);
+  const [paletteOpen, setPaletteOpen] = useState(() => localStorage.getItem('modemap_palette') !== '0');
+  useEffect(() => { localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen]);
 
   // Always-fresh refs (for deferred saves after React Flow internal updates).
   // Пишем в эффекте, а не в рендере (react-hooks/refs): читаются только в
@@ -53,7 +55,7 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
   const selectedNode = nodes.find(n => n.id === selectedNodeId) ?? null;
   const selectedEdge = edges.find(e => e.id === selectedEdgeId) ?? null;
 
-  const { saveStatus, scheduleSave } = useModeMapAutosave(mapId, nodesRef, edgesRef);
+  const { saveStatus, savedAt, saveError, retry: retrySave, scheduleSave } = useModeMapAutosave(mapId, nodesRef, edgesRef);
   useSettleFresh({ nodes, edgesRef, setNodes, scheduleSave }); // свежая схема случая: колонки по реальной высоте
 
   const clearSelection = useCallback(() => { setSelectedNodeId(null); setSelectedEdgeId(null); }, []);
@@ -61,27 +63,21 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
     nodesRef, edgesRef, setNodes, setEdges, scheduleSave, clearSelection,
   });
 
-  const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => {
-    const pos = { x: 220 + Math.random() * 280, y: 100 + Math.random() * 200 };
-    const defaultSize = NODE_DEFAULT_SIZES[partial.type] ?? {};
-    pushHistory();
-    const newNodes = [...nodes, { id: partial.id, type: partial.type, position: pos, data: partial.data as Record<string, unknown>, ...defaultSize }];
-    setNodes(newNodes); scheduleSave(newNodes, edges);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory]);
-
-  // Add several nodes at once (e.g. "вынести все режимы клиента") in a tidy grid.
+  // Фигуры из палитры (одна или «вынести все режимы клиента») ложатся на свободные
+  // места видимой области, а не случайно друг на друга (useCanvasSpace).
+  const { place } = useCanvasSpace();
   const handleAddMany = useCallback((partials: Omit<ModeMapNode, 'position'>[]) => {
     if (!partials.length) return;
     pushHistory();
-    const COLS = 4, GAPX = 210, GAPY = 150, x0 = 120, y0 = 80;
+    const spots = place(nodes, partials.length);
     const added = partials.map((p, i) => ({
-      id: p.id, type: p.type,
-      position: { x: x0 + (i % COLS) * GAPX, y: y0 + Math.floor(i / COLS) * GAPY },
+      id: p.id, type: p.type, position: spots[i],
       data: p.data as Record<string, unknown>, ...(NODE_DEFAULT_SIZES[p.type] ?? {}),
     }));
     const newNodes = [...nodes, ...added];
     setNodes(newNodes); scheduleSave(newNodes, edges);
-  }, [nodes, edges, setNodes, scheduleSave, pushHistory]);
+  }, [nodes, edges, setNodes, scheduleSave, pushHistory, place]);
+  const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => handleAddMany([partial]), [handleAddMany]);
 
   const handleNodeChange = useCallback((updated: ModeMapNode) => {
     pushHistory();
@@ -202,21 +198,8 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
     return () => window.removeEventListener('keydown', onKey);
   }, [selectedNodeId, selectedEdgeId, nodes, edges, setNodes, setEdges, scheduleSave, pushHistory, undo, redo]);
 
-  // On mobile, the palette + side editor float over the canvas (drawers) so
-  // the canvas always has the full width; on desktop they're flex columns.
-  const overlay = (sideBtn: React.ReactNode, content: React.ReactNode, side: 'left' | 'right') => (
-    <>
-      <div role="button" tabIndex={0} aria-label="Закрыть"
-        onClick={() => { setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); }}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPaletteOpen(false); setSelectedNodeId(null); setSelectedEdgeId(null); } }}
-        style={{ position: 'absolute', inset: 0, zIndex: 39, background: 'rgba(0,0,0,0.25)' }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, [side]: 0, zIndex: 40, display: 'flex',
-        boxShadow: side === 'left' ? '4px 0 16px rgba(0,0,0,0.15)' : '-4px 0 16px rgba(0,0,0,0.15)' }}>
-        {side === 'left' ? <>{content}{sideBtn}</> : <>{sideBtn}{content}</>}
-      </div>
-    </>
-  );
-
+  // Палитра и боковой редактор — flex-колонки по бокам холста. Холст бывает только
+  // на компьютере и планшете: на телефоне вкладка показывает ModeMapTab без него.
   const nodeEditor = selectedNode && (
     <ModeMapNodeEditor
       node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
@@ -234,42 +217,29 @@ export function ModeMapEditor({ mapId, clientId, kind, initialNodes, initialEdge
 
   const paletteCol = (
     <div style={{ position: 'relative', display: 'flex' }}>
-      <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />
+      <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />
       <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов" aria-label="Скрыть панель режимов"
-        style={collapseBtnStyle('left')}>‹</button>
+        className="mm2-ear" style={collapseBtnStyle('left')}>‹</button>
     </div>
   );
 
   return (
-    <ReactFlowProvider>
-      <div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
-        {/* Palette: inline column (desktop) or floating drawer (mobile) */}
-        {paletteOpen && !mobile && paletteCol}
-        {!paletteOpen && (
-          <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
-            style={mobile
-              ? { ...collapseBtnStyle('left'), position: 'absolute', top: 52, left: 8, zIndex: 30, borderRadius: 7, width: 30, height: 30, fontSize: 17 }
-              : { ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
-            ›
-          </button>
-        )}
+    <ModeMapConceptProvider clientId={clientId} kind={kind} nodes={nodes} edges={edges}><div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
+      {paletteOpen ? paletteCol : (
+        <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
+          className="mm2-ear" style={{ ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
+          ›
+        </button>
+      )}
 
-        <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
-          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-          setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId} selectedNodeId={selectedNodeId}
-          saveStatus={saveStatus} scheduleSave={scheduleSave}
-          pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
-          onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
+      <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
+        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+        setSelectedNodeId={setSelectedNodeId} setSelectedEdgeId={setSelectedEdgeId}
+        saveStatus={saveStatus} savedAt={savedAt} saveError={saveError} onRetrySave={retrySave} scheduleSave={scheduleSave}
+        pushHistory={pushHistory} nodesRef={nodesRef} edgesRef={edgesRef}
+        onUndo={undo} onRedo={redo} canUndo={canUndo} canRedo={canRedo} />
 
-        {/* Side editor: inline column (desktop) or floating drawer (mobile) */}
-        {!mobile && (nodeEditor || edgeEditor)}
-
-        {/* Mobile drawers */}
-        {mobile && paletteOpen && overlay(
-          <button onClick={() => setPaletteOpen(false)} title="Скрыть" aria-label="Скрыть" style={collapseBtnStyle('left')}>‹</button>,
-          <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} clientId={clientId} />, 'left')}
-        {mobile && (nodeEditor || edgeEditor) && overlay(null, nodeEditor || edgeEditor, 'right')}
-      </div>
-    </ReactFlowProvider>
+      {nodeEditor || edgeEditor}
+    </div></ModeMapConceptProvider>
   );
 }

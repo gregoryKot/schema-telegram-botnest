@@ -127,9 +127,10 @@ function spyLogger() {
   return { errors, warns, texts };
 }
 
-// Момент по МСК → UTC (МСК = UTC+3).
-const msk = (hour: number, minute = 0): Date =>
-  new Date(Date.UTC(2026, 6, 20, hour - 3, minute));
+// Момент по МСК → UTC (МСК = UTC+3). 2026-07-20 — понедельник, 21-е — вторник.
+const msk = (hour: number, minute = 0, day = 20): Date =>
+  new Date(Date.UTC(2026, 6, day, hour - 3, minute));
+const TUESDAY = 21;
 
 describe('ChannelScheduleService', () => {
   beforeEach(() => alerts.mockClear());
@@ -488,13 +489,47 @@ describe('ChannelScheduleService', () => {
     expect(alerts.mock.calls[0][2]).toEqual({ skipTelegram: false });
   });
 
-  it('выключенная площадка названа в отчёте, а не пропущена молча', async () => {
-    // Молчание площадки без env раньше было неотличимо от успеха.
-    spyLogger();
-    const { service } = makeService(silentResult);
-    await service.maybePost(msk(10, 55));
-    expect(alerts).toHaveBeenCalledTimes(1);
-    expect(alertTexts()[0]).toContain('Threads');
-    expect(alertTexts()[0]).toContain('HEALTHY_ADULT_THREADS_USER');
+  describe('молчащая площадка (нет env)', () => {
+    it('в понедельник утром названа в отчёте, а не пропущена молча', async () => {
+      // Молчание площадки без env раньше было неотличимо от успеха.
+      spyLogger();
+      const { service } = makeService(silentResult);
+      await service.maybePost(msk(10, 55));
+      expect(alerts).toHaveBeenCalledTimes(1);
+      expect(alertTexts()[0]).toContain('Threads');
+      expect(alertTexts()[0]).toContain('HEALTHY_ADULT_THREADS_USER');
+      expect(alertTexts()[0]).toContain('раз в неделю');
+    });
+
+    it('во вторник владельца не будит — напоминание раз в неделю', async () => {
+      // Pinterest без env с июля 2026: DM «Молчали: Pinterest» приходил каждое
+      // утро, и его перестали читать.
+      spyLogger();
+      const { service, publish } = makeService(silentResult);
+      await service.maybePost(msk(10, 55, TUESDAY));
+      expect(publish).toHaveBeenCalledWith('утро');
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('в понедельник вечером молчит — хватило утреннего напоминания', async () => {
+      spyLogger();
+      const { service, publish } = makeService(silentResult);
+      await service.maybePost(msk(19, 55));
+      expect(publish).toHaveBeenCalledWith('вечер');
+      expect(alertTexts()).toEqual([]);
+    });
+
+    it('площадка упала во вторник — отчёт уходит и называет молчащих', async () => {
+      spyLogger();
+      const { service } = makeService({
+        ...partialResult,
+        silent: silentResult.silent,
+      });
+      await service.maybePost(msk(10, 55, TUESDAY));
+      expect(alerts).toHaveBeenCalledTimes(1);
+      expect(alertTexts()[0]).toContain('403: нет доступа');
+      expect(alertTexts()[0]).toContain('HEALTHY_ADULT_THREADS_USER');
+      expect(alertTexts()[0]).toContain('Пробую дослать');
+    });
   });
 });

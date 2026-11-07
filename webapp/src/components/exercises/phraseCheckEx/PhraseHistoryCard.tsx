@@ -1,15 +1,16 @@
 // Карточка прошлого разбора (тап по строке в «Прошлые разборы»,
 // PhraseCheckEx.tsx). Правится только ответ Здорового Взрослого — фраза и
-// приметы критика неизменны (см. UpdatePhraseCheckDto). Паритет с miniapp
-// (schema-miniapp/src/components/phraseCheck/HistoryCard.tsx, правило №3 —
-// гейт паритета фич поймал этот роут как miniapp-only). Состояние — общее
+// приметы критика неизменны (см. UpdatePhraseCheckDto). Состояние — общее
 // (shared/usePhraseHistoryCard), вёрстка своя. Read-after-write: onUpdated
-// обновляет список у родителя сразу после PATCH.
+// обновляет список у родителя сразу после PATCH. Удаление — DeleteBtn
+// дневника («Удалить» → «Удалить навсегда», сбой — строкой, запись на месте);
+// после DELETE лист закрывается, onDeleted убирает строку из списка.
 import { useHistorySheet } from '../../../hooks/useHistorySheet';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { CrisisCard } from '../../CrisisCard';
 import { BottomSheetShell } from '../../BottomSheetShell';
 import { PhraseCheckShare } from './PhraseCheckShare';
+import { DeleteBtn } from '../../../sections/diary/DeleteBtn';
 import { usePhraseHistoryCard } from '../../../../../shared/src/phraseCheck/usePhraseHistoryCard';
 import { PhraseMarkPills } from '../../../../../shared/src/phraseCheck/PhraseMarkPills';
 import { api } from '../../../api';
@@ -19,11 +20,13 @@ export function PhraseHistoryCard({
   entry,
   onClose,
   onUpdated,
+  onDeleted,
   tr,
 }: {
   entry: PhraseCheckEntry;
   onClose: () => void;
   onUpdated: (id: number, rewrite: string | null) => void;
+  onDeleted: (id: number) => void;
   tr: (ty: string, vy: string) => string;
 }) {
   const goBack = useHistorySheet(onClose);
@@ -32,6 +35,12 @@ export function PhraseHistoryCard({
 
   async function handleSave() {
     if (await save()) goBack();
+  }
+
+  // Сбой пробрасывается в DeleteBtn: он покажет строку, лист останется открытым.
+  async function handleDelete() {
+    await api.deletePhraseCheck(entry.id);
+    goBack(() => onDeleted(entry.id));
   }
 
   return (
@@ -80,6 +89,10 @@ export function PhraseHistoryCard({
             marks={entry.marks}
             rewrite={rewrite.trim() || undefined}
           />
+        </div>
+
+        <div className="ex2-gap">
+          <DeleteBtn onClick={handleDelete} />
         </div>
     </BottomSheetShell>
   );

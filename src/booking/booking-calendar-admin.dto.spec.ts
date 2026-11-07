@@ -41,6 +41,25 @@ describe('AdminCalendarQueryDto', () => {
       errorsFor(AdminCalendarQueryDto, { from: '2026-07-13', to: '' }),
     ).resolves.toContain('to');
   });
+
+  // Регэксп формы пропускал несуществующий день: 2026-02-31 — не дата.
+  it('несуществующий день (02-31, 13-01) — отказ по обоим полям', async () => {
+    await expect(
+      errorsFor(AdminCalendarQueryDto, {
+        from: '2026-02-31',
+        to: '2026-13-01',
+      }),
+    ).resolves.toEqual(['from', 'to']);
+  });
+
+  it('последний день февраля (02-28) — проходит', async () => {
+    await expect(
+      errorsFor(AdminCalendarQueryDto, {
+        from: '2026-02-28',
+        to: '2026-02-28',
+      }),
+    ).resolves.toEqual([]);
+  });
 });
 
 describe('SlotOverrideItemDto', () => {

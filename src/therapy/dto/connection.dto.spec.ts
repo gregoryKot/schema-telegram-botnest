@@ -6,6 +6,7 @@ import { CLIENT_NAME_MAX } from '../../utils/text-limits';
 import { RenameClientDto } from './client-data.dto';
 import { JoinTherapyDto } from './connection.dto';
 import { VirtualClientDto } from './virtual-client.dto';
+import { CreateInviteDto } from './invite.dto';
 
 async function errorsFor(
   cls: new () => object,
@@ -60,5 +61,23 @@ describe('VirtualClientDto', () => {
     await expect(
       errorsFor(RenameClientDto, { alias: 'A'.repeat(CLIENT_NAME_MAX) }),
     ).resolves.toEqual([]);
+  });
+});
+
+describe('CreateInviteDto — имя клиента в приглашении (инцидент 2026-10-26)', () => {
+  it('без тела и без имени — можно (приглашение из настроек «Кабинет»)', async () => {
+    await expect(errorsFor(CreateInviteDto, {})).resolves.toEqual([]);
+  });
+
+  it('имя в пределе CLIENT_NAME_MAX проходит, длиннее — отказ, не строка — отказ', async () => {
+    await expect(
+      errorsFor(CreateInviteDto, { alias: 'М'.repeat(CLIENT_NAME_MAX) }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(CreateInviteDto, { alias: 'М'.repeat(CLIENT_NAME_MAX + 1) }),
+    ).resolves.toContain('alias');
+    await expect(errorsFor(CreateInviteDto, { alias: 42 })).resolves.toContain(
+      'alias',
+    );
   });
 });

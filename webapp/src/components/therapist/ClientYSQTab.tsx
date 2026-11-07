@@ -1,10 +1,15 @@
 import '../../styles/therapist-tabs.css';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { useTr } from '../../utils/addressForm';
+import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import type { ClientData, TherapyClientSummary } from '../../api';
 import { isVirtualId } from '../../../../shared/src/utils/sameId';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import { CONCEPT_EXPORT_EMPTY } from '../../../../shared/src/therapy/conceptExport';
 import { buildYsqRows, YSQ_TOP_N } from './ysqRows';
+import { TabTitle } from './TabTitle';
+import { PaperEmpty } from '../art/PaperEmpty';
 import { YSQTable } from './YSQTable';
 import { YSQDynamics } from './YSQDynamics';
 
@@ -16,24 +21,26 @@ interface Props {
   ysqRequested: boolean;
   ysqError: string;
   exportCopied: boolean;
+  exportEmpty?: boolean; // пустой концепт: экспорт недоступен, подсказка строкой
   handleRequestYsq: () => void;
   handleExport: () => void;
 }
 
-export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqRequested, ysqError, exportCopied, handleRequestYsq, handleExport }: Props) {
+export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqRequested, ysqError, exportCopied, exportEmpty = false, handleRequestYsq, handleExport }: Props) {
+  const tr = useTr();
   const virtual = isVirtualId(selectedClient.telegramId);
 
   if (!clientData?.ysqHistory || clientData.ysqHistory.length === 0) {
     return (
-      <div className="ds-page tb-page tb-page--ysq">
-        <div className="tb-ysq-empty">
-          <div className="ds-h2">YSQ ещё не проходился</div>
+      <div className="ds-page tb-page--ysq">
+        <div className="u-col8">
+          <PaperEmpty>YSQ ещё не проходился</PaperEmpty>
           {virtual ? (
-            <div className="tb-meta">Клиент без Telegram – YSQ недоступен</div>
+            <div className="tb-meta">У офлайн-клиента нет аккаунта – тест пройти негде</div>
           ) : (
             <>
-              <div className="ds-sub">Запроси тест – клиент получит уведомление в боте</div>
-              <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn">
+              <div className="ds-sub">{tr('Запроси тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан', 'Запросите тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан')}</div>
+              <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn ds-btn--sm" style={{ alignSelf: 'flex-start' }}>
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
               </button>
               {ysqError && <div className="tb-error">{ysqError}</div>}
@@ -47,12 +54,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
               {selfSchemaIds.map(id => {
                 const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
                 const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
-                return (
-                  <div key={id} className="tag-mini">
-                    <span className="swatch" style={{ background: domain?.color ?? 'var(--accent)' }} />
-                    {s?.name ?? id}
-                  </div>
-                );
+                return <span key={id} className="ds-chip tone-tint" style={hueStyle(domain ? DOMAIN_HUE[domain.id] : undefined)}>{s?.name ?? id}</span>;
               })}
             </div>
           </div>
@@ -65,16 +67,13 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
   const rows = buildYsqRows(hist[0], hist[1] ?? null);
 
   return (
-    <div className="ds-page tb-page tb-page--ysq">
-      <div className="ds-head-row tb-ysq-head-row">
-        <div>
-          <h2 className="tb-h32">Опросник схем YSQ</h2>
-          <div className="tb-sub">
-            {hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}
-          </div>
-        </div>
+    <div className="ds-page tb-page--ysq">
+      <div className="ds-head-row">
+        <TabTitle title="Опросник схем YSQ" motif="layers">
+          <div className="ds-sub">{hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}</div>
+        </TabTitle>
         <div className="tb-actions">
-          <button onClick={handleExport} className="ds-btn ds-btn--sm ds-btn--secondary">
+          <button onClick={handleExport} disabled={exportEmpty} className="ds-btn ds-btn--sm ds-btn--secondary">
             {exportCopied ? '✓ Скопировано' : 'Экспорт'}
           </button>
           {!virtual && (
@@ -84,6 +83,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           )}
         </div>
       </div>
+      {exportEmpty && <div className="tb-meta">{CONCEPT_EXPORT_EMPTY}</div>}
       {ysqError && <div className="tb-error">{ysqError}</div>}
 
       <YSQTable rows={rows} hasPrev={hist.length > 1} />

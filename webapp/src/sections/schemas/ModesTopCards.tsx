@@ -1,7 +1,10 @@
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTr } from '../../utils/addressForm';
 import type { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import { modesHeroModel, type ModesHeroRow } from '../../../../shared/src/pattern/modesHeroModel';
+import { Cluster } from '../../components/art/PaperArtSigns';
+import { Pebbles } from '../../components/art/PaperArt';
 import { WeekPatternCard } from './WeekPatternCard';
 import { PatternsIntro } from './PatternsIntro';
 import { ScreenBlock } from '../../components/customize/ScreenBlock';
@@ -21,16 +24,13 @@ interface Props {
   blocks: SiteScreenBlocks;
 }
 
-function ToolRows({ rows }: { rows: (ModesHeroRow & { onClick: () => void })[] }) {
+function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void })[]; art: ReactNode }) {
   return (
-    <div className="cs-tools">
+    <div className="ds-card ds-card--flush">
       {rows.map((r) => (
-        <button key={r.label} className="cs-row" onClick={r.onClick}>
-          <span className="cs-row-text">
-            <span className="cs-row-name">{r.label}</span>
-            <span className="cs-row-sub">{r.sub}</span>
-          </span>
-          <span className="cs-fold-chev" aria-hidden>›</span>
+        <button key={r.label} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={r.onClick}>
+          <span className="pp-row-art">{art}</span><span className="ds-list-body"><span className="ds-list-title">{r.label}</span><span className="ds-list-sub">{r.sub}</span></span>
+          <span className="ds-chev" aria-hidden="true" />
         </button>
       ))}
     </div>
@@ -53,11 +53,11 @@ export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLi
       {m.kind === 'intro' && (
         <>
           <PatternsIntro step="modes" testProgress={null} onAction={onMeetCritic} />
-          <ToolRows rows={[{ ...m.library, onClick: onOpenLibrary }, { ...m.manual, onClick: onPickManually }]} />
+          <ToolRows rows={[{ ...m.library, onClick: onOpenLibrary }, { ...m.manual, onClick: onPickManually }]} art={<Cluster size="row" />} />
         </>
       )}
       {m.kind === 'week' && summary && <WeekPatternCard top={{ kind: 'mode', ...summary }} onOpen={(_, id) => onOpenMode(id)} />}
-      {m.kind === 'diary' && <ToolRows rows={[{ ...m.row, onClick: () => navigate('/diary') }]} />}
+      {m.kind === 'diary' && <ToolRows rows={[{ ...m.row, onClick: () => navigate('/diary') }]} art={<Pebbles size="row" />} />}
     </ScreenBlock>
   );
 }

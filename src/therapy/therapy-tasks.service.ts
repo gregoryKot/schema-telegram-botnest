@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { taskNotificationTitle, TaskNotificationInput } from './task-title';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { encrypt, decrypt } from '../utils/crypto';
 import { localDate, localMidnightUTC } from '../utils/tz';
+import { completeOfflineTask, deleteAssignedTask } from './assigned-task';
+import { STREAK_TASK_TYPES, streakProgress } from './streak-progress';
 
 // Задачи пользователя (свои и назначенные терапевтом): создание, список,
 // завершение, стрик-прогресс и уведомление о назначении. Терапевтские
@@ -45,11 +48,7 @@ export class TherapyTasksService {
     const uid = userId;
 
     // Use user's stored timezone for correct "today" across all timezones
-    const settings = await this.prisma.user.findUnique({
-      where: { id: uid },
-      select: { notifyTimezone: true },
-    });
-    const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+    const tz = await this.clientTimezone(uid);
     const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
 
@@ -93,12 +92,6 @@ export class TherapyTasksService {
     }
     const expiredIds = new Set(expired.map((t) => t.id));
 
-    const STREAK_TYPES = new Set([
-      'tracker_streak',
-      'diary_streak',
-      'schema_diary',
-      'mode_diary',
-    ]);
     const activeTasks = tasks.filter((t) => !expiredIds.has(t.id));
 
     return Promise.all(
@@ -110,8 +103,8 @@ export class TherapyTasksService {
               ? diaryToday > 0
               : undefined;
         const progress =
-          task.targetDays && STREAK_TYPES.has(task.type)
-            ? await this.getStreakProgress(userId, task.type, task.targetDays)
+          task.targetDays && STREAK_TASK_TYPES.includes(task.type)
+            ? await this.getStreakProgress(userId, task, tz)
             : undefined;
         return {
           ...task,
@@ -146,22 +139,29 @@ export class TherapyTasksService {
     return result.count > 0;
   }
 
+  /** Терапевт: удалить своё задание текущему клиенту (assigned-task.ts). */
+  deleteAssignedTask(therapistId: bigint, taskId: number): Promise<boolean> {
+    return deleteAssignedTask(this.prisma, therapistId, taskId);
+  }
+
+  /** Терапевт: закрыть задание офлайн-клиента (assigned-task.ts). */
+  completeOfflineTask(
+    therapistId: bigint,
+    taskId: number,
+    done: boolean,
+  ): Promise<boolean> {
+    return completeOfflineTask(this.prisma, therapistId, taskId, done);
+  }
+
   async checkStreakTasks(userId: bigint): Promise<void> {
     const tasks = await this.prisma.userTask.findMany({
-      where: {
-        userId,
-        done: null,
-        type: {
-          in: ['diary_streak', 'tracker_streak', 'schema_diary', 'mode_diary'],
-        },
-      },
+      where: { userId, done: null, type: { in: [...STREAK_TASK_TYPES] } },
     });
     if (tasks.length === 0) return;
     const now = new Date();
+    const tz = await this.clientTimezone(userId);
     const progresses = await Promise.all(
-      tasks.map((t) =>
-        this.getStreakProgress(userId, t.type, t.targetDays ?? 7),
-      ),
+      tasks.map((t) => this.getStreakProgress(userId, t, tz)),
     );
     const completed = tasks.filter(
       (t, i) => progresses[i] >= (t.targetDays ?? 7),
@@ -178,64 +178,34 @@ export class TherapyTasksService {
     }
   }
 
-  async getStreakProgress(
+  /** notifyTimezone клиента: в его днях лежат оценки и считаются серии. */
+  async clientTimezone(userId: bigint): Promise<string> {
+    const settings = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notifyTimezone: true },
+    });
+    return settings?.notifyTimezone ?? 'Europe/Moscow';
+  }
+
+  /** Дни серии с дня назначения по календарю клиента (streak-progress.ts). */
+  getStreakProgress(
     userId: bigint,
-    type: string,
-    days: number,
+    task: { type: string; createdAt: Date },
+    tz: string,
   ): Promise<number> {
-    const since = new Date(Date.now() - days * 86_400_000)
-      .toISOString()
-      .slice(0, 10);
-    if (type === 'tracker_streak') {
-      const dates = await this.prisma.rating.groupBy({
-        by: ['date'],
-        where: { userId, date: { gte: since } },
-      });
-      return dates.length;
-    }
-    if (type === 'schema_diary') {
-      return this.prisma.schemaDiaryEntry.count({
-        where: { userId, createdAt: { gte: new Date(since) } },
-      });
-    }
-    if (type === 'mode_diary') {
-      return this.prisma.modeDiaryEntry.count({
-        where: { userId, createdAt: { gte: new Date(since) } },
-      });
-    }
-    // diary_streak: any diary entry (schema or mode or gratitude)
-    const [schema, mode, gratitude] = await Promise.all([
-      this.prisma.schemaDiaryEntry.groupBy({
-        by: ['createdAt'],
-        where: { userId, createdAt: { gte: new Date(since) } },
-      }),
-      this.prisma.modeDiaryEntry.groupBy({
-        by: ['createdAt'],
-        where: { userId, createdAt: { gte: new Date(since) } },
-      }),
-      this.prisma.gratitudeDiaryEntry.findMany({
-        where: { userId, date: { gte: since } },
-        select: { date: true },
-      }),
-    ]);
-    const diaryDates = new Set([
-      ...schema.map((e) => e.createdAt.toISOString().slice(0, 10)),
-      ...mode.map((e) => e.createdAt.toISOString().slice(0, 10)),
-      ...gratitude.map((e) => e.date),
-    ]);
-    return diaryDates.size;
+    return streakProgress(this.prisma, userId, task, tz);
   }
 
   async scheduleTaskNotification(
     clientId: bigint,
-    task: { text: string; needId: string | null; dueDate: string | null },
+    task: TaskNotificationInput,
   ): Promise<void> {
     await this.notificationService.schedule(
       clientId,
       'task_assigned',
       new Date(),
       {
-        text: task.text,
+        text: taskNotificationTitle(task.type, task.text),
         needId: task.needId,
         dueDate: task.dueDate,
       },

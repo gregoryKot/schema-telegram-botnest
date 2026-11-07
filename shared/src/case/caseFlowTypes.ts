@@ -5,8 +5,8 @@
  * Полный CaseAnswers собирается из этих полей только когда gateId/modeId уже
  * гарантированно заданы (caseFlowMappers.ts → buildAnswers).
  *
- * Один источник для webapp/schema-miniapp (правило №3 CLAUDE.md) — вынесено
- * из schema-miniapp/src/components/caseFlow/caseFlowTypes.ts 2026-08:
+ * Общий модуль (правило №3 CLAUDE.md) — вынесен
+ * из удалённого мини-аппа 2026-08:
  * ни хук состояния, ни эти типы не были завязаны ни на один платформенный
  * модуль (BottomSheet/haptic/api), только на shared. webapp подключает те же
  * типы, платформенные хуки (useCaseFlowState/useCaseFlowSave) у каждой
@@ -14,6 +14,16 @@
  */
 import type { CaseCriterionAnswers, CaseGateId } from './caseTypes';
 import type { ModeEntrySaveData } from '../mode/modeDiarySteps';
+import type { ModeNoteField } from '../notes/types';
+
+/** Поля, которые разбор пишет в карточку режима только в пустое место: один
+ *  момент дополняет портрет, а не переписывает его (QA 2026-11, К1). Имя части
+ *  (alias) дают явно на шаге «Как назовёшь» — оно обновляется как обычно. */
+export const CASE_CARD_FILL: ModeNoteField[] = [
+  'triggers',
+  'feelings',
+  'behavior',
+];
 
 /** Тело onSaveCard — карточка режима (UserModeNote, частичный апсерт). */
 export interface CaseCardBody {
@@ -22,11 +32,11 @@ export interface CaseCardBody {
   triggers?: string;
   feelings?: string;
   behavior?: string;
+  fillIfEmpty: ModeNoteField[];
 }
 
-/** Пропсы оркестратора потока — общая форма для CaseFlowSheet (miniapp) и
- *  CaseFlowScreen (webapp): каждая площадка сама решает, чем сохранять и
- *  куда вести дальше, форма контракта одна. */
+/** Пропсы оркестратора потока — общая форма для CaseFlowScreen (webapp): экран сам
+ *  решает, чем сохранять и куда вести дальше. */
 export interface CaseFlowSheetProps {
   /** Сколько разборов уже было ДО этого — 0 показывает термин «режим». */
   caseCount: number;

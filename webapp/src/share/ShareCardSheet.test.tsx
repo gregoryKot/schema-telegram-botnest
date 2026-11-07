@@ -11,6 +11,8 @@ const copyMock = vi.fn().mockResolvedValue(undefined);
 let hookState: {
   sharing: boolean;
   copied: boolean;
+  /** Картинка скачана вместо шэра — подпись кнопки берётся настоящая. */
+  saved?: boolean;
   failed: boolean;
   showText: boolean;
   text: string;
@@ -18,9 +20,17 @@ let hookState: {
   copy: () => Promise<void>;
 };
 
-vi.mock('../../../shared/src/share/useShareCard', () => ({
-  useShareCard: () => hookState,
-}));
+vi.mock('../../../shared/src/share/useShareCard', async () => {
+  const { shareButtonLabel } = await import(
+    '../../../shared/src/share/shareOutcome'
+  );
+  return {
+    useShareCard: () => ({
+      ...hookState,
+      shareLabel: shareButtonLabel(hookState.sharing, !!hookState.saved),
+    }),
+  };
+});
 vi.mock('../components/TherapyNote', () => ({
   TherapyNote: () => <div data-testid="therapy-note" />,
 }));
@@ -76,5 +86,33 @@ describe('ShareCardSheet — therapyNote', () => {
   it('therapyNote=false — TherapyNote не показан', () => {
     renderSheet({ therapyNote: false });
     expect(screen.queryByTestId('therapy-note')).toBeNull();
+  });
+});
+
+describe('ShareCardSheet — подпись главной кнопки', () => {
+  function stateWith(over: Partial<typeof hookState>) {
+    hookState = {
+      sharing: false,
+      copied: false,
+      failed: false,
+      showText: false,
+      text: '',
+      share: shareMock,
+      copy: copyMock,
+      ...over,
+    };
+  }
+
+  it('обычное состояние — «Поделиться»', () => {
+    stateWith({});
+    renderSheet();
+    expect(screen.getByText('Поделиться')).toBeTruthy();
+  });
+
+  it('saved=true (шэра нет, картинка скачана) — «✓ Картинка сохранена»', () => {
+    stateWith({ saved: true });
+    renderSheet();
+    expect(screen.getByText('✓ Картинка сохранена')).toBeTruthy();
+    expect(screen.queryByText('Поделиться')).toBeNull();
   });
 });

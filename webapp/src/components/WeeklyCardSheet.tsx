@@ -1,6 +1,5 @@
 // Экран «Карточка недели» — отрисовка и расчёты в shared/src/share
 // (единственная копия, правило №3). Здесь только вёрстка ExScreen и share-флоу.
-// Парный файл: schema-miniapp/src/components/WeeklyCardSheet.tsx.
 import { useEffect, useRef, useState } from 'react';
 import type { Need, DayHistory } from '../types';
 import { ExScreen } from './exercises/ExScreen';
@@ -93,7 +92,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       lede={tr('Сводка потребностей за неделю в виде карточки – сохрани или отправь терапевту.', 'Сводка потребностей за неделю в виде карточки – сохраните или отправьте терапевту.')}
     >
       {history.length === 0 ? (
-        <div className="sd-weekly-empty">Нет данных за неделю</div>
+        <p className="ds-empty">Нет данных за неделю</p>
       ) : (
         <>
           <div className="ds-card ds-card--flush sd-canvas">

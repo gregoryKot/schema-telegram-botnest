@@ -3,7 +3,7 @@
 // «+» и ⌘K открывали одно и то же. Всё ленивое: чанки грузятся по тапу.
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
-import { todayCalendarDate } from '../../../../shared/src/utils/calendarDate';
+import { diaryToday } from '../../../../shared/src/diary/diaryDay';
 import { CaseFlowHost } from '../caseFlow/CaseFlowHost';
 import { QuickPracticeSheet } from '../practice/QuickPracticeSheet';
 import type { OverlayQuickActionId } from './quickActionRouting';
@@ -17,21 +17,6 @@ interface Props {
   onClose: () => void;
   onOpenTracker: () => void;
   onOpenSchema: React.ComponentProps<typeof CaseFlowHost>['onOpenSchema'];
-}
-
-// Число прошлых разборов нужно потоку для первой фразы; пока грузится — ничего
-// не показываем, ошибка читается как «первый разбор».
-function QuickCase({ onClose, onOpenTracker, onOpenSchema }: Omit<Props, 'active'>) {
-  const [count, setCount] = useState<number | null>(null);
-  useEffect(() => {
-    let alive = true;
-    api.getModeDiary()
-      .then((rows) => { if (alive) setCount(rows.length); })
-      .catch(() => { if (alive) setCount(0); });
-    return () => { alive = false; };
-  }, []);
-  if (count === null) return null;
-  return <CaseFlowHost start="flow" caseCount={count} onClose={onClose} onOpenTracker={onOpenTracker} onOpenSchema={onOpenSchema} />;
 }
 
 function QuickSchemaEntry({ onClose }: { onClose: () => void }) {
@@ -55,7 +40,7 @@ export function QuickActionOverlays({ active, ...rest }: Props) {
   const { onClose } = rest;
   switch (active) {
     case 'case':
-      return <Suspense fallback={null}><QuickCase {...rest} /></Suspense>;
+      return <CaseFlowHost start="flow" {...rest} />;
     case 'diary_schema':
       return <Suspense fallback={null}><QuickSchemaEntry onClose={onClose} /></Suspense>;
     case 'diary_mode':
@@ -69,8 +54,8 @@ export function QuickActionOverlays({ active, ...rest }: Props) {
         <Suspense fallback={null}>
           <GratitudeEntrySheet
             onClose={onClose}
-            date={todayCalendarDate()}
-            onSave={async (date, items) => { await api.createGratitudeDiary(date, items); }}
+            date={diaryToday() /* день человека, не UTC: в 00:10 по Москве UTC ещё вчера */}
+            onSave={async (date, items, base) => { await api.createGratitudeDiary(date, items, base); }}
           />
         </Suspense>
       );

@@ -1,22 +1,47 @@
 // Общие ключи localStorage — единственная копия (правило №3 CLAUDE.md, волна 2).
 // YSQ_RESULT_KEY/YSQ_PROGRESS_KEY — из hooks/ysqStorageKeys.ts, НЕ из
-// hooks/useYsqTest.ts (правка производительности схема-мини-аппа 2026-08-22):
+// hooks/useYsqTest.ts (правка производительности удалённого мини-аппа 2026-08-22):
 // тот — барабан-реэкспорт вопросов/схем/скоринга, и импорт через него тянул
 // бы весь контент теста в любой чанк, откуда синхронно нужен этот ключ.
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../hooks/ysqStorageKeys';
-
 export const MY_SCHEMA_IDS_KEY = 'my_schema_ids';
 export const MY_MODE_IDS_KEY = 'my_mode_ids';
+// Единственный писатель локальных копий «моих» схем и режимов — зеркало
+// User.mySchemaIds / myModeIds (api.getProfile / api.updateSettings); экраны
+// и старт приложения зовут эти функции, а не localStorage напрямую. Живут
+// здесь, а не в модуле экрана «Паттерны»: их зовёт и главный чанк
+// (useBootstrapLoad), и ленивые экраны, а этот файл оба уже импортируют —
+// новый общий модуль между ними заставлял сборщик дробить index на 14
+// лишних чанков (+13 КБ бандла, PR #939).
+export function cacheMySchemaIds(ids: string[]): void {
+  localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(ids));
+}
+export function cacheMyModeIds(ids: string[]): void {
+  localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(ids));
+}
+const isStringList = (v: unknown): v is string[] =>
+  Array.isArray(v) && v.every((x) => typeof x === 'string');
+/** Профиль с сервера — источник правды целиком, пустой список тоже: убрал всё
+ * на другом устройстве — здесь старый список не переживает загрузку (класс
+ * «кэш пережил источник правды», #939; до этого кэш писался только при
+ * непустом списке). Поля нет (ответ не той формы) — кэш не трогаем. */
+export function cacheMyPatternsFromProfile(p: {
+  mySchemaIds?: unknown;
+  myModeIds?: unknown;
+}): void {
+  if (isStringList(p.mySchemaIds)) cacheMySchemaIds(p.mySchemaIds);
+  if (isStringList(p.myModeIds)) cacheMyModeIds(p.myModeIds);
+}
 export const CHILDHOOD_DONE_KEY = 'childhood_wheel_done';
-// Последняя открытая вкладка экрана «Паттерны» мини-аппа (Схемы/Режимы/
+// Последняя открытая вкладка экрана «Паттерны» (Схемы/Режимы/
 // Потребности) — секция размонтируется при переключении нижней навигации и
-// без этого ключа каждый возврат сбрасывал вкладку на «Схемы» (см.
-// schema-miniapp/src/sections/schemas/patternsTabStorage.ts).
+// без этого ключа каждый возврат сбрасывал вкладку на «Схемы».
 export const PATTERNS_LAST_TAB_KEY = 'patterns_last_tab';
 // Ручной выбор часового пояса в BookingPicker сайта («не ваш часовой
 // пояс?») — переживает возврат на страницу записи.
 export const BOOKING_TIME_ZONE_KEY = 'booking_time_zone';
-
+// Флаг стартового режима сайта: '1' — кабинет, '0' — клиент. Единственный писатель — webapp/src/components/appShell/therapistModeCache.ts; читает AccountPage.
+export const THERAPIST_MODE_KEY = 'therapist_mode';
 export function shouldShowChildhoodWheel(): boolean {
   return !localStorage.getItem(CHILDHOOD_DONE_KEY);
 }

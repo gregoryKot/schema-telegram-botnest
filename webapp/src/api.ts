@@ -1,7 +1,7 @@
 // Shared API client for the web app (Authorization: Bearer <token> вместо x-telegram-init-data).
 // Типы — единственная копия в shared (правило №3); методы переехали в shared-фабрику, здесь ре-экспорты.
 export type { TherapyClientSummary } from '../../shared/src/types';
-import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine';
+import type { QuizDto } from '../../shared/src/quiz/quizEngine'; export type { QuizDto } from '../../shared/src/quiz/quizEngine'; import type { ConceptAppendBody } from '../../shared/src/therapy/conceptAppend'; import type { ClientSharedConcept } from '../../shared/src/therapy/clientConceptualization';
 export type { UserSchemaNote, UserModeNote } from '../../shared/src/notes/types';
 import type { ContactChannel } from '../../shared/src/booking/contactChannel'; import type { Currency } from '../../shared/src/booking/priceRegion'; import type { PhraseMarkId } from '../../shared/src/phraseCheck/criteria';
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
@@ -15,8 +15,7 @@ import {
   authedFetch,
   get,
   post,
-  postJson,
-  patchJson,
+  postJson, patchJson, type SendOptions,
   del,
   setTokenProvider,
   setRefreshHandler,
@@ -55,7 +54,7 @@ async function adminReq<T>(method: string, path: string, key: string, body?: unk
 }
 
 import type {
-  BookingSlot,
+  BookingSlot, ClientBookingOverview, ClientBookResult,
   SessionOption,
   AvailabilityRule,
   NewAvailabilityRule,
@@ -87,7 +86,7 @@ export type {
   UserSettings,
   StreakData,
   Achievement,
-  BookingSlot,
+  BookingSlot, ClientBookingView, ClientBookingOverview, ClientBookResult,
   SessionOption,
   AvailabilityRule,
   NewAvailabilityRule,
@@ -143,15 +142,17 @@ export const api = {
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
-  getQuizzes: (form?: 'ty' | 'vy') =>
-    get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
+  getQuizzes: (form?: 'ty' | 'vy') => get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
   getAllTherapyTasks:       () => get<{ clientId: UserId; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
   getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
-  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body),
+  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body, opts),
+  appendConceptualization: (clientId: UserId, body: ConceptAppendBody, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}/append`, body, opts), // холст дописывает: сервер объединяет, не удаляет
+  shareConceptualization: (clientId: UserId, shared: boolean) => patchJson<{ sharedWithClientAt: string | null }>(`/api/therapy/conceptualization/${clientId}/share`, { shared }), // тумблер «Показать клиенту»
+  getMyConcept: () => get<ClientSharedConcept>('/api/therapy/my-concept'), // схема случая клиента; не показана — 404
   getTherapyClientHistory: (clientId: UserId) => get<{ date: string; index: number | null; ratings: Record<string, number> }[]>(`/api/therapy/client-history/${clientId}`),
   // Разборы фразы («Критик или забота?», теперь на обоих фронтендах — раньше
   // miniapp-only решение (PR #261), сайту тоже нужны write-методы, не только GET для «Тёплых слов»).
-  // Случайная фраза Здорового Взрослого для карточки шаринга (PhraseShareCard.tsx) — паритет, правило №16.
+  // Случайная фраза Здорового Взрослого для карточки шаринга в мини-аппе (PhraseShareCard.tsx); на сайте карточку убрали вместе с главной (#872), метод остался для паритета, правило №16.
   getHealthyPhrase:     () => get<{ text: string | null }>('/api/healthy-phrase'),
   getPhraseChecks:      () => get<PhraseCheckEntry[]>('/api/phrase-checks'),
   createPhraseCheck:    (body: { phrase: string; marks: PhraseMarkId[]; rewrite?: string; inWarmWords?: boolean }) => post('/api/phrase-checks', body),
@@ -161,7 +162,8 @@ export const api = {
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),
   getLetters:           () => get<LetterEntry[]>('/api/letters'),
-  createLetter:         (text: string) => post('/api/letters', { text }),
+  createLetter:         (text: string) => postJson<LetterEntry>('/api/letters', { text }),
+  updateLetter:         (id: number, text: string) => patchJson<LetterEntry>(`/api/letters/${id}`, { text }),
   deleteLetter:         (id: number) => del(`/api/letters/${id}`),
   getSafePlace:         () => get<{ description: string; updatedAt: string } | null>('/api/safe-place'),
   saveSafePlace:        (description: string) => post('/api/safe-place', { description }),
@@ -183,6 +185,9 @@ export const api = {
     postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null }>('/api/booking/book', body),
   getBookingByToken:    (token: string) => get<{ status: string; paid: boolean; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
+  // Запись клиента из приложения (#546): имя, контакт и оферту сервер берёт из аккаунта и действия.
+  getClientBooking:     () => get<ClientBookingOverview>('/api/client-booking'),
+  clientBook:           (body: { startsAt: string; durationMin?: number; clientTimeZone?: string }) => postJson<ClientBookResult>('/api/client-booking/book', body),
   donate:               (body: { amount: number; source?: 'app' | 'game'; email?: string; comment?: string; website?: string }) =>
     postJson<{ id: number; paymentUrl: string | null }>('/api/donation', body),
   // Subscription (recurring support)
@@ -235,7 +240,7 @@ export const api = {
   listModeMaps:   (clientId: UserId) => get<ModeMapMeta[]>(`/api/therapy/mode-maps/${clientId}`),
   getModeMap:     (mapId: number)    => get<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`),
   createModeMap:  (clientId: UserId, title: string, kind: ModeMapKind = 'problem') => postJson<ModeMapFull>(`/api/therapy/mode-maps/${clientId}`, { title, kind }),
-  updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body),
+  updateModeMap:  (mapId: number, body: Partial<Pick<ModeMapFull, 'title' | 'nodes' | 'edges'>>, opts?: SendOptions) => patchJson<ModeMapFull>(`/api/therapy/mode-maps/map/${mapId}`, body, opts),
   deleteModeMap:  (mapId: number) => del(`/api/therapy/mode-maps/map/${mapId}`),
   // Client read-only view of their own maps
   listMyModeMaps: () => get<ModeMapMeta[]>('/api/therapy/my-mode-maps'),

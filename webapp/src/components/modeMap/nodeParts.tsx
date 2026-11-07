@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeToolbar } from '@xyflow/react';
 import { useNodeActions } from '../modeMapActions';
 import { MMIcon } from '../modeMapIcons';
-import { getSchemaById } from '../../schemaTherapyData';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { SchemaPills } from './SchemaPills';
 import { useTr } from '../../utils/addressForm';
 import { fontPx, type ModeNodeData } from './nodeStyle';
+import { MODE_MAP_NODE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 // Общие части фигур карты режимов: тулбар выбранной ноды, бейдж партнёра, ручки
 // соединения и подпись. Вынесены из ModeMapNodes.tsx (правило №10), чтобы фигуры
@@ -73,21 +73,21 @@ export function NodeTools({ id, selected, data }: { id: string; selected?: boole
       <div style={{ display: 'flex', gap: 2, padding: 'var(--space-4)', borderRadius: 'var(--r-8)', alignItems: 'center',
         background: 'var(--bg-elev)', border: '1px solid var(--line-strong)',
         boxShadow: 'var(--shadow-2)' }}>
-        <button style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
+        <button className="mm2-nt-btn" style={btn} title="Редактировать" aria-label="Редактировать" onClick={() => actions.edit(id)}><MMIcon name="edit" size={15} /></button>
         {sep}
-        <button style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
+        <button className="mm2-nt-btn" style={btn} title={`Толщина контура: ${({ thin: 'тонкий', normal: 'обычный', bold: 'жирный' } as const)[sw]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Толщина контура"
           onClick={() => actions.patchData(id, { strokeWidth: next(STROKE_CYCLE, sw) })}>
           <span style={{ display: 'inline-block', width: 16, height: sw === 'thin' ? 1.5 : sw === 'bold' ? 4 : 2.5,
             borderRadius: 'var(--r-2)', background: 'var(--text-sub)' }} />
         </button>
-        <button style={{ ...btn, fontWeight: 700, fontSize: fz === 'sm' ? 11 : fz === 'lg' ? 17 : 14 }}
+        <button className="mm2-nt-btn" style={{ ...btn, fontWeight: 700, fontSize: fz === 'sm' ? 11 : fz === 'lg' ? 17 : 14 }}
           title={`Размер текста: ${({ sm: 'мелкий', md: 'средний', lg: 'крупный' } as const)[fz]} (${tr('нажми', 'нажмите')}, чтобы сменить)`}
           aria-label="Размер текста"
           onClick={() => actions.patchData(id, { fontSize: next(FONT_CYCLE, fz) })}>A</button>
         {sep}
-        <button style={btn} title="Дублировать" aria-label="Дублировать" onClick={() => actions.duplicate(id)}><MMIcon name="copy" size={15} /></button>
-        <button style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" aria-label="Удалить" onClick={() => actions.remove(id)}><MMIcon name="trash" size={15} /></button>
+        <button className="mm2-nt-btn" style={btn} title="Дублировать" aria-label="Дублировать" onClick={() => actions.duplicate(id)}><MMIcon name="copy" size={15} /></button>
+        <button className="mm2-nt-btn" style={{ ...btn, color: 'var(--accent-red)' }} title="Удалить" aria-label="Удалить" onClick={() => actions.remove(id)}><MMIcon name="trash" size={15} /></button>
       </div>
     </NodeToolbar>
   );
@@ -113,15 +113,14 @@ export function NodeLabel({ id, data, light, hideSchema }: { id?: string; data: 
   const actions = useNodeActions();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(data.label);
-  const editRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (editing) editRef.current?.focus(); }, [editing]);
+  const editRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (editing) editRef.current?.select(); }, [editing]);
 
   const display = data.display ?? 'full';
   const showNote = display !== 'name' && !!data.note;
   const showNeed = display === 'full' && !!data.unmetNeed;
   const showHealthy = display === 'full' && !!data.healthyResponse;
-  const schema = data.schemaId ? getSchemaById(data.schemaId) : undefined;
-  const showSchema = display !== 'name' && !!schema && !hideSchema;
+  const showSchema = display !== 'name' && !hideSchema;
 
   const startEdit = () => { if (id && actions) { setDraft(data.label); setEditing(true); } };
   const commit = () => { if (id && actions) actions.rename(id, draft.trim() || data.label); setEditing(false); };
@@ -131,16 +130,15 @@ export function NodeLabel({ id, data, light, hideSchema }: { id?: string; data: 
   return (
     <div style={{ textAlign: 'center', pointerEvents: 'all' }}>
       {editing ? (
-        <input ref={editRef} value={draft}
+        // Переносит строки, как подпись: узкий input прокручивался к концу и прятал начало («язвимый Ребёнок»).
+        <textarea ref={editRef} value={draft} rows={draft.length > 14 ? 2 : 1} maxLength={MODE_MAP_NODE_TEXT_MAX}
           onChange={e => setDraft(e.target.value)}
           onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); e.stopPropagation(); }}
-          onClick={e => e.stopPropagation()}
-          onDoubleClick={e => e.stopPropagation()}
-          className="nodrag"
-          style={{ width: '90%', fontSize: fs, fontWeight: 600, textAlign: 'center',
-            border: '1px solid var(--accent)', borderRadius: 'var(--r-4)', background: 'var(--bg-elev)',
-            color: 'var(--text)', outline: 'none', padding: '1px 4px' }} />
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } if (e.key === 'Escape') setEditing(false); e.stopPropagation(); }}
+          onClick={e => e.stopPropagation()} onDoubleClick={e => e.stopPropagation()} className="nodrag"
+          style={{ width: '100%', fontSize: fs, fontWeight: 600, textAlign: 'center', lineHeight: 1.35, resize: 'none', fieldSizing: 'content',
+            border: '1px solid var(--accent)', borderRadius: 'var(--r-4)', background: 'var(--bg-elev)', fontFamily: 'inherit',
+            color: 'var(--text)', outline: 'none', padding: '1px 4px', boxSizing: 'border-box', overflow: 'hidden' }} />
       ) : (
         <div onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
           style={{ fontSize: fs, fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word', cursor: id ? 'text' : 'default',
@@ -152,16 +150,7 @@ export function NodeLabel({ id, data, light, hideSchema }: { id?: string; data: 
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
       {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>{data.healthyResponse}</div>}
-      {showSchema && schema && (
-        <div style={{ marginTop: 'var(--space-6)', display: 'inline-flex', alignItems: 'center', gap: 'var(--space-4)', maxWidth: '100%',
-          padding: '2px 7px', borderRadius: 999, fontSize: subFs - 1.5, lineHeight: 1.2,
-          background: light ? 'rgba(255,255,255,0.18)' : `color-mix(in srgb, ${schema.domainColor} 14%, transparent)`,
-          border: `1px solid ${light ? 'rgba(255,255,255,0.3)' : `color-mix(in srgb, ${schema.domainColor} 40%, transparent)`}`,
-          color: light ? 'rgba(255,255,255,0.92)' : schema.domainColor }}>
-          <IdentityDot color={schema.domainColor} size={7} />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{schema.name}</span>
-        </div>
-      )}
+      {showSchema && <SchemaPills modeId={data.modeId} schemaId={data.schemaId} light={light} fontSize={subFs - 1.5} />}
     </div>
   );
 }

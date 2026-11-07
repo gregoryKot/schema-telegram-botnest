@@ -34,6 +34,8 @@ describe('AppInstallSection', () => {
     }
     const cta = screen.getByText('Открыть приложение') as HTMLAnchorElement;
     expect(cta.getAttribute('href')).toBe('/today');
+    const page = screen.getByText('Страница установки') as HTMLAnchorElement;
+    expect(page.getAttribute('href')).toBe('/install');
   });
 
   it('без пойманного beforeinstallprompt кнопки «Установить сейчас» нет', () => {

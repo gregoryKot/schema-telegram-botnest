@@ -8,7 +8,7 @@
 // parity.mjs смотрит только в src/api/**, контроллеры src/auth/* для него
 // слепая зона, поэтому класс закрыт здесь.
 //
-// Потребитель — НЕ-тестовый файл фронта (webapp/src, schema-miniapp/src,
+// Потребитель — НЕ-тестовый файл фронта (webapp,
 // shared/src), в котором есть вызов `/api/auth/<id>` вне комментария (блочного,
 // JSX-шного или хвостового `//`). Спек в потребители не годится (правило №11).
 import { readdirSync, readFileSync } from 'fs';
@@ -17,7 +17,7 @@ import { collectSourceFiles } from '../../security/collect-source-files';
 
 const ROOT = join(__dirname, '..', '..', '..');
 const PROVIDERS_DIR = __dirname;
-const FRONT_DIRS = ['webapp/src', 'schema-miniapp/src', 'shared/src'];
+const FRONT_DIRS = ['webapp/src', 'shared/src'];
 
 // Исключения: id провайдера → причина, почему у него законно нет фронтового
 // потребителя. Пусто намеренно (правило №15): вход без потребителя удаляют.

@@ -1,0 +1,26 @@
+/* Запись клиента из приложения (#546): лист «Запись на сессию» (ClientBookingSheet) и строки
+   записи в карточке «Терапевт» профиля (ClientBookingBlock). Колонка листа — как у WhySheet:
+   шапка ds-sheet-head во всю ширину, содержимое — колонка до 560px. Цвета — токены. */
+.cbk-sheet { display: flex; flex-direction: column; align-items: center; }
+.cbk-head { width: 100%; }
+.cbk-inner {
+  box-sizing: border-box; width: 100%; max-width: 560px;
+  padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 20px;
+}
+.cbk-lede { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
+.cbk-note { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.cbk-offer { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-faint); }
+.cbk-error { margin: 0; font-size: 14px; line-height: 1.6; color: var(--accent-red); }
+.cbk-actions, .cbk-result { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
+.cbk-actions .ds-btn, .cbk-result .ds-btn { width: 100%; text-align: center; }
+.cbk-skel { display: flex; flex-direction: column; gap: 12px; }
+.cbk-skel-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Карточка «Терапевт» профиля: ближайшая бронь и кнопка записи под строкой терапевта. */
+.cbk-card { flex: 1 0 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.cbk-card-status { font-size: 13px; color: var(--text-faint); }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cbk-inner { padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+}

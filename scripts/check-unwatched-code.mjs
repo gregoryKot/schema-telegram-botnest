@@ -22,16 +22,16 @@ const CODE_EXT = /\.(js|mjs|cjs|sh)$/;
 
 // Деревья, за которыми уже следит другой гейт — префиксы repo-relative путей.
 const WATCHED_PREFIXES = [
-  'src/', 'webapp/src/', 'schema-miniapp/src/', 'shared/src/',
-  'webapp/public/', 'schema-miniapp/public/', 'game/public/',
+  'src/', 'webapp/src/', 'shared/src/',
+  'webapp/public/', 'game/public/',
 ];
 // Деревья вне гейта в принципе (не прод-код репозитория или заморожены).
 // Экспорт — ради теста гейта.
 export const EXCLUDED_PREFIXES = ['game/', '.github/'];
 function gitFiles() {
-  return execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean);
+  // maxBuffer: дефолт 1 МиБ ронял гейт с ENOBUFS — см. unwatched-code-buffer.spec.ts
+  const opts = { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 };
+  return execFileSync('git', ['ls-files'], opts).split('\n').filter(Boolean);
 }
 function main() {
 const all = gitFiles();
@@ -94,7 +94,6 @@ const isTestFile = (rel) =>
   (rel.startsWith('src/') && rel.endsWith('.spec.ts')) ||
   (rel.startsWith('test/') && rel.endsWith('.ts')) ||
   (rel.startsWith('webapp/src/') && /\.test\.[jt]sx?$/.test(rel)) ||
-  (rel.startsWith('schema-miniapp/src/') && /\.test\.[jt]sx?$/.test(rel)) ||
   (rel.startsWith('shared/src/') && /\.test\.[jt]sx?$/.test(rel));
 
 // existsSync — на удалённое из рабочего дерева. stripComments ДО поиска.

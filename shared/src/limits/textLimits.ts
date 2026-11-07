@@ -13,9 +13,12 @@ export const DIARY_FIELD_MAX = 10000; // поле записи дневника 
 export const PRACTICE_TEXT_MAX = 200; // своя практика в плане
 export const BOOKING_SLOT_MESSAGE_MAX = 2000; // запись на слот (/api/booking/book): запрос
 export const MODE_MAP_TITLE_MAX = 120; // название карты режимов
+export const MODE_MAP_NODE_TEXT_MAX = 2000; // карта режимов: любая строка узла или связи (название, заметка, ответ Здорового Взрослого, подпись стрелки)
+export const CONCEPT_FIELD_TEXT_MAX = 5000; // концептуализация, вид «Поля»: каждое текстовое поле (цели, ранний опыт, триггеры…)
 export const CONCEPT_MODE_ALIAS_MAX = 80; // графическая концептуализация: как режим называет клиент
 export const CONCEPT_MODE_TEXT_MAX = 1000; // графическая концептуализация: истоки / проявления / работа с режимом
 export const CONCEPT_SCHEMA_TEXT_MAX = 1000; // графическая концептуализация: убеждение схемы / как нарушалась потребность
+export const CONCEPT_TECHNIQUE_MARKS_MAX = 200; // графическая концептуализация: отметок «Делали сегодня» у одной связи режима или схемы
 export const CUSTOM_MODE_NAME_MAX = 80; // название своего режима на карте
 export const CUSTOM_MODE_EMOJI_MAX = 8; // значок своего режима
 export const THERAPIST_REQUEST_NAME_MAX = 100; // заявка «Я психолог»: ФИО
@@ -27,6 +30,7 @@ export const BOOKING_CONTACT_MAX = 100; // заявка с сайта: конт�
 export const BOOKING_MESSAGE_MAX = 500; // заявка с сайта: запрос
 export const BOOKING_SOURCE_MAX = 200; // заявка с сайта: откуда (leadSource())
 export const CLIENT_NAME_MAX = 100; // имя/псевдоним клиента у терапевта (добавление офлайн-клиента и переименование)
+export const TASK_TEXT_MAX = 10000; // «Своё задание»: текст задания (терапевта клиенту или своей цели)
 
 /** С какой доли заполнения показывать остаток: до этого счётчик — шум. */
 export const COUNTER_FROM_RATIO = 0.8;

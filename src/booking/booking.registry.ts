@@ -2,6 +2,8 @@ import { BookingController } from './booking.controller';
 import { BookingAdminController } from './booking-admin.controller';
 import { BookingCalendarAdminController } from './booking-calendar-admin.controller';
 import { PaymentController } from './payment.controller';
+import { ClientBookingController } from './client-booking.controller';
+import { ClientBookingService } from './client-booking.service';
 import { BookingService } from './booking.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { BookingConfirmRetryService } from './booking-confirm-retry.service';
@@ -25,12 +27,14 @@ export const BOOKING_CONTROLLERS = [
   BookingAdminController,
   BookingCalendarAdminController,
   PaymentController,
+  ClientBookingController,
   DonationController,
   SubscriptionController,
 ];
 
 export const BOOKING_PROVIDERS = [
   BookingService,
+  ClientBookingService,
   BookingNotifyService,
   BookingConfirmRetryService,
   BookingRetentionService,

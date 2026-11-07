@@ -198,6 +198,42 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     expect(bGet.body.answers).toHaveLength(116);
   });
 
+  // Кнопка «Удалить результаты теста» в настройках (решение владельца
+  // 2026-10-22): итог, вся история и незаконченный прогресс — у себя, и
+  // ничего у другого человека. Удалил → больше не отдаётся ни одной ручкой.
+  it('ysq-data DELETE: стирает свой итог, историю и прогресс, чужие не трогает', async () => {
+    const a = agentAs(USER_A);
+    const b = agentAs(USER_B);
+    for (const agent of [a, b]) {
+      // Два прохождения — две строки истории; затем начатая третья попытка.
+      await agent.post('/api/ysq-result', { answers: Array(116).fill(2) });
+      await agent.post('/api/ysq-result', { answers: Array(116).fill(5) });
+      await agent.post('/api/ysq-progress', {
+        answers: Array(116).fill(1),
+        page: 3,
+      });
+    }
+    const aHistoryBefore = await a.get('/api/ysq-history');
+    expect(aHistoryBefore.body.length).toBeGreaterThanOrEqual(2);
+
+    const del = await a.delete('/api/ysq-data');
+    expect(del.status).toBeLessThan(300);
+
+    const aResult = await a.get('/api/ysq-result');
+    expect(aResult.text).toBe('');
+    const aHistory = await a.get('/api/ysq-history');
+    expect(aHistory.body).toEqual([]);
+    const aProgress = await a.get('/api/ysq-progress');
+    expect(aProgress.text).toBe('');
+
+    const bResult = await b.get('/api/ysq-result');
+    expect(bResult.body.answers).toHaveLength(116);
+    const bHistory = await b.get('/api/ysq-history');
+    expect(bHistory.body.length).toBeGreaterThanOrEqual(2);
+    const bProgress = await b.get('/api/ysq-progress');
+    expect(bProgress.body.page).toBe(3);
+  });
+
   // ─── Pairs: invite → join → visible to both, not to a third user; leave ───
 
   it('pairs: invite+join виден обоим партнёрам, посторонний C ничего не видит', async () => {

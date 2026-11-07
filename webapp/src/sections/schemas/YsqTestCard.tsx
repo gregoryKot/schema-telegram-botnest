@@ -1,3 +1,4 @@
+import { Layers } from '../../components/art/PaperArt';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { useTr } from '../../utils/addressForm';
 
@@ -7,7 +8,7 @@ interface Props {
   onStart: () => void;
 }
 
-/** Тёмная карточка про тест YSQ: пройти / продолжить / посмотреть результаты. */
+/** Карточка цветной бумаги про тест YSQ: пройти / продолжить / посмотреть результаты. */
 export function YsqTestCard({ progressAnswered, completedAt, onStart }: Props) {
   const tr = useTr();
   // Незаконченный прогресс приоритетнее результата: кнопка ведёт в тест на
@@ -23,12 +24,10 @@ export function YsqTestCard({ progressAnswered, completedAt, onStart }: Props) {
       ? 'Результаты, история прохождений и «поделиться» – внутри'
       : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут');
   return (
-    <div className="ds-card ds-card--ink cs-test">
-      <div>
-        <div className="ds-label cs-test-label">Тест на схемы</div>
-        <p className="cs-test-text">{text}</p>
-      </div>
-      <button className="ds-btn cs-test-btn" onClick={onStart}>{action}</button>
+    <div className="pp-paper cs-test">
+      <div className="cs-test-head"><div className="ds-label">Тест на схемы</div><Layers size="row" /></div>
+      <p className="cs-test-text">{text}</p>
+      <button className="ds-btn ds-btn--secondary cs-test-btn" onClick={onStart}>{action}</button>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { useSelfMapData } from '../../hooks/useSelfMapData';
 /**
  * Точка монтирования карты себя — грузит данные только когда карту открыли
  * (правило CLAUDE.md: скелетон по форме контента, а не спиннер, пока карта
- * не готова). Twin schema-miniapp SelfMapOverlay.tsx: маршрутизация «что
+ * не готова). Маршрутизация «что
  * дальше» здесь же — тест схем и «посмотреть потребности» ведут в свои
  * разделы, всё остальное возвращает в разбор случая (он и есть основная
  * работа).
@@ -45,12 +45,11 @@ export function SelfMapOverlay({
       next={next}
       onBack={goBack}
       onPickMode={goBack}
-      onNextStep={(id) => {
-        goBack();
+      onNextStep={(id) => goBack(() => {
         if (id === 'ysq_test') onOpenSchema({ startTest: true });
         else if (id === 'needs_week') onOpenTracker();
         else onStartCase();
-      }}
+      })}
     />
   );
 }

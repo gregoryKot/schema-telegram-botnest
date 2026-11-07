@@ -2,14 +2,24 @@ import { useState, useEffect } from 'react';
 import { api } from '../../api';
 import type { MarqueeTopic } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
+import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 
 /** Marquee admin tab: edit the two scrolling topic strips on the landing page. */
 export function MarqueeSection({ adminKey }: { adminKey: string }) {
   const [a, setA] = useState<MarqueeTopic[]>([]);
   const [b, setB] = useState<MarqueeTopic[]>([]);
 
+  // Ответ, пришедший после правки (пункт добавлен до конца загрузки), её не затирает: до ответа в строке
+  // могут быть только новые пункты — они встают после загруженных. Голая отмена, как в PhotoSection, здесь
+  // хуже: строка осталась бы без загруженных пунктов, и «Сохранить» стёр бы их на сервере.
   useEffect(() => {
-    api.getSiteContent().then(c => { setA(c.marqueeTopicsA); setB(c.marqueeTopicsB); }).catch(() => {});
+    let cancelled = false; // размонтирование (и двойной эффект StrictMode) — ответ не применяется
+    api.getSiteContent().then(c => {
+      if (cancelled) return;
+      setA(local => [...c.marqueeTopicsA, ...local]);
+      setB(local => [...c.marqueeTopicsB, ...local]);
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -24,7 +34,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
   title: string; adminKey: string; group: 'A' | 'B'; topics: MarqueeTopic[]; onChange: (t: MarqueeTopic[]) => void;
 }) {
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, flashSaved] = useTimedFlag(1500);
   const [error, setError] = useState<string | null>(null);
 
   const update = (i: number, patch: Partial<MarqueeTopic>) => {
@@ -45,8 +55,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
     setError(null);
     try {
       await api.adminSetMarquee(adminKey, group, topics.filter(t => t.label.trim() && t.href.trim()));
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      flashSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {

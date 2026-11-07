@@ -5,6 +5,7 @@
 // Образец сетапа: SubscribePage.test.tsx (мок '../api'), NoteSheet.test.tsx
 // (MemoryRouter — useHistorySheet требует useNavigate/useLocation),
 // AuthCallback.test.tsx (подмена window.location для window.location.reload).
+import { useEffect, useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -15,7 +16,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { SettingsSheet } from './SettingsSheet';
 import {
   withAddressForm,
@@ -43,7 +44,9 @@ vi.mock('../api', () => ({
     joinTherapy: vi.fn(),
     createTherapyInvite: vi.fn(),
     updateName: vi.fn(),
-    deleteYsqResult: vi.fn(),
+    deleteYsqData: vi.fn(),
+    getYsqHistory: vi.fn(),
+    getYsqProgress: vi.fn(),
     submitTherapistRequest: vi.fn(),
   },
   reportClientError: vi.fn(),
@@ -74,6 +77,8 @@ beforeEach(() => {
   mockApi.getTherapyRelation.mockResolvedValue(null);
   mockApi.getTherapistRequest.mockResolvedValue(null);
   mockApi.updateSettings.mockResolvedValue(undefined);
+  mockApi.getYsqHistory.mockResolvedValue([]);
+  mockApi.getYsqProgress.mockResolvedValue(null);
   reloadSpy = mockLocationReload();
 });
 
@@ -89,7 +94,7 @@ async function renderSheet(userRole?: 'CLIENT' | 'THERAPIST') {
     </MemoryRouter>,
   );
   // Дожидаемся загрузки настроек (useEffect -> api.getSettings), иначе
-  // компонент застрял бы на <Loader>.
+  // компонент застрял бы на силуэте (SettingsSkeleton, заголовок — плашка).
   await screen.findByText('Настройки');
   return utils;
 }
@@ -128,12 +133,25 @@ describe('SettingsSheet — диалог (К4)', () => {
   });
 });
 
+// QA 2026-11, М10: раздел «Обращение» был в контенте, а в оглавлении слева —
+// нет. Оглавление и разделы — два места, обязанные совпадать (правило №4).
+describe('SettingsSheet — оглавление совпадает с разделами', () => {
+  it.each(['CLIENT', 'THERAPIST'] as const)('%s: у каждого раздела есть строка в оглавлении', async (role) => {
+    await renderSheet(role);
+    const sections = document.querySelectorAll('.settings-content-inner [id^="s-"]');
+    const nav = document.querySelectorAll('.settings-sidenav .settings-sidenav-item');
+    expect(sections.length).toBeGreaterThan(5);
+    expect(nav.length).toBe(sections.length);
+    expect(screen.getByRole('button', { name: 'Обращение' })).toBeTruthy();
+  });
+});
+
 describe('SettingsSheet — удаление аккаунта: подтверждение обязательно', () => {
   it('первый клик открывает предупреждение с кнопками «Отмена»/«Удалить», без вызова api', async () => {
     await renderSheet();
     openDeleteSheet();
 
-    expect(screen.getByText('Необратимо.', { exact: false })).toBeTruthy();
+    expect(screen.getByText(/аккаунт целиком/)).toBeTruthy();
     expect(screen.getByText('Отмена')).toBeTruthy();
     expect(mockApi.deleteAllUserData).not.toHaveBeenCalled();
   });
@@ -370,7 +388,7 @@ describe('SettingsSheet — пара: создание приглашения', 
     await renderSheet();
 
     fireEvent.click(
-      within(partnerSectionContent()).getByText('Пригласить друга'),
+      within(partnerSectionContent()).getByText('Позвать в пару'),
     );
 
     await screen.findByText('https://schemehappens.ru/p/ABC123');
@@ -390,7 +408,7 @@ describe('SettingsSheet — пара: вход по коду', () => {
         target: { value: 'zzzzzz' },
       },
     );
-    fireEvent.click(within(partnerSectionContent()).getByText('Войти'));
+    fireEvent.click(within(partnerSectionContent()).getByText('Присоединиться'));
 
     await screen.findByText('Код не найден или уже использован');
   });
@@ -419,7 +437,7 @@ describe('SettingsSheet — пара: вход по коду', () => {
         target: { value: 'xyz123' },
       },
     );
-    fireEvent.click(within(partnerSectionContent()).getByText('Войти'));
+    fireEvent.click(within(partnerSectionContent()).getByText('Присоединиться'));
 
     await screen.findByText('Аня сегодня');
     expect(mockApi.joinPair).toHaveBeenCalledWith('XYZ123');
@@ -428,24 +446,24 @@ describe('SettingsSheet — пара: вход по коду', () => {
 
 // ── Удаление аккаунта: отказ теперь виден пользователю (не только «сброс») ──
 describe('SettingsSheet — удаление аккаунта: отказ показывает сообщение', () => {
-  it('после ошибки видно "Не удалось удалить данные" на первом шаге, а не тишина', async () => {
+  it('после ошибки видно «Не удалось удалить аккаунт» на первом шаге, а не тишина', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
     confirmAccountDeletion();
 
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
   });
 
   it('повторное открытие листа удаления сбрасывает прошлую ошибку', async () => {
     mockApi.deleteAllUserData.mockRejectedValue(new Error('network down'));
     await renderSheet();
     confirmAccountDeletion();
-    await screen.findByText(/Не удалось удалить данные/i);
+    await screen.findByText(/Не удалось удалить аккаунт/i);
 
     fireEvent.click(screen.getByText('Отмена'));
     openDeleteSheet();
 
-    expect(screen.queryByText(/Не удалось удалить данные/i)).toBeNull();
+    expect(screen.queryByText(/Не удалось удалить аккаунт/i)).toBeNull();
   });
 
   it('ты/вы: сообщение об отказе звучит в обеих формах', async () => {
@@ -453,7 +471,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
     await renderSheetWithForm('ty');
     confirmAccountDeletion();
     await screen.findByText(
-      'Не удалось удалить данные. Проверь связь и попробуй ещё раз',
+      'Не удалось удалить аккаунт. Данные на месте — проверь соединение и попробуй ещё раз.',
     );
     cleanup();
 
@@ -461,7 +479,7 @@ describe('SettingsSheet — удаление аккаунта: отказ пок
     await renderSheetWithForm('vy');
     confirmAccountDeletion();
     await screen.findByText(
-      'Не удалось удалить данные. Проверьте связь и попробуйте ещё раз',
+      'Не удалось удалить аккаунт. Данные на месте — проверьте соединение и попробуйте ещё раз.',
     );
   });
 });
@@ -510,12 +528,26 @@ describe('SettingsSheet — «Отключиться от терапевта»: 
     mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
     mockApi.leaveTherapy.mockRejectedValue(new Error('network down'));
     await renderSheet();
-    await screen.findByText('Анна подключён');
+    await screen.findByText('Терапевт: Анна');
 
+    // Инцидент 2026-10-26: один тап рвал связь — теперь сначала вопрос.
     fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    expect(mockApi.leaveTherapy).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByText('Отключиться', { selector: 'button' }));
     await screen.findByText(/Не удалось отключиться/);
     // Всё ещё подключены — не откатились на форму ввода кода молча.
-    expect(screen.getByText('Анна подключён')).toBeTruthy();
+    expect(screen.getByText('Терапевт: Анна')).toBeTruthy();
+  });
+
+  it('подтверждение → связь снята, видна форма кода', async () => {
+    mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
+    mockApi.leaveTherapy.mockResolvedValue(undefined);
+    await renderSheet();
+    await screen.findByText('Терапевт: Анна');
+    fireEvent.click(screen.getByText('Отключиться от терапевта'));
+    fireEvent.click(await screen.findByText('Отключиться', { selector: 'button' }));
+    await screen.findByLabelText('Код от терапевта');
+    expect(mockApi.leaveTherapy).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -528,7 +560,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
   });
 
   it('регресс: клипборд падает — раньше «Скопировано ✓» показывалось всё равно, теперь видна сама ссылка', async () => {
-    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc' });
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) }, configurable: true, writable: true,
     });
@@ -540,11 +572,14 @@ describe('SettingsSheet — приглашение клиенту (терапе�
   });
 
   it('клипборд успевает — показывает «Скопировано ✓»', async () => {
-    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc' });
+    mockApi.createTherapyInvite.mockResolvedValue({ url: 'https://t.me/bot?start=abc', code: '7F3A9C21B04E' });
     mockClipboard();
     await renderSheet('THERAPIST');
     fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
-    await screen.findByText('Скопировано ✓');
+    await screen.findByText('Ссылка скопирована ✓');
+    // Код — отдельной строкой, для клиента на сайте (инцидент 2026-10-26).
+    expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
+    expect(screen.getByText('Скопировать код')).toBeTruthy();
   });
 });
 
@@ -583,7 +618,7 @@ describe('SettingsSheet — загрузка партнёра: отказ не �
 
     mockApi.getPair.mockResolvedValue({ partners: [], pendingCode: null });
     fireEvent.click(screen.getByText('Повторить'));
-    await screen.findByText('Пригласить друга');
+    await screen.findByText('Позвать в пару');
   });
 });
 
@@ -592,27 +627,30 @@ describe('SettingsSheet — удаление результатов YSQ: при�
     localStorage.setItem('ysq_progress', JSON.stringify({ answers: [1] }));
   });
 
-  it('ошибка api.deleteYsqResult: localStorage НЕ очищается, видна ошибка, модалка не закрывается', async () => {
-    mockApi.deleteYsqResult.mockRejectedValue(new Error('network down'));
+  // Кнопка сначала спрашивает подтверждение и стирает всё про тест
+  // (DELETE /api/ysq-data) — подробные сценарии в DataSection.test.tsx.
+  async function confirmYsqDelete() {
     await renderSheet();
     fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+    fireEvent.click(await screen.findByText('Удалить результаты теста'));
+    fireEvent.click(await screen.findByText('Удалить всё'));
+  }
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
+  it('ошибка api.deleteYsqData: localStorage НЕ очищается, видна ошибка, окно не закрывается', async () => {
+    mockApi.deleteYsqData.mockRejectedValue(new Error('network down'));
+    await confirmYsqDelete();
+
     await screen.findByText(/Не удалось удалить/);
     expect(localStorage.getItem('ysq_progress')).not.toBeNull();
-    // Модалка осталась открытой — кнопка всё ещё видна.
-    expect(screen.getByText(/Удалить результаты теста|Удаляю/)).toBeTruthy();
+    // Подтверждение осталось открытым.
+    expect(screen.getByText('Удалить все результаты теста?')).toBeTruthy();
   });
 
   it('успех: localStorage очищается только после подтверждённого удаления', async () => {
-    mockApi.deleteYsqResult.mockResolvedValue(undefined);
-    await renderSheet();
-    fireEvent.click(screen.getByText('Конфиденциальность'));
-    await screen.findByText('Удалить результаты теста');
+    mockApi.deleteYsqData.mockResolvedValue(undefined);
+    await confirmYsqDelete();
 
-    fireEvent.click(screen.getByText('Удалить результаты теста'));
-    await waitFor(() => expect(mockApi.deleteYsqResult).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockApi.deleteYsqData).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(localStorage.getItem('ysq_progress')).toBeNull());
   });
 });
@@ -623,7 +661,7 @@ describe('SettingsSheet — сбой начальной загрузки не б
     mockApi.getSettings.mockRejectedValueOnce(new Error('network down'));
     await renderSheet();
     // Дефолт notifyEnabled=false — тумблер «Итоги дня» реально отрисован
-    // и выключен, а не «повис» на Loader.
+    // и выключен, а не «повис» на силуэте загрузки.
     expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe('false');
   });
 
@@ -706,7 +744,7 @@ describe('SettingsSheet — переключение подвидов «Част
     await screen.findByText('Настройки');
   });
 
-  it('«Тихие часы»: выбор пресета клавиатурой (Enter) тоже сохраняет', async () => {
+  it('«Тихие часы»: пресет — нативная кнопка, клик сохраняет', async () => {
     mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
     await renderSheet();
     fireEvent.click(screen.getByText('Тихие часы'));
@@ -714,7 +752,8 @@ describe('SettingsSheet — переключение подвидов «Част
 
     const firstPreset = screen.getAllByRole('button').find(b => b.textContent?.includes('–'));
     expect(firstPreset).toBeTruthy();
-    fireEvent.keyDown(firstPreset!, { key: 'Enter' });
+    expect(firstPreset!.tagName).toBe('BUTTON');
+    fireEvent.click(firstPreset!);
     await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalled());
   });
 
@@ -773,19 +812,116 @@ describe('SettingsSheet — блок уведомлений: пауза и за�
   });
 });
 
-// ── Кабинет терапевта: доступ и приглашение — сфера видимости (терапевт видит SRow) ──
-describe('SettingsSheet — режим терапевта (userRole=THERAPIST): переключатель и «Открыть кабинет»', () => {
-  it('«Режим специалиста» вызывает onToggleTherapistMode из пропа', async () => {
-    const onToggle = vi.fn();
+// ── Кабинет терапевта: режим, доступ и приглашение — сфера видимости (терапевт видит SRow) ──
+describe('SettingsSheet — режим терапевта (userRole=THERAPIST): блок «Режим» и «Открыть кабинет»', () => {
+  // #902: на телефоне сайдбар с переключателем скрыт — режим выбирается первым
+  // блоком настроек; выбор другого режима закрывает лист (goBack), чтобы
+  // человек оказался в выбранном режиме, а не остался в настройках.
+  async function renderTherapist(therapistMode: boolean) {
+    const onClose = vi.fn();
+    const onSet = vi.fn();
     render(
       <MemoryRouter>
-        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" therapistMode={false} onToggleTherapistMode={onToggle} />
+        <SettingsSheet onClose={onClose} userRole="THERAPIST" therapistMode={therapistMode} onSetTherapistMode={onSet} />
       </MemoryRouter>,
     );
     await screen.findByText('Настройки');
-    const row = screen.getByText('Режим специалиста').parentElement!.parentElement!;
-    fireEvent.click(within(row).getByRole('switch'));
-    expect(onToggle).toHaveBeenCalledTimes(1);
+    return { onClose, onSet };
+  }
+  const modeGroup = () => screen.getByRole('group', { name: 'Режим' });
+
+  it('первым блоком главного вида — группа «Режим» с «Клиент»/«Терапевт», нажат текущий режим', async () => {
+    await renderTherapist(true);
+    const group = modeGroup();
+    expect(within(group).getByRole('button', { name: 'Клиент' }).getAttribute('aria-pressed')).toBe('false');
+    expect(within(group).getByRole('button', { name: 'Терапевт' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText(/Кабинет терапевта — клиенты и концептуализации/)).toBeTruthy();
+    const firstSection = document.querySelector('.st-inner .st-section')!;
+    expect(firstSection.contains(group)).toBe(true);
+    expect(screen.getByText('Режим', { selector: 'button' })).toBeTruthy(); // пункт бокового оглавления
+  });
+
+  it('«Клиент» зовёт обработчик с false и закрывает лист — сначала закрытие, затем переключение', async () => {
+    const { onClose, onSet } = await renderTherapist(true);
+    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Клиент' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onSet).toHaveBeenCalledTimes(1);
+    expect(onSet).toHaveBeenCalledWith(false);
+    expect(onSet.mock.invocationCallOrder[0]).toBeGreaterThan(onClose.mock.invocationCallOrder[0]);
+  });
+
+  it('«Терапевт» из режима клиента зовёт обработчик с true и закрывает лист', async () => {
+    const { onClose, onSet } = await renderTherapist(false);
+    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Терапевт' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onSet).toHaveBeenCalledWith(true);
+  });
+
+  it('тап по текущему режиму ничего не делает: лист открыт, обработчик не зван', async () => {
+    const { onClose, onSet } = await renderTherapist(true);
+    fireEvent.click(within(modeGroup()).getByRole('button', { name: 'Терапевт' }));
+    expect(onSet).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText('Настройки')).toBeTruthy();
+  });
+
+  // #902: /account вне AppShell, а с телефона из кабинета другого пути к нему нет —
+  // под переключателем режима строка-вход. Как и выбор режима, она сначала
+  // закрывает лист (goBack), и только потом переходит.
+  it('под переключателем режима — строка «Аккаунт и способы входа» с подписью, в том же блоке', async () => {
+    await renderTherapist(true);
+    const row = screen.getByRole('button', { name: /Аккаунт и способы входа/ });
+    expect(within(row).getByText('Привязки, двухфакторная защита, выход')).toBeTruthy();
+    expect(modeGroup().closest('.st-section')!.contains(row)).toBe(true);
+  });
+
+  it('клик по строке закрывает лист и только затем ведёт на /account', async () => {
+    const log: string[] = [];
+    // Как в AppOverlays: onClose размонтирует лист (иначе хук истории видит вторую
+    // смену адреса — уже /account — и зовёт закрытие повторно).
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return open ? (
+        <SettingsSheet onClose={() => { log.push('close'); setOpen(false); }} userRole="THERAPIST" therapistMode onSetTherapistMode={vi.fn()} />
+      ) : null;
+    }
+    function PathProbe() {
+      const { pathname } = useLocation();
+      useEffect(() => { if (pathname === '/account') log.push('navigate /account'); }, [pathname]);
+      return <output data-testid="path">{pathname}</output>;
+    }
+    render(<MemoryRouter><Host /><PathProbe /></MemoryRouter>);
+    await screen.findByText('Настройки');
+    expect(screen.getByTestId('path').textContent).toBe('/');
+    fireEvent.click(screen.getByRole('button', { name: /Аккаунт и способы входа/ }));
+    await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/account'));
+    expect(log).toEqual(['close', 'navigate /account']);
+    expect(screen.queryByText('Настройки')).toBeNull();
+  });
+
+  it('тумблера «Режим специалиста» в «Оформлении» больше нет (одно место для режима)', async () => {
+    await renderTherapist(false);
+    expect(screen.queryByText('Режим специалиста')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Режим специалиста' })).toBeNull();
+  });
+
+  it('без обработчика режима блока нет (терапевт без переключения — как раньше)', async () => {
+    await renderSheet('THERAPIST');
+    expect(screen.queryByRole('group', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();
+  });
+
+  it('у клиента (userRole=CLIENT) группы «Режим» нет даже с обработчиком', async () => {
+    render(
+      <MemoryRouter>
+        <SettingsSheet onClose={vi.fn()} userRole="CLIENT" therapistMode={false} onSetTherapistMode={vi.fn()} />
+      </MemoryRouter>,
+    );
+    await screen.findByText('Настройки');
+    expect(screen.queryByRole('group', { name: 'Режим' })).toBeNull();
+    expect(screen.queryByText('Режим специалиста')).toBeNull();
+    // у клиента вход на /account уже есть в его разделе «Профиль» («Аккаунт и привязки»)
+    expect(screen.queryByText('Аккаунт и способы входа')).toBeNull();
   });
 
   it('«Открыть кабинет» вызывает onOpenTherapistCabinet', async () => {
@@ -851,14 +987,14 @@ describe('SettingsSheet — «Перестать быть специалисто
 describe('SettingsSheet — «Поделиться»: приглашение в приложение открывает карточку', () => {
   it('клик по «Пригласить друга» в разделе «Поделиться» открывает ShareCardSheet с приглашением', async () => {
     await renderSheet();
-    // Тот же текст встречается и в разделе «Партнёр» — берём второе вхождение
-    // (строка «Поделиться» идёт в разметке позже).
+    // QA 2026-11, М7: «Пригласить друга» — одна строка; кнопка пары
+    // называется «Позвать в пару» (раньше два одинаковых ярлыка).
     const buttonsBefore = screen.getAllByText('Пригласить друга');
-    expect(buttonsBefore.length).toBe(2);
-    fireEvent.click(buttonsBefore[buttonsBefore.length - 1]);
+    expect(buttonsBefore.length).toBe(1);
+    fireEvent.click(buttonsBefore[0]);
     // ShareCardSheet рендерит свой заголовок с тем же текстом — после
     // открытия совпадений на один больше (карточка реально появилась).
-    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(3));
+    await waitFor(() => expect(screen.getAllByText('Пригласить друга').length).toBe(2));
   });
 });
 
@@ -916,16 +1052,16 @@ describe('SettingsSheet — «Напоминание»: тумблер сохр�
 });
 
 describe('SettingsSheet — приватность карточек терапевту: тумблеры видимы, когда есть активная связь', () => {
-  it('переключение «Карточки схем и режимов» и «Профиль и схемы» шлёт patch с реальным значением', async () => {
+  it('переключение «Дневники и карточки» и «Мои схемы и тест» шлёт patch с реальным значением', async () => {
     mockApi.getTherapyRelation.mockResolvedValue({ role: 'client', status: 'active', partnerName: 'Анна', partnerId: 1, code: 'X', nextSession: null });
     await renderSheet();
-    await screen.findByText('Анна подключён');
+    await screen.findByText('Терапевт: Анна');
 
-    fireEvent.click(toggleForRow('Карточки схем и режимов'));
+    fireEvent.click(toggleForRow('Дневники и карточки'));
     await waitFor(() =>
       expect(mockApi.updateSettings).toHaveBeenCalledWith({ therapistShareCards: false }),
     );
-    fireEvent.click(toggleForRow('Профиль и схемы'));
+    fireEvent.click(toggleForRow('Мои схемы и тест'));
     await waitFor(() =>
       expect(mockApi.updateSettings).toHaveBeenCalledWith({ therapistShareProfile: false }),
     );
@@ -933,42 +1069,47 @@ describe('SettingsSheet — приватность карточек терапе
 });
 
 describe('SettingsSheet — вход по коду терапевта (клиент): успех подключает связь', () => {
-  it('код в верхнем регистре уходит в joinTherapy, успех показывает подключённого терапевта', async () => {
+  // Инцидент 2026-10-26: поле пускало 8 знаков при коде из 12 — вставленный
+  // код обрезался, и подключиться не мог никто.
+  it('код из 12 знаков строчными с пробелами уходит в joinTherapy целиком; успех — кто и что видит', async () => {
     mockApi.getTherapyRelation
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ role: 'client', status: 'active', partnerName: 'Игорь', partnerId: 2, code: 'Y', nextSession: null });
     mockApi.joinTherapy.mockResolvedValue(undefined);
     await renderSheet();
-    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
-    expect(screen.getByPlaceholderText('ABCDEF')).toHaveProperty('value', 'CODE12');
-    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+    const input = await screen.findByLabelText('Код от терапевта');
+    fireEvent.change(input, { target: { value: ' 7f3a9c21b04e ' } });
+    expect(input).toHaveProperty('value', '7F3A9C21B04E');
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
 
-    await screen.findByText('Игорь подключён');
+    await screen.findByText('Терапевт: Игорь');
+    expect(mockApi.joinTherapy).toHaveBeenCalledWith('7F3A9C21B04E');
+    expect(screen.getByRole('status').textContent).toMatch(/Терапевт Игорь видит/);
   });
 
   // 409 { reason: 'already_connected' }: код верный, мешает действующее
-  // подключение — «Неверный код» вводил бы в заблуждение.
-  it('409 already_connected — текст про действующее подключение, а не «Неверный код»', async () => {
+  // подключение — «Код не подошёл» вводил бы в заблуждение.
+  it('409 already_connected — текст про действующее подключение, а не «Код не подошёл»', async () => {
     mockApi.getTherapyRelation.mockResolvedValue(null);
     mockApi.joinTherapy.mockRejectedValue(
       Object.assign(new Error('already'), { status: 409, reason: 'already_connected' }),
     );
     await renderSheet();
-    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
-    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+    fireEvent.change(await screen.findByLabelText('Код от терапевта'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
 
     await screen.findByText(/У тебя уже есть подключение к терапевту/);
-    expect(screen.queryByText('Неверный код')).toBeNull();
+    expect(screen.queryByText(/Код не подошёл/)).toBeNull();
   });
 
-  it('любой другой отказ — прежний «Неверный код»', async () => {
+  it('любой другой отказ — «Код не подошёл» с выходом', async () => {
     mockApi.getTherapyRelation.mockResolvedValue(null);
     mockApi.joinTherapy.mockRejectedValue(Object.assign(new Error('nf'), { status: 404 }));
     await renderSheet();
-    fireEvent.change(screen.getByPlaceholderText('ABCDEF'), { target: { value: 'code12' } });
-    fireEvent.click(screen.getByText('Войти', { selector: 'button' }));
+    fireEvent.change(await screen.findByLabelText('Код от терапевта'), { target: { value: 'code12' } });
+    fireEvent.click(screen.getByText('Подключиться', { selector: 'button' }));
 
-    await screen.findByText('Неверный код');
+    await screen.findByText(/Код не подошёл. Проверь его или попроси у терапевта новый/);
   });
 });
 
@@ -1008,7 +1149,7 @@ describe('SettingsSheet — пара: копирование ссылки-при
       .mockResolvedValueOnce({ partners: [], pendingCode: null })
       .mockResolvedValueOnce({ partners: [], pendingCode: 'ABC123' });
     await renderSheet();
-    fireEvent.click(within(partnerSectionContent()).getByText('Пригласить друга'));
+    fireEvent.click(within(partnerSectionContent()).getByText('Позвать в пару'));
     await screen.findByText('https://schemehappens.ru/p/ABC123');
 
     fireEvent.click(within(partnerSectionContent()).getByText('Скопировать ссылку'));
@@ -1021,7 +1162,7 @@ describe('SettingsSheet — пара: копирование ссылки-при
     await screen.findByPlaceholderText('Код');
 
     fireEvent.click(within(partnerSectionContent()).getByText('← Назад'));
-    expect(within(partnerSectionContent()).getByText('Пригласить друга')).toBeTruthy();
+    expect(within(partnerSectionContent()).getByText('Позвать в пару')).toBeTruthy();
     expect(within(partnerSectionContent()).queryByPlaceholderText('Код')).toBeNull();
   });
 });
@@ -1059,9 +1200,36 @@ describe('SettingsSheet — удаление аккаунта: закрытие 
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await screen.findByText('Точно? Восстановить невозможно.');
 
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sk-dialog-backdrop')!);
     await waitFor(() => expect(screen.queryByText('Точно? Восстановить невозможно.')).toBeNull());
     // Модалка закрылась целиком, не откатилась на первый шаг.
-    expect(screen.queryByText('Необратимо.', { exact: false })).toBeNull();
+    expect(screen.queryByText(/аккаунт целиком/)).toBeNull();
+  });
+});
+
+// #906: шапка листа — общая ds-sheet-head/ds-back/ds-h2 из cabinet.css, своих
+// .st-head/.st-title нет; «← Закрыть» на главном виде, «← Назад» — в подвиде.
+describe('SettingsSheet — шапка листа (#906)', () => {
+  it('«← Закрыть» — ds-back внутри ds-sheet-head рядом с заголовком ds-h2', async () => {
+    await renderSheet();
+    const back = screen.getByRole('button', { name: '← Закрыть' });
+    expect(back.className).toBe('ds-back');
+    const head = back.parentElement!;
+    expect(head.className).toBe('ds-sheet-head');
+    expect(head.querySelector('h2.ds-h2')?.textContent).toBe('Настройки');
+    expect(document.querySelector('.st-head, .st-title')).toBeNull();
+  });
+});
+
+// ── Загрузка: силуэт по форме, а не спиннер (правило скелетонов; docs/open/backend.md) ──
+describe('SettingsSheet — пока настройки грузятся', () => {
+  it('силуэт листа без спиннера; «Закрыть» уже работает', async () => {
+    mockApi.getSettings.mockReturnValueOnce(new Promise(() => {}));
+    const onClose = vi.fn();
+    const { container } = render(<MemoryRouter><SettingsSheet onClose={onClose} /></MemoryRouter>);
+    expect(container.querySelector('[data-skeleton="settings"] .skel')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '← Закрыть' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });

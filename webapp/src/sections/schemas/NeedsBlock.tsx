@@ -1,7 +1,8 @@
 import { NEED_ORDER, useNeedData } from '../../needData';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
-import { hueStyle, NEED_HUE } from '../../lib/tone';
+import { NeedArt } from '../../components/art/NeedArt';
+import { Wheel } from '../../components/art/PaperArtSigns';
 import { needLevel } from './schemasModel';
+import { NEEDS_WHAT } from '../../../../shared/src/pattern/patternTerms';
 
 interface Props {
   childhoodRatings: Record<string, number>;
@@ -9,7 +10,7 @@ interface Props {
   onOpenNeed: (id: string) => void;
 }
 
-/** «Базовые потребности»: оценка детства (если есть) и вход в описание. */
+/** «Базовые потребности»: оценка детства (если есть) и вход в описание; до колеса детства — что это (онбординг). */
 export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed }: Props) {
   const NEED_DATA = useNeedData();
   const hasChildhood = Object.keys(childhoodRatings).length > 0;
@@ -21,10 +22,11 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
           {hasChildhood ? 'Изменить детство →' : 'Пройти колесо детства →'}
         </button>
       </div>
+      {!hasChildhood && <p className="ds-empty">{NEEDS_WHAT}</p>}
       <div className="ds-card ds-card--flush">
         {!hasChildhood && (
           <button className="ds-list-row ds-list-row--hover cs-need" onClick={() => onOpenChildhoodWheel?.()}>
-            <span />
+            <span className="pp-row-art"><Wheel size="row" /></span>
             <span className="cs-need-text">
               <span className="cs-need-name tone-text">Колесо детства</span>
               <span className="cs-need-hint">Как потребности удовлетворялись в детстве?</span>
@@ -32,21 +34,19 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
             <span className="cs-need-arrow">›</span>
           </button>
         )}
-        {NEED_ORDER.map(id => {
+        {NEED_ORDER.filter(id => NEED_DATA[id]).map(id => {
           const d = NEED_DATA[id];
-          if (!d) return null;
           const score = childhoodRatings[id];
           return (
             <button key={id} className="ds-list-row ds-list-row--hover cs-need" onClick={() => onOpenNeed(id)}>
-              <span className="cs-need-icon tone-soft" style={hueStyle(NEED_HUE[id])}><IdentityDot id={id} size={14} /></span>
+              <span className="pp-row-art"><NeedArt id={id} size="row" /></span>
               <span className="cs-need-text">
                 <span className="cs-need-name">{d.name}</span>
                 <span className="cs-need-hint">{d.hint}</span>
               </span>
               {score !== undefined ? (
                 <span className="cs-need-score">
-                  <b className={`ds-num ds-idx-${needLevel(score)}`}>{score}</b>
-                  <small>детство</small>
+                  <b className={`ds-num ds-idx-${needLevel(score)}`}>{score}</b><small>детство</small>
                 </span>
               ) : <span className="cs-need-arrow">›</span>}
             </button>

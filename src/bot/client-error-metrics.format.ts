@@ -27,6 +27,7 @@ export interface ClientErrorMetrics extends ClientErrorFlood {
     help: number;
     cabinet: number;
     booking: number;
+    assets: number;
     other: number;
   };
   bySource: { webapp: number; miniapp: number };
@@ -42,6 +43,7 @@ const SECTION_LABELS: Record<keyof ClientErrorMetrics['bySection'], string> = {
   help: 'Помощь',
   cabinet: 'Кабинет',
   booking: 'Запись на консультацию',
+  assets: 'Файлы сайта не загрузились',
   other: 'другое',
 };
 

@@ -1,0 +1,104 @@
+/* Трекер «один вопрос на экран» и экран «Готово» (простой клиент, этап 2).
+   Префикс tq-; оболочка — .tk2-overlay (sheet-tracker.css). Цвет потребности
+   приходит через --h (hueStyle), цвета — только токены. */
+.tq-bar {
+  flex-shrink: 0; min-height: 56px; padding: 0 var(--space-4);
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0;
+  border-bottom: 1px solid var(--line);
+}
+.tq-bar-btn {
+  min-height: 44px; min-width: 44px; padding: 0 var(--space-4); background: none; border: none;
+  font: 600 14px var(--sans); color: var(--text-sub); cursor: pointer; border-radius: var(--r-10);
+}
+.tq-bar-btn:focus-visible, .tq-dot-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tq-dots { display: flex; justify-content: center; }
+/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px; высота 44 держит
+   палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
+.tq-dot-hit {
+  width: 40px; height: 44px; padding: 0; background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.tq-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .2s; }
+.tq-dot.is-done { background: oklch(0.58 0.12 var(--h)); }
+.tq-dot.is-current { background: var(--accent); }
+
+.tq-body { flex: 1; min-height: 0; overflow-y: auto; }
+.tq-inner {
+  width: 100%; max-width: 560px; margin: 0 auto; box-sizing: border-box;
+  padding: var(--space-24) var(--space-16) var(--space-32);
+  display: flex; flex-direction: column; gap: var(--space-16);
+}
+.tq-note {
+  padding: var(--space-12) var(--space-16); border-radius: 14px;
+  background: var(--paper-tint); font-size: 13px; line-height: 1.5; color: var(--text-sub);
+}
+/* «Понятно» — в строке за текстом, а не отдельной строкой в 44px: на 360×640 эти 48px решали, виден ли первый
+   ответ (QA мобильной версии 2026-11, З5). Зона нажатия 44 по высоте — псевдоэлементом поверх отступа плашки. */
+.tq-note-x {
+  position: relative; padding: 0; margin-left: var(--space-4); white-space: nowrap;
+  background: none; border: none; font: 600 13px/1.5 var(--sans); color: var(--accent); cursor: pointer;
+}
+.tq-note-x::after { content: ''; position: absolute; inset: -12px -10px; }
+.tq-note-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-8); }
+.tq-eyebrow { margin: 0; font: 700 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.tq-title { margin: 0; font: 400 clamp(30px, 7vw, 44px)/1.1 var(--serif); letter-spacing: -0.02em; color: var(--text); }
+.tq-question { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text-sub); }
+/* «Что это за потребность» и примеры (NeedExplainer): описание всегда, примеры — нативный <details>. */
+.tq-desc { margin: calc(var(--space-8) * -1) 0 0; font-size: 15px; line-height: 1.5; color: var(--text-sub); }
+.tq-examples { margin: 0; border-radius: 14px; background: var(--paper-tint); padding: 0 var(--space-16); }
+.tq-examples-sum {
+  min-height: 44px; display: flex; align-items: center; cursor: pointer; list-style: none;
+  font: 600 14px var(--sans); color: var(--text-sub);
+}
+.tq-examples-sum::-webkit-details-marker { display: none; }
+.tq-examples-sum::after { content: '›'; margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-faint); transition: transform .2s; }
+.tq-examples[open] .tq-examples-sum::after { transform: rotate(90deg); }
+.tq-examples-sum:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-8); }
+.tq-examples-list { margin: 0; padding: 0 0 var(--space-12) var(--space-16); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.tq-examples-list li + li { margin-top: var(--space-4); }
+/* Низкий экран (Safari на iPhone с панелями — 664, Chrome на Android — 640): вопрос плотнее, чтобы ответы
+   начинались на первом экране, а не за краем (QA мобильной версии 2026-11, З5). */
+@media (max-height: 700px) {
+  .tq-ask { padding-top: var(--space-16); gap: var(--space-12); }
+  .tq-ask .tq-desc { margin-top: calc(var(--space-4) * -1); }
+  .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
+}
+.tq-hint { margin: 0; font-size: 13px; line-height: 1.4; color: var(--text-faint); }
+.tq-more {
+  align-self: flex-start; min-height: 44px; padding: 0; background: none; border: none;
+  font: 600 14px var(--sans); color: var(--text-sub); text-decoration: underline; cursor: pointer;
+}
+.tq-more:focus-visible, .tq-link:focus-visible, .tq-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Экран «Готово» */
+.tq-done { align-items: center; text-align: center; gap: var(--space-8); }
+.tq-done.pp-paper { --h: 135; width: calc(100% - 2 * var(--space-16)); padding: var(--space-24) var(--space-16); margin-top: var(--space-16); }
+.tq-done--sand.pp-paper { --h: 45; }
+.tq-done .tq-eyebrow { color: var(--text-faint); }
+.tq-index { font: 400 72px/1 var(--serif); letter-spacing: -0.03em; color: var(--text); margin-top: var(--space-8); }
+.tq-index-cap { margin: 0; font-size: 13px; color: var(--text-faint); }
+.tq-obs { margin: var(--space-8) 0 0; max-width: 420px; font-size: 16px; line-height: 1.5; color: var(--text-sub); }
+.tq-bars {
+  list-style: none; margin: var(--space-16) 0; padding: 0; width: 100%; max-width: 360px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-12);
+}
+.tq-bars li { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-8); min-height: 120px; }
+.tq-bar-col { width: 100%; max-width: 40px; border-radius: 8px; }
+/* Оценённый — бумажная палитра (--bar ставит DayBars из BAR_PAPER), без оценки — серый. */
+.tq-bar-col.is-rated { background: var(--bar); }
+.tq-bar-col:not(.is-rated) { background: var(--line); }
+.tq-bar-cap { font-size: 11px; color: var(--text-faint); }
+.tq-acts { width: 100%; display: flex; flex-direction: column; gap: var(--space-8); }
+.tq-btn {
+  min-height: 52px; border-radius: 26px; padding: 0 var(--space-20); cursor: pointer;
+  font: 600 16px var(--sans); background: var(--surface); color: var(--text); border: 1px solid var(--line-strong);
+}
+.tq-btn--main { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.tq-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-8); }
+.tq-link {
+  min-height: 44px; padding: 0 var(--space-12); background: none; border: none;
+  font: 600 14px var(--sans); color: var(--text-sub); cursor: pointer;
+}
+/* Название потребности и её мотив в одной строке: картинка не уводит ответы за сгиб (390×844). */
+.tq-namerow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
+.tq-namerow .pp-row-art { width: auto; }

@@ -1,6 +1,5 @@
-// Мини-тесты в боте: /tests и колбэки qz:*. Флоу полностью stateless —
-// накопленные ответы едут в callback_data (`qz:q:<id>:<шаг>:<цифры>`),
-// поэтому БД не нужна и тест доступен сразу, без онбординга.
+// Мини-тесты в боте: /tests и колбэки qz:*. Флоу stateless — ответы едут в
+// callback_data (`qz:q:<id>:<шаг>:<цифры>`), тест доступен без онбординга.
 import {
   Inject,
   Injectable,
@@ -9,7 +8,8 @@ import {
   Optional,
 } from '@nestjs/common';
 import { Context, Markup, Telegraf } from 'telegraf';
-import { TELEGRAF_BOT, MINIAPP_URL } from './telegram.constants';
+import { TELEGRAF_BOT, CABINET_URL } from './telegram.constants';
+import { failCallback } from './callback-failure';
 import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -57,7 +57,7 @@ export class TelegramQuizService implements OnModuleInit {
         const { text, keyboard } = this.listView(form);
         await ctx.reply(text, { parse_mode: 'HTML', ...keyboard });
       } catch (err) {
-        this.logger.error('tests command failed', err);
+        await failCallback(this.logger, ctx, 'tests command', err);
       }
     });
 
@@ -68,7 +68,7 @@ export class TelegramQuizService implements OnModuleInit {
         const { text, keyboard } = this.listView(form);
         await this.show(ctx, text, keyboard);
       } catch (err) {
-        this.logger.error('qz:list action failed', err);
+        await failCallback(this.logger, ctx, 'qz:list', err);
       }
     });
 
@@ -87,7 +87,7 @@ export class TelegramQuizService implements OnModuleInit {
         ]);
         await this.show(ctx, text, keyboard);
       } catch (err) {
-        this.logger.error('qz:i action failed', err);
+        await failCallback(this.logger, ctx, 'qz:i', err);
       }
     });
 
@@ -135,7 +135,7 @@ export class TelegramQuizService implements OnModuleInit {
         ]);
         await this.show(ctx, text, keyboard);
       } catch (err) {
-        this.logger.error('qz:q action failed', err);
+        await failCallback(this.logger, ctx, 'qz:q', err);
       }
     });
   }
@@ -168,7 +168,7 @@ export class TelegramQuizService implements OnModuleInit {
       );
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.callback('🎲 Другие тесты', 'qz:list')],
-      [Markup.button.webApp('🧠 Большой тест схем', MINIAPP_URL)],
+      [Markup.button.webApp('🧠 Большой тест схем', CABINET_URL)],
     ]);
     await this.show(ctx, text, keyboard);
   }

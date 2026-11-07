@@ -3,7 +3,6 @@ import { alertsProbe, oauthRedirectsProbe } from './probe-capabilities';
 describe('alertsProbe', () => {
   it('хотя бы один канал (Telegram) настроен — ok', async () => {
     const probe = alertsProbe({ BOT_TOKEN: 'tok', ADMIN_ID: '1' });
-    expect(probe.critical).toBe(true);
     const res = await probe.run();
     expect(res.ok).toBe(true);
   });

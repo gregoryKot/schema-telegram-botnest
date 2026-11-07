@@ -36,7 +36,17 @@ export interface YsqSchemaScore {
   id: string;
   pct5plus: number; // % of questions rated ≥5
   avg: number; // средний балл 1–6 (0 если нет ответов)
+  /**
+   * Схема выражена по критерию выше. Единственное место формулы: фронты
+   * (таблица YSQ терапевта, сверка в концептуализации) берут флаг, а не
+   * пересчитывают — до 2026-10 таблица смотрела только на % «5–6» и рисовала
+   * серые 0% у схемы, которую клиент видел выраженной по среднему баллу.
+   */
+  active: boolean;
 }
+
+export const isYsqScoreActive = (s: { pct5plus: number; avg: number }) =>
+  s.pct5plus > 50 || s.avg >= YSQ_AVG_ACTIVE_THRESHOLD;
 
 export function computeYsqScores(answers: number[]): YsqSchemaScore[] {
   return YSQ_SCHEMAS.map((schema) => {
@@ -54,12 +64,17 @@ export function computeYsqScores(answers: number[]): YsqSchemaScore[] {
       vals.length > 0
         ? Math.round((sum / schema.questions.length) * 10) / 10
         : 0;
-    return { id: schema.id, pct5plus, avg };
+    return {
+      id: schema.id,
+      pct5plus,
+      avg,
+      active: isYsqScoreActive({ pct5plus, avg }),
+    };
   });
 }
 
 export function computeActiveSchemas(answers: number[]): string[] {
   return computeYsqScores(answers)
-    .filter((s) => s.pct5plus > 50 || s.avg >= YSQ_AVG_ACTIVE_THRESHOLD)
+    .filter((s) => s.active)
     .map((s) => s.id);
 }

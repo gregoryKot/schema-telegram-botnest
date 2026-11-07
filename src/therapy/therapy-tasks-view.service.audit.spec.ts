@@ -68,7 +68,10 @@ function makeService(relations: any[], tasks: any[]) {
   const relationsService = new TherapyRelationsService(prisma, {} as any);
   return new TherapyTasksViewService(
     prisma,
-    { getStreakProgress: async () => 0 } as any,
+    {
+      getStreakProgress: async () => 0,
+      clientTimezone: async () => 'Europe/Moscow',
+    } as any,
     relationsService,
   );
 }

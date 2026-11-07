@@ -7,19 +7,18 @@
 // зелёный» и «пользователь видит помощь в кризисе». Терапевтический продукт
 // без доказанного кризисного пути — недопустим (правило №7).
 //
-// Путь до поля: AppShell → раздел «Практика» → каталог «Практики» →
+// Путь до поля: AppShell → раздел «Практики» → каталог «Что питает» →
 // PracticesScreen (components/PracticesScreen.tsx). Выбран как самый
 // стабильный: один явный текстовый инпут с placeholder'ом, без
 // многошаговых упражнений (LetterEx/SafePlaceEx полнее, но требуют пройти
 // несколько экранов ради того же самого detectCrisisAny + CrisisCard).
 //
-// Стаб — общий с tracker-smoke.spec.ts, см. support/stubApi.ts.
-import { test, expect } from '@playwright/test';
+// Стаб API и проверка на падение — общий `test` (support/test.ts).
+import { test, expect } from './support/test';
 import {
   CRISIS_HOTLINE_DISPLAY,
   CRISIS_HOTLINE_TEL,
 } from '../shared/src/utils/crisisMarkers';
-import { stubApi, throwOnPageError } from './support/stubApi';
 
 // Реальная фраза из корпуса паттернов (CRISIS_PATTERNS: /хочу\s+умереть/) —
 // не выдуманная строка, а то, что детекция действительно обязана ловить.
@@ -31,20 +30,15 @@ const NEUTRAL_TEXT = 'вечерняя прогулка 20 минут перед
 
 async function openPracticesCatalog(page: import('@playwright/test').Page) {
   await page.goto('/practice');
-  const catalogItem = page.getByRole('button', { name: /^Практики/ });
+  const catalogItem = page.getByRole('button', { name: /^Что питает/ });
   await catalogItem.waitFor();
   await catalogItem.click();
-  const input = page.getByPlaceholder('Добавить практику...');
+  const input = page.getByPlaceholder('Добавить действие...');
   await input.waitFor();
   return input;
 }
 
 test.describe('браузерный smoke: кризисная детекция в реальном бандле', () => {
-  test.beforeEach(async ({ page }) => {
-    await stubApi(page);
-    throwOnPageError(page);
-  });
-
   test('кризисная фраза показывает карточку с телефоном доверия ДО сохранения', async ({
     page,
   }) => {

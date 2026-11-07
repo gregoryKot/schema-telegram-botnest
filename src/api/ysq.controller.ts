@@ -68,9 +68,17 @@ export class YsqController {
     return { ok: true };
   }
 
+  // Только итог — для «Пройти заново»: история прохождений остаётся.
   @Delete('ysq-result')
   async deleteYsqResult(@Req() req: AuthRequest) {
     await this.ysqService.deleteYsqResult(uid(req));
+    return { ok: true };
+  }
+
+  // Кнопка «Удалить результаты теста» в настройках: итог, история и прогресс.
+  @Delete('ysq-data')
+  async deleteAllYsqData(@Req() req: AuthRequest) {
+    await this.ysqService.deleteAllYsqData(uid(req));
     return { ok: true };
   }
 

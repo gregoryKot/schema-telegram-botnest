@@ -44,7 +44,7 @@ export function YsqSchemaCard({ schema, avg, n5plus, nQuestions, tip, delta, dia
 
       <div {...pressable(onOpen)} className="ss-res-link">
         <span className="ds-link">Читать карточку схемы</span>
-        <span className="ds-link">›</span>
+        <span className="ds-chev" aria-hidden="true" />
       </div>
 
       {showDiaryHint && (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { Cluster } from '../art/PaperArtSigns';
 import { buildModes } from './data';
 import { ModeCheckinOverlay } from './ModeCheckinOverlay';
 import { ModeShareButton } from './ModeShareButton';
@@ -24,7 +25,7 @@ export function ModesTab() {
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
         className="ds-card ds-card--hover ss-cta"
       >
-        <div className="ss-cta-text">
+        <Cluster size="row" /><div className="ss-cta-text">
           <div className="ds-eyebrow">Режим прямо сейчас</div>
           <div className="ss-need-title">{tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →')}</div>
         </div>
@@ -32,9 +33,7 @@ export function ModesTab() {
       <p className="ss-body">Режим – это актуальное состояние психики прямо сейчас. Цель – расширить доступ к Здоровому Взрослому.</p>
       {buildModes(tr).map((g) => (
         <div key={g.group} className="ss-pane" style={hueStyle(MODE_GROUP_HUE[GROUP_HUE_KEY[g.group]])}>
-          <span className="ds-chip tone-tint" style={{ alignSelf: 'flex-start' }}>
-            <span className="ds-dot tone-fill" />{g.group}
-          </span>
+          <span className="ds-chip tone-tint" style={{ alignSelf: 'flex-start' }}><span className="ds-dot tone-fill" />{g.group}</span>
           {g.items.map((m) => (
             <div key={m.name} className="ds-card ss-mode">
               <div className="ss-need-head">

@@ -1,41 +1,31 @@
-// Чистые вычисления экрана «Сегодня» кабинета терапевта: счётчики, статус
-// активности клиента, точки спарклайна. Всё считается только из
-// TherapyClientSummary, который экран уже получает.
+// Чистые вычисления экрана «Сегодня» кабинета терапевта из TherapyClientSummary:
+// счётчики, статус активности (по календарю КЛИЕНТА — daysSinceActive и todayIndex
+// считает сервер), спарклайн; сессии — по местному дню терапевта (QA 2026-10-26).
 import type { TherapyClientSummary } from '../api';
-import { todayCalendarDate } from '../../../shared/src/utils/calendarDate';
+import { momentDayKey, momentTime, todayStr } from '../utils/format';
+import { upcomingSession } from '../../../shared/src/therapy/upcomingSession';
+import { clientActivityLabel } from '../../../shared/src/therapy/clientActivity';
+import { isVirtualClient } from '../../../shared/src/therapy/clientSheetHelpers';
 import { indexLevel, type IndexLevel } from '../lib/tone';
 
-const DAY_MS = 86400000;
 /** С какого числа дней без активности клиент попадает в «Требуют внимания». */
 export const ATTENTION_DAYS = 3;
 
-export const clientName = (c: TherapyClientSummary): string =>
-  c.clientAlias ?? c.name ?? `#${c.telegramId}`;
-
-/** Инициалы для аватара: до двух первых букв слов имени; «#123» -> «#». */
-export function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const letters = words.slice(0, 2).map(w => Array.from(w)[0]?.toUpperCase() ?? '');
-  return letters.join('') || '?';
+/** Дней от последней оценки до сегодня клиента (его календарь); null — не было. */
+export function daysSinceActive(c: TherapyClientSummary): number | null {
+  return c.daysSinceActive ?? null;
 }
 
-/** Целых дней с lastActiveDate до now; null — активности не было. */
-export function daysSinceActive(c: TherapyClientSummary, now: number): number | null {
-  if (!c.lastActiveDate) return null;
-  return Math.max(0, Math.floor((now - new Date(c.lastActiveDate).getTime()) / DAY_MS));
-}
-
-/** Есть ли у клиента сессия сегодня: явный nextSession важнее meetingDays. */
-export function hasSessionToday(c: TherapyClientSummary): boolean {
-  if (c.nextSession) return c.nextSession.slice(0, 10) === todayCalendarDate();
-  return c.meetingDays.includes(new Date().getDay());
-}
-
-/** HH:MM из nextSession, если сессия сегодня; иначе пустая строка. */
-export function sessionTime(c: TherapyClientSummary): string {
-  if (!c.nextSession || c.nextSession.slice(0, 10) !== todayCalendarDate()) return '';
-  return c.nextSession.includes('T') ? c.nextSession.split('T')[1].slice(0, 5) : '';
-}
+/** Встреча сегодня — по МЕСТНОМУ дню терапевта (правило №25): встреча — момент
+ *  (datetime-local без зоны), по UTC в МСК 00–03 «сегодня» показывало вчерашние. */
+const sessionToday = (c: TherapyClientSummary): string | null => {
+  const today = todayStr();
+  const at = upcomingSession(c.nextSession, c.meetingDays, today);
+  return at && momentDayKey(at) === today ? at : null;
+};
+export const hasSessionToday = (c: TherapyClientSummary): boolean => sessionToday(c) !== null;
+/** HH:MM сегодняшней встречи в зоне терапевта; без времени или не сегодня — ''. */
+export const sessionTime = (c: TherapyClientSummary): string => momentTime(sessionToday(c) ?? '');
 
 /** Сессии сегодня по времени; без времени — в конце. */
 export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyClientSummary[] {
@@ -44,34 +34,38 @@ export function sessionsTodaySorted(clients: TherapyClientSummary[]): TherapyCli
     .sort((a, b) => (sessionTime(a) || '99:99').localeCompare(sessionTime(b) || '99:99'));
 }
 
-/** Не заполнили сегодня и молчат 3+ дня (или записей не было вовсе). */
-export function needsAttention(c: TherapyClientSummary, now: number): boolean {
-  if (c.todayIndex != null) return false;
-  const days = daysSinceActive(c, now);
+/** Клиенты с аккаунтом: у офлайн-клиента активности не бывает, и он не входит ни
+ *  в «Активны N / M», ни в «Требуют внимания», ни в «Активность клиентов» (QA 2026-11). */
+export const trackedClients = (clients: TherapyClientSummary[]): TherapyClientSummary[] =>
+  clients.filter(c => !isVirtualClient(c));
+
+/** Не заполнили сегодня и молчат 3+ дня (или записей не было вовсе); офлайн — никогда. */
+export function needsAttention(c: TherapyClientSummary): boolean {
+  if (isVirtualClient(c) || c.todayIndex != null) return false;
+  const days = daysSinceActive(c);
   return days == null || days >= ATTENTION_DAYS;
 }
 
 export interface TodayCounts { active: number; total: number; sessions: number; attention: number }
 
-export function todayCounts(clients: TherapyClientSummary[], now: number): TodayCounts {
+/** Сессии — по всем клиентам (встреча с офлайн-клиентом настоящая), остальное — по trackedClients. */
+export function todayCounts(clients: TherapyClientSummary[]): TodayCounts {
+  const tracked = trackedClients(clients);
   return {
-    active: clients.filter(c => c.todayIndex != null).length,
-    total: clients.length,
+    active: tracked.filter(c => c.todayIndex != null).length,
+    total: tracked.length,
     sessions: clients.filter(hasSessionToday).length,
-    attention: clients.filter(c => needsAttention(c, now)).length,
+    attention: tracked.filter(needsAttention).length,
   };
 }
 
 export interface ActivityStatus { text: string; tone: 'ok' | 'warn' | 'none' }
 
-export function activityStatus(c: TherapyClientSummary, now: number): ActivityStatus {
-  if (c.todayIndex != null) return { text: 'активность сегодня', tone: 'ok' };
-  const days = daysSinceActive(c, now);
-  if (days == null) return { text: 'нет данных', tone: 'warn' };
-  if (days === 0) return { text: 'активность сегодня', tone: 'ok' };
-  if (days === 1) return { text: 'активность вчера', tone: 'none' };
-  if (days < ATTENTION_DAYS) return { text: `активность ${days} дн. назад`, tone: 'none' };
-  return { text: `нет активности ${days} дн.`, tone: 'warn' };
+/** Текст — общая подпись кабинета (clientActivityLabel), тон — сегодня / требует внимания. */
+export function activityStatus(c: TherapyClientSummary): ActivityStatus {
+  const text = clientActivityLabel(c) ?? '';
+  if (c.todayIndex != null || daysSinceActive(c) === 0) return { text, tone: 'ok' };
+  return { text, tone: needsAttention(c) ? 'warn' : 'none' };
 }
 
 export interface SparkPoint { height: number; level: IndexLevel }

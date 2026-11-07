@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Talk } from '../../components/art/PaperArtSigns';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
+import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
+import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -50,22 +53,20 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
           message: message.trim() || undefined,
         }),
       });
-      if (!r.ok) {
-        const body = await r.json().catch(() => ({ message: 'Ошибка' }));
-        throw new Error(body.message ?? 'Ошибка');
-      }
+      if (!r.ok) throw new Error((await readHumanError(r, 'Не удалось отправить заявку')).message);
       setReq({ id: 0, status: 'pending', rejectReason: null, createdAt: new Date().toISOString(), reviewedAt: null });
       setOpen(false);
     } catch (e) {
-      setErr(String(e));
+      setErr(humanizeThrown(e, 'Не удалось отправить заявку'));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="ds-card ds-card--ink aa-role">
-      <div className="aa-role-label">Роль психолога</div>
+    <div className="pp-paper aa-role">
+      <div className="aa-role-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
+      <TherapistRequestRejectedNote request={req} className="aa-role-note" />
       {req?.status === 'pending' ? (
         <div className="aa-role-note">
           {tr('Твоя заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.', 'Ваша заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.')}
@@ -83,11 +84,6 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
         </>
       ) : (
         <div className="aa-role-form">
-          {req?.status === 'rejected' && (
-            <div className="aa-role-note">
-              Прошлая заявка отклонена{req.rejectReason ? `: ${req.rejectReason}` : ''}. {tr('Можешь подать новую.', 'Можете подать новую.')}
-            </div>
-          )}
           <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
           <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={qualification} onChange={e => setQualification(e.target.value)} rows={3}
             placeholder="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />

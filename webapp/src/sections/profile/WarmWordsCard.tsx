@@ -2,15 +2,15 @@
 // Список целиком — существующий экран WarmWordsEx (тот же, что в разделе
 // «Практика»; он грузит слова сам и трекает открытие). Данные превью уже
 // собраны хуком useAboutMe — второй раз их не запрашиваем. Пусто — карточки
-// нет (не выдуманная фраза). Парна schema-miniapp/.../WarmWordsCard.tsx.
+// нет (не выдуманная фраза).
 import { lazy, Suspense, useState } from 'react';
+import { CardTitle } from './CardTitle';
 import { pressable } from '../../utils/a11y';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { WARM_WORDS_CARD_TITLE, WARM_WORDS_CARD_SOURCE } from '../../../../shared/src/portrait/portraitTexts';
 import type { WarmWordsItem } from '../../../../shared/src/warmWords/collectWarmWords';
 
 const WarmWordsEx = lazy(() => import('../../components/exercises/WarmWordsEx').then((m) => ({ default: m.WarmWordsEx })));
-
 export function WarmWordsCard({ items }: { items: WarmWordsItem[] }) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
@@ -20,7 +20,7 @@ export function WarmWordsCard({ items }: { items: WarmWordsItem[] }) {
     <>
       <section {...pressable(() => setOpen(true))} aria-label={WARM_WORDS_CARD_TITLE} className="ds-card ds-card--hover cpf-card">
         <div className="ds-head-row">
-          <h2 className="ds-h3">{WARM_WORDS_CARD_TITLE}</h2>
+          <CardTitle sign="warm">{WARM_WORDS_CARD_TITLE}</CardTitle>
           <span className="ds-sub">{items.length} {pluralRu(items.length, 'фраза', 'фразы', 'фраз')}</span>
         </div>
         <div className="cpf-warm-text">«{preview.text}»</div>

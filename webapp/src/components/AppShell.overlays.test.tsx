@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
-// AppShell — оверлеи и их побочные эффекты: цепочка трекер → селебрейшн →
-// заметка дня, командная палитра (⌘K, ⌘1-4), режим терапевта (переключение +
+// AppShell — оверлеи и их побочные эффекты: трекер → селебрейшн (заметка дня
+// сама не открывается), командная палитра (⌘K, ⌘1-4), режим терапевта (переключение +
 // поиск по клиентам), разовый дисклеймер приватности кабинета.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell, mockLogout } from './AppShell.test-helpers';
 import { api } from '../api';
 import { todayStr } from '../utils/format';
+import { THERAPIST_MODE_KEY, CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
 import type { DayHistory } from '../types';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -30,6 +31,7 @@ afterEach(() => {
 
 describe('AppShell — трекер: сохранение со стриком запускает селебрейшн, а не молчит', () => {
   it('onSaved(needId, streak>0) → показывает Celebration с реальным стриком', async () => {
+    localStorage.setItem(CHILDHOOD_DONE_KEY, '1'); // колесо пройдено — проверяем только поздравление
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
@@ -40,19 +42,23 @@ describe('AppShell — трекер: сохранение со стриком з
     // значение, а не захардкоженное «вчерашнее».
     await waitFor(() => expect(screen.getByTestId('celebration-streak-3')).toBeTruthy());
 
-    // Закрытие Celebration ведёт дальше к заметке дня (see handleDone chain).
+    // «Закрыть» закрывает — заметка дня сама не открывается (2026-11-06,
+    // владелец: «само закрылось, там заметки открылись»). Заметка — ссылка
+    // «Заметка» на экране «Готово» трекера, он остаётся под поздравлением.
     fireEvent.click(screen.getByTestId('celebration-streak-3-done'));
-    await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
+    await waitFor(() => expect(screen.queryByTestId('celebration-streak-3')).toBeNull());
+    expect(screen.queryByTestId('note-sheet')).toBeNull();
+    expect(screen.getByTestId('tracker-overlay')).toBeTruthy();
   });
 
-  it('onSaved(needId, streak=0) → сразу заметка дня, без Celebration', async () => {
+  it('onSaved(needId, streak=0) → ни Celebration, ни заметки дня', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
 
     fireEvent.click(screen.getByTestId('tracker-overlay-saveNoStreak'));
-    await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
+    expect(screen.queryByTestId('note-sheet')).toBeNull();
     expect(screen.queryByTestId(/celebration-streak/)).toBeNull();
   });
 
@@ -75,11 +81,13 @@ describe('AppShell — командная палитра', () => {
     await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
   });
 
-  it('⌘2 переключает секцию на «Дневник» (быстрый доступ без палитры)', async () => {
+  it('⌘2 переключает секцию на «Записи», ⌘3 — на «Ещё» (быстрый доступ без палитры)', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.keyDown(window, { key: '2', metaKey: true });
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.keyDown(window, { key: '3', metaKey: true });
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
   });
 
   it('палитра «Закрыть» реально закрывается', async () => {
@@ -95,7 +103,7 @@ describe('AppShell — командная палитра', () => {
 describe('AppShell — режим терапевта: переключение и поиск по клиентам', () => {
   it('переключатель «Терапевт» в сайдбаре ведёт в кабинет', async () => {
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
-    localStorage.setItem('therapist_mode', '0'); // старт клиентом, чтобы проверить именно клик по переключателю
+    localStorage.setItem(THERAPIST_MODE_KEY, '0'); // старт клиентом, чтобы проверить именно клик по переключателю
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: 'Терапевт' }));
@@ -141,10 +149,10 @@ describe('AppShell — разовый дисклеймер приватност�
 });
 
 describe('AppShell — история: открытие с Today и read-after-write связка колбэков', () => {
-  it('history-кнопка Today открывает HistorySheet, tracker/schemas/childhood переключают оверлеи', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+  it('history-кнопка «Записей» открывает HistorySheet, tracker/schemas/childhood переключают оверлеи', async () => {
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => expect(screen.getByTestId('history-sheet')).toBeTruthy());
 
     fireEvent.click(screen.getByTestId('history-sheet-tracker'));
@@ -166,9 +174,9 @@ describe('AppShell — история: открытие с Today и read-after-w
       { id: 1, needId: 'safety', practiceText: 'A', scheduledDate: '2026-01-01', reminderUtcHour: null, done: null },
       { id: 2, needId: 'autonomy', practiceText: 'B', scheduledDate: '2026-01-02', reminderUtcHour: null, done: null },
     ]);
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => {
       const state = JSON.parse(screen.getByTestId('history-sheet-state').textContent ?? '{}');
       expect(state.pendingPlanIds).toEqual([1, 2]);
@@ -188,9 +196,9 @@ describe('AppShell — история: открытие с Today и read-after-w
   });
 
   it('закрытие HistorySheet сбрасывает trackerTab на «today» (повторное открытие не залипает на history)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => expect(screen.getByTestId('history-sheet')).toBeTruthy());
     fireEvent.click(screen.getByTestId('history-sheet-close'));
     await waitFor(() => expect(screen.queryByTestId('history-sheet')).toBeNull());
@@ -199,9 +207,9 @@ describe('AppShell — история: открытие с Today и read-after-w
   it('открытие истории сразу выставляет historyLoading=true, до ответа сервера, и снимает его с реальными данными', async () => {
     let resolveHistory: (v: DayHistory[]) => void = () => {};
     mockApi.history.mockImplementationOnce(() => new Promise<DayHistory[]>(res => { resolveHistory = res; }));
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-history'));
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('diary-section-history'));
     await waitFor(() => {
       const state = JSON.parse(screen.getByTestId('history-sheet-state').textContent ?? '{}');
       expect(state.historyLoading).toBe(true);
@@ -232,17 +240,6 @@ describe('AppShell — трекер: колбэки заметки/цели/ис
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
     fireEvent.click(screen.getByTestId('tracker-overlay-note'));
     await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
-  });
-
-  it('«goal» из трекера открывает TaskCreateSheet, закрытие/создание убирает его', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-tracker'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('tracker-overlay-goal'));
-    await waitFor(() => expect(screen.getByTestId('task-create-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('task-create-sheet-created'));
-    await waitFor(() => expect(screen.queryByTestId('task-create-sheet')).toBeNull());
   });
 
   it('«openHistory» из трекера закрывает трекер и открывает HistorySheet', async () => {
@@ -280,18 +277,11 @@ describe('AppShell — диалог схемы: три параметра (autoS
 });
 
 describe('AppShell — прямая навигация и точечный трекер из Today/Паттернов/Практики', () => {
-  it('Today «navigate» переключает секцию на «Дневник» напрямую (setSection)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-navigate'));
+  it('«Ещё» navigate переключает секцию на «Дневник» напрямую (setSection)', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-navigate'));
     await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
-  });
-
-  it('Today «trackerAt» открывает трекер сразу с конкретной потребностью (не с пустого списка)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-trackerAt'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
   });
 
   it('Паттерны: «childhood» открывает колесо детства из раздела схем', async () => {
@@ -325,29 +315,40 @@ describe('AppShell — прямая навигация и точечный тр�
 });
 
 describe('AppShell — Дневник напрямую (Today) и Практика открывают дневник-оверлей', () => {
-  it('Today «diaries» открывает DiariesOverlay, закрытие убирает его', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-diaries'));
+  it('«Ещё» diaries открывает DiariesOverlay, закрытие убирает его', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-diaries'));
     await waitFor(() => expect(screen.getByTestId('diaries-overlay')).toBeTruthy());
     fireEvent.click(screen.getByTestId('diaries-overlay-close'));
     await waitFor(() => expect(screen.queryByTestId('diaries-overlay')).toBeNull());
   });
 
-  it('Today «childhood» открывает колесо детства напрямую (без истории), «назад» закрывает', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-childhood'));
+  it('«Ещё» childhood открывает колесо детства напрямую (без истории), «назад» закрывает', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-childhood'));
     await waitFor(() => expect(screen.getByTestId('childhood-wheel')).toBeTruthy());
     fireEvent.click(screen.getByTestId('childhood-wheel-back'));
     await waitFor(() => expect(screen.queryByTestId('childhood-wheel')).toBeNull());
   });
 
-  it('Today «cabinet» переключает в режим терапевта (доступно из клиентского экрана)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-cabinet'));
+  it('«Ещё»: «cabinet» переключает в режим терапевта (ссылка живёт в «Ещё», на главной её нет)', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-cabinet'));
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+  });
+
+  it('«Ещё»: переход в «Практики» и тест на схемы доходят до оболочки', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-test'));
+    await waitFor(() => expect(screen.getByTestId('schema-info-sheet')).toBeTruthy());
+    expect(JSON.parse(screen.getByTestId('schema-info-sheet-state').textContent ?? '{}')).toMatchObject({ autoStartTest: true, initialTab: 'needs' });
+    fireEvent.click(screen.getByTestId('schema-info-sheet-close'));
+    fireEvent.click(screen.getByTestId('more-section-toPractice'));
+    await waitFor(() => expect(screen.getByTestId('practice-section')).toBeTruthy());
   });
 
   it('Практика: практики/планы/трекер/дневники/детство открывают соответствующие оверлеи', async () => {
@@ -399,21 +400,21 @@ describe('AppShell — Дневник напрямую (Today) и Практик
 
 describe('AppShell — Настройки: доп. переходы (кабинет терапевта, переключение режима)', () => {
   it('«cabinet» из настроек закрывает лист и ведёт в /cabinet', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-advanced'));
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-advanced'));
     await waitFor(() => expect(screen.getByTestId('settings-sheet')).toBeTruthy());
     fireEvent.click(screen.getByTestId('settings-sheet-cabinet'));
     await waitFor(() => expect(screen.queryByTestId('settings-sheet')).toBeNull());
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
   });
 
-  it('«toggleTherapist» из настроек переключает режим на терапевта', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-advanced'));
+  it('onSetTherapistMode(true) из настроек переключает режим на терапевта', async () => {
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-advanced'));
     await waitFor(() => expect(screen.getByTestId('settings-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('settings-sheet-toggleTherapist'));
+    fireEvent.click(screen.getByTestId('settings-sheet-setTherapist'));
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
   });
 });
@@ -450,7 +451,7 @@ describe('AppShell — командная палитра: переход к кл
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
   });
 
-  it('быстрое действие «Трекер» из палитры открывает трекер тем же флагом, что и «+»', async () => {
+  it('быстрое действие «Трекер» из палитры открывает трекер (быстрые действия живы без кнопки «+»)', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.keyDown(window, { key: 'k', metaKey: true });
@@ -460,17 +461,18 @@ describe('AppShell — командная палитра: переход к кл
   });
 });
 
-describe('AppShell — кнопка «+» быстрых действий', () => {
-  it('в клиентском режиме «+» открывает лист, строка «Трекер потребностей» открывает трекер и закрывает лист', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByRole('button', { name: 'Быстрое действие' }));
-    fireEvent.click(await screen.findByRole('button', { name: /Трекер потребностей/ }));
+describe('AppShell — кнопки «+» быстрых действий нет', () => {
+  it('на «Записях» кнопки нет, а быстрое действие по-прежнему запускается из палитры ⌘K', async () => {
+    renderAppShell('/diary');
+    await waitFor(() => expect(screen.getByTestId('diary-section')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Быстрое действие' })).toBeNull();
+    fireEvent.keyDown(window, { key: 'k', metaKey: true });
+    await waitFor(() => expect(screen.getByTestId('command-palette')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('command-palette-quickTracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    expect(screen.queryByRole('dialog', { name: 'Быстрое действие' })).toBeNull();
   });
 
-  it('в кабинете терапевта «+» нет', async () => {
+  it('в кабинете терапевта «+» тоже нет', async () => {
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/cabinet');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
@@ -490,40 +492,40 @@ describe('AppShell — настройки: выход из роли терапе
 
     await waitFor(() => expect(mockApi.resignTherapist).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    expect(localStorage.getItem('therapist_mode')).toBe('0');
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('0');
   });
 });
 
-describe('AppShell — трекер: изменение оценки реально приходит обратно в ratings/saved', () => {
-  it('onChange(needId, value) — ratings[needId] обновился, saved[needId] сброшен на false', async () => {
+describe('AppShell — трекер: изменение оценки реально приходит обратно в ratings', () => {
+  it('onChange(needId, value) — ratings[needId] обновился', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: null, attachmentSaved: null });
+    expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: null });
 
     fireEvent.click(screen.getByTestId('tracker-overlay-change'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5, attachmentSaved: false });
+      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5 });
     });
   });
 });
 
-describe('AppShell — карточка клиента в кабинете: routing-состояние (view/openClientId) и синхронизация списка', () => {
+describe('AppShell — карточка клиента в кабинете: routing-состояние (view/openClientRef) и синхронизация списка', () => {
   it('openClient переключает view на «client» с реальным id, toList возвращает к списку', async () => {
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/cabinet');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
-    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientId: null });
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientRef: null });
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-openClient'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '42' });
+      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientRef: '42' });
     });
 
     fireEvent.click(screen.getByTestId('therapist-client-sheet-toList'));
     await waitFor(() => {
-      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientId: null });
+      expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'list', openClientRef: null });
     });
   });
 
@@ -533,7 +535,15 @@ describe('AppShell — карточка клиента в кабинете: rout
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/cabinet/1000000000000000123');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
-    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientId: '1000000000000000123' });
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientRef: '1000000000000000123' });
+  });
+
+  // Адрес карточки — постоянный код (shared/src/utils/clientRef.ts): у офлайн-клиента id менялся при подключении.
+  it('адрес /cabinet/<код> открывает карточку и отдаёт в неё код', async () => {
+    mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
+    renderAppShell('/cabinet/abcdefgh');
+    await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
+    expect(JSON.parse(screen.getByTestId('therapist-client-sheet-state').textContent ?? '{}')).toEqual({ view: 'client', openClientRef: 'abcdefgh' });
   });
 
   it('onClientsChange реально долетает до сайдбара — новый клиент виден в списке', async () => {
@@ -568,17 +578,6 @@ describe('AppShell — заметка дня и цель трекера закр
     fireEvent.click(screen.getByTestId('note-sheet-close'));
     await waitFor(() => expect(screen.queryByTestId('note-sheet')).toBeNull());
   });
-
-  it('TaskCreateSheet close реально скрывает лист (без создания цели)', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-tracker'));
-    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('tracker-overlay-goal'));
-    await waitFor(() => expect(screen.getByTestId('task-create-sheet')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('task-create-sheet-close'));
-    await waitFor(() => expect(screen.queryByTestId('task-create-sheet')).toBeNull());
-  });
 });
 
 describe('AppShell — командная палитра: закрытие и переключение режима', () => {
@@ -602,13 +601,39 @@ describe('AppShell — командная палитра: закрытие и п
 });
 
 describe('AppShell — сайдбар: индекс дня и поиск⌘K открываются кликом (не только по клавише)', () => {
-  it('CTA «Заполнить дневник» в сайдбаре реально открывает трекер', async () => {
+  // QA 2026-11 (A-З9): подпись «Заполнить дневник →» открывала трекер, а
+  // «Дневник» на главной — отдельная плитка. Подпись и действие совпадают.
+  it('CTA «Заполнить трекер» в сайдбаре реально открывает трекер', async () => {
     mockApi.needs.mockResolvedValueOnce([{ id: 'safety', emoji: '', title: 'Безопасность', chartLabel: 'Без.' }]);
     mockApi.ratings.mockResolvedValueOnce({}).mockResolvedValueOnce({});
     renderAppShell('/today');
-    await waitFor(() => expect(screen.getByText('Заполнить дневник →')).toBeTruthy());
-    fireEvent.click(screen.getByText('Заполнить дневник →'));
+    await waitFor(() => expect(screen.getByText('Заполнить трекер →')).toBeTruthy());
+    expect(screen.queryByText(/Заполнить дневник/)).toBeNull();
+    fireEvent.click(screen.getByText('Заполнить трекер →'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
+  });
+
+  // QA 2026-11 (A-М10): «Мне плохо» уводил на /practice, и «Назад» браузера
+  // возвращал туда, а не откуда пришли. Теперь карточка — поверх раздела.
+  it('«Мне плохо» открывает карточку поверх текущего раздела, не уводя на /practice', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    fireEvent.click(screen.getByText('Мне плохо'));
+    expect(await screen.findByTestId('sos-card')).toBeTruthy();
+    expect(screen.queryByTestId('practice-section')).toBeNull();
+    expect(screen.getByTestId('today-section').closest('[inert]')).not.toBeNull();
+    fireEvent.click(screen.getByTestId('sos-card-close'));
+    await waitFor(() => expect(screen.queryByTestId('sos-card')).toBeNull());
+    expect(screen.getByTestId('today-section').closest('[inert]')).toBeNull();
+  });
+
+  it('из карточки «Мне плохо» — в трекер: карточка закрывается, трекер открыт', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    fireEvent.click(screen.getByText('Мне плохо'));
+    fireEvent.click(await screen.findByTestId('sos-card-tracker'));
+    expect(await screen.findByTestId('tracker-overlay')).toBeTruthy();
+    expect(screen.queryByTestId('sos-card')).toBeNull();
   });
 
   it('иконка поиска в топбаре («Перейти к…») открывает командную палитру', async () => {
@@ -619,8 +644,8 @@ describe('AppShell — сайдбар: индекс дня и поиск⌘K о�
   });
 });
 
-describe('AppShell — стрик 5+ дней ставит колесо детства «в очередь», заметка дня его открывает', () => {
-  it('после Celebration и заметки дня — колесо детства открывается автоматически (если ещё не пройдено)', async () => {
+describe('AppShell — стрик 5+ дней ставит колесо детства «в очередь», закрытие поздравления его открывает', () => {
+  it('после Celebration — колесо детства (если ещё не пройдено), заметка дня не открывается', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
@@ -629,13 +654,11 @@ describe('AppShell — стрик 5+ дней ставит колесо детс
     fireEvent.click(screen.getByTestId('tracker-overlay-saveWithStreak'));
     await waitFor(() => expect(screen.getByTestId('celebration-streak-3')).toBeTruthy());
     fireEvent.click(screen.getByTestId('celebration-streak-3-done'));
-    await waitFor(() => expect(screen.getByTestId('note-sheet')).toBeTruthy());
-
-    fireEvent.click(screen.getByTestId('note-sheet-close'));
     await waitFor(() => expect(screen.getByTestId('childhood-wheel')).toBeTruthy());
+    expect(screen.queryByTestId('note-sheet')).toBeNull();
   });
 
-  it('заметка дня открыта не через стрик-цепочку (childhoodWheelPending=false) — закрытие не открывает колесо', async () => {
+  it('заметка дня из трекера — закрытие не открывает колесо', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
     fireEvent.click(screen.getByTestId('today-section-tracker'));
@@ -668,9 +691,9 @@ describe('AppShell — сайдбар: выход из аккаунта и за�
 
 describe('AppShell — колесо детства: сохранение оценок и повтор истории', () => {
   it('saved (onSaved) сохраняет childhoodRatings — они попадают дальше в SchemaInfoSheet при открытии из истории', async () => {
-    renderAppShell('/today');
-    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    fireEvent.click(screen.getByTestId('today-section-childhood'));
+    renderAppShell('/more');
+    await waitFor(() => expect(screen.getByTestId('more-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('more-section-childhood'));
     await waitFor(() => expect(screen.getByTestId('childhood-wheel')).toBeTruthy());
     fireEvent.click(screen.getByTestId('childhood-wheel-saved'));
     // saved не закрывает лист сам по себе — закрываем явно, как в реальном UX.

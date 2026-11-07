@@ -4,7 +4,8 @@
 // тесты каждого примитива и его веток — сам SettingsSheet использует их
 // только косвенно.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './ui';
 
 afterEach(() => {
@@ -13,10 +14,10 @@ afterEach(() => {
 
 describe('SRow — без onClick', () => {
   it('не кликабельна: нет role="button", нет стрелки-плейсхолдера', () => {
-    render(<SRow title="Просто строка" />);
+    const { container } = render(<SRow title="Просто строка" />);
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByText('Просто строка')).toBeTruthy();
-    expect(screen.queryByText('›')).toBeNull();
+    expect(container.querySelector('.ds-chev')).toBeNull();
   });
 
   it('без sub — подписи нет', () => {
@@ -50,18 +51,18 @@ describe('SRow — с onClick', () => {
   });
 
   it('без явного right — рисует стрелку-плейсхолдер ›', () => {
-    render(<SRow title="Со стрелкой" onClick={() => {}} />);
-    expect(screen.getByText('›')).toBeTruthy();
+    const { container } = render(<SRow title="Со стрелкой" onClick={() => {}} />);
+    expect(container.querySelector('.ds-chev[aria-hidden="true"]')).toBeTruthy();
   });
 });
 
 describe('SRow — right', () => {
   it('явный right побеждает стрелку-плейсхолдер', () => {
-    render(
+    const { container } = render(
       <SRow title="С кастомным right" onClick={() => {}} right={<span>кастом</span>} />,
     );
     expect(screen.getByText('кастом')).toBeTruthy();
-    expect(screen.queryByText('›')).toBeNull();
+    expect(container.querySelector('.ds-chev')).toBeNull();
   });
 });
 
@@ -109,30 +110,30 @@ describe('Toggle', () => {
 
 describe('SmallToggle', () => {
   it('label становится именем switch для скринридера', () => {
-    render(<SmallToggle label="Профиль и схемы" on={true} onClick={() => {}} />);
-    expect(screen.getByRole('switch', { name: 'Профиль и схемы' }).getAttribute('aria-checked')).toBe('true');
+    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
+    expect(screen.getByRole('switch', { name: 'Мои схемы и тест' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('on=false — aria-checked false', () => {
-    render(<SmallToggle label="Профиль и схемы" on={false} onClick={() => {}} />);
+    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={() => {}} />);
     expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false');
   });
 
   it('on=true — aria-checked true', () => {
-    render(<SmallToggle label="Профиль и схемы" on={true} onClick={() => {}} />);
+    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
     expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true');
   });
 
   it('клик зовёт onClick', () => {
     const onClick = vi.fn();
-    render(<SmallToggle label="Профиль и схемы" on={false} onClick={onClick} />);
+    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={onClick} />);
     fireEvent.click(screen.getByRole('switch'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('Enter/Space зовут onClick', () => {
     const onClick = vi.fn();
-    render(<SmallToggle label="Профиль и схемы" on={true} onClick={onClick} />);
+    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={onClick} />);
     fireEvent.keyDown(screen.getByRole('switch'), { key: 'Enter' });
     expect(onClick).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(screen.getByRole('switch'), { key: ' ' });
@@ -141,59 +142,66 @@ describe('SmallToggle', () => {
 });
 
 describe('ChevronVal', () => {
-  it('small не задан — текст и стрелка рендерятся', () => {
-    render(<ChevronVal text="Значение" />);
+  it('текст и стрелка рендерятся', () => {
+    const { container } = render(<ChevronVal text="Значение" />);
     expect(screen.getByText('Значение')).toBeTruthy();
-    expect(screen.getByText('›')).toBeTruthy();
-  });
-
-  it('small=true — текст и стрелка тоже рендерятся (проверяем контент, не размер шрифта)', () => {
-    render(<ChevronVal text="Малое значение" small />);
-    expect(screen.getByText('Малое значение')).toBeTruthy();
-    expect(screen.getByText('›')).toBeTruthy();
+    expect(container.querySelector('.ds-chev')).toBeTruthy();
   });
 });
 
 describe('InfoModal', () => {
   it('рендерит children', () => {
     render(
-      <InfoModal onClose={() => {}}>
+      <MemoryRouter><InfoModal onClose={() => {}}>
         <div>Содержимое модалки</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     expect(screen.getByText('Содержимое модалки')).toBeTruthy();
   });
 
-  it('клик по фону зовёт onClose', () => {
+  it('клик по фону зовёт onClose', async () => {
     const onClose = vi.fn();
     render(
-      <InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal onClose={onClose}>
         <div>Тело</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     fireEvent.click(screen.getByLabelText('Закрыть'));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   it('клик внутри модалки не зовёт onClose (stopPropagation)', () => {
     const onClose = vi.fn();
     render(
-      <InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal onClose={onClose}>
         <div>Клик внутри</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     fireEvent.click(screen.getByText('Клик внутри'));
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('Enter/Space на фоне зовут onClose', () => {
+  it('Enter/Space на фоне зовут onClose', async () => {
     const onClose = vi.fn();
     render(
-      <InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal onClose={onClose}>
         <div>Тело</div>
-      </InfoModal>,
+      </InfoModal></MemoryRouter>,
     );
     fireEvent.keyDown(screen.getByLabelText('Закрыть'), { key: 'Enter' });
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  // QA 2026-11, М11: «Сводку для терапевта» и пояснения закрывали только
+  // клик мимо окна или Escape — кнопки не было.
+  it('внутри окна есть кнопка «Закрыть», она зовёт onClose один раз', async () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter><InfoModal onClose={onClose}>
+        <div>Тело</div>
+      </InfoModal></MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('Закрыть', { selector: 'button' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });

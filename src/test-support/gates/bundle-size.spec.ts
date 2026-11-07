@@ -14,18 +14,15 @@ const bytes = (n: number) => 'x'.repeat(n);
 const BASELINE = {
   'webapp:total-js': 100_000,
   'webapp:largest-chunk': 90_000,
-  'miniapp:index.js': 50_000,
-  'miniapp:total-js': 50_000,
 };
 
 /** Фикстурное дерево, ровно повторяющее бейслайн (a.js — самый тяжёлый
- * webapp-чанк, b.js добирает total-js; miniapp — один index.js). */
+ * webapp-чанк, b.js добирает total-js). */
 function matchingFiles() {
   return {
     'scripts/bundle-size-baseline.json': JSON.stringify(BASELINE),
     'webapp/dist/assets/a.js': bytes(90_000),
     'webapp/dist/assets/b.js': bytes(10_000),
-    'schema-miniapp/dist/assets/index.js': bytes(50_000),
   };
 }
 
@@ -88,7 +85,6 @@ describe('check-bundle-size-ratchet.mjs', () => {
   it('нет webapp/dist — exit 1 с подсказкой "сначала собери"', () => {
     const res = runGate('check-bundle-size-ratchet.mjs', {
       'scripts/bundle-size-baseline.json': JSON.stringify(BASELINE),
-      'schema-miniapp/dist/assets/index.js': bytes(50_000),
     });
 
     expect(res.status).toBe(1);
@@ -96,49 +92,22 @@ describe('check-bundle-size-ratchet.mjs', () => {
     expect(res.stderr).toContain('Сначала собери');
   });
 
-  it('есть schema-miniapp/dist/assets, но без index.js — exit 1', () => {
-    const res = runGate('check-bundle-size-ratchet.mjs', {
-      'scripts/bundle-size-baseline.json': JSON.stringify(BASELINE),
-      'webapp/dist/assets/a.js': bytes(90_000),
-      'webapp/dist/assets/b.js': bytes(10_000),
-      // имя с хешем вместо ожидаемого index.js без хеша (правило №13).
-      'schema-miniapp/dist/assets/index-ABC123.js': bytes(50_000),
-    });
-
-    expect(res.status).toBe(1);
-    expect(res.stderr).toContain('index.js');
-    expect(res.stderr).toContain('не найден');
-  });
-
-  it('нет schema-miniapp/dist вовсе — exit 1', () => {
-    const res = runGate('check-bundle-size-ratchet.mjs', {
-      'scripts/bundle-size-baseline.json': JSON.stringify(BASELINE),
-      'webapp/dist/assets/a.js': bytes(90_000),
-      'webapp/dist/assets/b.js': bytes(10_000),
-    });
-
-    expect(res.status).toBe(1);
-    expect(res.stderr).toContain('schema-miniapp/dist/assets не найден');
-  });
-
   it('нет бейслайна — гейт падает, а не молчит', () => {
     const res = runGate('check-bundle-size-ratchet.mjs', {
       'webapp/dist/assets/a.js': bytes(90_000),
       'webapp/dist/assets/b.js': bytes(10_000),
-      'schema-miniapp/dist/assets/index.js': bytes(50_000),
     });
 
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('Нет бейслайна');
   });
 
-  it('--update фиксирует текущие байты по всем четырём ключам', () => {
+  it('--update фиксирует текущие байты по обоим ключам', () => {
     const res = runGate(
       'check-bundle-size-ratchet.mjs',
       {
         'webapp/dist/assets/a.js': bytes(90_000),
         'webapp/dist/assets/b.js': bytes(10_000),
-        'schema-miniapp/dist/assets/index.js': bytes(50_000),
       },
       { args: ['--update'], keepTmp: true },
     );
@@ -150,8 +119,10 @@ describe('check-bundle-size-ratchet.mjs', () => {
       ) as Record<string, number>;
       expect(written['webapp:total-js']).toBe(100_000);
       expect(written['webapp:largest-chunk']).toBe(90_000);
-      expect(written['miniapp:index.js']).toBe(50_000);
-      expect(written['miniapp:total-js']).toBe(50_000);
+      expect(Object.keys(written).sort()).toEqual([
+        'webapp:largest-chunk',
+        'webapp:total-js',
+      ]);
     } finally {
       cleanupTmp(res.tmp);
     }

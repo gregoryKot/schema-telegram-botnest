@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Компонентные тесты SubscribePage: сабмит формы подписки, honeypot-поле,
 // обязательное согласие (consent), ошибка API. Мок '../api' — образец сетапа
-// webapp/src/utils/addressForm.test.tsx / schema-miniapp TrackerOverlay.test.tsx.
+// webapp TrackerOverlay.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { SubscribePage } from './SubscribePage';
@@ -169,6 +169,8 @@ describe('SubscribePage — управление подпиской по ток�
 
     await screen.findByText('Подписка');
     expect(screen.queryByText(/Не удалось загрузить подписку/)).toBeNull();
+    // Кнопки «На главную» в управлении нет — на компьютере ссылка внизу (A9: token || ret !== 'ok').
+    expect(screen.getAllByRole('link', { name: '← На главную' }).map((a) => a.className)).toEqual(['ds-back', 'ap-home']);
   });
 });
 
@@ -260,5 +262,57 @@ describe('SubscribePage — отмена подписки (отказ не гл�
     fireEvent.click(cancelBtn());
     await screen.findByText('Подписка отменена');
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+// #906: страница прижата к верху — шапка «← На главную» на ds-sheet-head/ds-back,
+// eyebrow + ds-h1 слева, кнопки — ds-btn--lg; центрирующего .ap-page--center нет.
+describe('SubscribePage — шапка и кнопки (#906)', () => {
+  it('служебное состояние: «← На главную» — ds-back в ds-sheet-head, заголовок ds-h1, кнопка ds-btn--lg', async () => {
+    mockApi.getSubscriptionOptions.mockResolvedValue({ enabled: false, options: [] });
+    const { container } = render(<SubscribePage />);
+    await screen.findByText('Подписка скоро');
+    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
+    expect(back.className).toBe('ds-back');
+    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
+    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — под кнопкой
+    expect(container.querySelector('.ap-lead')!.className).toBe('ds-sub ap-lead'); // подзаголовок как в main
+    expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
+    expect(screen.getByRole('link', { name: 'Разовый донат' }).className).toBe('ds-btn ds-btn--lg');
+    expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn')).toBeNull();
+  });
+
+  it('форма: та же шапка над сплитом, CTA — ds-btn--accent ds-btn--lg', async () => {
+    await renderLoaded();
+    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
+    expect(back.className).toBe('ds-back');
+    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
+    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу левой колонки, шапка скрыта
+    expect(screen.getByRole('button', { name: /Оформить за/ }).className).toContain('ds-btn ds-btn--accent ds-btn--lg');
+  });
+});
+
+describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () => {
+  it('?sub=ok: благодарность и «На главную», формы и alert нет', async () => {
+    window.history.pushState({}, '', '/subscribe?sub=ok');
+    render(<SubscribePage />);
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Спасибо за поддержку!');
+    expect(screen.getByText(/Подписка оформлена/)).toBeTruthy();
+    // Письма со ссылкой управления нет (open/backend.md): обещать «пришлём» нельзя,
+    // путь к отмене — Telegram.
+    expect(screen.queryByText(/пришлём|в настройках/)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Telegram' }).getAttribute('href')).toBe('https://t.me/kotlarewski');
+    expect(screen.getByRole('link', { name: 'На главную' })).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: /На главную/ }).filter((a) => a.className === 'ap-home')).toHaveLength(0); // под кнопкой не дублируется
+    expect(screen.queryByRole('button', { name: /Оформить за/ })).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('?sub=fail: alert «Оплата не прошла», форма подписки на месте', async () => {
+    window.history.pushState({}, '', '/subscribe?sub=fail');
+    await renderLoaded();
+    expect(screen.getByRole('alert').textContent).toContain('Оплата не прошла');
+    expect(screen.getByRole('button', { name: /Оформить за/ })).toBeTruthy();
+    expect(screen.queryByText('Спасибо за поддержку!')).toBeNull();
   });
 });

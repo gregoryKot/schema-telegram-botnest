@@ -22,9 +22,9 @@ export function failedSummary(failed: DeliveryFailure[]): string {
 }
 
 /**
- * «Молчали: Threads — нет HEALTHY_ADULT_THREADS_USER». Выключенная площадка
- * раньше просто отсутствовала в отчёте, и отличить её от успешной было
- * невозможно — ровно так утро 2026-07-31 и выглядело «всё хорошо».
+ * «Молчали: Threads — нет HEALTHY_ADULT_THREADS_USER». Без строки выключенная
+ * площадка неотличима от успешной (утро 2026-07-31 выглядело «всё хорошо»).
+ * DM только о молчащих — раз в неделю, а не каждый слот: `slot-report.ts`.
  */
 export function silentSummary(silent: SilentTarget[]): string {
   if (silent.length === 0) return '';

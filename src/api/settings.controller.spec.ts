@@ -27,6 +27,7 @@ function makeController(
   } as unknown as BotService;
   const accountService = {
     setAdaptiveLevel: jest.fn().mockResolvedValue(undefined),
+    isNotifyReachable: jest.fn().mockResolvedValue(true),
     ...overrides.accountService,
   } as unknown as AccountService;
   const scheduleService = {
@@ -62,7 +63,19 @@ describe('SettingsController.getSettings', () => {
       therapistShareCards: true,
       therapistShareProfile: true,
       uiPrefs: {},
+      notifyReachable: true,
     });
+  });
+
+  // QA 2026-11, З5: веб-клиент без Telegram видел включённые уведомления,
+  // которые очередь снимала как «доставить некому».
+  it('notifyReachable — от адреса очереди уведомлений этого человека', async () => {
+    const { controller, accountService } = makeController({
+      accountService: { isNotifyReachable: jest.fn().mockResolvedValue(false) },
+    });
+    const res = await controller.getSettings(makeReq(7n));
+    expect(res.notifyReachable).toBe(false);
+    expect(accountService.isNotifyReachable).toHaveBeenCalledWith(7n);
   });
 
   it('запрашивает настройки под userId из req', async () => {
@@ -103,24 +116,24 @@ describe('SettingsController.getSettings', () => {
     const { controller } = makeController({
       botService: {
         getUserSettings: jest.fn().mockResolvedValue({
-          uiPrefs: { today_streak_hidden: '1' },
+          uiPrefs: { why_seen_v1: '1' },
         }),
       },
     });
     const res = await controller.getSettings(makeReq());
-    expect(res.uiPrefs).toEqual({ today_streak_hidden: '1' });
+    expect(res.uiPrefs).toEqual({ why_seen_v1: '1' });
   });
 
   it('uiPrefs с мусором в БД (устаревший/битый ключ) — отфильтровывается на чтение', async () => {
     const { controller } = makeController({
       botService: {
         getUserSettings: jest.fn().mockResolvedValue({
-          uiPrefs: { today_streak_hidden: '1', stale_key: 'x' },
+          uiPrefs: { why_seen_v1: '1', stale_key: 'x' },
         }),
       },
     });
     const res = await controller.getSettings(makeReq());
-    expect(res.uiPrefs).toEqual({ today_streak_hidden: '1' });
+    expect(res.uiPrefs).toEqual({ why_seen_v1: '1' });
   });
 });
 
@@ -136,12 +149,30 @@ describe('SettingsController.updateSettings — whitelist полей', () => {
     });
   });
 
-  it('невалидная таймзона (не из VALID_TIMEZONES) отбрасывается', async () => {
+  it('несуществующая таймзона отбрасывается', async () => {
     const { controller, botService } = makeController();
     await controller.updateSettings(makeReq(), {
       notifyTimezone: 'Mars/Olympus',
     });
     expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {});
+  });
+
+  // QA 2026-11-03: пояс устройства (Париж) показывается в выборе первым;
+  // повторный тап по нему раньше молча отбрасывался — пояс вне списка.
+  it('настоящий пояс IANA вне списка выбора сохраняется; новый пояс из списка — тоже', async () => {
+    const { controller, botService } = makeController();
+    await controller.updateSettings(makeReq(), {
+      notifyTimezone: 'Europe/Paris',
+    });
+    expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {
+      notifyTimezone: 'Europe/Paris',
+    });
+    await controller.updateSettings(makeReq(), {
+      notifyTimezone: 'Asia/Vladivostok',
+    });
+    expect(botService.updateUserSettings).toHaveBeenLastCalledWith(1n, {
+      notifyTimezone: 'Asia/Vladivostok',
+    });
   });
 
   it('addressForm принимает только «ty»/«vy», остальное отбрасывается', async () => {
@@ -176,22 +207,22 @@ describe('SettingsController.updateSettings — uiPrefs (серверное зе
     const { controller, botService } = makeController();
     await controller.updateSettings(makeReq(11n), {
       uiPrefs: {
-        today_streak_hidden: '1',
-        today_focus_practice: 'tracker',
+        why_seen_v1: '1',
+        quick_actions_order_tools: '["tracker"]',
       },
     });
     expect(botService.updateUserSettings).toHaveBeenCalledWith(11n, {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'tracker' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: '["tracker"]' },
     });
   });
 
   it('невалидное значение внутри uiPrefs отбрасывает только свой ключ (per-key), сохраняет остальное', async () => {
     const { controller, botService } = makeController();
     await controller.updateSettings(makeReq(12n), {
-      uiPrefs: { today_streak_hidden: '1', today_focus_practice: 'garbage' },
+      uiPrefs: { why_seen_v1: '1', quick_actions_order_tools: 'garbage' },
     });
     expect(botService.updateUserSettings).toHaveBeenCalledWith(12n, {
-      uiPrefs: { today_streak_hidden: '1' },
+      uiPrefs: { why_seen_v1: '1' },
     });
   });
 

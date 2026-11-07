@@ -1,6 +1,6 @@
 // Онбординг трекера потребностей (3 шага + строка происхождения) — один
-// контент на оба фронтенда (правило №3). Раньше жил в
-// schema-miniapp/.../trackerOverlay/OnboardingOverlay.tsx; на сайте трекер
+// контент (правило №3). Раньше жил в
+// OnboardingOverlay удалённого мини-аппа; на сайте трекер
 // открывался без единого объяснения «откуда это и зачем».
 type Tr = (ty: string, vy: string) => string;
 
@@ -27,5 +27,5 @@ export const buildTrackerOnboardingSteps = (tr: Tr) => [
   },
 ];
 
-/** Ключ флага «карточку видели» (localStorage, как в мини-аппе). */
+/** Ключ флага «карточку видели» (localStorage). */
 export const TRACKER_ONBOARDING_KEY = 'tracker_onboarding_v1';

@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { renderAppShell } from './AppShell.test-helpers';
 import { api } from '../api';
-import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
+import { MY_SCHEMA_IDS_KEY, YSQ_PROGRESS_KEY, CHILDHOOD_DONE_KEY, THERAPIST_MODE_KEY } from '../utils/storageKeys';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -45,6 +45,21 @@ describe('AppShell — согласия: молча не принимаем, н�
     await waitFor(() => expect(screen.queryByText('Важно знать')).toBeNull());
   });
 
+  // QA 2026-11 (A-З7): автопоказ «Первый раз здесь» открывался под согласиями.
+  // Шов AppShell ↔ секция: конец очереди входов секция узнаёт только после «Начать».
+  it('секция «Сегодня» узнаёт конец очереди только после согласий', async () => {
+    mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
+    renderAppShell('/today');
+    await screen.findByText('БЕТА-ВЕРСИЯ');
+    expect(screen.getByTestId('today-section-state').textContent).toContain('"entryDone":false');
+    fireEvent.click(screen.getByText('Далее'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Далее'));
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByText('Начать'));
+    await waitFor(() => expect(screen.getByTestId('today-section-state').textContent).toContain('"entryDone":true'));
+  });
+
   it('accepted: false, но экран входа сайта был показан — принимается без экрана', async () => {
     localStorage.setItem('login_consent_shown', '1');
     mockApi.getDisclaimer.mockResolvedValueOnce({ accepted: false });
@@ -74,11 +89,11 @@ describe('AppShell — роль пользователя решает, куда 
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('therapist-client-sheet')).toBeTruthy());
-    expect(localStorage.getItem('therapist_mode')).toBe('1');
+    expect(localStorage.getItem(THERAPIST_MODE_KEY)).toBe('1');
   });
 
   it('THERAPIST, ЯВНО выбравший клиентский режим (therapist_mode=0), остаётся клиентом', async () => {
-    localStorage.setItem('therapist_mode', '0');
+    localStorage.setItem(THERAPIST_MODE_KEY, '0');
     mockApi.getProfile.mockResolvedValueOnce({ role: 'THERAPIST', name: 'Др. Кто', mySchemaIds: [] });
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
@@ -107,11 +122,16 @@ describe('AppShell — денормализованный mySchemaIds синхр
     expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '[]')).toEqual(['abandonment', 'mistrust']);
   });
 
-  it('пустой mySchemaIds ничего не пишет в localStorage (не затирает реальные данные пустышкой)', async () => {
+  // Сервер — источник правды целиком, пустой список тоже: убрал все схемы на
+  // другом устройстве — здесь старый список не переживает вход (класс «кэш
+  // пережил источник правды», #939/#958). До этого гард length > 0 оставлял
+  // старую копию, и «пустышка» была единственным случаем, который он отличал.
+  it('пустой mySchemaIds стирает старую локальную копию', async () => {
+    localStorage.setItem(MY_SCHEMA_IDS_KEY, JSON.stringify(['abandonment']));
     mockApi.getProfile.mockResolvedValueOnce({ role: 'CLIENT', name: null, mySchemaIds: [] });
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBeNull();
+    await waitFor(() => expect(localStorage.getItem(MY_SCHEMA_IDS_KEY)).toBe('[]'));
   });
 });
 
