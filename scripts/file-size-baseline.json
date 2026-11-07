@@ -2336,7 +2336,7 @@
   "webapp/src/test-support/crashScreenGuard.ts": 93,
   "webapp/src/test-support/cssContrast.ts": 69,
   "webapp/src/test-support/mockCanvas2d.ts": 19,
-  "webapp/src/test-support/paperSign.tsx": 24,
+  "webapp/src/test-support/paperSign.tsx": 32,
   "webapp/src/test-support/renderWithFlow.tsx": 50,
   "webapp/src/test-support/rtlCleanup.ts": 38,
   "webapp/src/types.ts": 2,
