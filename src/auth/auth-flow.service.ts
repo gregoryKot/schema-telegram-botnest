@@ -173,11 +173,11 @@ export class AuthFlowService {
     // Билет НЕ одобряем молча (device-code phishing, 2026-08-31): код в
     // `?ticket=` мог подставить кто угодно. Уже вошедшего уводим на экран
     // сверки `/auth/confirm` для ЯВНОГО подтверждения. Без билета — обычный приём сессии.
-    const hash = `#access_token=${outcome.tokens.accessToken}&expires_in=${outcome.tokens.expiresIn}`;
+    // Токена в адресе нет (login-CSRF, аудит 2026-11): сессию фронт берёт refresh-ом по куке.
     res.redirect(
       ticketCode
-        ? `${frontendBase}/auth/confirm?code=${encodeURIComponent(ticketCode)}${hash}`
-        : `${frontendBase}/auth/callback${hash}`,
+        ? `${frontendBase}/auth/confirm?code=${encodeURIComponent(ticketCode)}`
+        : `${frontendBase}/auth/callback`,
     );
   }
 

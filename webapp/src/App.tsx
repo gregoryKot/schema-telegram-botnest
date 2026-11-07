@@ -1,10 +1,9 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
-import { useEffect, lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { applyPersonalSiteChrome, isPracticeHost } from './utils/domainChrome';
 import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
-import { useAuth } from './auth/authContext';
-import { setTokenProvider, setRefreshHandler } from './api';
+import { TokenBridge } from './auth/TokenBridge';
 import { LoginPage } from './pages/LoginPage';
 import { AuthErrorPage } from './pages/AuthErrorPage';
 import { AuthCallback } from './pages/AuthCallback';
@@ -38,12 +37,6 @@ const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m
 
 if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); // saved theme before first render
 
-// ── Token bridge (inside AuthProvider) ────────────────────────────────────────
-function TokenBridge() {
-  const { accessToken, refreshToken } = useAuth();
-  useEffect(() => { setTokenProvider(() => accessToken); setRefreshHandler(refreshToken); }, [accessToken, refreshToken]);
-  return null;
-}
 // ── Root layout – providers wrapper ───────────────────────────────────────────
 function Root() {
   return (

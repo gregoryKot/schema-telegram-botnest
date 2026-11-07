@@ -72,10 +72,10 @@ describe('emailConsumeNextPath', () => {
     expect(emailConsumeNextPath(session, null, '/practice')).toBe('/practice');
   });
 
-  it('сессия с билетом → экран сверки, токен во фрагменте (сервер не одобряет молча)', () => {
-    expect(emailConsumeNextPath(session, 'K7M2QX94', '/practice')).toBe(
-      '/auth/confirm?code=K7M2QX94#access_token=AT&expires_in=900',
-    );
+  it('сессия с билетом → экран сверки без токена в адресе (login-CSRF, 2026-11)', () => {
+    const path = emailConsumeNextPath(session, 'K7M2QX94', '/practice');
+    expect(path).toBe('/auth/confirm?code=K7M2QX94');
+    expect(path).not.toContain('AT');
   });
 
   it('2FA → /auth/2fa с challengeToken; привязка → /account?linked=email', () => {

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, waitFor, cleanup, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '../../auth/AuthProvider';
+import { useAuth } from '../../auth/authContext';
 import { AuthCallback } from '../AuthCallback';
 
 const json = (status: number, body: unknown) =>
@@ -34,7 +35,13 @@ afterEach(() => {
 
 function Where() {
   const l = useLocation();
-  return <div>at:{l.pathname + l.search + l.hash}</div>;
+  const { accessToken } = useAuth();
+  return (
+    <>
+      <div>at:{l.pathname + l.search + l.hash}</div>
+      <div>tok:{accessToken ?? 'none'}</div>
+    </>
+  );
 }
 
 function renderPage(search: string) {
@@ -66,9 +73,9 @@ describe('AuthCallback ← ссылка из письма (?email_token)', () =>
 
   it('с билетом входа → экран сверки /auth/confirm, а не молчаливое одобрение', async () => {
     renderPage('?email_token=raw-1&ticket=K7M2QX94');
-    await screen.findByText(
-      /at:\/auth\/confirm\?code=K7M2QX94#access_token=AT/,
-    );
+    // Токена в адресе нет (login-CSRF, 2026-11): сессия ответа POST уже в AuthProvider.
+    await screen.findByText('at:/auth/confirm?code=K7M2QX94');
+    expect(screen.getByText('tok:AT')).toBeTruthy();
   });
 
   it('аккаунт с 2FA → /auth/2fa?token=…', async () => {

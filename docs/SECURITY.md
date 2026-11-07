@@ -163,6 +163,10 @@
   не может.
 - OAuth-флоу защищён cookie `oauth_state` (`sameSite=lax`, нужен для top-level
   редиректа от Google/VK) + сверкой `state`.
+- Куки незаконченной привязки (`tg_link_user`, `link_token`) стираются вместе с
+  сессией (`clearCookies` в `src/auth/refresh-cookie.ts`: выход и 401 на refresh)
+  и анонимным `telegram/redirect`: иначе следующий вошедший на том же компьютере
+  привязался бы к чужому аккаунту (аудит 2026-11).
 - Access-токен на вебе хранится **только в памяти** (React `useState`),
   **никогда** в `localStorage`/`sessionStorage`. localStorage уязвим к краже
   через XSS; httpOnly-cookie с refresh-токеном — нет.
@@ -267,8 +271,12 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   Сверку запретов с API, которое зовут фронты, держит
   `src/security/permissions-policy.invariants.spec.ts`.
 - **Access-токен — только в памяти.** Хранится в React-state, не в
-  `localStorage`. Refresh-токен — в httpOnly-cookie. После OAuth токен приходит
-  во фрагменте URL и сразу вычищается (`AuthCallback.tsx`, `replaceState`).
+  `localStorage`. Refresh-токен — в httpOnly-cookie. После OAuth сервер ставит
+  refresh-куку и ведёт на `/auth/callback` (с билетом — `/auth/confirm?code=…`)
+  без токена в URL; фронт берёт сессию только refresh-ом. Токен из фрагмента не
+  принимается и стирается (login-CSRF, аудит 2026-11: чужая ссылка
+  `#access_token=…` заводила жертву в аккаунт атакующего). Повтор запроса после
+  refresh берёт токен синхронно (`getAccessToken`, `webapp/src/auth/TokenBridge.tsx`).
   Эту схему не менять — `localStorage` для токенов запрещён.
 - **`VITE_*`-переменные публичны.** Vite инлайнит их в бандл. Сейчас там только
   `VITE_API_URL` и `VITE_BOT_USERNAME` — не секреты. Секрет в `VITE_`-переменную

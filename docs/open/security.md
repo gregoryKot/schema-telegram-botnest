@@ -65,8 +65,8 @@
   GET, ничего не проверяют: подписывают state (с `linkUserId`, если сессия
   есть), кладут его в куку и отвечают 302 на провайдера; state сверяют колбэки
   (они в `ANONYMOUS_BY_DESIGN`). `telegram/redirect` — то же: кука
-  `tg_link_user` с подписанным `linkUserId` (если сессия есть) и 302 на
-  oauth.telegram.org.
+  `tg_link_user` с подписанным `linkUserId` (если сессия есть; без сессии —
+  стирает брошенную, аудит 2026-11) и 302 на oauth.telegram.org.
   `telegram/widget`: CSRF-заголовок и HMAC-подпись Telegram-payload. `merge`:
   CSRF-заголовок, подписанный merge-токен, вызывающий обязан быть целевым
   аккаунтом (`assertMergeCaller`), TOTP поглощаемого. `ticket/start`: только
@@ -210,6 +210,11 @@
   кладёт `location.hash` целиком в открытую колонку `source`; свободный JSON без схемы
   (`src/api/dto/misc.dto.ts:19`, `diary-entries.dto.ts:21-23`); сторонние actions по тегу, не SHA
   (`docs/AUDIT_2026-10_FINDINGS.md:520`); `fast-uri` 3.1.8 moderate через `prisma`.
+- **Билет входа теряется после 2FA.** `finishOAuthRedirect` ведёт на
+  `/auth/2fa?token=…&ticket=…` (`src/auth/auth-flow.service.ts`, «билет доживает до второго
+  шага»), но `webapp/src/pages/TwoFactorChallengePage.tsx` `ticket` не читает и после кода
+  уводит на `/today`, а не на `/auth/confirm?code=…`: вход в контейнере с 2FA ждёт до истечения
+  билета. Найдено при правке login-CSRF (аудит 2026-11), не чинили — вне задачи.
 
 ## Инцидент 2026-07-20 — утечка в публичном репозитории
 
