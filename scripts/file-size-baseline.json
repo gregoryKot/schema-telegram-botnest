@@ -2218,7 +2218,7 @@
   "webapp/src/sections/more/HomeTherapyLine.tsx": 7,
   "webapp/src/sections/more/MoreRows.tsx": 30,
   "webapp/src/sections/more/useMoreRows.tsx": 49,
-  "webapp/src/sections/MoreSection.tsx": 86,
+  "webapp/src/sections/MoreSection.tsx": 91,
   "webapp/src/sections/practice/catalogCounts.ts": 38,
   "webapp/src/sections/practice/CatalogsBlock.tsx": 25,
   "webapp/src/sections/practice/CrisisBlock.tsx": 23,

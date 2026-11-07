@@ -390,19 +390,15 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
     старые строки переводит проход на старте.
   - *`updateMany`/`deleteMany` с нулевым `count`* теперь отдают 404 (C-8);
     драфты — в том же PR.
-- **`@Cron`-джобы рассчитаны на одну реплику** (нет leader-election): рассылки
-  напоминаний о сессиях (`booking-notify`, `booking.service` hold-expiry),
-  посты канала «Здоровый Взрослый» (`channel-schedule`), продление подписок
-  (`subscription`), полуночный планировщик (`telegram.schedule`), дневной
-  digest аналитики. На двух+ репликах каждая джоба выполнится N раз — двойные
-  уведомления, двойные списания, дубли постов в канал. Amvera держит один
-  инстанс, поэтому accepted risk; при переходе на >1 реплику — распределённый
-  лок (advisory-lock Postgres или Redis) перед телом каждой джобы, иначе
-  побочки задвоятся молча. Идемпотентность части путей (hold-expiry — CAS по
-  статусу, антиреплей) смягчает, но не покрывает рассылки и посты.
-- **Верификация Google ID-token через `tokeninfo`** (debug-эндпоинт Google,
-  rate-limited). Для большого трафика — перейти на локальную проверку подписи
-  по JWKS.
+- **`@Cron`-джобы:** с аудита 2026-09 каждый leader-крон берёт аренду
+  `CronLeaderService.claimRun` (`src/infra/cron-leader.service.ts`, гейт
+  `check-cron-leader`) — запись прежнего «нет leader-election» устарела (аудит
+  2026-11). Остаток риска — exempt-кроны из `scripts/cron-leader-baseline.json`,
+  каждый с причиной идемпотентности.
+- **Google ID-token** проверяется локально по JWKS (`src/auth/google-id-token.ts`)
+  с офлайн-фолбэком для redirect-потока (токен получен по TLS от Google); для
+  One Tap офлайн-путь запрещён (`google-one-tap-nonce.ts`). Запись про
+  `tokeninfo` устарела (аудит 2026-11).
 - **merge-токен и `link_token` в URL** (query/fragment) — попадают в логи
   и историю браузера. TTL 10/15 мин ограничивает экспозицию.
 - **`VACUUM FULL` не выполняется** при удалении аккаунта — см. `CLAUDE.md`.

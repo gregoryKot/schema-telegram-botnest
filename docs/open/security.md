@@ -9,8 +9,8 @@
 [security/AUDIT_FINDINGS.md](../security/AUDIT_FINDINGS.md), «Фаза 4»; решения по
 хвостам — [SECURITY.md](../SECURITY.md) §13):
 - **Владельцу, срочно:** дамп боевой БД `scripts/railway_data.sql` по-прежнему
-  читается с GitHub анонимно (D-1; проверено 2026-10-11 по метаданным, содержимое
-  не скачивалось). Хронология: файл попал в репозиторий 2026-05-17, из дерева
+  читается с GitHub анонимно (D-1; проверено 2026-10-11 и снова 2026-11-07 по
+  метаданным Git Trees API — 758 КБ в дереве базы PR #128, содержимое не скачивалось). Хронология: файл попал в репозиторий 2026-05-17, из дерева
   удалён PR #128 2026-07-20, `main` перезаписан force-push 2026-07-21 — ни одна из
   190 веток дамп не содержит. Держат его 131 ссылки `refs/pull/N/head`, которые
   `git push --force` не трогает, поэтому рецепт «`git filter-repo` + force-push
@@ -23,8 +23,9 @@
   поддержку GitHub на удаление чувствительных данных (переписать `refs/pull`,
   запустить GC) либо перевод репозитория в приватный; подтверждение, что
   `JWT_SECRET`/`ENCRYPTION_KEY` мая 2026 ротированы; решение об уведомлении 17
-  человек. Код: проба самопроверки `dumpStillPublic` (публичный REST GitHub: коммит
-  ещё отдаётся → `ok: false`; пока файл читается, проба обязана быть красной) и
+  человек. Код: проба самопроверки `dumpStillPublic` (`src/infra/self-check/probe-dump-public.ts`,
+  с #1016; до того эта строка называла её существующей, а кода не было): Git Trees API
+  отдаёт файл в дереве → `ok: false` в DM и `/stats`, не в `/health`; и
   строка в [INCIDENTS.md](../INCIDENTS.md) ([AUDIT_2026-10, «Безопасность и приватность»](../AUDIT_2026-10_FINDINGS.md#безопасность-и-приватность)).
 - **Владельцу, до первого `release-hold` на VPS:** бакет и API-токен Cloudflare R2
   (пошагово в [RUNBOOKS.md](../RUNBOOKS.md), «Cloudflare R2 — бэкапы базы») и
@@ -171,6 +172,44 @@
 - **Повтор доставки заявки не отличает «нет `ADMIN_ID`/бота» от сбоя Telegram.** `TelegramService.notifyAdmin` отдаёт `false` в обоих случаях, поэтому на окружении без бота лид получит все 5 попыток впустую; на проде бот есть, так что цена нулевая.
 - **У входа через Google и VK нет рубильника, а `docs/ENV.md` обещает обратное.** Реестр пишет «без него кнопка «Войти через Google» недоступна» (`src/infra/env-registry.entries*.ts`; ENV.md сверяется с реестром тестом по именам, генератора нет), но `webapp/src/pages/login/LoginProviderButtons.tsx` рисует обе кнопки безусловно — никакой проверки конфигурации на фронте нет. При снятых переменных `GoogleProvider.buildAuthUrl` / `VkProvider` падают на `getOrThrow`, и человек получает голый 500 вместо страницы «Ошибка входа» (`AuthErrorPage`). То есть выключить сломанный вход, не ухудшив картину, сейчас нечем. Кандидаты: отдавать фронту список доступных провайдеров и прятать кнопку, либо ловить отсутствие конфигурации в контроллере и вести на `/auth/error?reason=…`. Заодно поправить формулировку в реестре.
 
+
+**Аудит 2026-11** (детали и коды — [AUDIT_2026-11.md](../AUDIT_2026-11.md), раздел «Безопасность»):
+- **S7 · секреты VPS без GitHub Environment.** `DEPLOY_SSH_KEY` (root без `restrict,command=`),
+  `PROD_ENV`, `BOT_TOKEN` — секреты уровня репозитория (`.github/workflows/deploy-vps.yml`,
+  `vps.yml`, `nightly.yml`, `prod-smoke.yml`); ruleset без одобрений; `deploy/vps/ops.sh:166`
+  принимает любой `ghcr.io/*`. До заведения секретов VPS: Environment `production` (только
+  `main`, одобрение владельца для `vps.yml`), ключ с `command=`, регэксп образа на свой репозиторий,
+  отдельный бот-уведомитель для `alarm`.
+- **S9 · фишинг кодом входа через настоящее письмо.** `POST /api/auth/email/link` принимает
+  чужой `ticket` (`src/auth/auth-account.controller.ts:65` → `magic-link.ts:53-54`), `/auth/confirm`
+  подставляет код из URL без устройства и времени, `poll` отдаёт сессию подтвердившего;
+  карточка привязки в боте (`src/telegram/telegram.link-card.ts:53`) молчит, что устройство
+  получит сессию. Чинить: код вводится руками, на `/auth/confirm` — `deviceLabel` и время.
+- **S11 · перебор TOTP по IP, а не по аккаунту.** `src/auth/auth-2fa.controller.ts:109-118`,
+  `src/api/throttler-identity.ts:94`: анонимный `2fa/challenge` лимитируется по IP, merge — по
+  `uid` атакующего. Нужен постоянный счётчик неудач на целевой `userId` (общий для challenge,
+  merge, удаления).
+- **S12 · привязка и отвязка способов входа без step-up.** `auth-account.controller.ts:229,271`
+  и handoff — только `JwtAuthGuard`, без кода TOTP, без уведомления пользователю; включение 2FA
+  не отзывает другие сессии. 15 минут украденного access-токена → вечный доступ.
+- **S15 · Метрика остаётся в документе после входа.** `/install` (публичная) → обмен кода →
+  SPA-переход в кабинет (`webapp/src/pages/InstallPage.tsx:51`), и `?site=personal` на
+  `schemehappens.ru` (`webapp/src/App.tsx:62-63`). Чинить: полная навигация при `__ym_loaded`,
+  `?site=personal` только на хосте визитки. D-4 «закрыт» — неточно.
+- **S16 · `User.firstName` открытым текстом.** Google кладёт `name ?? email`
+  (`src/auth/providers/google.provider.ts:136`), VK — имя и фамилию (`vk.provider.ts:145`);
+  причина в `src/utils/encryption-policy.ts:25` («публично в Telegram») к ним не относится.
+- **S19 · серверный рендер статьи без санитайзера.** `src/articles/article-seo.render.ts:37-38`
+  режет `<script>` регэкспом (обходится `<scr<script></script>ipt>`), клиент — DOMPurify. Источник —
+  админ; ремень безопасности — тот же allowlist на сервере.
+- **S20 · чужой текст на наших страницах.** `webapp/src/pages/AuthErrorPage.tsx:11,29` выводит
+  `?reason=` как есть; `webapp/src/pages/MergePage.tsx:19-24` — `name`/`summary` из query.
+  Чинить: словарь кодов; имя и сводку merge брать с сервера по токену.
+- **S21 · мелочи:** токен 2FA остаётся в адресе (`TwoFactorChallengePage.tsx:25`, стереть
+  `replaceState`); PKCE VK выводится из `state` (`vk.provider.ts:33,96`); `webapp/src/utils/leadSource.ts:13`
+  кладёт `location.hash` целиком в открытую колонку `source`; свободный JSON без схемы
+  (`src/api/dto/misc.dto.ts:19`, `diary-entries.dto.ts:21-23`); сторонние actions по тегу, не SHA
+  (`docs/AUDIT_2026-10_FINDINGS.md:520`); `fast-uri` 3.1.8 moderate через `prisma`.
 
 ## Инцидент 2026-07-20 — утечка в публичном репозитории
 
