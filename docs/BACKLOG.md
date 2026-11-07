@@ -34,7 +34,8 @@
   терапевта. Содержание — справочник владельца по книгам. ТЗ —
   [#995](https://github.com/gregoryKot/schema-telegram-botnest/issues/995); шаг 1 — PR
   [#996](https://github.com/gregoryKot/schema-telegram-botnest/pull/996) (смержен), шаг 2 (схемы) — PR
-  [#1001](https://github.com/gregoryKot/schema-telegram-botnest/pull/1001).
+  [#1001](https://github.com/gregoryKot/schema-telegram-botnest/pull/1001) (смержен), шаг 3 (история) — PR
+  [#1002](https://github.com/gregoryKot/schema-telegram-botnest/pull/1002).
 
 ## Следующее
 
