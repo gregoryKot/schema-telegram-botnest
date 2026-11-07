@@ -16,12 +16,15 @@ export function GuideSection({ title, text, children }: { title: string; text?: 
   );
 }
 
-/** «Источники»: метки книг в квадратных скобках, мелко и серым. */
+/** «Источники» внизу листа, мелко и серым: метки в квадратных скобках в тексте — эти книги. */
 export function GuideSources({ text }: { text: string }) {
   if (!text.trim()) return null;
   return (
-    <GuideSection title="Источники">
-      <p className="ds-sub" style={{ margin: 0 }}>{text}</p>
-    </GuideSection>
+    <div className="gd-sources">
+      <GuideSection title="Источники">
+        <p className="ds-sub" style={{ margin: 0 }}>{text}</p>
+        <p className="ds-sub" style={{ margin: 0 }}>Метки в квадратных скобках в тексте — эти книги.</p>
+      </GuideSection>
+    </div>
   );
 }

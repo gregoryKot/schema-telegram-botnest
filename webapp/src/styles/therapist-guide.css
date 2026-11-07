@@ -1,0 +1,47 @@
+/* Листы подсказок терапевту (#995; пилот живого языка 2026-11, components/therapist/guide/GuideSheet.tsx).
+   Герой бумажной аппликации (pp-hero, paper.css), реплика «Как это звучит» на цветной бумаге,
+   крупные шаги, «Подробнее» — раскрывашка ds-fold. Колонка чтения одна у шапки и содержимого. */
+.gd-page { margin: 0 auto; display: flex; flex-direction: column; gap: 28px; padding-bottom: 32px; }
+/* Герой: заголовок и знак в строку, суть под ними во всю колонку — на телефоне не узкой полосой. */
+.gd-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 16px; align-items: center; }
+.gd-hero > .pp-hero-text { grid-column: 1 / -1; }
+.gd-hero .pp-hero-title { font-size: clamp(24px, 6.2vw, 32px); }
+@media (max-width: 480px) { .gd-hero > .pp-art--hero { width: 84px; height: 64px; } }
+
+/* «Как это звучит»: реплика терапевта, кавычки ставит лист. Персиковая бумага (--h 45). */
+.gd-voice { --h: 45; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; margin: 0; }
+.gd-voice-line { margin: 0; font-family: var(--serif); font-style: italic; font-size: 19px; line-height: 1.45; color: var(--text); }
+
+/* Шаги: номер Literata слева, счётчик CSS — текст пункта остаётся текстом шага. */
+.gd-steps { list-style: none; counter-reset: gd-step; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.gd-steps > li {
+  counter-increment: gd-step; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px;
+  font-size: 16px; line-height: 1.55; color: var(--text);
+}
+.gd-steps > li::before { content: counter(gd-step); font-family: var(--serif); font-size: 28px; line-height: 1; color: var(--accent); }
+
+/* Главные пункты: кружок-маркер; у канала работы — подпись строкой выше. */
+.gd-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+.gd-points > li { position: relative; padding-left: 22px; font-size: 16px; line-height: 1.55; color: var(--text); }
+.gd-points > li::before {
+  content: ''; position: absolute; left: 3px; top: .55em; width: 9px; height: 9px; border-radius: 50%;
+  background: color-mix(in srgb, var(--c-moss) 70%, transparent);
+}
+.gd-lead { display: block; font-weight: 600; }
+
+/* Техники и задания в листе; переехали из therapist-concept.css: «Справочник» открывает
+   листы без схемы случая, и без своего файла стилей списки там рисовались голыми. */
+.tcp-guide-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.tcp-guide-link {
+  min-height: 44px; padding: 0; border: none; background: none; cursor: pointer; text-align: left;
+  font: 600 16px/1.4 var(--sans); color: var(--text);
+  text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px;
+}
+.tcp-guide-task { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
+
+/* «На сессии»: знак техники слева от названия. */
+.gd-tech { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
+.gd-tech > .pp-row-art { padding-top: 10px; }
+
+.gd-more .ds-fold-body { display: flex; flex-direction: column; gap: 20px; }
+.gd-sources p { font-size: 12px; line-height: 1.5; }
