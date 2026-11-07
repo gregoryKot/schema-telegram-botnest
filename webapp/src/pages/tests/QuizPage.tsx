@@ -7,25 +7,9 @@ import { api } from '../../api';
 import { useQuizzes } from '../../hooks/useQuizzes';
 import { useQuizRunner } from '../../hooks/useQuizRunner';
 import { Skeleton, SkeletonCard } from '../../components/Skeleton';
-import { INK, SUB, FAINT, GLASS_BORDER, AURORA, glow, VIOLET, PINK, GLASS_CARD } from '../landing/aurora';
 import { AUTHOR_SITE, trackPracticeClick } from '../landing/practiceLink';
 import { TestsFrame, QuizProgress } from './testsKit';
 import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
-
-const OPTION_STYLE: React.CSSProperties = {
-  ...GLASS_CARD,
-  display: 'block',
-  width: '100%',
-  textAlign: 'left',
-  padding: '16px 18px',
-  fontSize: 15,
-  lineHeight: 1.5,
-  fontWeight: 600,
-  fontFamily: 'inherit',
-  color: INK,
-  cursor: 'pointer',
-  transition: 'transform .15s, border-color .15s, background .15s',
-};
 
 export function QuizPage() {
   const { quizId } = useParams();
@@ -79,9 +63,9 @@ export function QuizPage() {
         </div>
       )}
       {error && (
-        <div style={{ ...GLASS_CARD, padding: '24px 22px', fontSize: 15, color: SUB }}>
+        <div className="ds-card pl2-card-text">
           Не получилось загрузить тест.{' '}
-          <button onClick={() => window.location.reload()} style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: INK, cursor: 'pointer', textDecoration: 'underline' }}>
+          <button onClick={() => window.location.reload()} className="pl2-link" style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}>
             Попробовать ещё раз
           </button>
         </div>
@@ -89,15 +73,15 @@ export function QuizPage() {
 
       {quiz && !started && (
         <div>
-          <Link to="/tests" style={{ fontSize: 13, fontWeight: 700, color: FAINT, textDecoration: 'none' }}>← Все тесты</Link>
-          <div aria-hidden style={{ fontSize: 56, margin: '18px 0 6px' }}>{quiz.emoji}</div>
-          <h1 style={{ fontSize: 'clamp(30px, 5vw, 44px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.08, margin: '0 0 18px' }}>{quiz.title}</h1>
-          <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, whiteSpace: 'pre-line', maxWidth: 560, margin: '0 0 26px' }}>{quiz.intro}</p>
-          <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button onClick={start} style={{ padding: '15px 30px', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', borderRadius: 'var(--r-14)', border: 'none', cursor: 'pointer', background: AURORA, color: '#1a0f2e', boxShadow: `0 8px 30px ${glow(VIOLET, .45)}` }}>
+          <Link to="/tests" className="pl2-link" style={{ fontSize: 13 }}>← Все тесты</Link>
+          <div aria-hidden className="pl2-quiz-emoji" style={{ display: 'flex', margin: '20px 0 16px' }}>{quiz.emoji}</div>
+          <h1 className="pl2-h1" style={{ fontSize: 'clamp(30px, 5vw, 44px)', margin: '0 0 18px' }}>{quiz.title}</h1>
+          <p className="pl2-lead" style={{ whiteSpace: 'pre-line', maxWidth: 560, margin: '0 0 26px' }}>{quiz.intro}</p>
+          <div className="pl2-actions">
+            <button onClick={start} className="ds-btn pl2-cta--lg">
               Начать →
             </button>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: FAINT }}>{quiz.questions.length} вопросов · ~2 минуты</span>
+            <span className="pl2-card-meta" style={{ margin: 0 }}>{quiz.questions.length} вопросов · ~2 минуты</span>
           </div>
         </div>
       )}
@@ -105,18 +89,12 @@ export function QuizPage() {
       {quiz && started && !runner.finished && runner.question && (
         <div>
           <QuizProgress index={runner.index} total={runner.total} />
-          <h2 style={{ fontSize: 'clamp(21px, 3.6vw, 28px)', fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.25, margin: '0 0 20px' }}>
+          <h2 className="pl2-h2" style={{ fontSize: 'clamp(22px, 3.6vw, 30px)', lineHeight: 1.25, margin: '0 0 20px' }}>
             {runner.question.text}
           </h2>
           <div className="u-col12">
             {runner.question.options.map((o, idx) => (
-              <button
-                key={o.label}
-                onClick={() => runner.answer(idx)}
-                style={OPTION_STYLE}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.borderColor = glow(PINK, .45); e.currentTarget.style.background = 'rgba(255,255,255,.07)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = ''; e.currentTarget.style.borderColor = ''; e.currentTarget.style.background = ''; }}
-              >
+              <button key={o.label} onClick={() => runner.answer(idx)} className="pl2-option">
                 {o.label}
               </button>
             ))}
@@ -126,40 +104,39 @@ export function QuizPage() {
 
       {quiz && runner.result && (
         <div>
-          <p style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: FAINT, margin: '0 0 14px' }}>{quiz.title} · результат</p>
-          <div style={{ ...GLASS_CARD, padding: '30px 26px', marginBottom: 18 }}>
-            <div aria-hidden style={{ fontSize: 54, marginBottom: 10 }}>{runner.result.emoji}</div>
-            <h1 style={{ fontSize: 'clamp(26px, 4.6vw, 38px)', fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.12, margin: '0 0 14px' }}>{runner.result.title}</h1>
-            <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, margin: 0 }}>{runner.result.text}</p>
+          <span className="pl2-eyebrow" style={{ margin: '0 0 14px' }}>{quiz.title} · результат</span>
+          <div className="ds-card pl2-card" style={{ marginBottom: 16 }}>
+            <div aria-hidden className="pl2-quiz-emoji">{runner.result.emoji}</div>
+            <h1 className="pl2-h1" style={{ fontSize: 'clamp(26px, 4.6vw, 38px)', lineHeight: 1.12, margin: '4px 0 0' }}>{runner.result.title}</h1>
+            <p className="pl2-card-text">{runner.result.text}</p>
           </div>
-          <div style={{ ...GLASS_CARD, padding: '18px 20px', marginBottom: 26, display: 'flex', gap: 'var(--space-12)', alignItems: 'flex-start' }}>
-            <span aria-hidden style={{ fontSize: 20 }}>💡</span>
-            <p style={{ fontSize: 14.5, lineHeight: 1.65, color: SUB, margin: 0 }}>{runner.result.hint}</p>
+          <div className="pp-paper pl2-card pl2-card--paper" style={{ '--h': 70, marginBottom: 24 } as React.CSSProperties}>
+            <span className="pl2-eyebrow">Что с этим делать</span>
+            <p className="pl2-card-text">{runner.result.hint}</p>
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-12)', flexWrap: 'wrap', marginBottom: 22 }}>
-            <button onClick={() => { void share(); }} style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', borderRadius: 'var(--r-14)', border: 'none', cursor: 'pointer', background: AURORA, color: '#1a0f2e' }}>
+            <button onClick={() => { void share(); }} className="ds-btn">
               {copied ? 'Скопировано ✓' : 'Поделиться результатом'}
             </button>
-            <button onClick={() => { completedSent.current = false; runner.restart(); }} style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', borderRadius: 'var(--r-14)', cursor: 'pointer', background: 'rgba(255,255,255,.04)', color: INK, border: `1px solid ${GLASS_BORDER}` }}>
+            <button onClick={() => { completedSent.current = false; runner.restart(); }} className="ds-btn ds-btn--secondary">
               Пройти ещё раз
             </button>
-            <Link to="/tests" style={{ padding: '13px 24px', fontSize: 14, fontWeight: 700, borderRadius: 'var(--r-14)', textDecoration: 'none', background: 'rgba(255,255,255,.04)', color: INK, border: `1px solid ${GLASS_BORDER}`, boxSizing: 'border-box' }}>
+            <Link to="/tests" className="ds-btn ds-btn--secondary pl2-cta">
               Другие тесты
             </Link>
           </div>
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: FAINT, maxWidth: 520, margin: 0 }}>
+          <p className="pl2-fine" style={{ lineHeight: 1.6, maxWidth: 520, margin: 0 }}>
             Это игра-наблюдение, а не диагноз. Если тема отозвалась — в
             приложении есть большой тест схем (116 вопросов) и трекер
             потребностей.
           </p>
           {/* Мягкий мост к практике (событие practice_link_click, place: quiz) */}
-          <div style={{ ...GLASS_CARD, marginTop: 18, padding: '16px 18px', display: 'flex', gap: 'var(--space-12)', alignItems: 'flex-start', maxWidth: 520, boxSizing: 'border-box' }}>
-            <span aria-hidden style={{ fontSize: 20 }}>👤</span>
-            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: SUB, margin: 0 }}>
+          <div className="ds-card ds-card--row pl2-card" style={{ marginTop: 16, maxWidth: 520 }}>
+            <p className="pl2-card-text" style={{ fontSize: 14 }}>
               Хочется разобрать результат с живым специалистом? Автор проекта
               работает в подходе схема-терапия, онлайн. Первая встреча — 15 минут,
               бесплатно.{' '}
-              <a href={AUTHOR_SITE} target="_blank" rel="noopener noreferrer" onClick={() => trackPracticeClick('quiz')} style={{ color: VIOLET, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              <a href={AUTHOR_SITE} target="_blank" rel="noopener noreferrer" onClick={() => trackPracticeClick('quiz')} className="pl2-link" style={{ whiteSpace: 'nowrap' }}>
                 Познакомиться ↗
               </a>
             </p>

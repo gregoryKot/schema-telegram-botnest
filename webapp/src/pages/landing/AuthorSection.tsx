@@ -1,43 +1,32 @@
-import { SUB, FAINT, GLASS_BORDER, VIOLET, PINK, glow } from './aurora';
 import { Cta } from './BrandKit';
-import { EYEBROW, H2 } from './productContent';
 import { AUTHOR_SITE, trackPracticeClick } from './practiceLink';
 
 // Блок «Кто это делает»: автор проекта работает в подходе схема-терапия, частная практика.
 // Клик по CTA — продуктовое событие practice_link_click (place: 'author'),
 // видно в /stats. Композиция своя, не копия Telegram-ленты (jscpd).
+// Вид — белая карточка кабинета (ds-card) + styles/product-landing.css.
 
 export function AuthorSection() {
   return (
-    <section id="author" style={{ padding: '20px 24px 72px' }}>
-      <div className="pl2-author" style={{
-        maxWidth: 1160, margin: '0 auto',
-        display: 'grid', gridTemplateColumns: '300px 1fr', gap: 48, alignItems: 'center',
-        background: 'linear-gradient(120deg, rgba(244,114,182,.10), rgba(167,139,250,.07))',
-        border: `1px solid ${GLASS_BORDER}`, borderRadius: 28, padding: '48px 44px',
-      }}>
+    <section id="author" className="pl2-sec pl2-sec--tight">
+      <div className="pl2-wrap ds-card pl2-author">
         <img
+          className="pl2-author-photo"
           src="/gregory.jpg"
           alt="Григорий Котляревский"
           loading="lazy"
           decoding="async"
           width={300}
           height={360}
-          style={{
-            width: '100%', maxWidth: 300, aspectRatio: '5 / 6', objectFit: 'cover',
-            objectPosition: 'center top', borderRadius: 24, justifySelf: 'center',
-            border: `1px solid ${GLASS_BORDER}`,
-            boxShadow: `0 24px 60px rgba(0,0,0,.45), 0 0 40px ${glow(PINK, .15)}`,
-          }}
           onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
         <div>
-          <span style={EYEBROW}>Кто это делает</span>
-          <h2 style={{ ...H2, margin: '14px 0 10px' }}>Григорий Котляревский</h2>
-          <p style={{ fontSize: 14, fontWeight: 700, color: VIOLET, margin: '0 0 16px' }}>
+          <span className="pl2-eyebrow">Кто это делает</span>
+          <h2 className="pl2-h2">Григорий Котляревский</h2>
+          <p className="pl2-author-role">
             Работаю в подходе схема-терапия · частная практика онлайн
           </p>
-          <p style={{ fontSize: 15.5, lineHeight: 1.7, color: SUB, maxWidth: 560, margin: '0 0 28px' }}>
+          <p className="pl2-author-text">
             Я работаю в подходе схема-терапия и сделал «Всё по схеме»
             бесплатным — чтобы у метода был доступный инструмент самонаблюдения.
             Приложение выросло из моей практики: это те же дневники и упражнения,
@@ -47,7 +36,7 @@ export function AuthorSection() {
           <Cta href={AUTHOR_SITE} size="lg" onClick={() => trackPracticeClick('author')}>
             Познакомиться: сайт практики ↗
           </Cta>
-          <p style={{ fontSize: 12.5, color: FAINT, margin: '14px 0 0' }}>
+          <p className="pl2-fine">
             Первая встреча — 15 минут, бесплатно
           </p>
         </div>

@@ -63,9 +63,6 @@ export const EXCLUDE_FILES = [
   'shared/src/share/',
   // То же canvas-рисование (конфетти).
   'shared/src/hooks/useConfetti.ts',
-  // Намеренно отдельная маркетинговая айдентика, не зависящая от app-темы
-  // (см. шапку самого файла).
-  'webapp/src/pages/landing/aurora.ts',
 ];
 
 // Парная запись `css: 'var(--…)', hex: '#…'` в shared/src/journey/journeyMeta.ts:

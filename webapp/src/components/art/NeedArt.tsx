@@ -48,7 +48,7 @@ function Play({ size }: ArtProps) {
     </Svg>
   );
 }
-function Limits({ size }: ArtProps) {
+export function Limits({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <rect x="26" y="4" width="68" height="56" rx="14" fill="none" stroke={PAPER.moss} strokeWidth="8" />

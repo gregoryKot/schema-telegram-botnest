@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Текст продуктового лендинга живёт в src/articles/home-landing.content.ts —
 // его же сервер вкладывает в #root главной для робота без JS (GEO.md). Здесь:
-// у каждого пункта есть вид (эмодзи, цвет), адрес сайта практики в тексте тот
+// у каждого пункта есть вид (знак бумаги, у доверия — оттенок), адрес сайта практики в тексте тот
 // же, что у трекинга клика, и ссылки внутри текста рисуются правильно.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
@@ -29,11 +29,9 @@ describe('productContent: вид по id поверх общего текста'
     expect(STEPS.map((s) => s.id)).toEqual(HOME_STEPS.map((s) => s.id));
     expect(FEATURES.map((f) => f.id)).toEqual(HOME_FEATURES.map((f) => f.id));
     expect(TRUST.map((t) => t.id)).toEqual(HOME_TRUST.map((t) => t.id));
-    for (const x of [...STEPS, ...FEATURES]) {
-      expect(x.emoji).toBeTruthy();
-      expect(x.color).toBeTruthy();
-    }
-    for (const t of TRUST) expect(t.icon && t.color).toBeTruthy();
+    // Знак — компонент бумажной картинки (PaperArt), у доверия ещё оттенок бумаги.
+    for (const x of [...STEPS, ...FEATURES, ...TRUST]) expect(typeof x.Art).toBe('function');
+    for (const t of TRUST) expect(t.hue).toBeGreaterThanOrEqual(0);
     expect(STEPS.map((s) => s.num)).toEqual(['01', '02', '03']);
     expect(FAQ).toBe(HOME_FAQ);
   });

@@ -45,7 +45,7 @@
 2026-10-21; `.landing-personal-brand` теперь на всех страницах визитки через `PracticeBrand`
 в `webapp/src/App.tsx`). Не сделано осознанно, каждое меняет вид или упирается в решение владельца:
 - **Шкалы размера шрифта на визитке нет.** В `pages/LandingPage.tsx`, `pages/landing/*`
-  (кроме Product*/AppInstall*/AppPreview/BrandKit/productContent/aurora) и
+  (кроме Product*/AppInstall*/AppPreview/BrandKit/productContent — продуктовый лендинг, он на классах `styles/product-landing.css`) и
   `components/booking/*` около 200 числовых `fontSize` и 16–17 разных значений (11…56):
   `grep -ohE "fontSize: *[0-9]+" … | sort | uniq -c`. Сведение в шкалу меняет вид — нужен взгляд
   владельца, отдельная волна.
