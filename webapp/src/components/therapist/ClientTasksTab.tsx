@@ -18,15 +18,20 @@ import { PaperEmpty } from '../art/PaperEmpty';
 import { useIsMobile } from '../useIsMobile';
 import { TaskStatusBadge } from '../TaskStatusBadge';
 import { ASSIGN_TEMPLATES, type AssignPreset } from './assignTemplates';
+import { TechniqueJournalBlock } from './TechniqueJournalBlock';
 
 interface Props {
   detail: ClientDetail;
   /** Открыть лист назначения; шаблон передаёт тип и текст. */
   onAssign: (preset?: AssignPreset) => void;
   onTasksChanged?: () => void;
+  /** Журнал техник пуст — переход на «Концептуализацию»; `takeJournalFocus` — см. TechniqueJournalBlock. */
+  onOpenConcept?: () => void;
+  takeJournalFocus?: () => boolean;
 }
 
-export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
+// Задания — то, что клиент делает между сессиями; ниже «На сессиях» — журнал техник (TechniqueJournalBlock).
+export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept, takeJournalFocus }: Props) {
   const { clientTasks, setClientTasks, selectedClient } = detail;
   const today = todayStr();
   const actions = useTherapistTaskActions(api, setClientTasks, onTasksChanged); // успех перечитывает доску «Задания»
@@ -78,6 +83,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged }: Props) {
           </div>
         )}
         {actions.error && !confirmDelete && <div className="tb-error" role="alert">{actions.error}</div>}
+        <TechniqueJournalBlock detail={detail} onOpenConcept={onOpenConcept} takeFocus={takeJournalFocus} />
       </div>
 
       <div className="tb-col tb-col--tight">

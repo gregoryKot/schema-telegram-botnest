@@ -8,28 +8,13 @@ import type {
 } from '../../schemaTherapy/guide';
 import type { ConceptGuideActions, GuideFrom } from './conceptGuide';
 import type { GuideNotes } from './guideHistory';
-import { hintStyle, labelStyle } from './graphStyles';
+import { hintStyle, labelStyle, wordBtn } from './graphStyles';
+import { JournalLink } from './JournalLink';
 
 const sectionStyle: CSSProperties = { marginTop: 'var(--space-8)' };
 // Пояснение и история — тихим серым.
 const subStyle: CSSProperties = { color: 'var(--text-sub)' };
 
-// Кнопка, которая выглядит словом: зона нажатия 44 по высоте, а в потоке —
-// строка текста (отрицательные поля компенсируют рост, как retryStyle в
-// SaveStatusLine). Цвет — текста, акцент на плашке один: «Взять за основу».
-export const wordBtn: CSSProperties = {
-  minHeight: 44,
-  margin: '-12px 0',
-  padding: '0 2px',
-  border: 'none',
-  background: 'transparent',
-  color: 'var(--text)',
-  font: 'inherit',
-  textDecoration: 'underline',
-  textDecorationColor: 'rgba(var(--fg-rgb),0.3)',
-  textUnderlineOffset: 3,
-  cursor: 'pointer',
-};
 // «Дать заданием» стоит в своей строке, ей отрицательные поля не нужны.
 const assignBtn: CSSProperties = {
   ...wordBtn,
@@ -38,7 +23,7 @@ const assignBtn: CSSProperties = {
   color: 'var(--text-sub)',
 };
 
-/** «На сессии»: техника — слово-кнопка (без `actions` — текст), за ней «делали …». */
+/** «На сессии»: техника — слово-кнопка (без `actions` — текст), за ней «делали …» и «журнал →». */
 export function HintTechniques({
   techniques,
   from,
@@ -79,6 +64,12 @@ export function HintTechniques({
                 <span style={{ color: 'var(--text)' }}>{t.name}</span>
               )}
               {done && <span style={subStyle}> · {done}</span>}
+              {done && actions?.onOpenJournal && (
+                <>
+                  <span style={subStyle}> · </span>
+                  <JournalLink onClick={actions.onOpenJournal} />
+                </>
+              )}
             </span>
           );
         })}

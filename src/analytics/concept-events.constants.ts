@@ -19,6 +19,9 @@
 //   concept_guide_assign     — «Дать заданием» у пункта «Между сессиями» (плашка или лист режима или схемы).
 //   concept_guide_mark_done  — «Делали сегодня» в листе техники из схемы случая: отметка поставлена
 //                              (снятие тем же тапом события не шлёт). Какая техника и чей режим — нет.
+//   concept_guide_journal_open  — «журнал →» за «делали …» (плашка, лист режима или схемы, лист техники):
+//                                 переход в журнал техник, блок «На сессиях» вкладки «Задания».
+//   concept_guide_journal_entry — тап по строке журнала техник: открыт лист техники. Какая техника — нет.
 //   concept_shared           — терапевт включил или выключил «Показать клиенту»; meta { on: boolean },
 //                              других полей нет (src/api/analytics-meta.sanitize.ts).
 //   client_concept_opened    — клиент открыл схему случая из «Мой терапевт» (лист загрузился).
@@ -37,6 +40,8 @@ export const CONCEPT_EVENTS = [
   'concept_guide_technique_open',
   'concept_guide_assign',
   'concept_guide_mark_done',
+  'concept_guide_journal_open',
+  'concept_guide_journal_entry',
   'concept_shared',
   'client_concept_opened',
 ] as const;

@@ -64,6 +64,25 @@
 .tb-tpl-head { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; }
 .tb-tpl-head span:last-child { font-size: 18px; }
 .tb-tpl-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+/* «На сессиях» — журнал техник (#995, TechniqueJournalBlock): день слева один раз,
+   справа строки-кнопки «Техника — Режим» (зона 44 по высоте); подчёркнутое
+   название — как техника в листе подсказок (.tcp-guide-link). */
+.tb-journal { display: flex; flex-direction: column; gap: 8px; scroll-margin-top: 16px; }
+.tb-journal-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.tb-journal-day { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; border-top: 1px solid var(--paper-sunk); }
+.tb-journal-date { padding-top: 12px; font-size: 13px; color: var(--text-sub); }
+.tb-journal-row {
+  display: block; width: 100%; min-height: 44px; padding: 10px 0; border: none; background: none;
+  cursor: pointer; text-align: left; font: 15px/1.4 var(--sans); color: var(--text); overflow-wrap: anywhere;
+}
+.tb-journal-tech { font-weight: 600; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.tb-journal-from { color: var(--text-sub); }
+.tb-journal-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.tb-journal-link {
+  min-height: 44px; padding: 0; border: none; background: none; cursor: pointer;
+  font: 600 14px/1.4 var(--sans); color: var(--text);
+  text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px;
+}
 
 /* ── YSQ ──────────────────────────────────────────────────────────────── */
 .tb-ysq-card { padding: 8px 24px; }
