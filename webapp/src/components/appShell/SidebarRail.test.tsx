@@ -4,7 +4,7 @@
 // полоска с иконками; у иконок подпись в aria-label и title; выбор запоминается на устройстве.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { SidebarSkeleton } from './SidebarRail';
 import { DESKTOP_NAV_ITEMS } from './navItems';
@@ -47,7 +47,7 @@ describe('боковое меню — свернуть и развернуть',
     expect(screen.queryByText('Всё по схеме')).toBeNull();
     // Знак остаётся наверху полоски, над шевроном.
     const head = aside().querySelector('.sb-rail-head')!;
-    expect(head.firstElementChild!.getAttribute('data-brand-mark')).toBe('full');
+    expect(head.firstElementChild!.querySelector('[data-brand-mark]')!.getAttribute('data-brand-mark')).toBe('full');
     expect(head.lastElementChild!.getAttribute('aria-label')).toBe('Развернуть меню');
     expect(screen.queryByRole('button', { name: 'Выйти' })).toBeNull();
     const expand = screen.getByRole('button', { name: 'Развернуть меню' });
@@ -100,5 +100,34 @@ describe('боковое меню — свернуть и развернуть',
     expect(rail.querySelector('aside.sidebar.is-collapsed')).toBeTruthy();
     expect(rail.querySelector('.sb-brand')).toBeNull();
     expect(rail.querySelector('.sb-rail-head [data-brand-mark]')).toBeTruthy();
+    expect(rail.querySelector('a')).toBeNull(); // в силуэте знак — не ссылка
   });
+});
+
+// Владелец 2026-11: «логотип должен кидать на главную». Главная раздела — «Сегодня»:
+// у клиента /today, в режиме терапевта — /cabinet/today.
+describe('знак меню ведёт на главную раздела', () => {
+  function Where() { return <output data-testid="where">{useLocation().pathname}</output>; }
+  function renderAt(therapist: boolean, path: string) {
+    return render(
+      <MemoryRouter initialEntries={[path]}>
+        <Sidebar items={DESKTOP_NAV_ITEMS} therapistMode={therapist} userRole={therapist ? 'THERAPIST' : 'CLIENT'}
+                 onSwitchMode={vi.fn()} therapistClients={[]} needs={[]} ratings={{}} displayName="Григорий"
+                 onOpenTracker={vi.fn()} onOpenSettings={vi.fn()} />
+        <Where />
+      </MemoryRouter>,
+    );
+  }
+  const home = () => screen.getByRole('link', { name: 'На главную' });
+
+  it.each([[false, '/diary', '/today'], [true, '/cabinet/guide', '/cabinet/today']])(
+    'терапевт=%s: с %s тап по знаку → %s, и в развёрнутом, и в свёрнутом меню', (therapist, from, to) => {
+      renderAt(therapist, from);
+      expect(home().closest('.sb-brand')!.textContent).toBe('Всё по схеме');
+      fireEvent.click(home());
+      expect(screen.getByTestId('where').textContent).toBe(to);
+      fireEvent.click(screen.getByRole('button', { name: 'Свернуть меню' }));
+      expect(home().closest('.sb-rail-head')).toBeTruthy();
+      expect(home().getAttribute('href')).toBe(to);
+    });
 });

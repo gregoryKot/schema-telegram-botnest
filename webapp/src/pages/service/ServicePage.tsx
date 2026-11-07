@@ -9,10 +9,10 @@ export function ServicePage({ children, width }: { children: ReactNode; width?: 
   return (
     <div className="light-lock as-root">
       <div className="ds-card as-card" style={width ? { maxWidth: width } : undefined}>
-        <div className="as-brand">
+        <a href="/" className="as-brand" aria-label="На главную" title="На главную">
           <BrandMark size={28} />
           <span className="as-brand-name">Всё по схеме</span>
-        </div>
+        </a>
         {children}
       </div>
     </div>
