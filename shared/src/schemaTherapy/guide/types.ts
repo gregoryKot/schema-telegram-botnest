@@ -17,6 +17,7 @@ export type TechniqueId =
   | 'chairwork'
   | 'historical_role_play'
   | 'flashcards'
+  | 'cognitive_work'
   | 'letters'
   | 'pattern_breaking'
   | 'mindfulness'

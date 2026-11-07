@@ -40,7 +40,12 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
         'Три оттенка: не хватает заботы («всем всё равно»), понимания («никто меня не понимает») или защиты («против всего мира в одиночку») [Кембридж, табл. 1.1; Касьяник].',
         'Симптомы обостряются при перегрузке: забота нужна как никогда, а принять её нечем [Арнтц, 1.1.1].',
       ],
-      techniques: ['imagery_rescripting', 'chairwork', 'pattern_breaking'],
+      techniques: [
+        'imagery_rescripting',
+        'chairwork',
+        'cognitive_work',
+        'pattern_breaking',
+      ],
       betweenSessions: [
         {
           kind: 'task',
@@ -215,6 +220,7 @@ export const buildRejectionGuides: SchemaDomainGuideBuilder = (tr) => ({
         'chairwork',
         'imagery_rescripting',
         'self_compassion',
+        'cognitive_work',
         'pattern_breaking',
       ],
       betweenSessions: [

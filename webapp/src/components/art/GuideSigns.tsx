@@ -5,7 +5,7 @@
 // режимов (MODE_GROUP_HUE): копинги — сланец, критики — слива, здоровые — мох.
 // Знаки техник — GuideSignsTechniques.tsx; какой знак у какого листа — guideSignsModel.ts.
 import type { ReactElement } from 'react';
-import { Breath, Sheets } from './PaperArt';
+import { Breath, Pebbles, Sheets } from './PaperArt';
 import { Cluster, Heart, Talk } from './PaperArtSigns';
 import { PAPER, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
@@ -100,6 +100,7 @@ const BY_SIGN: Record<GuideSign, (p: ArtProps) => ReactElement> = {
   spotlight: Spotlight,
   heart: Heart,
   grown: Grown,
+  pebbles: Pebbles,
 };
 
 /** Знак листа подсказок по имени (guideSignsModel.ts). */
