@@ -99,11 +99,11 @@ describe('ModeMapEditor — палитра → холст', () => {
 
   it('кнопка «Скрыть панель режимов» прячет палитру, «Показать» возвращает', () => {
     renderEditor();
-    expect(screen.getByPlaceholderText('Поиск режима…')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Режим или схема…')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Скрыть панель режимов'));
-    expect(screen.queryByPlaceholderText('Поиск режима…')).toBeNull();
+    expect(screen.queryByPlaceholderText('Режим или схема…')).toBeNull();
     fireEvent.click(screen.getByLabelText('Показать панель режимов'));
-    expect(screen.getByPlaceholderText('Поиск режима…')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Режим или схема…')).toBeTruthy();
   });
 });
 
