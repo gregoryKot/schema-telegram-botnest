@@ -990,7 +990,6 @@
   "src/bot/entry-delete-metrics.format.ts": 49,
   "src/bot/entry-delete-metrics.service.ts": 44,
   "src/bot/env-check.format.ts": 19,
-  "src/bot/event-counts.ts": 22,
   "src/bot/exercises.service.ts": 146,
   "src/bot/game-metrics.format.ts": 110,
   "src/bot/game-metrics.service.ts": 110,
