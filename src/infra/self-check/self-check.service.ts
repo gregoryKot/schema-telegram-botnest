@@ -13,6 +13,7 @@ import { buildProbes } from './registry';
 import { runProbes } from './runner';
 import { selfCheckState, SelfCheckResultEntry } from './state';
 import { selfCheckAlerts } from './alert-tracker';
+import { alertLeaseStore, decideSelfCheckAlert } from './alert-dedup';
 
 /** ~60с после старта — приложение успело поднять слушатель, но ещё не успело
  * закрасться в тишину до первого реального трафика (инциденты 2026-09-13/16
@@ -58,7 +59,8 @@ export class SelfCheckService
   }
 
   /** Прогоняет все пробы, обновляет снимок для /health и /stats, шлёт DM по
-   * смене состояния. Публичный — тесты и оба триггера зовут его напрямую. */
+   * смене набора упавших (решение — в базе, alert-dedup.ts). Публичный —
+   * тесты и оба триггера зовут его напрямую. */
   async run(trigger: string): Promise<SelfCheckResultEntry[]> {
     const results = await runProbes(buildProbes(this.prisma));
     selfCheckState.set(results);
@@ -70,7 +72,8 @@ export class SelfCheckService
         `Самопроверка (${trigger}): не в порядке — ${failed.map((f) => f.id).join(', ')}`,
       );
     }
-    const text = selfCheckAlerts.noteResult(failed);
+    const store = alertLeaseStore(this.cronLeader, this.prisma);
+    const text = await decideSelfCheckAlert(failed, store, selfCheckAlerts);
     if (text) void notifyAdminWithFallback(text, 'Самопроверка SchemeHappens');
     return results;
   }

@@ -6,8 +6,8 @@ import { cronGapsMs } from './cron-gap';
 export const SELF_CHECK_CRON = '43 * * * *';
 
 /** Грейс после старта процесса, пока снимка ещё нет: 60 с задержки первого
- * прогона (POST_DEPLOY_DELAY_MS) + не более 10 с самого прогона (`runProbes`
- * гоняет пробы параллельно, каждая ограничена PROBE_TIMEOUT_MS) + буст Nest и
+ * прогона (POST_DEPLOY_DELAY_MS) + не более ~23 с самого прогона (пробы
+ * параллельно, попытка ≤ PROBE_TIMEOUT_MS, `retryOnce` — две и пауза) + буст Nest и
  * запас на рестарт супервизора. Меньше ~3 мин дало бы ложно-красный смок в
  * окне деплоя. */
 export const STARTUP_GRACE_MS = 10 * 60_000;

@@ -17,6 +17,7 @@ export function telegramProbe(env: NodeJS.ProcessEnv = process.env): Probe {
   return {
     id: 'telegram',
     title: 'Бот Telegram',
+    retryOnce: true, // живой getMe к api.telegram.org (Probe.retryOnce)
     async run() {
       const token = env.BOT_TOKEN?.trim();
       if (!token) return { ok: true, detail: 'выключено' };

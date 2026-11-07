@@ -44,16 +44,8 @@ export class CronLeaderService extends CronRunLedger {
    * из двух инстансов строку получает ровно один, второй увидит 0 строк.
    */
   async claimRun(name: string, windowMs: number, now = new Date()) {
-    const notAfter = new Date(now.getTime() - windowMs);
     try {
-      const claimed = await this.prisma.$executeRaw`
-        INSERT INTO "CronLease" ("name", "runAt", "instanceId")
-        VALUES (${name}, ${now}, ${INSTANCE_ID})
-        ON CONFLICT ("name") DO UPDATE
-          SET "runAt" = ${now}, "instanceId" = ${INSTANCE_ID}
-          WHERE "CronLease"."runAt" <= ${notAfter}
-      `;
-      return claimed > 0;
+      return await this.claimRunOrThrow(name, windowMs, now);
     } catch (err) {
       // БД недоступна: тело крона упало бы следом — пропуск лучше дубля.
       // Warn, а не error: error будил бы админа DM каждый тик. Отказ из-за
@@ -64,5 +56,20 @@ export class CronLeaderService extends CronRunLedger {
       );
       return false;
     }
+  }
+
+  /** Тот же захват, но отказ базы бросает, а не отвечает «тик чужой»: дедупу
+   * алерта самопроверки (self-check/alert-dedup.ts) «уже сообщили» и «база
+   * недоступна» значат разное — во втором случае DM решает память процесса. */
+  async claimRunOrThrow(name: string, windowMs: number, now = new Date()) {
+    const notAfter = new Date(now.getTime() - windowMs);
+    const claimed = await this.prisma.$executeRaw`
+      INSERT INTO "CronLease" ("name", "runAt", "instanceId")
+      VALUES (${name}, ${now}, ${INSTANCE_ID})
+      ON CONFLICT ("name") DO UPDATE
+        SET "runAt" = ${now}, "instanceId" = ${INSTANCE_ID}
+        WHERE "CronLease"."runAt" <= ${notAfter}
+    `;
+    return claimed > 0;
   }
 }
