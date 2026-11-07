@@ -160,7 +160,7 @@ export function ProductLandingPage() {
       <footer className="pl2-footer">
         <div className="pl2-wrap pl2-footer-in">
           <div className="pl2-actions">
-            <a href="/" className="pl2-brand" aria-label="На главную"><Logo /></a>
+            <a href="/" className="pl2-brand" aria-label="На главную" title="На главную"><Logo /></a>
             <span className="pl2-copy">© {new Date().getFullYear()}</span>
           </div>
           <nav className="pl2-footer-nav">
