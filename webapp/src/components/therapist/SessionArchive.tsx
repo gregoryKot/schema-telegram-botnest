@@ -6,6 +6,8 @@ import { HistoryConfirmDialog } from '../HistoryConfirmDialog';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { NotesTruncationHint } from '../../../../shared/src/therapy/NotesTruncationHint';
 import type { TherapistNotesPage } from '../../../../shared/src/therapy/notesPage';
+import { PaperEmpty } from '../art/PaperEmpty';
+import { Talk } from '../art/PaperArtSigns';
 
 // Архив заметок сессий. Удаление — через подтверждение: до 2026-10-26 заметку
 // стирал один клик по «✕» рядом с датой (QA-проход), вернуть её было нельзя.
@@ -26,7 +28,7 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
       <div className="ds-label tb-archive-label">Архив · {total} {pluralRu(total, 'заметка', 'заметки', 'заметок')}</div>
       <NotesTruncationHint page={page} />
       {notes.length === 0 ? (
-        <p className="ds-empty">Заметок пока нет</p>
+        <PaperEmpty art={Talk}>Заметок пока нет</PaperEmpty>
       ) : (
         notes.map(note => (
           <div key={note.id} className="tb-tl-row">

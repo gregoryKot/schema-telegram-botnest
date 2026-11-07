@@ -207,13 +207,13 @@ describe('вкладки без заголовков, пустые состоя�
     expect(screen.getByText('В концепте пока пусто — экспортировать нечего')).toBeTruthy();
   });
 
-  it('YSQ без прохождений: ds-empty без засечного заголовка, кнопка запроса и чипы схем', () => {
+  it('YSQ без прохождений: заголовок пустого состояния без засечного h2, кнопка запроса и чипы схем', () => {
     const selectedClient = { telegramId: 7 } as unknown as TherapyClientSummary;
     const { container } = render(<ClientYSQTab
       clientData={null} selectedClient={selectedClient} selfSchemaIds={['failure']} ysqSchemaIds={[]}
       ysqRequested={false} ysqError="" exportCopied={false} handleRequestYsq={vi.fn()} handleExport={vi.fn()}
     />);
-    expect(screen.getByText('YSQ ещё не проходился').classList.contains('ds-empty')).toBe(true);
+    expect(screen.getByText('YSQ ещё не проходился').classList.contains('ds-list-title')).toBe(true);
     expect(container.querySelector('.ds-h2')).toBeNull();
     expect(screen.getByText(/Запроси(те)? тест/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Запросить тест на схемы' })).toBeTruthy();

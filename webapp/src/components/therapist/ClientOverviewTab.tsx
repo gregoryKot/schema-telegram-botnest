@@ -5,6 +5,7 @@ import { hueStyle } from '../../lib/tone';
 import { useIsMobile } from '../useIsMobile';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { Layers } from '../art/PaperArt';
 import { SignHead } from './SignArt';
 import { ClientQuickActions } from './ClientQuickActions';
 import { ToneGroupsCard } from './ClientOverviewGroups';
@@ -86,7 +87,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
 
         {isEmpty && (
           <section className="ds-card">
-            <PaperEmpty>{tr('Заполни концептуализацию, чтобы увидеть схемы и режимы клиента', 'Заполните концептуализацию, чтобы увидеть схемы и режимы клиента')}</PaperEmpty>
+            <PaperEmpty art={Layers}>{tr('Заполни концептуализацию, чтобы увидеть схемы и режимы клиента', 'Заполните концептуализацию, чтобы увидеть схемы и режимы клиента')}</PaperEmpty>
             <div className="tk-start"><button className="ds-btn ds-btn--sm" onClick={() => setClientTab('concept')}>Открыть концептуализацию</button></div>
           </section>
         )}

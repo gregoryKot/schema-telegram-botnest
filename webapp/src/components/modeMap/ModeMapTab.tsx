@@ -1,6 +1,7 @@
 import type { UserId } from '../../api';
 import { ModeMapSelector } from '../ModeMapSelector';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { Cluster } from '../art/PaperArtSigns';
 import { useIsMobile } from '../useIsMobile';
 
 // Вкладка «Графические карты» карточки клиента. На телефоне холста нет: палитра,
@@ -8,7 +9,7 @@ import { useIsMobile } from '../useIsMobile';
 // связи на экране телефона не разглядеть (владелец 2026-11-05: «убрать совсем,
 // просто сообщение, что откройте на компе»). Вместо холста — одна строка;
 // карты никуда не деваются, на компьютере и планшете они те же.
-// Условие «телефон» — общее для сайта (useIsMobile).
+// Условие «телефон» — общее для сайта (useIsMobile). Знак — круги режимов, как у пустого холста.
 export function ModeMapTab({ clientId, initialMapId }: { clientId: UserId; initialMapId?: number }) {
   const mobile = useIsMobile();
   if (mobile) return <ModeMapDesktopOnly />;
@@ -21,7 +22,7 @@ export const MODE_MAP_DESKTOP_ONLY =
 function ModeMapDesktopOnly() {
   return (
     <div className="mm2-center">
-      <PaperEmpty>{MODE_MAP_DESKTOP_ONLY}</PaperEmpty>
+      <PaperEmpty art={Cluster}>{MODE_MAP_DESKTOP_ONLY}</PaperEmpty>
     </div>
   );
 }

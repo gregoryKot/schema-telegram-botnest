@@ -7,6 +7,7 @@ import { render as rtlRender, screen, cleanup, fireEvent, waitFor } from '@testi
 import { MemoryRouter } from 'react-router-dom';
 import { SessionArchive } from './SessionArchive';
 import type { TherapistNote } from '../../api';
+import { paperSignName } from '../../test-support/paperSign';
 
 // Подтверждение пишет запись в историю (HistoryConfirmDialog) — нужен роутер.
 const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
@@ -39,9 +40,10 @@ describe('SessionArchive', () => {
     expect(screen.getByText('Сессия 1')).toBeTruthy();
   });
 
-  it('пустая история: «Заметок пока нет», без строки о срезе', () => {
-    render(<SessionArchive page={{ notes: [], total: 0 }} removeNote={vi.fn()} />);
+  it('пустая история: «Заметок пока нет» со знаком сессии (Talk), без строки о срезе', () => {
+    const { container } = render(<SessionArchive page={{ notes: [], total: 0 }} removeNote={vi.fn()} />);
     expect(screen.getByText('Заметок пока нет')).toBeTruthy();
+    expect(paperSignName(container.querySelector('.pp-empty svg'))).toBe('Talk');
     expect(screen.queryByRole('note')).toBeNull();
   });
 

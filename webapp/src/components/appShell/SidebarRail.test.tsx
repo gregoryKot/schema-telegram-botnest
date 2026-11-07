@@ -29,10 +29,12 @@ const aside = () => document.querySelector('aside.sidebar')!;
 const navLinks = () => within(screen.getByRole('navigation')).getAllByRole('link');
 
 describe('боковое меню — свернуть и развернуть', () => {
-  it('развёрнутое: кнопка «Свернуть меню» в шапке, подписи пунктов текстом', () => {
+  it('развёрнутое: знак и название в шапке, кнопка «Свернуть меню» там же, подписи пунктов текстом', () => {
     renderSidebar();
     const toggle = screen.getByRole('button', { name: 'Свернуть меню' });
-    expect(toggle.closest('.sb-brand')).toBeTruthy();
+    const brand = toggle.closest('.sb-brand')!;
+    expect(brand.querySelector('svg[data-brand-mark="full"]')).toBeTruthy();
+    expect(brand.textContent).toBe('Всё по схеме'); // без буквы «В» прежнего квадрата
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(aside().classList.contains('is-collapsed')).toBe(false);
     expect(navLinks().map((a) => a.textContent)).toEqual(DESKTOP_NAV_ITEMS.map((i) => i.label));
@@ -43,6 +45,10 @@ describe('боковое меню — свернуть и развернуть',
     fireEvent.click(screen.getByRole('button', { name: 'Свернуть меню' }));
     expect(aside().classList.contains('is-collapsed')).toBe(true);
     expect(screen.queryByText('Всё по схеме')).toBeNull();
+    // Знак остаётся наверху полоски, над шевроном.
+    const head = aside().querySelector('.sb-rail-head')!;
+    expect(head.firstElementChild!.getAttribute('data-brand-mark')).toBe('full');
+    expect(head.lastElementChild!.getAttribute('aria-label')).toBe('Развернуть меню');
     expect(screen.queryByRole('button', { name: 'Выйти' })).toBeNull();
     const expand = screen.getByRole('button', { name: 'Развернуть меню' });
     expect(expand.getAttribute('aria-expanded')).toBe('false');
@@ -87,11 +93,12 @@ describe('боковое меню — свернуть и развернуть',
   it('силуэт загрузки повторяет выбор: свёрнутое меню — сразу полоской', () => {
     const { container, unmount } = render(<SidebarSkeleton />);
     expect(container.querySelector('aside.sidebar.is-collapsed')).toBeNull();
-    expect(container.querySelector('.sb-brand')).toBeTruthy();
+    expect(container.querySelector('.sb-brand [data-brand-mark]')).toBeTruthy();
     unmount();
     act(() => setSidebarCollapsed(true));
     const rail = render(<SidebarSkeleton />).container;
     expect(rail.querySelector('aside.sidebar.is-collapsed')).toBeTruthy();
     expect(rail.querySelector('.sb-brand')).toBeNull();
+    expect(rail.querySelector('.sb-rail-head [data-brand-mark]')).toBeTruthy();
   });
 });
