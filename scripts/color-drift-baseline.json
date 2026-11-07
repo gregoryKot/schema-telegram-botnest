@@ -8,15 +8,8 @@
   "webapp/src/pages/admin/MarqueeSection.tsx": 1,
   "webapp/src/pages/admin/PhotoSection.tsx": 1,
   "webapp/src/pages/ArticlesPage.tsx": 1,
-  "webapp/src/pages/landing/AppPreview.tsx": 2,
-  "webapp/src/pages/landing/AuthorSection.tsx": 2,
-  "webapp/src/pages/landing/BrandKit.tsx": 1,
   "webapp/src/pages/landing/constants.ts": 1,
   "webapp/src/pages/landing/ContentSections.tsx": 2,
-  "webapp/src/pages/landing/ProductMobileMenu.tsx": 1,
   "webapp/src/pages/LandingPage.tsx": 6,
-  "webapp/src/pages/ProductLandingPage.tsx": 5,
-  "webapp/src/pages/tests/QuizPage.tsx": 2,
-  "webapp/src/pages/tests/testsKit.tsx": 1,
   "webapp/src/utils/theme.ts": 2
 }

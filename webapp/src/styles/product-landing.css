@@ -1,0 +1,216 @@
+/* Продуктовый лендинг и мини-тесты (schemehappens.ru: «/», «/tests») — тот же
+   язык «бумажной аппликации», что у кабинета (docs/design/PAPER_2026-11.md):
+   бумага --bg, заголовки --serif, кнопки ds-btn, карточки ds-card, знаки
+   PaperArt, цвета только токенами. До 2026-11 здесь была своя «ночная»
+   айдентика (тёмный холст, аврора-градиенты, стекло, вечные анимации) —
+   владелец: «лендинг вырвиглаз, а сайт — спокойная бумага». Корень страницы
+   стоит на .light-lock: бумага нарисована только в светлой теме, как кабинет.
+   Подключают ProductLandingPage.tsx и pages/tests/testsKit.tsx. */
+
+html:has(.pl2-root) { scroll-behavior: smooth; }
+
+.pl2-root {
+  position: relative; display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 100dvh;
+  overflow-x: hidden; background: var(--bg); color: var(--text); font-family: var(--sans);
+}
+.pl2-wrap { max-width: 1160px; margin: 0 auto; }
+
+/* ── Шапка: цвет страницы и линия снизу (без стекла — check-render-poison) ── */
+.pl2-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 24px; box-sizing: border-box;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.pl2-header--static { position: static; }
+.pl2-brand { text-decoration: none; color: inherit; }
+.pl2-nav { display: flex; align-items: center; gap: 2px; }
+.pl2-navlink {
+  display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box;
+  font-size: 14px; font-weight: 600; color: var(--text-sub); text-decoration: none;
+  padding: 0 12px; border-radius: 10px; white-space: nowrap; transition: color .15s;
+}
+.pl2-navlink:hover, .pl2-navlink:focus-visible { color: var(--text); }
+.pl2-burger {
+  display: none; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+  width: 44px; height: 44px; padding: 0; border-radius: 22px; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--surface);
+}
+.pl2-burger span { display: block; width: 17px; height: 1.6px; border-radius: 2px; background: var(--text); }
+
+/* ── Кнопки: ds-btn кабинета + размер лендинга ──────────────────────────── */
+.pl2-cta { text-decoration: none; box-sizing: border-box; }
+/* Классы-пары с ds-*: специфичность выше, чем у одиночного .ds-btn/.ds-card, без опоры на порядок CSS. */
+.ds-btn.pl2-cta--lg { height: 48px; padding: 0 26px; border-radius: 24px; font-size: 15px; }
+.pl2-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.pl2-link { color: var(--accent); font-weight: 700; text-decoration: none; }
+.pl2-link:hover { color: var(--accent-hi); }
+/* Отдельная ссылка (не внутри абзаца) — зона нажатия 44px. */
+.pl2-link--solo { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* ── Первый экран ───────────────────────────────────────────────────────── */
+.pl2-hero-sec { padding: 132px 24px 80px; }
+.pl2-hero { display: grid; grid-template-columns: 1.06fr 1fr; gap: 56px; align-items: center; }
+.pl2-pill {
+  display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;
+  padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line);
+  font-size: 13px; font-weight: 600; color: var(--text-sub);
+}
+.pl2-pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-hot); }
+.pl2-h1 {
+  margin: 0 0 22px; font-family: var(--serif); font-weight: 400; color: var(--text);
+  font-size: clamp(40px, 5.6vw, 66px); line-height: 1.04; letter-spacing: -.015em;
+}
+.pl2-h1 em { font-style: italic; color: var(--accent); }
+.pl2-lead { margin: 0 0 32px; max-width: 500px; font-size: 17px; line-height: 1.65; color: var(--text-sub); }
+.pl2-fine { margin: 18px 0 0; font-size: 13px; color: var(--text-faint); }
+.pl2-in { animation: pl2-in .6s cubic-bezier(.16, 1, .3, 1) both; }
+.pl2-in--late { animation-delay: .12s; }
+@keyframes pl2-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* ── Секции ─────────────────────────────────────────────────────────────── */
+.pl2-sec { padding: 72px 24px; scroll-margin-top: 70px; }
+.pl2-sec--tight { padding-top: 16px; }
+.pl2-eyebrow { display: block; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.pl2-h2 {
+  margin: 12px 0 44px; max-width: 680px; font-family: var(--serif); font-weight: 400; color: var(--text);
+  font-size: clamp(28px, 3.4vw, 40px); line-height: 1.12; letter-spacing: -.01em;
+}
+.pl2-h2--flush { margin-bottom: 0; }
+.pl2-sub { margin: -28px 0 36px; max-width: 560px; font-size: 16px; line-height: 1.65; color: var(--text-sub); }
+.pl2-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.pl2-3--wide { column-gap: 32px; }
+.pl2-3--above-actions { margin-bottom: 36px; }
+.pl2-head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
+
+/* Шаг «Как это работает»: блок под тонкой линией, номер и знак. */
+.pl2-step { display: flex; flex-direction: column; gap: 10px; padding-top: 22px; border-top: 1px solid var(--panel-line); }
+.pl2-step-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.pl2-step-num { font-family: var(--serif); font-size: 44px; line-height: 1; color: var(--accent); }
+
+/* Карточка: белая (ds-card) или цветная бумага (pp-paper + --h). */
+.pl2-card { display: flex; flex-direction: column; gap: 10px; }
+.pl2-card .pp-art { margin-bottom: 10px; }
+.pl2-card--paper { padding: 24px 22px; }
+.pl2-card-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.2; color: var(--text); }
+.pl2-card-meta { margin: -4px 0 2px; font-size: 13px; font-weight: 600; color: var(--text-faint); }
+.pl2-card-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
+.pl2-card-list { margin: 0; padding: 0 0 0 18px; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.6; color: var(--text-sub); }
+
+/* ── Мокап экрана «Сегодня» (декор, aria-hidden) ────────────────────────── */
+.pl2-preview { position: relative; display: flex; justify-content: center; }
+.pl2-phone {
+  width: 300px; box-sizing: border-box; padding: 22px 20px 20px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 32px;
+  box-shadow: 0 34px 60px -34px rgba(var(--fg-rgb), .45);
+}
+.pl2-phone-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
+.pl2-phone-sub { margin: 4px 0 18px; font-size: 12.5px; color: var(--text-sub); }
+.pl2-need { margin-bottom: 12px; }
+.pl2-need-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12.5px; font-weight: 600; color: var(--text); }
+.pl2-need-row .pp-art--row { width: 30px; height: 18px; }
+.pl2-need-v { margin-left: auto; font-weight: 700; }
+.pl2-track { height: 7px; border-radius: 4px; background: var(--paper-sunk); }
+.pl2-track > span { display: block; height: 100%; border-radius: 4px; }
+.pl2-spark { margin-top: 18px; padding: 12px 14px; border-radius: 16px; background: var(--paper-tint); }
+.pl2-spark-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11.5px; }
+.pl2-spark-head b { color: var(--text); }
+.pl2-spark-head span { color: var(--text-faint); }
+.pl2-note-card {
+  position: absolute; padding: 10px 14px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: 0 16px 30px -20px rgba(var(--fg-rgb), .5);
+  font-size: 12px; font-weight: 700;
+}
+.pl2-note-card small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--text-sub); }
+.pl2-note-card--a { top: -18px; right: -28px; transform: rotate(2deg); color: var(--accent); }
+.pl2-note-card--b { bottom: 44px; left: -16px; transform: rotate(-2deg); color: var(--c-moss-strong); }
+
+/* ── Автор ──────────────────────────────────────────────────────────────── */
+.ds-card.pl2-author { display: grid; grid-template-columns: 300px 1fr; gap: 48px; align-items: center; padding: 44px; border-radius: 28px; }
+.pl2-author-photo {
+  width: 100%; max-width: 300px; aspect-ratio: 5 / 6; object-fit: cover; object-position: center top;
+  justify-self: center; border-radius: 20px; border: 1px solid var(--line);
+}
+.pl2-author .pl2-h2 { margin-bottom: 10px; }
+.pl2-author-role { margin: 0 0 16px; font-size: 14px; font-weight: 700; color: var(--accent); }
+.pl2-author-text { margin: 0 0 28px; max-width: 560px; font-size: 16px; line-height: 1.7; color: var(--text-sub); }
+
+/* ── Статьи ─────────────────────────────────────────────────────────────── */
+.pl2-article { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+.pl2-article-img { aspect-ratio: 16 / 9; overflow: hidden; background: var(--paper-sunk); }
+.pl2-article-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pl2-article-body { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 18px 20px 20px; }
+.pl2-article-title { margin: 0; font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--text); }
+.pl2-article-desc { flex: 1; margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.pl2-article-meta { margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
+
+/* ── Вопросы: строки между линиями ──────────────────────────────────────── */
+.pl2-faq { border-top: 1px solid var(--paper-sunk); }
+.pl2-faq-item { border-bottom: 1px solid var(--paper-sunk); }
+.pl2-faq-q {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  width: 100%; min-height: 44px; padding: 20px 2px; border: 0; background: none; cursor: pointer;
+  text-align: left; font: 600 16px/1.4 var(--sans); color: var(--text);
+}
+.pl2-faq-plus { flex-shrink: 0; font-size: 22px; line-height: 1; color: var(--accent); transition: transform .25s; }
+.pl2-faq-a { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+.pl2-faq-a > div { overflow: hidden; }
+.pl2-faq-a p { margin: 0 2px 22px; font-size: 15px; line-height: 1.75; color: var(--text-sub); }
+.pl2-faq-item.is-open .pl2-faq-plus { transform: rotate(45deg); }
+.pl2-faq-item.is-open .pl2-faq-a { grid-template-rows: 1fr; }
+
+/* ── Финальный призыв: песочная панель, одна залитая кнопка ─────────────── */
+.ds-card.pl2-final { padding: 72px 32px; border-radius: 28px; text-align: center; }
+.pl2-final-title {
+  margin: 0 0 16px; font-family: var(--serif); font-weight: 400; color: var(--on-panel);
+  font-size: clamp(30px, 4.2vw, 48px); line-height: 1.1;
+}
+.pl2-final-text { margin: 0 auto 32px; max-width: 560px; font-size: 16px; line-height: 1.6; color: var(--on-panel-sub); }
+
+/* ── Подвал ─────────────────────────────────────────────────────────────── */
+.pl2-footer { padding: 32px 24px; border-top: 1px solid var(--paper-sunk); }
+.pl2-footer-in { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; }
+.pl2-footer-nav { display: flex; column-gap: 20px; flex-wrap: wrap; }
+.pl2-footer-link { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; color: var(--text-sub); text-decoration: none; transition: color .15s; }
+.pl2-footer-link:hover, .pl2-footer-link:focus-visible { color: var(--text); }
+.pl2-copy { font-size: 13px; color: var(--text-faint); }
+
+/* ── Мини-тесты (/tests, /tests/:id) ────────────────────────────────────── */
+.pl2-tests-main { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 40px 20px 56px; box-sizing: border-box; }
+.pl2-tests-foot { padding: 36px 20px 44px; border-top: 1px solid var(--paper-sunk); text-align: center; }
+.pl2-tests-foot .pl2-actions { justify-content: center; }
+.pl2-quiz-row { display: flex; gap: 18px; align-items: center; text-decoration: none; color: inherit; }
+.pl2-quiz-emoji {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 56px; height: 56px; border-radius: 16px; font-size: 28px; background: var(--paper-tint);
+}
+.pl2-quiz-arrow { margin-left: auto; font-size: 20px; color: var(--accent); }
+.pl2-option {
+  display: block; width: 100%; padding: 16px 18px; border-radius: 16px; box-sizing: border-box;
+  background: var(--surface); border: 1px solid var(--line); cursor: pointer; text-align: left;
+  font: 600 15px/1.5 var(--sans); color: var(--text); transition: border-color .12s, background .12s;
+}
+.pl2-option:hover, .pl2-option:focus-visible { border-color: var(--line-hover); background: var(--paper-tint); }
+.pl2-progress { height: 6px; border-radius: 4px; background: var(--paper-sunk); }
+.pl2-progress > span { display: block; height: 100%; border-radius: 4px; background: var(--accent); transition: width .25s; }
+
+/* ── Раскладка ──────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pl2-hero { grid-template-columns: 1fr; gap: 48px; }
+  .pl2-3 { grid-template-columns: 1fr; }
+  .ds-card.pl2-author { grid-template-columns: 1fr; gap: 32px; padding: 32px 24px; }
+  .pl2-note-card { display: none; }
+}
+@media (min-width: 601px) and (max-width: 900px) { .pl2-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) {
+  .pl2-nav { display: none; }
+  .pl2-burger { display: flex; }
+  .pl2-hero-sec { padding-top: 112px; }
+  .ds-card.pl2-final { padding: 48px 22px; }
+}
+@media (max-width: 480px) { .pl2-actions .ds-btn.pl2-cta--lg { width: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  html:has(.pl2-root) { scroll-behavior: auto; }
+  .pl2-in { animation: none; }
+}
