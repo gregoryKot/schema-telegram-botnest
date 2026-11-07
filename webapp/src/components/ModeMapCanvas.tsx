@@ -288,11 +288,11 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
   }, [nodeActions, duplicateNode, removeNode]);
 
   return (
-    <div className="mm2-canvas" style={{ flex: 1, position: 'relative', background: 'var(--surface)' }}>
-      <div className="mm2-status">
+    <div className="mm2-canvas">
+      <div className="mm2-statusbar">{/* строка в потоке над холстом, не поверх тулбара (sheet-modemap.css) */}
         <ConceptSyncLine onAddToMap={fromConcept.generate} />
-        {fromConcept.failed ? <span role="alert" className="is-err">Не получилось собрать схему из концептуализации</span>
-          : <SaveStatusLine status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} errorText={saveError} align="right" />}
+        {fromConcept.failed ? <span role="alert" className="mm2-save is-err">Не получилось собрать схему из концептуализации</span>
+          : <SaveStatusLine className="mm2-save" status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} errorText={saveError} align="right" />}
       </div>
       {nodes.length === 0 && <CanvasEmpty />}
       <NodeActionsContext.Provider value={nodeActions}>
