@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { Skeleton } from '../Skeleton';
 import { BrandMark } from '../art/BrandMark';
+import { BrandHomeLink, type BrandMenu } from './BrandHome';
 import { MobileNavIcon, type MobileNavIconId } from './MobileNavIcon';
 import type { Section } from './navigation';
 import { setSidebarCollapsed, useSidebarCollapsed } from './sidebarCollapse';
@@ -25,13 +26,12 @@ export function SidebarToggle({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-/** Знак и название — общие у меню и его силуэта на загрузке; у меню справа — кнопка «свернуть». */
-export function SidebarBrand({ toggle = false }: { toggle?: boolean }) {
+/** Знак и название. В меню (`menu`) — ссылка на главную и кнопка «свернуть»; без — силуэт загрузки, лендинг. */
+export function SidebarBrand({ menu }: { menu?: BrandMenu }) {
+  const mark = <><BrandMark size={32} /><span className="sb-name">Всё по схеме</span></>;
   return (
     <div className="sb-brand">
-      <BrandMark size={32} />
-      <div className="sb-name">Всё по схеме</div>
-      {toggle && <SidebarToggle collapsed={false} />}
+      {menu ? <><BrandHomeLink {...menu}>{mark}</BrandHomeLink><SidebarToggle collapsed={false} /></> : mark}
     </div>
   );
 }
@@ -40,11 +40,11 @@ const SIDEBAR_BAR = { background: 'var(--panel-2)' };
 
 /** Верх свёрнутой полоски: знак на месте развёрнутого (меню не прыгает), под ним шеврон;
  *  в силуэте загрузки вместо шеврона — плашка. */
-function RailHead({ toggle }: { toggle: boolean }) {
+function RailHead({ menu }: { menu?: BrandMenu }) {
   return (
     <div className="sb-rail-head">
-      <BrandMark size={32} />
-      {toggle ? <SidebarToggle collapsed /> : <Skeleton width={44} height={44} style={SIDEBAR_BAR} />}
+      {menu ? <BrandHomeLink {...menu}><BrandMark size={32} /></BrandHomeLink> : <BrandMark size={32} />}
+      {menu ? <SidebarToggle collapsed /> : <Skeleton width={44} height={44} style={SIDEBAR_BAR} />}
     </div>
   );
 }
@@ -77,7 +77,7 @@ export function SidebarRail({ items, therapistMode, onList, displayName }: RailP
   const account = displayName || 'Профиль';
   return (
     <aside className="sidebar is-collapsed">
-      <RailHead toggle />
+      <RailHead menu={{ therapistMode }} />
       <nav className="sb-nav">
         {therapistMode ? (<>
           {THERAPIST_ITEMS.map(railLink)}
@@ -101,7 +101,7 @@ export function SidebarSkeleton() {
   const square = collapsed ? 44 : undefined;
   return (
     <aside className={`sidebar${collapsed ? ' is-collapsed' : ''}`} aria-hidden="true">
-      {collapsed ? <RailHead toggle={false} /> : <SidebarBrand />}
+      {collapsed ? <RailHead /> : <SidebarBrand />}
       <div className="sb-nav">
         {[0, 1, 2].map(i => <Skeleton key={i} width={square} height={44} style={SIDEBAR_BAR} />)}
       </div>

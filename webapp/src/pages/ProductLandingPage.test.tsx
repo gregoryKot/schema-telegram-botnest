@@ -62,7 +62,7 @@ describe('ProductLandingPage — неавторизованный визитор
   it('шапка и футер — знак продукта (тот же, что в меню и favicon), а не 🧠', () => {
     const { container } = renderPage();
     expect(container.querySelector('header a[href="/"] svg[data-brand-mark="full"]')).toBeTruthy();
-    expect(container.querySelector('footer svg[data-brand-mark="full"]')).toBeTruthy();
+    expect(container.querySelector('footer a[href="/"] svg[data-brand-mark="full"]')).toBeTruthy(); // знак в футере тоже ведёт на главную
     expect(container.textContent).not.toContain('🧠');
   });
 
