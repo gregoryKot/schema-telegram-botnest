@@ -1,5 +1,5 @@
 const CI_RUNS_TIMEOUT_MS = 8_000;
-const REPO = 'gregoryKot/schema-telegram-botnest';
+export const REPO = 'gregoryKot/schema-telegram-botnest';
 
 export interface WorkflowRun {
   conclusion?: string | null;

@@ -155,6 +155,13 @@
     ],
     "spec": "src/infra/self-check/probe-ci-runs.spec.ts"
   },
+  "src/infra/self-check/probe-dump-public.ts": {
+    "status": "recorded",
+    "fixtures": [
+      "github-git-tree-dump.json"
+    ],
+    "spec": "src/infra/self-check/probe-dump-public.spec.ts"
+  },
   "src/infra/self-check/probe-telegram.ts": {
     "status": "exempt",
     "reason": "Ответ Telegram Bot API getMe (ok/result.username) — синтетическое тело по документации Bot API в спеке, не захваченный с прода ответ площадки."
