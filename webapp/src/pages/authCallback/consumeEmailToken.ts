@@ -58,8 +58,9 @@ export async function consumeEmailToken(
 
 /**
  * Куда вести после погашения. Билет входа (`ticket`) сессию сам не одобряет:
- * человека ведём на экран сверки (device-code phishing, 2026-08-31), а токен
- * едет во фрагменте — AuthConfirmPage забирает его оттуда.
+ * человека ведём на экран сверки (device-code phishing, 2026-08-31). Токена в
+ * адресе нет: EmailTokenConsume уже положил его в AuthProvider, а фрагмент
+ * AuthConfirmPage не читает (login-CSRF, аудит 2026-11).
  */
 export function emailConsumeNextPath(
   outcome: EmailConsumeOutcome,
@@ -73,8 +74,7 @@ export function emailConsumeNextPath(
       return '/account?linked=email';
     case 'session':
       return ticket
-        ? `/auth/confirm?code=${encodeURIComponent(ticket)}` +
-            `#access_token=${outcome.accessToken}&expires_in=${outcome.expiresIn}`
+        ? `/auth/confirm?code=${encodeURIComponent(ticket)}`
         : (returnTo ?? '/today');
     case 'error':
       // Ссылка привязки открыта не в том браузере / адрес занят — на аккаунт,

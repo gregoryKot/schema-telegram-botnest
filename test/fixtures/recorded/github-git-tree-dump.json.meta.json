@@ -1,0 +1,6 @@
+{
+  "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo}/git/trees/a3d82cc8c312ef37cae99b6a529ec91e264590c5 (каталог scripts/ в базе PR #128, без токена, репозиторий публичный)",
+  "recordedAt": "2026-11-07",
+  "how": "записано живым curl из сессии аудита 2026-11, готовящей probe-dump-public.ts, HTTP 200",
+  "redacted": "из тела ответа оставлены только поля, которые читает проба (sha, truncated и в tree[]: path, type); убраны mode, sha, size и url каждой записи. Содержимое файлов Git Trees API не отдаёт вовсе — в фикстуре только имена файлов каталога scripts/ на 2026-07-20, персональных данных нет"
+}

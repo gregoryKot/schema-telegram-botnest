@@ -227,6 +227,23 @@ describe('AuthController.logout', () => {
     });
   });
 
+  // Аудит 2026-11: брошенная привязка (tg_link_user 10 мин, link_token 60 с)
+  // переживала выход — следующий вошедший привязывался к чужому аккаунту.
+  it('выход стирает и куки незаконченной привязки tg_link_user / link_token', async () => {
+    const controller = makeController(makeAuth().auth);
+    const req = makeReq({
+      cookies: { tg_link_user: 'state-of-A', link_token: 'jwt-of-A' },
+    });
+    const { res, mocks: resMocks } = makeRes();
+
+    await controller.logout('false', req, res);
+
+    for (const name of ['tg_link_user', 'link_token'])
+      expect(resMocks.clearCookie).toHaveBeenCalledWith(name, {
+        path: '/api/auth',
+      });
+  });
+
   it('all=false — отзывает только текущую сессию (revokeSession), не revokeAllSessions', async () => {
     const { auth, mocks } = makeAuth();
     const controller = makeController(auth);

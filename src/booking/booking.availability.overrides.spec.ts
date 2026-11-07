@@ -11,6 +11,8 @@ const RULE = {
   startMinute: 0,
   endHour: 19,
   endMinute: 0,
+  sessionDuration: 50, // сетка 10:00, 11:00, … 18:00 МСК
+  bufferMin: 10,
   timezone: 'Europe/Moscow',
   isActive: true,
 };
@@ -66,7 +68,7 @@ describe('assertWithinAvailability — BLOCK', () => {
 });
 
 describe('assertWithinAvailability — OPEN', () => {
-  it('OPEN с тем же startsAt и достаточной durationMin разрешает слот вне покрытия правил', async () => {
+  it('OPEN с тем же startsAt и той же durationMin разрешает слот вне покрытия правил', async () => {
     const overrides = [{ kind: 'OPEN', startsAt: OUTSIDE, durationMin: 50 }];
     const { assert } = makeService({ rules: [RULE], overrides });
     await expect(assert(OUTSIDE, 50)).resolves.toBeUndefined();
@@ -82,6 +84,21 @@ describe('assertWithinAvailability — OPEN', () => {
     const overrides = [{ kind: 'OPEN', startsAt: OUTSIDE, durationMin: 30 }];
     const { assert } = makeService({ rules: [RULE], overrides });
     await expect(assert(OUTSIDE, 50)).rejects.toThrow('OUTSIDE_AVAILABILITY');
+  });
+
+  // /slots отдаёт OPEN ровно с его durationMin (applyOverrides), фронт шлёт
+  // длину выбранного слота — другой длины сервер не предлагал.
+  it('OPEN на 50 мин, бронь на 15 — отказ: длина обязана совпасть со слотом', async () => {
+    const overrides = [{ kind: 'OPEN', startsAt: OUTSIDE, durationMin: 50 }];
+    const { assert } = makeService({ rules: [RULE], overrides });
+    await expect(assert(OUTSIDE, 15)).rejects.toThrow('OUTSIDE_AVAILABILITY');
+  });
+
+  it('OPEN вне сетки правила внутри его окна (12:30 МСК, 45 мин) — разрешён', async () => {
+    const offGrid = new Date('2026-07-13T09:30:00Z'); // пн 12:30 МСК
+    const overrides = [{ kind: 'OPEN', startsAt: offGrid, durationMin: 45 }];
+    const { assert } = makeService({ rules: [RULE], overrides });
+    await expect(assert(offGrid, 45)).resolves.toBeUndefined();
   });
 
   it('контроль: OPEN на другой startsAt (не точное совпадение) не разрешает', async () => {

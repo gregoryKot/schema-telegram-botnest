@@ -20,6 +20,7 @@ import { TRUSTED_PROXY_HOPS } from './infra/trust-proxy';
 import { installBodyParsers } from './infra/body-parsers';
 import { helmetOptions } from './security/helmet-config';
 import { permissionsPolicy } from './security/permissions-policy';
+import { apiNoStore } from './infra/api-no-store';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
 import { registerUncaughtExceptionHandler } from './infra/uncaught-exception';
 import {
@@ -70,7 +71,7 @@ async function bootstrap() {
   }
 
   app.use(cookieParser());
-  app.use(helmet(helmetOptions()), permissionsPolicy());
+  app.use(helmet(helmetOptions()), permissionsPolicy(), apiNoStore);
   // Порядок важен: Nest берёт фильтры с конца, Prisma ловит раньше catch-all.
   app.useGlobalFilters(
     new GenericExceptionFilter(),
@@ -124,8 +125,7 @@ async function bootstrap() {
   // раньше и отдельно (src/utils/crypto.ts, PrismaService).
   logEnvCheck(new Logger('EnvCheck'), checkEnv());
 
-  // Run after listen so PrismaService.onModuleInit has already connected.
-  // Idempotent — skips rows already encrypted. Doesn't block startup.
+  // After listen (Prisma connected); idempotent, doesn't block startup.
   void runClinicalLabelMigration(
     app.get(PrismaService),
     new Logger('EncryptMigration'),

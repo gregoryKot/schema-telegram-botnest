@@ -162,11 +162,11 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
   'auth/auth-telegram.controller.ts:45':
     'inline-тип Record<string, string> — подписанный Telegram-payload, ' +
     'whitelist срежет поля и сломает hash-верификацию (комментарий в коде)',
-  'booking/payment.controller.ts:62':
+  'booking/payment.controller.ts:65':
     "одиночное поле @Body('OutSum') — вебхук Robokassa",
-  'booking/payment.controller.ts:63':
+  'booking/payment.controller.ts:66':
     "одиночное поле @Body('InvId') — вебхук Robokassa",
-  'booking/payment.controller.ts:64':
+  'booking/payment.controller.ts:67':
     "одиночное поле @Body('SignatureValue') — вебхук Robokassa, подпись " +
     'проверяется вручную в RobokassaService',
 };

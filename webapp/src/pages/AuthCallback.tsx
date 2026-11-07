@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from 'react';
 import { HashCallback } from './authCallback/HashCallback';
 
 // Две двери в одну страницу: ссылка из письма приходит с ?email_token=…
-// (её погашает POST, а не GET — B-14), OAuth — с токеном во фрагменте.
+// (её погашает POST, а не GET — B-14), OAuth — без токена (refresh-кука, 2026-11).
 // Почтовый путь редкий, поэтому едет отдельным чанком, а не в стартовом.
 const EmailTokenConsume = lazy(() =>
   import('./authCallback/EmailTokenConsume').then((m) => ({

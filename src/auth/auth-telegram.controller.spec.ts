@@ -355,6 +355,25 @@ describe('AuthTelegramController.telegramRedirect', () => {
     );
   });
 
+  // Аудит 2026-11: A нажал «Привязать Telegram», бросил и вышел; B на том же
+  // компьютере за 10 минут входит через Telegram — кука A привязала бы
+  // Telegram B к аккаунту A и выдала B сессию A. Анонимный вход куку стирает.
+  it('без webUser: стирает брошенную куку привязки tg_link_user', () => {
+    const { flow } = makeFlow();
+    const controller = makeController({ providers: makeProviders({}), flow });
+    const req = makeReq({
+      cookies: { tg_link_user: 'stale-state-of-A' },
+    } as Partial<Request>);
+    const { res, mocks: resMocks } = makeRes();
+
+    controller.telegramRedirect(req, res);
+
+    expect(resMocks.clearCookie).toHaveBeenCalledWith('tg_link_user', {
+      path: '/api/auth',
+    });
+    expect(resMocks.cookie).not.toHaveBeenCalled();
+  });
+
   it('с webUser: ставит tg_link_user cookie с подписанным state', () => {
     const { flow, mocks: flowMocks } = makeFlow();
     const controller = makeController({ providers: makeProviders({}), flow });
@@ -369,6 +388,8 @@ describe('AuthTelegramController.telegramRedirect', () => {
       'signed-link-state',
       expect.objectContaining({ httpOnly: true }),
     );
+    // Контрольный: собственную свежую куку привязки не стирает.
+    expect(resMocks.clearCookie).not.toHaveBeenCalled();
   });
 });
 

@@ -1,6 +1,4 @@
-// Вынесено из auth.controller.ts / auth-http.util.ts — оба стоят на потолке
-// размера (правило №10 CLAUDE.md), новая логика едет сюда, а не туда.
-//
+// Вынесено из auth.controller.ts / auth-http.util.ts (оба на потолке размера, №10).
 // Разбор 31.08.2026, продолжение 2026-09-03. `refresh()` ставил refresh-куку
 // только при успешной ротации, а на 401 ничего не чистил (в отличие от
 // `logout`, у которого была своя пара `clearCookie`). Клиент по контракту
@@ -15,11 +13,13 @@ interface CookieRes {
   clearCookie(name: string, opts: { path: string }): void;
 }
 
-/** Стирает refresh-куку и метку кросс-сайтовой сессии — общая точка для
- * `logout` и для 401 на `/api/auth/refresh` (одна механика, одно место). */
+const LINK_COOKIES = ['tg_link_user', 'link_token']; // незаконченная привязка
+/** Стирает refresh-куку, метку кросс-сайтовой сессии и куки привязки: брошенная
+ * привязка переживала выход — следующий на этом компьютере входил в чужой аккаунт
+ * (аудит 2026-11). Общая точка для `logout` и 401 на `/api/auth/refresh`. */
 export function clearCookies(res: CookieRes): void {
-  res.clearCookie(REFRESH_COOKIE, { path: '/api/auth' });
-  res.clearCookie(CROSS_SITE_COOKIE, { path: '/api/auth' });
+  for (const name of [REFRESH_COOKIE, CROSS_SITE_COOKIE, ...LINK_COOKIES])
+    res.clearCookie(name, { path: '/api/auth' });
 }
 
 /**

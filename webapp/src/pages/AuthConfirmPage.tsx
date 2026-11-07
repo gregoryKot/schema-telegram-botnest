@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
 import { TicketDenied } from './service/TicketDenied';
 import { formatUserCode } from '../../../shared/src/auth/loginTicketCode';
+import { dropUrlFragment } from './authCallback/dropUrlFragment';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -22,37 +23,34 @@ type Phase = 'ask' | 'busy' | 'notfound' | 'denied';
 export function AuthConfirmPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { setAccessToken } = useAuth();
+  const { getAccessToken, refreshToken } = useAuth();
   const tr = useTr();
   const code = params.get('code') ?? '';
   const [phase, setPhase] = useState<Phase>('ask');
-  const tokenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Токен приезжает во фрагменте (redirect OAuth/письма). Забираем сессию
-    // ЗДЕСЬ: подтверждение билета — авторизованное действие, и без сессии его
-    // сервер отобьёт. Фрагмент затем чистим, чтобы токен не осел в истории.
-    const hash = new URLSearchParams(window.location.hash.slice(1));
-    const token = hash.get('access_token');
-    const expiresIn = parseInt(hash.get('expires_in') ?? '900', 10);
-    if (token) {
-      tokenRef.current = token;
-      setAccessToken(token, expiresIn);
-      window.history.replaceState(null, '', window.location.pathname);
-    }
+    // Фрагмент не читаем (login-CSRF, аудит 2026-11): подброшенный
+    // `#access_token=` одобрил бы билет ЧУЖОЙ сессией. Только стираем.
+    dropUrlFragment();
     if (!code) navigate('/today', { replace: true });
-  }, [code, navigate, setAccessToken]);
+  }, [code, navigate]);
+
+  // Подтверждение — действие СВОЕЙ сессии этого браузера: refresh-кука из
+  // редиректа OAuth или ответ POST письма. Ещё не поднята — refresh (общий
+  // in-flight замок с AuthProvider, второй ротации не будет).
+  const sessionToken = async (): Promise<string | null> =>
+    getAccessToken() ?? ((await refreshToken()) ? getAccessToken() : null);
 
   const call = async (path: string): Promise<boolean> => {
+    const token = await sessionToken();
+    if (!token) return false; // сессии нет — сервер всё равно отобьёт (JwtAuthGuard)
     const res = await fetch(`${API_BASE}/api/auth/ticket/${path}`, {
       method: 'POST',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         'x-requested-with': 'webapp',
-        ...(tokenRef.current
-          ? { Authorization: `Bearer ${tokenRef.current}` }
-          : {}),
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ code }),
     });
