@@ -242,4 +242,23 @@ describe('useAboutMe — сбои уходят в reportError, а не в кон
     const { result } = renderHook(() => useAboutMe(api));
     await waitFor(() => expect(result.current.portraitReady).toBe(true));
   });
+
+  // Дневники — единственное чтение профиля (счётчик записей, лист портрета):
+  // потребителю нужно знать, пришли ли они, а не гадать по пустому массиву.
+  it('diaries: loading → ready после обоих дневников; сбой любого — failed', async () => {
+    mockApi.getProfile.mockResolvedValue(emptyProfile);
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getSchemaDiary.mockResolvedValue([]);
+    mockApi.getModeDiary.mockResolvedValue([]);
+    mockApi.getModeNotes.mockResolvedValue([]);
+    mockApi.getPhraseChecks.mockResolvedValue([]);
+    const ok = renderHook(() => useAboutMe(api, { reportError }));
+    expect(ok.result.current.diaries).toBe('loading');
+    await waitFor(() => expect(ok.result.current.diaries).toBe('ready'));
+
+    mockApi.getModeDiary.mockRejectedValue(new Error('x'));
+    const bad = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() => expect(bad.result.current.diaries).toBe('failed'));
+    expect(reportError).toHaveBeenCalledWith('getModeDiary failed');
+  });
 });

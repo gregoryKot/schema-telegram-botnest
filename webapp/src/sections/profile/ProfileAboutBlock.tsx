@@ -1,24 +1,22 @@
 // «Мой портрет» и «Тёплые слова» в профиле сайта. Данные — общий хук
-// shared/src/portrait/useAboutMe (api инъекцией); портрет и слова готовятся
-// независимо и показывают силуэт карточки, пока грузятся (правило «Скелетоны»).
+// shared/src/portrait/useAboutMe: его держит ProfileSection (дневники — один запрос и для счётчика записей);
+// портрет и слова готовятся независимо и показывают силуэт карточки, пока грузятся (правило «Скелетоны»).
 import { useState } from 'react';
-import { api, reportClientError } from '../../api';
 import { Skeleton } from '../../components/Skeleton';
 import { ScreenBlock } from '../../components/customize/ScreenBlock';
 import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
-import { useAboutMe } from '../../../../shared/src/portrait/useAboutMe';
+import type { AboutMeState } from '../../../../shared/src/portrait/useAboutMe';
 import { PortraitCard } from './PortraitCard';
 import { PortraitSheet } from './PortraitSheet';
 import { WarmWordsCard } from './WarmWordsCard';
 
 interface Props {
-  refreshKey?: number;
+  aboutMe: AboutMeState;
   onTakeTest?: () => void;
   blocks: SiteScreenBlocks;
 }
 
-export function ProfileAboutBlock({ refreshKey, onTakeTest, blocks }: Props) {
-  const aboutMe = useAboutMe(api, { refreshKey, reportError: (message) => reportClientError({ message, section: 'profile-about' }) });
+export function ProfileAboutBlock({ aboutMe, onTakeTest, blocks }: Props) {
   const [sheet, setSheet] = useState(false);
 
   return (

@@ -1,7 +1,5 @@
-// Записи дневника схем и режимов для экрана «Мои паттерны»: нужны и для
-// статуса строки («карточка заполнена · 3 записи»), и для списка записей
-// внутри PatternSheet — один запрос на оба места. Провал загрузки не
-// выдумывает пустоту молча: уходит в отчёт, а статус строки не показывается.
+// Записи дневников схем и режимов для «Мои паттерны»: статус строки и список в PatternSheet — один запрос.
+// Провал — отчёт, статус строки не показывается. Есть source (профиль: useAboutMe) — своего запроса нет.
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { api, reportClientError } from '../../api';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
@@ -12,13 +10,15 @@ export interface PatternEntries {
   modeEntries: ModeDiaryEntry[];
   setModeEntries: Dispatch<SetStateAction<ModeDiaryEntry[]>>;
 }
+export type PatternEntriesSource = PatternEntries & { ready: boolean };
 
-export function usePatternEntries() {
+export function usePatternEntries(source?: PatternEntriesSource): PatternEntriesSource {
   const [schemaEntries, setSchemaEntries] = useState<SchemaDiaryEntry[]>([]);
   const [modeEntries, setModeEntries] = useState<ModeDiaryEntry[]>([]);
   const [ready, setReady] = useState(false);
-
+  const external = !!source;
   useEffect(() => {
+    if (external) return;
     let alive = true;
     Promise.all([api.getSchemaDiary(), api.getModeDiary()])
       .then(([s, m]) => {
@@ -29,7 +29,7 @@ export function usePatternEntries() {
       })
       .catch(() => reportClientError({ message: 'schemas pattern diary load failed', section: 'schemas' }));
     return () => { alive = false; };
-  }, []);
+  }, [external]);
 
-  return { schemaEntries, setSchemaEntries, modeEntries, setModeEntries, ready };
+  return source ?? { schemaEntries, setSchemaEntries, modeEntries, setModeEntries, ready };
 }

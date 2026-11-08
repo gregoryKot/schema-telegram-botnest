@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
 import { JourneySheet } from '../components/JourneySheet';
@@ -27,20 +27,20 @@ import { CardTitle } from './profile/CardTitle';
 import { ACHIEVEMENT_META } from './profile/profileMeta';
 import type { InsightsData, StreakData } from './profile/profileMeta';
 import { buildLevelMap } from './profile/profileModel';
+import { useAboutMe } from '../../../shared/src/portrait/useAboutMe';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
 
 interface Props {
-  onOpenSettings?: () => void;
-  onOpenTracker?: () => void;
-  refreshKey?: number;
-  displayName?: string | null;
-  onTakeTest?: () => void;
+  onOpenSettings?: () => void; onOpenTracker?: () => void; onTakeTest?: () => void;
+  refreshKey?: number; displayName?: string | null;
 }
 
 export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, displayName, onTakeTest }: Props) {
   const tr = useTr();
   const blocks = useScreenBlocks('profile');
+  // Дневники схем и режимов читает только useAboutMe — счётчик записей, портрет и его лист берут их оттуда.
+  const aboutMe = useAboutMe(api, { refreshKey, reportError: (message) => reportClientError({ message, section: 'profile-about' }) });
 
   const [streak, setStreak]             = useState<StreakData | null>(null);
   const [achievements, setAchievements] = useState<Achievement[] | null>(null);
@@ -54,13 +54,12 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [showBestDayInfo, setShowBestDayInfo] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [relation, setRelation] = useState<TherapyRelationInfo | null>(null);
-  const [diaryCount, setDiaryCount] = useState<number>(0);
+  const [gratitudeCount, setGratitudeCount] = useState<number>(0);
   const [ysqCount, setYsqCount] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Reset to the loading state when a refresh is requested. Adjusting state
-  // during render (not in an effect) keeps this off set-state-in-effect; on
-  // mount these already start null/false.
+  // Refresh → back to loading. State is adjusted during render (not in an effect) to stay off
+  // set-state-in-effect; on mount these already start null/false.
   const [seenRefresh, setSeenRefresh] = useState(refreshKey);
   if (refreshKey !== seenRefresh) {
     setSeenRefresh(refreshKey);
@@ -71,8 +70,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     setLoadError(false);
   }
 
-  // Сбой любого фетча раньше глотался поодиночке — экран уходил в "ready" с
-  // молчаливыми нулями вместо реальных данных. Теперь виден баннером.
+  // Сбой любого фетча (и дневников useAboutMe) виден баннером, а не молчаливыми нулями.
   useEffect(() => {
     Promise.all([
       api.getStreak().then(setStreak),
@@ -80,12 +78,14 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       api.getInsights().then(setInsights),
       api.history(112).then(h => setLevels(buildLevelMap(h))),
       api.getTherapyRelation().then(r => setRelation(r)),
-      Promise.all([api.getSchemaDiary(), api.getModeDiary(), api.getGratitudeDiary()])
-        .then(([sd, md, gd]) => setDiaryCount(sd.length + md.length + gd.length)),
+      api.getGratitudeDiary().then(g => setGratitudeCount(g.length)),
       api.getYsqHistory().then(h => setYsqCount(h.length)),
     ]).catch(() => setLoadError(true)).finally(() => setReady(true));
   }, [refreshKey]);
 
+  const shown = ready && aboutMe.diaries !== 'loading';
+  const failed = loadError || aboutMe.diaries === 'failed';
+  const diaryCount = aboutMe.schemaEntries.length + aboutMe.modeEntries.length + gratitudeCount;
   const activeDates = useMemo(() => new Set(levels.keys()), [levels]);
   const currentStreak = streak?.currentStreak ?? 0;
   const totalDays     = streak?.totalDays ?? 0;
@@ -97,17 +97,17 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     <div className="ds-page cpf-page animate-fade">
       <ProfileHeader displayName={displayName} totalDays={totalDays} onCustomize={blocks.openByGear} onOpenSettings={onOpenSettings} />
 
-      {!ready && (
+      {!shown && (
         <div className="cpf-skeleton">{[110, 96, 160].map((h, i) => <Skeleton key={i} height={h} radius={20} />)}</div>
       )}
 
-      {ready && loadError && (
+      {shown && failed && (
         <div role="alert" className="cpf-error">
           {tr('Не удалось загрузить часть данных. Обнови страницу.', 'Не удалось загрузить часть данных. Обновите страницу.')}
         </div>
       )}
 
-      {ready && (
+      {shown && (
         <>
           <ScreenBlock id="journey" blocks={blocks} className="cpf-blk">
             <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card cpf-journey">
@@ -132,7 +132,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
             </ScreenBlock>
           )}
 
-          <ProfileAboutBlock refreshKey={refreshKey} onTakeTest={onTakeTest} blocks={blocks} />
+          <ProfileAboutBlock aboutMe={aboutMe} onTakeTest={onTakeTest} blocks={blocks} />
 
           {(hasAchievementsCard || showInsights) && (
             <div className="cpf-duo">
@@ -155,7 +155,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       <TherapyNote compact />
 
-      {ready && <ProfileLinks onOpenSettings={onOpenSettings} onDeleteAccount={() => setShowDeleteConfirm(true)} />}
+      {shown && <ProfileLinks onOpenSettings={onOpenSettings} onDeleteAccount={() => setShowDeleteConfirm(true)} />}
 
       {/* Список прячем, пока открыта деталь (когда-то — из-за драки двух
           фокус-ловушек; теперь трап у верхнего слоя, dialogStack) */}

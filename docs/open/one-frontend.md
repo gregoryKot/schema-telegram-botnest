@@ -11,14 +11,11 @@
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
 **Единая версия, этап 3 — S-пробелы** (`docs/archive/ONE_FRONTEND_PLAN.md`):
-- **Профиль сайта читает дневники схем и режимов трижды.** `ProfileSection.tsx`
-  (счётчик записей), `useAboutMe` (`shared/src/portrait/useAboutMe.ts`: частоты и
-  «тёплые слова») и открытый лист `PortraitSheet` (`usePatternLayer` →
-  `usePatternEntries`) — три пары одинаковых GET `/api/diary/schema|mode`. Лишнюю
-  пару лист платит только при открытии, но две первые идут на каждом заходе в
-  профиль. Решение: отдать `ProfileSection` счётчик из `useAboutMe`
-  (`schemaEntries.length + modeEntries.length`) и не грузить дневники второй раз.
-  Не сделано сейчас: `ProfileSection.tsx` упирается в храповик размера (170 строк).
+- **Профиль сайта читает историю теста YSQ дважды**: счётчик тестов `ProfileSection.tsx`
+  (`getYsqHistory`) и `useAboutMe` (`shared/src/portrait/useAboutMe.ts`, портрет). Дневники
+  уже читает один `useAboutMe` (поднят в `ProfileSection`, флаг `diaries`). Не сделано: экран
+  ждёт свой счётчик, а `portraitReady` ждёт ещё и `getProfile` — перевод счётчика на хук задержал
+  бы профиль; нужен свой флаг готовности истории в `useAboutMe`.
 - **Хаб дневника на сайте: нет подписи «Последняя отметка · N дн. назад»** у строки
   трекера. Нужна дата последней оценки из
   `ratings`/истории в `DiarySection`; сейчас строка отдаёт только «что это и зачем».
