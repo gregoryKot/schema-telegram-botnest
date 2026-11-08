@@ -1238,6 +1238,7 @@
   "src/infra/self-check/probe-oauth-providers.ts": 148,
   "src/infra/self-check/probe-robokassa.ts": 166,
   "src/infra/self-check/probe-runtime-mode.ts": 40,
+  "src/infra/self-check/probe-telegram-pending.ts": 62,
   "src/infra/self-check/probe-telegram-polling.ts": 58,
   "src/infra/self-check/probe-telegram.ts": 45,
   "src/infra/self-check/probe-telegram.username.ts": 29,
