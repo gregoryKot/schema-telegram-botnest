@@ -1,4 +1,10 @@
 import { escapeHtml } from '../utils/escape-html';
+import { formatPrice } from './price-region';
+import {
+  BookingCard,
+  bookingCardText,
+  subjectFromTitle,
+} from './booking-notify.format';
 
 // Пометки админу в уведомлениях о брони. Клиенту они не показываются: ответ
 // публичной ручки записи не должен выдавать, кто из контактов уже клиент
@@ -16,4 +22,38 @@ export function awaitingPaymentTitle(note?: string): string {
   return note
     ? `${AWAITING_PAYMENT}\n⚠️ ${escapeHtml(note)}`
     : AWAITING_PAYMENT;
+}
+
+/**
+ * Заголовок «запись отменена». Оплаченную бронь (`paidAt` — деньги пришли
+ * вебхуком Robokassa, только рубли) отменяют так же, как неоплаченную, а
+ * владельцу нужно вернуть деньги: без пометки DM и письмо выглядели одинаково
+ * (аудит 2026-11, R9). Заголовок же становится темой письма — пометка видна
+ * в обоих каналах.
+ */
+export function cancelledTitle(b: {
+  paidAt?: Date | null;
+  amount?: number | null;
+}): string {
+  if (b.paidAt == null) return '❌ <b>Запись отменена</b>';
+  const sum =
+    b.amount != null
+      ? formatPrice(b.amount, 'RUB')
+      : 'сумму сверьте в Robokassa';
+  return `❌ <b>Запись отменена — оплачена, нужен возврат, ${sum}</b>`;
+}
+
+/** Что делать с деньгами отменённой оплаченной брони — строкой под карточкой. */
+export const REFUND_HINT =
+  'Деньги пришли через Robokassa: верните их клиенту и аннулируйте чек в «Моём налоге».';
+
+/** Уведомление об отмене для обоих каналов: карточка брони и тема письма. */
+export function cancelledNotice(b: BookingCard): {
+  html: string;
+  subject: string;
+} {
+  const title = cancelledTitle(b);
+  const card = bookingCardText(title, b);
+  const html = b.paidAt != null ? `${card}\n\n${REFUND_HINT}` : card;
+  return { html, subject: subjectFromTitle(title) };
 }

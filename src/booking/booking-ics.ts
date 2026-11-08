@@ -2,6 +2,7 @@ import { GoneException, NotFoundException } from '@nestjs/common';
 import { BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildVcalendar } from './caldav-event.util';
+import { eventDurationMin } from './session-event';
 
 // .ics для клиента (PR B) — отдельная сборка от CalDAV-события владельца
 // (booking-notify.service.ts::onConfirmed), потому что владельческое событие
@@ -40,7 +41,7 @@ export async function buildBookingIcsText(
     {
       uid: `booking-${b.id}-client@schemehappens.ru`,
       startsAt: b.startsAt,
-      durationMin: b.durationMin,
+      durationMin: eventDurationMin(b),
       summary,
       description,
       url: manageUrl,

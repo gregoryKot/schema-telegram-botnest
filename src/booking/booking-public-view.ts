@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { eventDurationMin } from './session-event';
 
 /**
  * Public booking view by self-cancel token (used by the post-payment page).
@@ -21,14 +22,14 @@ export async function getPublicBookingByToken(
     where: { cancelToken: token },
   });
   if (!b) throw new NotFoundException('Booking not found');
+  // Длина встречи, а не слота: знакомство — 15 минут (Р6, session-event.ts).
+  const durationMin = eventDurationMin(b);
   return {
     status: b.status,
     paid: b.paidAt != null,
     type: b.type,
     startsAt: b.startsAt.toISOString(),
-    endsAt: new Date(
-      b.startsAt.getTime() + b.durationMin * 60_000,
-    ).toISOString(),
-    durationMin: b.durationMin,
+    endsAt: new Date(b.startsAt.getTime() + durationMin * 60_000).toISOString(),
+    durationMin,
   };
 }

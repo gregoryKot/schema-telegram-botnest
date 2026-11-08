@@ -117,7 +117,15 @@ export class DonationService {
 
   private async markPaid(id: number, paidAmount?: number) {
     const row = await this.prisma.donation.findUnique({ where: { id } });
-    if (!row || row.status === 'paid') return { ok: true };
+    // R9 (аудит 2026-11): деньги без строки доната — OK Robokassa (повтор её не
+    // создаст), владельцу error(): AlertLogger шлёт его в DM с троттлингом.
+    if (!row) {
+      this.logger.error(
+        `Robokassa: оплата доната #${id} (${paidAmount ?? '?'} ₽) без строки в БД — платёж нужно найти в кабинете Robokassa и вернуть деньги`,
+      );
+      return { ok: true };
+    }
+    if (row.status === 'paid') return { ok: true };
     // Defense in depth: the paid amount is already signature-bound, but flag any
     // mismatch with the recorded amount so a misconfig can't slip through.
     if (paidAmount != null && Math.round(paidAmount) !== row.amount) {

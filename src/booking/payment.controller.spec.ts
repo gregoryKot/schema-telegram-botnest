@@ -422,6 +422,19 @@ describe('PaymentController.successRedirect', () => {
     expect(res.redirect).toHaveBeenCalledWith(`${SITE_URL}/booking/paid`);
   });
 
+  // Аудит 2026-11, R9: SignatureValue=a&SignatureValue=b в query — массив;
+  // сверка звала `.toLowerCase` у массива и роняла редирект 500.
+  it('подпись массивом (повтор параметра в query) → общая страница, не 500', async () => {
+    const { controller, booking } = makeController();
+    const sig = md5(`4000.00:7:${PASS1}`);
+    const res = fakeRes();
+
+    await controller.successRedirect('7', '4000.00', [sig, sig] as never, res);
+
+    expect(booking.getById).not.toHaveBeenCalled();
+    expect(res.redirect).toHaveBeenCalledWith(`${SITE_URL}/booking/paid`);
+  });
+
   it('booking.getById падает (не найдено) → общая страница без токена, не 500', async () => {
     const { controller, booking } = makeController();
     booking.getById.mockRejectedValueOnce(new Error('not found'));

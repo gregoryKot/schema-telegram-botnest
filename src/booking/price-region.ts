@@ -80,9 +80,14 @@ export const EU_EXTRA_TIME_ZONES: readonly string[] = [
   'MET',
 ];
 
-/** Регион цены по IANA-поясу; пустой/неизвестный → 'RU'. */
+/** UTC и синонимы — пояс без места (защита от отпечатка, серверы): страна
+ * неизвестна → рубли с предоплатой (решение владельца Р5, 2026-11-08). */
+export const PLACELESS_TIME_ZONE =
+  /^(Etc\/)?(UTC|UCT|Universal|Zulu|Greenwich|GMT([+-]?0)?)$/;
+
+/** Регион цены по IANA-поясу; пустой/неизвестный/без места → 'RU'. */
 export function regionFromTimeZone(tz: string | null | undefined): PriceRegion {
-  if (!tz) return 'RU';
+  if (!tz || PLACELESS_TIME_ZONE.test(tz)) return 'RU';
   if (RU_TIME_ZONES.includes(tz)) return 'RU';
   if (IL_TIME_ZONES.includes(tz)) return 'IL';
   if (tz.startsWith('Europe/') || EU_EXTRA_TIME_ZONES.includes(tz)) return 'EU';
@@ -101,8 +106,7 @@ export function regionFromTimeZone(tz: string | null | undefined): PriceRegion {
   if (
     tz.startsWith('Atlantic/') ||
     tz.startsWith('Antarctica/') ||
-    tz.startsWith('Etc/') ||
-    tz === 'UTC'
+    tz.startsWith('Etc/')
   )
     return 'INTL';
   // Строка не похожа на IANA-пояс (мусор из запроса) — рубли, как у пустого.

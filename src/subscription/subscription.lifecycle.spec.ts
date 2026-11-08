@@ -98,6 +98,16 @@ function makePrisma() {
       },
     ),
     subscriptionCharge: {
+      // Просроченные продления (R8, charge-guards.ts): pending, не первый,
+      // старше where.createdAt.lt — как отфильтровал бы Postgres.
+      findMany: jest.fn(({ where }: any) =>
+        [...charges.values()].filter(
+          (c) =>
+            c.status === where.status &&
+            !c.isFirst &&
+            c.createdAt < where.createdAt.lt,
+        ),
+      ),
       create: jest.fn(({ data }: any) => {
         const row = { id: nextChargeId++, status: 'pending', ...data };
         charges.set(row.id, row);
