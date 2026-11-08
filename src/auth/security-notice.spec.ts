@@ -58,7 +58,9 @@ describe('SecurityNoticeService.deliver', () => {
 
   it('нет ни почты, ни Telegram → никуда не шлёт (след — в журнале у вызывающего)', async () => {
     const { svc, email, notifications } = makeService({});
-    await svc.deliver(7n, { kind: 'totp_locked' });
+    await expect(
+      svc.deliver(7n, { kind: 'totp_locked' }),
+    ).resolves.toBeUndefined();
     expect(email.send).not.toHaveBeenCalled();
     expect(notifications.schedule).not.toHaveBeenCalled();
   });

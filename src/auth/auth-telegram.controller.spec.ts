@@ -415,6 +415,10 @@ describe('AuthTelegramController.telegramRedirect', () => {
     controller.telegramRedirect(req, res);
     expect(flowMocks.buildLinkState).not.toHaveBeenCalled();
     expect(resMocks.cookie).not.toHaveBeenCalled();
+    expect(resMocks.clearCookie).toHaveBeenCalledWith('tg_link_user', {
+      path: '/api/auth',
+    });
+    expect(resMocks.redirect).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('webUser из куки link_token: ставит tg_link_user cookie с подписанным state', () => {

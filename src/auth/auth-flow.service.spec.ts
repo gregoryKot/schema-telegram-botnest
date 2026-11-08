@@ -210,7 +210,10 @@ describe('AuthFlowService.signInOrLinkOrMerge', () => {
   it('обычный вход (linkUserId=null) — не привязка, уведомления нет', async () => {
     const notice = makeNotice();
     const svc = makeService({ notice });
-    await svc.signInOrLinkOrMerge('vk', makeIdentity(), { linkUserId: null });
+    const outcome = await svc.signInOrLinkOrMerge('vk', makeIdentity(), {
+      linkUserId: null,
+    });
+    expect(outcome).toMatchObject({ kind: 'tokens', userId: 1n });
     expect(notice.linked).not.toHaveBeenCalled();
   });
 

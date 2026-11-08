@@ -417,7 +417,15 @@ describe('AuthAccountController.emailConsume (POST)', () => {
 
   it('обычный вход по ссылке — не привязка, уведомления нет', async () => {
     const { controller, notice } = makeController();
-    await controller.emailConsume({ token: 'tok-1' }, makeReq(), makeRes());
+    const result = await controller.emailConsume(
+      { token: 'tok-1' },
+      makeReq(),
+      makeRes(),
+    );
+    expect(result).toEqual({
+      accessToken: FAKE_TOKENS.accessToken,
+      expiresIn: FAKE_TOKENS.expiresIn,
+    });
     expect(notice.linked).not.toHaveBeenCalled();
   });
 
