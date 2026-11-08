@@ -69,12 +69,6 @@
 `file:line`, — в [ONBOARDING_AUDIT_2026-10.md](../ONBOARDING_AUDIT_2026-10.md);
 здесь только инженерные хвосты, которые в PR аудита сознательно не чинились):
 
-- **Гейт тап-целей не видит размеры из CSS-классов.**
-  `scripts/tap-targets-rules.mjs` читает только инлайновый `style` в JSX, а
-  размер `.evi-x` 22×22 (`webapp/src/index.css`; чинился: зона 44 через
-  `::before`, держит пин в `EviList.test.tsx`) задан классом. Расширение —
-  другой механизм (разбор CSS плюс связь `className` → правило), больше
-  PR кнопки удаления; разборщик правил уже есть в `scripts/css-rules-parse.mjs`.
 - **Второй словарь имён провайдеров — `PROVIDER_NAMES` в
   `shared/src/components/LoginTicketWait.tsx`** (на сайте один —
   `webapp/src/pages/account/providerNames.ts`). Осознанно не сведены: в шторке
