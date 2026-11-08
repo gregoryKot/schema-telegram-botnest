@@ -32,9 +32,29 @@ beforeEach(() => {
   cleanup();
   startParam = null;
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 describe('useStartParam', () => {
+  // #758: внутри Telegram start_param приходит из подписанных данных запуска —
+  // перезагрузка отдаёт его снова, и согласие на пару открывалось второй раз.
+  it('перезагрузка вкладки: тот же start_param хоста повторно не разбирается, новый — разбирается', () => {
+    expect(setup('pair_AB12', '/today').onAction).toHaveBeenCalledTimes(1);
+    cleanup(); // «перезагрузка»: новая жизнь страницы, та же вкладка
+    const again = setup('pair_AB12', '/today');
+    expect(again.onAction).not.toHaveBeenCalled();
+    expect(again.onHandled).toHaveBeenCalledTimes(1);
+    cleanup();
+    expect(setup('therapy_XY', '/today').onAction).toHaveBeenCalledWith({ kind: 'join', joinKind: 'therapy', code: 'XY' });
+  });
+
+  it('контрольный: ?startapp= адреса память хоста не глушит', () => {
+    setup('pair_AB12', '/today');
+    cleanup();
+    startParam = null;
+    expect(setup(null, '/today?startapp=pair_AB12').onAction).toHaveBeenCalledWith({ kind: 'join', joinKind: 'pair', code: 'AB12' });
+  });
+
   it('pair_ и therapy_ отдают действие присоединения, адрес очищается', () => {
     const a = setup('pair_AB12', '/today?startapp=pair_AB12');
     expect(a.onAction).toHaveBeenCalledWith({ kind: 'join', joinKind: 'pair', code: 'AB12' });
