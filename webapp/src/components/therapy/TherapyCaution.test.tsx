@@ -35,6 +35,27 @@ describe('TherapyCaution', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  // Редизайн 2026-11: наклейка-строка — знак Limits, одна фраза и ссылка, без пояснения;
+  // ветки «кто ответит» и событие shown — те же, что у полного предупреждения.
+  it('compact: строка со знаком Limits и ссылкой, без пояснения; shown так же', () => {
+    const { container } = render(<MemoryRouter><TherapyCaution place="exercise_start" compact /></MemoryRouter>);
+    const note = screen.getByRole('note');
+    expect(note.className).toBe('th-caution th-caution--compact');
+    expect(note.querySelector('.th-caution-sign')?.getAttribute('aria-hidden')).toBe('true');
+    expect(note.querySelector('.th-caution-sign svg.pp-art--nav')).toBeTruthy();
+    expect(screen.getByText('Это самопомощь, не замена терапии.')).toBeTruthy();
+    expect(container.querySelector('.th-caution-body')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
+    expect(track).toHaveBeenCalledWith('exercise_start', 'shown');
+  });
+
+  it('по умолчанию — полное предупреждение с пояснением, без знака', () => {
+    const { container } = renderCaution();
+    expect(screen.getByRole('note').className).toBe('th-caution');
+    expect(container.querySelector('.th-caution-body')).toBeTruthy();
+    expect(container.querySelector('.th-caution-sign')).toBeNull();
+  });
+
   it('пользователь сам терапевт: пусто, событий нет', () => {
     localStorage.setItem('therapy_contact_url', 'tg://user?id=1');
     localStorage.setItem('therapy_contact_name', 'вам');

@@ -1,72 +1,72 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Leaf } from '../art/PaperArtSigns';
 import { pressable } from '../../utils/a11y';
+// Порядок импортов держит общий чанк TherapyCaution: его CSS идёт до index.css (docs/open/frontend-ux.md).
 import { TherapyCaution } from '../therapy/TherapyCaution';
 import { useExBackLabel } from './exBackLabel';
 import { Skeleton, SkeletonCard } from '../Skeleton';
+import { SpreadLayout } from '../paper/SpreadLayout';
+import { ExHead, type ExHeadProps } from './ExHead';
+import { GlyphArrowLeft } from './ExGlyphs';
 import '../../styles/sheet-exercises.css';
 
-// ── Shared SVG icons ─────────────────────────────────────────────────────────
-export function GlyphArrowLeft() {
-  return (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 8H3M7 4L3 8l4 4" />
-    </svg>
-  );
-}
-export function GlyphArrowRight() {
-  return (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 8h10M9 4l4 4-4 4" />
-    </svg>
-  );
-}
-export function GlyphCheck() {
-  return <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.5 3.5L13 4.5" /></svg>;
-}
-export function GlyphPlus() {
-  return <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>;
-}
-export function GlyphX() {
-  return <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>;
-}
+export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExGlyphs';
 
 // ── Shared exercise wrapper ───────────────────────────────────────────────────
 // Шапка — общая ds-sheet-head/ds-back (#906): .ex2-top держит sticky и --safe-top
 // (safeTop.test.ts). Стрелка — SVG, подпись без «←»: имя кнопки («Назад», «Закрыть»,
 // «Назад к упражнениям») ищут по тексту тесты десятков потребителей ExScreen.
 // Без backLabel подпись задаёт хост упражнений (exBackLabel.ts).
-interface ExScreenProps {
+// Герой (look, ExHead) и раскладки редизайна 2026-11 — по желанию экрана, без них DOM прежний:
+//  • hintBeforeField — на ≤900 подсказка (aside) между шапкой и полем, а не после «Сохранить»;
+//  • spread — разворот (SpreadLayout): на ≥1024 шапка и подсказка слева колонкой, форма справа.
+interface ExScreenProps extends ExHeadProps {
+  /** Предупреждение «самопомощь» под шапкой — только на первом экране. */
+  caution?: boolean;
   onBack: () => void;
   backLabel?: string;
-  eyebrow: ReactNode;
-  art?: ReactNode;
-  title: ReactNode;
-  lede?: ReactNode;
-  caution?: boolean; // предупреждение «самопомощь» под lede, только на первом экране
   aside?: ReactNode;
   foot?: ReactNode;
   children?: ReactNode;
+  hintBeforeField?: boolean;
+  spread?: boolean;
 }
 
-export function ExScreen({ onBack, backLabel, eyebrow, art, title, lede, caution, aside, foot, children }: ExScreenProps) {
+function ExBody({ aside, foot, children, hintBeforeField, spread, caution, ...rest }: Omit<ExScreenProps, 'onBack' | 'backLabel'>) {
+  const head = { ...rest, caution: caution && <TherapyCaution place="exercise_start" compact={rest.look !== undefined} /> };
+  const side = aside && <aside className="ex2-aside">{aside}</aside>;
+  if (spread) {
+    return (
+      <div className="ex2-body ex2-body--spread">
+        <SpreadLayout side={<><ExHead {...head} />{side}</>}>{children}{foot}</SpreadLayout>
+      </div>
+    );
+  }
+  if (hintBeforeField && side) {
+    return (
+      <div className="ex2-body ex2-body--split">
+        <div className="ex2-head"><ExHead {...head} /></div>
+        {side}
+        <div className="ex2-main">{children}{foot}</div>
+      </div>
+    );
+  }
+  return (
+    <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
+      <div className="ex2-main"><ExHead {...head} />{children}{foot}</div>
+      {side}
+    </div>
+  );
+}
+
+export function ExScreen({ onBack, backLabel, ...body }: ExScreenProps) {
   const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
       <div className="ds-sheet-head ex2-top">
         <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{backLabel ?? hostBackLabel}</button>
       </div>
-      <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
-        <div className="ex2-main">
-          {art}<div className="ds-eyebrow">{eyebrow}</div>
-          <h1 className="ds-h2 ex2-title">{title}</h1>
-          {lede && <p className="ds-sub ex2-lede">{lede}</p>}
-          {caution && <TherapyCaution place="exercise_start" />}
-          {children}
-          {foot}
-        </div>
-        {aside && <aside className="ex2-aside">{aside}</aside>}
-      </div>
+      <ExBody {...body} />
     </div>
   );
 }

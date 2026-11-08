@@ -2,7 +2,7 @@ import { Btn, ThemeIcon } from '../../components/landing-kit';
 import type { useTheme } from '../../components/landing-kit-hooks';
 import { TG_URL, menuBtnStyle, burgerLine } from './constants';
 import { TgLink, SectionNav } from './nav';
-import { AuthorAvatar } from './AuthorAvatar';
+import { AuthorAvatar } from '../../components/AuthorAvatar';
 import { hideOnError } from './hideOnError';
 
 type Theme = ReturnType<typeof useTheme>['theme'];

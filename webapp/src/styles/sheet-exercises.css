@@ -45,6 +45,26 @@
   .ex2-aside { position: static; }
 }
 
+/* ── Герой и раскладки редизайна 2026-11 (ExScreen look / hintBeforeField / spread) ── */
+/* Герой — лист упражнения (EntitySheet, paper-app.css); под ним поле. */
+.ex2-main > .ex2-hero { margin-bottom: 28px; }
+.ex2-main > .ex2-hero + .th-caution { margin-top: -12px; margin-bottom: 28px; }
+/* hintBeforeField: шапка, подсказка и поле — отдельные ячейки. На компьютере подсказка справа
+   на обе строки (лишняя высота уходит во вторую строку, а не в зазор под шапкой), на ≤900 —
+   между шапкой и полем: «С чего начать» стоит до «Запечатать письмо», а не после. */
+.ex2-body--split { grid-template-areas: 'head aside' 'main aside'; grid-template-rows: auto 1fr; row-gap: 28px; }
+.ex2-body--split > .ex2-head { grid-area: head; min-width: 0; }
+.ex2-body--split > .ex2-main { grid-area: main; }
+.ex2-body--split > .ex2-aside { grid-area: aside; }
+.ex2-head > .ex2-lede.ds-sub:last-child { margin-bottom: 0; }
+/* Разворот: колонки держит SpreadLayout; подсказка — в левой колонке под листом, не липнет
+   отдельно (липнет вся колонка, ниже шапки упражнения). */
+.ex2-body--spread { display: block; max-width: 1180px; --pa-sticky-top: 80px; }
+.ex2-body--spread .ex2-aside { position: static; }
+@media (max-width: 900px) {
+  .ex2-body--split { grid-template-areas: 'head' 'aside' 'main'; grid-template-rows: none; row-gap: 24px; }
+}
+
 /* ── Шаги, вопрос, низ экрана ─────────────────────────────────────────── */
 .ex2-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid var(--paper-sunk); }
 .ex2-step {
@@ -65,6 +85,9 @@
 .ex2-spacer { flex: 1; }
 .ds-btn.ex2-ghost, .ds-btn.ex2-ghost:hover:not(:disabled) { background: transparent; color: var(--text-sub); }
 .ds-btn.ex2-ghost:hover:not(:disabled) { color: var(--text); background: var(--paper-tint); }
+/* Неактивная прозрачная («← Назад» на первом шаге): без подложки, но бледная — общее правило
+   .ds-btn:disabled больше не гасит прозрачностью, а этот класс перебивает его цвет. */
+.ds-btn.ex2-ghost:disabled { color: var(--text-ghost); }
 .ex2-err { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--err); }
 .ex2-gap { margin-top: 16px; }
 .ex2-stack { display: flex; flex-direction: column; gap: 12px; }

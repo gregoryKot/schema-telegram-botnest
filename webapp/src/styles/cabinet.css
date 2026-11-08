@@ -105,6 +105,10 @@
 .ds-list-row--danger .ds-list-title { color: var(--accent-red); }
 .ds-list-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .ds-list-row--nav { grid-template-columns: minmax(0, 1fr) auto; min-height: 44px; box-sizing: border-box; }
+/* Строка-переход со знаком слева (.pp-row-art): три колонки — знак, подпись, шеврон. Раньше
+   правило жило только в «Ещё» (.cm-page), и в профиле, плане и «Режимах» шеврон уезжал на
+   вторую строку. */
+.ds-list-row--nav:has(> .pp-row-art) { grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 14px; }
 .ds-list-row--inset { padding-left: 0; padding-right: 0; }
 .ds-list-row--inset.ds-list-row--hover:hover { background: none; }
 .ds-list-row--inset.ds-list-row--hover:hover .ds-list-title { color: var(--accent); }
@@ -145,8 +149,10 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   transition: background .12s, border-color .12s;
 }
 .ds-btn:hover { background: var(--accent-hi); }
-.ds-btn:disabled { opacity: .5; cursor: default; }
-.ds-btn:disabled:hover { background: var(--accent); }
+/* Неактивная — утопленная бумага и бледный текст, без прозрачности: терракота на 50%
+   читалась розовой и активной (аудит 2026-11, «неактивные кнопки розовые»). Варианты
+   (--secondary, --icon) неактивными выглядят одинаково. */
+.ds-btn:disabled, .ds-btn:disabled:hover { background: var(--paper-sunk); color: var(--text-faint); border-color: var(--paper-sunk); cursor: default; }
 .ds-btn--sm { height: 40px; padding: 0 18px; border-radius: 20px; }
 .ds-btn--lg { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; } /* на телефоне во всю колонку — в блоке ≤767; на компьютере по тексту */
 .ds-btn--secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
@@ -203,7 +209,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 500; }
 .ds-chip--sm { font-size: 11px; font-weight: 700; padding: 4px 9px; }
 .ds-chip--toggle { min-height: 36px; box-sizing: border-box; border: 1px solid var(--line); background: var(--paper-tint); color: var(--text-muted); font-family: inherit; cursor: pointer; }
-.ds-chip--toggle.is-on { background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h)); border-color: oklch(0.58 0.12 var(--h)); font-weight: 600; }
+/* Выбранный — бумага сущности (--h), а не цветная обводка (APP_2026-11.md, принцип 5);
+   галочка и знак — у SignChip (components/paper). */
+.ds-chip--toggle.is-on { background: oklch(0.885 0.06 var(--h)); color: var(--text); border-color: transparent; font-weight: 600; }
 .ds-badge { display: inline-block; border-radius: 10px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--paper-sunk); color: var(--text-sub); }
 .ds-badge--ok { background: var(--ok-bg); color: var(--ok-ink); }
 .ds-badge--warn { background: var(--warn-bg); color: var(--warn-ink); }
@@ -221,7 +229,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 /* ── Тумблер (role="switch") ─────────────────────────────────────────────── */
 .ds-switch { position: relative; flex-shrink: 0; width: 44px; height: 26px; border-radius: 13px; border: none; padding: 0; background: var(--line-strong); cursor: pointer; transition: background .15s; }
 .ds-switch::before { content: ''; position: absolute; inset: -9px -2px; }
-.ds-switch[aria-checked="true"] { background: var(--ok); }
+/* Включённый — мох бумажной палитры, а не ярко-зелёный --ok: самый яркий цвет экрана
+   настроек был у тумблеров (аудит 2026-11). Мох к --surface 4.2:1, к --bg 3.8:1 (WCAG 1.4.11 ≥3). */
+.ds-switch[aria-checked="true"] { background: var(--c-moss); }
 .ds-switch:disabled { opacity: .5; cursor: default; }
 .ds-switch-knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: left .15s; }
 .ds-switch[aria-checked="true"] .ds-switch-knob { left: 21px; }

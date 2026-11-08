@@ -7,6 +7,12 @@
 .ss-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .ss-inner { max-width: 720px; margin: 0 auto; padding: 40px clamp(16px, 4vw, 24px) 80px; display: flex; flex-direction: column; gap: 24px; box-sizing: border-box; }
 .ss-inner--narrow { max-width: 580px; }
+/* Разворот (SsSheet spread): на ≥1024 герой слева, содержимое справа — колонка шире 720;
+   уже 1024 SpreadLayout ставит героя сверху в прежней колонке. Шапка листа — вне прокрутки,
+   поэтому липкой колонке хватает отступа по умолчанию (--pa-sticky-top, paper-app.css). */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .ss-inner--spread { max-width: 1136px; }
+}
 .ss-head { display: flex; flex-direction: column; gap: 8px; }
 .ss-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1.15; color: var(--text); }
 .ss-lede { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }

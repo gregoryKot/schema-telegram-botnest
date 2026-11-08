@@ -1,0 +1,144 @@
+/* Примитивы рабочих экранов на живой бумаге (редизайн приложения 2026-11,
+   docs/design/APP_2026-11.md; компоненты — components/paper/*). Префикс pa-.
+   База — paper.css (.pp-paper: oklch(0.915 0.03 var(--h)), .pp-art--*) и знаки с тенью-вырезкой
+   (.scn-sign, paper-scenes.css). Глубина — сплошным сдвинутым слоем, без blur и filter.
+   Файл подключают сами компоненты, и в сборке он может встать раньше index.css: правило,
+   которое спорит с примитивом ds-*, пишется на два класса (.ds-btn.pa-…), а не полагается
+   на порядок. Мелкий текст на цветной бумаге — --text-sub: --text-faint на ней ниже 4.5:1. */
+
+/* ── Лист-герой сущности (EntitySheet) ───────────────────────────────────── */
+/* Размер знака и кегль — по ширине самого листа (container query), а не окна: лист живёт и во
+   всю колонку, и плиткой в сетке, и колонкой разворота; узкий лист с знаком 160px душил слово. */
+.pa-sheet {
+  container: pa-sheet / inline-size;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px;
+  box-sizing: border-box; width: 100%; padding: 28px 28px 28px 32px; border-radius: 24px;
+}
+.pa-sheet-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.pa-sheet-label { color: var(--text-sub); }
+.pa-sheet-title {
+  margin: 0; font-family: var(--serif); font-weight: 400; font-size: 32px; line-height: 1.12;
+  letter-spacing: -0.01em; color: var(--text); text-wrap: balance;
+}
+.pa-sheet-sub { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
+.pa-sheet-meta { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text-sub); }
+.pa-sheet-art { display: flex; align-items: center; justify-content: center; width: 160px; }
+.pa-sheet-art .scn-sign { width: 100%; }
+.pa-sheet-art > .scn { width: 200px; }
+.pa-sheet--plain { grid-template-columns: minmax(0, 1fr); }
+.pa-sheet--compact { gap: 18px; padding: 18px 22px 18px 26px; }
+.pa-sheet--compact .pa-sheet-title { font-size: 28px; }
+.pa-sheet--compact .pa-sheet-art { width: 80px; }
+.pa-sheet--compact .pa-sheet-art > .scn { width: 120px; }
+
+@container pa-sheet (max-width: 560px) {
+  .pa-sheet-title { font-size: 28px; }
+  .pa-sheet-art { width: 112px; }
+  .pa-sheet-art > .scn { width: 150px; }
+}
+@container pa-sheet (max-width: 400px) {
+  .pa-sheet-title { font-size: 26px; }
+  .pa-sheet-sub { font-size: 14.5px; }
+  .pa-sheet-art { width: 84px; }
+  .pa-sheet-art > .scn { width: 116px; }
+  .pa-sheet--compact .pa-sheet-title { font-size: 24px; }
+  .pa-sheet--compact .pa-sheet-art { width: 64px; }
+}
+
+/* ── Разворот (SpreadLayout) ─────────────────────────────────────────────── */
+/* Отступ липкой колонки сверху; экран с липкой шапкой задаёт свой на предке (ExScreen — 80). */
+:root { --pa-sticky-top: 24px; }
+.pa-spread { display: flex; flex-direction: column; gap: 24px; box-sizing: border-box; width: 100%; min-width: 0; }
+.pa-spread-side, .pa-spread-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .pa-spread {
+    display: grid; grid-template-columns: minmax(360px, 440px) minmax(0, 600px); gap: 48px;
+    align-items: start; justify-content: center; max-width: 1088px; margin: 0 auto;
+  }
+  /* Колонка липнет; выше окна — прокручивается сама, а не прячет низ под край экрана. */
+  .pa-spread-side { position: sticky; top: var(--pa-sticky-top); max-height: calc(100vh - var(--pa-sticky-top) - 16px); overflow-y: auto; }
+  /* Лист колонкой: знак сверху и крупнее — на 440px рядом с ним Literata 32 жалась бы в две буквы. */
+  .pa-spread-side .pa-sheet { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 32px 32px 36px; }
+  .pa-spread-side .pa-sheet-art { order: -1; justify-self: start; justify-content: flex-start; width: 180px; }
+  .pa-spread-side .pa-sheet-title { font-size: 32px; }
+  .pa-spread-side .pa-sheet--compact .pa-sheet-title { font-size: 28px; }
+  .pa-spread-side .pa-sheet-art > .scn { width: 260px; }
+  .pa-spread-side .pa-sheet--compact .pa-sheet-art { width: 120px; }
+}
+/* Уже разворота лист стоит сверху компактной полосой. */
+@media (max-width: 1023px) {
+  .pa-spread-side .pa-sheet:not(.pa-sheet--compact) { gap: 18px; padding: 22px 24px 22px 26px; }
+}
+
+/* ── Лист «готово» (DoneSheet) ───────────────────────────────────────────── */
+.pa-done { display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; width: 100%; max-width: 540px; margin: 0 auto; }
+.pa-done-sheet { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; box-sizing: border-box; padding: 24px 32px 28px; border-radius: 28px; }
+.pa-done-scene { align-self: stretch; display: flex; justify-content: center; margin-bottom: 6px; }
+.pa-done-scene > .scn { width: min(100%, 300px); }
+.pa-done-label { color: var(--text-sub); }
+.pa-done-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 32px; line-height: 1.12; letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.pa-done-sub { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+.pa-done-actions { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 16px; }
+.ds-btn.pa-done-primary { width: 100%; }
+.ds-link.pa-done-link { min-height: 44px; color: var(--text-sub); }
+.ds-link.pa-done-link:hover { color: var(--text); }
+
+/* ── Сбой строкой (PaperAlert) ───────────────────────────────────────────── */
+.pa-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; box-sizing: border-box; padding: 14px 16px 14px 18px; border-radius: 16px; }
+.pa-alert-sign { display: inline-flex; flex-shrink: 0; opacity: .55; }
+.pa-alert-body { flex: 1 1 200px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pa-alert-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--text); }
+.pa-alert-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
+.ds-btn.pa-alert-retry { flex: none; }
+.ds-btn.pa-alert-retry:not(:disabled) { background: var(--surface); }
+
+/* ── Полноэкранный исход (PaperOutcome) ──────────────────────────────────── */
+.pa-outcome {
+  flex: 1 1 auto; display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100%;
+  min-height: 100vh; padding: 40px 24px; background: var(--bg); color: var(--text);
+}
+@supports (min-height: 100dvh) { .pa-outcome { min-height: 100dvh; } }
+.pa-outcome-card {
+  width: 100%; max-width: 440px; overflow: hidden; border-radius: 28px; background: var(--surface);
+  box-shadow: 12px 13px 0 oklch(0.86 0.045 var(--h));
+}
+.pa-outcome-band {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  height: 176px; overflow: hidden; border-radius: 0;
+}
+/* Уголок второй бумаги из-под полосы — как квадратик у сцен. */
+.pa-outcome-band::before {
+  content: ''; position: absolute; right: -26px; bottom: -34px; width: 104px; height: 104px;
+  border-radius: 20px; transform: rotate(-11deg); background: oklch(0.885 0.06 var(--h));
+}
+.pa-outcome-band .scn-sign { position: relative; width: 136px; }
+.pa-outcome-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 26px 30px 30px; }
+.pa-outcome-eyebrow { color: var(--accent); }
+.pa-outcome-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.pa-outcome-lead { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+.ds-btn.pa-outcome-action { width: 100%; margin-top: 10px; text-decoration: none; }
+.ds-link.pa-outcome-link { align-self: center; min-height: 44px; color: var(--text-sub); text-decoration: none; }
+.ds-link.pa-outcome-link:hover { color: var(--text); }
+.pa-outcome-code { margin: 4px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-muted); word-break: break-all; }
+
+/* ── Чип со знаком (SignChip) ────────────────────────────────────────────── */
+.ds-chip.pa-chip { gap: 6px; padding-left: 6px; }
+.pa-chip-sign { display: inline-flex; align-items: center; justify-content: center; width: 24px; flex-shrink: 0; }
+.pa-chip-sign--idle .pp-art [fill]:not([fill='none']) { fill: color-mix(in srgb, var(--text) 14%, transparent); }
+.pa-chip-sign--idle .pp-art [stroke]:not([stroke='none']) { stroke: color-mix(in srgb, var(--text) 24%, transparent); }
+
+/* ── Телефон ─────────────────────────────────────────────────────────────── */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .pa-sheet { gap: 14px; padding: 20px 18px 20px 20px; border-radius: 20px; }
+  .pa-sheet--compact { padding: 14px 16px 14px 18px; }
+  .pa-done-sheet { padding: 20px 20px 22px; border-radius: 24px; }
+  .pa-done-scene > .scn { width: min(100%, 250px); }
+  .pa-done-title { font-size: 28px; }
+  .ds-btn.pa-alert-retry { width: 100%; }
+  .pa-outcome { align-items: flex-start; padding: calc(16px + var(--safe-top)) 16px 24px; }
+  .pa-outcome-card { box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h)); border-radius: 24px; }
+  .pa-outcome-band { height: 148px; }
+  .pa-outcome-band .scn-sign { width: 112px; }
+  .pa-outcome-body { padding: 22px 20px 24px; }
+  .pa-outcome-title { font-size: 28px; }
+}

@@ -8,3 +8,13 @@
 .th-caution-lead { margin: 0 0 2px; font-weight: 600; color: var(--text); }
 .th-caution-body { margin: 0; }
 .th-caution .th-link { font-size: 14px; display: inline-block; margin-top: 6px; }
+/* Наклейка-строка (TherapyCaution compact, редизайн 2026-11): знак Limits, одна фраза и ссылка
+   на утопленной бумаге, без акцентной полосы — вспомогательное тише главного. */
+.th-caution--compact {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+  margin: 16px 0 0; padding: 10px 14px 10px 12px; border-left: 0; border-radius: 12px;
+  background: var(--paper-sunk); font-size: 13px; line-height: 1.45;
+}
+.th-caution-sign { display: inline-flex; flex-shrink: 0; }
+.th-caution--compact .th-caution-lead { margin: 0; font-weight: 600; color: var(--text-sub); }
+.th-caution--compact .th-link { margin-top: 0; font-size: 13px; }

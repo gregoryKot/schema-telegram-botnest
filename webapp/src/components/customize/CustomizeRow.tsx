@@ -1,5 +1,7 @@
 import { useId, type ReactNode } from 'react';
 import type { DragHandleProps } from '../../../../shared/src/hooks/useDragReorder';
+import type { SignKey } from '../../../../shared/src/theme/entityLook';
+import { SignArt } from '../art/SignArt';
 
 interface Props {
   title: string;
@@ -14,32 +16,38 @@ interface Props {
   lifted: boolean;
   /** Подсветка строки: лист открыт долгим нажатием на этот блок. */
   highlighted?: boolean;
+  /** Знак блока (BLOCK_META.sign) в колонке 44px слева; выключенный блок — знак бледный. */
+  sign?: SignKey;
 }
 
-function Text({ title, sub }: { title: string; sub: string }) {
+function Text({ title, sub, sign, off }: { title: string; sub: string; sign?: SignKey; off?: boolean }) {
   return (
-    <span className="cz-text">
-      <span className="cz-title">{title}</span>
-      <span className="cz-sub">{sub}</span>
-    </span>
+    <>
+      {sign && <span className={off ? 'pp-row-art cz-sign is-off' : 'pp-row-art cz-sign'} aria-hidden="true"><SignArt sign={sign} size="row" /></span>}
+      <span className="cz-text">
+        <span className="cz-title">{title}</span>
+        <span className="cz-sub">{sub}</span>
+      </span>
+    </>
   );
 }
 
 // Строка блока в листе «Настроить экран» (любого экрана — «Сегодня», «Профиль», «Паттерны»): подпись + тумблер (весь ряд — это
 // label тумблера, тап по тексту переключает) и ручка «≡» для перестановки.
-// Тумблер — тот же .ds-switch, что в настройках и в листе «+».
-export function CustomizeRow({ title, sub, on, onToggle, handle, rowRef, offsetY, lifted, highlighted }: Props) {
+// Тумблер — тот же .ds-switch, что в настройках и в листе «+» (включённый — мох).
+// Знак блока слева (sign) — тот же, что у блока на экране; выключенный — бледный.
+export function CustomizeRow({ title, sub, on, onToggle, handle, rowRef, offsetY, lifted, highlighted, sign }: Props) {
   const switchId = useId();
   const body: ReactNode = onToggle ? (
     <label htmlFor={switchId} className="cz-row cz-grow">
-      <Text title={title} sub={sub} />
+      <Text title={title} sub={sub} sign={sign} off={!on} />
       <button id={switchId} type="button" role="switch" aria-checked={!!on} aria-label={title} className="ds-switch" onClick={onToggle}>
         <span className="ds-switch-knob" />
       </button>
     </label>
   ) : (
     <div className="cz-row cz-grow">
-      <Text title={title} sub={sub} />
+      <Text title={title} sub={sub} sign={sign} />
     </div>
   );
   return (

@@ -30,6 +30,8 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/WhySheet.tsx': ['own', '.cw-inner .ds-btn--lg'],
   'components/booking/ClientBookingSheet.tsx': ['own', '.cbk-actions .ds-btn'], // колонка листа до 560 (client-booking.css)
   'components/settingsSheet/AboutSheet.tsx': ['own', '.st-done'],
+  'components/paper/DoneSheet.tsx': ['own', '.ds-btn.pa-done-primary'], // во весь лист «готово» 480–540
+  'components/paper/PaperOutcome.tsx': ['own', '.ds-btn.pa-outcome-action'], // во всю карточку исхода 440
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
   'sections/today/HomeTiles.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину страницы 600

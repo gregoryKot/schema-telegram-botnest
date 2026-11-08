@@ -67,6 +67,69 @@ describe('ExScreen — предупреждение о самопомощи', ()
   });
 });
 
+// Редизайн 2026-11: герой на бумаге упражнения (look → EntitySheet), подсказка до поля на телефоне
+// (hintBeforeField) и разворот (spread). Без них разметка прежняя — 40 экранов не сдвигаются.
+describe('ExScreen — герой и раскладки', () => {
+  const aside = <button type="button">С чего начать</button>;
+
+  it('без look — прежняя шапка: ds-h2 в основной колонке, листа нет', () => {
+    const { container } = render(<ExScreen onBack={vi.fn()} eyebrow="Письмо" title="Себе маленькому" aside={aside}>поле</ExScreen>);
+    expect(container.querySelector('.pa-sheet')).toBeNull();
+    expect(container.querySelector('.ex2-body > .ex2-main > h1.ds-h2')).toBeTruthy();
+    const body = container.querySelector('.ex2-body')!;
+    expect([...body.children].map((c) => c.className)).toEqual(['ex2-main', 'ex2-aside']);
+  });
+
+  it('look — лист упражнения: надпись, h1 Literata и подводка на бумаге, знак из ENTITY_LOOK', () => {
+    const { container } = render(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Упражнение" title="Письмо" lede="Ребёнку, которым ты был">поле</ExScreen>);
+    const sheet = container.querySelector('.ex2-main > .pa-sheet.ex2-hero') as HTMLElement;
+    expect(sheet).toBeTruthy();
+    expect(sheet.getAttribute('data-sign')).toBe('sheets');
+    expect(sheet.style.getPropertyValue('--h')).toBe('290');
+    const h1 = screen.getByRole('heading', { level: 1 });
+    expect(h1.className).toBe('pa-sheet-title');
+    expect(sheet.contains(screen.getByText('Ребёнку, которым ты был'))).toBe(true);
+    expect(container.querySelector('.ex2-title')).toBeNull();
+  });
+
+  it('look с бумагой без знака — картинкой героя становится art; «самопомощь» — строкой под листом', () => {
+    localStorage.clear();
+    const { container } = render(
+      <ExScreen onBack={vi.fn()} look={{ hue: 45 }} art={<i data-testid="art" />} eyebrow="Колесо" title="Детство" caution compact>поле</ExScreen>,
+    );
+    const sheet = container.querySelector('.pa-sheet')!;
+    expect(sheet.className).toContain('pa-sheet--compact');
+    expect(sheet.querySelector('.pa-sheet-art [data-testid="art"]')).toBeTruthy();
+    expect(sheet.nextElementSibling?.className).toBe('th-caution th-caution--compact');
+  });
+
+  it('hintBeforeField: шапка, подсказка, поле — по порядку (на телефоне подсказка до поля)', () => {
+    const { container } = render(
+      <ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" aside={aside} hintBeforeField foot={<button type="button">Запечатать</button>}>поле</ExScreen>,
+    );
+    const body = container.querySelector('.ex2-body.ex2-body--split')!;
+    expect([...body.children].map((c) => c.className)).toEqual(['ex2-head', 'ex2-aside', 'ex2-main']);
+    expect(body.querySelector('.ex2-head .pa-sheet')).toBeTruthy();
+    expect(body.querySelector('.ex2-main')?.textContent).toBe('полеЗапечатать');
+  });
+
+  it('hintBeforeField без подсказки — прежняя раскладка в одну колонку', () => {
+    const { container } = render(<ExScreen onBack={vi.fn()} eyebrow="Письмо" title="Себе" hintBeforeField>поле</ExScreen>);
+    expect(container.querySelector('.ex2-body')?.className).toBe('ex2-body ex2-body--single');
+  });
+
+  it('spread: шапка и подсказка — в боковой колонке разворота, поле — в основной', () => {
+    const { container } = render(
+      <ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" aside={aside} spread>поле</ExScreen>,
+    );
+    const spreadEl = container.querySelector('.ex2-body.ex2-body--spread > .pa-spread')!;
+    const [side, main] = [...spreadEl.children];
+    expect(side.querySelector('.pa-sheet')).toBeTruthy();
+    expect(side.querySelector('.ex2-aside')).toBeTruthy();
+    expect(main.textContent).toBe('поле');
+  });
+});
+
 // Пока грузится чанк упражнения (Suspense в TaskExerciseHost) — силуэт той же рамки,
 // а не крутилка на весь экран (бывший Loader 100dvh).
 describe('ExScreenSkeleton', () => {
