@@ -1,15 +1,18 @@
+import { readLocal, removeLocal, writeLocal } from '../../../shared/src/utils/safeLocalStorage';
+
 export type Theme = 'dark' | 'light';
 
 const KEY = 'app_theme';
 
-function detectTheme(): Theme {
-  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
-  return 'light';
+const detectTheme = (): Theme => (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+/** Выбор человека; заблокированное хранилище — null, а не исключение и белый экран (аудит 2026-11, E10). */
+export function savedTheme(): Theme | null {
+  const v = readLocal(KEY);
+  return v === 'dark' || v === 'light' ? v : null;
 }
 
-export function getTheme(): Theme {
-  return (localStorage.getItem(KEY) as Theme) ?? detectTheme();
-}
+export const getTheme = (): Theme => savedTheme() ?? detectTheme();
 
 const THEME_BG: Record<Theme, string> = { light: '#f6f2eb', dark: '#14141a' };
 
@@ -19,7 +22,7 @@ export function applyTheme(theme: Theme) {
   document.documentElement.style.colorScheme = theme;
   const meta = document.getElementById('theme-color-meta') as HTMLMetaElement | null;
   if (meta) meta.content = THEME_BG[theme];
-  localStorage.setItem(KEY, theme);
+  writeLocal(KEY, theme);
 }
 
 /** Кабинет (AppShell) нарисован только в светлой теме (редизайн 2026-10,
@@ -43,7 +46,7 @@ export function toggleTheme(): Theme {
 
 /** Clear manual selection and apply system theme */
 export function resetToSystemTheme(): Theme {
-  localStorage.removeItem(KEY);
+  removeLocal(KEY);
   const theme = detectTheme();
   document.documentElement.setAttribute('data-theme', theme);
   return theme;

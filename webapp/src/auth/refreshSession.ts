@@ -1,6 +1,5 @@
 // Сетевая половина обновления сессии сайта — вынесена из AuthProvider.tsx
-// (файл-храповик, правило №10 CLAUDE.md: AuthProvider.tsx не имеет права
-// расти сверх бейслайна). In-flight + кросс-табный замок и ретраи с бэкоффом
+// (файл-храповик, правило №10). In-flight + кросс-табный замок и ретраи с бэкоффом
 // при временной беде (сеть/5xx) — тот же урок, что был у удалённого мини-аппа:
 // диагностика «постоянно нужно логиниться
 // заново» (2026-08-21) нашла у сайта ДВА пробела разом — не было ни
@@ -11,6 +10,7 @@ import {
   renewWithRetries,
 } from '../../../shared/src/auth/sessionRefresh';
 import { withCrossTabLock } from '../../../shared/src/auth/crossTabLock';
+import { fetchWithTimeout } from '../../../shared/src/api/fetchWithTimeout';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -20,7 +20,7 @@ export type RefreshOutcome =
 
 async function attemptOnce(): Promise<RefreshOutcome> {
   try {
-    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+    const res = await fetchWithTimeout(`${API_BASE}/api/auth/refresh`, {
       method: 'POST',
       credentials: 'include', // httpOnly refresh-кука
       headers: {
@@ -34,8 +34,8 @@ async function attemptOnce(): Promise<RefreshOutcome> {
     const data = (await res.json()) as { accessToken: string; expiresIn: number };
     return { ok: true, token: data.accessToken, expiresIn: data.expiresIn };
   } catch {
-    // Сетевая ошибка/таймаут — ответа не было вовсе, статус неизвестен.
-    // classifyRefreshFailure(null) === 'transient', поэтому dead:false.
+    // Сетевая ошибка/таймаут 15 с (E9: зависшая сеть давала вечный спиннер) —
+    // ответа не было вовсе: classifyRefreshFailure(null) === 'transient', dead:false.
     return { ok: false, dead: false };
   }
 }

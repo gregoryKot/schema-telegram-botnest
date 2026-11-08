@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { applyPersonalSiteChrome } from './utils/domainChrome';
+import { savedTheme } from './utils/theme';
 import { resolvePersonalSite } from './utils/personalSite';
 import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
@@ -36,7 +37,7 @@ const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ de
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage }))); // юридические тексты — редкие страницы, ~20 КБ текста
 const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m.OfferPage })));
 
-if (localStorage.getItem('app_theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); // saved theme before first render
+if (savedTheme() === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); // saved theme before first render; без try хранилище роняло модуль — белый экран (E10)
 
 // ── Root layout – providers wrapper ───────────────────────────────────────────
 function Root() {

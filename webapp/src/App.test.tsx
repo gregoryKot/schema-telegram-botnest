@@ -96,6 +96,25 @@ describe('App — публичные маршруты app-домена', () => {
   });
 });
 
+// Аудит 2026-11, E10: приватный режим и «блокировать данные сайтов» роняют
+// любое обращение к localStorage; чтение темы на уровне модуля без try давало
+// исключение при загрузке App — белый экран вместо сайта.
+describe('App — хранилище недоступно', () => {
+  it('localStorage бросает — модуль грузится и вход рисуется', async () => {
+    const denied = () => { throw new DOMException('denied', 'SecurityError'); };
+    const spies = (['getItem', 'setItem', 'removeItem'] as const).map((m) =>
+      vi.spyOn(Storage.prototype, m).mockImplementation(denied));
+    try {
+      stubLocation({ pathname: '/login', href: 'http://localhost/login' });
+      const App = await loadApp();
+      render(<App />);
+      await screen.findByRole('link', { name: /Войти через Google/ });
+    } finally {
+      spies.forEach((s) => s.mockRestore());
+    }
+  });
+});
+
 describe('App — личный сайт (домен kotlarewski)', () => {
   it('/ показывает лендинг практики, а не продуктовый', async () => {
     stubLocation({ hostname: 'kotlarewski.example', pathname: '/', href: 'http://kotlarewski.example/' });

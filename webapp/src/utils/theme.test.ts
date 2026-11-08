@@ -2,7 +2,7 @@
 // Тест переключения темы (theme.ts): детекция системной темы через
 // matchMedia, персист в localStorage, применение к document.documentElement.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getTheme, applyTheme, toggleTheme, resetToSystemTheme, applyCabinetLightTheme } from './theme';
+import { getTheme, applyTheme, toggleTheme, resetToSystemTheme, applyCabinetLightTheme, savedTheme } from './theme';
 
 function mockMatchMedia(prefersDark: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -105,5 +105,31 @@ describe('applyCabinetLightTheme', () => {
     expect(document.documentElement.style.colorScheme).toBe('light');
     expect(localStorage.getItem('app_theme')).toBe('dark');
     expect(getTheme()).toBe('dark');
+  });
+});
+
+// Аудит 2026-11, E10: App.tsx читает тему при загрузке модуля — бросок
+// недоступного хранилища давал белый экран.
+describe('хранилище недоступно', () => {
+  it('тема — системная, применение и сброс не бросают', () => {
+    mockMatchMedia(true);
+    const denied = () => { throw new DOMException('denied', 'SecurityError'); };
+    const spies = (['getItem', 'setItem', 'removeItem'] as const).map((m) =>
+      vi.spyOn(Storage.prototype, m).mockImplementation(denied));
+    try {
+      expect(savedTheme()).toBeNull();
+      expect(getTheme()).toBe('dark');
+      expect(() => applyTheme('light')).not.toThrow();
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+      expect(() => resetToSystemTheme()).not.toThrow();
+    } finally {
+      spies.forEach((sp) => sp.mockRestore());
+    }
+  });
+
+  it('мусор в ключе — не выбор: savedTheme null, тема системная', () => {
+    localStorage.setItem('app_theme', 'purple');
+    expect(savedTheme()).toBeNull();
+    expect(getTheme()).toBe('light');
   });
 });

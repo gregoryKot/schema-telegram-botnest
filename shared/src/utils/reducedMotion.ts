@@ -3,9 +3,9 @@
 // можно отключить. Эффективное значение = ручной выбор пользователя ИЛИ
 // системная настройка prefers-reduced-motion.
 //
-// Хранение локальное (per-device), как тема — utils/theme.ts фронтендов.
-// CSS-часть — блок «reduced motion» в index.css каждого фронтенда: правила
-// висят на html[data-reduce-motion="1"] и на самом media query.
+// Хранение локальное (per-device); хранилище недоступно — «как в системе»: бросок
+// при загрузке AppShell давал белый экран (E10). CSS — html[data-reduce-motion="1"].
+import { readLocal, removeLocal, writeLocal } from './safeLocalStorage';
 
 export type MotionPref = 'system' | 'reduced';
 
@@ -29,7 +29,7 @@ export function systemPrefersReducedMotion(): boolean {
 }
 
 export function getMotionPref(): MotionPref {
-  return parseMotionPref(localStorage.getItem(KEY));
+  return parseMotionPref(readLocal(KEY));
 }
 
 /** Итог для JS-анимаций (canvas-конфетти и т.п.). CSS сам смотрит на атрибут/media. */
@@ -45,8 +45,8 @@ export function syncMotionAttr(): void {
 }
 
 export function setMotionPref(pref: MotionPref): void {
-  if (pref === 'reduced') localStorage.setItem(KEY, '1');
-  else localStorage.removeItem(KEY);
+  if (pref === 'reduced') writeLocal(KEY, '1');
+  else removeLocal(KEY);
   syncMotionAttr();
 }
 

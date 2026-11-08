@@ -3,7 +3,8 @@
 // временная беда, ретраится и НЕ считается мёртвой. Плюс единый in-flight
 // промис на параллельные вызовы (иначе сервер видит кражу refresh-токена).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { refreshSession } from './refreshSession';
+import { refreshSession, resetRefreshLockForTests } from './refreshSession';
+import { REQUEST_TIMEOUT_MS } from '../../../shared/src/api/fetchWithTimeout';
 import { REFRESH_RETRY_DELAYS_MS } from '../../../shared/src/auth/sessionRefresh';
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -88,5 +89,21 @@ describe('refreshSession', () => {
     await refreshSession();
     await refreshSession();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  // Аудит 2026-11, E9: голый fetch на зависшей сети — вечный спиннер входа.
+  it('зависший refresh — за таймаут каждой попытки исход «временная беда», не «сессия мертва»', async () => {
+    resetRefreshLockForTests();
+    vi.useFakeTimers();
+    fetchMock.mockImplementation((_url: string, init: RequestInit) => new Promise((_, reject) => {
+      init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+    }));
+    const outcome = vi.fn();
+    const p = refreshSession().then(outcome);
+    await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+    for (const ms of REFRESH_RETRY_DELAYS_MS) await vi.advanceTimersByTimeAsync(ms + REQUEST_TIMEOUT_MS);
+    await p;
+    expect(outcome).toHaveBeenCalledWith({ ok: false, dead: false });
+    expect(fetchMock).toHaveBeenCalledTimes(REFRESH_RETRY_DELAYS_MS.length + 1);
   });
 });
