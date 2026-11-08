@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { parseTelegramAuthResult } from './telegramAuthResult';
 import { ServiceLoading } from './service/ServiceLoading';
+import { telegramWidgetReason } from './service/authErrorReasons';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -56,8 +57,9 @@ export function TelegramWidgetCallback() {
         window.history.replaceState(null, '', '/auth/telegram');
 
         if (!res.ok) {
-          const body = await res.json().catch(() => ({})) as { message?: string };
-          const reason = body.message ?? `http_${res.status}`;
+          const body = await res.json().catch(() => ({})) as { message?: unknown };
+          // В адрес — только код (S20): текст сервера экран ошибки не покажет.
+          const reason = telegramWidgetReason(res.status, body.message);
           navigate(`/auth/error?reason=${encodeURIComponent(reason)}`, { replace: true });
           return;
         }
@@ -69,8 +71,6 @@ export function TelegramWidgetCallback() {
           challengeToken?: string;
           merge?: boolean;
           mergeToken?: string;
-          summary?: Record<string, number>;
-          otherDisplay?: string;
           provider?: string;
         };
 
@@ -80,11 +80,10 @@ export function TelegramWidgetCallback() {
         }
 
         if (data.merge && data.mergeToken) {
+          // Имя и сводку экран объединения из адреса не берёт (S20) — не кладём.
           const p = new URLSearchParams({
             token: data.mergeToken,
-            summary: JSON.stringify(data.summary ?? {}),
             provider: data.provider ?? 'telegram',
-            name: data.otherDisplay ?? '',
           });
           navigate(`/account/merge?${p.toString()}`, { replace: true });
           return;

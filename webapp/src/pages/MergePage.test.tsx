@@ -74,24 +74,22 @@ describe('MergePage — без токена', () => {
   });
 });
 
-describe('MergePage — сводка переносимых данных', () => {
-  it('показывает реальные счётчики из ?summary, а не выдуманные', async () => {
-    const summary = JSON.stringify({ Rating: 12, Note: 3 });
-    renderAt(
-      `/merge?token=abc&summary=${encodeURIComponent(summary)}&provider=google&name=user%40gmail.com`,
+// S20 (аудит 2026-11): адрес собирает кто угодно, подписан только токен —
+// имя и сводка из query на экран не попадают (ручки сводки по токену нет).
+describe('MergePage — чужой текст из адреса', () => {
+  it('name и summary из query не попадают в DOM', async () => {
+    const summary = JSON.stringify({ Rating: 12, Note: 3, 'Позвоните 8-900': 1 });
+    const { container } = renderAt(
+      `/merge?token=abc&summary=${encodeURIComponent(summary)}&provider=google&name=${encodeURIComponent('Служба безопасности банка')}`,
     );
-
-    await screen.findByText('оценки потребностей');
-    expect(screen.getByText('12')).toBeTruthy();
-    expect(screen.getByText('заметки')).toBeTruthy();
-    expect(screen.getByText('3')).toBeTruthy();
-    expect(screen.getByText('15 записей')).toBeTruthy();
-  });
-
-  it('на пустом переносимом аккаунте (summary={}) — явное "нет данных", не 0/NaN', async () => {
-    renderAt('/merge?token=abc');
-
-    await screen.findByText('Нет данных – объединение пройдёт без переноса.');
+    await screen.findByText('Объединить аккаунты?');
+    const text = container.textContent ?? '';
+    expect(text).not.toContain('Служба безопасности');
+    expect(text).not.toContain('8-900');
+    expect(text).not.toContain('12');
+    expect(text).not.toContain('оценки потребностей');
+    expect(text).not.toContain('записей');
+    expect(text).toContain('Найден ещё один аккаунт');
   });
 });
 
@@ -104,20 +102,28 @@ describe('MergePage — имя провайдера', () => {
     ['vk', 'ВКонтакте'],
     ['telegram', 'Telegram'],
     ['max', 'MAX'],
-  ])('provider=%s → «Аккаунт %s», без технического id', async (id, name) => {
+  ])('provider=%s → «%s» из словаря, без технического id', async (id, name) => {
     renderAt(`/merge?token=abc&provider=${id}&name=Ann`);
     await screen.findByText('Объединить аккаунты?');
     const bold = screen.getByText(name);
     expect(bold.tagName).toBe('B');
-    expect(bold.parentElement?.textContent).toContain(`Аккаунт ${name} (Ann) уже существует`);
+    expect(bold.parentElement?.textContent).toContain(`Найден ещё один аккаунт – со входом через ${name}.`);
+    expect(bold.parentElement?.textContent).not.toContain('Ann');
     if (id !== name) expect(screen.queryByText(id)).toBeNull();
   });
 
-  it('неизвестный id не выводится — «Другой аккаунт»', async () => {
+  it('неизвестный id не выводится — просто «Найден ещё один аккаунт»', async () => {
     renderAt('/merge?token=abc&provider=some-new-idp');
     await screen.findByText('Объединить аккаунты?');
-    expect(screen.queryByText('some-new-idp')).toBeNull();
-    expect(screen.getByText(/Другой аккаунт уже существует/)).toBeTruthy();
+    expect(screen.queryByText(/some-new-idp/)).toBeNull();
+    expect(screen.getByText(/Найден ещё один аккаунт\. Если объединить/)).toBeTruthy();
+  });
+
+  it('форма «вы» — «ваш текущий аккаунт»', async () => {
+    const { container } = renderAt('/merge?token=abc', authValue(), 'vy');
+    await screen.findByText('Объединить аккаунты?');
+    expect(container.textContent).toContain('переедет в ваш текущий аккаунт');
+    expect(container.textContent).not.toContain('твой');
   });
 });
 

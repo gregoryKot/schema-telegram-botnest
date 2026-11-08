@@ -50,6 +50,16 @@ function authValue(overrides: Partial<AuthState> = {}): AuthState {
   };
 }
 
+function MergeProbe() {
+  const [params] = useSearchParams();
+  return (
+    <>
+      <div>merge-page</div>
+      <div data-testid="merge-query">{params.toString()}</div>
+    </>
+  );
+}
+
 function ErrorProbe() {
   const [params] = useSearchParams();
   return <div>error-page reason={params.get('reason') ?? 'none'}</div>;
@@ -71,7 +81,7 @@ function renderWith(hash: string, auth: AuthState = authValue(), search = '') {
           <Route path="/auth/telegram" element={<TelegramWidgetCallback />} />
           <Route path="/today" element={<div>today-page</div>} />
           <Route path="/auth/2fa" element={<div>2fa-page</div>} />
-          <Route path="/account/merge" element={<div>merge-page</div>} />
+          <Route path="/account/merge" element={<MergeProbe />} />
           <Route path="/auth/error" element={<ErrorProbe />} />
         </Routes>
       </AuthContext.Provider>
@@ -174,23 +184,34 @@ describe('TelegramWidgetCallback — TOTP и merge', () => {
     await findByText('2fa-page');
   });
 
-  it('merge=true уводит на /account/merge с параметрами слияния', async () => {
+  it('merge=true уводит на /account/merge с токеном и провайдером, без имени и сводки (S20)', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, {
       merge: true, mergeToken: 'merge1', summary: { Rating: 3 }, provider: 'telegram', otherDisplay: 'user',
     }));
-    const { findByText } = renderWith(`#tgAuthResult=${b64url({ id: 1, hash: 'x' })}`);
+    const { findByText, getByTestId } = renderWith(`#tgAuthResult=${b64url({ id: 1, hash: 'x' })}`);
     await findByText('merge-page');
+    expect(getByTestId('merge-query').textContent).toBe('token=merge1&provider=telegram');
   });
 });
 
 describe('TelegramWidgetCallback — ошибка сервера', () => {
-  it('не-ok ответ — уходит на /auth/error с причиной из тела ответа', async () => {
+  // S20: текст сервера в адрес не кладём — экран ошибки показывает только коды.
+  it('не-ok ответ — уходит на /auth/error с кодом статуса, не с текстом сервера', async () => {
     fetchMock.mockResolvedValue({
       ok: false, status: 403,
       json: () => Promise.resolve({ message: 'invalid_hash' }),
     } as unknown as Response);
     const { findByText } = renderWith(`#tgAuthResult=${b64url({ id: 1, hash: 'x' })}`);
-    await findByText('error-page reason=invalid_hash');
+    await findByText('error-page reason=http_403');
+  });
+
+  it('устаревшие данные Telegram — отдельный код telegram_expired', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false, status: 401,
+      json: () => Promise.resolve({ message: 'Telegram auth data expired' }),
+    } as unknown as Response);
+    const { findByText } = renderWith(`#tgAuthResult=${b64url({ id: 1, hash: 'x' })}`);
+    await findByText('error-page reason=telegram_expired');
   });
 
   it('сетевая ошибка (fetch reject) — telegram_failed, не падает белым экраном', async () => {
