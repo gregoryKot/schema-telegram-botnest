@@ -1422,7 +1422,7 @@
   "src/therapy/therapist-request.dto.ts": 26,
   "src/therapy/therapist-request.notify.ts": 159,
   "src/therapy/therapist-request.service.ts": 219,
-  "src/therapy/therapy-card-claims.controller.ts": 70,
+  "src/therapy/therapy-card-claims.controller.ts": 77,
   "src/therapy/therapy-client-data.service.ts": 279,
   "src/therapy/therapy-connection.controller.ts": 215,
   "src/therapy/therapy-invite-attach.ts": 97,
