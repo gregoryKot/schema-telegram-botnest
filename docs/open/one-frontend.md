@@ -10,12 +10,6 @@
   Кнопка «Встретить Критика» ведёт в `ModeExOverlay` (тот же, что у плиток карты). Решили не городить второй лист до
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
-**Единая версия, этап 4 — быстрые действия «+» на сайте** (`docs/archive/ONE_FRONTEND_PLAN.md`):
-- **Последняя копия лямбды открытия справочника схем в `appShell/AppSections.tsx`** (строка с
-  `ov.setSchemaAutoStartTest(!!opts?.startTest)` и `opts?.tab`; три другие уже на
-  `ov.openSchema` из `appShell/useOverlays.ts`) — заменить и её. Не трогали: файл
-  вне задачи, и копии расходятся поведением (подсветка), нужна сверка с экранами.
-
 **Единая версия, этап 3 — S-пробелы** (`docs/archive/ONE_FRONTEND_PLAN.md`):
 - **Профиль сайта читает дневники схем и режимов трижды.** `ProfileSection.tsx`
   (счётчик записей), `useAboutMe` (`shared/src/portrait/useAboutMe.ts`: частоты и
