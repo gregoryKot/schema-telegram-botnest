@@ -151,10 +151,10 @@ const ARTICLES = ARTICLE_SEED.map((a, i) => ({
 export const FIXTURES: Record<string, unknown> = {
   ...SCREEN_FIXTURES, // «Профиль» и «Паттерны»: stubScreens.ts
   'GET /api/articles': ARTICLES,
-  // auth.controller.ts me(): способы входа и 2FA для «/account»
+  // auth.controller.ts me(): способов входа и 2FA у чистого веб-клиента нет («/account»)
   'GET /api/auth/me': {
     userId: '1',
-    providers: [{ provider: 'telegram', email: null, displayName: 'Тест' }],
+    providers: [],
     totp: { enabled: false, recoveryCodesLeft: 0 },
   },
   'GET /api/belief-checks': [], // exercises.controller.ts
