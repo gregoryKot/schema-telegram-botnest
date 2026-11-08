@@ -16,12 +16,15 @@ import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { insertRelation } from '../src/therapy/relation-url-code';
 
 const [TH, TH2, A, B, C] = [1n, 2n, 3n, 4n, 5n].map(
   (n) => 4_200_000_000_000n + n,
 );
 const ALL = [TH, TH2, A, B, C];
 jest.setTimeout(60_000);
+// Форма ошибки уникальности — свойство драйвера, у фейка своя (правило №18).
+const itOnRealDb = process.env.E2E_REAL_DB === '1' ? it : it.skip;
 
 describe('e2e: приглашение клиента терапевтом', () => {
   let app: INestApplication;
@@ -158,6 +161,47 @@ describe('e2e: приглашение клиента терапевтом', () =
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ therapistName: 'Анна', connection: 'same' });
   });
+
+  // docs/open/therapy.md (аудит 2026-11): urlCode ставит Postgres случайным
+  // DEFAULT, совпадение роняло создание 23505. Здесь — что повтор узнаёт
+  // конфликт по urlCode в той форме, которую отдаёт настоящий драйвер.
+  itOnRealDb(
+    'живой Postgres: коллизия urlCode — вставка повторяется, дубль code — нет',
+    async () => {
+      // «z» не бывает в коде из DEFAULT (hex → буквы без z): с ним не совпадёт.
+      const taken = await prisma.therapyRelation.create({
+        data: { therapistId: TH2, code: 'E2EURLCODE01', urlCode: 'zzzzzzzz' },
+      });
+      let tries = 0;
+      // Первая попытка — с занятым кодом (как совпавший DEFAULT), дальше —
+      // с кодом от базы.
+      const made = await insertRelation(() =>
+        prisma.therapyRelation.create({
+          data: {
+            therapistId: TH2,
+            code: 'E2EURLCODE02',
+            ...(tries++ === 0 ? { urlCode: taken.urlCode } : {}),
+          },
+        }),
+      );
+      expect(tries).toBe(2);
+      expect(made.urlCode).not.toBe(taken.urlCode);
+
+      let codeTries = 0;
+      await expect(
+        insertRelation(() => {
+          codeTries++;
+          return prisma.therapyRelation.create({
+            data: { therapistId: TH2, code: 'E2EURLCODE01' },
+          });
+        }),
+      ).rejects.toMatchObject({ code: 'P2002' });
+      expect(codeTries).toBe(1);
+      await prisma.therapyRelation.deleteMany({
+        where: { id: { in: [taken.id, made.id] } },
+      });
+    },
+  );
 
   it('список и отзыв — только свои: чужой терапевт не видит и не отзывает', async () => {
     const mine = await as(TH).post('/api/therapy/invite', { alias: 'Пётр' });
