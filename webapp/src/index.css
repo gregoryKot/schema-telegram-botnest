@@ -1182,6 +1182,8 @@ textarea:focus-visible {
    plain crosshair). White halo keeps it visible on any background. Hotspot at the dot. */
 :root {
   --mm-connect-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Cg fill='none' stroke='%234d4799' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Ccircle cx='6' cy='20' r='4' fill='%23ffffff'/%3E%3Ccircle cx='6' cy='20' r='2.6' fill='%234d4799'/%3E%3C/svg%3E") 6 20, grab;
+  /* Зона ручки связи под пальцем в px холста; холст переписывает её по зуму (modeMap/handleZoom.ts). */
+  --mm-handle-hit: 28px;
 }
 .mm-handle {
   opacity: 0;
@@ -1217,9 +1219,10 @@ textarea:focus-visible {
    или у выделенного узла нечем, а выделенный узел на телефоне закрыт панелью
    правки (QA 2026-11, T-4). Связь — потянуть точку к другому узлу или тапнуть
    точку одного узла и точку другого (React Flow connectOnClick). Зона 28px —
-   компромисс: 44 соседние ручки узла перекрыли бы друг друга и сам узел. */
+   компромисс: 44 соседние ручки узла перекрыли бы друг друга и сам узел. Ручка в
+   координатах холста: --mm-handle-hit = 28 / зум (modeMap/handleZoom.ts), на экране те же 28. */
 @media (hover: none) {
-  .mm-handle { opacity: 1; width: 28px !important; height: 28px !important; } /* !important: размер ручки задан инлайн (nodeParts dotStyle) */
+  .mm-handle { opacity: 1; width: var(--mm-handle-hit) !important; height: var(--mm-handle-hit) !important; } /* !important: размер ручки задан инлайн (nodeParts dotStyle) */
 }
 /* While dragging a connection, reveal all handles so targets are obvious */
 .react-flow.connecting .mm-handle { opacity: 0.85; }
