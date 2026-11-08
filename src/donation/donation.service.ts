@@ -7,6 +7,7 @@ import { assertPaymentAvailable } from '../booking/payment-guard';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { normalizeBaseUrl } from '../utils/url';
 import { escapeHtml } from '../utils/escape-html';
+import { moneyAlert } from '../logger/money-alert';
 
 // Donation InvId is offset so it never collides with booking InvId (booking uses
 // booking.id directly). Both share one Robokassa shop → one Result URL, which
@@ -121,7 +122,9 @@ export class DonationService {
     // создаст), владельцу error(): AlertLogger шлёт его в DM с троттлингом.
     if (!row) {
       this.logger.error(
-        `Robokassa: оплата доната #${id} (${paidAmount ?? '?'} ₽) без строки в БД — платёж нужно найти в кабинете Robokassa и вернуть деньги`,
+        moneyAlert(
+          `Robokassa: оплата доната #${id} (${paidAmount ?? '?'} ₽) без строки в БД — платёж нужно найти в кабинете Robokassa и вернуть деньги`,
+        ),
       );
       return { ok: true };
     }

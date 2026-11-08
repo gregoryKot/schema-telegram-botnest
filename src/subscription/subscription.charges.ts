@@ -6,6 +6,7 @@ import { SubPeriod } from '../booking/booking.config';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { SUBSCRIPTION_INVID_BASE } from './subscription.constants';
 import { escapeHtml } from '../utils/escape-html';
+import { moneyAlert } from '../logger/money-alert';
 import { activatePaidCharge } from './subscription.charge-activate';
 import { markChargeFailed } from './subscription.charge-failed';
 import { reportPaidAfterCancel } from './subscription-paid-after-cancel';
@@ -41,7 +42,9 @@ export async function markChargePaid(
   // R9 (аудит 2026-11): деньги пришли, а записи нет — OK Robokassa (повтор её
   // не создаст), владельцу — error() со стабильным текстом (DM с троттлингом).
   const lost = (what: string) =>
-    `Robokassa: оплата подписки, InvId ${invId} (${paidAmount ?? '?'} ₽), без строки ${what} в БД — нужна ручная проверка`;
+    moneyAlert(
+      `Robokassa: оплата подписки, InvId ${invId} (${paidAmount ?? '?'} ₽), без строки ${what} в БД — нужна ручная проверка`,
+    );
   if (!charge) {
     deps.logger.error(lost('списания'));
     return { ok: true };

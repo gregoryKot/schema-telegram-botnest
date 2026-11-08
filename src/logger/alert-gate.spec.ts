@@ -8,7 +8,9 @@ import {
   ANON_BUDGET,
   AlertGate,
   MAIN_BUDGET,
+  MONEY_BUDGET,
 } from './alert-gate';
+import { moneyAlert } from './money-alert';
 
 const T0 = 5_000_000;
 const sends = (v: { send: boolean }[]) => v.filter((x) => x.send).length;
@@ -80,6 +82,59 @@ describe('AlertGate — seen после решения бюджета', () => {
     const gate = new AlertGate();
     expect(gate.decide('Failed id=1', undefined, T0).send).toBe(true);
     expect(gate.decide('Failed id=2', undefined, T0 + 10_000).send).toBe(false);
+  });
+});
+
+// Хвост R9 (аудит 2026-11): второй «платёж без строки в БД» с другим InvId в
+// те же 60 с гасился ключом (цифры схлопывались) и оставался только в логе.
+describe('AlertGate — денежные алерты', () => {
+  const lost = (invId: number) =>
+    moneyAlert(
+      `Robokassa: оплата подписки, InvId ${invId} (500 ₽), без строки`,
+    );
+
+  it('два платежа с разными InvId за 60 с — оба уходят владельцу', () => {
+    const gate = new AlertGate();
+    expect(gate.decide(lost(1500000001), undefined, T0).send).toBe(true);
+    expect(gate.decide(lost(1500000002), undefined, T0 + 5_000).send).toBe(
+      true,
+    );
+  });
+
+  it('повтор вебхука с тем же InvId в окне ключа — не дублируется', () => {
+    const gate = new AlertGate();
+    expect(gate.decide(lost(1500000001), undefined, T0).send).toBe(true);
+    expect(gate.decide(lost(1500000001), undefined, T0 + 5_000).send).toBe(
+      false,
+    );
+  });
+
+  it('общий потолок, выжженный прочими ошибками, денежный алерт не глушит', () => {
+    const gate = new AlertGate();
+    for (let i = 0; i < MAIN_BUDGET + 5; i++)
+      gate.decide(`noise ${'n'.repeat(i)}`, undefined, T0);
+    expect(gate.decide(lost(1500000003), undefined, T0 + 1_000).send).toBe(
+      true,
+    );
+  });
+
+  it('сверх денежного потолка — счётчик в первом алерте следующего окна', () => {
+    const gate = new AlertGate();
+    const v = Array.from({ length: MONEY_BUDGET + 2 }, (_, i) =>
+      gate.decide(lost(1500000100 + i), undefined, T0),
+    );
+    expect(sends(v)).toBe(MONEY_BUDGET);
+    expect(gate.decide(lost(1500000200), undefined, T0 + 61_000)).toEqual({
+      send: true,
+      tail: expect.stringContaining('подавлено ещё 2 — потолок денежных'),
+    });
+  });
+
+  it('контроль: тот же текст без метки по-прежнему схлопывается ключом', () => {
+    const gate = new AlertGate();
+    const plain = (n: number) => `Robokassa: оплата, InvId ${n}, без строки`;
+    expect(gate.decide(plain(1), undefined, T0).send).toBe(true);
+    expect(gate.decide(plain(2), undefined, T0 + 5_000).send).toBe(false);
   });
 });
 

@@ -1,4 +1,5 @@
 import { AlertBudget } from '../utils/alert-throttle';
+import { isMoneyAlert } from './money-alert';
 
 // Решение «уходит ли error() владельцу в DM» — вынесено из alert.logger.ts.
 //
@@ -16,6 +17,8 @@ import { AlertBudget } from '../utils/alert-throttle';
 //    всё равно будит (первые ANON_BUDGET в минуту доходят), а мусор не глушит
 //    остальное. Отчёты фронтенда сюда не попадают вовсе: они пишутся warn и
 //    приезжают сводкой раз в час (src/api/client-errors-digest.ts).
+// 4. Денежный бюджет (аудит 2026-11, хвост R9): текст из moneyAlert() идёт в
+//    ключ целиком, с InvId, и в свой бюджет — см. ./money-alert.ts.
 //
 // Ключ помечается доставленным ТОЛЬКО после решения бюджета: раньше `seen`
 // ставился до проверки, и ошибка, упёршаяся в потолок, молчала ещё 60 с и
@@ -35,6 +38,7 @@ export const ANON_ALERT_CONTEXTS: ReadonlySet<string> = new Set([
 export const KEY_WINDOW_MS = 60_000;
 export const MAIN_BUDGET = 15;
 export const ANON_BUDGET = 3;
+export const MONEY_BUDGET = 10;
 
 export type AlertVerdict = { send: false } | { send: true; tail: string };
 
@@ -50,24 +54,29 @@ export class AlertGate {
   private readonly seen = new Map<string, number>();
   private readonly main = new AlertBudget(60_000, MAIN_BUDGET);
   private readonly anon = new AlertBudget(60_000, ANON_BUDGET);
+  private readonly money = new AlertBudget(60_000, MONEY_BUDGET);
 
   decide(message: string, context?: string, now = Date.now()): AlertVerdict {
     // Записи старше часа вычищаются — Map не растёт бесконечно.
     for (const [k, t] of this.seen)
       if (now - t > 3_600_000) this.seen.delete(k);
 
-    const key = alertKey(message);
+    const money = isMoneyAlert(message);
+    const key = money ? message.slice(0, 300) : alertKey(message);
     if (now - (this.seen.get(key) ?? 0) < KEY_WINDOW_MS) return { send: false };
 
     const anon = context !== undefined && ANON_ALERT_CONTEXTS.has(context);
-    const budget = (anon ? this.anon : this.main).take('__all__', now);
+    const pool = money ? this.money : anon ? this.anon : this.main;
+    const budget = pool.take('__all__', now);
     if (!budget.allow) return { send: false };
     this.seen.set(key, now);
 
     if (!budget.suppressed) return { send: true, tail: '' };
-    const which = anon
-      ? 'потолок ошибок входа, которые может вызвать любой запрос'
-      : 'общий потолок алертов';
+    const which = money
+      ? 'потолок денежных алертов, остальные — в логе'
+      : anon
+        ? 'потолок ошибок входа, которые может вызвать любой запрос'
+        : 'общий потолок алертов';
     return {
       send: true,
       tail: `\n(за прошлое окно подавлено ещё ${budget.suppressed} — ${which})`,

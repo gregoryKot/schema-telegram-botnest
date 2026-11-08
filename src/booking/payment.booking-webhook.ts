@@ -4,6 +4,7 @@ import { PaymentAfterCancelError } from './booking.transitions';
 import { ConfirmEffectsFailedError } from './booking.confirm-effects';
 import { BookingNotifyService } from './booking-notify.service';
 import { paidAfterCancelAlert } from './booking-paid-after-cancel';
+import { moneyAlert } from '../logger/money-alert';
 
 /**
  * Ветка ResultURL для брони (InvId вне диапазонов подписок и донатов): что
@@ -47,7 +48,9 @@ export async function bookingWebhookReply(
         await notify.notifyAdminBoth(html, subject);
       } catch (notifyErr) {
         logger.error(
-          `PAID after cancel, booking ${id}: admin alert failed: ${(notifyErr as Error).message}`,
+          moneyAlert(
+            `PAID after cancel, booking ${id}: admin alert failed: ${(notifyErr as Error).message}`,
+          ),
         );
         return `FAIL${invId}`;
       }
@@ -74,7 +77,9 @@ export async function bookingWebhookReply(
     // Real failure: the client PAID but the booking didn't confirm. Alert loudly
     // and return FAIL so Robokassa retries later.
     logger.error(
-      `PAID but confirm failed for booking ${id}: ${(e as Error).message}`,
+      moneyAlert(
+        `PAID but confirm failed for booking ${id}: ${(e as Error).message}`,
+      ),
     );
     await notify.alertAdmin(
       `🚨 <b>Оплата прошла, но бронь #${id} не подтвердилась</b>\n${(e as Error).message}\nПроверьте вручную в админке.`,
