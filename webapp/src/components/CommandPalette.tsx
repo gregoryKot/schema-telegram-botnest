@@ -184,7 +184,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
                   </span>
                 )}
               </span>
-              {row.hint && <span className={row.hint.startsWith('⌘') ? 'ds-sub kbd-hint' : 'ds-sub'}>{row.hint}</span>}
+              {row.hint && <span className={row.hint.startsWith('⌘') ? 'ds-kbd kbd-hint' : 'ds-sub'}>{row.hint}</span>}
             </div>
           ))}
         </div>

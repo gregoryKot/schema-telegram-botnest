@@ -16,6 +16,7 @@ import {
   alertLeaseStore,
 } from '../src/infra/self-check/alert-dedup';
 import { REMIND_EVERY_MS } from '../src/infra/self-check/alert-tracker';
+import { syncProcessLives } from '../src/infra/self-check/process-lives';
 
 describe('CronLeaderService на реальном Postgres', () => {
   let prisma: PrismaService;
@@ -170,5 +171,43 @@ describe('Аренда алерта самопроверки на реально
     ).resolves.not.toBeNull();
     // Строк нет — следующий такой же сбой алертит сразу.
     await expect(store.claim(alertName, REMIND_EVERY_MS)).resolves.toBe(true);
+  });
+});
+
+// Жизни процессов для пробы cronLeases (process-lives.ts, аудит 2026-10:
+// суточный крон при частых деплоях ловился на 4-е сутки). Прошлый процесс
+// отметился — следующий прочитал его отрезок через настоящий драйвер.
+describe('жизни процессов на реальном Postgres', () => {
+  let prisma: PrismaService;
+  const ids = ['e2e-life-a', 'e2e-life-b'];
+
+  beforeAll(async () => {
+    prisma = new PrismaService();
+    await prisma.$connect();
+  });
+
+  afterAll(async () => {
+    await prisma.processLife.deleteMany({
+      where: { OR: ids.map((id) => ({ id: { startsWith: `${id}@` } })) },
+    });
+    await prisma.$disconnect();
+  });
+
+  it('прошлый процесс записал отрезок — следующий его прочитал', async () => {
+    const now = Date.now();
+    await syncProcessLives(
+      prisma,
+      { startedAt: now - 7_200_000, now: now - 600_000, failures: [] },
+      ids[0],
+    );
+    const earlier = await syncProcessLives(
+      prisma,
+      { startedAt: now - 60_000, now, failures: [now - 30_000] },
+      ids[1],
+    );
+    expect(earlier).toContainEqual({
+      from: now - 7_200_000,
+      to: now - 600_000,
+    });
   });
 });

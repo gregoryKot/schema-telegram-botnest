@@ -44,7 +44,7 @@ export function AddClientForm({ addClient }: Props) {
             <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без привязки к боту.</p>
           )}
           <div className="tc-actions">
-            <button className="ds-btn ds-btn--sm" onClick={resetAddClient}>Добавить ещё</button>
+            <button className={`ds-btn ds-btn--sm${invite ? ' ds-btn--secondary' : ''}`} onClick={resetAddClient}>Добавить ещё</button>
             <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={closeAddClient}>к списку</button>
           </div>
         </div>

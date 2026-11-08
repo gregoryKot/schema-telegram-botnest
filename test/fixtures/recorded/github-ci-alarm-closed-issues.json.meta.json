@@ -1,0 +1,6 @@
+{
+  "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo}/issues?labels=ci-alarm&state=closed&per_page=100",
+  "recordedAt": "2026-11-08",
+  "how": "записано из сессии агента через gh api с тем же адресом, HTTP 200, 37 закрытых issue (с 2026-09-16 по 2026-11-08); читает scripts/check-incident-registry.mjs",
+  "redacted": "из каждой issue оставлены только поля, которые читает гейт и которые нужны для разбора (number, title, state, created_at, closed_at, comments, labels[].name); убраны user, assignee, body, служебные ссылки API, reactions — персональных данных сверх публичных логинов в них не было, но гейт их не читает"
+}

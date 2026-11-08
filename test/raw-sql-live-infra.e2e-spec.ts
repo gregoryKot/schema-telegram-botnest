@@ -230,6 +230,27 @@ describe('сырой SQL инфраструктуры на реальном Post
       ]);
       expect(await pendingTypes()).toEqual(['weekly']);
     });
+
+    // Хвост волны 9: донат, невыполненный план и инсайт тоже встают вместо
+    // напоминания — правка настроек рядом с ними напоминания не оставляет.
+    it.each([
+      'donate_reminder',
+      'practice_missed',
+      'low_streak_insight',
+    ] as const)(
+      '%s и замена напоминания одновременно — одно проактивное',
+      async (type) => {
+        const notifications = new NotificationService(prisma);
+        await clearPending();
+        const at = new Date('2030-01-05T18:00:00Z');
+        await Promise.all([
+          notifications.replacePending(RESCHEDULE_USER, 'reminder', at),
+          notifications.swapReminder(RESCHEDULE_USER, type, at, { text: 'x' }),
+          notifications.replacePending(RESCHEDULE_USER, 'reminder', at),
+        ]);
+        expect(await pendingTypes()).toEqual([type]);
+      },
+    );
   });
 
   // docs/open/backend.md: стрик в списке клиентов терапевта считался по парам

@@ -65,20 +65,28 @@ const LINE_OUTLINES: Record<string, string> = {
   '.mm2-bar': 'нижний край полосы выбора карт',
   '.mm2-statusbar': 'нижний край полосы статуса над холстом карты',
   '.th-card': 'рамка самостоятельной карточки (три стороны + акцент слева)',
+  // index.css — каркас кабинета (подключён к сверке 2026-11-08):
+  '.topbar': 'нижний край верхней полосы кабинета',
+  '.mobile-nav': 'верхний край нижней навигации телефона',
+  '.offline-banner': 'нижний край полосы «нет сети»',
 };
 const selectorsOf = (css: string, re: RegExp) => [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
   .filter((m) => re.test(m[2])).map((m) => m[1].trim());
 const LINE_BORDER = /border-(?:top|bottom):\s*1px\s+solid\s+var\(--line\)/;
 
+/** Все css сверки разделителя: styles/*.css и index.css (до 2026-11-08 index.css в неё не входил). */
+const dividerFiles = [...cssFiles, 'index.css'];
+const dividerText = (f: string) => (f === 'index.css' ? indexCss : cssText(f));
+
 describe('один токен разделителя', () => {
   // Разделитель строк, разделов и футеров — --paper-sunk; --line — контуры из списка выше; на песочной панели — --panel-line.
-  it.each(cssFiles)('%s: линии 1px — solid и токен разделителя/контура', (f) => {
-    const bad = [...cssText(f).matchAll(/border-(?:top|bottom):\s*1px\s+(\w+)\s+(var\([^)]*\)|[^;}\s]+)/g)]
+  it.each(dividerFiles)('%s: линии 1px — solid и токен разделителя/контура', (f) => {
+    const bad = [...dividerText(f).matchAll(/border-(?:top|bottom):\s*1px\s+(\w+)\s+(var\([^)]*\)|[^;}\s]+)/g)]
       .filter((m) => m[1] !== 'solid' || !/^var\(--(line|paper-sunk|panel-line)\)$/.test(m[2])).map((m) => m[0]);
     expect(bad).toEqual([]);
   });
-  it.each(cssFiles)('%s: --line в border-top/bottom только у контуров из списка', (f) => {
-    const bad = selectorsOf(cssText(f), LINE_BORDER).filter((sel) => !(sel in LINE_OUTLINES));
+  it.each(dividerFiles)('%s: --line в border-top/bottom только у контуров из списка', (f) => {
+    const bad = selectorsOf(dividerText(f), LINE_BORDER).filter((sel) => !(sel in LINE_OUTLINES));
     expect(bad).toEqual([]);
   });
   it('гейт ловит разделитель на --line и пропускает контур', () => {

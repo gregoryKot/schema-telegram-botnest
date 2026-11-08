@@ -17,9 +17,6 @@
 /* Герой: три мотива в ряд; на узком экране сжимаются, а не переносятся. */
 .cw-hero { display: flex; gap: 12px; }
 .cw-hero .pp-art { flex: 1 1 0; min-width: 0; width: auto; height: 60px; }
-.cw-title-row { display: flex; align-items: center; gap: 16px; }
-.cw-title-row .ds-h1 { margin: 0; flex: 1; min-width: 0; }
-.cw-title-row .pp-art { flex: none; width: 84px; height: auto; }
 .cw-item-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); }
 /* Ободряющая фраза перед кнопкой. Не .cw-note: это имя занято колесом детства (sheet-childhood.css). */
 .cw-tip { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }

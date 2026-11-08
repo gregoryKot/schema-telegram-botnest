@@ -7,20 +7,20 @@ import {
   MAX_REJECTS,
 } from './telegram.schedule-queue.rejects';
 
+/** true — строка осталась на повтор следующим тиком (временный сбой). */
 export async function handleSendError(
   deps: QueueDeps,
-  id: number,
-  userId: bigint | number,
+  { id, userId }: { id: number; userId: bigint | number },
   err: unknown,
   seen: { unknown: number[]; transient: number },
-): Promise<void> {
+): Promise<boolean> {
   const { accountService, notificationService, logger } = deps;
   // Запрос оборван, а Telegram мог его принять: повтор дал бы дубль каждые
   // 5 минут. Метим отправленным и сообщаем одной строкой на тик.
   if (isUnknownOutcome(err)) {
     await notificationService.markSent(id);
     seen.unknown.push(id);
-    return;
+    return false;
   }
   const verdict = classifySendFailure(err);
   const desc = describeTelegramError(err);
@@ -33,13 +33,12 @@ export async function handleSendError(
     // Но 400 на само сообщение повтор не исправит: после MAX_REJECTS отказов
     // строку снимаем (cancelledAt — не «отправлено»: каденс считает только
     // реально ушедшие) — telegram.schedule-queue.rejects.ts.
-    if (isPermanentRejection(err) && deps.rejects.strike(id)) {
-      await notificationService.cancelOne(id);
-      logger.warn(
-        `Notification id=${id}: Telegram отказал ${MAX_REJECTS} раза подряд — снято, повторов не будет (${desc})`,
-      );
-    }
-    return;
+    if (!isPermanentRejection(err) || !deps.rejects.strike(id)) return true;
+    await notificationService.cancelOne(id);
+    logger.warn(
+      `Notification id=${id}: Telegram отказал ${MAX_REJECTS} раза подряд — снято, повторов не будет (${desc})`,
+    );
+    return false;
   }
 
   // Оба оставшихся исхода означают «по этому адресу писать больше нельзя»,
@@ -50,4 +49,5 @@ export async function handleSendError(
   await accountService.markUserBlocked(BigInt(userId));
   const reason = verdict === 'blocked' ? 'bot blocked' : 'chat_not_found';
   logger.warn(`Skipping notification id=${id} — ${reason} (${desc})`);
+  return false;
 }

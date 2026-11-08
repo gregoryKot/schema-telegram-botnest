@@ -61,8 +61,8 @@ export class BotAnalyticsService {
     return this.history.getGapBeforeLatestFill(userId);
   }
 
-  getWeeklyStats(userId: bigint, tzArg?: string) {
-    return this.insights.getWeeklyStats(userId, tzArg);
+  getWeeklyStats(userId: bigint, tzArg?: string, endDate?: string) {
+    return this.insights.getWeeklyStats(userId, tzArg, endDate);
   }
 
   getProfileInsight(userId: bigint) {

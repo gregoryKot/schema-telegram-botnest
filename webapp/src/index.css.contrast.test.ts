@@ -1,12 +1,10 @@
 // Регрессионный тест на a11y-аудит 2026-08 (главная страница webapp, узлы
-// «Выйти» в сайдбаре и «⌘K» в .kbd — axe color-contrast, serious).
+// «Выйти» в сайдбаре и «⌘K» в топбаре — axe color-contrast, serious).
 //
-// Оба узла сидят не на чистом --bg/--bg-rail, а на композите из нескольких
-// полупрозрачных слоёв (--kbd рисуется поверх дважды наложенной --surface-2
-// внутри .search-pill), поэтому обычных --text-faint/--c-rose там не хватало
-// (3.12:1 и 4.46:1 при требуемых 4.5:1). Тест пересчитывает контраст токенов
-// --c-rose-strong/--kbd-text против ТЕХ ЖЕ композитных фонов, что в проде —
-// чтобы правку нельзя было тихо откатить к слишком светлому значению.
+// «⌘K» с 2026-11 — плашка .ds-kbd (styles/cabinet.css, контур без заливки) на --paper-sunk
+// поля поиска .search-pill: тест держит --text-muted к --paper-sunk (кабинет только светлый).
+// «Выйти» сидит на --bg-rail, обычного --c-rose там не хватало (3.12:1) — тест пересчитывает
+// контраст --c-rose-strong против того же фона, чтобы правку нельзя было тихо откатить.
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -18,22 +16,14 @@ const CSS = readFileSync(join(__dirname, 'index.css'), 'utf8');
 const LIGHT = extractBlock(CSS, ':root, html[data-theme="light"]');
 const DARK = extractBlock(CSS, 'html[data-theme="dark"]');
 
-describe('a11y: цвета токенов --kbd-text / --c-rose-strong держат ≥4.5:1', () => {
-  it.each([
-    ['light', LIGHT],
-    ['dark', DARK],
-  ] as const)('.kbd (⌘K) на реальном сложенном фоне — тема %s', (_label, block) => {
-    // Реальный фон .kbd = .search-pill (--surface-2 поверх --bg) + собственный
-    // --surface-2 самого .kbd поверх этого — те же два наложения, что в CSS.
-    const bg = parseColor(tokenInBlock(block, '--bg')).rgb;
-    const surface2 = parseColor(tokenInBlock(block, '--surface-2'));
-    const searchPillBg = overlay(surface2.rgb, surface2.alpha, bg);
-    const kbdBg = overlay(surface2.rgb, surface2.alpha, searchPillBg);
-
-    const kbdText = parseColor(tokenInBlock(block, '--kbd-text'));
-    const kbdFg = overlay(kbdText.rgb, kbdText.alpha, kbdBg);
-
-    expect(contrastRatio(kbdFg, kbdBg)).toBeGreaterThanOrEqual(4.5);
+describe('a11y: цвета токенов --text-muted (⌘K) / --c-rose-strong держат ≥4.5:1', () => {
+  it('.ds-kbd (⌘K) на --paper-sunk поля поиска — светлая тема', () => {
+    const css = CSS + readFileSync(join(__dirname, 'styles', 'cabinet.css'), 'utf8');
+    expect(css).toMatch(/\.search-pill \{[^}]*background: var\(--paper-sunk\)/);
+    expect(css).toMatch(/\.ds-kbd \{[^}]*color: var\(--text-muted\)/);
+    const bg = parseColor(tokenInBlock(LIGHT, '--paper-sunk')).rgb;
+    const fg = parseColor(tokenInBlock(LIGHT, '--text-muted')).rgb;
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each([

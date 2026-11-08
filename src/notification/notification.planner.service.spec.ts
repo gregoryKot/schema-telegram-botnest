@@ -452,6 +452,52 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       expect(payload.text).toContain('Автономия');
     });
 
+    // Хвост волны 9: донат, план и инсайт ставились мимо замены напоминания —
+    // правка настроек до обхода оставляла напоминание рядом. Теперь все три
+    // встают вместо него тем же локом (swapReminder, replace-pending.ts).
+    it.each([
+      [
+        'donate_reminder',
+        FIRST_OF_MONTH,
+        (d: ReturnType<typeof makeDeps>) => d,
+      ],
+      [
+        'practice_missed',
+        NOW,
+        (d: ReturnType<typeof makeDeps>) => {
+          d.practices.getMissedPlans.mockResolvedValue([
+            { practiceText: 'Позвонить другу' },
+          ]);
+          return d;
+        },
+      ],
+      [
+        'low_streak_insight',
+        NOW,
+        (d: ReturnType<typeof makeDeps>) => {
+          d.analytics.getLowStreakNeeds.mockResolvedValue(['attachment']);
+          return d;
+        },
+      ],
+    ])(
+      '%s встаёт вместо напоминания (swapReminder)',
+      async (type, now, prep) => {
+        const deps = prep(makeDeps());
+        deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
+        const { svc } = make(deps);
+        await svc.planDay(makeUser(), now);
+        expect(
+          deps.notifications.swapReminder.mock.calls.map(
+            (c: unknown[]) => c[1],
+          ),
+        ).toEqual([type]);
+        expect(deps.notifications.cancel).toHaveBeenCalledWith(
+          expect.anything(),
+          'reminder',
+        );
+      },
+    );
+
     it('в день напоминания practice_missed уступает reminder (бюджет)', async () => {
       const { svc, deps } = make();
       deps.practices.getMissedPlans.mockResolvedValue([

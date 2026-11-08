@@ -49,18 +49,23 @@ e2e-browser/a11y-baseline.json            merge=ratchet-min
 scripts/alert-throttle-baseline.json      merge=ratchet-min
 scripts/body-dto-baseline.json            merge=ratchet-min
 scripts/body-truncation-baseline.json     merge=ratchet-min
+scripts/dead-end-report-baseline.json     merge=ratchet-min
 scripts/dead-files-baseline.json          merge=ratchet-min
+scripts/doc-refs-baseline.json            merge=ratchet-min
 scripts/dto-string-bounds-baseline.json   merge=ratchet-min
 scripts/public-scripts-baseline.json      merge=ratchet-min
 scripts/capability-registry-baseline.json merge=ratchet-min
 scripts/cron-leader-baseline.json         merge=ratchet-min
 scripts/history-sheet-baseline.json       merge=ratchet-min
+scripts/incident-registry-baseline.json   merge=ratchet-min
 scripts/local-cache-baseline.json         merge=ratchet-min
 scripts/mutation-zone-baseline.json       merge=ratchet-min
 scripts/persistent-throttle-baseline.json merge=ratchet-min
 scripts/raw-sql-live-baseline.json        merge=ratchet-min
 scripts/recorded-fixtures-baseline.json   merge=ratchet-min
+scripts/timer-cleanup-baseline.json       merge=ratchet-min
 scripts/unwatched-code-baseline.json      merge=ratchet-min
+scripts/zero-coverage-baseline.json       merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max

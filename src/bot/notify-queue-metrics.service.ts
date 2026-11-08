@@ -8,16 +8,18 @@ import {
 } from './notify-queue-metrics.format';
 
 const DAY_MS = 86_400_000;
-const FIELDS = ['sent', 'pushed', 'transient', 'waited', 'deferred'] as const;
+const FIELDS = [
+  'sent',
+  'pushed',
+  'transient',
+  'unknown',
+  'waited',
+  'deferred',
+] as const;
 
-const emptyTotals = (): QueueTotals => ({
-  ticks: 0,
-  sent: 0,
-  pushed: 0,
-  transient: 0,
-  waited: 0,
-  deferred: 0,
-});
+type Totals = Record<keyof QueueTotals, number>;
+const emptyTotals = (): QueueTotals =>
+  Object.fromEntries(['ticks', ...FIELDS].map((f) => [f, 0])) as Totals;
 
 /** Число из meta; всё прочее (нет поля, строка, минус) — ноль. */
 function count(meta: unknown, key: string): number {
@@ -34,11 +36,9 @@ function add(into: QueueTotals, meta: unknown): void {
 // Счётчики очереди уведомлений для /stats: событие notify_queue_tick (итог
 // прогона, пишет крон очереди — src/telegram/telegram.schedule-queue.tally.ts)
 // и кнопка «Напомню через час» (reminder_snoozed, src/telegram/telegram.snooze.ts).
-// Свой домен — свой файл (правило №10).
-//
-// Без сырого SQL: строк не больше одной на тик (288 в сутки, ~2000 в неделю),
-// суммировать их в коде дешевле, чем заводить ещё один $queryRaw с живым
-// спеком (правило №18).
+// Свой домен — свой файл (правило №10). Без сырого SQL: строк не больше одной
+// на тик (~2000 в неделю), суммировать в коде дешевле, чем ещё один $queryRaw
+// с живым спеком (правило №18).
 @Injectable()
 export class NotifyQueueMetricsService {
   constructor(private readonly prisma: PrismaService) {}

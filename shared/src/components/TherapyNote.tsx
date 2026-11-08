@@ -7,7 +7,7 @@ import { useTr } from '../utils/addressForm';
 
 // Ссылки ниже были 74×16 (QA мобильной версии 2026-11, М1): зона нажатия 44 по
 // высоте — отступом 14px; у строчной он не раздвигает строку, у блочной это
-// делает отрицательный margin.
+// делает отрицательный margin. Компактная — ds-link в строке текста, кегль строки.
 export function TherapyNote({ compact }: { compact?: boolean }) {
   const contact = getTherapistContact();
   const tr = useTr();
@@ -45,8 +45,8 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
               href={contact.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="u-link"
-              style={{ padding: '14px 0' }}
+              className="ds-link ds-link--inline"
+              style={{ padding: '14px 0', fontSize: 'inherit' }}
             >
               {contact.name === 'автору'
                 ? 'Записаться →'

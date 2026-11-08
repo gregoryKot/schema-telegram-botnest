@@ -2,17 +2,14 @@ import type { PrismaService } from '../../prisma/prisma.service';
 import { lastClaimDbFailureAt } from '../cron-claim-failures';
 import { expectedLeases } from './cron-lease-expected';
 import { leaseRowProblem } from './cron-lease-done';
+import { syncProcessLives } from './process-lives';
 import { Probe } from './types';
 
 const PROCESS_STARTED_AT = Date.now();
-
-/**
- * Каждая leader-аренда из cron-lease-registry.ts: не пропустил ли её крон два
- * тика подряд (cron-lease-verdict.ts; тики до старта процесса и во время
- * аварии базы не судятся — 2026-09-16 и 2026-10-17, docs/INCIDENTS.md) и дошёл
- * ли до конца захваченный прогон (cron-lease-done.ts). Зависимости — явные
- * параметры со значениями по умолчанию: спеку не нужно глобальное состояние.
- */
+/** Каждая leader-аренда (cron-lease-registry.ts): не пропустил ли крон два тика
+ * подряд в зоне ответственности (cron-lease-verdict.ts, process-lives.ts) и
+ * дошёл ли до конца захваченный прогон (cron-lease-done.ts). Зависимости —
+ * параметры по умолчанию: спеку не нужно глобальное состояние. */
 export function cronLeasesProbe(
   prisma: PrismaService,
   startedAt: number = PROCESS_STARTED_AT,
@@ -24,6 +21,8 @@ export function cronLeasesProbe(
     async run() {
       const names = expectedLeases(); // крон за выключенной фичей не судим
       const now = Date.now();
+      const me = { startedAt, now, failures: names.map(lastDbFailureAt) };
+      const earlier = await syncProcessLives(prisma, me); // прошлые процессы
       const rows = await prisma.cronLease.findMany({
         where: { name: { in: names } },
         select: { name: true, runAt: true, doneRunAt: true },
@@ -35,6 +34,7 @@ export function cronLeasesProbe(
           now,
           startedAt,
           lastDbFailureAt: lastDbFailureAt(name),
+          earlier,
         });
         if (problem) problems.push(`${name}: ${problem}`);
       }

@@ -26,7 +26,7 @@ export function YsqCrossCheck({ ysqActiveIds, latest, conceptSchemaIds }: {
         </div>
       ))}
       {items.length > SHOWN && (
-        <button type="button" className="ds-link" style={{ alignSelf: 'flex-start', minHeight: 44 }} onClick={() => setAll(a => !a)}>
+        <button type="button" className="ds-link u-self-start" style={{ minHeight: 44 }} onClick={() => setAll(a => !a)}>
           {all ? 'Свернуть' : `Ещё ${items.length - SHOWN}`}
         </button>
       )}

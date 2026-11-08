@@ -1,0 +1,3 @@
+{
+  "webapp/src/components/ModeMapCanvas.tsx": "setTimeout(…, 0) зовёт setViewport стора ReactFlow (useReactFlow), а не setState компонента; таймер до 10 мс до сноса jsdom ждёт afterAll(settleUnmountTimers) в rtlCleanup.ts, а очистка в эффекте потеряла бы восстановление вида при перезапуске эффекта (restoredVp уже true)"
+}

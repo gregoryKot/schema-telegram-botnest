@@ -28,9 +28,7 @@ const RECENT_POSTS = 10;
  *
  * Запись в HealthyAdultPost — тоже одна на публикацию, а не по площадке: по
  * ней считается «когда постили в последний раз» для расписания и «что уже
- * звучало» для дедупа, и оба ответа не зависят от числа площадок.
- *
- * Пул конечен и пополняется вручную — см. HEALTHY_ADULT.md.
+ * звучало» для дедупа. Пул конечен и пополняется вручную — HEALTHY_ADULT.md.
  */
 @Injectable()
 export class ChannelPublisherService {
@@ -94,16 +92,17 @@ export class ChannelPublisherService {
   }
 
   /**
-   * Досылка той же фразы тем площадкам, которые её не приняли.
-   *
-   * Пул не трогаем и пост в историю не пишем: публикация уже состоялась, это
-   * добор долга внутри того же слота. Повтор всего фан-аута дал бы дубль там,
-   * где пост уже вышел, поэтому список площадок приходит снаружи — из журнала.
+   * Досылка той же фразы тем площадкам, которые её не приняли; список — из
+   * журнала (повтор всего фан-аута дал бы дубль там, где пост уже вышел).
+   * Добор долга внутри слота историю не трогает, а слот, не вышедший нигде,
+   * выходит досылкой впервые (`firstOut`): тогда пост пишется в историю и
+   * фраза помечается вышедшей, как у publish (хвост волны 9).
    */
   async retry(
     source: string,
     text: string,
     platforms: string[],
+    firstOut = false,
   ): Promise<PublishResult> {
     const wanted = new Set(platforms);
     const targets = this.enabled().filter(({ target }) =>
@@ -122,7 +121,9 @@ export class ChannelPublisherService {
       }),
     );
     await this.deliveries.record(`${source} — повтор`, delivered, failed, text);
-    return fanoutResult(text, delivered, failed);
+    const res = fanoutResult(text, delivered, failed);
+    if (firstOut && res.posted) await this.afterPost(text);
+    return res;
   }
 
   private async deliver(
@@ -130,11 +131,8 @@ export class ChannelPublisherService {
     destination: string,
     post: ChannelPost,
   ): Promise<Delivery | DeliveryFailure> {
-    const where = {
-      platform: target.platform,
-      title: target.title,
-      destination,
-    };
+    const { platform, title } = target;
+    const where = { platform, title, destination };
     try {
       await target.send(post, destination);
       this.logger.log(`healthy_adult_post ${target.platform}=${destination}`);

@@ -6,7 +6,7 @@ import '../../../styles/sheet-childhood.css';
 
 /**
  * «Примеры – как это выглядит в жизни» под ползунком потребности: четыре
- * точки шкалы с живыми историями, чтобы было с чем сверить свою оценку.
+ * точки шкалы с живыми историями. Шевроны — ds-fold-chev, его переворачивает aria-expanded.
  */
 export function NeedExamples({ needId }: { needId: NeedId }) {
   const [open, setOpen] = useState(false);
@@ -22,7 +22,7 @@ export function NeedExamples({ needId }: { needId: NeedId }) {
           setOpenIdx(null);
         }}
       >
-        Примеры – как это выглядит в жизни {open ? '▴' : '▾'}
+        Примеры – как это выглядит в жизни <span className="ds-fold-chev" aria-hidden="true" />
       </button>
       {open && (
         <div className="chw-examples-list">
@@ -32,12 +32,12 @@ export function NeedExamples({ needId }: { needId: NeedId }) {
               <div key={i} className="chw-example">
                 <button
                   type="button"
-                  className="chw-example-head"
+                  className="ds-fold-btn chw-example-head"
                   aria-expanded={isOpen}
                   onClick={() => setOpenIdx(isOpen ? null : i)}
                 >
                   <span className={'chw-badge is-' + exampleTone(ex.score)}>≈{ex.score}/10</span>
-                  <span className="chw-example-chev">{isOpen ? '▴' : '▾'}</span>
+                  <span className="ds-fold-chev" aria-hidden="true" />
                 </button>
                 {isOpen && <p className="chw-example-text">{ex.text}</p>}
               </div>

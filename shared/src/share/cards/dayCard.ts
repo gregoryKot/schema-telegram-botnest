@@ -1,9 +1,9 @@
 // Карточка одного дня трекера потребностей («заполнил день → поделись»).
-// Как weeklyCard, но значения — оценки за конкретный день, а не средние.
-// Общая копия для обоих фронтендов (правило №3). Чистый билдер текста
-// экспортируется для тестов.
+// Как weeklyCard, но значения — оценки за конкретный день, а не средние; числа — fmtIndex.
+// Чистый билдер текста экспортируется для тестов.
 import { NEED_COLORS } from '../../needs/needColors';
 import type { Need } from '../../types';
+import { fmtIndex } from '../../needs/dayIndex';
 import { drawNeedsRadarCard, type NeedsRadarRow } from './needsRadarCard';
 
 export function dayIndex(
@@ -24,7 +24,7 @@ export function buildDayShareText(
   link: string,
 ): string {
   const idx = dayIndex(needs, ratings);
-  const idxStr = idx !== null ? idx.toFixed(1) : '—';
+  const idxStr = fmtIndex(idx);
   return `Мои потребности сегодня, ${dateLabel}\nИндекс дня: ${idxStr}/10\n${link}`;
 }
 
@@ -84,7 +84,7 @@ export function drawDayCard(
     subtitle: dateLabel,
     rows: dayRadarRows(needs, ratings),
     center: {
-      value: idx !== null ? idx.toFixed(1) : '—',
+      value: fmtIndex(idx),
       caption: 'индекс',
     },
     footerLabel: 'Трекер потребностей',

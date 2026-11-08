@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptPayload, decryptPayload } from './notification-payload.crypto';
 import { PROACTIVE_TYPES, type NotificationType } from './notification.types';
+import { claimForSend } from './notification-claim';
 import {
   replacePending,
   swapReminder,
@@ -26,22 +27,10 @@ export interface DueNotification {
 export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Запланировать уведомление */
-  async schedule(
-    userId: bigint,
-    type: NotificationType,
-    sendAt: Date,
-    payload?: object,
-  ) {
+  /** Запланировать уведомление; payload шифруется (аудит 2026-10, T1). */
+  async schedule(u: bigint, t: NotificationType, at: Date, p?: object) {
     await this.prisma.scheduledNotification.create({
-      // Текст задания терапевта и подобное шифруется (аудит 2026-10, T1) —
-      // в БД свободный текст открытым не лежит.
-      data: {
-        userId,
-        type,
-        sendAt,
-        payload: encryptPayload(payload),
-      },
+      data: { userId: u, type: t, sendAt: at, payload: encryptPayload(p) },
     });
   }
 
@@ -82,15 +71,24 @@ export class NotificationService {
       orderBy: { sendAt: 'asc' },
       take: 500, // M3: бэклог после даунтайма дренируется батчами, старейшие первыми
     });
-    return rows.map((r) => ({
-      ...r,
-      payload: decryptPayload(r.payload),
-    }));
+    return rows.map((r) => ({ ...r, payload: decryptPayload(r.payload) }));
   }
 
-  /** Пометить уведомление как отправленное. Идемпотентно — двойной вызов не падает. */
+  /** Забрать строку перед отправкой — её не пошлёт второй прогон (backend#15). */
+  claim(id: number): Promise<boolean> {
+    return claimForSend(this.prisma, id);
+  }
+
+  /** Отпустить захват: строка осталась на повтор, следующий тик её возьмёт. */
+  async releaseClaim(id: number) {
+    await this.prisma.scheduledNotification.updateMany({
+      where: { id, sentAt: null },
+      data: { attemptedAt: null },
+    });
+  }
+
+  /** Пометить отправленным. updateMany: строки нет — не бросает, двойной вызов цел. */
   async markSent(id: number) {
-    // updateMany не бросает P2025 если строки уже нет — две конкурентные обработки безопасны.
     await this.prisma.scheduledNotification.updateMany({
       where: { id, sentAt: null },
       data: { sentAt: new Date() },

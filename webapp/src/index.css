@@ -97,9 +97,9 @@
      --text-faint до --text-sub, оба стали 0.62 — два уровня приглушения
      схлопнулись в один. Опустить faint нельзя: 0.62 — уже минимум, который
      держит ≥4.5:1 на самой тёмной реальной подложке (тонированная карточка
-     0.06, см. --kbd-text ниже) — 4.51:1, запаса нет. Поэтому иерархия
+     0.06) — 4.51:1, запаса нет. Поэтому иерархия
      восстановлена подъёмом sub, а не занижением faint: 0.70 — тот же альфа,
-     что уже был выверен для --kbd-text (5.38:1 на его подложке), здесь даёт
+     что уже был выверен для прежнего --kbd-text (5.38:1 на его подложке), здесь даёт
      6.13:1 на чистом --bg / 5.78:1 на тонированной карточке. */
   /* Редизайн 2026-10: макет даёт faint #8E8578, но это 3.26:1 к --bg — мимо
      AA. Взят ближайший тон той же гаммы, который держит ≥4.5:1 на всех
@@ -108,10 +108,6 @@
   --text-muted:    #6b6258;
   --text-faint:    #716759;
   --text-ghost:    #a49b8e; /* только плейсхолдеры/декор, не текст */
-  /* .kbd рисует текст на дважды наложенной --surface-2 (плашка внутри
-     search-pill) — эта подложка светлее чистого --bg, поэтому --text-faint
-     там даёт только ~4.46:1. Отдельный токен чуть темнее (а11y аудит 2026-08). */
-  --kbd-text:      rgba(28,25,22,0.70); /* 5.38:1 к сложенному фону .kbd */
 
   /* ── Accent — терракота. Базовые значения — shared/src/theme/tokens.css
      (дизайн-аудит 2026-08 В11). Редизайн
@@ -272,7 +268,6 @@ html[data-theme="dark"] {
   --text-sub:      rgba(236,234,229,0.58);
   --text-faint:    rgba(236,234,229,0.52); /* ≥4.5:1 к --bg (аудит 2026-08) */
   --text-ghost:    rgba(236,234,229,0.20);
-  --kbd-text:      rgba(236,234,229,0.58); /* 5.19:1 к сложенному фону .kbd (а11y аудит 2026-08) */
 
   /* --accent и производные — shared/src/theme/tokens.css, см. светлую тему выше. */
 
@@ -676,49 +671,8 @@ a { color: inherit; text-decoration: none; }
 .faint { color: var(--text-faint); }
 
 /* ─── Buttons ─────────────────────────────────────────────────────────────── */
-/* Full-width legacy buttons (used in sheets, forms) */
-.btn-primary {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: none;
-  border-radius: var(--r-md);
-  padding: 12px 22px;
-  font-size: 14px; font-weight: 600;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: var(--space-8);
-  width: 100%;
-  transition: background .12s, opacity .12s;
-}
-.btn-primary:hover  { background: var(--accent-hi); color: var(--on-accent); }
-.btn-primary:active { opacity: 0.85; }
-.btn-primary:disabled { opacity: 0.38; cursor: default; }
-
-.btn-outline {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 10px 20px;
-  font-size: 14px; font-weight: 500;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: var(--space-8);
-  width: 100%;
-  transition: background .12s, border-color .12s;
-}
-.btn-outline:hover { background: var(--surface-2); border-color: var(--line-strong); }
-.btn-outline:active { opacity: 0.75; }
-
-/* Inline button system (new design) */
-.btn {
-  display: inline-flex; align-items: center; gap: var(--space-6);
-  padding: 7px 14px;
-  border-radius: 7px;
-  font-size: 13px; font-weight: 500;
-  transition: background .12s, color .12s, border-color .12s, opacity .12s;
-  white-space: nowrap; cursor: pointer; border: none;
-}
-.btn.btn-primary { background: var(--accent); color: var(--on-accent); font-weight: 600; width: auto; border-radius: 7px; padding: 7px 14px; font-size: 13px; }
-.btn.btn-primary:hover { background: var(--accent-hi); }
+/* Кнопки кабинета — .ds-btn (styles/cabinet.css). Старые .btn/.btn-primary/.btn-outline удалены
+   в 2026-11 вместе с последними потребителями (styles/legacyClasses.test.ts). */
 
 /* ─── Card ────────────────────────────────────────────────────────────────── */
 .card {
@@ -734,37 +688,14 @@ a { color: inherit; text-decoration: none; }
   box-shadow: var(--shadow-1);
 }
 
-/* ─── Eyebrow / chip ─────────────────────────────────────────────────────── */
+/* ─── Eyebrow ────────────────────────────────────────────────────────────── */
 .eyebrow {
   font-size: 10.5px; font-weight: 600;
   letter-spacing: 0.09em; text-transform: uppercase;
   color: var(--text-faint); white-space: nowrap;
 }
-.chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 2px 9px; border-radius: 999px;
-  font-size: 11.5px; font-weight: 500;
-  background: var(--surface-2); color: var(--text-sub);
-  border: 1px solid var(--line); white-space: nowrap; flex-shrink: 0;
-}
-/* В11 (аудит 2026-08): было rgba(107,129,86,…) и т.п. — хардкод одного (светлого)
-   значения токена, из-за чего фон/рамка чипов не следовали за тёмной темой,
-   хотя text-цвет уже брался из var(--c-*). color-mix с тем же токеном — фон
-   пересчитывается сам при смене темы, как в .sb-today-cta. */
-.chip-success { background: color-mix(in srgb, var(--c-moss) 10%, transparent); color: var(--accent-green); border-color: color-mix(in srgb, var(--c-moss) 22%, transparent); }
 .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; background: currentColor; }
 
-/* ─── Section dividers ───────────────────────────────────────────────────── */
-.section { margin-bottom: 56px; }
-.section:last-child { margin-bottom: 0; }
-.section-head {
-  display: flex; align-items: baseline; justify-content: space-between;
-  margin-bottom: 18px; padding-bottom: var(--space-12);
-  border-bottom: 1px solid var(--line);
-}
-.section-head h3 { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
-.section-head .hint { font-size: 12.5px; color: var(--text-faint); }
-.hr-soft { height: 1px; background: var(--line); border: 0; margin: 24px 0; }
 
 /* ─── Input ──────────────────────────────────────────────────────────────── */
 .input, .textarea {
@@ -778,36 +709,6 @@ a { color: inherit; text-decoration: none; }
 }
 .input:focus, .textarea:focus { border-color: var(--accent-line); outline: none; }
 .textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
-
-/* ─── Tabs ───────────────────────────────────────────────────────────────── */
-.tabs {
-  display: flex; align-items: center;
-  border-bottom: 1px solid var(--line);
-  gap: var(--space-4); padding: 0 28px;
-}
-.tab {
-  position: relative;
-  padding: 13px 12px;
-  font-size: 13.5px; font-weight: 500;
-  color: var(--text-faint); white-space: nowrap; flex-shrink: 0;
-  transition: color .12s;
-}
-.tab:hover { color: var(--text-sub); }
-.tab.is-active { color: var(--text); font-weight: 600; }
-.tab.is-active::after {
-  content: '';
-  position: absolute; left: 8px; right: 8px; bottom: -1px;
-  height: 1.5px; background: var(--text);
-}
-.tab .count { margin-left: var(--space-6); font-size: 11px; color: var(--text-faint); }
-
-/* ─── List row ───────────────────────────────────────────────────────────── */
-.list-line {
-  display: flex; align-items: center; gap: var(--space-14);
-  padding: 14px 0;
-  border-bottom: 1px solid var(--line);
-}
-.list-line:last-child { border-bottom: 0; }
 
 /* ─── Needs bars ──────────────────────────────────────────────────────────── */
 .bar { background: var(--surface-3); border-radius: 999px; position: relative; height: 4px; overflow: hidden; }
@@ -825,14 +726,7 @@ a { color: inherit; text-decoration: none; }
 .link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ─── KBD ────────────────────────────────────────────────────────────────── */
-.kbd {
-  display: inline-flex; align-items: center;
-  font-size: 10.5px; color: var(--kbd-text);
-  padding: 2px 5px; border-radius: var(--r-4);
-  background: var(--surface-2); border: 1px solid var(--line);
-  font-family: 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0;
-  flex-shrink: 0;
-}
+/* Вид плашки клавиши — .ds-kbd в styles/cabinet.css (до 2026-11 здесь жил моноширинный .kbd). */
 /* Подсказки для клавиатуры («⌘K», «Esc», «⌘ + Enter — сохранить») на устройстве
    без наведения (телефон, планшет) не нужны: нажать их нечем. Один класс на
    все такие подсказки; новую клавиатурную подсказку помечай им (QA 2026-11, T-14). */
@@ -881,7 +775,7 @@ a { color: inherit; text-decoration: none; }
   animation: cookie-in .35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Кнопка у баннера одна («Понятно») — главная чёрная, как .btn-primary. */
+/* Кнопка у баннера одна («Понятно») — главная, залитая акцентом. */
 .cookie-btn {
   min-height: 44px;
   padding: 11px 22px;
@@ -1121,7 +1015,7 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 /* ─── Диалог по центру (компонент Dialog) ───────────────────────────────────
    Один вид для всех центрированных окон сайта (подтверждение, выбор «ты/вы»,
    достижение, празднование): бумага, тонкая рамка, мягкая тень, заголовок —
-   serif обычного начертания, кнопки — .btn-primary / .btn-outline. Раньше у
+   serif обычного начертания, кнопки — .ds-btn / .ds-btn--secondary. Раньше у
    каждого окна были свои радиусы (12/20/24/28), тени и пружинные анимации. */
 .dialog-title {
   font-family: var(--serif); font-weight: 400;
@@ -1131,9 +1025,7 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 .dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
 .dialog-error { font-size: 14px; line-height: 1.5; color: var(--accent-red); margin: 0 0 16px; }
 .dialog-actions { display: flex; gap: var(--space-10); }
-.dialog-actions > .btn-primary, .dialog-actions > .btn-outline { flex: 1; width: auto; }
-.dialog-actions > .btn-primary { padding: 12px 18px; }
-.dialog-actions > .btn-outline { padding: 11px 18px; }
+.dialog-actions > .ds-btn { flex: 1; }
 .dialog-link { /* 44 по высоте: «Позже» в выборе «ты/вы» было 40 (QA мобильной версии 2026-11, М1) */
   display: block; width: 100%; min-height: 44px; margin-top: 6px; padding: 10px 0;
   background: none; border: none; cursor: pointer; font-family: inherit;
@@ -1170,36 +1062,14 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 /* Prompt – shared by exercises and diary flows */
 .prompt { display: grid; grid-template-columns: 56px 1fr; gap: var(--space-24); align-items: start; margin-bottom: 28px; }
 
-/* Aside card */
-.aside-card { border: 1px solid var(--line); border-radius: var(--r-12); padding: 22px 24px; background: var(--surface); margin-bottom: var(--space-16); }
-.aside-card-eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-faint); margin-bottom: var(--space-10); }
-.aside-card h3 { font-family: var(--serif); font-size: 22px; line-height: 1.2; letter-spacing: -0.01em; font-weight: 400; margin-bottom: var(--space-10); }
-.aside-card .body { font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
-.aside-card ul { margin-top: var(--space-10); font-size: 13px; color: var(--text-sub); line-height: 1.6; list-style: none; }
-.aside-card ul li { padding-left: var(--space-16); position: relative; }
-.aside-card ul li::before { content: '·'; position: absolute; left: 4px; top: -2px; color: var(--text-ghost); font-size: 16px; }
-
 /* Ex buttons (exercise-scoped) */
 .ex-btn { display: inline-flex; align-items: center; gap: var(--space-8); padding: 11px 22px; border-radius: var(--r-8); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; border: none; font-family: inherit; }
-.ex-btn-primary { background: var(--accent); color: var(--on-accent); }
-.ex-btn-primary:hover { background: var(--accent-hi); }
-.ex-btn-primary:disabled { opacity: 0.35; cursor: default; background: var(--accent); }
 .ex-btn-ghost { color: var(--text-sub); background: none; }
 .ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 
 /* Flashcards */
 .flash { border: 1px solid var(--line); border-radius: var(--r-16); padding: 36px 40px 32px; background: var(--surface); margin-bottom: 28px; }
 .flash-q { font-family: var(--serif); font-size: 32px; line-height: 1.15; letter-spacing: -0.015em; font-weight: 400; color: var(--text); margin-bottom: var(--space-14); }
-
-/* ── Diary Hub ─────────────────────────────────────────────────── */
-
-.entry { display: grid; grid-template-columns: 70px 4px 1fr auto; gap: 22px; padding: 22px 0; border-top: 1px solid var(--line); cursor: pointer; transition: background .1s; align-items: start; }
-.entry:last-child { border-bottom: 1px solid var(--line); }
-.entry:hover { background: var(--surface-2); }
-
-/* ── Diary entry flows ─────────────────────────────────────────── */
-
-.intensity { display: flex; align-items: center; gap: var(--space-12); padding: 12px 0; border-bottom: 1px solid var(--line); }
 
 /* ── Accessibility: keyboard focus indicators ─────────────────────────────── */
 /* Убирает outline только для мышь/тач; сохраняет для клавиатуры */
@@ -1227,6 +1097,8 @@ textarea:focus-visible {
    plain crosshair). White halo keeps it visible on any background. Hotspot at the dot. */
 :root {
   --mm-connect-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Cg fill='none' stroke='%234d4799' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Ccircle cx='6' cy='20' r='4' fill='%23ffffff'/%3E%3Ccircle cx='6' cy='20' r='2.6' fill='%234d4799'/%3E%3C/svg%3E") 6 20, grab;
+  /* Зона ручки связи под пальцем в px холста; холст переписывает её по зуму (modeMap/handleZoom.ts). */
+  --mm-handle-hit: 28px;
 }
 .mm-handle {
   opacity: 0;
@@ -1262,9 +1134,10 @@ textarea:focus-visible {
    или у выделенного узла нечем, а выделенный узел на телефоне закрыт панелью
    правки (QA 2026-11, T-4). Связь — потянуть точку к другому узлу или тапнуть
    точку одного узла и точку другого (React Flow connectOnClick). Зона 28px —
-   компромисс: 44 соседние ручки узла перекрыли бы друг друга и сам узел. */
+   компромисс: 44 соседние ручки узла перекрыли бы друг друга и сам узел. Ручка в
+   координатах холста: --mm-handle-hit = 28 / зум (modeMap/handleZoom.ts), на экране те же 28. */
 @media (hover: none) {
-  .mm-handle { opacity: 1; width: 28px !important; height: 28px !important; } /* !important: размер ручки задан инлайн (nodeParts dotStyle) */
+  .mm-handle { opacity: 1; width: var(--mm-handle-hit) !important; height: var(--mm-handle-hit) !important; } /* !important: размер ручки задан инлайн (nodeParts dotStyle) */
 }
 /* While dragging a connection, reveal all handles so targets are obvious */
 .react-flow.connecting .mm-handle { opacity: 0.85; }

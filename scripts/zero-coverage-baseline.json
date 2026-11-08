@@ -1,0 +1,9 @@
+{
+  "src/api/dto/practice-ics.dto.ts": "DTO из декораторов class-validator без ветвлений; читает только PracticeIcsController, тело проверяет e2e test/app-ownership-practice-ics.e2e-spec.ts, а e2e в этот подсчёт не входит",
+  "src/api/practice-ics.controller.ts": "контроллер под e2e-смоком ownership test/app-ownership-practice-ics.e2e-spec.ts — e2e в этот подсчёт юнит-покрытия не входит",
+  "src/articles/article-seo.routes.ts": "привязка middleware SEO к маршрутам (forRoutes) без ветвлений, зовётся из AppModule; сами middleware покрыты юнитами (article-seo, sitemap)",
+  "src/booking/booking.registry.ts": "реестр контроллеров и провайдеров модуля брони — списки классов без ветвлений; модуль поднимается e2e на AppModule вне этого подсчёта",
+  "src/booking/client-booking.controller.ts": "контроллер под e2e-смоком ownership test/client-booking-ownership.e2e-spec.ts — e2e в этот подсчёт юнит-покрытия не входит",
+  "src/booking/meeting.providers.ts": "список провайдеров постоянной комнаты клиента (вынесен из booking.registry.ts) — одна константа без ветвлений",
+  "src/cli/rotate-encryption-key.ts": "точка входа CLI ротации ключа: исполняется отдельным процессом в test/key-rotation.e2e-spec.ts на живом Postgres (джоба migrations), вне юнит-подсчёта"
+}

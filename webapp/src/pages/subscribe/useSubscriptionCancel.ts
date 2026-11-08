@@ -21,6 +21,14 @@ function describeFailure(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+/** Отказ загрузки подписки по ссылке: экран-тупик шлёт отчёт наверх (правило
+ * №14, check-dead-end-report). 404 — ссылка устарела, ожидаемый исход, как у
+ * отмены: без отчёта. Токена в отчёте нет. */
+export function reportSubscriptionLoadFailure(err: unknown): void {
+  if (err instanceof ApiError && err.status === 404) return;
+  reportClientError({ message: `subscription load failed: ${describeFailure(err)}`, section: SUBSCRIPTION_SECTION });
+}
+
 export function useSubscriptionCancel(token: string | null, onCancelled: () => void) {
   const [phase, setPhase] = useState<CancelPhase>('idle');
 

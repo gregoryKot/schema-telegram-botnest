@@ -80,6 +80,10 @@ jobs:
       # его spawn'нутому jest как --cacheDirectory.
       - run: node scripts/check-coverage-ratchet.mjs
         timeout-minutes: 6
+      # Пофайловый храповик нулей: файл src/** с 0% строк — красный, если не
+      # записан с причиной в scripts/zero-coverage-baseline.json. Судит
+      # coverage/coverage-summary.json из шага выше, jest сам не гоняет.
+      - run: node scripts/check-zero-coverage.mjs
       # Тот же пакет тестов под НЕ-UTC зоной (инцидент 2026-07-20), второй
       # полный прогон после coverage-храповика выше. Раннер всегда UTC,
       # поэтому баги «время считается от зоны сервера» в CI невидимы:
@@ -230,6 +234,21 @@ jobs:
       # теле, exempt — только с внятной причиной); протухшая запись тоже красит
       # CI. Флага --update нет: это решение человека, не счётчик долга.
       - run: node scripts/check-cron-leader.mjs
+      # Экран-тупик шлёт отчёт наверх (правило №14): catch-ветка страницы с
+      # исходом-ошибкой классифицирована в scripts/dead-end-report-baseline.json
+      # (reports — отчёт в catch или хук via, exempt/debt — с причиной). Без --update.
+      - run: node scripts/check-dead-end-report.mjs
+      # Таймер, ставящий состояние, чистится при размонтировании (clearTimeout
+      # или useTimedFlag): иначе он срабатывает после сноса jsdom и роняет весь
+      # vitest (run 36409902702). Исключения — scripts/timer-cleanup-baseline.json.
+      - run: node scripts/check-timer-cleanup.mjs
+      # Адрес отправки в Telegram — только из AuthProvider (telegramIdFor /
+      # telegramIdsFor): userId — чат лишь у телеграм-входа (класс #456).
+      # Бейслайна нет, исключения — EXEMPT_FILES в самом гейте.
+      - run: node scripts/check-telegram-chat-id.mjs
+      # Ближайшая встреча во фронтах — только upcomingSession(x.nextSession, …):
+      # настенная дата стареет (класс 17 INCIDENTS, #867/#869). Без бейслайна.
+      - run: node scripts/check-next-session-reads.mjs
       # Один ключ localStorage — один писатель (инцидент 2026-11-05, PR #935:
       # кэш контакта терапевта писали два места, третье меняло источник правды
       # на сервере и кэш не трогало). Каждый ключ классифицирован в
@@ -257,6 +276,10 @@ jobs:
       # сессию), у правил .claude/rules есть paths, карта кода называет все
       # каталоги и гейты, пути и ссылки живы. Бейслайна и --update нет.
       - run: node scripts/check-agent-docs.mjs
+      # Пути в обратных кавычках CLAUDE.md, docs/SECURITY.md, docs/README.md и
+      # .claude/rules/*.md существуют в дереве (аудит 2026-10: битые указатели
+      # CLAUDE.md чинили руками, #643). Исключения — scripts/doc-refs-baseline.json.
+      - run: node scripts/check-doc-refs.mjs
       # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
       # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
       # в security-log-redact.ts и перестал измеряться). Классификация в
@@ -492,6 +515,11 @@ jobs:
       # условием, а это свойство Postgres, не нашего кода.
       - name: e2e доделка полуночного обхода после рестарта на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/midnight-planner-resume.e2e-spec.ts
+      # Захват строки очереди уведомлений (аудит 2026-10, backend#15): два прогона
+      # очереди по одной базе, каждое уведомление уходит один раз — строку забирает
+      # один UPDATE с условием, а это свойство Postgres, не нашего кода.
+      - name: e2e захват строки очереди уведомлений на реальном Postgres
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/notification-claim.e2e-spec.ts
       # Ротация ENCRYPTION_KEY (аудит 2026-10-11, r2-0#0..#2; правило №18): по
       # строке на КАЖДУЮ запись списка ротации → rotateAll → читается новым ключом,
       # не читается старым; плюс отдельный процесс точки входа и его коды выхода.

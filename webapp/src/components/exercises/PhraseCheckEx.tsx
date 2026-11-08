@@ -202,7 +202,7 @@ export function PhraseCheckEx({
           </div>
           {pastEntries.length > 0 && (
             <div className="u-mt8">
-              <div className="aside-card-eyebrow u-mb10">Прошлые разборы · {history.length}</div>
+              <div className="ds-label u-mb10">Прошлые разборы · {history.length}</div>
               <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} showRewrite />
             </div>
           )}

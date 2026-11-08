@@ -1,7 +1,7 @@
 import type { UserSettings } from '../../api';
 import { botHandle } from '../../utils/botConfig';
 import { useTr } from '../../utils/addressForm';
-import { SSection, SRow, Toggle } from './ui';
+import { SSection, SRow, Toggle, ChevronVal } from './ui';
 import type { SubView } from './SubViews';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
 import { NotifyScheduleRows } from './NotifyScheduleRows';
@@ -19,10 +19,9 @@ interface Props {
   reloadSettings: () => Promise<void>; // после включения пушей на устройстве меняется notifyChannel
 }
 
-// Раздел «Уведомления» — вынесен из SettingsSheet.tsx (правило №10). Канал —
-// веб-пуш на устройстве или Telegram (shared/src/settings/notifyReach.ts); без
-// канала вместо тумблеров — честная причина и два пути (QA 2026-11, З5).
-// Два тумблера — shared/src/settings/notifyToggles.ts.
+// «Уведомления»: канал — веб-пуш или Telegram (shared/src/settings/notifyReach.ts), без канала — причина и
+// два пути (QA 2026-11, З5); тумблеры — shared/src/settings/notifyToggles.ts. «Часовой пояс» — вне ветки
+// уведомлений: он считает и «сегодня» заданий (TherapyTasksService.getTasks → notifyTimezone).
 export function NotificationsSection({ settings, tzLabel, patch, openSubView, leaveTo, reloadSettings }: Props) {
   const tr = useTr();
   const channel = notifyChannelOf(settings);
@@ -51,8 +50,9 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, le
         </div>
       )}
       {channel && (reminders || summary) && (
-        <NotifyScheduleRows settings={settings} tzLabel={tzLabel} patch={patch} openSubView={openSubView} />
+        <NotifyScheduleRows settings={settings} patch={patch} openSubView={openSubView} />
       )}
+      <SRow title="Часовой пояс" sub="От него считается «сегодня» и час напоминаний" right={<ChevronVal text={tzLabel} />} onClick={() => openSubView('tz')} />
     </SSection>
   );
 }

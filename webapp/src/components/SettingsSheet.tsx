@@ -137,8 +137,8 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
               {subView === 'main' && (<>
                 {isTherapist && onSetTherapistMode && <ModeSection therapistMode={!!therapistMode}
-                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} />}
-                <AppearanceSection userRole={userRole} onResignTherapist={onResignTherapist} onSaved={flashSaved} />
+                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} onResign={onResignTherapist} />}
+                <AppearanceSection onSaved={flashSaved} />
                 {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
                 <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView}

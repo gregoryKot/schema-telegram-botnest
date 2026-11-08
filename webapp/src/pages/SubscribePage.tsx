@@ -5,6 +5,7 @@ import { Cup } from '../components/art/PaperArt';
 import { Leaf } from '../components/art/PaperArtSigns';
 import { CANCEL_SUPPORT_LINK } from '../components/booking/cancelPolicy';
 import { CancelControl } from './subscribe/CancelControl';
+import { reportSubscriptionLoadFailure } from './subscribe/useSubscriptionCancel';
 import { usePageShowReset } from '../hooks/usePageShowReset';
 import { SubscribeForm } from './subscribe/SubscribeForm';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
@@ -55,7 +56,7 @@ export function SubscribePage() {
       .catch(() => { setEnabled(false); setOpts([]); });
   }, []);
   useEffect(() => {
-    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch(() => setSubFailed(true));
+    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch((err: unknown) => { reportSubscriptionLoadFailure(err); setSubFailed(true); });
   }, [token]);
 
   const submit = async () => {

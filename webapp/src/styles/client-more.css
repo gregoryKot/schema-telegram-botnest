@@ -2,7 +2,6 @@
 .cm-page { max-width: 600px; }
 .cm-page > .cm-head { gap: 10px; }
 /* Строка с картинкой слева: картинка 44px, тело, шеврон (у строки без картинки остаётся «тело, шеврон»). */
-.cm-page > .ds-card--flush .ds-list-row--nav:has(> .pp-row-art) { grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 14px; align-items: center; }
 
 /* Компьютер: простой список с линиями и стрелкой «→», кризисный вход — контурная кнопка (вид до #907). */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {

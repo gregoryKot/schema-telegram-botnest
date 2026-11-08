@@ -68,10 +68,10 @@ function AddressFormPickerModal({ onClose }: { onClose: (answered: boolean) => v
         Поменять можно в любой момент в настройках.
       </p>
       <div className="dialog-actions" style={{ marginBottom: 10 }}>
-        <button className="btn-primary" onClick={() => choose('ty')}>
+        <button className="ds-btn" onClick={() => choose('ty')}>
           На «ты»
         </button>
-        <button className="btn-outline" onClick={() => choose('vy')}>
+        <button className="ds-btn ds-btn--secondary" onClick={() => choose('vy')}>
           На «вы»
         </button>
       </div>

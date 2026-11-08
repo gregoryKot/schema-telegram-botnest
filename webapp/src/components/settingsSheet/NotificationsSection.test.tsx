@@ -85,10 +85,28 @@ describe('NotificationsSection (сайт)', () => {
       expect(screen.getByText('Время')).toBeTruthy();
     });
 
-    it('оба выключены — время, частота и пояс скрыты', () => {
+    it('оба выключены — время и частота скрыты, пояс остаётся', () => {
       renderSection(settings({ notifyEnabled: false, notifySummaryEnabled: false }));
       expect(screen.queryByText('Время')).toBeNull();
-      expect(screen.queryByText('Часовой пояс')).toBeNull();
+      expect(screen.getByText('Часовой пояс')).toBeTruthy();
+    });
+  });
+
+  // Пояс считает и «сегодня» заданий (TherapyTasksService.getTasks → notifyTimezone), поэтому строка
+  // живёт вне ветки «уведомления включены»: у веб-клиента без канала её не было вовсе.
+  describe('«Часовой пояс» — вне условной ветки уведомлений', () => {
+    it.each([
+      ['канала нет', settings({ notifyReachable: false })],
+      ['уведомления выключены', settings({ notifyEnabled: false, notifySummaryEnabled: false })],
+      ['уведомления включены', settings({ notifyReachable: true })],
+    ])('%s — строка с поясом видна ровно одна и открывает выбор', (_label, s) => {
+      const openSubView = vi.fn();
+      render(<NotificationsSection settings={s} tzLabel="Москва" patch={vi.fn()} openSubView={openSubView}
+        leaveTo={vi.fn()} reloadSettings={vi.fn()} />);
+      expect(screen.getAllByText('Часовой пояс')).toHaveLength(1);
+      expect(screen.getByText('Москва')).toBeTruthy();
+      fireEvent.click(screen.getByText('Часовой пояс'));
+      expect(openSubView).toHaveBeenCalledWith('tz');
     });
   });
 });

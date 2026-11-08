@@ -137,6 +137,9 @@
   "src/infra/db-outage.service.ts": {
     "spec": "test/raw-sql-live-infra.e2e-spec.ts"
   },
+  "src/notification/notification-claim.ts": {
+    "spec": "test/notification-claim.e2e-spec.ts"
+  },
   "src/notification/replace-pending.ts": {
     "spec": "test/raw-sql-live-infra.e2e-spec.ts"
   },

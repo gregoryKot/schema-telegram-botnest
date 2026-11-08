@@ -7,10 +7,8 @@ import {
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { PracticesService } from '../bot/practices.service';
-import {
-  buildWeeklySummaryText,
-  renderLowStreakInsight,
-} from './notification.templates';
+import { renderLowStreakInsight } from './notification.templates';
+import { missedPlanDay, weeklyPayload } from './notification.weekly';
 import {
   addDaysLocal,
   daysBetweenLocal,
@@ -39,9 +37,9 @@ export interface PlannerUser extends CadenceUser {
  * понедельник. Теперь день захвата, решение движка частоты, воскресенье и
  * 1-е число — про день отправки, а заполнение снимает напоминания только до
  * дня следующего контакта (notification.fill-cancel.ts). Москве с 21:00 обход
- * в 03:00 даёт тот же день, что и раньше. Почему не «каждый местный день —
- * завтрашний»: тогда Москва решала бы за 21 час до дня (сводка недели без
- * субботы, движок частоты до вечерней записи).
+ * в 03:00 даёт тот же день, что и раньше. Не «каждый день — завтрашний»: Москва
+ * решала бы за 21 час до дня (движок частоты до вечерней записи). Окно сводки
+ * недели и «вчерашний план» у поясов с завтрашним днём — notification.weekly.ts.
  */
 @Injectable()
 export class NotificationPlannerService {
@@ -98,8 +96,8 @@ export class NotificationPlannerService {
             : daysSince > 30 && (daysSince - 30) % 45 === 0
               ? 'nudge'
               : null;
-    // Перерыв, value_recap и сводка встают вместо напоминания одной транзакцией
-    // под локом его замены (swapReminder, replace-pending.ts).
+    // Перерыв, value_recap, сводка, донат, план, инсайт встают вместо
+    // напоминания одной транзакцией под локом его замены (swapReminder).
     if (lapsingType) {
       const nudge = lapsingType === 'nudge' ? { daysSince } : undefined;
       if (!(await this.notifications.hasPending(uid, lapsingType)))
@@ -140,16 +138,16 @@ export class NotificationPlannerService {
       daysSince < 7 &&
       !(await this.notifications.hasPending(uid, 'weekly'))
     ) {
-      const stats = await this.analytics.getWeeklyStats(uid, tz);
-      const bestDay = await this.analytics.getBestDayOfWeek(uid);
-      const text = buildWeeklySummaryText(
-        stats,
-        this.botService.getNeeds(),
-        bestDay,
-        Number(uid % 3n),
-        normalizeAddressForm(user.addressForm),
+      // Окно — по дню плана; субботнее заполнение освежит (notification.weekly.ts).
+      const deps = { analytics: this.analytics, botService: this.botService };
+      const payload = await weeklyPayload(
+        deps,
+        uid,
+        tz,
+        planDate,
+        user.addressForm,
       );
-      await this.notifications.swapReminder(uid, 'weekly', sendAt, { text });
+      await this.notifications.swapReminder(uid, 'weekly', sendAt, payload);
       return;
     }
 
@@ -165,7 +163,7 @@ export class NotificationPlannerService {
       !(await this.notifications.hasPending(uid, 'donate_reminder'))
     ) {
       const totalDays = await this.analytics.getTotalDaysFilled(uid);
-      await this.notifications.schedule(uid, 'donate_reminder', sendAt, {
+      await this.notifications.swapReminder(uid, 'donate_reminder', sendAt, {
         seed: Number(uid % 3n),
         totalDays,
       });
@@ -191,8 +189,9 @@ export class NotificationPlannerService {
       return;
     }
 
-    // Дни без напоминания: невыполненный вчерашний план или инсайт о низкой потребности.
-    // «Вчера» — последний завершённый местный день: день перед днём плана может ещё идти.
+    // Дни без напоминания: невыполненный план или инсайт о низкой потребности.
+    // План — за последний завершённый местный день (день перед днём плана может
+    // ещё идти); назван своим днём, если не вчерашний для дня отправки.
     const yesterday = addDaysLocal(localDateString(tz, now), -1);
     const missed = await this.practicesService.getMissedPlans(uid, yesterday);
     if (
@@ -200,8 +199,9 @@ export class NotificationPlannerService {
       !(await this.notifications.hasPending(uid, 'practice_missed'))
     ) {
       const text = missed.map((p) => p.practiceText).join(', ');
-      await this.notifications.schedule(uid, 'practice_missed', sendAt, {
+      await this.notifications.swapReminder(uid, 'practice_missed', sendAt, {
         practiceText: text,
+        day: missedPlanDay(yesterday, planDate),
       });
       return;
     }
@@ -297,7 +297,7 @@ export class NotificationPlannerService {
       showBooking ? 10 : 3,
       normalizeAddressForm(addressForm),
     );
-    await this.notifications.schedule(
+    await this.notifications.swapReminder(
       userId,
       'low_streak_insight',
       nextSendAt(notifyLocalHour, tz, now),

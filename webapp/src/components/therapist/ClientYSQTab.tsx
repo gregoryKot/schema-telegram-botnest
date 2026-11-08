@@ -42,7 +42,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
           </PaperEmpty>
           {!virtual && (
             <>
-              <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn ds-btn--sm" style={{ alignSelf: 'flex-start' }}>
+              <button onClick={handleRequestYsq} disabled={ysqRequested} className="ds-btn ds-btn--sm u-self-start">
                 {ysqRequested ? '✓ Запрос отправлен' : 'Запросить тест на схемы'}
               </button>
               {ysqError && <div className="tb-error">{ysqError}</div>}

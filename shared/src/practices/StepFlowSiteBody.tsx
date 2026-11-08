@@ -1,7 +1,7 @@
 // Тело пошагового листа сайта: editorial — без
 // эмодзи-иллюстрации, выравнивание по левому краю; эйбрау «Шаг N из M»,
-// serif-заголовок шага, прогресс — тонкие линии-сегменты, «Дальше» — чёрная
-// пилюля сайта (.btn-primary), «Закрыть» — текстовая. Логика шагов — useStepFlow,
+// serif-заголовок шага, прогресс — тонкие линии-сегменты, «Дальше» — залитая
+// кнопка сайта (.ds-btn), «Закрыть» — текстовая. Логика шагов — useStepFlow,
 // общая с StepFlowBody мини-аппа; площадка импортирует только свою вёрстку.
 import { useStepFlow } from './useStepFlow';
 import type { StepFlowProps } from './stepFlowTypes';
@@ -110,17 +110,7 @@ export function StepFlowSiteBody({
         >
           Закрыть
         </button>
-        <button
-          className="btn btn-primary"
-          style={{
-            minHeight: 44,
-            padding: '0 28px',
-            borderRadius: 999,
-            fontSize: 14,
-            fontFamily: 'inherit',
-          }}
-          onClick={onNext}
-        >
+        <button className="ds-btn" onClick={onNext}>
           {nextLabel}
         </button>
       </div>

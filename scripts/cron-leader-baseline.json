@@ -39,6 +39,18 @@
     "status": "exempt",
     "reason": "updateMany идемпотентен: второй инстанс на том же тике обновит 0 строк (первый уже проставил anonymizedAt, фильтр anonymizedAt: null их не берёт), наружу ничего не уходит — ни DM, ни письма."
   },
+  "src/channel/channel-schedule.service.ts::alert": {
+    "status": "shared",
+    "reason": "DM владельцу о сбое площадки канала, текст — про свой слот или долг; повтор DM не повторяет пост, а троттлинг здесь снят осознанно (инцидент 2026-07-31)"
+  },
+  "src/channel/channel-schedule.service.ts::maybePost": {
+    "status": "shared",
+    "reason": "утро (*/5 9,10) и вечер (*/5 18,19 МСК) по времени не пересекаются, слот выбирает dueSlot по lastPostAt из базы — пост один на слот; публикацию сериализует publisher.inFlight"
+  },
+  "src/channel/channel-schedule.service.ts::postIfDue": {
+    "status": "shared",
+    "reason": "тело maybePost: то же разведение утра и вечера по окнам и dueSlot; досылка (tickCatchUp) сюда не доходит, у неё свой вход catchUp"
+  },
   "src/channel/channel-schedule.service.ts::tickCatchUp": {
     "status": "leader",
     "reason": "Догоняющая публикация в канал «Здоровый Взрослый» — дубль на двух инстансах постит фразу дважды."
@@ -50,6 +62,10 @@
   "src/channel/channel-schedule.service.ts::tickMorning": {
     "status": "leader",
     "reason": "Утренняя публикация в канал «Здоровый Взрослый» — дубль на двух инстансах постит фразу дважды."
+  },
+  "src/channel/channel-schedule.service.ts::warnUnknown": {
+    "status": "shared",
+    "reason": "«исход неизвестен» раз на площадку в слоте: ключ unknownWarned общий у тика и досылки; это DM владельцу, а не пост, второй DM с другого инстанса безвреден"
   },
   "src/channel/targets/threads-token.service.ts::refreshIfStale": {
     "status": "leader",
