@@ -21,7 +21,7 @@ export function TherapyCardFrame({
     <section className="th-card" aria-label={t.cardTalk}>
       <div className="ds-eyebrow">{eyebrow}</div>
       <h2 className="th-card-title">{title}</h2>
-      <p className="th-card-sub">{target.write ? t.cardSubTherapist : t.cardSubAuthor}</p>
+      <p className="th-card-sub">{target.write ? t.cardSubTherapist : target.connected ? t.cardSubTherapistNoChannel : t.cardSubAuthor}</p>
       <div className="th-card-acts">
         {target.write ? (
           <ExternalLink className="ds-btn th-btn" href={target.write.url} onClick={target.write.onClick}>
@@ -29,7 +29,7 @@ export function TherapyCardFrame({
           </ExternalLink>
         ) : (
           <button type="button" className="ds-btn th-btn" onClick={target.open}>
-            {t.cardTalk}
+            {target.connected ? t.sheetNextMeeting : t.cardTalk}
           </button>
         )}
         {extra}
