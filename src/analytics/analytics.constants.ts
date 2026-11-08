@@ -81,8 +81,8 @@
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
 //                         каждого — game-events.constants.ts.
-//   entry_deleted        — удалил свою запись из архива «Мой путь» (проверка убеждения /
-//                         письмо себе / кризисная карточка, meta.type — ENTRY_DELETE_TYPES):
+//   entry_deleted        — удалил свою запись: «Мой путь», разбор фразы, дневник
+//                         (meta.type — ENTRY_DELETE_TYPES, entry-delete.constants.ts):
 //                         текст там очень личный — видно, находят ли удаление вообще.
 import { CASE_EVENTS } from './case-steps.constants';
 import { CABINET_EVENTS } from './cabinet-events.constants';
@@ -136,7 +136,7 @@ export const ANALYTICS_EVENTS = [
   ...CASE_EVENTS,
   // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
   ...GAME_EVENTS,
-  // Удалил запись из архива «Мой путь» — belief_check|letter|flashcard.
+  // Удалил свою запись — meta.type из ENTRY_DELETE_TYPES.
   'entry_deleted',
   ...HOME_EVENTS,
   ...BOOKING_EVENTS,

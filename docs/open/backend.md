@@ -205,15 +205,6 @@
   (`webapp/src/utils/theme.ts`) и запасной фон экспорта карты (`useModeMapExport.ts`) — значения вне CSS;
   тень карточки статьи (`ArticlesPage.tsx`, `<style>`). Брать ролями, а не файлами.
 
-**Удаление прошлого разбора фразы не пишет событие аналитики** (осознанно, 2026-11-06):
-кнопка в `webapp/src/components/exercises/phraseCheckEx/PhraseHistoryCard.tsx` (общий
-`DeleteBtn` дневника; удаление записей дневника события тоже не пишет). Готовое
-`entry_deleted` не подходит без переделки: `ENTRY_DELETE_TYPES`
-(`src/analytics/entry-delete.constants.ts`) сверен с `JourneyDeletableType` «Моего пути»
-(`src/security/analytics-sync.invariants.spec.ts`), а разбор фразы в «Моём пути» не
-удаляется. Понадобится «находят ли удаление» — развести тип события и тип «Моего пути»,
-добавить `phrase_check` и `diary` с подписями в `src/bot/entry-delete-metrics.format.ts`.
-
 **Остатки мини-аппа для старых клиентов** (удалён, #908):
 - **`source: 'miniapp'` в отчёте об ошибках клиента.** `src/api/dto/client-error.dto.ts` (`@IsIn(['webapp','miniapp'])`) и строка «приложение в мессенджере» в блоке ошибок `/stats` (`src/bot/client-error-metrics.*`) оставлены: открытое до удаления окно мини-аппа ещё может прислать отчёт. Новых источников нет — через месяц-два после удаления убрать значение и строку вместе со спеками и `test/raw-sql-live-stats.e2e-spec.ts`.
 

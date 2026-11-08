@@ -6,9 +6,9 @@ import {
   YsqDeleteMetrics,
 } from './entry-delete-metrics.format';
 
-// Счётчики удаления записей архива «Мой путь» для /stats: событие
-// entry_deleted из AnalyticsEvent (meta.type — belief_check|letter|flashcard)
-// и ysq_data_deleted (стёртый целиком тест схем).
+// Счётчики удаления своих записей для /stats: событие entry_deleted из
+// AnalyticsEvent (meta.type — ENTRY_DELETE_TYPES: «Мой путь», разбор фразы,
+// дневник) и ysq_data_deleted (стёртый целиком тест схем).
 // Свой домен — свой файл (правило №10), образец — phrase-check-metrics.service.ts.
 @Injectable()
 export class EntryDeleteMetricsService {

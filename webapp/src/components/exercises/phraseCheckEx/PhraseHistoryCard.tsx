@@ -4,7 +4,7 @@
 // (shared/usePhraseHistoryCard), вёрстка своя. Read-after-write: onUpdated
 // обновляет список у родителя сразу после PATCH. Удаление — DeleteBtn
 // дневника («Удалить» → «Удалить навсегда», сбой — строкой, запись на месте);
-// после DELETE лист закрывается, onDeleted убирает строку из списка.
+// после DELETE — событие entry_deleted, лист закрывается, onDeleted убирает строку.
 import { useHistorySheet } from '../../../hooks/useHistorySheet';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { CrisisCard } from '../../CrisisCard';
@@ -13,6 +13,7 @@ import { PhraseCheckShare } from './PhraseCheckShare';
 import { DeleteBtn } from '../../../sections/diary/DeleteBtn';
 import { usePhraseHistoryCard } from '../../../../../shared/src/phraseCheck/usePhraseHistoryCard';
 import { PhraseMarkPills } from '../../../../../shared/src/phraseCheck/PhraseMarkPills';
+import { trackEntryDeleted } from '../../../../../shared/src/analytics/trackEntryDeleted';
 import { api } from '../../../api';
 import type { PhraseCheckEntry } from '../../../api';
 
@@ -38,8 +39,10 @@ export function PhraseHistoryCard({
   }
 
   // Сбой пробрасывается в DeleteBtn: он покажет строку, лист останется открытым.
+  // Событие — только после успешного DELETE (правило №8, блок удалений в /stats).
   async function handleDelete() {
     await api.deletePhraseCheck(entry.id);
+    trackEntryDeleted(api, 'phrase_check');
     goBack(() => onDeleted(entry.id));
   }
 

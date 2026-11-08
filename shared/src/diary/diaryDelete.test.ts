@@ -17,6 +17,7 @@ function makeApi() {
     deleteSchemaDiary: vi.fn().mockResolvedValue(undefined),
     deleteModeDiary: vi.fn().mockResolvedValue(undefined),
     deleteGratitudeDiary: vi.fn().mockResolvedValue(undefined),
+    trackEvent: vi.fn(),
   };
 }
 
@@ -31,10 +32,20 @@ describe('deleteDiaryEntry', () => {
     expect(api.deleteGratitudeDiary).toHaveBeenCalledWith(3);
   });
 
-  it('404 — записи уже нет, это успех', async () => {
+  // Правило №8: удаление записи дневника видно в /stats (2026-11).
+  it('успешное удаление шлёт entry_deleted с типом diary', async () => {
+    const api = makeApi();
+    await deleteDiaryEntry(api, 'gratitude', 3);
+    expect(api.trackEvent).toHaveBeenCalledWith('entry_deleted', {
+      type: 'diary',
+    });
+  });
+
+  it('404 — записи уже нет, это успех; удалял не этот запрос — события нет', async () => {
     const api = makeApi();
     api.deleteModeDiary.mockRejectedValue(httpError(404));
     await expect(deleteDiaryEntry(api, 'mode', 2)).resolves.toBeUndefined();
+    expect(api.trackEvent).not.toHaveBeenCalled();
   });
 
   it('500 и обрыв сети пробрасываются — экран должен о них сказать', async () => {
@@ -43,6 +54,7 @@ describe('deleteDiaryEntry', () => {
     await expect(deleteDiaryEntry(api, 'mode', 2)).rejects.toThrow();
     api.deleteSchemaDiary.mockRejectedValue(new TypeError('Failed to fetch'));
     await expect(deleteDiaryEntry(api, 'schema', 1)).rejects.toThrow();
+    expect(api.trackEvent).not.toHaveBeenCalled();
   });
 });
 

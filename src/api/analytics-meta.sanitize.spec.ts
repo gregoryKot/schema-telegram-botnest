@@ -323,10 +323,17 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('entry_deleted', { type: 'flashcard' })).toEqual({
       type: 'flashcard',
     });
+    // С 2026-11 — и вне «Моего пути»: разбор фразы и запись дневника.
+    expect(sanitizeMeta('entry_deleted', { type: 'phrase_check' })).toEqual({
+      type: 'phrase_check',
+    });
+    expect(sanitizeMeta('entry_deleted', { type: 'diary' })).toEqual({
+      type: 'diary',
+    });
   });
 
   it('entry_deleted: неизвестный/отсутствующий type → отброшено', () => {
-    expect(sanitizeMeta('entry_deleted', { type: 'diary' })).toBeUndefined();
+    expect(sanitizeMeta('entry_deleted', { type: 'note' })).toBeUndefined();
     expect(sanitizeMeta('entry_deleted', {})).toBeUndefined();
   });
 

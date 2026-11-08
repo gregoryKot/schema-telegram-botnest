@@ -3,13 +3,11 @@
 // на бэке: проверка убеждения, письмо себе, кризисная карточка.
 import { useCallback, useState } from 'react';
 import type { JourneyItem } from './journeyMeta';
-import {
-  ENTRY_DELETED_EVENT,
-  type JourneyDeletableType,
-} from '../share/analytics';
+import type { JourneyDeletableType } from '../share/analytics';
+import { trackEntryDeleted } from '../analytics/trackEntryDeleted';
 
-// Тип-источник — JourneyDeletableType в analytics.ts (там же живёт парный
-// allow-list на бэке); список ниже — рантайм-значения того же множества.
+// Тип-источник — JourneyDeletableType в analytics.ts (подмножество типов
+// события entry_deleted); список ниже — рантайм-значения того же множества.
 export const JOURNEY_DELETABLE_TYPES = [
   'belief_check',
   'letter',
@@ -73,11 +71,7 @@ export function useJourneyDelete(
       setFailed(false);
       callDelete(api, type, id)
         .then(() => {
-          try {
-            api.trackEvent(ENTRY_DELETED_EVENT, { type });
-          } catch {
-            // fire-and-forget — сбой трекинга не должен маскировать успех
-          }
+          trackEntryDeleted(api, type);
           setBusy(false);
           onDeleted();
         })

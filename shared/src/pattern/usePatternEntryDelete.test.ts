@@ -14,12 +14,19 @@ import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 const deleteSchemaDiary = vi.fn();
 const deleteModeDiary = vi.fn();
 const deleteGratitudeDiary = vi.fn();
-const api = { deleteSchemaDiary, deleteModeDiary, deleteGratitudeDiary };
+const trackEvent = vi.fn();
+const api = {
+  deleteSchemaDiary,
+  deleteModeDiary,
+  deleteGratitudeDiary,
+  trackEvent,
+};
 
 afterEach(() => {
   deleteSchemaDiary.mockReset();
   deleteModeDiary.mockReset();
   deleteGratitudeDiary.mockReset();
+  trackEvent.mockReset();
 });
 
 const ENTRY = {

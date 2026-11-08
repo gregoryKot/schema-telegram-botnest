@@ -10,6 +10,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';
 import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
+import { ENTRY_DELETE_TYPES } from '../analytics/entry-delete.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
@@ -180,9 +181,9 @@ const BACKEND_ONLY: Record<string, string> = {
     'trigger? }) (мост к терапевту); тот же приём, что у home_tile',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
-    '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
-    'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
-    'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — общий ' +
+    'trackEntryDeleted (shared/src/analytics/trackEntryDeleted.ts) зовут ' +
+    'useJourneyDelete, deleteDiaryEntry и PhraseHistoryCard сразу за успешным ' +
     'удалением записи; та же причина, что у share_card',
   notify_queue_tick:
     'серверное событие: пишет только крон очереди уведомлений бота ' +
@@ -353,5 +354,27 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // 48 — ysq_data_deleted (стёртый тест схем): серверное — удаление делает
     // HTTP-запрос, число стёртых попыток видно только в транзакции.
     expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(48);
+  });
+});
+
+// Тип удалённой записи (meta.type события entry_deleted): фронт держит union
+// EntryDeleteType, бэк — allow-list ENTRY_DELETE_TYPES. Значение, которого нет
+// на бэке, sanitizeMeta молча выбросит, и удаление пропадёт из /stats.
+// До 2026-11 тип события был тем же, что «удаляемо в Моём пути»
+// (JourneyDeletableType), и разбор фразы с дневником в него не помещались.
+describe('трипваер: EntryDeleteType фронта = ENTRY_DELETE_TYPES бэка (правило №4)', () => {
+  const FRONT = 'shared/src/share/analytics.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const m = src.match(/export type EntryDeleteType\s*=([^;]+);/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('union EntryDeleteType найден и непуст', () => {
+    expect(front.length).toBeGreaterThan(0);
+  });
+
+  it('списки совпадают в обе стороны', () => {
+    expect([...front].sort()).toEqual([...ENTRY_DELETE_TYPES].sort());
   });
 });
