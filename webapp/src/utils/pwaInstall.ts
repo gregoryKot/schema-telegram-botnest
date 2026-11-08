@@ -6,9 +6,9 @@
 // (components/installGuide/installSteps.ts).
 import { isStandalone, webPlatform } from '../../../shared/src/host/web';
 import { getHost } from '../../../shared/src/host';
-// Детект в shared (правило №3); установку не предлагаем с иконки и в Telegram/MAX.
+// Детект в shared (№3); установку не предлагаем с иконки и в Telegram/MAX (хост компонент берёт из useHostId).
 export { isStandalone };
-export const hideInstallOffers = () => isStandalone() || getHost().id !== 'web';
+export const hideInstallOffers = (hostId = getHost().id) => isStandalone() || hostId !== 'web';
 
 export interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
