@@ -37,8 +37,8 @@ function isPermanent(status: AlertEmailFailure): boolean {
  * письма — авария (правило №21).
  *
  * Границы: снимок живёт в памяти процесса. Сбой отправки на соседнем инстансе
- * эта проба не видит — его покрывает warn-лог того инстанса. Письма
- * magic-link (auth/email.service.ts) в снимок не пишут.
+ * эта проба не видит — его покрывает warn-лог того инстанса. Письма входа и
+ * привязки адреса (auth/email.service.ts) пишут в тот же снимок — ключ общий.
  */
 export function emailProbe(
   env: Env = process.env,

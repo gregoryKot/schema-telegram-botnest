@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AddressForm } from '../notification/address-form';
+import * as health from '../utils/alert-email-health';
 import { linkEmailLetter } from './email-link.letter';
 import { loginLetter } from './email.letters';
 
-// Доставка писем: ссылки входа и привязки адреса (токены выпускает
-// AuthService), уведомления владельцу. Prod sender — Resend; без
-// RESEND_API_KEY (dev/CI) письмо логируется. Env: RESEND_API_KEY, EMAIL_FROM.
+// Доставка писем: ссылки входа и привязки адреса (токены — AuthService),
+// уведомления владельцу. Prod sender — Resend (RESEND_API_KEY, EMAIL_FROM); без
+// ключа (dev/CI) письмо логируется. Ответ Resend — в снимок пробы почты
+// (alert-email-health.ts): ключ тот же, что у резервных алертов.
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -33,8 +35,7 @@ export class EmailService {
 
   async sendAdminNotification(subject: string, text: string): Promise<boolean> {
     const to = process.env.ADMIN_EMAIL;
-    // true = Resend принял письмо.
-    // Правило №14: молчаливый пропуск — невидимая авария; warn, не error (без DM на каждое письмо).
+    // true = Resend принял письмо. Пустой адрес — warn, не error (№14, без DM).
     if (!to) {
       this.logger.warn(`ADMIN_EMAIL пуст, письмо не ушло: ${subject}`);
       return false;
@@ -46,8 +47,6 @@ export class EmailService {
       return false;
     });
   }
-
-  // ─── Resend SMTP wrapper ──────────────────────────────────────────────────
 
   async send(to: string, subject: string, text: string): Promise<boolean> {
     const apiKey = process.env.RESEND_API_KEY;
@@ -70,8 +69,9 @@ export class EmailService {
       return false;
     }
 
+    let res: Response;
     try {
-      const res = await fetch('https://api.resend.com/emails', {
+      res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,17 +80,17 @@ export class EmailService {
         body: JSON.stringify({ from, to, subject, text }),
         signal: AbortSignal.timeout(10_000),
       });
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        this.logger.error(
-          `Resend send failed ${res.status}: ${body.slice(0, 200)}`,
-        );
-        throw new Error('Email delivery failed');
-      }
-      return true;
     } catch (e) {
+      health.noteAlertEmailError(e);
       this.logger.error(`Resend error: ${(e as Error).message}`);
       throw new Error('Email delivery failed', { cause: e });
     }
+    health.noteAlertEmailResponse(res);
+    if (res.ok) return true;
+    const body = await res.text().catch(() => '');
+    this.logger.error(
+      `Resend send failed ${res.status}: ${body.slice(0, 200)}`,
+    );
+    throw new Error('Email delivery failed');
   }
 }
