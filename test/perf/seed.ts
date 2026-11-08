@@ -27,6 +27,8 @@ import {
 } from './seed-profile';
 import { at1, json, q, series, strs } from './seed-sql';
 import { scheduledNotificationSql } from './seed-notifications';
+import { webSessionSql } from './seed-sessions';
+import { withStreakCohort } from './seed-streaks';
 
 export { PERF_ID_BASE, PERF_PROFILE } from './seed-profile';
 
@@ -75,7 +77,7 @@ FROM (SELECT CASE WHEN ((g.i * 7937) % 10037) % 100 < ${s.anon ?? 0} THEN NULL E
   ${meta} AS meta, ${ts('g.i', P.eventSpreadDays)} AS at FROM ${series(s.rows)}) t`;
   };
 
-  return {
+  return withStreakCohort(a, {
     // ── User: возраст аккаунта размазан по году; доли — как читает /stats ──
     User: `INSERT INTO "User"("id","createdAt","role","therapistMode","disclaimerAccepted","notifyEnabled","botBlockedAt","notifyTimezone","onboardingV2Done","addressForm","themePref","defaultSection")
 SELECT ${B} + u,
@@ -179,7 +181,8 @@ SELECT "therapistId", "clientId",
 FROM "TherapyRelation" WHERE "therapistId" >= ${B} AND "status" = 'active'`,
     // ── Очередь уведомлений: год истории + завтрашнее (seed-notifications.ts) ─
     ScheduledNotification: scheduledNotificationSql(a),
-  };
+    WebSession: webSessionSql(a), // сессии сайта под гвард Bearer (seed-sessions.ts)
+  });
 }
 
 // Параллельных соединений: узкое место сида — вставка 2 млн событий и 1.5 млн

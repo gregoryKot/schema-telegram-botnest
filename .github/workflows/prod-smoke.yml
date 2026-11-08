@@ -52,11 +52,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
+      # Страница техработ отвечает 200 и называет причину заголовком
+      # X-Maintenance-Reason (migrating, migrate-failed, crashloop-parked…,
+      # deploy/maintenance-page.mjs): печатаем её до проверок тела, чтобы
+      # красный шаг говорил, что именно лежит (src/infra/prod-smoke-health.spec.ts).
       - name: /health — 200 и db":"up"
         run: |
-          body=$($CURL https://schemehappens.ru/health)
+          body=$($CURL -D health.headers https://schemehappens.ru/health)
           echo "$body"
           printf '%s' "$body" > health.json
+          reason=$(grep -i '^x-maintenance-reason:' health.headers | tail -n 1 | cut -d: -f2- | tr -d ' \r' || true)
+          if [ -n "$reason" ]; then echo "::error::Прод на странице техработ, причина: $reason (docs/RUNBOOKS.md, «Прод лежит»)"; fi
           echo "$body" | grep -q '"status":"ok"'
           echo "$body" | grep -q '"db":"up"'
       # Самопроверка прода (CLAUDE.md, правило №21): приложение само гоняет

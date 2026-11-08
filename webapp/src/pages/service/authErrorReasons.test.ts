@@ -48,3 +48,20 @@ describe('telegramWidgetReason', () => {
     expect(telegramWidgetReason(429, undefined)).toBe('http_429');
   });
 });
+
+// Рубильник Google/VK (2026-11): сервер ведёт сюда со старта входа, когда env
+// провайдера снят (`src/auth/oauth-provider-switch.ts`). Текст безличный:
+// экран публичный, формы обращения у него нет.
+describe('провайдер выключен (<id>_disabled)', () => {
+  const vy = (_: string, b: string) => b;
+  it.each([
+    ['google_disabled', 'Google'],
+    ['vk_disabled', 'ВКонтакте'],
+  ])('%s — известный код, текст про %s и другой способ, одинаковый в обеих формах', (code, name) => {
+    expect(knownAuthErrorReason(code)).toBe(code);
+    const text = authErrorText(code, ty);
+    expect(text).toContain(`Вход через ${name} временно отключён`);
+    expect(text).toContain('Telegram или почта');
+    expect(authErrorText(code, vy)).toBe(text);
+  });
+});

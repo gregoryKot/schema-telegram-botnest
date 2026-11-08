@@ -110,3 +110,23 @@ describe('AuthErrorPage — ссылка из письма', () => {
     expect(screen.getByText(/попробуйте ещё раз: проверьте интернет и снова откройте ссылку/)).toBeTruthy();
   });
 });
+
+// Рубильник Google/VK (2026-11): вместо голого 500 — свой экран с честной
+// причиной и кнопкой к другим способам входа.
+describe('AuthErrorPage — провайдер выключен', () => {
+  it('google_disabled: свой заголовок, кнопка на /login, без кода, код в отчёте', () => {
+    const { container } = renderAt('?reason=google_disabled');
+    expect(screen.getByRole('heading').textContent).toBe('Вход через Google отключён');
+    expect(screen.getByText(/временно отключён/)).toBeTruthy();
+    const link = screen.getByText('Другой способ входа') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/login');
+    expect(container.querySelector('.as-reason')).toBeNull();
+    expect(reportedMessages()[0]).toMatch(/, google_disabled$/);
+  });
+
+  it('vk_disabled в форме «вы» — тот же безличный текст', () => {
+    const { container } = renderAt('?reason=vk_disabled', 'vy');
+    expect(screen.getByRole('heading').textContent).toBe('Вход через ВКонтакте отключён');
+    expect(container.textContent).not.toMatch(/Попробуй|напиши/);
+  });
+});

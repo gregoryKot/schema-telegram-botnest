@@ -125,7 +125,7 @@
 | `src/therapy/` | Кабинет терапевта: связи, заметки, концептуализация, задания, заявки | backend-platform |
 | `src/booking/` | Запись, слоты, оплата, CalDAV, встречи, заявки с формы | backend-platform |
 | `src/infra/` | Аренда кронов, env-реестр, самопроверка, HTTP-края, бэкапы | backend-platform |
-| `src/prisma/` | `PrismaService` (глобальный), предел запроса `statement-timeout.ts`, фильтр ошибок Prisma, волны дошифровки | backend-platform |
+| `src/prisma/` | `PrismaService` (глобальный), предел запроса `statement-timeout.ts`, «проверка + запись» в Serializable с ретраем `serializable-retry.ts`, фильтр ошибок Prisma, волны дошифровки | backend-platform |
 | `src/utils/` | Шифрование и его реестр, админ-алерты, лимиты текста, таймзоны | backend-platform |
 | `src/cli/` | Ротация `ENCRYPTION_KEY` | backend-platform |
 | `src/test-support/` | Хелперы jest, фейки Prisma/S3/Telegram; `src/test-support/gates/` — тесты гейтов | backend-platform |

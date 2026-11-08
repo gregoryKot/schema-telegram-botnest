@@ -45,14 +45,17 @@ afterEach(() => {
 });
 
 describe('LoginEmailForm — письмо отправлено', () => {
-  it('подсказывает про «Спам» в обеих формах', async () => {
-    const { container } = renderForm(EMAIL_FORM_PATH);
-    await sendOnce(container);
-    expect(screen.getByText('Письма нет? Проверь папку «Спам»')).toBeTruthy();
-    cleanup();
-    const vy = renderForm(EMAIL_FORM_PATH, 'vy');
-    await sendOnce(vy.container);
-    expect(screen.getByText('Письма нет? Проверьте папку «Спам»')).toBeTruthy();
+  // Аудит 2026-10: /login живёт вне AddressFormProvider, и useTr() всегда
+  // давал «ты». Формы до входа нет — текст безличный, одинаковый в обеих.
+  it('подсказывает про «Спам» безлично — одинаково в обеих формах', async () => {
+    for (const form of ['ty', 'vy'] as const) {
+      const { container } = renderForm(EMAIL_FORM_PATH, form);
+      await sendOnce(container);
+      expect(screen.getByText('Письма нет? Оно могло попасть в «Спам»')).toBeTruthy();
+      expect(screen.getByText('Ссылка для входа — в письме, она действует 30 минут')).toBeTruthy();
+      expect(container.textContent).not.toMatch(/Проверь|перейди/i);
+      cleanup();
+    }
   });
 
   it('«Отправить ещё раз» — после паузы 60 с с обратным отсчётом, тот же запрос', async () => {

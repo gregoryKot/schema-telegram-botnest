@@ -4,9 +4,11 @@
 // запись allowlist — лишняя дверь: чужой скрипт с этого домена исполнился бы.
 //
 // Сверка от настоящего заголовка (helmet с helmetOptions, через HTTP): у
-// каждого внешнего источника script-src и connect-src есть потребитель среди
-// того, что исполняется у пользователя. img-src не сверяется — остаток
-// записан в docs/open/security.md («Что осталось открытым»).
+// каждого внешнего источника script-src, connect-src и img-src есть
+// потребитель среди того, что исполняется у пользователя. img-src взят в
+// сверку в 2026-11, когда из него ушла мёртвая https://cdn.jsdelivr.net
+// (обложка визитки шла оттуда до 2026-10; ни фронт, ни сид статей её не
+// упоминают).
 import express from 'express';
 import helmet from 'helmet';
 import request from 'supertest';
@@ -17,7 +19,7 @@ import {
   type SourceText,
 } from '../test-support/frontend-sources';
 
-const CHECKED = ['script-src', 'connect-src'];
+const CHECKED = ['script-src', 'connect-src', 'img-src'];
 
 async function directives(): Promise<Map<string, string[]>> {
   const app = express();

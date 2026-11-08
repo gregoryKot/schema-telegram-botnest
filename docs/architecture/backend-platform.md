@@ -39,7 +39,7 @@
   - `src/api/request-utils.ts` — `uid()` и `parseId()` для контроллеров
 - Связи: гард зависит от `src/auth/` (AuthService, MaxProvider, SecurityLogService) и `src/analytics/`; ApiModule импортирует Bot/Notification/Telegram/Therapy/Auth/Analytics/IntroLead; diary и tracker зовут `src/therapy/therapy-tasks.service.ts`; `src/api/throttler-module-options.ts` подключает `src/app.module.ts`.
 - Подводные камни:
-  - `req.telegramUserId` — number (историческое имя; для веб/MAX-аккаунтов тоже userId); канонический BigInt — `uid(req)`, id из path — `parseId` (Int-колонки) или `parseUserId` (`src/api/parse-user-id.ts`, BigInt); отрицательные id — виртуальные клиенты терапевта.
+  - пользователь запроса — канонический BigInt `uid(req)` (`req.webUser.userId`), id из path — `parseId` (Int-колонки) или `parseUserId` (`src/api/parse-user-id.ts`, BigInt); отрицательные id — виртуальные клиенты терапевта.
   - Бакет троттлинга строится только по проверенной подписи (JWT/initData), иначе по IP (`src/api/throttler-identity.ts`); денежные и кодовые ручки обязаны быть с `@PersistentThrottle()` / `@PersistentThrottleLimit` — решение по каждой ручке с `@Throttle` проверяет CI-гейт `scripts/check-persistent-throttle.mjs`.
   - Контроллер без гарда допустим только из `PUBLIC_BY_DESIGN` (`src/security/controller-classification.ts`) и обязан быть в `controllers` какого-то модуля; `src/api/booking.controller.ts` (POST /api/booking) зарегистрирован в `src/booking/intro-lead.module.ts`, а не в ApiModule.
 
@@ -48,8 +48,9 @@
 - Входы:
   - `src/security/controller-classification.ts` — контроллеры: guarded / admin-key / PUBLIC_BY_DESIGN
   - `src/security/anonymous-routes.ts` — анонимные методы внутри guarded-контроллеров
+  - `src/security/optional-auth-routes.ts` — методы под `OptionalJwtGuard` (аноним проходит; защитой трипваер его не считает)
   - `src/test-support/free-text-inputs.ts` — признак однострочного поля свободного текста для трипваера `crisis-path.invariants.spec.ts` (правило №7)
-  - `src/security/helmet-config.ts` — CSP и заголовки helmet (подключает main.ts)
+  - `src/security/helmet-config.ts` — CSP и заголовки helmet (подключает `src/infra/configure-app.ts`)
   - `src/security/embedders.ts` — площадки-iframe: CSP frame-ancestors и SameSite=None
   - `src/security/collect-source-files.ts` — единственный обход дерева исходников
 - Связи: спеки читают исходники всего `src/` (и `.tsx` фронтендов) и используют `src/test-support/route-method-auth.ts`; `src/security/helmet-config.ts` — прод-код; `src/security/embedders.ts` сверяется с куками `src/auth/auth-http.util.ts` через `src/security/csrf.invariants.spec.ts`.
@@ -136,7 +137,7 @@
   - `src/prisma/client-http-error.ts` — клиентские ошибки express-слоя (http-errors: 413, 415) → свой статус и текст; с Nest 12.4 узнаёт их и внутри HttpException (`cause`)
   - `src/prisma/encryption-wave2.service.ts` и `src/prisma/encryption-wave3.service.ts` — дошифровка старых строк на старте
   - `src/prisma/unique-violation.ts` — детектор P2002 / SQLSTATE 23505
-- Связи: используется почти всеми модулями (PrismaModule глобальный); фильтр подключён в `src/main.ts` (`useGlobalFilters`); волны шифруют через `src/utils/encrypt-if-plain.ts` и хранят флаг-гард в `BookingSetting`.
+- Связи: используется почти всеми модулями (PrismaModule глобальный); фильтр подключён в `src/infra/configure-app.ts` (`useGlobalFilters`; её зовут `src/main.ts` и оба e2e-сборщика); волны шифруют через `src/utils/encrypt-if-plain.ts` и хранят флаг-гард в `BookingSetting`.
 - Подводные камни:
   - Волны идемпотентны и не роняют старт при ошибке (флаг не ставится — повтор на следующем старте); wave3 обновляет условно (`where` со старым значением), чтобы не затереть свежую запись приложения.
   - Предел — на каждый запрос, параметр сессии пула, а не `DATABASE_URL`: `prisma migrate deploy` его не получает. Свой `PrismaClient` вне `PrismaService` берёт `buildPrismaAdapter(порог)`; VACUUM в `withStatementTimeout` не обернуть (в транзакции запрещён).

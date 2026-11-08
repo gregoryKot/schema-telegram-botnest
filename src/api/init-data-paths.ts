@@ -71,9 +71,7 @@ export async function applyTelegramInitData(
     String(rawTelegramId),
     firstName,
   );
-  req.telegramUserId = Number(canonicalId);
   req.telegramFirstName = firstName;
-  // Also expose BigInt-safe ref for controllers that need it
   req.webUser = { userId: canonicalId };
   reportAuthSuccess(canonicalId, 'telegram', {
     track: (meta) => void analytics.track(null, 'auth_success', meta),
@@ -110,7 +108,6 @@ export async function applyMaxInitData(
     identity.providerId,
     identity.displayName,
   );
-  req.telegramUserId = Number(canonicalId);
   req.telegramFirstName = identity.displayName;
   req.webUser = { userId: canonicalId };
   reportAuthSuccess(canonicalId, 'max', {

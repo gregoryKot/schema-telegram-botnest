@@ -15,7 +15,10 @@ export interface AuthErrorScreen {
 }
 
 const NEW_LINK = { label: 'Запросить новую ссылку', href: EMAIL_FORM_PATH };
+const OTHER_WAY = { label: 'Другой способ входа', href: '/login' };
 const AUTH_ERROR_SCREENS: Record<string, AuthErrorScreen> = {
+  google_disabled: { title: 'Вход через Google отключён', action: OTHER_WAY },
+  vk_disabled: { title: 'Вход через ВКонтакте отключён', action: OTHER_WAY },
   email_link_expired: { title: 'Ссылка устарела', action: NEW_LINK },
   email_network: { title: 'Нет связи', action: NEW_LINK, retryLead: (tr) => tr(
     'Ссылка из письма ещё действует: проверь интернет и нажми «Повторить».',

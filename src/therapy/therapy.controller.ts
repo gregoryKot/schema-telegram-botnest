@@ -16,7 +16,6 @@ import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   userRole?: string;
   webUser: { userId: bigint };
 }

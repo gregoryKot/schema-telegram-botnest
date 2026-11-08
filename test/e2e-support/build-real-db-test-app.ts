@@ -6,11 +6,11 @@
 // юнит-тест сервиса не ловит guard/ValidationPipe/сериализацию на стыке).
 // TELEGRAF_BOT по-прежнему фейковый (makeFakeBot) — бот не должен стучаться
 // в Telegram при сборке AppModule.
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
-import { installBodyParsers } from '../../src/infra/body-parsers';
+import { configureApp } from '../../src/infra/configure-app';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
 import { installBigIntJson } from '../../src/utils/bigint-json';
@@ -34,20 +34,14 @@ export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
     .useValue(makeFakeBot())
     .compile();
 
-  const app = moduleRef.createNestApplication({ bodyParser: false });
-  // cookieParser — то же зеркало src/main.ts, что и в build-test-app.ts. Без
-  // него `req.cookies` пуст, и ЛЮБОЙ сценарий с refresh-кукой на живой базе
-  // молча отвечал бы 401: не потому что сессия плоха, а потому что куку никто
-  // не разобрал (найдено при переносе ротации на реальный Postgres,
-  // 2026-08-28).
-  app.use(cookieParser());
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  // Парсеры тела — то же зеркало src/main.ts (аудит 2026-07-20, L2). До этого
-  // прогон на живой базе парсеры не ставил вообще и жил со штатным потолком
-  // Nest в 100 КБ: тело на 150 КБ проходило в фейковом прогоне и падало в
-  // настоящем. Ровно тот класс расхождения фейка с реальностью, ради которого
-  // второй прогон и заведён.
-  installBodyParsers(app);
+  const app = moduleRef.createNestApplication<NestExpressApplication>({
+    bodyParser: false,
+  });
+  // Та же обвязка, что в src/main.ts и build-test-app.ts (src/infra/configure-app.ts).
+  // Раньше здесь стояли свои строки — cookieParser, ValidationPipe, парсеры тела —
+  // и не стояли фильтры исключений, trust proxy, helmet и CORS: прогон на живой
+  // базе отвечал на ошибки не так, как прод (аудит 2026-10).
+  configureApp(app);
   await app.init();
   // Настоящие @Cron тикают после init прямо посреди спека (stop-cron-jobs.ts);
   // гейт scripts/check-e2e-stop-cron.mjs.

@@ -57,6 +57,10 @@
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"
   },
+  "src/bot/client-streaks.ts": {
+    "spec": "test/raw-sql-live-infra.e2e-spec.ts",
+    "via": "src/bot/bot.client-overview.service.ts"
+  },
   "src/bot/data-export-metrics.service.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"

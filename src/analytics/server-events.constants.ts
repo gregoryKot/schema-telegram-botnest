@@ -43,6 +43,9 @@
 //                   после постановки в очередь (src/telegram/telegram.snooze.ts),
 //                   meta.quietShift — час попал в тихие часы. С клиента meta
 //                   отбрасывается, /stats считает только строки с quietShift.
+//   login_one_tap — вход через окно Google «Продолжить как…» (meta.outcome —
+//                   ONE_TAP_OUTCOMES, login-one-tap.constants.ts): пишет только
+//                   GoogleOneTapService, userId = null; /stats — блок входа.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -54,4 +57,5 @@ export const SERVER_EVENTS = [
   'therapy_invite',
   'crawler_visits',
   'reminder_snoozed',
+  'login_one_tap',
 ] as const;

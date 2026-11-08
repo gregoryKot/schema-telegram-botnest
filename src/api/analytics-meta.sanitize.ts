@@ -14,7 +14,7 @@ import {
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
-import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeLoginMeta } from './analytics-meta.sanitize-login';
 import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
@@ -159,7 +159,7 @@ export function sanitizeMeta(
   if (name === 'quick_action_toggle' || name === 'quick_action_move') {
     return sanitizeQuickActionMeta(name, meta);
   }
-  if (name === 'login_ticket_step') return sanitizeLoginTicketMeta(meta);
+  if (name.startsWith('login_')) return sanitizeLoginMeta(name, meta);
   if (name === 'account_link_started') {
     const host = meta.host;
     if (typeof host === 'string' && ACCOUNT_LINK_HOST_SET.has(host)) {

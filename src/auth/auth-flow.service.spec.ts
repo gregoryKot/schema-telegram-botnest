@@ -52,8 +52,21 @@ function makeAuth(): AuthServiceMock {
   };
 }
 
-function makeConfig(webappUrl = 'https://schemehappens.ru'): ConfigService {
+// Env провайдеров OAuth по умолчанию заданы: провайдер включён.
+const OAUTH_ENV: Record<string, string> = {
+  GOOGLE_CLIENT_ID: 'gid',
+  GOOGLE_CLIENT_SECRET: 'gsecret',
+  GOOGLE_REDIRECT_URI: 'https://schemehappens.ru/api/auth/google/callback',
+  VK_APP_ID: 'vkid',
+  VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
+};
+
+function makeConfig(
+  webappUrl = 'https://schemehappens.ru',
+  env: Record<string, string | undefined> = OAUTH_ENV,
+): ConfigService {
   return {
+    get: jest.fn((key: string) => env[key]),
     getOrThrow: jest.fn((key: string) => {
       if (key === 'WEBAPP_URL') return webappUrl;
       if (key === 'JWT_SECRET') return 'test-jwt-secret';
@@ -520,6 +533,49 @@ describe('AuthFlowService.oauthRedirect', () => {
     // Нет webUser → ВХОД → forceChooser=false: Google впустит уже вошедшего
     // одним касанием, а не «с нуля» (разбор 2026-08-31).
     expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, false);
+  });
+
+  // Рубильник (2026-11): без env провайдера старт падал 500 на getOrThrow.
+  it('провайдер без конфигурации → 302 на /auth/error?reason=<id>_disabled, без куки и buildAuthUrl', () => {
+    const buildAuthUrl = jest.fn().mockReturnValue('https://x');
+    const { registry } = makeRegistry({
+      id: 'google',
+      displayName: 'Google',
+      buildAuthUrl,
+    });
+    const config = makeConfig('https://schemehappens.ru', {
+      ...OAUTH_ENV,
+      GOOGLE_CLIENT_SECRET: '  ',
+    });
+    const svc = makeService({ registry, config });
+    const res = makeRes();
+
+    svc.oauthRedirect('google', makeReq(), res);
+
+    expect(res.redirect).toHaveBeenCalledWith(
+      'https://schemehappens.ru/auth/error?reason=google_disabled',
+    );
+    expect(res.cookie).not.toHaveBeenCalled();
+    expect(buildAuthUrl).not.toHaveBeenCalled();
+  });
+
+  it('контроль: выключен Google — VK с полной конфигурацией стартует как обычно', () => {
+    const buildAuthUrl = jest.fn().mockReturnValue('https://id.vk.com/x');
+    const { registry } = makeRegistry({
+      id: 'vk',
+      displayName: 'VK',
+      buildAuthUrl,
+    });
+    const config = makeConfig('https://schemehappens.ru', {
+      ...OAUTH_ENV,
+      GOOGLE_CLIENT_ID: undefined,
+    });
+    const svc = makeService({ registry, config });
+    const res = makeRes();
+
+    svc.oauthRedirect('vk', makeReq(), res);
+
+    expect(res.redirect).toHaveBeenCalledWith('https://id.vk.com/x');
   });
 
   it('провайдер не поддерживает OAuth (нет buildAuthUrl) → BadRequestException', () => {

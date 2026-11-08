@@ -18,11 +18,10 @@ import { TherapyNotesService } from './therapy-notes.service';
 import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
 import { CreateSessionNoteDto, SessionInfoDto } from './dto/client-data.dto';
-import { ConceptualizationDto } from './dto/conceptualization.dto';
+import { ConceptSaveDto } from './dto/concept-save.dto';
 import { isCalendarDay } from '../utils/calendar-day';
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   userRole?: string;
   webUser: { userId: bigint };
 }
@@ -135,7 +134,7 @@ export class TherapyNotesController {
   async saveConceptualization(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
-    @Body() body: ConceptualizationDto,
+    @Body() body: ConceptSaveDto,
   ) {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');

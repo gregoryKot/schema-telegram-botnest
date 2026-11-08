@@ -15,6 +15,7 @@ import { getFormerTherapistInfo } from '../../src/therapy/former-therapist-info'
 import { NotificationService } from '../../src/notification/notification.service';
 import { proactiveBudgetSpent } from '../../src/notification/notification.budget';
 import { buildStatsReport } from '../e2e-support/stats-report.factory';
+import { assertLiveAccess } from '../../src/auth/live-access';
 import type { ScenarioContext } from './worst-case-ids';
 
 export { resolveWorstCaseIds, type ScenarioContext } from './worst-case-ids';
@@ -53,6 +54,17 @@ export const SCENARIOS: Scenario[] = [
         new BotClientOverviewService(prisma),
       ).getClients(therapistId),
   },
+  {
+    name: 'therapist-clients-long-streaks',
+    title: 'Список клиентов терапевта: у каждого годы ежедневных оценок',
+    // Стрик считается в SQL без общего потолка строк (src/bot/client-streaks.ts);
+    // когорта 50 × 2600 дней — test/perf/seed-streaks.ts.
+    run: ({ prisma, streakTherapistId }) =>
+      new TherapyRelationsService(
+        prisma,
+        new BotClientOverviewService(prisma),
+      ).getClients(streakTherapistId),
+  },
   // 30 — экран истории; 365 — лента «Записи», потолок HISTORY_MAX_DAYS.
   ...[30, 365].map((days) => ({
     name: `history-${days}d`,
@@ -84,5 +96,14 @@ export const SCENARIOS: Scenario[] = [
         await proactiveBudgetSpent(notifications, notifiedUserId, tz, now, 1),
       ];
     },
+  },
+  {
+    name: 'bearer-guard',
+    title: 'Проверка Bearer на каждом запросе (аккаунт + живая сессия, S12)',
+    // Ровно то, что делают JwtAuthGuard/TelegramAuthGuard/OptionalJwtGuard на
+    // каждом запросе сайта (src/auth/live-access.ts) — на семье с самой
+    // длинной цепочкой ротаций (seed-sessions.ts).
+    run: ({ prisma, session }) =>
+      assertLiveAccess(prisma, session.userId, session.family),
   },
 ];

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NeedId } from './bot.service';
 import { localDate } from '../utils/tz';
+import { readClientStreaks } from './client-streaks';
 
 // Батч-обзор клиентов терапевта (стрик, давность, история за 14 дней) одним
 // набором запросов. Вынесено из BotAnalyticsService (правило №10): единственный
@@ -42,26 +43,15 @@ export class BotClientOverviewService {
       users.map((u) => [String(u.id), u.notifyTimezone ?? 'Europe/Moscow']),
     );
 
-    // 2) Все (userId, date) — для стрика и давности последнего заполнения.
-    const allDates = await this.prisma.rating.findMany({
-      where: { userId: { in: userIds } },
-      select: { userId: true, date: true },
-      distinct: ['userId', 'date'],
-      // D-4: явная страховка от роста таблицы (не пагинация) — без неё грузятся
-      // ВСЕ уникальные даты по всем клиентам терапевта разом. orderBy нужен,
-      // чтобы при упоре в потолок остались самые свежие даты — от них считаются
-      // streak (последовательные дни от сегодня) и daysSince (max date); в
-      // реальном домене 5000 уникальных дат ≈ 13.7 лет ежедневного трекинга,
-      // потолок чисто защитный.
-      orderBy: { date: 'desc' },
-      take: 5000,
-    });
-    const datesByUser = new Map<string, Set<string>>();
-    for (const r of allDates) {
-      const key = String(r.userId);
-      if (!datesByUser.has(key)) datesByUser.set(key, new Set());
-      datesByUser.get(key)!.add(r.date);
-    }
+    // 2) Стрик и день последней оценки — в SQL, без общего потолка строк
+    // (client-streaks.ts): «сегодня» у каждого клиента своё.
+    const todayByUser = new Map(
+      userIds.map((id) => [
+        id,
+        this.localDateString(tzById.get(String(id)) ?? 'Europe/Moscow'),
+      ]),
+    );
+    const streaks = await readClientStreaks(this.prisma, todayByUser);
 
     // 3) Оценки за последние 14 локальных дней (объединение дат по всем TZ).
     const recentDatesByUser = new Map<string, string[]>();
@@ -89,28 +79,20 @@ export class BotClientOverviewService {
 
     for (const id of userIds) {
       const key = String(id);
-      const tz = tzById.get(key) ?? 'Europe/Moscow';
-      const dates = datesByUser.get(key) ?? new Set<string>();
-
-      let streak = 0;
-      while (
-        dates.has(
-          this.localDateString(tz, new Date(Date.now() - streak * 86_400_000)),
-        )
-      ) {
-        streak++;
-      }
-
-      let daysSince = -1;
-      const lastDate = dates.size > 0 ? [...dates].sort().at(-1)! : null;
-      if (lastDate) {
-        const today = this.localDateString(tz);
-        daysSince = Math.floor(
-          (Date.parse(today + 'T00:00:00Z') -
-            Date.parse(lastDate + 'T00:00:00Z')) /
-            86_400_000,
-        );
-      }
+      const { streak, lastDate } = streaks.get(key) ?? {
+        streak: 0,
+        lastDate: null,
+      };
+      // Оценка «на завтра» (поставлена из зоны восточнее) — заполнял сегодня,
+      // а не «−1 = не заполнял никогда».
+      const daysSince = lastDate
+        ? Math.max(
+            0,
+            (Date.parse(`${todayByUser.get(id)}T00:00:00Z`) -
+              Date.parse(`${lastDate}T00:00:00Z`)) /
+              86_400_000,
+          )
+        : -1;
 
       const recentDays = recentDatesByUser.get(key)!;
       const history = recentDays

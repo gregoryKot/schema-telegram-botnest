@@ -5,6 +5,8 @@
 // не шлёт, поэтому автосохранение вкладки «Концептуализация» и холст не
 // перетирают друг другу то, чего каждый не видел.
 import type { PrismaService } from '../prisma/prisma.service';
+import { inSerializableTx } from '../prisma/serializable-retry';
+import { CONCEPT_MODE_LINKS_MAX } from './dto/conceptualization.dto';
 import type { TherapyRelationsService } from './therapy-relations.service';
 import {
   conceptView,
@@ -12,10 +14,11 @@ import {
   encryptConceptFields,
   writeConceptWithHistory,
 } from './concept-store';
+import { conceptStale } from './concept-save';
 
 // Потолки ConceptualizationDto: дописанное обязано проходить следующее полное
 // сохранение полей (modeLinks ≤ 40, схем у связи ≤ 20) — сверка в спеке.
-export const APPEND_MODE_LINKS_MAX = 40;
+export const APPEND_MODE_LINKS_MAX = CONCEPT_MODE_LINKS_MAX;
 export const APPEND_LINK_SCHEMAS_MAX = 20;
 
 export interface ConceptAppendInput {
@@ -132,22 +135,28 @@ export async function appendToConcept(
   nowMs = Date.now(),
 ) {
   await deps.relations.assertHasClient(key.therapistId, key.clientId);
-  return deps.prisma.$transaction(async (tx) => {
-    const existing = await tx.clientConceptualization.findUnique({
-      where: { therapistId_clientId: key },
-    });
-    const patch = mergeConceptAppend(currentState(existing), add);
-    if (Object.keys(patch).length === 0) {
-      return existing ? conceptView(existing, existing.history) : null;
-    }
-    const enc = encryptConceptFields(patch);
-    const { row, history } = await writeConceptWithHistory(
-      tx,
-      key,
-      existing,
-      enc,
-      nowMs,
-    );
-    return conceptView(row, history);
-  });
+  // Serializable: сохранение полей с версией (concept-save.ts) и дописывание
+  // не перетирают друг друга — второй получает конфликт и перечитывает.
+  return inSerializableTx(
+    deps.prisma,
+    async (tx) => {
+      const existing = await tx.clientConceptualization.findUnique({
+        where: { therapistId_clientId: key },
+      });
+      const patch = mergeConceptAppend(currentState(existing), add);
+      if (Object.keys(patch).length === 0) {
+        return existing ? conceptView(existing, existing.history) : null;
+      }
+      const enc = encryptConceptFields(patch);
+      const { row, history } = await writeConceptWithHistory(
+        tx,
+        key,
+        existing,
+        enc,
+        nowMs,
+      );
+      return conceptView(row, history);
+    },
+    conceptStale,
+  );
 }

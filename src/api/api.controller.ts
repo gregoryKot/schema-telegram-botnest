@@ -25,7 +25,6 @@ import { encryptJson, decryptJson } from '../utils/crypto';
 import { FLAG_FIELDS } from './flag-fields';
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   telegramFirstName?: string;
   webUser: { userId: bigint };
 }

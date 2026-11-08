@@ -110,7 +110,7 @@ jobs:
           test/diary-mode-from-case
           test/journey-entry-ownership
           test/therapy-task-delete
-          test/concept-share
+          test/concept-share test/concept-save-patch
           test/push-ownership
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
       # блокируют мерж. dev-зависимости не гейтим: сборочная цепочка
@@ -601,6 +601,7 @@ jobs:
           test/therapy-card-claim.e2e-spec.ts
           test/therapy-task-delete.e2e-spec.ts
           test/concept-share.e2e-spec.ts
+          test/concept-save-patch.e2e-spec.ts
           test/text-limits.e2e-spec.ts
           test/therapy-resign.e2e-spec.ts
           test/booking-admin-cancel.e2e-spec.ts

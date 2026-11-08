@@ -36,8 +36,8 @@
 
 ## 2. Инварианты аутентификации
 
-Три пути входа, все сводятся к `req.telegramUserId` (number) либо
-`req.webUser.userId` (BigInt):
+Три пути входа, все сводятся к `req.webUser.userId` (BigInt, читать через
+`uid(req)`):
 
 | Путь | Что присылает клиент | Как проверяется |
 |------|----------------------|-----------------|
@@ -72,6 +72,13 @@
 - Сравнение HMAC/подписей — только `crypto.timingSafeEqual`, никогда `===`.
 - JWT при verify — всегда явный `algorithms: ['HS256']`. Без этого возможна
   alg-confusion и подделка через `alg: none`.
+- Access-токен несёт `sid` — family refresh-цепочки, из которой выписан. Все три
+  гварда Bearer сверяют его на каждом запросе с `WebSession` тем же чтением, что
+  проверяет жизнь аккаунта (`src/auth/live-access.ts`): «Выйти», кража, отзыв
+  остальных сессий гасят access-токен сразу, а не через ≤15 минут.
+- Токен без `sid` (выписан до этой правки) живёт до истечения, ≤15 минут, и
+  «Выйти» его не гасит — осознанно: это окно после выкладки, то же, что было у
+  каждого токена раньше, а подделать такой токен без `JWT_SECRET` нельзя.
 - **Билет передачи сессии (`intent: 'handoff'`, POST `/api/auth/ticket/handoff`)** —
   одноразовая ссылка входа того же класса, что magic link из письма: выписывается
   только вошедшему (JwtAuthGuard + CSRF), сразу подтверждена его же аккаунтом,
@@ -253,11 +260,11 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   клинической истории. На будущее — либо не кэшировать чувствительный текст
   совсем (лоадер до ответа сервера), либо шифровать кэш ключом, живущим только
   в памяти сессии.
-- **Content-Security-Policy — есть, через helmet** (`src/main.ts`, HTTP-заголовком
+- **Content-Security-Policy — есть, через helmet** (`src/infra/configure-app.ts`, HTTP-заголовком
   на все ответы Nest, включая статику webapp через `ServeStaticModule`). `helmet`
   с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
   `script-src` — allowlist (`mc.yandex.ru`, `st.max.ru`, `accounts.google.com`;
-  у каждого источника `script-src`/`connect-src` обязан быть потребитель —
+  у каждого источника `script-src`/`connect-src`/`img-src` обязан быть потребитель —
   `src/security/csp-allowlist.invariants.spec.ts`);
   `connect-src`/`img-src`/`frame-src` — по месту; `object-src 'none'`;
   `frame-ancestors 'self' https://max.ru https://*.max.ru https://web.telegram.org https://webk.telegram.org https://weba.telegram.org`
@@ -457,8 +464,11 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   Единица учёта — **метод** (разбор через AST, `src/test-support/route-method-auth.ts`):
   в guarded-контроллере каждый роут-метод либо под гвардом (на классе или на
   методе), либо назван в `ANONYMOUS_BY_DESIGN` (`src/security/anonymous-routes.ts`,
-  14 записей с причиной, список только сокращается; протухшая запись роняет
-  тест). Для admin-key — `assertAdminKey(` в теле каждого метода.
+  не больше 14 записей с причиной, список только сокращается; протухшая запись
+  роняет тест). `OptionalJwtGuard` защитой не считается — аноним его проходит:
+  метод под ним назван в `OPTIONAL_AUTH_BY_DESIGN`
+  (`src/security/optional-auth-routes.ts`, 6 роутов входа с причиной).
+  Для admin-key — `assertAdminKey(` в теле каждого метода.
 - **Инъекции/RCE/pollution** (`src/security/injection.invariants.spec.ts`):
   бан eval/Function/child_process; `*RawUnsafe` только с литералом;
   `Prisma.raw` всегда через whitelist `ident()`; `__proto__` не загрязняет

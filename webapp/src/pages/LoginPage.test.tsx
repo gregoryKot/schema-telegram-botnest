@@ -146,6 +146,16 @@ describe('LoginPage — провал OAuth (?error=no_token)', () => {
     expect(screen.getByText(/Вход не получился/)).toBeTruthy();
   });
 
+  // Аудит 2026-10: /login вне AddressFormProvider — useTr() всегда давал «ты».
+  it('текст провала безличный: без «Попробуй»/«Попробуйте»', () => {
+    renderPage(authValue(), '/login?error=no_token');
+    expect(
+      screen.getByText(
+        'Вход не получился: окно входа закрылось раньше времени. Можно попробовать ещё раз.',
+      ),
+    ).toBeTruthy();
+  });
+
   it('без ?error никакого сообщения нет', () => {
     renderPage();
     expect(screen.queryByText(/Вход не получился/)).toBeNull();
@@ -183,7 +193,7 @@ describe('LoginPage — email magic-link', () => {
     // Клик по type="submit" в jsdom не инициирует нативный submit формы —
     // сабмитим форму напрямую, как реальный браузер по Enter/клику.
     fireEvent.submit(container.querySelector('form')!);
-    expect(screen.getByText('Введи корректный email')).toBeTruthy();
+    expect(screen.getByText('Адрес почты выглядит неверно')).toBeTruthy();
     // Билет входа экран выписывает сам при открытии — считаем только запросы
     // письма, иначе тест ловил бы чужой вызов.
     expect(emailCalls()).toHaveLength(0);

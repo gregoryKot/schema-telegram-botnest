@@ -8,7 +8,8 @@
 // Класс живёт не в одном файле: «страховка от роста таблицы» через take
 // выглядит заботливо и переезжает копией в соседний блок. Поэтому пин
 // смотрит на все файлы отчёта — src/bot/*metrics*, *stats*, stats-report* —
-// и краснеет на:
+// и на обзор клиентов терапевта (src/bot/bot.client-overview.service.ts: до
+// 2026-11 стрик там резал тот же `distinct + take: 5000`), и краснеет на:
 //   - `distinct` вместе с `take` в одном вызове: счёт по обрезанному
 //     множеству неверен при любом orderBy;
 //   - `take` без `orderBy`: какие строки останутся, решает не код.
@@ -20,7 +21,7 @@ import * as ts from 'typescript';
 import { collectSourceFiles } from '../../security/collect-source-files';
 
 const SRC = join(__dirname, '..', '..');
-const REPORT_FILE = /^bot\/[^/]*(metrics|stats)[^/]*\.ts$/;
+const REPORT_FILE = /^bot\/[^/]*(metrics|stats|client-overview)[^/]*\.ts$/;
 
 function reportFiles(): string[] {
   return collectSourceFiles(join(SRC, 'bot'))
@@ -77,6 +78,7 @@ describe('отчёт /stats не считает по обрезанной выб
         'bot/bot.admin-stats.service.ts',
         'bot/bot.product-metrics.service.ts',
         'bot/stats-report.service.ts',
+        'bot/bot.client-overview.service.ts',
       ]),
     );
     expect(files.some((f) => f.endsWith('.spec.ts'))).toBe(false);

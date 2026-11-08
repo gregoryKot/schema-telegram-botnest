@@ -32,8 +32,10 @@ vi.mock('html-to-image', () => ({ toPng: (...a: unknown[]) => toPng(...a) }));
 import { api } from '../../api';
 import { ClientConceptTab } from './ClientConceptTab';
 import { useClientDetail } from './useClientDetail';
+import { conceptServer } from './conceptServer.test-helpers';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
+let srv = conceptServer(null); // строка на «сервере»: сайт шлёт патч, проверяем итог
 
 const CLIENT = {
   telegramId: 7, name: 'Анна', clientAlias: null, streak: 0, lastActiveDate: null,
@@ -122,7 +124,8 @@ beforeEach(() => {
   mockApi.getTherapyClientHistory.mockResolvedValue([]);
   mockApi.getClientDiary.mockResolvedValue([]);
   mockApi.getConceptualization.mockResolvedValue(concept());
-  mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => ({ ...concept(), ...body }));
+  srv = conceptServer(concept());
+  mockApi.saveConceptualization.mockImplementation(srv.save);
   mockApi.createModeMap.mockResolvedValue({ id: 41, title: 'x', kind: 'concept' });
   mockApi.updateModeMap.mockResolvedValue({});
   mockApi.deleteModeMap.mockResolvedValue(undefined);
@@ -212,10 +215,9 @@ describe('«На весь экран»: тот же граф', () => {
     await waitFor(() => expect(sheet()).toBeNull());
     expect(screen.getAllByText(/Судья Иванов/).length).toBeGreaterThan(0);
 
-    // Автосохранение вкладки то же: связь с новым именем уходит в saveConceptualization.
+    // Автосохранение вкладки то же: связь с новым именем уходит в saveConceptualization (патчем) и лежит на сервере.
     await waitFor(() => expect(mockApi.saveConceptualization).toHaveBeenCalled(), { timeout: 4000 });
-    const body = mockApi.saveConceptualization.mock.calls.at(-1)![1] as { modeLinks: { alias: string }[] };
-    expect(body.modeLinks[0].alias).toBe('Судья Иванов');
+    expect((srv.state.modeLinks as { alias: string }[])[0].alias).toBe('Судья Иванов');
   });
 });
 

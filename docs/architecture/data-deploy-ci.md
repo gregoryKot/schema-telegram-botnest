@@ -46,14 +46,14 @@
   - `CMD ["node","deploy/entrypoint.mjs"]`.
 
 **`deploy/entrypoint.mjs`** (супервизор, PID 1) по порядку:
-1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, ответ с диска (`front-static.mjs`): файлы сборки `webapp/dist` — любому хосту (нет файла — 404 `no-store`, не HTML: при выкладке HTML мог прийти от соседнего контейнера, инцидент 2026-11-04), страницы — только визитке (`kotlarewski.gr`, сюда идёт реклама). Страницы продукта, API, `/app`, `/health`, `robots.txt` и `sitemap.xml` получают `maintenance.html`.
+1. `front-server.mjs` сразу занимает публичный порт 3000: это TCP-проброс на `APP_PORT` (3001) или, пока приложение не поднялось или упало, ответ с диска (`front-static.mjs`): файлы сборки `webapp/dist` — любому хосту (нет файла — 404 `no-store`, не HTML: при выкладке HTML мог прийти от соседнего контейнера, инцидент 2026-11-04), страницы — только визитке (`kotlarewski.gr`, сюда идёт реклама). Страницы продукта, API, `/app`, `/health`, `robots.txt` и `sitemap.xml` получают `maintenance.html` с заголовком `X-Maintenance-Reason` — состоянием супервизора (`starting`, `db-wait`, `migrating`, `app-starting`, `migrate-failed`, `crashloop-parked`, `db-unreachable`; список и страница — `maintenance-page.mjs`, смок прода печатает заголовок).
 2. `wait-for-db.mjs` ждёт TCP-порт БД из `DATABASE_URL`, до 120 с.
 3. `RECOVER_CMD`, по умолчанию `npx prisma db execute --file prisma/recover-p3009.sql || true`.
 4. `MIGRATE_CMD`, по умолчанию `npx prisma migrate deploy`, 3 попытки. Если не прошло, остаются техработы навсегда и приложение не стартует.
 5. `backup-scheduler.cjs`: бэкап БД в R2 с арендой через `CronLease`, стартует только после миграций.
 6. `exec node dist/main` на `APP_PORT`, с номером запуска, числом падений за сутки и решением троттла DM (`STARTUP_LAUNCH`, `STARTUP_CRASHES_DAY`, `STARTUP_NOTICE`). Рестарты до `STARTUP_MAX_FAILS`=3 падений за окно `STARTUP_CRASH_WINDOW_MS`=15 мин или `STARTUP_MAX_FAILS_HOUR`=6 за час (`crash-window.mjs`), затем техработы, пауза 5 мин (×2, потолок 1 ч) и новая серия. Рост паузы сбрасывает только прогон дольше окна.
 
-SIGTERM/SIGINT пробрасываются приложению.
+Состояние держит `supervisor-status.mjs`; парковка (упавший `migrate deploy`, исчерпанный лимит перезапусков, база не поднялась) шлёт DM владельцу через Bot API по `BOT_TOKEN`/`ADMIN_ID` с троттлом как у DM о перезапуске (1, 2, 4, 8… остановка по причине за сутки); без них молчит. Настройки из env — `entrypoint-config.mjs`. SIGTERM/SIGINT пробрасываются приложению.
 
 - `amvera.yml`: `environment: docker`, `toolchain: docker`, `run.containerPort: 3000`. Amvera сама тянет main из GitHub и собирает Dockerfile (README).
 - `branch-cleanup.yml`: ручной `workflow_dispatch`, чистка веток смерженных PR (`scripts/branch-cleanup.mjs`): без `apply` — только список, с `apply` — удаление веток, чья голова совпадает с head смерженного PR и без открытого PR. Права на запись в refs — только у этой джобы; тест — `src/test-support/gates/branch-cleanup.spec.ts`.
@@ -97,7 +97,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 **mutation-bot.yml** (cron `0 4 * * 0` по воскресеньям, плюс dispatch): `mutation-bot` — Stryker по `src/bot`, отчёт артефактом, храповика и `alarm` нет.
 
 **prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
-- `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`), `/`, `/app/`, `/game/` по маркерам.
+- `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`; тело — `src/api/health-report.ts`, в нём и `startedAt`/`launch`/`crashesDay` — старт процесса и рестарты в контейнере), `/`, `/app/`, `/game/` по маркерам.
 - `alarm` — issue `ci-alarm` и DM, троттлинг напоминаний раз в 3 часа.
 
 ### Тесты

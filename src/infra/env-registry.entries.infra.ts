@@ -10,7 +10,7 @@ export const INFRA_ENV_ENTRIES: EnvVarSpec[] = [
     name: 'ALLOWED_ORIGINS',
     purpose:
       'CORS-список источников через запятую (нужен мини-аппу — другой origin) ' +
-      '— без него используется дефолтный список из main.ts.',
+      '— без него используется дефолтный список из src/infra/cors-options.ts.',
     requiredInProd: false,
     format: formats.any,
     group: 'infra',

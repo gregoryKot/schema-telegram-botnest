@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { api, reportClientError, type ClientConceptualization, type UserId } from '../../api';
-import { conceptSaveBody, type ConceptSaveBody } from '../../../../shared/src/therapy/conceptGraph/conceptSaveBody';
+import { saveConceptPatch, type ConceptSaveHost } from './conceptSaveRequests';
 import { conceptOverLimitField, conceptOverLimitText } from '../../../../shared/src/therapy/conceptOverLimit';
 import { usePendingSave } from '../../../../shared/src/utils/usePendingSave';
 import { saveFailureText, type SaveStatus } from '../../../../shared/src/therapy/SaveStatusLine';
@@ -18,9 +18,13 @@ const SECTION = 'therapist.clientDetail';
 // клиента правка уходит прежнему с ЕГО данными, при уходе со страницы — keepalive-досылкой, поздний ответ чужую
 // карточку не трогает. Статус — для `SaveStatusLine` (#879): «✓ Сохранено в ЧЧ:ММ» не гаснет до следующей правки,
 // отказ — 'error' с «Повторить» (`retrySave`); `conceptError` — причина отказа (поле длиннее предела, сеть, сервер).
+// Уходит только изменённое против последнего ответа сервера (`baseRef`) с его версией (shared conceptPatch.ts):
+// полное тело упиралось в потолок 256 КБ, а холст в другом окне стирался полями. 409 — строку изменили:
+// перечитать и наложить свои правки на свежую версию (`rebaseConcept`), повторить — без потери правки.
 export function useConceptAutosave(openClientIdRef: { readonly current: UserId | null }) {
   const tr = useTr();
   const [concept, setConcept] = useState<ClientConceptualization | null>(null);
+  const baseRef = useRef<ClientConceptualization | null>(null); // зеркало concept: от него считается патч
   const [localConcept, setLocalConcept] = useState<LocalConcept>({});
   // Зеркало localConcept, обновляемое синхронно: правка за правкой до
   // рендера собирает тело из последней версии, а не из state рендера.
@@ -37,28 +41,40 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     localRef.current = next;
     setLocalConcept(next);
   }
+  function setBase(next: ClientConceptualization | null) {
+    baseRef.current = next;
+    setConcept(next);
+  }
+
+  const host: ConceptSaveHost = {
+    isOpen,
+    currentLocal: () => localRef.current,
+    rebased: (fresh, next) => { setBase(fresh); setLocal(next); },
+    acked: (saved) => { baseRef.current = saved; },
+  };
 
   // Досылка при уходе (`leaving`) — тот же путь с keepalive: скрытая вкладка потом видит итог; после размонтирования setState — no-op.
-  async function send(clientId: UserId, body: ConceptSaveBody, { leaving }: { leaving: boolean }) {
+  // База — синхронно, в момент отправки: досылка прежнему клиенту при смене берёт ЕГО версию, до обнуления карточки.
+  async function send(clientId: UserId, local: LocalConcept, { leaving }: { leaving: boolean }) {
     if (isOpen(clientId)) setSaveStatus('saving');
     try {
-      const saved = await (leaving ? api.saveConceptualization(clientId, body, { keepalive: true }) : api.saveConceptualization(clientId, body));
+      const saved = await saveConceptPatch(host, clientId, baseRef.current, local, leaving);
       if (!isOpen(clientId)) return;
-      setConcept(saved);
+      setBase(saved);
       setConceptError('');
-      setSavedAt(saved.updatedAt ? new Date(saved.updatedAt) : new Date());
+      setSavedAt(saved?.updatedAt ? new Date(saved.updatedAt) : new Date());
       setSaveStatus('saved'); // не гаснет: «✓ Сохранено в ЧЧ:ММ» висит до следующей правки (issue #879, шаг A)
     } catch (e) {
       // Карточка уже другого клиента или закрыта — показать отказ негде, но молчать нельзя.
       if (leaving || !isOpen(clientId)) reportClientError({ message: 'concept save failed after leaving the client', section: SECTION });
       if (!isOpen(clientId)) return;
       setSaveStatus('error'); // «Не сохранилось» и «Повторить» рисует SaveStatusLine
-      const over = conceptOverLimitField(body);
+      const over = conceptOverLimitField(local);
       setConceptError(over ? conceptOverLimitText(over, tr) : saveFailureText(e)); // иначе причина — сеть, 5xx, 413
     }
   }
 
-  const saver = usePendingSave<UserId, ConceptSaveBody>({
+  const saver = usePendingSave<UserId, LocalConcept>({
     delayMs: 700,
     send,
     isSameKey: sameId,
@@ -70,9 +86,9 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
   useConceptAppended(({ clientId, concept: saved }) => {
     if (!isOpen(clientId)) return;
     const next = mergeAppended(concept, localRef.current, saved);
-    setConcept(saved);
+    setBase(saved);
     setLocal(next);
-    if (saveStatus === 'pending' || saveStatus === 'saving') saver.schedule(clientId, conceptSaveBody(next));
+    if (saveStatus === 'pending' || saveStatus === 'saving') saver.schedule(clientId, next);
   });
 
   function patchConcept(patch: LocalConcept) {
@@ -81,7 +97,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     const next = { ...localRef.current, ...patch };
     setLocal(next);
     setSaveStatus('pending');
-    saver.schedule(clientId, conceptSaveBody(next));
+    saver.schedule(clientId, next);
   }
 
   // «Повторить» после ошибки: текущая версия правок открытого клиента уходит сразу (взведённый таймер
@@ -91,7 +107,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
     const clientId = openClientIdRef.current;
     if (clientId == null) return;
     api.trackEvent('concept_save_retry');
-    saver.schedule(clientId, conceptSaveBody(localRef.current));
+    saver.schedule(clientId, localRef.current);
     saver.flush();
   }
 
@@ -103,7 +119,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
   /** Смена клиента: ожидающая правка сразу уходит прежнему клиенту, карточка обнуляется. */
   function resetForClient() {
     saver.flush();
-    setConcept(null);
+    setBase(null);
     setLocal({});
     setConceptError('');
     setSaveStatus('idle'); // статус — состояние клиента: «Не сохранилось» прежнего не переезжает к новому (#879)
@@ -113,7 +129,7 @@ export function useConceptAutosave(openClientIdRef: { readonly current: UserId |
 
   function loadConcept(fetched: ClientConceptualization | null, failed = false) {
     setLoad({ failed, reloading: false });
-    setConcept(fetched);
+    setBase(fetched);
     if (fetched) setLocal(fetched);
   }
 

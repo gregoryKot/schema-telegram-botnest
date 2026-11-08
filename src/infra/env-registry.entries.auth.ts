@@ -24,7 +24,7 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'GOOGLE_CLIENT_ID',
     purpose:
-      'OAuth client id входа через Google — без него кнопка «Войти через Google» недоступна. Тот же id зашит в сборку сайта для окна «Продолжить как…» (`ARG VITE_GOOGLE_CLIENT_ID` в Dockerfile) — менять в обоих местах.',
+      'OAuth client id входа через Google. Рубильник: без него (или без `GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`) вход через Google выключен — кнопка на `/login` остаётся, нажатие ведёт на экран «Вход через Google отключён» (`src/auth/oauth-provider-switch.ts`). Тот же id зашит в сборку сайта для окна «Продолжить как…» (`ARG VITE_GOOGLE_CLIENT_ID` в Dockerfile) — менять в обоих местах.',
     requiredInProd: false,
     format: formats.nonEmpty,
     group: 'auth',
@@ -49,8 +49,8 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'JWT_SECRET',
     purpose:
-      'Подписывает access/refresh/merge JWT сайта — без него вход через ' +
-      'Google/VK и merge аккаунтов не работает.',
+      'Подписывает access/refresh/merge/2FA-challenge JWT и state входа сайта — ' +
+      'без него вход через Google/VK и merge аккаунтов не работает.',
     requiredInProd: true,
     format: formats.secret32,
     group: 'auth',
@@ -76,7 +76,7 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'VK_APP_ID',
     purpose:
-      'OAuth client id входа через VK ID — без него кнопка «Войти через VK» недоступна.',
+      'OAuth client id входа через VK ID. Рубильник: без него (или без `VK_REDIRECT_URI`) вход через VK выключен — кнопка остаётся, нажатие ведёт на экран «Вход через ВКонтакте отключён» (`src/auth/oauth-provider-switch.ts`).',
     requiredInProd: false,
     format: formats.nonEmpty,
     group: 'auth',

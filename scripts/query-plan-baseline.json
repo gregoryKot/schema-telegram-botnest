@@ -1,5 +1,9 @@
 {
   "scenarios": {
+    "bearer-guard": {
+      "blocks": 80,
+      "msCeiling": 500
+    },
     "former-therapist": {
       "blocks": 4,
       "msCeiling": 500
@@ -22,6 +26,10 @@
     },
     "therapist-clients": {
       "blocks": 2980,
+      "msCeiling": 1500
+    },
+    "therapist-clients-long-streaks": {
+      "blocks": 3816,
       "msCeiling": 1500
     }
   },

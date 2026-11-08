@@ -230,6 +230,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'quietShift. Кнопка «Напомню через час» живёт под сообщением бота, у ' +
     'сайта такого действия нет; ветка sanitizeMeta отбрасывает meta с ' +
     'клиента, а /stats считает только строки с quietShift',
+  login_one_tap:
+    'серверное событие: пишет только GoogleOneTapService после проверки ' +
+    'токена окна Google (src/auth/google-one-tap.service.ts), userId = null. ' +
+    'Исход (вошёл / второй фактор / не принят) знает только сервер; слать его ' +
+    'с фронта значило бы открыть отчёт о входе для накрутки через /api/event',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -332,6 +337,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // уведомления в приложении): серверные — подписку сохраняет и удаляет
     // HTTP-запрос, мёртвую подписку находит очередь. 45 — push_denied:
     // константа PUSH_DENIED_EVENT, как entry_deleted.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(45);
+    // 46 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
+    // исход проверки токена есть только у сервера, тот же приём userId = null.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(46);
   });
 });

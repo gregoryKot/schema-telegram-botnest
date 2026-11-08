@@ -7,7 +7,7 @@ import {
 
 describe('диапазон userId', () => {
   // Пин допущения, на котором держится каждый оставшийся Number(userId) в
-  // src/** (guard, init-data-paths, therapist-request, req.telegramUserId).
+  // src/** (chat_id в therapist-request.notify, telegram.broadcast; req.telegramUserId снесён).
   // Веб-номер ниже 2^53 -> Number() его не округляет. Расширяешь диапазон за
   // 2^53 — сначала вычисти Number() над userId, потом меняй число здесь
   // (аудит 2026-10, X-1).

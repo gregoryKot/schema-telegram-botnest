@@ -80,6 +80,22 @@ describe('saveGratitudeDay — транзакция и повтор', () => {
     expect(prisma.$transaction).toHaveBeenCalledTimes(3);
   });
 
+  // Prisma 7 + adapter-pg: конфликт на COMMIT приходит не P2034, а голым
+  // DriverAdapterError (форма с живого Postgres, src/prisma/serializable-retry.ts).
+  it('конфликт на COMMIT (DriverAdapterError 40001) тоже повторяется', async () => {
+    const { prisma } = makePrisma([]);
+    const conflict = Object.assign(new Error('TransactionWriteConflict'), {
+      name: 'DriverAdapterError',
+      cause: { kind: 'TransactionWriteConflict', originalCode: '40001' },
+    });
+    const real = prisma.$transaction.getMockImplementation();
+    prisma.$transaction.mockImplementationOnce(() => Promise.reject(conflict));
+    prisma.$transaction.mockImplementation(real);
+    const row = await saveGratitudeDay(prisma, USER, DATE, ['B'], []);
+    expect(row.items).toEqual(['B']);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+  });
+
   it('три конфликта подряд — 409, а не молчаливая перезапись', async () => {
     const { prisma } = makePrisma(['P2034', 'P2034', 'P2034']);
     await expect(

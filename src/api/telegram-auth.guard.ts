@@ -13,12 +13,13 @@ import { SecurityLogService } from '../auth/security-log.service';
 import { applyTelegramInitData, applyMaxInitData } from './init-data-paths';
 import { reportAuthFailure } from './auth-failure.report';
 import { reportAuthSuccess } from './auth-success.report';
+import { assertLiveAccess } from '../auth/live-access';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { Request } from 'express';
 
 // Unified guard: accepts Telegram initData (mini-app / bot), MAX initData
-// (MAX mini-app), OR JWT Bearer (web app). Sets req.telegramUserId (number)
-// which all existing controllers rely on. Telegram/MAX path bodies live in
+// (MAX mini-app), OR JWT Bearer (web app). Sets req.webUser.userId (bigint) —
+// контроллеры читают его через uid(req). Telegram/MAX path bodies live in
 // ./init-data-paths.ts to keep this file under the file-size ratchet.
 @Injectable()
 export class TelegramAuthGuard implements CanActivate {
@@ -40,25 +41,15 @@ export class TelegramAuthGuard implements CanActivate {
     const authHeader = req.headers['authorization'];
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
-      const { userId } = this.authService.verifyAccessToken(token);
-      // userId is a BigInt — convert to number for backward compat with controllers
-      req.telegramUserId = Number(userId);
-      req.webUser = { userId };
+      const { userId, sid } = this.authService.verifyAccessToken(token);
       // Строка веб-юзера создаётся при входе, ДО выдачи токена. Здесь только
-      // сверяем, что аккаунт ещё жив: access-токен живёт 15 минут — дольше, чем
-      // удаление или слияние аккаунта. Прежний upsert ВОСКРЕШАЛ строку по
-      // устаревшему токену: у удалённого появлялась пустая зомби-строка (обход
-      // права на удаление), а слитый юзер застревал на исчезнувшем исходном id
-      // вместо целевого — его данные «пропадали» (разбор 2026-08-31). Нет строки
-      // или помечена deletedAt → токен протух вместе с аккаунтом: 401, и клиент
-      // рефрешит — refresh-кука слитого уже переехала на целевой userId.
-      const account = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, deletedAt: true },
-      });
-      if (!account || account.deletedAt) {
-        throw new UnauthorizedException('Account no longer exists');
-      }
+      // сверяем, что аккаунт и сессия ещё живы (live-access.ts). Прежний upsert
+      // ВОСКРЕШАЛ строку по устаревшему токену: у удалённого появлялась пустая
+      // зомби-строка (обход права на удаление), а слитый юзер застревал на
+      // исчезнувшем исходном id (разбор 2026-08-31). 401 → клиент рефрешит:
+      // refresh-кука слитого уже переехала на целевой userId.
+      await assertLiveAccess(this.prisma, userId, sid);
+      req.webUser = { userId };
       reportAuthSuccess(userId, 'web', {
         track: (meta) => void this.analytics.track(null, 'auth_success', meta),
       });

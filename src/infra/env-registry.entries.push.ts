@@ -14,7 +14,7 @@ const base64urlKey =
     return got === bytes ? null : `ожидалось ${bytes} байт, получено ${got}`;
   };
 
-const subject: FormatValidator = (value) =>
+const httpsOrMailto: FormatValidator = (value) =>
   value.startsWith('mailto:') ? null : formats.httpsUrl(value);
 
 export const PUSH_ENV_ENTRIES: EnvVarSpec[] = [
@@ -43,7 +43,7 @@ export const PUSH_ENV_ENTRIES: EnvVarSpec[] = [
       'Контакт для push-сервисов (https-адрес или mailto:) — дефолт ' +
       'https://schemehappens.ru.',
     requiredInProd: false,
-    format: subject,
+    format: httpsOrMailto,
     group: 'infra',
   },
 ];

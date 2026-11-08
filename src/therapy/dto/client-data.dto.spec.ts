@@ -107,6 +107,27 @@ describe('SessionInfoDto — форматы (T6)', () => {
       ).resolves.toContain('nextSession');
   });
 
+  // docs/open/backend.md: день внутри момента сверялся только регэкспом —
+  // `2026-02-30T25:00` уходил в БД и в карточку как «NaN …».
+  it('nextSession: несуществующий день и время вне суток — отказ', async () => {
+    for (const ok of ['2028-02-29', '2026-08-01T00:00', '2026-08-01T23:59:59'])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: ok }),
+      ).resolves.toEqual([]);
+    for (const bad of [
+      '2026-02-30',
+      '2026-13-01',
+      '2026-02-30T10:00',
+      '2026-08-01T25:00',
+      '2026-08-01T24:00',
+      '2026-08-01T14:60',
+      '2026-08-01T14:30:60',
+    ])
+      await expect(
+        errorsFor(SessionInfoDto, { nextSession: bad }),
+      ).resolves.toContain('nextSession');
+  });
+
   it('meetingDays: не более 7 элементов, каждый 0–6', async () => {
     await expect(
       errorsFor(SessionInfoDto, { meetingDays: [0, 6] }),

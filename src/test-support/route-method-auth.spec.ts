@@ -1,7 +1,11 @@
 // Образцы для разбора роутов по методу (route-method-auth.ts): оба исхода
 // и контрольные. Сценарий находки аудита 2026-10 — гвард на одном методе не
 // должен делать защищённым соседний `@Post` с многострочным `@Throttle`.
-import { duplicateKeys, routeMethods } from './route-method-auth';
+import {
+  duplicateKeys,
+  routeMethods,
+  unclassifiedRoutes,
+} from './route-method-auth';
 
 const REL = 'x/x.controller.ts';
 const guards = (src: string) =>
@@ -48,10 +52,31 @@ describe('routeMethods: гвард по методу', () => {
         @Throttle({
           short: { limit: 1, ttl: 1 },
         })
-        @UseGuards(OptionalJwtGuard)
+        @UseGuards(JwtAuthGuard)
         a() {}
       }`;
     expect(guards(src)).toEqual({ [`${REL}:a`]: 'method' });
+  });
+
+  it('OptionalJwtGuard не защита: guard = null, optional — где стоит', () => {
+    // Аудит 2026-11: аноним проходит OptionalJwtGuard, а трипваер считал
+    // такой роут guarded. Теперь он optional и требует своей записи.
+    const src = `
+      @Controller('x')
+      export class C {
+        @Get('a') @UseGuards(OptionalJwtGuard) a() {}
+        @Get('b') @UseGuards(JwtAuthGuard) b() {}
+      }
+      @Controller('y') @UseGuards(OptionalJwtGuard)
+      export class D { @Get('c') c() {} }`;
+    const by = Object.fromEntries(
+      routeMethods(REL, src).map((m) => [m.key, [m.guard, m.optional]]),
+    );
+    expect(by).toEqual({
+      [`${REL}:a`]: [null, 'method'],
+      [`${REL}:b`]: ['method', null],
+      [`${REL}:c`]: [null, 'class'],
+    });
   });
 
   it('чужой гвард не засчитывается', () => {
@@ -90,6 +115,48 @@ describe('routeMethods: assertAdminKey по телу метода', () => {
       [`${REL}:b`]: false,
       [`${REL}:c`]: false,
     });
+  });
+});
+
+describe('unclassifiedRoutes: у каждого не-guarded роута своя запись', () => {
+  const src = `
+    @Controller('x')
+    export class C {
+      @Get('open') open() {}
+      @Get('opt') @UseGuards(OptionalJwtGuard) opt() {}
+      @Get('safe') @UseGuards(JwtAuthGuard) safe() {}
+    }`;
+  const methods = () => routeMethods(REL, src);
+  const reason = 'причина длиной больше двадцати символов';
+
+  it('optional-роут без записи — красный, даже если он есть в ANONYMOUS', () => {
+    expect(
+      unclassifiedRoutes(
+        methods(),
+        { [`${REL}:opt`]: reason, [`${REL}:open`]: reason },
+        {},
+      ),
+    ).toEqual([`${REL}:opt`]);
+  });
+
+  it('анонимный роут в реестре optional не прячется', () => {
+    expect(
+      unclassifiedRoutes(
+        methods(),
+        {},
+        { [`${REL}:open`]: reason, [`${REL}:opt`]: reason },
+      ),
+    ).toEqual([`${REL}:open`]);
+  });
+
+  it('каждый в своём реестре — зелёный; guarded записи не требует', () => {
+    expect(
+      unclassifiedRoutes(
+        methods(),
+        { [`${REL}:open`]: reason },
+        { [`${REL}:opt`]: reason },
+      ),
+    ).toEqual([]);
   });
 });
 
