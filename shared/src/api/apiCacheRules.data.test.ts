@@ -206,3 +206,37 @@ describe('RULES: запись по id и страницы дневника сб�
     expect(covers(targets, '/api/diary/page/mode')).toBe(false);
   });
 });
+
+// Мутации webapp/src/api.ts, которые сверка инвалидации до 2026-11 не видела
+// (apiCacheRules.coverage.test.ts): цели считаются по настоящему совпадению
+// шаблона — токен из пути доходит до ключа.
+describe('RULES: запись на слот, отмена брони и подписки', () => {
+  const targetsFor = (method: string, path: string) =>
+    RULES.filter((r) => r.method === method).flatMap((r) => {
+      const m = path.match(r.pattern);
+      return m ? (r.targets?.(m, undefined) ?? []) : [];
+    });
+  const covers = (targets: InvalidationTarget[], key: string) =>
+    targets.some((t) =>
+      typeof t === 'string' ? t === key : key.startsWith(t.prefix),
+    );
+
+  it.each([
+    ['/api/booking/book', ['/api/booking/slots?tz=Europe%2FMoscow']],
+    ['/api/booking/cancel/abc', ['/api/booking/slots', '/api/client-booking']],
+    [
+      '/api/client-booking/book',
+      ['/api/booking/slots?tz=x', '/api/client-booking'],
+    ],
+    ['/api/subscription/cancel/tok1', ['/api/subscription/by-token/tok1']],
+  ])('POST %s', (path, keys) => {
+    const targets = targetsFor('POST', path);
+    for (const key of keys) expect(covers(targets, key)).toBe(true);
+  });
+
+  it('контроль: отмена подписки не сбрасывает чужой токен и слоты', () => {
+    const targets = targetsFor('POST', '/api/subscription/cancel/tok1');
+    expect(covers(targets, '/api/subscription/by-token/tok2')).toBe(false);
+    expect(covers(targets, '/api/booking/slots')).toBe(false);
+  });
+});

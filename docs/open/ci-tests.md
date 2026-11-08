@@ -141,13 +141,7 @@
   дня благодарности, который приходит с сервера в UTC (правило №25). Решать
   вместе с тем, в какой системе координат живёт лента дневника.
 
-**Сверка карты инвалидации кеша видит только `shared/src/api/*`** (найдено 2026-10-26 на офлайн-клиентах терапевта):
-- `shared/src/api/apiCacheRules.coverage.test.ts` (`SOURCES`) собирает мутации из `sharedApi.ts`,
-  `ratingApi.ts`, `apiExercises.ts` и только вида `t.post(`. Мутации `webapp/src/api.ts` (голые `post(`/`postJson(`/`patchJson(`/`del(`) в сверку не попадают:
-  карты режимов и свои режимы терапевта жили без строки инвалидации (закрыто в
-  `shared/src/api/apiCacheRules.therapy.ts`), `booking/cancel/:token`, `subscription`, `donation` не
-  проверены. Чинить: `webapp/src/api.ts` в `SOURCES` с регэкспом без `t.`, найденное — правилом или
-  записью `NO_INVALIDATION` с причиной.
+**Сверка карты инвалидации не видит мутаций мимо api-помощников** (осознанно, 2026-11): `shared/src/api/apiCacheRules.coverage.test.ts` читает вызовы `post(`/`postJson(`/`patchJson(`/`del(` (и `t.`-транспорта) в `SOURCES`, но не голый `fetch`/`authedFetch(path, { method })`. Сейчас так ходят только `/api/auth/*` (мимо кеша, `NO_CACHE` в `shared/src/api/apiCache.ts`), `POST /api/ratings` в `shared/src/api/ratingApi.ts` (правило в карте есть) и заявка терапевта (`webapp/src/pages/account/TherapistRequestSection.tsx`, её GET тоже голый `fetch`, не кешируется). Новая мутация голым `authedFetch` с кешируемым GET мимо сверки пройдёт — переводить такие места на помощники api-слоя.
 
 **Статика и браузерный смок — находки при починке перекоса ассетов** (инцидент 2026-11-04, #928):
 **Живой сьют: тест 14 `offline-invite.spec.ts` красный на локальном стенде** (2026-11-08,
