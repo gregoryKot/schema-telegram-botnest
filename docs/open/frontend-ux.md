@@ -6,8 +6,11 @@
 > `grep -n` по ключу, затем чтение куска.
 
 **Аудит 2026-11 — баги сайта и понятность** (детали и коды — [AUDIT_2026-11.md](../AUDIT_2026-11.md)):
-- **E6 · `.ics` в Telegram бросает.** `shared/src/host/telegram.ts:163` — `openLink(data:…)`, SDK пускает только http(s) (`webapp/public/telegram-web-app.js:2917-2920`); тест на фейке это не видит.
-- **E14 · мелочи.** `RequireAuth.tsx:11` теряет адрес возврата (`LoginPage.tsx` всегда `/today`); bfcache оставляет кнопку оплаты в `loading` (`DonatePage.tsx:22-25`, `SubscribePage.tsx:61-64`); дата статьи без `timeZone: 'UTC'` (`ArticlesPage.tsx:55,192`, `landing/ProductKit.tsx:36`).
+- **Хвосты 5.6 (E6, E14):**
+  - Вход по ссылке из письма приходит новой вкладкой: адрес возврата (`webapp/src/auth/returnTo.ts`, sessionStorage вкладки) там не виден, человек попадает на «Сегодня». Чинится только адресом в самой ссылке письма (`src/auth/` + `consumeEmailToken.ts`) — не сделано, дороже пункта.
+  - .ics в MAX: data:-URL уходит ссылкой-скачиванием внутри вебвью (`shared/src/host/max.ts`, `saveFile`), работает ли это в клиенте MAX — не проверено; `downloadFile` берёт https, ссылку с сервера (`POST /api/plan/ics`) MAX может взять, выставив `dataUrlFiles: false`.
+  - Telegram: ссылка на .ics открывается после ответа сервера (`shared/src/practices/savePracticeIcs.ts`), а не синхронно в тапе; если клиент потребует жест для `openLink`, ссылку придётся выдавать заранее, при открытии шага «Запланировать».
+  - Сигнал в серверном .ics подписан «Напоминание о встрече» — текст зашит в `buildVcalendar` (`src/booking/caldav-event.util.ts`, `buildValarm`); для практики нужен параметр описания сигнала.
 - **Хвосты волны 4 (#1024):**
   - Мёртвая ручка `DELETE /api/ysq-result` (`src/api/ysq.controller.ts:81`): после U8 «Пройти заново» итог не стирает, сайт её не зовёт; остались метод сервиса и `deleteYsqResult` в `shared/src/hooks/ysqTest.types.ts:20`. Удалить вместе.
   - Экран «Нет связи» после ссылки из письма (`webapp/src/pages/service/authErrorScreens.ts`, `email_network`) ведёт на «Запросить новую ссылку», хотя старая ещё действует: кнопки «Повторить» с тем же токеном нет (`consumeEmailToken.ts`).

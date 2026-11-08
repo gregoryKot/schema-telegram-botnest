@@ -2,9 +2,8 @@
 // практик и пояса, выбор часа, сохранение и .ics; вёрстка — в PlanSheet.
 import { useEffect, useState } from 'react';
 import { CURATED } from './curated';
-import { practiceIcsDataUrl } from '../utils/ics';
+import { savePracticeIcs, type PracticeIcsLink } from './savePracticeIcs';
 import { notifyReachable } from '../settings/notifyReach';
-import { getHost } from '../host';
 
 export const REMINDER_OPTIONS: Array<{
   label: string;
@@ -54,6 +53,7 @@ export interface PlanSheetApi {
     text: string,
     reminderLocalHour?: number,
   ) => Promise<unknown>;
+  practiceIcsLink: PracticeIcsLink;
 }
 
 export interface PlanSheetOption {
@@ -75,6 +75,7 @@ export function usePlanSheetState(
   const [tzOffset, setTzOffset] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [icsFailed, setIcsFailed] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
   const [phase, setPhase] = useState<'pick' | 'confirm'>('pick');
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
@@ -163,15 +164,13 @@ export function usePlanSheetState(
     }
   }
 
-  // Генерация — shared/utils/ics.ts, сохранение файла — платформенное.
+  // Файл с устройства или ссылка с сервера — по хосту (savePracticeIcs.ts).
   function handleIcsDownload() {
-    const dataUrl = practiceIcsDataUrl({
-      text: selectedText,
-      needLabel,
-      localHour,
-      tzOffset,
-    });
-    getHost().saveFile(dataUrl, 'practice.ics');
+    setIcsFailed(false);
+    const params = { text: selectedText, needLabel, localHour, tzOffset };
+    void savePracticeIcs(params, api.practiceIcsLink).catch(() =>
+      setIcsFailed(true),
+    );
   }
 
   return {
@@ -184,6 +183,7 @@ export function usePlanSheetState(
     saving,
     saveError,
     setSaveError,
+    icsFailed,
     savedOk,
     phase,
     setPhase,

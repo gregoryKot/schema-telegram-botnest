@@ -8,6 +8,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { TwoFactorChallengePage } from './TwoFactorChallengePage';
+import { rememberReturnTo } from '../auth/returnTo';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
@@ -54,6 +55,7 @@ function renderAt(path: string, auth: AuthState = authValue()) {
           <Route path="/auth/2fa" element={<TwoFactorChallengePage />} />
           <Route path="/login" element={<div>login-page</div>} />
           <Route path="/today" element={<div>today-page</div>} />
+          <Route path="/schemas" element={<div>schemas-page</div>} />
           <Route path="/auth/confirm" element={<ConfirmProbe />} />
         </Routes>
       </AuthContext.Provider>
@@ -86,6 +88,16 @@ describe('TwoFactorChallengePage — ввод кода', () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/api/auth/2fa/challenge');
     expect(JSON.parse((init as RequestInit).body as string)).toEqual({ challengeToken: 'chal123', code: '482913' });
+  });
+
+  // E14 (аудит 2026-11): вход с 2FA тоже возвращает туда, откуда увели на вход.
+  it('успешный код без билета → на запомненный адрес, а не на /today', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'tok-2fa', expiresIn: 900 }));
+    rememberReturnTo('/schemas');
+    const { container } = renderAt('/auth/2fa?token=chal123');
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '482913' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await screen.findByText('schemas-page');
   });
 
   it('неверный код — ошибка показана, поле очищается, не уходит на /today', async () => {

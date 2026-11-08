@@ -83,7 +83,10 @@ function make() {
     {} as never,
     { getUserPairs: jest.fn().mockResolvedValue([]) } as never,
     notifications,
-    { registerFill: jest.fn().mockResolvedValue('2026-07-17') } as never,
+    {
+      claimFillDay: jest.fn().mockResolvedValue(true),
+      registerFill: jest.fn().mockResolvedValue('2026-07-17'),
+    } as never,
     planner as never,
     { claimRun: jest.fn() } as never,
   );

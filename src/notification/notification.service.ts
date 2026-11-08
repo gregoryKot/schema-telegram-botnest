@@ -40,6 +40,18 @@ export class NotificationService {
     });
   }
 
+  /** Освежить данные неотправленного уведомления — без новой строки (E16). */
+  async refreshPending(
+    userId: bigint,
+    type: NotificationType,
+    payload: object,
+  ) {
+    await this.prisma.scheduledNotification.updateMany({
+      where: { userId, type, sentAt: null, cancelledAt: null },
+      data: { payload: encryptPayload(payload) },
+    });
+  }
+
   /** Отменить все неотправленные уведомления пользователя данного типа */
   async cancel(userId: bigint, type: NotificationType) {
     await this.prisma.scheduledNotification.updateMany({

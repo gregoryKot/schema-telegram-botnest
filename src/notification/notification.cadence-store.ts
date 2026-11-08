@@ -57,3 +57,26 @@ export async function claimPlanDay(
   });
   return count === 1;
 }
+
+/**
+ * Забрать день заполнения трекера: `true` — заполнение за `day` отрабатывает
+ * впервые (сводка, вехи, «с возвращением»), `false` — день уже забрал другой
+ * вызов. E16 (аудит 2026-11): два параллельных сохранения последних оценок
+ * оба видели день заполненным, оба снимали и ставили сводку — вперемешку
+ * выходило две. Тот же приём, что у claimPlanDay: один UPDATE с условием,
+ * OR с NULL обязателен.
+ */
+export async function claimFillDay(
+  prisma: PrismaService,
+  userId: bigint,
+  day: string,
+): Promise<boolean> {
+  const { count } = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      OR: [{ notifyLastFillDate: null }, { notifyLastFillDate: { not: day } }],
+    },
+    data: { notifyLastFillDate: day },
+  });
+  return count === 1;
+}

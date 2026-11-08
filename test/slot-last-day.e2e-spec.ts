@@ -12,10 +12,16 @@ import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
 
-// Далеко в будущем и не пересекается с фикстурами других e2e (2091-03-04,
-// 2093-05-10): по startsAt спек чистит за собой.
-const LAST_DAY = '2094-03-09';
-const PREV_DAY = '2094-03-08';
+// Через 49–50 дней: внутри горизонта публичной записи (аудит 2026-11, S17 —
+// дни за ним /slots отвечает 400) и не пересекается с фикстурами других e2e
+// (2091-03-04, slot-override — через 40 дней): по startsAt спек чистит за собой.
+const DAY_MS = 86_400_000;
+const dayFromToday = (n: number) =>
+  new Date(Math.floor(Date.now() / DAY_MS) * DAY_MS + n * DAY_MS)
+    .toISOString()
+    .slice(0, 10);
+const LAST_DAY = dayFromToday(50);
+const PREV_DAY = dayFromToday(49);
 const DOW = new Date(`${LAST_DAY}T00:00:00Z`).getUTCDay();
 const at = (hh: string) => `${LAST_DAY}T${hh}:00:00.000Z`;
 const TAKEN = at('09'); // занят CONFIRMED-бронью

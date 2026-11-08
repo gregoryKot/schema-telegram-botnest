@@ -16,6 +16,7 @@ import {
   type QueueTickTally,
 } from './telegram.schedule-queue.tally';
 import type { PaceOptions } from './telegram.paced-sender';
+import type { RejectCounter } from './telegram.schedule-queue.rejects';
 export { armQueueKillSwitch } from './telegram.schedule-queue.budget';
 
 export interface QueueDeps {
@@ -29,6 +30,8 @@ export interface QueueDeps {
   pace?: PaceOptions;
   /** Итог прогона в /stats (событие notify_queue_tick). */
   track?: (tally: QueueTickTally) => Promise<void> | undefined;
+  /** Отказы 400 по строкам — живёт дольше тика (E16, ...queue.rejects.ts). */
+  rejects: RejectCounter;
 }
 
 // Сколько userId показать в итоговой строке про «некуда слать»: авария — это

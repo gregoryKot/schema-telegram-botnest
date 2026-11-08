@@ -64,6 +64,7 @@ function make(opts: {
       scheduledNotification: table,
     } as never),
     cadenceService: {
+      claimFillDay: jest.fn().mockResolvedValue(true),
       registerFill: jest.fn().mockResolvedValue(opts.nextContact),
     },
     logger: new Logger('test'),

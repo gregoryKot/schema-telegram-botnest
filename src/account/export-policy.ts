@@ -207,6 +207,7 @@ export const USER_EXPORT_SELECT = {
   notifyNextRemindDate: true,
   notifySkipAckDate: true,
   notifyLastEvalDate: true,
+  notifyLastFillDate: true,
   notifyReminderSeq: true,
   notifyQuietStart: true,
   notifyQuietEnd: true,

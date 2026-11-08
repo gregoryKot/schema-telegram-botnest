@@ -6,6 +6,7 @@ import { busyQueryXml, Interval } from './caldav-busy';
 import { readBusy } from './caldav-busy-read';
 import { calDavHealth } from './caldav-health';
 import { onEmptyCalendars } from './caldav-empty-guard';
+import { BusyCache } from './caldav-busy-cache';
 
 /**
  * One-way push of confirmed bookings into the therapist's Apple Calendar via CalDAV.
@@ -28,8 +29,7 @@ export class CalDavService {
   private readonly auth: string;
   private resolvedBase: string | null = null;
   private discovery: Promise<string | null> | null = null;
-  private busyCache: { key: string; val: Interval[]; exp: number } | null =
-    null;
+  private readonly busyCache = new BusyCache((f, t) => this.readBusyAll(f, t));
   private busyUrls: Promise<string[]> | null = null;
 
   constructor(config: ConfigService) {
@@ -134,18 +134,15 @@ export class CalDavService {
   /**
    * Busy intervals from ALL of the therapist's calendars in [from, to], so the
    * slot engine can hide times already occupied by real calendar events.
-   * Cached 60s. Fail-open: returns [] on any problem (slots still show).
+   * Cached 60s, one wide window for all slot requests (caldav-busy-cache.ts).
+   * Fail-open: returns [] on any problem (slots still show).
    */
   async getBusyTimes(from: Date, to: Date): Promise<Interval[]> {
     if (!this.enabled) return [];
-    const key = `${from.getTime()}_${to.getTime()}`;
-    if (
-      this.busyCache &&
-      this.busyCache.key === key &&
-      Date.now() < this.busyCache.exp
-    ) {
-      return this.busyCache.val;
-    }
+    return this.busyCache.get(from, to);
+  }
+
+  private async readBusyAll(from: Date, to: Date): Promise<Interval[]> {
     const urls = await this.getBusyUrls();
     if (!urls.length) return onEmptyCalendars();
     const body = busyQueryXml(from, to);
@@ -166,7 +163,6 @@ export class CalDavService {
       if (recovered) this.logger.error(recovered);
     }
     for (const r of results) if (r.ok) all.push(...r.intervals);
-    this.busyCache = { key, val: all, exp: Date.now() + 60_000 };
     return all;
   }
 

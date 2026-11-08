@@ -94,6 +94,7 @@ model User {
   notifyNextRemindDate   String?               // YYYY-MM-DD (локальная дата) следующего дня напоминания
   notifySkipAckDate      String?               // YYYY-MM-DD «Сегодня не могу» — день не считается игнором
   notifyLastEvalDate     String?               // YYYY-MM-DD последнего прогона движка — идемпотентность catch-up
+  notifyLastFillDate     String?               // YYYY-MM-DD дня, чьё заполнение уже отработало (сводка, вехи) — захват дня, E16
   notifyPausedUntil      DateTime?             // пауза уведомлений (UTC instant)
   notifyQuietStart       Int      @default(22) // тихие часы: начало, локальный час
   notifyQuietEnd         Int      @default(8)  // тихие часы: конец; start==end → выключено

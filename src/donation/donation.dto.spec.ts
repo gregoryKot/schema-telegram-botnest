@@ -44,6 +44,14 @@ describe('DonateDto — рантайм-валидация публичного �
     );
   });
 
+  // R9 (аудит 2026-11): email уходит в Robokassa для чека.
+  it.each([
+    ['не адрес', 'not-an-email'],
+    ['длиннее 254', `${'a'.repeat(64)}@${`${'b'.repeat(60)}.`.repeat(4)}co`],
+  ])('email %s — отказ (R9)', async (_, email) => {
+    await expect(errorsFor({ ...VALID, email })).resolves.toContain('email');
+  });
+
   it('гигантский comment — отказ (спам)', async () => {
     await expect(
       errorsFor({ ...VALID, comment: 'x'.repeat(1001) }),

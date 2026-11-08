@@ -87,7 +87,10 @@
   - `src/booking/whole-price.ts` — строгий разбор целой цены (`1e+22`, мусор → отказ); на нём `parsePrice` и `src/subscription/subscription-price.ts`
   - `src/booking/booking.transitions.ts` — переходы статуса брони (CAS)
   - `src/booking/slot.service.ts` — свободные слоты: правила, брони, override, CalDAV
+  - `src/booking/slot-range.ts` — диапазон публичного `/slots` (прошлое, перевёрнутый, за горизонтом 92 дня — 400) и окно занятости; `caldav-busy-cache.ts` — одно широкое окно iCloud раз в 60 с, ответы нарезаются из него (S17)
+  - `src/booking/session-event.ts` — длина события сессии (CalDAV, .ics, страница записи): знакомство 15 минут, слот сетки занят целиком (`Booking.durationMin`)
   - `src/booking/payment.controller.ts` — вебхук Robokassa: брони, донаты, подписки
+  - `src/booking/robokassa-sign.ts` — подписи и чек `Receipt` (один на первый платёж и продление), сверка подписи не строкой → false
   - `src/booking/payment.result-guard.ts` — разбор ResultURL до подтверждения: формат InvId (эхом только число, ответ `text/plain`), подпись, `IsTest=1` на боевом магазине не подтверждается
   - `src/booking/rule-slot-match.ts` (`ruleOffersSlot`) — бронь принимается только ровно слотом сетки правила (длина = `sessionDuration`, старт на `expandRuleForDay`); зовёт `booking.availability.ts`
   - `src/booking/client-booking.controller.ts` + `client-booking.service.ts` — запись клиента владельца практики из приложения (#546): под `TelegramAuthGuard`, свой префикс `/api/client-booking` (на визитке не открывается), та же цепочка `BookingService.book` с `account` (пишет `Booking.userId` и `clientTelegramId` из подписи); имя и контакт — `client-booking.identity.ts`; владелец практики — `src/utils/practice-owner.ts` (`ADMIN_ID` с учётом слияния)

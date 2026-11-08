@@ -13,6 +13,7 @@ import { TELEGRAF_BOT } from './telegram.constants';
 import { failCallback } from './callback-failure';
 import { describeTelegramError } from './telegram-error';
 import { BroadcastRunner } from './telegram.broadcast-runner';
+import { ZV_BUSY, ZvRunner } from './zv-runner';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
@@ -28,6 +29,7 @@ import { adminIdNum, isAdminSender } from '../utils/admin-alert';
 export class TelegramAdminService implements OnModuleInit {
   private readonly logger = new Logger(TelegramAdminService.name);
   readonly broadcast = new BroadcastRunner(); // фоном: telegram.broadcast-runner.ts
+  readonly zv = new ZvRunner(); // /zv фоном: zv-runner.ts
 
   constructor(
     @Inject(TELEGRAF_BOT)
@@ -97,10 +99,14 @@ export class TelegramAdminService implements OnModuleInit {
           await ctx.reply(await this.channelCheck.log());
           return;
         }
-        const result = only
-          ? await this.channelCheck.checkOne(only)
-          : await this.publisher.publish();
-        await ctx.reply(result.message);
+        // Фоном (E16): публикация длится дольше, чем можно держать бота.
+        const started = this.zv.start(
+          () =>
+            only ? this.channelCheck.checkOne(only) : this.publisher.publish(),
+          (text) => ctx.reply(text),
+          this.logger,
+        );
+        if (!started) await ctx.reply(ZV_BUSY);
       } catch (err) {
         this.logger.error('zv command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);

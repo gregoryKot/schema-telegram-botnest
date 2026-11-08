@@ -4,6 +4,7 @@ import type { ProviderId } from './ProviderRows';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 import { stepUpHeader } from '../../../../shared/src/auth/stepUp';
 import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
+import { rememberReturnTo } from '../../auth/returnTo';
 import { sessionPost } from '../../components/stepUp/sessionRequest';
 
 const UNLINK_FAILED = 'Не удалось отвязать способ входа';
@@ -28,7 +29,7 @@ export function useProviderActions(
         credentials: 'include', headers: { Authorization: `Bearer ${accessToken ?? ''}`, ...stepUpHeader(code) } }));
       if (!res) return;
       if (!res.ok) throw new Error((await readHumanError(res, LINK_FAILED)).message);
-      sessionStorage.setItem('auth_return_to', '/account');
+      rememberReturnTo('/account');
       window.location.href = `${API_BASE}${path}`;
     } catch (e) {
       setError(humanizeThrown(e, LINK_FAILED));

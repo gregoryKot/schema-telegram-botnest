@@ -39,6 +39,8 @@ function makePrisma() {
     // nextChargeAt). 0 вернул бы «уже забрал другой инстанс».
     $executeRaw: jest.fn(async () => 1),
     subscriptionCharge: {
+      // Просроченные продления (R8, charge-guards.ts) — здесь их нет.
+      findMany: jest.fn(async () => []),
       create: jest.fn(({ data }: any) => {
         const row = { id: nextChargeId++, status: 'pending', ...data };
         charges.set(row.id, row);
@@ -104,7 +106,8 @@ describe('SubscriptionService.chargeDue — точные аргументы вы
     );
   });
 
-  it('проверка pending-charge идёт по exact where: status:"pending" и окну 48ч (ArithmeticOperator на 48*3_600_000)', async () => {
+  // R8 (аудит 2026-11): P-3 смотрит и failed — таймаут ответа тоже failed.
+  it('проверка свежего charge идёт по exact where: status in [pending, failed] и окну 48ч (ArithmeticOperator на 48*3_600_000)', async () => {
     const { service, prisma } = makeService();
     const now = new Date('2026-08-01T12:00:00Z');
     jest.useFakeTimers();
@@ -122,7 +125,7 @@ describe('SubscriptionService.chargeDue — точные аргументы вы
     await service.chargeDue();
     jest.useRealTimers();
     const call = prisma.subscriptionCharge.findFirst.mock.calls[0][0];
-    expect(call.where.status).toBe('pending');
+    expect(call.where.status).toEqual({ in: ['pending', 'failed'] });
     const expectedGte = now.getTime() - 48 * 3_600_000;
     expect(call.where.createdAt.gte.getTime()).toBe(expectedGte);
   });

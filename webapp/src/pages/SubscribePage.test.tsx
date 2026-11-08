@@ -316,3 +316,17 @@ describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () =
     expect(screen.queryByText('Спасибо за поддержку!')).toBeNull();
   });
 });
+
+// E14 (аудит 2026-11): «Назад» с Robokassa достаёт страницу из bfcache вместе
+// с состоянием — кнопка оставалась в «Перехожу к оплате…» и не нажималась.
+describe('SubscribePage — возврат «Назад» со страницы оплаты', () => {
+  it('pageshow из bfcache снимает «Перехожу к оплате…», кнопка снова жива', async () => {
+    mockApi.subscribe.mockReturnValue(new Promise(() => {}));
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /Оформить за/ }));
+    expect((screen.getByRole('button', { name: 'Перехожу к оплате…' }) as HTMLButtonElement).disabled).toBe(true);
+    act(() => { window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); });
+    expect((screen.getByRole('button', { name: /Оформить за/ }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});

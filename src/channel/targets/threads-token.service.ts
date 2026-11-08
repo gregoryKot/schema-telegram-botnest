@@ -105,8 +105,10 @@ export class ThreadsTokenService {
       await this.save(fresh);
       this.logger.log('threads token refreshed');
     } catch (err) {
-      // Токен ещё жив, времени на починку — месяц, поэтому warn, а не error.
-      this.logger.warn(
+      // error, а не warn: это алерт (AlertLogger → DM владельцу). Токен ещё
+      // жив, но молча упавший refresh через 60 дней убивает Threads, а warn
+      // никто не читал (E16, аудит 2026-11). Крон суточный — DM раз в день.
+      this.logger.error(
         `threads token refresh failed: ${(err as Error)?.message}`,
       );
     }

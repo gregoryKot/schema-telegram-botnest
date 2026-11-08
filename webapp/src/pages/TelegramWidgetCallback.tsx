@@ -5,6 +5,7 @@ import { useAuth } from '../auth/authContext';
 import { parseTelegramAuthResult } from './telegramAuthResult';
 import { ServiceLoading } from './service/ServiceLoading';
 import { telegramWidgetReason } from './service/authErrorReasons';
+import { takeReturnTo } from '../auth/returnTo';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -90,8 +91,7 @@ export function TelegramWidgetCallback() {
         }
 
         if (data.accessToken) {
-          const returnTo = sessionStorage.getItem('auth_return_to') ?? '/today';
-          sessionStorage.removeItem('auth_return_to');
+          const returnTo = takeReturnTo() ?? '/today';
           flushSync(() => setAccessToken(data.accessToken!, data.expiresIn ?? 900));
           // returnTo может вести на мини-апп (/app/…) — у сайта нет такого
           // роута, нужен полный переход (симметрично AuthCallback.tsx).

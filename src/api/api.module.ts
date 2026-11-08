@@ -3,6 +3,7 @@ import { ApiController } from './api.controller';
 import { YsqController } from './ysq.controller';
 import { PairsController } from './pairs.controller';
 import { PlansController } from './plans.controller';
+import { PracticeIcsController } from './practice-ics.controller';
 import { ExercisesController } from './exercises.controller';
 import { PhraseCheckController } from './phrase-check.controller';
 import { NotesController } from './notes.controller';
@@ -42,6 +43,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     YsqController,
     PairsController,
     PlansController,
+    PracticeIcsController,
     ExercisesController,
     PhraseCheckController,
     NotesController,

@@ -55,7 +55,16 @@ describe('regionFromTimeZone', () => {
     ['America/New_York', 'INTL'],
     ['Asia/Bangkok', 'INTL'],
     ['Australia/Sydney', 'INTL'],
-    ['UTC', 'INTL'],
+    // Р5 (2026-11-08): пояс без места — «неизвестен», рубли.
+    ['UTC', 'RU'],
+    ['Etc/UTC', 'RU'],
+    ['GMT', 'RU'],
+    ['Etc/GMT', 'RU'],
+    ['Etc/Universal', 'RU'],
+    ['Etc/GMT-0', 'RU'],
+    ['Zulu', 'RU'],
+    ['Etc/GMT+10', 'INTL'],
+    ['Etc/GMT-3', 'INTL'],
   ])('%s → %s', (tz, region) => {
     expect(regionFromTimeZone(tz)).toBe(region);
   });

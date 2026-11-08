@@ -14,6 +14,7 @@ import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/src/account/accountDeletion';
 import { useTr } from '../utils/addressForm';
 import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
+import { useAfterLoginPath } from '../auth/returnTo';
 import '../styles/auth-login.css';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -23,6 +24,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const tr = useTr();
+  const afterLogin = useAfterLoginPath(); // адрес, с которого увели на вход (E14)
   useLoginConsentMark();
   // В5: после провала OAuth AuthCallback уводит сюда с ?error=no_token (читаем один раз).
   const [error, setError] = useState<string | null>(() =>
@@ -37,8 +39,8 @@ export function LoginPage() {
   const deleted = useAccountDeletedNotice(); // сразу после удаления — не «вход устарел» (К2)
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/today', { replace: true });
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) navigate(afterLogin(), { replace: true });
+  }, [isAuthenticated, navigate, afterLogin]);
 
   const [miniAppLoading, setMiniAppLoading] = useState(false);
   // Сломанный вход обязан быть слышен нам, а не только виден пользователю
@@ -71,7 +73,7 @@ export function LoginPage() {
       if (!res.ok) { setError(await exchangeErrorText(res)); return; }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
       setAccessToken(accessToken, expiresIn);
-      navigate('/today', { replace: true });
+      navigate(afterLogin(), { replace: true });
     } catch (e) {
       setError(exchangeThrownText(e));
     } finally {
@@ -101,7 +103,7 @@ export function LoginPage() {
           <LoginProviderButtons
             onSession={(token, expiresIn) => {
               setAccessToken(token, expiresIn);
-              navigate('/today', { replace: true });
+              navigate(afterLogin(), { replace: true });
             }}
           />
 

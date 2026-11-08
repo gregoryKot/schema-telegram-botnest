@@ -20,7 +20,8 @@ type CallSignal = NonNullable<Parameters<Telegram['callApi']>[2]>['signal'];
 
 export async function sendBounded(
   bot: Telegraf<Context>,
-  chatId: number,
+  // number — личка (очередь, рассылка), string — @канал или -100… (пост канала).
+  chatId: number | string,
   text: string,
   extra: SendExtra,
   timeoutMs: number = SEND_TIMEOUT_MS,
