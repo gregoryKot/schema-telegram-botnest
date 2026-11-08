@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { PaperEmpty } from '../components/art/PaperEmpty';
 import { Cluster } from '../components/art/PaperArtSigns';
+import { Breath } from '../components/art/PaperArt';
 import { useLocation } from 'react-router-dom';
 import { api } from '../api';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
@@ -15,6 +16,7 @@ import { sessionMoment } from './today/model';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
 import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
+import { scrollToBlock } from './practice/scrollToBlock';
 import { PracticeHeader } from './practice/PracticeHeader';
 import { PhoneHelpRows } from './practice/PhoneHelpRows';
 import { TherapyBridgeCard } from '../components/therapy/TherapyBridgeCard';
@@ -144,10 +146,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
       <section className="cp-block">
         <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
-        {/* Тест на 116 вопросов отсюда убран (FIX_PLAN 4.10): в трудную минуту он не помогает. Вход в тест —
-            «Ещё» и раздел схем; помощь «сейчас» — верх страницы («Мне плохо», «Здесь и сейчас», «Помощь рядом»). */}
+        {/* Тест убран (FIX_PLAN 4.10); «Здесь и сейчас» — переход к быстрым практикам вверху: что сделать сразу. */}
         <div className="cp-tools">
           {[
+            { label: 'Здесь и сейчас', sub: 'Дыхание, заземление, «Стоп» — на одну-три минуты', onClick: () => scrollToBlock(HERE_BLOCK_ID), art: <Breath size="row" /> },
             { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }), art: <Cluster size="row" /> },
           ].map(item => (
             <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>

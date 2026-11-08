@@ -3,11 +3,10 @@ import { pressable } from '../../utils/a11y';
 import { Breath } from '../../components/art/PaperArt';
 import { Heart, Talk } from '../../components/art/PaperArtSigns';
 import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
+import { scrollToBlock } from './scrollToBlock';
 
 export const HERE_BLOCK_ID = 'practice-here-and-now';
 export const HELP_BLOCK_ID = 'practice-help-nearby';
-
-const scrollToBlock = (id: string) => document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
 
 /** Верхний ряд «Практики»: «Мне плохо» (флешкарта; скрыта в «Инструментах» — нет onCrisis) и переходы ниже. */
 export function PracticeTopRow({ onCrisis }: { onCrisis?: () => void }) {
