@@ -19,6 +19,7 @@ import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
 import { PUSH_EVENTS } from '../analytics/push-events.constants';
+import { SERVER_META_EVENTS } from '../analytics/server-events.constants';
 
 const PUSH_EVENT_SET: ReadonlySet<string> = new Set(PUSH_EVENTS);
 
@@ -248,11 +249,9 @@ export function sanitizeMeta(
   // через POST /api/event в отчёт /stats не попадёт.
   if (name === 'client_booking_opened' || name === 'client_booking_created')
     return undefined;
-  // «Напомню через час» пишет только бот, запуск в мессенджере — ручка обмена
-  // подписи (server-events.constants.ts): quietShift и host/platform с клиента
-  // не принимаются — подделка без них в /stats не считается.
-  if (name === 'reminder_snoozed' || name === 'messenger_launch')
-    return undefined;
+  // meta этих событий пишет только сервер (SERVER_META_EVENTS): с клиента не
+  // принимается ничего — подделка без meta в /stats не считается.
+  if (SERVER_META_EVENTS.has(name)) return undefined;
   // Уведомления в приложении (push-events.constants.ts): push_subscribed/
   // unsubscribed/gone пишет только сервер — meta с клиента не принимается,
   // /stats считает только строки с meta; push_denied клиент шлёт без полей.

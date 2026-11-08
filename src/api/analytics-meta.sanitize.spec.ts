@@ -943,3 +943,11 @@ describe('messenger_launch', () => {
     ).toBeUndefined();
   });
 });
+
+// Стёртый тест схем: attempts пишет только DELETE /api/ysq-data, с клиента
+// он не проходит — /stats считает только строки с attempts.
+describe('ysq_data_deleted', () => {
+  it('attempts с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(sanitizeMeta('ysq_data_deleted', { attempts: 3 })).toBeUndefined();
+  });
+});

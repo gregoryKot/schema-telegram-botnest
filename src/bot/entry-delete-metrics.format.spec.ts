@@ -47,6 +47,45 @@ describe('formatEntryDeleteMetrics', () => {
     }
   });
 
+  // Стёртый целиком тест схем (ysq_data_deleted, 2026-11): без строки воронка
+  // теста не отличала «не дошёл» от «дошёл и стёр».
+  it('стёртый тест: сколько раз, людей и сколько из них проходили тест', () => {
+    const text = formatEntryDeleteMetrics(FULL, {
+      deleted30: 3,
+      users30: 2,
+      completedUsers30: 2,
+    });
+    expect(text).toContain('Удалили записей: 12 · людей: 6');
+    expect(text).toContain(
+      'Стёрли результаты теста схем: 3 раза · людей: 2, из них проходили тест до конца: 2',
+    );
+    expect(text).not.toMatch(/ysq|attempts/i);
+  });
+
+  it('стёрли только тест — без «никто ничего не удалял» и без нулей', () => {
+    const text = formatEntryDeleteMetrics(EMPTY, {
+      deleted30: 1,
+      users30: 1,
+      completedUsers30: 0,
+    });
+    expect(text).not.toContain('Пока никто ничего не удалял.');
+    expect(text).toContain('Отдельные записи пока никто не удалял.');
+    expect(text).toContain('Стёрли результаты теста схем: 1 раз · людей: 1');
+    expect(text).not.toContain('проходили тест');
+  });
+
+  it('пустая БД с нулевым тестом — та же одна строка', () => {
+    const text = formatEntryDeleteMetrics(EMPTY, {
+      deleted30: 0,
+      users30: 0,
+      completedUsers30: 0,
+    });
+    expect(text.split('\n')).toEqual([
+      '🗑 <b>Удаление своих записей</b> (за месяц)',
+      'Пока никто ничего не удалял.',
+    ]);
+  });
+
   it('неизвестный тип не роняет отчёт — печатается как есть', () => {
     const text = formatEntryDeleteMetrics({
       ...FULL,

@@ -78,6 +78,8 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'data_export' },
   { name: 'home_screen_offer', meta: { via: 'banner' } },
   { name: 'entry_deleted', meta: { type: 'belief_check' } },
+  // Стёртый тест схем: приведение meta->>'attempts' к int в FILTER.
+  { name: 'ysq_data_deleted', meta: { attempts: 2 } },
 ];
 // Серверные/анонимные строки (userId IS NULL) — вход, поломки клиента, лиды.
 const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
@@ -208,6 +210,10 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(oneTap.rejected).toBeGreaterThanOrEqual(1);
     expect(product).toMatch(/Вошли одним касанием: [1-9]\d*/);
     expect(product).toMatch(/Сервер не принял вход из окна: [1-9]\d*/);
+    // Стёртый тест: count(DISTINCT) с FILTER по ("meta"->>'attempts')::int.
+    expect(product).toMatch(
+      /Стёрли результаты теста схем: [1-9]\d* раз\S* · людей: [1-9]\d*, из них проходили тест до конца: [1-9]/,
+    );
     // Платформы запуска: группировка по двум ключам meta через драйвер.
     expect(product).toMatch(/Telegram · браузер, Web A — [1-9]\d* \(\d+\)/);
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.

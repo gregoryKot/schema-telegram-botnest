@@ -240,6 +240,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
     'userId = null. Фронт присылает только поле platform в теле обмена ' +
     '(shared/src/host/launchPlatform.ts), отдельного trackEvent у него нет',
+  ysq_data_deleted:
+    'серверное событие: пишет YsqController после транзакции DELETE ' +
+    '/api/ysq-data (кнопка «Удалить результаты теста»). Сколько попыток ' +
+    'стёрто, знает только сервер; кликать на фронте второй раз нечего',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -346,6 +350,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // исход проверки токена есть только у сервера, тот же приём userId = null.
     // 47 — messenger_launch (аудит 2026-10, платформа запуска): серверное —
     // пишет ручка обмена подписи, клиент шлёт только поле platform в её теле.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(47);
+    // 48 — ysq_data_deleted (стёртый тест схем): серверное — удаление делает
+    // HTTP-запрос, число стёртых попыток видно только в транзакции.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(48);
   });
 });
