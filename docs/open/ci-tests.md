@@ -16,13 +16,6 @@
   пакет только ESM, бэкенд собран в CommonJS: jest падает на
   `src/telegram/telegram.providers.spec.ts` («Must use import to load ES Module»). Применение
   одно — `src/telegram/telegram-agent.ts`. Вернуться при переезде бэкенда на ESM.
-- **`@napi-rs/canvas` закреплён на 1.0.11** (`package.json`, `ignore` версии 1.0.12 в записи `/`).
-  В 1.0.12 `index.js` при каждой загрузке оборачивает `CanvasRenderingContext2D.prototype.fill`;
-  прототип нативный и общий, jest грузит модуль в каждом тест-файле воркера — обёртки
-  складываются, `fill()` без аргументов бросает «not of type 'Path2D'» (упал
-  `src/channel/pin-image.spec.ts` на #843). Прод грузит модуль один раз и не задет. Тест
-  «повторная загрузка модуля» в том же спеке краснеет на 1.0.12 детерминированно — следующую
-  версию бот принесёт сам, тест скажет, починена ли обёртка; тогда снять пин и `ignore`.
 - **Взятые мажоры: часть проверит только прод и первая ночь.** Взяты Nest 12 (#845),
   Stryker 10 (#842), Vitest 5 (#844), jsdom 30 (#846), `actions/github-script` 9 (#522). PR-CI
   не исполняет ночные мутации (`nightly.yml`; у Stryker 10 мутатор `CallExpression` выключен —
