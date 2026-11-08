@@ -997,6 +997,15 @@ a { color: inherit; text-decoration: none; }
 }
 /* Активный пункт — терракота, без «таблетки» и точки (референс 2026-11-04). */
 .mobile-nav-item.active { color: var(--accent); font-weight: 600; }
+/* Точка «есть новое» у «Ещё» (новые задания терапевта, U2): у иконки справа, вне потока — пункт не растёт. */
+.mobile-nav-item { position: relative; }
+.mobile-nav-dot { position: absolute; top: 2px; left: calc(50% + 8px); width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+/* Счётчик новых заданий терапевта (U2): строка «Задания» в «Ещё» и пункт «Ещё» сайдбара. */
+.new-badge {
+  display: inline-block; margin-left: 8px; min-width: 20px; padding: 0 6px; border-radius: 10px;
+  background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 600;
+  line-height: 20px; text-align: center; vertical-align: 1px;
+}
 
 /* ─── Responsive breakpoints ─────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {

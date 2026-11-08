@@ -9,6 +9,7 @@ vi.mock('../../../shared/src/host', () => ({
   getHost: () => ({ startParam: () => startParam }),
 }));
 import { useStartParam } from './useStartParam';
+import { rememberLaunchParam } from '../../../shared/src/host/startParam';
 
 function setup(param: string | null, entry: string, enabled = true) {
   startParam = param;
@@ -30,6 +31,7 @@ function setup(param: string | null, entry: string, enabled = true) {
 beforeEach(() => {
   cleanup();
   startParam = null;
+  localStorage.clear();
 });
 
 describe('useStartParam', () => {
@@ -85,5 +87,45 @@ describe('useStartParam', () => {
     const b = setup('pair_AB12', '/today?startapp=pair_AB12');
     expect(b.onAction).toHaveBeenCalledTimes(1);
     expect(b.onHandled).toHaveBeenCalledTimes(1);
+  });
+
+  // Аудит 2026-11, U2: кнопка уведомления о задании вела на «Сегодня».
+  it('tasks_<id> уводит на «Ещё» и отдаёт действие с id задания', () => {
+    const a = setup('tasks_42', '/today?startapp=tasks_42');
+    expect(a.result.current.pathname).toBe('/more');
+    expect(a.result.current.search).toBe('');
+    expect(a.onAction).toHaveBeenCalledWith({ kind: 'tasks', taskId: 42 });
+  });
+
+  it('ysq отдаёт действие теста, адрес остаётся на месте', () => {
+    const a = setup('ysq', '/today?startapp=ysq');
+    expect(a.onAction).toHaveBeenCalledWith({ kind: 'ysq' });
+    expect(a.result.current.pathname).toBe('/today');
+  });
+
+  // Кнопка web_app в Telegram/MAX открывает адрес как есть: start_param хоста пуст.
+  it('хост без start_param — параметр берётся из адреса', () => {
+    const a = setup(null, '/today?startapp=ysq');
+    expect(a.onAction).toHaveBeenCalledWith({ kind: 'ysq' });
+    expect(a.result.current.search).toBe('');
+  });
+
+  // Аудит 2026-11, U3: ссылка-приглашение на сайт без входа — /login терял адрес.
+  it('параметр, отложенный до входа (RequireAuth), срабатывает после входа один раз', () => {
+    rememberLaunchParam('?startapp=therapy_XY');
+    const a = setup(null, '/today');
+    expect(a.onAction).toHaveBeenCalledWith({ kind: 'join', joinKind: 'therapy', code: 'XY' });
+    cleanup();
+    const b = setup(null, '/today');
+    expect(b.onAction).not.toHaveBeenCalled();
+  });
+
+  it('свежая ссылка сильнее отложенной, а отложенная всё равно стирается', () => {
+    rememberLaunchParam('?startapp=therapy_OLD');
+    const a = setup('tracker', '/today');
+    expect(a.onAction).toHaveBeenCalledWith({ kind: 'tracker' });
+    cleanup();
+    const b = setup(null, '/today');
+    expect(b.onAction).not.toHaveBeenCalled();
   });
 });

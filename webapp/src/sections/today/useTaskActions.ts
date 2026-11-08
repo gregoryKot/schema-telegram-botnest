@@ -16,6 +16,9 @@ export function useTaskActions(refreshKey: number | undefined, section = 'today.
   const [tasks, setTasks] = useState<UserTask[]>([]);
   const [taskHistory, setTaskHistory] = useState<UserTask[]>([]);
   const [taskError, setTaskError] = useState(false);
+  // Первая загрузка закончилась (удачно или нет): узел заданий по ссылке
+  // (`tasks_<id>`) решает, открыть задание или показать список.
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(
     () => Promise.all([api.getTasks(), api.getTaskHistory()]).then(([t, h]) => {
@@ -26,7 +29,9 @@ export function useTaskActions(refreshKey: number | undefined, section = 'today.
   );
 
   const reload = useCallback(
-    () => load().catch(() => reportClientError({ message: 'tasks background load failed', section })),
+    () => load()
+      .catch(() => reportClientError({ message: 'tasks background load failed', section }))
+      .finally(() => setLoaded(true)),
     [load, section],
   );
   useEffect(() => { void reload(); }, [refreshKey, reload]);
@@ -53,5 +58,5 @@ export function useTaskActions(refreshKey: number | undefined, section = 'today.
     [load],
   );
 
-  return { tasks, taskHistory, taskError, completeTask, afterCreate };
+  return { tasks, taskHistory, taskError, loaded, completeTask, afterCreate };
 }

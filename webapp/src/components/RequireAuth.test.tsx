@@ -14,6 +14,7 @@ vi.mock('../api', () => ({
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { RequireAuth } from './RequireAuth';
 import { StepUpContext } from './stepUp/stepUpContext';
+import { takeLaunchParam } from '../../../shared/src/host/startParam';
 
 const auth = (over: Partial<AuthState> = {}): AuthState => ({
   accessToken: 'tok', isLoading: false, isAuthenticated: true,
@@ -41,5 +42,26 @@ describe('RequireAuth', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('окно кода есть')).toBeTruthy();
+  });
+
+  // Аудит 2026-11, U3: приглашение терапевта — ссылка на сайт. Без входа
+  // RequireAuth уводит на /login, и `?startapp=therapy_…` терялся: после входа
+  // клиент попадал на «Сегодня» без подключения.
+  it('без входа параметр запуска из адреса ждёт входа, а не теряется на /login', async () => {
+    localStorage.clear();
+    render(
+      <MemoryRouter initialEntries={['/today?startapp=therapy_ABC']}>
+        <AuthContext.Provider value={auth({ isAuthenticated: false, accessToken: null })}>
+          <Routes>
+            <Route element={<RequireAuth />}>
+              <Route path="/today" element={<div>сегодня</div>} />
+            </Route>
+            <Route path="/login" element={<div>login</div>} />
+          </Routes>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('login')).toBeTruthy();
+    expect(takeLaunchParam()).toBe('therapy_ABC');
   });
 });

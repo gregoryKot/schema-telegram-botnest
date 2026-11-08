@@ -240,6 +240,7 @@ vi.mock('../api', () => ({
     setTherapistView: vi.fn().mockResolvedValue({ ok: true }),
     resignTherapist: vi.fn().mockResolvedValue(undefined),
     history: vi.fn().mockResolvedValue([]),
+    getTasks: vi.fn().mockResolvedValue([]), // счётчик новых заданий у «Ещё» (MobileNav, Sidebar)
     trackEvent: vi.fn(),
   }, reportClientError: vi.fn(),
 }));

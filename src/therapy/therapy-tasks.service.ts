@@ -207,6 +207,7 @@ export class TherapyTasksService {
         text: taskNotificationTitle(task.type, task.text),
         needId: task.needId,
         dueDate: task.dueDate,
+        taskId: task.taskId,
       },
     );
   }

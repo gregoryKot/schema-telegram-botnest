@@ -50,8 +50,11 @@ describe('CABINET_URL', () => {
 
 describe('BOT_USERNAME', () => {
   it('ни одно экспортированное значение не ведёт на vercel или старого бота', () => {
+    // Строитель ссылки (cabinetTasksUrl) проверяется тем, что строит.
     const values = Object.values(load().constants).map((v) =>
-      JSON.stringify(v),
+      typeof v === 'function'
+        ? String((v as () => unknown)())
+        : JSON.stringify(v),
     );
     for (const v of values) {
       expect(v).not.toMatch(/vercel/i);
@@ -101,5 +104,36 @@ describe('miniappStartLink', () => {
         'Ссылки-приглашения временно недоступны',
       );
     }
+  });
+});
+
+// Аудит 2026-11, U3: приглашение терапевта ведёт на сайт, Telegram — вторая
+// строка. Без бота приглашение не должно падать 503 целиком.
+describe('optionalMiniappStartLink', () => {
+  it('с именем бота — та же t.me-ссылка', () => {
+    const { link } = load({ BOT_USERNAME: 'SchemeHappensBot' });
+    expect(link.optionalMiniappStartLink('therapy_X')).toBe(
+      'https://t.me/SchemeHappensBot/diary?startapp=therapy_X',
+    );
+  });
+
+  it('без имени бота — null, а не исключение', () => {
+    expect(load().link.optionalMiniappStartLink('therapy_X')).toBeNull();
+  });
+});
+
+// Аудит 2026-11, U2: кнопки уведомлений о задании и тесте открывали «Сегодня».
+describe('ссылки запуска кабинета', () => {
+  it('тест и задания — с параметром запуска на адресе кабинета', () => {
+    const { constants } = load();
+    expect(constants.CABINET_YSQ_URL).toBe(
+      'https://schemehappens.ru/today?startapp=ysq',
+    );
+    expect(constants.cabinetTasksUrl()).toBe(
+      'https://schemehappens.ru/today?startapp=tasks',
+    );
+    expect(constants.cabinetTasksUrl(7)).toBe(
+      'https://schemehappens.ru/today?startapp=tasks_7',
+    );
   });
 });

@@ -5,6 +5,8 @@
 // закрыть изнутри, значок ставит сам браузер. Такие места честно помечены
 // в capabilities, чтобы экран прятал кнопку, а не показывал мёртвую.
 import type { HostBridge, HostCapabilities, HostInsets } from './types';
+// Глубокая ссылка вида /today?startapp=… — веб-аналог start_param.
+import { urlStartParam } from './startParam';
 
 /** Приложение открыто с иконки, а не как вкладка сайта. */
 export function isStandalone(): boolean {
@@ -45,13 +47,6 @@ export function webPlatform(ua?: string, maxTouchPoints?: number): string {
   return 'web';
 }
 
-/** Глубокая ссылка вида /app/?startapp=… — веб-аналог start_param. */
-function urlStartParam(): string | null {
-  if (typeof window === 'undefined') return null;
-  const q = new URLSearchParams(window.location.search);
-  return q.get('startapp') ?? q.get('start_param');
-}
-
 export function createWebHost(): HostBridge {
   return {
     id: 'web',
@@ -73,7 +68,7 @@ export function createWebHost(): HostBridge {
     setVerticalSwipes: () => {},
 
     user: () => null,
-    startParam: urlStartParam,
+    startParam: () => urlStartParam(),
     // В браузере вход по JWT: заголовок первичной авторизации не нужен.
     authHeaders: () => ({}),
     // Подписи хоста нет — сессию держит refresh-кука, выданная при входе.

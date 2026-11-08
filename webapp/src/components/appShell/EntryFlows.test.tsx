@@ -17,6 +17,8 @@ vi.mock('../../api', () => ({
 }));
 vi.mock('../../utils/addressForm', () => ({ useTr: () => (ty: string) => ty, useSetAddressForm: () => vi.fn() }));
 vi.mock('../../utils/therapistContact', () => ({ cacheClientRelation: vi.fn() }));
+const requestTasksOpen = vi.hoisted(() => vi.fn());
+vi.mock('../../sections/tasks/tasksLaunch', () => ({ requestTasksOpen }));
 import { api, reportClientError } from '../../api';
 import { cacheClientRelation } from '../../utils/therapistContact';
 import { EntryFlows } from './EntryFlows';
@@ -24,7 +26,7 @@ import { EntryFlows } from './EntryFlows';
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function setup(onDone = vi.fn()) {
-  const ov = { setTrackerNeedId: vi.fn(), setShowTrackerOverlay: vi.fn() };
+  const ov = { setTrackerNeedId: vi.fn(), setShowTrackerOverlay: vi.fn(), openSchema: vi.fn() };
   render(
     <MemoryRouter initialEntries={['/today?startapp=x']}>
       <EntryFlows ov={ov as never} onDone={onDone} />
@@ -67,6 +69,19 @@ describe('EntryFlows', () => {
     startParam = 'tracker';
     const ov = setup();
     await waitFor(() => expect(ov.setShowTrackerOverlay).toHaveBeenCalledWith(true));
+  });
+
+  // Аудит 2026-11, U2: кнопки уведомлений о тесте и задании вели на «Сегодня».
+  it('ysq открывает тест на схемы', async () => {
+    startParam = 'ysq';
+    const ov = setup();
+    await waitFor(() => expect(ov.openSchema).toHaveBeenCalledWith({ startTest: true }));
+  });
+
+  it('tasks_<id> просит «Ещё» открыть это задание', async () => {
+    startParam = 'tasks_5';
+    setup();
+    await waitFor(() => expect(requestTasksOpen).toHaveBeenCalledWith(5));
   });
 
   it('ссылка ждёт согласий: пока экран согласий открыт, присоединения нет', async () => {

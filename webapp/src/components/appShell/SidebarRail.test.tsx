@@ -10,7 +10,7 @@ import { SidebarSkeleton } from './SidebarRail';
 import { DESKTOP_NAV_ITEMS } from './navItems';
 import { SIDEBAR_COLLAPSED_KEY, setSidebarCollapsed } from './sidebarCollapse';
 
-vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
+vi.mock('../../api', () => ({ api: { trackEvent: vi.fn(), getTasks: vi.fn().mockResolvedValue([]) }, reportClientError: vi.fn() }));
 vi.mock('../../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 
 // Сначала размонтировать, потом развернуть: без подписчиков смена не требует act.

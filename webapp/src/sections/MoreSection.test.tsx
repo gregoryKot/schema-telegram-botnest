@@ -6,6 +6,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MoreSection } from './MoreSection';
+import { requestTasksOpen } from './tasks/tasksLaunch';
 
 const trackHomeTile = vi.hoisted(() => vi.fn());
 const trackNudge = vi.hoisted(() => vi.fn());
@@ -14,12 +15,15 @@ vi.mock('./today/trackHomeTile', () => ({ trackHomeTile }));
 
 vi.mock('../components/HomeScreenOfferCard', () => ({ HomeScreenOfferCard: () => null }));
 vi.mock('./tasks/TasksHub', () => ({
-  TasksHub: (p: { onClose: () => void }) => <div data-testid="tasks-hub"><button onClick={p.onClose}>закрыть задания</button></div>,
+  TasksHub: (p: { onClose: () => void; openTaskId?: number }) => (
+    <div data-testid="tasks-hub" data-task={String(p.openTaskId ?? '')}><button onClick={p.onClose}>закрыть задания</button></div>
+  ),
 }));
 vi.mock('../api', () => ({
   api: {
     getSchemaDiary: vi.fn().mockResolvedValue([]), getModeDiary: vi.fn().mockResolvedValue([]), getGratitudeDiary: vi.fn().mockResolvedValue([]),
     history: vi.fn().mockResolvedValue([]), trackEvent: vi.fn(), updateSettings: vi.fn().mockResolvedValue(undefined),
+    getTasks: vi.fn().mockResolvedValue([]),
   },
   reportClientError: vi.fn(),
 }));
@@ -163,6 +167,20 @@ describe('MoreSection', () => {
     expect(trackNudge).toHaveBeenCalledWith('more', 'write', undefined);
   });
 
+  // Аудит 2026-11, U4: у клиента свой терапевт без Telegram, а строка звала
+  // «Встреча с автором приложения».
+  it('свой терапевт без канала связи: строка про своего терапевта, не про автора; открывает лист', () => {
+    localStorage.setItem('therapy_contact_url', '');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    setup();
+    const r = row('Терапевт рядом');
+    expect(r.textContent).toContain('Твой терапевт и ближайшая встреча');
+    expect(document.body.textContent).not.toContain('Встреча с автором приложения');
+    fireEvent.click(r);
+    expect(trackNudge).toHaveBeenCalledWith('more', 'open', undefined);
+    expect(screen.getByRole('heading', { level: 1, name: 'Терапевт рядом' })).toBeTruthy();
+  });
+
   it('пользователю-терапевту строки нет', () => {
     localStorage.setItem('therapy_contact_url', 'tg://user?id=1');
     localStorage.setItem('therapy_contact_name', 'вам');
@@ -199,6 +217,31 @@ describe('MoreSection — то, что переехало с главной', ()
     fireEvent.click(screen.getByText('закрыть задания'));
     await waitFor(() => expect(screen.queryByTestId('tasks-hub')).toBeNull());
     expect(row('Задания')).toBeTruthy();
+  });
+
+  // Аудит 2026-11, U2: о новом задании терапевта узнать было неоткуда.
+  it('новые задания терапевта — счётчик на строке «Задания»; свои цели и выполненные не считаются', async () => {
+    const t = { userId: 1, type: 'custom', text: 'x', targetDays: null, needId: null, dueDate: null, completedAt: null, createdAt: '2026-11-05T10:00:00.000Z' };
+    mockApi.getTasks.mockResolvedValueOnce([
+      { ...t, id: 1, assignedBy: 9, done: null },
+      { ...t, id: 2, assignedBy: 9, done: null },
+      { ...t, id: 3, assignedBy: 9, done: true },
+      { ...t, id: 4, assignedBy: null, done: null },
+    ]);
+    setup();
+    expect(await within(row('Задания')).findByLabelText('новых: 2')).toBeTruthy();
+  });
+
+  it('нет новых — счётчика нет', async () => {
+    setup();
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
+    expect(within(row('Задания')).queryByLabelText(/новых/)).toBeNull();
+  });
+
+  it('ссылка из уведомления (tasks_<id>) открывает узел заданий с этим заданием', async () => {
+    requestTasksOpen(5);
+    setup();
+    expect((await screen.findByTestId('tasks-hub')).getAttribute('data-task')).toBe('5');
   });
 
   it('внизу тихая строка «самопомощь, не замена терапии» со ссылкой «Поговорить →»; без сигнала карточки нет', async () => {

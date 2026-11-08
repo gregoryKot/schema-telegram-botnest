@@ -1,5 +1,9 @@
 import { Markup } from 'telegraf';
-import { CABINET_URL, CABINET_HELP_URL } from '../telegram/telegram.constants';
+import {
+  CABINET_HELP_URL,
+  CABINET_YSQ_URL,
+  cabinetTasksUrl,
+} from '../telegram/telegram.constants';
 import type { NotificationTemplate } from './notification.templates';
 import { NotificationType } from './notification.service';
 import { AddressForm, t } from './address-form';
@@ -84,6 +88,8 @@ export function renderActivityTemplate(
       const text = payload?.text as string | undefined;
       const needId = payload?.needId as string | undefined;
       const dueDate = payload?.dueDate as string | undefined;
+      const taskId =
+        typeof payload?.taskId === 'number' ? payload.taskId : undefined;
       if (!text) return null;
       const NEED_LABELS: Record<string, string> = {
         attachment: 'Привязанность',
@@ -99,9 +105,12 @@ export function renderActivityTemplate(
         const d = new Date(dueDate + 'T12:00:00Z'); // noon UTC — timezone-safe date parsing
         msg += `\nСрок: ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
       }
+      // Кнопка ведёт к самому заданию (U2): «Сегодня» заданий не показывает.
       return {
         text: msg,
-        keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
+        keyboard: Markup.inlineKeyboard([
+          [Markup.button.webApp('📋 Открыть задание', cabinetTasksUrl(taskId))],
+        ]),
       };
     }
 
@@ -123,7 +132,7 @@ export function renderActivityTemplate(
           `📋 ${tn ? `Терапевт ${tn}` : 'Ваш терапевт'} просит вас пройти тест на схемы.\n\nЭто займёт 10–15 минут. Результаты помогут лучше понять ваши схемы.`,
         ),
         keyboard: Markup.inlineKeyboard([
-          [Markup.button.webApp('📋 Пройти тест', CABINET_URL)],
+          [Markup.button.webApp('📋 Пройти тест', CABINET_YSQ_URL)],
         ]),
       };
     }
