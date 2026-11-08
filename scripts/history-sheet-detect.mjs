@@ -150,3 +150,41 @@ export function frameOverlays(rawSrc) {
 export function callsHistorySheet(rawSrc) {
   return /\buseHistorySheet\s*\(/.test(stripComments(rawSrc, false));
 }
+
+// Объявление верхнего уровня — с нулевым отступом (так форматирует prettier):
+// функция-компонент или const/let. Тело тянется до следующего такого объявления.
+const TOP_DECL =
+  /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\s*\*?\s*([A-Za-z_$][\w$]*)|(?:const|let)\s+([A-Za-z_$][\w$]*)\s*[:=])/;
+
+/**
+ * Компоненты файла: объявления верхнего уровня со строками и признаком вызова
+ * хука в СВОЁМ теле. Хук соседнего компонента оверлей не закрывает: лист с
+ * хуком и чек-ин без него в одном файле — два решения, а не одно.
+ */
+export function topLevelComponents(rawSrc) {
+  const lines = stripComments(rawSrc, false).split('\n');
+  const comps = [];
+  lines.forEach((l, i) => {
+    const m = TOP_DECL.exec(l);
+    if (m) comps.push({ name: m[1] ?? m[2], start: i + 1 });
+  });
+  return comps.map((c, i) => {
+    const end = i + 1 < comps.length ? comps[i + 1].start - 1 : lines.length;
+    return { ...c, end, hook: callsHistorySheet(lines.slice(c.start - 1, end).join('\n')) };
+  });
+}
+
+/**
+ * Оверлеи файла по компонентам: [{ name, hook, hits }]. Находка выше первого
+ * объявления относится к псевдокомпоненту «(модуль)» без хука.
+ */
+export function overlaysByComponent(rawSrc, hits) {
+  const comps = topLevelComponents(rawSrc);
+  const out = new Map();
+  for (const h of hits) {
+    const c = comps.filter((x) => x.start <= h.line).pop() ?? { name: '(модуль)', hook: false };
+    if (!out.has(c.name)) out.set(c.name, { name: c.name, hook: c.hook, hits: [] });
+    out.get(c.name).hits.push(h);
+  }
+  return [...out.values()];
+}

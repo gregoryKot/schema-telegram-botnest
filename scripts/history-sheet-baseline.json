@@ -21,7 +21,11 @@
   },
   "webapp/src/components/exercises/ExScreen.tsx": {
     "reason": "Рамка экрана упражнения: хук вызывает каждое упражнение-потребитель (useHistorySheet(onBack)), а сценарий caseFlow — CaseFlowScreen. Хук в рамке дал бы вторую запись истории. ExScreenSkeleton здесь же — силуэт на время загрузки чанка упражнения (Suspense в TaskExerciseHost): запись истории делает упражнение после загрузки, «Назад» силуэта зовёт onBack хоста.",
-    "since": "docs/AUDIT_2026-10_FINDINGS.md"
+    "since": "docs/AUDIT_2026-10_FINDINGS.md",
+    "components": [
+      "ExScreen",
+      "ExScreenSkeleton"
+    ]
   },
   "webapp/src/components/flashcard/FlashcardFrame.tsx": {
     "reason": "Рамка экранов «Мне плохо» (класс u-sheet-grid; заменила отдельный экран FlashcardDoneScreen из прежней записи): goBack приходит пропом из SchemaFlashcard.tsx, где хук вызван один раз на весь поток шагов.",
