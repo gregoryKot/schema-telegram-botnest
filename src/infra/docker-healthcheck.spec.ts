@@ -13,7 +13,7 @@ import { createServer, Server } from 'http';
 import { join } from 'path';
 import { HealthController } from '../api/health.controller';
 import { PrismaService } from '../prisma/prisma.service';
-import { listenOn, reservePort } from '../test-support/ephemeral-port';
+import { listenOn, REFUSED_PORT } from '../test-support/ephemeral-port';
 
 const ROOT = join(__dirname, '..', '..');
 const DOCKERFILE = readFileSync(join(ROOT, 'Dockerfile'), 'utf8');
@@ -94,7 +94,7 @@ describe('Dockerfile HEALTHCHECK', () => {
   } as unknown as PrismaService;
 
   it('приложение не поднято, front отдаёт техработы (200) → HEALTHCHECK красный', async () => {
-    const port = await startFront(await reservePort()); // апстрима нет
+    const port = await startFront(REFUSED_PORT); // апстрима нет
     const res = await fetch(`http://127.0.0.1:${port}/health`);
     expect(res.status).toBe(200); // именно поэтому `r.ok` не годился
     expect(await res.text()).not.toContain(MARKER);
@@ -126,7 +126,7 @@ describe('Dockerfile HEALTHCHECK', () => {
   }, 20000);
 
   it('никто не слушает порт → HEALTHCHECK красный', async () => {
-    expect(await runHealthcheck(await reservePort())).not.toBe(0);
+    expect(await runHealthcheck(REFUSED_PORT)).not.toBe(0);
   }, 20000);
 
   // Правило №4: один маркер в двух местах, обязанных совпадать.

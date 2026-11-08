@@ -7,7 +7,11 @@ import { spawn, ChildProcess } from 'child_process';
 import { createServer, Server } from 'net';
 import { createServer as createHttpServer } from 'http';
 import type { AddressInfo } from 'net';
-import { listenWithRetry, reservePort } from '../test-support/ephemeral-port';
+import {
+  listenWithRetry,
+  REFUSED_PORT,
+  reservePort,
+} from '../test-support/ephemeral-port';
 import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
@@ -18,6 +22,8 @@ const ENTRY = join(process.cwd(), 'deploy', 'entrypoint.mjs');
 // APP_PORT раньше был захардкожен (58124 и соседи), потом брался своей копией
 // «занять и отпустить» — номер от ядра, поздний бинд с ретраями: общий хелпер
 // src/test-support/ephemeral-port.ts (#547, TEST_IMPROVEMENT_PLAN п. 3.4).
+// Где приложение порт так и не слушает — REFUSED_PORT: отпущенный номер мог
+// занять соседний воркер, и front проксировал бы к нему вместо техработ.
 
 // Запускает entrypoint с фейковыми командами. front всегда поднимается на PORT=0
 // (эфемерный) — возвращаем промис его порта (из лога) и промис exit-кода.
@@ -125,7 +131,7 @@ describe('entrypoint (супервизор старта)', () => {
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'exit 1',
-      APP_PORT: String(await reservePort()), // апстрима нет
+      APP_PORT: String(REFUSED_PORT), // апстрима нет
     });
     alive.push(proc);
     const port = await frontPort;
@@ -148,17 +154,18 @@ describe('entrypoint (супервизор старта)', () => {
     if (existsSync(marker)) unlinkSync(marker);
     try {
       const { proc, frontPort } = launch({
-        // Порт свободен и никто на нём не слушает — connect гарантированно
-        // отказывает быстро (ECONNREFUSED). Бюджет ожидания БД — короткий
-        // (150мс), а проверку маркера ниже делаем с большим запасом сверху,
-        // чтобы гонка таймингов не давала ложно-зелёный результат.
-        DATABASE_URL: `postgresql://u:p@127.0.0.1:${await reservePort()}/db`,
+        // REFUSED_PORT никто не слушает — connect отказывает сразу
+        // (ECONNREFUSED). Номер от reservePort() здесь мигал (run
+        // 42287170557): его занимал соседний воркер, и проба БД проходила.
+        // Бюджет ожидания БД — короткий (150мс), а проверку маркера ниже
+        // делаем с большим запасом сверху.
+        DATABASE_URL: `postgresql://u:p@127.0.0.1:${REFUSED_PORT}/db`,
         DB_WAIT_TIMEOUT_MS: '150',
         DB_WAIT_INTERVAL_MS: '50',
         DB_WAIT_CONNECT_MS: '50',
         RECOVER_CMD: `node -e "require('fs').writeFileSync('${marker}','x')"`,
         MIGRATE_CMD: 'true',
-        APP_PORT: String(await reservePort()),
+        APP_PORT: String(REFUSED_PORT),
       });
       alive.push(proc);
       const port = await frontPort;
@@ -182,7 +189,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'exit 1',
-      APP_PORT: String(await reservePort()), // апстрим так и не поднимется
+      APP_PORT: String(REFUSED_PORT), // апстрим так и не поднимется
       STARTUP_MAX_FAILS: '2',
       STARTUP_BACKOFF_MS: '10',
     });
@@ -201,7 +208,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'echo APP-START >&2; exit 1',
-      APP_PORT: String(await reservePort()),
+      APP_PORT: String(REFUSED_PORT),
       STARTUP_MAX_FAILS: '2',
       STARTUP_BACKOFF_MS: '10',
       STARTUP_COOLDOWN_MS: '200',
@@ -242,7 +249,7 @@ describe('entrypoint (супервизор старта)', () => {
         RECOVER_CMD: `node -e "require('fs').writeFileSync('${marker}','x')"`,
         MIGRATE_CMD: 'true',
         APP_CMD: 'echo APP-START >&2; exec sleep 30',
-        APP_PORT: String(await reservePort()),
+        APP_PORT: String(REFUSED_PORT),
       });
       alive.push(proc);
       await frontPort;
@@ -288,7 +295,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'exit 0',
-      APP_PORT: String(await reservePort()),
+      APP_PORT: String(REFUSED_PORT),
     });
     alive.push(proc);
     expect(await exit).toBe(0);
@@ -314,7 +321,7 @@ describe('entrypoint (супервизор старта)', () => {
         RECOVER_CMD: 'true',
         MIGRATE_CMD: 'true',
         APP_CMD: appCmd,
-        APP_PORT: String(await reservePort()),
+        APP_PORT: String(REFUSED_PORT),
         STARTUP_MAX_FAILS: '3',
         STARTUP_BACKOFF_MS: '10',
       });
@@ -342,7 +349,7 @@ describe('entrypoint (супервизор старта)', () => {
         RECOVER_CMD: 'true',
         MIGRATE_CMD: 'true',
         APP_CMD: appCmd,
-        APP_PORT: String(await reservePort()),
+        APP_PORT: String(REFUSED_PORT),
         STARTUP_MAX_FAILS: '2',
         STARTUP_BACKOFF_MS: '10',
         STARTUP_CRASH_WINDOW_MS: '100',
@@ -375,7 +382,7 @@ describe('entrypoint (супервизор старта)', () => {
     it('три падения за окно → лимит и техработы, процесс жив', async () => {
       const { proc, frontPort, log } = launch({
         ...slowCrash,
-        APP_PORT: String(await reservePort()),
+        APP_PORT: String(REFUSED_PORT),
         STARTUP_MAX_FAILS: '3',
       });
       alive.push(proc);
@@ -394,7 +401,7 @@ describe('entrypoint (супервизор старта)', () => {
     it('серии подряд без прогона дольше окна → пауза растёт, а не сбрасывается', async () => {
       const { proc, frontPort, log } = launch({
         ...slowCrash,
-        APP_PORT: String(await reservePort()),
+        APP_PORT: String(REFUSED_PORT),
         STARTUP_MAX_FAILS: '2',
         STARTUP_COOLDOWN_MS: '100',
         STARTUP_COOLDOWN_MAX_MS: '10000',
@@ -424,7 +431,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'echo APP-START >&2; sleep 0.2; exit 1',
-      APP_PORT: String(await reservePort()),
+      APP_PORT: String(REFUSED_PORT),
       STARTUP_CRASH_WINDOW_MS: '1000',
       STARTUP_MAX_FAILS: '2',
       STARTUP_MAX_FAILS_HOUR: '3',
@@ -461,7 +468,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: `echo "RUN L=$${L} C=$${C} N=$${N}" >&2; exit 1`,
-      APP_PORT: String(await reservePort()),
+      APP_PORT: String(REFUSED_PORT),
       STARTUP_MAX_FAILS: '3',
       STARTUP_BACKOFF_MS: '10',
       STARTUP_COOLDOWN_MS: '50',
@@ -493,7 +500,7 @@ describe('entrypoint (супервизор старта)', () => {
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
       APP_CMD: 'echo APP-START >&2; exec sleep 30',
-      APP_PORT: String(await reservePort()),
+      APP_PORT: String(REFUSED_PORT),
       STARTUP_MAX_FAILS: '3',
       STARTUP_BACKOFF_MS: '10',
     });

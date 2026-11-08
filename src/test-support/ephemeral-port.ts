@@ -31,6 +31,16 @@ export async function reservePort(): Promise<number> {
   return port;
 }
 
+/**
+ * Порт, который никто не слушает: connect на 127.0.0.1 сразу получает отказ
+ * (ECONNREFUSED). Для «БД недоступна», «апстрима нет» — не reservePort(): его
+ * номер свободен и для соседнего воркера, тот садится на него, и проба БД
+ * проходит (мигание maintenance-startup.spec.ts, run 42287170557). Порт 1
+ * (tcpmux) вне эфемерного диапазона ядра — ни listen(0), ни исходящее
+ * соединение его не выдадут; занять его может только root и только явно.
+ */
+export const REFUSED_PORT = 1;
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**

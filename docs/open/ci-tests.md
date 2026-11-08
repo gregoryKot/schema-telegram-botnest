@@ -248,15 +248,6 @@ PR: сменить `runs-on`, прочитать логи, починить.
 составной текст (`'1 активное'` собирался `pluralRu()` в `PracticesBlock.tsx`, литерала не было и до #941) — то есть шум на
 динамических строках; а падение #965 он бы не поймал вовсе: текст задания на месте, переехал экран.
 
-**`maintenance-startup.spec.ts` «БД недоступна → RECOVER_CMD/MIGRATE_CMD не запускаются» мигнул в
-полном jest** (2026-11-06, PR #974, run 42287170557, шаг `check-coverage-ratchet` джобы `backend`):
-`src/infra/maintenance-startup.spec.ts:170` — `existsSync(marker)` = `true`, то есть RECOVER_CMD
-отработал при «недоступной» БД. Тот же код на `main` (run 42286830476) зелёный, локально 3/3.
-Гипотеза, логом не доказана: `DATABASE_URL` смотрит на порт из `reservePort()`, а порт освобождается
-до старта entrypoint — под параллельным jest на него может сесть чужой тестовый сервер, и TCP-проба
-БД проходит. Чинить: сначала посмотреть, чем entrypoint проверяет готовность БД (TCP connect или
-ответ Postgres), затем не отдавать зарезервированный порт до старта entrypoint.
-
 **e2e-спеки не дают jest выйти сразу** (найдено 2026-11-08 при переезде на otplib 13, #1031).
 `npx jest --config ./test/jest-e2e.json --runInBand test/auth-flows.e2e-spec.ts` (и
 `test/login-csrf.e2e-spec.ts`; на `main` так же) после зелёного прогона печатает «Jest did not
