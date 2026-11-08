@@ -38,8 +38,15 @@ export async function screenResultWebhook(
     logger.warn('Robokassa webhook: malformed InvId');
     return { reply: 'FAIL' };
   }
-  logger.log(`Payment webhook InvId=${invId} OutSum=${outSum}`);
-  if (!robokassa.validateWebhook(outSum, invId, sig)) {
+  logger.log(`Payment webhook InvId=${invId} OutSum=${String(outSum)}`);
+  // SignatureValue[]=x / OutSum[]=x из формы — массив, не строка: сверка
+  // подписи падала на `.toLowerCase` с 500 (аудит 2026-11, S21). Не строка —
+  // та же неверная подпись, что и чужая.
+  if (
+    typeof outSum !== 'string' ||
+    typeof sig !== 'string' ||
+    !robokassa.validateWebhook(outSum, invId, sig)
+  ) {
     // Ручка публичная: неверная подпись — это сканеры и чужие формы. warn, не
     // error: error уходил владельцу DM через AlertLogger на каждый такой POST.
     // Текст стабильный — по нему ищется серия в логах.
