@@ -6,7 +6,9 @@ import { ServicePage } from './service/ServicePage';
 import { TicketDenied } from './service/TicketDenied';
 import { TicketNotFound, ToAppLink } from './service/TicketNotFound';
 import { TicketCodeField } from './service/TicketCodeField';
-import { userCodesMatch } from '../../../shared/src/auth/userCodeEntry';
+import { normalizeUserCode, userCodesMatch } from '../../../shared/src/auth/userCodeEntry';
+import { momentTime } from '../../../shared/src/utils/momentDate';
+import { useLoginPreview } from './service/useLoginPreview';
 import { dropUrlFragment } from './authCallback/dropUrlFragment';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -46,6 +48,7 @@ export function AuthConfirmPage() {
   // in-flight замок с AuthProvider, второй ротации не будет).
   const sessionToken = async (): Promise<string | null> =>
     getAccessToken() ?? ((await refreshToken()) ? getAccessToken() : null);
+  const preview = useLoginPreview(matches ? normalizeUserCode(typed) : null, sessionToken);
 
   const call = async (path: string): Promise<boolean> => {
     const token = await sessionToken();
@@ -95,7 +98,7 @@ export function AuthConfirmPage() {
     setPhase('denied');
   };
 
-  if (phase === 'notfound') return <TicketNotFound />;
+  if (phase === 'notfound' || preview.kind === 'notfound') return <TicketNotFound />;
   if (phase === 'denied') return <TicketDenied><ToAppLink /></TicketDenied>;
 
   return (
@@ -110,6 +113,7 @@ export function AuthConfirmPage() {
           )}
         </p>
         <TicketCodeField value={typed} onChange={setTyped} matches={matches} disabled={phase === 'busy'} />
+        {preview.kind === 'ok' && <p className="as-lead">Устройство: <b>{preview.deviceLabel ?? 'не определилось'}</b>, запрошено в {momentTime(preview.createdAt)}</p>}
         <p className="as-lead">
           {tr(
             'Если кода перед тобой нет, вход начинал кто-то другой. Нажми «Это не я»: ссылку могли прислать, чтобы попасть в твой аккаунт.',
@@ -117,7 +121,7 @@ export function AuthConfirmPage() {
           )}
         </p>
         <div className="as-actions">
-          <button type="button" onClick={confirm} disabled={phase === 'busy' || !matches} className="ds-btn">
+          <button type="button" onClick={confirm} disabled={phase === 'busy' || !matches || preview.kind === 'loading'} className="ds-btn">
             {phase === 'busy'
               ? tr('Впускаю…', 'Впускаю…')
               : tr('Да, это я — впустить', 'Да, это я — впустить')}

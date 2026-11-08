@@ -4,7 +4,7 @@ import { ANALYTICS_COOKIES, TECHNICAL_COOKIES } from './privacy/cookies';
 import { Doc, Chapter, P, Ul, Table } from '../legal/LegalLayout';
 import { column, backLink, eyebrow, h1, lead, inlineLink } from '../legal/legalStyles';
 
-const EFFECTIVE_DATE = '7 ноября 2026 г.';
+const EFFECTIVE_DATE = '8 ноября 2026 г.';
 const SITE_URL       = 'schemehappens.ru';
 
 export function PrivacyPage() {

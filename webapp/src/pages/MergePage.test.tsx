@@ -4,7 +4,7 @@
 // global fetch напрямую (компонент ходит через fetch, не через '../api') —
 // образец: AccountPage.test.tsx / AuthCallback.test.tsx.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { AddressFormContext } from '../utils/addressForm';
@@ -19,10 +19,16 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
+// Сводка по токену (POST /api/auth/merge/preview) — отдельный мок, чтобы
+// fetchMock по-прежнему видел только сам merge (индексы вызовов в тестах ниже).
+let previewMock: ReturnType<typeof vi.fn>;
+const PREVIEW = { provider: 'google', otherDisplay: null, summary: {}, twoFactorLost: false };
 
 beforeEach(() => {
   fetchMock = vi.fn();
-  vi.stubGlobal('fetch', fetchMock);
+  previewMock = vi.fn(() => Promise.resolve(jsonResponse(200, PREVIEW)));
+  vi.stubGlobal('fetch', (url: string, init?: RequestInit) =>
+    String(url).includes('/api/auth/merge/preview') ? previewMock(url, init) : fetchMock(url, init));
 });
 
 afterEach(() => {
@@ -75,75 +81,102 @@ describe('MergePage — без токена', () => {
 });
 
 // S20 (аудит 2026-11): адрес собирает кто угодно, подписан только токен —
-// имя и сводка из query на экран не попадают (ручки сводки по токену нет).
-describe('MergePage — чужой текст из адреса', () => {
-  it('name и summary из query не попадают в DOM', async () => {
-    const summary = JSON.stringify({ Rating: 12, Note: 3, 'Позвоните 8-900': 1 });
+// имя и сводка приходят с сервера по токену (merge/preview), query не читается.
+describe('MergePage — сводка с сервера по токену', () => {
+  it('имя и счётчики — из ответа сервера; name и summary из адреса не попадают в DOM', async () => {
+    previewMock.mockResolvedValue(jsonResponse(200, {
+      provider: 'google', otherDisplay: 'user@gmail.com', summary: { Rating: 12, Note: 3 }, twoFactorLost: false,
+    }));
+    const fake = JSON.stringify({ Rating: 99, 'Позвоните 8-900': 1 });
     const { container } = renderAt(
-      `/merge?token=abc&summary=${encodeURIComponent(summary)}&provider=google&name=${encodeURIComponent('Служба безопасности банка')}`,
+      `/merge?token=abc&summary=${encodeURIComponent(fake)}&provider=vk&name=${encodeURIComponent('Служба безопасности банка')}`,
     );
-    await screen.findByText('Объединить аккаунты?');
+    await screen.findByText('оценки потребностей');
+    expect(screen.getByText('12')).toBeTruthy();
+    expect(screen.getByText('15 записей')).toBeTruthy();
+    expect(screen.getByText('Google').tagName).toBe('B');
     const text = container.textContent ?? '';
-    expect(text).not.toContain('Служба безопасности');
-    expect(text).not.toContain('8-900');
-    expect(text).not.toContain('12');
-    expect(text).not.toContain('оценки потребностей');
-    expect(text).not.toContain('записей');
-    expect(text).toContain('Найден ещё один аккаунт');
+    expect(text).toContain('(user@gmail.com) уже существует');
+    expect(text).not.toMatch(/Служба безопасности|8-900|99|ВКонтакте/);
   });
-});
 
-describe('MergePage — имя провайдера', () => {
-  // Бэкенд кладёт в адрес id провайдера в нижнем регистре
-  // (src/auth/auth-flow.service.ts, finishOAuthRedirect) — тест на настоящих
-  // значениях, а не на выдуманном «Google» (правило №23).
+  it('запрос сводки: POST с токеном, Bearer и CSRF-заголовком', async () => {
+    renderAt('/merge?token=abc');
+    await waitFor(() => expect(previewMock).toHaveBeenCalled());
+    const [url, init] = previewMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/api/auth/merge/preview');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ token: 'abc' });
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer tok123');
+    expect((init.headers as Record<string, string>)['x-requested-with']).toBe('webapp');
+  });
+
+  it('пока сводка грузится — силуэт, а не «нет данных» и не нули', async () => {
+    previewMock.mockReturnValue(new Promise(() => {}));
+    const { container } = renderAt('/merge?token=abc');
+    await screen.findByText('Объединить аккаунты?');
+    expect(container.querySelectorAll('.skel').length).toBeGreaterThan(0);
+    expect(container.textContent).not.toMatch(/Нет данных|записей|0/);
+  });
+
+  it('пустой переносимый аккаунт — явное «нет данных», не 0/NaN', async () => {
+    renderAt('/merge?token=abc');
+    await screen.findByText('Нет данных – объединение пройдёт без переноса.');
+  });
+
+  it('чужой токен (403) — нейтральный текст без имён и цифр', async () => {
+    previewMock.mockResolvedValue(jsonResponse(403, { message: 'Forbidden' }));
+    const { container } = renderAt('/merge?token=abc&name=Ann&provider=google');
+    await screen.findByText(/Найден ещё один аккаунт\. Если объединить/);
+    expect(container.textContent).not.toMatch(/Ann|Google|записей|Нет данных/);
+  });
+
   it.each([
-    ['google', 'Google'],
     ['vk', 'ВКонтакте'],
     ['telegram', 'Telegram'],
     ['max', 'MAX'],
-  ])('provider=%s → «%s» из словаря, без технического id', async (id, name) => {
-    renderAt(`/merge?token=abc&provider=${id}&name=Ann`);
-    await screen.findByText('Объединить аккаунты?');
-    const bold = screen.getByText(name);
+  ])('провайдер сервера %s → «%s» из словаря, без технического id', async (id, name) => {
+    previewMock.mockResolvedValue(jsonResponse(200, { ...PREVIEW, provider: id }));
+    renderAt('/merge?token=abc');
+    const bold = await screen.findByText(name);
     expect(bold.tagName).toBe('B');
-    expect(bold.parentElement?.textContent).toContain(`Найден ещё один аккаунт – со входом через ${name}.`);
-    expect(bold.parentElement?.textContent).not.toContain('Ann');
-    if (id !== name) expect(screen.queryByText(id)).toBeNull();
+    expect(screen.queryByText(id)).toBeNull();
   });
 
-  it('неизвестный id не выводится — просто «Найден ещё один аккаунт»', async () => {
-    renderAt('/merge?token=abc&provider=some-new-idp');
-    await screen.findByText('Объединить аккаунты?');
+  it('неизвестный провайдер не выводится — «Другой аккаунт»', async () => {
+    previewMock.mockResolvedValue(jsonResponse(200, { ...PREVIEW, provider: 'some-new-idp' }));
+    renderAt('/merge?token=abc');
+    await screen.findByText(/Другой аккаунт уже существует/);
     expect(screen.queryByText(/some-new-idp/)).toBeNull();
-    expect(screen.getByText(/Найден ещё один аккаунт\. Если объединить/)).toBeTruthy();
   });
 
   it('форма «вы» — «ваш текущий аккаунт»', async () => {
     const { container } = renderAt('/merge?token=abc', authValue(), 'vy');
-    await screen.findByText('Объединить аккаунты?');
+    await screen.findByText('Нет данных – объединение пройдёт без переноса.');
     expect(container.textContent).toContain('переедет в ваш текущий аккаунт');
     expect(container.textContent).not.toContain('твой');
   });
 });
 
 describe('MergePage — потеря двухфакторной защиты', () => {
-  it('с ?twofa=1 показывает предупреждение о том, что 2FA не переедет', async () => {
-    renderAt('/merge?token=abc&twofa=1');
-    await screen.findByText('Объединить аккаунты?');
+  const NOTE = /Двухфакторная защита второго аккаунта не переедет/;
 
-    expect(
-      screen.getByText(/Двухфакторная защита второго аккаунта не переедет/),
-    ).toBeTruthy();
+  it('сервер говорит twoFactorLost — предупреждение есть', async () => {
+    previewMock.mockResolvedValue(jsonResponse(200, { ...PREVIEW, twoFactorLost: true }));
+    renderAt('/merge?token=abc');
+    await screen.findByText(NOTE);
   });
 
-  it('без ?twofa в URL предупреждение не рендерится', async () => {
-    renderAt('/merge?token=abc');
-    await screen.findByText('Объединить аккаунты?');
+  it('сервер говорит «не теряется» — ?twofa=1 из адреса не перебивает', async () => {
+    renderAt('/merge?token=abc&twofa=1');
+    await screen.findByText('Нет данных – объединение пройдёт без переноса.');
+    expect(screen.queryByText(NOTE)).toBeNull();
+  });
 
-    expect(
-      screen.queryByText(/Двухфакторная защита второго аккаунта не переедет/),
-    ).toBeNull();
+  it('сводка не загрузилась — флаг из адреса остаётся запасным', async () => {
+    previewMock.mockResolvedValue(jsonResponse(500, {}));
+    renderAt('/merge?token=abc&twofa=1');
+    await screen.findByText(NOTE);
   });
 });
 

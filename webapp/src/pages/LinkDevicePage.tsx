@@ -12,6 +12,7 @@ import { providerName } from './account/providerNames';
 import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
+import { StepUpProvider } from '../components/stepUp/StepUpProvider';
 
 // Подтверждение привязки из мессенджера: сюда человек попадает по ссылке из
 // мини-аппа (device authorization grant, RFC 8628).
@@ -37,10 +38,10 @@ export function LinkDevicePage() {
   if (!code) return <Navigate to="/account" replace />;
 
   // Маршрут вне RequireAuth (свой возврат-после-логина выше) — форма не
-  // приезжает сверху из App.tsx, ставим её здесь.
+  // приезжает сверху из App.tsx, ставим её здесь; окно кода 2FA (S12) — тоже.
   return (
     <AddressFormProvider>
-      <LinkDeviceContent code={code} />
+      <StepUpProvider><LinkDeviceContent code={code} /></StepUpProvider>
     </AddressFormProvider>
   );
 }
@@ -74,11 +75,7 @@ function LinkDeviceContent({ code }: { code: string }) {
         <div className="ds-eyebrow">Аккаунт</div>
         <h1 className="ds-h2">{done ? 'Готово' : 'Привязать приложение'}</h1>
 
-        {done && (
-          <p className="as-lead">
-            {tr('Вернись в приложение', 'Вернитесь в приложение')} — оно уже работает с этим аккаунтом.
-          </p>
-        )}
+        {done && <p className="as-lead">{tr('Вернись в приложение', 'Вернитесь в приложение')} — оно уже работает с этим аккаунтом.</p>}
 
         {!done && error && <div className="ds-card as-err">{error}</div>}
 

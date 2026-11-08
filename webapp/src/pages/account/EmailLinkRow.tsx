@@ -2,10 +2,11 @@
 // ключ), форма адреса и экран «письмо отправлено». После отправки не обещаем
 // «письмо отправлено»: ответ одинаков для свободного и занятого адреса (B-16).
 import { useEffect, useRef, useState } from 'react';
-import { API_BASE } from '../../utils/apiBase';
 import { useTr } from '../../utils/addressForm';
 import { EmailIcon, ProviderRow } from './ProviderRows';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
+import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
+import { sessionPost } from '../../components/stepUp/sessionRequest';
 
 export function EmailLinkRow({
   accessToken,
@@ -32,6 +33,7 @@ export function EmailLinkRow({
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const stepUp = useStepUpFetch(); // у аккаунта с 2FA новый способ входа — только с кодом (S12)
 
   useEffect(() => {
     if (showForm && !linked && !sent) inputRef.current?.focus();
@@ -42,16 +44,8 @@ export function EmailLinkRow({
     setSending(true);
     onError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/email/link-to-account`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-requested-with': 'webapp',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ email: value }),
-      });
+      const res = await stepUp(sessionPost('/api/auth/email/link-to-account', accessToken, { email: value }));
+      if (!res) return; // окно кода закрыто — письмо не отправлено, форма на месте
       if (!res.ok) throw new Error((await readHumanError(res, 'Не удалось отправить письмо')).message);
       setSent(true);
     } catch (e) {

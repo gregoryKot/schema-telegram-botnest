@@ -5,7 +5,9 @@
 // сервера виден человеку текстом, а не тишиной.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { StepUpProvider } from '../../components/stepUp/StepUpProvider';
 import { EmailLinkRow } from './EmailLinkRow';
 import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 
@@ -163,5 +165,50 @@ describe('EmailLinkRow — отправка письма', () => {
 
     await screen.findByText(/Перейдите по ссылке в письме/);
     expect(screen.queryByText(/Перейди по ссылке в письме/)).toBeNull();
+  });
+});
+
+// S12 (аудит 2026-11): у аккаунта с 2FA новый способ входа — только с кодом.
+// Сервер отвечает 403 totp_required → общее окно кода → тот же запрос с
+// `x-totp-code`; окно закрыли — письмо не уходит, форма остаётся.
+describe('EmailLinkRow — включённая 2FA', () => {
+  const need = () => new Response(JSON.stringify({ reason: 'totp_required' }), { status: 403 });
+  const totp = (init?: RequestInit) => (init?.headers as Record<string, string>)['x-totp-code'];
+
+  function renderWithStepUp() {
+    render(
+      <MemoryRouter>
+        <StepUpProvider><Harness /></StepUpProvider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'me@example.com' } });
+    fireEvent.click(screen.getByText('Отправить'));
+  }
+  async function codeDialog() {
+    await screen.findByText('Подтверди, что это ты');
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+  }
+
+  it('403 totp_required → код → письмо уходит повтором с кодом', async () => {
+    fetchMock.mockImplementation((_u: string, init?: RequestInit) =>
+      Promise.resolve(totp(init) === '123456' ? jsonResponse(200, {}) : need()));
+    renderWithStepUp();
+    await codeDialog();
+    fireEvent.change(screen.getByLabelText('Код из приложения'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await screen.findByText(/письмо придёт в течение минуты/);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('окно закрыто — письма нет, форма на месте, ошибки нет', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(need()));
+    renderWithStepUp();
+    await codeDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+    await waitFor(() => expect(screen.queryByText('Подтверди, что это ты')).toBeNull());
+    expect(screen.getByPlaceholderText('your@email.com')).toBeTruthy();
+    expect(screen.queryByText(/письмо придёт/)).toBeNull();
+    expect(screen.queryByText(/Нужен код|Не удалось/)).toBeNull();
   });
 });
