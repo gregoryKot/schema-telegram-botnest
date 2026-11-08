@@ -457,8 +457,11 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   Единица учёта — **метод** (разбор через AST, `src/test-support/route-method-auth.ts`):
   в guarded-контроллере каждый роут-метод либо под гвардом (на классе или на
   методе), либо назван в `ANONYMOUS_BY_DESIGN` (`src/security/anonymous-routes.ts`,
-  14 записей с причиной, список только сокращается; протухшая запись роняет
-  тест). Для admin-key — `assertAdminKey(` в теле каждого метода.
+  не больше 14 записей с причиной, список только сокращается; протухшая запись
+  роняет тест). `OptionalJwtGuard` защитой не считается — аноним его проходит:
+  метод под ним назван в `OPTIONAL_AUTH_BY_DESIGN`
+  (`src/security/optional-auth-routes.ts`, 6 роутов входа с причиной).
+  Для admin-key — `assertAdminKey(` в теле каждого метода.
 - **Инъекции/RCE/pollution** (`src/security/injection.invariants.spec.ts`):
   бан eval/Function/child_process; `*RawUnsafe` только с литералом;
   `Prisma.raw` всегда через whitelist `ident()`; `__proto__` не загрязняет

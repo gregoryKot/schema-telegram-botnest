@@ -48,6 +48,7 @@
 - Входы:
   - `src/security/controller-classification.ts` — контроллеры: guarded / admin-key / PUBLIC_BY_DESIGN
   - `src/security/anonymous-routes.ts` — анонимные методы внутри guarded-контроллеров
+  - `src/security/optional-auth-routes.ts` — методы под `OptionalJwtGuard` (аноним проходит; защитой трипваер его не считает)
   - `src/test-support/free-text-inputs.ts` — признак однострочного поля свободного текста для трипваера `crisis-path.invariants.spec.ts` (правило №7)
   - `src/security/helmet-config.ts` — CSP и заголовки helmet (подключает main.ts)
   - `src/security/embedders.ts` — площадки-iframe: CSP frame-ancestors и SameSite=None

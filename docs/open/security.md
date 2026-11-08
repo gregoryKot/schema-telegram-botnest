@@ -18,21 +18,6 @@
 - **Владельцу, в env прода** (Amvera): если
   `ALLOWED_ORIGINS` задан явно и содержит
   `kotlarewski.*` — убрать; проверка env теперь предупреждает об этом (F-2).
-- **Шесть роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
-  хотя аноним проходит** (`telegram/widget`, `telegram/redirect`, `merge`,
-  `ticket/start`, `google`, `vk` в `src/auth/*.controller.ts`; `telegram-oidc` удалён в #725):
-  гвард в `route-method-auth.ts` засчитывается по имени, классификации
-  «optional-auth» нет. Не расширяли при починке разбора по методу (правило №20).
-  Что каждый делает на самом деле: `google`, `vk` — стартовые
-  GET, ничего не проверяют: подписывают state (с `linkUserId`, если сессия
-  есть), кладут его в куку и отвечают 302 на провайдера; state сверяют колбэки
-  (они в `ANONYMOUS_BY_DESIGN`). `telegram/redirect` — то же: кука
-  `tg_link_user` с подписанным `linkUserId` (если сессия есть; без сессии —
-  стирает брошенную, аудит 2026-11) и 302 на oauth.telegram.org.
-  `telegram/widget`: CSRF-заголовок и HMAC-подпись Telegram-payload. `merge`:
-  CSRF-заголовок, подписанный merge-токен, вызывающий обязан быть целевым
-  аккаунтом (`assertMergeCaller`), TOTP поглощаемого. `ticket/start`: только
-  троттлинг и 401 для `intent: 'link'` без сессии; выдаёт device-код.
 - **`src/auth/telegram-init-data.ts` вне мутационной зоны `golden-auth`, пол
   `auth.service.ts` не пересчитан.** Верификатор подписи ушёл из `auth.service.ts`
   (пол 94.29 в `scripts/mutation-golden-auth-baseline.json`) в новый файл; прогон
