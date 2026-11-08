@@ -96,11 +96,13 @@ COPY --from=build --chown=node:node /app/assets ./assets
 COPY --from=build --chown=node:node /app/BUILD_INFO ./
 # Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
 # контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
+# Там же deploy/s3-sign.cjs — подпись S3: её берут и dist/infra/s3-sigv4.js
+# (require ../../deploy/), и scripts/s3-api.sh.
 COPY --from=build --chown=node:node /app/deploy ./deploy
 # Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-upload.sh,
 # restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).
 # backup-fetch-latest.sh скачивает свежий бэкап из R2 (docs/RUNBOOKS.md, «Cloudflare R2 — бэкапы базы»);
-# s3-api.sh — общий вход в хранилище (подпись SigV4 curl-ом), его подключают оба.
+# s3-api.sh — общий вход в хранилище (подпись SigV4 — deploy/s3-sign.cjs, запрос — curl), его подключают оба.
 COPY --from=build --chown=node:node /app/scripts/backup-upload.sh /app/scripts/restore-backup.sh /app/scripts/backup-fetch-latest.sh /app/scripts/s3-api.sh ./scripts/
 
 # Непривилегированный пользователь (в node-образе уже есть `node`)

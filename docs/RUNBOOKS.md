@@ -736,7 +736,8 @@ Server-to-Server OAuth, страница App Credentials. Временная з�
 Бэкапы лежат в Cloudflare R2 — хранилище с S3-совместимым API. Скрипты
 (`scripts/backup-upload.sh`, `scripts/backup-fetch-latest.sh`, общий вход —
 `scripts/s3-api.sh`) ходят туда `curl`-ом с подписью AWS SigV4, проба
-самопроверки — тем же протоколом из Node (`src/infra/s3-sigv4.ts`). Другое
+самопроверки — из Node; подпись у обоих одна — `deploy/s3-sign.cjs` (curl
+получает готовые заголовки, его собственный `--aws-sigv4` не используется). Другое
 S3-хранилище подойдёт без правки кода: сменить `BACKUP_S3_ENDPOINT` и, если
 нужно, `BACKUP_S3_REGION`.
 
@@ -808,7 +809,7 @@ BACKUP_ENCRYPTION_KEY=<ключ бэкапов> bash scripts/restore-backup.sh \
 Чего проверено не было: восстановление из **настоящего** бакета. Ночная джоба
 гоняет свой бэкап со своим ключом и до R2 не доходит; цепочка
 «загрузка → скачивание → заливка» проверена только на поддельном S3, который
-сверяет подпись `curl` (`test/restore-backup.e2e-spec.ts`).
+сверяет подпись запросов `curl` (`test/restore-backup.e2e-spec.ts`).
 
 **Ротация и доступ.** API-токен — в Cloudflare → R2 → Manage R2 API tokens
 (выдаётся на один бакет): создать новый, заменить `BACKUP_S3_ACCESS_KEY_ID` и

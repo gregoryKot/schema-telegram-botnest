@@ -35,15 +35,14 @@
   в `HttpException` (`ExpressAdapter.mapException`), фильтр поправлен в #1027
   (`src/prisma/client-http-error.ts`). Логи прода после деплоя никто не смотрел.
 
-**CI на Ubuntu 26 не переведён** (#789, 2026-10-20). На `ubuntu-latest` (с 2026-10-19 —
-Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverage-ratchet.mjs` и шаг
-`migrations` с `pg_dump` (спек переноса БД, с тех пор удалён), на `ubuntu-24.04` эти шаги
-зелёные. Причину по логам не разобрали: из песочницы агента логи Actions не скачиваются
-(хвост вывода храповика в pipe терялся — исправлено, следующий красный прогон покажет FAIL jest).
-Версия для `pg_dump` — 17+ пишет `SET transaction_timeout`, которого нет в Postgres 16
-сервиса джобы (тот же клиент берёт `test/restore-backup.e2e-spec.ts`). Переход — отдельный
-PR: сменить `runs-on`, прочитать логи, починить.
-Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
+**CI на `ubuntu-26.04` ждёт зелёного PR-CI #1046** (коммит «ci: все джобы на ubuntu-26.04»).
+Красный `backend` там (jest внутри `check-coverage-ratchet.mjs`) — два спека бэкапа: curl 8.18 образа
+с `--aws-sigv4` подписывал `%2B` курсора листинга как `%20`, поддельный S3 отвечал 403. Воспроизведено
+бинарём curl 8.18 из архива Ubuntu (8.14 так же; 7.88 и 8.5 подписывают верно); починено — подпись
+считает `deploy/s3-sign.cjs`, curl только шлёт, версия curl печатается шагом джобы `backend`. Октябрьский
+красный `backend` на `ubuntu-latest`, вероятно, тот же (логи не разбирали). `pg_dump` в `migrations` —
+клиент 16 из PGDG первым в PATH (образ несёт PostgreSQL 18), пин — `src/test-support/gates/runner-pin.spec.ts`.
+#1046 зелёный — убери строку.
 
 **Тесты и даты — открыто:**
 - **vitest `webapp` под нагрузкой машины: остался класс «10 с на весь тест».** Класс «`findBy*`/`waitFor`

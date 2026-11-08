@@ -57,3 +57,83 @@ describe('настоящие воркфлоу', () => {
     expect(floatingRunners(readFileSync(join(DIR, f), 'utf8'))).toEqual([]);
   });
 });
+
+// Переход на Ubuntu 26 (#789) — одной правкой во всех воркфлоу: джоба,
+// забытая на старом образе, держала бы вторую среду CI. Следующий переход —
+// правка этой константы в том же PR, что и `runs-on`.
+const UBUNTU = 'ubuntu-26.04';
+
+/** `runs-on` всех джоб воркфлоу: [джоба, метка]. */
+const runners = (text: string) =>
+  Object.entries(jobBlocks(text)).map(
+    ([id, block]) =>
+      [id, /^ {4}runs-on:[ \t]*(\S+)/m.exec(block)?.[1] ?? ''] as const,
+  );
+
+describe(`ubuntu-джобы — на ${UBUNTU}`, () => {
+  it.each(files)('%s', (f) => {
+    const stale = runners(readFileSync(join(DIR, f), 'utf8')).filter(
+      ([, label]) => label.startsWith('ubuntu-') && label !== UBUNTU,
+    );
+    expect(stale).toEqual([]);
+  });
+});
+
+// Образ ubuntu-26.04 несёт PostgreSQL 18 и удаляет репозиторий PGDG после
+// сборки, а сервис джоб — Postgres 16: pg_dump 17+ пишет `SET
+// transaction_timeout`, которого в 16 нет. `command -v psql || apt-get install
+// postgresql-client-16` на таком образе молча оставлял бы клиент 18, а пакет
+// клиента 16 без PGDG не находится. Поэтому: PGDG, затем bin 16 первым в PATH
+// (обёртка pg_wrapper иначе выберет 18-й).
+export function pgClientProblems(text: string): string[] {
+  const bad: string[] = [];
+  for (const [id, block] of Object.entries(jobBlocks(text))) {
+    if (!/postgresql-client-16/.test(block)) continue;
+    if (!/apt\.postgresql\.org/.test(block))
+      bad.push(`${id}: клиент 16 не из PGDG`);
+    if (!/echo \/usr\/lib\/postgresql\/16\/bin >> "\$GITHUB_PATH"/.test(block))
+      bad.push(`${id}: bin клиента 16 не первым в PATH`);
+    if (/command -v (?:psql|pg_dump)[^\n]*postgresql-client-16/.test(block))
+      bad.push(
+        `${id}: установка клиента 16 за «command -v» — на образе с 18 не сработает`,
+      );
+  }
+  return bad;
+}
+
+describe('клиент Postgres 16 на раннере', () => {
+  const job = (steps: string) =>
+    `name: X\n\non:\n  push:\n\njobs:\n  db:\n    runs-on: ${UBUNTU}\n    timeout-minutes: 5\n    steps:\n${steps}`;
+  const GOOD = [
+    '      - run: |',
+    '          echo "deb [signed-by=k] https://apt.postgresql.org/pub/repos/apt x-pgdg main" | sudo tee l',
+    '          sudo apt-get install -y postgresql-client-16',
+    '          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"',
+    '',
+  ].join('\n');
+
+  it('PGDG + bin 16 в GITHUB_PATH — без замечаний', () => {
+    expect(pgClientProblems(job(GOOD))).toEqual([]);
+  });
+
+  it('старая форма «command -v psql || apt-get install» — красная по всем трём пунктам', () => {
+    const old = job(
+      '      - run: command -v psql >/dev/null || sudo apt-get install -y postgresql-client-16\n',
+    );
+    expect(pgClientProblems(old)).toEqual([
+      'db: клиент 16 не из PGDG',
+      'db: bin клиента 16 не первым в PATH',
+      'db: установка клиента 16 за «command -v» — на образе с 18 не сработает',
+    ]);
+  });
+
+  it('контроль: джоба без клиента 16 гейту не интересна', () => {
+    expect(
+      pgClientProblems(job('      - run: npx prisma migrate deploy\n')),
+    ).toEqual([]);
+  });
+
+  it.each(files)('%s: клиент 16 ставится как надо', (f) => {
+    expect(pgClientProblems(readFileSync(join(DIR, f), 'utf8'))).toEqual([]);
+  });
+});
