@@ -262,7 +262,7 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   на все ответы Nest, включая статику webapp через `ServeStaticModule`). `helmet`
   с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
   `script-src` — allowlist (`mc.yandex.ru`, `st.max.ru`, `accounts.google.com`;
-  у каждого источника `script-src`/`connect-src` обязан быть потребитель —
+  у каждого источника `script-src`/`connect-src`/`img-src` обязан быть потребитель —
   `src/security/csp-allowlist.invariants.spec.ts`);
   `connect-src`/`img-src`/`frame-src` — по месту; `object-src 'none'`;
   `frame-ancestors 'self' https://max.ru https://*.max.ru https://web.telegram.org https://webk.telegram.org https://weba.telegram.org`

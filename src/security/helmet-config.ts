@@ -30,13 +30,7 @@ export function helmetOptions(): HelmetOptions {
           // One Tap ходит на accounts.google.com за конфигом/статусом сессии.
           'https://accounts.google.com',
         ],
-        imgSrc: [
-          "'self'",
-          'data:',
-          'https://mc.yandex.ru',
-          'https://t.me',
-          'https://cdn.jsdelivr.net',
-        ],
+        imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru', 'https://t.me'],
         // oauth.telegram.org — iframe кнопки Telegram Login Widget;
         // accounts.google.com — iframe всплывашки Google One Tap.
         frameSrc: ['https://oauth.telegram.org', 'https://accounts.google.com'],
