@@ -18,8 +18,12 @@ import {
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { loadRecordedFixture } from '../test-support/recorded-fixture';
-import { FAKE_S3_SECRET, FakeS3 } from '../test-support/fake-s3';
-import { installCurlSpy, runScript } from '../test-support/run-script';
+import {
+  FAKE_S3_ACCESS_KEY_ID,
+  FAKE_S3_SECRET,
+  FakeS3,
+} from '../test-support/fake-s3';
+import { installSpy, runScript } from '../test-support/run-script';
 
 jest.setTimeout(60_000);
 
@@ -40,7 +44,7 @@ describe('backup-fetch-latest.sh → S3 (поддельный сервер)', ()
     const bin = join(dir, 'bin');
     mkdirSync(bin);
     curlLog = join(dir, 'curl.log');
-    installCurlSpy(bin, curlLog);
+    installSpy(bin, curlLog, 'curl');
     s3 = await new FakeS3().start();
   });
   afterEach(async () => {
@@ -210,12 +214,18 @@ describe('backup-fetch-latest.sh → S3 (поддельный сервер)', ()
     });
   });
 
-  it('секрет хранилища не попадает в командную строку curl и в вывод', async () => {
+  it('секрет хранилища не попадает в командную строку curl и node и в вывод', async () => {
+    const nodeLog = join(dir, 'node.log');
+    installSpy(join(dir, 'bin'), nodeLog, 'node');
     backup('2026-10-09');
     const res = await run();
     const log = readFileSync(curlLog, 'utf8');
-    expect(log).toContain('list-type=2'); // обёртка действительно видела вызовы
-    expect(log).not.toContain(FAKE_S3_SECRET);
+    const nodeArgs = readFileSync(nodeLog, 'utf8');
+    expect(log).toContain('list-type=2'); // обёртки действительно видели вызовы
+    expect(nodeArgs).toContain('s3-sign.cjs GET');
+    expect(log).not.toContain('--aws-sigv4');
+    expect(log + nodeArgs).not.toContain(FAKE_S3_SECRET);
+    expect(log + nodeArgs).not.toContain(FAKE_S3_ACCESS_KEY_ID);
     expect(res.stdout + res.stderr).not.toContain(FAKE_S3_SECRET);
   });
 

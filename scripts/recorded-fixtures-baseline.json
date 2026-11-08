@@ -152,7 +152,8 @@
   "src/infra/s3-sigv4.ts": {
     "status": "recorded",
     "fixtures": [
-      "aws-sigv4-test-suite.json"
+      "aws-sigv4-test-suite.json",
+      "s3-sigv4-reference.json"
     ],
     "spec": "src/infra/s3-sigv4.spec.ts"
   },

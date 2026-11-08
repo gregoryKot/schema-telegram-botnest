@@ -27,7 +27,7 @@ on:
 
 jobs:
   prod-smoke:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     env:
       # ВАЖНО: несущая проверка здесь — grep по маркеру, а НЕ `--fail`.
@@ -136,7 +136,7 @@ jobs:
   alarm:
     needs: [prod-smoke]
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       issues: write

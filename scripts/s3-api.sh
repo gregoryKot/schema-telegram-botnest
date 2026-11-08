@@ -5,10 +5,15 @@
 # scripts/backup-fetch-latest.sh (скачивание при аварии), чтобы вход в
 # хранилище жил в одном месте.
 #
-# Подпись — AWS Signature V4, встроенная в curl (`--aws-sigv4`, curl ≥ 7.75; в
-# образе node:22-slim/bookworm — 7.88). Проба самопроверки подписывает тем же
-# алгоритмом в Node (src/infra/s3-sigv4.ts); что подписи совпадают, проверяет
-# поддельный S3 спеков (src/test-support/fake-s3.ts), пересчитывая подпись curl.
+# Подпись — AWS Signature V4, считает её Node: deploy/s3-sign.cjs, та же
+# реализация, что у пробы самопроверки (src/infra/s3-sigv4.ts — её
+# типизированный вход). curl получает готовые заголовки и шлёт адрес как есть.
+# Встроенный `curl --aws-sigv4` не годится: curl сам каноникализирует строку
+# запроса, и curl 8.18 (Ubuntu 26.04) подписывал `%2B` в курсоре листинга как
+# `%20` — R2 отвечал 403 SignatureDoesNotMatch на второй странице списка.
+# Что подпись сходится с тем, что реально ушло по сети, проверяет поддельный
+# S3 спеков (src/test-support/fake-s3.ts): он пересчитывает её по запросу,
+# который пришёл от curl.
 #
 # Что нужно от вызывающего:
 #   переменные BACKUP_S3_ENDPOINT (https://<id аккаунта>.r2.cloudflarestorage.com),
@@ -16,11 +21,10 @@
 #   необязательная BACKUP_S3_REGION (по умолчанию auto — так требует R2).
 # Адреса path-style: <endpoint>/<бакет>/<ключ>.
 #
-# Ключ доступа и секрет уходят curl-у через stdin (-K -), а не аргументами: в
-# командной строке процесса и в логах их нет. Заголовок x-amz-content-sha256
-# ставится явно (SHA-256 тела): S3 требует его у каждого запроса, а старые curl
-# сами его не добавляют. Параметры списка идут уже в каноническом порядке и
-# строгом кодировании — подпись не зависит от того, как их нормализует curl.
+# Ключ доступа и секрет уходят подписи через stdin, а заголовки с подписью —
+# curl-у через stdin (-K -), а не аргументами: в командной строке процессов и
+# в логах их нет. Параметры списка кодируются строго (`+` → `%2B`): именно эту
+# строку видят и подпись, и хранилище.
 # shellcheck disable=SC2034  # EMPTY_SHA256 читают вызывающие скрипты
 
 S3_REGION="${BACKUP_S3_REGION:-auto}"
@@ -29,19 +33,18 @@ S3_MAX_PAGES="${S3_MAX_PAGES:-100}"
 CURL_OPTS=(-sS --fail-with-body --max-time 120)
 EMPTY_SHA256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 
-# Значение для конфига curl (-K): в кавычках, \ и " экранированы.
-curl_quote() {
-  local v=${1//\\/\\\\}
-  printf '"%s"' "${v//\"/\\\"}"
-}
+S3_SIGN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../deploy/s3-sign.cjs"
 
 # s3_curl <метод> <хвост адреса после бакета: /ключ или ?параметры> <sha256 тела> [аргументы curl…]
+# Сбой подписи → код 1: причина от s3-sign.cjs — в stderr, короткая метка — в
+# stdout (его вызывающие печатают вместо тела ответа S3).
 s3_curl() {
-  local method=$1 tail=$2 sha=$3
+  local method=$1 url="$S3_BASE$2" sha=$3 signed
   shift 3
-  printf 'user = %s\n' "$(curl_quote "$BACKUP_S3_ACCESS_KEY_ID:$BACKUP_S3_SECRET_ACCESS_KEY")" |
-    curl "${CURL_OPTS[@]}" -K - --aws-sigv4 "aws:amz:$S3_REGION:s3" -X "$method" \
-      -H "x-amz-content-sha256: $sha" "$@" "$S3_BASE$tail"
+  signed=$(printf '%s\n%s\n' "$BACKUP_S3_ACCESS_KEY_ID" "$BACKUP_S3_SECRET_ACCESS_KEY" |
+    node "$S3_SIGN" "$method" "$url" "$sha" "$S3_REGION") ||
+    { echo "запрос не подписан (deploy/s3-sign.cjs)"; return 1; }
+  printf '%s\n' "$signed" | curl "${CURL_OPTS[@]}" -K - -X "$method" "$@" "$url"
 }
 
 # Разбор страницы ListObjectsV2 (XML). Первая строка вывода — курсор следующей
