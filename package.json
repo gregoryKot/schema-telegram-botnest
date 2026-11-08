@@ -48,7 +48,7 @@
     "https-proxy-agent": "^7.0.6",
     "jose": "^6.2.15",
     "jsonwebtoken": "^9.0.3",
-    "otplib": "^12.0.1",
+    "otplib": "^13.5.0",
     "pg": "^8.23.1",
     "prisma": "^7.10.1",
     "qrcode": "^1.5.4",
@@ -115,7 +115,7 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "/node_modules/@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)/.+\\.js$": "<rootDir>/test-support/esm-to-cjs.transform.cjs",
+      "/node_modules/(@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)|@noble/hashes|@otplib/[a-z-]+|@scure/base)/.+\\.js$": "<rootDir>/test-support/esm-to-cjs.transform.cjs",
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
@@ -135,7 +135,7 @@
       "<rootDir>/test-support/exit-code-leak.setup.ts"
     ],
     "transformIgnorePatterns": [
-      "/node_modules/(?!@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)/)"
+      "/node_modules/(?!(@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)|@noble/hashes|@otplib/[a-z-]+|@scure/base)/)"
     ]
   }
 }

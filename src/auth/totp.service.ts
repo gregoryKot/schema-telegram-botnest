@@ -5,22 +5,17 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, decrypt } from '../utils/crypto';
 import { revokeOtherSessions } from './session-proof';
 import { TotpAttemptsService, TotpLockedException } from './totp-attempts';
+import { matchTotpStep, newTotpSecret, totpUri } from './totp-code';
 import {
   consumeRecoveryCode,
   newRecoveryCodes,
   readRecoveryHashes,
 } from './totp-recovery';
-
-const ISSUER = 'Schema Happens';
-
-// Allow ±1 step (30s) drift between server and client clock.
-authenticator.options = { window: 1 };
 
 @Injectable()
 export class TotpService {
@@ -46,7 +41,7 @@ export class TotpService {
     });
     if (user?.totpEnabledAt) throw new ConflictException('2FA already enabled');
 
-    const secret = authenticator.generateSecret();
+    const secret = newTotpSecret();
     const encrypted = encrypt(secret);
     if (!encrypted)
       throw new Error('Encryption unavailable — refusing to store TOTP secret');
@@ -56,7 +51,7 @@ export class TotpService {
       data: { totpSecret: encrypted, totpEnabledAt: null },
     });
 
-    const otpauthUrl = authenticator.keyuri(accountLabel, ISSUER, secret);
+    const otpauthUrl = totpUri(accountLabel, secret);
     const qrDataUrl = await QRCode.toDataURL(otpauthUrl, {
       width: 240,
       margin: 1,
@@ -84,14 +79,19 @@ export class TotpService {
     if (!secret)
       throw new BadRequestException('Setup secret unreadable — restart setup');
 
-    if (!authenticator.check(code.trim(), secret)) {
-      throw new UnauthorizedException('Invalid code');
-    }
+    const step = matchTotpStep(secret, code.trim(), this.logger);
+    if (step === null) throw new UnauthorizedException('Invalid code');
 
+    // totpLastStep — тот же анти-повтор, что в checkTotp: без него код
+    // включения ещё ~90 с проходил verifyCode (вход, step-up).
     const { codes, stored } = newRecoveryCodes();
     await this.prisma.user.update({
       where: { id: userId },
-      data: { totpEnabledAt: new Date(), totpRecoveryCodes: stored },
+      data: {
+        totpEnabledAt: new Date(),
+        totpRecoveryCodes: stored,
+        totpLastStep: step,
+      },
     });
     await revokeOtherSessions(this.prisma, userId, currentRefresh);
     return { recoveryCodes: codes };
@@ -132,21 +132,19 @@ export class TotpService {
     return false;
   }
 
-  // Anti-replay (L2 аудита 2026-08): authenticator.check пускал ОДИН и тот же
-  // код всё окно валидности (~90с). checkDelta даёт смещение шага, из него —
-  // абсолютный time-step принятого кода. Двигаем totpLastStep вперёд АТОМАРНО
-  // (updateMany с фильтром lt/null = CAS): повтор того же шага (или более
-  // раннего) не проходит условие и получает false.
+  // Anti-replay (L2 аудита 2026-08): сама проверка пускает ОДИН и тот же код
+  // всё окно валидности (~90с). matchTotpStep отдаёт абсолютный time-step
+  // принятого кода. Двигаем totpLastStep вперёд АТОМАРНО (updateMany с
+  // фильтром lt/null = CAS): повтор того же шага (или более раннего) не
+  // проходит условие и получает false.
   private async checkTotp(
     userId: bigint,
     storedSecret: string,
     code: string,
   ): Promise<boolean> {
     const secret = decrypt(storedSecret);
-    const delta = secret ? authenticator.checkDelta(code, secret) : null;
-    if (delta === null) return false;
-    const stepSeconds = authenticator.options.step ?? 30;
-    const step = Math.floor(Date.now() / 1000 / stepSeconds) + delta;
+    const step = secret ? matchTotpStep(secret, code, this.logger) : null;
+    if (step === null) return false;
     const res = await this.prisma.user.updateMany({
       where: {
         id: userId,
