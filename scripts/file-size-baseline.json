@@ -1269,7 +1269,7 @@
   "src/infra/self-check/probe-web-push.ts": 52,
   "src/infra/self-check/registry.config.ts": 22,
   "src/infra/self-check/registry.db.ts": 16,
-  "src/infra/self-check/registry.live.ts": 22,
+  "src/infra/self-check/registry.live.ts": 26,
   "src/infra/self-check/registry.ts": 16,
   "src/infra/self-check/runner.ts": 76,
   "src/infra/self-check/self-check.service.ts": 80,
