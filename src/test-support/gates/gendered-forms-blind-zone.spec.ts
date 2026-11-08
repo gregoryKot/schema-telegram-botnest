@@ -30,14 +30,21 @@ describe('check-gendered-forms — глагол перед «ты»', () => {
 });
 
 describe('check-gendered-forms — краткие прилагательные «ты»-ветки', () => {
-  it.each(['ты благодарен себе', 'ты нужен', 'ты не одинок', 'ты счастлив'])(
-    'ловит: %s',
-    (text) => expect(hits('ty-short-adj', text)).toBe(true),
-  );
+  it.each([
+    'ты благодарен себе',
+    'ты нужен',
+    'ты не одинок',
+    'ты счастлив',
+    'ты недостаточно хорош',
+  ])('ловит: %s', (text) => expect(hits('ty-short-adj', text)).toBe(true));
 
-  it.each(['ты благодарна себе', 'ты нужна', 'тыквенный счастливчик'])(
-    'контроль, не ловит: %s',
-    (text) => expect(hits('ty-short-adj', text)).toBe(false),
+  it.each([
+    'ты благодарна себе',
+    'ты нужна',
+    'тыквенный счастливчик',
+    'ты недостаточно хороша',
+  ])('контроль, не ловит: %s', (text) =>
+    expect(hits('ty-short-adj', text)).toBe(false),
   );
 });
 
@@ -58,5 +65,20 @@ describe('check-gendered-forms — опущенное подлежащее: от
     '«не знала, чего ждать»',
   ])('контроль, не ловит: %s', (text) =>
     expect(hits('dropped-subject-past', text)).toBe(false),
+  );
+});
+
+describe('check-gendered-forms — «я (недостаточно) хорош» в реплике читателя', () => {
+  it.each([
+    'убеждение «я недостаточно хорош»',
+    'фраза «я хорош таким, какой есть»',
+  ])('ловит: %s', (text) => expect(hits('ya-short-adj', text)).toBe(true));
+
+  it.each([
+    '«я недостаточно хороша»',
+    '«со мной что-то не так»',
+    'я хорошо справляюсь',
+  ])('контроль, не ловит: %s', (text) =>
+    expect(hits('ya-short-adj', text)).toBe(false),
   );
 });
