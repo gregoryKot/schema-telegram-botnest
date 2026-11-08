@@ -3,6 +3,7 @@
 // Образец промаха — SECURITY.md называл `src/therapy/therapy.service.ts`,
 // которого нет с переезда assertRelation в therapy-relations.service.ts.
 import { spawnSync } from 'child_process';
+import { mkdirSync } from 'fs';
 import { join } from 'path';
 import { runGate } from './gate-sandbox';
 
@@ -65,6 +66,30 @@ describe('check-doc-refs.mjs', () => {
     });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('.claude/rules/x.md:1');
+  });
+
+  it('путь, который игнорирует git (сборка), не сверяется — есть он или нет', () => {
+    const files = {
+      ...TREE,
+      '.gitignore': 'webapp/dist/\n',
+      'CLAUDE.md': '# x\n\nСборка лежит в `webapp/dist/`, в git её нет.\n',
+    };
+    const absent = runGate('check-doc-refs.mjs', files, { git: true });
+    expect(absent.stderr).toBe('');
+    expect(absent.status).toBe(0);
+    const built = runGate('check-doc-refs.mjs', files, {
+      git: true,
+      setup: (tmp) =>
+        mkdirSync(join(tmp, 'webapp', 'dist'), { recursive: true }),
+    });
+    expect(built.status).toBe(0);
+    // Контроль: путь, которого нет и который git не игнорирует, — красный.
+    const control = runGate(
+      'check-doc-refs.mjs',
+      { ...files, 'CLAUDE.md': '# x\n\nСм. `src/infra/gone.ts`.\n' },
+      { git: true },
+    );
+    expect(control.status).toBe(1);
   });
 
   it('бейслайн гасит нарочно несуществующий путь; протухшая и короткая причина — красный', () => {

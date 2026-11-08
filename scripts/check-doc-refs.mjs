@@ -21,6 +21,7 @@
 // история). Протухшая запись (путь появился или строка исчезла) — красное.
 // Без --update: это решение, а не счётчик.
 import { readFileSync, readdirSync, existsSync } from 'fs';
+import { execFileSync } from 'child_process';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -65,6 +66,15 @@ export function extractPaths(text, dirs) {
   return out;
 }
 
+function gitIgnored(path) {
+  try {
+    execFileSync('git', ['check-ignore', '-q', path], { cwd: ROOT, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false; // не игнорируется или не git-дерево
+  }
+}
+
 function main() {
   const dirs = topDirs();
   const baseline = existsSync(BASELINE_PATH) ? JSON.parse(readFileSync(BASELINE_PATH, 'utf8')) : {};
@@ -75,7 +85,13 @@ function main() {
     for (const { path, line } of extractPaths(readFileSync(join(ROOT, doc), 'utf8'), dirs)) {
       checked += 1;
       const key = `${doc}::${path}`;
-      if (existsSync(join(ROOT, path))) continue;
+      const exists = existsSync(join(ROOT, path));
+      if (exists && !(key in baseline)) continue;
+      // Путь, который игнорирует git (сборка `webapp/dist/`), не сверяем: есть он или
+      // нет — зависит от локальной сборки, а не от дерева, и гейт краснел бы у того,
+      // кто собирал сайт.
+      if (gitIgnored(path)) continue;
+      if (exists) continue;
       seen.add(key);
       if (!(key in baseline)) problems.push(`${doc}:${line}: \`${path}\` — такого пути в репозитории нет`);
     }
