@@ -285,6 +285,7 @@ describe('YsqResult — итог теста', () => {
     });
     await combineConflicts(tx, SRC, TGT);
     expect(db.ysqResultHistory.create).not.toHaveBeenCalled();
+    expect(db.ysqResultHistory.rows.map((r) => r.id)).toEqual([9]);
   });
 
   it('строка истории ДРУГОГО аккаунта в ту же минуту — не в счёт', async () => {
@@ -294,6 +295,10 @@ describe('YsqResult — итог теста', () => {
     });
     await combineConflicts(tx, SRC, TGT);
     expect(db.ysqResultHistory.create).toHaveBeenCalledTimes(1);
+    const added = db.ysqResultHistory.rows.filter((r) => r.id !== 9);
+    expect(added).toHaveLength(1);
+    expect(added[0].userId).toBe(TGT);
+    expect(added[0].completedAt).toEqual(T0);
   });
 
   it('цель свежее: итог цели не меняется; прежний уже в истории — не дублируется', async () => {
@@ -304,6 +309,9 @@ describe('YsqResult — итог теста', () => {
     await combineConflicts(tx, SRC, TGT);
     expect(db.ysqResult.update).not.toHaveBeenCalled();
     expect(db.ysqResultHistory.create).not.toHaveBeenCalled();
+    const t = db.ysqResult.rows.find((r) => r.userId === TGT)!;
+    expect(t.completedAt).toEqual(T1);
+    expect(db.ysqResultHistory.rows).toHaveLength(1);
   });
 });
 
