@@ -33,11 +33,15 @@ describe('TherapyInviteMetricsService', () => {
       ...Array(3).fill({ meta: { step: 'joined', kind: 'new' } }),
       { meta: { step: 'joined', kind: 'offline' } },
       ...Array(4).fill({ meta: { step: 'revoked', kind: 'new' } }),
+      ...Array(2).fill({ meta: { step: 'confirmed', kind: 'offline' } }),
+      { meta: { step: 'denied', kind: 'offline' } },
     ];
     expect(await setup(rows).svc.getMetrics(now)).toEqual({
       created: { new: 5, offline: 2 },
       joined: { new: 3, offline: 1 },
       revoked: { new: 4, offline: 0 },
+      confirmed: { new: 0, offline: 2 },
+      denied: { new: 0, offline: 1 },
     });
   });
 
@@ -54,6 +58,8 @@ describe('TherapyInviteMetricsService', () => {
       created: { new: 0, offline: 0 },
       joined: { new: 0, offline: 1 },
       revoked: { new: 0, offline: 0 },
+      confirmed: { new: 0, offline: 0 },
+      denied: { new: 0, offline: 0 },
     });
   });
 

@@ -17,4 +17,12 @@ describe('activeRelationWhere', () => {
       status: 'active',
     });
   });
+
+  it('офлайн-id за int32 до Prisma не доходит: id 0, связи нет (S18)', () => {
+    expect(activeRelationWhere(7n, -3000000000n)).toMatchObject({
+      id: 0,
+      clientId: null,
+    });
+    expect(activeRelationWhere(7n, -2147483647n).id).toBe(2147483647);
+  });
 });

@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   YM_ID,
   loadMetrika,
+  metrikaLoadedInDocument,
   trackHit,
   trackGoal,
   trackGoalOnce,
@@ -46,6 +47,17 @@ describe('loadMetrika', () => {
     const initCall = ymQueue().find((c) => c[1] === 'init');
     expect(initCall).toBeTruthy();
     expect((initCall![2] as { webvisor?: boolean }).webvisor).toBe(false);
+  });
+
+  // S15: по этому признаку переход в кабинет идёт полной навигацией (install/CabinetLink).
+  it('metrikaLoadedInDocument: false до вставки тега и при закрытом шлюзе, true после', () => {
+    expect(metrikaLoadedInDocument()).toBe(false);
+    setMetrikaSessionPossible(true);
+    loadMetrika();
+    expect(metrikaLoadedInDocument()).toBe(false);
+    setMetrikaSessionPossible(false);
+    loadMetrika();
+    expect(metrikaLoadedInDocument()).toBe(true);
   });
 });
 

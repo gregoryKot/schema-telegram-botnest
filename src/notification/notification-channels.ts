@@ -64,6 +64,7 @@ export const NOTIFICATION_CHANNELS: Record<
   practice_missed: SELF,
   low_streak_insight: SELF,
   nudge: SELF,
+  security_notice: SELF, // способ входа, подбор кода 2FA (security-notice.service.ts)
   // Терапевт назначил задание / просит пройти тест — задание в «Сегодня».
   task_assigned: THERAPIST_TASK,
   ysq_requested: THERAPIST_TASK,

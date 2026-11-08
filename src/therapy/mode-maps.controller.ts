@@ -26,9 +26,9 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-// id Int-колонок (заметка, задача, карта) — обычное число.
+// id Int-колонок (заметка, задача, карта): за int32 — 400, не 500 (S18).
 const parseId = (raw: string): number =>
-  parseIdShared(raw, { allowNegative: true });
+  parseIdShared(raw, { allowNegative: true, int32: true });
 
 // Карты режимов терапевта (для клиента) и кастомные режимы, плюс
 // клиентский read-only доступ к своим картам (my-mode-maps).

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api';
+import { useAuth } from '../../auth/authContext';
+import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
+import { sessionPost } from '../../components/stepUp/sessionRequest';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
   type AccountLinkHost,
 } from '../../../../shared/src/share/analytics';
-
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 export interface LinkPreview {
   provider: string;
@@ -18,25 +19,23 @@ export interface LinkPreview {
 
 export type LinkPhase = 'ask' | 'done' | 'denied';
 
-// Билет привязки мессенджера (`intent: 'link'`) со стороны браузера: сводка,
-// подтверждение, отказ. Вынесено из LinkDevicePage (правило №10: страница в
-// бейслайне размера и может только худеть).
+// Билет привязки мессенджера (`intent: 'link'`) со стороны браузера: сводка, подтверждение,
+// отказ. Вынесено из LinkDevicePage (правило №10: страница может только худеть).
 export function useLinkTicket(code: string) {
   const [preview, setPreview] = useState<LinkPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | 'approve' | 'deny'>(null);
   const [phase, setPhase] = useState<LinkPhase>('ask');
+  const { accessToken } = useAuth();
+  const stepUp = useStepUpFetch();
 
+  // Ручки под JwtAuthGuard (Bearer; без него был 401); approve при 2FA — с кодом (S12).
   const call = useCallback(async (path: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/ticket/${path}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-      body: JSON.stringify({ code }),
-    });
+    const res = await stepUp(sessionPost(`/api/auth/ticket/${path}`, accessToken, { code }));
+    if (!res) return null; // окно кода закрыто — ничего не подтверждено
     if (!res.ok) throw new Error((await readHumanError(res, 'Не получилось')).message);
     return res.json().catch(() => ({})) as Promise<unknown>;
-  }, [code]);
+  }, [code, accessToken, stepUp]);
 
   useEffect(() => {
     let alive = true;
@@ -50,7 +49,8 @@ export function useLinkTicket(code: string) {
     setBusy('approve');
     setError(null);
     try {
-      const res = (await call('approve')) as { merged?: boolean; repeat?: boolean };
+      const res = (await call('approve')) as { merged?: boolean; repeat?: boolean } | null;
+      if (!res) return;
       // Успех считает именно этот экран (мини-апп ещё ждёт и не знает) —
       // ровно один раз: повтор из второй вкладки уже посчитан первым.
       if (!res.repeat) api.trackEvent(ACCOUNT_LINK_CONFIRMED_EVENT, {

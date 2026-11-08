@@ -49,7 +49,7 @@ jobs:
       # --format=%cI` даёт время коммита слияния — момент, с которого Amvera
       # была обязана пересобрать образ (правило №14 CLAUDE.md, инцидент
       # 2026-09-16). fetch-depth: 1 достаточно — нужен только последний коммит.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
       - name: /health — 200 и db":"up"
@@ -121,7 +121,7 @@ jobs:
     steps:
       - name: issue ci-alarm — завести/обновить/закрыть (одна открытая на воркфлоу)
         id: issue
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           # needs['prod-smoke'] — дефис в имени джобы не даёт писать needs.prod-smoke
           # напрямую ни в YAML-выражении, ни здесь: тянем результат через env.

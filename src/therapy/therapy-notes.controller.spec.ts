@@ -316,3 +316,26 @@ describe('TherapyNotesController.saveConceptualization', () => {
     ).rejects.toThrow('DB connection lost');
   });
 });
+
+// S18 (аудит 2026-11): id Int-колонок и -TherapyRelation.id за int32 уходили в
+// Prisma — 500 и DM владельцу. Теперь 400 до сервиса.
+describe('TherapyNotesController — id за int32 → 400 (S18)', () => {
+  it('noteId 3000000000 и -3000000000 → 400, сервис не зовётся', async () => {
+    const { controller, notes } = makeController();
+    for (const raw of ['3000000000', '-3000000000'])
+      await expect(controller.deleteNote(makeReq(), raw)).rejects.toThrow(
+        BadRequestException,
+      );
+    expect(notes.deleteNote).not.toHaveBeenCalled();
+  });
+
+  it('офлайн-клиент -3000000000 → 400; веб-id 3000000000 законен', async () => {
+    const { controller, notes } = makeController();
+    await expect(controller.getNotes(makeReq(), '-3000000000')).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(notes.getNotes).not.toHaveBeenCalled();
+    await controller.getNotes(makeReq(3n), '3000000000');
+    expect(notes.getNotes).toHaveBeenCalledWith(3n, 3000000000n);
+  });
+});

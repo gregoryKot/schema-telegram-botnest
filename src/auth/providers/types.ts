@@ -1,8 +1,10 @@
+import type { Response } from 'express';
+
 // Identity returned by any provider after successful verification.
 export interface ProviderIdentity {
   providerId: string; // unique within the provider (telegramId, googleSub, vkId, …)
   email?: string;
-  displayName?: string;
+  displayName?: string; // ляжет открытым в User.firstName — только имя (S16)
 }
 
 // Single abstraction for auth providers. Implement either an OAuth pair
@@ -11,17 +13,15 @@ export interface ProviderIdentity {
 export interface AuthProviderHandler {
   readonly id: string; // 'google' | 'telegram' | 'vk' | …
   readonly displayName: string;
-
   // OAuth-redirect flow: buildAuthUrl → provider redirects back with a code →
   // exchangeCode swaps it for the user's identity (server-side token exchange).
-  // forceChooser: only for account-LINKING (attaching a second identity) —
-  // force the provider's account picker so the user explicitly picks WHICH
-  // account to attach. Omitted/false for LOGIN, so a provider that recognizes
-  // an already-signed-in user bounces them straight back (no "from scratch"
-  // re-pick). Providers that don't distinguish may ignore it.
+  // forceChooser — only for account-LINKING: force the account picker so the
+  // user picks WHICH account to attach; LOGIN lets a signed-in user bounce
+  // straight back. nonce — секрет шага 1 из issueNonce, если он объявлен:
+  // провайдер кладёт его в куку через oauth-host.ts (PKCE-верификатор VK).
   buildAuthUrl?(state: string, nonce?: string, forceChooser?: boolean): string;
+  issueNonce?(res: Response): string;
   exchangeCode?(code: string): Promise<ProviderIdentity>;
-
   // Direct client-data verification (no redirect)
   verifyClientData?(data: Record<string, unknown>): ProviderIdentity;
 

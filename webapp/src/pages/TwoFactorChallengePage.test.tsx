@@ -5,7 +5,7 @@
 // запускает нативный submit — сабмитим форму напрямую (см. LoginPage.test.tsx).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { TwoFactorChallengePage } from './TwoFactorChallengePage';
 
@@ -41,6 +41,11 @@ function authValue(overrides: Partial<AuthState> = {}): AuthState {
   };
 }
 
+function ConfirmProbe() {
+  const { search } = useLocation();
+  return <div>confirm-page {search}</div>;
+}
+
 function renderAt(path: string, auth: AuthState = authValue()) {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -49,6 +54,7 @@ function renderAt(path: string, auth: AuthState = authValue()) {
           <Route path="/auth/2fa" element={<TwoFactorChallengePage />} />
           <Route path="/login" element={<div>login-page</div>} />
           <Route path="/today" element={<div>today-page</div>} />
+          <Route path="/auth/confirm" element={<ConfirmProbe />} />
         </Routes>
       </AuthContext.Provider>
     </MemoryRouter>,
@@ -209,5 +215,41 @@ describe('TwoFactorChallengePage — вход устарел', () => {
     expect(screen.queryByText(/Вход устарел/)).toBeNull();
     expect(screen.getByPlaceholderText('123456')).toBeTruthy();
     expect(screen.getByText('Двухфакторная проверка')).toBeTruthy();
+  });
+});
+
+// S21 + FIX_PLAN 1.5 (аудит 2026-11): токен вызова и билет входа стоят в адресе.
+// Токен оставался в адресной строке и истории; билет страница не читала вовсе —
+// после кода вела на /today, и приложение, начавшее вход, ждало до истечения.
+describe('TwoFactorChallengePage — секреты в адресе и билет входа', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('token и ticket стёрты из адреса сразу при открытии', () => {
+    window.history.replaceState(null, '', '/auth/2fa?token=chal123&ticket=K7M2QX94');
+    renderAt('/auth/2fa?token=chal123&ticket=K7M2QX94');
+    expect(window.location.search).toBe('');
+    expect(window.location.pathname).toBe('/auth/2fa');
+  });
+
+  it('после стирания адреса код всё равно уходит с прочитанным токеном', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'tok-2fa', expiresIn: 900 }));
+    window.history.replaceState(null, '', '/auth/2fa?token=chal123');
+    const { container } = renderAt('/auth/2fa?token=chal123');
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '482913' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await screen.findByText('today-page');
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse((init as RequestInit).body as string).challengeToken).toBe('chal123');
+  });
+
+  it('с ticket после верного кода ведёт на сверку /auth/confirm?code=<билет>, не на /today', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { accessToken: 'tok-2fa', expiresIn: 900 }));
+    const setAccessToken = vi.fn();
+    const { container } = renderAt('/auth/2fa?token=chal123&ticket=K7M2QX94', authValue({ setAccessToken }));
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '482913' } });
+    fireEvent.submit(container.querySelector('form')!);
+    await screen.findByText('confirm-page ?code=K7M2QX94');
+    expect(setAccessToken).toHaveBeenCalledWith('tok-2fa', 900);
+    expect(screen.queryByText('today-page')).toBeNull();
   });
 });

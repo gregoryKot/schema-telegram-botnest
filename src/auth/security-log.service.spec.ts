@@ -103,6 +103,7 @@ describe('SecurityLogService — only ALERT_EVENTS DM the admin', () => {
     'suspicious_initdata',
     'empty_signature',
     'refresh_token_reuse',
+    'totp_locked', // S11: подбор кода 2FA — DM админу
   ] as const;
 
   const NON_ALERT_EVENTS = [

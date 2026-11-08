@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { AuthOauthController } from './auth-oauth.controller';
 import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
+import { AuthLinkController } from './auth-link.controller';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthTicketController } from './auth-ticket.controller';
 import { AuthTicketHandoffController } from './auth-ticket-handoff.controller';
@@ -11,6 +12,7 @@ import { AuthLoginConfirmController } from './auth-login-confirm.controller';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
 import { LoginTicketReport } from './login-ticket/login-ticket.report';
 import { TicketLinkService } from './login-ticket/ticket-link.service';
+import { TicketDeviceService } from './login-ticket/ticket-device';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
 import { AuthOneTapController } from './auth-one-tap.controller';
@@ -22,6 +24,9 @@ import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
 import { TelegramDomainWatchdogService } from './telegram-domain-watchdog.service';
 import { TotpService } from './totp.service';
+import { TotpAttemptsService } from './totp-attempts';
+import { SecurityNoticeService } from './security-notice.service';
+import { StepUpService } from './step-up';
 import { EmailService } from './email.service';
 import { AuthProviderRegistry } from './providers/registry';
 import { GoogleProvider } from './providers/google.provider';
@@ -30,9 +35,11 @@ import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [PrismaModule, AnalyticsModule],
+  // NotificationModule — очередь сообщений бота для SecurityNoticeService.
+  imports: [PrismaModule, AnalyticsModule, NotificationModule],
   providers: [
     AuthService,
     AuthFlowService,
@@ -45,9 +52,13 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     LoginTicketService,
     LoginTicketReport,
     TicketLinkService,
+    TicketDeviceService,
     SecurityLogService,
+    SecurityNoticeService,
     TelegramDomainWatchdogService,
     TotpService,
+    TotpAttemptsService,
+    StepUpService, // его берёт StepUpGuard в @UseGuards
     EmailService,
     GoogleProvider,
     TelegramProvider,
@@ -61,6 +72,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AuthOneTapController,
     AuthTelegramController,
     AuthAccountController,
+    AuthLinkController,
     AuthMaxController,
     AuthTicketController,
     AuthTicketHandoffController,

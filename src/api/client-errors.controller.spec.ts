@@ -5,7 +5,9 @@ import type { ClientErrorDto } from './dto/client-error.dto';
 import type { AnalyticsService } from '../analytics/analytics.service';
 
 // Best-practice «видимость прода» (2026-07): краш фронтенда обязан доехать
-// до AlertLogger (→ DM админу).
+// до лога. С аудита 2026-11 (S13) — уровнем warn, не error: error уходил в DM
+// через AlertLogger, и анонимные отчёты выжигали общий бюджет алертов;
+// владельцу теперь идёт сводка раз в час (client-errors-digest.spec.ts).
 //
 // Регрессия аудита 2026-07-20 (H0/H6). AlertLogger отправляет в Telegram
 // админу ТОЛЬКО первый аргумент .error(); optionalParams идут лишь в stdout.
@@ -34,7 +36,8 @@ import type { AnalyticsService } from '../analytics/analytics.service';
 // устройство (nextIp()): тесты про один и тот же IP передают его явно.
 describe('ClientErrorsController', () => {
   let controller: ClientErrorsController;
-  let errorSpy: jest.SpyInstance;
+  let errorSpy: jest.SpyInstance; // warn: имя оставлено, чтобы не трогать тесты ниже
+  let realErrorSpy: jest.SpyInstance;
   let track: jest.Mock;
   let ipSeq = 0;
   const nextIp = () => `10.0.0.${++ipSeq}`;
@@ -46,11 +49,17 @@ describe('ClientErrorsController', () => {
     const analytics = { track } as unknown as AnalyticsService;
     controller = new ClientErrorsController(analytics);
     errorSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    realErrorSpy = jest
       .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
   });
 
   afterEach(() => {
+    // S13: ни один отчёт клиента не идёт уровнем error (→ DM владельцу).
+    expect(realErrorSpy).not.toHaveBeenCalled();
+    realErrorSpy.mockRestore();
     errorSpy.mockRestore();
     jest.useRealTimers();
   });
@@ -59,7 +68,7 @@ describe('ClientErrorsController', () => {
   const report = (dto: ClientErrorDto, ip?: string) =>
     controller.report(dto, req(ip));
 
-  it('логирует через .error() с распознаваемым префиксом источника и секции', () => {
+  it('логирует через .warn() с распознаваемым префиксом источника и секции', () => {
     const dto: ClientErrorDto = {
       message: 'Cannot read properties of undefined',
       section: 'DiaryOverlay',

@@ -12,7 +12,7 @@ import type { TherapyClientSummary, UserTask } from '../api';
 
 vi.mock('../api', () => ({
   api: {
-    getTherapyClients: vi.fn(), getTherapyInvites: vi.fn(() => Promise.resolve([])),
+    getTherapyClients: vi.fn(), getTherapyInvites: vi.fn(() => Promise.resolve([])), getCardClaims: vi.fn(() => Promise.resolve([])),
     getTherapyTasksForClient: vi.fn(), getTherapistNotes: vi.fn(), getConceptualization: vi.fn(),
     getTherapyClientData: vi.fn(), getClientSchemaNotes: vi.fn(), getClientModeNotes: vi.fn(),
     getTherapyClientHistory: vi.fn(), getClientDiary: vi.fn(), getAllTherapyTasks: vi.fn(),

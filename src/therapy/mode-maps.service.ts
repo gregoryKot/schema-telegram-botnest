@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { guardOverwrite } from '../utils/crypto-record';
+import { requireAffected } from '../utils/require-affected';
 import { clientMapAuthors, clientSeesMap } from './client-map-authors';
 import { normalizeModeMapKind } from './mode-map-kinds';
 
@@ -48,10 +49,8 @@ export class ModeMapsService {
     if (!row || row.therapistId.toString() !== therapistId.toString())
       throw new Error('Not found');
     // Связь могла быть разорвана уже ПОСЛЕ создания карты — сверка
-    // therapistId на строке этого не отражает (карта — не единственный
-    // барьер, а первая линия). Как и весь остальной клинический доступ
-    // (TherapyClientDataService — assertHasClient на каждом обращении, а
-    // не только на листинге), догоняем активность связи здесь же.
+    // therapistId на строке этого не отражает. Как весь клинический доступ
+    // (assertHasClient на каждом обращении), догоняем связь здесь же.
     await this.relationsService.assertHasClient(
       therapistId,
       (row as { clientId: bigint }).clientId,
@@ -180,8 +179,9 @@ export class ModeMapsService {
   }
 
   async deleteCustomMode(therapistId: bigint, modeId: number) {
-    await this.prisma.therapistCustomMode.deleteMany({
-      where: { id: modeId, therapistId },
-    });
+    const where = { id: modeId, therapistId };
+    await requireAffected(
+      this.prisma.therapistCustomMode.deleteMany({ where }),
+    );
   }
 }

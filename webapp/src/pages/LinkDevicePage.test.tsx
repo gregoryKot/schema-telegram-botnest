@@ -6,6 +6,7 @@
 // главное — до нажатия человеку сказано, ЧЕЙ аккаунт и ЧТО именно переедет.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -348,5 +349,46 @@ describe('«Это не я»', () => {
 
     fireEvent.click(await screen.findByText('В аккаунт'));
     expect(screen.getByText('АККАУНТ')).toBeTruthy();
+  });
+});
+
+// Ручки билета — под JwtAuthGuard: раньше запросы уходили без Bearer, и сервер
+// отвечал 401 «Missing Bearer token». S12 (аудит 2026-11): подтверждение
+// привязки при включённой 2FA — с кодом в общем окне (components/stepUp).
+describe('сессия и код 2FA', () => {
+  const headersOf = (path: string) =>
+    fetchMock.mock.calls.filter((c) => String(c[0]).endsWith(path)).map((c) => (c[1] as RequestInit).headers as Record<string, string>);
+
+  it('preview и approve уходят с Bearer этой сессии', async () => {
+    setAuth({ accessToken: 'tok-link' });
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
+    fetchMock.mockResolvedValue(jsonResponse(200, { merged: true }));
+    confirmAck();
+    fireEvent.click(screen.getByText('Разрешить доступ'));
+    await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
+    expect(headersOf('/preview')[0].Authorization).toBe('Bearer tok-link');
+    expect(headersOf('/approve')[0].Authorization).toBe('Bearer tok-link');
+  });
+
+  it('403 totp_required на approve → окно кода → повтор с кодом → «Готово»', async () => {
+    setAuth({ accessToken: 'tok-link' });
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() => expect(screen.getByText('Разрешить доступ')).toBeTruthy());
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      const code = ((init?.headers ?? {}) as Record<string, string>)['x-totp-code'];
+      if (String(url).endsWith('/approve') && code !== '123456') {
+        return Promise.resolve(new Response(JSON.stringify({ reason: 'totp_required' }), { status: 403 }));
+      }
+      return Promise.resolve(jsonResponse(200, { merged: true }));
+    });
+    confirmAck();
+    fireEvent.click(screen.getByText('Разрешить доступ'));
+    await screen.findByText('Подтвердите, что это вы');
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+    fireEvent.change(screen.getByLabelText('Код из приложения'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await waitFor(() => expect(screen.getByText('Готово')).toBeTruthy());
+    expect(headersOf('/approve').map((h) => h['x-totp-code'])).toEqual([undefined, '123456']);
   });
 });

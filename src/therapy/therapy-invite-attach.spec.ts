@@ -58,6 +58,7 @@ function make(o: Opts) {
         .mockResolvedValueOnce(card)
         .mockResolvedValueOnce(target),
       update: rec('rel.update'),
+      updateMany: rec('rel.updateMany'),
       deleteMany: rec('rel.deleteMany'),
       delete: rec('rel.delete'),
     },
@@ -185,6 +186,20 @@ describe('attachOfflineCard', () => {
     expect(m.tx.therapyRelation.delete).toHaveBeenCalledWith({
       where: { id: 7 },
     });
+  });
+
+  it('чужие связи, ждущие сверки с карточкой, теряют отметку ДО её удаления (S8)', async () => {
+    // Код карточки мог прийти и от другого аккаунта: каскад attachToId снёс
+    // бы его живую связь вместе с карточкой.
+    const m = make({});
+    await attachOfflineCard(m.prisma, TH, CLIENT, 7);
+    expect(m.tx.therapyRelation.updateMany).toHaveBeenCalledWith({
+      where: { attachToId: 7, clientId: { not: null } },
+      data: { attachToId: null },
+    });
+    expect(m.calls.indexOf('rel.updateMany')).toBeLessThan(
+      m.calls.indexOf('rel.delete'),
+    );
   });
 
   it('код адреса карточки переезжает на связь клиента — после удаления карточки', async () => {

@@ -81,6 +81,8 @@ function makeReq(
   opts: {
     csrf?: boolean;
     webUser?: { userId: bigint };
+    cookies?: Record<string, string>;
+    ip?: string;
   } = {},
 ): Request {
   const headers: Record<string, string> = {};
@@ -88,8 +90,8 @@ function makeReq(
   return {
     headers,
     webUser: opts.webUser,
-    ip: '198.51.100.1',
-    cookies: {},
+    ip: opts.ip ?? '198.51.100.1',
+    cookies: opts.cookies ?? {},
   } as unknown as Request;
 }
 
@@ -170,12 +172,26 @@ describe('Auth2faController.totpEnable', () => {
       makeReq({ webUser: { userId: 3n } }),
       CODE_DTO,
     );
-    expect(totp.confirmSetup).toHaveBeenCalledWith(3n, '123456');
+    expect(totp.confirmSetup).toHaveBeenCalledWith(3n, '123456', undefined);
     expect(securityLog.log).toHaveBeenCalledWith('role_changed', {
       userId: 3n,
       event: '2fa_enabled',
     });
     expect(res).toEqual({ recoveryCodes: ['a1b2c3d4e5'] });
+  });
+
+  // S12: включение 2FA гасит остальные сессии — сервису уходит refresh-кука
+  // этого браузера, чтобы её семья осталась (отзыв — totp.service/session-proof).
+  it('сервису уходит refresh-кука этого браузера — её сессия останется', async () => {
+    const { controller, totp } = makeController();
+    await controller.totpEnable(
+      makeReq({
+        webUser: { userId: 3n },
+        cookies: { [REFRESH_COOKIE]: 'raw-r' },
+      }),
+      CODE_DTO,
+    );
+    expect(totp.confirmSetup).toHaveBeenCalledWith(3n, '123456', 'raw-r');
   });
 });
 

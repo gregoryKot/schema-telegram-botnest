@@ -15,7 +15,8 @@ E — баги, R — логика и надёжность, U — понятно
 
 ## Волна 0. Решения владельца (до кода)
 
-Без ответа эти строки не начинаются. Рядом — рекомендация; молчание = рекомендация.
+**2026-11-08 владелец: «да, начинай всё»** — Р1–Р6 приняты по рекомендации. Р7 и Р8 —
+действия владельца во внешних сервисах (BotFather, Cloudflare); строки 1.12 и 1.14 ждут их.
 
 | # | Вопрос | Рекомендация | Что ждёт |
 |---|---|---|---|
@@ -30,21 +31,11 @@ E — баги, R — логика и надёжность, U — понятно
 
 ## Волна 1. Безопасность
 
+Сделано в #1019 (1.1–1.11, 1.13). Остались строки, которые ждут владельца.
+
 | PR | Код | Что сделать | Где | Тест | Размер |
 |---|---|---|---|---|---|
-| 1.1 | S8 | Связь из кода офлайн-карточки — в состоянии «ждёт сверки»; психолог подтверждает в кабинете, только тогда `attachOfflineCard`; ветка `alreadyConnected` карточку не сливает | `src/therapy/therapy-invite.ts`, `therapy-invite-attach.ts`, экран заявок в кабинете | e2e ownership: Б с кодом А не видит задания и карты А до подтверждения | L (после Р3) |
-| 1.2 | S12 | Привязка и отвязка способа входа и handoff: код TOTP, если включён, либо вход не старше 5 минут; письмо или сообщение в бот о новом способе входа; включение 2FA отзывает остальные сессии | `src/auth/auth-account.controller.ts:229,271`, `auth-ticket-handoff.controller.ts`, `security-log.service.ts` | спеки: без кода — 403; с кодом — ок; включение 2FA гасит чужие `WebSession` | M |
-| 1.3 | S11 | Счётчик неудачных кодов на защищаемый `userId` в Postgres (10 в сутки → пауза и письмо), общий для `2fa/challenge`, merge, удаления | `src/auth/auth-2fa.controller.ts`, `totp.service`, `ThrottleHit` | спек: 11-я попытка с разных IP отклонена | M |
-| 1.4 | S9 | `email/link` принимает билет только с устройства, которое его выписало (кука билета); `/auth/confirm` — код вводится руками, видно устройство и время; текст карточки привязки в боте — как на `LinkDevicePage` | `src/auth/auth-account.controller.ts:65`, `magic-link.ts`, `webapp/src/pages/AuthConfirmPage.tsx`, `src/telegram/telegram.link-card.ts` | спек: чужой билет в `email/link` — 400; тест экрана: код не подставлен | M |
-| 1.5 | — | Билет входа теряется после 2FA: `TwoFactorChallengePage` читает `?ticket=` и после кода ведёт на `/auth/confirm?code=…` | `webapp/src/pages/TwoFactorChallengePage.tsx` | тест страницы | S |
-| 1.6 | S13 | Отчёты клиента об ошибках — `warn` и сводка раз в час; у `AlertLogger` отдельный малый бюджет на источники, которые вызывает аноним, остальной бюджет не делится | `src/api/client-errors.controller.ts`, `client-error-log-gate.ts`, `src/logger/alert.logger.ts` | спек: 100 анонимных отчётов не глушат настоящий `logger.error` | M |
-| 1.7 | S15 | Метрика на продуктовом сайте после появления сессии — полная навигация, а не SPA-переход; `?site=personal` работает только на хосте визитки | `webapp/src/pages/InstallPage.tsx`, `webapp/src/lib/metrika.ts`, `webapp/src/App.tsx:62` | тест на шве: после обмена кода `tag.js` в документе нет | S |
-| 1.8 | S20 | `/auth/error` показывает текст только для известных кодов; `/account/merge` берёт имя и сводку с сервера по токену | `webapp/src/pages/AuthErrorPage.tsx`, `MergePage.tsx` | тесты страниц с чужим текстом в query | S |
-| 1.9 | S18 | `int32` у id кабинета психолога (`parseId`) и у отрицательного `clientId`; `deleteNote`/`deleteCustomMode` — 404 на чужой id | `src/therapy/*.controller.ts`, `relation-where.ts` | спеки: `3000000000` → 400, чужой id → 404 | S |
-| 1.10 | S16 | Не копировать имя и почту Google/VK в открытый `User.firstName` (или шифровать); миграция чистит записанное | `src/auth/providers/google.provider.ts:136`, `vk.provider.ts:145`, `auth.service.ts` | спек провайдера; миграция на живой БД | M |
-| 1.11 | S19 | Серверный рендер статьи — тот же allowlist, что DOMPurify на клиенте (`sanitize-html` или isomorphic DOMPurify) | `src/articles/article-seo.render.ts` | спек с обходными пейлоадами | S |
 | 1.12 | S7 | После Р7: `alarm` в `nightly.yml`/`prod-smoke.yml` шлёт DM токеном бота-уведомителя; переменные с токеном — на уровне шага | `.github/workflows/*.yml`, `src/infra/alarm-workflow.spec.ts` | спек воркфлоу | S |
-| 1.13 | S21 | Мелочи одним PR: стереть токен 2FA из адреса; случайный PKCE-верификатор VK в куке шага 1 (`oauth-host.ts`); источник заявки — только `#раздел` по белому списку; схема DTO для `emotions` и черновиков; actions по SHA; массив в `SignatureValue` → 400, не 500 | `TwoFactorChallengePage.tsx`, `vk.provider.ts`, `leadSource.ts`, `diary-entries.dto.ts`, `misc.dto.ts`, `payment.result-guard.ts` | тест на каждый пункт | M |
 | 1.14 | S10 | После Р8: удаление старых копий — правилом жизненного цикла R2, `s3_prune` из приложения убрать; шифрование бэкапа — открытым ключом (age), закрытый — офлайн у владельца | `scripts/backup-upload.sh`, `docs/RUNBOOKS.md` | `test/restore-backup.e2e-spec.ts` с закрытым ключом из теста | M |
 
 ## Волна 2. Данные не теряются

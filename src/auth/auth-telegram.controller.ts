@@ -13,6 +13,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { OptionalJwtGuard } from './jwt.guard';
+import { StepUpService, linkCookieUserId } from './step-up';
 import { AuthProviderRegistry } from './providers/registry';
 import { SecurityLogService } from './security-log.service';
 import type { Request, Response } from 'express';
@@ -29,6 +30,7 @@ export class AuthTelegramController {
     private readonly providers: AuthProviderRegistry,
     private readonly securityLog: SecurityLogService,
     private readonly flow: AuthFlowService,
+    private readonly stepUp: StepUpService,
   ) {}
 
   // ─── Telegram Login Widget ────────────────────────────────────────────────
@@ -68,6 +70,7 @@ export class AuthTelegramController {
     // Cookie-based link is used by the redirect flow: the user left the app
     // to authenticate on oauth.telegram.org, so the access token is gone but
     // the httpOnly tg_link_user cookie is still present.
+    await this.stepUp.assertIfBearer(req); // S12: Bearer-привязка — со step-up
     let linkUserId = req.webUser?.userId ?? null;
     const tgLinkCookie = getCookie(req, 'tg_link_user');
     if (!linkUserId && tgLinkCookie) {
@@ -127,7 +130,7 @@ export class AuthTelegramController {
     // Persist linkUserId in a short-lived SIGNED cookie so we can restore it
     // after redirect. Signed (C1): a raw userId here was client-forgeable and
     // let an attacker link their Telegram to the victim's account.
-    const linkUserId = req.webUser?.userId ?? null;
+    const linkUserId = linkCookieUserId(req); // S12: Bearer тут не привязывает
     if (linkUserId) {
       res.cookie('tg_link_user', this.flow.buildLinkState(linkUserId), {
         httpOnly: true,

@@ -120,11 +120,26 @@ describe('App — личный сайт (домен kotlarewski)', () => {
     }
   });
 
-  it('?site=personal на любом хосте тоже включает личный сайт', async () => {
+  it('?site=personal на петле (dev, браузерный смок) включает личный сайт', async () => {
     stubLocation({ pathname: '/', search: '?site=personal', href: 'http://localhost/?site=personal' });
     const App = await loadApp();
     render(<App />);
     await waitFor(() => expect(screen.getAllByText('Григорий Котляревский').length).toBeGreaterThan(0));
+  });
+
+  // S15 (аудит 2026-11): на продуктовом хосте параметр включал визитку и её
+  // Метрику у вошедшего человека. В проде он игнорируется.
+  it('?site=personal на schemehappens.ru в проде — продуктовый лендинг, не визитка', async () => {
+    vi.stubEnv('DEV', false);
+    try {
+      stubLocation({ hostname: 'schemehappens.ru', pathname: '/', search: '?site=personal', href: 'https://schemehappens.ru/?site=personal' });
+      const App = await loadApp();
+      const { container } = render(<App />);
+      await waitFor(() => expect(document.title).toBe('Всё по схеме — инструмент схема-терапии'));
+      expect(container.querySelector('.landing-personal-brand')).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 
@@ -223,19 +238,19 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
 });
 
 describe('App — страница ошибки входа (/auth/error)', () => {
-  it('показывает причину из query-параметра', async () => {
-    stubLocation({ pathname: '/auth/error', search: '?reason=telegram_mismatch', href: 'http://localhost/auth/error?reason=telegram_mismatch' });
+  it('показывает известный код причины из query-параметра (S20: только из словаря)', async () => {
+    stubLocation({ pathname: '/auth/error', search: '?reason=telegram_no_data', href: 'http://localhost/auth/error?reason=telegram_no_data' });
     const App = await loadApp();
     render(<App />);
-    await screen.findByText('telegram_mismatch');
-    expect(screen.getByText('Что-то пошло не так')).toBeTruthy();
+    await screen.findByText('telegram_no_data');
+    expect(screen.getByText('Вход не удался')).toBeTruthy();
   });
 
   it('без причины — блок с текстом ошибки не рисуется вовсе', async () => {
     stubLocation({ pathname: '/auth/error', href: 'http://localhost/auth/error' });
     const App = await loadApp();
     const { container } = render(<App />);
-    await screen.findByText('Что-то пошло не так');
+    await screen.findByText('Вход не удался');
     expect(container.querySelector('.as-reason')).toBeNull();
   });
 });

@@ -188,3 +188,34 @@ describe('InstallPage — экраны', () => {
     expect(events()).not.toContain('shown');
   });
 });
+
+// S15 (аудит 2026-11): после передачи сессии на публичной /install тег Метрики
+// уже стоит в документе; SPA-переход в кабинет оставил бы tag.js на клинических
+// экранах. С загруженным тегом — только полная навигация (location.assign).
+describe('InstallPage — Метрика не переезжает в кабинет', () => {
+  afterEach(() => { delete (window as { __ym_loaded?: boolean }).__ym_loaded; });
+
+  async function handoffThenInstalled() {
+    poll.mockResolvedValue({ status: 'linked', accessToken: 'tok', expiresIn: 900 });
+    window.history.replaceState(null, '', `/install#h=${CODE}`);
+    renderPage();
+    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('tok', 900));
+    act(() => { window.dispatchEvent(new Event('appinstalled')); });
+    const assign = vi.fn();
+    vi.stubGlobal('location', { ...window.location, assign });
+    return assign;
+  }
+
+  it('после обмена кода при загруженной Метрике «Открыть приложение» — полная навигация', async () => {
+    (window as { __ym_loaded?: boolean }).__ym_loaded = true;
+    const assign = await handoffThenInstalled();
+    fireEvent.click(screen.getByRole('link', { name: 'Открыть приложение' }));
+    expect(assign).toHaveBeenCalledWith('/today');
+  });
+
+  it('контроль: тега Метрики в документе нет — обычный SPA-переход, без перезагрузки', async () => {
+    const assign = await handoffThenInstalled();
+    fireEvent.click(screen.getByRole('link', { name: 'Открыть приложение' }));
+    expect(assign).not.toHaveBeenCalled();
+  });
+});

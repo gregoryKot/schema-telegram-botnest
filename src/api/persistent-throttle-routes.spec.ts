@@ -17,6 +17,7 @@ import { UserThrottlerGuard } from './throttler.guard';
 import { PublicEventsController } from './public-events.controller';
 import { Auth2faController } from '../auth/auth-2fa.controller';
 import { AuthAccountController } from '../auth/auth-account.controller';
+import { AuthLinkController } from '../auth/auth-link.controller';
 import { AuthLoginConfirmController } from '../auth/auth-login-confirm.controller';
 import { AuthTicketController } from '../auth/auth-ticket.controller';
 import { TherapyConnectionController } from '../therapy/therapy-connection.controller';
@@ -118,6 +119,35 @@ const DB_ROUTES: Route[] = [
     'POST /api/auth/2fa/challenge',
     Auth2faController,
     Auth2faController.prototype.totpChallenge,
+    5,
+    20,
+  ], // S9/S12 (аудит 2026-11): просмотр перед подтверждением и смена способа
+  // входа — тоже код или токен, которые нельзя перебирать сменой инстанса.
+  [
+    'POST /api/auth/ticket/login-preview',
+    AuthLoginConfirmController,
+    AuthLoginConfirmController.prototype.loginPreview,
+    5,
+    20,
+  ],
+  [
+    'POST /api/auth/merge/preview',
+    AuthAccountController,
+    AuthAccountController.prototype.mergePreview,
+    5,
+    20,
+  ],
+  [
+    'POST /api/auth/link/:provider',
+    AuthLinkController,
+    AuthLinkController.prototype.linkProvider,
+    5,
+    20,
+  ],
+  [
+    'POST /api/auth/unlink/:provider',
+    AuthLinkController,
+    AuthLinkController.prototype.unlink,
     5,
     20,
   ],

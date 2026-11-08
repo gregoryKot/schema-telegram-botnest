@@ -14,13 +14,63 @@ async function errorsFor(
 }
 
 describe('SaveDraftDto', () => {
-  it('data — произвольный JSON, проходит с @Allow()', async () => {
+  const startedAt = '2026-07-14T09:00:00.000Z';
+
+  it('data — объект любой формы в границах, проходит', async () => {
     await expect(
       errorsFor(SaveDraftDto, {
-        startedAt: '2026-07-14T09:00:00.000Z',
+        startedAt,
         data: { any: ['nested', 'shape'], n: 1 },
       }),
     ).resolves.toEqual([]);
+  });
+
+  // Реальные снимки форм сайта (SchemaEntrySheet / ModeEntrySheet /
+  // useGratitudeItems): граница не должна их резать.
+  it.each([
+    [
+      'дневник схем',
+      {
+        trigger: 'т'.repeat(10_000),
+        thoughts: 'мысль',
+        emotions: [{ id: 'anger', intensity: 3 }],
+        schemaIds: ['abandonment'],
+      },
+    ],
+    ['дневник режимов', { modeId: 'vulnerable_child', situation: 'x' }],
+    ['благодарность', { items: ['раз', 'два', ''] }],
+  ])('черновик «%s» проходит', async (_, data) => {
+    await expect(errorsFor(SaveDraftDto, { startedAt, data })).resolves.toEqual(
+      [],
+    );
+  });
+
+  // Аудит 2026-11, S21: @Allow() пропускал любой JSON до 256 КБ.
+  it.each([
+    ['массив', ['a', 'b']],
+    ['строка', 'x'.repeat(100)],
+    ['число', 5],
+    ['null', null],
+    [
+      'больше 50 ключей',
+      Object.fromEntries(Array.from({ length: 51 }, (_, i) => [`k${i}`, 1])),
+    ],
+    ['строка длиннее поля дневника', { trigger: 'x'.repeat(10_001) }],
+    ['длинная строка в глубине', { a: { b: [{ c: 'x'.repeat(10_001) }] } }],
+    ['ключ длиннее поля дневника', { ['k'.repeat(10_001)]: 1 }],
+  ])('data — %s → отказ', async (_, data) => {
+    await expect(
+      errorsFor(SaveDraftDto, { startedAt, data }),
+    ).resolves.toContain('data');
+  });
+
+  it('ровно 50 ключей — проходит (граница включительно)', async () => {
+    const data = Object.fromEntries(
+      Array.from({ length: 50 }, (_, i) => [`k${i}`, 1]),
+    );
+    await expect(errorsFor(SaveDraftDto, { startedAt, data })).resolves.toEqual(
+      [],
+    );
   });
 
   it('startedAt не строка — отказ', async () => {

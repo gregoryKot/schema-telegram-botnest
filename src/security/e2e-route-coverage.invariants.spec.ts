@@ -177,7 +177,6 @@ const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/auth/vk/callback', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/telegram/redirect', reason: REASON.AUTH_LOGIN },
   { route: 'GET /api/auth/me', reason: REASON.AUTH_LOGIN },
-  { route: 'GET /api/auth/link-token', reason: REASON.AUTH_LOGIN },
   { route: 'DELETE /api/therapy/custom-modes/:param', reason: REASON.THERAPY },
   { route: 'DELETE /api/therapy/mode-maps/map/:param', reason: REASON.THERAPY },
   { route: 'GET /api/therapy/my-mode-maps/:param', reason: REASON.THERAPY },

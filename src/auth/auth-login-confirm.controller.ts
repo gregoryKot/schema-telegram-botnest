@@ -33,13 +33,32 @@ import { LoginTicketService } from './login-ticket/login-ticket.service';
 import { UserCodeDto } from './dto/login-ticket.dto';
 import { requireCsrf } from './auth-http.util';
 import { SecurityLogService } from './security-log.service';
+import {
+  TicketDeviceService,
+  type LoginTicketPreview,
+} from './login-ticket/ticket-device';
 
 @Controller('api/auth/ticket')
 export class AuthLoginConfirmController {
   constructor(
     private readonly tickets: LoginTicketService,
     private readonly securityLog: SecurityLogService,
+    private readonly device: TicketDeviceService,
   ) {}
+
+  // S9: экран сверки показывает, какое устройство и когда просило вход;
+  // мёртвый, чужой по intent или неизвестный код — 404 без подробностей.
+  @Post('login-preview')
+  @UseGuards(JwtAuthGuard)
+  @PersistentThrottleLimit(CODE_THROTTLE)
+  @HttpCode(200)
+  loginPreview(
+    @Body() body: UserCodeDto,
+    @Req() req: Request,
+  ): Promise<LoginTicketPreview> {
+    requireCsrf(req, 'ticket/login-preview', this.securityLog);
+    return this.device.preview(body.code);
+  }
 
   // «Да, это я»: одобрить вход в контейнер, начавший его у себя. Хозяином
   // становится сессия, которая жмёт кнопку, — не тот, кто выписал билет.

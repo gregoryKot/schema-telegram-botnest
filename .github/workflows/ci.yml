@@ -49,8 +49,8 @@ jobs:
       # репозитория, и шаг «Кэш ts-jest» сохранял пустой каталог.
       JEST_CACHE_DIR: ${{ github.workspace }}/.jest-cache
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -61,7 +61,7 @@ jobs:
       # не менялись, кэш переиспользуется; иначе restore-keys подхватывают
       # ближайший старый кэш вместо холодного старта.
       - name: Кэш ts-jest
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.JEST_CACHE_DIR }}
           key: jest-ts-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -102,7 +102,7 @@ jobs:
           test/auth-flows test/public-quizzes test/phrase-check-ownership
           test/scheduler-teardown test/login-ticket test/refresh-rotation
           test/slot-override test/therapy-remove-client test/therapy-resign test/therapy-invite test/therapy-invite-attach
-          test/therapy-relation-end test/notify-from-other
+          test/therapy-relation-end test/notify-from-other test/therapy-card-claim
           test/body-limit test/login-csrf test/payment-webhook-practice-host
           test/text-limits test/therapy-ownership.e2e-spec.ts
           test/client-booking-ownership
@@ -170,8 +170,8 @@ jobs:
     # (пять зелёных прогонов main 2026-10-15). Гейт — job-timeouts.spec.ts.
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       # Один маршрут — один контроллер (аудит: найдены живые дубли маршрутов
@@ -381,14 +381,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           # FROM node:22-slim тянется через зеркало: Docker Hub отдавал 429 (2026-10-09).
           buildkitd-config-inline: |
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           push: false
@@ -421,8 +421,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -596,6 +596,7 @@ jobs:
           test/therapy-relation-end.e2e-spec.ts
           test/therapy-invite.e2e-spec.ts
           test/therapy-invite-attach.e2e-spec.ts
+          test/therapy-card-claim.e2e-spec.ts
           test/therapy-task-delete.e2e-spec.ts
           test/concept-share.e2e-spec.ts
           test/text-limits.e2e-spec.ts
@@ -677,8 +678,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:ci@localhost:5432/ci
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -703,7 +704,7 @@ jobs:
       # именно запрос и какой план, не переспрашивая CI.
       - name: отчёт замера артефактом
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: query-plans
           path: .perf/plans.json
@@ -713,8 +714,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -842,8 +843,8 @@ jobs:
     # худший случай audit-обёртки (2 мин 41 с) в конце джобы.
     timeout-minutes: 13
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -875,8 +876,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -906,8 +907,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -924,7 +925,7 @@ jobs:
       - name: версия Playwright для ключа кэша браузера
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
@@ -935,7 +936,7 @@ jobs:
         run: npx playwright test
       - name: трейс упавшего смока артефактом
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-trace
           path: test-results/
@@ -954,10 +955,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -996,7 +997,7 @@ jobs:
         run: node scripts/check-mutation-ratchet.mjs --partial --report=reports/mutation/golden-payments.json --baseline=scripts/mutation-golden-payments-baseline.json
       - name: отчёт артефактом
         if: always() && (steps.auth.outputs.files != '' || steps.payments.outputs.files != '')
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mutation-report-changed
           path: reports/mutation/

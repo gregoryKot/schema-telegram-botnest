@@ -48,11 +48,9 @@ export class TherapyInviteMetricsService {
       where: { name: THERAPY_INVITE_EVENT, createdAt: { gte: since } },
       select: { meta: true },
     });
-    const out: TherapyInviteMetrics = {
-      created: { new: 0, offline: 0 },
-      joined: { new: 0, offline: 0 },
-      revoked: { new: 0, offline: 0 },
-    };
+    const out = Object.fromEntries(
+      THERAPY_INVITE_STEPS.map((s) => [s, { new: 0, offline: 0 }]),
+    ) as TherapyInviteMetrics;
     for (const row of rows) {
       const pair = pairOf(row.meta);
       if (pair) out[pair.step][pair.kind] += 1;

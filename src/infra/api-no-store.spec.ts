@@ -18,6 +18,7 @@ import { AuthController } from '../auth/auth.controller';
 import { AuthService } from '../auth/auth.service';
 import { SecurityLogService } from '../auth/security-log.service';
 import { TotpService } from '../auth/totp.service';
+import { StepUpService } from '../auth/step-up';
 import { PrismaService } from '../prisma/prisma.service';
 import { apiNoStore } from './api-no-store';
 
@@ -57,6 +58,7 @@ class PageController {
     { provide: AuthService, useValue: { revokeSession: jest.fn() } },
     { provide: SecurityLogService, useValue: { log: jest.fn() } },
     { provide: TotpService, useValue: {} },
+    { provide: StepUpService, useValue: {} }, // StepUpGuard на link-token
     { provide: PrismaService, useValue: {} },
   ],
 })

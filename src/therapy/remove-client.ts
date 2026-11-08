@@ -6,18 +6,15 @@ import { THERAPIST_REMOVED } from './relation-end-reason';
 // Насовсем стираются заметки по сессиям, концептуализация и именные карты
 // режимов (ModeMap) терапевта: это его записи о клиенте, и удаляет он их явно.
 // Иначе карты остались бы сиротами (офлайн-клиент) или всплыли при повторном
-// подключении того же клиента. TherapistCustomMode — личная палитра терапевта,
-// а не данные клиента: не трогаем. Все WHERE ограничены therapistId — чужой
-// терапевт ничего не заденет.
-//
+// подключении того же клиента. TherapistCustomMode — палитра терапевта, не
+// трогаем. Все WHERE ограничены therapistId — чужой терапевт ничего не заденет.
 // Клиент с аккаунтом (clientId > 0): связь не удаляется, а завершается
 // (`ended`, причина therapist_removed, end-client-relations.ts) — клиент
 // видит строку о бывшем терапевте, а открытые задания этого терапевта
 // становятся его личными целями (решение владельца 2026-11-05).
 //
 // Офлайн-клиент (clientId = -TherapyRelation.id) аккаунта не имеет: всё
-// удаляется, как раньше. Его задания лежат в UserTask с отрицательным userId
-// и БЕЗ FK, каскада нет — без явного удаления остались бы сиротами.
+// удаляется. Его задания (UserTask с отрицательным userId) без FK и каскада.
 // Отрицательный id снимает связь только если она действительно офлайн
 // (clientId IS NULL): иначе DELETE /clients/-<id связи с реальным клиентом>
 // сносил бы связь, оставляя заметки/концептуализацию/карты сиротами.
@@ -36,6 +33,7 @@ export async function removeTherapistClient(
     });
     return;
   }
+  const card = { therapistId, attachToId: Number(-cid) };
   await prisma.$transaction([
     prisma.therapistNote.deleteMany({ where: own }),
     prisma.clientConceptualization.deleteMany({ where: own }),
@@ -43,11 +41,13 @@ export async function removeTherapistClient(
     prisma.userTask.deleteMany({
       where: { userId: cid, assignedBy: therapistId },
     }),
-    // Приглашения из карточки: на живой БД их снесёт каскад attachToId, у
-    // фейка (без FK) — единственный путь.
-    prisma.therapyRelation.deleteMany({
-      where: { therapistId, attachToId: Number(-cid) },
+    // Связь аккаунта, ждущая сверки с карточкой (S8), теряет отметку — её
+    // снёс бы каскад; оставшиеся приглашения у фейка удаляет deleteMany.
+    prisma.therapyRelation.updateMany({
+      where: { ...card, clientId: { not: null } },
+      data: { attachToId: null },
     }),
+    prisma.therapyRelation.deleteMany({ where: card }),
     prisma.therapyRelation.deleteMany({
       where: { id: Number(-cid), therapistId, clientId: null },
     }),

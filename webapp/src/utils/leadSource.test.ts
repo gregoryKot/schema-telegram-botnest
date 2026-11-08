@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 describe('leadSource', () => {
-  it('без referrer — только страница (host + путь + hash)', () => {
+  it('без referrer — только страница (host + путь)', () => {
     stubLocation('schemehappens.ru', '/booking', '');
     stubReferrer('');
     expect(leadSource()).toBe('schemehappens.ru/booking');
@@ -48,9 +48,27 @@ describe('leadSource', () => {
   });
 
   it('с referrer — «страница ← referrer»', () => {
-    stubLocation('schemehappens.ru', '/booking', '#form');
+    stubLocation('kotlarewski.gr', '/', '#prices');
     stubReferrer('https://google.com/search');
-    expect(leadSource()).toBe('schemehappens.ru/booking#form ← https://google.com/search');
+    expect(leadSource()).toBe('kotlarewski.gr/#prices ← https://google.com/search');
+  });
+
+  // S21 (аудит 2026-11): источник — открытая колонка брони и строка в DM админу;
+  // фрагмент целиком тащил туда что угодно (токены, имя, свободный текст).
+  it('фрагмент вне белого списка разделов отбрасывается целиком', () => {
+    stubReferrer('');
+    for (const hash of ['#access_token=SECRET', '#booking&name=Ivan', '#form', '#BOOKING', '#h=' + 'ab'.repeat(32)]) {
+      stubLocation('kotlarewski.gr', '/', hash);
+      expect(leadSource(), hash).toBe('kotlarewski.gr/');
+    }
+  });
+
+  it('якоря разделов визитки доезжают', () => {
+    stubReferrer('');
+    for (const hash of ['#about', '#approach', '#booking', '#faq', '#prices']) {
+      stubLocation('kotlarewski.gr', '/', hash);
+      expect(leadSource(), hash).toBe(`kotlarewski.gr/${hash}`);
+    }
   });
 
   it('срезает результат до 200 символов', () => {

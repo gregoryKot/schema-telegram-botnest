@@ -60,6 +60,8 @@ export type SecurityEvent =
   // шквал DM = замьюченный чат (урок 2026-07-29). Перебор виден по частоте
   // строк на один userId/ip; жёсткий предел ставят @Throttle на самих ручках.
   | 'totp_failed'
+  | 'totp_locked' // 10 промахов 2FA за сутки на аккаунт (S11): подбор, DM
+  | 'login_ticket_foreign' // билет письма входа — с чужого браузера (S9)
   // Отказ по ключу админки (x-admin-key: неверный/слабый/не задан), см.
   // booking/admin-key-audit.interceptor.ts. Только лог, не DM.
   | 'admin_key_rejected'
@@ -80,6 +82,7 @@ const ALERT_EVENTS = new Set<SecurityEvent>([
   'suspicious_initdata',
   'empty_signature',
   'refresh_token_reuse',
+  'totp_locked',
 ]);
 
 /** Сколько DM одного и того же события пропускаем за окно, прежде чем

@@ -105,6 +105,7 @@ async function bootstrap() {
       'x-telegram-init-data',
       'Authorization',
       'x-requested-with',
+      'x-totp-code', // step-up привязки/отвязки входа (src/auth/step-up.ts)
     ],
     credentials: true,
   });

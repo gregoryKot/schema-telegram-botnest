@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { applyPersonalSiteChrome, isPracticeHost } from './utils/domainChrome';
+import { applyPersonalSiteChrome } from './utils/domainChrome';
+import { resolvePersonalSite } from './utils/personalSite';
 import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
 import { TokenBridge } from './auth/TokenBridge';
@@ -52,8 +53,7 @@ function Root() {
 }
 
 // ── Domain detection ──────────────────────────────────────────────────────────
-const isPersonalSite = isPracticeHost(window.location.hostname)
-  || new URLSearchParams(window.location.search).get('site') === 'personal';
+const isPersonalSite = resolvePersonalSite(window.location.hostname, window.location.search, import.meta.env.DEV); // S15
 
 if (isPersonalSite) applyPersonalSiteChrome();
 

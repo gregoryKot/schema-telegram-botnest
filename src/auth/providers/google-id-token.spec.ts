@@ -40,7 +40,8 @@ function goodPayload(overrides: Record<string, unknown> = {}) {
     sub: 'google-user-1',
     email: 'anna@example.com',
     email_verified: true,
-    name: 'Аня',
+    name: 'Аня Петрова',
+    given_name: 'Аня',
     iat: NOW_S - 10,
     exp: NOW_S + 3600,
     ...overrides,
@@ -66,7 +67,7 @@ describe('verifyGoogleIdToken — обычный путь, подпись про
     expect(claims).toEqual({
       sub: 'google-user-1',
       email: 'anna@example.com',
-      name: 'Аня',
+      givenName: 'Аня', // только имя: полное `name` (с фамилией) не берётся
       emailVerified: true,
       offline: false,
     });

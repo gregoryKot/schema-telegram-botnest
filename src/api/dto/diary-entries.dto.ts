@@ -8,19 +8,19 @@ import {
   MaxLength,
 } from 'class-validator';
 import { DIARY_FIELD_MAX } from '../../utils/text-limits';
+import { EmotionDto, EmotionList } from './diary-emotion.dto';
 
 // DTO дневников схем и режимов (diary.controller.ts; правило №6; благодарность —
 // gratitude-diary.dto.ts). Свободный текст — до DIARY_FIELD_MAX, превышение —
-// 400 (backend#29); `emotions` — только число.
+// 400 (backend#29); `emotions` — вложенный EmotionDto (diary-emotion.dto.ts).
 // id схем/режимов — формат каталога shared/src/schemaTherapy/content: [a-z_]{1,64}.
 export class SchemaDiaryDto {
   @IsString()
   @MaxLength(DIARY_FIELD_MAX)
   trigger!: string;
 
-  @IsArray()
-  @ArrayMaxSize(50)
-  emotions!: { id: string; intensity: number }[];
+  @EmotionList()
+  emotions!: EmotionDto[];
 
   @IsOptional()
   @IsString()

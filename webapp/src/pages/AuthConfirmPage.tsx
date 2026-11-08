@@ -4,7 +4,11 @@ import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
 import { TicketDenied } from './service/TicketDenied';
-import { formatUserCode } from '../../../shared/src/auth/loginTicketCode';
+import { TicketNotFound, ToAppLink } from './service/TicketNotFound';
+import { TicketCodeField } from './service/TicketCodeField';
+import { normalizeUserCode, userCodesMatch } from '../../../shared/src/auth/userCodeEntry';
+import { momentTime } from '../../../shared/src/utils/momentDate';
+import { useLoginPreview } from './service/useLoginPreview';
 import { dropUrlFragment } from './authCallback/dropUrlFragment';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
@@ -18,6 +22,8 @@ const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 // код и жмёт «это я». Здесь тот же барьер для браузера: сюда попадает уже
 // вошедший человек, видит код и подтверждает его СВОЕЙ сессией. Одобрить билет
 // иначе, чем этим явным действием, теперь нельзя.
+// S9 (аудит 2026-11): код из ссылки не подставляется готовым — человек
+// набирает его с экрана приложения, и кнопка оживает только при совпадении.
 type Phase = 'ask' | 'busy' | 'notfound' | 'denied';
 
 export function AuthConfirmPage() {
@@ -27,6 +33,8 @@ export function AuthConfirmPage() {
   const tr = useTr();
   const code = params.get('code') ?? '';
   const [phase, setPhase] = useState<Phase>('ask');
+  const [typed, setTyped] = useState('');
+  const matches = userCodesMatch(typed, code);
 
   useEffect(() => {
     // Фрагмент не читаем (login-CSRF, аудит 2026-11): подброшенный
@@ -40,6 +48,7 @@ export function AuthConfirmPage() {
   // in-flight замок с AuthProvider, второй ротации не будет).
   const sessionToken = async (): Promise<string | null> =>
     getAccessToken() ?? ((await refreshToken()) ? getAccessToken() : null);
+  const preview = useLoginPreview(matches ? normalizeUserCode(typed) : null, sessionToken);
 
   const call = async (path: string): Promise<boolean> => {
     const token = await sessionToken();
@@ -60,7 +69,7 @@ export function AuthConfirmPage() {
   };
 
   const confirm = async () => {
-    if (phase === 'busy') return;
+    if (phase === 'busy' || !matches) return;
     setPhase('busy');
     try {
       // Сеть могла моргнуть — тогда честнее показать «код не найдён / начни
@@ -89,23 +98,8 @@ export function AuthConfirmPage() {
     setPhase('denied');
   };
 
-  if (phase === 'notfound') {
-    return (
-      <ServicePage>
-        <div className="as-body">
-          <h1 className="ds-h2">Код не найден</h1>
-          <p className="as-lead">
-            {tr(
-              'Возможно, времени прошло слишком много или код уже использован. Открой вход в приложении заново.',
-              'Возможно, времени прошло слишком много или код уже использован. Откройте вход в приложении заново.',
-            )}
-          </p>
-        </div>
-      </ServicePage>
-    );
-  }
-
-  if (phase === 'denied') return <TicketDenied />;
+  if (phase === 'notfound' || preview.kind === 'notfound') return <TicketNotFound />;
+  if (phase === 'denied') return <TicketDenied><ToAppLink /></TicketDenied>;
 
   return (
     <ServicePage>
@@ -114,19 +108,20 @@ export function AuthConfirmPage() {
         <h1 className="ds-h2">{tr('Это ты открываешь приложение?', 'Это вы открываете приложение?')}</h1>
         <p className="as-lead">
           {tr(
-            'Сверь код с тем, что показан в приложении, откуда ты входишь.',
-            'Сверьте код с тем, что показан в приложении, откуда вы входите.',
+            'Набери код, который показан в приложении, откуда ты входишь.',
+            'Наберите код, который показан в приложении, откуда вы входите.',
           )}
         </p>
-        <div className="as-code">{formatUserCode(code)}</div>
+        <TicketCodeField value={typed} onChange={setTyped} matches={matches} disabled={phase === 'busy'} />
+        {preview.kind === 'ok' && <p className="as-lead">Устройство: <b>{preview.deviceLabel ?? 'не определилось'}</b>, запрошено в {momentTime(preview.createdAt)}</p>}
         <p className="as-lead">
           {tr(
-            'Если это не ты открываешь приложение — нажми «Это не я»: кто-то мог прислать этот код, чтобы попасть в твой аккаунт.',
-            'Если это не вы открываете приложение — нажмите «Это не я»: кто-то мог прислать этот код, чтобы попасть в ваш аккаунт.',
+            'Если кода перед тобой нет, вход начинал кто-то другой. Нажми «Это не я»: ссылку могли прислать, чтобы попасть в твой аккаунт.',
+            'Если кода перед вами нет, вход начинал кто-то другой. Нажмите «Это не я»: ссылку могли прислать, чтобы попасть в ваш аккаунт.',
           )}
         </p>
         <div className="as-actions">
-          <button type="button" onClick={confirm} disabled={phase === 'busy'} className="ds-btn">
+          <button type="button" onClick={confirm} disabled={phase === 'busy' || !matches || preview.kind === 'loading'} className="ds-btn">
             {phase === 'busy'
               ? tr('Впускаю…', 'Впускаю…')
               : tr('Да, это я — впустить', 'Да, это я — впустить')}

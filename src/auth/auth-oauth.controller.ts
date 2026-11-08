@@ -15,6 +15,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import type { Request, Response } from 'express';
 import { VkProvider } from './providers/vk.provider';
 import { fromVkState } from './providers/vk-state';
+import { takeVkPkceVerifier } from './vk-pkce';
 import { AuthFlowService } from './auth-flow.service';
 import {
   OAUTH_COOKIE_PATH,
@@ -71,7 +72,7 @@ export class AuthOauthController {
     @Res() res: Response,
   ): Promise<void> {
     const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    // VK ID: обмен кода требует device_id + PKCE, общий хелпер не подходит.
+    // VK ID: обмен требует device_id + PKCE (верификатор — кука шага 1, vk-pkce.ts).
     // state ушёл к VK в base64url (VK режет точки JWT) — см. vk-state.ts.
     const state = vkState ? fromVkState(vkState) : vkState;
     try {
@@ -79,14 +80,13 @@ export class AuthOauthController {
       if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
       if (!code || !state || !deviceId)
         throw new BadRequestException('Missing code / state / device_id');
-
       assertOAuthStateMatches(req, state, vk.callbackOrigin());
       res.clearCookie(OAUTH_STATE_COOKIE, { path: OAUTH_COOKIE_PATH });
-
-      const identity = await vk.exchangeCodeWithContext(code, deviceId, state);
-
+      const identity = await vk.exchangeCodeWithContext(code, deviceId, {
+        state,
+        verifier: takeVkPkceVerifier(req, res),
+      });
       const linkUserId = this.flow.linkUserIdFromState(state);
-
       const outcome = await this.flow.signInOrLinkOrMerge('vk', identity, {
         linkUserId,
         ip: req.ip,

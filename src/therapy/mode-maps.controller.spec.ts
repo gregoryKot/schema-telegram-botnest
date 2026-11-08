@@ -259,3 +259,27 @@ describe('ModeMapsController.listMyModeMaps / getMyModeMap', () => {
     );
   });
 });
+
+describe('ModeMapsController — id за int32 → 400 (S18)', () => {
+  it('modeId/mapId 3000000000 и -3000000000 → 400 до сервиса', async () => {
+    const { controller, modeMaps } = makeController();
+    for (const raw of ['3000000000', '-3000000000']) {
+      await expect(controller.deleteCustomMode(makeReq(), raw)).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(controller.getModeMap(makeReq(), raw)).rejects.toThrow(
+        BadRequestException,
+      );
+    }
+    expect(modeMaps.deleteCustomMode).not.toHaveBeenCalled();
+    expect(modeMaps.getModeMap).not.toHaveBeenCalled();
+  });
+
+  it('clientId -3000000000 → 400 до сервиса', async () => {
+    const { controller, modeMaps } = makeController();
+    await expect(
+      controller.listModeMaps(makeReq(), '-3000000000'),
+    ).rejects.toThrow(BadRequestException);
+    expect(modeMaps.listModeMaps).not.toHaveBeenCalled();
+  });
+});

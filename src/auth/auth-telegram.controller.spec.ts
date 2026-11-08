@@ -13,9 +13,14 @@
 // telegram.provider.spec.ts.
 jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
 
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
+import { StepUpService } from './step-up';
 import { AuthTelegramController } from './auth-telegram.controller';
 import type { AuthProviderRegistry } from './providers/registry';
 import type { AuthFlowService, SignInOutcome } from './auth-flow.service';
@@ -101,17 +106,26 @@ function makeRes(): { res: Response; mocks: ResMocks } {
   return { res: mocks as unknown as Response, mocks };
 }
 
+// StepUpService: проверка Bearer-привязки — своя логика в step-up.spec.ts.
+function makeStepUp(): StepUpService & { assertIfBearer: jest.Mock } {
+  return {
+    assertIfBearer: jest.fn().mockResolvedValue(undefined),
+  } as unknown as StepUpService & { assertIfBearer: jest.Mock };
+}
+
 function makeController(opts: {
   providers: AuthProviderRegistry;
   flow: AuthFlowService;
   securityLog?: SecurityLogService;
   config?: ConfigService;
+  stepUp?: StepUpService;
 }): AuthTelegramController {
   return new AuthTelegramController(
     opts.config ?? makeConfig(),
     opts.providers,
     opts.securityLog ?? makeSecurityLog().securityLog,
     opts.flow,
+    opts.stepUp ?? makeStepUp(),
   );
 }
 
@@ -229,6 +243,24 @@ describe('AuthTelegramController.telegramWidget — resolveLinkUserId и outcome
     expect(resMocks.clearCookie).toHaveBeenCalledWith('tg_link_user', {
       path: '/api/auth',
     });
+  });
+
+  // S12: привязка по голому Bearer без кода/свежего входа отбивается ДО
+  // обращения к провайдеру и к БД — ни линковки, ни куки.
+  it('step-up не пройден → отказ, signInOrLinkOrMerge не вызывается', async () => {
+    const { flow, flowMocks, providers } = setup();
+    const stepUp = makeStepUp();
+    stepUp.assertIfBearer.mockRejectedValue(new ForbiddenException());
+    const controller = makeController({ providers, flow, stepUp });
+    const req = makeReq({
+      headers: { 'x-requested-with': 'XMLHttpRequest' },
+      webUser: { userId: 777n },
+    } as Partial<Request>);
+    await expect(
+      controller.telegramWidget({}, req, makeRes().res),
+    ).rejects.toThrow(ForbiddenException);
+    expect(stepUp.assertIfBearer).toHaveBeenCalledWith(req);
+    expect(flowMocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
   });
 
   it('нет webUser, но есть cookie tg_link_user → linkUserId из cookie', async () => {
@@ -374,10 +406,27 @@ describe('AuthTelegramController.telegramRedirect', () => {
     expect(resMocks.cookie).not.toHaveBeenCalled();
   });
 
-  it('с webUser: ставит tg_link_user cookie с подписанным state', () => {
+  // S12: привязку начинает только кука link_token (выдана после step-up).
+  it('webUser из голого Bearer → обычный вход: куку привязки не ставит', () => {
     const { flow, mocks: flowMocks } = makeFlow();
     const controller = makeController({ providers: makeProviders({}), flow });
     const req = makeReq({ webUser: { userId: 777n } } as Partial<Request>);
+    const { res, mocks: resMocks } = makeRes();
+    controller.telegramRedirect(req, res);
+    expect(flowMocks.buildLinkState).not.toHaveBeenCalled();
+    expect(resMocks.cookie).not.toHaveBeenCalled();
+    expect(resMocks.clearCookie).toHaveBeenCalledWith('tg_link_user', {
+      path: '/api/auth',
+    });
+    expect(resMocks.redirect).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it('webUser из куки link_token: ставит tg_link_user cookie с подписанным state', () => {
+    const { flow, mocks: flowMocks } = makeFlow();
+    const controller = makeController({ providers: makeProviders({}), flow });
+    const req = makeReq({
+      webUser: { userId: 777n, viaLinkToken: true },
+    } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
     controller.telegramRedirect(req, res);

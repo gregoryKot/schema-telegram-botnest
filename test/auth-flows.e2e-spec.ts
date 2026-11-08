@@ -7,6 +7,8 @@ import * as crypto from 'crypto';
 import { authenticator } from 'otplib';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { SecurityLogService } from '../src/auth/security-log.service';
+import { AuthService } from '../src/auth/auth.service';
+import { signAccessToken } from './e2e-support/jwt';
 
 const hashToken = (raw: string): string =>
   crypto.createHash('sha256').update(raw).digest('hex');
@@ -271,6 +273,24 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       });
       expect(rightCode.status).toBe(200);
       expect(rightCode.body.accessToken).toEqual(expect.any(String));
+
+      // S12: с включённым TOTP пропуск в привязку нового способа входа
+      // (кука link_token) — только с кодом в x-totp-code. Код этого шага уже
+      // погашен анти-реплеем (challenge выше) — берём код следующего шага.
+      const linkToken = () =>
+        request(app.getHttpServer())
+          .get('/api/auth/link-token')
+          .set('Authorization', `Bearer ${rightCode.body.accessToken}`);
+      const noCode = await linkToken();
+      expect(noCode.status).toBe(403);
+      expect(noCode.body.reason).toBe('totp_required');
+      expect(extractSetCookie(noCode, 'link_token')).toBeUndefined();
+      const nextStep = authenticator
+        .clone({ epoch: Date.now() + 30_000 })
+        .generate(secret);
+      const withCode = await linkToken().set('x-totp-code', nextStep);
+      expect(withCode.status).toBe(200);
+      expect(extractSetCookie(withCode, 'link_token')).toBeDefined();
     });
 
     // FINDING: telegram/webapp skips signInOrLinkOrMerge/totp.isEnabled() —
@@ -395,6 +415,51 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       const secret = extractCookieValue(res, 'gsi_nonce')!;
       expect(res.body.nonce).toBe(hashToken(secret));
       expect(res.headers['cache-control']).toContain('no-store');
+    });
+  });
+
+  // Экран /account/merge берёт имя и сводку здесь, а не из query редиректа.
+  describe('merge/preview: ownership', () => {
+    const TARGET = 910_701n;
+    const SOURCE = 910_702n;
+    const OTHER = 910_703n;
+    const bearer = (id: bigint) =>
+      `Bearer ${signAccessToken(id, process.env.JWT_SECRET as string)}`;
+
+    it('свой токен → провайдер, имя и сводка; чужой → 403; без входа → 401', async () => {
+      for (const id of [TARGET, SOURCE, OTHER])
+        await prisma.user.create({ data: { id, firstName: 'E2E' } });
+      await prisma.authProvider.create({
+        data: {
+          userId: SOURCE,
+          provider: 'google',
+          providerId: 'g-e2e-merge',
+          displayName: 'Другой',
+        },
+      });
+      const token = app
+        .get(AuthService)
+        .buildMergeToken(TARGET, SOURCE, 'google', 'g-e2e-merge');
+
+      const own = await post('/api/auth/merge/preview')
+        .set('Authorization', bearer(TARGET))
+        .send({ token });
+      expect(own.status).toBe(200);
+      expect(own.body).toMatchObject({
+        provider: 'google',
+        otherDisplay: 'Другой',
+        twoFactorLost: false,
+      });
+      expect(typeof own.body.summary).toBe('object');
+
+      const foreign = await post('/api/auth/merge/preview')
+        .set('Authorization', bearer(OTHER))
+        .send({ token });
+      expect(foreign.status).toBe(403);
+      expect(foreign.body).not.toHaveProperty('otherDisplay');
+
+      const anon = await post('/api/auth/merge/preview').send({ token });
+      expect(anon.status).toBe(401);
     });
   });
 

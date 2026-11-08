@@ -147,38 +147,26 @@
 - **S7 · боевой `BOT_TOKEN` — секрет уровня репозитория.** Он нужен для DM из `alarm`
   (`nightly.yml`, `prod-smoke.yml`); любой воркфлоу ветки этого репозитория его видит.
   Чинить: отдельный бот-уведомитель вместо боевого токена.
-- **S9 · фишинг кодом входа через настоящее письмо.** `POST /api/auth/email/link` принимает
-  чужой `ticket` (`src/auth/auth-account.controller.ts:65` → `magic-link.ts:53-54`), `/auth/confirm`
-  подставляет код из URL без устройства и времени, `poll` отдаёт сессию подтвердившего;
-  карточка привязки в боте (`src/telegram/telegram.link-card.ts:53`) молчит, что устройство
-  получит сессию. Чинить: код вводится руками, на `/auth/confirm` — `deviceLabel` и время.
-- **S11 · перебор TOTP по IP, а не по аккаунту.** `src/auth/auth-2fa.controller.ts:109-118`,
-  `src/api/throttler-identity.ts:94`: анонимный `2fa/challenge` лимитируется по IP, merge — по
-  `uid` атакующего. Нужен постоянный счётчик неудач на целевой `userId` (общий для challenge,
-  merge, удаления).
-- **S12 · привязка и отвязка способов входа без step-up.** `auth-account.controller.ts:229,271`
-  и handoff — только `JwtAuthGuard`, без кода TOTP, без уведомления пользователю; включение 2FA
-  не отзывает другие сессии. 15 минут украденного access-токена → вечный доступ.
-- **S15 · Метрика остаётся в документе после входа.** `/install` (публичная) → обмен кода →
-  SPA-переход в кабинет (`webapp/src/pages/InstallPage.tsx:51`), и `?site=personal` на
-  `schemehappens.ru` (`webapp/src/App.tsx:62-63`). Чинить: полная навигация при `__ym_loaded`,
-  `?site=personal` только на хосте визитки. D-4 «закрыт» — неточно.
-- **S16 · `User.firstName` открытым текстом.** Google кладёт `name ?? email`
-  (`src/auth/providers/google.provider.ts:136`), VK — имя и фамилию (`vk.provider.ts:145`);
-  причина в `src/utils/encryption-policy.ts:25` («публично в Telegram») к ним не относится.
-- **S19 · серверный рендер статьи без санитайзера.** `src/articles/article-seo.render.ts:37-38`
-  режет `<script>` регэкспом (обходится `<scr<script></script>ipt>`), клиент — DOMPurify. Источник —
-  админ; ремень безопасности — тот же allowlist на сервере.
-- **S20 · чужой текст на наших страницах.** `webapp/src/pages/AuthErrorPage.tsx:11,29` выводит
-  `?reason=` как есть; `webapp/src/pages/MergePage.tsx:19-24` — `name`/`summary` из query.
-  Чинить: словарь кодов; имя и сводку merge брать с сервера по токену.
-- **S21 · мелочи:** токен 2FA остаётся в адресе (`TwoFactorChallengePage.tsx:25`, стереть
-  `replaceState`); PKCE VK выводится из `state` (`vk.provider.ts:33,96`); `webapp/src/utils/leadSource.ts:13`
-  кладёт `location.hash` целиком в открытую колонку `source`; свободный JSON без схемы
-  (`src/api/dto/misc.dto.ts:19`, `diary-entries.dto.ts:21-23`); сторонние actions по тегу, не SHA
-  (`docs/AUDIT_2026-10_FINDINGS.md:520`); `fast-uri` 3.1.8 moderate через `prisma`.
-- **Билет входа теряется после 2FA.** `finishOAuthRedirect` ведёт на
-  `/auth/2fa?token=…&ticket=…` (`src/auth/auth-flow.service.ts`, «билет доживает до второго
-  шага»), но `webapp/src/pages/TwoFactorChallengePage.tsx` `ticket` не читает и после кода
-  уводит на `/today`, а не на `/auth/confirm?code=…`: вход в контейнере с 2FA ждёт до истечения
-  билета. Найдено при правке login-CSRF (аудит 2026-11), не чинили — вне задачи.
+- **S12 · осознанно не сделано (2026-11).** Step-up (`src/auth/step-up.ts`) спрашивает только
+  код TOTP: аккаунту без 2FA «свежий вход» нечем доказать — refresh-кука не доходит в iframe
+  MAX и Telegram Web (вариант: принимать свежий initData); такому аккаунту остаётся уведомление
+  о привязке. `ticket/handoff` и `ticket/confirm-login` — без step-up: handoff мессенджер
+  выписывает сам каждые ~2 мин, confirm-login — основной сценарий давно вошедшего человека.
+- **Хвосты S12.** Отвязка почты не шлёт письмо на отвязанный адрес — уведомление уходит в
+  оставшиеся каналы (`src/auth/auth-link.controller.ts`, `security-notice.service.ts`);
+  access-токен отозванной сессии живёт до 15 минут (JWT без состояния, `jwt.guard.ts`);
+  `forConfirm` бота (`src/auth/login-ticket/login-ticket.service.ts`) не отдаёт `createdAt`.
+- **S21 · остаток:** `fast-uri` 3.1.8 moderate через `prisma` (недоверенные URI до него не
+  доходят); `GET /api/payment/success?SignatureValue[]=x` падает в `safeEqualHex`
+  (`src/booking/robokassa.service.ts:~188`) с 500 — проверка типа там же, где в ResultURL;
+  сырой query-параметр `error` попадает в текст DM (`src/auth/auth-oauth.controller.ts:~79`) —
+  после S13 до 3 в минуту, формат стоит ограничить белым списком. Остальное из S21 закрыто
+  в волне 1 плана исправлений.
+- **Без события аналитики — осознанно (2026-11).** Уведомление `security_notice` о привязке и
+  отвязке входа (`src/auth/security-notice.service.ts`) и окно кода 2FA (`webapp/src/components/stepUp/`)
+  — не фичи в смысле правила №8, а защитные шаги: считать их в `/stats` нечего (события пишет
+  `SecurityLogService`, DM админу — `totp_locked`).
+- **S9 · остаток.** `/api/auth/google|vk?ticket=` кукой билета не закрыть (ссылку по замыслу
+  открывает другой контейнер) — там защищает ручной ввод кода на `/auth/confirm` и
+  `login-preview`. Карточка привязки в боте (`src/telegram/telegram.link-card.ts:53`) по-прежнему
+  не говорит, что устройство получит сессию подтверждающего.

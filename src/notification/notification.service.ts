@@ -29,7 +29,8 @@ export type NotificationType =
   | 'nudge'
   | 'task_assigned'
   | 'ysq_requested'
-  | 'pair_activity';
+  | 'pair_activity'
+  | 'security_notice';
 
 /**
  * Проактивные типы — бот пишет сам, без действия юзера. Подчиняются дневному
@@ -70,6 +71,7 @@ export const QUIET_EXEMPT_TYPES: NotificationType[] = [
   'anniversary_30',
   'anniversary_60',
   'anniversary_90',
+  'security_notice', // S11/S12: о входе в аккаунт молчать до утра нельзя
 ];
 
 export interface DueNotification {

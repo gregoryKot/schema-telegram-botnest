@@ -36,3 +36,7 @@
 .as-steps { margin: 6px 0 0; padding: 0 0 0 22px; display: grid; gap: 8px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .as-hint { font-size: 13px; line-height: 1.6; color: var(--text-faint); margin: 0; }
 .as-cta { min-height: 52px; font-size: 15px; }
+/* Поле сверки кода билета (/auth/confirm, S9 аудита 2026-11). */
+.as-field { display: flex; flex-direction: column; gap: 6px; }
+.as-code-input { font-size: 20px; letter-spacing: .15em; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 52px; }
+.as-field-err { font-size: 13px; line-height: 1.5; color: var(--err); }
