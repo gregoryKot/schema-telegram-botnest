@@ -1456,7 +1456,7 @@
   "src/therapy/relation-where.ts": 16,
   "src/therapy/remove-client.ts": 55,
   "src/therapy/session-notes-page.ts": 35,
-  "src/therapy/streak-expire.ts": 48,
+  "src/therapy/streak-expire.ts": 54,
   "src/therapy/streak-progress.ts": 54,
   "src/therapy/streak-window.ts": 80,
   "src/therapy/task-title.data.ts": 65,
