@@ -17,7 +17,7 @@ export function TicketCodeField({ value, onChange, matches, disabled }: {
         id={id}
         className="ds-input as-code-input"
         type="text"
-        autoComplete="off"
+        autoComplete="one-time-code" // одноразовый код, не свободный текст (трипваер №7)
         autoCapitalize="characters"
         autoCorrect="off"
         spellCheck={false}
