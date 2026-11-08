@@ -260,7 +260,7 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   клинической истории. На будущее — либо не кэшировать чувствительный текст
   совсем (лоадер до ответа сервера), либо шифровать кэш ключом, живущим только
   в памяти сессии.
-- **Content-Security-Policy — есть, через helmet** (`src/main.ts`, HTTP-заголовком
+- **Content-Security-Policy — есть, через helmet** (`src/infra/configure-app.ts`, HTTP-заголовком
   на все ответы Nest, включая статику webapp через `ServeStaticModule`). `helmet`
   с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
   `script-src` — allowlist (`mc.yandex.ru`, `st.max.ru`, `accounts.google.com`;

@@ -4,31 +4,26 @@
 //   - PrismaService → стейтфулый in-memory фейк (fake-prisma.ts)
 //   - TELEGRAF_BOT   → no-op стаб (fake-bot.ts), чтобы не стучаться в Telegram
 //
-// Всё остальное — ValidationPipe, guard'ы, фильтры — то самое, что реально
-// работает в проде: это и есть смысл e2e (юнит-тесты не могут поймать
+// Всё остальное — ValidationPipe, guard'ы, фильтры (configureApp, общий с
+// src/main.ts) — то самое, что реально работает в проде: это и есть смысл e2e (юнит-тесты не могут поймать
 // "guard не примонтирован" или "ValidationPipe не применён глобально").
 //
 // E2E_REAL_DB=1 (TEST_TRUST_PLAN.md, п.1) переключает PrismaService на
 // настоящий Postgres (см. buildTestApp() ниже и build-real-db-test-app.ts) —
 // для ownership-спеков, которые именно про фильтрацию по userId, там, где
 // фейк расходился с реальностью.
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
-import {
-  GenericExceptionFilter,
-  PrismaExceptionFilter,
-} from '../../src/prisma/prisma-exception.filter';
 import { installBigIntJson } from '../../src/utils/bigint-json';
-import { installBodyParsers } from '../../src/infra/body-parsers';
+import { configureApp } from '../../src/infra/configure-app';
 import { makeFakePrisma, FakePrisma } from './fake-prisma';
 import { makeFakeBot } from './fake-bot';
 import { buildRealDbTestApp } from './build-real-db-test-app';
 import { stopCronJobs } from './stop-cron-jobs';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const cookieParser = require('cookie-parser');
 
 // BigInt в JSON-ответах — тот же установщик, что в src/main.ts (число для
 // безопасного целого, строка для id ≥ 2^53). Без него любой ответ с
@@ -70,22 +65,14 @@ export async function buildTestApp(): Promise<TestApp> {
     .useValue(makeFakeBot())
     .compile();
 
-  // `bodyParser: false` — как в src/main.ts: свой парсер с BODY_LIMIT ставится
-  // ниже, штатный (100 КБ) не регистрируется вовсе.
-  const app = moduleRef.createNestApplication({ bodyParser: false });
-
-  // ── ЗЕРКАЛО src/main.ts — держать синхронно при правках bootstrap() ────────
-  // (helmet/CORS/redirect-middleware/ServeStatic намеренно опущены: они не
-  // участвуют в проверяемых смоуком инвариантах — guard/DTO/ownership — и не
-  // нужны для запросов supertest напрямую к handler'ам.)
-  app.use(cookieParser());
-  app.useGlobalFilters(
-    new GenericExceptionFilter(),
-    new PrismaExceptionFilter(),
-  );
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  installBodyParsers(app);
-  // ─────────────────────────────────────────────────────────────────────────
+  // `bodyParser: false` — как в src/main.ts: свой парсер с BODY_LIMIT ставит
+  // configureApp, штатный (100 КБ) не регистрируется вовсе.
+  const app = moduleRef.createNestApplication<NestExpressApplication>({
+    bodyParser: false,
+  });
+  // Та же обвязка, что в src/main.ts (фильтры, пайп, парсеры, helmet, CORS,
+  // trust proxy) — одна функция, а не зеркало (src/infra/configure-app.ts).
+  configureApp(app);
 
   await app.init();
   // Как в build-real-db-test-app.ts: расписание спеку не нужно, ему нужны

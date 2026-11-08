@@ -254,18 +254,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   `PhraseCheckEx.tsx`, `BeliefCheckEx.tsx`, `flashcard/FlashcardSteps.tsx`; `<input>`
   в `SafePlaceEx.tsx`), экран письма и места пишет «Проверь соединение», повтор не поможет. Закрыть: `LimitedTextarea` с
   пределом из `shared/src/limits/textLimits.ts` (как у дневников, `DIARY_FIELD_MAX`).
-- **`test/e2e-support/build-real-db-test-app.ts` не вешает фильтры исключений**,
-  хотя задуман как зеркало `src/main.ts` (второе зеркало,
-  `build-test-app.ts`, их вешает). Значит прогон на живом Postgres отвечает на
-  ошибки не так, как прод: `GenericExceptionFilter`/`PrismaExceptionFilter`
-  там не участвуют. Парсеры тела в этом файле были той же дырой и закрыты
-  вместе с L2; фильтры не трогали, чтобы не менять ответы спеков, которые
-  локально не прогнать (Postgres есть только в CI-джобе `migrations`).
-  Правильный путь — свести оба зеркала в один бутстрап, а не дописывать
-  строки в каждое. Остаток расхождения зеркал с `main.ts`: ни одно не ставит
-  `trust proxy`, helmet/`frameAncestors`, `enableCors`; путь — `configureApp(app)`
-  в `src/infra` для `main.ts` и обоих билдеров с тестом-сверкой
-  ([AUDIT_2026-10, «Тесты и гейты»](../AUDIT_2026-10_FINDINGS.md#тесты-и-гейты)).
 - Добивание `no-unsafe-*` в проде (храповик не даёт расти).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
 - Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
