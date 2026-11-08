@@ -172,13 +172,27 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
+  // Хвост S12 (аудит 2026-11): sid в access-токене — family его цепочки; по нему
+  // гвард (live-access.ts) узнаёт отзыв сессии сразу. Ротация sid не меняет.
+  it('access-токен несёт sid = family сессии, и при выдаче, и после ротации', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const family = webSessions[0].family as string;
+    expect(svc.verifyAccessToken(issued.accessToken)).toEqual({
+      userId: 1n,
+      sid: family,
+    });
+    const rotated = await svc.rotateRefreshToken(issued.refreshToken);
+    expect(svc.verifyAccessToken(rotated.accessToken).sid).toBe(family);
+  });
+
   it('rotateRefreshToken ищет сессию именно по своему tokenHash, а не берёт первую строку таблицы (иначе можно получить чужой accessToken)', async () => {
     const { svc } = makeService();
     await svc.issueTokens(2n); // окажется первой строкой в таблице
     const mine = await svc.issueTokens(1n);
     const rotated = await svc.rotateRefreshToken(mine.refreshToken);
     // Идентичность нового accessToken — от МОЕГО userId, не от первой строки.
-    expect(svc.verifyAccessToken(rotated.accessToken)).toEqual({ userId: 1n });
+    expect(svc.verifyAccessToken(rotated.accessToken).userId).toBe(1n);
   });
 
   it('theft-detection отзывает только family украденного токена, не сессии посторонних пользователей (updateMany обязан фильтровать по family)', async () => {
@@ -1309,6 +1323,7 @@ describe('AuthService — issueTokens/rotateRefreshToken: accessToken реаль
     const tokens = await svc.issueTokens(42n);
     expect(svc.verifyAccessToken(tokens.accessToken)).toEqual({
       userId: 42n,
+      sid: expect.any(String),
     });
   });
 
@@ -1318,6 +1333,7 @@ describe('AuthService — issueTokens/rotateRefreshToken: accessToken реаль
     const rotated = await svc.rotateRefreshToken(issued.refreshToken);
     expect(svc.verifyAccessToken(rotated.accessToken)).toEqual({
       userId: 42n,
+      sid: expect.any(String),
     });
   });
 });

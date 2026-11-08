@@ -66,6 +66,8 @@ function makeGuard(
       // по умолчанию аккаунт жив — тесты про удаление/слияние переопределяют
       findUnique: jest.fn().mockResolvedValue({ id: 0n, deletedAt: null }),
     },
+    // живая цепочка сессии по умолчанию — тест про отзыв переопределяет
+    webSession: { findFirst: jest.fn().mockResolvedValue({ id: 's1' }) },
   } as any;
   const authService = {
     verifyAccessToken: jest.fn(),
@@ -116,7 +118,7 @@ describe('путь 1: JWT Bearer (сайт)', () => {
     // Только сверка существования — никакого upsert (он воскрешал бы удалённых).
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: 555n },
-      select: { id: true, deletedAt: true },
+      select: { deletedAt: true },
     });
     expect(prisma.user.upsert).toBeUndefined();
   });
@@ -145,6 +147,23 @@ describe('путь 1: JWT Bearer (сайт)', () => {
     await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+
+  // Хвост S12 (аудит 2026-11): отозванная сессия гасит свой access-токен сразу.
+  it('sid отозванной цепочки → 401, webUser не ставится', async () => {
+    const { guard, prisma, authService } = makeGuard();
+    authService.verifyAccessToken.mockReturnValue({ userId: 555n, sid: 'f1' });
+    prisma.webSession.findFirst.mockResolvedValue(null);
+    const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
+
+    await expect(guard.canActivate(makeCtx(req))).rejects.toThrow(
+      'Session revoked',
+    );
+    expect(prisma.webSession.findFirst).toHaveBeenCalledWith({
+      where: { family: 'f1', userId: 555n, revokedAt: null },
+      select: { id: true },
+    });
+    expect(req.webUser).toBeUndefined();
   });
 
   it('битый Bearer → исключение от verifyAccessToken пробрасывается', async () => {

@@ -204,6 +204,30 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(extractSetCookie(res, 'refresh_token')).toMatch(/refresh_token=;/);
       expect(sessionFor(raw).revokedAt).not.toBeNull();
     });
+
+    // Хвост S12 (аудит 2026-11): access-токен несёт sid (family цепочки), и
+    // гвард сверяет его с WebSession на каждом запросе — после «Выйти» токен
+    // мёртв сразу, а не через ≤15 минут. Соседняя сессия того же аккаунта жива.
+    it('после logout access-токен этой сессии — 401 сразу; другая сессия жива', async () => {
+      const a = await loginViaTelegramWebapp(910_202);
+      const b = await loginViaTelegramWebapp(910_202);
+      expect(a.status).toBe(200);
+      const me = (token: string) =>
+        request(app.getHttpServer())
+          .get('/api/auth/me')
+          .set('Authorization', `Bearer ${token}`);
+      expect((await me(a.body.accessToken)).status).toBe(200);
+
+      const rawA = extractCookieValue(a, 'refresh_token')!;
+      const out = await post('/api/auth/logout').set(
+        'Cookie',
+        `refresh_token=${rawA}`,
+      );
+      expect(out.status).toBe(200);
+
+      expect((await me(a.body.accessToken)).status).toBe(401);
+      expect((await me(b.body.accessToken)).status).toBe(200);
+    });
   });
 
   describe('CSRF protection (x-requested-with, or JSON content-type as fallback)', () => {

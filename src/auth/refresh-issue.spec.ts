@@ -22,7 +22,7 @@ function makeDeps(rows: Row[]): { deps: IssueRotatedDeps; rows: Row[] } {
   const deps: IssueRotatedDeps = {
     prisma,
     hashToken: (raw: string) => `h:${raw}`,
-    signAccessToken: (id: bigint) => `acc:${id}`,
+    signAccessToken: (id: bigint, sid: string) => `acc:${id}:${sid}`,
     accessTtlS: 900,
     refreshTtlS: 2_592_000,
   };
@@ -85,7 +85,7 @@ describe('issueRotatedPair — обычная ротация', () => {
 
     expect(res.rotated).toBe(false);
     expect(res.refreshToken).toBe(RAW); // кука прежняя
-    expect(res.accessToken).toBe('acc:7');
+    expect(res.accessToken).toBe('acc:7:fam-1'); // sid = family цепочки (S12)
     // Ни одной новой строки: наследник не создан.
     expect(rows).toHaveLength(1);
   });
