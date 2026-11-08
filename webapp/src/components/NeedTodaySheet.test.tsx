@@ -77,7 +77,7 @@ describe('NeedTodaySheet', () => {
   });
 
   // U5 (аудит 2026-11): «и напомним» обещалось и тем, кому напоминание не
-  // дойдёт — уведомления уходят только в Telegram.
+  // дойдёт — без канала уведомлений (ни Telegram, ни веб-пушей).
   it('напоминанию некуда прийти — карточка плана не обещает «напомним», а зовёт в календарь', async () => {
     vi.mocked(api.getSettings).mockResolvedValueOnce({ notifyTimezone: 'UTC', notifyReachable: false } as never);
     await act(async () => { renderSheet({ value: 2 }); });

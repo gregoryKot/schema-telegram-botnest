@@ -35,6 +35,7 @@ export const RULES: Rule[] = [
   simple('POST', /^\/api\/ysq-progress$/, '/api/ysq-progress'),
   simple('DELETE', /^\/api\/ysq-progress$/, '/api/ysq-progress'),
   simple('POST', /^\/api\/settings$/, '/api/settings'),
+  simple('POST', /^\/api\/push\/(subscription|unsubscribe)$/, '/api/settings'), // notifyChannel: push ↔ telegram
   {
     method: 'POST',
     pattern: /^\/api\/note$/,

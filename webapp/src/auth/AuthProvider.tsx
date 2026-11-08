@@ -9,6 +9,7 @@ import { clearLocalData } from './clearLocalData';
 import { refreshSession } from './refreshSession';
 import { telegramWebAppAuth } from './telegramWebAppAuth';
 import { useAuthRetryOnFocus } from './useAuthRetryOnFocus';
+import { releasePushOnLogout } from '../push/pushSubscription';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 const EXPIRY_SKEW_MS = 60_000; // не дёргаем refresh, если токен ещё жив с запасом
@@ -101,8 +102,8 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
   );
 
   const logout = useCallback(async (all = false) => {
-    // Сетевой шаг — общий с мини-аппом (shared/auth/logout, правило №3).
-    await postLogout(API_BASE, { all, requestedWith: 'webapp' });
+    await releasePushOnLogout(); // пока сессия жива: следующему аккаунту здесь не придут чужие напоминания
+    await postLogout(API_BASE, { all, requestedWith: 'webapp' }); // сетевой шаг — shared/auth/logout (правило №3)
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
     setToken(null);
     setAuthError(null);

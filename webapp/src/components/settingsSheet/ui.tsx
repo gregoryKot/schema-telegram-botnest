@@ -42,18 +42,20 @@ export function SRow({ title, sub, right, onClick, danger }: {
   );
 }
 
-function Switch({ on, onClick, small, label, describedBy }: { on: boolean; onClick: () => void; small?: boolean; label: string; describedBy?: string }) {
+// busy — запрос в пути (включение пушей): тумблер бледнеет и не жмётся, спиннер — только у кнопок.
+function Switch({ on, onClick, small, label, describedBy, busy }: { on: boolean; onClick: () => void; small?: boolean; label: string; describedBy?: string; busy?: boolean }) {
+  const act = busy ? () => undefined : onClick;
   return (
-    <div onClick={onClick} role="switch" aria-checked={on} aria-label={label} aria-describedby={describedBy} tabIndex={0}
-      onKeyDown={onKeyActivate(onClick)}
+    <div onClick={act} role="switch" aria-checked={on} aria-label={label} aria-describedby={describedBy} tabIndex={0}
+      aria-busy={busy || undefined} aria-disabled={busy || undefined} onKeyDown={onKeyActivate(act)}
       className={`ds-switch${small ? ' ds-switch--sm' : ''}`}>
       <div className="ds-switch-knob" />
     </div>
   );
 }
 
-export function Toggle({ on, onClick, label, describedBy }: { on: boolean; onClick: () => void; label: string; describedBy?: string }) {
-  return <Switch on={on} onClick={onClick} label={label} describedBy={describedBy} />;
+export function Toggle({ on, onClick, label, describedBy, busy }: { on: boolean; onClick: () => void; label: string; describedBy?: string; busy?: boolean }) {
+  return <Switch on={on} onClick={onClick} label={label} describedBy={describedBy} busy={busy} />;
 }
 
 export function SmallToggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
