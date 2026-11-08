@@ -17,7 +17,7 @@ import { FIELD_HINTS, type InvalidField } from './booking/fieldHints';
 import { ContactChannelField } from './booking/ContactChannelField';
 import type { ContactChannel } from '../../../shared/src/booking/contactChannel';
 import { BookingSlotsSection } from './booking/BookingSlotsSection';
-import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen } from './booking/BookingResultScreens';
+import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen, type BookedSession } from './booking/BookingResultScreens';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
 import { currencyFromTimeZone } from '../../../shared/src/booking/priceRegion';
 import { firstSlotDay, useBookingSlots } from '../../../shared/src/booking/useBookingSlots';
@@ -57,7 +57,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
     return 'idle';
   });
   const [payUrl, setPayUrl] = useState<string | null>(null);
-  const [cancelToken, setCancelToken] = useState('');
+  const [booked, setBooked] = useState<BookedSession | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [options, setOptions] = useState<SessionOption[]>([]);
   const [sessionType, setSessionType] = useState<BookingType>(lockedType ?? 'INTRO_15');
@@ -108,7 +108,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   if (status === 'payment_fail') return <PaymentFailScreen resultRef={resultRef} onRetry={() => setStatus('idle')} />;
   if (status === 'done') return (
     <DoneScreen
-      resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} cancelToken={cancelToken}
+      resultRef={resultRef} slot={slot} tz={tz} cancelled={cancelled} booked={booked}
       sessionType={sessionType} onCancelled={() => setCancelled(true)} message={message} costNote={doneCostNote(view, sessionType)}
     />
   );
@@ -133,7 +133,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
         returning: sessionType === 'SESSION_50' && returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz, clientChannel: channel,
       });
-      setCancelToken(res.cancelToken);
+      setBooked({ cancelToken: res.cancelToken, eventDurationMin: res.eventDurationMin });
       trackBookingSubmit(sessionType);
       if (res.paymentUrl) {
         // Paid session: show a "reserved, go to pay" screen first (so the client

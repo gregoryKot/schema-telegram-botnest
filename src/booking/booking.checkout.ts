@@ -4,6 +4,7 @@ import { BookingNotifyService } from './booking-notify.service';
 import { RobokassaService } from './robokassa.service';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { assertPaymentAvailable } from './payment-guard';
+import { eventDurationMin } from './session-event';
 
 // После создания брони: бесплатная и платная не в рублях подтверждаются сразу,
 // платная в рублях получает ссылку на оплату (правило №10: из booking.service.ts).
@@ -27,6 +28,7 @@ export interface BookingResult {
   heldUntil: Date | null;
   status: BookingStatus;
   paymentUrl: string | null;
+  eventDurationMin: number; // длина встречи, не слота: знакомство 15 в слоте 50 (Р6)
 }
 
 /** Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ
@@ -46,6 +48,7 @@ async function confirmNow(
     heldUntil: null,
     status: BookingStatus.CONFIRMED,
     paymentUrl: null,
+    eventDurationMin: eventDurationMin(booking),
   };
 }
 
@@ -101,5 +104,6 @@ export async function completeCheckout(
     heldUntil,
     status: BookingStatus.HELD,
     paymentUrl,
+    eventDurationMin: eventDurationMin(booking),
   };
 }
