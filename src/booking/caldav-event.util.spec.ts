@@ -154,6 +154,16 @@ describe('URL и VALARM — опциональные поля (PR B, клиен�
     expect(ics).toContain('ACTION:DISPLAY\r\n');
     expect(ics).toContain('TRIGGER:-PT60M\r\n');
     expect(ics).toContain('END:VALARM\r\n');
+    // Бронь: подпись сигнала прежняя.
+    expect(ics).toContain('DESCRIPTION:Напоминание о встрече\r\n');
+  });
+
+  it('alarmDescription подписывает сигнал и экранируется', () => {
+    const ics = buildVcalendar([
+      { ...BASE, alarmMinutesBefore: 0, alarmDescription: 'Шаг; дыхание' },
+    ]);
+    expect(ics).toContain('DESCRIPTION:Шаг\\; дыхание\r\n');
+    expect(ics).not.toContain('Напоминание о встрече');
   });
 });
 

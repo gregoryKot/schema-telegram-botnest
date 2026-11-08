@@ -82,6 +82,8 @@ export function practiceIcsText(ev: PracticeIcsEvent): string {
         summary: ev.text,
         description: `Практика для потребности: ${ev.needLabel}`,
         alarmMinutesBefore: 0,
+        // Сигнал — текст практики, как в файле с устройства (shared/src/utils/ics.ts).
+        alarmDescription: ev.text.trim() || 'Практика',
       },
     ],
     'Всё по схеме',

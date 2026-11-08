@@ -16,6 +16,8 @@ export interface CalEvent {
   url?: string;
   /** Напоминание за N минут до начала (VALARM DISPLAY). */
   alarmMinutesBefore?: number;
+  /** Текст сигнала; без него — «Напоминание о встрече» (бронь). */
+  alarmDescription?: string;
 }
 
 /** Build the VCALENDAR/VEVENT body that CalDAV PUTs to iCloud (RFC 5545). */
@@ -53,16 +55,19 @@ function buildVevent(ev: CalEvent): string[] {
   if (ev.organizerEmail) out.push(`ORGANIZER:mailto:${ev.organizerEmail}`);
   if (ev.url) out.push(`URL:${escapeText(ev.url)}`);
   if (ev.alarmMinutesBefore != null)
-    out.push(...buildValarm(ev.alarmMinutesBefore));
+    out.push(...buildValarm(ev.alarmMinutesBefore, ev.alarmDescription));
   out.push('END:VEVENT');
   return out;
 }
 
-function buildValarm(minutesBefore: number): string[] {
+function buildValarm(
+  minutesBefore: number,
+  description = 'Напоминание о встрече',
+): string[] {
   return [
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
-    'DESCRIPTION:Напоминание о встрече',
+    `DESCRIPTION:${escapeText(description)}`,
     `TRIGGER:-PT${Math.max(0, Math.round(minutesBefore))}M`,
     'END:VALARM',
   ];
