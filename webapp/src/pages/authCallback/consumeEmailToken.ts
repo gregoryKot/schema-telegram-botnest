@@ -19,14 +19,19 @@ interface ConsumeBody {
 }
 
 const EXPIRED = 'email_link_expired';
+// U6 (аудит 2026-11): сеть и сбой сервера читались как «ссылка устарела».
+const NETWORK = 'email_network';
+/** Коды с подсказкой на «Аккаунте» (emailLinkError.ts), а не на /auth/error. */
+const ACCOUNT_REASONS = new Set(['email_link_session', 'email_taken']);
 
 /** POST /api/auth/email/consume. Любой сбой → { kind: 'error', reason }. */
 export async function consumeEmailToken(
   apiBase: string,
   token: string,
 ): Promise<EmailConsumeOutcome> {
+  let res: Response;
   try {
-    const res = await fetch(`${apiBase}/api/auth/email/consume`, {
+    res = await fetch(`${apiBase}/api/auth/email/consume`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -35,25 +40,26 @@ export async function consumeEmailToken(
       },
       body: JSON.stringify({ token }),
     });
-    const body = (await res.json().catch(() => ({}))) as ConsumeBody;
-    if (!res.ok) {
-      // email_link_session / email_taken несёт сам сервер; прочее — просрочка.
-      const known = body.reason === 'email_link_session' || body.reason === 'email_taken';
-      return { kind: 'error', reason: known ? String(body.reason) : EXPIRED };
-    }
-    if (typeof body.challengeToken === 'string')
-      return { kind: 'twofa', challengeToken: body.challengeToken };
-    if (body.linked === true) return { kind: 'linked' };
-    if (typeof body.accessToken === 'string')
-      return {
-        kind: 'session',
-        accessToken: body.accessToken,
-        expiresIn: typeof body.expiresIn === 'number' ? body.expiresIn : 900,
-      };
-    return { kind: 'error', reason: EXPIRED };
   } catch {
+    return { kind: 'error', reason: NETWORK }; // запрос не дошёл: ссылка цела
+  }
+  const body = (await res.json().catch(() => ({}))) as ConsumeBody;
+  if (!res.ok) {
+    const reason = String(body.reason);
+    if (ACCOUNT_REASONS.has(reason)) return { kind: 'error', reason };
+    if (res.status === 429 || res.status >= 500) return { kind: 'error', reason: `http_${res.status}` }; // не про ссылку
     return { kind: 'error', reason: EXPIRED };
   }
+  if (typeof body.challengeToken === 'string')
+    return { kind: 'twofa', challengeToken: body.challengeToken };
+  if (body.linked === true) return { kind: 'linked' };
+  if (typeof body.accessToken === 'string')
+    return {
+      kind: 'session',
+      accessToken: body.accessToken,
+      expiresIn: typeof body.expiresIn === 'number' ? body.expiresIn : 900,
+    };
+  return { kind: 'error', reason: EXPIRED };
 }
 
 /**
@@ -77,10 +83,8 @@ export function emailConsumeNextPath(
         ? `/auth/confirm?code=${encodeURIComponent(ticket)}`
         : (returnTo ?? '/today');
     case 'error':
-      // Ссылка привязки открыта не в том браузере / адрес занят — на аккаунт,
-      // там для этих кодов есть своя подсказка (emailLinkError.ts).
-      return outcome.reason === EXPIRED
-        ? `/auth/error?reason=${EXPIRED}`
-        : `/account?error=${outcome.reason}`;
+      return ACCOUNT_REASONS.has(outcome.reason)
+        ? `/account?error=${outcome.reason}`
+        : `/auth/error?reason=${outcome.reason}`;
   }
 }

@@ -11,7 +11,7 @@ import {
 const ty = (a: string) => a;
 
 describe('knownAuthErrorReason', () => {
-  it.each(['google_failed', 'vk_failed', 'max_failed', 'telegram_failed', 'email_link_expired', 'telegram_no_data', 'http_401', 'http_503'])(
+  it.each(['google_failed', 'vk_failed', 'max_failed', 'telegram_failed', 'email_link_expired', 'email_network', 'telegram_no_data', 'http_401', 'http_503'])(
     '%s — известный код',
     (code) => expect(knownAuthErrorReason(code)).toBe(code),
   );
@@ -33,7 +33,7 @@ describe('reportedAuthErrorReason', () => {
 
 describe('authErrorText', () => {
   it('у каждого кода словаря есть текст; у неизвестного — нет', () => {
-    for (const code of ['google_failed', 'telegram_expired', 'email_link_expired', 'http_429', 'http_502']) {
+    for (const code of ['google_failed', 'telegram_expired', 'email_link_expired', 'email_network', 'http_429', 'http_502']) {
       expect(authErrorText(code, ty), code).toBeTruthy();
     }
     expect(authErrorText('http_403', ty)).toBeNull();

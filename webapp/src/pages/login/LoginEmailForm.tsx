@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTr } from '../../utils/addressForm';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
+import { useResendPause } from './useResendPause';
+import { LoginEmailSent } from './LoginEmailSent';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -8,19 +11,22 @@ function isEmail(s: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 const SEND_FAILED = 'Не удалось отправить письмо';
 
 // Вход по ссылке из письма. Ошибки отдаёт наверх (общая строка ошибки страницы).
+// `?via=email` открывает форму сразу: так ведёт «Ссылка устарела» (authErrorScreens.ts).
 export function LoginEmailForm({ setError }: { setError: (e: string | null) => void }) {
   const tr = useTr();
-  const [show, setShow] = useState(false);
+  const { search } = useLocation();
+  const [show, setShow] = useState(() => new URLSearchParams(search).get('via') === 'email');
   const [value, setValue] = useState('');
-  const [sent, setSent] = useState(false);
+  const [sentCount, setSentCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const pause = useResendPause();
   const inputRef = useRef<HTMLInputElement>(null);
+  const sent = sentCount > 0;
 
   useEffect(() => { if (show && !sent) inputRef.current?.focus(); }, [show, sent]);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isEmail(value)) { setError(tr('Введи корректный email', 'Введите корректный email')); return; }
+  // Первая отправка и «Отправить ещё раз» — один и тот же запрос.
+  const send = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -30,12 +36,19 @@ export function LoginEmailForm({ setError }: { setError: (e: string | null) => v
         body: JSON.stringify({ email: value }),
       });
       if (!res.ok) throw new Error((await readHumanError(res, SEND_FAILED)).message);
-      setSent(true);
+      setSentCount(n => n + 1);
+      pause.start();
     } catch (err) {
       setError(humanizeThrown(err, SEND_FAILED));
     } finally {
       setLoading(false);
     }
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isEmail(value)) { setError(tr('Введи корректный email', 'Введите корректный email')); return; }
+    void send();
   };
 
   if (!show) {
@@ -46,15 +59,8 @@ export function LoginEmailForm({ setError }: { setError: (e: string | null) => v
     );
   }
   if (sent) {
-    return (
-      <div className="al-email-sent">
-        <p>Письмо отправлено</p>
-        <p>{tr('Проверь почту и перейди по ссылке — она действует 30 минут', 'Проверьте почту и перейдите по ссылке — она действует 30 минут')}</p>
-        <button className="al-linkbtn" onClick={() => { setSent(false); setValue(''); }}>
-          Ввести другой email
-        </button>
-      </div>
-    );
+    return <LoginEmailSent sentCount={sentCount} left={pause.left} loading={loading}
+      onResend={() => void send()} onOtherEmail={() => { setSentCount(0); setValue(''); }} />;
   }
   return (
     <form onSubmit={submit} className="al-email">
