@@ -50,6 +50,18 @@ describe('buildArticleBody', () => {
     expect(html).toContain('<p>Текст</p>');
     expect(html).not.toContain('alert(1)');
   });
+
+  // Аудит 2026-11, S19: регэксп `<script…</script>` собирал тег обратно из
+  // `<scr<script></script>ipt>` и не трогал on*/javascript:.
+  it.each([
+    '<scr<script></script>ipt src=//evil.js></script>',
+    '<img src=x onerror=alert(1)>',
+    '<a href="javascript:alert(1)">x</a>',
+    '<script>alert(1)</script >',
+  ])('обходной пейлоад %s не доезжает до ответа', (content) => {
+    const html = buildArticleBody({ ...ARTICLE, content });
+    expect(html).not.toMatch(/<script|onerror|javascript:/i);
+  });
 });
 
 describe('buildArticlesListBody', () => {

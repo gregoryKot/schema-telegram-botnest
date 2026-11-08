@@ -1,4 +1,5 @@
 import { CANONICAL_HOST } from '../infra/canonical-host';
+import { sanitizeArticleHtml } from './article-html-sanitize';
 
 export const SITE_URL = `https://${CANONICAL_HOST}`;
 const AUTHOR_NAME = 'Котляревский Григорий Юрьевич';
@@ -34,10 +35,6 @@ export function esc(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function stripScripts(html: string): string {
-  return html.replace(/<script[\s\S]*?<\/script>/gi, '');
-}
-
 /**
  * Более поздняя из дат: публикации и последней правки. Поисковикам и
  * нейросетям нужна честная дата обновления; без `updatedAt` (старые
@@ -68,15 +65,16 @@ export function buildArticleJsonLd(article: SeoArticle, url: string) {
 }
 
 /**
- * Текст для краулера: заголовок, лид и тело статьи. <script> вырезается
- * заранее (контент пишет админ, но лишний замок не мешает).
+ * Текст для краулера: заголовок, лид и тело статьи. Тело — через тот же
+ * allowlist, что DOMPurify на клиенте (article-html-sanitize.ts, аудит 2026-11
+ * S19): контент пишет админ, но ответ отдаётся с нашего домена всем.
  */
 export function buildArticleBody(article: SeoArticle): string {
   return (
     `<article>` +
     `<h1>${esc(article.title)}</h1>` +
     `<p>${esc(article.description)}</p>` +
-    stripScripts(article.content) +
+    sanitizeArticleHtml(article.content) +
     `</article>`
   );
 }
