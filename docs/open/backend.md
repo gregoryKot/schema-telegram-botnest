@@ -205,13 +205,6 @@
   (`webapp/src/utils/theme.ts`) и запасной фон экспорта карты (`useModeMapExport.ts`) — значения вне CSS;
   тень карточки статьи (`ArticlesPage.tsx`, `<style>`). Брать ролями, а не файлами.
 
-**«Мост к терапевту» в `/stats`: место `home` подписано «на главной», а строка живёт в «Ещё»**
-(находка 2026-11-06, PR про строку клиенту с терапевтом): `HomeTherapyLine` с `place="home"` с 2026-11-05
-стоит внизу «Ещё» (`webapp/src/sections/MoreSection.tsx`, шапка `webapp/src/sections/more/HomeTherapyLine.tsx`),
-а `PLACE_LABELS.home` в `src/bot/therapy-nudge-metrics.format.ts` — «на главной»; рядом `more` — «в «Ещё»»
-(строка «Поговорить с кем-то»). Отчёт приписывает показы главной. Не правлено в том PR: смена подписи
-меняет смысл старых чисел за 30 дней, решить — переименовать подпись или завести новое место.
-
 **Удаление прошлого разбора фразы не пишет событие аналитики** (осознанно, 2026-11-06):
 кнопка в `webapp/src/components/exercises/phraseCheckEx/PhraseHistoryCard.tsx` (общий
 `DeleteBtn` дневника; удаление записей дневника события тоже не пишет). Готовое
