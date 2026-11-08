@@ -663,7 +663,7 @@ jobs:
   # scripts/incident-registry-baseline.json. До гейта реестр отставал на месяц
   # (аудит 2026-10). Ходит в GitHub API: код 2 — GitHub не ответил, не нарушение.
   incident-registry:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: read
