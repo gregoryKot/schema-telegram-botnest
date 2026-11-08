@@ -20,6 +20,7 @@ import {
   type EncryptSchema,
 } from '../utils/crypto';
 import { MODE_NOTE_SCHEMA, SCHEMA_NOTE_SCHEMA } from '../bot/notes.service';
+import { GRATITUDE_DIARY_SCHEMA } from '../bot/gratitude-merge';
 import {
   fillEmptyFields,
   joinDayNotes,
@@ -49,10 +50,6 @@ export interface CombineOutcome {
 }
 
 const NOTE_SCHEMA: EncryptSchema = { model: 'note', strings: ['text', 'tags'] };
-const GRATITUDE_SCHEMA: EncryptSchema = {
-  model: 'gratitudeDiaryEntry',
-  jsonArrays: ['items'],
-};
 const SAFE_PLACE_SCHEMA: EncryptSchema = {
   model: 'userSafePlace',
   strings: ['description'],
@@ -108,13 +105,13 @@ const dayNotes: Finder = async (db, src, tgt) => {
 const gratitude: Finder = async (db, src, tgt) => {
   const rows = await db.gratitudeDiaryEntry.findMany({ where: both(src, tgt) });
   return pairs(rows, src, (r) => r.date).map(([t, s]) => async (tx) => {
-    const read = readBoth(t, s, GRATITUDE_SCHEMA);
+    const read = readBoth(t, s, GRATITUDE_DIARY_SCHEMA);
     if (!read) return false;
     const items = joinGratitudeItems(
       strings(read[0].items),
       strings(read[1].items),
     );
-    const enc = encryptRecord({ items }, GRATITUDE_SCHEMA);
+    const enc = encryptRecord({ items }, GRATITUDE_DIARY_SCHEMA);
     await tx.gratitudeDiaryEntry.update({ where: { id: t.id }, data: enc });
     return true;
   });
