@@ -11,9 +11,9 @@
   живого взгляда на онбординг (чеклист `ONBOARDING_AUDIT_2026-10.md`).
 
 **Единая версия, этап 4 — быстрые действия «+» на сайте** (`docs/archive/ONE_FRONTEND_PLAN.md`):
-- **Три копии лямбды открытия справочника схем в `appShell/AppSections.tsx`** (строки с
-  `ov.setSchemaAutoStartTest(!!opts?.startTest)`; одна без `highlight`). Теперь есть
-  `ov.openSchema` (`appShell/useOverlays.ts`) — заменить копии им. Не трогали: файл
+- **Последняя копия лямбды открытия справочника схем в `appShell/AppSections.tsx`** (строка с
+  `ov.setSchemaAutoStartTest(!!opts?.startTest)` и `opts?.tab`; три другие уже на
+  `ov.openSchema` из `appShell/useOverlays.ts`) — заменить и её. Не трогали: файл
   вне задачи, и копии расходятся поведением (подсветка), нужна сверка с экранами.
 
 **Единая версия, этап 3 — S-пробелы** (`docs/archive/ONE_FRONTEND_PLAN.md`):

@@ -26,12 +26,12 @@
   расширении диапазона за 2^53 это округляющий `Number()` над userId. Снести
   поле и тип отдельным PR; рассылка и уведомление заявителя уже на bigint
   ([AUDIT_2026-10, «Кабинет психолога»](../AUDIT_2026-10_FINDINGS.md#кабинет-психолога)).
-- **Семь роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
+- **Шесть роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
   хотя аноним проходит** (`telegram/widget`, `telegram/redirect`, `merge`,
-  `ticket/start`, `google`, `vk`, `telegram-oidc` в `src/auth/*.controller.ts`):
+  `ticket/start`, `google`, `vk` в `src/auth/*.controller.ts`; `telegram-oidc` удалён в #725):
   гвард в `route-method-auth.ts` засчитывается по имени, классификации
   «optional-auth» нет. Не расширяли при починке разбора по методу (правило №20).
-  Что каждый делает на самом деле: `google`, `vk`, `telegram-oidc` — стартовые
+  Что каждый делает на самом деле: `google`, `vk` — стартовые
   GET, ничего не проверяют: подписывают state (с `linkUserId`, если сессия
   есть), кладут его в куку и отвечают 302 на провайдера; state сверяют колбэки
   (они в `ANONYMOUS_BY_DESIGN`). `telegram/redirect` — то же: кука
@@ -166,6 +166,12 @@
   отвязке входа (`src/auth/security-notice.service.ts`) и окно кода 2FA (`webapp/src/components/stepUp/`)
   — не фичи в смысле правила №8, а защитные шаги: считать их в `/stats` нечего (события пишет
   `SecurityLogService`, DM админу — `totp_locked`).
+- **Код, которым включили 2FA, можно один раз повторить** (найдено при переезде на otplib 13,
+  2026-11-08). `confirmSetup` (`src/auth/totp.service.ts`) проверяет код, но не пишет
+  `totpLastStep` — анти-повтор L2 (`checkTotp`, CAS по шагу) видит `null`, и тот же код ещё
+  ~90 с проходит `verifyCode` (вход с 2FA, step-up). Узко: код нужно перехватить в момент
+  включения. Чинить: `confirmSetup` берёт шаг из `matchTotpStep` и пишет его вместе с
+  `totpEnabledAt`; тест «код включения второй раз — отказ».
 - **S9 · остаток.** `/api/auth/google|vk?ticket=` кукой билета не закрыть (ссылку по замыслу
   открывает другой контейнер) — там защищает ручной ввод кода на `/auth/confirm` и
   `login-preview`. Карточка привязки в боте (`src/telegram/telegram.link-card.ts:53`) по-прежнему
