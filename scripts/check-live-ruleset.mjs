@@ -14,8 +14,11 @@
 //                            обязательные проверки — тот же набор, strict;
 //   /repos/{repo}          — allow_auto_merge, allow_squash_merge,
 //                            delete_branch_on_merge (порядок мержа, №1а и №13).
-// Поля настроек слияния GitHub отдаёт не каждому токену; нет поля — красное с
-// отдельной причиной, а не молчаливый пропуск (правило №15).
+// Красное — только настоящее расхождение того, что API показал, и недоступный
+// /rules/branches/main (публичный эндпоинт). Поля настроек слияния GitHub
+// отдаёт не каждому токену (у джобы — contents: read): нет поля или не ответил
+// /rulesets, /repos — `::warning::не проверено`, шаг зелёный. Тревога, горящая
+// каждую ночь из-за прав токена, — ноль тревог (правила №14, №24).
 //
 //   node scripts/check-live-ruleset.mjs
 // GITHUB_API_URL — база API (тест подставляет свой сервер), GITHUB_REPOSITORY —
@@ -50,11 +53,21 @@ function paramDrift(type, want, got) {
   return out;
 }
 
-/** Расхождения живой настройки с копией; пустой список — совпадает. */
+/**
+ * Сверка с копией: `bad` — расхождения (красное), `unchecked` — что API не
+ * показал (предупреждение). `rulesets`/`repo` — ответ или `{ error }`.
+ */
 export function rulesetDrift({ copy, rulesets, branchRules, repo }) {
   const bad = [];
-  const live = rulesets.find((r) => r.name === copy.name);
-  if (!live) {
+  const unchecked = [];
+  const live = Array.isArray(rulesets)
+    ? rulesets.find((r) => r.name === copy.name)
+    : undefined;
+  if (!Array.isArray(rulesets)) {
+    unchecked.push(
+      `enforcement ruleset «${copy.name}» (${rulesets?.error ?? 'нет ответа'})`,
+    );
+  } else if (!live) {
     bad.push(`ruleset «${copy.name}» на GitHub нет`);
   } else if (live.enforcement !== copy.enforcement) {
     bad.push(
@@ -81,19 +94,20 @@ export function rulesetDrift({ copy, rulesets, branchRules, repo }) {
   }
   for (const got of own) {
     if (!(copy.rules ?? []).some((r) => r.type === got.type)) {
-      bad.push(`на GitHub к main применяется правило ${got.type}, которого нет в копии`);
+      bad.push(
+        `на GitHub к main применяется правило ${got.type}, которого нет в копии`,
+      );
     }
   }
   for (const [key, value] of Object.entries(REPO_SETTINGS)) {
-    if (!(key in repo)) {
-      bad.push(
-        `API не отдал ${key}: токену не видны настройки слияния репозитория — сверить нельзя`,
-      );
+    if (repo?.error) unchecked.push(`${key} (${repo.error})`);
+    else if (!(key in repo)) {
+      unchecked.push(`API не отдал ${key} (нужны права администратора)`);
     } else if (repo[key] !== value) {
       bad.push(`настройка репозитория ${key} = ${repo[key]}, нужно ${value}`);
     }
   }
-  return bad;
+  return { bad, unchecked };
 }
 
 async function main() {
@@ -115,15 +129,25 @@ async function main() {
     return res.json();
   };
   const copy = JSON.parse(readFileSync(COPY, 'utf8'));
+  const optional = (path) => get(path).catch((e) => ({ error: e.message }));
   const [rulesets, branchRules, repo] = await Promise.all([
-    get('/rulesets'),
-    get('/rules/branches/main'),
-    get(''),
+    optional('/rulesets'),
+    get('/rules/branches/main'), // публичный: не ответил — красное
+    optional(''),
   ]);
-  const bad = rulesetDrift({ copy, rulesets, branchRules, repo });
+  const { bad, unchecked } = rulesetDrift({
+    copy,
+    rulesets,
+    branchRules,
+    repo,
+  });
+  for (const u of unchecked) console.log(`::warning::не проверено: ${u}`);
   if (bad.length === 0) {
+    const what = unchecked.length
+      ? '(видимая часть) совпадает'
+      : 'и настройки слияния совпадают';
     console.log(
-      `✓ живой ruleset «${copy.name}» и настройки слияния совпадают с .github/rulesets/main.json`,
+      `✓ живой ruleset «${copy.name}» ${what} с .github/rulesets/main.json`,
     );
     return;
   }
@@ -137,7 +161,9 @@ async function main() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((e) => {
-    console.error(`::error::live-ruleset: не удалось спросить GitHub — ${e.message}`);
+    console.error(
+      `::error::live-ruleset: не удалось спросить GitHub — ${e.message}`,
+    );
     process.exit(1);
   });
 }

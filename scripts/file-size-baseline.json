@@ -67,7 +67,7 @@
   "scripts/check-ignored-tracked.mjs": 56,
   "scripts/check-jscpd-ratchet.mjs": 82,
   "scripts/check-legacy-name.mjs": 59,
-  "scripts/check-live-ruleset.mjs": 143,
+  "scripts/check-live-ruleset.mjs": 169,
   "scripts/check-local-cache-writers.mjs": 201,
   "scripts/check-mutation-ratchet.mjs": 176,
   "scripts/check-mutation-zone.mjs": 182,

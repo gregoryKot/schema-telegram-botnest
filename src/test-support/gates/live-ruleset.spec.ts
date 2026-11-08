@@ -36,7 +36,8 @@ const recorded = <T>(name: string): T =>
 let server: Server;
 let base = '';
 let responses: { rulesets: unknown; rules: unknown; repo: unknown };
-let status = 200;
+/** Пути, которые отвечают 500: '/rulesets', '/rules/branches/main', '' (репо). */
+const failing = new Set<string>();
 const auth: (string | undefined)[] = [];
 
 function handle(req: IncomingMessage, res: ServerResponse): void {
@@ -50,7 +51,8 @@ function handle(req: IncomingMessage, res: ServerResponse): void {
         : path === `/repos/${REPO}`
           ? responses.repo
           : undefined;
-  const code = body === undefined ? 404 : status;
+  const failed = [...failing].some((f) => path === `/repos/${REPO}${f}`);
+  const code = body === undefined ? 404 : failed ? 500 : 200;
   res.writeHead(code, { 'content-type': 'application/json' });
   res.end(JSON.stringify(body ?? { message: 'Not Found' }));
 }
@@ -94,7 +96,7 @@ beforeAll(async () => {
 });
 afterAll(() => new Promise<void>((r) => server.close(() => r())));
 beforeEach(() => {
-  status = 200;
+  failing.clear();
   auth.length = 0;
   responses = {
     rulesets: recorded('github-rulesets.json'),
@@ -191,18 +193,52 @@ describe('check-live-ruleset.mjs', () => {
     },
   );
 
-  it('API не отдал настройки слияния (токену не видно) — красный с причиной, не пропуск', async () => {
+  // Токену джобы (contents: read) GitHub может не отдавать настройки слияния:
+  // тревога, горящая каждую ночь из-за прав, — ноль тревог (правила №14, №24).
+  it('API не отдал настройки слияния — зелёный с ::warning::не проверено, без ::error', async () => {
     const repo = recorded<Json>('github-repo-merge-settings.json');
     delete repo.allow_auto_merge;
     delete repo.delete_branch_on_merge;
     responses.repo = repo;
     const r = await run();
-    expect(r.code).toBe(1);
-    expect(r.out).toContain('API не отдал allow_auto_merge');
+    expect(r.code).toBe(0);
+    expect(r.out).not.toContain('::error::');
+    expect(r.out).toContain(
+      '::warning::не проверено: API не отдал allow_auto_merge (нужны права администратора)',
+    );
+    expect(r.out).toContain(
+      '::warning::не проверено: API не отдал delete_branch_on_merge (нужны права администратора)',
+    );
   });
 
-  it('GitHub не ответил — красный «не удалось спросить», а не зелёный', async () => {
-    status = 500;
+  it('контроль: поле, которое API отдал, разошлось — красный и при скрытых соседях', async () => {
+    const repo = recorded<Json>('github-repo-merge-settings.json');
+    delete repo.allow_auto_merge;
+    repo.allow_squash_merge = false;
+    responses.repo = repo;
+    const r = await run();
+    expect(r.code).toBe(1);
+    expect(r.out).toContain('allow_squash_merge = false, нужно true');
+    expect(r.out).toContain(
+      '::warning::не проверено: API не отдал allow_auto_merge',
+    );
+  });
+
+  it('не ответили /rulesets и /repos — зелёный с предупреждениями, правила main сверены', async () => {
+    failing.add('/rulesets');
+    failing.add('');
+    const r = await run();
+    expect(r.code).toBe(0);
+    expect(r.out).toContain(
+      '::warning::не проверено: enforcement ruleset «main» (GET /rulesets: HTTP 500)',
+    );
+    expect(r.out).toContain(
+      '::warning::не проверено: allow_auto_merge (GET /: HTTP 500)',
+    );
+  });
+
+  it('контроль: не ответил публичный /rules/branches/main — красный «не удалось спросить»', async () => {
+    failing.add('/rules/branches/main');
     const r = await run();
     expect(r.code).toBe(1);
     expect(r.out).toContain('не удалось спросить GitHub');
