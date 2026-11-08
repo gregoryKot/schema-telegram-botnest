@@ -1,5 +1,5 @@
 {
-  "shared/src/hooks/useYsqTest.ts": 2,
+  "shared/src/hooks/useYsqTest.ts": 1,
   "shared/src/host/max.ts": 1,
   "shared/src/journey/journeyShare.ts": 1,
   "shared/src/utils/addressFormCache.ts": 1,
@@ -25,6 +25,5 @@
   "webapp/src/pages/LandingPage.tsx": 1,
   "webapp/src/pages/LinkDevicePage.tsx": 1,
   "webapp/src/pages/tests/QuizPage.tsx": 1,
-  "webapp/src/sections/DiarySection.tsx": 1,
-  "webapp/src/sections/TherapistTodaySection.tsx": 1
+  "webapp/src/sections/DiarySection.tsx": 1
 }
