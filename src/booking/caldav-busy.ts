@@ -1,9 +1,11 @@
 // Read busy intervals (each with an optional SUMMARY, see caldav-summary.ts)
 // from the iCloud calendar via CalDAV. Best-effort: RRULE events are skipped;
-// on parse issues we fail open with fewer/no intervals (slots still show).
+// on parse issues we fail open with fewer/no intervals (slots still show) and
+// count what was dropped (caldav-parse-skips.ts).
 
 import { zonedWallClockToUtc } from '../utils/tz';
 import { eventEnd } from './caldav-event-end';
+import { noSkips } from './caldav-parse-skips';
 import { readSummary } from './caldav-summary';
 
 export interface Interval {
@@ -26,8 +28,9 @@ export function busyQueryXml(from: Date, to: Date): string {
 </c:calendar-query>`;
 }
 
-/** Parse VEVENT DTSTART + DTEND/DURATION (RFC 5545 §3.6.1) from a multistatus. */
-export function parseBusy(xml: string): Interval[] {
+/** Parse VEVENT DTSTART + DTEND/DURATION (RFC 5545 §3.6.1) from a multistatus;
+ * `skipped` accumulates what fail-open dropped (one object per read). */
+export function parseBusy(xml: string, skipped = noSkips()): Interval[] {
   const out: Interval[] = [];
   // Unfold iCal line continuations (RFC 5545: lines wrapped with CRLF + space).
   const text = xml
@@ -36,18 +39,31 @@ export function parseBusy(xml: string): Interval[] {
     .replace(/&#10;/g, '\n');
   const events = text.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) ?? [];
   for (const ev of events) {
-    if (/\nRRULE[:;]/.test(ev) || /^RRULE[:;]/.test(ev)) continue; // skip recurring (MVP)
+    if (/(?:^|\n)RRULE[:;]/.test(ev)) {
+      skipped.recurring += 1; // skip recurring (MVP)
+      continue;
+    }
     const start = findDate(ev, 'DTSTART');
-    if (!start) continue;
-    const end = eventEnd(ev, start, findDate(ev, 'DTEND'));
+    if (!start) {
+      skipped.badStart += 1;
+      continue;
+    }
+    const dtend = findDate(ev, 'DTEND');
+    if (!dtend && fieldLine(ev, 'DTEND')) skipped.badEnd += 1;
+    const tzid = tzidOf(fieldLine(ev, 'DTSTART')?.[1]);
+    const end = eventEnd(ev, start, dtend, tzid);
     const summary = readSummary(ev);
     out.push({ start, end, ...(summary ? { summary } : {}) });
   }
   return out;
 }
 
+const fieldLine = (ev: string, field: 'DTSTART' | 'DTEND') =>
+  ev.match(new RegExp(`(?:^|\\n)${field}([^:\\n]*):([^\\r\\n]+)`));
+const tzidOf = (params = '') => params.match(/TZID=([^;:]+)/)?.[1];
+
 function findDate(ev: string, field: 'DTSTART' | 'DTEND'): Date | null {
-  const m = ev.match(new RegExp(`(?:^|\\n)${field}([^:\\n]*):([^\\r\\n]+)`));
+  const m = fieldLine(ev, field);
   if (!m) return null;
   const params = m[1],
     value = m[2].trim();
@@ -62,7 +78,7 @@ function findDate(ev: string, field: 'DTSTART' | 'DTEND'): Date | null {
   if (!dt) return null;
   const [, Y, Mo, D, h, mi, s, z] = dt;
   if (z === 'Z') return new Date(`${Y}-${Mo}-${D}T${h}:${mi}:${s}.000Z`);
-  const tzid = params.match(/TZID=([^;:]+)/)?.[1];
+  const tzid = tzidOf(params);
   if (tzid) {
     // Стенное время в зоне события. Перевод — общий хелпер (src/utils/tz.ts):
     // локальная копия этой логики была сломана и игнорировала смещение TZID

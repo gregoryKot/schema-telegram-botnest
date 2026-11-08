@@ -116,8 +116,8 @@ export class TelegramAdminService implements OnModuleInit {
     });
 
     // ─── Therapist-request admin callbacks ──────────────────────────────────
-    // (resumePendingPair — приватный метод TelegramService, общий для обоих
-    // consent-хендлеров там же; к этому файлу отношения не имеет.)
+    // (resumePendingPair — telegram.pair-resume.ts, общий для обоих
+    // consent-хендлеров TelegramService; к этому файлу отношения не имеет.)
     // Inline buttons attached to admin notification messages. Only the admin
     // ID may trigger these.
     this.bot.action(/^treq:(approve|reject):(\d+)$/, async (ctx) => {

@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Booking, BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
@@ -20,6 +21,7 @@ export interface CheckoutDeps {
   robokassa: RobokassaService;
   siteUrl: string;
   schema: EncryptSchema;
+  logger: Logger;
 }
 
 export interface BookingResult {
@@ -34,14 +36,23 @@ export interface BookingResult {
 /** Подтвердить бронь сразу: расшифровать, уведомить, отдать CONFIRMED-ответ
  * (бесплатная сессия и dev-режим без Robokassa — один путь). Ссылки на встречу
  * в ответе нет ни на одном пути: ручка анонимная, а комната клиента ищется по
- * контакту — назвавший чужой контакт получил бы чужую комнату. */
-async function confirmNow(
+ * контакту — назвавший чужой контакт получил бы чужую комнату. Эффекты
+ * (встреча, календарь, DM) идут после ответа: Zoom для нового контакта и
+ * чтение для клиента различались временем ответа — тот же оракул. Упавшее
+ * добирает крон по confirmEffectsDoneAt (booking-confirm-retry.service.ts). */
+function confirmNow(
   deps: CheckoutDeps,
   booking: Booking,
   cancelToken: string,
-): Promise<BookingResult> {
+): BookingResult {
   const plain = decryptRecord(booking, deps.schema);
-  await deps.notify.onConfirmed(plain);
+  void deps.notify
+    .onConfirmed(plain)
+    .catch((e: unknown) =>
+      deps.logger.error(
+        `Booking confirm effects failed, retry cron finishes: #${booking.id} ${(e as Error)?.message ?? e}`,
+      ),
+    );
   return {
     id: booking.id,
     cancelToken,

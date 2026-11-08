@@ -13,6 +13,10 @@ import { BookingService } from './booking.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
+import {
+  BookingConfirmRetryService,
+  STALLED_AFTER_MIN,
+} from './booking-confirm-retry.service';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z'); // понедельник, 00:00 UTC
 const RULE = {
@@ -35,6 +39,8 @@ function makeService(
     existingBookings?: any[];
     robokassaEnabled?: boolean;
     analytics?: { track: jest.Mock };
+    env?: Record<string, string>;
+    calDav?: { getBusyTimes: jest.Mock };
   } = {},
 ) {
   const bookingRows: any[] = opts.existingBookings
@@ -93,7 +99,7 @@ function makeService(
     buildPaymentUrl: jest.fn(() => 'https://auth.robokassa.ru/pay?x=1'),
   };
   const pricing = { getPrice: jest.fn(async () => 4000) };
-  const config = { get: () => undefined };
+  const config = { get: (k: string) => opts.env?.[k] };
   const cronLeader = {
     claimRun: jest.fn().mockResolvedValue(true),
   } as any;
@@ -105,7 +111,8 @@ function makeService(
     pricing as any,
     config as any,
     cronLeader,
-    opts.analytics as any,
+    opts.analytics as never,
+    opts.calDav as never,
   );
   return {
     service,
@@ -312,6 +319,68 @@ describe('BookingService.book — advisory-lock и TOCTOU (P-1)', () => {
     ).rejects.toThrow(ConflictException);
     expect(tx.booking.create).not.toHaveBeenCalled();
   });
+
+  // Аудит 2026-10: запись поверх личного события владельца. При
+  // CALENDAR_BLOCK_SLOTS=true book() сверяет слот с занятостью календаря.
+  const SLOT = {
+    ...BASE_DTO,
+    startsAt: INSIDE_WINDOW,
+    durationMin: 50,
+    type: SessionType.SESSION_50,
+  };
+  const busyOverSlot = () => ({
+    getBusyTimes: jest.fn(async () => [
+      {
+        start: INSIDE_WINDOW,
+        end: new Date(INSIDE_WINDOW.getTime() + 3_600_000),
+      },
+    ]),
+  });
+
+  it('CALENDAR_BLOCK_SLOTS=true, слот поверх события календаря — 409 «Slot already taken», брони нет', async () => {
+    const calDav = busyOverSlot();
+    const { service, tx } = makeService({
+      env: { CALENDAR_BLOCK_SLOTS: 'true' },
+      calDav,
+    });
+    await expect(service.book(SLOT)).rejects.toThrow(
+      new ConflictException('Slot already taken'),
+    );
+    expect(tx.booking.create).not.toHaveBeenCalled();
+    expect(calDav.getBusyTimes).toHaveBeenCalledTimes(1);
+  });
+
+  it('CALENDAR_BLOCK_SLOTS=true, календарь упал — бронь создаётся (fail-open)', async () => {
+    const calDav = {
+      getBusyTimes: jest.fn(async () => {
+        throw new Error('fetch failed');
+      }),
+    };
+    const { service, tx } = makeService({
+      env: { CALENDAR_BLOCK_SLOTS: 'true' },
+      calDav,
+    });
+    const res = await service.book(SLOT);
+    expect(res.status).toBe(BookingStatus.CONFIRMED); // dev без Robokassa
+    expect(calDav.getBusyTimes).toHaveBeenCalledWith(
+      INSIDE_WINDOW,
+      new Date(INSIDE_WINDOW.getTime() + 50 * 60_000),
+    );
+    expect(tx.booking.create.mock.calls[0][0].data.startsAt).toEqual(
+      INSIDE_WINDOW,
+    );
+  });
+
+  it('контроль: флаг выключен — календарь не спрашивается, бронь создаётся', async () => {
+    const calDav = busyOverSlot();
+    const { service, tx } = makeService({ calDav });
+    const res = await service.book(SLOT);
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(calDav.getBusyTimes.mock.calls).toEqual([]);
+    expect(tx.booking.create.mock.calls[0][0].data.startsAt).toEqual(
+      INSIDE_WINDOW,
+    );
+  });
 });
 
 describe('BookingService.book — создание и side-effects', () => {
@@ -332,6 +401,50 @@ describe('BookingService.book — создание и side-effects', () => {
     expect(res.status).toBe(BookingStatus.CONFIRMED);
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
     expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
+  });
+
+  // Эффекты подтверждения идут после ответа (security, время ответа book не
+  // выдаёт клиента). Шов: что не доделал запрос, добирает крон по флагу
+  // confirmEffectsDoneAt — бронь из book() обязана попасть в его выборку.
+  it('эффекты упали после ответа — ответ CONFIRMED, крон-добор находит бронь и доделывает', async () => {
+    const { service, notify, tx } = makeService({ rules: [] });
+    notify.onConfirmed.mockRejectedValueOnce(new Error('zoom down'));
+    const res = await service.book({
+      ...BASE_DTO,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    const row = await tx.booking.create.mock.results[0].value;
+    expect(row.confirmEffectsDoneAt ?? null).toBeNull();
+    // @updatedAt Prisma: строку не трогали дольше порога застоя.
+    row.updatedAt = new Date(Date.now() - (STALLED_AFTER_MIN + 1) * 60_000);
+    type RetryWhere = {
+      status: string;
+      confirmEffectsDoneAt: null;
+      startsAt: { gt: Date };
+      updatedAt: { lt: Date };
+    };
+    const findMany = jest.fn(async ({ where }: { where: RetryWhere }) =>
+      [row].filter(
+        (r) =>
+          r.status === where.status &&
+          (r.confirmEffectsDoneAt ?? null) === where.confirmEffectsDoneAt &&
+          r.startsAt > where.startsAt.gt &&
+          r.updatedAt < where.updatedAt.lt,
+      ),
+    );
+    const retry = new BookingConfirmRetryService(
+      { booking: { findMany, update: jest.fn() } } as never,
+      notify as never,
+      { claimRun: jest.fn().mockResolvedValue(true) } as never,
+    );
+    await retry.retryStalled();
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(2);
+    expect(notify.onConfirmed).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: row.id, clientName: 'Мария' }),
+    );
   });
 
   it('SESSION_50 + Robokassa включена — остаётся HELD, возвращает paymentUrl, admin уведомлён об ожидании оплаты', async () => {
