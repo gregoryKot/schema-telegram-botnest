@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/authContext';
 import { consumeEmailToken, emailConsumeNextPath } from './consumeEmailToken';
 import { ServiceLoading } from '../service/ServiceLoading';
+import { takeReturnTo } from '../../auth/returnTo';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -25,8 +26,7 @@ export function EmailTokenConsume({ token, ticket }: { token: string; ticket: st
       const outcome = await consumeEmailToken(API_BASE, token);
       let returnTo: string | null = null;
       if (outcome.kind === 'session') {
-        returnTo = sessionStorage.getItem('auth_return_to');
-        sessionStorage.removeItem('auth_return_to');
+        returnTo = takeReturnTo();
         // Синхронно, до navigate: иначе RequireAuth увидит «не вошёл» и уведёт на /login.
         flushSync(() => setAccessToken(outcome.accessToken, outcome.expiresIn));
         if (!ticket && returnTo?.startsWith('/app')) {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, ApiError } from '../api';
 import { Leaf } from '../components/art/PaperArtSigns';
+import { usePageShowReset } from '../hooks/usePageShowReset';
 import '../styles/auth-pay.css';
 
 const PRESETS = [200, 500, 1000, 2000];
@@ -16,6 +17,7 @@ export function DonatePage() {
   const [email, setEmail] = useState('');
   const [website, setWebsite] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'unavailable'>('idle');
+  usePageShowReset(() => setStatus((s) => (s === 'loading' ? 'idle' : s))); // «Назад» с Robokassa — кнопка снова жива
 
   const submit = async () => {
     if (amount < 10) return;

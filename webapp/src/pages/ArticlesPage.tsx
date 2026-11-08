@@ -9,6 +9,7 @@ import { PRACTICE_BOOKING_URL } from './landing/constants';
 import { siteTitleSuffix } from '../utils/domainChrome';
 import { Btn } from '../components/landing-kit';
 import { backLink } from '../legal/legalStyles';
+import { formatDateString, utcCalendarDay } from '../../../shared/src/utils/calendarDate';
 // ─── Article list page ────────────────────────────────────────────────────────
 export function ArticlesListPage() {
   // Сбой ≠ пусто: раньше `.catch(() => setArticles([]))` рисовал читателю со
@@ -52,7 +53,7 @@ export function ArticlesListPage() {
                   <div className="art-meta">
                     <span>{a.readMin} мин</span>
                     <span>·</span>
-                    <span>{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    <span>{formatDateString(utcCalendarDay(a.date), { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                   </div>
                 </div>
               </Link>
@@ -189,7 +190,7 @@ export function ArticlePage() {
         <div className="u-mb40">
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 20 }}>
             <span className="u-faint12">
-              {new Date(article.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {formatDateString(utcCalendarDay(article.date), { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
             <span className="u-faint12">·</span>
             <span className="u-faint12">{article.readMin} минут чтения</span>

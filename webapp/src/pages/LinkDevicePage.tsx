@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
+import { rememberReturnTo } from '../auth/returnTo';
 import { totalItems as sumItems } from '../utils/mergeLabels';
 import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
@@ -32,7 +33,7 @@ export function LinkDevicePage() {
   if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
   if (!isAuthenticated) {
     // Возврат сюда же после входа — иначе код потеряется и всё начинай заново.
-    try { sessionStorage.setItem('auth_return_to', `/link?code=${encodeURIComponent(code)}`); } catch { /* приватный режим */ }
+    rememberReturnTo(`/link?code=${encodeURIComponent(code)}`);
     return <Navigate to="/login" replace />;
   }
   if (!code) return <Navigate to="/account" replace />;
