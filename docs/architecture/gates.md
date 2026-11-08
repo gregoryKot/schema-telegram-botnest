@@ -65,6 +65,7 @@
 | check-silent-catch.mjs | `.catch(() => {})`, глушащий ошибку сети | `scripts/silent-catch-baseline.json` | да | backend |
 | check-spelling.mjs | орфография видимых строк («оффлайн» → «офлайн»); комментарии и тесты не смотрит | — | нет | checks |
 | check-tap-targets.mjs | интерактивный элемент с инлайн-размером обеих сторон меньше 44px | `scripts/tap-targets-baseline.json` | да | webapp |
+| check-timer-cleanup.mjs | файл `webapp/src`, `shared/src` с `setTimeout(() => setX…)` без `clearTimeout` и `useTimedFlag` (таймер переживает jsdom) | `scripts/timer-cleanup-baseline.json` | нет | checks |
 | check-tiny-fonts.mjs | инлайн `fontSize` ниже 11px | `scripts/tiny-fonts-baseline.json` | да | webapp |
 | check-token-contract.mjs | расхождение набора токенов `shared/src/theme/tokens.css` и `webapp/src/index.css` | — | нет | webapp |
 | check-unwatched-code.mjs | исполняемый .js/.mjs/.cjs/.sh вне тестов и наблюдаемых деревьев | `scripts/unwatched-code-baseline.json` | да | checks |

@@ -229,6 +229,10 @@ jobs:
       # исходом-ошибкой классифицирована в scripts/dead-end-report-baseline.json
       # (reports — отчёт в catch или хук via, exempt/debt — с причиной). Без --update.
       - run: node scripts/check-dead-end-report.mjs
+      # Таймер, ставящий состояние, чистится при размонтировании (clearTimeout
+      # или useTimedFlag): иначе он срабатывает после сноса jsdom и роняет весь
+      # vitest (run 36409902702). Исключения — scripts/timer-cleanup-baseline.json.
+      - run: node scripts/check-timer-cleanup.mjs
       # Один ключ localStorage — один писатель (инцидент 2026-11-05, PR #935:
       # кэш контакта терапевта писали два места, третье меняло источник правды
       # на сервере и кэш не трогало). Каждый ключ классифицирован в
