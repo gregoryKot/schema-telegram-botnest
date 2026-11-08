@@ -90,13 +90,19 @@ export class AuthLinkController {
     @Param('provider') provider: string,
     @Req() req: Request,
   ): Promise<{ ok: boolean }> {
-    if (!this.providers.list().some((p) => p.id === provider)) {
+    // Почта — способ входа без обработчика в реестре (magic link,
+    // auth.service.ts), но кабинет отвязывает её этой же ручкой.
+    const email = provider === 'email';
+    if (!email && !this.providers.list().some((p) => p.id === provider)) {
       throw new BadRequestException('Unknown provider');
     }
     const userId = req.webUser!.userId;
+    // Снятый адрес — до отвязки: письмо уходит и на него (хвост S12).
+    const removed = email ? await this.notice.emailAddresses(userId) : [];
     await this.auth.unlinkProvider(userId, provider);
     this.securityLog.log('provider_unlinked', { userId, provider, ip: req.ip });
-    this.notice.notify(userId, { kind: 'provider_unlinked', provider });
+    const notice = { kind: 'provider_unlinked', provider } as const;
+    this.notice.notify(userId, notice, removed);
     return { ok: true };
   }
 }

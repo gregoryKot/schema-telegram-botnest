@@ -16,6 +16,9 @@ function makeService(opts: {
       findUnique: jest.fn().mockResolvedValue({ addressForm: opts.form }),
     },
     authProvider: {
+      findMany: jest.fn(() =>
+        Promise.resolve(opts.email ? [{ providerId: opts.email }] : []),
+      ),
       findFirst: jest.fn(({ where }: { where: { provider: string } }) => {
         if (where.provider === 'email' && opts.email)
           return Promise.resolve({ providerId: opts.email });
@@ -32,7 +35,7 @@ function makeService(opts: {
     email as never,
     notifications as never,
   );
-  return { svc, email, notifications };
+  return { svc, email, notifications, prisma };
 }
 
 describe('SecurityNoticeService.deliver', () => {
@@ -63,6 +66,37 @@ describe('SecurityNoticeService.deliver', () => {
     ).resolves.toBeUndefined();
     expect(email.send).not.toHaveBeenCalled();
     expect(notifications.schedule).not.toHaveBeenCalled();
+  });
+
+  // Хвост S12: письмо об отвязке почты уходило только в оставшиеся каналы —
+  // хозяин снятого адреса, которого отвязал не он, не узнавал ничего.
+  it('отвязка почты: письмо уходит и на снятый адрес, которого у аккаунта уже нет', async () => {
+    const { svc, email } = makeService({ form: 'ty' });
+    await svc.deliver(7n, { kind: 'provider_unlinked', provider: 'email' }, [
+      'old@example.com',
+    ]);
+    expect(email.send).toHaveBeenCalledWith(
+      'old@example.com',
+      'Способ входа отвязан от «Всё по схеме»',
+      expect.stringContaining('отвязан способ входа: вход по почте'),
+    );
+  });
+
+  it('адрес и в аккаунте, и в alsoTo — одно письмо, не два', async () => {
+    const { svc, email } = makeService({ email: 'me@example.com' });
+    await svc.deliver(7n, { kind: 'provider_unlinked', provider: 'google' }, [
+      'me@example.com',
+    ]);
+    expect(email.send.mock.calls.map((c) => c[0])).toEqual(['me@example.com']);
+  });
+
+  it('emailAddresses: адреса почтового входа; сбой чтения — пусто, не бросает', async () => {
+    const { svc, prisma } = makeService({ email: 'me@example.com' });
+    await expect(svc.emailAddresses(7n)).resolves.toEqual(['me@example.com']);
+    prisma.authProvider.findMany.mockImplementationOnce(() =>
+      Promise.reject(new Error('db down')),
+    );
+    await expect(svc.emailAddresses(7n)).resolves.toEqual([]);
   });
 
   it('notify не бросает и не ждёт: сбой почты уходит в warn', async () => {
