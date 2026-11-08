@@ -1,5 +1,9 @@
 {
   "scenarios": {
+    "bearer-guard": {
+      "blocks": 80,
+      "msCeiling": 500
+    },
     "former-therapist": {
       "blocks": 4,
       "msCeiling": 500

@@ -14,6 +14,9 @@ export interface ScenarioContext {
   unattachedUserId: bigint;
   /** Больше всех строк в очереди уведомлений (отправленные + снятые + ждущие). */
   notifiedUserId: bigint;
+  /** Живая семья сессий с самой длинной цепочкой ротаций — её строки гвард
+   *  Bearer перебирает по индексу family, пока не найдёт живую. */
+  session: { userId: bigint; family: string };
 }
 
 /**
@@ -43,10 +46,22 @@ export async function resolveWorstCaseIds(
     `SELECT "userId"::text AS id FROM "ScheduledNotification"
       GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
   );
-  if (!therapistId || !heavyUserId || !unattachedUserId || !notifiedUserId) {
+  const session = (
+    await client.query<{ id: string; family: string }>(
+      `SELECT "userId"::text AS id, family FROM "WebSession" GROUP BY 1, 2
+        HAVING bool_or("revokedAt" IS NULL) ORDER BY count(*) DESC, 2 LIMIT 1`,
+    )
+  ).rows[0];
+  if (
+    !therapistId ||
+    !heavyUserId ||
+    !unattachedUserId ||
+    !notifiedUserId ||
+    !session
+  ) {
     throw new Error(
       'В базе нет синтетики (терапевта с клиентами / юзера с оценками / ' +
-        'очереди уведомлений) — прогони сидер: test/perf/seed.ts',
+        'очереди уведомлений / сессий сайта) — прогони сидер: test/perf/seed.ts',
     );
   }
   return {
@@ -54,5 +69,6 @@ export async function resolveWorstCaseIds(
     heavyUserId: BigInt(heavyUserId),
     unattachedUserId: BigInt(unattachedUserId),
     notifiedUserId: BigInt(notifiedUserId),
+    session: { userId: BigInt(session.id), family: session.family },
   };
 }

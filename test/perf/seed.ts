@@ -27,6 +27,7 @@ import {
 } from './seed-profile';
 import { at1, json, q, series, strs } from './seed-sql';
 import { scheduledNotificationSql } from './seed-notifications';
+import { webSessionSql } from './seed-sessions';
 
 export { PERF_ID_BASE, PERF_PROFILE } from './seed-profile';
 
@@ -179,6 +180,7 @@ SELECT "therapistId", "clientId",
 FROM "TherapyRelation" WHERE "therapistId" >= ${B} AND "status" = 'active'`,
     // ── Очередь уведомлений: год истории + завтрашнее (seed-notifications.ts) ─
     ScheduledNotification: scheduledNotificationSql(a),
+    WebSession: webSessionSql(a), // сессии сайта под гвард Bearer (seed-sessions.ts)
   };
 }
 
