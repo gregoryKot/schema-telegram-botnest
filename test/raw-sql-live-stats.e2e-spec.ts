@@ -84,6 +84,11 @@ const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'auth_rejected', meta: { host: 'telegram', reason: 'empty' } },
   { name: 'auth_success', meta: { host: 'telegram' } },
   { name: 'login_ticket_step', meta: { step: 'issued' } },
+  // Окно Google One Tap (2026-11): count(*) FILTER по meta->>'outcome' в
+  // LoginTicketMetricsService.getOneTap — все три исхода.
+  { name: 'login_one_tap', meta: { outcome: 'signed_in' } },
+  { name: 'login_one_tap', meta: { outcome: 'twofa' } },
+  { name: 'login_one_tap', meta: { outcome: 'rejected' } },
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
   { name: 'client_error', meta: { section: 'assets', source: 'webapp' } },
@@ -143,6 +148,13 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     ]);
     expectSaneReport(core);
     expectSaneReport(product);
+    // Окно Google One Tap: getOneTap отдаёт целые числа (bigint → number), а
+    // на пустой базе блок говорит словами, без нулей (правило №8).
+    const oneTap = await report.loginTicket.getOneTap();
+    for (const n of Object.values(oneTap))
+      expect(Number.isInteger(n)).toBe(true);
+    if (oneTap.signedIn + oneTap.twofa + oneTap.rejected === 0)
+      expect(product).toContain('За неделю через окно не входили.');
     // Пустое состояние (правило №8): без шквала строк про него нет.
     expect(product).not.toContain('Повторные отчёты с одного устройства');
     expect(product).not.toContain(
@@ -186,6 +198,14 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(product).toMatch(
       /Подробности не записаны из-за общего потолка: [1-9]\d* —/,
     );
+    // Окно Google One Tap: FILTER по meta->>'outcome' на живой базе видит все
+    // три исхода фикстур, и строка блока входа попадает в общий /stats.
+    const oneTap = await report.loginTicket.getOneTap();
+    expect(oneTap.signedIn).toBeGreaterThanOrEqual(1);
+    expect(oneTap.twofa).toBeGreaterThanOrEqual(1);
+    expect(oneTap.rejected).toBeGreaterThanOrEqual(1);
+    expect(product).toMatch(/Вошли одним касанием: [1-9]\d*/);
+    expect(product).toMatch(/Сервер не принял вход из окна: [1-9]\d*/);
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
     expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);
     expect(product).toMatch(/Связи режимов заполняли [1-9]\d* раз/);
