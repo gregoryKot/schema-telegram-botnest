@@ -14,7 +14,7 @@ afterEach(() => {
 function renderShare(inviteUrl: string) {
   return render(
     <MemoryRouter>
-      <TherapistInviteShare inviteUrl={inviteUrl} />
+      <TherapistInviteShare invite={{ code: 'ABC', url: inviteUrl, tgUrl: null }} />
     </MemoryRouter>,
   );
 }

@@ -3,6 +3,7 @@
 // link — ссылка на бота (botShortUrl конкретного фронтенда).
 import { pluralDays } from '../utils/celebrationText';
 import { HEALTHY_ADULT_CHANNEL_SHORT_URL } from './channelLinks';
+import { THERAPIST_SEES_BY_DEFAULT } from '../therapy/therapistLinkCopy';
 
 export function pluralEntries(n: number): string {
   if (n % 10 === 1 && n % 100 !== 11) return 'запись';
@@ -43,14 +44,37 @@ export function pairInviteShareText(code: string, deepLink: string): string {
   return `🤝 Присоединяйся — отслеживаем эмоциональные потребности вместе.\n\nКод пары: ${code}\n${deepLink}`;
 }
 
-/** Приглашение в приложение («поделиться ссылкой на бота»). */
-export function appInviteShareText(link: string): string {
-  return `🌱 Отмечаю здесь пять базовых эмоциональных потребностей — видно, что питает, а что истощает.\n\n${link}`;
+/** Приглашение в приложение: сайт (открывается и без Telegram) первой ссылкой, бот (botLink) — второй строкой. */
+export function appInviteShareText(botLink: string): string {
+  return `🌱 Отмечаю здесь пять базовых эмоциональных потребностей — видно, что питает, а что истощает.\n\nhttps://schemehappens.ru\nВ Telegram: ${botLink}`;
 }
 
-/** Ссылка-приглашение клиенту от терапевта (создаёт терапевт в кабинете). */
-export function therapistInviteShareText(inviteUrl: string): string {
-  return `Приглашение в дневник «Всё по схеме» — по ссылке подключится трекер потребностей, который мы сможем смотреть на сессиях.\n\n${inviteUrl}`;
+/** Приглашение клиенту от терапевта: код и ссылки, которые выдал сервер. */
+export interface TherapistInviteLinks {
+  code: string;
+  /** Сайт: открывается без Telegram, после входа подключает (`?startapp=therapy_…`). */
+  url: string;
+  /** Приложение в Telegram; null — бот не настроен. */
+  tgUrl?: string | null;
+}
+
+/**
+ * Сообщение клиенту от терапевта (аудит 2026-11, U3): сайт первой ссылкой, код
+ * для ввода вручную, Telegram второй строкой. Раньше была одна ссылка t.me и
+ * обещание «подключится трекер», хотя терапевт видит больше — теперь список
+ * честный (THERAPIST_SEES_BY_DEFAULT, сверен с сервером). Безличный: форма
+ * обращения терапевта в приложении не говорит, как он обращается к клиенту.
+ */
+export function therapistInviteShareText(invite: TherapistInviteLinks): string {
+  const lines = [
+    'Приглашение в приложение «Всё по схеме»: отметки и записи из него можно будет смотреть вместе на сессиях.',
+    `Терапевт видит трекер потребностей и задания, а по умолчанию ещё ${THERAPIST_SEES_BY_DEFAULT}. Лишнее закрывается в настройках, раздел «Мой терапевт».`,
+    '',
+    `Подключиться на сайте: ${invite.url}`,
+    `Или ввести код ${invite.code} в приложении: Настройки → «Мой терапевт».`,
+  ];
+  if (invite.tgUrl) lines.push(`В Telegram: ${invite.tgUrl}`);
+  return lines.join('\n');
 }
 
 export function monthShareText(activeDays: number, link: string): string {

@@ -171,15 +171,16 @@ export const buildSharedApi = (t: ApiTransport) => ({
   },
   deleteGratitudeDiary: (id: number) => t.del(`/api/diary/gratitude/${id}`),
   // Каждый вызов — новый код; alias — имя карточки из «Новый клиент».
+  // url — сайт, tgUrl — Telegram (null — бот не настроен), аудит 2026-11 U3.
   createTherapyInvite: (alias?: string) =>
-    t.postJson<{ code: string; url: string }>(
+    t.postJson<{ code: string; url: string; tgUrl?: string | null }>(
       '/api/therapy/invite',
       alias ? { alias } : {},
     ),
   // Приглашение из карточки офлайн-клиента (clientId < 0): её данные переедут на
   // аккаунт, когда терапевт подтвердит сверку. Повтор отдаёт тот же живой код.
   createOfflineClientInvite: (clientId: UserId) =>
-    t.postJson<{ code: string; url: string }>(
+    t.postJson<{ code: string; url: string; tgUrl?: string | null }>(
       `/api/therapy/clients/${clientId}/invite`,
       {},
     ),

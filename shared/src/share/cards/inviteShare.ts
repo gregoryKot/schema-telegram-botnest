@@ -7,6 +7,7 @@ import {
   appInviteShareText,
   pairInviteShareText,
   therapistInviteShareText,
+  type TherapistInviteLinks,
 } from '../shareTexts';
 import type { ShareCardKind } from '../analytics';
 
@@ -21,17 +22,17 @@ export interface InviteSharePayload {
 // Эмодзи пяти потребностей — тот же порядок, что в трекере и на радаре.
 const NEED_EMOJIS = ['🤝', '🧭', '💬', '🎉', '⚖️'];
 
-/** Приглашение в приложение: чем оно занимается, без обещаний результата. */
-export function appInviteShare(link: string): InviteSharePayload {
+/** Приглашение в приложение без обещаний результата: сайт в тексте, бот (`botLink`) второй строкой. */
+export function appInviteShare(botLink: string): InviteSharePayload {
   return {
     title: 'Пригласить друга',
     draw: (canvas) =>
       drawInviteCard(canvas, {
         title: 'Всё по схеме',
         emojis: NEED_EMOJIS,
-        hint: 'Дневник о пяти базовых эмоциональных потребностях: что за день их наполнило, а что оставило пустым',
+        hint: 'Трекер пяти базовых эмоциональных потребностей: что за день их наполнило, а что оставило пустым',
       }),
-    shareText: appInviteShareText(link),
+    shareText: appInviteShareText(botLink),
     filename: 'app-invite.png',
     eventKind: 'app_invite',
   };
@@ -60,17 +61,19 @@ export function pairInviteShare(
   };
 }
 
-/** Приглашение клиенту: карточка объясняет, что за ссылка пришла в сообщении. */
-export function therapistInviteShare(inviteUrl: string): InviteSharePayload {
+/** Приглашение клиенту: карточка объясняет, что за ссылка и код пришли в сообщении. */
+export function therapistInviteShare(
+  invite: TherapistInviteLinks,
+): InviteSharePayload {
   return {
     title: 'Приглашение клиенту',
     draw: (canvas) =>
       drawInviteCard(canvas, {
         title: 'Приглашение от терапевта',
         emojis: ['🤝'],
-        hint: 'Ссылка в сообщении подключит трекер потребностей — его можно смотреть вместе на сессиях',
+        hint: 'Ссылка или код из сообщения подключат приложение к терапевту — отметки и записи можно смотреть вместе на сессиях',
       }),
-    shareText: therapistInviteShareText(inviteUrl),
+    shareText: therapistInviteShareText(invite),
     filename: 'therapist-invite.png',
     eventKind: 'therapist_invite',
   };

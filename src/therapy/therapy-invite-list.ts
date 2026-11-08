@@ -3,7 +3,7 @@ import { decryptName } from './client-name';
 import { therapistName } from './therapist-name';
 import {
   INVITE_TTL_MS,
-  inviteUrl,
+  inviteLinks,
   isClaimableInvite,
   liveInvitesWhere,
   normalizeInviteCode,
@@ -20,7 +20,9 @@ import {
 export interface TherapyInviteView {
   id: number;
   code: string;
+  /** Ссылка на сайт; tgUrl — та же в Telegram (null — бот не настроен). */
   url: string;
+  tgUrl: string | null;
   /** Имя клиента, которое терапевт ввёл при создании; null — без имени. */
   alias: string | null;
   /** id офлайн-карточки, из которой создано приглашение; null — обычное. */
@@ -41,7 +43,7 @@ export async function listTherapyInvites(
   return rows.map((r) => ({
     id: r.id,
     code: r.code,
-    url: inviteUrl(r.code),
+    ...inviteLinks(r.code),
     alias: decryptName(r.clientAlias),
     attachToId: r.attachToId ?? null,
     createdAt: r.createdAt.toISOString(),

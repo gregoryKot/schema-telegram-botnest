@@ -342,11 +342,16 @@ function makeFullService(
 }
 
 describe('createInvite — генерация кода приглашения', () => {
-  it('создаёт pending-связь с кодом и возвращает ссылку startapp', async () => {
+  // Аудит 2026-11, U3: ссылка была только t.me — клиент без Telegram не
+  // подключался. Теперь основная — сайт, Telegram — второй.
+  it('создаёт pending-связь с кодом и возвращает ссылку на сайт и в Telegram', async () => {
     const { service, rels } = makeFullService([]);
     const result = await service.createInvite(T1);
     expect(result.code).toHaveLength(12);
     expect(result.url).toBe(
+      `https://schemehappens.ru/today?startapp=therapy_${result.code}`,
+    );
+    expect(result.tgUrl).toBe(
       `https://t.me/SchemeHappensBot/diary?startapp=therapy_${result.code}`,
     );
     expect(rels).toHaveLength(1);

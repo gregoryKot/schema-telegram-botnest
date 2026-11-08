@@ -3,7 +3,8 @@ import { decryptName } from './client-name';
 import { activeRelationWhere } from './relation-where';
 import {
   createTherapyInvite,
-  inviteUrl,
+  inviteLinks,
+  type InviteLinks,
   liveInvitesWhere,
 } from './therapy-invite';
 
@@ -15,7 +16,7 @@ export async function createInviteFromCard(
   prisma: PrismaService,
   therapistId: bigint,
   cid: bigint,
-): Promise<{ code: string; url: string; created: boolean }> {
+): Promise<{ code: string; created: boolean } & InviteLinks> {
   const card =
     cid < 0n
       ? await prisma.therapyRelation.findFirst({
@@ -29,7 +30,7 @@ export async function createInviteFromCard(
     orderBy: { createdAt: 'desc' },
   });
   if (live)
-    return { code: live.code, url: inviteUrl(live.code), created: false };
+    return { code: live.code, ...inviteLinks(live.code), created: false };
   const made = await createTherapyInvite(
     prisma,
     therapistId,

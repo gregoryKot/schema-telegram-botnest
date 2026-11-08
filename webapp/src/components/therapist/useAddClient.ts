@@ -13,7 +13,7 @@ interface Params {
 export interface AddClientCreated {
   name: string;
   /** Есть — создано приглашение (карточка появится после подключения). */
-  invite: { url: string; code: string } | null;
+  invite: { url: string; code: string; tgUrl?: string | null } | null;
 }
 
 // «+ Новый клиент» в кабинете. Две разные вещи, а не одна с довеском
