@@ -5,6 +5,7 @@ import {
   catchUpSlot,
   dueSlot,
   mskParts,
+  postedInSlot,
   type HealthyAdultSlot,
 } from '../bot/healthy-adult.schedule';
 import { DeliveryLogService } from './delivery-log.service';
@@ -204,6 +205,7 @@ export class ChannelScheduleService {
     // Пост мог выйти — не досылаем, просим проверить руками (хвост R7).
     await this.warnUnknown(slotKey, name, plan.unknown);
     if (plan.platforms.length === 0) return;
+    if (await this.tickOwns(now, slot)) return;
 
     const res = await this.publisher.retry(name, plan.text, plan.platforms);
     if (res.ok) {
@@ -218,6 +220,20 @@ export class ChannelScheduleService {
     this.retries.fail(key);
     this.logger.warn(
       `healthy-adult ${slot}: повтор не удался — ${res.message}`,
+    );
+  }
+
+  /**
+   * У слота один механизм повтора (хвост волны 8). Слот не вышел нигде, а окно
+   * открыто — его повторяет тик новой фразой всем площадкам; досылка старой
+   * фразы дала бы ожившей площадке второй пост. Окно закрылось — слот берёт
+   * досылка, но не пока публикация в полёте: её исхода в журнале ещё нет.
+   */
+  private async tickOwns(now: Date, slot: HealthyAdultSlot): Promise<boolean> {
+    const lastPostAt = await this.phrases.lastPostAt();
+    if (postedInSlot(now, lastPostAt, slot)) return false;
+    return (
+      dueSlot(now, lastPostAt) === slot || !!this.publisher.inFlight.holder
     );
   }
 

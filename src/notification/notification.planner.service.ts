@@ -98,12 +98,12 @@ export class NotificationPlannerService {
             : daysSince > 30 && (daysSince - 30) % 45 === 0
               ? 'nudge'
               : null;
+    // Перерыв, value_recap и сводка встают вместо напоминания одной транзакцией
+    // под локом его замены (swapReminder, replace-pending.ts).
     if (lapsingType) {
-      if (!(await this.notifications.hasPending(uid, lapsingType))) {
-        await this.notifications.cancel(uid, 'reminder');
-        const payload = lapsingType === 'nudge' ? { daysSince } : undefined;
-        await this.notifications.schedule(uid, lapsingType, sendAt, payload);
-      }
+      const nudge = lapsingType === 'nudge' ? { daysSince } : undefined;
+      if (!(await this.notifications.hasPending(uid, lapsingType)))
+        await this.notifications.swapReminder(uid, lapsingType, sendAt, nudge);
       return;
     }
 
@@ -121,8 +121,7 @@ export class NotificationPlannerService {
           (n) => n.id === insight.strongest,
         )?.chartLabel;
         const weakest = needs.find((n) => n.id === insight.weakest)?.chartLabel;
-        await this.notifications.cancel(uid, 'reminder');
-        await this.notifications.schedule(uid, 'value_recap', sendAt, {
+        await this.notifications.swapReminder(uid, 'value_recap', sendAt, {
           totalDays: insight.totalDays,
           strongest,
           strongestAvg: insight.strongestAvg,
@@ -150,8 +149,7 @@ export class NotificationPlannerService {
         Number(uid % 3n),
         normalizeAddressForm(user.addressForm),
       );
-      await this.notifications.cancel(uid, 'reminder');
-      await this.notifications.schedule(uid, 'weekly', sendAt, { text });
+      await this.notifications.swapReminder(uid, 'weekly', sendAt, { text });
       return;
     }
 

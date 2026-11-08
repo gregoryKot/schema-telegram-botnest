@@ -42,6 +42,13 @@ function makeDeps() {
       await notifications.schedule(u, t, at, p);
     },
   );
+  // Перерыв/сводка вместо напоминания — та же транзакция (swapReminder).
+  notifications.swapReminder = jest.fn(
+    async (u: bigint, t: string, at: Date, p?: object) => {
+      await notifications.cancel(u, 'reminder');
+      await notifications.schedule(u, t, at, p);
+    },
+  );
   const cadence = {
     claimPlanDay: jest.fn().mockResolvedValue(true),
     expirePauseIfDue: jest.fn().mockResolvedValue('none'),
