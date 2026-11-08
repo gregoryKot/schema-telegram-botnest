@@ -6,6 +6,7 @@ import {
   writeUserSettings,
   type UserSettingsPatch,
 } from './user-settings-write';
+import { assertDayNoteFits } from './day-note-limit';
 
 export const NEED_IDS = [
   'attachment',
@@ -163,6 +164,8 @@ export class BotService {
   }
 
   async saveNote(userId: bigint, date: string, text: string, tags?: string[]) {
+    const stored = () => this.getNote(userId, date).then((n) => n.text);
+    await assertDayNoteFits(text, stored); // слитая заметка — правка без роста
     const tagsPlain = tags ? tags.join(',') : '';
     const encText = encrypt(text) ?? text;
     const encTags = encrypt(tagsPlain) ?? tagsPlain;

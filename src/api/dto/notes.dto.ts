@@ -6,7 +6,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { DAY_NOTE_MAX } from '../../utils/text-limits';
+import { DAY_NOTE_MERGED_MAX } from '../../bot/day-note-limit';
 import { MODE_NOTE_FIELDS } from '../../bot/notes.service';
 
 /**
@@ -18,8 +18,9 @@ export class SaveNoteDto {
   @IsString()
   date!: string;
 
+  // Потолок слитой заметки; предел 500 — в сервисе (bot/day-note-limit.ts)
   @IsString()
-  @MaxLength(DAY_NOTE_MAX)
+  @MaxLength(DAY_NOTE_MERGED_MAX)
   text!: string;
 
   @IsOptional()

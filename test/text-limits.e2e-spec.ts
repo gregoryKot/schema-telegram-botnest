@@ -30,6 +30,7 @@ import {
   THERAPIST_REQUEST_QUAL_MAX,
 } from '../src/utils/text-limits';
 import { TherapistRequestService } from '../src/therapy/therapist-request.service';
+import { encrypt } from '../src/utils/crypto';
 
 describe('e2e: лимиты текста — один в DTO, превышение → 400, хвост не теряется', () => {
   let app: INestApplication;
@@ -152,6 +153,31 @@ describe('e2e: лимиты текста — один в DTO, превышени
       expect(over.status).toBe(400);
       const got = await agentAs(U).get('/api/note?date=2026-10-12');
       expect(got.body.text).toBe(prev);
+    });
+
+    // Хвост волны 2 (#1022): слияние аккаунтов склеивает заметки одного дня
+    // (joinDayNotes) и не режет — склейка до 1002 знаков. Её правка проходила
+    // бы сервис, но упиралась в @MaxLength(500) DTO.
+    it('слитая заметка 900: правка без роста — 201, рост и новая 600 — 400', async () => {
+      const merged = ofLen(900);
+      await prisma.note.create({
+        data: { userId: U, date: '2026-10-13', text: encrypt(merged) ?? '' },
+      });
+      const edited = 'б' + merged.slice(1);
+      const post = (date: string, text: string) =>
+        agentAs(U).post('/api/note', { date, text, tags: [] });
+
+      expect((await post('2026-10-13', edited)).status).toBe(201);
+      const got = await agentAs(U).get('/api/note?date=2026-10-13');
+      expect(got.body.text).toBe(edited);
+
+      expect((await post('2026-10-13', ofLen(901))).status).toBe(400);
+      expect((await post('2026-10-14', ofLen(600))).status).toBe(400);
+      expect((await post('2026-10-13', ofLen(DAY_NOTE_MAX * 3))).status).toBe(
+        400,
+      );
+      const after = await agentAs(U).get('/api/note?date=2026-10-13');
+      expect(after.body.text).toBe(edited);
     });
   });
 

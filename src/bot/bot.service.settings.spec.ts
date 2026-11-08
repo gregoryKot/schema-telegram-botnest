@@ -1,4 +1,6 @@
+import { BadRequestException } from '@nestjs/common';
 import { BotService } from './bot.service';
+import { encrypt } from '../utils/crypto';
 
 // Stateful in-memory fake Prisma — заметки, настройки/денормализованные
 // коллекции, детские оценки, отмена pre_reminder, дисклеймер. Оценки
@@ -111,6 +113,29 @@ describe('BotService.getNote / saveNote — read-after-write', () => {
     const note = await svc.getNote(1n, '2026-07-16');
 
     expect(note.tags).toEqual([]);
+  });
+});
+
+// Хвост волны 2 (#1022): слияние аккаунтов склеивает заметки дня, и склейка
+// бывает длиннее предела 500 — её правка не должна упираться в 400.
+describe('BotService.saveNote — слитая заметка длиннее предела', () => {
+  it('слитая заметка 900 сохраняется с правкой и читается назад; новая 600 — 400', async () => {
+    const db = makeDb();
+    const svc = new BotService(db);
+    const merged = 'а'.repeat(450) + '\n\n' + 'б'.repeat(448); // 900
+    db.note.upsert({
+      where: { userId_date: { userId: 1n, date: '2026-07-16' } },
+      create: { userId: 1n, date: '2026-07-16', text: encrypt(merged) },
+    });
+
+    const edited = merged.replace('б', 'в');
+    await svc.saveNote(1n, '2026-07-16', edited);
+    expect((await svc.getNote(1n, '2026-07-16')).text).toBe(edited);
+
+    await expect(
+      svc.saveNote(1n, '2026-07-17', 'г'.repeat(600)),
+    ).rejects.toThrow(BadRequestException);
+    expect((await svc.getNote(1n, '2026-07-17')).text).toBeNull();
   });
 });
 

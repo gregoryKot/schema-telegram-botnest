@@ -79,7 +79,7 @@ export function NoteSheet({ date, onClose }: Props) {
         <div className="ds-card sd-note-field">
           <div className="ds-label">Запись</div>
           <LimitedTextarea
-            max={DAY_NOTE_MAX}
+            max={Math.max(DAY_NOTE_MAX, applied?.text?.length ?? 0)} // слитая заметка — правка без роста (src/bot/day-note-limit.ts)
             alwaysCount
             value={text}
             onChange={e => { setDirty(true); setText(e.target.value); }}
