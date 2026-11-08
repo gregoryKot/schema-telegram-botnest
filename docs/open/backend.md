@@ -243,7 +243,7 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   только из `successUrl` (`src/subscription/subscription.service.ts`), редирект
   `/subscribe?sub=ok` в `src/booking/payment.controller.ts` его не добавляет,
   письма со ссылкой нет. Строка в аккаунте (`webapp/src/pages/AccountPage.tsx`)
-  с #WAVE4 подписана «Регулярная поддержка проекта» и ведёт на оформление.
+  с #1024 подписана «Регулярная поддержка проекта» и ведёт на оформление.
   Нужно письмо со ссылкой управления (или управление по сессии).
   [Находка](../AUDIT_2026-10_FINDINGS.md#деньги-и-заявки): «Отмена подписки на
   сайте глотает отказ».
