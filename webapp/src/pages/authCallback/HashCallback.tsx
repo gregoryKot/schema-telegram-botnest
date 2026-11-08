@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/authContext';
 import { ServiceLoading } from '../service/ServiceLoading';
 import { dropUrlFragment } from './dropUrlFragment';
+import { takeReturnTo } from '../../auth/returnTo';
 
 // Приём сессии после OAuth (Google, VK): сервер ставит httpOnly refresh-куку и
 // ведёт на /auth/callback БЕЗ токена в адресе (до 2026-11 токен ехал во
@@ -18,8 +19,7 @@ export function HashCallback() {
   useEffect(() => {
     if (isLoading) return;
     if (isAuthenticated) {
-      const returnTo = sessionStorage.getItem('auth_return_to') ?? '/today';
-      sessionStorage.removeItem('auth_return_to');
+      const returnTo = takeReturnTo() ?? '/today';
       // returnTo можно вести за пределы SPA (/app/…, его ключ кладёт LoginScreen
       // перед OAuth): react-router там покажет пустоту — нужен полный переход.
       // Refresh уже завершён, новая кука в jar — следующая страница поднимет её сама.

@@ -82,13 +82,40 @@ describe('channel-http', () => {
 
   it('сеть не поднялась за все попытки — отдаём последнюю причину', async () => {
     const netErr = Object.assign(new TypeError('fetch failed'), {
-      cause: Object.assign(new Error('ETIMEDOUT'), { code: 'ETIMEDOUT' }),
+      cause: Object.assign(new Error('connect ETIMEDOUT'), {
+        code: 'ETIMEDOUT',
+        syscall: 'connect',
+      }),
     });
     const fn = jest.fn().mockRejectedValue(netErr);
     global.fetch = fn;
 
     await expect(getJson('https://api.test/x')).rejects.toThrow('fetch failed');
     expect(fn).toHaveBeenCalledTimes(3);
+  });
+
+  // R7 (аудит 2026-11): запрос, который ушёл, но ответа не дождался, мог
+  // создать пост — повтор давал в канале второй.
+  it.each([
+    [
+      'наш таймаут ожидания ответа',
+      Object.assign(new Error('aborted'), { name: 'TimeoutError' }),
+    ],
+    [
+      'обрыв после отправки',
+      Object.assign(new TypeError('fetch failed'), {
+        cause: Object.assign(new Error('read ECONNRESET'), {
+          code: 'ECONNRESET',
+          syscall: 'read',
+        }),
+      }),
+    ],
+  ])('%s — не повторяется, пост мог уже выйти', async (_name, err) => {
+    const fn = jest.fn().mockRejectedValue(err);
+    global.fetch = fn;
+
+    await expect(getJson('https://api.test/x')).rejects.toBe(err);
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('не-2xx превращается в ошибку со статусом и телом', async () => {

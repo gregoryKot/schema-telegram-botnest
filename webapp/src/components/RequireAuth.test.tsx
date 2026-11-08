@@ -15,6 +15,7 @@ import { AuthContext, type AuthState } from '../auth/authContext';
 import { RequireAuth } from './RequireAuth';
 import { StepUpContext } from './stepUp/stepUpContext';
 import { takeLaunchParam } from '../../../shared/src/host/startParam';
+import { AUTH_RETURN_KEY } from '../auth/returnTo';
 
 const auth = (over: Partial<AuthState> = {}): AuthState => ({
   accessToken: 'tok', isLoading: false, isAuthenticated: true,
@@ -64,4 +65,37 @@ describe('RequireAuth', () => {
     expect(await screen.findByText('login')).toBeTruthy();
     expect(takeLaunchParam()).toBe('therapy_ABC');
   });
+
+  // E14 (аудит 2026-11): после входа человек попадал на «Сегодня», а не туда,
+  // откуда его увели. Адрес ждёт экран входа; параметр запуска — свой путь.
+  const renderGuard = (path: string, over: Partial<AuthState>) => render(
+    <MemoryRouter initialEntries={[path]}>
+      <AuthContext.Provider value={auth({ isAuthenticated: false, accessToken: null, ...over })}>
+        <Routes>
+          <Route element={<RequireAuth />}>
+            <Route path="/diary" element={<div>записи</div>} />
+          </Route>
+          <Route path="/login" element={<div>login</div>} />
+        </Routes>
+      </AuthContext.Provider>
+    </MemoryRouter>,
+  );
+
+  it('без входа запоминает адрес с query для возврата, параметр запуска — отдельно', async () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    renderGuard('/diary?tab=schemas&startapp=therapy_ABC', {});
+    expect(await screen.findByText('login')).toBeTruthy();
+    expect(sessionStorage.getItem(AUTH_RETURN_KEY)).toBe('/diary?tab=schemas');
+    expect(takeLaunchParam()).toBe('therapy_ABC');
+  });
+
+  it('пока сессия поднимается или сеть сбоит, на вход не уводят — и адрес не пишется', () => {
+    sessionStorage.clear();
+    renderGuard('/diary?tab=schemas', { isLoading: true });
+    cleanup();
+    renderGuard('/diary?tab=schemas', { authError: 'transient' });
+    expect(sessionStorage.getItem(AUTH_RETURN_KEY)).toBeNull();
+  });
 });
+

@@ -14,9 +14,10 @@ import {
   cleanup,
   waitFor,
 } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { LoginPage } from './LoginPage';
+import { rememberReturnTo, AUTH_RETURN_KEY } from '../auth/returnTo';
 import { wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
 
 vi.mock('../../../shared/src/host', () => ({
@@ -70,10 +71,15 @@ function renderPage(auth: AuthState = authValue(), initialPath = '/login') {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/today" element={<div>today-page</div>} />
+          <Route path="/diary" element={<DiaryProbe />} />
         </Routes>
       </AuthContext.Provider>
     </MemoryRouter>,
   );
+}
+
+function DiaryProbe() {
+  return <div>diary-page {useLocation().search}</div>;
 }
 
 // QA 2026-11, К2: после удаления аккаунта экран входа писал «Вход устарел —
@@ -91,6 +97,20 @@ describe('LoginPage — сразу после удаления аккаунта'
 
 describe('LoginPage — уже вошедший пользователь', () => {
   it('isAuthenticated=true сразу уводит на /today', async () => {
+    renderPage(authValue({ isAuthenticated: true }));
+    await screen.findByText('today-page');
+  });
+
+  // E14 (аудит 2026-11): после входа — туда, откуда увели на вход (RequireAuth).
+  it('после входа возвращает на адрес, с которого увели, с query; адрес одноразовый', async () => {
+    rememberReturnTo('/diary?tab=schemas');
+    renderPage(authValue({ isAuthenticated: true }));
+    await screen.findByText('diary-page ?tab=schemas');
+    expect(sessionStorage.getItem(AUTH_RETURN_KEY)).toBeNull();
+  });
+
+  it('подложенный чужой адрес не уводит с сайта — /today', async () => {
+    sessionStorage.setItem(AUTH_RETURN_KEY, '//evil.com/phish');
     renderPage(authValue({ isAuthenticated: true }));
     await screen.findByText('today-page');
   });

@@ -9,6 +9,8 @@ export interface PriceFields {
   amount?: number | null;
   /** Код валюты (RUB | ILS | EUR | USD). */
   currency?: string | null;
+  /** Деньги пришли вебхуком Robokassa: отмена такой брони = возврат. */
+  paidAt?: Date | null;
 }
 
 const isCurrency = (c: string): c is Currency =>

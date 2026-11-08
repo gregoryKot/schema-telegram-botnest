@@ -58,6 +58,8 @@ function makePrisma() {
     // nextChargeAt). 0 вернул бы «уже забрал другой инстанс».
     $executeRaw: jest.fn(async () => 1),
     subscriptionCharge: {
+      // Просроченные продления (R8, charge-guards.ts) — здесь их нет.
+      findMany: jest.fn(async () => []),
       create: jest.fn(({ data }: any) => {
         const row = { id: nextChargeId++, status: 'pending', ...data };
         charges.set(row.id, row);

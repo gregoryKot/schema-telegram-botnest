@@ -11,6 +11,7 @@ import { loadRecordedFixture } from '../test-support/recorded-fixture';
 import { isRateLimited, retryAfterMs } from './telegram-rate-limit';
 import { sendBounded } from './telegram.send-bounded';
 import { runProcessQueue } from './telegram.schedule-queue';
+import { RejectCounter } from './telegram.schedule-queue.rejects';
 import { classifySendFailure } from './telegram-error';
 
 const FIXTURE = 'telegram-429-too-many-requests.json';
@@ -143,6 +144,7 @@ describe('шов: настоящий Telegraf получает 429 от серв
       } as never,
       pace: { sleep: (ms) => (waits.push(ms), Promise.resolve()) },
       track,
+      rejects: new RejectCounter(),
     });
     expect(hits).toBe(2);
     expect(waits).toEqual([5000]);

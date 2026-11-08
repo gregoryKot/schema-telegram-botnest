@@ -7,17 +7,19 @@
 // ждало до истечения билета (FIX_PLAN 1.5).
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { takeReturnTo } from '../../auth/returnTo';
 
-export function afterChallengePath(ticket: string): string {
-  return ticket ? `/auth/confirm?code=${encodeURIComponent(ticket)}` : '/today';
+/** Без билета — на адрес, с которого увели на вход (E14), иначе на «Сегодня». */
+export function afterChallengePath(ticket: string, returnTo: string | null = null): string {
+  return ticket ? `/auth/confirm?code=${encodeURIComponent(ticket)}` : (returnTo ?? '/today');
 }
 
 export function useChallengeAddress(): { challengeToken: string; afterLogin: string } {
   const [params] = useSearchParams();
-  const [read] = useState(() => ({
-    challengeToken: params.get('token') ?? '',
-    afterLogin: afterChallengePath(params.get('ticket') ?? ''),
-  }));
+  const [read] = useState(() => {
+    const ticket = params.get('ticket') ?? '';
+    return { challengeToken: params.get('token') ?? '', afterLogin: afterChallengePath(ticket, ticket ? null : takeReturnTo()) };
+  });
   useEffect(() => {
     if (window.location.search) window.history.replaceState(window.history.state, '', window.location.pathname);
   }, []);

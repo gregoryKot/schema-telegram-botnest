@@ -6,6 +6,7 @@ import { SceneCover } from '../../components/art/LandingScenesMore';
 import { FAQ } from './productContent';
 import { Rich } from './Rich';
 import { glue } from './typo';
+import { formatDateString, utcCalendarDay } from '../../../../shared/src/utils/calendarDate';
 
 // Карточки продуктового лендинга (плитка со знаком, карточка статьи, FAQ).
 // Вид — styles/product-landing*.css; данные — productContent.ts (react-refresh: раздельно).
@@ -31,7 +32,7 @@ export function ArticleCard({ a, index = 0 }: { a: ArticleSummary; index?: numbe
       <div className="pl2-article-body">
         <p className="pl2-article-title">{glue(a.title)}</p>
         <p className="pl2-article-desc">{glue(a.description)}</p>
-        <span className="pl2-article-meta">{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long' })} · {a.readMin} мин</span>
+        <span className="pl2-article-meta">{formatDateString(utcCalendarDay(a.date), { day: 'numeric', month: 'long' })} · {a.readMin} мин</span>
       </div>
     </a>
   );

@@ -20,11 +20,16 @@ export async function markChargeFailed(
     status: Subscription['status'];
     fails: number;
     maxFails: number;
+    /** Только из pending: просроченный charge (charge-guards) — не засчитать failed дважды. */
+    onlyPending?: boolean;
   },
 ): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const marked = await tx.subscriptionCharge.updateMany({
-      where: { id: args.chargeId, status: { not: 'paid' } },
+      where: {
+        id: args.chargeId,
+        status: args.onlyPending ? 'pending' : { not: 'paid' },
+      },
       data: { status: 'failed' },
     });
     if (marked.count === 0) return false;

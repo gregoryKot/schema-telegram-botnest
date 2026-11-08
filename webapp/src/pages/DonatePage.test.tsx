@@ -223,3 +223,17 @@ describe('DonatePage — возврат с оплаты (?donation=ok|fail)', ()
     expect(screen.getByRole('button', { name: /Поддержать 500/ })).toBeTruthy();
   });
 });
+
+// E14 (аудит 2026-11): «Назад» с Robokassa достаёт страницу из bfcache вместе
+// с состоянием — кнопка оставалась в «Перехожу к оплате…» и не нажималась.
+describe('DonatePage — возврат «Назад» со страницы оплаты', () => {
+  it('pageshow из bfcache снимает «Перехожу к оплате…», кнопка снова жива', async () => {
+    mockApi.donate.mockReturnValue(new Promise(() => {})); // ушли на оплату — ответа страница уже не ждёт
+    render(<DonatePage />);
+    fireEvent.click(screen.getByRole('button', { name: /Поддержать 500/ }));
+    const busy = screen.getByRole('button', { name: 'Перехожу к оплате…' }) as HTMLButtonElement;
+    expect(busy.disabled).toBe(true);
+    act(() => { window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); });
+    expect((screen.getByRole('button', { name: /Поддержать 500/ }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});

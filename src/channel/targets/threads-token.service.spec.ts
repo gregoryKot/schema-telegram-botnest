@@ -156,7 +156,9 @@ describe('ThreadsTokenService', () => {
     expect(upsert.mock.calls[0][0].update.value).toBe('enc(renewed)');
   });
 
-  it('сбой обновления не роняет крон и предупреждает, а не будит', async () => {
+  // E16 (аудит 2026-11): сбой refresh писался warn и не доходил до владельца,
+  // а необновлённый токен через 60 дней молча убивает публикацию в Threads.
+  it('сбой обновления не роняет крон и будит владельца (error)', async () => {
     const { prisma, upsert } = makePrisma({
       value: 'enc(old-token)',
       updatedAt: daysAgo(45),
@@ -180,8 +182,8 @@ describe('ThreadsTokenService', () => {
       ).refreshIfStale(),
     ).resolves.toBeUndefined();
     expect(upsert).not.toHaveBeenCalled();
-    expect(String(warn.mock.calls[0][0])).toContain('400: invalid token');
-    expect(error).not.toHaveBeenCalled();
+    expect(String(error.mock.calls[0][0])).toContain('400: invalid token');
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('ответ 200 без access_token тоже считается сбоем — не сохраняем пустоту', async () => {
@@ -197,8 +199,8 @@ describe('ThreadsTokenService', () => {
       status: 200,
       text: async () => '{"expires_in":5184000}',
     });
-    const warn = jest
-      .spyOn(Logger.prototype, 'warn')
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
       .mockImplementation(() => undefined);
 
     await new ThreadsTokenService(
@@ -207,7 +209,7 @@ describe('ThreadsTokenService', () => {
     ).refreshIfStale();
 
     expect(upsert).not.toHaveBeenCalled();
-    expect(String(warn.mock.calls[0][0])).toContain(
+    expect(String(error.mock.calls[0][0])).toContain(
       'в ответе нет access_token',
     );
   });

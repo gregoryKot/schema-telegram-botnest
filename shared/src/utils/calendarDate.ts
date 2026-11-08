@@ -87,6 +87,14 @@ export function formatDateString(
   });
 }
 
+/** День, который сервер хранит полночью UTC в DateTime и отдаёт моментом
+ * (`2026-01-10T00:00:00.000Z`, дата статьи): в зоне читателя западнее UTC он
+ * показался бы 9 января (E14). `YYYY-MM-DD` — как есть, нечитаемое — пусто. */
+export function utcCalendarDay(value: string): string {
+  const ms = dateStringMs(value);
+  return Number.isNaN(ms) ? '' : new Date(ms).toISOString().slice(0, 10);
+}
+
 /**
  * Сегодняшний день UTC — только для дней, которые ПОСЧИТАЛ СЕРВЕР в UTC:
  * `todayStr()` там, где местная дата другая, с ними не совпадает (2026-09-17).

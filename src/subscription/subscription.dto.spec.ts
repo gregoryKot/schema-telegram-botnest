@@ -30,6 +30,14 @@ describe('SubscribeDto — рантайм-валидация публичног�
     await expect(errorsFor({ email: ['a@b.co'] })).resolves.toContain('email');
   });
 
+  // R9 (аудит 2026-11): email уходит в Robokassa для чека.
+  it.each([
+    ['не адрес', 'not-an-email'],
+    ['длиннее 254', `${'a'.repeat(64)}@${`${'b'.repeat(60)}.`.repeat(4)}co`],
+  ])('email %s — отказ (R9)', async (_, email) => {
+    await expect(errorsFor({ email })).resolves.toContain('email');
+  });
+
   it('acceptedOffer не boolean — отказ', async () => {
     await expect(errorsFor({ acceptedOffer: 'yes' })).resolves.toContain(
       'acceptedOffer',

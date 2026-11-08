@@ -1,4 +1,5 @@
 import {
+  IsEmail,
   IsBoolean,
   IsIn,
   IsOptional,
@@ -18,9 +19,11 @@ export class SubscribeDto {
   @IsIn(['month', 'year'])
   period?: 'month' | 'year';
 
+  // R9 (аудит 2026-11): адрес уходит в Robokassa для чека — только e-mail,
+  // 254 — предел длины адреса (RFC 5321).
   @IsOptional()
-  @IsString()
-  @MaxLength(320)
+  @IsEmail()
+  @MaxLength(254)
   email?: string;
 
   @IsOptional()

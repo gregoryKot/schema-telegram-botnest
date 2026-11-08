@@ -5,6 +5,7 @@ import { Cup } from '../components/art/PaperArt';
 import { Leaf } from '../components/art/PaperArtSigns';
 import { CANCEL_SUPPORT_LINK } from '../components/booking/cancelPolicy';
 import { CancelControl } from './subscribe/CancelControl';
+import { usePageShowReset } from '../hooks/usePageShowReset';
 import { SubscribeForm } from './subscribe/SubscribeForm';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
 
@@ -39,6 +40,7 @@ export function SubscribePage() {
   const [period, setPeriod] = useState<'month' | 'year'>('month');
   const [email, setEmail] = useState(''); const [website, setWebsite] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  usePageShowReset(() => setStatus((s) => (s === 'loading' ? 'idle' : s))); // «Назад» с Robokassa — кнопка снова жива
 
   const [sub, setSub] = useState<Sub | null>(null);
   const [cancelled, setCancelled] = useState(false); const [enabled, setEnabled] = useState<boolean | null>(null);

@@ -79,6 +79,7 @@ export const USER_MERGE_RULES: Record<string, MergeRule> = {
   notifyNextRemindDate: skip('расписание конкретного аккаунта'),
   notifySkipAckDate: skip('расписание конкретного аккаунта'),
   notifyLastEvalDate: skip('идемпотентность catch-up конкретного аккаунта'),
+  notifyLastFillDate: skip('захват дня сводки конкретного аккаунта'),
   notifyPausedUntil: skip('пауза, поставленная в конкретном аккаунте'),
   notifyReminderSeq: skip('счётчик отправленных напоминаний'),
 

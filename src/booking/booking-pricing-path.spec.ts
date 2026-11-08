@@ -49,6 +49,35 @@ describe('resolveBookingPrice', () => {
     expect(p.getPrice).toHaveBeenCalledWith(SessionType.SESSION_50, 'USD');
   });
 
+  // Решение владельца Р5 (2026-11-08, аудит 2026-11 R9): UTC — «пояс
+  // неизвестен» (так его отдают браузеры с защитой от отпечатка), а не
+  // заграница. Раньше UTC давал доллары и бронь без предоплаты.
+  it.each(['UTC', 'Etc/UTC', 'Etc/GMT'])(
+    '%s — рубли с предоплатой: холд 15 минут, не manual',
+    async (tz) => {
+      const r = await resolveBookingPrice(
+        pricing(),
+        { type: SessionType.SESSION_50, clientTimeZone: tz },
+        NOW,
+      );
+      expect(r).toMatchObject({
+        currency: 'RUB',
+        manual: false,
+        amount: 4000,
+        heldUntil: new Date(NOW + HOLD_MINUTES * 60_000),
+      });
+    },
+  );
+
+  it('КОНТРОЛЬ: пояс со смещением Etc/GMT-3 — по-прежнему заграница', async () => {
+    const r = await resolveBookingPrice(
+      pricing(),
+      { type: SessionType.SESSION_50, clientTimeZone: 'Etc/GMT-3' },
+      NOW,
+    );
+    expect(r).toMatchObject({ currency: 'USD', manual: true });
+  });
+
   it('без пояса и с невалидным — рубли', async () => {
     for (const tz of [undefined, '', 'Europe/Nonexistent', 'мусор']) {
       const r = await resolveBookingPrice(pricing(), {

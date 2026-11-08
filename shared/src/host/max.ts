@@ -143,6 +143,7 @@ export function createMaxHost(): HostBridge {
         backButton: !!w?.BackButton,
         // Закрыть мини-апп изнутри нельзя — только предупреждение о закрытии.
         close: false,
+        dataUrlFiles: true, // data:-URL — ссылкой на скачивание (saveFile ниже)
       };
     },
 

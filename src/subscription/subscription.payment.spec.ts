@@ -34,6 +34,8 @@ function makeService(opts: { pendingCharge?: any; chargeRow?: any }) {
     // nextChargeAt). 0 вернул бы «уже забрал другой инстанс».
     $executeRaw: jest.fn(async () => 1),
     subscriptionCharge: {
+      // Просроченные продления (R8, charge-guards.ts) — здесь их нет.
+      findMany: jest.fn(async () => []),
       findFirst: jest.fn(async () => opts.pendingCharge ?? null),
       findUnique: jest.fn(async () => chargeState),
       create: jest.fn(async () => ({ id: 55, subscriptionId: 1, amount: 300 })),
