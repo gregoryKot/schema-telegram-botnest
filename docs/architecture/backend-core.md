@@ -100,7 +100,7 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 
 ### `src/logger/`
 `AlertLogger`: ошибки приложения превращаются в сообщение админу (Telegram, фолбэк e-mail) с троттлингом; авария БД сворачивается в одно сообщение.
-- Входы: `src/logger/alert.logger.ts` — `AlertLogger.error()` → `notifyAdminWithFallback`; `src/logger/db-outage.ts` — классификация «БД недоступна», один DM + recovery.
+- Входы: `src/logger/alert.logger.ts` — `AlertLogger.error()` → `notifyAdminWithFallback`; `src/logger/db-outage.ts` — классификация «БД недоступна», один DM + recovery (признаки в тексте, включая отказ пула pg, — `src/logger/db-outage-signals.ts`).
 - Связи: ставится в `main.ts` (`NestFactory.create({logger})`); доставка — `src/utils/admin-alert.ts`, `src/utils/alert-throttle.ts`; `isConnectionError` использует `telegram.schedule.service.ts`.
 - Подводные камни: алерт шлёт только `logger.error`; для временных сбоев (в том числе соединения с БД) использовать `warn`. Троттлинг по тексту сообщения (цифры/uuid заменяются плейсхолдером) раз в 60 с плюс общий потолок 15 алертов за 60 с: текст `error` делать стабильным, без переменных частей.
 - Денежные алерты (`src/logger/money-alert.ts`, метка в тексте) троттлятся по полному тексту со своим бюджетом — второй платёж без строки не теряется (`alert-gate.ts`).

@@ -14,6 +14,7 @@
 // схлопнулся в один DM плюс одно сообщение о восстановлении.
 
 import { AlertBudget } from '../utils/alert-throttle';
+import { DB_CONTEXT, STRONG_SIGNALS, WEAK_SIGNALS } from './db-outage-signals';
 
 // Тема письма-фолбэка (Telegram недоступен → e-mail). Одна на оба сообщения
 // об аварии — и на первое, и на «база снова отвечает».
@@ -23,27 +24,8 @@ export const DB_ALERT_SUBJECT = 'База данных SchemeHappens';
 // общий потолок.
 const BUDGET_KEY = 'db';
 
-// Сильные признаки — сами по себе достаточны, независимо от контекста.
-const STRONG_SIGNALS = [
-  'p1001',
-  'p1017',
-  'p2024',
-  'databasenotreachable',
-  "can't reach database server",
-  'can’t reach database server', // типографский апостроф
-  'server has closed the connection',
-  'timed out fetching a new connection from the pool',
-];
-
-// Слабые признаки — общая формулировка сетевого сбоя, которая с тем же
-// успехом описывает отказ api.telegram.org. Засчитываются только рядом с
-// явным упоминанием БД, иначе авария Telegram схлопнулась бы в «БД легла».
-const WEAK_SIGNALS = [
-  'econnrefused',
-  'connect etimedout',
-  'connection terminated',
-];
-const DB_CONTEXT = ['prisma', 'database', 'postgres', ':5432'];
+// Признаки аварии в тексте (сильные, слабые, контекст БД, отказ пула pg) —
+// src/logger/db-outage-signals.ts.
 
 function safeStringify(value: object): string {
   try {
