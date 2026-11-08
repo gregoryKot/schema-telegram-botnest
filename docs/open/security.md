@@ -126,9 +126,6 @@
   чтением `User`; индекс `@@index([family])`). Сценария в `test/perf/scenarios.ts` нет:
   синтетика perf не сеет `WebSession`, а планку страниц снимает только прогон джобы `perf`
   (`check-query-plans.mjs --update`). Добавить сид сессий и сценарий «гвард на запрос».
-- **S21 · остаток:** `fast-uri` 3.1.8 moderate через `prisma` (недоверенные URI до него не
-  доходят). Остальное из S21 закрыто: подпись массивом на `/api/payment/success` — волна 5
-  (`src/booking/robokassa-sign.ts`), код ошибки OAuth в DM — волна 6, прочее — волна 1.
 - **Без события аналитики — осознанно (2026-11).** Уведомление `security_notice` о привязке и
   отвязке входа (`src/auth/security-notice.service.ts`) и окно кода 2FA (`webapp/src/components/stepUp/`)
   — не фичи в смысле правила №8, а защитные шаги: считать их в `/stats` нечего (события пишет
