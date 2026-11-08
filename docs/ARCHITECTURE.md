@@ -28,6 +28,7 @@
 | Новый эндпоинт | контроллер в `src/api/api.module.ts`, гард `src/api/telegram-auth.guard.ts`, `uid(req)` из `src/api/request-utils.ts`, DTO; e2e-смок ownership в `test/` | backend-api, tests |
 | Публичная ручка без входа | `src/security/controller-classification.ts` (`PUBLIC_BY_DESIGN`) | backend-api, security |
 | Вход, сессии, привязка, слияние | `src/auth/auth-flow.service.ts`, `src/auth/providers/registry.ts`, `src/auth/merge.service.ts` | security |
+| Действие, которое у пользователя с 2FA просит код (привязка и отвязка входа, link-token, approve) | сервер — `src/auth/step-up.ts` (`StepUpGuard`, 403 `totp_required`), лимит неверных кодов — `src/auth/totp-attempts.ts`; сайт — `webapp/src/components/stepUp/` (`StepUpProvider`, `useStepUpFetch`), разбор ответа — `shared/src/auth/stepUp.ts` | security |
 | Данные пользователя (доменная логика) | `src/bot/` — это НЕ Telegram-бот, а доменный слой: `src/bot/bot.service.ts`, `src/bot/bot.module.ts` | data |
 | Новая таблица с `userId` | `prisma/schema.prisma`, `src/bot/user-data-tables.ts`, `src/auth/user-owned-tables.ts`, `src/utils/encryption-policy.ts` | data, security |
 | Миграция | `prisma/migrations/<ГГГГММДДччммсс>_<имя>/migration.sql` | data |
