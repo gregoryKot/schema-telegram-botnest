@@ -37,6 +37,44 @@ describe('SchemaDiaryDto', () => {
     ).resolves.toContain('emotions');
   });
 
+  // Аудит 2026-11, S21: emotions без @ValidateNested принимал любые объекты.
+  it.each([
+    ['id не из формата каталога', { id: 'Anger<b>', intensity: 3 }],
+    ['id длиннее 64', { id: 'a'.repeat(65), intensity: 3 }],
+    ['id не строка', { id: 5, intensity: 3 }],
+    ['intensity дробная', { id: 'anger', intensity: 2.5 }],
+    ['intensity 0', { id: 'anger', intensity: 0 }],
+    ['intensity больше 10', { id: 'anger', intensity: 11 }],
+    ['intensity строкой', { id: 'anger', intensity: '3' }],
+    ['без intensity', { id: 'anger' }],
+    ['не объект', 'anger'],
+  ])('эмоция: %s → отказ', async (_, emotion) => {
+    await expect(
+      errorsFor(SchemaDiaryDto, { ...VALID, emotions: [emotion] }),
+    ).resolves.toContain('emotions');
+  });
+
+  it('эмоция с лишним полем: whitelist срезает его, запись проходит', async () => {
+    const dto = plainToInstance(SchemaDiaryDto, {
+      ...VALID,
+      emotions: [{ id: 'anger', intensity: 5, note: 'x'.repeat(100_000) }],
+    });
+    await expect(validate(dto, { whitelist: true })).resolves.toEqual([]);
+    expect(dto.emotions[0]).toEqual({ id: 'anger', intensity: 5 });
+  });
+
+  it.each([1, 5, 10])(
+    'intensity %i — проходит (шкала сайта 1..5)',
+    async (n) => {
+      await expect(
+        errorsFor(SchemaDiaryDto, {
+          ...VALID,
+          emotions: [{ id: 'anxiety', intensity: n }],
+        }),
+      ).resolves.toEqual([]);
+    },
+  );
+
   it('schemaIds не массив строк — отказ', async () => {
     await expect(
       errorsFor(SchemaDiaryDto, { ...VALID, schemaIds: [1, 2] }),
