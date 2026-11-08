@@ -218,6 +218,19 @@ describe('Полуночный обход: обрыв рестартом и до
     await expect(cadence.claimPlanDay(user as never, now)).resolves.toBe(true);
   });
 
+  // E16 (аудит 2026-11): тот же приём для дня заполнения трекера — из двух
+  // параллельных «последних оценок» сводку ставит одна (claimFillDay).
+  it('параллельные захваты дня заполнения: ровно один; с NULL и с прошлого дня — проходят', async () => {
+    const today = localDateString(TZ, new Date());
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () => cadence.claimFillDay(RACE, today)),
+    );
+    expect(results.filter(Boolean)).toHaveLength(1);
+    const next = addDaysLocal(today, 1);
+    await expect(cadence.claimFillDay(RACE, next)).resolves.toBe(true);
+    await expect(cadence.claimFillDay(RACE, next)).resolves.toBe(false);
+  });
+
   it('параллельные planDay одного человека после проведённого дня → одно проактивное уведомление', async () => {
     const now = new Date();
     await seedMissedPlan(RACE, now);

@@ -24,6 +24,8 @@ import {
   type DiaryCompleteDeps,
 } from './telegram.diary-complete';
 import { runProcessQueue, armQueueKillSwitch } from './telegram.schedule-queue';
+import { RejectCounter } from './telegram.schedule-queue.rejects';
+import { PerKeyQueue } from '../utils/per-key-queue';
 import { MidnightPlanner } from './telegram.midnight-planner';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { isConnectionError } from '../logger/db-outage';
@@ -56,6 +58,9 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
   }
 
   private isProcessing = false;
+  private readonly queueRejects = new RejectCounter();
+  /** Перепланировки одного человека — по очереди (E16, per-key-queue.ts). */
+  private readonly reschedules = new PerKeyQueue();
   private readonly midnight: MidnightPlanner;
   private readonly catchupTimer = new CatchupTimer();
 
@@ -74,13 +79,13 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
 
   /** Reschedule reminder for a single user — telegram.schedule-reschedule.ts. */
   async rescheduleForUser(userId: bigint) {
-    return rescheduleForUser(
-      {
-        botService: this.botService,
-        notificationService: this.notificationService,
-        plannerService: this.plannerService,
-      },
-      userId,
+    const deps = {
+      botService: this.botService,
+      notificationService: this.notificationService,
+      plannerService: this.plannerService,
+    };
+    return this.reschedules.run(String(userId), () =>
+      rescheduleForUser(deps, userId),
     );
   }
 
@@ -143,6 +148,7 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       notificationService: this.notificationService,
       logger: this.logger,
       track: (t) => this.analytics?.track(null, 'notify_queue_tick', t),
+      rejects: this.queueRejects,
     });
   }
 

@@ -5,6 +5,7 @@
 import { Logger } from '@nestjs/common';
 import { holdBeforeSend } from './telegram.schedule-queue.gate';
 import { runProcessQueue } from './telegram.schedule-queue';
+import { RejectCounter } from './telegram.schedule-queue.rejects';
 import { NotificationService } from '../notification/notification.service';
 import type { SendSettings } from '../bot/account.service';
 import {
@@ -156,6 +157,7 @@ describe('runProcessQueue: pair_activity напарнику на паузе не
       } as never,
       notificationService: q.svc,
       logger: new Logger('test'),
+      rejects: new RejectCounter(),
     });
     expect(callApi).not.toHaveBeenCalled();
     expect(q.cancelled(1)).toBe(true);

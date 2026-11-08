@@ -2,6 +2,10 @@
 import { classifySendFailure, describeTelegramError } from './telegram-error';
 import { isUnknownOutcome } from './telegram.send-bounded';
 import type { QueueDeps } from './telegram.schedule-queue';
+import {
+  isPermanentRejection,
+  MAX_REJECTS,
+} from './telegram.schedule-queue.rejects';
 
 export async function handleSendError(
   deps: QueueDeps,
@@ -26,6 +30,15 @@ export async function handleSendError(
     // отправленным: повтор на следующем тике (429 — в telegram.paced-sender).
     seen.transient++;
     logger.error(`Failed to send notification id=${id} (${desc})`, err);
+    // Но 400 на само сообщение повтор не исправит: после MAX_REJECTS отказов
+    // строку снимаем (cancelledAt — не «отправлено»: каденс считает только
+    // реально ушедшие) — telegram.schedule-queue.rejects.ts.
+    if (isPermanentRejection(err) && deps.rejects.strike(id)) {
+      await notificationService.cancelOne(id);
+      logger.warn(
+        `Notification id=${id}: Telegram отказал ${MAX_REJECTS} раза подряд — снято, повторов не будет (${desc})`,
+      );
+    }
     return;
   }
 
