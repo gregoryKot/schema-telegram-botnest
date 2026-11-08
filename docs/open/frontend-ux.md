@@ -151,7 +151,6 @@
 - **`CaseFeelStep.tsx` и `CaseChipGrid.tsx` теперь на `ds-chip--toggle`** (`webapp/src/components/caseFlow/`); `.ex2-chip` удалён — шаг чувств глазами не снимали (экран упражнения вне тура `tour.mjs`).
 - **`.tk-ov` на телефоне держит свой `gap: 24` и padding** (`webapp/src/styles/therapist-card.css`) при остальных страницах на 16/24 по `ds-page`; к `ds-page` не относится, сверка не ругается.
 - **`AboutSheet.tsx`: после удаления `.st-links a b` слова в `<b>` не акцентные** (`webapp/src/components/settingsSheet/AboutSheet.tsx`); тексты не менялись, глазами не проверено.
-- **Нет теста на синтаксис CSS целиком:** при волне 3 `vite build` (lightningcss) упал на осиротевшем теле правила `.st-hour` в `sheet-settings.css`, а vitest (366 кейсов стилей) был зелёным — спеки читают css регэкспами. Образец: сборка (CI) ловит, локально — `vite build` перед пушем.
 
 **QA клиента 2026-11 — трекер, история, тест на схемы: увиденное попутно и не тронутое**
 - **Средние оценок с точкой вне `fmtIndex`/`fmtIndexDelta`** (`shared/src/needs/dayIndex.ts`): история
