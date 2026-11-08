@@ -35,6 +35,8 @@ function makeService(
     existingBookings?: any[];
     robokassaEnabled?: boolean;
     analytics?: { track: jest.Mock };
+    env?: Record<string, string>;
+    calDav?: { getBusyTimes: jest.Mock };
   } = {},
 ) {
   const bookingRows: any[] = opts.existingBookings
@@ -93,7 +95,7 @@ function makeService(
     buildPaymentUrl: jest.fn(() => 'https://auth.robokassa.ru/pay?x=1'),
   };
   const pricing = { getPrice: jest.fn(async () => 4000) };
-  const config = { get: () => undefined };
+  const config = { get: (k: string) => opts.env?.[k] };
   const cronLeader = {
     claimRun: jest.fn().mockResolvedValue(true),
   } as any;
@@ -105,7 +107,8 @@ function makeService(
     pricing as any,
     config as any,
     cronLeader,
-    opts.analytics as any,
+    opts.analytics as never,
+    opts.calDav as never,
   );
   return {
     service,
@@ -311,6 +314,68 @@ describe('BookingService.book — advisory-lock и TOCTOU (P-1)', () => {
       }),
     ).rejects.toThrow(ConflictException);
     expect(tx.booking.create).not.toHaveBeenCalled();
+  });
+
+  // Аудит 2026-10: запись поверх личного события владельца. При
+  // CALENDAR_BLOCK_SLOTS=true book() сверяет слот с занятостью календаря.
+  const SLOT = {
+    ...BASE_DTO,
+    startsAt: INSIDE_WINDOW,
+    durationMin: 50,
+    type: SessionType.SESSION_50,
+  };
+  const busyOverSlot = () => ({
+    getBusyTimes: jest.fn(async () => [
+      {
+        start: INSIDE_WINDOW,
+        end: new Date(INSIDE_WINDOW.getTime() + 3_600_000),
+      },
+    ]),
+  });
+
+  it('CALENDAR_BLOCK_SLOTS=true, слот поверх события календаря — 409 «Slot already taken», брони нет', async () => {
+    const calDav = busyOverSlot();
+    const { service, tx } = makeService({
+      env: { CALENDAR_BLOCK_SLOTS: 'true' },
+      calDav,
+    });
+    await expect(service.book(SLOT)).rejects.toThrow(
+      new ConflictException('Slot already taken'),
+    );
+    expect(tx.booking.create).not.toHaveBeenCalled();
+    expect(calDav.getBusyTimes).toHaveBeenCalledTimes(1);
+  });
+
+  it('CALENDAR_BLOCK_SLOTS=true, календарь упал — бронь создаётся (fail-open)', async () => {
+    const calDav = {
+      getBusyTimes: jest.fn(async () => {
+        throw new Error('fetch failed');
+      }),
+    };
+    const { service, tx } = makeService({
+      env: { CALENDAR_BLOCK_SLOTS: 'true' },
+      calDav,
+    });
+    const res = await service.book(SLOT);
+    expect(res.status).toBe(BookingStatus.CONFIRMED); // dev без Robokassa
+    expect(calDav.getBusyTimes).toHaveBeenCalledWith(
+      INSIDE_WINDOW,
+      new Date(INSIDE_WINDOW.getTime() + 50 * 60_000),
+    );
+    expect(tx.booking.create.mock.calls[0][0].data.startsAt).toEqual(
+      INSIDE_WINDOW,
+    );
+  });
+
+  it('контроль: флаг выключен — календарь не спрашивается, бронь создаётся', async () => {
+    const calDav = busyOverSlot();
+    const { service, tx } = makeService({ calDav });
+    const res = await service.book(SLOT);
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    expect(calDav.getBusyTimes.mock.calls).toEqual([]);
+    expect(tx.booking.create.mock.calls[0][0].data.startsAt).toEqual(
+      INSIDE_WINDOW,
+    );
   });
 });
 

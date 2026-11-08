@@ -4,6 +4,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BookingNotifyService } from './booking-notify.service';
 import { lockBookingSlots } from './booking-slot-lock';
 import { assertSlotFree } from './booking.availability';
+import {
+  assertCalendarFree,
+  CalendarBusySource,
+} from './booking-calendar-guard';
 import { LostLead, lostLeadAlertText } from './booking-notify.format';
 import type { AnalyticsService } from '../analytics/analytics.service';
 import { BOOKING_SLOT_TAKEN_EVENT } from '../analytics/booking-events.constants';
@@ -14,6 +18,8 @@ export interface CreateDeps {
   logger: Logger;
   /** Счётчик «время уже заняли» для /stats (booking-events.constants.ts). */
   analytics?: Pick<AnalyticsService, 'track'>;
+  /** Занятость календаря — только при CALENDAR_BLOCK_SLOTS=true (booking-calendar-guard.ts). */
+  calendar?: CalendarBusySource;
 }
 
 type BookingCreateData = Prisma.BookingCreateArgs['data'];
@@ -35,6 +41,8 @@ export async function createBookingGuarded(
   lead: LostLead,
 ) {
   try {
+    // До лока, с таймаутом: событие в iCloud ставит не наш код, лок от него не защищает.
+    await assertCalendarFree(deps.calendar, lead, deps.logger);
     return await deps.prisma.$transaction(async (tx) => {
       await lockBookingSlots(tx);
       await assertSlotFree(tx, lead.startsAt, lead.durationMin);
