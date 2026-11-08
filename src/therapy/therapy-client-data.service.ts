@@ -7,9 +7,13 @@ import { TherapyRelationsService } from './therapy-relations.service';
 import { removeTherapistClient } from './remove-client';
 import { isOwnYsqRequestPending, requestYsq } from './ysq-request';
 import { activeRelationWhere } from './relation-where';
-import { decrypt, decryptJson, decryptRecord } from '../utils/crypto';
+import { decryptRecord } from '../utils/crypto';
 import { computeActiveSchemas, computeYsqScores } from '../utils/ysq';
 import { decodeYsqAnswers } from '../bot/ysq.service';
+import {
+  ClientDiaryEntry,
+  readClientDiaryEntries,
+} from './client-diary-entries';
 // Схемы шифрования — общий источник правды с NotesService (правило №4
 // CLAUDE.md: не копипастить список полей, иначе рассинхрон при новом поле).
 import { SCHEMA_NOTE_SCHEMA, MODE_NOTE_SCHEMA } from '../bot/notes.service';
@@ -113,96 +117,13 @@ export class TherapyClientDataService {
   async getClientDiaryEntries(
     therapistId: bigint,
     clientId: bigint,
-  ): Promise<
-    {
-      type: 'schema' | 'mode' | 'gratitude';
-      date: string;
-      schemaIds?: string[];
-      modeId?: string;
-      excerpt: string;
-    }[]
-  > {
+  ): Promise<ClientDiaryEntry[]> {
     if (clientId < 0n) return [];
     await this.relationsService.assertHasClient(therapistId, clientId);
     // L1 (аудит 2026-08): дневник чтит therapistShareCards, как соседи-заметки
     // (getClientSchemaNotes/ModeNotes); свободный клин. текст не течёт при opt-out.
     if (!(await this.cardsShared(clientId))) return [];
-    const uid = clientId;
-    const [schemaRows, modeRows, gratitudeRows] = await Promise.all([
-      this.prisma.schemaDiaryEntry.findMany({
-        where: { userId: uid },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        select: { schemaIds: true, trigger: true, createdAt: true },
-      }),
-      this.prisma.modeDiaryEntry.findMany({
-        where: { userId: uid },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        select: { modeId: true, situation: true, createdAt: true },
-      }),
-      this.prisma.gratitudeDiaryEntry.findMany({
-        where: { userId: uid },
-        orderBy: { date: 'desc' },
-        take: 10,
-        select: { date: true, items: true },
-      }),
-    ]);
-
-    const entries: {
-      type: 'schema' | 'mode' | 'gratitude';
-      dateMs: number;
-      date: string;
-      schemaIds?: string[];
-      modeId?: string;
-      excerpt: string;
-    }[] = [];
-
-    for (const r of schemaRows) {
-      const schemaIds: string[] =
-        typeof r.schemaIds === 'string'
-          ? (decryptJson<string[]>(r.schemaIds) ?? [])
-          : ((r.schemaIds as string[]) ?? []);
-      const trigger = decrypt(r.trigger) ?? r.trigger;
-      entries.push({
-        type: 'schema',
-        dateMs: r.createdAt.getTime(),
-        date: r.createdAt.toISOString().slice(0, 10),
-        schemaIds,
-        excerpt: trigger,
-      });
-    }
-
-    for (const r of modeRows) {
-      const modeId = decrypt(r.modeId) ?? r.modeId;
-      const situation = decrypt(r.situation) ?? r.situation;
-      entries.push({
-        type: 'mode',
-        dateMs: r.createdAt.getTime(),
-        date: r.createdAt.toISOString().slice(0, 10),
-        modeId,
-        excerpt: situation,
-      });
-    }
-
-    for (const r of gratitudeRows) {
-      const items: string[] =
-        typeof r.items === 'string'
-          ? (decryptJson<string[]>(r.items) ?? [])
-          : ((r.items as string[]) ?? []);
-      entries.push({
-        type: 'gratitude',
-        // `Z` обязателен: без него день уезжал в зону сервера (инцидент 2026-09-17)
-        dateMs: Date.parse(r.date + 'T00:00:00Z'),
-        date: r.date,
-        excerpt: items.slice(0, 2).join(' · '),
-      });
-    }
-
-    return entries
-      .sort((a, b) => b.dateMs - a.dateMs)
-      .slice(0, 10)
-      .map(({ dateMs: _d, ...rest }) => rest);
+    return readClientDiaryEntries(this.prisma, clientId);
   }
 
   // Клиент может закрыть карточки от терапевта (therapistShareCards=false) —

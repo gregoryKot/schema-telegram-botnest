@@ -17,6 +17,7 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PairCodeDto } from './dto/pairs.dto';
 import { miniappStartLink } from '../telegram/miniapp-link';
+import { shiftDay } from '../bot/bot.activity-streak';
 
 // Ссылка ждущего приглашения — чтобы клиент мог отправить её повторно, не
 // создавая новый код. Бот не настроен (miniappStartLink бросает 503) — это не
@@ -56,13 +57,13 @@ export class PairsController {
 
     const partners = await Promise.all(
       activePairs.map(async (pair) => {
-        const [partnerRatings, partnerName, partnerHistory] = await Promise.all(
-          [
+        const [partnerRatings, partnerName, partnerHistory, partnerToday] =
+          await Promise.all([
             this.botService.getRatings(pair.partnerId!),
             this.accountService.getUserFirstName(pair.partnerId!),
             this.analyticsService.getHistoryRatings(pair.partnerId!, 7),
-          ],
-        );
+            this.botService.userToday(pair.partnerId!),
+          ]);
         const partnerRaw =
           NEED_IDS.reduce((s, id) => s + (partnerRatings[id] ?? 0), 0) /
           NEED_IDS.length;
@@ -72,11 +73,10 @@ export class PairsController {
         const histByDate = new Map(
           partnerHistory.map((d) => [d.date, d.ratings]),
         );
+        // Дни партнёра — по его поясу, как история (E15): в UTC-днях в 00–03
+        // по Москве «сегодня» полосы показывало вчерашний день.
         const partnerWeekAvgs = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date();
-          d.setUTCDate(d.getUTCDate() - i);
-          const date = d.toISOString().split('T')[0];
-          const ratings = histByDate.get(date);
+          const ratings = histByDate.get(shiftDay(partnerToday, -i));
           if (!ratings) return null;
           const done = NEED_IDS.every((id) => ratings[id] !== undefined);
           if (!done) return null;

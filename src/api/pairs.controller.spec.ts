@@ -42,6 +42,7 @@ function makeController(
   } as unknown as PairsService;
   const botService = {
     getRatings: jest.fn().mockResolvedValue({}),
+    userToday: jest.fn().mockResolvedValue('2026-11-08'),
     ...overrides.botService,
   } as unknown as BotService;
   const accountService = {
@@ -153,10 +154,11 @@ describe('PairsController.getPair', () => {
     expect(botService.getRatings).toHaveBeenCalledWith(555n);
     expect(accountService.getUserFirstName).toHaveBeenCalledWith(555n);
     expect(analyticsService.getHistoryRatings).toHaveBeenCalledWith(555n, 7);
+    expect(botService.userToday).toHaveBeenCalledWith(555n);
   });
 
   it('partnerWeekAvgs: день без полной истории — null, а не 0/NaN', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = '2026-11-08'; // «сегодня» партнёра из botService.userToday
     const { controller } = makeController({
       pairsService: {
         getUserPairs: jest
@@ -173,6 +175,38 @@ describe('PairsController.getPair', () => {
     });
     const res = await controller.getPair(makeReq());
     expect(res.partners[0].partnerWeekAvgs[0]).toBeNull();
+  });
+
+  // E15 аудита 2026-11: ключи полосы брались по UTC-дням, а история партнёра —
+  // в его местных днях. В 00:30 по Москве (в UTC ещё вчера) «сегодня» полосы
+  // показывало вчерашний день, а вчерашний — позавчерашний.
+  it('partnerWeekAvgs: дни — по календарю партнёра, не по UTC', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-07T21:30:00Z') });
+    try {
+      const { controller } = makeController({
+        pairsService: {
+          getUserPairs: jest
+            .fn()
+            .mockResolvedValue([
+              { code: 'AB', status: 'active', isCreator: true, partnerId: 1n },
+            ]),
+        },
+        botService: {
+          getRatings: jest.fn().mockResolvedValue(allNeedsRated(6)),
+          userToday: jest.fn().mockResolvedValue('2026-11-08'), // 00:30 МСК
+        },
+        analyticsService: {
+          getHistoryRatings: jest.fn().mockResolvedValue([
+            { date: '2026-11-08', ratings: allNeedsRated(6) },
+            { date: '2026-11-07', ratings: allNeedsRated(4) },
+          ]),
+        },
+      });
+      const res = await controller.getPair(makeReq());
+      expect(res.partners[0].partnerWeekAvgs.slice(0, 3)).toEqual([6, 4, null]);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 

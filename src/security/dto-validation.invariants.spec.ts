@@ -154,8 +154,10 @@ function countBodyParams(): number {
 // phishing 2026-08-31 убрал из контроллера инъекцию LoginTicketService, но
 // номер строки после prettier совпал с прежним. Переезд лимитов на
 // `STRICT_THROTTLE` (check-persistent-throttle) сдвинул её на семь строк вверх.
+// tracker.controller.ts:177 (была 180): проверка дней через isCalendarDay
+// (E15 аудита 2026-11) сжала saveNote на три строки — нарушитель тот же.
 const VIOLATIONS_LEGACY: Record<string, string> = {
-  'api/tracker.controller.ts:180':
+  'api/tracker.controller.ts:177':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
   'auth/auth-link.controller.ts:47':
