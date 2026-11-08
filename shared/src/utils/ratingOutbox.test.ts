@@ -100,6 +100,49 @@ describe('flushRatingOutbox', () => {
     ]);
   });
 
+  it('постоянный отказ снимает оценку (все её копии) и едет дальше; isDropped — по разу', async () => {
+    enqueueRating(item('gone', 1, '2026-07-15'));
+    enqueueRating(item('safety', 2, '2026-07-16'));
+    enqueueRating(item('gone', 4, '2026-07-15'));
+    const rejected = new Error('404');
+    const post = vi
+      .fn()
+      .mockRejectedValueOnce(rejected)
+      .mockResolvedValueOnce(undefined);
+    const onRecovered = vi.fn();
+    const isDropped = vi.fn(
+      (_it: OutboxItem, err: unknown) => err === rejected,
+    );
+    await flushRatingOutbox(post, onRecovered, isDropped);
+
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+    expect(isDropped).toHaveBeenCalledTimes(1);
+    expect(isDropped).toHaveBeenCalledWith(
+      item('gone', 4, '2026-07-15'),
+      rejected,
+    );
+    expect(onRecovered).toHaveBeenCalledWith(1);
+  });
+
+  it('отказ не постоянный (isDropped → false) — выгрузка встаёт, очередь цела', async () => {
+    enqueueRating(item('safety', 1, '2026-07-15'));
+    enqueueRating(item('play', 2, '2026-07-16'));
+    const post = vi.fn().mockRejectedValue(new TypeError('offline'));
+    await flushRatingOutbox(post, undefined, () => false);
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toHaveLength(2);
+  });
+
+  it('снято всё, ничего не доехало — onRecovered молчит', async () => {
+    enqueueRating(item('gone', 1, '2026-07-15'));
+    const post = vi.fn().mockRejectedValue(new Error('400'));
+    const onRecovered = vi.fn();
+    await flushRatingOutbox(post, onRecovered, () => true);
+    expect(onRecovered).not.toHaveBeenCalled();
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+  });
+
   it('удаляет все успешно отправленные элементы', async () => {
     enqueueRating(item('safety', 1, '2026-07-15'));
     enqueueRating(item('autonomy', 2, '2026-07-16'));

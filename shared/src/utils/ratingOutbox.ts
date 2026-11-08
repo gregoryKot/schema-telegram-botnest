@@ -101,24 +101,31 @@ function withoutSent(current: OutboxItem[], sent: OutboxItem[]): OutboxItem[] {
   return rest;
 }
 
+/** true — отказ насовсем (удалённый needId): оценку снять и ехать дальше. */
+type IsDropped = (item: OutboxItem, err: unknown) => boolean;
+
 async function drain(
   post: (item: OutboxItem) => Promise<void>,
   onRecovered?: (count: number) => void,
+  isDropped?: IsDropped,
 ): Promise<void> {
   const snapshot = readOutbox();
   const sentKeys = new Set<string>();
+  const doneKeys = new Set<string>(); // доехали или сняты насовсем
   for (const item of dedupe(snapshot)) {
     try {
       await post(item);
       sentKeys.add(keyOf(item));
-    } catch {
-      break;
+    } catch (err) {
+      // Раньше любой отказ стопорил очередь (хвост волны 2, #1022); сеть, 5xx, 401, 429 — ждать.
+      if (!isDropped?.(item, err)) break;
     }
+    doneKeys.add(keyOf(item));
   }
-  if (sentKeys.size === 0) return;
-  const sent = snapshot.filter((it) => sentKeys.has(keyOf(it)));
-  writeOutbox(withoutSent(readOutbox(), sent));
-  onRecovered?.(sentKeys.size);
+  if (doneKeys.size === 0) return;
+  const done = snapshot.filter((it) => doneKeys.has(keyOf(it)));
+  writeOutbox(withoutSent(readOutbox(), done));
+  if (sentKeys.size > 0) onRecovered?.(sentKeys.size);
 }
 
 // Одна выгрузка за раз: старт приложения и событие `online` приходят почти
@@ -127,15 +134,17 @@ let flushing: Promise<void> | null = null;
 
 /**
  * Отправляет очередь по порядку. Останавливается на первой ошибке (сеть, 5xx,
- * 401 до перевыпуска сессии, 429) и оставляет неотправленное в очереди.
+ * 401 до перевыпуска сессии, 429) и оставляет неотправленное в очереди;
+ * отказ, признанный `isDropped` постоянным, снимает оценку и идёт дальше.
  * Повторный вызов во время выгрузки получает ту же выгрузку.
  */
 export function flushRatingOutbox(
   post: (item: OutboxItem) => Promise<void>,
   // Вызывается один раз, если что-то реально доехало (аналитика outbox_flush).
   onRecovered?: (count: number) => void,
+  isDropped?: IsDropped,
 ): Promise<void> {
-  flushing ??= drain(post, onRecovered).finally(() => {
+  flushing ??= drain(post, onRecovered, isDropped).finally(() => {
     flushing = null;
   });
   return flushing;
