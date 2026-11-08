@@ -12,6 +12,7 @@ import type { AddressForm } from '../notification/address-form';
 // TTL один на все почтовые токены — второй константы рядом быть не должно.
 import { EMAIL_TOKEN_TTL_MS } from './email.util';
 import { emailLinkQuery, type MagicLinkParams } from './email-link-params';
+export type { MagicLinkParams };
 
 export interface MagicLinkDeps {
   prisma: PrismaService;

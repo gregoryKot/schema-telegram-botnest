@@ -55,8 +55,18 @@ export function rememberReturnTo(path: string): boolean {
 /** Забрать адрес (один раз): после чтения он стирается. Чужой адрес — null. */
 export function takeReturnTo(): string | null {
   const path = peekReturnTo();
-  try { sessionStorage.removeItem(AUTH_RETURN_KEY); } catch { /* хранилище закрыто — стирать нечего */ }
+  forgetReturnTo();
   return path;
+}
+
+/** Стереть адрес; false — хранилище закрыто (приватный режим), стирать нечего. */
+function forgetReturnTo(): boolean {
+  try {
+    sessionStorage.removeItem(AUTH_RETURN_KEY);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Посмотреть адрес, не стирая: его везёт ссылка из письма (emailReturnTo.ts). */

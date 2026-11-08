@@ -13,8 +13,7 @@ import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
-import { sendMagicLink } from './magic-link';
-import type { MagicLinkParams } from './email-link-params';
+import { sendMagicLink, type MagicLinkParams } from './magic-link';
 import * as authPii from '../utils/auth-provider-crypto'; // D-9: email/имя — PII
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
