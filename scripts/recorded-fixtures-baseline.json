@@ -82,6 +82,10 @@
     "status": "exempt",
     "reason": "Трекер состояния (счётчики сбоев, пороги алерта) поверх уже классифицированных kind/detail — сам XML/HTTP-ответ площадки не разбирает. Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."
   },
+  "src/booking/caldav-parse-skips.ts": {
+    "status": "exempt",
+    "reason": "Счётчик VEVENT, которые parseBusy (caldav-busy.ts) пропустил, и текст для пробы и /stats; ответ iCloud не читает и XML не разбирает. Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."
+  },
   "src/booking/caldav-resourcetype.ts": {
     "status": "recorded",
     "fixtures": [

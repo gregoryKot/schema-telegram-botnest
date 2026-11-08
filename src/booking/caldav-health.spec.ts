@@ -102,6 +102,21 @@ describe('formatCalendarHealth', () => {
     expect(text).toContain('Сбоев чтения с запуска: 1');
     expect(text).not.toContain('НЕ читается');
   });
+
+  it('непонятые разбором события видны строкой; всё разобрано — строки нет', () => {
+    const t = tr();
+    t.noteSuccess(T0);
+    const skips = { recurring: 1, badStart: 0, badEnd: 0 };
+    const text = formatCalendarHealth(t.snapshot(), true, true, T0, skips);
+    expect(text).toContain(
+      '⚠️ При последнем чтении занятости не разобрано событий: 1 ' +
+        '(повторяющихся без разворота — 1)',
+    );
+    const clean = { recurring: 0, badStart: 0, badEnd: 0 };
+    expect(
+      formatCalendarHealth(t.snapshot(), true, true, T0, clean),
+    ).not.toContain('не разобрано');
+  });
 });
 
 describe('renderCalendarHealthBlock', () => {

@@ -4,6 +4,8 @@
 // DM, ни письма, ни строки в /stats об этом не было (правило №14). Тот же приём, что у
 // dbOutage (src/logger/db-outage.ts): авария — ОДНО состояние, алерт на смену состояния, не
 // на каждый запрос (слоты читаются часто, чат стал бы шумом).
+import { BusySkips, busySkips, formatSkips } from './caldav-parse-skips';
+
 export type CalDavFailureKind =
   'auth' | 'timeout' | 'http' | 'network' | 'empty';
 export interface CalDavHealthSnapshot {
@@ -122,6 +124,7 @@ export function renderCalendarHealthBlock(
     Boolean(env.APPLE_ID?.trim() && env.APPLE_APP_PASSWORD?.trim()),
     env.CALENDAR_BLOCK_SLOTS === 'true',
     now,
+    busySkips.last(),
   );
 }
 
@@ -131,6 +134,7 @@ export function formatCalendarHealth(
   configured: boolean,
   blocking: boolean,
   now: number = Date.now(),
+  skips: BusySkips | null = null,
 ): string {
   const lines = ['📅 <b>Личный календарь</b>'];
   if (!configured) {
@@ -160,5 +164,7 @@ export function formatCalendarHealth(
       ? 'Сбоев чтения с запуска не было.'
       : `Сбоев чтения с запуска: ${s.failCount}.`,
   );
+  const skipped = formatSkips(skips);
+  if (skipped) lines.push(`⚠️ ${skipped[0].toUpperCase()}${skipped.slice(1)}.`);
   return lines.join('\n');
 }

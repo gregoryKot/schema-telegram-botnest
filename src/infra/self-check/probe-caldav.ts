@@ -1,5 +1,6 @@
 import { listCalendars } from '../../booking/caldav-discovery';
 import { calDavHealth, CalDavFailureKind } from '../../booking/caldav-health';
+import { busySkips, formatSkips } from '../../booking/caldav-parse-skips';
 import { Probe } from './types';
 
 /** Классификация как в caldav-busy-read.ts (401/403 — учётка, timeout/abort
@@ -14,6 +15,13 @@ function classify(e: unknown): { kind: CalDavFailureKind; detail: string } {
   if (/PROPFIND \d/.test(msg)) return { kind: 'http', detail };
   return { kind: 'network', detail };
 }
+
+/** Деталь успеха + что разбор занятости не понял при последнем чтении слотов
+ * (caldav-parse-skips.ts): проба остаётся зелёной — fail-open разбора не авария. */
+const okWithSkips = (detail: string) => {
+  const skips = formatSkips(busySkips.last());
+  return { ok: true, detail: skips ? `${detail}; ${skips}` : detail };
+};
 
 /**
  * Живое обнаружение календарей iCloud — тот же путь, что CalDavService
@@ -33,11 +41,9 @@ export function caldavProbe(env: NodeJS.ProcessEnv = process.env): Probe {
       if (env.APPLE_CALDAV_URL?.trim()) {
         // Явный адрес — как и CalDavService, не проверяем его живьём здесь:
         // тот же best-effort, что у getBase() в caldav.service.ts.
-        return {
-          ok: true,
-          detail:
-            'используется явный APPLE_CALDAV_URL — автообнаружение пропущено',
-        };
+        return okWithSkips(
+          'используется явный APPLE_CALDAV_URL — автообнаружение пропущено',
+        );
       }
       const auth = 'Basic ' + Buffer.from(`${id}:${pass}`).toString('base64');
       try {
@@ -53,7 +59,7 @@ export function caldavProbe(env: NodeJS.ProcessEnv = process.env): Probe {
           };
         }
         calDavHealth.noteSuccess();
-        return { ok: true, detail: `найдено календарей: ${cals.length}` };
+        return okWithSkips(`найдено календарей: ${cals.length}`);
       } catch (e) {
         const { kind, detail } = classify(e);
         calDavHealth.noteFailure(kind, detail);
