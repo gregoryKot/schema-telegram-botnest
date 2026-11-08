@@ -189,11 +189,19 @@ describe('TelegramService — /about', () => {
 });
 
 describe('TelegramService — /therapist (deprecated redirect)', () => {
-  it('отправляет инструкцию идти в мини-апп, ровно одним сообщением', async () => {
+  it('отправляет инструкцию идти в приложение в Telegram, ровно одним сообщением', async () => {
     const { service, fakeBot } = makeDeps();
     service.onModuleInit();
     const ctx = await runCommand(fakeBot, 'therapist');
-    expect(ctx.reply).toHaveBeenCalledWith(expect.stringContaining('мини-апп'));
+    // Путь по меню — как раздел называется сейчас (BecomeTherapistSection), без «мини-апп» (U12).
+    expect(ctx.reply).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'приложение в Telegram → Настройки → «Стать специалистом»',
+      ),
+    );
+    expect(ctx.reply).not.toHaveBeenCalledWith(
+      expect.stringContaining('мини-апп'),
+    );
     // Хендлер вообще не зависит от therapistRequestService (она уехала на
     // TelegramAdminService) — единственный сайд-эффект команды это reply.
     expect(ctx.reply).toHaveBeenCalledTimes(1);

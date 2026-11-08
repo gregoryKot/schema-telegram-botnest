@@ -35,7 +35,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
     return (
       <div className="ds-page tb-page--ysq">
         <div className="u-col8">
-          <PaperEmpty art={Layers} title="YSQ ещё не проходился">
+          <PaperEmpty art={Layers} title="Тест на схемы ещё не пройден">
             {virtual
               ? 'У офлайн-клиента нет аккаунта – тест пройти негде'
               : tr('Запроси тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан', 'Запросите тест – у клиента появится задание «Пройти тест на схемы», а в Telegram придёт сообщение, если он привязан')}
@@ -71,7 +71,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
   return (
     <div className="ds-page tb-page--ysq">
       <div className="ds-head-row">
-        <TabTitle title="Опросник схем YSQ" motif="layers">
+        <TabTitle title="Тест на схемы" motif="layers">
           <div className="ds-sub">{hist.length} {pluralRu(hist.length, 'прохождение', 'прохождения', 'прохождений')} · последнее {clientData.ysqCompletedAt ? fmtDate(momentDayKey(clientData.ysqCompletedAt)) : '–'}</div>
         </TabTitle>
         <div className="tb-actions">

@@ -54,7 +54,9 @@ describe('кому карточка не показывается', () => {
 describe('приглашение', () => {
   it('объясняет и откуда это, и что будет после нажатия', () => {
     show();
-    expect(screen.getByText(/В боте и мини-аппе Telegram/)).toBeTruthy();
+    expect(
+      screen.getByText(/В боте и приложении в Telegram записи лежат/),
+    ).toBeTruthy();
     expect(screen.getByText(/откроется бот и спросит/)).toBeTruthy();
     expect(screen.getByText('Подключить Telegram')).toBeTruthy();
   });

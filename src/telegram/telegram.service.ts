@@ -57,7 +57,7 @@ export const WELCOME_TEXT = `Привет!
 // Запасные ответы команд на сбой: без кнопки и без формы обращения из БД.
 const DONATE_FALLBACK = `💛 <b>Поддержать SchemeHappens</b>\n\n${DONATE_URL}`;
 const THERAPIST_FALLBACK =
-  '🩺 Заявка на роль психолога подаётся в приложении «Всё по схеме»: Настройки → «Я психолог — подать заявку».';
+  '🩺 Заявка на роль психолога подаётся в приложении «Всё по схеме»: Настройки → «Стать специалистом» → «Я психолог — подать заявку».';
 
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
@@ -386,18 +386,18 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
 
     this.bot.command('therapist', async (ctx) => {
       // DEPRECATED: was `/therapist <THERAPIST_CODE>` — bypassed the new
-      // admin-approval flow. Redirect users to the mini-app form.
+      // admin-approval flow. Redirect users to the app's settings form.
       try {
         const form = await this.form(ctx.from?.id);
         await ctx.reply(
           t(
             form,
-            '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
-              'Открой мини-апп → Настройки → "Я психолог" → заполни форму.\n' +
-              'Админ проверит и одобрит.',
-            '🩺 Заявка на роль психолога теперь подаётся через настройки приложения:\n' +
-              'Откройте мини-апп → Настройки → "Я психолог" → заполните форму.\n' +
-              'Админ проверит и одобрит.',
+            '🩺 Заявка на роль психолога подаётся в настройках приложения:\n' +
+              'Открой приложение в Telegram → Настройки → «Стать специалистом» → «Я психолог — подать заявку» и заполни форму.\n' +
+              'Администратор проверит заявку — решение придёт в этот чат.',
+            '🩺 Заявка на роль психолога подаётся в настройках приложения:\n' +
+              'Откройте приложение в Telegram → Настройки → «Стать специалистом» → «Я психолог — подать заявку» и заполните форму.\n' +
+              'Администратор проверит заявку — решение придёт в этот чат.',
           ),
         );
       } catch (err) {

@@ -95,7 +95,7 @@ export function LoginPage() {
           <p className="al-sub" role={deleted ? 'status' : undefined}>
             {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
               ? 'Вход устарел — данные на месте, нужно войти заново'
-              : 'Войдите, чтобы продолжить. Telegram даёт тот же аккаунт, что в боте и мини-аппе'}
+              : 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram'}
           </p>
 
           <LoginProviderButtons

@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TherapistRequestSection } from './TherapistRequestSection';
 import * as LIM from '../../../../shared/src/limits/textLimits';
+import { THERAPIST_REQUEST_PENDING } from '../../../../shared/src/therapy/therapistRequestCopy';
 
 function jsonResponse(status: number, body: unknown): Response {
   return {
@@ -49,9 +50,8 @@ describe('TherapistRequestSection — статусы существующей з
     // Решение приходит не только в бота: заявку подают и с сайта (аудит 2026-10).
     // «Решение появится здесь» тут неверно: отказ виден только внутри раскрытой
     // формы (тест ниже), поэтому обещаем сообщение и смену статуса.
-    expect(note.textContent).toContain(
-      'О решении сообщим в Telegram, на почту или по контактам из заявки',
-    );
+    // Одна строка с листом настроек (shared/src/therapy/therapistRequestCopy.ts, U12).
+    expect(note.textContent).toBe(THERAPIST_REQUEST_PENDING);
     expect(note.textContent).not.toContain('в боте');
     expect(note.textContent).not.toContain('появится здесь');
   });

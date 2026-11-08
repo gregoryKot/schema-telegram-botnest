@@ -32,14 +32,14 @@ describe('пустые вкладки карточки клиента: знак 
     const { container } = ysq(offline);
     expect(emptySign(container)).toBe('Layers');
     const text = container.querySelector('.pp-empty-text')!;
-    expect(text.textContent).toBe('YSQ ещё не проходилсяУ офлайн-клиента нет аккаунта – тест пройти негде');
+    expect(text.textContent).toBe('Тест на схемы ещё не пройденУ офлайн-клиента нет аккаунта – тест пройти негде');
     expect(screen.queryByRole('button', { name: 'Запросить тест на схемы' })).toBeNull();
   });
 
   it('«Схемы» без YSQ у клиента в приложении: слои, подсказка о запросе в той же строке, кнопка под ней', () => {
     const { container } = ysq(online);
     expect(emptySign(container)).toBe('Layers');
-    expect(container.querySelector('.pp-empty-text')!.textContent).toMatch(/^YSQ ещё не проходилсяЗапроси тест/);
+    expect(container.querySelector('.pp-empty-text')!.textContent).toMatch(/^Тест на схемы ещё не пройденЗапроси тест/);
     expect(screen.getByRole('button', { name: 'Запросить тест на схемы' })).toBeTruthy();
   });
 

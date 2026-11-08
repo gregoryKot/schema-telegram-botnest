@@ -180,7 +180,7 @@ describe('вкладки без заголовков, пустые состоя�
     expect(screen.getByText('Клиент ещё не заполнял дневник').classList.contains('ds-empty')).toBe(true);
   });
 
-  it('YSQ с прохождениями: h2 «Опросник схем YSQ» для компьютера, строка прохождений и действия остаются', () => {
+  it('YSQ с прохождениями: h2 «Тест на схемы» для компьютера, строка прохождений и действия остаются', () => {
     const run = { id: 1, completedAt: '2026-10-01T10:00:00Z', scores: [{ id: 'failure', pct5plus: 70 }] };
     const clientData = { ysqHistory: [run], ysqCompletedAt: '2026-10-01T10:00:00Z' } as unknown as ClientData;
     const selectedClient = { telegramId: 7 } as unknown as TherapyClientSummary;
@@ -188,7 +188,7 @@ describe('вкладки без заголовков, пустые состоя�
       clientData={clientData} selectedClient={selectedClient} selfSchemaIds={[]} ysqSchemaIds={['failure']}
       ysqRequested={false} ysqError="" exportCopied={false} handleRequestYsq={vi.fn()} handleExport={vi.fn()}
     />);
-    expect(container.querySelector('h2.tb-tab-h')?.textContent).toBe('Опросник схем YSQ');
+    expect(container.querySelector('h2.tb-tab-h')?.textContent).toBe('Тест на схемы');
     // подпись видна и на телефоне: wrapper заголовка целиком не прячется
     expect(container.querySelector('.tb-tab-title')!.classList.contains('tb-tab-title--desk')).toBe(false);
     expect(screen.getByText(/1 прохождение · последнее/)).toBeTruthy();
@@ -213,7 +213,7 @@ describe('вкладки без заголовков, пустые состоя�
       clientData={null} selectedClient={selectedClient} selfSchemaIds={['failure']} ysqSchemaIds={[]}
       ysqRequested={false} ysqError="" exportCopied={false} handleRequestYsq={vi.fn()} handleExport={vi.fn()}
     />);
-    expect(screen.getByText('YSQ ещё не проходился').classList.contains('ds-list-title')).toBe(true);
+    expect(screen.getByText('Тест на схемы ещё не пройден').classList.contains('ds-list-title')).toBe(true);
     expect(container.querySelector('.ds-h2')).toBeNull();
     expect(screen.getByText(/Запроси(те)? тест/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Запросить тест на схемы' })).toBeTruthy();

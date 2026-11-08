@@ -30,5 +30,5 @@ export function actionStatusText(
 
 /** Заголовок сверки: сколько схем из теста ещё не в концептуализации. */
 export function ysqFoldTitle(missing: number): string {
-  return missing === 0 ? 'Сверка с YSQ · всё учтено' : `Сверка с YSQ · ${missing} не в концептуализации`;
+  return missing === 0 ? 'Сверка с тестом на схемы · всё учтено' : `Сверка с тестом на схемы · ${missing} не в концептуализации`;
 }
