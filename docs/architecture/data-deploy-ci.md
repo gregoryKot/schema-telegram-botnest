@@ -97,7 +97,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 **mutation-bot.yml** (cron `0 4 * * 0` по воскресеньям, плюс dispatch): `mutation-bot` — Stryker по `src/bot`, отчёт артефактом, храповика и `alarm` нет.
 
 **prod-smoke.yml** (cron `*/15 * * * *`, фактический шаг GitHub 3–7 ч, плюс dispatch):
-- `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`), `/`, `/app/`, `/game/` по маркерам.
+- `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`; тело — `src/api/health-report.ts`, в нём и `startedAt`/`launch`/`crashesDay` — старт процесса и рестарты в контейнере), `/`, `/app/`, `/game/` по маркерам.
 - `alarm` — issue `ci-alarm` и DM, троттлинг напоминаний раз в 3 часа.
 
 ### Тесты
