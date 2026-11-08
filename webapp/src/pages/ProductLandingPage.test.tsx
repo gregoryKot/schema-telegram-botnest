@@ -100,7 +100,8 @@ describe('ProductLandingPage — тот же текст, что получает
   // Сервер вкладывает home-landing.content.ts в #root главной (GEO.md). Если
   // страница перестанет брать текст оттуда, робот и человек разойдутся.
   const plain = (r: RichText) => r.map((p) => (typeof p === 'string' ? p : p.text)).join('');
-  const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+  // Неразрывные пробел и дефис (glue, landing/typo.ts) — те же слова, что у робота.
+  const norm = (s: string) => s.replace(/\u2011/g, '-').replace(/\s+/g, ' ').trim();
 
   it('каждая строка текста для робота есть на странице', () => {
     const { container } = renderPage();
@@ -118,7 +119,7 @@ describe('ProductLandingPage — тот же текст, что получает
 });
 
 describe('ProductLandingPage — мобильное меню (В4, аудит 2026-08)', () => {
-  // .pl2-nav скрывается CSS-медиазапросом ≤640px — jsdom его не вычисляет,
+  // .pl2-nav скрывается CSS-медиазапросом ≤960px — jsdom его не вычисляет,
   // поэтому кнопка всегда в DOM (видимость — забота CSS, проверенного глазами
   // в браузере); тест бьёт по реальному поведению: кнопка есть, открывает
   // меню со всеми ссылками нав-бара, включая «Войти».
