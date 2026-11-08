@@ -72,7 +72,9 @@ describe('e2e: приглашение клиента терапевтом', () =
       new RegExp(`^https://[^/]+/today\\?startapp=therapy_${links.code}$`),
     );
     expect(links.tgUrl).toMatch(
-      new RegExp(`^https://t\\.me/E2eTestBot/.*startapp=therapy_${links.code}$`),
+      new RegExp(
+        `^https://t\\.me/E2eTestBot/.*startapp=therapy_${links.code}$`,
+      ),
     );
 
     // Код так, как его переписывают руками: строчные и пробелы по краям.
