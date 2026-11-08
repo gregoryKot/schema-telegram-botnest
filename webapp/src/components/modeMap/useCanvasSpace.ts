@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useReactFlow, useStoreApi, type FitViewOptions, type Node } from '@xyflow/react';
-import { findFreeSpots, fitInsets, insideView, NEW_NODE_SIZE, type Rect } from './canvasSpace';
+import { findFreeSpots, fitInsets, insideView, NEW_NODE_SIZE, type Rect, type Size } from './canvasSpace';
 
 type Pos = { x: number; y: number };
 
@@ -42,15 +42,15 @@ export function useCanvasSpace() {
 
   const fit = useCallback((duration = 300) => { void fitView({ ...fitOptions(), duration }); }, [fitView, fitOptions]);
 
-  const place = useCallback((nodes: Node[], count = 1): Pos[] => {
+  const place = useCallback((nodes: Node[], count = 1, size?: Size): Pos[] => { // size — крупная фигура (круг потребностей)
     const m = measure();
     if (!m) {
       // Холст ещё не измерен (скрытая вкладка, тест): лесенкой от последней фигуры.
       const last = nodes[nodes.length - 1]?.position ?? { x: 160, y: 80 };
       return Array.from({ length: count }, (_, i) => ({ x: last.x + 40 * (i + 1), y: last.y + 40 * (i + 1) }));
     }
-    const spots = findFreeSpots(m.view, [...nodes.map(nodeRect), ...m.panels], count);
-    if (spots.some(p => !insideView(m.view, p))) setTimeout(() => fit(), 60);
+    const spots = findFreeSpots(m.view, [...nodes.map(nodeRect), ...m.panels], count, size);
+    if (spots.some(p => !insideView(m.view, p, size))) setTimeout(() => fit(), 60);
     return spots;
   }, [measure, fit]);
 
