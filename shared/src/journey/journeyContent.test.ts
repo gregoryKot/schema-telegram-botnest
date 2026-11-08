@@ -18,12 +18,12 @@ function stubApi(overrides: Partial<JourneyContentApi>): JourneyContentApi {
     throw new Error(`api.${name} не замокан в этом тесте`);
   };
   const names: (keyof JourneyContentApi)[] = [
-    'getSchemaDiary',
-    'getModeDiary',
-    'getGratitudeDiary',
-    'getBeliefChecks',
-    'getLetters',
-    'getFlashcards',
+    'getSchemaDiaryEntry',
+    'getModeDiaryEntry',
+    'getGratitudeDiaryEntry',
+    'getBeliefCheck',
+    'getLetter',
+    'getFlashcard',
     'getSafePlace',
     'getNote',
     'getPractices',
@@ -31,7 +31,7 @@ function stubApi(overrides: Partial<JourneyContentApi>): JourneyContentApi {
     'ratings',
     'getSchemaNotes',
     'getModeNotes',
-    'getYsqHistory',
+    'getYsqHistoryEntry',
     'getYsqResult',
   ];
   const base = Object.fromEntries(
@@ -40,6 +40,15 @@ function stubApi(overrides: Partial<JourneyContentApi>): JourneyContentApi {
   return { ...base, ...overrides };
 }
 
+// Ответ сервера на чужую/удалённую запись — ApiError со статусом 404.
+const notFound = () =>
+  Promise.reject(Object.assign(new Error('Not found'), { status: 404 }));
+/** GET …/:id: запись есть только под своим id, иначе 404. */
+const byId =
+  <T>(rows: Record<number, T>) =>
+  (id: number): Promise<T> =>
+    id in rows ? Promise.resolve(rows[id]) : notFound();
+
 const item = (patch: Partial<JourneyItem>): JourneyItem => ({
   type: 'note',
   at: '2026-07-20',
@@ -47,13 +56,14 @@ const item = (patch: Partial<JourneyItem>): JourneyItem => ({
 });
 
 describe('fetchJourneyResult — сохранил → нашёл по id', () => {
-  it('schema_diary: находит запись по id среди списка, а не первую попавшуюся', async () => {
-    const api = stubApi({
-      getSchemaDiary: async () => [
-        { id: 1, trigger: 'первая', healthyView: '' },
-        { id: 2, trigger: 'вторая', healthyView: 'взгляд' },
-      ],
-    });
+  it('schema_diary: открывает запись своим GET по id, а не первую попавшуюся', async () => {
+    const getSchemaDiaryEntry = vi.fn(
+      byId({
+        1: { trigger: 'первая', healthyView: '' },
+        2: { trigger: 'вторая', healthyView: 'взгляд' },
+      }),
+    );
+    const api = stubApi({ getSchemaDiaryEntry });
     const result = await fetchJourneyResult(
       api,
       item({ type: 'schema_diary', id: 2 }),
@@ -64,8 +74,46 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
     ]);
   });
 
-  it('id, которого нет в списке (запись удалена/рассинхрон) — null, без падения', async () => {
-    const api = stubApi({ getSchemaDiary: async () => [] });
+  // R6 (аудит 2026-11): поиск в списке находил только 30 последних записей,
+  // и 31-я открывалась пустой. Каждый тип с id ходит в свой GET …/:id.
+  it.each([
+    ['schema_diary', 'getSchemaDiaryEntry'],
+    ['mode_diary', 'getModeDiaryEntry'],
+    ['gratitude', 'getGratitudeDiaryEntry'],
+    ['belief_check', 'getBeliefCheck'],
+    ['letter', 'getLetter'],
+    ['flashcard', 'getFlashcard'],
+    ['ysq', 'getYsqHistoryEntry'],
+  ] as const)(
+    '%s: 31-я запись — запрос по её id (%s)',
+    async (type, method) => {
+      const get = vi.fn(async () => ({}));
+      await fetchJourneyDetail(
+        stubApi({ [method]: get }),
+        item({ type, id: 31 }),
+      );
+      expect(get).toHaveBeenCalledWith(31);
+    },
+  );
+
+  it('запись ленты без id — в api не ходит, пусто', async () => {
+    const result = await fetchJourneyResult(
+      stubApi({}),
+      item({ type: 'letter' }),
+    );
+    expect(result).toBeNull();
+  });
+
+  it('сбой сервера (не 404) не выдаётся за пустую запись — уходит наверх', async () => {
+    const boom = Object.assign(new Error('500'), { status: 500 });
+    const api = stubApi({ getLetter: () => Promise.reject(boom) });
+    await expect(
+      fetchJourneyDetail(api, item({ type: 'letter', id: 3 })),
+    ).rejects.toBe(boom);
+  });
+
+  it('id, которого нет (запись удалена, 404) — null, без падения', async () => {
+    const api = stubApi({ getSchemaDiaryEntry: notFound });
     const result = await fetchJourneyResult(
       api,
       item({ type: 'schema_diary', id: 999 }),
@@ -134,10 +182,10 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
 
   it('mode_diary: находит запись по id, ситуация и потребность попадают в части', async () => {
     const api = stubApi({
-      getModeDiary: async () => [
-        { id: 1, situation: 'Первая', actualNeed: '' },
-        { id: 2, situation: 'Критика на работе', actualNeed: 'Поддержка' },
-      ],
+      getModeDiaryEntry: byId({
+        1: { situation: 'Первая', actualNeed: '' },
+        2: { situation: 'Критика на работе', actualNeed: 'Поддержка' },
+      }),
     });
     const result = await fetchJourneyResult(
       api,
@@ -151,9 +199,9 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
 
   it('gratitude: находит запись по id, до трёх пунктов благодарности', async () => {
     const api = stubApi({
-      getGratitudeDiary: async () => [
-        { id: 9, items: ['Солнце', 'Кофе', 'Звонок другу', 'Лишний пункт'] },
-      ],
+      getGratitudeDiaryEntry: byId({
+        9: { items: ['Солнце', 'Кофе', 'Звонок другу', 'Лишний пункт'] },
+      }),
     });
     const result = await fetchJourneyResult(
       api,
@@ -168,9 +216,9 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
 
   it('belief_check: находит запись по id, убеждение и переформулировка попадают в части', async () => {
     const api = stubApi({
-      getBeliefChecks: async () => [
-        { id: 4, belief: 'Я всё испорчу', reframe: 'Я могу ошибаться' },
-      ],
+      getBeliefCheck: byId({
+        4: { belief: 'Я всё испорчу', reframe: 'Я могу ошибаться' },
+      }),
     });
     const result = await fetchJourneyResult(
       api,
@@ -184,9 +232,9 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
 
   it('flashcard: находит запись по id, напоминание и действие попадают в части', async () => {
     const api = stubApi({
-      getFlashcards: async () => [
-        { id: 7, reflection: 'Это пройдёт', action: 'Подышать' },
-      ],
+      getFlashcard: byId({
+        7: { reflection: 'Это пройдёт', action: 'Подышать' },
+      }),
     });
     const result = await fetchJourneyResult(
       api,
@@ -251,13 +299,13 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
 describe('fetchJourneyResult — ysq (id из истории и фолбэк старого юзера)', () => {
   it('с id: тянет из истории и отдаёт scores/activeCount', async () => {
     const api = stubApi({
-      getYsqHistory: async () => [
-        {
+      getYsqHistoryEntry: byId({
+        1: {
           id: 1,
           completedAt: '2026-01-01',
           scores: [{ id: 'Покорность', pct5plus: 60, avg: 4.5 }],
         },
-      ],
+      }),
     });
     const result = await fetchJourneyResult(api, item({ type: 'ysq', id: 1 }));
     expect(result?.ysq?.activeCount).toBe(1);
@@ -305,7 +353,7 @@ describe('fetchJourneyResult — tracker_day несёт сырые оценки 
 describe('fetchJourneyDetail', () => {
   it('прокидывает найденную запись в buildJourneyDetailParts (все поля)', async () => {
     const api = stubApi({
-      getLetters: async () => [{ id: 3, text: 'Полный текст письма' }],
+      getLetter: byId({ 3: { text: 'Полный текст письма' } }),
     });
     const parts = await fetchJourneyDetail(
       api,
@@ -315,7 +363,7 @@ describe('fetchJourneyDetail', () => {
   });
 
   it('запись не найдена → пустой массив, не падение', async () => {
-    const api = stubApi({ getLetters: async () => [] });
+    const api = stubApi({ getLetter: notFound });
     const parts = await fetchJourneyDetail(
       api,
       item({ type: 'letter', id: 1 }),

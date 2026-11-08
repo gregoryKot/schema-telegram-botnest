@@ -108,6 +108,7 @@ jobs:
           test/client-booking-ownership
           test/booking-admin-cancel test/exercise-delete-ownership test/max-auth
           test/diary-mode-from-case
+          test/journey-entry-ownership
           test/therapy-task-delete
           test/concept-share
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
@@ -605,6 +606,8 @@ jobs:
           test/exercise-delete-ownership.e2e-spec.ts
           test/max-auth.e2e-spec.ts
           test/diary-mode-from-case.e2e-spec.ts
+          test/journey-entry-ownership.e2e-spec.ts
+          test/notes-my-list-race.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
       # Откат образа поверх упавшей миграции (аудит 2026-10-11, infra#8): N+1 с

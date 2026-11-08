@@ -122,7 +122,7 @@ describe('RULES: DELETE /api/ysq-data', () => {
     );
     expect(rule?.targets?.(FAKE_MATCH, undefined)).toEqual([
       '/api/ysq-result',
-      '/api/ysq-history',
+      { prefix: '/api/ysq-history' }, // и попытки по id («Мой путь», R6)
       '/api/ysq-progress',
       '/api/journey',
       '/api/profile',
@@ -156,5 +156,58 @@ describe('RULES: итог YSQ сбрасывает профиль', () => {
         '/api/journey',
       ]),
     );
+  });
+});
+
+// R6 (аудит 2026-11): у записей появились GET …/:id («Мой путь») и страницы
+// «Записей» (/api/diary/page/:kind) — отдельные ключи кеша. Запись или удаление
+// обязаны сбросить и их, иначе удалённая запись ещё 15 секунд открывается, а
+// правка письма показывает старый текст.
+describe('RULES: запись по id и страницы дневника сбрасываются вместе со списком', () => {
+  const targetsOf = (method: string, path: string) =>
+    RULES.filter((r) => r.method === method && r.pattern.test(path)).flatMap(
+      (r) => r.targets?.(FAKE_MATCH, undefined) ?? [],
+    );
+  const covers = (targets: InvalidationTarget[], key: string) =>
+    targets.some((t) =>
+      typeof t === 'string' ? t === key : key.startsWith(t.prefix),
+    );
+
+  it.each([
+    [
+      'POST',
+      '/api/diary/schema',
+      [
+        '/api/diary/schema',
+        '/api/diary/schema/31',
+        '/api/diary/page/schema?before=9',
+      ],
+    ],
+    [
+      'DELETE',
+      '/api/diary/mode/31',
+      ['/api/diary/mode', '/api/diary/mode/31', '/api/diary/page/mode'],
+    ],
+    [
+      'POST',
+      '/api/diary/gratitude',
+      ['/api/diary/gratitude/31', '/api/diary/page/gratitude'],
+    ],
+    ['PATCH', '/api/letters/31', ['/api/letters', '/api/letters/31']],
+    [
+      'DELETE',
+      '/api/belief-checks/31',
+      ['/api/belief-checks', '/api/belief-checks/31'],
+    ],
+    ['DELETE', '/api/flashcards/31', ['/api/flashcards', '/api/flashcards/31']],
+  ])('%s %s', (method, path, keys) => {
+    const targets = targetsOf(method, path);
+    for (const key of keys) expect(covers(targets, key)).toBe(true);
+  });
+
+  it('контроль: дневник схем не сбрасывает чужой дневник', () => {
+    const targets = targetsOf('POST', '/api/diary/schema');
+    expect(covers(targets, '/api/diary/mode/31')).toBe(false);
+    expect(covers(targets, '/api/diary/page/mode')).toBe(false);
   });
 });

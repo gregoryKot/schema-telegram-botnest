@@ -58,8 +58,8 @@ vi.mock('../components/diary/QuickEntrySheet', () => ({
   ),
 }));
 
-vi.mock('../api', () => ({
-  api: {
+vi.mock('../api', () => {
+  const api: Record<string, (...a: unknown[]) => unknown> = {
     getSchemaDiary: vi.fn(),
     getModeDiary: vi.fn(),
     getGratitudeDiary: vi.fn(),
@@ -72,8 +72,13 @@ vi.mock('../api', () => ({
     createModeDiary: vi.fn(),
     createGratitudeDiary: vi.fn(),
     trackEvent: vi.fn(),
-  },
-}));
+  };
+  // «Записи» грузят дневник страницами (R6): первая страница — то, что отдают
+  // моки списков, «есть ещё» нет. Догрузку проверяет DiarySection.more.test.tsx.
+  const LIST: Record<string, string> = { schema: 'getSchemaDiary', mode: 'getModeDiary', gratitude: 'getGratitudeDiary' };
+  api.getDiaryPage = vi.fn(async (kind: unknown) => ({ items: await api[LIST[kind as string]](), hasMore: false }));
+  return { api };
+});
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 

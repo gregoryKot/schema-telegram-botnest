@@ -6,8 +6,9 @@ import {
   decryptRecord,
   type EncryptSchema,
 } from '../utils/crypto';
-import { deleteOwned } from '../utils/require-affected';
-import { saveGratitudeDay } from './gratitude-merge';
+import { deleteOwned, requireFound } from '../utils/require-affected';
+import { GRATITUDE_DIARY_SCHEMA, saveGratitudeDay } from './gratitude-merge';
+import { createdAtPage, datePage, type DiaryKind } from './diary-page';
 
 // Расшифровка записи — одна на чтение (GET) и на ответ записи (POST).
 // Инцидент 2026-10-26: create возвращал строку из БД, расшифровав поля
@@ -44,10 +45,6 @@ export const MODE_DIARY_SCHEMA: EncryptSchema = {
     'childhoodMemories',
     'healthyResponse',
   ],
-};
-const GRATITUDE_DIARY_SCHEMA: EncryptSchema = {
-  model: 'gratitudeDiaryEntry',
-  jsonArrays: ['items'],
 };
 
 export interface EmotionEntry {
@@ -107,6 +104,13 @@ export class DiaryService {
     return rows.map((r) => decryptRecord(r, SCHEMA_DIARY_SCHEMA));
   }
 
+  // Одна запись по id — её открывает «Мой путь» (R6: в списке только 30).
+  async getSchemaDiaryEntry(userId: bigint, id: number) {
+    const where = { id, userId };
+    const row = this.prisma.schemaDiaryEntry.findFirst({ where });
+    return decryptRecord(await requireFound(row), SCHEMA_DIARY_SCHEMA);
+  }
+
   deleteSchemaDiaryEntry(userId: bigint, id: number) {
     return deleteOwned(this.prisma.schemaDiaryEntry, id, userId);
   }
@@ -157,6 +161,12 @@ export class DiaryService {
     return rows.map((r) => decryptRecord(r, MODE_DIARY_SCHEMA));
   }
 
+  async getModeDiaryEntry(userId: bigint, id: number) {
+    const where = { id, userId };
+    const row = this.prisma.modeDiaryEntry.findFirst({ where });
+    return decryptRecord(await requireFound(row), MODE_DIARY_SCHEMA);
+  }
+
   deleteModeDiaryEntry(userId: bigint, id: number) {
     return deleteOwned(this.prisma.modeDiaryEntry, id, userId);
   }
@@ -182,7 +192,29 @@ export class DiaryService {
     return rows.map((r) => decryptRecord(r, GRATITUDE_DIARY_SCHEMA));
   }
 
+  async getGratitudeDiaryEntry(userId: bigint, id: number) {
+    const where = { id, userId };
+    const row = this.prisma.gratitudeDiaryEntry.findFirst({ where });
+    return decryptRecord(await requireFound(row), GRATITUDE_DIARY_SCHEMA);
+  }
+
   deleteGratitudeDiaryEntry(userId: bigint, id: number) {
     return deleteOwned(this.prisma.gratitudeDiaryEntry, id, userId);
+  }
+
+  // «Записи» → «Показать ещё»: страница старше записи `before` (diary-page.ts).
+  getDiaryPage(userId: bigint, kind: DiaryKind, before?: number) {
+    const p = this.prisma;
+    if (kind === 'gratitude')
+      return datePage(p.gratitudeDiaryEntry, userId, before, (r) =>
+        decryptRecord(r, GRATITUDE_DIARY_SCHEMA),
+      );
+    if (kind === 'mode')
+      return createdAtPage(p.modeDiaryEntry, userId, before, (r) =>
+        decryptRecord(r, MODE_DIARY_SCHEMA),
+      );
+    return createdAtPage(p.schemaDiaryEntry, userId, before, (r) =>
+      decryptRecord(r, SCHEMA_DIARY_SCHEMA),
+    );
   }
 }

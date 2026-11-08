@@ -17,6 +17,17 @@
 import { simple, str, type Rule } from './apiCacheRules.kit';
 import { THERAPY_RULES } from './apiCacheRules.therapy';
 
+// Дневник: список, запись по id («Мой путь») и страницы «Записей» (R6).
+function diaryRules(kind: 'schema' | 'mode' | 'gratitude'): Rule[] {
+  const all = [
+    { prefix: `/api/diary/${kind}` },
+    { prefix: `/api/diary/page/${kind}` },
+  ];
+  const write = new RegExp(`^/api/diary/${kind}$`);
+  const del = new RegExp(`^/api/diary/${kind}/\\d+$`);
+  return [simple('POST', write, ...all), simple('DELETE', del, ...all)];
+}
+
 export const RULES: Rule[] = [
   { method: 'DELETE', pattern: /^\/api\/user$/, clearAll: true },
 
@@ -95,30 +106,31 @@ export const RULES: Rule[] = [
     'DELETE',
     /^\/api\/ysq-data$/,
     '/api/ysq-result',
-    '/api/ysq-history',
+    { prefix: '/api/ysq-history' }, // и попытки по id («Мой путь»)
     '/api/ysq-progress',
     '/api/journey',
     '/api/profile',
   ),
   simple('POST', /^\/api\/profile\/name$/, '/api/profile'),
-  simple('POST', /^\/api\/diary\/schema$/, '/api/diary/schema'),
-  simple('DELETE', /^\/api\/diary\/schema\/\d+$/, '/api/diary/schema'),
-  simple('POST', /^\/api\/diary\/mode$/, '/api/diary/mode'),
-  simple('DELETE', /^\/api\/diary\/mode\/\d+$/, '/api/diary/mode'),
-  simple('POST', /^\/api\/diary\/gratitude$/, '/api/diary/gratitude'),
-  simple('DELETE', /^\/api\/diary\/gratitude\/\d+$/, '/api/diary/gratitude'),
+  ...diaryRules('schema'),
+  ...diaryRules('mode'),
+  ...diaryRules('gratitude'),
   simple('POST', /^\/api\/schema-notes$/, '/api/schema-notes'),
   simple('POST', /^\/api\/mode-notes$/, '/api/mode-notes'),
   // Быстрые практики «Здесь и сейчас» (мини-апп).
   simple('POST', /^\/api\/practice-session$/, '/api/practice-sessions'),
   // Дневниковые инструменты (apiExercises.ts, оба фронтенда).
-  simple('POST', /^\/api\/belief-checks$/, '/api/belief-checks'),
-  simple('DELETE', /^\/api\/belief-checks\/\d+$/, '/api/belief-checks'),
-  simple('POST', /^\/api\/letters$/, '/api/letters'),
-  simple('DELETE', /^\/api\/letters\/\d+$/, '/api/letters'),
+  // Префикс — список и запись по id («Мой путь», R6) разом; письмо правится.
+  simple('POST', /^\/api\/belief-checks$/, { prefix: '/api/belief-checks' }),
+  simple('DELETE', /^\/api\/belief-checks\/\d+$/, {
+    prefix: '/api/belief-checks',
+  }),
+  simple('POST', /^\/api\/letters$/, { prefix: '/api/letters' }),
+  simple('PATCH', /^\/api\/letters\/\d+$/, { prefix: '/api/letters' }),
+  simple('DELETE', /^\/api\/letters\/\d+$/, { prefix: '/api/letters' }),
   simple('POST', /^\/api\/safe-place$/, '/api/safe-place'),
-  simple('POST', /^\/api\/flashcards$/, '/api/flashcards'),
-  simple('DELETE', /^\/api\/flashcards\/\d+$/, '/api/flashcards'),
+  simple('POST', /^\/api\/flashcards$/, { prefix: '/api/flashcards' }),
+  simple('DELETE', /^\/api\/flashcards\/\d+$/, { prefix: '/api/flashcards' }),
   simple('POST', /^\/api\/phrase-checks$/, '/api/phrase-checks'),
   simple('DELETE', /^\/api\/phrase-checks\/\d+$/, '/api/phrase-checks'),
   simple('PATCH', /^\/api\/phrase-checks\/\d+$/, '/api/phrase-checks'),

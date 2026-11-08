@@ -77,6 +77,7 @@ function makeServices() {
     userTask: table(),
   };
   prisma.$transaction = createFakeTransaction(prisma);
+  prisma.$executeRaw = jest.fn(async () => 1); // замок строки (notes-my-list.ts)
   const db = prisma as never;
   const relations = { assertHasClient: async () => undefined } as never;
   return {

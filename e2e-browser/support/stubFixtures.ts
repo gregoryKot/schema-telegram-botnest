@@ -151,6 +151,9 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/childhood-ratings': {}, // BotService.getChildhoodRatings
   'GET /api/diary/gratitude': [], // diary.controller.ts
   'GET /api/diary/mode': [],
+  'GET /api/diary/page/gratitude': { items: [], hasMore: false }, // «Записи»
+  'GET /api/diary/page/mode': { items: [], hasMore: false },
+  'GET /api/diary/page/schema': { items: [], hasMore: false },
   'GET /api/diary/schema': [],
   'GET /api/disclaimer': { accepted: true }, // согласие уже дано
   'GET /api/letters': [], // exercises.controller.ts
