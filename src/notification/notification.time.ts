@@ -40,14 +40,14 @@ export function utcInstantForLocalHour(
   localHour: number,
   tz: string,
 ): Date {
-  // Полдень как DST-безопасный якорь для вычисления смещения этой даты
-  const noonRef = new Date(`${dateStr}T12:00:00.000Z`);
-  const offsetMin = tzOffsetMinutes(tz, noonRef);
-  const d = new Date(
+  const wall = Date.parse(
     `${dateStr}T${String(localHour).padStart(2, '0')}:00:00.000Z`,
   );
-  d.setTime(d.getTime() - offsetMin * 60_000);
-  return d;
+  // Первый шаг — смещение полудня; в день перевода часов полночь живёт по
+  // другому смещению, поэтому оно пересчитывается на найденном моменте.
+  const noon = tzOffsetMinutes(tz, new Date(`${dateStr}T12:00:00.000Z`));
+  const offsetMin = tzOffsetMinutes(tz, new Date(wall - noon * 60_000));
+  return new Date(wall - offsetMin * 60_000);
 }
 
 /** Ближайший будущий момент localHour:00 в таймзоне tz. Никогда не в прошлом. */

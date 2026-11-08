@@ -8,16 +8,45 @@ import {
   snoozeSendAt,
 } from './telegram.snooze';
 
+/**
+ * Очередь уведомлений в памяти: каждый вызов — отдельный «запрос к БД».
+ * replacePending — как в базе: «снять этого типа + поставить» под локом на
+ * человека (src/notification/replace-pending.ts), вызовы идут по одному.
+ */
+function memoryQueue() {
+  const rows: { type: string; sendAt: Date; cancelled: boolean }[] = [];
+  const db = () => new Promise((r) => setImmediate(r));
+  const pending = (type: string) =>
+    rows.filter((r) => r.type === type && !r.cancelled);
+  let lockTail: Promise<unknown> = Promise.resolve();
+  const replace = async (type: string, sendAt: Date) => {
+    await db();
+    for (const r of pending(type)) r.cancelled = true;
+    await db();
+    rows.push({ type, sendAt, cancelled: false });
+  };
+  return {
+    rows,
+    pending,
+    cancel: jest.fn(async (_u: bigint, type: string) => {
+      await db();
+      for (const r of pending(type)) r.cancelled = true;
+    }),
+    replacePending: jest.fn((_u: bigint, type: string, sendAt: Date) => {
+      const run = lockTail.then(() => replace(type, sendAt));
+      lockTail = run.catch(() => undefined);
+      return run;
+    }),
+  };
+}
+
 function makeDeps(settings: Record<string, unknown> | null, now: number) {
   return {
     accountService: {
       canonicalUserId: jest.fn(async (id: number) => BigInt(id)),
     },
     botService: { getUserSettings: jest.fn().mockResolvedValue(settings) },
-    notificationService: {
-      cancel: jest.fn().mockResolvedValue(undefined),
-      schedule: jest.fn().mockResolvedValue(undefined),
-    },
+    notificationService: memoryQueue(),
     analytics: { track: jest.fn().mockResolvedValue(undefined) },
     now: () => now,
   };
@@ -56,12 +85,34 @@ describe('snoozeReminder', () => {
     );
     const ctx = makeCtx();
     await snoozeReminder(deps, ctx as never, 7);
-    expect(deps.notificationService.schedule).toHaveBeenCalledWith(
+    expect(deps.notificationService.replacePending).toHaveBeenCalledWith(
       7n,
       'pre_reminder',
       new Date('2026-10-11T12:30:00Z'),
     );
     expect(ctx.editMessageText).toHaveBeenCalledWith('⏰ Напомню в 18:00');
+  });
+
+  // Аудит 2026-10: снималось только напоминание, а уже отложенное — нет, и
+  // второе нажатие до правки сообщения (кнопки исчезают только с итогом)
+  // ставило второе «через час». Отложенное ставится через replacePending.
+  it('второе нажатие снимает уже отложенное — в очереди одно, напоминание снято', async () => {
+    const deps = makeDeps(null, Date.parse('2026-10-11T11:30:00Z'));
+    const q = deps.notificationService;
+    q.rows.push({ type: 'reminder', sendAt: new Date(0), cancelled: false });
+    await snoozeReminder(deps, makeCtx() as never, 7);
+    await snoozeReminder(deps, makeCtx() as never, 7);
+    expect(q.pending('pre_reminder')).toHaveLength(1);
+    expect(q.pending('reminder')).toHaveLength(0);
+  });
+
+  it('параллельный двойной тап — в очереди одно отложенное', async () => {
+    const deps = makeDeps(null, Date.parse('2026-10-11T11:30:00Z'));
+    await Promise.all([
+      snoozeReminder(deps, makeCtx() as never, 7),
+      snoozeReminder(deps, makeCtx() as never, 7),
+    ]);
+    expect(deps.notificationService.pending('pre_reminder')).toHaveLength(1);
   });
 
   // Правило №8: кнопку видно в /stats (notify-queue-metrics.*) — событие пишет
@@ -73,7 +124,7 @@ describe('snoozeReminder', () => {
       quietShift: true,
     });
     const [scheduled] =
-      deps.notificationService.schedule.mock.invocationCallOrder;
+      deps.notificationService.replacePending.mock.invocationCallOrder;
     const [tracked] = deps.analytics.track.mock.invocationCallOrder;
     expect(scheduled).toBeLessThan(tracked);
   });

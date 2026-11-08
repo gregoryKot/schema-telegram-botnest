@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { localDate } from '../utils/tz';
-import { formatAdminStats } from './admin-stats.format';
+import { formatStatsHeader } from './admin-stats.sections';
+import { adminStatsBlocks } from './admin-stats.blocks';
+import { settleBlocks } from './stats-settle';
 import {
   formatRetentionBlock,
   RetentionStats,
@@ -13,14 +15,14 @@ import {
 // считаются в той же зоне: по UTC с 00:00 до 03:00 МСК «сегодня» было
 // вчерашним днём (правило №25, аудит 2026-10).
 const REPORT_TZ = 'Europe/Moscow';
-type ActivityKey = 'month30' | 'week7' | 'churn' | 'core';
-type RetKey = 'ret1' | 'ret3' | 'ret7' | 'ret30';
 
 // Админский отчёт по всей базе (не по конкретному юзеру, в отличие от
 // BotAnalyticsService) — единственный потребитель: команда `/stats` в
 // TelegramService. Вынесено из BotAnalyticsService (правило №10).
 @Injectable()
 export class BotAdminStatsService {
+  private readonly logger = new Logger(BotAdminStatsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private localDateString(tz: string, base = new Date()): string {
@@ -87,6 +89,11 @@ export class BotAdminStatsService {
     };
   }
 
+  /**
+   * «Главные цифры» /stats. Разделы независимы (admin-stats.blocks.ts):
+   * упавший запрос гасит только свой раздел — заглушкой с причиной, а не всё
+   * первое сообщение отчёта (аудит 2026-10, infra#28).
+   */
   async getAdminStats(): Promise<string> {
     const now = new Date();
     const day = (ago: number) =>
@@ -94,124 +101,13 @@ export class BotAdminStatsService {
         REPORT_TZ,
         new Date(now.getTime() - ago * 86_400_000),
       );
-    const [today, d7, d30] = [day(0), day(7), day(30)];
-    const ago7 = new Date(now.getTime() - 7 * 86_400_000);
-    const ago30 = new Date(now.getTime() - 30 * 86_400_000);
-
-    const [
-      totalUsers,
-      newUsers7,
-      newUsers30,
-      notifyOff,
-      blockedUsers,
-      activePairs,
-      todayCountRows,
-      activityRows,
-      needAvgs,
-      perDayRows,
-    ] = await Promise.all([
-      this.prisma.user.count({ where: { deletedAt: null } }),
-      this.prisma.user.count({
-        where: { deletedAt: null, createdAt: { gte: ago7 } },
-      }),
-      this.prisma.user.count({
-        where: { deletedAt: null, createdAt: { gte: ago30 } },
-      }),
-      this.prisma.user.count({
-        where: { deletedAt: null, notifyEnabled: false },
-      }),
-      this.prisma.user.count({
-        where: { deletedAt: null, botBlockedAt: { not: null } },
-      }),
-      this.prisma.pair.count({ where: { status: 'active' } }),
-      // D-4 (аудит 2026-07): честный COUNT(DISTINCT), а не выборка id.
-      this.prisma.$queryRaw<Array<{ c: bigint }>>`
-        SELECT COUNT(DISTINCT "userId")::bigint AS c FROM "Rating" WHERE date = ${today}
-      `,
-      // Заходившие за месяц/неделю, «могут уйти» и «ядро» (≥3 разных дня за
-      // неделю, docs/LAUNCH_STRATEGY.md §5) — одним проходом в SQL. Раньше —
-      // findMany с distinct и take: 5000: Prisma дедуплицирует в памяти поверх
-      // ORDER BY id, и выше ~170 человек в день свежие дни выпадали — «ядро»
-      // показывало 0 из 500 (аудит 2026-10). «Могут уйти» = последний день
-      // в окне месяца раньше недели.
-      this.prisma.$queryRaw<Array<Record<ActivityKey, bigint>>>`
-        SELECT count(*)::bigint AS month30,
-               count(*) FILTER (WHERE t.last_day >= ${d7})::bigint AS week7,
-               count(*) FILTER (WHERE t.last_day < ${d7})::bigint AS churn,
-               count(*) FILTER (WHERE t.days7 >= 3)::bigint AS core
-        FROM (
-          SELECT p."userId", max(p.date) AS last_day,
-                 count(*) FILTER (WHERE p.date >= ${d7}) AS days7
-          FROM (SELECT DISTINCT "userId", date FROM "Rating" WHERE date >= ${d30}) p
-          GROUP BY p."userId"
-        ) t
-      `,
-      // Average score per need over last 7 days — по числу потребностей
-      // (NEED_IDS), не растёт с таблицей, take не нужен.
-      this.prisma.rating.groupBy({
-        by: ['needId'],
-        where: { date: { gte: d7 } },
-        _avg: { value: true },
-        orderBy: { _avg: { value: 'asc' } },
-      }),
-      // Сколько разных людей заполняли в каждый день за 30 дней — ≤31 строки;
-      // день недели считается ниже в JS, без каста строки в date в SQL.
-      this.prisma.$queryRaw<Array<{ date: string; c: bigint }>>`
-        SELECT date, COUNT(DISTINCT "userId")::bigint AS c
-        FROM "Rating" WHERE date >= ${d30} GROUP BY date
-      `,
-    ]);
-    const todayCount = Number(todayCountRows[0]?.c ?? 0);
-    const act = (k: ActivityKey): number => Number(activityRows[0]?.[k] ?? 0);
-    const month30Count = act('month30');
-
-    // Воронка удержания: у скольких людей 1+, 3+, 7+ и 30+ разных дней
-    // заполнения — один GROUP BY по всей Rating вместо четырёх (по ~250 мс).
-    const [funnel] = await this.prisma.$queryRaw<Array<Record<RetKey, bigint>>>`
-      SELECT count(*) FILTER (WHERE t.days >= 1)::bigint AS ret1,
-             count(*) FILTER (WHERE t.days >= 3)::bigint AS ret3,
-             count(*) FILTER (WHERE t.days >= 7)::bigint AS ret7,
-             count(*) FILTER (WHERE t.days >= 30)::bigint AS ret30
-      FROM (SELECT COUNT(DISTINCT date) AS days FROM "Rating" GROUP BY "userId") t`;
-    const ret = (k: RetKey): number => Number(funnel?.[k] ?? 0);
-
-    // Most neglected need (lowest avg this week)
-    const lowestNeed = needAvgs[0];
-
-    // День недели с наибольшим числом пар «человек–день»; на пустой базе —
-    // null, а не «вс» из массива нулей (правило №8).
-    const dowCounts: number[] = new Array<number>(7).fill(0);
-    for (const r of perDayRows) {
-      dowCounts[new Date(r.date + 'T12:00:00Z').getUTCDay()] += Number(r.c);
-    }
-    const maxDow = Math.max(...dowCounts);
-    const bestDow = maxDow > 0 ? dowCounts.indexOf(maxDow) : null;
-    const fillRate =
-      month30Count > 0 ? Math.round((todayCount / month30Count) * 100) : 0;
-
-    const report = formatAdminStats({
-      today,
-      totalUsers,
-      newUsers7,
-      newUsers30,
-      notifyOff,
-      blockedUsers,
-      todayCount,
-      fillRate,
-      week7Count: act('week7'),
-      activeCoreCount: act('core'),
-      month30Count,
-      churnRisk: act('churn'),
-      ret1: ret('ret1'),
-      ret3: ret('ret3'),
-      ret7: ret('ret7'),
-      ret30: ret('ret30'),
-      lowestNeed,
-      bestDow,
-      activePairs,
-    });
-
-    const retention = await this.getRetentionStats();
-    return report + '\n\n' + formatRetentionBlock(retention);
+    const days = { now, today: day(0), d7: day(7), d30: day(30) };
+    const retention = async () =>
+      formatRetentionBlock(await this.getRetentionStats());
+    const parts = await settleBlocks(
+      adminStatsBlocks(this.prisma, days, retention),
+      this.logger,
+    );
+    return [formatStatsHeader(days.today), ...parts].join('\n\n');
   }
 }

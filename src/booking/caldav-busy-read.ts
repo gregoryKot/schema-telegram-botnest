@@ -3,9 +3,10 @@
 // сервиса целиком, а сетевой вызов должен идти через тот же мок.
 import { CalDavFailureKind } from './caldav-health';
 import { Interval, parseBusy } from './caldav-busy';
+import { BusySkips, noSkips } from './caldav-parse-skips';
 
 export type BusyRead =
-  | { ok: true; intervals: Interval[] }
+  | { ok: true; intervals: Interval[]; skipped: BusySkips }
   | { ok: false; kind: CalDavFailureKind; detail: string };
 
 // 401/403 — учётные данные, таймаут, сеть, прочий HTTP. Сам не логирует и
@@ -31,7 +32,9 @@ export async function readBusy(
       const kind = res.status === 401 || res.status === 403 ? 'auth' : 'http';
       return { ok: false, kind, detail: `REPORT ${res.status} for ${url}` };
     }
-    return { ok: true, intervals: parseBusy(await res.text()) };
+    const skipped = noSkips();
+    const intervals = parseBusy(await res.text(), skipped);
+    return { ok: true, intervals, skipped };
   } catch (e) {
     const msg = (e as Error).message;
     const kind = /timeout|abort/i.test(msg) ? 'timeout' : 'network';

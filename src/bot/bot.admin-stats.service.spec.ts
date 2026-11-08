@@ -6,7 +6,9 @@
 // SQL — его арифметику (churn, ядро, >5000 пар) доказывает живая база
 // (test/raw-sql-live-admin-stats.e2e-spec.ts, правило №18); здесь — что числа
 // из SQL доходят до отчёта, день недели, зона «сегодня» и пустое состояние.
+import { Logger } from '@nestjs/common';
 import { BotAdminStatsService } from './bot.admin-stats.service';
+import { BLOCK_FAILED_MARK } from './stats-settle';
 
 const FIXED_DATE = new Date('2025-06-11T12:00:00Z'); // среда
 
@@ -372,5 +374,50 @@ describe('BotAdminStatsService.getAdminStats — отчёт целиком', () 
     for (const n of [1, 3, 7, 30])
       expect(funnel[0]).toContain(`FILTER (WHERE t.days >= ${n})`);
     expect(sqls.some((t) => /HAVING/i.test(t))).toBe(false);
+  });
+});
+
+// Аудит 2026-10 (infra#28): «Главные цифры» собирались двумя Promise.all по
+// ~10 запросам и retention — упал любой, и вместо всех цифр первого сообщения
+// /stats стояла одна заглушка. Теперь каждый раздел — свой блок settleBlocks.
+describe('BotAdminStatsService.getAdminStats — разделы независимы', () => {
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  it('упал запрос пар — заглушка только у «Пар», остальные строки на месте', async () => {
+    const prisma = makePrisma({
+      pair: { count: jest.fn().mockRejectedValue(new Error('db down')) },
+    });
+    const report = await new BotAdminStatsService(prisma).getAdminStats();
+    expect(report).toContain('«Пары»');
+    expect(report).toContain(BLOCK_FAILED_MARK);
+    expect(report).toContain('db down');
+    expect(report).not.toContain('Сейчас вместе');
+    expect(report).toContain('Что происходит в приложении');
+    expect(report).toContain('Всего людей: 0');
+    expect(report).toContain('Заполнили сегодня: 0');
+    expect(report).toContain('Хотя бы 1 день: 0');
+    expect(report).toContain('Пока мало данных о потребностях');
+  });
+
+  it('упал сырой запрос активности — «Люди», воронка и retention доезжают', async () => {
+    const base = makeQueryRawMock({ ret1: 9 });
+    const queryRaw = jest.fn(
+      (strings: TemplateStringsArray, ...v: unknown[]) =>
+        strings.join('|').includes('AS last_day')
+          ? Promise.reject(new Error('timeout'))
+          : base(strings, ...v),
+    );
+    const report = await new BotAdminStatsService(
+      makePrisma({ $queryRaw: queryRaw }),
+    ).getAdminStats();
+    expect(report).toContain('«Дневник настроения»');
+    expect(report).not.toContain('Заполнили сегодня');
+    expect(report).toContain('Всего людей: 0');
+    expect(report).toContain('Хотя бы 1 день: 9');
+    expect(report).toContain('Сейчас вместе: 0');
+    expect(report.split(BLOCK_FAILED_MARK)).toHaveLength(2);
   });
 });
