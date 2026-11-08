@@ -16,13 +16,13 @@
   пакет только ESM, бэкенд собран в CommonJS: jest падает на
   `src/telegram/telegram.providers.spec.ts` («Must use import to load ES Module»). Применение
   одно — `src/telegram/telegram-agent.ts`. Вернуться при переезде бэкенда на ESM.
-- **`@napi-rs/canvas` закреплён на 1.0.11** (`package.json`, `ignore` версии 1.0.12 в записи `/`).
-  В 1.0.12 `index.js` при каждой загрузке оборачивает `CanvasRenderingContext2D.prototype.fill`;
-  прототип нативный и общий, jest грузит модуль в каждом тест-файле воркера — обёртки
-  складываются, `fill()` без аргументов бросает «not of type 'Path2D'» (упал
-  `src/channel/pin-image.spec.ts` на #843). Прод грузит модуль один раз и не задет. Тест
-  «повторная загрузка модуля» в том же спеке краснеет на 1.0.12 детерминированно — следующую
-  версию бот принесёт сам, тест скажет, починена ли обёртка; тогда снять пин и `ignore`.
+- **Babel 8 не берём** (2026-11-08, разбор в #1027; бот-PR #892, #855, #856 закрыты) — `ignore`
+  мажора `@babel/*` в записи `/`. Babel 8 только ESM (`"type": "module"`, Node ≥22.18): сам
+  трансформер `src/test-support/esm-to-cjs.transform.cjs` под ним работает (babel-jest грузит
+  ядро обычным `require(esm)` Node), но `src/test-support/esm-to-cjs.transform.spec.ts`
+  импортирует `@babel/core` внутри jest и падает «Must use import to load ES Module». Пользы
+  нет: Babel нужен только этому трансформеру, а на Node 24.9+ трансформер, его спек и три
+  пакета `@babel/*` удаляются целиком. Вернуться тогда же — снять `ignore` вместе с Babel.
 - **Взятые мажоры: часть проверит только прод и первая ночь.** Взяты Nest 12 (#845),
   Stryker 10 (#842), Vitest 5 (#844), jsdom 30 (#846), `actions/github-script` 9 (#522). PR-CI
   не исполняет ночные мутации (`nightly.yml`; у Stryker 10 мутатор `CallExpression` выключен —

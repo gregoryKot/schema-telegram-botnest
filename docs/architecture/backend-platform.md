@@ -130,6 +130,7 @@
   - `src/prisma/prisma.module.ts` — @Global, экспортирует PrismaService
   - `src/prisma/prisma-exception.filter.ts` — коды Prisma → дружелюбные 4xx
   - `src/prisma/http-exception-body.ts` — тело HttpException в форме Nest (строка → `{ statusCode, message }`)
+  - `src/prisma/client-http-error.ts` — клиентские ошибки express-слоя (http-errors: 413, 415) → свой статус и текст; с Nest 12.4 узнаёт их и внутри HttpException (`cause`)
   - `src/prisma/encryption-wave2.service.ts` и `src/prisma/encryption-wave3.service.ts` — дошифровка старых строк на старте
   - `src/prisma/unique-violation.ts` — детектор P2002 / SQLSTATE 23505
 - Связи: используется почти всеми модулями (PrismaModule глобальный); фильтр подключён в `src/main.ts` (`useGlobalFilters`); волны шифруют через `src/utils/encrypt-if-plain.ts` и хранят флаг-гард в `BookingSetting`.
