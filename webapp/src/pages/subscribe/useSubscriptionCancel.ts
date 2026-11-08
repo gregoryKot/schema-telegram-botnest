@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { ApiError } from '../../apiClient';
+import { describeFailure } from '../../../../shared/src/api/describeFailure';
 
 // Отмена подписки по ссылке из письма. Раньше `catch { /* ignore */ }`
 // проглатывал любой отказ (500, 429, maintenance-HTML с кодом 200 в окно
@@ -15,11 +16,6 @@ import { ApiError } from '../../apiClient';
 export type CancelPhase = 'idle' | 'loading' | 'error' | 'stale';
 
 export const SUBSCRIPTION_SECTION = 'subscription';
-
-function describeFailure(err: unknown): string {
-  if (err instanceof ApiError) return `HTTP ${err.status}`;
-  return err instanceof Error ? err.message : String(err);
-}
 
 /** Отказ загрузки подписки по ссылке: экран-тупик шлёт отчёт наверх (правило
  * №14, check-dead-end-report). 404 — ссылка устарела, ожидаемый исход, как у
@@ -43,7 +39,7 @@ export function useSubscriptionCancel(token: string | null, onCancelled: () => v
         setPhase('stale');
         return;
       }
-      // Без токена и без PII: только код ответа или текст сетевой ошибки.
+      // Без токена и без PII: код ответа или тип сбоя, текст ошибки не уходит.
       reportClientError({ message: `subscription cancel failed: ${describeFailure(err)}`, section: SUBSCRIPTION_SECTION });
       setPhase('error');
     }
