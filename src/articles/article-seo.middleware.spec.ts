@@ -1,5 +1,6 @@
 import { ArticleSeoMiddleware } from './article-seo.middleware';
 import type { ArticlesService } from './articles.service';
+import { PRACTICE_PREVIEW } from '../practice-preview';
 
 // existsSync/readFileSync экспортируются из 'fs' как non-configurable
 // свойства в текущем Node — jest.spyOn(fs, ...) падает "Cannot redefine
@@ -27,6 +28,7 @@ const BASE_HTML = `<!doctype html>
     <meta property="og:title"       content="Григорий Котляревский" />
     <meta property="og:description" content="Онлайн-консультации." />
     <meta property="og:type"        content="website" />
+    <meta property="og:image"       content="https://schemehappens.ru/og-app-v1.jpg" />
   </head>
   <body>
     <div id="root"></div>
@@ -179,6 +181,24 @@ describe('ArticleSeoMiddleware', () => {
       'href="https://kotlarewski.gr/articles/skhemy-yanga-spisok"',
     );
     expect(html).not.toContain('https://schemehappens.ru');
+  });
+
+  // Карточка ссылки: в index.html — продукт, статья на визитке показывает
+  // обложку визитки, на продукте — продукта (practice-preview.ts).
+  it('alias-домен — обложка визитки, продуктовый хост — продукта', async () => {
+    const cover = async (host: string) => {
+      const mw = makeMiddleware(ARTICLE);
+      const { req, res, getSent } = mockReqRes(
+        '/articles/skhemy-yanga-spisok',
+        host,
+      );
+      await mw.use(req, res, () => {});
+      return /property="og:image"\s+content="([^"]+)"/.exec(getSent()!)?.[1];
+    };
+    expect(await cover('kotlarewski.gr')).toBe(PRACTICE_PREVIEW.image);
+    expect(await cover('schemehappens.ru')).toBe(
+      'https://schemehappens.ru/og-app-v1.jpg',
+    );
   });
 
   // Аудит 2026-10 (I3): клиентский X-Forwarded-Host (его читает req.hostname
