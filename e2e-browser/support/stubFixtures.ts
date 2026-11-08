@@ -200,6 +200,7 @@ export const FIXTURES: Record<string, unknown> = {
   'POST /api/activity': { ok: true }, // tracker.controller.ts
   'POST /api/auth/refresh': { accessToken: 'e2e-test-token', expiresIn: 900 },
   'POST /api/event': { ok: true }, // analytics.controller.ts
+  'POST /api/public-event': { ok: true }, // public-events.controller.ts (asset-recovery.js)
   'POST /api/init': { ok: true }, // api.controller.ts
   'POST /api/settings': { ok: true }, // settings.controller.ts
 };

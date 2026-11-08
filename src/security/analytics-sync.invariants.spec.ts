@@ -241,6 +241,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
     'userId = null. Фронт присылает только поле platform в теле обмена ' +
     '(shared/src/host/launchPlatform.ts), отдельного trackEvent у него нет',
+  asset_recovered:
+    'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
+    "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
+    'скрипта сверяет src/analytics/asset-recovery.constants.spec.ts',
   ysq_data_deleted:
     'серверное событие: пишет YsqController после транзакции DELETE ' +
     '/api/ysq-data (кнопка «Удалить результаты теста»). Сколько попыток ' +
@@ -353,7 +357,9 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // пишет ручка обмена подписи, клиент шлёт только поле platform в её теле.
     // 48 — ysq_data_deleted (стёртый тест схем): серверное — удаление делает
     // HTTP-запрос, число стёртых попыток видно только в транзакции.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(48);
+    // 49 — asset_recovered (инцидент 2026-11-04, #928): шлёт скрипт из
+    // webapp/public, а не бандл; FRONTEND_DIRS его не видят по устройству.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(49);
   });
 });
 

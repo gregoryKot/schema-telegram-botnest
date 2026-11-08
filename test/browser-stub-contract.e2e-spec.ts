@@ -60,6 +60,10 @@ const VOLATILE: Record<string, Record<string, string>> = {
 const BODIES: Record<string, unknown> = {
   'POST /api/activity': {},
   'POST /api/event': { name: ANALYTICS_EVENTS[0] },
+  'POST /api/public-event': {
+    name: 'asset_recovered',
+    meta: { kind: 'css', attempts: 1 },
+  },
   'POST /api/init': { timezone: 'Europe/Moscow' },
   'POST /api/auth/refresh': {},
   'POST /api/settings': { notifyEnabled: true },

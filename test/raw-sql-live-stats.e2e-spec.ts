@@ -96,6 +96,8 @@ const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
   { name: 'client_error', meta: { section: 'assets', source: 'webapp' } },
+  // Сработавший повтор asset-recovery.js (#928): FILTER по meta->>'kind'.
+  { name: 'asset_recovered', meta: { kind: 'css', attempts: 1 } },
   // Шквал (находка аудита 2026-10-11): meta.suppressed суммируется приведением
   // ::int, meta.unlogged считается FILTER'ом — оба идут через драйвер.
   {
@@ -194,6 +196,7 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(product).toContain('Запись на консультацию');
     // Секция 'assets' (asset-recovery.js, инцидент 2026-11-04) — свой FILTER.
     expect(product).toContain('Файлы сайта не загрузились');
+    expect(product).toMatch(/повтор помог: стиль — [1-9]\d* раз/);
     // Сумма meta.suppressed и счёт meta.unlogged: сырой SQL приводит jsonb-текст
     // к int на живой базе (мок $queryRaw этого не доказывает, правило №18).
     expect(product).toMatch(

@@ -30,6 +30,15 @@ describe('PublicEventDto', () => {
     ).resolves.toEqual([]);
   });
 
+  it('повтор файла сборки (asset_recovered) проходит DTO — скрипт работает до входа', async () => {
+    await expect(
+      errorsFor({
+        name: 'asset_recovered',
+        meta: { kind: 'css', attempts: 1 },
+      }),
+    ).resolves.toEqual([]);
+  });
+
   it('кризисная карточка записи (crisis_card_shown / crisis_hotline_tapped) проходит DTO', async () => {
     for (const name of ['crisis_card_shown', 'crisis_hotline_tapped']) {
       await expect(
@@ -327,5 +336,30 @@ describe('PublicEventsController', () => {
       meta: { anything: 'x' },
     });
     expect(track).toHaveBeenCalledWith(null, 'game_start', {});
+  });
+
+  // Инцидент 2026-11-04 (#928): сработавший повтор asset-recovery.js.
+  it('asset_recovered пишется анонимно: только kind и attempts', async () => {
+    await controller.track({
+      name: 'asset_recovered',
+      meta: { kind: 'js', attempts: 2, path: '/assets/index-x.js' },
+    });
+    expect(track).toHaveBeenCalledWith(null, 'asset_recovered', {
+      kind: 'js',
+      attempts: 2,
+    });
+  });
+
+  it.each([
+    { kind: 'img', attempts: 1 },
+    { kind: 'css', attempts: 0 },
+    { kind: 'css', attempts: 11 },
+    { kind: 'css', attempts: 1.5 },
+    { kind: 'css' },
+  ])('asset_recovered с meta %p молча дропается', async (meta) => {
+    await expect(
+      controller.track({ name: 'asset_recovered', meta }),
+    ).resolves.toEqual({ ok: true });
+    expect(track).not.toHaveBeenCalled();
   });
 });
