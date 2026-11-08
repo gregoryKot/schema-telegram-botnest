@@ -21,7 +21,6 @@ import { CustomModeDto } from './dto/custom-mode.dto';
 import { CreateModeMapDto, UpdateModeMapDto } from './dto/mode-maps.dto';
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   userRole?: string;
   webUser: { userId: bigint };
 }

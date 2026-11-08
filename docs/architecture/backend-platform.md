@@ -39,7 +39,7 @@
   - `src/api/request-utils.ts` — `uid()` и `parseId()` для контроллеров
 - Связи: гард зависит от `src/auth/` (AuthService, MaxProvider, SecurityLogService) и `src/analytics/`; ApiModule импортирует Bot/Notification/Telegram/Therapy/Auth/Analytics/IntroLead; diary и tracker зовут `src/therapy/therapy-tasks.service.ts`; `src/api/throttler-module-options.ts` подключает `src/app.module.ts`.
 - Подводные камни:
-  - `req.telegramUserId` — number (историческое имя; для веб/MAX-аккаунтов тоже userId); канонический BigInt — `uid(req)`, id из path — `parseId` (Int-колонки) или `parseUserId` (`src/api/parse-user-id.ts`, BigInt); отрицательные id — виртуальные клиенты терапевта.
+  - пользователь запроса — канонический BigInt `uid(req)` (`req.webUser.userId`), id из path — `parseId` (Int-колонки) или `parseUserId` (`src/api/parse-user-id.ts`, BigInt); отрицательные id — виртуальные клиенты терапевта.
   - Бакет троттлинга строится только по проверенной подписи (JWT/initData), иначе по IP (`src/api/throttler-identity.ts`); денежные и кодовые ручки обязаны быть с `@PersistentThrottle()` / `@PersistentThrottleLimit` — решение по каждой ручке с `@Throttle` проверяет CI-гейт `scripts/check-persistent-throttle.mjs`.
   - Контроллер без гарда допустим только из `PUBLIC_BY_DESIGN` (`src/security/controller-classification.ts`) и обязан быть в `controllers` какого-то модуля; `src/api/booking.controller.ts` (POST /api/booking) зарегистрирован в `src/booking/intro-lead.module.ts`, а не в ApiModule.
 

@@ -17,8 +17,8 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import type { Request } from 'express';
 
 // Unified guard: accepts Telegram initData (mini-app / bot), MAX initData
-// (MAX mini-app), OR JWT Bearer (web app). Sets req.telegramUserId (number)
-// which all existing controllers rely on. Telegram/MAX path bodies live in
+// (MAX mini-app), OR JWT Bearer (web app). Sets req.webUser.userId (bigint) —
+// контроллеры читают его через uid(req). Telegram/MAX path bodies live in
 // ./init-data-paths.ts to keep this file under the file-size ratchet.
 @Injectable()
 export class TelegramAuthGuard implements CanActivate {
@@ -41,8 +41,6 @@ export class TelegramAuthGuard implements CanActivate {
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
       const { userId } = this.authService.verifyAccessToken(token);
-      // userId is a BigInt — convert to number for backward compat with controllers
-      req.telegramUserId = Number(userId);
       req.webUser = { userId };
       // Строка веб-юзера создаётся при входе, ДО выдачи токена. Здесь только
       // сверяем, что аккаунт ещё жив: access-токен живёт 15 минут — дольше, чем

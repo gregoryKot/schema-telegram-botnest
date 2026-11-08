@@ -44,7 +44,6 @@ function signInitData(opts: {
 interface FakeRequest {
   headers: Record<string, string | undefined>;
   ip?: string;
-  telegramUserId?: number;
   telegramFirstName?: string;
   webUser?: { userId: bigint };
 }
@@ -104,15 +103,16 @@ afterEach(() => {
 });
 
 describe('путь 1: JWT Bearer (сайт)', () => {
-  it('валидный токен, аккаунт жив → telegramUserId/webUser, строку НЕ воскрешаем', async () => {
+  it('валидный токен, аккаунт жив → webUser, строку НЕ воскрешаем', async () => {
     const { guard, prisma, authService } = makeGuard();
     authService.verifyAccessToken.mockReturnValue({ userId: 555n });
     prisma.user.findUnique.mockResolvedValue({ id: 555n, deletedAt: null });
     const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
 
     await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
-    expect(req.telegramUserId).toBe(555);
     expect(req.webUser).toEqual({ userId: 555n });
+    // Округляющего Number(userId) на запросе больше нет — только bigint.
+    expect(req).not.toHaveProperty('telegramUserId');
     // Только сверка существования — никакого upsert (он воскрешал бы удалённых).
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: 555n },
@@ -175,8 +175,8 @@ describe('путь 2: Telegram initData (мини-апп)', () => {
       'Грег',
     );
     // канонический id (999) из реестра провайдеров, НЕ сырой telegram id (42)
-    expect(req.telegramUserId).toBe(999);
     expect(req.webUser).toEqual({ userId: 999n });
+    expect(req).not.toHaveProperty('telegramUserId');
     expect(req.telegramFirstName).toBe('Грег');
   });
 
@@ -358,8 +358,8 @@ describe('путь 3: MAX initData (MAX мини-апп)', () => {
       'Оля',
     );
     // канонический id (999) из реестра провайдеров, НЕ сырой providerId (77)
-    expect(req.telegramUserId).toBe(999);
     expect(req.webUser).toEqual({ userId: 999n });
+    expect(req).not.toHaveProperty('telegramUserId');
     expect(req.telegramFirstName).toBe('Оля');
   });
 

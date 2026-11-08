@@ -22,7 +22,6 @@ import { ConceptualizationDto } from './dto/conceptualization.dto';
 import { isCalendarDay } from '../utils/calendar-day';
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   userRole?: string;
   webUser: { userId: bigint };
 }

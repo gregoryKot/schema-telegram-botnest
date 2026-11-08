@@ -107,6 +107,6 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 
 ### `src/types/`
 Единственный файл `src/types/express.d.ts`: глобальное расширение `express.Request` полями, которые ставят гварды.
-- Входы: `src/types/express.d.ts` — `webUser?: {userId: bigint}`, `telegramUserId?`, `telegramFirstName?`.
+- Входы: `src/types/express.d.ts` — `webUser?: {userId: bigint}`, `telegramFirstName?`.
 - Связи: поля выставляют `JwtAuthGuard`/`OptionalJwtGuard`/`TelegramAuthGuard` (`src/auth`, `src/api`); контроллеры читают через `uid(req)` (`src/api/request-utils.ts`).
-- Подводные камни: `telegramUserId` — `Number` (выше 2^53 округляется), для поиска пользователя не использовать; брать `uid(req)` / `webUser.userId` (bigint). Поля опциональны: на публичных эндпоинтах гвард их не ставит.
+- Подводные камни: пользователь — только `uid(req)` / `webUser.userId` (bigint); округляющий `req.telegramUserId` снесён. Поля опциональны: на публичных эндпоинтах гвард их не ставит.

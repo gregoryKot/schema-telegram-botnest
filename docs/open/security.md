@@ -18,14 +18,6 @@
 - **Владельцу, в env прода** (Amvera): если
   `ALLOWED_ORIGINS` задан явно и содержит
   `kotlarewski.*` — убрать; проверка env теперь предупреждает об этом (F-2).
-- Мёртвое поле `req.telegramUserId = Number(…)` (`src/api/telegram-auth.guard.ts:45`,
-  `src/api/init-data-paths.ts:75,114`; тип — `src/types/express.d.ts:13`,
-  `src/api/request-utils.ts:9`, `telegramUserId: number` в семи контроллерах):
-  `grep '\.telegramUserId'` находит читателя только в `guard.spec`. Сегодня
-  безвредно (веб-id < 2^53, пин в `src/auth/user-id-range.spec.ts`), но при
-  расширении диапазона за 2^53 это округляющий `Number()` над userId. Снести
-  поле и тип отдельным PR; рассылка и уведомление заявителя уже на bigint
-  ([AUDIT_2026-10, «Кабинет психолога»](../AUDIT_2026-10_FINDINGS.md#кабинет-психолога)).
 - **Шесть роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
   хотя аноним проходит** (`telegram/widget`, `telegram/redirect`, `merge`,
   `ticket/start`, `google`, `vk` в `src/auth/*.controller.ts`; `telegram-oidc` удалён в #725):

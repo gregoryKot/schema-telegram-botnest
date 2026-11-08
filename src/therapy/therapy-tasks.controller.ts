@@ -20,7 +20,6 @@ import { AccountService } from '../bot/account.service';
 import { CreateTaskDto, CompleteTaskDto } from './dto/tasks.dto';
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   userRole?: string;
   webUser: { userId: bigint };
 }
