@@ -33,7 +33,19 @@
   `/stats` не упадёт почти до нуля: значит ширины всё ещё не хватает.
 - **Картинкой схема скачивается не везде.** Сайт, открытый внутри WebView Telegram,
   скачивает файл ненадёжно; там остаётся текстовый экспорт (связи режимов в него
-  входят). Решили не делать, пока нет способа отдать файл из Telegram без потери.
+  входят). Способ есть — `Telegram.WebApp.downloadFile({ url, file_name })`
+  (Bot API 8.0): https-ссылка, ответ с `Content-Disposition: attachment` и
+  `Access-Control-Allow-Origin: https://web.telegram.org`. Но PNG рисуется только
+  на клиенте (`html-to-image` из DOM, `webapp/src/components/therapist/useConceptGraphImage.ts`),
+  сервер его не построит; значит, клиент загружает PNG, сервер отдаёт его по
+  короткоживущей подписанной ссылке. Вариант «держать 5 минут в памяти» не взят
+  (2026-11-08): инстансов на Amvera больше одного, а ссылку качает клиент
+  Telegram — запрос попадёт на другой инстанс и получит 404. Надёжно — временная
+  таблица в Postgres (PNG — клиническое содержимое: шифрование, реестры
+  `USER_DATA_TABLES`/`USER_OWNED_TABLES`, чистка кроном под `claimRun`) плюс свой
+  парсер `image/png` сверх общего потолка 256 КБ (`src/infra/body-limit.ts`),
+  троттлинг и e2e ownership; или отправить файл ботом в чат (`sendDocument`) —
+  без хранения, но это другой UX, решение владельца.
 - **Остаток частичного сохранения концептуализации** (патч с версией строки —
   `shared/src/therapy/conceptGraph/conceptPatch.ts`, `src/therapy/concept-save.ts`).
   Худший патч (~220 КБ, `src/therapy/dto/concept-save.dto.spec.ts`) посчитан
