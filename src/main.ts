@@ -11,6 +11,7 @@ import { logCapabilityReport } from './infra/capability-boot-log';
 import { checkEnv } from './infra/env-check';
 import { logEnvCheck } from './infra/env-check-boot-log';
 import { configureApp } from './infra/configure-app';
+import { applyServerTimeouts } from './infra/server-timeouts';
 import { registerUnhandledRejectionHandler } from './infra/unhandled-rejection';
 import { registerUncaughtExceptionHandler } from './infra/uncaught-exception';
 
@@ -39,6 +40,8 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
+  // Простой keep-alive дольше, чем у прокси перед нами (дефолт Node — 5 с).
+  applyServerTimeouts(app.getHttpServer());
   void announceStart(app); // DM о старте — только когда HTTP уже слушает
 
   // Реестр возможностей, зависящих от конфигурации (щит, волна 8): раз при
