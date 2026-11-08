@@ -15,7 +15,7 @@ export interface TherapyNudgeMetrics {
   book: number;
   /** Нажали «написать». */
   write: number;
-  /** Нажали «не сейчас». */
+  /** Скрыли карточку: «Не сейчас» у карточки по сигналу и «Скрыть» у постоянной (с 2026-11-08). */
   dismiss: number;
   /** Свой терапевт без канала связи: перешли к ближайшей встрече. */
   session: number;
@@ -74,7 +74,7 @@ export function formatTherapyNudge(m: TherapyNudgeMetrics): string {
     m.open > 0 ? `открыли лист ${m.open}` : null,
     m.book > 0 ? `перешли к записи ${m.book}` : null,
     m.write > 0 ? `нажали «написать» ${m.write}` : null,
-    m.dismiss > 0 ? `нажали «не сейчас» ${m.dismiss}` : null,
+    m.dismiss > 0 ? `скрыли карточку ${m.dismiss}` : null,
     m.session > 0 ? `перешли к встрече со своим терапевтом ${m.session}` : null,
   ].filter((s): s is string => s !== null);
 
