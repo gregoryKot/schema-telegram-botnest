@@ -1,1 +1,4 @@
-{}
+{
+  "docs/open/owner.md::docs/AMVERA_BACKUP_QUESTIONS.md": "файл живёт в ветке docs/amvera-backup-risk (#631, ждёт обращения в Amvera), в main его нет — запись о ветке",
+  "docs/open/owner.md::docs/amvera-backup-risk": "имя ветки git с файлом обращения (#631), а не путь в дереве"
+}

@@ -52,7 +52,7 @@
   "scripts/check-dead-files.mjs": 146,
   "scripts/check-deploy-lag.mjs": 145,
   "scripts/check-deploy-paths.mjs": 270,
-  "scripts/check-doc-refs.mjs": 115,
+  "scripts/check-doc-refs.mjs": 121,
   "scripts/check-dto-string-bounds.mjs": 141,
   "scripts/check-e2e-in-ci.mjs": 118,
   "scripts/check-e2e-stop-cron.mjs": 106,

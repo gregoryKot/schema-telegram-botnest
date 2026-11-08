@@ -1,5 +1,6 @@
 // Тест гейта check-doc-refs.mjs: путь в обратных кавычках в CLAUDE.md,
-// docs/SECURITY.md, docs/README.md и .claude/rules/*.md существует в дереве.
+// docs/SECURITY.md, docs/README.md, .claude/rules/*.md, карте и реестре
+// docs/open/*.md существует в дереве.
 // Образец промаха — SECURITY.md называл `src/therapy/therapy.service.ts`,
 // которого нет с переезда assertRelation в therapy-relations.service.ts.
 import { spawnSync } from 'child_process';
@@ -90,6 +91,32 @@ describe('check-doc-refs.mjs', () => {
       { git: true },
     );
     expect(control.status).toBe(1);
+  });
+
+  it('шаблон каталога в .gitignore (`.jest-cache/`) гасит путь без слеша, которого нет', () => {
+    const res = runGate(
+      'check-doc-refs.mjs',
+      {
+        ...TREE,
+        '.gitignore': '.jest-cache/\n',
+        'CLAUDE.md': '# x\n\nКэш jest — `src/.jest-cache`.\n',
+      },
+      { git: true },
+    );
+    expect(res.stderr).toBe('');
+    expect(res.status).toBe(0);
+  });
+
+  it('карта и реестр открытого тоже сверяются', () => {
+    const res = run({
+      'docs/architecture/x.md': 'Модуль — `src/infra/gone-map.ts`.\n',
+      'docs/open/y.md': 'Где — `src/infra/gone-open.ts`.\n',
+      'docs/ARCHITECTURE.md': 'Сервис — `src/infra/real.service.ts`.\n',
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('docs/architecture/x.md:1');
+    expect(res.stderr).toContain('docs/open/y.md:1');
+    expect(res.stderr).not.toContain('docs/ARCHITECTURE.md');
   });
 
   it('бейслайн гасит нарочно несуществующий путь; протухшая и короткая причина — красный', () => {
