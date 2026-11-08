@@ -99,6 +99,10 @@ const SETTINGS = {
   therapistShareProfile: true,
   uiPrefs: {},
   notifyReachable: false,
+  // Куда уходят уведомления (src/bot/notify-channel.ts): у нового аккаунта
+  // без Telegram и без подписки в приложении — никуда.
+  notifyChannel: null,
+  telegramLinked: false,
 };
 
 // GET /api/user-flags (src/api/api.controller.ts) — поля FLAG_FIELDS
@@ -165,6 +169,8 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/practice-sessions': { breathing: 0, grounding: 0, stop: 0 },
   'GET /api/practices': [], // plans.controller.ts
   'GET /api/profile': PROFILE,
+  // push.controller.ts: без VAPID-ключей (как в e2e) включение не предлагается.
+  'GET /api/push/config': { publicKey: null },
   'GET /api/safe-place': null, // ExercisesService.getSafePlace
   'GET /api/schema-notes': [], // notes.controller.ts
   'GET /api/settings': SETTINGS,
