@@ -65,9 +65,63 @@ describe('NoteSheet — загрузка существующей заметки
   it('ошибка api.getNote не роняет экран — поле остаётся пустым, а не выдуманным текстом', async () => {
     mockApi.getNote.mockRejectedValue(new Error('network down'));
     await act(async () => { renderSheet(); });
+    expect(screen.queryByPlaceholderText(PLACEHOLDER)).toBeNull();
+    expect(screen.getByRole('alert').textContent).toContain('Заметка не загрузилась');
+  });
+});
 
-    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement;
-    expect(textarea.value).toBe('');
+// Аудит 2026-11, E7: поле до загрузки принимало ввод, поздний ответ его затирал;
+// сбой загрузки давал пустую форму, и «Сохранить» перетирало заметку на сервере.
+const PLACEHOLDER = 'Что происходило сегодня? Любая мысль...';
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  let reject!: (e: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+const saveBtn = () => screen.getByText('Сохранить') as HTMLButtonElement;
+
+describe('NoteSheet — гонка загрузки', () => {
+  it('до ответа — силуэт без поля, «Сохранить» закрыто', () => {
+    mockApi.getNote.mockReturnValue(new Promise(() => {}));
+    renderSheet();
+    expect(screen.getByRole('status', { name: 'Загружается заметка' })).toBeTruthy();
+    expect(screen.queryByPlaceholderText(PLACEHOLDER)).toBeNull();
+    expect(saveBtn().disabled).toBe(true);
+  });
+
+  it('сбой загрузки — «Повторить», сохранить нельзя; повтор приносит заметку в поле', async () => {
+    mockApi.getNote.mockRejectedValueOnce(new Error('network down'));
+    mockApi.getNote.mockResolvedValueOnce({ text: 'Сохранённое', tags: ['work'] });
+    await act(async () => { renderSheet(); });
+    expect(saveBtn().disabled).toBe(true);
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Повторить' })); });
+    expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Сохранённое');
+    expect(screen.getByRole('button', { name: 'Работа' }).getAttribute('aria-pressed')).toBe('true');
+    expect(mockApi.getNote).toHaveBeenCalledTimes(2);
+  });
+
+  it('ответ прошлого дня, пришедший позже, не попадает в заметку нового дня', async () => {
+    const a = deferred<{ text: string; tags: string[] }>();
+    const b = deferred<{ text: string; tags: string[] }>();
+    mockApi.getNote.mockReturnValueOnce(a.promise).mockReturnValueOnce(b.promise);
+    const { rerender } = renderSheet();
+    rerender(<MemoryRouter><NoteSheet date="2026-07-21" onClose={vi.fn()} /></MemoryRouter>);
+    await act(async () => { b.resolve({ text: 'Двадцать первое', tags: [] }); });
+    await act(async () => { a.resolve({ text: 'Двадцатое', tags: [] }); });
+    expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Двадцать первое');
+  });
+
+  it('набранное не затирается ответом, пришедшим после ввода', async () => {
+    const later = deferred<{ text: string; tags: string[] }>();
+    mockApi.getNote.mockResolvedValueOnce({ text: '', tags: [] }).mockReturnValueOnce(later.promise);
+    const { rerender } = renderSheet();
+    await act(async () => {});
+    fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), { target: { value: 'Пишу прямо сейчас' } });
+    rerender(<MemoryRouter><NoteSheet date="2026-07-21" onClose={vi.fn()} /></MemoryRouter>);
+    await act(async () => { later.resolve({ text: 'С сервера', tags: ['joy'] }); });
+    expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Пишу прямо сейчас');
+    expect(screen.getByRole('button', { name: 'Радость' }).getAttribute('aria-pressed')).toBe('false');
   });
 });
 

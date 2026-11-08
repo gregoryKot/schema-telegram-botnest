@@ -169,6 +169,48 @@ describe('HistoryView — день с реальными данными', () => 
     expect(screen.getByText('Заметка второго дня')).toBeTruthy();
   });
 
+  // Аудит 2026-11, E8: ответ без флага `alive` и без сброса — под выбранным днём
+  // оставалась заметка другого дня, а отказ запроса уходил необработанным.
+  it('поздний ответ прошлого дня не подменяет заметку выбранного', async () => {
+    let first!: (v: unknown) => void;
+    let second!: (v: unknown) => void;
+    mockApi.getNote
+      .mockReturnValueOnce(new Promise((r) => { first = r; }))
+      .mockReturnValueOnce(new Promise((r) => { second = r; }));
+    await act(async () => { renderView({ history: HISTORY, currentRatings: {} }); });
+    await act(async () => { fireEvent.click(screen.getByText('2')); });
+    await act(async () => { second({ text: 'Заметка второго дня', tags: [] }); });
+    await act(async () => { first({ text: 'Заметка третьего дня', tags: ['work'] }); });
+    expect(screen.getByText('Заметка второго дня')).toBeTruthy();
+    expect(screen.queryByText('Заметка третьего дня')).toBeNull();
+    expect(screen.queryByText('work')).toBeNull();
+  });
+
+  it('смена дня сразу убирает заметку прежнего, пока новая не пришла', async () => {
+    mockApi.getNote.mockResolvedValueOnce({ text: 'Заметка третьего дня', tags: [] });
+    await act(async () => { renderView({ history: HISTORY, currentRatings: {} }); });
+    expect(screen.getByText('Заметка третьего дня')).toBeTruthy();
+    mockApi.getNote.mockReturnValueOnce(new Promise(() => {}));
+    await act(async () => { fireEvent.click(screen.getByText('2')); });
+    expect(screen.queryByText('Заметка третьего дня')).toBeNull();
+    expect(screen.getByText('Добавить заметку к этому дню')).toBeTruthy();
+  });
+
+  it('отказ запроса заметки не роняет экран и не показывает чужое', async () => {
+    mockApi.getNote.mockRejectedValue(new Error('network down'));
+    await act(async () => { renderView({ history: HISTORY, currentRatings: {} }); });
+    expect(screen.getByText('7,5')).toBeTruthy();
+    expect(screen.getByText('Добавить заметку к этому дню')).toBeTruthy();
+  });
+
+  it('после закрытия листа заметки строка дня перечитывается', async () => {
+    await act(async () => { renderView({ history: HISTORY, currentRatings: {} }); });
+    await act(async () => { fireEvent.click(screen.getByText('Добавить заметку к этому дню')); });
+    mockApi.getNote.mockResolvedValueOnce({ text: 'Только что записано', tags: [] });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Назад' })); });
+    expect(screen.getByText('Только что записано')).toBeTruthy();
+  });
+
   it('бэкфилл прошлого дня зовёт onBackfill с датой этого дня', async () => {
     const onBackfill = vi.fn();
     await act(async () => {
@@ -191,6 +233,16 @@ describe('HistoryView — день с реальными данными', () => 
     expect(screen.getByText(/Остаётся низкой несколько дней подряд/)).toBeTruthy();
     // CTA текст общий с miniapp (Ж9 аудита 2026-08) — раньше здесь было «Записаться →».
     expect(screen.getByText('Записаться и взять сводку →')).toBeTruthy();
+  });
+
+  it('0 — «не оценено», а не низкая оценка: инсайта нет', async () => {
+    const zeroHistory: DayHistory[] = [
+      day('2020-01-03', { attachment: 0, autonomy: 8 }),
+      day('2020-01-02', { attachment: 0, autonomy: 8 }),
+      day('2020-01-01', { attachment: 0, autonomy: 8 }),
+    ];
+    await act(async () => { renderView({ history: zeroHistory, currentRatings: {} }); });
+    expect(screen.queryByText('Стоит уделить внимание')).toBeNull();
   });
 
   it('подсказка над трекером звучит в форме «ты» (текст общий с miniapp, Ж9)', async () => {

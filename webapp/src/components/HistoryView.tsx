@@ -7,7 +7,6 @@ import { IndexInfoSheet } from './IndexInfoSheet';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { NoteSheet } from './NoteSheet';
 import { WeeklyCardSheet } from './WeeklyCardSheet';
-import { api } from '../api';
 import { BOOKING_CTA_LABEL, trackerTapHint } from '../../../shared/src/history/therapistCta';
 import { DateStrip } from './history/DateStrip';
 import { HistoryEmpty } from './history/HistoryEmpty';
@@ -15,6 +14,9 @@ import { HistoryDayView } from './history/HistoryDayView';
 import { HistoryWeekView } from './history/HistoryWeekView';
 import '../styles/sheet-diary.css';
 import { ExternalLink } from '../host/ExternalLink';
+import { readLocal, writeLocal } from '../../../shared/src/utils/safeLocalStorage';
+import { useDayNote } from '../hooks/useDayNote';
+import { isRated } from '../../../shared/src/needs/ratingRecord';
 
 interface Props {
   needs: Need[];
@@ -44,10 +46,10 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const [activeNeed, setActiveNeed] = useState<Need | null>(null);
   const [showIndexInfo, setShowIndexInfo] = useState(false);
   const [showNote, setShowNote] = useState(false);
-  const [noteText, setNoteText] = useState<string | null>(null);
-  const [noteTags, setNoteTags] = useState<string[]>([]);
+  // Заметка выбранного дня: смена дня сбрасывает прежнюю, поздний ответ другого дня не показывается (E8).
+  const dayNote = useDayNote(history[selectedIdx]?.date);
   const [showWeekCard, setShowWeekCard] = useState(false);
-  const [showHint, setShowHint] = useState(() => !localStorage.getItem(HISTORY_HINT_KEY));
+  const [showHint, setShowHint] = useState(() => !readLocal(HISTORY_HINT_KEY));
 
   // Clamp the selected index when history shrinks. Adjusting state during render
   // (not in an effect) is the documented pattern for deriving state from props;
@@ -60,14 +62,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
     scrollIntoViewSafe(dateBtnRefs.current[selectedIdx], { block: 'nearest', inline: 'center' });
   }, [selectedIdx]);
 
-  useEffect(() => {
-    if (history.length === 0) return;
-    const date = history[selectedIdx]?.date;
-    if (date) api.getNote(date).then(r => { setNoteText(r.text); setNoteTags(r.tags ?? []); });
-  }, [selectedIdx, history]);
-
   const handleTapNeed = useCallback((n: Need) => {
-    if (showHint) { localStorage.setItem(HISTORY_HINT_KEY, '1'); setShowHint(false); }
+    if (showHint) { writeLocal(HISTORY_HINT_KEY, '1'); setShowHint(false); }
     setActiveNeed(n);
   }, [showHint]);
 
@@ -76,9 +72,9 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const selected = history[selectedIdx] ?? history[0];
   const selectedRatings = selected.date === TODAY_STR ? currentRatings : selected.ratings;
   const prevRatings = history[selectedIdx + 1]?.ratings ?? {};
-  const ratedCount = Object.keys(selectedRatings).filter(k => (selectedRatings[k] ?? 0) > 0).length;
+  const ratedCount = Object.keys(selectedRatings).filter(k => isRated(selectedRatings, k)).length;
   const needsLow = history.length >= 3
-    ? needs.filter(n => history.slice(0, 3).every(d => (d.ratings[n.id] ?? 10) <= 4)) : [];
+    ? needs.filter(n => history.slice(0, 3).every(d => isRated(d.ratings, n.id) && d.ratings[n.id] <= 4)) : [];
 
   return (
     <div className="sd-history">
@@ -107,7 +103,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
           <HistoryDayView date={selected.date} needs={needs} ratings={selectedRatings} prevRatings={prevRatings}
             childhoodRatings={childhoodRatings} isToday={selected.date === TODAY_STR} ratedCount={ratedCount}
             historyLen={history.length} needsLow={needsLow} isTherapist={contact.isTherapist} bookingLink={bookingLink}
-            noteText={noteText} noteTags={noteTags} onTapNeed={handleTapNeed} onIndexInfo={() => setShowIndexInfo(true)}
+            noteText={dayNote.note?.text ?? null} noteTags={dayNote.note?.tags ?? []} onTapNeed={handleTapNeed} onIndexInfo={() => setShowIndexInfo(true)}
             onOpenNote={() => setShowNote(true)} onOpenSchemas={onOpenSchemas}
             onOpenChildhoodWheel={onOpenChildhoodWheel} onBackfill={onBackfill} />
         ) : (
@@ -119,10 +115,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
       {/* ── Sheets ── */}
       {showNote && history[selectedIdx] && (
-        <NoteSheet date={history[selectedIdx].date} onClose={() => {
-          api.getNote(history[selectedIdx].date).then(r => { setNoteText(r.text); setNoteTags(r.tags ?? []); });
-          setShowNote(false);
-        }} />
+        <NoteSheet date={history[selectedIdx].date} onClose={() => { dayNote.reload(); setShowNote(false); }} />
       )}
       {showIndexInfo && <IndexInfoSheet onClose={() => setShowIndexInfo(false)} />}
       {showWeekCard && (

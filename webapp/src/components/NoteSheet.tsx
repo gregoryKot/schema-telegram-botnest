@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { api } from '../api';
 import { ExScreen } from './exercises/ExScreen';
@@ -11,6 +11,8 @@ import '../styles/sheet-diary.css';
 import { NoteTagsPicker } from './NoteTagsPicker';
 import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
 import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
+import { useDayNote, type DayNote } from '../hooks/useDayNote';
+import { NoteLoadState } from './NoteLoadState';
 
 interface Props {
   date: string;
@@ -22,21 +24,20 @@ export function NoteSheet({ date, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const [text, setText] = useState('');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [_loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
-
-  useEffect(() => {
-    api.getNote(date)
-      .then(r => {
-        setText(r.text ?? '');
-        setSelectedTags(new Set(r.tags ?? []));
-        setLoaded(true);
-      })
-      .catch(() => setLoaded(true));
-  }, [date]);
+  const { status, note, reload } = useDayNote(date);
+  const ready = status === 'ready';
+  // Ответ сервера ложится в форму, только пока человек ничего не менял (аудит 2026-11, E7).
+  const [dirty, setDirty] = useState(false);
+  const [applied, setApplied] = useState<DayNote | null>(null);
+  if (ready && note && note !== applied) {
+    setApplied(note);
+    if (!dirty) { setText(note.text ?? ''); setSelectedTags(new Set(note.tags)); }
+  }
 
   function toggleTag(id: string) {
+    setDirty(true);
     setSelectedTags(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
@@ -47,7 +48,7 @@ export function NoteSheet({ date, onClose }: Props) {
   const hasContent = text.trim().length > 0 || selectedTags.size > 0;
 
   async function handleSave() {
-    if (!hasContent) return;
+    if (!ready || !hasContent) return;
     setSaving(true);
     setError(false);
     try {
@@ -73,22 +74,21 @@ export function NoteSheet({ date, onClose }: Props) {
         </DiaryAside>
       }
     >
-      {/* Tags */}
-      <NoteTagsPicker selectedTags={selectedTags} onToggle={toggleTag} />
-
-      {/* Text */}
-      <div className="ds-card sd-note-field">
-        <div className="ds-label">Запись</div>
-        <LimitedTextarea
-          max={DAY_NOTE_MAX}
-          alwaysCount
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder="Что происходило сегодня? Любая мысль..."
-          rows={5}
-          className="ds-textarea"
-        />
-      </div>
+      {status !== 'ready' ? <NoteLoadState status={status} onRetry={reload} /> : <>
+        <NoteTagsPicker selectedTags={selectedTags} onToggle={toggleTag} />
+        <div className="ds-card sd-note-field">
+          <div className="ds-label">Запись</div>
+          <LimitedTextarea
+            max={DAY_NOTE_MAX}
+            alwaysCount
+            value={text}
+            onChange={e => { setDirty(true); setText(e.target.value); }}
+            placeholder="Что происходило сегодня? Любая мысль..."
+            rows={5}
+            className="ds-textarea"
+          />
+        </div>
+      </>}
 
       {detectCrisisAny(text) && <CrisisCard surface="note" />}
 
@@ -100,7 +100,7 @@ export function NoteSheet({ date, onClose }: Props) {
 
       <div className="sd-foot">
         <span className="sd-spacer" />
-        <button onClick={handleSave} disabled={!hasContent || saving} className="ds-btn">
+        <button onClick={handleSave} disabled={!ready || !hasContent || saving} className="ds-btn">
           {saving ? '…' : 'Сохранить'}
         </button>
       </div>
