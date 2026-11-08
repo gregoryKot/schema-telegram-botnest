@@ -553,7 +553,7 @@
   "shared/src/therapy/conceptGraph/diagram/diagramPolyline.ts": 97,
   "shared/src/therapy/conceptGraph/diagram/diagramPortAssign.ts": 38,
   "shared/src/therapy/conceptGraph/diagram/diagramPorts.ts": 138,
-  "shared/src/therapy/conceptGraph/diagram/DiagramSectionHeader.tsx": 71,
+  "shared/src/therapy/conceptGraph/diagram/DiagramSectionHeader.tsx": 67,
   "shared/src/therapy/conceptGraph/diagram/diagramSections.ts": 36,
   "shared/src/therapy/conceptGraph/diagram/DiagramShape.tsx": 75,
   "shared/src/therapy/conceptGraph/diagram/diagramTypes.ts": 104,

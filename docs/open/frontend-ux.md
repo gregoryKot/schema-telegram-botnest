@@ -146,7 +146,6 @@
 
 - **Меню «Новая карта» (`webapp/src/components/ModeMapSelector.tsx`) осталось на собственных `ds-backdrop`/`ds-menu`**, не на `Dropdown`: `Dropdown` держит ширину 220 и z 39/40, а этому меню нужно 290 и 60/61; Escape не закрывает. Перевести, добавив `Dropdown` проп ширины.
 - **`booking/Chip.tsx` (визитка и форма записи лендинга) не приведён к `ds-chip`:** ТЗ #906 — «лендинги не входят», визитка живёт в своём стиле с акцентной заливкой.
-- **Ссылки в общих компонентах `shared/` не на `ds-link`:** «+ режим» в `DiagramSectionHeader`, компактный `TherapyNote` (инлайн-дефолты и className-пропы). Мини-апп удалён (#908), теперь их можно перевести на `ds-link`; `shared/` в волне 3 не трогали.
 - **Нет модификатора `ds-textarea--resize` для ≥768:** `resize: none` у `ds-textarea`; жалоб терапевта нет, заводим по первой жалобе.
 - **Раскрывашки примеров колеса детства — глифы ▴/▾ текстом** (`webapp/src/components/exercises/childhoodWheel/NeedExamples.tsx`): `ds-fold-chev` рассчитан на кнопку `ds-fold-btn`, экраны упражнений не снимали.
 - **Плашка ⌘K в топбаре — моноширинный `.kbd`** (кнопка «Перейти к…», `webapp/src/components/AppShell.tsx`; только ноутбук, вне телефона): не приведена к общему виду вместе с палитрой команд (`webapp/src/components/CommandPalette.tsx`, классы `cmd-*`, `command-palette.css`).
