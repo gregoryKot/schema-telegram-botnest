@@ -2022,7 +2022,7 @@
   "webapp/src/components/settingsSheet/ModeSection.tsx": 23,
   "webapp/src/components/settingsSheet/NameAddressSections.tsx": 60,
   "webapp/src/components/settingsSheet/NotificationsSection.tsx": 58,
-  "webapp/src/components/settingsSheet/NotifyScheduleRows.tsx": 31,
+  "webapp/src/components/settingsSheet/NotifyScheduleRows.tsx": 30,
   "webapp/src/components/settingsSheet/PartnerCard.tsx": 72,
   "webapp/src/components/settingsSheet/PartnerInviteLink.tsx": 17,
   "webapp/src/components/settingsSheet/PartnerSection.tsx": 71,
