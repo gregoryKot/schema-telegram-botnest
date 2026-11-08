@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { getTherapistContact, hasConnectedTherapist } from '../../../../shared/src/utils/therapistContact';
 import type { TherapyNudgePlace, TherapyNudgeTrigger } from '../../../../shared/src/analytics/therapyNudge';
 import { bookingUrl, telegramUrl } from '../../../../shared/src/therapy/bridge/therapyBridgeLinks';
@@ -15,12 +16,19 @@ interface Props {
   onClose: () => void;
 }
 
-/** Лист «Поговорить с кем-то»: куда пойти, если одной самопомощи мало. Цены на листе нет. */
+/** Лист «Поговорить с кем-то»: куда пойти, если одной самопомощи мало. Цены на листе нет.
+ *  Свой терапевт без канала связи (U4) — «запиши и принеси на встречу» и переход к ближайшей
+ *  встрече (профиль: карточка терапевта, следующая сессия, запись): лист без действия был тупиком. */
 export function TalkSheet({ place, trigger, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const navigate = useNavigate();
   const t = useTherapyBridgeTexts();
   const contact = getTherapistContact();
   const hasTherapist = hasConnectedTherapist(contact);
+  const toMeeting = () => {
+    trackTherapyNudge(place, 'session', trigger);
+    goBack(() => navigate('/profile'));
+  };
 
   return (
     <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label={t.sheetEyebrow}>
@@ -34,7 +42,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
           <Talk size="square" />
         </div>
         {hasTherapist ? (
-          <p className="cw-lead">{t.sheetTherapistP}</p>
+          <p className="cw-lead">{contact.url ? t.sheetTherapistP : t.sheetTherapistNoChannelP}</p>
         ) : (
           <>
             <p className="cw-lead">{t.sheetP1}</p>
@@ -44,10 +52,12 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
         )}
         <div className="th-sheet-acts">
           {hasTherapist ? (
-            // Терапевт с веб-аккаунтом: написать из приложения некуда (З6).
-            contact.url && (
+            contact.url ? (
               <ExternalLink className="ds-btn ds-btn--lg" href={contact.url}
                 onClick={() => trackTherapyNudge(place, 'write', trigger)}>{t.sheetWriteTherapist}</ExternalLink>
+            ) : (
+              // Терапевт с веб-аккаунтом: написать из приложения некуда (З6) — ведём к встрече.
+              <button type="button" className="ds-btn ds-btn--lg" onClick={toMeeting}>{t.sheetNextMeeting}</button>
             )
           ) : (
             <>

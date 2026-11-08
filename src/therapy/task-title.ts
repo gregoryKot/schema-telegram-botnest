@@ -11,6 +11,8 @@ export interface TaskNotificationInput {
   text: string;
   needId: string | null;
   dueDate: string | null;
+  /** id задания: кнопка уведомления открывает его (`?startapp=tasks_<id>`, U2). */
+  taskId?: number;
 }
 
 const own = (map: Record<string, string>, id: string): string | undefined =>

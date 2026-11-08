@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { ShareCardSheet } from './ShareCardSheet';
 import { therapistInviteShare } from '../../../shared/src/share/cards/inviteShare';
+import type { TherapistInviteLinks } from '../../../shared/src/share/shareTexts';
 
-export function TherapistInviteShare({ inviteUrl }: { inviteUrl: string }) {
+/** В сообщении — сайт, код и Telegram второй строкой (аудит 2026-11, U3). */
+export function TherapistInviteShare({ invite }: { invite: TherapistInviteLinks }) {
   const [open, setOpen] = useState(false);
-  if (!inviteUrl) return null;
+  if (!invite.url) return null;
   return (
     <>
       {/* Пара к «Скопировать» (ds-btn--sm) рядом: малая кнопка 40, под пальцем 44 (блок тап-целей cabinet.css).
@@ -16,7 +18,7 @@ export function TherapistInviteShare({ inviteUrl }: { inviteUrl: string }) {
       </button>
       {open && (
         <ShareCardSheet
-          {...therapistInviteShare(inviteUrl)}
+          {...therapistInviteShare(invite)}
           onClose={() => setOpen(false)}
           zIndex={400}
         />

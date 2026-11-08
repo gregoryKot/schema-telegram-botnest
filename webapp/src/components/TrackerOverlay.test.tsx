@@ -14,7 +14,8 @@ import { todayStr } from '../../../shared/src/utils/format';
 
 // useHistorySheet (внутри TrackerOverlay) требует react-router-контекст.
 vi.mock('../api', () => ({
-  api: { ratings: vi.fn(), saveRating: vi.fn(), trackEvent: vi.fn() },
+  // getSettings — лист потребности узнаёт, дойдёт ли напоминание (U5).
+  api: { ratings: vi.fn(), saveRating: vi.fn(), trackEvent: vi.fn(), getSettings: vi.fn().mockResolvedValue({}) },
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';

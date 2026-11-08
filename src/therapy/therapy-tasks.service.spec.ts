@@ -430,6 +430,24 @@ describe('TherapyTasksService — scheduleTaskNotification', () => {
     expect(msg).not.toContain('emotional_deprivation');
   });
 
+  // Аудит 2026-11, U2: кнопка вела на «Сегодня», где заданий нет. Шов: id
+  // задания из контроллера → payload → кнопка настоящего шаблона бота.
+  it('кнопка уведомления открывает само задание (ссылка запуска tasks_<id>)', async () => {
+    const { service, notificationService } = makeService();
+    await service.scheduleTaskNotification(CLIENT_A, {
+      type: 'custom',
+      text: 'сделай практику',
+      needId: null,
+      dueDate: null,
+      taskId: 42,
+    });
+    const payload = notificationService.schedule.mock.calls[0][3];
+    const kb = JSON.stringify(
+      renderTemplate('task_assigned', payload)!.keyboard,
+    );
+    expect(kb).toContain('/today?startapp=tasks_42');
+  });
+
   it('вызывает notificationService.schedule с типом task_assigned и payload задачи', async () => {
     const { service, notificationService } = makeService();
     await service.scheduleTaskNotification(CLIENT_A, {

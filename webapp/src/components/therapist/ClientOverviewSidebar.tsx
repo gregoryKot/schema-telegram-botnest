@@ -51,7 +51,7 @@ export function ClientOverviewSidebar({ selectedClient, detail }: Props) {
       )}
 
       <div className="tk-quick">
-        {!isVirtualClient(selectedClient) && <button className={btn} onClick={() => setClientTab('ysq')}>Запросить YSQ</button>}
+        {!isVirtualClient(selectedClient) && <button className={btn} onClick={() => setClientTab('ysq')}>Запросить тест на схемы</button>}
         <button className={btn} onClick={handleExport} disabled={exportEmpty}>Экспорт концепта{exportCopied ? ' ✓' : ''}</button>
       </div>
       {exportEmpty && <p className="ds-sub">{CONCEPT_EXPORT_EMPTY}</p>}

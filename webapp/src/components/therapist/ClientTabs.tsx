@@ -14,7 +14,7 @@ export function ClientTabs({ detail }: { detail: ClientDetail }) {
     ['ysq', 'Схемы', clientData?.ysqHistory?.length ?? 0],
     ['client_notes', 'Записи клиента', clientSchemaNotesData.length + clientModeNotesData.length + clientDiary.length],
   ];
-  // Переход кнопкой («+ Заметка», «Запросить YSQ») меняет вкладку мимо полосы:
+  // Переход кнопкой («+ Заметка», «Запросить тест на схемы») меняет вкладку мимо полосы:
   // активная уезжала за край и не была видна (QA 2026-11, T-11).
   const bar = useRef<HTMLDivElement>(null);
   useEffect(() => {

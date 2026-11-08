@@ -59,7 +59,7 @@ export class TelegramNotifySettingsService implements OnModuleInit {
         ]);
         rows.push([Markup.button.callback('⬅️ Назад', 'settings:back')]);
         await ctx.editMessageText(
-          'Как часто напоминать о дневнике?\n\nЕсли напоминания будут оставаться без ответа, я сам начну писать реже — а когда записи вернутся, вернусь к выбранной частоте.',
+          'Как часто напоминать о трекере?\n\nЕсли напоминания будут оставаться без ответа, я сам начну писать реже — а когда записи вернутся, вернусь к выбранной частоте.',
           Markup.inlineKeyboard(rows),
         );
       } catch (err) {

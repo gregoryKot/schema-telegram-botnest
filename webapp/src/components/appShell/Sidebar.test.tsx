@@ -11,7 +11,7 @@ import { setScreenShare } from './screenShareMode';
 import { CABINET_SCREEN_SHARE_ON_EVENT } from '../../../../shared/src/share/analytics';
 
 const trackEvent = vi.fn();
-vi.mock('../../api', () => ({ api: { trackEvent: (...a: unknown[]) => trackEvent(...a) } }));
+vi.mock('../../api', () => ({ api: { trackEvent: (...a: unknown[]) => trackEvent(...a), getTasks: vi.fn().mockResolvedValue([]) }, reportClientError: vi.fn() }));
 vi.mock('../../auth/authContext', () => ({ useAuth: () => ({ logout: vi.fn() }) }));
 
 // Сначала размонтировать, потом выключить: без подписчиков смена режима не требует act.

@@ -3,6 +3,7 @@ import { api, reportClientError } from '../../api';
 import { useConsentGate } from '../../hooks/useConsentGate';
 import { useStartParam } from '../../hooks/useStartParam';
 import { cacheClientRelation } from '../../utils/therapistContact';
+import { requestTasksOpen } from '../../sections/tasks/tasksLaunch';
 import { AddressFormPicker } from '../AddressFormPicker';
 import { ConsentScreen } from '../ConsentScreen';
 import { JoinConfirmSheet } from '../JoinConfirmSheet';
@@ -12,7 +13,7 @@ import type { useOverlays } from './useOverlays';
 interface Join { joinKind: 'pair' | 'therapy'; joinCode: string }
 
 // Входы в кабинет (этап 2 docs/archive/ONE_FRONTEND_PLAN.md) — очередью, а не стопкой: вопрос «ты/вы» →
-// согласия при первом входе → параметр запуска (ссылка-приглашение, трекер). Порядок и «один слой
+// согласия при первом входе → параметр запуска (ссылка-приглашение, трекер, задания, тест). Порядок и «один слой
 // за раз» — entryQueue.ts (QA 2026-11, A-З7); конец очереди уходит в onDone, по нему открываются
 // автопоказы «Сегодня». Отдельный компонент: AppShell на потолке размера (№10).
 export function EntryFlows({ ov, onDone }: { ov: ReturnType<typeof useOverlays>; onDone: (done: boolean) => void }) {
@@ -25,6 +26,8 @@ export function EntryFlows({ ov, onDone }: { ov: ReturnType<typeof useOverlays>;
   useStartParam(addressDone && consent.state === 'done', (a) => {
     if (a.kind === 'join') setJoin({ joinKind: a.joinKind, joinCode: a.code });
     else if (a.kind === 'tracker') { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }
+    else if (a.kind === 'ysq') ov.openSchema({ startTest: true });
+    else if (a.kind === 'tasks') requestTasksOpen(a.taskId); // useStartParam уже увёл на /more
   }, () => setLinkHandled(true));
 
   useEffect(() => { if (step === 'done') onDone(true); }, [step, onDone]);

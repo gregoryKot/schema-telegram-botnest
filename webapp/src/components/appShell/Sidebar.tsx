@@ -11,6 +11,7 @@ import { useScreenShare } from './screenShareMode';
 import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
 import { SidebarBrand, SidebarRail } from './SidebarRail';
 import { useSidebarCollapsed } from './sidebarCollapse';
+import { useNewTasksCount } from '../../sections/tasks/newTasks';
 
 const itemClass = ({ isActive }: { isActive: boolean }) => `sb-item${isActive ? ' is-active' : ''}`;
 
@@ -40,6 +41,7 @@ export function Sidebar({
   // Тот же индекс дня, что на плитке и в итоге трекера (shared/src/needs/dayIndex.ts).
   const idx = dayIndex(needs.map(n => n.id), ratings);
   const collapsed = useSidebarCollapsed();
+  const newTasks = useNewTasksCount(!therapistMode); // «Задания» лежат в «Ещё» (U2)
   if (collapsed) return <SidebarRail items={items} therapistMode={therapistMode} onList={onList} displayName={displayName} />;
   return (
     <aside className="sidebar">
@@ -53,6 +55,7 @@ export function Sidebar({
         {!therapistMode && items.map(item => (
           <NavLink key={item.id} to={'/' + item.id} className={itemClass}>
             <span className="sb-dot" style={hueStyle(SECTION_HUE[item.id])} />{item.label}
+            {item.id === 'more' && newTasks > 0 && <span className="new-badge" aria-label={`новых заданий: ${newTasks}`}>{newTasks}</span>}
           </NavLink>
         ))}
         {therapistMode && (<>

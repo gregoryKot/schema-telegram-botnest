@@ -17,6 +17,8 @@ export interface TherapyNudgeMetrics {
   write: number;
   /** Нажали «не сейчас». */
   dismiss: number;
+  /** Свой терапевт без канала связи: перешли к ближайшей встрече. */
+  session: number;
   /** Заявок с формы знакомства, пришедших из приложения. */
   introFromApp: number;
   /** Записей на слот, пришедших из приложения. */
@@ -73,6 +75,7 @@ export function formatTherapyNudge(m: TherapyNudgeMetrics): string {
     m.book > 0 ? `перешли к записи ${m.book}` : null,
     m.write > 0 ? `нажали «написать» ${m.write}` : null,
     m.dismiss > 0 ? `нажали «не сейчас» ${m.dismiss}` : null,
+    m.session > 0 ? `перешли к встрече со своим терапевтом ${m.session}` : null,
   ].filter((s): s is string => s !== null);
 
   const lines: string[] = [];

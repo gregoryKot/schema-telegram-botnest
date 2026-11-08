@@ -87,7 +87,7 @@ export function YsqResult(p: Props) {
         <button onClick={p.onDone} className="ds-btn">Сохранить и закрыть</button>
         {p.retakeConfirm ? (
           <div className="ss-confirm">
-            <div>Результаты будут удалены. Точно начать заново?</div>
+            <div>Прошлый результат останется в истории, новый появится после последнего вопроса.</div>
             <div className="ss-actions ss-actions--row">
               <button onClick={() => p.onRetakeConfirm(false)} className="ds-btn ds-btn--secondary">Отмена</button>
               <button onClick={p.onRetake} className="ds-btn ds-btn--accent">Начать заново</button>

@@ -70,7 +70,7 @@
   gap: 48px; padding: 40px var(--tk-gutter) 64px; max-width: var(--tk-max); box-sizing: border-box;
 }
 @media (max-width: 1023px) { .tk-ov { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
-/* Действия узкого сайдбара («Запросить YSQ», «Экспорт концепта») — столбцом во
+/* Действия узкого сайдбара («Запросить тест на схемы», «Экспорт концепта») — столбцом во
    всю ширину: в ряд им нужно ~314px, и в 260–313 вторая кнопка падала вниз
    другой ширины. В одну колонку (<1024) сайдбар широкий — кнопки в ряд. */
 @media (min-width: 1024px) { .tk-side .tk-quick { flex-direction: column; } }

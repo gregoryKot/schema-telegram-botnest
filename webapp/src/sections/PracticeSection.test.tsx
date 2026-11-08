@@ -121,13 +121,11 @@ describe('PracticeSection — ты/вы вилка', () => {
 
   it('подсказки блока «В трудный момент» звучат на «ты»', () => {
     renderSection({}, 'ty');
-    expect(screen.getByText(/116 вопросов, 20 шкал схем – узнай свои паттерны/)).toBeTruthy();
     expect(screen.getByText(/Найди Уязвимого Ребёнка, Критика, Защитника/)).toBeTruthy();
   });
 
   it('подсказки блока «В трудный момент» звучат на «вы»', () => {
     renderSection({}, 'vy');
-    expect(screen.getByText(/116 вопросов, 20 шкал схем – узнайте свои паттерны/)).toBeTruthy();
     expect(screen.getByText(/Найдите Уязвимого Ребёнка, Критика, Защитника/)).toBeTruthy();
   });
 });
@@ -677,7 +675,7 @@ describe('PracticeSection — задания терапевта: остальн�
   });
 });
 
-describe('PracticeSection — «В трудный момент»: три быстрые карточки открывают верный экран', () => {
+describe('PracticeSection — «В трудный момент»: быстрые карточки открывают верный экран', () => {
   it('«Мне плохо» открывает SchemaFlashcard', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
@@ -685,12 +683,12 @@ describe('PracticeSection — «В трудный момент»: три быс�
     await screen.findByText('Стало чуть лучше – разобраться →');
   });
 
-  it('«Тест на схемы» вызывает onOpenSchema с startTest', async () => {
-    const onOpenSchema = vi.fn();
-    renderSection({ onOpenSchema });
+  it('тест на 116 вопросов в «В трудный момент» не предлагается: в трудную минуту он не помогает (FIX_PLAN 4.10)', async () => {
+    renderSection();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
-    fireEvent.click(screen.getByText('Тест на схемы'));
-    expect(onOpenSchema).toHaveBeenCalledWith({ startTest: true });
+    expect(screen.getByText('В трудный момент')).toBeTruthy();
+    expect(screen.queryByText('Тест на схемы')).toBeNull();
+    expect(screen.queryByText(/116 вопросов/)).toBeNull();
   });
 
   it('«Карта режимов» вызывает onOpenSchema с tab=modes', async () => {

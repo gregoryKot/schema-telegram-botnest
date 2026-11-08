@@ -21,3 +21,12 @@ export function miniappStartLink(startapp: string): string {
   }
   return `https://t.me/${BOT_USERNAME}/${MINIAPP_APP_NAME}?startapp=${startapp}`;
 }
+
+/**
+ * Та же ссылка там, где Telegram — второй путь, а не единственный (приглашение
+ * терапевта ведёт на сайт, t.me — строкой для тех, у кого он есть): бот не
+ * настроен — null, а не 503 на всё приглашение.
+ */
+export function optionalMiniappStartLink(startapp: string): string | null {
+  return BOT_USERNAME ? miniappStartLink(startapp) : null;
+}

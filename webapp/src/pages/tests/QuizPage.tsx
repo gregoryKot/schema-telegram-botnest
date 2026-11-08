@@ -1,5 +1,5 @@
 // Прохождение мини-теста (/tests/:quizId): интро («что это и зачем» — правило
-// онбординга) → вопросы → результат с подсказкой и CTA в бота. Без регистрации;
+// онбординга) → вопросы → результат с подсказкой и дверью в приложение. Без регистрации;
 // аналитика — анонимные quiz_started/quiz_completed (POST /api/public-event).
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';

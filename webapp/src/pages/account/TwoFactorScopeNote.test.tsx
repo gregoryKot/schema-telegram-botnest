@@ -9,10 +9,10 @@ import { withAddressForm } from '../../components/settingsSheet/SettingsSheet.te
 
 afterEach(cleanup);
 
-const NOTE = /Вход из мини-приложения Telegram или MAX идёт по подписи мессенджера — там второй фактор не спрашивается\./;
+const NOTE = /Вход из приложения в Telegram или MAX идёт по подписи мессенджера — там второй фактор не спрашивается\./;
 
 describe('TwoFactorSection — область действия 2FA', () => {
-  it('текст содержит полный перечень входов, где код спрашивается, и оговорку про мини-приложения', () => {
+  it('текст содержит полный перечень входов, где код спрашивается, и оговорку про вход из мессенджеров', () => {
     expect(SCOPE_TEXT).toContain('Google, VK, почту, виджет Telegram');
     expect(SCOPE_TEXT).toMatch(NOTE);
   });

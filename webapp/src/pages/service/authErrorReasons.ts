@@ -8,7 +8,8 @@
 //   `src/auth/auth-oauth.controller.ts` (`vk_failed`); id провайдеров —
 //   `src/auth/providers/*.provider.ts`;
 // - `email_link_expired` — `src/auth/email-callback-redirect.ts` и
-//   `pages/authCallback/consumeEmailToken.ts`;
+//   `pages/authCallback/consumeEmailToken.ts`; там же `email_network` (запрос
+//   не дошёл до сервера) и `http_429`/`http_5xx` (ответил, но не про ссылку);
 // - `telegram_*` и `http_<статус>` — `pages/TelegramWidgetCallback.tsx`
 //   (ответ сервера переводится в код там же, `telegramWidgetReason`).
 // Неизвестное — общий текст, сам код не показываем, в отчёт уходит `unknown`.
@@ -35,8 +36,13 @@ const AUTH_ERROR_TEXTS: Record<string, (tr: Tr) => string> = {
   telegram_expired: tryAgain('Данные входа от Telegram устарели: окно входа было открыто слишком долго.'),
   email_link_expired: (tr) =>
     tr(
-      'Ссылка из письма устарела или уже открывалась. Запроси новую на странице входа.',
-      'Ссылка из письма устарела или уже открывалась. Запросите новую на странице входа.',
+      'Ссылка из письма действует 30 минут и открывается только один раз. Запроси новую.',
+      'Ссылка из письма действует 30 минут и открывается только один раз. Запросите новую.',
+    ),
+  email_network: (tr) =>
+    tr(
+      'Нет связи, попробуй ещё раз: проверь интернет и снова открой ссылку из письма.',
+      'Нет связи, попробуйте ещё раз: проверьте интернет и снова откройте ссылку из письма.',
     ),
 };
 

@@ -151,6 +151,8 @@ describe('TherapyTasksController.createTask', () => {
       text: 'почитать главу',
       needId: 'safety',
       dueDate: '2026-08-01',
+      // id созданного задания — кнопка уведомления открывает его (U2).
+      taskId: 1,
     });
     expect(res).toEqual({ id: 1, text: 'задача' });
   });

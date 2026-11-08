@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MobileNav } from './MobileNav';
+
+vi.mock('../../api', () => ({ api: { getTasks: vi.fn().mockResolvedValue([]) }, reportClientError: vi.fn() }));
+import { api } from '../../api';
+const getTasks = api.getTasks as unknown as ReturnType<typeof vi.fn>;
+const newTask = {
+  id: 1, userId: 1, assignedBy: 9, type: 'custom', text: 'x', targetDays: null, needId: null,
+  dueDate: null, done: null, completedAt: null, createdAt: '2026-11-05T10:00:00.000Z',
+};
 
 const ITEMS = [
   { id: 'today' as const, label: 'Сегодня' },
@@ -11,6 +19,24 @@ const ITEMS = [
 ];
 
 describe('MobileNav', () => {
+  // Аудит 2026-11, U2: «Задания» лежат в «Ещё» — о новом задании терапевта говорит точка.
+  it('новое задание терапевта — точка на «Ещё»; нет новых — точки нет', async () => {
+    getTasks.mockResolvedValueOnce([newTask]);
+    const a = render(<MemoryRouter><MobileNav items={ITEMS} /></MemoryRouter>);
+    const more = screen.getByText('Ещё').closest('a')!;
+    expect(await within(more).findByLabelText('есть новое')).toBeTruthy();
+    a.unmount();
+    render(<MemoryRouter><MobileNav items={ITEMS} /></MemoryRouter>);
+    await act(async () => {});
+    expect(screen.queryByLabelText('есть новое')).toBeNull();
+  });
+
+  it('терапевту задания клиента не грузятся', () => {
+    getTasks.mockClear();
+    render(<MemoryRouter initialEntries={['/cabinet']}><MobileNav items={ITEMS} therapist /></MemoryRouter>);
+    expect(getTasks).not.toHaveBeenCalled();
+  });
+
   it('клиент: пункты разделов ведут в свои разделы', () => {
     render(<MemoryRouter><MobileNav items={ITEMS} /></MemoryRouter>);
     expect(screen.getByText('Записи').closest('a')?.getAttribute('href')).toBe('/diary');

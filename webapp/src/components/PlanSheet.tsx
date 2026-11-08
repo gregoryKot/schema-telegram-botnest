@@ -1,5 +1,5 @@
 import { api } from '../api';
-import { ExScreen, GlyphCheck } from './exercises/ExScreen';
+import { ExScreen } from './exercises/ExScreen';
 import { Check } from './art/PaperArtSigns';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
@@ -8,7 +8,8 @@ import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-import { usePlanSheetState, REMINDER_OPTIONS } from '../../../shared/src/practices/usePlanSheetState';
+import { usePlanSheetState } from '../../../shared/src/practices/usePlanSheetState';
+import { PlanConfirm } from './plans/PlanConfirm';
 
 interface Props {
   needId: string;
@@ -20,27 +21,11 @@ interface Props {
 export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
+  const state = usePlanSheetState(needId, needLabel, api, () => goBack(onSaved)); // лист снимает свою запись истории сам
   const {
-    selectedText,
-    customText,
-    setCustomText,
-    reminderIdx,
-    setReminderIdx,
-    saving,
-    saveError,
-    setSaveError,
-    savedOk,
-    phase,
-    setPhase,
-    deletingIds,
-    practicesFailed,
-    allOptions,
-    selectText,
-    handleCustomSubmit,
-    handleDeletePractice,
-    handleSave,
-    handleIcsDownload,
-  } = usePlanSheetState(needId, needLabel, api, () => goBack(onSaved)); // лист снимает свою запись истории сам
+    selectedText, customText, setCustomText, phase, setPhase, deletingIds,
+    practicesFailed, allOptions, selectText, handleCustomSubmit, handleDeletePractice,
+  } = state;
 
   return (
     <ExScreen
@@ -118,59 +103,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
         </>
       )}
 
-      {phase === 'confirm' && (
-        <>
-          <div className="sk-field">
-            <div className="ds-label">Действие</div>
-            <div className="sk-chosen tone-tint" style={hueStyle(NEED_HUE[needId as NeedId])}>
-              {selectedText}
-            </div>
-          </div>
-
-          <div className="sk-field">
-            <div className="ds-label">Напомнить завтра</div>
-            <div className="sk-list">
-              {REMINDER_OPTIONS.map((opt, i) => (
-                <div
-                  key={i}
-                  onClick={() => setReminderIdx(i)}
-                  role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setReminderIdx(i); } }}
-                  className={'ds-card ds-card--row ds-card--hover sk-opt' + (reminderIdx === i ? ' tone-border is-selected' : '')}
-                  style={hueStyle(NEED_HUE[needId as NeedId])}
-                >
-                  <span>
-                    {opt.label}
-                    {opt.localHour !== null && <span className="ds-sub sk-hour">{String(opt.localHour).padStart(2, '0')}:00</span>}
-                  </span>
-                  {reminderIdx === i && <span className="sk-check"><GlyphCheck /></span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ICS download — паритет с мини-аппом, правило №16 */}
-          <button onClick={handleIcsDownload} className="ds-btn ds-btn--secondary sk-ics">
-            Добавить в календарь (.ics)
-          </button>
-
-          {saveError && (
-            <div className="sk-error sk-center">
-              {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
-            </div>
-          )}
-
-          <div className="sk-foot">
-            <button
-              onClick={() => { setSaveError(false); handleSave(); }}
-              disabled={saving || savedOk}
-              className={'ds-btn ' + (savedOk ? 'ds-btn--secondary' : 'ds-btn--accent')}
-            >
-              {savedOk ? <><GlyphCheck /> Запланировано</> : saving ? '…' : 'Сохранить план'}
-            </button>
-          </div>
-        </>
-      )}
+      {phase === 'confirm' && <PlanConfirm s={state} needId={needId} needLabel={needLabel} />}
     </ExScreen>
   );
 }

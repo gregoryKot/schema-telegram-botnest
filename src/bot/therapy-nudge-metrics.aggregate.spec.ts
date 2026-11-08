@@ -12,7 +12,9 @@ describe('aggregateTherapyNudge', () => {
     expect(m.shownByPlace).toHaveLength(THERAPY_NUDGE_PLACES.length);
     expect(m.signalByTrigger).toHaveLength(THERAPY_NUDGE_TRIGGERS.length);
     expect(m.shownByPlace.every((r) => r.count === 0)).toBe(true);
-    expect([m.open, m.book, m.write, m.dismiss]).toEqual([0, 0, 0, 0]);
+    expect([m.open, m.book, m.write, m.dismiss, m.session]).toEqual([
+      0, 0, 0, 0, 0,
+    ]);
   });
 
   it('раскладывает по месту, причине и действию; чужое и мусор не считает', () => {
@@ -28,6 +30,7 @@ describe('aggregateTherapyNudge', () => {
       { place: 'more', action: 'book' },
       { place: 'home', action: 'write' },
       { place: 'signal_card', action: 'dismiss', trigger: 'low_index' },
+      { place: 'more', action: 'session' },
       { place: 'home', action: 'teleport' },
       null,
       'строка',
@@ -42,6 +45,8 @@ describe('aggregateTherapyNudge', () => {
       1,
     );
     expect(m.signalByTrigger.find((r) => r.trigger === 'none')?.count).toBe(0);
-    expect([m.open, m.book, m.write, m.dismiss]).toEqual([1, 1, 1, 1]);
+    expect([m.open, m.book, m.write, m.dismiss, m.session]).toEqual([
+      1, 1, 1, 1, 1,
+    ]);
   });
 });

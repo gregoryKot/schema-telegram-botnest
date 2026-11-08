@@ -111,6 +111,21 @@ describe('QuizPage — прохождение', () => {
     expect(screen.getByText(/Это игра-наблюдение, а не диагноз/)).toBeTruthy();
   });
 
+  // U7 (аудит 2026-11): под результатом не было двери в приложение, звали в бота.
+  it('под результатом главная кнопка — «Начать в приложении →», бот — второй строкой', () => {
+    renderQuiz();
+    fireEvent.click(screen.getByText('Начать →'));
+    fireEvent.click(screen.getByText('Молчу'));
+    fireEvent.click(screen.getByText('Ухожу'));
+    const next = document.querySelector('.pl2-result-next')!;
+    const [main, bot] = Array.from(next.querySelectorAll('a'));
+    expect(main.textContent).toBe('Начать в приложении →');
+    expect(main.getAttribute('href')).toBe('/login');
+    expect(bot.textContent).toMatch(/Или бот в Telegram/);
+    // Остальные действия результата — второстепенные: главное одно.
+    expect(screen.getByText('Поделиться результатом').className).toContain('ds-btn--secondary');
+  });
+
   it('«Пройти ещё раз» сбрасывает прогресс и разрешает повторно отправить quiz_completed', () => {
     renderQuiz();
     fireEvent.click(screen.getByText('Начать →'));

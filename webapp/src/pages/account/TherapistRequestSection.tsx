@@ -5,6 +5,7 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { THERAPIST_REQUEST_PENDING, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
 
 // Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
 // (правило №10).
@@ -68,12 +69,10 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
       <div className="aa-role-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
       <TherapistRequestRejectedNote request={req} className="aa-role-note" />
       {req?.status === 'pending' ? (
-        <div className="aa-role-note">
-          {tr('Твоя заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.', 'Ваша заявка на рассмотрении. О решении сообщим в Telegram, на почту или по контактам из заявки; здесь тоже обновится статус.')}
-        </div>
+        <div className="aa-role-note">{THERAPIST_REQUEST_PENDING}</div>
       ) : req?.status === 'approved' ? (
         <div className="aa-role-note">
-          {tr('Заявка одобрена. Перезайди в приложение.', 'Заявка одобрена. Перезайдите в приложение.')}
+          {therapistRequestApprovedText(tr)}
         </div>
       ) : !open ? (
         <>

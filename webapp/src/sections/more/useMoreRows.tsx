@@ -4,8 +4,13 @@ import { useTherapyTarget } from '../../components/therapy/useTherapyTarget';
 import { useTherapyBridgeTexts } from '../../components/therapy/useTherapyBridgeTexts';
 import { Breath, Layers, Pebbles, Sheets } from '../../components/art/PaperArt';
 import { Beads, Check, Cluster, Leaf, Talk } from '../../components/art/PaperArtSigns';
+import { useNewTasksCount } from '../tasks/newTasks';
 
-export interface Row { id: string; art?: ReactNode; title: string; sub: string; onClick: () => void; href?: string; phoneOnly?: boolean }
+export interface Row {
+  id: string; art?: ReactNode; title: string; sub: string; onClick: () => void; href?: string; phoneOnly?: boolean;
+  /** Счётчик новых справа от заголовка (новые задания терапевта); 0 — нет. */
+  badge?: number;
+}
 
 export interface MoreRowsDeps {
   onNavigate: (s: Section) => void;
@@ -23,15 +28,19 @@ export interface MoreRowsDeps {
 export function useMoreRows(d: MoreRowsDeps): { rows: Row[]; sheet: ReactNode } {
   const bridge = useTherapyBridgeTexts();
   const target = useTherapyTarget('more');
-  // Терапевту строка «поговорить» не нужна. Подключён терапевт — сразу ссылка на него, иначе лист «Поговорить с кем-то».
+  const newTasks = useNewTasksCount();
+  // Терапевту строка «поговорить» не нужна. Подключён терапевт с каналом — сразу ссылка на него;
+  // без канала — лист «Терапевт рядом» (подпись про своего терапевта, не про автора, U4); нет терапевта — «Поговорить с кем-то».
   const talkRow: Row[] = d.userRole === 'THERAPIST' || target.hidden
     ? []
     : target.write
       ? [{ id: 'talk', art: <Talk size="row" />, title: bridge.moreWriteTitle, sub: bridge.moreWriteSub, href: target.write.url, onClick: target.write.onClick }]
-      : [{ id: 'talk', art: <Talk size="row" />, title: bridge.moreTalkTitle, sub: bridge.moreTalkSub, onClick: target.open }];
+      : target.connected
+        ? [{ id: 'talk', art: <Talk size="row" />, title: bridge.moreTherapistTitle, sub: bridge.moreTherapistSub, onClick: target.open }]
+        : [{ id: 'talk', art: <Talk size="row" />, title: bridge.moreTalkTitle, sub: bridge.moreTalkSub, onClick: target.open }];
   const rows: Row[] = [
     { id: 'why', art: <Leaf size="row" />, title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: d.onOpenWhy },
-    { id: 'tasks', art: <Check size="row" />, title: 'Задания', sub: 'От терапевта и свои цели', onClick: d.onOpenTasks },
+    { id: 'tasks', art: <Check size="row" />, title: 'Задания', sub: 'От терапевта и свои цели', onClick: d.onOpenTasks, badge: newTasks },
     { id: 'schemas', art: <Layers size="row" />, title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => d.onNavigate('schemas'), phoneOnly: true },
     // Единственный постоянный вход в «Карту себя»: иначе её видно только после разбора (CaseDoneScreen).
     { id: 'selfmap', art: <Cluster size="row" />, title: 'Карта себя', sub: 'Из разборов: какие части включаются в трудные моменты', onClick: d.onOpenSelfMap },

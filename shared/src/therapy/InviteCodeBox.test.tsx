@@ -21,7 +21,7 @@ describe('InviteCodeBox', () => {
     render(<InviteCodeBox code="7F3A9C21B04E" />);
     expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
     expect(
-      screen.getByText(/Профиль → Настройки → «Мой терапевт»/),
+      screen.getByText(/в настройках, раздел «Мой терапевт»/),
     ).toBeTruthy();
   });
 

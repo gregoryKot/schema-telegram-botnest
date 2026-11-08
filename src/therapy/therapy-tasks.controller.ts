@@ -72,6 +72,7 @@ export class TherapyTasksController {
         text: body.text,
         needId: body.needId ?? null,
         dueDate: body.dueDate ?? null,
+        taskId: task.id,
       });
     }
     return task;

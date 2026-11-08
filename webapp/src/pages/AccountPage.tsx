@@ -63,7 +63,7 @@ export function AccountPage() {
           <div className="aa-col">
             <TwoFactorSection accessToken={accessToken} totp={totp} onChanged={refresh} />
             <TherapistRequestSection accessToken={accessToken} />
-            <Link to="/subscribe" className="ds-card ds-card--row ds-card--nav ds-card--hover"><span className="ds-list-body"><span className="ds-list-title">Подписка</span><span className="ds-sub">Управлять</span></span><span className="ds-chev" aria-hidden="true" /></Link>
+            <Link to="/subscribe" className="ds-card ds-card--row ds-card--nav ds-card--hover"><span className="ds-list-body"><span className="ds-list-title">Подписка</span><span className="ds-sub">Регулярная поддержка проекта</span></span><span className="ds-chev" aria-hidden="true" /></Link>
           </div>
         </div>
 

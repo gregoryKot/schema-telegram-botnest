@@ -6,6 +6,7 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
 import { humanizeThrown } from '../../../../shared/src/api/humanizeError';
+import { THERAPIST_REQUEST_PENDING, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
 
 // Раздел «Стать специалистом» — вынесен из SettingsSheet.tsx (правило №10,
 // файл-должник, пофайловый храповик размера). Состояние заявки полностью
@@ -51,12 +52,10 @@ export function BecomeTherapistSection() {
     <SSection id="s-specialist" label="Стать специалистом">
       <div className="st-body-block">
         {therapistReq?.status === 'pending' ? (
-          <div className="st-text">
-            Заявка на рассмотрении. Решение появится здесь.
-          </div>
+          <div className="st-text">{THERAPIST_REQUEST_PENDING}</div>
         ) : therapistReq?.status === 'approved' ? (
           <div className="st-text st-text--ok">
-            {tr('Заявка одобрена. Перезайди в приложение, чтобы появился кабинет терапевта.', 'Заявка одобрена. Перезайдите в приложение, чтобы появился кабинет терапевта.')}
+            {therapistRequestApprovedText(tr)}
           </div>
         ) : !showReqForm ? (
           <div>

@@ -1,7 +1,8 @@
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { claimTherapyInvite } from './therapy-invite-claim';
-import { miniappStartLink } from '../telegram/miniapp-link';
+import { optionalMiniappStartLink } from '../telegram/miniapp-link';
+import { CABINET_URL } from '../telegram/telegram.constants';
 import { encryptName } from './client-name';
 import { markCardClaim } from './therapy-invite-card-claim';
 
@@ -35,8 +36,22 @@ const randomCode = (): string =>
     .toString('hex')
     .toUpperCase();
 
-export const inviteUrl = (code: string): string =>
-  miniappStartLink(`therapy_${code}`);
+/**
+ * Ссылки приглашения (аудит 2026-11, U3). `url` — сайт: открывается у любого
+ * клиента, после входа любым способом сайт разбирает `?startapp=therapy_…` тем
+ * же путём, что ссылку Telegram (useStartParam → экран согласия), — раньше
+ * ссылка была только t.me, и клиент без Telegram не подключался. `tgUrl` —
+ * приложение в Telegram, второй строкой; бот не настроен — null.
+ */
+export interface InviteLinks {
+  url: string;
+  tgUrl: string | null;
+}
+
+export const inviteLinks = (code: string): InviteLinks => ({
+  url: `${CABINET_URL}?startapp=therapy_${code}`,
+  tgUrl: optionalMiniappStartLink(`therapy_${code}`),
+});
 
 /** Код, как его ввёл человек: пробелы по краям и внутри, строчные буквы. */
 export const normalizeInviteCode = (code: string): string =>
@@ -85,7 +100,7 @@ export async function createTherapyInvite(
   therapistId: bigint,
   alias?: string,
   attachToId?: number,
-): Promise<{ code: string; url: string }> {
+): Promise<{ code: string } & InviteLinks> {
   const live = await prisma.therapyRelation.count({
     where: liveInvitesWhere(therapistId),
   });
@@ -97,7 +112,7 @@ export async function createTherapyInvite(
   await prisma.therapyRelation.create({
     data: { therapistId, code, clientAlias: encryptName(alias), attachToId },
   });
-  return { code, url: inviteUrl(code) };
+  return { code, ...inviteLinks(code) };
 }
 
 /**

@@ -10,6 +10,7 @@ import { HomeTherapyLine } from './more/HomeTherapyLine';
 import { useMoreRows } from './more/useMoreRows';
 import { MoreRows } from './more/MoreRows';
 import { TasksHub } from './tasks/TasksHub';
+import { useTasksSheet } from './tasks/tasksLaunch';
 import { CaseFlowHost } from '../components/caseFlow/CaseFlowHost';
 import { CrisisContactsSheet } from './practice/CrisisContactsSheet';
 import '../styles/client-more.css';
@@ -37,7 +38,7 @@ interface Props {
 export function MoreSection(p: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
-  const [tasks, setTasks] = useState(false);
+  const tasks = useTasksSheet(); // открывается и ссылкой из уведомления (tasksLaunch)
   const [selfMap, setSelfMap] = useState(false);
   const [crisis, setCrisis] = useState(false);
   const { modeEntries } = useTodayDiaries(p.refreshKey);
@@ -45,7 +46,7 @@ export function MoreSection(p: Props) {
     ...p,
     onOpenWhy: () => { trackHomeTile('why'); setWhy(true); },
     onOpenJourney: () => setJourney(true),
-    onOpenTasks: () => setTasks(true),
+    onOpenTasks: tasks.show,
     onOpenSelfMap: () => setSelfMap(true),
   });
 
@@ -76,9 +77,10 @@ export function MoreSection(p: Props) {
       {selfMap && (
         <CaseFlowHost start="map" onClose={() => setSelfMap(false)} onOpenTracker={p.onOpenTracker} onOpenSchema={p.onOpenSchema} />
       )}
-      {tasks && (
+      {tasks.open && (
         <TasksHub
-          onClose={() => setTasks(false)}
+          openTaskId={tasks.taskId}
+          onClose={tasks.hide}
           onOpenTracker={p.onOpenTracker}
           onOpenDiaries={p.onOpenDiaries}
           onOpenChildhoodWheel={p.onOpenChildhoodWheel}

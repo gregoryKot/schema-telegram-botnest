@@ -4,6 +4,8 @@ import { AllTasksOverlay } from '../today/AllTasksOverlay';
 import { TaskExerciseHost } from '../today/TaskExerciseHost';
 import { useTaskActions } from '../today/useTaskActions';
 import { useTaskLauncher } from '../today/useTaskLauncher';
+import { markTasksSeen } from './newTasks';
+import { taskToOpen } from './tasksLaunch';
 
 interface Props {
   onClose: () => void;
@@ -12,6 +14,8 @@ interface Props {
   onOpenChildhoodWheel: () => void;
   refreshKey?: number;
   onTasksChanged?: () => void;
+  /** Ссылка из уведомления (`tasks_<id>`): открыть это задание, а не список. */
+  openTaskId?: number;
 }
 
 // Узел заданий: список всех заданий (от терапевта и свои цели), запуск
@@ -21,19 +25,35 @@ interface Props {
 // Список снимает свою запись истории до открытия упражнения или новой цели
 // (goBack(then) в AllTasksOverlay): пока они открыты, списка нет; закрылись —
 // список возвращается. Список закрыт рукой («Назад») и ничего не открыто — узел
-// закрывается сам.
-export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged }: Props) {
-  const { tasks, taskHistory, completeTask, afterCreate } = useTaskActions(refreshKey);
-  const [listOpen, setListOpen] = useState(true);
+// закрывается сам. По ссылке с заданием список ждёт загрузки: задание с листом
+// открывается сразу, остальные — списком (tasksLaunch.taskToOpen).
+export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged, openTaskId }: Props) {
+  const { tasks, taskHistory, loaded, completeTask, afterCreate } = useTaskActions(refreshKey);
+  // Задание из ссылки ждёт загрузки списка; решение принимается один раз (ref), пока ждём — узел «занят».
+  const pendingId = useRef(openTaskId ?? null);
+  const [waiting, setWaiting] = useState(openTaskId !== undefined);
+  const [listOpen, setListOpen] = useState(openTaskId === undefined);
   const [showTaskCreate, setShowTaskCreate] = useState(false);
   const launcher = useTaskLauncher({ onOpenDiaries, onOpenTracker, onOpenChildhoodWheel, onTaskDone: id => completeTask(id, onTasksChanged) });
-  const busy = !!launcher.open || showTaskCreate;
+  const { openTask } = launcher;
+  const busy = !!launcher.open || showTaskCreate || waiting;
   const wasBusy = useRef(false);
   useEffect(() => {
     if (wasBusy.current && !busy) { wasBusy.current = false; setListOpen(true); return; }
     wasBusy.current = busy;
     if (!listOpen && !busy) onClose();
   }, [busy, listOpen, onClose]);
+  useEffect(() => {
+    const id = pendingId.current;
+    if (id === null || !loaded) return;
+    pendingId.current = null;
+    const task = taskToOpen(tasks, id);
+    if (task) openTask(task);
+    else setListOpen(true);
+    setWaiting(false);
+  }, [loaded, tasks, openTask]);
+  // Что лежит в узле, человек увидел: счётчик «новых» на «Ещё» гаснет.
+  useEffect(() => { markTasksSeen(tasks); }, [tasks]);
   return (
     <>
       {listOpen && (

@@ -12,6 +12,7 @@ import { useTr } from '../utils/addressForm';
 import { planDateLabel, plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
 import { PlanNeedPicker } from './plans/PlanNeedPicker';
 import { PaperEmpty } from './art/PaperEmpty';
+import { useNotifyReach } from '../../../shared/src/settings/useNotifyReach';
 
 interface Props {
   onClose: () => void;
@@ -33,6 +34,7 @@ function statusIcon(done: boolean | null) {
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
+  const notifyReach = useNotifyReach(api.getSettings); // «с напоминанием» — только если дойдёт (U5)
   // Сбой ≠ пусто (пара к miniapp-фиксу #371): отказ раньше рисовал «Планов
   // пока нет». Здесь — через канонический для webapp useAsyncData.failed.
   const plansFetcher = useCallback(() => api.getPlanHistory(30), []);
@@ -79,7 +81,7 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
           <div className="sk-group" aria-hidden><Skeleton width={150} height={12} /><SkeletonList rows={3} height={112} /></div>
         ) : plans.length === 0 ? (
           <div className="sk-group">
-            <PaperEmpty title="Планов пока нет">{plansEmptyText(tr)}</PaperEmpty>
+            <PaperEmpty title="Планов пока нет">{plansEmptyText(tr, notifyReach)}</PaperEmpty>
             <PlanNeedPicker onPlanned={load} />
             {onOpenTracker && (
               <button onClick={() => goBack(onOpenTracker)} className="ds-link sk-self-start">

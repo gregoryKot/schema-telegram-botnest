@@ -4,23 +4,25 @@
 import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
 import { authErrorText } from './service/authErrorReasons';
+import { authErrorScreen } from './service/authErrorScreens';
 import { useAuthErrorReason } from './service/useAuthErrorReason';
 
 export function AuthErrorPage() {
   const tr = useTr();
   const code = useAuthErrorReason(window.location.search);
   const explained = authErrorText(code, tr);
+  const screen = authErrorScreen(code); // свой заголовок и кнопка (U6), без кода
   return (
     <ServicePage>
       <div className="as-body">
         <div className="ds-eyebrow">Ошибка входа</div>
-        <h1 className="ds-h2">Вход не удался</h1>
+        <h1 className="ds-h2">{screen?.title ?? 'Вход не удался'}</h1>
         <p className="as-lead">
           {explained ?? tr('Попробуй ещё раз или напиши нам в Telegram.', 'Попробуйте ещё раз или напишите нам в Telegram.')}
         </p>
-        {code && <p className="as-reason">{code}</p>}
+        {code && !screen && <p className="as-reason">{code}</p>}
         <div className="as-actions-row">
-          <a href="/login" className="ds-btn">Попробовать снова</a>
+          <a href={screen?.action.href ?? '/login'} className="ds-btn">{screen?.action.label ?? 'Попробовать снова'}</a>
           <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" className="ds-btn ds-btn--secondary">
             Написать
           </a>

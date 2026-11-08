@@ -18,10 +18,8 @@ import { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from './ysqStorageKeys';
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
 import {
   clearYsqProgress,
-  notifyYsqResultChanged,
   writeYsqProgress,
   writeYsqResult,
-  clearYsqResult,
 } from './ysqProgressStore';
 import { submitYsqResult } from './ysqSubmitResult';
 
@@ -115,6 +113,23 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
       .catch(() => setResumeCheckFailed(true));
   };
 
+  /** Черновик прохождения на этом устройстве (или null). */
+  const readDraft = (): { answers: number[]; page: number } | null => {
+    try {
+      const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
+      const parsed = saved
+        ? (JSON.parse(saved) as { answers: number[]; page?: number })
+        : null;
+      return parsed &&
+        Array.isArray(parsed.answers) &&
+        parsed.answers.length === QUESTIONS.length
+        ? { answers: parsed.answers, page: parsed.page ?? 0 }
+        : null;
+    } catch {
+      return null; // битая запись — как будто черновика нет
+    }
+  };
+
   // Загрузка сохранённого состояния. autoResume означает «сразу к месту, где
   // пользователь остановился»: есть незаконченный прогресс → внутрь теста;
   // прогресса нет, но есть результат → показать результат (раньше autoResume
@@ -123,20 +138,14 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
   useEffect(() => {
     let resumedToTest = false;
     try {
-      const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as { answers: number[]; page: number };
-        if (
-          Array.isArray(parsed.answers) &&
-          parsed.answers.length === QUESTIONS.length
-        ) {
-          setHasProgress(true);
-          setAnswers(parsed.answers);
-          if (autoResume) {
-            setPage(parsed.page ?? 0);
-            setPhase('test');
-            resumedToTest = true;
-          }
+      const draft = readDraft();
+      if (draft) {
+        setHasProgress(true);
+        setAnswers(draft.answers);
+        if (autoResume) {
+          setPage(draft.page);
+          setPhase('test');
+          resumedToTest = true;
         }
       }
       if (!resumedToTest) {
@@ -177,20 +186,10 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
 
   const handleContinue = () => {
     userStartedRef.current = true;
-    try {
-      const saved = localStorage.getItem(YSQ_PROGRESS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as { answers: number[]; page: number };
-        if (
-          Array.isArray(parsed.answers) &&
-          parsed.answers.length === QUESTIONS.length
-        ) {
-          setAnswers(parsed.answers);
-          setPage(parsed.page ?? 0);
-        }
-      }
-    } catch {
-      /* ignore */
+    const draft = readDraft();
+    if (draft) {
+      setAnswers(draft.answers);
+      setPage(draft.page);
     }
     setPhase('test');
   };
@@ -271,19 +270,16 @@ export function useYsqTest({ api, autoResume }: UseYsqTestOptions) {
     }
   };
 
+  // «Пройти заново» (U8, аудит 2026-11): итог стирался сразу, и брошенное
+  // новое прохождение оставляло «Мои паттерны» без выраженных схем. Теперь
+  // итог живёт, пока новое прохождение не завершено: ответы копятся
+  // черновиком, последний ответ перезапишет итог (прошлый — в истории).
   const handleRetake = () => {
-    clearYsqResult();
-    clearYsqProgress();
-    api
-      .deleteYsqResult()
-      .then(notifyYsqResultChanged)
-      .catch((e) => console.error('deleteYsqResult', e));
-    api.deleteYsqProgress().catch((e) => console.error('deleteYsqProgress', e));
-    setAnswers(Array(QUESTIONS.length).fill(0));
-    setPage(0);
-    setHasProgress(false);
+    const draft = readDraft(); // брошенный прошлый заход — «Продолжить (N из 116)»
+    setAnswers(draft?.answers ?? Array(QUESTIONS.length).fill(0));
+    setPage(draft?.page ?? 0);
+    setHasProgress(draft !== null);
     setInactiveExpanded(false);
-    setCompletedAt(null);
     setRetakeConfirm(false);
     setPhase('intro');
   };

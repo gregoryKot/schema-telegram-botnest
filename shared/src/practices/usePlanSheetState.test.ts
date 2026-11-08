@@ -363,3 +363,56 @@ describe('usePlanSheetState — handleIcsDownload', () => {
     );
   });
 });
+
+// U5 (аудит 2026-11): уведомления уходят только в Telegram — лист плана
+// узнаёт, дойдёт ли напоминание, из той же загрузки настроек.
+describe('usePlanSheetState — notifyReach', () => {
+  it('до ответа — null, ответ без канала — false', async () => {
+    const api = makeApi({
+      getSettings: vi.fn().mockResolvedValue({
+        notifyTimezone: 'Europe/Moscow',
+        notifyReachable: false,
+      }),
+    });
+    const { result } = renderHook(() =>
+      usePlanSheetState('attachment', 'Привязанность', api, vi.fn()),
+    );
+    expect(result.current.notifyReach).toBeNull();
+    await waitFor(() => expect(result.current.notifyReach).toBe(false));
+  });
+
+  it('старый ответ без признака — true (не пугаем зря)', async () => {
+    const { result } = renderHook(() =>
+      usePlanSheetState('attachment', 'Привязанность', makeApi(), vi.fn()),
+    );
+    await waitFor(() => expect(result.current.notifyReach).toBe(true));
+  });
+
+  it('сбой настроек — остаётся null', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const api = makeApi({
+      getSettings: vi.fn().mockRejectedValue(new Error('x')),
+    });
+    const { result } = renderHook(() =>
+      usePlanSheetState('attachment', 'Привязанность', api, vi.fn()),
+    );
+    await waitFor(() => expect(errSpy).toHaveBeenCalled());
+    expect(result.current.notifyReach).toBeNull();
+    errSpy.mockRestore();
+  });
+
+  it('повторное сохранение после успеха не создаёт второй план', async () => {
+    const api = makeApi();
+    const { result } = renderHook(() =>
+      usePlanSheetState('attachment', 'Привязанность', api, vi.fn()),
+    );
+    act(() => result.current.selectText('Практика'));
+    await act(async () => {
+      await result.current.handleSave();
+    });
+    await act(async () => {
+      await result.current.handleSave();
+    });
+    expect(api.createPlan).toHaveBeenCalledTimes(1);
+  });
+});

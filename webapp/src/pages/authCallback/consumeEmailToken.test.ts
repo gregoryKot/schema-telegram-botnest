@@ -53,7 +53,10 @@ describe('consumeEmailToken', () => {
     ['не тот браузер', reply(401, { reason: 'email_link_session' }), 'email_link_session'],
     ['адрес занят', reply(409, { reason: 'email_taken' }), 'email_taken'],
     ['чужой reason не пропускаем', reply(401, { reason: 'что-то-другое' }), 'email_link_expired'],
-    ['сеть легла', vi.fn().mockRejectedValue(new Error('down')), 'email_link_expired'],
+    // U6 (аудит 2026-11): сеть и сбой сервера — не «ссылка устарела».
+    ['сеть легла', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')), 'email_network'],
+    ['лимит попыток', reply(429, { message: 'Too Many Requests' }), 'http_429'],
+    ['сервер упал (HTML вместо JSON)', vi.fn().mockResolvedValue({ ok: false, status: 502, json: () => Promise.reject(new SyntaxError('x')) }), 'http_502'],
     ['200 без нужных полей', reply(200, {}), 'email_link_expired'],
   ])('%s → error %s', async (_n, f, reason) => {
     vi.stubGlobal('fetch', f);
@@ -97,5 +100,14 @@ describe('emailConsumeNextPath', () => {
     expect(
       emailConsumeNextPath({ kind: 'error', reason: 'email_link_session' }, null, null),
     ).toBe('/account?error=email_link_session');
+  });
+
+  it('сеть и ответ сервера — свои коды на экране ошибки входа, не на аккаунте', () => {
+    expect(
+      emailConsumeNextPath({ kind: 'error', reason: 'email_network' }, null, null),
+    ).toBe('/auth/error?reason=email_network');
+    expect(
+      emailConsumeNextPath({ kind: 'error', reason: 'http_429' }, null, null),
+    ).toBe('/auth/error?reason=http_429');
   });
 });

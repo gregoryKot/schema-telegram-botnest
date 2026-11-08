@@ -8,6 +8,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { BecomeTherapistSection } from './BecomeTherapistSection';
 import { withAddressForm, fillTherapistRequestForm } from './SettingsSheet.test-helpers';
 import * as LIM from '../../../../shared/src/limits/textLimits';
+import { THERAPIST_REQUEST_PENDING } from '../../../../shared/src/therapy/therapistRequestCopy';
 import { postJson, setRefreshHandler, setTokenProvider } from '../../apiClient';
 import { NO_CONNECTION_TEXT, SERVER_DOWN_TEXT } from '../../../../shared/src/api/humanizeError';
 
@@ -43,9 +44,9 @@ describe('BecomeTherapistSection — статусы заявки', () => {
     mockApi.getTherapistRequest.mockResolvedValue({ status: 'pending', rejectReason: null });
     renderWithForm();
     const note = await screen.findByText('Заявка на рассмотрении.', { exact: false });
-    // «Появится здесь» верно для обоих исходов: одобрение и отказ с причиной
-    // рисуются в этом же блоке (тесты ниже).
-    expect(note.textContent).toContain('Решение появится здесь');
+    // Обещание то же, что на /account: решение приходит сообщением, статус
+    // виден и здесь (shared/src/therapy/therapistRequestCopy.ts, U12).
+    expect(note.textContent).toBe(THERAPIST_REQUEST_PENDING);
   });
 
   it('status=approved — сообщение об одобрении', async () => {

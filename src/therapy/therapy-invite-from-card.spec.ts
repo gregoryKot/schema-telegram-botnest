@@ -11,7 +11,7 @@ const card = {
 };
 
 jest.mock('../telegram/miniapp-link', () => ({
-  miniappStartLink: (s: string) => `https://t.me/bot/app?startapp=${s}`,
+  optionalMiniappStartLink: (s: string) => `https://t.me/bot/app?startapp=${s}`,
 }));
 
 function make(opts: { card?: unknown; live?: unknown }) {

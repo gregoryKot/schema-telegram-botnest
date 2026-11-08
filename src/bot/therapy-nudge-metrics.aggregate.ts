@@ -20,7 +20,7 @@ export function aggregateTherapyNudge(metas: unknown[]): TherapyNudgeCounts {
   const triggers = new Map<string, number>(
     THERAPY_NUDGE_TRIGGERS.map((trigger) => [trigger, 0]),
   );
-  const actions = { open: 0, book: 0, write: 0, dismiss: 0 };
+  const actions = { open: 0, book: 0, write: 0, dismiss: 0, session: 0 };
   for (const raw of metas) {
     if (!raw || typeof raw !== 'object') continue;
     const { place, action, trigger } = raw as Record<string, unknown>;

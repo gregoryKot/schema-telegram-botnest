@@ -16,7 +16,9 @@ type Tr = (ty: string, vy: string) => string;
 export interface TherapyInvite {
   id: number;
   code: string;
+  /** Ссылка на сайт; tgUrl — та же в Telegram (null — бот не настроен). */
   url: string;
+  tgUrl?: string | null;
   /** Имя клиента, введённое в «Новый клиент»; null — приглашение без имени. */
   alias: string | null;
   createdAt: string;

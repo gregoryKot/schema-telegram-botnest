@@ -9,7 +9,12 @@ import { expect, type Locator, type Page } from '@playwright/test';
 /** «Ещё» → строка «Задания» (useMoreRows) → список TasksHub / AllTasksOverlay. */
 export async function openClientTasks(page: Page): Promise<void> {
   await page.goto('/more');
-  await page.getByText('Задания', { exact: true }).first().click();
+  // Заголовок строки — «Задания» и, если есть новые, счётчик в том же span
+  // (MoreRows, U2): textContent «Задания2», поэтому exact-поиск по тексту мимо.
+  await page
+    .locator('.ds-list-title', { hasText: /^Задания\d*$/ })
+    .first()
+    .click();
   await expect(
     page.getByRole('heading', { name: 'Задания', exact: true }),
   ).toBeVisible();

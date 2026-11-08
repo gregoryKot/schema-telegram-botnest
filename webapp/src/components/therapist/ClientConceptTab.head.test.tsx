@@ -173,7 +173,7 @@ describe('шапка: меню «⋯ Ещё»', () => {
 describe('раскрывашки под содержанием', () => {
   it('свёрнуты по умолчанию, заголовок с числом; клик открывает, aria-expanded меняется', async () => {
     await openTab();
-    const ysq = screen.getByRole('button', { name: 'Сверка с YSQ · 2 не в концептуализации' });
+    const ysq = screen.getByRole('button', { name: 'Сверка с тестом на схемы · 2 не в концептуализации' });
     const hist = screen.getByRole('button', { name: 'История версий · 2' });
     expect(ysq.getAttribute('aria-expanded')).toBe('false');
     expect(hist.getAttribute('aria-expanded')).toBe('false');
@@ -198,23 +198,23 @@ describe('раскрывашки под содержанием', () => {
 
   it('все схемы теста уже в концептуализации — «всё учтено»; теста нет — сверки нет', async () => {
     await openTab(concept(), ['failure']);
-    expect(screen.getByRole('button', { name: 'Сверка с YSQ · всё учтено' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Сверка с тестом на схемы · всё учтено' })).toBeTruthy();
     cleanup();
     await openTab(concept({ history: [] }), []);
-    expect(screen.queryByRole('button', { name: /Сверка с YSQ/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Сверка с тестом на схемы/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /История версий/ })).toBeNull();
   });
 
   it('раскрывашки есть и в виде «Поля»', async () => {
     await openTab(concept({ modeIds: [], modeLinks: [] }));
     expect(screen.getByRole('button', { name: 'Поля' }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: /Сверка с YSQ/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Сверка с тестом на схемы/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'История версий · 2' })).toBeTruthy();
   });
 
   it('ysqFoldTitle: число не учтённых или «всё учтено»', () => {
-    expect(ysqFoldTitle(3)).toBe('Сверка с YSQ · 3 не в концептуализации');
-    expect(ysqFoldTitle(0)).toBe('Сверка с YSQ · всё учтено');
+    expect(ysqFoldTitle(3)).toBe('Сверка с тестом на схемы · 3 не в концептуализации');
+    expect(ysqFoldTitle(0)).toBe('Сверка с тестом на схемы · всё учтено');
   });
 });
 

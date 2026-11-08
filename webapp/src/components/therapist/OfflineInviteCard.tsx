@@ -66,7 +66,7 @@ export function OfflineInviteCard({ selectedClient }: Props) {
             <button className="ds-btn ds-btn--sm" onClick={() => void copy(invite.url)}>
               {copied ? '✓ Скопировано' : 'Скопировать'}
             </button>
-            <TherapistInviteShare inviteUrl={invite.url} />
+            <TherapistInviteShare invite={invite} />
           </div>
           <CopyFailedHint show={failed} />
           <InviteCodeBox code={invite.code} />

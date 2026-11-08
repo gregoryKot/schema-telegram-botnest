@@ -112,6 +112,10 @@
       "owner": "webapp/src/components/AppShell.tsx",
       "kind": "local"
     },
+    "launch_param_pending": {
+      "owner": "shared/src/host/startParam.ts",
+      "kind": "local"
+    },
     "login_consent_shown": {
       "owner": "webapp/src/auth/loginConsent.ts",
       "kind": "local"
@@ -211,6 +215,10 @@
     },
     "sidebar_collapsed": {
       "owner": "webapp/src/components/appShell/sidebarCollapse.ts",
+      "kind": "local"
+    },
+    "tasks_seen_at": {
+      "owner": "webapp/src/sections/tasks/newTasks.ts",
       "kind": "local"
     },
     "therapist_mode": {

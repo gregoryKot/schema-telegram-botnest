@@ -65,6 +65,17 @@ describe('e2e: приглашение клиента терапевтом', () =
     expect(second.status).toBe(201);
     expect(first.body.code).toHaveLength(12);
     expect(second.body.code).not.toBe(first.body.code);
+    // U3 (аудит 2026-11): основная ссылка — сайт с кодом, Telegram — второй
+    // путь (бот в e2e задан: env.setup.ts → E2eTestBot).
+    const links = first.body as { code: string; url: string; tgUrl: string };
+    expect(links.url).toMatch(
+      new RegExp(`^https://[^/]+/today\\?startapp=therapy_${links.code}$`),
+    );
+    expect(links.tgUrl).toMatch(
+      new RegExp(
+        `^https://t\\.me/E2eTestBot/.*startapp=therapy_${links.code}$`,
+      ),
+    );
 
     // Код так, как его переписывают руками: строчные и пробелы по краям.
     const joinA = await as(A).post('/api/therapy/join', {

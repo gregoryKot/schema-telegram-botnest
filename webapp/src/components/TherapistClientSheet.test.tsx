@@ -354,7 +354,7 @@ describe('TherapistClientSheet — вкладка «Схемы» (YSQ)', () => {
     await screen.findByText('Обзор');
 
     fireEvent.click(screen.getByText('Схемы'));
-    await screen.findByText('YSQ ещё не проходился');
+    await screen.findByText('Тест на схемы ещё не пройден');
 
     fireEvent.click(screen.getByText('Запросить тест на схемы'));
     await waitFor(() => expect(mockApi.requestYsq).toHaveBeenCalledWith(7));

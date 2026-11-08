@@ -63,7 +63,7 @@ describe('AuthErrorPage — известные коды', () => {
 
   it('email_link_expired в форме «вы» — без «ты»-строк', () => {
     const { container } = renderAt('?reason=email_link_expired', 'vy');
-    expect(screen.getByText(/Запросите новую на странице входа/)).toBeTruthy();
+    expect(screen.getByText(/Запросите новую\./)).toBeTruthy();
     expect(container.textContent).not.toMatch(/Запроси |напиши /);
   });
 
@@ -80,5 +80,33 @@ describe('AuthErrorPage — известные коды', () => {
     const { container } = renderAt('');
     expect(container.querySelector('.as-reason')).toBeNull();
     expect(reportClientError).not.toHaveBeenCalled();
+  });
+});
+
+// U6 (аудит 2026-11): просроченная ссылка показывала «Вход не удался» с
+// техническим кодом, а «Попробовать снова» вела на общий вход, где форму почты
+// надо было искать заново; обрыв сети выглядел так же, как просрочка.
+describe('AuthErrorPage — ссылка из письма', () => {
+  it('просрочка: «Ссылка устарела», без кода, кнопка ведёт сразу к форме почты', () => {
+    const { container } = renderAt('?reason=email_link_expired');
+    expect(screen.getByRole('heading').textContent).toBe('Ссылка устарела');
+    expect(screen.getByText(/открывается только один раз\. Запроси новую\./)).toBeTruthy();
+    expect(container.querySelector('.as-reason')).toBeNull();
+    const link = screen.getByText('Запросить новую ссылку') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/login?via=email');
+    expect(reportedMessages()[0]).toMatch(/, email_link_expired$/);
+  });
+
+  it('обрыв сети: «Нет связи» и свой текст, а не «ссылка устарела»', () => {
+    const { container } = renderAt('?reason=email_network');
+    expect(screen.getByRole('heading').textContent).toBe('Нет связи');
+    expect(screen.getByText('Нет связи, попробуй ещё раз: проверь интернет и снова открой ссылку из письма.')).toBeTruthy();
+    expect(container.textContent).not.toContain('устарел');
+    expect(reportedMessages()[0]).toMatch(/, email_network$/);
+  });
+
+  it('обрыв сети на «вы»', () => {
+    renderAt('?reason=email_network', 'vy');
+    expect(screen.getByText(/попробуйте ещё раз: проверьте интернет и снова откройте ссылку/)).toBeTruthy();
   });
 });

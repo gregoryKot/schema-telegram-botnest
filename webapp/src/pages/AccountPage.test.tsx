@@ -488,6 +488,21 @@ describe('AccountPage — занятый email', () => {
   });
 });
 
+// Управления подпиской по сессии нет: экран управления открывается только по
+// ?token=… из ссылки после оплаты (docs/open/backend.md). Строка ведёт на
+// /subscribe — форму оформления — и управление не обещает (FIX_PLAN 4.10).
+describe('AccountPage — строка «Подписка»', () => {
+  it('ведёт на /subscribe без обещания «Управлять»', async () => {
+    renderPage();
+    await screen.findByText('Аккаунт');
+
+    const row = screen.getByText('Подписка').closest('a') as HTMLAnchorElement;
+    expect(row.getAttribute('href')).toBe('/subscribe');
+    expect(row.textContent).toContain('Регулярная поддержка проекта');
+    expect(row.textContent).not.toMatch(/Управлять/);
+  });
+});
+
 describe('AccountPage — выход', () => {
   it('кнопка «Выйти» вызывает logout()', async () => {
     const logout = vi.fn().mockResolvedValue(undefined);

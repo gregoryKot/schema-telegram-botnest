@@ -34,7 +34,7 @@ export function AddClientForm({ addClient }: Props) {
                 <button className="ds-btn ds-btn--sm" onClick={copyAddInvite}>
                   {addCopied ? '✓ Скопировано' : 'Скопировать'}
                 </button>
-                <TherapistInviteShare inviteUrl={invite.url} />
+                <TherapistInviteShare invite={invite} />
               </div>
               <CopyFailedHint show={addCopyFailed} />
               <InviteCodeBox code={invite.code} />
