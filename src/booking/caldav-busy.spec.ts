@@ -345,6 +345,57 @@ describe('parseBusy — конец события по RFC 5545 §3.6.1', () => 
     expect(iv.end.getTime() - iv.start.getTime()).toBe(50 * 60_000);
   });
 
+  // RFC 5545 §3.3.6: день и неделя в DURATION номинальные — прибавляются к
+  // стенному времени зоны TZID, часы и минуты — к моменту. До починки P1D
+  // считался ровно 24 ч, и в день перевода часов конец уезжал на час.
+  // Ожидания — точные ISO: зона события задана в тексте VEVENT, зона процесса
+  // (вторая CI-джоба, TZ=Australia/Sydney) на них не влияет.
+  it.each([
+    [
+      'Берлин, перевод назад 25.10: P1D — 25 часов',
+      'DTSTART;TZID=Europe/Berlin:20261024T100000\nDURATION:P1D',
+      '2026-10-25T09:00:00.000Z',
+    ],
+    [
+      'Нью-Йорк, перевод вперёд 08.03: P1D — 23 часа',
+      'DTSTART;TZID=America/New_York:20260307T100000\nDURATION:P1D',
+      '2026-03-08T14:00:00.000Z',
+    ],
+    [
+      'Берлин: P1DT2H — день по стене, два часа к моменту',
+      'DTSTART;TZID=Europe/Berlin:20261024T100000\nDURATION:P1DT2H',
+      '2026-10-25T11:00:00.000Z',
+    ],
+    [
+      'Берлин: P1W через перевод — та же стенная минута через неделю',
+      'DTSTART;TZID=Europe/Berlin:20261022T100000\nDURATION:P1W',
+      '2026-10-29T09:00:00.000Z',
+    ],
+    [
+      'Берлин: PT24H через перевод — ровно 24 часа, не сутки',
+      'DTSTART;TZID=Europe/Berlin:20261024T100000\nDURATION:PT24H',
+      '2026-10-25T08:00:00.000Z',
+    ],
+    [
+      'UTC (Z): P1D — ровно 24 часа',
+      'DTSTART:20261024T100000Z\nDURATION:P1D',
+      '2026-10-25T10:00:00.000Z',
+    ],
+    [
+      'нестандартный TZID: старт floating, P1D — 24 часа',
+      'DTSTART;TZID=Russian Standard Time:20261024T100000\nDURATION:P1D',
+      '2026-10-25T10:00:00.000Z',
+    ],
+  ])('перевод часов: %s', (_name, lines, end) => {
+    expect(endOf(lines)).toBe(end);
+  });
+
+  it('перевод часов: P100000000D в зоне не теряет событие — откат к часу', () => {
+    expect(
+      endOf('DTSTART;TZID=Europe/Berlin:20261024T100000\nDURATION:P100000000D'),
+    ).toBe('2026-10-24T09:00:00.000Z');
+  });
+
   it('DTEND сильнее DURATION, если по ошибке пришли оба', () => {
     expect(
       endOf('DTSTART:20261017T100000Z\nDTEND:20261017T103000Z\nDURATION:PT5H'),

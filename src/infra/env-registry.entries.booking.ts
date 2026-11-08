@@ -48,7 +48,7 @@ export const BOOKING_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'CALENDAR_BLOCK_SLOTS',
     purpose:
-      '«true» — занятые в личном календаре часы скрываются из слотов записи.',
+      '«true» — занятые в личном календаре часы скрываются из слотов и не принимаются запросом записи (409).',
     requiredInProd: false,
     format: formats.oneOf(['true', 'false']),
     group: 'booking',

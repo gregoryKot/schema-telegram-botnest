@@ -43,10 +43,10 @@ import { BotLauncher } from './telegram.launch';
 import { t, AddressForm } from '../notification/address-form';
 import {
   CABINET_KEYBOARD,
-  pairJoinResultText,
   acceptRetryText,
   resolveForm,
 } from './telegram.reply-helpers';
+import { resumePendingPair } from './telegram.pair-resume';
 
 export const WELCOME_TEXT = `Привет!
 
@@ -297,7 +297,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         await this.botService.updateUserSettings(userId, {
           addressForm: form,
         });
-        if (await this.resumePendingPair(ctx, rawId)) return;
+        if (await resumePendingPair(this.pairDeps(), ctx, rawId)) return;
         const ack = t(
           form,
           'Договорились, на «ты». Поменять можно в любой момент в /settings.',
@@ -334,7 +334,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
         if (rawId) {
           const userId = await this.accountService.canonicalUserId(rawId);
           await this.botService.acceptDisclaimer(userId);
-          if (await this.resumePendingPair(ctx, rawId)) return;
+          if (await resumePendingPair(this.pairDeps(), ctx, rawId)) return;
         }
         // После согласия — сразу выбор обращения, приветствие покажет addr-хендлер
         try {
@@ -477,30 +477,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       this.logger.error('notifyAdmin failed', err);
       return false;
     }
-  }
-
-  /**
-   * Если юзер пришёл по pair-инвайту и только что принял согласие —
-   * возобновляем подключение пары. true = флоу завершён (сообщение показано).
-   * Общий для accept:(ty|vy) и легаси accept_consent.
-   */
-  private async resumePendingPair(
-    ctx: Context,
-    rawId: number,
-  ): Promise<boolean> {
-    const pending = this.pendingPairCodes.get(rawId);
-    if (!pending || pending.expiresAt <= Date.now()) return false;
-    this.pendingPairCodes.delete(rawId);
-    const userId = await this.accountService.canonicalUserId(rawId);
-    const ok = await this.pairsService.joinPair(userId, pending.code);
-    const text = pairJoinResultText(ok, await this.form(rawId));
-    const kb = CABINET_KEYBOARD;
-    try {
-      await ctx.editMessageText(text, kb);
-    } catch {
-      await ctx.reply(text, kb);
-    }
-    return true;
   }
 
   onModuleDestroy() {

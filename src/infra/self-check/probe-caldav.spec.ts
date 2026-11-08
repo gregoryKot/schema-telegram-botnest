@@ -6,12 +6,14 @@ jest.mock('../../booking/caldav-discovery', () => ({
 import { caldavProbe } from './probe-caldav';
 import { calDavHealth } from '../../booking/caldav-health';
 import { listCalendars } from '../../booking/caldav-discovery';
+import { busySkips } from '../../booking/caldav-parse-skips';
 
 const mockedListCalendars = listCalendars as jest.Mock;
 const ENV = { APPLE_ID: 'me@icloud.com', APPLE_APP_PASSWORD: 'pass' };
 
 beforeEach(() => {
   calDavHealth.reset();
+  busySkips.reset();
   mockedListCalendars.mockReset();
 });
 
@@ -39,6 +41,40 @@ describe('caldavProbe', () => {
     const res = await caldavProbe(ENV).run();
     expect(res).toEqual({ ok: true, detail: 'найдено календарей: 1' });
     expect(calDavHealth.snapshot().open).toBe(false);
+  });
+
+  // Fail-open разбора занятости не немой: что парсер не понял при последнем
+  // чтении слотов, проба называет в деталях (оба исхода — здесь и выше).
+  it('последнее чтение занятости что-то не разобрало — ok, счёт в деталях', async () => {
+    mockedListCalendars.mockResolvedValue([
+      { url: 'https://p1.icloud.com/1/calendars/home/', name: 'Home' },
+    ]);
+    busySkips.note({ recurring: 2, badStart: 1, badEnd: 0 });
+    const res = await caldavProbe(ENV).run();
+    expect(res.ok).toBe(true);
+    expect(res.detail).toBe(
+      'найдено календарей: 1; при последнем чтении занятости не разобрано ' +
+        'событий: 3 (повторяющихся без разворота — 2, без понятного начала — 1); ' +
+        'их часы могут остаться открытыми для записи',
+    );
+  });
+
+  it('явный APPLE_CALDAV_URL — счёт непонятых событий тоже в деталях', async () => {
+    busySkips.note({ recurring: 0, badStart: 0, badEnd: 4 });
+    const res = await caldavProbe({
+      ...ENV,
+      APPLE_CALDAV_URL: 'https://p1.icloud.com/x/',
+    }).run();
+    expect(res.detail).toContain('с непонятным концом — 4');
+  });
+
+  it('последнее чтение разобрало всё — деталь без хвоста', async () => {
+    mockedListCalendars.mockResolvedValue([
+      { url: 'https://p1.icloud.com/1/calendars/home/', name: 'Home' },
+    ]);
+    busySkips.note({ recurring: 0, badStart: 0, badEnd: 0 });
+    const res = await caldavProbe(ENV).run();
+    expect(res).toEqual({ ok: true, detail: 'найдено календарей: 1' });
   });
 
   // Регресс 2026-09-13/16: пустой список молчал до трекера здоровья.

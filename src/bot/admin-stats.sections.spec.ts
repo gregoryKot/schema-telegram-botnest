@@ -1,4 +1,33 @@
-import { formatAdminStats, AdminStatsData } from './admin-stats.format';
+// Разделы «Главных цифр» /stats. В отчёте каждый раздел — свой блок
+// settleBlocks (admin-stats.blocks.ts); здесь — их текст целиком, в том же
+// порядке, что в отчёте.
+import {
+  formatDays,
+  formatDiary,
+  formatNoticed,
+  formatPairs,
+  formatPeople,
+  formatStatsHeader,
+  type DaysData,
+  type DiaryData,
+  type NoticedData,
+  type PeopleData,
+} from './admin-stats.sections';
+
+type AdminStatsData = { today: string; activePairs: number } & PeopleData &
+  DiaryData &
+  DaysData &
+  NoticedData;
+
+const formatAdminStats = (d: AdminStatsData): string =>
+  [
+    formatStatsHeader(d.today),
+    formatPeople(d),
+    formatDiary(d),
+    formatDays(d),
+    formatNoticed(d),
+    formatPairs(d.activePairs),
+  ].join('\n\n');
 
 const EMPTY: AdminStatsData = {
   today: '2026-07-26',
@@ -22,7 +51,7 @@ const EMPTY: AdminStatsData = {
   activePairs: 0,
 };
 
-describe('formatAdminStats', () => {
+describe('разделы «Главных цифр»', () => {
   // Правило №8: пустое состояние обязательно — на чистой БД без NaN/undefined.
   it('на пустых данных не показывает NaN/undefined/мусор', () => {
     const out = formatAdminStats(EMPTY);

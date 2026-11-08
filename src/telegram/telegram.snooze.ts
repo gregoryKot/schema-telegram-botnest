@@ -1,13 +1,12 @@
 // Кнопка «⏰ Напомню через час» под напоминанием (callback `snooze_reminder`).
 // Вынесено из telegram.service.ts: файл в долге храповика размера (правило №10).
 //
-// Честный исход (аудит 2026-10, по образцу паузы #978). Раньше тост «Напомню
-// через час» уходил ДО записи: при сбое человек видел обещание, а следом —
-// ошибку. Теперь тост пустой (он только гасит спиннер), а итог «⏰ Напомню в
-// 15:30» — правкой сообщения ПОСЛЕ того, как напоминание встало в очередь.
-//
-// Событие reminder_snoozed — после записи (правило №8): /stats показывает,
-// сколько раз отложили и сколько отложенных пришло (notify-queue-metrics.*).
+// Честный исход (аудит 2026-10, по образцу паузы #978): тост пустой (только
+// гасит спиннер), итог «⏰ Напомню в 15:30» — правкой сообщения ПОСЛЕ того, как
+// напоминание встало в очередь; событие reminder_snoozed — тоже после записи
+// (правило №8, /stats: notify-queue-metrics.*). Уже отложенное снимается, а
+// новое ставится под локом на человека (replace-pending.ts): двойной тап до
+// правки сообщения (кнопки исчезают только с итогом) не ставит двух.
 import type { Context } from 'telegraf';
 import type { AccountService } from '../bot/account.service';
 import type { BotService } from '../bot/bot.service';
@@ -27,7 +26,7 @@ export const SNOOZE_MS = 3_600_000;
 export interface SnoozeDeps {
   accountService: Pick<AccountService, 'canonicalUserId'>;
   botService: Pick<BotService, 'getUserSettings'>;
-  notificationService: Pick<NotificationService, 'cancel' | 'schedule'>;
+  notificationService: Pick<NotificationService, 'cancel' | 'replacePending'>;
   analytics: Pick<AnalyticsService, 'track'>;
   now?: () => number;
 }
@@ -91,8 +90,9 @@ export async function snoozeReminder(
     settings?.notifyQuietEnd ?? 8,
   );
   try {
-    await deps.notificationService.cancel(userId, 'reminder');
-    await deps.notificationService.schedule(userId, 'pre_reminder', sendAt);
+    const queue = deps.notificationService;
+    await queue.cancel(userId, 'reminder');
+    await queue.replacePending(userId, 'pre_reminder', sendAt);
   } catch (err) {
     throw new SnoozeFailed(normalizeAddressForm(settings?.addressForm), err);
   }

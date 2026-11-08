@@ -16,6 +16,7 @@ jest.mock('./caldav-busy', () => ({
 import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
 import { parseBusy } from './caldav-busy';
 import { calDavHealth } from './caldav-health';
+import { busySkips } from './caldav-parse-skips';
 
 const originalFetch = global.fetch;
 afterEach(() => {
@@ -208,6 +209,26 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
     }) as any;
     const busy = await svc.getBusyTimes(...nextHours());
     expect(busy).toHaveLength(1); // только "b" вернул интервал
+  });
+
+  // Сохранил → нашёл: счёт непонятых разбором событий пишет чтение слотов, а
+  // читают проба самопроверки и /stats (caldav-parse-skips.ts).
+  it('счёт непонятых событий суммируется по календарям и запоминается для пробы', async () => {
+    busySkips.reset();
+    (listCalendars as jest.Mock).mockResolvedValue([
+      { url: 'https://c/a/', name: 'A' },
+      { url: 'https://c/b/', name: 'B' },
+    ]);
+    (parseBusy as jest.Mock).mockImplementation(
+      (_xml: string, skipped: { recurring: number }) => {
+        skipped.recurring += 1;
+        return [];
+      },
+    );
+    global.fetch = jest.fn(reportOk) as never;
+    await makeService().getBusyTimes(...nextHours());
+    expect(busySkips.last()).toEqual({ recurring: 2, badStart: 0, badEnd: 0 });
+    (parseBusy as jest.Mock).mockImplementation(() => []);
   });
 
   it('REPORT вернул ошибочный статус — trактуется как пусто, не бросает', async () => {
