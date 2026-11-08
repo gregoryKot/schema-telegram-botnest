@@ -14,6 +14,7 @@ export interface LinkPreview {
   displayName: string | null;
   sameAccount: boolean;
   summary: Record<string, number>;
+  combined?: number; // сколько записей объединится с этим аккаунтом (R3), как в merge/preview
   twoFactorLost: boolean;
 }
 

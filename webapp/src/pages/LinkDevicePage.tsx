@@ -9,6 +9,7 @@ import { ServiceRows } from './service/ServiceRows';
 import { TicketDenied } from './service/TicketDenied';
 import { AckCheck } from './merge/AckCheck';
 import { linkAckText, useLinkTicket } from './merge/useLinkTicket';
+import { combinedText } from './merge/combinedText';
 import { providerName } from './account/providerNames';
 import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
@@ -58,6 +59,7 @@ function LinkDeviceContent({ code }: { code: string }) {
 
   const messenger = preview ? providerName(preview.provider) ?? preview.provider : '';
   const total = preview ? sumItems(preview.summary) : 0;
+  const combined = preview && !preview.sameAccount ? combinedText(preview.combined, tr) : null; // без числа — прежний текст
 
   if (phase === 'denied') {
     return (
@@ -109,6 +111,7 @@ function LinkDeviceContent({ code }: { code: string }) {
                 <ServiceRows summary={preview.summary} />
               </>
             )}
+            {combined && <p className="as-lead">{combined}</p>}
 
             {preview.twoFactorLost && <TwoFactorLossNote />}
 

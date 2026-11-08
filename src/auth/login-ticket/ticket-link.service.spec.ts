@@ -23,8 +23,24 @@ describe('preview — что человек видит до подтвержде
       displayName: 'Гриша',
       sameAccount: false,
       summary: { Rating: 12 },
+      combined: 0,
       twoFactorLost: false,
     });
+  });
+
+  // Экран привязки называет, сколько записей сольётся (волна 6): число —
+  // из той же сводки, что и на /account/merge.
+  it('сколько записей сольётся — из сводки слияния; тот же аккаунт — 0', async () => {
+    const { links, tickets, merge } = makeDeps();
+    (merge.summarize as unknown as jest.Mock).mockResolvedValue({
+      counts: { Note: 2 },
+      combined: 3,
+      twoFactorLost: false,
+    });
+    const { userCode } = await startLink(tickets);
+
+    expect((await links.preview(userCode, WEB_USER)).combined).toBe(3);
+    expect((await links.preview(userCode, MAX_USER)).combined).toBe(0);
   });
 
   // Этот поток тоже зовёт merge.merge() в approve, значит второй фактор

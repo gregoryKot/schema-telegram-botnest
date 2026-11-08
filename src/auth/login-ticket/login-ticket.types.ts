@@ -23,6 +23,9 @@ export interface LinkPreview {
   sameAccount: boolean;
   /** Сколько чего переедет: {'Оценки': 12, …}. Пусто при sameAccount. */
   summary: Record<string, number>;
+  /** Сколько записей сольётся с записями этого аккаунта, а не переедет рядом
+   * (merge-combine.ts). 0 при sameAccount. Экран привязки называет число. */
+  combined: number;
   /** Второй фактор переносимого аккаунта не переедет (merge-user-rules.ts,
    * totpSecret: skip). Этот поток тоже зовёт merge.merge(), поэтому говорим
    * это вслух и здесь, не только на /account/merge. Пусто при sameAccount. */
