@@ -153,6 +153,7 @@ describe('шов: настоящий Telegraf получает 429 от серв
       sent: 1,
       pushed: 0,
       transient: 0,
+      unknown: 0,
       waited: 1,
       deferred: 0,
     });

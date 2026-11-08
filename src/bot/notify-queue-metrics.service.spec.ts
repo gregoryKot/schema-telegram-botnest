@@ -47,7 +47,7 @@ describe('NotifyQueueMetricsService', () => {
   it('суммирует сутки и неделю раздельно', async () => {
     const { service } = makeService([
       {
-        meta: { sent: 10, transient: 1, waited: 1, deferred: 5 },
+        meta: { sent: 10, transient: 1, unknown: 2, waited: 1, deferred: 5 },
         createdAt: hoursAgo(1),
       },
       {
@@ -61,6 +61,7 @@ describe('NotifyQueueMetricsService', () => {
       sent: 10,
       pushed: 0,
       transient: 1,
+      unknown: 2,
       waited: 1,
       deferred: 5,
     });
@@ -69,6 +70,7 @@ describe('NotifyQueueMetricsService', () => {
       sent: 30,
       pushed: 0,
       transient: 1,
+      unknown: 2,
       waited: 1,
       deferred: 5,
     });
@@ -78,7 +80,7 @@ describe('NotifyQueueMetricsService', () => {
     const { service } = makeService([
       { meta: null, createdAt: hoursAgo(1) },
       {
-        meta: { sent: '5', transient: -2, waited: Number.NaN },
+        meta: { sent: '5', transient: -2, unknown: '1', waited: Number.NaN },
         createdAt: hoursAgo(2),
       },
     ]);
@@ -88,6 +90,7 @@ describe('NotifyQueueMetricsService', () => {
       sent: 0,
       pushed: 0,
       transient: 0,
+      unknown: 0,
       waited: 0,
       deferred: 0,
     });

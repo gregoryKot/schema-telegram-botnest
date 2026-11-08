@@ -99,11 +99,10 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
     }
   }
   tick.tally.transient = seen.transient;
+  tick.tally.unknown = seen.unknown.length;
   await tick.finish(logger, deps.track);
-
-  if (seen.unknown.length > 0) {
+  if (seen.unknown.length > 0)
     logger.warn(describeUnknownOutcomes(seen.unknown));
-  }
 
   nowhere.report(logger);
 }

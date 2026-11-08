@@ -9,6 +9,7 @@ const totals = (t: Partial<QueueTotals> = {}): QueueTotals => ({
   sent: 0,
   pushed: 0,
   transient: 0,
+  unknown: 0,
   waited: 0,
   deferred: 0,
   ...t,
@@ -77,6 +78,32 @@ describe('formatNotifyQueueMetrics', () => {
     });
     expect(out).toContain('За сутки напоминаний не было.');
     expect(out).toContain('За неделю ушло 5');
+  });
+
+  // Исход «неизвестно» (r2-3#3): строку метим отправленной, повтор не шлём —
+  // если запрос до Telegram не дошёл, напоминание пропало. Число видно здесь,
+  // а не только в warn лога; ноль не пишется.
+  it('ответа не дождались — число за сутки и за неделю', () => {
+    const out = formatNotifyQueueMetrics({
+      day: totals({ ticks: 3, sent: 10, unknown: 2 }),
+      week: totals({ ticks: 9, sent: 40, unknown: 5 }),
+      snooze: noSnooze,
+    });
+    expect(out).toContain(
+      'За сутки ушло 10, сбоев не было. Ответа не дождались у 2 — могло дойти, повтор не слали.',
+    );
+    expect(out).toContain(
+      'отложено 0. Ответа не дождались у 5 — могло дойти, повтор не слали.',
+    );
+  });
+
+  it('у всех ответ получен — строки про неизвестный исход нет', () => {
+    const out = formatNotifyQueueMetrics({
+      day: totals({ ticks: 3, sent: 10 }),
+      week: totals({ ticks: 9, sent: 40 }),
+      snooze: noSnooze,
+    });
+    expect(out).not.toContain('не дождались');
   });
 
   it('все упали: 100%, без деления на ноль', () => {
