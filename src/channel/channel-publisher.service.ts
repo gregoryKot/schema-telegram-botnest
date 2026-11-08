@@ -35,7 +35,7 @@ const RECENT_POSTS = 10;
 @Injectable()
 export class ChannelPublisherService {
   private readonly logger = new Logger(ChannelPublisherService.name);
-  /** Публикация «в полёте» — один флаг на расписание и /zv (zv-runner.ts). */
+  /** Публикация «в полёте» — один флаг на расписание, /zv и кнопку админки. */
   readonly inFlight = new OneAtATime();
 
   constructor(
@@ -87,8 +87,10 @@ export class ChannelPublisherService {
     // Журнал пишем всегда — и когда дошло, и когда нет: он и есть ответ на
     // «почему утром пришло не везде» и основа адресного повтора.
     await this.deliveries.record(source, delivered, failed, text);
-    if (delivered.length > 0) await this.afterPost(text);
-    return fanoutResult(text, delivered, failed, this.silent());
+    const res = fanoutResult(text, delivered, failed, this.silent());
+    // Пост мог выйти и там, где исход неизвестен: фраза и слот заняты.
+    if (res.posted) await this.afterPost(text);
+    return res;
   }
 
   /**

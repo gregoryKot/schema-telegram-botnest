@@ -89,6 +89,22 @@ jobs:
         run: |
           body=$($CURL https://schemehappens.ru/)
           echo "$body" | grep -q 'Григорий Котляревский'
+      # Карточка ссылки (Telegram, VK): краулер превью берёт og:image из сырого
+      # HTML. До 2026-11 ссылка на продукт показывала обложку визитки — один
+      # index.html на оба хоста, — а смок картинку не запрашивал
+      # (AUDIT_2026-10_FINDINGS). Обложка обязана быть со своего хоста и
+      # отдаваться картинкой, не SPA-фолбэком (тот тоже 200).
+      - name: превью ссылок — у продукта и визитки свои обложки, и они отдаются
+        run: |
+          for host in schemehappens.ru kotlarewski.gr; do
+            img=$($CURL "https://$host/" | grep -o '<meta property="og:image" *content="[^"]*"' | sed 's/.*content="//; s/"$//')
+            echo "$host → $img"
+            case "$img" in
+              "https://$host/"*) ;;
+              *) echo "::error::og:image на $host не со своего хоста: '$img'"; exit 1 ;;
+            esac
+            $CURL -o /dev/null -w '%{content_type}\n' "$img" | grep -q '^image/jpeg'
+          done
       - name: /app/ — 302 в кабинет с query (переход вечный)
         run: |
           # Без -L и без --fail: проверяем сам переход. Адрес /app/ вшит в

@@ -4,14 +4,10 @@ import { trackGoalOnce } from '../../lib/metrika';
 import { TimeZonePicker } from './TimeZonePicker';
 import { Chip } from './Chip';
 import { VY, type Tr } from './slotsCopy';
+import { fieldLabel as labelSt } from './fieldLabelStyle';
 import {
   groupByLocalDay, localDayLabel, localTimeLabel, timeZoneCaption, mskHintLabel,
 } from '../../../../shared/src/booking/clientTimeZone';
-
-const labelSt: React.CSSProperties = {
-  display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em',
-  textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
-};
 
 interface Props {
   slots: BookingSlot[];

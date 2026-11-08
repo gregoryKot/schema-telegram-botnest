@@ -1468,6 +1468,59 @@ describe('addVirtualClient — офлайн-клиент без Telegram', () =>
   });
 });
 
+// docs/open/therapy.md (аудит 2026-11): urlCode ставит Postgres случайным
+// DEFAULT; совпадение с чужим кодом роняло создание связи 23505 без повтора.
+describe('коллизия urlCode при создании связи — вставка повторяется', () => {
+  const urlCodeTaken = () =>
+    Object.assign(new Error('Unique constraint failed'), {
+      code: 'P2002',
+      meta: {
+        driverAdapterError: {
+          cause: { constraint: { index: 'TherapyRelation_urlCode_key' } },
+        },
+      },
+    });
+  const collideOnce = (prisma: {
+    therapyRelation: { create: (a: unknown) => Promise<unknown> };
+  }) => {
+    const real = prisma.therapyRelation.create;
+    const create = jest
+      .fn()
+      .mockRejectedValueOnce(urlCodeTaken())
+      .mockImplementation(real);
+    prisma.therapyRelation.create = create;
+    return create;
+  };
+
+  it('createInvite: первая вставка упала на urlCode — приглашение создано', async () => {
+    const { service, prisma, rels } = makeFullService([]);
+    const create = collideOnce(prisma);
+    const { code } = await service.createInvite(T1);
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(rels.map((r) => r.code)).toEqual([code]);
+  });
+
+  it('addVirtualClient: первая вставка упала на urlCode — карточка создана', async () => {
+    const { service, prisma, rels } = makeFullService([]);
+    const create = collideOnce(prisma);
+    const list = await service.addVirtualClient(T1, 'Пётр');
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(rels).toHaveLength(1);
+    expect(list.map((c) => c.name)).toEqual(['Пётр']);
+  });
+
+  it('конфликт по code — без повтора, ошибка наружу', async () => {
+    const { service, prisma } = makeFullService([]);
+    const err = Object.assign(new Error('Unique constraint failed'), {
+      code: 'P2002',
+      meta: { target: ['code'] },
+    });
+    prisma.therapyRelation.create = jest.fn().mockRejectedValue(err);
+    await expect(service.addVirtualClient(T1, 'Пётр')).rejects.toBe(err);
+    expect(prisma.therapyRelation.create).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('addClientManually — удалён', () => {
   // Метод создавал активную связь терапевт↔клиент без согласия клиента.
   // Реальный клиент подключается только по приглашению (joinAsClient);

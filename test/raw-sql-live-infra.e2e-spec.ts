@@ -1,6 +1,7 @@
 // Сырой SQL вне отчёта /stats — на РЕАЛЬНОМ Postgres (см. raw-sql-live-stats:
 // мок драйвера не видит, инцидент 2026-09-13). Здесь: /health, зонд аварии
-// БД, VACUUM после удаления аккаунта и атомарный захват списания подписки.
+// БД, VACUUM после удаления аккаунта, атомарный захват списания подписки и
+// лок перепланировки напоминания.
 jest.mock('../src/utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn(async () => undefined),
   adminIdNum: () => null,
@@ -15,8 +16,11 @@ import { deleteAllUserData } from '../src/bot/account.delete';
 import { chargeDue } from '../src/subscription/subscription.charges';
 import { RobokassaService } from '../src/booking/robokassa.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
+import { NotificationService } from '../src/notification/notification.service';
+import { lockReschedule } from '../src/notification/replace-pending';
 
 const USER_ID = 999_000_000_011n;
+const RESCHEDULE_USER = 999_000_000_012n;
 const SUB_TOKEN = 'e2e-raw-sql-live-subscription';
 
 describe('сырой SQL инфраструктуры на реальном Postgres', () => {
@@ -26,12 +30,16 @@ describe('сырой SQL инфраструктуры на реальном Post
     prisma = new PrismaService();
     await prisma.$connect();
     await prisma.subscription.deleteMany({ where: { cancelToken: SUB_TOKEN } });
-    await prisma.user.deleteMany({ where: { id: USER_ID } });
+    await prisma.user.deleteMany({
+      where: { id: { in: [USER_ID, RESCHEDULE_USER] } },
+    });
   });
 
   afterAll(async () => {
     await prisma.subscription.deleteMany({ where: { cancelToken: SUB_TOKEN } });
-    await prisma.user.deleteMany({ where: { id: USER_ID } });
+    await prisma.user.deleteMany({
+      where: { id: { in: [USER_ID, RESCHEDULE_USER] } },
+    });
     await prisma.$disconnect();
   });
 
@@ -110,5 +118,73 @@ describe('сырой SQL инфраструктуры на реальном Post
     // Второй прогон: срок уже сдвинут — списания нет (та самая атомарность).
     await chargeDue(deps);
     expect(robokassa.chargeRecurring).toHaveBeenCalledTimes(1);
+  });
+
+  // Хвост E16 (аудит 2026-11): «снять, затем поставить» напоминание шло двумя
+  // запросами — обход на одном инстансе и правка настроек на другом давали
+  // два напоминания. Лок pg_advisory_xact_lock возвращает void ($executeRaw).
+  describe('перепланировка напоминания под локом на человека', () => {
+    const live = () =>
+      prisma.scheduledNotification.findMany({
+        where: {
+          userId: RESCHEDULE_USER,
+          type: 'reminder',
+          sentAt: null,
+          cancelledAt: null,
+        },
+      });
+    beforeAll(async () => {
+      await prisma.user.create({ data: { id: RESCHEDULE_USER } });
+    });
+
+    it('пока сосед держит лок, замена ждёт его коммита и снимает его строку', async () => {
+      const notifications = new NotificationService(prisma);
+      const theirs = new Date('2030-01-01T06:00:00Z');
+      const mine = new Date('2030-01-01T18:00:00Z');
+      let release!: () => void;
+      const held = new Promise<void>((r) => (release = r));
+      let locked!: () => void;
+      const lockTaken = new Promise<void>((r) => (locked = r));
+      // «Другой инстанс»: взял лок, вставит строку чуть позже.
+      const other = prisma.$transaction(
+        async (tx) => {
+          await lockReschedule(tx, RESCHEDULE_USER);
+          locked();
+          await held;
+          await tx.scheduledNotification.create({
+            data: { userId: RESCHEDULE_USER, type: 'reminder', sendAt: theirs },
+          });
+        },
+        { timeout: 15_000 },
+      );
+      await lockTaken;
+      let done = false;
+      const replaced = notifications
+        .replacePending(RESCHEDULE_USER, 'reminder', mine)
+        .then(() => {
+          done = true;
+        });
+      await new Promise((r) => setTimeout(r, 300));
+      expect(done).toBe(false);
+
+      release();
+      await other;
+      await replaced;
+      expect((await live()).map((r) => r.sendAt)).toEqual([mine]);
+    });
+
+    it('две замены одновременно — в очереди одно напоминание', async () => {
+      const notifications = new NotificationService(prisma);
+      await Promise.all(
+        [6, 9, 18, 21].map((h) =>
+          notifications.replacePending(
+            RESCHEDULE_USER,
+            'reminder',
+            new Date(Date.UTC(2030, 0, 2, h)),
+          ),
+        ),
+      );
+      expect(await live()).toHaveLength(1);
+    });
   });
 });

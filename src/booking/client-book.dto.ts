@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsInt,
   IsISO8601,
   IsOptional,
@@ -7,6 +8,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { CURRENCIES, type Currency } from './price-region';
 
 /**
  * Тело POST /api/client-booking/book (запись клиента из приложения, #546;
@@ -31,4 +33,9 @@ export class ClientBookDto {
   @IsString()
   @MaxLength(64)
   clientTimeZone?: string;
+
+  // Явный выбор валюты (Р5), как у BookDto: действует только при поясе без места.
+  @IsOptional()
+  @IsIn(CURRENCIES)
+  currency?: Currency;
 }

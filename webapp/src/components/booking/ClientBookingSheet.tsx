@@ -9,6 +9,8 @@ import { firstSlotDay, useBookingSlots } from '../../../../shared/src/booking/us
 import { localTimeLabel } from '../../../../shared/src/booking/clientTimeZone';
 import { BookingSlotsSection } from './BookingSlotsSection';
 import { useClientTimeZone } from './useClientTimeZone';
+import { useClientSessionPrice } from './useClientSessionPrice';
+import { ClientBookingPrice } from './ClientBookingPrice';
 import { bookOutcome, sessionWhen } from './clientBookingModel';
 import { buildClientBookingCopy } from './clientBookingCopy';
 import '../../styles/client-booking.css';
@@ -38,6 +40,7 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
   const copy = buildClientBookingCopy(tr);
   const [tz, setTz] = useClientTimeZone();
   const { slots, failed } = useBookingSlots(api.getSlots);
+  const { price, explicit } = useClientSessionPrice(tz); // тот же пояс и выбор валюты (Р5) уходят в запись
   const [pickedDay, setDay] = useState('');
   const [slot, setSlot] = useState<BookingSlot | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: 'pick' });
@@ -50,7 +53,7 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
     if (!slot) return;
     setPhase({ kind: 'sending' });
     try {
-      const res = await api.clientBook({ startsAt: slot.startsAt, durationMin: slot.durationMin, clientTimeZone: tz });
+      const res = await api.clientBook({ startsAt: slot.startsAt, durationMin: slot.durationMin, clientTimeZone: tz, currency: explicit });
       onBooked();
       setPhase({ kind: bookOutcome(res), res, startsAt: slot.startsAt });
     } catch (err) {
@@ -82,6 +85,7 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
     body = (
       <>
         <BookingSlotsSection slots={slots} tz={tz} onTzChange={setTz} day={day} onDayChange={setDay} slot={slot} onSlotChange={pick} tr={tr} />
+        <ClientBookingPrice tz={tz} tr={tr} price={price} />
         {phase.kind === 'failed' && (
           <p className="cbk-error" role="alert">{phase.why === 'taken' ? copy.taken : copy.failed}</p>
         )}

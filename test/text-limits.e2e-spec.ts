@@ -179,6 +179,30 @@ describe('e2e: лимиты текста — один в DTO, превышени
       const after = await agentAs(U).get('/api/note?date=2026-10-13');
       expect(after.body.text).toBe(edited);
     });
+
+    // Третье слияние в тот же день: склейка 1500 длиннее прежнего потолка DTO
+    // «две заметки» (1002). Правка без роста — 201, рост — 400 от сервиса,
+    // новая заметка длиннее 500 — по-прежнему 400.
+    it('склейка после третьего слияния (1500): правка без роста — 201, рост — 400', async () => {
+      const merged = ofLen(DAY_NOTE_MAX * 3);
+      await prisma.note.create({
+        data: { userId: U, date: '2026-10-15', text: encrypt(merged) ?? '' },
+      });
+      const post = (date: string, text: string) =>
+        agentAs(U).post('/api/note', { date, text, tags: [] });
+      const edited = 'в' + merged.slice(1);
+
+      expect((await post('2026-10-15', edited)).status).toBe(201);
+      const got = await agentAs(U).get('/api/note?date=2026-10-15');
+      expect(got.body.text).toBe(edited);
+
+      expect((await post('2026-10-15', merged + 'а')).status).toBe(400);
+      expect((await post('2026-10-16', ofLen(DAY_NOTE_MAX + 1))).status).toBe(
+        400,
+      );
+      const after = await agentAs(U).get('/api/note?date=2026-10-15');
+      expect(after.body.text).toBe(edited);
+    });
   });
 
   describe('дневники (POST /api/diary/*)', () => {

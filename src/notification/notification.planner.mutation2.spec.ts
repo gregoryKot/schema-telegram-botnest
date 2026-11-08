@@ -35,6 +35,14 @@ function makeDeps() {
     cancel: jest.fn().mockResolvedValue(undefined),
     hasPending: jest.fn().mockResolvedValue(false),
   } as any;
+  // «Снять + поставить» одной транзакцией (replace-pending.ts): мок раскладывает
+  // его на те же вызовы — проверки по schedule не зависят от пути.
+  notifications.replacePending = jest.fn(
+    async (u: bigint, t: string, at: Date, p?: object) => {
+      await notifications.cancel(u, t);
+      await notifications.schedule(u, t, at, p);
+    },
+  );
   const cadence = {
     claimPlanDay: jest.fn().mockResolvedValue(true),
     expirePauseIfDue: jest.fn().mockResolvedValue('none'),

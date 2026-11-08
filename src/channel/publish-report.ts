@@ -10,6 +10,7 @@ import type {
   PublishResult,
   SilentTarget,
 } from './channel-target';
+import { isUnknownReason } from './unknown-outcome';
 
 /** «Telegram (@channel)» — площадка и точка, куда именно ушло. */
 const named = (d: Delivery): string => `${d.title} (${d.destination})`;
@@ -32,6 +33,19 @@ export function silentSummary(silent: SilentTarget[]): string {
   return `\nМолчали:\n${list}`;
 }
 
+/** Ничего не отправлено: публиковать нечего или некуда. */
+const notPosted = (
+  message: string,
+  silent: SilentTarget[] = [],
+): PublishResult => ({
+  ok: false,
+  posted: false,
+  message,
+  delivered: [],
+  failed: [],
+  silent,
+});
+
 /**
  * Ни одной включённой площадки. Отдельный случай, а не ошибка отправки: чинить
  * тут нечего, надо задать env — поэтому в тексте сразу видно, какой именно.
@@ -41,31 +55,33 @@ export function allDisabled(
 ): PublishResult {
   const hints = targets.map((t) => `${t.title} — задай ${t.envKey}`).join('\n');
   const tail = hints ? `\n${hints}` : '';
-  return {
-    ok: false,
-    posted: false,
-    message: `⚠️ Постинг выключен: ни одна площадка не настроена.${tail}`,
-    delivered: [],
-    failed: [],
-    silent: targets.map((t) => ({ title: t.title, envKey: t.envKey })),
-  };
+  return notPosted(
+    `⚠️ Постинг выключен: ни одна площадка не настроена.${tail}`,
+    targets.map((t) => ({ title: t.title, envKey: t.envKey })),
+  );
 }
 
 /** Пул кончился — публиковать нечего, площадки ни при чём. */
-export function emptyPool(): PublishResult {
-  return {
-    ok: false,
-    posted: false,
-    message: '⚠️ Нет активных фраз — добавь их в админке (вкладка «Канал ЗВ»).',
-    delivered: [],
-    failed: [],
-    silent: [],
-  };
-}
+export const emptyPool = (): PublishResult =>
+  notPosted('⚠️ Нет активных фраз — добавь их в админке (вкладка «Канал ЗВ»).');
+
+/**
+ * Флаг «публикация в полёте» занят (one-at-a-time.ts): эта публикация не
+ * запущена — иначе в канале вышло бы два поста. `holder` — кто держит флаг.
+ */
+export const publishBusy = (holder: string | null): PublishResult =>
+  notPosted(
+    `⏳ Сейчас выходит ${holder ?? 'другая публикация'} — эта не запущена, ` +
+      'иначе в канале будет два поста. Повторить можно через пару минут.',
+  );
 
 /**
  * Итог рассылки одного текста по площадкам. Три исхода различимы с первого
  * символа: ✅ дошло везде, ⚠️ дошло не везде, ❌ не дошло никуда.
+ *
+ * `posted` — пост мог выйти: дошло хотя бы куда-то или у площадки исход
+ * неизвестен (unknown-outcome.ts). Хвост R7: с `posted: false` слот оставался
+ * открытым, и следующий тик публиковал там, где пост, возможно, уже вышел.
  */
 export function fanoutResult(
   text: string,
@@ -73,7 +89,8 @@ export function fanoutResult(
   failed: DeliveryFailure[],
   silent: SilentTarget[] = [],
 ): PublishResult {
-  const posted = delivered.length > 0;
+  const posted =
+    delivered.length > 0 || failed.some((f) => isUnknownReason(f.reason));
   const ok = posted && failed.length === 0;
   return {
     ok,
@@ -147,12 +164,5 @@ export function unknownPlatform(
   const message = disabled
     ? `⚠️ ${disabled.title} не настроен — задай ${disabled.envKey}.`
     : `⚠️ Площадка «${asked}» неизвестна. Доступные: ${known.join(', ')}.`;
-  return {
-    ok: false,
-    posted: false,
-    message,
-    delivered: [],
-    failed: [],
-    silent: disabled ? [disabled] : [],
-  };
+  return notPosted(message, disabled ? [disabled] : []);
 }

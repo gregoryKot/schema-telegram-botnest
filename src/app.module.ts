@@ -34,8 +34,10 @@ import {
   PRACTICE_ALIAS_HOSTS,
 } from './practice-domain.middleware';
 import { configureUnifiedFrontend } from './unified-frontend.middleware';
-import { practiceIndexMiddleware } from './practice-index-html';
-import { PRACTICE_INDEXED_PAGES } from './practice-domain.seo';
+import {
+  PRACTICE_PREVIEW_ROUTES,
+  practiceIndexMiddleware,
+} from './practice-index-html';
 import { SiteContentModule } from './site-content/site-content.module';
 import { DbOutageMonitorService } from './infra/db-outage.service';
 import { SelfCheckService } from './infra/self-check/self-check.service';
@@ -80,7 +82,7 @@ const ALIAS_DOMAINS = PRACTICE_ALIAS_HOSTS;
 })
 export class AppModule implements NestModule {
   // configure() runs before ServeStaticModule.onModuleInit(), so this
-  // middleware intercepts GET of indexed practice pages before serve-static.
+  // middleware intercepts GET of practice pages before serve-static.
   configure(consumer: MiddlewareConsumer) {
     const indexPath = join(__dirname, '..', 'webapp', 'dist', 'index.html');
     const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : null;
@@ -95,12 +97,9 @@ export class AppModule implements NestModule {
 
     configureUnifiedFrontend(consumer); // /app/* → /today за флагом
     configureBuildAssets(consumer); // промах по файлу сборки — 404 no-store
-    consumer.apply(practiceIndexMiddleware(html, ALIAS_DOMAINS)).forRoutes(
-      ...PRACTICE_INDEXED_PAGES.map((path) => ({
-        path,
-        method: RequestMethod.GET,
-      })),
-    );
+    consumer
+      .apply(practiceIndexMiddleware(html, ALIAS_DOMAINS))
+      .forRoutes(...PRACTICE_PREVIEW_ROUTES);
 
     // Главная продукта: текст лендинга в #root для робота без JS (GEO.md);
     // после practiceIndexMiddleware — главная визитки до сюда не доходит.
