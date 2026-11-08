@@ -44,11 +44,11 @@ export function shouldRecordSession(
   return WEBVISOR_PATHS.test(pathname);
 }
 
-/**
- * Вставляет тег Яндекс.Метрики и инициализирует счётчик. Идемпотентна —
- * повторный вызов ничего не делает (флаг __ym_loaded). Не делает ничего и
- * вне публичных страниц или при живой сессии (metrikaGate, решение D-4).
- */
+/** Тег уже вставлен в этот документ: SPA-переход его не выгрузит — в кабинет только полной навигацией (S15). */
+export const metrikaLoadedInDocument = (): boolean => (window as { __ym_loaded?: boolean }).__ym_loaded === true;
+
+/** Вставляет тег Метрики и инициализирует счётчик. Идемпотентна (флаг __ym_loaded); молчит
+ *  вне публичных страниц и при живой сессии (metrikaGate, решение D-4). */
 export function loadMetrika(): void {
   if (typeof window === 'undefined' || !metrikaAllowed()) return;
   const w = window as unknown as { __ym_loaded?: boolean; ym?: YmFn };

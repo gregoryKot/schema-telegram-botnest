@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { getHost } from '../../../shared/src/host';
 import { AddHomeScreenButton } from '../../../shared/src/host/AddHomeScreenButton';
 import { api } from '../api';
@@ -13,6 +12,7 @@ import { detectInstallPlatform, isStandalone, promptInstall, subscribeAppInstall
 import { ServicePage } from './service/ServicePage';
 import { isAndroidWebView, loginNote } from './install/installLogic';
 import { useHandoffExchange } from './install/useHandoffExchange';
+import { CabinetLink } from './install/CabinetLink';
 
 type Action = 'shown' | 'add' | 'added' | 'handoff_ok' | 'handoff_failed';
 // Страницу видят и анонимы: событие идёт публичным путём (userId = null).
@@ -48,7 +48,7 @@ function Done({ title, lead, label }: { title: string; lead: string; label: stri
         <div className="ds-eyebrow">Приложение</div>
         <h1 className="ds-h2">{title}</h1>
         <p className="as-lead">{lead}</p>
-        <Link className="ds-btn as-cta" to="/today">{label}</Link>
+        <CabinetLink className="ds-btn as-cta">{label}</CabinetLink>
       </div>
     </ServicePage>
   );
