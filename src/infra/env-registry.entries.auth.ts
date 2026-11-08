@@ -49,8 +49,8 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'JWT_SECRET',
     purpose:
-      'Подписывает access/refresh/merge JWT сайта — без него вход через ' +
-      'Google/VK и merge аккаунтов не работает.',
+      'Подписывает access/refresh/merge/2FA-challenge JWT и state входа сайта — ' +
+      'без него вход через Google/VK и merge аккаунтов не работает.',
     requiredInProd: true,
     format: formats.secret32,
     group: 'auth',
