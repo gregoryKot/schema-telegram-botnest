@@ -7,6 +7,7 @@ import { sessionLabel } from './caldav-event.util';
 import { formatTime, subjectFromTitle } from './booking-notify.format';
 import { CONFIRMED_SUBJECT, confirmedCardText } from './booking-confirmed-card';
 import type { PlainBooking } from './booking-notify.service';
+import { eventDurationMin } from './session-event';
 
 // Тело onConfirmed: ссылка на встречу, событие календаря, флаг, DM админу. Из
 // booking-notify.service.ts (правило №10), аудит 2026-10-11, security#21.
@@ -69,7 +70,7 @@ export async function runConfirmEffects(
     uid = await d.calDav.pushEvent({
       uid: bookingEventUid(b.id),
       startsAt: b.startsAt,
-      durationMin: b.durationMin,
+      durationMin: eventDurationMin(b),
       summary: `${sessionLabel(b.type)} — ${b.clientName}`,
       description: [b.clientContact, b.message, b.meetingUrl]
         .filter(Boolean)

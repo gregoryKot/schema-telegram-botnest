@@ -201,7 +201,7 @@ describe('PlanSheet — удаление своей практики', () => {
 describe('PlanSheet — .ics-экспорт (паритет с мини-аппом, правило №16)', () => {
   it('клик «Добавить в календарь» зовёт host.saveFile с .ics файлом', async () => {
     const saveFile = vi.fn();
-    setHost({ id: 'web', saveFile } as unknown as HostBridge);
+    setHost({ id: 'web', saveFile, capabilities: { dataUrlFiles: true } } as unknown as HostBridge);
     await act(async () => renderSheet());
     const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
     fireEvent.change(textarea, { target: { value: 'Своя практика' } });

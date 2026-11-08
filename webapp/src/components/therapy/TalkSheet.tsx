@@ -17,6 +17,7 @@ interface Props {
 }
 
 /** Лист «Поговорить с кем-то»: куда пойти, если одной самопомощи мало. Цены на листе нет.
+ *  Без своего терапевта говорит владелец от первого лица: «если хочешь в терапию — напиши мне» (2026-11-08).
  *  Свой терапевт без канала связи (U4) — «запиши и принеси на встречу» и переход к ближайшей
  *  встрече (профиль: карточка терапевта, следующая сессия, запись): лист без действия был тупиком. */
 export function TalkSheet({ place, trigger, onClose }: Props) {
@@ -44,11 +45,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
         {hasTherapist ? (
           <p className="cw-lead">{contact.url ? t.sheetTherapistP : t.sheetTherapistNoChannelP}</p>
         ) : (
-          <>
-            <p className="cw-lead">{t.sheetP1}</p>
-            <p className="cw-lead">{t.sheetP2}</p>
-            <p className="cw-lead">{t.sheetP3}</p>
-          </>
+          <p className="cw-lead">{t.sheetP}</p>
         )}
         <div className="th-sheet-acts">
           {hasTherapist ? (
@@ -63,17 +60,17 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
             <>
               <ExternalLink
                 className="ds-btn ds-btn--lg"
+                href={telegramUrl()}
+                onClick={() => trackTherapyNudge(place, 'write', trigger)}
+              >
+                {t.sheetWriteMe}
+              </ExternalLink>
+              <ExternalLink
+                className="ds-btn ds-btn--secondary ds-btn--lg"
                 href={bookingUrl(place)}
                 onClick={() => trackTherapyNudge(place, 'book', trigger)}
               >
                 {t.sheetBook}
-              </ExternalLink>
-              <ExternalLink
-                className="ds-btn ds-btn--secondary ds-btn--lg"
-                href={telegramUrl()}
-                onClick={() => trackTherapyNudge(place, 'write', trigger)}
-              >
-                {t.sheetTelegram}
               </ExternalLink>
             </>
           )}

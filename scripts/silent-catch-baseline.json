@@ -23,7 +23,6 @@
   "webapp/src/pages/admin/MarqueeSection.tsx": 1,
   "webapp/src/pages/admin/PhotoSection.tsx": 1,
   "webapp/src/pages/LandingPage.tsx": 1,
-  "webapp/src/pages/LinkDevicePage.tsx": 1,
   "webapp/src/pages/tests/QuizPage.tsx": 1,
   "webapp/src/sections/DiarySection.tsx": 1
 }

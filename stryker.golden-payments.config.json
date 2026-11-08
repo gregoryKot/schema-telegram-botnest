@@ -15,6 +15,7 @@
   "mutate": [
     "src/utils/tz.ts",
     "src/booking/robokassa.service.ts",
+    "src/booking/robokassa-sign.ts",
     "src/booking/booking.service.ts",
     "src/booking/payment-guard.ts",
     "src/booking/booking-data.ts",

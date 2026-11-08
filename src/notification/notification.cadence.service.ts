@@ -5,6 +5,7 @@ import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { addDaysLocal, localDateString } from './notification.time';
 import {
   CADENCE_USER_SELECT,
+  claimFillDay,
   claimPlanDay,
 } from './notification.cadence-store';
 
@@ -59,6 +60,11 @@ export class NotificationCadenceService {
   /** Захват дня плана под полуночный обход — notification.cadence-store.ts. */
   claimPlanDay(user: CadenceUser, now = new Date(), planDate?: string) {
     return claimPlanDay(this.prisma, user, now, planDate);
+  }
+
+  /** Захват дня заполнения трекера (E16) — notification.cadence-store.ts. */
+  claimFillDay(userId: bigint, day: string) {
+    return claimFillDay(this.prisma, userId, day);
   }
 
   /** 'paused' — пропустить юзера; 'expired' — пауза кончилась, отправить welcome_back и больше ничего */

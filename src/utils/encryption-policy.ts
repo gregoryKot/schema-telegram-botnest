@@ -27,6 +27,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     notifyNextRemindDate: DATE,
     notifySkipAckDate: DATE,
     notifyLastEvalDate: DATE,
+    notifyLastFillDate: DATE,
     addressForm: plain("'ty'|'vy' — настройка обращения"),
     mySchemaIds: enc(`${BOT}/bot.service.ts`),
     myModeIds: enc(`${BOT}/bot.service.ts`),

@@ -56,14 +56,41 @@ async function scheduleMilestone(
   }
 }
 
+/** Текст сводки дня из текущих оценок. */
+async function summaryText(
+  deps: DiaryCompleteDeps,
+  userId: bigint,
+  tz: string,
+  addressForm: string | null | undefined,
+): Promise<string> {
+  const ratings = await deps.botService.getRatings(userId);
+  return buildSummaryText(
+    deps.botService.getNeeds(),
+    ratings,
+    tz,
+    normalizeAddressForm(addressForm),
+  );
+}
+
 export async function runDiaryComplete(
   deps: DiaryCompleteDeps,
   userId: bigint,
   now = new Date(),
 ) {
-  const nextContact = await deps.cadenceService.registerFill(userId, now);
   const settings = await deps.botService.getUserSettings(userId);
   const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
+  const todayStr = localDateString(tz, now);
+  // E16 (аудит 2026-11): две параллельные «последние оценки» обе видели день
+  // заполненным, и сводок выходило две. День забирает один условный UPDATE;
+  // повторное заполнение того же дня (правка оценки) только освежает текст
+  // уже стоящей сводки — второй строки и второго празднования нет.
+  if (!(await deps.cadenceService.claimFillDay(userId, todayStr))) {
+    if (settings?.notifySummaryEnabled === false) return;
+    const text = await summaryText(deps, userId, tz, settings?.addressForm);
+    await deps.notificationService.refreshPending(userId, 'summary', { text });
+    return;
+  }
+  const nextContact = await deps.cadenceService.registerFill(userId, now);
   // Напоминания до дня следующего контакта и все «давно не заходил» (R4, E13).
   await cancelOnFill(deps.notificationService, userId, tz, now, nextContact);
   await deps.notificationService.cancel(userId, 'summary');
@@ -75,16 +102,9 @@ export async function runDiaryComplete(
   );
   if (settings?.notifySummaryEnabled === false) return;
 
-  const ratings = await deps.botService.getRatings(userId);
-  const text = buildSummaryText(
-    deps.botService.getNeeds(),
-    ratings,
-    tz,
-    normalizeAddressForm(settings?.addressForm),
-  );
+  const text = await summaryText(deps, userId, tz, settings?.addressForm);
   // Schedule summary after milestones: if notify hour passed, add 5 min so milestones (sent now)
   // arrive first and summary follows in the next processQueue cycle.
-  const todayStr = localDateString(tz, now);
   const hour = settings?.notifyLocalHour ?? 21;
   const todaySendAt = utcInstantForLocalHour(todayStr, hour, tz);
   const sendAt =

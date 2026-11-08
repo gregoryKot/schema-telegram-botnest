@@ -3,7 +3,10 @@
 // про Telegram уже ничего не знают.
 import { TelegramError } from 'telegraf';
 import { loadRecordedFixture } from '../test-support/recorded-fixture';
-import { TelegramChannelTarget } from './telegram-channel.target';
+import {
+  SEND_DEADLINE_MS,
+  TelegramChannelTarget,
+} from './telegram-channel.target';
 
 const error429 = (retryAfter: number) => {
   const body = JSON.parse(
@@ -19,9 +22,10 @@ const post = (text: string) => ({
   image: () => Promise.resolve(Buffer.alloc(0)),
 });
 
+/** Отправка идёт через callApi — только он принимает signal для отмены. */
 function makeBot() {
   const sendMessage = jest.fn().mockResolvedValue(undefined);
-  return { bot: { telegram: { sendMessage } } as any, sendMessage };
+  return { bot: { telegram: { callApi: sendMessage } } as any, sendMessage };
 }
 
 describe('TelegramChannelTarget', () => {
@@ -51,8 +55,12 @@ describe('TelegramChannelTarget', () => {
   it('шлёт текст в канал с уведомлением (без disable_notification)', async () => {
     const { bot, sendMessage } = makeBot();
     await new TelegramChannelTarget(bot).send(post('фраза'), '@test_channel');
-    expect(sendMessage).toHaveBeenCalledWith('@test_channel', 'фраза');
-    expect(sendMessage.mock.calls[0][2]?.disable_notification).toBeFalsy();
+    expect(sendMessage).toHaveBeenCalledWith(
+      'sendMessage',
+      { chat_id: '@test_channel', text: 'фраза' },
+      { signal: expect.anything() },
+    );
+    expect(sendMessage.mock.calls[0][1]?.disable_notification).toBeFalsy();
   });
 
   it('без бота падает с внятной причиной, а не с undefined', async () => {
@@ -83,52 +91,134 @@ describe('TelegramChannelTarget', () => {
     // Инцидент 2026-08-09: Telegram — единственная площадка, ходившая мимо
     // общего HTTP-слоя, и повторов у неё не было. Связь до api.telegram.org
     // с хостинга моргает: пост падал с ETIMEDOUT, а соседние площадки в те же
-    // секунды принимали его.
-    const netError = () =>
-      Object.assign(new Error('request to api.telegram.org failed'), {
-        code: 'ETIMEDOUT',
-      });
+    // секунды принимали его. Форма ошибки — как её отдаёт node-fetch в telegraf.
+    const connectError = () =>
+      Object.assign(
+        new Error(
+          'request to api.telegram.org failed, reason: connect ETIMEDOUT 149.154.167.220:443',
+        ),
+        { code: 'ETIMEDOUT', erroredSysCall: 'connect' },
+      );
+    const callWith = (callApi: jest.Mock) =>
+      ({ telegram: { callApi } }) as never;
 
-    const post = {
-      text: 'фраза',
-      image: () => Promise.resolve(Buffer.from('')),
-    };
-
-    it('таймаут — пробуем ещё раз, и пост уходит', async () => {
-      const sendMessage = jest
+    it('соединение не установилось — пробуем ещё раз, и пост уходит', async () => {
+      const callApi = jest
         .fn()
-        .mockRejectedValueOnce(netError())
+        .mockRejectedValueOnce(connectError())
         .mockResolvedValueOnce(undefined);
-      const bot = { telegram: { sendMessage } } as never;
 
-      await new TelegramChannelTarget(bot).send(post, '@ch');
+      await new TelegramChannelTarget(callWith(callApi)).send(
+        post('фраза'),
+        '@ch',
+      );
 
-      expect(sendMessage).toHaveBeenCalledTimes(2);
-      expect(sendMessage).toHaveBeenLastCalledWith('@ch', 'фраза');
+      expect(callApi).toHaveBeenCalledTimes(2);
+      expect(callApi.mock.calls[1][1]).toEqual({
+        chat_id: '@ch',
+        text: 'фраза',
+      });
     });
 
     it('сеть не поднялась — три попытки и внятная причина', async () => {
-      const sendMessage = jest.fn().mockRejectedValue(netError());
-      const bot = { telegram: { sendMessage } } as never;
+      const callApi = jest.fn().mockRejectedValue(connectError());
 
       await expect(
-        new TelegramChannelTarget(bot).send(post, '@ch'),
-      ).rejects.toThrow('failed');
-      expect(sendMessage).toHaveBeenCalledTimes(3);
+        new TelegramChannelTarget(callWith(callApi)).send(post('фраза'), '@ch'),
+      ).rejects.toThrow('connect ETIMEDOUT');
+      expect(callApi).toHaveBeenCalledTimes(3);
     });
 
     it('ответ API не повторяется — пост мог уже выйти', async () => {
       // 400 значит, что запрос дошёл: повтор рискует вторым сообщением.
-      const sendMessage = jest.fn().mockRejectedValue({
+      const callApi = jest.fn().mockRejectedValue({
         response: { error_code: 400, description: 'chat not found' },
       });
-      const bot = { telegram: { sendMessage } } as never;
 
       await expect(
-        new TelegramChannelTarget(bot).send(post, '@ch'),
+        new TelegramChannelTarget(callWith(callApi)).send(post('фраза'), '@ch'),
       ).rejects.toMatchObject({ response: { error_code: 400 } });
-      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(callApi).toHaveBeenCalledTimes(1);
     });
+
+    // R7 (аудит 2026-11): обрыв после записи запроса — исход неизвестен.
+    it('обрыв после отправки (read ECONNRESET) не повторяется', async () => {
+      const callApi = jest.fn().mockRejectedValue(
+        Object.assign(new Error('request failed, reason: read ECONNRESET'), {
+          code: 'ECONNRESET',
+          erroredSysCall: 'read',
+        }),
+      );
+
+      await expect(
+        new TelegramChannelTarget(callWith(callApi)).send(post('фраза'), '@ch'),
+      ).rejects.toThrow('ECONNRESET');
+      expect(callApi).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+// R7 (аудит 2026-11): у telegraf таймаут ответа 500 с — зависший пост
+// переживал тик расписания (5 мин), и следующий тик публиковал слот ещё раз.
+describe('TelegramChannelTarget — срок отправки', () => {
+  afterEach(() => jest.useRealTimers());
+
+  /** Запрос, на который Telegram не отвечает: висит, пока его не отменят. */
+  const hangingCall = () =>
+    jest.fn(
+      (_m: string, _p: unknown, opts: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          opts.signal.addEventListener('abort', () =>
+            reject(
+              Object.assign(new Error('The user aborted a request.'), {
+                name: 'AbortError',
+                type: 'aborted',
+              }),
+            ),
+          );
+        }),
+    );
+
+  it('ответа нет — запрос отменяется по своему таймауту и НЕ повторяется', async () => {
+    jest.useFakeTimers();
+    const callApi = hangingCall();
+    const sent = new TelegramChannelTarget({
+      telegram: { callApi },
+    } as never)
+      .send(post('фраза'), '@ch')
+      .catch((e: unknown) => e);
+
+    await jest.advanceTimersByTimeAsync(15_000);
+
+    expect(await sent).toMatchObject({ name: 'AbortError' });
+    expect(callApi).toHaveBeenCalledTimes(1);
+  });
+
+  it('весь send — с 429 и сетевыми повторами — укладывается в срок меньше тика', async () => {
+    jest.useFakeTimers();
+    // Худший случай: каждая попытка сначала ждёт 429, потом не соединяется.
+    const connectRefused = Object.assign(new Error('connect ECONNREFUSED'), {
+      code: 'ECONNREFUSED',
+      erroredSysCall: 'connect',
+    });
+    let calls = 0;
+    const callApi = jest.fn(() => {
+      calls++;
+      return Promise.reject(calls % 2 === 1 ? error429(25) : connectRefused);
+    });
+    let settled = false;
+    void new TelegramChannelTarget({ telegram: { callApi } } as never)
+      .send(post('фраза'), '@ch')
+      .catch(() => undefined)
+      .finally(() => {
+        settled = true;
+      });
+
+    await jest.advanceTimersByTimeAsync(SEND_DEADLINE_MS);
+
+    expect(settled).toBe(true);
+    // Тик расписания канала — 5 минут.
+    expect(SEND_DEADLINE_MS).toBeLessThan(5 * 60_000);
   });
 });
 

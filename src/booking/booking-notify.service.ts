@@ -6,7 +6,7 @@ import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
-import { awaitingPaymentTitle } from './booking-admin-note';
+import { awaitingPaymentTitle, cancelledNotice } from './booking-admin-note';
 import { bookingCardText, subjectFromTitle } from './booking-notify.format';
 import type { PriceFields } from './booking-notify.price';
 import { SessionType } from '@prisma/client';
@@ -68,10 +68,11 @@ export class BookingNotifyService {
     );
   }
 
-  /** Remove from Apple Calendar + notify admin when cancelled. */
+  /** Remove from Apple Calendar + notify admin when cancelled (оплаченная — «нужен возврат»). */
   async onCancelled(b: PlainBooking, calDavUid: string | null): Promise<void> {
     if (calDavUid) await this.calDav.removeEvent(calDavUid);
-    await this.sendAdmin('❌ <b>Запись отменена</b>', b);
+    const { html, subject } = cancelledNotice(b);
+    await this.notifyAdminBoth(html, subject);
   }
 
   /** Notify admin a paid slot is reserved and awaiting payment (so a failed/abandoned payment isn't lost). */

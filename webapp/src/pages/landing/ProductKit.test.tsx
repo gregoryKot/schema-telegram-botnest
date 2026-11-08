@@ -7,6 +7,7 @@ import { render, cleanup } from '@testing-library/react';
 import { ArticleCard, InfoCard } from './ProductKit';
 import { Heart } from '../../components/art/PaperArtSigns';
 import type { ArticleSummary } from '../../api';
+import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
 afterEach(() => cleanup());
 
@@ -33,6 +34,15 @@ describe('ArticleCard', () => {
     const hues = [0, 1, 2].map(hue);
     expect(new Set(hues).size).toBe(3);
     expect(hue(3)).toBe(hues[0]);
+  });
+
+  // E14 (аудит 2026-11): дата — полночь UTC моментом; западнее UTC была 30 сентября.
+  it('дата статьи — тот же день в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      const { container } = render(<ArticleCard a={article(null)} />);
+      expect(container.querySelector('.pl2-article-meta')?.textContent, tz).toBe('1 октября · 4 мин');
+      cleanup();
+    });
   });
 });
 

@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash, timingSafeEqual } from 'crypto';
 import { payableAmount } from './price-rules';
+import {
+  md5,
+  safeEqualHex,
+  signPayment,
+  type ShopCreds,
+} from './robokassa-sign';
 
 /**
  * Robokassa payment integration.
@@ -35,6 +40,10 @@ export class RobokassaService {
     this.fiscal = config.get<string>('ROBOKASSA_FISCAL') !== 'false'; // default ON
   }
 
+  private get creds(): ShopCreds {
+    return { login: this.login, pass1: this.pass1, fiscal: this.fiscal };
+  }
+
   get enabled(): boolean {
     return Boolean(this.login && this.pass1 && this.pass2);
   }
@@ -61,26 +70,12 @@ export class RobokassaService {
       params;
     const outSum = payableAmount(amount).toFixed(2);
 
-    // Optional ОФД fiscalization. Per Robokassa docs, when a Receipt is sent it
-    // MUST be part of the signature between InvId and Password1:
-    //   MD5(MerchantLogin:OutSum:InvId:Receipt:Password1)
-    // The Receipt here is the URL-encoded minified JSON (NOT base64), and the
-    // SAME url-encoded string is used both in the signature and as the Receipt
-    // value. URLSearchParams then encodes it once more for the wire; Robokassa
-    // decodes once → gets back this url-encoded string → signature matches, then
-    // decodes again to parse the JSON. Mismatching these two is exactly error 29.
-    let receiptParam: string | null = null;
-    let sig: string;
-    if (this.fiscal) {
-      receiptParam = encodeURIComponent(
-        JSON.stringify(buildReceipt(desc, amount)),
-      );
-      sig = md5(
-        `${this.login}:${outSum}:${invId}:${receiptParam}:${this.pass1}`,
-      );
-    } else {
-      sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
-    }
+    const { sig, receiptParam } = signPayment(this.creds, {
+      outSum,
+      invId,
+      desc,
+      amount,
+    });
 
     const base = 'https://auth.robokassa.ru/Merchant/Index.aspx';
     const qs = new URLSearchParams({
@@ -133,9 +128,10 @@ export class RobokassaService {
    * client tokenised on the first payment. The actual confirmation arrives on
    * the usual ResultURL webhook. Requires the recurring service to be enabled
    * for the shop by Robokassa support (otherwise error 34).
-   *   SignatureValue = MD5(MerchantLogin:OutSum:InvId:Password1)
+   *   SignatureValue = MD5(MerchantLogin:OutSum:InvId[:Receipt]:Password1)
    *   PreviousInvoiceID is sent but NOT part of the signature.
-   * Returns { ok, body } — ok=true when Robokassa accepted the charge request.
+   * Returns { ok, body } — ok=true when Robokassa ACCEPTED the request: это не
+   * списание, деньги подтверждает только вебхук (subscription.charge-guards.ts).
    */
   async chargeRecurring(params: {
     invId: number;
@@ -145,7 +141,12 @@ export class RobokassaService {
   }): Promise<{ ok: boolean; body: string }> {
     const { invId, previousInvId, amount, desc } = params;
     const outSum = amount.toFixed(2);
-    const sig = md5(`${this.login}:${outSum}:${invId}:${this.pass1}`);
+    const { sig, receiptParam } = signPayment(this.creds, {
+      outSum,
+      invId,
+      desc,
+      amount,
+    });
     const form = new URLSearchParams({
       MerchantLogin: this.login,
       InvoiceID: String(invId),
@@ -153,6 +154,7 @@ export class RobokassaService {
       OutSum: outSum,
       Description: desc,
       SignatureValue: sig,
+      ...(receiptParam ? { Receipt: receiptParam } : {}),
     });
     try {
       const res = await fetch('https://auth.robokassa.ru/Merchant/Recurring', {
@@ -176,40 +178,4 @@ export class RobokassaService {
       return { ok: false, body: (e as Error).message };
     }
   }
-}
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-function md5(input: string): string {
-  return createHash('md5').update(input, 'utf8').digest('hex');
-}
-
-/** Constant-time comparison of two hex signatures (case-insensitive). */
-function safeEqualHex(a: string, b: string): boolean {
-  const x = Buffer.from((a ?? '').toLowerCase(), 'utf8');
-  const y = Buffer.from((b ?? '').toLowerCase(), 'utf8');
-  if (x.length !== y.length) return false;
-  return timingSafeEqual(x, y);
-}
-
-/**
- * Receipt for Robokassa fiscalization. For self-employed (НПД / Робочеки СМЗ)
- * the `sno` field is intentionally omitted — it's only needed to distinguish
- * tax systems, and there is no НПД value (the old 'patent' was simply wrong and
- * could make Robokassa reject the cheque). Robokassa registers the income in
- * «Мой налог» automatically from these items.
- */
-function buildReceipt(name: string, amount: number) {
-  return {
-    items: [
-      {
-        name: name.slice(0, 128),
-        quantity: 1,
-        sum: parseFloat(amount.toFixed(2)),
-        tax: 'none',
-        payment_method: 'full_payment',
-        payment_object: 'service',
-      },
-    ],
-  };
 }

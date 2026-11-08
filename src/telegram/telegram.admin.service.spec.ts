@@ -9,6 +9,7 @@ import { Logger } from '@nestjs/common';
 import { TelegramAdminService } from './telegram.admin.service';
 import { BLOCK_FAILED_MARK } from '../bot/stats-settle';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
+import { ZV_BUSY, ZV_STARTED } from './zv-runner';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 
@@ -87,8 +88,46 @@ describe('TelegramAdminService — /zv (только админ)', () => {
       from: { id: 999 },
       message: { text: '/zv' },
     });
+    await service.zv.current;
     expect(publisher.publish).toHaveBeenCalledWith();
-    expect(ctx.reply).toHaveBeenCalledWith('✅ Опубликовано');
+    expect(ctx.reply.mock.calls).toEqual([[ZV_STARTED], ['✅ Опубликовано']]);
+  });
+
+  // E16 (аудит 2026-11): публикация ждалась в обработчике, и Telegraf держал
+  // всю пачку апдейтов — бот замирал для всех до 90 с.
+  it('/zv не держит обработчик: итог приходит отдельным сообщением', async () => {
+    process.env.ADMIN_ID = '999';
+    let finish: (r: { message: string }) => void = () => undefined;
+    const { service, fakeBot } = makeDeps({
+      publisher: {
+        publish: jest.fn(
+          () => new Promise<{ message: string }>((r) => (finish = r)),
+        ),
+      },
+    });
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'zv', {
+      from: { id: 999 },
+      message: { text: '/zv' },
+    });
+    // Обработчик вернулся, пока публикация ещё идёт.
+    expect(ctx.reply.mock.calls).toEqual([[ZV_STARTED]]);
+    finish({ message: '✅ Опубликовано' });
+    await service.zv.current;
+    expect(ctx.reply).toHaveBeenLastCalledWith('✅ Опубликовано');
+  });
+
+  it('второй /zv, пока идёт первый, не публикует ещё раз', async () => {
+    process.env.ADMIN_ID = '999';
+    const publish = jest.fn(() => new Promise(() => undefined));
+    const { service, fakeBot } = makeDeps({ publisher: { publish } });
+    service.onModuleInit();
+    const msg = { from: { id: 999 }, message: { text: '/zv' } };
+    await runCommand(fakeBot, 'zv', msg);
+    await new Promise((r) => setImmediate(r));
+    const second = await runCommand(fakeBot, 'zv', msg);
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(second.reply).toHaveBeenCalledWith(ZV_BUSY);
   });
 
   it('/zv <площадка> — проверяет ровно эту площадку через channelCheck.checkOne', async () => {
@@ -99,6 +138,7 @@ describe('TelegramAdminService — /zv (только админ)', () => {
       from: { id: 999 },
       message: { text: '/zv telegram' },
     });
+    await service.zv.current;
     expect(channelCheck.checkOne).toHaveBeenCalledWith('telegram');
     expect(publisher.publish).not.toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenCalledWith('✅ telegram ок');
@@ -119,7 +159,9 @@ describe('TelegramAdminService — /zv (только админ)', () => {
   });
 
   it('publisher.publish падает — не роняет хендлер, отвечает текстом ошибки', async () => {
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const errors = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
     process.env.ADMIN_ID = '999';
     const { service, fakeBot } = makeDeps({
       publisher: {
@@ -131,7 +173,9 @@ describe('TelegramAdminService — /zv (только админ)', () => {
       from: { id: 999 },
       message: { text: '/zv' },
     });
+    await service.zv.current;
     expect(ctx.reply).toHaveBeenCalledWith(expect.stringContaining('MAX down'));
+    expect(errors).toHaveBeenCalledWith('zv command failed', expect.any(Error));
   });
 });
 

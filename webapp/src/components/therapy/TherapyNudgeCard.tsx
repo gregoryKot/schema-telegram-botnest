@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { ModeDiaryEntry } from '../../../../shared/src/types';
+import { isBridgeCardHidden } from '../../../../shared/src/therapy/bridge/therapyBridgeState';
 import { SkeletonCard } from '../Skeleton';
 import { TherapyBridgeCard } from './TherapyBridgeCard';
 import { TherapyCardFrame } from './TherapyCardFrame';
@@ -11,7 +12,7 @@ import { useTherapyTarget } from './useTherapyTarget';
 /**
  * Карточка на главной, когда по данным видно: одной самопомощи может быть мало
  * (низкий индекс, повторяющийся режим, тяжёлый день). Нет сигнала — спокойная
- * карточка моста (TherapyBridgeCard); терапевту — пусто; до ответа истории — скелетон.
+ * карточка моста (TherapyBridgeCard, «Скрыть» — насовсем); терапевту — пусто; до ответа истории — скелетон.
  * «Не сейчас» прячет её на 14 дней на этом устройстве.
  */
 export function TherapyNudgeCard({
@@ -32,7 +33,8 @@ export function TherapyNudgeCard({
 
   if (target.hidden) return null;
   // Пока история не пришла — силуэт карточки, не спокойная версия с ложным показом.
-  if (!ready) return <SkeletonCard height={150} radius={18} />;
+  // Спокойную карточку скрыли («Скрыть») — силуэта нет: чаще всего на его месте будет пусто.
+  if (!ready) return isBridgeCardHidden() ? null : <SkeletonCard height={150} radius={18} />;
   if (!signal) return <TherapyBridgeCard place="home_card" />;
 
   return (

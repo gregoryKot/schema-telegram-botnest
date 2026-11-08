@@ -67,6 +67,7 @@ function makeService(opts: {
     hasEver: jest.fn().mockResolvedValue(opts.hasEver ?? false),
   };
   const cadenceService: any = {
+    claimFillDay: jest.fn().mockResolvedValue(true),
     registerFill: jest.fn().mockResolvedValue('2026-07-17'),
   };
   const plannerService: any = {};

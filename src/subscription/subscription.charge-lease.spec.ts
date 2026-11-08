@@ -11,6 +11,7 @@ function makeService(
 ) {
   const prisma: any = {
     subscription: { findMany: jest.fn().mockResolvedValue([]) },
+    subscriptionCharge: { findMany: jest.fn().mockResolvedValue([]) },
   };
   const cronLeader = {
     claimRun: jest.fn().mockResolvedValue(opts.leader ?? true),

@@ -90,6 +90,7 @@ export function createTelegramHost(): HostBridge {
         haptics: !!w?.HapticFeedback,
         backButton: !!w?.BackButton,
         close: true,
+        dataUrlFiles: false, // openLink клиента пускает только http(s)
       };
     },
 
@@ -159,8 +160,10 @@ export function createTelegramHost(): HostBridge {
     },
 
     openLink: (url) => tg()?.openLink?.(url),
-    // Файл отдаём системе: внутри вебвью мессенджера скачивания нет.
-    saveFile: (dataUrl) => tg()?.openLink?.(dataUrl),
+    // Файл отдаём системе ссылкой: в вебвью скачивания нет, а data:-URL
+    // openLink отвергает (WebAppTgUrlInvalid, аудит 2026-11 E6) — сюда
+    // приходит https-ссылка с сервера (practices/savePracticeIcs.ts).
+    saveFile: (url) => tg()?.openLink?.(url),
 
     haptic: {
       tap: () => tg()?.HapticFeedback?.impactOccurred('light'),

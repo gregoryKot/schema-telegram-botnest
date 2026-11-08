@@ -43,6 +43,7 @@ import type {
 } from '../notes/types';
 import type { JourneyData } from '../journey/journeyMeta';
 import type { TherapistNotesPage } from '../therapy/notesPage';
+import type { PracticeIcsLinkBody } from '../practices/savePracticeIcs';
 
 /** Транспорт фронтенда: auth-заголовки, BASE и обработка ошибок — внутри. */
 export interface ApiTransport {
@@ -112,6 +113,9 @@ export const buildSharedApi = (t: ApiTransport) => ({
     practiceText: string,
     reminderLocalHour?: number, // час по поясу человека, день считает сервер
   ) => t.post('/api/plan', { needId, practiceText, reminderLocalHour }),
+  // Ссылка на .ics шага плана для хоста без data:-URL (Telegram, E6).
+  practiceIcsLink: (body: PracticeIcsLinkBody) =>
+    t.postJson<{ path: string }>('/api/plan/ics', body),
   checkinPlan: (id: number, done: boolean) =>
     t.post(`/api/plan/${id}/checkin`, { done }),
   getPair: () => t.get<PairsData>('/api/pair'),

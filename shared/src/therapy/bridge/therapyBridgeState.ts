@@ -1,9 +1,10 @@
-// Локальное состояние моста к терапевту: «Не сейчас» и след кризисного текста.
+// Локальное состояние моста к терапевту: «Не сейчас», «Скрыть» и след кризисного текста.
 // Хранится только на устройстве, без синка (сознательно: не трогаем uiPrefsSync
 // и мини-апп). Каждое обращение к localStorage — в try/catch: приватный режим и
 // заблокированные данные сайта не должны ронять экран.
 const DISMISSED_KEY = 'therapy_nudge_dismissed_until';
 const CRISIS_KEY = 'therapy_crisis_seen_at';
+const CARD_HIDDEN_KEY = 'therapy_bridge_card_hidden';
 const DISMISS_DAYS = 14;
 
 function read(key: string): string | null {
@@ -33,6 +34,17 @@ export function getDismissedUntil(): string | null {
 export function dismissFor14Days(now: Date = new Date()): void {
   const until = new Date(now.getTime() + DISMISS_DAYS * 24 * 60 * 60 * 1000);
   write(DISMISSED_KEY, until.toISOString());
+}
+
+/** Постоянная карточка моста («Ещё», «Практики») скрыта кнопкой «Скрыть». */
+export function isBridgeCardHidden(): boolean {
+  return read(CARD_HIDDEN_KEY) === '1';
+}
+
+/** «Скрыть»: постоянная карточка не показывается больше нигде на этом устройстве.
+ *  Карточку по сигналу не трогает — у неё своё «Не сейчас». */
+export function hideBridgeCard(): void {
+  write(CARD_HIDDEN_KEY, '1');
 }
 
 /** Пользователь написал кризисный текст: запоминаем момент (поднимает сигнал на 7 дней). */

@@ -9,6 +9,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ArticlesListPage, ArticlePage } from './ArticlesPage';
 import { ApiError } from '../api';
 import type { ArticleSummary, Article } from '../api';
+import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const listArticles = vi.fn();
 const getArticle = vi.fn();
@@ -133,5 +134,29 @@ describe('ArticlePage', () => {
     renderArticle('schemas-101');
     const cta = await screen.findAllByText('Записаться →');
     expect((cta[0] as HTMLAnchorElement).getAttribute('href')).toMatch(/^https?:\/\//);
+  });
+});
+
+// E14 (аудит 2026-11): дата статьи — полночь UTC, сервер отдаёт её моментом
+// (Prisma DateTime). Без зоны UTC в Лос-Анджелесе показывалось 9 января.
+describe('дата статьи — календарный день, одинаковый в любой зоне', () => {
+  const STORED = '2026-01-10T00:00:00.000Z';
+
+  it('в списке', async () => {
+    await forEachTimeZoneAsync(async (tz) => {
+      listArticles.mockResolvedValue([{ ...SUMMARY, date: STORED }]);
+      render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
+      expect(await screen.findByText('10 января 2026 г.'), tz).toBeTruthy();
+      cleanup();
+    });
+  });
+
+  it('на странице статьи', async () => {
+    await forEachTimeZoneAsync(async (tz) => {
+      getArticle.mockResolvedValue({ ...SUMMARY, date: STORED, content: '<p>Текст</p>' });
+      renderArticle('schemas-101');
+      expect(await screen.findByText('10 января 2026 г.'), tz).toBeTruthy();
+      cleanup();
+    });
   });
 });

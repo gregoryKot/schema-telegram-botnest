@@ -15,7 +15,7 @@ const SRC = join(__dirname, '..');
 // Файлы, которые ОБЯЗАНЫ сравнивать секрет через timingSafeEqual.
 const SECRET_COMPARE_SITES = [
   'booking/admin-key.util.ts',
-  'booking/robokassa.service.ts',
+  'booking/robokassa-sign.ts', // safeEqualHex подписей Robokassa (вынесен из robokassa.service.ts, 2026-11)
   'auth/telegram-init-data.ts', // единый верификатор initData Telegram (был auth.service.ts)
   'auth/providers/telegram.provider.ts',
 ];

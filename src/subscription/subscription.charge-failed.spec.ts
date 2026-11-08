@@ -31,6 +31,20 @@ describe('markChargeFailed', () => {
     expect(tx.subscription.updateMany).not.toHaveBeenCalled();
   });
 
+  // R8 (аудит 2026-11): просроченное продление закрывается только из pending —
+  // уже failed (таймаут ответа) второй раз сбоем не засчитывается.
+  it('onlyPending: CAS только из pending', async () => {
+    const { prisma, tx } = makePrisma(0);
+    await expect(
+      markChargeFailed(prisma, { ...base, fails: 1, onlyPending: true }),
+    ).resolves.toBe(false);
+    expect(tx.subscriptionCharge.updateMany).toHaveBeenCalledWith({
+      where: { id: 11, status: 'pending' },
+      data: { status: 'failed' },
+    });
+    expect(tx.subscription.updateMany).not.toHaveBeenCalled();
+  });
+
   it('сбой засчитан: ретрай через сутки, статус прежний, предикат статуса подписки', async () => {
     const { prisma, tx } = makePrisma(1);
     await expect(markChargeFailed(prisma, { ...base, fails: 1 })).resolves.toBe(

@@ -110,6 +110,36 @@ describe('RobokassaService.validateSuccess (SuccessURL, MD5(OutSum:InvId:Passwor
   });
 });
 
+// Аудит 2026-11, R9: `SignatureValue=a&SignatureValue=b` в query SuccessURL
+// (и `SignatureValue[]=…` в форме) приходит массивом — `.toLowerCase` у массива
+// ронял ручку 500. Не строка — та же неверная подпись: false без исключения.
+describe('RobokassaService — подпись не строкой (массив из запроса)', () => {
+  const asSig = (v: unknown) => v as string;
+
+  it('validateSuccess: массив даже из верной подписи → false, не TypeError', () => {
+    const svc = makeService();
+    const good = md5(`100.00:42:${PASS1}`);
+    expect(svc.validateSuccess('100.00', '42', asSig([good]))).toBe(false);
+    expect(svc.validateSuccess('100.00', '42', asSig([good, good]))).toBe(
+      false,
+    );
+  });
+
+  it('validateWebhook: массив и объект → false, не TypeError', () => {
+    const svc = makeService();
+    const good = md5(`100.00:42:${PASS2}`);
+    expect(svc.validateWebhook('100.00', '42', asSig([good]))).toBe(false);
+    expect(svc.validateWebhook('100.00', '42', asSig({ 0: good }))).toBe(false);
+  });
+
+  it('КОНТРОЛЬ: та же подпись строкой принимается', () => {
+    const svc = makeService();
+    expect(svc.validateWebhook('100.00', '42', md5(`100.00:42:${PASS2}`))).toBe(
+      true,
+    );
+  });
+});
+
 describe('RobokassaService.buildPaymentUrl — подпись исходящего платежа', () => {
   const base = {
     invId: 7,
@@ -240,7 +270,7 @@ describe('RobokassaService.chargeRecurring — подпись MIT-списани
     global.fetch = originalFetch;
   });
 
-  it('шлёт корректную подпись MD5(login:sum:invId:pass1), PreviousInvoiceID вне подписи', async () => {
+  it('без чека (ROBOKASSA_FISCAL=false): подпись MD5(login:sum:invId:pass1), PreviousInvoiceID вне подписи', async () => {
     let sentBody = '';
     let sentUrl: unknown;
     let sentInit: any;
@@ -250,7 +280,7 @@ describe('RobokassaService.chargeRecurring — подпись MIT-списани
       sentBody = init.body as string;
       return { ok: true, text: async () => 'OK900123' } as any;
     }) as any;
-    const svc = makeService();
+    const svc = makeService({ ROBOKASSA_FISCAL: 'false' });
     const res = await svc.chargeRecurring({
       invId: 900123,
       previousInvId: 900001,
@@ -270,6 +300,56 @@ describe('RobokassaService.chargeRecurring — подпись MIT-списани
     expect(sentInit.headers).toEqual({
       'Content-Type': 'application/x-www-form-urlencoded',
     });
+  });
+
+  // Аудит 2026-11, R8: продление уходило без чека — «Робочеки СМЗ» не
+  // регистрировали доход в «Моём налоге». Чек тот же, что у первого платежа,
+  // и так же входит в подпись между InvoiceID и Паролем 1.
+  it('с чеком (по умолчанию): Receipt в форме и в подписи, как у первого платежа', async () => {
+    let sentBody = '';
+    global.fetch = jest.fn(async (_url: any, init: any) => {
+      sentBody = init.body as string;
+      return { ok: true, text: async () => 'OK900123' } as any;
+    }) as any;
+    const svc = makeService();
+    await svc.chargeRecurring({
+      invId: 900123,
+      previousInvId: 900001,
+      amount: 500,
+      desc: 'Подписка',
+    });
+    const sent = new URLSearchParams(sentBody);
+    const receipt = sent.get('Receipt');
+    expect(receipt).not.toBeNull();
+    expect(JSON.parse(decodeURIComponent(receipt!))).toEqual({
+      items: [
+        {
+          name: 'Подписка',
+          quantity: 1,
+          sum: 500,
+          tax: 'none',
+          payment_method: 'full_payment',
+          payment_object: 'service',
+        },
+      ],
+    });
+    expect(sent.get('SignatureValue')).toBe(
+      md5(`${LOGIN}:500.00:900123:${receipt}:${PASS1}`),
+    );
+    // Тот же чек и та же формула, что у ссылки первого платежа.
+    const first = new URL(
+      svc.buildPaymentUrl({
+        invId: 900123,
+        amount: 500,
+        desc: 'Подписка',
+        successUrl: 'https://x/s',
+        failUrl: 'https://x/f',
+      }),
+    );
+    expect(first.searchParams.get('Receipt')).toBe(receipt);
+    expect(first.searchParams.get('SignatureValue')).toBe(
+      sent.get('SignatureValue'),
+    );
   });
 
   it('обрезает пробелы вокруг ответа (trim) перед проверкой "OK"', async () => {

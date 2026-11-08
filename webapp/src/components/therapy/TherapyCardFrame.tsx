@@ -4,7 +4,8 @@ import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import type { TherapyTarget } from './useTherapyTarget';
 import '../../styles/therapy-bridge.css';
 
-/** Общая разметка карточки моста: сигнальной (с «Не сейчас») и постоянной (`extra` не задан). */
+/** Общая разметка карточки моста: сигнальной («Не сейчас») и постоянной («Скрыть») — вторая кнопка в `extra`.
+ *  Без своего терапевта под заголовком только кнопка: кто ведёт встречи, говорит лист (2026-11-08). */
 export function TherapyCardFrame({
   eyebrow,
   title,
@@ -21,7 +22,7 @@ export function TherapyCardFrame({
     <section className="th-card" aria-label={t.cardTalk}>
       <div className="ds-eyebrow">{eyebrow}</div>
       <h2 className="th-card-title">{title}</h2>
-      <p className="th-card-sub">{target.write ? t.cardSubTherapist : t.cardSubAuthor}</p>
+      {target.write && <p className="th-card-sub">{t.cardSubTherapist}</p>}
       <div className="th-card-acts">
         {target.write ? (
           <ExternalLink className="ds-btn th-btn" href={target.write.url} onClick={target.write.onClick}>

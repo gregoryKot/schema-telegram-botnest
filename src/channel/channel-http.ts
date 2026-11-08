@@ -25,6 +25,7 @@ const TIMEOUT_MS = 15_000;
 // диспетчером идёт пакетным fetch, а обычный — глобальным (его подменяют
 // тесты, и лишняя зависимость там не нужна).
 import { fetch as undiciFetch } from 'undici';
+import { isConnectFailure } from './connect-failure';
 
 /**
  * Транспорт запроса. Нужен там, где площадке требуется свой корень доверия
@@ -41,13 +42,15 @@ export interface RequestTransport {
 }
 
 /**
- * Сколько раз повторяем запрос, до которого площадка НЕ ответила, и пауза
- * между попытками.
+ * Сколько раз повторяем запрос, который НЕ ушёл (соединение не установилось),
+ * и пауза между попытками.
  *
  * Инцидент 2026-07-30: Threads с российского хостинга доступен через раз —
  * пост то уходил, то падал с «fetch failed». Повторить такой запрос безопасно:
  * сервер его не получил, дубля не будет. Ответ площадки (любой статус) не
- * повторяется никогда — там уже могло что-то создаться.
+ * повторяется никогда — там уже могло что-то создаться. Наш таймаут ожидания
+ * ответа и обрыв после отправки — тоже нет (R7, аудит 2026-11): запрос мог
+ * дойти, пост — выйти; что считается «не ушёл» — connect-failure.ts.
  *
  * Почему не общий слотовый ретрай: он срабатывает, только если не дошло НИ ОДНА
  * площадка. Пока Telegram и VK принимают пост, слот закрывается, и капризная
@@ -57,11 +60,6 @@ const NETWORK_RETRIES = 2;
 const RETRY_PAUSE_MS = 1500;
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Ответ не получен: DNS, обрыв, таймаут. Только такие попытки повторяем. */
-function isNetworkFailure(err: unknown): boolean {
-  return !(err instanceof ChannelHttpError);
-}
 
 async function fetchWithRetry(
   url: string,
@@ -79,7 +77,7 @@ async function fetchWithRetry(
       });
     } catch (err) {
       last = err;
-      if (!isNetworkFailure(err) || attempt === NETWORK_RETRIES) break;
+      if (!isConnectFailure(err) || attempt === NETWORK_RETRIES) break;
       await pause(RETRY_PAUSE_MS);
     }
   }

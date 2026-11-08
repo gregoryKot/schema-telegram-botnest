@@ -96,6 +96,7 @@ export function PlanConfirm({ s, needId, needLabel }: Props) {
         </button>
       )}
 
+      {s.icsFailed && <div role="alert" className="sk-error sk-center">{tr('Файл для календаря не открылся. Попробуй ещё раз.', 'Файл для календаря не открылся. Попробуйте ещё раз.')}</div>}
       {s.saveError && (
         <div className="sk-error sk-center">
           {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}

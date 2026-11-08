@@ -11,6 +11,7 @@ import {
   formatDateString,
   todayCalendarDate,
   shiftCalendarDay,
+  utcCalendarDay,
 } from './calendarDate';
 import {
   withTimeZone,
@@ -205,5 +206,30 @@ describe('shiftCalendarDay', () => {
       expect(shiftCalendarDay('2026-03-29', 1), tz).toBe('2026-03-30');
       expect(shiftCalendarDay('2026-10-04', -1), tz).toBe('2026-10-03');
     });
+  });
+});
+
+// E14 (аудит 2026-11): дата статьи хранится полночью UTC и приезжает моментом;
+// `toLocaleDateString` без зоны показывал её западнее UTC днём раньше.
+describe('utcCalendarDay', () => {
+  it('день, отданный моментом полуночи UTC, остаётся своим днём в любой зоне', () => {
+    forEachTimeZone((tz) => {
+      const day = utcCalendarDay('2026-01-10T00:00:00.000Z');
+      expect(day, tz).toBe('2026-01-10');
+      expect(
+        formatDateString(day, {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+        tz,
+      ).toBe('10 января 2026 г.');
+    });
+  });
+
+  it('календарный день — как есть, нечитаемая строка — пусто', () => {
+    expect(utcCalendarDay('2026-07-14')).toBe('2026-07-14');
+    expect(utcCalendarDay('мусор')).toBe('');
+    expect(utcCalendarDay('')).toBe('');
   });
 });

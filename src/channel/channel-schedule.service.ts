@@ -14,6 +14,7 @@ import { SlotAttempts } from '../bot/healthy-adult.attempts';
 import { ChannelPublisherService } from './channel-publisher.service';
 import { shouldReportSlot, slotReportText } from './slot-report';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import { OneAtATime } from './one-at-a-time';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -48,6 +49,11 @@ export class ChannelScheduleService {
 
   /** Счётчик попыток досылки — свой, чтобы не жечь попытки самой публикации. */
   private readonly retries = new SlotAttempts();
+
+  /** Публикация и досылка «в полёте» (R7, one-at-a-time.ts). Проверка — после
+   * аренды: пока процесс публикует, тик за ним, а не за соседним инстансом. */
+  private readonly posting = new OneAtATime();
+  private readonly retrying = new OneAtATime();
 
   constructor(
     private readonly publisher: ChannelPublisherService,
@@ -112,6 +118,11 @@ export class ChannelScheduleService {
    * одинаковых DM за утро).
    */
   async maybePost(now = new Date()): Promise<void> {
+    if (!(await this.posting.run(() => this.postIfDue(now))))
+      this.logger.warn('healthy-adult: публикация ещё идёт — тик пропущен');
+  }
+
+  private async postIfDue(now: Date): Promise<void> {
     try {
       const slot = dueSlot(now, await this.phrases.lastPostAt());
       // Слот закрыт: долг досылает только tickCatchUp (см. там), не этот тик.
@@ -158,6 +169,11 @@ export class ChannelScheduleService {
    * считается по журналу и досылается только должникам.
    */
   async catchUp(now = new Date()): Promise<void> {
+    if (!(await this.retrying.run(() => this.retryDebt(now))))
+      this.logger.warn('healthy-adult: досылка ещё идёт — тик пропущен');
+  }
+
+  private async retryDebt(now: Date): Promise<void> {
     const slot = catchUpSlot(now);
     if (!slot) return;
     const key = `${mskParts(now).dateKey}:${slot}:повтор`;

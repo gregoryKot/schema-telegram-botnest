@@ -44,6 +44,13 @@ describe('BookingController.getOptions', () => {
 });
 
 describe('BookingController.getSlots', () => {
+  // Даты ниже — август 2026: «сейчас» прибито к концу июля, иначе после
+  // августа они стали бы прошлым и ушли в 400 (S17, slot-range.ts).
+  beforeEach(() => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-07-31T12:00:00Z'));
+  });
+  afterEach(() => jest.restoreAllMocks());
+
   it('без from/to — from по умолчанию "сейчас", to = from + 14 дней', async () => {
     const { controller, slots } = makeController();
     slots.getSlots.mockResolvedValue([]);
@@ -106,6 +113,20 @@ describe('BookingController.getSlots', () => {
       controller.getSlots('2000-01-01', '9999-12-31'),
     ).rejects.toThrow(BadRequestException);
     // Ключевое: НЕ доходим до getSlots — event-loop не блокируется.
+    expect(slots.getSlots).not.toHaveBeenCalled();
+  });
+
+  // Аудит 2026-11, S17: прошлое и перевёрнутый диапазон — 400 до сервиса
+  // (и до REPORT в iCloud), дни за горизонтом записи — тоже.
+  it.each([
+    ['from в прошлом', '2026-07-01', '2026-07-05'],
+    ['to раньше from', '2026-08-05', '2026-08-01'],
+    ['to за горизонтом записи', '2026-08-01', '2026-11-30'],
+  ])('%s → BadRequestException, сервис не зовётся', async (_, from, to) => {
+    const { controller, slots } = makeController();
+    await expect(controller.getSlots(from, to)).rejects.toThrow(
+      BadRequestException,
+    );
     expect(slots.getSlots).not.toHaveBeenCalled();
   });
 

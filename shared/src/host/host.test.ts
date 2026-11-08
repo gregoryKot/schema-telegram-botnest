@@ -350,6 +350,7 @@ describe('адаптер Telegram', () => {
       haptics: false,
       backButton: false,
       close: true,
+      dataUrlFiles: false,
     });
     expect(() => {
       host.expand();
@@ -378,8 +379,18 @@ describe('адаптер Telegram', () => {
     expect(webApp.openLink).toHaveBeenCalledWith(
       'https://schemehappens.ru/articles/1',
     );
-    host.saveFile('data:text/calendar,BEGIN', 'practice.ics');
-    expect(webApp.openLink).toHaveBeenCalledWith('data:text/calendar,BEGIN');
+    host.saveFile('https://schemehappens.ru/api/plan/ics/tok', 'practice.ics');
+    expect(webApp.openLink).toHaveBeenCalledWith(
+      'https://schemehappens.ru/api/plan/ics/tok',
+    );
+  });
+
+  // E6 (аудит 2026-11): openLink клиента бросает WebAppTgUrlInvalid на всё,
+  // кроме http(s), — data:-URL файла сюда отдавать нельзя, хост это объявляет.
+  it('data:-URL файлов Telegram не берёт — объявлено в capabilities', () => {
+    fakeTelegram();
+    expect(createTelegramHost().capabilities.dataUrlFiles).toBe(false);
+    expect(createWebHost().capabilities.dataUrlFiles).toBe(true);
   });
 
   it('тактильный отклик: press/warning/error тоже разложены по типам клиента', () => {
@@ -602,6 +613,7 @@ describe('адаптер MAX', () => {
       haptics: false,
       backButton: false,
       close: false,
+      dataUrlFiles: true,
     });
   });
 });

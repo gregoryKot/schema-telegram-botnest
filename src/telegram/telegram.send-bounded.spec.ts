@@ -8,6 +8,7 @@ import { AddressInfo } from 'net';
 import { Logger } from '@nestjs/common';
 import { Telegraf } from 'telegraf';
 import { runProcessQueue } from './telegram.schedule-queue';
+import { RejectCounter } from './telegram.schedule-queue.rejects';
 import { isUnknownOutcome, sendBounded } from './telegram.send-bounded';
 
 describe('isUnknownOutcome', () => {
@@ -147,6 +148,7 @@ describe('шов: настоящий Telegraf против медленного 
       notificationService,
       logger: new Logger('seam'),
       sendTimeoutMs: TIMEOUT_MS,
+      rejects: new RejectCounter(),
     };
 
     await runProcessQueue(deps);
