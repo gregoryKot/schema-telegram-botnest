@@ -865,6 +865,11 @@ jobs:
       # меньше 44 мимо `hitboxStyle`; промах по одной стороне не считается.
       # fs-only, тот же принцип, что у check-tiny-fonts.mjs выше.
       - run: node scripts/check-tap-targets.mjs
+      # Инлайновый набор, точно совпадающий с классом-утилитой
+      # (shared/src/theme/utilities.css): утилиты завели, гейта не оставили, и
+      # новый код снова писал style={{ display: 'flex', gap: 8 }}. Пофайловый
+      # храповик, fs-only.
+      - run: node scripts/check-utility-inline.mjs
       # Контрол без имени из одного глифа (аудит 2026-10, «Доступность»):
       # `<button>←</button>`, пустой `{...pressable(f)}`-тик, кнопка с одной
       # иконкой — скринридер читает «стрелка влево» или просто «кнопка».
