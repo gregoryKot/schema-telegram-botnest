@@ -13,6 +13,9 @@ import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWo
 import { NeedArtLine } from './NeedArtLine';
 import '../styles/sheet-tracker.css';
 import type { NeedId } from '../../../shared/src/needs/types';
+import { api } from '../api';
+import { useNotifyReach } from '../../../shared/src/settings/useNotifyReach';
+import { planStepHint } from '../../../shared/src/practices/planReminderCopy';
 
 interface Props {
   need: Need;
@@ -30,6 +33,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const NEED_DATA = useNeedData();
+  const notifyReach = useNotifyReach(api.getSettings); // «напомним» — только если дойдёт (U5)
 
   const data = NEED_DATA[need.id];
   if (!data) return null;
@@ -131,7 +135,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
                 className="ds-card ds-card--row ds-card--hover tk2-opt"
               >
                 <div className="ds-h3">Запланировать шаг на завтра</div>
-                <div className="ds-sub">Один маленький шаг – и напомним</div>
+                <div className="ds-sub">{planStepHint(notifyReach)}</div>
               </div>
               {onOpenHelp && (
                 <div

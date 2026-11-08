@@ -12,12 +12,14 @@ import { todayStr } from '../../../shared/src/utils/format';
 import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const getPlanHistory = vi.fn();
+const getSettings = vi.fn();
 const checkinPlan = vi.fn();
 
 vi.mock('../api', () => ({
   api: {
     getPlanHistory: (...a: unknown[]) => getPlanHistory(...a),
     checkinPlan: (...a: unknown[]) => checkinPlan(...a),
+    getSettings: () => getSettings(),
   },
 }));
 
@@ -33,6 +35,7 @@ vi.mock('./PlanSheet', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  getSettings.mockResolvedValue({ notifyReachable: true });
 });
 
 afterEach(() => {
@@ -94,6 +97,25 @@ describe('PlansScreen — пустое состояние', () => {
     expect(
       await screen.findByText(/Выберите, о какой позаботиться/),
     ).toBeTruthy();
+  });
+});
+
+// U5 (аудит 2026-11): «с напоминанием» звучало и тем, кому напоминание не
+// дойдёт — уведомления уходят только в Telegram.
+describe('PlansScreen — пустое состояние не обещает напоминание без канала', () => {
+  it('Telegram подключён — «с напоминанием» остаётся', async () => {
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen();
+    expect(await screen.findByText(/с напоминанием/)).toBeTruthy();
+  });
+
+  it('напоминанию некуда прийти — обещания нет', async () => {
+    getSettings.mockResolvedValue({ notifyReachable: false });
+    getPlanHistory.mockResolvedValue([]);
+    renderScreen();
+    await screen.findByText(/Выбери, о какой позаботиться/);
+    await waitFor(() => expect(getSettings).toHaveBeenCalled());
+    expect(screen.queryByText(/напоминани/)).toBeNull();
   });
 });
 

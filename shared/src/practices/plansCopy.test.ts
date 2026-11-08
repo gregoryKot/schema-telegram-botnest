@@ -2,6 +2,7 @@
 // кнопку, а счётчик писал «1 активных · 1 завершённых».
 import { describe, it, expect } from 'vitest';
 import { planDateLabel, plansEmptyText, plansSummary } from './plansCopy';
+import { planNoReminderNote, planStepHint } from './planReminderCopy';
 import { forEachTimeZone } from '../utils/timeZone.test-helpers';
 
 const ty = (a: string) => a;
@@ -10,11 +11,41 @@ const vy = (_a: string, b: string) => b;
 describe('plansEmptyText', () => {
   it('не обещает кнопку, которой нет, и зовёт выбрать потребность', () => {
     for (const tr of [ty, vy]) {
-      expect(plansEmptyText(tr)).not.toContain('Запланировать практику');
-      expect(plansEmptyText(tr)).toMatch(/позаботиться:$/);
+      for (const reach of [true, false, null]) {
+        expect(plansEmptyText(tr, reach)).not.toContain(
+          'Запланировать практику',
+        );
+        expect(plansEmptyText(tr, reach)).toMatch(/позаботиться:$/);
+      }
     }
-    expect(plansEmptyText(ty)).toContain('Выбери,');
-    expect(plansEmptyText(vy)).toContain('Выберите,');
+    expect(plansEmptyText(ty, true)).toContain('Выбери,');
+    expect(plansEmptyText(vy, false)).toContain('Выберите,');
+  });
+
+  // U5 (аудит 2026-11): уведомления уходят только в Telegram.
+  it('«с напоминанием» — только когда напоминанию есть куда прийти', () => {
+    expect(plansEmptyText(ty, true)).toContain('с напоминанием');
+    expect(plansEmptyText(ty, false)).not.toContain('напоминани');
+    expect(plansEmptyText(vy, null)).not.toContain('напоминани');
+  });
+});
+
+describe('planStepHint', () => {
+  it('«напомним» — только когда дойдёт; иначе — календарь', () => {
+    expect(planStepHint(true)).toBe('Один маленький шаг – и напомним');
+    for (const reach of [false, null]) {
+      expect(planStepHint(reach)).not.toContain('напомн');
+      expect(planStepHint(reach)).toContain('календарь');
+    }
+  });
+});
+
+describe('planNoReminderNote', () => {
+  it('говорит, почему напоминания не будет, в обеих формах', () => {
+    expect(planNoReminderNote(ty)).toContain('у тебя он не подключён. Поставь');
+    expect(planNoReminderNote(vy)).toContain(
+      'у вас он не подключён. Поставьте',
+    );
   });
 });
 

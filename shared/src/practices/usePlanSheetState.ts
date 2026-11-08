@@ -1,11 +1,9 @@
-// Состояние листа «Запланировать практику» (PlanSheet) — общее для обоих
-// фронтендов (правило №3). Было продублировано 1-в-1 при добавлении .ics
-// (правило №16): весь стейт, загрузка практик/таймзоны, выбор напоминания,
-// сохранение и генерация .ics совпадали построчно — вёрстка (ExScreen
-// webapp / BottomSheet+PracticeOptionRow miniapp) остаётся своя.
+// Состояние листа «Запланировать практику» (PlanSheet, правило №3): загрузка
+// практик и пояса, выбор часа, сохранение и .ics; вёрстка — в PlanSheet.
 import { useEffect, useState } from 'react';
 import { CURATED } from './curated';
 import { practiceIcsDataUrl } from '../utils/ics';
+import { notifyReachable } from '../settings/notifyReach';
 import { getHost } from '../host';
 
 export const REMINDER_OPTIONS: Array<{
@@ -45,9 +43,10 @@ export interface UserPracticeLike {
   text: string;
 }
 
+type PlanSettings = { notifyTimezone: string; notifyReachable?: boolean };
 export interface PlanSheetApi {
   getPractices: (needId: string) => Promise<UserPracticeLike[]>;
-  getSettings: () => Promise<{ notifyTimezone: string }>;
+  getSettings: () => Promise<PlanSettings>;
   addPractice: (needId: string, text: string) => Promise<unknown>;
   deletePractice: (id: number) => Promise<unknown>;
   createPlan: (
@@ -80,6 +79,7 @@ export function usePlanSheetState(
   const [phase, setPhase] = useState<'pick' | 'confirm'>('pick');
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [practicesFailed, setPracticesFailed] = useState(false);
+  const [notifyReach, setNotifyReach] = useState<boolean | null>(null); // U5: дойдёт ли напоминание; null — ещё не знаем
 
   useEffect(() => {
     // Сбой ≠ пусто (правило CLAUDE.md): без флага свои практики молча
@@ -95,7 +95,10 @@ export function usePlanSheetState(
     // Часовой пояс — деградация подсказки времени до дефолта, лог достаточен.
     api
       .getSettings()
-      .then((s) => setTzOffset(ianaToUtcOffset(s.notifyTimezone)))
+      .then((s) => {
+        setTzOffset(ianaToUtcOffset(s.notifyTimezone));
+        setNotifyReach(notifyReachable(s));
+      })
       .catch((e) => console.error('getSettings failed', e));
   }, [needId]);
 
@@ -139,17 +142,18 @@ export function usePlanSheetState(
       );
   }
 
+  const { localHour } = REMINDER_OPTIONS[reminderIdx];
   async function handleSave() {
-    if (!selectedText || saving) return;
+    // savedOk: второй тап по календарной кнопке до закрытия — не второй план.
+    if (!selectedText || saving || savedOk) return;
     setSaving(true);
     try {
-      // Час — по поясу человека: день и момент напоминания считает сервер.
-      // Перевод в UTC здесь брал смещение «сейчас» и терял день (E11).
-      const localHour = REMINDER_OPTIONS[reminderIdx].localHour ?? undefined;
       if (!userPractices.some((p) => p.text === selectedText)) {
         await api.addPractice(needId, selectedText);
       }
-      await api.createPlan(needId, selectedText, localHour);
+      // Час — по поясу человека: день и момент напоминания считает сервер.
+      // Перевод в UTC здесь брал смещение «сейчас» и терял день (E11).
+      await api.createPlan(needId, selectedText, localHour ?? undefined);
       setSavedOk(true);
       setTimeout(() => onSaved(), 1200);
     } catch {
@@ -159,15 +163,12 @@ export function usePlanSheetState(
     }
   }
 
-  // Паритет с обеих сторон (правило №16) — генерация вынесена в shared/ics.ts
-  // (чистая функция); сохранение файла остаётся платформенным
-  // (getHost().saveFile — web-адаптер webapp, свой у miniapp).
+  // Генерация — shared/utils/ics.ts, сохранение файла — платформенное.
   function handleIcsDownload() {
-    const opt = REMINDER_OPTIONS[reminderIdx];
     const dataUrl = practiceIcsDataUrl({
       text: selectedText,
       needLabel,
-      localHour: opt.localHour,
+      localHour,
       tzOffset,
     });
     getHost().saveFile(dataUrl, 'practice.ics');
@@ -188,6 +189,8 @@ export function usePlanSheetState(
     setPhase,
     deletingIds,
     practicesFailed,
+    notifyReach,
+    tzOffset, // ссылка «Google Календарь» ставит то же событие, что .ics
     allOptions,
     selectText,
     handleCustomSubmit,

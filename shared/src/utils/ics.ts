@@ -1,8 +1,6 @@
-// Генерация .ics-события «Напомнить завтра» для PlanSheet (оба фронтенда,
-// правило №3 — раньше жила только в мини-аппе, паритет фич правило №16).
-// Чистая функция: дата/час считаются от переданных параметров, побочных
-// эффектов нет — платформенное сохранение файла (`getHost().saveFile`)
-// остаётся на стороне каждого PlanSheet.
+// Генерация .ics-события «Напомнить завтра» для PlanSheet (правило №3).
+// Чистые функции от параметров; сохранение файла — `getHost().saveFile`.
+import { planEventStartMs } from './planEventStart';
 export interface PracticeIcsParams {
   /** Текст практики — уходит в SUMMARY как есть, без экранирования (нет
    * переносов строк/спецсимволов ICS в источнике — практика вводится в
@@ -10,36 +8,35 @@ export interface PracticeIcsParams {
   text: string;
   needLabel: string;
   /** Час напоминания в ЛОКАЛЬНОМ времени пользователя; null — без выбранного
-   * времени, событие ставится на 09:00 по умолчанию. */
+   * времени, событие ставится на 09:00 местного. */
   localHour: number | null;
   /** Смещение локального часового пояса пользователя от UTC, в часах. */
   tzOffset: number;
 }
 
-export function buildPracticeIcs({
-  text,
-  needLabel,
-  localHour,
-  tzOffset,
-}: PracticeIcsParams): string {
-  const date = new Date();
-  date.setDate(date.getDate() + 1);
-  const y = date.getUTCFullYear();
-  const mo = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(date.getUTCDate()).padStart(2, '0');
-  const h =
-    localHour !== null
-      ? String((((localHour - tzOffset) % 24) + 24) % 24).padStart(2, '0')
-      : '09';
+/** YYYYMMDDTHHMMSSZ (RFC 5545 §3.3.5). */
+const icsUtc = (ms: number) =>
+  new Date(ms).toISOString().replace(/[-:]|\.\d{3}/g, '');
+
+export function buildPracticeIcs(p: PracticeIcsParams): string {
+  const { text, needLabel } = p;
+  const start = planEventStartMs(p.localHour, p.tzOffset);
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Schema//Schema//RU',
     'BEGIN:VEVENT',
-    `DTSTART:${y}${mo}${d}T${h}0000Z`,
-    `DTEND:${y}${mo}${d}T${h}3000Z`,
+    `DTSTART:${icsUtc(start)}`,
+    `DTEND:${icsUtc(start + 30 * 60_000)}`,
     `SUMMARY:${text}`,
     `DESCRIPTION:Практика для потребности: ${needLabel}`,
+    // Сигнал в момент начала: календарь — единственное напоминание у тех,
+    // кому не доходит Telegram (U5); без VALARM событие молчит.
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:${text}`,
+    'TRIGGER:PT0M',
+    'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
