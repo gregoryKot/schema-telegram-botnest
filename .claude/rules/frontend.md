@@ -141,8 +141,10 @@ export function MySheet({ onClose }: { onClose: () => void }) {
 Механизм принуждения: **`scripts/check-history-sheet.mjs`** (CI, джоба `webapp`)
 — `.tsx` в `webapp/src` и `shared/src` с оверлеем на весь экран (инлайн
 `position: fixed` + `inset: 0` в одном объекте стиля, className с CSS-классом
-того же свойства или тег рамки `<ExScreen`/`<BottomSheetShell`) обязан вызывать `useHistorySheet(` или стоять в
-`scripts/history-sheet-baseline.json` с причиной. Флага `--update` нет:
+того же свойства или тег рамки `<ExScreen`/`<BottomSheetShell`): компонент, который
+его рисует, сам вызывает `useHistorySheet(` (хук соседнего компонента того же файла
+не в счёт) или стоит в `scripts/history-sheet-baseline.json` с причиной (несколько
+компонентов файла без хука — поле `components`). Флага `--update` нет:
 это классификация, а не счётчик. Вложенные листы (лист поверх листа) хук
 поддерживает — запись истории несёт стек; `goBack()` закрывает СВОЙ лист вместе
 со всем, что лежит над ним (снимает столько записей, сколько нужно).

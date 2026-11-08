@@ -153,7 +153,7 @@ describe('check-history-sheet.mjs — оверлей, заданный клас�
     const res = runGate(GATE, {
       'webapp/src/index.css': CSS,
       'webapp/src/Screen.tsx':
-        'const goBack = useHistorySheet(onClose);\n' + USES_CLASS,
+        'function S(){useHistorySheet(c);return <i className="ex-screen"/>}',
       'scripts/history-sheet-baseline.json': baseline(),
     });
     expect(res.status).toBe(0);

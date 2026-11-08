@@ -31,6 +31,7 @@ scripts/tiny-fonts-baseline.json          merge=ratchet-sum
 scripts/scale-drift-baseline.json         merge=ratchet-sum
 scripts/render-poison-baseline.json       merge=ratchet-sum
 scripts/tap-targets-baseline.json         merge=ratchet-sum
+scripts/utility-inline-baseline.json      merge=ratchet-sum
 scripts/color-drift-baseline.json         merge=ratchet-sum
 scripts/second-person-baseline.json       merge=ratchet-sum
 

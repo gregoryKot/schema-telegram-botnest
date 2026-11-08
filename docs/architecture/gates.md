@@ -40,8 +40,8 @@
 | check-gate-exemptions.mjs | ALLOW/EXCLUDE-списки гейтов без теста-образца | — | нет | checks |
 | check-gendered-forms.mjs | мужской род в тексте для пользователя («ты сделал»; без «ты» — по паре `tr(ты, вы)`, «Сказал» ↔ «Сказали») | `scripts/gendered-forms-baseline.json` | да | backend |
 | check-glyph-controls.mjs | `<button>`, `<a>`, элемент с control-ролью или `{...pressable()}` без `aria-label`/`aria-labelledby`, чьё содержимое — только глиф, иконка или пусто | — | нет | webapp |
-| check-history-sheet.mjs | fullscreen-оверлей (инлайн, CSS-класс или тег рамки `<ExScreen`/`<BottomSheetShell`) без `useHistorySheet(` (кнопка «Назад») | `scripts/history-sheet-baseline.json` | нет | webapp |
-| check-hover-only-reveal.mjs | элемент раскрывается только по :hover, без пути для пальца | — | нет | webapp |
+| check-history-sheet.mjs | fullscreen-оверлей (инлайн, CSS-класс или тег рамки `<ExScreen`/`<BottomSheetShell`) без `useHistorySheet(` в своём компоненте (кнопка «Назад»); запись бейслайна — на файл, несколько компонентов без хука — поле `components` | `scripts/history-sheet-baseline.json` | нет | webapp |
+| check-hover-only-reveal.mjs | элемент раскрывается только по :hover, без пути для пальца или клавиатуры; раскрытие засчитывается, только если выигрывает каскад; .css и `<style>` в .tsx | — | нет | webapp |
 | check-ignored-tracked.mjs | отслеживаемый git-файл, запрещённый .gitignore | — | нет | checks |
 | check-incident-registry.mjs | закрытая issue `ci-alarm` с напоминанием бота без строки в `docs/INCIDENTS.md` (номер issue и дата в её окне ±1 день); ходит в GitHub API, код 2 — GitHub не ответил | `scripts/incident-registry-baseline.json` | нет | nightly |
 | check-jscpd-ratchet.mjs | рост копипасты от 70 токенов (jscpd) | `scripts/jscpd-baseline.json` | да | backend |
@@ -65,7 +65,8 @@
 | check-second-person.mjs | захардкоженные императивы и «вы»-формы вне tr(), тексты бэкенда | `scripts/second-person-baseline.json` | да | webapp |
 | check-silent-catch.mjs | `.catch(() => {})`, глушащий ошибку сети | `scripts/silent-catch-baseline.json` | да | backend |
 | check-spelling.mjs | орфография видимых строк («оффлайн» → «офлайн»); комментарии и тесты не смотрит | — | нет | checks |
-| check-tap-targets.mjs | интерактивный элемент с инлайн-размером обеих сторон меньше 44px | `scripts/tap-targets-baseline.json` | да | webapp |
+| check-tap-targets.mjs | интерактивный элемент, у которого обе стороны меньше 44px — инлайн-размер или CSS-класс (с зоной `::before` отрицательным inset; `tap-targets-css.mjs`) | `scripts/tap-targets-baseline.json` | да | webapp |
+| check-utility-inline.mjs | инлайновый `style={{…}}`, набор которого точно совпадает с классом-утилитой `shared/src/theme/utilities.css` | `scripts/utility-inline-baseline.json` | да | webapp |
 | check-telegram-chat-id.mjs | отправка в Telegram (`sendMessage`/`sendTg`/`sendBounded`/`chat_id:`) по адресу, приведённому из `userId`/`user.id`, вне `src/auth/telegram-identity.ts` и `src/bot/account.service.ts` (класс #456) | — | нет | checks |
 | check-timer-cleanup.mjs | файл `webapp/src`, `shared/src` с `setTimeout(() => setX…)` без `clearTimeout` и `useTimedFlag` (таймер переживает jsdom) | `scripts/timer-cleanup-baseline.json` | нет | checks |
 | check-tiny-fonts.mjs | инлайн `fontSize` ниже 11px | `scripts/tiny-fonts-baseline.json` | да | webapp |
