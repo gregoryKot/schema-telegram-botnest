@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { REVALIDATE } from './infra/static-cache';
 import {
+  PRACTICE_PREVIEW_PAGES,
   practiceIndexMiddleware,
   practicePageHtml,
 } from './practice-index-html';
@@ -229,6 +230,18 @@ describe('practiceIndexMiddleware: страницы визитки', () => {
     expect(page.nextCalled).toBe(false);
     expect(page.image).toBe(PRACTICE_PREVIEW.image);
     expect(page.canonical).toBe('https://schemehappens.ru/');
+  });
+
+  it('каждая страница визитки — с карточкой визитки', () => {
+    expect(PRACTICE_PREVIEW_PAGES).toEqual(
+      expect.arrayContaining(['/', '/reviews', '/book', '/donate', '/privacy']),
+    );
+    for (const path of PRACTICE_PREVIEW_PAGES) {
+      expect([path, run('kotlarewski.gr', path).image]).toEqual([
+        path,
+        PRACTICE_PREVIEW.image,
+      ]);
+    }
   });
 
   it('продуктовый хост, /articles (у ArticleSeoMiddleware) и нет сборки — дальше', () => {

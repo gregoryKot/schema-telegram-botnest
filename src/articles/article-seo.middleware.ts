@@ -12,6 +12,7 @@ import {
   type SeoPage,
 } from './article-seo.render';
 import { requestHost } from '../infra/request-host';
+import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
 import { practicePreviewHtml } from '../practice-preview';
 
@@ -73,6 +74,7 @@ export class ArticleSeoMiddleware implements NestMiddleware {
         out = out.split(SITE_URL).join(`https://${host}`);
       }
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', REVALIDATE); // как index.html из ServeStatic
       res.send(out);
     } catch (err) {
       // Unknown slug (findBySlug throws) or DB error → SPA renders as before.

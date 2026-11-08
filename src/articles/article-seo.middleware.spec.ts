@@ -1,5 +1,6 @@
 import { ArticleSeoMiddleware } from './article-seo.middleware';
 import type { ArticlesService } from './articles.service';
+import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_PREVIEW } from '../practice-preview';
 
 // existsSync/readFileSync экспортируются из 'fs' как non-configurable
@@ -181,6 +182,8 @@ describe('ArticleSeoMiddleware', () => {
       'href="https://kotlarewski.gr/articles/skhemy-yanga-spisok"',
     );
     expect(html).not.toContain('https://schemehappens.ru');
+    // Карточка в HTML зависит от хоста — кэш как у index.html из ServeStatic.
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', REVALIDATE);
   });
 
   // Карточка ссылки: в index.html — продукт, статья на визитке показывает
