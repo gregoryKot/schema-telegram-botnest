@@ -6,11 +6,8 @@ import { encrypt, decrypt } from '../utils/crypto';
 import { localDate, localMidnightUTC } from '../utils/tz';
 import { completeOfflineTask, deleteAssignedTask } from './assigned-task';
 import { streakProgress } from './streak-progress';
-import {
-  STREAK_TASK_TYPES,
-  streakExpired,
-  tracksStreakProgress,
-} from './streak-window';
+import { STREAK_TASK_TYPES, tracksStreakProgress } from './streak-window';
+import { closeExpiredStreaks } from './streak-expire';
 
 // Задачи пользователя (свои и назначенные терапевтом): создание, список,
 // завершение, стрик-прогресс и уведомление о назначении. Терапевтские
@@ -78,21 +75,10 @@ export class TherapyTasksService {
       ]).then(([s, m, g]) => s + m + g),
     ]);
 
-    // Срок серии вышел — по календарю клиента, как и окно прогресса
-    const expired = tasks.filter((t) => streakExpired(t, tz, now));
-    if (expired.length > 0) {
-      await Promise.all(
-        expired.map((t) =>
-          this.prisma.userTask.update({
-            where: { id: t.id },
-            data: { done: false, completedAt: now },
-          }),
-        ),
-      );
-    }
-    const expiredIds = new Set(expired.map((t) => t.id));
-
-    const activeTasks = tasks.filter((t) => !expiredIds.has(t.id));
+    // Срок серии вышел — по календарю клиента; то же закрытие у психолога
+    const activeTasks = (
+      await closeExpiredStreaks(this.prisma, tasks, tz, now)
+    ).filter((t) => t.done === null);
 
     return Promise.all(
       activeTasks.map(async (task) => {
