@@ -30,7 +30,7 @@ describe('u-self-start вместо инлайн alignSelf', () => {
 
   it('нет объекта стиля из одного alignSelf: flex-start', () => {
     expect(tsx.length).toBeGreaterThan(100);
-    const bad = tsx.flatMap((f) => soleSelfStart(readFileSync(f, 'utf8')).map(() => f.slice(WEB.length - 6)));
+    const bad = tsx.flatMap((f) => soleSelfStart(readFileSync(f, 'utf8')).map(() => f.slice(WEB.length - 10)));
     expect(bad).toEqual([]);
   });
 

@@ -68,9 +68,13 @@
 
 **Редизайн кабинета — хвосты** (#746, `docs/design/REDESIGN_2026-10.md`):
 - **Лендинг, визитка (`kotlarewski.gr`), статьи и админка** намеренно в старом виде
-  (решение владельца 2026-10-16) — токены старой палитры в `index.css` нужны им,
-  поэтому «старые» классы (`.btn*`, `.chip*`, `.section`, `.aside-card`) остаются,
-  пока живы эти страницы.
+  (решение владельца 2026-10-16) — токены старой палитры в `index.css` нужны им.
+  Старые классы `.btn*`, `.chip*`, `.section`, `.aside-card` этим страницам не нужны и
+  удалены 2026-11-08 вместе с последними потребителями в кабинете (сверка
+  `webapp/src/styles/legacyClasses.test.ts`). Остались старые `.eyebrow` (`selfMap/SelfMapScreen.tsx`,
+  `NeedAdviceModal.tsx`, `concept/ConceptVersionHistory.tsx`, `shared/src/practices/StepFlowSiteBody.tsx`)
+  и `.ex-btn`/`.ex-btn-ghost` (`NeedAdviceModal.tsx`): `NeedAdviceModal` и `ConceptVersionHistory` в ту
+  же волну правила другая ветка, перевод на `ds-label`/`ds-btn--secondary` — следующим заходом.
 - **Браузерный смок PR-CI не гоняет, поэтому PR с новой разметкой его не видит.**
   #746 перевёл шкалу трекера сайта на `NeedScale` (кнопки без текста, имя — aria-label
   «N из 10»), а `e2e-browser/tracker-smoke.spec.ts` искал кнопку «7». Смок краснел
