@@ -3,34 +3,9 @@ import '../../styles/sheet-modemap.css';
 import type { ModeMapEdge, EdgeType } from '../../api';
 import { EditorHead, SegRow, Swatches } from './EditorParts';
 import { MODE_MAP_NODE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
+import { EDGE_TYPE_LABELS, EDGE_TYPE_MARK, EDGE_TYPE_STYLE, pickPhrases } from './edgeTypes';
 
-// Панель редактирования связи карты режимов.
-// Вынесено из ModeMapNodeEditor.tsx (правило №10).
-
-const EDGE_TYPE_LABELS: Record<string, string> = {
-  activates:  'активирует',
-  protects:   'защищает от',
-  suppresses: 'подавляет',
-  leads_to:   'ведёт к',
-};
-
-// Suggested phrases per connection type — clicking a type drops a random one on the
-// line, and the «окошко» below lets you pick another or type your own.
-const EDGE_TYPE_PHRASES: Record<string, string[]> = {
-  activates:  ['активирует', 'запускает', 'будит', 'включает', 'провоцирует', 'пробуждает', 'цепляет', 'триггерит'],
-  protects:   ['защищает от', 'прикрывает', 'оберегает от', 'спасает от', 'отгораживает от', 'прячет'],
-  suppresses: ['подавляет', 'давит на', 'заглушает', 'наказывает', 'обесценивает', 'критикует', 'стыдит', 'требует от'],
-  leads_to:   ['ведёт к', 'приводит к', 'оборачивается', 'заканчивается', 'усиливает', 'подкрепляет'],
-};
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
-function pickPhrases(type: string, n: number): string[] {
-  return shuffle(EDGE_TYPE_PHRASES[type] ?? []).slice(0, n);
-}
+// Панель редактирования связи карты режимов (вынесено из ModeMapNodeEditor.tsx, правило №10); типы и подписи — edgeTypes.ts.
 
 interface EdgeEditorProps {
   edge: ModeMapEdge;
@@ -41,7 +16,7 @@ interface EdgeEditorProps {
 }
 
 export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }: EdgeEditorProps) {
-  const edgeType = (edge.data?.edgeType ?? 'activates') as string;
+  const edgeType = (edge.data?.edgeType ?? ({ '✗': 'blocks', '✓': 'meets' } as Record<string, string>)[edge.label ?? ''] ?? 'activates') as string; // ✗/✓ старых схем случая — без типа
   const bidir = edge.data?.bidirectional ?? false;
   // Suggestion box for the current type's phrases (refreshable)
   const [suggestType, setSuggestType] = useState(edgeType);
@@ -51,7 +26,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
     const phrase = pickPhrases(k, 1)[0] ?? '';
     setSuggestType(k);
     setSuggestions(pickPhrases(k, 4));
-    onChange({ ...edge, label: phrase || undefined, data: { ...edge.data, edgeType: k as EdgeType } });
+    onChange({ ...edge, label: phrase || undefined, data: { ...edge.data, ...EDGE_TYPE_STYLE[k as EdgeType], edgeType: k as EdgeType } });
   };
 
   const lineOpts = [
@@ -74,7 +49,7 @@ export function ModeMapEdgeEditor({ edge, onChange, onDelete, onSwap, onClose }:
       <div className="mm2-chips">
         {Object.entries(EDGE_TYPE_LABELS).map(([k, v]) => (
           <button key={k} onClick={() => chooseType(k)} className={`mm2-chip${edgeType === k ? ' is-active' : ''}`}>
-            <span aria-hidden="true">→ </span>{v}
+            <span aria-hidden="true">{EDGE_TYPE_MARK[k as EdgeType] ?? '→'} </span>{v}
           </button>
         ))}
       </div>

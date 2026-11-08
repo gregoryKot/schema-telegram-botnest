@@ -2,13 +2,14 @@
 // относится к концептуализации, что на нём появилось и чего на нём нет.
 // Режим — узел с data.modeId из справочника (свой режим терапевта id не имеет);
 // схема — фигура «схема» с data.schemaId (опыт и потребности в поля не идут);
-// связь «схема питает режим» — любая линия между схемой и режимом, в какую
-// сторону ни проведи. Стрелки между режимами, текст и фигуры в поля не идут.
+// связь «схема питает режим» — линия между схемой и режимом в любую сторону или
+// таблетка схемы, поставленная на режим в панели. Прочие стрелки и текст — нет.
 import { getModeById, getSchemaById } from '../../schemaTherapyData';
 import { normalizeModeLinks } from '../../../../shared/src/therapy/conceptGraph/modeLinks';
 import { conceptSchemaIds } from '../../../../shared/src/therapy/conceptGraph/schemaLinks';
 import type { ConceptAppendBody } from '../../../../shared/src/therapy/conceptAppend';
 import type { ClientConcept, ClientConceptState } from './clientConceptContext';
+import { ownSchemaIds } from './nodeSchemaIds';
 
 export type GraphNode = { id: string; type?: string; data?: Record<string, unknown> };
 export type GraphEdge = { source: string; target: string };
@@ -32,27 +33,25 @@ export function toClientConcept(c: ConceptResponse): ClientConcept {
   return { schemaIds: strs(c?.schemaIds), modeIds: strs(c?.modeIds), modeLinks: normalizeModeLinks(c?.modeLinks) };
 }
 
-function entityOf(n: GraphNode): { mode?: string; schema?: string } {
+function entityOf(n: GraphNode): { mode?: string; schema?: string; own?: string[] } {
   if (n.type === 'schema') {
     const id = idOf(n.data?.schemaId);
     return id && getSchemaById(id) ? { schema: id } : {};
   }
   const id = NOT_MODE.has(n.type ?? '') ? undefined : idOf(n.data?.modeId);
-  return id && getModeById(id) ? { mode: id } : {};
+  return id && getModeById(id) ? { mode: id, own: ownSchemaIds({ schemaId: idOf(n.data?.schemaId), schemaIds: strs(n.data?.schemaIds) }) } : {};
 }
 
 export function canvasConcept(nodes: readonly GraphNode[], edges: readonly GraphEdge[]): CanvasConcept {
   const byId = new Map(nodes.map((n) => [n.id, entityOf(n)]));
-  const modes = new Set<string>();
-  const schemas = new Set<string>();
-  const links = new Set<string>();
+  const [modes, schemas, links] = [new Set<string>(), new Set<string>(), new Set<string>()];
   for (const e of byId.values()) {
     if (e.mode) modes.add(e.mode);
     if (e.schema) schemas.add(e.schema);
+    for (const schema of e.own ?? []) links.add(e.mode + SEP + schema);
   }
   for (const { source, target } of edges) {
-    const a = byId.get(source);
-    const b = byId.get(target);
+    const [a, b] = [byId.get(source), byId.get(target)];
     const mode = a?.mode ?? b?.mode;
     const schema = a?.schema ?? b?.schema;
     if (mode && schema) links.add(mode + SEP + schema);
