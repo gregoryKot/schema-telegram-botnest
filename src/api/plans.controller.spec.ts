@@ -144,6 +144,91 @@ describe('PlansController.createPlan', () => {
   });
 });
 
+// E11 аудита 2026-11: момент напоминания — стенные часы дня плана в поясе
+// человека. До починки момент брался от UTC-даты сервера: Москва в 00:30 —
+// на день раньше, Владивосток «Утром» и Нью-Йорк вечером — на день позже.
+describe('PlansController.createPlan — напоминание в день плана по поясу человека', () => {
+  afterEach(() => jest.useRealTimers());
+
+  const plan = (tz: string, now: string, hour: Record<string, number>) => {
+    jest.useFakeTimers({ now: new Date(now) });
+    const ctx = makeController({
+      botService: {
+        getUserSettings: jest.fn().mockResolvedValue({ notifyTimezone: tz }),
+      },
+    });
+    const body = { needId: 'attachment', practiceText: 'практика', ...hour };
+    return ctx.controller.createPlan(makeReq(4n), body).then(() => ctx);
+  };
+  const sentAt = (n: NotificationService) =>
+    ((n.schedule as jest.Mock).mock.calls[0][2] as Date).toISOString();
+
+  it.each([
+    // 00:30 по Москве 8-го: план на 9-е, «Утром» — 9-го в 09:00 МСК
+    ['Europe/Moscow', '2026-11-07T21:30:00Z', '2026-11-09T06:00:00.000Z', 6],
+    // 20:00 во Владивостоке 8-го: 9:00 9-го — это 23:00 UTC 8-го
+    [
+      'Asia/Vladivostok',
+      '2026-11-08T10:00:00Z',
+      '2026-11-08T23:00:00.000Z',
+      23,
+    ],
+    // 22:00 в Нью-Йорке 8-го (в UTC уже 9-е): план на 9-е
+    [
+      'America/New_York',
+      '2026-11-09T03:00:00Z',
+      '2026-11-09T14:00:00.000Z',
+      14,
+    ],
+  ])('%s, сейчас %s: местный час 9 → %s', async (tz, now, at, utcHour) => {
+    const { notificationService, practicesService } = await plan(tz, now, {
+      reminderLocalHour: 9,
+    });
+    expect(sentAt(notificationService)).toBe(at);
+    // В плане — завтрашний день человека (9-е) и час UTC настоящего момента.
+    expect(practicesService.createPlan).toHaveBeenCalledWith(
+      4n,
+      'attachment',
+      'практика',
+      '2026-11-09',
+      utcHour,
+    );
+  });
+
+  it.each([
+    ['Europe/Moscow', '2026-11-07T21:30:00Z', 6, '2026-11-09T06:00:00.000Z'],
+    [
+      'Asia/Vladivostok',
+      '2026-11-08T10:00:00Z',
+      23,
+      '2026-11-08T23:00:00.000Z',
+    ],
+    [
+      'America/New_York',
+      '2026-11-09T03:00:00Z',
+      14,
+      '2026-11-09T14:00:00.000Z',
+    ],
+  ])(
+    'старый клиент (%s, час UTC %i) — тоже день плана',
+    async (tz, now, h, at) => {
+      const { notificationService } = await plan(tz, now, {
+        reminderUtcHour: h,
+      });
+      expect(sentAt(notificationService)).toBe(at);
+    },
+  );
+
+  it('пришли оба часа — главный местный', async () => {
+    const { notificationService } = await plan(
+      'Europe/Moscow',
+      '2026-11-07T21:30:00Z',
+      { reminderLocalHour: 19, reminderUtcHour: 6 },
+    );
+    expect(sentAt(notificationService)).toBe('2026-11-09T16:00:00.000Z');
+  });
+});
+
 describe('PlansController.checkinPlan', () => {
   it('передаёт done и userId из req, id — из path через parseId', async () => {
     const { controller, practicesService } = makeController();

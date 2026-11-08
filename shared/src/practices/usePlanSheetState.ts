@@ -53,7 +53,7 @@ export interface PlanSheetApi {
   createPlan: (
     needId: string,
     text: string,
-    reminderUtcHour?: number,
+    reminderLocalHour?: number,
   ) => Promise<unknown>;
 }
 
@@ -143,15 +143,13 @@ export function usePlanSheetState(
     if (!selectedText || saving) return;
     setSaving(true);
     try {
-      const opt = REMINDER_OPTIONS[reminderIdx];
-      let reminderUtcHour: number | undefined;
-      if (opt.localHour !== null) {
-        reminderUtcHour = (((opt.localHour - tzOffset) % 24) + 24) % 24;
-      }
+      // Час — по поясу человека: день и момент напоминания считает сервер.
+      // Перевод в UTC здесь брал смещение «сейчас» и терял день (E11).
+      const localHour = REMINDER_OPTIONS[reminderIdx].localHour ?? undefined;
       if (!userPractices.some((p) => p.text === selectedText)) {
         await api.addPractice(needId, selectedText);
       }
-      await api.createPlan(needId, selectedText, reminderUtcHour);
+      await api.createPlan(needId, selectedText, localHour);
       setSavedOk(true);
       setTimeout(() => onSaved(), 1200);
     } catch {
