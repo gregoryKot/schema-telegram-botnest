@@ -195,7 +195,6 @@
   `PhraseCheckEx.tsx`, `BeliefCheckEx.tsx`, `flashcard/FlashcardSteps.tsx`; `<input>`
   в `SafePlaceEx.tsx`), экран письма и места пишет «Проверь соединение», повтор не поможет. Закрыть: `LimitedTextarea` с
   пределом из `shared/src/limits/textLimits.ts` (как у дневников, `DIARY_FIELD_MAX`).
-- Добивание `no-unsafe-*` в проде (храповик не даёт расти).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
 - Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
   `scripts/color-drift-baseline.json`). Брать ролями, а не файлами.

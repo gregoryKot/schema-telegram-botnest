@@ -42,7 +42,12 @@
 | [GAME_ANALYSIS.md](GAME_ANALYSIS.md) | Анализ игры `game/` (2026-09-03) по четырём срезам: сюжет, интерес, вовлечение в терапию, качество, плюс воронка. Реестр находок с `file:line`. |
 | [GAME_IMPROVEMENT_PLAN.md](GAME_IMPROVEMENT_PLAN.md) | План улучшений игры по находкам анализа: Этап 0 до плейтеста, выбор в механике, терапевтический мост, полировка. Вопросы владельцу — там же. |
 | [GAME_ART_BRIEF.md](GAME_ART_BRIEF.md) | Арт-бриф игры `game/` (2026-09): что перерисовать, один эталон стиля и промпты генерации ассетов с привязкой к файлам `game/src`. |
-| [security/](security/) | Реестр security-находок (`AUDIT_FINDINGS.md`), модель угроз, покрытие. |
+| [security/AUDIT_FINDINGS.md](security/AUDIT_FINDINGS.md) | Реестр security-находок по фазам: ID, источник, severity, статус. |
+| [security/THREAT_MODEL.md](security/THREAT_MODEL.md) | Модель угроз (фаза 0): что защищаем, от кого, границы доверия, пути атаки. |
+| [security/COVERAGE.md](security/COVERAGE.md) | Карта поверхности атаки (фаза 1): инвентарь точек входа и матрица покрытия. |
+| [security/AUDIT_PLAN.md](security/AUDIT_PLAN.md) | Методология внешнего аудита безопасности: доказуемое покрытие по фазам. |
+| [security/AUDIT_PLAN_2026-10.md](security/AUDIT_PLAN_2026-10.md) | Аудит 2026-10: ретест и данные клиента и психолога. |
+| [security/AUDIT_2026-08-12.md](security/AUDIT_2026-08-12.md) | Сквозной аудит безопасности и эффективности 2026-08-12. |
 
 ## Архив
 
