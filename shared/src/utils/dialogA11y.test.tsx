@@ -232,12 +232,18 @@ describe('useDialogA11y — стек диалогов', () => {
     function Sheet({ children }: { children?: React.ReactNode }) {
       const layer = useDialogLayer({ kind: 'sheet' });
       useEffect(() => layer.join(), [layer]);
-      useEffect(() => { owns.current = layer.ownsEscape; });
+      useEffect(() => {
+        owns.current = layer.ownsEscape;
+      });
       return <>{children}</>;
     }
 
     it('несворачиваемое окно над листом держит Escape: лист его не получает', () => {
-      const { rerender } = render(<Sheet><Layer id="picker" holdEscape /></Sheet>);
+      const { rerender } = render(
+        <Sheet>
+          <Layer id="picker" holdEscape />
+        </Sheet>,
+      );
       expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(false);
       expect(owns.current()).toBe(false);
       rerender(<Sheet />);
@@ -245,14 +251,22 @@ describe('useDialogA11y — стек диалогов', () => {
     });
 
     it('собственный фокус-слой листа прозрачен: Escape — листу', () => {
-      render(<Sheet><Layer id="focus" /></Sheet>);
+      render(
+        <Sheet>
+          <Layer id="focus" />
+        </Sheet>,
+      );
       expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(true);
       expect(owns.current()).toBe(true);
     });
 
     it('лист над окном с onEscape: Escape листу, окно под ним не закрывается', () => {
       const dialog = vi.fn();
-      render(<Layer id="dialog" onEscape={dialog}><Sheet /></Layer>);
+      render(
+        <Layer id="dialog" onEscape={dialog}>
+          <Sheet />
+        </Layer>,
+      );
       expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(true);
       expect(dialog).not.toHaveBeenCalled();
       expect(owns.current()).toBe(true);

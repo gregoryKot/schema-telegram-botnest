@@ -314,7 +314,9 @@ describe('check-history-sheet.mjs — потребители рамок ExScreen
     const res = runGate(GATE, {
       'webapp/src/components/Consumer.tsx': FRAME_NO_HOOK,
       'scripts/history-sheet-baseline.json': baseline({
-        'webapp/src/components/Consumer.tsx': entry('шаг потока: хук вызывает родитель-поток'),
+        'webapp/src/components/Consumer.tsx': entry(
+          'шаг потока: хук вызывает родитель-поток',
+        ),
       }),
     });
     expect(res.status).toBe(0);
