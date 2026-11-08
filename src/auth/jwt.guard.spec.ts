@@ -18,7 +18,7 @@ interface FakeRequest {
   headers: Record<string, string | undefined>;
   cookies?: Record<string, string>;
   query?: Record<string, string>;
-  webUser?: { userId: bigint };
+  webUser?: { userId: bigint; viaLinkToken?: true };
 }
 
 function makeCtx(req: FakeRequest): ExecutionContext {
@@ -174,7 +174,7 @@ describe('OptionalJwtGuard', () => {
       cookies: { link_token: signToken({ sub: '55', type: 'link' }) },
     };
     guard.canActivate(makeCtx(req));
-    expect(req.webUser).toEqual({ userId: 55n });
+    expect(req.webUser).toEqual({ userId: 55n, viaLinkToken: true });
   });
 
   // A1 (аудит 2026-10): login-CSRF. Злоумышленник выпускает link-токен
@@ -197,7 +197,7 @@ describe('OptionalJwtGuard', () => {
       query: { link_token: signToken({ sub: '56', type: 'link' }) },
     };
     guard.canActivate(makeCtx(req));
-    expect(req.webUser).toEqual({ userId: 55n });
+    expect(req.webUser).toEqual({ userId: 55n, viaLinkToken: true });
   });
 
   it('access-токен в link_token отвергается (webUser не ставится)', () => {

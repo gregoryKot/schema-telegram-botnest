@@ -30,6 +30,12 @@ function makeFakePrisma(seed: Record<string, Record<string, unknown>> = {}) {
   const users = new Map<string, Record<string, unknown>>(Object.entries(seed));
   return {
     users,
+    // Включение 2FA гасит чужие сессии (S12): сессий в этих тестах нет —
+    // отзывать нечего, проверка отзыва — в totp-attempts.spec.ts.
+    webSession: {
+      findUnique: jest.fn(() => Promise.resolve(null)),
+      updateMany: jest.fn(() => Promise.resolve({ count: 0 })),
+    },
     user: {
       findUnique: jest.fn(({ where: { id } }: { where: { id: bigint } }) => {
         const row = users.get(id.toString());
@@ -94,6 +100,14 @@ function makeFakePrisma(seed: Record<string, Record<string, unknown>> = {}) {
   };
 }
 
+// Счётчик неудач на аккаунт (S11) — свой спек; здесь пауза не наступает.
+function noLock() {
+  return {
+    lockedFor: jest.fn().mockResolvedValue(0),
+    recordFailure: jest.fn().mockResolvedValue(undefined),
+  } as never;
+}
+
 function extractSecret(otpauthUrl: string): string {
   const secret = new URL(otpauthUrl).searchParams.get('secret');
   if (!secret) throw new Error('otpauth URL без secret');
@@ -104,7 +118,7 @@ function extractSecret(otpauthUrl: string): string {
 // + сервис уже во «включённом» состоянии — общая подготовка для тестов
 // verify/disable/regenerate.
 async function enroll(prisma: ReturnType<typeof makeFakePrisma>) {
-  const service = new TotpService(prisma as never);
+  const service = new TotpService(prisma as never, noLock());
   const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test');
   const secret = extractSecret(otpauthUrl);
   const code = authenticator.generate(secret);
@@ -130,7 +144,7 @@ afterEach(() => {
 describe('TotpService — setup', () => {
   it('startSetup шифрует секрет перед записью и не включает 2FA сразу', async () => {
     const prisma = makeFakePrisma();
-    const service = new TotpService(prisma as never);
+    const service = new TotpService(prisma as never, noLock());
     const { otpauthUrl, qrDataUrl } = await service.startSetup(
       USER_ID,
       'user@test',
@@ -148,7 +162,7 @@ describe('TotpService — setup', () => {
     const prisma = makeFakePrisma({
       [USER_ID.toString()]: { totpEnabledAt: new Date() },
     });
-    const service = new TotpService(prisma as never);
+    const service = new TotpService(prisma as never, noLock());
     await expect(service.startSetup(USER_ID, 'user@test')).rejects.toThrow(
       ConflictException,
     );
@@ -168,7 +182,7 @@ describe('TotpService — setup', () => {
 
   it('confirmSetup с неверным кодом → UnauthorizedException, 2FA не включается', async () => {
     const prisma = makeFakePrisma();
-    const service = new TotpService(prisma as never);
+    const service = new TotpService(prisma as never, noLock());
     const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test');
     const secret = extractSecret(otpauthUrl);
     const wrong = String(
@@ -185,7 +199,7 @@ describe('TotpService — setup', () => {
 
   it('confirmSetup без предварительного startSetup → BadRequestException', async () => {
     const prisma = makeFakePrisma();
-    const service = new TotpService(prisma as never);
+    const service = new TotpService(prisma as never, noLock());
     await expect(service.confirmSetup(USER_ID, '123456')).rejects.toThrow(
       BadRequestException,
     );
@@ -240,7 +254,7 @@ describe('TotpService — verifyCode', () => {
 
   it('2FA не включена (нет totpEnabledAt) → всегда false, даже если код бы совпал', async () => {
     const prisma = makeFakePrisma();
-    const service = new TotpService(prisma as never);
+    const service = new TotpService(prisma as never, noLock());
     const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test'); // enabled=null
     const secret = extractSecret(otpauthUrl);
     expect(
@@ -364,7 +378,7 @@ describe('TotpService — regenerateRecoveryCodes', () => {
 describe('TotpService — isEnabled / getStatus', () => {
   it('до enroll: isEnabled=false, getStatus={enabled:false, recoveryCodesLeft:0}', async () => {
     const prisma = makeFakePrisma();
-    const service = new TotpService(prisma as never);
+    const service = new TotpService(prisma as never, noLock());
     expect(await service.isEnabled(USER_ID)).toBe(false);
     expect(await service.getStatus(USER_ID)).toEqual({
       enabled: false,

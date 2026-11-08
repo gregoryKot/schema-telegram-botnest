@@ -15,6 +15,7 @@ import { TotpService } from './totp.service';
 import { TwoFaCodeDto, TwoFaChallengeDto } from './dto/twofa.dto';
 import type { Request, Response } from 'express';
 import { requireCsrf, setRefreshCookie } from './auth-http.util';
+import { refreshCookieOf } from './step-up';
 import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import { CODE_THROTTLE } from './auth-throttles';
 
@@ -59,7 +60,9 @@ export class Auth2faController {
       req,
       webUser.userId,
       '2fa/enable',
-      () => this.totp.confirmSetup(webUser.userId, dto.code),
+      // Сессия этого браузера остаётся, остальные отзываются.
+      () =>
+        this.totp.confirmSetup(webUser.userId, dto.code, refreshCookieOf(req)),
     );
     this.securityLog.log('role_changed', {
       userId: webUser.userId,

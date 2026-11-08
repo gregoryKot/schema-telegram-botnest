@@ -28,6 +28,8 @@ import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { LoginTicketService } from './login-ticket/login-ticket.service';
 import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { deviceLabel } from './login-ticket/device-label';
+import { TicketDeviceService } from './login-ticket/ticket-device';
+import { StepUpGuard } from './step-up';
 import type { LinkPreview } from './login-ticket/login-ticket.types';
 import {
   DeviceCodeDto,
@@ -49,6 +51,7 @@ export class AuthTicketController {
     private readonly tickets: LoginTicketService,
     private readonly links: TicketLinkService,
     private readonly securityLog: SecurityLogService,
+    private readonly device: TicketDeviceService,
   ) {}
 
   // ─── Шаг 1: контейнер просит билет ────────────────────────────────────────
@@ -65,6 +68,7 @@ export class AuthTicketController {
   async start(
     @Body() body: StartTicketDto,
     @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{
     deviceCode: string;
     userCode: string;
@@ -75,7 +79,7 @@ export class AuthTicketController {
     if (body.intent === 'link' && !requesterUserId) {
       throw new UnauthorizedException('Привязка требует входа');
     }
-    return this.tickets.start({
+    const ticket = await this.tickets.start({
       intent: body.intent,
       provider: body.provider,
       // Вход всегда начинается с чистого листа: даже если сессия почему-то
@@ -84,6 +88,8 @@ export class AuthTicketController {
       hostId: body.hostId ?? 'web',
       deviceLabel: deviceLabel(req.headers['user-agent']),
     });
+    this.device.bind(res, ticket.deviceCode); // S9: чей билет — ticket-device.ts
+    return ticket;
   }
 
   // ─── Шаг 2: подтверждающий смотрит, что произойдёт ────────────────────────
@@ -106,7 +112,7 @@ export class AuthTicketController {
   // кода, а OAuth — сервер в своём callback. Публичного роута «одобрить вход»
   // не существует, и это намеренно.
   @Post('approve')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StepUpGuard) // S12: мессенджер — способ входа
   @PersistentThrottleLimit(CODE_THROTTLE)
   @HttpCode(200)
   async approve(

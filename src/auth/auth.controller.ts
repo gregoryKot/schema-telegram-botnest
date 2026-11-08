@@ -24,6 +24,7 @@ import {
   setRefreshCookie,
 } from './auth-http.util';
 import { clearCookies, clearCookiesOnAuthFailure } from './refresh-cookie';
+import { StepUpGuard } from './step-up';
 
 @Controller('api/auth')
 export class AuthController {
@@ -127,7 +128,7 @@ export class AuthController {
   // guarded зеркало для веба монтируется отдельно в api.controller.ts.
 
   @Get('link-token')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StepUpGuard) // S12: link_token — пропуск в привязку
   issueLinkToken(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,

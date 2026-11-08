@@ -5,6 +5,7 @@ import { Need, NeedId } from '../bot/bot.service';
 import { renderSoftTemplate, pluralDays } from './notification.templates.soft';
 import { AddressForm, t } from './address-form';
 import { renderActivityTemplate } from './notification.templates.activity';
+import { renderSecurityNotice } from '../auth/security-notice.texts';
 import {
   MONTHS,
   pickPractice,
@@ -229,6 +230,8 @@ export function renderTemplate(
         text: '📅 Три месяца без перерыва — дольше, чем живёт большинство привычек вообще.',
       };
 
+    case 'security_notice':
+      return renderSecurityNotice(payload, form);
     // comeback / welcome_back / lapsing_* / dormant_7 / reengagement_30 / nudge —
     // мягкие сообщения про перерывы живут в отдельном модуле
     default:

@@ -18,7 +18,7 @@ jest.mock('jose', () => ({
     ) as unknown,
 }));
 
-import { UnauthorizedException } from '@nestjs/common';
+import { Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { jwtVerify } from 'jose';
 import { GoogleProvider } from './google.provider';
@@ -99,12 +99,15 @@ describe('GoogleProvider.exchangeCode — happy path и payload → profile', ()
         sub: 'google-user-1',
         email: 'anna@example.com',
         email_verified: true,
-        name: 'Аня',
+        name: 'Аня Петрова',
+        given_name: 'Аня',
       },
     });
 
     const provider = makeProvider();
     const identity = await provider.exchangeCode('auth-code');
+    // S16 (аудит 2026-11): displayName ляжет открытым в User.firstName —
+    // только имя (given_name), фамилия из `name` туда не попадает.
     expect(identity).toEqual({
       providerId: 'google-user-1',
       email: 'anna@example.com',
@@ -112,7 +115,25 @@ describe('GoogleProvider.exchangeCode — happy path и payload → profile', ()
     });
   });
 
-  it('нет claim "name" в payload → displayName падает обратно на email', async () => {
+  it('S16: нет given_name (есть только полное name) → displayName пуст, а не полное имя', async () => {
+    global.fetch = jest.fn(() => ({
+      ok: true,
+      json: () => Promise.resolve({ id_token: 'fake.id.token' }),
+    })) as any;
+    mockedJwtVerify.mockResolvedValue({
+      payload: {
+        sub: 'google-user-3',
+        email: 'ivan@example.com',
+        email_verified: true,
+        name: 'Иван Петров',
+      },
+    });
+
+    const identity = await makeProvider().exchangeCode('auth-code');
+    expect(identity.displayName).toBeUndefined();
+  });
+
+  it('S16: нет имени в payload → displayName пуст, почта в него не попадает (раньше падал на email)', async () => {
     global.fetch = jest.fn(() => ({
       ok: true,
       json: () => Promise.resolve({ id_token: 'fake.id.token' }),
@@ -127,7 +148,8 @@ describe('GoogleProvider.exchangeCode — happy path и payload → profile', ()
 
     const provider = makeProvider();
     const identity = await provider.exchangeCode('auth-code');
-    expect(identity.displayName).toBe('noNAme@example.com');
+    expect(identity.displayName).toBeUndefined();
+    expect(identity.email).toBe('noNAme@example.com');
   });
 
   it('email_verified !== true → UnauthorizedException("Google email not verified")', async () => {
@@ -182,7 +204,7 @@ describe('GoogleProvider.exchangeCode — ключи Google недоступны
       sub: 'google-user-offline',
       email: 'offline@example.com',
       email_verified: true,
-      name: 'Офлайн',
+      given_name: 'Офлайн',
       exp: Math.floor(Date.now() / 1000) + 3600,
     });
     global.fetch = jest.fn(() => ({
@@ -271,6 +293,37 @@ describe('GoogleProvider.exchangeCode — обмен кода на токен: �
     await expect(provider.exchangeCode('bad-code')).rejects.toThrow(
       'Google token exchange failed',
     );
+  });
+
+  // S13 (аудит 2026-11): колбэк открыт без входа — выдуманный или повторный
+  // код (invalid_grant) не должен уходить владельцу в DM; поломка настройки
+  // (invalid_client, redirect_uri_mismatch) — должна.
+  it.each([
+    ['invalid_grant', 'warn'],
+    ['invalid_client', 'error'],
+    ['redirect_uri_mismatch', 'error'],
+  ])('отказ Google %s → уровень %s', async (code, level) => {
+    global.fetch = jest.fn(() => ({
+      ok: false,
+      status: 400,
+      json: () => Promise.resolve({ error: code }),
+    })) as any;
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    try {
+      await expect(makeProvider().exchangeCode('c')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      const used = level === 'warn' ? warn : error;
+      const other = level === 'warn' ? error : warn;
+      expect(used).toHaveBeenCalledWith(
+        expect.stringContaining('Google token exchange rejected'),
+      );
+      expect(other).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
   });
 
   it('ответ 200 без id_token → UnauthorizedException', async () => {

@@ -79,7 +79,10 @@ function makeService() {
     sendLinkEmailLetter: jest.fn().mockResolvedValue(undefined),
   } as any;
   const auth = new AuthService(prisma, config, securityLog, emailSvc);
-  const totp = new TotpService(prisma);
+  const totp = new TotpService(prisma, {
+    lockedFor: jest.fn().mockResolvedValue(0),
+    recordFailure: jest.fn().mockResolvedValue(undefined),
+  } as never);
   const svc = new EmailTokenService(prisma, auth, totp);
   return {
     svc,
@@ -135,6 +138,21 @@ beforeEach(() => jest.useFakeTimers({ now: FIXED_DATE }));
 afterEach(() => jest.useRealTimers());
 
 describe('EmailTokenService — consumeEmailToken', () => {
+  // S16 (аудит 2026-11): раньше новый пользователь получал в открытый
+  // User.firstName часть адреса до @ — то есть кусок почты, а не имя.
+  it('S16: новый пользователь по почте — firstName пуст, части адреса в нём нет', async () => {
+    const { svc, auth, users } = makeService();
+    await auth.requestEmailLogin('ivan.petrov1985@example.com');
+    const result = await svc.consumeEmailToken(extractTokenFromLink(auth));
+    assertTokens(result);
+    expect(users).toHaveLength(1);
+    expect(users[0].firstName ?? null).toBeNull();
+    const strings = Object.values(users[0]).filter(
+      (v) => typeof v === 'string',
+    );
+    expect(strings.join(' ')).not.toContain('ivan.petrov1985');
+  });
+
   it('пустой токен → именно "Missing token" (не проваливается в "Token not found")', async () => {
     const { svc } = makeService();
     await expect(svc.consumeEmailToken('')).rejects.toThrow('Missing token');
@@ -279,7 +297,7 @@ describe('EmailTokenService — consumeEmailToken', () => {
     expect(authProviders[0]).toMatchObject({
       provider: 'email',
       providerId: 'newbie@example.com',
-      displayName: 'newbie',
+      displayName: undefined, // S16: часть адреса — не имя
     });
     expect(result.userId).toBe(users[0].id);
     expect(emailTokens[0].usedAt).not.toBeNull();

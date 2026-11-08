@@ -146,16 +146,16 @@ export class AuthService {
       return existing.userId;
     }
 
-    // For Telegram: userId = telegramId (maintains backward compat with bot data)
-    // For Google/email: generate a web-only userId in the safe range
+    // Telegram: userId = telegramId (данные бота); остальные — веб-id.
     const userId =
       provider === 'telegram' ? BigInt(providerId) : this.generateWebUserId();
 
-    // Upsert User (may already exist for telegram users who used the bot)
+    // User мог завести бот. firstName открытый — адрес почты в него нет (S16).
+    const firstName = isValidEmail(displayName ?? '') ? undefined : displayName;
     await this.prisma.user.upsert({
       where: { id: userId },
-      update: displayName ? { firstName: displayName } : {},
-      create: { id: userId, firstName: displayName },
+      update: firstName ? { firstName } : {},
+      create: { id: userId, firstName },
     });
 
     // Atomic upsert (ON CONFLICT): параллельные запросы мини-аппа на первом

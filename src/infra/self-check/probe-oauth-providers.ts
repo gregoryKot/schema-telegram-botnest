@@ -19,9 +19,7 @@ const TIMEOUT_MS = 8_000;
 // наш способ передачи переживает площадку целиком.
 const SAMPLE_STATE =
   'eyJhbGciOiJIUzI1NiJ9.eyJzZWxmQ2hlY2siOnRydWV9.c2VsZi1jaGVjaw';
-
 type Env = Record<string, string | undefined>;
-
 function configFrom(env: Env): ConfigService {
   return {
     getOrThrow: (key: string) => {
@@ -36,7 +34,6 @@ interface FirstHop {
   status: number;
   location: string | null;
 }
-
 async function firstHop(url: string): Promise<FirstHop> {
   const res = await fetch(url, {
     redirect: 'manual',
@@ -44,7 +41,6 @@ async function firstHop(url: string): Promise<FirstHop> {
   });
   return { status: res.status, location: res.headers.get('location') };
 }
-
 const isRedirect = (status: number) => status >= 300 && status < 400;
 
 /** Имя ошибки из authError Google: protobuf, поле 1 — строка. */
@@ -137,7 +133,11 @@ export function vkOAuthProbe(env: Env = process.env): Probe {
       if (!env.VK_APP_ID?.trim() || !env.VK_REDIRECT_URI?.trim())
         return { ok: true, detail: 'выключено' };
       try {
-        const url = new VkProvider(configFrom(env)).buildAuthUrl(SAMPLE_STATE);
+        // PKCE-verifier любой (в проде — из куки шага 1): обмена кода нет.
+        const url = new VkProvider(configFrom(env)).buildAuthUrl(
+          SAMPLE_STATE,
+          SAMPLE_STATE,
+        );
         const sent = new URL(url).searchParams.get('state') ?? '';
         return judgeVk(await firstHop(url), sent);
       } catch (e) {

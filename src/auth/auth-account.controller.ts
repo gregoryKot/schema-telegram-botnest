@@ -6,7 +6,6 @@ import {
   Req,
   Res,
   Query,
-  Param,
   BadRequestException,
   Logger,
   UseGuards,
@@ -14,17 +13,20 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
-import { STRICT_THROTTLE } from './auth-throttles';
+import { CODE_THROTTLE, STRICT_THROTTLE } from './auth-throttles';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, OptionalJwtGuard, WebUser } from './jwt.guard';
-import { AuthProviderRegistry } from './providers/registry';
 import { MergeService } from './merge.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { SecurityLogService } from './security-log.service';
 import { emailCallbackRedirectUrl } from './email-callback-redirect';
 import { emailConsumeBody, type EmailConsumeBody } from './email-consume-body';
 import { EmailTokenService } from './email-token.service';
-import type { LinkProviderResult } from './merge-summary.types';
+import { buildMergePreview, type MergePreview } from './merge-preview';
+import { SecurityNoticeService } from './security-notice.service';
+import { StepUpGuard } from './step-up';
+import { TicketDeviceService } from './login-ticket/ticket-device';
 import {
   EmailBodyDto,
   InitDataBodyDto,
@@ -52,12 +54,14 @@ export class AuthAccountController {
   constructor(
     private readonly auth: AuthService,
     private readonly config: ConfigService,
-    private readonly providers: AuthProviderRegistry,
+    private readonly prisma: PrismaService,
     private readonly merge: MergeService,
     private readonly securityLog: SecurityLogService,
     private readonly emailTokens: EmailTokenService,
     private readonly identity: CallerIdentityService,
     private readonly totp: TotpService,
+    private readonly tickets: TicketDeviceService,
+    private readonly notice: SecurityNoticeService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -70,6 +74,8 @@ export class AuthAccountController {
     @Req() req: Request,
   ): Promise<{ ok: true }> {
     requireCsrf(req, 'email/link', this.securityLog);
+    // S9: чужой билет в письме — фишинг настоящим письмом (ticket-device.ts).
+    if (dto.ticket) await this.tickets.assertOwnPendingLogin(req, dto.ticket);
     return this.auth.requestEmailLogin(dto.email, dto.ticket);
   }
 
@@ -112,13 +118,14 @@ export class AuthAccountController {
       req.headers['user-agent'],
       await this.identity.resolve(req), // A3: чья сессия в этом браузере
     );
+    if (r.kind === 'linked') this.notice.linked(r.userId, 'email');
     return emailConsumeBody(r, res);
   }
 
   // ─── Link email to existing account ──────────────────────────────────────
 
   @Post('email/link-to-account')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, StepUpGuard) // S12: новый способ входа
   @PersistentThrottleLimit(STRICT_THROTTLE)
   @HttpCode(200)
   async emailLinkToAccount(
@@ -169,6 +176,20 @@ export class AuthAccountController {
   }
 
   // ─── Confirm a pending merge ──────────────────────────────────────────────
+
+  // Экран /account/merge: имя и счётчики — отсюда, не из query (merge-preview.ts).
+  @Post('merge/preview')
+  @UseGuards(JwtAuthGuard)
+  @PersistentThrottleLimit(CODE_THROTTLE)
+  @HttpCode(200)
+  mergePreview(
+    @Body() dto: TokenBodyDto,
+    @Req() req: Request,
+  ): Promise<MergePreview> {
+    requireCsrf(req, 'merge/preview', this.securityLog);
+    const deps = { auth: this.auth, merge: this.merge, prisma: this.prisma };
+    return buildMergePreview(deps, dto.token, req.webUser!.userId);
+  }
 
   @Post('merge')
   @UseGuards(OptionalJwtGuard)
@@ -222,69 +243,5 @@ export class AuthAccountController {
       ip: req.ip,
     });
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
-  }
-
-  // ─── Link an additional provider (Telegram widget → existing account) ────
-
-  @Post('link/:provider')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(200)
-  async linkProvider(
-    @Param('provider') provider: string,
-    // Не DTO: подписанный Telegram-payload, whitelist срежет поля и сломает hash-верификацию.
-    @Body() body: Record<string, unknown>,
-    @Req() req: Request,
-  ): Promise<LinkProviderResult> {
-    const handler = this.providers.get(provider);
-    if (!handler.verifyClientData) {
-      throw new BadRequestException(
-        `Provider ${provider} doesn't support direct linking — use OAuth flow`,
-      );
-    }
-    const identity = handler.verifyClientData(body);
-    const webUser: WebUser = req.webUser!;
-
-    const result = await this.auth.linkProviderToUser(
-      webUser.userId,
-      provider,
-      identity.providerId,
-      identity.displayName,
-      identity.email,
-    );
-    if (result.ok) return { ok: true };
-
-    // Conflict — give the UI a merge token.
-    const sourceId = BigInt(result.conflictUserId);
-    const mergeToken = this.auth.buildMergeToken(
-      webUser.userId,
-      sourceId,
-      provider,
-      identity.providerId,
-    );
-    const s = await this.merge.summarize(sourceId, webUser.userId);
-    const { counts: summary, twoFactorLost } = s;
-    return { merge: true, mergeToken, summary, twoFactorLost };
-  }
-
-  // ─── Unlink a provider ────────────────────────────────────────────────────
-
-  @Post('unlink/:provider')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(200)
-  async unlink(
-    @Param('provider') provider: string,
-    @Req() req: Request,
-  ): Promise<{ ok: boolean }> {
-    if (!this.providers.list().some((p) => p.id === provider)) {
-      throw new BadRequestException('Unknown provider');
-    }
-    const webUser: WebUser = req.webUser!;
-    await this.auth.unlinkProvider(webUser.userId, provider);
-    this.securityLog.log('provider_unlinked', {
-      userId: webUser.userId,
-      provider,
-      ip: req.ip,
-    });
-    return { ok: true };
   }
 }

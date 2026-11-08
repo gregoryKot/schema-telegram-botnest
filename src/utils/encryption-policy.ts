@@ -22,7 +22,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
   Rating: { date: DATE, needId: ID },
   YsqProgress: { answers: enc(`${BOT}/ysq.service.ts`) },
   User: {
-    firstName: plain('имя из Telegram-профиля; публично в Telegram'),
+    firstName: plain('только имя, без фамилии и почты (src/auth/providers)'),
     notifyTimezone: ID,
     notifyNextRemindDate: DATE,
     notifySkipAckDate: DATE,
@@ -39,7 +39,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     modeIntrosShown: plain('id просмотренных интро (не выбор «моих» режимов)'),
     defaultSection: ID,
     totpSecret: enc('src/auth/totp.service.ts'),
-    totpRecoveryCodes: enc('src/auth/totp.service.ts'),
+    totpRecoveryCodes: enc('src/auth/totp-recovery.ts'),
     recoveryEmail: plain(
       'по всей видимости пуста и не используется с #864 (восстановление по почте убрано); ' +
         'колонку удаляет отдельная миграция — docs/open/audit-2026-10.md',

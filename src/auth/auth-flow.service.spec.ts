@@ -12,6 +12,7 @@ jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
 
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { SecurityNoticeService } from './security-notice.service';
 import { AuthFlowService, SignInOutcome } from './auth-flow.service';
 import { AuthService, TokenPair } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -85,24 +86,33 @@ function makeTotp(enabled = false): TotpService & { isEnabled: jest.Mock } {
   } as unknown as TotpService & { isEnabled: jest.Mock };
 }
 
+function makeNotice(): SecurityNoticeService & { linked: jest.Mock } {
+  return { linked: jest.fn() } as unknown as SecurityNoticeService & {
+    linked: jest.Mock;
+  };
+}
+
 function makeService(opts: {
   auth?: AuthServiceMock;
   config?: ConfigService;
   registry?: AuthProviderRegistry;
   merge?: MergeService;
   totp?: TotpService;
+  notice?: SecurityNoticeService;
 }): AuthFlowService {
   const auth = opts.auth ?? makeAuth();
   const config = opts.config ?? makeConfig();
   const registry = opts.registry ?? makeRegistry().registry;
   const merge = opts.merge ?? makeMerge();
   const totp = opts.totp ?? makeTotp();
+  const notice = opts.notice ?? makeNotice();
   return new AuthFlowService(
     auth as unknown as AuthService,
     config,
     registry,
     merge,
     totp,
+    notice,
   );
 }
 
@@ -186,6 +196,22 @@ describe('AuthFlowService.signInOrLinkOrMerge', () => {
       userId: 1n,
       challengeToken: 'totp-challenge-tok',
     });
+  });
+
+  it('S12: привязка без конфликта → владельцу уведомление о новом способе входа', async () => {
+    const notice = makeNotice();
+    const svc = makeService({ notice });
+    await svc.signInOrLinkOrMerge('vk', makeIdentity({ providerId: 'vk-1' }), {
+      linkUserId: 777n,
+    });
+    expect(notice.linked).toHaveBeenCalledWith(777n, 'vk');
+  });
+
+  it('обычный вход (linkUserId=null) — не привязка, уведомления нет', async () => {
+    const notice = makeNotice();
+    const svc = makeService({ notice });
+    await svc.signInOrLinkOrMerge('vk', makeIdentity(), { linkUserId: null });
+    expect(notice.linked).not.toHaveBeenCalled();
   });
 
   it('linkUserId задан, конфликтов нет → линкует провайдера, issueTokens на linkUserId', async () => {
@@ -297,7 +323,7 @@ describe('AuthFlowService.signInOrLinkOrMerge', () => {
 describe('AuthFlowService.finishOAuthRedirect', () => {
   const FRONTEND = 'https://schemehappens.ru';
 
-  it('исход "merge" → редирект на /account/merge с токеном/summary/provider/name', async () => {
+  it('исход "merge" → редирект на /account/merge только с токеном и провайдером', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -313,7 +339,10 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     expect(url).toMatch(`${FRONTEND}/account/merge?`);
     expect(url).toContain('token=mt-1');
     expect(url).toContain('provider=google');
-    expect(url).toContain(encodeURIComponent('Грег'));
+    // Имя и сводка — через POST merge/preview, не в адресе (история, логи).
+    expect(url).not.toContain(encodeURIComponent('Грег'));
+    expect(url).not.toContain('summary');
+    expect(url).not.toContain('name=');
   });
 
   it('исход "merge" с twoFactorLost: true → в query есть twofa=1', async () => {
@@ -344,22 +373,6 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
     const url = res.redirect.mock.calls[0][0] as string;
     expect(url).not.toContain('twofa');
-  });
-
-  it('исход "merge" с otherDisplay=null → name в query пустая строка, не "null"', async () => {
-    const svc = makeService({});
-    const res = makeRes();
-    const outcome: SignInOutcome = {
-      kind: 'merge',
-      mergeToken: 'mt-1',
-      summary: { Note: 2 },
-      twoFactorLost: false,
-      otherDisplay: null,
-    };
-    svc.finishOAuthRedirect(outcome, 'google', res, FRONTEND);
-    const url = res.redirect.mock.calls[0][0] as string;
-    expect(url).toContain('name=');
-    expect(url).not.toContain('null');
   });
 
   it('исход "totp_challenge" → редирект на /auth/2fa с challenge-токеном', async () => {
@@ -442,7 +455,8 @@ describe('AuthFlowService.oauthRedirect', () => {
     });
     const svc = makeService({ registry });
     const res = makeRes();
-    const req = makeReq({ webUser: { userId: 999n } });
+    // Привязка — по куке link_token (выдана после step-up), не по Bearer.
+    const req = makeReq({ webUser: { userId: 999n, viaLinkToken: true } });
 
     svc.oauthRedirect('google', req, res);
 
@@ -465,6 +479,25 @@ describe('AuthFlowService.oauthRedirect', () => {
     expect(res.redirect).toHaveBeenCalledWith(
       'https://accounts.google.com/o/authorize?x=1',
     );
+  });
+
+  // S12: скрипт с украденным Bearer не начинает привязку чужого Google/VK —
+  // такой запрос идёт как обычный вход (state без linkUserId).
+  it('webUser из голого Bearer (без куки link_token) → вход, не привязка', () => {
+    const buildAuthUrl = jest
+      .fn()
+      .mockReturnValue('https://accounts.google.com/x');
+    const { registry } = makeRegistry({
+      id: 'google',
+      displayName: 'Google',
+      buildAuthUrl,
+    });
+    const svc = makeService({ registry });
+    const res = makeRes();
+    svc.oauthRedirect('google', makeReq({ webUser: { userId: 999n } }), res);
+    const state = res.cookie.mock.calls[0][1] as string;
+    expect(svc.linkUserIdFromState(state)).toBeNull();
+    expect(buildAuthUrl).toHaveBeenCalledWith(state, undefined, false);
   });
 
   it('анонимный запрос (без webUser) → linkUserId в state равен null', () => {
@@ -545,7 +578,7 @@ describe('AuthFlowService.oauthRedirect', () => {
     const res = makeRes();
     const req = makeReq({
       headers: { host: 'kotlarewski.gr' },
-      webUser: { userId: 999n },
+      webUser: { userId: 999n, viaLinkToken: true },
     });
 
     svc.oauthRedirect('google', req, res);

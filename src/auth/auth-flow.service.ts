@@ -12,6 +12,8 @@ import { MergeService } from './merge.service';
 import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 import { TotpService } from './totp.service';
 import { setRefreshCookie } from './auth-http.util';
+import { linkCookieUserId } from './step-up';
+import { SecurityNoticeService } from './security-notice.service';
 import { signOAuthState, readOAuthState, readOAuthTicket } from './oauth-state';
 import {
   OAUTH_STATE_COOKIE,
@@ -51,6 +53,7 @@ export class AuthFlowService {
     private readonly providers: AuthProviderRegistry,
     private readonly merge: MergeService,
     private readonly totp: TotpService,
+    private readonly notice: SecurityNoticeService,
   ) {}
 
   // ─── Generic helper ───────────────────────────────────────────────────────
@@ -102,8 +105,8 @@ export class AuthFlowService {
     );
 
     if (result.ok) {
-      // Linking an additional provider doesn't need re-2FA — the user is
-      // already authed in this session.
+      // Step-up уже был при выдаче link_token (S12); владельцу — уведомление.
+      this.notice.linked(linkUserId, providerId_);
       const tokens = await this.auth.issueTokens(linkUserId, ip, userAgent);
       return { kind: 'tokens', userId: linkUserId, tokens };
     }
@@ -145,9 +148,7 @@ export class AuthFlowService {
     if (outcome.kind === 'merge') {
       const params = new URLSearchParams({
         token: outcome.mergeToken,
-        summary: JSON.stringify(outcome.summary),
         provider,
-        name: outcome.otherDisplay ?? '',
       });
       // Только когда правда теряется — параметр без значения true/false,
       // чтобы отсутствие читалось как «нечего терять», а не как «неизвестно».
@@ -218,8 +219,9 @@ export class AuthFlowService {
     // всегда на канонический хост — кука здесь не увидится (2026-09-08).
     // Только АНОНИМНЫЙ вход: у привязки кука link_token/сессия на текущем
     // хосте, редирект превратил бы её во вход под другим аккаунтом (2026-08-21).
+    const linkUserId = linkCookieUserId(req); // S12: только кука link_token
     if (
-      req.webUser?.userId == null &&
+      linkUserId == null &&
       redirectToCallbackHost(req, res, this.callbackOrigin(handler))
     )
       return;
@@ -227,14 +229,12 @@ export class AuthFlowService {
     // Дальше код едет внутри подписи, а не в открытом query.
     const ticket =
       typeof req.query?.ticket === 'string' ? req.query.ticket : null;
-    const state = this.buildLinkState(req.webUser?.userId ?? null, ticket);
+    const state = this.buildLinkState(linkUserId, ticket);
     setOAuthCookie(res, OAUTH_STATE_COOKIE, state);
-    // Привязка (уже есть webUser) заставляет выбрать аккаунт явно; вход
-    // (webUser нет) — нет: провайдер впускает уже вошедшего одним касанием,
-    // а не гоняет через полный выбор аккаунта заново (см. buildAuthUrl).
-    res.redirect(
-      handler.buildAuthUrl(state, undefined, req.webUser?.userId != null),
-    );
+    // Привязка (есть webUser) — выбор аккаунта явно, вход — одним касанием (см.
+    // buildAuthUrl). nonce — секрет шага 1 в куке (PKCE VK, аудит 2026-11 S21).
+    const force = linkUserId != null;
+    res.redirect(handler.buildAuthUrl(state, handler.issueNonce?.(res), force));
   }
 
   async oauthCallback(

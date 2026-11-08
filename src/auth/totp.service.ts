@@ -7,30 +7,29 @@ import {
 } from '@nestjs/common';
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
-import * as crypto from 'crypto';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
+import { encrypt, decrypt } from '../utils/crypto';
+import { revokeOtherSessions } from './session-proof';
+import { TotpAttemptsService, TotpLockedException } from './totp-attempts';
+import {
+  consumeRecoveryCode,
+  newRecoveryCodes,
+  readRecoveryHashes,
+} from './totp-recovery';
 
 const ISSUER = 'Schema Happens';
-const RECOVERY_CODES = 10;
-const RECOVERY_CODE_BYTES = 5; // 10 hex chars per code
 
 // Allow ±1 step (30s) drift between server and client clock.
 authenticator.options = { window: 1 };
-
-function hashCode(code: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(code.trim().toLowerCase())
-    .digest('hex');
-}
 
 @Injectable()
 export class TotpService {
   private readonly logger = new Logger(TotpService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly attempts: TotpAttemptsService,
+  ) {}
 
   // ─── Setup phase ──────────────────────────────────────────────────────────
 
@@ -67,9 +66,12 @@ export class TotpService {
 
   // Step 2: user types their first 6-digit code. If valid → enable 2FA and
   // return a fresh batch of one-time recovery codes (shown ONCE).
+  // S12: включение 2FA гасит остальные сессии — иначе тот, кто увёл сессию
+  // раньше, остаётся внутри и после защиты. Семья `currentRefresh` остаётся.
   async confirmSetup(
     userId: bigint,
     code: string,
+    currentRefresh?: string,
   ): Promise<{ recoveryCodes: string[] }> {
     const row = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -86,27 +88,21 @@ export class TotpService {
       throw new UnauthorizedException('Invalid code');
     }
 
-    const codes = Array.from({ length: RECOVERY_CODES }, () =>
-      crypto.randomBytes(RECOVERY_CODE_BYTES).toString('hex'),
-    );
-    const hashes = codes.map(hashCode);
-    const encryptedHashes = encryptJson(hashes) ?? JSON.stringify(hashes);
-
+    const { codes, stored } = newRecoveryCodes();
     await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        totpEnabledAt: new Date(),
-        totpRecoveryCodes: encryptedHashes,
-      },
+      data: { totpEnabledAt: new Date(), totpRecoveryCodes: stored },
     });
-
+    await revokeOtherSessions(this.prisma, userId, currentRefresh);
     return { recoveryCodes: codes };
   }
 
   // ─── Verification (login / disable / sensitive action) ───────────────────
 
   // Verify a TOTP code OR a one-time recovery code against the user's stored
-  // secret. Recovery codes are consumed (removed from the list) on success.
+  // secret. Recovery codes are consumed on success (totp-recovery.ts).
+  // Неверный код — +1 к счётчику аккаунта (S11, totp-attempts.ts); на паузе
+  // принимается только резервный код, остальное — 429 `totp_locked`.
   async verifyCode(userId: bigint, code: string): Promise<boolean> {
     const row = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -119,67 +115,46 @@ export class TotpService {
     if (!row?.totpEnabledAt || !row.totpSecret) return false;
 
     const trimmed = code.trim();
-    const secret = decrypt(row.totpSecret);
-    if (secret) {
-      // Anti-replay (L2 аудита 2026-08): authenticator.check пускал ОДИН и тот
-      // же код всё окно валидности (~90с). checkDelta даёт смещение шага, из
-      // него — абсолютный time-step принятого кода. Двигаем totpLastStep вперёд
-      // АТОМАРНО (updateMany с фильтром lt/null = CAS): повтор того же шага (или
-      // более раннего) не проходит условие и получает false.
-      const delta = authenticator.checkDelta(trimmed, secret);
-      if (delta !== null) {
-        const stepSeconds = authenticator.options.step ?? 30;
-        const step = Math.floor(Date.now() / 1000 / stepSeconds) + delta;
-        const res = await this.prisma.user.updateMany({
-          where: {
-            id: userId,
-            OR: [{ totpLastStep: null }, { totpLastStep: { lt: step } }],
-          },
-          data: { totpLastStep: step },
-        });
-        return res.count > 0;
-      }
-    }
+    const lockedFor = await this.attempts.lockedFor(userId);
+    const ok =
+      (lockedFor === 0 &&
+        (await this.checkTotp(userId, row.totpSecret, trimmed))) ||
+      (await consumeRecoveryCode(
+        this.prisma,
+        this.logger,
+        userId,
+        row.totpRecoveryCodes,
+        trimmed,
+      ));
+    if (ok) return true;
+    if (lockedFor > 0) throw new TotpLockedException(lockedFor);
+    await this.attempts.recordFailure(userId);
+    return false;
+  }
 
-    // Not a valid TOTP — maybe a recovery code.
-    const raw = row.totpRecoveryCodes;
-    const hashes: string[] =
-      typeof raw === 'string'
-        ? (decryptJson<string[]>(raw) ?? [])
-        : Array.isArray(raw)
-          ? raw.map(String)
-          : [];
-    const incomingHash = hashCode(trimmed);
-    const idx = hashes.indexOf(incomingHash);
-    if (idx === -1) return false;
-
-    // Consume the recovery code — АТОМАРНО (F1 аудита 2026-08, та же болезнь,
-    // что step-ветка выше). Раньше здесь был read→filter→update: два
-    // параллельных запроса с ОДНИМ recovery-кодом оба проходили indexOf и оба
-    // писали remaining — код гасился дважды (lost-update стирал чужое
-    // погашение, одноразовый код срабатывал двумя входами). updateMany с CAS
-    // по текущему блобу (equals: raw = jsonb-равенство в Postgres) пускает
-    // ровно одну запись: победитель меняет значение, у проигравшего фильтр
-    // больше не совпадает (count=0) — код не засчитан.
-    // Компромисс: два РАЗНЫХ кода, поданных строго одновременно, тоже
-    // конфликтуют по блобу — проигравший получит false и просто повторит ввод
-    // (fail-closed, безопасно). Recovery-коды вводит человек по одному, так что
-    // гонка — редкость, а двойное списание одноразового кода — нет.
-    const remaining = hashes.filter((_, i) => i !== idx);
-    const encryptedRemaining =
-      encryptJson(remaining) ?? JSON.stringify(remaining);
-    const consumed = await this.prisma.user.updateMany({
+  // Anti-replay (L2 аудита 2026-08): authenticator.check пускал ОДИН и тот же
+  // код всё окно валидности (~90с). checkDelta даёт смещение шага, из него —
+  // абсолютный time-step принятого кода. Двигаем totpLastStep вперёд АТОМАРНО
+  // (updateMany с фильтром lt/null = CAS): повтор того же шага (или более
+  // раннего) не проходит условие и получает false.
+  private async checkTotp(
+    userId: bigint,
+    storedSecret: string,
+    code: string,
+  ): Promise<boolean> {
+    const secret = decrypt(storedSecret);
+    const delta = secret ? authenticator.checkDelta(code, secret) : null;
+    if (delta === null) return false;
+    const stepSeconds = authenticator.options.step ?? 30;
+    const step = Math.floor(Date.now() / 1000 / stepSeconds) + delta;
+    const res = await this.prisma.user.updateMany({
       where: {
         id: userId,
-        totpRecoveryCodes: { equals: raw as Prisma.InputJsonValue },
+        OR: [{ totpLastStep: null }, { totpLastStep: { lt: step } }],
       },
-      data: { totpRecoveryCodes: encryptedRemaining },
+      data: { totpLastStep: step },
     });
-    if (consumed.count === 0) return false; // проиграли гонку — код не гасим
-    this.logger.warn(
-      `Recovery code consumed for user ${userId} (${remaining.length} left)`,
-    );
-    return true;
+    return res.count > 0;
   }
 
   // Disable 2FA — caller must have just verified a current code.
@@ -199,14 +174,10 @@ export class TotpService {
   ): Promise<{ recoveryCodes: string[] }> {
     const ok = await this.verifyCode(userId, code);
     if (!ok) throw new UnauthorizedException('Invalid code');
-    const codes = Array.from({ length: RECOVERY_CODES }, () =>
-      crypto.randomBytes(RECOVERY_CODE_BYTES).toString('hex'),
-    );
-    const hashes = codes.map(hashCode);
-    const encryptedHashes = encryptJson(hashes) ?? JSON.stringify(hashes);
+    const { codes, stored } = newRecoveryCodes();
     await this.prisma.user.update({
       where: { id: userId },
-      data: { totpRecoveryCodes: encryptedHashes },
+      data: { totpRecoveryCodes: stored },
     });
     return { recoveryCodes: codes };
   }
@@ -228,13 +199,7 @@ export class TotpService {
       select: { totpEnabledAt: true, totpRecoveryCodes: true },
     });
     if (!row?.totpEnabledAt) return { enabled: false, recoveryCodesLeft: 0 };
-    const raw = row.totpRecoveryCodes;
-    const hashes: string[] =
-      typeof raw === 'string'
-        ? (decryptJson<string[]>(raw) ?? [])
-        : Array.isArray(raw)
-          ? raw.map(String)
-          : [];
-    return { enabled: true, recoveryCodesLeft: hashes.length };
+    const left = readRecoveryHashes(row.totpRecoveryCodes).length;
+    return { enabled: true, recoveryCodesLeft: left };
   }
 }

@@ -1,8 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
+import type { Response } from 'express';
 import { AuthProviderHandler, ProviderIdentity } from './types';
 import { toVkState } from './vk-state';
+import { issueVkPkceVerifier, pkceChallenge } from '../vk-pkce';
 
 // VK ID (modern OAuth 2.1 + PKCE flow). Docs:
 //   https://id.vk.com/about/business/go/docs/en/vkid/latest/vk-id/connection/...
@@ -14,14 +15,10 @@ import { toVkState } from './vk-state';
 //     authorize, verifier sent on token exchange
 //   - device_id is returned alongside `code` and must be replayed on exchange
 //
-// PKCE verifier не хранится — он выводится из state: HMAC(JWT_SECRET, state).
-// Раньше он жил в Map в памяти процесса, а на Amvera больше одного инстанса
-// (правило №5) и каждый деплой перезапускает процесс: колбэк, попавший на
-// другой инстанс или после рестарта, не находил verifier → «VK PKCE verifier
-// expired or missing» → /auth/error?reason=vk_failed (инцидент 2026-10-03).
-// Секретность verifier держит ключ: state виден в адресе, HMAC без ключа —
-// нет. Срок и одноразовость держат кука oauth_state (10 минут, стирается в
-// колбэке) и сам VK: code одноразовый и короткоживущий.
+// PKCE verifier — случайный, в httpOnly-куке шага 1 (vk-pkce.ts, аудит
+// 2026-11 S21; раньше — HMAC от state, а state виден в адресе). Шаг 1 — общий
+// AuthFlowService.oauthRedirect: issueNonce кладёт куку, buildAuthUrl получает
+// verifier вторым аргументом; колбэк (auth-oauth.controller.ts) читает куку.
 
 @Injectable()
 export class VkProvider implements AuthProviderHandler {
@@ -30,24 +27,17 @@ export class VkProvider implements AuthProviderHandler {
 
   constructor(private readonly config: ConfigService) {}
 
-  private verifierFor(state: string): string {
-    const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    return crypto
-      .createHmac('sha256', secret)
-      .update(`vk-pkce-verifier:${state}`)
-      .digest('base64url');
+  issueNonce(res: Response): string {
+    return issueVkPkceVerifier(res);
   }
 
-  buildAuthUrl(state: string): string {
+  // verifier — из issueNonce (кука шага 1). Без него PKCE не построить: падать
+  // громко, а не выдумывать verifier, которого колбэк не найдёт.
+  buildAuthUrl(state: string, verifier?: string): string {
+    if (!verifier) throw new Error('VK PKCE: buildAuthUrl без verifier');
     const clientId = this.config.getOrThrow<string>('VK_APP_ID');
     const redirectUri = this.config.getOrThrow<string>('VK_REDIRECT_URI');
-
-    // PKCE S256: verifier (43 символа base64url) → sha256 → base64url.
-    const challenge = crypto
-      .createHash('sha256')
-      .update(this.verifierFor(state))
-      .digest('base64url');
-
+    const challenge = pkceChallenge(verifier);
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
@@ -84,7 +74,7 @@ export class VkProvider implements AuthProviderHandler {
   async exchangeCodeWithContext(
     code: string,
     deviceId: string,
-    state: string,
+    { state, verifier }: { state: string; verifier: string },
   ): Promise<ProviderIdentity> {
     const clientId = this.config.getOrThrow<string>('VK_APP_ID');
     const redirectUri = this.config.getOrThrow<string>('VK_REDIRECT_URI');
@@ -93,7 +83,7 @@ export class VkProvider implements AuthProviderHandler {
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      code_verifier: this.verifierFor(state),
+      code_verifier: verifier,
       redirect_uri: redirectUri,
       client_id: clientId,
       device_id: deviceId,
@@ -138,12 +128,10 @@ export class VkProvider implements AuthProviderHandler {
       });
       if (infoRes.ok) {
         const info = (await infoRes.json()) as {
-          user?: { first_name?: string; last_name?: string };
+          user?: { first_name?: string };
         };
-        const u = info.user;
-        if (u)
-          displayName =
-            [u.first_name, u.last_name].filter(Boolean).join(' ') || undefined;
+        // Открытым в User.firstName — только имя, без фамилии (S16, 2026-11).
+        displayName = info.user?.first_name?.trim() || undefined;
       }
     } catch {
       /* non-fatal */

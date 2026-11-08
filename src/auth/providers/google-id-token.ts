@@ -28,7 +28,7 @@ const CLOCK_SKEW_S = 60;
 export interface GoogleIdTokenClaims {
   sub: string;
   email?: string;
-  name?: string;
+  givenName?: string; // только имя (given_name), без фамилии — S16, аудит 2026-11
   emailVerified: boolean;
   nonce?: string; // One Tap: привязка токена к браузеру
   /** Подпись проверить не удалось — JWKS недостижим, claims проверены офлайн. */
@@ -70,11 +70,11 @@ function toClaims(payload: JWTPayload, offline: boolean): GoogleIdTokenClaims {
     throw new Error('Google id_token without sub');
   }
   const email = payload['email'];
-  const name = payload['name'];
+  const given = payload['given_name'];
   return {
     sub: payload.sub,
     email: typeof email === 'string' ? email : undefined,
-    name: typeof name === 'string' ? name : undefined,
+    givenName: typeof given === 'string' && given.trim() ? given : undefined,
     emailVerified: payload['email_verified'] === true,
     nonce: typeof payload['nonce'] === 'string' ? payload['nonce'] : undefined,
     offline,

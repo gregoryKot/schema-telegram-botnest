@@ -91,13 +91,11 @@ export class EmailTokenService {
       return { kind: 'linked', purpose: row.purpose, userId: row.userId };
     }
 
+    // Имени у входа по почте нет: часть адреса до @ — это почта, а не имя, и
+    // открытым в User.firstName ей не место (S16, аудит 2026-11).
     const userId =
       row.userId ??
-      (await this.auth.findOrCreateUserByProvider(
-        'email',
-        rowEmail,
-        rowEmail.split('@')[0],
-      ));
+      (await this.auth.findOrCreateUserByProvider('email', rowEmail));
     if (await this.totp.isEnabled(userId)) {
       const challengeToken = this.auth.buildTotpChallengeToken(
         userId,

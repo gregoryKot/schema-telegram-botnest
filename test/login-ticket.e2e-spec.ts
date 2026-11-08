@@ -186,12 +186,11 @@ describe('e2e smoke: билет входа и привязка аккаунта 
     });
     expect(pending.body).toEqual({ status: 'pending' });
 
+    // Step-up (S12) у аккаунта без TOTP не спрашивает ничего — пропуск.
     const approve = await call(
       srv().post('/api/auth/ticket/approve'),
       tokenA,
-    ).send({
-      code: userCode,
-    });
+    ).send({ code: userCode });
     expect(approve.status).toBe(200);
     expect(approve.body).toEqual({ merged: false });
 
@@ -328,6 +327,72 @@ describe('e2e smoke: билет входа и привязка аккаунта 
       });
       expect(linked.body.status).toBe('linked');
       expect(linked.body.accessToken).toBeTruthy();
+    });
+
+    // S9: экран /auth/confirm показывает устройство и время просьбы о входе.
+    it('login-preview: живой билет входа → устройство и время; прочее → 404', async () => {
+      const noAuth = await call(
+        srv().post('/api/auth/ticket/login-preview'),
+      ).send({ code: 'ABCD2345' });
+      expect(noAuth.status).toBe(401);
+
+      const { userCode } = await issue();
+      const ok = await call(
+        srv().post('/api/auth/ticket/login-preview'),
+        tokenB,
+      ).send({ code: userCode });
+      expect(ok.status).toBe(200);
+      expect(ok.body.deviceLabel).toBe('iPhone · Safari');
+      expect(Number.isNaN(Date.parse(ok.body.createdAt))).toBe(false);
+      expect(Object.keys(ok.body).sort()).toEqual(['createdAt', 'deviceLabel']);
+
+      const unknown = await call(
+        srv().post('/api/auth/ticket/login-preview'),
+        tokenB,
+      ).send({ code: 'ZZZZ2345' });
+      expect(unknown.status).toBe(404);
+
+      // Привязку (intent link) этот экран не описывает — у неё свой preview.
+      // Сервисом, не роутом: `start` по Bearer A уже у лимита 5/мин.
+      const link = await app.get(LoginTicketService).start({
+        intent: 'link',
+        provider: 'max',
+        requesterUserId: USER_A,
+        hostId: 'web',
+        deviceLabel: 'Android · Chrome',
+      });
+      const notLogin = await call(
+        srv().post('/api/auth/ticket/login-preview'),
+        tokenB,
+      ).send({ code: link.userCode });
+      expect(notLogin.status).toBe(404);
+    });
+
+    // S9: чужой билет в письме входа — фишинг настоящим письмом. Письмо с
+    // билетом уходит только браузеру, который этот билет выписал (кука).
+    it('email/link принимает билет только с куки браузера, выписавшего его', async () => {
+      const started = await call(srv().post('/api/auth/ticket/start')).send({
+        intent: 'login',
+        provider: 'email',
+      });
+      expect(started.status).toBe(200);
+      const setCookie = (
+        started.headers['set-cookie'] as unknown as string[]
+      ).find((c) => c.startsWith('login_ticket='));
+      expect(setCookie).toMatch(/HttpOnly/i);
+      const ticket = started.body.userCode as string;
+
+      const foreign = await call(srv().post('/api/auth/email/link')).send({
+        email: 'victim@example.com',
+        ticket,
+      });
+      expect(foreign.status).toBe(400);
+      expect(foreign.body.reason).toBe('ticket_foreign');
+
+      const own = await call(srv().post('/api/auth/email/link'))
+        .set('Cookie', String(setCookie).split(';')[0])
+        .send({ email: 'me@example.com', ticket });
+      expect(own.status).toBe(200);
     });
 
     it('deny-login («это не я») требует сессии и гасит билет', async () => {

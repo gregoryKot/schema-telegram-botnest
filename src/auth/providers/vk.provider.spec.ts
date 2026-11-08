@@ -3,6 +3,7 @@
 // PKCE-чек), либо ломает вход всем VK-юзерам. fetch мокается по паттерну
 // robokassa.service.spec.ts (global.fetch = jest.fn(...)).
 import { UnauthorizedException } from '@nestjs/common';
+import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
 import { VkProvider } from './vk.provider';
@@ -11,8 +12,10 @@ import { fromVkState, toVkState } from './vk-state';
 const CONFIG_MAP: Record<string, string> = {
   VK_APP_ID: '123456',
   VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
-  JWT_SECRET: 'test-jwt-secret',
 };
+
+/** Verifier шага 1 (в проде — случайный из куки vk_pkce, vk-pkce.ts). */
+const V = 'v'.repeat(43);
 
 function makeConfig(overrides: Record<string, string> = {}): ConfigService {
   const map = { ...CONFIG_MAP, ...overrides };
@@ -52,7 +55,7 @@ afterEach(() => {
 describe('VkProvider.buildAuthUrl', () => {
   it('строит authorize-URL с PKCE-challenge (S256) и scope', () => {
     const provider = new VkProvider(makeConfig());
-    const url = new URL(provider.buildAuthUrl('state-1'));
+    const url = new URL(provider.buildAuthUrl('state-1', V));
     expect(url.origin + url.pathname).toBe('https://id.vk.com/authorize');
     const p = url.searchParams;
     expect(p.get('client_id')).toBe(CONFIG_MAP.VK_APP_ID);
@@ -71,7 +74,7 @@ describe('VkProvider.buildAuthUrl', () => {
   it('state JWT уходит к VK без точек и раскодируется обратно без потерь', () => {
     const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJsaW5rIjpudWxsfQ.sig-_A1';
     const sent = new URL(
-      new VkProvider(makeConfig()).buildAuthUrl(jwt),
+      new VkProvider(makeConfig()).buildAuthUrl(jwt, V),
     ).searchParams.get('state')!;
     expect(sent).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(fromVkState(sent)).toBe(jwt);
@@ -94,98 +97,89 @@ describe('VkProvider.exchangeCode (без контекста)', () => {
   });
 });
 
-// Инцидент 2026-10-03: verifier жил в Map одного процесса, а на Amvera
-// больше одного инстанса — колбэк на соседнем инстансе (или после деплоя) не
-// находил его, и вход через VK падал vk_failed. Теперь verifier выводится из
-// state, и любой инстанс с тем же JWT_SECRET получает тот же самый.
-describe('VkProvider — PKCE-verifier без состояния в памяти', () => {
-  function verifierSent(fetchMock: jest.Mock): string | null {
+// Аудит 2026-11, S21: verifier выводился из state (HMAC(JWT_SECRET, state)),
+// а state не секрет — он виден в адресе. Теперь verifier случайный и живёт в
+// httpOnly-куке шага 1 (vk-pkce.ts); провайдер получает его аргументом.
+describe('VkProvider — PKCE-verifier из куки шага 1', () => {
+  function sentBody(fetchMock: jest.Mock): URLSearchParams {
     const [, init] = fetchMock.mock.calls.find(([url]) =>
       String(url).endsWith('/oauth2/auth'),
     ) as [string, { body: string }];
-    return new URLSearchParams(init.body).get('code_verifier');
+    return new URLSearchParams(init.body);
   }
 
-  function challengeOf(verifier: string): string {
-    return createHash('sha256').update(verifier).digest('base64url');
-  }
+  const challengeOf = (verifier: string) =>
+    createHash('sha256').update(verifier).digest('base64url');
 
-  it('колбэк на ДРУГОМ инстансе шлёт verifier, совпадающий с challenge из authorize', async () => {
+  it('issueNonce кладёт случайный verifier в httpOnly-куку и challenge в authorize сходится с ним', () => {
+    const res = { cookie: jest.fn() };
+    const provider = new VkProvider(makeConfig());
+    const verifier = provider.issueNonce(res as unknown as Response);
+    expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(res.cookie).toHaveBeenCalledWith(
+      'vk_pkce',
+      verifier,
+      expect.objectContaining({ httpOnly: true, path: '/api/auth' }),
+    );
+    const challenge = new URL(
+      provider.buildAuthUrl('state-1', verifier),
+    ).searchParams.get('code_challenge');
+    expect(challenge).toBe(challengeOf(verifier));
+  });
+
+  it('verifier не выводится из state: два входа с одним state — разные verifier', () => {
+    const provider = new VkProvider(makeConfig());
+    const a = provider.issueNonce({ cookie: jest.fn() } as unknown as Response);
+    const b = provider.issueNonce({ cookie: jest.fn() } as unknown as Response);
+    expect(a).not.toBe(b);
+  });
+
+  it('без verifier authorize-URL не строится (громкий отказ, а не выдуманный verifier)', () => {
+    expect(() => new VkProvider(makeConfig()).buildAuthUrl('state-1')).toThrow(
+      'VK PKCE',
+    );
+  });
+
+  it('обмен кода шлёт тот verifier, что пришёл из куки, и state в форме VK', async () => {
     const fetchMock = jest.fn((url: any) =>
       String(url).includes('user_info') ? userInfoOk() : tokenOk(),
     );
     global.fetch = fetchMock as any;
-    const instanceA = new VkProvider(makeConfig());
-    const instanceB = new VkProvider(makeConfig());
-
-    const challenge = new URL(
-      instanceA.buildAuthUrl('state-cross'),
-    ).searchParams.get('code_challenge');
-    const identity = await instanceB.exchangeCodeWithContext(
+    const verifier = 'x'.repeat(43);
+    const identity = await new VkProvider(makeConfig()).exchangeCodeWithContext(
       'code',
       'device-1',
-      'state-cross',
+      {
+        state: 'state-cross',
+        verifier,
+      },
     );
-
     expect(identity.providerId).toBe('555666');
-    const verifier = verifierSent(fetchMock);
-    expect(verifier).toMatch(/^[A-Za-z0-9_-]{43,128}$/);
-    expect(challengeOf(verifier!)).toBe(challenge);
-    // VK ID ждёт в обмене тот же state, что видел на authorize.
-    const [, init] = fetchMock.mock.calls.find(([url]) =>
-      String(url).endsWith('/oauth2/auth'),
-    ) as [string, { body: string }];
-    expect(new URLSearchParams(init.body).get('state')).toBe(
-      toVkState('state-cross'),
-    );
-  });
-
-  it('у разных state — разные challenge', () => {
-    const provider = new VkProvider(makeConfig());
-    const c1 = new URL(provider.buildAuthUrl('state-1')).searchParams.get(
-      'code_challenge',
-    );
-    const c2 = new URL(provider.buildAuthUrl('state-2')).searchParams.get(
-      'code_challenge',
-    );
-    expect(c1).not.toBe(c2);
-  });
-
-  it('verifier зависит от секрета: зная только state, его не вычислить', async () => {
-    const fetchMock = jest.fn((url: any) =>
-      String(url).includes('user_info') ? userInfoOk() : tokenOk(),
-    );
-    global.fetch = fetchMock as any;
-    const challenge = new URL(
-      new VkProvider(makeConfig()).buildAuthUrl('state-s'),
-    ).searchParams.get('code_challenge');
-
-    await new VkProvider(
-      makeConfig({ JWT_SECRET: 'other-secret' }),
-    ).exchangeCodeWithContext('code', 'device-1', 'state-s');
-    expect(challengeOf(verifierSent(fetchMock)!)).not.toBe(challenge);
+    expect(sentBody(fetchMock).get('code_verifier')).toBe(verifier);
+    expect(sentBody(fetchMock).get('state')).toBe(toVkState('state-cross'));
   });
 });
 
 describe('VkProvider.exchangeCodeWithContext — happy path и профиль', () => {
-  it('успешный обмен: providerId/email из токена, displayName из user_info', async () => {
+  it('успешный обмен: providerId/email из токена, displayName — только имя из user_info', async () => {
     global.fetch = jest.fn((url: any) =>
       String(url).includes('user_info')
         ? userInfoOk('Анна', 'Смирнова')
         : tokenOk(),
     ) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-happy');
 
     const identity = await provider.exchangeCodeWithContext(
       'code',
       'device-1',
-      'state-happy',
+      { state: 'state-happy', verifier: V },
     );
+    // S16 (аудит 2026-11): displayName ляжет открытым в User.firstName —
+    // только имя, фамилия VK туда не попадает.
     expect(identity).toEqual({
       providerId: '555666',
       email: 'vk@example.com',
-      displayName: 'Анна Смирнова',
+      displayName: 'Анна',
     });
   });
 
@@ -195,12 +189,11 @@ describe('VkProvider.exchangeCodeWithContext — happy path и профиль', 
       return tokenOk();
     }) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-userinfo-fail');
 
     const identity = await provider.exchangeCodeWithContext(
       'code',
       'device-1',
-      'state-userinfo-fail',
+      { state: 'state-userinfo-fail', verifier: V },
     );
     expect(identity.providerId).toBe('555666');
     expect(identity.displayName).toBeUndefined();
@@ -212,12 +205,11 @@ describe('VkProvider.exchangeCodeWithContext — happy path и профиль', 
       return tokenOk();
     }) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-userinfo-500');
 
     const identity = await provider.exchangeCodeWithContext(
       'code',
       'device-1',
-      'state-userinfo-500',
+      { state: 'state-userinfo-500', verifier: V },
     );
     expect(identity.displayName).toBeUndefined();
   });
@@ -233,10 +225,12 @@ describe('VkProvider.exchangeCodeWithContext — ошибки токен-обм�
       }),
     })) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-err');
 
     await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'state-err'),
+      provider.exchangeCodeWithContext('code', 'device-1', {
+        state: 'state-err',
+        verifier: V,
+      }),
     ).rejects.toThrow('Authorization code expired');
   });
 
@@ -246,10 +240,12 @@ describe('VkProvider.exchangeCodeWithContext — ошибки токен-обм�
       json: () => ({ user_id: 1 }),
     })) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-no-token');
 
     await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'state-no-token'),
+      provider.exchangeCodeWithContext('code', 'device-1', {
+        state: 'state-no-token',
+        verifier: V,
+      }),
     ).rejects.toThrow(UnauthorizedException);
   });
 
@@ -259,10 +255,12 @@ describe('VkProvider.exchangeCodeWithContext — ошибки токен-обм�
       json: () => ({ access_token: 'tok' }),
     })) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-no-uid');
 
     await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'state-no-uid'),
+      provider.exchangeCodeWithContext('code', 'device-1', {
+        state: 'state-no-uid',
+        verifier: V,
+      }),
     ).rejects.toThrow(UnauthorizedException);
   });
 
@@ -271,10 +269,12 @@ describe('VkProvider.exchangeCodeWithContext — ошибки токен-обм�
       throw new Error('token endpoint unreachable');
     }) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-net-fail');
 
     await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'state-net-fail'),
+      provider.exchangeCodeWithContext('code', 'device-1', {
+        state: 'state-net-fail',
+        verifier: V,
+      }),
     ).rejects.toThrow('token endpoint unreachable');
   });
 
@@ -286,10 +286,12 @@ describe('VkProvider.exchangeCodeWithContext — ошибки токен-обм�
       },
     })) as any;
     const provider = new VkProvider(makeConfig());
-    provider.buildAuthUrl('state-malformed');
 
     await expect(
-      provider.exchangeCodeWithContext('code', 'device-1', 'state-malformed'),
+      provider.exchangeCodeWithContext('code', 'device-1', {
+        state: 'state-malformed',
+        verifier: V,
+      }),
     ).rejects.toThrow(SyntaxError);
   });
 });

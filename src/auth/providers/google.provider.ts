@@ -5,9 +5,8 @@ import { buildGoogleAuthUrl } from './google-auth-url';
 import { AuthProviderHandler, ProviderIdentity } from './types';
 import { assertOneTapNonce } from '../google-one-tap-nonce';
 
-// Token endpoint + легаси-алиасы: с Amvera oauth2.googleapis.com бывает
-// недостижим, www.googleapis.com — доступен. Пробуем по очереди; HTTP-ответ с
-// ошибкой — финален, fallback только при сетевых сбоях.
+// Token endpoint + алиасы (с Amvera oauth2.googleapis.com бывает недостижим):
+// по очереди; HTTP-ответ с ошибкой финален, fallback — только при сетевом сбое.
 const GOOGLE_TOKEN_URIS = [
   'https://oauth2.googleapis.com/token',
   'https://www.googleapis.com/oauth2/v4/token',
@@ -44,7 +43,6 @@ export class GoogleProvider implements AuthProviderHandler {
     const clientId = this.config.getOrThrow<string>('GOOGLE_CLIENT_ID');
     const clientSecret = this.config.getOrThrow<string>('GOOGLE_CLIENT_SECRET');
     const redirectUri = this.config.getOrThrow<string>('GOOGLE_REDIRECT_URI');
-
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
@@ -52,7 +50,6 @@ export class GoogleProvider implements AuthProviderHandler {
       client_secret: clientSecret,
       redirect_uri: redirectUri,
     });
-
     let lastNetErr: Error | null = null;
     for (const endpoint of GOOGLE_TOKEN_URIS) {
       let res: Response;
@@ -84,8 +81,10 @@ export class GoogleProvider implements AuthProviderHandler {
         error_description?: string;
       };
       if (!res.ok || data.error || !data.id_token) {
-        // HTTP-ответ получен — это вердикт Google, fallback не поможет.
-        this.logger.error(
+        // Вердикт Google, fallback не поможет. invalid_grant — код протух,
+        // повторён или выдуман (обновили колбэк, аноним): warn, не DM. Прочее
+        // (invalid_client, redirect_uri_mismatch) — поломка настройки, будит.
+        this.logger[data.error === 'invalid_grant' ? 'warn' : 'error'](
           `Google token exchange rejected (${endpoint}): ${data.error_description ?? data.error ?? `HTTP ${res.status}`}`,
         );
         throw new UnauthorizedException('Google token exchange failed');
@@ -99,9 +98,8 @@ export class GoogleProvider implements AuthProviderHandler {
     throw new UnauthorizedException('Google token exchange failed');
   }
 
-  // Проверка id_token — в google-id-token.ts. Публичный: так же проверяется
-  // токен One Tap; `oneTap` — его прислал браузер: нужен nonce из куки, офлайн-
-  // путь запрещён (google-one-tap-nonce.ts).
+  // Проверка id_token — google-id-token.ts; так же проверяется One Tap (`oneTap`:
+  // nonce из куки, офлайн-путь запрещён — google-one-tap-nonce.ts).
   async verifyIdToken(
     idToken: string,
     oneTap?: { nonceCookie: string | undefined },
@@ -130,10 +128,12 @@ export class GoogleProvider implements AuthProviderHandler {
       throw new UnauthorizedException('Google email not verified');
     }
 
+    // Имя открытым ляжет в User.firstName — только given_name, без фамилии и
+    // без почты (S16, аудит 2026-11); нет имени — пусто, почта — в `email`.
     return {
       providerId: claims.sub,
       email: claims.email,
-      displayName: claims.name ?? claims.email,
+      displayName: claims.givenName,
     };
   }
 }

@@ -22,9 +22,13 @@ import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthService, TokenPair } from './auth.service';
-import { AuthProviderRegistry } from './providers/registry';
-import { AuthProviderHandler, ProviderIdentity } from './providers/types';
 import { MergeService } from './merge.service';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  TICKET_DEVICE_COOKIE,
+  TicketDeviceService,
+} from './login-ticket/ticket-device';
+import { SecurityNoticeService } from './security-notice.service';
 import { SecurityLogService } from './security-log.service';
 import { EmailTokenService } from './email-token.service';
 import { REFRESH_COOKIE } from './auth-http.util';
@@ -76,7 +80,30 @@ type EmailTokensMock = Pick<EmailTokenService, 'consumeEmailToken'> & {
   consumeEmailToken: jest.Mock;
 };
 
-type ProvidersMock = { get: jest.Mock; list: jest.Mock };
+// Билеты входа по хешу короткого кода — для настоящего TicketDeviceService
+// (S9: сверка куки браузера с билетом идёт через шов, а не через мок).
+type TicketRow = {
+  intent: string;
+  deviceCodeHash: string;
+  deviceLabel: string;
+  createdAt: Date;
+  expiresAt: Date;
+  consumedAt: Date | null;
+  deniedAt: Date | null;
+  approvedUserId: bigint | null;
+};
+function pendingTicket(deviceCode: string): TicketRow {
+  return {
+    intent: 'login',
+    deviceCodeHash: hashToken(deviceCode),
+    deviceLabel: 'iPhone · Safari',
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + 300_000),
+    consumedAt: null,
+    deniedAt: null,
+    approvedUserId: null,
+  };
+}
 
 function makeAuth(): AuthMock {
   return {
@@ -130,16 +157,6 @@ function makeEmailTokens(): EmailTokensMock {
       purpose: 'login',
       userId: 1n,
     }),
-  };
-}
-
-function makeProviders(
-  handler?: Partial<AuthProviderHandler>,
-  list: AuthProviderHandler[] = [],
-): ProvidersMock {
-  return {
-    get: jest.fn().mockReturnValue(handler),
-    list: jest.fn().mockReturnValue(list),
   };
 }
 
@@ -202,15 +219,28 @@ const liveSession = (userId: bigint): SessionRow => ({
 
 function makeController(
   opts: {
-    providers?: ProvidersMock;
     sessions?: Record<string, SessionRow>;
     sourceTotp?: boolean;
     codeOk?: boolean;
+    tickets?: Record<string, TicketRow>; // userCode → строка
+    providerRow?: Record<string, unknown> | null;
   } = {},
 ) {
   const auth = makeAuth();
   const config = makeConfig();
-  const providers = opts.providers ?? makeProviders();
+  const byHash = new Map(
+    Object.entries(opts.tickets ?? {}).map(([c, r]) => [hashToken(c), r]),
+  );
+  const prisma = {
+    loginTicket: {
+      findUnique: jest.fn(({ where }: { where: { userCodeHash: string } }) =>
+        Promise.resolve(byHash.get(where.userCodeHash) ?? null),
+      ),
+    },
+    authProvider: {
+      findUnique: jest.fn().mockResolvedValue(opts.providerRow ?? null),
+    },
+  };
   const merge = makeMerge();
   const securityLog = makeSecurityLog();
   const emailTokens = makeEmailTokens();
@@ -218,25 +248,31 @@ function makeController(
     isEnabled: jest.fn().mockResolvedValue(opts.sourceTotp ?? false),
     verifyCode: jest.fn().mockResolvedValue(opts.codeOk ?? false),
   };
+  const notice = { linked: jest.fn(), notify: jest.fn() };
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
-    providers as unknown as AuthProviderRegistry,
+    prisma as unknown as PrismaService,
     merge as unknown as MergeService,
     securityLog as unknown as SecurityLogService,
     emailTokens as unknown as EmailTokenService,
     makeIdentity(opts.sessions),
     totp as unknown as TotpService,
+    new TicketDeviceService(
+      prisma as unknown as PrismaService,
+      securityLog as unknown as SecurityLogService,
+    ),
+    notice as unknown as SecurityNoticeService,
   );
   return {
     totp,
     controller,
     auth,
     config,
-    providers,
     merge,
     securityLog,
     emailTokens,
+    notice,
   };
 }
 
@@ -366,6 +402,23 @@ describe('AuthAccountController.emailConsume (POST)', () => {
       controller.emailConsume({ token: 'tok-1' }, makeReq(), res),
     ).resolves.toEqual({ linked: true });
     expect(res.cookie).not.toHaveBeenCalled();
+  });
+
+  it('S12: почта привязана → владельцу уведомление о новом способе входа', async () => {
+    const { controller, emailTokens, notice } = makeController();
+    emailTokens.consumeEmailToken.mockResolvedValue({
+      kind: 'linked',
+      purpose: 'link_email_auth',
+      userId: 1n,
+    });
+    await controller.emailConsume({ token: 'tok-1' }, makeReq(), makeRes());
+    expect(notice.linked).toHaveBeenCalledWith(1n, 'email');
+  });
+
+  it('обычный вход по ссылке — не привязка, уведомления нет', async () => {
+    const { controller, notice } = makeController();
+    await controller.emailConsume({ token: 'tok-1' }, makeReq(), makeRes());
+    expect(notice.linked).not.toHaveBeenCalled();
   });
 
   it('сервису уходит userId сессии из refresh-куки браузера', async () => {
@@ -739,123 +792,130 @@ describe('AuthAccountController.confirmMerge', () => {
   });
 });
 
-describe('AuthAccountController.linkProvider', () => {
-  it('провайдер без verifyClientData → BadRequestException, линковка не выполняется', async () => {
-    const providers = makeProviders({ id: 'google', displayName: 'Google' });
-    const { controller, auth } = makeController({ providers });
-    await expect(
-      controller.linkProvider(
-        'google',
-        {},
-        makeReq({ webUser: { userId: 1n } }),
-      ),
-    ).rejects.toThrow(BadRequestException);
-    expect(auth.linkProviderToUser).not.toHaveBeenCalled();
-  });
-
-  it('успешная линковка (без конфликта) → { ok: true }', async () => {
-    const identity: ProviderIdentity = {
-      providerId: 'tg-1',
-      displayName: 'Грег',
-    };
-    const verifyClientData = jest.fn().mockReturnValue(identity);
-    const providers = makeProviders({
-      id: 'telegram',
-      displayName: 'Telegram',
-      verifyClientData,
-    });
-    const { controller, auth } = makeController({ providers });
-    const body = { hash: 'x' };
-    const res = await controller.linkProvider(
-      'telegram',
-      body,
-      makeReq({ webUser: { userId: 5n } }),
-    );
-    expect(verifyClientData).toHaveBeenCalledWith(body);
-    expect(auth.linkProviderToUser).toHaveBeenCalledWith(
-      5n,
-      'telegram',
-      'tg-1',
-      'Грег',
-      undefined,
-    );
-    expect(res).toEqual({ ok: true });
-  });
-
-  it('конфликт providerId с другим userId → возвращает mergeToken + summary', async () => {
-    const identity: ProviderIdentity = { providerId: 'tg-1' };
-    const verifyClientData = jest.fn().mockReturnValue(identity);
-    const providers = makeProviders({
-      id: 'telegram',
-      displayName: 'Telegram',
-      verifyClientData,
-    });
-    const { controller, auth, merge } = makeController({ providers });
-    auth.linkProviderToUser.mockResolvedValue({
-      ok: false,
-      conflictUserId: '555',
-    });
-    const res = await controller.linkProvider(
-      'telegram',
-      {},
-      makeReq({ webUser: { userId: 5n } }),
-    );
-    expect(auth.buildMergeToken).toHaveBeenCalledWith(
-      5n,
-      555n,
-      'telegram',
-      'tg-1',
-    );
-    expect(merge.summarize).toHaveBeenCalledWith(555n, 5n);
-    expect(res).toEqual({
-      merge: true,
-      mergeToken: 'merge-tok',
-      summary: { Note: 3, Rating: 12 },
-      twoFactorLost: false,
-    });
-  });
-});
-
-describe('AuthAccountController.unlink', () => {
-  it('неизвестный провайдер → BadRequestException, unlinkProvider не вызывается', async () => {
-    const providers = makeProviders(undefined, [
-      { id: 'google', displayName: 'Google' },
-    ]);
-    const { controller, auth } = makeController({ providers });
-    await expect(
-      controller.unlink('vk', makeReq({ webUser: { userId: 1n } })),
-    ).rejects.toThrow(BadRequestException);
-    expect(auth.unlinkProvider).not.toHaveBeenCalled();
-  });
-
-  it('известный провайдер → отвязывает + аудит provider_unlinked', async () => {
-    const providers = makeProviders(undefined, [
-      { id: 'google', displayName: 'Google' },
-      { id: 'telegram', displayName: 'Telegram' },
-    ]);
-    const { controller, auth, securityLog } = makeController({ providers });
-    const req = makeReq({ webUser: { userId: 7n } });
-    const res = await controller.unlink('google', req);
-    expect(auth.unlinkProvider).toHaveBeenCalledWith(7n, 'google');
-    expect(securityLog.log).toHaveBeenCalledWith('provider_unlinked', {
-      userId: 7n,
-      provider: 'google',
-      ip: '198.51.100.1',
-    });
-    expect(res).toEqual({ ok: true });
-  });
-});
-
 // Вход по email из установленного приложения. Письмо часто открывают на
 // ДРУГОМ устройстве — раньше сессия доставалась тому браузеру, а исходный
 // экран навсегда оставался с надписью «письмо отправлено».
 describe('AuthAccountController — билет входа в email-флоу', () => {
-  it('код билета доезжает до сервиса при запросе письма', async () => {
-    const { controller, auth } = makeController();
+  const DEVICE = 'd'.repeat(64);
+  it('свой билет (кука этого браузера) доезжает до письма', async () => {
+    const { controller, auth } = makeController({
+      tickets: { K7M2QX94: pendingTicket(DEVICE) },
+    });
+    const cookies = { [TICKET_DEVICE_COOKIE]: hashToken(DEVICE) };
     await controller.emailLoginLink(
       { email: 'a@b.ru', ticket: 'K7M2QX94' },
-      makeReq(),
+      makeReq({ cookies }),
     );
     expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', 'K7M2QX94');
+  });
+
+  // S9 (аудит 2026-11): атакующий выписывает билет у себя и просит сервер
+  // прислать жертве НАСТОЯЩЕЕ письмо с его кодом. Без куки того браузера,
+  // что выписал билет, письма нет вовсе.
+  it.each([
+    ['куки нет', {}],
+    [
+      'кука другого билета',
+      { [TICKET_DEVICE_COOKIE]: hashToken('e'.repeat(64)) },
+    ],
+  ])(
+    'чужой билет (%s) → 400 ticket_foreign, письмо не уходит',
+    async (_l, cookies) => {
+      const { controller, auth, securityLog } = makeController({
+        tickets: { K7M2QX94: pendingTicket(DEVICE) },
+      });
+      const err = await controller
+        .emailLoginLink(
+          { email: 'victim@b.ru', ticket: 'K7M2QX94' },
+          makeReq({ cookies }),
+        )
+        .catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(BadRequestException);
+      expect((err as BadRequestException).getResponse()).toMatchObject({
+        reason: 'ticket_foreign',
+      });
+      expect(auth.requestEmailLogin).not.toHaveBeenCalled();
+      expect(securityLog.log).toHaveBeenCalledWith(
+        'login_ticket_foreign',
+        expect.objectContaining({ reason: 'other_device' }),
+      );
+    },
+  );
+
+  it('билет уже подтверждён/не вход/неизвестен → тоже 400, письма нет', async () => {
+    const approved = { ...pendingTicket(DEVICE), approvedUserId: 9n };
+    const handoff = { ...pendingTicket(DEVICE), intent: 'handoff' };
+    const { controller, auth } = makeController({
+      tickets: { AAAAAAAA: approved, BBBBBBBB: handoff },
+    });
+    const cookies = { [TICKET_DEVICE_COOKIE]: hashToken(DEVICE) };
+    for (const ticket of ['AAAAAAAA', 'BBBBBBBB', 'CCCCCCCC']) {
+      await expect(
+        controller.emailLoginLink(
+          { email: 'a@b.ru', ticket },
+          makeReq({ cookies }),
+        ),
+      ).rejects.toThrow(BadRequestException);
+    }
+    expect(auth.requestEmailLogin).not.toHaveBeenCalled();
+  });
+
+  it('без билета — обычное письмо входа, кука не нужна', async () => {
+    const { controller, auth } = makeController();
+    await controller.emailLoginLink({ email: 'a@b.ru' }, makeReq());
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', undefined);
+  });
+});
+
+// Экран /account/merge берёт имя и счётчики отсюда, а не из query редиректа.
+describe('AuthAccountController.mergePreview', () => {
+  it('свой токен → провайдер, имя поглощаемого аккаунта, сводка, флаг 2FA', async () => {
+    const { controller, merge } = makeController({
+      providerRow: { userId: 2n, displayName: 'Другой', email: null },
+    });
+    const res = await controller.mergePreview(
+      { token: 'merge-tok' },
+      makeReq({ webUser: { userId: 1n } }),
+    );
+    expect(merge.summarize).toHaveBeenCalledWith(2n, 1n);
+    expect(res).toEqual({
+      provider: 'google',
+      otherDisplay: 'Другой',
+      summary: { Note: 3, Rating: 12 },
+      twoFactorLost: false,
+    });
+  });
+
+  it('токен выписан на объединение в ЧУЖОЙ аккаунт → 403, сводка не считается', async () => {
+    const { controller, merge } = makeController();
+    await expect(
+      controller.mergePreview(
+        { token: 'merge-tok' },
+        makeReq({ webUser: { userId: 99n } }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(merge.summarize).not.toHaveBeenCalled();
+  });
+
+  it('строка провайдера уже не у source → имя не показываем', async () => {
+    const { controller } = makeController({
+      providerRow: { userId: 77n, displayName: 'Чужой', email: null },
+    });
+    const res = await controller.mergePreview(
+      { token: 'merge-tok' },
+      makeReq({ webUser: { userId: 1n } }),
+    );
+    expect(res.otherDisplay).toBeNull();
+  });
+
+  it('без CSRF-заголовка → 401 до проверки токена', () => {
+    const { controller, auth } = makeController();
+    expect(() =>
+      controller.mergePreview(
+        { token: 'merge-tok' },
+        makeReq({ csrf: false, webUser: { userId: 1n } }),
+      ),
+    ).toThrow(UnauthorizedException);
+    expect(auth.verifyMergeToken).not.toHaveBeenCalled();
   });
 });

@@ -159,6 +159,15 @@
 - **S12 · привязка и отвязка способов входа без step-up.** `auth-account.controller.ts:229,271`
   и handoff — только `JwtAuthGuard`, без кода TOTP, без уведомления пользователю; включение 2FA
   не отзывает другие сессии. 15 минут украденного access-токена → вечный доступ.
+- **S12 · осознанно не сделано (2026-11).** Step-up (`src/auth/step-up.ts`) спрашивает только
+  код TOTP: аккаунту без 2FA «свежий вход» нечем доказать — refresh-кука не доходит в iframe
+  MAX и Telegram Web (вариант: принимать свежий initData); такому аккаунту остаётся уведомление
+  о привязке. `ticket/handoff` и `ticket/confirm-login` — без step-up: handoff мессенджер
+  выписывает сам каждые ~2 мин, confirm-login — основной сценарий давно вошедшего человека.
+- **Хвосты S12.** Отвязка почты не шлёт письмо на отвязанный адрес — уведомление уходит в
+  оставшиеся каналы (`src/auth/auth-link.controller.ts`, `security-notice.service.ts`);
+  access-токен отозванной сессии живёт до 15 минут (JWT без состояния, `jwt.guard.ts`);
+  `forConfirm` бота (`src/auth/login-ticket/login-ticket.service.ts`) не отдаёт `createdAt`.
 - **S15 · Метрика остаётся в документе после входа.** `/install` (публичная) → обмен кода →
   SPA-переход в кабинет (`webapp/src/pages/InstallPage.tsx:51`), и `?site=personal` на
   `schemehappens.ru` (`webapp/src/App.tsx:62-63`). Чинить: полная навигация при `__ym_loaded`,

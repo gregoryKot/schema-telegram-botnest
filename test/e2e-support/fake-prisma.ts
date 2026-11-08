@@ -44,13 +44,15 @@ export function makeFakePrisma() {
     }),
     // Билет входа и привязки (login-ticket e2e): подтверждение, отказ и опрос
     // помечают строку, поэтому дефолты нужны явные.
-    loginTicket: withDefaults(makeTable(), {
+    loginTicket: withDefaults(makeTable(), () => ({
       approvedUserId: null,
       approvedAt: null,
       deniedAt: null,
       consumedAt: null,
-    }),
+      createdAt: new Date(), // @default(now()): экран сверки показывает время (S9)
+    })),
     emailToken: makeTable(),
+    throttleHit: makeTable(), // S11 totp-attempts.ts: чтение; инкремент (сырой SQL) — warn
     // Затрагивается TherapyTasksService.checkStreakTasks (fire-and-forget
     // побочный вызов из tracker/diary контроллеров) — пустая таблица
     // достаточна, чтобы findMany() вернул [] и метод рано вышел.

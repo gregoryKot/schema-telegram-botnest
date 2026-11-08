@@ -8,7 +8,8 @@ import 'express';
 declare global {
   namespace Express {
     interface Request {
-      webUser?: { userId: bigint };
+      /** viaLinkToken — из куки link_token (OptionalJwtGuard), не из Bearer. */
+      webUser?: { userId: bigint; viaLinkToken?: true };
       /** Только совместимость: Number(id), выше 2^53 округлился бы. Не для поиска — `uid(req)`. */
       telegramUserId?: number;
       telegramFirstName?: string;

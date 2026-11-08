@@ -13,6 +13,7 @@
 // telegram.provider.spec.ts.
 jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
 
+import { Logger } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthOauthController } from './auth-oauth.controller';
@@ -173,8 +174,9 @@ describe('AuthOauthController.vkCallback', () => {
     mocks.signInOrLinkOrMerge.mockResolvedValue(TOKENS_OUTCOME);
 
     const controller = makeController(makeProviders({ vk }), flow);
+    const verifier = 'p'.repeat(43);
     const req = makeReq({
-      cookies: { oauth_state: 'state-1' },
+      cookies: { oauth_state: 'state-1', vk_pkce: verifier },
     } as Partial<Request>);
     const { res, mocks: resMocks } = makeRes();
 
@@ -187,12 +189,16 @@ describe('AuthOauthController.vkCallback', () => {
       res,
     );
 
+    // PKCE-верификатор — из куки шага 1 (аудит 2026-11, S21), кука стирается.
     expect(vkMocks.exchangeCodeWithContext).toHaveBeenCalledWith(
       'code-1',
       'device-1',
-      'state-1',
+      { state: 'state-1', verifier },
     );
     expect(resMocks.clearCookie).toHaveBeenCalledWith('oauth_state', {
+      path: '/api/auth',
+    });
+    expect(resMocks.clearCookie).toHaveBeenCalledWith('vk_pkce', {
       path: '/api/auth',
     });
     expect(mocks.signInOrLinkOrMerge).toHaveBeenCalledWith('vk', identity, {
@@ -207,6 +213,34 @@ describe('AuthOauthController.vkCallback', () => {
       WEBAPP_URL,
       null,
     );
+  });
+
+  it('S21: кука vk_pkce не пришла (истекла/другой браузер) → vk_failed, обмена кода нет', async () => {
+    const { flow, mocks } = makeFlow();
+    const { vk, mocks: vkMocks } = makeVkProvider();
+    const controller = makeController(makeProviders({ vk }), flow);
+    const req = makeReq({
+      cookies: { oauth_state: 'state-1' },
+    } as Partial<Request>);
+    const { res, mocks: resMocks } = makeRes();
+    const err = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      'device-1',
+      '',
+      req,
+      res,
+    );
+
+    expect(vkMocks.exchangeCodeWithContext).not.toHaveBeenCalled();
+    expect(mocks.signInOrLinkOrMerge).not.toHaveBeenCalled();
+    expect(resMocks.redirect).toHaveBeenCalledWith(
+      `${WEBAPP_URL}/auth/error?reason=vk_failed`,
+    );
+    expect(err).toHaveBeenCalledWith(expect.stringContaining('VK PKCE'));
+    err.mockRestore();
   });
 
   it('state в query не совпадает с cookie oauth_state → редирект на /auth/error, провайдер не трогается дальше обмена', async () => {
@@ -295,10 +329,12 @@ describe('AuthOauthController.vkCallback', () => {
         ({
           VK_APP_ID: '1',
           VK_REDIRECT_URI: `${WEBAPP_URL}/api/auth/vk/callback`,
-          JWT_SECRET: 's',
         })[k],
     } as unknown as ConfigService);
-    const sent = new URL(real.buildAuthUrl(jwtLike)).searchParams.get('state')!;
+    const verifier = 'q'.repeat(43);
+    const sent = new URL(real.buildAuthUrl(jwtLike, verifier)).searchParams.get(
+      'state',
+    )!;
     const vkReturns = sent.replace(/[^A-Za-z0-9_-]/g, '');
     expect(vkReturns).toBe(sent);
 
@@ -307,13 +343,16 @@ describe('AuthOauthController.vkCallback', () => {
       .mockResolvedValue({ providerId: '1' });
     const controller = makeController(makeProviders({ vk: real }), flow);
     const req = makeReq({
-      cookies: { oauth_state: jwtLike },
+      cookies: { oauth_state: jwtLike, vk_pkce: verifier },
     } as Partial<Request>);
     const { res } = makeRes();
 
     await controller.vkCallback('code-1', vkReturns, 'device-1', '', req, res);
 
-    expect(exchange).toHaveBeenCalledWith('code-1', 'device-1', jwtLike);
+    expect(exchange).toHaveBeenCalledWith('code-1', 'device-1', {
+      state: jwtLike,
+      verifier,
+    });
     expect(mocks.finishOAuthRedirect).toHaveBeenCalled();
   });
 });

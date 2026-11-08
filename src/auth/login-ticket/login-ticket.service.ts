@@ -39,7 +39,7 @@ import type {
   TicketStatus,
 } from './login-ticket.types';
 
-const TTL_S = 300;
+export const TTL_S = 300;
 export const POLL_INTERVAL_S = 3;
 
 @Injectable()
