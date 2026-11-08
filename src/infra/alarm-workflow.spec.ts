@@ -159,67 +159,83 @@ describe.each(['prod-smoke.yml', 'nightly.yml'])(
   },
 );
 
-// Шаг issue ci-alarm в nightly.yml исполняется с поддельными github/context:
-// новая красная джоба не должна тонуть в продолжающемся «Упали джобы».
-describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
-  const step = steps(alarmJob(read('nightly.yml'))).find((s) =>
+// Шаг issue ci-alarm исполняется с поддельными github/context/core: `script:`
+// вытаскивается из настоящего YAML (github-script отдаёт его AsyncFunction).
+type Call = { kind: string; args: Record<string, unknown> };
+type Issue = { number: number; title: string; body: string; updated_at?: string };
+
+function issueScript(file: string): string {
+  const step = steps(alarmJob(read(file))).find((s) =>
     stepName(s).startsWith('issue ci-alarm'),
   );
-  if (!step) throw new Error('шага issue ci-alarm нет');
+  if (!step) throw new Error(`шага issue ci-alarm нет в ${file}`);
   const lines = step.split('\n');
   const at = lines.findIndex((l) => /^ {10}script: \|\s*$/.test(l));
-  const script = lines
+  return lines
     .slice(at + 1)
     .filter((l) => l.trim() === '' || l.startsWith(' '.repeat(12)))
     .map((l) => l.slice(12))
     .join('\n');
-  const AsyncFunction = Object.getPrototypeOf(async () => 0).constructor;
+}
 
-  type Call = { kind: string; args: Record<string, unknown> };
-  async function exec(opts: {
-    failed: string;
-    issue?: { number: number; title: string; body: string };
+async function execIssueStep(
+  file: string,
+  opts: {
+    env: Record<string, string>;
+    issue?: Issue;
     comments?: { body: string; user: { type: string } }[];
-  }) {
-    const calls: Call[] = [];
-    const outputs: Record<string, string> = {};
-    const rec = (kind: string) => async (args: Record<string, unknown>) => {
-      calls.push({ kind, args });
-      return {};
-    };
-    const github = {
-      paginate: async () => opts.comments ?? [],
-      rest: {
-        issues: {
-          listForRepo: async () => ({
-            data: opts.issue ? [opts.issue] : [],
-          }),
-          listComments: () => undefined,
-          create: rec('create'),
-          createComment: rec('comment'),
-          update: rec('update'),
-        },
+  },
+) {
+  const calls: Call[] = [];
+  const outputs: Record<string, string> = {};
+  const rec = (kind: string) => async (args: Record<string, unknown>) => {
+    calls.push({ kind, args });
+    return {};
+  };
+  const github = {
+    paginate: async () => opts.comments ?? [],
+    rest: {
+      issues: {
+        listForRepo: async () => ({ data: opts.issue ? [opts.issue] : [] }),
+        listComments: () => undefined,
+        create: rec('create'),
+        createComment: rec('comment'),
+        update: rec('update'),
       },
-    };
-    const context = {
-      serverUrl: 'https://github.com',
-      runId: 7,
-      repo: { owner: 'o', repo: 'r' },
-    };
-    const core = {
-      setOutput: (k: string, v: string) => (outputs[k] = v),
-      warning: () => undefined,
-    };
-    const fn = new AsyncFunction(
-      'github',
-      'context',
-      'core',
-      'process',
-      script,
-    );
-    await fn(github, context, core, { env: { FAILED: opts.failed } });
-    return { calls, outputs };
-  }
+    },
+  };
+  const context = {
+    serverUrl: 'https://github.com',
+    runId: 7,
+    repo: { owner: 'o', repo: 'r' },
+  };
+  const core = {
+    setOutput: (k: string, v: string) => (outputs[k] = v),
+    warning: () => undefined,
+  };
+  const AsyncFunction = Object.getPrototypeOf(async () => 0).constructor;
+  const fn = new AsyncFunction(
+    'github',
+    'context',
+    'core',
+    'process',
+    issueScript(file),
+  );
+  await fn(github, context, core, { env: opts.env });
+  return { calls, outputs };
+}
+
+describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
+  const exec = (opts: {
+    failed: string;
+    issue?: Issue;
+    comments?: { body: string; user: { type: string } }[];
+  }) =>
+    execIssueStep('nightly.yml', {
+      env: { FAILED: opts.failed },
+      issue: opts.issue,
+      comments: opts.comments,
+    });
 
   const TITLE = 'Ночная flaky-детекция — красный прогон';
   const bot = (body: string) => ({ body, user: { type: 'Bot' } });
@@ -289,5 +305,21 @@ describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', (
     });
     expect(r.status).toBe(0);
     expect(r.curlCalls[0]).toContain('Новые: b.');
+  });
+});
+
+// Issue без исполнителя не приходит владельцу ни уведомлением, ни в «Assigned
+// to me» (аудит 2026-10, «Красный смок не говорит, что именно лежит»): пока
+// нет секретов DM, это единственный канал, который GitHub доставляет сам.
+describe.each([
+  ['prod-smoke.yml', { PROD_SMOKE_RESULT: 'failure' }],
+  ['nightly.yml', { FAILED: 'backend-flaky' }],
+])('%s: новая issue ci-alarm', (file, env) => {
+  it('назначается владельцу репозитория (assignees: [context.repo.owner])', async () => {
+    const r = await execIssueStep(file, { env });
+    const create = r.calls.filter((c) => c.kind === 'create');
+    expect(create).toHaveLength(1);
+    expect(create[0].args.assignees).toEqual(['o']);
+    expect(create[0].args.labels).toEqual(['ci-alarm']);
   });
 });

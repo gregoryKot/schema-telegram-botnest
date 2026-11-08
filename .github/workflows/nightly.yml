@@ -733,6 +733,9 @@ jobs:
                   title,
                   body,
                   labels: [label],
+                  // Без исполнителя issue не приходит владельцу ни уведомлением,
+                  // ни в «Assigned to me» (аудит 2026-10).
+                  assignees: [context.repo.owner],
                 });
               }
             } else if (existing) {
