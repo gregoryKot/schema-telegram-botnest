@@ -33,7 +33,7 @@ export function ModesTab() {
       <p className="ss-body">Режим – это актуальное состояние психики прямо сейчас. Цель – расширить доступ к Здоровому Взрослому.</p>
       {buildModes(tr).map((g) => (
         <div key={g.group} className="ss-pane" style={hueStyle(MODE_GROUP_HUE[GROUP_HUE_KEY[g.group]])}>
-          <span className="ds-chip tone-tint" style={{ alignSelf: 'flex-start' }}><span className="ds-dot tone-fill" />{g.group}</span>
+          <span className="ds-chip tone-tint u-self-start"><span className="ds-dot tone-fill" />{g.group}</span>
           {g.items.map((m) => (
             <div key={m.name} className="ds-card ss-mode">
               <div className="ss-need-head">

@@ -71,7 +71,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
         placeholder="Найти по названию" aria-label="Найти в справочнике" className="ds-input ds-input--search"
       />
       {!searching && (
-        <div className="ds-seg ds-seg--scroll" role="tablist" aria-label="Разделы справочника" style={{ alignSelf: 'flex-start' }}>
+        <div className="ds-seg ds-seg--scroll u-self-start" role="tablist" aria-label="Разделы справочника">
           {tabs.map((t) => (
             <button
               key={t.id} type="button" role="tab" aria-selected={tab === t.id}
