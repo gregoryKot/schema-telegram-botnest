@@ -193,12 +193,29 @@ describe('AuthConfirmPage', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('форма «вы» — обращение без «ты»-строк', () => {
-    const { container } = renderAt('/auth/confirm?code=K7M2QX94', 'vy');
-    expect(container.textContent).toContain('вы открываете');
-    expect(container.textContent).not.toMatch(/ты открываешь|нажми «Это не я»|Набери /);
-    fireEvent.change(screen.getByLabelText('Код из приложения'), { target: { value: 'AAAAAAAA' } });
-    expect(container.textContent).toContain('Сверьте его');
+  // Аудит 2026-10: /auth/confirm живёт вне AddressFormProvider, и useTr()
+  // всегда давал «ты». Формы здесь взять неоткуда — тексты безличные.
+  it('тексты безличные: одинаковые в обеих формах, без «ты» и «вы»', () => {
+    const texts = (['ty', 'vy'] as const).map((form) => {
+      const { container } = renderAt('/auth/confirm?code=K7M2QX94', form);
+      fireEvent.change(screen.getByLabelText('Код из приложения'), { target: { value: 'AAAAAAAA' } });
+      const text = container.textContent ?? '';
+      cleanup();
+      return text;
+    });
+    expect(texts[0]).toBe(texts[1]);
+    expect(texts[0]).toContain('Это свой вход в приложение?');
+    expect(texts[0]).toContain('Код не совпадает с тем, что на экране приложения.');
+    expect(texts[0]).not.toMatch(/(?<![а-яё])(ты|вы|тебя|вас|твой|ваш)(?![а-яё])|Набери|Сверь|Нажми/i);
+  });
+
+  it('«код не найден» — без «Открой»/«Откройте»', async () => {
+    renderAt('/auth/confirm?code=K7M2QX94', 'vy', authValue(null, null));
+    await typeMatching('K7M2QX94');
+    fireEvent.click(screen.getByText(/впустить/i));
+    await waitFor(() =>
+      expect(screen.getByText(/Вход в приложении можно начать заново/)).toBeTruthy(),
+    );
   });
 });
 

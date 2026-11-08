@@ -1,14 +1,13 @@
 import { useId } from 'react';
-import { useTr } from '../../utils/addressForm';
 import { displayUserCodeInput, normalizeUserCode, USER_CODE_LENGTH } from '../../../../shared/src/auth/userCodeEntry';
 
 // Поле сверки кода билета (S9, аудит 2026-11): человек набирает код с экрана
 // приложения, откуда входит, — из ссылки он не подставляется. Подсказка
-// «не совпадает» появляется, только когда код набран целиком.
+// «не совпадает» появляется, только когда код набран целиком. Тексты безличные:
+// экран сверки (AuthConfirmPage) живёт вне AddressFormProvider.
 export function TicketCodeField({ value, onChange, matches, disabled }: {
   value: string; onChange: (v: string) => void; matches: boolean; disabled: boolean;
 }) {
-  const tr = useTr();
   const id = useId();
   return (
     <div className="as-field">
@@ -27,12 +26,7 @@ export function TicketCodeField({ value, onChange, matches, disabled }: {
         disabled={disabled}
       />
       {value.length === USER_CODE_LENGTH && !matches && (
-        <span className="as-field-err">
-          {tr(
-            'Код не совпадает. Сверь его с экраном приложения ещё раз.',
-            'Код не совпадает. Сверьте его с экраном приложения ещё раз.',
-          )}
-        </span>
+        <span className="as-field-err">Код не совпадает с тем, что на экране приложения.</span>
       )}
     </div>
   );
