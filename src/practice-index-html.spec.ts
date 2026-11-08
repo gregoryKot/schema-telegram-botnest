@@ -1,20 +1,29 @@
 // Главная kotlarewski.gr глазами Telegram/Директа/поисковика: что реально
-// уходит в <head> после practiceIndexHtml. До 2026-10 обложка шла с jsdelivr
+// уходит в <head> после practicePageHtml. До 2026-10 обложка шла с jsdelivr
 // и несла «схема-терапевт», цену и schemehappens.ru, а JSON-LD (@id, url,
 // image) указывал на продуктовый домен — визитка представлялась чужим адресом.
+// До 2026-11 наоборот: карточка визитки (фото автора) стояла в самом
+// index.html, и ссылка на продукт schemehappens.ru выглядела как визитка.
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { REVALIDATE } from './infra/static-cache';
 import {
-  practiceIndexHtml,
+  PRACTICE_PREVIEW_PAGES,
   practiceIndexMiddleware,
+  practicePageHtml,
 } from './practice-index-html';
+import { PRACTICE_PREVIEW, practicePreviewHtml } from './practice-preview';
 
 const WEBAPP = join(__dirname, '..', 'webapp');
 const source = readFileSync(join(WEBAPP, 'index.html'), 'utf8');
-const html = practiceIndexHtml(source, 'kotlarewski.gr');
+const html = practicePageHtml(source, 'kotlarewski.gr', '/');
 
-const meta = (attr: 'property' | 'name', key: string): string | undefined =>
-  new RegExp(`<meta ${attr}="${key}"\\s+content="([^"]*)"`).exec(html)?.[1];
+const metaIn =
+  (page: string) =>
+  (attr: 'property' | 'name', key: string): string | undefined =>
+    new RegExp(`<meta ${attr}="${key}"\\s+content="([^"]*)"`).exec(page)?.[1];
+const meta = metaIn(html);
+const productMeta = metaIn(source);
 
 // Размеры JPEG из маркера SOF (FFC0..FFC3) — без зависимостей.
 function jpegSize(buf: Buffer): { width: number; height: number } {
@@ -107,19 +116,73 @@ describe('главная визитки kotlarewski.gr', () => {
   });
 });
 
+// Карточка ссылки продукта — то, что index.html несёт по умолчанию на любом
+// пути schemehappens.ru (краулер превью JS не исполняет).
+describe('карточка ссылки: продукт в файле, визитка — подменой', () => {
+  const CARD: readonly [
+    'property' | 'name',
+    string,
+    keyof typeof PRACTICE_PREVIEW,
+  ][] = [
+    ['property', 'og:site_name', 'siteName'],
+    ['property', 'og:title', 'title'],
+    ['property', 'og:description', 'description'],
+    ['property', 'og:image', 'image'],
+    ['property', 'og:image:alt', 'imageAlt'],
+    ['name', 'twitter:title', 'title'],
+    ['name', 'twitter:description', 'description'],
+    ['name', 'twitter:image', 'image'],
+  ];
+
+  it('в файле — карточка продукта с обложкой со своего домена', () => {
+    expect(productMeta('property', 'og:site_name')).toBe('Всё по схеме');
+    expect(productMeta('property', 'og:image')).toBe(
+      'https://schemehappens.ru/og-app-v1.jpg',
+    );
+    expect(productMeta('name', 'twitter:image')).toBe(
+      'https://schemehappens.ru/og-app-v1.jpg',
+    );
+    for (const [attr, key] of CARD) {
+      expect(productMeta(attr, key)).not.toMatch(/kotlarewski|Котляревск/i);
+    }
+  });
+
+  it('обложка продукта лежит в public и того же размера, что в og:image:width/height', () => {
+    const size = jpegSize(
+      readFileSync(join(WEBAPP, 'public', 'og-app-v1.jpg')),
+    );
+    expect(size).toEqual({
+      width: Number(productMeta('property', 'og:image:width')),
+      height: Number(productMeta('property', 'og:image:height')),
+    });
+  });
+
+  it('визитка подменяет каждый тег карточки (тег из файла не пропал)', () => {
+    const swapped = metaIn(practicePreviewHtml(source));
+    for (const [attr, key, field] of CARD) {
+      // Контроль: в файле стоит другое значение — иначе подмена не доказана.
+      expect(productMeta(attr, key)).not.toBe(PRACTICE_PREVIEW[field]);
+      expect(swapped(attr, key)).toBe(PRACTICE_PREVIEW[field]);
+    }
+  });
+});
+
 // Решение владельца 2026-10-24: /reviews визитки в поиске. Сырой HTML страницы
 // (его читают Telegram и поисковик без JS) обязан нести свой canonical, иначе
 // /reviews объявляет себя копией главной продукта и в выдачу не попадает.
-describe('practiceIndexMiddleware: страницы визитки в поиске', () => {
+describe('practiceIndexMiddleware: страницы визитки', () => {
   const run = (
     hostname: string,
     path: string,
     page: string | null = source,
   ) => {
     const sent: { body?: string } = {};
+    const headers: Record<string, string> = {};
     let nextCalled = false;
     const res = {
-      setHeader: () => undefined,
+      setHeader: (name: string, value: string) => {
+        headers[name] = value;
+      },
       send: (body: string) => {
         sent.body = body;
       },
@@ -133,6 +196,8 @@ describe('practiceIndexMiddleware: страницы визитки в поиск
     );
     return {
       canonical: /rel="canonical" href="([^"]+)"/.exec(sent.body ?? '')?.[1],
+      image: metaIn(sent.body ?? '')('property', 'og:image'),
+      headers,
       nextCalled,
     };
   };
@@ -152,9 +217,37 @@ describe('practiceIndexMiddleware: страницы визитки в поиск
     );
   });
 
-  it('продуктовый хост, страница вне поиска и нет сборки — дальше, к ServeStatic', () => {
+  it('главная — карточка визитки и ревалидация, как у index.html из ServeStatic', () => {
+    const page = run('kotlarewski.gr', '/');
+    expect(page.image).toBe(PRACTICE_PREVIEW.image);
+    expect(page.headers['Cache-Control']).toBe(REVALIDATE);
+  });
+
+  // Ссылку на /book отправляют клиентам в мессенджер: карточка — визитки, а
+  // canonical страницы вне поиска остаётся как в файле.
+  it('/book — карточка визитки, canonical не трогаем', () => {
+    const page = run('kotlarewski.gr', '/book');
+    expect(page.nextCalled).toBe(false);
+    expect(page.image).toBe(PRACTICE_PREVIEW.image);
+    expect(page.canonical).toBe('https://schemehappens.ru/');
+  });
+
+  it('каждая страница визитки — с карточкой визитки', () => {
+    expect(PRACTICE_PREVIEW_PAGES).toEqual(
+      expect.arrayContaining(['/', '/reviews', '/book', '/donate', '/privacy']),
+    );
+    for (const path of PRACTICE_PREVIEW_PAGES) {
+      expect([path, run('kotlarewski.gr', path).image]).toEqual([
+        path,
+        PRACTICE_PREVIEW.image,
+      ]);
+    }
+  });
+
+  it('продуктовый хост, /articles (у ArticleSeoMiddleware) и нет сборки — дальше', () => {
     expect(run('schemehappens.ru', '/reviews').nextCalled).toBe(true);
-    expect(run('kotlarewski.gr', '/book').nextCalled).toBe(true);
+    expect(run('schemehappens.ru', '/').nextCalled).toBe(true);
+    expect(run('kotlarewski.gr', '/articles').nextCalled).toBe(true);
     expect(run('kotlarewski.gr', '/reviews', null).nextCalled).toBe(true);
   });
 });
