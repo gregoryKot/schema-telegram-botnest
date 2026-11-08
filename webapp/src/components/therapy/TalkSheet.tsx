@@ -5,16 +5,13 @@ import { bookingUrl, telegramUrl } from '../../../../shared/src/therapy/bridge/t
 import { Talk } from '../art/PaperArtSigns';
 import { ExternalLink } from '../../host/ExternalLink';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useDialogA11y } from '../../../../shared/src/utils/dialogA11y';
 import { trackTherapyNudge } from './trackTherapyNudge';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import '../../styles/client-why.css';
 import '../../styles/therapy-bridge.css';
 
-interface Props {
-  place: TherapyNudgePlace;
-  trigger?: TherapyNudgeTrigger;
-  onClose: () => void;
-}
+interface Props { place: TherapyNudgePlace; trigger?: TherapyNudgeTrigger; onClose: () => void }
 
 /** Лист «Поговорить с кем-то»: куда пойти, если одной самопомощи мало. Цены на листе нет.
  *  Без своего терапевта говорит владелец от первого лица: «если хочешь в терапию — напиши мне» (2026-11-08).
@@ -22,6 +19,7 @@ interface Props {
  *  встрече (профиль: карточка терапевта, следующая сессия, запись): лист без действия был тупиком. */
 export function TalkSheet({ place, trigger, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y(); // фокус на «Назад», Tab внутри, возврат к вызвавшей строке
   const navigate = useNavigate();
   const t = useTherapyBridgeTexts();
   const contact = getTherapistContact();
@@ -32,7 +30,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
   };
 
   return (
-    <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label={t.sheetEyebrow}>
+    <div {...dialogA11y} className="u-sheet cw-sheet" aria-label={t.sheetEyebrow}>
       <div className="ds-sheet-head ds-sheet-head--page cw-head">
         <button type="button" className="ds-back" onClick={goBack}><span aria-hidden="true">←</span>{t.sheetBack}</button>
       </div>
