@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 import {
-  utcDateStr, dayLevel, buildLevelMap, buildHeatWeeks, monthLabels, daysWord, counterItems,
+  dayLevel, buildLevelMap, buildHeatWeeks, monthLabels, daysWord, counterItems,
   achievementProgress, avatarInitial, trendKind, heatWeeksForWidth, patternBarPercent,
 } from './profileModel';
 
@@ -28,7 +28,7 @@ describe('buildLevelMap', () => {
 });
 
 describe('buildHeatWeeks', () => {
-  const today = new Date(Date.UTC(2026, 9, 15, 12)); // чт 15 окт 2026, полдень UTC
+  const today = '2026-10-15'; // чт 15 окт 2026 — местный день человека (todayStr())
   const weeks = buildHeatWeeks(new Map([['2026-10-15', 3], ['2026-10-14', 1]]), today);
   it('18 недель по 7 дней, неделя начинается с понедельника', () => {
     expect(weeks).toHaveLength(18);
@@ -41,14 +41,18 @@ describe('buildHeatWeeks', () => {
     expect(weeks[17][4].future).toBe(true);
     expect(weeks[17][6].future).toBe(true);
   });
-  it('сетка — календарные дни UTC в любой зоне машины (правило №25)', () => {
-    // 23:30 UTC 15 окт — в Сиднее уже 16-е, но день истории сервера ещё 15-й.
-    const late = new Date(Date.UTC(2026, 9, 15, 23, 30));
-    forEachTimeZone(() => {
-      const w = buildHeatWeeks(new Map([['2026-10-15', 2]]), late);
-      expect(w[17][3]).toEqual({ dateStr: '2026-10-15', level: 2, future: false });
-      expect(w[17][0].dateStr).toBe('2026-10-12');
+  it('сетка от переданного дня одна в любой зоне машины (правило №25)', () => {
+    forEachTimeZone((tz) => {
+      const w = buildHeatWeeks(new Map([['2026-10-15', 2]]), '2026-10-15');
+      expect(w[17][3], tz).toEqual({ dateStr: '2026-10-15', level: 2, future: false });
+      expect(w[17][0].dateStr, tz).toBe('2026-10-12');
+      expect(w[0][0].dateStr, tz).toBe('2026-06-15');
     });
+  });
+  it('воскресенье — последний день своей недели, а не первый следующей', () => {
+    const w = buildHeatWeeks(new Map(), '2026-10-18');
+    expect(w[17][6]).toEqual({ dateStr: '2026-10-18', level: 0, future: false });
+    expect(w[17][0].dateStr).toBe('2026-10-12');
   });
   it('пустая карта — все уровни 0', () => {
     expect(buildHeatWeeks(new Map(), today).flat().every(c => c.level === 0)).toBe(true);
@@ -57,7 +61,7 @@ describe('buildHeatWeeks', () => {
 
 describe('monthLabels', () => {
   it('подпись только там, где месяц меняется', () => {
-    const labels = monthLabels(buildHeatWeeks(new Map(), new Date(Date.UTC(2026, 9, 15, 12))));
+    const labels = monthLabels(buildHeatWeeks(new Map(), '2026-10-15'));
     expect(labels).toHaveLength(18);
     expect(labels[0]).not.toBe('');
     expect(labels.filter(Boolean).length).toBeGreaterThanOrEqual(4);
@@ -66,9 +70,6 @@ describe('monthLabels', () => {
 });
 
 describe('мелкие функции', () => {
-  it('utcDateStr — календарный день UTC', () => {
-    expect(utcDateStr(new Date(Date.UTC(2026, 0, 5, 23, 30)))).toBe('2026-01-05');
-  });
   // QA 2026-11-03: «1 дней стрика», «1 записей дневника», «1 прохождений теста».
   it('counterItems: подписи счётчиков склоняются по числу', () => {
     expect(counterItems({ streak: 1, totalDays: 2, diaryCount: 1, ysqCount: 1 }).map(([, l]) => l)).toEqual([

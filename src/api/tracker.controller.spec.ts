@@ -241,6 +241,49 @@ describe('TrackerController.saveRating', () => {
   });
 });
 
+// E15 аудита 2026-11: день проверялся только регэкспом формы — `2026-02-30`
+// сохранялся и ломал сортировку «Моего пути». Настоящий день — isCalendarDay.
+describe('TrackerController — несуществующий день → 400', () => {
+  const BAD = ['2026-02-30', '2026-13-01', '0000-00-00'];
+
+  it.each(BAD)('оценка за %s не сохраняется', async (date) => {
+    const { controller, botService } = makeController();
+    await expect(
+      controller.saveRating(makeReq(), {
+        needId: 'attachment',
+        value: 5,
+        date,
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(botService.saveRating).not.toHaveBeenCalled();
+  });
+
+  it.each(BAD)('заметка за %s не сохраняется и не читается', async (date) => {
+    const { controller, botService } = makeController();
+    await expect(
+      controller.saveNote(makeReq(), { date, text: 'день' }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(controller.getNote(makeReq(), date)).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(controller.getRatings(makeReq(), date)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(botService.saveNote).not.toHaveBeenCalled();
+  });
+
+  it('29 февраля високосного года — настоящий день', async () => {
+    const { controller, botService } = makeController();
+    await controller.saveNote(makeReq(), { date: '2028-02-29', text: 'день' });
+    expect(botService.saveNote).toHaveBeenCalledWith(
+      1n,
+      '2028-02-29',
+      'день',
+      undefined,
+    );
+  });
+});
+
 describe('TrackerController.getHistory', () => {
   it('без параметра days — дефолт 7', async () => {
     const { controller, analyticsService } = makeController();

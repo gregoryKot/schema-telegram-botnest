@@ -110,8 +110,8 @@ export const buildSharedApi = (t: ApiTransport) => ({
   createPlan: (
     needId: string,
     practiceText: string,
-    reminderUtcHour?: number,
-  ) => t.post('/api/plan', { needId, practiceText, reminderUtcHour }),
+    reminderLocalHour?: number, // час по поясу человека, день считает сервер
+  ) => t.post('/api/plan', { needId, practiceText, reminderLocalHour }),
   checkinPlan: (id: number, done: boolean) =>
     t.post(`/api/plan/${id}/checkin`, { done }),
   getPair: () => t.get<PairsData>('/api/pair'),

@@ -29,7 +29,7 @@ const BASE_SETTINGS = {
 
 function makeService(botService: any) {
   const notificationService = {
-    cancelAll: jest.fn().mockResolvedValue(undefined),
+    cancelProactive: jest.fn().mockResolvedValue(undefined),
   };
   const scheduleService = {
     rescheduleForUser: jest.fn().mockResolvedValue(undefined),
@@ -121,7 +121,7 @@ describe('buildSettingsView — фолбэки', () => {
 
 describe('TelegramSettingsService.onModuleInit — bot === null', () => {
   it('без бота (TELEGRAF_BOT не сконфигурирован) — не падает, хендлеры не регистрируются', () => {
-    const notificationService = { cancelAll: jest.fn() };
+    const notificationService = { cancelProactive: jest.fn() };
     const scheduleService = { rescheduleForUser: jest.fn() };
     const botService = {
       getUserSettings: jest.fn(),
@@ -222,6 +222,6 @@ describe('TelegramSettingsService — settings:toggle без сохранённ�
     expect(svc.updateUserSettings).toHaveBeenCalledWith(1n, {
       notifyEnabled: false,
     });
-    expect(notificationService.cancelAll).toHaveBeenCalledWith(1n);
+    expect(notificationService.cancelProactive).toHaveBeenCalledWith(1n);
   });
 });

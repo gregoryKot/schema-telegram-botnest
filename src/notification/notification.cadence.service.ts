@@ -56,19 +56,20 @@ export class NotificationCadenceService {
     private readonly analytics: BotAnalyticsService,
   ) {}
 
-  /** Захват локального дня под полуночный обход — notification.cadence-store.ts. */
-  claimPlanDay(user: CadenceUser, now = new Date()): Promise<boolean> {
-    return claimPlanDay(this.prisma, user, now);
+  /** Захват дня плана под полуночный обход — notification.cadence-store.ts. */
+  claimPlanDay(user: CadenceUser, now = new Date(), planDate?: string) {
+    return claimPlanDay(this.prisma, user, now, planDate);
   }
 
   /** 'paused' — пропустить юзера; 'expired' — пауза кончилась, отправить welcome_back и больше ничего */
   async expirePauseIfDue(
     user: CadenceUser,
     now = new Date(),
+    planDate?: string,
   ): Promise<'none' | 'paused' | 'expired'> {
     if (!user.notifyPausedUntil) return 'none';
     if (user.notifyPausedUntil > now) return 'paused';
-    const today = localDateString(user.notifyTimezone, now);
+    const today = planDate ?? localDateString(user.notifyTimezone, now);
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -86,18 +87,19 @@ export class NotificationCadenceService {
   }
 
   /**
-   * Полуночная оценка: детекция игнора, сдвиги уровня, решение «сегодня день напоминания?».
-   * Идемпотентна в пределах локального дня (notifyLastEvalDate) — catch-up при
-   * рестарте не накрутит счётчик второй раз.
+   * Полуночная оценка: игнор (по последнему завершённому местному дню), сдвиги
+   * уровня, «день плана — день напоминания?» (planDate, E13 — шапка
+   * планировщика). Идемпотентна по notifyLastEvalDate.
    */
   async evaluate(
     user: CadenceUser,
     now = new Date(),
+    planDate?: string,
   ): Promise<{ remindToday: boolean }> {
     const tz = user.notifyTimezone;
-    const today = localDateString(tz, now);
+    const today = planDate ?? localDateString(tz, now);
     if (user.notifyLastEvalDate === today) return { remindToday: false };
-    const yesterday = addDaysLocal(today, -1);
+    const yesterday = addDaysLocal(localDateString(tz, now), -1);
 
     let ignored = user.notifyIgnoredCount;
     let adaptive = user.notifyAdaptiveLevel;
@@ -148,22 +150,21 @@ export class NotificationCadenceService {
     return { remindToday };
   }
 
-  /** Дневник заполнен: не игнор, следующий контакт через полный интервал. Идемпотентно за день. */
-  async registerFill(userId: bigint, now = new Date()) {
+  /** Дневник заполнен: не игнор; возвращает день следующего контакта (fill-cancel). */
+  async registerFill(userId: bigint, now = new Date()): Promise<string | null> {
     const user = await this.loadUser(userId);
-    if (!user) return;
+    if (!user) return null;
     const today = localDateString(user.notifyTimezone, now);
+    const next = addDaysLocal(today, CADENCE_INTERVALS[effectiveLevel(user)]);
     await this.prisma.user.update({
       where: { id: userId },
       data: {
         notifyIgnoredCount: 0,
         notifySkipAckDate: null,
-        notifyNextRemindDate: addDaysLocal(
-          today,
-          CADENCE_INTERVALS[effectiveLevel(user)],
-        ),
+        notifyNextRemindDate: next,
       },
     });
+    return next;
   }
 
   /** «Сегодня не могу»: день выведен из подсчёта игноров, без последствий. */
@@ -199,10 +200,9 @@ export class NotificationCadenceService {
 
   /**
    * Атомарно инкрементирует и возвращает счётчик отправленных напоминаний.
-   * Вызывается один раз на каждое РЕАЛЬНО запланированное напоминание — служит
-   * nonce для ротации текста. Монотонность важнее: два соседних напоминания
-   * получают seq n и n+1, поэтому variant = seq % N у них всегда разный (в отличие
-   * от прежней ротации по календарному дню, где фиксированный интервал давал повтор).
+   * Один раз на каждое РЕАЛЬНО запланированное напоминание — nonce ротации
+   * текста: соседние получают seq n и n+1, и variant = seq % N у них всегда
+   * разный (ротация по календарному дню при фиксированном интервале повторялась).
    */
   async nextReminderSeq(userId: bigint): Promise<number> {
     const row = await this.prisma.user.update({

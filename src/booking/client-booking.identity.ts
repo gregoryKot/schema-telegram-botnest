@@ -4,7 +4,7 @@
 // нет: initData его не хранит), иначе e-mail аккаунта; нет ни того ни другого —
 // номер аккаунта, по которому владелец найдёт клиента в кабинете.
 // Telegram-адрес — по AuthProvider, а для старого пользователя бота без
-// привязки — сам userId (тот же порядок, что resolveChatId в account.service.ts).
+// привязки — сам userId (тот же порядок, что resolveChatId в bot/send-settings.ts).
 import type { PrismaService } from '../prisma/prisma.service';
 import { decryptName } from '../therapy/client-name';
 import { decryptAuthProviderRow } from '../utils/auth-provider-crypto';

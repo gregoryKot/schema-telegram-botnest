@@ -127,8 +127,8 @@ describe('usePlanSheetState — загрузка', () => {
     await act(async () => {
       await result.current.handleSave();
     });
-    // tzOffset=3 (деградация) + localHour=9 (первый вариант) → UTC 6
-    expect(api.createPlan).toHaveBeenCalledWith('attachment', 'Практика', 6);
+    // Сервер получает местный час (E11): смещение пояса на него не влияет.
+    expect(api.createPlan).toHaveBeenCalledWith('attachment', 'Практика', 9);
   });
 
   it('needId без готовых практик (нет в CURATED) — allOptions не падает, просто пусто', () => {
@@ -232,13 +232,25 @@ describe('usePlanSheetState — handleDeletePractice', () => {
 });
 
 describe('usePlanSheetState — handleSave', () => {
-  it('новый текст — добавляет практику, создаёт план с UTC-часом из локального+смещения, вызывает onSaved', async () => {
-    const api = makeApi();
+  // E11 аудита 2026-11: клиент переводил час в UTC смещением «сейчас», и
+  // день напоминания терялся (Владивосток «Утром» = 23 UTC — на день позже).
+  // Теперь уходит местный час, день и момент считает сервер по поясу.
+  it('новый текст — добавляет практику, создаёт план с МЕСТНЫМ часом (не UTC), вызывает onSaved', async () => {
+    const api = makeApi({
+      getSettings: vi
+        .fn()
+        .mockResolvedValue({ notifyTimezone: 'Asia/Vladivostok' }),
+    });
     const onSaved = vi.fn();
     const { result } = renderHook(() =>
       usePlanSheetState('attachment', 'Привязанность', api, onSaved),
     );
     await waitFor(() => expect(api.getSettings).toHaveBeenCalled());
+    // Пояс применился (setTzOffset — следующим тиком): старый расчёт дал бы 23.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     act(() => result.current.selectText('Новая практика'));
     act(() => result.current.setReminderIdx(0)); // Утром, 9:00
     await act(async () => {
@@ -251,12 +263,12 @@ describe('usePlanSheetState — handleSave', () => {
     expect(api.createPlan).toHaveBeenCalledWith(
       'attachment',
       'Новая практика',
-      expect.any(Number),
+      9,
     );
     expect(result.current.savedOk).toBe(true);
   });
 
-  it('без напоминания (localHour=null) — reminderUtcHour не передаётся', async () => {
+  it('без напоминания (localHour=null) — час не передаётся', async () => {
     const noReminderIdx = REMINDER_OPTIONS.findIndex(
       (o) => o.localHour === null,
     );

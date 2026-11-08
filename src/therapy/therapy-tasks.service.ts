@@ -5,7 +5,12 @@ import { NotificationService } from '../notification/notification.service';
 import { encrypt, decrypt } from '../utils/crypto';
 import { localDate, localMidnightUTC } from '../utils/tz';
 import { completeOfflineTask, deleteAssignedTask } from './assigned-task';
-import { STREAK_TASK_TYPES, streakProgress } from './streak-progress';
+import { streakProgress } from './streak-progress';
+import {
+  STREAK_TASK_TYPES,
+  streakExpired,
+  tracksStreakProgress,
+} from './streak-window';
 
 // Задачи пользователя (свои и назначенные терапевтом): создание, список,
 // завершение, стрик-прогресс и уведомление о назначении. Терапевтские
@@ -73,13 +78,8 @@ export class TherapyTasksService {
       ]).then(([s, m, g]) => s + m + g),
     ]);
 
-    // Auto-expire overdue streak tasks
-    const expired = tasks.filter(
-      (t) =>
-        t.targetDays &&
-        Math.floor((now.getTime() - t.createdAt.getTime()) / 86_400_000) >=
-          t.targetDays,
-    );
+    // Срок серии вышел — по календарю клиента, как и окно прогресса
+    const expired = tasks.filter((t) => streakExpired(t, tz, now));
     if (expired.length > 0) {
       await Promise.all(
         expired.map((t) =>
@@ -102,10 +102,9 @@ export class TherapyTasksService {
             : task.type === 'diary_streak'
               ? diaryToday > 0
               : undefined;
-        const progress =
-          task.targetDays && STREAK_TASK_TYPES.includes(task.type)
-            ? await this.getStreakProgress(userId, task, tz)
-            : undefined;
+        const progress = tracksStreakProgress(task)
+          ? await this.getStreakProgress(userId, task, tz)
+          : undefined;
         return {
           ...task,
           text: decrypt(task.text) ?? task.text,
@@ -187,10 +186,10 @@ export class TherapyTasksService {
     return settings?.notifyTimezone ?? 'Europe/Moscow';
   }
 
-  /** Дни серии с дня назначения по календарю клиента (streak-progress.ts). */
+  /** Дни серии в её окне по календарю клиента (streak-progress.ts). */
   getStreakProgress(
     userId: bigint,
-    task: { type: string; createdAt: Date },
+    task: Parameters<typeof streakProgress>[2],
     tz: string,
   ): Promise<number> {
     return streakProgress(this.prisma, userId, task, tz);

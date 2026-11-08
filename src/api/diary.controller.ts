@@ -19,6 +19,7 @@ import { TherapyTasksService } from '../therapy/therapy-tasks.service';
 import { SchemaDiaryDto, ModeDiaryDto } from './dto/diary-entries.dto';
 import { GratitudeDiaryDto } from './dto/gratitude-diary.dto';
 import { DIARY_KINDS, type DiaryKind } from '../bot/diary-page';
+import { isCalendarDay } from '../utils/calendar-day';
 
 const id32 = (raw: string) => parseId(raw, { int32: true });
 
@@ -27,8 +28,7 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-// uid()/parseId() — единый источник в request-utils (аудит 2026-07, 2в).
-// Заодно ужесточение: parseInt принимал «5abc» как 5, теперь это 400.
+// uid()/parseId() — из request-utils (аудит 2026-07, 2в): «5abc» теперь 400, а не 5.
 
 @Controller('api/diary')
 @UseGuards(TelegramAuthGuard)
@@ -131,7 +131,7 @@ export class DiaryController {
     @Req() req: AuthRequest,
     @Body() body: GratitudeDiaryDto,
   ) {
-    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
+    if (!isCalendarDay(body.date))
       throw new BadRequestException('Invalid date');
     const entry = await this.diaryService.upsertGratitudeDiaryEntry(
       uid(req),

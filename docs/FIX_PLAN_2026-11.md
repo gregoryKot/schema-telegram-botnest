@@ -44,21 +44,7 @@ E — баги, R — логика и надёжность, U — понятно
 
 ## Волна 3. Время и напоминания
 
-Один класс: «день и час считаются не по поясу человека». Механизм для всей волны —
-общий расчёт местного дня (`shared/src/utils/calendarDate.ts`, `zonedWallClockToUtc` на
-бэкенде) и прогон тестов по поясам `forEachTimeZone` с Asia/Kolkata (+5:30),
-America/New_York и Asia/Vladivostok — новый пояс-образец ловит класс сам.
-
-| PR | Код | Что сделать | Где | Тест | Размер |
-|---|---|---|---|---|---|
-| 3.1 | E5 | «Сегодня» в «Истории» и тепловой карте — местный день, считается при каждом рендере | `HistoryView.tsx`, `sections/profile/profileModel.ts` | `forEachTimeZone`: Москва 00:30 — вчерашний день заполнен | S |
-| 3.2 | E12 | Смещение пояса — в минутах, без округления до часа | `src/notification/notification.time.ts` | спек на Kolkata и Kathmandu: отложенное приходит в 08:00 местного | S |
-| 3.3 | E13 | Полуночный обход планирует напоминание на местный день, в котором стоит час отправки; заполнение отменяет только напоминание на сегодняшний местный день | `telegram.schedule.service.ts`, `notification.planner.service.ts` | спек: Владивосток 8:00 и Нью-Йорк 18:00 — в тот же день | M |
-| 3.4 | E11 | Напоминание плана — через `zonedWallClockToUtc` от местного часа; клиент шлёт местный час | `src/api/plans.controller.ts`, `shared/src/practices/usePlanSheetState.ts` | спек по трём поясам | S |
-| 3.5 | R4, R5 | Заполнение отменяет напоминания о перерыве (`lapsing_3`, `dormant_7`, `value_recap`, `reengagement_30`, `nudge`); `pair_activity` уважает паузу и дневной бюджет при постановке и в очереди | `telegram.diary-complete.ts`, `telegram.schedule-queue.ts` | спеки: заполнил после 7 дней — вечером тишина; пауза — партнёр не пишет | S |
-| 3.6 | R2 | После Р1: два флага, итоги и вехи слушаются своего | `NotificationsSection.tsx`, `src/bot/account.service.ts`, `telegram.diary-complete.ts`, миграция поля | read-after-write: выключил итоги — сводки нет, напоминание есть | M |
-| 3.7 | E15 | Даты по поясу владельца записи: полоса партнёра, дневник клиента у психолога; дни трекера, заметки и благодарности — `IsCalendarDay` | `src/api/pairs.controller.ts`, `src/therapy/therapy-client-data.service.ts`, `tracker.controller.ts`, `diary.controller.ts` | спеки | S |
-| 3.8 | E15 | Задание-серия: окно ограничено сверху `day + targetDays`; у закрытых прогресс не пересчитывается | `src/therapy/streak-progress.ts`, `therapy-tasks.service.ts` | спек: отметки после срока не закрывают задание | S |
+Сделано в волне 3 (3.1–3.8): местный день везде, пояса с получасом, напоминания в тот же день, тумблеры «Напоминания» и «Итоги дня»; остатки — `docs/open/backend.md`, «Хвосты волны 3».
 
 ## Волна 4. Путь клиента
 

@@ -109,8 +109,7 @@ export class BotService {
   }
 
   async getUserSettings(userId: bigint) {
-    // Explicit select — only return fields used by the API. Adding a new
-    // public setting? Add it here AND in api.controller.getSettings().
+    // Явный select: новая настройка — сюда И в SettingsController.getSettings().
     const row = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -118,6 +117,7 @@ export class BotService {
         notifyLocalHour: true,
         notifyTimezone: true,
         notifyReminderEnabled: true,
+        notifySummaryEnabled: true,
         notifyFrequency: true,
         notifyQuietStart: true,
         notifyQuietEnd: true,

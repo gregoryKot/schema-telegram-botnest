@@ -82,7 +82,11 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     deps.cadence.expirePauseIfDue.mockResolvedValue('paused');
     const user = makeUser();
     await svc.planDay(user, NOW);
-    expect(deps.cadence.expirePauseIfDue).toHaveBeenCalledWith(user, NOW);
+    expect(deps.cadence.expirePauseIfDue).toHaveBeenCalledWith(
+      user,
+      NOW,
+      '2026-07-02',
+    );
     expect(deps.notifications.schedule).not.toHaveBeenCalled();
     expect(deps.cadence.evaluate).not.toHaveBeenCalled();
   });
@@ -99,7 +103,11 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     ]);
     const user = makeUser();
     await svc.planDay(user, NOW);
-    expect(deps.cadence.claimPlanDay).toHaveBeenCalledWith(user, NOW);
+    expect(deps.cadence.claimPlanDay).toHaveBeenCalledWith(
+      user,
+      NOW,
+      '2026-07-02',
+    );
     expect(scheduledTypes(deps)).toEqual([]);
     expect(deps.cadence.expirePauseIfDue).not.toHaveBeenCalled();
     expect(deps.cadence.evaluate).not.toHaveBeenCalled();
@@ -109,7 +117,11 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     const { svc, deps } = make();
     const user = makeUser();
     await svc.planDay(user, NOW);
-    expect(deps.cadence.claimPlanDay).toHaveBeenCalledWith(user, NOW);
+    expect(deps.cadence.claimPlanDay).toHaveBeenCalledWith(
+      user,
+      NOW,
+      '2026-07-02',
+    );
     expect(scheduledTypes(deps)).toEqual(['reminder']);
   });
 
@@ -132,7 +144,7 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
     const user = makeUser();
     await svc.planDay(user, NOW);
-    expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW);
+    expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW, '2026-07-02');
     expect(deps.notifications.schedule).not.toHaveBeenCalled();
   });
 
@@ -147,7 +159,7 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
     deps.analytics.getDaysSinceLastFill.mockResolvedValue(3);
     const user = makeUser();
     await svc.planDay(user, NOW);
-    expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW);
+    expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW, '2026-07-02');
   });
 
   describe('перерывы', () => {
@@ -181,7 +193,11 @@ describe('NotificationPlannerService.planDay — дневной бюджет', (
       deps.cadence.evaluate.mockResolvedValue({ remindToday: false });
       const user = makeUser({ notifyFrequency: 2 });
       await svc.planDay(user, NOW);
-      expect(deps.cadence.evaluate).toHaveBeenCalledWith(user, NOW);
+      expect(deps.cadence.evaluate).toHaveBeenCalledWith(
+        user,
+        NOW,
+        '2026-07-02',
+      );
       expect(deps.notifications.schedule).not.toHaveBeenCalled();
     });
 

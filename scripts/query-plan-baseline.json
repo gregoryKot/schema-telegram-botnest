@@ -12,6 +12,10 @@
       "blocks": 20,
       "msCeiling": 500
     },
+    "proactive-budget": {
+      "blocks": 332,
+      "msCeiling": 500
+    },
     "stats-report": {
       "blocks": 68472,
       "msCeiling": 10000

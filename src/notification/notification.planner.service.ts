@@ -11,7 +11,12 @@ import {
   buildWeeklySummaryText,
   renderLowStreakInsight,
 } from './notification.templates';
-import { addDaysLocal, localDateString, nextSendAt } from './notification.time';
+import {
+  addDaysLocal,
+  daysBetweenLocal,
+  localDateString,
+  nextSendAt,
+} from './notification.time';
 import { normalizeAddressForm } from './address-form';
 
 export interface PlannerUser extends CadenceUser {
@@ -25,6 +30,18 @@ export interface PlannerUser extends CadenceUser {
  * Дневной бюджет: максимум ОДНО проактивное уведомление на юзера в день.
  * Единственная точка решения — первый матч по приоритету, остальное молчит.
  * Реактивные (summary, comeback, вехи, терапевтские) бюджету не подчиняются.
+ *
+ * День плана (E13, аудит 2026-11) — местный день, на который выпадает час
+ * отправки: `localDate(nextSendAt(час))`. Обход один, в 00:00 UTC, и у
+ * Владивостока (+10) это 10:00 местного: напоминание на 08:00 уходит завтра.
+ * Раньше обход считал его «сегодняшним» — вечерняя запись его снимала, и в
+ * первый пропущенный день напоминания не было; воскресная сводка приходила в
+ * понедельник. Теперь день захвата, решение движка частоты, воскресенье и
+ * 1-е число — про день отправки, а заполнение снимает напоминания только до
+ * дня следующего контакта (notification.fill-cancel.ts). Москве с 21:00 обход
+ * в 03:00 даёт тот же день, что и раньше. Почему не «каждый местный день —
+ * завтрашний»: тогда Москва решала бы за 21 час до дня (сводка недели без
+ * субботы, движок частоты до вечерней записи).
  */
 @Injectable()
 export class NotificationPlannerService {
@@ -39,25 +56,28 @@ export class NotificationPlannerService {
   ) {}
 
   async planDay(user: PlannerUser, now = new Date()) {
-    if (!(await this.cadence.claimPlanDay(user, now))) return; // уже спланирован
     const { id: uid, notifyLocalHour: hour, notifyTimezone: tz } = user;
-    const pauseState = await this.cadence.expirePauseIfDue(user, now);
+    const sendAt = nextSendAt(hour, tz, now);
+    const planDate = localDateString(tz, sendAt); // день плана — шапка класса
+    if (!(await this.cadence.claimPlanDay(user, now, planDate))) return;
+    const pauseState = await this.cadence.expirePauseIfDue(user, now, planDate);
     if (pauseState === 'paused') return;
     if (pauseState === 'expired') {
-      if (!(await this.notifications.hasPending(uid, 'welcome_back'))) {
-        await this.notifications.schedule(
-          uid,
-          'welcome_back',
-          nextSendAt(hour, tz, now),
-        );
-      }
+      if (!(await this.notifications.hasPending(uid, 'welcome_back')))
+        await this.notifications.schedule(uid, 'welcome_back', sendAt);
       return;
     }
 
     // Оценка движка идёт каждую ночь — детекция игнора и сдвиги уровня не зависят
     // от того, какое сообщение (и было ли) отправлено сегодня.
-    const { remindToday } = await this.cadence.evaluate(user, now);
-    const daysSince = await this.analytics.getDaysSinceLastFill(uid, tz);
+    const { remindToday } = await this.cadence.evaluate(user, now, planDate);
+    // Дней без записей — на день плана: остаток сегодняшнего дня считаем
+    // пустым, а запись в нём снимет перерыв (notification.fill-cancel.ts).
+    const rawSince = await this.analytics.getDaysSinceLastFill(uid, tz);
+    const daysSince =
+      rawSince < 0
+        ? rawSince
+        : rawSince + daysBetweenLocal(localDateString(tz, now), planDate);
 
     // Перерывы: 3 → lapsing_3, 7 → dormant_7, 30 → reengagement_30, дальше nudge раз в 45 дней.
     // Гейт по ВЫБРАННОЙ юзером частоте (notifyFrequency), а не по эффективному уровню.
@@ -82,12 +102,7 @@ export class NotificationPlannerService {
       if (!(await this.notifications.hasPending(uid, lapsingType))) {
         await this.notifications.cancel(uid, 'reminder');
         const payload = lapsingType === 'nudge' ? { daysSince } : undefined;
-        await this.notifications.schedule(
-          uid,
-          lapsingType,
-          nextSendAt(hour, tz, now),
-          payload,
-        );
+        await this.notifications.schedule(uid, lapsingType, sendAt, payload);
       }
       return;
     }
@@ -107,25 +122,19 @@ export class NotificationPlannerService {
         )?.chartLabel;
         const weakest = needs.find((n) => n.id === insight.weakest)?.chartLabel;
         await this.notifications.cancel(uid, 'reminder');
-        await this.notifications.schedule(
-          uid,
-          'value_recap',
-          nextSendAt(hour, tz, now),
-          {
-            totalDays: insight.totalDays,
-            strongest,
-            strongestAvg: insight.strongestAvg,
-            weakest,
-            weakestAvg: insight.weakestAvg,
-          },
-        );
+        await this.notifications.schedule(uid, 'value_recap', sendAt, {
+          totalDays: insight.totalDays,
+          strongest,
+          strongestAvg: insight.strongestAvg,
+          weakest,
+          weakestAvg: insight.weakestAvg,
+        });
       }
       return;
     }
 
-    // Воскресенье (локальное) для активных: недельная сводка заменяет напоминание
-    const today = localDateString(tz, now);
-    const isSunday = new Date(`${today}T12:00:00Z`).getUTCDay() === 0;
+    // Воскресенье (день плана) для активных: недельная сводка заменяет напоминание
+    const isSunday = new Date(`${planDate}T12:00:00Z`).getUTCDay() === 0;
     if (
       isSunday &&
       daysSince >= 0 &&
@@ -142,12 +151,7 @@ export class NotificationPlannerService {
         normalizeAddressForm(user.addressForm),
       );
       await this.notifications.cancel(uid, 'reminder');
-      await this.notifications.schedule(
-        uid,
-        'weekly',
-        nextSendAt(hour, tz, now),
-        { text },
-      );
+      await this.notifications.schedule(uid, 'weekly', sendAt, { text });
       return;
     }
 
@@ -157,18 +161,16 @@ export class NotificationPlannerService {
     // реально в контакте с приложением. На перерыве ≥7 дней всё остальное молчит
     // (см. подавление напоминаний ниже) — донат в это окно выбивался бы из тона.
     if (
-      today.endsWith('-01') &&
+      planDate.endsWith('-01') &&
       daysSince >= 0 &&
       daysSince < 7 &&
       !(await this.notifications.hasPending(uid, 'donate_reminder'))
     ) {
       const totalDays = await this.analytics.getTotalDaysFilled(uid);
-      await this.notifications.schedule(
-        uid,
-        'donate_reminder',
-        nextSendAt(hour, tz, now),
-        { seed: Number(uid % 3n), totalDays },
-      );
+      await this.notifications.schedule(uid, 'donate_reminder', sendAt, {
+        seed: Number(uid % 3n),
+        totalDays,
+      });
       return;
     }
 
@@ -191,20 +193,18 @@ export class NotificationPlannerService {
       return;
     }
 
-    // Дни без напоминания: невыполненный вчерашний план или инсайт о низкой потребности
-    const yesterday = addDaysLocal(today, -1);
+    // Дни без напоминания: невыполненный вчерашний план или инсайт о низкой потребности.
+    // «Вчера» — последний завершённый местный день: день перед днём плана может ещё идти.
+    const yesterday = addDaysLocal(localDateString(tz, now), -1);
     const missed = await this.practicesService.getMissedPlans(uid, yesterday);
     if (
       missed.length > 0 &&
       !(await this.notifications.hasPending(uid, 'practice_missed'))
     ) {
       const text = missed.map((p) => p.practiceText).join(', ');
-      await this.notifications.schedule(
-        uid,
-        'practice_missed',
-        nextSendAt(hour, tz, now),
-        { practiceText: text },
-      );
+      await this.notifications.schedule(uid, 'practice_missed', sendAt, {
+        practiceText: text,
+      });
       return;
     }
 

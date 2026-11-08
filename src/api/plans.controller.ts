@@ -18,6 +18,8 @@ import { NotificationService } from '../notification/notification.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { CheckinDto } from './dto/misc.dto';
 import { AddPracticeDto, CreatePlanDto } from './dto/practice-plan.dto';
+import { localDate } from '../utils/tz';
+import { planDay, planReminderAt } from './plan-reminder';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -70,7 +72,7 @@ export class PlansController {
     const tz =
       (await this.botService.getUserSettings(uid(req)))?.notifyTimezone ??
       'Europe/Moscow';
-    const today = this.localDate(tz);
+    const today = localDate(tz);
     const plans = await this.practicesService.getPendingPlans(uid(req), today);
     return plans;
   }
@@ -79,18 +81,20 @@ export class PlansController {
   async createPlan(@Req() req: AuthRequest, @Body() body: CreatePlanDto) {
     const settings = await this.botService.getUserSettings(uid(req));
     const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-    const tomorrow = this.localDate(tz, 1);
+    const tomorrow = planDay(tz);
+    // Момент — стенные часы дня плана в поясе человека (E11, plan-reminder.ts).
+    const sendAt = planReminderAt(tomorrow, tz, {
+      localHour: body.reminderLocalHour,
+      utcHour: body.reminderUtcHour,
+    });
     const plan = await this.practicesService.createPlan(
       uid(req),
       body.needId,
       body.practiceText.trim(),
       tomorrow,
-      body.reminderUtcHour,
+      sendAt?.getUTCHours(),
     );
-    if (body.reminderUtcHour !== undefined) {
-      const sendAt = new Date();
-      sendAt.setUTCDate(sendAt.getUTCDate() + 1);
-      sendAt.setUTCHours(body.reminderUtcHour, 0, 0, 0);
+    if (sendAt) {
       await this.notificationService.schedule(
         uid(req),
         'practice_reminder',
@@ -124,15 +128,5 @@ export class PlansController {
     // 365: архив «Мой путь» тянет текст практики и для старых записей
     const n = Math.min(Number(days) || 30, 365);
     return this.practicesService.getPlanHistory(uid(req), n);
-  }
-
-  private localDate(tz: string, daysAhead = 0): string {
-    const d = new Date(Date.now() + daysAhead * 86_400_000);
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: tz,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(d);
   }
 }

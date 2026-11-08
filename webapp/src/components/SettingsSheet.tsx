@@ -29,7 +29,7 @@ import { homeIconMode } from './settingsSheet/homeIconMode';
 // зависнуть на Loader, показываем безопасные значения.
 const DEFAULT_SETTINGS: UserSettings = {
   notifyEnabled: false, notifyLocalHour: 21, notifyTimezone: 'Europe/Moscow',
-  notifyReminderEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [],
+  notifyReminderEnabled: false, notifySummaryEnabled: false, pairCardDismissed: false, mySchemaIds: [], myModeIds: [],
   therapistShareCards: true, therapistShareProfile: true,
 };
 

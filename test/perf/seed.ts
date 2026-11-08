@@ -25,6 +25,8 @@ import {
   SCHEMA_IDS,
   TIMEZONES,
 } from './seed-profile';
+import { at1, json, q, series, strs } from './seed-sql';
+import { scheduledNotificationSql } from './seed-notifications';
 
 export { PERF_ID_BASE, PERF_PROFILE } from './seed-profile';
 
@@ -35,15 +37,6 @@ const NEEDS: readonly string[] = NEED_IDS;
 // Таблицы БЕЗ FK на User (каскад их не снесёт) → явный DELETE по диапазону.
 // prettier-ignore
 const NO_FK_TABLES = ['ClientConceptualization.therapistId', 'UserTask.userId', 'TherapistNote.therapistId', 'TherapistCustomMode.therapistId', 'ModeMap.therapistId'];
-
-const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
-const strs = (xs: readonly string[]) => `ARRAY[${xs.map(q).join(',')}]::text[]`;
-const json = (v: unknown) => `${q(JSON.stringify(v))}::jsonb`;
-// Элемент массива по номеру строки (PG-массивы с единицы).
-const at1 = (xs: readonly string[], i: string) =>
-  `(${strs(xs)})[1 + (${i}) % ${xs.length}]`;
-// bigint обязателен: i * 7919 для 2 млн строк не влезает в int4.
-const series = (n: number) => `generate_series(1::bigint, ${n}::bigint) g(i)`;
 
 // Номер строки → userId: перекос к «активным» (квадрат равномерной доли),
 // затем перестановка *4999 (взаимно просто с 10 000), чтобы активными были не
@@ -183,6 +176,8 @@ SELECT "therapistId", "clientId",
   jsonb_build_array(${at1(SCHEMA_IDS, '"id"')}, ${at1(SCHEMA_IDS, '"id" / 9')}),
   jsonb_build_array(${at1(MODE_IDS, '"id"')}, ${at1(MODE_IDS, '"id" / 9')}), CURRENT_TIMESTAMP
 FROM "TherapyRelation" WHERE "therapistId" >= ${B} AND "status" = 'active'`,
+    // ── Очередь уведомлений: год истории + завтрашнее (seed-notifications.ts) ─
+    ScheduledNotification: scheduledNotificationSql(a),
   };
 }
 

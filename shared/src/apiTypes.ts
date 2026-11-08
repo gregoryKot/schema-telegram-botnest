@@ -1,6 +1,5 @@
-// Общие DTO/типы ответов API — единый источник для обоих фронтендов
-// (webapp, правило №3 CLAUDE.md); оба ре-экспортируют их из
-// своих api-модулей. Здесь ТОЛЬКО типы, совпадающие в обоих фронтендах;
+// Общие DTO/типы ответов API — единый источник для фронтендов (webapp, правило
+// №3 CLAUDE.md), ре-экспорт из api-модулей. Здесь ТОЛЬКО типы, совпадающие везде;
 // расходящиеся остаются локальными (ClientConceptualization в webapp несёт
 // modeMapNodes/modeMapEdges — mode-map есть только на сайте).
 import type { UserId } from './userId';
@@ -12,6 +11,7 @@ export interface UserSettings {
   notifyLocalHour: number;
   notifyTimezone: string;
   notifyReminderEnabled: boolean;
+  notifySummaryEnabled?: boolean; // «Итоги дня»: сводка, вехи, «с возвращением»; нет поля = включены
   notifyFrequency?: number; // 0=каждый день, 1=через день, 2=2×/нед, 3=раз/нед
   notifyQuietStart?: number; // тихие часы: начало (локальный час)
   notifyQuietEnd?: number; // тихие часы: конец; start===end → выключены

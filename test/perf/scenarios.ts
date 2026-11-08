@@ -6,25 +6,18 @@
 // базу, решает код прода, и записывается это драйвером (record-sql.ts). Так
 // новый запрос внутри уже измеряемого пути попадает под гейт сам, без того
 // чтобы кто-то вспомнил его зарегистрировать.
-import { Client } from 'pg';
-import { PrismaService } from '../../src/prisma/prisma.service';
 import { BotAdminStatsService } from '../../src/bot/bot.admin-stats.service';
 import { BLOCK_FAILED_MARK } from '../../src/bot/stats-settle';
 import { BotAnalyticsService } from '../../src/bot/bot.analytics.service';
 import { BotClientOverviewService } from '../../src/bot/bot.client-overview.service';
 import { TherapyRelationsService } from '../../src/therapy/therapy-relations.service';
 import { getFormerTherapistInfo } from '../../src/therapy/former-therapist-info';
+import { NotificationService } from '../../src/notification/notification.service';
+import { proactiveBudgetSpent } from '../../src/notification/notification.budget';
 import { buildStatsReport } from '../e2e-support/stats-report.factory';
+import type { ScenarioContext } from './worst-case-ids';
 
-export interface ScenarioContext {
-  prisma: PrismaService;
-  /** Терапевт с самым длинным списком клиентов в синтетике. */
-  therapistId: bigint;
-  /** Пользователь с самой длинной историей оценок. */
-  heavyUserId: bigint;
-  /** Ничей не клиент — так профиль сайта видит клиента без терапевта. */
-  unattachedUserId: bigint;
-}
+export { resolveWorstCaseIds, type ScenarioContext } from './worst-case-ids';
 
 export interface Scenario {
   name: string;
@@ -75,41 +68,21 @@ export const SCENARIOS: Scenario[] = [
     run: ({ prisma, unattachedUserId }) =>
       getFormerTherapistInfo(prisma, unattachedUserId),
   },
+  {
+    name: 'proactive-budget',
+    title: 'Дневной бюджет проактивных (pair_activity: постановка и очередь)',
+    // Оба входа proactiveBudgetSpent: постановка парного (telegram.pair-activity.ts,
+    // без exceptId) и проверка строки очереди перед отправкой
+    // (telegram.schedule-queue.gate.ts — на каждой строке pair_activity в тике,
+    // exceptId — сама строка). День — у человека с самой длинной очередью.
+    run: async ({ prisma, notifiedUserId }) => {
+      const notifications = new NotificationService(prisma);
+      const now = new Date();
+      const tz = 'Europe/Moscow';
+      return [
+        await proactiveBudgetSpent(notifications, notifiedUserId, tz, now),
+        await proactiveBudgetSpent(notifications, notifiedUserId, tz, now, 1),
+      ];
+    },
+  },
 ];
-
-/**
- * Худший случай в засеянных данных, а не «любая строка»: план у юзера с одной
- * записью и у юзера с годом истории разный, и мерить надо второго — иначе
- * гейт зеленел бы ровно там, где начинается боль.
- */
-export async function resolveWorstCaseIds(
-  client: Client,
-): Promise<Omit<ScenarioContext, 'prisma'>> {
-  const therapist = await client.query<{ id: string }>(
-    `SELECT "therapistId"::text AS id FROM "TherapyRelation"
-      WHERE status = 'active' GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
-  );
-  const heavy = await client.query<{ id: string }>(
-    `SELECT "userId"::text AS id FROM "Rating"
-      GROUP BY 1 ORDER BY count(*) DESC, 1 LIMIT 1`,
-  );
-  // В синтетике это терапевт (клиенты — все остальные); план от роли не зависит.
-  const unattached = await client.query<{ id: string }>(
-    `SELECT u."id"::text AS id FROM "User" u WHERE NOT EXISTS (
-      SELECT 1 FROM "TherapyRelation" r WHERE r."clientId" = u."id") ORDER BY 1 LIMIT 1`,
-  );
-  const therapistId = therapist.rows[0]?.id;
-  const heavyUserId = heavy.rows[0]?.id;
-  const unattachedUserId = unattached.rows[0]?.id;
-  if (!therapistId || !heavyUserId || !unattachedUserId) {
-    throw new Error(
-      'В базе нет синтетики (терапевта с клиентами / юзера с оценками) — ' +
-        'прогони сидер: test/perf/seed.ts',
-    );
-  }
-  return {
-    therapistId: BigInt(therapistId),
-    heavyUserId: BigInt(heavyUserId),
-    unattachedUserId: BigInt(unattachedUserId),
-  };
-}

@@ -336,6 +336,34 @@ describe('TherapyClientDataService — расшифровка на пути чт
     expect(entries.map((e) => e.type)).toEqual(['gratitude', 'mode']);
   });
 
+  // E15 аудита 2026-11: дата записи дневника схем/режимов — момент createdAt,
+  // и день брался в UTC. Запись в 01:30 по Москве стояла у психолога
+  // вчерашним числом, вечерняя запись в Нью-Йорке — завтрашним.
+  it.each([
+    ['Europe/Moscow', '2026-07-09T22:30:00Z', '2026-07-10'], // 01:30 МСК 10-го
+    ['Asia/Vladivostok', '2026-07-09T15:30:00Z', '2026-07-10'], // 01:30 10-го
+    ['America/New_York', '2026-07-10T02:00:00Z', '2026-07-09'], // 22:00 9-го
+    ['Asia/Kolkata', '2026-07-09T19:00:00Z', '2026-07-10'], // 00:30 10-го
+  ])('дата записи — местный день клиента (%s)', async (tz, at, day) => {
+    const { svc, users, schemaDiary, modeDiary } = makeService([relA]);
+    users.push({ ...mkUser(CLIENT_A, 'Аня', []), notifyTimezone: tz });
+    schemaDiary.push({
+      ...mkDiaryRow(CLIENT_A, [], 'т'),
+      createdAt: new Date(at),
+    });
+    modeDiary.push({
+      userId: CLIENT_A,
+      modeId: 'vulnerable_child',
+      situation: 'с',
+      createdAt: new Date(at),
+    });
+    const entries = await svc.getClientDiaryEntries(T1, CID_A);
+    expect(entries.map((e) => [e.type, e.date])).toEqual([
+      ['schema', day],
+      ['mode', day],
+    ]);
+  });
+
   it('заметки по схеме и режиму: decryptRecord возвращает исходные строки полей', async () => {
     const { svc, schemaNotes, modeNotes } = makeService([relA]);
     schemaNotes.push(

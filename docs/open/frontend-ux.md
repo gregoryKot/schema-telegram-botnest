@@ -6,7 +6,6 @@
 > `grep -n` по ключу, затем чтение куска.
 
 **Аудит 2026-11 — баги сайта и понятность** (детали и коды — [AUDIT_2026-11.md](../AUDIT_2026-11.md)):
-- **E5 · «сегодня» по UTC.** `webapp/src/components/HistoryView.tsx:32,77,108` (`TODAY_STR` при загрузке модуля), `webapp/src/sections/profile/profileModel.ts:18-20,48-57`; сервер считает дни по поясу (`src/bot/rating-history.ts:31-35`). Москва 00–03 — вчерашний день пуст. `todayStr()` при каждом рендере.
 - **E6 · `.ics` в Telegram бросает.** `shared/src/host/telegram.ts:163` — `openLink(data:…)`, SDK пускает только http(s) (`webapp/public/telegram-web-app.js:2917-2920`); тест на фейке это не видит.
 - **E14 · мелочи.** `RequireAuth.tsx:11` теряет адрес возврата (`LoginPage.tsx` всегда `/today`); bfcache оставляет кнопку оплаты в `loading` (`DonatePage.tsx:22-25`, `SubscribePage.tsx:61-64`); дата статьи без `timeZone: 'UTC'` (`ArticlesPage.tsx:55,192`, `landing/ProductKit.tsx:36`).
 - **U2 · уведомления о задании и тесте ведут не туда.** Кнопки `notification.templates.activity.ts:83-106,117-130` открывают `/today`; ссылка запуска знает только join/tracker/diaries (`shared/src/host/startParam.ts:6-8`); у «Заданий» в «Ещё» (`useMoreRows.tsx:34`) нет счётчика.

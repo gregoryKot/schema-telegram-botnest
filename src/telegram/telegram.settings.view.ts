@@ -2,13 +2,13 @@
 // Отдельный файл, потому что telegram.settings.service.ts упирается в потолок
 // 300 строк (правило №10 CLAUDE.md — раздутый файл дробится, а не пухнет
 // дальше), а сборке экрана из сервиса нужен только BotService.
-// Соседи (telegram.notify-settings.service.ts и спеки) по-прежнему берут
-// buildSettingsView из telegram.settings.service.ts — там стоит ре-экспорт.
+// Соседи и спеки берут buildSettingsView из telegram.settings.service.ts (ре-экспорт).
 import { Markup } from 'telegraf';
 import { BotService } from '../bot/bot.service';
 import { CADENCE_LABELS } from '../notification/notification.cadence.service';
-import { tzOffsetAt } from '../notification/notification.time';
+import { utcOffsetLabel } from '../notification/tz-offset';
 import { NOTIFY_TIMEZONES } from '../notification/notify-timezones';
+import { remindersOn } from '../notification/notify-toggles';
 import { cityLabel } from '../booking/client-timezone';
 
 // Кнопки пояса — общий список выбора (src/notification/notify-timezones.ts).
@@ -33,18 +33,18 @@ export async function buildSettingsView(
   const tz =
     TIMEZONES.find((t) => t.tz === s.notifyTimezone)?.label ??
     cityLabel(s.notifyTimezone);
-  const offset = tzOffsetAt(s.notifyTimezone);
-  const utcLabel = offset >= 0 ? `UTC+${offset}` : `UTC${offset}`;
+  const utcLabel = utcOffsetLabel(s.notifyTimezone);
   const quietLine =
     s.notifyQuietStart === s.notifyQuietEnd
       ? 'выключены'
       : `${pad(s.notifyQuietStart)}:00 – ${pad(s.notifyQuietEnd)}:00`;
   const paused = s.notifyPausedUntil && s.notifyPausedUntil > new Date();
-  const isVy = s.addressForm === 'vy';
+  const [isVy, reminders] = [s.addressForm === 'vy', remindersOn(s)];
   const lines = [
     '⚙️ Настройки уведомлений',
     '',
-    `Статус: ${s.notifyEnabled ? '🔔 Включены' : '🔕 Выключены'}`,
+    `Напоминания: ${reminders ? '🔔 включены' : '🔕 выключены'}`,
+    `Итоги дня: ${s.notifySummaryEnabled === false ? 'выключены' : 'включены'}`,
     ...(paused
       ? [
           `⏸ На паузе до ${s.notifyPausedUntil!.toLocaleDateString('ru-RU', { timeZone: s.notifyTimezone })}`,
@@ -60,7 +60,7 @@ export async function buildSettingsView(
   const keyboard = Markup.inlineKeyboard([
     [
       Markup.button.callback(
-        s.notifyEnabled ? '🔕 Выключить' : '🔔 Включить',
+        reminders ? '🔕 Выключить напоминания' : '🔔 Включить напоминания',
         'settings:toggle',
       ),
     ],

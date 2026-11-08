@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // PlanSheet — было 0% покрытия (57 непокрытых строк). Проверяем: выбор
-// готового варианта vs свой текст, сохранение плана (реальный расчёт
-// reminderUtcHour из таймзоны), ошибку сохранения (правило CLAUDE.md
+// готового варианта vs свой текст, сохранение плана (местный час
+// напоминания, E11), ошибку сохранения (правило CLAUDE.md
 // «свободный текст → пользователь должен увидеть правду»), удаление своей
 // практики (успех/неуспех) и обе формы ты/вы для подписи текстового поля.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -92,7 +92,7 @@ describe('PlanSheet — свой текст', () => {
 });
 
 describe('PlanSheet — сохранение плана', () => {
-  it('«Днём» напоминание пересчитывается в UTC-час из реальной таймзоны пользователя', async () => {
+  it('«Днём» уходит местным часом 13: день и момент по поясу считает сервер (E11)', async () => {
     await act(async () => renderSheet());
     const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
     fireEvent.change(textarea, { target: { value: 'Своя практика' } });
@@ -102,12 +102,12 @@ describe('PlanSheet — сохранение плана', () => {
     fireEvent.click(screen.getByText('Сохранить план'));
 
     await waitFor(() => expect(mockApi.createPlan).toHaveBeenCalled());
-    // Europe/Moscow = UTC+3, «Днём» = 13:00 локально → 10 UTC.
-    expect(mockApi.createPlan).toHaveBeenCalledWith('attachment', 'Своя практика', 10);
+    // Перевод в UTC на клиенте терял день напоминания — сервер получает местный час.
+    expect(mockApi.createPlan).toHaveBeenCalledWith('attachment', 'Своя практика', 13);
     expect(mockApi.addPractice).toHaveBeenCalledWith('attachment', 'Своя практика');
   });
 
-  it('«Без напоминания» отправляет reminderUtcHour = undefined', async () => {
+  it('«Без напоминания» отправляет час = undefined', async () => {
     await act(async () => renderSheet());
     const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
     fireEvent.change(textarea, { target: { value: 'Практика без будильника' } });

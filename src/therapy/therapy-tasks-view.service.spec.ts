@@ -21,8 +21,9 @@ function matchWhere(row: any, where: any): boolean {
       !Array.isArray(v) &&
       !(v instanceof Date)
     ) {
-      if ('gte' in v) return val >= v.gte;
-      if ('lt' in v) return val < v.lt;
+      // Окно серии — обе границы сразу: { gte, lt } (streak-window.ts)
+      if ('gte' in v || 'lt' in v)
+        return (!('gte' in v) || val >= v.gte) && (!('lt' in v) || val < v.lt);
       if ('in' in v) return v.in.includes(val);
     }
     return val === v;
@@ -61,6 +62,12 @@ function makeDb() {
         if (orderBy?.createdAt === 'desc')
           rows = [...rows].sort((a, b) => b.createdAt - a.createdAt);
         return Promise.resolve(rows);
+      }),
+      // просрочка в getTasks клиента закрывает задание (сверка с /tasks)
+      update: jest.fn(({ where, data }: any) => {
+        const row = tasks.find((t) => t.id === where.id);
+        Object.assign(row, data);
+        return Promise.resolve(row);
       }),
     },
     user: {
@@ -439,5 +446,75 @@ describe('TherapyTasksViewService.getTasksForClient — доступ по акт
     expect(task.text).toBe('офлайн задача');
     expect(task.doneToday).toBeUndefined();
     expect(task.progress).toBeUndefined();
+  });
+});
+
+// E15 аудита 2026-11: окно серии шло до «сейчас», и отметки после срока
+// засчитывались: просроченное задание закрывалось выполненным, а у закрытого
+// «не вышло» число у терапевта продолжало расти. Окно — targetDays местных
+// дней клиента; у закрытого задания оно замирает в момент закрытия.
+describe('TherapyTasksViewService.getTasksForClient — окно серии и закрытые задания (E15)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  const setup = (tz: string) => {
+    const ctx = makeService();
+    ctx.relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+    });
+    ctx.users.push({ id: CLIENT_A, notifyTimezone: tz });
+    ctx.tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T1,
+      type: 'tracker_streak',
+      text: encrypt('серия') ?? 'серия',
+      targetDays: 3,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date('2026-11-01T01:00:00Z'),
+    });
+    return ctx;
+  };
+  const mark = (ratings: any[], ...dates: string[]) =>
+    dates.forEach((date) => ratings.push({ userId: CLIENT_A, date }));
+
+  it('отметки после срока: у психолога то же число, что клиент видел в последний день окна', async () => {
+    const { service, tasksService, tasks, ratings } = setup('Asia/Vladivostok');
+    // назначено в 11:00 1-го по Владивостоку: окно 1–3 ноября
+    mark(ratings, '2026-11-01', '2026-11-03');
+    jest.useFakeTimers({ now: new Date('2026-11-03T12:00:00Z') }); // 22:00 3-го
+    const [clientView] = await tasksService.getTasks(CLIENT_A);
+    expect(clientView.progress).toBe(2);
+
+    jest.setSystemTime(new Date('2026-11-05T02:00:00Z')); // 12:00 5-го
+    mark(ratings, '2026-11-04', '2026-11-05');
+    await tasksService.checkStreakTasks(CLIENT_A);
+    expect(tasks[0].done).toBeNull(); // до починки — true: 4 «дня» из 3
+    const [therapistView] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(therapistView.progress).toBe(clientView.progress);
+
+    // клиент открыл /tasks — просрочка закрыла задание «не вышло»
+    expect(await tasksService.getTasks(CLIENT_A)).toHaveLength(0);
+    const [closed] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(closed.done).toBe(false);
+    expect(closed.progress).toBe(2);
+  });
+
+  it('закрытое раньше срока: новые отметки в окне число не меняют', async () => {
+    const { service, tasks, ratings } = setup('Europe/Moscow');
+    mark(ratings, '2026-11-01');
+    // закрыто 1-го в 20:00 по Москве, дальше клиент отмечался в окне
+    Object.assign(tasks[0], {
+      done: false,
+      completedAt: new Date('2026-11-01T17:00:00Z'),
+    });
+    mark(ratings, '2026-11-02', '2026-11-03');
+    const [task] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(task.progress).toBe(1); // до починки — 3
   });
 });

@@ -27,7 +27,7 @@ const BASE_SETTINGS = {
 
 function makeService(botService: any) {
   const notificationService = {
-    cancelAll: jest.fn().mockResolvedValue(undefined),
+    cancelProactive: jest.fn().mockResolvedValue(undefined),
   };
   const scheduleService = {
     rescheduleForUser: jest.fn().mockResolvedValue(undefined),

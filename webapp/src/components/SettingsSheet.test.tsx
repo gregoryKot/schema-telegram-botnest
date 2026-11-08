@@ -59,6 +59,7 @@ const SETTINGS = {
   notifyLocalHour: 21,
   notifyTimezone: 'Europe/Moscow',
   notifyReminderEnabled: false,
+  notifySummaryEnabled: false,
   pairCardDismissed: false,
   mySchemaIds: [],
   myModeIds: [],
@@ -118,7 +119,7 @@ describe('SettingsSheet — имена переключателей', () => {
   // заголовок SRow виден глазами, а switch рядом был безымянным.
   it('каждый switch уведомлений назван заголовком своей строки', async () => {
     await renderSheetWithForm('ty');
-    for (const title of ['Итоги дня', 'Напоминание']) {
+    for (const title of ['Итоги дня', 'Напоминания']) {
       expect(screen.getByRole('switch', { name: title })).toBe(toggleForRow(title));
     }
   });
@@ -303,7 +304,7 @@ describe('SettingsSheet — сохранение переключателя ви
 
     await waitFor(() =>
       expect(mockApi.updateSettings).toHaveBeenCalledWith({
-        notifyEnabled: true,
+        notifySummaryEnabled: true,
       }),
     );
     await waitFor(() =>
@@ -337,7 +338,7 @@ describe('SettingsSheet — сохранение переключателя ви
 // ── Переключение подвидов (время уведомления) ────────────────────────────────
 describe('SettingsSheet — переключение вида «Время уведомления»', () => {
   it('открывает список часов, выбор часа сохраняет и возвращает на главный экран', async () => {
-    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
     await renderSheet();
 
     fireEvent.click(screen.getByText('Время'));
@@ -355,7 +356,7 @@ describe('SettingsSheet — переключение вида «Время ув�
   });
 
   it('кнопка «Назад» в подвиде возвращает на главный экран без сохранения', async () => {
-    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
     await renderSheet();
 
     fireEvent.click(screen.getByText('Время'));
@@ -660,7 +661,7 @@ describe('SettingsSheet — сбой начальной загрузки не б
   it('getSettings() падает — используются безопасные дефолты, экран открывается', async () => {
     mockApi.getSettings.mockRejectedValueOnce(new Error('network down'));
     await renderSheet();
-    // Дефолт notifyEnabled=false — тумблер «Итоги дня» реально отрисован
+    // Дефолт notifySummaryEnabled=false — тумблер «Итоги дня» реально отрисован
     // и выключен, а не «повис» на силуэте загрузки.
     expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe('false');
   });
@@ -732,7 +733,7 @@ describe('SettingsSheet — переключатель формы обращен
 // ── Подвиды: частота, тихие часы, часовой пояс (аналогично «время») ──────────
 describe('SettingsSheet — переключение подвидов «Частота»/«Тихие часы»/«Часовой пояс»', () => {
   it('«Частота»: выбор варианта сохраняет и возвращает на главный экран', async () => {
-    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
     await renderSheet();
     fireEvent.click(screen.getByText('Частота'));
     await screen.findByText('Частота напоминаний');
@@ -745,7 +746,7 @@ describe('SettingsSheet — переключение подвидов «Част
   });
 
   it('«Тихие часы»: пресет — нативная кнопка, клик сохраняет', async () => {
-    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
     await renderSheet();
     fireEvent.click(screen.getByText('Тихие часы'));
     await screen.findByText('В тихие часы бот не пишет вообще', { exact: false });
@@ -758,7 +759,7 @@ describe('SettingsSheet — переключение подвидов «Част
   });
 
   it('«Часовой пояс»: выбор часового пояса сохраняет и возвращает на главный экран', async () => {
-    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true });
+    mockApi.getSettings.mockResolvedValue({ ...SETTINGS, notifyEnabled: true, notifyReminderEnabled: true });
     await renderSheet();
     fireEvent.click(screen.getByText('Часовой пояс'));
     await waitFor(() => expect(mockApi.updateSettings).not.toHaveBeenCalled());
@@ -793,7 +794,7 @@ describe('SettingsSheet — блок уведомлений: пауза и за�
     );
   });
 
-  it('«Время»/«Частота»/«Тихие часы»/«Часовой пояс» скрыты, пока и «Итоги дня», и «Напоминание» выключены', async () => {
+  it('«Время»/«Частота»/«Тихие часы»/«Часовой пояс» скрыты, пока и «Итоги дня», и «Напоминания» выключены', async () => {
     await renderSheet();
     expect(screen.queryByText('Частота')).toBeNull();
     expect(screen.queryByText('Тихие часы')).toBeNull();
@@ -1041,13 +1042,16 @@ describe('SettingsSheet — боковая навигация: клик по п�
   });
 });
 
-describe('SettingsSheet — «Напоминание»: тумблер сохраняет отдельно от «Итоги дня»', () => {
-  it('включает notifyReminderEnabled', async () => {
+// R2 (аудит 2026-11): «Напоминания» — notifyEnabled вместе с notifyReminderEnabled,
+// «Итоги дня» — свой флаг; один тумблер другой не трогает.
+describe('SettingsSheet — «Напоминания»: тумблер сохраняет отдельно от «Итоги дня»', () => {
+  it('включает оба флага напоминаний и не трогает итоги', async () => {
     await renderSheet();
-    fireEvent.click(toggleForRow('Напоминание'));
+    fireEvent.click(toggleForRow('Напоминания'));
     await waitFor(() =>
-      expect(mockApi.updateSettings).toHaveBeenCalledWith({ notifyReminderEnabled: true }),
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ notifyEnabled: true, notifyReminderEnabled: true }),
     );
+    expect(toggleForRow('Итоги дня').getAttribute('aria-checked')).toBe('false');
   });
 });
 

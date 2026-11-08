@@ -194,13 +194,13 @@ export const USER_EXPORT_SELECT = {
   role: true,
   disclaimerAccepted: true,
   addressForm: true,
-  // Настройки уведомлений вместе со счётчиками движка: по ним видно, почему
-  // сообщения приходят с такой частотой — это тоже данные о человеке.
+  // Настройки уведомлений и счётчики движка: почему сообщения приходят так часто — тоже данные о человеке.
   notifyEnabled: true,
   notifyLocalHour: true,
   notifyTimezone: true,
   notifyTimezoneChosen: true,
   notifyReminderEnabled: true,
+  notifySummaryEnabled: true,
   notifyFrequency: true,
   notifyAdaptiveLevel: true,
   notifyIgnoredCount: true,

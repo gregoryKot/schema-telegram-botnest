@@ -53,7 +53,7 @@ function setup(botService: object) {
     bot,
     botService as never,
     { canonicalUserId: async (id: number) => BigInt(id) } as never,
-    { cancelAll: jest.fn() } as never,
+    { cancelProactive: jest.fn() } as never,
     { rescheduleForUser: jest.fn() } as never,
   ).onModuleInit();
   return bot;

@@ -1,15 +1,7 @@
-import {
-  IsIn,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { NEED_IDS } from '../../bot/bot.service';
 import { PRACTICE_TEXT_MAX } from '../../utils/text-limits';
+import { OptionalHour } from './optional-hour';
 
 /** POST /api/practices (правило №6): `text` длиннее предела — 400, не обрезка (backend#29). */
 export class AddPracticeDto {
@@ -22,7 +14,12 @@ export class AddPracticeDto {
   text!: string;
 }
 
-/** DTO для POST /api/plan. reminderUtcHour — час UTC, 0..23 (M5 аудита 2026-10). */
+/**
+ * DTO для POST /api/plan. `reminderLocalHour` — час по поясу человека
+ * (notifyTimezone): день и момент напоминания считает сервер (E11 аудита
+ * 2026-11). `reminderUtcHour` — час UTC от старых клиентов, принимается на
+ * переходный срок; пришли оба — главный местный.
+ */
 export class CreatePlanDto {
   @IsIn(NEED_IDS)
   needId!: string;
@@ -32,9 +29,9 @@ export class CreatePlanDto {
   @MaxLength(PRACTICE_TEXT_MAX)
   practiceText!: string;
 
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(23)
+  @OptionalHour()
+  reminderLocalHour?: number;
+
+  @OptionalHour()
   reminderUtcHour?: number;
 }

@@ -152,6 +152,18 @@ describe('DiaryController gratitude diary', () => {
     expect(diaryService.upsertGratitudeDiaryEntry).not.toHaveBeenCalled();
   });
 
+  // E15 аудита 2026-11: `2026-02-30` проходил регэксп и ломал сортировку «Моего пути».
+  it.each(['2026-02-30', '2026-13-01', '0000-00-00'])(
+    'несуществующий день %s → BadRequestException, запись не создаётся',
+    async (date) => {
+      const { controller, diaryService } = makeController();
+      await expect(
+        controller.createGratitudeDiary(makeReq(), { date, items: ['a'] }),
+      ).rejects.toThrow(BadRequestException);
+      expect(diaryService.upsertGratitudeDiaryEntry).not.toHaveBeenCalled();
+    },
+  );
+
   it('пункты благодарности доходят до сервиса целиком (лимит — в DTO)', async () => {
     const { controller, diaryService } = makeController();
     await controller.createGratitudeDiary(makeReq(2n), {

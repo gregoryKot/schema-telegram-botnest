@@ -51,6 +51,7 @@ describe('SettingsController.getSettings', () => {
       notifyLocalHour: 21,
       notifyTimezone: 'Europe/Moscow',
       notifyReminderEnabled: true,
+      notifySummaryEnabled: true,
       notifyFrequency: 0,
       notifyQuietStart: 22,
       notifyQuietEnd: 8,

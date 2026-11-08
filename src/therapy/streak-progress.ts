@@ -1,8 +1,10 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { localDate, localMidnightUTC } from '../utils/tz';
+import { localDate } from '../utils/tz';
+import { StreakTaskLike, streakWindow } from './streak-window';
 
 // Прогресс задания-серии («заполнять N дней подряд»): сколько дней клиент
-// отметился С ДНЯ НАЗНАЧЕНИЯ. Расчёт один на всех: /tasks клиента, карточка
+// отметился В ОКНЕ СЕРИИ — с дня назначения по день назначения + targetDays
+// (streak-window.ts). Расчёт один на всех: /tasks клиента, карточка
 // задания у терапевта и авто-закрытие (checkStreakTasks) зовут его через
 // TherapyTasksService.getStreakProgress — «1 из 7 дней» у обоих одно число
 // (правило №4, сверка — therapy-tasks-view.service.spec.ts).
@@ -13,38 +15,22 @@ import { localDate, localMidnightUTC } from '../utils/tz';
 // неделю, закрывал задание на 7 дней первой же оценкой в день назначения
 // (docs/INCIDENTS.md).
 
-export const STREAK_TASK_TYPES: readonly string[] = [
-  'tracker_streak',
-  'diary_streak',
-  'schema_diary',
-  'mode_diary',
-];
-
-/** Начало окна серии: местный день клиента, в который назначено задание,
- *  и момент его полуночи (для полей-моментов createdAt). */
-export function streakWindowStart(
-  assignedAt: Date,
-  tz: string,
-): { day: string; from: Date } {
-  const day = localDate(tz, assignedAt);
-  return { day, from: localMidnightUTC(day, tz) };
-}
-
 export async function streakProgress(
   prisma: PrismaService,
   userId: bigint,
-  task: { type: string; createdAt: Date },
+  task: StreakTaskLike & { type: string },
   tz: string,
 ): Promise<number> {
-  const { day, from } = streakWindowStart(task.createdAt, tz);
+  const { day, from, endDay, to } = streakWindow(task, tz);
+  const inWindow = { gte: day, lt: endDay };
   if (task.type === 'tracker_streak') {
     const dates = await prisma.rating.groupBy({
       by: ['date'],
-      where: { userId, date: { gte: day } },
+      where: { userId, date: inWindow },
     });
     return dates.length;
   }
-  const since = { userId, createdAt: { gte: from } };
+  const since = { userId, createdAt: { gte: from, lt: to } };
   if (task.type === 'schema_diary') {
     return prisma.schemaDiaryEntry.count({ where: since });
   }
@@ -56,7 +42,7 @@ export async function streakProgress(
     prisma.schemaDiaryEntry.groupBy({ by: ['createdAt'], where: since }),
     prisma.modeDiaryEntry.groupBy({ by: ['createdAt'], where: since }),
     prisma.gratitudeDiaryEntry.findMany({
-      where: { userId, date: { gte: day } },
+      where: { userId, date: inWindow },
       select: { date: true },
     }),
   ]);

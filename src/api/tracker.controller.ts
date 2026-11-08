@@ -21,6 +21,7 @@ import { SaveRatingDto } from './dto/ratings.dto';
 import { SaveNoteDto } from './dto/notes.dto';
 import { historyDays, HistoryQueryDto } from './dto/history-query.dto';
 import { buildExportSummary, EXPORT_DAYS } from './export-summary';
+import { isCalendarDay } from '../utils/calendar-day';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -48,14 +49,14 @@ export class TrackerController {
 
   @Get('ratings')
   async getRatings(@Req() req: AuthRequest, @Query('date') date?: string) {
-    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date))
+    if (date && !isCalendarDay(date))
       throw new BadRequestException('Invalid date format');
     return this.botService.getRatings(uid(req), date);
   }
 
   @Post('rating')
   async saveRating(@Req() req: AuthRequest, @Body() body: SaveRatingDto) {
-    if (body.date && !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
+    if (body.date && !isCalendarDay(body.date))
       throw new BadRequestException('Invalid date');
     await this.botService.saveRating(
       uid(req),
@@ -148,18 +149,14 @@ export class TrackerController {
 
   @Get('note')
   async getNote(@Req() req: AuthRequest, @Query('date') date: string) {
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
+    if (!isCalendarDay(date))
       throw new BadRequestException('Invalid date format');
     return this.botService.getNote(uid(req), date);
   }
 
   @Post('note')
   async saveNote(@Req() req: AuthRequest, @Body() body: SaveNoteDto) {
-    if (
-      !body.date ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(body.date) ||
-      typeof body.text !== 'string'
-    )
+    if (!isCalendarDay(body.date) || typeof body.text !== 'string')
       throw new BadRequestException();
     await this.botService.saveNote(uid(req), body.date, body.text, body.tags);
     return { ok: true };
