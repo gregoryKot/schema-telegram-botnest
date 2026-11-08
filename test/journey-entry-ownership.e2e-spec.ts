@@ -47,47 +47,52 @@ describe('e2e smoke: запись «Моего пути» по id и стран�
   // Сущность → как её создать, как открыть по id (литералом пути: его ищет
   // трипваер e2e-route-coverage) и какое поле доказывает, что пришла она.
   type Agent = ReturnType<typeof as>;
+  // Тело ответа читаем по известным полям — без any (правило №9).
+  type Body = { [k: string]: unknown } & {
+    items?: unknown[];
+    schemaIds?: unknown[];
+  };
   const CASES = [
     {
       path: '/api/diary/schema',
-      open: (u: Agent, id: unknown) => u.get(`/api/diary/schema/${id}`),
+      open: (u: Agent, id: number) => u.get(`/api/diary/schema/${id}`),
       body: { trigger: 'триггер A', emotions: [], schemaIds: ['mistrust'] },
-      check: (b: any) =>
+      check: (b: Body) =>
         b.trigger === 'триггер A' && b.schemaIds[0] === 'mistrust',
     },
     {
       path: '/api/diary/mode',
-      open: (u: Agent, id: unknown) => u.get(`/api/diary/mode/${id}`),
+      open: (u: Agent, id: number) => u.get(`/api/diary/mode/${id}`),
       body: { modeId: 'vulnerable_child', situation: 'ситуация A' },
-      check: (b: any) => b.situation === 'ситуация A',
+      check: (b: Body) => b.situation === 'ситуация A',
     },
     {
       path: '/api/diary/gratitude',
-      open: (u: Agent, id: unknown) => u.get(`/api/diary/gratitude/${id}`),
+      open: (u: Agent, id: number) => u.get(`/api/diary/gratitude/${id}`),
       body: { date: '2026-03-01', items: ['солнце A'] },
-      check: (b: any) => b.items[0] === 'солнце A',
+      check: (b: Body) => b.items[0] === 'солнце A',
     },
     {
       path: '/api/belief-checks',
-      open: (u: Agent, id: unknown) => u.get(`/api/belief-checks/${id}`),
+      open: (u: Agent, id: number) => u.get(`/api/belief-checks/${id}`),
       body: { belief: 'убеждение A', evidenceFor: ['за'], evidenceAgainst: [] },
-      check: (b: any) => b.belief === 'убеждение A',
+      check: (b: Body) => b.belief === 'убеждение A',
     },
     {
       path: '/api/letters',
-      open: (u: Agent, id: unknown) => u.get(`/api/letters/${id}`),
+      open: (u: Agent, id: number) => u.get(`/api/letters/${id}`),
       body: { text: 'письмо A' },
-      check: (b: any) => b.text === 'письмо A',
+      check: (b: Body) => b.text === 'письмо A',
     },
     {
       path: '/api/flashcards',
-      open: (u: Agent, id: unknown) => u.get(`/api/flashcards/${id}`),
+      open: (u: Agent, id: number) => u.get(`/api/flashcards/${id}`),
       body: {
         modeId: 'vulnerable_child',
         needId: 'attachment',
         action: 'дышать A',
       },
-      check: (b: any) => b.action === 'дышать A',
+      check: (b: Body) => b.action === 'дышать A',
     },
   ];
 
@@ -148,7 +153,7 @@ describe('e2e smoke: запись «Моего пути» по id и стран�
     const last = page1.body.items[29].id as number;
     const page2 = await as(USER_A).get(`/api/diary/page/schema?before=${last}`);
     expect(page2.body).toMatchObject({ hasMore: false });
-    expect(page2.body.items.map((e: any) => e.trigger)).toEqual(['запись 1']);
+    expect(page2.body.items.map((e: Body) => e.trigger)).toEqual(['запись 1']);
 
     // Чужой курсор: B не узнаёт по ответу ни записей A, ни их существования.
     const stranger = await as(USER_B).get(
