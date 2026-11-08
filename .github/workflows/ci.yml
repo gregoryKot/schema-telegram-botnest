@@ -237,6 +237,10 @@ jobs:
       # или useTimedFlag): иначе он срабатывает после сноса jsdom и роняет весь
       # vitest (run 36409902702). Исключения — scripts/timer-cleanup-baseline.json.
       - run: node scripts/check-timer-cleanup.mjs
+      # Адрес отправки в Telegram — только из AuthProvider (telegramIdFor /
+      # telegramIdsFor): userId — чат лишь у телеграм-входа (класс #456).
+      # Бейслайна нет, исключения — EXEMPT_FILES в самом гейте.
+      - run: node scripts/check-telegram-chat-id.mjs
       # Один ключ localStorage — один писатель (инцидент 2026-11-05, PR #935:
       # кэш контакта терапевта писали два места, третье меняло источник правды
       # на сервере и кэш не трогало). Каждый ключ классифицирован в
