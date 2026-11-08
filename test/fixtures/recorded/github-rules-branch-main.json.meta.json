@@ -1,0 +1,6 @@
+{
+  "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo}/rules/branches/main (правила, действующие на ветке main; только активные ruleset)",
+  "recordedAt": "2026-11-08",
+  "how": "записано из сессии агента командой `gh api repos/gregoryKot/schema-telegram-botnest/rules/branches/main`, HTTP 200 (с токеном GitHub App прокси песочницы; по документации GitHub эндпоинт отвечает и без токена, если ресурс публичный)",
+  "redacted": "ничего — ответ целиком, только переформатирован с отступами; персональных данных и секретов в нём нет (имя ruleset, id, имена проверок CI)"
+}
