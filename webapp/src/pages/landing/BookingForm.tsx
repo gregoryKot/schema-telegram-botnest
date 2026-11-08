@@ -7,6 +7,7 @@ import { trackGoal } from '../../lib/metrika';
 import { ContactChannelField } from '../../components/booking/ContactChannelField';
 import { RequestField } from '../../components/booking/RequestField';
 import { BookingCrisisNote } from '../../components/booking/BookingCrisisNote';
+import { fieldLabel as labelSt } from '../../components/booking/fieldLabelStyle';
 import type { ContactChannel } from '../../../../shared/src/booking/contactChannel';
 import { BOOKING_MESSAGE_MAX, BOOKING_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 // ─── Простая заявка «напишите мне» — основной путь записи на визитке ─────────
@@ -33,7 +34,6 @@ export function BookingForm() {
     width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
     borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color .15s, box-shadow .15s',
   };
-  const labelSt: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8 };
 
   if (status === 'done') return (
     <div style={{ textAlign: 'center', padding: '56px 0' }}>

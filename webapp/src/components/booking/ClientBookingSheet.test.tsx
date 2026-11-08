@@ -5,29 +5,36 @@
 // со слотом и поясом; дальше — оплата по ссылке или «Записано»; тексты — в
 // форме обращения пользователя.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 
 vi.mock('../../api', () => ({
-  api: { getSlots: vi.fn(), clientBook: vi.fn(), trackEvent: vi.fn() },
+  api: { getSlots: vi.fn(), getBookingOptions: vi.fn(), clientBook: vi.fn(), trackEvent: vi.fn() },
   reportClientError: vi.fn(),
 }));
-vi.mock('./useClientTimeZone', () => ({ useClientTimeZone: () => ['Europe/Moscow', vi.fn()] }));
-import { api } from '../../api';
+const zone = vi.hoisted(() => ({ tz: 'Europe/Moscow' }));
+vi.mock('./useClientTimeZone', () => ({ useClientTimeZone: () => [zone.tz, vi.fn()] }));
+vi.mock('../../lib/metrika', () => ({ trackGoal: vi.fn(), trackGoalOnce: vi.fn() }));
+import { api, reportClientError } from '../../api';
 import { ClientBookingSheet } from './ClientBookingSheet';
+import { setChosenCurrency } from './priceCurrency';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const SLOT = { startsAt: '2026-11-10T13:00:00.000Z', endsAt: '2026-11-10T13:50:00.000Z', durationMin: 50 };
+const SESSION = { type: 'SESSION_50', label: 'Сессия', durationMin: 50, price: 4000, prices: { RUB: 4000, ILS: 200, EUR: 65, USD: 70 }, note: '' };
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockApi.getSlots.mockResolvedValue([SLOT]);
+  mockApi.getBookingOptions.mockResolvedValue([SESSION]);
+  zone.tz = 'Europe/Moscow';
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-09T09:00:00Z'));
 });
 afterEach(() => {
   cleanup();
+  act(() => setChosenCurrency(null));
   vi.useRealTimers();
 });
 
@@ -105,6 +112,50 @@ describe('ClientBookingSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Записаться на 16:00' }));
     expect((await screen.findByRole('heading', { level: 2 })).textContent).toBe('Записано: Завтра, 16:00');
     expect(screen.queryByRole('link', { name: 'Перейти к оплате' })).toBeNull();
+  });
+
+  // R9: цена видна до «Записаться» — раньше лист её не показывал вовсе.
+  it('цена до записи: пояс России — рубли с оплатой онлайн, выбора валюты нет', async () => {
+    renderSheet();
+    expect(await screen.findByText('Сессия — 4 000 ₽, оплата картой или СБП сразу после записи.')).toBeTruthy();
+    expect(screen.queryByText('Я не в России — показать цену')).toBeNull();
+  });
+
+  // R9: при поясе без места — тот же выбор валюты, что у формы на визитке, и
+  // он уходит в запись (сервер примет его только при таком поясе).
+  it('пояс без места: выбор евро меняет цену и уходит в clientBook', async () => {
+    zone.tz = 'UTC';
+    mockApi.clientBook.mockResolvedValue({
+      cancelToken: 'tok', status: 'CONFIRMED', heldUntil: null, paymentUrl: null,
+      manageUrl: 'https://kotlarewski.gr/booking/manage?token=tok',
+    });
+    renderSheet('ty');
+    expect(await screen.findByText(/^Сессия — 4 000 ₽/)).toBeTruthy();
+    expect(screen.getByText(/Если ты не в России, выбери валюту/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'в евро €' }));
+    expect(screen.getByText('Сессия — 65 €, запись подтвердится сразу: об оплате терапевт напишет перед встречей.')).toBeTruthy();
+    fireEvent.click(await screen.findByRole('button', { name: '13:00' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Записаться на 13:00' }));
+    await waitFor(() => expect(mockApi.clientBook).toHaveBeenCalledWith({
+      startsAt: SLOT.startsAt, durationMin: 50, clientTimeZone: 'UTC', currency: 'EUR',
+    }));
+  });
+
+  it('цена ещё грузится — силуэт строки, а не пустота и не дефолтная цена', async () => {
+    mockApi.getBookingOptions.mockReturnValue(new Promise(() => {}));
+    renderSheet();
+    await screen.findByRole('button', { name: '16:00' });
+    expect(document.querySelector('.cbk-inner .skel')).not.toBeNull();
+    expect(screen.queryByText(/^Сессия — /)).toBeNull();
+  });
+
+  it('цена не загрузилась — строки цены нет, сбой ушёл наверх, записаться можно', async () => {
+    mockApi.getBookingOptions.mockRejectedValue(new Error('500'));
+    renderSheet();
+    fireEvent.click(await screen.findByRole('button', { name: '16:00' }));
+    await waitFor(() => expect(reportClientError).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/^Сессия — /)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Записаться на 16:00' })).toBeTruthy();
   });
 
   it('время заняли — честная строка в форме «ты», выбор другого времени её снимает', async () => {

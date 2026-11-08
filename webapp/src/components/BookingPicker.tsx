@@ -21,15 +21,13 @@ import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen, type BookedSession }
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
 import { usePriceCurrency } from './booking/priceCurrency';
 import { CurrencyChoice } from './booking/CurrencyChoice';
+import { fieldLabel as labelSt } from './booking/fieldLabelStyle';
 import { firstSlotDay, useBookingSlots } from '../../../shared/src/booking/useBookingSlots';
 import { bookingPriceView, doneCostNote, formatPriceSuffix, needsOnlinePayment, submitLabel, submitNote } from './booking/bookingPriceLabels';
 
 const field: React.CSSProperties = {
   width: '100%', padding: '14px 16px', fontSize: 15, background: 'rgba(var(--fg-rgb),0.04)', border: '1.5px solid var(--line)',
   borderRadius: 'var(--r-12)', color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-};
-const labelSt: React.CSSProperties = {
-  display: 'block', fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
 };
 const hintSt: React.CSSProperties = { fontSize: 12, color: 'var(--accent-red)', margin: '6px 0 0' };
 

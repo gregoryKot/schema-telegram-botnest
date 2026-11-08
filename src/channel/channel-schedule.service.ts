@@ -15,7 +15,11 @@ import { ChannelPublisherService } from './channel-publisher.service';
 import { shouldReportSlot, slotReportText } from './slot-report';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 import { OneAtATime } from './one-at-a-time';
-import { UnknownOutcomeWarnings, unknownOutcomeText } from './unknown-outcome';
+import {
+  UnknownOutcomeWarnings,
+  splitUnknown,
+  unknownOutcomeText,
+} from './unknown-outcome';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -31,7 +35,7 @@ const MORNING_CRON = '*/5 9,10 * * *';
  */
 const CATCH_UP_CRON = '*/15 * * * *';
 const EVENING_CRON = '*/5 18,19 * * *';
-/** Кто держит флаг публикации, пока идёт тик, — так его назовёт отказ /zv. */
+/** Кто держит флаг публикации, пока идёт тик, — так его назовёт отказ /zv и админки. */
 export const SCHEDULE_HOLDER = 'пост по расписанию';
 /** Имя слота для владельца и для журнала отправок. */
 const SLOT_NAME: Record<HealthyAdultSlot, string> = {
@@ -146,8 +150,12 @@ export class ChannelScheduleService {
         // вышел), но про упавшую площадку владелец должен узнать — один раз.
         // Молчащие (нет env) — раз в неделю, в понедельник утром: ежедневный
         // одинаковый DM перестают читать, почему так — в slot-report.ts.
-        if (shouldReportSlot(res, day, slot))
-          await this.alert(slotReportText(SLOT_NAME[slot], res), res.failed);
+        // Исход неизвестен — не «дошлю», а «проверить вручную» (хвост R7).
+        const { failed, unknown } = splitUnknown(res.failed);
+        const report = { failed, silent: res.silent };
+        if (shouldReportSlot(report, day, slot))
+          await this.alert(slotReportText(SLOT_NAME[slot], report), failed);
+        await this.warnUnknown(key, SLOT_NAME[slot], unknown);
         return;
       }
 
@@ -184,7 +192,8 @@ export class ChannelScheduleService {
   private async retryDebt(now: Date): Promise<void> {
     const slot = catchUpSlot(now);
     if (!slot) return;
-    const key = `${mskParts(now).dateKey}:${slot}:повтор`;
+    const slotKey = `${mskParts(now).dateKey}:${slot}`;
+    const key = `${slotKey}:повтор`;
     if (!this.retries.allow(key)) return;
 
     const name = SLOT_NAME[slot];
@@ -193,10 +202,7 @@ export class ChannelScheduleService {
     const plan = planRetry(await this.deliveries.slotRows(name, since));
     if (!plan) return;
     // Пост мог выйти — не досылаем, просим проверить руками (хвост R7).
-    const unknown = this.unknownWarned.fresh(key, plan.unknown);
-    const down = unknown.map((platform) => ({ platform }));
-    if (unknown.length)
-      await this.alert(unknownOutcomeText(name, unknown), down);
+    await this.warnUnknown(slotKey, name, plan.unknown);
     if (plan.platforms.length === 0) return;
 
     const res = await this.publisher.retry(name, plan.text, plan.platforms);
@@ -213,6 +219,18 @@ export class ChannelScheduleService {
     this.logger.warn(
       `healthy-adult ${slot}: повтор не удался — ${res.message}`,
     );
+  }
+
+  /** «Исход неизвестен» — раз на площадку в слоте: ключ общий у тика и досылки. */
+  private async warnUnknown(
+    slotKey: string,
+    name: string,
+    platforms: string[],
+  ) {
+    const fresh = this.unknownWarned.fresh(slotKey, platforms);
+    if (fresh.length === 0) return;
+    const down = fresh.map((platform) => ({ platform }));
+    await this.alert(unknownOutcomeText(name, fresh), down);
   }
 
   /**

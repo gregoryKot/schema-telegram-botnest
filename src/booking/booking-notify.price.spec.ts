@@ -1,6 +1,13 @@
 // Строка цены в карточке брони для админа: только вне рублей и только с суммой.
 import { bookingCardText } from './booking-notify.format';
-import { CHOSEN_CURRENCY_NOTE, priceLine } from './booking-notify.price';
+import {
+  CHOSEN_CURRENCY_NOTE,
+  CURRENCY_CHOICE_SINCE,
+  priceLine,
+} from './booking-notify.price';
+
+// Бронь после волны 7: выбор валюты при поясе без места уже есть.
+const createdAt = new Date('2026-11-09T10:00:00Z');
 
 describe('priceLine', () => {
   it.each([
@@ -35,7 +42,9 @@ describe('priceLine — валюта по выбору клиента', () => {
   it.each(['UTC', 'Etc/UTC', 'GMT'])(
     'пояс %s, евро: строка цены и пометка под ней',
     (clientTimeZone) => {
-      expect(priceLine({ amount: 65, currency: 'EUR', clientTimeZone })).toBe(
+      expect(
+        priceLine({ amount: 65, currency: 'EUR', clientTimeZone, createdAt }),
+      ).toBe(
         `💳 65 € · оплата по договорённости (не Robokassa)\n${CHOSEN_CURRENCY_NOTE}`,
       );
     },
@@ -45,10 +54,41 @@ describe('priceLine — валюта по выбору клиента', () => {
     'пояс %p — валюта по поясу, без пометки',
     (clientTimeZone) => {
       expect(
-        priceLine({ amount: 65, currency: 'EUR', clientTimeZone }),
+        priceLine({ amount: 65, currency: 'EUR', clientTimeZone, createdAt }),
       ).not.toContain(CHOSEN_CURRENCY_NOTE);
     },
   );
+
+  // До волны 5 пояс UTC давал доллары по умолчанию: у такой брони «UTC + не
+  // рубли» — не выбор клиента, пометка была бы ложной (хвост R9).
+  it.each([
+    ['до волны 5, UTC давал доллары', new Date('2026-11-01T12:00:00Z')],
+    [
+      'за секунду до мержа волны 7',
+      new Date(CURRENCY_CHOICE_SINCE.getTime() - 1000),
+    ],
+    ['дата брони неизвестна', undefined],
+  ])('старая бронь (%s): строка цены без пометки', (_, created) => {
+    expect(
+      priceLine({
+        amount: 70,
+        currency: 'USD',
+        clientTimeZone: 'UTC',
+        createdAt: created,
+      }),
+    ).toBe('💳 70 $ · оплата по договорённости (не Robokassa)');
+  });
+
+  it('бронь ровно с мержа волны 7 — пометка есть', () => {
+    expect(
+      priceLine({
+        amount: 70,
+        currency: 'USD',
+        clientTimeZone: 'UTC',
+        createdAt: CURRENCY_CHOICE_SINCE,
+      }),
+    ).toContain(CHOSEN_CURRENCY_NOTE);
+  });
 
   it('рубли и знакомство при поясе без места — ни цены, ни пометки', () => {
     expect(
@@ -68,6 +108,7 @@ describe('priceLine — валюта по выбору клиента', () => {
       amount: 70,
       currency: 'USD',
       clientTimeZone: 'UTC',
+      createdAt,
     });
     expect(text).toContain(CHOSEN_CURRENCY_NOTE);
     expect(CHOSEN_CURRENCY_NOTE).not.toMatch(

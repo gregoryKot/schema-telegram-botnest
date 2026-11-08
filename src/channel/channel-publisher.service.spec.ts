@@ -271,9 +271,10 @@ describe('ChannelPublisherService', () => {
   });
 
   it('полный провал не записывает пост — тик расписания попробует снова', async () => {
+    // Запрос не ушёл (сбой подключения) — поста нигде нет, слот открыт.
     const a = makeTarget('telegram', '@ch');
     a.send.mockRejectedValue(
-      Object.assign(new Error('connect failed'), { code: 'ETIMEDOUT' }),
+      Object.assign(new Error('connect failed'), { code: 'ECONNREFUSED' }),
     );
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const { svc, recordPost } = makePhrases();
@@ -286,6 +287,30 @@ describe('ChannelPublisherService', () => {
     expect(recordPost).not.toHaveBeenCalled();
     expect(res.posted).toBe(false);
     expect(res.message).toContain('connect failed');
+  });
+
+  // Хвост R7 (аудит 2026-11): «не подтвердила ни одна площадка, у одной исход
+  // неизвестен» давало posted: false — слот оставался открытым, и следующий
+  // тик публиковал новую фразу там, где пост, возможно, уже вышел.
+  it('ни одна площадка не подтвердила, у одной исход неизвестен — пост записан, слот закрыт', async () => {
+    const a = makeTarget('telegram', '@ch');
+    const b = makeTarget('vk', 'club1');
+    a.send.mockRejectedValue(
+      Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' }),
+    );
+    b.send.mockRejectedValue(new Error('403: нет доступа'));
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { svc, recordPost } = makePhrases('одна фраза');
+    const res = await new ChannelPublisherService(
+      [a.target, b.target],
+      svc,
+      journal(),
+    ).publish('утро');
+
+    expect(res.delivered).toEqual([]);
+    expect(res.posted).toBe(true);
+    expect(res.ok).toBe(false);
+    expect(recordPost).toHaveBeenCalledWith('одна фраза', 'pool');
   });
 
   it('сбой записи поста и проверки остатка не отменяет отправленное, но оба сбоя видны в логе', async () => {
