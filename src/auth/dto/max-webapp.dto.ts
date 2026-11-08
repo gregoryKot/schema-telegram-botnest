@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /**
  * DTO for POST /api/auth/max/webapp `initData` body field — CLAUDE.md
@@ -9,4 +9,10 @@ export class MaxWebAppDto {
   @IsNotEmpty()
   @MaxLength(8192)
   initData!: string;
+
+  // Платформа запуска для аналитики; незнакомое — `other`, вход не роняет.
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  platform?: string;
 }

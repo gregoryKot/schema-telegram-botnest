@@ -933,3 +933,13 @@ describe('reminder_snoozed', () => {
     ).toBeUndefined();
   });
 });
+
+// Платформа запуска в мессенджере (аудит 2026-10): событие пишет только ручка
+// обмена подписи с userId = null; host/platform с клиента не проходят.
+describe('messenger_launch', () => {
+  it('host и platform с клиента отбрасываются — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('messenger_launch', { host: 'telegram', platform: 'ios' }),
+    ).toBeUndefined();
+  });
+});

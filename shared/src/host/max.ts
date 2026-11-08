@@ -8,6 +8,7 @@ import type {
   HostUser,
 } from './types';
 import { hasMaxInitDataShape } from './maxLaunchShape';
+import { launchPlatform } from './launchPlatform';
 
 type MaxWebApp = {
   initData?: string;
@@ -120,26 +121,23 @@ function isMaxDeepLink(url: string): boolean {
 
 export function createMaxHost(): HostBridge {
   const wa = () => maxWebApp();
+  // Мост знает платформу точнее, но её же присылают в адресе — значит
+  // ответ есть и до его загрузки.
+  const platform = () => wa()?.platform ?? launchParams()['WebAppPlatform'];
 
   return {
     id: 'max',
     // Читаем каждый раз, а не запоминаем при создании: клиент может
     // дозаполнить объект уже после загрузки скрипта.
-    // Мост знает платформу точнее, но её же присылают в адресе — значит
-    // ответ есть и до его загрузки.
     get platform(): string | undefined {
-      return wa()?.platform ?? launchParams()['WebAppPlatform'];
+      return platform();
     },
     get capabilities(): HostCapabilities {
       const w = wa();
       return {
         // Без моста хаптик нет физически — звать нечего, сколько бы
         // подходящей ни была платформа.
-        haptics:
-          !!w?.HapticFeedback &&
-          HAPTIC_PLATFORMS.has(
-            w.platform ?? launchParams()['WebAppPlatform'] ?? '',
-          ),
+        haptics: !!w?.HapticFeedback && HAPTIC_PLATFORMS.has(platform() ?? ''),
         backButton: !!w?.BackButton,
         // Закрыть мини-апп изнутри нельзя — только предупреждение о закрытии.
         close: false,
@@ -174,9 +172,8 @@ export function createMaxHost(): HostBridge {
     authHeaders: () => ({ 'x-max-init-data': launchInitData() }),
     sessionExchange() {
       const initData = launchInitData();
-      return initData
-        ? { path: '/api/auth/max/webapp', body: { initData } }
-        : null;
+      const body = { initData, platform: launchPlatform(platform()) };
+      return initData ? { path: '/api/auth/max/webapp', body } : null;
     },
 
     // Своей темы площадка не навязывает — решает система.

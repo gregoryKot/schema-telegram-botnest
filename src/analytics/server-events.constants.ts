@@ -46,6 +46,11 @@
 //   login_one_tap — вход через окно Google «Продолжить как…» (meta.outcome —
 //                   ONE_TAP_OUTCOMES, login-one-tap.constants.ts): пишет только
 //                   GoogleOneTapService, userId = null; /stats — блок входа.
+//   messenger_launch — сайт открыли в мессенджере и подпись сменилась на сессию
+//                   (meta.host + meta.platform, launch-platforms.constants.ts):
+//                   пишут ручки обмена telegram/webapp и max/webapp, userId = null
+//                   (тот же приём, что у auth_success); с клиента meta не
+//                   принимается. /stats — платформы в блоке «Вход в мессенджере».
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -58,4 +63,5 @@ export const SERVER_EVENTS = [
   'crawler_visits',
   'reminder_snoozed',
   'login_one_tap',
+  'messenger_launch',
 ] as const;

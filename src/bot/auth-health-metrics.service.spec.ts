@@ -62,3 +62,33 @@ describe('AuthHealthMetricsService.getMetrics', () => {
     expect(sql).toContain('"userId" IS NULL');
   });
 });
+
+describe('AuthHealthMetricsService.getLaunches', () => {
+  it('раскладывает запуски по площадке и платформе, пустые ключи отбрасывает', async () => {
+    const queryRaw = jest.fn().mockResolvedValueOnce([
+      { host: 'telegram', platform: 'ios', week: 5n, prev: 7n },
+      { host: null, platform: 'ios', week: 1n, prev: 0n },
+    ]);
+    const service = new AuthHealthMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    await expect(service.getLaunches()).resolves.toEqual([
+      { host: 'telegram', platform: 'ios', week: 5, prevWeek: 7 },
+    ]);
+    // Подделка через /api/event несёт userId — в отчёт она не попадает.
+    const sql = (queryRaw.mock.calls[0][0] as string[]).join('?');
+    expect(sql).toContain(`"name" = 'messenger_launch'`);
+    expect(sql).toContain('"userId" IS NULL');
+  });
+
+  it('render — блок входа и строка платформ, пустая БД без NaN', async () => {
+    const queryRaw = jest.fn().mockResolvedValue([]);
+    const service = new AuthHealthMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    const text = await service.render();
+    expect(text).toContain('Вход в мессенджере');
+    expect(text).toContain('по платформам пока нет');
+    expect(text).not.toMatch(/NaN|undefined/);
+  });
+});

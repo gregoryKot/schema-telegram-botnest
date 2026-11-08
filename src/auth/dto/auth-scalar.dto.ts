@@ -46,4 +46,10 @@ export class InitDataBodyDto {
   @IsString()
   @MaxLength(4096)
   initData!: string;
+
+  // Платформа запуска для аналитики; незнакомое — `other`, вход не роняет.
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  platform?: string;
 }

@@ -83,6 +83,8 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
 const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'auth_rejected', meta: { host: 'telegram', reason: 'empty' } },
   { name: 'auth_success', meta: { host: 'telegram' } },
+  // Платформа запуска (аудит 2026-10): GROUP BY по meta->>'host'/'platform'.
+  { name: 'messenger_launch', meta: { host: 'telegram', platform: 'weba' } },
   { name: 'login_ticket_step', meta: { step: 'issued' } },
   // Окно Google One Tap (2026-11): count(*) FILTER по meta->>'outcome' в
   // LoginTicketMetricsService.getOneTap — все три исхода.
@@ -206,6 +208,8 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(oneTap.rejected).toBeGreaterThanOrEqual(1);
     expect(product).toMatch(/Вошли одним касанием: [1-9]\d*/);
     expect(product).toMatch(/Сервер не принял вход из окна: [1-9]\d*/);
+    // Платформы запуска: группировка по двум ключам meta через драйвер.
+    expect(product).toMatch(/Telegram · браузер, Web A — [1-9]\d* \(\d+\)/);
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
     expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);
     expect(product).toMatch(/Связи режимов заполняли [1-9]\d* раз/);

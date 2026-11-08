@@ -235,6 +235,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'токена окна Google (src/auth/google-one-tap.service.ts), userId = null. ' +
     'Исход (вошёл / второй фактор / не принят) знает только сервер; слать его ' +
     'с фронта значило бы открыть отчёт о входе для накрутки через /api/event',
+  messenger_launch:
+    'серверное событие: пишут ручки обмена подписи на сессию telegram/webapp ' +
+    'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
+    'userId = null. Фронт присылает только поле platform в теле обмена ' +
+    '(shared/src/host/launchPlatform.ts), отдельного trackEvent у него нет',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -339,6 +344,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // константа PUSH_DENIED_EVENT, как entry_deleted.
     // 46 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
     // исход проверки токена есть только у сервера, тот же приём userId = null.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(46);
+    // 47 — messenger_launch (аудит 2026-10, платформа запуска): серверное —
+    // пишет ручка обмена подписи, клиент шлёт только поле platform в её теле.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(47);
   });
 });

@@ -248,9 +248,11 @@ export function sanitizeMeta(
   // через POST /api/event в отчёт /stats не попадёт.
   if (name === 'client_booking_opened' || name === 'client_booking_created')
     return undefined;
-  // «Напомню через час» пишет только бот (server-events.constants.ts): quietShift
-  // с клиента не принимается — подделка без него в /stats не считается.
-  if (name === 'reminder_snoozed') return undefined;
+  // «Напомню через час» пишет только бот, запуск в мессенджере — ручка обмена
+  // подписи (server-events.constants.ts): quietShift и host/platform с клиента
+  // не принимаются — подделка без них в /stats не считается.
+  if (name === 'reminder_snoozed' || name === 'messenger_launch')
+    return undefined;
   // Уведомления в приложении (push-events.constants.ts): push_subscribed/
   // unsubscribed/gone пишет только сервер — meta с клиента не принимается,
   // /stats считает только строки с meta; push_denied клиент шлёт без полей.
