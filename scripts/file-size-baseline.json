@@ -1279,7 +1279,7 @@
   "src/prisma/encryption-wave2.service.ts": 152,
   "src/prisma/encryption-wave3.service.ts": 146,
   "src/prisma/http-exception-body.ts": 27,
-  "src/prisma/prisma-exception.filter.ts": 174,
+  "src/prisma/prisma-exception.filter.ts": 147,
   "src/prisma/prisma.module.ts": 10,
   "src/prisma/prisma.service.ts": 78,
   "src/prisma/safe-request-path.ts": 47,

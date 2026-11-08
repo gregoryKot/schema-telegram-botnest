@@ -8,7 +8,12 @@ import {
   GenericExceptionFilter,
   PrismaExceptionFilter,
 } from './prisma-exception.filter';
-import { HttpException, HttpStatus, ArgumentsHost } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 
 function makeHost(url = '/api/notes') {
   const json = jest.fn();
@@ -503,6 +508,67 @@ describe('GenericExceptionFilter', () => {
       const { res, errorSpy } = run(err);
       expect(res.status).toHaveBeenCalledWith(500);
       expect(errorSpy).toHaveBeenCalled();
+    });
+
+    // Nest 12.4 (nestjs/nest#18213): ExpressAdapter.mapException заворачивает
+    // http-errors < 500 в HttpException с сырым сообщением body-parser и
+    // исходной ошибкой в `cause`. Ветка выше видела только сырую ошибку — после
+    // обновления Nest клиент получал «request entity too large», а лог — ни
+    // строки (красный test/body-limit.e2e-spec.ts в #1027).
+    function wrappedByNest(err: Error & { statusCode?: number }) {
+      return new HttpException(err.message, err.statusCode ?? 500, {
+        cause: err,
+      });
+    }
+
+    it('Nest 12.4: http-error в cause у HttpException → наш текст 413 и warn', () => {
+      const { res, json, errorSpy, warnSpy } = run(
+        wrappedByNest(
+          httpError(413, 'request entity too large', 'PayloadTooLargeError'),
+        ),
+      );
+      expect(res.status).toHaveBeenCalledWith(413);
+      expect(json).toHaveBeenCalledWith({
+        statusCode: 413,
+        error: 'Client Error',
+        message: 'Слишком большой запрос',
+      });
+      expect(JSON.stringify(json.mock.calls[0][0])).not.toContain('entity');
+      expect(errorSpy).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('PayloadTooLargeError'),
+      );
+    });
+
+    it('контроль: прикладной HttpException со своим текстом и http-error в cause — как есть', () => {
+      const { res, json, warnSpy } = run(
+        new BadRequestException('Свой текст', {
+          cause: httpError(
+            413,
+            'request entity too large',
+            'PayloadTooLargeError',
+          ),
+        }),
+      );
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(json).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 400, message: 'Свой текст' }),
+      );
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('контроль: HttpException с cause не из http-errors — пропускается как есть', () => {
+      const { res, json, warnSpy } = run(
+        new HttpException('нет доступа', HttpStatus.FORBIDDEN, {
+          cause: new Error('внутренняя причина'),
+        }),
+      );
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(json).toHaveBeenCalledWith({
+        statusCode: 403,
+        message: 'нет доступа',
+      });
+      expect(warnSpy).not.toHaveBeenCalled();
     });
 
     it('контроль: expose=true без числового статуса остаётся аварией', () => {
