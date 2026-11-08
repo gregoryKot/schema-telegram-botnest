@@ -1,0 +1,6 @@
+{
+  "source": "Первый случай — пример «GET Bucket (List Objects)» из документации S3: https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html. Второй — подпись AWS SDK для Python (botocore, класс botocore.auth.S3SigV4Auth): https://github.com/boto/botocore",
+  "recordedAt": "2026-11-08",
+  "how": "botocore 1.43.126 (pip install botocore), S3SigV4Auth.add_auth над AWSRequest с params-словарём (botocore кодирует значения сам, quote(safe='-_.~')) и заголовком X-Amz-Content-SHA256 пустого тела; время зафиксировано подменой botocore.auth.get_current_datetime. Первый случай botocore воспроизвёл байт в байт с подписью из документации (34b48302…); значения документации перенесены без изменений. Второй — запрос ListObjectsV2 к path-style адресу R2 (регион auto) с continuation-token=1ue/X+b=: ровно тот случай, где curl 8.18 с --aws-sigv4 подписывал %2B как %20",
+  "redacted": "ничего — публичные тестовые ключи AWS (AKIAIOSFODNN7EXAMPLE, AKIDEXAMPLE), не секреты; хост R2 вымышленный (example)"
+}

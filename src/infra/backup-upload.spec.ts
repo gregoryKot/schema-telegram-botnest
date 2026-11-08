@@ -1,9 +1,10 @@
 // Загрузка бэкапа в хранилище и чистка старых (scripts/backup-upload.sh,
 // аудит D-2). Скрипт гоняется по-настоящему против ПОДДЕЛЬНОГО S3
-// (src/test-support/fake-s3.ts), который пересчитывает подпись SigV4
-// настоящего curl модулем s3-sigv4.ts, — зелёный прогон значит, что подпись
-// curl принята бы и хранилищем. В образе нет ни aws CLI, ни rclone: весь путь
-// — curl + node -e, проверять его остаётся только исполнением. `curl` в PATH
+// (src/test-support/fake-s3.ts), который пересчитывает подпись SigV4 по
+// запросу, реально пришедшему от curl (подписывает deploy/s3-sign.cjs), —
+// зелёный прогон значит, что запрос принят бы и хранилищем. В образе нет ни
+// aws CLI, ни rclone: весь путь — curl + node, проверять его остаётся только
+// исполнением. `curl` в PATH
 // подменён обёрткой, пишущей аргументы в лог, — так доказывается, что ключи
 // не в командной строке.
 import { spawnSync } from 'child_process';
@@ -17,8 +18,12 @@ import {
 } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { FAKE_S3_SECRET, FakeS3 } from '../test-support/fake-s3';
-import { installCurlSpy, runScript } from '../test-support/run-script';
+import {
+  FAKE_S3_ACCESS_KEY_ID,
+  FAKE_S3_SECRET,
+  FakeS3,
+} from '../test-support/fake-s3';
+import { installSpy, runScript } from '../test-support/run-script';
 
 // Каждый прогон скрипта — три PBKDF2 по 200 000 итераций; под нагрузкой параллельного jest 5 с мало.
 jest.setTimeout(90_000);
@@ -30,7 +35,7 @@ const BACKUP_KEY = 'backup-key-' + 'z'.repeat(30);
 const daysAgo = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 
-describe('backup-upload.sh → S3 (поддельный сервер, подпись curl сверяется)', () => {
+describe('backup-upload.sh → S3 (поддельный сервер, подпись сверяется по запросу curl)', () => {
   let dir: string;
   let s3: FakeS3;
   let curlLog: string;
@@ -45,7 +50,7 @@ describe('backup-upload.sh → S3 (поддельный сервер, подпи
       `#!/bin/bash\necho "-- dump marker ${randomBytes(4).toString('hex')}"\n`,
       { mode: 0o755 },
     );
-    installCurlSpy(bin, curlLog);
+    installSpy(bin, curlLog, 'curl');
     s3 = await new FakeS3().start();
   });
   afterEach(async () => {
@@ -126,14 +131,24 @@ describe('backup-upload.sh → S3 (поддельный сервер, подпи
     ).toContain('-- dump marker');
   });
 
-  it('секрет хранилища и ключ бэкапов не попадают в командную строку curl и в вывод', async () => {
+  it('секрет хранилища и ключ бэкапов не попадают в командную строку curl и node и в вывод', async () => {
+    const nodeLog = join(dir, 'node.log');
+    installSpy(join(dir, 'bin'), nodeLog, 'node');
     const res = await run();
     const log = readFileSync(curlLog, 'utf8');
-    expect(log).toContain('--aws-sigv4'); // обёртка действительно видела вызовы
+    const nodeArgs = readFileSync(nodeLog, 'utf8');
+    expect(log).toContain('-X PUT'); // обёртки действительно видели вызовы
+    expect(nodeArgs).toContain('s3-sign.cjs PUT');
+    // Заголовки с подписью — через stdin (-K -); строку запроса curl не
+    // каноникализирует сам (`--aws-sigv4` подписывал `%2B` как `%20`).
+    expect(log).toContain('-K -');
+    expect(log).not.toContain('--aws-sigv4');
     for (const secret of [FAKE_S3_SECRET, BACKUP_KEY]) {
       expect(log).not.toContain(secret);
+      expect(nodeArgs).not.toContain(secret);
       expect(res.stdout + res.stderr).not.toContain(secret);
     }
+    expect(log + nodeArgs).not.toContain(FAKE_S3_ACCESS_KEY_ID);
   });
 
   describe('хранение', () => {

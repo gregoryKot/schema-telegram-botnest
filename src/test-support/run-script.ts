@@ -1,7 +1,7 @@
 // Запуск bash-скриптов бэкапа из спеков: асинхронно (скрипт ходит в
 // поддельный S3 внутри того же процесса jest — spawnSync заблокировал бы
-// сервер) и с подменой `curl` в PATH обёрткой, пишущей аргументы в лог, —
-// так спек доказывает, что ключи не попадают в командную строку процесса.
+// сервер) и с подменой `curl`/`node` в PATH обёртками, пишущими аргументы в
+// лог, — так спек доказывает, что ключи не попадают в командную строку.
 import { spawn, spawnSync } from 'child_process';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
@@ -12,14 +12,12 @@ export interface ScriptResult {
   stderr: string;
 }
 
-/** Кладёт в <bin> обёртку curl, дописывающую аргументы в <log>. */
-export function installCurlSpy(bin: string, log: string): void {
-  const realCurl = spawnSync('which', ['curl'], {
-    encoding: 'utf8',
-  }).stdout.trim();
+/** Кладёт в <bin> обёртку <cmd>, дописывающую аргументы в <log>. */
+export function installSpy(bin: string, log: string, cmd: string): void {
+  const real = spawnSync('which', [cmd], { encoding: 'utf8' }).stdout.trim();
   writeFileSync(
-    join(bin, 'curl'),
-    `#!/bin/bash\necho "curl $*" >> '${log}'\nexec ${realCurl} "$@"\n`,
+    join(bin, cmd),
+    `#!/bin/bash\necho "${cmd} $*" >> '${log}'\nexec ${real} "$@"\n`,
     { mode: 0o755 },
   );
 }
