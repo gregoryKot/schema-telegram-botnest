@@ -18,7 +18,7 @@ export class SaveNoteDto {
   @IsString()
   date!: string;
 
-  // Потолок слитой заметки; предел 500 — в сервисе (bot/day-note-limit.ts)
+  // Защитный потолок слитых заметок; предел 500 — в сервисе (bot/day-note-limit.ts)
   @IsString()
   @MaxLength(DAY_NOTE_MERGED_MAX)
   text!: string;

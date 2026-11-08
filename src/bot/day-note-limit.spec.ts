@@ -3,6 +3,9 @@
 // Связка «слил → сохранил правку → прочитал» — bot.service.settings.spec.ts,
 // через настоящий ValidationPipe — test/text-limits.e2e-spec.ts.
 import { BadRequestException } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { SaveNoteDto } from '../api/dto/notes.dto';
 import { assertDayNoteFits, DAY_NOTE_MERGED_MAX } from './day-note-limit';
 import { joinDayNotes } from '../auth/merge-combine-rules';
 import { DAY_NOTE_MAX } from '../utils/text-limits';
@@ -45,9 +48,21 @@ describe('assertDayNoteFits', () => {
   });
 });
 
-// Правило №4: потолок DTO обязан вмещать худший случай склейки — две полные
-// заметки. Поменяется разделитель в joinDayNotes — тест покраснеет.
-it('DAY_NOTE_MERGED_MAX = длина склейки двух заметок по пределу', () => {
-  const joined = joinDayNotes(ofLen(DAY_NOTE_MAX), 'б'.repeat(DAY_NOTE_MAX));
-  expect(joined.length).toBe(DAY_NOTE_MERGED_MAX);
+// Правило №4: потолок DTO обязан пропускать склейку после нескольких слияний
+// в один день — иначе её правка без роста упирается в 400 до сервиса.
+// Прежний потолок «две заметки» (1002) третью склейку (1504) не пускал.
+it('DAY_NOTE_MERGED_MAX вмещает склейку трёх полных заметок, DTO её пропускает', async () => {
+  const full = (ch: string) => ch.repeat(DAY_NOTE_MAX);
+  const three = joinDayNotes(joinDayNotes(full('а'), full('б')), full('в'));
+  expect(three.length).toBe(DAY_NOTE_MAX * 3 + 4);
+  expect(three.length).toBeLessThanOrEqual(DAY_NOTE_MERGED_MAX);
+  const dto = plainToInstance(SaveNoteDto, { date: '2026-10-13', text: three });
+  await expect(validate(dto)).resolves.toEqual([]);
+  // Потолок остаётся защитным: тело сверх него DTO отклоняет.
+  const huge = plainToInstance(SaveNoteDto, {
+    date: '2026-10-13',
+    text: 'а'.repeat(DAY_NOTE_MERGED_MAX + 1),
+  });
+  const errs = await validate(huge);
+  expect(errs.map((e) => e.property)).toEqual(['text']);
 });
