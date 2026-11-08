@@ -9,9 +9,10 @@ import {
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { noteCrisisSeen } from '../../../../../shared/src/therapy/bridge/therapyBridgeState';
 import { trackQuickSave } from './trackQuickSave';
+import { isUnwritableError } from '../../../../../shared/src/api/unwritableError';
 
 export type QuickStage = 'write' | 'schema' | 'mode' | 'done';
-export type QuickError = 'failed' | 'gratitudeFull';
+export type QuickError = 'failed' | 'gratitudeFull' | 'unreadable';
 
 class GratitudeFullError extends Error {}
 
@@ -51,7 +52,8 @@ export function useQuickEntry(onSaved?: () => void) {
       finish(savedTag, false);
     } catch (e) {
       haptic.error();
-      setError(e instanceof GratitudeFullError ? 'gratitudeFull' : 'failed');
+      // 409 unreadable_data: прежние пункты дня не читаются — повтор не поможет, «проверь связь» соврёт.
+      setError(e instanceof GratitudeFullError ? 'gratitudeFull' : isUnwritableError(e) ? 'unreadable' : 'failed');
       setStage('write');
     } finally {
       setSaving(false);

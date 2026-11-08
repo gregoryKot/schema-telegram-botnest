@@ -7,6 +7,8 @@ import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTex
 import { DIARY_FIELD_MAX } from '../../../../../shared/src/limits/textLimits';
 import { QUICK_TAGS, hasSecondStep, type QuickTag } from './quickEntryModel';
 import type { QuickError } from './useQuickEntry';
+import { unwritableGratitudeText } from '../../../../../shared/src/api/unwritableError';
+import { useTr } from '../../../utils/addressForm';
 
 interface Props {
   text: string;
@@ -22,6 +24,7 @@ interface Props {
 
 /** Первый экран «Дневника одной страницей»: поле «Что на уме?», необязательный тег, «Сохранить». */
 export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubmit, onDetailed, onClose }: Props) {
+  const tr = useTr();
   // Правило №7: детекция прямо в файле с полем ввода (трипваер crisis-path.invariants).
   const crisis = detectCrisisAny(text);
   const areaRef = useRef<HTMLTextAreaElement>(null);
@@ -61,9 +64,9 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
           {error === 'failed' && (
             <p role="alert" className="qe-error">Не удалось сохранить. Текст остался на месте — можно повторить.</p>
           )}
-          {error === 'gratitudeFull' && (
+          {(error === 'gratitudeFull' || error === 'unreadable') && (
             <p role="alert" className="qe-error">
-              На сегодня уже пять пунктов.{' '}
+              {error === 'gratitudeFull' ? 'На сегодня уже пять пунктов.' : unwritableGratitudeText(tr)}{' '}
               <button type="button" className="qe-error-act" onClick={() => onTag('thought')}>Записать как мысль</button>
             </p>
           )}

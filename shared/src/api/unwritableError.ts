@@ -23,6 +23,20 @@ export function unwritableSelectionText(
   );
 }
 
+// Быстрая запись благодарности (QuickEntry): пункты дня не читаются. Что
+// делать — сохранить текст мыслью (кнопка рядом) или повторить позже.
+export function unwritableGratitudeText(
+  tr: (ty: string, vy: string) => string,
+): string {
+  return (
+    'Благодарность не сохранилась: сегодняшние пункты сейчас не читаются, и новая запись стёрла бы их. О сбое уже сообщено. ' +
+    tr(
+      'Текст на месте — сохрани его как мысль или попробуй позже.',
+      'Текст на месте — сохраните его как мысль или попробуйте позже.',
+    )
+  );
+}
+
 // Пара форм для SaveErrorNote обоих фронтендов (`<SaveErrorNote {...NOTE} />`).
 export const UNWRITABLE_SELECTION_NOTE = {
   ty: unwritableSelectionText((ty) => ty),
