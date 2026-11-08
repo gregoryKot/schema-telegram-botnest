@@ -1,5 +1,6 @@
-// Трансформер ESM-пакетов Nest 12 для jest (src/test-support/esm-to-cjs.transform.cjs):
-// без него ни один спек, импортирующий '@nestjs/common', не грузится на Node 22.
+// Трансформер ESM-пакетов для jest (src/test-support/esm-to-cjs.transform.cjs):
+// без него ни один спек, импортирующий '@nestjs/common' или otplib, не
+// грузится на Node 22.
 import { Injectable } from '@nestjs/common';
 import { transformSync, type TransformOptions } from '@babel/core';
 import { spawnSync } from 'node:child_process';
@@ -64,17 +65,19 @@ interface JestConfig {
   transformIgnorePatterns: string[];
 }
 
-// Первый шаблон со списком `@nestjs/(common|core|…)`. Нет списка — ошибка:
+// Первый шаблон со списком `@nestjs/(common|core|…)` и пакетами за ним
+// (`|@noble/hashes|…` до закрывающей скобки). Нет списка — ошибка:
 // молчаливо пустой результат прошёл бы сверку с таким же пустым.
-const LIST_RE = /@nestjs\/\(([^)]+)\)/;
+const LIST_RE = /@nestjs\/\(([^)]+)\)((?:\|[^|)]+)*)/;
 
 function packagesIn(patterns: string[], where: string): string[] {
   const hit = patterns.map((p) => LIST_RE.exec(p)).find((m) => m !== null);
   if (!hit) throw new Error(`${where}: нет списка «@nestjs/(a|b|…)»`);
-  return hit[1].split('|').sort();
+  const nest = hit[1].split('|').map((n) => `@nestjs/${n}`);
+  return [...nest, ...hit[2].split('|').filter(Boolean)].sort();
 }
 
-/** Четыре места, где перечислены ESM-пакеты Nest: они обязаны совпадать. */
+/** Четыре места, где перечислены ESM-пакеты: они обязаны совпадать. */
 function wiredLists(): Record<string, string[]> {
   const pkg = readJson<{ jest: JestConfig }>('package.json').jest;
   const e2e = readJson<JestConfig>('test/jest-e2e.json');
@@ -153,14 +156,61 @@ describe('esm-to-cjs.transform', () => {
     });
   }, 30_000);
 
+  // otplib 13 — CJS-сборка, но тянет ESM-only @noble/hashes 2 и @scure/base.
+  // В проде их грузит require(esm) самого Node 22, как @nestjs/*: голый Node
+  // без трансформера обязан и загрузить, и посчитать код — тот же, что выдавал
+  // otplib 12 для 10-байтового секрета (эталон — src/auth/totp.service.spec.ts).
+  it('otplib с ESM-зависимостями грузится голым Node через require() и считает код', () => {
+    const script = [
+      "const o = require('otplib');",
+      'const guardrails = o.createGuardrails({ MIN_SECRET_BYTES: 10 });',
+      "const secret = 'JBSWY3DPEHPK3PXP';",
+      'const code = o.generateSync({ secret, epoch: 1768478400, guardrails });',
+      'process.stdout.write(code);',
+    ].join('\n');
+    const run = spawnSync(process.execPath, ['-e', script], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    expect({ status: run.status, stdout: run.stdout }).toEqual({
+      status: 0,
+      stdout: '738134',
+    });
+  }, 30_000);
+
   describe('список пакетов в jest-конфигах', () => {
-    it('@nestjs/(…) один во всех четырёх местах: transform и transformIgnorePatterns в package.json и test/jest-e2e.json', () => {
+    it('ESM-пакеты одни во всех четырёх местах: transform и transformIgnorePatterns в package.json и test/jest-e2e.json', () => {
       const lists = wiredLists();
       expect(Object.keys(lists)).toHaveLength(4);
       expect(Object.values(lists)[0]).toEqual(
-        expect.arrayContaining(['common', 'core']),
+        expect.arrayContaining([
+          '@nestjs/common',
+          '@nestjs/core',
+          '@noble/hashes',
+          '@scure/base',
+        ]),
       );
       expect(mismatches(lists)).toEqual([]);
+    });
+
+    it('КОНТРОЛЬ: пакеты после @nestjs/(…) тоже в списке — пропажа одного ловится', () => {
+      const full = packagesIn(
+        ['/node_modules/(@nestjs/(common|core)|@noble/hashes|@scure/base)/.+'],
+        'a',
+      );
+      const short = packagesIn(
+        ['/node_modules/(?!(@nestjs/(common|core)|@noble/hashes)/)'],
+        'b',
+      );
+      expect(full).toEqual([
+        '@nestjs/common',
+        '@nestjs/core',
+        '@noble/hashes',
+        '@scure/base',
+      ]);
+      expect(mismatches({ a: full, b: short })).toEqual([
+        'b против a: нет [@scure/base], лишнее []',
+      ]);
     });
 
     it('КОНТРОЛЬ: пропавший или лишний пакет в одном из мест ловится', () => {

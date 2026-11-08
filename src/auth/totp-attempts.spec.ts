@@ -12,7 +12,7 @@ process.env.ENCRYPTION_KEY_OLD = '';
 
 import { HttpException } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { authenticator } from 'otplib';
+import { generateSecret, generateSync } from 'otplib';
 import { PostgresThrottleStorage } from '../api/postgres-throttle-storage';
 import { Auth2faController } from './auth-2fa.controller';
 import { assertSourceTotp } from './merge-confirm';
@@ -31,7 +31,7 @@ const T0 = new Date('2026-11-08T10:00:00Z').getTime();
 type Hit = { hits: number; expiresAt: Date; blockedUntil: Date | null };
 
 function makeWorld(opts: { storageDown?: boolean } = {}) {
-  const secret = authenticator.generateSecret();
+  const secret = generateSecret();
   const recovery = newRecoveryCodes();
   const user: Record<string, unknown> = {
     totpSecret: encrypt(secret),
@@ -133,7 +133,7 @@ describe('TotpAttemptsService + TotpService.verifyCode (S11)', () => {
       expect(status(e)).toBe(401);
       expect(status(await w.merge('000000').catch((x) => x))).toBe(403);
     }
-    const right = authenticator.generate(w.secret);
+    const right = generateSync({ secret: w.secret });
     const viaChallenge = await w
       .challenge(right, '203.0.113.99')
       .catch((x) => x);
@@ -172,7 +172,7 @@ describe('TotpAttemptsService + TotpService.verifyCode (S11)', () => {
     const w = makeWorld();
     for (let i = 0; i < 9; i++) await w.totp.verifyCode(USER, '000000');
     await expect(
-      w.totp.verifyCode(USER, authenticator.generate(w.secret)),
+      w.totp.verifyCode(USER, generateSync({ secret: w.secret })),
     ).resolves.toBe(true);
     await w.totp.verifyCode(USER, '000000');
     expect(await w.attempts.lockedFor(USER)).toBeGreaterThan(0);
@@ -186,8 +186,21 @@ describe('TotpAttemptsService + TotpService.verifyCode (S11)', () => {
     jest.setSystemTime(T0 + 24 * 3600_000 + 1000);
     expect(await w.attempts.lockedFor(USER)).toBe(0);
     await expect(
-      w.totp.verifyCode(USER, authenticator.generate(w.secret)),
+      w.totp.verifyCode(USER, generateSync({ secret: w.secret })),
     ).resolves.toBe(true);
+  });
+
+  // otplib 13 бросает на токене не из шести цифр; DTO такие пропускает
+  // (6–10 символов). Это промах, как при otplib 12: false/401 и +1 к счётчику,
+  // а не 500 мимо счётчика (тогда перебор шёл бы без паузы).
+  it('код буквами, из 5 цифр или пустой — промах в счётчик, 401, не 500', async () => {
+    const w = makeWorld();
+    for (const code of ['abcdef', '12345', ''])
+      await expect(w.totp.verifyCode(USER, code)).resolves.toBe(false);
+    expect(w.hits.get(totpFailKey(USER))?.hits).toBe(3);
+    const e = await w.challenge('abcdefg', '1.1.1.1').catch((x) => x);
+    expect(status(e)).toBe(401);
+    expect(w.hits.get(totpFailKey(USER))?.hits).toBe(4);
   });
 
   it('ключ счётчика — аккаунт, а не адрес: totp-fail:<userId>', async () => {

@@ -4,7 +4,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as crypto from 'crypto';
-import { authenticator } from 'otplib';
+import { generateSync } from 'otplib';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { SecurityLogService } from '../src/auth/security-log.service';
 import { AuthService } from '../src/auth/auth.service';
@@ -251,9 +251,21 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       const secret = new URL(setup.body.otpauthUrl).searchParams.get(
         'secret',
       ) as string;
+      // Анти-повтор гасит шаг каждого принятого кода — включения тоже, — так
+      // что включение, вход и привязка берут три шага подряд: −1, 0, +1 (окно
+      // ±1). Граница шага посреди теста сдвинула бы −1 за окно — стартуем не
+      // ближе 5 с к ней.
+      const toBoundary = 30_000 - (Date.now() % 30_000);
+      if (toBoundary < 5_000)
+        await new Promise((r) => setTimeout(r, toBoundary + 100));
+      const stepCode = (delta: number) =>
+        generateSync({
+          secret,
+          epoch: Math.floor(Date.now() / 1000) + delta * 30,
+        });
       const enable = await post('/api/auth/2fa/enable')
         .set('Authorization', auth)
-        .send({ code: authenticator.generate(secret) });
+        .send({ code: stepCode(-1) });
       expect(enable.status).toBe(200);
       expect(enable.body.recoveryCodes).toHaveLength(10);
       // A fresh login (same widget route) now returns a challenge, not tokens.
@@ -269,7 +281,7 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(wrongCode.status).toBe(401);
       const rightCode = await post('/api/auth/2fa/challenge').send({
         challengeToken,
-        code: authenticator.generate(secret),
+        code: stepCode(0),
       });
       expect(rightCode.status).toBe(200);
       expect(rightCode.body.accessToken).toEqual(expect.any(String));
@@ -285,13 +297,10 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(noCode.status).toBe(403);
       expect(noCode.body.reason).toBe('totp_required');
       expect(extractSetCookie(noCode, 'link_token')).toBeUndefined();
-      const nextStep = authenticator
-        .clone({ epoch: Date.now() + 30_000 })
-        .generate(secret);
-      const withCode = await linkToken().set('x-totp-code', nextStep);
+      const withCode = await linkToken().set('x-totp-code', stepCode(1));
       expect(withCode.status).toBe(200);
       expect(extractSetCookie(withCode, 'link_token')).toBeDefined();
-    });
+    }, 20_000);
 
     // FINDING: telegram/webapp skips signInOrLinkOrMerge/totp.isEnabled() —
     // 2FA-enabled user still gets a full session (out of scope here).

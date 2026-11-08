@@ -26,12 +26,12 @@
   расширении диапазона за 2^53 это округляющий `Number()` над userId. Снести
   поле и тип отдельным PR; рассылка и уведомление заявителя уже на bigint
   ([AUDIT_2026-10, «Кабинет психолога»](../AUDIT_2026-10_FINDINGS.md#кабинет-психолога)).
-- **Семь роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
+- **Шесть роутов под `OptionalJwtGuard` трипваер route-auth считает guarded,
   хотя аноним проходит** (`telegram/widget`, `telegram/redirect`, `merge`,
-  `ticket/start`, `google`, `vk`, `telegram-oidc` в `src/auth/*.controller.ts`):
+  `ticket/start`, `google`, `vk` в `src/auth/*.controller.ts`; `telegram-oidc` удалён в #725):
   гвард в `route-method-auth.ts` засчитывается по имени, классификации
   «optional-auth» нет. Не расширяли при починке разбора по методу (правило №20).
-  Что каждый делает на самом деле: `google`, `vk`, `telegram-oidc` — стартовые
+  Что каждый делает на самом деле: `google`, `vk` — стартовые
   GET, ничего не проверяют: подписывают state (с `linkUserId`, если сессия
   есть), кладут его в куку и отвечают 302 на провайдера; state сверяют колбэки
   (они в `ANONYMOUS_BY_DESIGN`). `telegram/redirect` — то же: кука

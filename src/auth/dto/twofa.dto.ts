@@ -19,10 +19,10 @@ import {
  *
  * Length 6–10 covers both formats TotpService.verifyCode() accepts:
  * a 6-digit TOTP code (otplib default) or a 10-hex-char recovery code
- * (RECOVERY_CODE_BYTES=5 → 10 hex chars, see totp.service.ts). confirmSetup
+ * (RECOVERY_CODE_BYTES=5 → 10 hex chars, see totp-recovery.ts). confirmSetup
  * (used by 2fa/enable) only ever expects the 6-digit form — the DTO stays
  * permissive on the exact format; TotpService does the real check via
- * authenticator.check()/hashCode() comparison. No trim/regex here: the
+ * matchTotpStep() (totp-code.ts)/hashCode() comparison. No trim/regex here: the
  * service already trims internally (code.trim()), so leading/trailing
  * whitespace within the length budget still round-trips correctly.
  */
