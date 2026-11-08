@@ -85,6 +85,9 @@
 .pl2-result-title { margin: 0; font-size: clamp(30px, 4.6vw, 42px); line-height: 1.1; }
 .pl2-hint { --h: 70; margin-bottom: 28px; }
 .pl2-result-actions { margin-bottom: 22px; }
+/* Главная дверь в приложение под результатом (U7), бот — строкой ниже. */
+.pl2-result-next { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 18px; }
+@media (max-width: 480px) { .pl2-result-next { align-items: stretch; text-align: center; } .pl2-result-next .pl2-link--solo { justify-content: center; } }
 /* Дисклеймер и плашка специалиста — на ширину колонки, как панель и «Что с этим делать»:
    на 560px они висели у левого края под карточкой 872px. */
 .pl2-result-fine { margin: 0; line-height: 1.6; }

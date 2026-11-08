@@ -5,6 +5,7 @@ import { SceneNotice } from '../../components/art/LandingScenes';
 import { AUTHOR_SITE, trackPracticeClick } from '../landing/practiceLink';
 import { resultHues } from './quizLook';
 import { glue } from '../landing/typo';
+import { QuizAppCta } from './QuizAppCta';
 
 interface Props {
   quiz: QuizDto;
@@ -40,8 +41,9 @@ export function QuizResult({ quiz, hue, result, copied, onShare, onRestart }: Pr
         <span className="pl2-eyebrow">Что с этим делать</span>
         <p className="pl2-card-text">{result.hint}</p>
       </div>
+      <QuizAppCta />
       <div className="pl2-actions pl2-result-actions">
-        <button onClick={onShare} className="ds-btn">
+        <button onClick={onShare} className="ds-btn ds-btn--secondary">
           {copied ? 'Скопировано ✓' : 'Поделиться результатом'}
         </button>
         <button onClick={onRestart} className="ds-btn ds-btn--secondary">
