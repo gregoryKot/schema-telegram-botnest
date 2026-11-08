@@ -166,7 +166,7 @@ function stubJourneyApi(overrides: Partial<JourneyApiLike>): JourneyApiLike {
     'getSafePlace',
     'getNote',
     'getPractices',
-    'getPlanHistory',
+    'getPlanEntry',
     'ratings',
     'getSchemaNotes',
     'getModeNotes',

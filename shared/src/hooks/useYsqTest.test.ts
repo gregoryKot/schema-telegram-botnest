@@ -34,7 +34,6 @@ function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
     saveYsqProgress: vi.fn().mockResolvedValue(undefined),
     saveYsqResult: vi.fn().mockResolvedValue(undefined),
     deleteYsqProgress: vi.fn().mockResolvedValue(undefined),
-    deleteYsqResult: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -209,7 +208,6 @@ describe('useYsqTest — прохождение по страницам', () => 
     expect(JSON.parse(localStorage.getItem(YSQ_RESULT_KEY)!).answers).toEqual(
       answers,
     );
-    expect(api.deleteYsqResult).not.toHaveBeenCalled();
   });
 
   it('брошенное новое прохождение не стирает схемы; повторный ретейк зовёт продолжить черновик', () => {
@@ -235,7 +233,6 @@ describe('useYsqTest — прохождение по страницам', () => 
     act(() => result.current.handleRetake());
     expect(result.current.hasProgress).toBe(true);
     expect(result.current.progressAnswered).toBe(1);
-    expect(api.deleteYsqResult).not.toHaveBeenCalled();
   });
 });
 

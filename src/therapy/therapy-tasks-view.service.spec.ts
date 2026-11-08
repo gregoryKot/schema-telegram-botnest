@@ -47,7 +47,14 @@ function makeDb() {
             .map((r) => ({
               ...r,
               client: r.clientId
-                ? { id: r.clientId, firstName: r.clientName ?? null }
+                ? {
+                    id: r.clientId,
+                    firstName: r.clientName ?? null,
+                    // как в схеме: пояс не null, по умолчанию Москва
+                    notifyTimezone:
+                      users.find((u) => u.id === r.clientId)?.notifyTimezone ??
+                      'Europe/Moscow',
+                  }
                 : null,
             })),
         ),
@@ -63,11 +70,11 @@ function makeDb() {
           rows = [...rows].sort((a, b) => b.createdAt - a.createdAt);
         return Promise.resolve(rows);
       }),
-      // просрочка в getTasks клиента закрывает задание (сверка с /tasks)
-      update: jest.fn(({ where, data }: any) => {
-        const row = tasks.find((t) => t.id === where.id);
-        Object.assign(row, data);
-        return Promise.resolve(row);
+      // ленивое закрытие просроченной серии (streak-expire.ts) — только открытых
+      updateMany: jest.fn(({ where, data }: any) => {
+        const hits = tasks.filter((t) => matchWhere(t, where));
+        hits.forEach((t) => Object.assign(t, data));
+        return Promise.resolve({ count: hits.length });
       }),
     },
     user: {
@@ -516,5 +523,69 @@ describe('TherapyTasksViewService.getTasksForClient — окно серии и �
     mark(ratings, '2026-11-02', '2026-11-03');
     const [task] = (await service.getTasksForClient(T1, CLIENT_A))!;
     expect(task.progress).toBe(1); // до починки — 3
+  });
+});
+
+// Хвост волны 3: просроченную серию лениво закрывал только getTasks клиента —
+// психолог видел её открытой, пока клиент не откроет «Задания».
+describe('просроченная серия закрывается и при чтении психологом (streak-expire.ts)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  const setup = () => {
+    const ctx = makeService();
+    ctx.relations.push({
+      id: 1,
+      therapistId: T1,
+      clientId: CLIENT_A,
+      status: 'active',
+    });
+    ctx.users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
+    ctx.tasks.push({
+      id: 1,
+      userId: CLIENT_A,
+      assignedBy: T1,
+      type: 'tracker_streak',
+      text: encrypt('серия') ?? 'серия',
+      targetDays: 3,
+      needId: null,
+      dueDate: null,
+      done: null,
+      completedAt: null,
+      createdAt: new Date('2026-11-01T09:00:00Z'), // окно 1–3 ноября
+    });
+    // 5 ноября: срок вышел, клиент «Задания» не открывал
+    jest.useFakeTimers({ now: new Date('2026-11-05T09:00:00Z') });
+    return ctx;
+  };
+
+  it('карточка клиента у психолога: закрыто «не вышло» — и клиент находит его закрытым', async () => {
+    const { service, tasksService, tasks } = setup();
+    const [seen] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(seen.done).toBe(false); // до починки — null: «открыто»
+    expect(tasks[0].done).toBe(false);
+    expect(tasks[0].completedAt).toEqual(new Date('2026-11-05T09:00:00Z'));
+
+    // клиент: в активных его нет — закрытие лежит в БД, а не только в ответе
+    expect(await tasksService.getTasks(CLIENT_A)).toHaveLength(0);
+    expect(tasks[0].completedAt).toEqual(new Date('2026-11-05T09:00:00Z'));
+  });
+
+  it('обзор всех клиентов: то же закрытие, карточка клиента видит его', async () => {
+    const { service, tasks } = setup();
+    const [group] = await service.getAllTasksForTherapist(T1);
+    expect(group.tasks[0].done).toBe(false); // до починки — null
+    expect(tasks[0].done).toBe(false);
+    const [card] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(card.done).toBe(false);
+  });
+
+  it('закрыл клиент — психолог видит то же закрытие, не перезаписывая его', async () => {
+    const { service, tasksService, tasks } = setup();
+    await tasksService.getTasks(CLIENT_A);
+    const closedAt = tasks[0].completedAt;
+    jest.setSystemTime(new Date('2026-11-06T09:00:00Z'));
+    const [seen] = (await service.getTasksForClient(T1, CLIENT_A))!;
+    expect(seen.done).toBe(false);
+    expect(seen.completedAt).toEqual(closedAt);
   });
 });

@@ -3,6 +3,7 @@ import {
   UNWRITABLE_REASON,
   UNWRITABLE_SELECTION_NOTE,
   isUnwritableError,
+  unwritableGratitudeText,
   unwritableSelectionText,
 } from './unwritableError';
 import { pickForm } from '../utils/addressForm';
@@ -53,5 +54,16 @@ describe('unwritableSelectionText', () => {
       unwritableSelectionText(trFor('vy')),
     );
     expect(UNWRITABLE_SELECTION_NOTE.ty).not.toBe(UNWRITABLE_SELECTION_NOTE.vy);
+  });
+});
+
+describe('unwritableGratitudeText — быстрая запись благодарности', () => {
+  it('что не так и что делать, в обеих формах без чужой', () => {
+    const ty = unwritableGratitudeText(trFor('ty'));
+    const vy = unwritableGratitudeText(trFor('vy'));
+    expect(ty).toMatch(/не читаются/);
+    expect(ty).toMatch(/сохрани его как мысль или попробуй позже\.$/);
+    expect(vy).toMatch(/сохраните его как мысль или попробуйте позже\.$/);
+    expect(vy).not.toMatch(/сохрани |попробуй /);
   });
 });

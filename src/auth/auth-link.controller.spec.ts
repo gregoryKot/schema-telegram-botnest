@@ -45,7 +45,11 @@ function makeController(
     }),
   };
   const securityLog = { log: jest.fn() };
-  const notice = { linked: jest.fn(), notify: jest.fn() };
+  const notice = {
+    linked: jest.fn(),
+    notify: jest.fn(),
+    emailAddresses: jest.fn().mockResolvedValue(['old@example.com']),
+  };
   const controller = new AuthLinkController(
     auth as unknown as AuthService,
     providers as unknown as AuthProviderRegistry,
@@ -153,10 +157,47 @@ describe('AuthLinkController.unlink', () => {
       provider: 'google',
       ip: '198.51.100.1',
     });
-    expect(notice.notify).toHaveBeenCalledWith(7n, {
-      kind: 'provider_unlinked',
-      provider: 'google',
-    });
+    expect(notice.notify).toHaveBeenCalledWith(
+      7n,
+      { kind: 'provider_unlinked', provider: 'google' },
+      [],
+    );
+    expect(notice.emailAddresses).not.toHaveBeenCalled();
     expect(res).toEqual({ ok: true });
+  });
+
+  // Хвост S12 (аудит 2026-11). Почты нет в реестре провайдеров, и
+  // `unlink/email` из кабинета отвечал 400 «Unknown provider»; письмо об
+  // отвязке уходит и на снятый адрес — его читаем до отвязки.
+  it('почта: отвязывается, уведомление уходит и на снятый адрес', async () => {
+    const { controller, auth, notice } = makeController(undefined, [
+      { id: 'google' },
+    ]);
+    const order: string[] = [];
+    notice.emailAddresses.mockImplementation(async () => {
+      order.push('read');
+      return ['old@example.com'];
+    });
+    auth.unlinkProvider.mockImplementation(async () => {
+      order.push('unlink');
+    });
+    const res = await controller.unlink('email', makeReq(7n));
+    expect(order).toEqual(['read', 'unlink']);
+    expect(auth.unlinkProvider).toHaveBeenCalledWith(7n, 'email');
+    expect(notice.notify).toHaveBeenCalledWith(
+      7n,
+      { kind: 'provider_unlinked', provider: 'email' },
+      ['old@example.com'],
+    );
+    expect(res).toEqual({ ok: true });
+  });
+
+  it('отвязка не удалась (последний способ входа) — уведомления нет', async () => {
+    const { controller, auth, notice } = makeController(undefined, []);
+    auth.unlinkProvider.mockRejectedValue(new Error('last method'));
+    await expect(controller.unlink('email', makeReq(7n))).rejects.toThrow(
+      'last method',
+    );
+    expect(notice.notify).not.toHaveBeenCalled();
   });
 });

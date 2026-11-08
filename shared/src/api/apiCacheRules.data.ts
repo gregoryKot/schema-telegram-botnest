@@ -68,9 +68,16 @@ export const RULES: Rule[] = [
   // deletePractice(id) — needId неизвестен из одного id, сбрасываем ресурс целиком.
   simple('DELETE', /^\/api\/practices\/\d+$/, { prefix: '/api/practices?' }),
   simple('POST', /^\/api\/plan$/, '/api/plan/pending'),
-  simple('POST', /^\/api\/plan\/\d+\/checkin$/, '/api/plan/pending', {
-    prefix: '/api/plans/history',
-  }),
+  // Чек-ин меняет и сам шаг: «Мой путь» открывает его по id (GET /api/plan/:id).
+  {
+    method: 'POST',
+    pattern: /^\/api\/plan\/(\d+)\/checkin$/,
+    targets: (m) => [
+      '/api/plan/pending',
+      `/api/plan/${m[1]}`,
+      { prefix: '/api/plans/history' },
+    ],
+  },
   // GET /api/pair отдаёт pendingCode — созданное приглашение обязано быть
   // видно сразу, иначе экран пары ещё 15 секунд показывает «приглашения нет».
   simple('POST', /^\/api\/pair\/invite$/, '/api/pair'),
@@ -91,14 +98,6 @@ export const RULES: Rule[] = [
     '/api/profile',
     '/api/therapy/tasks',
     '/api/therapy/tasks/history',
-  ),
-  // «Пройти заново» стирает итог: профиль и «Мой путь» читают его же.
-  simple(
-    'DELETE',
-    /^\/api\/ysq-result$/,
-    '/api/ysq-result',
-    '/api/journey',
-    '/api/profile',
   ),
   // «Удалить результаты теста» стирает итог, историю и прогресс; «Мой путь»
   // (journey.service.ts) и профиль (profile.service.ts, ysq.*) читают их же.

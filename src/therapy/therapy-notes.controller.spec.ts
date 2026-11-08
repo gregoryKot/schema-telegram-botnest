@@ -141,6 +141,16 @@ describe('TherapyNotesController.createNote', () => {
     expect(notes.createNote).not.toHaveBeenCalled();
   });
 
+  it('форма верна, а дня нет (2026-02-30, 2026-13-01) → BadRequestException("Invalid date")', async () => {
+    const { controller, notes } = makeController();
+    for (const date of ['2026-02-30', '2026-13-01', '0000-00-00']) {
+      await expect(
+        controller.createNote(makeReq(3n), '5', { date, text: 'x' }),
+      ).rejects.toThrow('Invalid date');
+    }
+    expect(notes.createNote).not.toHaveBeenCalled();
+  });
+
   it('валидное тело → делегирует createNote(therapistId, clientId, {date, text})', async () => {
     const { controller, notes } = makeController();
     const res = await controller.createNote(makeReq(3n), '5', VALID_BODY);

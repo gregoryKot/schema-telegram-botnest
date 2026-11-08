@@ -41,4 +41,29 @@ describe('emailCallbackRedirectUrl', () => {
       `${BASE}/auth/error?reason=email_link_expired`,
     );
   });
+
+  it('адрес возврата (E14) едет следом; без токена — не едет', () => {
+    expect(
+      emailCallbackRedirectUrl(BASE, 't', undefined, '/link?code=AB'),
+    ).toBe(`${BASE}/auth/callback?email_token=t&return_to=%2Flink%3Fcode%3DAB`);
+    expect(emailCallbackRedirectUrl(BASE, undefined, undefined, '/x')).toBe(
+      `${BASE}/auth/error?reason=email_link_expired`,
+    );
+  });
+
+  it.each([
+    '//evil.com',
+    '/\\evil.com',
+    '/\t/evil.com',
+    'https://evil.com',
+    '/..//evil.com',
+    ['/a'],
+  ])(
+    'чужой адрес возврата (%j) отбрасывается, вход по ссылке остаётся',
+    (raw) => {
+      expect(emailCallbackRedirectUrl(BASE, 't', undefined, raw)).toBe(
+        `${BASE}/auth/callback?email_token=t`,
+      );
+    },
+  );
 });

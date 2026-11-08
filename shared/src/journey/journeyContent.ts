@@ -3,7 +3,8 @@
 // расшифровывающие эндпоинты, ТОЛЬКО по явному тапу пользователя на записи
 // (и перед отправкой виден в превью, как у карточки благодарности).
 // Запись с id открывается своим GET …/:id: поиск в списке находил только 30
-// последних, и 31-я открывалась пустой (R6, аудит 2026-11).
+// последних, и 31-я открывалась пустой (R6, аудит 2026-11); шаг плана искали
+// в истории за год — старше года открывался пустым (хвост волны 2).
 import { type JourneyItem, JOURNEY_NEED_NAMES } from './journeyMeta';
 import { computeScores, type YsqHistoryEntry } from '../hooks/useYsqTest';
 // Разбор записи в части карточек — рядом, в journeyParts (реэкспорт ниже:
@@ -51,9 +52,7 @@ export interface JourneyContentApi {
   getSafePlace(): Promise<{ description: string } | null>;
   getNote(date: string): Promise<{ text: string | null }>;
   getPractices(needId: string): Promise<Array<{ id: number; text: string }>>;
-  getPlanHistory(
-    days?: number,
-  ): Promise<Array<{ id: number; practiceText: string }>>;
+  getPlanEntry(id: number): Promise<{ practiceText: string }>;
   ratings(date?: string): Promise<Record<string, number>>;
   getSchemaNotes(): Promise<Array<{ schemaId: string }>>;
   getModeNotes(): Promise<Array<{ modeId: string }>>;
@@ -69,6 +68,7 @@ const BY_ID: Partial<Record<string, ById>> = {
   belief_check: (a, id) => a.getBeliefCheck(id),
   letter: (a, id) => a.getLetter(id),
   flashcard: (a, id) => a.getFlashcard(id),
+  plan_done: (a, id) => a.getPlanEntry(id),
 };
 
 /** 404 — запись удалили на другом устройстве: показать нечего, это не сбой. */
@@ -100,9 +100,6 @@ async function fetchJourneyEntry(
       break;
     case 'practice':
       entry = item.needId ? byId(await api.getPractices(item.needId)) : null;
-      break;
-    case 'plan_done':
-      entry = byId(await api.getPlanHistory(365));
       break;
     case 'tracker_day':
       entry = await api.ratings(item.at.slice(0, 10));

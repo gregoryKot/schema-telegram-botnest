@@ -133,7 +133,7 @@ const transport: ApiTransport = { get, post, postJson, del };
 
 // Оффлайн-надёжность оценки — shared/src/api/ratingApi.ts (единая реализация для обоих фронтендов, правило №3); `api.trackEvent` внутри — лениво (TDZ: `api` определится ниже, замыкание исполнится позже).
 // authedFetch (не голый fetchWithTimeout) — оценка теперь тоже переживает 401 (пункт 4 диагностики 2026-08-21), а не только сеть/5xx.
-const ratingApi = createRatingApi((path, init) => authedFetch(path, init), (name, meta) => api.trackEvent(name, meta));
+const ratingApi = createRatingApi((path, init) => authedFetch(path, init), (name, meta) => api.trackEvent(name, meta), reportClientError);
 
 export const api = {
   ...buildSharedApi(transport),
@@ -187,7 +187,7 @@ export const api = {
     return get<BookingSlot[]>(`/api/booking/slots${qs ? `?${qs}` : ''}`);
   },
   bookSlot:             (body: { startsAt: string; durationMin?: number; type?: 'INTRO_15' | 'SESSION_50'; clientName: string; clientContact: string; message?: string; returning?: boolean; acceptedOffer?: boolean; website?: string; source?: string; clientTimeZone?: string; clientChannel?: ContactChannel }) =>
-    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null }>('/api/booking/book', body),
+    postJson<{ id: number; cancelToken: string; heldUntil: string | null; status: string; paymentUrl?: string | null; eventDurationMin: number }>('/api/booking/book', body),
   getBookingByToken:    (token: string) => get<{ status: string; paid: boolean; type: 'INTRO_15' | 'SESSION_50'; startsAt: string; endsAt: string; durationMin: number }>(`/api/booking/by-token/${token}`),
   cancelBooking:        (token: string) => postJson<{ ok: true }>(`/api/booking/cancel/${token}`, {}),
   // Запись клиента из приложения (#546): имя, контакт и оферту сервер берёт из аккаунта и действия.

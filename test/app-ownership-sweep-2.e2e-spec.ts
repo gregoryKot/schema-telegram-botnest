@@ -1,7 +1,7 @@
 // e2e SMOKE — продолжение app-ownership-sweep.e2e-spec.ts (TEST_IMPROVEMENT_
 // PLAN.md, этап 1.3): маршруты, которые остались непокрытыми у трипваера
 // e2e-route-coverage.invariants.spec.ts. Этот файл — «мутации/удаления»:
-// diary DELETE, practices DELETE, plan checkin+history, ysq-progress/result
+// diary DELETE, practices DELETE, plan checkin+history, ysq-progress/data
 // DELETE, пары (invite/join/leave). Паттерн для delete-style роутов такой же,
 // как у terapy-ownership («B не может создать/удалить чужое» — сервисы фильтруют
 // по userId в WHERE, поэтому чужой DELETE — молчаливый no-op, не 403; тест
@@ -166,7 +166,7 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     expect(row?.done).toBe(true); // отвергнутый checkin B план не тронул
   });
 
-  // ─── YSQ progress/result DELETE (self-only — no id param, always caller) ──
+  // ─── YSQ progress/data DELETE (self-only — no id param, always caller) ────
 
   it('ysq-progress DELETE: чистит свой прогресс, не трогает чужой', async () => {
     const a = agentAs(USER_A);
@@ -181,21 +181,6 @@ describe('e2e smoke: ownership sweep 2 (deletes/mutations: diary, plans, ysq, pa
     expect(aGet.text).toBe('');
     const bGet = await b.get('/api/ysq-progress');
     expect(bGet.body.page).toBe(5);
-  });
-
-  it('ysq-result DELETE: чистит свой результат, не трогает чужой', async () => {
-    const a = agentAs(USER_A);
-    const b = agentAs(USER_B);
-    await a.post('/api/ysq-result', { answers: Array(116).fill(2) });
-    await b.post('/api/ysq-result', { answers: Array(116).fill(4) });
-
-    const del = await a.delete('/api/ysq-result');
-    expect(del.status).toBeLessThan(300);
-
-    const aGet = await a.get('/api/ysq-result');
-    expect(aGet.text).toBe('');
-    const bGet = await b.get('/api/ysq-result');
-    expect(bGet.body.answers).toHaveLength(116);
   });
 
   // Кнопка «Удалить результаты теста» в настройках (решение владельца

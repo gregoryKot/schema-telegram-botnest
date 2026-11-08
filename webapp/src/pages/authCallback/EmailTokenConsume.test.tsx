@@ -3,11 +3,12 @@
 // и переход по исходу. Главное: токен гасится ОДНИМ POST-ом (не двумя) и
 // стирается из адресной строки.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, waitFor, cleanup, screen } from '@testing-library/react';
+import { render, waitFor, cleanup, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '../../auth/AuthProvider';
 import { useAuth } from '../../auth/authContext';
 import { AuthCallback } from '../AuthCallback';
+import { AUTH_RETURN_KEY } from '../../auth/returnTo';
 
 const json = (status: number, body: unknown) =>
   ({ ok: status < 400, status, json: () => Promise.resolve(body) }) as Response;
@@ -101,6 +102,56 @@ describe('AuthCallback ← ссылка из письма (?email_token)', () =>
     renderPage('?email_token=raw-1');
     await screen.findByText('at:/account?error=email_link_session');
   });
+
+  // U6-хвост (аудит 2026-11): сеть ссылку не тратит, а экран вёл только на
+  // «Запросить новую». «Повторить» шлёт тот же токен из памяти страницы.
+  it('нет связи → «Нет связи» и «Повторить» тем же токеном; токена в адресе нет', async () => {
+    let calls = 0;
+    fetchMock.mockImplementation((url: string) => {
+      if (!String(url).endsWith('/email/consume')) return Promise.resolve(json(401, {}));
+      calls += 1;
+      return calls === 1 ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(consumeReply);
+    });
+    renderPage('?email_token=raw-1');
+    const retry = await screen.findByRole('button', { name: 'Повторить' });
+    expect(screen.getByText(/Ссылка из письма ещё действует/)).toBeTruthy();
+    expect(window.location.href).not.toContain('raw-1');
+    fireEvent.click(retry);
+    await screen.findByText('at:/today');
+    expect(consumeCalls().map((c) => JSON.parse(c[1].body))).toEqual([{ token: 'raw-1' }, { token: 'raw-1' }]);
+  });
+
+  it('сбой сервера (502) — тоже повтор на месте; просрочка — нет (контроль)', async () => {
+    consumeReply = json(502, {});
+    renderPage('?email_token=raw-1');
+    expect(await screen.findByRole('button', { name: 'Повторить' })).toBeTruthy();
+    cleanup();
+    consumeReply = json(401, { message: 'Token expired' });
+    renderPage('?email_token=raw-2');
+    await screen.findByText('at:/auth/error?reason=email_link_expired');
+  });
+
+  // E14 (аудит 2026-11): письмо открывают новой вкладкой — адрес возврата едет в ссылке.
+  it('адрес возврата из ссылки письма: ведёт туда, а не на «Сегодня»', async () => {
+    sessionStorage.setItem(AUTH_RETURN_KEY, '/schemas');
+    renderPage('?email_token=raw-1&return_to=%2Fdiary%3Ftab%3Dschemas');
+    await screen.findByText('at:/diary?tab=schemas');
+    expect(sessionStorage.getItem(AUTH_RETURN_KEY)).toBeNull(); // адрес вкладки забран, не висит
+  });
+
+  it('без адреса в ссылке — запомненный во вкладке (контроль)', async () => {
+    sessionStorage.setItem(AUTH_RETURN_KEY, '/schemas');
+    renderPage('?email_token=raw-1');
+    await screen.findByText('at:/schemas');
+  });
+
+  it.each(['//evil.com', '/\\evil.com', '/..//evil.com', 'https://evil.com/x'])(
+    'чужой адрес в ссылке (%s) — не открытый редирект: «Сегодня»',
+    async (raw) => {
+      renderPage(`?email_token=raw-1&return_to=${encodeURIComponent(raw)}`);
+      await screen.findByText('at:/today');
+    },
+  );
 
   it('контрольный: без ?email_token POST не уходит (это обычный OAuth-колбэк)', async () => {
     renderPage('');

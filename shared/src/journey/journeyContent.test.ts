@@ -27,7 +27,7 @@ function stubApi(overrides: Partial<JourneyContentApi>): JourneyContentApi {
     'getSafePlace',
     'getNote',
     'getPractices',
-    'getPlanHistory',
+    'getPlanEntry',
     'ratings',
     'getSchemaNotes',
     'getModeNotes',
@@ -256,19 +256,28 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
     ]);
   });
 
-  it('plan_done: находит запись по id среди истории плана', async () => {
-    const getPlanHistory = vi.fn(async () => [
-      { id: 2, practiceText: 'Дыхание 4-4-6' },
-    ]);
-    const api = stubApi({ getPlanHistory });
+  // Хвост волны 2: запись искали в getPlanHistory(365) — шаг старше года
+  // открывался пустым. Теперь — свой GET по id, окна нет.
+  it('plan_done: открывает шаг своим GET по id, какой бы давности он ни был', async () => {
+    const getPlanEntry = vi.fn(
+      byId({ 2: { id: 2, practiceText: 'Дыхание 4-4-6' } }),
+    );
+    const api = stubApi({ getPlanEntry });
     const result = await fetchJourneyResult(
       api,
-      item({ type: 'plan_done', id: 2 }),
+      item({ type: 'plan_done', id: 2, at: '2024-03-01' }),
     );
-    expect(getPlanHistory).toHaveBeenCalledWith(365);
+    expect(getPlanEntry).toHaveBeenCalledWith(2);
     expect(result?.parts).toEqual([
       { title: 'Действие', text: 'Дыхание 4-4-6' },
     ]);
+  });
+
+  it('plan_done: шаг удалён (404) — пусто, а не сбой', async () => {
+    const api = stubApi({ getPlanEntry: byId({}) });
+    const item404 = item({ type: 'plan_done', id: 9 });
+    expect(await fetchJourneyResult(api, item404)).toBeNull();
+    expect(await fetchJourneyDetail(api, item404)).toEqual([]);
   });
 
   it('schema_note: с schemaIds в записи ленты — ищет по первому id из списка', async () => {

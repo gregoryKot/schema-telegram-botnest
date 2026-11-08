@@ -26,6 +26,7 @@
 - Подводные камни: хендлеров Telegraf здесь нет, они в `src/telegram`. Сырой `telegramId` в данные не совать: сначала `AccountService.canonicalUserId()` (после слияния аккаунтов данные лежат под веб-номером).
 - Новый блок `/stats`: пара `X-metrics.service.ts` (запросы) + `X-metrics.format.ts` (текст), сервис в `INTERNAL_PROVIDERS` (`bot.internal-providers.ts`), в `StatsReportService` (список — `stats-report.blocks.ts`) и имя блока в раздел `STATS_SECTIONS` (`stats-sections.ts`, тест-сверка `stats-sections.spec.ts`); упавший блок заменяется заглушкой (`stats-settle.ts`).
 - Блок «Разбор случая» (`case-metrics.*`): воронка (начали, сцена, вердикт, «у меня было иначе») — по событиям `AnalyticsEvent`; «сохранено разборов» — по `ModeDiaryEntry.fromCase` (маркер с миграции `20261027120000_mode_diary_from_case`; записи до неё — `false`). Две популяции с этапа 4 простого клиента (#877): «записано с сайта» — только сайт (мини-апп пишет `fromCase=false`; «Ровный день» с сайта тоже `fromCase` — итог разбора режимом Здорового Взрослого); «вердикт» и «назвали часть» — только мини-апп, на сайте этих шагов нет; `case_recognized{agreed}` с сайта = «не выбрал другой режим при сохранении», передумавшие без «Сохранить» в событие не попадают — порог «почти никто не спорит» читать с этой поправкой.
+- Волна 6: заметка дня длиннее 500 после слияния правится без роста — `src/bot/day-note-limit.ts`; шаг плана по id (`GET /api/plan/:id`) — `PracticesService.getPlan`.
 
 ### `src/telegram/`
 Telegram-бот на Telegraf (long polling): онбординг и согласие, диплинки `/start`, мини-тесты `/tests`, настройки уведомлений, админ-консоль, отправка напоминаний из очереди; заодно хостит публикацию в каналы.
@@ -34,6 +35,7 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 - Подводные камни: хендлеры `bot.command/action` регистрируются в `onModuleInit` каждого сервиса (`*.settings`, `*.quiz`, `*.login`, `*.link`, `*.notify-*`), а не в одном файле; polling запускает `TelegramService` через `BotLauncher` (`telegram.launch.ts`, ретрай при 409); ошибку апдейта мимо try/catch хендлера ловит `bot.catch` из `telegram.bot-catch.ts` (error владельцу, поллинг не рвётся); `BOT_REDIRECT_USERNAME` включает режим «бот переехал» вместо всех хендлеров.
 - Диплинки `login_<КОД>` и `link_<КОД>` разбираются в `/start` до гейта согласия; `link_` переносит данные и уничтожает один из аккаунтов, поэтому у него отдельная ветка и карточка (`telegram.link.service.ts` против `telegram.login.service.ts`).
 - Очередь и админка (волна 5, E16): постоянная 400 снимается после трёх отказов — `telegram.schedule-queue.rejects.ts`; перепланировки одного человека идут по очереди — `src/utils/per-key-queue.ts` в `rescheduleForUser`; `/zv` публикует фоном — `zv-runner.ts`; сводка дня забирается один раз — `claimFillDay` (`notification.cadence-store.ts`, `User.notifyLastFillDate`).
+- Волна 6: тумблер «Итоги дня» — `telegram.summary-toggle.service.ts` (callback `settings:toggle_summary`).
 
 ### `src/channel/`
 Рассылка постов канала «Здоровый Взрослый» (два слота в день) на Telegram, VK, MAX, Threads, Pinterest; журнал доставки и досылка недошедшего.
@@ -41,6 +43,7 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 - Связи: своего модуля нет, `CHANNEL_PROVIDERS` подключены в `TelegramModule` (нужен `TELEGRAF_BOT`); пул фраз и слоты — `HealthyAdultService` и `healthy-adult.schedule.ts` в `src/bot`; таблицы `HealthyAdultPhrase`, `HealthyAdultPost`, `ChannelDelivery`, `BookingSetting` (токен Threads, зашифрован); ручной запуск — `/zv` и `src/telegram/healthy-adult-admin.controller.ts` (`api/healthy-adult/admin`, `x-admin-key`).
 - Подводные камни: площадка без своего env молчит (`destination()` = null) и попадает в отчёт как silent (DM только о молчащих — раз в неделю, `src/channel/slot-report.ts`); новая площадка = адаптер + строка в `TARGETS`. Кроны `healthyAdultMorning/Evening/CatchUp` и `threadsTokenRefresh` идут под `claimRun`; пост выходит раз в окно в детерминированно-случайную минуту, частичный успех закрывает слот, упавшим площадкам досылает `retry-plan.ts`.
 - Дубли постов (волна 5, R7): тик не начинает публикацию, пока идёт предыдущая — `src/channel/one-at-a-time.ts`; повтор запроса только при ошибке подключения — `src/channel/connect-failure.ts` (`isConnectFailure`); Telegram-адаптер укладывает все попытки в 60 с (`telegram-channel.target.ts`).
+- Волна 6: `/zv` и тик — один флаг `ChannelPublisherService.inFlight`; «исход неизвестен» (таймаут ответа, обрыв после отправки) — `src/channel/unknown-outcome.ts`, досылка его не повторяет.
 
 ### `src/notification/`
 Проактивные напоминания и вехи: очередь `ScheduledNotification`, дневной планировщик (максимум одно проактивное в день), адаптивная частота и паузы, тексты шаблонов.
@@ -100,6 +103,7 @@ Telegram-бот на Telegraf (long polling): онбординг и соглас
 - Входы: `src/logger/alert.logger.ts` — `AlertLogger.error()` → `notifyAdminWithFallback`; `src/logger/db-outage.ts` — классификация «БД недоступна», один DM + recovery.
 - Связи: ставится в `main.ts` (`NestFactory.create({logger})`); доставка — `src/utils/admin-alert.ts`, `src/utils/alert-throttle.ts`; `isConnectionError` использует `telegram.schedule.service.ts`.
 - Подводные камни: алерт шлёт только `logger.error`; для временных сбоев (в том числе соединения с БД) использовать `warn`. Троттлинг по тексту сообщения (цифры/uuid заменяются плейсхолдером) раз в 60 с плюс общий потолок 15 алертов за 60 с: текст `error` делать стабильным, без переменных частей.
+- Денежные алерты (`src/logger/money-alert.ts`, метка в тексте) троттлятся по полному тексту со своим бюджетом — второй платёж без строки не теряется (`alert-gate.ts`).
 
 ### `src/types/`
 Единственный файл `src/types/express.d.ts`: глобальное расширение `express.Request` полями, которые ставят гварды.

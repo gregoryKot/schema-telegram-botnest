@@ -3,7 +3,7 @@
 // иначе «войди и вернись» становится открытым редиректом; параметр запуска
 // сюда не попадает (у него свой механизм со сроком).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AUTH_RETURN_KEY, rememberReturnTo, safeReturnPath, takeReturnTo } from './returnTo';
+import { AUTH_RETURN_KEY, peekReturnTo, rememberReturnTo, safeReturnPath, takeReturnTo } from './returnTo';
 
 beforeEach(() => sessionStorage.clear());
 
@@ -16,6 +16,7 @@ describe('safeReturnPath', () => {
   it.each([
     null, undefined, '', 'diary', 'https://evil.com/x', '//evil.com/x',
     '/\\evil.com', '/\t/evil.com', 'javascript:alert(1)',
+    '/..//evil.com', '/a/..//evil.com', '/%2e%2e//evil.com',
   ])('чужое или битое (%j) — null', (raw) => {
     expect(safeReturnPath(raw)).toBeNull();
   });
@@ -41,5 +42,15 @@ describe('rememberReturnTo / takeReturnTo', () => {
     sessionStorage.setItem(AUTH_RETURN_KEY, '//evil.com/phish');
     expect(takeReturnTo()).toBeNull();
     expect(sessionStorage.getItem(AUTH_RETURN_KEY)).toBeNull();
+  });
+});
+
+describe('peekReturnTo', () => {
+  it('смотрит, не стирая; подложенный чужой адрес — null', () => {
+    rememberReturnTo('/diary');
+    expect(peekReturnTo()).toBe('/diary');
+    expect(takeReturnTo()).toBe('/diary');
+    sessionStorage.setItem(AUTH_RETURN_KEY, '/..//evil.com');
+    expect(peekReturnTo()).toBeNull();
   });
 });

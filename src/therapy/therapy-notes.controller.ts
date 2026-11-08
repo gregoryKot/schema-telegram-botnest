@@ -19,6 +19,7 @@ import { TherapyClientDataService } from './therapy-client-data.service';
 import { AccountService } from '../bot/account.service';
 import { CreateSessionNoteDto, SessionInfoDto } from './dto/client-data.dto';
 import { ConceptualizationDto } from './dto/conceptualization.dto';
+import { isCalendarDay } from '../utils/calendar-day';
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -66,15 +67,12 @@ export class TherapyNotesController {
     const role = await this.accountService.getUserRole(uid(req));
     if (role !== 'THERAPIST') throw new ForbiddenException('Therapist only');
     if (!body.text?.trim()) throw new BadRequestException('text required');
-    if (!body.date || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))
+    if (!isCalendarDay(body.date))
       throw new BadRequestException('Invalid date');
     const note = { date: body.date, text: body.text };
     try {
-      return await this.notesService.createNote(
-        uid(req),
-        parseClientId(clientId),
-        note,
-      );
+      const cid = parseClientId(clientId);
+      return await this.notesService.createNote(uid(req), cid, note);
     } catch (e: unknown) {
       if (e instanceof Error && e.message === 'No active relation')
         throw new ForbiddenException('No active relation with this client');

@@ -10,12 +10,17 @@ export const EMAIL_FORM_PATH = '/login?via=email';
 export interface AuthErrorScreen {
   title: string;
   action: { label: string; href: string };
+  /** Текст, когда рядом «Повторить» (ссылка из письма цела, токен ещё в памяти). */
+  retryLead?: (tr: (ty: string, vy: string) => string) => string;
 }
 
 const NEW_LINK = { label: 'Запросить новую ссылку', href: EMAIL_FORM_PATH };
 const AUTH_ERROR_SCREENS: Record<string, AuthErrorScreen> = {
   email_link_expired: { title: 'Ссылка устарела', action: NEW_LINK },
-  email_network: { title: 'Нет связи', action: NEW_LINK },
+  email_network: { title: 'Нет связи', action: NEW_LINK, retryLead: (tr) => tr(
+    'Ссылка из письма ещё действует: проверь интернет и нажми «Повторить».',
+    'Ссылка из письма ещё действует: проверьте интернет и нажмите «Повторить».',
+  ) },
 };
 
 /** Экран для известного кода; прочие коды — общий «Вход не удался». */

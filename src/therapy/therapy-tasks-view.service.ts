@@ -5,12 +5,14 @@ import { localDate, localMidnightUTC } from '../utils/tz';
 import { TherapyTasksService } from './therapy-tasks.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { tracksStreakProgress } from './streak-window';
+import { closeExpiredStreaks } from './streak-expire';
 import { unnamedClientLabel } from './client-display-name';
 
 // Терапевтский обзор задач: по всем клиентам сразу и по одному конкретному
 // клиенту. Стрик-прогресс не пересчитывается заново — берётся из
 // TherapyTasksService.getStreakProgress (та же формула, что и в /tasks
-// самого клиента).
+// самого клиента), просроченную серию закрывает тот же streak-expire.ts.
+const CLIENT_FIELDS = { id: true, firstName: true, notifyTimezone: true };
 @Injectable()
 export class TherapyTasksViewService {
   constructor(
@@ -22,7 +24,7 @@ export class TherapyTasksViewService {
   async getAllTasksForTherapist(therapistId: bigint) {
     const relations = await this.prisma.therapyRelation.findMany({
       where: { therapistId, status: 'active' },
-      include: { client: { select: { id: true, firstName: true } } },
+      include: { client: { select: CLIENT_FIELDS } },
     });
 
     // Точный userId связи: реальный клиент — rel.client.id, виртуальный —
@@ -56,6 +58,7 @@ export class TherapyTasksViewService {
       tasks: Record<string, unknown>[];
     }> = [];
 
+    const now = new Date();
     for (const rel of relations) {
       const clientId = userIdOf(rel);
       // clientAlias и virtualClientName лежат зашифрованными (PII) — без
@@ -66,7 +69,9 @@ export class TherapyTasksViewService {
         : (alias ??
           decrypt(rel.virtualClientName) ??
           unnamedClientLabel(clientId));
-      const tasks = tasksByUserId.get(String(userIdOf(rel))) ?? [];
+      const rows = tasksByUserId.get(String(userIdOf(rel))) ?? [];
+      const tz = rel.client?.notifyTimezone; // у виртуального — нет
+      const tasks = await closeExpiredStreaks(this.prisma, rows, tz, now);
 
       if (tasks.length > 0) {
         results.push({
@@ -115,10 +120,11 @@ export class TherapyTasksViewService {
     const today = localDate(tz, now);
     const startOfDay = localMidnightUTC(today, tz);
 
-    const tasks = await this.prisma.userTask.findMany({
+    const rows = await this.prisma.userTask.findMany({
       where: { userId: uid, assignedBy: therapistId },
       orderBy: { createdAt: 'desc' },
     });
+    const tasks = await closeExpiredStreaks(this.prisma, rows, tz, now);
 
     return Promise.all(
       tasks.map(async (task) => {

@@ -85,6 +85,21 @@ describe('practiceIcsText', () => {
     expect(ics).toContain('BEGIN:VALARM');
   });
 
+  // Хвост 5.6 (E6, аудит 2026-11): сигнал практики был подписан «Напоминание
+  // о встрече» — текст брони, зашитый в buildValarm.
+  it('сигнал подписан текстом практики, не «Напоминание о встрече»', () => {
+    const ics = unfold(m.practiceIcsText(EVENT));
+    const alarm = ics.slice(ics.indexOf('BEGIN:VALARM'));
+    expect(alarm).toContain('DESCRIPTION:Позвонить маме\r\n');
+    expect(ics).not.toContain('Напоминание о встрече');
+  });
+
+  it('пустой текст практики — сигнал «Практика»', () => {
+    const ics = unfold(m.practiceIcsText({ ...EVENT, text: '  ' }));
+    const alarm = ics.slice(ics.indexOf('BEGIN:VALARM'));
+    expect(alarm).toContain('DESCRIPTION:Практика\r\n');
+  });
+
   it('перенос строки в тексте не дописывает в файл свои свойства', () => {
     const ics = unfold(
       m.practiceIcsText({ ...EVENT, text: 'шаг\r\nURL:https://evil.example' }),

@@ -17,7 +17,6 @@ export interface YsqApi {
   saveYsqProgress: (answers: number[], page: number) => Promise<unknown>;
   saveYsqResult: (answers: number[]) => Promise<unknown>;
   deleteYsqProgress: () => Promise<unknown>;
-  deleteYsqResult: () => Promise<unknown>;
 }
 
 export interface UseYsqTestOptions {

@@ -148,14 +148,9 @@ describe('RULES: итог YSQ сбрасывает профиль', () => {
       ]),
     );
   });
-  it('DELETE /api/ysq-result («Пройти заново») — профиль и «Мой путь»', () => {
-    expect(targetsOf('DELETE')).toEqual(
-      expect.arrayContaining([
-        '/api/ysq-result',
-        '/api/profile',
-        '/api/journey',
-      ]),
-    );
+  // «Пройти заново» итог не стирает (U8), ручки DELETE /api/ysq-result нет.
+  it('DELETE /api/ysq-result — правила нет', () => {
+    expect(targetsOf('DELETE')).toEqual([]);
   });
 });
 

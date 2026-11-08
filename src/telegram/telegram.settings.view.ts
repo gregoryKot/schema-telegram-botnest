@@ -8,7 +8,7 @@ import { BotService } from '../bot/bot.service';
 import { CADENCE_LABELS } from '../notification/notification.cadence.service';
 import { utcOffsetLabel } from '../notification/tz-offset';
 import { NOTIFY_TIMEZONES } from '../notification/notify-timezones';
-import { remindersOn } from '../notification/notify-toggles';
+import { remindersOn, summaryOn } from '../notification/notify-toggles';
 import { cityLabel } from '../booking/client-timezone';
 
 // Кнопки пояса — общий список выбора (src/notification/notify-timezones.ts).
@@ -39,12 +39,13 @@ export async function buildSettingsView(
       ? 'выключены'
       : `${pad(s.notifyQuietStart)}:00 – ${pad(s.notifyQuietEnd)}:00`;
   const paused = s.notifyPausedUntil && s.notifyPausedUntil > new Date();
-  const [isVy, reminders] = [s.addressForm === 'vy', remindersOn(s)];
+  const isVy = s.addressForm === 'vy';
+  const [reminders, summary] = [remindersOn(s), summaryOn(s)];
   const lines = [
     '⚙️ Настройки уведомлений',
     '',
     `Напоминания: ${reminders ? '🔔 включены' : '🔕 выключены'}`,
-    `Итоги дня: ${s.notifySummaryEnabled === false ? 'выключены' : 'включены'}`,
+    `Итоги дня: ${summary ? 'включены' : 'выключены'}`,
     ...(paused
       ? [
           `⏸ На паузе до ${s.notifyPausedUntil!.toLocaleDateString('ru-RU', { timeZone: s.notifyTimezone })}`,
@@ -62,6 +63,12 @@ export async function buildSettingsView(
       Markup.button.callback(
         reminders ? '🔕 Выключить напоминания' : '🔔 Включить напоминания',
         'settings:toggle',
+      ),
+    ],
+    [
+      Markup.button.callback(
+        summary ? '📋 Выключить итоги дня' : '📋 Включить итоги дня',
+        'settings:toggle_summary',
       ),
     ],
     [Markup.button.callback('🕐 Изменить время', 'settings:pick_hour')],

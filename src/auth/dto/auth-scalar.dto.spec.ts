@@ -28,6 +28,27 @@ describe('auth-scalar DTO — тип тела auth-эндпоинтов (L4)', (
     );
   });
 
+  // E14 (аудит 2026-11): адрес возврата в ссылке письма — только свой путь.
+  it('EmailBodyDto.returnTo: свой путь проходит; чужой, длинный и не строка — отказ', async () => {
+    const body = (returnTo: unknown) => ({ email: 'a@b.co', returnTo });
+    await expect(
+      errorsFor(EmailBodyDto, body('/diary?tab=schemas#x')),
+    ).resolves.toEqual([]);
+    for (const bad of [
+      '//evil.com',
+      '/\\evil.com',
+      '/\t/evil.com',
+      'https://evil.com/x',
+      '/..//evil.com',
+      `/${'a'.repeat(512)}`,
+      ['/a'],
+    ]) {
+      await expect(errorsFor(EmailBodyDto, body(bad))).resolves.toEqual([
+        'returnTo',
+      ]);
+    }
+  });
+
   it('TokenBodyDto: строка проходит, число — отказ (раньше 500 на createHash)', async () => {
     await expect(errorsFor(TokenBodyDto, { token: 'abc' })).resolves.toEqual(
       [],

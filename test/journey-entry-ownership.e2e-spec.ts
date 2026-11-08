@@ -15,6 +15,7 @@ import {
   seedUsers,
 } from './e2e-support/cleanup-fixtures';
 import { DiaryService } from '../src/bot/diary.service';
+import { PracticesService } from '../src/bot/practices.service';
 
 describe('e2e smoke: запись «Моего пути» по id и страницы дневника (ownership)', () => {
   let app: INestApplication;
@@ -127,6 +128,25 @@ describe('e2e smoke: запись «Моего пути» по id и стран�
     expect(
       (await as(USER_B).get(`/api/ysq-history/${attempt.id}`)).status,
     ).toBe(404);
+  });
+
+  // Хвост волны 2: шаг плана «Мой путь» искал в истории за 365 дней — запись
+  // старше года открывалась пустой. Теперь — GET /api/plan/:id без окна.
+  it('/api/plan/:id — шаг плана старше года: A открывает свой, B получает 404', async () => {
+    const plans = app.get(PracticesService);
+    const plan = await plans.createPlan(USER_A, 'play', 'шаг A', '2024-03-01');
+    const A = as(USER_A);
+    const history = await A.get('/api/plans/history?days=365');
+    expect(history.body.map((p: Body) => p.id)).not.toContain(plan.id);
+
+    const own = await A.get(`/api/plan/${plan.id}`);
+    expect(own.status).toBe(200);
+    expect(own.body).toMatchObject({ id: plan.id, practiceText: 'шаг A' });
+    expect((await as(USER_B).get(`/api/plan/${plan.id}`)).status).toBe(404);
+    expect((await A.get('/api/plan/2147483647')).status).toBe(404);
+    expect((await A.get('/api/plan/2147483648')).status).toBe(400);
+    // статический маршрут рядом не перехвачен параметром
+    expect((await A.get('/api/plan/pending')).status).toBe(200);
   });
 
   it('сохранил 31 запись → 1-я открывается по id, страницы делят дневник без потерь', async () => {

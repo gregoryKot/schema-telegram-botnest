@@ -22,6 +22,7 @@ import {
   OAUTH_STATE_COOKIE,
   assertOAuthStateMatches,
 } from './oauth-host';
+import { oauthErrorCode } from './oauth-error-code';
 
 @Controller('api/auth')
 export class AuthOauthController {
@@ -77,7 +78,10 @@ export class AuthOauthController {
     const state = vkState ? fromVkState(vkState) : vkState;
     try {
       const vk = this.providers.get('vk') as VkProvider;
-      if (error) throw new UnauthorizedException(`vk auth denied: ${error}`);
+      if (error)
+        throw new UnauthorizedException(
+          `vk auth denied: ${oauthErrorCode(error)}`,
+        );
       if (!code || !state || !deviceId)
         throw new BadRequestException('Missing code / state / device_id');
       assertOAuthStateMatches(req, state, vk.callbackOrigin());

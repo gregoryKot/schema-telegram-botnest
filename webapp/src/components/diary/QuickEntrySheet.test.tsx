@@ -209,6 +209,25 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     expect(m.createSchemaDiary).toHaveBeenCalledWith({ trigger: 'Шестое', emotions: [], schemaIds: [] });
   });
 
+  // Хвост волны 2 (#1022): 409 unreadable_data показывал общее «Не удалось
+  // сохранить … можно повторить» — повтор не поможет.
+  it('«Благодарность», 409 unreadable_data: своё сообщение (что не так и что делать), «Записать как мысль»', async () => {
+    m.getGratitudeDiary.mockResolvedValue([{ id: 1, date: todayStr(), items: ['Чай'] }]);
+    m.createGratitudeDiary.mockRejectedValue(Object.assign(new Error('conflict'), { status: 409, reason: 'unreadable_data' }));
+    setup();
+    type('Солнце');
+    tag('Благодарность');
+    await press('Сохранить');
+    const alert = screen.getByRole('alert').textContent ?? '';
+    expect(alert).toMatch(/сегодняшние пункты сейчас не читаются/);
+    expect(alert).toMatch(/сохрани его как мысль или попробуй позже/);
+    expect(alert).not.toMatch(/Не удалось сохранить/);
+    expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Солнце');
+    fireEvent.click(screen.getByRole('button', { name: 'Записать как мысль' }));
+    await press('Сохранить');
+    expect(m.createSchemaDiary).toHaveBeenCalledWith({ trigger: 'Солнце', emotions: [], schemaIds: [] });
+  });
+
   it('«Благодарность», день не загрузился: пункты не затираются, запись не уходит', async () => {
     m.getGratitudeDiary.mockRejectedValue(new Error('offline'));
     setup();

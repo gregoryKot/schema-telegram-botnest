@@ -6,6 +6,7 @@ import { BookingSaveBlock, MEETING_LINK_LATER } from './BookingSaveBlock';
 import { BookingCrisisNote } from './BookingCrisisNote';
 import { Btn } from '../landing-kit';
 
+export type BookedSession = { cancelToken: string; eventDurationMin: number }; // длина встречи — с сервера: у знакомства 15, слот 50 (R9)
 /** Терминальные экраны BookingPicker (ожидание оплаты / провал / готово) — вынесены отдельно (правило №10). */
 export function AwaitPaymentScreen({ resultRef, slot, tz, priceText, payUrl, message }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; priceText: string | null; payUrl: string | null; message: string;
@@ -41,9 +42,9 @@ export function PaymentFailScreen({ resultRef, onRetry }: { resultRef: RefObject
   );
 }
 
-export function DoneScreen({ resultRef, slot, tz, cancelled, cancelToken, sessionType, onCancelled, message, costNote }: {
+export function DoneScreen({ resultRef, slot, tz, cancelled, booked, sessionType, onCancelled, message, costNote }: {
   resultRef: RefObject<HTMLDivElement | null>; slot: BookingSlot | null; tz: string; cancelled: boolean;
-  cancelToken: string; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void; message: string; costNote?: string | null;
+  booked: BookedSession | null; sessionType: 'INTRO_15' | 'SESSION_50'; onCancelled: () => void; message: string; costNote?: string | null;
 }) {
   return (
     <div ref={resultRef} className="ym-hide-content" style={{ textAlign: 'center', padding: '48px 0' }}>
@@ -64,15 +65,15 @@ export function DoneScreen({ resultRef, slot, tz, cancelled, cancelToken, sessio
       {!cancelled && costNote && <p style={{ color: 'var(--text-sub)', fontSize: 14, lineHeight: 1.6, margin: '0 0 8px' }}>{costNote}</p>}
       {!cancelled && <p style={{ color: 'var(--text-faint)', fontSize: 14, margin: '0 0 8px' }}>{MEETING_LINK_LATER}</p>}
       {!cancelled && <BookingCrisisNote text={message} />}
-      {!cancelled && cancelToken && slot && (
+      {!cancelled && booked && slot && (
         <BookingSaveBlock
-          cancelToken={cancelToken} startsAt={slot.startsAt} durationMin={slot.durationMin}
+          cancelToken={booked.cancelToken} startsAt={slot.startsAt} durationMin={booked.eventDurationMin}
           type={sessionType} tz={tz}
         />
       )}
-      {!cancelled && cancelToken && slot && (
+      {!cancelled && booked && slot && (
         <div style={{ marginTop: 12 }}>
-          <BookingCancelControl cancelToken={cancelToken} startsAt={slot.startsAt} onCancelled={onCancelled} />
+          <BookingCancelControl cancelToken={booked.cancelToken} startsAt={slot.startsAt} onCancelled={onCancelled} />
         </div>
       )}
     </div>

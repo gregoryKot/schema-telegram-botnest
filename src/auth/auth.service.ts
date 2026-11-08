@@ -13,7 +13,7 @@ import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { encrypt as encField } from '../utils/crypto';
-import { sendMagicLink } from './magic-link';
+import { sendMagicLink, type MagicLinkParams } from './magic-link';
 import * as authPii from '../utils/auth-provider-crypto'; // D-9: email/имя — PII
 import { issueRotatedPair, type RotatingSession } from './refresh-issue';
 import { normalizeAddressForm } from '../notification/address-form';
@@ -79,7 +79,7 @@ export class AuthService {
 
   async requestEmailLogin(
     email: string,
-    ticket?: string,
+    link: MagicLinkParams = {},
   ): Promise<{ ok: true }> {
     if (!isValidEmail(email)) throw new BadRequestException('Invalid email');
     const lower = email.toLowerCase().trim();
@@ -94,7 +94,7 @@ export class AuthService {
       lower,
       'login',
       'sendLoginLink',
-      ticket,
+      link,
     );
     return { ok: true };
   }
@@ -534,7 +534,7 @@ export class AuthService {
     lower: string,
     purpose: 'login' | 'link_email_auth',
     logLabel: string,
-    ticket?: string,
+    link?: MagicLinkParams,
   ): Promise<void> {
     return sendMagicLink(
       {
@@ -549,7 +549,7 @@ export class AuthService {
       userId,
       lower,
       purpose,
-      ticket,
+      link,
     );
   }
 }

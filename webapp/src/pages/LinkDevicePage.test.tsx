@@ -126,6 +126,25 @@ describe('что показано до подтверждения', () => {
     expect(screen.getByText(/нажмите «Это не я»/)).toBeTruthy();
   });
 
+  // Хвост волны 2 (#1022): «данные переедут» без числа объединяемых записей.
+  it('сервер прислал combined — экран говорит, сколько записей объединится', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ...PREVIEW, combined: 3 }));
+    renderAt('/link?code=ABCD2345');
+    await waitFor(() =>
+      expect(screen.getByText(/3 записи совпадают с вашими по дню, схеме или режиму/)).toBeTruthy(),
+    );
+  });
+
+  it('контроль: без числа (или 0) — прежний текст, без абзаца про объединение', async () => {
+    for (const body of [PREVIEW, { ...PREVIEW, combined: 0 }]) {
+      fetchMock.mockResolvedValue(jsonResponse(200, body));
+      renderAt('/link?code=ABCD2345');
+      await waitFor(() => expect(screen.getByText(/переедут к вам/)).toBeTruthy());
+      expect(screen.queryByText(/совпада/)).toBeNull();
+      cleanup();
+    }
+  });
+
   it('тот же аккаунт — про перенос не врёт', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse(200, { ...PREVIEW, sameAccount: true, summary: {} }),

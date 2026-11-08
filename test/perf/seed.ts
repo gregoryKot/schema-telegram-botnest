@@ -161,13 +161,14 @@ FROM ${series(P.userSafePlace)}`,
     // Клиент — не терапевт; 200 человек получаются клиентами двух терапевтов
     // (50 × 200 = 10 000 пар на 9 800 клиентов) — допустимо: unique по code и активной паре (терапевт, клиент).
     TherapyRelation: [
-      `INSERT INTO "TherapyRelation"("code","therapistId","clientId","status","createdAt","meetingDays","nextSession","therapyStartDate")
-SELECT 'perf-a-' || t || '-' || k, ${B} + t, ${B} + ${T} + 1 + ((t - 1) * ${P.clientsPerTherapist} + k) % ${U - T},
+      // urlCode явно: случайный DEFAULT на 10 000 строк ловил дубли (#1030); синтетика детерминирована (№28).
+      `INSERT INTO "TherapyRelation"("code","urlCode","therapistId","clientId","status","createdAt","meetingDays","nextSession","therapyStartDate")
+SELECT 'perf-a-' || t || '-' || k, 'perf-a-' || t || '-' || k, ${B} + t, ${B} + ${T} + 1 + ((t - 1) * ${P.clientsPerTherapist} + k) % ${U - T},
   'active'::"RelationStatus", ${a} - make_interval(days => ((t * 31 + k * 17) % 300)::int),
   '[1,4]'::jsonb, ${day('-(k % 14)')}, ${day('(t * 31 + k * 17) % 300')}
 FROM generate_series(1::bigint, ${T}::bigint) t, generate_series(0::bigint, ${P.clientsPerTherapist - 1}::bigint) k`,
-      `INSERT INTO "TherapyRelation"("code","therapistId","clientId","status","createdAt")
-SELECT 'perf-p-' || g.i, ${B} + 1 + g.i % ${T}, NULL, 'pending'::"RelationStatus", ${ts('g.i', 90)}
+      `INSERT INTO "TherapyRelation"("code","urlCode","therapistId","clientId","status","createdAt")
+SELECT 'perf-p-' || g.i, 'perf-p-' || g.i, ${B} + 1 + g.i % ${T}, NULL, 'pending'::"RelationStatus", ${ts('g.i', 90)}
 FROM ${series(P.pendingRelations)}`,
     ],
     // updatedAt — NOT NULL без DEFAULT (ловушка @updatedAt, CLAUDE.md «Миграции БД»).

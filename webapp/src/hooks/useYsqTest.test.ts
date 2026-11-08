@@ -29,7 +29,6 @@ function makeApi(overrides: Partial<YsqApi> = {}): YsqApi {
     saveYsqProgress: vi.fn().mockResolvedValue(undefined),
     saveYsqResult: vi.fn().mockResolvedValue(undefined),
     deleteYsqProgress: vi.fn().mockResolvedValue(undefined),
-    deleteYsqResult: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }

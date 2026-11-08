@@ -10,6 +10,7 @@ import {
 } from '../donation/donation.service';
 import { markChargePaid } from '../subscription/subscription.charges';
 import { SUBSCRIPTION_INVID_BASE } from '../subscription/subscription.constants';
+import { isMoneyAlert } from '../logger/money-alert';
 
 afterEach(() => jest.restoreAllMocks());
 
@@ -37,6 +38,8 @@ describe('DonationService.markPaidByInvId — строки доната нет',
     expect(String(error.mock.calls[0][0])).toMatch(
       /оплата доната #77 \(500 ₽\) без строки в БД/,
     );
+    // Денежная метка: AlertGate не гасит второй такой платёж (хвост R9).
+    expect(isMoneyAlert(String(error.mock.calls[0][0]))).toBe(true);
     expect(prisma.donation.updateMany).not.toHaveBeenCalled();
   });
 });
@@ -73,6 +76,7 @@ describe('markChargePaid — строки списания или подписк
         new RegExp(`InvId ${invId} \\(500 ₽\\), без строки списания в БД`),
       ),
     );
+    expect(isMoneyAlert(String(logger.error.mock.calls[0][0]))).toBe(true);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -83,6 +87,7 @@ describe('markChargePaid — строки списания или подписк
     expect(logger.error).toHaveBeenCalledWith(
       expect.stringContaining('без строки подписки'),
     );
+    expect(isMoneyAlert(String(logger.error.mock.calls[0][0]))).toBe(true);
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 

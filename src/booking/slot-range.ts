@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { isCalendarDay } from '../utils/calendar-day';
 
 // Диапазон публичного GET /api/booking/slots и окно занятости календаря, из
 // которого нарезаются ответы, — одно определение (правило №4): окно обязано
@@ -45,16 +46,13 @@ export function slotsBusyWindow(now: number): { from: Date; to: Date } {
 
 // L11 аудита 2026-08: сырой query-параметр уходил в new Date() и на кривой
 // строке давал Invalid Date → Prisma 500 на неавторизованном GET. Пускаем
-// только YYYY-MM-DD (календарный день — полночь UTC, правило №25); пусто →
-// null (дефолт вызывающего), мусор → 400.
+// только настоящий день YYYY-MM-DD (calendar-day.ts: `2026-11-31` — 400, а не
+// 1 декабря; полночь UTC, правило №25); пусто → null (дефолт вызывающего).
 function parseSlotDate(v: string | undefined): Date | null {
   if (!v) return null;
-  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v))
+  if (!isCalendarDay(v))
     throw new BadRequestException('Некорректная дата, ожидается YYYY-MM-DD');
-  const d = new Date(`${v}T00:00:00Z`);
-  if (Number.isNaN(d.getTime()))
-    throw new BadRequestException('Некорректная дата');
-  return d;
+  return new Date(`${v}T00:00:00Z`);
 }
 
 /**

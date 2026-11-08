@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt } from '../utils/crypto';
 import { deleteOwned, requireAffected } from '../utils/require-affected';
@@ -67,6 +67,14 @@ export class PracticesService {
       orderBy: { createdAt: 'asc' },
     });
     return rows.map(readPlan);
+  }
+
+  /** Шаг плана по id — «Мой путь» открывает запись любой давности. */
+  async getPlan(userId: bigint, id: number) {
+    const where = { id, userId };
+    const row = await this.prisma.practicePlan.findFirst({ where });
+    if (!row) throw new NotFoundException('Plan not found');
+    return readPlan(row);
   }
 
   async getPlanHistory(userId: bigint, days: number) {

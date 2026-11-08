@@ -37,6 +37,18 @@ describe('TherapyBridgeCard', () => {
     expect(track).toHaveBeenLastCalledWith('practice', 'write', undefined);
   });
 
+  // U4-хвост (аудит 2026-11): у своего терапевта без Telegram карточка звала к автору приложения.
+  it('свой терапевт без канала связи: о нём и ближайшей встрече, без «автора приложения»', () => {
+    localStorage.setItem('therapy_contact_url', '');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    const { container } = renderCard();
+    expect(screen.getByText('Твой терапевт рядом: что всплыло, можно принести на ближайшую встречу.')).toBeTruthy();
+    expect(container.textContent).not.toMatch(/Автор приложения/);
+    fireEvent.click(screen.getByRole('button', { name: 'Ближайшая встреча' }));
+    expect(track).toHaveBeenLastCalledWith('practice', 'open', undefined);
+    expect(screen.getByRole('dialog').textContent).toMatch(/Терапевт рядом/);
+  });
+
   it('«Скрыть»: карточки нет ни сейчас, ни при следующем показе; событие dismiss', () => {
     renderCard();
     fireEvent.click(screen.getByRole('button', { name: 'Скрыть' }));

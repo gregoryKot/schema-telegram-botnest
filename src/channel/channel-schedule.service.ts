@@ -15,6 +15,7 @@ import { ChannelPublisherService } from './channel-publisher.service';
 import { shouldReportSlot, slotReportText } from './slot-report';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
 import { OneAtATime } from './one-at-a-time';
+import { UnknownOutcomeWarnings, unknownOutcomeText } from './unknown-outcome';
 
 /** Часовой пояс расписания канала (единый для broadcast, не per-user). */
 const POST_TZ = 'Europe/Moscow';
@@ -30,6 +31,8 @@ const MORNING_CRON = '*/5 9,10 * * *';
  */
 const CATCH_UP_CRON = '*/15 * * * *';
 const EVENING_CRON = '*/5 18,19 * * *';
+/** Кто держит флаг публикации, пока идёт тик, — так его назовёт отказ /zv. */
+export const SCHEDULE_HOLDER = 'пост по расписанию';
 /** Имя слота для владельца и для журнала отправок. */
 const SLOT_NAME: Record<HealthyAdultSlot, string> = {
   morning: 'утро',
@@ -51,9 +54,11 @@ export class ChannelScheduleService {
   private readonly retries = new SlotAttempts();
 
   /** Публикация и досылка «в полёте» (R7, one-at-a-time.ts). Проверка — после
-   * аренды: пока процесс публикует, тик за ним, а не за соседним инстансом. */
-  private readonly posting = new OneAtATime();
+   * аренды: пока процесс публикует, тик за ним, а не за соседним инстансом.
+   * Флаг публикации — у publisher: его же держит /zv. */
   private readonly retrying = new OneAtATime();
+  /** «Исход неизвестен» — владельцу раз на площадку в слоте (unknown-outcome.ts). */
+  private readonly unknownWarned = new UnknownOutcomeWarnings();
 
   constructor(
     private readonly publisher: ChannelPublisherService,
@@ -118,8 +123,11 @@ export class ChannelScheduleService {
    * одинаковых DM за утро).
    */
   async maybePost(now = new Date()): Promise<void> {
-    if (!(await this.posting.run(() => this.postIfDue(now))))
-      this.logger.warn('healthy-adult: публикация ещё идёт — тик пропущен');
+    const gate = this.publisher.inFlight;
+    if (!(await gate.run(() => this.postIfDue(now), SCHEDULE_HOLDER)))
+      this.logger.warn(
+        `healthy-adult: публикация ещё идёт (${gate.holder}) — тик пропущен`,
+      );
   }
 
   private async postIfDue(now: Date): Promise<void> {
@@ -184,6 +192,12 @@ export class ChannelScheduleService {
     const since = new Date(now.getTime() - 3 * 60 * 60 * 1000);
     const plan = planRetry(await this.deliveries.slotRows(name, since));
     if (!plan) return;
+    // Пост мог выйти — не досылаем, просим проверить руками (хвост R7).
+    const unknown = this.unknownWarned.fresh(key, plan.unknown);
+    const down = unknown.map((platform) => ({ platform }));
+    if (unknown.length)
+      await this.alert(unknownOutcomeText(name, unknown), down);
+    if (plan.platforms.length === 0) return;
 
     const res = await this.publisher.retry(name, plan.text, plan.platforms);
     if (res.ok) {

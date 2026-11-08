@@ -8,9 +8,10 @@ import { createRatingApi, HttpStatusError } from './ratingApi';
 
 const authedFetch = vi.fn();
 const trackEvent = vi.fn();
+const reportError = vi.fn();
 
 function makeApi() {
-  return createRatingApi(authedFetch, trackEvent);
+  return createRatingApi(authedFetch, trackEvent, reportError);
 }
 
 const okJson = (body: unknown) => ({
@@ -22,6 +23,7 @@ beforeEach(() => {
   localStorage.clear();
   authedFetch.mockReset();
   trackEvent.mockReset();
+  reportError.mockReset();
 });
 
 describe('createRatingApi.saveRating', () => {
@@ -145,14 +147,17 @@ describe('createRatingApi.saveRating — границы классификаци
 // Аудит 2026-11, E4: 401/429 пробрасывались как 4xx — плитка показывала
 // оценку, которой нет ни на сервере, ни в очереди.
 describe('createRatingApi.saveRating — отказ, который пройдёт сам', () => {
-  it.each([401, 429])('%i — оценка в очереди, ответ queued', async (status) => {
-    authedFetch.mockResolvedValue({ ok: false, status });
-    const res = await makeApi().saveRating('safety', 6, '2026-08-16');
-    expect(res).toEqual({ ok: true, allDone: false, queued: true });
-    expect(JSON.parse(localStorage.getItem('rating_outbox_v1')!)).toEqual([
-      { needId: 'safety', value: 6, date: '2026-08-16' },
-    ]);
-  });
+  it.each([401, 408, 429])(
+    '%i — оценка в очереди, ответ queued',
+    async (status) => {
+      authedFetch.mockResolvedValue({ ok: false, status });
+      const res = await makeApi().saveRating('safety', 6, '2026-08-16');
+      expect(res).toEqual({ ok: true, allDone: false, queued: true });
+      expect(JSON.parse(localStorage.getItem('rating_outbox_v1')!)).toEqual([
+        { needId: 'safety', value: 6, date: '2026-08-16' },
+      ]);
+    },
+  );
 
   it.each([400, 403, 404])(
     'контроль: %i — бросок, очередь пуста',
@@ -180,4 +185,48 @@ describe('createRatingApi.saveRating — отказ, который пройдё
       spy.mockRestore();
     }
   });
+});
+
+// Хвост волны 2 (#1022): оценка с постоянным 4xx (удалённый needId) стояла
+// в голове очереди вечно, и за ней не уезжала ни одна другая.
+describe('createRatingApi.flushOutbox — постоянный отказ', () => {
+  const queue = (...items: object[]) =>
+    localStorage.setItem('rating_outbox_v1', JSON.stringify(items));
+  const status = (code: number) => ({ ok: false, status: code });
+
+  it('404 снимается с отчётом наверх, остальные уезжают', async () => {
+    queue(
+      { needId: 'gone', value: 3, date: '2026-08-10' },
+      { needId: 'safety', value: 7, date: '2026-08-10' },
+    );
+    authedFetch
+      .mockResolvedValueOnce(status(404))
+      .mockResolvedValueOnce(okJson({ ok: true, allDone: false }));
+    await makeApi().flushOutbox();
+    expect(authedFetch).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem('rating_outbox_v1')).toBeNull();
+    expect(reportError).toHaveBeenCalledTimes(1);
+    expect(reportError.mock.calls[0][0]).toEqual({
+      section: 'rating_outbox',
+      message: expect.stringMatching(/404 \(needId=gone, 2026-08-10\)/),
+    });
+    expect(trackEvent).toHaveBeenCalledWith('outbox_flush', { count: 1 });
+  });
+
+  it.each([401, 408, 429, 503])(
+    'контроль: %i — выгрузка встаёт, очередь цела, отчёта нет',
+    async (code) => {
+      queue(
+        { needId: 'safety', value: 7, date: '2026-08-10' },
+        { needId: 'play', value: 2, date: '2026-08-10' },
+      );
+      authedFetch.mockResolvedValue(status(code));
+      await makeApi().flushOutbox();
+      expect(authedFetch).toHaveBeenCalledTimes(1);
+      expect(
+        JSON.parse(localStorage.getItem('rating_outbox_v1')!),
+      ).toHaveLength(2);
+      expect(reportError).not.toHaveBeenCalled();
+    },
+  );
 });

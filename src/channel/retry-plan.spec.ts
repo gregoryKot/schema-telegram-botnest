@@ -6,6 +6,7 @@
 // фразу: повтор всего фан-аута дал бы дубль там, где пост уже вышел.
 import { planRetry } from './retry-plan';
 import type { DeliveryRow } from './delivery-log.format';
+import { markUnknown } from './unknown-outcome';
 
 const row = (
   platform: string,
@@ -26,7 +27,7 @@ describe('planRetry', () => {
   it('в план попадают только не принявшие площадки', () => {
     expect(
       planRetry([row('max', false), row('vk', true), row('telegram', true)]),
-    ).toEqual({ text: 'фраза слота', platforms: ['max'] });
+    ).toEqual({ text: 'фраза слота', platforms: ['max'], unknown: [] });
   });
 
   it('дошло везде — плана нет', () => {
@@ -65,6 +66,28 @@ describe('planRetry', () => {
     // Записи старше версии с колонкой text: повторить нечего, и выдумывать
     // новую фразу нельзя — на площадках должен оказаться тот же пост.
     expect(planRetry([row('max', false, { text: null })])).toBeNull();
+  });
+
+  // Хвост R7 (аудит 2026-11): таймаут ответа или обрыв после отправки — пост
+  // мог выйти, и досылка через 15 минут дала бы в канале второй.
+  it('исход неизвестен — площадка не досылается, а названа отдельно', () => {
+    const unknown = row('telegram', false, {
+      reason: markUnknown('таймаут ответа'),
+    });
+    expect(planRetry([unknown, row('max', false), row('vk', true)])).toEqual({
+      text: 'фраза слота',
+      platforms: ['max'],
+      unknown: ['telegram'],
+    });
+  });
+
+  it('только неизвестный исход — план без досылки, но с площадкой для проверки', () => {
+    const unknown = row('telegram', false, { reason: markUnknown('обрыв') });
+    expect(planRetry([unknown, row('vk', true)])).toEqual({
+      text: 'фраза слота',
+      platforms: [],
+      unknown: ['telegram'],
+    });
   });
 
   it('текст берётся из журнала, а не из свежей записи повтора', () => {

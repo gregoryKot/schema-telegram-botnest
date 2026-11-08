@@ -1,4 +1,5 @@
 import type { DeliveryRow } from './delivery-log.format';
+import { isUnknownReason } from './unknown-outcome';
 
 /**
  * Кому досылать пост, который вышел не везде.
@@ -15,6 +16,8 @@ import type { DeliveryRow } from './delivery-log.format';
 export interface RetryPlan {
   text: string;
   platforms: string[];
+  /** Исход неизвестен (пост мог выйти) — не досылаем, проверяет владелец. */
+  unknown: string[];
 }
 
 /**
@@ -25,14 +28,16 @@ export interface RetryPlan {
 export function planRetry(rows: DeliveryRow[]): RetryPlan | null {
   const seen = new Set<string>();
   const failed: string[] = [];
+  const unknown: string[] = [];
   let text = '';
   for (const row of rows) {
     if (!text && row.text) text = row.text;
     if (seen.has(row.platform)) continue;
     seen.add(row.platform);
-    if (!row.ok) failed.push(row.platform);
+    if (!row.ok)
+      (isUnknownReason(row.reason) ? unknown : failed).push(row.platform);
   }
   // Без текста досылать нечего: строка журнала старше версии с текстом.
-  if (!text || failed.length === 0) return null;
-  return { text, platforms: failed };
+  if (!text || failed.length + unknown.length === 0) return null;
+  return { text, platforms: failed, unknown };
 }

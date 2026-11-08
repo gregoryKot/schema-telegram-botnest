@@ -13,7 +13,7 @@ import { TELEGRAF_BOT } from './telegram.constants';
 import { failCallback } from './callback-failure';
 import { describeTelegramError } from './telegram-error';
 import { BroadcastRunner } from './telegram.broadcast-runner';
-import { ZV_BUSY, ZvRunner } from './zv-runner';
+import { ZvRunner } from './zv-runner';
 import { renderTemplate } from '../notification/notification.templates';
 import { BotAdminStatsService } from '../bot/bot.admin-stats.service';
 import { StatsReportService } from '../bot/stats-report.service';
@@ -100,13 +100,15 @@ export class TelegramAdminService implements OnModuleInit {
           return;
         }
         // Фоном (E16): публикация длится дольше, чем можно держать бота.
-        const started = this.zv.start(
+        // Флаг «в полёте» — общий с расписанием (zv-runner.ts).
+        const refused = this.zv.start(
           () =>
             only ? this.channelCheck.checkOne(only) : this.publisher.publish(),
           (text) => ctx.reply(text),
           this.logger,
+          this.publisher.inFlight,
         );
-        if (!started) await ctx.reply(ZV_BUSY);
+        if (refused) await ctx.reply(refused);
       } catch (err) {
         this.logger.error('zv command failed', err);
         await ctx.reply(`❌ ${String(err).slice(0, 300)}`).catch(() => null);

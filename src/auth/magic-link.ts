@@ -11,6 +11,8 @@ import type { PrismaService } from '../prisma/prisma.service';
 import type { AddressForm } from '../notification/address-form';
 // TTL один на все почтовые токены — второй константы рядом быть не должно.
 import { EMAIL_TOKEN_TTL_MS } from './email.util';
+import { emailLinkQuery, type MagicLinkParams } from './email-link-params';
+export type { MagicLinkParams };
 
 export interface MagicLinkDeps {
   prisma: PrismaService;
@@ -27,15 +29,15 @@ export interface MagicLinkDeps {
  * Общий хвост email-логина и привязки email; письмо уходит fire-and-forget.
  * `userId` null — адрес новый: User/AuthProvider до подтверждения не создаём
  * (B-16 аудита 2026-10), аккаунт появится в EmailTokenService.consumeEmailToken.
- * `ticket` — билет входа: письмо часто открывают на ДРУГОМ устройстве, и сессия
- * доставалась ему, а исходный экран висел «письмо отправлено» (2026-08-28).
+ * `extra` — билет входа (письмо часто открывают на ДРУГОМ устройстве, 2026-08-28)
+ * и адрес возврата (E14): см. email-link-params.ts.
  */
 export async function sendMagicLink(
   deps: MagicLinkDeps,
   userId: bigint | null,
   lower: string,
   purpose: 'login' | 'link_email_auth',
-  ticket?: string,
+  extra: MagicLinkParams = {},
 ): Promise<void> {
   const raw = crypto.randomBytes(32).toString('base64url');
   const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
@@ -50,8 +52,7 @@ export async function sendMagicLink(
     },
   });
   const base = deps.webappUrl.replace(/\/$/, '');
-  const tail = ticket ? `&ticket=${encodeURIComponent(ticket)}` : '';
-  const link = `${base}/api/auth/email/callback?token=${raw}${tail}`;
+  const link = `${base}/api/auth/email/callback?${emailLinkQuery(raw, extra)}`;
   const form = userId === null ? 'ty' : await deps.addressForm(userId);
   const send = purpose === 'link_email_auth' ? deps.sendLink : deps.send;
   void send(lower, link, form).catch((err: Error) => {

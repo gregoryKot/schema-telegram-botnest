@@ -4,6 +4,7 @@ import { useTr } from '../../utils/addressForm';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 import { useResendPause } from './useResendPause';
 import { LoginEmailSent } from './LoginEmailSent';
+import { returnToForEmailLink } from '../../auth/emailReturnTo';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -33,7 +34,7 @@ export function LoginEmailForm({ setError }: { setError: (e: string | null) => v
       const res = await fetch(`${API_BASE}/api/auth/email/link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-requested-with': 'webapp' },
-        body: JSON.stringify({ email: value }),
+        body: JSON.stringify({ email: value, returnTo: returnToForEmailLink() }), // письмо откроют новой вкладкой (E14)
       });
       if (!res.ok) throw new Error((await readHumanError(res, SEND_FAILED)).message);
       setSentCount(n => n + 1);

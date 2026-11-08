@@ -4,6 +4,7 @@
  * status». Время — московское, как и расписание канала.
  */
 import { mskParts } from '../bot/healthy-adult.schedule';
+import { isUnknownReason } from './unknown-outcome';
 
 export interface DeliveryRow {
   source: string;
@@ -46,7 +47,9 @@ export function formatDeliveryLog(rows: DeliveryRow[]): string {
   if (rows.length === 0)
     return 'Журнал пуст: с момента запуска канал ещё ничего не отправлял.';
   const lines = rows.map((r) => {
-    const tail = r.ok ? 'дошло' : `не дошло — ${clip(r.reason)}`;
+    // «Исход неизвестен: …» — не «не дошло»: пост мог выйти (unknown-outcome.ts).
+    const failed = isUnknownReason(r.reason) ? '' : 'не дошло — ';
+    const tail = r.ok ? 'дошло' : `${failed}${clip(r.reason)}`;
     return `${when(r.createdAt)} · ${r.source} · ${r.platform} — ${tail}`;
   });
   return `Последние отправки (время московское, новые сверху):\n${lines.join('\n')}`;

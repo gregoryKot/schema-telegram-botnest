@@ -29,10 +29,15 @@ function makeDeps() {
   return { deps: deps as never, robokassa, notify };
 }
 
-const row = (amount: number | null, currency = 'RUB') =>
+const row = (
+  amount: number | null,
+  currency = 'RUB',
+  type: SessionType = SessionType.SESSION_50,
+) =>
   ({
     id: 5,
-    type: SessionType.SESSION_50,
+    type,
+    durationMin: 50,
     status: BookingStatus.HELD,
     amount,
     currency,
@@ -110,7 +115,14 @@ describe('completeCheckout — платная не в рублях (manual)', ()
 // когда подтверждение уже проставило её в брони. Форма ответа одна на всех
 // путях (инвариант #662: тело не различает пути).
 describe('completeCheckout — ответ без ссылки на встречу', () => {
-  const KEYS = ['cancelToken', 'heldUntil', 'id', 'paymentUrl', 'status'];
+  const KEYS = [
+    'cancelToken',
+    'eventDurationMin',
+    'heldUntil',
+    'id',
+    'paymentUrl',
+    'status',
+  ];
 
   it('сразу подтверждённая бронь со ссылкой в строке — в ответе ссылки нет', async () => {
     const { deps } = makeDeps();
@@ -132,5 +144,28 @@ describe('completeCheckout — ответ без ссылки на встреч�
     const { deps } = makeDeps();
     const res = await completeCheckout(deps, row(4200), OPTS);
     expect(Object.keys(res).sort()).toEqual(KEYS);
+  });
+});
+
+// Аудит 2026-11, R9: экран сразу после записи брал длину из слота (50), и
+// ссылка «в Google Календарь» у знакомства стояла на 50 минут, а .ics и
+// страница записи — на 15. Длину встречи отдаёт сервер, один источник правды —
+// eventDurationMin (session-event.ts).
+describe('completeCheckout — длина встречи в ответе', () => {
+  it('знакомство в слоте 50 → eventDurationMin 15 (сразу подтверждено)', async () => {
+    const { deps } = makeDeps();
+    const notify = { onConfirmed: jest.fn(async () => undefined) };
+    const res = await completeCheckout(
+      { ...(deps as object), notify } as never,
+      row(null, 'RUB', SessionType.INTRO_15),
+      { ...OPTS, isFree: true, heldUntil: null },
+    );
+    expect(res.eventDurationMin).toBe(15);
+  });
+
+  it('контрольный: сессия 50 (ждёт оплаты) → 50', async () => {
+    const { deps } = makeDeps();
+    const res = await completeCheckout(deps, row(4200), OPTS);
+    expect(res.eventDurationMin).toBe(50);
   });
 });

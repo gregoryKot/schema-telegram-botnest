@@ -10,9 +10,9 @@ import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 
 type Tr = (ty: string, vy: string) => string;
 
-/** Абзац про объединение; null — совпадающих записей нет. */
-export function combinedText(n: number, tr: Tr): string | null {
-  if (n <= 0) return null;
+/** Абзац про объединение; null — совпадающих записей нет (или числа нет: прежний текст). */
+export function combinedText(n: number | undefined, tr: Tr): string | null {
+  if (!(typeof n === 'number' && n > 0)) return null;
   const records = `${n} ${pluralRu(n, 'запись', 'записи', 'записей')}`;
   const match = pluralRu(n, 'совпадает', 'совпадают', 'совпадают');
   return (

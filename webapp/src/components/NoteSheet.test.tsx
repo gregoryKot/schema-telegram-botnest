@@ -171,3 +171,22 @@ describe('NoteSheet — предел длины', () => {
     expect(screen.getByText(`3/${DAY_NOTE_MAX}`)).toBeTruthy();
   });
 });
+
+// Хвост волны 2 (#1022): слияние аккаунтов склеивает заметки дня, и склейка
+// бывает длиннее предела. Сервер пускает её правку без роста; поле не должно
+// запирать ввод на 500 — иначе исправить можно только удалением.
+describe('NoteSheet — слитая заметка длиннее предела', () => {
+  it('предел поля — длина сохранённой заметки, правка уходит на сохранение', async () => {
+    const merged = 'а'.repeat(450) + '\n\n' + 'б'.repeat(448);
+    mockApi.getNote.mockResolvedValue({ text: merged, tags: [] });
+    mockApi.saveNote.mockResolvedValue(undefined);
+    await act(async () => { renderSheet(); });
+    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement;
+    await waitFor(() => expect(textarea.value).toBe(merged));
+    expect(textarea.maxLength).toBe(900);
+    const edited = 'в' + merged.slice(1);
+    fireEvent.change(textarea, { target: { value: edited } });
+    await act(async () => { fireEvent.click(screen.getByText('Сохранить')); });
+    expect(mockApi.saveNote).toHaveBeenCalledWith('2026-07-20', edited, []);
+  });
+});

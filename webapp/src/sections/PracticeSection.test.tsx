@@ -394,6 +394,22 @@ describe('PracticeSection — баннер ближайшей сессии', () 
   });
 });
 
+// Хвост 5.6/волны 4: после снятия теста в блоке «В трудный момент» осталась
+// одна «Карта режимов» — в трудную минуту нечего сделать сразу.
+describe('PracticeSection — «В трудный момент»', () => {
+  it('есть «Здесь и сейчас»: ведёт к быстрым практикам вверху страницы (тот же переход, что у верхнего ряда)', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    renderSection();
+    const block = screen.getByRole('heading', { name: 'В трудный момент' }).closest('section')!;
+    fireEvent.click(within(block).getByRole('button', { name: /Здесь и сейчас/ }));
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll.mock.contexts[0]).toBe(document.getElementById('practice-here-and-now'));
+    expect(within(block).getByText(/Карта режимов/)).toBeTruthy();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+});
+
 describe('PracticeSection — колесо детства', () => {
   it('одна точка входа — карточка в «Инструментах»; плитки в «В трудный момент» нет', async () => {
     renderSection();

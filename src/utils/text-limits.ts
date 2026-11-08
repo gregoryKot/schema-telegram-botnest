@@ -12,7 +12,7 @@
  * ловит `text-limits.parity.spec.ts` (правило №4 CLAUDE.md).
  */
 export const SESSION_NOTE_MAX = 10000; // заметка терапевта по сессии
-export const DAY_NOTE_MAX = 500; // заметка к дню в трекере (счётчик «N/500» в обоих фронтах)
+export const DAY_NOTE_MAX = 500; // заметка к дню в трекере (счётчик «N/500»); длиннее — только слитая, правка без роста (src/bot/day-note-limit.ts)
 export const DIARY_FIELD_MAX = 10000; // поле записи дневника / пункт благодарности
 export const PRACTICE_TEXT_MAX = 200; // своя практика в плане
 export const MODE_MAP_TITLE_MAX = 120; // название карты режимов

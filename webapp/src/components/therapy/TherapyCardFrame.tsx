@@ -22,7 +22,9 @@ export function TherapyCardFrame({
     <section className="th-card" aria-label={t.cardTalk}>
       <div className="ds-eyebrow">{eyebrow}</div>
       <h2 className="th-card-title">{title}</h2>
-      {target.write && <p className="th-card-sub">{t.cardSubTherapist}</p>}
+      {/* Свой терапевт: с каналом — повод написать, без канала — про ближайшую встречу (волна 6). */}
+      {target.write ? <p className="th-card-sub">{t.cardSubTherapist}</p>
+        : target.connected ? <p className="th-card-sub">{t.cardSubTherapistNoChannel}</p> : null}
       <div className="th-card-acts">
         {target.write ? (
           <ExternalLink className="ds-btn th-btn" href={target.write.url} onClick={target.write.onClick}>
@@ -30,7 +32,7 @@ export function TherapyCardFrame({
           </ExternalLink>
         ) : (
           <button type="button" className="ds-btn th-btn" onClick={target.open}>
-            {t.cardTalk}
+            {target.connected ? t.sheetNextMeeting : t.cardTalk}
           </button>
         )}
         {extra}

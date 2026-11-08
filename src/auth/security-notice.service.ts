@@ -5,6 +5,8 @@
 //     `security_notice`, без тихих часов), если есть вход через Telegram.
 // Без каналов — только строка в журнале безопасности, которую пишет
 // вызывающий. Ничего не бросает: уведомление — след, а не условие действия.
+// Отвязанный адрес почты получает письмо тоже (хвост S12): если отвязал не
+// владелец почты, это его единственный сигнал — в аккаунт он уже не войдёт.
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
@@ -27,8 +29,8 @@ export class SecurityNoticeService {
   ) {}
 
   /** Fire-and-forget: ответ на запрос не ждёт почты и очереди. */
-  notify(userId: bigint, notice: SecurityNotice): void {
-    this.deliver(userId, notice).catch((err: Error) =>
+  notify(userId: bigint, notice: SecurityNotice, alsoTo: string[] = []): void {
+    this.deliver(userId, notice, alsoTo).catch((err: Error) =>
       this.logger.warn(
         `уведомление ${notice.kind} для ${userId} не ушло: ${err.message}`,
       ),
@@ -39,7 +41,23 @@ export class SecurityNoticeService {
     this.notify(userId, { kind: 'provider_linked', provider });
   }
 
-  async deliver(userId: bigint, notice: SecurityNotice): Promise<void> {
+  /** Адреса почтового входа — читать ДО отвязки; сбой чтения не мешает ей. */
+  async emailAddresses(userId: bigint): Promise<string[]> {
+    const rows = await this.prisma.authProvider
+      .findMany({
+        where: { userId, provider: 'email' },
+        select: { providerId: true },
+      })
+      .catch((): { providerId: string }[] => []);
+    return rows.map((r) => r.providerId);
+  }
+
+  /** `alsoTo` — адреса, которых у аккаунта уже нет (отвязанная почта). */
+  async deliver(
+    userId: bigint,
+    notice: SecurityNotice,
+    alsoTo: string[] = [],
+  ): Promise<void> {
     const [user, mail, chatId] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: userId },
@@ -54,10 +72,11 @@ export class SecurityNoticeService {
       telegramIdFor(this.prisma, userId),
     ]);
     const jobs: Promise<unknown>[] = [];
-    if (mail) {
+    const to = new Set([...(mail ? [mail.providerId] : []), ...alsoTo]);
+    if (to.size > 0) {
       const form = normalizeAddressForm(user?.addressForm);
       const { subject, body } = securityNoticeText(notice, form);
-      jobs.push(this.email.send(mail.providerId, subject, body));
+      for (const addr of to) jobs.push(this.email.send(addr, subject, body));
     }
     if (chatId !== null) {
       jobs.push(

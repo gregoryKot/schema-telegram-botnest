@@ -81,7 +81,7 @@ describe('компоненты с секретами: DOM под ym-hide-content
   it('DoneScreen: токен в href — под скрытым узлом; ссылки на встречу нет (аудит 2026-10)', () => {
     const { container } = render(
       <DoneScreen resultRef={createRef<HTMLDivElement>()} slot={slot} tz="Europe/Moscow" cancelled={false}
-        cancelToken={TOKEN} sessionType="SESSION_50" onCancelled={() => {}} />,
+        booked={{ cancelToken: TOKEN, eventDurationMin: 50 }} sessionType="SESSION_50" onCancelled={() => {}} />,
     );
     expect(carriers(container).length).toBeGreaterThanOrEqual(3); // Google, .ics, Telegram
     expect(violations(container)).toEqual([]);
