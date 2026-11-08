@@ -53,7 +53,7 @@
 5. `backup-scheduler.cjs`: бэкап БД в R2 с арендой через `CronLease`, стартует только после миграций.
 6. `exec node dist/main` на `APP_PORT`, с номером запуска, числом падений за сутки и решением троттла DM (`STARTUP_LAUNCH`, `STARTUP_CRASHES_DAY`, `STARTUP_NOTICE`). Рестарты до `STARTUP_MAX_FAILS`=3 падений за окно `STARTUP_CRASH_WINDOW_MS`=15 мин или `STARTUP_MAX_FAILS_HOUR`=6 за час (`crash-window.mjs`), затем техработы, пауза 5 мин (×2, потолок 1 ч) и новая серия. Рост паузы сбрасывает только прогон дольше окна.
 
-Состояние держит `supervisor-status.mjs`, настройки из env — `entrypoint-config.mjs`. SIGTERM/SIGINT пробрасываются приложению.
+Состояние держит `supervisor-status.mjs`; парковка (упавший `migrate deploy`, исчерпанный лимит перезапусков, база не поднялась) шлёт DM владельцу через Bot API по `BOT_TOKEN`/`ADMIN_ID` с троттлом как у DM о перезапуске (1, 2, 4, 8… остановка по причине за сутки); без них молчит. Настройки из env — `entrypoint-config.mjs`. SIGTERM/SIGINT пробрасываются приложению.
 
 - `amvera.yml`: `environment: docker`, `toolchain: docker`, `run.containerPort: 3000`. Amvera сама тянет main из GitHub и собирает Dockerfile (README).
 - `branch-cleanup.yml`: ручной `workflow_dispatch`, чистка веток смерженных PR (`scripts/branch-cleanup.mjs`): без `apply` — только список, с `apply` — удаление веток, чья голова совпадает с head смерженного PR и без открытого PR. Права на запись в refs — только у этой джобы; тест — `src/test-support/gates/branch-cleanup.spec.ts`.

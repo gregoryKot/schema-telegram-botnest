@@ -12,7 +12,8 @@
 // БД не поднялась → техработы, пауза (cooldownMs) и новая серия: HEALTHCHECK при
 // этом красный (Dockerfile смотрит тело /health, не код front). Каждый шаг
 // пишет состояние (supervisor-status.mjs): front отдаёт его заголовком
-// X-Maintenance-Reason. Настройки из env — entrypoint-config.mjs.
+// X-Maintenance-Reason, а парковка (migrate, лимит, БД) шлёт DM владельцу.
+// Настройки из env — entrypoint-config.mjs.
 //
 // Graceful shutdown: Node как PID 1 ловит SIGTERM/SIGINT, пробрасывает их
 // приложению (bot.stop, prisma disconnect), затем закрывает front и выходит.
@@ -33,7 +34,7 @@ const PORT =
     : 3000;
 const C = readEntrypointConfig();
 const book = createCrashBook({ windowMs: C.CRASH_WINDOW_MS, maxFails: C.MAX_FAILS, hourMaxFails: C.MAX_FAILS_HOUR });
-const status = createSupervisorStatus();
+const status = createSupervisorStatus({ token: C.BOT_TOKEN, chatId: C.ADMIN_ID, apiBase: C.ALERT_API });
 
 // Front занимает публичный порт немедленно; приложение живёт на APP_PORT.
 const front = startFront({ port: PORT, appPort: C.APP_PORT, reason: status.reason });

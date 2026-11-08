@@ -5,6 +5,8 @@
 // подсовывая фейковые команды через env (RECOVER_CMD/MIGRATE_CMD/APP_CMD).
 import { spawn, ChildProcess } from 'child_process';
 import { createServer, Server } from 'net';
+import { createServer as createHttpServer } from 'http';
+import type { AddressInfo } from 'net';
 import { listenWithRetry, reservePort } from '../test-support/ephemeral-port';
 import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
@@ -32,8 +34,10 @@ const ENTRY = join(process.cwd(), 'deploy', 'entrypoint.mjs');
 // это маскировал принудительным выходом воркера. detached: true делает
 // entrypoint.mjs лидером своей группы — её и убиваем целиком.
 function launch(env: Record<string, string>) {
+  // BOT_TOKEN/ADMIN_ID пустые по умолчанию: парковка не должна слать DM в
+  // настоящий Telegram из-за переменных окружения машины, где идёт прогон.
   const proc: ChildProcess = spawn('node', [ENTRY], {
-    env: { ...process.env, PORT: '0', ...env },
+    env: { ...process.env, PORT: '0', BOT_TOKEN: '', ADMIN_ID: '', ...env },
     detached: true,
   });
   // Весь stderr entrypoint'а (и унаследованный stderr APP_CMD) — для тестов,
@@ -504,10 +508,38 @@ describe('entrypoint (супервизор старта)', () => {
   }, 30_000);
 });
 
-// Аудит 2026-10, «Красный смок не говорит, что именно лежит»: окно старта,
-// упавший migrate deploy и крашлуп давали одну и ту же страницу техработ.
-// Супервизор держит причину (supervisor-status.mjs), front отдаёт её заголовком
-// X-Maintenance-Reason — здесь шов с настоящим процессом.
+// Аудит 2026-10: «Красный смок не говорит, что именно лежит» и «Из entrypoint
+// без поднявшегося приложения сигнала нет». Супервизор держит причину
+// техработ (front отдаёт её заголовком X-Maintenance-Reason) и при парковке
+// шлёт DM владельцу через Bot API — здесь фейковый, адрес из STARTUP_ALERT_API.
+// Троттл и тексты — supervisor-status.spec.ts; здесь шов с настоящим процессом.
+interface BotCall {
+  path: string;
+  body: { chat_id: string; text: string };
+}
+
+async function fakeBotApi() {
+  const calls: BotCall[] = [];
+  const server = createHttpServer((req, res) => {
+    let raw = '';
+    req.on('data', (c: Buffer) => (raw += c.toString()));
+    req.on('end', () => {
+      calls.push({
+        path: req.url ?? '',
+        body: JSON.parse(raw) as BotCall['body'],
+      });
+      res.setHeader('Content-Type', 'application/json');
+      res.end('{"ok":true}');
+    });
+  });
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  const { port } = server.address() as AddressInfo;
+  return {
+    calls,
+    url: `http://127.0.0.1:${port}`,
+    close: () => new Promise<void>((r) => server.close(() => r())),
+  };
+}
 
 /** Опрос /health через front до нужной причины в заголовке (или последняя). */
 async function pollReason(port: number, want: string): Promise<string | null> {
@@ -526,9 +558,17 @@ async function pollReason(port: number, want: string): Promise<string | null> {
   return last;
 }
 
-describe('entrypoint: причина техработ заголовком X-Maintenance-Reason', () => {
+async function waitCalls(calls: BotCall[], n: number): Promise<void> {
+  const until = Date.now() + 10_000;
+  while (calls.length < n && Date.now() < until) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+}
+
+describe('entrypoint: причина техработ и DM владельцу при парковке', () => {
   const alive: ChildProcess[] = [];
-  afterEach(() => {
+  const bots: Array<{ close: () => Promise<void> }> = [];
+  afterEach(async () => {
     while (alive.length) {
       const proc = alive.pop();
       try {
@@ -537,6 +577,7 @@ describe('entrypoint: причина техработ заголовком X-Mai
         proc?.kill('SIGKILL');
       }
     }
+    await Promise.all(bots.splice(0).map((b) => b.close()));
   });
 
   it('идёт migrate deploy → причина migrating', async () => {
@@ -549,20 +590,32 @@ describe('entrypoint: причина техработ заголовком X-Mai
     expect(await pollReason(await frontPort, 'migrating')).toBe('migrating');
   }, 25_000);
 
-  it('migrate deploy упал → причина migrate-failed', async () => {
+  it('migrate deploy упал → причина migrate-failed и один DM через Bot API', async () => {
+    const bot = await fakeBotApi();
+    bots.push(bot);
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'exit 1',
       MIGRATE_MAX_ATTEMPTS: '1',
       APP_PORT: String(await reservePort()),
+      BOT_TOKEN: '1:test-token',
+      ADMIN_ID: '42',
+      STARTUP_ALERT_API: bot.url,
     });
     alive.push(proc);
-    expect(await pollReason(await frontPort, 'migrate-failed')).toBe(
-      'migrate-failed',
-    );
+    const port = await frontPort;
+    expect(await pollReason(port, 'migrate-failed')).toBe('migrate-failed');
+    await waitCalls(bot.calls, 1);
+    expect(bot.calls).toHaveLength(1);
+    expect(bot.calls[0].path).toBe('/bot1:test-token/sendMessage');
+    expect(bot.calls[0].body.chat_id).toBe('42');
+    expect(bot.calls[0].body.text).toContain('migrate deploy упал');
+    expect(bot.calls[0].body.text).not.toMatch(/test-token|https?:/);
   }, 25_000);
 
-  it('крашлуп до listen → причина crashloop-parked', async () => {
+  it('крашлуп до listen → причина crashloop-parked и DM о парковке', async () => {
+    const bot = await fakeBotApi();
+    bots.push(bot);
     const { proc, frontPort } = launch({
       RECOVER_CMD: 'true',
       MIGRATE_CMD: 'true',
@@ -571,10 +624,36 @@ describe('entrypoint: причина техработ заголовком X-Mai
       STARTUP_MAX_FAILS: '2',
       STARTUP_BACKOFF_MS: '10',
       STARTUP_COOLDOWN_MS: '600000', // пауза дольше теста — супервизор припаркован
+      BOT_TOKEN: '1:test-token',
+      ADMIN_ID: '42',
+      STARTUP_ALERT_API: bot.url,
     });
     alive.push(proc);
-    expect(await pollReason(await frontPort, 'crashloop-parked')).toBe(
-      'crashloop-parked',
+    const port = await frontPort;
+    expect(await pollReason(port, 'crashloop-parked')).toBe('crashloop-parked');
+    await waitCalls(bot.calls, 1);
+    expect(bot.calls.map((c) => c.body.text)).toEqual([
+      expect.stringContaining('лимит перезапусков исчерпан'),
+    ]);
+  }, 25_000);
+
+  it('контроль: без BOT_TOKEN парковка молчит, причина всё равно наружу', async () => {
+    const bot = await fakeBotApi();
+    bots.push(bot);
+    const { proc, frontPort, log } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'exit 1',
+      MIGRATE_MAX_ATTEMPTS: '1',
+      APP_PORT: String(await reservePort()),
+      ADMIN_ID: '42',
+      STARTUP_ALERT_API: bot.url,
+    });
+    alive.push(proc);
+    expect(await pollReason(await frontPort, 'migrate-failed')).toBe(
+      'migrate-failed',
     );
+    await waitLog(log, (l) => /migrate deploy не прошёл/.test(l));
+    await new Promise((r) => setTimeout(r, 500));
+    expect(bot.calls).toEqual([]);
   }, 25_000);
 });

@@ -51,9 +51,9 @@
 
 | Переменная | На проде | Формат | Назначение |
 |---|---|---|---|
-| `ADMIN_ID` | **обязательна** | telegramId | Telegram id единственного администратора — без него не работают ни админские команды, ни алерты в Telegram (см. src/utils/admin-alert.ts). |
+| `ADMIN_ID` | **обязательна** | telegramId | Telegram id единственного администратора — без него не работают ни админские команды, ни алерты в Telegram (см. src/utils/admin-alert.ts). Её же читает супервизор контейнера: DM о парковке на техработах (`deploy/supervisor-status.mjs`). |
 | `BOT_REDIRECT_USERNAME` | опциональна | nonEmpty | Имя второго бота, на который редиректит /start при миграции (опционально). |
-| `BOT_TOKEN` | **обязательна** | botToken | Токен бота BotFather — без него бот не подключается к Telegram и алерты в Telegram не уходят. |
+| `BOT_TOKEN` | **обязательна** | botToken | Токен бота BotFather — без него бот не подключается к Telegram и алерты в Telegram не уходят. Его же читает супервизор контейнера: DM о парковке на техработах (`deploy/supervisor-status.mjs`). |
 | `BOT_USERNAME` | **обязательна** | telegramUsername | Имя бота без @ для t.me-ссылок; без него приглашения отдают 503. |
 | `MINIAPP_APP_NAME` | опциональна | nonEmpty | Короткое имя Mini App бота в BotFather для ссылок-приглашений t.me/<bot>/<name>?startapp=… (открывают кабинет сайта внутри Telegram) — дефолт «diary», если не задано. |
 | `TELEGRAM_PROXY_URL` | опциональна | nonEmpty | Исходящий прокси до api.telegram.org на случай, если маршрут с хостинга не работает напрямую — без него бот ходит напрямую. |
