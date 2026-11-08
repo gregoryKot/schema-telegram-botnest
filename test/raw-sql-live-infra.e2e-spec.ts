@@ -186,5 +186,44 @@ describe('сырой SQL инфраструктуры на реальном Post
       );
       expect(await live()).toHaveLength(1);
     });
+
+    // Хвост волны 8: обход ставит перерыв вместо напоминания (swapReminder),
+    // правка настроек на соседнем инстансе меняет напоминание — в дне одно
+    // проактивное. Проверка «перерыв уже стоит» идёт под тем же локом.
+    const pendingTypes = async () =>
+      (
+        await prisma.scheduledNotification.findMany({
+          where: { userId: RESCHEDULE_USER, sentAt: null, cancelledAt: null },
+        })
+      ).map((r) => r.type);
+    const clearPending = () =>
+      prisma.scheduledNotification.updateMany({
+        where: { userId: RESCHEDULE_USER, sentAt: null, cancelledAt: null },
+        data: { cancelledAt: new Date() },
+      });
+
+    it('перерыв уже встал — замена напоминания второго не ставит', async () => {
+      const notifications = new NotificationService(prisma);
+      await clearPending();
+      const at = new Date('2030-01-03T18:00:00Z');
+      await notifications.replacePending(RESCHEDULE_USER, 'reminder', at);
+      await notifications.swapReminder(RESCHEDULE_USER, 'lapsing_3', at);
+      await notifications.replacePending(RESCHEDULE_USER, 'reminder', at);
+      expect(await pendingTypes()).toEqual(['lapsing_3']);
+    });
+
+    it('перерыв и замена напоминания одновременно — одно проактивное', async () => {
+      const notifications = new NotificationService(prisma);
+      await clearPending();
+      const at = new Date('2030-01-04T18:00:00Z');
+      await Promise.all([
+        notifications.replacePending(RESCHEDULE_USER, 'reminder', at),
+        notifications.swapReminder(RESCHEDULE_USER, 'weekly', at, {
+          text: 'x',
+        }),
+        notifications.replacePending(RESCHEDULE_USER, 'reminder', at),
+      ]);
+      expect(await pendingTypes()).toEqual(['weekly']);
+    });
   });
 });
