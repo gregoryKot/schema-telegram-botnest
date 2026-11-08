@@ -26,6 +26,7 @@
 
 ### `src/api/`
 Пользовательский HTTP-API мини-аппа и сайта (`/api/*`): один гард на все контроллеры, глобальный троттлинг (в т.ч. общий Postgres-счётчик).
+- Напоминание плана практики — местный день плана и местный час (`src/api/plan-reminder.ts`, `zonedWallClockToUtc`; старое поле `reminderUtcHour` принимается).
 - Контроллеры: api (user-flags, drafts, profile, disclaimer), ysq, pairs, plans/practices, exercises (healthy-phrase, belief-checks, letters, safe-place, flashcards), notes, tracker (needs, ratings, streak, insights, achievements), diary, phrase-checks, settings, journey, practice-sessions, analytics; без гарда: quiz, public-events, client-errors, health, booking (лид-форма); AccountApiModule — export/delete аккаунта.
 - Входы:
   - `src/api/telegram-auth.guard.ts` — единый гард: Bearer JWT / Telegram / MAX initData
@@ -67,7 +68,7 @@
   - `src/therapy/therapy-client-data.service.ts` — данные клиента для терапевта, запрос YSQ
   - `src/therapy/therapy-tasks.service.ts` — задачи (свои и назначенные), стрик-прогресс
   - `src/therapy/task-title.ts` — название задания для уведомления в боте («Карточка схемы: …»); названия схем/режимов — копия `shared` в `task-title.data.ts`, сверка `task-title.sync.spec.ts`
-  - `src/therapy/streak-progress.ts` — прогресс задания-серии: дни с дня назначения по календарю клиента; один расчёт для /tasks клиента, карточки у терапевта и авто-закрытия
+  - `src/therapy/streak-progress.ts` — прогресс задания-серии: дни с дня назначения по календарю клиента; один расчёт для /tasks клиента, карточки у терапевта и авто-закрытия; окно `[день назначения, + targetDays)` и просрочка — `src/therapy/streak-window.ts` (у закрытого окно замирает в `completedAt`)
   - `src/therapy/assigned-task.ts` — удаление и отметка «выполнено» задания терапевтом (офлайн-клиенту выполнить его некому); доступ — задание назначено этим терапевтом и связь активна, иначе 403
   - `src/therapy/dto/not-future-day.ts` — валидатор `NotFutureDay`: «начало терапии» не позже самого позднего «сегодня» на Земле (UTC+14)
   - `src/therapy/therapist-request.service.ts` — заявка на роль терапевта
