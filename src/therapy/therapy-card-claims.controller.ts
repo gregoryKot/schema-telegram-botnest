@@ -16,6 +16,7 @@ import { AccountService } from '../bot/account.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ResolveCardClaimDto } from './dto/card-claim.dto';
+import { PersistentThrottleLimit } from '../api/persistent-throttle-limit';
 import {
   listCardClaims,
   resolveCardClaim,
@@ -48,7 +49,13 @@ export class TherapyCardClaimsController {
     return listCardClaims(this.prisma, uid(req));
   }
 
+  // Решение переносит записи карточки на аккаунт — лимит в Postgres (№5),
+  // живому психологу его не достичь.
   @Post('card-claims/:clientId')
+  @PersistentThrottleLimit({
+    short: { limit: 20, ttl: 60_000 },
+    long: { limit: 200, ttl: 24 * 3_600_000 },
+  })
   async resolve(
     @Req() req: AuthRequest,
     @Param('clientId') clientId: string,
