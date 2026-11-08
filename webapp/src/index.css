@@ -755,11 +755,10 @@ a { color: inherit; text-decoration: none; }
 .section-head {
   display: flex; align-items: baseline; justify-content: space-between;
   margin-bottom: 18px; padding-bottom: var(--space-12);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--paper-sunk); /* разделитель (oneStyle.test.ts), не контур */
 }
 .section-head h3 { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
 .section-head .hint { font-size: 12.5px; color: var(--text-faint); }
-.hr-soft { height: 1px; background: var(--line); border: 0; margin: 24px 0; }
 
 /* ─── Input ──────────────────────────────────────────────────────────────── */
 .input, .textarea {
@@ -774,33 +773,11 @@ a { color: inherit; text-decoration: none; }
 .input:focus, .textarea:focus { border-color: var(--accent-line); outline: none; }
 .textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
 
-/* ─── Tabs ───────────────────────────────────────────────────────────────── */
-.tabs {
-  display: flex; align-items: center;
-  border-bottom: 1px solid var(--line);
-  gap: var(--space-4); padding: 0 28px;
-}
-.tab {
-  position: relative;
-  padding: 13px 12px;
-  font-size: 13.5px; font-weight: 500;
-  color: var(--text-faint); white-space: nowrap; flex-shrink: 0;
-  transition: color .12s;
-}
-.tab:hover { color: var(--text-sub); }
-.tab.is-active { color: var(--text); font-weight: 600; }
-.tab.is-active::after {
-  content: '';
-  position: absolute; left: 8px; right: 8px; bottom: -1px;
-  height: 1.5px; background: var(--text);
-}
-.tab .count { margin-left: var(--space-6); font-size: 11px; color: var(--text-faint); }
-
 /* ─── List row ───────────────────────────────────────────────────────────── */
 .list-line {
   display: flex; align-items: center; gap: var(--space-14);
   padding: 14px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--paper-sunk);
 }
 .list-line:last-child { border-bottom: 0; }
 
@@ -1178,16 +1155,6 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 /* Flashcards */
 .flash { border: 1px solid var(--line); border-radius: var(--r-16); padding: 36px 40px 32px; background: var(--surface); margin-bottom: 28px; }
 .flash-q { font-family: var(--serif); font-size: 32px; line-height: 1.15; letter-spacing: -0.015em; font-weight: 400; color: var(--text); margin-bottom: var(--space-14); }
-
-/* ── Diary Hub ─────────────────────────────────────────────────── */
-
-.entry { display: grid; grid-template-columns: 70px 4px 1fr auto; gap: 22px; padding: 22px 0; border-top: 1px solid var(--line); cursor: pointer; transition: background .1s; align-items: start; }
-.entry:last-child { border-bottom: 1px solid var(--line); }
-.entry:hover { background: var(--surface-2); }
-
-/* ── Diary entry flows ─────────────────────────────────────────── */
-
-.intensity { display: flex; align-items: center; gap: var(--space-12); padding: 12px 0; border-bottom: 1px solid var(--line); }
 
 /* ── Accessibility: keyboard focus indicators ─────────────────────────────── */
 /* Убирает outline только для мышь/тач; сохраняет для клавиатуры */

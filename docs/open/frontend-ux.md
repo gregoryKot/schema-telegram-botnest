@@ -147,7 +147,7 @@
 - **Меню «Новая карта» (`webapp/src/components/ModeMapSelector.tsx`) осталось на собственных `ds-backdrop`/`ds-menu`**, не на `Dropdown`: `Dropdown` держит ширину 220 и z 39/40, а этому меню нужно 290 и 60/61; Escape не закрывает. Перевести, добавив `Dropdown` проп ширины.
 - **`booking/Chip.tsx` (визитка и форма записи лендинга) не приведён к `ds-chip`:** ТЗ #906 — «лендинги не входят», визитка живёт в своём стиле с акцентной заливкой.
 - **Нет модификатора `ds-textarea--resize` для ≥768:** `resize: none` у `ds-textarea`; жалоб терапевта нет, заводим по первой жалобе.
-- **`.sk-fc-row` и разделители «один токен»:** по решению владельца разделитель строк и разделов — `--paper-sunk`, `--line` только контуры (край полосы или рамка самостоятельного блока; список селекторов — `LINE_OUTLINES` в `oneStyle.test.ts`: `ds-sheet-head`, `tk-head`, `tq-bar`, `ss-tabs`, `mm2-bar`, `th-card`); `ds-list-row` оставлен на `--paper-sunk` (плановая смена на `--line` отменена). Сверка — `webapp/src/styles/oneStyle.test.ts`.
+- **`.sk-fc-row` и разделители «один токен»:** по решению владельца разделитель строк и разделов — `--paper-sunk`, `--line` только контуры (край полосы или рамка самостоятельного блока; список селекторов — `LINE_OUTLINES` в `oneStyle.test.ts`: `ds-sheet-head`, `tk-head`, `tq-bar`, `ss-tabs`, `mm2-bar`, `th-card`, из `index.css` — `topbar`, `mobile-nav`, `offline-banner`); `ds-list-row` оставлен на `--paper-sunk` (плановая смена на `--line` отменена). Сверка — `webapp/src/styles/oneStyle.test.ts` (с 2026-11-08 и `index.css`).
 - **`CaseFeelStep.tsx` и `CaseChipGrid.tsx` теперь на `ds-chip--toggle`** (`webapp/src/components/caseFlow/`); `.ex2-chip` удалён — шаг чувств глазами не снимали (экран упражнения вне тура `tour.mjs`).
 - **`.tk-ov` на телефоне держит свой `gap: 24` и padding** (`webapp/src/styles/therapist-card.css`) при остальных страницах на 16/24 по `ds-page`; к `ds-page` не относится, сверка не ругается.
 - **`AboutSheet.tsx`: после удаления `.st-links a b` слова в `<b>` не акцентные** (`webapp/src/components/settingsSheet/AboutSheet.tsx`); тексты не менялись, глазами не проверено.
@@ -165,10 +165,6 @@
   глазами владельца после деплоя: ни vitest, ни ночной Chromium (`browser-live`) клавиатуру iOS не поднимают. Если панель
   снова застрянет — сперва проверить `KEYBOARD_MIN_PX` (100) против реальной разницы `innerHeight − visualViewport.height`
   и работает ли `scrollTo` на то же место как перерисовка; запасной приём — `scrollBy(0, 1)` и обратно.
-
-**Карта режимов терапевта — хвост QA 2026-10-26** (починка багов карты и YSQ, сделано
-в той же ветке; здесь — увиденное попутно и не тронутое):
-- **Разделители в `webapp/src/index.css` не проверены сверкой «один токен разделителя».** `webapp/src/styles/oneStyle.test.ts` читает только `webapp/src/styles/*.css`; в `index.css` остались `border-top/bottom: 1px solid var(--line)` у `.entry`, `.intensity` и соседей (≈ стр. 536, 681, 703, 726, 931, 1105–1111), часть из них — разделители внутри блоков, а не контуры. Не тронуто: вне списка волны 3 #906; починка — классифицировать эти правила (разделитель → `--paper-sunk`, контур → в список `LINE_OUTLINES`) и подключить `index.css` к сверке.
 
 **Дневник и упражнения — хвост QA клиента 2026-11 (данные записей)** (починены К1, З2, З4,
 З14, М1, М7 из `CLIENT_FINDINGS_B`; здесь — осознанно не сделанное и увиденное попутно):
@@ -232,7 +228,6 @@
 ## Кэш localStorage: хвосты инвентаризации (#939, 2026-11-05)
 
 - **`ui_prefs_migrated` гейту не виден.** `shared/src/prefs/uiPrefsSync.ts` пишет маркер через интерфейс `PrefStorage`, а не через `localStorage` напрямую, поэтому ключа нет в `scripts/local-cache-baseline.json`; файл объявлен движком с причиной. Если маркер получит второго писателя, гейт промолчит.
-
 
 ## Веб-пуши на сайте — осознанно не сделано (фаза 4, 2026-11-08)
 
