@@ -115,7 +115,6 @@
 - **`booking/Chip.tsx` (визитка и форма записи лендинга) не приведён к `ds-chip`:** ТЗ #906 — «лендинги не входят», визитка живёт в своём стиле с акцентной заливкой.
 - **Нет модификатора `ds-textarea--resize` для ≥768:** `resize: none` у `ds-textarea`; жалоб терапевта нет, заводим по первой жалобе.
 - **`.sk-fc-row` и разделители «один токен»:** по решению владельца разделитель строк и разделов — `--paper-sunk`, `--line` только контуры (край полосы или рамка самостоятельного блока; список селекторов — `LINE_OUTLINES` в `oneStyle.test.ts`: `ds-sheet-head`, `tk-head`, `tq-bar`, `ss-tabs`, `mm2-bar`, `th-card`, из `index.css` — `topbar`, `mobile-nav`, `offline-banner`); `ds-list-row` оставлен на `--paper-sunk` (плановая смена на `--line` отменена). Сверка — `webapp/src/styles/oneStyle.test.ts` (с 2026-11-08 и `index.css`).
-- **`CaseFeelStep.tsx` и `CaseChipGrid.tsx` теперь на `ds-chip--toggle`** (`webapp/src/components/caseFlow/`); `.ex2-chip` удалён — шаг чувств глазами не снимали (экран упражнения вне тура `tour.mjs`).
 - **`.tk-ov` на телефоне держит свой `gap: 24` и padding** (`webapp/src/styles/therapist-card.css`) при остальных страницах на 16/24 по `ds-page`; к `ds-page` не относится, сверка не ругается.
 - **`AboutSheet.tsx`: после удаления `.st-links a b` слова в `<b>` не акцентные** (`webapp/src/components/settingsSheet/AboutSheet.tsx`); тексты не менялись, глазами не проверено.
 
