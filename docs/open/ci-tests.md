@@ -66,13 +66,6 @@
   `auth.service.ts` — 5, `crypto.ts` — 1; в счёт они не входят, так что 100% по
   таким файлам не значит «все мутации убиты». Включать ли статические мутанты
   (`ignoreStatic: false` — минуты прогона на мутант) — решение не принято.
-- **Три файла волны Б в `mutate` без пола в бейслайне.** Реальный прогон
-  2026-10-15 (27 минут): `booking-paid-after-cancel.ts` 84.62%,
-  `booking.transitions.ts` 86.49%, `payment.booking-webhook.ts` 84.62% —
-  `check-mutation-ratchet.mjs` только печатает «без пола», падение этих файлов
-  ничего не уронит. Пол вносится по результату прогона
-  (`scripts/mutation-golden-payments-baseline.json`); не сделано здесь, потому
-  что правка бейслайна чужих файлов — отдельное решение (правило №20).
 - **`src/utils/crypto-keys.ts` в `mutate` без пола.** Разбор ключей вынесен из
   `crypto.ts` при переводе `ClientMeeting.clientKey` на HMAC и стоит в `mutate`
   обоих конфигов (`stryker.config.json`, `stryker.golden-auth.config.json`), а
