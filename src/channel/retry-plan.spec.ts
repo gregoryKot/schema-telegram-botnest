@@ -27,7 +27,12 @@ describe('planRetry', () => {
   it('в план попадают только не принявшие площадки', () => {
     expect(
       planRetry([row('max', false), row('vk', true), row('telegram', true)]),
-    ).toEqual({ text: 'фраза слота', platforms: ['max'], unknown: [] });
+    ).toEqual({
+      text: 'фраза слота',
+      platforms: ['max'],
+      unknown: [],
+      delivered: true,
+    });
   });
 
   it('дошло везде — плана нет', () => {
@@ -78,6 +83,7 @@ describe('planRetry', () => {
       text: 'фраза слота',
       platforms: ['max'],
       unknown: ['telegram'],
+      delivered: true,
     });
   });
 
@@ -87,7 +93,28 @@ describe('planRetry', () => {
       text: 'фраза слота',
       platforms: [],
       unknown: ['telegram'],
+      delivered: true,
     });
+  });
+
+  // Хвост волны 9: слот, не вышедший нигде, выходит досылкой впервые — тогда
+  // пост пишется в историю. Признак — ни одна площадка его не приняла.
+  it('ни одна площадка не приняла — пост ещё не выходил (delivered: false)', () => {
+    expect(planRetry([row('max', false), row('telegram', false)])).toEqual({
+      text: 'фраза слота',
+      platforms: ['max', 'telegram'],
+      unknown: [],
+      delivered: false,
+    });
+  });
+
+  it('прошлая досылка дошла до одной площадки — второй добор не первый выход', () => {
+    const rows = [
+      row('max', true, { source: 'утро — повтор' }),
+      row('telegram', false),
+      row('max', false),
+    ];
+    expect(planRetry(rows)?.delivered).toBe(true);
   });
 
   it('текст берётся из журнала, а не из свежей записи повтора', () => {

@@ -54,6 +54,11 @@ function makeDb() {
         Object.assign(row, data);
         return Promise.resolve({ ...row });
       }),
+      updateMany: jest.fn(({ where, data }: any) => {
+        const hit = rows.filter((r) => r.text === where.text);
+        for (const r of hit) Object.assign(r, data);
+        return Promise.resolve({ count: hit.length });
+      }),
       delete: jest.fn(({ where }: any) => {
         const i = rows.findIndex((r) => r.id === where.id);
         return Promise.resolve(rows.splice(i, 1)[0]);
@@ -77,6 +82,8 @@ function makeDb() {
         }),
       };
     })(),
+    // Массив операций — как у Prisma: обе уже начаты, ждём обе.
+    $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   } as any;
 }
 
@@ -150,9 +157,32 @@ describe('HealthyAdultService', () => {
     await svc.create('b');
     await svc.create('c');
     const seen: string[] = [];
-    for (let i = 0; i < 3; i++) seen.push((await svc.pickFromPool())!);
+    for (let i = 0; i < 3; i++) {
+      const text = (await svc.pickFromPool())!;
+      await svc.recordPost(text, 'pool'); // пост вышел
+      seen.push(text);
+    }
     // За полный обход — все три разные (никакая не повторилась подряд).
     expect(new Set(seen).size).toBe(3);
+  });
+
+  // Хвост волны 9: фраза помечалась вышедшей ещё при выборе, и неудачная
+  // попытка тика выкидывала её из ротации до конца круга.
+  it('выбор без выхода фразу не помечает — неудачная попытка остаётся в ротации', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.importMany('раз\nдва');
+    await svc.pickFromPool(); // попытка не дошла ни до одной площадки
+    await svc.pickFromPool();
+    expect((await svc.poolStatus()).unused).toBe(2);
+  });
+
+  it('recordPost помечает вышедшую фразу пула — её больше не выберут в этом круге', async () => {
+    const svc = new HealthyAdultService(makeDb());
+    await svc.importMany('раз\nдва');
+    await svc.recordPost('раз', 'pool');
+    expect((await svc.poolStatus()).unused).toBe(1);
+    expect(await svc.pickFromPool()).toBe('два');
+    expect(await svc.recentPostTexts(1)).toEqual(['раз']);
   });
 
   it('pickFromPool на пустой БД берёт встроенный пул, не дублируя недавнее', async () => {
@@ -220,7 +250,7 @@ describe('HealthyAdultService', () => {
   it('poolStatus не считает уже отзвучавшие фразы остатком', async () => {
     const svc = new HealthyAdultService(makeDb());
     await svc.importMany('раз\nдва');
-    await svc.pickFromPool(); // одна ушла в канал — помечается lastPostedAt
+    await svc.recordPost((await svc.pickFromPool())!, 'pool'); // одна ушла
     const status = await svc.poolStatus();
     expect(status.enabled).toBe(2);
     expect(status.unused).toBe(1);

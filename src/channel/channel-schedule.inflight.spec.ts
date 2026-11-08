@@ -166,7 +166,7 @@ describe('ChannelScheduleService — публикация «в полёте» (R
     await flush();
     await service.catchUp(at(11, 15));
 
-    expect(retry.mock.calls).toEqual([['утро', 'фраза', ['telegram']]]);
+    expect(retry.mock.calls).toEqual([['утро', 'фраза', ['telegram'], true]]);
     slow.release();
     await first;
   });
@@ -185,7 +185,7 @@ describe('ChannelScheduleService — публикация «в полёте» (R
     slow.release({ ...POSTED, posted: false, delivered: [] });
     await tick;
     await service.catchUp(at(11, 15));
-    expect(retry.mock.calls).toEqual([['утро', 'фраза', ['telegram']]]);
+    expect(retry.mock.calls).toEqual([['утро', 'фраза', ['telegram'], true]]);
   });
 
   it('досылка упала — флаг снят, следующий тик пробует', async () => {
@@ -199,8 +199,8 @@ describe('ChannelScheduleService — публикация «в полёте» (R
     await service.catchUp(at(11, 15));
 
     expect(retry.mock.calls).toEqual([
-      ['утро', 'фраза', ['telegram']],
-      ['утро', 'фраза', ['telegram']],
+      ['утро', 'фраза', ['telegram'], true],
+      ['утро', 'фраза', ['telegram'], true],
     ]);
   });
 });
