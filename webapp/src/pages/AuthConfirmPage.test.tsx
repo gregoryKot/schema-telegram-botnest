@@ -72,6 +72,10 @@ function renderAt(path: string, form: AddressForm = 'ty', auth: AuthState = auth
   );
 }
 
+const typeCode = (value: string) =>
+  fireEvent.change(screen.getByLabelText('Код из приложения'), { target: { value } });
+const confirmButton = () => screen.getByRole('button', { name: /впустить/i }) as HTMLButtonElement;
+
 const lastBody = () =>
   JSON.parse((fetchMock.mock.calls.at(-1)![1] as RequestInit).body as string);
 const lastUrl = () => fetchMock.mock.calls.at(-1)![0] as string;
@@ -80,17 +84,33 @@ const lastAuthHeader = () =>
     .Authorization;
 
 describe('AuthConfirmPage', () => {
-  it('показывает код в сверяемом виде и обе кнопки', () => {
-    renderAt('/auth/confirm?code=K7M2QX94');
-    expect(screen.getByText('K7M2-QX94')).toBeTruthy();
-    expect(screen.getByText(/впустить/i)).toBeTruthy();
+  // S9 (аудит 2026-11): ссылку с чужим кодом мог прислать кто угодно — код из
+  // адреса не подставляется и не показывается, его набирают с экрана приложения.
+  it('код из адреса не показан и не подставлен; кнопка «впустить» неактивна без ввода', () => {
+    const { container } = renderAt('/auth/confirm?code=K7M2QX94');
+    expect(container.textContent).not.toMatch(/K7M2/);
+    expect((screen.getByLabelText('Код из приложения') as HTMLInputElement).value).toBe('');
+    expect(confirmButton().disabled).toBe(true);
     expect(screen.getByText('Это не я')).toBeTruthy();
-    // Ничего не отправляем, пока человек не нажал.
+    fireEvent.click(confirmButton());
+    // Ничего не отправляем, пока человек не набрал код и не нажал.
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('чужой код — кнопка неактивна и подсказка «не совпадает»; совпавший (любой регистр, с дефисом) — активна', () => {
+    renderAt('/auth/confirm?code=K7M2QX94');
+    typeCode('K7M2QX95');
+    expect(confirmButton().disabled).toBe(true);
+    expect(screen.getByText(/Код не совпадает/)).toBeTruthy();
+    typeCode('k7m2-qx94');
+    expect(confirmButton().disabled).toBe(false);
+    expect(screen.queryByText(/Код не совпадает/)).toBeNull();
+    expect((screen.getByLabelText('Код из приложения') as HTMLInputElement).value).toBe('K7M2-QX94');
   });
 
   it('«Да» одобряет ИМЕННО этот код и уводит в приложение', async () => {
     renderAt('/auth/confirm?code=K7M2QX94');
+    typeCode('K7M2QX94');
     fireEvent.click(screen.getByText(/впустить/i));
 
     await waitFor(() => expect(screen.getByText('today-page')).toBeTruthy());
@@ -102,6 +122,7 @@ describe('AuthConfirmPage', () => {
   it('сессия ещё не поднята — сначала refresh, подтверждение уходит с его токеном', async () => {
     const auth = authValue(null, 'fresh-token');
     renderAt('/auth/confirm?code=K7M2QX94', 'ty', auth);
+    typeCode('K7M2QX94');
     fireEvent.click(screen.getByText(/впустить/i));
 
     await waitFor(() => expect(screen.getByText('today-page')).toBeTruthy());
@@ -111,6 +132,7 @@ describe('AuthConfirmPage', () => {
 
   it('сессии нет совсем — «код не найден», запрос без токена не уходит', async () => {
     renderAt('/auth/confirm?code=K7M2QX94', 'ty', authValue(null, null));
+    typeCode('K7M2QX94');
     fireEvent.click(screen.getByText(/впустить/i));
 
     await waitFor(() => expect(screen.getByText(/Код не найден/)).toBeTruthy());
@@ -120,10 +142,14 @@ describe('AuthConfirmPage', () => {
   it('мёртвый/чужой код — честное «код не найден», без входа', async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { ok: false }));
     renderAt('/auth/confirm?code=ZZZZZZZZ');
+    typeCode('ZZZZZZZZ');
     fireEvent.click(screen.getByText(/впустить/i));
 
     await waitFor(() => expect(screen.getByText(/Код не найден/)).toBeTruthy());
     expect(screen.queryByText('today-page')).toBeNull();
+    // Не тупик: из исхода есть путь в приложение.
+    fireEvent.click(screen.getByRole('link', { name: 'В приложение' }));
+    await waitFor(() => expect(screen.getByText('today-page')).toBeTruthy());
   });
 
   it('«Это не я» гасит билет и говорит, что доступ никто не получил', async () => {
@@ -135,6 +161,8 @@ describe('AuthConfirmPage', () => {
     );
     expect(lastUrl()).toContain('/api/auth/ticket/deny-login');
     expect(lastBody()).toEqual({ code: 'K7M2QX94' });
+    fireEvent.click(screen.getByRole('link', { name: 'В приложение' }));
+    await waitFor(() => expect(screen.getByText('today-page')).toBeTruthy());
   });
 
   it('без кода на экране сверки делать нечего — уводит домой', async () => {
@@ -146,7 +174,9 @@ describe('AuthConfirmPage', () => {
   it('форма «вы» — обращение без «ты»-строк', () => {
     const { container } = renderAt('/auth/confirm?code=K7M2QX94', 'vy');
     expect(container.textContent).toContain('вы открываете');
-    expect(container.textContent).not.toMatch(/ты открываешь|нажми «Это не я»/);
+    expect(container.textContent).not.toMatch(/ты открываешь|нажми «Это не я»|Набери /);
+    fireEvent.change(screen.getByLabelText('Код из приложения'), { target: { value: 'AAAAAAAA' } });
+    expect(container.textContent).toContain('Сверьте его');
   });
 });
 
@@ -182,6 +212,7 @@ describe('AuthConfirmPage — подброшенный #access_token не исп
     );
     expect(window.location.hash).toBe('');
     expect(window.location.search).toBe('?code=K7M2QX94');
+    typeCode('K7M2QX94');
     fireEvent.click(screen.getByText(/впустить/i));
 
     await waitFor(() => expect(screen.getByText('today-page')).toBeTruthy());
