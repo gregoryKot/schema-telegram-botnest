@@ -152,21 +152,21 @@
   MAX и Telegram Web (вариант: принимать свежий initData); такому аккаунту остаётся уведомление
   о привязке. `ticket/handoff` и `ticket/confirm-login` — без step-up: handoff мессенджер
   выписывает сам каждые ~2 мин, confirm-login — основной сценарий давно вошедшего человека.
-- **Хвосты S12.** Отвязка почты не шлёт письмо на отвязанный адрес — уведомление уходит в
-  оставшиеся каналы (`src/auth/auth-link.controller.ts`, `security-notice.service.ts`);
-  access-токен отозванной сессии живёт до 15 минут (JWT без состояния, `jwt.guard.ts`);
-  `forConfirm` бота (`src/auth/login-ticket/login-ticket.service.ts`) не отдаёт `createdAt`.
+- **Хвосты S12.** Access-токен отозванной сессии живёт до 15 минут (JWT без состояния,
+  `jwt.guard.ts`).
+- **S12 · `createdAt` в `forConfirm` — осознанно не сделано (волна 6).** Бот
+  (`src/auth/login-ticket/login-ticket.service.ts`, `forConfirm`) давность кода не показывает:
+  билет живёт 5 минут (`TTL_S`), протухший карточку не получает, а код, присланный
+  злоумышленником, так же свеж, как свой, — «выписан 2 минуты назад» их не различает. От
+  фишинга защищают код на своём экране, устройство в карточке и закрепление карточки за
+  первым увидевшим (`claimTicketView`).
 - **S21 · остаток:** `fast-uri` 3.1.8 moderate через `prisma` (недоверенные URI до него не
-  доходят); `GET /api/payment/success?SignatureValue[]=x` падает в `safeEqualHex`
-  (`src/booking/robokassa.service.ts:~188`) с 500 — проверка типа там же, где в ResultURL;
-  сырой query-параметр `error` попадает в текст DM (`src/auth/auth-oauth.controller.ts:~79`) —
-  после S13 до 3 в минуту, формат стоит ограничить белым списком. Остальное из S21 закрыто
-  в волне 1 плана исправлений.
+  доходят). Остальное из S21 закрыто: подпись массивом на `/api/payment/success` — волна 5
+  (`src/booking/robokassa-sign.ts`), код ошибки OAuth в DM — волна 6, прочее — волна 1.
 - **Без события аналитики — осознанно (2026-11).** Уведомление `security_notice` о привязке и
   отвязке входа (`src/auth/security-notice.service.ts`) и окно кода 2FA (`webapp/src/components/stepUp/`)
   — не фичи в смысле правила №8, а защитные шаги: считать их в `/stats` нечего (события пишет
   `SecurityLogService`, DM админу — `totp_locked`).
 - **S9 · остаток.** `/api/auth/google|vk?ticket=` кукой билета не закрыть (ссылку по замыслу
   открывает другой контейнер) — там защищает ручной ввод кода на `/auth/confirm` и
-  `login-preview`. Карточка привязки в боте (`src/telegram/telegram.link-card.ts:53`) по-прежнему
-  не говорит, что устройство получит сессию подтверждающего.
+  `login-preview`.
