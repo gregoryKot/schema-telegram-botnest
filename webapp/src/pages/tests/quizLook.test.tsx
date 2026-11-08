@@ -7,7 +7,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { render, cleanup } from '@testing-library/react';
-import { quizLook, QUIZ_SIGN_IDS } from './quizLook';
+import { quizLook, resultHues, QUIZ_SIGN_IDS } from './quizLook';
 import { QuizSign } from './QuizSign';
 
 afterEach(() => cleanup());
@@ -36,6 +36,20 @@ describe('quizLook: знак мини-теста', () => {
     expect(new Set(hues).size).toBe(5);
     expect(quizLook('critic', 5).hue).toBe(hues[0]);
     expect(quizLook('critic', -1).hue).toBe(hues[4]);
+  });
+
+  it('результат: лист сцены и подсказка под панелью — не в оттенок панели, для каждого места в списке', () => {
+    for (const i of [0, 1, 2, 3, 4]) {
+      const { hue } = quizLook('critic', i);
+      const { sceneHue, hintHue } = resultHues(hue);
+      expect(sceneHue, `сцена при ${hue}`).not.toBe(hue);
+      expect(hintHue, `подсказка при ${hue}`).not.toBe(hue);
+    }
+    // шалфей (3-е место) — лист соломы, а не шалфей на шалфее
+    expect(resultHues(135).sceneHue).toBe(70);
+    // оттенок вне круга — всё равно не совпадает
+    expect(resultHues(300).sceneHue).not.toBe(300);
+    expect(resultHues(300).hintHue).not.toBe(300);
   });
 
   it('QuizSign: знак рисуется картинкой, без знака — эмодзи; всё скрыто от чтения с экрана', () => {

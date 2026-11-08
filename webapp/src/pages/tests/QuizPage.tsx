@@ -10,12 +10,14 @@ import { Skeleton, SkeletonCard } from '../../components/Skeleton';
 import { TestsFrame, QuizProgress } from './testsKit';
 import { QuizIntro } from './QuizIntro';
 import { QuizResult } from './QuizResult';
+import { quizLook } from './quizLook';
 import { useTimedFlag } from '../../../../shared/src/hooks/useTimedFlag';
 
 export function QuizPage() {
   const { quizId } = useParams();
   const { quizzes, error } = useQuizzes();
   const quiz = quizzes?.find((q) => q.id === quizId) ?? null;
+  const hue = quiz && quizzes ? quizLook(quiz.id, quizzes.indexOf(quiz)).hue : 0; // как у плитки в /tests
   const runner = useQuizRunner(quiz);
   const [started, setStarted] = useState(false);
   const [copied, flashCopied] = useTimedFlag(2000);
@@ -72,7 +74,7 @@ export function QuizPage() {
         </div>
       )}
 
-      {quiz && !started && <QuizIntro quiz={quiz} onStart={start} />}
+      {quiz && !started && <QuizIntro quiz={quiz} hue={hue} onStart={start} />}
 
       {quiz && started && !runner.finished && runner.question && (
         <div>
@@ -89,10 +91,7 @@ export function QuizPage() {
       )}
 
       {quiz && runner.result && (
-        <QuizResult
-          quiz={quiz}
-          result={runner.result}
-          copied={copied}
+        <QuizResult quiz={quiz} hue={hue} result={runner.result} copied={copied}
           onShare={() => { void share(); }}
           onRestart={() => { completedSent.current = false; runner.restart(); }}
         />

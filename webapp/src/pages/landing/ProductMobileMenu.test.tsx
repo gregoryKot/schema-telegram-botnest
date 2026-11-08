@@ -8,6 +8,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ProductMobileMenu } from './ProductMobileMenu';
+import { BAND_HUE, NAV_LINKS } from './productContent';
 
 HTMLElement.prototype.scrollIntoView = vi.fn();
 
@@ -68,5 +69,18 @@ describe('ProductMobileMenu', () => {
     expect(onClose).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();
+  });
+
+  it('плитка секции с полосой — того же оттенка, что полоса (по ссылке, а не по порядку); соседи по сетке 2×3 разные', () => {
+    renderMenu();
+    const hue = (label: string) => (screen.getByText(label).closest('a') as HTMLElement).style.getPropertyValue('--h');
+    expect(hue('Как это работает')).toBe(String(BAND_HUE.how));
+    expect(hue('Приложение')).toBe(String(BAND_HUE.app));
+    expect(hue('Вопросы')).toBe(String(BAND_HUE.faq));
+    const hues = NAV_LINKS.map((l) => l.hue);
+    for (let i = 0; i < hues.length; i++) {
+      if (i % 2 === 0) expect(hues[i], `ряд ${i / 2 + 1}`).not.toBe(hues[i + 1]);
+      if (i + 2 < hues.length) expect(hues[i], `столбец, пункт ${i + 1}`).not.toBe(hues[i + 2]);
+    }
   });
 });

@@ -58,6 +58,7 @@ const OVERLAY_ROOTS: [string, string[], Record<string, string>?][] = [
   ['styles/sheet-tasks.css', ['.sk-sheet', '.sk-overlay', '.sk-priv']],
   ['styles/client-schemas.css', ['.cs-sheet']],
   ['index.css', ['.ex-screen']],
+  ['styles/product-landing-menu.css', ['.pl2-menu']],
 ];
 
 describe('безопасная зона сверху (--safe-top)', () => {
@@ -115,7 +116,9 @@ describe('безопасная зона сверху (--safe-top)', () => {
   it('инлайн-корни на весь экран в .tsx отступают на --safe-top', () => {
     const roots = tsxFiles().flatMap((f) => inlineOverlayRoots(readFileSync(f, 'utf8')).map((o) => ({ f, o })));
     const sheets = roots.filter(({ o }) => !o.includes("pointerEvents: 'none'"));
-    expect(sheets.length, 'скан нашёл инлайн-листы').toBeGreaterThanOrEqual(3);
+    // Мобильное меню продуктового лендинга ушло из инлайна в CSS (.pl2-menu) — его
+    // держит сверка OVERLAY_ROOTS выше; инлайн-листов осталось два.
+    expect(sheets.length, 'скан нашёл инлайн-листы').toBeGreaterThanOrEqual(2);
     expect(sheets.filter(({ o }) => !o.includes('--safe-top')).map(({ f }) => f)).toEqual([]);
   });
 

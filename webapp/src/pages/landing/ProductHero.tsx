@@ -3,11 +3,14 @@ import { AppPreview } from './AppPreview';
 import type { entryCta } from './entryCta';
 import { HeroCollage } from '../../components/art/HeroCollage';
 import { HOME_HERO } from '../../../../src/articles/home-landing.content';
+import { glue } from './typo';
+import '../../styles/product-landing.css';
+import '../../styles/product-landing-hero.css';
 
 // Первый экран продуктового лендинга: заголовок-вопрос, абзац, одна залитая кнопка
 // и тихая вторая; справа мокап «Сегодня» на бумажном коллаже (HeroCollage: лента-петля
 // за телефоном — то самое «снова»). Под словом «снова» — завиток той же ленты.
-// Вид — styles/product-landing.css (.pl2-hero*).
+// Вид — styles/product-landing-hero.css (.pl2-hero*, мокап .pl2-phone).
 export function ProductHero({ entry, isAuthenticated }: { entry: ReturnType<typeof entryCta>; isAuthenticated: boolean }) {
   const t = HOME_HERO.title;
   return (
@@ -16,7 +19,7 @@ export function ProductHero({ entry, isAuthenticated }: { entry: ReturnType<type
         <div className="pl2-in">
           <div className="pl2-pill">
             <span className="pl2-pill-dot" />
-            Схема-терапия · бесплатно · без рекламы
+            Схема-терапия · бесплатно · без&nbsp;рекламы
           </div>
           <h1 className="pl2-h1">
             {t.before}
@@ -28,7 +31,7 @@ export function ProductHero({ entry, isAuthenticated }: { entry: ReturnType<type
             </em>
             {t.after}
           </h1>
-          <p className="pl2-lead">{HOME_HERO.lead}</p>
+          <p className="pl2-lead">{glue(HOME_HERO.lead)}</p>
           <div className="pl2-actions">
             <Cta href={entry.href} size="lg">{entry.main}</Cta>
             <Cta href="/tests" variant="ghost" size="lg">Мини-тесты без регистрации</Cta>

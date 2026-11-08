@@ -1,0 +1,106 @@
+/* Первый экран продуктового лендинга (ProductHero.tsx): вопрос слева, мокап экрана
+   «Сегодня» (AppPreview.tsx) на бумажном коллаже (HeroCollage.tsx) справа. Общие
+   заголовок, абзац и плашка (.pl2-h1, .pl2-lead, .pl2-pill) — в product-landing.css:
+   их берёт и /tests. Сдвинутая тень — у мокапа и наклеек: опорный элемент экрана. */
+
+.pl2-hero-sec { padding: 120px 24px 72px; }
+.pl2-hero {
+  display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr);
+  gap: 56px; align-items: center;
+}
+/* «снова» — под словом завиток той же ленты, что петляет на коллаже. */
+.pl2-h1-loop { position: relative; display: inline-block; }
+.pl2-h1-swirl { position: absolute; left: -3%; bottom: -.3em; width: 106%; height: .3em; overflow: visible; }
+.pl2-h1-swirl path {
+  fill: none; stroke: var(--c-clay); stroke-width: 5px;
+  stroke-linecap: round; vector-effect: non-scaling-stroke;
+}
+.pl2-in { animation: pl2-in .6s cubic-bezier(.16, 1, .3, 1) both; }
+.pl2-in--late { animation-delay: .12s; }
+@keyframes pl2-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.pl2-hero-art { position: relative; display: flex; justify-content: center; align-items: center; min-height: 500px; }
+/* Коллаж — в своей колонке, не наезжает на заголовок (между «?» и коллажем ≥48px). */
+.pl2-hero-collage {
+  position: absolute; left: 50%; top: 50%; width: 100%; max-width: 580px;
+  transform: translate(-50%, -50%);
+}
+.pl2-hero-collage--narrow { display: none; }
+
+/* ── Мокап экрана «Сегодня» на коллаже (декор, aria-hidden) ─────────────── */
+.pl2-preview { position: relative; z-index: 1; display: flex; justify-content: center; }
+.pl2-phone {
+  width: 300px; box-sizing: border-box; padding: 22px 20px 20px; transform: rotate(-1.5deg);
+  background: var(--surface); border-radius: 32px; box-shadow: 12px 14px 0 oklch(0.8 0.07 45);
+}
+.pl2-phone-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
+.pl2-phone-sub { margin: 4px 0 18px; font-size: 12.5px; color: var(--text-sub); }
+.pl2-need { margin-bottom: 12px; }
+.pl2-need-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--text);
+}
+.pl2-need-row .pp-art--row { width: 30px; height: 18px; }
+.pl2-need-v { margin-left: auto; font-weight: 700; }
+.pl2-track { height: 7px; border-radius: 4px; background: var(--paper-sunk); }
+.pl2-track > span { display: block; height: 100%; border-radius: 4px; }
+.pl2-spark { margin-top: 18px; padding: 12px 14px; border-radius: 16px; background: var(--paper-tint); }
+.pl2-spark-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11.5px; }
+.pl2-spark-head b { color: var(--text); }
+.pl2-spark-head span { color: var(--text-faint); }
+.pl2-note-card {
+  position: absolute; z-index: 2; padding: 10px 14px; border-radius: 14px;
+  background: var(--surface); font-size: 12px; font-weight: 700;
+  box-shadow: 6px 7px 0 oklch(0.82 0.06 var(--h));
+}
+.pl2-note-card small { display: block; margin-top: 2px; font-size: 11px; font-weight: 500; color: var(--text-sub); }
+.pl2-note-card--a { --h: 25; top: -14px; right: -18px; transform: rotate(3deg); color: var(--accent); }
+.pl2-note-card--b { --h: 135; bottom: 18px; left: -22px; transform: rotate(-3deg); color: var(--c-moss-strong); }
+
+/* ── Раскладка ──────────────────────────────────────────────────────────── */
+@media (min-width: 1101px) and (max-width: 1240px) {
+  .pl2-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 44px; }
+}
+/* 901–1100 (iPad в альбомной ориентации, ноутбук при масштабе 125%): две колонки, справа
+   узкий коллаж — тот же, что у телефона: в колонке 380px широкий мокап закрыл бы петлю. */
+@media (min-width: 901px) and (max-width: 1100px) {
+  .pl2-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 40px; }
+  .pl2-hero-art { min-height: 520px; }
+  .pl2-hero-collage--wide { display: none; }
+  .pl2-hero-collage--narrow { display: block; max-width: 358px; }
+}
+@media (max-width: 900px) {
+  .pl2-hero { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .pl2-hero .pl2-h1 { max-width: 12em; }
+}
+/* Телефон: узкий коллаж целиком в ширине контента, мокап своей шириной (без scale).
+   Вертикаль плотнее, а строка «Вход через Google…» — под коллажем: над сгибом 390×760
+   видна верхняя часть мокапа «Сегодня», а не только текст. */
+@media (max-width: 640px) {
+  .pl2-hero-sec { padding: 80px 16px 40px; }
+  .pl2-hero { display: flex; flex-direction: column; gap: 0; }
+  .pl2-hero > .pl2-in:first-child { display: contents; }
+  .pl2-hero .pl2-pill { align-self: flex-start; margin-bottom: 18px; }
+  .pl2-hero .pl2-h1 { margin-bottom: 18px; }
+  .pl2-hero .pl2-lead { margin-bottom: 22px; font-size: 16px; line-height: 1.6; }
+  /* Мокап выше середины коллажа (44px от верха, а не по центру): лист и лента под ним те же. */
+  .pl2-hero-art { order: 1; align-items: flex-start; box-sizing: border-box; min-height: 520px; margin-top: 16px; padding-top: 44px; }
+  .pl2-hero .pl2-fine { order: 2; }
+  .pl2-hero-collage--wide { display: none; }
+  .pl2-hero-collage--narrow { display: block; max-width: 358px; }
+  .pl2-note-card--a { right: -14px; }
+  .pl2-note-card--b { left: -18px; }
+}
+/* 320–374px: мокап «Сегодня» уже на ширину экрана — наклейки (±14–18px) не заходят в поля
+   16px; заголовок мельче — «это происходит?» с неразрывным пробелом влезает в строку
+   (иначе колонка раздувалась до 330px и резала текст первого экрана справа). Плашка
+   мельче — «без рекламы» не висит отдельной строкой. */
+@media (max-width: 374px) {
+  .pl2-phone { width: calc(100vw - 76px); }
+  /* Наклейка «Схема замечена» на узком мокапе закрывала «Сегодня» — выше, над краем. */
+  .pl2-note-card--a { top: -44px; }
+  .pl2-hero .pl2-h1 { font-size: 10.6vw; }
+  .pl2-hero .pl2-pill { gap: 6px; padding: 6px 12px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl2-in { animation: none; }
+}

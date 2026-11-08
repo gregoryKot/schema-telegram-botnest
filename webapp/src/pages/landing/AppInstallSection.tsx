@@ -1,14 +1,18 @@
 import { useEffect } from 'react';
 import { api } from '../../api';
 import { Cta } from './BrandKit';
+import { PaperBand } from './PaperBand';
+import { glue } from './typo';
+import { SceneHomeScreen } from '../../components/art/LandingScenesMore';
 import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { hideInstallOffers, subscribeAppInstalled } from '../../utils/pwaInstall';
 
-// Секция «значок на экране» лендинга: сайт ставится как приложение из
-// браузера (манифест ведёт в /today; отдельная страница — /install). Шаги — из
-// installSteps (один источник текста). Аналитика анонимная: событие уходит в
-// POST /api/public-event (userId = null).
+// Секция «значок на экране» лендинга — полоса небесной бумаги: сайт ставится как приложение из
+// браузера (манифест ведёт в /today; страница — /install). Шаги — из installSteps (один
+// источник текста). Рядом с заголовком — сцена «значок на экране» (SceneHomeScreen: знак
+// продукта среди значков на экране телефона): самая длинная полоса страницы не без картинки.
+// Аналитика анонимная: событие в POST /api/public-event (userId = null).
 const trackInstall = (action: 'add' | 'added') =>
   api.trackPublicEvent('home_screen_offer', { action, surface: 'site_landing' });
 
@@ -21,16 +25,18 @@ export function AppInstallSection() {
   if (hideInstallOffers()) return null;
 
   return (
-    <section id="app" className="pl2-sec">
-      <div className="pl2-wrap pl2-band">
-        <span className="pl2-eyebrow">Приложение</span>
-        <h2 className="pl2-h2">
-          Значок на экране — без магазина приложений
-        </h2>
-        <p className="pl2-sub">
-          «Всё по схеме» ставится прямо из браузера: значок на экране телефона,
-          запуск на весь экран, вход тот же, что на сайте.
-        </p>
+    <PaperBand id="app" calm>
+      <div className="pl2-wrap">
+        <div className="pl2-app-head">
+          <div>
+            <span className="pl2-eyebrow">Приложение</span>
+            <h2 className="pl2-h2">{glue('Значок на экране — без магазина приложений')}</h2>
+            <p className="pl2-sub">
+              {glue('«Всё по схеме» ставится прямо из браузера: значок на экране телефона, запуск на весь экран, вход тот же, что на сайте.')}
+            </p>
+          </div>
+          <div className="pl2-app-art"><SceneHomeScreen /></div>
+        </div>
         <div className="pl2-3 pl2-3--above-actions">
           {(['ios', 'android', 'desktop'] as const).map((p) => {
             const b = INSTALL_STEPS[p];
@@ -66,6 +72,6 @@ export function AppInstallSection() {
           )}
         </div>
       </div>
-    </section>
+    </PaperBand>
   );
 }

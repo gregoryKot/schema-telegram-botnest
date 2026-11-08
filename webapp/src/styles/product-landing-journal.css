@@ -1,8 +1,27 @@
 /* Журнальные развороты продуктового лендинга (docs/design/PAPER_2026-11.md):
+   полосы цветной бумаги во всю ширину (PaperBand.tsx: «Как это работает» — солома,
+   «Приложение» — небо, «Вопросы» — шалфей), между ними бумага страницы;
    «Как это работает» — шаг со сценой то слева, то справа, крупный засечный номер;
-   «Возможности» — полоса из двух разворотов со сценой и четырёх квадратов цветной
-   бумаги; «Приложение» — лист небесной бумаги. Подключают HowSection.tsx,
-   FeaturesSection.tsx и AppInstallSection (через страницу). База — product-landing.css. */
+   «Возможности» и «Доверие» — плитки цветной бумаги (.pl2-tile) с крупной картинкой.
+   Плитки плоские, на насыщенности кабинета (.pp-paper): сдвинутая тень — только у
+   опорных элементов (макет, фото автора, финальный лист) и у фигур сцен. Подключают
+   HowSection.tsx, FeaturesSection.tsx, PaperBand.tsx. База — product-landing.css. */
+
+/* ── Полоса цветной бумаги, край — срез ножницами в два слоя ──────────────── */
+.pl2-band { --band-c: 0.045; position: relative; margin: 22px 0; background: oklch(0.93 var(--band-c) var(--h)); }
+/* Небо при той же насыщенности выходит голубее соломы и шалфея — на тон спокойнее (PaperBand calm). */
+.pl2-band--calm { --band-c: 0.034; }
+.pl2-edge { position: absolute; left: 0; top: -21px; display: block; width: 100%; height: 22px; pointer-events: none; }
+.pl2-edge--bottom { top: auto; bottom: -21px; transform: scaleY(-1); }
+.pl2-edge-top { fill: oklch(0.93 var(--band-c) var(--h)); }
+.pl2-edge-under { fill: oklch(0.83 calc(var(--band-c) + 0.02) var(--h)); }
+/* Разделители на цветной бумаге — тон панели, а не бумаги страницы (иначе светлее фона). */
+.pl2-band .pl2-faq, .pl2-band .pl2-faq-item { border-color: var(--panel-line); }
+.pl2-band .ds-card.pl2-install { border-color: transparent; }
+
+/* «Приложение»: заголовок слева, сцена «значок на экране» справа (на телефоне — над ним). */
+.pl2-app-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 280px); gap: 40px; align-items: center; }
+.pl2-app-art { margin-bottom: 36px; }
 
 /* ── Как это работает ───────────────────────────────────────────────────── */
 .pl2-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 64px; }
@@ -15,52 +34,80 @@
   display: block; font-family: var(--serif); font-weight: 400; letter-spacing: -.04em;
   font-size: clamp(76px, 9vw, 132px); line-height: .86;
 }
-/* Под номером — полоска бумаги того же оттенка, что пятно сцены. */
-.pl2-spread-num::after { content: ''; display: block; width: 64px; height: 10px; margin-top: 22px; border-radius: 5px; background: oklch(0.8 0.08 var(--h)); }
+/* Под номером — полоска бумаги того же оттенка, что лист сцены. */
+.pl2-spread-num::after {
+  content: ''; display: block; width: 64px; height: 10px; margin-top: 22px; border-radius: 5px;
+  background: oklch(0.78 0.08 var(--h));
+}
 .pl2-spread--origin .pl2-spread-num { color: var(--c-clay-strong); }
 .pl2-spread--trigger .pl2-spread-num { color: var(--c-rose-strong); }
 .pl2-spread--notice .pl2-spread-num { color: var(--c-moss-strong); }
-.pl2-spread-title { margin: 22px 0 14px; font-family: var(--serif); font-weight: 400; font-size: clamp(26px, 3vw, 36px); line-height: 1.1; color: var(--text); }
+.pl2-spread-title {
+  margin: 22px 0 14px; font-family: var(--serif); font-weight: 400;
+  font-size: clamp(26px, 3vw, 36px); line-height: 1.1; color: var(--text);
+}
 .pl2-spread-text { margin: 0; font-size: 17px; line-height: 1.7; color: var(--text-sub); }
 
-/* ── Возможности: полоса 12 колонок ─────────────────────────────────────── */
-.pl2-bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; }
-.pl2-feat {
-  display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; min-width: 0;
-  padding: 26px 26px 28px; border-radius: 24px; box-shadow: 8px 9px 0 oklch(0.84 0.05 var(--h));
+/* ── Плитки: «Возможности» (бенто) и «Доверие» ──────────────────────────── */
+.pl2-bento { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.pl2-trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.pl2-tile {
+  display: flex; flex-direction: column; gap: 20px; min-width: 0; box-sizing: border-box;
+  padding: 26px 24px 28px; border-radius: 26px;
 }
-.pl2-feat--diary { grid-column: 1 / 8; grid-row: 1 / 3; }
-.pl2-feat--schemas { grid-column: 8 / 13; grid-row: 1; }
-.pl2-feat--practices { grid-column: 8 / 13; grid-row: 2; }
-.pl2-feat--modes { grid-column: 6 / 13; grid-row: 3 / 5; }
-.pl2-feat--dynamics { grid-column: 1 / 6; grid-row: 3; }
-.pl2-feat--therapist { grid-column: 1 / 6; grid-row: 4; }
-.pl2-feat--big { padding: 24px 36px 36px; }
-.pl2-feat-scene { width: 100%; max-width: 380px; align-self: center; }
-.pl2-feat-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 25px; line-height: 1.15; color: var(--text); }
-.pl2-feat--big .pl2-feat-title { font-size: clamp(28px, 3vw, 36px); }
-.pl2-feat-text { margin: 8px 0 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
-.pl2-feat--big .pl2-feat-text { max-width: 480px; font-size: 17px; }
+.pl2-tile-art { display: flex; align-items: center; justify-content: center; height: 150px; }
+.pl2-tile-art .scn { width: auto; height: 100%; max-width: 100%; }
+.pl2-tile-art .scn-sign { width: min(100%, 210px); }
+.pl2-tile-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pl2-tile-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 25px; line-height: 1.15; color: var(--text); }
+.pl2-tile-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
+/* Широкая плитка — на две колонки, картинка справа крупно. */
+.pl2-tile--wide { grid-column: span 2; flex-direction: row; align-items: center; gap: 20px; padding: 30px 28px; }
+/* Картинка 44%, текст не уже 240px: при 54% текст «Дневника» шёл в 5–6 рваных строк. Знак
+   в широкой плитке до 320px — по массе вровень со сценой соседней широкой плитки. */
+.pl2-tile--wide .pl2-tile-art { order: 2; flex: 0 1 44%; min-width: 0; height: 280px; }
+.pl2-tile--wide .pl2-tile-art .scn-sign { width: min(100%, 320px); }
+.pl2-tile--wide .pl2-tile-body { flex: 1 1 0; min-width: 240px; }
+.pl2-tile--wide .pl2-tile-title { font-size: clamp(26px, 2.6vw, 32px); }
 
-/* ── Приложение: лист небесной бумаги, белые карточки шагов ─────────────── */
-.pl2-band { --h: 240; padding: 56px 52px 52px; border-radius: 32px; background: oklch(0.93 0.03 var(--h)); box-shadow: 10px 12px 0 oklch(0.85 0.045 var(--h)); }
-.ds-card.pl2-install { border-color: transparent; }
-
+/* ── Раскладка ──────────────────────────────────────────────────────────── */
+@media (max-width: 1080px) {
+  .pl2-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 900px) {
   .pl2-steps { gap: 56px; }
   .pl2-spread, .pl2-spread:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
   .pl2-spread:nth-child(even) .pl2-spread-art { order: 0; }
-  .pl2-spread-art { max-width: 340px; }
+  /* Сцена у левого края колонки — на одной оси с номером и текстом шага, без дыры справа. */
+  .pl2-spread-art { max-width: 300px; justify-self: start; }
   .pl2-spread-num { font-size: 76px; }
   .pl2-spread-num::after { margin-top: 16px; }
   .pl2-spread-title { margin-top: 18px; }
   .pl2-spread-text { font-size: 16px; }
-  .pl2-bento { grid-template-columns: 1fr; gap: 20px; }
-  .pl2-bento .pl2-feat { grid-column: auto; grid-row: auto; }
-  .pl2-feat--big { padding: 20px 22px 26px; }
-  .pl2-feat-scene { max-width: 320px; }
-  /* Квадрат на телефоне — строка: знак слева, текст справа. */
-  .pl2-feat:not(.pl2-feat--big) { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 16px; align-items: start; padding: 22px 20px; }
-  .pl2-feat:not(.pl2-feat--big) .pp-art { width: 76px; height: 42px; margin-top: 4px; }
-  .pl2-band { padding: 36px 20px 28px; border-radius: 26px; }
+}
+/* Доверие до 641px — три колонки (одна в 770px оставляла пустые поля): плитка поуже. */
+@media (min-width: 641px) and (max-width: 900px) {
+  .pl2-trust .pl2-tile { padding: 24px 18px 26px; }
+  .pl2-trust .pl2-tile-title { font-size: 22px; }
+}
+@media (max-width: 640px) {
+  .pl2-app-head { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .pl2-app-art { order: -1; width: 220px; margin: 0 0 8px; }
+  .pl2-band { margin: 16px 0; }
+  .pl2-edge { top: -13px; height: 14px; }
+  .pl2-edge--bottom { top: auto; bottom: -13px; }
+  /* Сцена шага на телефоне не выше ~210px: холст 320×260 при ширине 256. */
+  .pl2-spread-art { max-width: 256px; }
+  .pl2-bento, .pl2-trust { grid-template-columns: 1fr; gap: 14px; }
+  .pl2-bento .pl2-tile--wide { grid-column: auto; }
+  /* Плитка строкой: картинка слева, заголовок рядом, текст во всю ширину ниже. */
+  .pl2-tile, .pl2-tile--wide {
+    display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 16px; row-gap: 12px;
+    align-items: center; padding: 20px 18px 22px;
+  }
+  .pl2-tile-body { display: contents; }
+  .pl2-tile-art, .pl2-tile--wide .pl2-tile-art { grid-column: 1; grid-row: 1; width: 104px; height: 84px; }
+  .pl2-tile-art .scn-sign, .pl2-tile--wide .pl2-tile-art .scn-sign { width: 96px; }
+  .pl2-tile-title, .pl2-tile--wide .pl2-tile-title { grid-column: 2; grid-row: 1; font-size: 23px; }
+  .pl2-tile-text { grid-column: 1 / -1; grid-row: 2; }
 }

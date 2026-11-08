@@ -1,36 +1,68 @@
 // Коллаж первого экрана лендинга — подложка под мокапом «Сегодня» (AppPreview).
 // Заголовок спрашивает «почему со мной снова это происходит?», и картинка отвечает
-// языком знаков (docs/design/PAPER_2026-11.md): лента-петля проходит за телефоном —
-// сценарий, который закручивается снова и снова; пять полосок на земле — потребности,
+// языком знаков (docs/design/PAPER_2026-11.md): лента-петля уходит за телефон —
+// сценарий, который закручивается снова и снова; полоски на земле — потребности,
 // за которыми следит чек-ин; лист — то, что вырастает, когда петлю замечают.
-// Пятно персика и клочки шалфея и неба — цветная бумага (styles/paper-scenes.css).
-import type { CSSProperties } from 'react';
+// Подложка — вырезанные листы цветной бумаги (персик, небо, шалфей), не пятна.
+// Два холста: широкий (компьютер, планшет) и узкий — телефон, где коллаж целиком
+// лежит в ширине контента: телефон-мокап на листе, по углам квадратики бумаги,
+// петля внизу. Какой виден — решает CSS (.pl2-hero-collage--*, product-landing.css).
+import type { CSSProperties, ReactNode } from 'react';
 import { INK } from './scenePaper';
 import { Lift } from './sceneKit';
 
 const STROKES = [
-  { x: 446, h: 62, fill: INK.moss, deg: -6 },
-  { x: 470, h: 80, fill: INK.amber, deg: 3 },
-  { x: 494, h: 52, fill: INK.clay, deg: -3 },
-  { x: 518, h: 72, fill: INK.slate, deg: 5 },
+  { x: 452, h: 62, fill: INK.moss, deg: -6 },
+  { x: 476, h: 80, fill: INK.amber, deg: 3 },
+  { x: 500, h: 52, fill: INK.clay, deg: -3 },
+  { x: 524, h: 72, fill: INK.slate, deg: 5 },
 ];
+const ribbon = { fill: 'none', stroke: INK.clay, strokeWidth: 18, strokeLinecap: 'round' } as const;
+
+/** Вырезанный лист: нижний слой тоном глубже со сдвигом, верхний — бумага (.hc-*). */
+function Cut({ cls, x, y, w, h, deg, rx = 26 }: { cls: string; x: number; y: number; w: number; h: number; deg: number; rx?: number }) {
+  const turn = `rotate(${deg} ${x + w / 2} ${y + h / 2})`;
+  return (
+    <>
+      <rect className={`${cls} hc-under`} x={x + 8} y={y + 9} width={w} height={h} rx={rx} transform={turn} />
+      <rect className={cls} x={x} y={y} width={w} height={h} rx={rx} transform={turn} />
+    </>
+  );
+}
+
+function Canvas({ wide, box, children }: { wide: boolean; box: string; children: ReactNode }) {
+  const style = { '--h': 45, '--h2': 135 } as CSSProperties;
+  return (
+    <svg className={`scn pl2-hero-collage pl2-hero-collage--${wide ? 'wide' : 'narrow'}`} viewBox={box} style={style} aria-hidden="true" focusable="false">
+      {children}
+    </svg>
+  );
+}
 
 export function HeroCollage() {
-  const ribbon = { fill: 'none', stroke: INK.clay, strokeWidth: 18, strokeLinecap: 'round' } as const;
   return (
-    <svg className="scn pl2-hero-collage" viewBox="0 0 580 520" style={{ '--h': 45, '--h2': 135 } as CSSProperties} aria-hidden="true" focusable="false">
-      <path className="scn-blob" d="M84 120 C130 38 278 8 400 30 C520 52 578 160 560 280 C542 400 446 500 300 500 C160 500 46 440 26 316 C14 232 44 176 84 120 Z" />
-      <path className="scn-patch" d="M22 360 C40 316 104 304 140 336 C176 368 166 432 122 456 C78 480 20 462 8 420 C2 398 10 378 22 360 Z" />
-      <path className="scn-patch scn-patch--sky" d="M430 26 C470 4 534 18 548 62 C562 106 520 132 478 124 C436 116 404 86 410 56 C412 42 418 32 430 26 Z" />
-      <Lift by={6}>
-        <path d="M14 236 C64 196 132 196 150 246 C166 292 112 318 92 286 C72 254 120 208 200 196" {...ribbon} />
-        <path d="M400 300 C452 288 494 300 502 330 C510 362 472 376 462 352 C452 328 500 300 562 308" {...ribbon} />
-        <path d="M404 486 H566" stroke={INK.sage} strokeWidth="7" strokeLinecap="round" />
-        {STROKES.map((s) => (
-          <rect key={s.x} x={s.x} y={480 - s.h} width="18" height={s.h} rx="9" fill={s.fill} transform={`rotate(${s.deg} ${s.x + 9} 480)`} />
-        ))}
-        <path d="M60 472 C52 438 70 410 104 402 C110 436 94 462 60 472 Z" fill={INK.moss} />
-      </Lift>
-    </svg>
+    <>
+      <Canvas wide box="0 0 580 520">
+        <Cut cls="hc-sky" x={420} y={22} w={140} h={120} deg={8} rx={22} />
+        <Cut cls="hc-sage" x={20} y={330} w={150} h={140} deg={-9} rx={22} />
+        <Cut cls="hc-peach" x={64} y={40} w={452} h={440} deg={-4} rx={36} />
+        <Lift by={6}>
+          <path d="M14 236 C64 196 132 196 150 246 C166 292 112 318 92 286 C72 254 120 208 200 196" {...ribbon} />
+          <path d="M410 488 H566" stroke={INK.sage} strokeWidth="7" strokeLinecap="round" />
+          {STROKES.map((s) => (
+            <rect key={s.x} x={s.x} y={482 - s.h} width="18" height={s.h} rx="9" fill={s.fill} transform={`rotate(${s.deg} ${s.x + 9} 482)`} />
+          ))}
+          <path d="M58 462 C50 428 68 400 102 392 C108 426 92 452 58 462 Z" fill={INK.moss} />
+        </Lift>
+      </Canvas>
+      <Canvas wide={false} box="0 0 358 520">
+        <Cut cls="hc-sky" x={258} y={4} w={88} h={76} deg={8} rx={16} />
+        <Cut cls="hc-sage" x={10} y={430} w={92} h={80} deg={-7} rx={16} />
+        <Cut cls="hc-peach" x={18} y={24} w={314} h={466} deg={-2} rx={28} />
+        <Lift by={5}>
+          <path d="M226 506 C250 478 296 480 300 500 C303 516 276 517 272 503 C268 489 300 478 342 486" {...ribbon} strokeWidth={13} />
+        </Lift>
+      </Canvas>
+    </>
   );
 }

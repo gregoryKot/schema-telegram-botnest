@@ -1,0 +1,55 @@
+/* Блок «Кто это делает» продуктового лендинга (AuthorSection.tsx): плитка персиковой
+   бумаги; фото — наклеенная фотокарточка в белой рамке с полоской скотча, в углу
+   наклейка со знаком Talk. Сдвинутая тень — у фотокарточки и наклейки: опорный
+   элемент блока. База — product-landing.css. */
+
+.pp-paper.pl2-author {
+  --h: 45; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 72px; align-items: center;
+  padding: 56px 60px 52px; border-radius: 32px;
+}
+.pl2-author-frame {
+  position: relative; justify-self: center; width: 100%; max-width: 280px; box-sizing: border-box;
+  padding: 12px 12px 16px; border-radius: 8px; background: var(--surface); transform: rotate(-2.5deg);
+  box-shadow: 12px 13px 0 oklch(0.79 0.07 var(--h));
+}
+/* Полоска скотча сверху — фото приклеено к листу. Сплошной тон, без прозрачности. */
+.pl2-author-frame::before {
+  content: ''; position: absolute; top: -12px; left: 50%; width: 96px; height: 26px; margin-left: -48px;
+  border-radius: 3px; background: oklch(0.9 0.055 85); transform: rotate(-4deg);
+}
+.pl2-author-photo {
+  display: block; width: 100%; aspect-ratio: 5 / 6;
+  object-fit: cover; object-position: center top; border-radius: 4px;
+}
+.pl2-author-sticker {
+  --h: 135; position: absolute; right: -30px; bottom: -26px;
+  display: flex; align-items: center; justify-content: center;
+  width: 96px; height: 96px; border-radius: 22px; transform: rotate(9deg);
+  background: oklch(0.9 0.06 var(--h)); box-shadow: 6px 7px 0 oklch(0.78 0.07 var(--h));
+}
+.pl2-author-sticker .scn-sign { width: 72px; }
+.pl2-author .pl2-h2 { margin-bottom: 10px; }
+.pl2-author-role { margin: 0 0 16px; font-size: 14px; font-weight: 700; color: var(--accent); }
+.pl2-author-text { margin: 0 0 28px; max-width: 560px; font-size: 16px; line-height: 1.7; color: var(--text-sub); }
+/* На цветной бумаге --text-faint ниже 4.5:1 — мелкая подпись берёт --text-sub. */
+.pl2-author .pl2-fine { color: var(--text-sub); }
+
+/* ── Раскладка ──────────────────────────────────────────────────────────── */
+/* Одна колонка: minmax(0, 1fr), а не 1fr — трек 1fr растягивался до min-content
+   кнопки (white-space: nowrap у ds-btn), и на 320–359px текст выходил за край листа. */
+@media (max-width: 900px) {
+  .pp-paper.pl2-author { grid-template-columns: minmax(0, 1fr); gap: 48px; padding: 44px 24px 32px; }
+  .pl2-author-frame { max-width: 250px; }
+}
+@media (max-width: 640px) {
+  .pl2-author-sticker { right: -18px; bottom: -22px; width: 80px; height: 80px; border-radius: 18px; }
+  .pl2-author-sticker .scn-sign { width: 60px; }
+}
+/* «Познакомиться: сайт практики ↗» в строку не влезает уже 360px — кнопка во всю
+   ширину и переносит текст, а не уходит за край экрана. */
+@media (max-width: 480px) {
+  .pl2-author .ds-btn.pl2-cta {
+    width: 100%; height: auto; min-height: 48px; padding: 12px 20px;
+    white-space: normal; line-height: 1.3; text-align: center;
+  }
+}
