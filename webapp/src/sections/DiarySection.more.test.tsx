@@ -7,10 +7,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DiarySection } from './DiarySection';
-import { appendPage, oldestId } from './diary/useDiaryLists';
+import { oldestId } from './diary/useDiaryLists';
 
 vi.mock('../api', () => ({
-  api: { getDiaryPage: vi.fn(), getProfile: vi.fn(), history: vi.fn(), trackEvent: vi.fn() },
+  api: { getDiaryPage: vi.fn(), getProfile: vi.fn(), history: vi.fn(), trackEvent: vi.fn(), createSchemaDiary: vi.fn() },
 }));
 import { api } from '../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -88,13 +88,38 @@ describe('DiarySection — «Показать ещё»', () => {
   });
 });
 
+// Хвост R6: сохранение из быстрой записи перезагружает первую страницу — и
+// сбрасывало догруженное, «Показать ещё» приходилось жать заново.
+describe('DiarySection — догруженное переживает сохранение из быстрой записи', () => {
+  it('после «Записать → Сохранить» старые записи на месте, новая сверху, лишнего запроса нет', async () => {
+    let saved = false;
+    mockApi.createSchemaDiary.mockImplementation(async () => { saved = true; return entry(32); });
+    mockApi.getDiaryPage.mockImplementation(async (kind: string, before?: number) => {
+      if (kind !== 'schema') return EMPTY;
+      if (before !== undefined) return { items: [entry(1)], hasMore: false };
+      return saved
+        ? { items: [entry(32), ...newest.slice(0, 29)], hasMore: true } // 32..3: запись 2 уехала на вторую страницу
+        : { items: newest, hasMore: true };
+    });
+    renderSection();
+    fireEvent.click(await screen.findByRole('button', { name: 'Показать ещё' }));
+    await screen.findByText('Запись номер 1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Записать' }));
+    fireEvent.change(screen.getByPlaceholderText('Можно одним предложением. Можно без точки.'), { target: { value: 'Новая мысль' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await screen.findByText('Запись номер 32');
+
+    expect(screen.getByText('Запись номер 2')).toBeTruthy();
+    expect(screen.getByText('Запись номер 1')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Показать ещё' })).toBeNull();
+    expect(mockApi.getDiaryPage.mock.calls.filter((c) => c[1] !== undefined)).toHaveLength(1);
+  });
+});
+
 describe('useDiaryLists — курсор и склейка страниц', () => {
   it('курсор — последняя (самая старая) запись; пустой список — без курсора', () => {
     expect(oldestId([{ id: 9 }, { id: 4 }])).toBe(4);
     expect(oldestId([])).toBeUndefined();
-  });
-
-  it('страница встаёт в хвост без повторов', () => {
-    expect(appendPage([{ id: 3 }, { id: 2 }], [{ id: 2 }, { id: 1 }])).toEqual([{ id: 3 }, { id: 2 }, { id: 1 }]);
   });
 });
