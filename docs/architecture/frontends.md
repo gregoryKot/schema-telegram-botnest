@@ -36,6 +36,7 @@
   - Access-токен лежит в памяти (state + ref в `AuthProvider`, в localStorage его нет).
   - `webapp/src/auth/TokenBridge.tsx` передаёт `getAccessToken` (ref, синхронно) в `setTokenProvider` и `refreshToken` в `setRefreshHandler`.
   - После OAuth сессию даёт только refresh по куке из редиректа; фрагмент `#access_token` не читается (`webapp/src/pages/authCallback/HashCallback.tsx`, `dropUrlFragment.ts`).
+  - Адрес возврата после входа (`auth_return_to`, sessionStorage вкладки): пишут `RequireAuth`, `LinkDevicePage`, привязка способа входа; забирают вход, 2FA и колбэки — всё через `webapp/src/auth/returnTo.ts` (только внутренний путь).
   - Refresh — httpOnly-кука: `POST /api/auth/refresh` с `credentials:'include'` и `x-requested-with: webapp` (`webapp/src/auth/refreshSession.ts`).
 - **ты/вы:**
   - Инфраструктура одна, в `shared/src/utils/addressForm.ts`: `AddressFormContext`, `useAddressForm`, `useSetAddressForm`, `useTr()` (`tr('текст на ты','текст на вы')`), `pickForm`.
