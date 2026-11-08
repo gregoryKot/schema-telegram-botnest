@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QuizPage } from './QuizPage';
 import type { QuizDto } from '../../api';
+import { quizLook } from './quizLook';
 
 const mockUseQuizzes = vi.fn();
 vi.mock('../../hooks/useQuizzes', () => ({
@@ -130,5 +131,19 @@ describe('QuizPage — прохождение', () => {
     await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
     expect(await screen.findByText('Скопировано ✓')).toBeTruthy();
     vi.unstubAllGlobals();
+  });
+});
+
+describe('QuizPage — цвет теста', () => {
+  it('вступление и результат в оттенке плитки этого теста из списка /tests (по его месту в списке)', () => {
+    mockUseQuizzes.mockReturnValue({ quizzes: [{ ...QUIZ, id: 'other' }, QUIZ], error: false });
+    const { container } = renderQuiz();
+    const hue = String(quizLook('anger', 1).hue);
+    expect(hue).not.toBe(String(quizLook('anger', 0).hue));
+    expect((container.querySelector('.pl2-quiz-intro-art svg.scn') as SVGElement).style.getPropertyValue('--h')).toBe(hue);
+    fireEvent.click(screen.getByText('Начать →'));
+    fireEvent.click(screen.getByText('Спорю'));
+    fireEvent.click(screen.getByText('Настаиваю'));
+    expect((container.querySelector('.pl2-result') as HTMLElement).style.getPropertyValue('--h')).toBe(hue);
   });
 });

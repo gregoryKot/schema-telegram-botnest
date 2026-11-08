@@ -1,0 +1,39 @@
+/* Сцены — крупные картинки бумажной аппликации (components/art/sceneKit.tsx,
+   LandingScenes*.tsx; docs/design/PAPER_2026-11.md, «Сцены»). Префикс scn-.
+   Подложка — вырезанный лист цветной бумаги того же рецепта, что .pp-paper (oklch
+   по --h), только насыщеннее: сцена — главное пятно цвета в своей секции. Под листом
+   второй лист тоном глубже, сдвинутый вниз-вправо, — край «вырезки». Тень фигур —
+   сплошной тон той же бумаги, сдвинутый слой, а не размытие (check-render-poison). */
+
+.scn { display: block; width: 100%; height: auto; overflow: visible; }
+/* Небо фигур сцен (INK.sky: задняя карточка веера SceneQuiz) — токена неба у палитры нет,
+   бумага неба та же, что у квадратиков и полос (oklch по оттенку 240). */
+.scn { --scn-sky: oklch(0.84 0.065 240); }
+.scn-sheet { fill: oklch(0.885 0.06 var(--h)); }
+.scn-sheet-under { fill: oklch(0.79 0.07 var(--h)); }
+.scn-patch { fill: oklch(0.85 0.08 var(--h2)); }
+.scn-patch-under { fill: oklch(0.76 0.085 var(--h2)); }
+
+/* Копия фигур под ними — «бумага отбрасывает бумагу»: один тон на всю сцену. */
+.scn-shade [fill]:not([fill="none"]) { fill: oklch(0.79 0.06 var(--h)); fill-opacity: 1; }
+.scn-shade [stroke]:not([stroke="none"]) { stroke: oklch(0.79 0.06 var(--h)); stroke-opacity: 1; }
+
+/* Знак кабинета крупно (SignScene, SceneParts.tsx): под ним тот же знак тоном
+   глубже бумаги, на которой он лежит, со сдвигом — вырезка, а не перерисовка знака. */
+.scn-sign { position: relative; display: inline-grid; flex-shrink: 0; }
+.scn-sign > .pp-art { position: relative; grid-area: 1 / 1; width: 100%; height: auto; }
+/* Оба слоя позиционированы: со сдвигом (transform) нижний иначе рисуется поверх верхнего. */
+.scn-sign > .pp-art:first-child { transform: translate(5%, 7%); }
+.scn-sign > .pp-art:first-child *:not([fill="none"]) { fill: oklch(0.78 0.07 var(--h)); fill-opacity: 1; }
+.scn-sign > .pp-art:first-child [stroke]:not([stroke="none"]) { stroke: oklch(0.78 0.07 var(--h)); stroke-opacity: 1; }
+/* Верхний слой непрозрачен: полупрозрачный круг Cluster (fill-opacity .85 — в кабинете он
+   ложится на бумагу) над тенью-вырезкой просвечивал её — круг двоился серпом. */
+.scn-sign > .pp-art:last-child [fill-opacity] { fill-opacity: 1; }
+
+/* Листы коллажа первого экрана (HeroCollage.tsx): персик под мокапом, клочки неба и шалфея. */
+.hc-peach { fill: oklch(0.885 0.06 45); }
+.hc-sky { fill: oklch(0.88 0.05 240); }
+.hc-sage { fill: oklch(0.87 0.06 135); }
+.hc-peach.hc-under { fill: oklch(0.79 0.07 45); }
+.hc-sky.hc-under { fill: oklch(0.79 0.06 240); }
+.hc-sage.hc-under { fill: oklch(0.78 0.07 135); }

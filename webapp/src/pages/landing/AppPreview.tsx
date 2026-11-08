@@ -18,7 +18,7 @@ export function AppPreview() {
     <div className="pl2-preview" aria-hidden>
       <div className="pl2-phone">
         <div className="pl2-phone-title">Сегодня</div>
-        <p className="pl2-phone-sub">Пять потребностей — минутный чек-ин</p>
+        <p className="pl2-phone-sub">Пять потребностей — минутный <span className="pl2-nowrap">чек-ин</span></p>
         {MOCK_NEEDS.map((n) => (
           <div key={n.id} className="pl2-need">
             <div className="pl2-need-row">
