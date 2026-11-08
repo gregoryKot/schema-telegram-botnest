@@ -190,6 +190,86 @@ describe('encryptionReadableProbe', () => {
   });
 });
 
+// ClientConceptualization.history: снапшоты с отдельно зашифрованными полями
+// (rotate-history.ts) — колонка-массив, общий подсчёт её не видел.
+describe('encryptionReadableProbe — снапшоты ClientConceptualization.history', () => {
+  const CONCEPT = [{ name: 'clientConceptualization', fields: ['goals'] }];
+  const run = (rows: Array<Record<string, unknown>>) =>
+    encryptionReadableProbe(
+      fakePrisma({ clientConceptualization: rows }).prisma,
+      { ENCRYPTION_KEY: 'k' },
+      CONCEPT,
+    ).run();
+  const savedAt = '2026-11-01T10:00:00.000Z';
+
+  it('нечитаемое поле снапшота → не ok, колонка history и счёт в detail, без содержимого', async () => {
+    const blob = foreign('СЕКРЕТ из прошлой версии');
+    const res = await run([
+      {
+        id: 'c1',
+        goals: encrypt('цели'),
+        history: [
+          { savedAt, goals: encrypt('читается'), triggers: blob },
+          { savedAt, goals: encrypt('тоже') },
+        ],
+      },
+    ]);
+    expect(res.ok).toBe(false);
+    expect(res.detail).toContain('clientConceptualization.history 1 из 3');
+    expect(res.detail).not.toContain('clientConceptualization.goals');
+    expect(res.detail).not.toContain(blob);
+    expect(res.detail).not.toContain('СЕКРЕТ');
+  });
+
+  it('чистые снапшоты → ok; открытые поля (savedAt) и легаси-текст не в счёте', async () => {
+    const res = await run([
+      {
+        id: 'c1',
+        goals: encrypt('цели'),
+        history: [
+          { savedAt, goals: encrypt('a'), modeIds: encryptJson(['x']) },
+          { savedAt, goals: 'старый открытый текст с пробелами', v: 2 },
+          'не снапшот',
+          null,
+        ],
+      },
+      { id: 'c0', goals: null, history: null },
+    ]);
+    expect(res.ok).toBe(true);
+    // goals строки (1) + два шифротекста снапшота.
+    expect(res.detail).toContain('проверено значений 3 в 2 колонках');
+  });
+
+  it('history читается тем же запросом, что и поля таблицы, — последние строки по id', async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const prisma = new Proxy(
+      {},
+      {
+        get: () => ({
+          findMany: async (args: Record<string, unknown>) => {
+            calls.push(args);
+            return [];
+          },
+          updateMany: jest.fn(),
+        }),
+      },
+    ) as unknown as PrismaService;
+    await encryptionReadableProbe(
+      prisma,
+      { ENCRYPTION_KEY: 'k' },
+      CONCEPT,
+      7,
+    ).run();
+    expect(calls).toEqual([
+      {
+        select: { id: true, goals: true, history: true },
+        take: 7,
+        orderBy: [{ id: 'desc' }],
+      },
+    ]);
+  });
+});
+
 describe('describeTallies', () => {
   const col = (column: string, checked: number, unreadable: number) => ({
     column,
