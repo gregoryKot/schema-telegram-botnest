@@ -15,6 +15,7 @@ import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { ClientBookingService } from '../src/booking/client-booking.service';
 
 const REAL_DB = process.env.E2E_REAL_DB === '1';
 const itOnRealDb = REAL_DB ? it : it.skip;
@@ -140,6 +141,42 @@ describe('e2e smoke: запись клиента из приложения (owne
       userId: String(A),
     });
     expect(post.status).toBe(403);
+  });
+
+  // R9: выбор валюты при поясе без места доходит до сервиса через настоящий
+  // ValidationPipe (whitelist срезал бы поле, которого нет в DTO); мусор — 400.
+  it('выбор валюты проходит DTO и контроллер; валюта не из списка — 400', async () => {
+    const svc = app.get(ClientBookingService);
+    const spy = jest.spyOn(svc, 'book').mockResolvedValue({
+      id: 1,
+      cancelToken: 'cb-e2e-spy',
+      heldUntil: null,
+      status: 'CONFIRMED',
+      paymentUrl: null,
+      eventDurationMin: 50,
+      manageUrl: 'https://kotlarewski.gr/booking/manage?token=cb-e2e-spy',
+    });
+    try {
+      const ok = await agentAs(A).post('/api/client-booking/book', {
+        startsAt: SLOT.toISOString(),
+        clientTimeZone: 'UTC',
+        currency: 'EUR',
+      });
+      expect(ok.status).toBe(200);
+      expect(spy).toHaveBeenCalledWith(
+        A,
+        expect.objectContaining({ clientTimeZone: 'UTC', currency: 'EUR' }),
+      );
+      const bad = await agentAs(A).post('/api/client-booking/book', {
+        startsAt: SLOT.toISOString(),
+        currency: 'XXX',
+      });
+      expect(bad.status).toBe(400);
+      expect(JSON.stringify(bad.body)).toContain('currency');
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   itOnRealDb(

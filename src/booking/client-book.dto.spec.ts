@@ -21,6 +21,15 @@ describe('ClientBookDto', () => {
     ).resolves.toEqual([]);
   });
 
+  it('валюта — только из списка (выбор при поясе без места, Р5)', async () => {
+    for (const currency of ['RUB', 'ILS', 'EUR', 'USD'])
+      await expect(errorsFor({ ...VALID, currency })).resolves.toEqual([]);
+    for (const currency of ['XXX', 'eur', 5])
+      await expect(errorsFor({ ...VALID, currency })).resolves.toEqual([
+        'currency',
+      ]);
+  });
+
   it('мусор вместо даты и пустое тело — отказ', async () => {
     await expect(errorsFor({ startsAt: 'завтра' })).resolves.toContain(
       'startsAt',

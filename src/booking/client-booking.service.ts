@@ -7,6 +7,7 @@ import { CLIENT_BOOKING_CREATED_EVENT } from '../analytics/client-booking-events
 import { practiceOwnerUserId } from '../utils/practice-owner';
 import { BookingService } from './booking.service';
 import { clientIdentity } from './client-booking.identity';
+import type { Currency } from './price-region';
 
 // Запись клиента на сессию из приложения (issue #546). Тонкий слой над той же
 // цепочкой BookingService.book, что у публичной /book: оферта, TOO_SOON,
@@ -43,6 +44,7 @@ export interface ClientBookInput {
   startsAt: Date;
   durationMin: number;
   clientTimeZone?: string;
+  currency?: Currency; // явный выбор (Р5): учитывается только при поясе без места
 }
 
 @Injectable()
@@ -132,6 +134,7 @@ export class ClientBookingService {
         acceptedOffer: true,
         source: CLIENT_BOOKING_SOURCE,
         clientTimeZone: input.clientTimeZone,
+        currency: input.currency,
       },
       { userId, telegramId: who.telegramId },
     );
