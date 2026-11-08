@@ -54,6 +54,7 @@ describe('replacePending — снять и поставить под локом 
   // Хвост волны 8: правка настроек решила «ставить напоминание» до лока, а
   // обход за это время поставил вместо него перерыв — второго не ставим.
   it('перерыв или сводка уже стоят — напоминание не ставится', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-08T21:00:00Z') });
     const { prisma, tx, steps } = fakeDb(1);
     await replacePending(prisma, 42n, 'reminder', new Date(0));
     expect(steps).toEqual([
@@ -78,8 +79,11 @@ describe('replacePending — снять и поставить под локом 
         },
         sentAt: null,
         cancelledAt: null,
+        // Просроченный дольше часа заменитель — хвост прошлого дня, не блокирует.
+        sendAt: { gte: new Date('2026-11-08T20:00:00Z') },
       },
     });
+    jest.useRealTimers();
   });
 
   it('другие типы перерыв не проверяют — меняются как раньше', async () => {

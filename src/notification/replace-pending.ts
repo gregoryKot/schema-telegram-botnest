@@ -94,6 +94,10 @@ async function cancelPending(tx: Tx, userId: bigint, type: NotificationType) {
   });
 }
 
+/** Заменитель, просроченный дольше этого, — хвост прошлого дня (очередь шлёт
+ * каждые 5 минут): напоминание он не блокирует. */
+const STALE_STAND_IN_MS = 60 * 60_000;
+
 async function standInPending(tx: Tx, userId: bigint): Promise<boolean> {
   const n = await tx.scheduledNotification.count({
     where: {
@@ -101,6 +105,7 @@ async function standInPending(tx: Tx, userId: bigint): Promise<boolean> {
       type: { in: [...REMINDER_STAND_INS] },
       sentAt: null,
       cancelledAt: null,
+      sendAt: { gte: new Date(Date.now() - STALE_STAND_IN_MS) },
     },
   });
   return n > 0;
