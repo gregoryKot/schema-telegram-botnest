@@ -193,8 +193,13 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   title,
-                  body,
+                  // Правило №20: починка инцидента приезжает со строкой в
+                  // реестре. Чеклист — только в новой issue, не в напоминаниях.
+                  body: `${body}\n\n- [ ] строка в docs/INCIDENTS.md (симптом, корень, класс, кто заметил, сколько жило)`,
                   labels: [label],
+                  // Без исполнителя issue не приходит владельцу ни уведомлением,
+                  // ни в «Assigned to me» (аудит 2026-10).
+                  assignees: [context.repo.owner],
                 });
               }
             } else if (existing) {

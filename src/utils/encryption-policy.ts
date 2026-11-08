@@ -65,7 +65,7 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     message: enc(`${TH}/therapist-request.service.ts`),
     rejectReason: plain('текст админа, не PII заявителя'),
   },
-  DiaryDraft: { type: ID, data: enc('src/api/api.controller.ts') },
+  DiaryDraft: { type: ID, data: enc('src/cli/rotate-encryption/targets.ts') }, // ручки удалены, пишет только ротация
   AuthProvider: {
     provider: ID,
     providerId: plain(

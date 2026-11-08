@@ -1,14 +1,12 @@
 import { type ClientErrorFlood, floodLines } from './client-error-flood.format';
 
-// Блок «Поломки на клиенте» для /stats (правило №8: метрика, которой нет в
-// отчёте, — невидима). Чистый форматтер, покрыт тестом, включая пустую БД.
-// Волна 9 щита покрытия: отчёт клиента о поломке (POST /api/client-errors)
-// считается событием client_error; повторы — в client-error-flood.format.ts,
-// владельцу — сводка раз в час (src/api/client-errors-digest.ts, подписи ниже).
+// Блок «Поломки на клиенте» для /stats (правило №8). Чистый форматтер, тест
+// с пустой БД. Отчёт клиента о поломке (POST /api/client-errors) — событие
+// client_error; повторы — client-error-flood.format.ts, сводка владельцу раз в
+// час — src/api/client-errors-digest.ts (подписи ниже).
 // Раздел auth — отдельная явная строка, а не просто пункт списка по разделам:
 // это единственный клиентский свидетель для «вход сломан ДО того, как запрос
-// вообще дошёл до guard'а» (инцидент 2026-08-08, см. блок «Вход в
-// мессенджере» — auth-health-metrics.format.ts): иначе авария тонет в списке.
+// вообще дошёл до guard'а» (инцидент 2026-08-08, auth-health-metrics.format.ts).
 export interface ClientErrorMetrics extends ClientErrorFlood {
   totalDay: number;
   totalWeek: number;
@@ -25,6 +23,7 @@ export interface ClientErrorMetrics extends ClientErrorFlood {
     cabinet: number;
     booking: number;
     assets: number;
+    subscription: number;
     other: number;
   };
   bySource: { webapp: number; miniapp: number };
@@ -44,6 +43,7 @@ export const SECTION_LABELS: Record<
   cabinet: 'Кабинет',
   booking: 'Запись на консультацию',
   assets: 'Файлы сайта не загрузились',
+  subscription: 'Подписка',
   other: 'другое',
 };
 

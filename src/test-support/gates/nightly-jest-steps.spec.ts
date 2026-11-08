@@ -70,3 +70,49 @@ describe('nightly.yml, backend-flaky: jest не может молча висет
     expect(sum + 2).toBeLessThanOrEqual(jobMinutes);
   });
 });
+
+// ci.yml, джоба backend: до сторожа утечку в PR-CI видела только строка в
+// логе зелёного шага — так поллинг из telegram.polling.seam.spec.ts (#649)
+// уехал в main при зелёном шаге со строкой «A worker process has failed to
+// exit gracefully» и повесил nightly (ci-alarm #672). Сторож стоит на полном
+// юнит-прогоне под Australia/Sydney: прогон coverage-храповика он не
+// оборачивает — красный храповик (просадка покрытия при зелёных тестах)
+// сторож прочитал бы как «код выхода выставил тест».
+describe('ci.yml, backend: юнит-jest через jest-exit-guard', () => {
+  const CI = readFileSync(
+    join(process.cwd(), '.github', 'workflows', 'ci.yml'),
+    'utf8',
+  );
+  const backend = job(CI, 'backend');
+  const steps = backend.split(/^ {6}- /m).slice(1);
+  const run = (s: string) => stepField(s, 'run') ?? '';
+  const unit = steps.filter(
+    (s) => /\bnpx jest\b/.test(run(s)) && !/--config/.test(run(s)),
+  );
+
+  it('полный юнит-прогон jest в джобе есть (под не-UTC зоной)', () => {
+    expect(unit).toHaveLength(1);
+    expect(unit[0]).toMatch(/^ {10}TZ: Australia\/Sydney$/m);
+  });
+
+  it('через сторожа, без пайпа и без --forceExit', () => {
+    const cmd = run(unit[0]);
+    expect(cmd).toMatch(/^node scripts\/jest-exit-guard\.mjs .* -- npx jest\b/);
+    expect(cmd).not.toMatch(/\|/);
+    expect(cmd).not.toMatch(/--forceExit/);
+  });
+
+  it('бюджет + ожидание выхода + минута запаса ≤ timeout-minutes шага ≤ джобы', () => {
+    const cmd = run(unit[0]);
+    const budget = Number(/--budget (\d+)/.exec(cmd)?.[1]);
+    const grace = Number(/--exit-grace (\d+)/.exec(cmd)?.[1]);
+    const step = Number(stepField(unit[0], 'timeout-minutes'));
+    const jobMinutes = Number(
+      /^ {4}timeout-minutes: (\d+)$/m.exec(backend)?.[1],
+    );
+    expect(budget).toBeGreaterThan(0);
+    expect(grace).toBeGreaterThan(0);
+    expect(budget + grace + 60).toBeLessThanOrEqual(step * 60);
+    expect(step).toBeLessThan(jobMinutes);
+  });
+});

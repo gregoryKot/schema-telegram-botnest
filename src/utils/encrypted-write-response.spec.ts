@@ -337,7 +337,7 @@ const NO_ROW_RESPONSE: Record<string, string> = {
     'пишется вместе с YsqResult, ответа-строки нет (src/bot/ysq.service.ts)',
   Note: 'saveNote ничего не возвращает (src/bot/bot.service.ts)',
   DiaryDraft:
-    'POST /api/drafts/:type отвечает { ok: true } (src/api/api.controller.ts)',
+    'писателя нет: ручки /api/drafts удалены, таблица ждёт DROP (docs/open/backend.md)',
   TherapistRequest:
     'submit отвечает { id, status } (therapist-request.service.ts)',
   TherapyRelation:

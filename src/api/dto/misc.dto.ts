@@ -1,21 +1,7 @@
 import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { TIMEZONE_MAX_LENGTH } from '../../notification/notify-timezones';
-import { DraftData } from './draft-data';
 
-/**
- * DTO для мелких эндпоинтов api.controller.ts (аудит 2026-07, 2г / правило
- * №6 CLAUDE.md). `data` — снимок формы черновика: объект с границами по
- * ключам и строкам (draft-data.ts, аудит 2026-11 S21); формат `startedAt`
- * проверяется вручную в контроллере.
- */
-export class SaveDraftDto {
-  @IsString()
-  startedAt!: string;
-
-  @DraftData()
-  data!: Record<string, unknown>;
-}
-
+/** DTO для мелких эндпоинтов api.controller.ts (аудит 2026-07, 2г / правило №6). */
 export class UpdateNameDto {
   @IsString()
   @MaxLength(50)

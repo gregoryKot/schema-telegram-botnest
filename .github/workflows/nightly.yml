@@ -631,6 +631,25 @@ jobs:
             exit 1
           fi
 
+  # Живой ruleset `main` и настройки слияния ↔ копия .github/rulesets/main.json
+  # (аудит 2026-10, правило №13). Не PR-гейт: новая джоба законно не обязательна
+  # между своим мержем и правкой ruleset владельцем. Тест —
+  # src/test-support/gates/live-ruleset.spec.ts.
+  live-ruleset:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: живой ruleset main совпадает с копией
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-live-ruleset.mjs
+
   # Сигнализация (щит): красный nightly раньше был виден только тому, кто сам
   # зашёл во вкладку Actions — 6 из 7 ночных ранов с 2026-09-10 были красными,
   # и никто не заметил. Эта джоба — единственный наблюдатель после самих
@@ -647,6 +666,7 @@ jobs:
       - macos-build
       - backup-restore
       - npm-audit
+      - live-ruleset
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -731,8 +751,13 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   title,
-                  body,
+                  // Правило №20: починка инцидента приезжает со строкой в
+                  // реестре. Чеклист — только в новой issue, не в напоминаниях.
+                  body: `${body}\n\n- [ ] строка в docs/INCIDENTS.md (симптом, корень, класс, кто заметил, сколько жило)`,
                   labels: [label],
+                  // Без исполнителя issue не приходит владельцу ни уведомлением,
+                  // ни в «Assigned to me» (аудит 2026-10).
+                  assignees: [context.repo.owner],
                 });
               }
             } else if (existing) {

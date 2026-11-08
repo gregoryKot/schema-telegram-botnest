@@ -82,3 +82,9 @@ scripts/mutation-golden-payments-baseline.json merge=ratchet-max
 # бейслайнам union не подходит — им нужна семантика храповика. Оба условия
 # держит scripts/merge-drivers-check.mjs.
 docs/agent/NAV_LOG.md                     merge=union
+# Сам этот файл: каждый новый бейслайн приносит сюда строку, и два PR с новыми
+# гейтами вставляли их в соседние места — текстовый конфликт по построению.
+# Строки про разные точные пути друг от друга не зависят, union оставляет обе.
+# Обе стороны переписали ОДНУ строку — останутся обе, и повтор пути краснит
+# `setup-merge-drivers.mjs --check` (scripts/merge-drivers-check.mjs, п. 5).
+.gitattributes                            merge=union

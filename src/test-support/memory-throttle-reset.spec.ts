@@ -1,12 +1,9 @@
-// Сброс умеет обе формы: MemoryThrottleStorage (прод) и голый штатный.
-// Регресс мигалки test/refresh-rotation.e2e-spec.ts (разбор 2026-10-15, см.
-// шапку memory-throttle-reset.ts): сброс троттлера между сценариями стирал
-// записи, оставляя таймеры истечения, и таймер падал TypeError. Время здесь
-// фейковое: в e2e попадание таймера в окно зависело от нагрузки машины, тут
-// порядок «хит → сброс → истечение» задан руками и воспроизводится всегда.
+// Сброс троттлера в памяти между e2e-сценариями (шапка memory-throttle-reset.ts).
+// Регресс мигалки test/refresh-rotation.e2e-spec.ts (разбор 2026-10-15): сброс
+// стирал одну Map записей, а хиты жили дальше. Время фейковое: порядок «хит →
+// сброс → истечение» задан руками и воспроизводится всегда.
 import { ThrottlerStorageService } from '@nestjs/throttler';
 import { HybridThrottleStorage } from '../api/hybrid-throttle-storage';
-import { MemoryThrottleStorage } from '../api/memory-throttle-storage';
 import type { PrismaService } from '../prisma/prisma.service';
 import { resetMemoryThrottle } from './memory-throttle-reset';
 
@@ -31,47 +28,24 @@ describe('resetMemoryThrottle — сброс троттлера в памяти 
 
   // Контрольный образец: приём «стереть одну Map библиотеки», что жил в спеке
   // до разбора. Форма провала зависит от версии @nestjs/throttler, класс один:
-  //  - 6.5.0: таймер на каждый хит берёт запись без проверки и падает
-  //    TypeError, когда записи уже нет;
-  //  - 6.7.1: таймеров на хит нет, счётчик восстанавливается из
-  //    hitExpirations — следующий хит не свежий (totalHits > 1).
-  // Не провалился ни так, ни так — разбор выше устарел, его надо перечитать.
+  //  - 6.5.0: таймер на каждый хит брал запись без проверки и падал TypeError;
+  //  - 6.7.1: счётчик восстанавливается из hitExpirations — следующий хит не
+  //    свежий (totalHits > 1).
+  // Не провалился ни так, ни так — разбор устарел, его надо перечитать.
   it('контроль: стереть только записи — это не сброс (таймер падает или счётчик живёт)', async () => {
-    // Две независимые проверки на двух хранилищах: время идёт только вперёд.
-    const timers = new ThrottlerStorageService();
-    await hit(timers);
-    timers.storage.clear();
+    const lib = new ThrottlerStorageService();
+    await hit(lib);
+    lib.storage.clear();
     let threw = false;
+    let next = 0;
     try {
-      jest.advanceTimersByTime(TTL);
+      jest.advanceTimersByTime(TTL / 2);
+      next = (await hit(lib)).totalHits;
     } catch {
       threw = true;
     }
-    timers.onApplicationShutdown();
-
-    const counter = new ThrottlerStorageService();
-    await hit(counter);
-    counter.storage.clear();
-    const next = await hit(counter);
-    counter.onApplicationShutdown();
-
-    expect(threw || next.totalHits > 1).toBe(true);
-  });
-
-  it('таймер хита, сделанного до сброса, истекает после него без ошибки', async () => {
-    await hit(storage);
-    resetMemoryThrottle(storage);
-    expect(() => jest.advanceTimersByTime(TTL)).not.toThrow();
-  });
-
-  it('таймер хита до сброса не вычитает хит из записи, заведённой после', async () => {
-    await hit(storage);
-    jest.advanceTimersByTime(TTL / 2);
-    resetMemoryThrottle(storage);
-    await hit(storage);
-    // Таймер первого хита истёк бы здесь, таймер второго — ещё нет.
-    jest.advanceTimersByTime(TTL / 2 + 100);
-    expect((await hit(storage)).totalHits).toBe(2);
+    lib.onApplicationShutdown();
+    expect(threw || next > 1).toBe(true);
   });
 
   it('лимит, исчерпанный до сброса, после сброса не мешает', async () => {
@@ -83,20 +57,32 @@ describe('resetMemoryThrottle — сброс троттлера в памяти 
     expect(after.isBlocked).toBe(false);
   });
 
+  it('хиты до сброса не досчитываются к записи, заведённой после', async () => {
+    await hit(storage);
+    jest.advanceTimersByTime(TTL / 2);
+    resetMemoryThrottle(storage);
+    await hit(storage);
+    // Хит до сброса истёк бы здесь, хит после — ещё нет.
+    jest.advanceTimersByTime(TTL / 2 + 100);
+    expect((await hit(storage)).totalHits).toBe(2);
+  });
+
+  it('сброс снимает таймер выметания; следующий хит заводит его снова', async () => {
+    await hit(storage);
+    expect(jest.getTimerCount()).toBe(1);
+    resetMemoryThrottle(storage);
+    expect(jest.getTimerCount()).toBe(0);
+    await hit(storage);
+    expect(jest.getTimerCount()).toBe(1);
+  });
+
   it('голый ThrottlerStorageService (сборка без гибрида) сбрасывается так же', async () => {
     const lib = new ThrottlerStorageService();
     await hit(lib);
     resetMemoryThrottle(lib);
-    expect(() => jest.advanceTimersByTime(TTL)).not.toThrow();
     expect(lib.storage.size).toBe(0);
-  });
-
-  it('MemoryThrottleStorage без обёртки сбрасывается через reset()', async () => {
-    const own = new MemoryThrottleStorage();
-    await hit(own);
-    resetMemoryThrottle(own);
-    expect(own.size).toBe(0);
-    expect((await hit(own)).totalHits).toBe(1);
+    expect((await hit(lib)).totalHits).toBe(1);
+    lib.onApplicationShutdown();
   });
 
   it('чужая форма хранилища — громкая ошибка, а не тихий no-op', () => {

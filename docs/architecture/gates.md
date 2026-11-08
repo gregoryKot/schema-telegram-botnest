@@ -8,7 +8,7 @@
 
 ### Гейты CI
 
-Бейслайн указан полным путём, «—» значит, что бейслайна нет. «--update: нет» значит, что флага нет: это ручная классификация с причинами или жёсткий запрет без долга. `check-db-phrases.ts` в CI не гоняется: он ходит в БД, запускать вручную через `npm run check-phrases`.
+Бейслайн указан полным путём, «—» значит, что бейслайна нет. «--update: нет» значит, что флага нет: это ручная классификация с причинами или жёсткий запрет без долга.
 
 | скрипт | что ловит | baseline | --update? | джоба CI |
 |---|---|---|---|---|
@@ -23,7 +23,6 @@
 | check-color-drift.mjs | захардкоженные хроматические hex/rgb вне токенов палитры | `scripts/color-drift-baseline.json` | да | webapp |
 | check-coverage-ratchet.mjs | просадка покрытия бэкенда (сам гоняет jest --coverage) | `scripts/coverage-baseline.json` | да | backend |
 | check-cron-leader.mjs | `@Cron` без классификации leader-election (двойной запуск) | `scripts/cron-leader-baseline.json` | нет | checks |
-| check-db-phrases.ts | мужской род и брак в пуле фраз «ЗВ» в БД | — | нет | — |
 | check-dead-files.mjs | файл без нетестовых потребителей (мёртвый код) | `scripts/dead-files-baseline.json` | да | checks |
 | check-deploy-lag.mjs | образ на проде старее последнего коммита main | — | нет | prod-smoke |
 | check-deploy-paths.mjs | рассинхрон путей Dockerfile, .dockerignore, amvera.yml | — | нет | checks |
@@ -31,6 +30,7 @@
 | check-e2e-in-ci.mjs | `test/*.e2e-spec.ts`, который не запускается ни одним шагом workflow | — | нет | checks |
 | check-e2e-stop-cron.mjs | тест поднимает AppModule без `stopCronJobs(app)` после `app.init()` — настоящие `@Cron` тикают посреди спека | — | нет | checks |
 | check-env-registry.mjs | чтение env мимо реестра и протухшие записи реестра | — (реестр `src/infra/env-registry.entries*.ts`) | нет | checks |
+| check-ephemeral-port.mjs | спек занимает эфемерный порт и отпускает его, чтобы забиндить позже: `.listen(0…)` и `.close(` в одной функции (разбор — `ephemeral-port-scan.mjs`) вне `src/test-support/ephemeral-port.ts`; поднят в beforeAll и закрыт в afterAll — законно | — | нет | checks |
 | check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint; полный режим — по каталогам верхнего уровня отдельными процессами (правила — `eslint-ratchet-rules.mjs`), локально `--changed` — только файлы против `origin/main` | `scripts/eslint-baseline.json` | да | eslint |
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
 | check-filename-case.mjs | два отслеживаемых пути, различающиеся только регистром (`diagramEdges.ts` ≈ `DiagramEdges.tsx`): на macOS Vite резолвит не тот файл | — | нет | checks |
@@ -44,6 +44,7 @@
 | check-jscpd-ratchet.mjs | рост копипасты от 70 токенов (jscpd) | `scripts/jscpd-baseline.json` | да | backend |
 | check-local-cache-writers.mjs | второй писатель ключа localStorage, ключ без классификации владельца (mirror/local), протухшая запись | `scripts/local-cache-baseline.json` | нет | checks |
 | check-legacy-name.mjs | возврат старого названия «СхемаЛаб» в текстах | — | нет | checks |
+| check-live-ruleset.mjs | живой ruleset `main` и настройки слияния разошлись с копией `.github/rulesets/main.json`: enforcement, правила, `strict`, набор обязательных проверок, `allow_auto_merge`, `allow_squash_merge`, `delete_branch_on_merge`; не ответил публичный `/rules/branches/main` — красное; поле, которого API не отдал (права токена), или не ответившие `/rulesets`, `/repos` — `::warning::не проверено`, шаг зелёный | — | нет | nightly (`live-ruleset`) |
 | check-mutation-ratchet.mjs | падение mutation-score золотых зон (читает отчёт Stryker) | `scripts/mutation-baseline.json`; для nightly-волн через `--baseline=`: `scripts/mutation-golden-auth-baseline.json`, `scripts/mutation-golden-payments-baseline.json`, `scripts/mutation-crisis-baseline.json`, `scripts/mutation-outbox-baseline.json`; `--partial` (PR-CI `mutation-changed`) сверяет только файлы отчёта | да | nightly, PR-CI |
 | check-mutation-zone.mjs | файл, выделенный из мутационной зоны, выпал из неё молча | `scripts/mutation-zone-baseline.json` | нет | checks |
 | check-persistent-throttle.mjs | ручка с лимитом без решения о `@PersistentThrottle()` | `scripts/persistent-throttle-baseline.json` | нет | checks |
