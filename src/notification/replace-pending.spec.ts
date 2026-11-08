@@ -1,10 +1,11 @@
 // Хвост E16: «снять + поставить» — одна транзакция, лок перепланировки берётся
 // первым. Что Postgres держит лок и UPDATE после него видит чужой коммит —
 // test/raw-sql-live-infra.e2e-spec.ts (мок этого не докажет, правило №18).
-import { replacePending } from './replace-pending';
+import { replacePending, swapReminder } from './replace-pending';
 import type { PrismaService } from '../prisma/prisma.service';
 
-function fakeDb() {
+/** standIns — сколько перерывов/сводок уже стоит у человека. */
+function fakeDb(standIns = 0) {
   const steps: string[] = [];
   const tx = {
     $executeRaw: jest.fn((sql: TemplateStringsArray, ...args: unknown[]) => {
@@ -19,6 +20,10 @@ function fakeDb() {
       create: jest.fn(async () => {
         steps.push('create');
         return {};
+      }),
+      count: jest.fn(async () => {
+        steps.push('check');
+        return standIns;
       }),
     },
   };
@@ -40,9 +45,52 @@ describe('replacePending — снять и поставить под локом 
       'begin',
       'lock SELECT pg_advisory_xact_lock(hashtext(?)) reschedule:42',
       'cancel',
+      'check',
       'create',
       'commit',
     ]);
+  });
+
+  // Хвост волны 8: правка настроек решила «ставить напоминание» до лока, а
+  // обход за это время поставил вместо него перерыв — второго не ставим.
+  it('перерыв или сводка уже стоят — напоминание не ставится', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-08T21:00:00Z') });
+    const { prisma, tx, steps } = fakeDb(1);
+    await replacePending(prisma, 42n, 'reminder', new Date(0));
+    expect(steps).toEqual([
+      'begin',
+      'lock SELECT pg_advisory_xact_lock(hashtext(?)) reschedule:42',
+      'cancel',
+      'check',
+      'commit',
+    ]);
+    expect(tx.scheduledNotification.count).toHaveBeenCalledWith({
+      where: {
+        userId: 42n,
+        type: {
+          in: [
+            'lapsing_3',
+            'dormant_7',
+            'value_recap',
+            'reengagement_30',
+            'nudge',
+            'weekly',
+          ],
+        },
+        sentAt: null,
+        cancelledAt: null,
+        // Просроченный дольше часа заменитель — хвост прошлого дня, не блокирует.
+        sendAt: { gte: new Date('2026-11-08T20:00:00Z') },
+      },
+    });
+    jest.useRealTimers();
+  });
+
+  it('другие типы перерыв не проверяют — меняются как раньше', async () => {
+    const { prisma, steps } = fakeDb(1);
+    await replacePending(prisma, 42n, 'practice_reminder', new Date(0));
+    expect(steps).toContain('create');
+    expect(steps).not.toContain('check');
   });
 
   it('снимает только неотправленные этого человека и типа; payload шифруется как в schedule', async () => {
@@ -70,5 +118,27 @@ describe('replacePending — снять и поставить под локом 
     await replacePending(b.prisma, 2n, 'reminder', new Date(0));
     expect(a.tx.$executeRaw.mock.calls[0][1]).toBe('reschedule:1');
     expect(b.tx.$executeRaw.mock.calls[0][1]).toBe('reschedule:2');
+  });
+});
+
+describe('swapReminder — перерыв или сводка вместо напоминания', () => {
+  it('снять напоминание и поставить сообщение дня — одна транзакция под тем же локом', async () => {
+    const { prisma, tx, steps } = fakeDb();
+    const at = new Date('2026-07-02T18:00:00Z');
+    await swapReminder(prisma, 42n, 'lapsing_3', at);
+    expect(steps).toEqual([
+      'begin',
+      'lock SELECT pg_advisory_xact_lock(hashtext(?)) reschedule:42',
+      'cancel',
+      'create',
+      'commit',
+    ]);
+    expect(tx.scheduledNotification.updateMany).toHaveBeenCalledWith({
+      where: { userId: 42n, type: 'reminder', sentAt: null, cancelledAt: null },
+      data: { cancelledAt: expect.any(Date) },
+    });
+    expect(tx.scheduledNotification.create).toHaveBeenCalledWith({
+      data: { userId: 42n, type: 'lapsing_3', sendAt: at, payload: undefined },
+    });
   });
 });

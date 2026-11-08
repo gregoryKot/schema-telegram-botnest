@@ -4,6 +4,7 @@ import { layoutConceptDiagram } from '../../../../shared/src/therapy/conceptGrap
 import type { DiagramEdge, DiagramNode } from '../../../../shared/src/therapy/conceptGraph/diagram/diagramTypes';
 import { HUB_DIAMETER } from './hubGeometry';
 import { modeNodeType } from './modeNodeMeta';
+import { EDGE_TYPE_STYLE } from './edgeTypes';
 
 // Схема случая → карта режимов. Единственный конвертер: его берут и кнопка
 // «Открыть на холсте» (новая карта), и пункт меню «Из концептуализации клиента»
@@ -19,8 +20,7 @@ const HUB_KEY = 'needs:circle';
 /** Подпись и стиль ребра по виду линии раскладки; объект новый на каждое ребро. */
 function arrowOf(kind: DiagramEdge['kind']): Pick<ModeMapEdge, 'label' | 'data'> {
   if (kind === 'link') return { data: { bidirectional: true } };
-  if (kind === 'blocks') return { label: '✗', data: { color: 'var(--accent-red)', lineStyle: 'dashed' } };
-  if (kind === 'meets') return { label: '✓', data: { color: 'var(--accent-green)' } };
+  if (kind === 'blocks' || kind === 'meets') return { label: kind === 'blocks' ? '✗' : '✓', data: { edgeType: kind, ...EDGE_TYPE_STYLE[kind] } };
   return {};
 }
 

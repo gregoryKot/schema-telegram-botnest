@@ -106,14 +106,14 @@ export interface ModeMapNode {
     strokeWidth?: 'thin' | 'normal' | 'bold';  // толщина контура фигуры
     fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
     side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
-    schemaId?: string;                     // связанная схема (из списка схем клиента)
+    schemaId?: string; schemaIds?: string[]; // схема фигуры «схема»/«опыт»; схемы режима — таблетки на фигуре (schemaId у режима — старая одна)
     needId?: string; diameter?: number;    // потребность таблетки; диаметр круга потребностей
     settle?: boolean;                      // свежая схема случая: после замера колонки раздвинутся по высоте (useSettleFresh), флаг снимется
   };
   width?: number; height?: number;
 }
 
-export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to';
+export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to' | 'blocks' | 'meets'; // ✗ схема блокирует потребность, ✓ забота о ней
 
 export type LineStyle = 'solid' | 'dashed' | 'dotted';
 

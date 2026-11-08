@@ -149,3 +149,60 @@ describe('createBookingGuarded — счётчик «время уже занял
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
   });
 });
+
+// Второй рубеж против записи поверх личного события (аудит 2026-10): при
+// включённой блокировке календарём (deps.calendar задан) слот сверяется с
+// занятостью CalDAV до лока. Fail-open: календарь упал — запись проходит.
+describe('createBookingGuarded — занятость календаря', () => {
+  const busyAt = (start: Date) => ({
+    getBusyTimes: jest.fn(async () => [
+      { start, end: new Date(start.getTime() + 3_600_000) },
+    ]),
+  });
+
+  it('слот поверх события календаря → 409 «Slot already taken», INSERT не делается, счётчик «заняли»', async () => {
+    const made = makeDeps();
+    const track = jest.fn(async () => undefined);
+    const calendar = busyAt(LEAD.startsAt);
+    const deps = { ...made.deps, analytics: { track }, calendar };
+
+    const err = await createBookingGuarded(deps, {} as any, LEAD).catch(
+      (e: unknown) => e,
+    );
+
+    expect(err).toBeInstanceOf(ConflictException);
+    expect((err as Error).message).toBe('Slot already taken');
+    expect(made.tx.booking.create).not.toHaveBeenCalled();
+    expect(made.notify.notifyAdminBoth).not.toHaveBeenCalled();
+    expect(track).toHaveBeenCalledWith(null, 'booking_slot_taken');
+  });
+
+  it('календарь упал → запись проходит (fail-open)', async () => {
+    const made = makeDeps();
+    jest.spyOn(made.logger, 'warn').mockImplementation(() => undefined);
+    const calendar = {
+      getBusyTimes: jest.fn(async () => {
+        throw new Error('REPORT 503');
+      }),
+    };
+    await expect(
+      createBookingGuarded(
+        { ...made.deps, calendar },
+        { clientName: 'x' } as never,
+        LEAD,
+      ),
+    ).resolves.toEqual({ id: 7, clientName: 'x' });
+  });
+
+  it('контроль: календарь свободен — бронь создаётся, окно запроса — сам слот', async () => {
+    const made = makeDeps();
+    const calendar = busyAt(new Date(LEAD.startsAt.getTime() + 3_600_000));
+    await expect(
+      createBookingGuarded({ ...made.deps, calendar }, {} as never, LEAD),
+    ).resolves.toEqual({ id: 7 });
+    expect(calendar.getBusyTimes).toHaveBeenCalledWith(
+      LEAD.startsAt,
+      new Date(LEAD.startsAt.getTime() + 15 * 60_000),
+    );
+  });
+});

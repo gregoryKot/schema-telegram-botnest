@@ -24,6 +24,7 @@ import { clientKey, legacyClientKey } from '../src/booking/client-key';
 import { decrypt, encrypt } from '../src/utils/crypto';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
+import { waitUntil } from './e2e-support/wait-until';
 import {
   LINK_TO_FORWARD,
   ROOM_REPLACED,
@@ -110,6 +111,17 @@ describe('e2e: анонимная запись не отдаёт ссылку н
     );
     responses.newcomer = await book(body(NEWCOMER, SLOT_NEWCOMER, 'INTRO_15'));
     responses.legacy = await book(body(LEGACY_CLIENT, SLOT_LEGACY, 'INTRO_15'));
+    // Встреча, календарь и DM идут после ответа book (booking.checkout.ts):
+    // флаг ставится до DM, поэтому ждём и флаг, и четыре «Запись подтверждена».
+    await waitUntil(
+      async () =>
+        (await prisma.booking.count({
+          where: { startsAt: { in: SLOTS }, confirmEffectsDoneAt: null },
+        })) === 0 &&
+        adminDms().filter((t) => t.includes('Запись подтверждена')).length ===
+          SLOTS.length,
+      'эффекты подтверждения четырёх броней',
+    );
   });
 
   afterAll(async () => {

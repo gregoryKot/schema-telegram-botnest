@@ -132,7 +132,7 @@ describe('conceptToModeMap — богатый случай', () => {
       expect(map.get(e.source)!.type).toBe('schema');
       expect(map.get(e.target)!.type).toBe('need');
       expect(e.label).toBe('✗');
-      expect(e.data).toEqual({ color: 'var(--accent-red)', lineStyle: 'dashed' });
+      expect(e.data).toEqual({ edgeType: 'blocks', color: 'var(--accent-red)', lineStyle: 'dashed' });
     }
   });
 
@@ -143,7 +143,7 @@ describe('conceptToModeMap — богатый случай', () => {
     for (const e of edgesOf(edges, 'meets')) {
       expect(map.get(e.source)!.type).toBe('healthy');
       expect(e.label).toBe('✓');
-      expect(e.data).toEqual({ color: 'var(--accent-green)' });
+      expect(e.data).toEqual({ edgeType: 'meets', color: 'var(--accent-green)' });
     }
   });
 

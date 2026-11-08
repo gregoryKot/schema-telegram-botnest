@@ -21,6 +21,7 @@ import { ClientKeyRekeyService } from '../src/booking/client-key-rekey.service';
 import { decrypt, encrypt } from '../src/utils/crypto';
 import { TELEGRAF_BOT } from '../src/telegram/telegram.constants';
 import { buildRealDbTestApp } from './e2e-support/build-real-db-test-app';
+import { waitUntil } from './e2e-support/wait-until';
 
 const DASHED = 'ck-ivan-petrov@example.com';
 const PLAIN = 'ck-ivanpetrov@example.com'; // по старой формуле — тот же ключ
@@ -86,10 +87,25 @@ describe('e2e: ключ комнаты клиента не склеивает р
     await prisma.throttleHit.deleteMany({});
   };
 
-  const book = (contact: string, startsAt: Date) =>
-    request(app.getHttpServer())
+  // Встреча и DM «Запись подтверждена» идут после ответа book
+  // (booking.checkout.ts): ждём их, иначе комната и счёт DM читаются раньше.
+  const book = async (contact: string, startsAt: Date) => {
+    const confirmedBefore = confirmedDms();
+    const res = await request(app.getHttpServer())
       .post('/api/booking/book')
       .send(body(contact, startsAt));
+    if (res.status === 200)
+      await waitUntil(
+        async () =>
+          (await prisma.booking.count({
+            where: { startsAt, confirmEffectsDoneAt: { not: null } },
+          })) === 1 && confirmedDms() > confirmedBefore,
+        `эффекты подтверждения брони ${startsAt.toISOString()}`,
+      );
+    return res;
+  };
+  const confirmedDms = () =>
+    adminDms().filter((t) => t.includes('Запись подтверждена')).length;
   const linkOf = async (startsAt: Date) =>
     decrypt(
       (await prisma.booking.findFirst({ where: { startsAt } }))?.meetingUrl ??

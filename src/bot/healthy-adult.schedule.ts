@@ -120,8 +120,19 @@ export function dueSlot(
   const offsetNow = (parts.hour - SLOT_START_HOUR[slot]) * 60 + parts.minute;
   if (offsetNow < plannedOffset(parts.dateKey, slot)) return null; // ещё рано
 
-  if (lastPostAt && isInWindow(mskParts(lastPostAt), slot, parts.dateKey)) {
-    return null; // уже публиковали в этот слот сегодня
-  }
+  if (postedInSlot(now, lastPostAt, slot)) return null; // уже публиковали
   return slot;
+}
+
+/**
+ * Вышел ли сегодня пост в слот `slot` — по времени последнего поста. Тот же
+ * признак, что у `dueSlot`: досылка решает по нему, чей слот (тика или её).
+ */
+export function postedInSlot(
+  now: Date,
+  lastPostAt: Date | null,
+  slot: HealthyAdultSlot,
+): boolean {
+  if (!lastPostAt) return false;
+  return isInWindow(mskParts(lastPostAt), slot, mskParts(now).dateKey);
 }

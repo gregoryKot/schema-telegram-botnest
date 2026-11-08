@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../api';
 import { handleLoadFailure, reportHeldTimeout, type BookingLoadError } from './bookingLoadError';
-import { paidPhase, POLL_INTERVAL_MS, POLL_LIMIT_MS } from './paidPageModel';
+import { nextPollDelayMs, paidPhase, POLL_LIMIT_MS } from './paidPageModel';
 import { useRefreshFailure } from './useRefreshFailure';
 
 export type PublicBooking = Awaited<ReturnType<typeof api.getBookingByToken>>;
 
 /**
  * Бронь по токену для экрана возврата с оплаты. Пока бронь HELD, переспрашивает
- * сервер каждые POLL_INTERVAL_MS; через POLL_LIMIT_MS ставит `timedOut`. Отказ
+ * сервер с растущей паузой (nextPollDelayMs); через POLL_LIMIT_MS ставит `timedOut`. Отказ
  * запроса не стирает полученную бронь: до неё — `loadError`, после — `refreshFailed`.
  */
 export function useBookingByToken(token: string | null) {
@@ -29,6 +29,7 @@ export function useBookingByToken(token: string | null) {
     // Новый цикл после «Проверить ещё раз» продолжает ждать, если бронь была HELD.
     let pending = !!lastBooking.current && paidPhase(lastBooking.current.status) === 'pending';
     const startedAt = Date.now();
+    let attempt = 0;
 
     const load = () => {
       api.getBookingByToken(token)
@@ -43,7 +44,7 @@ export function useBookingByToken(token: string | null) {
           setLoaded(true);
           if (!pending) return;
           if (Date.now() - startedAt >= POLL_LIMIT_MS) { setTimedOut(true); reportHeldTimeout(); return; }
-          timer = setTimeout(load, POLL_INTERVAL_MS);
+          timer = setTimeout(load, nextPollDelayMs(attempt++, Date.now() - startedAt));
         });
     };
     load();
