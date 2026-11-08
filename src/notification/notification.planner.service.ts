@@ -98,8 +98,8 @@ export class NotificationPlannerService {
             : daysSince > 30 && (daysSince - 30) % 45 === 0
               ? 'nudge'
               : null;
-    // Перерыв, value_recap и сводка встают вместо напоминания одной транзакцией
-    // под локом его замены (swapReminder, replace-pending.ts).
+    // Перерыв, value_recap, сводка, донат, план, инсайт встают вместо
+    // напоминания одной транзакцией под локом его замены (swapReminder).
     if (lapsingType) {
       const nudge = lapsingType === 'nudge' ? { daysSince } : undefined;
       if (!(await this.notifications.hasPending(uid, lapsingType)))
@@ -165,7 +165,7 @@ export class NotificationPlannerService {
       !(await this.notifications.hasPending(uid, 'donate_reminder'))
     ) {
       const totalDays = await this.analytics.getTotalDaysFilled(uid);
-      await this.notifications.schedule(uid, 'donate_reminder', sendAt, {
+      await this.notifications.swapReminder(uid, 'donate_reminder', sendAt, {
         seed: Number(uid % 3n),
         totalDays,
       });
@@ -200,7 +200,7 @@ export class NotificationPlannerService {
       !(await this.notifications.hasPending(uid, 'practice_missed'))
     ) {
       const text = missed.map((p) => p.practiceText).join(', ');
-      await this.notifications.schedule(uid, 'practice_missed', sendAt, {
+      await this.notifications.swapReminder(uid, 'practice_missed', sendAt, {
         practiceText: text,
       });
       return;
@@ -297,7 +297,7 @@ export class NotificationPlannerService {
       showBooking ? 10 : 3,
       normalizeAddressForm(addressForm),
     );
-    await this.notifications.schedule(
+    await this.notifications.swapReminder(
       userId,
       'low_streak_insight',
       nextSendAt(notifyLocalHour, tz, now),
