@@ -32,6 +32,8 @@ export const THERAPY_NUDGE_ACTIONS = [
   'book',
   'write',
   'dismiss',
+  // «Ближайшая встреча» на листе «Терапевт рядом» — свой терапевт без канала связи (U4).
+  'session',
 ] as const;
 export type TherapyNudgeAction = (typeof THERAPY_NUDGE_ACTIONS)[number];
 

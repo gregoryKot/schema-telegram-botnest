@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // Лист «Поговорить с кем-то»: кнопки шлют события с местом, «Назад» закрывает, цены нет.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { TalkSheet } from './TalkSheet';
 
 const track = vi.hoisted(() => vi.fn());
@@ -54,5 +54,24 @@ describe('TalkSheet', () => {
     fireEvent.click(w);
     expect(track).toHaveBeenLastCalledWith('more', 'write', undefined);
     expect(screen.queryByRole('link', { name: 'Записаться на встречу' })).toBeNull();
+  });
+
+  // Аудит 2026-11, U4: у терапевта без Telegram ссылка пустая — лист обещал
+  // «написать прямо сейчас» и не давал ни одной кнопки.
+  it('терапевт без канала связи: «запиши и принеси на встречу» и действие — к ближайшей встрече', () => {
+    localStorage.setItem('therapy_contact_url', '');
+    localStorage.setItem('therapy_contact_name', 'терапевту');
+    const Where = () => <div data-testid="where">{useLocation().pathname}</div>;
+    render(<MemoryRouter initialEntries={['/more']}><TalkSheet place="more" onClose={vi.fn()} /><Where /></MemoryRouter>);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Терапевт рядом');
+    expect(document.body.textContent).not.toMatch(/написать прямо сейчас/);
+    expect(screen.getByText(/Запиши, что всплыло, и принеси на встречу/)).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Написать терапевту' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Ближайшая встреча' }));
+    expect(track).toHaveBeenLastCalledWith('more', 'session', undefined);
+    // Лист сперва снимает свою запись истории, потом ведёт в профиль (карточка терапевта).
+    const then = goBack.mock.calls.at(-1)?.[0] as () => void;
+    act(() => then());
+    expect(screen.getByTestId('where').textContent).toBe('/profile');
   });
 });

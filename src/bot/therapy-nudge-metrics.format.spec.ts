@@ -18,6 +18,7 @@ function metrics(over: Partial<TherapyNudgeMetrics> = {}): TherapyNudgeMetrics {
     book: 0,
     write: 0,
     dismiss: 0,
+    session: 0,
     introFromApp: 0,
     bookingFromApp: 0,
     ...over,
@@ -138,6 +139,14 @@ describe('formatTherapyNudge', () => {
     expect(out).toContain(
       'Открыли лист 7, перешли к записи 3, нажали «написать» 2, нажали «не сейчас» 4.',
     );
+  });
+
+  // U4: свой терапевт без канала — лист ведёт к ближайшей встрече.
+  it('переход к встрече со своим терапевтом: число показывается, ноль нет', () => {
+    expect(formatTherapyNudge(metrics({ session: 2 }))).toContain(
+      'Перешли к встрече со своим терапевтом 2.',
+    );
+    expect(formatTherapyNudge(metrics())).not.toContain('встрече');
   });
 
   it('только часть действий: нулевые не показываются', () => {
