@@ -1,6 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { PaperEmpty } from '../components/art/PaperEmpty';
-import { Layers } from '../components/art/PaperArt';
 import { Cluster } from '../components/art/PaperArtSigns';
 import { useLocation } from 'react-router-dom';
 import { api } from '../api';
@@ -145,9 +144,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
 
       <section className="cp-block">
         <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
+        {/* Тест на 116 вопросов отсюда убран (FIX_PLAN 4.10): в трудную минуту он не помогает. Вход в тест —
+            «Ещё» и раздел схем; помощь «сейчас» — верх страницы («Мне плохо», «Здесь и сейчас», «Помощь рядом»). */}
         <div className="cp-tools">
           {[
-            { label: 'Тест на схемы',   sub: tr('116 вопросов, 20 шкал схем – узнай свои паттерны', '116 вопросов, 20 шкал схем – узнайте свои паттерны'),   onClick: () => onOpenSchema?.({ startTest: true }), art: <Layers size="row" /> },
             { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }), art: <Cluster size="row" /> },
           ].map(item => (
             <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>

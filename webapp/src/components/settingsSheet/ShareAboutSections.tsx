@@ -41,7 +41,7 @@ export function ShareSection() {
   return (
     <>
       <SSection id="s-share" label="Поделиться">
-        <SRow title="Пригласить друга" sub="Карточка со ссылкой на бота" onClick={() => setAppInvite(true)} />
+        <SRow title="Пригласить друга" sub="Карточка со ссылкой на сайт" onClick={() => setAppInvite(true)} />
         <SRow title="Сводка для терапевта" sub="Данные за 30 дней" onClick={openExport} />
         {exportError && <div className="st-err">{tr('Не удалось собрать сводку. Проверь связь и попробуй ещё раз', 'Не удалось собрать сводку. Проверьте связь и попробуйте ещё раз')}</div>}
       </SSection>
