@@ -64,10 +64,8 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
   },
   CronLease: {
     name: plain('имя расписания (midnightPlanner и т.п.), не данные юзера'),
-    instanceId: plain(
-      'имя процесса-лидера из HOSTNAME — нужно, чтобы по строке было видно, ' +
-        'какой инстанс забрал прогон; пользователя в ней нет',
-    ),
+    instanceId: plain('HOSTNAME инстанса, забравшего прогон'),
   },
+  ProcessLife: { id: plain('HOSTNAME процесса и время старта, без юзера') },
   ...INTRO_LEAD_FIELD_POLICY,
 };
