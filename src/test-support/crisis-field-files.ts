@@ -80,3 +80,23 @@ export function behaviorRowFiles(): string[] {
     .flatMap((f) => [...read(f).matchAll(BEHAVIOR_ROW_RE)].map((m) => m[1]));
   return [...new Set(rows)].sort();
 }
+
+/**
+ * Разбор сверки: поля без поведенческой строки (и без записи «ещё не покрыт»),
+ * протухшие записи «ещё не покрыт» и строки, указывающие не на поле с детекцией.
+ * Чистая функция — оба исхода пинятся на синтетике в спеке трипваера.
+ */
+export function behaviorGaps(
+  fields: string[],
+  rows: string[],
+  pending: Record<string, string>,
+  exists: (f: string) => boolean,
+): { missing: string[]; stale: string[]; orphan: string[] } {
+  return {
+    missing: fields.filter((f) => !rows.includes(f) && !pending[f]),
+    stale: Object.keys(pending).filter(
+      (f) => !fields.includes(f) || rows.includes(f),
+    ),
+    orphan: rows.filter((f) => !exists(f) || !fields.includes(f)),
+  };
+}

@@ -1455,7 +1455,7 @@
   "src/telegram/zv-runner.ts": 71,
   "src/test-support/concept-worst-body.ts": 91,
   "src/test-support/configure-app-probe.ts": 95,
-  "src/test-support/crisis-field-files.ts": 82,
+  "src/test-support/crisis-field-files.ts": 102,
   "src/test-support/cron-source-scan.ts": 197,
   "src/test-support/cron-source-tz.ts": 25,
   "src/test-support/ephemeral-port.ts": 68,
