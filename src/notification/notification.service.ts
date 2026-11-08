@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptPayload, decryptPayload } from './notification-payload.crypto';
 import { PROACTIVE_TYPES, type NotificationType } from './notification.types';
-import { replacePending } from './replace-pending';
+import {
+  replacePending,
+  swapReminder,
+  type ReminderStandIn,
+} from './replace-pending';
 export {
   PROACTIVE_TYPES,
   QUIET_EXEMPT_TYPES,
@@ -44,6 +48,11 @@ export class NotificationService {
   /** Снять стоящие этого типа и поставить новое — атомарно (replace-pending.ts). */
   replacePending(u: bigint, t: NotificationType, at: Date, payload?: object) {
     return replacePending(this.prisma, u, t, at, payload);
+  }
+
+  /** Снять напоминание и поставить вместо него сообщение дня — тем же локом. */
+  swapReminder(u: bigint, t: ReminderStandIn, at: Date, payload?: object) {
+    return swapReminder(this.prisma, u, t, at, payload);
   }
 
   /** Освежить данные неотправленного уведомления — без новой строки (E16). */
