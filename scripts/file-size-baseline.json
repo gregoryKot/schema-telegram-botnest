@@ -1041,7 +1041,7 @@
   "src/bot/client-error-flood.format.ts": 27,
   "src/bot/client-error-metrics.format.ts": 101,
   "src/bot/client-error-metrics.row.ts": 27,
-  "src/bot/client-error-metrics.service.ts": 87,
+  "src/bot/client-error-metrics.service.ts": 86,
   "src/bot/client-streaks.ts": 53,
   "src/bot/concept-graph-metrics.format.ts": 70,
   "src/bot/concept-graph-metrics.service.ts": 89,

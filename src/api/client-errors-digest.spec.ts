@@ -25,6 +25,14 @@ describe('formatClientErrorDigest', () => {
     );
     expect(text).not.toContain('другое');
   });
+
+  it('отказ отмены подписки подписан словом, как в /stats', () => {
+    const text = formatClientErrorDigest(
+      2,
+      new Map<ClientErrorSection, number>([['subscription', 2]]),
+    );
+    expect(text).toContain('Чаще всего: Подписка — 2.');
+  });
 });
 
 describe('ClientErrorDigest', () => {
