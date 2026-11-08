@@ -111,8 +111,8 @@ function WaitingCode({
     <div className="u-tc">
       <div style={SUB}>
         {state.provider === 'telegram'
-          ? `Подтвердите вход в ${where} — там появится этот код:`
-          : `Подтвердите вход через ${where}. Код входа:`}
+          ? `Осталось подтвердить вход в ${where} — там появится этот код:`
+          : `Осталось подтвердить вход через ${where}. Код входа:`}
       </div>
       <div
         style={{
