@@ -202,7 +202,8 @@ Jitsi раньше вычислялся из контакта (`schemehappens-<s
 **Видимость в ответах нейросетей** ([GEO.md](../GEO.md), раздел «Открытое»):
 - **Автор описан на двух хостах**: `@id`/`url`/`image`/`sameAs` в JSON-LD
   `webapp/index.html` указывают на `kotlarewski.gr`, `canonical`/`og:url` той же
-  страницы — на `schemehappens.ru`, `og:image` — снова `kotlarewski.gr`. Решение
+  страницы — на `schemehappens.ru` (карточка ссылки уже разведена по хостам: в файле —
+  продукт, визитка подменяет на свою, `src/practice-preview.ts`). Решение
   владельца, где «дом» автора; затем один хост в разметке. Тот же класс на главной
   schemehappens.ru: `<title>`, `description` и `FAQPage` в JSON-LD `index.html` описывают
   практику, а текст в `#root` (`src/articles/home-seo.middleware.ts`) — продукт «Всё по

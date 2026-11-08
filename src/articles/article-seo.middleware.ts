@@ -12,7 +12,9 @@ import {
   type SeoPage,
 } from './article-seo.render';
 import { requestHost } from '../infra/request-host';
+import { REVALIDATE } from '../infra/static-cache';
 import { PRACTICE_ALIAS_HOSTS } from '../practice-domain.middleware';
+import { practicePreviewHtml } from '../practice-preview';
 
 const LIST_TITLE = 'Статьи о схема-терапии – Григорий Котляревский';
 const LIST_DESCRIPTION =
@@ -61,15 +63,18 @@ export class ArticleSeoMiddleware implements NestMiddleware {
       const page = match
         ? await this.articlePage(match[1])
         : await this.listPage();
-      // Alias domains get their own canonical/og:url host. Аудит 2026-10 (I3):
-      // host берётся из заголовка Host и только из allow-list алиасов, не из
-      // клиентского X-Forwarded-Host (иначе инъекция в canonical/og:url).
-      let out = injectSeo(base, page);
+      // Alias domains get their own canonical/og:url host and the practice
+      // link card (practice-preview.ts). Аудит 2026-10 (I3): host берётся из
+      // заголовка Host и только из allow-list алиасов, не из клиентского
+      // X-Forwarded-Host (иначе инъекция в canonical/og:url).
       const host = requestHost(req);
-      if (PRACTICE_ALIAS_HOSTS.has(host)) {
+      const alias = PRACTICE_ALIAS_HOSTS.has(host);
+      let out = injectSeo(alias ? practicePreviewHtml(base) : base, page);
+      if (alias) {
         out = out.split(SITE_URL).join(`https://${host}`);
       }
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', REVALIDATE); // как index.html из ServeStatic
       res.send(out);
     } catch (err) {
       // Unknown slug (findBySlug throws) or DB error → SPA renders as before.
