@@ -55,11 +55,9 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // не числится: посетитель описывает там своё состояние до всякого контакта,
   // это свободный текст о переживаниях — кризисный путь подключён (аудит
   // 2026-10, frontends#5; RequestField → BookingCrisisNote), запись снята.
-  // Планы/задачи/заметки настроек — операционный текст (что сделать), а не
-  // рефлексия/переживание.
-  'webapp/src/components/PlanSheet.tsx': 'план действий — операционный текст',
-  'webapp/src/components/TaskCreateSheet.tsx':
-    'создание задачи — операционный текст',
+  // PlanSheet и TaskCreateSheet («операционный текст») здесь больше не
+  // числятся: в своей практике и своей цели пишут и о себе, детекция там
+  // давно стоит и под поведенческой строкой — запись была протухшей (2026-11).
   // SettingsSheet распилен (правило №10): <textarea> анкеты «стать
   // терапевтом» уехал в BecomeTherapistSection, сам SettingsSheet остался
   // без свободного текста — запись переехала за полем, а не добавилась.
@@ -171,9 +169,24 @@ describe('трипваер: кризисная детекция для своб�
     // поля потребности и ответа Здорового Взрослого вынесены из
     // ModeMapNodeEditor (правило №10); новых полей нет, у самого редактора
     // остались название и заметка, поэтому его запись тоже на месте.
+    // 21 → 19 (2026-11): PlanSheet.tsx и TaskCreateSheet.tsx сняты — детекция
+    // в них есть, запись «детекция не нужна» протухла (тест ниже).
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      21,
+      19,
     );
+  });
+
+  it('записи allowlist не протухли: в файле из списка нет детекции', () => {
+    // Запись значит «детекция тут не нужна». Файл с детекцией и записью
+    // разом молча проходил бы и после её удаления: сверка (A) не смотрит
+    // дальше allowlist. Так в списке жили PlanSheet и TaskCreateSheet.
+    const stale = [
+      ...Object.keys(NON_THERAPEUTIC_ALLOWLIST),
+      ...Object.keys(SHORT_INPUT_ALLOWLIST),
+    ].filter((rel) =>
+      DETECT_CRISIS_RE.test(readFileSync(join(ROOT, rel), 'utf8')),
+    );
+    expect(stale).toEqual([]);
   });
 
   it('BookingCrisisNote (форма записи на визитке) сам зовёт detectCrisisAny и карточку', () => {
