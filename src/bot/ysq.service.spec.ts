@@ -134,23 +134,12 @@ describe('YsqService.saveYsqResult — история накапливается
     expect(await done(3)).toBeNull();
     expect(await done(4)).toBe(false);
   });
-
-  it('deleteYsqResult убирает текущий результат, но не трогает историю прохождений', async () => {
-    const db = makeDb();
-    const svc = new YsqService(db);
-    await svc.saveYsqResult(1n, [1]);
-
-    await svc.deleteYsqResult(1n);
-
-    expect(await svc.getYsqResult(1n)).toBeNull();
-    expect(await svc.getYsqHistory(1n)).toHaveLength(1);
-  });
 });
 
 // Кнопка «Удалить результаты теста» в настройках (решение владельца
 // 2026-10-22): стирает всё про тест — итог, всю историю и незаконченный
-// прогресс — и только у этого человека. «Пройти заново» по-прежнему зовёт
-// deleteYsqResult (тест выше: история остаётся).
+// прогресс — и только у этого человека. «Пройти заново» на сервере ничего не
+// стирает (U8): отдельного удаления одного итога нет.
 describe('YsqService.deleteAllYsqData — итог, история и прогресс разом', () => {
   it('после удаления ничего не читается: ни итог, ни история, ни прогресс', async () => {
     const db = makeDb();

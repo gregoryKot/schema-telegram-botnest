@@ -1,7 +1,8 @@
 // Тест на схемы (YSQ): валидация ответов (ровно 116, 0..6 целых) — модель
 // оценок фиксированная, битый массив ломает подсчёт баллов дальше по пайплайну.
 // userId — всегда из req, никогда из тела (правило №5/чеклист новой таблицы).
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, RequestMethod } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { YsqController } from './ysq.controller';
 import type { YsqService } from '../bot/ysq.service';
 
@@ -20,7 +21,6 @@ function makeController(overrides: Partial<YsqService> = {}) {
     deleteYsqProgress: jest.fn().mockResolvedValue(undefined),
     getYsqResult: jest.fn().mockResolvedValue(null),
     saveYsqResult: jest.fn().mockResolvedValue(undefined),
-    deleteYsqResult: jest.fn().mockResolvedValue(undefined),
     deleteAllYsqData: jest.fn().mockResolvedValue(undefined),
     getYsqHistory: jest.fn().mockResolvedValue([]),
     ...overrides,
@@ -132,7 +132,7 @@ describe('YsqController.getYsqProgress/deleteYsqProgress', () => {
   });
 });
 
-describe('YsqController.getYsqResult/deleteYsqResult', () => {
+describe('YsqController.getYsqResult', () => {
   it('getYsqResult делегирует сервису под userId из req', async () => {
     const { controller, ysqService } = makeController({
       getYsqResult: jest.fn().mockResolvedValue({ answers: validAnswers() }),
@@ -141,12 +141,24 @@ describe('YsqController.getYsqResult/deleteYsqResult', () => {
     expect(ysqService.getYsqResult).toHaveBeenCalledWith(14n);
     expect(res).toEqual({ answers: validAnswers() });
   });
+});
 
-  it('deleteYsqResult удаляет под userId из req и возвращает { ok: true }', async () => {
-    const { controller, ysqService } = makeController();
-    const res = await controller.deleteYsqResult(makeReq(15n));
-    expect(ysqService.deleteYsqResult).toHaveBeenCalledWith(15n);
-    expect(res).toEqual({ ok: true });
+// Хвост волны 4 (#1024): после U8 «Пройти заново» итог не стирает, сайт
+// DELETE /api/ysq-result не зовёт — ручка удалена. Стирает итог только
+// «Удалить результаты теста» (DELETE /api/ysq-data, всё разом).
+describe('YsqController — какие DELETE-ручки есть', () => {
+  it('ysq-progress и ysq-data; ysq-result — нет', () => {
+    const proto = YsqController.prototype as unknown as Record<string, object>;
+    const deletes = Object.getOwnPropertyNames(proto)
+      .map((name) => proto[name])
+      .filter(
+        (fn) =>
+          typeof fn === 'function' &&
+          Reflect.getMetadata(METHOD_METADATA, fn) === RequestMethod.DELETE,
+      )
+      .map((fn) => Reflect.getMetadata(PATH_METADATA, fn) as string)
+      .sort();
+    expect(deletes).toEqual(['ysq-data', 'ysq-progress']);
   });
 });
 
@@ -158,7 +170,7 @@ describe('YsqController.deleteAllYsqData (DELETE /api/ysq-data)', () => {
     expect(ysqService.deleteAllYsqData).toHaveBeenCalledWith(16n);
     expect(ysqService.deleteAllYsqData).toHaveBeenCalledTimes(1);
     // Всё стирает одна транзакция сервиса, отдельного удаления итога нет.
-    expect(ysqService.deleteYsqResult).not.toHaveBeenCalled();
+    expect(Object.keys(ysqService)).not.toContain('deleteYsqResult');
     expect(res).toEqual({ ok: true });
   });
 });

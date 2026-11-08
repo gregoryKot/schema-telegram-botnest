@@ -20,7 +20,6 @@ vi.mock('../api', () => ({
     saveYsqProgress: vi.fn().mockResolvedValue(undefined),
     saveYsqResult: vi.fn().mockResolvedValue(undefined),
     deleteYsqProgress: vi.fn().mockResolvedValue(undefined),
-    deleteYsqResult: vi.fn().mockResolvedValue(undefined),
     trackEvent: vi.fn(),
     trackPublicEvent: vi.fn(),
   },
@@ -176,7 +175,6 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     expect(screen.queryByText(/Результаты будут удалены/)).toBeNull();
     fireEvent.click(screen.getByText('Отмена'));
     expect(screen.queryByText(RETAKE_NOTE)).toBeNull();
-    expect(mockApi.deleteYsqResult).not.toHaveBeenCalled();
   });
 
   // U8 (аудит 2026-11): итог стирался сразу после «Начать заново», и брошенное
@@ -189,7 +187,6 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     fireEvent.click(screen.getByText('Пройти заново'));
     fireEvent.click(screen.getByText('Начать заново'));
     await waitFor(() => expect(screen.getByText('Начать тест')).toBeTruthy());
-    expect(mockApi.deleteYsqResult).not.toHaveBeenCalled();
     expect(localStorage.getItem(YSQ_RESULT_KEY)).toBe(saved);
   });
 
@@ -211,7 +208,6 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     // Выраженные схемы прежнего итога на месте (все ответы 6 — схем много).
     await waitFor(() => expect(screen.getByText('Пройти заново')).toBeTruthy());
     expect(screen.queryByText('Выраженных схем нет — отличный результат.')).toBeNull();
-    expect(mockApi.deleteYsqResult).not.toHaveBeenCalled();
     // Новый заход ждёт черновиком: повторный ретейк зовёт продолжить, а не с нуля.
     fireEvent.click(screen.getByText('Пройти заново'));
     fireEvent.click(screen.getByText('Начать заново'));

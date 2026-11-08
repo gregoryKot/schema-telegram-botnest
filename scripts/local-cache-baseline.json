@@ -270,7 +270,7 @@
     "ysq_result": {
       "owner": "shared/src/hooks/ysqProgressStore.ts",
       "kind": "mirror",
-      "source": "YsqResult (api.getYsqResult / submitYsqResult / api.deleteYsqResult)"
+      "source": "YsqResult (api.getYsqResult / submitYsqResult / deleteAllYsqData)"
     }
   },
   "engines": {
