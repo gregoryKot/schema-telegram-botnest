@@ -12,6 +12,12 @@ import { StreakTaskLike, streakExpired } from './streak-window';
 // прочитать одновременно, и отметка «выполнено», пришедшая между чтением и
 // записью, не перетирается в «не вышло».
 
+/** Задание открыто — отметки нет. По типу done: null, но строка, созданная
+ * мимо дефолта колонки (фейковая Prisma в e2e), приходит с undefined —
+ * строгое `=== null` прятало все задания (#1030, CI). */
+export const isOpenTask = (t: { done?: boolean | null }): boolean =>
+  typeof t.done !== 'boolean';
+
 export interface ExpirableTask extends StreakTaskLike {
   id: number;
   done: boolean | null;
@@ -30,7 +36,7 @@ export async function closeExpiredStreaks<T extends ExpirableTask>(
   if (!tz) return tasks;
   const expired = new Set(
     tasks
-      .filter((t) => t.done === null && streakExpired(t, tz, now))
+      .filter((t) => isOpenTask(t) && streakExpired(t, tz, now))
       .map((t) => t.id),
   );
   if (expired.size === 0) return tasks;

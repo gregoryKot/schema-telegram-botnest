@@ -1,7 +1,7 @@
 // Ленивое закрытие просроченной серии — один код для /tasks клиента и
 // обзоров психолога (хвост волны 3). Сквозные сценарии «психолог прочитал →
 // клиент нашёл» — в therapy-tasks-view.service.spec.ts.
-import { closeExpiredStreaks } from './streak-expire';
+import { closeExpiredStreaks, isOpenTask } from './streak-expire';
 
 const NOW = new Date('2026-11-05T09:00:00Z');
 const task = (over: Record<string, unknown> = {}) => ({
@@ -72,5 +72,15 @@ describe('closeExpiredStreaks', () => {
     const { prisma } = makePrisma(db);
     await closeExpiredStreaks(prisma, [task()], 'Europe/Moscow', NOW);
     expect(db[0].done).toBe(true);
+  });
+});
+
+// #1030, CI: строка без дефолта колонки (фейковая Prisma в e2e) приходит с
+// done: undefined — она открыта, а не скрыта строгим `=== null`.
+describe('isOpenTask', () => {
+  it('нет отметки (null или undefined) — открыто; true/false — закрыто', () => {
+    expect(
+      [null, undefined, true, false].map((done) => isOpenTask({ done })),
+    ).toEqual([true, true, false, false]);
   });
 });

@@ -7,7 +7,7 @@ import { localDate, localMidnightUTC } from '../utils/tz';
 import { completeOfflineTask, deleteAssignedTask } from './assigned-task';
 import { streakProgress } from './streak-progress';
 import { STREAK_TASK_TYPES, tracksStreakProgress } from './streak-window';
-import { closeExpiredStreaks } from './streak-expire';
+import { closeExpiredStreaks, isOpenTask } from './streak-expire';
 
 // Задачи пользователя (свои и назначенные терапевтом): создание, список,
 // завершение, стрик-прогресс и уведомление о назначении. Терапевтские
@@ -78,7 +78,7 @@ export class TherapyTasksService {
     // Срок серии вышел — по календарю клиента; то же закрытие у психолога
     const activeTasks = (
       await closeExpiredStreaks(this.prisma, tasks, tz, now)
-    ).filter((t) => t.done === null);
+    ).filter(isOpenTask);
 
     return Promise.all(
       activeTasks.map(async (task) => {
