@@ -7,6 +7,7 @@ import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
 import { TelegramSettingsService } from './telegram.settings.service';
 import { TelegramNotifyActionsService } from './telegram.notify-actions.service';
 import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
+import { TelegramSummaryToggleService } from './telegram.summary-toggle.service';
 import { TelegramQuizService } from './telegram.quiz.service';
 import { TelegramLoginService } from './telegram.login.service';
 import { TelegramLinkService } from './telegram.link.service';
@@ -34,6 +35,7 @@ import { AuthModule } from '../auth/auth.module';
     TelegramSettingsService,
     TelegramNotifyActionsService,
     TelegramNotifySettingsService,
+    TelegramSummaryToggleService,
     TelegramQuizService,
     TelegramLoginService,
     TelegramLinkService,

@@ -15,3 +15,8 @@ export function remindersPatch(on: boolean): Flags {
     ? { notifyEnabled: true, notifyReminderEnabled: true }
     : { notifyEnabled: false };
 }
+
+/** «Итоги дня» — notifySummaryEnabled; строка без поля — включены (дефолт схемы). */
+export function summaryOn(s?: { notifySummaryEnabled?: boolean } | null) {
+  return s?.notifySummaryEnabled !== false;
+}

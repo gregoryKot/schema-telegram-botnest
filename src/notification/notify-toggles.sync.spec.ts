@@ -5,13 +5,14 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { runInNewContext } from 'vm';
 import * as ts from 'typescript';
-import { remindersOn, remindersPatch } from './notify-toggles';
+import { remindersOn, remindersPatch, summaryOn } from './notify-toggles';
 
 // shared/ — ESM-пакет ("type": "module"), jest бэкенда его не грузит:
 // транспилируем исходник сайта и исполняем как есть.
 type Toggles = {
   remindersOn: typeof remindersOn;
   remindersPatch: typeof remindersPatch;
+  summaryOn: typeof summaryOn;
 };
 function loadSite(): Toggles {
   const path = join(__dirname, '../../shared/src/settings/notifyToggles.ts');
@@ -42,4 +43,14 @@ describe('notify-toggles ↔ shared/src/settings/notifyToggles.ts', () => {
   it('нет настроек (новичок) — напоминания включены, как дефолт схемы', () => {
     expect(remindersOn(null)).toBe(true);
   });
+
+  // «Итоги дня» — тумблер бота (settings:toggle_summary) и сайта читают флаг
+  // одинаково; ответ без поля (старый сервер) — включены.
+  it.each([true, false, undefined])(
+    'notifySummaryEnabled=%s — одно состояние «Итогов дня»',
+    (notifySummaryEnabled) => {
+      const flags = { notifySummaryEnabled };
+      expect(summaryOn(flags)).toBe(site.summaryOn(flags));
+    },
+  );
 });
