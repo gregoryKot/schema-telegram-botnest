@@ -142,7 +142,6 @@
 - **Осознанно не сделано: примитивы без второго потребителя.** `.ds-hero` (eyebrow + h1 + sub), `.ds-list-row--stack`, `.ds-card--compact`, `.ds-btn--icon.is-warn` (⚠ самопомощи — цвет у потребителя), `.ds-btn:disabled на панели (прежний `.ds-btn--on-ink`)` (одно правило `.ap-pay`), общий набор SVG-иконок кабинета. Не строим, пока нет второго потребителя: примитив без копий мёртв.
 - **Проверить глазами на экране:** у `.ds-sheet-head` с `position: sticky; top: 0` в `HistorySheet`/`JourneySheet` шапка при прокрутке может уйти под статус-бар; `PortraitPatternRows` без `freq` ставит шеврон в третью колонку grid (`webapp/src/sections/profile/PortraitPatternRows.tsx`); `ActivityRow` в `TherapistTodayLists.tsx` единственная строка списка со стрелкой.
 - **«Встреча» как `ds-label` вне секции** — `webapp/src/components/therapist/ClientHeaderBadges.test.tsx:55`, `NextSessionLine.test.tsx:13`: подпись не сделана заголовком осознанно (не секция, а строка шапки). Если скринридеру нужна структура — решить вместе с шапкой карточки.
-- **Флешкарты (`SchemaFlashcardTopbar`) переведены на `ds-sheet-head` целиком** хотя это верх экрана упражнения; подпись «Закрыть» сохранена. Если упражнения получат общий `ExScreen`-бар — свести в один примитив (волна 2).
 - **Тест на фокус меню «⋯» вкладки «Концептуализация» не написан**: `MoreMenu` в `webapp/src/components/therapist/concept/ConceptTabHead.tsx` использует общий `useMenuPick` и покрыт кейсом `ClientHeader.actions.test.tsx`; отдельный кейс — при расхождении механики.
 
 - **Меню «Новая карта» (`webapp/src/components/ModeMapSelector.tsx`) осталось на собственных `ds-backdrop`/`ds-menu`**, не на `Dropdown`: `Dropdown` держит ширину 220 и z 39/40, а этому меню нужно 290 и 60/61; Escape не закрывает. Перевести, добавив `Dropdown` проп ширины.
@@ -219,7 +218,7 @@
   может снова проверить только 393. Предложение: e2e-browser-снимок 1280 ключевых страниц (`/subscribe`, `/donate`,
   `/account`, «Зачем это всё», «Обзор» клиента) со сравнением с эталоном. Доказано: в `e2e-browser/` и `ci.yml`
   снимков компьютера нет.
-- **Оверлеи с `ds-sheet-head` на компьютере остаются полосой во всю ширину** (ExScreen, JourneySheet, HistorySheet, ModeDoubtButton, SettingsSheet, SsSheet, OverlayFrame, TaskCreateSheet, SchemaFlashcardTopbar, ModeMapBanner): `ds-sheet-head--page` (ссылка над колонкой) включён только у страниц и листа «Зачем это всё»/«Поговорить». Колонки оверлеев разные (560–1160), общего `--sheet-col` у них нет; решить по снимкам 1280, нужна ли им ссылка над колонкой. Доказано: grep потребителей `ds-sheet-head`; снимки «после» на 1280 не снимались.
+- **Оверлеи с `ds-sheet-head` на компьютере остаются полосой во всю ширину** (ExScreen, JourneySheet, HistorySheet, ModeDoubtButton, SettingsSheet, SsSheet, OverlayFrame, TaskCreateSheet, FlashcardFrame (общий `ExBar`), ModeMapBanner): `ds-sheet-head--page` (ссылка над колонкой) включён только у страниц и листа «Зачем это всё»/«Поговорить». Колонки оверлеев разные (560–1160), общего `--sheet-col` у них нет; решить по снимкам 1280, нужна ли им ссылка над колонкой. Доказано: grep потребителей `ds-sheet-head`; снимки «после» на 1280 не снимались.
 
 ## Бумажная аппликация — хвост раскатки (#921, 2026-11-05)
 
