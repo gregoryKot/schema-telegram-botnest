@@ -1,16 +1,11 @@
 import type { Need } from '../../types';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';
+import { isRated } from '../../../../shared/src/needs/ratingRecord';
 
 /** Верх вопроса трекера: «Закрыть», точки прогресса (тап — к этой потребности), «Пропустить». */
 export function TrackerTopbar({
-  needs,
-  idx,
-  ratings,
-  nameOf,
-  onClose,
-  onPick,
-  onSkip,
+  needs, idx, ratings, nameOf, onClose, onPick, onSkip,
 }: {
   needs: Need[];
   idx: number;
@@ -25,7 +20,7 @@ export function TrackerTopbar({
       <button type="button" className="tq-bar-btn" onClick={onClose}>Закрыть</button>
       <div className="tq-dots" role="group" aria-label="Потребности">
         {needs.map((n, i) => {
-          const state = i === idx ? ' is-current' : (ratings[n.id] ?? 0) > 0 ? ' is-done' : '';
+          const state = i === idx ? ' is-current' : isRated(ratings, n.id) ? ' is-done' : '';
           return (
             <button
               key={n.id}

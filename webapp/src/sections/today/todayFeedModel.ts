@@ -2,10 +2,10 @@ import { fmtAgo, momentTime } from '../../utils/format';
 import { isDiaryToday } from '../../../../shared/src/diary/diaryDay';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
+import { isRated } from '../../../../shared/src/needs/ratingRecord';
 import { modeEntryKind, schemaEntryKind, type EntryKind } from '../diary/entryKind';
 
-// Чистые вычисления главной «Сегодня»: лента дня и мета-строки трёх плиток.
-// Только реальные данные: нет оценок и записей — нет и строк.
+// Чистые вычисления главной «Сегодня»: лента дня и мета-строки трёх плиток; нет оценок и записей — нет строк.
 // «Сегодня» дневников — местный день человека (`isDiaryToday`): дату
 // благодарности пишут местным днём, гринвичский день её теряет в 00:00–03:00 МСК.
 
@@ -32,7 +32,7 @@ const TEXT_MAX = 80;
 
 export function trackerSummary(needIds: string[], ratings: Record<string, number>): TrackerSummary {
   return {
-    filled: needIds.filter(id => ratings[id] !== undefined).length,
+    filled: needIds.filter(id => isRated(ratings, id)).length,
     total: needIds.length,
     index: dayIndex(needIds, ratings),
   };

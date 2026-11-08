@@ -1,22 +1,14 @@
-// Оффлайн-очередь для оценок потребностей (правило №3 CLAUDE.md — единственная
-// копия; до 2026-08 существовала только в удалённом мини-аппе, и оценка на
-// сайте терялась молча при сетевом сбое — см. webapp/src/apiRating.ts).
+// Офлайн-очередь оценок потребностей — единственная копия (правило №3).
+// Ключ `rating_outbox_v1` не меняется: очередь, начатая в старом мини-аппе
+// (тот же origin), обязана дойти с сайта.
 //
-// Ключ localStorage не менялся НАМЕРЕННО: сайт (schemehappens.ru) и удалённый
-// мини-апп (schemehappens.ru/app/) жили на одном origin, и очередь, начатая в
-// мини-аппе, должна дойти с сайта; другие денормализованные ключи (MY_SCHEMA_IDS_KEY, YSQ_RESULT_KEY
-// в storageKeys.ts) уже используют этот же паттерн.
-//
-// Почему буферизуются ТОЛЬКО оценки, а не любые POST: сервер сохраняет
-// рейтинг через upsert по (userId, date, needId) — повторная отправка той
-// же {needId, date} безопасно перезаписывает значение, а не создаёт
-// дубликат. Это единственный write-запрос в приложении с таким свойством.
-// Заметки/дневники/письма/планы такой идемпотентности не имеют (могут
-// завести вторую запись или дать неожиданный побочный эффект при повторе),
-// поэтому они вообще не ретраятся — пользователь видит ошибку сразу и
-// повторяет действие сам. По той же причине обычные POST/DELETE в api.ts не
-// ретраятся автоматически: сеть в Telegram-webview (и на мобильном сайте)
-// рвётся часто и без идемпотентности «тихий» повтор рискует задвоить данные.
+// Буферизуются ТОЛЬКО оценки: сервер пишет их upsert'ом по (userId, date,
+// needId), и повтор той же {needId, date} перезаписывает значение, а не
+// заводит дубль. Заметки, дневники, письма и планы такой идемпотентности не
+// имеют и не ретраятся вовсе: сеть в webview рвётся часто, «тихий» повтор
+// задвоил бы данные — человек видит ошибку и повторяет сам.
+import { readLocal, removeLocal, writeLocal } from './safeLocalStorage';
+
 export interface OutboxItem {
   needId: string;
   value: number;
@@ -37,7 +29,7 @@ function isOutboxItem(v: unknown): v is OutboxItem {
 }
 
 function readOutbox(): OutboxItem[] {
-  const raw = localStorage.getItem(OUTBOX_KEY);
+  const raw = readLocal(OUTBOX_KEY);
   if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -46,26 +38,23 @@ function readOutbox(): OutboxItem[] {
   } catch {
     // Битый JSON (или неожиданная форма) — тихий сброс очереди, а не краш
     // приложения на старте.
-    localStorage.removeItem(OUTBOX_KEY);
+    removeLocal(OUTBOX_KEY);
     return [];
   }
 }
 
-function writeOutbox(items: OutboxItem[]): void {
-  if (items.length === 0) {
-    localStorage.removeItem(OUTBOX_KEY);
-    return;
-  }
+/** false — хранилище недоступно (приватный режим, квота): записи нет. */
+function writeOutbox(items: OutboxItem[]): boolean {
+  if (items.length === 0) return removeLocal(OUTBOX_KEY);
   // Старые вытесняются, если очередь переполнена.
   const trimmed =
     items.length > MAX_ITEMS ? items.slice(items.length - MAX_ITEMS) : items;
-  localStorage.setItem(OUTBOX_KEY, JSON.stringify(trimmed));
+  return writeLocal(OUTBOX_KEY, JSON.stringify(trimmed));
 }
 
-export function enqueueRating(item: OutboxItem): void {
-  const items = readOutbox();
-  items.push(item);
-  writeOutbox(items);
+/** false — положить некуда: оценка не сохранена нигде (вызывающий откатывает её). */
+export function enqueueRating(item: OutboxItem): boolean {
+  return writeOutbox([...readOutbox(), item]);
 }
 
 /**
@@ -84,42 +73,70 @@ export function pendingRatingsFor(date: string): Record<string, number> {
   return out;
 }
 
+const keyOf = (it: OutboxItem) => `${it.needId}|${it.date}`;
+
 // Дедуп по (needId, date): побеждает последняя запись по этому ключу,
 // порядок отправки — по первому вхождению ключа в очереди.
 function dedupe(items: OutboxItem[]): OutboxItem[] {
   const order: string[] = [];
   const byKey = new Map<string, OutboxItem>();
   for (const it of items) {
-    const key = `${it.needId}|${it.date}`;
-    if (!byKey.has(key)) order.push(key);
-    byKey.set(key, it);
+    if (!byKey.has(keyOf(it))) order.push(keyOf(it));
+    byKey.set(keyOf(it), it);
   }
   return order.map((key) => byKey.get(key)!);
 }
 
-/**
- * Отправляет очередь по порядку. Останавливается на первой ошибке (сетевой —
- * единственная ожидаемая на этом этапе, т.к. элементы уже прошли 4xx-проверку
- * при первой попытке saveRating) и оставляет неотправленный хвост в очереди.
- * Успешно отправленные элементы удаляются.
- */
-export async function flushRatingOutbox(
+// Из очереди, ПЕРЕЧИТАННОЙ после отправки, снимаются ровно записи снимка
+// (по одной на каждую), а не «хвост по счёту»: оценка, поставленная во время
+// выгрузки, дописана в конец и остаётся ждать (аудит 2026-11, E3).
+function withoutSent(current: OutboxItem[], sent: OutboxItem[]): OutboxItem[] {
+  const rest = [...current];
+  for (const it of sent) {
+    const i = rest.findIndex(
+      (r) => keyOf(r) === keyOf(it) && r.value === it.value,
+    );
+    if (i !== -1) rest.splice(i, 1);
+  }
+  return rest;
+}
+
+async function drain(
   post: (item: OutboxItem) => Promise<void>,
-  // Вызывается один раз, если что-то реально доехало (аналитика outbox_flush).
   onRecovered?: (count: number) => void,
 ): Promise<void> {
-  const items = dedupe(readOutbox());
-  if (items.length === 0) return;
-
-  let sentCount = 0;
-  for (const item of items) {
+  const snapshot = readOutbox();
+  const sentKeys = new Set<string>();
+  for (const item of dedupe(snapshot)) {
     try {
       await post(item);
-      sentCount++;
+      sentKeys.add(keyOf(item));
     } catch {
       break;
     }
   }
-  writeOutbox(items.slice(sentCount));
-  if (sentCount > 0) onRecovered?.(sentCount);
+  if (sentKeys.size === 0) return;
+  const sent = snapshot.filter((it) => sentKeys.has(keyOf(it)));
+  writeOutbox(withoutSent(readOutbox(), sent));
+  onRecovered?.(sentKeys.size);
+}
+
+// Одна выгрузка за раз: старт приложения и событие `online` приходят почти
+// вместе, и две параллельные выгрузки слали одни и те же оценки дважды.
+let flushing: Promise<void> | null = null;
+
+/**
+ * Отправляет очередь по порядку. Останавливается на первой ошибке (сеть, 5xx,
+ * 401 до перевыпуска сессии, 429) и оставляет неотправленное в очереди.
+ * Повторный вызов во время выгрузки получает ту же выгрузку.
+ */
+export function flushRatingOutbox(
+  post: (item: OutboxItem) => Promise<void>,
+  // Вызывается один раз, если что-то реально доехало (аналитика outbox_flush).
+  onRecovered?: (count: number) => void,
+): Promise<void> {
+  flushing ??= drain(post, onRecovered).finally(() => {
+    flushing = null;
+  });
+  return flushing;
 }

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
-import { api } from '../api';
+import { api, type StreakData } from '../api';
 import type { DayHistory } from '../types';
 import { useCabinetLightTheme } from '../utils/useCabinetLightTheme';
 import { syncMotionAttr } from '../utils/reducedMotion';
@@ -42,7 +42,7 @@ const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ defaul
 const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
 
-import type { StreakData } from '../api';
+import { withRating } from '../../../shared/src/needs/ratingRecord';
 import { clientPath, parseClientRef } from '../../../shared/src/utils/clientRef';
 
 syncMotionAttr();
@@ -176,7 +176,7 @@ export function AppShell() {
   }, [ov.showSettings, ov.showPractices, ov.showPlans, ov.showTrackerOverlay, ov.showTracker, ov.showChildhoodWheel, section]);
 
   const handleChange = useCallback((needId: string, value: number) => {
-    setRatings(prev => ({ ...prev, [needId]: value }));
+    setRatings(prev => withRating(prev, needId, value)); // 0 — откат к «не было оценки»: ключа нет
     setSaved(prev => ({ ...prev, [needId]: false }));
   }, [setRatings, setSaved]);
 

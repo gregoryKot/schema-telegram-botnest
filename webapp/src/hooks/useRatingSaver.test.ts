@@ -120,4 +120,28 @@ describe('useRatingSaver', () => {
     await flush();
     expect(reportClientError).toHaveBeenCalledWith({ message: 'rating save failed', section: 'tracker' });
   });
+
+  // Аудит 2026-11, E4: сервер отказал насовсем — экран откатывает плитку к оценке до серии касаний.
+  it('отказ — onRejected с оценкой до серии; без прежней оценки — undefined', async () => {
+    save.mockRejectedValue(new Error('API error: 400'));
+    const onRejected = vi.fn();
+    const { result } = renderHook(() => useRatingSaver({ ...base, onRejected }));
+    act(() => { result.current('play', 6, 4); result.current('play', 8, 6); });
+    act(() => { result.current('limits', 2, undefined); result.current('limits', 6, 2); });
+    await flush();
+    expect(onRejected).toHaveBeenCalledWith('play', 4);
+    expect(onRejected).toHaveBeenCalledWith('limits', undefined);
+  });
+
+  it('контроль: принято или ушло в очередь — onRejected не зовётся', async () => {
+    const onRejected = vi.fn();
+    const { result } = renderHook(() => useRatingSaver({ ...base, onRejected }));
+    save.mockResolvedValueOnce({ ok: true, allDone: false, queued: true });
+    act(() => { result.current('play', 6, 4); });
+    await flush();
+    save.mockResolvedValueOnce({ ok: true, allDone: false });
+    act(() => { result.current('play', 8, 6); });
+    await flush();
+    expect(onRejected).not.toHaveBeenCalled();
+  });
 });

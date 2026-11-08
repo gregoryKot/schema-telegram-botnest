@@ -63,6 +63,13 @@ describe('HomeTiles', () => {
     expect(document.querySelectorAll('[data-rated="no"]').length).toBe(4);
   });
 
+  // Аудит 2026-11, E4: 0 — «не оценено» (откат отклонённой оценки), полоска не плотная.
+  it('оценка 0 — полоска бледная, как без оценки', () => {
+    render(<HomeTiles {...base} ratings={{ attachment: 0, autonomy: 6 }} />);
+    const rated = document.querySelectorAll('[data-rated="yes"]');
+    expect([...rated].map((r) => r.getAttribute('data-need'))).toEqual(['autonomy']);
+  });
+
   it('три плитки зовут свои обработчики', () => {
     const onTracker = vi.fn(), onCase = vi.fn(), onDiary = vi.fn();
     render(<HomeTiles {...base} onTracker={onTracker} onCase={onCase} onDiary={onDiary} />);

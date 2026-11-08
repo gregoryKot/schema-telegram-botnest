@@ -111,7 +111,7 @@ vi.mock('./TrackerOverlay', () => ({
   TrackerOverlay: (p: ComponentProps<typeof TrackerOverlayT>) => (
     <Btns testid="tracker-overlay" state={{ attachmentRating: p.ratings.attachment ?? null }} map={{
       close: () => p.onClose(),
-      change: () => p.onChange('attachment', 5),
+      change: () => p.onChange('attachment', 5), revert: () => p.onChange('attachment', 0), // revert — откат отклонённой оценки
       saveWithStreak: () => p.onSaved('attachment', { currentStreak: 3, longestStreak: 3, totalDays: 6, todayDone: true, weekDots: [] }),
       saveNoStreak: () => p.onSaved('attachment', { currentStreak: 0, longestStreak: 2, totalDays: 1, todayDone: true, weekDots: [] }),
       note: () => p.onOpenNote?.(),
