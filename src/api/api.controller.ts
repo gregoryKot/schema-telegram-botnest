@@ -2,10 +2,8 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
   Logger,
-  Param,
   Post,
   Req,
   UseGuards,
@@ -19,9 +17,8 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
-import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
+import { UpdateNameDto, InitDto } from './dto/misc.dto';
 import { UserFlagsDto } from './dto/user-flags.dto';
-import { encryptJson, decryptJson } from '../utils/crypto';
 import { FLAG_FIELDS } from './flag-fields';
 
 interface AuthRequest extends Request {
@@ -100,64 +97,6 @@ export class ApiController {
     await this.prisma.user.update({
       where: { id: uid(req) },
       data,
-    });
-    return { ok: true };
-  }
-
-  // ─── Diary drafts ──────────────────────────────────────────────────────────
-
-  @Get('drafts')
-  async getDrafts(@Req() req: AuthRequest) {
-    const rows = await this.prisma.diaryDraft.findMany({
-      where: { userId: uid(req) },
-      select: { type: true, startedAt: true, data: true },
-    });
-    return Object.fromEntries(
-      rows.map((r) => [
-        r.type,
-        {
-          startedAt: r.startedAt.toISOString(),
-          // Черновик — шифрованный JSON-блоб; легаси-строки хранят объект как есть.
-          data: typeof r.data === 'string' ? decryptJson(r.data) : r.data,
-        },
-      ]),
-    );
-  }
-
-  @Post('drafts/:type')
-  async saveDraft(
-    @Req() req: AuthRequest,
-    @Param('type') type: string,
-    @Body() body: SaveDraftDto,
-  ): Promise<{ ok: true }> {
-    if (!['schema', 'mode', 'gratitude'].includes(type))
-      throw new BadRequestException('Invalid type');
-    if (!body?.startedAt) throw new BadRequestException('Missing startedAt');
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(body.startedAt))
-      throw new BadRequestException('Invalid startedAt format');
-    const startedAt = new Date(body.startedAt);
-    if (isNaN(startedAt.getTime()))
-      throw new BadRequestException('Invalid startedAt value');
-    // Черновик содержит тот же свободный текст, что и готовая запись дневника —
-    // шифруется так же (в Json-колонке лежит зашифрованная строка).
-    const data = (encryptJson(body.data) ?? body.data) as Prisma.InputJsonValue;
-    await this.prisma.diaryDraft.upsert({
-      where: { userId_type: { userId: uid(req), type } },
-      update: { data, startedAt },
-      create: { userId: uid(req), type, data, startedAt },
-    });
-    return { ok: true };
-  }
-
-  @Delete('drafts/:type')
-  async deleteDraft(
-    @Req() req: AuthRequest,
-    @Param('type') type: string,
-  ): Promise<{ ok: true }> {
-    if (!['schema', 'mode', 'gratitude'].includes(type))
-      throw new BadRequestException('Invalid type');
-    await this.prisma.diaryDraft.deleteMany({
-      where: { userId: uid(req), type },
     });
     return { ok: true };
   }

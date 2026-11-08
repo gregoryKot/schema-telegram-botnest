@@ -147,9 +147,6 @@ const REASON = {
 const NOT_YET_COVERED: Array<{ route: string; reason: string }> = [
   { route: 'GET /api/user-flags', reason: REASON.MISC_ACCOUNT },
   { route: 'POST /api/user-flags', reason: REASON.MISC_ACCOUNT },
-  { route: 'GET /api/drafts', reason: REASON.MISC_ACCOUNT },
-  { route: 'POST /api/drafts/:param', reason: REASON.MISC_ACCOUNT },
-  { route: 'DELETE /api/drafts/:param', reason: REASON.MISC_ACCOUNT },
   { route: 'GET /api/profile', reason: REASON.MISC_ACCOUNT },
   { route: 'POST /api/profile/name', reason: REASON.MISC_ACCOUNT },
   { route: 'POST /api/init', reason: REASON.MISC_ACCOUNT },
