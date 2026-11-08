@@ -2,12 +2,9 @@ import { type ClientErrorFlood, floodLines } from './client-error-flood.format';
 
 // Блок «Поломки на клиенте» для /stats (правило №8: метрика, которой нет в
 // отчёте, — невидима). Чистый форматтер, покрыт тестом, включая пустую БД.
-//
-// Волна 9 щита покрытия (docs/SHIELD_PROMPT.md): отчёт клиента о поломке
-// (POST /api/client-errors) только логировался, а разные поломки схлопывались
-// в один DM (хедер client-errors.controller.ts). Теперь он ещё и считается
-// (событие client_error), число видно здесь; повторы — в client-error-flood.format.ts.
-//
+// Волна 9 щита покрытия: отчёт клиента о поломке (POST /api/client-errors)
+// считается событием client_error; повторы — в client-error-flood.format.ts,
+// владельцу — сводка раз в час (src/api/client-errors-digest.ts, подписи ниже).
 // Раздел auth — отдельная явная строка, а не просто пункт списка по разделам:
 // это единственный клиентский свидетель для «вход сломан ДО того, как запрос
 // вообще дошёл до guard'а» (инцидент 2026-08-08, см. блок «Вход в
@@ -33,7 +30,10 @@ export interface ClientErrorMetrics extends ClientErrorFlood {
   bySource: { webapp: number; miniapp: number };
 }
 
-const SECTION_LABELS: Record<keyof ClientErrorMetrics['bySection'], string> = {
+export const SECTION_LABELS: Record<
+  keyof ClientErrorMetrics['bySection'],
+  string
+> = {
   login: 'Вход по коду',
   today: 'Сегодня',
   diary: 'Дневник',

@@ -1,29 +1,25 @@
 import { ConsoleLogger } from '@nestjs/common';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
-import { AlertBudget } from '../utils/alert-throttle';
+import { AlertGate } from './alert-gate';
 import { isDbUnreachable, dbOutage, DB_ALERT_SUBJECT } from './db-outage';
 
 export class AlertLogger extends ConsoleLogger {
-  // Simple in-memory throttle: don't send same error more than once per 60s
-  private readonly seen = new Map<string, number>();
-
-  // Общий потолок поверх пер-контентного ключа (M4, аудит 2026-08). Ключ ниже
-  // нормализует только цифры/uuid — сток, чей первый аргумент содержит
-  // варьируемый атакующим НЕ-цифровой текст (имена query-параметров, текст
-  // ошибки парсинга), рождает новый ключ на каждый запрос и обходит троттлинг
-  // лавиной DM. Пер-ключевой троттлинг против этого бессилен по построению,
-  // поэтому сверху — общий бюджет: не больше N алертов за окно СУММАРНО по
-  // всем ключам. Реальная авария из нескольких подсистем (десяток разных
-  // ошибок) проходит; лавина подделанных ключей упирается в потолок и дальше
-  // копится счётчиком, который сообщает о себе в первом алерте следующего окна.
-  private readonly globalBudget = new AlertBudget(60_000, 15);
+  // Троттлинг DM: пер-контентный ключ, общий бюджет и анонимный подбюджет —
+  // слои и их история в ./alert-gate.ts.
+  private readonly gate = new AlertGate();
 
   error(message: unknown, ...optionalParams: unknown[]) {
     super.error(message, ...optionalParams);
-    this.alert(typeof message === 'string' ? message : JSON.stringify(message));
+    // Контекст — последний строковый аргумент: так его передаёт
+    // `new Logger(X.name).error(…)`. Без него — собственный контекст логгера.
+    const last = optionalParams[optionalParams.length - 1];
+    this.alert(
+      typeof message === 'string' ? message : JSON.stringify(message),
+      typeof last === 'string' ? last : this.context,
+    );
   }
 
-  private alert(message: string) {
+  private alert(message: string, context: string | undefined) {
     // Недоступность БД (инцидент 2026-08-31) рассыпается на десятки разных по
     // тексту сообщений — по ключу их не свести, и шторм проходит мимо обоих
     // троттлов ниже. Ветка ведёт всю аварию как ОДНУ (см. ./db-outage.ts).
@@ -33,34 +29,12 @@ export class AlertLogger extends ConsoleLogger {
       return;
     }
 
-    const now = Date.now();
-    // Evict entries older than 1 hour to prevent unbounded Map growth
-    for (const [k, t] of this.seen)
-      if (now - t > 3_600_000) this.seen.delete(k);
-
-    // Нормализованный ключ (аудит 2026-07, I-4): числа/uuid/hex заменяются
-    // плейсхолдером, иначе «Failed … id=1», «id=2», … — это разные ключи, и
-    // массовый сбой обходит троттлинг лавиной DM админу.
-    const key = message
-      .replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, '<uuid>')
-      .replace(/\d+/g, '<n>')
-      .slice(0, 100);
-    const lastSent = this.seen.get(key) ?? 0;
-    if (now - lastSent < 60_000) return;
-    this.seen.set(key, now);
-
-    // Backstop против варьируемого буквами текста (M4): пер-контентный ключ
-    // уже пропустил этот алерт, но общий бюджет за окно мог исчерпаться —
-    // тогда молчим (в чат уже ушло N за минуту, дальше это флуд).
-    const budget = this.globalBudget.take('__all__', now);
-    if (!budget.allow) return;
-    const tail = budget.suppressed
-      ? `\n(за прошлое окно подавлено ещё ${budget.suppressed} — общий потолок алертов)`
-      : '';
+    const verdict = this.gate.decide(message, context);
+    if (!verdict.send) return;
 
     // Telegram first, e-mail fallback. Fire-and-forget — never throws.
     void notifyAdminWithFallback(
-      `🚨 Ошибка на сервере\n${message.slice(0, 300)}${tail}`,
+      `🚨 Ошибка на сервере\n${message.slice(0, 300)}${verdict.tail}`,
       '🚨 Ошибка на сервере SchemeHappens',
     );
   }
