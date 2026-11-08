@@ -61,25 +61,47 @@
 .pl2-tile-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .pl2-tile-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 25px; line-height: 1.15; color: var(--text); }
 .pl2-tile-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
-/* Широкая плитка — на две колонки, картинка справа крупно. */
+/* Широкая плитка — на две колонки, картинка справа крупно. Знак — до 220px: на 960 (плитка
+   во всю ширину) Talk в 280px перевешивал заголовок; сцена дневника обрезана по фигурам
+   (`box` у SceneCheckIn) и занимает рамку целиком. */
 .pl2-tile--wide { grid-column: span 2; flex-direction: row; align-items: center; gap: 20px; padding: 30px 28px; }
-/* Картинка 44%, текст не уже 240px: при 54% текст «Дневника» шёл в 5–6 рваных строк. Знак
-   в широкой плитке до 320px — по массе вровень со сценой соседней широкой плитки. */
-.pl2-tile--wide .pl2-tile-art { order: 2; flex: 0 1 44%; min-width: 0; height: 280px; }
-.pl2-tile--wide .pl2-tile-art .scn-sign { width: min(100%, 320px); }
+.pl2-tile--wide .pl2-tile-art { order: 2; flex: 0 1 44%; min-width: 0; height: 260px; }
+.pl2-tile--wide .pl2-tile-art .scn-sign { width: min(100%, 220px); }
+/* Широкая плитка со знаком (не сценой) — высотой по тексту: на 641–1080 «Кабинет терапевта»
+   во всю ширину стоял 912×320 с пустым полем вокруг знака. */
+.pl2-tile--wide .pl2-tile-art--sign { height: auto; }
 .pl2-tile--wide .pl2-tile-body { flex: 1 1 0; min-width: 240px; }
 .pl2-tile--wide .pl2-tile-title { font-size: clamp(26px, 2.6vw, 32px); }
 
+/* Доверие: заголовки и тексты трёх плиток на одной высоте, даже если один заголовок
+   («Записи зашифрованы» на 641–1080) встал в две строки, — ряды общие (subgrid). */
+@supports (grid-template-rows: subgrid) {
+  @media (min-width: 641px) {
+    .pl2-trust .pl2-tile { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; }
+    .pl2-trust .pl2-tile-body { display: contents; }
+    .pl2-trust .pl2-tile-title { margin-top: 20px; }
+    .pl2-trust .pl2-tile-text { margin-top: 8px; }
+  }
+}
+
 /* ── Раскладка ──────────────────────────────────────────────────────────── */
+/* 4 колонки: в широкой плитке картинка — половина плитки (при 44% сцена дневника была
+   ~175×150 в плитке 571×381), текст не уже 220px. На 1081–1095 половина + 220px шире
+   плитки — уступает картинка (flex-shrink), а не правое поле плитки. */
+@media (min-width: 1081px) {
+  .pl2-tile--wide { gap: 16px; padding: 28px 24px; }
+  .pl2-tile--wide .pl2-tile-art { flex: 0 1 50%; height: 300px; }
+  .pl2-tile--wide .pl2-tile-body { min-width: 220px; }
+}
 @media (max-width: 1080px) {
   .pl2-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Планшет в портрете — разворот остаётся разворотом (сцена то слева, то справа), только
+   уже: одна колонка на 641–900 оставляла справа 35–40% пустоты на всех трёх шагах. */
 @media (max-width: 900px) {
   .pl2-steps { gap: 56px; }
-  .pl2-spread, .pl2-spread:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
-  .pl2-spread:nth-child(even) .pl2-spread-art { order: 0; }
-  /* Сцена у левого края колонки — на одной оси с номером и текстом шага, без дыры справа. */
-  .pl2-spread-art { max-width: 300px; justify-self: start; }
+  .pl2-spread, .pl2-spread:nth-child(even) { gap: 32px; }
+  .pl2-spread-art { max-width: 280px; }
   .pl2-spread-num { font-size: 76px; }
   .pl2-spread-num::after { margin-top: 16px; }
   .pl2-spread-title { margin-top: 18px; }
@@ -88,11 +110,19 @@
 /* Доверие до 641px — три колонки (одна в 770px оставляла пустые поля): плитка поуже. */
 @media (min-width: 641px) and (max-width: 900px) {
   .pl2-trust .pl2-tile { padding: 24px 18px 26px; }
-  .pl2-trust .pl2-tile-title { font-size: 22px; }
+  /* «зашифрованы» на 641–670 в 22px шире колонки — шрифт от ширины, 19–22px
+     (сверка — styles/landingGrid.test.ts). */
+  .pl2-trust .pl2-tile-title { font-size: clamp(19px, 3vw, 22px); }
 }
+/* Картинка над надзаголовком («Приложение», «Вопросы») отстоит от него на ~26px вместе с
+   тенью — как сцены шагов от номера; у квадрата «Вопросов» тень 7px, у сцены — поле холста. */
 @media (max-width: 640px) {
+  .pl2-spread, .pl2-spread:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
+  .pl2-spread:nth-child(even) .pl2-spread-art { order: 0; }
+  /* Сцена у левого края колонки — на одной оси с номером и текстом шага, без дыры справа. */
+  .pl2-spread-art { justify-self: start; }
   .pl2-app-head { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .pl2-app-art { order: -1; width: 220px; margin: 0 0 8px; }
+  .pl2-app-art { order: -1; width: 220px; margin: 0 0 24px; }
   .pl2-band { margin: 16px 0; }
   .pl2-edge { top: -13px; height: 14px; }
   .pl2-edge--bottom { top: auto; bottom: -13px; }
@@ -110,4 +140,13 @@
   .pl2-tile-art .scn-sign, .pl2-tile--wide .pl2-tile-art .scn-sign { width: 96px; }
   .pl2-tile-title, .pl2-tile--wide .pl2-tile-title { grid-column: 2; grid-row: 1; font-size: 23px; }
   .pl2-tile-text { grid-column: 1 / -1; grid-row: 2; }
+}
+/* 320–374: колонка картинки уже, заголовок мельче — «зашифрованы» и «Диагностика» целиком
+   в колонке рядом со знаком (при 104px и 23px слово выходило за плитку и за край экрана;
+   сверка — styles/landingGrid.test.ts). */
+@media (max-width: 374px) {
+  .pl2-tile, .pl2-tile--wide { grid-template-columns: 80px minmax(0, 1fr); column-gap: 14px; }
+  .pl2-tile-art, .pl2-tile--wide .pl2-tile-art { width: 80px; height: 72px; }
+  .pl2-tile-art .scn-sign, .pl2-tile--wide .pl2-tile-art .scn-sign { width: 76px; }
+  .pl2-tile-title, .pl2-tile--wide .pl2-tile-title { font-size: 21px; }
 }

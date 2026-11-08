@@ -6,12 +6,14 @@
 // слое .scn-shade, а не фильтр; знак кабинета не перерисован, а взят как есть; цвета —
 // только токены.
 import { describe, it, expect, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, cleanup } from '@testing-library/react';
 import { SceneChildhood, SceneTrigger, SceneNotice } from './LandingScenes';
-import { SceneCheckIn, SceneQuiz, SceneCover, SceneHomeScreen } from './LandingScenesMore';
+import { SceneCheckIn, SceneQuiz, SceneCover, SceneCoverMini, SceneHomeScreen } from './LandingScenesMore';
 import { SignScene, FinalCorners } from './SceneParts';
 import { HeroCollage } from './HeroCollage';
-import { Talk } from './PaperArtSigns';
+import { Talk, Cluster } from './PaperArtSigns';
 import { SceneSvg, Lift } from './sceneKit';
 import { INK } from './scenePaper';
 
@@ -38,7 +40,7 @@ describe('сцены: декор языка знаков', () => {
     expect(container.querySelector('.scn-patch')).toBeNull();
     expect(container.querySelector('.scn-sheet')).not.toBeNull();
     expect(container.querySelector('.scn-sheet-under')).not.toBeNull();
-    rerender(<SceneSvg hue={45} patch={135} blob={null}><circle r="1" /></SceneSvg>);
+    rerender(<SceneSvg hue={45} patch={135} sheet={null}><circle r="1" /></SceneSvg>);
     const svg = container.querySelector('svg') as SVGElement;
     expect(svg.querySelector('.scn-patch')).not.toBeNull();
     expect(svg.querySelector('.scn-sheet')).toBeNull();
@@ -46,13 +48,13 @@ describe('сцены: декор языка знаков', () => {
   });
 
   it('SceneSvg: лист с нижним слоем лежит внутри холста с равными полями слева и справа', () => {
-    for (const blob of ['a', 'b', 'c'] as const) {
-      const { container } = render(<SceneSvg hue={45} blob={blob}><circle r="1" /></SceneSvg>);
+    for (const sheet of ['a', 'b', 'c'] as const) {
+      const { container } = render(<SceneSvg hue={45} sheet={sheet}><circle r="1" /></SceneSvg>);
       const top = container.querySelector('.scn-sheet') as SVGRectElement;
       const under = container.querySelector('.scn-sheet-under') as SVGRectElement;
       const left = Number(top.getAttribute('x'));
       const right = 320 - Number(under.getAttribute('x')) - Number(under.getAttribute('width'));
-      expect(left, blob).toBe(right);
+      expect(left, sheet).toBe(right);
       cleanup();
     }
   });
@@ -134,6 +136,30 @@ describe('сцены: декор языка знаков', () => {
     const signs = box.querySelectorAll(':scope > svg.pp-art');
     expect(signs).toHaveLength(2);
     expect(signs[0].innerHTML).toBe(signs[1].innerHTML);
+  });
+
+  // Круг Cluster полупрозрачен (в кабинете он ложится на бумагу); над тенью-вырезкой он её
+  // просвечивал и двоился серпом. CSS в jsdom не исполняется — пинаем правило исходника
+  // (приём styles/safeTop.test.ts) и то, что без него знак правда полупрозрачен.
+  it('SignScene: верхний слой непрозрачен — полупрозрачная заливка знака не просвечивает тень', () => {
+    const { container } = render(<SignScene Art={Cluster} />);
+    expect(container.querySelector('.scn-sign > svg:last-child [fill-opacity]')).not.toBeNull();
+    const css = readFileSync(join(__dirname, '../../styles/paper-scenes.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(css).toMatch(/\.scn-sign > \.pp-art:last-child \[fill-opacity\]\s*\{\s*fill-opacity:\s*1;?\s*\}/);
+  });
+
+  it('сцены без листа обрезаны по фигурам (box), с листом — холст 320×260; мини-обложка — та же обложка', () => {
+    const vb = (el: Element | null) => el?.getAttribute('viewBox');
+    const { container: a } = render(<SceneCheckIn />);
+    expect(vb(a.querySelector('svg.scn'))).not.toBe('0 0 320 260');
+    const { container: b } = render(<SceneCover />);
+    expect(vb(b.querySelector('svg.scn'))).toBe('0 0 320 260');
+    const { container: c } = render(<SceneCoverMini />);
+    expect(vb(c.querySelector('svg.scn'))).not.toBe('0 0 320 260');
+    expect(c.querySelector('svg.scn')?.innerHTML).toBe(b.querySelector('svg.scn')?.innerHTML);
+    // окно игнорируется, если у сцены есть лист: лист рассчитан на полный холст
+    const { container: d } = render(<SceneSvg hue={45} box="0 0 10 10"><circle r="1" /></SceneSvg>);
+    expect(vb(d.querySelector('svg.scn'))).toBe('0 0 320 260');
   });
 
   it('HeroCollage: широкий и узкий холст, на узком всё в ширине контента (viewBox 358)', () => {

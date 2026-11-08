@@ -4,13 +4,14 @@
 import { Link } from 'react-router-dom';
 import { Logo, Cta } from '../landing/BrandKit';
 import { botUrl } from '../../utils/botConfig';
+import { glue } from '../landing/typo';
 import '../../styles/product-landing.css';
 import '../../styles/product-tests.css';
 
 export function TestsFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="light-lock pl2-root">
-      <header className="pl2-header pl2-header--static">
+      <header className="pl2-header pl2-header--static pl2-tests-head">
         <a href="/" className="pl2-brand" aria-label="На главную"><Logo /></a>
         <Cta href={botUrl}>Бот в Telegram ↗</Cta>
       </header>
@@ -19,16 +20,14 @@ export function TestsFrame({ children }: { children: React.ReactNode }) {
       </main>
       <footer className="pl2-tests-foot">
         <p className="pl2-card-text pl2-tests-foot-text">
-          Эти же тесты есть в телеграм-боте — вместе с трекером пяти
-          потребностей, дневниками и большим тестом схем.
+          {glue('Эти же тесты есть в телеграм-боте — вместе с трекером пяти потребностей, дневниками и большим тестом схем.')}
         </p>
         <div className="pl2-actions">
           <Cta href={botUrl} size="lg">Продолжить в Telegram</Cta>
           <Cta href="/login" variant="ghost" size="lg">Войти в приложение</Cta>
         </div>
         <p className="pl2-fine pl2-tests-foot-fine">
-          Мини-тесты — игра-наблюдение по мотивам схема-терапии, а не
-          диагностика и не замена психотерапии.
+          {glue('Мини-тесты — игра-наблюдение по мотивам схема-терапии, а не диагностика и не замена психотерапии.')}
         </p>
       </footer>
     </div>

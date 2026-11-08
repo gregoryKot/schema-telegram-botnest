@@ -46,7 +46,7 @@ export function AppInstallSection() {
                 <p className="pl2-card-meta">{b.browser}</p>
                 <ol className="pl2-card-list">
                   {b.steps.map((s) => (
-                    <li key={s}>{s}</li>
+                    <li key={s}>{glue(s)}</li>
                   ))}
                 </ol>
               </div>

@@ -6,7 +6,7 @@
 // Подложка — вырезанные листы цветной бумаги (персик, небо, шалфей), не пятна.
 // Два холста: широкий (компьютер, планшет) и узкий — телефон, где коллаж целиком
 // лежит в ширине контента: телефон-мокап на листе, по углам квадратики бумаги,
-// петля внизу. Какой виден — решает CSS (.pl2-hero-collage--*, product-landing.css).
+// петля внизу. Какой виден — решает CSS (.pl2-hero-collage--*, product-landing-hero.css).
 import type { CSSProperties, ReactNode } from 'react';
 import { INK } from './scenePaper';
 import { Lift } from './sceneKit';

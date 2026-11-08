@@ -20,7 +20,7 @@ export function SceneChildhood({ hue = 45 }: { hue?: number }) {
   const spoke = (i: number) => `rotate(${i * 72} ${HUB.x} ${HUB.y})`;
   const last = SPOKES.length - 1;
   return (
-    <SceneSvg hue={hue} patch={240} patchAt="tr" blob="a">
+    <SceneSvg hue={hue} patch={240} patchAt="tr" sheet="a">
       <rect x="145" y="50" width="30" height="48" rx="15" fill={SPOKES[last]} fillOpacity=".38" transform={spoke(last)} />
       <Lift>
         {SPOKES.slice(0, last).map((fill, i) => (
@@ -49,7 +49,7 @@ const RIBBON_CUTS = ['M24 226.6 L46 227.2', 'M251 65.7 L265 58.2'];
 export function SceneTrigger({ hue = 25 }: { hue?: number }) {
   const ribbon = { fill: 'none', strokeWidth: 14, strokeLinecap: 'round' } as const;
   return (
-    <SceneSvg hue={hue} patch={135} patchAt="bl" blob="b">
+    <SceneSvg hue={hue} patch={135} patchAt="bl" sheet="b">
       <Lift>
         <rect x="58" y="216" width="204" height="14" rx="7" fill={INK.sage} />
         <path d={RIBBON_BACK} stroke={INK.clayBack} {...ribbon} />
@@ -63,7 +63,7 @@ export function SceneTrigger({ hue = 25 }: { hue?: number }) {
 
 export function SceneNotice({ hue = 135, patch = 45 }: { hue?: number; patch?: number }) {
   return (
-    <SceneSvg hue={hue} patch={patch} patchAt="tr" blob="c">
+    <SceneSvg hue={hue} patch={patch} patchAt="tr" sheet="c">
       <path d="M112 210 C112 174 98 148 62 124" fill="none" stroke={INK.slate} strokeOpacity=".3" strokeWidth="26" strokeLinecap="round" />
       <Lift>
         <path d="M30 218 H290" stroke={INK.sage} strokeWidth="7" strokeLinecap="round" />

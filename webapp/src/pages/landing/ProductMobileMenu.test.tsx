@@ -71,16 +71,27 @@ describe('ProductMobileMenu', () => {
     vi.unstubAllGlobals();
   });
 
-  it('плитка секции с полосой — того же оттенка, что полоса (по ссылке, а не по порядку); соседи по сетке 2×3 разные', () => {
+  // Соседи — по горизонтали и вертикали в сетке телефона (2 колонки) и планшета (3 колонки,
+  // product-landing-menu.css): разной бумаги, то есть дальше 45° по кругу оттенков (25 и 45
+  // рядом читались одним розовым, 195 над 195 на планшете — одной плиткой).
+  it.each([2, 3])('плитка секции с полосой — оттенка полосы; соседи на %i колонках разной бумаги', (cols) => {
     renderMenu();
     const hue = (label: string) => (screen.getByText(label).closest('a') as HTMLElement).style.getPropertyValue('--h');
     expect(hue('Как это работает')).toBe(String(BAND_HUE.how));
     expect(hue('Приложение')).toBe(String(BAND_HUE.app));
     expect(hue('Вопросы')).toBe(String(BAND_HUE.faq));
     const hues = NAV_LINKS.map((l) => l.hue);
+    const apart = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
     for (let i = 0; i < hues.length; i++) {
-      if (i % 2 === 0) expect(hues[i], `ряд ${i / 2 + 1}`).not.toBe(hues[i + 1]);
-      if (i + 2 < hues.length) expect(hues[i], `столбец, пункт ${i + 1}`).not.toBe(hues[i + 2]);
+      if (i % cols !== cols - 1 && i + 1 < hues.length) expect(apart(hues[i], hues[i + 1]), `ряд, пункт ${i + 1}`).toBeGreaterThanOrEqual(45);
+      if (i + cols < hues.length) expect(apart(hues[i], hues[i + cols]), `столбец, пункт ${i + 1}`).toBeGreaterThanOrEqual(45);
     }
+  });
+
+  it('знак «Статей» — обложка карточки статьи в миниатюре, «Вопросов» — тот же, что у секции', () => {
+    renderMenu();
+    const sign = (label: string) => (screen.getByText(label).closest('a') as HTMLElement).querySelector('.pl2-menu-sign') as HTMLElement;
+    expect(sign('Статьи').querySelector('svg.scn')).not.toBeNull();
+    expect(sign('Вопросы').querySelector('.scn-sign')).not.toBeNull();
   });
 });

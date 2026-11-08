@@ -11,7 +11,10 @@
 //    перерисованный) со своей тенью-вырезкой.
 //  • SceneCover — обложка статьи без картинки: листы веером, верхний исписан.
 //    `tone` — набор по порядку карточки: число листов, сторона веера и цвета свои,
-//    соседние обложки не повторяются.
+//    соседние обложки не повторяются. SceneCoverMini — та же обложка в рамке по
+//    листам: знак «Статей» в мобильном меню (один мотив на сущность).
+// У сцен без листа-подложки (SceneCheckIn, SceneCoverMini) холст обрезан по фигурам
+// (`box`): в плитке и в меню картинка занимает свою рамку, а не 70% её.
 import { INK } from './scenePaper';
 import { Lift, SceneSvg } from './sceneKit';
 import { BrandMark } from './BrandMark';
@@ -26,7 +29,7 @@ const BARS = [
 
 export function SceneCheckIn({ hue = 135 }: { hue?: number }) {
   return (
-    <SceneSvg hue={hue} blob={null}>
+    <SceneSvg hue={hue} sheet={null} box="34 31 259 218">
       <Lift>
         <rect x="52" y="50" width="168" height="176" rx="16" transform="rotate(-10 136 138)" fill={INK.amberSoft} />
         <rect x="70" y="40" width="172" height="182" rx="16" transform="rotate(-3 156 131)" fill={INK.tealSoft} />
@@ -55,7 +58,7 @@ export function SceneQuiz({ hue = 135, sign = false }: { hue?: number; sign?: bo
   const card = { y: 40, width: 140, height: 180, rx: 18 } as const;
   const backs = fanFor(hue);
   return (
-    <SceneSvg hue={hue} blob="a">
+    <SceneSvg hue={hue} sheet="a">
       <Lift by={6}>
         {FAN.map((c, i) => <rect key={c.x} x={c.x} {...card} fill={backs[i]} transform={`rotate(${c.deg} ${c.x + 70} 130)`} />)}
         <g transform="rotate(8 176 130)">
@@ -79,7 +82,7 @@ const MARK = { x: 128, y: 136, size: 64, rx: 14 } as const;
 
 export function SceneHomeScreen({ hue = 45 }: { hue?: number }) {
   return (
-    <SceneSvg hue={hue} patch={135} patchAt="bl" blob="c">
+    <SceneSvg hue={hue} patch={135} patchAt="bl" sheet="c">
       <g transform="rotate(-5 160 130)">
         <Lift by={6}><rect x="100" y="20" width="120" height="220" rx="22" fill={INK.sheet} /></Lift>
         {APPS.map((fill, i) => (
@@ -102,14 +105,14 @@ const COVERS = [
   { xs: [52, 160, 106], deg: [-13, 13, -2], back: [INK.plum, INK.moss] },
 ] as const;
 
-export function SceneCover({ tone = 0, hue = 45 }: { tone?: number; hue?: number }) {
+export function SceneCover({ tone = 0, hue = 45, box }: { tone?: number; hue?: number; box?: string }) {
   const set = COVERS[((tone % COVERS.length) + COVERS.length) % COVERS.length];
   const sheet = { y: 52, width: 104, height: 140, rx: 12 } as const;
   const turn = (i: number) => `rotate(${set.deg[i]} ${set.xs[i] + 52} 122)`;
   const top = set.xs.length - 1;
   const x = set.xs[top];
   return (
-    <SceneSvg hue={hue} blob={null}>
+    <SceneSvg hue={hue} sheet={null} box={box}>
       <Lift>
         {set.back.map((fill, i) => <rect key={fill} x={set.xs[i]} {...sheet} fill={fill} transform={turn(i)} />)}
         <g transform={turn(top)}>
@@ -121,4 +124,9 @@ export function SceneCover({ tone = 0, hue = 45 }: { tone?: number; hue?: number
       </Lift>
     </SceneSvg>
   );
+}
+
+/** Обложка первого набора в рамке по листам (с тенью) — для знака размером 60–80px. */
+export function SceneCoverMini({ hue }: { hue?: number }) {
+  return <SceneCover tone={0} hue={hue} box="52 36 214 180" />;
 }

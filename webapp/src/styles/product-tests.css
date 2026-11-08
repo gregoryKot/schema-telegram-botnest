@@ -40,7 +40,12 @@
 .pl2-quiz-arrow { margin-left: auto; padding-left: 8px; font-size: 22px; color: var(--accent); }
 
 /* ── Вступление теста ───────────────────────────────────────────────────── */
-.pl2-quiz-intro { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 48px; align-items: center; }
+/* Пара «сцена + текст» — по центру колонки и по высоте свободного места до подвала: прижатая
+   к верху и влево, она оставляла справа ~150px и снизу ~250px пустоты. */
+.pl2-quiz-intro {
+  display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 540px); gap: 48px;
+  justify-content: center; align-items: center; align-content: center; min-height: max(0px, calc(100dvh - 470px));
+}
 .pl2-quiz-intro-art { position: relative; width: 100%; max-width: 320px; justify-self: center; }
 /* Знак теста на верхней карточке веера (SceneQuiz с `sign`): центр (176, 158) холста
    320×260 после поворота карточки на 8°, ширина — 108 единиц холста. */
@@ -55,7 +60,7 @@
 
 /* ── Вопрос ─────────────────────────────────────────────────────────────── */
 .pl2-quiz-progress { margin: 0 0 22px; }
-.pl2-quiz-progress-head { display: flex; justify-content: space-between; margin: 0 0 8px; }
+.pl2-quiz-progress-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 8px; }
 .pl2-question { margin: 0 0 20px; font-size: clamp(22px, 3.6vw, 30px); line-height: 1.25; }
 .pl2-option {
   display: block; width: 100%; padding: 16px 18px; border-radius: 16px; box-sizing: border-box;
@@ -80,8 +85,10 @@
 .pl2-result-title { margin: 0; font-size: clamp(30px, 4.6vw, 42px); line-height: 1.1; }
 .pl2-hint { --h: 70; margin-bottom: 28px; }
 .pl2-result-actions { margin-bottom: 22px; }
-.pl2-result-fine { max-width: 560px; margin: 0; line-height: 1.6; }
-.pl2-result-bridge { max-width: 560px; margin-top: 16px; }
+/* Дисклеймер и плашка специалиста — на ширину колонки, как панель и «Что с этим делать»:
+   на 560px они висели у левого края под карточкой 872px. */
+.pl2-result-fine { margin: 0; line-height: 1.6; }
+.pl2-result-bridge { margin-top: 16px; }
 .pl2-result-bridge .pl2-card-text { font-size: 14px; }
 
 @media (max-width: 720px) {
@@ -98,8 +105,9 @@
   .pl2-quiz-sign .scn-sign > .pp-art { height: 62px; }
   .pl2-quiz-row-body { grid-area: body; }
   .pl2-quiz-arrow { grid-area: arrow; align-self: start; justify-self: end; padding-left: 0; }
-  .pl2-quiz-intro { grid-template-columns: 1fr; gap: 4px; }
-  .pl2-quiz-intro-art { width: 240px; order: -1; }
+  .pl2-quiz-intro { grid-template-columns: minmax(0, 1fr); gap: 4px; min-height: 0; }
+  /* Сцена у левого края, как в шапке /tests: заголовок и текст под ней тоже слева. */
+  .pl2-quiz-intro-art { width: 240px; order: -1; justify-self: start; }
   .pl2-quiz-card-sign { font-size: 34px; }
   /* Телефон: эмодзи результата — наклейкой на нижнем углу сцены, а не второй картинкой
      под ней: заголовок результата попадает в первый экран. */
@@ -110,4 +118,11 @@
     grid-area: 1 / 1; align-self: end; justify-self: start; position: relative; width: 66px; height: 66px;
     margin: 0 0 -4px 2px; font-size: 36px; box-shadow: 4px 5px 0 oklch(0.8 0.05 var(--h));
   }
+}
+/* Шапка /tests на 320–360: «Бот в Telegram ↗» выдавливал подпись логотипа в две строки —
+   подпись в строку, кнопка компактнее (зона нажатия 44px остаётся у ds-btn). */
+.pl2-tests-head .sb-name { white-space: nowrap; }
+@media (max-width: 360px) {
+  .pl2-tests-head { gap: 8px; }
+  .pl2-tests-head .pl2-cta { padding: 0 12px; font-size: 13px; }
 }

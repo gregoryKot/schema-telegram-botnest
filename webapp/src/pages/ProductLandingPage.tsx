@@ -16,7 +16,7 @@ import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
 import { ProductMobileMenu } from './landing/ProductMobileMenu';
 import { entryCta } from './landing/entryCta';
 import { FinalCorners, SignScene } from '../components/art/SceneParts';
-import { Talk } from '../components/art/PaperArtSigns';
+import { Pebbles } from '../components/art/PaperArt';
 import { glue } from './landing/typo';
 import { PaperBand } from './landing/PaperBand';
 import '../styles/product-landing.css';
@@ -93,13 +93,13 @@ export function ProductLandingPage() {
         </section>
       )}
 
-      {/* ── FAQ: полоса шалфея, слева знак разговора Talk на квадрате персика ── */}
+      {/* ── FAQ: полоса шалфея, слева камешки Pebbles (мысли, разложенные по местам) на квадрате персика ── */}
       <PaperBand id="faq">
         <div className="pl2-wrap pl2-faq-wrap">
           <div className="pl2-faq-side">
             <span className="pl2-eyebrow">Вопросы</span>
             <h2 className="pl2-h2">{HOME_HEADINGS.faq}</h2>
-            <div className="pl2-faq-art"><SignScene Art={Talk} /></div>
+            <div className="pl2-faq-art"><SignScene Art={Pebbles} /></div>
           </div>
           <FaqList />
         </div>

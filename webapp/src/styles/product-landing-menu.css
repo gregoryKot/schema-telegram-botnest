@@ -19,23 +19,34 @@
 .pp-paper.pl2-menu-link { background: oklch(0.93 0.045 var(--h)); }
 .pl2-menu-link {
   display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
-  min-width: 0; min-height: 120px; box-sizing: border-box;
+  min-width: 0; min-height: clamp(128px, 18dvh, 168px); box-sizing: border-box;
   padding: 16px 12px 12px 14px; font-family: var(--serif); font-size: clamp(16px, 5vw, 21px); line-height: 1.15;
   color: var(--text); text-decoration: none; hyphens: auto; overflow-wrap: anywhere;
 }
 .pp-paper.pl2-menu-link:active, .pp-paper.pl2-menu-link:focus-visible { background: oklch(0.885 0.045 var(--h)); }
-/* Низ плитки: знак секции слева, стрелка справа. */
+/* Низ плитки: знак секции слева, стрелка справа. Знак меряется высотой, как бейдж теста:
+   колесо (Wheel) и полоски (Strokes) весят вровень с широкими слоями и камешками. */
 .pl2-menu-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
-.pl2-menu-sign { display: flex; }
-.pl2-menu-sign .scn-sign { width: 52px; }
+.pl2-menu-sign { --sign-h: 46px; display: flex; }
+.pl2-menu-sign .scn-sign > .pp-art { width: auto; height: var(--sign-h); }
+.pl2-menu-sign .scn { width: auto; height: calc(var(--sign-h) + 8px); }
+.pl2-menu-sign > [data-brand-mark] { width: calc(var(--sign-h) + 4px); height: calc(var(--sign-h) + 4px); }
 .pl2-menu-arrow { font-family: var(--sans); font-size: 20px; line-height: 1; color: var(--accent); }
 .pl2-menu-cta { margin-top: auto; padding-top: 24px; }
 .pl2-menu-cta .ds-btn { width: 100%; }
 .pl2-menu-fine { margin: 14px 0 0; text-align: center; font-size: 12px; color: var(--text-sub); }
 
-/* Поля как у шапки лендинга (.pl2-header: 24px на ≥641): логотип и «×» не прыгают при открытии. */
+/* Поля как у шапки лендинга (.pl2-header: 24px на ≥641): логотип и «×» не прыгают при открытии.
+   Планшет: плитки в три колонки в колонке 760px, знаки крупнее; плитки и «Войти» одной
+   группой по центру высоты — на 900×1024 под двумя плитками в ряд оставалось ~260px пустоты. */
 @media (min-width: 641px) {
   .pl2-menu { padding-left: 24px; padding-right: 24px; }
+  .pl2-menu-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; width: 100%; max-width: 760px; margin: auto auto 0; }
+  .pl2-menu-link { min-height: 196px; padding: 20px 16px 16px 18px; font-size: 22px; }
+  .pl2-menu-sign { --sign-h: 68px; }
+  .pl2-menu-cta { justify-content: center; margin-top: 0; padding-top: 28px; }
+  .pl2-menu-cta .ds-btn { width: auto; min-width: 280px; }
+  .pl2-menu-fine { margin-bottom: auto; }
 }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .pl2-menu { padding-top: var(--safe-top); }

@@ -100,7 +100,8 @@ describe('ProductLandingPage — тот же текст, что получает
   // Сервер вкладывает home-landing.content.ts в #root главной (GEO.md). Если
   // страница перестанет брать текст оттуда, робот и человек разойдутся.
   const plain = (r: RichText) => r.map((p) => (typeof p === 'string' ? p : p.text)).join('');
-  const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+  // Неразрывные пробел и дефис (glue, landing/typo.ts) — те же слова, что у робота.
+  const norm = (s: string) => s.replace(/\u2011/g, '-').replace(/\s+/g, ' ').trim();
 
   it('каждая строка текста для робота есть на странице', () => {
     const { container } = renderPage();

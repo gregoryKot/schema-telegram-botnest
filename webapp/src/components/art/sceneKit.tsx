@@ -27,7 +27,7 @@ const PATCH = {
   bl: { x: 14, y: 172, s: 76, deg: -8 },
 } as const;
 
-type BlobShape = keyof typeof SHEET;
+type SheetShape = keyof typeof SHEET;
 
 interface SceneProps {
   /** Оттенок подложки и тени (oklch hue, как --h у pp-paper). */
@@ -36,7 +36,9 @@ interface SceneProps {
   patch?: number;
   patchAt?: keyof typeof PATCH;
   /** Форма листа-подложки; null — без листа (сцена лежит на цветной плитке). */
-  blob?: BlobShape | null;
+  sheet?: SheetShape | null;
+  /** Окно холста вместо 320×260 — только у сцены без листа: рамка по самим фигурам. */
+  box?: string;
   className?: string;
   children: ReactNode;
 }
@@ -52,13 +54,13 @@ function Sheet({ x, y, w, h, deg, rx, cls }: { x: number; y: number; w: number; 
   );
 }
 
-export function SceneSvg({ hue, patch, patchAt = 'tr', blob = 'a', className, children }: SceneProps) {
+export function SceneSvg({ hue, patch, patchAt = 'tr', sheet = 'a', box = SCENE_BOX, className, children }: SceneProps) {
   const style = { '--h': hue, '--h2': patch ?? hue } as CSSProperties;
   const p = PATCH[patchAt];
   return (
-    <svg className={`scn${className ? ` ${className}` : ''}`} viewBox={SCENE_BOX} style={style} aria-hidden="true" focusable="false">
+    <svg className={`scn${className ? ` ${className}` : ''}`} viewBox={sheet ? SCENE_BOX : box} style={style} aria-hidden="true" focusable="false">
       {patch !== undefined && <Sheet x={p.x} y={p.y} w={p.s} h={p.s} deg={p.deg} rx={14} cls="scn-patch" />}
-      {blob && <Sheet {...SHEET[blob]} rx={26} cls="scn-sheet" />}
+      {sheet && <Sheet {...SHEET[sheet]} rx={26} cls="scn-sheet" />}
       {children}
     </svg>
   );

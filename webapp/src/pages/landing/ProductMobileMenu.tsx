@@ -12,7 +12,7 @@ import '../../styles/product-landing-menu.css';
 // ≤960px, ссылки остаются достижимы отсюда. Язык бумаги, как весь лендинг: пункты —
 // плитки цветной бумаги; у секции с полосой — оттенка полосы (NAV_LINKS[].hue из BAND_HUE:
 // солома, небо, шалфей), не серийная nav.tsx личного сайта терапевта. Внизу плитки — знак
-// секции (NAV_LINKS[].Art, у «Приложения» — значок продукта) и стрелка.
+// секции (NAV_LINKS[].Art или .Scene, у «Приложения» — значок продукта) и стрелка.
 // Вид — styles/product-landing-menu.css. Fullscreen-оверлей ⇒ useHistorySheet.
 
 export function ProductMobileMenu({ onClose, entry = entryCta(false) }: { onClose: () => void; entry?: EntryCta }) {
@@ -47,7 +47,7 @@ export function ProductMobileMenu({ onClose, entry = entryCta(false) }: { onClos
           >
             {l.label}
             <span aria-hidden="true" className="pl2-menu-foot">
-              <span className="pl2-menu-sign">{l.Art ? <SignScene Art={l.Art} /> : <BrandMark size={40} />}</span>
+              <span className="pl2-menu-sign">{l.Scene ? <l.Scene hue={l.hue} /> : l.Art ? <SignScene Art={l.Art} /> : <BrandMark size={48} />}</span>
               <span className="pl2-menu-arrow">→</span>
             </span>
           </a>

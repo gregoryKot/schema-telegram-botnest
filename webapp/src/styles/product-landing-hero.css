@@ -73,18 +73,20 @@
   .pl2-hero .pl2-h1 { max-width: 12em; }
 }
 /* Телефон: узкий коллаж целиком в ширине контента, мокап своей шириной (без scale).
-   Вертикаль плотнее, а строка «Вход через Google…» — под коллажем: над сгибом 390×760
-   видна верхняя часть мокапа «Сегодня», а не только текст. */
+   Строка «Вход через Google…» — прямо под кнопками: это ответ на страх перед «Начать»,
+   под коллажем она читалась подписью к картинке. Над сгибом место для мокапа добрано
+   вертикалью: отступы у плашки, заголовка и над коллажем меньше (что осталось за сгибом —
+   docs/open/frontend-ux.md). */
 @media (max-width: 640px) {
   .pl2-hero-sec { padding: 80px 16px 40px; }
   .pl2-hero { display: flex; flex-direction: column; gap: 0; }
   .pl2-hero > .pl2-in:first-child { display: contents; }
-  .pl2-hero .pl2-pill { align-self: flex-start; margin-bottom: 18px; }
-  .pl2-hero .pl2-h1 { margin-bottom: 18px; }
-  .pl2-hero .pl2-lead { margin-bottom: 22px; font-size: 16px; line-height: 1.6; }
-  /* Мокап выше середины коллажа (44px от верха, а не по центру): лист и лента под ним те же. */
-  .pl2-hero-art { order: 1; align-items: flex-start; box-sizing: border-box; min-height: 520px; margin-top: 16px; padding-top: 44px; }
-  .pl2-hero .pl2-fine { order: 2; }
+  .pl2-hero .pl2-pill { align-self: flex-start; margin-bottom: 16px; }
+  .pl2-hero .pl2-h1 { margin-bottom: 16px; }
+  .pl2-hero .pl2-lead { margin-bottom: 20px; font-size: 16px; line-height: 1.6; }
+  .pl2-hero .pl2-fine { margin-top: 12px; }
+  /* Мокап выше середины коллажа (28px от верха, а не по центру): лист и лента под ним те же. */
+  .pl2-hero-art { order: 1; align-items: flex-start; box-sizing: border-box; min-height: 488px; margin-top: 4px; padding-top: 28px; }
   .pl2-hero-collage--wide { display: none; }
   .pl2-hero-collage--narrow { display: block; max-width: 358px; }
   .pl2-note-card--a { right: -14px; }
@@ -96,8 +98,11 @@
    мельче — «без рекламы» не висит отдельной строкой. */
 @media (max-width: 374px) {
   .pl2-phone { width: calc(100vw - 76px); }
-  /* Наклейка «Схема замечена» на узком мокапе закрывала «Сегодня» — выше, над краем. */
-  .pl2-note-card--a { top: -44px; }
+  /* Наклейка «Схема замечена» на узком мокапе закрывала «Сегодня» — выше, над краем. Чтобы
+     она не легла на строку «Вход через…», весь коллаж ниже (мокап и лист сдвигаются вместе):
+     зазор от строки до наклейки 14px, как на 375+. */
+  .pl2-hero-art { margin-top: 36px; }
+  .pl2-note-card--a { top: -46px; }
   .pl2-hero .pl2-h1 { font-size: 10.6vw; }
   .pl2-hero .pl2-pill { gap: 6px; padding: 6px 12px; font-size: 12px; }
 }

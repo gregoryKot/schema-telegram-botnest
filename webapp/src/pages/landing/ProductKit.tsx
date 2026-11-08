@@ -29,8 +29,8 @@ export function ArticleCard({ a, index = 0 }: { a: ArticleSummary; index?: numbe
         {a.heroImage ? <img src={a.heroImage} alt="" loading="lazy" decoding="async" /> : <SceneCover tone={index} hue={articleHue(index)} />}
       </div>
       <div className="pl2-article-body">
-        <p className="pl2-article-title">{a.title}</p>
-        <p className="pl2-article-desc">{a.description}</p>
+        <p className="pl2-article-title">{glue(a.title)}</p>
+        <p className="pl2-article-desc">{glue(a.description)}</p>
         <span className="pl2-article-meta">{new Date(a.date).toLocaleDateString('ru', { day: 'numeric', month: 'long' })} · {a.readMin} мин</span>
       </div>
     </a>

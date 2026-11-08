@@ -4,6 +4,7 @@ import type { QuizDto, QuizResultDto } from '../../../../shared/src/quiz/quizEng
 import { SceneNotice } from '../../components/art/LandingScenes';
 import { AUTHOR_SITE, trackPracticeClick } from '../landing/practiceLink';
 import { resultHues } from './quizLook';
+import { glue } from '../landing/typo';
 
 interface Props {
   quiz: QuizDto;
@@ -21,6 +22,7 @@ interface Props {
 // на панели оттенка теста. Лист сцены — соседний оттенок, квадратик — оттенок панели;
 // под панелью бумага «Что с этим делать» другого тона (resultHues), действия и мягкий
 // мост к практике (practice_link_click, place: quiz). Карточки плоские (.pp-paper).
+// Неразрывные пробелы и дефис — glue (typo.ts): «(116 вопросов)» не рвётся после «(116».
 export function QuizResult({ quiz, hue, result, copied, onShare, onRestart }: Props) {
   const { sceneHue, hintHue } = resultHues(hue);
   return (
@@ -50,15 +52,11 @@ export function QuizResult({ quiz, hue, result, copied, onShare, onRestart }: Pr
         </Link>
       </div>
       <p className="pl2-fine pl2-result-fine">
-        Это игра-наблюдение, а не диагноз. Если тема отозвалась — в
-        приложении есть большой тест схем (116 вопросов) и трекер
-        потребностей.
+        {glue('Это игра-наблюдение, а не диагноз. Если тема отозвалась — в приложении есть большой тест схем (116 вопросов) и трекер потребностей.')}
       </p>
       <div className="ds-card ds-card--row pl2-card pl2-result-bridge">
         <p className="pl2-card-text">
-          Хочется разобрать результат с живым специалистом? Автор проекта
-          работает в подходе схема-терапия, онлайн. Первая встреча — 15 минут,
-          бесплатно.{' '}
+          {glue('Хочется разобрать результат с живым специалистом? Автор проекта работает в подходе схема-терапия, онлайн. Первая встреча — 15 минут, бесплатно.')}{' '}
           <a href={AUTHOR_SITE} target="_blank" rel="noopener noreferrer" onClick={() => trackPracticeClick('quiz')} className="pl2-link pl2-nowrap">
             Познакомиться ↗
           </a>

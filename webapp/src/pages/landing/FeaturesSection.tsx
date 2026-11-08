@@ -20,7 +20,7 @@ export function FeaturesSection() {
         <div className="pl2-bento">
           {FEATURES.map(({ id, Art, Scene, hue, wide, title, text }) => (
             <article key={id} className={`pp-paper pl2-tile${wide ? ' pl2-tile--wide' : ''}`} style={{ '--h': hue } as CSSProperties}>
-              <div className="pl2-tile-art">{Scene ? <Scene hue={hue} /> : <SignScene Art={Art} />}</div>
+              <div className={`pl2-tile-art${Scene ? '' : ' pl2-tile-art--sign'}`}>{Scene ? <Scene hue={hue} /> : <SignScene Art={Art} />}</div>
               <div className="pl2-tile-body">
                 <h3 className="pl2-tile-title">{glue(title)}</h3>
                 <p className="pl2-tile-text">{glue(text)}</p>
