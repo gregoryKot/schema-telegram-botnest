@@ -12,7 +12,11 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
-import { ConceptualizationDto } from './conceptualization.dto';
+import {
+  CONCEPT_MODE_LINKS_MAX,
+  CONCEPT_SCHEMA_LINKS_MAX,
+  ConceptualizationDto,
+} from './conceptualization.dto';
 
 // Частичное сохранение концептуализации (POST /api/therapy/conceptualization/
 // :clientId, контракт — shared/src/therapy/conceptGraph/conceptPatch.ts).
@@ -35,7 +39,7 @@ export class ConceptModeLinksPatchDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(40)
+  @ArrayMaxSize(CONCEPT_MODE_LINKS_MAX)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   remove?: string[];
@@ -51,7 +55,7 @@ export class ConceptSchemaLinksPatchDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(20)
+  @ArrayMaxSize(CONCEPT_SCHEMA_LINKS_MAX)
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   remove?: string[];

@@ -6,6 +6,7 @@
 // перетирают друг другу то, чего каждый не видел.
 import type { PrismaService } from '../prisma/prisma.service';
 import { inSerializableTx } from '../prisma/serializable-retry';
+import { CONCEPT_MODE_LINKS_MAX } from './dto/conceptualization.dto';
 import type { TherapyRelationsService } from './therapy-relations.service';
 import {
   conceptView,
@@ -17,7 +18,7 @@ import { conceptStale } from './concept-save';
 
 // Потолки ConceptualizationDto: дописанное обязано проходить следующее полное
 // сохранение полей (modeLinks ≤ 40, схем у связи ≤ 20) — сверка в спеке.
-export const APPEND_MODE_LINKS_MAX = 40;
+export const APPEND_MODE_LINKS_MAX = CONCEPT_MODE_LINKS_MAX;
 export const APPEND_LINK_SCHEMAS_MAX = 20;
 
 export interface ConceptAppendInput {

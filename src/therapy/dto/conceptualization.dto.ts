@@ -13,6 +13,12 @@ import { Type } from 'class-transformer';
 import { ConceptModeLinkDto, ConceptSchemaLinkDto } from './concept-links.dto';
 import { CONCEPT_FIELD_TEXT_MAX as TEXT_MAX } from '../../utils/text-limits';
 
+// Сколько связей режимов и схем держит концептуализация — одно число на
+// полное тело, патч (concept-save.dto.ts, concept-save.ts) и дописывание
+// с холста (concept-append.ts), правило №4.
+export const CONCEPT_MODE_LINKS_MAX = 40;
+export const CONCEPT_SCHEMA_LINKS_MAX = 20;
+
 /**
  * DTO для карты концептуализации терапевта (аудит 2026-07, 2г / правило
  * №6 CLAUDE.md). Лимиты (текст — `CONCEPT_FIELD_TEXT_MAX`, его же `maxLength`
@@ -84,7 +90,7 @@ export class ConceptualizationDto {
   /** Связи режимов графической концептуализации (не больше 40 режимов). */
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(40)
+  @ArrayMaxSize(CONCEPT_MODE_LINKS_MAX)
   @ValidateNested({ each: true })
   @Type(() => ConceptModeLinkDto)
   modeLinks?: ConceptModeLinkDto[];
@@ -92,7 +98,7 @@ export class ConceptualizationDto {
   /** Тексты схем графической концептуализации (схем в форме Янга 18, запас до 20). */
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(20)
+  @ArrayMaxSize(CONCEPT_SCHEMA_LINKS_MAX)
   @ValidateNested({ each: true })
   @Type(() => ConceptSchemaLinkDto)
   schemaLinks?: ConceptSchemaLinkDto[];

@@ -9,6 +9,10 @@
 // и повторяет свои правки. Проверка и запись — одна Serializable-транзакция
 // с ретраем (как дописывание с холста, concept-append.ts): между проверкой
 // версии и записью чужая запись не втиснется.
+import {
+  CONCEPT_MODE_LINKS_MAX,
+  CONCEPT_SCHEMA_LINKS_MAX,
+} from './dto/conceptualization.dto';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import type { ClientConceptualization } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
@@ -25,8 +29,6 @@ import {
 export const CONCEPT_STALE_MESSAGE =
   'Концептуализацию изменили в другом окне — правки наложатся на свежую версию';
 export const conceptStale = () => new ConflictException(CONCEPT_STALE_MESSAGE);
-const MODE_LINKS_MAX = 40; // потолки полного тела ConceptualizationDto
-const SCHEMA_LINKS_MAX = 20;
 
 type Link = Record<string, unknown>;
 export interface LinksPatchInput {
@@ -94,7 +96,7 @@ function mergedFields(
       from,
       modeLinksPatch,
       'modeId',
-      MODE_LINKS_MAX,
+      CONCEPT_MODE_LINKS_MAX,
     );
   }
   if (schemaLinksPatch) {
@@ -103,7 +105,7 @@ function mergedFields(
       from,
       schemaLinksPatch,
       'schemaId',
-      SCHEMA_LINKS_MAX,
+      CONCEPT_SCHEMA_LINKS_MAX,
     );
   }
   return fields;
