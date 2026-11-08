@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 
 // getProfile агрегирует 7 источников параллельно (Promise.all) — приоритет
@@ -87,6 +88,46 @@ describe('ProfileService.getProfile — агрегация реальных да
     expect(profile.name).toBe('Аня');
     expect(profile.mySchemaIds).toEqual(['abandonment']);
     expect(profile.myModeIds).toEqual(['vulnerable_child']);
+  });
+
+  it('читаемые списки — unreadableLists пуст', async () => {
+    const prisma = makePrisma({
+      user: {
+        findUnique: jest.fn(() => ({
+          mySchemaIds: JSON.stringify(['abandonment']),
+          myModeIds: null,
+        })),
+      },
+    });
+    const profile = await new ProfileService(
+      prisma,
+      makeAnalytics(),
+    ).getProfile(1n);
+    expect(profile.unreadableLists).toEqual([]);
+  });
+
+  // docs/open/frontend-ux.md: нечитаемый список уходил `[]`, и сайт после
+  // перезагрузки затирал этим `[]` локальный выбор. Флаг отличает «не
+  // читается» от «пусто» — по нему клиент оставляет свою копию.
+  it('нечитаемый список: [] в данных и имя поля в unreadableLists', async () => {
+    const err = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const prisma = makePrisma({
+      user: {
+        findUnique: jest.fn(() => ({
+          // Шифротекст под чужим ключом: по форме шифр, расшифровать нельзя.
+          mySchemaIds: Buffer.alloc(48, 7).toString('base64'),
+          myModeIds: JSON.stringify(['vulnerable_child']),
+        })),
+      },
+    });
+    const profile = await new ProfileService(
+      prisma,
+      makeAnalytics(),
+    ).getProfile(1n);
+    expect(profile.mySchemaIds).toEqual([]);
+    expect(profile.myModeIds).toEqual(['vulnerable_child']);
+    expect(profile.unreadableLists).toEqual(['mySchemaIds']);
+    err.mockRestore();
   });
 
   it('стрик берётся из BotAnalyticsService.getStreakData, а не пересчитывается локально', async () => {

@@ -6,6 +6,7 @@ import {
   cacheMySchemaIds,
   cacheMyModeIds,
   cacheMyPatternsFromProfile,
+  trustedProfileLists,
   MY_SCHEMA_IDS_KEY,
   MY_MODE_IDS_KEY,
   shouldShowChildhoodWheel,
@@ -49,5 +50,39 @@ describe('cacheMyPatternsFromProfile — профиль как источник 
       'abandonment',
     ]);
     expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBeNull();
+  });
+  // Нечитаемый на сервере список приходит `[]` с именем в unreadableLists:
+  // стереть им локальную копию — потерять единственный живой выбор (запись
+  // поверх сервер отбивает 409, docs/open/frontend-ux.md).
+  it('список из unreadableLists копию не стирает; читаемый соседний — пишется', () => {
+    cacheMySchemaIds(['abandonment']);
+    cacheMyModeIds(['critic']);
+    cacheMyPatternsFromProfile({
+      mySchemaIds: [],
+      myModeIds: [],
+      unreadableLists: ['mySchemaIds'],
+    });
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY) ?? '')).toEqual([
+      'abandonment',
+    ]);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBe('[]');
+  });
+});
+
+describe('trustedProfileLists', () => {
+  it('отдаёт только читаемые списки строк', () => {
+    expect(
+      trustedProfileLists({
+        mySchemaIds: ['a'],
+        myModeIds: [],
+        unreadableLists: ['myModeIds'],
+      }),
+    ).toEqual({ mySchemaIds: ['a'], myModeIds: undefined });
+  });
+  it('старый сервер без unreadableLists — оба списка как есть', () => {
+    expect(trustedProfileLists({ mySchemaIds: [], myModeIds: ['m'] })).toEqual({
+      mySchemaIds: [],
+      myModeIds: ['m'],
+    });
   });
 });

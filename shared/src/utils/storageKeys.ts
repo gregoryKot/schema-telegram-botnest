@@ -21,16 +21,33 @@ export function cacheMyModeIds(ids: string[]): void {
 }
 const isStringList = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every((x) => typeof x === 'string');
-/** Профиль с сервера — источник правды целиком, пустой список тоже: убрал всё
- * на другом устройстве — здесь старый список не переживает загрузку (класс
- * «кэш пережил источник правды», #939; до этого кэш писался только при
- * непустом списке). Поля нет (ответ не той формы) — кэш не трогаем. */
-export function cacheMyPatternsFromProfile(p: {
+type MyLists = {
   mySchemaIds?: unknown;
   myModeIds?: unknown;
-}): void {
-  if (isStringList(p.mySchemaIds)) cacheMySchemaIds(p.mySchemaIds);
-  if (isStringList(p.myModeIds)) cacheMyModeIds(p.myModeIds);
+  unreadableLists?: unknown;
+};
+/** Списки профиля, которым можно верить, — источник правды целиком, пустой
+ * список тоже: убрал всё на другом устройстве — здесь старый список не
+ * переживает загрузку (класс «кэш пережил источник правды», #939). Не верим
+ * двум случаям: поля нет (ответ не той формы) и список в `unreadableLists` —
+ * он на сервере не расшифровался и пришёл `[]`, это «не прочиталось», а не
+ * «пусто»; запись поверх сервер отбивает 409, так что локальный выбор —
+ * единственная живая копия. */
+export function trustedProfileLists(p: MyLists): {
+  mySchemaIds?: string[];
+  myModeIds?: string[];
+} {
+  const bad = Array.isArray(p.unreadableLists) ? p.unreadableLists : [];
+  const pick = (k: 'mySchemaIds' | 'myModeIds') => {
+    const v = p[k];
+    return isStringList(v) && !bad.includes(k) ? v : undefined;
+  };
+  return { mySchemaIds: pick('mySchemaIds'), myModeIds: pick('myModeIds') };
+}
+export function cacheMyPatternsFromProfile(p: MyLists): void {
+  const { mySchemaIds, myModeIds } = trustedProfileLists(p);
+  if (mySchemaIds) cacheMySchemaIds(mySchemaIds);
+  if (myModeIds) cacheMyModeIds(myModeIds);
 }
 export const CHILDHOOD_DONE_KEY = 'childhood_wheel_done';
 // Последняя открытая вкладка экрана «Паттерны» (Схемы/Режимы/

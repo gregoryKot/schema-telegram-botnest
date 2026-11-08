@@ -75,6 +75,7 @@ const PROFILE = {
   },
   mySchemaIds: [],
   myModeIds: [],
+  unreadableLists: [],
 };
 
 // GET /api/settings — умолчания src/api/settings.controller.ts, кроме addressForm:
