@@ -1550,7 +1550,7 @@
   "test/perf/seed-notifications.ts": 56,
   "test/perf/seed-profile.ts": 189,
   "test/perf/seed-sql.ts": 14,
-  "test/perf/seed.ts": 294,
+  "test/perf/seed.ts": 295,
   "test/perf/worst-case-ids.ts": 58,
   "test/setup-e2e.ts": 5,
   "webapp/eslint.config.js": 57,

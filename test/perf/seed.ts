@@ -161,9 +161,7 @@ FROM ${series(P.userSafePlace)}`,
     // Клиент — не терапевт; 200 человек получаются клиентами двух терапевтов
     // (50 × 200 = 10 000 пар на 9 800 клиентов) — допустимо: unique по code и активной паре (терапевт, клиент).
     TherapyRelation: [
-      // urlCode задан явно: его DEFAULT — случайные 8 символов (~4·10⁹ значений), на
-      // 10 000+ строк ~1% прогонов ловил дубль и ронял perf (#1030); синтетика
-      // детерминирована (правило №28).
+      // urlCode явно: случайный DEFAULT на 10 000 строк ловил дубли (#1030); синтетика детерминирована (№28).
       `INSERT INTO "TherapyRelation"("code","urlCode","therapistId","clientId","status","createdAt","meetingDays","nextSession","therapyStartDate")
 SELECT 'perf-a-' || t || '-' || k, 'perf-a-' || t || '-' || k, ${B} + t, ${B} + ${T} + 1 + ((t - 1) * ${P.clientsPerTherapist} + k) % ${U - T},
   'active'::"RelationStatus", ${a} - make_interval(days => ((t * 31 + k * 17) % 300)::int),
