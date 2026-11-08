@@ -4,7 +4,7 @@
 // не читается, а --on-accent там тёмный (shared/src/theme/tokens.css). Свип по
 // образцу #516 (--on-accent-red): DESIGN_AUDIT_2026-08, «Что по цвету открыто», п. 1.
 // Сверка: ни одно CSS-правило сайта с заливкой ровно var(--accent) не красит
-// текст белым литералом.
+// текст белым литералом; то же для инлайн-объектов стиля в .ts/.tsx (webapp/src и shared/src).
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -38,6 +38,24 @@ function textOnHot(css: string): string[] {
   return out;
 }
 
+/** Инлайн-объекты стиля .ts/.tsx: в одном объекте (без вложенных скобок) заливка var(--accent), в том числе
+ *  веткой тернарника, и цвет текста — белый литерал. Возвращает начало объекта для сообщения. */
+function whiteOnAccentInline(src: string): string[] {
+  const out: string[] = [];
+  const clean = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  for (const m of clean.matchAll(/\{([^{}]*)\}/g)) {
+    const body = m[1];
+    if (!/background(Color)?:[^,;]*['"`]var\(--accent\)['"`]/.test(body)) continue;
+    if (/(^|[\s,{])color:[^,;]*['"`](#fff|#ffffff|white)['"`]/i.test(body)) out.push(body.trim().slice(0, 80));
+  }
+  return out;
+}
+
+const tsxFiles = [SRC, join(SRC, '..', '..', 'shared', 'src')].flatMap((root) =>
+  (readdirSync(root, { recursive: true }) as string[])
+    .filter((f) => /\.tsx?$/.test(f) && !f.endsWith('.d.ts') && !f.includes('.test.'))
+    .map((f) => join(root, f)));
+
 describe('белый литерал на заливке --accent', () => {
   it.each(files)('%s: текст на акценте — var(--on-accent)', (f) => {
     expect(whiteOnAccent(readFileSync(join(SRC, f), 'utf8'))).toEqual([]);
@@ -46,6 +64,20 @@ describe('белый литерал на заливке --accent', () => {
   it('контрольный образец: сверка видит белый на акценте', () => {
     expect(whiteOnAccent('.x { background: var(--accent); color: #fff; }')).toEqual(['.x']);
     expect(whiteOnAccent('.y { background: var(--accent-hot); color: #fff; }')).toEqual([]);
+  });
+
+  it('инлайн-стили .ts/.tsx: на заливке var(--accent) текст не белый литерал', () => {
+    expect(tsxFiles.length).toBeGreaterThan(100);
+    const bad = tsxFiles.flatMap((f) => whiteOnAccentInline(readFileSync(f, 'utf8')).map((b) => `${f}: ${b}`));
+    expect(bad).toEqual([]);
+  });
+
+  it('контрольный образец: инлайн-сверка видит белый на акценте, и только его', () => {
+    expect(whiteOnAccentInline(`<b style={{ background: 'var(--accent)', color: '#fff' }} />`)).toHaveLength(1);
+    expect(whiteOnAccentInline(`const s = { background: on ? 'var(--accent)' : 'none', color: on ? 'white' : 'var(--text)' };`)).toHaveLength(1);
+    expect(whiteOnAccentInline(`<b style={{ background: 'var(--accent)', color: 'var(--on-accent)' }} />`)).toEqual([]);
+    expect(whiteOnAccentInline(`<b style={{ background: 'var(--accent-soft)', color: '#fff' }} />`)).toEqual([]);
+    expect(whiteOnAccentInline(`<b style={{ background: 'var(--accent)', borderColor: '#fff' }} />`)).toEqual([]);
   });
 });
 
