@@ -93,10 +93,19 @@ export async function seedPerfHorizon(
       all.filter((s) => s.table !== 'User' && !AFTER.has(s.table)),
       all.filter((s) => AFTER.has(s.table)),
     ];
+    // Вставки одной таблицы — по очереди, параллельны только таблицы: две
+    // вставки в Rating вперемешку раскладывали строки по страницам по-разному
+    // от прогона к прогону, и history-365d прыгал 378 ↔ 1 465 страниц (#1049).
     for (const wave of waves) {
-      await inParallel(wave, async ({ table, statement }) => {
-        const res = await pool.query(statement);
-        counts[table] = (counts[table] ?? 0) + (res.rowCount ?? 0);
+      const byTable = new Map<string, string[]>();
+      for (const { table, statement } of wave) {
+        byTable.set(table, [...(byTable.get(table) ?? []), statement]);
+      }
+      await inParallel([...byTable], async ([table, statements]) => {
+        for (const statement of statements) {
+          const res = await pool.query(statement);
+          counts[table] = (counts[table] ?? 0) + (res.rowCount ?? 0);
+        }
       });
     }
     // Счётчики строк (n_live_tup) доезжают из соединений с задержкой и, придя

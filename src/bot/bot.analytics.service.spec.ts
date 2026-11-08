@@ -367,6 +367,33 @@ describe('BotAnalyticsService', () => {
       const svc = new BotAnalyticsService(makePrisma());
       expect(await svc.getHistoryRatings(1, 5)).toEqual([]);
     });
+
+    // Замер perf #1049: на `date IN (365)` план прыгал между индексами
+    // (378 ↔ 1 476 страниц) — окно спрашивается диапазоном, строки вне окна
+    // отсеиваются.
+    it('asks the window as a date range (oldest..today) and drops rows outside the days', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(1), needId: 'attachment', value: 5 },
+        { date: d(9), needId: 'attachment', value: 1 },
+      ]);
+      const history = await new BotAnalyticsService(prisma).getHistoryRatings(
+        1,
+        3,
+      );
+      expect(prisma.rating.findMany).toHaveBeenCalledWith({
+        where: { userId: 1, date: { gte: d(2), lte: d(0) } },
+      });
+      expect(history.map((h) => h.date)).toEqual([d(1)]);
+    });
+
+    it('zero-day window asks nothing', async () => {
+      const prisma = makePrisma();
+      expect(
+        await new BotAnalyticsService(prisma).getHistoryRatings(1, 0),
+      ).toEqual([]);
+      expect(prisma.rating.findMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('getTotalDaysFilled', () => {

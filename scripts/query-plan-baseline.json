@@ -13,15 +13,15 @@
       "msCeiling": 500
     },
     "history-30d": {
-      "blocks": 122,
+      "blocks": 37,
       "msCeiling": 500
     },
     "history-365d": {
-      "blocks": 378,
+      "blocks": 392,
       "msCeiling": 500
     },
     "notify-queue-tick": {
-      "blocks": 2645,
+      "blocks": 3461,
       "msCeiling": 1500
     },
     "proactive-budget": {
@@ -29,15 +29,15 @@
       "msCeiling": 500
     },
     "stats-report": {
-      "blocks": 78261,
+      "blocks": 68452,
       "msCeiling": 10000
     },
     "therapist-clients": {
-      "blocks": 2814,
+      "blocks": 2815,
       "msCeiling": 1500
     },
     "therapist-clients-long-streaks": {
-      "blocks": 4483,
+      "blocks": 3813,
       "msCeiling": 1500
     }
   },
