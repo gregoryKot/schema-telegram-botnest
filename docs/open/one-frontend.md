@@ -81,10 +81,8 @@
   заметит — ровно форма находки с чек-ином, живи он в `SchemaInfoSheet.tsx`.
 - Потребители рамок (`ExScreen`, `BottomSheetShell`, `Dialog`) не проверяются:
   рамки в бейслайне, а в файле-потребителе своего `position: fixed` нет. Без
-  хука их 15 — в основном шаги потоков с хуком у родителя (`caseFlow/*Screen`,
-  `diary/ModeEntry*`), но и `NeedAdviceModal.tsx`: шторка «О советах» поверх
-  `NeedTodaySheet`/`NeedHistorySheet` с локальным `onClose` — «Назад» закрывает
-  лист под ней (CLAUDE.md такие мини-модалки допускает). Новое упражнение на
+  хука их 14 — в основном шаги потоков с хуком у родителя (`caseFlow/*Screen`,
+  `diary/ModeEntry*`); шторка «О советах» (`NeedAdviceModal.tsx`) хук получила. Новое упражнение на
   `ExScreen` без хука гейт пропустит; считать `<ExScreen`/`<BottomSheetShell`
   оверлеем — решение с ~15 записями бейслайна.
 - Долг, записанный в бейслайн честно: `Celebration.tsx` (`webapp/src/components/`) закрывается
