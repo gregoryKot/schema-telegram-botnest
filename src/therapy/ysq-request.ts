@@ -1,4 +1,6 @@
+import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { inSerializableTx } from '../prisma/serializable-retry';
 import { NotificationService } from '../notification/notification.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt } from '../utils/crypto';
@@ -19,14 +21,19 @@ import { encrypt } from '../utils/crypto';
 //
 // Сообщение в личку дедуплицируется по клиенту: пока предыдущее не отправлено,
 // второе не ставится (аудит 2026-10: на каждый тап уходило новое DM).
-// Остаточную гонку двух параллельных запросов (оба видят «пусто») сужают
-// защита кнопки на фронте и лимит на маршруте со счётчиком в Postgres
-// (docs/open/therapy.md, «Запрос YSQ»).
+// «Проверка + вставка» задания — одна Serializable-транзакция с ретраем
+// (`inSerializableTx`): из двух параллельных запросов второй получает P2034,
+// перечитывает и видит задание первого — второго задания и DM нет.
 
 /** UserTask.type задания «пройти тест на схемы». */
 export const YSQ_TASK_TYPE = 'ysq_test';
 const YSQ_TASK_TEXT = 'Пройти тест на схемы';
 const NOTIFY_TYPE = 'ysq_requested';
+const pair = (therapistId: bigint, clientId: bigint) => ({
+  userId: clientId,
+  assignedBy: therapistId,
+  type: YSQ_TASK_TYPE,
+});
 
 /** Открытое задание YSQ этого терапевта этому клиенту — запрос висит. */
 export async function isOwnYsqRequestPending(
@@ -35,12 +42,7 @@ export async function isOwnYsqRequestPending(
   clientId: bigint,
 ): Promise<boolean> {
   const open = await prisma.userTask.count({
-    where: {
-      userId: clientId,
-      assignedBy: therapistId,
-      type: YSQ_TASK_TYPE,
-      done: null,
-    },
+    where: { ...pair(therapistId, clientId), done: null },
   });
   return open > 0;
 }
@@ -58,15 +60,19 @@ export async function requestYsq(
 ): Promise<void> {
   await relations.assertHasClient(therapistId, clientId);
   if (clientId < 0n) return; // Офлайн-клиент: аккаунта нет, тест пройти негде
-  if (await isOwnYsqRequestPending(prisma, therapistId, clientId)) return;
-  await prisma.userTask.create({
-    data: {
-      userId: clientId,
-      assignedBy: therapistId,
-      type: YSQ_TASK_TYPE,
-      text: encrypt(YSQ_TASK_TEXT) ?? YSQ_TASK_TEXT,
+  const text = encrypt(YSQ_TASK_TEXT) ?? YSQ_TASK_TEXT;
+  const created = await inSerializableTx(
+    prisma,
+    async (tx) => {
+      if (await isOwnYsqRequestPending(tx, therapistId, clientId)) return false;
+      await tx.userTask.create({
+        data: { ...pair(therapistId, clientId), text },
+      });
+      return true;
     },
-  });
+    () => new ConflictException('Запрос уже отправляется из другого окна'),
+  );
+  if (!created) return;
   if (await notifications.hasPending(clientId, NOTIFY_TYPE)) return;
   const therapist = await prisma.user.findUnique({
     where: { id: therapistId },

@@ -91,14 +91,6 @@
   очереди, клиент получит два задания, но одно сообщение с именем первого:
   payload зашифрован, по имени терапевта очередь не фильтрует. Второму ответ тот
   же `{ ok: true }`: отличающийся ответ выдал бы ему, что у клиента есть другой терапевт.
-- **Гонка двух параллельных запросов не закрыта атомарно.** Оба видят «открытого
-  задания нет» и создают по строке `UserTask`. Закрыть можно `Serializable`-
-  транзакцией «проверка + вставка» с ретраем (образец `src/auth/unlink-provider.ts`)
-  или частичным уникальным индексом на `UserTask (userId, assignedBy) WHERE
-  type = 'ysq_test' AND done IS NULL` — свойство Postgres, доказывается только
-  живым спеком в джобе `migrations`. Ради ручки, которую терапевт жмёт руками, не
-  делали; окно сужают защита кнопки (`shared/src/therapy/useYsqRequest.ts`) и
-  лимит 30 в час со счётчиком в Postgres (`@PersistentThrottleLimit`, правило №5).
 - **Сценария в `test/perf/scenarios.ts` для `getClientData` нет.** Признак
   `ysqRequestPending` — `count` по `UserTask (userId, assignedBy, type, done)`,
   под него есть индекс `@@index([userId, done, type])`. Сценарий

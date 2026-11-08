@@ -23,6 +23,7 @@ const C = 1_000_000_000_480_002n; // клиент с входом через с�
 const A = 1_000_000_000_480_003n; // напарник, заполняет трекер
 const B = 1_000_000_000_480_004n; // напарник-адресат
 const ALL = [T, C, A, B];
+const itOnRealDb = process.env.E2E_REAL_DB === '1' ? it : it.skip;
 jest.setTimeout(60_000);
 
 describe('e2e: уведомление от другого человека оставляет след на сайте (класс 20)', () => {
@@ -100,6 +101,28 @@ describe('e2e: уведомление от другого человека ос�
       ]),
     ).toContainEqual(['ysq_test', Number(T)]);
   });
+
+  // docs/open/therapy.md «Гонка двух параллельных запросов»: оба запроса видели
+  // «открытого задания нет» и создавали по строке. «Проверка + вставка» идут
+  // Serializable-транзакцией с ретраем (src/prisma/serializable-retry.ts) —
+  // свойство Postgres SSI и маппинга 40001 → P2034 драйвером: фейк транзакций
+  // не изолирует, поэтому только на живой базе.
+  itOnRealDb(
+    'два одновременных запроса теста — одно задание, оба ответа 2xx',
+    async () => {
+      await prisma.userTask.deleteMany({
+        where: { userId: C, assignedBy: T, type: 'ysq_test' },
+      });
+      const url = `/api/therapy/request-ysq/${String(C)}`;
+      const [a, b] = await Promise.all([act(T).post(url), act(T).post(url)]);
+      expect([a.status, b.status].every((s) => s < 300)).toBe(true);
+      expect(
+        await prisma.userTask.count({
+          where: { userId: C, assignedBy: T, type: 'ysq_test', done: null },
+        }),
+      ).toBe(1);
+    },
+  );
 
   it("'pair_activity': напарник заполнил трекер — его день виден в /api/pair", async () => {
     expect(await queued(B, 'pair_activity')).toBe(0);
