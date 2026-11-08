@@ -34,6 +34,10 @@
   "src/bot/account.delete.ts": {
     "spec": "test/raw-sql-live-infra.e2e-spec.ts"
   },
+  "src/bot/admin-stats.blocks.ts": {
+    "spec": "test/raw-sql-live-admin-stats.e2e-spec.ts",
+    "via": "src/bot/bot.admin-stats.service.ts"
+  },
   "src/bot/auth-health-metrics.service.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"

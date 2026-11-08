@@ -44,6 +44,8 @@ import {
 import { finishConfirmEffects, rerunEffects } from './booking.confirm-effects';
 import type { BookingAccount, CreateBookingDto } from './booking.types';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { CalDavService } from './caldav.service';
+import { calendarGuard } from './booking-calendar-guard';
 
 export type { CreateBookingDto };
 export { PaymentAmountMismatchError } from './booking-amount';
@@ -52,6 +54,7 @@ export { PaymentAmountMismatchError } from './booking-amount';
 export class BookingService {
   private readonly logger = new Logger(BookingService.name);
   private readonly siteUrl: string;
+  private readonly calendar: ReturnType<typeof calendarGuard>;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -62,7 +65,9 @@ export class BookingService {
     config: ConfigService,
     private readonly cronLeader: CronLeaderService,
     @Optional() private readonly analytics?: AnalyticsService,
+    @Optional() calDav?: CalDavService,
   ) {
+    this.calendar = calendarGuard(config, calDav);
     this.siteUrl = (
       config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
     ).replace(/\/$/, '');
@@ -125,6 +130,7 @@ export class BookingService {
         notify: this.notify,
         logger: this.logger,
         analytics: this.analytics,
+        calendar: this.calendar,
       },
       data,
       dto,
@@ -139,6 +145,7 @@ export class BookingService {
         robokassa: this.robokassa,
         siteUrl: this.siteUrl,
         schema: BOOKING_SCHEMA,
+        logger: this.logger,
       },
       booking,
       {

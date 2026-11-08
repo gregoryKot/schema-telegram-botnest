@@ -7,6 +7,7 @@ import { readBusy } from './caldav-busy-read';
 import { calDavHealth } from './caldav-health';
 import { onEmptyCalendars } from './caldav-empty-guard';
 import { BusyCache } from './caldav-busy-cache';
+import { busySkips, sumSkips } from './caldav-parse-skips';
 
 /**
  * One-way push of confirmed bookings into the therapist's Apple Calendar via CalDAV.
@@ -163,6 +164,7 @@ export class CalDavService {
       if (recovered) this.logger.error(recovered);
     }
     for (const r of results) if (r.ok) all.push(...r.intervals);
+    busySkips.note(sumSkips(results)); // непонятые события — в пробу и /stats
     return all;
   }
 

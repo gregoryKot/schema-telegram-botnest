@@ -1,6 +1,7 @@
 import { Probe, ProbeResult } from './types';
 import { telegramProbe } from './probe-telegram';
 import { pollingStatus } from './polling-status';
+import { withPendingUpdates } from './probe-telegram-pending';
 
 /** Сколько поллингу дают подняться после старта (или вернуться после 409). */
 export const POLLING_GRACE_MS = 120_000;
@@ -10,9 +11,8 @@ export const POLLING_GRACE_MS = 120_000;
  * (`telegramProbe`). Инцидент-класс backend#12: 409 на getUpdates убивал
  * поллинг молча — Nest жив, /health зелёный, уведомления уходят, а на /start и
  * кнопки бот не отвечает до следующего деплоя.
- *
- * Не поднялся за 2 минуты — авария. Нет BOT_TOKEN — бот выключен осознанно,
- * не авария (как в `telegramProbe`).
+ * Не поднялся за 2 минуты — авария; нет BOT_TOKEN — выключен осознанно, не
+ * авария (как в `telegramProbe`). Сколько апдейтов ждёт — probe-telegram-pending.
  */
 export function telegramPollingProbe(
   env: NodeJS.ProcessEnv = process.env,
@@ -52,7 +52,7 @@ export function telegramPollingProbe(
   }
 }
 
-/** Обе пробы бота: отвечает API (getMe) и принимает сообщения (getUpdates). */
+/** Обе пробы бота: отвечает API (getMe), принимает сообщения (getUpdates). */
 export function telegramProbes(): Probe[] {
-  return [telegramProbe(), telegramPollingProbe()];
+  return [telegramProbe(), withPendingUpdates(telegramPollingProbe())];
 }

@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramService } from './telegram.service';
 import { makeFakeBot, runAction } from './telegram.test-helpers.spec';
+import { createFakeTransaction } from '../test-support/fake-prisma.spec-helper';
 
 type Row = {
   id: number;
@@ -108,9 +109,14 @@ describe('snooze → рестарт: отложенное напоминание
 
   it('нажал в 14:30 МСК, деплой в 14:45, в 15:31 pre_reminder на месте и due', async () => {
     const table = makeTable();
-    const notifications = new NotificationService({
+    // Отложенное ставится под advisory-локом в транзакции (replace-pending.ts):
+    // в памяти ждать некого, транзакция — сам «клиент».
+    const prisma: Record<string, unknown> = {
       scheduledNotification: table,
-    } as never);
+      $executeRaw: jest.fn(async () => 1),
+    };
+    prisma.$transaction = createFakeTransaction(prisma);
+    const notifications = new NotificationService(prisma as never);
     const first = bootProcess(notifications);
     await flush();
 
