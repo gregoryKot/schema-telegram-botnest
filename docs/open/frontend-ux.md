@@ -154,14 +154,10 @@
 - **Нет теста на синтаксис CSS целиком:** при волне 3 `vite build` (lightningcss) упал на осиротевшем теле правила `.st-hour` в `sheet-settings.css`, а vitest (366 кейсов стилей) был зелёным — спеки читают css регэкспами. Образец: сборка (CI) ловит, локально — `vite build` перед пушем.
 
 **QA клиента 2026-11 — трекер, история, тест на схемы: увиденное попутно и не тронутое**
-- **Индекс дня с точкой вне общего `fmtIndex`** (`shared/src/needs/dayIndex.ts`, «6,4», нет
-  данных — «—»): карточка партнёра
-  `webapp/src/components/settingsSheet/PartnerCard.tsx:39`;
-  кабинет терапевта `webapp/src/components/therapist/ClientIndexCard.tsx:20`,
-  `webapp/src/sections/TherapistTodayLists.tsx:44`;
-  картинки шаринга `shared/src/share/cards/dayCard.ts:27,87`, `weeklyCard.ts:44,52,76,79`. Не тронуто:
-  сайдбар, настройки и кабинет — области других агентов той же волны QA; картинки — отдельное решение
-  (на холсте запятая меняет ширину строк, нужна сверка макета).
+- **Средние оценок с точкой вне `fmtIndex`/`fmtIndexDelta`** (`shared/src/needs/dayIndex.ts`): история
+  потребности `webapp/src/components/NeedHistorySheet.tsx` («+0.4 к предыдущей неделе», «сейчас 6.2»),
+  `webapp/src/sections/profile/PatternsCard.tsx` (среднее схемы), текст шаринга `shared/src/journey/journeyShare.ts`.
+  Индекс дня на экранах и картинках шаринга переведён (2026-11-08); эти — не индекс, в ту запись не входили.
 
 **Клавиатура iOS и fixed-панели — проверки на устройстве нет** (инцидент 2026-11-05, PR #956).
 - `webapp/src/hooks/keyboardSettled.ts` ждёт `visualViewport.resize` и дёргает нулевую прокрутку, чтобы WebKit пересчитал
