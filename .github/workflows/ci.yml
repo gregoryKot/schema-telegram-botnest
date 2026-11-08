@@ -256,6 +256,10 @@ jobs:
       # сессию), у правил .claude/rules есть paths, карта кода называет все
       # каталоги и гейты, пути и ссылки живы. Бейслайна и --update нет.
       - run: node scripts/check-agent-docs.mjs
+      # Пути в обратных кавычках CLAUDE.md, docs/SECURITY.md, docs/README.md и
+      # .claude/rules/*.md существуют в дереве (аудит 2026-10: битые указатели
+      # CLAUDE.md чинили руками, #643). Исключения — scripts/doc-refs-baseline.json.
+      - run: node scripts/check-doc-refs.mjs
       # Файл, выделенный из файла мутационной зоны, не выпадает из `mutate`
       # молча (nightly golden-auth, #614: redact() ушёл из security-log.service
       # в security-log-redact.ts и перестал измеряться). Классификация в

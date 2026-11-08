@@ -103,7 +103,7 @@
 - Удаление и обновление — `deleteMany` / `updateMany` со скоупом по владельцу:
   `where: { id, userId }`. **Никогда** `delete({ where: { id } })` без `userId`.
 - Терапевт ↔ клиент: каждый аксессор данных клиента **первой строкой** вызывает
-  `assertRelation(therapistId, clientId)` (`src/therapy/therapy.service.ts`).
+  `assertRelation(therapistId, clientId)` (`src/therapy/therapy-relations.service.ts`).
   Роль `THERAPIST` сама по себе не даёт доступа к произвольному клиенту — нужна
   активная `TherapyRelation`.
 - Виртуальные клиенты имеют отрицательный `id` (`-relation.id`) — `assertRelation`
@@ -417,7 +417,7 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   `check-cron-leader`) — запись прежнего «нет leader-election» устарела (аудит
   2026-11). Остаток риска — exempt-кроны из `scripts/cron-leader-baseline.json`,
   каждый с причиной идемпотентности.
-- **Google ID-token** проверяется локально по JWKS (`src/auth/google-id-token.ts`)
+- **Google ID-token** проверяется локально по JWKS (`src/auth/providers/google-id-token.ts`)
   с офлайн-фолбэком для redirect-потока (токен получен по TLS от Google); для
   One Tap офлайн-путь запрещён (`google-one-tap-nonce.ts`). Запись про
   `tokeninfo` устарела (аудит 2026-11).

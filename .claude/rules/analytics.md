@@ -43,7 +43,7 @@ D1/D7/D30, а не ощущениями.
   Пиши так, чтобы понял ребёнок; англицизмы/жаргон — в подписи словами.
 
 Общий фронт-код события (трекинг-хук, share-хелпер) — сразу в `shared/`
-(правило №3/№11): образцы — `shared/src/analytics/useCrisisCardTracking`,
+(правило №3/№11): образцы — `shared/src/analytics/useCrisisCardTracking.ts`,
 `shared/src/share/useShareCard.ts`.
 
 Механизм принуждения (ревью): «новое событие видно в `/stats`? понятно без
