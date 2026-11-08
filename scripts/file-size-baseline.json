@@ -1639,7 +1639,7 @@
   "webapp/src/api.ts": 253,
   "webapp/src/api.types.ts": 178,
   "webapp/src/apiClient.ts": 123,
-  "webapp/src/App.tsx": 154,
+  "webapp/src/App.tsx": 165,
   "webapp/src/auth/authContext.ts": 18,
   "webapp/src/auth/AuthProvider.tsx": 130,
   "webapp/src/auth/clearLocalData.ts": 3,

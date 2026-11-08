@@ -2,11 +2,11 @@
 // App.tsx — маршрутизация корневого компонента: два набора роутов (личный
 // сайт kotlarewski vs. продуктовый app-домен, определяется по hostname),
 // защита приватных маршрутов через RequireAuth, страница ошибки входа,
-// Метрика-трекер и мост токена в api-клиент. Каждый сценарий пересоздаёт
-// модуль (`vi.resetModules`), потому что isPersonalSite и сам router строятся
-// один раз при импорте — единственный способ переключить домен между тестами.
+// Метрика-трекер и мост токена в api-клиент. Домен переключается подменой
+// адреса: роутер App.tsx кэшируется по объекту location (модуль один).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import App from './App';
 
 vi.mock('../../shared/src/host', () => ({
   getHost: () => ({ sessionExchange: () => null }),
@@ -38,10 +38,11 @@ function stubLocation(overrides: Partial<Record<'hostname' | 'pathname' | 'searc
   });
 }
 
+/** App под текущий (подменённый) адрес: роутер App.tsx кэширует по объекту location,
+ *  а stubLocation каждый раз даёт новый. Раньше — vi.resetModules и холодный import всего
+ *  графа на каждый тест (домен считался при импорте), под нагрузкой это упиралось в 10 с. */
 async function loadApp() {
-  vi.resetModules();
-  const mod = await import('./App');
-  return mod.default;
+  return App;
 }
 
 beforeEach(() => {
@@ -70,7 +71,6 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
-  vi.resetModules();
 });
 
 describe('App — публичные маршруты app-домена', () => {
@@ -131,7 +131,9 @@ describe('App — личный сайт (домен kotlarewski)', () => {
     document.head.appendChild(link);
     try {
       stubLocation({ hostname: 'kotlarewski.example', pathname: '/', href: 'http://kotlarewski.example/' });
-      await loadApp();
+      // Оформление визитки ставится при первом рендере (вместе с роутером), не при импорте.
+      const App = await loadApp();
+      render(<App />);
       expect(link.href).toContain('favicon-personal-192.png');
       expect(link.type).toBe('image/png');
     } finally {
@@ -310,20 +312,28 @@ describe('App — Яндекс.Метрика SPA-трекинг', () => {
 
 describe('App — токен-мост (TokenBridge → api-клиент)', () => {
   it('после проверки сессии api-клиент реально получает функцию-провайдер токена', async () => {
+    // Единственный сценарий с подменой модуля: шпион на api нужен до импорта
+    // App, поэтому здесь — свой холодный граф (остальные тесты делят один).
+    vi.resetModules();
     vi.doMock('./api', async (importOriginal) => {
       const actual = await importOriginal<typeof import('./api')>();
       return { ...actual, setTokenProvider: vi.fn(actual.setTokenProvider) };
     });
-    stubLocation({ pathname: '/login', href: 'http://localhost/login' });
-    const App = await loadApp();
-    const { setTokenProvider } = await import('./api');
-    const spy = setTokenProvider as unknown as ReturnType<typeof vi.fn>;
-    render(<App />);
+    try {
+      stubLocation({ pathname: '/login', href: 'http://localhost/login' });
+      const mod = await import('./App');
+      const { setTokenProvider } = await import('./api');
+      const spy = setTokenProvider as unknown as ReturnType<typeof vi.fn>;
+      render(<mod.default />);
 
-    await waitFor(() => expect(spy).toHaveBeenCalled());
-    // Без сохранённой сессии провайдер отдаёт null — заголовок Authorization
-    // в api-клиенте реально не появится (не просто «функция была вызвана»).
-    const provider = spy.mock.calls[spy.mock.calls.length - 1][0] as () => string | null;
-    expect(provider()).toBeNull();
+      await waitFor(() => expect(spy).toHaveBeenCalled());
+      // Без сохранённой сессии провайдер отдаёт null — заголовок Authorization
+      // в api-клиенте реально не появится (не просто «функция была вызвана»).
+      const provider = spy.mock.calls[spy.mock.calls.length - 1][0] as () => string | null;
+      expect(provider()).toBeNull();
+    } finally {
+      vi.doUnmock('./api');
+      vi.resetModules();
+    }
   });
 });

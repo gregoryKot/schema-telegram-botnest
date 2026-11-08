@@ -30,20 +30,15 @@
   Express-адаптера) — логи Amvera агенту недоступны; косвенно держат `prod-smoke` и `crashesDay` в `/health`.
 
 **Тесты и даты — открыто:**
-- **vitest `webapp` под нагрузкой машины: остался класс «10 с на весь тест».** Класс «`findBy*`/`waitFor`
-  ждёт 1 с, а холодный `import()` ленивого чанка дольше» (`HistoryView` 1,4 с, `TrackerOverlay` 2,1 с на Mac
-  владельца при load average 55–77 на 8 ядрах; мигали `ProfileSection`/`SchemasSection.customize`,
-  `HistorySheet`, `AppShell.overlays`) закрыт `configure({ asyncUtilTimeout: 5000 })` в
-  `webapp/src/test-support/rtlCleanup.ts`. Замер 2026-11-06 (пять файлов, 5 параллельных `vitest run
-  --pool=threads` × 3 раунда, 4 ядра, load average 16–38): без бюджета 15/15 прогонов красные, 58 тестов,
-  из них 40 «Unable to find»; с бюджетом 13/15, 34 теста, «Unable to find» — 2, остальное `Test timed out in
-  10000ms`. Почти все таймауты — `webapp/src/App.test.tsx` (`/login`, `/`, `/` визитки): каждый тест
-  делает `vi.resetModules()` и холодный `import('./App')` всего графа, потому что домен и роутер
-  `App.tsx` вычисляет при импорте; плюс «Настроить» в `ProfileSection.customize.test.tsx` (рендер профиля
-  и лист больше 10 с). `testTimeout` не поднимали осознанно (задача гигиены: бюджет теста не трогать).
-  Лечение `App.test` — определять домен при рендере, а не при импорте, тогда `resetModules` не нужен. До
-  этого локальный красный vitest при высокой нагрузке — повод перегнать красные файлы в одиночку; CI зелёный
-  (там нагрузки нет), локальный `check-frontend-coverage-ratchet.mjs` под нагрузкой не доказывает ничего.
+- **vitest `webapp` под нагрузкой машины: остаток класса «10 с на весь тест».** «`findBy*` ждёт 1 с, а
+  холодный `import()` ленивого чанка дольше» закрыт `configure({ asyncUtilTimeout: 5000 })`
+  (`webapp/src/test-support/rtlCleanup.ts`); главный источник таймаутов — `App.test.tsx`, где каждый
+  тест делал `vi.resetModules()` и холодный `import('./App')`, — закрыт 2026-11-08: домен и роутер
+  считает `App.tsx` при первом рендере (роутер кэшируется по объекту `location`), холодный граф остался у одного теста с подменой `./api`
+  (сумма времени 6,7 → 4,9 с при нагрузке агентов). `ProfileSection.customize.test.tsx`: замер
+  2026-11-08 — первый тест 0,9 с (рендер профиля и холодный ленивый лист «Настроить»), остальные
+  меньше 0,3 с; под load average 55+ он один может упереться в 10 с. `testTimeout` не поднимали
+  осознанно; повторится — мокать лист в этом файле.
 - **Храповик нулей (`scripts/check-zero-coverage.mjs`) видит только юнит-покрытие.** Контроллеры
   под e2e-смоком (`practice-ics`, `client-booking`) и CLI ротации ключа записаны в
   `scripts/zero-coverage-baseline.json` как «покрыто e2e», но e2e в `coverage-summary.json` не
