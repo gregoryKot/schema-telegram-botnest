@@ -427,6 +427,25 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
+  // Рубильник Google/VK (2026-11): в e2e-окружении GOOGLE_*/VK_* не заданы —
+  // ровно состояние «провайдер выключен». Раньше старт падал 500 на
+  // getOrThrow; теперь — 302 на экран ошибки входа с понятной причиной.
+  describe('старт OAuth без конфигурации провайдера', () => {
+    it.each(['google', 'vk'])(
+      'GET /api/auth/%s → 302 на /auth/error?reason=<id>_disabled, без куки state',
+      async (provider) => {
+        const res = await request(app.getHttpServer())
+          .get(`/api/auth/${provider}`)
+          .set('Host', 'schemehappens.ru');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe(
+          `https://schemehappens.ru/auth/error?reason=${provider}_disabled`,
+        );
+        expect(extractSetCookie(res, 'oauth_state')).toBeFalsy();
+      },
+    );
+  });
+
   // Экран /account/merge берёт имя и сводку здесь, а не из query редиректа.
   describe('merge/preview: ownership', () => {
     const TARGET = 910_701n;

@@ -7,6 +7,8 @@
 // - `<провайдер>_failed` — `src/auth/auth-flow.service.ts` (колбэк OAuth),
 //   `src/auth/auth-oauth.controller.ts` (`vk_failed`); id провайдеров —
 //   `src/auth/providers/*.provider.ts`;
+// - `<провайдер>_disabled` — `src/auth/oauth-provider-switch.ts` (env провайдера
+//   снят: рубильник входа; сверку словаря держит `oauth-provider-switch.spec.ts`);
 // - `email_link_expired` — `src/auth/email-callback-redirect.ts` и
 //   `pages/authCallback/consumeEmailToken.ts`; там же `email_network` (запрос
 //   не дошёл до сервера) и `http_429`/`http_5xx` (ответил, но не про ссылку);
@@ -22,12 +24,19 @@ const providerFailed = (name: string) => (tr: Tr) =>
     `Вход через ${name} не прошёл. Попробуйте ещё раз или выберите другой способ.`,
   );
 
+// Безличный: экран публичный, формы обращения у него нет (как у DonatePage).
+const providerDisabled = (name: string) => () =>
+  `Вход через ${name} временно отключён. Другой способ — Telegram или почта: ` +
+  'если они привязаны к аккаунту, откроется он же.';
+
 const tryAgain = (lead: string) => (tr: Tr) =>
   `${lead} ${tr('Попробуй ещё раз.', 'Попробуйте ещё раз.')}`;
 
 const AUTH_ERROR_TEXTS: Record<string, (tr: Tr) => string> = {
   google_failed: providerFailed('Google'),
   vk_failed: providerFailed('ВКонтакте'),
+  google_disabled: providerDisabled('Google'),
+  vk_disabled: providerDisabled('ВКонтакте'),
   max_failed: providerFailed('MAX'),
   telegram_failed: providerFailed('Telegram'),
   telegram_no_data: tryAgain('Данные входа от Telegram не дошли до сайта.'),

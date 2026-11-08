@@ -34,13 +34,13 @@
 |---|---|---|---|
 | `ENCRYPTION_KEY` | **обязательна** | hex32 | Ключ AES-256-GCM (заметки, дневники) и HMAC ключа комнаты клиента (ClientMeeting.clientKey); без него прод не стартует (utils/crypto.ts). |
 | `ENCRYPTION_KEY_OLD` | опциональна | any | Старые ключи на время ротации (через запятую) — для расшифровки и поиска комнаты клиента; новое всегда пишется текущим ключом. |
-| `GOOGLE_CLIENT_ID` | опциональна | nonEmpty | OAuth client id входа через Google — без него кнопка «Войти через Google» недоступна. Тот же id зашит в сборку сайта для окна «Продолжить как…» (`ARG VITE_GOOGLE_CLIENT_ID` в Dockerfile) — менять в обоих местах. |
+| `GOOGLE_CLIENT_ID` | опциональна | nonEmpty | OAuth client id входа через Google. Рубильник: без него (или без `GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`) вход через Google выключен — кнопка на `/login` остаётся, нажатие ведёт на экран «Вход через Google отключён» (`src/auth/oauth-provider-switch.ts`). Тот же id зашит в сборку сайта для окна «Продолжить как…» (`ARG VITE_GOOGLE_CLIENT_ID` в Dockerfile) — менять в обоих местах. |
 | `GOOGLE_CLIENT_SECRET` | опциональна | nonEmpty | OAuth client secret Google — без него обмен кода на токен падает. |
 | `GOOGLE_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата Google после входа — обязан вести на канонический хост (инцидент 2026-09-16: старый хост давал ERR_TOO_MANY_REDIRECTS). |
 | `JWT_SECRET` | **обязательна** | secret32 | Подписывает access/refresh/merge/2FA-challenge JWT и state входа сайта — без него вход через Google/VK и merge аккаунтов не работает. Не короче 32 символов, не заглушка (`secret`, `changeme`, повтор одного символа); генерация: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`. |
 | `MAX_BOT_TOKEN` | опциональна | nonEmpty | Перекрывает HEALTHY_ADULT_MAX_TOKEN для проверки подписи initData мини-аппа MAX, если бот мини-аппа когда-нибудь станет отдельным от канального. |
 | `SKIP_AUTH` | опциональна | oneOf(true, false) | Dev-only обход проверки initData — хардкод-запрет в проде (src/api/init-data-paths.ts), в реестре только для формата/кросс-проверки. |
-| `VK_APP_ID` | опциональна | nonEmpty | OAuth client id входа через VK ID — без него кнопка «Войти через VK» недоступна. |
+| `VK_APP_ID` | опциональна | nonEmpty | OAuth client id входа через VK ID. Рубильник: без него (или без `VK_REDIRECT_URI`) вход через VK выключен — кнопка остаётся, нажатие ведёт на экран «Вход через ВКонтакте отключён» (`src/auth/oauth-provider-switch.ts`). |
 | `VK_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата VK после входа — обязан вести на канонический хост. |
 
 ## Бот и мини-апп
