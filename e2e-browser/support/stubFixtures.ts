@@ -77,15 +77,15 @@ const PROFILE = {
   myModeIds: [],
 };
 
-// GET /api/settings — умолчания src/api/settings.controller.ts, кроме
-// addressForm: при null AddressFormPicker («Как удобнее общаться?») кладёт
-// fixed-оверлей поверх приложения и перехватывает клики сценариев; сам выбор
-// формы проверяют юниты AddressFormPicker.test.tsx.
+// GET /api/settings — умолчания src/api/settings.controller.ts, кроме addressForm:
+// при null AddressFormPicker («Как удобнее общаться?») кладёт fixed-оверлей поверх
+// приложения и перехватывает клики сценариев (выбор формы — AddressFormPicker.test.tsx).
 const SETTINGS = {
   notifyEnabled: true,
   notifyLocalHour: 21,
   notifyTimezone: 'Europe/Moscow',
   notifyReminderEnabled: true,
+  notifySummaryEnabled: true,
   notifyFrequency: 0,
   notifyQuietStart: 22,
   notifyQuietEnd: 8,

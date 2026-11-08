@@ -42,7 +42,7 @@ function makeBotService(overrides: Record<string, any> = {}) {
 
 function makeService(botService: any) {
   const notificationService = {
-    cancelAll: jest.fn().mockResolvedValue(undefined),
+    cancelProactive: jest.fn().mockResolvedValue(undefined),
   };
   const scheduleService = {
     rescheduleForUser: jest.fn().mockResolvedValue(undefined),
@@ -115,10 +115,40 @@ describe('TelegramSettingsService — settings:toggle', () => {
       notifyEnabled: false,
     });
     expect(botService._get().notifyEnabled).toBe(false);
-    expect(notificationService.cancelAll).toHaveBeenCalledWith(1n);
+    expect(notificationService.cancelProactive).toHaveBeenCalledWith(1n);
     expect(scheduleService.rescheduleForUser).not.toHaveBeenCalled();
     expect(ctx.editMessageText).toHaveBeenCalledTimes(1);
     expect(ctx.reply).not.toHaveBeenCalled();
+  });
+
+  // R2 (аудит 2026-11): «Напоминания» — оба флага, как тумблер сайта; «Итоги
+  // дня» — свой флаг, статус виден рядом, выключение напоминаний его не трогает.
+  it('напоминание выключено отдельно — кнопка «Включить напоминания» поднимает оба флага', async () => {
+    const botService = makeBotService({ notifyReminderEnabled: false });
+    const { service, fakeBot, scheduleService } = makeService(botService);
+    service.onModuleInit();
+    await runAction(fakeBot, 'settings:toggle');
+    expect(botService.updateUserSettings).toHaveBeenCalledWith(1n, {
+      notifyEnabled: true,
+      notifyReminderEnabled: true,
+    });
+    expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
+  });
+
+  it('экран показывает статус обоих тумблеров', async () => {
+    const on = await buildSettingsView(makeBotService() as never, 1n);
+    expect(on.text).toContain('Напоминания: 🔔 включены');
+    expect(on.text).toContain('Итоги дня: включены');
+    const off = await buildSettingsView(
+      makeBotService({
+        notifyEnabled: false,
+        notifySummaryEnabled: false,
+      }) as never,
+      1n,
+    );
+    expect(off.text).toContain('Напоминания: 🔕 выключены');
+    expect(off.text).toContain('Итоги дня: выключены');
+    expect(JSON.stringify(off.keyboard)).toContain('🔔 Включить напоминания');
   });
 
   it('включение обратно — переплпнирует, а не отменяет', async () => {
@@ -129,7 +159,7 @@ describe('TelegramSettingsService — settings:toggle', () => {
     await runAction(fakeBot, 'settings:toggle');
     expect(botService._get().notifyEnabled).toBe(true);
     expect(scheduleService.rescheduleForUser).toHaveBeenCalledWith(1n);
-    expect(notificationService.cancelAll).not.toHaveBeenCalled();
+    expect(notificationService.cancelProactive).not.toHaveBeenCalled();
   });
 });
 

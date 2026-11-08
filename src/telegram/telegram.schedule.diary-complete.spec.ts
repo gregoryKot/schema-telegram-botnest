@@ -54,6 +54,8 @@ function makeService(opts: {
   const pairsService: any = { getUserPairs: jest.fn().mockResolvedValue([]) };
   const notificationService: any = {
     cancel: jest.fn().mockResolvedValue(undefined),
+    cancelTypes: jest.fn().mockResolvedValue(undefined),
+    countProactiveInDay: jest.fn().mockResolvedValue(0),
     schedule: jest.fn(
       (userId: bigint, type: string, _at: Date, extra?: unknown) => {
         scheduled.push({ userId, type, extra });
@@ -65,7 +67,7 @@ function makeService(opts: {
     hasEver: jest.fn().mockResolvedValue(opts.hasEver ?? false),
   };
   const cadenceService: any = {
-    registerFill: jest.fn().mockResolvedValue(undefined),
+    registerFill: jest.fn().mockResolvedValue('2026-07-17'),
   };
   const plannerService: any = {};
   const cronLeader: any = { claimRun: jest.fn().mockResolvedValue(true) };
@@ -109,16 +111,24 @@ afterEach(() => {
 });
 
 describe('onDiaryComplete — базовые побочные эффекты', () => {
-  it('отменяет reminder/pre_reminder/low_streak_insight и регистрирует cadence-заполнение', async () => {
+  // Что именно снимается и до какого дня — telegram.diary-complete.fill.spec.ts
+  // (настоящая очередь на фейковой таблице).
+  it('отменяет напоминания до следующего контакта, перерывы и регистрирует cadence-заполнение', async () => {
     const { service, notificationService, cadenceService } = makeService({});
     await service.onDiaryComplete(1n);
-    expect(notificationService.cancel).toHaveBeenCalledWith(1n, 'reminder');
-    expect(notificationService.cancel).toHaveBeenCalledWith(1n, 'pre_reminder');
-    expect(notificationService.cancel).toHaveBeenCalledWith(
-      1n,
-      'low_streak_insight',
+    const cancelled = notificationService.cancelTypes.mock.calls.flatMap(
+      (c: unknown[]) => c[1] as string[],
     );
-    expect(cadenceService.registerFill).toHaveBeenCalledWith(1n);
+    expect(cancelled).toEqual(
+      expect.arrayContaining([
+        'reminder',
+        'pre_reminder',
+        'low_streak_insight',
+        'lapsing_3',
+        'dormant_7',
+      ]),
+    );
+    expect(cadenceService.registerFill).toHaveBeenCalledWith(1n, FIXED_NOW);
   });
 
   it('планирует summary с реальным текстом сводки (не заглушкой) на сегодняшний notifyLocalHour', async () => {

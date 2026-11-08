@@ -17,7 +17,7 @@ import { PairsService } from '../bot/pairs.service';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationCadenceService } from '../notification/notification.cadence.service';
 import { NotificationPlannerService } from '../notification/notification.planner.service';
-import { localDateString } from '../notification/notification.time';
+import { rescheduleForUser } from './telegram.schedule-reschedule';
 import {
   runDiaryComplete,
   maybeNotifyPairPartners,
@@ -72,31 +72,16 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
     this.midnight.stop();
   }
 
-  /** Reschedule reminder for a single user (called after settings change). */
+  /** Reschedule reminder for a single user — telegram.schedule-reschedule.ts. */
   async rescheduleForUser(userId: bigint) {
-    const s = await this.botService.getUserSettings(userId);
-    if (!s?.notifyEnabled || !s.notifyReminderEnabled) {
-      await this.notificationService.cancel(userId, 'reminder');
-      return;
-    }
-    // На паузе ничего не планируем — юзер попросил тишины
-    if (s.notifyPausedUntil && s.notifyPausedUntil > new Date()) return;
-    const hadPending = await this.notificationService.hasPending(
+    return rescheduleForUser(
+      {
+        botService: this.botService,
+        notificationService: this.notificationService,
+        plannerService: this.plannerService,
+      },
       userId,
-      'reminder',
     );
-    // due покрывает включение уведомлений после перерыва: nextRemindDate устарел или пуст
-    const today = localDateString(s.notifyTimezone, new Date());
-    const due = !s.notifyNextRemindDate || today >= s.notifyNextRemindDate;
-    if (hadPending || due) {
-      await this.plannerService.scheduleReminder(
-        userId,
-        s.notifyLocalHour,
-        s.notifyTimezone,
-        new Date(),
-        !!s.notifyGamified,
-      );
-    }
   }
 
   /** Every 5 minutes: send all due notifications from the queue */

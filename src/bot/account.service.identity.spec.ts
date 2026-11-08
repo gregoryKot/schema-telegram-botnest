@@ -265,6 +265,8 @@ describe('AccountService.getSendSettingsFor', () => {
         notifyTimezone: 'Asia/Almaty',
         notifyQuietStart: 23,
         notifyQuietEnd: 7,
+        // Пауза едет в очередь вместе с адресом (R5): проактивные она снимает.
+        notifyPausedUntil: new Date('2026-07-20T00:00:00Z'),
         addressForm: 'vy',
         authProviders: [{ providerId: '777' }],
       },
@@ -284,6 +286,7 @@ describe('AccountService.getSendSettingsFor', () => {
       end: 8,
       form: 'ty',
       chatId: 1n,
+      pausedUntil: null,
     });
     // Адрес взят из привязки, а НЕ из userId: писать по веб-номеру некуда.
     expect(result.get('1000000000000002')).toEqual({
@@ -292,6 +295,7 @@ describe('AccountService.getSendSettingsFor', () => {
       end: 7,
       form: 'vy',
       chatId: 777n,
+      pausedUntil: new Date('2026-07-20T00:00:00Z'),
     });
     expect(prisma.user.findMany).toHaveBeenCalledWith({
       where: { id: { in: [1n, 1_000_000_000_000_002n] } },
@@ -300,6 +304,7 @@ describe('AccountService.getSendSettingsFor', () => {
         notifyTimezone: true,
         notifyQuietStart: true,
         notifyQuietEnd: true,
+        notifyPausedUntil: true,
         addressForm: true,
         authProviders: {
           where: { provider: 'telegram' },

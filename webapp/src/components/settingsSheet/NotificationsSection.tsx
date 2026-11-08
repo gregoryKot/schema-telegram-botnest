@@ -5,22 +5,22 @@ import { SSection, SRow, Toggle, ChevronVal } from './ui';
 import type { SubView } from './SubViews';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
 import { NOTIFY_UNREACHABLE, notifyReachable } from '../../../../shared/src/settings/notifyReach';
+import { remindersOn, remindersPatch, summaryOn } from '../../../../shared/src/settings/notifyToggles';
 
 interface Props {
   settings: UserSettings;
   tzLabel: string;
   patch: (update: Partial<UserSettings>) => Promise<void>;
   openSubView: (v: SubView) => void;
-  /** «Аккаунт» — там привязывают Telegram, куда приходят уведомления. */
-  onOpenAccount: () => void;
+  onOpenAccount: () => void; // «Аккаунт» — там привязывают Telegram, куда приходят уведомления
 }
 
 // Раздел «Уведомления» — вынесен из SettingsSheet.tsx (правило №10). Без
 // Telegram уведомлениям некуда прийти: вместо тумблеров — честная причина и
-// путь привязать его (QA 2026-11, З5).
+// путь привязать его (QA 2026-11, З5). Два тумблера — shared/src/settings/notifyToggles.ts.
 export function NotificationsSection({ settings, tzLabel, patch, openSubView, onOpenAccount }: Props) {
   const localHour = settings.notifyLocalHour;
-  const reachable = notifyReachable(settings);
+  const [reachable, reminders, summary] = [notifyReachable(settings), remindersOn(settings), summaryOn(settings)];
   return (
     <SSection id="s-notifications" label="Уведомления" hint={reachable ? `Приходят через Telegram — ${botHandle}` : NOTIFY_UNREACHABLE.hint}
       help={<SettingsInfoHelp infoKey="notify" />}>
@@ -33,15 +33,15 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, on
         </div>
       )}
       {reachable ? (<>
-        <SRow title="Итоги дня" sub="Ежедневный отчёт по потребностям" right={<Toggle label="Итоги дня" on={settings.notifyEnabled} onClick={() => patch({ notifyEnabled: !settings.notifyEnabled })} />} />
-        <SRow title="Напоминание" sub="Заполнить трекер вечером" right={<Toggle label="Напоминание" on={!!settings.notifyReminderEnabled} onClick={() => patch({ notifyReminderEnabled: !settings.notifyReminderEnabled })} />} />
+        <SRow title="Напоминания" sub="Заполнить трекер в выбранный час" right={<Toggle label="Напоминания" on={reminders} onClick={() => patch(remindersPatch(!reminders))} />} />
+        <SRow title="Итоги дня" sub="Сводка и вехи после заполнения трекера" right={<Toggle label="Итоги дня" on={summary} onClick={() => patch({ notifySummaryEnabled: !summary })} />} />
       </>) : (
         <div className="st-body-block" role="note">
           <p className="st-text">{NOTIFY_UNREACHABLE.text}</p>
           <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onOpenAccount}>{NOTIFY_UNREACHABLE.linkButton}</button>
         </div>
       )}
-      {reachable && (settings.notifyEnabled || settings.notifyReminderEnabled) && (<>
+      {reachable && (reminders || summary) && (<>
         <SRow title="Время" right={<ChevronVal text={`${pad(localHour)}:00`} />} onClick={() => openSubView('time')} />
         <SRow title="Частота" right={<ChevronVal text={FREQ_LABELS[settings.notifyFrequency ?? 0]} />} onClick={() => openSubView('freq')} />
         <SRow title="Игровой режим" sub="Серии и «ещё день до вехи»" right={<Toggle label="Игровой режим" on={!!settings.notifyGamified} onClick={() => patch({ notifyGamified: !settings.notifyGamified })} />} />

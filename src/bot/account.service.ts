@@ -8,43 +8,12 @@ import { deleteAllUserData } from './account.delete';
 // Реестр живёт отдельным файлом (им пользуется и account.delete.ts);
 // ре-экспорт — чтобы импорты соседей и спек продолжали работать.
 export { USER_DATA_TABLES } from './user-data-tables';
-
-/**
- * Что нужно знать про человека, чтобы отправить ему уведомление: тихие часы,
- * форма обращения и КУДА писать. `chatId === null` — писать некуда: у
- * человека нет телеграм-входа вовсе.
- */
-export interface SendSettings {
-  tz: string;
-  start: number;
-  end: number;
-  form: string | null;
-  chatId: bigint | null;
-}
-
-/**
- * Куда писать этому аккаунту. Сначала — привязка AuthProvider (единственный
- * верный ответ для слитых аккаунтов и для входов через сайт). Если привязки
- * нет, а сам номер лежит в телеграмном диапазоне — это старый пользователь
- * бота, которому строку AuthProvider никогда не заводили (её создаёт вход в
- * мини-апп или на сайте). Таких большинство, и их адрес — сам userId.
- *
- * `null` остаётся только у веб-номеров без привязки: чата по такому номеру
- * не существует в принципе.
- */
-function resolveChatId(
-  userId: bigint,
-  providerId: string | undefined,
-): bigint | null {
-  if (providerId !== undefined) {
-    try {
-      return BigInt(providerId);
-    } catch {
-      return isTelegramUserId(userId) ? userId : null;
-    }
-  }
-  return isTelegramUserId(userId) ? userId : null;
-}
+import {
+  SEND_SETTINGS_SELECT,
+  toSendSettings,
+  type SendSettings,
+} from './send-settings';
+export type { SendSettings } from './send-settings';
 
 // Жизненный цикл аккаунта: регистрация/идентичность, роль, статус блокировки
 // бота, списки для рассылок и полное удаление (right-to-erasure).
@@ -181,39 +150,14 @@ export class AccountService {
     });
   }
 
-  /** Тихие часы + таймзона + форма обращения для пачки юзеров (processQueue) */
+  /** Тихие часы, пауза, пояс, форма и адрес для пачки юзеров (processQueue) */
   async getSendSettingsFor(ids: bigint[]): Promise<Map<string, SendSettings>> {
     if (ids.length === 0) return new Map();
     const rows = await this.prisma.user.findMany({
       where: { id: { in: ids } },
-      select: {
-        id: true,
-        notifyTimezone: true,
-        notifyQuietStart: true,
-        notifyQuietEnd: true,
-        addressForm: true,
-        // Адрес берём тем же запросом, что и настройки: очередь читает и то и
-        // другое на одном тике, второй роундтрип здесь был бы дублем механики.
-        authProviders: {
-          where: { provider: 'telegram' },
-          select: { providerId: true },
-          orderBy: { id: 'desc' },
-          take: 1,
-        },
-      },
+      select: SEND_SETTINGS_SELECT,
     });
-    return new Map(
-      rows.map((r) => [
-        r.id.toString(),
-        {
-          tz: r.notifyTimezone,
-          start: r.notifyQuietStart,
-          end: r.notifyQuietEnd,
-          form: r.addressForm,
-          chatId: resolveChatId(r.id, r.authProviders?.[0]?.providerId),
-        },
-      ]),
-    );
+    return new Map(rows.map((r) => [r.id.toString(), toSendSettings(r)]));
   }
 
   /**

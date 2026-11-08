@@ -1,78 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptPayload, decryptPayload } from './notification-payload.crypto';
-
-export type NotificationType =
-  | 'reminder'
-  | 'pre_reminder'
-  | 'summary'
-  | 'comeback'
-  | 'welcome_back'
-  | 'onboarding_1'
-  | 'onboarding_3'
-  | 'onboarding_7'
-  | 'streak_7'
-  | 'streak_14'
-  | 'streak_30'
-  | 'lapsing_3'
-  | 'dormant_7'
-  | 'value_recap'
-  | 'reengagement_30'
-  | 'weekly'
-  | 'donate_reminder'
-  | 'anniversary_30'
-  | 'anniversary_60'
-  | 'anniversary_90'
-  | 'practice_reminder'
-  | 'practice_missed'
-  | 'low_streak_insight'
-  | 'nudge'
-  | 'task_assigned'
-  | 'ysq_requested'
-  | 'pair_activity'
-  | 'security_notice';
-
-/**
- * Проактивные типы — бот пишет сам, без действия юзера. Подчиняются дневному
- * бюджету (одно в день) и отменяются при паузе. Реактивные (summary, comeback,
- * streak_*, onboarding_*, task_assigned...) — ответ на действие, не отменяются.
- */
-export const PROACTIVE_TYPES: NotificationType[] = [
-  'reminder',
-  'pre_reminder',
-  'lapsing_3',
-  'dormant_7',
-  'value_recap',
-  'reengagement_30',
-  'nudge',
-  'weekly',
-  'donate_reminder',
-  'practice_missed',
-  'low_streak_insight',
-  // Парный триггер (аудит 2026-07, 4.5): бот пишет сам по действию напарника —
-  // проактивное (дневной бюджет, отмена при паузе), НЕ quiet-exempt (получатель
-  // сам ничего не делал — тихие часы уважаются).
-  'pair_activity',
-];
-
-/**
- * Не задерживаются тихими часами: приходят через секунды после того, как юзер
- * сам был активен (заполнил дневник) — придержать их до утра было бы странно.
- */
-export const QUIET_EXEMPT_TYPES: NotificationType[] = [
-  'summary',
-  'comeback',
-  'streak_7',
-  'streak_14',
-  'streak_30',
-  'onboarding_1',
-  'onboarding_3',
-  'onboarding_7',
-  'anniversary_30',
-  'anniversary_60',
-  'anniversary_90',
-  'security_notice', // S11/S12: о входе в аккаунт молчать до утра нельзя
-];
+import { PROACTIVE_TYPES, type NotificationType } from './notification.types';
+export {
+  PROACTIVE_TYPES,
+  QUIET_EXEMPT_TYPES,
+  BREAK_TYPES,
+  type NotificationType,
+} from './notification.types';
 
 export interface DueNotification {
   id: number;
@@ -169,6 +104,49 @@ export class NotificationService {
         cancelledAt: null,
       },
       data: { cancelledAt: new Date() },
+    });
+  }
+
+  /**
+   * Снять неотправленные уведомления этих типов; с `before` — только те, что
+   * стоят раньше этого момента (заполнение снимает напоминание на сегодня, а
+   * завтрашнее оставляет — E13, telegram.diary-complete.ts).
+   */
+  async cancelTypes(userId: bigint, types: NotificationType[], before?: Date) {
+    await this.prisma.scheduledNotification.updateMany({
+      where: {
+        userId,
+        type: { in: types },
+        sentAt: null,
+        cancelledAt: null,
+        ...(before && { sendAt: { lt: before } }),
+      },
+      data: { cancelledAt: new Date() },
+    });
+  }
+
+  /**
+   * Сколько проактивных занимают местный день [start, end): уже отправленные в
+   * нём и ещё стоящие в очереди на него. Дневной бюджет (R5) —
+   * notification.budget.ts; `exceptId` — сама проверяемая строка очереди.
+   */
+  countProactiveInDay(
+    userId: bigint,
+    start: Date,
+    end: Date,
+    exceptId?: number,
+  ): Promise<number> {
+    return this.prisma.scheduledNotification.count({
+      where: {
+        userId,
+        type: { in: PROACTIVE_TYPES },
+        cancelledAt: null,
+        ...(exceptId !== undefined && { id: { not: exceptId } }),
+        OR: [
+          { AND: [{ sentAt: { gte: start } }, { sentAt: { lt: end } }] },
+          { sentAt: null, sendAt: { lt: end } },
+        ],
+      },
     });
   }
 

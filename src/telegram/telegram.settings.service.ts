@@ -12,9 +12,10 @@ import { BotService } from '../bot/bot.service';
 import { AccountService } from '../bot/account.service';
 import { NotificationService } from '../notification/notification.service';
 import { TelegramScheduleService } from './telegram.schedule.service';
-import { tzOffsetAt } from '../notification/notification.time';
+import { utcOffsetLabel } from '../notification/tz-offset';
 import { normalizeAddressForm, t } from '../notification/address-form';
 import { TIMEZONES, buildSettingsView } from './telegram.settings.view';
+import { remindersOn, remindersPatch } from '../notification/notify-toggles';
 import { REMINDER_HOURS, buildHourRows } from './telegram.reminder-hours';
 
 // Сборка экрана переехала в telegram.settings.view.ts (правило №10 — лимит
@@ -62,12 +63,11 @@ export class TelegramSettingsService implements OnModuleInit {
         if (!rawId) return;
         const userId = await this.accountService.canonicalUserId(rawId);
         const s = await this.botService.getUserSettings(userId);
-        const newEnabled = !(s?.notifyEnabled ?? true);
-        await this.botService.updateUserSettings(userId, {
-          notifyEnabled: newEnabled,
-        });
-        if (!newEnabled) {
-          await this.notificationService.cancelAll(userId);
+        const on = !remindersOn(s); // новое состояние «Напоминаний»
+        await this.botService.updateUserSettings(userId, remindersPatch(on));
+        if (!on) {
+          // «Итоги дня» — свой тумблер (R2): снимаем только проактивные.
+          await this.notificationService.cancelProactive(userId);
         } else {
           await this.scheduleService.rescheduleForUser(userId);
         }
@@ -158,8 +158,7 @@ export class TelegramSettingsService implements OnModuleInit {
         const s = await this.botService.getUserSettings(userId);
         const form = normalizeAddressForm(s?.addressForm);
         const buttons = TIMEZONES.map((entry) => {
-          const offset = tzOffsetAt(entry.tz);
-          const utcLabel = offset >= 0 ? `UTC+${offset}` : `UTC${offset}`;
+          const utcLabel = utcOffsetLabel(entry.tz);
           return [
             Markup.button.callback(
               `${entry.label} (${utcLabel})`,

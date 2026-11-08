@@ -5,12 +5,8 @@
 import { Logger } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import { AccountService } from '../bot/account.service';
-import {
-  NotificationService,
-  QUIET_EXEMPT_TYPES,
-  NotificationType,
-} from '../notification/notification.service';
-import { isQuietHours, nextQuietEnd } from '../notification/notification.time';
+import { NotificationService } from '../notification/notification.service';
+import { holdBeforeSend } from './telegram.schedule-queue.gate';
 import { undeliveredFromOther } from '../notification/notification-channels';
 import { describeUnknownOutcomes, sendBounded } from './telegram.send-bounded';
 import { handleSendError } from './telegram.schedule-queue.errors';
@@ -70,14 +66,8 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
       }
       const chatId = s.chatId;
 
-      // Тихие часы: проактивные придерживаем до утра. Покрывает и catch-up после
-      // даунтайма — уведомление за 21:00 не улетит в 3 ночи.
-      if (!QUIET_EXEMPT_TYPES.includes(notif.type as NotificationType)) {
-        if (isQuietHours(s.tz, s.start, s.end)) {
-          await notificationService.defer(notif.id, nextQuietEnd(s.tz, s.end));
-          continue;
-        }
-      }
+      // Пауза, дневной бюджет, тихие часы — telegram.schedule-queue.gate.ts.
+      if (await holdBeforeSend(notificationService, notif, s)) continue;
       const msg = await renderForQueue(deps, notif, s.form);
       if (!msg) continue;
       // Number(chatId): telegram-id заведомо меньше 2^53, а telegraf ждёт

@@ -8,6 +8,7 @@ import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { isNotifyTimezone } from '../notification/notify-timezones';
 import { UpdateSettingsDto } from './dto/settings.dto';
 import { sanitizeUiPrefs } from './ui-prefs.sanitize';
+import { BOOLEAN_SETTINGS, RESCHEDULE_ON } from './settings-fields';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -35,6 +36,7 @@ export class SettingsController {
       notifyLocalHour: s?.notifyLocalHour ?? 21,
       notifyTimezone: s?.notifyTimezone ?? 'Europe/Moscow',
       notifyReminderEnabled: s?.notifyReminderEnabled ?? true,
+      notifySummaryEnabled: s?.notifySummaryEnabled ?? true,
       notifyFrequency: s?.notifyFrequency ?? 0,
       notifyQuietStart: s?.notifyQuietStart ?? 22,
       notifyQuietEnd: s?.notifyQuietEnd ?? 8,
@@ -64,14 +66,8 @@ export class SettingsController {
     @Body() body: UpdateSettingsDto,
   ) {
     const clean: Parameters<typeof this.botService.updateUserSettings>[1] = {};
-    if (typeof body.notifyEnabled === 'boolean')
-      clean.notifyEnabled = body.notifyEnabled;
-    if (typeof body.notifyReminderEnabled === 'boolean')
-      clean.notifyReminderEnabled = body.notifyReminderEnabled;
-    if (typeof body.notifyGamified === 'boolean')
-      clean.notifyGamified = body.notifyGamified;
-    if (typeof body.pairCardDismissed === 'boolean')
-      clean.pairCardDismissed = body.pairCardDismissed;
+    for (const key of BOOLEAN_SETTINGS)
+      if (typeof body[key] === 'boolean') clean[key] = body[key];
     if (
       Number.isInteger(body.notifyLocalHour) &&
       body.notifyLocalHour! >= 0 &&
@@ -114,10 +110,6 @@ export class SettingsController {
       body.myModeIds.every((id) => typeof id === 'string' && id.length < 100)
     )
       clean.myModeIds = body.myModeIds;
-    if (typeof body.therapistShareCards === 'boolean')
-      clean.therapistShareCards = body.therapistShareCards;
-    if (typeof body.therapistShareProfile === 'boolean')
-      clean.therapistShareProfile = body.therapistShareProfile;
     if (body.uiPrefs !== undefined) {
       const prefs = sanitizeUiPrefs(body.uiPrefs);
       if (prefs) clean.uiPrefs = prefs;
@@ -132,17 +124,10 @@ export class SettingsController {
       );
     }
 
-    // Reschedule reminder if notification time/toggle changed
-    if (
-      'notifyEnabled' in clean ||
-      'notifyLocalHour' in clean ||
-      'notifyTimezone' in clean ||
-      'notifyReminderEnabled' in clean ||
-      'notifyFrequency' in clean ||
-      'notifyPausedUntil' in clean
-    ) {
+    // Reschedule reminder if notification time/toggle changed; выключенные
+    // «Итоги дня» снимают стоящую сводку там же (rescheduleForUser).
+    if (RESCHEDULE_ON.some((key) => key in clean))
       await this.scheduleService.rescheduleForUser(uid(req));
-    }
 
     return { ok: true };
   }

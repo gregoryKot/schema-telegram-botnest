@@ -49,8 +49,8 @@ describe('класс 20: уведомление от другого челове
     expect(violations(NOTIFICATION_CHANNELS, readFromRepo)).toEqual([]);
   });
 
-  it('ключи реестра — ровно объединение NotificationType из notification.service.ts', () => {
-    const src = read('src/notification/notification.service.ts');
+  it('ключи реестра — ровно объединение NotificationType из notification.types.ts', () => {
+    const src = read('src/notification/notification.types.ts');
     const union = src.match(/export type NotificationType =([\s\S]*?);/);
     const types = [...(union?.[1] ?? '').matchAll(/'([a-z0-9_]+)'/g)].map(
       (m) => m[1],

@@ -5,13 +5,13 @@ import {
   type EncryptSchema,
 } from '../utils/crypto-record';
 
-// Запись настроек юзера (POST /api/settings → BotService.updateUserSettings).
-// mySchemaIds/myModeIds — зашифрованные JSON-списки, пишутся целиком.
+// Запись настроек юзера (POST /api/settings → BotService.updateUserSettings); mySchemaIds/myModeIds — шифрованные JSON-списки целиком.
 export interface UserSettingsPatch {
   notifyEnabled?: boolean;
   notifyLocalHour?: number;
   notifyTimezone?: string;
   notifyReminderEnabled?: boolean;
+  notifySummaryEnabled?: boolean;
   notifyFrequency?: number;
   notifyQuietStart?: number;
   notifyQuietEnd?: number;

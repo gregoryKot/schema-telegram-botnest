@@ -15,10 +15,8 @@ import {
 import { TIMEZONE_MAX_LENGTH } from '../../notification/notify-timezones';
 
 /**
- * DTO для POST /api/settings (аудит 2026-07, 2г / правило №6 CLAUDE.md).
- * Границы (0–23 для часов, 0–3 для частоты, список таймзон и т.п.) уже
- * проверялись вручную в контроллере построением `clean` — здесь та же логика
- * как рантайм-валидация. Ручная сборка `clean` в контроллере не убрана.
+ * DTO для POST /api/settings (аудит 2026-07, 2г / правило №6 CLAUDE.md): те же
+ * границы, что ручная сборка `clean` в контроллере, — рантайм-валидацией.
  */
 export class UpdateSettingsDto {
   @IsOptional()
@@ -31,9 +29,8 @@ export class UpdateSettingsDto {
   @Max(23)
   notifyLocalHour?: number;
 
-  // Любой настоящий пояс IANA, не только из списка выбора: пояс, который
-  // определил браузер, показывается в выборе первым, и повторный тап по нему
-  // не должен давать 400 (QA 2026-11-03).
+  // Любой настоящий пояс IANA: пояс браузера стоит в выборе первым, и повторный
+  // тап по нему не должен давать 400 (QA 2026-11-03).
   @IsOptional()
   @IsString()
   @MaxLength(TIMEZONE_MAX_LENGTH)
@@ -43,6 +40,10 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   notifyReminderEnabled?: boolean;
+
+  @IsOptional() // «Итоги дня» (R2): сводка после заполнения, вехи, «с возвращением»
+  @IsBoolean()
+  notifySummaryEnabled?: boolean;
 
   @IsOptional()
   @IsInt()
@@ -101,10 +102,9 @@ export class UpdateSettingsDto {
   @IsBoolean()
   therapistShareProfile?: boolean;
 
-  // Серверное зеркало кастомизации мини-аппа (SYNCED_PREF_KEYS). Форма —
-  // плоский объект { известный ключ → строка-значение }; неизвестные ключи и
-  // невалидные значения отбрасываются в sanitizeUiPrefs (per-key), не здесь —
-  // тут только проверка «это вообще объект».
+  // Серверное зеркало кастомизации мини-аппа (SYNCED_PREF_KEYS): плоский
+  // { ключ → строка }; неизвестное отбрасывает sanitizeUiPrefs (per-key), здесь
+  // — только «это объект».
   @IsOptional()
   @IsObject()
   uiPrefs?: Record<string, unknown>;

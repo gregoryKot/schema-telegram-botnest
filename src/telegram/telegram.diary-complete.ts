@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { BotService, NEED_IDS } from '../bot/bot.service';
+import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { PairsService } from '../bot/pairs.service';
 import {
@@ -13,10 +13,16 @@ import {
   utcInstantForLocalHour,
 } from '../notification/notification.time';
 import { normalizeAddressForm } from '../notification/address-form';
+import { cancelOnFill } from '../notification/notification.fill-cancel';
+import { maybeNotifyPairPartners } from './telegram.pair-activity';
+export { maybeNotifyPairPartners } from './telegram.pair-activity';
 
 // Что происходит после заполнения трекера: сводка дня, «с возвращением»
 // после перерыва, вехи (серии/онбординг/годовщины) и мягкий сигнал
 // напарнику. Вынесено из telegram.schedule.service.ts (правило №10).
+// R2 (аудит 2026-11, решение владельца Р1): сводка, вехи и «с возвращением»
+// слушаются тумблера «Итоги дня» (notifySummaryEnabled), напоминания —
+// «Напоминаний» (notifyEnabled, планировщик). Раньше итоги приходили всегда.
 
 export interface DiaryCompleteDeps {
   botService: BotService;
@@ -53,15 +59,22 @@ async function scheduleMilestone(
 export async function runDiaryComplete(
   deps: DiaryCompleteDeps,
   userId: bigint,
+  now = new Date(),
 ) {
-  await deps.notificationService.cancel(userId, 'reminder');
-  await deps.notificationService.cancel(userId, 'pre_reminder');
-  await deps.notificationService.cancel(userId, 'low_streak_insight');
-  await deps.cadenceService.registerFill(userId);
-
+  const nextContact = await deps.cadenceService.registerFill(userId, now);
   const settings = await deps.botService.getUserSettings(userId);
   const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
-  const notifyLocalHour = settings?.notifyLocalHour ?? 21;
+  // Напоминания до дня следующего контакта и все «давно не заходил» (R4, E13).
+  await cancelOnFill(deps.notificationService, userId, tz, now, nextContact);
+  await deps.notificationService.cancel(userId, 'summary');
+
+  // 4.5 (аудит 2026-07): лёгкий социальный триггер для напарника — до
+  // ранних return'ов (итоги выключены, comeback), чтобы срабатывал всегда.
+  await maybeNotifyPairPartners(deps, userId, now).catch((err) =>
+    deps.logger.error('maybeNotifyPairPartners failed', err),
+  );
+  if (settings?.notifySummaryEnabled === false) return;
+
   const ratings = await deps.botService.getRatings(userId);
   const text = buildSummaryText(
     deps.botService.getNeeds(),
@@ -69,24 +82,14 @@ export async function runDiaryComplete(
     tz,
     normalizeAddressForm(settings?.addressForm),
   );
-
-  await deps.notificationService.cancel(userId, 'summary');
   // Schedule summary after milestones: if notify hour passed, add 5 min so milestones (sent now)
   // arrive first and summary follows in the next processQueue cycle.
-  const now = new Date();
   const todayStr = localDateString(tz, now);
-  const todaySendAt = utcInstantForLocalHour(todayStr, notifyLocalHour, tz);
+  const hour = settings?.notifyLocalHour ?? 21;
+  const todaySendAt = utcInstantForLocalHour(todayStr, hour, tz);
   const sendAt =
     todaySendAt > now ? todaySendAt : new Date(now.getTime() + 5 * 60_000);
-  await deps.notificationService.schedule(userId, 'summary', sendAt, {
-    text,
-  });
-
-  // 4.5 (аудит 2026-07): лёгкий социальный триггер для напарника — до
-  // раннего return'а comeback-ветки, чтобы срабатывал в обоих путях.
-  await maybeNotifyPairPartners(deps, userId).catch((err) =>
-    deps.logger.error('maybeNotifyPairPartners failed', err),
-  );
+  await deps.notificationService.schedule(userId, 'summary', sendAt, { text });
 
   const total = await deps.analyticsService.getTotalDaysFilled(userId);
 
@@ -106,7 +109,7 @@ export async function runDiaryComplete(
         ? deps.botService.getNeeds().find((n) => n.id === insight.strongest)
             ?.chartLabel
         : undefined;
-      await deps.notificationService.schedule(userId, 'comeback', new Date(), {
+      await deps.notificationService.schedule(userId, 'comeback', now, {
         totalDays: total,
         strongestNeed,
         strongestAvg: insight?.strongestAvg,
@@ -120,46 +123,4 @@ export async function runDiaryComplete(
 
   await scheduleMilestone(deps, userId, 'onboarding', [1, 3, 7], total);
   await scheduleMilestone(deps, userId, 'anniversary', [30, 60, 90], total);
-}
-
-// Парный триггер (аудит 2026-07, этап 4.5): юзер заполнил трекер — мягко
-// подсказать активным напарникам. Ограничители: уведомления партнёра
-// включены; партнёр сегодня ещё не заполнил сам; максимум один
-// pair_activity в день (по его таймзоне); тихие часы/бюджет — через очередь.
-export async function maybeNotifyPairPartners(
-  deps: DiaryCompleteDeps,
-  userId: bigint,
-): Promise<void> {
-  const pairs = await deps.pairsService.getUserPairs(userId);
-  for (const pair of pairs) {
-    if (pair.status !== 'active' || pair.partnerId === null) continue;
-    const partnerId = pair.partnerId;
-
-    const settings = await deps.botService.getUserSettings(partnerId);
-    if (!settings || settings.notifyEnabled === false) continue;
-
-    // Напарник уже заполнил сегодня сам — подсказка не нужна.
-    const partnerRatings = await deps.botService.getRatings(partnerId);
-    if (NEED_IDS.every((id) => partnerRatings[id] !== undefined)) continue;
-
-    const tz = settings.notifyTimezone ?? 'Europe/Moscow';
-    const todayStr = localDateString(tz, new Date());
-    const last = await deps.notificationService.lastSentAt(
-      partnerId,
-      'pair_activity',
-    );
-    const sentToday = last !== null && localDateString(tz, last) === todayStr;
-    if (
-      sentToday ||
-      (await deps.notificationService.hasPending(partnerId, 'pair_activity'))
-    ) {
-      continue;
-    }
-
-    await deps.notificationService.schedule(
-      partnerId,
-      'pair_activity',
-      new Date(),
-    );
-  }
 }
