@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptPayload, decryptPayload } from './notification-payload.crypto';
 import { PROACTIVE_TYPES, type NotificationType } from './notification.types';
+import { replacePending } from './replace-pending';
 export {
   PROACTIVE_TYPES,
   QUIET_EXEMPT_TYPES,
@@ -38,6 +39,11 @@ export class NotificationService {
         payload: encryptPayload(payload),
       },
     });
+  }
+
+  /** Снять стоящие этого типа и поставить новое — атомарно (replace-pending.ts). */
+  replacePending(u: bigint, t: NotificationType, at: Date, payload?: object) {
+    return replacePending(this.prisma, u, t, at, payload);
   }
 
   /** Освежить данные неотправленного уведомления — без новой строки (E16). */

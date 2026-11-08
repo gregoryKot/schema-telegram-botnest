@@ -34,6 +34,14 @@ function makeDeps() {
     cancel: jest.fn().mockResolvedValue(undefined),
     hasPending: jest.fn().mockResolvedValue(false),
   } as any;
+  // «Снять + поставить» одной транзакцией (replace-pending.ts): мок раскладывает
+  // его на те же вызовы — проверки по schedule не зависят от пути.
+  notifications.replacePending = jest.fn(
+    async (u: bigint, t: string, at: Date, p?: object) => {
+      await notifications.cancel(u, t);
+      await notifications.schedule(u, t, at, p);
+    },
+  );
   const cadence = {
     claimPlanDay: jest.fn().mockResolvedValue(true),
     expirePauseIfDue: jest.fn().mockResolvedValue('none'),
@@ -251,12 +259,18 @@ describe('NotificationPlannerService — low_streak_insight: lowest без optio
 });
 
 describe('NotificationPlannerService — scheduleReminder: cancel(reminder) StringLiteral', () => {
-  it('всегда отменяет прежний reminder перед планированием нового', async () => {
+  // Хвост E16: «снять прежний reminder и поставить новый» — одна замена под
+  // локом на человека (replace-pending.ts), а не два запроса вперемешку с
+  // соседним инстансом.
+  it('прежний reminder снимается той же заменой, что ставит новый', async () => {
     const { svc, deps } = make();
     await svc.planDay(makeUser(), NOW);
-    expect(deps.notifications.cancel).toHaveBeenCalledWith(
+    expect(deps.notifications.replacePending).toHaveBeenCalledTimes(1);
+    expect(deps.notifications.replacePending).toHaveBeenCalledWith(
       BigInt(42),
       'reminder',
+      expect.any(Date),
+      expect.objectContaining({ variant: expect.any(Number) }),
     );
   });
 });

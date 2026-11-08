@@ -21,6 +21,14 @@ function memoryQueue() {
   const db = () => new Promise((r) => setImmediate(r));
   const pending = (type: string) =>
     rows.filter((r) => r.type === type && !r.cancelled);
+  const cancel = async (_u: bigint, type: string) => {
+    await db();
+    for (const r of pending(type)) r.cancelled = true;
+  };
+  const schedule = async (_u: bigint, type: string, sendAt: Date) => {
+    await db();
+    rows.push({ type, sendAt, cancelled: false });
+  };
   return {
     rows,
     pending,
@@ -29,13 +37,13 @@ function memoryQueue() {
         await db();
         return pending(type).length > 0;
       },
-      cancel: async (_u: bigint, type: string) => {
-        await db();
-        for (const r of pending(type)) r.cancelled = true;
-      },
-      schedule: async (_u: bigint, type: string, sendAt: Date) => {
-        await db();
-        rows.push({ type, sendAt, cancelled: false });
+      cancel,
+      schedule,
+      // Без лока базы — два запроса вперемешку: порядок здесь держит только
+      // очередь процесса (межинстансовый лок — replace-pending.ts).
+      replacePending: async (u: bigint, type: string, sendAt: Date) => {
+        await cancel(u, type);
+        await schedule(u, type, sendAt);
       },
       cancelProactive: jest.fn(),
     },
