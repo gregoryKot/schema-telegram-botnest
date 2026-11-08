@@ -35,16 +35,14 @@ describe('ArticleDto', () => {
     );
   });
 
-  it('heroImage: null (сброс картинки) проходит', async () => {
-    await expect(
-      errorsFor(ArticleDto, { ...VALID, heroImage: null }),
-    ).resolves.toEqual([]);
-  });
-
-  it('heroImage: число — отказ', async () => {
-    await expect(
-      errorsFor(ArticleDto, { ...VALID, heroImage: 42 }),
-    ).resolves.toContain('heroImage');
+  it('лишнее поле heroImage (старый клиент) не валит валидацию и отбрасывается', async () => {
+    const dto = plainToInstance(ArticleDto, {
+      ...VALID,
+      heroImage: 'data:image/jpeg;base64,AAAA',
+    });
+    const errs = await validate(dto, { whitelist: true });
+    expect(errs).toEqual([]);
+    expect(dto).not.toHaveProperty('heroImage');
   });
 });
 

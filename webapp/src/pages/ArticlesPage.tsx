@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { api, ApiError } from '../api';
 import type { ArticleSummary, Article } from '../api';
@@ -8,6 +8,8 @@ import { DIAGRAMS } from './articleDiagrams';
 import { PRACTICE_BOOKING_URL } from './landing/constants';
 import { siteTitleSuffix } from '../utils/domainChrome';
 import { Btn } from '../components/landing-kit';
+import { ArticleCover } from '../components/art/ArticleCover';
+import { ArticleCard } from './landing/ArticleCard';
 import { backLink } from '../legal/legalStyles';
 import { formatDateString, utcCalendarDay } from '../../../shared/src/utils/calendarDate';
 // ─── Article list page ────────────────────────────────────────────────────────
@@ -42,39 +44,13 @@ export function ArticlesListPage() {
 
         {!failed && articles && (
           <div className="art-grid">
-            {articles.map((a) => (
-              <Link key={a.slug} to={`/articles/${a.slug}`} className="art-card">
-                {a.heroImage
-                  ? <img className="art-cover" src={a.heroImage} alt="" loading="lazy" decoding="async" />
-                  : <div className="art-cover art-cover-ph" aria-hidden />}
-                <div className="art-body">
-                  <h2 className="art-title">{a.title}</h2>
-                  <p className="art-desc">{a.description}</p>
-                  <div className="art-meta">
-                    <span>{a.readMin} мин</span>
-                    <span>·</span>
-                    <span>{formatDateString(utcCalendarDay(a.date), { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+            {articles.map((a, i) => <ArticleCard key={a.slug} a={a} index={i} titleAs="h2" withYear />)}
           </div>
         )}
 
         <style>{`
           .art-page { padding: 64px 40px 96px; }
           .art-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
-          .art-card { display: flex; flex-direction: column; text-decoration: none; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--surface); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
-          .art-card:hover { transform: translateY(-3px); box-shadow: 0 16px 44px rgba(28,25,20,.10); border-color: var(--line-strong); }
-          .art-cover { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
-          .art-cover-ph { background: linear-gradient(135deg, var(--accent-soft), transparent 62%), var(--surface-2); position: relative; }
-          .art-cover-ph::after { content: ''; position: absolute; right: -34px; bottom: -34px; width: 132px; height: 132px; border-radius: 50%; border: 1.5px solid var(--accent-line); }
-          .art-cover-ph::before { content: ''; position: absolute; right: 6px; bottom: 6px; width: 72px; height: 72px; border-radius: 50%; border: 1.5px solid var(--accent-line); opacity: .6; }
-          .art-body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
-          .art-title { font-family: var(--serif); font-size: 22px; font-weight: 400; color: var(--text); margin: 0 0 10px; letter-spacing: -.01em; line-height: 1.25; }
-          .art-desc { font-size: 14px; color: var(--text-sub); line-height: 1.6; margin: 0 0 16px; flex: 1; }
-          .art-meta { display: flex; gap: 8px; align-items: center; }
-          .art-meta span { font-size: 12px; color: var(--text-faint); }
           @media (max-width: 720px) {
             .art-page { padding: 40px 20px 72px; }
             .art-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -203,12 +179,7 @@ export function ArticlePage() {
           </p>
         </div>
 
-        {article.heroImage ? (
-          <img src={article.heroImage} alt="" loading="lazy" decoding="async"
-            style={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'cover', borderRadius: 'var(--r-20)', display: 'block', margin: '0 0 44px' }} />
-        ) : (
-          <div style={{ height: 1, background: 'var(--line)', margin: '0 0 40px' }} />
-        )}
+        <ArticleCover slug={article.slug} className="ac-cover ac-cover--hero" />
 
         <div className="article-content" dangerouslySetInnerHTML={{ __html: safeHtml }} />
         <style>{`

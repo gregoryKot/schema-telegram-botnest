@@ -133,7 +133,6 @@ const ARTICLES = ARTICLE_SEED.map((a, i) => ({
   date: `${a.date}T00:00:00.000Z`,
   updatedAt: `${a.date}T00:00:00.000Z`,
   readMin: a.readMin,
-  heroImage: null,
   diagramKey: ARTICLE_DIAGRAM_KEYS[a.slug] ?? null,
 })).sort((x, y) => y.date.localeCompare(x.date));
 

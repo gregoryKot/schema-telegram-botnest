@@ -7,21 +7,11 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ARTICLE_SEED } from './articles.seed';
 import { ARTICLE_DIAGRAM_KEYS } from './article-diagrams';
+import type { ArticleDto } from './article.dto';
 
 // Bump when built-in article content changes: instances refresh seeds on start.
 const SEED_VERSION = '16';
 const SEED_VERSION_KEY = 'articlesSeedVersion';
-
-export interface ArticleDto {
-  slug: string;
-  title: string;
-  description: string;
-  content: string;
-  date: string;
-  readMin: number;
-  heroImage?: string | null;
-  diagramKey?: string | null;
-}
 
 /** CRUD for blog articles. Public reads, admin-only writes. */
 @Injectable()
@@ -33,8 +23,9 @@ export class ArticlesService implements OnModuleInit {
   // Seed / refresh the built-in articles (the ones that used to be hardcoded in
   // the webapp). Version-gated: on an empty table we insert everything; on a
   // SEED_VERSION bump we refresh the built-in articles' text/diagrams by slug.
-  // heroImage is never overwritten (admin uploads survive), and articles the
-  // admin created (slugs not in the seed) are never touched.
+  // Обложки статей рисует сайт (webapp/src/components/art/articleCoverModel.ts):
+  // heroImage API больше не читает и не пишет. Статьи, созданные админом
+  // (слаги вне сида), сид не трогает.
   async onModuleInit() {
     const stored = await this.prisma.bookingSetting.findUnique({
       where: { key: SEED_VERSION_KEY },
@@ -56,7 +47,7 @@ export class ArticlesService implements OnModuleInit {
       if (!existing) {
         await this.prisma.article.create({ data: a });
       } else {
-        // Refresh built-in text + diagram key; keep any admin-uploaded hero image.
+        // Обновляем текст и ключ диаграммы встроенной статьи.
         await this.prisma.article.update({
           where: { slug: a.slug },
           data: {
@@ -90,20 +81,25 @@ export class ArticlesService implements OnModuleInit {
         date: true,
         updatedAt: true,
         readMin: true,
-        heroImage: true,
         diagramKey: true,
       },
     });
   }
 
   async findBySlug(slug: string) {
-    const article = await this.prisma.article.findUnique({ where: { slug } });
+    const article = await this.prisma.article.findUnique({
+      where: { slug },
+      omit: { heroImage: true },
+    });
     if (!article) throw new NotFoundException('Article not found');
     return article;
   }
 
   async adminList() {
-    return this.prisma.article.findMany({ orderBy: { date: 'desc' } });
+    return this.prisma.article.findMany({
+      orderBy: { date: 'desc' },
+      omit: { heroImage: true },
+    });
   }
 
   async create(dto: ArticleDto) {

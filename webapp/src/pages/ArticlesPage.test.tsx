@@ -9,6 +9,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ArticlesListPage, ArticlePage } from './ArticlesPage';
 import { ApiError } from '../api';
 import type { ArticleSummary, Article } from '../api';
+import { ARTICLE_COVERS } from '../components/art/articleCoverModel';
 import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const listArticles = vi.fn();
@@ -33,7 +34,7 @@ afterEach(() => {
 
 const SUMMARY: ArticleSummary = {
   id: 1, slug: 'schemas-101', title: 'Что такое схемы', description: 'Введение',
-  date: '2026-01-10', readMin: 5, heroImage: null, diagramKey: null,
+  date: '2026-01-10', readMin: 5, diagramKey: null,
 };
 
 describe('ArticlesListPage', () => {
@@ -129,6 +130,17 @@ describe('ArticlePage', () => {
     expect(container.querySelector('script')).toBeNull();
   });
 
+  it('шапка статьи — её сцена-обложка на бумаге, фото не рисуется, даже если API прислал heroImage', async () => {
+    const legacy = { ...SUMMARY, slug: 'schema-terapiya-vs-kpt', content: '<p>Текст</p>', heroImage: 'data:image/jpeg;base64,AAA' } as Article;
+    getArticle.mockResolvedValue(legacy);
+    const { container } = renderArticle('schema-terapiya-vs-kpt');
+    await screen.findByText('Что такое схемы');
+    const cover = container.querySelector('.ac-cover--hero') as HTMLElement;
+    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVERS['schema-terapiya-vs-kpt'].hue));
+    expect(cover.querySelector('svg.scn[aria-hidden="true"]')).not.toBeNull();
+    expect(container.querySelector('img')).toBeNull();
+  });
+
   it('CTA «Записаться» на странице статьи ведёт на реальный урл записи', async () => {
     getArticle.mockResolvedValue({ ...SUMMARY, content: '<p>Текст</p>' });
     renderArticle('schemas-101');
@@ -146,7 +158,7 @@ describe('дата статьи — календарный день, одина�
     await forEachTimeZoneAsync(async (tz) => {
       listArticles.mockResolvedValue([{ ...SUMMARY, date: STORED }]);
       render(<MemoryRouter><ArticlesListPage /></MemoryRouter>);
-      expect(await screen.findByText('10 января 2026 г.'), tz).toBeTruthy();
+      expect(await screen.findByText('10 января 2026 г. · 5 мин'), tz).toBeTruthy();
       cleanup();
     });
   });

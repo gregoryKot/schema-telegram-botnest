@@ -26,13 +26,8 @@ export class ArticleDto {
   @Min(0)
   readMin!: number;
 
-  // string | null (null сбрасывает картинку/диаграмму) — ValidateIf
+  // string | null (null сбрасывает диаграмму) — ValidateIf
   // пропускает проверку типа при null, IsOptional — при undefined.
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null)
-  @IsString()
-  heroImage?: string | null;
-
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
   @IsString()
@@ -64,11 +59,6 @@ export class UpdateArticleDto {
   @IsInt()
   @Min(0)
   readMin?: number;
-
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null)
-  @IsString()
-  heroImage?: string | null;
 
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
