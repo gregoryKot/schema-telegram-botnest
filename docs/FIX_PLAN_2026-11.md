@@ -54,8 +54,6 @@ E — баги, R — логика и надёжность, U — понятно
 
 | PR | Код | Что сделать | Где | Тест | Размер |
 |---|---|---|---|---|---|
-| 5.1 | R7 | Канал: флаг «публикация в полёте» и общий таймаут Telegram меньше тика; повтор только при ошибке подключения | `src/channel/channel-schedule.service.ts`, `channel-http.ts`, `telegram-channel.target.ts` | спек: медленная отправка — второй тик не постит | M |
-| 5.2 | E16 | Бот: захват дня одним `UPDATE` для сводки (две параллельные — одна сводка); двойной тап часа — одна запись; постоянная 400 — счётчик попыток и «отправлено»; `/zv` фоном; сбой refresh токена Threads — `error` | `tracker.controller.ts`, `telegram.diary-complete.ts`, `telegram.settings.service.ts`, `telegram-error.ts`, `telegram.admin.service.ts`, `threads-token.service.ts` | спек на каждый пункт | M |
 | 5.3 | R9 | Деньги: отмена оплаченной брони — «нужен возврат, X ₽» в оба канала; оплата доната или подписки без строки — алерт; `isEmail` у доната и подписки; после Р5 и Р6 — валюта и длина знакомства | `src/booking/booking-notify.service.ts`, `src/donation/donation.service.ts`, `src/subscription/*`, DTO | спеки | M |
 | 5.4 | R8 | Подписка (выключена; до включения): зависший `pending` сверяется через OpState или считается неудачей с алертом; пропуск P-3 учитывает и `failed` моложе 48 часов; чек у продления | `src/subscription/subscription.charges.ts`, `robokassa.service.ts` | спеки на таймаут и пропущенный вебхук | M |
 | 5.5 | S17 | Занятость календаря: одно широкое окно раз в 60 с, ответы нарезаются из него; `from` в прошлом и `to < from` — 400 | `src/booking/caldav.service.ts`, `booking.controller.ts` | спек: 10 разных окон — один запрос в iCloud | S |
