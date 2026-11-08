@@ -14,7 +14,7 @@ interface Props {
   label: string;
   onClose?: () => void;
   closeOnEscape?: boolean;
-  /** Escape без закрытия по фону (выбор «ты/вы»: «Позже» — тот же goBack). */
+  /** Escape без закрытия по фону (выбор формы обращения: «Позже» — тот же goBack). */
   onEscape?: () => void;
   zIndex?: number;
   maxWidth?: number;
