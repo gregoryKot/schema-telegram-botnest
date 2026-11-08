@@ -4,10 +4,10 @@
 // карточек разной бумаги. Фото-обложек нет: даже если старый ответ API принесёт heroImage,
 // картинка не рисуется. Дата — календарный день в любой зоне (E14).
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ArticleCard } from './ArticleCard';
-import { ARTICLE_COVERS } from '../../components/art/articleCoverModel';
+import { ARTICLE_COVER_HUE } from '../../components/art/articleCoverModel';
 import type { ArticleSummary } from '../../api';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
@@ -25,11 +25,11 @@ describe('ArticleCard', () => {
     expect(box.querySelector('a')?.getAttribute('href')).toBe('/articles/rezhimy-v-schema-terapii');
   });
 
-  it('статья со своей сценой — её бумага и сцена, без фото, даже если API прислал heroImage', () => {
+  it('статья со своей сценой — её бумага и сцена, без фото, даже если API прислал heroImage', async () => {
     const legacy = { ...article('skhemy-yanga-spisok'), heroImage: 'data:image/jpeg;base64,AAA' } as ArticleSummary;
     const cover = card(legacy).querySelector('.ac-cover') as HTMLElement;
-    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVERS['skhemy-yanga-spisok'].hue));
-    expect(cover.querySelector('svg.scn[aria-hidden="true"]')).not.toBeNull();
+    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVER_HUE['skhemy-yanga-spisok']));
+    await waitFor(() => expect(cover.querySelector('svg.scn[aria-hidden="true"]')).not.toBeNull());
     expect(cover.querySelector('img')).toBeNull();
   });
 

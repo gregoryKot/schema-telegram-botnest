@@ -290,7 +290,7 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
 - Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
   `scripts/color-drift-baseline.json`). Брать ролями, а не файлами.
 
-**Колонка `Article.heroImage` — данные без читателя (осознанно, 2026-11-08).** Обложки статей теперь рисует сайт по slug (`webapp/src/components/art/articleCoverModel.ts`); API heroImage не читает и не пишет (`src/articles/articles.service.ts`: `list()` без поля, `findBySlug`/`adminList` с `omit`), но в проде в колонке лежат 11 старых JPEG data URI (~1,4 МБ). Колонку не сносили, чтобы замена фото на иллюстрации откатывалась без потери. Снести — миграцией `ALTER TABLE "Article" DROP COLUMN "heroImage"` вместе с полем в `prisma/schema.prisma` и записью в `src/utils/encryption-policy.infra.ts`, когда владелец подтвердит, что старые картинки не нужны.
+**Колонка `Article.heroImage` — данные без читателя (осознанно, 2026-11-08).** Обложки статей теперь рисует сайт по slug (`webapp/src/components/art/articleCoverScenes.ts`); API heroImage не читает и не пишет (`src/articles/articles.service.ts`: `list()` без поля, `findBySlug`/`adminList` с `omit`), но в проде в колонке лежат 11 старых JPEG data URI (~1,4 МБ). Колонку не сносили, чтобы замена фото на иллюстрации откатывалась без потери. Снести — миграцией `ALTER TABLE "Article" DROP COLUMN "heroImage"` вместе с полем в `prisma/schema.prisma` и записью в `src/utils/encryption-policy.infra.ts`, когда владелец подтвердит, что старые картинки не нужны.
 
 **Удаление всех данных теста схем не пишет событие аналитики** (осознанно, 2026-10-24):
 `DELETE /api/ysq-data` (`src/api/ysq.controller.ts`, кнопка «Удалить результаты теста»)

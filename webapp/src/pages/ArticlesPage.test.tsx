@@ -4,12 +4,12 @@
 // (не заглушки), 404 на несуществующий slug, санитизацию HTML содержимого
 // (DOMPurify — XSS-защита свободного контента) и CTA на запись.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ArticlesListPage, ArticlePage } from './ArticlesPage';
 import { ApiError } from '../api';
 import type { ArticleSummary, Article } from '../api';
-import { ARTICLE_COVERS } from '../components/art/articleCoverModel';
+import { ARTICLE_COVER_HUE } from '../components/art/articleCoverModel';
 import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
 const listArticles = vi.fn();
@@ -136,8 +136,8 @@ describe('ArticlePage', () => {
     const { container } = renderArticle('schema-terapiya-vs-kpt');
     await screen.findByText('Что такое схемы');
     const cover = container.querySelector('.ac-cover--hero') as HTMLElement;
-    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVERS['schema-terapiya-vs-kpt'].hue));
-    expect(cover.querySelector('svg.scn[aria-hidden="true"]')).not.toBeNull();
+    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVER_HUE['schema-terapiya-vs-kpt']));
+    await waitFor(() => expect(cover.querySelector('svg.scn[aria-hidden="true"]')).not.toBeNull());
     expect(container.querySelector('img')).toBeNull();
   });
 

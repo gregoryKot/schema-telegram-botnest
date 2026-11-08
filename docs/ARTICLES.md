@@ -74,8 +74,9 @@
   санитайзер, иначе контент просто вырежется молча.
 - Диаграмма статьи — отдельное поле `diagramKey`, не часть текста. Не пытаться
   вписывать SVG прямо в `content` через редактор — WYSIWYG его выкинет.
-- Обложка — не фото, а сцена стиля сайта по slug: строка в
-  `webapp/src/components/art/articleCoverModel.ts`, рисунок в `ArticleScenes*.tsx` и
+- Обложка — не фото, а сцена стиля сайта по slug: бумага в
+  `webapp/src/components/art/articleCoverModel.ts`, сцена в `articleCoverScenes.ts`,
+  рисунок в `ArticleScenes*.tsx` и
   строка в таблице «Обложки статей» ([design/PAPER_2026-11.md](design/PAPER_2026-11.md)).
   Статья сида без сцены краснит `articleCoverModel.test.tsx`; статья из админки без сцены
   получает листы веером.

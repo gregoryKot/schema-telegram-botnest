@@ -23,7 +23,7 @@ export class ArticlesService implements OnModuleInit {
   // Seed / refresh the built-in articles (the ones that used to be hardcoded in
   // the webapp). Version-gated: on an empty table we insert everything; on a
   // SEED_VERSION bump we refresh the built-in articles' text/diagrams by slug.
-  // Обложки статей рисует сайт (webapp/src/components/art/articleCoverModel.ts):
+  // Обложки статей рисует сайт (webapp/src/components/art/articleCoverScenes.ts):
   // heroImage API больше не читает и не пишет. Статьи, созданные админом
   // (слаги вне сида), сид не трогает.
   async onModuleInit() {

@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { ArticleEditor } from './ArticleEditor';
 import type { Article } from '../../api';
-import { ARTICLE_COVERS } from '../../components/art/articleCoverModel';
+import { ARTICLE_COVER_HUE } from '../../components/art/articleCoverModel';
 
 vi.mock('../../api', () => ({
   api: {
@@ -140,8 +140,8 @@ describe('ArticleEditor — обложка', () => {
     const { container } = render(<ArticleEditor adminKey="k" article={article} onDone={() => {}} onCancel={() => {}} />);
     expect(container.querySelector('input[type="file"]')).toBeNull();
     const cover = container.querySelector('.ac-cover') as HTMLElement;
-    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVERS['rezhimy-v-schema-terapii'].hue));
-    expect(cover.querySelector('svg.scn')).not.toBeNull();
+    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVER_HUE['rezhimy-v-schema-terapii']));
+    await waitFor(() => expect(cover.querySelector('svg.scn')).not.toBeNull());
 
     fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
     await waitFor(() => expect(mockApi.adminUpdateArticle).toHaveBeenCalled());
@@ -153,7 +153,7 @@ describe('ArticleEditor — обложка', () => {
     const hueOf = () => (container.querySelector('.ac-cover') as HTMLElement).style.getPropertyValue('--h');
     const fallback = hueOf();
     fireEvent.change(screen.getByPlaceholderText('moya-statya'), { target: { value: 'skhemy-yanga-spisok' } });
-    expect(hueOf()).toBe(String(ARTICLE_COVERS['skhemy-yanga-spisok'].hue));
+    expect(hueOf()).toBe(String(ARTICLE_COVER_HUE['skhemy-yanga-spisok']));
     expect(hueOf()).not.toBe(fallback);
   });
 });
