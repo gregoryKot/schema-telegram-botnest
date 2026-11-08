@@ -55,6 +55,7 @@ scripts/public-scripts-baseline.json      merge=ratchet-min
 scripts/capability-registry-baseline.json merge=ratchet-min
 scripts/cron-leader-baseline.json         merge=ratchet-min
 scripts/history-sheet-baseline.json       merge=ratchet-min
+scripts/incident-registry-baseline.json   merge=ratchet-min
 scripts/local-cache-baseline.json         merge=ratchet-min
 scripts/mutation-zone-baseline.json       merge=ratchet-min
 scripts/persistent-throttle-baseline.json merge=ratchet-min
