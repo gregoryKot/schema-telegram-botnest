@@ -6,7 +6,13 @@
 //
 // Шаг исполняется как в Actions (`bash -e`), вместо node — подставной
 // исполняемый файл с заданным кодом выхода.
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
