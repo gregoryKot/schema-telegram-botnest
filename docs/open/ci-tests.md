@@ -60,18 +60,11 @@ PR: сменить `runs-on`, прочитать логи, починить.
   Лечение `App.test` — определять домен при рендере, а не при импорте, тогда `resetModules` не нужен. До
   этого локальный красный vitest при высокой нагрузке — повод перегнать красные файлы в одиночку; CI зелёный
   (там нагрузки нет), локальный `check-frontend-coverage-ratchet.mjs` под нагрузкой не доказывает ничего.
-- **Файл `src/**` с логикой и 0% строк не краснит ни один гейт.**
-  `scripts/check-coverage-ratchet.mjs` проверяет сумму и полы по каталогам, а
-  отдельные файлы не смотрит: десять непокрытых строк пол каталога `src/api`
-  не роняют. Так жил `src/api/throttle-hit.cleanup.ts` — единственный код,
-  удаляющий из общего счётчика денежных ручек, — пока аудит 2026-10 не нашёл
-  его глазами. Нужен пофайловый гейт с бейслайном существующих нулей (по
-  образцу `check-file-size-ratchet.mjs`: новый файл рождается с покрытием,
-  нулевой остаётся только записанным). Полный прогон coverage 2026-10-16 нашёл 14
-  файлов с 0% строк; большинство — Nest-модули и бутстрап (`app.module.ts`,
-  `main.ts`, `*.module.ts`), с логикой — `src/booking/booking.registry.ts` (22
-  строки), `src/articles/article-seo.routes.ts` (6),
-  `src/api/throttler-module-options.ts` (3), `src/cli/rotate-encryption-key.ts` (8).
+- **Храповик нулей (`scripts/check-zero-coverage.mjs`) видит только юнит-покрытие.** Контроллеры
+  под e2e-смоком (`practice-ics`, `client-booking`) и CLI ротации ключа записаны в
+  `scripts/zero-coverage-baseline.json` как «покрыто e2e», но e2e в `coverage-summary.json` не
+  входит: сломай e2e — гейт не узнает. Файл, покрытый одной строкой из десяти, гейт тоже не
+  видит — порог «ноль», а не процент.
 - **21 файл, выделенный из файлов мутационных зон, не измеряется мутациями**
   (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
   `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,

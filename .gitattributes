@@ -65,6 +65,7 @@ scripts/raw-sql-live-baseline.json        merge=ratchet-min
 scripts/recorded-fixtures-baseline.json   merge=ratchet-min
 scripts/timer-cleanup-baseline.json       merge=ratchet-min
 scripts/unwatched-code-baseline.json      merge=ratchet-min
+scripts/zero-coverage-baseline.json       merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max

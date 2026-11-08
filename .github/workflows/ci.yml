@@ -75,6 +75,10 @@ jobs:
       # его spawn'нутому jest как --cacheDirectory.
       - run: node scripts/check-coverage-ratchet.mjs
         timeout-minutes: 6
+      # Пофайловый храповик нулей: файл src/** с 0% строк — красный, если не
+      # записан с причиной в scripts/zero-coverage-baseline.json. Судит
+      # coverage/coverage-summary.json из шага выше, jest сам не гоняет.
+      - run: node scripts/check-zero-coverage.mjs
       # Тот же пакет тестов под НЕ-UTC зоной (инцидент 2026-07-20), второй
       # полный прогон после coverage-храповика выше. Раннер всегда UTC,
       # поэтому баги «время считается от зоны сервера» в CI невидимы:
