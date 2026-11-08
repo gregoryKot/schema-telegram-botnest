@@ -6,6 +6,7 @@ import { dependabotPrsProbe } from './probe-dependabot-prs';
 import { backupFreshnessProbe } from './probe-backup-freshness';
 import { googleOAuthProbe, vkOAuthProbe } from './probe-oauth-providers';
 import { webPushProbe } from './probe-web-push';
+import { telegramDomainProbe } from './probe-telegram-domain';
 
 /**
  * Пробы, которые ходят во внешние площадки живым запросом (Telegram, iCloud,
@@ -15,6 +16,7 @@ import { webPushProbe } from './probe-web-push';
 export function liveIntegrationProbes(): Probe[] {
   return [
     ...telegramProbes(),
+    telegramDomainProbe(),
     caldavProbe(),
     googleOAuthProbe(),
     vkOAuthProbe(),
