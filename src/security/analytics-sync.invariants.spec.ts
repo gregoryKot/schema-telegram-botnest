@@ -218,6 +218,12 @@ const BACKEND_ONLY: Record<string, string> = {
     '(src/booking/booking.create.ts), когда запись ответила 409 «время уже ' +
     'заняли», userId = null, без meta. Фронт его не шлёт: отказ — ответ на ' +
     'HTTP-запрос записи; /stats считает только строки с userId = null',
+  booking_currency_chosen:
+    'серверное событие: пишет только BookingService.book после созданной ' +
+    'брони, когда валюту назначил явный выбор посетителя при поясе без места ' +
+    '(решение Р5), userId = null, meta — валюта. Выбор уходит полем currency ' +
+    'в POST /api/booking/book, а не событием: форма записи анонимная, ' +
+    'POST /api/event её не принял бы; /stats считает только строки с userId = null',
   reminder_snoozed:
     'серверное событие: пишет только бот после постановки отложенного ' +
     'напоминания в очередь (src/telegram/telegram.snooze.ts), meta — булев ' +
@@ -302,6 +308,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // отказ «время уже заняли» есть только в ответе сервера на запись.
     // 40 — reminder_snoozed (2026-11, аудит 2026-10 backend#16): серверное —
     // кнопка под сообщением бота, у сайта такого действия нет.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(40);
+    // 41 — booking_currency_chosen (2026-11, решение владельца Р5): серверное —
+    // форма записи анонимная, выбор валюты приходит полем брони.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(41);
   });
 });

@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 import { BookingPicker } from './BookingPicker';
 import { localTimeLabel } from '../../../shared/src/booking/clientTimeZone';
+import { setChosenCurrency } from './booking/priceCurrency';
 
 vi.mock('../api', () => ({
   api: { getSlots: vi.fn(), getBookingOptions: vi.fn(), bookSlot: vi.fn(), cancelBooking: vi.fn() },
@@ -40,7 +41,10 @@ beforeEach(() => {
   mockApi.getSlots.mockResolvedValue([SLOT]);
   mockApi.getBookingOptions.mockResolvedValue(OPTIONS);
 });
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  act(() => setChosenCurrency(null)); // выбор валюты живёт в памяти вкладки — между тестами сбрасываем
+});
 
 /** Открывает форму: слот выбран, поля заполнены, формат «Сессия» (платный). */
 async function openSessionForm(tz: string) {
@@ -122,5 +126,48 @@ describe('BookingPicker — цена в валюте посетителя', () =
     ]);
     await openSessionForm('America/New_York');
     expect(flat(screen.getByRole('button', { name: /Оплатить/ }).textContent ?? '')).toContain(`Оплатить ${flat((3000).toLocaleString('ru-RU'))} ₽`);
+  });
+});
+
+// Решение владельца Р5: пояс без места (UTC и т. п.) — рубли с предоплатой, а
+// заграничная цена — только по явному выбору валюты. Выбор виден только при
+// таком поясе, меняет показанную цену и уходит на сервер полем `currency`.
+describe('BookingPicker — явный выбор валюты при поясе без места', () => {
+  it.each(['Europe/Moscow', 'America/New_York'])('настоящий пояс %s — выбора валюты нет', async (tz) => {
+    mockTz.mockReturnValue([tz, vi.fn()]);
+    render(<BookingPicker />);
+    await screen.findByText(localTimeLabel(SLOT.startsAt, tz));
+    expect(screen.queryByText('Я не в России — показать цену')).toBeNull();
+  });
+
+  it('UTC: по умолчанию рубли с оплатой онлайн; выбор евро меняет цену и путь оплаты', async () => {
+    await openSessionForm('UTC');
+    expect(screen.getByText('Я не в России — показать цену')).toBeTruthy();
+    expect(screen.getByRole('button', { name: (n) => flat(n) === `Сессия · ${flat(RUB_4000)}` })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Оплатить/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'в евро €' }));
+    expect(screen.getByRole('button', { name: (n) => flat(n) === 'Сессия · 65 €' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Оплатить/ })).toBeNull();
+    expect(screen.getByText('Сессия – 65 €. Об оплате договоримся после записи.')).toBeTruthy();
+  });
+
+  it('UTC + евро: запрос несёт пояс и выбранную валюту', async () => {
+    await openSessionForm('UTC');
+    fireEvent.click(screen.getByRole('button', { name: 'в евро €' }));
+    mockApi.bookSlot.mockResolvedValue({ id: 6, cancelToken: 't6', heldUntil: null, status: 'confirmed', paymentUrl: null, eventDurationMin: 50 });
+    fireEvent.click(screen.getByRole('button', { name: /^Записаться на/ }));
+    await screen.findByText('Время забронировано');
+    expect(mockApi.bookSlot).toHaveBeenCalledWith(expect.objectContaining({ clientTimeZone: 'UTC', currency: 'EUR' }));
+  });
+
+  it('выбор, сделанный при UTC, не уходит с настоящим поясом: валюта по поясу, currency в запросе нет', async () => {
+    act(() => setChosenCurrency('EUR'));
+    await openSessionForm('Europe/Moscow');
+    expect(screen.getByRole('button', { name: /Оплатить/ })).toBeTruthy();
+    mockApi.bookSlot.mockResolvedValue({ id: 7, cancelToken: 't7', heldUntil: null, status: 'pending', paymentUrl: 'https://pay.example/y', eventDurationMin: 50 });
+    fireEvent.click(screen.getByRole('button', { name: /Оплатить/ }));
+    await screen.findByText('Время зарезервировано');
+    expect(mockApi.bookSlot.mock.calls[0][0].currency).toBeUndefined();
   });
 });

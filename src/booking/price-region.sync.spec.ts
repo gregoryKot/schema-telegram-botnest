@@ -12,7 +12,9 @@ import {
   currencyFromTimeZone,
   formatPrice,
   isOnlinePaymentCurrency,
+  isPlacelessTimeZone,
   regionFromTimeZone,
+  resolvePriceCurrency,
 } from './price-region';
 
 const SHARED = join(
@@ -102,6 +104,42 @@ describe('currencyFromTimeZone / isOnlinePaymentCurrency', () => {
       expect(CURRENCIES).toContain(c);
     }
     for (const c of CURRENCIES) expect(CURRENCY_SYMBOL[c]).toBeTruthy();
+  });
+});
+
+// Р5: явный выбор валюты действует только при поясе без места.
+describe('isPlacelessTimeZone / resolvePriceCurrency', () => {
+  it.each(['UTC', 'Etc/UTC', 'GMT', 'Etc/GMT-0', 'Zulu'])(
+    '%s — без места',
+    (tz) => {
+      expect(isPlacelessTimeZone(tz)).toBe(true);
+    },
+  );
+
+  it.each([undefined, null, '', 'Europe/Moscow', 'Etc/GMT-3', 'мусор'])(
+    '%p — не «без места»',
+    (tz) => {
+      expect(isPlacelessTimeZone(tz)).toBe(false);
+    },
+  );
+
+  it.each([
+    ['UTC', 'EUR', 'EUR'],
+    ['Etc/UTC', 'ILS', 'ILS'],
+    ['GMT', 'USD', 'USD'],
+    ['UTC', 'RUB', 'RUB'],
+    ['UTC', undefined, 'RUB'],
+    ['UTC', null, 'RUB'],
+    ['Europe/Moscow', 'EUR', 'RUB'],
+    ['Asia/Bangkok', 'EUR', 'USD'],
+    ['Asia/Jerusalem', 'USD', 'ILS'],
+    [undefined, 'EUR', 'RUB'],
+  ] as const)('пояс %p, выбор %p → %s', (tz, chosen, currency) => {
+    expect(resolvePriceCurrency(tz, chosen)).toBe(currency);
+  });
+
+  it('мусор вместо валюты при поясе без места — рубли', () => {
+    expect(resolvePriceCurrency('UTC', 'XXX' as never)).toBe('RUB');
   });
 });
 

@@ -34,6 +34,7 @@ function makeService(
     rules?: any[];
     existingBookings?: any[];
     robokassaEnabled?: boolean;
+    analytics?: { track: jest.Mock };
   } = {},
 ) {
   const bookingRows: any[] = opts.existingBookings
@@ -104,6 +105,7 @@ function makeService(
     pricing as any,
     config as any,
     cronLeader,
+    opts.analytics as any,
   );
   return {
     service,
@@ -895,12 +897,13 @@ describe('BookingService.book — страна посетителя (валют�
   };
 
   function setupCurrency(robokassaEnabled = true) {
-    const made = makeService({ rules: [], robokassaEnabled });
+    const analytics = { track: jest.fn(async () => undefined) };
+    const made = makeService({ rules: [], robokassaEnabled, analytics });
     made.pricing.getPrice.mockImplementation(
       async (_type: unknown, currency?: string) =>
         CURRENCY_PRICES[currency ?? 'RUB'],
     );
-    return made;
+    return { ...made, analytics };
   }
 
   describe('BookingService.book — не в рублях: подтверждена сразу, без Robokassa', () => {
@@ -1042,6 +1045,100 @@ describe('BookingService.book — страна посетителя (валют�
         process.env.NODE_ENV = was;
         errorSpy.mockRestore();
       }
+    });
+  });
+
+  // Решение владельца Р5: пояс без места (UTC) — рубли с предоплатой, а
+  // заграница — только по явному выбору валюты. При настоящем поясе выбор
+  // игнорируется: иначе клиент из России выбрал бы евро и обошёл предоплату.
+  describe('BookingService.book — явный выбор валюты (Р5)', () => {
+    it('UTC + EUR: CONFIRMED в евро без Robokassa; событие для /stats', async () => {
+      const { service, tx, notify, robokassa, analytics } = setupCurrency();
+      const res = await service.book({
+        ...CURRENCY_DTO,
+        clientTimeZone: 'UTC',
+        currency: 'EUR',
+      });
+      expect(res.status).toBe(BookingStatus.CONFIRMED);
+      expect(res.paymentUrl).toBeNull();
+      expect(tx.booking.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          status: BookingStatus.CONFIRMED,
+          heldUntil: null,
+          amount: 65,
+          currency: 'EUR',
+          clientTimeZone: 'UTC',
+        }),
+      });
+      expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
+      // Карточка владельцу: пояс UTC + евро — по ней видна пометка (priceLine).
+      expect(notify.onConfirmed).toHaveBeenCalledWith(
+        expect.objectContaining({ currency: 'EUR', clientTimeZone: 'UTC' }),
+      );
+      expect(analytics.track).toHaveBeenCalledWith(
+        null,
+        'booking_currency_chosen',
+        { currency: 'EUR' },
+      );
+    });
+
+    it('Europe/Moscow + EUR: выбор игнорируется — рубли, HELD, Robokassa', async () => {
+      const { service, tx, robokassa, analytics } = setupCurrency();
+      const res = await service.book({
+        ...CURRENCY_DTO,
+        clientTimeZone: 'Europe/Moscow',
+        currency: 'EUR',
+      });
+      expect(res.status).toBe(BookingStatus.HELD);
+      expect(res.paymentUrl).toBeTruthy();
+      expect(tx.booking.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ currency: 'RUB', amount: 4000 }),
+      });
+      expect(robokassa.buildPaymentUrl).toHaveBeenCalledTimes(1);
+      expect(analytics.track).not.toHaveBeenCalled();
+    });
+
+    it.each([[undefined], ['RUB' as const]])(
+      'UTC, выбор %p — рубли с предоплатой, как раньше',
+      async (currency) => {
+        const { service, tx, analytics } = setupCurrency();
+        const res = await service.book({
+          ...CURRENCY_DTO,
+          clientTimeZone: 'UTC',
+          currency,
+        });
+        expect(res.status).toBe(BookingStatus.HELD);
+        expect(tx.booking.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({ currency: 'RUB' }),
+        });
+        expect(analytics.track).not.toHaveBeenCalled();
+      },
+    );
+
+    it('слот уже занят — бронь не создана, события «валюту выбрали» нет', async () => {
+      const { service, analytics } = setupCurrency();
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      await service.book({
+        ...CURRENCY_DTO,
+        clientTimeZone: 'UTC',
+        currency: 'EUR',
+      });
+      analytics.track.mockClear();
+      await expect(
+        service.book({
+          ...CURRENCY_DTO,
+          clientTimeZone: 'UTC',
+          currency: 'EUR',
+        }),
+      ).rejects.toThrow(ConflictException);
+      errorSpy.mockRestore();
+      expect(analytics.track).not.toHaveBeenCalledWith(
+        null,
+        'booking_currency_chosen',
+        expect.anything(),
+      );
     });
   });
 });

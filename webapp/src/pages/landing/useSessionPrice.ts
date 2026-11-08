@@ -2,15 +2,16 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import type { SessionOption } from '../../api';
 import { resolveClientTimeZone } from '../../../../shared/src/booking/clientTimeZone';
-import { currencyFromTimeZone } from '../../../../shared/src/booking/priceRegion';
+import { usePriceCurrency } from '../../components/booking/priceCurrency';
 import { DEFAULT_SESSION_PRICE, makePrice, optionPrice, type OptionPrice } from '../../utils/sessionPrice';
 
 /**
- * Живая цена сессии (правится в админке) в валюте посетителя — лендинг
- * совпадает с формой записи. До ответа API и при его сбое — дефолт валюты.
+ * Живая цена сессии (правится в админке) в валюте посетителя (и выбор валюты, Р5) —
+ * лендинг совпадает с формой записи. До ответа API и при его сбое — дефолт валюты.
  */
 export function useSessionPrice(): OptionPrice {
-  const [currency] = useState(() => currencyFromTimeZone(resolveClientTimeZone()));
+  const [tz] = useState(resolveClientTimeZone);
+  const { currency } = usePriceCurrency(tz);
   const [option, setOption] = useState<SessionOption | null>(null);
   useEffect(() => {
     api.getBookingOptions()

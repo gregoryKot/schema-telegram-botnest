@@ -125,6 +125,23 @@ export function currencyFromTimeZone(tz: string | null | undefined): Currency {
   return REGION_CURRENCY[regionFromTimeZone(tz)];
 }
 
+/** Пояс без места (UTC и синонимы): страна неизвестна. Пустой — не такой. */
+export function isPlacelessTimeZone(tz: string | null | undefined): boolean {
+  return !!tz && PLACELESS_TIME_ZONE.test(tz);
+}
+
+/** Валюта цены (Р5): явный выбор посетителя действует только при поясе без
+ * места — иначе клиент из России выбрал бы евро и обошёл предоплату. Одна
+ * функция на показ цены (сайт) и на бронь (сервер). */
+export function resolvePriceCurrency(
+  tz: string | null | undefined,
+  chosen?: Currency | null,
+): Currency {
+  if (chosen && CURRENCIES.includes(chosen) && isPlacelessTimeZone(tz))
+    return chosen;
+  return currencyFromTimeZone(tz);
+}
+
 /** Онлайн-оплата (Robokassa) есть только в рублях. */
 export function isOnlinePaymentCurrency(currency: Currency): boolean {
   return currency === 'RUB';

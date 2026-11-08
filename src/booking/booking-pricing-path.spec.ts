@@ -1,11 +1,12 @@
 // resolveBookingPrice: валюта по поясу, сумма из PricingService, холд и
 // признак «платная не в рублях» (manual). book() целиком — в
-// booking.book-currency.spec.ts, здесь — сама развилка.
+// booking.book.spec.ts («страна посетителя»), здесь — сама развилка.
 import { SessionType } from '@prisma/client';
 import {
   HOLD_MINUTES,
   pathLabel,
   resolveBookingPrice,
+  trackExplicitCurrency,
 } from './booking-pricing-path';
 
 const NOW = Date.parse('2026-10-20T12:00:00Z');
@@ -29,6 +30,7 @@ describe('resolveBookingPrice', () => {
       manual: false,
       amount: 4000,
       heldUntil: new Date(NOW + HOLD_MINUTES * 60_000),
+      explicit: false,
     });
     expect(p.getPrice).toHaveBeenCalledWith(SessionType.SESSION_50, 'RUB');
   });
@@ -105,6 +107,119 @@ describe('resolveBookingPrice', () => {
   });
 });
 
+// Решение владельца Р5: заграница при неизвестном поясе — по явному выбору
+// валюты. Выбор действует только при поясе без места; при настоящем поясе он
+// игнорируется — иначе клиент из России выбрал бы евро и обошёл предоплату.
+describe('resolveBookingPrice — явный выбор валюты (Р5)', () => {
+  const eurPricing = () => ({
+    getPrice: jest.fn(async (_t: SessionType, c?: string) =>
+      c === 'EUR' ? 65 : 4000,
+    ),
+  });
+
+  it.each(['UTC', 'Etc/UTC', 'GMT'])(
+    'пояс %s + EUR: евро, manual, без холда, explicit',
+    async (tz) => {
+      const p = eurPricing();
+      const r = await resolveBookingPrice(
+        p,
+        { type: SessionType.SESSION_50, clientTimeZone: tz, currency: 'EUR' },
+        NOW,
+      );
+      expect(r).toEqual({
+        isFree: false,
+        currency: 'EUR',
+        manual: true,
+        amount: 65,
+        heldUntil: null,
+        explicit: true,
+      });
+      expect(p.getPrice).toHaveBeenCalledWith(SessionType.SESSION_50, 'EUR');
+    },
+  );
+
+  it.each([
+    ['Europe/Moscow', 'RUB'],
+    ['Asia/Yekaterinburg', 'RUB'],
+    ['Asia/Bangkok', 'USD'],
+    // Невалидный пояс — как пустой: не «без места», выбор не действует.
+    ['мусор', 'RUB'],
+    [undefined, 'RUB'],
+  ])(
+    'настоящий или пустой пояс %p + EUR: выбор игнорируется → %s',
+    async (tz, currency) => {
+      const r = await resolveBookingPrice(
+        eurPricing(),
+        { type: SessionType.SESSION_50, clientTimeZone: tz, currency: 'EUR' },
+        NOW,
+      );
+      expect(r).toMatchObject({ currency, explicit: false });
+      expect(r.manual).toBe(currency !== 'RUB');
+    },
+  );
+
+  it('Москва + EUR: рубли с предоплатой — холд 15 минут, не manual', async () => {
+    const r = await resolveBookingPrice(
+      eurPricing(),
+      {
+        type: SessionType.SESSION_50,
+        clientTimeZone: 'Europe/Moscow',
+        currency: 'EUR',
+      },
+      NOW,
+    );
+    expect(r).toMatchObject({
+      currency: 'RUB',
+      manual: false,
+      amount: 4000,
+      heldUntil: new Date(NOW + HOLD_MINUTES * 60_000),
+    });
+  });
+
+  it('UTC без выбора и с выбором RUB — рубли с предоплатой, как раньше', async () => {
+    for (const currency of [undefined, 'RUB' as const]) {
+      const r = await resolveBookingPrice(
+        eurPricing(),
+        { type: SessionType.SESSION_50, clientTimeZone: 'UTC', currency },
+        NOW,
+      );
+      expect(r).toMatchObject({
+        currency: 'RUB',
+        manual: false,
+        explicit: false,
+        heldUntil: new Date(NOW + HOLD_MINUTES * 60_000),
+      });
+    }
+  });
+});
+
+describe('trackExplicitCurrency', () => {
+  const path = {
+    isFree: false,
+    currency: 'EUR' as const,
+    manual: true,
+    amount: 65,
+    heldUntil: null,
+  };
+
+  it('явный выбор — серверное событие без userId, meta — только валюта', async () => {
+    const track = jest.fn(async () => undefined);
+    await trackExplicitCurrency({ track }, { ...path, explicit: true });
+    expect(track).toHaveBeenCalledWith(null, 'booking_currency_chosen', {
+      currency: 'EUR',
+    });
+  });
+
+  it('валюта по поясу — события нет; без сервиса аналитики не падает', async () => {
+    const track = jest.fn(async () => undefined);
+    await trackExplicitCurrency({ track }, { ...path, explicit: false });
+    expect(track).not.toHaveBeenCalled();
+    await expect(
+      trackExplicitCurrency(undefined, { ...path, explicit: true }),
+    ).resolves.toBeUndefined();
+  });
+});
+
 describe('pathLabel', () => {
   const base = {
     isFree: false,
@@ -112,6 +227,7 @@ describe('pathLabel', () => {
     manual: false,
     amount: 1,
     heldUntil: null,
+    explicit: false,
   };
   it('подписи для лога', () => {
     expect(pathLabel({ ...base, heldUntil: new Date() })).toBe('HELD');

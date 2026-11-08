@@ -89,4 +89,21 @@ describe('BookDto — рантайм-валидация платёжного э�
       errorsFor({ ...VALID, clientChannel: 'sms' }),
     ).resolves.toContain('clientChannel');
   });
+
+  // Р5: явный выбор валюты — только код из списка; ValidationPipe отвечает 400.
+  it.each(['RUB', 'ILS', 'EUR', 'USD'])(
+    'currency: %s проходит',
+    async (currency) => {
+      await expect(errorsFor({ ...VALID, currency })).resolves.toEqual([]);
+    },
+  );
+
+  it.each(['eur', 'GBP', '', 'EUR ', 5, { code: 'EUR' }])(
+    'currency: %p — отказ',
+    async (currency) => {
+      await expect(errorsFor({ ...VALID, currency })).resolves.toContain(
+        'currency',
+      );
+    },
+  );
 });
