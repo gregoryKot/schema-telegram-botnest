@@ -503,3 +503,78 @@ describe('entrypoint (супервизор старта)', () => {
     expect(out).not.toMatch(/убито сигналом|приложение упало/);
   }, 30_000);
 });
+
+// Аудит 2026-10, «Красный смок не говорит, что именно лежит»: окно старта,
+// упавший migrate deploy и крашлуп давали одну и ту же страницу техработ.
+// Супервизор держит причину (supervisor-status.mjs), front отдаёт её заголовком
+// X-Maintenance-Reason — здесь шов с настоящим процессом.
+
+/** Опрос /health через front до нужной причины в заголовке (или последняя). */
+async function pollReason(port: number, want: string): Promise<string | null> {
+  let last: string | null = null;
+  for (let i = 0; i < 100; i++) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/health`);
+      await res.text();
+      last = res.headers.get('x-maintenance-reason');
+      if (last === want) return last;
+    } catch {
+      /* front ещё не принимает — повторим */
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return last;
+}
+
+describe('entrypoint: причина техработ заголовком X-Maintenance-Reason', () => {
+  const alive: ChildProcess[] = [];
+  afterEach(() => {
+    while (alive.length) {
+      const proc = alive.pop();
+      try {
+        if (proc?.pid) process.kill(-proc.pid, 'SIGKILL');
+      } catch {
+        proc?.kill('SIGKILL');
+      }
+    }
+  });
+
+  it('идёт migrate deploy → причина migrating', async () => {
+    const { proc, frontPort } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'sleep 20',
+      APP_PORT: String(await reservePort()),
+    });
+    alive.push(proc);
+    expect(await pollReason(await frontPort, 'migrating')).toBe('migrating');
+  }, 25_000);
+
+  it('migrate deploy упал → причина migrate-failed', async () => {
+    const { proc, frontPort } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'exit 1',
+      MIGRATE_MAX_ATTEMPTS: '1',
+      APP_PORT: String(await reservePort()),
+    });
+    alive.push(proc);
+    expect(await pollReason(await frontPort, 'migrate-failed')).toBe(
+      'migrate-failed',
+    );
+  }, 25_000);
+
+  it('крашлуп до listen → причина crashloop-parked', async () => {
+    const { proc, frontPort } = launch({
+      RECOVER_CMD: 'true',
+      MIGRATE_CMD: 'true',
+      APP_CMD: 'exit 1',
+      APP_PORT: String(await reservePort()),
+      STARTUP_MAX_FAILS: '2',
+      STARTUP_BACKOFF_MS: '10',
+      STARTUP_COOLDOWN_MS: '600000', // пауза дольше теста — супервизор припаркован
+    });
+    alive.push(proc);
+    expect(await pollReason(await frontPort, 'crashloop-parked')).toBe(
+      'crashloop-parked',
+    );
+  }, 25_000);
+});

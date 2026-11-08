@@ -14,19 +14,26 @@ import { listenWithRetry, reservePort } from '../test-support/ephemeral-port';
 
 const FRONT = join(process.cwd(), 'deploy', 'front-server.mjs');
 const FRONT_STATIC = join(process.cwd(), 'deploy', 'front-static.mjs');
+const MAINTENANCE_PAGE = join(process.cwd(), 'deploy', 'maintenance-page.mjs');
 
 // Поднимает front с заданным APP_PORT на эфемерном публичном порту (PORT=0),
-// вычитывает реальный порт из лога. С distDir — через startFront() в
-// инлайн-модуле: так спек подкладывает свою сборку визитки вместо webapp/dist.
-function launchFront(appPort: number, distDir?: string) {
-  const args = distDir
-    ? [
-        '--input-type=module',
-        '-e',
-        `import { startFront } from ${JSON.stringify(FRONT)};` +
-          `startFront({ port: 0, appPort: ${appPort}, distDir: ${JSON.stringify(distDir)} });`,
-      ]
-    : [FRONT];
+// вычитывает реальный порт из лога. С distDir или reason — через startFront() в
+// инлайн-модуле: так спек подкладывает свою сборку визитки вместо webapp/dist и
+// причину техработ, которую в контейнере держит супервизор (entrypoint.mjs).
+function launchFront(appPort: number, distDir?: string, reason?: string) {
+  const opts =
+    `port: 0, appPort: ${appPort}` +
+    (distDir ? `, distDir: ${JSON.stringify(distDir)}` : '') +
+    (reason ? `, reason: () => ${JSON.stringify(reason)}` : '');
+  const args =
+    distDir || reason
+      ? [
+          '--input-type=module',
+          '-e',
+          `import { startFront } from ${JSON.stringify(FRONT)};` +
+            `startFront({ ${opts} });`,
+        ]
+      : [FRONT];
   const proc: ChildProcess = spawn('node', args, {
     env: { ...process.env, PORT: '0', APP_PORT: String(appPort) },
   });
@@ -70,6 +77,8 @@ describe('front-server (публичный порт: техработы ⇄ пр
       expect(res.status).toBe(200);
       expect(res.headers.get('cache-control')).toContain('no-store');
       expect(res.headers.get('content-type')).toContain('text/html');
+      // Front сам по себе (без супервизора) причины не знает — заголовка нет.
+      expect(res.headers.get('x-maintenance-reason')).toBeNull();
       const html = await res.text();
       expect(html).toContain('технические работы');
       expect(html).toContain('Всё по схеме');
@@ -141,7 +150,13 @@ describe('front-server (публичный порт: техработы ⇄ пр
     });
     afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-    type Hit = { status: number; type: string; cache: string; body: string };
+    type Hit = {
+      status: number;
+      type: string;
+      cache: string;
+      reason?: string;
+      body: string;
+    };
     // fetch не даёт подменить Host — сырой http.request.
     function hit(port: number, path: string, host: string, method = 'GET') {
       return new Promise<Hit>((resolve, reject) => {
@@ -155,6 +170,8 @@ describe('front-server (публичный порт: техработы ⇄ пр
                 status: res.statusCode ?? 0,
                 type: String(res.headers['content-type']),
                 cache: String(res.headers['cache-control']),
+                reason: res.headers['x-maintenance-reason'] as
+                  string | undefined,
                 body,
               }),
             );
@@ -245,6 +262,42 @@ describe('front-server (публичный порт: техработы ⇄ пр
       const res = await hit(await port, '/', 'kotlarewski.gr');
       expect(res.body).toContain('технические работы');
     }, 10000);
+
+    // Аудит 2026-10, «Красный смок не говорит, что именно лежит»: упавший
+    // migrate deploy и крашлуп снаружи были неразличимы. Причину держит
+    // супервизор (supervisor-status.mjs), front ставит её заголовком только на
+    // страницу техработ; смок прода её печатает (prod-smoke.yml).
+    it('причина техработ — заголовком X-Maintenance-Reason на странице техработ, не на файлах', async () => {
+      const { proc, port } = launchFront(59995, dist, 'migrate-failed');
+      alive.push(proc);
+      const p = await port;
+      for (const path of ['/health', '/api/settings', '/today']) {
+        const res = await hit(p, path, 'schemehappens.ru');
+        expect(res.body).toContain('технические работы');
+        expect(res.reason).toBe('migrate-failed');
+      }
+      const js = await hit(p, '/assets/index-AbCdEf12.js', 'schemehappens.ru');
+      expect(js.status).toBe(200);
+      expect(js.reason).toBeUndefined();
+    }, 10000);
+
+    it('в заголовок попадает только известное слово (без инъекции заголовков)', () => {
+      const out = execFileSync('node', [
+        '--input-type=module',
+        '-e',
+        `import { withReason } from ${JSON.stringify(MAINTENANCE_PAGE)};` +
+          `const raw = Buffer.from('HTTP/1.1 200 OK\\r\\nA: b\\r\\n\\r\\nBODY');` +
+          `const r = (x) => withReason(raw, x).toString();` +
+          `console.log(JSON.stringify([r('crashloop-parked'), r('evil\\r\\nSet-Cookie: x=1'), r(null), r('toString')]));`,
+      ]).toString();
+      const [known, injected, none, proto] = JSON.parse(out) as string[];
+      expect(known).toBe(
+        'HTTP/1.1 200 OK\r\nA: b\r\nX-Maintenance-Reason: crashloop-parked\r\n\r\nBODY',
+      );
+      expect(injected).toBe('HTTP/1.1 200 OK\r\nA: b\r\n\r\nBODY');
+      expect(none).toBe(injected);
+      expect(proto).toBe(injected);
+    });
 
     it('хосты визитки во front совпадают с PRACTICE_ALIAS_HOSTS (правило №4)', () => {
       const out = execFileSync('node', [

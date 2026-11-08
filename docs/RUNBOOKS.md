@@ -127,8 +127,11 @@ Resend. У Robokassa две пробы (настройка и поток веб�
 
 **Что делать сейчас.**
 1. Открыть `https://schemehappens.ru/health`. 503 — проблема в базе, иди в
-   следующий блок. Страница техработ — приложение не стартовало. Ничего —
-   контейнера нет.
+   следующий блок. Страница техработ — приложение не стартовало; почему —
+   заголовок `X-Maintenance-Reason` (`curl -sD - -o /dev/null
+   https://schemehappens.ru/health`, его же печатает смок): `migrate-failed` —
+   п. 4, `crashloop-parked` — п. 5, `db-wait`/`db-unreachable` — п. 3,
+   `migrating`/`app-starting` — старт ещё идёт. Ничего — контейнера нет.
 2. Смотреть логи контейнера в Amvera. Порядок старта (`deploy/entrypoint.mjs`):
    front на порту 3000 → ожидание базы (до 2 минут) → `recover-p3009` →
    `migrate deploy` (до 3 попыток) → `node dist/main` на `APP_PORT`.

@@ -7,8 +7,7 @@
 // Здесь шаг не пересказывается, а ИСПОЛНЯЕТСЯ: `run:` вытаскивается из
 // настоящего YAML и идёт в bash с пустыми и заполненными секретами и
 // подменённым `curl` в PATH (шов — сам скрипт воркфлоу, не его описание).
-// YAML-парсера в зависимостях нет, шаги режутся по отступу; слом отступа
-// многострочного run (известная ловушка аудита 2026-09) ломает и этот разбор.
+// Разбор шагов по отступу — src/test-support/workflow-steps.ts.
 import { spawnSync } from 'child_process';
 import {
   chmodSync,
@@ -20,37 +19,17 @@ import {
 } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import {
+  jobBody,
+  runBlock,
+  stepName,
+  steps,
+} from '../test-support/workflow-steps';
 
 const WORKFLOWS = join(process.cwd(), '.github', 'workflows');
 const read = (file: string) => readFileSync(join(WORKFLOWS, file), 'utf8');
 
-/** Тело джобы `alarm`: от её ключа до следующего ключа джобы (отступ 2). */
-function alarmJob(yml: string): string {
-  const start = yml.search(/^ {2}alarm:\n/m);
-  if (start < 0) throw new Error('джобы alarm нет');
-  const rest = yml.slice(start + 1);
-  const next = rest.search(/^ {2}\S/m);
-  return next < 0 ? rest : rest.slice(0, next);
-}
-
-/** Шаги джобы: каждый начинается с `      - ` (отступ 6). */
-function steps(job: string): string[] {
-  return job.split(/^ {6}- /m).slice(1);
-}
-
-const stepName = (s: string) => /^name: (.*)$/m.exec(s)?.[1] ?? '';
-
-function runBlock(step: string): string {
-  const lines = step.split('\n');
-  const at = lines.findIndex((l) => /^ {8}run: \|\s*$/.test(l));
-  if (at < 0) throw new Error(`у шага «${stepName(step)}» нет run: |`);
-  const body: string[] = [];
-  for (const l of lines.slice(at + 1)) {
-    if (l.trim() !== '' && !l.startsWith(' '.repeat(10))) break;
-    body.push(l.slice(10));
-  }
-  return body.join('\n');
-}
+const alarmJob = (yml: string) => jobBody(yml, 'alarm');
 
 const dmStep = (file: string) => {
   const found = steps(alarmJob(read(file))).find((s) =>
