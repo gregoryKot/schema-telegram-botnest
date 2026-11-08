@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BeliefCheckEx } from './BeliefCheckEx';
+import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 import { AddressFormContext } from '../../utils/addressForm';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
 
@@ -279,5 +280,22 @@ describe('BeliefCheckEx — недобавленный текст не теря�
     fireEvent.click(screen.getByText(/Дальше · доказательства за/));
     expect(screen.getByText('Опоздание')).toBeTruthy();
     expect((screen.getByPlaceholderText('Добавить доказательство…') as HTMLInputElement).value).toBe('');
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('BeliefCheckEx — пределы полей', () => {
+  it('мысль и доказательство несут предел DTO проверки убеждения', () => {
+    toForStep();
+    fireEvent.click(screen.getByRole('button', { name: /^Назад$/ }));
+    const belief = screen.getByPlaceholderText(BELIEF_PH) as HTMLTextAreaElement;
+    expect(belief.maxLength).toBe(EXERCISE_TEXT_MAX);
+    fireEvent.click(screen.getByText(/Дальше · доказательства за/));
+    const evidence = screen.getByPlaceholderText(
+      'Добавить доказательство…',
+    ) as HTMLInputElement;
+    expect(evidence.maxLength).toBe(EXERCISE_TEXT_MAX);
   });
 });

@@ -9,8 +9,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { PHRASE_MARK_IDS } from '../../bot/phrase-check.constants';
-
-const TEXT_MAX = 3000;
+import { EXERCISE_TEXT_MAX } from '../../utils/text-limits';
 
 /**
  * Разбор фразы внутреннего голоса (правило №6: рантайм-валидация декораторами,
@@ -20,7 +19,7 @@ const TEXT_MAX = 3000;
 export class PhraseCheckDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(TEXT_MAX)
+  @MaxLength(EXERCISE_TEXT_MAX)
   phrase!: string;
 
   @IsArray()
@@ -30,7 +29,7 @@ export class PhraseCheckDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(TEXT_MAX)
+  @MaxLength(EXERCISE_TEXT_MAX)
   rewrite?: string;
 
   /** Забрать переписанную фразу в «Тёплые слова» — выбор пользователя. */
@@ -47,6 +46,6 @@ export class PhraseCheckDto {
  */
 export class UpdatePhraseCheckDto {
   @IsString()
-  @MaxLength(TEXT_MAX)
+  @MaxLength(EXERCISE_TEXT_MAX)
   rewrite!: string;
 }

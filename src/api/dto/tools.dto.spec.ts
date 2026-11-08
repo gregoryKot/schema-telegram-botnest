@@ -9,6 +9,11 @@ import {
   SafePlaceDto,
   FlashcardDto,
 } from './tools.dto';
+import {
+  EXERCISE_TEXT_MAX,
+  LETTER_TEXT_MAX,
+  SAFE_PLACE_TEXT_MAX,
+} from '../../utils/text-limits';
 
 async function errorsFor(
   cls: new () => object,
@@ -88,5 +93,55 @@ describe('FlashcardDto', () => {
     await expect(
       errorsFor(FlashcardDto, { modeId: 'x', needId: 'hacked' }),
     ).resolves.toContain('needId');
+  });
+});
+
+// Поля упражнений на сайте получают `maxLength` из тех же констант
+// (`shared/src/limits/textLimits.ts`, сверка — text-limits.parity.spec.ts).
+// Предел DTO, разошедшийся с константой, снова пускал бы в поле текст,
+// который сервер отобьёт 400.
+describe('пределы DTO инструментов = константы text-limits', () => {
+  const cases: [new () => object, Record<string, unknown>, string, number][] = [
+    [LetterDto, {}, 'text', LETTER_TEXT_MAX],
+    [SafePlaceDto, {}, 'description', SAFE_PLACE_TEXT_MAX],
+    [FlashcardDto, { modeId: 'x' }, 'reflection', EXERCISE_TEXT_MAX],
+    [FlashcardDto, { modeId: 'x' }, 'action', EXERCISE_TEXT_MAX],
+    [
+      BeliefCheckDto,
+      { belief: 'мысль', evidenceFor: [], evidenceAgainst: [] },
+      'reframe',
+      EXERCISE_TEXT_MAX,
+    ],
+  ];
+
+  it.each(cases)(
+    '%p.%s: на пределе проходит, на знак больше — отказ',
+    async (cls, base, field, max) => {
+      await expect(
+        errorsFor(cls, { ...base, [field]: 'я'.repeat(max) }),
+      ).resolves.toEqual([]);
+      await expect(
+        errorsFor(cls, { ...base, [field]: 'я'.repeat(max + 1) }),
+      ).resolves.toContain(field);
+    },
+  );
+
+  it('BeliefCheckDto: мысль и каждое доказательство — тот же предел', async () => {
+    const long = 'я'.repeat(EXERCISE_TEXT_MAX + 1);
+    const ok = 'я'.repeat(EXERCISE_TEXT_MAX);
+    await expect(
+      errorsFor(BeliefCheckDto, {
+        belief: ok,
+        evidenceFor: [ok],
+        evidenceAgainst: [ok],
+      }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(BeliefCheckDto, {
+        belief: long,
+        evidenceFor: [long],
+        evidenceAgainst: [long],
+      }),
+    ).resolves.toEqual(['belief', 'evidenceFor', 'evidenceAgainst']);
   });
 });

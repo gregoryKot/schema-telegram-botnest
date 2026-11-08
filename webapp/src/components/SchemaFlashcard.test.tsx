@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaFlashcard } from './SchemaFlashcard';
+import { EXERCISE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
 import { describeCrisisField } from '../test-support/crisisCardHarness';
 
@@ -296,5 +297,19 @@ describe('SchemaFlashcard — серверная копия не доехала'
     });
     expect(screen.getByText('Сохранено')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+// Предел поля = `@MaxLength` FlashcardDto: без него длинный отклик уходил на
+// сервер и получал 400 (docs/open, «Поля упражнений без лимита»).
+describe('SchemaFlashcard — пределы полей', () => {
+  it('отклик и шаг несут предел DTO флешкарты', () => {
+    renderToResponseStep();
+    const reflection = screen.getByPlaceholderText('Что хочется сказать себе...') as HTMLTextAreaElement;
+    expect(reflection.maxLength).toBe(EXERCISE_TEXT_MAX);
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    const action = screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...') as HTMLTextAreaElement;
+    expect(action.maxLength).toBe(EXERCISE_TEXT_MAX);
   });
 });

@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PhraseCheckEx } from './PhraseCheckEx';
+import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 import { AddressFormContext } from '../../utils/addressForm';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
@@ -303,5 +304,24 @@ describe('PhraseCheckEx — ты/вы', () => {
       </MemoryRouter>,
     );
     expect(screen.getByText(/^Запишите дословно фразу, которую говорите себе/)).toBeTruthy();
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('PhraseCheckEx — пределы полей', () => {
+  it('фраза и ответ несут предел DTO разбора', () => {
+    renderEx();
+    const phrase = screen.getByPlaceholderText(
+      'Например: опять всё завалила, ни на что не гожусь',
+    ) as HTMLTextAreaElement;
+    expect(phrase.maxLength).toBe(EXERCISE_TEXT_MAX);
+    enterPhrase('я ни на что не гожусь');
+    walkAllCritic();
+    const rewrite = screen.getByPlaceholderText(
+      /Например: отчёт ушёл с ошибкой/,
+    ) as HTMLTextAreaElement;
+    expect(rewrite.maxLength).toBe(EXERCISE_TEXT_MAX);
   });
 });

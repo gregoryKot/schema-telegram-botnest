@@ -184,17 +184,6 @@
   Обычная карта на 30 узлов с заметками укладывается с запасом; автосохранение
   на 413 называет причину — «текст слишком длинный» (`webapp/src/components/useModeMapAutosave.ts`).
   Общий потолок не поднимать — разбор в `src/infra/body-limit.ts`.
-- **Поля упражнений без клиентского лимита врут про причину отказа на длинном
-  тексте.** 413 (тело больше 256 КБ) теперь разбирает общий маппер
-  (`shared/src/api/humanizeError.ts`, `TOO_LARGE_TEXT`; строка статуса —
-  `saveFailureText` в `shared/src/therapy/SaveStatusLine.tsx`, концептуализация
-  и карта режимов). Но реальный край у письма, безопасного места, карточки-флешкарты,
-  проверки убеждения и фразы — не 413, а 400 от `@MaxLength(10000)`/`TEXT_MAX`
-  (`src/api/dto/tools.dto.ts`): `<textarea>` без `maxLength`
-  (`webapp/src/components/exercises/LetterEx.tsx`, `FlashcardEx.tsx`,
-  `PhraseCheckEx.tsx`, `BeliefCheckEx.tsx`, `flashcard/FlashcardSteps.tsx`; `<input>`
-  в `SafePlaceEx.tsx`), экран письма и места пишет «Проверь соединение», повтор не поможет. Закрыть: `LimitedTextarea` с
-  пределом из `shared/src/limits/textLimits.ts` (как у дневников, `DIARY_FIELD_MAX`).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
 - Таяние долга `check-color-drift.mjs`: 19 литералов в 8 файлах (сверка 2026-11-08,
   `scripts/color-drift-baseline.json`; админка и `indexColor` переведены на токены). Остаток по ролям:

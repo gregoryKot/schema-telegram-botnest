@@ -8,49 +8,54 @@ import {
   MaxLength,
 } from 'class-validator';
 import { NEED_IDS } from '../../bot/bot.service';
-
-const TEXT_MAX = 3000;
+import {
+  EXERCISE_TEXT_MAX,
+  LETTER_TEXT_MAX,
+  SAFE_PLACE_TEXT_MAX,
+} from '../../utils/text-limits';
 
 /**
  * DTO для инструментов дневника (belief-checks, letters, safe-place,
- * flashcards) — аудит 2026-07, 2г / правило №6 CLAUDE.md. Лимиты
- * дублируют уже существующие ручные проверки в контроллере.
+ * flashcards) — аудит 2026-07, 2г / правило №6 CLAUDE.md. Пределы — из
+ * `src/utils/text-limits.ts`: поля упражнений на сайте берут те же числа
+ * (`maxLength` + счётчик), иначе длинный текст упирался в 400, а экран
+ * говорил «проверь соединение».
  */
 export class BeliefCheckDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(TEXT_MAX)
+  @MaxLength(EXERCISE_TEXT_MAX)
   belief!: string;
 
   @IsArray()
   @ArrayMaxSize(50)
   @IsString({ each: true })
-  @MaxLength(TEXT_MAX, { each: true })
+  @MaxLength(EXERCISE_TEXT_MAX, { each: true })
   evidenceFor!: string[];
 
   @IsArray()
   @ArrayMaxSize(50)
   @IsString({ each: true })
-  @MaxLength(TEXT_MAX, { each: true })
+  @MaxLength(EXERCISE_TEXT_MAX, { each: true })
   evidenceAgainst!: string[];
 
   @IsOptional()
   @IsString()
-  @MaxLength(TEXT_MAX)
+  @MaxLength(EXERCISE_TEXT_MAX)
   reframe?: string;
 }
 
 export class LetterDto {
   @IsOptional()
   @IsString()
-  @MaxLength(10000)
+  @MaxLength(LETTER_TEXT_MAX)
   text?: string;
 }
 
 export class SafePlaceDto {
   @IsOptional()
   @IsString()
-  @MaxLength(10000)
+  @MaxLength(SAFE_PLACE_TEXT_MAX)
   description?: string;
 }
 
@@ -69,11 +74,11 @@ export class FlashcardDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(TEXT_MAX)
+  @MaxLength(EXERCISE_TEXT_MAX)
   reflection?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(TEXT_MAX)
+  @MaxLength(EXERCISE_TEXT_MAX)
   action?: string;
 }

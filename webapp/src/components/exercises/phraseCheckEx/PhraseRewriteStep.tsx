@@ -6,6 +6,8 @@ import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { CrisisCard } from '../../CrisisCard';
 import { buildVerdict } from '../../../../../shared/src/phraseCheck/verdict';
 import type { PhraseMarkId } from '../../../../../shared/src/phraseCheck/criteria';
+import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
+import { EXERCISE_TEXT_MAX } from '../../../../../shared/src/limits/textLimits';
 
 export function PhraseRewriteStep({
   marks,
@@ -56,7 +58,8 @@ export function PhraseRewriteStep({
         </div>
       </div>
 
-      <textarea
+      <LimitedTextarea
+        max={EXERCISE_TEXT_MAX}
         className="ds-textarea"
         value={rewrite}
         onChange={(e) => setRewrite(e.target.value)}

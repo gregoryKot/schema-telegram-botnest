@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEx, ModeEx } from './FlashcardEx';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
+import { NOTE_CARD_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: {
@@ -248,5 +249,16 @@ describe('FlashcardEx — вход без initialData грузит сохран�
     );
     expect(((await screen.findByRole('textbox')) as HTMLTextAreaElement).value).toBe('Когда не отвечают');
     expect(mockedApi.getModeNotes).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('FlashcardEx — предел поля карточки', () => {
+  it('поле ответа несёт предел поля карточки схемы', async () => {
+    renderSheet();
+    const area = (await screen.findByRole('textbox')) as HTMLTextAreaElement;
+    expect(area.maxLength).toBe(NOTE_CARD_FIELD_MAX);
   });
 });

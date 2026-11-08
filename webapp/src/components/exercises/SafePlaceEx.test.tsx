@@ -11,6 +11,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { SafePlaceEx } from './SafePlaceEx';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
+import { SAFE_PLACE_FIELD_MAX } from './safePlaceText';
+import { SAFE_PLACE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: {
@@ -126,5 +128,23 @@ describe('SafePlaceEx — сохранение и обращение ты/вы',
     fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
     fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
     expect(await screen.findByText('Ваше')).toBeTruthy();
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('SafePlaceEx — пределы полей', () => {
+  it('все пять полей несут предел, при котором описание целиком влезает в DTO', async () => {
+    renderEx();
+    const fields = screen.getAllByRole('textbox') as HTMLInputElement[];
+    expect(fields).toHaveLength(5);
+    for (const f of fields) expect(f.maxLength).toBe(SAFE_PLACE_FIELD_MAX);
+    const full = 'я'.repeat(SAFE_PLACE_FIELD_MAX);
+    for (const f of fields) fireEvent.change(f, { target: { value: full } });
+    fireEvent.click(screen.getByText(/Сохранить место/));
+    await screen.findByText('безопасное место.');
+    const sent = mockApi.saveSafePlace.mock.calls[0][0] as string;
+    expect(sent.length).toBeLessThanOrEqual(SAFE_PLACE_TEXT_MAX);
   });
 });

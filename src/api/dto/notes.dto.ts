@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { DAY_NOTE_MERGED_MAX } from '../../bot/day-note-limit';
 import { MODE_NOTE_FIELDS } from '../../bot/notes.service';
+import { NOTE_CARD_FIELD_MAX } from '../../utils/text-limits';
 
 /**
  * DTO для POST /api/note, /api/schema-notes, /api/mode-notes
@@ -31,40 +32,38 @@ export class SaveNoteDto {
   tags?: string[];
 }
 
-export const NOTE_MAX = 3000;
-
 // Поля, общие для карточки схемы и карточки режима (правило №11 — одна
 // механика ввода не копипастится). Схема-специфичные (`reality`) и
 // режим-специфичные (`needs`) поля — в дочерних классах.
 export class NoteFieldsDto {
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   triggers?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   feelings?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   thoughts?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   origins?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   healthyView?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   behavior?: string;
 }
 
@@ -74,7 +73,7 @@ export class SchemaNoteDto extends NoteFieldsDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   reality?: string;
 }
 
@@ -84,17 +83,17 @@ export class ModeNoteDto extends NoteFieldsDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   needs?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   modeFunction?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   needsMet?: string;
 
   /** Имя режима своими словами — короткое, это подпись, а не текст. */
@@ -105,7 +104,7 @@ export class ModeNoteDto extends NoteFieldsDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(NOTE_MAX)
+  @MaxLength(NOTE_CARD_FIELD_MAX)
   fear?: string;
 
   /** Поля, которые пишутся только в пустое место карточки (разбор «Что случилось»). */

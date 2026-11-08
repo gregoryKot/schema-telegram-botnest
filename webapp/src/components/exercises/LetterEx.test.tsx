@@ -5,6 +5,7 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { LetterEx } from './LetterEx';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
+import { LETTER_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
 import { getQuickAction } from '../../../../shared/src/quickActions/quickActions';
 import { journeyTypeMeta } from '../../../../shared/src/journey/journeyMeta';
@@ -229,5 +230,24 @@ describe('LetterEx — сбой сохранения не теряет пись�
     expect(screen.getByText('Второй заход.')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
     expect(mockApi.createLetter).toHaveBeenCalledTimes(2);
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('LetterEx — предел письма', () => {
+  it('поле письма не пропускает больше, чем примет сервер', () => {
+    renderSheet();
+    const area = screen.getByPlaceholderText('…') as HTMLTextAreaElement;
+    expect(area.maxLength).toBe(LETTER_TEXT_MAX);
+  });
+
+  it('у края предела виден остаток знаков', () => {
+    renderSheet();
+    fireEvent.change(screen.getByPlaceholderText('…'), {
+      target: { value: 'я'.repeat(LETTER_TEXT_MAX - 5) },
+    });
+    expect(screen.getByText('Осталось знаков: 5')).toBeTruthy();
   });
 });

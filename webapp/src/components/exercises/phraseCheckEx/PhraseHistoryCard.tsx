@@ -14,6 +14,8 @@ import { DeleteBtn } from '../../../sections/diary/DeleteBtn';
 import { usePhraseHistoryCard } from '../../../../../shared/src/phraseCheck/usePhraseHistoryCard';
 import { PhraseMarkPills } from '../../../../../shared/src/phraseCheck/PhraseMarkPills';
 import { trackEntryDeleted } from '../../../../../shared/src/analytics/trackEntryDeleted';
+import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
+import { EXERCISE_TEXT_MAX } from '../../../../../shared/src/limits/textLimits';
 import { api } from '../../../api';
 import type { PhraseCheckEntry } from '../../../api';
 
@@ -57,7 +59,8 @@ export function PhraseHistoryCard({
         <div className="ds-label ex2-sheet-label">
           {tr('Твой ответ себе', 'Ваш ответ себе')}
         </div>
-        <textarea
+        <LimitedTextarea
+          max={EXERCISE_TEXT_MAX}
           className="ds-textarea"
           value={rewrite}
           onChange={(e) => setRewrite(e.target.value)}
