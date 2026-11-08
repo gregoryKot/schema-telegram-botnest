@@ -162,7 +162,12 @@ describe.each(['prod-smoke.yml', 'nightly.yml'])(
 // Шаг issue ci-alarm исполняется с поддельными github/context/core: `script:`
 // вытаскивается из настоящего YAML (github-script отдаёт его AsyncFunction).
 type Call = { kind: string; args: Record<string, unknown> };
-type Issue = { number: number; title: string; body: string; updated_at?: string };
+type Issue = {
+  number: number;
+  title: string;
+  body: string;
+  updated_at?: string;
+};
 
 function issueScript(file: string): string {
   const step = steps(alarmJob(read(file))).find((s) =>
@@ -321,5 +326,32 @@ describe.each([
     expect(create).toHaveLength(1);
     expect(create[0].args.assignees).toEqual(['o']);
     expect(create[0].args.labels).toEqual(['ci-alarm']);
+  });
+
+  // Правило №20: починка инцидента приезжает со строкой в docs/INCIDENTS.md.
+  // Три коротких красных смока октября закрылись сами без строки (аудит
+  // 2026-10, «Реестр инцидентов отстаёт»): напоминание стоит в самой issue.
+  it('в теле — чеклист «строка в docs/INCIDENTS.md», ссылка на прогон на месте', async () => {
+    const r = await execIssueStep(file, { env });
+    const body = String(r.calls[0].args.body);
+    expect(body).toMatch(/^- \[ \] строка в docs\/INCIDENTS\.md/m);
+    expect(body).toContain(
+      'Ссылка на прогон: https://github.com/o/r/actions/runs/7',
+    );
+  });
+
+  it('контроль: повторный провал дописывает комментарий без второго чеклиста', async () => {
+    const r = await execIssueStep(file, {
+      env,
+      issue: {
+        number: 1,
+        title: String((await execIssueStep(file, { env })).calls[0].args.title),
+        body: 'Упали джобы: backend-flaky.',
+        updated_at: '2000-01-01T00:00:00Z',
+      },
+    });
+    const comments = r.calls.filter((c) => c.kind === 'comment');
+    expect(comments).toHaveLength(1);
+    expect(String(comments[0].args.body)).not.toContain('INCIDENTS');
   });
 });
