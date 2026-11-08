@@ -66,13 +66,6 @@ NestJS 12, 2026-10-24): `src/api/memory-throttle-storage.ts` заменял шт
   требует протащить таймзону в `parseBusy` и решения владельца. Согласуется с
   правилом №25.
 
-**Даты в DTO, проверенные только регэкспом формы.** С 2026-10-26 есть валидатор
-настоящего календарного дня `IsCalendarDay` (`src/utils/calendar-day.ts`), он
-стоит на сроке задания, дате заметки сессии, `therapyStartDate` и
-`AdminCalendarQueryDto.from/to`. Без него остался момент
-`SessionInfoDto.nextSession` (день внутри `DAY_OR_MOMENT_RE` не сверяется): зона
-другого агента (даты встреч), правило №20.
-
 **Нечитаемые шифрованные данные — остаток после D-8** (проба `encryptionReadable`,
 `src/utils/crypto-record.ts`):
 - **Мутационная зона крипто-ядра держится на допуске.** `crypto.ts` дал 89.14%
