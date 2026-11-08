@@ -55,6 +55,11 @@ describe('сырой SQL инфраструктуры на реальном Post
       // stale не пинится: джоба `migrations` живёт дольше грейса старта, и
       // process.uptime() законно даст true (форму поля держит health.controller.spec).
       selfCheck: { ranAt: null, stale: expect.any(Boolean), failed: [] },
+      // Поля запуска (src/api/health-report.ts): момент старта процесса и
+      // счёт запусков/падений от супервизора; без супервизора (CI) — null.
+      startedAt: expect.any(String),
+      launch: null,
+      crashesDay: null,
     });
   });
 
