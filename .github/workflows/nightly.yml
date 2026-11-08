@@ -667,7 +667,18 @@ jobs:
         with:
           node-version: 22
       - name: закрытые тревоги ci-alarm — строки в реестре инцидентов
-        run: node scripts/check-incident-registry.mjs
+        # Код 2 — GitHub API не ответил: данных нет, реестр не нарушен. Красное
+        # тут завело бы ci-alarm на сбой GitHub (ложная тревога), поэтому шаг
+        # зелёный с предупреждением; следующей ночью сверка повторится.
+        # Поведение по кодам держит incident-registry-step.spec.ts.
+        run: |
+          code=0
+          node scripts/check-incident-registry.mjs || code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::GitHub API не ответил — реестр инцидентов этой ночью не сверен"
+            exit 0
+          fi
+          exit "$code"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
