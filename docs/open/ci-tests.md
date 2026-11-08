@@ -35,15 +35,13 @@
   в `HttpException` (`ExpressAdapter.mapException`), фильтр поправлен в #1027
   (`src/prisma/client-http-error.ts`). Логи прода после деплоя никто не смотрел.
 
-**CI на Ubuntu 26 не переведён** (#789, 2026-10-20). На `ubuntu-latest` (с 2026-10-19 —
-Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverage-ratchet.mjs` и шаг
-`migrations` с `pg_dump` (спек переноса БД, с тех пор удалён), на `ubuntu-24.04` эти шаги
-зелёные. Причину по логам не разобрали: из песочницы агента логи Actions не скачиваются
-(хвост вывода храповика в pipe терялся — исправлено, следующий красный прогон покажет FAIL jest).
-Версия для `pg_dump` — 17+ пишет `SET transaction_timeout`, которого нет в Postgres 16
-сервиса джобы (тот же клиент берёт `test/restore-backup.e2e-spec.ts`). Переход — отдельный
-PR: сменить `runs-on`, прочитать логи, починить.
-Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
+**CI переведён на `ubuntu-26.04` без проверки на раннере** (#789; коммит «ci: все джобы на
+ubuntu-26.04»). В октябре на `ubuntu-latest` (уже Ubuntu 26) у трёх PR подряд падали `backend` →
+`check-coverage-ratchet.mjs` и шаг `migrations` с `pg_dump`; причину по логам не разобрали. Закрыто
+до проверки: клиент Postgres 16 — из PGDG и первым в PATH (образ несёт PostgreSQL 18, `pg_dump`
+17+ пишет `SET transaction_timeout`, которого в 16 нет), пин — `src/test-support/gates/runner-pin.spec.ts`.
+Не разобрано: храповик покрытия. Первый PR-CI на новом образе — красный `backend` читать по логу
+(хвост FAIL jest в выводе храповика есть), не откатывать `runs-on` молча.
 
 **Тесты и даты — открыто:**
 - **vitest `webapp` под нагрузкой машины: остался класс «10 с на весь тест».** Класс «`findBy*`/`waitFor`
