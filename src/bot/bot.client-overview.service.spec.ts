@@ -2,7 +2,10 @@
 // 1) семантика полей идентична старым per-user методам (стрик, давность,
 //    история за 14 дней);
 // 2) число SQL-запросов не растёт с числом клиентов — ровно 3 на весь список.
+// Стрик и давность считает сырой SQL (client-streaks.ts): здесь его эмулирует
+// фейк той же формулой, сам запрос — живой спек test/raw-sql-live-infra.
 import { BotClientOverviewService } from './bot.client-overview.service';
+import { makeFakeQueryRaw } from '../test-support/fake-client-streaks';
 
 const TZ = 'Europe/Moscow';
 // Fixed mid-day Moscow instant — the service derives "today"/"N days ago"
@@ -55,6 +58,11 @@ function makePrisma(
     },
     countQueries: () => queries,
   };
+  const streaks = makeFakeQueryRaw(() => ratings);
+  prisma.$queryRaw = jest.fn((q: any) => {
+    queries++;
+    return streaks(q);
+  });
   return prisma;
 }
 
@@ -125,29 +133,6 @@ describe('BotClientOverviewService.getClientOverviews', () => {
     expect(prisma.countQueries()).toBe(3);
   });
 
-  it('D5: запрос distinct-дат (allDates) уходит со страховочным потолком take: 5000 и orderBy по свежести', async () => {
-    const prisma = makePrisma(ratings);
-    const svc = new BotClientOverviewService(prisma);
-    await svc.getClientOverviews([A, B, C]);
-
-    const calls = prisma.rating.findMany.mock.calls as any[];
-    // Различаем два вызова rating.findMany по наличию distinct — только у
-    // allDates (запрос №2) он есть, у recentRows (запрос №3) нет.
-    const allDatesArgs = calls.find((c) => c[0].distinct)?.[0];
-    const recentRowsArgs = calls.find((c) => !c[0].distinct)?.[0];
-
-    expect(allDatesArgs).toMatchObject({
-      distinct: ['userId', 'date'],
-      orderBy: { date: 'desc' },
-      take: 5000,
-    });
-    // Потолок — только для allDates. recentRows и так ограничен union дат за
-    // 14 дней (запрос №3), ему такой предохранитель не нужен.
-    expect(recentRowsArgs).toBeDefined();
-    expect(recentRowsArgs.take).toBeUndefined();
-    expect(recentRowsArgs.orderBy).toBeUndefined();
-  });
-
   it('пустой список клиентов — ноль запросов', async () => {
     const prisma = makePrisma([]);
     const svc = new BotClientOverviewService(prisma);
@@ -164,10 +149,14 @@ function d(daysAgo: number): string {
   t.setUTCDate(t.getUTCDate() - daysAgo);
   return t.toISOString().slice(0, 10);
 }
-function makePrismaLite(overrides: Record<string, unknown> = {}) {
+function makePrismaLite(
+  overrides: Record<string, unknown> = {},
+  days: Array<{ userId: bigint; date: string }> = [],
+) {
   return {
     user: { findMany: jest.fn().mockResolvedValue([]) },
     rating: { findMany: jest.fn().mockResolvedValue([]) },
+    $queryRaw: makeFakeQueryRaw(() => days),
     ...overrides,
   };
 }
@@ -182,32 +171,27 @@ describe('getClientOverviews — перенос из analytics-спека (#177)
   });
 
   it('batches streak/daysSince/history for several clients in one pass', async () => {
-    const prisma = makePrismaLite({
-      user: {
-        findMany: jest.fn().mockResolvedValue([
-          { id: 1n, notifyTimezone: 'UTC' },
-          { id: 2n, notifyTimezone: 'UTC' },
-        ]),
+    const rows = [
+      { userId: 1n, date: d(0), needId: 'attachment', value: 7 },
+      { userId: 1n, date: d(1), needId: 'attachment', value: 6 },
+      { userId: 2n, date: d(5), needId: 'autonomy', value: 4 },
+    ];
+    const prisma = makePrismaLite(
+      {
+        user: {
+          findMany: jest.fn().mockResolvedValue([
+            { id: 1n, notifyTimezone: 'UTC' },
+            { id: 2n, notifyTimezone: 'UTC' },
+          ]),
+        },
+        rating: {
+          // Полные строки за последние 14 дней (для history); дни для стрика
+          // и давности отдаёт эмуляция сырого запроса — из тех же строк.
+          findMany: jest.fn(() => Promise.resolve(rows)),
+        },
       },
-      rating: {
-        findMany: jest.fn(({ select }: any) => {
-          // Первый вызов — distinct-даты (для стрика/давности), второй —
-          // полные строки за последние 14 дней (для history).
-          if (select && !('needId' in select) && !('value' in select)) {
-            return Promise.resolve([
-              { userId: 1n, date: d(0) },
-              { userId: 1n, date: d(1) },
-              { userId: 2n, date: d(5) },
-            ]);
-          }
-          return Promise.resolve([
-            { userId: 1n, date: d(0), needId: 'attachment', value: 7 },
-            { userId: 1n, date: d(1), needId: 'attachment', value: 6 },
-            { userId: 2n, date: d(5), needId: 'autonomy', value: 4 },
-          ]);
-        }),
-      },
-    });
+      rows,
+    );
     const svc = new BotClientOverviewService(prisma as never);
     const out = await svc.getClientOverviews([1n, 2n]);
     expect(out.get('1')!.streak).toBe(2);

@@ -18,9 +18,13 @@ import { RobokassaService } from '../src/booking/robokassa.service';
 import { BookingNotifyService } from '../src/booking/booking-notify.service';
 import { NotificationService } from '../src/notification/notification.service';
 import { lockReschedule } from '../src/notification/replace-pending';
+import { BotClientOverviewService } from '../src/bot/bot.client-overview.service';
 
 const USER_ID = 999_000_000_011n;
 const RESCHEDULE_USER = 999_000_000_012n;
+// Клиенты терапевта для стрика в SQL (src/bot/client-streaks.ts).
+const STREAK_USERS = [13n, 14n, 15n, 16n].map((n) => 999_000_000_000n + n);
+const ALL_USERS = [USER_ID, RESCHEDULE_USER, ...STREAK_USERS];
 const SUB_TOKEN = 'e2e-raw-sql-live-subscription';
 
 describe('сырой SQL инфраструктуры на реальном Postgres', () => {
@@ -30,16 +34,12 @@ describe('сырой SQL инфраструктуры на реальном Post
     prisma = new PrismaService();
     await prisma.$connect();
     await prisma.subscription.deleteMany({ where: { cancelToken: SUB_TOKEN } });
-    await prisma.user.deleteMany({
-      where: { id: { in: [USER_ID, RESCHEDULE_USER] } },
-    });
+    await prisma.user.deleteMany({ where: { id: { in: ALL_USERS } } });
   });
 
   afterAll(async () => {
     await prisma.subscription.deleteMany({ where: { cancelToken: SUB_TOKEN } });
-    await prisma.user.deleteMany({
-      where: { id: { in: [USER_ID, RESCHEDULE_USER] } },
-    });
+    await prisma.user.deleteMany({ where: { id: { in: ALL_USERS } } });
     await prisma.$disconnect();
   });
 
@@ -229,6 +229,65 @@ describe('сырой SQL инфраструктуры на реальном Post
         notifications.replacePending(RESCHEDULE_USER, 'reminder', at),
       ]);
       expect(await pendingTypes()).toEqual(['weekly']);
+    });
+  });
+
+  // docs/open/backend.md: стрик в списке клиентов терапевта считался по парам
+  // «человек–день» всех клиентов с общим `take: 5000` — у двух клиентов по
+  // 2600 дней старые дни срезались, и стрик выходил короче. Теперь — SQL без
+  // потолка; проверка через сервис, как его зовёт GET /api/therapy/clients.
+  describe('стрик и давность клиентов терапевта в SQL', () => {
+    const [A, B, C, D] = STREAK_USERS;
+    const DAY = 86_400_000;
+    // Пояс UTC: «сегодня» клиента = день UTC прогона.
+    const day = (back: number) =>
+      new Date(Date.now() - back * DAY).toISOString().slice(0, 10);
+    const rows = (userId: bigint, backs: number[]) =>
+      backs.map((b) => ({
+        userId,
+        date: day(b),
+        needId: 'attachment',
+        value: 5,
+      }));
+    const range = (from: number, to: number) =>
+      Array.from({ length: to - from + 1 }, (_, i) => from + i);
+
+    beforeAll(async () => {
+      for (const id of STREAK_USERS)
+        await prisma.user.create({ data: { id, notifyTimezone: 'UTC' } });
+      await prisma.rating.createMany({
+        data: [
+          // A: 2600 дней подряд по сегодня, по две потребности в день.
+          ...rows(A, range(0, 2599)),
+          ...rows(A, range(0, 2599)).map((r) => ({ ...r, needId: 'play' })),
+          // B: 2600 дней, дыра 2000 дней назад — стрик 2000.
+          ...rows(B, [...range(0, 1999), ...range(2001, 2600)]),
+          // D: сегодня и «завтра» (оценка из зоны восточнее) — стрик 1.
+          ...rows(D, [-1, 0, 2]),
+        ],
+      });
+    });
+
+    it('стрик не режется потолком: 2600 дней, дыра, без оценок, «завтра»', async () => {
+      const map = await new BotClientOverviewService(prisma).getClientOverviews(
+        STREAK_USERS,
+      );
+      expect(map.get(String(A))).toMatchObject({
+        streak: 2600,
+        daysSince: 0,
+        lastDate: day(0),
+      });
+      expect(map.get(String(B))).toMatchObject({ streak: 2000, daysSince: 0 });
+      expect(map.get(String(C))).toMatchObject({
+        streak: 0,
+        daysSince: -1,
+        lastDate: null,
+      });
+      expect(map.get(String(D))).toMatchObject({
+        streak: 1,
+        daysSince: 0, // заполнял сегодня, а не «никогда» (-1)
+        lastDate: day(-1),
+      });
     });
   });
 });

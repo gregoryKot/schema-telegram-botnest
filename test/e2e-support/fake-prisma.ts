@@ -13,6 +13,7 @@
 // require-await в typed-линте.
 
 import { makeFakeExecuteRaw } from './fake-cron-lease';
+import { makeFakeQueryRaw } from '../../src/test-support/fake-client-streaks';
 import { makeTable, withDefaults } from './fake-prisma-engine';
 import { withUserJoin } from './fake-user-join';
 import { withCreatedAt, withUpdatedAt } from './fake-updated-at';
@@ -142,9 +143,10 @@ export function makeFakePrisma() {
       if (typeof fnOrArr === 'function') return fnOrArr(prisma);
       return Promise.all(fnOrArr);
     }),
-    // Единственный сырой запрос, который эмулирует фейк, — захват аренды крона
-    // (см. fake-cron-lease.ts, там же почему не заглушкой «всегда лидер»).
+    // Сырые запросы фейк эмулирует поштучно, почему не заглушкой — в шапках:
+    // аренда крона (fake-cron-lease.ts), стрик клиентов (fake-client-streaks.ts).
     $executeRaw: makeFakeExecuteRaw(tables.cronLease._rows),
+    $queryRaw: makeFakeQueryRaw(() => tables.rating._rows),
   };
   return prisma;
 }

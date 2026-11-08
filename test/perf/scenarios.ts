@@ -54,6 +54,17 @@ export const SCENARIOS: Scenario[] = [
         new BotClientOverviewService(prisma),
       ).getClients(therapistId),
   },
+  {
+    name: 'therapist-clients-long-streaks',
+    title: 'Список клиентов терапевта: у каждого годы ежедневных оценок',
+    // Стрик считается в SQL без общего потолка строк (src/bot/client-streaks.ts);
+    // когорта 50 × 2600 дней — test/perf/seed-streaks.ts.
+    run: ({ prisma, streakTherapistId }) =>
+      new TherapyRelationsService(
+        prisma,
+        new BotClientOverviewService(prisma),
+      ).getClients(streakTherapistId),
+  },
   // 30 — экран истории; 365 — лента «Записи», потолок HISTORY_MAX_DAYS.
   ...[30, 365].map((days) => ({
     name: `history-${days}d`,

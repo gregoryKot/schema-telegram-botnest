@@ -27,6 +27,10 @@
     "therapist-clients": {
       "blocks": 2980,
       "msCeiling": 1500
+    },
+    "therapist-clients-long-streaks": {
+      "blocks": 3816,
+      "msCeiling": 1500
     }
   },
   "seqScanAllowed": {}
