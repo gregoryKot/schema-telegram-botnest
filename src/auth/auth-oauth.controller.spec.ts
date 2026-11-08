@@ -292,6 +292,31 @@ describe('AuthOauthController.vkCallback', () => {
     );
   });
 
+  // S21 (аудит 2026-11): `?error=` присылает браузер — сырой текст уходил в
+  // error(), а оттуда в DM владельцу. Код провайдера проходит, прочее — unknown.
+  it.each([
+    ['access_denied', 'vk auth denied: access_denied'],
+    ['Зайди на https://evil.example', 'vk auth denied: unknown'],
+    ['x'.repeat(41), 'vk auth denied: unknown'],
+    [['a', 'b'], 'vk auth denied: unknown'],
+  ])('error=%p → в лог и DM только код: %s', async (raw, logged) => {
+    const err = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    const { flow } = makeFlow();
+    const { vk } = makeVkProvider();
+    const controller = makeController(makeProviders({ vk }), flow);
+    const { res } = makeRes();
+    await controller.vkCallback(
+      'code-1',
+      toVkState('state-1'),
+      'device-1',
+      raw as string,
+      makeReq({ cookies: { oauth_state: 'state-1' } } as Partial<Request>),
+      res,
+    );
+    expect(err).toHaveBeenCalledWith(`vk callback error: ${logged}`);
+    err.mockRestore();
+  });
+
   it('нет device_id → BadRequestException внутри, редирект на /auth/error без обмена кода', async () => {
     const { flow } = makeFlow();
     const { vk, mocks: vkMocks } = makeVkProvider();
