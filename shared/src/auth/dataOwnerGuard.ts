@@ -16,6 +16,7 @@
 import { clearLocalData } from './clearLocalData';
 import { markAuthSeen } from './authSeen';
 import { readLocal, writeLocal } from '../utils/safeLocalStorage';
+import { base64UrlToText } from '../utils/base64url';
 
 export const DATA_OWNER_KEY = 'data_owner_id';
 
@@ -25,11 +26,7 @@ export function tokenSubject(token: string): string | null {
   try {
     const payload = token.split('.')[1];
     if (!payload) return null;
-    const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const json = atob(
-      b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), '='),
-    );
-    const sub = (JSON.parse(json) as { sub?: unknown }).sub;
+    const sub = (JSON.parse(base64UrlToText(payload)) as { sub?: unknown }).sub;
     return typeof sub === 'string' || typeof sub === 'number'
       ? String(sub)
       : null;

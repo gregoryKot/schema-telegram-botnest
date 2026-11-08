@@ -4,10 +4,11 @@ import { caldavProbe } from './probe-caldav';
 import { ciRunsProbe } from './probe-ci-runs';
 import { backupFreshnessProbe } from './probe-backup-freshness';
 import { googleOAuthProbe, vkOAuthProbe } from './probe-oauth-providers';
+import { webPushProbe } from './probe-web-push';
 
 /**
  * Пробы, которые ходят во внешние площадки живым запросом (Telegram, iCloud,
- * Google, VK, GitHub, Cloudflare R2) — всё, что не про нашу БД и конфигурацию.
+ * Google, VK, GitHub, Cloudflare R2, push-сервис) — всё, что не про нашу БД и конфигурацию.
  * Вынесены из registry.ts: тот под храповиком размера (правило №10).
  */
 export function liveIntegrationProbes(): Probe[] {
@@ -18,5 +19,6 @@ export function liveIntegrationProbes(): Probe[] {
     vkOAuthProbe(),
     ciRunsProbe(),
     backupFreshnessProbe(),
+    webPushProbe(),
   ];
 }

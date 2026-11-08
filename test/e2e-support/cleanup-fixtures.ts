@@ -44,6 +44,7 @@ const USER_ID_TABLES = [
   'ysqResultHistory',
   'analyticsEvent',
   'scheduledNotification',
+  'pushSubscription',
 ] as const;
 
 /**

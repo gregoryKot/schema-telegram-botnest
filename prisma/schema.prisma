@@ -178,6 +178,27 @@ model User {
   appActivities          AppActivity[]
   analyticsEvents        AnalyticsEvent[]
   bookings               Booking[]
+  pushSubscriptions      PushSubscription[]
+}
+
+// Подписка браузера на уведомления в приложении (веб-пуши, src/push/).
+// endpoint — capability-URL push-сервиса: по нему можно слать человеку
+// уведомления, поэтому он и ключи шифрования лежат зашифрованными, а поиск
+// идёт по endpointHash (sha256 от endpoint). Unique глобальный, без userId:
+// одна подписка браузера — один аккаунт; вход другим аккаунтом в том же
+// браузере переносит подписку к нему (upsert по хэшу, push-subscription.store.ts).
+model PushSubscription {
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  endpointHash String   @unique
+  endpoint     String
+  p256dh       String
+  auth         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Email magic-link tokens — вход по ссылке и привязка адреса.

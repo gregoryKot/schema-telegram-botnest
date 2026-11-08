@@ -89,6 +89,14 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
       'класс устройства для сверки входа, без версий и сборок',
     ),
   },
+  // Уведомления в приложении (src/push/): адрес подписки — capability-URL,
+  // по нему можно слать человеку уведомления; ключи — секрет шифрования.
+  PushSubscription: {
+    endpointHash: TOKEN,
+    endpoint: enc('src/push/push-subscription.store.ts'),
+    p256dh: enc('src/push/push-subscription.store.ts'),
+    auth: enc('src/push/push-subscription.store.ts'),
+  },
   WebSession: {
     id: ID,
     tokenHash: TOKEN,

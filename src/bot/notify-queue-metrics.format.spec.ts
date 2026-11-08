@@ -7,6 +7,7 @@ import {
 const totals = (t: Partial<QueueTotals> = {}): QueueTotals => ({
   ticks: 0,
   sent: 0,
+  pushed: 0,
   transient: 0,
   waited: 0,
   deferred: 0,
@@ -128,5 +129,23 @@ describe('formatNotifyQueueMetrics — «Напомню через час»', ()
     });
     expect(out).toContain('За неделю напоминаний из очереди не было.');
     expect(out).toContain('отложили 1 раз. Пришло 1.');
+  });
+
+  // Уведомления в приложении (src/push/): доля пушей видна в том же итоге,
+  // а при нуле строки «из них» нет вовсе.
+  it('ушедшие в приложение показаны долей недели, ноль не пишется', () => {
+    const week = totals({ ticks: 10, sent: 40, pushed: 12 });
+    const out = formatNotifyQueueMetrics({
+      day: totals(),
+      week,
+      snooze: noSnooze,
+    });
+    expect(out).toContain('За неделю ушло 40 (из них в приложение 12),');
+    const none = formatNotifyQueueMetrics({
+      day: totals(),
+      week: totals({ ticks: 10, sent: 40 }),
+      snooze: noSnooze,
+    });
+    expect(none).not.toContain('в приложение');
   });
 });

@@ -121,6 +121,11 @@ export const ACCOUNT_LINK_STARTED_EVENT = 'account_link_started';
 export const ACCOUNT_LINK_CONFIRMED_EVENT = 'account_link_confirmed';
 export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
 
+// Веб-пуши: человек запретил уведомления в окне браузера («Настройки → Уведомления»).
+// Без меты; шлёт webapp/src/push/pushSubscription.ts через api.trackEvent. Парный
+// allow-list — src/analytics/push-events.constants.ts (в analytics-sync — BACKEND_ONLY).
+export const PUSH_DENIED_EVENT = 'push_denied';
+
 /** Откуда переносят: meta.host. 'web' — карточка объединения на сайте. */
 export type AccountLinkHost = 'max' | 'telegram' | 'web';
 /** Почему не вышло: meta.reason. */

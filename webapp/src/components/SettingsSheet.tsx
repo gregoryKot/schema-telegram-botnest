@@ -73,6 +73,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     try { await api.updateSettings(update); flashSaved(); }
     catch { setSettings(prev); flashSaveError(); }
   }
+  const reloadSettings = () => api.getSettings().then(setSettings, (e: unknown) => console.warn('настройки не перечитались', e)); // после веб-пушей: новый notifyChannel
 
   const scrollTo = (id: string) => scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
 
@@ -141,7 +142,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                 {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
                 <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView}
-                  onOpenAccount={() => goBack(() => navigate('/account'))} />
+                  leaveTo={(path) => goBack(() => navigate(path))} reloadSettings={reloadSettings} />
                 <AddressSection settings={settings} patch={patch} />
                 {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
                 {!isTherapist && <BecomeTherapistSection />}

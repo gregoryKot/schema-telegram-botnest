@@ -1,11 +1,13 @@
 import type { UserSettings } from '../apiTypes';
+import type { Tr } from '../needs/types';
 
-// Дойдут ли уведомления — одна развилка на оба раздела «Уведомления» (правило
-// №3). QA 2026-11 (З5): у веб-клиента без Telegram «Итоги дня» и
-// «Напоминание» были включены, рядом стояли время и частота, а очередь
-// снимала каждое уведомление как «доставить некому» — человек ждал
-// напоминаний, которых не будет. Признак `notifyReachable` считает сервер по
-// тому же адресу, по которому шлёт очередь (AccountService.isNotifyReachable).
+// Дойдут ли уведомления и куда — одна развилка на все экраны (правило №3).
+// QA 2026-11 (З5): у веб-клиента без Telegram тумблеры стояли включёнными, а
+// очередь снимала каждое уведомление как «доставить некому». Канал считает
+// сервер тем же правилом, по которому шлёт очередь: веб-пуш, если подписано
+// хоть одно устройство, иначе Telegram, если привязан (`notifyChannel`).
+
+export type NotifyChannel = 'push' | 'telegram';
 
 /** Нет ответа сервера (старый ответ, дефолты при сбое) — не пугаем зря. */
 export function notifyReachable(
@@ -14,12 +16,42 @@ export function notifyReachable(
   return s.notifyReachable !== false;
 }
 
-export const NOTIFY_UNREACHABLE = {
-  hint: 'Приходят только в Telegram',
-  text: 'Уведомления приходят в Telegram, а к этому аккаунту он не привязан — пока они не придут.',
-  /** Сайт: кнопка ведёт в «Аккаунт», где есть «Привязать» у Telegram. */
-  linkButton: 'Привязать Telegram',
-  /** Мини-апп вне Telegram (MAX): привязка — на сайте. */
-  linkElsewhere:
-    'Привязать Telegram можно на сайте schemehappens.ru, раздел «Аккаунт».',
-} as const;
+/** Куда уходят уведомления. Ответ без notifyChannel (сервер до веб-пушей) —
+ *  по notifyReachable: тогда единственным каналом был Telegram. */
+export function notifyChannelOf(
+  s: Pick<UserSettings, 'notifyChannel' | 'notifyReachable'>,
+): NotifyChannel | null {
+  if (s.notifyChannel !== undefined) return s.notifyChannel;
+  return notifyReachable(s) ? 'telegram' : null;
+}
+
+/** Подпись раздела «Уведомления» под заголовком. */
+export function notifyChannelHint(
+  channel: NotifyChannel | null,
+  botHandle: string,
+): string {
+  if (channel === 'push') return 'Приходят в приложение';
+  if (channel === 'telegram') return `Приходят через Telegram — ${botHandle}`;
+  return 'Пока не приходят';
+}
+
+/**
+ * Блок вместо тумблеров, когда уведомлениям некуда прийти. canPush — браузер
+ * умеет веб-пуши (или научится после установки на экран «Домой» iPhone);
+ * нет — вебвью мессенджера или старый браузер, остаётся Telegram.
+ */
+export function notifyUnreachableCopy(tr: Tr, canPush: boolean) {
+  return {
+    text: canPush
+      ? tr(
+          'Чтобы напоминания приходили, включи их на этом устройстве или привяжи Telegram.',
+          'Чтобы напоминания приходили, включите их на этом устройстве или привяжите Telegram.',
+        )
+      : tr(
+          'Этот браузер не присылает уведомления. Открой сайт в Chrome или Safari на телефоне — или привяжи Telegram.',
+          'Этот браузер не присылает уведомления. Откройте сайт в Chrome или Safari на телефоне — или привяжите Telegram.',
+        ),
+    /** Кнопка ведёт в «Аккаунт», где у Telegram есть «Привязать». */
+    linkButton: 'Привязать Telegram',
+  };
+}

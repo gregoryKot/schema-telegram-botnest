@@ -40,6 +40,7 @@ import { ClientBookingMetricsService } from '../../src/bot/client-booking-metric
 import { NotifyQueueMetricsService } from '../../src/bot/notify-queue-metrics.service';
 import { TherapistExitMetricsService } from '../../src/bot/therapist-exit-metrics.service';
 import { CrawlerMetricsService } from '../../src/bot/crawler-metrics.service';
+import { PushMetricsService } from '../../src/bot/push-metrics.service';
 
 /** Продуктовый блок /stats (второе сообщение команды). */
 export function buildStatsReport(prisma: PrismaService): StatsReportService {
@@ -81,5 +82,6 @@ export function buildStatsReport(prisma: PrismaService): StatsReportService {
     new NotifyQueueMetricsService(prisma),
     new TherapistExitMetricsService(prisma),
     new CrawlerMetricsService(prisma),
+    new PushMetricsService(prisma),
   );
 }
