@@ -2,8 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { pickNeed, pickSchema } from './identityPick';
 import { getSchemaById } from '../../schemaTherapyData';
 import { needColor } from '../../../../shared/src/needs/needColors';
+import { NEED_ORDER, getNeedData } from '../../needData';
 
 describe('pickNeed — какая из пяти потребностей', () => {
+  it('названия потребностей одинаковы в «ты» и «вы» — на этом держится выбор без формы обращения', () => {
+    const ty = getNeedData('ty');
+    const vy = getNeedData('vy');
+    for (const id of NEED_ORDER) expect({ id, name: vy[id].name }).toEqual({ id, name: ty[id].name });
+  });
+
   it('заготовка палитры «Потребность» получает название и цвет потребности', () => {
     expect(pickNeed({ label: 'Потребность' }, 'play')).toEqual({ needId: 'play', label: 'Спонтанность', customColor: needColor('play') });
   });
