@@ -282,6 +282,11 @@ jobs:
       # `./DiagramEdges` в `diagramEdges.ts` и кабинет терапевта падал в
       # error boundary (2026-11-05); на Linux CI этого не видно. Без бейслайна.
       - run: node scripts/check-filename-case.mjs
+      # Спек занимает эфемерный порт и отпускает его, чтобы забиндить позже
+      # (`.listen(0…)` и `.close(` в одной функции): в этом окне порт берёт
+      # соседний jest-воркер (#547). Механика — только
+      # src/test-support/ephemeral-port.ts. Без бейслайна.
+      - run: node scripts/check-ephemeral-port.mjs
       # merge-драйверы (.gitattributes ↔ scripts/setup-merge-drivers.mjs):
       # атрибут без драйвера молча деградирует до текстового слияния, то есть
       # защита от конфликтов между параллельными агентами есть на бумаге и нет

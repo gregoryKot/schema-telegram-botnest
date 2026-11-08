@@ -31,6 +31,7 @@
 | check-e2e-in-ci.mjs | `test/*.e2e-spec.ts`, который не запускается ни одним шагом workflow | — | нет | checks |
 | check-e2e-stop-cron.mjs | тест поднимает AppModule без `stopCronJobs(app)` после `app.init()` — настоящие `@Cron` тикают посреди спека | — | нет | checks |
 | check-env-registry.mjs | чтение env мимо реестра и протухшие записи реестра | — (реестр `src/infra/env-registry.entries*.ts`) | нет | checks |
+| check-ephemeral-port.mjs | спек занимает эфемерный порт и отпускает его, чтобы забиндить позже: `.listen(0…)` и `.close(` в одной функции (разбор — `ephemeral-port-scan.mjs`) вне `src/test-support/ephemeral-port.ts`; поднят в beforeAll и закрыт в afterAll — законно | — | нет | checks |
 | check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint; полный режим — по каталогам верхнего уровня отдельными процессами (правила — `eslint-ratchet-rules.mjs`), локально `--changed` — только файлы против `origin/main` | `scripts/eslint-baseline.json` | да | eslint |
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
 | check-filename-case.mjs | два отслеживаемых пути, различающиеся только регистром (`diagramEdges.ts` ≈ `DiagramEdges.tsx`): на macOS Vite резолвит не тот файл | — | нет | checks |
