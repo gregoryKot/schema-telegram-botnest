@@ -130,6 +130,22 @@ export function classOverlays(rawSrc, overlayClassSet) {
   return found;
 }
 
+// Рамки рисуют fixed-оболочку сами (в бейслайне), у потребителя своего fixed нет: файл с тегом
+// рамки — тоже оверлей (2026-11: «О советах» поверх листа жила с локальным onClose). Dialog не
+// в списке: его потребители-подтверждения закрываются кнопками и Escape (стек диалогов).
+export const FRAME_TAGS = ['ExScreen', 'BottomSheetShell'];
+
+/** Теги рамок-оверлеев в .tsx (`<ExScreen`, но не `<ExScreenSkeleton`). */
+export function frameOverlays(rawSrc) {
+  const src = stripComments(rawSrc, false);
+  return FRAME_TAGS.flatMap((tag) =>
+    [...src.matchAll(new RegExp(`<${tag}(?![\\w$])`, 'g'))].map((m) => ({
+      line: lineAt(src, m.index),
+      what: `рамка <${tag}> (оверлей рисует она)`,
+    })),
+  );
+}
+
 /** Вызывает ли файл хук (в коде, не в комментарии). */
 export function callsHistorySheet(rawSrc) {
   return /\buseHistorySheet\s*\(/.test(stripComments(rawSrc, false));

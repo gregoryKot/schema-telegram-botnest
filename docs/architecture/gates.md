@@ -38,7 +38,7 @@
 | check-gate-exemptions.mjs | ALLOW/EXCLUDE-списки гейтов без теста-образца | — | нет | checks |
 | check-gendered-forms.mjs | мужской род в тексте для пользователя («ты сделал»; без «ты» — по паре `tr(ты, вы)`, «Сказал» ↔ «Сказали») | `scripts/gendered-forms-baseline.json` | да | backend |
 | check-glyph-controls.mjs | `<button>`, `<a>`, элемент с control-ролью или `{...pressable()}` без `aria-label`/`aria-labelledby`, чьё содержимое — только глиф, иконка или пусто | — | нет | webapp |
-| check-history-sheet.mjs | fullscreen-оверлей без `useHistorySheet(` (кнопка «Назад») | `scripts/history-sheet-baseline.json` | нет | webapp |
+| check-history-sheet.mjs | fullscreen-оверлей (инлайн, CSS-класс или тег рамки `<ExScreen`/`<BottomSheetShell`) без `useHistorySheet(` (кнопка «Назад») | `scripts/history-sheet-baseline.json` | нет | webapp |
 | check-hover-only-reveal.mjs | элемент раскрывается только по :hover, без пути для пальца | — | нет | webapp |
 | check-ignored-tracked.mjs | отслеживаемый git-файл, запрещённый .gitignore | — | нет | checks |
 | check-jscpd-ratchet.mjs | рост копипасты от 70 токенов (jscpd) | `scripts/jscpd-baseline.json` | да | backend |
