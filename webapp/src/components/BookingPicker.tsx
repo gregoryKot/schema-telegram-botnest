@@ -4,6 +4,7 @@ import { BookingErrorNote } from './BookingErrorNote';
 import { Btn } from './landing-kit';
 import { handleBookingFailure } from './bookingFailure';
 import { leadSource } from '../utils/leadSource';
+import { dropUrlParam } from '../utils/dropUrlParam';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { trackBookingSubmit, trackGoal, trackGoalOnce } from '../lib/metrika';
 import { useClientTimeZone } from './booking/useClientTimeZone';
@@ -68,12 +69,11 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   const consentRef = useRef<HTMLInputElement>(null);
   const confirmRef = useRef<HTMLInputElement>(null);
 
-  // Handle ?payment=ok / ?payment=fail redirect back from Robokassa
+  // Возврат с Robokassa (?payment=ok / ?payment=fail): из адреса уходит только
+  // параметр оплаты, метки визита (utm_source, yclid) остаются.
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    if (p.get('payment') === 'ok' || p.get('payment') === 'fail') {
-      window.history.replaceState({}, '', window.location.pathname + window.location.hash);
-    }
+    if (p.get('payment') === 'ok' || p.get('payment') === 'fail') dropUrlParam('payment');
   }, []);
 
   useEffect(() => {
