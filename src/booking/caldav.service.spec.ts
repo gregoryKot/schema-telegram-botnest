@@ -40,6 +40,16 @@ const reportOk = () =>
     text: () => Promise.resolve('<xml/>'),
   });
 const NO_CREDS = { APPLE_ID: undefined, APPLE_APP_PASSWORD: undefined };
+// Ответы нарезаются из широкого окна (S17): интервал обязан пересекать запрос.
+const HOUR = 3_600_000;
+const nextHours = (): [Date, Date] => [
+  new Date(Date.now() + HOUR),
+  new Date(Date.now() + 3 * HOUR),
+];
+const soon = () => ({
+  start: new Date(Date.now() + 2 * HOUR),
+  end: new Date(Date.now() + 2.5 * HOUR),
+});
 
 describe('CalDavService.enabled — no-op без учётных данных', () => {
   it('без APPLE_ID/APPLE_APP_PASSWORD — enabled:false', () => {
@@ -174,11 +184,11 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
       { url: 'https://c/b/', name: 'B' },
     ]);
     (parseBusy as jest.Mock)
-      .mockReturnValueOnce([{ start: new Date(), end: new Date() }])
-      .mockReturnValueOnce([{ start: new Date(), end: new Date() }]);
+      .mockReturnValueOnce([soon()])
+      .mockReturnValueOnce([soon()]);
     const svc = makeService();
     global.fetch = jest.fn(reportOk) as any;
-    const busy = await svc.getBusyTimes(new Date(), new Date());
+    const busy = await svc.getBusyTimes(...nextHours());
     expect(busy).toHaveLength(2); // из ОБОИХ календарей — иначе встреча в "Work" не заблокирует слот
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
@@ -188,9 +198,7 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
       { url: 'https://c/a/', name: 'A' },
       { url: 'https://c/b/', name: 'B' },
     ]);
-    (parseBusy as jest.Mock).mockReturnValue([
-      { start: new Date(), end: new Date() },
-    ]);
+    (parseBusy as jest.Mock).mockReturnValue([soon()]);
     const svc = makeService();
     let call = 0;
     global.fetch = jest.fn(() => {
@@ -198,7 +206,7 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
       if (call === 1) throw new Error('timeout');
       return reportOk();
     }) as any;
-    const busy = await svc.getBusyTimes(new Date(), new Date());
+    const busy = await svc.getBusyTimes(...nextHours());
     expect(busy).toHaveLength(1); // только "b" вернул интервал
   });
 
@@ -236,7 +244,7 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
     );
   });
 
-  it('другой диапазон — кэш не используется, новый REPORT уходит', async () => {
+  it('другой диапазон вне окна записи (админка листает прошлое) — точный ключ, новый REPORT', async () => {
     const svc = makeService({ APPLE_CALDAV_URL: 'https://p1.icloud.com/cal/' });
     global.fetch = jest.fn(reportOk) as any;
     await svc.getBusyTimes(

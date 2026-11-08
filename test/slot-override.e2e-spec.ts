@@ -16,9 +16,15 @@ import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 
 const ADMIN_KEY = process.env.ADMIN_BOOKING_KEY;
-// Далеко в будущем (за пределами любого реального расписания) — и не
-// пересекается с фикстурой booking-slot-lock.e2e-spec.ts (2091-03-04).
-const FUTURE_DATE = '2093-05-10';
+// Через 40 дней: внутри горизонта публичной записи (аудит 2026-11, S17 — дни
+// за ним /slots отвечает 400) и не пересекается с фикстурами других e2e
+// (booking-slot-lock — 2091-03-04, slot-last-day — через 49–50 дней).
+const DAY_MS = 86_400_000;
+const FUTURE_DATE = new Date(
+  Math.floor(Date.now() / DAY_MS) * DAY_MS + 40 * DAY_MS,
+)
+  .toISOString()
+  .slice(0, 10);
 const FUTURE_DOW = new Date(`${FUTURE_DATE}T00:00:00Z`).getUTCDay();
 const RULE_SLOT_ISO = `${FUTURE_DATE}T09:00:00.000Z`;
 const OPEN_SLOT_ISO = `${FUTURE_DATE}T20:00:00.000Z`;
