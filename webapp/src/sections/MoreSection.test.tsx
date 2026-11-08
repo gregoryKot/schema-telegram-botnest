@@ -148,7 +148,7 @@ describe('MoreSection', () => {
     const titles = screen.getAllByRole('button').map(b => b.textContent ?? '');
     const at = titles.findIndex(t => t.startsWith('Мой путь'));
     expect(titles[at + 1]).toMatch(/^Поговорить с кем-то/);
-    expect(row('Поговорить с кем-то').textContent).toContain('Встреча с автором приложения');
+    expect(row('Поговорить с кем-то').textContent).toContain('Если хочется в терапию');
     fireEvent.click(row('Поговорить с кем-то'));
     expect(trackNudge).toHaveBeenCalledWith('more', 'open', undefined);
     expect(screen.getByRole('dialog')).toBeTruthy();
@@ -188,10 +188,28 @@ describe('MoreSection', () => {
     setup();
     expect(screen.queryByText('Поговорить с кем-то')).toBeNull();
     expect(screen.queryByText(/Написать терапевту/)).toBeNull();
-    cleanup();
-    localStorage.clear();
+  });
+
+  // Владелец 2026-11-08: «если терапевт — то ничего». Роль из профиля приходит раньше,
+  // чем кэш контакта (therapy_is_therapist): без него карточка и строка внизу всплывали.
+  it('роль терапевта без кэша контакта: ни карточки, ни строки внизу', async () => {
     setup('THERAPIST');
+    await waitFor(() => expect(mockApi.getModeDiary).toHaveBeenCalled());
+    await Promise.resolve();
     expect(screen.queryByText('Поговорить с кем-то')).toBeNull();
+    expect(screen.queryByText(/Разобраться глубже/)).toBeNull();
+    expect(screen.queryByText(/не замена терапии/)).toBeNull();
+    expect(trackNudge).not.toHaveBeenCalled();
+  });
+
+  // Владелец 2026-11-08: карточка вверху «Ещё» скрывается, вход остаётся строкой списка.
+  it('«Скрыть» убирает карточку, строка «Поговорить с кем-то» в списке остаётся', async () => {
+    setup();
+    fireEvent.click(await screen.findByRole('button', { name: 'Скрыть' }));
+    expect(screen.queryByText(/Разобраться глубже/)).toBeNull();
+    expect(trackNudge).toHaveBeenCalledWith('home_card', 'dismiss');
+    fireEvent.click(row('Поговорить с кем-то'));
+    expect(screen.getByRole('dialog')).toBeTruthy();
   });
 
   // #925: на ≥768 эти три строки дублируют левое меню и скрыты CSS-классом; на телефоне «Ещё» полное.

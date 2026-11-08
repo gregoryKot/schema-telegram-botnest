@@ -38,7 +38,9 @@ describe('TherapyNudgeCard', () => {
     renderCard();
     expect(await screen.findByText('Три последних заполненных дня: индекс не выше 4')).toBeTruthy();
     expect(screen.getByText('Самопомощь помогает держаться. Нести это в одиночку не обязательно.')).toBeTruthy();
-    expect(screen.getByText('Автор приложения работает в подходе схема-терапия и ведёт встречи онлайн.')).toBeTruthy();
+    // Владелец 2026-11-08: под заголовком без «автора приложения» — только кнопка.
+    expect(document.body.textContent).not.toMatch(/[Аа]втор/);
+    expect(screen.getByRole('button', { name: 'Поговорить с кем-то' })).toBeTruthy();
     // Событие уходит из useEffect после коммита — ждём, а не читаем мок сразу.
     await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'low_index'));
   });
@@ -60,12 +62,13 @@ describe('TherapyNudgeCard', () => {
     await waitFor(() => expect(track).toHaveBeenCalledWith('signal_card', 'shown', 'crisis'));
   });
 
-  it('спокойные дни и новичок: спокойная карточка моста без «Не сейчас»', async () => {
+  it('спокойные дни и новичок: спокойная карточка моста со «Скрыть», без «Не сейчас»', async () => {
     history.mockResolvedValue(CALM);
     renderCard();
     await waitFor(() => expect(history).toHaveBeenCalled());
     expect(await screen.findByText(/Разобраться глубже — на встречах с терапевтом/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Не сейчас' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Скрыть' })).toBeTruthy();
     await waitFor(() => expect(track).toHaveBeenCalledWith('home_card', 'shown'));
     cleanup();
     history.mockResolvedValue(LOW.slice(0, 3));
@@ -117,8 +120,35 @@ describe('TherapyNudgeCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Поговорить с кем-то' }));
     expect(track).toHaveBeenCalledWith('signal_card', 'open', 'low_index');
     expect(screen.getByRole('dialog')).toBeTruthy();
-    fireEvent.click(screen.getByRole('link', { name: 'Записаться на встречу' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Выбрать время на сайте' }));
     expect(track).toHaveBeenLastCalledWith('signal_card', 'book', 'low_index');
+  });
+
+  // Владелец 2026-11-08: карточка вверху «Ещё» видна всегда — её можно скрыть, вход остаётся строкой в списке.
+  it('«Скрыть» убирает спокойную карточку насовсем, а карточку по сигналу — нет', async () => {
+    history.mockResolvedValue(CALM);
+    renderCard();
+    await waitFor(() => expect(track).toHaveBeenCalledWith('home_card', 'shown'));
+    fireEvent.click(screen.getByRole('button', { name: 'Скрыть' }));
+    expect(track).toHaveBeenLastCalledWith('home_card', 'dismiss');
+    expect(screen.queryByText(/Разобраться глубже/)).toBeNull();
+    cleanup();
+    track.mockClear();
+    const { container } = renderCard();
+    await waitFor(() => expect(history).toHaveBeenCalledTimes(2));
+    expect(container.textContent).toBe('');
+    expect(track).not.toHaveBeenCalled();
+    cleanup();
+    history.mockResolvedValue(LOW);
+    renderCard();
+    expect(await screen.findByText('Три последних заполненных дня: индекс не выше 4')).toBeTruthy();
+  });
+
+  it('карточка скрыта: пока история грузится, скелетона нет', () => {
+    localStorage.setItem('therapy_bridge_card_hidden', '1');
+    history.mockReturnValue(new Promise<DayHistory[]>(() => {}));
+    const { container } = renderCard();
+    expect(container.innerHTML).toBe('');
   });
 
   it('терапевт подключён: «Написать терапевту» и подпись про повод написать', async () => {

@@ -4,6 +4,8 @@ import {
   dismissFor14Days,
   getCrisisSeenAt,
   getDismissedUntil,
+  hideBridgeCard,
+  isBridgeCardHidden,
   noteCrisisSeen,
 } from './therapyBridgeState';
 
@@ -24,6 +26,14 @@ describe('therapyBridgeState', () => {
     );
   });
 
+  it('«Скрыть»: карточка спрятана насовсем и не трогает «Не сейчас»', () => {
+    expect(isBridgeCardHidden()).toBe(false);
+    hideBridgeCard();
+    expect(isBridgeCardHidden()).toBe(true);
+    expect(localStorage.getItem('therapy_bridge_card_hidden')).toBe('1');
+    expect(getDismissedUntil()).toBeNull();
+  });
+
   it('кризисный след: записал — прочитал', () => {
     noteCrisisSeen(new Date('2026-10-27T08:30:00.000Z'));
     expect(getCrisisSeenAt()).toBe('2026-10-27T08:30:00.000Z');
@@ -41,6 +51,8 @@ describe('therapyBridgeState', () => {
     });
     expect(() => dismissFor14Days()).not.toThrow();
     expect(() => noteCrisisSeen()).not.toThrow();
+    expect(() => hideBridgeCard()).not.toThrow();
+    expect(isBridgeCardHidden()).toBe(false);
     expect(getDismissedUntil()).toBeNull();
     expect(getCrisisSeenAt()).toBeNull();
   });

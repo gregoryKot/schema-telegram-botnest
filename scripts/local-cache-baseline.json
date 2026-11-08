@@ -230,6 +230,10 @@
       "owner": "webapp/src/components/therapistDisclaimerSeen.ts",
       "kind": "local"
     },
+    "therapy_bridge_card_hidden": {
+      "owner": "shared/src/therapy/bridge/therapyBridgeState.ts",
+      "kind": "local"
+    },
     "therapy_contact_name": {
       "owner": "shared/src/utils/therapistContact.ts",
       "kind": "mirror",

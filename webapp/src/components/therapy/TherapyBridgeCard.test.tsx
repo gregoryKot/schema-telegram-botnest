@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Постоянная карточка моста: автор / подключён терапевт / сам терапевт.
+// Постоянная карточка моста: без терапевта / подключён терапевт / сам терапевт / «Скрыть».
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -14,10 +14,11 @@ beforeEach(() => { localStorage.clear(); track.mockClear(); });
 afterEach(cleanup);
 
 describe('TherapyBridgeCard', () => {
-  it('автор: спокойный заголовок, без «Не сейчас», кнопка открывает лист', () => {
+  it('без своего терапевта: спокойный заголовок и кнопка, без подписи про автора; кнопка открывает лист', () => {
     renderCard();
     expect(screen.getByText('Терапия')).toBeTruthy();
     expect(screen.getByText(/Разобраться глубже — на встречах с терапевтом/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/[Аа]втор/);
     expect(screen.queryByRole('button', { name: 'Не сейчас' })).toBeNull();
     expect(track).toHaveBeenCalledTimes(1);
     expect(track).toHaveBeenCalledWith('practice', 'shown');
@@ -46,6 +47,18 @@ describe('TherapyBridgeCard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ближайшая встреча' }));
     expect(track).toHaveBeenLastCalledWith('practice', 'open', undefined);
     expect(screen.getByRole('dialog').textContent).toMatch(/Терапевт рядом/);
+  });
+
+  it('«Скрыть»: карточки нет ни сейчас, ни при следующем показе; событие dismiss', () => {
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: 'Скрыть' }));
+    expect(track).toHaveBeenLastCalledWith('practice', 'dismiss');
+    expect(screen.queryByText('Терапия')).toBeNull();
+    cleanup();
+    track.mockClear();
+    const { container } = renderCard();
+    expect(container.textContent).toBe('');
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('пользователь сам терапевт: пусто, событий нет', () => {

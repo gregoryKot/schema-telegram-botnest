@@ -50,9 +50,9 @@ updates:
     #    не принимают; вернуть, когда объявят поддержку;
     #  - https-proxy-agent 8+ — только ESM, а бэкенд собран в CommonJS (jest
     #    падает на telegram.providers.spec.ts); вернуть при переезде на ESM;
-    #  - @napi-rs/canvas 1.0.12 — обёртка fill() складывается при повторной
-    #    загрузке модуля (jest), держим 1.0.11; следующие версии проверит
-    #    тест «повторная загрузка модуля» в src/channel/pin-image.spec.ts.
+    #  - Babel 8 — только ESM: jest на Node 22 не грузит @babel/core внутри
+    #    спека (esm-to-cjs.transform.spec.ts); Babel нужен лишь трансформеру
+    #    ESM-пакетов Nest для jest, на Node 24.9+ он уходит вместе с Babel.
     ignore:
       - dependency-name: typescript
         update-types:
@@ -60,8 +60,9 @@ updates:
       - dependency-name: https-proxy-agent
         update-types:
           - version-update:semver-major
-      - dependency-name: '@napi-rs/canvas'
-        versions: ['1.0.12']
+      - dependency-name: '@babel/*'
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: npm
     directory: /webapp
