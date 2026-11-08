@@ -20,14 +20,24 @@ function encryptWithOtherKey(text: string): string {
 }
 
 function makeDb(stored: { mySchemaIds: unknown } | null) {
+  const calls: string[] = [];
   const db = {
+    calls,
     user: {
-      findUnique: jest.fn(async () => stored),
+      findUnique: jest.fn(async () => (calls.push('read'), stored)),
       update: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        calls.push('write');
         Object.assign(stored ?? {}, data);
       }),
     },
-    $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(db)),
+    $executeRaw: jest.fn(async (sql: TemplateStringsArray) => {
+      calls.push(sql.join('?'));
+      return 1;
+    }),
+    $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => {
+      calls.push('begin');
+      return fn(db);
+    }),
   };
   return db;
 }
@@ -72,5 +82,23 @@ describe('addToMyList: нечитаемый список не затираетс
     const db = makeDb(null);
     await expect(call(db)).resolves.toBeUndefined();
     expect(db.user.update).not.toHaveBeenCalled();
+  });
+});
+
+// E15 (аудит 2026-11): в транзакции READ COMMITTED две карточки одного юзера
+// читали список параллельно, и запись второй теряла id первой. Сама гонка
+// проверяется на живом Postgres (test/notes-my-list-race.e2e-spec.ts); здесь —
+// что замок строки берётся в той же транзакции и ДО чтения списка.
+describe('addToMyList: замок строки пользователя до чтения списка', () => {
+  it('порядок: транзакция → SELECT … FOR UPDATE по userId → чтение → запись', async () => {
+    const db = makeDb({ mySchemaIds: encryptJson(['mistrust']) });
+    await call(db);
+    expect(db.calls).toEqual([
+      'begin',
+      'SELECT 1 FROM "User" WHERE "id" = ? FOR UPDATE',
+      'read',
+      'write',
+    ]);
+    expect(db.$executeRaw.mock.calls[0].slice(1)).toEqual([1n]);
   });
 });

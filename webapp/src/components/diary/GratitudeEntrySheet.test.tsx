@@ -192,3 +192,40 @@ describe('GratitudeEntrySheet — сохранённый день не зати�
     expect(api.getGratitudeDiary).not.toHaveBeenCalled();
   });
 });
+
+// E15 (аудит 2026-11): сервер не пишет поверх дня, чьи пункты сейчас не
+// читаются, и отвечает 409 { reason: 'unreadable_data' }. «Можно повторить»
+// тут врёт — повтор получит тот же отказ.
+describe('GratitudeEntrySheet — отказ записи поверх нечитаемого дня', () => {
+  async function saveWith(error: unknown) {
+    const onSave = vi.fn().mockRejectedValue(error);
+    render(
+      <MemoryRouter>
+        <GratitudeEntrySheet
+          onClose={vi.fn()}
+          date="2026-07-20"
+          onSave={onSave}
+        />
+      </MemoryRouter>,
+    );
+    fireEvent.change(await screen.findByLabelText(/Пункт 1:/), {
+      target: { value: 'Тёплый чай' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить/ }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+  }
+
+  it('409 unreadable_data — своя строка без «можно повторить», лист открыт', async () => {
+    await saveWith({ status: 409, reason: 'unreadable_data' });
+    expect(
+      await screen.findByText(/прежние пункты этого дня сейчас не читаются/),
+    ).toBeTruthy();
+    expect(screen.queryByText(/можно повторить/)).toBeNull();
+    expect(screen.getByDisplayValue('Тёплый чай')).toBeTruthy();
+  });
+
+  it('контроль: обрыв связи — прежняя строка с повтором', async () => {
+    await saveWith(new Error('offline'));
+    expect(await screen.findByText(/можно повторить/)).toBeTruthy();
+  });
+});

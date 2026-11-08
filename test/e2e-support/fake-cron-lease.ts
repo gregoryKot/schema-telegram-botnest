@@ -1,5 +1,5 @@
-// Эмуляция единственного сырого запроса, который встречается в смоуке, —
-// захвата аренды крона (src/infra/cron-leader.service.ts).
+// Эмуляция сырых запросов смоука: захват аренды крона
+// (src/infra/cron-leader.service.ts) и замок строки пользователя.
 //
 // Семантика повторяет Postgres: вставка при первом прогоне, обновление только
 // если прошлый прогон старше окна. Заглушка «всегда лидер» была бы проще и
@@ -15,13 +15,16 @@ interface LeaseRow {
 }
 
 /**
- * Делегат `$executeRaw` фейка. Любой сырой SQL, кроме захвата аренды, — громкая
+ * Делегат `$executeRaw` фейка. Любой другой сырой SQL — громкая
  * ошибка, а не молчаливый 0: неверный ответ на неэмулируемый запрос хуже, чем
  * его отсутствие.
  */
 export function makeFakeExecuteRaw(rows: LeaseRow[]) {
   return jest.fn((chunks: string[], ...values: unknown[]) => {
     const sql = Array.isArray(chunks) ? chunks.join(' ') : String(chunks);
+    // Замок строки пользователя (src/bot/notes-my-list.ts): в памяти один
+    // поток, ждать некого — гонку проверяет живой Postgres.
+    if (/^SELECT 1 FROM "User" WHERE "id" = +FOR UPDATE$/.test(sql)) return 1;
     if (!sql.includes('"CronLease"')) {
       throw new Error(`fake prisma: неэмулируемый $executeRaw: ${sql.trim()}`);
     }

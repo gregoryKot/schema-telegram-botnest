@@ -16,6 +16,7 @@ import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextar
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import { useGratitudeItems } from '../../../../shared/src/diary/useGratitudeItems';
 import { useSeedGratitudeItem } from './quickEntry/useSeedGratitudeItem';
+import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 interface Props {
   initialItem?: string; // текст из «Дневника одной страницей»: встаёт в первый пустой пункт
@@ -38,7 +39,8 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
   const ready = status === 'ready';
   const [saving, setSaving] = useState(false);
   // Отказ раньше сообщался лишь вибрацией (в браузере её нет) и закрывал лист.
-  const [saveError, setSaveError] = useState(false);
+  // 409 «не читается» (E15): повтор не поможет — прежние пункты сервер бережёт.
+  const [saveError, setSaveError] = useState<'failed' | 'unreadable' | null>(null);
   const firstItemRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { if (ready) firstItemRef.current?.focus(); }, [ready]);
@@ -52,16 +54,16 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
 
   const handleSave = async () => {
     if (!canSave || saving) return;
-    setSaveError(false);
+    setSaveError(null);
     haptic.success();
     setSaving(true);
     try {
       await onSave(date, filled, base);
       clearDraft('gratitude');
       goBack();
-    } catch {
+    } catch (e) {
       haptic.error();
-      setSaveError(true); // лист НЕ закрываем — иначе отказ неотличим от успеха
+      setSaveError(isUnwritableError(e) ? 'unreadable' : 'failed'); // лист НЕ закрываем — иначе отказ неотличим от успеха
     } finally {
       setSaving(false);
     }
@@ -111,7 +113,9 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
         <SaveEntryButton canSave={canSave} saving={saving} onSave={handleSave} />
         {saveError && (
           <div role="status" className="sd-save-error">
-            Не удалось сохранить. Текст остался черновиком — можно повторить
+            {saveError === 'unreadable'
+              ? 'Не сохранилось: прежние пункты этого дня сейчас не читаются, и новая запись стёрла бы их. Текст остался черновиком, о сбое уже сообщено'
+              : 'Не удалось сохранить. Текст остался черновиком — можно повторить'}
           </div>
         )}
       </div>

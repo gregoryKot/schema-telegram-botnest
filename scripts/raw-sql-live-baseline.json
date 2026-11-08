@@ -77,6 +77,9 @@
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"
   },
+  "src/bot/notes-my-list.ts": {
+    "spec": "test/notes-my-list-race.e2e-spec.ts"
+  },
   "src/bot/phrase-check-metrics.service.ts": {
     "spec": "test/raw-sql-live-stats.e2e-spec.ts",
     "via": "test/e2e-support/stats-report.factory.ts"

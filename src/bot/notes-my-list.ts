@@ -16,10 +16,13 @@ export async function addToMyList(
   field: 'mySchemaIds' | 'myModeIds',
   id: string,
 ): Promise<void> {
-  // Read-modify-write по денормализованному зашифрованному списку — в
-  // транзакции (аудит 2026-07, 2.2): конкурентные upsert'ы разных карточек
-  // одного юзера гонялись за одним прочитанным списком → lost update.
+  // Read-modify-write по денормализованному зашифрованному списку (аудит
+  // 2026-07, 2.2). Одной транзакции READ COMMITTED мало: две карточки одного
+  // юзера читали список параллельно, и вторая запись теряла id первой (E15,
+  // аудит 2026-11). Замок строки пользователя: вторая ждёт коммита первой и
+  // читает список уже с её id. Шифротекст не дописать в SQL — только так.
   await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT 1 FROM "User" WHERE "id" = ${userId} FOR UPDATE`;
     const row = await tx.user.findUnique({
       where: { id: userId },
       select: { [field]: true },

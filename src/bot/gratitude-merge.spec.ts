@@ -1,8 +1,12 @@
 // Слияние пунктов дня благодарности (docs/open/frontend-ux.md, P0): пункт,
 // добавленный с другой вкладки между чтением и записью, не теряется, а правка
 // и удаление пунктов, которые клиент видел, по-прежнему работают.
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, Logger } from '@nestjs/common';
 import { mergeGratitudeItems, saveGratitudeDay } from './gratitude-merge';
+import { UNWRITABLE_REASON } from '../utils/crypto-record';
+
+// Шифротекст под чужим ключом: по форме — шифр, расшифровать нельзя.
+const FOREIGN = Buffer.alloc(48, 7).toString('base64');
 
 describe('mergeGratitudeItems', () => {
   it('клиент не видел пункт с другой вкладки — пункт остаётся, новый встаёт после', () => {
@@ -55,7 +59,10 @@ describe('saveGratitudeDay — транзакция и повтор', () => {
       },
     };
     const prisma: any = {
-      gratitudeDiaryEntry: { upsert: jest.fn() },
+      gratitudeDiaryEntry: {
+        upsert: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue(stored),
+      },
       $transaction: jest.fn((fn: (t: typeof tx) => unknown) => {
         const code = failures.shift();
         if (code)
@@ -100,5 +107,75 @@ describe('saveGratitudeDay — транзакция и повтор', () => {
     const row = await saveGratitudeDay(prisma, USER, DATE, ['B']);
     expect(row.items).toEqual(['B']);
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+// E15 (аудит 2026-11): день, чей шифротекст сейчас не читается (ключ не
+// подошёл), читался как `[]` — и сохранение навсегда стирало прежние пункты.
+describe('saveGratitudeDay — запись поверх нечитаемого дня', () => {
+  const USER = 7n;
+  const DATE = '2026-07-16';
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  function makePrisma(stored: unknown) {
+    const delegate = {
+      findUnique: jest.fn().mockResolvedValue(stored),
+      upsert: jest.fn(({ create }: { create: object }) =>
+        Promise.resolve({ id: 1, ...create }),
+      ),
+    };
+    const prisma: any = {
+      gratitudeDiaryEntry: delegate,
+      $transaction: jest.fn((fn: (t: unknown) => unknown) =>
+        fn({ gratitudeDiaryEntry: delegate }),
+      ),
+    };
+    return { prisma, delegate };
+  }
+
+  const reasonOf = (e: unknown) =>
+    (e as ConflictException).getResponse() as { reason?: string };
+
+  it('слияние (с base): 409 unreadable_data, день не перезаписан', async () => {
+    const { prisma, delegate } = makePrisma({ id: 1, items: FOREIGN });
+    const err: unknown = await saveGratitudeDay(
+      prisma,
+      USER,
+      DATE,
+      ['новый пункт'],
+      [],
+    ).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect(reasonOf(err).reason).toBe(UNWRITABLE_REASON);
+    expect(delegate.upsert).not.toHaveBeenCalled();
+    // 409 — не конфликт сериализации: повтора нет.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('замена (без base): тоже 409, день не перезаписан', async () => {
+    const { prisma, delegate } = makePrisma({ id: 1, items: FOREIGN });
+    const err: unknown = await saveGratitudeDay(prisma, USER, DATE, [
+      'новый пункт',
+    ]).catch((e: unknown) => e);
+    expect(reasonOf(err).reason).toBe(UNWRITABLE_REASON);
+    expect(delegate.upsert).not.toHaveBeenCalled();
+  });
+
+  it('контроль: читаемый день (JSON-текст) сливается и пишется', async () => {
+    const { prisma, delegate } = makePrisma({ id: 1, items: '["A"]' });
+    const row = await saveGratitudeDay(prisma, USER, DATE, ['B'], []);
+    expect(row.items).toEqual(['A', 'B']);
+    expect(delegate.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('контроль: дня ещё нет — создаётся без 409', async () => {
+    const { prisma, delegate } = makePrisma(null);
+    const row = await saveGratitudeDay(prisma, USER, DATE, ['B']);
+    expect(row.items).toEqual(['B']);
+    expect(delegate.upsert).toHaveBeenCalledTimes(1);
   });
 });

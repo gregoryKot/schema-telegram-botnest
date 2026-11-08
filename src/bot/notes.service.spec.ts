@@ -67,6 +67,8 @@ function makeDb(user: { mySchemaIds: string[]; myModeIds: string[] }) {
   // addToMyList теперь read-modify-write в интерактивной транзакции —
   // фейк просто исполняет колбэк на самом себе.
   db.$transaction = jest.fn(async (fn: any) => fn(db));
+  // Замок строки пользователя перед чтением списка (notes-my-list.ts).
+  db.$executeRaw = jest.fn(async () => 1);
   return db;
 }
 
