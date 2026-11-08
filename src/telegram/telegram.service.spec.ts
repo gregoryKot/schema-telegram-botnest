@@ -251,6 +251,68 @@ describe('TelegramService — accept:(ty|vy) сохраняет согласие
       expect.anything(),
     );
   });
+
+  // Находка 2026-11-06: код удалялся из памяти ДО joinPair — упала запись,
+  // человеку «попробуй нажать ещё раз», а повторное нажатие кода уже не
+  // находило и показывало обычное приветствие: в пару не вступил, молча.
+  describe('сбой вступления в пару после согласия', () => {
+    const startThenFail = async () => {
+      jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      const deps = makeDeps({
+        botService: {
+          hasAcceptedDisclaimer: jest.fn().mockResolvedValue(false),
+        },
+      });
+      deps.pairsService.joinPair.mockRejectedValueOnce(new Error('db down'));
+      deps.service.onModuleInit();
+      await runCommand(deps.fakeBot, 'start', {
+        from: { id: 1 },
+        payload: 'pair_abc123',
+      });
+      return deps;
+    };
+
+    it('сбой → «нажми ещё раз»; повторное нажатие вступает в пару по тому же коду', async () => {
+      const { fakeBot, pairsService } = await startThenFail();
+      const failed = await runAction(fakeBot, 'accept:ty', { from: { id: 1 } });
+      expect(failed.reply).toHaveBeenCalledWith(
+        expect.stringContaining('ещё раз'),
+      );
+
+      const again = await runAction(fakeBot, 'accept:ty', { from: { id: 1 } });
+      expect(pairsService.joinPair).toHaveBeenCalledTimes(2);
+      expect(pairsService.joinPair).toHaveBeenLastCalledWith(1n, 'ABC123');
+      expect(again.editMessageText).toHaveBeenCalledWith(
+        expect.stringContaining('Вы в паре!'),
+        expect.anything(),
+      );
+    });
+
+    it('двойной тап согласия — joinPair по коду один раз', async () => {
+      const { service, fakeBot, pairsService } = makeDeps({
+        botService: {
+          hasAcceptedDisclaimer: jest.fn().mockResolvedValue(false),
+        },
+      });
+      service.onModuleInit();
+      await runCommand(fakeBot, 'start', {
+        from: { id: 1 },
+        payload: 'pair_abc123',
+      });
+      const taps = await Promise.all([
+        runAction(fakeBot, 'accept:ty', { from: { id: 1 } }),
+        runAction(fakeBot, 'accept:ty', { from: { id: 1 } }),
+      ]);
+      expect(pairsService.joinPair).toHaveBeenCalledTimes(1);
+      expect(pairsService.joinPair).toHaveBeenCalledWith(1n, 'ABC123');
+      const joined = taps.filter((ctx) =>
+        ctx.editMessageText.mock.calls.some(([text]: [string]) =>
+          text.includes('Вы в паре!'),
+        ),
+      );
+      expect(joined).toHaveLength(1);
+    });
+  });
 });
 
 describe('TelegramService — cancel / back:welcome', () => {
