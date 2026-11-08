@@ -8,7 +8,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { TaskCreateSheet } from './TaskCreateSheet';
 import { AddressFormContext } from '../utils/addressForm';
-import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 
 vi.mock('../api', () => ({
@@ -40,25 +40,13 @@ afterEach(() => {
   cleanup();
 });
 
-describe('TaskCreateSheet — кризисная детекция в описании своей цели', () => {
-  it('кризисная фраза в описании задания показывает CrisisCard с телефоном доверия', async () => {
-    renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: позвонить другу раз в неделю');
-
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('нейтральный текст цели не показывает CrisisCard', async () => {
-    renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: позвонить другу раз в неделю');
-
-    fireEvent.change(textarea, { target: { value: 'Читать по 10 страниц в день' } });
-
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+describeCrisisField('webapp/src/components/TaskCreateSheet.tsx', {
+  label: 'описание своей цели',
+  open: () => renderSheet(),
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Например: позвонить другу раз в неделю'), {
+      target: { value: text },
+    }),
 });
 
 describe('TaskCreateSheet — сохранение своей цели', () => {

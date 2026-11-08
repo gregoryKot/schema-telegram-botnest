@@ -44,12 +44,13 @@
   - Контроллер без гарда допустим только из `PUBLIC_BY_DESIGN` (`src/security/controller-classification.ts`) и обязан быть в `controllers` какого-то модуля; `src/api/booking.controller.ts` (POST /api/booking) зарегистрирован в `src/booking/intro-lead.module.ts`, а не в ApiModule.
 
 ### `src/security/`
-Защита от регрессий безопасности: реестры классификации маршрутов и площадок, конфиг helmet/CSP и 21 спек-«трипваер» (`*.invariants.spec.ts`: route-auth, csrf, log-leak, ssrf, injection, dto-validation, crisis-path по фронтендам).
+Защита от регрессий безопасности: реестры классификации маршрутов и площадок, конфиг helmet/CSP и 21 спек-«трипваер» (`*.invariants.spec.ts`: route-auth, csrf, log-leak, ssrf, injection, dto-validation, crisis-path и crisis-card-behavior по фронтендам).
 - Входы:
   - `src/security/controller-classification.ts` — контроллеры: guarded / admin-key / PUBLIC_BY_DESIGN
   - `src/security/anonymous-routes.ts` — анонимные методы внутри guarded-контроллеров
   - `src/security/optional-auth-routes.ts` — методы под `OptionalJwtGuard` (аноним проходит; защитой трипваер его не считает)
   - `src/test-support/free-text-inputs.ts` — признак однострочного поля свободного текста для трипваера `crisis-path.invariants.spec.ts` (правило №7)
+  - `src/test-support/crisis-field-files.ts` — выборка полей свободного текста фронтендов, регэксп детекции и дочерние контролы: общая для `crisis-path.invariants.spec.ts` (текст файла) и `crisis-card-behavior.invariants.spec.ts` (у каждого поля с детекцией есть строка харнесса `describeCrisisField`)
   - `src/security/helmet-config.ts` — CSP и заголовки helmet (подключает `src/infra/configure-app.ts`)
   - `src/security/embedders.ts` — площадки-iframe: CSP frame-ancestors и SameSite=None
   - `src/security/collect-source-files.ts` — единственный обход дерева исходников

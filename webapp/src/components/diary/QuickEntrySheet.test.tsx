@@ -6,6 +6,7 @@ import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { QuickEntrySheet } from './QuickEntrySheet';
 import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { todayStr } from '../../utils/format';
 
 vi.mock('../../api', () => ({
@@ -59,14 +60,6 @@ describe('QuickEntrySheet — первый экран', () => {
     expect(screen.getByText('Тег необязателен. Схему или режим можно уточнить на следующем шаге.')).toBeTruthy();
   });
 
-  it('кризисный текст показывает CrisisCard; нейтральный — нет', () => {
-    setup();
-    type('Тёплый чай вечером');
-    expect(screen.queryByRole('status')).toBeNull();
-    type('не хочу жить');
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
   it('черновик пишется в diary_draft_quick и восстанавливается при открытии', () => {
     setup();
     type('Недописанная мысль');
@@ -76,6 +69,8 @@ describe('QuickEntrySheet — первый экран', () => {
     expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Недописанная мысль');
   });
 });
+
+describeCrisisField('webapp/src/components/diary/quickEntry/QuickWriteStep.tsx', { open: setup, enter: type });
 
 describe('QuickEntrySheet — сохранение по тегам', () => {
   it('«Просто мысль»: запись схем без схем и эмоций, экран «Записано», черновик стёрт, событие без текста', async () => {

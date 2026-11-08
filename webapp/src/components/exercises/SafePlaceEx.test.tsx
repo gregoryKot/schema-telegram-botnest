@@ -10,7 +10,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { SafePlaceEx } from './SafePlaceEx';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 
 vi.mock('../../api', () => ({
   api: {
@@ -41,28 +41,16 @@ afterEach(() => {
   cleanup();
 });
 
-describe('SafePlaceEx — кризисная детекция', () => {
-  it('кризисная фраза в общем описании места показывает CrisisCard', () => {
-    renderEx();
-    const overview = screen.getByPlaceholderText(/полянка в лесу/);
-    fireEvent.change(overview, { target: { value: 'не хочу жить, хочу исчезнуть' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('кризисная фраза в одном из органов чувств тоже показывает CrisisCard', () => {
-    renderEx();
-    const hear = screen.getByPlaceholderText(/шорох листьев/);
-    fireEvent.change(hear, { target: { value: 'слышу тишину, хочу исчезнуть' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', () => {
-    renderEx();
-    const overview = screen.getByPlaceholderText(/полянка в лесу/);
-    fireEvent.change(overview, { target: { value: 'дача у бабушки, веранда' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+// Общее описание места и любое из четырёх чувств — одна детекция на все поля.
+describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
+  label: 'общее описание места',
+  open: () => renderEx(),
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: text } }),
+});
+describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
+  label: 'что слышно',
+  open: () => renderEx(),
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: text } }),
 });
 
 describe('SafePlaceEx — сохранение и обращение ты/вы', () => {

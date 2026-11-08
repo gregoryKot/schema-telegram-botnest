@@ -10,7 +10,7 @@ import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { PhraseCheckEx } from './PhraseCheckEx';
 import { AddressFormContext } from '../../utils/addressForm';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
 
 vi.mock('../../api', () => ({
@@ -58,42 +58,32 @@ function walkAllCritic() {
   }
 }
 
-describe('PhraseCheckEx — кризисная детекция ДО сохранения (правило №7)', () => {
-  it('кризисная фраза на шаге ввода показывает CrisisCard', () => {
-    renderEx();
-    fireEvent.change(
-      screen.getByPlaceholderText('Например: опять всё завалила, ни на что не гожусь'),
-      { target: { value: 'не хочу жить' } },
-    );
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
+describe('PhraseCheckEx — шаг ввода', () => {
   // Аудит 2026-10, «Доступность»: progressbar без имени (control-has-associated-label).
   it('полоса прогресса названа «Шаг упражнения»', () => {
     renderEx();
     expect(screen.getByRole('progressbar', { name: 'Шаг упражнения' }).getAttribute('aria-valuenow')).toBe('1');
   });
+});
 
-  it('нейтральная фраза не показывает CrisisCard', () => {
-    renderEx();
-    fireEvent.change(
-      screen.getByPlaceholderText('Например: опять всё завалила, ни на что не гожусь'),
-      { target: { value: 'опять забыл про встречу' } },
-    );
-    expect(screen.queryByRole('status')).toBeNull();
-  });
-
-  it('кризисный текст в переписанной фразе (шаг переписать) тоже показывает CrisisCard', () => {
+// Кризисный гейт ДО сохранения (правило №7): фраза на шаге ввода и переписанная фраза.
+describeCrisisField('webapp/src/components/exercises/PhraseCheckEx.tsx', {
+  label: 'фраза на шаге ввода',
+  open: () => renderEx(),
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Например: опять всё завалила, ни на что не гожусь'), {
+      target: { value: text },
+    }),
+});
+describeCrisisField('webapp/src/components/exercises/phraseCheckEx/PhraseRewriteStep.tsx', {
+  label: 'переписанная фраза',
+  open: () => {
     renderEx();
     enterPhrase('я ни на что не гожусь');
     walkAllCritic();
-    fireEvent.change(
-      screen.getByPlaceholderText(/Например: отчёт ушёл с ошибкой/),
-      { target: { value: 'не хочу жить' } },
-    );
-    expect(screen.getByRole('status')).toBeTruthy();
-  });
+  },
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText(/Например: отчёт ушёл с ошибкой/), { target: { value: text } }),
 });
 
 describe('PhraseCheckEx — вердикт по приметам', () => {
@@ -216,6 +206,17 @@ describe('PhraseCheckEx — правка прошлого разбора (пар
     };
   }
 
+  describeCrisisField('webapp/src/components/exercises/phraseCheckEx/PhraseHistoryCard.tsx', {
+    label: 'правка ответа в прошлом разборе',
+    open: async () => {
+      mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
+      renderEx();
+      await screen.findByText(/Прошлые разборы · 1/);
+      fireEvent.click(screen.getByLabelText('Открыть разбор: старая фраза'));
+    },
+    enter: (text) => fireEvent.change(screen.getByDisplayValue('старый ответ'), { target: { value: text } }),
+  });
+
   it('тап по строке истории открывает карточку с текущим ответом', async () => {
     mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
     renderEx();
@@ -244,18 +245,6 @@ describe('PhraseCheckEx — правка прошлого разбора (пар
     // без перезахода за данными (read-after-write, CLAUDE.md).
     await waitFor(() => expect(screen.queryByText('Разбор фразы')).toBeNull());
     expect(screen.getByText(/→ «новый ответ»/)).toBeTruthy();
-  });
-
-  it('кризисный текст в поле правки показывает CrisisCard', async () => {
-    mockApi.getPhraseChecks.mockResolvedValue([existingEntry()]);
-    renderEx();
-    await screen.findByText(/Прошлые разборы · 1/);
-    fireEvent.click(screen.getByLabelText('Открыть разбор: старая фраза'));
-
-    fireEvent.change(screen.getByDisplayValue('старый ответ'), {
-      target: { value: 'не хочу жить' },
-    });
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   it('отказ сети при сохранении правки показывает ошибку, карточка остаётся открытой', async () => {

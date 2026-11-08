@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaFlashcard } from './SchemaFlashcard';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 
 vi.mock('../api', () => ({
   api: {
@@ -118,30 +119,23 @@ describe('SchemaFlashcard — проход мастера и сохранени�
   });
 });
 
-describe('SchemaFlashcard — кризисная детекция (reflection)', () => {
-  it('кризисная фраза в отклике показывает CrisisCard', () => {
-    renderToResponseStep();
-    const textarea = screen.getByPlaceholderText('Что хочется сказать себе...');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', () => {
-    renderToResponseStep();
-    const textarea = screen.getByPlaceholderText('Что хочется сказать себе...');
-    fireEvent.change(textarea, { target: { value: 'Стало немного легче' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
-
-  it('кризисная фраза в шаге действия тоже показывает CrisisCard', () => {
+describeCrisisField('webapp/src/components/flashcard/FlashcardSteps.tsx', {
+  label: 'отклик Здорового Взрослого',
+  open: renderToResponseStep,
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), { target: { value: text } }),
+});
+describeCrisisField('webapp/src/components/flashcard/FlashcardSteps.tsx', {
+  label: 'шаг действия',
+  open: () => {
     renderToResponseStep();
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
-    const textarea = screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-  });
+  },
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+      target: { value: text },
+    }),
 });
 
 describe('SchemaFlashcard — история карточек (read-after-write)', () => {

@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEx, ModeEx } from './FlashcardEx';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 
 vi.mock('../../api', () => ({
   api: {
@@ -50,15 +50,13 @@ afterEach(() => {
   cleanup();
 });
 
-describe('FlashcardEx (SchemaEx) — кризисная детекция', () => {
-  it('кризисная фраза в ответе показывает CrisisCard', async () => {
-    renderSheet();
-    const textarea = await screen.findByRole('textbox');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
+describeCrisisField('webapp/src/components/exercises/FlashcardEx.tsx', {
+  label: 'ответ на вопрос карточки схемы',
+  open: renderSheet,
+  enter: async (text) => fireEvent.change(await screen.findByRole('textbox'), { target: { value: text } }),
+});
 
+describe('FlashcardEx (SchemaEx) — вопросы', () => {
   // Аудит 2026-10, «Доступность»: тики вопросов были pressable()-div без имени.
   it('тик назван номером вопроса, ведёт к нему и помечает текущий', async () => {
     renderSheet();
@@ -68,13 +66,6 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     expect(screen.getByText(/^Вопрос 2 из/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Вопрос 2' }).getAttribute('aria-current')).toBe('step');
     expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBeNull();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', async () => {
-    renderSheet();
-    const textarea = await screen.findByRole('textbox');
-    fireEvent.change(textarea, { target: { value: 'Обычно это молчание в переписке' } });
-    expect(screen.queryByRole('status')).toBeNull();
   });
 });
 

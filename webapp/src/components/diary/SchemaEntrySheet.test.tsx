@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
@@ -34,21 +34,12 @@ afterEach(() => {
   cleanup();
 });
 
-describe('SchemaEntrySheet — кризисная детекция', () => {
-  it('кризисная фраза в описании ситуации показывает CrisisCard', () => {
-    renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', () => {
-    renderSheet();
-    const textarea = screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…');
-    fireEvent.change(textarea, { target: { value: 'Обычный рабочий созвон' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+describeCrisisField('webapp/src/components/diary/SchemaEntrySheet.tsx', {
+  open: renderSheet,
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Например: на созвоне А. сказал, что мой ппт «слабо проработан»…'), {
+      target: { value: text },
+    }),
 });
 
 // В7 дизайн-аудита 2026-08: поле связано с видимым вопросом программно.

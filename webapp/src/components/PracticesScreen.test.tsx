@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
 import { PracticesScreen } from './PracticesScreen';
 import { sheetStackOf } from '../hooks/historySheetStack';
 import { AddressFormContext } from '../utils/addressForm';
-import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 
 const getPractices = vi.fn();
 const addPractice = vi.fn();
@@ -227,28 +227,15 @@ describe('PracticesScreen — удаление практики', () => {
   });
 });
 
-describe('PracticesScreen — кризисная детекция поля «добавить практику» (правило №7)', () => {
-  // Регрессия: поле было чистым свободным текстом без crisisMarkers — тот же
-  // класс дефекта, что закрыт в TaskCreateSheet/LetterEx, здесь его не было.
-  it('тревожный текст в поле показывает карточку помощи ДО отправки', async () => {
+// Регрессия: поле «добавить практику» было чистым свободным текстом без
+// crisisMarkers — тот же класс дефекта, что закрыт в TaskCreateSheet/LetterEx.
+describeCrisisField('webapp/src/components/PracticesScreen.tsx', {
+  label: 'добавить практику',
+  open: async () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), {
-      target: { value: 'не хочу жить' },
-    });
-    expect(
-      await screen.findByText(new RegExp(CRISIS_HOTLINE_DISPLAY)),
-    ).toBeTruthy();
-  });
-
-  it('нейтральный текст карточку не показывает', async () => {
-    renderScreen();
-    await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), {
-      target: { value: 'прогулка 20 минут' },
-    });
-    expect(screen.queryByText(new RegExp(CRISIS_HOTLINE_DISPLAY))).toBeNull();
-  });
+  },
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), { target: { value: text } }),
 });
 
 describe('PracticesScreen — ты/вы', () => {
