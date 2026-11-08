@@ -1,27 +1,14 @@
-import { useState } from 'react';
-import { useTr } from '../../utils/addressForm';
 import { useReducedMotionPref } from '../../hooks/useReducedMotionPref';
 import { SSection, SRow, Toggle } from './ui';
 
-interface Props {
-  userRole?: 'CLIENT' | 'THERAPIST';
-  onResignTherapist?: () => Promise<void> | void;
-  onSaved: () => void;
-}
-
 // Раздел «Оформление» — вынесен из SettingsSheet.tsx (правило №10). Тумблера
 // темы здесь больше нет: кабинет только светлый (редизайн 2026-10), тема
-// переключается только на лендинге. Режима «клиент/терапевт» здесь тоже нет:
-// с #902 он — первый блок листа (ModeSection), «Оформление» не место для
-// роли. Подтверждение снятия роли специалиста
-// живёт внутри секции; «Сохранено ✓» после переключения
-// «Меньше движения» — общий тост в шапке родителя, поэтому единственное, что
-// секция отдаёт наружу, — колбэк onSaved.
-export function AppearanceSection({ userRole, onResignTherapist, onSaved }: Props) {
-  const tr = useTr();
+// переключается только на лендинге. Режима «клиент/терапевт» и снятия роли
+// специалиста здесь тоже нет: с #902 это первый блок листа (ModeSection).
+// «Сохранено ✓» после переключения «Меньше движения» — общий тост в шапке
+// родителя, поэтому единственное, что секция отдаёт наружу, — колбэк onSaved.
+export function AppearanceSection({ onSaved }: { onSaved: () => void }) {
   const motion = useReducedMotionPref(onSaved);
-  const [resignConfirm, setResignConfirm] = useState(false);
-  const [resignBusy, setResignBusy] = useState(false);
 
   return (
     <SSection id="s-appearance" label="Оформление">
@@ -31,35 +18,6 @@ export function AppearanceSection({ userRole, onResignTherapist, onSaved }: Prop
         sub={motion.sub}
         right={<Toggle on={motion.reduced} onClick={motion.toggle} label="Меньше движения" />}
       />
-      {userRole === 'THERAPIST' && onResignTherapist && (
-        !resignConfirm ? (
-          <div className="st-body-block">
-            <div className="st-actions">
-              <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setResignConfirm(true)}>
-                Перестать быть специалистом
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="st-body-block">
-            <div className="st-text">
-              {tr(
-                'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряешь. Заявку можно подать заново.',
-                'Роль специалиста будет снята: кабинет и доступ к данным клиентов пропадут. Свои данные не теряете. Заявку можно подать заново.',
-              )}
-            </div>
-            <div className="st-actions">
-              <button className="ds-btn ds-btn--sm ds-btn--secondary" disabled={resignBusy} onClick={() => setResignConfirm(false)}>
-                Отмена
-              </button>
-              <button className="ds-btn ds-btn--sm st-btn-danger is-solid" disabled={resignBusy}
-                onClick={() => { setResignBusy(true); void (async () => { try { await onResignTherapist(); setResignConfirm(false); } finally { setResignBusy(false); } })(); }}>
-                {resignBusy ? '…' : 'Снять роль'}
-              </button>
-            </div>
-          </div>
-        )
-      )}
     </SSection>
   );
 }
