@@ -1,5 +1,5 @@
 const CI_RUNS_TIMEOUT_MS = 8_000;
-const REPO = 'gregoryKot/schema-telegram-botnest';
+export const GITHUB_REPO = 'gregoryKot/schema-telegram-botnest';
 
 export interface WorkflowRun {
   conclusion?: string | null;
@@ -20,7 +20,7 @@ export interface WorkflowRunsResponse {
 export async function fetchLastRun(
   file: string,
 ): Promise<WorkflowRunsResponse> {
-  const url = `https://api.github.com/repos/${REPO}/actions/workflows/${file}/runs?branch=main&status=completed&per_page=1`;
+  const url = `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${file}/runs?branch=main&status=completed&per_page=1`;
   const res = await fetch(url, {
     headers: {
       Accept: 'application/vnd.github+json',

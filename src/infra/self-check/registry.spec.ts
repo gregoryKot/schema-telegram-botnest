@@ -15,6 +15,7 @@ describe('buildProbes', () => {
         'clientIp',
         'cronLeases',
         'db',
+        'dependabotPrs',
         'email',
         'encryptionReadable',
         'googleOAuth',
