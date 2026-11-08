@@ -25,6 +25,7 @@ describe('MoneyMetricsService.getMetrics', () => {
       afterCancelAll = 0,
       slotTaken = 0,
       created7 = 0,
+      chosenMeta = [] as Array<{ meta: unknown }>,
     } = {},
   ) => {
     // window() запускает три groupBy и count оплаченных параллельно, дважды —
@@ -69,7 +70,11 @@ describe('MoneyMetricsService.getMetrics', () => {
       donation: { groupBy: donationGroupBy },
       subscriptionCharge: { groupBy: chargeGroupBy },
       booking: { groupBy: bookingGroupBy, count: bookingCount },
-      analyticsEvent: { count: jest.fn(async () => slotTaken) },
+      analyticsEvent: {
+        count: jest.fn(async () => slotTaken),
+        // Брони с валютой по выбору клиента (Р5, booking-currency-metrics.ts).
+        findMany: jest.fn(async () => chosenMeta),
+      },
     } as never;
     return {
       service: new MoneyMetricsService(prisma),
@@ -295,6 +300,24 @@ describe('MoneyMetricsService.getMetrics', () => {
     );
   });
 
+  it('render() подклеивает «валюту выбрали сами» — событие брони → строка отчёта', async () => {
+    const { service } = build(
+      {
+        donation7: EMPTY,
+        charge7: EMPTY,
+        booking7: EMPTY,
+        donationAll: EMPTY,
+        chargeAll: EMPTY,
+        bookingAll: EMPTY,
+      },
+      { chosenMeta: [{ meta: { currency: 'EUR' } }] },
+    );
+
+    await expect(service.render()).resolves.toContain(
+      'валюту выбрали сами (без онлайн-оплаты), за 30 дней: 1 запись (евро — 1).',
+    );
+  });
+
   it('render() на пустой базе — без строки про отменённые', async () => {
     const { service } = build({
       donation7: EMPTY,
@@ -310,5 +333,6 @@ describe('MoneyMetricsService.getMetrics', () => {
     expect(out).toContain('Пока никто не платил.');
     expect(out).not.toContain('отменённую');
     expect(out).not.toContain('Записаться пробовали');
+    expect(out).not.toContain('валюту выбрали');
   });
 });

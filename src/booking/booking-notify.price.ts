@@ -1,4 +1,9 @@
-import { CURRENCIES, Currency, formatPrice } from './price-region';
+import {
+  CURRENCIES,
+  Currency,
+  formatPrice,
+  isPlacelessTimeZone,
+} from './price-region';
 
 // Строка с ценой в карточке брони для админа. Вне рублей онлайн-оплаты нет:
 // бронь подтверждена сразу, и владельцу нужно видеть, сколько и в чём договариваться.
@@ -11,14 +16,23 @@ export interface PriceFields {
   currency?: string | null;
   /** Деньги пришли вебхуком Robokassa: отмена такой брони = возврат. */
   paidAt?: Date | null;
+  /** IANA-пояс посетителя: без места (UTC) + не рубли = валюту выбрал клиент. */
+  clientTimeZone?: string | null;
 }
 
 const isCurrency = (c: string): c is Currency =>
   (CURRENCIES as readonly string[]).includes(c);
 
+/** Пометка под ценой (Р5): пояс без места даёт рубли, другая валюта — только явным выбором. */
+export const CHOSEN_CURRENCY_NOTE =
+  '🌍 Валюта — по выбору клиента: часовой пояс не определился';
+
 /** «💳 70 $ · оплата по договорённости (не Robokassa)»; для рублей и без суммы — null. */
 export function priceLine(b: PriceFields): string | null {
   if (b.amount == null || !b.currency || b.currency === 'RUB') return null;
   if (!isCurrency(b.currency)) return null;
-  return `💳 ${formatPrice(b.amount, b.currency)} · оплата по договорённости (не Robokassa)`;
+  const line = `💳 ${formatPrice(b.amount, b.currency)} · оплата по договорённости (не Robokassa)`;
+  return isPlacelessTimeZone(b.clientTimeZone)
+    ? `${line}\n${CHOSEN_CURRENCY_NOTE}`
+    : line;
 }

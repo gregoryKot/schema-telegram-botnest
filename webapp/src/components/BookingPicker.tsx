@@ -19,7 +19,8 @@ import type { ContactChannel } from '../../../shared/src/booking/contactChannel'
 import { BookingSlotsSection } from './booking/BookingSlotsSection';
 import { AwaitPaymentScreen, PaymentFailScreen, DoneScreen, type BookedSession } from './booking/BookingResultScreens';
 import { localDayLabel, localTimeLabel, submitTimeSuffix } from '../../../shared/src/booking/clientTimeZone';
-import { currencyFromTimeZone } from '../../../shared/src/booking/priceRegion';
+import { usePriceCurrency } from './booking/priceCurrency';
+import { CurrencyChoice } from './booking/CurrencyChoice';
 import { firstSlotDay, useBookingSlots } from '../../../shared/src/booking/useBookingSlots';
 import { bookingPriceView, doneCostNote, formatPriceSuffix, needsOnlinePayment, submitLabel, submitNote } from './booking/bookingPriceLabels';
 
@@ -84,7 +85,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
   const day = pickedDay || firstSlotDay(slots, tz); // пока день не выбран — день первого слота в зоне посетителя
 
   const chosen = options.find((o) => o.type === sessionType);
-  const currency = currencyFromTimeZone(tz); // тот же tz уходит в clientTimeZone — цена совпадёт с серверной
+  const { currency, explicit } = usePriceCurrency(tz); // тот же tz и выбор (Р5) уходят в запрос — цена совпадёт с серверной
   const view = bookingPriceView(chosen, currency);
 
   // On a terminal screen (done / payment failed), scroll it into view — on mobile
@@ -131,7 +132,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
       const res = await api.bookSlot({
         startsAt: slot.startsAt, durationMin: slot.durationMin, type: sessionType,
         clientName: name.trim(), clientContact: contact.trim(), message: message.trim() || undefined,
-        returning: sessionType === 'SESSION_50' && returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz, clientChannel: channel,
+        returning: sessionType === 'SESSION_50' && returning, acceptedOffer: consent, website, source: leadSource(), clientTimeZone: tz, clientChannel: channel, currency: explicit,
       });
       setBooked({ cancelToken: res.cancelToken, eventDurationMin: res.eventDurationMin });
       trackBookingSubmit(sessionType);
@@ -163,6 +164,7 @@ export function BookingPicker({ fallback, onWriteInstead, lockedType, compact = 
     // молча (без наших trackGoal/подсказок) — обработчик submit сам решает,
     // что показать и куда поставить фокус.
     <form onSubmit={submit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <CurrencyChoice tz={tz} labelStyle={labelSt} />
       {options.length > 1 && !lockedType && (
         <div>
           <div style={labelSt}>Формат встречи</div>

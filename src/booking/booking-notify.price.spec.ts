@@ -1,6 +1,6 @@
 // Строка цены в карточке брони для админа: только вне рублей и только с суммой.
 import { bookingCardText } from './booking-notify.format';
-import { priceLine } from './booking-notify.price';
+import { CHOSEN_CURRENCY_NOTE, priceLine } from './booking-notify.price';
 
 describe('priceLine', () => {
   it.each([
@@ -26,6 +26,53 @@ describe('priceLine', () => {
     [{}],
   ])('нет строки для %j', (fields) => {
     expect(priceLine(fields)).toBeNull();
+  });
+});
+
+// Р5: пояс без места даёт рубли; другая валюта при нём — только явный выбор
+// клиента. Владелец видит пометку, откуда у клиента без пояса евро.
+describe('priceLine — валюта по выбору клиента', () => {
+  it.each(['UTC', 'Etc/UTC', 'GMT'])(
+    'пояс %s, евро: строка цены и пометка под ней',
+    (clientTimeZone) => {
+      expect(priceLine({ amount: 65, currency: 'EUR', clientTimeZone })).toBe(
+        `💳 65 € · оплата по договорённости (не Robokassa)\n${CHOSEN_CURRENCY_NOTE}`,
+      );
+    },
+  );
+
+  it.each([['Asia/Bangkok'], ['Europe/Berlin'], [null], [undefined]])(
+    'пояс %p — валюта по поясу, без пометки',
+    (clientTimeZone) => {
+      expect(
+        priceLine({ amount: 65, currency: 'EUR', clientTimeZone }),
+      ).not.toContain(CHOSEN_CURRENCY_NOTE);
+    },
+  );
+
+  it('рубли и знакомство при поясе без места — ни цены, ни пометки', () => {
+    expect(
+      priceLine({ amount: 4000, currency: 'RUB', clientTimeZone: 'UTC' }),
+    ).toBeNull();
+    expect(
+      priceLine({ amount: null, currency: 'EUR', clientTimeZone: 'UTC' }),
+    ).toBeNull();
+  });
+
+  it('карточка брони несёт пометку и без обращения к читателю', () => {
+    const text = bookingCardText('Заголовок', {
+      clientName: 'Иван',
+      clientContact: '@ivan',
+      startsAt: new Date('2026-09-30T12:00:00Z'),
+      message: null,
+      amount: 70,
+      currency: 'USD',
+      clientTimeZone: 'UTC',
+    });
+    expect(text).toContain(CHOSEN_CURRENCY_NOTE);
+    expect(CHOSEN_CURRENCY_NOTE).not.toMatch(
+      /(^|[^а-яё])(ты|вы|тебя|тебе|вас|вам|ваш\S*|тво\S*)(?![а-яё])/i,
+    );
   });
 });
 

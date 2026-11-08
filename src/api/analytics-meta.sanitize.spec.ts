@@ -914,6 +914,14 @@ describe('client_booking_*', () => {
       sanitizeMeta('booking_slot_taken', { contact: '@maria', taken: 5 }),
     ).toBeUndefined();
   });
+
+  // Р5: валюту по явному выбору пишет сервер после брони; подделка с клиента
+  // не несёт валюты и в /stats не считается (там только userId = null).
+  it('booking_currency_chosen: meta с клиента отбрасывается целиком', () => {
+    expect(
+      sanitizeMeta('booking_currency_chosen', { currency: 'EUR' }),
+    ).toBeUndefined();
+  });
 });
 
 // «⏰ Напомню через час» (аудит 2026-10, backend#16): событие пишет только бот,

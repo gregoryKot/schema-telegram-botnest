@@ -14,6 +14,7 @@ import {
 } from 'class-validator';
 import * as L from '../utils/text-limits';
 import { CONTACT_CHANNELS, type ContactChannel } from './contact-channel';
+import { CURRENCIES, type Currency } from './price-region';
 
 /** Тело POST /api/booking/book — публичный эндпоинт с деньгами, рантайм-валидация (аудит 2026-07, правило №6). */
 export class BookDto {
@@ -63,6 +64,12 @@ export class BookDto {
   @IsString()
   @MaxLength(64)
   clientTimeZone?: string;
+
+  // Явный выбор валюты (решение владельца Р5): сервер учитывает его только
+  // при поясе без места (UTC и т. п.), иначе валюта — по поясу.
+  @IsOptional()
+  @IsIn(CURRENCIES)
+  currency?: Currency;
 
   @IsBoolean()
   acceptedOffer!: boolean;

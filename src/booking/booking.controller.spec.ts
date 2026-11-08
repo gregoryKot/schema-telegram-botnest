@@ -208,6 +208,24 @@ describe('BookingController.bookSlot', () => {
     );
   });
 
+  // Р5: выбор валюты доходит до сервиса как есть — учесть его или нет (по
+  // поясу) решает resolveBookingPrice, а не контроллер.
+  it('currency из тела доходит до сервиса; без поля — undefined', async () => {
+    const { controller, booking } = makeController();
+    booking.book.mockResolvedValue({ id: 1 });
+    await controller.bookSlot({
+      ...BASE_DTO,
+      clientTimeZone: 'UTC',
+      currency: 'EUR',
+    });
+    await controller.bookSlot(BASE_DTO);
+    expect(booking.book.mock.calls[0][0]).toMatchObject({
+      clientTimeZone: 'UTC',
+      currency: 'EUR',
+    });
+    expect(booking.book.mock.calls[1][0].currency).toBeUndefined();
+  });
+
   it('возвращает результат BookingService.book как есть', async () => {
     const { controller, booking } = makeController();
     const result = { id: 5, cancelToken: 'tok', status: 'CONFIRMED' };

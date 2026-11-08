@@ -6,7 +6,9 @@ import {
   currencyFromTimeZone,
   formatPrice,
   isOnlinePaymentCurrency,
+  isPlacelessTimeZone,
   regionFromTimeZone,
+  resolvePriceCurrency,
 } from './priceRegion';
 
 describe('regionFromTimeZone — страна по часовому поясу', () => {
@@ -91,5 +93,24 @@ describe('formatPrice', () => {
 
   it('ноль — «0 ₽» (карточка знакомства)', () => {
     expect(formatPrice(0, 'RUB')).toBe('0 ₽');
+  });
+});
+
+// Решение владельца Р5: заграница при неизвестном поясе — по явному выбору
+// валюты; при настоящем поясе выбор не действует (защита предоплаты).
+describe('resolvePriceCurrency — явный выбор валюты', () => {
+  it('пояс без места: выбор действует, без выбора — рубли', () => {
+    expect(isPlacelessTimeZone('UTC')).toBe(true);
+    expect(resolvePriceCurrency('UTC', 'EUR')).toBe('EUR');
+    expect(resolvePriceCurrency('Etc/UTC', 'ILS')).toBe('ILS');
+    expect(resolvePriceCurrency('UTC', null)).toBe('RUB');
+  });
+
+  it('настоящий или пустой пояс: выбор не действует', () => {
+    expect(isPlacelessTimeZone('Europe/Moscow')).toBe(false);
+    expect(isPlacelessTimeZone(undefined)).toBe(false);
+    expect(resolvePriceCurrency('Europe/Moscow', 'EUR')).toBe('RUB');
+    expect(resolvePriceCurrency('Asia/Bangkok', 'EUR')).toBe('USD');
+    expect(resolvePriceCurrency(undefined, 'EUR')).toBe('RUB');
   });
 });

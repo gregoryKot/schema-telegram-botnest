@@ -21,7 +21,11 @@ import { assertWithinAvailability } from './booking.availability';
 import { completeCheckout } from './booking.checkout';
 import { createBookingGuarded } from './booking.create';
 import { buildBookingData } from './booking-data';
-import { pathLabel, resolveBookingPrice } from './booking-pricing-path';
+import {
+  pathLabel,
+  resolveBookingPrice,
+  trackExplicitCurrency,
+} from './booking-pricing-path';
 import { assertBookingPayable } from './payment-guard';
 import { assertPaidAmount } from './booking-amount';
 import { BOOKING_SCHEMA } from './booking.schema';
@@ -126,6 +130,7 @@ export class BookingService {
       dto,
     );
     this.logger.log(`Booking ${booking.id} created (${pathLabel(price)})`);
+    await trackExplicitCurrency(this.analytics, price);
 
     return completeCheckout(
       {

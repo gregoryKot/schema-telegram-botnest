@@ -1,5 +1,6 @@
 import type { SessionType } from '@prisma/client';
 import type { ContactChannel } from './contact-channel';
+import type { Currency } from './price-region';
 
 export interface CreateBookingDto {
   startsAt: Date;
@@ -17,6 +18,8 @@ export interface CreateBookingDto {
   source?: string;
   /** IANA-пояс посетителя из Intl. Невалидный — игнорируется (не 400). */
   clientTimeZone?: string;
+  /** Явный выбор валюты; действует только при поясе без места (Р5). */
+  currency?: Currency;
 }
 
 /**
