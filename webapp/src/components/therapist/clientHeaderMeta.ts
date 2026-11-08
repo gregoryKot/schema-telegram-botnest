@@ -1,13 +1,15 @@
 import type { TherapyClientSummary } from '../../api';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
-import { calcTherapyDuration, isActiveToday, isVirtualClient, nextSessionLabel } from './clientSheetHelpers';
+import { calcTherapyDuration, isActiveToday, nextSessionLabel } from './clientSheetHelpers';
+import { clientStatus } from './rosterOrder';
 
-/** Строка шапки клиента: «в боте · активность сегодня · в работе … · N дн. подряд»; части только из данных.
+/** Строка шапки клиента: «в приложении · активность сегодня · в работе … · N дн. подряд»; части только из данных.
  *  «Сегодня» — по календарю клиента (isActiveToday, daysSinceActive от сервера), не по дню терапевта (№25). */
 export function clientHeaderMeta(client: TherapyClientSummary): string {
   const duration = client.therapyStartDate ? calcTherapyDuration(client.therapyStartDate) : '';
+  const status = clientStatus(client); // метка — та же, что в списке клиентов
   return [
-    !isVirtualClient(client) && 'в боте',
+    status.inBot && status.label,
     isActiveToday(client) && 'активность сегодня',
     duration && `в работе ${duration}`,
     client.streak > 0 && `${client.streak} дн. подряд`,

@@ -69,3 +69,7 @@
   .tt-name { font-size: 15px; font-weight: 700; }
   .tt-row-sub { font-size: 12px; }
 }
+/* Сбой загрузки (U11): строка и «Повторить» вместо ложных «Нет клиентов». */
+.tt-failed { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+/* Пустой кабинет: пустое состояние и первое действие «Добавить клиента». */
+.tt-first { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }

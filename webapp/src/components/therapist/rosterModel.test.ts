@@ -244,8 +244,9 @@ describe('clientCaption', () => {
 });
 
 describe('clientStatus', () => {
-  it('Telegram-клиент — в боте', () => {
-    expect(clientStatus(client({}))).toEqual({ label: 'в боте', inBot: true });
+  // Аудит 2026-11, U11: клиент сайта в боте не бывает — метка по факту.
+  it('клиент с аккаунтом — в приложении', () => {
+    expect(clientStatus(client({}))).toEqual({ label: 'в приложении', inBot: true });
   });
   it('офлайн по отрицательному id, а не по name', () => {
     expect(clientStatus(offline())).toEqual({ label: 'офлайн', inBot: false });

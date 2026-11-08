@@ -45,24 +45,44 @@ afterEach(() => {
 });
 
 describe('TherapistTodaySection — пустой аккаунт (без хардкод-заглушек)', () => {
-  it('на пустом списке клиентов показывает реальные пустые состояния, а не выдуманные цифры', async () => {
+  it('на пустом списке клиентов показывает реальные пустые состояния и первое действие «Добавить клиента»', async () => {
     mockApi.getTherapyClients.mockResolvedValue([]);
-    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+    const onAddClient = vi.fn();
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} onAddClient={onAddClient} />);
 
     await waitFor(() => expect(screen.getByText('Сессий не запланировано')).toBeTruthy());
-    expect(screen.getByText('Нет клиентов')).toBeTruthy();
+    expect(screen.getByText('Клиентов пока нет')).toBeTruthy();
     // Пустые состояния — общий ds-empty (#906), не курсив в пунктирной рамке.
     expect(screen.getByText('Сессий не запланировано').classList.contains('ds-empty')).toBe(true);
-    expect(screen.getByText('Нет клиентов').classList.contains('ds-empty')).toBe(true);
     // Блок сводной статистики скрыт вовсе на пустом списке — не «0/0».
     expect(screen.queryByText('Активны сегодня')).toBeNull();
+    // Аудит 2026-11, U11: у нового терапевта пустой экран вёл в никуда.
+    fireEvent.click(screen.getByRole('button', { name: 'Добавить клиента' }));
+    expect(onAddClient).toHaveBeenCalledTimes(1);
   });
 
-  it('ошибка api.getTherapyClients не роняет экран — остаётся пустое состояние', async () => {
-    mockApi.getTherapyClients.mockRejectedValue(new Error('network down'));
+  it('пока грузится — силуэт счётчиков, а не «клиентов нет»', () => {
+    mockApi.getTherapyClients.mockReturnValue(new Promise(() => {}));
+    render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
+    expect(screen.getByRole('status', { name: 'Загружаются клиенты' })).toBeTruthy();
+    expect(screen.queryByText('Клиентов пока нет')).toBeNull();
+    expect(screen.queryByText('Сессий не запланировано')).toBeNull();
+  });
+
+  // Аудит 2026-11, U11: catch глушил сбой, и при плохой связи терапевт видел
+  // «Нет клиентов» и «Сессий не запланировано» — неправду о своей практике.
+  it('сбой сети — сообщение и «Повторить», а не «нет клиентов»; повтор загружает клиентов', async () => {
+    mockApi.getTherapyClients
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce([client({ telegramId: 1, name: 'Иван', todayIndex: 7 })]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Нет клиентов')).toBeTruthy());
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Клиенты не загрузились/);
+    expect(screen.queryByText(/Клиентов пока нет|Нет клиентов/)).toBeNull();
+    expect(screen.queryByText('Сессий не запланировано')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(await screen.findByText('Активны сегодня')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 
@@ -289,9 +309,10 @@ describe('TherapistTodaySection — офлайн-клиенты', () => {
     mockApi.getTherapyClients.mockResolvedValue([offline()]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    const note = await screen.findByText('Активность видна у клиентов, подключённых к боту');
+    // U11: клиент сайта к боту не подключён — подпись по факту, «к приложению».
+    const note = await screen.findByText('Активность видна у клиентов, подключённых к приложению');
     expect(note.classList.contains('ds-empty')).toBe(true);
-    expect(screen.queryByText('Нет клиентов')).toBeNull();
+    expect(screen.queryByText('Клиентов пока нет')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Требуют внимания' })).toBeNull();
   });
 });

@@ -10,9 +10,10 @@ import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession'
 import { matchesSearch } from '../../../../shared/src/utils/searchNormalize';
 import { clientDisplayName as displayName } from '../../../../shared/src/therapy/clientInitials';
 
-/** Статус: клиент в боте (ok) или офлайн-карточка без бота — одна метка для списка и палитры. */
+/** Статус: клиент с аккаунтом (ok) или офлайн-карточка — одна метка для списка, палитры и шапки
+ *  клиента. «В приложении», а не «в боте»: клиент сайта в боте не бывает (аудит 2026-11, U11). */
 export const clientStatus = (c: TherapyClientSummary): { label: string; inBot: boolean } =>
-  isVirtualClient(c) ? { label: 'офлайн', inBot: false } : { label: 'в боте', inBot: true };
+  isVirtualClient(c) ? { label: 'офлайн', inBot: false } : { label: 'в приложении', inBot: true };
 
 /** Явная встреча не в прошлом — иначе null; дни встреч список подписывает «по Вт». */
 export const plannedSession = (c: TherapyClientSummary, today: string): string | null =>

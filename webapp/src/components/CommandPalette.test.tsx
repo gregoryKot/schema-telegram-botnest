@@ -168,7 +168,7 @@ describe('CommandPalette — клиенты терапевта', () => {
 
   // QA 2026-11 (T-19): офлайн-клиент подписывался «Клиент», как подключённый
   // без активности, а в списке он «офлайн». Метка одна — clientStatus.
-  it('без активности сегодня — метка списка: «офлайн» у офлайн-карточки, «в боте» у подключённого', async () => {
+  it('без активности сегодня — метка списка: «офлайн» у офлайн-карточки, «в приложении» у подключённого', async () => {
     getTherapyClients.mockResolvedValue([
       { ...CLIENT, telegramId: -7, name: 'Офлайн Иван', streak: 0 },
       { ...CLIENT, telegramId: 8, name: 'Света', daysSinceActive: 3 },
@@ -177,7 +177,7 @@ describe('CommandPalette — клиенты терапевта', () => {
     const sub = async (name: string) =>
       (await screen.findByText(name)).parentElement!.querySelector('.cmd-sub')!.textContent;
     expect(await sub('Офлайн Иван')).toBe('офлайн');
-    expect(await sub('Света')).toBe('в боте');
+    expect(await sub('Света')).toBe('в приложении');
     expect(screen.queryByText('Клиент')).toBeNull();
   });
 

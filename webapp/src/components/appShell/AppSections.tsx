@@ -75,10 +75,8 @@ export function AppSections({
     {/* Therapist mode */}
     {therapistMode && pathname === '/cabinet/today' && (
       <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
-        <TherapistTodaySection
-          displayName={displayName}
-          onOpenClient={openClient}
-        />
+        {/* «Добавить клиента» у пустого кабинета — список, где форма открыта сразу. */}
+        <TherapistTodaySection displayName={displayName} onOpenClient={openClient} onAddClient={() => navigate('/cabinet')} />
       </ErrorBoundary>
     )}
     {therapistMode && pathname === '/cabinet/guide' && (
