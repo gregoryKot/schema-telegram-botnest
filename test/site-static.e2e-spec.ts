@@ -24,8 +24,9 @@ describe('статика сайта через AppModule', () => {
   });
 
   it('файл сборки — сам файл с годовым кэшем', async () => {
-    const res = await http().get('/assets/app-E2eFixt1.js').expect(200);
-    expect(res.headers['content-type']).toMatch(/javascript/);
+    // .css, а не .js: правило .gitignore `test/**/*.js` не пустило бы фикстуру в git.
+    const res = await http().get('/assets/app-E2eFixt1.css').expect(200);
+    expect(res.headers['content-type']).toMatch(/text\/css/);
     expect(res.headers['cache-control']).toContain('immutable');
   });
 
