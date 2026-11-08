@@ -8,7 +8,7 @@
 
 ### Гейты CI
 
-Бейслайн указан полным путём, «—» значит, что бейслайна нет. «--update: нет» значит, что флага нет: это ручная классификация с причинами или жёсткий запрет без долга. `check-db-phrases.ts` в CI не гоняется: он ходит в БД, запускать вручную через `npm run check-phrases`.
+Бейслайн указан полным путём, «—» значит, что бейслайна нет. «--update: нет» значит, что флага нет: это ручная классификация с причинами или жёсткий запрет без долга.
 
 | скрипт | что ловит | baseline | --update? | джоба CI |
 |---|---|---|---|---|
@@ -23,7 +23,6 @@
 | check-color-drift.mjs | захардкоженные хроматические hex/rgb вне токенов палитры | `scripts/color-drift-baseline.json` | да | webapp |
 | check-coverage-ratchet.mjs | просадка покрытия бэкенда (сам гоняет jest --coverage) | `scripts/coverage-baseline.json` | да | backend |
 | check-cron-leader.mjs | `@Cron` без классификации leader-election (двойной запуск) | `scripts/cron-leader-baseline.json` | нет | checks |
-| check-db-phrases.ts | мужской род и брак в пуле фраз «ЗВ» в БД | — | нет | — |
 | check-dead-files.mjs | файл без нетестовых потребителей (мёртвый код) | `scripts/dead-files-baseline.json` | да | checks |
 | check-deploy-lag.mjs | образ на проде старее последнего коммита main | — | нет | prod-smoke |
 | check-deploy-paths.mjs | рассинхрон путей Dockerfile, .dockerignore, amvera.yml | — | нет | checks |

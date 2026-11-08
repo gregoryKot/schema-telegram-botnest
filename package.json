@@ -25,8 +25,7 @@
     "mutation:golden-auth": "stryker run stryker.golden-auth.config.json",
     "mutation:golden-payments": "stryker run stryker.golden-payments.config.json",
     "mutation:crisis": "stryker run stryker.crisis.config.json",
-    "mutation:outbox": "stryker run stryker.outbox.config.json",
-    "check-phrases": "ts-node scripts/check-db-phrases.ts"
+    "mutation:outbox": "stryker run stryker.outbox.config.json"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.1.0",
