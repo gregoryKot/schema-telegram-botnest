@@ -50,7 +50,10 @@ export function matchTotpStep(
     const res = verifySync({ secret, token: code, ...TOTP_OPTIONS });
     return res.valid && 'timeStep' in res ? res.timeStep : null;
   } catch (e) {
-    logger.error(`TOTP secret rejected by otplib: ${(e as Error).message}`);
+    // Первым аргументом — только класс: он уходит в DM владельцу (D1), текст
+    // otplib может цитировать кусок секрета — его только в stdout.
+    const err = e as Error;
+    logger.error(`TOTP secret rejected by otplib (${err.name})`, err.message);
     return null;
   }
 }

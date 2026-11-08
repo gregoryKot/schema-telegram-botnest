@@ -521,7 +521,14 @@ describe('TotpService — код не того формата, битый сек
       .mockImplementation(() => undefined);
 
     await expect(service.verifyCode(USER_ID, '123456')).resolves.toBe(false);
-    expect(logged).toHaveBeenCalledWith(expect.stringMatching(/otplib/));
+    expect(logged).toHaveBeenCalledWith(
+      expect.stringMatching(/otplib/),
+      expect.any(String),
+    );
+    // Первый аргумент уходит в DM владельцу (D1): текст otplib цитирует
+    // символы секрета («Unknown letter …») — ему место только во втором.
+    const alertLine = logged.mock.calls[0][0] as string;
+    expect(alertLine).not.toMatch(/letter|base32|allowed/i);
     expect(attempts.recordFailure).toHaveBeenCalledWith(USER_ID);
     logged.mockRestore();
   });
