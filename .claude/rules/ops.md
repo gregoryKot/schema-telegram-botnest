@@ -254,4 +254,6 @@ nightly старше 40 ч — планировщик GitHub не запуска
   отдельным PR. Механизм: `src/test-support/gates/runner-pin.spec.ts` — любая
   джоба любого воркфлоу с `runs-on: *-latest` роняет jest, все ubuntu-джобы —
   на одной версии, клиент Postgres 16 — из PGDG и первым в PATH (образ 26.04
-  несёт PostgreSQL 18); `--update` нет.
+  несёт PostgreSQL 18); `--update` нет. Новый образ меняет и утилиты: curl 8.18
+  образа 26.04 с `--aws-sigv4` подписывал `%2B` как `%20` (#1046) — подпись S3
+  поэтому считает `deploy/s3-sign.cjs`, а не curl.

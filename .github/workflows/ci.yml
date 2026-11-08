@@ -68,6 +68,11 @@ jobs:
           restore-keys: |
             jest-ts-cache-${{ runner.os }}-
       - run: npx tsc --noEmit -p tsconfig.build.json
+      # Спеки бэкапа гоняют scripts/s3-api.sh с curl раннера: его версия — в
+      # лог. curl 8.14+ с `--aws-sigv4` подписывал `%2B` курсора как `%20`
+      # (#1046), поэтому подпись считает deploy/s3-sign.cjs, а не curl.
+      - name: версия curl (скрипты бэкапа)
+        run: curl --version
       # coverage-храповик (TEST_COVERAGE_PLAN.md, этап 4, п.14): сам гоняет
       # jest --coverage, отдельный `npx jest` не нужен. Падает при просадке
       # покрытия ниже scripts/coverage-baseline.json (общей или по полу
