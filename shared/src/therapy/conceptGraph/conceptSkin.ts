@@ -1,12 +1,8 @@
 import { createContext, useContext } from 'react';
 import type { DisclosureClasses } from '../../components/Disclosure';
 
-/**
- * Классы вида концептуализации. Сайт кладёт их контекстом, а не пропом: чип
- * лежит на глубине ConceptGraph → редактор → выбор → чип, и тащить классы по
- * каждому уровню значило бы раздуть все сигнатуры. Мини-апп контекст не ставит
- * и рисуется прежними инлайн-дефолтами (conceptInlineStyles.ts).
- */
+/** Классы вида концептуализации. Сайт кладёт их контекстом, а не пропом: чип лежит на глубине
+ *  ConceptGraph → редактор → выбор → чип. Без контекста — инлайн-дефолты (conceptInlineStyles.ts). */
 export interface ConceptSkin {
   seg: { group: string; btn: string };
   chip: string;
@@ -16,6 +12,8 @@ export interface ConceptSkin {
   link: string;
   card: string;
   fold: { root: string; btn: string; chev: string; body: string };
+  /** Раскладка сводки «Коротко» (ConceptDigest): заголовок и метка идут вместе с label. */
+  digest: Record<'title' | 'list' | 'row' | 'term' | 'value', string>;
 }
 
 export const ConceptSkinContext = createContext<ConceptSkin | null>(null);

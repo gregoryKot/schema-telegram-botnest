@@ -82,12 +82,33 @@ export function DigestChips({ items }: { items: DigestItem[] }) {
   );
 }
 
+// Инлайн-раскладка — только без skin; со skin её дают классы skin.digest (на сайте
+// tcp-dg-* в therapist-concept.css), иначе инлайн спорил бы с ds-label.
+const TITLE: React.CSSProperties = { ...CAPS, margin: '0 0 var(--space-10)' };
+const LIST: React.CSSProperties = {
+  margin: 0,
+  display: 'grid',
+  gap: 'var(--space-10)',
+};
+const ROW: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '4px 16px',
+};
+const TERM: React.CSSProperties = {
+  ...CAPS,
+  flex: '0 0 104px',
+  lineHeight: '26px',
+};
+
 /** Карточка сводки; при пустом списке строк не рендерится. */
 export function ConceptDigest({ rows }: { rows: DigestRow[] }) {
   const id = useId();
   const skin = useConceptSkin();
   if (rows.length === 0) return null;
-  const caps = skin ? undefined : CAPS;
+  const d = skin?.digest;
+  const withLabel = (cls?: string) =>
+    skin && cls ? `${skin.label} ${cls}` : undefined;
   return (
     <section
       data-export-skip
@@ -95,37 +116,16 @@ export function ConceptDigest({ rows }: { rows: DigestRow[] }) {
       className={skin?.card}
       style={skin ? undefined : DIGEST_CARD}
     >
-      <h3
-        id={id}
-        className={skin?.label}
-        style={{ ...caps, margin: '0 0 var(--space-10)' }}
-      >
+      <h3 id={id} className={withLabel(d?.title)} style={d ? undefined : TITLE}>
         {DIGEST_TITLE}
       </h3>
-      <dl style={{ margin: 0, display: 'grid', gap: 'var(--space-10)' }}>
+      <dl className={d?.list} style={d ? undefined : LIST}>
         {rows.map((r) => (
-          <div
-            key={r.key}
-            style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}
-          >
-            <dt
-              className={skin?.label}
-              style={{ ...caps, flex: '0 0 104px', lineHeight: '26px' }}
-            >
+          <div key={r.key} className={d?.row} style={d ? undefined : ROW}>
+            <dt className={withLabel(d?.term)} style={d ? undefined : TERM}>
               {r.label}
             </dt>
-            <dd
-              style={
-                skin
-                  ? {
-                      flex: '1 1 260px',
-                      minWidth: 0,
-                      margin: 0,
-                      lineHeight: 1.5,
-                    }
-                  : DIGEST_VALUE
-              }
-            >
+            <dd className={d?.value} style={d ? undefined : DIGEST_VALUE}>
               {r.kind === 'chips' ? <DigestChips items={r.items} /> : r.text}
             </dd>
           </div>

@@ -527,7 +527,7 @@
   "shared/src/therapy/conceptGraph/ConceptSchemaEditor.tsx": 145,
   "shared/src/therapy/conceptGraph/ConceptSchemaField.tsx": 75,
   "shared/src/therapy/conceptGraph/ConceptSchemaPicker.tsx": 57,
-  "shared/src/therapy/conceptGraph/conceptSkin.ts": 32,
+  "shared/src/therapy/conceptGraph/conceptSkin.ts": 30,
   "shared/src/therapy/conceptGraph/ConceptStrategy.tsx": 57,
   "shared/src/therapy/conceptGraph/ConceptTextField.tsx": 63,
   "shared/src/therapy/conceptGraph/ConceptToggleChip.tsx": 45,

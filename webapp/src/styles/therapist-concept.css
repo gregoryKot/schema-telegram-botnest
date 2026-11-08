@@ -54,8 +54,15 @@
 }
 .tcp-node-kind { display: inline-flex; align-items: center; gap: 6px; }
 
-/* Сводка «Коротко»: отступ, который раньше давал инлайн-CARD. */
+/* Сводка «Коротко»: отступ, который раньше давал инлайн-CARD. Раскладка строк — классами
+   skin.digest (ConceptDigest), заголовок и метка стоят вместе с ds-label: метка слева 104px,
+   плашки на узком экране переносятся под неё сами (flex-wrap + flex-basis). */
 .tcp-digest { margin-bottom: 16px; }
+.tcp-dg-title { margin: 0 0 var(--space-10); }
+.tcp-dg-list { margin: 0; display: grid; gap: var(--space-10); }
+.tcp-dg-row { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.tcp-dg-term { flex: 0 0 104px; line-height: 26px; }
+.tcp-dg-value { flex: 1 1 260px; min-width: 0; margin: 0; line-height: 1.5; }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-fields { gap: 40px; }
