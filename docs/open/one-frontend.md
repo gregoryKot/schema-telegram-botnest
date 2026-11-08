@@ -91,16 +91,10 @@
   по таймеру конфетти в `useConfetti`, хук оставил бы брошенную запись),
   `AchievementsDialog` (на время детали убирается из дерева мимо `goBack` —
   `ProfileSection.tsx`, `!selectedAchievement`; сначала держать список под
-  деталью вложенным листом), подтверждения `ConfirmDialog` в
-  `AccountPage` (после подтверждения его убирает родитель, а не
-  `goBack` — нужен `goBack` по успеху). `CommandPalette` и `DeleteAccountDialog`
-  хук получили. Удаление клиента (`ClientHeader`) переехало на
-  `webapp/src/components/HistoryConfirmDialog.tsx` (QA 2026-11: запись в истории,
-  подтверждение — `goBack(onConfirm)`). Тот же «Назад мимо диалога» остался в
-  карточке клиента: «Восстановить версию?» (`concept/ConceptVersionHistory.tsx`,
-  закрывается сразу — переводится на `HistoryConfirmDialog` вместе с Router в
-  `ClientConceptTab.restore.test.tsx`). «Удалить задание?» и «Удалить заметку?»
-  переведены (`run` у `HistoryConfirmDialog`: busy/ошибка внутри, `goBack` по успеху).
+  деталью вложенным листом). `CommandPalette` и `DeleteAccountDialog` хук получили;
+  подтверждения — на `webapp/src/components/HistoryConfirmDialog.tsx` (запись в истории,
+  `goBack(onConfirm)` или `run`): удаление клиента, «Удалить задание?», «Удалить заметку?»,
+  отвязка способа входа в `AccountPage` и «Восстановить версию?» в карточке клиента.
 - `useHistorySheet` и два листа, смонтированные в одном коммите (родитель сразу
   рендерит ребёнка — `SchemaInfoSheet` с `autoStartTest` и уже загруженным
   `YSQTestSheet`): эффект ребёнка идёт раньше родительского, поэтому в стеке

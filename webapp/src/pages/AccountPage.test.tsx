@@ -15,7 +15,8 @@ import {
   waitFor,
   act,
 } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate, type NavigateFunction } from 'react-router-dom';
+import { useEffect } from 'react';
 import { AuthContext, type AuthState } from '../auth/authContext';
 import { THERAPIST_MODE_KEY } from '../utils/storageKeys';
 import { AccountPage } from './AccountPage';
@@ -322,6 +323,41 @@ describe('AccountPage — отвязка провайдера', () => {
         url.includes('/api/auth/unlink/'),
       ),
     ).toBe(false);
+  });
+
+  // Подтверждение держит свою запись истории (HistoryConfirmDialog): «Назад» браузера
+  // закрывает его, а не уводит со страницы аккаунта.
+  it('«Назад» браузера закрывает диалог отвязки и остаётся на странице', async () => {
+    meProviders = [
+      { provider: 'google', email: 'user@gmail.com', displayName: null },
+      { provider: 'telegram', email: null, displayName: '@petya' },
+    ];
+    const snap = { nav: null as NavigateFunction | null };
+    function NavSpy() {
+      const nav = useNavigate();
+      useEffect(() => { snap.nav = nav; });
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={['/today', '/account']} initialIndex={1}>
+        <NavSpy />
+        <AuthContext.Provider value={authValue()}>
+          <Routes>
+            <Route path="/today" element={<div>сегодня</div>} />
+            <Route path="/account" element={<AccountPage />} />
+          </Routes>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    );
+    await screen.findAllByText('Отвязать');
+    fireEvent.click(unlinkBtn('Google'));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    await act(async () => {});
+    await act(async () => { snap.nav!(-1); });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.queryByText('сегодня')).toBeNull();
+    expect(screen.getByText('user@gmail.com')).toBeTruthy();
+    expect(fetchMock.mock.calls.some(([url]: [string]) => url.includes('/api/auth/unlink/'))).toBe(false);
   });
 
   it('ошибка API при отвязке показывает причину и оставляет провайдер привязанным', async () => {
