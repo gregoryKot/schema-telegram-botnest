@@ -6,7 +6,7 @@ import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import { useTherapyTarget } from './useTherapyTarget';
 
 /** Постоянная спокойная карточка моста: без условия по сигналу, для всех, кроме терапевта.
- *  «Скрыть» убирает её насовсем (в «Ещё» и «Практиках» разом): вход остаётся строкой «Поговорить с кем-то» в «Ещё». */
+ *  «Скрыть» убирает её насовсем на этом устройстве — и в «Ещё», и в «Практиках»; вход остаётся строкой «Поговорить с кем-то» в «Ещё». */
 export function TherapyBridgeCard({ place }: { place: 'home_card' | 'practice' }) {
   const t = useTherapyBridgeTexts();
   const target = useTherapyTarget(place);
