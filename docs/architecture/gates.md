@@ -74,7 +74,7 @@
 | check-var-alpha-suffix.mjs | hex-суффикс альфы после `var()`, например `var(--x)18` | — | нет | webapp |
 | check-weak-assert-ratchet.mjs | тесты только с голым `toHaveBeenCalled()` без аргументов | `scripts/weak-assert-baseline.json` | да | backend |
 | check-webvisor-fields.mjs | текстовое поле визитки без метки `ym-disable-keys` | — | нет | webapp |
-| check-zero-coverage.mjs | файл `src/**` с 0% строк вне бейслайна (читает `coverage/coverage-summary.json` шага `check-coverage-ratchet`); `*.module.ts` и `src/main.ts` не считаются; покрытый файл из бейслайна — красный до `--update` | `scripts/zero-coverage-baseline.json` | да (только вычёркивает) | backend |
+| check-zero-coverage.mjs | файл `src/**` с 0% строк вне бейслайна (читает `coverage/coverage-summary.json` шага `check-coverage-ratchet`); `*.module.ts` и `src/main.ts` не считаются; покрытый файл из бейслайна — предупреждение «зафиксируй `--update`», не красное | `scripts/zero-coverage-baseline.json` | да (только вычёркивает) | backend |
 | setup-merge-drivers.mjs --check | merge-драйвер или baseline без строки/скрипта в .gitattributes. Режим слияния бейслайна — строка `.gitattributes`: `ratchet-sum` (счётчики: база + обе дельты), `ratchet-min`, `ratchet-max`; исключения по ключу — `scripts/merge-json-ratchet-rules.mjs` | — | нет (`--check` ничего не ставит) | checks |
 | git-hooks/pre-push (локально, не CI) | красная сборка `webapp` перед `git push` (`tsc -b && vite build` с `VITE_BOT_USERNAME`); ставится в `core.hooksPath` скриптом `setup-git-hooks.mjs` из npm `prepare`, работает из git worktree; `--no-verify` не используется | — | нет | — (тест: `src/test-support/gates/git-hooks.spec.ts`, джоба backend) |
 

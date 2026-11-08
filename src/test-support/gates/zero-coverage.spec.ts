@@ -86,13 +86,23 @@ describe('check-zero-coverage.mjs', () => {
     ).toContain('короче 20 символов');
   });
 
-  it('покрытый файл из бейслайна — красный до --update; --update вычёркивает и не вписывает новые', () => {
+  it('покрытый файл из бейслайна — зелёный с просьбой зафиксировать (соседние PR не краснеют)', () => {
+    const res = run(
+      { 'src/a.ts': entry(5, 2) },
+      { 'src/a.ts': 'был без теста, теперь с тестом' },
+    );
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain(
+      'src/a.ts: в бейслайне нулей, но покрыт или удалён',
+    );
+  });
+
+  it('новый ноль рядом с покрытым — красный; --update вычёркивает покрытый и не вписывает новые', () => {
     const files = { 'src/a.ts': entry(5, 2), 'src/b.ts': entry(5, 0) };
     const base = { 'src/a.ts': 'был без теста, теперь с тестом' };
     const red = run(files, base);
-    expect(red.stderr).toContain(
-      'src/a.ts: в бейслайне нулей, но покрыт или удалён',
-    );
+    expect(red.status).toBe(1);
+    expect(red.stderr).toContain('src/b.ts: 0% строк');
     const upd = run(files, base, ['--update'], true);
     try {
       expect(upd.status).toBe(1);
