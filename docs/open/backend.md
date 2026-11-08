@@ -196,8 +196,14 @@
   в `SafePlaceEx.tsx`), экран письма и места пишет «Проверь соединение», повтор не поможет. Закрыть: `LimitedTextarea` с
   пределом из `shared/src/limits/textLimits.ts` (как у дневников, `DIARY_FIELD_MAX`).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
-- Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
-  `scripts/color-drift-baseline.json`). Брать ролями, а не файлами.
+- Таяние долга `check-color-drift.mjs`: 19 литералов в 8 файлах (сверка 2026-11-08,
+  `scripts/color-drift-baseline.json`; админка и `indexColor` переведены на токены). Остаток по ролям:
+  визитка (`webapp/src/pages/LandingPage.tsx`, `landing/ContentSections.tsx`, `landing-kit-hooks.ts`,
+  `landing/constants.ts` — свой стиль, тёмная секция без токенов, решение владельца 2026-10-16 «лендинг и
+  визитка в старом виде»); цвета групп режимов (`shared/src/flashcard/modes.ts`) уходят в картинку шаринга
+  (canvas, `ModeShareButton`) — нужна пара `css`/`hex`, как в `journeyMeta.ts`; `theme-color` браузера
+  (`webapp/src/utils/theme.ts`) и запасной фон экспорта карты (`useModeMapExport.ts`) — значения вне CSS;
+  тень карточки статьи (`ArticlesPage.tsx`, `<style>`). Брать ролями, а не файлами.
 
 **Удаление всех данных теста схем не пишет событие аналитики** (осознанно, 2026-10-24):
 `DELETE /api/ysq-data` (`src/api/ysq.controller.ts`, кнопка «Удалить результаты теста»)

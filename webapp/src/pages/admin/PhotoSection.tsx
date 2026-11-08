@@ -75,7 +75,7 @@ export function PhotoSection({ adminKey }: { adminKey: string }) {
       </div>
 
       {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
-      {saved && <p style={{ color: '#4a6335', fontSize: 13, margin: '10px 0 0' }}>Фото сохранено ✓</p>}
+      {saved && <p style={{ color: 'var(--accent-green)', fontSize: 13, margin: '10px 0 0' }}>Фото сохранено ✓</p>}
 
       {preview && (
         <div className="u-mt16">
