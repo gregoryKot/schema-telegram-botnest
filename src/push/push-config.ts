@@ -3,7 +3,16 @@
 // выключены: GET /api/push/config отдаёт null, очередь их не шлёт, ничего не
 // падает. Смена ключей делает мёртвыми ВСЕ подписки: браузер подписан на
 // конкретный публичный ключ, людям придётся включить уведомления заново.
+import { createECDH } from 'crypto';
 import { getVapidHeaders } from 'web-push';
+
+/** Публичный ключ выводится из приватного (P-256) — совпал ли он с заданным.
+ *  Зовётся после getVapidHeaders: формат обоих ключей уже проверен. */
+function isKeyPair(publicKey: string, privateKey: string): boolean {
+  const ecdh = createECDH('prime256v1');
+  ecdh.setPrivateKey(Buffer.from(privateKey, 'base64url'));
+  return ecdh.getPublicKey().equals(Buffer.from(publicKey, 'base64url'));
+}
 
 /** Адрес сайта: контакт для push-сервисов, если VAPID_SUBJECT не задан. */
 export const DEFAULT_VAPID_SUBJECT = 'https://schemehappens.ru';
@@ -59,6 +68,16 @@ export function readVapid(env: Env = process.env): VapidState {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return { kind: 'broken', problem: `ключи не принимаются: ${msg}` };
+  }
+  // Подпись строится и чужим приватным ключом, но push-сервис ответит на неё
+  // 401/403 — а этот ответ очередь читает как «подписка мертва» и стирает её
+  // (push-transport.ts, GONE_STATUSES). Ключи не из одной пары — пуши
+  // выключены целиком, подписки людей целы (ревью правил 2026-11-08).
+  if (!isKeyPair(publicKey, privateKey)) {
+    return {
+      kind: 'broken',
+      problem: 'VAPID_PUBLIC_KEY и VAPID_PRIVATE_KEY не из одной пары',
+    };
   }
   return { kind: 'ready', config: { publicKey, privateKey, subject } };
 }

@@ -55,6 +55,21 @@ describe('readVapid', () => {
     );
   });
 
+  it('ключи из разных пар — сломано: иначе 401/403 стёрли бы все подписки', () => {
+    const other = generateVAPIDKeys();
+    const crossed = readVapid({
+      VAPID_PUBLIC_KEY: keys.publicKey,
+      VAPID_PRIVATE_KEY: other.privateKey,
+    });
+    expect(crossed).toEqual({
+      kind: 'broken',
+      problem: 'VAPID_PUBLIC_KEY и VAPID_PRIVATE_KEY не из одной пары',
+    });
+    expect(pushReady({ ...pair(), VAPID_PRIVATE_KEY: other.privateKey })).toBe(
+      false,
+    );
+  });
+
   it('pushReady / vapidState следуют за значениями env', () => {
     expect(pushReady({})).toBe(false);
     expect(pushReady(pair())).toBe(true);
