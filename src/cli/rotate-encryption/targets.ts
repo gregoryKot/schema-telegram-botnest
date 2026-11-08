@@ -146,6 +146,8 @@ export const TARGETS: RotationTarget[] = [
   { name: 'ysqResult', fields: ['answers'], pk: 'userId' },
   { name: 'ysqResultHistory', fields: ['answers'] },
   { name: 'emailToken', fields: ['email'] },
+  // Подписка на уведомления в приложении: адрес — capability-URL (src/push/).
+  { name: 'pushSubscription', fields: ['endpoint', 'p256dh', 'auth'] },
   // User: клинические ярлыки (mySchemaIds/myModeIds) и 2FA-секреты. Раньше жили
   // отдельным блоком скрипта, который общий цикл дублировал; теперь это обычная
   // запись (H4, аудит 2026-07-20: без неё 2FA осталась бы под старым ключом).

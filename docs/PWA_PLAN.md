@@ -164,6 +164,23 @@ media-гейтов пустой.
 
 ## Фаза 4 — Web Push уведомления (ядро 🔴)
 
+> **Фаза 4 сделана (2026-11-08, владелец: «что с уведомлениями без телеги?
+> нужно, чтобы приложение тоже умело»), с отступлениями от плана ниже.**
+> Модель `PushSubscription` с глобальным unique по `endpointHash` (sha256
+> адреса; один браузер — один аккаунт, вход другим аккаунтом переносит
+> подписку); ручки `GET /api/push/config`, `POST /api/push/subscription`
+> (сразу шлёт пробное уведомление), `POST /api/push/unsubscribe`
+> (`src/push/push.controller.ts`). **Пуш выигрывает у Telegram** (пункт 4.4
+> плана говорил обратное) — решение агента по курсу владельца «не привязывать
+> приложение к Telegram» (2026-11-05): человек сам включил уведомления в
+> приложении, экран говорит «вместо Telegram»; развернуть — одна функция
+> `src/bot/notify-channel.ts`. Список push-сервисов против SSRF —
+> `src/push/push-endpoint.ts`; ключи — `docs/ENV.md`. Сайт: воркер
+> `webapp/public/sw.js` (без `fetch`, ничего не кэширует), состояние
+> устройства и подписка — `webapp/src/push/`, строка «На этом устройстве» —
+> `webapp/src/components/settingsSheet/PushDeviceRow.tsx`. Кнопок под
+> уведомлением (отложить, пауза) у пуша нет: у воркера нет сессии.
+
 ### 4.1 🔴 БД: модель PushSubscription
 `userId, endpoint, p256dh, auth, createdAt, updatedAt` + unique(userId, endpoint).
 **Полный чеклист новой таблицы** (CLAUDE.md): `USER_DATA_TABLES` +

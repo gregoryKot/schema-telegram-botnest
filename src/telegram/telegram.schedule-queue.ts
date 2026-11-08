@@ -2,12 +2,19 @@
 // отдельным файлом по образцу telegram.diary-complete.ts: сервис расписания
 // упёрся в лимит размера (правило №10), а тело очереди — самостоятельный
 // кусок с собственными исходами.
+//
+// Два канала: уведомление в приложение (веб-пуш, ...queue.push.ts) и Telegram.
+// Какой — решает notify-channel.ts (та же функция отвечает экрану настроек);
+// пауза, бюджет и тихие часы проверяются до выбора транспорта.
 import { Logger } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
 import { AccountService } from '../bot/account.service';
+import { notifyChannel } from '../bot/notify-channel';
+import type { PushService } from '../push/push.service';
+import { sendRowByPush } from './telegram.schedule-queue.push';
 import { NotificationService } from '../notification/notification.service';
 import { holdBeforeSend } from './telegram.schedule-queue.gate';
-import { undeliveredFromOther } from '../notification/notification-channels';
+import { NoAddressRows } from './telegram.schedule-queue.nowhere';
 import { describeUnknownOutcomes, sendBounded } from './telegram.send-bounded';
 import { handleSendError } from './telegram.schedule-queue.errors';
 import { renderForQueue } from './telegram.schedule-queue.render';
@@ -32,11 +39,9 @@ export interface QueueDeps {
   track?: (tally: QueueTickTally) => Promise<void> | undefined;
   /** Отказы 400 по строкам — живёт дольше тика (E16, ...queue.rejects.ts). */
   rejects: RejectCounter;
+  /** Уведомления в приложение; нет — канал push не используется. */
+  push?: Pick<PushService, 'sendToUser'>;
 }
-
-// Сколько userId показать в итоговой строке про «некуда слать»: авария — это
-// поток, и сотня строк в логе равна замьюченному логу (урок 2026-07-29).
-const NO_ADDRESS_SAMPLE = 5;
 
 export async function runProcessQueue(deps: QueueDeps): Promise<void> {
   const { bot, accountService, notificationService, logger } = deps;
@@ -47,30 +52,33 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
   const sendSettings = await accountService.getSendSettingsFor([
     ...new Set(due.map((n) => n.userId)),
   ]);
-  const noAddress: string[] = [];
-  const noAddressTypes: string[] = []; // класс 20: notification-channels.ts
+  const nowhere = new NoAddressRows(notificationService);
   const seen = { unknown: [] as number[], transient: 0 };
   const tick = new QueueTick(deps.pace);
 
   for (const [i, notif] of due.entries()) {
     try {
       const s = sendSettings.get(String(notif.userId));
-
-      // Писать некуда: у человека нет телеграм-входа (Google, почта, MAX) либо
-      // аккаунт слит, и адрес уехал вместе с AuthProvider. Отменяем строку —
-      // именно cancelledAt, а не markSent: sentAt читает lastSentAt(), на нём
-      // стоит каденс, и «отправлено» без отправки сдвинуло бы расписание.
-      // И ни в коем случае не markUserBlocked: человек бота не блокировал.
-      if (!s || s.chatId === null) {
-        await notificationService.cancelOne(notif.id);
-        noAddress.push(String(notif.userId));
-        noAddressTypes.push(notif.type);
+      const channel = s ? notifyChannel(s) : null;
+      if (!s || channel === null) {
+        await nowhere.cancel(notif);
         continue;
       }
-      const chatId = s.chatId;
 
       // Пауза, дневной бюджет, тихие часы — telegram.schedule-queue.gate.ts.
       if (await holdBeforeSend(notificationService, notif, s)) continue;
+      if (channel === 'push') {
+        const left = due.length - i;
+        const step = await sendRowByPush(deps, notif, s, tick, left, seen);
+        if (step === 'stop') break;
+        if (step === 'done') continue;
+        // Подписок больше не осталось — в Telegram, если он привязан.
+      }
+      const chatId = s.chatId;
+      if (chatId === null) {
+        await nowhere.cancel(notif);
+        continue;
+      }
       const msg = await renderForQueue(deps, notif, s.form);
       if (!msg) continue;
       // Number(chatId): telegram-id заведомо меньше 2^53, а telegraf ждёт
@@ -97,13 +105,5 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
     logger.warn(describeUnknownOutcomes(seen.unknown));
   }
 
-  if (noAddress.length > 0) {
-    logger.warn(
-      `Очередь: ${noAddress.length} уведомлений некому доставить — ` +
-        `у аккаунта нет входа в Telegram. userId: ` +
-        `${noAddress.slice(0, NO_ADDRESS_SAMPLE).join(', ')}` +
-        `${noAddress.length > NO_ADDRESS_SAMPLE ? ' …' : ''}` +
-        undeliveredFromOther(noAddressTypes),
-    );
-  }
+  nowhere.report(logger);
 }

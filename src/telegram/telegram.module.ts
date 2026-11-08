@@ -17,6 +17,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { TherapyModule } from '../therapy/therapy.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { AuthModule } from '../auth/auth.module';
+import { PushModule } from '../push/push.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AuthModule } from '../auth/auth.module';
     AnalyticsModule,
     // Билет входа: карточку сверки показывает бот (telegram.login.service).
     AuthModule,
+    PushModule, // очередь шлёт и уведомления в приложение
   ],
   controllers: [HealthyAdultAdminController],
   providers: [

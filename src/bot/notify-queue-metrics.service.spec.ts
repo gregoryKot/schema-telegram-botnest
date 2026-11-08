@@ -59,6 +59,7 @@ describe('NotifyQueueMetricsService', () => {
     expect(m.day).toEqual({
       ticks: 1,
       sent: 10,
+      pushed: 0,
       transient: 1,
       waited: 1,
       deferred: 5,
@@ -66,6 +67,7 @@ describe('NotifyQueueMetricsService', () => {
     expect(m.week).toEqual({
       ticks: 2,
       sent: 30,
+      pushed: 0,
       transient: 1,
       waited: 1,
       deferred: 5,
@@ -84,6 +86,7 @@ describe('NotifyQueueMetricsService', () => {
     expect(m.day).toEqual({
       ticks: 2,
       sent: 0,
+      pushed: 0,
       transient: 0,
       waited: 0,
       deferred: 0,

@@ -22,6 +22,7 @@ const settings = (over: Partial<SendSettings> = {}): SendSettings => ({
   end: 8,
   form: 'ty',
   chatId: 1n,
+  hasPush: false,
   pausedUntil: null,
   ...over,
 });

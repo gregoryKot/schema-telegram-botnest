@@ -76,6 +76,7 @@
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 //   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
 //   client_booking_*/booking_slot_taken — запись на сессию: booking-events.constants.ts.
+//   push_*               — уведомления в приложении (веб-пуши): push-events.constants.ts.
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
@@ -91,6 +92,7 @@ import { GAME_EVENTS } from './game-events.constants';
 import { HOME_EVENTS } from './home-events.constants';
 import { SERVER_EVENTS } from './server-events.constants';
 import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
+import { PUSH_EVENTS } from './push-events.constants';
 
 export const ANALYTICS_EVENTS = [
   'share_card',
@@ -138,6 +140,7 @@ export const ANALYTICS_EVENTS = [
   'entry_deleted',
   ...HOME_EVENTS,
   ...BOOKING_EVENTS,
+  ...PUSH_EVENTS, // уведомления в приложении: push-events.constants.ts
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 

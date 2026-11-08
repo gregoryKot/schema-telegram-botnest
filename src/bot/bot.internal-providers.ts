@@ -23,6 +23,7 @@ import { ModeCardMetricsService } from './mode-card-metrics.service';
 import { ModeDiaryMetricsService } from './mode-diary-metrics.service';
 import { MoneyMetricsService } from './money-metrics.service';
 import { NotifyQueueMetricsService } from './notify-queue-metrics.service';
+import { PushMetricsService } from './push-metrics.service';
 import { TherapistExitMetricsService } from './therapist-exit-metrics.service';
 import { PhraseCheckMetricsService } from './phrase-check-metrics.service';
 import { PlusMetricsService } from './plus-metrics.service';
@@ -58,6 +59,7 @@ export const INTERNAL_PROVIDERS = [
   ModeDiaryMetricsService,
   MoneyMetricsService,
   NotifyQueueMetricsService,
+  PushMetricsService,
   TherapistExitMetricsService,
   PhraseCheckMetricsService,
   PlusMetricsService,

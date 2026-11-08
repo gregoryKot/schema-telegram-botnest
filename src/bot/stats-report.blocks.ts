@@ -38,6 +38,7 @@ export interface StatsBlockDeps {
   clientBooking: Renderable;
   therapistExit: Renderable;
   crawlers: Renderable;
+  push: Renderable;
 }
 
 export interface StatsBlock {
@@ -56,6 +57,7 @@ export function statsBlocks(d: StatsBlockDeps): StatsBlock[] {
     { name: 'Перенос данных из другого приложения', svc: d.accountLink },
     { name: 'Кнопка плюс', svc: d.plus },
     { name: 'Установка с сайта', svc: d.siteInstall },
+    { name: 'Уведомления в приложении', svc: d.push },
     { name: 'Настройка экранов', svc: d.screen },
     { name: 'Паттерны со вкладки Я', svc: d.profilePattern },
     { name: 'Графическая концептуализация', svc: d.conceptGraph },

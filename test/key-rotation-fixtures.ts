@@ -53,6 +53,8 @@ export const BASE_ROWS: Record<string, Row> = {
     purpose: 'login',
     expiresAt: new Date('2036-01-01T00:00:00Z'),
   },
+  // Подписка на уведомления в приложении: хэш адреса — свой unique-ключ.
+  pushSubscription: { userId: USER, endpointHash: 'rot-e2e-push' },
   user: { id: USER },
 };
 

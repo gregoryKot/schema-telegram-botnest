@@ -20,6 +20,8 @@ export interface QueueTotals {
   /** Прогонов очереди, в которых было что слать. */
   ticks: number;
   sent: number;
+  /** Из ушедших — уведомлением в приложение (веб-пуш), а не в Telegram. */
+  pushed: number;
   /** Не ушло из-за сбоя (наша ошибка или сеть); повтор в следующий заход. */
   transient: number;
   /** Сколько раз Telegram попросил подождать, и после ожидания ушло. */
@@ -92,8 +94,9 @@ export function formatNotifyQueueMetrics(m: NotifyQueueMetrics): string {
     }
   }
   const w = m.week;
+  const app = w.pushed > 0 ? ` (из них в приложение ${w.pushed})` : '';
   lines.push(
-    `За неделю ушло ${w.sent}, ${failShare(w)}; ` +
+    `За неделю ушло ${w.sent}${app}, ${failShare(w)}; ` +
       `Telegram просил подождать ${times(w.waited)}, ` +
       `отложено ${w.deferred}.`,
   );

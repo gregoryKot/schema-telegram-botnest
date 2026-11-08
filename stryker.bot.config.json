@@ -17,6 +17,7 @@
     "src/bot/bot.analytics.service.ts",
     "src/bot/account.service.ts",
     "src/bot/send-settings.ts",
+    "src/bot/send-settings.load.ts",
     "src/bot/device-timezone.ts",
     "src/therapy/end-therapist-relations.ts",
     "src/bot/user-settings-write.ts"
