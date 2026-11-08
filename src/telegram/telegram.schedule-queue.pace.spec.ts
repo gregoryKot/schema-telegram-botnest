@@ -30,6 +30,8 @@ const row = (id: number) => ({
 function makeService(due: ReturnType<typeof row>[], callApi: jest.Mock) {
   const notificationService: any = {
     getDue: jest.fn().mockResolvedValue(due),
+    claim: jest.fn().mockResolvedValue(true),
+    releaseClaim: jest.fn().mockResolvedValue(undefined),
     markSent: jest.fn().mockResolvedValue(undefined),
     defer: jest.fn(),
     cancelOne: jest.fn(),

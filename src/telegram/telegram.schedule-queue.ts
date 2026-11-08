@@ -7,17 +7,17 @@
 // Какой — решает notify-channel.ts (та же функция отвечает экрану настроек);
 // пауза, бюджет и тихие часы проверяются до выбора транспорта.
 import { Logger } from '@nestjs/common';
-import { Telegraf, Context } from 'telegraf';
+import type { Telegraf, Context } from 'telegraf';
 import { AccountService } from '../bot/account.service';
 import { notifyChannel } from '../bot/notify-channel';
 import type { PushService } from '../push/push.service';
-import { sendRowByPush } from './telegram.schedule-queue.push';
+import { type RowStep, sendRowByPush } from './telegram.schedule-queue.push';
+import { sendRowByTelegram } from './telegram.schedule-queue.telegram';
 import { NotificationService } from '../notification/notification.service';
 import { holdBeforeSend } from './telegram.schedule-queue.gate';
 import { NoAddressRows } from './telegram.schedule-queue.nowhere';
-import { describeUnknownOutcomes, sendBounded } from './telegram.send-bounded';
+import { describeUnknownOutcomes } from './telegram.send-bounded';
 import { handleSendError } from './telegram.schedule-queue.errors';
-import { renderForQueue } from './telegram.schedule-queue.render';
 import {
   QueueTick,
   type QueueTickTally,
@@ -44,7 +44,7 @@ export interface QueueDeps {
 }
 
 export async function runProcessQueue(deps: QueueDeps): Promise<void> {
-  const { bot, accountService, notificationService, logger } = deps;
+  const { accountService, notificationService, logger } = deps;
   const due = await notificationService.getDue();
   if (due.length === 0) return;
   logger.log(`Processing ${due.length} due notifications`);
@@ -57,6 +57,7 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
   const tick = new QueueTick(deps.pace);
 
   for (const [i, notif] of due.entries()) {
+    let claimed = false;
     try {
       const s = sendSettings.get(String(notif.userId));
       const channel = s ? notifyChannel(s) : null;
@@ -64,38 +65,26 @@ export async function runProcessQueue(deps: QueueDeps): Promise<void> {
         await nowhere.cancel(notif);
         continue;
       }
-
       // Пауза, дневной бюджет, тихие часы — telegram.schedule-queue.gate.ts.
       if (await holdBeforeSend(notificationService, notif, s)) continue;
-      if (channel === 'push') {
-        const left = due.length - i;
-        const step = await sendRowByPush(deps, notif, s, tick, left, seen);
-        if (step === 'stop') break;
-        if (step === 'done') continue;
-        // Подписок больше не осталось — в Telegram, если он привязан.
-      }
-      const chatId = s.chatId;
-      if (chatId === null) {
-        await nowhere.cancel(notif);
-        continue;
-      }
-      const msg = await renderForQueue(deps, notif, s.form);
-      if (!msg) continue;
-      // Number(chatId): telegram-id заведомо меньше 2^53, а telegraf ждёт
-      // number | string. false — Telegram просит ждать дольше, чем осталось
-      // прогону: эту и следующие строки подберёт следующий тик.
-      const send = () =>
-        sendBounded(
-          bot,
-          Number(chatId),
-          msg.text,
-          msg.extra,
-          deps.sendTimeoutMs,
-        );
-      if (!(await tick.send(send, due.length - i))) break;
-      await notificationService.markSent(notif.id);
+      // Захват до отправки (backend#15, notification-claim.ts): строку, которую
+      // ещё шлёт прогон, переживший kill-таймер, или сосед, этот прогон не шлёт.
+      claimed = await notificationService.claim(notif.id);
+      if (!claimed) continue;
+      const left = due.length - i;
+      let step: RowStep = 'telegram';
+      if (channel === 'push')
+        step = await sendRowByPush(deps, notif, s, tick, left, seen);
+      // Подписок больше не осталось — в Telegram, если он привязан.
+      if (step === 'telegram')
+        step = await sendRowByTelegram(deps, notif, s, tick, left, nowhere);
+      if (step === 'done') continue;
+      // Не ушло — отпускаем захват: повтор на следующем тике, а не через окно.
+      await notificationService.releaseClaim(notif.id);
+      if (step === 'stop') break;
     } catch (err: unknown) {
-      await handleSendError(deps, notif.id, notif.userId, err, seen);
+      const retry = await handleSendError(deps, notif, err, seen);
+      if (retry && claimed) await notificationService.releaseClaim(notif.id);
     }
   }
   tick.tally.transient = seen.transient;

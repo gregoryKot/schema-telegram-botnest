@@ -791,6 +791,8 @@ model ScheduledNotification {
   payload     Json?
   sentAt      DateTime?
   cancelledAt DateTime?
+  /// Захват строки очередью до отправки (backend#15, notification-claim.ts).
+  attemptedAt DateTime?
 
   @@index([sendAt, sentAt, cancelledAt])
   @@index([userId, type, sentAt])

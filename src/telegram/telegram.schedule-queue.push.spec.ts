@@ -39,6 +39,8 @@ function deps(opts: {
 }) {
   const notificationService = {
     getDue: jest.fn().mockResolvedValue(opts.due),
+    claim: jest.fn().mockResolvedValue(true),
+    releaseClaim: jest.fn().mockResolvedValue(undefined),
     markSent: jest.fn().mockResolvedValue(undefined),
     cancelOne: jest.fn().mockResolvedValue(undefined),
     defer: jest.fn().mockResolvedValue(undefined),

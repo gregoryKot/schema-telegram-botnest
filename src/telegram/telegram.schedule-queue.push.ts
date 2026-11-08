@@ -6,7 +6,7 @@
 //   sent    → markSent;
 //   unknown → markSent (push-сервис мог принять, повтор дал бы дубль) и в
 //             общую строку лога про неизвестный исход;
-//   failed  → строка остаётся на следующий тик; после MAX_REJECTS неудач
+//   failed  → строка остаётся на следующий тик (retry); после MAX_REJECTS неудач
 //             подряд снимается (cancelOne — не «отправлено»: каденс считает
 //             только реально ушедшие), счётчик тот же, что у отказов Telegram;
 //   gone    → подписок не осталось: в этом же проходе — в Telegram, если он
@@ -20,8 +20,9 @@ import { renderForQueue } from './telegram.schedule-queue.render';
 import { MAX_REJECTS } from './telegram.schedule-queue.rejects';
 import type { QueueTick } from './telegram.schedule-queue.tally';
 
-/** done — строка решена; telegram — слать в Telegram; stop — бюджет вышел. */
-export type PushStep = 'done' | 'telegram' | 'stop';
+/** done — строка решена; telegram — слать в Telegram; stop — бюджет вышел;
+ * retry — не ушло, повтор на следующем тике (захват отпускает очередь). */
+export type RowStep = 'done' | 'telegram' | 'stop' | 'retry';
 
 export async function sendRowByPush(
   deps: QueueDeps,
@@ -30,7 +31,7 @@ export async function sendRowByPush(
   tick: QueueTick,
   left: number,
   seen: { unknown: number[]; transient: number },
-): Promise<PushStep> {
+): Promise<RowStep> {
   const { push, notificationService, logger } = deps;
   if (!push) return 'telegram';
   if (!tick.hasTime(left)) return 'stop';
@@ -47,12 +48,11 @@ export async function sendRowByPush(
     seen.unknown.push(notif.id);
   } else {
     seen.transient++;
-    if (deps.rejects.strike(notif.id)) {
-      await notificationService.cancelOne(notif.id);
-      logger.warn(
-        `Notification id=${notif.id}: уведомление в приложение не принято ${MAX_REJECTS} раза подряд — снято`,
-      );
-    }
+    if (!deps.rejects.strike(notif.id)) return 'retry';
+    await notificationService.cancelOne(notif.id);
+    logger.warn(
+      `Notification id=${notif.id}: уведомление в приложение не принято ${MAX_REJECTS} раза подряд — снято`,
+    );
   }
   return 'done';
 }
