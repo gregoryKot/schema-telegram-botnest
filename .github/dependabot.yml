@@ -49,12 +49,18 @@ updates:
     #  - typescript 7 — нативный компилятор, typescript-eslint и ts-jest его ещё
     #    не принимают; вернуть, когда объявят поддержку;
     #  - https-proxy-agent 8+ — только ESM, а бэкенд собран в CommonJS (jest
-    #    падает на telegram.providers.spec.ts); вернуть при переезде на ESM.
+    #    падает на telegram.providers.spec.ts); вернуть при переезде на ESM;
+    #  - Babel 8 — только ESM: jest на Node 22 не грузит @babel/core внутри
+    #    спека (esm-to-cjs.transform.spec.ts); Babel нужен лишь трансформеру
+    #    ESM-пакетов Nest для jest, на Node 24.9+ он уходит вместе с Babel.
     ignore:
       - dependency-name: typescript
         update-types:
           - version-update:semver-major
       - dependency-name: https-proxy-agent
+        update-types:
+          - version-update:semver-major
+      - dependency-name: '@babel/*'
         update-types:
           - version-update:semver-major
 
