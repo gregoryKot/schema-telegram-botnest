@@ -265,12 +265,21 @@ describe('CalDavService.getBusyTimes — fail-open и кэш', () => {
 describe('CalDavService.removeEvent', () => {
   it('пустой uid — no-op, fetch не вызывается', async () => {
     const svc = makeService({ APPLE_CALDAV_URL: 'https://p1.icloud.com/cal/' });
-    global.fetch = jest.fn() as any;
+    global.fetch = jest.fn(() =>
+      Promise.resolve({ ok: true, status: 200 }),
+    ) as any;
     // Осознанный weak: removeEvent('') return-ит void — единственный
     // наблюдаемый эффект early-return'а — отсутствие сетевого вызова,
     // проверять тут больше нечего.
-    await svc.removeEvent('');
+    await expect(svc.removeEvent('')).resolves.toBeUndefined();
     expect(global.fetch).not.toHaveBeenCalled();
+    // Контроль: тот же сервис с непустым uid до сети доходит (DELETE по URL).
+    await svc.removeEvent('booking-1@x');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://p1.icloud.com/cal/booking-1@x.ics',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
   });
 
   it('вызывает DELETE по корректному URL события', async () => {

@@ -10,7 +10,7 @@ jest.mock('./caldav-busy', () => ({
   busyQueryXml: jest.fn(() => '<query/>'),
   parseBusy: jest.fn(() => []),
 }));
-import { parseBusy } from './caldav-busy';
+import { busyQueryXml, parseBusy } from './caldav-busy';
 
 const DAY = 86_400_000;
 const NOW = Date.parse('2026-11-08T10:00:00Z');
@@ -49,22 +49,50 @@ describe('BusyCache — одно широкое окно на все запро�
   });
 
   it('через 60 с окно читается заново', async () => {
-    const read = jest.fn(async () => []);
+    const ev = (iso: string) => ({ start: at(iso), end: at(iso) });
+    const first = ev('2026-11-09T10:00:00Z');
+    const second = ev('2026-11-09T11:00:00Z');
+    const read = jest
+      .fn()
+      .mockResolvedValueOnce([first])
+      .mockResolvedValueOnce([second]);
     const cache = new BusyCache(read);
-    await cache.get(day(1), day(2), NOW);
-    await cache.get(day(1), day(2), NOW + BUSY_TTL_MS - 1);
+    const win = slotsBusyWindow(NOW);
+    expect(await cache.get(day(1), day(2), NOW)).toEqual([first]);
+    // Внутри TTL — из кэша: тот же ответ, без второго чтения.
+    expect(await cache.get(day(1), day(2), NOW + BUSY_TTL_MS - 1)).toEqual([
+      first,
+    ]);
     expect(read).toHaveBeenCalledTimes(1);
-    await cache.get(day(1), day(2), NOW + BUSY_TTL_MS);
+    // По истечении TTL — свежее чтение того же широкого окна, ответ новый.
+    expect(await cache.get(day(1), day(2), NOW + BUSY_TTL_MS)).toEqual([
+      second,
+    ]);
     expect(read).toHaveBeenCalledTimes(2);
+    expect(read).toHaveBeenNthCalledWith(1, win.from, win.to);
+    expect(read).toHaveBeenNthCalledWith(
+      2,
+      slotsBusyWindow(NOW + BUSY_TTL_MS).from,
+      slotsBusyWindow(NOW + BUSY_TTL_MS).to,
+    );
   });
 
   it('параллельные промахи ждут одно чтение', async () => {
-    const read = jest.fn(async () => []);
+    const busy = {
+      start: at('2026-11-10T09:00:00Z'),
+      end: at('2026-11-10T10:00:00Z'),
+    };
+    const read = jest.fn(async () => [busy]);
     const cache = new BusyCache(read);
-    await Promise.all(
+    const got = await Promise.all(
       [0, 1, 2, 3, 4].map((i) => cache.get(day(i), day(i + 1), NOW)),
     );
     expect(read).toHaveBeenCalledTimes(1);
+    const win = slotsBusyWindow(NOW);
+    expect(read).toHaveBeenCalledWith(win.from, win.to);
+    // Каждый ждавший получил свой срез общего чтения: событие 10.11 — в окнах
+    // [10.11, 11.11) (i=2), в остальных пусто.
+    expect(got).toEqual([[], [], [busy], [], []]);
   });
 
   it('упавшее чтение не кэшируется — следующий запрос пробует снова', async () => {
@@ -131,5 +159,14 @@ describe('CalDavService.getBusyTimes — 10 разных окон, один REPO
       );
     }
     expect(global.fetch).toHaveBeenCalledTimes(1);
+    // Единственный REPORT — широкое окно записи, а не окно первого запроса.
+    const win = slotsBusyWindow(Date.now());
+    const [url, init] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain('p1.icloud.com');
+    expect(init.method).toBe('REPORT');
+    expect((busyQueryXml as jest.Mock).mock.calls[0]).toEqual([
+      win.from,
+      win.to,
+    ]);
   });
 });

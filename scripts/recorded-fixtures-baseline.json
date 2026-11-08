@@ -45,6 +45,10 @@
     "status": "exempt",
     "reason": "Единый верификатор подписи initData Telegram (бывшие копии в auth.service.ts и throttler-init-data.ts) — HMAC в спеках самоподписан фейковым BOT_TOKEN и синтетическим initData; настоящей строки initData от клиента Telegram в логах не сохранялось (docs/SHIELD_PROMPT.md: записать при следующем реальном логине)."
   },
+  "src/booking/caldav-busy-cache.ts": {
+    "status": "exempt",
+    "reason": "Кэш уже разобранных интервалов занятости (S17, волна 5): хранит окно Interval[] из caldav-busy-read → parseBusy и нарезает его по запросу; сам ответ iCloud не читает и XML не разбирает. Подпадает под путь caldav-*.ts, парсер классифицирован в caldav-busy.ts."
+  },
   "src/booking/caldav-busy-read.ts": {
     "status": "exempt",
     "reason": "Только шлёт REPORT и передаёт текст ответа в parseBusy (caldav-busy.ts) — сам не разбирает XML, делегирует. Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."

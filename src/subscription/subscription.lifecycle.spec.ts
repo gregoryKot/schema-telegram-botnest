@@ -637,40 +637,54 @@ describe('SubscriptionService.findActiveByTelegram', () => {
   });
 });
 
+function makeDueSub(prisma: ReturnType<typeof makePrisma>, failedAttempts = 0) {
+  return prisma.subscription.create({
+    data: {
+      status: 'active',
+      period: 'month',
+      amount: 300,
+      telegramId: null,
+      firstInvId: 900001,
+      failedAttempts,
+      nextChargeAt: new Date(Date.now() - 1000),
+    },
+  });
+}
+
 describe('SubscriptionService.chargeDue — выключенные флаги', () => {
-  // Осознанный weak (оба теста): chargeDue() возвращает void сразу на гварде —
-  // единственный наблюдаемый эффект early-return'а — отсутствие DB-вызова.
+  // chargeDue() возвращает void: эффект гварда — созревшая подписка не тронута.
   it('SUBSCRIPTION_ENABLED=false → выходит немедленно, БД не трогает', async () => {
-    const { service, prisma } = makeService({ enabled: false });
+    const { service, prisma, robokassa, calls } = makeService({
+      enabled: false,
+    });
+    // Подписка к списанию созрела — но при выключенном флаге остаётся нетронутой.
+    const sub = await makeDueSub(prisma, 0);
+    const before = { ...prisma.subs.get(sub.id) };
     await service.chargeDue();
     expect(prisma.subscription.findMany).not.toHaveBeenCalled();
+    expect(robokassa.chargeRecurring).not.toHaveBeenCalled();
+    expect(prisma.charges.size).toBe(0);
+    expect(calls.alerts).toHaveLength(0);
+    expect(prisma.subs.get(sub.id)).toEqual(before);
   });
 
   it('Robokassa выключена → выходит немедленно', async () => {
-    const { service, prisma } = makeService({ robokassaEnabled: false });
+    const { service, prisma, robokassa, calls } = makeService({
+      robokassaEnabled: false,
+    });
+    // Подписка к списанию созрела — но при выключенном флаге остаётся нетронутой.
+    const sub = await makeDueSub(prisma, 0);
+    const before = { ...prisma.subs.get(sub.id) };
     await service.chargeDue();
     expect(prisma.subscription.findMany).not.toHaveBeenCalled();
+    expect(robokassa.chargeRecurring).not.toHaveBeenCalled();
+    expect(prisma.charges.size).toBe(0);
+    expect(calls.alerts).toHaveLength(0);
+    expect(prisma.subs.get(sub.id)).toEqual(before);
   });
 });
 
 describe('SubscriptionService.chargeDue — неудачное списание (grace period)', () => {
-  function makeDueSub(
-    prisma: ReturnType<typeof makePrisma>,
-    failedAttempts = 0,
-  ) {
-    return prisma.subscription.create({
-      data: {
-        status: 'active',
-        period: 'month',
-        amount: 300,
-        telegramId: null,
-        firstInvId: 900001,
-        failedAttempts,
-        nextChargeAt: new Date(Date.now() - 1000),
-      },
-    });
-  }
-
   it('первый неудачный чардж (< MAX_FAILS): статус не трогаем, ретрай через сутки', async () => {
     const { service, prisma, calls } = makeService({
       chargeRecurringResult: { ok: false, body: 'insufficient funds' },
