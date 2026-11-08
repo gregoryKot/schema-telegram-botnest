@@ -3,13 +3,15 @@
 // мотив языка, который им точно подходит: стулья — Talk, письма — Sheets,
 // осознанность — Breath, самосострадание — Heart, когнитивная работа — Pebbles),
 // схема — знак домена (DomainArt), раздел «Для терапевта» — свой знак (PRACTICE_NOTE_SIGN).
-// Чистые функции; рисунки — GuideSigns.tsx (режимы), GuideSignsTechniques.tsx (техники) и
-// GuideSignsPractice.tsx (два знака «Для терапевта»). Тип техники — только тип: тексты
-// подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
+// Чистые функции; рисунки — реестр SignArt.tsx (группы режимов — GuideSignsModes.tsx, техники —
+// GuideSignsTechniques.tsx, два знака «Для терапевта» — GuideSignsPractice.tsx). Тип техники —
+// только тип: тексты подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
 import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
+import { MODE_GROUP_SIGN } from '../../../../shared/src/theme/entityLook';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
-/** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта». */
+/** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
+ *  Подмножество ключей реестра SIGN_KEYS (сверка — guideSignsModel.test.tsx). */
 export const GUIDE_SIGNS = [
   'child_care', 'yield', 'shelter', 'shield', 'looming', 'together', 'cluster',
   'pattern_steps', 'rescript', 'horizon', 'talk', 'talk_past', 'flashcard', 'sheets',
@@ -19,24 +21,15 @@ export const GUIDE_SIGNS = [
 
 export type GuideSign = (typeof GUIDE_SIGNS)[number];
 
-/** Группы режимов (id из MODE_GROUPS); сверка с данными — тестом модели. */
-type ModeGroupId =
-  | 'child' | 'coping_surrender' | 'coping_avoidance' | 'coping_overcompensation' | 'critic' | 'healthy';
-
 /**
  * Знак группы режимов — круги, потому что режим — часть, которая у руля; знак говорит,
  * что с этой частью делают в терапии. Цвет главного круга — оттенок группы на карте
  * режимов (MODE_GROUP_HUE): детские — глина, копинги — сланец, критики — слива,
- * здоровые — мох.
+ * здоровые — мох. Таблица живёт в shared (entityLook.ts): её же берут клиент и канва
+ * шаринга — терапевт и клиент говорят на одном языке.
  */
-export const MODE_GROUP_SIGN: Record<ModeGroupId, GuideSign> = {
-  child: 'child_care',
-  coping_surrender: 'yield',
-  coping_avoidance: 'shelter',
-  coping_overcompensation: 'shield',
-  critic: 'looming',
-  healthy: 'together',
-};
+export { MODE_GROUP_SIGN };
+type ModeGroupId = keyof typeof MODE_GROUP_SIGN;
 
 /** Знак техники: у каждой свой, общих нет. */
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
@@ -85,8 +78,16 @@ export const practiceNoteSign = (noteId: string): GuideSign | null =>
 /** Знак группы режимов по id (лист режима, заголовок группы в палитре холста); без группы — общий знак режимов. */
 export const modeGroupSign = (groupId: string | undefined): GuideSign =>
   (groupId && MODE_GROUP_SIGN[groupId as ModeGroupId]) || 'cluster';
-/** Знак режима — знак его группы; режим без группы (свой режим терапевта) — общий знак режимов. */
-export const modeSign = (modeId: string): GuideSign => modeGroupSign(getModeById(modeId)?.groupId);
+/**
+ * Режимы со своим знаком внутри группы: «Сердитый Ребёнок» — Flare (часть вспыхнула, рядом
+ * ровный круг мха), иначе два детских режима различала бы только подпись. Заголовок группы
+ * остаётся знаком группы (ChildCare). Решение 6, docs/design/APP_2026-11.md.
+ */
+const MODE_OWN_SIGN: Record<string, GuideSign> = { angry_child: 'flare' };
+
+/** Знак режима — свой (MODE_OWN_SIGN) или знак его группы; режим без группы (свой режим терапевта) — общий знак режимов. */
+export const modeSign = (modeId: string): GuideSign =>
+  (Object.hasOwn(MODE_OWN_SIGN, modeId) ? MODE_OWN_SIGN[modeId] : null) ?? modeGroupSign(getModeById(modeId)?.groupId);
 
 /** Номер домена схемы 1–5 для DomainArt; неизвестная схема — 0, картинки нет. */
 export function schemaDomain(schemaId: string): number {

@@ -80,15 +80,41 @@ export function HeartFrame({ size }: ArtProps) {
   );
 }
 
-/** За и против: два камешка на перекладине весов — что режим даёт и сколько стоит. */
-export function Scales({ size }: ArtProps) {
+/** Места камешков на левой чаше: нижний ряд из трёх, сверху два; правая — зеркально (120 − x). */
+const PAN = [{ x: 22, row: 0 }, { x: 35, row: 0 }, { x: 48, row: 0 }, { x: 28.5, row: 1 }, { x: 41.5, row: 1 }] as const;
+const PEB = { rx: 6.5, ry: 4.4 } as const;
+
+function PanPebbles({ count, right }: { count: number; right: boolean }) {
+  return PAN.slice(0, Math.max(0, Math.min(PAN.length, Math.floor(count)))).map((p) => {
+    const cx = right ? 120 - p.x : p.x;
+    return <ellipse key={`${right}-${p.x}`} cx={cx} cy={32 - PEB.ry - p.row * PEB.ry * 2} rx={PEB.rx} ry={PEB.ry} fill={right ? PAPER.clay : PAPER.moss} />;
+  });
+}
+
+/**
+ * За и против: два камешка на перекладине весов — что режим даёт и сколько стоит.
+ * `left`/`right` — счёт (доказательства «за» и «против»): камешков на чаше столько же (до пяти),
+ * перекладина клонится к тяжёлой стороне; поровну — равновесие, ноль — пустые чаши.
+ */
+export function Scales({ size, left, right }: ArtProps & { left?: number; right?: number }) {
+  const counted = left !== undefined || right !== undefined;
+  const tilt = counted ? Math.max(-9, Math.min(9, ((right ?? 0) - (left ?? 0)) * 3)) : -7;
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <path d="M60 38 L 71 58 H 49 Z" fill={PAPER.sage} stroke={PAPER.sage} strokeWidth="4" strokeLinejoin="round" />
-      <g transform="rotate(-7 60 35)">
+      <g transform={`rotate(${tilt} 60 35)`}>
         <rect x="12" y="32" width="96" height="7" rx="3.5" fill={PAPER.brown} />
-        <ellipse cx="28" cy="23" rx="15" ry="9" fill={PAPER.moss} />
-        <ellipse cx="92" cy="25" rx="11" ry="7" fill={PAPER.clay} />
+        {counted ? (
+          <>
+            <PanPebbles count={left ?? 0} right={false} />
+            <PanPebbles count={right ?? 0} right />
+          </>
+        ) : (
+          <>
+            <ellipse cx="28" cy="23" rx="15" ry="9" fill={PAPER.moss} />
+            <ellipse cx="92" cy="25" rx="11" ry="7" fill={PAPER.clay} />
+          </>
+        )}
       </g>
     </Svg>
   );

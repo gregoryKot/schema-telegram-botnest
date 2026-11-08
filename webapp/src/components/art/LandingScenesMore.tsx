@@ -1,11 +1,13 @@
 // Сцены возможностей, мини-тестов и статей (вторая половина LandingScenes.tsx):
 //  • SceneCheckIn — пять полосок разной высоты на белом листе сегодняшнего дня,
-//    позади листы прошлых дней: из ежедневных отметок складывается картина.
+//    позади листы прошлых дней: из ежедневных отметок складывается картина; `days` —
+//    дней серии (праздник серии в кабинете; 0 — пустой лист, пустая история).
 //  • SceneQuiz — карточки-вопросы веером (сверху белая) на вырезанном листе оттенка
 //    теста; задние карточки цветные и не в тон листу (fanFor). На верхней — строки
 //    вопроса и под ними три плашки-ответа, одна выбрана (шапка /tests); с `sign` низ
 //    карточки пуст: туда вступление теста кладёт знак самого теста (QuizIntro.tsx) —
-//    плитка списка и вступление связаны знаком, а не только цветом.
+//    плитка списка и вступление связаны знаком, а не только цветом. SceneQuizMini — тот
+//    же веер в рамке по карточкам: знак теста в строке.
 //  • SceneHomeScreen — «Значок на экране»: телефон, на экране бледные значки других
 //    приложений и крупно сам знак продукта (BrandMark — тот же, что у иконки PWA, не
 //    перерисованный) со своей тенью-вырезкой.
@@ -27,15 +29,31 @@ const BARS = [
   { h: 88, fill: INK.plum },
 ];
 
-export function SceneCheckIn({ hue = 135 }: { hue?: number }) {
+/** Листы прошлых дней за сегодняшним — от ближнего к дальнему; веер уходит влево. */
+const PAST = [
+  { x: 70, y: 40, w: 172, h: 182, deg: -3, fill: INK.tealSoft },
+  { x: 52, y: 50, w: 168, h: 176, deg: -10, fill: INK.amberSoft },
+  { x: 36, y: 60, w: 164, h: 170, deg: -17, fill: INK.sky },
+  { x: 22, y: 72, w: 160, h: 164, deg: -24, fill: INK.sage },
+] as const;
+/** Окно по фигурам для 0…4 листов позади (с тенью): веер шире — окно шире. */
+const CHECKIN_BOX = ['86 34 207 206', '61 31 232 209', '34 31 259 218', '10 31 283 229', '-8 31 301 240'] as const;
+
+/** Пять полосок на листе сегодняшнего дня, позади — листы прошлых дней. `days` — дней серии
+ *  вместе с сегодняшним: 0 — один лист без полосок (ещё ничего), 1 — сегодняшний лист, n — за
+ *  ним n − 1 листов (до четырёх, дальше счёт словами рядом); без `days` — вид лендинга (три). */
+export function SceneCheckIn({ hue = 135, days }: { hue?: number; days?: number }) {
+  const total = days === undefined ? 3 : Math.max(0, Math.floor(days));
+  const n = Math.min(PAST.length, Math.max(0, total - 1));
   return (
-    <SceneSvg hue={hue} sheet={null} box="34 31 259 218">
+    <SceneSvg hue={hue} sheet={null} box={CHECKIN_BOX[n]}>
       <Lift>
-        <rect x="52" y="50" width="168" height="176" rx="16" transform="rotate(-10 136 138)" fill={INK.amberSoft} />
-        <rect x="70" y="40" width="172" height="182" rx="16" transform="rotate(-3 156 131)" fill={INK.tealSoft} />
+        {PAST.slice(0, n).reverse().map((s) => (
+          <rect key={s.deg} x={s.x} y={s.y} width={s.w} height={s.h} rx="16" transform={`rotate(${s.deg} ${s.x + s.w / 2} ${s.y + s.h / 2})`} fill={s.fill} />
+        ))}
         <g transform="rotate(4 186 134)">
           <rect x="96" y="44" width="182" height="180" rx="18" fill={INK.sheet} />
-          {BARS.map((b, i) => (
+          {total > 0 && BARS.map((b, i) => (
             <rect key={i} x={116 + i * 31} y={204 - b.h} width="20" height={b.h} rx="10" fill={b.fill} />
           ))}
         </g>
@@ -54,11 +72,12 @@ const fanFor = (hue: number): [string, string] => [hue >= 170 && hue <= 260 ? IN
 const QUESTION = [{ y: 66, w: 88 }, { y: 84, w: 56 }];
 const ANSWERS = [{ y: 112, fill: INK.brown, op: '.14' }, { y: 140, fill: INK.moss, op: '1' }, { y: 168, fill: INK.brown, op: '.14' }];
 
-export function SceneQuiz({ hue = 135, sign = false }: { hue?: number; sign?: boolean }) {
+/** `box` — окно по карточкам без листа-подложки (знак теста в строке — SceneQuizMini). */
+export function SceneQuiz({ hue = 135, sign = false, box }: { hue?: number; sign?: boolean; box?: string }) {
   const card = { y: 40, width: 140, height: 180, rx: 18 } as const;
   const backs = fanFor(hue);
   return (
-    <SceneSvg hue={hue} sheet="a">
+    <SceneSvg hue={hue} sheet={box ? null : 'a'} box={box}>
       <Lift by={6}>
         {FAN.map((c, i) => <rect key={c.x} x={c.x} {...card} fill={backs[i]} transform={`rotate(${c.deg} ${c.x + 70} 130)`} />)}
         <g transform="rotate(8 176 130)">
@@ -73,6 +92,12 @@ export function SceneQuiz({ hue = 135, sign = false }: { hue?: number; sign?: bo
       </Lift>
     </SceneSvg>
   );
+}
+
+/** Веер карточек теста в рамке по карточкам (с тенью) — знак теста размером 60–80px в строке
+ *  («Тест на схемы» в «Ещё»): тот же мотив, что шапка /tests, а не второй Layers. */
+export function SceneQuizMini({ hue }: { hue?: number }) {
+  return <SceneQuiz hue={hue} box="22 18 246 230" />;
 }
 
 /** Значки других приложений на экране — бледные квадратики бумаги, сетка 3×2. */

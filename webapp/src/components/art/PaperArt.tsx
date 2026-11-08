@@ -2,19 +2,46 @@
 // 2026-11-04, docs/design/PAPER_2026-11.md). Встроенный SVG, цвета только из
 // токенов: внешних файлов нет (CSP 'self'), размытия нет (check-render-poison).
 // Декор: aria-hidden, смысл несёт текст рядом. Размер задаёт класс
-// .pp-art--hero / --square / --row / --empty (styles/paper.css).
+// .pp-art--hero / --square / --row / --empty / --nav / --scene (styles/paper.css).
+// Варианты мотива вместо нового знака: Strokes values / even, Pebbles filled — данные
+// только реальные, пустое место — пустой тон бумаги (PAPER.hollow), а не выдуманная фигура.
 // Мотив → смысл: Strokes — трекер и потребности; Ribbon — «Что случилось»;
 // Pebbles — дневник; Cup — пусто и отдых; Breath — дыхание и «здесь и сейчас»;
 // Sheets — записи и «Мой путь»; Layers — схемы и паттерны.
-import { PAPER, type ArtProps } from './paper';
+import { NEED_DATA_PAPER, PAPER, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
 
 export interface StrokeMark { id: string; dense: boolean }
 const STROKE_PAPER = [PAPER.moss, PAPER.sage, PAPER.brown, PAPER.clay, PAPER.sage];
 const STROKE_TILT = [-6, 3, -2, 5, -4];
+/** Полоска по оценке 0–10: от кружка (16) до полной (84), низ всех полосок на одной линии. */
+const STROKE_FOOT = 92;
+const strokeHeight = (v: number) => 16 + Math.round((Math.min(10, Math.max(0, v)) / 10) * 68);
 
-/** Пять полосок цветной бумаги. `marks` — по одной на потребность: плотная или бледная. */
-export function Strokes({ marks, size }: ArtProps & { marks?: StrokeMark[] }) {
+/**
+ * Пять полосок цветной бумаги. `marks` — по одной на потребность: плотная или бледная.
+ * `values` — оценки дня в порядке NEED_ORDER (0–10, null — не оценена): высота полоски по
+ * оценке, цвет — цвет данных своей потребности (NEED_DATA_PAPER); без оценки — пустой тон
+ * бумаги той же высоты, что бледная. `even` — ровный день: полоски одной высоты, без наклона.
+ */
+export function Strokes({ marks, values, even, size }: ArtProps & { marks?: StrokeMark[]; values?: readonly (number | null)[]; even?: boolean }) {
+  const tilt = (i: number, y: number) => (even ? undefined : `rotate(${STROKE_TILT[i]} ${16 + i * 22} ${y})`);
+  if (values) {
+    return (
+      <Svg size={size} viewBox="0 0 120 100">
+        {values.slice(0, 5).map((v, i) => {
+          const h = v == null ? 72 : strokeHeight(v);
+          return (
+            <rect
+              key={i} data-rated={v == null ? 'no' : 'yes'} data-value={v ?? undefined}
+              x={8 + i * 22} y={STROKE_FOOT - h} width="16" height={h} rx="8"
+              fill={v == null ? PAPER.hollow : NEED_DATA_PAPER[i]} transform={tilt(i, STROKE_FOOT)}
+            />
+          );
+        })}
+      </Svg>
+    );
+  }
   const list = marks ?? STROKE_PAPER.map((_, i) => ({ id: String(i), dense: true }));
   return (
     <Svg size={size} viewBox="0 0 120 100">
@@ -23,7 +50,7 @@ export function Strokes({ marks, size }: ArtProps & { marks?: StrokeMark[] }) {
           key={m.id} data-need={m.id} data-rated={m.dense ? 'yes' : 'no'}
           x={8 + i * 22} y={m.dense ? 8 : 16} width="16" height={m.dense ? 84 : 72} rx="8"
           fill={STROKE_PAPER[i]} fillOpacity={m.dense ? 1 : 0.5}
-          transform={`rotate(${STROKE_TILT[i]} ${16 + i * 22} 50)`}
+          transform={tilt(i, 50)}
         />
       ))}
     </Svg>
@@ -40,13 +67,26 @@ export function Ribbon({ size }: ArtProps) {
   );
 }
 
-/** Три камешка — мысль, схема, спасибо. */
-export function Pebbles({ size }: ArtProps) {
+const PEBBLES = [
+  { cx: 24, cy: 36, fill: PAPER.moss },
+  { cx: 60, cy: 34, fill: PAPER.brown },
+  { cx: 96, cy: 30, fill: PAPER.clay },
+] as const;
+
+/** Три камешка — мысль, схема, спасибо. `filled` — сколько уже легло (благодарность по одной):
+ *  остальные — пустой тон бумаги; без `filled` легли все три. */
+export function Pebbles({ size, filled }: ArtProps & { filled?: number }) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <ellipse cx="24" cy="36" rx="20" ry="13" transform="rotate(-18 24 36)" fill={PAPER.moss} />
-      <ellipse cx="60" cy="34" rx="20" ry="13" transform="rotate(-18 60 34)" fill={PAPER.brown} />
-      <ellipse cx="96" cy="30" rx="20" ry="13" transform="rotate(-18 96 30)" fill={PAPER.clay} />
+      {PEBBLES.map((p, i) => {
+        const laid = filled === undefined || i < filled;
+        return (
+          <ellipse
+            key={p.cx} cx={p.cx} cy={p.cy} rx="20" ry="13" transform={`rotate(-18 ${p.cx} ${p.cy})`}
+            fill={laid ? p.fill : PAPER.hollow} data-laid={filled === undefined ? undefined : laid ? 'yes' : 'no'}
+          />
+        );
+      })}
     </Svg>
   );
 }

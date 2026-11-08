@@ -29,6 +29,16 @@
 /* Верхний слой непрозрачен: полупрозрачный круг Cluster (fill-opacity .85 — в кабинете он
    ложится на бумагу) над тенью-вырезкой просвечивал её — круг двоился серпом. */
 .scn-sign > .pp-art:last-child [fill-opacity] { fill-opacity: 1; }
+/* Знак внутри сцены (SignInScene, AppScenes.tsx) — по той же причине: над слоем Lift он непрозрачен. */
+.scn svg.pp-art [fill-opacity] { fill-opacity: 1; }
+
+/* Дыхание (SceneBreath): дуги расходятся и опускаются переходом transform — длину фазы
+   задаёт компонент (transition-duration), бесконечной анимации нет; reduced-motion — без
+   движения, меняется только положение. Центр — середина земли под дугами (160 206 в единицах холста). */
+.scn-breath-arcs { transform-box: view-box; transform-origin: 160px 206px; transition: transform 4s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .scn-breath-arcs { transition: none; }
+}
 
 /* Листы коллажа первого экрана (HeroCollage.tsx): персик под мокапом, клочки неба и шалфея. */
 .hc-peach { fill: oklch(0.885 0.06 45); }

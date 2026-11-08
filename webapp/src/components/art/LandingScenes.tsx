@@ -15,9 +15,43 @@ import { Lift, SceneSvg } from './sceneKit';
 /** Полоски колеса по кругу от верхней; последней (слева вверху) не хватило. */
 const SPOKES = [INK.teal, INK.moss, INK.plum, INK.amber, INK.slate];
 const HUB = { x: 160, y: 128 } as const;
+const spoke = (i: number) => `rotate(${i * 72} ${HUB.x} ${HUB.y})`;
+/** Длина полоски по оценке 0–10: доля от полной (72), не короче своей ширины (30 — кружок).
+ *  Внутренний конец у всех один (y = 98), растёт полоска наружу. */
+const spokeLength = (v: number) => Math.max(30, Math.round((72 * Math.min(10, Math.max(0, v))) / 10));
+/** Ниже этой оценки потребности не хватило: полоска бледная и лежит без тени. */
+const SHORT_OF = 5;
 
-export function SceneChildhood({ hue = 45 }: { hue?: number }) {
-  const spoke = (i: number) => `rotate(${i * 72} ${HUB.x} ${HUB.y})`;
+/** Колесо по оценкам (Колесо детства): полоска на потребность в порядке `values`; без оценки — полоски нет. */
+interface RatedSpoke { fill: string; i: number; v: number }
+
+function ChildhoodValues({ hue, values }: { hue: number; values: readonly (number | null)[] }) {
+  const rated = SPOKES.flatMap((fill, i): RatedSpoke[] => {
+    const v = values[i];
+    return v == null ? [] : [{ fill, i, v }];
+  });
+  const bar = (s: RatedSpoke, pale: boolean) => {
+    const len = spokeLength(s.v);
+    return (
+      <rect key={s.i} data-value={s.v} x="145" y={98 - len} width="30" height={len} rx="15" fill={s.fill}
+        fillOpacity={pale ? '.38' : undefined} transform={spoke(s.i)} />
+    );
+  };
+  return (
+    <SceneSvg hue={hue} patch={240} patchAt="tr" sheet="a">
+      {rated.filter((s) => s.v < SHORT_OF).map((s) => bar(s, true))}
+      <Lift>
+        {rated.filter((s) => s.v >= SHORT_OF).map((s) => bar(s, false))}
+        <circle cx={HUB.x} cy={HUB.y} r="25" fill={INK.clay} />
+      </Lift>
+    </SceneSvg>
+  );
+}
+
+/** Колесо детства. Без `values` — композиция лендинга (одной полоски не хватило); с `values` —
+ *  полоски по оценкам 0–10 (длина — оценка/10, ниже 5 — бледная и без тени). */
+export function SceneChildhood({ hue = 45, values }: { hue?: number; values?: readonly (number | null)[] }) {
+  if (values) return <ChildhoodValues hue={hue} values={values} />;
   const last = SPOKES.length - 1;
   return (
     <SceneSvg hue={hue} patch={240} patchAt="tr" sheet="a">
