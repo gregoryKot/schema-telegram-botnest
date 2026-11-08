@@ -15,6 +15,7 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 import { TELEGRAF_BOT } from '../../src/telegram/telegram.constants';
 import { installBigIntJson } from '../../src/utils/bigint-json';
 import { makeFakeBot } from './fake-bot';
+import { withSiteStatic } from './e2e-site-static';
 import { stopCronJobs } from './stop-cron-jobs';
 
 // BigInt в JSON-ответах — тот же установщик, что в src/main.ts и
@@ -26,10 +27,14 @@ export interface RealDbTestApp {
   prisma: PrismaService;
 }
 
-export async function buildRealDbTestApp(): Promise<RealDbTestApp> {
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  })
+/** siteDist — корень статики сайта (по умолчанию сборка-фикстура, e2e-site-static.ts). */
+export async function buildRealDbTestApp(
+  siteDist?: string,
+): Promise<RealDbTestApp> {
+  const moduleRef = await withSiteStatic(
+    Test.createTestingModule({ imports: [AppModule] }),
+    siteDist,
+  )
     .overrideProvider(TELEGRAF_BOT)
     .useValue(makeFakeBot())
     .compile();

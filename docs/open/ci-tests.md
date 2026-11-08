@@ -194,13 +194,6 @@
   записью `NO_INVALIDATION` с причиной.
 
 **Статика и браузерный смок — находки при починке перекоса ассетов** (инцидент 2026-11-04, #928):
-- **e2e не отдаёт статику вовсе.** `test/e2e-support/build-test-app.ts` и
-  `build-real-db-test-app.ts` поднимают AppModule через `Test.createTestingModule(...).compile()`:
-  провайдер загрузчика `ServeStaticModule` создаётся до HTTP-адаптера и берёт `NoopLoader`
-  (`node_modules/@nestjs/serve-static/dist/serve-static.providers.js`) — SPA-фолбэк и раздачу
-  `webapp/dist` не видит ни один e2e, любой путь вне контроллеров там 404. Шов статики держит
-  только `src/infra/site-static.spec.ts` (поднимает через `NestFactory.create`, как `main.ts`).
-
 **Pre-push хук собирает только `webapp`** (2026-11-05, осознанно): `scripts/git-hooks/pre-push`
 гоняет `tsc -b && vite build` сайта — то, что ломалось только на машине владельца (регистр имён,
 #933); `tsc` бэкенда, vitest `webapp`/`shared` и остальные сьюты остаются работой CI — в хуке они

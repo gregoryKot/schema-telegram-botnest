@@ -126,6 +126,7 @@ jobs:
           test/diary-mode-from-case
           test/journey-entry-ownership
           test/therapy-task-delete
+          test/site-static
           test/concept-share test/concept-save-patch
           test/push-ownership
       # Security-гейт (этап 1.4): high/critical уязвимости в prod-зависимостях
