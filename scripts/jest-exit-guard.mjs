@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Сторож прогона jest в nightly (джоба backend-flaky): тест, оставивший живой
-// хендл, не вешает шаг до отмены джобы, а роняет его с причиной в логе.
+// Сторож прогона jest (nightly — backend-flaky, PR-CI — backend): тест, оставивший
+// живой хендл, не вешает шаг до отмены джобы, а роняет его с причиной в логе.
 //
 // Инцидент 2026-10-15 (ci-alarm #672): шаг `npx jest --detectOpenHandles
 // --forceExit=false 2>&1 | tail -50` прогнал все спеки и висел 27 минут, пока
@@ -45,7 +45,18 @@ function parseArgs(argv) {
     if (!(value > 0)) usage(`${flags[i]} ждёт число секунд больше нуля`);
     opts[key] = value;
   }
-  return { ...opts, command: argv.slice(sep + 1) };
+  const command = argv.slice(sep + 1);
+  // JEST_CACHE_DIR (кэш ts-jest джобы backend) jest сам не читает; `"$X"` в
+  // строке шага ci.yml не разобрал бы precheck — флаг дописываем здесь.
+  const cache = process.env.JEST_CACHE_DIR;
+  if (
+    cache &&
+    command.includes('jest') &&
+    !command.some((a) => a.startsWith('--cacheDirectory'))
+  ) {
+    command.push(`--cacheDirectory=${cache}`);
+  }
+  return { ...opts, command };
 }
 
 function main() {

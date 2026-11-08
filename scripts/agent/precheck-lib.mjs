@@ -25,6 +25,8 @@ export const NEEDS_BUILD = {
     'судит отчёт Stryker reports/mutation/*.json — его пишет прогон Stryker (джоба mutation-changed)',
   'mutation-changed-files.mjs':
     'сравнивает ветку с origin/main и пишет в $GITHUB_OUTPUT — только в CI',
+  'jest-exit-guard.mjs':
+    'не гейт, а сторож полного прогона jest (джоба backend) — минуты',
 };
 
 // Шаг ci.yml вида `- run: node scripts/<имя>.mjs [аргументы]` (или `run:` без

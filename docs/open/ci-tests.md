@@ -135,16 +135,6 @@ PR: сменить `runs-on`, прочитать логи, починить.
   исключение, прогнать волны, выживших закрыть тестом или
   `// Stryker disable next-line CallExpression` с причиной, полы — `--update`
   по ночному прогону.
-- **PR-CI не ловит тест, оставивший живой хендл.** Джоба `backend` в `ci.yml`
-  гоняет jest воркерами, и утечка там видна только строкой «A worker process
-  has failed to exit gracefully» при зелёном шаге — так поллинг из
-  `telegram.polling.seam.spec.ts` (#649) уехал в `main` и повесил nightly
-  (ci-alarm #672). Ловит её только ночной `backend-flaky` через
-  `scripts/jest-exit-guard.mjs`. Сторож в PR-CI осознанно не поставлен:
-  утечка от гонки проявляется не в каждом прогоне и роняла бы чужие PR как
-  флак. Вернуться, когда `backend-flaky` неделю подряд зелёный (видно по
-  `nightly.yml` в Actions): тогда такая строка в PR-CI укажет на утечку,
-  принесённую самим изменением.
 - **Таймаутов у шагов `ci.yml` нет, потолок только у джоб.** Гейт
   `src/test-support/gates/job-timeouts.spec.ts` требует `timeout-minutes`
   на уровне джобы; шаг (`vitest`, `migrate deploy`) может занять весь потолок

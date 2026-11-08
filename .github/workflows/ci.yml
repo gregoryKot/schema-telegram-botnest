@@ -85,8 +85,15 @@ jobs:
       # северному полушарию. Мутировать process.env.TZ внутри jest нельзя —
       # песочница не пробрасывает смену зоны в V8, только env процесса.
       # Прогон стоит ~20 секунд.
+      # Через сторожа scripts/jest-exit-guard.mjs (как backend-flaky в
+      # nightly.yml): тест, оставивший живой хендл («A worker process has
+      # failed to exit gracefully»), роняет шаг с причиной, а не уезжает в
+      # main зелёным (#649 → ci-alarm #672). Прогон coverage-храповика выше
+      # сторож не оборачивает: просадку покрытия при зелёных тестах он прочёл
+      # бы как «код выхода выставил тест». Тест — nightly-jest-steps.spec.ts.
       - name: jest под не-UTC таймзоной — ловит зависимость от зоны сервера
-        run: npx jest --cacheDirectory="$JEST_CACHE_DIR"
+        timeout-minutes: 7
+        run: node scripts/jest-exit-guard.mjs --budget 300 --exit-grace 60 -- npx jest
         env:
           TZ: Australia/Sydney
       # e2e-смоук (TEST_COVERAGE_PLAN.md, этап 1 п.7): реальный AppModule
