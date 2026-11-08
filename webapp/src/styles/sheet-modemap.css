@@ -4,13 +4,15 @@
    сюда не входят — они живут в nodeParts/ModeMapNodes. */
 
 /* ── Тулбар и выпадающие меню ── */
-.ds-card.mm2-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 4px; border-radius: 12px; }
+/* flex-wrap и max-width — страховка: ни одна кнопка не уходит за край холста ни при какой ширине,
+   ряд переносится строкой (100cqw — ширина React Flow, контейнер ниже; 30px — поля панелей). */
+.ds-card.mm2-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 4px; border-radius: 12px; max-width: calc(100cqw - 30px); box-sizing: border-box; }
 .mm2-tb { position: relative; display: flex; }
 .ds-btn.mm2-tb-btn { width: auto; min-width: 36px; height: 36px; gap: 3px; border-radius: 10px; border-color: transparent; }
 .ds-btn.mm2-tb-btn.is-active { background: var(--paper-sunk); color: var(--accent); }
 .ds-btn.mm2-tb-btn:disabled { color: var(--text-ghost); background: transparent; cursor: default; }
 .mm2-tb-caret { opacity: .65; margin-left: 1px; }
-.mm2-tb-sep { width: 1px; background: var(--line); margin: 4px 2px; }
+.mm2-tb-sep { width: 1px; align-self: stretch; background: var(--line); margin: 4px 2px; }
 .mm2-tip {
   position: absolute; top: 42px; left: 50%; transform: translateX(-50%); z-index: 40;
   background: var(--text); color: var(--bg); font-size: 11px; padding: 3px 8px; border-radius: 6px;
@@ -22,6 +24,12 @@
 .mm2-drop-sep { height: 1px; background: var(--line); margin: 4px 0; }
 .mm2-kbd-row { display: flex; justify-content: space-between; gap: 14px; padding: 5px 10px; font-size: 12px; color: var(--text-sub); }
 .mm2-kbd { font-family: inherit; font-size: 11.5px; color: var(--text); background: var(--paper-sunk); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.ds-menu-item.mm2-more-item { justify-content: space-between; }
+.mm2-more-dots { font-size: 18px; line-height: 1; }
+/* Масштаб (ZoomBar) — внизу слева, легенда над ним колонкой; подсказки кнопок — над ними. */
+.react-flow__panel.mm2-corner { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.mm2-zoombar .mm2-tip { top: auto; bottom: 42px; }
+.ds-btn.mm2-tb-btn.mm2-zoom-pct { min-width: 50px; padding: 0 6px; font: 600 12px var(--sans); font-variant-numeric: tabular-nums; color: var(--text-sub); }
 
 /* Меню общее: ds-menu, ds-menu-item, ds-backdrop из cabinet.css; здесь только место и размер. */
 .ds-menu.mm2-ctx { z-index: 1000; width: auto; min-width: 170px; }
@@ -109,6 +117,8 @@
 .mm2-x:hover { color: var(--text); }
 .mm2-panel .ds-label { display: block; margin-bottom: 6px; }
 .mm2-panel .ds-label.is-ok { color: var(--ok); }
+/* «Оформление»: стиль фигуры ниже её смысла, отделён чертой. */
+.mm2-panel .ds-label.mm2-panel-sec { margin: 4px 0 12px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); font: 400 15px/1.25 var(--serif); letter-spacing: 0; text-transform: none; color: var(--text); }
 .mm2-panel .ds-input, .mm2-panel .ds-textarea, .mm2-panel select.ds-input { padding: 8px 10px; font-size: 13px; border-radius: 10px; margin-bottom: 14px; }
 .mm2-panel .ds-textarea.is-ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
 .mm2-panel select.ds-input { cursor: pointer; }
@@ -116,7 +126,8 @@
 .mm2-seg .ds-seg-btn.is-icon { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; padding: 7px 2px; border-radius: 14px; }
 .mm2-seg .ds-seg-btn.is-icon.is-active i { background: var(--text); }
 .mm2-seg .ds-seg-btn i { display: block; width: 26px; border-radius: 4px; background: var(--text-sub); }
-.mm2-shape-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 14px; }
+/* Три колонки: подписи целыми словами («Капитуляция», «Потребность») в четыре не влезали. */
+.mm2-shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 14px; }
 .mm2-shape-grid .mm2-pick { height: 50px; }
 .mm2-swatches { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
 .mm2-swatch { width: 28px; height: 28px; border-radius: 50%; padding: 0; cursor: pointer; border: 3px solid var(--surface); box-sizing: border-box; }
@@ -131,6 +142,12 @@
 .mm2-chip { min-height: 32px; padding: 5px 11px; border-radius: 16px; font: 12px var(--sans); cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text-sub); }
 .mm2-chip.is-active { border-color: var(--accent); background: var(--paper-tint); color: var(--accent); }
 .mm2-chip.is-sm { font-size: 11.5px; padding: 4px 9px; min-height: 30px; }
+/* Таблетки схем режима и выбор потребности: кружок цвета + имя; свои убираются «×», из концептуализации — только видны. */
+.mm2-dot-chips .mm2-chip { display: inline-flex; align-items: center; gap: 5px; text-align: left; }
+.mm2-chip-x { margin-left: 2px; color: var(--text-faint); font-size: 13px; line-height: 1; }
+.mm2-chip.is-locked { cursor: default; border-style: dashed; }
+.mm2-hint-p { margin: 0 0 6px; font: 12px/1.45 var(--sans); color: var(--text-sub); }
+.ds-btn.mm2-hint-btn { width: 100%; min-height: 36px; margin-top: 4px; font-size: 12.5px; }
 .mm2-sugg { margin-bottom: 14px; padding: 8px 9px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-tint); }
 .mm2-sugg-head { display: flex; align-items: center; margin-bottom: 7px; }
 .mm2-sugg-head .ds-label { margin: 0; flex: 1; }
@@ -161,11 +178,16 @@
 .mm2-canvas { flex: 1; min-width: 0; position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); background: var(--surface); }
 .mm2-canvas > .react-flow { container-type: size; }
 @supports (height: 1cqh) { .ds-card.mm2-guide { max-height: calc(100cqh - 76px); } }
-/* Тулбар шире узкого холста (телефон) — прокручивается, а не обрезается за
-   краем. Только на узком: прокрутка обрезала бы подсказки кнопок под тулбаром. */
-@container (max-width: 640px) {
-  .ds-card.mm2-toolbar { max-width: calc(100cqw - 30px); overflow-x: auto; scrollbar-width: none; }
+/* Узкий холст (палитра слева и панель свойств справа оставляют ~460px): кнопки
+   плотнее, чтобы ряд влез одной строкой; не влез — переносится (flex-wrap выше),
+   а не прокручивается: прокрутка обрезала бы подсказки кнопок. Под пальцем
+   кнопки остаются 44px — блок касания ниже стоит позже и перебивает. Подсказки
+   справа сужаются, чтобы не наезжать на масштаб внизу слева. */
+@container (max-width: 560px) {
+  .ds-card.mm2-toolbar { gap: 2px; }
   .ds-card.mm2-toolbar > * { flex-shrink: 0; }
+  .ds-btn.mm2-tb-btn { min-width: 32px; height: 32px; }
+  .ds-card.mm2-guide { width: min(270px, max(200px, calc(100cqw - 230px))); }
 }
 .mm2-guide-lead { font-size: 11px; line-height: 1.4; color: var(--text-faint); margin-bottom: 10px; }
 .mm2-step { display: flex; gap: 8px; align-items: flex-start; width: 100%; min-height: 40px; padding: 6px 5px; border: none; border-radius: 10px; background: none; text-align: left; cursor: default; }
@@ -296,6 +318,7 @@ button.mm2-sync-text { min-height: 44px; margin: -12px 0; padding: 0; border: no
   .mm2-nt-btn { min-width: 44px; min-height: 44px; }
   .mm2-x, .mm2-mine-plus { width: 44px; height: 44px; }
   .ds-btn.mm2-del { height: 44px; }
+  .ds-btn.mm2-hint-btn { min-height: 44px; }
   .mm2-panel .ds-input, .mm2-panel .ds-btn, .mm2-panel select.ds-input, .mm2-add-form .ds-input, .mm2-pal-search .ds-input { min-height: 44px; }
   .mm2-ear { width: 44px !important; height: 44px !important; font-size: 18px !important; }
   /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS (и iPad, где окно шире 767)

@@ -3,7 +3,6 @@ import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import type { ModeMapNode, ModeMapEdge, ModeMapKind, UserId } from '../api';
-import { NODE_DEFAULT_SIZES } from './modeMapData';
 import { ModeMapPalette } from './ModeMapPalette';
 import { ModeMapNodeEditor, ModeMapEdgeEditor } from './ModeMapNodeEditor';
 import { ModeMapCanvas } from './ModeMapCanvas';
@@ -18,6 +17,9 @@ import { collapseBtnStyle } from './modeMap/paletteStyle';
 import { useSettleFresh } from './modeMap/useSettleFresh';
 import { useCanvasSpace } from './modeMap/useCanvasSpace';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
+import { useMapKeys } from './modeMap/useMapKeys';
+import { expandDraft } from './modeMap/hubFill';
+import { useHubFill } from './modeMap/useHubFill';
 
 // ─── Public component ─────────────────────────────────────────────────────────
 
@@ -69,15 +71,14 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
   const handleAddMany = useCallback((partials: Omit<ModeMapNode, 'position'>[]) => {
     if (!partials.length) return;
     pushHistory();
-    const spots = place(nodes, partials.length);
-    const added = partials.map((p, i) => ({
-      id: p.id, type: p.type, position: spots[i],
-      data: p.data as Record<string, unknown>, ...(NODE_DEFAULT_SIZES[p.type] ?? {}),
-    }));
-    const newNodes = [...nodes, ...added];
+    const hub = partials.find(p => p.type === 'needs')?.data.diameter; // круг занимает больше места, чем режим
+    const spots = place(nodes, partials.length, hub ? { w: hub, h: hub } : undefined);
+    // Круг потребностей приезжает с пятью потребностями внутри и встаёт под них (toFlowNodes: zIndex −1).
+    const newNodes = [...nodes, ...toFlowNodes(partials.flatMap((p, i) => expandDraft(p, spots[i])))];
     setNodes(newNodes); scheduleSave(newNodes, edges);
   }, [nodes, edges, setNodes, scheduleSave, pushHistory, place]);
   const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => handleAddMany([partial]), [handleAddMany]);
+  const hubFill = useHubFill({ nodes, edges, setNodes, scheduleSave, pushHistory });
 
   const handleNodeChange = useCallback((updated: ModeMapNode) => {
     pushHistory();
@@ -137,73 +138,15 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
     setEdges(newEdges); scheduleSave(nodes, newEdges);
   }, [selectedEdgeId, nodes, edges, setEdges, scheduleSave, pushHistory]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      // Undo / Redo
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) redo(); else undo();
-        return;
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
-        e.preventDefault(); redo(); return;
-      }
-      // Duplicate selected node (Cmd/Ctrl+D)
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        const sel = nodes.filter(n => n.selected).map(n => n.id);
-        const ids = sel.length ? sel : (selectedNodeId ? [selectedNodeId] : []);
-        if (ids.length) {
-          pushHistory();
-          const copies = ids.map(id => {
-            const src = nodes.find(n => n.id === id); if (!src) return null;
-            return { ...src, id: `${src.type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-              position: { x: src.position.x + 40, y: src.position.y + 40 }, selected: false, data: { ...src.data } };
-          }).filter(Boolean) as typeof nodes;
-          const newNodes = [...nodes, ...copies];
-          setNodes(newNodes); scheduleSave(newNodes, edges);
-        }
-        return;
-      }
-      if (e.key === 'Escape') { setSelectedNodeId(null); setSelectedEdgeId(null); return; }
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        // Multi-select (Shift+box) → delete all selected; else single selection
-        const selNodes = nodes.filter(n => n.selected).map(n => n.id);
-        const selEdges = edges.filter(e2 => e2.selected).map(e2 => e2.id);
-        if (selNodes.length || selEdges.length) {
-          pushHistory();
-          const delN = new Set(selNodes);
-          const newNodes = nodes.filter(n => !delN.has(n.id));
-          const newEdges = edges.filter(e2 => !selEdges.includes(e2.id) && !delN.has(e2.source) && !delN.has(e2.target));
-          setNodes(newNodes); setEdges(newEdges); setSelectedNodeId(null); setSelectedEdgeId(null);
-          scheduleSave(newNodes, newEdges);
-        } else if (selectedNodeId) {
-          pushHistory();
-          const newNodes = nodes.filter(n => n.id !== selectedNodeId);
-          const newEdges = edges.filter(e2 => e2.source !== selectedNodeId && e2.target !== selectedNodeId);
-          setNodes(newNodes); setEdges(newEdges); setSelectedNodeId(null);
-          scheduleSave(newNodes, newEdges);
-        } else if (selectedEdgeId) {
-          pushHistory();
-          const newEdges = edges.filter(e2 => e2.id !== selectedEdgeId);
-          setEdges(newEdges); setSelectedEdgeId(null);
-          scheduleSave(nodes, newEdges);
-        }
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [selectedNodeId, selectedEdgeId, nodes, edges, setNodes, setEdges, scheduleSave, pushHistory, undo, redo]);
+  useMapKeys({ nodes, edges, selectedNodeId, selectedEdgeId, setNodes, setEdges, setSelectedNodeId, setSelectedEdgeId,
+    scheduleSave, pushHistory, undo, redo });
 
   // Палитра и боковой редактор — flex-колонки по бокам холста. Холст бывает только
   // на компьютере и планшете: на телефоне вкладка показывает ModeMapTab без него.
   const nodeEditor = selectedNode && (
     <ModeMapNodeEditor
       node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
-      onChange={handleNodeChange} onDelete={handleDeleteNode}
+      onChange={handleNodeChange} onDelete={handleDeleteNode} hub={selectedNode.type === 'needs' ? hubFill(selectedNode) : undefined}
       coupleMode={kind === 'couple'}
       onClose={() => setSelectedNodeId(null)} />
   );

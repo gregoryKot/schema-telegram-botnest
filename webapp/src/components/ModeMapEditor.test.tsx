@@ -144,7 +144,7 @@ describe('ModeMapEditor — массовое добавление и смена 
   it('смена фигуры в редакторе узла меняет тип узла на холсте', () => {
     renderEditor([mmNode('n1', 'child', 'Ребёнок')]);
     fireEvent.click(screen.getByText('Ребёнок').closest('.react-flow__node')!);
-    fireEvent.click(screen.getByTitle('Здоров'));
+    fireEvent.click(screen.getByTitle('Здоровый режим'));
     const el = screen.getByText('Ребёнок').closest('.react-flow__node')!;
     expect(el.className).toContain('react-flow__node-healthy');
   });
@@ -174,7 +174,7 @@ describe('ModeMapEditor — выбор узла открывает редакт�
 });
 
 describe('ModeMapEditor — удаление узла снимает и его рёбра (read-after-write)', () => {
-  it('«Удалить ноду» в редакторе убирает узел и его связи из сохранённой модели', async () => {
+  it('«Удалить фигуру» в редакторе убирает узел и его связи из сохранённой модели', async () => {
     renderEditor(
       [
         mmNode('n1', 'trigger', 'Ссора'),
@@ -192,7 +192,7 @@ describe('ModeMapEditor — удаление узла снимает и его �
       fireEvent.click(
         screen.getByText('Ссора').closest('.react-flow__node')!,
       );
-      fireEvent.click(screen.getByText('Удалить ноду'));
+      fireEvent.click(screen.getByText('Удалить фигуру'));
       expect(screen.queryByText('Ссора')).toBeNull();
 
       await vi.advanceTimersByTimeAsync(1300);
@@ -222,7 +222,7 @@ describe('ModeMapEditor — размонтирование со взведённ
     const { unmount } = renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
     await act(async () => {});
     fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
-    fireEvent.click(screen.getByTitle('Здоров')); // меняет тип узла → scheduleSave взводит таймер
+    fireEvent.click(screen.getByTitle('Здоровый режим')); // меняет тип узла → scheduleSave взводит таймер
     expect(updateModeMap).not.toHaveBeenCalled(); // таймер ещё не сработал (1200мс не прошло)
 
     unmount(); // размонтирование ДО срабатывания таймера — работа не должна потеряться
@@ -250,7 +250,7 @@ describe('ModeMapEditor — горячие клавиши', () => {
       ],
       [mmEdge('e1', 'n1', 'n2')],
     );
-    // См. комментарий у теста «Удалить ноду» выше — тот же mount-race.
+    // См. комментарий у теста «Удалить фигуру» выше — тот же mount-race.
     await act(async () => {});
     vi.useFakeTimers();
     try {
@@ -282,7 +282,7 @@ describe('ModeMapEditor — горячие клавиши', () => {
   it('⌘Z отменяет последнее действие (удаление узла)', () => {
     renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
     fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
-    fireEvent.click(screen.getByText('Удалить ноду'));
+    fireEvent.click(screen.getByText('Удалить фигуру'));
     expect(screen.queryByText('Ссора')).toBeNull();
     fireEvent.keyDown(window, { key: 'z', metaKey: true });
     expect(screen.getByText('Ссора')).toBeTruthy();
@@ -302,7 +302,7 @@ describe('ModeMapEditor — горячие клавиши', () => {
   it('⌘⇧Z (shift) повторяет отменённое действие через redo', () => {
     renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
     fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
-    fireEvent.click(screen.getByText('Удалить ноду'));
+    fireEvent.click(screen.getByText('Удалить фигуру'));
     expect(screen.queryByText('Ссора')).toBeNull();
     fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo — вернули узел
     expect(screen.getByText('Ссора')).toBeTruthy();
@@ -313,7 +313,7 @@ describe('ModeMapEditor — горячие клавиши', () => {
   it('⌘Y тоже повторяет отменённое действие (альтернативный redo)', () => {
     renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
     fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
-    fireEvent.click(screen.getByText('Удалить ноду'));
+    fireEvent.click(screen.getByText('Удалить фигуру'));
     fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo
     expect(screen.getByText('Ссора')).toBeTruthy();
     fireEvent.keyDown(window, { key: 'y', metaKey: true }); // redo

@@ -38,6 +38,23 @@ describe('ModeMapEdgeEditor — тип связи и подпись', () => {
     }));
   });
 
+  it('«✗ блокирует потребность» — линия схемы случая: тип, подпись с ✗, красный пунктир; свой цвет перекрывается', () => {
+    const { onChange } = renderEditor(baseEdge({ data: { color: 'var(--c-teal)', width: 'bold' } }));
+    fireEvent.click(screen.getByText('блокирует потребность'));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      label: expect.stringMatching(/^✗/),
+      data: { edgeType: 'blocks', color: 'var(--accent-red)', lineStyle: 'dashed', width: 'bold' },
+    }));
+  });
+
+  it('«✓ заботится о потребности» — зелёная линия с ✓', () => {
+    const { onChange } = renderEditor(baseEdge());
+    fireEvent.click(screen.getByText('заботится о потребности'));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      label: expect.stringMatching(/^✓/), data: expect.objectContaining({ edgeType: 'meets', color: 'var(--accent-green)' }),
+    }));
+  });
+
   it('ручной ввод подписи пишет label напрямую', () => {
     const { onChange } = renderEditor(baseEdge());
     fireEvent.change(screen.getByLabelText('Подпись (необязательно)'), { target: { value: 'будит критика' } });
