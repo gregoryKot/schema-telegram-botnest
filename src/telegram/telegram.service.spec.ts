@@ -45,6 +45,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
   const notificationService = {
     cancel: jest.fn().mockResolvedValue(undefined),
     schedule: jest.fn().mockResolvedValue(undefined),
+    replacePending: jest.fn().mockResolvedValue(undefined),
     ...overrides.notificationService,
   };
   const analyticsEvents = {
@@ -118,7 +119,7 @@ describe('TelegramService — snooze_reminder', () => {
     service.onModuleInit();
     const ctx = await runAction(fakeBot, 'snooze_reminder');
     expect(notificationService.cancel).toHaveBeenCalledWith(1n, 'reminder');
-    expect(notificationService.schedule).toHaveBeenCalledWith(
+    expect(notificationService.replacePending).toHaveBeenCalledWith(
       1n,
       'pre_reminder',
       expect.any(Date),
@@ -134,7 +135,8 @@ describe('TelegramService — snooze_reminder', () => {
     const ctx = await runAction(fakeBot, 'snooze_reminder');
     expect(ctx.answerCbQuery).toHaveBeenCalledWith();
     const [answered] = ctx.answerCbQuery.mock.invocationCallOrder;
-    const [scheduled] = notificationService.schedule.mock.invocationCallOrder;
+    const [scheduled] =
+      notificationService.replacePending.mock.invocationCallOrder;
     const [edited] = ctx.editMessageText.mock.invocationCallOrder;
     expect(answered).toBeLessThan(scheduled);
     expect(scheduled).toBeLessThan(edited);
@@ -150,7 +152,7 @@ describe('TelegramService — snooze_reminder', () => {
         getUserSettings: jest.fn().mockResolvedValue({ addressForm: 'vy' }),
       },
       notificationService: {
-        schedule: jest.fn().mockRejectedValue(new Error('db down')),
+        replacePending: jest.fn().mockRejectedValue(new Error('db down')),
       },
     });
     service.onModuleInit();
@@ -195,7 +197,7 @@ describe('TelegramService — snooze_reminder', () => {
     const { service, fakeBot, notificationService } = makeDeps();
     service.onModuleInit();
     await runAction(fakeBot, 'snooze_reminder');
-    const [, , sendAt] = notificationService.schedule.mock.calls[0];
+    const [, , sendAt] = notificationService.replacePending.mock.calls[0];
     // Конец тихих часов — 08:00 МСК того же/следующего дня, а не 23:30
     const hourMsk = Number(
       new Intl.DateTimeFormat('en-US', {
