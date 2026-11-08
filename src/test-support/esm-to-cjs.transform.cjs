@@ -1,13 +1,13 @@
-// Трансформер jest для ESM-пакетов Nest 12 (переезд на NestJS 12, 2026-10-24).
+// Трансформер jest для ESM-only пакетов (переезд на NestJS 12, 2026-10-24).
 //
-// Зачем: с 12-й версии пакеты @nestjs/* (common, core, testing,
-// platform-express, config, schedule, serve-static) — только ESM
-// (`"type": "module"`). Бэкенд остаётся на CommonJS: в рантайме Node 22.12+
-// грузит их через require(esm) сам, а jest — нет. Свой загрузчик модулей jest
-// умеет require(esm) только на Node 24.9+ (нужен
+// Зачем: только ESM (`"type": "module"`) — @nestjs/* с 12-й версии (common,
+// core, testing, platform-express, config, schedule, serve-static) и
+// зависимости otplib 13: @noble/hashes 2 и @scure/base (сам otplib — CJS;
+// @otplib/* в списке, чтобы jest дошёл до @noble/hashes во вложенном
+// node_modules плагина). Бэкенд на CommonJS: Node 22.12+ грузит их через
+// require(esm) сам, jest — только на Node 24.9+ (нужен
 // `vm.SourceTextModule#hasAsyncGraph`), а CI, Dockerfile и машины агентов —
-// на Node 22. Без этого файла любой спек, импортирующий '@nestjs/common',
-// падает с «Must use import to load ES Module».
+// на Node 22. Без файла спек падает с «Must use import to load ES Module».
 //
 // Что делает: babel переводит import/export в CommonJS (`import()` — в
 // `require`), а `import.meta` — в объект-литерал с путём файла, известным на
@@ -15,9 +15,9 @@
 // объявляют свой `const require = createRequire(import.meta.url)`, и любой
 // вставленный вызов `require` попал бы в его TDZ (так падал serve-static).
 // Подключён в `transform` обоих конфигов jest (package.json и
-// test/jest-e2e.json) только для перечисленных пакетов — список в
-// `transformIgnorePatterns` там же. Переедем на Node 24.9+ — трансформер и
-// исключения можно убрать.
+// test/jest-e2e.json) только для перечисленных пакетов — тот же список в
+// `transformIgnorePatterns` там же (сверяет спек). Переедем на Node 24.9+ —
+// трансформер и исключения можно убрать.
 const { createHash } = require('node:crypto');
 const { readFileSync } = require('node:fs');
 const { dirname } = require('node:path');

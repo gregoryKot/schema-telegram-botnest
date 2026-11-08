@@ -17,14 +17,21 @@ process.env.ENCRYPTION_KEY_OLD = '';
 import {
   BadRequestException,
   ConflictException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { authenticator } from 'otplib';
+import { generateSync } from 'otplib';
+import { TOTP_OPTIONS } from './totp-code';
 import { TotpService } from './totp.service';
-import { decrypt } from '../utils/crypto';
+import { decrypt, encrypt } from '../utils/crypto';
 
 const USER_ID = 42n;
 const FIXED_TIME = new Date('2026-07-16T12:00:00.000Z').getTime();
+
+// Код текущего шага — с теми же guardrails, что у сервиса (иначе otplib 13
+// отказался бы генерировать для 10-байтового секрета). Время — из Date.now().
+const codeFor = (secret: string): string =>
+  generateSync({ secret, guardrails: TOTP_OPTIONS.guardrails });
 
 function makeFakePrisma(seed: Record<string, Record<string, unknown>> = {}) {
   const users = new Map<string, Record<string, unknown>>(Object.entries(seed));
@@ -121,7 +128,7 @@ async function enroll(prisma: ReturnType<typeof makeFakePrisma>) {
   const service = new TotpService(prisma as never, noLock());
   const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test');
   const secret = extractSecret(otpauthUrl);
-  const code = authenticator.generate(secret);
+  const code = codeFor(secret);
   const { recoveryCodes } = await service.confirmSetup(USER_ID, code);
   return { service, secret, recoveryCodes };
 }
@@ -185,9 +192,7 @@ describe('TotpService — setup', () => {
     const service = new TotpService(prisma as never, noLock());
     const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test');
     const secret = extractSecret(otpauthUrl);
-    const wrong = String(
-      (Number(authenticator.generate(secret)) + 1) % 1e6,
-    ).padStart(6, '0');
+    const wrong = String((Number(codeFor(secret)) + 1) % 1e6).padStart(6, '0');
 
     await expect(service.confirmSetup(USER_ID, wrong)).rejects.toThrow(
       UnauthorizedException,
@@ -208,7 +213,7 @@ describe('TotpService — setup', () => {
   it('повторный confirmSetup на уже включённой 2FA → ConflictException', async () => {
     const prisma = makeFakePrisma();
     const { service, secret } = await enroll(prisma);
-    const code = authenticator.generate(secret);
+    const code = codeFor(secret);
     await expect(service.confirmSetup(USER_ID, code)).rejects.toThrow(
       ConflictException,
     );
@@ -219,9 +224,7 @@ describe('TotpService — verifyCode', () => {
   it('верный текущий TOTP-код → true', async () => {
     const prisma = makeFakePrisma();
     const { service, secret } = await enroll(prisma);
-    expect(
-      await service.verifyCode(USER_ID, authenticator.generate(secret)),
-    ).toBe(true);
+    expect(await service.verifyCode(USER_ID, codeFor(secret))).toBe(true);
   });
 
   it('неверный код (не TOTP и не recovery) → false', async () => {
@@ -235,7 +238,7 @@ describe('TotpService — verifyCode', () => {
     const { service, secret } = await enroll(prisma);
 
     dateNowSpy.mockReturnValue(FIXED_TIME - 30_000);
-    const staleStepCode = authenticator.generate(secret);
+    const staleStepCode = codeFor(secret);
     dateNowSpy.mockReturnValue(FIXED_TIME);
 
     expect(await service.verifyCode(USER_ID, staleStepCode)).toBe(true);
@@ -246,26 +249,49 @@ describe('TotpService — verifyCode', () => {
     const { service, secret } = await enroll(prisma);
 
     dateNowSpy.mockReturnValue(FIXED_TIME - 90_000);
-    const farCode = authenticator.generate(secret);
+    const farCode = codeFor(secret);
     dateNowSpy.mockReturnValue(FIXED_TIME);
 
     expect(await service.verifyCode(USER_ID, farCode)).toBe(false);
   });
+
+  it('окно ±1 шаг в обе стороны — код следующего шага (часы клиента спешат) принят', async () => {
+    const prisma = makeFakePrisma();
+    const { service, secret } = await enroll(prisma);
+
+    dateNowSpy.mockReturnValue(FIXED_TIME + 30_000);
+    const aheadCode = codeFor(secret);
+    dateNowSpy.mockReturnValue(FIXED_TIME);
+
+    expect(await service.verifyCode(USER_ID, aheadCode)).toBe(true);
+  });
+
+  it.each([-60_000, 60_000])(
+    'код за два шага (%i мс) уже вне окна — отвергается',
+    async (shift) => {
+      const prisma = makeFakePrisma();
+      const { service, secret } = await enroll(prisma);
+
+      dateNowSpy.mockReturnValue(FIXED_TIME + shift);
+      const outside = codeFor(secret);
+      dateNowSpy.mockReturnValue(FIXED_TIME);
+
+      expect(await service.verifyCode(USER_ID, outside)).toBe(false);
+    },
+  );
 
   it('2FA не включена (нет totpEnabledAt) → всегда false, даже если код бы совпал', async () => {
     const prisma = makeFakePrisma();
     const service = new TotpService(prisma as never, noLock());
     const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test'); // enabled=null
     const secret = extractSecret(otpauthUrl);
-    expect(
-      await service.verifyCode(USER_ID, authenticator.generate(secret)),
-    ).toBe(false);
+    expect(await service.verifyCode(USER_ID, codeFor(secret))).toBe(false);
   });
 
   it('тот же TOTP-код не принимается дважды в пределах окна (replay, L2)', async () => {
     const prisma = makeFakePrisma();
     const { service, secret } = await enroll(prisma);
-    const code = authenticator.generate(secret);
+    const code = codeFor(secret);
 
     expect(await service.verifyCode(USER_ID, code)).toBe(true); // первый раз
     expect(await service.verifyCode(USER_ID, code)).toBe(false); // реплей того же шага
@@ -275,15 +301,11 @@ describe('TotpService — verifyCode', () => {
     const prisma = makeFakePrisma();
     const { service, secret } = await enroll(prisma);
 
-    expect(
-      await service.verifyCode(USER_ID, authenticator.generate(secret)),
-    ).toBe(true);
+    expect(await service.verifyCode(USER_ID, codeFor(secret))).toBe(true);
 
     // Время ушло на шаг вперёд — код нового шага обязан пройти.
     dateNowSpy.mockReturnValue(FIXED_TIME + 30_000);
-    expect(
-      await service.verifyCode(USER_ID, authenticator.generate(secret)),
-    ).toBe(true);
+    expect(await service.verifyCode(USER_ID, codeFor(secret))).toBe(true);
   });
 
   it('recovery-код принимается один раз — повторное использование отвергается (защита от replay)', async () => {
@@ -331,7 +353,7 @@ describe('TotpService — disable', () => {
   it('верный код отключает 2FA и стирает секрет/recovery-коды', async () => {
     const prisma = makeFakePrisma();
     const { service, secret } = await enroll(prisma);
-    await service.disable(USER_ID, authenticator.generate(secret));
+    await service.disable(USER_ID, codeFor(secret));
 
     const stored = prisma.users.get(USER_ID.toString())!;
     expect(stored.totpSecret).toBeNull();
@@ -394,5 +416,113 @@ describe('TotpService — isEnabled / getStatus', () => {
       enabled: true,
       recoveryCodesLeft: 10,
     });
+  });
+});
+
+// Переезд otplib 12 → 13 (бот-PR #858 делал голый bump). otplib 12 выдавал
+// секреты по 10 байт; 13-я по умолчанию требует от 16 и бросает
+// SecretTooShortError — все, кто включил 2FA до переезда, потеряли бы вход.
+// Эталон снят otplib 12.0.1 до его удаления: authenticator.generate(
+// LEGACY_SECRET) при Date.now() = LEGACY_TIME, ±30 с — соседние шаги.
+const LEGACY_SECRET = 'JBSWY3DPEHPK3PXP';
+const LEGACY_TIME = Date.UTC(2026, 0, 15, 12, 0, 0);
+const LEGACY_CODE = '738134';
+const LEGACY_PREV = '837587';
+const LEGACY_NEXT = '504584';
+
+function legacyUser(enabled: boolean) {
+  return makeFakePrisma({
+    [USER_ID.toString()]: {
+      totpSecret: encrypt(LEGACY_SECRET),
+      totpEnabledAt: enabled ? new Date(LEGACY_TIME) : null,
+      totpRecoveryCodes: [],
+      totpLastStep: null,
+    },
+  });
+}
+
+describe('TotpService — секрет otplib 12 после переезда на otplib 13', () => {
+  beforeEach(() => dateNowSpy.mockReturnValue(LEGACY_TIME));
+
+  it('confirmSetup принимает эталонный код otplib 12 для 10-байтового секрета', async () => {
+    const service = new TotpService(legacyUser(false) as never, noLock());
+    const { recoveryCodes } = await service.confirmSetup(USER_ID, LEGACY_CODE);
+    expect(recoveryCodes).toHaveLength(10);
+  });
+
+  it('verifyCode принимает эталонный код otplib 12 — вход со старым секретом жив', async () => {
+    const service = new TotpService(legacyUser(true) as never, noLock());
+    expect(await service.verifyCode(USER_ID, LEGACY_CODE)).toBe(true);
+  });
+
+  it('окно как в otplib 12: эталонные коды соседних шагов принимаются', async () => {
+    const service = new TotpService(legacyUser(true) as never, noLock());
+    expect(await service.verifyCode(USER_ID, LEGACY_PREV)).toBe(true);
+    expect(await service.verifyCode(USER_ID, LEGACY_NEXT)).toBe(true);
+  });
+
+  it('код, выпущенный с guardrails сервиса, совпадает с эталоном otplib 12', () => {
+    expect(codeFor(LEGACY_SECRET)).toBe(LEGACY_CODE);
+  });
+});
+
+// otplib 13 бросает на токене не из шести цифр и на битом секрете, а DTO
+// пропускает 6–10 символов любого вида (резервный код тоже идёт через
+// проверку TOTP первым). Без своей проверки формата и try/catch — 500 вместо
+// «код неверный» и промах мимо счётчика неудач (S11).
+describe('TotpService — код не того формата, битый секрет', () => {
+  const BAD = ['abcdef', '12345', '', '1234567', '12 456'];
+
+  function spyAttempts() {
+    return {
+      lockedFor: jest.fn().mockResolvedValue(0),
+      recordFailure: jest.fn().mockResolvedValue(undefined),
+    };
+  }
+
+  it.each(BAD)(
+    'verifyCode(%j) → false без исключения, промах засчитан',
+    async (code) => {
+      const prisma = makeFakePrisma();
+      await enroll(prisma);
+      const attempts = spyAttempts();
+      const service = new TotpService(prisma as never, attempts as never);
+
+      await expect(service.verifyCode(USER_ID, code)).resolves.toBe(false);
+      expect(attempts.recordFailure).toHaveBeenCalledWith(USER_ID);
+    },
+  );
+
+  it.each(BAD)(
+    'confirmSetup(%j) → UnauthorizedException, не 500',
+    async (code) => {
+      const prisma = makeFakePrisma();
+      const service = new TotpService(prisma as never, noLock());
+      await service.startSetup(USER_ID, 'user@test');
+
+      await expect(service.confirmSetup(USER_ID, code)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    },
+  );
+
+  it('битый секрет в БД → verifyCode false и error в лог, не исключение', async () => {
+    const prisma = makeFakePrisma({
+      [USER_ID.toString()]: {
+        totpSecret: encrypt('not base32!!'),
+        totpEnabledAt: new Date(FIXED_TIME),
+        totpRecoveryCodes: [],
+      },
+    });
+    const attempts = spyAttempts();
+    const service = new TotpService(prisma as never, attempts as never);
+    const logged = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+
+    await expect(service.verifyCode(USER_ID, '123456')).resolves.toBe(false);
+    expect(logged).toHaveBeenCalledWith(expect.stringMatching(/otplib/));
+    expect(attempts.recordFailure).toHaveBeenCalledWith(USER_ID);
+    logged.mockRestore();
   });
 });

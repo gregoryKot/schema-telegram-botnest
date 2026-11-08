@@ -4,7 +4,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import * as crypto from 'crypto';
-import { authenticator } from 'otplib';
+import { generateSync } from 'otplib';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { SecurityLogService } from '../src/auth/security-log.service';
 import { AuthService } from '../src/auth/auth.service';
@@ -253,7 +253,7 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       ) as string;
       const enable = await post('/api/auth/2fa/enable')
         .set('Authorization', auth)
-        .send({ code: authenticator.generate(secret) });
+        .send({ code: generateSync({ secret }) });
       expect(enable.status).toBe(200);
       expect(enable.body.recoveryCodes).toHaveLength(10);
       // A fresh login (same widget route) now returns a challenge, not tokens.
@@ -269,7 +269,7 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(wrongCode.status).toBe(401);
       const rightCode = await post('/api/auth/2fa/challenge').send({
         challengeToken,
-        code: authenticator.generate(secret),
+        code: generateSync({ secret }),
       });
       expect(rightCode.status).toBe(200);
       expect(rightCode.body.accessToken).toEqual(expect.any(String));
@@ -285,9 +285,10 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(noCode.status).toBe(403);
       expect(noCode.body.reason).toBe('totp_required');
       expect(extractSetCookie(noCode, 'link_token')).toBeUndefined();
-      const nextStep = authenticator
-        .clone({ epoch: Date.now() + 30_000 })
-        .generate(secret);
+      const nextStep = generateSync({
+        secret,
+        epoch: Math.floor(Date.now() / 1000) + 30,
+      });
       const withCode = await linkToken().set('x-totp-code', nextStep);
       expect(withCode.status).toBe(200);
       expect(extractSetCookie(withCode, 'link_token')).toBeDefined();
