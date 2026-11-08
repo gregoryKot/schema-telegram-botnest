@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -42,6 +43,8 @@ export class JwtAuthGuard implements CanActivate {
 // сессия отозвана — аноним (роуты входа: optional-auth-routes.ts).
 @Injectable()
 export class OptionalJwtGuard implements CanActivate {
+  private readonly logger = new Logger(OptionalJwtGuard.name);
+
   constructor(
     private readonly auth: AuthService,
     private readonly prisma: PrismaService,
@@ -55,8 +58,15 @@ export class OptionalJwtGuard implements CanActivate {
         const { userId, sid } = this.auth.verifyAccessToken(header.slice(7));
         await assertLiveAccess(this.prisma, userId, sid);
         req.webUser = { userId };
-      } catch {
-        /* ignore — treat as anonymous */
+      } catch (err) {
+        // 401-исходы (битый токен, мёртвый аккаунт, отозванная сессия) — аноним.
+        // Прочее (сбой базы) — тоже аноним, но видно: имя и код, без текста.
+        if (!(err instanceof UnauthorizedException)) {
+          const { name, code } = err as { name?: string; code?: string };
+          this.logger.warn(
+            `проверка сессии не удалась, запрос идёт анонимом: ${name ?? 'Error'} ${code ?? ''}`,
+          );
+        }
       }
     }
     // Link-token для OAuth-редиректов — ТОЛЬКО httpOnly-кука `link_token`

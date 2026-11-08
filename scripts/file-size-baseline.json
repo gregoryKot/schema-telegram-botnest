@@ -832,7 +832,7 @@
   "src/auth/email.util.ts": 11,
   "src/auth/google-one-tap-nonce.ts": 57,
   "src/auth/google-one-tap.service.ts": 82,
-  "src/auth/jwt.guard.ts": 79,
+  "src/auth/jwt.guard.ts": 89,
   "src/auth/link-session-required.exception.ts": 12,
   "src/auth/live-access.ts": 43,
   "src/auth/login-ticket/device-label.ts": 53,

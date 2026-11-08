@@ -5,7 +5,11 @@
 // AuthService берётся НАСТОЯЩИЙ (verifyAccessToken/verifyLinkToken не ходят
 // в БД), а токены подписываются в тесте независимо через jsonwebtoken —
 // как в robokassa.service.spec.ts, где подпись пересчитывается руками.
-import { UnauthorizedException, ExecutionContext } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  ExecutionContext,
+  Logger,
+} from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
@@ -257,6 +261,39 @@ describe('OptionalJwtGuard', () => {
     };
     await guard.canActivate(makeCtx(req));
     expect(req.webUser).toEqual({ userId: 1n });
+  });
+
+  // Ревью волны (2026-11): сбой базы при сверке сессии — тоже аноним (вход
+  // продолжается), но не молча: warn с именем ошибки, без токена и текста.
+  it('сбой базы при сверке → аноним и warn; отозванная сессия → аноним без warn', async () => {
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    const token = signToken({ sid: 'fam' });
+    const broken = makePrisma();
+    broken.user.findUnique.mockRejectedValue(
+      Object.assign(new Error(`db down ${token}`), { code: 'P1001' }),
+    );
+    const req: FakeRequest = { headers: { authorization: `Bearer ${token}` } };
+    expect(
+      await new OptionalJwtGuard(makeAuth(), broken as never).canActivate(
+        makeCtx(req),
+      ),
+    ).toBe(true);
+    expect(req.webUser).toBeUndefined();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toContain('P1001');
+    expect(String(warn.mock.calls[0][0])).not.toContain(token);
+
+    warn.mockClear();
+    const revoked = makePrisma({ deletedAt: null }, null);
+    const req2: FakeRequest = { headers: { authorization: `Bearer ${token}` } };
+    await new OptionalJwtGuard(makeAuth(), revoked as never).canActivate(
+      makeCtx(req2),
+    );
+    expect(req2.webUser).toBeUndefined();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   // Хвост S12: на роутах входа Bearer отозванной сессии — аноним, а не
