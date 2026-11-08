@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { OtpCells } from './login/OtpCells';
 import { RecoveryCodeField } from './login/RecoveryCodeField';
@@ -7,14 +7,14 @@ import '../styles/auth-login.css';
 import { TwoFactorIntro } from './login/TwoFactorIntro';
 import { TwoFactorExpired } from './login/TwoFactorExpired';
 import { submitTwoFactorCode } from './login/twoFactorSubmit';
+import { useChallengeAddress } from './login/useChallengeAddress';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 // Page the user lands on after primary login (Google/Telegram/VK) IF their
 // account has TOTP enabled. They paste a 6-digit code (or a recovery code)
-// to exchange the challenge token for a real session.
+// to exchange the challenge token for a real session (address: useChallengeAddress).
 export function TwoFactorChallengePage() {
-  const [params] = useSearchParams();
   const navigate = useNavigate();
   const { setAccessToken } = useAuth();
   const [code, setCode] = useState('');
@@ -22,7 +22,7 @@ export function TwoFactorChallengePage() {
   const [busy, setBusy] = useState(false);
   const [recovery, setRecovery] = useState(false);
   const [expired, setExpired] = useState(false);
-  const challengeToken = params.get('token') ?? '';
+  const { challengeToken, afterLogin } = useChallengeAddress();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export function TwoFactorChallengePage() {
     setBusy(true);
     setError(null);
     const out = await submitTwoFactorCode(API_BASE, challengeToken, code.trim());
-    if (out.kind === 'ok') { setAccessToken(out.accessToken, out.expiresIn); navigate('/today', { replace: true }); return; }
+    if (out.kind === 'ok') { setAccessToken(out.accessToken, out.expiresIn); navigate(afterLogin, { replace: true }); return; }
     setBusy(false);
     setCode('');
     if (out.kind === 'expired') { setExpired(true); return; }
