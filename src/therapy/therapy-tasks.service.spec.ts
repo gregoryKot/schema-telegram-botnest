@@ -25,7 +25,9 @@ function matchWhere(row: any, where: any): boolean {
       !Array.isArray(v) &&
       !(v instanceof Date)
     ) {
-      if ('gte' in v) return val >= v.gte;
+      // Окно серии — обе границы сразу: { gte, lt } (streak-window.ts)
+      if ('gte' in v || 'lt' in v)
+        return (!('gte' in v) || val >= v.gte) && (!('lt' in v) || val < v.lt);
       if ('in' in v) return v.in.includes(val);
       if ('not' in v) return val !== v.not;
     }
@@ -462,5 +464,90 @@ describe('TherapyTasksService — scheduleTaskNotification', () => {
         dueDate: null,
       },
     );
+  });
+});
+
+// E15 аудита 2026-11: окно серии шло от дня назначения до «сейчас», а
+// просрочка ставилась лениво (при открытии /tasks). Клиент, не открывавший
+// задания, отмечался после срока — отметки засчитывались, и просроченное
+// задание закрывалось выполненным. Окно — targetDays местных дней клиента.
+describe('TherapyTasksService — окно серии ограничено сроком (E15)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  const task = (
+    createdAt: string,
+    targetDays: number,
+    type = 'tracker_streak',
+  ) => ({
+    id: 1,
+    userId: CLIENT_A,
+    assignedBy: THERAPIST,
+    type,
+    text: 't',
+    targetDays,
+    needId: null,
+    dueDate: null,
+    done: null,
+    completedAt: null,
+    createdAt: new Date(createdAt),
+  });
+
+  it('отметки после срока не закрывают задание выполненным', async () => {
+    const { service, tasks, users, ratings } = makeService();
+    users.push({ id: CLIENT_A, notifyTimezone: 'Europe/Moscow' });
+    // назначено 1-го (12:00 МСК), 3 дня: окно 1–3 ноября
+    tasks.push(task('2026-11-01T09:00:00Z', 3));
+    for (const date of ['2026-11-01', '2026-11-04', '2026-11-05'])
+      ratings.push({ userId: CLIENT_A, date });
+    await service.checkStreakTasks(CLIENT_A);
+    expect(tasks[0].done).toBeNull(); // до починки — true: 3 «дня» из 3
+  });
+
+  it.each([
+    // 15:00 в Нью-Йорке 1-го, 2 дня: окно 1–2 ноября по Нью-Йорку
+    ['America/New_York', '2026-11-01T20:00:00Z'],
+    // 09:30 во Владивостоке 1-го (в UTC ещё 31 октября)
+    ['Asia/Vladivostok', '2026-10-31T23:30:00Z'],
+    ['Asia/Kolkata', '2026-10-31T19:00:00Z'], // 00:30 1-го по Калькутте
+  ])('конец окна — по календарю клиента (%s)', async (tz, createdAt) => {
+    const { service, ratings } = makeService();
+    for (const date of ['2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03'])
+      ratings.push({ userId: CLIENT_A, date });
+    const t = {
+      type: 'tracker_streak',
+      createdAt: new Date(createdAt),
+      targetDays: 2,
+    };
+    expect(await service.getStreakProgress(CLIENT_A, t, tz)).toBe(2);
+  });
+
+  it('diary_streak: запись после полуночи последнего дня окна не в счёт', async () => {
+    const { service, schemaDiary } = makeService();
+    schemaDiary.push(
+      // 23:59 по Москве 4-го — последний день окна
+      { userId: CLIENT_A, createdAt: new Date('2026-11-04T20:59:00Z') },
+      // 00:30 по Москве 5-го — уже за окном
+      { userId: CLIENT_A, createdAt: new Date('2026-11-04T21:30:00Z') },
+    );
+    const t = {
+      type: 'diary_streak',
+      createdAt: new Date('2026-11-03T21:15:00Z'), // 00:15 МСК 4-го
+      targetDays: 1,
+    };
+    expect(await service.getStreakProgress(CLIENT_A, t, 'Europe/Moscow')).toBe(
+      1,
+    );
+  });
+
+  it('срок — по календарю клиента: Владивосток, 00:30 дня после окна — задание просрочено', async () => {
+    const { service, tasks, users } = makeService();
+    users.push({ id: CLIENT_A, notifyTimezone: 'Asia/Vladivostok' });
+    tasks.push(task('2026-11-01T01:00:00Z', 3)); // 11:00 1-го: окно 1–3 ноября
+    jest.useFakeTimers({ now: new Date('2026-11-03T13:30:00Z') }); // 23:30 3-го
+    expect(await service.getTasks(CLIENT_A)).toHaveLength(1);
+    jest.setSystemTime(new Date('2026-11-03T14:30:00Z')); // 00:30 4-го
+    // по суткам от назначения прошло 2,5 — раньше задание жило ещё полдня
+    expect(await service.getTasks(CLIENT_A)).toHaveLength(0);
+    expect(tasks[0].done).toBe(false);
   });
 });
