@@ -15,6 +15,7 @@
 //   PW_CHROMIUM_PATH=<путь к Chromium, если ревизия не совпадает> npx playwright test -c e2e-browser/live/playwright.config.ts
 //   остановить стенд: touch /tmp/stand.stop
 import { existsSync } from 'fs';
+import { join } from 'path';
 import { createServer } from 'http';
 import { buildTestApp } from './build-test-app';
 import { cleanupOwnershipFixtures } from './cleanup-fixtures';
@@ -35,7 +36,11 @@ jest.setTimeout(12 * 3_600_000);
 
 describe('stand', () => {
   it('serves until stop file appears', async () => {
-    const { app, prisma } = await buildTestApp();
+    // :3000 отдаёт и настоящую сборку сайта со своими заголовками (CSP
+    // frame-ancestors): её смотрит e2e-browser/live/telegram-frame.spec.ts.
+    const { app, prisma } = await buildTestApp(
+      join(__dirname, '..', '..', 'webapp', 'dist'),
+    );
     await cleanupOwnershipFixtures(prisma, ALL);
     // Онбординг пройден: иначе оверлеи «ты/вы», согласия и «первый раз» перехватывают клики.
     const seen = {

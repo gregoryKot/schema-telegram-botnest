@@ -3,6 +3,7 @@
 // «худшим случаем» дописывает сюда строку, а список сценариев не пухнет.
 import { Client } from 'pg';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { PRACTICE_OWNER } from './seed-booking';
 import { STREAK_COHORT } from './seed-streaks';
 
 export interface ScenarioContext {
@@ -20,6 +21,9 @@ export interface ScenarioContext {
   session: { userId: bigint; family: string };
   /** Терапевт когорты «долгий стрик» (seed-streaks.ts): годы оценок у клиентов. */
   streakTherapistId: bigint;
+  /** Клиент владельца практики с самым большим числом броней (seed-booking.ts)
+   *  и Telegram id владельца — сценарий кладёт его в ADMIN_ID. */
+  bookingClient: { userId: bigint; ownerTelegramId: string };
 }
 
 /**
@@ -61,6 +65,15 @@ export async function resolveWorstCaseIds(
     `SELECT "therapistId"::text AS id FROM "TherapyRelation"
       WHERE "therapistId" = ${STREAK_COHORT.base} AND status = 'active' LIMIT 1`,
   );
+  const bookingClient = (
+    await client.query<{ id: string; owner: string }>(
+      `SELECT b."userId"::text AS id, p."providerId" AS owner FROM "Booking" b
+        JOIN "TherapyRelation" r ON r."clientId" = b."userId" AND r.status = 'active'
+        JOIN "AuthProvider" p ON p."userId" = r."therapistId" AND p.provider = 'telegram'
+        WHERE r."therapistId" = ${PRACTICE_OWNER.userId}
+        GROUP BY 1, 2 ORDER BY count(*) DESC, 1 LIMIT 1`,
+    )
+  ).rows[0];
   const ids = {
     therapistId,
     heavyUserId,
@@ -72,7 +85,8 @@ export async function resolveWorstCaseIds(
     .filter(([, v]) => !v)
     .map(([k]) => k);
   if (!session) missing.push('session');
-  if (missing.length || !session) {
+  if (!bookingClient) missing.push('bookingClient');
+  if (missing.length || !session || !bookingClient) {
     throw new Error(
       `В базе нет синтетики (${missing.join(', ')}) — ` +
         'прогони сидер: test/perf/seed.ts',
@@ -81,7 +95,11 @@ export async function resolveWorstCaseIds(
   return {
     ...(Object.fromEntries(
       Object.entries(ids).map(([k, v]) => [k, BigInt(v)]),
-    ) as Omit<ScenarioContext, 'prisma' | 'session'>),
+    ) as Omit<ScenarioContext, 'prisma' | 'session' | 'bookingClient'>),
     session: { userId: BigInt(session.id), family: session.family },
+    bookingClient: {
+      userId: BigInt(bookingClient.id),
+      ownerTelegramId: bookingClient.owner,
+    },
   };
 }

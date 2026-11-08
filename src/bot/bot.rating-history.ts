@@ -33,8 +33,14 @@ export class RatingHistoryMetrics {
       d.setDate(d.getDate() - i);
       return localDate(tz, d);
     });
+    if (!dates.length) return [];
+    // Окно — диапазон дат, а не список из N значений: на `date IN (365)` план
+    // выбирался по выборке ANALYZE — то одна проходка (userId, date), ~378
+    // страниц, то 365 спусков по (date, userId), ~1 476 (замер perf, #1049).
+    // Равенство по userId и диапазон по date ведут в (userId, date) всегда;
+    // строки вне списка дат (его нет — дни подряд) отсеет фильтр ниже.
     const rows = await this.prisma.rating.findMany({
-      where: { userId, date: { in: dates } },
+      where: { userId, date: { gte: dates[dates.length - 1], lte: dates[0] } },
     });
     const byDate = new Map<string, Partial<Record<NeedId, number>>>();
     for (const row of rows) {

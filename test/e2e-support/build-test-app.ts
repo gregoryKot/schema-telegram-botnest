@@ -24,6 +24,7 @@ import { makeFakePrisma, FakePrisma } from './fake-prisma';
 import { makeFakeBot } from './fake-bot';
 import { buildRealDbTestApp } from './build-real-db-test-app';
 import { stopCronJobs } from './stop-cron-jobs';
+import { withSiteStatic } from './e2e-site-static';
 
 // BigInt в JSON-ответах — тот же установщик, что в src/main.ts (число для
 // безопасного целого, строка для id ≥ 2^53). Без него любой ответ с
@@ -35,7 +36,8 @@ export interface TestApp {
   prisma: FakePrisma;
 }
 
-export async function buildTestApp(): Promise<TestApp> {
+/** siteDist — корень статики сайта (по умолчанию сборка-фикстура, e2e-site-static.ts). */
+export async function buildTestApp(siteDist?: string): Promise<TestApp> {
   // Режим «реальная БД» (TEST_TRUST_PLAN.md, п.1): фейковая Prisma трижды
   // расходилась с настоящей на ЗЕЛЁНЫХ тестах (не понимала top-level OR,
   // не применяла @default из схемы, не поддерживала include) — ownership-
@@ -51,14 +53,15 @@ export async function buildTestApp(): Promise<TestApp> {
     // `any` (see fake-prisma.ts) — присвоение PrismaService сюда не требует
     // приведения типа, но остаётся структурно совместимым по вызовам,
     // которые используют спеки.
-    return await buildRealDbTestApp();
+    return await buildRealDbTestApp(siteDist);
   }
 
   const prisma = makeFakePrisma();
 
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  })
+  const moduleRef = await withSiteStatic(
+    Test.createTestingModule({ imports: [AppModule] }),
+    siteDist,
+  )
     .overrideProvider(PrismaService)
     .useValue(prisma)
     .overrideProvider(TELEGRAF_BOT)
