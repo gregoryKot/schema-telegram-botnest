@@ -49,9 +49,9 @@ describe('ModeMapNodeEditor — название и базовые действ�
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ label: 'Покинутый ребёнок' }) }));
   });
 
-  it('кнопка «Удалить ноду» вызывает onDelete', () => {
+  it('кнопка «Удалить фигуру» вызывает onDelete', () => {
     const { onDelete } = renderEditor(baseNode());
-    fireEvent.click(screen.getByText('Удалить ноду'));
+    fireEvent.click(screen.getByText('Удалить фигуру'));
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
@@ -63,15 +63,15 @@ describe('ModeMapNodeEditor — название и базовые действ�
 });
 
 describe('ModeMapNodeEditor — форма и тип фигуры', () => {
-  it('выбор фигуры «Здоров» меняет type на healthy', () => {
+  it('выбор фигуры «Здоровый» меняет type на healthy', () => {
     const { onChange } = renderEditor(baseNode());
-    fireEvent.click(screen.getByTitle('Здоров'));
+    fireEvent.click(screen.getByTitle('Здоровый режим'));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ type: 'healthy' }));
   });
 
-  it('выбор «Избег» ставит type=coping и copingSubtype=avoid', () => {
+  it('выбор «Избегание» ставит type=coping и copingSubtype=avoid', () => {
     const { onChange } = renderEditor(baseNode());
-    fireEvent.click(screen.getByTitle('Избег'));
+    fireEvent.click(screen.getByTitle('Копинг: Избегание'));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
       type: 'coping', data: expect.objectContaining({ copingSubtype: 'avoid' }),
     }));
@@ -162,10 +162,24 @@ describe('ModeMapNodeEditor — условные поля по типу ноды
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ note: undefined }) }));
   });
 
-  it('выбор связанной схемы пишет schemaId', () => {
-    const { onChange } = renderEditor(baseNode());
-    fireEvent.change(screen.getByLabelText('Связанная схема'), { target: { value: 'abandonment' } });
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ schemaId: 'abandonment' }) }));
+  it('«Схемы режима» → «+ Добавить схему» дописывает схему в schemaIds (таблетка на фигуре)', () => {
+    const { onChange } = renderEditor(baseNode({ data: { label: 'x', schemaIds: ['mistrust'] } }));
+    fireEvent.change(screen.getByLabelText('Схемы режима'), { target: { value: 'abandonment' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ schemaIds: ['mistrust', 'abandonment'] }) }));
+  });
+
+  it('старая одиночная «Связанная схема» видна таблеткой и при правке складывается в список', () => {
+    const { onChange } = renderEditor(baseNode({ data: { label: 'x', schemaId: 'failure' } }));
+    fireEvent.change(screen.getByLabelText('Схемы режима'), { target: { value: 'abandonment' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ schemaIds: ['failure', 'abandonment'], schemaId: undefined }),
+    }));
+  });
+
+  it('своя схема убирается крестиком; последняя — schemaIds снимается целиком', () => {
+    const { onChange } = renderEditor(baseNode({ data: { label: 'x', schemaIds: ['abandonment'] } }));
+    fireEvent.click(screen.getByLabelText(/Убрать схему/));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ schemaIds: undefined }) }));
   });
 });
 
@@ -211,12 +225,12 @@ describe('ModeMapNodeEditor — фигуры схемы случая', () => {
     expect(screen.getByLabelText('Заметка')).toBeTruthy();
   });
 
-  it('в выборе формы есть «Схема», «Опыт», «Потребн.», а круга потребностей нет', () => {
+  it('в выборе формы есть «Схема», «Опыт», «Потребность», а круга потребностей нет', () => {
     const { onChange } = renderEditor(baseNode());
     expect(screen.getByTitle('Схема')).toBeTruthy();
-    expect(screen.getByTitle('Потребн.')).toBeTruthy();
+    expect(screen.getByTitle('Потребность')).toBeTruthy();
     expect(screen.queryByTitle(/Круг/)).toBeNull();
-    fireEvent.click(screen.getByTitle('Опыт'));
+    fireEvent.click(screen.getByTitle('Опыт детства'));
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ type: 'origin' }));
   });
 
@@ -231,7 +245,7 @@ describe('ModeMapNodeEditor — фигуры схемы случая', () => {
 
   it('выбранная фигура схемы случая подсвечена в выборе формы', () => {
     renderEditor(baseNode({ type: 'need', data: { label: 'x' } }));
-    expect(screen.getByTitle('Потребн.').className).toContain('is-active');
+    expect(screen.getByTitle('Потребность').className).toContain('is-active');
   });
 });
 
@@ -305,5 +319,52 @@ describe('ModeMapNodeEditor — предел длины текстовых по�
       expect({ id, max: document.getElementById(id)?.getAttribute('maxLength') })
         .toEqual({ id, max: String(MODE_MAP_NODE_TEXT_MAX) });
     }
+  });
+});
+
+// Аудит холста 2026-11: у фигур схемы случая панель говорит, чем фигура является,
+// и не показывает того, что на ней ничего не меняет.
+describe('ModeMapNodeEditor — круг потребностей, потребность, схема', () => {
+  it('круг: подсказка «Как заполнять», без выбора формы и без схем режима', () => {
+    renderEditor(baseNode({ type: 'needs', data: { label: 'Базовые эмоциональные потребности' } }));
+    expect(screen.getByText('Как заполнять')).toBeTruthy();
+    expect(screen.queryByText('Форма и тип')).toBeNull();
+    expect(screen.queryByLabelText('Схемы режима')).toBeNull();
+  });
+
+  it('пустой круг: кнопка ставит пять потребностей; полный — кнопки нет', () => {
+    const fill = vi.fn();
+    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), { hub: { missing: 5, fill } });
+    fireEvent.click(screen.getByText('Поставить пять потребностей'));
+    expect(fill).toHaveBeenCalledTimes(1);
+    cleanup();
+    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), { hub: { missing: 2, fill } });
+    expect(screen.getByText('Добавить недостающие (2)')).toBeTruthy();
+    cleanup();
+    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), { hub: { missing: 0, fill } });
+    expect(screen.queryByText('Поставить пять потребностей')).toBeNull();
+    expect(screen.queryByText(/Добавить недостающие/)).toBeNull();
+  });
+
+  it('подсказка круга — в форме «вы» для «вы»', () => {
+    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), {}, 'vy');
+    expect(screen.getByText(/проведите к ней линию/)).toBeTruthy();
+  });
+
+  it('потребность: выбор из пяти пишет needId, название и цвет', () => {
+    const { onChange } = renderEditor(baseNode({ type: 'need', data: { label: 'Потребность' } }));
+    fireEvent.click(screen.getByRole('button', { name: /Автономия/ }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ needId: 'autonomy', label: 'Автономия', customColor: expect.any(String) }),
+    }));
+  });
+
+  it('схема: «Какая это схема» ставит schemaId и название вместо заготовки «Схема»', () => {
+    const { onChange } = renderEditor(baseNode({ type: 'schema', data: { label: 'Схема' } }));
+    fireEvent.change(screen.getByLabelText('Какая это схема'), { target: { value: 'abandonment' } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ schemaId: 'abandonment', label: expect.stringMatching(/\S/) }),
+    }));
+    expect(screen.queryByLabelText('Схемы режима')).toBeNull();
   });
 });

@@ -10,10 +10,12 @@ import { installFlowTestPolyfills } from '../test-support/renderWithFlow';
 
 const updateModeMap = vi.fn();
 const getConceptualization = vi.fn();
+const appendConceptualization = vi.fn();
 vi.mock('../api', () => ({
   api: {
     updateModeMap: (...a: unknown[]) => updateModeMap(...a),
     getConceptualization: (...a: unknown[]) => getConceptualization(...a),
+    appendConceptualization: (...a: unknown[]) => appendConceptualization(...a),
     listCustomModes: () => Promise.resolve([]),
   },
   reportClientError: vi.fn(),
@@ -39,6 +41,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   updateModeMap.mockResolvedValue({});
   getConceptualization.mockResolvedValue(CONCEPT);
+  appendConceptualization.mockResolvedValue(null);
   window.innerWidth = 1200;
 });
 afterEach(() => cleanup());
@@ -83,5 +86,34 @@ describe('ModeMapEditor — схемы клиента', () => {
     await renderEditor([CHILD]);
     expect(screen.getByText('Не удалось загрузить режимы и схемы клиента')).toBeTruthy();
     expect(screen.queryByText('Покинутость / Нестабильность')).toBeNull();
+  });
+});
+
+// Аудит холста 2026-11 (скриншоты владельца): то, что автоматическая схема
+// рисует сама, теперь собирается руками — сохранил в панели → видно на холсте.
+describe('ModeMapEditor — собрать руками то же, что схема случая', () => {
+  it('схема, добавленная в панели «Схемы режима», становится таблеткой на фигуре и уходит в сохранение', async () => {
+    getConceptualization.mockResolvedValue(null);
+    await renderEditor([CHILD]);
+    fireEvent.click(document.querySelector('.react-flow__node[data-id="n1"]')!);
+    fireEvent.change(screen.getByLabelText('Схемы режима'), { target: { value: 'self_sacrifice' } });
+    expect(childNodeText()).toContain('Самопожертвование');
+    await act(async () => { await new Promise(r => setTimeout(r, 1300)); });
+    const saved = updateModeMap.mock.calls.at(-1)?.[1] as { nodes: ModeMapNode[] } | undefined;
+    expect(saved?.nodes.find(n => n.id === 'n1')?.data.schemaIds).toEqual(['self_sacrifice']);
+    // как линия схема — режим: связь дописывается в концептуализацию клиента
+    expect(appendConceptualization).toHaveBeenCalledWith(7, { modeLinks: [{ modeId: 'vulnerable_child', schemaIds: ['self_sacrifice'] }] });
+  });
+
+  it('«Круг потребностей» из палитры приезжает с пятью потребностями внутри', async () => {
+    getConceptualization.mockResolvedValue(null);
+    await renderEditor([]);
+    fireEvent.click(screen.getByText('Круг потребностей').closest('button')!);
+    const nodes = [...document.querySelectorAll('.react-flow__node')];
+    expect(nodes.filter(n => n.classList.contains('react-flow__node-need'))).toHaveLength(5);
+    expect(nodes.filter(n => n.classList.contains('react-flow__node-needs'))).toHaveLength(1);
+    for (const name of ['Привязанность', 'Автономия', 'Выражение чувств', 'Спонтанность', 'Границы']) {
+      expect(nodes.some(n => n.textContent?.includes(name))).toBe(true);
+    }
   });
 });
