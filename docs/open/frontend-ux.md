@@ -6,14 +6,8 @@
 > `grep -n` по ключу, затем чтение куска.
 
 **Аудит 2026-11 — баги сайта и понятность** (детали и коды — [AUDIT_2026-11.md](../AUDIT_2026-11.md)):
-- **E3 · выгрузка офлайн-очереди оценок теряет новые.** `shared/src/utils/ratingOutbox.ts:111-123` пишет `items.slice(sentCount)` по снимку до выгрузки; две выгрузки (старт и `online`) идут параллельно.
-- **E4 · оценка с 4xx не сохранена и не в очереди.** `shared/src/api/ratingApi.ts:61-65` пробрасывает 401/429/400, `webapp/src/hooks/useRatingSaver.ts:42-47` — только отчёт; плитка показывает значение. 401/429 — в очередь, прочее — откат и ошибка.
 - **E5 · «сегодня» по UTC.** `webapp/src/components/HistoryView.tsx:32,77,108` (`TODAY_STR` при загрузке модуля), `webapp/src/sections/profile/profileModel.ts:18-20,48-57`; сервер считает дни по поясу (`src/bot/rating-history.ts:31-35`). Москва 00–03 — вчерашний день пуст. `todayStr()` при каждом рендере.
 - **E6 · `.ics` в Telegram бросает.** `shared/src/host/telegram.ts:163` — `openLink(data:…)`, SDK пускает только http(s) (`webapp/public/telegram-web-app.js:2917-2920`); тест на фейке это не видит.
-- **E7 · заметка дня теряет ввод.** `webapp/src/components/NoteSheet.tsx:29-37`: поздний GET затирает набранное, сбой GET — пустая форма, которая перезапишет заметку.
-- **E8 · «История»: заметка чужого дня.** `HistoryView.tsx:63-67,123` — нет `alive`, сброса и `.catch`.
-- **E9 · вход без таймаута.** `webapp/src/auth/refreshSession.ts:23`, `telegramWebAppAuth.ts:17`, `shared/src/auth/logout.ts` — голый `fetch`, вечный спиннер вместо `ConnectionTrouble`.
-- **E10 · заблокированное хранилище — белый экран.** `webapp/src/App.tsx:39` (уровень модуля), `CookieBanner.tsx:67`, `webapp/src/utils/theme.ts:11`, `HistoryView.tsx:50` — через `readLocal`.
 - **E14 · мелочи.** `RequireAuth.tsx:11` теряет адрес возврата (`LoginPage.tsx` всегда `/today`); bfcache оставляет кнопку оплаты в `loading` (`DonatePage.tsx:22-25`, `SubscribePage.tsx:61-64`); дата статьи без `timeZone: 'UTC'` (`ArticlesPage.tsx:55,192`, `landing/ProductKit.tsx:36`).
 - **U2 · уведомления о задании и тесте ведут не туда.** Кнопки `notification.templates.activity.ts:83-106,117-130` открывают `/today`; ссылка запуска знает только join/tracker/diaries (`shared/src/host/startParam.ts:6-8`); у «Заданий» в «Ещё» (`useMoreRows.tsx:34`) нет счётчика.
 - **U5 · планы обещают напоминание без канала.** `shared/src/practices/plansCopy.ts:14`, `NeedTodaySheet.tsx:134`, `PlanSheet.tsx:131`; уведомления — только Telegram (`src/notification/notification-channels.ts`). Без канала — сказать и предложить календарь.
