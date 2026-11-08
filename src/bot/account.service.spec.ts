@@ -69,6 +69,10 @@ function makePrisma() {
     _calls: calls,
   };
   for (const t of tables) prisma[t] = { deleteMany: deleteMany(t) };
+  prisma.therapistRequest.updateMany = jest.fn(async (args: any) => {
+    (calls['therapistRequest.updateMany'] ??= []).push(args);
+    return { count: 0 };
+  });
   // Адрес в Telegram спрашивают перед удалением подписки: она привязана к
   // telegramId, а не к userId, и после слияния аккаунтов эти номера разные.
   prisma.authProvider.findFirst = jest.fn(async () => null);
@@ -148,6 +152,29 @@ describe('AccountService.deleteAllUserData — right-to-erasure', () => {
     expect(secondary.OR).toEqual([
       { shownToTelegramId: { in: expect.arrayContaining([uid, 777000n]) } },
       { approvedUserId: uid },
+    ]);
+  });
+
+  // Реестр PERSON_REF_COLUMNS (2026-11): reviewedBy — адрес в Telegram того,
+  // кто рассмотрел заявку (ADMIN_ID). Удаление его аккаунта оставляло этот id
+  // в чужих заявках. Заявка остаётся (она принадлежит заявителю), id
+  // рассмотревшего обнуляется — и по веб-id, и по Telegram-id аккаунта.
+  it('обнуляет TherapistRequest.reviewedBy у чужих заявок, не удаляя их', async () => {
+    const prisma = makePrisma();
+    prisma.authProvider.findFirst = jest.fn(async () => ({
+      providerId: '777000',
+    }));
+    const service = new AccountService(prisma);
+    await service.deleteAllUserData(uid);
+
+    const [args] = prisma._calls['therapistRequest.updateMany'] ?? [];
+    expect(args).toEqual({
+      where: { reviewedBy: { in: expect.arrayContaining([uid, 777000n]) } },
+      data: { reviewedBy: null },
+    });
+    // Свою заявку удаляемый теряет целиком, чужие — только ссылку на него.
+    expect(prisma._calls['therapistRequest']).toEqual([
+      { where: { userId: uid } },
     ]);
   });
 

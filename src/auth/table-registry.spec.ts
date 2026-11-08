@@ -226,7 +226,7 @@ const PERSON_REF_COLUMNS: Record<string, string> = {
   'Subscription.telegramId':
     'удаление — subscription.deleteMany по адресу в Telegram (не по userId: после слияния они расходятся); слияние — merge-subscriptions.ts',
   'TherapistRequest.reviewedBy':
-    'ДОЛГ: кто рассмотрел заявку — это владелец проекта (ADMIN_ID), и при удалении ЕГО аккаунта id останется в чужих строках. Заявителя удаление достаёт по userId, рассматривающего — нет',
+    'удаление — обнуляется в account.delete.ts по веб-id и Telegram-id аккаунта (заявка остаётся заявителю); слияние не нужно: это адрес в Telegram (ADMIN_ID), а не userId — после слияния он тот же',
   'UserTask.assignedBy':
     'ДОЛГ: удаление достаёт только задания офлайн-клиентов (userId < 0, аудит 2026-10 T8) — у задания живого клиента id ушедшего психолога остаётся; слияние — remapAssignerRefs',
 };
