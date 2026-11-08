@@ -54,11 +54,11 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
   const ysqRequested = useYsqRequested(api.getTasks); // задание терапевта (К1, QA 2026-11)
   const [highlightSchema, setHighlightSchema] = useState<string | undefined>(initHighlight);
 
+  // Тест к этому моменту уже закрыт своим goBack (YSQTestSheet): его запись истории снята.
   const handleViewSchemas = (schemaName?: string) => {
     setContentInitialTab('schemas');
     setHighlightSchema(schemaName);
     setContentKey(k => k + 1);
-    setShowTest(false);
   };
 
   return (
