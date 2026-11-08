@@ -1,0 +1,37 @@
+/* Список «Справочника» терапевта (sections/guide/GuideReferenceList.tsx). На телефоне — карточка
+   строк, как у списков кабинета, со знаком слева. На широком контейнере (контейнерный запрос: у
+   кабинета бывает свёрнутое и развёрнутое меню) группы режимов и доменов встают в две колонки, а
+   техники и «Для терапевта» — карточками по две в ряд. Знаки — pp-art--row (paper.css). */
+.gr-wrap { container-type: inline-size; }
+.gr-list { display: flex; flex-direction: column; gap: 20px; }
+.gr-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+/* Знак группы крупнее строчного: он один на всю группу. */
+.gr-group-head { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.gr-group-head > .pp-row-art { width: auto; }
+.gr-group-head .pp-art--row { width: 60px; height: 32px; }
+
+/* Строка со знаком: знак у названия, название с сутью, шеврон по центру. */
+.gr-row { grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; min-height: 56px; }
+.gr-row > .pp-row-art { padding-top: 1px; }
+.gr-row > .ds-chev { align-self: center; }
+.gr-row .ds-list-sub { line-height: 1.45; }
+
+@container (min-width: 640px) {
+  /* Режимы и схемы: группы в две колонки, группа не рвётся между ними. */
+  .gr-list--groups { display: block; columns: 2; column-gap: 20px; }
+  .gr-list--groups > .gr-group { break-inside: avoid; margin-bottom: 24px; }
+
+  /* Техники и «Для терапевта»: карточки по две в ряд — знак, название, суть. */
+  .gr-list--tiles .gr-rows.ds-card {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+    background: none; border: none; border-radius: 0; overflow: visible;
+  }
+  .gr-list--tiles .gr-rows > .gr-row {
+    grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 8px 14px;
+    padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface);
+    transition: border-color .12s;
+  }
+  .gr-list--tiles .gr-rows > .gr-row:hover { border-color: var(--line-hover); }
+  .gr-list--tiles .gr-row .ds-list-title { font-size: 15px; }
+  .gr-list--tiles .gr-row > .ds-chev { display: none; }
+}

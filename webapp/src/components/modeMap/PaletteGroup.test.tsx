@@ -1,32 +1,41 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PaletteGroup } from './PaletteGroup';
+import type { CatalogGroup } from './paletteModel';
 
-afterEach(() => cleanup());
 const draft = { id: 'x', type: 'schema' as const, data: { label: 'S' } };
-const base = { id: 'g', title: 'Группа', color: '#123456', total: 2, items: [{ id: 'i', name: 'Пункт', draft: () => draft }], onToggle: vi.fn(), onAdd: vi.fn() };
+const group: CatalogGroup = {
+  id: 'g', title: 'Группа', hint: 'Группа полностью', total: 2,
+  items: [{ id: 'i', name: 'Пункт', hint: 'что это', mark: 'mode', color: 'var(--c-teal)', draft: () => draft }],
+};
+const base = { group, art: <svg data-testid="art" />, onToggle: vi.fn(), onAdd: vi.fn() };
 
 describe('PaletteGroup', () => {
-  it('свёрнута: пунктов нет, счётчик виден; клик зовёт onToggle', () => {
-    render(<PaletteGroup {...base} open={false} searching={false} />);
+  it('свёрнута: пунктов нет, тихое число и шеврон; клик зовёт onToggle с id группы', () => {
+    const onToggle = vi.fn();
+    render(<PaletteGroup {...base} onToggle={onToggle} open={false} />);
     expect(screen.queryByText('Пункт')).toBeNull();
-    expect(screen.getByText('▼ 2')).toBeTruthy();
-    fireEvent.click(screen.getByText('Группа'));
-    expect(base.onToggle).toHaveBeenCalledWith('g');
+    const head = screen.getByRole('button', { name: /Группа/ });
+    expect(head.getAttribute('aria-expanded')).toBe('false');
+    expect(head.querySelector('.mm2-pal-head-n')?.textContent).toBe('2');
+    expect(head.textContent).not.toContain('▼');
+    expect(head.getAttribute('title')).toBe('Группа полностью');
+    fireEvent.click(head);
+    expect(onToggle).toHaveBeenCalledWith('g');
   });
 
-  it('при поиске раскрыта и не переключается', () => {
-    const onToggle = vi.fn();
-    render(<PaletteGroup {...base} onToggle={onToggle} open={false} searching />);
-    fireEvent.click(screen.getByText('Группа'));
-    expect(onToggle).not.toHaveBeenCalled();
-    expect(screen.getByText('Пункт')).toBeTruthy();
+  it('знак группы — в колонке знака заголовка; строка — свой маленький знак, имя и подсказка', () => {
+    const { container } = render(<PaletteGroup {...base} open />);
+    expect(container.querySelector('.mm2-pal-head .mm2-pal-mark [data-testid="art"]')).not.toBeNull();
+    const row = screen.getByText('Пункт').closest('button')!;
+    expect(row.querySelector('.mm2-pal-mark svg[data-mark="mode"]')).not.toBeNull();
+    expect(row.getAttribute('title')).toBe('Пункт — что это');
   });
 
   it('клик по пункту добавляет заготовку, перетаскивание кладёт JSON', () => {
     const onAdd = vi.fn();
-    render(<PaletteGroup {...base} onAdd={onAdd} open searching={false} />);
+    render(<PaletteGroup {...base} onAdd={onAdd} open />);
     fireEvent.click(screen.getByText('Пункт'));
     expect(onAdd).toHaveBeenCalledWith(draft);
     const setData = vi.fn();

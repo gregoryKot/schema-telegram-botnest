@@ -1,0 +1,36 @@
+/* Лист панелью справа (ConceptFullscreenSheet `panel`: листы подсказок терапевту).
+   До 1024px — весь экран, как остальные листы. С 1024px — панель ~600px во всю высоту со своей
+   прокруткой, слева виден контекст (список «Справочника», схема случая) под затемнением; тап по
+   затемнению закрывает лист. Затемнение — ахроматическая подложка без размытия, как у .sheet-modal
+   (check-render-poison): панель сама сплошная, сквозь неё ничего не просвечивает. */
+.cfs-layer { position: fixed; inset: 0; display: flex; justify-content: flex-end; }
+.cfs-scrim { display: none; }
+.cfs-panel {
+  position: relative; flex: 1 1 auto; min-width: 0; height: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; padding-top: var(--safe-top); background: var(--bg);
+}
+.cfs-panel .cfs-head { padding: var(--space-12) var(--space-20); }
+.cfs-panel .cfs-body { padding: var(--space-20); }
+
+@media (min-width: 1024px) {
+  .cfs-scrim {
+    display: block; position: absolute; inset: 0; cursor: pointer;
+    background: rgba(28, 25, 22, 0.3); animation: fade-in .18s ease;
+  }
+  /* Лист поверх листа (техника из листа режима): своя подложка легче — контекст под двумя слоями не уходит в черноту. */
+  .cfs-layer + .cfs-layer > .cfs-scrim { background: rgba(28, 25, 22, 0.12); }
+  .cfs-panel .cfs-head, .cfs-panel .cfs-body { padding-left: var(--space-32); padding-right: var(--space-32); }
+  .cfs-panel {
+    flex: 0 0 auto; width: min(600px, 100%);
+    border-left: 1px solid var(--line);
+    box-shadow: -28px 0 56px -32px rgba(28, 25, 22, 0.35);
+    animation: cfs-panel-in .2s ease; transition: transform .2s ease;
+  }
+  /* Под листом лежит другой лист той же ширины: его край выглядывает слева — видно, куда вернёт «Закрыть». */
+  .cfs-layer:has(+ .cfs-layer) > .cfs-panel { transform: translateX(-20px); }
+  html[data-theme="dark"] .cfs-scrim { background: rgba(0, 0, 0, 0.5); }
+  html[data-theme="dark"] .cfs-layer + .cfs-layer > .cfs-scrim { background: rgba(0, 0, 0, 0.2); }
+  html[data-theme="dark"] .cfs-panel { box-shadow: -28px 0 56px -32px rgba(0, 0, 0, 0.7); }
+}
+
+@keyframes cfs-panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }

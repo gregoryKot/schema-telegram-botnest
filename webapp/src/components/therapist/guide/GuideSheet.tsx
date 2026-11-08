@@ -34,17 +34,18 @@ interface PageProps {
 
 /**
  * Каркас листа подсказок (#995, пилот живого языка 2026-11) — один на листы техники,
- * режима и схемы: в шапке подпись и «Закрыть», герой бумажной аппликации (заголовок
- * Literata, суть, знак справа — docs/design/PAPER_2026-11.md), свои разделы листа,
+ * режима, схемы и «Для терапевта»: в шапке подпись и «Закрыть», герой бумажной аппликации
+ * (заголовок Literata, суть, знак справа — docs/design/PAPER_2026-11.md), свои разделы листа,
  * «Подробнее» (закрыто по умолчанию, NeedFold) и мелко «Источники». Шапка и
- * содержимое стоят в одной колонке. Оболочка — ConceptFullscreenSheet
- * (useHistorySheet, «Назад» браузера закрывает лист).
+ * содержимое стоят в одной колонке. Оболочка — ConceptFullscreenSheet `panel`
+ * (useHistorySheet, «Назад» браузера закрывает лист): на компьютере — панель справа над
+ * затемнённым «Справочником» или схемой случая, на телефоне — весь экран.
  */
 export function GuidePage({ label, title, lede, art, onClose, more = [], moreParts = [], sources, backRef, children }: PageProps) {
   const items = more.filter((m) => m.trim());
   const parts = moreParts.filter((p) => p.children || p.text?.trim());
   return (
-    <ConceptFullscreenSheet title={title} label={label} column={GUIDE_COLUMN} closeLabel="Закрыть" onClose={onClose} backRef={backRef}>
+    <ConceptFullscreenSheet title={title} label={label} column={GUIDE_COLUMN} closeLabel="Закрыть" onClose={onClose} backRef={backRef} panel>
       <div className="gd-page" style={{ maxWidth: GUIDE_COLUMN }}>
         <div className="gd-hero">
           <h2 className="pp-hero-title">{title}</h2>

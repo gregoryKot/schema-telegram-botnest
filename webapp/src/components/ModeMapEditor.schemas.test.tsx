@@ -73,7 +73,7 @@ describe('ModeMapEditor — схемы клиента', () => {
 
   it('клик по схеме клиента в палитре ставит на холст узел «схема»', async () => {
     await renderEditor([]);
-    const item = screen.getByLabelText('Схема клиента: Недоверие / Ожидание жестокого обращения');
+    const item = screen.getAllByText('Недоверие / Ожидание жестокого обращения').find(el => el.closest('.mm2-pal-item'))!;
     fireEvent.click(item);
     expect(screen.getAllByText('Недоверие / Ожидание жестокого обращения').some(el => el.closest('.react-flow__node'))).toBe(true);
   });
@@ -81,7 +81,7 @@ describe('ModeMapEditor — схемы клиента', () => {
   it('сбой загрузки: палитра честно говорит «не удалось», узлы остаются без таблеток связей', async () => {
     getConceptualization.mockImplementation(() => Promise.reject(new Error('offline')));
     await renderEditor([CHILD]);
-    expect(screen.getByText('Не удалось загрузить схемы клиента')).toBeTruthy();
+    expect(screen.getByText('Не удалось загрузить режимы и схемы клиента')).toBeTruthy();
     expect(screen.queryByText('Покинутость / Нестабильность')).toBeNull();
   });
 });

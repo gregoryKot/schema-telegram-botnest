@@ -27,44 +27,58 @@
 .ds-menu.mm2-ctx { z-index: 1000; width: auto; min-width: 170px; }
 .mm2-ctx-back { z-index: 999; }
 
-/* ── Палитра режимов ── */
-.ds-card.mm2-pal { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; padding: 0; background: var(--surface); }
+/* ── Палитра холста (ModeMapPalette, modeMap/Palette*.tsx) ──
+   Одна сетка: колонка знака 28px (знак группы или маленький знак строки) и колонка текста.
+   Один кегль 14px, имена в одну строку с многоточием (полное — в title), без жирных
+   заголовков и разделителей между группами; число и шеврон — тихие. Язык знаков —
+   docs/design/PAPER_2026-11.md. */
+.ds-card.mm2-pal { --pal-mark: 28px; width: 240px; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; padding: 0; background: var(--surface); }
 .mm2-pal-search { padding: 10px; border-bottom: 1px solid var(--paper-sunk); flex-shrink: 0; }
-.mm2-pal-scroll { flex: 1; overflow-y: auto; }
-.mm2-pal-head {
-  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 6px 12px;
-  border: none; border-top: 1px solid var(--paper-sunk); background: none; cursor: pointer; text-align: left;
+.mm2-pal-scroll { flex: 1; overflow-y: auto; padding-bottom: 12px; }
+.mm2-pal-block { margin: 0; padding: 16px 12px 6px; border-top: 1px solid var(--paper-sunk); font: 600 11px/1.2 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+.mm2-pal-block:first-child { border-top: none; padding-top: 12px; }
+.mm2-pal-head, .mm2-pal-item, .mm2-pal-more {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 0 12px;
+  border: none; background: none; text-align: left; font: 400 14px/1.3 var(--sans); color: var(--text);
 }
+.mm2-pal-head { min-height: 40px; cursor: pointer; }
+.mm2-pal-head:not(.is-static), .mm2-pal-more { padding-right: 8px; } /* у шеврона своё поле внутри 12px */
 .mm2-pal-head.is-static { cursor: default; }
-.mm2-pal-head-name { flex: 1; font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
-.mm2-pal-head-n { font-size: 10px; color: var(--text-faint); }
-.mm2-pal-block { margin: 0; padding: 10px 12px 4px; border-top: 1px solid var(--paper-sunk); font: 700 11px/1.2 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
-.mm2-pal-block:first-child { border-top: none; }
-.mm2-client { background: var(--paper-tint); padding-bottom: 0; }
-.mm2-client.is-open { padding-bottom: 4px; }
-.mm2-client-row { display: flex; align-items: center; padding: 4px 12px 4px 0; }
-.mm2-client-row .mm2-pal-head { border-top: none; flex: 1; }
-.mm2-client-row .mm2-pal-head-name { color: var(--accent); }
-.mm2-pal-item {
-  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 6px 14px;
-  border: none; background: none; cursor: pointer; text-align: left; color: var(--text); font: 12px/1.3 var(--sans);
-}
-.mm2-pal-item:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
-.mm2-pal-item.is-lg { font-size: 12.5px; }
-.mm2-pal-item.is-tone { background: color-mix(in srgb, var(--gc) 7%, var(--surface)); }
-.mm2-gdot { background: var(--gc); }
-.mm2-pal-item-name { flex: 1; }
-.ds-btn.mm2-pal-add { flex-shrink: 0; white-space: nowrap; height: 32px; padding: 0 12px; font-size: 11px; gap: 3px; }
-.mm2-pal-sub { padding: 4px 12px 10px; font-size: 11.5px; line-height: 1.4; color: var(--text-faint); }
+.mm2-pal-item { min-height: 36px; cursor: pointer; }
+.mm2-pal-head:hover:not(.is-static), .mm2-pal-item:hover, .mm2-pal-more:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.mm2-pal-mark { width: var(--pal-mark); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.mm2-pal .pp-art--row { width: var(--pal-mark); height: 15px; }
+.mm2-mark { display: block; width: 20px; height: 20px; flex-shrink: 0; }
+.mm2-pal-head-name, .mm2-pal-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm2-pal-head-name { font-weight: 500; }
+.mm2-pal-head-n { margin-left: -4px; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.mm2-pal-chev { margin: 0 -2px 0 -4px; color: var(--text-faint); transition: transform .15s; }
+[aria-expanded="false"] > .mm2-pal-chev { transform: rotate(-90deg); }
+.mm2-sec + .mm2-sec { margin-top: 4px; }
+.mm2-pal-link { flex-shrink: 0; min-height: 32px; padding: 0 2px; border: none; background: none; font: 500 13px/1 var(--sans); color: var(--accent); cursor: pointer; }
+.mm2-pal-link:hover { text-decoration: underline; }
+.mm2-pal-sub { margin: 0; padding: 4px 12px 10px calc(12px + var(--pal-mark) + 10px); font-size: 13px; line-height: 1.4; color: var(--text-faint); }
 .mm2-pal-sub.is-err { color: var(--err); }
+.mm2-pal-skel { display: flex; flex-direction: column; gap: 14px; padding: 8px 12px 12px calc(12px + var(--pal-mark) + 10px); }
 .mm2-pal-empty { padding: 20px 14px; }
-.mm2-mine { border-top: 1px solid var(--paper-sunk); margin-top: 4px; }
-.mm2-mine-head { display: flex; align-items: center; padding: 6px 12px; }
-.mm2-mine-head .mm2-pal-head-name { font-size: 11.5px; }
-.mm2-mine-plus { width: 36px; height: 36px; border: none; background: none; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mm2-found { padding-top: 6px; }
+/* Фигуры: сетка бумажных знаков, подпись под знаком. Две колонки: в три «потребностей» не входит без переноса. */
+.mm2-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 0 8px 8px; }
+.mm2-fig {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 60px; padding: 8px 4px 6px;
+  border: none; border-radius: 10px; background: none; cursor: pointer; font: 400 12px/1.25 var(--sans); color: var(--text); text-align: center;
+}
+.mm2-fig:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
+.mm2-fig .mm2-mark { width: 28px; height: 28px; }
+.mm2-fig-name { max-width: 100%; }
+/* Каталог одной строкой внизу. */
+.mm2-cat { border-top: 1px solid var(--paper-sunk); margin-top: 4px; }
+.mm2-pal-more { min-height: 44px; cursor: pointer; }
+.mm2-pal-more .mm2-pal-head-name { color: var(--text-sub); }
+.mm2-mine-plus { width: 36px; height: 36px; margin-right: -8px; border: none; background: none; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mm2-mine-row { display: flex; align-items: center; }
 .mm2-mine-row .mm2-pal-item { flex: 1; }
-.mm2-mine-del { width: 40px; height: 40px; flex-shrink: 0; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.mm2-mine-del { width: 36px; height: 36px; flex-shrink: 0; border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .mm2-add-form { padding: 6px 10px 16px; display: flex; flex-direction: column; gap: 6px; }
 .mm2-add-row { display: flex; gap: 6px; }
 .mm2-add-form .ds-input { padding: 7px 10px; font-size: 12.5px; border-radius: 10px; }
@@ -273,7 +287,7 @@ button.mm2-sync-text { min-height: 44px; margin: -12px 0; padding: 0; border: no
   .ds-btn.mm2-tb-btn { min-width: 44px; height: 44px; }
   .mm2-tb-sep { margin-block: 8px; }
   .mm2-pal-item, .mm2-pal-head { min-height: 44px; }
-  .ds-btn.mm2-pal-add { height: 44px; }
+  .mm2-pal-link { min-height: 44px; }
   .mm2-mine-del { width: 44px; height: 44px; }
   .mm2-add-form .ds-btn { height: 44px; }
   .mm2-add-form .ds-btn--icon { width: 44px; }

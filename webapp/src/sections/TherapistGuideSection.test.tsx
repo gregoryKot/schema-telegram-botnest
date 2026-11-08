@@ -11,15 +11,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { TherapistGuideSection } from './TherapistGuideSection';
 import { CABINET_GUIDE_OPEN_EVENT, CABINET_GUIDE_SHEET_EVENTS } from '../../../shared/src/share/analytics';
 import { getSchemaById } from '../../../shared/src/schemaTherapy/schemaTherapyData';
-
-const h = vi.hoisted(() => ({
-  note: {
-    id: 'group_format',
-    title: 'Групповой формат',
-    paragraphs: ['В группе режимы видны в отношениях с другими участниками.', 'Правила группы объявляют в начале.'],
-    sources: '[Фаррелл, гл. 2]',
-  },
-}));
+import { FIXTURE_PRACTICE_NOTE as NOTE } from '../../../shared/src/therapy/conceptGraph/conceptGuide.fixture';
 
 vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
   const f = await import('../../../shared/src/therapy/conceptGraph/conceptGuide.fixture');
@@ -27,7 +19,7 @@ vi.mock('../../../shared/src/schemaTherapy/guide', async () => {
     buildModeGuides: () => [f.FIXTURE_GUIDE],
     buildSchemaDomainGuides: () => [{ domainId: 'rejection', note: f.FIXTURE_DOMAIN_NOTE, schemas: [f.FIXTURE_SCHEMA_GUIDE] }],
     buildTechniqueGuides: () => f.FIXTURE_TECHNIQUES,
-    practiceNotes: () => [h.note],
+    practiceNotes: () => [f.FIXTURE_PRACTICE_NOTE],
     modeGuide: (_tr: unknown, id: string) => (id === 'vulnerable_child' ? f.FIXTURE_GUIDE : null),
     schemaGuide: (_tr: unknown, id: string) =>
       id === 'abandonment' ? { guide: f.FIXTURE_SCHEMA_GUIDE, domainNote: f.FIXTURE_DOMAIN_NOTE } : null,
@@ -105,16 +97,30 @@ describe('TherapistGuideSection', () => {
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.technique);
   });
 
-  it('«Для терапевта»: заголовки разделов, тап — лист с абзацами и источниками', async () => {
+  it('«Для терапевта»: раздел с сутью, тап — лист с пунктами и источниками; «Закрыть» — обратно', async () => {
     await mount();
     fireEvent.click(screen.getByRole('tab', { name: 'Для терапевта' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Групповой формат' }));
-    const sheet = screen.getByRole('dialog', { name: 'Групповой формат' });
-    for (const p of h.note.paragraphs) expect(within(sheet).getByText(p)).toBeTruthy();
-    expect(within(sheet).getByText('[Фаррелл, гл. 2]')).toBeTruthy();
+    const row = screen.getByRole('button', { name: new RegExp(`^${NOTE.title}`) });
+    expect(within(row).getByText(NOTE.summary)).toBeTruthy();
+    fireEvent.click(row);
+    const sheet = screen.getByRole('dialog', { name: NOTE.title });
+    expect(within(sheet).getByText('Для терапевта')).toBeTruthy();
+    for (const p of NOTE.points) expect(within(sheet).getByText(p)).toBeTruthy();
+    expect(within(sheet).getByText(NOTE.sources)).toBeTruthy();
     fireEvent.click(within(sheet).getByRole('button', { name: 'Закрыть' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(tracked()).toContain(CABINET_GUIDE_SHEET_EVENTS.note);
+  });
+
+  it('лист — панель над затемнённым списком: тап по затемнению закрывает её', async () => {
+    const { container } = await mount();
+    fireEvent.click(screen.getByRole('button', { name: 'Уязвимый Ребёнок' }));
+    const scrim = container.querySelector('.cfs-layer > .cfs-scrim')!;
+    expect(screen.getByRole('dialog', { name: 'Уязвимый Ребёнок' }).className).toBe('cfs-panel');
+    fireEvent.click(scrim);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // список под листом на месте: лист открывается поверх, а не вместо
+    expect(screen.getByRole('region', { name: 'Детские режимы' })).toBeTruthy();
   });
 
   it('поиск — по названиям во всех разделах сразу; без совпадений — так и сказано', async () => {

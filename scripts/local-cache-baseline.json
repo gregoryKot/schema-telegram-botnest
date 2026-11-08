@@ -120,6 +120,10 @@
       "owner": "webapp/src/components/exercises/FlashcardEx.tsx",
       "kind": "local"
     },
+    "modemap_catalog": {
+      "owner": "webapp/src/components/modeMap/useCatalogOpen.ts",
+      "kind": "local"
+    },
     "modemap_couple_*": {
       "owner": "webapp/src/components/ModeMapCoupleLanes.tsx",
       "kind": "local"
