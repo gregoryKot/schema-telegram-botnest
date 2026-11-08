@@ -9,7 +9,7 @@ import { render, screen, cleanup, act, fireEvent } from '@testing-library/react'
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { BookingPaidPage } from './BookingPaidPage';
-import { POLL_INTERVAL_MS, POLL_LIMIT_MS, paidPhase, type PaidPhase } from '../components/booking/paidPageModel';
+import { nextPollDelayMs, POLL_INTERVAL_MS, POLL_LIMIT_MS, paidPhase, type PaidPhase } from '../components/booking/paidPageModel';
 
 const getBookingByToken = vi.fn();
 const reportClientError = vi.fn();
@@ -59,14 +59,35 @@ describe('BookingPaidPage — HELD: оплата принята, запись е
     render(<BookingPaidPage />);
     await tick(0);
     expect(screen.queryByText(CONFIRMED_TEXT)).toBeNull();
-    await tick(POLL_INTERVAL_MS);
+    await tick(nextPollDelayMs(0, 0));
     expect(screen.queryByText(CONFIRMED_TEXT)).toBeNull();
-    await tick(POLL_INTERVAL_MS);
+    await tick(nextPollDelayMs(1, 0));
     expect(screen.getByText(CONFIRMED_TEXT)).toBeTruthy();
     expect(getBookingByToken).toHaveBeenCalledTimes(3);
     // В подтверждённой ветке поллинг прекращается.
-    await tick(POLL_INTERVAL_MS * 3);
+    await tick(POLL_LIMIT_MS);
     expect(getBookingByToken).toHaveBeenCalledTimes(3);
+  });
+
+  // Аудит 2026-10: опрос раз в 5 с выжигал лимит by-token (60 в час с IP) —
+  // 24 запроса на визит. Пауза растёт 5 → 10 → 20 с (paidPageModel.ts).
+  it('HELD: пауза опроса растёт 5 → 10 → 20 с, за визит — девять запросов', async () => {
+    vi.useFakeTimers();
+    getBookingByToken.mockResolvedValue(booking({ status: 'HELD', paid: false }));
+    render(<BookingPaidPage />);
+    await tick(0);
+    expect(getBookingByToken).toHaveBeenCalledTimes(1);
+    await tick(5_000);
+    expect(getBookingByToken).toHaveBeenCalledTimes(2);
+    await tick(9_999);
+    expect(getBookingByToken).toHaveBeenCalledTimes(2);
+    await tick(1);
+    expect(getBookingByToken).toHaveBeenCalledTimes(3);
+    await tick(20_000);
+    expect(getBookingByToken).toHaveBeenCalledTimes(4);
+    await tick(POLL_LIMIT_MS);
+    expect(getBookingByToken).toHaveBeenCalledTimes(9);
+    expect(screen.getByText('Подтверждение задерживается')).toBeTruthy();
   });
 
   it('HELD → таймаут: честный текст, контакт, отчёт наверх, поллинг остановлен', async () => {
@@ -106,7 +127,7 @@ describe('BookingPaidPage — HELD: оплата принята, запись е
     await tick(0);
     await tick(POLL_INTERVAL_MS);
     expect(screen.getByText('Оплата принята')).toBeTruthy();
-    await tick(POLL_INTERVAL_MS);
+    await tick(nextPollDelayMs(1, 0));
     expect(screen.getByText(CONFIRMED_TEXT)).toBeTruthy();
   });
 });
