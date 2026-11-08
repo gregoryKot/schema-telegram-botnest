@@ -39,15 +39,20 @@ export function parseBusy(xml: string): Interval[] {
     if (/\nRRULE[:;]/.test(ev) || /^RRULE[:;]/.test(ev)) continue; // skip recurring (MVP)
     const start = findDate(ev, 'DTSTART');
     if (!start) continue;
-    const end = eventEnd(ev, start, findDate(ev, 'DTEND'));
+    const tzid = tzidOf(fieldLine(ev, 'DTSTART')?.[1]);
+    const end = eventEnd(ev, start, findDate(ev, 'DTEND'), tzid);
     const summary = readSummary(ev);
     out.push({ start, end, ...(summary ? { summary } : {}) });
   }
   return out;
 }
 
+const fieldLine = (ev: string, field: 'DTSTART' | 'DTEND') =>
+  ev.match(new RegExp(`(?:^|\\n)${field}([^:\\n]*):([^\\r\\n]+)`));
+const tzidOf = (params = '') => params.match(/TZID=([^;:]+)/)?.[1];
+
 function findDate(ev: string, field: 'DTSTART' | 'DTEND'): Date | null {
-  const m = ev.match(new RegExp(`(?:^|\\n)${field}([^:\\n]*):([^\\r\\n]+)`));
+  const m = fieldLine(ev, field);
   if (!m) return null;
   const params = m[1],
     value = m[2].trim();
@@ -62,7 +67,7 @@ function findDate(ev: string, field: 'DTSTART' | 'DTEND'): Date | null {
   if (!dt) return null;
   const [, Y, Mo, D, h, mi, s, z] = dt;
   if (z === 'Z') return new Date(`${Y}-${Mo}-${D}T${h}:${mi}:${s}.000Z`);
-  const tzid = params.match(/TZID=([^;:]+)/)?.[1];
+  const tzid = tzidOf(params);
   if (tzid) {
     // Стенное время в зоне события. Перевод — общий хелпер (src/utils/tz.ts):
     // локальная копия этой логики была сломана и игнорировала смещение TZID
