@@ -230,6 +230,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'quietShift. Кнопка «Напомню через час» живёт под сообщением бота, у ' +
     'сайта такого действия нет; ветка sanitizeMeta отбрасывает meta с ' +
     'клиента, а /stats считает только строки с quietShift',
+  login_one_tap:
+    'серверное событие: пишет только GoogleOneTapService после проверки ' +
+    'токена окна Google (src/auth/google-one-tap.service.ts), userId = null. ' +
+    'Исход (вошёл / второй фактор / не принят) знает только сервер; слать его ' +
+    'с фронта значило бы открыть отчёт о входе для накрутки через /api/event',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -310,6 +315,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // кнопка под сообщением бота, у сайта такого действия нет.
     // 41 — booking_currency_chosen (2026-11, решение владельца Р5): серверное —
     // форма записи анонимная, выбор валюты приходит полем брони.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(41);
+    // 42 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
+    // исход проверки токена есть только у сервера, тот же приём userId = null.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(42);
   });
 });

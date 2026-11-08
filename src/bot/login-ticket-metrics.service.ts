@@ -4,6 +4,7 @@ import {
   LoginTicketMetrics,
   formatLoginTicket,
 } from './login-ticket-metrics.format';
+import { OneTapMetrics, formatOneTap } from './one-tap-metrics.format';
 
 // Счётчики пути входа по билету для /stats. Событие пишет только
 // LoginTicketService (src/auth/login-ticket/login-ticket.report.ts), всегда
@@ -16,9 +17,34 @@ import {
 export class LoginTicketMetricsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Готовый текстовый блок для /stats. */
+  /** Готовый текстовый блок для /stats: вход по коду + окно Google One Tap. */
   async render(): Promise<string> {
-    return formatLoginTicket(await this.getMetrics());
+    const [ticket, oneTap] = await Promise.all([
+      this.getMetrics(),
+      this.getOneTap(),
+    ]);
+    return `${formatLoginTicket(ticket)}\n\n${formatOneTap(oneTap)}`;
+  }
+
+  /** Входы через окно Google за неделю — те же правила: только userId IS NULL. */
+  async getOneTap(): Promise<OneTapMetrics> {
+    const since7 = new Date(Date.now() - 7 * 86_400_000);
+    const [row] = await this.prisma.$queryRaw<
+      Array<{ signed_in: bigint; twofa: bigint; rejected: bigint }>
+    >`
+      SELECT
+        count(*) FILTER (WHERE "meta"->>'outcome' = 'signed_in')::bigint AS signed_in,
+        count(*) FILTER (WHERE "meta"->>'outcome' = 'twofa')::bigint AS twofa,
+        count(*) FILTER (WHERE "meta"->>'outcome' = 'rejected')::bigint AS rejected
+      FROM "AnalyticsEvent"
+      WHERE "userId" IS NULL
+        AND "name" = 'login_one_tap'
+        AND "createdAt" >= ${since7}`;
+    return {
+      signedIn: Number(row?.signed_in ?? 0n),
+      twofa: Number(row?.twofa ?? 0n),
+      rejected: Number(row?.rejected ?? 0n),
+    };
   }
 
   async getMetrics(): Promise<LoginTicketMetrics> {
