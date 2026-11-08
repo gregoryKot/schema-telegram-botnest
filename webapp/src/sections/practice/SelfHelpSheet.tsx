@@ -19,7 +19,7 @@ export function SelfHelpSheet({ onClose }: { onClose: () => void }) {
   return (
     <>
       <BottomSheetShell goBack={goBack} zIndex={310} label={SELF_HELP_TITLE}>
-        <div className="sh-head"><h2 className="ds-h3 sh-title">{SELF_HELP_TITLE}</h2><Breath size="square" /></div>
+        <div className="pp-head sh-head"><h2 className="ds-h3 sh-title">{SELF_HELP_TITLE}</h2><Breath size="square" /></div>
         {buildSelfHelpParagraphs(tr).map((p) => (
           <p key={p} className="sh-text">
             {p}

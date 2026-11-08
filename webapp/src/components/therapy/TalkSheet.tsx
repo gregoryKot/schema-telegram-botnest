@@ -36,7 +36,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
       </div>
       <div className="cw-inner">
         <div className="ds-eyebrow">{hasTherapist ? t.sheetTherapistEyebrow : t.sheetEyebrow}</div>
-        <div className="cw-title-row">
+        <div className="pp-head">
           <h1 className="ds-h1">{hasTherapist ? t.sheetTherapistTitle : t.sheetTitle}</h1>
           <Talk size="square" />
         </div>
