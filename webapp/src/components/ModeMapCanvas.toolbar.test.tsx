@@ -262,9 +262,11 @@ describe('ModeMapCanvas — скачивание карты', () => {
   });
 });
 
-describe('ModeMapCanvas — горячие клавиши (только десктоп)', () => {
-  it('на мобильном viewport (matchMedia не совпадает) кнопка горячих клавиш не рендерится', () => {
-    renderCanvas({ initialNodes: [mmNode('n1', 'trigger')] });
+describe('ModeMapCanvas — горячие клавиши (только десктоп, в «⋯ Ещё»)', () => {
+  it('на мобильном viewport (matchMedia не совпадает) пункта горячих клавиш в «Ещё» нет', () => {
+    const { container } = renderCanvas({ initialNodes: [mmNode('n1', 'trigger')] });
+    clickToolbarButton(container, 'Ещё');
+    expect(screen.getByRole('menuitem', { name: 'Выделить всё' })).toBeTruthy();
     expect(screen.queryByText('Горячие клавиши')).toBeNull();
   });
 
@@ -278,8 +280,11 @@ describe('ModeMapCanvas — горячие клавиши (только деск
     const { container } = renderCanvas({
       initialNodes: [mmNode('n1', 'trigger')],
     });
-    clickToolbarButton(container, 'Горячие клавиши');
+    clickToolbarButton(container, 'Ещё');
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Горячие клавиши' }));
     expect(screen.getByText('Отменить')).toBeTruthy();
-    expect(screen.getByText('Дублировать ноду')).toBeTruthy();
+    expect(screen.getByText('Дублировать фигуру')).toBeTruthy();
+    expect(screen.getByText('⌘A / Ctrl+A')).toBeTruthy(); // строка «Выделить всё»
+    expect(screen.queryByText(/ноду/)).toBeNull(); // слово «нода» пользователю не показываем
   });
 });

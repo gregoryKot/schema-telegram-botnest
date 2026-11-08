@@ -39,6 +39,21 @@ describe('canvasConcept', () => {
     expect(forward.links.size).toBe(1);
     expect(canvasConcept(nodes, [edge('m1', 'm2'), edge('o1', 's1')]).links.size).toBe(0);
   });
+
+  it('схема, поставленная на режим в панели («Схемы режима»), — та же связь, что линия; у своего режима без modeId — нет', () => {
+    const withPills = (id: string, modeId: string | undefined, schemaIds: string[]): GraphNode =>
+      ({ id, type: 'child', data: { label: 'x', schemaIds, ...(modeId ? { modeId } : {}) } });
+    const c = canvasConcept([withPills('m1', 'vulnerable_child', ['abandonment', 'no_such_schema']), withPills('m2', undefined, ['mistrust'])], []);
+    expect([...c.links]).toEqual(['vulnerable_child abandonment']);
+    expect([...c.schemas]).toEqual([]); // фигуры схемы на холсте нет — «Добавить на карту» её по-прежнему предложит
+  });
+
+  it('добавил таблетку схемы на режим — в поля уходит связь режима со схемой', () => {
+    const before: [GraphNode[], GraphEdge[]] = [[mode('m1', 'vulnerable_child', 'child')], []];
+    const after: [GraphNode[], GraphEdge[]] = [[{ id: 'm1', type: 'child', data: { modeId: 'vulnerable_child', label: 'x', schemaIds: ['abandonment'] } }], []];
+    expect(bodyFor(before, after, concept({ modeIds: ['vulnerable_child'] })))
+      .toEqual({ modeLinks: [{ modeId: 'vulnerable_child', schemaIds: ['abandonment'] }] });
+  });
 });
 
 describe('appendBody — что уходит в поля', () => {

@@ -3,7 +3,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { getSchemaById } from '../../schemaTherapyData';
 import { SchemaPills } from './SchemaPills';
-import { linkedSchemaIds, nodeSchemaIds, schemasOnCanvasKey } from './nodeSchemaIds';
+import { linkedSchemaIds, nodeSchemaIds, ownSchemaIds, schemasOnCanvasKey } from './nodeSchemaIds';
 import { ModeMapConceptContext, SchemasOnCanvasContext, type ClientConceptState } from './clientConceptContext';
 
 afterEach(() => cleanup());
@@ -13,11 +13,11 @@ const link = (modeId: string, schemaIds: string[]) =>
 const concept = (links: ReturnType<typeof link>[]): ClientConceptState =>
   ({ schemaIds: [], modeIds: links.map(l => l.modeId), modeLinks: links });
 
-function renderPills(state: ClientConceptState, props: Partial<Parameters<typeof SchemaPills>[0]> = {}, onCanvas = '') {
+function renderPills(state: ClientConceptState, props: { modeId?: string; schemaId?: string; schemaIds?: string[] } = {}, onCanvas = '') {
   return render(
     <ModeMapConceptContext.Provider value={state}>
       <SchemasOnCanvasContext.Provider value={onCanvas}>
-        <SchemaPills modeId="vulnerable_child" fontSize={10} {...props} />
+        <SchemaPills data={{ modeId: 'vulnerable_child', ...props }} fontSize={10} />
       </SchemasOnCanvasContext.Provider>
     </ModeMapConceptContext.Provider>,
   );
@@ -55,10 +55,29 @@ describe('schemasOnCanvasKey', () => {
 
 describe('nodeSchemaIds', () => {
   it('своя схема первой, дубль из связей не повторяется, неизвестные id отбрасываются', () => {
-    expect(nodeSchemaIds('abandonment', ['mistrust', 'abandonment', 'no_such_schema'])).toEqual(['abandonment', 'mistrust']);
+    expect(nodeSchemaIds(['abandonment'], ['mistrust', 'abandonment', 'no_such_schema'])).toEqual(['abandonment', 'mistrust']);
   });
   it('без своей схемы и связей — пусто', () => {
-    expect(nodeSchemaIds(undefined, [])).toEqual([]);
+    expect(nodeSchemaIds([undefined], [])).toEqual([]);
+  });
+});
+
+describe('ownSchemaIds — схемы, поставленные на фигуру в панели', () => {
+  it('старая одиночная schemaId первой, затем список; без дублей и неизвестных id', () => {
+    expect(ownSchemaIds({ schemaId: 'failure', schemaIds: ['mistrust', 'failure', 'no_such_schema'] })).toEqual(['failure', 'mistrust']);
+    expect(ownSchemaIds({})).toEqual([]);
+  });
+});
+
+describe('SchemaPills — свои схемы режима (без концептуализации)', () => {
+  it('карта без клиента: таблетки из schemaIds узла, как у автоматической схемы', () => {
+    renderPills(null, { schemaIds: ['emotional_deprivation', 'self_sacrifice'] });
+    expect(screen.getByText(getSchemaById('emotional_deprivation')!.name)).toBeTruthy();
+    expect(screen.getByText(getSchemaById('self_sacrifice')!.name)).toBeTruthy();
+  });
+  it('своя схема, которая есть и в связях, — одна таблетка', () => {
+    renderPills(concept([link('vulnerable_child', ['abandonment'])]), { schemaIds: ['abandonment'] });
+    expect(screen.getAllByText(getSchemaById('abandonment')!.name)).toHaveLength(1);
   });
 });
 
