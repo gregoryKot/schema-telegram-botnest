@@ -14,6 +14,8 @@ import {
 import { DeliveryLogService } from './delivery-log.service';
 import { allDisabled, emptyPool, fanoutResult } from './publish-report';
 import { makeChannelPost } from './pin-image';
+import { OneAtATime } from './one-at-a-time';
+import { isAfterSendFailure, markUnknown } from './unknown-outcome';
 
 /** Сколько последних постов показываем пулу, чтобы не повториться подряд. */
 const RECENT_POSTS = 10;
@@ -33,6 +35,8 @@ const RECENT_POSTS = 10;
 @Injectable()
 export class ChannelPublisherService {
   private readonly logger = new Logger(ChannelPublisherService.name);
+  /** Публикация «в полёте» — один флаг на расписание и /zv (zv-runner.ts). */
+  readonly inFlight = new OneAtATime();
 
   constructor(
     @Inject(CHANNEL_TARGETS) private readonly targets: ChannelTarget[],
@@ -134,7 +138,9 @@ export class ChannelPublisherService {
       this.logger.log(`healthy_adult_post ${target.platform}=${destination}`);
       return where;
     } catch (err) {
-      const reason = target.explain(err);
+      // Пост мог выйти — метка в журнале, досылка не повторит (unknown-outcome.ts).
+      const said = target.explain(err);
+      const reason = isAfterSendFailure(err) ? markUnknown(said) : said;
       // warn, а не error: будить ли владельца, решает расписание — иначе
       // каждый тик крона превращался бы в отдельный DM (инцидент 2026-07-29).
       this.logger.warn(`healthy-adult ${target.platform} failed: ${reason}`);

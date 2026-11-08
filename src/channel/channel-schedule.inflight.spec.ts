@@ -5,10 +5,12 @@
 import { Logger } from '@nestjs/common';
 import { ChannelScheduleService } from './channel-schedule.service';
 import type { ChannelPublisherService } from './channel-publisher.service';
+import { OneAtATime } from './one-at-a-time';
 import type { PublishResult } from './channel-target';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
 import type { DeliveryLogService } from './delivery-log.service';
 import type { CronLeaderService } from '../infra/cron-leader.service';
+import { ZvRunner } from '../telegram/zv-runner';
 
 jest.mock('../utils/admin-alert', () => ({
   notifyAdminWithFallback: jest.fn().mockResolvedValue(undefined),
@@ -52,13 +54,14 @@ function setup(over: { publish?: jest.Mock; retry?: jest.Mock } = {}) {
       createdAt: new Date(),
     },
   ]);
+  const publisher = { publish, retry, inFlight: new OneAtATime() };
   const service = new ChannelScheduleService(
-    { publish, retry } as unknown as ChannelPublisherService,
+    publisher as unknown as ChannelPublisherService,
     { lastPostAt } as unknown as HealthyAdultService,
     { slotRows } as unknown as DeliveryLogService,
     { claimRun } as unknown as CronLeaderService,
   );
-  return { service, publish, retry, claimRun };
+  return { service, publish, retry, claimRun, publisher };
 }
 
 // 10:55 и 11:00 МСК (UTC+3): конец утреннего окна — слот «пора».
@@ -124,6 +127,35 @@ describe('ChannelScheduleService — публикация «в полёте» (R
     await second;
 
     expect(publish.mock.calls).toEqual([['утро'], ['утро']]);
+  });
+
+  // Хвост R7 (аудит 2026-11): /zv и расписание держат ОДИН флаг публикации.
+  it('пока идёт /zv, тик расписания не публикует; /zv кончился — публикует', async () => {
+    const slow = slowCall();
+    const { service, publish, publisher } = setup({ publish: slow.fn });
+    const zv = new ZvRunner();
+    const reply = jest.fn().mockResolvedValue(undefined);
+    const log = { error: jest.fn(), warn: jest.fn() };
+    const refused = zv.start(
+      () => publisher.publish() as Promise<PublishResult>,
+      reply,
+      log,
+      publisher.inFlight,
+    );
+    expect(refused).toBeNull();
+    await flush();
+
+    await service.maybePost(at(10, 55));
+    expect(publish.mock.calls).toEqual([[]]); // только ручная, без слота
+    expect(String(warns.mock.calls[0]?.[0])).toContain('/zv');
+
+    slow.release();
+    await zv.current;
+    const tick = service.maybePost(at(10, 56));
+    await flush();
+    slow.release();
+    await tick;
+    expect(publish.mock.calls).toEqual([[], ['утро']]);
   });
 
   it('медленная досылка — следующий тик досылки не шлёт ту же фразу', async () => {

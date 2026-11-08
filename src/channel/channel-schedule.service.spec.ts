@@ -12,6 +12,8 @@
 import { Logger } from '@nestjs/common';
 import { ChannelScheduleService } from './channel-schedule.service';
 import type { ChannelPublisherService } from './channel-publisher.service';
+import { OneAtATime } from './one-at-a-time';
+import { markUnknown } from './unknown-outcome';
 import type { PublishResult } from './channel-target';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
@@ -95,7 +97,11 @@ function makeService(
   } as unknown as HealthyAdultService;
   const { journal, slotRows } = makeJournal(rows);
   const service = new ChannelScheduleService(
-    { publish, retry } as unknown as ChannelPublisherService,
+    {
+      publish,
+      retry,
+      inFlight: new OneAtATime(),
+    } as unknown as ChannelPublisherService,
     phrases,
     journal,
     cronLeader,
@@ -293,6 +299,43 @@ describe('ChannelScheduleService', () => {
       expect(retry).not.toHaveBeenCalled();
       // Журнал всё же прочитан — решение принято по данным, а не по памяти.
       expect(slotRows).toHaveBeenCalledWith('утро', expect.any(Date));
+    });
+
+    // Хвост R7 (аудит 2026-11): таймаут ответа или обрыв после отправки —
+    // пост мог выйти, а досылка через 15 минут повторяла его вторым.
+    it('исход неизвестен — не досылает, владельцу раз за слот: проверить руками', async () => {
+      spyLogger();
+      const unknown = {
+        ...row('telegram', false),
+        reason: markUnknown('таймаут ответа'),
+      };
+      const { service, retry } = closedSlot([unknown, row('max', false)]);
+
+      await service.catchUp(msk(10, 30));
+      await service.catchUp(msk(10, 45));
+
+      // Досылка — только тому, кто точно не получил.
+      expect((retry as jest.Mock).mock.calls).toEqual([
+        ['утро', 'фраза этого слота', ['max']],
+        ['утро', 'фраза этого слота', ['max']],
+      ]);
+      const checks = alertTexts().filter((t) =>
+        t.includes('проверить вручную'),
+      );
+      expect(checks).toEqual([expect.stringContaining('telegram')]);
+      // Telegram не ответил — сообщение о нём идёт почтой, не через него же.
+      const call = alerts.mock.calls.find((c) => String(c[0]) === checks[0]);
+      expect(call?.[2]).toEqual({ skipTelegram: true });
+    });
+
+    it('только неизвестный исход — повтора нет вовсе', async () => {
+      spyLogger();
+      const { service, retry } = closedSlot([
+        { ...row('vk', false), reason: markUnknown('socket hang up') },
+      ]);
+      await service.catchUp(msk(10, 30));
+      expect(retry).not.toHaveBeenCalled();
+      expect(alertTexts()).toEqual([expect.stringContaining('vk')]);
     });
 
     it('не долбится бесконечно — три попытки на слот', async () => {

@@ -9,7 +9,9 @@ import { Logger } from '@nestjs/common';
 import { TelegramAdminService } from './telegram.admin.service';
 import { BLOCK_FAILED_MARK } from '../bot/stats-settle';
 import { makeFakeBot, runCommand } from './telegram.test-helpers.spec';
-import { ZV_BUSY, ZV_STARTED } from './zv-runner';
+import { ZV_BUSY, ZV_STARTED, zvBusyWith } from './zv-runner';
+import { SCHEDULE_HOLDER } from '../channel/channel-schedule.service';
+import { OneAtATime } from '../channel/one-at-a-time';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 
@@ -34,6 +36,7 @@ function makeDeps(overrides: Record<string, any> = {}) {
     publish: jest
       .fn()
       .mockResolvedValue({ ok: true, message: '✅ Опубликовано' }),
+    inFlight: new OneAtATime(),
     ...overrides.publisher,
   };
   const channelCheck = {
@@ -128,6 +131,55 @@ describe('TelegramAdminService — /zv (только админ)', () => {
     const second = await runCommand(fakeBot, 'zv', msg);
     expect(publish).toHaveBeenCalledTimes(1);
     expect(second.reply).toHaveBeenCalledWith(ZV_BUSY);
+  });
+
+  // Хвост R7 (аудит 2026-11): /zv и тик расписания друг о друге не знали —
+  // ручная публикация во время тика давала в канале два поста.
+  it('/zv во время публикации по расписанию не публикует и говорит админу почему', async () => {
+    process.env.ADMIN_ID = '999';
+    const { service, fakeBot, publisher, channelCheck } = makeDeps();
+    const release = publisher.inFlight.claim(SCHEDULE_HOLDER);
+    service.onModuleInit();
+    const msg = { from: { id: 999 } };
+    const ctx = await runCommand(fakeBot, 'zv', {
+      ...msg,
+      message: { text: '/zv' },
+    });
+    const one = await runCommand(fakeBot, 'zv', {
+      ...msg,
+      message: { text: '/zv max' },
+    });
+    expect(publisher.publish).not.toHaveBeenCalled();
+    expect(channelCheck.checkOne).not.toHaveBeenCalled();
+    expect(ctx.reply.mock.calls).toEqual([[zvBusyWith(SCHEDULE_HOLDER)]]);
+    expect(String(ctx.reply.mock.calls[0][0])).toContain('по расписанию');
+    expect(one.reply).toHaveBeenCalledWith(zvBusyWith(SCHEDULE_HOLDER));
+    // Тик закончился — /zv снова публикует.
+    release?.();
+    await runCommand(fakeBot, 'zv', { ...msg, message: { text: '/zv' } });
+    await service.zv.current;
+    expect(publisher.publish).toHaveBeenCalledTimes(1);
+  });
+
+  it('флаг публикации снят сразу после публикации, даже если итог админу завис', async () => {
+    process.env.ADMIN_ID = '999';
+    const { service, fakeBot, publisher } = makeDeps();
+    service.onModuleInit();
+    // «Публикую…» уходит, а ответ с итогом виснет (Telegram не отвечает).
+    const reply = jest
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockImplementation(() => new Promise(() => undefined));
+    await runCommand(fakeBot, 'zv', {
+      from: { id: 999 },
+      message: { text: '/zv' },
+      reply,
+    });
+    await new Promise((r) => setImmediate(r));
+    expect(publisher.publish).toHaveBeenCalledWith();
+    expect(reply).toHaveBeenLastCalledWith('✅ Опубликовано');
+    // Тик расписания не ждёт, пока админ получит сообщение.
+    expect(publisher.inFlight.holder).toBeNull();
   });
 
   it('/zv <площадка> — проверяет ровно эту площадку через channelCheck.checkOne', async () => {
