@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { claimTherapyInvite } from './therapy-invite-claim';
 import { miniappStartLink } from '../telegram/miniapp-link';
 import { encryptName } from './client-name';
-import { attachOfflineCard } from './therapy-invite-attach';
+import { markCardClaim } from './therapy-invite-card-claim';
 
 // Срок жизни кода-приглашения (аудит 2026-10, T5): колонки expiresAt нет, а
 // миграции ради этого не нужны — возраст считается по createdAt.
@@ -76,8 +76,9 @@ export function isClaimableInvite(
  * Новое приглашение — всегда новый код. `alias` — имя, которое терапевт ввёл
  * в «Новый клиент»: ложится в clientAlias приглашения, и после подключения
  * карточка клиента одна и называется так, как назвал терапевт. `attachToId` —
- * приглашение из карточки офлайн-клиента: при подключении её данные переезжают
- * на аккаунт (therapy-invite-attach.ts). Бросает TOO_MANY_INVITES_ERROR.
+ * приглашение из карточки офлайн-клиента: её данные переедут на аккаунт
+ * после сверки терапевтом (therapy-invite-card-claim.ts). Бросает
+ * TOO_MANY_INVITES_ERROR.
  */
 export async function createTherapyInvite(
   prisma: PrismaService,
@@ -115,21 +116,15 @@ export async function joinTherapyAsClient(
     where: { code: normalizeInviteCode(code) },
   });
   if (!isClaimableInvite(rel, clientId)) return false;
-  // Prevent duplicate: if already connected to this therapist, ignore silently
   const alreadyConnected = await prisma.therapyRelation.findFirst({
     where: { therapistId: rel.therapistId, clientId, status: 'active' },
   });
-  // Приглашение из офлайн-карточки: данные карточки переезжают на аккаунт, а
-  // при «уже подключён» сливаются в существующую связь; карточка и приглашение
-  // (каскадом) исчезают.
+  // Код офлайн-карточки (S8): данные карточки НЕ переезжают — связь (новая
+  // или уже живая) ждёт, пока терапевт подтвердит «это тот же человек»
+  // (therapy-invite-card-claim.ts). Уже подключён без карточки — молча true.
   if (alreadyConnected) {
     if (rel.attachToId != null)
-      await attachOfflineCard(
-        prisma,
-        rel.therapistId,
-        clientId,
-        rel.attachToId,
-      );
+      await markCardClaim(prisma, rel.id, rel.attachToId, alreadyConnected.id);
     return true;
   }
   const otherTherapist = await prisma.therapyRelation.findFirst({
@@ -140,8 +135,5 @@ export async function joinTherapyAsClient(
     },
   });
   if (otherTherapist) throw new Error(ALREADY_CONNECTED_ERROR);
-  const claimed = await claimTherapyInvite(prisma, rel.code, clientId);
-  if (claimed && rel.attachToId != null)
-    await attachOfflineCard(prisma, rel.therapistId, clientId, rel.attachToId);
-  return claimed;
+  return claimTherapyInvite(prisma, rel.code, clientId, rel.attachToId != null);
 }

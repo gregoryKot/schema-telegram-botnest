@@ -4,7 +4,7 @@
 // createTask: SECURITY-инвариант "терапевт может создать задачу клиенту
 // только при реальной активной связи" (assertHasClient) и условная нотификация
 // (только для реальных, не виртуальных, клиентов).
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { Request } from 'express';
 import { TherapyTasksController } from './therapy-tasks.controller';
 import { TherapyRelationsService } from './therapy-relations.service';
@@ -315,5 +315,16 @@ describe('TherapyTasksController.deleteTask', () => {
     await expect(controller.deleteTask(makeReq(7n), '9')).resolves.toEqual({
       ok: true,
     });
+  });
+});
+
+describe('TherapyTasksController — id за int32 → 400 (S18)', () => {
+  it('taskId 3000000000 и -3000000000 → 400 до сервиса', async () => {
+    const { controller, tasks } = makeController();
+    for (const raw of ['3000000000', '-3000000000'])
+      await expect(controller.deleteTask(makeReq(), raw)).rejects.toThrow(
+        BadRequestException,
+      );
+    expect(tasks.deleteAssignedTask).not.toHaveBeenCalled();
   });
 });

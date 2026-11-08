@@ -3,6 +3,7 @@
 // saveConceptualization (см. therapy-notes.service.spec.ts). Read-after-write
 // на createNote → getNotes (правило CLAUDE.md про связку сохранение→показ) +
 // граница доступа: чужой терапевт не читает/не пишет заметки о чужом клиенте.
+import { NotFoundException } from '@nestjs/common';
 import { TherapyNotesService } from './therapy-notes.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { SESSION_NOTES_PAGE } from './session-notes-page';
@@ -114,16 +115,22 @@ describe('TherapyNotesService — заметки о сессиях (session note
     expect(notes).toHaveLength(0);
   });
 
-  it('удаление заметки скопировано по id+therapistId — чужой id не удаляет запись владельца', async () => {
+  it('удаление заметки скопировано по id+therapistId — чужой id: 404, запись владельца жива (C-8, S18)', async () => {
     const { service, notes } = makeService([activeRel]);
     const created = await service.createNote(T1, CLIENT, {
       date: '2026-01-05',
       text: 'заметка',
     });
 
-    // T2 пытается удалить заметку T1 своим therapistId — where не совпадает, запись жива.
-    await service.deleteNote(T2, created.id);
+    // T2 пытается удалить заметку T1 своим therapistId — where не совпадает:
+    // 404, а не тихий 200, запись жива.
+    await expect(service.deleteNote(T2, created.id)).rejects.toThrow(
+      NotFoundException,
+    );
     expect(notes).toHaveLength(1);
+    await expect(service.deleteNote(T1, 999_999)).rejects.toThrow(
+      NotFoundException,
+    );
 
     await service.deleteNote(T1, created.id);
     expect(notes).toHaveLength(0);

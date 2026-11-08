@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import { api, type TherapyClientSummary } from '../../api';
+import { api, reportClientError, type TherapyClientSummary } from '../../api';
 import { useTr } from '../../utils/addressForm';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { useSingleFlight } from '../../../../shared/src/utils/useSingleFlight';
 import { inviteCreateErrorText, usePendingInvites } from '../../../../shared/src/therapy/therapyInvites';
+import { useCardClaims } from '../../../../shared/src/therapy/cardClaims';
 
 interface Params {
   setClients: React.Dispatch<React.SetStateAction<TherapyClientSummary[]>>;
@@ -17,14 +18,11 @@ export interface AddClientCreated {
 
 // «+ Новый клиент» в кабинете. Две разные вещи, а не одна с довеском
 // (инцидент 2026-10-26): без галочки — офлайн-карточка (записи без аккаунта
-// клиента); с галочкой — только приглашение с этим именем. Раньше галочка
-// создавала И офлайн-карточку, И независимое приглашение, и после подключения
-// в списке было две карточки одного человека. Данные офлайн-карточки висят на
-// -TherapyRelation.id и в связь с аккаунтом не переезжают, поэтому карточка
-// для приглашённого — та, что появится после подключения, с именем отсюда; до
-// подключения он виден в блоке «Ждут подключения» (`pending`).
-// QA 2026-11: двойной Enter создавал двух клиентов — submit под useSingleFlight;
-// «Добавить ещё» после первого клиента прятало форму — `open` живёт здесь.
+// клиента); с галочкой — только приглашение с этим именем (раньше галочка
+// давала обе, и после подключения было две карточки одного человека). До
+// подключения приглашённый виден в «Ждут подключения» (`pending`); код из
+// офлайн-карточки ждёт сверки (`claims`, S8: «Да» перечитывает список клиентов).
+// QA 2026-11: двойной Enter — submit под useSingleFlight; «Добавить ещё» — `open` здесь.
 export function useAddClient({ setClients }: Params) {
   const tr = useTr();
   const once = useSingleFlight();
@@ -37,6 +35,8 @@ export function useAddClient({ setClients }: Params) {
   const { copied, failed: copyFailed, copy } = useCopyToClipboard();
   const inputRef = useRef<HTMLInputElement>(null);
   const pending = usePendingInvites(api);
+  const claims = useCardClaims(api, () => void api.getTherapyClients().then(setClients)
+    .catch(() => reportClientError({ message: 'therapy clients reload failed', section: 'therapist.clients' })));
 
   const valid = name.trim().length >= 2;
 
@@ -80,7 +80,7 @@ export function useAddClient({ setClients }: Params) {
   return {
     name, setName, withInvite, setWithInvite, open, setOpen,
     created, submitting, error, copied, copyFailed, valid,
-    inputRef, pending,
+    inputRef, pending, claims,
     submit: () => once(submit), reset: () => reset(), close: () => reset(false), copyInvite,
   };
 }

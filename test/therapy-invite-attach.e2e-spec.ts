@@ -1,10 +1,12 @@
 // e2e: приглашение в приложение существующего офлайн-клиента терапевта
-// (POST /api/therapy/clients/:negId/invite → join). Что обещает фича: после
-// подключения у терапевта ОДНА карточка, а задания, заметки, карты режимов и
+// (POST /api/therapy/clients/:negId/invite → join → терапевт подтверждает
+// «это тот же человек», S8). Что обещает фича: после подтверждения у
+// терапевта ОДНА карточка, а задания, заметки, карты режимов и
 // концептуализация офлайн-карточки (лежат на -TherapyRelation.id, без FK)
 // переехали на аккаунт клиента; офлайн-строка и её приглашение исчезли.
 // Сценарии: a) обычный проход, b) клиент уже подключён (побеждает новее
-// концептуализация), c) удаление карточки отзывает её приглашение.
+// концептуализация), c) удаление карточки отзывает её приглашение. Что до
+// подтверждения ничего не переезжает — test/therapy-card-claim.e2e-spec.ts.
 //
 // Гоняется дважды: фейковая Prisma (джоба backend) и живой Postgres
 // (E2E_REAL_DB=1, джоба migrations): updateMany по отрицательному userId,
@@ -66,6 +68,21 @@ describe('e2e: приглашение офлайн-клиента с перен�
         }),
     ];
     for (const call of calls) expect((await call()).status).toBeLessThan(300);
+  }
+  // Сверка S8: плашка ровно одна — этот аккаунт и эта карточка; «Да».
+  async function confirmCard(client: bigint, neg: bigint) {
+    const claims = (await as(TH).get('/api/therapy/card-claims')).body;
+    expect(claims).toEqual([
+      expect.objectContaining({
+        clientId: Number(client),
+        cardId: Number(-neg),
+      }),
+    ]);
+    const res = await as(TH).post(`/api/therapy/card-claims/${client}`, {
+      cardId: Number(-neg),
+      accept: true,
+    });
+    expect(res.status).toBe(201);
   }
   const rowsOn = async (cid: bigint) => ({
     notes: await prisma.therapistNote.count({
@@ -151,6 +168,7 @@ describe('e2e: приглашение офлайн-клиента с перен�
     expect(
       (await as(C).post('/api/therapy/join', { code: inv.body.code })).status,
     ).toBe(201);
+    await confirmCard(C, neg);
 
     const clients = (await as(TH).get('/api/therapy/clients')).body;
     expect(clients).toHaveLength(1);
@@ -214,6 +232,7 @@ describe('e2e: приглашение офлайн-клиента с перен�
     expect(
       (await as(D).post('/api/therapy/join', { code: inv.body.code })).status,
     ).toBe(201);
+    await confirmCard(D, neg);
 
     const clients = (await as(TH).get('/api/therapy/clients')).body;
     expect(

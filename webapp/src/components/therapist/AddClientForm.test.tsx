@@ -15,6 +15,8 @@ vi.mock('../../api', () => ({
     createTherapyInvite: vi.fn(),
     getTherapyInvites: vi.fn(() => Promise.resolve([])),
     revokeTherapyInvite: vi.fn(),
+    getCardClaims: vi.fn(() => Promise.resolve([])),
+    resolveCardClaim: vi.fn(),
   },
 }));
 import { api } from '../../api';

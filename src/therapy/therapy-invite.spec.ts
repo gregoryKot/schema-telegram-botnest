@@ -73,10 +73,20 @@ describe('joinTherapyAsClient — уникальность активной св
   });
 });
 
+// S8 (аудит 2026-11, решение владельца Р3): код карточки мог ввести кто
+// угодно — данные карточки при join НЕ переносятся, связь ждёт сверки
+// терапевтом (therapy-invite-card-claim.ts).
 describe('joinTherapyAsClient — приглашение из офлайн-карточки', () => {
-  const fromCard = { ...pending, attachToId: 9 };
-  const dbWith = (rel: unknown, alreadyConnected: unknown, count: number) =>
-    ({
+  const fromCard = { ...pending, id: 77, attachToId: 9 };
+  const dbWith = (rel: unknown, alreadyConnected: unknown, count: number) => {
+    const tx = {
+      therapyRelation: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const db = {
+      $transaction: jest.fn((cb: (t: unknown) => unknown) => cb(tx)),
       therapyRelation: {
         findUnique: jest.fn().mockResolvedValue(rel),
         findFirst: jest
@@ -85,39 +95,54 @@ describe('joinTherapyAsClient — приглашение из офлайн-ка�
           .mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count }),
       },
-    }) as unknown as PrismaService;
+    } as unknown as PrismaService;
+    return { db, tx };
+  };
 
-  it('захват: данные карточки переносятся', async () => {
-    expect(
-      await joinTherapyAsClient(dbWith(fromCard, null, 1), 2n, 'abc123'),
-    ).toBe(true);
-    expect(attachMock).toHaveBeenCalledWith(expect.anything(), 1n, 2n, 9);
-  });
-
-  it('уже подключён: данные карточки сливаются в существующую связь', async () => {
-    const db = dbWith(fromCard, { id: 5 }, 0);
+  it('захват: связь есть, данные карточки не переносятся, имя карточки снято', async () => {
+    const { db } = dbWith(fromCard, null, 1);
     expect(await joinTherapyAsClient(db, 2n, 'abc123')).toBe(true);
-    expect(attachMock).toHaveBeenCalledWith(db, 1n, 2n, 9);
+    expect(attachMock).not.toHaveBeenCalled();
+    expect(db.therapyRelation.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { clientId: 2n, status: 'active', clientAlias: null },
+      }),
+    );
   });
 
-  it('захват не удался: перенос не зовётся', async () => {
-    expect(
-      await joinTherapyAsClient(dbWith(fromCard, null, 0), 2n, 'abc123'),
-    ).toBe(false);
+  it('уже подключён: карточка не сливается, код гаснет, связь ждёт сверки', async () => {
+    const { db, tx } = dbWith(fromCard, { id: 5 }, 0);
+    expect(await joinTherapyAsClient(db, 2n, 'abc123')).toBe(true);
     expect(attachMock).not.toHaveBeenCalled();
+    expect(tx.therapyRelation.deleteMany).toHaveBeenCalledWith({
+      where: { id: 77, status: 'pending', clientId: null },
+    });
+    expect(tx.therapyRelation.update).toHaveBeenCalledWith({
+      where: { id: 5 },
+      data: { attachToId: 9 },
+    });
   });
 
-  it('обычное приглашение (attachToId нет/null): перенос не зовётся', async () => {
-    expect(
-      await joinTherapyAsClient(dbWith(pending, null, 1), 2n, 'abc123'),
-    ).toBe(true);
-    expect(
-      await joinTherapyAsClient(
-        dbWith({ ...pending, attachToId: null }, { id: 5 }, 0),
-        2n,
-        'abc123',
-      ),
-    ).toBe(true);
-    expect(attachMock).not.toHaveBeenCalled();
+  it('уже подключён, код успел погаснуть (параллельный ввод) — отметки нет', async () => {
+    const { db, tx } = dbWith(fromCard, { id: 5 }, 0);
+    tx.therapyRelation.deleteMany.mockResolvedValue({ count: 0 });
+    expect(await joinTherapyAsClient(db, 2n, 'abc123')).toBe(true);
+    expect(tx.therapyRelation.update).not.toHaveBeenCalled();
+  });
+
+  it('захват не удался → false', async () => {
+    const { db } = dbWith(fromCard, null, 0);
+    expect(await joinTherapyAsClient(db, 2n, 'abc123')).toBe(false);
+  });
+
+  it('обычное приглашение: имя из «Новый клиент» остаётся, отметки сверки нет', async () => {
+    const plain = dbWith({ ...pending, attachToId: null }, null, 1);
+    expect(await joinTherapyAsClient(plain.db, 2n, 'abc123')).toBe(true);
+    expect(plain.db.therapyRelation.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { clientId: 2n, status: 'active' } }),
+    );
+    const again = dbWith({ ...pending, attachToId: null }, { id: 5 }, 0);
+    expect(await joinTherapyAsClient(again.db, 2n, 'abc123')).toBe(true);
+    expect(again.db.$transaction).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { parseUserId } from './parse-user-id';
+import { parseClientId, parseUserId } from './parse-user-id';
 import { parseId } from './request-utils';
 
 // Аудит 2026-10, X-1: веб-id лежат в [1e15, 9e15), ниже 2^53; границу держит
@@ -49,5 +49,20 @@ describe('parseUserId', () => {
 
   it('parseId (Int-колонки) веб-id по-прежнему не принимает', () => {
     expect(() => parseId('1000000000000000123')).toThrow(BadRequestException);
+  });
+});
+
+// S18 (аудит 2026-11): -TherapyRelation.id — Int-колонка; -3000000000 уходил
+// в Prisma и падал 500 с DM владельцу.
+describe('parseClientId', () => {
+  it('отрицательный за int32 → 400, на границе — проходит', () => {
+    expect(() => parseClientId('-3000000000')).toThrow(BadRequestException);
+    expect(() => parseClientId('-2147483648')).toThrow(BadRequestException);
+    expect(parseClientId('-2147483647')).toBe(-2147483647n);
+  });
+
+  it('положительный id пользователя int32 не ограничен (веб-id ~1e15)', () => {
+    expect(parseClientId('3000000000')).toBe(3000000000n);
+    expect(parseClientId('1000000000000001')).toBe(1000000000000001n);
   });
 });

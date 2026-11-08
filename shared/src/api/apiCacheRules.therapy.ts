@@ -1,15 +1,10 @@
-// Карта инвалидации ручек /api/therapy/* (src/therapy/*.controller.ts):
-// связь клиент↔терапевт и кабинет терапевта. Вынесено из
-// apiCacheRules.data.ts (правило №10), принцип тот же: каждая строка —
-// решение про конкретный роут.
-//
-// Id клиента в пути — `(-?\d+)`, с минусом. У клиента с аккаунтом это id
-// пользователя, у офлайн-клиента — отрицательный -TherapyRelation.id (`-57`,
-// therapy-relations.service.ts getClients). До 2026-10 шаблоны были `\d+`,
-// офлайн-клиент мимо них проходил, и после правки, переименования или
-// удаления кабинет до 2 минут показывал старое (apiCache.ts: свежо 15 с,
-// протухает за 2 мин). Новая мутация с :clientId обязана попасть сюда —
-// сверку с контроллерами держит apiCacheRules.therapy.test.ts.
+// Карта инвалидации ручек /api/therapy/* (src/therapy/*.controller.ts),
+// вынесена из apiCacheRules.data.ts (правило №10): строка — решение про роут.
+// Id клиента в пути — `(-?\d+)`, с минусом: у офлайн-клиента это
+// -TherapyRelation.id (`-57`). До 2026-10 шаблоны были `\d+`, офлайн-клиент
+// мимо них проходил, и кабинет до 2 минут показывал старое. Новая мутация с
+// :clientId обязана попасть сюда — сверка с контроллерами в
+// apiCacheRules.therapy.test.ts.
 import type { InvalidationTarget } from './apiCache';
 import { numStr, simple, type Rule } from './apiCacheRules.kit';
 
@@ -17,6 +12,7 @@ const T = '/api/therapy';
 const FORMER = `${T}/former-therapist`;
 const INVITES = `${T}/invites`;
 const CLIENTS = `${T}/clients`;
+const CLAIMS = `${T}/card-claims`;
 // Канбан «Задания» (tasks/all): имя клиента и его задания.
 const ALL_TASKS = `${T}/tasks/all`;
 const MODE_MAPS = { prefix: `${T}/mode-maps/` };
@@ -33,10 +29,8 @@ const clientKeys = (id: string): InvalidationTarget[] => [
 ];
 
 export const THERAPY_RULES: Rule[] = [
-  // Сообщение о бывшем терапевте зависит от живой связи: подключился по коду —
-  // пропадает, отключился — может вернуться (former-therapist-info.ts).
-  // Отключение ещё и делает открытые задания терапевта личными
-  // (end-client-relations.ts): метка «От терапевта» не висит 15 секунд.
+  // Сообщение о бывшем терапевте зависит от живой связи (former-therapist-
+  // info.ts); отключение делает задания терапевта личными (end-client-relations.ts).
   simple('POST', /^\/api\/therapy\/join$/, `${T}/relation`, FORMER),
   simple(
     'DELETE',
@@ -45,9 +39,8 @@ export const THERAPY_RULES: Rule[] = [
     FORMER,
     `${T}/tasks`,
   ),
-  // Живые приглашения терапевта («Ждут подключения»): новое и отозванное
-  // меняют список сразу; принятое клиентом уходит из него на чужом запросе —
-  // его кеш у терапевта живёт 15 секунд, это допустимо.
+  // «Ждут подключения»: новое и отозванное меняют список сразу; принятое
+  // клиентом уходит на чужом запросе — 15 секунд кеша допустимы.
   simple('POST', /^\/api\/therapy\/invite$/, INVITES),
   // Приглашение из карточки офлайн-клиента сразу видно в «Ждут подключения» и в карточке.
   simple('POST', /^\/api\/therapy\/clients\/-?\d+\/invite$/, INVITES),
@@ -61,6 +54,12 @@ export const THERAPY_RULES: Rule[] = [
     targets: (m) => [CLIENTS, ALL_TASKS, ...clientKeys(m[1])],
   },
   simple('POST', /^\/api\/therapy\/rename-client\/-?\d+$/, CLIENTS, ALL_TASKS),
+  // Сверка «тот же человек?» (S8): «Да» переносит записи карточки на аккаунт.
+  {
+    method: 'POST',
+    pattern: /^\/api\/therapy\/card-claims\/(-?\d+)$/,
+    targets: (m) => [CLAIMS, CLIENTS, ALL_TASKS, ...clientKeys(m[1])],
+  },
   simple('POST', /^\/api\/therapy\/become-therapist$/, `${T}/request`),
   simple('POST', /^\/api\/therapy\/request$/, `${T}/request`),
   simple('POST', /^\/api\/therapy\/therapist-view$/, '/api/user-flags'),

@@ -19,8 +19,7 @@ interface Props {
 }
 
 // Карточка «Приложение» в сайдбаре «Обзора» офлайн-клиента: пригласить его в
-// приложение так, чтобы записи карточки (задания, заметки, карта режимов,
-// концептуализация) переехали на его аккаунт, а карточка осталась одна.
+// приложение; записи карточки переедут на аккаунт после сверки (S8, CardClaimBanner).
 export function OfflineInviteCard({ selectedClient }: Props) {
   const tr = useTr();
   const once = useSingleFlight();
@@ -50,8 +49,8 @@ export function OfflineInviteCard({ selectedClient }: Props) {
       {pending.invites !== undefined && !invite && (
         <>
           <p className="ds-sub">
-            У клиента пока нет приложения. После подключения по коду задания, заметки, карта режимов
-            и концептуализация переедут на его аккаунт, а карточка останется одна.
+            У клиента пока нет приложения. Когда по коду подключится аккаунт, кабинет спросит, тот ли
+            это человек. После «Да» задания, заметки, карта режимов и концептуализация переедут на его аккаунт.
           </p>
           <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={create} disabled={submitting}>
             {submitting ? '…' : 'Пригласить в приложение'}
@@ -72,7 +71,7 @@ export function OfflineInviteCard({ selectedClient }: Props) {
           <CopyFailedHint show={failed} />
           <InviteCodeBox code={invite.code} />
           <p className="ds-sub">
-            Карточка останется одна: после подключения всё, что здесь записано, будет у клиента в приложении.
+            Когда человек подключится, над списком клиентов появится вопрос «Это тот же человек?». До ответа записи карточки ему не видны.
           </p>
         </>
       )}

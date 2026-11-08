@@ -5,7 +5,14 @@ import {
 
 const zero = { new: 0, offline: 0 };
 function metrics(over: Partial<TherapyInviteMetrics> = {}) {
-  return { created: zero, joined: zero, revoked: zero, ...over };
+  return {
+    created: zero,
+    joined: zero,
+    revoked: zero,
+    confirmed: zero,
+    denied: zero,
+    ...over,
+  };
 }
 const TITLE = '✉️ <b>Приглашения клиентов</b> (за 30 дней)';
 
@@ -47,5 +54,24 @@ describe('formatTherapyInviteMetrics', () => {
       metrics({ revoked: { new: 0, offline: 2 } }),
     );
     expect(out).toBe(`${TITLE}\nОтозвали: 2, из них из офлайн-карточки 2.`);
+  });
+
+  it('сверка карточки: «да/нет» одной строкой, без хвоста «из них»', () => {
+    const out = formatTherapyInviteMetrics(
+      metrics({
+        confirmed: { new: 0, offline: 3 },
+        denied: { new: 0, offline: 1 },
+      }),
+    );
+    expect(out).toBe(
+      `${TITLE}\nКод из офлайн-карточки ввёл тот же человек: да 3, нет 1.`,
+    );
+  });
+
+  it('только отказы: «да 0» в строке сверки законен', () => {
+    const out = formatTherapyInviteMetrics(
+      metrics({ denied: { new: 0, offline: 2 } }),
+    );
+    expect(out).toContain('ввёл тот же человек: да 0, нет 2.');
   });
 });

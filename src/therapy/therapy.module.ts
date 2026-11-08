@@ -9,6 +9,7 @@ import { ModeMapsService } from './mode-maps.service';
 import { TherapyController } from './therapy.controller';
 import { TherapyConnectionController } from './therapy-connection.controller';
 import { TherapyInvitesController } from './therapy-invites.controller';
+import { TherapyCardClaimsController } from './therapy-card-claims.controller';
 import { TherapyTasksController } from './therapy-tasks.controller';
 import { TherapyNotesController } from './therapy-notes.controller';
 import { ModeMapsController } from './mode-maps.controller';
@@ -29,6 +30,7 @@ import { AuthModule } from '../auth/auth.module';
     TherapyController,
     TherapyConnectionController,
     TherapyInvitesController,
+    TherapyCardClaimsController,
     TherapyTasksController,
     TherapyNotesController,
     ModeMapsController,

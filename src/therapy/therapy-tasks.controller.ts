@@ -25,9 +25,9 @@ interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
 
-// id Int-колонок (заметка, задача, карта) — обычное число.
+// id Int-колонок (заметка, задача, карта): за int32 — 400, не 500 (S18).
 const parseId = (raw: string): number =>
-  parseIdShared(raw, { allowNegative: true });
+  parseIdShared(raw, { allowNegative: true, int32: true });
 
 // Задачи терапевта клиенту: создание, список, история, отметка выполнения,
 // удаление терапевтом.

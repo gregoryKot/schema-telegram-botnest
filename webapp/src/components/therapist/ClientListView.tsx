@@ -1,13 +1,13 @@
 import { useTr } from '../../utils/addressForm';
 import type { TherapyClientSummary } from '../../api';
 import { sameId } from '../../../../shared/src/utils/sameId';
-// Местный день: с ним сравнивается nextSession — настенное время терапевта.
-// Активность клиента — по его календарю (isActiveToday), не по этому дню.
+// Местный день — для nextSession; активность клиента — по его календарю.
 import { todayStr } from '../../utils/format';
 import { Skeleton } from '../Skeleton';
 import { KanbanView } from './KanbanView';
 import { AddClientForm } from './AddClientForm';
 import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvitesList';
+import { CardClaimBanner } from '../../../../shared/src/therapy/CardClaimBanner';
 import { ClientCard } from './ClientCard';
 import { PaperEmpty } from '../art/PaperEmpty';
 import { ClientListHero } from './ClientListHero';
@@ -59,6 +59,7 @@ export function ClientListView({
       <div className="ds-page">
         <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} />
 
+        <CardClaimBanner claims={addClient.claims} />
         {formVisible && <AddClientForm addClient={addClient} />}
         <PendingInvitesList pending={addClient.pending} className="tc-pending" />
 
@@ -105,8 +106,7 @@ export function ClientListView({
               {[0, 1, 2].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={20} />)}
             </div>
           ) : loadFailed ? (
-            // Сбой ≠ пусто (CLAUDE.md: никаких заглушек вместо данных) —
-            // терапевт с полным ростером не должен увидеть «клиентов нет».
+            // Сбой ≠ пусто: полный ростер не должен выглядеть как «клиентов нет».
             <div className="tc-error">
               {tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')}
             </div>

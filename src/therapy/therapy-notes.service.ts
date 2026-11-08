@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt } from '../utils/crypto';
+import { requireAffected } from '../utils/require-affected';
 import { findSessionNotesPage } from './session-notes-page';
 import {
   conceptView,
@@ -44,9 +45,8 @@ export class TherapyNotesService {
   }
 
   async deleteNote(therapistId: bigint, noteId: number): Promise<void> {
-    await this.prisma.therapistNote.deleteMany({
-      where: { id: noteId, therapistId },
-    });
+    const where = { id: noteId, therapistId };
+    await requireAffected(this.prisma.therapistNote.deleteMany({ where }));
   }
 
   // ─── Case Conceptualization ──────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 // терапевта. Access-control по mapId (getModeMap/updateModeMap/
 // deleteModeMap + клиентский read-only доступ) — в mode-maps.access.spec.ts
 // (файл разделён из-за лимита ~300 строк/файл, CLAUDE.md).
-import { ConflictException, Logger } from '@nestjs/common';
+import { NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { ModeMapsService } from './mode-maps.service';
 import { TherapyRelationsService } from './therapy-relations.service';
 import { Rel, makeRelationPrismaMock } from './therapy.test-helpers';
@@ -216,7 +216,7 @@ describe('ModeMapsService — кастомные режимы терапевта
     expect(mine.map((m: any) => m.name)).toEqual(['Мой']);
   });
 
-  it('deleteCustomMode: deleteMany скоупится по therapistId — чужой терапевт не удаляет и не выбрасывает (тихий no-op)', async () => {
+  it('deleteCustomMode: deleteMany скоупится по therapistId — чужой терапевт не удаляет и получает 404 (C-8, S18)', async () => {
     const { service, customModes } = makeService([]);
     customModes.push({
       id: 5,
@@ -226,8 +226,13 @@ describe('ModeMapsService — кастомные режимы терапевта
       nodeType: 'custom',
       createdAt: new Date(),
     });
-    await expect(service.deleteCustomMode(T2, 5)).resolves.toBeUndefined();
+    await expect(service.deleteCustomMode(T2, 5)).rejects.toThrow(
+      NotFoundException,
+    );
     expect(customModes).toHaveLength(1); // цел — чужой не мог удалить
+    await expect(service.deleteCustomMode(T1, 404)).rejects.toThrow(
+      NotFoundException,
+    );
 
     await service.deleteCustomMode(T1, 5);
     expect(customModes).toHaveLength(0);

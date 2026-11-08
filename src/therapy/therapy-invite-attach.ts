@@ -1,14 +1,11 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { meetingDaysOf } from './therapy-relation-info';
 
-// Перенос данных офлайн-карточки на аккаунт клиента, когда он принял
-// приглашение «из карточки» (TherapyRelation.attachToId). Данные карточки
-// лежат на отрицательном id (-TherapyRelation.id): задания, заметки, карты
-// режимов, концептуализация. Всё в ОДНОЙ транзакции: половинный перенос
-// оставил бы терапевту часть записей на карточке, которой уже нет (сироты без
-// FK), а часть — на аккаунте. Перечень таблиц сверяется со схемой в
-// therapy-invite-attach.spec.ts — новая таблица с парой therapistId+clientId
-// без переноса роняет спек (так же, как remove-client.spec.ts).
+// Перенос данных офлайн-карточки (-TherapyRelation.id: задания, заметки, карты
+// режимов, концептуализация) на аккаунт, когда терапевт подтвердил, что код
+// карточки ввёл тот же человек (therapy-invite-card-claim.ts, S8). Всё в ОДНОЙ
+// транзакции: половинный перенос оставил бы сирот без FK. Перечень таблиц
+// сверяется со схемой в therapy-invite-attach.spec.ts.
 
 /** false — карточки или активной связи с клиентом нет, ничего не тронуто. */
 export async function attachOfflineCard(
@@ -42,9 +39,8 @@ export async function attachOfflineCard(
     });
 
     // Концептуализация уникальна по паре therapistId+clientId. Две версии
-    // одного документа слить нельзя, поэтому остаётся новее по updatedAt:
-    // терапевт правил её позже — она и актуальна. При равенстве побеждает
-    // та, что уже на аккаунте.
+    // одного документа слить нельзя: остаётся новее по updatedAt, при
+    // равенстве — та, что уже на аккаунте.
     const offline = await tx.clientConceptualization.findFirst({
       where: { therapistId, clientId: neg },
     });
@@ -68,9 +64,8 @@ export async function attachOfflineCard(
       }
     }
 
-    // Поля связи копируются только в пустые; имена зашифрованы — как есть.
-    // attachToId: null ДО удаления карточки: целевая строка сама может быть
-    // приглашением с attachToId = card.id, и каскад снёс бы её вместе с картой.
+    // Поля связи — только в пустые, имена зашифрованы — как есть. attachToId:
+    // null ДО удаления карточки, иначе каскад снёс бы целевую строку с ней.
     const ownDays = meetingDaysOf(target.meetingDays);
     await tx.therapyRelation.update({
       where: { id: target.id },
@@ -82,7 +77,12 @@ export async function attachOfflineCard(
         meetingDays: ownDays.length ? ownDays : meetingDaysOf(card.meetingDays),
       },
     });
-    // На живой БД приглашения карточки снесёт каскад; у фейка его нет.
+    // Связи других аккаунтов, ждущие сверки с карточкой, теряют отметку (их
+    // снёс бы каскад); остаются приглашения — их у фейка удаляет deleteMany.
+    await tx.therapyRelation.updateMany({
+      where: { attachToId: card.id, clientId: { not: null } },
+      data: { attachToId: null },
+    });
     await tx.therapyRelation.deleteMany({ where: { attachToId: card.id } });
     await tx.therapyRelation.delete({ where: { id: card.id } });
     // Адрес карточки в кабинете (/cabinet/<urlCode>) переезжает вместе с

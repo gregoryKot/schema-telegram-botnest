@@ -34,6 +34,7 @@ import {
   THERAPY_INVITES_PATH,
   type TherapyInvite,
 } from '../therapy/therapyInvites';
+import type { CardClaim } from '../therapy/cardClaims';
 import type {
   UserSchemaNote,
   UserModeNote,
@@ -53,8 +54,7 @@ export interface ApiTransport {
 
 export const buildSharedApi = (t: ApiTransport) => ({
   // Пояс устройства (deviceTimeZone): пока человек не выбрал пояс сам, сервер
-  // считает по нему «сегодня» — серию, недельную полосу, напоминания. Раньше
-  // уходило число tzOffset, которого DTO не знает, и пояс у всех был московским.
+  // считает по нему «сегодня» — серию, недельную полосу, напоминания.
   init: (timezone?: string) => t.post('/api/init', { timezone }),
 
   // Продуктовая аналитика (правило №8). Fire-and-forget: аналитика НИКОГДА не
@@ -70,12 +70,9 @@ export const buildSharedApi = (t: ApiTransport) => ({
   },
   getDisclaimer: () => t.get<{ accepted: boolean }>('/api/disclaimer'),
   acceptDisclaimer: () => t.post('/api/disclaimer', {}),
-  // Только чтение: сервер отдаёт полный набор типизированных UI-флагов
-  // (см. UserFlagsDto), здесь типизирован только срез, который реально
-  // читает вызывающая сторона — миниапп держит свой богатый useUserFlags.ts
-  // (правило №3, это не дубль — он использует ЭТОТ же роут напрямую через
-  // authedFetch). therapistMode — сохранённое серверное предпочтение
-  // терапевта «кабинет vs клиент», source of truth для дефолтного роутинга.
+  // Только чтение: сервер отдаёт все UI-флаги (UserFlagsDto), здесь типизирован
+  // срез, который читает вызывающая сторона. therapistMode — серверное
+  // предпочтение терапевта «кабинет vs клиент», источник дефолтного роутинга.
   getUserFlags: () => t.get<{ therapistMode?: boolean }>('/api/user-flags'),
   getYsqProgress: () =>
     t.get<{ answers: number[]; page: number } | null>('/api/ysq-progress'),
@@ -173,15 +170,14 @@ export const buildSharedApi = (t: ApiTransport) => ({
     return t.postJson<GratitudeDiaryEntry>('/api/diary/gratitude', body);
   },
   deleteGratitudeDiary: (id: number) => t.del(`/api/diary/gratitude/${id}`),
-  // Каждый вызов — новый код; alias — имя из «Новый клиент» (карточка после
-  // подключения называется так). Живые приглашения — списком, их можно отозвать.
+  // Каждый вызов — новый код; alias — имя карточки из «Новый клиент».
   createTherapyInvite: (alias?: string) =>
     t.postJson<{ code: string; url: string }>(
       '/api/therapy/invite',
       alias ? { alias } : {},
     ),
-  // Приглашение из карточки офлайн-клиента (clientId < 0): после подключения её
-  // данные переедут на аккаунт клиента. Повтор отдаёт то же живое приглашение.
+  // Приглашение из карточки офлайн-клиента (clientId < 0): её данные переедут на
+  // аккаунт, когда терапевт подтвердит сверку. Повтор отдаёт тот же живой код.
   createOfflineClientInvite: (clientId: UserId) =>
     t.postJson<{ code: string; url: string }>(
       `/api/therapy/clients/${clientId}/invite`,
@@ -189,6 +185,10 @@ export const buildSharedApi = (t: ApiTransport) => ({
     ),
   getTherapyInvites: () => t.get<TherapyInvite[]>(THERAPY_INVITES_PATH),
   revokeTherapyInvite: (id: number) => t.del(`/api/therapy/invites/${id}`),
+  // Сверка «тот же человек?» для кода из офлайн-карточки (S8, cardClaims.ts).
+  getCardClaims: () => t.get<CardClaim[]>('/api/therapy/card-claims'),
+  resolveCardClaim: (clientId: UserId, cardId: number, accept: boolean) =>
+    t.post(`/api/therapy/card-claims/${clientId}`, { cardId, accept }),
   // Чей код — до согласия клиента (экран JoinConfirmSheet).
   previewTherapyInvite: (code: string) =>
     t.postJson<{

@@ -31,6 +31,8 @@ describe('OfflineInviteCard', () => {
     renderCard();
     const btn = await screen.findByText('Пригласить в приложение');
     expect(screen.getByText(/переедут на его аккаунт/)).toBeTruthy();
+    // S8: перенос — только после ответа терапевта, не сразу по коду.
+    expect(screen.getByText(/кабинет спросит, тот ли/)).toBeTruthy();
     mockApi.getTherapyInvites.mockResolvedValue([invite(57)]);
     fireEvent.click(btn);
     await waitFor(() => expect(screen.getByText('ABCD1234EF56')).toBeTruthy());
@@ -46,6 +48,7 @@ describe('OfflineInviteCard', () => {
     expect(screen.getByText(invite(57).url)).toBeTruthy();
     expect(screen.getByText('ABCD1234EF56')).toBeTruthy();
     expect(screen.queryByText('Пригласить в приложение')).toBeNull();
+    expect(screen.getByText(/До ответа записи карточки ему не видны/)).toBeTruthy();
   });
 
   it('чужое и обычное приглашение не считаются', async () => {
