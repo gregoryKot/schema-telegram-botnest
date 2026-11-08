@@ -1,12 +1,15 @@
 import { isTelegramUserId } from '../auth/user-id-range';
 
 // Настройки отправки уведомления — вынесено из account.service.ts (правило
-// №10): очередь (telegram.schedule-queue.ts) читает их пачкой одним запросом.
+// №10): очередь (telegram.schedule-queue.ts) читает их пачкой одним запросом
+// с адресом в Telegram; подписки на уведомления в приложении добавляет
+// загрузчик send-settings.load.ts.
 
 /**
  * Что нужно знать про человека, чтобы отправить ему уведомление: тихие часы,
- * форма обращения и КУДА писать. `chatId === null` — писать некуда: у
- * человека нет телеграм-входа вовсе.
+ * форма обращения и КУДА писать — два адреса: `chatId` (Telegram; null — нет
+ * телеграм-входа) и `hasPush` (есть подписка на уведомления в приложении,
+ * src/push/). Какой из них берёт очередь — notify-channel.ts.
  */
 export interface SendSettings {
   tz: string;
@@ -14,6 +17,8 @@ export interface SendSettings {
   end: number;
   form: string | null;
   chatId: bigint | null;
+  /** Есть подписка на уведомления в приложении и VAPID-ключи заданы. */
+  hasPush: boolean;
   /** Пауза уведомлений (R5): очередь снимает проактивные, пока она идёт. */
   pausedUntil: Date | null;
 }
@@ -60,21 +65,25 @@ export const SEND_SETTINGS_SELECT = {
   },
 } as const;
 
-export function toSendSettings(r: {
-  id: bigint;
-  notifyTimezone: string;
-  notifyQuietStart: number;
-  notifyQuietEnd: number;
-  notifyPausedUntil?: Date | null;
-  addressForm: string | null;
-  authProviders?: { providerId: string }[];
-}): SendSettings {
+export function toSendSettings(
+  r: {
+    id: bigint;
+    notifyTimezone: string;
+    notifyQuietStart: number;
+    notifyQuietEnd: number;
+    notifyPausedUntil?: Date | null;
+    addressForm: string | null;
+    authProviders?: { providerId: string }[];
+  },
+  hasPush = false,
+): SendSettings {
   return {
     tz: r.notifyTimezone,
     start: r.notifyQuietStart,
     end: r.notifyQuietEnd,
     form: r.addressForm,
     chatId: resolveChatId(r.id, r.authProviders?.[0]?.providerId),
+    hasPush,
     pausedUntil: r.notifyPausedUntil ?? null,
   };
 }

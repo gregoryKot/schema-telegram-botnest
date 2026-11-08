@@ -151,6 +151,7 @@ describe('шов: настоящий Telegraf получает 429 от серв
     expect(markSent).toHaveBeenCalledWith(1);
     expect(track).toHaveBeenCalledWith({
       sent: 1,
+      pushed: 0,
       transient: 0,
       waited: 1,
       deferred: 0,

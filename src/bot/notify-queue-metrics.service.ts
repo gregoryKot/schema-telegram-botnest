@@ -8,11 +8,12 @@ import {
 } from './notify-queue-metrics.format';
 
 const DAY_MS = 86_400_000;
-const FIELDS = ['sent', 'transient', 'waited', 'deferred'] as const;
+const FIELDS = ['sent', 'pushed', 'transient', 'waited', 'deferred'] as const;
 
 const emptyTotals = (): QueueTotals => ({
   ticks: 0,
   sent: 0,
+  pushed: 0,
   transient: 0,
   waited: 0,
   deferred: 0,

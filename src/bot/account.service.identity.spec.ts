@@ -286,6 +286,7 @@ describe('AccountService.getSendSettingsFor', () => {
       end: 8,
       form: 'ty',
       chatId: 1n,
+      hasPush: false,
       pausedUntil: null,
     });
     // Адрес взят из привязки, а НЕ из userId: писать по веб-номеру некуда.
@@ -295,6 +296,7 @@ describe('AccountService.getSendSettingsFor', () => {
       end: 7,
       form: 'vy',
       chatId: 777n,
+      hasPush: false,
       pausedUntil: new Date('2026-07-20T00:00:00Z'),
     });
     expect(prisma.user.findMany).toHaveBeenCalledWith({
@@ -327,14 +329,20 @@ describe('AccountService.getAllUsersWithSettings', () => {
     const result = await service.getAllUsersWithSettings();
 
     expect(result).toBe(rows);
+    // Ключей VAPID в окружении спека нет — ветки «подписка на уведомления в
+    // приложении» нет (notify-channel.spec.ts проверяет её отдельно).
     expect(prisma.user.findMany).toHaveBeenCalledWith({
       where: {
         notifyEnabled: true,
-        botBlockedAt: null,
         deletedAt: null,
         OR: [
-          { authProviders: { some: { provider: 'telegram' } } },
-          { id: { lt: 1_000_000_000_000_000n } },
+          {
+            botBlockedAt: null,
+            OR: [
+              { authProviders: { some: { provider: 'telegram' } } },
+              { id: { lt: 1_000_000_000_000_000n } },
+            ],
+          },
         ],
       },
       select: {

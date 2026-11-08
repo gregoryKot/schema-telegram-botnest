@@ -492,6 +492,17 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   logger-вызов не интерполирует токен/секрет/`decrypt()`/`req.body`.
 - **SSRF** (`src/security/ssrf.invariants.spec.ts`): server-side `fetch`
   не строит URL из пользовательского ввода.
+  Единственное осознанное исключение — уведомления в приложении (веб-пуши,
+  `src/push/`): сервер шлёт POST на адрес подписки, присланный браузером
+  (`POST /api/push/subscription`). Адрес принимается только `https:`, без
+  порта и учётных данных, и только с хостов push-сервисов
+  (`src/push/push-endpoint.ts`: `fcm.googleapis.com`, `android.googleapis.com`,
+  `*.push.services.mozilla.com`, `*.push.apple.com`, `*.notify.windows.com`);
+  проверка — при сохранении и перед каждой отправкой, редиректы web-push не
+  выполняет. Чужой хост — 400 и `warn` с ИМЕНЕМ хоста (весь адрес — секрет:
+  по нему можно слать человеку уведомления), по логу список расширяют.
+  Тест — `src/push/push-endpoint.spec.ts` (образцы и контрольные образцы).
+  Адрес и ключи подписки лежат зашифрованными, поиск — по sha256 адреса.
 - **Добавлено аудитом 2026-10:** `log-leak` ловит `req.url`/`originalUrl`/
   `exception.message` в первом аргументе логгера (D-3); `hardening` — нет
   inline-`<script>` в `index.html` обоих фронтов, `permissions` в CI, CORS без

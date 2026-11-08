@@ -2,7 +2,7 @@ import { buildProbes } from './registry';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 describe('buildProbes', () => {
-  it('собирает все 19 проб с уникальными id', () => {
+  it('собирает все 20 проб с уникальными id', () => {
     const probes = buildProbes({} as unknown as PrismaService);
     const ids = probes.map((p) => p.id);
     expect(ids.sort()).toEqual(
@@ -26,6 +26,7 @@ describe('buildProbes', () => {
         'telegramPolling',
         'throttleStorage',
         'vkOAuth',
+        'webPush',
       ].sort(),
     );
     expect(new Set(ids).size).toBe(ids.length);
@@ -45,6 +46,7 @@ describe('buildProbes', () => {
         'googleOAuth',
         'telegram',
         'vkOAuth',
+        'webPush',
       ].sort(),
     );
   });

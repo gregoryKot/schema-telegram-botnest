@@ -347,6 +347,8 @@ const NO_ROW_RESPONSE: Record<string, string> = {
   AuthProvider:
     'ручки входа отвечают сессией и статусом, строку провайдера не отдают',
   EmailToken: 'magic-link: ответ { ok }, строка токена наружу не уходит',
+  PushSubscription:
+    'POST /api/push/subscription отвечает { ok, delivered } (src/push/push.controller.ts)',
   Booking:
     'ответ записи — { id, cancelToken, status, paymentUrl } (booking.checkout.ts)',
   ClientMeeting:

@@ -13,8 +13,10 @@ import { QUEUE_TICK_BUDGET_MS } from './telegram.schedule-queue.budget';
 // type, а не interface: значение уходит в meta события как
 // Record<string, unknown>, а interface без индексной сигнатуры туда не встаёт.
 export type QueueTickTally = {
-  /** Доставлено. */
+  /** Доставлено (оба канала). */
   sent: number;
+  /** Из них — уведомлением в приложение (веб-пуш, src/push/). */
+  pushed: number;
   /** Временный сбой (наш или сети): строка осталась, повтор на следующем тике. */
   transient: number;
   /** Telegram ответил 429, подождали retry_after и повторили. */
@@ -39,15 +41,37 @@ export function describeQueueStop(stop: Stop, tally: QueueTickTally): string {
 export class QueueTick {
   readonly tally: QueueTickTally = {
     sent: 0,
+    pushed: 0,
     transient: 0,
     waited: 0,
     deferred: 0,
   };
   private stop: Stop | null = null;
   private readonly pacer: PacedSender;
+  private readonly now: () => number;
+  private readonly deadline: number;
 
   constructor(pace?: PaceOptions) {
     this.pacer = new PacedSender({ budgetMs: QUEUE_TICK_BUDGET_MS, ...pace });
+    this.now = pace?.now ?? Date.now;
+    this.deadline = this.now() + (pace?.budgetMs ?? QUEUE_TICK_BUDGET_MS);
+  }
+
+  /**
+   * Уведомлению в приложение темп Telegram не нужен, но бюджет прогона общий:
+   * false — время вышло, строка и `left - 1` следующих ждут следующего тика.
+   */
+  hasTime(left: number): boolean {
+    if (this.now() < this.deadline) return true;
+    this.stop = 'out_of_time';
+    this.tally.deferred = left;
+    return false;
+  }
+
+  /** Уведомление в приложение принято push-сервисом. */
+  notePushed(): void {
+    this.tally.sent++;
+    this.tally.pushed++;
   }
 
   /**

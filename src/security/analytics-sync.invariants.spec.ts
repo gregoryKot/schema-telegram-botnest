@@ -243,6 +243,24 @@ const BACKEND_ONLY: Record<string, string> = {
     '(AppInstallSection, surface site_landing) — та же причина, что у ' +
     "crisis_card_shown. Единственный литерал trackEvent('home_screen_offer') " +
     'жил в баннере кабинета MobileAppBanner, убранном 2026-10 (PR #771)',
+  push_subscribed:
+    'серверное событие: пишет только PushService.subscribe ' +
+    '(src/push/push.service.ts) после сохранённой подписки и пробного ' +
+    'уведомления, meta — delivered и service. Включение — сам HTTP-запрос ' +
+    'POST /api/push/subscription; ветка sanitizeMeta отбрасывает meta с ' +
+    'клиента, а /stats считает только строки с service',
+  push_unsubscribed:
+    'серверное событие: пишет только PushService.unsubscribe после ' +
+    'POST /api/push/unsubscribe, meta — reason (user|logout); с клиента meta ' +
+    'отбрасывается, /stats считает только строки с reason',
+  push_gone:
+    'серверное событие: пишет PushService, когда push-сервис ответил, что ' +
+    'подписки больше нет, и сервер её удалил (очередь уведомлений или ' +
+    'пробная отправка), meta — service. У фронта такого действия нет',
+  push_denied:
+    'шлётся через импортируемую константу PUSH_DENIED_EVENT ' +
+    '(shared/src/share/analytics.ts), когда человек отказал в разрешении ' +
+    'браузера на уведомления; та же причина, что у share_card',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -315,8 +333,12 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // кнопка под сообщением бота, у сайта такого действия нет.
     // 41 — booking_currency_chosen (2026-11, решение владельца Р5): серверное —
     // форма записи анонимная, выбор валюты приходит полем брони.
-    // 42 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
+    // 42–44 — push_subscribed/push_unsubscribed/push_gone (2026-11,
+    // уведомления в приложении): серверные — подписку сохраняет и удаляет
+    // HTTP-запрос, мёртвую подписку находит очередь. 45 — push_denied:
+    // константа PUSH_DENIED_EVENT, как entry_deleted.
+    // 46 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
     // исход проверки токена есть только у сервера, тот же приём userId = null.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(42);
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(46);
   });
 });

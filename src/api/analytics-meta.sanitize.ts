@@ -18,6 +18,9 @@ import { sanitizeLoginMeta } from './analytics-meta.sanitize-login';
 import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
+import { PUSH_EVENTS } from '../analytics/push-events.constants';
+
+const PUSH_EVENT_SET: ReadonlySet<string> = new Set(PUSH_EVENTS);
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -248,6 +251,10 @@ export function sanitizeMeta(
   // «Напомню через час» пишет только бот (server-events.constants.ts): quietShift
   // с клиента не принимается — подделка без него в /stats не считается.
   if (name === 'reminder_snoozed') return undefined;
+  // Уведомления в приложении (push-events.constants.ts): push_subscribed/
+  // unsubscribed/gone пишет только сервер — meta с клиента не принимается,
+  // /stats считает только строки с meta; push_denied клиент шлёт без полей.
+  if (PUSH_EVENT_SET.has(name)) return undefined;
   // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
   // CONCEPT_EVENTS, CABINET_EVENTS; серверные notify_queue_tick, therapist_resigned, booking_slot_taken, booking_currency_chosen (подделке — без чисел).
   // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.

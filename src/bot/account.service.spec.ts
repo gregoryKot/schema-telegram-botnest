@@ -41,6 +41,7 @@ function makePrisma() {
     'emailToken',
     'analyticsEvent',
     'loginTicket',
+    'pushSubscription',
     // отдельно обрабатываемые
     'clientConceptualization',
     'therapistNote',

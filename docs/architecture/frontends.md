@@ -18,6 +18,7 @@
   - `webapp/src/utils/` — `addressForm.ts`, `AddressFormProvider.tsx`, `apiBase.ts`, `domainChrome.ts`, `theme.ts`, `uiPrefsSync.ts`, `chunkReload.ts`; часть файлов — реэкспорты из shared.
   - `webapp/src/auth/` — `AuthProvider`, `authContext`, `refreshSession` (refresh-кука и кросс-табный замок), `telegramWebAppAuth`, `loginConsent`, `clearLocalData`.
   - `webapp/src/host/` — поведение внутри WebView Telegram/MAX: `initHost`, `ExternalLink`, `useHostId`. Само определение хоста лежит в `shared/src/host/`.
+  - `webapp/src/push/` — веб-пуши на этом устройстве: `pushState.ts` (состояния unsupported / ios-install / denied / off / on), `pushSubscription.ts` (разрешение только по клику, регистрация `public/sw.js`, отписка при выходе и после удаления аккаунта), `pushApi.ts`, хук `usePushDevice.ts` для строки «На этом устройстве» в настройках. Подставной браузер для тестов — `pushBrowser.test-helpers.ts`.
   - `webapp/src/styles/` — 34 css по экранам и шторкам. `webapp/src/index.css` сам импортирует только `cabinet.css` и `touch-fixes.css`, остальные подключаются из компонентов (`import '../styles/…css'`).
   - `webapp/src/lib/` — Метрика (`metrika*.ts`, `webvisorRoutes.ts`) и `tone.ts` (оттенки разделов).
   - `webapp/src/legal/` — `operator.ts`: реквизиты оператора (оферта, политика, футер визитки); `LegalLayout.tsx` + `legalStyles.ts`: разметка и стили обеих страниц (глава, таблица реквизитов, поля).

@@ -53,6 +53,8 @@ export function makeFakePrisma() {
       createdAt: new Date(), // @default(now()): экран сверки показывает время (S9)
     })),
     emailToken: makeTable(),
+    // Уведомления в приложении (test/push-ownership.e2e-spec.ts).
+    pushSubscription: makeTable(),
     throttleHit: makeTable(), // S11 totp-attempts.ts: чтение; инкремент (сырой SQL) — warn
     // Затрагивается TherapyTasksService.checkStreakTasks (fire-and-forget
     // побочный вызов из tracker/diary контроллеров) — пустая таблица

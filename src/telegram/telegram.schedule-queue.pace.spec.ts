@@ -100,6 +100,7 @@ describe('очередь и лимит Telegram', () => {
     // Итог прогона уходит в /stats событием без userId.
     expect(analytics.track).toHaveBeenCalledWith(null, 'notify_queue_tick', {
       sent: 1,
+      pushed: 0,
       transient: 0,
       waited: 1,
       deferred: 0,
@@ -122,6 +123,7 @@ describe('очередь и лимит Telegram', () => {
     ]);
     expect(analytics.track).toHaveBeenCalledWith(null, 'notify_queue_tick', {
       sent: 0,
+      pushed: 0,
       transient: 0,
       waited: 0,
       deferred: 3,
@@ -154,6 +156,7 @@ describe('очередь и лимит Telegram', () => {
     expect(accountService.markUserBlocked).not.toHaveBeenCalled();
     expect(analytics.track).toHaveBeenCalledWith(null, 'notify_queue_tick', {
       sent: 0,
+      pushed: 0,
       transient: 2,
       waited: 0,
       deferred: 0,
