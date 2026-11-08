@@ -7,7 +7,6 @@
 
 **Аудит 2026-11 — баги сайта и понятность** (детали и коды — [AUDIT_2026-11.md](../AUDIT_2026-11.md)):
 - **Хвосты 5.6 (E6):**
-  - .ics в MAX: data:-URL уходит ссылкой-скачиванием внутри вебвью (`shared/src/host/max.ts`, `saveFile`), работает ли это в клиенте MAX — не проверено; `downloadFile` берёт https, ссылку с сервера (`POST /api/plan/ics`) MAX может взять, выставив `dataUrlFiles: false`.
   - Telegram: ссылка на .ics открывается после ответа сервера (`shared/src/practices/savePracticeIcs.ts`), а не синхронно в тапе; если клиент потребует жест для `openLink`, ссылку придётся выдавать заранее, при открытии шага «Запланировать».
 - **Хвосты волны 4 (#1024):**
   - Отложенная ссылка запуска (`rememberLaunchParam`, `shared/src/host/startParam.ts`) стирается `clearLocalData` (`shared/src/auth/clearLocalData.ts`), если в браузере до этого был вход в другой аккаунт: ссылку из уведомления придётся открыть ещё раз.

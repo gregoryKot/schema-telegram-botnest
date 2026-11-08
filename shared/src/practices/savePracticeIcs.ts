@@ -1,6 +1,6 @@
-// .ics шага плана: отдать хосту (аудит 2026-11, E6). Браузер и MAX берут
-// файл, собранный на устройстве (data:-URL, utils/ics.ts). Telegram его не
-// берёт: openLink клиента пускает только http(s) и бросал WebAppTgUrlInvalid.
+// .ics шага плана: отдать хосту (аудит 2026-11, E6). Браузер берёт файл,
+// собранный на устройстве (data:-URL, utils/ics.ts). Telegram (openLink) и
+// MAX (downloadFile) пускают только http(s) — Telegram бросал WebAppTgUrlInvalid.
 // Там файл отдаёт сервер — по ссылке, которую выдаёт POST /api/plan/ics
 // (src/api/practice-ics.ts); событие то же: начало — planEventStartMs.
 import { getHost } from '../host';

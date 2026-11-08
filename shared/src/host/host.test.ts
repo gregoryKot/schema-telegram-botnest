@@ -482,6 +482,16 @@ describe('адаптер MAX', () => {
     expect(createMaxHost().capabilities.haptics).toBe(false);
   });
 
+  // Хвост E6: downloadFile моста берёт только https — файл отдаёт сервер.
+  it('с downloadFile у моста data:-URL файлов не берёт, без моста — берёт', () => {
+    fakeMax();
+    expect(createMaxHost().capabilities.dataUrlFiles).toBe(false);
+    fakeMax({ downloadFile: undefined });
+    expect(createMaxHost().capabilities.dataUrlFiles).toBe(true);
+    delete (globalThis as { WebApp?: unknown }).WebApp;
+    expect(createMaxHost().capabilities.dataUrlFiles).toBe(true);
+  });
+
   it('close у площадки нет, backButton есть', () => {
     fakeMax();
     const host = createMaxHost();
