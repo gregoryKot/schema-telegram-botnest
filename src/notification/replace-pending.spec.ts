@@ -1,0 +1,74 @@
+// Хвост E16: «снять + поставить» — одна транзакция, лок перепланировки берётся
+// первым. Что Postgres держит лок и UPDATE после него видит чужой коммит —
+// test/raw-sql-live-infra.e2e-spec.ts (мок этого не докажет, правило №18).
+import { replacePending } from './replace-pending';
+import type { PrismaService } from '../prisma/prisma.service';
+
+function fakeDb() {
+  const steps: string[] = [];
+  const tx = {
+    $executeRaw: jest.fn((sql: TemplateStringsArray, ...args: unknown[]) => {
+      steps.push(`lock ${sql.join('?')} ${String(args[0])}`);
+      return Promise.resolve(0);
+    }),
+    scheduledNotification: {
+      updateMany: jest.fn(async () => {
+        steps.push('cancel');
+        return { count: 1 };
+      }),
+      create: jest.fn(async () => {
+        steps.push('create');
+        return {};
+      }),
+    },
+  };
+  const prisma = {
+    $transaction: jest.fn(async (fn: (t: typeof tx) => Promise<unknown>) => {
+      steps.push('begin');
+      await fn(tx);
+      steps.push('commit');
+    }),
+  };
+  return { prisma: prisma as unknown as PrismaService, tx, steps };
+}
+
+describe('replacePending — снять и поставить под локом на человека', () => {
+  it('лок, снятие и вставка — внутри одной транзакции, лок первым', async () => {
+    const { prisma, steps } = fakeDb();
+    await replacePending(prisma, 42n, 'reminder', new Date(0));
+    expect(steps).toEqual([
+      'begin',
+      'lock SELECT pg_advisory_xact_lock(hashtext(?)) reschedule:42',
+      'cancel',
+      'create',
+      'commit',
+    ]);
+  });
+
+  it('снимает только неотправленные этого человека и типа; payload шифруется как в schedule', async () => {
+    const { prisma, tx } = fakeDb();
+    const at = new Date('2026-07-02T18:00:00Z');
+    await replacePending(prisma, 42n, 'reminder', at, { streak: 3 });
+    expect(tx.scheduledNotification.updateMany).toHaveBeenCalledWith({
+      where: { userId: 42n, type: 'reminder', sentAt: null, cancelledAt: null },
+      data: { cancelledAt: expect.any(Date) },
+    });
+    expect(tx.scheduledNotification.create).toHaveBeenCalledWith({
+      data: {
+        userId: 42n,
+        type: 'reminder',
+        sendAt: at,
+        payload: expect.any(String),
+      },
+    });
+  });
+
+  it('у разных людей — разные ключи лока', async () => {
+    const a = fakeDb();
+    const b = fakeDb();
+    await replacePending(a.prisma, 1n, 'reminder', new Date(0));
+    await replacePending(b.prisma, 2n, 'reminder', new Date(0));
+    expect(a.tx.$executeRaw.mock.calls[0][1]).toBe('reschedule:1');
+    expect(b.tx.$executeRaw.mock.calls[0][1]).toBe('reschedule:2');
+  });
+});

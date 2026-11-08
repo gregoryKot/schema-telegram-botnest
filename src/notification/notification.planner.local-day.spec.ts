@@ -37,10 +37,16 @@ function makeUser(over: Partial<PlannerUser> = {}): PlannerUser {
 }
 
 function make(daysSince = 1) {
+  const schedule = jest.fn().mockResolvedValue(undefined);
   const notifications = {
-    schedule: jest.fn().mockResolvedValue(undefined),
+    schedule,
     cancel: jest.fn().mockResolvedValue(undefined),
     hasPending: jest.fn().mockResolvedValue(false),
+    // «Снять + поставить» одной транзакцией (replace-pending.ts).
+    replacePending: jest.fn(
+      (u: bigint, t: string, at: Date, p?: object): Promise<unknown> =>
+        schedule(u, t, at, p),
+    ),
   };
   const cadence = {
     claimPlanDay: jest.fn().mockResolvedValue(true),

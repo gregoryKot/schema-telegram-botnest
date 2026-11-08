@@ -295,6 +295,32 @@ describe('ClientBookingService.book — та же цепочка, что у /boo
       { status: 'confirmed' },
     );
   });
+
+  // R9 (хвост волны 7): выбор валюты при поясе без места — то же правило, что
+  // у /book. Раньше выбор до сервиса не доходил: UTC оставался в рублях с
+  // предоплатой, даже если человек не в России.
+  it('пояс без места + выбранные евро → бронь в евро, подтверждена сразу', async () => {
+    const { svc, created } = make({ relations: [active(TG_CLIENT)] });
+    const res = await svc.book(TG_CLIENT, {
+      ...INPUT,
+      clientTimeZone: 'UTC',
+      currency: 'EUR',
+    });
+    expect(res).toMatchObject({ status: 'CONFIRMED', paymentUrl: null });
+    expect(created[0]).toMatchObject({ currency: 'EUR', status: 'CONFIRMED' });
+  });
+
+  it('настоящий пояс России: выбор евро не действует — рубли и оплата', async () => {
+    const { svc, created } = make({ relations: [active(TG_CLIENT)] });
+    const res = await svc.book(TG_CLIENT, {
+      ...INPUT,
+      clientTimeZone: 'Europe/Moscow',
+      currency: 'EUR',
+    });
+    expect(res.status).toBe('HELD');
+    expect(res.paymentUrl).toContain('robokassa');
+    expect(created[0]).toMatchObject({ currency: 'RUB', status: 'HELD' });
+  });
 });
 
 describe('ClientBookingService.overview — только свои ближайшие брони', () => {

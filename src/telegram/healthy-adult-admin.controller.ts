@@ -14,6 +14,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { HealthyAdultService } from '../bot/healthy-adult.service';
 import { ChannelPublisherService } from '../channel/channel-publisher.service';
+import type { PublishResult } from '../channel/channel-target';
+import { publishBusy } from '../channel/publish-report';
 import { AdminThrottle, assertAdminKey } from '../booking/admin-key.util';
 import {
   CheckPhraseDto,
@@ -23,6 +25,9 @@ import {
 } from '../bot/healthy-adult.dto';
 import { findIssues } from '../bot/healthy-adult.quality';
 import { formatImportReport } from '../bot/healthy-adult.import';
+
+/** Кто держит флаг публикации, пока идёт кнопка, — так его назовёт отказ /zv. */
+export const ADMIN_HOLDER = 'публикация из админки';
 
 /**
  * Админ-эндпоинты управления фразами «Здорового Взрослого», защищены тем же
@@ -120,11 +125,22 @@ export class HealthyAdultAdminController {
     return this.phrases.poolStatus();
   }
 
-  /** Опубликовать сообщение по всем площадкам сейчас — проверка связки из админки. */
+  /**
+   * Опубликовать сообщение по всем площадкам сейчас — проверка связки из
+   * админки. Флаг «в полёте» — общий с тиком расписания и /zv (хвост R7):
+   * без него кнопка во время тика давала в канале второй пост.
+   */
   @Post('test-post')
   @HttpCode(HttpStatus.OK)
-  async testPost(@Headers('x-admin-key') key: string) {
+  async testPost(@Headers('x-admin-key') key: string): Promise<PublishResult> {
     assertAdminKey(key, this.adminKey);
-    return this.publisher.publish();
+    const gate = this.publisher.inFlight;
+    const release = gate.claim(ADMIN_HOLDER);
+    if (!release) return publishBusy(gate.holder);
+    try {
+      return await this.publisher.publish();
+    } finally {
+      release();
+    }
   }
 }

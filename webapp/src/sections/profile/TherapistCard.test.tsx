@@ -11,8 +11,9 @@ const getFormerTherapist = vi.hoisted(() => vi.fn());
 // Запись из приложения (#546): по умолчанию — раздела нет (не клиент владельца).
 const getClientBooking = vi.hoisted(() => vi.fn());
 const getSlots = vi.hoisted(() => vi.fn());
+const getBookingOptions = vi.hoisted(() => vi.fn()); // цена в листе записи (R9)
 const trackEvent = vi.hoisted(() => vi.fn());
-vi.mock('../../api', () => ({ api: { getFormerTherapist, getClientBooking, getSlots, trackEvent } }));
+vi.mock('../../api', () => ({ api: { getFormerTherapist, getClientBooking, getSlots, getBookingOptions, trackEvent } }));
 vi.mock('../../components/booking/useClientTimeZone', () => ({ useClientTimeZone: () => ['Europe/Moscow', vi.fn()] }));
 
 import { TherapistCard } from './TherapistCard';
@@ -20,6 +21,7 @@ import { TherapistCard } from './TherapistCard';
 beforeEach(() => {
   getClientBooking.mockResolvedValue({ eligible: false, upcoming: [] });
   getSlots.mockResolvedValue([]);
+  getBookingOptions.mockResolvedValue([]);
 });
 afterEach(() => {
   cleanup();

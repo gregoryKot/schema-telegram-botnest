@@ -13,6 +13,7 @@ import { decryptJson } from '../utils/crypto';
 import { decryptName, encryptName } from './client-name';
 import { randomBytes } from 'crypto';
 import { activeRelationWhere } from './relation-where';
+import { insertRelation } from './relation-url-code';
 import { endClientRelations } from './end-client-relations';
 import { CLIENT_LEFT } from './relation-end-reason';
 import { TherapyRelationInfo, TherapyClientSummary } from './therapy.types';
@@ -170,15 +171,17 @@ export class TherapyRelationsService {
     name: string,
   ): Promise<TherapyClientSummary[]> {
     const code = randomBytes(5).toString('hex').toUpperCase();
-    await this.prisma.therapyRelation.create({
-      data: {
-        code,
-        therapistId,
-        clientId: null,
-        status: 'active',
-        virtualClientName: encryptName(name),
-      },
-    });
+    await insertRelation(() =>
+      this.prisma.therapyRelation.create({
+        data: {
+          code,
+          therapistId,
+          clientId: null,
+          status: 'active',
+          virtualClientName: encryptName(name),
+        },
+      }),
+    );
     return this.getClients(therapistId);
   }
 

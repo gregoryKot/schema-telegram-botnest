@@ -14,6 +14,7 @@ import {
   isAfterSendFailure,
   isUnknownReason,
   markUnknown,
+  splitUnknown,
 } from './unknown-outcome';
 
 const sys = (code: string, extra: Record<string, unknown> = {}) =>
@@ -102,9 +103,14 @@ describe('ChannelPublisherService — метка исхода в отчёте и
       explain: (e) => (e as Error).message,
     });
     const record = jest.fn().mockResolvedValue(undefined);
+    const recordPost = jest.fn().mockResolvedValue(undefined);
     const phrases = {
       recentPostTexts: jest.fn().mockResolvedValue([]),
       pickFromPool: jest.fn().mockResolvedValue('фраза'),
+      recordPost,
+      poolStatus: jest
+        .fn()
+        .mockResolvedValue({ enabled: 40, unused: 30, daysLeft: 15 }),
     } as unknown as HealthyAdultService;
     const res = await new ChannelPublisherService(
       [
@@ -122,6 +128,21 @@ describe('ChannelPublisherService — метка исхода в отчёте и
     expect(isUnknownReason(reasons.vk)).toBe(false);
     // В журнал уходит та же причина — по ней досылка решает «не повторять».
     expect(record).toHaveBeenCalledWith('утро', [], res.failed, 'фраза');
+    // Пост мог выйти — фраза занята, слот закрыт: тик её не повторит.
+    expect(res.posted).toBe(true);
+    expect(recordPost).toHaveBeenCalledWith('фраза', 'pool');
+  });
+});
+
+describe('splitUnknown — отказы и «пост мог выйти» раздельно', () => {
+  it('исход неизвестен уходит в площадки для ручной проверки, остальное — в отказы', () => {
+    const tg = { platform: 'telegram', reason: markUnknown('таймаут') };
+    const vk = { platform: 'vk', reason: '403: нет доступа' };
+    expect(splitUnknown([tg, vk])).toEqual({
+      failed: [vk],
+      unknown: ['telegram'],
+    });
+    expect(splitUnknown([])).toEqual({ failed: [], unknown: [] });
   });
 });
 

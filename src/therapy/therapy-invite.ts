@@ -5,6 +5,7 @@ import { optionalMiniappStartLink } from '../telegram/miniapp-link';
 import { CABINET_URL } from '../telegram/telegram.constants';
 import { encryptName } from './client-name';
 import { markCardClaim } from './therapy-invite-card-claim';
+import { insertRelation } from './relation-url-code';
 
 // Срок жизни кода-приглашения (аудит 2026-10, T5): колонки expiresAt нет, а
 // миграции ради этого не нужны — возраст считается по createdAt.
@@ -109,9 +110,11 @@ export async function createTherapyInvite(
   do {
     code = randomCode();
   } while (await prisma.therapyRelation.findUnique({ where: { code } }));
-  await prisma.therapyRelation.create({
-    data: { therapistId, code, clientAlias: encryptName(alias), attachToId },
-  });
+  await insertRelation(() =>
+    prisma.therapyRelation.create({
+      data: { therapistId, code, clientAlias: encryptName(alias), attachToId },
+    }),
+  );
   return { code, ...inviteLinks(code) };
 }
 

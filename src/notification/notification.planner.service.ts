@@ -266,9 +266,8 @@ export class NotificationPlannerService {
       // Компактная клавиатура только для вовлечённого юзера без признаков усталости.
       compactControls: ignoredCount === 0 && !onBreak,
     };
-    // Всегда отменяем зависшие напоминания и планируем заново
-    await this.notifications.cancel(userId, 'reminder');
-    await this.notifications.schedule(
+    // Снять зависшее и поставить заново — атомарно и между инстансами (E16)
+    await this.notifications.replacePending(
       userId,
       'reminder',
       nextSendAt(notifyLocalHour, tz, now),

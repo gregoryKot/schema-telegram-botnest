@@ -40,6 +40,7 @@ export class ClientBookingController {
       startsAt: new Date(dto.startsAt),
       durationMin: dto.durationMin ?? 50,
       clientTimeZone: dto.clientTimeZone?.trim() || undefined,
+      currency: dto.currency,
     });
   }
 }

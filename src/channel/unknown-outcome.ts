@@ -68,6 +68,17 @@ export const markUnknown = (reason: string): string =>
 export const isUnknownReason = (reason: string | null | undefined): boolean =>
   !!reason && reason.startsWith(`${UNKNOWN_OUTCOME}:`);
 
+/** Отказы публикации → настоящие отказы и площадки, где пост мог выйти. */
+export function splitUnknown<T extends { platform: string; reason: string }>(
+  failed: T[],
+): { failed: T[]; unknown: string[] } {
+  const unknown = failed.filter((f) => isUnknownReason(f.reason));
+  return {
+    failed: failed.filter((f) => !unknown.includes(f)),
+    unknown: unknown.map((f) => f.platform),
+  };
+}
+
 /** Сообщение владельцу: досылки не будет, площадку проверить руками. */
 export function unknownOutcomeText(slot: string, platforms: string[]): string {
   return (

@@ -2,9 +2,14 @@
 // x-admin-key (ADMIN_BOOKING_KEY, не ADMIN_ID — это HTTP-админка, не бот),
 // и что каждый метод дёргает правильный сервис с правильными аргументами.
 import { ForbiddenException } from '@nestjs/common';
-import { HealthyAdultAdminController } from './healthy-adult-admin.controller';
+import {
+  ADMIN_HOLDER,
+  HealthyAdultAdminController,
+} from './healthy-adult-admin.controller';
 import type { HealthyAdultService } from '../bot/healthy-adult.service';
 import type { ChannelPublisherService } from '../channel/channel-publisher.service';
+import { OneAtATime } from '../channel/one-at-a-time';
+import { SCHEDULE_HOLDER } from '../channel/channel-schedule.service';
 
 const ADMIN_KEY = 'test-admin-key-1234-0123456789abcdefghij';
 
@@ -37,6 +42,7 @@ function makePhrases() {
 function makeChannel() {
   return {
     publish: jest.fn().mockResolvedValue({ ok: true, message: 'posted' }),
+    inFlight: new OneAtATime(),
   } as unknown as ChannelPublisherService;
 }
 
@@ -163,5 +169,47 @@ describe('HealthyAdultAdminController — действия делегируют 
       ForbiddenException,
     );
     expect(phrases.poolStatus).not.toHaveBeenCalled();
+  });
+});
+
+// Хвост R7 (аудит 2026-11): кнопка «Опубликовать» шла мимо общего флага
+// «публикация в полёте» — во время тика расписания давала второй пост.
+describe('HealthyAdultAdminController — testPost и флаг «в полёте»', () => {
+  it('флаг держит тик расписания — пост не уходит, ответ называет, чем занято', async () => {
+    const { controller, channel } = makeController();
+    const release = channel.inFlight.claim(SCHEDULE_HOLDER);
+
+    const res = await controller.testPost(ADMIN_KEY);
+
+    expect(channel.publish).not.toHaveBeenCalled();
+    expect(res.ok).toBe(false);
+    expect(res.posted).toBe(false);
+    expect(res.message).toContain(`Сейчас выходит ${SCHEDULE_HOLDER}`);
+    expect(channel.inFlight.holder).toBe(SCHEDULE_HOLDER);
+    release?.();
+  });
+
+  it('пока кнопка публикует, флаг у неё: тик и /zv видят «занято»', async () => {
+    const channel = makeChannel();
+    let holderDuring: string | null = 'не вызывался';
+    (channel.publish as jest.Mock).mockImplementation(async () => {
+      holderDuring = channel.inFlight.holder;
+      return { ok: true, posted: true, message: 'posted' };
+    });
+    const { controller } = makeController({ channel });
+
+    await controller.testPost(ADMIN_KEY);
+
+    expect(holderDuring).toBe(ADMIN_HOLDER);
+    expect(channel.inFlight.holder).toBeNull();
+  });
+
+  it('публикация упала — флаг снят, следующий тик не заблокирован', async () => {
+    const channel = makeChannel();
+    (channel.publish as jest.Mock).mockRejectedValue(new Error('db down'));
+    const { controller } = makeController({ channel });
+
+    await expect(controller.testPost(ADMIN_KEY)).rejects.toThrow('db down');
+    expect(channel.inFlight.holder).toBeNull();
   });
 });

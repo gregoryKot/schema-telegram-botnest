@@ -46,7 +46,7 @@
 | «Справочник» терапевта (`/cabinet/guide`: режимы, схемы, техники, «Для терапевта» без клиента) | `webapp/src/sections/TherapistGuideSection.tsx` + `webapp/src/sections/guide/` (`guideReferenceModel.ts` — списки и поиск); листы — те же `webapp/src/components/therapist/guide/` (`useConceptGuide` с `track`); пункт меню — `webapp/src/components/appShell/MobileNav.tsx` и `Sidebar.tsx`, экран по адресу — `AppSections.tsx`; /stats — `src/bot/guide-reference-metrics.*` | frontend, texts, analytics |
 | Env-переменная | `src/infra/env-registry.ts` + `docs/ENV.md` | ops |
 | Внешняя интеграция | проба в `src/infra/self-check/registry.ts` | ops |
-| Хост, редирект, визитка; что визитка показывает поисковикам | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts`, `src/practice-domain.seo.ts` (robots, sitemap, `PRACTICE_INDEXED_PAGES`), `src/practice-index-html.ts` (canonical), `src/infra/canonical-host.ts` | backend-api |
+| Хост, редирект, визитка; что визитка показывает поисковикам | `src/practice-domain.middleware.ts`, `src/practice-domain.surface.ts`, `src/practice-domain.seo.ts` (robots, sitemap, `PRACTICE_INDEXED_PAGES`), `src/practice-index-html.ts` (canonical и карточка ссылки на страницах визитки), `src/practice-preview.ts` (карточка ссылки визитки: `og:*`/`twitter:*`), `src/infra/canonical-host.ts` | backend-api |
 | Статья сайта | `src/articles/articles.seed.ts` (+ поднять `SEED_VERSION` в `src/articles/articles.service.ts`), [docs/ARTICLES.md](ARTICLES.md) | texts, telegram |
 | Фраза канала «Здоровый Взрослый» | `src/bot/healthy-adult.data.ts` + миграция; площадки — `src/channel/channel.providers.ts` | telegram, texts |
 | Красный CI | [architecture/gates.md](architecture/gates.md) → строка гейта → его шапка | gates |
