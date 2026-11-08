@@ -45,15 +45,6 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
 PR: сменить `runs-on`, прочитать логи, починить.
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
 
-**Merge-драйверы бейслайнов** (`scripts/merge-drivers-check.mjs`, `scripts/merge-json-ratchet.mjs`, #729):
-- **`.gitattributes` сам драйвером не сводится.** `--check` требует строку на
-  каждый новый `scripts/*-baseline.json`, поэтому два PR с новыми гейтами
-  вставляют строки в соседние места файла и получают текстовый конфликт.
-  Разрешается руками: оставить обе строки, порядок не важен. Если строку
-  потеряли при разрешении, `node scripts/setup-merge-drivers.mjs --check`
-  (джоба `checks`) краснеет на бейслайне без атрибута. Свой драйвер для
-  `.gitattributes` не заведён.
-
 **Тесты и даты — открыто:**
 - **vitest `webapp` под нагрузкой машины: остался класс «10 с на весь тест».** Класс «`findBy*`/`waitFor`
   ждёт 1 с, а холодный `import()` ленивого чанка дольше» (`HistoryView` 1,4 с, `TrackerOverlay` 2,1 с на Mac

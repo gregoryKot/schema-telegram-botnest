@@ -109,7 +109,7 @@
   "scripts/list-survived-mutants.mjs": 66,
   "scripts/local-cache-resolve.mjs": 184,
   "scripts/local-cache-source.mjs": 131,
-  "scripts/merge-drivers-check.mjs": 109,
+  "scripts/merge-drivers-check.mjs": 118,
   "scripts/merge-json-ratchet-rules.mjs": 67,
   "scripts/merge-json-ratchet.mjs": 158,
   "scripts/mutation-changed-files.mjs": 70,
