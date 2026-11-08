@@ -133,7 +133,8 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   font-size: 18px; line-height: 1; color: var(--text-faint); transition: transform .15s;
 }
 .ds-fold-chev::before { content: '›'; display: block; transform: rotate(90deg); }
-.ds-fold-btn[aria-expanded="true"] .ds-fold-chev { transform: rotate(180deg); }
+/* Шеврон в кнопке-ссылке (ds-link) переворачивается так же — по aria-expanded своей кнопки. */
+.ds-fold-btn[aria-expanded="true"] .ds-fold-chev, [aria-expanded="true"] > .ds-fold-chev { transform: rotate(180deg); }
 .ds-fold-body { padding: 0 16px 16px; }
 
 /* ── Кнопки ──────────────────────────────────────────────────────────────── */
