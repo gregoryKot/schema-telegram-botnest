@@ -43,6 +43,22 @@ describe('TalkSheet', () => {
     expect(track).toHaveBeenLastCalledWith('more', 'book', 'crisis');
   });
 
+  // QA 2026-11: фокус оставался на строке «Ещё» под листом, Tab ходил по невидимой странице.
+  it('забирает фокус на «Назад», держит Tab внутри и возвращает фокус вызвавшей строке', () => {
+    const opener = document.createElement('button');
+    document.body.appendChild(opener);
+    opener.focus();
+    const { unmount } = renderSheet();
+    const back = screen.getByRole('button', { name: 'Назад' });
+    expect(document.activeElement).toBe(back);
+    screen.getAllByRole('link').at(-1)!.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(back);
+    unmount();
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
   it('«Назад» закрывает через goBack', () => {
     renderSheet();
     fireEvent.click(screen.getByRole('button', { name: 'Назад' }));

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Лист «Мой портрет»: списки «Мои схемы»/«Мои режимы» со статусом карточки и
 // частотой за неделю (из общего usePatternLayer), строка открывает экран
-// паттерна, открытие трекается. Пусто — подсказка вместо тишины.
+// паттерна, открытие трекается. Пусто — подсказка вместо тишины. Записи
+// дневников лист берёт у useAboutMe профиля — своего запроса нет.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -26,8 +27,11 @@ const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
 
-function aboutMe(schemas: string[], modes: string[]) {
-  return { portrait: buildPortrait({ manualSchemaIds: schemas, myModeIds: modes }), mySchemaIds: schemas, myModeIds: modes } as unknown as AboutMeState;
+function aboutMe(schemas: string[], modes: string[], extra: Partial<AboutMeState> = {}) {
+  return {
+    portrait: buildPortrait({ manualSchemaIds: schemas, myModeIds: modes }), mySchemaIds: schemas, myModeIds: modes,
+    schemaEntries: [], modeEntries: [], setSchemaEntries: vi.fn(), setModeEntries: vi.fn(), diaries: 'ready', ...extra,
+  } as unknown as AboutMeState;
 }
 function renderSheet(state: AboutMeState, onClose = vi.fn(), form: 'ty' | 'vy' = 'ty') {
   return render(
@@ -47,28 +51,34 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('PortraitSheet', () => {
-  it('пусто: подсказка отметить схемы или пройти тест, форма «вы» — без «ты»', async () => {
+  it('пусто: подсказка отметить схемы или пройти тест, форма «вы» — без «ты»; дневники сам не читает', async () => {
     renderSheet(aboutMe([], []), vi.fn(), 'vy');
     expect(screen.getByText(/Отметьте схемы и режимы, которые узнаёте/)).toBeTruthy();
     expect(screen.queryByText('Мои схемы')).toBeNull();
-    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+    expect(mockApi.getSchemaDiary).not.toHaveBeenCalled();
+    expect(mockApi.getModeDiary).not.toHaveBeenCalled();
   });
 
   it('списки схем и режимов; статус карточки словами и частота — из дневника', async () => {
-    mockApi.getSchemaDiary.mockResolvedValue([
+    const schemaEntries = [
       { id: 1, createdAt: daysAgo(0), trigger: 'Т', emotions: [], schemaIds: ['abandonment'] },
       { id: 2, createdAt: daysAgo(1), trigger: 'Т', emotions: [], schemaIds: ['abandonment'] },
-    ]);
-    renderSheet(aboutMe(['abandonment', 'mistrust'], ['vulnerable_child']));
+    ];
+    renderSheet(aboutMe(['abandonment', 'mistrust'], ['vulnerable_child'], { schemaEntries } as Partial<AboutMeState>));
     expect(screen.getByText('Мои схемы')).toBeTruthy();
     expect(screen.getByText('Мои режимы')).toBeTruthy();
     expect(await screen.findByText('2 дня')).toBeTruthy();
     expect(screen.getAllByText(/карточка пока пустая/).length).toBe(3);
   });
 
-  it('пока дневник не загрузился, статус и частоту не выдумываем', () => {
-    mockApi.getSchemaDiary.mockReturnValue(new Promise(() => {}));
-    renderSheet(aboutMe(['abandonment'], []));
+  it('пока дневник не загрузился (или не загрузился вовсе), статус и частоту не выдумываем', async () => {
+    renderSheet(aboutMe(['abandonment'], [], { diaries: 'loading' }));
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+    expect(screen.queryByText(/карточка пока пустая/)).toBeNull();
+    cleanup();
+    renderSheet(aboutMe(['abandonment'], [], { diaries: 'failed' }));
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalledTimes(2));
     expect(screen.queryByText(/карточка пока пустая/)).toBeNull();
   });
 

@@ -1,13 +1,9 @@
-// Данные вкладки «Я» / профиля: портрет по потребностям, «Мои схемы»/«Мои
-// режимы», «Тёплые слова». Единственная реализация для обоих фронтендов
-// (правила №3 и №11): раньше жила в мини-аппе, сайту нужен тот же расчёт.
-// api приходит параметром (образец — pair/usePairMechanics), сбой источника —
-// через reportError, а не console.error (check-silent-catch).
-//
-// Общий источник правды с «Мои паттерны» — buildPortrait (portraitData.ts):
-// активные схемы здесь не пересчитываем (правило №4). Шесть запросов уходят
-// параллельно, но готовность у карточек своя: портрет не ждёт «тёплые слова»
-// (замер 2026-08-23: общий Promise.all делал вкладку вдвое дольше соседних).
+// Данные вкладки «Я» / профиля: портрет (buildPortrait — как «Мои паттерны», №4), «Мои схемы»/
+// «Мои режимы», «Тёплые слова» — одна реализация (№3, №11). api — параметром, сбой — reportError.
+// Шесть запросов параллельно, готовность у карточек своя: портрет не ждёт «тёплые
+// слова» (замер 2026-08-23: общий Promise.all делал вкладку вдвое дольше соседних).
+// Дневники схем и режимов — единственное чтение на весь профиль: счётчик записей,
+// частоты, «тёплые слова» и лист портрета берут их отсюда (diaries).
 import { useEffect, useRef, useState } from 'react';
 import { buildPortrait, type Portrait } from './portraitData';
 import {
@@ -39,6 +35,7 @@ export interface AboutMeOptions {
 }
 
 export type AboutMeState = ReturnType<typeof useAboutMe>;
+type Load = 'loading' | 'ready' | 'failed';
 
 export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
   const { refreshKey } = options;
@@ -55,6 +52,7 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
   >([]);
   const [portraitReady, setPortraitReady] = useState(false);
   const [warmWordsReady, setWarmWordsReady] = useState(false);
+  const [diaries, setDiaries] = useState<Load>('loading');
 
   // Свежие api/reportError без перезапуска эффекта загрузки.
   const apiRef = useRef(api);
@@ -65,10 +63,10 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
   useEffect(() => {
     const a = apiRef.current;
     const fail = (what: string) => () => reportRef.current?.(`${what} failed`);
-    // Только ready, не данные: провал повторного запроса не подменяет уже
-    // показанное пустотой.
+    // Только ready, не данные: провал повтора не подменяет показанное пустотой.
     setPortraitReady(false);
     setWarmWordsReady(false);
+    setDiaries('loading');
 
     void Promise.all([
       a
@@ -83,13 +81,14 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
       a.getYsqHistory().then(setYsqHistory).catch(fail('getYsqHistory')),
     ]).finally(() => setPortraitReady(true));
 
-    // Дневник схем не гейтит ни одну карточку: частоты подъезжают по мере
-    // готовности.
-    a.getSchemaDiary().then(setSchemaEntries).catch(fail('getSchemaDiary'));
-
-    // Дневник режимов нужен и «тёплым словам», и частотам — просим один раз.
+    // Дневник схем карточек не гейтит; дневник режимов нужен и «тёплым словам».
+    const settle = (state: Load) => () => setDiaries(state);
+    const sd = a.getSchemaDiary().then(setSchemaEntries);
+    const md = a.getModeDiary().then(setModeEntries);
+    Promise.all([sd, md]).then(settle('ready'), settle('failed'));
+    sd.catch(fail('getSchemaDiary'));
     void Promise.all([
-      a.getModeDiary().then(setModeEntries).catch(fail('getModeDiary')),
+      md.catch(fail('getModeDiary')),
       a.getModeNotes().then(setModeNotes).catch(fail('getModeNotes')),
       a.getPhraseChecks().then(setPhraseChecks).catch(fail('getPhraseChecks')),
     ]).finally(() => setWarmWordsReady(true));
@@ -121,6 +120,7 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
     setSchemaEntries,
     modeEntries,
     setModeEntries,
+    diaries,
     schemaWeekFreq: weekSchemaFrequency(schemaEntries),
     modeWeekFreq: weekModeFrequency(modeEntries),
     warmWordsItems,

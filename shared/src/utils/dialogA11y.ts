@@ -5,8 +5,8 @@ import { useDialogLayer, type LayerOpts } from './dialogStack';
 // базовом шите чинит все места разом. При монтировании запоминает
 // activeElement, переносит фокус внутрь (на первый фокусируемый элемент,
 // иначе на контейнер), держит Tab внутри (трап), при размонтировании
-// возвращает фокус. Трап и Escape работают только у верхнего диалога —
-// стек в dialogStack.ts; onEscape не задан — Escape диалог не закрывает.
+// возвращает фокус. Трап и Escape — только у верхнего (стек dialogStack.ts): onEscape —
+// закрыть, holdEscape — держать, ни того ни другого — Escape слою ниже (лист под трапом).
 export interface DialogA11yProps {
   ref: React.RefObject<HTMLDivElement | null>;
   role: 'dialog';

@@ -4,8 +4,9 @@
 // находка аудита 2026-10 — чек-ин в ModesTab).
 //
 // Любой `.tsx` в webapp/src и shared/src, рисующий оверлей на весь экран —
-// `position: fixed` + `inset: 0` в одном объекте стиля ЛИБО className с классом,
-// чьё правило в CSS делает то же самое, — обязан вызывать `useHistorySheet(`.
+// `position: fixed` + `inset: 0` в одном объекте стиля, className с классом,
+// чьё правило в CSS делает то же самое, ЛИБО тег рамки-оверлея (`<ExScreen`,
+// `<BottomSheetShell`), — обязан вызывать `useHistorySheet(`.
 // Иначе «Назад» браузера уводит со страницы (или, хуже, закрывает родительский
 // лист вместе с оверлеем), а Escape его не касается.
 //
@@ -20,12 +21,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import {
-  callsHistorySheet,
-  classOverlays,
-  inlineOverlays,
-  overlayClasses,
-} from './history-sheet-detect.mjs';
+import { callsHistorySheet, classOverlays, frameOverlays, inlineOverlays, overlayClasses } from './history-sheet-detect.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const BASELINE_PATH = join(ROOT, 'scripts', 'history-sheet-baseline.json');
@@ -79,7 +75,7 @@ function main() {
   const overlays = new Map(); // файл → { hits, hasHook }
   for (const rel of files.filter((f) => f.endsWith('.tsx') && !isTest(f))) {
     const src = readFileSync(join(ROOT, rel), 'utf8');
-    const hits = [...inlineOverlays(src), ...classOverlays(src, classes)];
+    const hits = [...inlineOverlays(src), ...classOverlays(src, classes), ...frameOverlays(src)];
     if (hits.length) overlays.set(rel, { hits, hasHook: callsHistorySheet(src) });
   }
 

@@ -97,7 +97,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             <h1 className="ds-h2 sk-title">Что меня<br /><em className="sk-it">питает</em></h1>
             <div className="ds-sub sk-lead sk-intro">
               {buildPracticesIntro(tr)}
-              {onOpenTracker &&<> Что-то просело? <span {...pressable(onOpenTracker)} className="ds-link ds-link--inline">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
+              {onOpenTracker &&<> Что-то просело? <span {...pressable(() => goBack(onOpenTracker))} className="ds-link ds-link--inline">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
           <div className="sk-head-actions">

@@ -143,12 +143,12 @@ export function createMaxHost(): HostBridge {
         backButton: !!w?.BackButton,
         // Закрыть мини-апп изнутри нельзя — только предупреждение о закрытии.
         close: false,
-        dataUrlFiles: true, // data:-URL — ссылкой на скачивание (saveFile ниже)
+        // downloadFile берёт только https: есть он — файл отдаёт сервер.
+        dataUrlFiles: !w?.downloadFile,
       };
     },
 
-    // MAX Bridge предзагружает данные сам — ready() ждать нечего.
-    ready: () => {},
+    ready: () => {}, // мост предзагружает данные сам — ждать нечего
     // Управления разворотом вьюпорта у площадки нет.
     expand: () => {},
     // Метода закрыть себя изнутри у площадки нет — capabilities.close = false,
@@ -197,11 +197,11 @@ export function createMaxHost(): HostBridge {
       if (isMaxDeepLink(url)) wa()?.openMaxLink?.(url);
       else wa()?.openLink?.(url);
     },
-    // downloadFile требует https-ссылку, а нам приходит data:-URL (.ics файл
-    // практики) — для неё отдаём обычную ссылку на скачивание, как в браузере.
+    // Без downloadFile (моста нет) — ссылка на скачивание, как в браузере.
     saveFile: (dataUrl, filename) => {
-      if (/^https?:/i.test(dataUrl)) {
-        wa()?.downloadFile?.(dataUrl, filename);
+      const w = wa();
+      if (w?.downloadFile && /^https?:/i.test(dataUrl)) {
+        w.downloadFile(dataUrl, filename);
         return;
       }
       const a = document.createElement('a');

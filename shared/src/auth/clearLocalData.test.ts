@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { clearLocalData } from './clearLocalData';
+import { rememberLaunchParam, takeLaunchParam } from '../host/startParam';
 
 beforeEach(() => {
   localStorage.clear();
@@ -33,6 +34,15 @@ describe('clearLocalData', () => {
     expect(localStorage.getItem('ysq_progress')).toBeNull();
     expect(localStorage.getItem('app_theme')).toBeNull();
     expect(localStorage.length).toBe(0);
+  });
+
+  // Хвост волны 4 (#1024): ссылка из уведомления, открытая без входа, ждёт
+  // входа; вход в другой аккаунт (ensureDataOwner) стирал её вместе с чужими
+  // данными — ссылку приходилось открывать ещё раз.
+  it('отложенная ссылка запуска переживает очистку', () => {
+    rememberLaunchParam('?startapp=tasks');
+    clearLocalData();
+    expect(takeLaunchParam()).toBe('tasks');
   });
 
   it('недоступное хранилище (приватный режим/квота) не роняет выход', () => {

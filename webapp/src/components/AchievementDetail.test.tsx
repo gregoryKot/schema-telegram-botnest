@@ -4,7 +4,7 @@
 // мокать. Проверяем контент, закрытие по фону/не-закрытие по карточке
 // (stopPropagation) и открытие шита «Поделиться».
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AchievementDetail } from './AchievementDetail';
 import type { AchievementMeta } from '../../../shared/src/share/cards/achievementCard';
@@ -44,6 +44,14 @@ describe('AchievementDetail — закрытие', () => {
     renderDetail(onClose);
     fireEvent.click(screen.getAllByRole('presentation')[0]);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  // Dialog без closeOnEscape держит Escape (несворачиваемое окно) — деталь объявляет его явно.
+  it('Escape закрывает деталь', async () => {
+    const onClose = vi.fn();
+    renderDetail(onClose);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
   it('клик по самой карточке НЕ вызывает onClose (stopPropagation)', () => {

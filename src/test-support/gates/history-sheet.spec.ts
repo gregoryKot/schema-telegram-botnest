@@ -260,6 +260,83 @@ describe('check-history-sheet.mjs — бейслайн', () => {
   });
 });
 
+// Рамки-оверлеи (ExScreen, BottomSheetShell) рисуют fixed-оболочку сами, а у
+// потребителя своего `position: fixed` нет — до 2026-11 гейт их не видел: шторка
+// «О советах» (NeedAdviceModal) жила с локальным onClose, «Назад» закрывал лист
+// под ней. Теперь файл с тегом рамки — оверлей, как с инлайновым fixed.
+const FRAME_NO_HOOK = [
+  "import { ExScreen } from './exercises/ExScreen';",
+  'export function Ex({ onBack }: { onBack: () => void }) {',
+  '  return <ExScreen onBack={onBack} title="Упражнение" />;',
+  '}',
+  '',
+].join('\n');
+const SHEET_FRAME_NO_HOOK = [
+  "import { BottomSheetShell } from './BottomSheetShell';",
+  'export function Advice({ onClose }: { onClose: () => void }) {',
+  '  return <BottomSheetShell goBack={onClose} zIndex={300}>О советах</BottomSheetShell>;',
+  '}',
+  '',
+].join('\n');
+const FRAME_WITH_HOOK = [
+  "import { ExScreen } from './exercises/ExScreen';",
+  "import { useHistorySheet } from '../hooks/useHistorySheet';",
+  'export function Ex({ onBack }: { onBack: () => void }) {',
+  '  const goBack = useHistorySheet(onBack);',
+  '  return <ExScreen onBack={goBack} title="Упражнение" />;',
+  '}',
+  '',
+].join('\n');
+
+describe('check-history-sheet.mjs — потребители рамок ExScreen/BottomSheetShell', () => {
+  it.each([
+    ['<ExScreen', FRAME_NO_HOOK],
+    ['<BottomSheetShell', SHEET_FRAME_NO_HOOK],
+  ])('%s без хука и без записи — красный, с путём', (_tag, src) => {
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': src,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('webapp/src/components/Consumer.tsx');
+    expect(res.stderr).toContain('рамка');
+  });
+
+  it('потребитель с хуком — зелёный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': FRAME_WITH_HOOK,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('шаг потока без хука (хук у родителя) с записью в бейслайне — зелёный', () => {
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': FRAME_NO_HOOK,
+      'scripts/history-sheet-baseline.json': baseline({
+        'webapp/src/components/Consumer.tsx': entry(
+          'шаг потока: хук вызывает родитель-поток',
+        ),
+      }),
+    });
+    expect(res.status).toBe(0);
+  });
+
+  it('контроль: рамка в комментарии, похожее имя тега (ExScreenSkeleton) и импорт без тега — не оверлей', () => {
+    const src = [
+      "import { ExScreen, ExScreenSkeleton } from './exercises/ExScreen';",
+      '// раньше здесь был <ExScreen> — теперь силуэт',
+      'export const S = () => <ExScreenSkeleton />;',
+      '',
+    ].join('\n');
+    const res = runGate(GATE, {
+      'webapp/src/components/Consumer.tsx': src,
+      'scripts/history-sheet-baseline.json': baseline(),
+    });
+    expect(res.status).toBe(0);
+  });
+});
+
 // Каждая запись настоящего бейслайна — не «вес», а решение: причина внятная, у
 // записи есть since. Протухание (файл получил хук/исчез) настоящий гейт ловит в
 // CI на реальном дереве; здесь пинится форма записей.
@@ -317,6 +394,15 @@ describe('history-sheet-detect.mjs — чистые функции', () => {
         "import { useHistorySheet } from '../hooks/useHistorySheet';",
       ),
     ).toBe(false);
+  });
+
+  it('frameOverlays: тег рамки — находка со строкой; ExScreenSkeleton и комментарий — нет', () => {
+    const hits = call('frameOverlays', FRAME_NO_HOOK) as { line: number }[];
+    expect(hits).toHaveLength(1);
+    expect(hits[0].line).toBe(3);
+    expect(
+      call('frameOverlays', '// <ExScreen>\nconst s = <ExScreenSkeleton />;'),
+    ).toEqual([]);
   });
 
   it('inlineOverlays: строка находки указывает на position: fixed', () => {

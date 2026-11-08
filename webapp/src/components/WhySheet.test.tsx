@@ -26,6 +26,24 @@ function renderSheet(props: { auto?: boolean; onClose?: () => void } = {}) {
 }
 
 describe('WhySheet', () => {
+  // QA 2026-11: фокус оставался на строке «Ещё» под листом, Tab ходил по невидимой странице.
+  it('забирает фокус на «← Закрыть», держит Tab внутри и возвращает фокус вызвавшей строке', () => {
+    const opener = document.createElement('button');
+    opener.textContent = 'Зачем это всё';
+    document.body.appendChild(opener);
+    opener.focus();
+    const { unmount } = render(<MemoryRouter><WhySheet onClose={vi.fn()} /></MemoryRouter>);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '← Закрыть' }));
+    const sheet = screen.getByRole('dialog', { name: 'Зачем это всё' });
+    const last = [...sheet.querySelectorAll<HTMLElement>('button, a[href]')].at(-1)!;
+    last.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '← Закрыть' }));
+    unmount();
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
   it('при автопоказе подпись «Первый раз здесь», по кнопке — «Зачем это всё»', () => {
     renderSheet({ auto: true });
     expect(screen.getByText('Первый раз здесь')).toBeTruthy();

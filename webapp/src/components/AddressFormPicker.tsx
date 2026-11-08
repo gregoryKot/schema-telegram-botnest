@@ -62,7 +62,7 @@ function AddressFormPickerModal({ onClose }: { onClose: (answered: boolean) => v
   );
 
   return (
-    <Dialog label="Как удобнее общаться?" zIndex={300}>
+    <Dialog label="Как удобнее общаться?" zIndex={300} onEscape={() => goBack()}>
       <h2 className="dialog-title">Как удобнее общаться?</h2>
       <p className="dialog-text" style={{ marginBottom: 20 }}>
         Поменять можно в любой момент в настройках.

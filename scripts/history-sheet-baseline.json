@@ -1,10 +1,10 @@
 {
   "webapp/src/components/BottomSheetShell.tsx": {
-    "reason": "Оболочка нижней шторки: «Назад» приходит пропом goBack, который вызывающий считает через useHistorySheet (шапка файла); хук в оболочке дал бы вторую запись истории на один лист. Соблюдение этого гейт у потребителей не проверяет: NeedAdviceModal передаёт локальный onClose (мини-модалка поверх листа, CLAUDE.md допускает) — слепая зона записана в docs/README.md, «Гейт оверлеев webapp».",
+    "reason": "Оболочка нижней шторки: «Назад» приходит пропом goBack, который вызывающий считает через useHistorySheet (шапка файла); хук в оболочке дал бы вторую запись истории на один лист. Потребителя гейт видит по тегу <BottomSheetShell (frameOverlays в history-sheet-detect.mjs): без хука он обязан стоять здесь сам.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/Dialog.tsx": {
-    "reason": "Оболочка диалога: запись истории — забота потребителя (useHistorySheet и goBack как onClose). Так делают AchievementDetail и AddressFormPicker; AchievementsDialog, CelebrationDialog, DeleteAccountDialog и подтверждения в AccountPage/ClientHeader закрываются только своими кнопками и Escape, «Назад» браузера закрывает лист под ними. Потребителей рамки гейт не видит — слепая зона записана в docs/README.md, «Гейт оверлеев webapp».",
+    "reason": "Оболочка диалога: запись истории — забота потребителя (useHistorySheet и goBack как onClose). Так делают AchievementDetail, AddressFormPicker, DeleteAccountDialog и подтверждения через HistoryConfirmDialog; AchievementsDialog и CelebrationDialog закрываются только своими кнопками и Escape, «Назад» браузера закрывает лист под ними. Потребителей рамки гейт не видит — слепая зона записана в docs/open/one-frontend.md, «Гейт оверлеев webapp».",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/ModeMapContextMenu.tsx": {
@@ -50,5 +50,69 @@
   "webapp/src/sections/schemas/ModeExOverlay.tsx": {
     "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
+  },
+  "webapp/src/components/caseFlow/CaseDoneScreen.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseFeelStep.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseImpulseStep.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseModeScreen.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseResultStep.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseResumeGate.tsx": {
+    "reason": "Развилка «продолжить черновик?» сценария «Что случилось» на рамке ExScreen: обёртка потока, onBack — exitFlow из useHistorySheet в CaseFlowScreen.tsx; своя запись истории дала бы вторую на один лист.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseSceneStep.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseSteadyStep.tsx": {
+    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/diary/ModeEntryDone.tsx": {
+    "reason": "Экран «Готово» записи дневника режимов на рамке ExScreen: шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/diary/ModeEntryForm.tsx": {
+    "reason": "Форма записи дневника режимов на рамке ExScreen: шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/diary/ModeSelectScreen.tsx": {
+    "reason": "Выбор режима на рамке ExScreen: шаг потоков ModeEntrySheet.tsx и QuickEntrySheet.tsx, в каждом useHistorySheet вызван один раз; onBack приходит пропом (goBack родителя).",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/exercises/beliefCheck/BeliefDoneScreen.tsx": {
+    "reason": "Экран «Готово» проверки убеждения на рамке ExScreen: шаг BeliefCheckEx.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/exercises/childhoodWheel/ChildhoodFill.tsx": {
+    "reason": "Шаг заполнения «Колеса детства» на рамке ExScreen: поток ChildhoodWheelEx.tsx, где useHistorySheet вызван один раз; onBack приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/exercises/childhoodWheel/ChildhoodIntro.tsx": {
+    "reason": "Вводный шаг «Колеса детства» на рамке ExScreen: поток ChildhoodWheelEx.tsx, где useHistorySheet вызван один раз; onBack приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/exercises/childhoodWheel/ChildhoodResult.tsx": {
+    "reason": "Итог «Колеса детства» на рамке ExScreen: поток ChildhoodWheelEx.tsx, где useHistorySheet вызван один раз; onBack приходит пропом goBack.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/selfMap/SelfMapScreen.tsx": {
+    "reason": "Экран «Карта себя» на рамке ExScreen: его оборачивает SelfMapOverlay.tsx, где useHistorySheet вызван один раз; «Назад» и переходы — его goBack, пропом.",
+    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   }
 }
