@@ -80,7 +80,7 @@ export async function resolveWorstCaseIds(
   }
   return {
     ...(Object.fromEntries(
-      Object.entries(ids).map(([k, v]) => [k, BigInt(v as string)]),
+      Object.entries(ids).map(([k, v]) => [k, BigInt(v)]),
     ) as Omit<ScenarioContext, 'prisma' | 'session'>),
     session: { userId: BigInt(session.id), family: session.family },
   };
