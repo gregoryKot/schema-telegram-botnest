@@ -1,7 +1,6 @@
-// Экран /account/merge: чей второй аккаунт и что в нём записано — с сервера по
-// подписанному merge-токену (S20, аудит 2026-11), а не из адреса: адрес
-// собирает кто угодно. POST /api/auth/merge/preview {token} → {provider,
-// otherDisplay, summary, twoFactorLost}; чужой токен — 403.
+// Экран /account/merge: чей аккаунт и что в нём — с сервера по merge-токену (S20, аудит 2026-11), не из
+// адреса. POST /api/auth/merge/preview {token} → {provider, otherDisplay, summary, combined, twoFactorLost}.
+// Чужой токен — 403; адрес не читается — его собирает кто угодно.
 import { useEffect, useState } from 'react';
 import { API_BASE } from '../../utils/apiBase';
 
@@ -9,6 +8,7 @@ export interface MergePreview {
   provider: string;
   otherDisplay: string | null;
   summary: Record<string, number>;
+  combined: number; // сколько записей объединится с записями текущего аккаунта (R3)
   twoFactorLost: boolean;
 }
 
@@ -18,19 +18,19 @@ export type MergePreviewState =
   /** Сеть, чужой или протухший токен — экран говорит нейтрально. */
   | { kind: 'failed' };
 
+const positive = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0;
 /** Только известная форма: числа в сводке, строки в именах — иначе `null`. */
 export function parseMergePreview(body: unknown): MergePreview | null {
   if (!body || typeof body !== 'object') return null;
   const b = body as Record<string, unknown>;
   if (typeof b.provider !== 'string' || !b.summary || typeof b.summary !== 'object') return null;
   const summary: Record<string, number> = {};
-  for (const [k, v] of Object.entries(b.summary as Record<string, unknown>)) {
-    if (typeof v === 'number' && Number.isFinite(v) && v > 0) summary[k] = v;
-  }
+  for (const [k, v] of Object.entries(b.summary as Record<string, unknown>)) if (positive(v)) summary[k] = v;
   return {
     provider: b.provider,
     otherDisplay: typeof b.otherDisplay === 'string' && b.otherDisplay ? b.otherDisplay : null,
     summary,
+    combined: positive(b.combined) ? Math.floor(b.combined) : 0,
     twoFactorLost: b.twoFactorLost === true,
   };
 }

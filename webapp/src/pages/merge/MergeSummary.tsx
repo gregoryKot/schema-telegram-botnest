@@ -1,17 +1,16 @@
 import { totalItems } from '../../utils/mergeLabels';
-import { useTr } from '../../utils/addressForm';
 import { Skeleton } from '../../components/Skeleton';
 import { ServiceRows } from '../service/ServiceRows';
 import { providerName } from '../account/providerNames';
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import type { MergePreviewState } from './useMergePreview';
+import { useMergeTexts } from './combinedText';
 
-// Чей второй аккаунт и что из него переедет — только из ответа сервера
-// (useMergePreview). Пока грузится — силуэт абзаца и строк; не загрузилось —
+// Чей второй аккаунт, что из него переедет и что объединится — только из ответа
+// сервера (useMergePreview). Грузится — силуэт абзаца и строк; не загрузилось —
 // нейтрально «найден ещё один аккаунт», без имён и цифр.
 export function MergeSummary({ preview }: { preview: MergePreviewState }) {
-  const tr = useTr();
-  const moves = tr('Если объединить – всё, что в нём записано, переедет в твой текущий аккаунт.', 'Если объединить – всё, что в нём записано, переедет в ваш текущий аккаунт.');
+  const { moves, combined } = useMergeTexts(preview.kind === 'ok' ? preview.combined : 0);
   if (preview.kind === 'loading') {
     return (
       <div aria-hidden="true">
@@ -29,6 +28,7 @@ export function MergeSummary({ preview }: { preview: MergePreviewState }) {
       <p className="as-lead">
         {name ? <>Аккаунт <b>{name}</b></> : 'Другой аккаунт'}{preview.otherDisplay ? ` (${preview.otherDisplay})` : ''} уже существует. {moves}
       </p>
+      {combined && <p className="as-lead">{combined}</p>}
       <div className="as-sec-head">
         <div className="ds-label">В переносимом аккаунте</div>
         {total > 0 && <span className="ds-sub">{total} {pluralRu(total, 'запись', 'записи', 'записей')}</span>}

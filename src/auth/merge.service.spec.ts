@@ -74,6 +74,11 @@ function makePrisma() {
         // Карточки нужны merge-user-lists.ts (источник правды для «моих схем»).
         userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
         userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
+        // merge-combine.ts ищет пары по объединяемым таблицам (R3) — пар нет.
+        note: { findMany: jest.fn().mockResolvedValue([]) },
+        gratitudeDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+        userSafePlace: { findMany: jest.fn().mockResolvedValue([]) },
+        ysqResult: { findMany: jest.fn().mockResolvedValue([]) },
       };
       await fn(tx);
     }),

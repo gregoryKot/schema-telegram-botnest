@@ -129,6 +129,13 @@ describe('MergeService — конфликт подписок сообщаетс�
         await cb({
           ...tx,
           user: { findUnique: jest.fn().mockResolvedValue(null) },
+          // merge-combine.ts ищет пары по объединяемым таблицам (R3) — пар нет.
+          note: { findMany: jest.fn().mockResolvedValue([]) },
+          gratitudeDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+          userSafePlace: { findMany: jest.fn().mockResolvedValue([]) },
+          ysqResult: { findMany: jest.fn().mockResolvedValue([]) },
+          userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
+          userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
           $executeRaw: jest.fn().mockResolvedValue(0),
         });
       },
@@ -156,6 +163,13 @@ describe('MergeService — конфликт подписок сообщаетс�
         await cb({
           ...tx,
           user: { findUnique: jest.fn().mockResolvedValue(null) },
+          // merge-combine.ts ищет пары по объединяемым таблицам (R3) — пар нет.
+          note: { findMany: jest.fn().mockResolvedValue([]) },
+          gratitudeDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+          userSafePlace: { findMany: jest.fn().mockResolvedValue([]) },
+          ysqResult: { findMany: jest.fn().mockResolvedValue([]) },
+          userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
+          userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
         });
       },
     };
