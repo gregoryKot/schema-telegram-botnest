@@ -117,6 +117,19 @@ describe('applyMutationInvalidation', () => {
     expect(f['/api/phrase-checks']).toHaveBeenCalledTimes(2);
   });
 
+  it('POST /api/plan/:id/checkin сбрасывает свой шаг по id и ожидающие, соседний шаг — нет', async () => {
+    const f = await seed(['/api/plan/7', '/api/plan/8', '/api/plan/pending']);
+    applyMutationInvalidation(
+      'POST',
+      '/api/plan/7/checkin',
+      JSON.stringify({ done: true }),
+    );
+    for (const p of Object.keys(f)) await cachedGet(p, f[p]);
+    expect(f['/api/plan/7']).toHaveBeenCalledTimes(2);
+    expect(f['/api/plan/pending']).toHaveBeenCalledTimes(2);
+    expect(f['/api/plan/8']).toHaveBeenCalledTimes(1);
+  });
+
   it('неизвестный роут — ни одна запись не трогается', async () => {
     const f = await seed(['/api/settings']);
     applyMutationInvalidation('POST', '/api/does-not-exist', undefined);

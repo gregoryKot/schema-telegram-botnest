@@ -153,3 +153,24 @@ describe('PracticesService — план: read-after-write и изоляция ч
     expect(history.map((h) => h.practiceText)).toEqual(['моё']);
   });
 });
+
+// Хвост волны 2: «Мой путь» искал запись в getPlanHistory(365) — шаг плана
+// старше года открывался пустым. Теперь — по id, без окна.
+describe('PracticesService.getPlan — шаг плана по id', () => {
+  it('сохранил шаг два года назад → нашёл по id с текстом, хотя в окне истории его нет', async () => {
+    const svc = new PracticesService(makeDb());
+    const old = await svc.createPlan(1n, 'play', 'погулять', '2024-03-01');
+    expect(await svc.getPlanHistory(1n, 365)).toEqual([]);
+    const found = await svc.getPlan(1n, old.id);
+    expect(found).toMatchObject({ id: old.id, practiceText: 'погулять' });
+  });
+
+  it('чужой и несуществующий id — 404', async () => {
+    const svc = new PracticesService(makeDb());
+    const plan = await svc.createPlan(1n, 'play', 'моё', '2024-03-01');
+    await expect(svc.getPlan(2n, plan.id)).rejects.toThrow(NotFoundException);
+    await expect(svc.getPlan(1n, plan.id + 1)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+});

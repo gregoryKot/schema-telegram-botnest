@@ -77,6 +77,13 @@ export class PlansController {
     return plans;
   }
 
+  // Шаг плана по id: «Мой путь» открывает и запись старше окна истории (год).
+  @Get('plan/:id')
+  getPlan(@Req() req: AuthRequest, @Param('id') id: string) {
+    const planId = parseId(id, { int32: true });
+    return this.practicesService.getPlan(uid(req), planId);
+  }
+
   @Post('plan')
   async createPlan(@Req() req: AuthRequest, @Body() body: CreatePlanDto) {
     const settings = await this.botService.getUserSettings(uid(req));
@@ -125,8 +132,7 @@ export class PlansController {
 
   @Get('plans/history')
   async getPlanHistory(@Req() req: AuthRequest, @Query('days') days?: string) {
-    // 365: архив «Мой путь» тянет текст практики и для старых записей
-    const n = Math.min(Number(days) || 30, 365);
+    const n = Math.min(Number(days) || 30, 365); // запись «Пути» — plan/:id
     return this.practicesService.getPlanHistory(uid(req), n);
   }
 }

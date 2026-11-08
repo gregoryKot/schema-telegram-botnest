@@ -1,4 +1,4 @@
-// Запись дневника и попытка теста по id, страница «Записей» (R6, аудит 2026-11).
+// Запись дневника, попытка теста и шаг плана по id, страница «Записей» (R6).
 // Списки отдают последние 30 записей (тест — 20), а «Мой путь» перечисляет до
 // 500: старая запись открывалась поиском в списке и приходила пустой. Отдельным
 // модулем, а не строками в sharedApi.ts — по образцу practiceSessionsApi.ts:
@@ -10,7 +10,7 @@ import type {
   ModeDiaryEntry,
   GratitudeDiaryEntry,
 } from '../types';
-import type { YsqHistoryEntry } from '../apiTypes';
+import type { PracticePlan, YsqHistoryEntry } from '../apiTypes';
 
 export type DiaryKind = 'schema' | 'mode' | 'gratitude';
 export interface DiaryEntryOf {
@@ -38,4 +38,5 @@ export const createEntryApi = (t: ApiTransport) => ({
     t.get<GratitudeDiaryEntry>(`/api/diary/gratitude/${id}`),
   getYsqHistoryEntry: (id: number) =>
     t.get<YsqHistoryEntry>(`/api/ysq-history/${id}`),
+  getPlanEntry: (id: number) => t.get<PracticePlan>(`/api/plan/${id}`),
 });
