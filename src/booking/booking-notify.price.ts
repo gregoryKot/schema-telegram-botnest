@@ -18,7 +18,14 @@ export interface PriceFields {
   paidAt?: Date | null;
   /** IANA-пояс посетителя: без места (UTC) + не рубли = валюту выбрал клиент. */
   clientTimeZone?: string | null;
+  /** Когда создана бронь: выбор валюты есть только с CURRENCY_CHOICE_SINCE. */
+  createdAt?: Date | null;
 }
+
+/** Мерж волны 7 (#1034): с него пара «пояс без места + не рубли» бывает только
+ * явным выбором (resolveBookingPrice). До волны 5 (#1025) тот же пояс давал
+ * доллары по умолчанию — у брони старше метки пометка была бы ложной. */
+export const CURRENCY_CHOICE_SINCE = new Date('2026-11-08T17:33:55Z');
 
 const isCurrency = (c: string): c is Currency =>
   (CURRENCIES as readonly string[]).includes(c);
@@ -27,12 +34,16 @@ const isCurrency = (c: string): c is Currency =>
 export const CHOSEN_CURRENCY_NOTE =
   '🌍 Валюта — по выбору клиента: часовой пояс не определился';
 
+/** Валюту назначил явный выбор клиента (Р5), а не пояс; без даты — не утверждаем. */
+const chosenByClient = (b: PriceFields): boolean =>
+  isPlacelessTimeZone(b.clientTimeZone) &&
+  !!b.createdAt &&
+  b.createdAt.getTime() >= CURRENCY_CHOICE_SINCE.getTime();
+
 /** «💳 70 $ · оплата по договорённости (не Robokassa)»; для рублей и без суммы — null. */
 export function priceLine(b: PriceFields): string | null {
   if (b.amount == null || !b.currency || b.currency === 'RUB') return null;
   if (!isCurrency(b.currency)) return null;
   const line = `💳 ${formatPrice(b.amount, b.currency)} · оплата по договорённости (не Robokassa)`;
-  return isPlacelessTimeZone(b.clientTimeZone)
-    ? `${line}\n${CHOSEN_CURRENCY_NOTE}`
-    : line;
+  return chosenByClient(b) ? `${line}\n${CHOSEN_CURRENCY_NOTE}` : line;
 }
