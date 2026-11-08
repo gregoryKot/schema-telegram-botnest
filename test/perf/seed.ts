@@ -13,6 +13,7 @@
 // В SQL подставляются только константы профиля и значения из самой БД.
 import { Pool } from 'pg';
 import { PERF_ID_BASE as B, PERF_SEED_MARK } from './seed-profile';
+import { BOOKING_CLEANUP_SQL } from './seed-booking';
 import { json } from './seed-sql';
 import { buildSteps } from './seed-steps';
 
@@ -22,11 +23,12 @@ export { PERF_ID_BASE, PERF_PROFILE } from './seed-profile';
 // prettier-ignore
 const NO_FK_TABLES = ['ClientConceptualization.therapistId', 'UserTask.userId', 'TherapistNote.therapistId', 'TherapistCustomMode.therapistId', 'ModeMap.therapistId'];
 
-// Параллельных соединений: узкое место сида — вставка 2 млн событий и 1.5 млн
-// оценок, они независимы и в параллель укладываются в ~половину времени.
+// Параллельных соединений: узкое место сида — вставка 2 млн событий, 2,7 млн
+// оценок и 2,1 млн строк очереди; они независимы и в параллель укладываются
+// в ~половину времени.
 const WORKERS = 4;
 // Зависят от строк других шагов (читают Rating / TherapyRelation) — вторая волна.
-const AFTER = new Set(['AppActivity', 'ClientConceptualization']);
+const AFTER = new Set(['AppActivity', 'ClientConceptualization', 'Booking']);
 
 async function inParallel<T>(items: T[], run: (item: T) => Promise<void>) {
   const queue = [...items];
@@ -50,7 +52,7 @@ export async function seedPerfHorizon(
   const url = process.env.DATABASE_URL;
   if (!url)
     throw new Error('DATABASE_URL не задан: сидеру нужен живой Postgres');
-  // ~4.5 млн строк в чужую базу — не шутка: боевой URL в окружении разработчика
+  // ~8 млн строк в чужую базу — не шутка: боевой URL в окружении разработчика
   // не должен превращать замер в аварию.
   const host = new URL(url).hostname;
   if (
@@ -76,6 +78,7 @@ export async function seedPerfHorizon(
     await pool.query(
       `DELETE FROM "AnalyticsEvent" WHERE "userId" IS NULL AND "meta" @> ${json(PERF_SEED_MARK)}`,
     );
+    await pool.query(BOOKING_CLEANUP_SQL); // Booking.userId — SET NULL, не каскад
     await pool.query(`DELETE FROM "User" WHERE "id" >= ${B}`); // каскад сносит остальное
     log(`чистка диапазона: ${((Date.now() - started) / 1000).toFixed(1)}с`);
 

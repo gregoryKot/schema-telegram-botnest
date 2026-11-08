@@ -6,17 +6,18 @@ import { NEED_IDS } from '../../src/bot/bot.service';
 import {
   DEFAULT_SECTIONS,
   EMOTION_IDS,
-  eventPlan,
   MODE_IDS,
   PERF_ID_BASE as B,
   PERF_PROFILE as P,
-  PERF_SEED_MARK,
   PHRASE_MARKS,
   SCHEMA_IDS,
   TIMEZONES,
 } from './seed-profile';
-import { at1, distinctUser, json, pick, q, series, strs } from './seed-sql';
+import { at1, distinctUser, pick, q, series, strs, tsBack } from './seed-sql';
+import { authProviderSql, bookingSql } from './seed-booking';
+import { analyticsEventSql } from './seed-events';
 import { scheduledNotificationSql } from './seed-notifications';
+import { pushSubscriptionSql } from './seed-push';
 import { webSessionSql } from './seed-sessions';
 import { withStreakCohort } from './seed-streaks';
 
@@ -26,30 +27,9 @@ const NEEDS: readonly string[] = NEED_IDS;
 
 // Таблица → SQL вставки (или несколько). Порядок ключей = порядок выполнения.
 export function buildSteps(a: string): Record<string, string | string[]> {
-  // Момент в прошлом внутри days дней; секунды — чтобы не все строки в полночь.
-  const ts = (i: string, days: number) =>
-    `(${a} - make_interval(days => ((${i} * 7907) % 1000003 % ${days})::int, secs => ((${i} * 104729) % 86400)::int))`;
+  const ts = (i: string, days: number) => tsBack(a, i, days);
   const day = (offset: string) =>
     `to_char((${a}::date - (${offset})::int)::timestamp, 'YYYY-MM-DD')`;
-
-  // meta: смешанная система счисления — значения ключей независимы друг от
-  // друга; анонимные строки (userId NULL) помечены PERF_SEED_MARK для чистки.
-  const eventSql = (s: ReturnType<typeof eventPlan>[number]) => {
-    let radix = 1;
-    const parts = Object.entries(s.meta ?? {}).map(([k, vals]) => {
-      const expr = `${q(k)}, (${json(vals)} -> (((g.i / ${radix}) % ${vals.length})::int))`;
-      radix *= vals.length;
-      return expr;
-    });
-    const meta = parts.length
-      ? `jsonb_build_object(${parts.join(', ')})`
-      : 'NULL::jsonb';
-    return `INSERT INTO "AnalyticsEvent"("userId","name","meta","createdAt")
-SELECT t.uid, ${q(s.name)},
-  CASE WHEN t.uid IS NULL THEN COALESCE(t.meta, '{}'::jsonb) || ${json(PERF_SEED_MARK)} ELSE t.meta END, t.at
-FROM (SELECT CASE WHEN ((g.i * 7937) % 10037) % 100 < ${s.anon ?? 0} THEN NULL ELSE ${pick('g.i')} END AS uid,
-  ${meta} AS meta, ${ts('g.i', P.eventSpreadDays)} AS at FROM ${series(s.rows)}) t`;
-  };
 
   return withStreakCohort(a, {
     // ── User: возраст аккаунта размазан по году; доли — как читает /stats ──
@@ -68,6 +48,9 @@ FROM generate_series(1::bigint, ${U}::bigint) g(u)`,
     // ── Rating: у каждого своё число дней, окно кончается не у всех сегодня ─
     // Дни не раньше регистрации (age); половина людей активна сегодня, остальные
     // «отпали» на 0..59 дней назад — иначе окна 7/30 дней совпали бы с таблицей.
+    // В куче — по дням, как в проде, где трекер пишут каждый день все сразу: «по
+    // людям» год одного человека лежал бы в десятке страниц, и history-365d
+    // мерил бы артефакт сидера (29 страниц на 1 820 строк, замер 2026-11-08).
     Rating: `WITH up AS (
   SELECT u, age, LEAST(CASE WHEN u % 10 < 5 THEN 0 ELSE (u * 31) % 60 END, age) AS off
   FROM (SELECT u, (u * 7919) % ${P.userSpreadDays} AS age FROM generate_series(1::bigint, ${U}::bigint) g(u)) a
@@ -79,12 +62,13 @@ INSERT INTO "Rating"("userId","date","needId","value")
 SELECT ${B} + nd.u, ${day('nd.off + d.d')}, n.need, 1 + (nd.u * 31 + d.d * 17 + n.ord * 7) % 10
 FROM nd
 CROSS JOIN LATERAL generate_series(0::bigint, nd.n - 1) d(d)
-CROSS JOIN unnest(${strs(NEEDS)}) WITH ORDINALITY n(need, ord)`,
+CROSS JOIN unnest(${strs(NEEDS)}) WITH ORDINALITY n(need, ord)
+ORDER BY nd.off + d.d DESC, nd.u, n.ord`,
     // Один день активности = одна (userId, date), как пишет бот; читает ретеншен D1/D7/D30.
     AppActivity: `INSERT INTO "AppActivity"("userId","date")
 SELECT "userId", "date" FROM "Rating" WHERE "userId" >= ${B} AND "needId" = ${q(NEEDS[0])}`,
 
-    AnalyticsEvent: eventPlan().map(eventSql),
+    AnalyticsEvent: analyticsEventSql(a), // seed-events.ts
 
     // ── Дневники и упражнения (тексты — заглушки, шифрование не нужно) ─────
     SchemaDiaryEntry: `INSERT INTO "SchemaDiaryEntry"("userId","createdAt","trigger","emotions","thoughts","bodyFeelings","actualBehavior","schemaIds","healthyView")
@@ -153,8 +137,12 @@ SELECT "therapistId", "clientId",
   jsonb_build_array(${at1(SCHEMA_IDS, '"id"')}, ${at1(SCHEMA_IDS, '"id" / 9')}),
   jsonb_build_array(${at1(MODE_IDS, '"id"')}, ${at1(MODE_IDS, '"id" / 9')}), CURRENT_TIMESTAMP
 FROM "TherapyRelation" WHERE "therapistId" >= ${B} AND "status" = 'active'`,
-    // ── Очередь уведомлений: год истории + завтрашнее (seed-notifications.ts) ─
+    // ── Очередь: год истории, завтрашнее, хвост (seed-notifications.ts) ───
     ScheduledNotification: scheduledNotificationSql(a),
+    PushSubscription: pushSubscriptionSql(a), // seed-push.ts
     WebSession: webSessionSql(a), // сессии сайта под гвард Bearer (seed-sessions.ts)
+    // ── Входы и запись из приложения (seed-booking.ts) ───────────────────
+    AuthProvider: authProviderSql(a),
+    Booking: bookingSql(a),
   });
 }
