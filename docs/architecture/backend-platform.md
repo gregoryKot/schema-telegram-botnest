@@ -106,12 +106,11 @@
   - `src/infra/capability-report.ts` — реестр «фича молча выключена без env»
   - `src/infra/self-check/self-check.service.ts` — крон `43 * * * *` и прогон через 60 с после старта
   - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live.ts`)
-  - `src/infra/self-check/probe-dump-public.ts` (`dumpStillPublic`) — дамп БД из PR #128 ещё отдаётся GitHub (Git Trees API, без содержимого); только DM и `/stats`, не `/health`
 - Остальные сервисы (по строке на группу):
   - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-dedup.ts` (DM по смене набора упавших — аренда `self-check-alert:*` в `CronLease`; база недоступна — память процесса, `alert-tracker.ts`), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники)
   - `src/infra/db-outage.service.ts` — закрывает аварию БД и шлёт DM о восстановлении; `src/infra/session-retention.service.ts` — чистка WebSession/EmailToken
   - HTTP-края: `src/infra/trust-proxy.ts` (один хоп), `src/infra/request-host.ts` (хост из Host), `src/infra/canonical-host.ts` (301 на apex), `src/infra/body-limit.ts` и `src/infra/body-parsers.ts` (потолок тела 256 КБ), `src/infra/static-cache.ts`
-  - Бэкапы: `src/infra/backup-config.ts`, `src/infra/backup-capability.ts`, `src/infra/s3-sigv4.ts`, `src/infra/s3-list-objects.ts` (проба свежести в Cloudflare R2; сам прогон — `deploy/backup-scheduler.cjs`); `src/infra/deploy-target.ts` (`DEPLOY_TARGET=vps`)
+  - Бэкапы: `src/infra/backup-config.ts`, `src/infra/backup-capability.ts`, `src/infra/s3-sigv4.ts`, `src/infra/s3-list-objects.ts` (проба свежести в Cloudflare R2; сам прогон — `deploy/backup-scheduler.cjs`)
   - AlertLogger — вне infra: `src/logger/alert.logger.ts`; доставка — `src/utils/admin-alert.ts`
   - Троттлинг-хранилище — вне infra: `src/api/hybrid-throttle-storage.ts` + `src/api/postgres-throttle-storage.ts`
 - Связи: Prisma (CronLease, WebSession, EmailToken); `CronLeaderModule` — @Global, `claimRun` зовут кроны booking/, auth/, channel/, telegram/; `SelfCheckService` и `ThrottleHitModule` регистрируются в `src/app.module.ts`; `src/main.ts` вызывает boot-проверки env и capability; пробы читают `src/cli/rotate-encryption/delegates.ts` и `src/utils/alert-email-health.ts`.
@@ -172,7 +171,7 @@
   - `src/test-support/cron-source-scan.ts` — сканер пар `@Cron` + `claimRun` в исходниках
   - `src/test-support/fake-s3.ts` — поддельный S3/R2, сверяет подпись SigV4
   - `src/test-support/fake-telegram-api.ts` — поддельный Bot API для шовных тестов поллинга
-- Прочее: `src/test-support/load-with-keys.ts` (модули под заданными ENCRYPTION_KEY), `src/test-support/recorded-fixture.ts` (читает `test/fixtures/recorded/**`), `src/test-support/memory-throttle-reset.ts` (сброс троттлера между e2e), `src/test-support/exit-code-leak.ts` (спек, оставивший `process.exitCode`, краснеет), `src/test-support/esm-to-cjs.transform.cjs` (переводит пакеты `@nestjs/*` 12-й версии — только ESM — в CommonJS для jest на Node 22; подключён трансформером `transform` + списком `transformIgnorePatterns` в `package.json` (jest) и `test/jest-e2e.json`; список пакетов в четырёх местах сверяет `esm-to-cjs.transform.spec.ts`; удалить вместе с обоими списками, когда CI перейдёт на Node 24.9+, где jest сам грузит ESM через require; прод на Node 22.12+ грузит их штатно через `require(esm)`), `src/test-support/subscription-update-many.ts`, `src/test-support/run-script.ts`, `src/test-support/vps-bootstrap-sandbox.ts`
+- Прочее: `src/test-support/load-with-keys.ts` (модули под заданными ENCRYPTION_KEY), `src/test-support/recorded-fixture.ts` (читает `test/fixtures/recorded/**`), `src/test-support/memory-throttle-reset.ts` (сброс троттлера между e2e), `src/test-support/exit-code-leak.ts` (спек, оставивший `process.exitCode`, краснеет), `src/test-support/esm-to-cjs.transform.cjs` (переводит пакеты `@nestjs/*` 12-й версии — только ESM — в CommonJS для jest на Node 22; подключён трансформером `transform` + списком `transformIgnorePatterns` в `package.json` (jest) и `test/jest-e2e.json`; список пакетов в четырёх местах сверяет `esm-to-cjs.transform.spec.ts`; удалить вместе с обоими списками, когда CI перейдёт на Node 24.9+, где jest сам грузит ESM через require; прод на Node 22.12+ грузит их штатно через `require(esm)`), `src/test-support/subscription-update-many.ts`, `src/test-support/run-script.ts`
 - Связи: спеки всего `src/**`; `src/security/*.invariants.spec.ts` берут `route-method-auth.ts`, `src/infra/self-check/cron-lease-registry.spec.ts` — `cron-source-scan.ts`; e2e на реальном Postgres и их `fake-prisma` лежат вне src, в `test/e2e-support/`.
 - Подводные камни:
   - `GUARD_NAMES` в `src/test-support/route-method-auth.ts` — единственный список гардов: по нему идёт и разбор по методу, и файловый `GUARD_RE`.
@@ -185,7 +184,7 @@
   - `src/test-support/gates/workflow-yaml.ts` — построчный разбор workflow (`on:`, джобы)
   - `src/test-support/gates/step-script.ts` — значение `run:` шага так, как его получит shell (склейка plain/`>`-скаляра YAML и `\`-продолжений), для гейта `lockfile-audit`
   - `src/test-support/gates/fake-npm.ts` — поддельный `npm` на PATH с записанными ответами реестра для исполнения `scripts/npm-audit.mjs` и ночного шага audit
-  - `src/test-support/gates/deploy-needs-ci.ts`, `src/test-support/gates/job-timeouts.ts`, `src/test-support/gates/dependabot-coverage.ts`, `src/test-support/gates/lockfile-audit.ts`, `src/test-support/gates/alarm-needs.ts` — правила над workflow и dependabot.yml
+  - `src/test-support/gates/job-timeouts.ts`, `src/test-support/gates/dependabot-coverage.ts`, `src/test-support/gates/lockfile-audit.ts`, `src/test-support/gates/alarm-needs.ts` — правила над workflow и dependabot.yml
 - Связи: спеки запускают `scripts/check-*.mjs` и читают `scripts/*-baseline.json`, `.github/workflows/*.yml`, `.github/dependabot.yml`; те же скрипты CI вызывает шагами в `.github/workflows/ci.yml`; сами спеки идут в обычном `jest` (rootDir `src`).
 - Подводные камни:
   - Гейт-скрипт держит scan/report за `if (isMain)`, иначе `src/test-support/gates/pattern-loader.ts` получит побочные эффекты при импорте; `runGate` копирует и локальные зависимости скрипта (`withLocalDeps`).

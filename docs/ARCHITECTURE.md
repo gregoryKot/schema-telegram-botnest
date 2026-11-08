@@ -11,7 +11,7 @@
 | [architecture/backend-core.md](architecture/backend-core.md) | Бутстрап (`src/main.ts`, `src/app.module.ts`), хосты, бот и доменный слой, уведомления, канал, аналитика, статьи, тесты-квизы, деньги (донаты, подписки), логгер |
 | [architecture/backend-platform.md](architecture/backend-platform.md) | Вход и сессии, HTTP-API и гарды, безопасность, кабинет терапевта, запись и оплата, инфраструктура (кроны, env, самопроверка), Prisma, утилиты, тест-хелперы |
 | [architecture/frontends.md](architecture/frontends.md) | webapp (роутинг, кабинет, токены), мини-апп (навигация без роутера, «Назад», сборка), shared (все подкаталоги), игра, подводные камни |
-| [architecture/data-deploy-ci.md](architecture/data-deploy-ci.md) | Модели БД по доменам, миграции, Dockerfile и супервизор, VPS, джобы CI, nightly, смок прода, раскладка тестов |
+| [architecture/data-deploy-ci.md](architecture/data-deploy-ci.md) | Модели БД по доменам, миграции, Dockerfile и супервизор, джобы CI, nightly, смок прода, раскладка тестов |
 | [architecture/gates.md](architecture/gates.md) | Таблица всех гейтов CI (что ловит, бейслайн, `--update`, джоба) и команды для локальной проверки |
 | [architecture/glossary.md](architecture/glossary.md) | Словарь: как говорит владелец («Мой путь», «ЗВ», «визитка») → где это в коде |
 
@@ -91,7 +91,7 @@
 | `test/` | e2e бэкенда (`test/*.e2e-spec.ts`), `test/e2e-support/`, записанные ответы площадок `test/fixtures/recorded/`, замер планов `test/perf/` |
 | `e2e-browser/` | Playwright-смоки (nightly) |
 | `scripts/` | Гейты CI `scripts/check-*.mjs`, их бейслайны, merge-драйверы, хуки git (`scripts/git-hooks/`, ставит `scripts/setup-git-hooks.mjs`), бэкапы |
-| `deploy/` | Супервизор контейнера, VPS (`deploy/vps/`), Cloudflare Worker (`deploy/threads-relay/`) |
+| `deploy/` | Супервизор контейнера, бэкапы (`backup-scheduler.cjs`), Cloudflare Worker (`deploy/threads-relay/`) |
 | `docs/` | Документация: индекс — [docs/README.md](README.md), открытое — `docs/open/`, архив — `docs/archive/` |
 | `game/` | Игра (Phaser), заморожена: не трогать без прямой просьбы |
 | `assets/` | Шрифты для карточек шаринга и корневой сертификат для MAX (`assets/ca/russian-trusted-root.pem`) |

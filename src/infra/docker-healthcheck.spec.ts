@@ -138,15 +138,13 @@ describe('Dockerfile HEALTHCHECK', () => {
     expect(await runHealthcheck(await freePort())).not.toBe(0);
   }, 20000);
 
-  // Правило №4: один маркер в трёх местах, обязанных совпадать.
-  it('маркер "status":"ok" одинаков в Dockerfile, ops.sh health_wait и prod-smoke.yml', () => {
-    const ops = readFileSync(join(ROOT, 'deploy/vps/ops.sh'), 'utf8');
+  // Правило №4: один маркер в двух местах, обязанных совпадать.
+  it('маркер "status":"ok" одинаков в Dockerfile и prod-smoke.yml', () => {
     const smoke = readFileSync(
       join(ROOT, '.github/workflows/prod-smoke.yml'),
       'utf8',
     );
     expect(healthcheckCommand().replace(/\\"/g, '"')).toContain(MARKER);
-    expect(ops).toContain(MARKER);
     expect(smoke).toContain(MARKER);
   });
 });

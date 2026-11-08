@@ -56,16 +56,12 @@
 SIGTERM/SIGINT пробрасываются приложению.
 
 - `amvera.yml`: `environment: docker`, `toolchain: docker`, `run.containerPort: 3000`. Amvera сама тянет main из GitHub и собирает Dockerfile (README).
-- `deploy/vps/`: прод на VPS. `docker-compose.yml` (Postgres + app + Caddy), `Caddyfile` (TLS и reverse proxy), `bootstrap.sh`, `dc.sh`, `ops.sh` (закрытый список операций на сервере), `external-db-check.sh`, `grant-root.sh`, `ssh-setup.sh`, `docker-compose.transfer.yml` (порт 5432 наружу на время переноса БД).
-- `deploy-vps.yml`: после успешного push-CI на main собирает образ, пушит в ghcr.io (теги sha и latest), по ssh копирует `deploy/vps`, пишет `.env` из секрета `PROD_ENV`, запускает `ops.sh deploy` (ждёт health до 5 мин, при провале откатывается). Без секретов `DEPLOY_HOST`, `DEPLOY_SSH_KEY`, `PROD_ENV` джоба зелёная и ничего не делает.
 - `branch-cleanup.yml`: ручной `workflow_dispatch`, чистка веток смерженных PR (`scripts/branch-cleanup.mjs`): без `apply` — только список, с `apply` — удаление веток, чья голова совпадает с head смерженного PR и без открытого PR. Права на запись в refs — только у этой джобы; тест — `src/test-support/gates/branch-cleanup.spec.ts`.
-- `vps.yml`: ручной `workflow_dispatch` с `op` из закрытого списка, только с main, через `ops.sh`. Операции: `status`, `grant-root`, `bootstrap`, `transfer-open/check/close`, `restore-backup`, `external-db-check`, `release-hold`, `restart-app`, `restart-caddy`, `rollback`, `migrate-resolve-failed`.
 - Остальное в `deploy/`:
   - `threads-relay/` — Cloudflare Worker (`worker.js` + README), ретранслятор запросов к `graph.threads.net`;
   - `app-exit.mjs` — решение супервизора по выходу приложения;
   - `pg-url-env.cjs` — `DATABASE_URL` в переменные libpq;
   - `backup-lease-release.cjs` — при SIGTERM синхронно отпускает аренду бэкапа (иначе следующий процесс ждёт окно);
-  - `transfer-db.sh` — разовый перенос БД Amvera→VPS через `RECOVER_CMD`.
 
 ### CI
 
@@ -74,7 +70,7 @@ SIGTERM/SIGINT пробрасываются приложению.
 | джоба | что гоняет (≤15 слов) |
 |---|---|
 | backend | tsc, coverage-храповик, jest под TZ Sydney, e2e на фейках, npm audit корня и game, 6 храповиков |
-| checks | fs-only гейты без `npm ci`, shellcheck `deploy/vps`, `docker compose config` |
+| checks | fs-only гейты без `npm ci`, shellcheck `scripts/*.sh` |
 | docker | `docker build` прод-образа (`push: false`, кэш gha) |
 | migrations | Postgres 16: `migrate deploy` дважды, `migrate diff` против schema.prisma, real-DB e2e |
 | perf | сид синтетики, EXPLAIN ANALYZE горячих путей, `check-query-plans.mjs` |

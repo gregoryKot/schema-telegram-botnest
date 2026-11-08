@@ -33,12 +33,13 @@
   Проверил — убери строку.
 
 **CI на Ubuntu 26 не переведён** (#789, 2026-10-20). На `ubuntu-latest` (с 2026-10-19 —
-Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverage-ratchet.mjs` и `migrations` →
-«e2e перенос БД на VPS» (`test/transfer-db.e2e-spec.ts`), на `ubuntu-24.04` эти шаги
+Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverage-ratchet.mjs` и шаг
+`migrations` с `pg_dump` (спек переноса БД, с тех пор удалён), на `ubuntu-24.04` эти шаги
 зелёные. Причину по логам не разобрали: из песочницы агента логи Actions не скачиваются
 (хвост вывода храповика в pipe терялся — исправлено, следующий красный прогон покажет FAIL jest).
-Версия для переноса — `pg_dump` 17+ пишет `SET transaction_timeout`, которого нет в Postgres 16
-сервиса джобы. Переход — отдельный PR: сменить `runs-on`, прочитать логи, починить.
+Версия для `pg_dump` — 17+ пишет `SET transaction_timeout`, которого нет в Postgres 16
+сервиса джобы (тот же клиент берёт `test/restore-backup.e2e-spec.ts`). Переход — отдельный
+PR: сменить `runs-on`, прочитать логи, починить.
 Плавающую метку держит `src/test-support/gates/runner-pin.spec.ts`.
 
 **Merge-драйверы бейслайнов** (`scripts/merge-drivers-check.mjs`, `scripts/merge-json-ratchet.mjs`, #729):
@@ -164,14 +165,7 @@ Ubuntu 26) у трёх PR подряд падали `backend` → `check-coverag
   `migrations`): локальный прогон без живой базы краснеет на десятке спеков и
   ничего не доказывает. Пока e2e с утёкшим кодом выхода краснеет шагом CI без
   объяснения. Подключить отдельным PR после прогона `live-e2e.py`.
-- `src/infra/vps-ops.spec.ts` флакает под нагрузкой машины: при load average
-  15+ на чистом `origin/main` (25233de) один-два теста из 29 падают примерно
-  в одном прогоне из трёх («релиз записан, предыдущий сохранён…», «первый
-  деплой: prev нет…» — пустой stdout `deploy/vps/ops.sh`), в тихой машине
-  зелёные. Причина не разобрана: подозрение на лимиты проб здоровья
-  (`OPS_HEALTH_LIMIT`/`OPS_HEALTH_POLL`) и `timeout 15` вокруг поддельного
-  docker. Нашлось попутно при починке наблюдателей (2026-10-14), не чинилось.
-- Ещё два спека того же класса (2026-10-15, полный `npx jest --silent` при load
+- Два спека флакают под нагрузкой машины (2026-10-15, полный `npx jest --silent` при load
   average 13–19 на четырёх ядрах; в одиночном прогоне зелёные):
   `src/auth/totp.service.spec.ts`, «повторный confirmSetup на уже включённой
   2FA → ConflictException» — `Exceeded timeout of 5000 ms` (сьют шёл 57 с, в

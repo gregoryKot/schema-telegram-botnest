@@ -178,8 +178,7 @@ EXPLAIN с записанного SQL (`test/perf/run-plans.ts`) и гейт
 5. Восстановление без внешнего доступа к БД: `deploy/entrypoint.mjs` перед
    `migrate deploy` всегда исполняет `prisma/recover-p3009.sql` (`RECOVER_CMD`) —
    он снимает ЛЮБУЮ застрявшую запись (`finished_at IS NULL`), кроме миграции,
-   которая выполняется прямо сейчас (замок Prisma занят). На VPS то же делает
-   автооткат и ручной `op=migrate-resolve-failed`. В Prisma 7 у `db execute`
+   которая выполняется прямо сейчас (замок Prisma занят). В Prisma 7 у `db execute`
    **нет** флага `--schema` — URL берётся из `prisma.config.js`.
 
 Механизм принуждения: CI-джоба **`migrations`** — поднимает Postgres 16 и

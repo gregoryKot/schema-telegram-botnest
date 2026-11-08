@@ -1,6 +1,5 @@
 -- Снятие застрявшей записи миграции после P3009. Исполняется entrypoint-ом
--- перед каждым `migrate deploy` (deploy/entrypoint.mjs, RECOVER_CMD) и вручную
--- (ops.sh: op=migrate-resolve-failed). Эквивалент `prisma migrate resolve
+-- перед каждым `migrate deploy` (deploy/entrypoint.mjs, RECOVER_CMD). Эквивалент `prisma migrate resolve
 -- --rolled-back` для ЛЮБОЙ застрявшей записи, а не для двух имён из июля.
 --
 -- История: 2026-07-16 упала 20260716120000_healthy_adult_ai_pool (сырой INSERT
@@ -8,7 +7,7 @@
 -- (CREATE TABLE без IF NOT EXISTS, 42P07). В обоих случаях запись оставалась
 -- с finished_at IS NULL, и `migrate deploy` отказывался применять что-либо
 -- (P3009). Список имён в этом файле не масштабируется: следующая упавшая
--- миграция была бы третьей строкой, а откат VPS на образ, где её нет, не
+-- миграция была бы третьей строкой, а откат на образ, где её нет, не
 -- поднялся бы вовсе (docs/AUDIT_2026-10_FINDINGS.md, infra#8).
 --
 -- ЧТО ЭТО ЗНАЧИТ ДЛЯ БАЗЫ. Prisma НЕ оборачивает миграцию в транзакцию
@@ -38,9 +37,9 @@
 -- поэтому замок не утекает в соединение.
 --
 -- Безопасно при повторном запуске: на здоровой БД записей с
--- finished_at IS NULL нет -> 0 строк. Имена в RETURNING печатает ops.sh;
--- больше ничего из таблицы выводить нельзя (логи Actions публичны, а logs
--- несёт тексты ошибок со значениями).
+-- finished_at IS NULL нет -> 0 строк. Имена в RETURNING попадают в лог;
+-- больше ничего из таблицы выводить нельзя (logs несёт тексты ошибок со
+-- значениями).
 DELETE FROM "_prisma_migrations"
 WHERE finished_at IS NULL
   AND rolled_back_at IS NULL

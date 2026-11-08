@@ -4,7 +4,7 @@
 # аварийного восстановления: вторая, scripts/restore-backup.sh, расшифровывает
 # и заливает файл в базу. Нужен, когда основная база недоступна и поднимать
 # прод приходится из ночного бэкапа (scripts/backup-upload.sh кладёт его в
-# бакет): docs/MIGRATION_VPS.md, «План Б».
+# бакет): docs/RUNBOOKS.md, «Cloudflare R2 — бэкапы базы».
 #
 # Использование:
 #   BACKUP_S3_ENDPOINT=… BACKUP_S3_BUCKET=… BACKUP_S3_ACCESS_KEY_ID=… \

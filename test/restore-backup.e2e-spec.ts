@@ -1,4 +1,4 @@
-// Сквозная связка плана Б (docs/MIGRATION_VPS.md): настоящий backup-upload.sh
+// Сквозная связка восстановления из бэкапа: настоящий backup-upload.sh
 // снимает дамп живой базы и грузит его в (поддельный) S3 → backup-fetch-latest.sh
 // скачивает самый свежий файл → restore-backup.sh заливает его в ПУСТУЮ базу
 // настоящим psql → числа сходятся с источником. Мок не заменит ни pg_dump, ни
@@ -63,7 +63,7 @@ function bash(
   });
 }
 
-describe('план Б: backup-upload.sh → S3 → backup-fetch-latest.sh → restore-backup.sh на реальном Postgres', () => {
+describe('восстановление из бэкапа: backup-upload.sh → S3 → backup-fetch-latest.sh → restore-backup.sh на реальном Postgres', () => {
   let fake: FakeS3;
   let dir: string;
 
@@ -121,7 +121,7 @@ describe('план Б: backup-upload.sh → S3 → backup-fetch-latest.sh → re
     );
     expect(fetched.out).not.toContain(FAKE_S3_SECRET);
 
-    // База-приёмник пуста до заливки (как op=restore-backup проверяет в ops.sh).
+    // База-приёмник пуста до заливки (restore-backup.sh льёт только в пустую).
     expect(
       psql(
         DB.dst,
