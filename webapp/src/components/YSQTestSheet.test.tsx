@@ -165,26 +165,57 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     await waitFor(() => expect(document.querySelector('canvas')).toBeTruthy());
   });
 
-  it('«Пройти заново» требует подтверждения, отмена НЕ удаляет результат', async () => {
+  const RETAKE_NOTE = 'Прошлый результат останется в истории, новый появится после последнего вопроса.';
+
+  it('«Пройти заново» требует подтверждения с честным текстом; отмена ничего не трогает', async () => {
     seedResult(6);
     renderSheet();
     await waitFor(() => expect(screen.getByText('Пройти заново')).toBeTruthy());
     fireEvent.click(screen.getByText('Пройти заново'));
-    expect(screen.getByText('Результаты будут удалены. Точно начать заново?')).toBeTruthy();
+    expect(screen.getByText(RETAKE_NOTE)).toBeTruthy();
+    expect(screen.queryByText(/Результаты будут удалены/)).toBeNull();
     fireEvent.click(screen.getByText('Отмена'));
-    expect(screen.queryByText('Результаты будут удалены. Точно начать заново?')).toBeNull();
+    expect(screen.queryByText(RETAKE_NOTE)).toBeNull();
     expect(mockApi.deleteYsqResult).not.toHaveBeenCalled();
   });
 
-  it('подтверждённый ретейк удаляет результат и возвращает в интро', async () => {
+  // U8 (аудит 2026-11): итог стирался сразу после «Начать заново», и брошенное
+  // новое прохождение оставляло «Мои паттерны» без выраженных схем.
+  it('подтверждённый ретейк ведёт в интро, но итог не стирает — ни локально, ни на сервере', async () => {
     seedResult(6);
+    const saved = localStorage.getItem(YSQ_RESULT_KEY);
     renderSheet();
     await waitFor(() => expect(screen.getByText('Пройти заново')).toBeTruthy());
     fireEvent.click(screen.getByText('Пройти заново'));
     fireEvent.click(screen.getByText('Начать заново'));
     await waitFor(() => expect(screen.getByText('Начать тест')).toBeTruthy());
-    expect(mockApi.deleteYsqResult).toHaveBeenCalledTimes(1);
-    expect(localStorage.getItem(YSQ_RESULT_KEY)).toBeNull();
+    expect(mockApi.deleteYsqResult).not.toHaveBeenCalled();
+    expect(localStorage.getItem(YSQ_RESULT_KEY)).toBe(saved);
+  });
+
+  it('брошенное новое прохождение не стирает схемы: при следующем открытии — прежний итог и черновик', async () => {
+    seedResult(6);
+    renderSheet();
+    await waitFor(() => expect(screen.getByText('Пройти заново')).toBeTruthy());
+    fireEvent.click(screen.getByText('Пройти заново'));
+    fireEvent.click(screen.getByText('Начать заново'));
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByText('Начать тест'));
+    fireEvent.click(screen.getByText('Иногда бывает'));
+    act(() => { vi.advanceTimersByTime(300); });
+    fireEvent.click(screen.getByLabelText('Закрыть')); // бросил на втором вопросе
+    vi.useRealTimers();
+    cleanup();
+
+    renderSheet();
+    // Выраженные схемы прежнего итога на месте (все ответы 6 — схем много).
+    await waitFor(() => expect(screen.getByText('Пройти заново')).toBeTruthy());
+    expect(screen.queryByText('Выраженных схем нет — отличный результат.')).toBeNull();
+    expect(mockApi.deleteYsqResult).not.toHaveBeenCalled();
+    // Новый заход ждёт черновиком: повторный ретейк зовёт продолжить, а не с нуля.
+    fireEvent.click(screen.getByText('Пройти заново'));
+    fireEvent.click(screen.getByText('Начать заново'));
+    expect(screen.getByText(`Продолжить (1 из ${QUESTIONS.length})`)).toBeTruthy();
   });
 });
 

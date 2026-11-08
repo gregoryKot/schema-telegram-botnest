@@ -191,18 +191,51 @@ describe('useYsqTest — прохождение по страницам', () => 
     );
   });
 
-  it('handleRetake: чистит и localStorage, и api, возвращает в intro', () => {
+  // U8 (аудит 2026-11): «Пройти заново» стирал итог сразу, и брошенное новое
+  // прохождение оставляло «Мои паттерны» без выраженных схем.
+  it('handleRetake: в интро, итог не трогает ни локально, ни на сервере', () => {
+    const answers = Array(QUESTIONS.length).fill(6);
+    localStorage.setItem(
+      YSQ_RESULT_KEY,
+      JSON.stringify({ date: '2026-11-01T10:00:00Z', answers }),
+    );
     const api = makeApi();
     const { result } = renderHook(() => useYsqTest({ api }));
-    act(() => result.current.handleStartFresh());
-    act(() => result.current.selectAnswer(0, 6));
+    expect(result.current.phase).toBe('result');
     act(() => result.current.handleRetake());
     expect(result.current.phase).toBe('intro');
     expect(result.current.answers).toEqual(emptyAnswers());
-    expect(localStorage.getItem(YSQ_PROGRESS_KEY)).toBeNull();
-    expect(localStorage.getItem(YSQ_RESULT_KEY)).toBeNull();
-    expect(api.deleteYsqResult).toHaveBeenCalled();
-    expect(api.deleteYsqProgress).toHaveBeenCalled();
+    expect(result.current.hasProgress).toBe(false);
+    expect(JSON.parse(localStorage.getItem(YSQ_RESULT_KEY)!).answers).toEqual(
+      answers,
+    );
+    expect(api.deleteYsqResult).not.toHaveBeenCalled();
+  });
+
+  it('брошенное новое прохождение не стирает схемы; повторный ретейк зовёт продолжить черновик', () => {
+    vi.useFakeTimers();
+    const answers = Array(QUESTIONS.length).fill(6);
+    localStorage.setItem(
+      YSQ_RESULT_KEY,
+      JSON.stringify({ date: '2026-11-01T10:00:00Z', answers }),
+    );
+    const api = makeApi();
+    const first = renderHook(() => useYsqTest({ api }));
+    act(() => first.result.current.handleRetake());
+    act(() => first.result.current.handleStartFresh());
+    act(() => first.result.current.selectAnswer(0, 2));
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    first.unmount(); // бросил на втором вопросе
+
+    const { result } = renderHook(() => useYsqTest({ api }));
+    expect(result.current.phase).toBe('result');
+    expect(result.current.resultView?.activeCount).toBeGreaterThan(0);
+    act(() => result.current.handleRetake());
+    expect(result.current.hasProgress).toBe(true);
+    expect(result.current.progressAnswered).toBe(1);
+    expect(api.deleteYsqResult).not.toHaveBeenCalled();
   });
 });
 
@@ -506,14 +539,27 @@ describe('useYsqTest — прервал и вернулся: продолжен�
     window.removeEventListener(YSQ_PROGRESS_EVENT, onProgress);
   });
 
-  it('сдал тест — экран под ним узнаёт, что незаконченного теста нет', () => {
+  it('сдал тест — экран под ним узнаёт, что незаконченного теста нет', async () => {
+    vi.useFakeTimers();
+    localStorage.setItem(
+      YSQ_PROGRESS_KEY,
+      JSON.stringify({
+        answers: Array(QUESTIONS.length).fill(3),
+        page: TOTAL_PAGES - 1,
+      }),
+    );
     const seen: (number | null)[] = [];
     const onProgress = (e: Event) =>
       seen.push((e as CustomEvent<number | null>).detail);
     window.addEventListener(YSQ_PROGRESS_EVENT, onProgress);
-    const { result } = renderHook(() => useYsqTest({ api: makeApi() }));
-    act(() => result.current.handleRetake());
-    expect(seen).toEqual([null]);
+    const { result } = renderHook(() =>
+      useYsqTest({ api: makeApi(), autoResume: true }),
+    );
+    act(() => result.current.selectAnswer(TOTAL_PAGES - 1, 6));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
+    expect(seen.at(-1)).toBeNull();
     window.removeEventListener(YSQ_PROGRESS_EVENT, onProgress);
   });
 });
@@ -583,13 +629,13 @@ describe('useYsqTest — итог на сервере: экраны под те�
     ev.off();
   });
 
-  it('«Пройти заново» стирает итог на сервере — экраны тоже узнают', async () => {
+  it('«Пройти заново» итог на сервере не меняет — экранам перечитывать нечего', async () => {
     const ev = onResult();
     const { result } = renderHook(() => useYsqTest({ api: makeApi() }));
     await act(async () => {
       result.current.handleRetake();
     });
-    expect(ev.calls).toEqual(['result']);
+    expect(ev.calls).toEqual([]);
     ev.off();
   });
 });
