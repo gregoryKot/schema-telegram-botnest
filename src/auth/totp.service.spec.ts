@@ -126,10 +126,15 @@ function extractSecret(otpauthUrl: string): string {
 // verify/disable/regenerate.
 async function enroll(prisma: ReturnType<typeof makeFakePrisma>) {
   const service = new TotpService(prisma as never, noLock());
+  // Включение — за три шага до FIXED_TIME: confirmSetup пишет totpLastStep
+  // (анти-повтор), и код его шага verifyCode больше не примет. Тесты ниже
+  // меряют вход в FIXED_TIME и соседних шагах — они должны быть «после».
+  dateNowSpy.mockReturnValue(FIXED_TIME - 90_000);
   const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test');
   const secret = extractSecret(otpauthUrl);
   const code = codeFor(secret);
   const { recoveryCodes } = await service.confirmSetup(USER_ID, code);
+  dateNowSpy.mockReturnValue(FIXED_TIME);
   return { service, secret, recoveryCodes };
 }
 
@@ -221,6 +226,18 @@ describe('TotpService — setup', () => {
 });
 
 describe('TotpService — verifyCode', () => {
+  // Находка при переезде на otplib 13 (2026-11-08): confirmSetup не писал
+  // totpLastStep, и код включения ещё ~90 с проходил verifyCode (вход, step-up).
+  it('код, которым включили 2FA, второй раз не принимается (replay, L2)', async () => {
+    const prisma = makeFakePrisma();
+    const service = new TotpService(prisma as never, noLock());
+    const { otpauthUrl } = await service.startSetup(USER_ID, 'user@test');
+    const code = codeFor(extractSecret(otpauthUrl));
+    await service.confirmSetup(USER_ID, code);
+
+    expect(await service.verifyCode(USER_ID, code)).toBe(false);
+  });
+
   it('верный текущий TOTP-код → true', async () => {
     const prisma = makeFakePrisma();
     const { service, secret } = await enroll(prisma);

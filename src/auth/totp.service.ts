@@ -79,14 +79,19 @@ export class TotpService {
     if (!secret)
       throw new BadRequestException('Setup secret unreadable — restart setup');
 
-    if (matchTotpStep(secret, code.trim(), this.logger) === null) {
-      throw new UnauthorizedException('Invalid code');
-    }
+    const step = matchTotpStep(secret, code.trim(), this.logger);
+    if (step === null) throw new UnauthorizedException('Invalid code');
 
+    // totpLastStep — тот же анти-повтор, что в checkTotp: без него код
+    // включения ещё ~90 с проходил verifyCode (вход, step-up).
     const { codes, stored } = newRecoveryCodes();
     await this.prisma.user.update({
       where: { id: userId },
-      data: { totpEnabledAt: new Date(), totpRecoveryCodes: stored },
+      data: {
+        totpEnabledAt: new Date(),
+        totpRecoveryCodes: stored,
+        totpLastStep: step,
+      },
     });
     await revokeOtherSessions(this.prisma, userId, currentRefresh);
     return { recoveryCodes: codes };

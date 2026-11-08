@@ -166,12 +166,6 @@
   отвязке входа (`src/auth/security-notice.service.ts`) и окно кода 2FA (`webapp/src/components/stepUp/`)
   — не фичи в смысле правила №8, а защитные шаги: считать их в `/stats` нечего (события пишет
   `SecurityLogService`, DM админу — `totp_locked`).
-- **Код, которым включили 2FA, можно один раз повторить** (найдено при переезде на otplib 13,
-  2026-11-08). `confirmSetup` (`src/auth/totp.service.ts`) проверяет код, но не пишет
-  `totpLastStep` — анти-повтор L2 (`checkTotp`, CAS по шагу) видит `null`, и тот же код ещё
-  ~90 с проходит `verifyCode` (вход с 2FA, step-up). Узко: код нужно перехватить в момент
-  включения. Чинить: `confirmSetup` берёт шаг из `matchTotpStep` и пишет его вместе с
-  `totpEnabledAt`; тест «код включения второй раз — отказ».
 - **S9 · остаток.** `/api/auth/google|vk?ticket=` кукой билета не закрыть (ссылку по замыслу
   открывает другой контейнер) — там защищает ручной ввод кода на `/auth/confirm` и
   `login-preview`. Карточка привязки в боте (`src/telegram/telegram.link-card.ts:53`) по-прежнему
