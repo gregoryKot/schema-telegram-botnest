@@ -1256,6 +1256,7 @@
   "src/infra/self-check/probe-dependabot-prs.ts": 80,
   "src/infra/self-check/probe-email.ts": 90,
   "src/infra/self-check/probe-encryption-readable.ts": 109,
+  "src/infra/self-check/probe-max.ts": 89,
   "src/infra/self-check/probe-oauth-providers.ts": 148,
   "src/infra/self-check/probe-robokassa.ts": 166,
   "src/infra/self-check/probe-runtime-mode.ts": 40,
