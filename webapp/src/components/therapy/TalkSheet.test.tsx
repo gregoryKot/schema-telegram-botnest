@@ -18,23 +18,28 @@ beforeEach(() => { localStorage.clear(); track.mockClear(); goBack.mockClear(); 
 afterEach(cleanup);
 
 describe('TalkSheet', () => {
-  it('терапевт не подключён: запись с меткой места и Telegram автора, цены нет', () => {
+  // Владелец 2026-11-08: без «автора приложения» — от первого лица, главное действие «Написать мне».
+  it('терапевт не подключён: «напиши мне» от первого лица, Telegram первым, запись с меткой места, цены нет', () => {
     renderSheet();
     expect(screen.getByText('Поговорить с кем-то', { selector: '.ds-eyebrow' })).toBeTruthy();
-    const book = screen.getByRole('link', { name: 'Записаться на встречу' });
-    expect(book.getAttribute('href')).toBe('https://kotlarewski.gr/?from=app_more#booking');
-    fireEvent.click(book);
-    expect(track).toHaveBeenLastCalledWith('more', 'book', undefined);
-    const tg = screen.getByRole('link', { name: 'Написать в Telegram' });
+    expect(screen.getByText(/Если хочешь в терапию, напиши мне\./)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/[Аа]втор/);
+    const links = screen.getAllByRole('link');
+    expect(links.map(l => l.textContent)).toEqual(['Написать мне', 'Выбрать время на сайте']);
+    const tg = screen.getByRole('link', { name: 'Написать мне' });
     expect(tg.getAttribute('href')).toBe('https://t.me/kotlarewski');
     fireEvent.click(tg);
     expect(track).toHaveBeenLastCalledWith('more', 'write', undefined);
+    const book = screen.getByRole('link', { name: 'Выбрать время на сайте' });
+    expect(book.getAttribute('href')).toBe('https://kotlarewski.gr/?from=app_more#booking');
+    fireEvent.click(book);
+    expect(track).toHaveBeenLastCalledWith('more', 'book', undefined);
     expect(document.body.textContent).not.toMatch(/₽|руб/);
   });
 
   it('trigger карточки доезжает до события', () => {
     renderSheet('crisis');
-    fireEvent.click(screen.getByRole('link', { name: 'Записаться на встречу' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Выбрать время на сайте' }));
     expect(track).toHaveBeenLastCalledWith('more', 'book', 'crisis');
   });
 
@@ -53,7 +58,8 @@ describe('TalkSheet', () => {
     expect(w.getAttribute('href')).toBe('tg://user?id=42');
     fireEvent.click(w);
     expect(track).toHaveBeenLastCalledWith('more', 'write', undefined);
-    expect(screen.queryByRole('link', { name: 'Записаться на встречу' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Выбрать время на сайте' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Написать мне' })).toBeNull();
   });
 
   // Аудит 2026-11, U4: у терапевта без Telegram ссылка пустая — лист обещал

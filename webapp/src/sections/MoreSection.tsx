@@ -42,6 +42,9 @@ export function MoreSection(p: Props) {
   const [selfMap, setSelfMap] = useState(false);
   const [crisis, setCrisis] = useState(false);
   const { modeEntries } = useTodayDiaries(p.refreshKey);
+  // Мост к терапевту терапевту не нужен. Роль из профиля приходит раньше кэша контакта
+  // (therapy_is_therapist пишется после загрузки профиля), поэтому смотрим и на неё.
+  const bridge = p.userRole !== 'THERAPIST';
   const { rows, sheet } = useMoreRows({
     ...p,
     onOpenWhy: () => { trackHomeTile('why'); setWhy(true); },
@@ -57,7 +60,7 @@ export function MoreSection(p: Props) {
         <h1 className="ds-h1">Всё остальное</h1>
       </header>
 
-      <TherapyNudgeCard refreshKey={p.refreshKey} modeEntries={modeEntries} />
+      {bridge && <TherapyNudgeCard refreshKey={p.refreshKey} modeEntries={modeEntries} />}
 
       <MoreRows rows={rows} />
 
@@ -68,7 +71,7 @@ export function MoreSection(p: Props) {
       </button>
 
       <HomeScreenOfferCard />
-      <HomeTherapyLine />
+      {bridge && <HomeTherapyLine />}
 
       {why && <WhySheet onClose={() => setWhy(false)} />}
       {crisis && <CrisisContactsSheet onClose={() => setCrisis(false)} />}

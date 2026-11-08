@@ -20,7 +20,8 @@ export type TherapyNudgePlace =
   | 'test_start'
   | 'why';
 
-/** shown — показали; open — открыли лист; book — «Записаться»; write — написали (Telegram/терапевту); dismiss — «Не сейчас»;
+/** shown — показали; open — открыли лист; book — «Выбрать время на сайте»; write — написали (Telegram/терапевту);
+ *  dismiss — «Не сейчас» у карточки по сигналу или «Скрыть» у постоянной (home_card, practice);
  *  session — «Ближайшая встреча» у своего терапевта без канала связи (лист «Терапевт рядом», U4). */
 export type TherapyNudgeAction =
   'shown' | 'open' | 'book' | 'write' | 'dismiss' | 'session';
