@@ -76,8 +76,8 @@ afterEach(() => cleanup());
 describe('ModeMapEditor — палитра → холст', () => {
   it('клик по режиму в палитре добавляет узел на холст', () => {
     renderEditor();
-    fireEvent.click(screen.getByText('Триггер / Ситуация'));
-    expect(screen.getByText('Триггер')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Триггер' }));
+    expect(screen.getAllByText('Триггер').some(el => el.closest('.react-flow__node'))).toBe(true);
   });
 
   it('два клика по палитре — две фигуры на разных местах, не друг на друге (QA 2026-10-26)', async () => {
@@ -85,8 +85,8 @@ describe('ModeMapEditor — палитра → холст', () => {
     await act(async () => {});
     vi.useFakeTimers();
     try {
-      fireEvent.click(screen.getByText('Триггер / Ситуация'));
-      fireEvent.click(screen.getByText('Поведение / Последствие'));
+      fireEvent.click(screen.getByRole('button', { name: 'Триггер' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Поведение' }));
       await vi.advanceTimersByTimeAsync(1300);
       const body = updateModeMap.mock.calls.at(-1)![1] as { nodes: ModeMapNode[] };
       expect(body.nodes).toHaveLength(2);
@@ -177,7 +177,7 @@ describe('ModeMapEditor — удаление узла снимает и его �
   it('«Удалить ноду» в редакторе убирает узел и его связи из сохранённой модели', async () => {
     renderEditor(
       [
-        mmNode('n1', 'trigger', 'Триггер'),
+        mmNode('n1', 'trigger', 'Ссора'),
         mmNode('n2', 'behavior', 'Поведение'),
       ],
       [mmEdge('e1', 'n1', 'n2')],
@@ -190,10 +190,10 @@ describe('ModeMapEditor — удаление узла снимает и его �
     vi.useFakeTimers();
     try {
       fireEvent.click(
-        screen.getByText('Триггер').closest('.react-flow__node')!,
+        screen.getByText('Ссора').closest('.react-flow__node')!,
       );
       fireEvent.click(screen.getByText('Удалить ноду'));
-      expect(screen.queryByText('Триггер')).toBeNull();
+      expect(screen.queryByText('Ссора')).toBeNull();
 
       await vi.advanceTimersByTimeAsync(1300);
 
@@ -219,9 +219,9 @@ describe('ModeMapEditor — удаление узла снимает и его �
 // ModeMapEditor (не изолированный хук) действительно долетает до api.
 describe('ModeMapEditor — размонтирование со взведённым таймером сохранения', () => {
   it('уход с экрана до срабатывания автосейва всё равно отправляет несохранённую правку', async () => {
-    const { unmount } = renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
+    const { unmount } = renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
     await act(async () => {});
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
     fireEvent.click(screen.getByTitle('Здоров')); // меняет тип узла → scheduleSave взводит таймер
     expect(updateModeMap).not.toHaveBeenCalled(); // таймер ещё не сработал (1200мс не прошло)
 
@@ -245,7 +245,7 @@ describe('ModeMapEditor — горячие клавиши', () => {
   it('Backspace удаляет выбранный узел вместе с его рёбрами', async () => {
     renderEditor(
       [
-        mmNode('n1', 'trigger', 'Триггер'),
+        mmNode('n1', 'trigger', 'Ссора'),
         mmNode('n2', 'behavior', 'Поведение'),
       ],
       [mmEdge('e1', 'n1', 'n2')],
@@ -255,10 +255,10 @@ describe('ModeMapEditor — горячие клавиши', () => {
     vi.useFakeTimers();
     try {
       fireEvent.click(
-        screen.getByText('Триггер').closest('.react-flow__node')!,
+        screen.getByText('Ссора').closest('.react-flow__node')!,
       );
       fireEvent.keyDown(window, { key: 'Backspace' });
-      expect(screen.queryByText('Триггер')).toBeNull();
+      expect(screen.queryByText('Ссора')).toBeNull();
 
       await vi.advanceTimersByTimeAsync(1300);
       const body = updateModeMap.mock.calls.at(-1)![1] as {
@@ -280,43 +280,43 @@ describe('ModeMapEditor — горячие клавиши', () => {
   });
 
   it('⌘Z отменяет последнее действие (удаление узла)', () => {
-    renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
     fireEvent.click(screen.getByText('Удалить ноду'));
-    expect(screen.queryByText('Триггер')).toBeNull();
+    expect(screen.queryByText('Ссора')).toBeNull();
     fireEvent.keyDown(window, { key: 'z', metaKey: true });
-    expect(screen.getByText('Триггер')).toBeTruthy();
+    expect(screen.getByText('Ссора')).toBeTruthy();
   });
 
   it('⌘D дублирует выбранный узел', () => {
-    renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
     fireEvent.keyDown(window, { key: 'd', metaKey: true });
     // Гайд тоже упоминает «Триггер» (мини-превью цепочки) — считаем только узлы холста.
     const onCanvas = screen
-      .getAllByText('Триггер')
+      .getAllByText('Ссора')
       .filter((el) => el.closest('.react-flow__node'));
     expect(onCanvas).toHaveLength(2);
   });
 
   it('⌘⇧Z (shift) повторяет отменённое действие через redo', () => {
-    renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
     fireEvent.click(screen.getByText('Удалить ноду'));
-    expect(screen.queryByText('Триггер')).toBeNull();
+    expect(screen.queryByText('Ссора')).toBeNull();
     fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo — вернули узел
-    expect(screen.getByText('Триггер')).toBeTruthy();
+    expect(screen.getByText('Ссора')).toBeTruthy();
     fireEvent.keyDown(window, { key: 'z', metaKey: true, shiftKey: true }); // redo — снова удалён
-    expect(screen.queryByText('Триггер')).toBeNull();
+    expect(screen.queryByText('Ссора')).toBeNull();
   });
 
   it('⌘Y тоже повторяет отменённое действие (альтернативный redo)', () => {
-    renderEditor([mmNode('n1', 'trigger', 'Триггер')]);
-    fireEvent.click(screen.getByText('Триггер').closest('.react-flow__node')!);
+    renderEditor([mmNode('n1', 'trigger', 'Ссора')]);
+    fireEvent.click(screen.getByText('Ссора').closest('.react-flow__node')!);
     fireEvent.click(screen.getByText('Удалить ноду'));
     fireEvent.keyDown(window, { key: 'z', metaKey: true }); // undo
-    expect(screen.getByText('Триггер')).toBeTruthy();
+    expect(screen.getByText('Ссора')).toBeTruthy();
     fireEvent.keyDown(window, { key: 'y', metaKey: true }); // redo
-    expect(screen.queryByText('Триггер')).toBeNull();
+    expect(screen.queryByText('Ссора')).toBeNull();
   });
 });

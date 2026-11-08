@@ -96,13 +96,10 @@ COPY --from=build --chown=node:node /app/assets ./assets
 COPY --from=build --chown=node:node /app/BUILD_INFO ./
 # Front + страница техработ (dependency-free) — держат порт 3000 всю жизнь
 # контейнера. См. deploy/front-server.mjs, deploy/entrypoint.mjs и CMD ниже.
-# Каталог едет целиком: в нём и deploy/transfer-db.sh (разовый перенос БД на VPS,
-# запускается через RECOVER_CMD, docs/MIGRATION_VPS.md), и deploy/vps/ (серверу он
-# в образе не нужен, но лишним не мешает).
 COPY --from=build --chown=node:node /app/deploy ./deploy
 # Скрипты бэкапа/восстановления: планировщик в deploy/ запускает backup-upload.sh,
 # restore-backup.sh нужен владельцу при аварии (оба читают deploy/pg-url-env.cjs).
-# backup-fetch-latest.sh скачивает свежий бэкап из R2 (op=restore-backup, docs/MIGRATION_VPS.md);
+# backup-fetch-latest.sh скачивает свежий бэкап из R2 (docs/RUNBOOKS.md, «Cloudflare R2 — бэкапы базы»);
 # s3-api.sh — общий вход в хранилище (подпись SigV4 curl-ом), его подключают оба.
 COPY --from=build --chown=node:node /app/scripts/backup-upload.sh /app/scripts/restore-backup.sh /app/scripts/backup-fetch-latest.sh /app/scripts/s3-api.sh ./scripts/
 
@@ -112,8 +109,8 @@ USER node
 # Зависший процесс/потерянная БД/парковка на техработах видны оркестратору.
 # Смотрим ТЕЛО /health, а не код: front (deploy/front-server.mjs) отвечает 200
 # страницей техработ на любой путь, и по r.ok запаркованный контейнер был бы
-# «здоров». Маркер тот же, что в deploy/vps/ops.sh и prod-smoke.yml. HEALTHCHECK
-# ничего не перезапускает, он даёт честный статус (unhealthy в `op=status`).
+# «здоров». Маркер тот же, что в prod-smoke.yml. HEALTHCHECK
+# ничего не перезапускает, он даёт честный статус (unhealthy).
 # 127.0.0.1 (front слушает IPv4); redirect:'manual' — хостовый редирект не
 # уведёт проверку на внешний прод.
 HEALTHCHECK --interval=60s --timeout=5s --start-period=30s --retries=3 \

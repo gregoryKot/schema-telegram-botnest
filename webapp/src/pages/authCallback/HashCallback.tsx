@@ -1,45 +1,39 @@
 import { useEffect } from 'react';
-import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/authContext';
 import { ServiceLoading } from '../service/ServiceLoading';
+import { dropUrlFragment } from './dropUrlFragment';
 
-// Приём сессии после OAuth (Google, VK, Telegram): бэкенд ведёт на
-// /auth/callback#access_token=...&expires_in=... Попап-ветки (токен в
-// window.opener) нет: она отдавала токен в чужое окно (аудит 2026-10, E3).
+// Приём сессии после OAuth (Google, VK): сервер ставит httpOnly refresh-куку и
+// ведёт на /auth/callback БЕЗ токена в адресе (до 2026-11 токен ехал во
+// фрагменте — login-CSRF: чужая ссылка заводила в чужой аккаунт). Сессию
+// поднимает AuthProvider refresh-ом при загрузке; здесь только ждём исход.
+// Попап-ветки (токен в window.opener) нет: аудит 2026-10, E3.
 export function HashCallback() {
-  const { setAccessToken } = useAuth();
+  const { isLoading, isAuthenticated, authError } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => { dropUrlFragment(); }, []);
+
   useEffect(() => {
-    const hash = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
-    const token = params.get('access_token');
-    const expiresIn = parseInt(params.get('expires_in') ?? '900', 10);
-
-    window.history.replaceState(null, '', '/auth/callback');
-
-    if (token) {
+    if (isLoading) return;
+    if (isAuthenticated) {
       const returnTo = sessionStorage.getItem('auth_return_to') ?? '/today';
       sessionStorage.removeItem('auth_return_to');
-      // flushSync forces the state update to complete synchronously before
-      // navigate() — otherwise RequireAuth renders with isAuthenticated=false
-      // and immediately redirects to /login.
-      flushSync(() => setAccessToken(token, expiresIn));
-      // returnTo можно вести за пределы SPA сайта — на мини-апп (/app/…),
-      // куда LoginScreen положил этот же ключ ПЕРЕД уходом на OAuth. У сайта
-      // нет роута /app — react-router-навигация там покажет пустую страницу.
-      // Полный переход отдаёт /app/ мини-аппу; сессия уже есть — refresh-кука
-      // выдана бэкендом на path=/api/auth, мини-апп поднимет её POST /api/auth/refresh.
+      // returnTo можно вести за пределы SPA (/app/…, его ключ кладёт LoginScreen
+      // перед OAuth): react-router там покажет пустоту — нужен полный переход.
+      // Refresh уже завершён, новая кука в jar — следующая страница поднимет её сама.
       if (returnTo.startsWith('/app')) {
         window.location.replace(returnTo);
         return;
       }
       navigate(returnTo, { replace: true });
-    } else {
-      navigate('/login?error=no_token', { replace: true });
+      return;
     }
-  }, [navigate, setAccessToken]);
+    // Сеть/5xx: сессия, может быть, есть — AuthProvider ретраит сам, ждём его.
+    if (authError === 'transient') return;
+    navigate('/login?error=no_token', { replace: true });
+  }, [isLoading, isAuthenticated, authError, navigate]);
 
   return (
     <ServiceLoading />

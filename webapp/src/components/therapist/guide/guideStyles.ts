@@ -9,14 +9,6 @@ export const guideTextStyle: CSSProperties = {
   whiteSpace: 'pre-line',
 };
 
-/** Ширина колонки листа подсказок: текст справочника читается строкой ~70 знаков, а не во всю ширину окна. */
+/** Ширина колонки листа подсказок на планшете (на телефоне лист уже, на компьютере — панель справа): строка ~70 знаков, а не во всю ширину окна. */
 export const GUIDE_COLUMN = 680;
 
-/** Колонка листа подсказок; шапка листа встаёт в ту же ширину (ConceptFullscreenSheet `column`). */
-export const guideColumnStyle: CSSProperties = {
-  maxWidth: GUIDE_COLUMN,
-  margin: '0 auto',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 'var(--space-24)',
-};

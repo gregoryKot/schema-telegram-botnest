@@ -3,16 +3,19 @@
 // Здесь знаки групп режимов: что с этой частью происходит и что с ней делают в терапии.
 // Своя часть — маленький круг глины; цвет главного элемента — оттенок группы на карте
 // режимов (MODE_GROUP_HUE): копинги — сланец, критики — слива, здоровые — мох.
-// Знаки техник — GuideSignsTechniques.tsx; какой знак у какого листа — guideSignsModel.ts.
+// Знаки техник — GuideSignsTechniques.tsx, два своих знака «Для терапевта» — GuideSignsPractice.tsx;
+// какой знак у какого листа — guideSignsModel.ts.
 import type { ReactElement } from 'react';
-import { Breath, Pebbles, Sheets } from './PaperArt';
-import { Cluster, Heart, Talk } from './PaperArtSigns';
+import { Limits } from './NeedArt';
+import { Breath, Layers, Pebbles, Ribbon, Sheets } from './PaperArt';
+import { Beads, Check, Cluster, Heart, Talk } from './PaperArtSigns';
 import { PAPER, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
 import type { GuideSign } from './guideSignsModel';
 import {
   Flashcard, Grown, HeartFrame, Horizon, PatternSteps, Rescript, Scales, Spotlight, TalkPast,
 } from './GuideSignsTechniques';
+import { Chatter, Flare } from './GuideSignsPractice';
 
 /** Детские режимы: маленький круг в объятиях большого — о ребёнке заботятся. */
 export function ChildCare({ size }: ArtProps) {
@@ -101,6 +104,13 @@ const BY_SIGN: Record<GuideSign, (p: ArtProps) => ReactElement> = {
   heart: Heart,
   grown: Grown,
   pebbles: Pebbles,
+  ribbon: Ribbon,
+  chatter: Chatter,
+  check: Check,
+  layers: Layers,
+  beads: Beads,
+  limits: Limits,
+  flare: Flare,
 };
 
 /** Знак листа подсказок по имени (guideSignsModel.ts). */

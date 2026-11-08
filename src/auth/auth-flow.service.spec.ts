@@ -376,7 +376,9 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
     );
   });
 
-  it('исход "tokens" → ставит REFRESH_COOKIE и редиректит на /auth/callback с access_token в хэше', async () => {
+  // Login-CSRF (аудит 2026-11): токена в адресе нет — фронт берёт сессию
+  // refresh-ом по куке, которую ставит этот же ответ.
+  it('исход "tokens" → ставит REFRESH_COOKIE и редиректит на /auth/callback без токена в URL', async () => {
     const svc = makeService({});
     const res = makeRes();
     const outcome: SignInOutcome = {
@@ -390,9 +392,10 @@ describe('AuthFlowService.finishOAuthRedirect', () => {
       FAKE_TOKENS.refreshToken,
       expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
     );
-    expect(res.redirect).toHaveBeenCalledWith(
-      `${FRONTEND}/auth/callback#access_token=${FAKE_TOKENS.accessToken}&expires_in=${FAKE_TOKENS.expiresIn}`,
-    );
+    expect(res.redirect).toHaveBeenCalledWith(`${FRONTEND}/auth/callback`);
+    const url = String(res.redirect.mock.calls[0][0]);
+    expect(url).not.toContain(FAKE_TOKENS.accessToken);
+    expect(url).not.toContain('#');
   });
 });
 
@@ -594,9 +597,7 @@ describe('AuthFlowService.oauthCallback', () => {
       FAKE_TOKENS.refreshToken,
       expect.anything(),
     );
-    expect(res.redirect).toHaveBeenCalledWith(
-      expect.stringContaining(`${FRONTEND}/auth/callback#`),
-    );
+    expect(res.redirect).toHaveBeenCalledWith(`${FRONTEND}/auth/callback`);
   });
 
   it('provider с error-параметром (юзер отклонил) → редирект на /auth/error, без обмена кода', async () => {
@@ -734,9 +735,15 @@ describe('finishOAuthRedirect — возврат сессии в контейн�
     );
 
     const url = res.redirect.mock.calls[0][0];
-    expect(url).toContain('/auth/confirm?code=K7M2QX94');
-    // Сессия для БРАУЗЕРА всё равно выдана — вход в нём состоялся.
-    expect(url).toContain('access_token=a');
+    expect(url).toBe('https://schemehappens.ru/auth/confirm?code=K7M2QX94');
+    // Сессия для БРАУЗЕРА всё равно выдана — refresh-кукой, не токеном в
+    // адресе (login-CSRF, аудит 2026-11).
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'r',
+      expect.anything(),
+    );
+    expect(url).not.toContain('access_token');
     // Прежнего «тихого» флага одобрения не осталось.
     expect(url).not.toContain('ticket=1');
     expect(url).not.toContain('/auth/callback');
@@ -754,7 +761,12 @@ describe('finishOAuthRedirect — возврат сессии в контейн�
     );
 
     const url = res.redirect.mock.calls[0][0];
-    expect(url).toContain('/auth/callback#access_token=a');
+    expect(url).toBe('https://schemehappens.ru/auth/callback');
+    expect(res.cookie).toHaveBeenCalledWith(
+      'refresh_token',
+      'r',
+      expect.anything(),
+    );
     expect(url).not.toContain('/auth/confirm');
   });
 

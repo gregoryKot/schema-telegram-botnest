@@ -40,7 +40,7 @@ describe('clientIpProbe', () => {
     const r = await run(100, 0, CDN_LIMIT * 100);
     expect(r.ok).toBe(false);
     expect(r.detail).toContain('CDN');
-    expect(r.detail).toContain('trusted_proxies');
+    expect(r.detail).toContain('trust proxy = 2');
   });
 
   it('обе беды сразу: обе названы', async () => {

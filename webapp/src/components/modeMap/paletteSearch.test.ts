@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MODE_GROUPS, SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { matchCustomModes, matchDomainSchemas, matchGroupItems, matchesBehavior, matchesTrigger, normalizeQuery } from './paletteSearch';
+import { matchCustomModes, matchDomainSchemas, matchGroupItems, matchesWords, normalizeQuery } from './paletteSearch';
 
 describe('paletteSearch', () => {
   it('normalizeQuery: обрезает и приводит к нижнему регистру', () => {
@@ -34,9 +34,9 @@ describe('paletteSearch', () => {
   });
 
   it('фигуры ищутся по ключевым словам', () => {
-    expect(matchesTrigger('ситуац')).toBe(true);
-    expect(matchesTrigger('поведен')).toBe(false);
-    expect(matchesBehavior('последств')).toBe(true);
-    expect(matchesBehavior('')).toBe(true);
+    expect(matchesWords('триггер ситуация', 'ситуац')).toBe(true);
+    expect(matchesWords('триггер ситуация', 'поведен')).toBe(false);
+    expect(matchesWords('поведение последствие', 'последств')).toBe(true);
+    expect(matchesWords('поведение последствие', '')).toBe(true);
   });
 });

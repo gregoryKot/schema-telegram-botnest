@@ -149,12 +149,14 @@ export interface SchemaDomainGuide {
  * Раздел «Для терапевта» в «Справочнике»: частые ошибки, тупики, свои
  * схемы терапевта, групповой формат, намеренная практика.
  */
-export interface PracticeNote {
-  /** Латиница, уникален: ключ раздела в списке. */
+export interface PracticeNote extends GuideVoiceFields {
+  /** Латиница, уникален: ключ раздела в списке и знак (guideSignsModel). */
   id: string;
   title: string;
-  /** Абзацы или пункты, 1–6, каждый 1–3 фразы. */
-  paragraphs: string[];
+  /** Суть одной-двумя фразами — под заголовком листа. */
+  summary: string;
+  /** «Что делать»: 3–5 коротких пунктов, у каждого первая фраза — действие. */
+  points: string[];
   sources: string;
 }
 

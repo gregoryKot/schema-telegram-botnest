@@ -83,7 +83,11 @@ async function openPlaque(figure = 'Уязвимый Ребёнок: связи'
 const SCHEMA = 'Покинутость / Нестабильность';
 const openSchemaPlaque = () => openPlaque(`Схема ${SCHEMA}: убеждение и опыт`);
 const tracked = (name: string) => mockApi.trackEvent.mock.calls.filter((c) => c[0] === name).length;
-const zOf = (el: Element) => (el.closest('.sk-sheet, [role="dialog"]') as HTMLElement).style.zIndex;
+// z-index листа: у листа-панели подсказок (ConceptFullscreenSheet `panel`) он на слое .cfs-layer вокруг диалога.
+const zOf = (el: Element) => {
+  const sheet = el.closest('.sk-sheet, [role="dialog"]')!;
+  return ((sheet.closest('.cfs-layer') ?? sheet) as HTMLElement).style.zIndex;
+};
 const isAfter = (a: Element, b: Element) => (b.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
 
 describe('TherapistClientSheet — подсказки терапевту', () => {

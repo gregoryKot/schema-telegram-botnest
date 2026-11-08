@@ -38,7 +38,7 @@ export function clientIpProbe(
       }
       if (cdnMarked / total >= CDN_LIMIT) {
         problems.push(
-          `перед прокси появился CDN (${pct(cdnMarked, total)}% из ${total} запросов с его метками): лимиты по IP схлопнулись в адреса CDN, нужны trusted_proxies в Caddy и trust proxy = 2`,
+          `перед прокси появился CDN (${pct(cdnMarked, total)}% из ${total} запросов с его метками): лимиты по IP схлопнулись в адреса CDN, нужен trust proxy = 2 (src/infra/trust-proxy.ts)`,
         );
       }
       return Promise.resolve(

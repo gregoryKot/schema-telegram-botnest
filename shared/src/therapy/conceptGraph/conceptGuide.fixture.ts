@@ -1,8 +1,9 @@
 // Фикстура подсказок терапевту (#995) для тестов плашки и листов сайта: свои
-// разделы режима и схемы и своя библиотека, чтобы тесты не зависели от текстов
-// shared/src/schemaTherapy/guide/modes|schemas|techniques.
+// разделы режима и схемы, своя библиотека и раздел «Для терапевта», чтобы тесты
+// не зависели от текстов shared/src/schemaTherapy/guide/modes|schemas|techniques|practice.
 import type {
   ModeGuide,
+  PracticeNote,
   SchemaGuide,
   TechniqueGuide,
 } from '../../schemaTherapy/guide';
@@ -96,4 +97,21 @@ export const FIXTURE_SCHEMA_VIEW: SchemaGuideView = {
   guide: FIXTURE_SCHEMA_GUIDE,
   domainNote: FIXTURE_DOMAIN_NOTE,
   techniques: [FIXTURE_TECHNIQUES[1], FIXTURE_TECHNIQUES[0]],
+};
+
+/** Раздел «Для терапевта» новой формы: суть, пункты, реплика, «Подробнее». */
+export const FIXTURE_PRACTICE_NOTE: PracticeNote = {
+  id: 'group_therapy',
+  title: 'Групповой формат',
+  summary: 'В группе режимы видны в отношениях с другими участниками.',
+  points: [
+    'Объявить правила группы в начале.',
+    'Замечать режим, когда он включился в группе.',
+    'Давать ограниченное родительство вдвоём.',
+  ],
+  voice: [
+    'Похоже, сейчас включился Отстранённый Защитник. Что было прямо перед этим?',
+  ],
+  more: ['Программа идёт блоками по 12 сессий.'],
+  sources: '[Фаррелл, гл. 2]',
 };

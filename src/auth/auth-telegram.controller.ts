@@ -123,11 +123,7 @@ export class AuthTelegramController {
     const frontendBase = this.config
       .getOrThrow<string>('WEBAPP_URL')
       .replace(/\/$/, '');
-    // Return to the frontend SPA page that reads the hash fragment (built
-    // inside telegramOauthLoginUrl as return_to). oauth.telegram.org puts
-    // auth data in #tgAuthResult=BASE64URL_JSON (hash fragment), which
-    // browsers never send to the server. The frontend page reads
-    // window.location.hash and calls /api/auth/telegram/widget directly.
+    // return_to — SPA-страница (см. шапку): #tgAuthResult сервер не видит.
     // Persist linkUserId in a short-lived SIGNED cookie so we can restore it
     // after redirect. Signed (C1): a raw userId here was client-forgeable and
     // let an attacker link their Telegram to the victim's account.
@@ -140,6 +136,10 @@ export class AuthTelegramController {
         maxAge: 10 * 60 * 1000,
         path: '/api/auth',
       });
+    } else {
+      // Анонимный вход: кука брошенной привязки (A нажал «Привязать» и вышел)
+      // привязала бы Telegram B к аккаунту A и дала B его сессию (аудит 2026-11).
+      res.clearCookie('tg_link_user', { path: '/api/auth' });
     }
     res.redirect(telegramOauthLoginUrl(botId, frontendBase));
   }

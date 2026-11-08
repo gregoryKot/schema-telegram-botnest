@@ -11,6 +11,7 @@ import { useMoreRows } from './more/useMoreRows';
 import { MoreRows } from './more/MoreRows';
 import { TasksHub } from './tasks/TasksHub';
 import { CaseFlowHost } from '../components/caseFlow/CaseFlowHost';
+import { CrisisContactsSheet } from './practice/CrisisContactsSheet';
 import '../styles/client-more.css';
 import { Heart } from '../components/art/PaperArtSigns';
 
@@ -30,12 +31,15 @@ interface Props {
 // «Ещё»: всё, что не входит в три действия главной (docs/design/CLIENT_SIMPLE_2026-10.md).
 // Владелец 2026-11-05: на главной только три кнопки — сюда переехали задания (строка
 // «Задания» → TasksHub), сигнальная карточка моста к терапевту, предложение поставить
-// значок на экран и строка «самопомощь, не замена терапии». Кризисный вход — внизу.
+// значок на экран и строка «самопомощь, не замена терапии». Кризисный вход — внизу:
+// сразу лист с телефонами доверия (правило №7: не глубже одного нажатия; аудит 2026-11 —
+// раньше вёл в «Практики», где контакты прятались за второй такой же строкой).
 export function MoreSection(p: Props) {
   const [why, setWhy] = useState(false);
   const [journey, setJourney] = useState(false);
   const [tasks, setTasks] = useState(false);
   const [selfMap, setSelfMap] = useState(false);
+  const [crisis, setCrisis] = useState(false);
   const { modeEntries } = useTodayDiaries(p.refreshKey);
   const { rows, sheet } = useMoreRows({
     ...p,
@@ -56,7 +60,7 @@ export function MoreSection(p: Props) {
 
       <MoreRows rows={rows} />
 
-      <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => p.onNavigate('practice')}>
+      <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => setCrisis(true)}>
         <span className="pp-row-art"><Heart size="row" /></span>
         <span className="ds-list-title">Мне очень плохо</span>
         <span className="ds-chev" aria-hidden="true" />
@@ -66,6 +70,7 @@ export function MoreSection(p: Props) {
       <HomeTherapyLine />
 
       {why && <WhySheet onClose={() => setWhy(false)} />}
+      {crisis && <CrisisContactsSheet onClose={() => setCrisis(false)} />}
       {sheet}
       {journey && <JourneySheet onClose={() => setJourney(false)} />}
       {selfMap && (

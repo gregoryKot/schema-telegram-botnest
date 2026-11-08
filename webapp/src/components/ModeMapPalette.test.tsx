@@ -1,23 +1,15 @@
 // @vitest-environment jsdom
-// ModeMapPalette — левая панель добавления режимов на карту (3% покрытия).
-// Чистый React-компонент без @xyflow/react — рендерится напрямую. Проверяем
-// поиск, добавление режима по клику, «вынести все режимы клиента» и полный
-// CRUD своих режимов терапевта (создание/удаление) — с реальными API-моками.
+// ModeMapPalette — левая панель холста. По умолчанию — только «Этот клиент» и фигуры;
+// весь каталог — одной строкой внизу; поиск идёт по всему и показывает плоский список.
+// Знаки — язык бумажной аппликации (docs/design/PAPER_2026-11.md). API — моки.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-  within,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { ModeMapPalette } from './ModeMapPalette';
 import type { TherapistCustomMode } from '../api';
 import { AddressFormContext } from '../utils/addressForm';
 import { TYPE_COLORS } from './modeMapData';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
+import { paperSignName } from '../test-support/paperSign';
 
 const getConceptualization = vi.fn();
 const listCustomModes = vi.fn();
@@ -32,401 +24,264 @@ vi.mock('../api', () => ({
   },
 }));
 
+const CLIENT = { modeIds: ['vulnerable_child', 'demanding_critic'], schemaIds: ['abandonment', 'no_such_schema'] };
+const MINE: TherapistCustomMode = { id: 5, therapistId: 1, name: 'Особый', emoji: '⭐', nodeType: 'healthy', createdAt: '2026-01-01' };
+
 beforeEach(() => {
   vi.clearAllMocks();
-  getConceptualization.mockResolvedValue(null);
+  localStorage.clear();
+  getConceptualization.mockResolvedValue(CLIENT);
   listCustomModes.mockResolvedValue([]);
 });
 afterEach(() => cleanup());
 
-function renderPalette(onAdd = vi.fn(), onAddMany = vi.fn(), form: 'ty' | 'vy' = 'ty') {
-  render(
-    <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <ModeMapConceptProvider clientId={7}>
-        <ModeMapPalette onAdd={onAdd} onAddMany={onAddMany} />
-      </ModeMapConceptProvider>
-    </AddressFormContext.Provider>,
-  );
+/** Рендер с загруженной концептуализацией и своими режимами (оба приезжают из эффектов). */
+async function renderPalette(onAdd = vi.fn(), onAddMany = vi.fn(), form: 'ty' | 'vy' = 'ty') {
+  await act(async () => {
+    render(
+      <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+        <ModeMapConceptProvider clientId={7}>
+          <ModeMapPalette onAdd={onAdd} onAddMany={onAddMany} />
+        </ModeMapConceptProvider>
+      </AddressFormContext.Provider>,
+    );
+  });
   return { onAdd, onAddMany };
 }
+const catalogRow = () => screen.getByRole('button', { name: /Все режимы и схемы/ });
+const openCatalog = () => fireEvent.click(catalogRow());
+const search = (v: string) => fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), { target: { value: v } });
+const headSign = (group: string) => paperSignName(document.querySelector(`[data-group="${group}"] .mm2-pal-head .mm2-pal-mark svg`));
+const rowMark = (name: string) => screen.getByText(name).closest('button')!.querySelector('svg')!.getAttribute('data-mark');
 
-describe('ModeMapPalette — секция «Схема случая»', () => {
-  const ITEMS: [string, string][] = [
-    ['Схема', 'schema'],
-    ['Опыт детства', 'origin'],
-    ['Потребность', 'need'],
-    ['Круг потребностей', 'needs'],
-  ];
-
-  it.each(ITEMS)('клик по «%s» добавляет ноду типа %s', (name, type) => {
-    const { onAdd } = renderPalette();
-    fireEvent.click(screen.getByText(name));
-    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ type, data: expect.objectContaining({ label: expect.any(String) }) }));
-  });
-
-  it('круг потребностей кладётся с диаметром, потребность — без чужих полей', () => {
-    const { onAdd } = renderPalette();
-    fireEvent.click(screen.getByText('Круг потребностей'));
-    fireEvent.click(screen.getByText('Потребность'));
-    expect(onAdd.mock.calls[0][0].data).toMatchObject({ label: 'Базовые эмоциональные потребности', diameter: 340 });
-    expect(onAdd.mock.calls[1][0].data).toEqual({ label: 'Потребность' });
-  });
-
-  it('перетаскивание кладёт заготовку в dataTransfer под тем же ключом, что читает холст', () => {
-    renderPalette();
-    const setData = vi.fn();
-    fireEvent.dragStart(screen.getByText('Опыт детства'), { dataTransfer: { setData, effectAllowed: '' } });
-    expect(setData).toHaveBeenCalledWith('application/modemap-node', expect.stringContaining('"type":"origin"'));
-  });
-
-  it('поиск режима прячет секцию, чтобы «Ничего не найдено» не спорил с ней', () => {
-    renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), { target: { value: 'Упрямый' } });
-    expect(screen.queryByText('Схема случая')).toBeNull();
-    expect(screen.queryByText('Круг потребностей')).toBeNull();
-  });
-});
-
-describe('ModeMapPalette — поиск и добавление стандартных режимов', () => {
-  it('клик по «Триггер / Ситуация» добавляет узел типа trigger', () => {
-    const { onAdd } = renderPalette();
-    fireEvent.click(screen.getByText('Триггер / Ситуация'));
-    expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'trigger',
-        data: expect.objectContaining({ label: 'Триггер' }),
-      }),
-    );
-  });
-
-  it('клик по «Поведение / Последствие» добавляет узел типа behavior', () => {
-    const { onAdd } = renderPalette();
-    fireEvent.click(screen.getByText('Поведение / Последствие'));
-    expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'behavior' }),
-    );
-  });
-
-  it('поиск фильтрует режимы группы по названию', () => {
-    renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), {
-      target: { value: 'Упрямый' },
-    });
-    expect(screen.getByText('Упрямый Ребёнок')).toBeTruthy();
-    expect(screen.queryByText('Одинокий Ребёнок')).toBeNull();
-  });
-
-  it('поиск без совпадений показывает «Ничего не найдено»', () => {
-    renderPalette();
-    fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), {
-      target: { value: 'зюзюзюкод' },
-    });
-    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
-  });
-
-  it('раскрытие группы показывает её режимы, клик по режиму добавляет узел с копинг-подтипом', () => {
-    const { onAdd } = renderPalette();
-    fireEvent.click(screen.getByText('Детские режимы'));
-    fireEvent.click(screen.getByText('Уязвимый Ребёнок'));
-    expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'child',
-        data: expect.objectContaining({ modeId: 'vulnerable_child' }),
-      }),
-    );
-  });
-});
-
-describe('ModeMapPalette — цвет группы = цвет узла на холсте', () => {
-  // QA 2026-10-26: детские режимы были красными в палитре (тон кабинета) и
-  // сине-зелёными на холсте (TYPE_COLORS), критикующие — фиолетовыми и красными.
-  it.each([
-    ['child', 'child'],
-    ['critic', 'critic'],
-    ['coping_avoidance', 'coping'],
-    ['healthy', 'healthy'],
-  ])('группа %s красится цветом узла типа %s', (groupId, type) => {
-    renderPalette();
-    const group = document.querySelector(`[data-group="${groupId}"]`) as HTMLElement;
-    expect(group.style.getPropertyValue('--gc')).toBe(TYPE_COLORS[type]);
-  });
-});
-
-describe('ModeMapPalette — режимы клиента (из концептуализации)', () => {
-  // Список режимов клиента приезжает из api.getConceptualization в mount-
-  // эффекте — обновление прилетает из-под await, вне act, и опрос findByText
-  // (timeout 8000) с ним иногда расходится. Оборачиваем рендер в act(async):
-  // он дожидается промиса, дальше ассерт синхронный. Раньше ждали текст
-  // «▼ 2» — то же число показывает статичный счётчик группы «Копинг:
-  // Капитуляция» (2 стандартных режима), совпадение делает ассерт
-  // неоднозначным (getByText падает на нескольких найденных). Само число при
-  // этом проверять надо — оно в заголовке названия раздела и есть «сколько
-  // режимов у клиента», — поэтому ищем его не по всему документу, а внутри
-  // кнопки раздела: там счётчик один.
-  it('показывает раздел с количеством режимов клиента и разворачивает список по клику', async () => {
-    getConceptualization.mockResolvedValue({
-      modeIds: ['vulnerable_child', 'demanding_critic'],
-    });
-    await act(async () => {
-      renderPalette();
-    });
-    const header = screen.getByText('Режимы клиента').closest('button')!;
-    expect(within(header).getByText('▼ 2')).toBeTruthy();
-    fireEvent.click(screen.getByText('Режимы клиента'));
+describe('ModeMapPalette — по умолчанию только клиент и фигуры', () => {
+  it('видны «Этот клиент» и «Фигуры», каталог закрыт одной строкой с тихим счётчиком', async () => {
+    await renderPalette();
+    expect(screen.getAllByRole('heading').map(h => h.textContent)).toEqual(['Этот клиент', 'Фигуры']);
     expect(screen.getByText('Уязвимый Ребёнок')).toBeTruthy();
-    expect(screen.getByText('Требовательный Критик')).toBeTruthy();
+    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
+    expect(catalogRow().getAttribute('aria-expanded')).toBe('false');
+    expect(catalogRow().textContent).toContain('55');
+    expect(screen.queryByText('Детские')).toBeNull();
+    expect(document.querySelector('[data-group]')).toBeNull();
   });
 
-  it('«вынести все» зовёт onAddMany со всеми режимами клиента одним пакетом', async () => {
-    getConceptualization.mockResolvedValue({
-      modeIds: ['vulnerable_child', 'demanding_critic'],
-    });
-    const onAddMany = vi.fn();
-    await act(async () => {
-      renderPalette(vi.fn(), onAddMany);
-    });
-    fireEvent.click(
-      screen.getByLabelText('Вынести все режимы клиента на карту'),
-    );
+  it('каталог раскрывается: группы свёрнуты, клик по группе показывает режимы; выбор запоминается', async () => {
+    const { onAdd } = await renderPalette();
+    openCatalog();
+    expect(localStorage.getItem('modemap_catalog')).toBe('1');
+    expect(document.querySelectorAll('[data-group]')).toHaveLength(11);
+    expect(screen.queryByText('Одинокий Ребёнок')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Детские/ }));
+    fireEvent.click(screen.getByText('Одинокий Ребёнок'));
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ type: 'child', data: expect.objectContaining({ modeId: 'lonely_child' }) }));
+    cleanup();
+    await renderPalette();
+    expect(catalogRow().getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('новый клиент без концептуализации: тихая строка, каталог открыт', async () => {
+    getConceptualization.mockResolvedValue(null);
+    await renderPalette();
+    expect(screen.getByText('Режимы и схемы из концептуализации появятся здесь')).toBeTruthy();
+    expect(catalogRow().getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: /Детские/ })).toBeTruthy();
+  });
+
+  // Сбой ≠ пусто: раньше секция клиента молча не рендерилась (три молчания карты режимов).
+  it('сбой загрузки концептуализации — строка отказа, каталог открыт', async () => {
+    getConceptualization.mockRejectedValue(new Error('offline'));
+    await renderPalette();
+    expect(screen.getByText('Не удалось загрузить режимы и схемы клиента')).toBeTruthy();
+    expect(screen.queryByText('Режимы и схемы из концептуализации появятся здесь')).toBeNull();
+    expect(catalogRow().getAttribute('aria-expanded')).toBe('true');
+  });
+});
+
+describe('ModeMapPalette — блок «Этот клиент»', () => {
+  it('режимы — круги со счётчиком, схемы — слои; неизвестная схема пропускается', async () => {
+    await renderPalette();
+    expect(screen.getByText('Режимы').closest('.mm2-pal-head')!.querySelector('.mm2-pal-head-n')!.textContent).toBe('2');
+    expect(screen.getByText('Схемы').closest('.mm2-pal-head')!.querySelector('.mm2-pal-head-n')!.textContent).toBe('1');
+    expect(rowMark('Требовательный Критик')).toBe('mode');
+    expect(rowMark('Покинутость / Нестабильность')).toBe('schema');
+    expect(paperSignName(screen.getByText('Режимы').closest('.mm2-pal-head')!.querySelector('svg'))).toBe('Cluster');
+    expect(paperSignName(screen.getByText('Схемы').closest('.mm2-pal-head')!.querySelector('svg'))).toBe('Layers');
+  });
+
+  it('круг режима — цвет его фигуры на холсте', async () => {
+    await renderPalette();
+    const circle = screen.getByText('Требовательный Критик').closest('button')!.querySelector('circle')!;
+    expect(circle.getAttribute('fill')).toBe(TYPE_COLORS.critic);
+  });
+
+  it('тихое «+ все» зовёт onAddMany со всеми режимами клиента одним пакетом', async () => {
+    const { onAddMany } = await renderPalette();
+    const all = screen.getByLabelText('Вынести все режимы клиента на карту');
+    expect(all.className).not.toContain('ds-btn');
+    fireEvent.click(all);
     expect(onAddMany).toHaveBeenCalledTimes(1);
     expect(onAddMany.mock.calls[0][0]).toHaveLength(2);
   });
 
-  it('пустой список режимов клиента — раздел не рендерится', async () => {
-    getConceptualization.mockResolvedValue({ modeIds: [] });
-    renderPalette();
-    await Promise.resolve();
-    expect(screen.queryByText('Режимы клиента')).toBeNull();
+  it('клик по схеме клиента кладёт узел schema с schemaId и названием; имя целиком в подсказке', async () => {
+    const { onAdd } = await renderPalette();
+    const row = screen.getByText('Покинутость / Нестабильность').closest('button')!;
+    expect(row.getAttribute('title')).toContain('Покинутость / Нестабильность');
+    fireEvent.click(row);
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'schema', data: expect.objectContaining({ schemaId: 'abandonment', label: 'Покинутость / Нестабильность' }),
+    }));
+  });
+});
+
+describe('ModeMapPalette — фигуры сеткой', () => {
+  it.each([
+    ['Триггер', 'trigger'], ['Поведение', 'behavior'], ['Схема', 'schema'],
+    ['Опыт детства', 'origin'], ['Потребность', 'need'], ['Круг потребностей', 'needs'],
+  ])('«%s» — бумажный знак и подпись; клик кладёт узел %s', async (name, type) => {
+    const { onAdd } = await renderPalette();
+    const tile = screen.getByText(name).closest('button')!;
+    expect(tile.className).toContain('mm2-fig');
+    expect(tile.querySelector(`svg[data-mark="${type}"]`)).not.toBeNull();
+    fireEvent.click(tile);
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ type }));
   });
 
-  // Регресс: сбой getConceptualization раньше подставлял [] в catch — секция
-  // «Режимы клиента» рендерится только при length > 0, поэтому терапевт видел
-  // ровно то же самое, что при настоящем «режимов нет» (карта режимов, три
-  // молчания). Теперь сбой ≠ пусто: секция видна с текстом отказа.
-  it('сбой загрузки режимов клиента — секция видна с текстом отказа, не «раздела нет»', async () => {
-    getConceptualization.mockRejectedValue(new Error('offline'));
-    await act(async () => {
-      renderPalette();
-    });
-    expect(screen.getByText('Режимы клиента')).toBeTruthy();
-    expect(screen.getByText('Не удалось загрузить режимы клиента')).toBeTruthy();
+  it('перетаскивание кладёт заготовку в dataTransfer под тем же ключом, что читает холст', async () => {
+    await renderPalette();
+    const setData = vi.fn();
+    fireEvent.dragStart(screen.getByText('Опыт детства'), { dataTransfer: { setData, effectAllowed: '' } });
+    expect(setData).toHaveBeenCalledWith('application/modemap-node', expect.stringContaining('"type":"origin"'));
+  });
+});
+
+describe('ModeMapPalette — поиск по всему, плоским списком', () => {
+  it('«крит» находит критиков из закрытого каталога: строки со знаками, без групп и подписей блоков', async () => {
+    const { onAdd } = await renderPalette();
+    search('крит');
+    expect(screen.getByText('Карающий Критик')).toBeTruthy();
+    expect(rowMark('Карающий Критик')).toBe('mode');
+    expect(screen.queryAllByRole('heading')).toHaveLength(0);
+    expect(document.querySelector('[data-group]')).toBeNull();
+    expect(screen.queryByText('Все режимы и схемы')).toBeNull();
+    fireEvent.click(screen.getByText('Карающий Критик'));
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ type: 'critic', data: expect.objectContaining({ modeId: 'punitive_critic' }) }));
+  });
+
+  it('«покину» находит и режим, и схему; режим клиента не дублируется', async () => {
+    await renderPalette();
+    search('покину');
+    expect(screen.getAllByText('Покинутость / Нестабильность')).toHaveLength(1);
+    expect(screen.getByText('Покинутый Ребёнок')).toBeTruthy();
+  });
+
+  it('находит свой режим и фигуру по ключевому слову', async () => {
+    listCustomModes.mockResolvedValue([MINE]);
+    await renderPalette();
+    search('особ');
+    expect(screen.getByText('Особый')).toBeTruthy();
+    expect(screen.queryByLabelText('Добавить свой режим')).toBeNull();
+    search('последств');
+    expect(rowMark('Поведение')).toBe('behavior');
+  });
+
+  it('без совпадений — «Ничего не найдено» и ни одного заголовка', async () => {
+    await renderPalette();
+    search('зюзюзюкод');
+    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
+    expect(screen.queryAllByRole('heading')).toHaveLength(0);
   });
 });
 
 describe('ModeMapPalette — свои режимы терапевта', () => {
-  it('без своих режимов показывает подсказку-заглушку', async () => {
-    // listCustomModes резолвится в mount-эффекте, обновление вне act —
-    // ждём его через act(async), а не опросом.
-    await act(async () => {
-      renderPalette();
-    });
-    expect(screen.getByText(/Добавь режимы, с которыми/)).toBeTruthy();
+  it('пока своих нет — строка «Мои режимы» с «+» в каталоге и подсказка в форме «ты» и «вы»', async () => {
+    await renderPalette();
+    expect(screen.queryByText('Мои режимы')).toBeNull();
+    openCatalog();
+    expect(screen.getByText('Мои режимы')).toBeTruthy();
+    expect(screen.getByText(/Добавь режимы, с которыми работаешь/)).toBeTruthy();
+    cleanup();
+    localStorage.clear();
+    await renderPalette(vi.fn(), vi.fn(), 'vy');
+    openCatalog();
+    expect(screen.getByText(/Добавьте режимы, с которыми работаете/)).toBeTruthy();
   });
 
-  it('в форме «вы» подсказка-заглушка не показывает «ты»', async () => {
-    await act(async () => {
-      renderPalette(vi.fn(), vi.fn(), 'vy');
-    });
-    expect(screen.getByText(/Добавьте режимы, с которыми/)).toBeTruthy();
-    expect(screen.getByText(/работаете чаще всего/)).toBeTruthy();
+  it('есть свои — секция в блоке клиента до фигур: круг цвета фигуры, клик кладёт режим', async () => {
+    listCustomModes.mockResolvedValue([MINE]);
+    const { onAdd } = await renderPalette();
+    const before = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(before(screen.getByText('Мои режимы'), screen.getByRole('heading', { name: 'Фигуры' }))).toBe(true);
+    expect(paperSignName(screen.getByText('Мои режимы').closest('.mm2-pal-head')!.querySelector('svg'))).toBe('Cluster');
+    const circle = screen.getByText('Особый').closest('button')!.querySelector('circle')!;
+    expect(circle.getAttribute('fill')).toBe(TYPE_COLORS.healthy);
+    fireEvent.click(screen.getByText('Особый'));
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ type: 'healthy', data: expect.objectContaining({ label: 'Особый' }) }));
   });
 
-  it('создание нового режима: форма → «Сохранить» → появляется в списке', async () => {
-    const created: TherapistCustomMode = {
-      id: 1,
-      therapistId: 1,
-      name: 'Мой режим',
-      emoji: '🔶',
-      nodeType: 'custom',
-      createdAt: '2026-01-01',
-    };
-    createCustomMode.mockResolvedValue(created);
-    renderPalette();
+  it('создание: форма → «Сохранить» → режим в блоке клиента', async () => {
+    createCustomMode.mockResolvedValue({ ...MINE, id: 1, name: 'Мой режим', nodeType: 'custom' });
+    await renderPalette();
+    openCatalog();
     fireEvent.click(screen.getByLabelText('Добавить свой режим'));
-    fireEvent.change(screen.getByPlaceholderText('Название…'), {
-      target: { value: 'Мой режим' },
-    });
-    // saveCustomMode ждёт api.createCustomMode — оборачиваем клик в act(async),
-    // чтобы дождаться промиса вместо опроса findByText.
-    await act(async () => {
-      fireEvent.click(screen.getByText('Сохранить'));
-    });
+    fireEvent.change(screen.getByPlaceholderText('Название…'), { target: { value: 'Мой режим' } });
+    await act(async () => { fireEvent.click(screen.getByText('Сохранить')); });
+    expect(createCustomMode).toHaveBeenCalledWith(expect.objectContaining({ name: 'Мой режим' }));
     expect(screen.getByText('Мой режим')).toBeTruthy();
-    expect(createCustomMode).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Мой режим' }),
-    );
   });
 
-  // Аудит 2026-10, «Доступность»: у кнопки отмены внутри была только иконка
-  // крестика с aria-hidden — скринридер называл её просто «кнопка».
-  it('кнопка отмены формы названа «Отменить» и закрывает форму', () => {
-    renderPalette();
+  // Аудит 2026-10, «Доступность»: у кнопки отмены была только иконка с aria-hidden.
+  it('отмена формы названа «Отменить» и закрывает форму; пустое имя не сохраняется', async () => {
+    await renderPalette();
+    openCatalog();
     fireEvent.click(screen.getByLabelText('Добавить свой режим'));
+    fireEvent.click(screen.getByText('Сохранить'));
+    expect(createCustomMode).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Отменить' }));
     expect(screen.queryByPlaceholderText('Название…')).toBeNull();
   });
 
-  it('пустое имя не сохраняет режим (createCustomMode не вызывается)', () => {
-    renderPalette();
-    fireEvent.click(screen.getByLabelText('Добавить свой режим'));
-    fireEvent.click(screen.getByText('Сохранить'));
-    expect(createCustomMode).not.toHaveBeenCalled();
-  });
-
-  it('клик по своему режиму в списке добавляет его на карту', async () => {
-    listCustomModes.mockResolvedValue([
-      {
-        id: 5,
-        therapistId: 1,
-        name: 'Особый',
-        emoji: '⭐',
-        nodeType: 'healthy',
-        createdAt: '2026-01-01',
-      },
-    ]);
-    const onAdd = vi.fn();
-    await act(async () => {
-      renderPalette(onAdd);
-    });
-    fireEvent.click(screen.getByText('Особый'));
-    expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'healthy',
-        data: expect.objectContaining({ label: 'Особый' }),
-      }),
-    );
-  });
-
-  it('удаление своего режима вызывает API и убирает его из списка', async () => {
-    listCustomModes.mockResolvedValue([
-      {
-        id: 5,
-        therapistId: 1,
-        name: 'Особый',
-        emoji: '⭐',
-        nodeType: 'custom',
-        createdAt: '2026-01-01',
-      },
-    ]);
+  it('удаление зовёт API и убирает режим', async () => {
+    listCustomModes.mockResolvedValue([MINE]);
     deleteCustomMode.mockResolvedValue(undefined);
-    await act(async () => {
-      renderPalette();
-    });
-    const row = screen.getByText('Особый').closest('div')!;
-    fireEvent.click(
-      within(row.parentElement as HTMLElement).getByLabelText('Удалить'),
-    );
+    await renderPalette();
+    fireEvent.click(screen.getByText('Особый').closest('.mm2-mine-row')!.querySelector('[aria-label="Удалить"]')!);
     expect(deleteCustomMode).toHaveBeenCalledWith(5);
     await waitFor(() => expect(screen.queryByText('Особый')).toBeNull());
   });
 
-  // Регресс: listCustomModes раньше глушился `.catch(() => {})` — свои режимы
-  // терапевта молча не загружались, и панель показывала ту же заглушку-подсказку
-  // «Добавь режимы…», что и на честно пустом списке (карта режимов, три молчания).
-  it('сбой загрузки своих режимов — видна строка отказа, заглушки «Добавь режимы…» нет', async () => {
+  // Регресс: сбой загрузки глушился и выглядел как честно пустой список.
+  it('сбой загрузки своих режимов — строка отказа, подсказки «Добавь режимы…» нет', async () => {
     listCustomModes.mockRejectedValue(new Error('offline'));
-    await act(async () => {
-      renderPalette();
-    });
-    expect(
-      screen.getByText('Не удалось загрузить твои режимы'),
-    ).toBeTruthy();
+    await renderPalette();
+    openCatalog();
+    expect(screen.getByText('Не удалось загрузить твои режимы')).toBeTruthy();
     expect(screen.queryByText(/Добавь режимы, с которыми/)).toBeNull();
   });
 });
 
-describe('ModeMapPalette — порядок блоков и каталог схем', () => {
-  const PH = 'Режим или схема…';
-  const search = (v: string) => fireEvent.change(screen.getByPlaceholderText(PH), { target: { value: v } });
-  const before = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-
-  it('блоки идут: Режимы → Схемы → Фигуры, внутри «клиента» раньше каталога', async () => {
-    getConceptualization.mockResolvedValue({ modeIds: ['vulnerable_child'], schemaIds: ['abandonment'] });
-    await act(async () => { renderPalette(); });
-    const order = [
-      screen.getByRole('heading', { name: 'Режимы' }),
-      screen.getByText('Режимы клиента'),
-      screen.getByText('Детские режимы'),
-      screen.getByText('Мои режимы'),
-      screen.getByRole('heading', { name: 'Схемы' }),
-      screen.getByText('Схемы клиента'),
-      screen.getByText('Нарушение связи и отвержение'),
-      screen.getByRole('heading', { name: 'Фигуры' }),
-      screen.getByText('Триггер / Ситуация'),
-      screen.getByText('Поведение / Последствие'),
-      screen.getByText('Схема случая'),
-    ];
-    order.slice(1).forEach((el, i) => expect(before(order[i], el), `${order[i].textContent} → ${el.textContent}`).toBe(true));
+describe('ModeMapPalette — знаки групп каталога', () => {
+  it.each([
+    ['child', 'ChildCare'], ['critic', 'Looming'], ['coping_overcompensation', 'Shield'],
+    ['coping_avoidance', 'Shelter'], ['coping_surrender', 'Yield'], ['healthy', 'Together'],
+    ['domain:rejection', 'Domain1'], ['domain:autonomy', 'Domain2'], ['domain:limits', 'Domain3'],
+    ['domain:other_directed', 'Domain4'], ['domain:vigilance', 'Domain5'],
+  ])('заголовок %s — знак %s', async (group, sign) => {
+    await renderPalette();
+    openCatalog();
+    expect(headSign(group)).toBe(sign);
   });
 
-  it('пять доменов свёрнуты; клик раскрывает схемы; клик по схеме добавляет узел с цветом домена', () => {
-    const { onAdd } = renderPalette();
-    const domains = document.querySelectorAll('[data-group^="domain:"]');
-    expect(domains).toHaveLength(5);
-    expect(screen.queryByText('Покинутость / Нестабильность')).toBeNull();
-    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
-    fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
-    const color = (domains[0] as HTMLElement).style.getPropertyValue('--gc');
-    expect(color).not.toBe('');
+  it('раскрытый домен: схемы — слои цвета домена, клик кладёт узел с этим цветом', async () => {
+    const { onAdd } = await renderPalette();
+    openCatalog();
+    fireEvent.click(screen.getByRole('button', { name: /Нарушение связи и отвержение/ }));
+    const row = screen.getAllByText('Недоверие / Ожидание жестокого обращения')[0].closest('button')!;
+    const color = row.querySelector('rect')!.getAttribute('fill');
+    fireEvent.click(row);
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'schema',
-      data: expect.objectContaining({ schemaId: 'abandonment', label: 'Покинутость / Нестабильность', customColor: color }),
+      type: 'schema', data: expect.objectContaining({ schemaId: 'mistrust', customColor: color }),
     }));
-  });
-
-  it('перетаскивание схемы кладёт JSON под ключ холста', () => {
-    renderPalette();
-    fireEvent.click(screen.getByText('Нарушение связи и отвержение'));
-    const setData = vi.fn();
-    fireEvent.dragStart(screen.getByText('Покинутость / Нестабильность'), { dataTransfer: { setData, effectAllowed: '' } });
-    expect(setData).toHaveBeenCalledWith('application/modemap-node', expect.stringContaining('"schemaId":"abandonment"'));
-  });
-
-  it('поиск схемы: схема и заголовок «Схемы» видны, «Режимов» нет', () => {
-    renderPalette();
-    // «покину» совпадает ещё и с режимом «Покинутый Ребёнок», поэтому берём «покинутость».
-    search('покинутость');
-    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Схемы' })).toBeTruthy();
-    expect(screen.queryByRole('heading', { name: 'Режимы' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Фигуры' })).toBeNull();
-  });
-
-  it('«покину» находит и схему, и режим: оба блока видны', () => {
-    renderPalette();
-    search('покину');
-    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
-    expect(screen.getByText('Покинутый Ребёнок')).toBeTruthy();
-  });
-
-  it('поиск режима: заголовка «Схемы» нет', () => {
-    renderPalette();
-    search('Упрямый');
-    expect(screen.getByText('Упрямый Ребёнок')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Режимы' })).toBeTruthy();
-    expect(screen.queryByRole('heading', { name: 'Схемы' })).toBeNull();
-  });
-
-  it('совпадение в «Моих режимах» видно, без «+» и без «не найдено»', async () => {
-    listCustomModes.mockResolvedValue([{ id: 5, therapistId: 1, name: 'Особый', emoji: '⭐', nodeType: 'custom', createdAt: '2026-01-01' }]);
-    await act(async () => { renderPalette(); });
-    search('особ');
-    expect(screen.getByText('Особый')).toBeTruthy();
-    expect(screen.queryByLabelText('Добавить свой режим')).toBeNull();
-    expect(screen.queryByText('Ничего не найдено')).toBeNull();
-  });
-
-  it('«Мои режимы» без совпадений при поиске — секции нет', async () => {
-    listCustomModes.mockResolvedValue([{ id: 5, therapistId: 1, name: 'Особый', emoji: '⭐', nodeType: 'custom', createdAt: '2026-01-01' }]);
-    await act(async () => { renderPalette(); });
-    search('Упрямый');
-    expect(screen.queryByText('Мои режимы')).toBeNull();
-  });
-
-  it('поиск без совпадений — «Ничего не найдено» и ни одного заголовка блока', () => {
-    renderPalette();
-    search('зюзюзюкод');
-    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
-    expect(screen.queryAllByRole('heading')).toHaveLength(0);
   });
 });

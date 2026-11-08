@@ -21,6 +21,29 @@ describe('clearCookies', () => {
       path: '/api/auth',
     });
   });
+
+  // Аудит 2026-11: брошенная привязка переживала выход — следующий вошедший на
+  // том же компьютере привязывался к чужому аккаунту и получал его сессию.
+  it.each(['tg_link_user', 'link_token'])(
+    'стирает куку незаконченной привязки %s (path /api/auth)',
+    (name) => {
+      const res = makeRes();
+      clearCookies(res);
+      expect(res.clearCookie).toHaveBeenCalledWith(name, { path: '/api/auth' });
+    },
+  );
+
+  it('401 на refresh тоже стирает куки привязки (через clearCookiesOnAuthFailure)', () => {
+    const res = makeRes();
+    const err = new UnauthorizedException('dead session');
+    expect(() => clearCookiesOnAuthFailure(res, err)).toThrow(err);
+    expect(res.clearCookie).toHaveBeenCalledWith('tg_link_user', {
+      path: '/api/auth',
+    });
+    expect(res.clearCookie).toHaveBeenCalledWith('link_token', {
+      path: '/api/auth',
+    });
+  });
 });
 
 describe('clearCookiesOnAuthFailure', () => {

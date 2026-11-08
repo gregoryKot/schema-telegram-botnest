@@ -22,6 +22,8 @@ const RULE = {
   startMinute: 0,
   endHour: 19,
   endMinute: 0,
+  sessionDuration: 50,
+  bufferMin: 10,
   timezone: 'Europe/Moscow',
   isActive: true,
 };

@@ -84,7 +84,7 @@ describe('e2e: слоты последнего дня окна на живом P
       .post('/api/booking/book')
       .send({
         startsAt: FREE,
-        durationMin: 15,
+        durationMin: 50, // длина слота из выдачи — /book принимает только её
         type: 'INTRO_15',
         clientName: 'Проверка слотов',
         clientContact: 'slot-last-day-client@example.com',

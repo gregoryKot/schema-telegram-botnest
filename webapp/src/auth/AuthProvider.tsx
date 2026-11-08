@@ -18,9 +18,11 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<'transient' | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasToken = useRef(false);
+  const tokenRef = useRef<string | null>(null);
   const expiresAtRef = useRef(0);
   const retryAttemptRef = useRef(0);
+  // Ref — синхронно: повтор запроса после refresh (apiClient) не ждёт рендера, иначе уходит старый токен.
+  const setToken = useCallback((t: string | null) => { tokenRef.current = t; setTokenState(t); }, []);
 
   // Общий таймер refresh/ретрая — раньше ретрая не было, цепочка обрывалась навсегда после первой неудачи (2026-08-21, п.3).
   const armRefreshTimer = useCallback((delayMs: number) => {
@@ -42,12 +44,11 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
   const applyToken = useCallback((token: string, expiresIn: number) => {
     // Отметка «вход удавался» (shared/auth/authSeen) + стирание данных прежнего аккаунта (E1).
     markSessionStarted(token);
-    hasToken.current = true;
-    setTokenState(token);
+    setToken(token);
     setAuthError(null);
     retryAttemptRef.current = 0;
     scheduleRefresh(expiresIn);
-  }, [scheduleRefresh]);
+  }, [scheduleRefresh, setToken]);
 
   // eslint-disable-next-line react-hooks/preserve-manual-memoization -- react-compiler: ручная мемоизация намеренная
   const doRefresh = useCallback(async (clearOnFailure = true): Promise<boolean> => {
@@ -56,7 +57,7 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
     if (result.ok) { applyToken(result.token, result.expiresIn); return true; }
     if (result.dead) {
       // 401/403 от refresh — сессию не восстановить, ретраить нечего.
-      if (clearOnFailure) setTokenState(null);
+      if (clearOnFailure) setToken(null);
       setAuthError(null);
       return false;
     }
@@ -66,7 +67,7 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
     armRefreshTimer(nextRetryTimerDelayMs(retryAttemptRef.current));
     retryAttemptRef.current += 1;
     return false;
-  }, [applyToken, armRefreshTimer]);
+  }, [applyToken, armRefreshTimer, setToken]);
 
   // Telegram WebApp auto-auth (сетевая часть — telegramWebAppAuth.ts).
   const doTelegramWebAppAuth = useCallback(async (): Promise<boolean> => {
@@ -79,14 +80,12 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
   // On mount: Telegram WebApp auth первым, иначе httpOnly-кука.
   useEffect(() => {
     const init = async () => {
-      // AuthCallback мог уже положить токен из OAuth-редиректа раньше
-      // (эффекты детей выполняются до родительских) — лишний refresh тут
-      // ротировал бы куку раньше, чем страница уйдёт на /app/, новая кука
-      // не доедет, сервер сочтёт это повторным использованием старой и
-      // отзовёт всю семью токенов у только что вошедшего.
+      // Ребёнок мог положить токен раньше (эффекты детей идут первыми) — лишний
+      // refresh ротировал бы куку зря. Страницы OAuth токен не кладут: сессию им
+      // даёт именно этот refresh по куке из редиректа (login-CSRF, аудит 2026-11).
       // bootstrapSession=false: визитка (kotlarewski.gr) — логина там нет, фоновый
       // refresh только 301-ился бы на schemehappens.ru (CORS) и ретраился бы вечным бэкоффом (#497).
-      if (!bootstrapSession || hasToken.current) { setIsLoading(false); return; }
+      if (!bootstrapSession || tokenRef.current) { setIsLoading(false); return; }
       const tgOk = await doTelegramWebAppAuth();
       if (!tgOk) await doRefresh(false);
       setIsLoading(false);
@@ -95,6 +94,7 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
     return () => { if (refreshTimer.current) clearTimeout(refreshTimer.current); };
   }, [bootstrapSession, doRefresh, doTelegramWebAppAuth]);
 
+  const getAccessToken = useCallback(() => tokenRef.current, []);
   useAuthRetryOnFocus(
     useCallback(() => bootstrapSession && Date.now() + EXPIRY_SKEW_MS >= expiresAtRef.current, [bootstrapSession]),
     useCallback(() => void doRefresh(), [doRefresh]),
@@ -104,14 +104,13 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
     // Сетевой шаг — общий с мини-аппом (shared/auth/logout, правило №3).
     await postLogout(API_BASE, { all, requestedWith: 'webapp' });
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    hasToken.current = false;
-    setTokenState(null);
+    setToken(null);
     setAuthError(null);
     clearAuthSeen();
     clearLocalData();
     // Кеш API — в памяти вкладки, не переживает смену пользователя.
     clearApiCache();
-  }, []);
+  }, [setToken]);
 
   return (
     <AuthContext.Provider value={{
@@ -120,6 +119,7 @@ export function AuthProvider({ children, bootstrapSession = true }: { children: 
       isAuthenticated: !!accessToken,
       authError,
       setAccessToken: applyToken,
+      getAccessToken,
       logout,
       refreshToken: doRefresh,
     }}>

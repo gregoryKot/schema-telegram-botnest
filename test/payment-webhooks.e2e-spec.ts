@@ -188,6 +188,31 @@ describe('e2e smoke: платёжный контур Robokassa по HTTP', () =>
       expect(await bookingStatus(booking.id)).toBe('HELD');
     });
 
+    // Аудит 2026-11: ответ шёл как text/html с InvId эхом, а форма на эту
+    // ручку уходит с любого сайта без CSRF — автосабмит показывал чужую
+    // разметку с адреса schemehappens.ru. Шов целиком: express-парсер формы,
+    // @Header, res.send.
+    it('форма с разметкой в InvId → 200 "FAIL" без эха, text/plain', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/payment/result')
+        .type('form')
+        .send({
+          OutSum: '1.00',
+          InvId: '<meta http-equiv=refresh content="0;url=https://evil">',
+          SignatureValue: 'x',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.text).toBe('FAIL');
+      expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
+    });
+
+    it('ответ на числовой InvId тоже text/plain, не text/html', async () => {
+      const res = await postResult(SESSION_OUT_SUM, '987654', 'deadbeef');
+      expect(res.text).toBe('FAIL987654');
+      expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
+    });
+
     it('идемпотентный повтор того же уведомления → OK, без дублей', async () => {
       const booking = await makeHeldBooking('bk-ct-3');
       const outSum = SESSION_OUT_SUM;

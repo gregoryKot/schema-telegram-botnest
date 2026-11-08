@@ -1,35 +1,29 @@
 import { useRef, useState } from 'react';
-import { api, type ModeMapNode, type TherapistCustomMode } from '../../api';
+import { api } from '../../api';
 import { CUSTOM_MODE_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { scrollIntoViewSafe } from '../../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../../utils/addressForm';
+import { Cluster } from '../art/PaperArtSigns';
 import { MMIcon } from '../modeMapIcons';
 import type { NodeType } from '../modeMapData';
 import { ShapePicker } from './ShapePicker';
 import type { Draft } from './modeDraft';
-
+import { customItem } from './paletteModel';
+import { PaletteHead, PaletteRow } from './PaletteParts';
 import type { CustomModesState } from './useCustomModes';
-
-function nodeData(m: TherapistCustomMode): ModeMapNode['data'] {
-  const base: ModeMapNode['data'] = { label: m.name };
-  if (m.nodeType === 'coping') base.copingSubtype = 'over';
-  return base;
-}
-const customDraft = (m: TherapistCustomMode): Draft => ({ id: `cm_${m.id}_${Date.now()}`, type: m.nodeType as NodeType, data: nodeData(m) });
 
 interface Props {
   state: CustomModesState;
   setState: React.Dispatch<React.SetStateAction<CustomModesState>>;
-  /** Режимы, показанные в списке (при поиске — только совпавшие). */
-  list: TherapistCustomMode[];
-  /** Идёт поиск: без «+», формы и подсказок. */
-  searching: boolean;
   onAdd: (node: Draft) => void;
-  onDragStart: (e: React.DragEvent, node: Draft) => void;
 }
 
-/** Секция палитры «Мои режимы»: список своих режимов терапевта и форма добавления. */
-export function CustomModesPalette({ state, setState, list, searching, onAdd, onDragStart }: Props) {
+/**
+ * Секция палитры «Мои режимы»: свои режимы терапевта (вне групп — общий знак режимов Cluster),
+ * форма добавления и удаление. Пока своих режимов нет, секция стоит в каталоге; появились —
+ * в блоке «Этот клиент» (ModeMapPalette): их кладут на карту почти всегда.
+ */
+export function CustomModesPalette({ state, setState, onAdd }: Props) {
   const tr = useTr();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -55,20 +49,16 @@ export function CustomModesPalette({ state, setState, list, searching, onAdd, on
     if (next) setTimeout(() => { scrollIntoViewSafe(addFormRef.current, { block: 'nearest' }); addInputRef.current?.focus(); }, 60);
   };
 
-  if (searching && list.length === 0) return null;
   const all = Array.isArray(state) ? state : [];
   return (
-    <div className="mm2-mine">
-      <div className="mm2-mine-head">
-        <span className="mm2-pal-head-name">Мои режимы</span>
-        {!searching && (
-          <button onClick={toggleForm} className="mm2-mine-plus" title="Добавить свой режим" aria-label="Добавить свой режим">
-            <MMIcon name="plus" size={15} />
-          </button>
-        )}
-      </div>
+    <div className="mm2-sec">
+      <PaletteHead art={<Cluster size="row" />} title="Мои режимы">
+        <button onClick={toggleForm} className="mm2-mine-plus" title="Добавить свой режим" aria-label="Добавить свой режим">
+          <MMIcon name="plus" size={15} />
+        </button>
+      </PaletteHead>
 
-      {!searching && adding && (
+      {adding && (
         <div ref={addFormRef} className="mm2-add-form">
           <div className="mm2-add-row">
             <input ref={addInputRef} value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
@@ -85,25 +75,19 @@ export function CustomModesPalette({ state, setState, list, searching, onAdd, on
         </div>
       )}
 
-      {list.map(m => (
+      {all.map(m => (
         <div key={m.id} className="mm2-mine-row">
-          <button onClick={() => onAdd(customDraft(m))} draggable onDragStart={e => onDragStart(e, customDraft(m))}
-            className="mm2-pal-item is-lg">
-            <span>{m.emoji}</span>
-            <span className="mm2-pal-item-name">{m.name}</span>
-          </button>
-          {!searching && (
-            <button onClick={() => remove(m.id)} className="mm2-mine-del" title="Удалить" aria-label="Удалить"><MMIcon name="close" size={11} /></button>
-          )}
+          <PaletteRow item={customItem(m)} onAdd={onAdd} />
+          <button onClick={() => remove(m.id)} className="mm2-mine-del" title="Удалить" aria-label="Удалить"><MMIcon name="close" size={11} /></button>
         </div>
       ))}
 
-      {!searching && state === 'failed' && (
+      {state === 'failed' && (
         <div className="mm2-pal-sub is-err">{tr('Не удалось загрузить твои режимы', 'Не удалось загрузить ваши режимы')}</div>
       )}
-      {!searching && state !== 'failed' && all.length === 0 && !adding && (
+      {state !== 'failed' && all.length === 0 && !adding && (
         <div className="mm2-pal-sub">
-          {tr('Добавь режимы, с которыми', 'Добавьте режимы, с которыми')}<br />{tr('работаешь чаще всего', 'работаете чаще всего')}
+          {tr('Добавь режимы, с которыми работаешь чаще всего', 'Добавьте режимы, с которыми работаете чаще всего')}
         </div>
       )}
     </div>

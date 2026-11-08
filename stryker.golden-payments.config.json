@@ -32,6 +32,7 @@
     "src/booking/booking-amount-alert.ts",
     "src/booking/payment.controller.ts",
     "src/booking/payment.booking-webhook.ts",
+    "src/booking/payment.result-guard.ts",
     "src/booking/booking-paid-after-cancel.ts",
     "src/booking/booking.transitions.ts",
     "src/donation/donation.service.ts",

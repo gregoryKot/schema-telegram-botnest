@@ -22,6 +22,5 @@ export function matchCustomModes<T extends TherapistCustomModeLike>(list: T[], q
   return q ? list.filter(m => m.name.toLowerCase().includes(q)) : list;
 }
 
-/** Фигуры «Триггер» и «Поведение» ищутся по ключевым словам подписи. */
-export const matchesTrigger = (q: string) => !q || 'триггер ситуация'.includes(q);
-export const matchesBehavior = (q: string) => !q || 'поведение последствие'.includes(q);
+/** Фигура ищется по ключевым словам подписи («триггер ситуация»). Пустой запрос — да. */
+export const matchesWords = (words: string, q: string) => !q || words.includes(q);
