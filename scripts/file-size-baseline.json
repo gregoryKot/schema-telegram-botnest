@@ -66,7 +66,7 @@
   "scripts/check-gendered-forms.mjs": 171,
   "scripts/check-glyph-controls.mjs": 147,
   "scripts/check-history-sheet.mjs": 147,
-  "scripts/check-hover-only-reveal.mjs": 147,
+  "scripts/check-hover-only-reveal.mjs": 197,
   "scripts/check-ignored-tracked.mjs": 56,
   "scripts/check-incident-registry.mjs": 174,
   "scripts/check-jscpd-ratchet.mjs": 82,

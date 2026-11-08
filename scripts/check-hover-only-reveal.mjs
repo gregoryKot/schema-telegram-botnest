@@ -17,6 +17,12 @@
 // не нужен. Раскрытие без :hover вовсе (ссылка «к содержимому» по :focus) —
 // не этот класс. Правила внутри @keyframes не считаются.
 //
+// Раскрытие засчитывается, только если оно выигрывает каскад у сокрытия:
+// специфичность выше или та же и правило ниже в файле (`@media (hover: none)
+// { .x {…} }` над `.row .x { opacity: 0 }` проигрывает и не в счёт). Кроме
+// .css сканируются шаблонные `<style>{`…`}</style>` в .tsx (лендинги, статьи)
+// и `<style>{ИМЯ}</style>` с шаблонной константой того же файла.
+//
 // Гейт АБСОЛЮТНЫЙ, без бейслайна и без списка исключений: класс вычищен в
 // том же PR, замораживать нечему (правило №15 CLAUDE.md). Образец по
 // устройству — check-var-alpha-suffix.mjs.
@@ -29,11 +35,47 @@ import { parseCssRules, splitSelectorList } from './css-rules-parse.mjs';
 const ROOT = join(import.meta.dirname, '..');
 const SCAN_DIRS = ['webapp/src', 'shared/src'];
 
-const cssFiles = (dir) =>
+const filesBy = (dir, ext) =>
   readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
-    .filter((e) => e.isFile() && e.name.endsWith('.css'))
+    .filter((e) => e.isFile() && e.name.endsWith(ext))
     .filter((e) => !(e.parentPath ?? e.path).includes('node_modules'))
     .map((e) => join(e.parentPath ?? e.path, e.name).slice(ROOT.length + 1));
+
+const lineOf = (src, i) => src.slice(0, i).split('\n').length;
+const tplText = (t) => t.replace(/\$\{[^}]*\}/g, '0');
+
+/** CSS из `<style>` в .tsx: [{ css, line }] — line = строка начала шаблона. */
+export function tsxStyleBlocks(src) {
+  const consts = new Map();
+  for (const m of src.matchAll(/\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*`([^`]*)`/g)) {
+    consts.set(m[1], { css: tplText(m[2]), line: lineOf(src, m.index + m[0].indexOf('`') + 1) });
+  }
+  const out = [];
+  for (const m of src.matchAll(/<style\b[^>]*>\s*\{\s*(?:`([^`]*)`|([A-Za-z_$][\w$]*))\s*\}\s*<\/style>/g)) {
+    if (m[1] !== undefined) out.push({ css: tplText(m[1]), line: lineOf(src, m.index + m[0].indexOf('`') + 1) });
+    else if (consts.has(m[2])) out.push(consts.get(m[2]));
+  }
+  return out;
+}
+
+// Специфичность [id, класс/атрибут/псевдокласс, тег/псевдоэлемент]; :where —
+// ноль, :not/:is/:has — по аргументу (упрощённо: аргумент считается целиком).
+export function specificity(sel) {
+  const s = sel.replace(/:where\([^)]*\)/g, '').replace(/:(?:not|is|has)\(([^)]*)\)/g, ' $1 ');
+  const noAttr = s.replace(/\[[^\]]*\]/g, '[]');
+  return [
+    (noAttr.match(/#[\w-]+/g) ?? []).length,
+    (noAttr.match(/\.[\w-]+|\[\]|(?<!:):(?!:)[\w-]+/g) ?? []).length,
+    (noAttr.match(/(?:^|[\s>+~])[a-zA-Z][\w-]*|::[\w-]+/g) ?? []).length,
+  ];
+}
+/** Правило r перекрывает h: специфичность выше или та же и r ниже. */
+const wins = (r, h) => {
+  const a = specificity(r.sel);
+  const b = specificity(h.sel);
+  const d = a.map((x, i) => x - b[i]).find((x) => x !== 0) ?? 0;
+  return d > 0 || (d === 0 && r.line > h.line);
+};
 
 // Последний составной селектор без псевдо-классов/элементов → набор простых
 // селекторов (`.a`, `#b`, `[c]`, `tag`), по которому правила «про один и тот
@@ -96,7 +138,7 @@ export function findHoverOnly(css) {
   )) {
     const key = subject(h.sel);
     const shown = rules.filter(
-      (r) => isShown(r.decls) && covers(subject(r.sel), key),
+      (r) => isShown(r.decls) && covers(subject(r.sel), key) && wins(r, h),
     );
     const p = paths(shown);
     if (mouseOnly(h.ctx)) p.touch = true;
@@ -110,15 +152,23 @@ export function findHoverOnly(css) {
 
 function main() {
   const found = [];
-  for (const file of SCAN_DIRS.flatMap((d) => {
-    try {
-      return cssFiles(d);
-    } catch {
-      return [];
-    }
-  })) {
+  const scan = (ext) =>
+    SCAN_DIRS.flatMap((d) => {
+      try {
+        return filesBy(d, ext);
+      } catch {
+        return [];
+      }
+    });
+  for (const file of scan('.css')) {
     const src = readFileSync(join(ROOT, file), 'utf8');
     for (const f of findHoverOnly(src)) found.push({ file, ...f });
+  }
+  for (const file of scan('.tsx')) {
+    for (const b of tsxStyleBlocks(readFileSync(join(ROOT, file), 'utf8'))) {
+      const at = (r) => ({ ...r, line: r.line + b.line - 1 });
+      for (const f of findHoverOnly(b.css)) found.push({ file, ...f, ln: f.ln + b.line - 1, shown: f.shown.map(at) });
+    }
   }
 
   if (found.length) {

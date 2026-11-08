@@ -84,13 +84,6 @@
   `::before`, держит пин в `EviList.test.tsx`) задан классом. Расширение —
   другой механизм (разбор CSS плюс связь `className` → правило), больше
   PR кнопки удаления; разборщик правил уже есть в `scripts/css-rules-parse.mjs`.
-- **Гейт `check-hover-only-reveal.mjs` не считает каскад и не видит `<style>`
-  в TSX.** Раскрытие для пальца засчитывается, даже если проигрывает сокрытию
-  по специфичности или порядку (`@media (hover: none) { .x {…} }` выше
-  `.row .x { opacity: 0 }`); у `.evi-x` раскрытие выигрывает — то же правило
-  ниже в файле. Шаблонные `<style>` в `webapp/src/pages/ArticlesPage.tsx` и
-  `ProductLandingPage.tsx` гейт не сканирует (пары «спрятано + :hover» там
-  сегодня нет).
 - **Второй словарь имён провайдеров — `PROVIDER_NAMES` в
   `shared/src/components/LoginTicketWait.tsx`** (на сайте один —
   `webapp/src/pages/account/providerNames.ts`). Осознанно не сведены: в шторке
