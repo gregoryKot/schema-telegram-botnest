@@ -17,6 +17,7 @@ import { ExternalLink } from '../host/ExternalLink';
 import { readLocal, writeLocal } from '../../../shared/src/utils/safeLocalStorage';
 import { useDayNote } from '../hooks/useDayNote';
 import { isRated } from '../../../shared/src/needs/ratingRecord';
+import { todayStr } from '../../../shared/src/utils/format';
 
 interface Props {
   needs: Need[];
@@ -31,7 +32,6 @@ interface Props {
   onBackfill?: (date: string) => void;
 }
 
-const TODAY_STR = new Date().toISOString().split('T')[0];
 const HISTORY_HINT_KEY = 'history_hint_dismissed';
 const DAYS_OPTIONS = [7, 14, 30];
 
@@ -51,9 +51,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   const [showWeekCard, setShowWeekCard] = useState(false);
   const [showHint, setShowHint] = useState(() => !readLocal(HISTORY_HINT_KEY));
 
-  // Clamp the selected index when history shrinks. Adjusting state during render
-  // (not in an effect) is the documented pattern for deriving state from props;
-  // the guard turns false after the set, so it settles in one extra render.
+  // Clamp the selected index when history shrinks: setState during render is the documented
+  // pattern for deriving state from props; the guard settles it in one extra render.
   if (history.length > 0 && selectedIdx >= history.length) {
     setSelectedIdx(history.length - 1);
   }
@@ -70,7 +69,8 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
   if (history.length === 0) return <HistoryEmpty onGoToToday={onGoToToday} />;
 
   const selected = history[selectedIdx] ?? history[0];
-  const selectedRatings = selected.date === TODAY_STR ? currentRatings : selected.ratings;
+  const isToday = selected.date === todayStr(); // местный день, на каждом рендере: сервер кладёт дни по поясу (E5)
+  const selectedRatings = isToday ? currentRatings : selected.ratings;
   const prevRatings = history[selectedIdx + 1]?.ratings ?? {};
   const ratedCount = Object.keys(selectedRatings).filter(k => isRated(selectedRatings, k)).length;
   const needsLow = history.length >= 3
@@ -101,7 +101,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       <div key={subView} className="sd-fade">
         {subView === 'day' ? (
           <HistoryDayView date={selected.date} needs={needs} ratings={selectedRatings} prevRatings={prevRatings}
-            childhoodRatings={childhoodRatings} isToday={selected.date === TODAY_STR} ratedCount={ratedCount}
+            childhoodRatings={childhoodRatings} isToday={isToday} ratedCount={ratedCount}
             historyLen={history.length} needsLow={needsLow} isTherapist={contact.isTherapist} bookingLink={bookingLink}
             noteText={dayNote.note?.text ?? null} noteTags={dayNote.note?.tags ?? []} onTapNeed={handleTapNeed} onIndexInfo={() => setShowIndexInfo(true)}
             onOpenNote={() => setShowNote(true)} onOpenSchemas={onOpenSchemas}

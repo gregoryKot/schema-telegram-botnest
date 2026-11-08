@@ -1,6 +1,7 @@
 // Чистые вычисления «Профиля»: тепловая карта, уровни, месяцы, достижения, дата сессии, склонение.
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
 import { isRated } from '../../../../shared/src/needs/ratingRecord';
+import { dateStringParts, shiftCalendarDay } from '../../../../shared/src/utils/calendarDate';
 
 export const HEAT_WEEKS = 18;
 /** Ширина, до которой кабинет считается телефонным (синхронно с @media в css). */
@@ -12,12 +13,6 @@ const HEAT_GAP = 3;
 // Поля вокруг сетки на телефоне: поля страницы 2×16 + карточка 2×16 + рамка 2 + колонка подписей дней 22.
 const HEAT_PHONE_CHROME = 88;
 export const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-
-/** Календарный день YYYY-MM-DD в UTC — так же, как история дней на сервере и
- *  «сегодня» приложения (правило №25 CLAUDE.md, shared/src/utils/calendarDate). */
-export function utcDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 /** Уровень дня 0..3 по числу оценённых потребностей: 0 — нет записи, 1 — 1–2, 2 — 3–4, 3 — 5 и больше. */
 export function dayLevel(ratings: Record<string, number> | null | undefined): number {
@@ -44,17 +39,18 @@ export function heatWeeksForWidth(width: number): number {
 
 export interface HeatCell { dateStr: string; level: number; future: boolean }
 
-/** Недели (пн–вс), последняя содержит сегодня. */
-export function buildHeatWeeks(levels: Map<string, number>, today: Date, weeks = HEAT_WEEKS): HeatCell[][] {
-  const todayDow = (today.getUTCDay() + 6) % 7;
-  const startMs = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - todayDow - (weeks - 1) * 7);
-  const todayStr = utcDateStr(today);
+/** Недели (пн–вс), последняя содержит `today` — местный день человека (`todayStr()`): сервер
+ *  кладёт дни истории по его поясу, и «сегодня» по UTC в Москве до 03:00 было бы вчера (E5).
+ *  Дни — календарные строки, арифметика в UTC (правило №25): от зоны машины не зависит. */
+export function buildHeatWeeks(levels: Map<string, number>, today: string, weeks = HEAT_WEEKS): HeatCell[][] {
+  const todayDow = ((dateStringParts(today)?.weekday ?? 1) + 6) % 7;
+  const start = shiftCalendarDay(today, -todayDow - (weeks - 1) * 7);
   const out: HeatCell[][] = [];
   for (let w = 0; w < weeks; w++) {
     const week: HeatCell[] = [];
     for (let d = 0; d < 7; d++) {
-      const dateStr = utcDateStr(new Date(startMs + (w * 7 + d) * 86_400_000));
-      const future = dateStr > todayStr;
+      const dateStr = shiftCalendarDay(start, w * 7 + d);
+      const future = dateStr > today;
       week.push({ dateStr, level: future ? 0 : levels.get(dateStr) ?? 0, future });
     }
     out.push(week);

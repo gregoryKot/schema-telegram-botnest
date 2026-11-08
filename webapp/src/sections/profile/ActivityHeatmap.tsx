@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
 import type { CSSProperties } from 'react';
+import { todayStr } from '../../../../shared/src/utils/format';
 import { hueStyle } from '../../lib/tone';
 import { MonthShareButton } from './heatmapShare';
 import { PROFILE_HUE } from './profileMeta';
@@ -13,8 +13,8 @@ const DAY_LABELS = ['пн', '', 'ср', '', 'пт', '', 'вс'];
 
 export function ActivityHeatmap({ levels, activeDates, totalDays }: Props) {
   const weekCount = useHeatWeeks();
-  const weeks = useMemo(() => buildHeatWeeks(levels, new Date(), weekCount), [levels, weekCount]);
-  const labels = useMemo(() => monthLabels(weeks), [weeks]);
+  const weeks = buildHeatWeeks(levels, todayStr(), weekCount); // местный день, каждый рендер (E5)
+  const labels = monthLabels(weeks);
   return (
     <section className="ds-card cpf-card cpf-heat-card" style={hueStyle(PROFILE_HUE)}>
       <div className="ds-head-row">
