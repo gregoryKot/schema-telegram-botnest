@@ -147,6 +147,19 @@ describe('BotAnalyticsService', () => {
       expect(att.avg).toBeCloseTo(7);
     });
 
+    // Хвост волны 3: сводка недели — по дню плана человека, а не по местному
+    // «сегодня» на момент обхода (notification.weekly.ts).
+    it('endDate задаёт последний день окна: неделя и прошлая неделя от него', async () => {
+      const prisma = makePrisma();
+      const svc = new BotAnalyticsService(prisma);
+      await svc.getWeeklyStats(1, 'Asia/Vladivostok', '2026-11-08');
+      const asked = prisma.rating.findMany.mock.calls[0][0].where.date.in;
+      expect(asked[0]).toBe('2026-11-08');
+      expect(asked[6]).toBe('2026-11-02');
+      expect(asked[13]).toBe('2026-10-26');
+      expect(asked).toHaveLength(14);
+    });
+
     it('marks trend ↑ when current significantly higher than prev', async () => {
       const prisma = makePrisma();
       prisma.rating.findMany.mockResolvedValue([
