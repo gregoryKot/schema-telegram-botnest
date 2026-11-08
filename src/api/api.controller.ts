@@ -18,7 +18,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
 import { UpdateNameDto, InitDto } from './dto/misc.dto';
-import { UserFlagsDto } from './dto/user-flags.dto';
 import { FLAG_FIELDS } from './flag-fields';
 
 interface AuthRequest extends Request {
@@ -31,26 +30,9 @@ interface AuthRequest extends Request {
 // ysq/pairs/plans/exercises/notes/tracker.controller.ts.
 
 // Реестр FLAG_FIELDS — см. ./flag-fields.ts (переиспользуется merge.service
-// при слиянии аккаунтов, правило №4). Модульная константа (не поле класса) —
-// нужна для type-level сверки с UserFlagsDto ниже.
-
-// Компайл-тайм сверка: набор ключей FLAG_FIELDS обязан совпадать с полями
-// UserFlagsDto один-в-один — иначе список того, что читает/пишет контроллер,
-// и список того, что пропускает ValidationPipe, разъедутся молча. Обе
-// стрелки: каждый FLAG_FIELDS обязан быть полем DTO, и каждое поле DTO
-// обязано быть в FLAG_FIELDS. Чисто type-level, без рантайм-кода.
-type _FlagFieldsAreDtoFields =
-  (typeof FLAG_FIELDS)[number] extends keyof UserFlagsDto
-    ? true
-    : ['FLAG_FIELDS содержит поле, которого нет в UserFlagsDto'];
-type _DtoFieldsAreFlagFields =
-  keyof UserFlagsDto extends (typeof FLAG_FIELDS)[number]
-    ? true
-    : ['UserFlagsDto содержит поле, которого нет в FLAG_FIELDS'];
-type _VerifyFlagFieldsMatchDto = [
-  _FlagFieldsAreDtoFields,
-  _DtoFieldsAreFlagFields,
-];
+// при слиянии аккаунтов, правило №4). Писателя у флагов через API нет:
+// POST /api/user-flags писал только удалённый мини-апп (#908); колонки и
+// чтение остались (GET — therapistMode для сайта).
 
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
@@ -67,7 +49,7 @@ export class ApiController {
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 
-  // Read-only flags — returned by GET but not writable via POST.
+  // Флаги для GET: реестр плюс therapistMode (его ставит сервер из role).
   private readonly FLAG_FIELDS_READ = [
     ...FLAG_FIELDS,
     'therapistMode',
@@ -82,23 +64,6 @@ export class ApiController {
       select,
     });
     return u ?? {};
-  }
-
-  @Post('user-flags')
-  async setUserFlags(
-    @Req() req: AuthRequest,
-    @Body() body: UserFlagsDto,
-  ): Promise<{ ok: true }> {
-    if (!body || typeof body !== 'object')
-      throw new BadRequestException('Invalid body');
-    const data: Record<string, unknown> = {};
-    for (const k of FLAG_FIELDS) if (k in body) data[k] = body[k];
-    if (Object.keys(data).length === 0) return { ok: true };
-    await this.prisma.user.update({
-      where: { id: uid(req) },
-      data,
-    });
-    return { ok: true };
   }
 
   @Get('profile')

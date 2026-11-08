@@ -2,8 +2,7 @@
 // Прямой потребитель PrismaService — фейкуем таблицу user (см.
 // test-support/fake-prisma.spec-helper.ts), остальное — фейковые сервисы.
 // Приоритет: userId ВСЕГДА из req.webUser (не из body — попытка подсунуть
-// чужой userId/id в теле игнорируется), и therapistMode нельзя выставить
-// клиентом через user-flags (это привилегия, производная от role).
+// чужой userId/id в теле игнорируется).
 import { BadRequestException, RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { ApiController } from './api.controller';
@@ -79,51 +78,6 @@ describe('ApiController user-flags', () => {
       expect.objectContaining({ themePref: 'dark', onboardingV1Done: true }),
     );
   });
-
-  it('POST с телом не-объектом → BadRequestException', async () => {
-    const { controller } = makeController();
-    await expect(
-      controller.setUserFlags(makeReq(), null as any),
-    ).rejects.toThrow(BadRequestException);
-  });
-
-  it('POST с пустым пересечением полей → ok без записи в БД', async () => {
-    const { controller, userTable } = makeController({
-      userRows: [{ id: 1n }],
-    });
-    const res = await controller.setUserFlags(makeReq(), { unknownField: 1 });
-    expect(res).toEqual({ ok: true });
-    expect(userTable.update).not.toHaveBeenCalled();
-  });
-
-  it('therapistMode НЕ входит в список писабельных полей (привилегия, не флаг)', async () => {
-    const { controller, userTable } = makeController({
-      userRows: [{ id: 1n }],
-    });
-    const res = await controller.setUserFlags(makeReq(), {
-      therapistMode: true,
-    });
-    // Ручка отвечает успехом (клиент не должен ретраить), но привилегия не
-    // выдана: therapistMode не в FLAG_FIELDS → data пуст → update не зовётся.
-    expect(res).toEqual({ ok: true });
-    expect(userTable.update).not.toHaveBeenCalled();
-  });
-
-  it('POST сохраняет только известные поля под userId из req, чужой userId в body игнорируется', async () => {
-    const { controller, userTable } = makeController({
-      userRows: [{ id: 3n }],
-    });
-    await controller.setUserFlags(makeReq(3n), {
-      themePref: 'dark',
-      onboardingV1Done: true,
-      therapistMode: true, // должен быть отфильтрован
-      userId: 999, // должен быть проигнорирован
-    });
-    expect(userTable.update).toHaveBeenCalledWith({
-      where: { id: 3n },
-      data: { themePref: 'dark', onboardingV1Done: true },
-    });
-  });
 });
 
 /** «МЕТОД путь» каждой ручки контроллера — из метаданных Nest. */
@@ -144,6 +98,14 @@ describe('ApiController — мёртвых ручек нет', () => {
   // localStorage (shared/src/utils/drafts.ts). Таблица DiaryDraft осталась
   // (строки на проде удаляет решение владельца) — её чистят удаление
   // аккаунта и слияние по реестрам USER_DATA_TABLES / USER_OWNED_TABLES.
+  // POST /api/user-flags писал только удалённый мини-апп (#908); GET жив —
+  // его зовёт сайт (shared/src/api/sharedApi.ts, getUserFlags → therapistMode).
+  it('POST /api/user-flags нет, GET остаётся', () => {
+    const routes = routesOf(ApiController);
+    expect(routes).toContain('GET user-flags');
+    expect(routes).not.toContain('POST user-flags');
+  });
+
   it('ручек черновиков /api/drafts нет', () => {
     expect(routesOf(ApiController).filter((r) => r.includes('drafts'))).toEqual(
       [],
