@@ -145,6 +145,7 @@ export class BookingService {
         robokassa: this.robokassa,
         siteUrl: this.siteUrl,
         schema: BOOKING_SCHEMA,
+        logger: this.logger,
       },
       booking,
       {

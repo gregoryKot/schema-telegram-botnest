@@ -13,6 +13,10 @@ import { BookingService } from './booking.service';
 import { MIN_BOOK_LEAD_HOURS, MIN_CANCEL_LEAD_HOURS } from './booking.config';
 import { LEASE_WINDOW } from '../infra/cron-leader.service';
 import { RETURNING_NOT_FOUND_NOTE } from './booking-admin-note';
+import {
+  BookingConfirmRetryService,
+  STALLED_AFTER_MIN,
+} from './booking-confirm-retry.service';
 
 const FIXED_NOW = new Date('2026-07-13T00:00:00Z'); // понедельник, 00:00 UTC
 const RULE = {
@@ -397,6 +401,50 @@ describe('BookingService.book — создание и side-effects', () => {
     expect(res.status).toBe(BookingStatus.CONFIRMED);
     expect(notify.onConfirmed).toHaveBeenCalledTimes(1);
     expect(robokassa.buildPaymentUrl).not.toHaveBeenCalled();
+  });
+
+  // Эффекты подтверждения идут после ответа (security, время ответа book не
+  // выдаёт клиента). Шов: что не доделал запрос, добирает крон по флагу
+  // confirmEffectsDoneAt — бронь из book() обязана попасть в его выборку.
+  it('эффекты упали после ответа — ответ CONFIRMED, крон-добор находит бронь и доделывает', async () => {
+    const { service, notify, tx } = makeService({ rules: [] });
+    notify.onConfirmed.mockRejectedValueOnce(new Error('zoom down'));
+    const res = await service.book({
+      ...BASE_DTO,
+      startsAt: INSIDE_WINDOW,
+      durationMin: 15,
+      type: SessionType.INTRO_15,
+    });
+    expect(res.status).toBe(BookingStatus.CONFIRMED);
+    const row = await tx.booking.create.mock.results[0].value;
+    expect(row.confirmEffectsDoneAt ?? null).toBeNull();
+    // @updatedAt Prisma: строку не трогали дольше порога застоя.
+    row.updatedAt = new Date(Date.now() - (STALLED_AFTER_MIN + 1) * 60_000);
+    type RetryWhere = {
+      status: string;
+      confirmEffectsDoneAt: null;
+      startsAt: { gt: Date };
+      updatedAt: { lt: Date };
+    };
+    const findMany = jest.fn(async ({ where }: { where: RetryWhere }) =>
+      [row].filter(
+        (r) =>
+          r.status === where.status &&
+          (r.confirmEffectsDoneAt ?? null) === where.confirmEffectsDoneAt &&
+          r.startsAt > where.startsAt.gt &&
+          r.updatedAt < where.updatedAt.lt,
+      ),
+    );
+    const retry = new BookingConfirmRetryService(
+      { booking: { findMany, update: jest.fn() } } as never,
+      notify as never,
+      { claimRun: jest.fn().mockResolvedValue(true) } as never,
+    );
+    await retry.retryStalled();
+    expect(notify.onConfirmed).toHaveBeenCalledTimes(2);
+    expect(notify.onConfirmed).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: row.id, clientName: 'Мария' }),
+    );
   });
 
   it('SESSION_50 + Robokassa включена — остаётся HELD, возвращает paymentUrl, admin уведомлён об ожидании оплаты', async () => {
