@@ -158,6 +158,39 @@ describe('MergePage — сводка с сервера по токену', () =>
   });
 });
 
+// R3 (аудит 2026-11): записи с одним ключом в обоих аккаунтах объединяются, а не
+// переезжают дублем; экран называет их число и не обещает «всё переедет».
+describe('MergePage — записи, которые объединятся', () => {
+  const withCombined = (combined: number) =>
+    previewMock.mockResolvedValue(jsonResponse(200, { ...PREVIEW, summary: { Note: 4, GratitudeDiaryEntry: 2 }, combined }));
+
+  it('combined > 0 — число и что станет с записями, без «всё переедет»', async () => {
+    withCombined(3);
+    const { container } = renderAt('/merge?token=abc');
+    await screen.findByText(/3 записи совпадают с твоими по дню, схеме или режиму/);
+    const text = container.textContent ?? '';
+    expect(text).toContain('каждая такая пара объединится в одну');
+    expect(text).toContain('записи из него переедут в твой текущий аккаунт');
+    expect(text).not.toMatch(/всё, что в нём записано, переедет/);
+  });
+
+  it('форма «вы» — «с вашими», без «ты»-форм', async () => {
+    withCombined(1);
+    const { container } = renderAt('/merge?token=abc', authValue(), 'vy');
+    await screen.findByText(/1 запись совпадает с вашими/);
+    expect(container.textContent).toContain('переедут в ваш текущий аккаунт');
+    expect(container.textContent).not.toMatch(/твой|твоими/);
+  });
+
+  it('combined = 0 или нет в ответе — абзаца нет, прежнее «всё переедет»', async () => {
+    withCombined(0);
+    const { container } = renderAt('/merge?token=abc');
+    await screen.findByText('6 записей');
+    expect(container.textContent).not.toMatch(/совпада|объединится в одну/);
+    expect(container.textContent).toContain('всё, что в нём записано, переедет');
+  });
+});
+
 describe('MergePage — потеря двухфакторной защиты', () => {
   const NOTE = /Двухфакторная защита второго аккаунта не переедет/;
 

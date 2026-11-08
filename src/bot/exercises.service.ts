@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { encrypt, encryptJson } from '../utils/crypto';
-import { deleteOwned, requireAffected } from '../utils/require-affected';
+import {
+  deleteOwned,
+  requireAffected,
+  requireFound,
+} from '../utils/require-affected';
 import {
   readBeliefCheck,
   readFlashcard,
@@ -50,6 +54,13 @@ export class ExercisesService {
     return readBeliefCheck(row);
   }
 
+  // Одна запись по id — её открывает «Мой путь» (R6: в списке только 30).
+  async getBeliefCheck(userId: bigint, id: number) {
+    const where = { id, userId };
+    const row = this.prisma.userBeliefCheck.findFirst({ where });
+    return readBeliefCheck(await requireFound(row));
+  }
+
   async deleteBeliefCheck(userId: bigint, id: number) {
     return deleteOwned(this.prisma.userBeliefCheck, id, userId);
   }
@@ -63,6 +74,13 @@ export class ExercisesService {
       take: 30,
     });
     return rows.map(readLetter);
+  }
+
+  async getLetter(userId: bigint, id: number) {
+    const where = { id, userId };
+    return readLetter(
+      await requireFound(this.prisma.userLetter.findFirst({ where })),
+    );
   }
 
   async createLetter(userId: bigint, text: string) {
@@ -138,6 +156,12 @@ export class ExercisesService {
       },
     });
     return readFlashcard(row);
+  }
+
+  async getFlashcard(userId: bigint, id: number) {
+    const where = { id, userId };
+    const row = this.prisma.userFlashcard.findFirst({ where });
+    return readFlashcard(await requireFound(row));
   }
 
   async deleteFlashcard(userId: bigint, id: number) {

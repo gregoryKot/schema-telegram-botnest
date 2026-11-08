@@ -2,13 +2,13 @@
 // «Пропустить», что показать на экране «Готово». Тестируется отдельно от React.
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 import { dayIndex, fmtIndex } from '../../../../shared/src/needs/dayIndex';
+import { isRated } from '../../../../shared/src/needs/ratingRecord';
 
 type Ratings = Record<string, number>;
 
 /** Задержка перед автопереходом: успеть увидеть выбранный ответ. */
 export const AUTO_ADVANCE_MS = 250;
 
-const isRated = (ratings: Ratings, id: string) => (ratings[id] ?? 0) > 0;
 
 /**
  * Индекс следующей неоценённой потребности после `from`. `wrap` — искать и

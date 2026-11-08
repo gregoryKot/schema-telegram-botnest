@@ -1,6 +1,6 @@
-// Чистые вычисления экрана «Профиль»: раскладка тепловой карты, уровни,
-// подписи месяцев, прогресс достижений, формат даты сессии, склонение.
+// Чистые вычисления «Профиля»: тепловая карта, уровни, месяцы, достижения, дата сессии, склонение.
 import { pluralRu } from '../../../../shared/src/utils/pluralRu';
+import { isRated } from '../../../../shared/src/needs/ratingRecord';
 
 export const HEAT_WEEKS = 18;
 /** Ширина, до которой кабинет считается телефонным (синхронно с @media в css). */
@@ -21,7 +21,7 @@ export function utcDateStr(d: Date): string {
 
 /** Уровень дня 0..3 по числу оценённых потребностей: 0 — нет записи, 1 — 1–2, 2 — 3–4, 3 — 5 и больше. */
 export function dayLevel(ratings: Record<string, number> | null | undefined): number {
-  const n = ratings ? Object.keys(ratings).length : 0;
+  const n = ratings ? Object.keys(ratings).filter(id => isRated(ratings, id)).length : 0;
   if (n <= 0) return 0;
   if (n <= 2) return 1;
   if (n <= 4) return 2;

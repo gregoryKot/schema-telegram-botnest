@@ -1,9 +1,6 @@
-// Оффлайн-надёжность оценки потребности — единственная реализация
-// (правило №3 CLAUDE.md). До 2026-08 это работало только в
-// удалённом мини-аппе: webapp глушил сетевой сбой `catch {}` в TrackerOverlay, и
-// оценка терялась без следа — самый глубокий разрыв между двумя копиями за все волны
-// аудита. Транспорт (authedFetch/trackEvent) приходит снаружи — эта функция
-// от него не зависит.
+// Офлайн-надёжность оценки потребности — единственная реализация (правило №3;
+// до 2026-08 сайт глушил сетевой сбой, и оценка терялась без следа).
+// Транспорт (authedFetch/trackEvent) приходит снаружи.
 import type { StreakData } from '../apiTypes';
 import {
   type OutboxItem,
@@ -29,6 +26,11 @@ export class HttpStatusError extends Error {
     this.status = status;
   }
 }
+
+// Отказ, который пройдёт сам: 401 — сессию перевыпустят при следующем входе,
+// 429 — лимит отпустит. Такая оценка ждёт в очереди, как при сбое сети;
+// прочие 4xx не пройдут и при повторе — экран откатывает плитку (аудит 2026-11, E4).
+const RETRY_LATER = new Set([401, 429]);
 
 export function createRatingApi(
   authedFetch: (path: string, init: RequestInit) => Promise<Response>,
@@ -56,14 +58,15 @@ export function createRatingApi(
       try {
         return await rawSaveRating(item);
       } catch (err) {
-        // 4xx кидаем как раньше; сеть/таймаут/5xx — оффлайн-путь: кладём в
-        // outbox и отвечаем успехом (upsert на сервере идемпотентен).
-        const isClientError =
+        // Сеть/таймаут/5xx/401/429 — оффлайн-путь: кладём в outbox и
+        // отвечаем успехом (upsert на сервере идемпотентен). Прочие 4xx и
+        // недоступное хранилище — бросок: оценка не сохранена нигде.
+        const rejected =
           err instanceof HttpStatusError &&
           err.status >= 400 &&
-          err.status < 500;
-        if (isClientError) throw err;
-        enqueueRating(item);
+          err.status < 500 &&
+          !RETRY_LATER.has(err.status);
+        if (rejected || !enqueueRating(item)) throw err;
         return { ok: true, allDone: false, queued: true };
       }
     },

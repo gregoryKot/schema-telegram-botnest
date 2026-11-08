@@ -26,6 +26,10 @@ describe('todayInsightPhrase — неполный трекер', () => {
       todayInsightPhrase({ ...full(), attachment: null, autonomy: undefined }),
     ).toBeNull();
   });
+
+  it('0 — «не оценено», а не самая слабая потребность', () => {
+    expect(todayInsightPhrase({ ...full(), attachment: 0 })).toBeNull();
+  });
 });
 
 describe('todayInsightPhrase — контраст между слабой и сильной потребностью', () => {

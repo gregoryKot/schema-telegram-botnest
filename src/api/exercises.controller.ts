@@ -22,6 +22,8 @@ import {
   FlashcardDto,
 } from './dto/tools.dto';
 
+const id32 = (raw: string) => parseId(raw, { int32: true });
+
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
@@ -68,12 +70,15 @@ export class ExercisesController {
     });
   }
 
+  // Одна запись по id — её открывает «Мой путь» (R6: в списке только 30).
+  @Get('belief-checks/:id')
+  getBeliefCheck(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.exercisesService.getBeliefCheck(uid(req), id32(id));
+  }
+
   @Delete('belief-checks/:id')
   deleteBeliefCheck(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.exercisesService.deleteBeliefCheck(
-      uid(req),
-      parseId(id, { int32: true }),
-    );
+    return this.exercisesService.deleteBeliefCheck(uid(req), id32(id));
   }
 
   // ── Letters ───────────────────────────────────────────────────────────────────
@@ -81,6 +86,11 @@ export class ExercisesController {
   @Get('letters')
   getLetters(@Req() req: AuthRequest) {
     return this.exercisesService.getLetters(uid(req));
+  }
+
+  @Get('letters/:id')
+  getLetter(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.exercisesService.getLetter(uid(req), id32(id));
   }
 
   @Post('letters')
@@ -97,16 +107,12 @@ export class ExercisesController {
   ) {
     const text = body.text?.trim();
     if (!text) throw new BadRequestException('invalid text');
-    const letterId = parseId(id, { int32: true });
-    return this.exercisesService.updateLetter(uid(req), letterId, text);
+    return this.exercisesService.updateLetter(uid(req), id32(id), text);
   }
 
   @Delete('letters/:id')
   deleteLetter(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.exercisesService.deleteLetter(
-      uid(req),
-      parseId(id, { int32: true }),
-    );
+    return this.exercisesService.deleteLetter(uid(req), id32(id));
   }
 
   // ── Safe place ────────────────────────────────────────────────────────────────
@@ -145,11 +151,13 @@ export class ExercisesController {
     });
   }
 
+  @Get('flashcards/:id')
+  getFlashcard(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.exercisesService.getFlashcard(uid(req), id32(id));
+  }
+
   @Delete('flashcards/:id')
   deleteFlashcard(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.exercisesService.deleteFlashcard(
-      uid(req),
-      parseId(id, { int32: true }),
-    );
+    return this.exercisesService.deleteFlashcard(uid(req), id32(id));
   }
 }

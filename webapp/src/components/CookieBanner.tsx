@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { isPracticeHost } from '../utils/domainChrome';
 import { useAnySheetOpen } from '../hooks/openSheets';
 import { useAnyDialogOpen } from '../../../shared/src/utils/dialogStack';
+import { readLocal, writeLocal } from '../../../shared/src/utils/safeLocalStorage';
 
 const CONSENT_KEY = 'cookie_consent';
 
@@ -63,9 +64,7 @@ export function CookieBanner() {
   // Начальная видимость выводится из localStorage на маунте (lazy-init), а не
   // через setState в эффекте (react-hooks/set-state-in-effect). Значение
   // 'all' и 'necessary' из старых визитов одинаково прячут баннер.
-  const [visible, setVisible] = useState(
-    () => !localStorage.getItem(CONSENT_KEY),
-  );
+  const [visible, setVisible] = useState(() => !readLocal(CONSENT_KEY)); // заблокированное хранилище — баннер, а не белый экран (E10)
 
   // Метрику баннер НЕ грузит: её включает MetrikaTracker через шлюз
   // (lib/metrikaGate) — только на публичных страницах и без сессии. Согласия
@@ -78,7 +77,7 @@ export function CookieBanner() {
   if (!visible || sheetOpen || dialogOpen) return null;
 
   const dismiss = () => {
-    localStorage.setItem(CONSENT_KEY, 'all');
+    writeLocal(CONSENT_KEY, 'all');
     setVisible(false);
   };
 

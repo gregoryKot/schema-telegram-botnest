@@ -4,7 +4,10 @@
 //  (а) констрейнты, реально созданные миграциями (pg_index), равны UNIQUE_RULES —
 //      в том числе unique-индекс, добавленный рукописным SQL мимо schema.prisma;
 //  (б) настоящий merge с коллизией по КАЖДОЙ таблице из правил не падает 23505,
-//      побеждает target, несвязанная строка source переезжает.
+//      побеждает target (в объединяемых таблицах — пара сливается), несвязанная
+//      строка source переезжает;
+//  (в) R3 (аудит 2026-11): записи с одним ключом в обоих аккаунтах, сохранённые
+//      настоящими сервисами (шифротекст), после merge читаются у target обе.
 // Мок $executeRaw не доказывает ни того, ни другого. Гоняется только при
 // E2E_REAL_DB=1 (джоба `migrations`).
 import { INestApplication } from '@nestjs/common';
@@ -17,6 +20,12 @@ import {
   USER_OWNED_TABLES,
   SECURITY_SENSITIVE_TABLES,
 } from '../src/auth/merge.service';
+import { COMBINE_TABLES } from '../src/auth/merge-combine';
+import { BotService } from '../src/bot/bot.service';
+import { DiaryService } from '../src/bot/diary.service';
+import { NotesService } from '../src/bot/notes.service';
+import { ExercisesService } from '../src/bot/exercises.service';
+import { YsqService } from '../src/bot/ysq.service';
 
 const REAL_DB = process.env.E2E_REAL_DB === '1';
 const describeOnRealDb = REAL_DB ? describe : describe.skip;
@@ -98,7 +107,9 @@ describeOnRealDb('e2e: UNIQUE_RULES против живого Postgres', () => {
     );
   });
 
-  it.each(UNIQUE_FIXTURES)(
+  const combined = (t: string) => COMBINE_TABLES.includes(t);
+
+  it.each(UNIQUE_FIXTURES.filter((f) => !combined(f.table)))(
     '$table: коллизия по ключу — target побеждает, чужой ключ source переезжает, 23505 нет',
     async ({ table, delegate, data, markOf }) => {
       const cols = UNIQUE_RULES.find((r) => r.table === table)!.cols;
@@ -124,4 +135,128 @@ describeOnRealDb('e2e: UNIQUE_RULES против живого Postgres', () => {
       expect(await prisma.user.findUnique({ where: { id: SRC } })).toBeNull();
     },
   );
+
+  // Объединяемые таблицы: строки фикстур пишутся без шифрования, поэтому здесь
+  // только «не падает, пара — одна строка, чужой ключ переехал»; содержимое
+  // проверяет блок R3 ниже, на строках, записанных сервисами.
+  it.each(UNIQUE_FIXTURES.filter((f) => combined(f.table)))(
+    '$table: коллизия по ключу — пара сливается в одну строку, 23505 нет',
+    async ({ table, delegate, data }) => {
+      const cols = UNIQUE_RULES.find((r) => r.table === table)!.cols;
+      const d = prisma[delegate];
+      await d.create({ data: data(TGT, 'a', '22') });
+      await d.create({ data: data(SRC, 'a', '11') });
+      if (cols.length > 0) await d.create({ data: data(SRC, 'b', '33') });
+
+      await app.get(MergeService).merge(SRC, TGT);
+
+      expect(await d.count({ where: { userId: TGT } })).toBe(
+        cols.length > 0 ? 2 : 1,
+      );
+      expect(await d.count({ where: { userId: SRC } })).toBe(0);
+    },
+  );
+});
+
+describeOnRealDb('e2e: R3 — слияние объединяет записи с одним ключом', () => {
+  let app: INestApplication;
+  let prisma: TestApp['prisma'];
+  const SRC = 770_000_912n;
+  const TGT = 1_000_000_000_000_912n;
+  const D = '2026-03-01';
+  // Шаг времени между записями: «свежее» не должно решаться совпадением мс.
+  const tick = () => new Promise((r) => setTimeout(r, 5));
+
+  beforeAll(async () => {
+    const built = await buildTestApp();
+    app = built.app;
+    prisma = built.prisma;
+  });
+  afterAll(async () => {
+    await cleanupOwnershipFixtures(prisma, [SRC, TGT]);
+    await app.close();
+  });
+  beforeEach(async () => {
+    await cleanupOwnershipFixtures(prisma, [SRC, TGT]);
+    await prisma.user.create({ data: { id: SRC } });
+    await prisma.user.create({ data: { id: TGT } });
+  });
+
+  it('сохранил в обоих аккаунтах → у target текст обоих, пункты обоих, заполненные поля', async () => {
+    const bot = app.get(BotService);
+    const diary = app.get(DiaryService);
+    const notes = app.get(NotesService);
+    const ex = app.get(ExercisesService);
+    const ysq = app.get(YsqService);
+    await bot.saveNote(TGT, D, 'Устала', ['work']);
+    await bot.saveNote(SRC, D, 'Поспала днём', ['sleep']);
+    await diary.upsertGratitudeDiaryEntry(TGT, D, ['чай']);
+    await diary.upsertGratitudeDiaryEntry(SRC, D, ['звонок', 'чай']);
+    await notes.upsertSchemaNote(TGT, 'abandonment', { triggers: 'уходят' });
+    await notes.upsertSchemaNote(SRC, 'abandonment', {
+      triggers: 'молчат',
+      feelings: 'страх',
+    });
+    await notes.upsertModeNote(TGT, 'vulnerable-child', { fear: 'один' });
+    await notes.upsertModeNote(SRC, 'vulnerable-child', { alias: 'Малыш' });
+    await ex.upsertSafePlace(TGT, 'море');
+    await ysq.saveYsqResult(TGT, [1, 1]);
+    await tick();
+    await ex.upsertSafePlace(SRC, 'лес');
+    await ysq.saveYsqResult(SRC, [5, 5]);
+    // Предусловие шва: в колонке — шифротекст, не открытый текст.
+    const raw = await prisma.note.findFirst({ where: { userId: SRC } });
+    expect(raw?.text).not.toContain('Поспала');
+
+    const merge = app.get(MergeService);
+    expect((await merge.summarize(SRC, TGT)).combined).toBe(6);
+    await merge.merge(SRC, TGT);
+
+    expect(await bot.getNote(TGT, D)).toEqual({
+      text: 'Устала\n\nПоспала днём',
+      tags: ['work', 'sleep'],
+    });
+    const [day] = await diary.getGratitudeDiaryEntries(TGT);
+    // Без повтора «чай»; «звонок» встал перед ним — как стоял у source.
+    expect(day.items).toEqual(['звонок', 'чай']);
+    const card = await notes.getSchemaNote(TGT, 'abandonment');
+    expect([card?.triggers, card?.feelings]).toEqual(['уходят', 'страх']);
+    const mode = await notes.getModeNote(TGT, 'vulnerable-child');
+    expect([mode?.alias, mode?.fear]).toEqual(['Малыш', 'один']);
+    expect((await ex.getSafePlace(TGT))?.description).toBe('лес');
+    expect((await ysq.getYsqResult(TGT))?.answers).toEqual([5, 5]);
+    const history = await ysq.getYsqHistory(TGT);
+    expect(history.map((h) => h.answers)).toEqual([
+      [5, 5],
+      [1, 1],
+    ]);
+  });
+
+  it('прежний итог теста без строки истории (до её появления) — уходит в историю', async () => {
+    const ysq = app.get(YsqService);
+    await ysq.saveYsqResult(TGT, [1, 1]);
+    await prisma.ysqResultHistory.deleteMany({ where: { userId: TGT } });
+    await tick();
+    await ysq.saveYsqResult(SRC, [5, 5]);
+
+    await app.get(MergeService).merge(SRC, TGT);
+
+    const history = await ysq.getYsqHistory(TGT);
+    expect(history.map((h) => h.answers)).toEqual([
+      [5, 5],
+      [1, 1],
+    ]);
+  });
+
+  it('нечитаемый шифротекст у target — merge проходит, target не перезаписан', async () => {
+    const foreign = Buffer.alloc(40, 7).toString('base64');
+    await prisma.note.create({ data: { userId: TGT, date: D, text: foreign } });
+    await app.get(BotService).saveNote(SRC, D, 'Поспала днём');
+
+    await app.get(MergeService).merge(SRC, TGT);
+
+    const row = await prisma.note.findFirst({ where: { userId: TGT } });
+    expect(row?.text).toBe(foreign);
+    expect(await prisma.note.count({ where: { userId: SRC } })).toBe(0);
+  });
 });

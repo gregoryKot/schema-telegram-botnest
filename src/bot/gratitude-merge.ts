@@ -14,7 +14,12 @@
 // пересборки).
 import { ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
-import { encryptJson, decryptJson } from '../utils/crypto';
+import { encryptJson } from '../utils/crypto';
+import {
+  assertWritable,
+  decryptRecord,
+  type EncryptSchema,
+} from '../utils/crypto-record';
 
 const MERGE_RETRIES = 3;
 
@@ -53,11 +58,24 @@ export function mergeGratitudeItems(
 const encItems = (items: string[]) =>
   encryptJson(items) ?? JSON.stringify(items);
 
-// Легаси-строка может лежать JSON-массивом без шифрования.
-const readItems = (raw: unknown): string[] =>
-  Array.isArray(raw)
-    ? raw.filter((x): x is string => typeof x === 'string')
-    : (decryptJson<string[]>(raw as string) ?? []);
+export const GRATITUDE_DIARY_SCHEMA: EncryptSchema = {
+  model: 'gratitudeDiaryEntry',
+  jsonArrays: ['items'],
+};
+
+/**
+ * Пункты дня перед записью поверх них. Легаси-строка может лежать
+ * JSON-массивом без шифрования. Шифротекст, который сейчас не читается (ключ
+ * не подошёл), раньше давал `[]` — и сохранение навсегда стирало прежние
+ * пункты (E15, аудит 2026-11). Теперь 409 { reason: 'unreadable_data' }.
+ */
+function readDay(row: { items: unknown } | null, where: string): string[] {
+  if (!row) return [];
+  const dec = decryptRecord(row, GRATITUDE_DIARY_SCHEMA);
+  assertWritable(dec, ['items'], where);
+  const items = Array.isArray(dec.items) ? (dec.items as unknown[]) : [];
+  return items.filter((x): x is string => typeof x === 'string');
+}
 
 /**
  * Сохраняет пункты дня и возвращает запись с расшифрованными пунктами.
@@ -74,7 +92,9 @@ export async function saveGratitudeDay(
   base?: string[],
 ) {
   const where = { userId_date: { userId, date } };
+  const label = `gratitude user#${userId} ${date}`;
   if (base === undefined) {
+    readDay(await prisma.gratitudeDiaryEntry.findUnique({ where }), label);
     const enc = encItems(items);
     const row = await prisma.gratitudeDiaryEntry.upsert({
       where,
@@ -88,7 +108,7 @@ export async function saveGratitudeDay(
       return await prisma.$transaction(
         async (tx) => {
           const existing = await tx.gratitudeDiaryEntry.findUnique({ where });
-          const current = existing ? readItems(existing.items) : [];
+          const current = readDay(existing, label);
           const merged = mergeGratitudeItems(current, base, items);
           const enc = encItems(merged);
           const row = await tx.gratitudeDiaryEntry.upsert({

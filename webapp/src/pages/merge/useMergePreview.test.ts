@@ -4,13 +4,21 @@ import { parseMergePreview } from './useMergePreview';
 
 describe('parseMergePreview', () => {
   it('известная форма проходит как есть', () => {
-    expect(parseMergePreview({ provider: 'vk', otherDisplay: 'Аня', summary: { Rating: 3 }, twoFactorLost: true }))
-      .toEqual({ provider: 'vk', otherDisplay: 'Аня', summary: { Rating: 3 }, twoFactorLost: true });
+    expect(parseMergePreview({ provider: 'vk', otherDisplay: 'Аня', summary: { Rating: 3 }, combined: 2, twoFactorLost: true }))
+      .toEqual({ provider: 'vk', otherDisplay: 'Аня', summary: { Rating: 3 }, combined: 2, twoFactorLost: true });
   });
 
   it('в сводке — только положительные числа; пустое имя — null; 2FA — только true', () => {
     expect(parseMergePreview({ provider: 'vk', otherDisplay: '', summary: { Rating: 3, Note: '7', X: -1, Y: Infinity }, twoFactorLost: 'yes' }))
-      .toEqual({ provider: 'vk', otherDisplay: null, summary: { Rating: 3 }, twoFactorLost: false });
+      .toEqual({ provider: 'vk', otherDisplay: null, summary: { Rating: 3 }, combined: 0, twoFactorLost: false });
+  });
+
+  it('combined (R3) — только конечное положительное число, иначе 0', () => {
+    const base = { provider: 'vk', summary: {} };
+    expect(parseMergePreview({ ...base, combined: 3 })?.combined).toBe(3);
+    for (const bad of ['3', -1, Infinity, NaN, undefined]) {
+      expect(parseMergePreview({ ...base, combined: bad })?.combined).toBe(0);
+    }
   });
 
   it('чужая форма — null (экран скажет нейтрально)', () => {

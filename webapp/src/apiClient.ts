@@ -16,6 +16,7 @@ import { applyMutationInvalidation } from '../../shared/src/api/apiCacheRules';
 import { readJsonBody } from '../../shared/src/api/readJsonBody';
 import { readErrorBody } from '../../shared/src/api/readErrorBody';
 import { withKeepalive } from '../../shared/src/api/keepalive';
+import { fetchWithTimeout as fetchWithDeadline, REQUEST_TIMEOUT_MS } from '../../shared/src/api/fetchWithTimeout';
 
 export const BASE_RAW = (import.meta.env.VITE_API_URL as string) ?? '';
 export const BASE = BASE_RAW && !BASE_RAW.startsWith('http') ? `https://${BASE_RAW}` : BASE_RAW;
@@ -40,14 +41,9 @@ function authHeaders(): Record<string, string> {
   };
 }
 
-export async function fetchWithTimeout(input: string, init: RequestInit, ms = 15000): Promise<Response> {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(input, { ...init, signal: ctrl.signal, credentials: 'include' });
-  } finally {
-    clearTimeout(id);
-  }
+// Таймаут — общий с входом и выходом (shared/api/fetchWithTimeout, правило №3); сайт шлёт куку всегда.
+export function fetchWithTimeout(input: string, init: RequestInit, ms = REQUEST_TIMEOUT_MS): Promise<Response> {
+  return fetchWithDeadline(input, { ...init, credentials: 'include' }, ms);
 }
 
 // Ошибка HTTP-ответа со статусом ПОЛЕМ, а не подстрокой в message: потребители

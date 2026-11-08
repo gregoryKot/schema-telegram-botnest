@@ -2,6 +2,8 @@
 // намеренно не несёт свободный текст — он подтягивается здесь, через обычные
 // расшифровывающие эндпоинты, ТОЛЬКО по явному тапу пользователя на записи
 // (и перед отправкой виден в превью, как у карточки благодарности).
+// Запись с id открывается своим GET …/:id: поиск в списке находил только 30
+// последних, и 31-я открывалась пустой (R6, аудит 2026-11).
 import { type JourneyItem, JOURNEY_NEED_NAMES } from './journeyMeta';
 import { computeScores, type YsqHistoryEntry } from '../hooks/useYsqTest';
 // Разбор записи в части карточек — рядом, в journeyParts (реэкспорт ниже:
@@ -30,22 +32,22 @@ export interface JourneyResult {
   ysq?: { scores: Record<string, YsqScore>; activeCount: number };
 }
 
-// Минимальные структурные типы записей — оба api-клиента им соответствуют.
+// Минимальные структурные типы записей — api-клиент им соответствует.
 export interface JourneyContentApi {
-  getSchemaDiary(): Promise<
-    Array<{ id: number; trigger: string; healthyView?: string | null }>
-  >;
-  getModeDiary(): Promise<
-    Array<{ id: number; situation: string; actualNeed?: string | null }>
-  >;
-  getGratitudeDiary(): Promise<Array<{ id: number; items: string[] }>>;
-  getBeliefChecks(): Promise<
-    Array<{ id: number; belief: string; reframe?: string | null }>
-  >;
-  getLetters(): Promise<Array<{ id: number; text: string }>>;
-  getFlashcards(): Promise<
-    Array<{ id: number; reflection?: string | null; action?: string | null }>
-  >;
+  getSchemaDiaryEntry(
+    id: number,
+  ): Promise<{ trigger: string; healthyView?: string | null }>;
+  getModeDiaryEntry(
+    id: number,
+  ): Promise<{ situation: string; actualNeed?: string | null }>;
+  getGratitudeDiaryEntry(id: number): Promise<{ items: string[] }>;
+  getBeliefCheck(
+    id: number,
+  ): Promise<{ belief: string; reframe?: string | null }>;
+  getLetter(id: number): Promise<{ text: string }>;
+  getFlashcard(
+    id: number,
+  ): Promise<{ reflection?: string | null; action?: string | null }>;
   getSafePlace(): Promise<{ description: string } | null>;
   getNote(date: string): Promise<{ text: string | null }>;
   getPractices(needId: string): Promise<Array<{ id: number; text: string }>>;
@@ -55,9 +57,26 @@ export interface JourneyContentApi {
   ratings(date?: string): Promise<Record<string, number>>;
   getSchemaNotes(): Promise<Array<{ schemaId: string }>>;
   getModeNotes(): Promise<Array<{ modeId: string }>>;
-  getYsqHistory(): Promise<YsqHistoryEntry[]>;
+  getYsqHistoryEntry(id: number): Promise<YsqHistoryEntry>;
   getYsqResult(): Promise<{ answers: number[] } | null>;
 }
+
+type ById = (api: JourneyContentApi, id: number) => Promise<unknown>;
+const BY_ID: Partial<Record<string, ById>> = {
+  schema_diary: (a, id) => a.getSchemaDiaryEntry(id),
+  mode_diary: (a, id) => a.getModeDiaryEntry(id),
+  gratitude: (a, id) => a.getGratitudeDiaryEntry(id),
+  belief_check: (a, id) => a.getBeliefCheck(id),
+  letter: (a, id) => a.getLetter(id),
+  flashcard: (a, id) => a.getFlashcard(id),
+};
+
+/** 404 — запись удалили на другом устройстве: показать нечего, это не сбой. */
+const missingAs404 = (p: Promise<unknown>): Promise<unknown> =>
+  p.catch((e: unknown) => {
+    if ((e as { status?: unknown } | null)?.status === 404) return null;
+    throw e;
+  });
 
 /**
  * Тянет запись по item.id (или дате): у каждого типа шага свой источник.
@@ -69,26 +88,10 @@ async function fetchJourneyEntry(
 ): Promise<unknown> {
   const byId = <T extends { id: number }>(rows: T[]): T | undefined =>
     rows.find((r) => r.id === item.id);
+  const own = BY_ID[item.type];
+  if (own) return item.id ? missingAs404(own(api, item.id)) : null;
   let entry: unknown;
   switch (item.type) {
-    case 'schema_diary':
-      entry = byId(await api.getSchemaDiary());
-      break;
-    case 'mode_diary':
-      entry = byId(await api.getModeDiary());
-      break;
-    case 'gratitude':
-      entry = byId(await api.getGratitudeDiary());
-      break;
-    case 'belief_check':
-      entry = byId(await api.getBeliefChecks());
-      break;
-    case 'letter':
-      entry = byId(await api.getLetters());
-      break;
-    case 'flashcard':
-      entry = byId(await api.getFlashcards());
-      break;
     case 'safe_place':
       entry = await api.getSafePlace();
       break;
@@ -115,10 +118,7 @@ async function fetchJourneyEntry(
       entry = (await api.getModeNotes()).find((n) => n.modeId === item.modeId);
       break;
     case 'ysq': {
-      if (item.id) {
-        entry = (await api.getYsqHistory()).find((h) => h.id === item.id);
-        break;
-      }
+      if (item.id) return missingAs404(api.getYsqHistoryEntry(item.id));
       // Старый пользователь: тест пройден до появления таблицы истории —
       // считаем выраженные схемы прямо из сохранённых ответов.
       const res = await api.getYsqResult();

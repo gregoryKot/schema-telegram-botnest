@@ -7,6 +7,7 @@ import type { ContactChannel } from '../../shared/src/booking/contactChannel'; i
 import { buildSharedApi, type ApiTransport } from '../../shared/src/api/sharedApi';
 import { createRatingApi } from '../../shared/src/api/ratingApi';
 import { createPracticeSessionsApi } from '../../shared/src/api/practiceSessionsApi';
+import { createEntryApi } from '../../shared/src/api/entryApi';
 import { createClientErrorReporter } from '../../shared/src/api/clientErrorReport';
 import {
   BASE,
@@ -139,6 +140,7 @@ export const api = {
   ...ratingApi,
   // Быстрые практики «Здесь и сейчас» — тоже общие (правило №3).
   ...createPracticeSessionsApi(transport),
+  ...createEntryApi(transport), // запись по id для «Моего пути», страницы «Записей»
 
   // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
   // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
@@ -159,15 +161,18 @@ export const api = {
   updatePhraseCheck:    (id: number, rewrite: string) => patchJson<{ id: number; rewrite: string | null }>(`/api/phrase-checks/${id}`, { rewrite }),
   deletePhraseCheck:    (id: number) => del(`/api/phrase-checks/${id}`),
   getBeliefChecks:      () => get<BeliefCheckEntry[]>('/api/belief-checks'),
+  getBeliefCheck:       (id: number) => get<BeliefCheckEntry>(`/api/belief-checks/${id}`), // «Мой путь»: запись по id
   createBeliefCheck:    (body: { belief: string; evidenceFor: string[]; evidenceAgainst: string[]; reframe?: string }) => post('/api/belief-checks', body),
   deleteBeliefCheck:    (id: number) => del(`/api/belief-checks/${id}`),
   getLetters:           () => get<LetterEntry[]>('/api/letters'),
+  getLetter:            (id: number) => get<LetterEntry>(`/api/letters/${id}`),
   createLetter:         (text: string) => postJson<LetterEntry>('/api/letters', { text }),
   updateLetter:         (id: number, text: string) => patchJson<LetterEntry>(`/api/letters/${id}`, { text }),
   deleteLetter:         (id: number) => del(`/api/letters/${id}`),
   getSafePlace:         () => get<{ description: string; updatedAt: string } | null>('/api/safe-place'),
   saveSafePlace:        (description: string) => post('/api/safe-place', { description }),
   getFlashcards:        () => get<FlashcardEntry[]>('/api/flashcards'),
+  getFlashcard:         (id: number) => get<FlashcardEntry>(`/api/flashcards/${id}`),
   createFlashcard:      (body: { modeId: string; needId: string; reflection?: string; action?: string }) => post('/api/flashcards', body),
   deleteFlashcard:      (id: number) => del(`/api/flashcards/${id}`),
   getClientDiary:       (clientId: UserId) => get<{ type: 'schema' | 'mode' | 'gratitude'; date: string; schemaIds?: string[]; modeId?: string; excerpt: string }[]>(`/api/therapy/client/${clientId}/diary`),

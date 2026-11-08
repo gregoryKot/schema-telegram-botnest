@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { requireFound } from '../utils/require-affected';
 import { PrismaService } from '../prisma/prisma.service';
 import { encryptJson, decryptJson } from '../utils/crypto';
 import { YSQ_TASK_TYPE } from '../therapy/ysq-request';
@@ -88,21 +89,33 @@ export class YsqService {
     ]);
   }
 
-  async getYsqHistory(
-    userId: bigint,
-  ): Promise<Array<{ id: number; completedAt: Date; answers: number[] }>> {
+  async getYsqHistory(userId: bigint) {
     const rows = await this.prisma.ysqResultHistory.findMany({
       where: { userId },
       orderBy: { completedAt: 'desc' },
       take: 20,
     });
-    return rows.map((r) => ({
-      id: r.id,
-      completedAt: r.completedAt,
-      answers: decAnswers(r.answers),
-    }));
+    return rows.map(readHistory);
+  }
+
+  // Одна попытка по id — её открывает «Мой путь»: лента перечисляет все
+  // попытки, а список выше — только 20 последних (R6, аудит 2026-11).
+  async getYsqHistoryEntry(userId: bigint, id: number) {
+    const where = { id, userId };
+    const row = this.prisma.ysqResultHistory.findFirst({ where });
+    return readHistory(await requireFound(row));
   }
 }
+
+const readHistory = (r: {
+  id: number;
+  completedAt: Date;
+  answers: unknown;
+}) => ({
+  id: r.id,
+  completedAt: r.completedAt,
+  answers: decAnswers(r.answers),
+});
 
 // Единственный экспортируемый декодер для читателей YsqResult вне сервиса
 // (profile.service, therapy-client-data.service) — чтобы tolerant-чтение

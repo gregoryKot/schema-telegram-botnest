@@ -10,7 +10,7 @@
 // строка: карточка на телефоне закрывала главную кнопку первого экрана, а
 // фраза про вход там лишняя (входа на визитке нет). Продуктовый хост
 // рисуется как раньше.
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { CookieBanner } from './CookieBanner';
 import { Dialog } from './Dialog';
@@ -67,6 +67,21 @@ describe('CookieBanner — первый визит', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(localStorage.getItem('cookie_consent')).toBe('all');
+  });
+
+  // Аудит 2026-11, E10: голый localStorage.getItem в инициализаторе бросал при
+  // заблокированном хранилище, и падал весь корень сайта.
+  it('хранилище недоступно — баннер рисуется, «Понятно» его скрывает', () => {
+    const denied = () => { throw new DOMException('denied', 'SecurityError'); };
+    const spies = (['getItem', 'setItem'] as const).map((m) =>
+      vi.spyOn(Storage.prototype, m).mockImplementation(denied));
+    try {
+      render(<CookieBanner />);
+      fireEvent.click(screen.getByRole('button', { name: 'Понятно' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+    } finally {
+      spies.forEach((sp) => sp.mockRestore());
+    }
   });
 
   it('текст честно ограничивает счётчик публичными страницами', () => {

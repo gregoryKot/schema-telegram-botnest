@@ -1,11 +1,11 @@
 // Общий сетевой шаг выхода: POST /api/auth/logout — сервер отзывает WebSession
-// и гасит refresh-куку. Локальную чистку каждый фронт делает по-своему (у сайта
-// — AuthProvider, у мини-аппа — session.ts), но сам вызов один: правило №3
-// (общий код — в shared, а не копипастой; раньше сайт слал этот fetch inline,
-// а мини-апп выхода не имел вовсе — разбор 2026-09-03).
+// и гасит refresh-куку. Локальную чистку делает фронт (у сайта — AuthProvider),
+// сам вызов один (правило №3); таймаут — чтобы зависшая сеть не держала «Выйти»
+// вечно (аудит 2026-11, E9).
 //
 // requireCsrf на сервере пускает по непустому x-requested-with ИЛИ по
 // Content-Type: application/json (см. auth-http.util.ts) — шлём оба.
+import { fetchWithTimeout } from '../api/fetchWithTimeout';
 
 export interface LogoutOptions {
   /** true → ?all=true: отозвать сессии на ВСЕХ устройствах, не только эту. */
@@ -18,8 +18,9 @@ export async function postLogout(
   apiBase: string,
   opts: LogoutOptions,
 ): Promise<void> {
+  const query = opts.all ? '?all=true' : '';
   try {
-    await fetch(`${apiBase}/api/auth/logout${opts.all ? '?all=true' : ''}`, {
+    await fetchWithTimeout(`${apiBase}/api/auth/logout${query}`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -28,8 +29,7 @@ export async function postLogout(
       },
     });
   } catch {
-    // Сеть легла — сервер refresh-куку не погасил, но человек нажал «Выйти»:
-    // локальная чистка обязана состояться, экран должен смениться. Сайт вёл
-    // себя так же (best-effort). Не тихий catch: см. комментарий (правило №15).
+    // Сеть легла или таймаут — сервер куку не погасил, но человек нажал «Выйти»:
+    // локальная чистка обязана состояться (best-effort, не тихий catch — №15).
   }
 }

@@ -141,3 +141,43 @@ describe('createRatingApi.saveRating — границы классификаци
     expect(res.ok).toBe(true);
   });
 });
+
+// Аудит 2026-11, E4: 401/429 пробрасывались как 4xx — плитка показывала
+// оценку, которой нет ни на сервере, ни в очереди.
+describe('createRatingApi.saveRating — отказ, который пройдёт сам', () => {
+  it.each([401, 429])('%i — оценка в очереди, ответ queued', async (status) => {
+    authedFetch.mockResolvedValue({ ok: false, status });
+    const res = await makeApi().saveRating('safety', 6, '2026-08-16');
+    expect(res).toEqual({ ok: true, allDone: false, queued: true });
+    expect(JSON.parse(localStorage.getItem('rating_outbox_v1')!)).toEqual([
+      { needId: 'safety', value: 6, date: '2026-08-16' },
+    ]);
+  });
+
+  it.each([400, 403, 404])(
+    'контроль: %i — бросок, очередь пуста',
+    async (status) => {
+      authedFetch.mockResolvedValue({ ok: false, status });
+      await expect(makeApi().saveRating('safety', 6)).rejects.toThrow(
+        HttpStatusError,
+      );
+      expect(localStorage.getItem('rating_outbox_v1')).toBeNull();
+    },
+  );
+
+  it('сеть легла и хранилище недоступно — бросок: оценка не сохранена нигде', async () => {
+    authedFetch.mockRejectedValue(new TypeError('offline'));
+    const spy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      });
+    try {
+      await expect(makeApi().saveRating('safety', 6)).rejects.toThrow(
+        'offline',
+      );
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});

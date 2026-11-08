@@ -61,6 +61,8 @@ const MOCKED_API_METHODS = [
   // sections/DiarySection.test.tsx
   'deleteSchemaDiary', 'deleteModeDiary', 'deleteGratitudeDiary',
   'createSchemaDiary', 'createModeDiary', 'createGratitudeDiary',
+  // sections/DiarySection*.test.tsx — страницы «Записей» (R6)
+  'getDiaryPage',
   // therapist/concept/ConceptShareRow.test.tsx, sections/profile/MyConceptSheet.test.tsx — схема случая клиенту
   'shareConceptualization', 'getMyConcept',
   // therapist/ClientListView.*.test.tsx, AddClientForm.test.tsx — сверка кода офлайн-карточки (S8)

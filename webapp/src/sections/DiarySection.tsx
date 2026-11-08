@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry } from '../types';
+import type { DiaryType } from '../types';
 import { api } from '../api';
 import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
@@ -18,6 +18,8 @@ import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
 import { DiaryTimeline, DiaryTimelineSkeleton } from './diary/DiaryTimeline';
 import { buildTrackerDays, type TrackerDay } from './diary/trackerEntries';
+import { fetchFirstDiaryPages, useDiaryLists } from './diary/useDiaryLists';
+import { DiaryMore } from './diary/DiaryMore';
 import {
   buildEntries, filterCounts, filterEntries, groupByDay, streakLine,
   type DiaryFilter,
@@ -35,9 +37,9 @@ const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
 export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onClose?: () => void; onOpenTrackerHistory?: () => void } = {}) {
   const bridge = useTherapyBridgeTexts();
-  const [schemaEntries,    setSchemaEntries]    = useState<SchemaDiaryEntry[]>([]);
-  const [modeEntries,      setModeEntries]      = useState<ModeDiaryEntry[]>([]);
-  const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeDiaryEntry[]>([]);
+  // Три дневника постранично: «Показать ещё» догружает старые (R6).
+  const lists = useDiaryLists();
+  const { schema: schemaEntries, mode: modeEntries, gratitude: gratitudeEntries, setSchema: setSchemaEntries, setMode: setModeEntries, setGratitude: setGratitudeEntries, applyFirst } = lists;
   const [activeSchemaIds,  setActiveSchemaIds]  = useState<string[] | undefined>(undefined);
   const [trackerDays,      setTrackerDays]      = useState<TrackerDay[]>([]);
   const [streak,           setStreak]           = useState(0);
@@ -53,16 +55,12 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
 
   const load = useCallback(() =>
     Promise.all([
-      api.getSchemaDiary(),
-      api.getModeDiary(),
-      api.getGratitudeDiary(),
+      fetchFirstDiaryPages(),
       api.getProfile().catch(() => null), // профиль и трекер вспомогательные, их отказ не «сбой дневника»
       api.history(TRACKER_DAYS).then(days => ({ days, ok: true }), () => ({ days: [], ok: false })),
-    ]).then(([schema, mode, gratitude, profile, tracker]) => {
+    ]).then(([pages, profile, tracker]) => {
       setLoadFailed(false);
-      setSchemaEntries(schema);
-      setModeEntries(mode);
-      setGratitudeEntries(gratitude);
+      applyFirst(pages);
       setTrackerFailed(!tracker.ok);
       setTrackerDays(buildTrackerDays(tracker.days));
       if (profile) {
@@ -71,7 +69,7 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
       }
     }).catch((err) => { console.error(err); setLoadFailed(true); })
       .finally(() => setLoading(false)),
-  []);
+  [applyFirst]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -175,6 +173,7 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
       {!loading && groups.length === 0 && <DiaryEmptyExplainer filter={filter} />}
 
       {!loading && groups.length > 0 && <DiaryTimeline groups={groups} onDelete={handleDelete} onOpenTrackerHistory={onOpenTrackerHistory} />}
+      {!loading && lists.hasMore && filter !== 'tracker' && <DiaryMore state={lists.moreState} onMore={() => { void lists.loadMore(); }} />}
 
       {streakText && <p className="cd-streak">{streakText}</p>}
 

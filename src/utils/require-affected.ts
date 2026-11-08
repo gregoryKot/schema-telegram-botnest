@@ -30,3 +30,13 @@ export function deleteOwned(
 ): Promise<{ count: number }> {
   return requireAffected(delegate.deleteMany({ where: { id, userId } }), what);
 }
+
+/** findFirst по (id, userId): строки нет или она чужая — тот же 404. */
+export async function requireFound<T>(
+  op: PromiseLike<T | null>,
+  what = 'Entry',
+): Promise<T> {
+  const row = await op;
+  if (row === null) throw new NotFoundException(`${what} not found`);
+  return row;
+}

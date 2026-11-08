@@ -14,6 +14,9 @@ describe('dayLevel', () => {
     expect(dayLevel({ a: 5, b: 6, c: 1 })).toBe(2);
     expect(dayLevel({ a: 1, b: 1, c: 1, d: 1, e: 1 })).toBe(3);
   });
+  it('0 — «не оценено», в счёт не идёт', () => {
+    expect(dayLevel({ a: 0, b: 0, c: 5 })).toBe(1);
+  });
 });
 
 describe('buildLevelMap', () => {

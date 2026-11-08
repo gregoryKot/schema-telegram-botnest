@@ -9,6 +9,9 @@ describe('dayIndex', () => {
     expect(dayIndex(['a', 'b'], { a: 4 })).toBeNull();
     expect(dayIndex([], {})).toBeNull();
   });
+  it('оценка 0 — «не оценено»: индекса нет, ноль в среднее не идёт', () => {
+    expect(dayIndex(['a', 'b'], { a: 4, b: 0 })).toBeNull();
+  });
 });
 
 describe('fmtIndex', () => {

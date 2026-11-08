@@ -509,6 +509,21 @@ describe('AppShell — трекер: изменение оценки реаль�
       expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5 });
     });
   });
+
+  // Аудит 2026-11, E4: сервер отказал первой оценке дня — трекер откатывает её
+  // через onChange(needId, 0). Ключ обязан уйти из ratings: оценка 0 рисовала
+  // плитку «Сегодня» отмеченной (HomeTiles и счётчик смотрели на !== undefined).
+  it('откат первой оценки дня (onChange 0) убирает ключ из ratings, а не ставит 0', async () => {
+    renderAppShell('/today');
+    await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('today-section-tracker'));
+    await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
+    fireEvent.click(screen.getByTestId('tracker-overlay-change'));
+    fireEvent.click(screen.getByTestId('tracker-overlay-revert'));
+    await waitFor(() => {
+      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: null });
+    });
+  });
 });
 
 describe('AppShell — карточка клиента в кабинете: routing-состояние (view/openClientRef) и синхронизация списка', () => {

@@ -1,9 +1,8 @@
 // «Мгновенный aha» (аудит 2026-07, этап 4.2): одна фраза-интерпретация
-// сегодняшнего профиля потребностей сразу после заполнения трекера — чтобы
-// первая сессия давала ощутимую отдачу, а не только обещание «паттерн через
-// 3–5 дней». Показывается в Celebration.
-//
-// Формулировки нейтральные по обращению (без ты/вы-вилки).
+// сегодняшнего профиля потребностей сразу после заполнения трекера — первая
+// сессия даёт отдачу, а не только обещание «паттерн через 3–5 дней».
+// Показывается в Celebration. Формулировки нейтральные по обращению.
+import { isRated } from '../needs/ratingRecord';
 
 const LABELS: Record<string, string> = {
   attachment: 'Привязанность',
@@ -20,8 +19,8 @@ const LABELS: Record<string, string> = {
 export function todayInsightPhrase(
   ratings: Record<string, number | null | undefined>,
 ): string | null {
-  const entries = Object.entries(ratings).filter(
-    (e): e is [string, number] => typeof e[1] === 'number',
+  const entries = Object.entries(ratings).filter((e): e is [string, number] =>
+    isRated(ratings, e[0]),
   );
   if (entries.length < 5) return null;
 

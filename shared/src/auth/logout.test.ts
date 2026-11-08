@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { postLogout } from './logout';
+import { REQUEST_TIMEOUT_MS } from '../api/fetchWithTimeout';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -40,5 +41,27 @@ describe('postLogout', () => {
     await expect(
       postLogout('', { requestedWith: 'webapp' }),
     ).resolves.toBeUndefined();
+  });
+
+  // Аудит 2026-11, E9: голый fetch на зависшей сети держал «Выйти» вечно.
+  it('зависшая сеть — выход не ждёт дольше таймаута', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_, reject) => {
+            init.signal?.addEventListener('abort', () =>
+              reject(new DOMException('aborted', 'AbortError')),
+            );
+          }),
+      ),
+    );
+    const done = vi.fn();
+    const p = postLogout('', { requestedWith: 'webapp' }).then(done);
+    await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+    await p;
+    expect(done).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 });

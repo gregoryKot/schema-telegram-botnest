@@ -157,12 +157,12 @@ function stubJourneyApi(overrides: Partial<JourneyApiLike>): JourneyApiLike {
   const names: (keyof JourneyApiLike)[] = [
     'getJourney',
     'trackEvent',
-    'getSchemaDiary',
-    'getModeDiary',
-    'getGratitudeDiary',
-    'getBeliefChecks',
-    'getLetters',
-    'getFlashcards',
+    'getSchemaDiaryEntry',
+    'getModeDiaryEntry',
+    'getGratitudeDiaryEntry',
+    'getBeliefCheck',
+    'getLetter',
+    'getFlashcard',
     'getSafePlace',
     'getNote',
     'getPractices',
@@ -170,7 +170,7 @@ function stubJourneyApi(overrides: Partial<JourneyApiLike>): JourneyApiLike {
     'ratings',
     'getSchemaNotes',
     'getModeNotes',
-    'getYsqHistory',
+    'getYsqHistoryEntry',
     'getYsqResult',
   ];
   const base = Object.fromEntries(
@@ -214,7 +214,7 @@ describe('makeJourneyProps', () => {
 
   it('fetchResult() делегирует в fetchJourneyResult с той же api', async () => {
     const api = stubJourneyApi({
-      getLetters: async () => [{ id: 5, text: 'Письмо себе' }],
+      getLetter: async () => ({ text: 'Письмо себе' }),
     });
     const props = makeJourneyProps(api, src);
     const result = await props.fetchResult({
@@ -227,7 +227,7 @@ describe('makeJourneyProps', () => {
 
   it('fetchDetail() делегирует в fetchJourneyDetail с той же api', async () => {
     const api = stubJourneyApi({
-      getLetters: async () => [{ id: 5, text: 'Письмо себе целиком' }],
+      getLetter: async () => ({ text: 'Письмо себе целиком' }),
     });
     const props = makeJourneyProps(api, src);
     const parts = await props.fetchDetail({

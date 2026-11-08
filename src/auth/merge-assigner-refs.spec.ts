@@ -53,6 +53,13 @@ describe('MergeService.merge вызывает remapAssignerRefs', () => {
         findMany: jest.fn().mockResolvedValue([]),
         updateMany: jest.fn(),
       },
+      // merge-combine.ts ищет пары по объединяемым таблицам (R3) — пар нет.
+      note: { findMany: jest.fn().mockResolvedValue([]) },
+      gratitudeDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+      userSafePlace: { findMany: jest.fn().mockResolvedValue([]) },
+      ysqResult: { findMany: jest.fn().mockResolvedValue([]) },
+      userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
+      userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
     };
     prisma.$transaction = (fn) => fn(withReads);
     const svc = new MergeService(prisma as never, { log: jest.fn() } as never);

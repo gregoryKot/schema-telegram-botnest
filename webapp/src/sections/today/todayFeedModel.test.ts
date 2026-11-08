@@ -18,6 +18,9 @@ describe('trackerSummary', () => {
     expect(trackerSummary(NEEDS, { a: 4, c: 6 })).toEqual({ filled: 2, total: 5, index: null });
     expect(trackerSummary(NEEDS, { a: 4, b: 6, c: 6, d: 8, e: 6 })).toEqual({ filled: 5, total: 5, index: 6 });
   });
+  it('оценка 0 (откат отклонённой) — не заполнено', () => {
+    expect(trackerSummary(NEEDS, { a: 0, b: 6 }).filled).toBe(1);
+  });
   it('оценка чужой потребности не засчитывается', () => {
     expect(trackerSummary(NEEDS, { zzz: 5 }).filled).toBe(0);
   });

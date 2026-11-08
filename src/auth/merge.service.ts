@@ -15,6 +15,7 @@ import { SecurityLogService } from './security-log.service';
 import { twoFactorWillBeLost } from './merge-two-factor';
 import { remapAssignerRefs } from './merge-assigner-refs';
 import { remapRelations } from './merge-relations';
+import { combineConflicts, countCombinable } from './merge-combine';
 import type { MergeSummary } from './merge-summary.types';
 
 // Tables we DELETE rather than move during merge — moving them would carry
@@ -29,10 +30,9 @@ export const SECURITY_SENSITIVE_TABLES = [
   'LoginTicket',
 ] as const;
 
-// Per-table allow-list of "other columns" in unique constraints that include
-// userId. When source and target both have a row with the same (userId, …key)
-// the source row is dropped first so the bulk UPDATE that follows can succeed
-// without violating the constraint.
+// Unique-констрейнты с userId: «прочие колонки» ключа. Строка source, чей ключ
+// уже есть у target, удаляется до общего UPDATE userId; в таблицах COMBINERS
+// (merge-combine.ts) она перед этим вливается в строку target (R3).
 export const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
   { table: 'Rating', cols: ['date', 'needId'] },
   { table: 'Note', cols: ['date'] },
@@ -48,9 +48,8 @@ export const UNIQUE_RULES: Array<{ table: string; cols: string[] }> = [
   { table: 'TherapistRequest', cols: [] }, // userId is @unique
 ];
 
-// Whitelist of identifiers we'll embed directly in SQL. Anything outside this
-// set is rejected — defence in depth even though sources are all constants in
-// this file.
+// Whitelist of identifiers we'll embed directly in SQL — defence in depth even
+// though sources are all constants in this file.
 export const KNOWN_TABLES = new Set<string>([
   ...USER_OWNED_TABLES,
   ...SECURITY_SENSITIVE_TABLES,
@@ -91,10 +90,9 @@ export class MergeService {
     private readonly securityLog: SecurityLogService,
   ) {}
 
-  // Сводка для экрана подтверждения: сколько строк переедет + пропадёт ли
-  // второй фактор. Флаг отдаётся ЗДЕСЬ, вместе со счётчиками, а не отдельным
-  // методом — иначе подтверждение можно собрать, «забыв» предупредить
-  // (аудит 2026-07, M4; детали — merge-two-factor.ts).
+  // Сводка для экрана подтверждения: что есть в source, сколько из этого
+  // объединится с записями target (R3) и пропадёт ли второй фактор — флаг
+  // здесь же, рядом со счётчиками (аудит 2026-07, M4; merge-two-factor.ts).
   async summarize(sourceId: bigint, targetId: bigint): Promise<MergeSummary> {
     const counts: Record<string, number> = {};
     const failed: string[] = [];
@@ -118,25 +116,27 @@ export class MergeService {
       );
     }
 
+    const combined = await countCombinable(this.prisma, sourceId, targetId);
     const twoFactorLost = await twoFactorWillBeLost(
       this.prisma,
       sourceId,
       targetId,
     );
-    return { counts, twoFactorLost };
+    return { counts, combined, twoFactorLost };
   }
 
-  // Move all user-owned data from `source` to `target`, then delete `source`.
-  // Done in a single transaction. On unique-constraint conflicts the source
-  // row is dropped (target wins, since that's the account the user is
-  // actively logged into).
+  // Move all user-owned data from `source` to `target`, then delete `source`,
+  // in one transaction. Unique-конфликт: объединяемые таблицы вливают source
+  // в target (merge-combine.ts), в остальных побеждает target.
   async merge(sourceId: bigint, targetId: bigint): Promise<void> {
     if (sourceId === targetId) return;
     const startedAt = Date.now();
-    // Обёртка, а не `let`: результат забирается изнутри колбэка транзакции, а
-    // возврату значения из $transaction доверять нельзя — тестовые дублёры
-    // Prisma сплошь и рядом просто вызывают колбэк, ничего не возвращая.
-    const state: { subs: ReassignOutcome } = { subs: { kind: 'none' } };
+    // Обёртка: результат забирается изнутри колбэка — возврату значения из
+    // $transaction не верим (тестовые дублёры Prisma ничего не возвращают).
+    const state: { subs: ReassignOutcome; combined: number } = {
+      subs: { kind: 'none' },
+      combined: 0,
+    };
     await this.prisma.$transaction(async (tx) => {
       // 0. Drop security-sensitive rows of source (refresh tokens, etc).
       for (const table of SECURITY_SENSITIVE_TABLES) {
@@ -145,7 +145,10 @@ export class MergeService {
         );
       }
 
-      // 1. Drop source rows that would collide on a (userId, …key) unique.
+      // 1. R3: пары с тем же ключом — влить source в target (merge-combine.ts),
+      //    затем удалить строки source, которые столкнулись бы по unique.
+      const combined = await combineConflicts(tx, sourceId, targetId);
+      state.combined = combined.combined;
       for (const rule of UNIQUE_RULES) {
         const tbl = Prisma.raw(ident(rule.table, 'table'));
         if (rule.cols.length === 0) {
@@ -188,9 +191,8 @@ export class MergeService {
       // 3-4. Pair и TherapyRelation: дедуп активных связей и ремап (см. merge-relations.ts).
       await remapRelations(tx, sourceId, targetId);
 
-      // 4b. TherapistNote (therapistId, clientId — no FK, no unique).
-      // Same IS DISTINCT FROM fix for virtual-client notes (clientId can be NULL
-      // for virtual clients stored as negative BigInt, but also plain NULL rows).
+      // 4b. TherapistNote (therapistId, clientId — no FK, no unique). IS DISTINCT
+      // FROM — для NULL clientId (виртуальные клиенты и просто NULL-строки).
       await tx.$executeRaw(Prisma.sql`
         UPDATE "TherapistNote" SET "therapistId" = ${targetId}
         WHERE "therapistId" = ${sourceId}
@@ -206,10 +208,7 @@ export class MergeService {
       `);
 
       // 4c. ClientConceptualization (unique on therapistId+clientId).
-      //     Strategy: prefer target's existing concept row over source's.
-      //     If target already has a row with the same (therapistId/clientId)
-      //     pair (after our remap), drop source's row entirely first.
-      //
+      //     Target wins: строка source с той же парой после ремапа дропается.
       // Step A: drop source rows where target already has the mapped pair.
       //   source(therapistId=src) + clientId X → would become (target, X)
       //   if target already has (target, X) — drop source row
@@ -299,7 +298,8 @@ export class MergeService {
     const ms = Date.now() - startedAt;
     this.logger.log(
       `Merged user ${sourceId} → ${targetId} (${ms}ms), подписок перенесено: ` +
-        (state.subs.kind === 'moved' ? state.subs.count : 0),
+        (state.subs.kind === 'moved' ? state.subs.count : 0) +
+        `, записей объединено: ${state.combined}`,
     );
     // Живые подписки с обеих сторон — редчайший случай про деньги, который
     // нельзя решить кодом (какую отменить — не наше решение). Идёт через

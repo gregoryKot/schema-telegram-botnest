@@ -235,3 +235,62 @@ describe('битый JSON в localStorage', () => {
     expect(raw).toEqual([item('play', 3, '2026-01-02')]);
   });
 });
+
+// Аудит 2026-11, E3: выгрузка писала в очередь «хвост по счёту» от снимка до
+// начала — оценка, поставленная во время выгрузки, стиралась; старт и событие
+// `online` запускали две выгрузки параллельно, и оценки уходили дважды.
+describe('flushRatingOutbox — гонки', () => {
+  it('оценка, поставленная во время выгрузки, остаётся в очереди', async () => {
+    enqueueRating(item('safety', 4, '2026-07-17'));
+    const post = vi.fn(async () => {
+      // Пока первый POST в пути, человек ставит ещё две оценки (сеть упала).
+      enqueueRating(item('play', 6, '2026-07-17'));
+      enqueueRating(item('safety', 8, '2026-07-17'));
+    });
+    await flushRatingOutbox(post);
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(localStorage.getItem(OUTBOX_KEY)!)).toEqual([
+      item('play', 6, '2026-07-17'),
+      item('safety', 8, '2026-07-17'),
+    ]);
+    expect(pendingRatingsFor('2026-07-17')).toEqual({ play: 6, safety: 8 });
+  });
+
+  it('две выгрузки сразу — один POST на оценку', async () => {
+    enqueueRating(item('safety', 4, '2026-07-17'));
+    enqueueRating(item('play', 6, '2026-07-17'));
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const post = vi.fn(() => gate);
+    const first = flushRatingOutbox(post);
+    const second = flushRatingOutbox(post);
+    release();
+    await Promise.all([first, second]);
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem(OUTBOX_KEY)).toBeNull();
+  });
+
+  it('после выгрузки замок снят — следующая выгрузка идёт заново', async () => {
+    enqueueRating(item('safety', 4, '2026-07-17'));
+    await flushRatingOutbox(() => Promise.reject(new TypeError('offline')));
+    const post = vi.fn().mockResolvedValue(undefined);
+    await flushRatingOutbox(post);
+    expect(post).toHaveBeenCalledWith(item('safety', 4, '2026-07-17'));
+  });
+});
+
+describe('хранилище недоступно', () => {
+  it('enqueueRating говорит false — оценку положить некуда', () => {
+    const spy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError');
+      });
+    try {
+      expect(enqueueRating(item('safety', 5, '2026-07-17'))).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(enqueueRating(item('safety', 5, '2026-07-17'))).toBe(true);
+  });
+});

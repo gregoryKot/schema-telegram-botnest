@@ -2,6 +2,7 @@ import { haptic } from '../../haptic';
 import { useTr } from '../../utils/addressForm';
 import type { TrackerSummary } from './todayFeedModel';
 import { NEED_COLOR_ORDER } from '../../../../shared/src/needs/needColors';
+import { isRated } from '../../../../shared/src/needs/ratingRecord';
 import { Strokes, Ribbon, Pebbles } from '../../components/art/PaperArt';
 import { HomeSquare } from './HomeSquare';
 import { trackerCta } from './trackerCta';
@@ -20,9 +21,8 @@ interface Props {
 
 /** Оттенки цветной бумаги квадратов (референс: шалфей и персик), не hue сущностей. */
 const SQUARE_HUE = { case: 135, diary: 45 } as const;
-// Главная по референсу владельца 2026-11-04 (бумажная аппликация, styles/paper.css):
-// Блок трекера — вся кнопка целиком; «кнопка» внутри — span (вложенная button невалидна),
-// без aria-hidden: имя кнопки несёт действие («Трекер … Отметить состояние»).
+// Главная по референсу владельца 2026-11-04 (бумажная аппликация, styles/paper.css). Блок трекера —
+// вся кнопка; «кнопка» внутри — span (вложенная button невалидна), без aria-hidden: имя несёт действие.
 export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, onTracker, onCase, onDiary }: Props) {
   const tr = useTr();
   const tap = (fn: () => void) => () => { haptic.tap(); fn(); };
@@ -37,7 +37,7 @@ export function HomeTiles({ ratings, tracker, trackerMeta, caseMeta, diaryMeta, 
             <span className="pp-hero-text">Пять потребностей. Одна минута для себя.</span>
             <span className="pp-meta">{trackerMeta}</span>
           </span>
-          <Strokes size="hero" marks={NEED_COLOR_ORDER.map(id => ({ id, dense: ratings[id] !== undefined }))} />
+          <Strokes size="hero" marks={NEED_COLOR_ORDER.map(id => ({ id, dense: isRated(ratings, id) }))} />
         </span>
         <span className={`ds-btn ds-btn--lg pp-cta${done ? ' ds-btn--secondary' : ''}`}>
           {trackerCta(tracker)} →

@@ -7,6 +7,7 @@ import {
   Logger,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,9 @@ import { DiaryService } from '../bot/diary.service';
 import { TherapyTasksService } from '../therapy/therapy-tasks.service';
 import { SchemaDiaryDto, ModeDiaryDto } from './dto/diary-entries.dto';
 import { GratitudeDiaryDto } from './dto/gratitude-diary.dto';
+import { DIARY_KINDS, type DiaryKind } from '../bot/diary-page';
+
+const id32 = (raw: string) => parseId(raw, { int32: true });
 
 interface AuthRequest extends Request {
   telegramUserId: number;
@@ -35,6 +39,19 @@ export class DiaryController {
     private readonly diaryService: DiaryService,
     private readonly tasksService: TherapyTasksService,
   ) {}
+
+  // «Записи» → «Показать ещё» (R6): страница старше записи `before`.
+  @Get('page/:kind')
+  getDiaryPage(
+    @Req() req: AuthRequest,
+    @Param('kind') kind: string,
+    @Query('before') before?: string,
+  ) {
+    if (!DIARY_KINDS.includes(kind as DiaryKind))
+      throw new BadRequestException('Invalid kind');
+    const cursor = before === undefined ? undefined : id32(before);
+    return this.diaryService.getDiaryPage(uid(req), kind as DiaryKind, cursor);
+  }
 
   // ─── Schema Diary ─────────────────────────────────────────────────────────
 
@@ -60,12 +77,15 @@ export class DiaryController {
     return entry;
   }
 
+  // Одна запись по id — её открывает «Мой путь».
+  @Get('schema/:id')
+  getSchemaDiaryEntry(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.diaryService.getSchemaDiaryEntry(uid(req), id32(id));
+  }
+
   @Delete('schema/:id')
   async deleteSchemaDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteSchemaDiaryEntry(
-      uid(req),
-      parseId(id, { int32: true }),
-    );
+    await this.diaryService.deleteSchemaDiaryEntry(uid(req), id32(id));
     return { ok: true };
   }
 
@@ -88,12 +108,14 @@ export class DiaryController {
     return entry;
   }
 
+  @Get('mode/:id')
+  getModeDiaryEntry(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.diaryService.getModeDiaryEntry(uid(req), id32(id));
+  }
+
   @Delete('mode/:id')
   async deleteModeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteModeDiaryEntry(
-      uid(req),
-      parseId(id, { int32: true }),
-    );
+    await this.diaryService.deleteModeDiaryEntry(uid(req), id32(id));
     return { ok: true };
   }
 
@@ -123,12 +145,14 @@ export class DiaryController {
     return entry;
   }
 
+  @Get('gratitude/:id')
+  getGratitudeDiaryEntry(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.diaryService.getGratitudeDiaryEntry(uid(req), id32(id));
+  }
+
   @Delete('gratitude/:id')
   async deleteGratitudeDiary(@Req() req: AuthRequest, @Param('id') id: string) {
-    await this.diaryService.deleteGratitudeDiaryEntry(
-      uid(req),
-      parseId(id, { int32: true }),
-    );
+    await this.diaryService.deleteGratitudeDiaryEntry(uid(req), id32(id));
     return { ok: true };
   }
 }

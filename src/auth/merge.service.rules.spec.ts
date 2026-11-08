@@ -96,6 +96,11 @@ function makeMergePrisma(
         // Карточки нужны merge-user-lists.ts (источник правды для «моих схем»).
         userSchemaNote: { findMany: jest.fn().mockResolvedValue([]) },
         userModeNote: { findMany: jest.fn().mockResolvedValue([]) },
+        // merge-combine.ts ищет пары по объединяемым таблицам (R3) — пар нет.
+        note: { findMany: jest.fn().mockResolvedValue([]) },
+        gratitudeDiaryEntry: { findMany: jest.fn().mockResolvedValue([]) },
+        userSafePlace: { findMany: jest.fn().mockResolvedValue([]) },
+        ysqResult: { findMany: jest.fn().mockResolvedValue([]) },
       });
     }),
     $executeRaw: execSpy,
@@ -558,6 +563,19 @@ describe('MergeService — лог длительности merge', () => {
 // строк 95-126 хоть раз исполнялись тестом). ────────────────────────────────
 type CountSpec = number | 'THROW' | 'EMPTY_ROWS';
 
+/** Делегаты объединяемых таблиц (merge-combine.ts) без пар source↔target. */
+const noCombinePairs = () =>
+  Object.fromEntries(
+    [
+      'note',
+      'gratitudeDiaryEntry',
+      'userSchemaNote',
+      'userModeNote',
+      'userSafePlace',
+      'ysqResult',
+    ].map((d) => [d, { findMany: jest.fn().mockResolvedValue([]) }]),
+  );
+
 // totp — totpEnabledAt по userId (ключ — String(id)); отсутствующий id читается
 // как null (2FA не включена), как и настоящий Prisma-null.
 function makeSummarizePrisma(
@@ -579,6 +597,7 @@ function makeSummarizePrisma(
     prisma: {
       $queryRaw: spy,
       user: { findUnique },
+      ...noCombinePairs(),
     } as unknown as FakePrisma,
   };
 }

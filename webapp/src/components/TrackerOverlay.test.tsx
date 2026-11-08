@@ -350,16 +350,56 @@ describe('TrackerOverlay — сохранение оценки', () => {
   });
 
   it('ошибка api.saveRating не роняет компонент, не вызывает onSaved и уходит отчётом наверх (section: tracker)', async () => {
-    mockApi.saveRating.mockRejectedValue(new Error('network'));
+    mockApi.saveRating.mockRejectedValue(new Error('API error: 400'));
     const onSaved = vi.fn();
     renderOverlay({ onSaved });
     answer(/В основном да/);
     await advance(500);
     expect(onSaved).not.toHaveBeenCalled();
-    expect(heading('Автономия')).toBeTruthy();
     expect(mockReportClientError).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'tracker', message: expect.stringContaining('rating save failed') }),
     );
+  });
+
+  // Аудит 2026-11, E4: сервер отказал насовсем — плитка не врёт о сохранённом.
+  it('отказ сервера: оценка откатывается к прежней, вопрос открыт снова, видно сообщение', async () => {
+    mockApi.saveRating.mockRejectedValue(new Error('API error: 400'));
+    const onChange = vi.fn();
+    renderOverlay({ initial: { attachment: 4 }, initialNeedId: 'attachment', onChange });
+    answer(/Полностью/);
+    answer(/В основном да/); // серия касаний: откат к оценке ДО неё, а не к промежуточной
+    await advance(AUTO_ADVANCE_MS);
+    expect(heading('Автономия')).toBeTruthy();
+    await advance(500);
+    expect(heading('Привязанность')).toBeTruthy();
+    expect(onChange).toHaveBeenLastCalledWith('attachment', 4);
+    expect(screen.getByRole('alert').textContent).toBe('Эта оценка не сохранилась. Попробуй ответить ещё раз.');
+    answer(/Полностью/); // новый ответ убирает сообщение
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('отказ на последнем вопросе возвращает с «Готово» к вопросу без оценки', async () => {
+    mockApi.saveRating.mockResolvedValueOnce({ ok: true, allDone: false });
+    mockApi.saveRating.mockRejectedValueOnce(new Error('API error: 400'));
+    renderOverlay();
+    answer(/В основном да/);
+    await advance(AUTO_ADVANCE_MS);
+    answer(/Мало/);
+    await advance(AUTO_ADVANCE_MS);
+    expect(screen.getByText('Трекер · сегодня')).toBeTruthy();
+    await advance(500);
+    expect(heading('Автономия')).toBeTruthy();
+    const pressed = screen.getAllByRole('button').filter((b) => b.getAttribute('aria-pressed') === 'true');
+    expect(pressed).toHaveLength(0);
+  });
+
+  it('контроль: оценка ушла в очередь — отката и сообщения нет', async () => {
+    mockApi.saveRating.mockResolvedValue({ ok: true, allDone: false, queued: true });
+    renderOverlay({ initial: { attachment: 4 }, initialNeedId: 'attachment' });
+    answer(/В основном да/);
+    await advance(AUTO_ADVANCE_MS + 500);
+    expect(heading('Автономия')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
 
@@ -435,14 +475,16 @@ describe('TrackerOverlay — бэкафилл прошлой даты', () => {
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it('ошибка сохранения бэкафилла не роняет экран и уходит отчётом наверх', async () => {
+  it('отказ сохранения бэкафилла: экран жив, оценка снята, отчёт наверх', async () => {
     mockApi.ratings.mockResolvedValue({});
-    mockApi.saveRating.mockRejectedValue(new Error('network'));
+    mockApi.saveRating.mockRejectedValue(new Error('API error: 400'));
     renderOverlay({ date: '2026-07-10' });
     await act(async () => {});
     answer(/Наполовину/);
     await advance(500);
-    expect(heading('Автономия')).toBeTruthy();
+    expect(heading('Привязанность')).toBeTruthy();
+    expect(screen.getAllByRole('button').filter((b) => b.getAttribute('aria-pressed') === 'true')).toHaveLength(0);
+    expect(screen.getByRole('alert')).toBeTruthy();
     expect(mockReportClientError).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'tracker', message: expect.stringContaining('backfill rating save failed') }),
     );

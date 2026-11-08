@@ -4,12 +4,13 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { uid } from './request-utils';
+import { uid, parseId } from './request-utils';
 import { YsqService } from '../bot/ysq.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { computeYsqScores } from '../utils/ysq';
@@ -18,6 +19,14 @@ import { YsqProgressDto, YsqResultDto } from './dto/ratings.dto';
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
 }
+
+// Попытка теста глазами клиента: счёт схем вместо сырых ответов.
+type Attempt = Awaited<ReturnType<YsqService['getYsqHistoryEntry']>>;
+const toHistoryDto = (r: Attempt) => ({
+  id: r.id,
+  completedAt: r.completedAt.toISOString(),
+  scores: computeYsqScores(r.answers),
+});
 
 // Тест на схемы — прогресс прохождения, итоговый
 // результат и история попыток.
@@ -84,11 +93,13 @@ export class YsqController {
 
   @Get('ysq-history')
   async getYsqHistory(@Req() req: AuthRequest) {
-    const raw = await this.ysqService.getYsqHistory(uid(req));
-    return raw.map((r) => ({
-      id: r.id,
-      completedAt: r.completedAt.toISOString(),
-      scores: computeYsqScores(r.answers),
-    }));
+    return (await this.ysqService.getYsqHistory(uid(req))).map(toHistoryDto);
+  }
+
+  // Одна попытка по id — её открывает «Мой путь» (в списке только 20).
+  @Get('ysq-history/:id')
+  async getYsqHistoryEntry(@Req() req: AuthRequest, @Param('id') raw: string) {
+    const id = parseId(raw, { int32: true });
+    return toHistoryDto(await this.ysqService.getYsqHistoryEntry(uid(req), id));
   }
 }

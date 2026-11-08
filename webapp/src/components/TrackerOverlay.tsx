@@ -11,6 +11,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { trackTrackerSkip } from '../sections/today/trackHomeTile';
 import { NEED_HUE } from '../lib/tone';
 import type { NeedId } from '../../../shared/src/needs/types';
+import { isRated, withRating } from '../../../shared/src/needs/ratingRecord';
 import { formatDateString } from '../../../shared/src/utils/calendarDate';
 import '../styles/sheet-tracker.css';
 import '../styles/tracker-question.css';
@@ -23,27 +24,18 @@ import { useHorizontalSwipe } from '../../../shared/src/hooks/useHorizontalSwipe
 import { nextUnrated } from './trackerOverlay/trackerFlow';
 import { useAutoAdvance } from './trackerOverlay/useAutoAdvance';
 import { useBackfillRatings } from './trackerOverlay/useBackfillRatings';
+import { SaveErrorNote } from './SaveErrorNote';
 import type { Need } from '../types';
 
 export function TrackerOverlay({
-  needs,
-  ratings,
-  onChange,
-  onSaved,
-  onClose,
-  initialNeedId,
-  onOpenNote,
-  onOpenHistory,
-  yesterdayRatings = {},
-  date,
-  onDone,
+  needs, ratings, onChange, onSaved, onClose, initialNeedId,
+  onOpenNote, onOpenHistory, yesterdayRatings = {}, date, onDone,
 }: Props) {
   const goBack = useHistorySheet(onClose);
   const isBackfill = !!date;
   const ids = needs.map((n) => n.id);
 
   const { ratings: localRatings, setRatings: setLocalRatings, loading: localLoading } = useBackfillRatings(date);
-
   const effectiveRatings = isBackfill ? localRatings : ratings;
 
   const [idx, setIdx] = useState(() => {
@@ -59,15 +51,25 @@ export function TrackerOverlay({
   );
   const [detailNeed, setDetailNeed] = useState<Need | null>(null);
   // Строка «откуда это» — только на первом вопросе и пока нет ни одной оценки (решается при открытии).
-  const [firstTime] = useState(() => !isBackfill && Object.keys(ratings).length === 0);
+  const [firstTime] = useState(() => !isBackfill && !ids.some((id) => isRated(ratings, id)));
   const [startIdx] = useState(idx);
 
   const NEED_DATA = useNeedData();
   const nameOf = (n: Need) => NEED_DATA[n.id]?.name ?? n.chartLabel;
 
+  const { schedule, cancel: cancelAdvance } = useAutoAdvance();
+  const goTo = (i: number) => { cancelAdvance(); setShowCompletion(false); setIdx(i); };
+
   const [queued, setQueued] = useState(false); // оценка ждёт в очереди — «Готово» скажет «отправятся сами»
+  const [rejected, setRejected] = useState(false); // сервер отказал: плитка откатилась, вопрос открыт снова
   const save = useRatingSaver({
     onQueued: () => setQueued(true),
+    onRejected: (needId, prev) => {
+      if (isBackfill) setLocalRatings((r) => withRating(r, needId, prev ?? 0));
+      else onChange(needId, prev ?? 0);
+      setRejected(true);
+      goTo(Math.max(0, ids.indexOf(needId)));
+    },
     date: isBackfill ? date : undefined,
     onSaved: isBackfill ? undefined : onSaved,
     errorMessage: isBackfill ? 'tracker backfill rating save failed' : 'tracker rating save failed',
@@ -75,20 +77,14 @@ export function TrackerOverlay({
   });
   const handleChange = useCallback(
     (needId: string, v: number) => {
-      if (isBackfill) setLocalRatings((prev) => ({ ...prev, [needId]: v }));
+      setRejected(false);
+      if (isBackfill) setLocalRatings((prev) => withRating(prev, needId, v));
       else onChange(needId, v);
-      save(needId, v);
+      save(needId, v, effectiveRatings[needId]);
     },
-    [onChange, isBackfill, save, setLocalRatings],
+    [onChange, isBackfill, save, setLocalRatings, effectiveRatings],
   );
 
-  const { schedule, cancel: cancelAdvance } = useAutoAdvance();
-
-  const goTo = (i: number) => {
-    cancelAdvance();
-    setShowCompletion(false);
-    setIdx(i);
-  };
   const goNextOrDone = (to: number | null) => (to === null ? setShowCompletion(true) : setIdx(to));
 
   const need = needs[idx];
@@ -153,6 +149,7 @@ export function TrackerOverlay({
           onAnswer={handleAnswer}
           onMore={() => setDetailNeed(need)}
         />
+        {rejected && <SaveErrorNote ty="Эта оценка не сохранилась. Попробуй ответить ещё раз." vy="Эта оценка не сохранилась. Попробуйте ответить ещё раз." />}
       </div>
       {detailNeed && (
         <NeedTodaySheet
