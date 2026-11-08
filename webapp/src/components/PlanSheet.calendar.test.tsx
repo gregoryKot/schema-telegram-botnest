@@ -17,6 +17,7 @@ vi.mock('../api', () => ({
     addPractice: vi.fn().mockResolvedValue(undefined),
     createPlan: vi.fn().mockResolvedValue(undefined),
     deletePractice: vi.fn().mockResolvedValue(undefined),
+    practiceIcsLink: vi.fn(),
   },
 }));
 import { api } from '../api';
@@ -44,7 +45,7 @@ beforeEach(() => {
   mockApi.getPractices.mockResolvedValue([]);
   mockApi.addPractice.mockResolvedValue(undefined);
   mockApi.createPlan.mockResolvedValue(undefined);
-  setHost({ id: 'web', saveFile } as unknown as HostBridge);
+  setHost({ id: 'web', saveFile, capabilities: { dataUrlFiles: true } } as unknown as HostBridge);
 });
 
 afterEach(() => { cleanup(); setHost(null); });
@@ -105,5 +106,30 @@ describe('PlanSheet — Telegram подключён', () => {
     expect(screen.queryByText('Google Календарь ↗')).toBeNull();
     fireEvent.click(screen.getByText('Сохранить план'));
     await waitFor(() => expect(mockApi.createPlan).toHaveBeenCalled());
+  });
+});
+
+// E6 (аудит 2026-11): в Telegram файл отдаёт сервер по https-ссылке.
+describe('PlanSheet — Telegram: .ics по ссылке с сервера', () => {
+  // id 'web': getHost() сверяет id с окружением и заменил бы фейк с id 'telegram'
+  // настоящим адаптером браузера; суть хоста Telegram здесь — dataUrlFiles: false.
+  const tgHost = () => setHost({ id: 'web', saveFile, capabilities: { dataUrlFiles: false } } as unknown as HostBridge);
+
+  it('файл открывается https-ссылкой, data:-URL в хост не уходит', async () => {
+    tgHost();
+    mockApi.practiceIcsLink.mockResolvedValue({ path: '/api/plan/ics/TOKEN' });
+    await openConfirm(true);
+    await act(async () => { fireEvent.click(screen.getByText('Добавить в календарь (.ics)')); });
+    expect(saveFile).toHaveBeenCalledTimes(1);
+    expect(saveFile.mock.calls[0][0]).toMatch(/^https?:\/\/[^/]+\/api\/plan\/ics\/TOKEN$/);
+  });
+
+  it('сервер не ответил — строка об этом, на «вы»', async () => {
+    tgHost();
+    mockApi.practiceIcsLink.mockRejectedValue(new Error('503'));
+    await openConfirm(true, 'vy');
+    await act(async () => { fireEvent.click(screen.getByText('Добавить в календарь (.ics)')); });
+    expect(screen.getByRole('alert').textContent).toBe('Файл для календаря не открылся. Попробуйте ещё раз.');
+    expect(saveFile).not.toHaveBeenCalled();
   });
 });

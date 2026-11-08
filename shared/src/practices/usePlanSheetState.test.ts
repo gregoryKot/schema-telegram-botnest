@@ -12,7 +12,8 @@ import {
 import type { PlanSheetApi } from './usePlanSheetState';
 
 const saveFile = vi.fn();
-vi.mock('../host', () => ({ getHost: () => ({ saveFile }) }));
+let host = { saveFile, capabilities: { dataUrlFiles: true } };
+vi.mock('../host', () => ({ getHost: () => host }));
 
 function makeApi(overrides: Partial<PlanSheetApi> = {}): PlanSheetApi {
   return {
@@ -21,12 +22,14 @@ function makeApi(overrides: Partial<PlanSheetApi> = {}): PlanSheetApi {
     addPractice: vi.fn().mockResolvedValue(undefined),
     deletePractice: vi.fn().mockResolvedValue(undefined),
     createPlan: vi.fn().mockResolvedValue(undefined),
+    practiceIcsLink: vi.fn().mockResolvedValue({ path: '/api/plan/ics/TOKEN' }),
     ...overrides,
   };
 }
 
 beforeEach(() => {
   saveFile.mockClear();
+  host = { saveFile, capabilities: { dataUrlFiles: true } };
 });
 
 describe('defaultReminderIdx', () => {
@@ -361,6 +364,39 @@ describe('usePlanSheetState — handleIcsDownload', () => {
       expect.stringContaining('data:text/calendar'),
       'practice.ics',
     );
+  });
+
+  // E6 (аудит 2026-11): Telegram data:-URL не открывает (WebAppTgUrlInvalid).
+  it('хост без data:-URL (Telegram) получает https-ссылку с сервера', async () => {
+    host = { saveFile, capabilities: { dataUrlFiles: false } };
+    const api = makeApi();
+    const { result } = renderHook(() =>
+      usePlanSheetState('attachment', 'Привязанность', api, vi.fn()),
+    );
+    act(() => result.current.selectText('Практика'));
+    await act(async () => result.current.handleIcsDownload());
+    expect(api.practiceIcsLink).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'Практика', needLabel: 'Привязанность' }),
+    );
+    expect(saveFile).toHaveBeenCalledTimes(1);
+    expect(saveFile.mock.calls[0][0]).toMatch(
+      /^https?:\/\/[^/]+\/api\/plan\/ics\/TOKEN$/,
+    );
+    expect(result.current.icsFailed).toBe(false);
+  });
+
+  it('сервер не выдал ссылку — icsFailed, экран скажет об этом', async () => {
+    host = { saveFile, capabilities: { dataUrlFiles: false } };
+    const api = makeApi({
+      practiceIcsLink: vi.fn().mockRejectedValue(new Error('503')),
+    });
+    const { result } = renderHook(() =>
+      usePlanSheetState('attachment', 'Привязанность', api, vi.fn()),
+    );
+    act(() => result.current.selectText('Практика'));
+    await act(async () => result.current.handleIcsDownload());
+    expect(saveFile).not.toHaveBeenCalled();
+    expect(result.current.icsFailed).toBe(true);
   });
 });
 

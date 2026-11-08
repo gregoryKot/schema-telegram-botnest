@@ -57,6 +57,7 @@ export function createWebHost(): HostBridge {
         // Кнопку «назад» даёт сам браузер — своей рисовать не нужно.
         backButton: false,
         close: false,
+        dataUrlFiles: true,
       };
     },
 
