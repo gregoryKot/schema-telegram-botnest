@@ -111,7 +111,7 @@ export function makeFakePrisma() {
       userTable,
     ),
     therapistNote: makeTable(),
-    clientConceptualization: makeTable(),
+    clientConceptualization: withUpdatedAt(makeTable()),
     modeMap: makeTable(),
     therapistCustomMode: makeTable(),
     // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks

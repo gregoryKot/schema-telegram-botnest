@@ -34,6 +34,7 @@ vi.mock('../../api', () => ({
 import { api } from '../../api';
 import { ClientConceptTab } from './ClientConceptTab';
 import { useClientDetail } from './useClientDetail';
+import { conceptServer } from './conceptServer.test-helpers';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -100,13 +101,18 @@ function Harness() {
   return <ClientConceptTab detail={detail} />;
 }
 
+// Сервер хранит строку и применяет патчи (conceptServer): `saved()` — что на
+// сервере после автосохранения, а не форма последнего тела.
+let srv = conceptServer(null);
 async function openTab(server: unknown) {
   mockApi.getConceptualization.mockResolvedValue(server);
+  srv = conceptServer(server as Record<string, unknown> | null);
+  mockApi.saveConceptualization.mockImplementation(srv.save);
   render(<Harness />);
   await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
-const saved = () => mockApi.saveConceptualization.mock.calls.at(-1)?.[1];
+const saved = () => (mockApi.saveConceptualization.mock.calls.length ? srv.state : undefined) as ReturnType<typeof concept>;
 // Второстепенные действия — в меню «⋯ Ещё» шапки (#879).
 const openMore = () => fireEvent.click(screen.getByRole('button', { name: 'Ещё действия' }));
 const exportViaMenu = () => {
@@ -125,10 +131,6 @@ beforeEach(() => {
   mockApi.getClientModeNotes.mockResolvedValue([]);
   mockApi.getTherapyClientHistory.mockResolvedValue([]);
   mockApi.getClientDiary.mockResolvedValue([]);
-  // сервер возвращает сохранённое тело как есть
-  mockApi.saveConceptualization.mockImplementation(
-    async (_id: number, body: object) => concept(body),
-  );
 });
 
 afterEach(() => cleanup());
@@ -347,7 +349,8 @@ describe('ClientConceptTab: тексты схем — правка → авто�
       () => expect(mockApi.saveConceptualization).toHaveBeenCalled(),
       { timeout: 2500 },
     );
-    expect(saved().schemaLinks).toEqual([]);
+    // Связи схем не правили — в патч не ушли, на сервере пусто, вкладка жива.
+    expect(saved().schemaLinks ?? []).toEqual([]);
   });
 
   it('«Убрать схему» снимает её из schemaIds автосохранением, тексты уходят в теле как были', async () => {

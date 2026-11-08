@@ -24,12 +24,14 @@ import { CONCEPT_FIELD_TEXT_MAX as TEXT_MAX } from '../../utils/text-limits';
 export class ConceptualizationDto {
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(40) // схем в форме Янга 18; потолок — ради худшего тела запроса
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   schemaIds?: string[];
 
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100) // режимы модели и свои режимы терапевта
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   modeIds?: string[];

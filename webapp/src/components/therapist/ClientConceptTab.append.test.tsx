@@ -55,7 +55,7 @@ async function openTab() {
   vi.useFakeTimers();
 }
 const typeText = (value: string) => fireEvent.change(document.querySelector('textarea')!, { target: { value } });
-const lastBody = () => mockApi.saveConceptualization.mock.calls.at(-1)?.[1] as { modeIds: string[]; schemaIds: string[] };
+const lastBody = () => mockApi.saveConceptualization.mock.calls.at(-1)?.[1] as { modeIds?: string[]; schemaIds?: string[]; baseVersion?: string | null };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -78,7 +78,9 @@ describe('ClientConceptTab: дописанное холстом (#963)', () => {
     typeText('Новый текст');
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1);
-    expect(lastBody().modeIds).toEqual(['demanding_critic']);
+    // Патч от версии ответа холста: режимы не менялись — не уходят и дописанное не стирают.
+    expect(lastBody().baseVersion).toBe(APPENDED.updatedAt);
+    expect(lastBody().modeIds).toBeUndefined();
     expect(Object.values(lastBody())).toContain('Новый текст');
   });
 
@@ -89,7 +91,8 @@ describe('ClientConceptTab: дописанное холстом (#963)', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1);
     expect(lastBody().schemaIds).toEqual(['emotional_deprivation']);
-    expect(lastBody().modeIds).toEqual(['demanding_critic']);
+    expect(lastBody().modeIds).toBeUndefined(); // режим холста уже на сервере, патч его не трогает
+    expect(lastBody().baseVersion).toBe(APPENDED.updatedAt);
   });
 
   it('запись холста у другого клиента вкладку не трогает', async () => {
