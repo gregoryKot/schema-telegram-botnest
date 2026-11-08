@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
+import { useEffect } from 'react';
 import { useDialogA11y } from './dialogA11y';
+import { useDialogLayer } from './dialogStack';
 
 afterEach(cleanup);
 
@@ -141,13 +143,15 @@ describe('useDialogA11y — стек диалогов', () => {
   function Layer({
     id,
     onEscape,
+    holdEscape,
     children,
   }: {
     id: string;
     onEscape?: () => void;
+    holdEscape?: boolean;
     children?: React.ReactNode;
   }) {
-    const dialogProps = useDialogA11y({ onEscape });
+    const dialogProps = useDialogA11y({ onEscape, holdEscape });
     return (
       <div {...dialogProps} data-testid={id}>
         <button data-testid={`${id}-1`}>1</button>
@@ -197,7 +201,19 @@ describe('useDialogA11y — стек диалогов', () => {
     expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(true);
   });
 
-  it('верхний без onEscape: Escape не закрывает нижний', () => {
+  it('верхний несворачиваемый (holdEscape): Escape не закрывает нижний и отменён', () => {
+    const low = vi.fn();
+    render(
+      <>
+        <Layer id="low" onEscape={low} />
+        <Layer id="top" holdEscape />
+      </>,
+    );
+    expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(false);
+    expect(low).not.toHaveBeenCalled();
+  });
+
+  it('слой без onEscape и holdEscape прозрачен (фокус листа): Escape уходит нижнему', () => {
     const low = vi.fn();
     render(
       <>
@@ -206,7 +222,41 @@ describe('useDialogA11y — стек диалогов', () => {
       </>,
     );
     escape();
-    expect(low).not.toHaveBeenCalled();
+    expect(low).toHaveBeenCalledTimes(1);
+  });
+
+  // Лист с записью истории (useHistorySheet) — тоже слой стека, kind 'sheet': Escape он
+  // берёт сам во всплытии и только когда ownsEscape() — никакое окно над ним Escape не держит.
+  describe('слой листа (kind: sheet)', () => {
+    const owns = { current: () => false };
+    function Sheet({ children }: { children?: React.ReactNode }) {
+      const layer = useDialogLayer({ kind: 'sheet' });
+      useEffect(() => layer.join(), [layer]);
+      useEffect(() => { owns.current = layer.ownsEscape; });
+      return <>{children}</>;
+    }
+
+    it('несворачиваемое окно над листом держит Escape: лист его не получает', () => {
+      const { rerender } = render(<Sheet><Layer id="picker" holdEscape /></Sheet>);
+      expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(false);
+      expect(owns.current()).toBe(false);
+      rerender(<Sheet />);
+      expect(owns.current()).toBe(true);
+    });
+
+    it('собственный фокус-слой листа прозрачен: Escape — листу', () => {
+      render(<Sheet><Layer id="focus" /></Sheet>);
+      expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(true);
+      expect(owns.current()).toBe(true);
+    });
+
+    it('лист над окном с onEscape: Escape листу, окно под ним не закрывается', () => {
+      const dialog = vi.fn();
+      render(<Layer id="dialog" onEscape={dialog}><Sheet /></Layer>);
+      expect(fireEvent.keyDown(document, { key: 'Escape' })).toBe(true);
+      expect(dialog).not.toHaveBeenCalled();
+      expect(owns.current()).toBe(true);
+    });
   });
 
   it('прочие клавиши onEscape не вызывают', () => {

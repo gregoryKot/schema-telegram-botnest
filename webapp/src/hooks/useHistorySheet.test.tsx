@@ -608,3 +608,71 @@ describe('useHistorySheet — Escape над диалогом', () => {
   });
 });
 
+// Слой листа в общем стеке диалогов (shared/src/utils/dialogStack.ts): раньше
+// useHistorySheet слоёв стека не видел.
+describe('useHistorySheet — слой в стеке диалогов', () => {
+  const escape = () =>
+    act(() => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+    });
+
+  // Несворачиваемое окно (Dialog без closeOnEscape — согласия ConsentScreen) над листом:
+  // Escape закрывал лист под таким окном.
+  it('несворачиваемый Dialog над листом: Escape лист не закрывает', () => {
+    const wrapper = makeWrapper(makeSnapshot(), ['/hub', '/sheet'], 1);
+    const onCloseSheet = vi.fn();
+    function Sheet({ consent }: { consent: boolean }) {
+      useHistorySheet(onCloseSheet);
+      return consent ? <Dialog label="Согласия"><button>Далее</button></Dialog> : null;
+    }
+    const { rerender } = render(<Sheet consent />, { wrapper });
+    escape();
+    expect(onCloseSheet).not.toHaveBeenCalled();
+    rerender(<Sheet consent={false} />);
+    escape();
+    expect(onCloseSheet).toHaveBeenCalledTimes(1);
+  });
+
+  // Лист без своего useDialogA11y над Dialog с closeOnEscape: верхним слоем стека
+  // оставался диалог под листом — Escape закрывал скрытый диалог, лист оставался.
+  it('лист над Dialog с closeOnEscape: Escape закрывает лист, диалог под ним остаётся', () => {
+    const wrapper = makeWrapper(makeSnapshot(), ['/hub', '/page'], 1);
+    const onCloseSheet = vi.fn();
+    const onCloseDialog = vi.fn();
+    function SheetProbe() {
+      useHistorySheet(onCloseSheet);
+      return null;
+    }
+    function DialogWithSheet({ sheet }: { sheet: boolean }) {
+      return (
+        <Dialog label="Подтверждение" closeOnEscape onClose={onCloseDialog}>
+          <button>ок</button>
+          {sheet && <SheetProbe />}
+        </Dialog>
+      );
+    }
+    const { rerender } = render(<DialogWithSheet sheet={false} />, { wrapper });
+    rerender(<DialogWithSheet sheet />);
+    escape();
+    expect(onCloseSheet).toHaveBeenCalledTimes(1);
+    expect(onCloseDialog).not.toHaveBeenCalled();
+  });
+
+  it('поле ввода в листе гасит Escape своим stopPropagation (отмена правки) — лист остаётся', () => {
+    const wrapper = makeWrapper(makeSnapshot(), ['/hub', '/sheet'], 1);
+    const onCloseSheet = vi.fn();
+    function Sheet() {
+      useHistorySheet(onCloseSheet);
+      return <input data-testid="alias" onKeyDown={(e) => e.stopPropagation()} />;
+    }
+    const { getByTestId } = render(<Sheet />, { wrapper });
+    act(() => {
+      getByTestId('alias').dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+    });
+    expect(onCloseSheet).not.toHaveBeenCalled();
+  });
+});

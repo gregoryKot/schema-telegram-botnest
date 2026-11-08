@@ -1,12 +1,10 @@
-// Единый центрированный диалог сайта (бэкдроп + окно) — единственная копия
-// (правило «одна механика — один компонент»). Вид задают классы .dialog-* из
-// sheet-tasks.css (ds-card r20); содержимое — .dialog-title / .dialog-text /
-// .dialog-actions + ds-btn. Фокус-ловушка, role="dialog", aria-modal — useDialogA11y.
-//
+// Единый центрированный диалог сайта (бэкдроп + окно) — единственная копия (правило «одна механика —
+// один компонент»). Вид — классы .dialog-* из sheet-tasks.css (ds-card r20); содержимое — .dialog-title /
+// .dialog-text / .dialog-actions + ds-btn. Фокус-ловушка, role="dialog", aria-modal — useDialogA11y.
 // onClose — клик по бэкдропу. Не задан — окно закрывается только своими
 // кнопками (выбор «ты/вы», операция «в процессе»). Escape — через общий стек
-// диалогов (useDialogA11y) и только по closeOnEscape: закрывается верхнее
-// окно, а useHistorySheet под ним такое событие пропускает.
+// диалогов (useDialogA11y): onEscape или closeOnEscape (тогда onClose) закрывают
+// верхнее окно; без них окно держит Escape — лист под ним его не получает.
 import type { ReactNode } from 'react';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import '../styles/sheet-tasks.css';
@@ -16,6 +14,8 @@ interface Props {
   label: string;
   onClose?: () => void;
   closeOnEscape?: boolean;
+  /** Escape без закрытия по фону (выбор «ты/вы»: «Позже» — тот же goBack). */
+  onEscape?: () => void;
   zIndex?: number;
   maxWidth?: number;
   center?: boolean;
@@ -28,15 +28,14 @@ export function Dialog({
   label,
   onClose,
   closeOnEscape = false,
+  onEscape,
   zIndex,
   maxWidth,
   center = false,
   underlay,
   children,
 }: Props) {
-  const dialogA11y = useDialogA11y({
-    onEscape: closeOnEscape ? onClose : undefined,
-  });
+  const dialogA11y = useDialogA11y({ onEscape: onEscape ?? (closeOnEscape ? onClose : undefined), holdEscape: true });
 
   return (
     <div

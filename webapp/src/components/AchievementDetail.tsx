@@ -25,7 +25,7 @@ export function AchievementDetail({ meta, onClose }: Props) {
 
   return (
     <>
-      <Dialog label={meta.title} onClose={goBack} zIndex={400} maxWidth={360} center>
+      <Dialog label={meta.title} onClose={goBack} closeOnEscape zIndex={400} maxWidth={360} center>
         <h2 className="dialog-title">{meta.title}</h2>
         <p className="dialog-text">{meta.desc}</p>
         <button onClick={() => setShowShare(true)} className="btn-primary">
