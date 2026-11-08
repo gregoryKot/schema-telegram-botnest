@@ -76,7 +76,8 @@ export class AuthAccountController {
     requireCsrf(req, 'email/link', this.securityLog);
     // S9: чужой билет в письме — фишинг настоящим письмом (ticket-device.ts).
     if (dto.ticket) await this.tickets.assertOwnPendingLogin(req, dto.ticket);
-    return this.auth.requestEmailLogin(dto.email, dto.ticket);
+    const { ticket, returnTo } = dto; // адрес возврата едет в ссылке (E14)
+    return this.auth.requestEmailLogin(dto.email, { ticket, returnTo });
   }
 
   // Ссылка из письма (B-14): только 302 на страницу сайта, токен не гасится —
@@ -85,17 +86,12 @@ export class AuthAccountController {
   emailLoginCallback(
     @Query('token') token: unknown,
     @Query('ticket') ticket: unknown,
+    @Query('return_to') returnTo: unknown,
     @Res() res: Response,
   ): void {
     res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-    res.redirect(
-      302,
-      emailCallbackRedirectUrl(
-        this.config.getOrThrow<string>('WEBAPP_URL'),
-        typeof token === 'string' ? token : undefined,
-        typeof ticket === 'string' ? ticket : undefined,
-      ),
-    );
+    const base = this.config.getOrThrow<string>('WEBAPP_URL');
+    res.redirect(302, emailCallbackRedirectUrl(base, token, ticket, returnTo));
   }
 
   // Погашение токена со страницы сайта. Анонимный роут (человек входит), но с

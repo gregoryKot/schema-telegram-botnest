@@ -288,8 +288,20 @@ describe('AuthAccountController.emailLoginLink', () => {
   it('валидный запрос → делегирует в auth.requestEmailLogin', async () => {
     const { controller, auth } = makeController();
     const res = await controller.emailLoginLink({ email: 'a@b.ru' }, makeReq());
-    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', undefined);
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', {});
     expect(res).toEqual({ ok: true });
+  });
+
+  // E14 (аудит 2026-11): письмо открывают новой вкладкой — адрес возврата едет в ссылке.
+  it('адрес возврата уходит в auth.requestEmailLogin вместе с письмом', async () => {
+    const { controller, auth } = makeController();
+    await controller.emailLoginLink(
+      { email: 'a@b.ru', returnTo: '/diary?tab=schemas' },
+      makeReq(),
+    );
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', {
+      returnTo: '/diary?tab=schemas',
+    });
   });
 });
 
@@ -311,7 +323,7 @@ describe('AuthAccountController.emailLoginCallback (GET) — только ред
   it('302 на страницу-погашение с токеном; токен НЕ гасится, кука НЕ ставится', () => {
     const { controller, emailTokens } = makeController();
     const res = makeGetRes();
-    controller.emailLoginCallback('tok-1', undefined, res);
+    controller.emailLoginCallback('tok-1', undefined, undefined, res);
     expect(res.redirect).toHaveBeenCalledWith(
       302,
       `${WEBAPP_URL}/auth/callback?email_token=tok-1`,
@@ -330,7 +342,7 @@ describe('AuthAccountController.emailLoginCallback (GET) — только ред
   it('билет входа едет следом — сверку на странице решает человек, не сервер', () => {
     const { controller, emailTokens } = makeController();
     const res = makeGetRes();
-    controller.emailLoginCallback('tok-1', 'K7M2QX94', res);
+    controller.emailLoginCallback('tok-1', 'K7M2QX94', undefined, res);
     expect(res.redirect).toHaveBeenCalledWith(
       302,
       `${WEBAPP_URL}/auth/callback?email_token=tok-1&ticket=K7M2QX94`,
@@ -338,11 +350,25 @@ describe('AuthAccountController.emailLoginCallback (GET) — только ред
     expect(emailTokens.consumeEmailToken).not.toHaveBeenCalled();
   });
 
+  it('адрес возврата из ссылки едет на страницу-погашение; чужой — отбрасывается', () => {
+    const { controller } = makeController();
+    const res = makeGetRes();
+    controller.emailLoginCallback('tok-1', undefined, '/diary?tab=x', res);
+    controller.emailLoginCallback('tok-1', undefined, '//evil.com', res);
+    expect(res.redirect.mock.calls).toEqual([
+      [
+        302,
+        `${WEBAPP_URL}/auth/callback?email_token=tok-1&return_to=%2Fdiary%3Ftab%3Dx`,
+      ],
+      [302, `${WEBAPP_URL}/auth/callback?email_token=tok-1`],
+    ]);
+  });
+
   it('нет токена или токен не строка (?token=a&token=b) → экран ошибки входа', () => {
     const { controller } = makeController();
     const res = makeGetRes();
-    controller.emailLoginCallback(undefined, undefined, res);
-    controller.emailLoginCallback(['a', 'b'], undefined, res);
+    controller.emailLoginCallback(undefined, undefined, undefined, res);
+    controller.emailLoginCallback(['a', 'b'], undefined, undefined, res);
     expect(res.redirect).toHaveBeenNthCalledWith(
       1,
       302,
@@ -814,7 +840,9 @@ describe('AuthAccountController — билет входа в email-флоу', ()
       { email: 'a@b.ru', ticket: 'K7M2QX94' },
       makeReq({ cookies }),
     );
-    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', 'K7M2QX94');
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', {
+      ticket: 'K7M2QX94',
+    });
   });
 
   // S9 (аудит 2026-11): атакующий выписывает билет у себя и просит сервер
@@ -871,7 +899,7 @@ describe('AuthAccountController — билет входа в email-флоу', ()
   it('без билета — обычное письмо входа, кука не нужна', async () => {
     const { controller, auth } = makeController();
     await controller.emailLoginLink({ email: 'a@b.ru' }, makeReq());
-    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', undefined);
+    expect(auth.requestEmailLogin).toHaveBeenCalledWith('a@b.ru', {});
   });
 });
 

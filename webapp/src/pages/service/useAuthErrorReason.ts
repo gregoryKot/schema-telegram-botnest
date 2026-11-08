@@ -7,8 +7,7 @@ import { useAuthFailureReport } from '../../../../shared/src/host/authFailureRep
 import { reportClientError } from '../../api';
 import { knownAuthErrorReason, reportedAuthErrorReason } from './authErrorReasons';
 
-export function useAuthErrorReason(search: string): string | null {
-  const raw = new URLSearchParams(search).get('reason');
+export function useAuthErrorReason(raw: string | null): string | null {
   const reported = reportedAuthErrorReason(raw);
   useAuthFailureReport(
     reportClientError,

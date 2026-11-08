@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { HashCallback } from './authCallback/HashCallback';
+import { EMAIL_RETURN_PARAM } from '../auth/emailReturnTo';
 
 // Две двери в одну страницу: ссылка из письма приходит с ?email_token=…
 // (её погашает POST, а не GET — B-14), OAuth — без токена (refresh-кука, 2026-11).
@@ -15,7 +16,7 @@ export function AuthCallback() {
   const [email] = useState(() => {
     const q = new URLSearchParams(window.location.search);
     const token = q.get('email_token');
-    return token ? { token, ticket: q.get('ticket') } : null;
+    return token ? { token, ticket: q.get('ticket'), returnTo: q.get(EMAIL_RETURN_PARAM) } : null;
   });
   if (!email) return <HashCallback />;
   return (

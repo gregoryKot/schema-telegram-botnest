@@ -5,6 +5,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { RETURN_TO_MAX, RETURN_TO_RE } from '../email-link-params';
 
 // L4 (аудит 2026-08, правило №6): сырые @Body('email'/'token'/'initData')
 // скаляры не валидировались в рантайме — {token:123} роняло createHash(123),
@@ -26,6 +27,13 @@ export class EmailBodyDto {
   @Length(8, 8)
   @Matches(/^[A-Za-z0-9]+$/)
   ticket?: string;
+
+  // Куда вернуть после входа: письмо открывают новой вкладкой (E14). Только свой путь.
+  @IsOptional()
+  @IsString()
+  @MaxLength(RETURN_TO_MAX)
+  @Matches(RETURN_TO_RE)
+  returnTo?: string;
 }
 
 export class TokenBodyDto {

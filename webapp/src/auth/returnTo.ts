@@ -19,12 +19,15 @@ const BASE = 'https://return-to.invalid';
  * Только внутренний путь: начинается с `/` и остаётся на своём сайте.
  * `//evil.com`, `/\evil.com`, `/\t/evil.com` браузер читает как чужой адрес —
  * такой «адрес возврата» сделал бы из входа открытый редирект. Чужое — null.
+ * `/..//evil.com` разбор схлопывает в путь `//evil.com` на своём же сайте, а
+ * навигация прочла бы его как чужой хост — такой результат тоже null.
  */
 export function safeReturnPath(raw: string | null | undefined): string | null {
   if (!raw?.startsWith('/')) return null;
   try {
     const url = new URL(raw, BASE);
-    return url.origin === BASE ? url.pathname + url.search + url.hash : null;
+    const path = url.pathname + url.search + url.hash;
+    return url.origin === BASE && !path.startsWith('//') ? path : null;
   } catch {
     return null;
   }
@@ -51,10 +54,15 @@ export function rememberReturnTo(path: string): boolean {
 
 /** Забрать адрес (один раз): после чтения он стирается. Чужой адрес — null. */
 export function takeReturnTo(): string | null {
+  const path = peekReturnTo();
+  try { sessionStorage.removeItem(AUTH_RETURN_KEY); } catch { /* хранилище закрыто — стирать нечего */ }
+  return path;
+}
+
+/** Посмотреть адрес, не стирая: его везёт ссылка из письма (emailReturnTo.ts). */
+export function peekReturnTo(): string | null {
   try {
-    const raw = sessionStorage.getItem(AUTH_RETURN_KEY);
-    sessionStorage.removeItem(AUTH_RETURN_KEY);
-    return safeReturnPath(raw);
+    return safeReturnPath(sessionStorage.getItem(AUTH_RETURN_KEY));
   } catch {
     return null;
   }

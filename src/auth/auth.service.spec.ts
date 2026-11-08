@@ -846,6 +846,18 @@ describe('AuthService — requestEmailLogin', () => {
     );
   });
 
+  // E14 (аудит 2026-11): письмо открывают новой вкладкой, где адреса возврата нет.
+  it('адрес возврата и билет едут в ссылке письма', async () => {
+    const { svc, emailSvc } = makeService();
+    await svc.requestEmailLogin('ret@example.com', {
+      ticket: 'K7M2QX94',
+      returnTo: '/link?code=AB',
+    });
+    const link = new URL(emailSvc.sendLoginLink.mock.calls[0][1] as string);
+    expect(link.searchParams.get('ticket')).toBe('K7M2QX94');
+    expect(link.searchParams.get('return_to')).toBe('/link?code=AB');
+  });
+
   it('повторные запросы для нового адреса по-прежнему ничего не создают (счётчик строк не растёт)', async () => {
     const { svc, users, authProviders } = makeService();
     await svc.requestEmailLogin('same@example.com');

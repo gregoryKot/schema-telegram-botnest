@@ -8,10 +8,16 @@ import { authErrorScreen } from './service/authErrorScreens';
 import { useAuthErrorReason } from './service/useAuthErrorReason';
 
 export function AuthErrorPage() {
+  return <AuthErrorView reason={new URLSearchParams(window.location.search).get('reason')} />;
+}
+
+/** `onRetry` — повтор на месте: ссылка из письма цела, а сети не было (EmailTokenConsume). */
+export function AuthErrorView({ reason, onRetry }: { reason: string | null; onRetry?: () => void }) {
   const tr = useTr();
-  const code = useAuthErrorReason(window.location.search);
-  const explained = authErrorText(code, tr);
+  const code = useAuthErrorReason(reason);
   const screen = authErrorScreen(code); // свой заголовок и кнопка (U6), без кода
+  const explained = (onRetry ? screen?.retryLead?.(tr) : undefined) ?? authErrorText(code, tr);
+  const other = screen?.action ?? { label: onRetry ? 'Ко входу' : 'Попробовать снова', href: '/login' };
   return (
     <ServicePage>
       <div className="as-body">
@@ -22,7 +28,8 @@ export function AuthErrorPage() {
         </p>
         {code && !screen && <p className="as-reason">{code}</p>}
         <div className="as-actions-row">
-          <a href={screen?.action.href ?? '/login'} className="ds-btn">{screen?.action.label ?? 'Попробовать снова'}</a>
+          {onRetry && <button type="button" className="ds-btn" onClick={onRetry}>Повторить</button>}
+          <a href={other.href} className={onRetry ? 'ds-btn ds-btn--secondary' : 'ds-btn'}>{other.label}</a>
           <a href="https://t.me/kotlarewski" target="_blank" rel="noopener noreferrer" className="ds-btn ds-btn--secondary">
             Написать
           </a>

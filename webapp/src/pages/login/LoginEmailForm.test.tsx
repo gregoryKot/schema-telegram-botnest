@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { LoginEmailForm } from './LoginEmailForm';
 import { EMAIL_FORM_PATH } from '../service/authErrorScreens';
+import { AUTH_RETURN_KEY } from '../../auth/returnTo';
 
 const fetchMock = vi.fn();
 const ok = () => ({ ok: true, status: 200, json: () => Promise.resolve({ ok: true }) });
@@ -75,6 +76,25 @@ describe('LoginEmailForm — письмо отправлено', () => {
     expect(JSON.parse(linkCalls()[1][1].body as string)).toEqual({ email: 'me@example.com' });
     expect(screen.getByText('Письмо отправлено ещё раз')).toBeTruthy();
     expect(resend().textContent).toBe('Отправить ещё раз через 60 с'); // пауза заново
+  });
+
+  // E14 (аудит 2026-11): письмо открывают новой вкладкой, где sessionStorage пуст.
+  it('запомненный адрес возврата уходит в запросе письма; длинный или с // — не уходит', async () => {
+    sessionStorage.setItem(AUTH_RETURN_KEY, '/link?code=ABCD2345');
+    const { container } = renderForm(EMAIL_FORM_PATH);
+    await sendOnce(container);
+    expect(JSON.parse(linkCalls()[0][1].body as string)).toEqual({ email: 'me@example.com', returnTo: '/link?code=ABCD2345' });
+    expect(sessionStorage.getItem(AUTH_RETURN_KEY)).toBe('/link?code=ABCD2345'); // вкладка свой адрес не теряет
+    cleanup();
+    for (const path of [`/${'a'.repeat(600)}`, '/x?next=https://a.b']) {
+      sessionStorage.setItem(AUTH_RETURN_KEY, path);
+      fetchMock.mockClear();
+      const r = renderForm(EMAIL_FORM_PATH);
+      await sendOnce(r.container);
+      expect(JSON.parse(linkCalls()[0][1].body as string)).toEqual({ email: 'me@example.com' });
+      cleanup();
+    }
+    sessionStorage.clear();
   });
 
   it('повтор упал (лимит сервера) — ошибка видна, экран «отправлено» остаётся', async () => {

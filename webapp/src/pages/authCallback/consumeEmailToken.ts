@@ -21,6 +21,8 @@ interface ConsumeBody {
 const EXPIRED = 'email_link_expired';
 // U6 (аудит 2026-11): сеть и сбой сервера читались как «ссылка устарела».
 const NETWORK = 'email_network';
+/** Сеть, лимит, сбой сервера: ссылка цела — повтор с тем же токеном на месте. */
+export const canRetryEmailConsume = (reason: string) => reason === NETWORK || /^http_(429|5\d\d)$/.test(reason);
 /** Коды с подсказкой на «Аккаунте» (emailLinkError.ts), а не на /auth/error. */
 const ACCOUNT_REASONS = new Set(['email_link_session', 'email_taken']);
 
