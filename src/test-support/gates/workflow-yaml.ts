@@ -1,5 +1,5 @@
 // Разбор текста воркфлоу GitHub Actions для гейтов над `.github/workflows`
-// (deploy-needs-ci.ts, job-timeouts.ts, ci-concurrency.spec.ts). Только
+// (job-timeouts.ts, alarm-needs.ts, lockfile-audit.ts, ci-concurrency.spec.ts). Только
 // разбор, правил здесь нет: что считать нарушением, решает каждый гейт сам.
 // yaml-парсера в зависимостях нет, а нужные места (`on:`, джобы верхнего
 // уровня) в репозитории плоские и однотипные, поэтому разбор идёт по строкам.

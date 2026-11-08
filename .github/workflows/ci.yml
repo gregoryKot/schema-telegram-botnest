@@ -356,21 +356,11 @@ jobs:
       # test/.jest-cache на 466 файлов). Нужны только git и node. Бейслайна
       # нет: нужный файл разрешается отрицанием `!путь` в самом .gitignore.
       - run: node scripts/check-ignored-tracked.mjs
-      # Переезд на VPS (docs/MIGRATION_VPS.md): скрипты и compose-файлы
-      # исполняются на сервере, до которого CI не дотягивается, поэтому
-      # хотя бы разбираем их здесь. shellcheck стоит на ubuntu-latest;
-      # `compose config` не требует демона, фиктивные значения — только чтобы
-      # разобрать интерполяцию, секретов в них нет.
-      - name: VPS-скрипты (shellcheck) и compose-файлы (config)
-        run: |
-          shellcheck deploy/transfer-db.sh deploy/vps/*.sh scripts/*.sh
-          cd deploy/vps
-          # shellcheck disable=SC2016  # `$` в значении — как у настоящего PROD_ENV
-          printf 'FOO=a$b\n' > .env
-          echo 'POSTGRES_PASSWORD=ci' > db.env
-          export APP_IMAGE=registry.invalid/app:ci
-          docker compose --env-file db.env -f docker-compose.yml config --quiet
-          docker compose --env-file db.env -f docker-compose.yml -f docker-compose.transfer.yml config --quiet
+      # Shell-скрипты бэкапов (scripts/backup-upload.sh и соседи) исполняются
+      # в прод-контейнере ночью — разбираем их здесь. shellcheck стоит на
+      # образе раннера.
+      - name: Shell-скрипты (shellcheck)
+        run: shellcheck scripts/*.sh
 
   # Щит, волна 6: `docker build` реально собирает прод-образ. До этой джобы
   # ни одна не гоняла настоящую сборку — check-deploy-paths.mjs (джоба
@@ -616,14 +606,6 @@ jobs:
           test/diary-mode-from-case.e2e-spec.ts
         env:
           E2E_REAL_DB: '1'
-      # Перенос БД на VPS (deploy/transfer-db.sh, docs/MIGRATION_VPS.md): настоящие
-      # pg_dump и psql --single-transaction между двумя базами, отказ на
-      # непустом приёмнике и «процесс не завершается» на старом хостинге. Мок
-      # не заменит ни клиент, ни живую базу (правило №18).
-      - name: e2e перенос БД на VPS на реальном Postgres
-        run: |
-          command -v pg_dump >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
-          npx jest --config ./test/jest-e2e.json --runInBand test/transfer-db.e2e-spec.ts
       # Откат образа поверх упавшей миграции (аудит 2026-10-11, infra#8): N+1 с
       # битой миграцией оставляет в _prisma_migrations запись, на которой образ N
       # падает с P3009. Настоящие prisma migrate deploy, prisma db execute и
@@ -634,7 +616,7 @@ jobs:
         run: |
           command -v psql >/dev/null || sudo apt-get install -y --no-install-recommends postgresql-client-16
           npx jest --config ./test/jest-e2e.json --runInBand test/migrate-stuck-record.e2e-spec.ts
-      # План Б (docs/MIGRATION_VPS.md): настоящая цепочка backup-upload.sh →
+      # Восстановление из бэкапа: настоящая цепочка backup-upload.sh →
       # (поддельный) S3 → backup-fetch-latest.sh → restore-backup.sh на живом
       # Postgres: восстановленная база обязана совпасть с источником.
       - name: e2e восстановление из бэкапа (S3) на реальном Postgres

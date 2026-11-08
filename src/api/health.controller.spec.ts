@@ -48,7 +48,7 @@ describe('HealthController', () => {
   // /health (см. src/utils/build-info.ts) — не признак сбоя БД/процесса,
   // поэтому статус остаётся ok, а не 503: HEALTHCHECK не должен краснеть
   // у живого контейнера только из-за отсутствующей метки сборки (перезапускать он
-  // ничего не перезапускает, но unhealthy виден в `op=status`).
+  // ничего не перезапускает, но unhealthy виден оркестратору).
   it('метки сборки нет, самопроверка ещё не бежала → 200, builtAt/ranAt null, failed пуст', async () => {
     mockBuiltAt.mockReturnValue(null);
     const prisma = {

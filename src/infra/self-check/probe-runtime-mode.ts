@@ -5,8 +5,8 @@ type Env = Record<string, string | undefined>;
 
 /**
  * Процесс прод-образа обязан работать в режиме production. Образ ставит его
- * сам (`ENV NODE_ENV=production`), но env_file/панель хостинга сильнее: строка
- * `NODE_ENV=development` в PROD_ENV молча включает режим разработки
+ * сам (`ENV NODE_ENV=production`), но панель хостинга сильнее: строка
+ * `NODE_ENV=development` в env Amvera молча включает режим разработки
  * (шифрование без ключа пропускает текст насквозь, проверки env становятся
  * предупреждениями). Отличить прод-образ от локального запуска по самому
  * NODE_ENV нельзя, поэтому признак независимый: метка BUILD_INFO, которую
@@ -32,7 +32,7 @@ export function runtimeModeProbe(
           : {
               ok: false,
               detail:
-                'образ собран для прода, но NODE_ENV не production: режим разработки на проде (проверить PROD_ENV и env хостинга)',
+                'образ собран для прода, но NODE_ENV не production: режим разработки на проде (проверить env хостинга)',
             },
       );
     },

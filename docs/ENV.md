@@ -114,7 +114,6 @@
 | `BACKUP_S3_SECRET_ACCESS_KEY` | опциональна | accessKey | Secret Access Key API-токена R2 — вместе с BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает бэкапы БД. |
 | `DATABASE_URL` | **обязательна** | nonEmpty | Строка подключения к Postgres — без неё Prisma не подключается, приложение не работает. |
 | `DB_STATEMENT_TIMEOUT_MS` | опциональна | целое 0…2147483647 | Предел одного запроса к базе в миллисекундах (по умолчанию 30 000) — дольше запрос прерывается с ошибкой; 0 выключает предел. Рубильник без выкладки кода (src/prisma/statement-timeout.ts). |
-| `DEPLOY_TARGET` | опциональна | oneOf(amvera, vps) | Площадка: «vps» (задаёт deploy/vps/docker-compose.yml) — там pgdata единственная копия базы, и бэкапы в R2 обязательны; не задана или «amvera» — бэкапы платформы, R2 по желанию. |
 | `SITE_URL` | опциональна | url | Адрес сайта для ссылок в уведомлениях о записи — дефолт kotlarewski.gr. |
 | `STARTUP_CRASHES_DAY` | опциональна | целое ≥ 0 | Падений приложения за сутки в этом контейнере — ставит `deploy/entrypoint.mjs` (`deploy/crash-window.mjs`), вручную не задаётся. Число попадает в DM о перезапуске. |
 | `STARTUP_LAUNCH` | опциональна | целое ≥ 1 | Номер запуска приложения внутри контейнера — ставит `deploy/entrypoint.mjs`, вручную не задаётся. 1 — DM «Деплой завершён», больше 1 — DM о перезапуске после падения (`src/telegram/start-announce.ts`). Ручки самого супервизора (`STARTUP_MAX_FAILS`, `STARTUP_MAX_FAILS_HOUR`, `STARTUP_CRASH_WINDOW_MS` и соседи) приложение не читает — они в docs/RUNBOOKS.md, п. «Крашлуп». |
@@ -122,14 +121,11 @@
 | `SUBSCRIPTION_ENABLED` | опциональна | oneOf(true, false) | «true» включает автосписание подписки — выключено, пока автосписание не готово. |
 | `WEBAPP_URL` | **обязательна** | httpsUrl | Публичный адрес сайта (schemehappens.ru) — на нём строится колбэк OAuth и фронтенд-редиректы; без него вход через сайт не работает. |
 
-**На VPS пять переменных бэкапов обязательны.** `BACKUP_S3_ENDPOINT`,
+**Бэкапы в R2 включаются пятью переменными сразу.** `BACKUP_S3_ENDPOINT`,
 `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`,
 `BACKUP_ENCRYPTION_KEY` в таблице «опциональна», потому что на Amvera копии
-делает платформа. `BACKUP_S3_REGION` и `BACKUP_RETENTION_DAYS` необязательны и
-на VPS. Когда `DEPLOY_TARGET=vps`, их отсутствие: `ops.sh`
-(`deploy`, `release-hold`) отказывается запускать приложение и называет недостающие
-имена; `checkEnv` в production даёт `error` владельцу в DM и строку в блоке
-«Переменные» `/stats`; проба `backupFreshness` отвечает `ok: false`. `DEPLOY_TARGET`
-в `PROD_ENV` не кладут: его ставит `docker-compose.yml`.
+делает платформа, а R2 — независимая копия по желанию. Задана только часть —
+планировщик не стартует, а проба `backupFreshness` отвечает `ok: false` с
+именами недостающих. `BACKUP_S3_REGION` и `BACKUP_RETENTION_DAYS` необязательны.
 
 
