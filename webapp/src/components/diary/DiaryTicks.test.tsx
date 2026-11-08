@@ -2,14 +2,14 @@
 // Полоски-шаги мастеров дневника прыгают на шаг, но были 24px по высоте при
 // видимой полоске 5px — пальцем не попасть (аудит онбординга 2026-10-08).
 // Зона теперь 44 по высоте, отрицательный margin держит прежнюю раскладку.
-// CSS в jsdom не считается — правило sheet-diary.css пинится строкой исходника.
+// CSS в jsdom не считается — правило diary-wizard.css пинится строкой исходника.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DiaryTicks } from './DiaryStepCard';
 
-const css = readFileSync(join(__dirname, '../../styles/sheet-diary.css'), 'utf8');
+const css = readFileSync(join(__dirname, '../../styles/diary-wizard.css'), 'utf8');
 const tickRule = css.match(/(^|\n)\.sd-tick \{([^}]*)\}/)?.[2] ?? '';
 
 describe('DiaryTicks — шаги мастера', () => {

@@ -5,9 +5,9 @@ import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 export type Rule = { media: string; selectors: string[]; body: string; f?: string };
 
-/** Правила со своим медиа-контекстом ('' — вне @media). Один уровень вложенности — как во всех css пакета. */
+/** Правила со своим медиа-контекстом ('' — вне @media). Один уровень вложенности — как во всех css пакета; `@import` пропущен. */
 export function parseRules(css: string): Rule[] {
-  const src = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@import[^;]*;/g, '');
   const out: Rule[] = [];
   const walk = (text: string, media: string) => {
     let i = 0;

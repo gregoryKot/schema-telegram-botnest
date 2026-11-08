@@ -1,0 +1,15 @@
+/* Диалоги по центру (Dialog, ConfirmDialog, окно праздника): подложка, коробка, кнопки.
+   Подключается сборником sheet-tasks.css. */
+/* ── Диалоги (Dialog / ConfirmDialog / Celebration) ── */
+.sk-dialog-backdrop { position: fixed; inset: 0; z-index: 300; background: rgba(var(--fg-rgb), 0.5); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
+.sk-dialog-box { position: relative; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; padding: 28px 24px; box-shadow: 0 24px 64px -16px rgba(0, 0, 0, .3); animation: modal-in .18s ease; }
+.sk-dialog-box--center { text-align: center; }
+.sk-dialog-title { margin: 0 0 10px; }
+.sk-dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
+.sk-dialog-error { margin: 0 0 16px; }
+.sk-dialog-actions { display: flex; gap: 10px; }
+.sk-dialog-actions > .ds-btn { flex: 1; }
+.ds-btn.sk-btn-danger { background: var(--accent-red); color: var(--on-accent-red); }
+.ds-btn.sk-btn-danger:hover { background: var(--accent-red); opacity: .9; }
+.sk-dialog-link { display: block; width: 100%; min-height: 44px; margin-top: 6px; }
+.sk-dialog-box .ds-btn.sk-wide { width: 100%; }

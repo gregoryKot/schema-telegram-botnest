@@ -1,0 +1,10 @@
+/* Предупреждение на входе в упражнение (TherapyCaution). Ссылка .th-link — общая, в
+   therapy-bridge.css, откуда этот файл и подключается. */
+/* Предупреждение на входе в упражнение: сплошной фон, акцентная полоска слева. */
+.th-caution {
+  margin: 12px 0; padding: 12px 16px; border-radius: 14px; border-left: 3px solid var(--accent);
+  background: var(--surface); font-size: 14px; line-height: 1.5; color: var(--text-sub);
+}
+.th-caution-lead { margin: 0 0 2px; font-weight: 600; color: var(--text); }
+.th-caution-body { margin: 0; }
+.th-caution .th-link { font-size: 14px; display: inline-block; margin-top: 6px; }

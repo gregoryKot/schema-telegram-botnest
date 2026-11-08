@@ -1,4 +1,9 @@
 /* Раздел «Практика» кабинета клиента. Префикс cp-. */
+/* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
+   начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
+   этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
+@import './task-row.css';
+@import './breathing.css';
 .cp-page { max-width: 1100px; }
 .cp-open-card { display: contents; } /* обёртка не участвует в flex-gap .cp-block (телефон как в main) */
 .cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
@@ -14,14 +19,8 @@
 /* Задания и цели */
 .cp-tasks { display: flex; flex-direction: column; gap: 10px; }
 .cp-task { display: flex; align-items: center; gap: 16px; min-height: 44px; }
-.cp-task-bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--accent); }
 .cp-task-body { flex: 1; min-width: 0; }
-.cp-task-from { color: var(--accent); margin-bottom: 4px; }
 .cp-task-title { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
-.cp-task--done { opacity: .6; }
-.cp-task-check { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--ok-bg); color: var(--ok-ink); }
-.cp-task-note { margin-top: var(--space-4); font-size: 13px; color: var(--ok-ink); }
-.cp-task-status { margin-top: var(--space-6); }
 .cp-actions { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .cp-alert { font-size: 13px; color: var(--err); }
 
@@ -91,15 +90,6 @@
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cp-open-card > .ds-card { background: none; border: 0; border-radius: 0; padding: 28px 0; }
 }
-
-/* Круг с отсчётом во время дыхания — на месте картинки героя «Дыши со мной». */
-.cp-ring {
-  width: clamp(64px, 18vw, 88px); height: clamp(64px, 18vw, 88px); flex-shrink: 0; border-radius: 50%;
-  border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--serif); font-size: clamp(24px, 6vw, 32px); color: var(--text); font-variant-numeric: tabular-nums;
-}
-
 
 /* Компьютер: «Начать дыхание» — по тексту, а не во всю ширину героя. */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {

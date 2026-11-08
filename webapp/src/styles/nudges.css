@@ -1,0 +1,27 @@
+/* Подсказки-предложения: «Что это было» (HomeScreenOfferCard), «Поддержать проект»
+   (DonateNudge). Подключается сборником sheet-tasks.css. */
+/* ── Онбординг-виджет (классов sk-onb- в разметке уже нет) и «Что это было» ── */
+.sk-onb { display: flex; flex-direction: column; gap: 6px; }
+.sk-onb-ok { color: var(--ok); }
+.sk-onb-done-text { max-width: 540px; font-size: 14px; line-height: 1.55; margin-bottom: 8px; }
+.sk-onb-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); cursor: pointer; min-height: 44px; box-sizing: border-box; }
+.sk-onb-row:last-of-type { border-bottom: none; }
+.sk-onb-row.is-skipped { opacity: .6; }
+.sk-onb-box { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--line-strong); flex-shrink: 0; margin-top: 3px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--surface); box-sizing: border-box; }
+.sk-onb-box.is-current { border-color: var(--accent); }
+.sk-onb-box.is-done { border-color: var(--ok); background: var(--ok); }
+.sk-onb-main { flex: 1; min-width: 0; }
+.sk-onb-title { font-size: 14px; font-weight: 600; cursor: pointer; }
+.sk-onb-title.is-done { color: var(--text-sub); }
+.sk-onb-desc { margin-top: 4px; line-height: 1.55; }
+.sk-onb-actions { display: flex; gap: 14px; align-items: center; flex-shrink: 0; }
+.sk-case { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+.sk-case-text { margin: 0 0 10px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.sk-case-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.sk-case-map { align-self: flex-start; margin-top: 6px; min-height: 44px; }
+
+/* ── Поддержать проект ── */
+.sk-nudge { display: flex; flex-direction: column; gap: 8px; }
+.sk-nudge-text { font-size: 15px; line-height: 1.6; color: var(--text-sub); margin: 0 0 14px; }
+.sk-nudge-link { text-decoration: none; box-sizing: border-box; }
+.sk-nudge-later { align-self: center; min-height: 44px; color: var(--text-faint); font-weight: 500; font-size: 14px; }

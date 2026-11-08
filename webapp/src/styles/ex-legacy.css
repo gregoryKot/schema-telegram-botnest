@@ -1,0 +1,41 @@
+/* Старые классы экранов упражнений (ex-screen, aside-card, ex-btn): ими ещё пользуются
+   сомнение в режиме, «Карта себя», «Разбор фразы» и совет по потребности. Новые — ex2-
+   (sheet-exercises.css). Подключается через index-tail.css. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
+     overflow:visible override above would clip content behind ex-screen's
+     overflow:hidden. Re-enable scroll for .page inside fixed overlays. */
+  .ex-screen .page { overflow-y: auto !important; }
+  /* Старый экран упражнения — тоже полноэкранный корень: статус-бар установленного
+     приложения (#902; новые листы отступают в styles/sheet-*.css). */
+  .ex-screen { padding-top: var(--safe-top); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Exercises – Hub & fullscreen exercise screens
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Exercise screen ────────────────────────────────────────────────── */
+.ex-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: grid; grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+/* Aside card */
+.aside-card { border: 1px solid var(--line); border-radius: var(--r-12); padding: 22px 24px; background: var(--surface); margin-bottom: var(--space-16); }
+.aside-card-eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-faint); margin-bottom: var(--space-10); }
+.aside-card h3 { font-family: var(--serif); font-size: 22px; line-height: 1.2; letter-spacing: -0.01em; font-weight: 400; margin-bottom: var(--space-10); }
+.aside-card .body { font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+.aside-card ul { margin-top: var(--space-10); font-size: 13px; color: var(--text-sub); line-height: 1.6; list-style: none; }
+.aside-card ul li { padding-left: var(--space-16); position: relative; }
+.aside-card ul li::before { content: '·'; position: absolute; left: 4px; top: -2px; color: var(--text-ghost); font-size: 16px; }
+
+/* Ex buttons (exercise-scoped) */
+.ex-btn { display: inline-flex; align-items: center; gap: var(--space-8); padding: 11px 22px; border-radius: var(--r-8); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; border: none; font-family: inherit; }
+.ex-btn-primary { background: var(--accent); color: var(--on-accent); }
+.ex-btn-primary:hover { background: var(--accent-hi); }
+.ex-btn-primary:disabled { opacity: 0.35; cursor: default; background: var(--accent); }
+.ex-btn-ghost { color: var(--text-sub); background: none; }
+.ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }

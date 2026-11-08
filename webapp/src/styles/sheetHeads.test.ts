@@ -6,10 +6,10 @@
 // исполняется, поэтому сверяем строки исходников (приём safeTop.test.ts); рендер
 // шапок — в тестах самих компонентов (getByRole('button'|'link', …) → .ds-back).
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { cssBundle } from './cssBundle.test-helpers';
 
-const read = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+// Файл вместе с частями, подключёнными через @import (раскрой 2026-11): сверка смотрит на весь раздел.
+const read = (f: string) => cssBundle(f).replace(/\/\*[\s\S]*?\*\//g, '');
 
 /** Правила файла (вложенные в @media тоже): список селекторов и тело. */
 function rules(css: string): { selectors: string[]; body: string }[] {

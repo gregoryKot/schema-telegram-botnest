@@ -1,0 +1,25 @@
+/* Упражнения: карточки схем и режимов (FlashcardEx, exercises/PickRow) и портрет режима
+   (ModePortrait). Подключается из sheet-exercises.css. */
+/* ── Выбор схемы / режима ─────────────────────────────────────────────── */
+.ex2-group-h { margin: 24px 0 10px; }
+.ex2-picklist { display: flex; flex-direction: column; gap: 8px; }
+.ex2-pick { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 16px; align-items: center; min-height: 44px; }
+
+/* ── Карточка-вопрос (FlashcardEx) ────────────────────────────────────── */
+.ex2-ticks { display: flex; gap: 6px; margin-bottom: 20px; }
+.ex2-tick { position: relative; flex: 1; height: 4px; border-radius: 2px; background: var(--line-strong); cursor: pointer; }
+.ex2-tick::before { content: ''; position: absolute; inset: -20px 0; }
+.ex2-tick.is-filled, .ex2-tick.is-active { background: oklch(0.58 0.12 var(--h)); }
+.ex2-tick.is-active { transform: scaleY(1.75); }
+.ex2-flash.ds-card { padding: 26px 28px; margin-bottom: 24px; }
+.ex2-flash-eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ex2-flash-counter { margin-left: auto; font-family: var(--serif); font-style: italic; font-size: 13px; color: var(--text-faint); text-transform: none; letter-spacing: 0; }
+.ex2-flash-q { font-family: var(--serif); font-size: 26px; line-height: 1.2; margin-bottom: 8px; }
+.ex2-flash-hint { margin-bottom: 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+
+/* ── Портрет режима ───────────────────────────────────────────────────── */
+.ex2-portrait.ds-card { padding: 8px 24px; }
+.ex2-portrait-row { padding: 16px 0; border-bottom: 1px solid var(--paper-sunk); }
+.ex2-portrait-row:last-child { border-bottom: none; }
+.ex2-portrait-row .ds-label { margin-bottom: 6px; }
+.ex2-portrait-cta { margin-top: 22px; width: 100%; min-height: 48px; }

@@ -1,0 +1,18 @@
+/* Оверлеи «Все задания» / «Все цели» (AllTasksOverlay, OverlayFrame) и широкая кнопка
+   .sk-wide-btn (ей пользуются ещё DonateNudge и дисклеймер терапевта).
+   Подключается сборником sheet-tasks.css. */
+/* ── Оверлеи «Все задания» / «Все цели» ── */
+.sk-overlay { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+.sk-overlay > .sk-scroll { min-height: 0; }
+.sk-page--narrow { max-width: 600px; }
+.sk-task { display: flex; align-items: center; gap: 12px; }
+.sk-task.is-past { opacity: .6; }
+.sk-task-mark { font-size: 18px; flex-shrink: 0; width: 22px; text-align: center; }
+.sk-task-main { flex: 1; min-width: 0; }
+.sk-task-text { font-size: 14px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.sk-wide-btn { width: 100%; }
+
+/* Телефон: корень листа не уходит под статус-бар установленного приложения (#902). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .sk-overlay { padding-top: var(--safe-top); }
+}

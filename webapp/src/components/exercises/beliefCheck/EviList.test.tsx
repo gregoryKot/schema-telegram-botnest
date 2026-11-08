@@ -3,7 +3,7 @@
 // телефоне RTL не доказывает — jsdom не применяет @media (hover: none); её
 // держит гейт check-hover-only-reveal.mjs. Здесь — что кнопка находится по
 // роли и имени и убирает свою строку (с окном «Отменить»), и геометрия зоны
-// нажатия из sheet-exercises.css: раскладку jsdom не считает, гейт тап-целей CSS-классы
+// нажатия из ex-belief.css: раскладку jsdom не считает, гейт тап-целей CSS-классы
 // не видит — без пина зону можно тихо ужать или вывести в соседнюю строку.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
@@ -62,12 +62,12 @@ describe('EviList — «Отменить» 5 секунд', () => {
   });
 });
 
-const CSS = readFileSync(resolve(__dirname, '../../../styles/sheet-exercises.css'), 'utf8');
+const CSS = readFileSync(resolve(__dirname, '../../../styles/ex-belief.css'), 'utf8');
 /** Объявления первого правила с ровно этим селектором в начале строки. */
 function decls(selector: string): string {
   const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const m = CSS.match(new RegExp(`(?:^|\\n)${esc}\\s*\\{([^}]*)\\}`));
-  if (!m) throw new Error(`правило «${selector}» не найдено в sheet-exercises.css`);
+  if (!m) throw new Error(`правило «${selector}» не найдено в ex-belief.css`);
   return m[1];
 }
 function px(block: string, prop: string): number {
@@ -76,7 +76,7 @@ function px(block: string, prop: string): number {
   return Number(m[1]);
 }
 
-describe('EviList — зона нажатия «×» (sheet-exercises.css)', () => {
+describe('EviList — зона нажатия «×» (ex-belief.css)', () => {
   it('кнопка «×» сама не меньше 44×44 — без псевдоэлемента-хитбокса', () => {
     const block = decls('.ex2-evi-x');
     expect(px(block, 'width')).toBeGreaterThanOrEqual(44);

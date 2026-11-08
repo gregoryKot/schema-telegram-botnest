@@ -2,10 +2,10 @@
 // состояние YSQ, счётчик сегмента, вкладки карт, суммы доната, «Управлять →»,
 // resize у полей) удалены — их роль играют ds-* из cabinet.css.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { cssBundle } from './cssBundle.test-helpers';
 
-const css = (name: string) => readFileSync(resolve(__dirname, name), 'utf8');
+// Файл вместе с частями из @import (раскрой 2026-11): sheet-tasks.css — сборник.
+const css = (name: string) => cssBundle(name);
 const rule = (src: string, sel: string) => {
   const m = src.match(new RegExp(`(^|\\n)${sel.replace(/[.]/g, '\\.')}\\s*\\{([^}]*)\\}`));
   return m ? m[2] : '';

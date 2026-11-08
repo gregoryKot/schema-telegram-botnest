@@ -7,7 +7,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SRC = join(__dirname, '..');
-const stripC = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '');
+// `@import …;` правил не несёт, но без вырезки прилип бы к первому селектору файла.
+const stripC = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@import[^;]*;/g, '');
 const cssFiles = readdirSync(__dirname).filter((f) => f.endsWith('.css'));
 const cssText = (f: string) => stripC(readFileSync(join(__dirname, f), 'utf8'));
 const indexCss = stripC(readFileSync(join(SRC, 'index.css'), 'utf8'));

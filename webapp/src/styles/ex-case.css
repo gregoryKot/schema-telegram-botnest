@@ -1,0 +1,7 @@
+/* Разбор «Что случилось»: чипы, опора, ссылки (caseFlow/*); остальное — case-quick.css.
+   Подключается из sheet-exercises.css. */
+/* ── Разбор случая ────────────────────────────────────────────────────── */
+.ex2-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.ex2-support { margin-top: 20px; }
+.ex2-link-row { display: block; min-height: 44px; padding: 12px 0; text-align: left; }
+.ex2-gap-b { margin-bottom: 16px; }

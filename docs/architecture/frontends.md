@@ -5,7 +5,7 @@
 > молчит — исправь строку в том же PR и запиши промах в [docs/agent/NAV_LOG.md](../agent/NAV_LOG.md).
 
 ### `webapp/` (сайт schemehappens.ru + визитка kotlarewski.*, JWT)
-- **Вход:** `webapp/src/main.tsx` подключает `webapp/src/index.css`, затем `shared/src/theme/utilities.css` (порядок важен), ставит `installChunkReloadListener()` и рендерит `App`.
+- **Вход:** `webapp/src/main.tsx` подключает `webapp/src/index.css`, `webapp/src/styles/index-tail.css` (разделы экранов, вынесенные из конца `index.css`), затем `shared/src/theme/utilities.css` (порядок важен), ставит `installChunkReloadListener()` и рендерит `App`.
 - **Роутинг:** все роуты в `webapp/src/App.tsx` (react-router-dom 7, `createBrowserRouter`), отдельного файла роутов нет. Два набора роутов, выбор по `isPersonalSite`:
   - `personalRoutes` — визитка практики: хост `kotlarewski.*` (`isPracticeHost`, `webapp/src/utils/domainChrome.ts`) или `?site=personal`. Роуты: `/`, `/articles`, `/reviews`, `/admin`, `/book`, `/booking/paid|manage`, `/subscribe`, `/donate`, `/privacy`, `/offer`. Продукта «Всё по схеме» здесь нет, сессия не поднимается (`AuthProvider bootstrapSession={!isPersonalSite}`).
   - `appRoutes` — продукт: лендинг, `/tests`, `/login`, `/auth/*`, `/link`. Юрстраницы `/privacy` и `/offer` — в обоих наборах: на них ведут вход, согласие и подвалы; карта сайта сверяется с `appRoutes` (`src/articles/sitemap.middleware.spec.ts`). Закрытая часть идёт через layout `RequireAuth` → `/account`, `/account/merge` и `AppShell`.
@@ -18,7 +18,8 @@
   - `webapp/src/utils/` — `addressForm.ts`, `AddressFormProvider.tsx`, `apiBase.ts`, `domainChrome.ts`, `theme.ts`, `uiPrefsSync.ts`, `chunkReload.ts`; часть файлов — реэкспорты из shared.
   - `webapp/src/auth/` — `AuthProvider`, `authContext`, `refreshSession` (refresh-кука и кросс-табный замок), `telegramWebAppAuth`, `loginConsent`, `clearLocalData`.
   - `webapp/src/host/` — поведение внутри WebView Telegram/MAX: `initHost`, `ExternalLink`, `useHostId`. Само определение хоста лежит в `shared/src/host/`.
-  - `webapp/src/styles/` — 34 css по экранам и шторкам. `webapp/src/index.css` сам импортирует только `cabinet.css` и `touch-fixes.css`, остальные подключаются из компонентов (`import '../styles/…css'`).
+  - `webapp/src/styles/` — css по экранам и шторкам. `webapp/src/index.css` сам импортирует `cabinet.css`, `paper.css` и `touch-fixes.css`, остальные подключаются из компонентов (`import '../styles/…css'`).
+  - Раскрой 2026-11: у каждого экрана свой файл. Общий файл, который подключают компоненты разных экранов, — сборник из `@import` (`sheet-tasks.css`, `sheet-diary.css`, `index-tail.css`) или файл экрана, чьи чужие разделы подключены `@import` в начале (`sheet-exercises.css`, `sheet-schemas.css`, `sheet-tracker.css`, `tracker-question.css`, `client-practice.css`, `practice-selfhelp.css`, `client-why.css`, `therapy-bridge.css`, `therapist-concept.css`). Порядок `@import` — это порядок правил в сборке; его и то, что часть не подключает компонент напрямую, держит `webapp/src/styles/cssSplit.test.ts`. Новое правило — в файл своего экрана.
   - `webapp/src/lib/` — Метрика (`metrika*.ts`, `webvisorRoutes.ts`) и `tone.ts` (оттенки разделов).
   - `webapp/src/legal/` — `operator.ts`: реквизиты оператора (оферта, политика, футер визитки); `LegalLayout.tsx` + `legalStyles.ts`: разметка и стили обеих страниц (глава, таблица реквизитов, поля).
   - `webapp/src/share/` — кнопки и шторка шаринга (`DayShareButton`, `DiaryShareButton`, `ShareCardSheet`, `SharePillButton`, `TherapistInviteShare`).

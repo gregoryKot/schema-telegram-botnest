@@ -1,4 +1,8 @@
 /* ── Шапка «Практики»: ряд заголовка, значок «Важное о самопомощи» и его лист ── */
+/* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
+   начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
+   этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
+@import './crisis.css';
 /* Ряд: заголовок, значок, справа ссылка «Настроить инструменты». На телефоне
    ссылка не помещается рядом с заголовком и переносится второй строкой, вправо. */
 .cp-head-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-8) var(--space-12); margin-top: var(--space-8); }
@@ -17,4 +21,3 @@
 .sh-text { margin: 0 0 var(--space-12); font-size: 14px; line-height: 1.65; color: var(--text-sub); }
 .sh-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-top: var(--space-16); }
 .sh-actions .ds-btn:last-child { flex: 1; }
-.sh-close { margin-top: var(--space-16); }

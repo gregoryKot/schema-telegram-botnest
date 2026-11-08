@@ -282,7 +282,7 @@ describe('шапка: компьютер с заголовком, телефон
     expect(more().textContent?.replace(/\s/g, '')).toBe('⋯Ещё');
     expect(root().classList.contains('tcp-page')).toBe(true);
     expect(root().classList.contains('u-pt40')).toBe(false);
-    const css = readFileSync(join(__dirname, '../../styles/therapist-concept.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const css = readFileSync(join(__dirname, '../../styles/concept-graph.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     const phoneAt = css.indexOf(`@media ${PHONE_MEDIA} {\n  .tcp-head`);
     expect(phoneAt).toBeGreaterThan(-1);
     const phone = css.slice(phoneAt);

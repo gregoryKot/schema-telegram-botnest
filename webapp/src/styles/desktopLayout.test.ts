@@ -16,7 +16,7 @@ const PHONE_ONLY: [string, RegExp][] = [['.ds-btn--lg', WIDE], ['.ds-seg--full',
 /** Примитивы и раскладки, у которых на ≥768 обязано быть своё правило; ':файл' — искать только в нём, по точному селектору. */
 const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-list', '.cw-item', '.sd-explainer-stack', '.cm-page > .ds-card--flush', '.ap-main--state'];
 /** Скрытие телефонных элементов: display: none только под точным ≤767. */
-const PHONE_HIDDEN: [string, string][] = [['therapist-concept.css', '.tcp-head-title'], ['therapist-concept.css', '.tcp-more-txt']];
+const PHONE_HIDDEN: [string, string][] = [['concept-graph.css', '.tcp-head-title'], ['concept-graph.css', '.tcp-more-txt']];
 /** Обёртки и правила компьютера, при которых телефон обязан остаться как в main: [селектор, вне медиа, только под ≥768]. */
 const C = /display:\s*contents/;
 const PHONE_SAME: [string, RegExp | null, RegExp | null][] = [

@@ -4,10 +4,10 @@
 // локальные копии удалены. CSS в jsdom не исполняется, поэтому сверяем строки
 // файлов (приём dsPrimitives.test.ts): удалённых классов нет, нужные правила есть.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { cssBundle } from './cssBundle.test-helpers';
 
-const read = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+// Файл вместе с частями, подключёнными через @import (раскрой 2026-11): сверка смотрит на весь раздел.
+const read = (f: string) => cssBundle(f).replace(/\/\*[\s\S]*?\*\//g, '');
 /** Правила файла как [селекторы, тело]. */
 const rulesOf = (css: string) =>
   [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => [m[1].split(',').map((s) => s.trim()), m[2]] as const);

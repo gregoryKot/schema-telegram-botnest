@@ -1,0 +1,5 @@
+/* Лист «Поговорить с кем-то» (TalkSheet): заголовок с мотивом. Каркас cw- общий с
+   «Зачем это всё» — в client-why.css, откуда этот файл и подключается. */
+.cw-title-row { display: flex; align-items: center; gap: 16px; }
+.cw-title-row .ds-h1 { margin: 0; flex: 1; min-width: 0; }
+.cw-title-row .pp-art { flex: none; width: 84px; height: auto; }

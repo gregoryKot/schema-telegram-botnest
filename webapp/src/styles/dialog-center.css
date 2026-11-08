@@ -1,0 +1,24 @@
+/* Текст и кнопки диалога по центру (.dialog-*: Dialog, выбор «ты/вы», достижения,
+   окна настроек). Подключается через index-tail.css. */
+/* ─── Диалог по центру (компонент Dialog) ───────────────────────────────────
+   Один вид для всех центрированных окон сайта (подтверждение, выбор «ты/вы»,
+   достижение, празднование): бумага, тонкая рамка, мягкая тень, заголовок —
+   serif обычного начертания, кнопки — .btn-primary / .btn-outline. Раньше у
+   каждого окна были свои радиусы (12/20/24/28), тени и пружинные анимации. */
+.dialog-title {
+  font-family: var(--serif); font-weight: 400;
+  font-size: 26px; line-height: 1.15; letter-spacing: -0.015em;
+  color: var(--text); margin: 0 0 10px;
+}
+.dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
+.dialog-error { font-size: 14px; line-height: 1.5; color: var(--accent-red); margin: 0 0 16px; }
+.dialog-actions { display: flex; gap: var(--space-10); }
+.dialog-actions > .btn-primary, .dialog-actions > .btn-outline { flex: 1; width: auto; }
+.dialog-actions > .btn-primary { padding: 12px 18px; }
+.dialog-actions > .btn-outline { padding: 11px 18px; }
+.dialog-link { /* 44 по высоте: «Позже» в выборе «ты/вы» было 40 (QA мобильной версии 2026-11, М1) */
+  display: block; width: 100%; min-height: 44px; margin-top: 6px; padding: 10px 0;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  font-size: 13px; color: var(--text-faint);
+}
+.dialog-link:hover { color: var(--text-sub); }

@@ -255,7 +255,7 @@ button.mm2-sync-text { min-height: 44px; margin: -12px 0; padding: 0; border: no
 .mm2-field-hint { margin-top: 4px; line-height: 1.4; }
 
 /* ── Телефон (≤767): явная высота холста ───────────────────────────────────
-   На ноутбуке высоту даёт цепочка flex от .therapist-sheet (index.css, блок
+   На ноутбуке высоту даёт цепочка flex от .therapist-sheet (therapist-sheet.css, блок
    ≥768); на телефоне страница течёт блоком, .mm2-fill { height: 100% } и
    .mm2-body { flex: 1 } наследуют auto, и вкладка схлопывалась в 0 (#906).
    min-height не лечит: процентные высоты внутри (корень редактора,

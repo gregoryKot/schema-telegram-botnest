@@ -1,0 +1,14 @@
+/* Объяснения пустого дневника и баннер сбоя загрузки (DiaryEmptyExplainer,
+   ExplainerPaperCard, DiaryLoadFailedBanner). Подключается сборником sheet-diary.css. */
+.sd-explainer-stack { display: flex; flex-direction: column; gap: 12px; }
+.sd-explainer-card { font-size: 14px; line-height: 1.65; }
+.sd-explainer-why { margin-top: 8px; font-size: 13px; }
+.sd-banner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; border-color: var(--err); font-size: 13px; line-height: 1.5; }
+
+/* Компьютер: пустой дневник — блок до 640 по центру, текст по центру (до #907). */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .sd-explainer-stack { width: 100%; max-width: 640px; margin: 0 auto; text-align: center; }
+  .sd-explainer-stack .ds-list-title { font: italic 400 24px/1.25 var(--serif); }
+  .sd-explainer-stack .ds-empty { text-align: center; }
+  .sd-explainer-stack .sd-explainer-card { text-align: left; }
+}

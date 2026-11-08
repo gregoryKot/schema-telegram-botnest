@@ -1,0 +1,11 @@
+/* «Мой путь» (JourneySheet, WebJourneyHero). Подключается сборником sheet-diary.css. */
+.sd-journey-inner { max-width: 680px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 20px) 80px; }
+.sd-journey-head { align-items: center; margin-bottom: 8px; }
+.sd-journey-head .pp-art { margin-right: auto; }
+.sd-journey-title { margin: 0; } /* кегль — ds-h1, без локального (#906) */
+/* Шапка листа («Мой путь», сомнение в режиме) — общая .ds-sheet-head/.ds-back из cabinet.css. */
+.sd-skel-gap { height: 8px; }
+.sd-hero { margin-top: 12px; }
+.sd-hero-num { font-size: 56px; margin-top: 8px; }
+.sd-hero-text { margin: 12px 0 0; font-size: 14px; line-height: 1.6; max-width: 460px; }
+.sd-hero-link { margin-top: 12px; min-height: 44px; font-size: 14px; }
