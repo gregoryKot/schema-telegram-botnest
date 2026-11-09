@@ -10,7 +10,7 @@ import { SceneQuiz } from '../../components/art/LandingScenesMore';
 import { TestsFrame } from './testsKit';
 import { QuizSign } from './QuizSign';
 import { quizLook } from './quizLook';
-import { glue } from '../landing/typo';
+import { glue } from '../../../../shared/src/utils/typo';
 
 export function TestsPage() {
   const { quizzes, error } = useQuizzes();

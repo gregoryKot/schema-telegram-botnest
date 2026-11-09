@@ -70,6 +70,31 @@ describe('Sidebar — «Справочник»', () => {
   });
 });
 
+// Карточка дня клиента: на открытой «Сегодня» её нет — там тот же трекер с индексом и полосками (b05);
+// в других разделах — индекс и полоски по оценкам.
+describe('Sidebar — карточка дня клиента', () => {
+  const NEEDS = ['attachment', 'autonomy', 'expression', 'play', 'limits'].map((id) => ({ id, emoji: '', title: id, chartLabel: id }));
+  const FULL = { attachment: 6, autonomy: 7, expression: 5, play: 6, limits: 6 };
+  const renderClient = (path: string) => render(
+    <MemoryRouter initialEntries={[path]}>
+      <Sidebar items={[]} therapistMode={false} userRole="CLIENT" onSwitchMode={vi.fn()} therapistClients={[]}
+               needs={NEEDS} ratings={FULL} displayName="Аня" onOpenTracker={vi.fn()} onOpenSettings={vi.fn()} />
+    </MemoryRouter>,
+  );
+
+  it.each(['/today', '/'])('%s: индекса и полосок дня в меню нет', (path) => {
+    renderClient(path);
+    expect(document.querySelector('.sb-today')).toBeNull();
+    expect(screen.queryByText('6,0')).toBeNull();
+  });
+
+  it.each(['/diary', '/more'])('%s: карточка дня с индексом и полосками', (path) => {
+    renderClient(path);
+    expect(screen.getByText('6,0')).toBeTruthy();
+    expect(document.querySelector('.sb-today svg')).not.toBeNull();
+  });
+});
+
 describe('Sidebar — «Показ экрана»', () => {
   it('выключен: имена, число клиентов и поиск на месте; тумблер объясняет, что сделает', () => {
     const { container } = renderSidebar();

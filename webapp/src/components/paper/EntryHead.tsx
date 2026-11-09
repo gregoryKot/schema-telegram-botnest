@@ -1,19 +1,18 @@
-// Шапка окон первого входа (редизайн 2026-11, docs/design/APP_2026-11.md, раздел b06-entry): лист
-// цветной бумаги во всю ширину окна сверху — надпись, заголовок Literata и знак сущности в углу,
-// как лист-герой потока (EntitySheet — он и рисует лист, здесь только место в окне). Один каркас на
-// выбор формы обращения, три шага согласий, приглашения терапевта и пары, «Поддержать проект»: приветствие —
-// персик и компактный коллаж первого экрана лендинга, конфиденциальность — небо и Limits, «не
-// терапия» — шалфей и Check, терапевт — Talk, пара — NeedArt attachment, исходы — OUTCOME_LOOK.
+// Шапка окон первого входа (docs/design/APP_2026-11.md, b06-entry): лист цветной бумаги во всю ширину окна —
+// надпись, заголовок Literata и знак сущности в углу, как лист-герой потока (лист рисует EntitySheet, здесь —
+// место в окне). Один каркас на «ты/вы», три шага согласий, приглашения терапевта и пары, «Поддержать проект»;
+// вид — paper/entryLook.ts.
 //  • scene — сцена во всю ширину над надписью (коллаж приветствия): знак в углу её бы сжал;
 //  • sticker — наклейка на сцене (бета): текст, а не декор — сцена скрыта от чтения, наклейка нет;
-//  • без надписи заголовок на узком листе встаёт рядом со знаком (ef-bare), а не под ним:
-//    иначе слева от знака оставалась пустая строка высотой в знак.
+//  • без надписи заголовок на узком листе встаёт рядом со знаком (ef-bare): иначе слева пустая строка;
+//  • слово длиннее колонки у знака на 320 (ef-long, hasLongWord) — знак строкой над заголовком, без переноса.
 // Окно (Dialog) отдаёт шапке свои поля: entry-flows.css — `.sk-dialog-box:has(> .ef-head)`.
 import type { ReactNode } from 'react';
 import type { EntityId, PaperHue, SheetLook } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
 import { BrandMark } from '../art/BrandMark';
 import { EntitySheet } from './EntitySheet';
+import { hasLongWord } from './entryLook';
 import '../../styles/entry-flows.css';
 
 export interface EntryHeadProps {
@@ -29,7 +28,8 @@ export interface EntryHeadProps {
 
 export function EntryHead({ look, label, title, sub, art, scene }: EntryHeadProps) {
   const sheetLook = scene ? { hue: scene.hue } : look;
-  const cls = `ef-head-sheet ef-art${label ? '' : ' ef-bare'}`;
+  const long = typeof title === 'string' && hasLongWord(title);
+  const cls = `ef-head-sheet ef-art${label ? '' : ' ef-bare'}${long ? ' ef-long' : ''}`;
   return (
     <div className="ef-head">
       {scene && (

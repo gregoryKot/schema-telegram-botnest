@@ -1,11 +1,10 @@
-// Вид окон первого входа (docs/design/APP_2026-11.md, раздел b06-entry): бумага и знак шапки
-// EntryHead. Терапевт, пара и исходы (готово, ссылка устарела) — строки ENTITY_LOOK и OUTCOME_LOOK,
-// здесь только то, чего в таблице нет: шаги согласий, выбор формы обращения, «Поддержать проект».
-// Три шага — три бумаги «входа»: приветствие на персике (как вход и быстрая запись), данные и
-// конфиденциальность — небо и рамка Limits (записи зашифрованы — тот же знак, что в «Доверии»
-// лендинга), «не замена терапии» — шалфей и Check (понятно и сделано). Соседи — дальше 40°.
+// Вид окон первого входа (docs/design/APP_2026-11.md, b06-entry): бумага и знак шапки EntryHead. Терапевт,
+// пара и исходы — строки ENTITY_LOOK и OUTCOME_LOOK; здесь — шаги согласий, «ты/вы», «Поддержать проект».
+// Три шага — три бумаги: приветствие на персике, данные и конфиденциальность — небо и рамка Limits (знак
+// «Доверия» лендинга), «не замена терапии» — шалфей и Check. Соседи — дальше 40°.
 import type { EntityId, PaperHue, SheetLook } from '../../../../shared/src/theme/entityLook';
 import type { InvitePreview } from '../../../../shared/src/therapy/useInvitePreview';
+import { OUTCOME_LOOK_LIT } from './outcomeLook';
 
 export type ConsentStep = 'welcome' | 'privacy' | 'not_therapy';
 
@@ -20,19 +19,20 @@ export const CONSENT_LOOK: Record<ConsentStep, SheetLook> = {
 /** Оттенки шагов по порядку — бумажки EntrySteps. */
 export const CONSENT_HUES: readonly PaperHue[] = CONSENT_STEPS.map((s) => CONSENT_LOOK[s].hue);
 
-/** Вход в кабинет — персик (выбор формы обращения со знаком продукта); два ответа — бумага двух
- *  следующих шагов входа, шалфей и небо: плитки равного веса, ни одна не выбрана заранее. */
+/** Выбор формы обращения — шапка персика; два ответа — шалфей и небо, плитки равного веса. */
 export const ENTRY_HUE: PaperHue = 45;
 export const ADDRESS_FORM_HUE: Record<'ty' | 'vy', PaperHue> = { ty: 135, vy: 240 };
 
 /** «Поддержать проект» — солома: просьба о самом продукте (знак продукта), не сущность кабинета. */
 export const DONATE_HUE: PaperHue = 70;
 
-/** Исходы «готово» и «устарело» — те же, что OUTCOME_LOOK (done, wait), литералами: рантайм-импорт
- *  OUTCOME_LOOK в главном потоке выносил entityLook, сцены и ExScreen в свои чанки, и CSS упражнений
- *  вставал раньше index.css (check-css-link-order; как у PaperAlert). Сверка — entryLook.test.ts. */
-export const JOIN_DONE_LOOK: SheetLook = { hue: 135, sign: 'check' };
-export const JOIN_STALE_LOOK: SheetLook = { hue: 70, sign: 'cup' };
+/** Исходы «готово» и «устарело» — OUTCOME_LOOK (done, wait) из литеральной таблицы (outcomeLook.ts). */
+export const JOIN_DONE_LOOK: SheetLook = OUTCOME_LOOK_LIT.done;
+export const JOIN_STALE_LOOK: SheetLook = OUTCOME_LOOK_LIT.wait;
+
+/** Слово не встаёт в строку рядом со знаком на 320 («Присоединиться» 186px при колонке 162): знак — строкой
+ *  над заголовком (`ef-long`, entry-flows.css), а не перенос по слогам — тот рвал и влезающие слова. */
+export const hasLongWord = (title: string): boolean => /\p{L}{13,}/u.test(title);
 
 /** Шапка приглашения по ссылке: пара — её вид (NeedArt attachment), терапевт — Talk на небе, в том
  *  числе «подключение уже есть» и «другой терапевт»; код не действует — исход «устарело» (Cup на

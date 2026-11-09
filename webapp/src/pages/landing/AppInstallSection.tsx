@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { api } from '../../api';
 import { Cta } from './BrandKit';
 import { PaperBand } from './PaperBand';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import { SceneHomeScreen } from '../../components/art/LandingScenesMore';
 import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';

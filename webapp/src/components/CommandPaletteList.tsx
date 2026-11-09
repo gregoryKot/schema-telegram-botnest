@@ -4,11 +4,11 @@
 // бледный кружок с инициалами, как в меню кабинета, переключение режима — Cluster («кто у руля»).
 // Быстрые действия идут группами реестра (Разобраться, Записать момент…) с подписью ds-label.
 // Пусто — PaperEmpty с чашкой. Палитра — ленивый чанк.
-import type { CSSProperties } from 'react';
 import type { SignKey } from '../../../shared/src/theme/entityLook';
 import { SignArt } from './art/SignArt';
 import { PaperEmpty } from './art/PaperEmpty';
 import { pressable } from '../utils/a11y';
+import { hueStyle } from '../lib/tone';
 
 export type CmdMark = { sign: SignKey } | { initials: string; hue: number };
 export interface CmdRow {
@@ -28,7 +28,7 @@ function Mark({ mark }: { mark: CmdMark }) {
   if ('sign' in mark) return <span className="cmd-mark" aria-hidden="true"><SignArt sign={mark.sign} size="row" /></span>;
   return (
     <span className="cmd-mark" aria-hidden="true">
-      <span className="ds-avatar cmd-avatar" style={{ '--h': mark.hue } as CSSProperties}>{mark.initials}</span>
+      <span className="ds-avatar cmd-avatar" style={hueStyle(mark.hue)}>{mark.initials}</span>
     </span>
   );
 }

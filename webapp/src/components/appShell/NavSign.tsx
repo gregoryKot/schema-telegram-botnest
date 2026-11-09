@@ -2,7 +2,7 @@
 // «Меню, ⌘K, объединение»). Подмножество реестра SignArt (art/SignArt.tsx): рамка кабинета живёт в
 // главном чанке, и в него идут только мотивы кабинета PaperArt* (~6 КБ), а не знаки листов
 // подсказок, доменов и потребностей — те остаются в чанках экранов. Рисунок тот же, что у SignArt
-// по тому же ключу (те же компоненты мотивов), — сверка в NavSign.test.tsx (правило №4).
+// по тому же ключу (те же компоненты мотивов), — сверка в navLook.test.tsx (правило №4).
 import type { ReactElement } from 'react';
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
 import type { ArtProps } from '../art/paper';

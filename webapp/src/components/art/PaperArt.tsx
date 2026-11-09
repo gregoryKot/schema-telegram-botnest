@@ -21,8 +21,8 @@ const strokeHeight = (v: number) => 16 + Math.round((Math.min(10, Math.max(0, v)
 /**
  * Пять полосок цветной бумаги. `marks` — по одной на потребность: плотная или бледная.
  * `values` — оценки дня в порядке NEED_ORDER (0–10, null — не оценена): высота полоски по
- * оценке, цвет — цвет данных своей потребности (NEED_DATA_PAPER); без оценки — пустой тон
- * бумаги той же высоты, что бледная. `even` — ровный день: полоски одной высоты, без наклона.
+ * оценке, цвет — цвет данных своей потребности (NEED_DATA_PAPER, он же в `color`: экран тонирует им
+ * пустое место); без оценки — пустой тон бумаги. `even` — ровный день: одна высота, без наклона.
  */
 export function Strokes({ marks, values, even, size }: ArtProps & { marks?: StrokeMark[]; values?: readonly (number | null)[]; even?: boolean }) {
   const tilt = (i: number, y: number) => (even ? undefined : `rotate(${STROKE_TILT[i]} ${16 + i * 22} ${y})`);
@@ -33,7 +33,7 @@ export function Strokes({ marks, values, even, size }: ArtProps & { marks?: Stro
           const h = v == null ? 72 : strokeHeight(v);
           return (
             <rect
-              key={i} data-rated={v == null ? 'no' : 'yes'} data-value={v ?? undefined}
+              key={i} data-rated={v == null ? 'no' : 'yes'} data-value={v ?? undefined} color={NEED_DATA_PAPER[i]}
               x={8 + i * 22} y={STROKE_FOOT - h} width="16" height={h} rx="8"
               fill={v == null ? PAPER.hollow : NEED_DATA_PAPER[i]} transform={tilt(i, STROKE_FOOT)}
             />

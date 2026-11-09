@@ -155,11 +155,12 @@ describe('AppShell — офлайн-индикатор (реальное browser
 describe('AppShell — виджет «Сегодня» в сайдбаре (реальные данные, не заглушка)', () => {
   // Правило «никаких хардкод-заглушек»: индекс дня либо посчитан из РЕАЛЬНЫХ
   // ratings, либо (на чистом аккаунте) показывает вход в трекер, а не
-  // выдуманное число. Подпись — «трекер»: открывается он (QA 2026-11, A-З9).
+  // выдуманное число. Подпись — «трекер»: открывается он (QA 2026-11, A-З9). Карточка — вне «Сегодня»:
+  // на главной тот же трекер листом (Sidebar.test.tsx), поэтому раздел здесь — «Записи».
   it('без оценок — CTA «Заполнить трекер», а не число', async () => {
     mockApi.needs.mockResolvedValueOnce([{ id: 'safety', emoji: '🛡️', title: 'Безопасность', chartLabel: 'Без.' }]);
     mockApi.ratings.mockResolvedValueOnce({}).mockResolvedValueOnce({});
-    renderAppShell('/today');
+    renderAppShell('/diary');
     await waitFor(() => expect(screen.getByText('Заполнить трекер →')).toBeTruthy());
   });
 
@@ -169,7 +170,7 @@ describe('AppShell — виджет «Сегодня» в сайдбаре (ре
       { id: 'autonomy', emoji: '🧭', title: 'Автономия', chartLabel: 'Авт.' },
     ]);
     mockApi.ratings.mockResolvedValueOnce({ safety: 8, autonomy: 6 }).mockResolvedValueOnce({});
-    renderAppShell('/today');
+    renderAppShell('/diary');
     // (8+6)/2 = 7,0 (fmtIndex: запятая, как на плитке) — ожидаем реально посчитанное значение, не хардкод.
     await waitFor(() => expect(screen.getByText('7,0')).toBeTruthy());
   });

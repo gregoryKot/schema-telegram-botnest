@@ -5,16 +5,24 @@ import { describe, it, expect } from 'vitest';
 import { OUTCOME_LOOK, PAPER_HUE, SIGN_KEYS } from '../../../../shared/src/theme/entityLook';
 import {
   ADDRESS_FORM_HUE, CONSENT_HUES, CONSENT_LOOK, CONSENT_STEPS, DONATE_HUE, ENTRY_HUE,
-  JOIN_DONE_LOOK, JOIN_STALE_LOOK, alertParts, joinLook,
+  JOIN_DONE_LOOK, JOIN_STALE_LOOK, alertParts, hasLongWord, joinLook,
 } from './entryLook';
 
 const gap = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d); };
 const PALETTE: readonly number[] = Object.values(PAPER_HUE);
 
 describe('entryLook', () => {
-  it('исходы приглашения совпадают с OUTCOME_LOOK: готово и устарело', () => {
+  it('исходы приглашения — «готово» и «устарело» таблицы исходов (сама таблица сверена в outcomeLook.test.ts)', () => {
     expect(JOIN_DONE_LOOK).toEqual(OUTCOME_LOOK.done);
     expect(JOIN_STALE_LOOK).toEqual(OUTCOME_LOOK.wait);
+  });
+
+  it('hasLongWord: слово длиннее колонки рядом со знаком на 320 — только у пары и конфиденциальности', () => {
+    for (const t of ['Присоединиться к паре?', 'Данные и конфиденциальность']) expect(hasLongWord(t)).toBe(true);
+    for (const t of ['Поддержать проект', 'Как удобнее общаться?', 'Открыть доступ терапевту?', 'Подключение уже есть',
+      'Ссылка не действует', 'Есть другой терапевт', 'Доступ открыт', 'Важно знать', 'Всё по схеме']) {
+      expect(hasLongWord(t)).toBe(false);
+    }
   });
 
   it('joinLook: «Доступ открыт» — готово, пара — её вид, код не действует — устарело, иначе — терапевт', () => {

@@ -4,7 +4,7 @@ import type { QuizDto, QuizResultDto } from '../../../../shared/src/quiz/quizEng
 import { SceneNotice } from '../../components/art/LandingScenes';
 import { AUTHOR_SITE, trackPracticeClick } from '../landing/practiceLink';
 import { resultHues } from './quizLook';
-import { glue } from '../landing/typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import { QuizAppCta } from './QuizAppCta';
 
 interface Props {

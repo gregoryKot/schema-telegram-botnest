@@ -103,6 +103,11 @@ describe('боковое меню — свернуть и развернуть',
     expect(rail.querySelector('.sb-rail-head [data-brand-mark]')).toBeTruthy();
     expect(rail.querySelector('a')).toBeNull(); // в силуэте знак — не ссылка
   });
+
+  it('силуэт меню на «Сегодня» — без карточки дня, как само меню; в других разделах — с ней', () => {
+    expect(render(<SidebarSkeleton today />).container.querySelector('.sb-skel-today')).toBeNull();
+    expect(render(<SidebarSkeleton />).container.querySelector('.sb-skel-today')).toBeTruthy();
+  });
 });
 
 // Владелец 2026-11: «логотип должен кидать на главную». Главная раздела — «Сегодня»:

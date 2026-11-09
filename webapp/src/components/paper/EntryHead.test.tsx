@@ -29,6 +29,14 @@ describe('EntryHead', () => {
     expect(screen.getByText('Шаг 2 из 3').className).toContain('ds-label');
   });
 
+  it('слово длиннее колонки рядом со знаком — ef-long (знак над заголовком на 320), короткие — без него', () => {
+    const { container, rerender } = render(<EntryHead look="pair" title="Присоединиться к паре?" />);
+    const sheet = () => container.querySelector('.ef-head > .pa-sheet')!;
+    expect(sheet().className).toContain('ef-long');
+    rerender(<EntryHead look={{ hue: 70 }} title="Поддержать проект" />);
+    expect(sheet().className).not.toContain('ef-long');
+  });
+
   it('сцена над листом: та же бумага, сцена скрыта от чтения, наклейка — текст; лист без знака', () => {
     const { container } = render(
       <EntryHead look={{ hue: 45 }} title="Всё по схеме" scene={{ art: <svg data-testid="art" />, hue: 45, sticker: 'БЕТА-ВЕРСИЯ' }} />,

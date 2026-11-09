@@ -7,7 +7,7 @@ import { shouldAskAddressForm, markAddressFormAsked } from '../../../shared/src/
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { hueStyle } from '../lib/tone';
 import { Dialog } from './Dialog';
-import { EntryBrand, EntryHead } from './paper/EntryHead';
+import { EntryHead } from './paper/EntryHead';
 import { PaperAlert } from './paper/PaperAlert';
 import { ADDRESS_FORM_HUE, ENTRY_HUE } from './paper/entryLook';
 
@@ -60,11 +60,11 @@ function AddressFormPickerModal({ onClose }: { onClose: (answered: boolean) => v
   // onSaved — тот же goBack, что у «Назад» браузера (CLAUDE.md: после сохранения — goBack()).
   const { failed, choose } = useAddressFormChoice(setForm, api.updateSettings, reportClientError, goBack);
 
-  // Первый вопрос продукта: шапка-лист персика со знаком продукта («это мы»), два равных ответа —
-  // плитки бумаги без заливки: до выбора ни один не выглядит выбранным (кольца автофокуса нет — Dialog).
+  // Первый вопрос продукта: шапка-лист персика без картинки (картинка — сами ответы; знак продукта — листам о
+  // продукте), две плитки бумаги без заливки: до выбора ни одна не выглядит выбранной (кольца автофокуса нет — Dialog).
   return (
     <Dialog label="Как удобнее общаться?" zIndex={300} onEscape={() => goBack()} maxWidth={480}>
-      <EntryHead look={{ hue: ENTRY_HUE }} art={<EntryBrand />} title="Как удобнее общаться?" />
+      <EntryHead look={{ hue: ENTRY_HUE }} title="Как удобнее общаться?" />
       <p className="sk-dialog-text ef-note">Поменять можно в любой момент в настройках.</p>
       <div className="ef-forms">
         <button type="button" className="pp-paper ef-form" style={hueStyle(ADDRESS_FORM_HUE.ty)} onClick={() => choose('ty')}>

@@ -1,11 +1,12 @@
-import { createContext, useContext, useMemo, type CSSProperties } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { useTr } from '../../utils/addressForm';
+import { hueStyle } from '../../lib/tone';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { Strokes } from '../../components/art/PaperArt';
 import type { ArtProps } from '../../components/art/paper';
 import { SignScene } from '../../components/art/SceneParts';
 import type { TrackerSummary } from './todayFeedModel';
-import { strokeValues } from './strokeValues';
+import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
 import { trackerCta } from './trackerCta';
 
 // Полоски дня — знак трекера с данными (Strokes values): высота — оценка, пустое место — тон
@@ -29,10 +30,10 @@ interface Props {
  *  (client-today.css). */
 export function TrackerBlock({ ratings, tracker, meta, onClick }: Props) {
   const tr = useTr();
-  const values = useMemo(() => strokeValues(ratings), [ratings]);
+  const values = useMemo(() => dayStrokeValues(ratings), [ratings]);
   const done = tracker.total > 0 && tracker.filled >= tracker.total;
   return (
-    <button type="button" className="pp-block pp-block--btn ct-main" style={{ '--h': ENTITY_LOOK.tracker.hue } as CSSProperties} onClick={onClick}>
+    <button type="button" className="pp-block pp-block--btn ct-main" style={hueStyle(ENTITY_LOOK.tracker.hue)} onClick={onClick}>
       <span className="pp-hero">
         <span className="pp-hero-body">
           <span className="ds-label">Трекер</span>

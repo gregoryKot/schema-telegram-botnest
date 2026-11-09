@@ -2,17 +2,12 @@
 // бумаги исхода со знаком крупно (тень-вырезка), надпись, заголовок, лид, одна кнопка, тихая ссылка, «код
 // для поддержки». Для загрузки кабинета, ErrorBoundary, RouteErrorScreen, ConnectionTrouble, ServicePage,
 // 404, /link, /merge, «спасибо». Страница может жить вне оболочки кабинета — лист всегда светлый (light-lock).
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { Look, OutcomeId } from '../../../../shared/src/theme/entityLook';
+import { hueStyle } from '../../lib/tone';
+import { OUTCOME_LOOK_LIT } from './outcomeLook';
 import { SignHero } from './SignHero';
 import '../../styles/paper-app.css';
-
-/** Исход → вид: литералы OUTCOME_LOOK (сверка — PaperOutcome.test.tsx), а не рантайм-импорт entityLook: исход живёт в
- *  главном потоке (загрузка кабинета, сбои), импорт туда перекраивал чанки — CSS упражнений вставал раньше index.css. */
-const OUTCOME_LOOK: Record<OutcomeId, Look> = {
-  done: { hue: 135, sign: 'check' }, limit: { hue: 240, sign: 'limits' }, wait: { hue: 70, sign: 'cup' },
-  our_side: { hue: 45, sign: 'breath' }, updated: { hue: 135, sign: 'leaf' },
-};
 
 /** Кнопка или ссылка (`href` — переход на другую страницу сайта). */
 export interface OutcomeAction { label: ReactNode; onClick?: () => void; href?: string }
@@ -36,9 +31,9 @@ function ActionView({ action, cls }: { action: OutcomeAction; cls: string }) {
 }
 
 export function PaperOutcome({ outcome, eyebrow, title, lead, action, link, code, children, className }: PaperOutcomeProps) {
-  const { hue, sign } = typeof outcome === 'string' ? OUTCOME_LOOK[outcome] : outcome;
+  const { hue, sign } = typeof outcome === 'string' ? OUTCOME_LOOK_LIT[outcome] : outcome; // литералы — outcomeLook.ts
   return (
-    <div className={`light-lock pa-outcome${className ? ` ${className}` : ''}`} style={{ '--h': hue } as CSSProperties}>
+    <div className={`light-lock pa-outcome${className ? ` ${className}` : ''}`} style={hueStyle(hue)}>
       <div className="pa-outcome-card" data-sign={sign}>
         <div className="pp-paper pa-outcome-band" aria-hidden="true"><SignHero sign={sign} /></div>
         <div className="pa-outcome-body">

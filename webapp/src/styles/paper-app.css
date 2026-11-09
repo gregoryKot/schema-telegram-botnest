@@ -174,7 +174,10 @@
   .pa-done-scene > .scn { width: min(100%, 250px); }
   .pa-done-title { font-size: 28px; }
   .ds-btn.pa-alert-retry { width: 100%; }
-  .pa-outcome { align-items: flex-start; padding: calc(16px + var(--safe-top)) 16px 24px; }
+  /* Полноэкранный исход и на телефоне — по центру (как на компьютере и в main): прижатый к верху лист
+     с пустыми двумя третями ниже читался недогруженным экраном (ревью g1). У верха — только сбой
+     раздела по месту (.sk-crash-outcome, error-screen.css). */
+  .pa-outcome { padding: calc(16px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); }
   .pa-outcome-card { box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h)); border-radius: 24px; }
   .pa-outcome-band { height: 148px; }
   .pa-outcome-band .scn-sign { width: 112px; }

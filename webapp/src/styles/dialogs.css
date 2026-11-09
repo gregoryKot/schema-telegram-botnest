@@ -15,9 +15,5 @@
 .sk-dialog-actions > .ds-btn { flex: 1; }
 .ds-btn.sk-btn-danger:not(:disabled) { background: var(--accent-red); color: var(--on-accent-red); }
 .ds-btn.sk-btn-danger:hover:not(:disabled) { background: var(--accent-red); opacity: .9; }
-/* Окно открыто касанием или само (Dialog: data-focus="quiet") — автофокус первой кнопки без
-   кольца: двойное кольцо на «На «ты»» и первой кнопке каждого окна входа читалось выбором.
-   С клавиатуры кольцо есть сразу, а после первого Tab — и в «тихом» окне. */
-.sk-dialog-box[data-focus='quiet'] :focus-visible, .sk-dialog-box[data-focus='quiet']:focus-visible { outline: none; }
 .sk-dialog-link { display: block; width: 100%; min-height: 44px; margin-top: 6px; }
 .sk-dialog-box .ds-btn.sk-wide { width: 100%; }

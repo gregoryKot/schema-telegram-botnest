@@ -3,7 +3,7 @@ import { Cta } from './BrandKit';
 import { AuthorPhoto } from '../../components/AuthorAvatar';
 import { AUTHOR_SITE, trackPracticeClick } from './practiceLink';
 import { AUTHOR_HUE } from './productContent';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/product-landing.css';
 import '../../styles/product-landing-author.css';
 

@@ -30,8 +30,8 @@ export function Skeleton({
 export function ScreenSkeleton() {
   return (
     <div aria-hidden className="ds-page sks-screen">
-      <div className="sks-screen-head"><Skeleton width={120} height={12} /><Skeleton width="55%" height={34} radius={10} /></div>
-      <div className="pp-paper sks-screen-sheet"><Skeleton width="45%" height={20} /><Skeleton width="80%" height={12} /></div>
+      <div className="sks-head"><Skeleton width={120} height={12} /><Skeleton width="55%" height={34} radius={10} /></div>
+      <div className="pp-paper sks-paper sks-sheet"><Skeleton width="45%" height={20} /><Skeleton width="80%" height={12} /></div>
       <SkeletonList rows={3} height={64} />
     </div>
   );

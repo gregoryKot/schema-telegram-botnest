@@ -15,6 +15,10 @@ describe('WhyThree', () => {
     expect(hues).toEqual([ENTITY_LOOK.tracker.hue, ENTITY_LOOK.case.hue, ENTITY_LOOK.diary.hue].map(String));
     for (const li of items) expect(li.querySelector('svg.pp-art--square[aria-hidden="true"]')).toBeTruthy();
   });
+  it('короткий предлог не висит в конце строки на телефоне: «со» держится со словом (glue)', () => {
+    const { container } = render(<WhyThree />);
+    expect(container.textContent).toContain('со\u00a0временем');
+  });
   it('листы — рассказ, не действие: ни кнопок, ни ссылок', () => {
     const { container } = render(<WhyThree />);
     expect(container.querySelectorAll('button, a').length).toBe(0);

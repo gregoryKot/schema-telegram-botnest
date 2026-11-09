@@ -668,8 +668,10 @@ a { color: inherit; text-decoration: none; }
 .topbar-sos > .pp-art--nav { width: 26px; height: 16px; }
 /* Зона нажатия «Мне плохо» и «Перейти к…» — 44 по высоте без смены видимой
    плашки (QA 2026-11, A-М8: были 32 и 34): прозрачный слой над кнопкой. Топбар
-   56px, слой в него помещается. */
+   56px, слой в него помещается. inset слоя считается от края под рамкой: у поиска
+   рамка 1px, поэтому его слой выходит на 5px (иначе 42, ревью g1). */
 .topbar-sos::after, .search-pill::after { content: ''; position: absolute; inset: -4px 0; }
+.search-pill::after { inset: -5px -1px; }
 /* Плашка «нет сети» (OfflineBanner) — полоса соломы со знаком Cup («подождём»): смысл текста —
    «всё сохранится», поэтому без красного. На компьютере — под верхней строкой (третья строка
    сетки .main), на телефоне — вверху страницы. */
@@ -822,7 +824,8 @@ a { color: inherit; text-decoration: none; }
 .cookie-title { font-family: var(--serif); font-size: 18px; line-height: 1.2; color: var(--text); }
 .cookie-text { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-sub); }
 .cookie-link { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
-.ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; }
+/* «Понятно» — 44 по высоте и на компьютере (на планшете это касание): --sm там 40 (ревью g1). */
+.ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; height: 44px; border-radius: 22px; }
 .cookie-banner--compact .ds-btn.cookie-btn { align-self: center; }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cookie-banner-wrap { right: auto; width: 440px; padding-left: 24px; }
@@ -837,9 +840,15 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ─── Силуэт раздела без своего (Skeleton.tsx, ScreenSkeleton) ───────────────
-   Во всю ширину колонки и в ритме .ds-page: шапка, лист бумаги тише экрана и строки списка. */
-.sks-screen-head { display: flex; flex-direction: column; gap: 12px; }
-.sks-screen-sheet { --h: 70; display: flex; flex-direction: column; gap: 12px; padding: 22px 20px; background: oklch(0.94 0.015 var(--h)); }
+   Во всю ширину колонки и в ритме .ds-page: шапка, лист бумаги тише экрана и строки списка.
+   Шапка, лист и тихая бумага — общие с силуэтами разделов (ShellSkeletons, shell-skeletons.css): здесь,
+   в главном CSS, потому что общий силуэт рисуется и без их чанка. Тихая бумага — тот же лист pp-paper,
+   что у экрана, хрома вдвое ниже (место уже цветное, а данных ещё нет); --sks-paper — для блока, который
+   бумагой становится только на компьютере (разворот «Сегодня»). */
+.sks-head { display: flex; flex-direction: column; gap: 12px; }
+.sks-paper { --sks-paper: oklch(0.94 0.015 var(--h, 70)); }
+.pp-paper.sks-paper, .pp-paper.sks-paper:hover { background: var(--sks-paper); cursor: default; }
+.sks-sheet { display: flex; flex-direction: column; gap: 14px; padding: 22px 20px; }
 /* Страница аккаунта, пока вход поднимается (AuthGateViews): колонка по центру, без меню кабинета. */
 .gate-page { flex: 1; display: flex; justify-content: center; min-height: 100vh; background: var(--bg); }
 .gate-page > .sks-screen { max-width: 720px; }
@@ -1035,6 +1044,10 @@ input:focus-visible,
 textarea:focus-visible {
   outline: none;
 }
+/* Окно или лист открыты касанием или сами (useQuietFocus: Dialog, WhySheet — data-focus="quiet") —
+   автофокус первой кнопки без кольца: двойное кольцо на «На «ты»» и на «← Закрыть» листа «Зачем это
+   всё» читалось выбором. С клавиатуры кольцо есть сразу, а после первого Tab — и в «тихом» окне. */
+[data-focus='quiet'] :focus-visible, [data-focus='quiet']:focus-visible { outline: none; }
 
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках

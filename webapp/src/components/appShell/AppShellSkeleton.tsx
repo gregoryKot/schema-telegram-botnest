@@ -12,7 +12,7 @@ export function AppShellSkeleton({ section, therapistMode, pathname }: { section
   useMarkShellLoading(); // баннер куки ждёт конца загрузки (CookieBanner)
   return (
     <div className="app-shell light-lock" aria-busy="true" data-testid="app-shell-skeleton">
-      <SidebarSkeleton therapist={therapistMode} />
+      <SidebarSkeleton therapist={therapistMode} today={section === 'today'} />
       <div className="main">
         <div className="topbar" aria-hidden="true" />
         <div className="canvas">

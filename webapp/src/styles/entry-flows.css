@@ -47,7 +47,7 @@
 .ef-steps > i.is-done { background: oklch(0.78 0.07 var(--h)); box-shadow: none; }
 .ef-steps > i.is-on { background: oklch(0.66 0.1 var(--h)); box-shadow: none; transform: rotate(-10deg) scale(1.2); }
 
-/* Знак продукта плиткой — значок приложения на листе (выбор формы обращения, «Поддержать проект»,
+/* Знак продукта плиткой — значок приложения на листе («Поддержать проект» — просьба о самом продукте,
    «Держи под рукой»). */
 .ef-brand { position: relative; display: inline-flex; border-radius: 15px; box-shadow: 5px 6px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-5deg); }
 .ef-brand > svg { width: 100%; height: auto; max-width: 64px; }
@@ -64,13 +64,22 @@
   .pa-sheet.ef-art[data-sign] > .pa-sheet-art { width: 88px; }
   .pa-sheet.ef-art.pa-sheet--scene > .pa-sheet-art { width: 92px; padding: 6px 0; }
 }
-/* 320 и 360 (контейнер — поле содержимого листа: на 390 оно 312, на 360 — 282): «конфиденциальность»
-   и «Присоединиться» рядом со знаком не влезали в строку — кегль и знак меньше, длинное слово
-   переносится по слогам (lang="ru"). Окно на компьютере (поле 418 и шире) — кегль 28. */
+/* 320 и 360 (контейнер — поле содержимого листа: на 390 оно 312, на 360 — 282, на 320 — 242): кегль и
+   знак меньше. Перенос по слогам не включаем: Chrome с hyphens: auto добивал строку переносом и там, где
+   слово влезает целиком («Поддер-жать проект»), — строки делит balance заголовка. Окно на компьютере
+   (поле 418 и шире) — кегль 28. */
 @container pa-sheet (max-width: 290px) {
-  .ef-head .pa-sheet.ef-head-sheet .pa-sheet-title { font-size: 22px; hyphens: auto; }
+  .ef-head .pa-sheet.ef-head-sheet .pa-sheet-title { font-size: 22px; hyphens: manual; }
   .pa-sheet.ef-art.ef-bare[data-sign] > .pa-sheet-art { width: 66px; }
   .pa-sheet.ef-art.ef-bare.pa-sheet--scene > .pa-sheet-art { width: 76px; }
+}
+/* Слово длиннее колонки рядом со знаком (ef-long: «Присоединиться» 186px при колонке 162 на 320,
+   «конфиденциальность» 241 при поле 242): знак встаёт строкой над заголовком, заголовок — во всю
+   ширину листа, кегль на ступень меньше. До 345 колонка у знака ещё уже слова. */
+@container pa-sheet (max-width: 270px) {
+  .ef-head .pa-sheet.ef-head-sheet.ef-long .pa-sheet-title { font-size: 21px; }
+  .pa-sheet.ef-art.ef-bare.ef-long > .pa-sheet-art { grid-column: 1; grid-row: 1; justify-self: start; }
+  .pa-sheet.ef-bare.ef-long:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { grid-column: 1 / -1; grid-row: 2; margin-top: 10px; }
 }
 
 /* ── Согласия: текст прокручивается, галочка и кнопки стоят ──────────────── */
