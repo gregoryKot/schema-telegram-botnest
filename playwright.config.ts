@@ -54,6 +54,7 @@ export default defineConfig({
         'asset-recovery.spec.ts',
         'today-fit.spec.ts',
         'screen-customize.spec.ts',
+        'sheet-scroll.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },

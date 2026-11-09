@@ -169,6 +169,7 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/letters': [], // exercises.controller.ts
   'GET /api/mode-notes': [], // notes.controller.ts
   'GET /api/needs': STUB_NEEDS,
+  'GET /api/note': { text: null, tags: [] }, // BotService.getNote: заметки к дню нет
   'GET /api/phrase-checks': [], // phrase-check.controller.ts
   'GET /api/plan/pending': [], // plans.controller.ts
   'GET /api/plans/history': [],
