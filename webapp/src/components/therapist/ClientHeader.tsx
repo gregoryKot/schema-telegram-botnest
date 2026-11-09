@@ -47,7 +47,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
             <div className="tk-alias-form">
               <input ref={aliasInputRef} className="tk-alias-input" value={aliasInput} onChange={e => setAliasInput(e.target.value)}
                 maxLength={CLIENT_NAME_MAX}
-                onKeyDown={e => { if (e.key === 'Enter') saveAlias(); if (e.key === 'Escape') setRenamingAlias(false); }} />
+                onKeyDown={e => { if (e.key === 'Enter') void saveAlias(); /* сбой ловит сам: aliasError у поля */ if (e.key === 'Escape') setRenamingAlias(false); }} />
               <button className="ds-btn ds-btn--sm" onClick={saveAlias} disabled={aliasSaving}>{aliasSaving ? '…' : 'OK'}</button>
               <button className="ds-btn ds-btn--icon" onClick={() => setRenamingAlias(false)} aria-label="Отменить">✕</button>
               {aliasError && <span className="tk-error">{aliasError}</span>}

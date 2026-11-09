@@ -8,7 +8,8 @@ type Stats = Partial<Record<ExId, ExStats>>;
 export function useExerciseStats(): Stats {
   const [stats, setStats] = useState<Stats>({});
   useEffect(() => {
-    Promise.allSettled([
+    // allSettled не отклоняется: упавший источник просто остаётся без счётчика.
+    void Promise.allSettled([
       api.getBeliefChecks(), api.getSchemaNotes(), api.getModeNotes(),
       api.getLetters(), api.getSafePlace(), api.getChildhoodRatings(), api.getPhraseChecks(),
     ]).then(([beliefs, schemas, modes, letters, safe, wheel, phrases]) => {

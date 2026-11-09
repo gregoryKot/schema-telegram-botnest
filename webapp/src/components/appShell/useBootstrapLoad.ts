@@ -145,8 +145,8 @@ export function useBootstrapLoad({ navigate, initialPathname }: Params) {
       }
     }).catch(fail('профиль'));
 
-    Promise.allSettled([initPromise, activityPromise, outboxPromise, needsRatingsPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
-      .then(() => {
+    void Promise.allSettled([initPromise, activityPromise, outboxPromise, needsRatingsPromise, plansPromise, childhoodPromise, ysqPromise, profilePromise])
+      .then(() => { // allSettled не отклоняется, источники пойманы выше; отчёт сам не бросает
         if (failed.length) {
           reportClientError({ message: `appshell bootstrap fail: ${failed.join(', ')}`, section: 'appshell.bootstrap' });
         }

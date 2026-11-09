@@ -13,7 +13,8 @@ export function useQuizzes(): { quizzes: QuizDto[] | null; error: boolean } {
   useEffect(() => {
     if (isLoading) return;
     let cancelled = false;
-    (async () => {
+    // Сбой ловит try/catch внутри: error → экран «не загрузилось».
+    void (async () => {
       try {
         let form: 'ty' | 'vy' | undefined;
         if (isAuthenticated) {
