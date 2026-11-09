@@ -3,7 +3,7 @@ import type { Need } from '../../types';
 import { useNeedData } from '../../needData';
 import { wordForValue } from '../../../../shared/src/needs/ratingWords';
 import { needDataColor } from '../needDataColor';
-import { barShare } from './trackerFlow';
+import { ratingShare } from '../../../../shared/src/needs/ratingShare';
 
 /**
  * Пять столбиков дня (экран «Готово»): у каждого — паз во всю высоту тоном глубже бумаги
@@ -19,7 +19,7 @@ export function DayBars({ needs, ratings }: { needs: Need[]; ratings: Record<str
       {needs.map((n) => {
         const v = ratings[n.id] ?? 0;
         const color = needDataColor(n.id);
-        const style = { '--v': barShare(v), ...(v > 0 && color && { '--bar': color }) } as CSSProperties;
+        const style = { '--v': ratingShare(v), ...(v > 0 && color && { '--bar': color }) } as CSSProperties;
         return (
           <li key={n.id} aria-label={`${NEED_DATA[n.id]?.name ?? n.chartLabel}: ${wordForValue(v)?.label ?? 'нет оценки'}`}>
             <span className="tq-bar-slot" aria-hidden="true">

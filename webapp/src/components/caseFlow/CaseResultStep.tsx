@@ -12,8 +12,8 @@ import type { QuickResultView } from '../../../../shared/src/case/quick/caseQuic
 /**
  * Итог разбора: предложенный режим, что собрали, что поможет сейчас. «Сохранить»
  * — это и согласие с режимом; сомнение уходит в «Не похоже — другие режимы».
- * Лист — бумага группы найденного режима со сценой SceneCaseFound (лента разбора
- * и знак группы), а не шалфей шагов: здесь главное — кто взял управление.
+ * Лист — бумага группы режима со сценой SceneCaseFound (лента и знак группы), а не шалфей
+ * шагов: главное — кто взял управление. На телефоне сцена углом (cq-scene--found).
  */
 export function CaseResultStep({
   view,
@@ -39,7 +39,7 @@ export function CaseResultStep({
     <CaseStepScreen
       onBack={onBack}
       look={look}
-      heroArt={<SceneCaseFound sign={look.sign} hue={look.hue} className="cq-scene" />}
+      heroArt={<SceneCaseFound sign={look.sign} hue={look.hue} className="cq-scene cq-scene--found" />}
       eyebrow="Похоже на режим"
       title={view.name}
       lede={view.desc || undefined}

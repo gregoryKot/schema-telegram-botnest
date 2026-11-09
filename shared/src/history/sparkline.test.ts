@@ -75,15 +75,17 @@ describe('sparklineGeometry', () => {
     expect(g.count).toBe(4);
     expect(g.line).not.toContain(` ${SPARK_H - 1}.0`);
     expect(g.area.match(/Z/g)).toHaveLength(2);
-    expect(g.singles).toBe('');
+    expect(g.singles).toEqual([]);
+    expect(g.points).toEqual([]);
     // Мостик через пропуск — от последнего дня отрезка к первому дню следующего, без точки на пропуске.
     expect(g.gaps).toBe('M 25.0 25.0 L 75.0 2.0');
   });
 
   // Ревью g2 r4: одиночный день рисовался отрезком нулевой длины в линии — точка в 2px, неделя с оценками
-  // через день читалась пустой. Теперь одиночные дни — отдельным путём (толстая точка), линия — только
-  // отрезки из двух дней и больше.
-  it('одиночный день между пропусками — в singles (точкой), не в линии и без заливки', () => {
+  // через день читалась пустой. Теперь одиночные дни — точками, линия — только отрезки из двух дней и больше.
+  // Ревью g2 r5: точка — HTML-маркер по процентам (points), а не отрезок нулевой длины в пути: его рисует
+  // только круглый конец обводки, и в WebKit (Telegram, PWA на iOS) это не проверено.
+  it('одиночный день между пропусками — точкой-маркером (points), не в линии и без заливки', () => {
     const g = sparklineGeometry(
       [
         { date: '2026-10-03', ratings: {} },
@@ -92,7 +94,8 @@ describe('sparklineGeometry', () => {
       ],
       'autonomy',
     );
-    expect(g.singles).toBe('M 50.0 2.0 L 50.0 2.0');
+    expect(g.singles).toEqual([{ x: 50, y: 2 }]);
+    expect(g.points).toEqual([{ left: 50, top: (2 / SPARK_H) * 100 }]);
     expect(g.line).toBe('');
     expect(g.area).toBe('');
     expect(g.gaps).toBe('');
@@ -106,7 +109,7 @@ describe('sparklineGeometry', () => {
     const g = sparklineGeometry(rate, 'autonomy');
     // Слева старые: –, 5·5 (отрезок), –, 5, –, 5 → линия из двух дней, две точки, два мостика.
     expect(g.line.match(/M /g)).toHaveLength(1);
-    expect(g.singles.match(/M /g)).toHaveLength(2);
+    expect(g.points).toHaveLength(2);
     expect(g.gaps.match(/M /g)).toHaveLength(2);
     expect(g.count).toBe(4);
   });

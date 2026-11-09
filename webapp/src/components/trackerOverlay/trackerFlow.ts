@@ -47,11 +47,6 @@ export function summarizeDay(ids: string[], ratings: Ratings): DaySummary {
   return { filled, total: ids.length, index: dayIndex(ids, rated), lowestId };
 }
 
-/** Доля высоты столбика дня (DayBars) от полной: оценка 0–10 → 0…1; без оценки — 0. */
-export function barShare(v: number): number {
-  return v > 0 ? Math.min(10, v) / 10 : 0;
-}
-
 /** Фраза-наблюдение под индексом дня. Название потребности — в нижнем регистре. */
 export function lowestObservation(needName: string): string {
   return `Ниже всего — ${needName.toLowerCase()}. Не вывод, а точка: посмотрим, повторится ли.`;

@@ -17,6 +17,19 @@
   .ex2-hero.pa-sheet:has(.cq-scene) > .pa-sheet-body > * { margin-top: 0; }
   .ex2-hero.pa-sheet:has(.cq-scene) .pa-sheet-label { align-self: flex-start; }
 }
+/* Итог разбора — последний шаг рабочего потока: на узком листе сцена углом справа на строке надписи (~150),
+   а не во всю ширину над ней (ревью g2 r5: на 390×844 «Сохранить» ушёл с 683 в main на ~970). Название — во
+   всю ширину под сценой: длинное имя режима («Самовозвеличиватель», 26px) рядом со сценой не встаёт.
+   «Карта себя» — экран-обзор, не шаг потока: её сцена остаётся во всю ширину. */
+@container pa-sheet (max-width: 560px) {
+  .ex2-hero.pa-sheet:has(.cq-scene--found) { column-gap: 8px; }
+  .ex2-hero.pa-sheet:has(.cq-scene--found) > .pa-sheet-art {
+    grid-column: 2; grid-row: 1; justify-self: end; align-self: start; width: min(46%, 150px); margin: -12px -14px 0 0;
+  }
+  .ex2-hero.pa-sheet:has(.cq-scene--found) > .pa-sheet-body { display: contents; }
+  .ex2-hero.pa-sheet:has(.cq-scene--found) .pa-sheet-label { grid-column: 1; grid-row: 1; align-self: end; }
+  .ex2-hero.pa-sheet:has(.cq-scene--found) > .pa-sheet-body > :not(.pa-sheet-label) { grid-column: 1 / -1; margin-top: 10px; }
+}
 @container pa-sheet (min-width: 561px) {
   .ex2-hero.pa-sheet:has(.cq-scene) > .pa-sheet-art { width: 300px; }
 }

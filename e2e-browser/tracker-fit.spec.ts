@@ -7,7 +7,9 @@
 //    пятый ответ под сгиб. Отдельно — первый показ, со строкой «откуда это».
 // 2) Верхняя полоса помещается в узкий телефон: на 360 «Пропустить» вылезал за
 //    край окна (круг 1 поднял поле полосы до 12px), на 320 полоска текущей точки
-//    наезжала на «Закрыть» (круг 4).
+//    наезжала на «Закрыть» (круг 4). Круг 5: полоска идёт по всем пяти вопросам —
+//    у пятого она у «Пропустить» (зазор 7px), поэтому меряем каждый вопрос и обе
+//    стороны; на 320 подписи не ближе 8px к краю окна (скругление WebView).
 // Высоту и ширину считает только браузер (jsdom CSS не исполняет), поэтому
 // замер — здесь, на прод-сборке. Раскладка — webapp/src/styles/tracker-question.css.
 import { test, expect, type Page } from './support/test';
@@ -104,29 +106,47 @@ async function barRects(page: Page) {
 }
 
 for (const vp of [
-  { width: 360, height: 640 },
-  { width: 320, height: 568 },
+  { width: 360, height: 640, edge: 4 },
+  { width: 320, height: 568, edge: 8 },
 ]) {
-  test(`шапка вопроса ${vp.width}×${vp.height}: «Закрыть», точки и «Пропустить» в окне, не наезжают`, async ({
+  test(`шапка вопроса ${vp.width}×${vp.height}: «Закрыть», точки и «Пропустить» в окне, не наезжают ни на одном из пяти вопросов`, async ({
     page,
   }) => {
-    await page.setViewportSize(vp);
+    await page.setViewportSize({ width: vp.width, height: vp.height });
     await openTracker(page);
-    await expect(page.locator('.tk2-overlay .tq-dot.is-current')).toBeVisible();
-    const m = await barRects(page);
-    expect(m.scrollWidth, 'полоса шире окна').toBeLessThanOrEqual(
-      m.clientWidth,
-    );
-    expect(m.skipText.right, '«Пропустить» за краем окна').toBeLessThanOrEqual(
-      m.innerWidth,
-    );
-    expect(
-      m.skipText.right,
-      '«Пропустить» вылезает из своей кнопки',
-    ).toBeLessThanOrEqual(m.skipBtn.right + 0.5);
-    expect(
-      m.pill.left,
-      'полоска текущей точки наезжает на «Закрыть»',
-    ).toBeGreaterThanOrEqual(m.closeText.right);
+    const dots = page.locator('.tk2-overlay .tq-dot-hit');
+    await expect(dots).toHaveCount(5);
+    for (let i = 0; i < 5; i++) {
+      await expect(dots.nth(i)).toHaveAttribute('aria-current', 'step');
+      await expect(
+        page.locator('.tk2-overlay .tq-dot.is-current'),
+      ).toBeVisible();
+      const m = await barRects(page);
+      const q = `вопрос ${i + 1}`;
+      expect(m.scrollWidth, `${q}: полоса шире окна`).toBeLessThanOrEqual(
+        m.clientWidth,
+      );
+      expect(
+        m.closeText.left,
+        `${q}: «Закрыть» у самого края окна`,
+      ).toBeGreaterThanOrEqual(vp.edge);
+      expect(
+        m.skipText.right,
+        `${q}: «Пропустить» за краем окна или у самого края`,
+      ).toBeLessThanOrEqual(m.innerWidth - vp.edge);
+      expect(
+        m.skipText.right,
+        `${q}: «Пропустить» вылезает из своей кнопки`,
+      ).toBeLessThanOrEqual(m.skipBtn.right + 0.5);
+      expect(
+        m.pill.left,
+        `${q}: полоска текущей точки наезжает на «Закрыть»`,
+      ).toBeGreaterThanOrEqual(m.closeText.right);
+      expect(
+        m.pill.right,
+        `${q}: полоска текущей точки наезжает на «Пропустить»`,
+      ).toBeLessThanOrEqual(m.skipText.left);
+      if (i < 4) await page.getByRole('button', { name: 'Пропустить' }).click();
+    }
   });
 }

@@ -21,6 +21,3 @@ export function dayIndex(
 export function fmtIndex(value: number | null | undefined): string {
   return value == null ? '—' : value.toFixed(1).replace('.', ',');
 }
-/** Отличие индекса со знаком: «+2,0», «−1,5» (типографский минус); знак — по показанному числу, без «−0,0». */
-export const fmtIndexDelta = (delta: number): string =>
-  `${delta < 0 && fmtIndex(-delta) !== '0,0' ? '−' : '+'}${fmtIndex(Math.abs(delta))}`;

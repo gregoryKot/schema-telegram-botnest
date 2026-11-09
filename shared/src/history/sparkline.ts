@@ -1,9 +1,10 @@
 // Линия потребности по дням — одна на всё приложение: «Неделя» в истории (SparklineRow) и
 // «Динамика потребности» (NeedDynamics). QA 2026-11 (B-М4): окно — N дней, которые кончаются
-// выбранным днём (не вся история), маркер — HTML поверх svg по процентам (в растянутом
-// preserveAspectRatio="none" круг сплющивался). День без оценки линию рвёт (sparkRuns.ts).
+// выбранным днём (не вся история), точки — HTML поверх svg по процентам (sparkMarks.ts).
+// День без оценки линию рвёт (sparkRuns.ts).
 import type { DayHistory } from '../types';
 import { sparkPaths, type SparkPaths, type SparkPt } from './sparkRuns';
+import { withSparkMarks, type SparkMarks } from './sparkMarks';
 
 export const SPARK_W = 100;
 export const SPARK_H = 28;
@@ -23,10 +24,8 @@ export function weekWindow(
   return history.slice(selectedIdx, selectedIdx + days);
 }
 
-export interface SparklineGeometry extends SparkPaths {
-  /** Маркер выбранного дня в процентах; у дня без оценки маркера нет. */
-  dot: { left: number; top: number } | null;
-}
+/** Пути линии (sparkRuns) и маркеры точек поверх svg (sparkMarks). */
+export type SparklineGeometry = SparkPaths & SparkMarks;
 
 /** y оценки 1–10 на холсте SPARK_W×SPARK_H (им же — линия детства); 0 — прижат к низу. */
 export const sparkY = (v: number): number =>
@@ -43,11 +42,5 @@ export function sparklineGeometry(
     const v = d.ratings[needId] ?? 0;
     return v > 0 ? { x: xAt(i), y: sparkY(v) } : null;
   });
-  const last = pts[n - 1];
-  return {
-    ...sparkPaths(pts, SPARK_H),
-    dot: last
-      ? { left: (last.x / SPARK_W) * 100, top: (last.y / SPARK_H) * 100 }
-      : null,
-  };
+  return withSparkMarks(sparkPaths(pts, SPARK_H), pts[n - 1], SPARK_W, SPARK_H);
 }

@@ -5,7 +5,7 @@
 // дням с оценкой; нет оценок в прошлой неделе — разницы нет (diffText null, строку сравнения лист
 // не выводит), направление тогда — внутри недели: три новых дня с оценкой против трёх ранних.
 // Линию рисует общий sparkline.ts; числа — fmtIndex, как индекс дня на «Готово» и в истории.
-import { fmtIndexDelta } from '../needs/dayIndex';
+import { fmtIndexDelta } from '../needs/indexDelta';
 
 export type TrendDir = 'up' | 'down' | 'flat';
 

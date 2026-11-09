@@ -27,6 +27,9 @@ const history = (rate: (i: number) => number | null): DayHistory[] => Array.from
 });
 
 const d = (root: ParentNode, sel: string) => root.querySelector(sel)?.getAttribute('d') ?? '';
+/** Одиночные дни — HTML-маркеры поверх svg (ревью g2 r5): их места «left/top» по порядку. */
+const pts = (root: ParentNode, sel: string) =>
+  [...root.querySelectorAll<HTMLElement>(sel)].map((el) => `${el.style.left}/${el.style.top}`);
 
 async function openDynamics(h: DayHistory[], dayNum?: string, childhood = 3) {
   const utils = render(
@@ -41,11 +44,11 @@ async function openDynamics(h: DayHistory[], dayNum?: string, childhood = 3) {
   fireEvent.click(screen.getByText('Неделя'));
   const row = utils.container.querySelector('.sd-spark-row')!;
   const rowLine = d(row, '.sd-spark-line');
-  const rowPts = d(row, '.sd-spark-pts');
+  const rowPts = pts(row, '.sd-spark-pt');
   const rowGaps = d(row, '.sd-spark-gap');
   fireEvent.click(row); // по строке: имя потребности бывает и в карточке «внимание»
   const sheetLine = d(utils.container, '.tk2-line');
-  return { rowLine, sheetLine, rowPts, sheetPts: d(utils.container, '.tk2-pts'), rowGaps, sheetGaps: d(utils.container, '.tk2-gap') };
+  return { rowLine, sheetLine, rowPts, sheetPts: pts(utils.container, '.tk2-pt'), rowGaps, sheetGaps: d(utils.container, '.tk2-gap') };
 }
 
 afterEach(() => cleanup());
@@ -71,19 +74,20 @@ describe('HistoryView → «Неделя» → «Динамика потребн
     expect(r.sheetLine).toBe(r.rowLine);
     // Неделя 8,7,8,–,8,–,8 (от новых): отрезок из трёх дней — линией, два одиночных — точками.
     expect(r.sheetLine.match(/M /g)).toHaveLength(1);
-    expect(r.sheetPts).toBe(r.rowPts);
-    expect(r.sheetPts.match(/M /g)).toHaveLength(2);
+    expect(r.sheetPts).toEqual(r.rowPts);
+    expect(r.sheetPts).toHaveLength(2);
     expect(screen.getByText(/сейчас 7,7/)).toBeTruthy(); // три новых дня с оценкой: (8+7+8)/3
   });
 
   // Ревью g2 r4: отметки через день давали одиночные дни — отрезки нулевой длины точкой в 2px, «Неделя»
   // и «Динамика» читались пустыми. Каждый день с оценкой виден: в отрезке — изломом линии, одиночный —
-  // точкой (.sd-spark-pts / .tk2-pts), через пропуск — тихий пунктирный мостик без значения.
+  // точкой (HTML-маркер .sd-spark-pt / .tk2-pt), через пропуск — тихий пунктирный мостик без значения.
   it('история через день: точка на каждый день с оценкой, мостики через пропуски — одинаково в строке и листе', async () => {
     const r = await openDynamics(history((i) => (i % 2 ? null : score(i))));
     expect(r.rowLine).toBe('');
-    expect(r.rowPts.match(/M /g)).toHaveLength(4); // дни 0, 2, 4, 6 недели
-    expect(r.sheetPts).toBe(r.rowPts);
+    expect(r.rowPts).toHaveLength(4); // дни 0, 2, 4, 6 недели
+    expect(r.sheetPts).toEqual(r.rowPts);
+    expect(document.querySelector('svg path[d*="L"][class$="pts"]')).toBeNull(); // не отрезки нулевой длины
     expect(r.rowGaps.match(/M /g)).toHaveLength(3);
     expect(r.sheetGaps).toBe(r.rowGaps);
   });

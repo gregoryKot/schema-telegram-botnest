@@ -190,7 +190,7 @@ vi.mock('./NoteSheet', () => ({
 }));
 vi.mock('./Celebration', () => ({
   Celebration: (p: ComponentProps<typeof CelebrationT>) => (
-    <Btns testid={`celebration-streak-${p.streak}`} map={{ done: () => p.onDone() }} />
+    <Btns testid={`celebration-streak-${p.streak}`} state={{ ratings: p.ratings ?? null }} map={{ done: () => p.onDone() }} />
   ),
 }));
 vi.mock('./TaskCreateSheet', () => ({

@@ -4,7 +4,7 @@
 // Celebration.tsx. onDone зовут только действия человека.
 // Вид (редизайн 2026-11, b07): сверху сцена SceneCheckIn на соломе — лист сегодняшнего дня
 // поверх листов прошлых дней серии (из ежедневных отметок складывается картина); его пять полосок —
-// сегодняшние оценки: цвета данных потребностей в порядке NEED_ORDER и высоты по оценкам (checkInBars); число серии —
+// сегодняшние оценки (dayStrokeValues → ValueStrokes, как на главной; неоценённая — пустым тоном); число серии —
 // Literata на бумажной наклейке цветом текста, а не красной цифрой; веха — персик и Leaf (рост).
 import type { CSSProperties } from 'react';
 import { getMilestoneText, pluralDays } from '../../../shared/src/utils/celebrationText';
@@ -13,14 +13,14 @@ import { CopyFailedHint } from '../../../shared/src/components/CopyFailedHint';
 import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 import { SceneCheckIn } from './art/LandingScenesMore';
 import { SignArt } from './art/SignArt';
-import { checkInBars } from './art/checkInBars';
+import { dayStrokeValues } from '../../../shared/src/needs/dayStrokes';
 import { Dialog } from './Dialog';
 
 interface Props {
   streak: number;
   onDone: () => void;
   insight?: string | null;
-  /** Сегодняшние оценки — высоты полосок сцены; нет — полоски одной высоты. */
+  /** Сегодняшние оценки — полоски сцены; нет — все пять пустым тоном. */
   ratings?: Record<string, number>;
   tr: (ty: string, vy: string) => string;
   botShortUrl: string;
@@ -43,7 +43,7 @@ export function CelebrationDialog({ streak, onDone, insight, ratings, tr, botSho
     >
       <div className="sk-celebr-top" style={{ '--h': hue } as CSSProperties}>
         <div className="pp-paper sk-celebr-band" aria-hidden="true">
-          <SceneCheckIn hue={hue} days={streak} {...checkInBars(ratings)} />
+          <SceneCheckIn hue={hue} days={streak} values={dayStrokeValues(ratings ?? {})} />
           {isMilestone && <span className="sk-celebr-leaf"><SignArt sign="leaf" size="square" /></span>}
         </div>
         <div data-milestone={isMilestone ? 'yes' : 'no'} className="ds-num sk-celebr-num">{streak}</div>

@@ -2,7 +2,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { DayBars } from './DayBars';
-import { barShare } from './trackerFlow';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { NEED_DATA_PAPER } from '../art/paper';
@@ -20,12 +19,6 @@ const SWAPPED: Need[] = [
   { id: 'attachment', emoji: '', title: 'Привязанность', chartLabel: 'Привяз.' },
 ];
 const v = (el: HTMLElement) => Number(el.style.getPropertyValue('--v'));
-
-describe('barShare', () => {
-  it('оценка 0–10 → доля высоты, без оценки — 0, выше 10 не растёт', () => {
-    expect([0, 2, 6, 10, 12].map(barShare)).toEqual([0, 0.2, 0.6, 1, 1]);
-  });
-});
 
 describe('DayBars', () => {
   it('высота столбика растёт с оценкой, подпись — short потребности', () => {

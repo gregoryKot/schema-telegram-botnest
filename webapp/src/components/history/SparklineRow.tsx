@@ -6,12 +6,10 @@ import { NEED_HUE, hueStyle } from '../../lib/tone';
 import { pressable } from '../../utils/a11y';
 import { NeedArt } from '../art/NeedArt';
 import { inkVars } from './needInk';
-interface Props {
-  /** Окно «За N дней» (weekWindow): выбранный день первым. */
-  need: Need; days: DayHistory[]; selectedRatings: Record<string, number>; onClick?: () => void;
-}
-/** Пути одной линии (sparklineGeometry): заливка, мостики через пропуск, линия, одиночные дни точками. */
-const PATHS = [['area', 'sd-spark-area'], ['gaps', 'sd-spark-gap'], ['line', 'sd-spark-line'], ['singles', 'sd-spark-pts']] as const;
+/** `days` — окно «За N дней» (weekWindow): выбранный день первым. */
+interface Props { need: Need; days: DayHistory[]; selectedRatings: Record<string, number>; onClick?: () => void }
+/** Пути одной линии (sparklineGeometry): заливка, мостики через пропуск, линия; одиночные дни — маркерами. */
+const PATHS = [['area', 'sd-spark-area'], ['gaps', 'sd-spark-gap'], ['line', 'sd-spark-line']] as const;
 /** «Потребность — линия — оценка»: строка на телефоне, карточка с 768; цвет — needInk.ts; маркер дня — HTML (в svg круг сплющивался). */
 export function SparklineRow({ need, days, selectedRatings, onClick }: Props) {
   const g = sparklineGeometry(days, need.id);
@@ -27,6 +25,7 @@ export function SparklineRow({ need, days, selectedRatings, onClick }: Props) {
         <svg className="sd-spark-svg" viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none">
           {PATHS.map(([k, cls]) => <path key={k} d={g[k]} className={cls} />)}
         </svg>
+        {g.points.map((p) => <span key={p.left} className="sd-spark-pt" style={{ left: `${p.left}%`, top: `${p.top}%` }} />)}
         {g.dot && <span className="sd-spark-dot" style={{ left: `${g.dot.left}%`, top: `${g.dot.top}%` }} />}
       </span>
       <span className="sd-spark-score">

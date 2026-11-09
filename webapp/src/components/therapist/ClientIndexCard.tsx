@@ -1,16 +1,14 @@
 import { indexLevel } from '../../lib/tone';
-import { fmtIndex, fmtIndexDelta } from '../../../../shared/src/needs/dayIndex';
+import { fmtIndex } from '../../../../shared/src/needs/dayIndex';
+import { deltaSign, fmtIndexDelta } from '../../../../shared/src/needs/indexDelta';
 import { SignHead } from './SignArt';
 import { indexSparkBars, weekDelta } from './clientOverviewModel';
 
-interface Props {
-  todayIndex: number;
-  /** История индекса клиента, index 0 = сегодня. */
-  history: readonly { index: number | null }[];
-}
+/** `history` — история индекса клиента, index 0 = сегодня. */
+interface Props { todayIndex: number; history: readonly { index: number | null }[] }
 
-// «Индекс сегодня» в сайдбаре «Обзора»: число с уровнем, отличие от недели (weekDelta — при ≥7
-// днях) и столбики за 14 дней (при ≥3 днях истории) — из реальных данных клиента, без заглушек.
+// «Индекс сегодня» в сайдбаре «Обзора»: число, отличие от недели (weekDelta, ≥7 дней; цвет — deltaSign)
+// и столбики за 14 дней (≥3 дня истории) — из реальных данных клиента, без заглушек.
 export function ClientIndexCard({ todayIndex, history }: Props) {
   const bars = history.length >= 3 ? indexSparkBars(history) : [];
   const delta = weekDelta(history, todayIndex);
@@ -20,7 +18,7 @@ export function ClientIndexCard({ todayIndex, history }: Props) {
       <div className="tk-index">
         <span className={`ds-num ds-idx-${indexLevel(todayIndex)}`}>{fmtIndex(todayIndex)}</span>
         {delta != null && (
-          <span className={`tk-delta ${delta >= 0 ? 'ds-idx-ok' : 'ds-idx-err'}`}>{fmtIndexDelta(delta)} к нед.</span>
+          <span className={`tk-delta ${deltaSign(delta) > 0 ? 'ds-idx-ok' : 'ds-idx-err'}`}>{fmtIndexDelta(delta)} к нед.</span>
         )}
       </div>
       {bars.length > 0 && (

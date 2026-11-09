@@ -100,8 +100,9 @@
 .sd-spark-area { fill: color-mix(in srgb, var(--need-ink) 16%, transparent); }
 .sd-spark-line { fill: none; stroke: var(--need-ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 /* Одиночный день между пропусками — точкой 6px (ревью g2 r4: отрезок нулевой длины под обводкой 2 был пылинкой);
+   HTML-маркером, как .sd-spark-dot, а не круглым концом отрезка нулевой длины (r5: WebKit не проверен);
    через пропуск — тихий пунктир точками того же цвета: ряд читается одной линией, значения на пропуске нет. */
-.sd-spark-pts { fill: none; stroke: var(--need-ink); stroke-width: 6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.sd-spark-pt { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--need-ink); }
 .sd-spark-gap { fill: none; stroke: color-mix(in srgb, var(--need-ink) 45%, transparent); stroke-width: 2; stroke-dasharray: 0 4.5; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .sd-spark-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; transform: translate(-50%, -50%); background: var(--need-ink); transition: left .15s ease, top .15s ease; }
 .sd-spark-score { font-family: var(--serif); font-size: 20px; min-width: 40px; text-align: right; display: inline-flex; align-items: baseline; justify-content: flex-end; gap: 4px; color: var(--need-text); }

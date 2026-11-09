@@ -36,10 +36,10 @@ export function NeedDynamics({ needId, history, selectedIdx = 0, childhoodValue 
             <path d={g.area} className="tk2-area" />
             <path d={g.gaps} className="tk2-gap" />
             <path d={g.line} className="tk2-line" />
-            <path d={g.singles} className="tk2-pts" />
             {childY !== null && <line x1={0} y1={childY} x2={SPARK_W} y2={childY} className="tk2-ref" strokeWidth={1} />}
           </svg>
-          {/* Точка — разметкой поверх: svg тянется по ширине (preserveAspectRatio="none"), круг в нём сплющивался. */}
+          {/* Точки — разметкой поверх: svg тянется по ширине (preserveAspectRatio="none"), круг в нём сплющивался. */}
+          {g.points.map((p) => <span key={p.left} className="tk2-pt" style={{ left: `${p.left}%`, top: `${p.top}%` }} />)}
           {g.dot && <span className="tk2-dot-pt" style={{ left: `${g.dot.left}%`, top: `${g.dot.top}%` }} />}
         </div>
       )}

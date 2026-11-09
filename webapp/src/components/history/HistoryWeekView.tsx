@@ -3,9 +3,9 @@ import type { Need, DayHistory } from '../../types';
 import { SparklineRow } from './SparklineRow';
 import { AttentionCard } from './AttentionCard';
 import { SceneCheckIn } from '../art/LandingScenesMore';
-import { checkInBars } from '../art/checkInBars';
 import { WEEK_DAYS, weekWindow } from '../../../../shared/src/history/sparkline';
 import { isRated } from '../../../../shared/src/needs/ratingRecord';
+import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { glue } from '../../../../shared/src/utils/typo';
 
@@ -15,7 +15,7 @@ interface Props {
 }
 
 /** «Неделя»: линии потребностей за WEEK_DAYS до выбранного дня (та же неделя у «Динамики»), внимание и «Карточка недели» —
- *  сцена: листки отмеченных дней, сверху выбранный день его оценками (checkInBars). */
+ *  сцена: листки отмеченных дней, сверху выбранный день его оценками (dayStrokeValues — как его листок в ленте дат). */
 export function HistoryWeekView({ needs, history, selectedIdx, selectedRatings, needsLow, isTherapist, bookingLink, onTapNeed, onWeekCard }: Props) {
   const weekDays = weekWindow(history, selectedIdx, WEEK_DAYS);
   const ratedDays = weekDays.filter(d => needs.some(n => isRated(d.ratings, n.id))).length;
@@ -36,7 +36,7 @@ export function HistoryWeekView({ needs, history, selectedIdx, selectedRatings, 
         </AttentionCard>
       )}
       <button type="button" onClick={onWeekCard} className="ds-card ds-card--row ds-card--hover sd-weekcard">
-        <span className="sd-weekcard-scene" aria-hidden="true"><SceneCheckIn hue={ENTITY_LOOK.tracker.hue} days={ratedDays} {...checkInBars(selectedRatings)} /></span>
+        <span className="sd-weekcard-scene" aria-hidden="true"><SceneCheckIn hue={ENTITY_LOOK.tracker.hue} days={ratedDays} values={dayStrokeValues(selectedRatings)} /></span>
         <span className="sd-weekcard-label">Карточка недели →</span>
       </button>
     </div>

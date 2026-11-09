@@ -9,7 +9,8 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { Celebration } from './Celebration';
 import { AddressFormContext } from '../utils/addressForm';
 import { needDataColor } from './needDataColor';
-import { checkInBarH } from './art/checkInBars';
+import { CHECK_IN_GEOM, strokeLen } from './art/strokeLen';
+import { PAPER } from './art/paper';
 import { NEED_ORDER } from '../../../shared/src/needs/types';
 
 beforeEach(() => {
@@ -45,24 +46,26 @@ describe('Celebration — лист серии (живая бумага, b07)', (
 
   // Ревью g2 r3: пять полосок «сегодняшнего листа» читаются как пять потребностей — цвета и порядок те же,
   // что у столбиков «Готово» и линий «Истории» (needDataColor по NEED_ORDER), а не палитра лендинга.
-  it('полоски сегодняшнего листа — цвета данных потребностей в порядке NEED_ORDER', () => {
-    const { container } = renderCelebration({ streak: 5 });
-    const bars = [...container.querySelectorAll('.sk-celebr-band .scn-shade g rect[rx="10"]')];
-    expect(bars.map((b) => b.getAttribute('fill'))).toEqual(NEED_ORDER.map((id) => needDataColor(id)));
+  // Ревью g2 r4: высоты — сегодняшние оценки (у человека с 2,2,2,2,2 лендинг рисовал высокие столбики).
+  const bars = (c: HTMLElement) => [...c.querySelectorAll('.sk-celebr-band svg > g:not(.scn-shade) rect[rx="10"]')];
+  it('полоски сегодняшнего листа — цвета данных в порядке NEED_ORDER, высоты — сегодняшние оценки', () => {
+    const ratings = { attachment: 2, autonomy: 9, expression: 2, play: 5, limits: 10 };
+    const b = bars(renderCelebration({ streak: 5, ratings }).container);
+    expect(b.map((r) => r.getAttribute('fill'))).toEqual(NEED_ORDER.map((id) => needDataColor(id)));
+    expect(b.map((r) => Number(r.getAttribute('height')))).toEqual(
+      NEED_ORDER.map((id) => strokeLen(ratings[id as keyof typeof ratings], CHECK_IN_GEOM)),
+    );
   });
 
-  // Ревью g2 r4: высоты полосок были лендинговыми (100/124/70/112/88) — у человека с сегодняшними 2,2,2,2,2
-  // сцена показывала высокие столбики. Высоты — сегодняшние оценки в порядке NEED_ORDER; оценок нет — ровно.
-  it('высоты полосок — сегодняшние оценки в порядке NEED_ORDER; без оценок — одной высоты', () => {
-    const heights = (c: HTMLElement) =>
-      [...c.querySelectorAll('.sk-celebr-band .scn-shade g rect[rx="10"]')].map((b) => Number(b.getAttribute('height')));
-    const ratings = { attachment: 2, autonomy: 9, expression: 2, play: 5, limits: 10 };
-    const low = heights(renderCelebration({ streak: 5, ratings }).container);
-    expect(low).toEqual(NEED_ORDER.map((id) => checkInBarH(ratings[id as keyof typeof ratings])));
-    expect(low[0]).toBeLessThan(low[1]);
+  // Ревью g2 r5: праздник открывается на первом сохранении дня — оценена одна потребность, и четыре цветных
+  // «пенька» ниже оценки 1 читались очень низкими оценками. Неоценённая — пустым тоном, как на главной.
+  it('первое сохранение дня — цвет данных у одной полоски, четыре пустым тоном; без оценок — все пустые', () => {
+    const b = bars(renderCelebration({ streak: 3, ratings: { attachment: 7 } }).container);
+    expect(b.map((r) => r.getAttribute('data-rated'))).toEqual(['yes', 'no', 'no', 'no', 'no']);
+    expect(b.slice(1).every((r) => r.getAttribute('fill') === PAPER.hollow)).toBe(true);
     cleanup();
-    const flat = heights(renderCelebration({ streak: 5 }).container);
-    expect(new Set(flat).size).toBe(1);
+    const none = bars(renderCelebration({ streak: 3 }).container);
+    expect(none.map((r) => r.getAttribute('fill'))).toEqual(Array(5).fill(PAPER.hollow));
   });
 
   it('веха — персик и лист роста', () => {
