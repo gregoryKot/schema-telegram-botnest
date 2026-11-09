@@ -101,10 +101,20 @@ describe('HistorySheet', () => {
     // терялась (Chromium, createBrowserRouter): трекер на экране, а «Назад»
     // уводил со страницы. Трекер открывается в onClose, после снятия записи.
     const log: string[] = [];
-    renderSheet({ onClose: () => log.push('close'), onOpenTracker: () => log.push('tracker') });
-    await waitFor(() => expect(screen.getByText(/трекер сегодня/)).toBeTruthy());
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+    renderSheet({ onClose: () => log.push('close'), onOpenTracker: () => log.push('tracker'),
+      history: [{ date: '2020-01-09', ratings: { attachment: 6 } }] });
+    await waitFor(() => expect(screen.getByText('Привяз.')).toBeTruthy());
     fireEvent.click(screen.getByText('Оценить →'));
     expect(log).toEqual(['close', 'tracker']);
+  });
+
+  // Аудит 2026-11 (today-history-empty): «Оценить →» в шапке и «Заполнить сегодня» в листе —
+  // две кнопки одного действия. В пустой истории остаётся одна, в листе.
+  it('пустая история — без «Оценить →» в шапке, действие одно', async () => {
+    renderSheet({ history: [] });
+    await waitFor(() => expect(screen.getByText('Заполнить сегодня')).toBeTruthy());
+    expect(screen.queryByText('Оценить →')).toBeNull();
   });
 
   it('просроченный план практики (scheduledDate < todayDate) показывает CheckInSheet', async () => {

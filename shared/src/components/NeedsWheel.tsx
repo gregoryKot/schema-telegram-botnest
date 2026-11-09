@@ -1,49 +1,44 @@
-// Колесо потребностей (история дня): лепестки-оценки, контур «колеса
-// детства», индекс в центре (wheelCenter.ts). Единственная копия (правило №3);
-// цвет — needColors.ts, как на остальных экранах (QA 2026-11).
+// Колесо потребностей (история дня): лепестки-оценки, контур «колеса детства», индекс в
+// центре (wheelCenter.ts). Единственная копия (правило №3). Язык бумаги (редизайн 2026-11,
+// docs/design/APP_2026-11.md, today-history-day): у каждой потребности свой сектор белого
+// листа, оценка — вырезанный лепесток цветом данных потребности (`ink`, решение 7 «Палитра
+// данных»; без него — NEED_COLORS) с тенью сплошным сдвинутым слоем, детство — сплошной
+// контур без пунктира, индекс — Literata. Тени и линейки — классы nw-* (styles/history.css):
+// тон бумаги листа (--h у родителя), а не литерал. Пусто — пустые секторы и «—» в центре.
 import type { Need } from '../types';
 import { NEED_COLORS } from '../needs/needColors';
 import { wheelCenter } from '../history/wheelCenter';
 
-const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+const W = 360,
+  H = 280,
+  CX = W / 2,
+  CY = H / 2,
+  R = CY - 20,
+  CENTER_R = 41;
+const SPREAD = (34 * Math.PI) / 180;
 
-function petalPath(
-  cx: number,
-  cy: number,
-  r: number,
-  ca: number,
-  hs: number,
-): string {
+function petalPath(r: number, ca: number): string {
   if (r < 1) return '';
-  const a1 = ca - hs,
-    a2 = ca + hs;
-  const x1 = cx + r * Math.cos(a1),
-    y1 = cy + r * Math.sin(a1);
-  const x2 = cx + r * Math.cos(a2),
-    y2 = cy + r * Math.sin(a2);
-  return `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+  const [a1, a2] = [ca - SPREAD, ca + SPREAD];
+  const p = (a: number) =>
+    `${(CX + r * Math.cos(a)).toFixed(2)} ${(CY + r * Math.sin(a)).toFixed(2)}`;
+  return `M ${CX} ${CY} L ${p(a1)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 1 ${p(a2)} Z`;
 }
-function arcPath2(
-  cx: number,
-  cy: number,
-  r: number,
-  ca: number,
-  hs: number,
-): string {
-  const a1 = ca - hs,
-    a2 = ca + hs;
-  const x1 = cx + r * Math.cos(a1),
-    y1 = cy + r * Math.sin(a1);
-  const x2 = cx + r * Math.cos(a2),
-    y2 = cy + r * Math.sin(a2);
-  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+function arcPath(r: number, ca: number): string {
+  const p = (a: number) =>
+    `${(CX + r * Math.cos(a)).toFixed(2)} ${(CY + r * Math.sin(a)).toFixed(2)}`;
+  return `M ${p(ca - SPREAD)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 1 ${p(ca + SPREAD)}`;
 }
+/** Радиус лепестка по оценке 0–10: площадь растёт с оценкой, а не радиус. */
+const radius = (v: number | undefined) =>
+  Math.sqrt(Math.min(10, Math.max(0, v ?? 0)) / 10) * R;
 
 export function NeedsWheel({
   needs,
   ratings,
   prevRatings = {},
   childhoodRatings = {},
+  ink = {},
   onClickNeed,
   onClickCenter,
 }: {
@@ -51,151 +46,88 @@ export function NeedsWheel({
   ratings: Record<string, number>;
   prevRatings?: Record<string, number>;
   childhoodRatings?: Partial<Record<string, number>>;
+  /** Цвет данных потребности по id (var-токен); нет в карте — NEED_COLORS. */
+  ink?: Partial<Record<string, string>>;
   onClickNeed?: (n: Need) => void;
   onClickCenter?: () => void;
 }) {
-  const W = 360,
-    H = 280,
-    cx = W / 2,
-    cy = H / 2,
-    R = cy - 20;
-  const SPREAD = (34 * Math.PI) / 180,
-    n = needs.length,
-    CENTER_R = 41;
-  const ids = needs.map((nd) => nd.id);
-  const center = wheelCenter(ids, ratings, prevRatings);
-
+  const center = wheelCenter(
+    needs.map((nd) => nd.id),
+    ratings,
+    prevRatings,
+  );
+  const angle = (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / needs.length;
+  const sectors = needs.map((nd, i) => (
+    <path key={nd.id} d={petalPath(R, angle(i))} />
+  ));
+  const petals = needs
+    .map((nd, i) => ({
+      id: nd.id,
+      d: petalPath(radius(ratings[nd.id]), angle(i)),
+      fill: ink[nd.id] ?? NEED_COLORS[nd.id] ?? '#888',
+    }))
+    .filter((p) => p.d);
+  const hasChildhood = Object.keys(childhoodRatings).length > 0;
   return (
     <svg
+      className="nw"
       viewBox={`0 0 ${W} ${H}`}
-      style={{ display: 'block', width: '100%', height: 280 }}
+      style={{ display: 'block', width: '100%', height: 'auto', maxHeight: H }}
     >
-      {[2, 5, 8, 10].map((ring) => (
-        <circle
-          key={ring}
-          cx={cx}
-          cy={cy}
-          r={(R * ring) / 10}
-          fill="none"
-          stroke="rgba(var(--fg-rgb),0.04)"
-          strokeWidth={ring === 10 ? 1.5 : 1}
-        />
+      <g className="nw-shade" transform="translate(5 6)">
+        {sectors}
+      </g>
+      <g className="nw-sector">{sectors}</g>
+      <g className="nw-rule">
+        {needs.map((nd, i) =>
+          [0.25, 0.5, 0.75].map((f) => (
+            <path key={`${nd.id}-${f}`} d={arcPath(R * f, angle(i))} />
+          )),
+        )}
+      </g>
+      <g className="nw-petal-shade" transform="translate(3 4)">
+        {petals.map((p) => (
+          <path key={p.id} d={p.d} />
+        ))}
+      </g>
+      {petals.map((p) => (
+        <path key={p.id} d={p.d} fill={p.fill} data-petal={p.id} />
       ))}
-      {needs.map((need, i) => {
-        const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-        const d = petalPath(cx, cy, R, angle, SPREAD);
-        return d ? (
-          <path key={`g-${need.id}`} d={d} fill="rgba(var(--fg-rgb),0.055)" />
-        ) : null;
-      })}
-      {needs.map((need, i) => {
-        const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-        const value = ratings[need.id] ?? 0;
-        const r = Math.sqrt(value / 10) * R;
-        const color = NEED_COLORS[need.id] ?? '#888';
-        const d = petalPath(cx, cy, r, angle, SPREAD);
-        return d ? (
-          <path
-            key={need.id}
-            d={d}
-            fill={color}
-            fillOpacity={0.9}
-            stroke={color}
-            strokeWidth={1}
-            strokeOpacity={0.4}
-            strokeLinejoin="round"
-            style={{
-              transformOrigin: `${cx}px ${cy}px`,
-              animation: `sector-in 400ms ${SPRING} ${i * 80}ms both`,
-            }}
-          />
-        ) : null;
-      })}
-      {needs.map((need, i) => {
-        const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-        return [0.25, 0.5, 0.75].map((frac) => (
-          <path
-            key={`a-${need.id}-${frac}`}
-            d={arcPath2(cx, cy, R * frac, angle, SPREAD)}
-            fill="none"
-            stroke="rgba(var(--fg-rgb),0.1)"
-            strokeWidth={1}
-          />
-        ));
-      })}
-      {Object.keys(childhoodRatings).length > 0 &&
-        needs.map((need, i) => {
-          const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-          const r = Math.sqrt((childhoodRatings[need.id] ?? 0) / 10) * R;
-          const d = petalPath(cx, cy, r, angle, SPREAD);
-          return d ? (
-            <path
-              key={`c-${need.id}`}
-              d={d}
-              fill="none"
-              stroke="rgba(var(--fg-rgb),0.4)"
-              strokeWidth={2}
-              strokeDasharray="4 3"
-              strokeLinejoin="round"
-            />
-          ) : null;
-        })}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={CENTER_R}
-        fill="var(--bg)"
-        stroke="rgba(var(--fg-rgb),0.05)"
-        strokeWidth={1}
-      />
-      <text
-        x={cx}
-        y={cy - 20}
-        textAnchor="middle"
-        fontSize={11}
-        fill="rgba(var(--fg-rgb),0.4)"
-      >
+      {hasChildhood && (
+        <g className="nw-childhood" data-layer="childhood">
+          {needs.map((nd, i) => {
+            const d = petalPath(radius(childhoodRatings[nd.id]), angle(i));
+            return d ? <path key={nd.id} d={d} /> : null;
+          })}
+        </g>
+      )}
+      <circle className="nw-shade" cx={CX + 3} cy={CY + 4} r={CENTER_R} />
+      <circle className="nw-center" cx={CX} cy={CY} r={CENTER_R} />
+      <text className="nw-label" x={CX} y={CY - 19} textAnchor="middle">
         индекс
       </text>
-      <text
-        x={cx}
-        y={cy + 8}
-        textAnchor="middle"
-        fontSize={32}
-        fontWeight={700}
-        fill="var(--text)"
-      >
+      <text className="nw-index" x={CX} y={CY + 10} textAnchor="middle">
         {center.index}
       </text>
       {center.prev !== null && (
-        <text
-          x={cx}
-          y={cy + 24}
-          textAnchor="middle"
-          fontSize={11}
-          fill="rgba(var(--fg-rgb),0.35)"
-        >
+        <text className="nw-label" x={CX} y={CY + 27} textAnchor="middle">
           {center.prev}
         </text>
       )}
       {onClickNeed &&
-        needs.map((need, i) => {
-          const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-          const d = petalPath(cx, cy, R, angle, SPREAD);
-          return d ? (
-            <path
-              key={`h-${need.id}`}
-              d={d}
-              fill="transparent"
-              onClick={() => onClickNeed(need)}
-              style={{ cursor: 'pointer' }}
-            />
-          ) : null;
-        })}
+        needs.map((nd, i) => (
+          <path
+            key={`h-${nd.id}`}
+            d={petalPath(R, angle(i))}
+            fill="transparent"
+            onClick={() => onClickNeed(nd)}
+            style={{ cursor: 'pointer' }}
+          />
+        ))}
       {onClickCenter && (
         <circle
-          cx={cx}
-          cy={cy}
+          cx={CX}
+          cy={CY}
           r={CENTER_R}
           fill="transparent"
           onClick={onClickCenter}

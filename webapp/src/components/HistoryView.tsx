@@ -78,7 +78,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
   return (
     <div className="sd-history">
-      <DateStrip history={history} needs={needs} selectedIdx={selectedIdx} onSelect={setSelectedIdx} btnRefs={dateBtnRefs} />
+      <DateStrip history={history} selectedIdx={selectedIdx} onSelect={setSelectedIdx} btnRefs={dateBtnRefs} />
 
       <div className="sd-toolbar">
         <div className="ds-seg ds-seg--full" role="group" aria-label="Вид">

@@ -9,6 +9,7 @@ import { GlyphArrowLeft } from './exercises/ExScreen';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { fillHistoryGaps } from './appShell/navigation';
 import { useTr } from '../utils/addressForm';
+import { PaperAlert } from './paper/PaperAlert';
 import '../styles/sheet-diary.css';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
@@ -44,6 +45,8 @@ export function HistorySheet({
   const [backfillDate, setBackfillDate] = useState<string | null>(null);
   const dialogA11y = useDialogA11y();
   const tr = useTr();
+  // Пустая история — одно действие «Заполнить сегодня» в самом листе, без дубля «Оценить →» в шапке.
+  const empty = !historyLoading && !historyFailed && history.length === 0;
 
   return (
     <div {...dialogA11y} className="u-sheet-grid">
@@ -52,9 +55,11 @@ export function HistorySheet({
         <button type="button" className="ds-back" onClick={goBack}>
           <GlyphArrowLeft /> Назад к трекеру
         </button>
-        <button type="button" onClick={() => goBack(onOpenTracker)} className="ds-btn ds-btn--sm">
-          Оценить →
-        </button>
+        {!empty && (
+          <button type="button" onClick={() => goBack(onOpenTracker)} className="ds-btn ds-btn--sm">
+            Оценить →
+          </button>
+        )}
       </div>
 
       <div className="page">
@@ -66,20 +71,12 @@ export function HistorySheet({
         {historyLoading
           ? <HistorySheetSkeleton />
           : historyFailed
-          ? <div role="alert" className="ds-card ds-card--row sd-banner">
-              {tr('Не удалось загрузить историю. Проверь соединение и открой её ещё раз — оценки на месте, просто не загрузились', 'Не удалось загрузить историю. Проверьте соединение и откройте её ещё раз — оценки на месте, просто не загрузились')}
-            </div>
+          ? <div className="sd-history"><PaperAlert sign="strokes" title="Не удалось загрузить историю."
+              text={tr('Проверь соединение и открой её ещё раз — оценки на месте, просто не загрузились', 'Проверьте соединение и откройте её ещё раз — оценки на месте, просто не загрузились')} /></div>
           : <Suspense fallback={<HistorySheetSkeleton />}>
-              <HistoryView
-                needs={needs}
-                history={history}
-                currentRatings={ratings}
-                childhoodRatings={childhoodRatings}
-                onOpenSchemas={onOpenSchemas}
-                onOpenChildhoodWheel={onOpenChildhoodWheel}
-                onGoToToday={() => goBack(onOpenTracker)}
-                onBackfill={(date) => setBackfillDate(date)}
-              />
+              <HistoryView needs={needs} history={history} currentRatings={ratings} childhoodRatings={childhoodRatings}
+                onOpenSchemas={onOpenSchemas} onOpenChildhoodWheel={onOpenChildhoodWheel}
+                onGoToToday={() => goBack(onOpenTracker)} onBackfill={(date) => setBackfillDate(date)} />
             </Suspense>
         }
       </div>
@@ -89,13 +86,7 @@ export function HistorySheet({
         if (!plan) return null;
         const need = needs.find(n => n.id === plan.needId);
         if (!need) return null;
-        return (
-          <CheckInSheet
-            plan={plan}
-            needLabel={need.chartLabel}
-            onDone={() => onDismissPlan(plan.id)}
-          />
-        );
+        return <CheckInSheet plan={plan} needLabel={need.chartLabel} onDone={() => onDismissPlan(plan.id)} />;
       })()}
 
       {backfillDate && (
