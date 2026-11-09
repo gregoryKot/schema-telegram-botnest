@@ -105,8 +105,7 @@ export function verifyMaxInitData(
   // бросает RangeError → 500 вместо 401 (та же защита, что в telegram.provider.ts).
   if (!HASH_RE.test(hash)) throw new Error('Malformed hash in initData');
 
-  const launchParams = entries
-    .slice()
+  const launchParams = [...entries]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
@@ -114,13 +113,11 @@ export function verifyMaxInitData(
   const secretKey = createHmac('sha256', 'WebAppData')
     .update(botToken)
     .digest();
-  const expectedHash = createHmac('sha256', secretKey)
+  const expected = createHmac('sha256', secretKey)
     .update(launchParams)
-    .digest('hex');
+    .digest();
 
-  if (
-    !timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expectedHash, 'hex'))
-  ) {
+  if (!timingSafeEqual(Buffer.from(hash, 'hex'), expected)) {
     // К сообщению — форма строки, без единого значения. Причин разойтись у
     // подписи ровно две: токен не от того бота или строка пришла не в том
     // виде, что мы разбираем. Отличить их по «подпись неверна» нельзя, а

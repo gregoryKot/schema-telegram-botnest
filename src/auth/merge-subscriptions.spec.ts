@@ -190,3 +190,30 @@ describe('MergeService — конфликт подписок сообщаетс�
 function rowsOf(tx: ReturnType<typeof makeTx>) {
   return tx.rows;
 }
+
+// Ночной мутационный замер (stryker.golden-auth.config.json): конфликт —
+// только когда живые подписки с ОБЕИХ сторон; заголовок алерта.
+describe('reassignSubscriptions — граница конфликта под мутационным замером', () => {
+  it('у источника только отменённая, у цели живая — перенос, не конфликт', async () => {
+    const tx = makeTx([
+      { telegramId: SRC, status: 'cancelled' },
+      { telegramId: TGT, status: 'active' },
+    ]);
+    expect(await reassignSubscriptions(tx as never, SRC, TGT)).toEqual({
+      kind: 'moved',
+      count: 1,
+    });
+    expect(tx.rows.every((r) => r.telegramId === TGT)).toBe(true);
+  });
+
+  it('алерт начинается с заголовка: подписка НЕ перенесена', () => {
+    const text = conflictAlertText(SRC, TGT, {
+      kind: 'conflict',
+      sourceLive: 1,
+      targetLive: 1,
+    });
+    expect(
+      text.startsWith('⚠️ Слияние аккаунтов: подписка НЕ перенесена\n\n'),
+    ).toBe(true);
+  });
+});

@@ -136,10 +136,9 @@ jobs:
   # Память воркера доходит до ~2,8 ГБ — четыре помещаются.
   mutation-golden-auth:
     runs-on: ubuntu-26.04
-    # Волна А (docs/TEST_TRUST_PLAN.md) — 9 файлов входа/шифрования/приватности
-    # (crypto, crypto-record, auth.service, merge.service, merge-relations,
-    # telegram-auth.guard, security-log.service, security-log-redact,
-    # therapy-relations.service) — список в stryker.golden-auth.config.json.
+    # Волна А (docs/TEST_TRUST_PLAN.md) — вход, шифрование, приватность.
+    # Состав — только `mutate` в stryker.golden-auth.config.json: перечень здесь
+    # устаревал (писал «9 файлов», когда их было уже 22).
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -168,9 +167,8 @@ jobs:
 
   mutation-golden-payments:
     runs-on: ubuntu-26.04
-    # Волна Б — 9 файлов денег/бронирования/напоминаний (tz, robokassa,
-    # booking, subscription, slot, pricing, payment.controller, donation,
-    # notification.planner), ~1650 строк — сопоставимо с волной А по объёму.
+    # Волна Б — деньги, бронирование, напоминания. Состав — только `mutate` в
+    # stryker.golden-payments.config.json (перечень здесь устаревал так же).
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

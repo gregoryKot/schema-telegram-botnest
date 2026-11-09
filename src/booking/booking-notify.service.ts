@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CalDavService } from './caldav.service';
@@ -39,7 +38,6 @@ export interface PlainBooking extends PriceFields {
 @Injectable()
 export class BookingNotifyService {
   private readonly logger = new Logger(BookingNotifyService.name);
-  private readonly siteUrl: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -47,13 +45,8 @@ export class BookingNotifyService {
     private readonly calDav: CalDavService,
     private readonly meeting: MeetingService,
     private readonly email: EmailService,
-    config: ConfigService,
     private readonly cronLeader: CronLeaderService,
-  ) {
-    this.siteUrl = (
-      config.get<string>('SITE_URL') ?? 'https://kotlarewski.gr'
-    ).replace(/\/$/, '');
-  }
+  ) {}
 
   /** On confirmation: meeting link + Apple Calendar + admin notify (идемпотентно, см. booking-confirm-run.ts). */
   async onConfirmed(b: PlainBooking): Promise<void> {

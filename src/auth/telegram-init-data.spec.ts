@@ -235,3 +235,48 @@ describe('verifyTelegramInitDataSignature / readTelegramUser', () => {
     ).toEqual({ id: 5 });
   });
 });
+
+// Ночной мутационный замер (stryker.golden-auth.config.json) — границы,
+// которые прежние тесты не отличали от поломки.
+describe('telegram-init-data: границы под мутационным замером', () => {
+  it('повторный ключ сохраняет порядок строки: сортировка стабильна, «равно» не «меньше»', () => {
+    // Подпись Telegram считается по парам в исходном порядке у равных ключей;
+    // компаратор, вернувший -1 на равенстве, переставил бы их — подпись не сошлась бы.
+    const checkString = [
+      `auth_date=${NOW_S}`,
+      'tag=первый',
+      'tag=второй',
+      'user={"id":42}',
+    ].join('\n');
+    const secret = createHmac('sha256', 'WebAppData').update(TOKEN).digest();
+    const hash = createHmac('sha256', secret).update(checkString).digest('hex');
+    const p = new URLSearchParams();
+    p.append('user', '{"id":42}');
+    p.append('tag', 'первый');
+    p.append('auth_date', String(NOW_S));
+    p.append('tag', 'второй');
+    p.append('hash', hash);
+    expect(verifyTelegramInitData(p.toString(), TOKEN, NOW_MS).user.id).toBe(
+      42,
+    );
+  });
+
+  it.each([
+    ['дробью', '{"id":1.5}'],
+    ['за пределом точности', '{"id":9007199254740993}'],
+    ['отрицательный', '{"id":-7}'],
+    ['примитив-число', '5'],
+    ['примитив-строка', '"42"'],
+    ['массив', '[42]'],
+  ])('user: id %s → Missing user id', (_n, raw) => {
+    expect(() => readTelegramUser(new URLSearchParams({ user: raw }))).toThrow(
+      'Missing user id in initData',
+    );
+  });
+
+  it('id = 1 — наименьший законный', () => {
+    expect(readTelegramUser(new URLSearchParams({ user: '{"id":1}' }))).toEqual(
+      { id: 1 },
+    );
+  });
+});

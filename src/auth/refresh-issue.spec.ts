@@ -198,3 +198,33 @@ describe('issueRotatedPair — метка recoveredAt', () => {
     expect(born.recoveredAt ?? null).toBeNull();
   });
 });
+
+// Ночной мутационный замер (stryker.golden-auth.config.json): при
+// восстановлении репойнт пишется в строку ПРЕДЪЯВЛЕННОГО токена, а не в
+// первую попавшуюся.
+describe('issueRotatedPair — восстановление трогает только свою строку', () => {
+  it('чужая сессия, стоящая в таблице первой, остаётся как была', async () => {
+    const other = live({ id: 'sess-0', tokenHash: 'h:other', family: 'fam-0' });
+    const parent = live({ revokedAt: new Date(), replacedByHash: 'h:succ' });
+    const succ = live({ id: 'sess-2', tokenHash: 'h:succ' });
+    const { deps, rows } = makeDeps([other, parent, succ]);
+    const res = await issueRotatedPair(
+      deps,
+      {
+        tokenHash: 'h:parent',
+        userId: 7n,
+        family: 'fam-1',
+        replacedByHash: 'h:succ',
+      },
+      RAW,
+    );
+    if (!res.rotated) throw new Error('unreachable');
+    const newHash = `h:${res.refreshToken}`;
+    expect(rows.find((r) => r.tokenHash === 'h:parent')!.replacedByHash).toBe(
+      newHash,
+    );
+    const untouched = rows.find((r) => r.tokenHash === 'h:other')!;
+    expect(untouched.revokedAt).toBeNull();
+    expect(untouched.replacedByHash).toBeNull();
+  });
+});

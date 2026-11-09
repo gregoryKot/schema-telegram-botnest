@@ -44,44 +44,71 @@
   `scripts/zero-coverage-baseline.json` как «покрыто e2e», но e2e в `coverage-summary.json` не
   входит: сломай e2e — гейт не узнает. Файл, покрытый одной строкой из десяти, гейт тоже не
   видит — порог «ноль», а не процент.
-- **21 файл, выделенный из файлов мутационных зон, не измеряется мутациями**
-  (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
-  `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
-  `booking.{create,checkout,queries}`, `subscription.charges`, `account.delete`
-  и другие). Гейт `check-mutation-zone.mjs` (#657) не даёт выпасть новому,
-  а этим двадцати одному ничего не мешает остаться за кадром: включать их в
-  `mutate` по одному вместе с прогоном и полом в бейслайне храповика (прогон
-  волны А — десятки минут, поэтому не пачкой). Первыми — `refresh-*` и
-  `merge-subscriptions` (деньги и сессии). Слепое пятно гейта: кандидат — файл,
-  все нетестовые импортёры которого в зоне; выделенный файл, который импортирует
-  ещё и код вне зоны (`booking-notify.service.ts`, `totp.service.ts`,
-  `max-init-data.ts`, `login-ticket.service.ts` — AUDIT_2026-10_FINDINGS.md), он
-  не видит, так что класс закрыт не целиком. Зона для гейта — объединение всех
-  `stryker*.config.json`, включая ручной зонтичный `stryker.config.json`, в
-  nightly не гоняемый. Файлы только из типов (`booking.types.ts`) кандидатами не
-  считаются: мутировать в них нечего.
-- **Мутационный замер волны А уже его реального охвата.** В отчёте golden-auth
-  (2026-10-15) `merge.service.ts` — 66 из 158 мутантов Ignored (статические,
-  `ignoreStatic: true`: код уровня модуля судится только динамическими мутантами),
-  `auth.service.ts` — 5, `crypto.ts` — 1; в счёт они не входят, так что 100% по
-  таким файлам не значит «все мутации убиты». Включать ли статические мутанты
-  (`ignoreStatic: false` — минуты прогона на мутант) — решение не принято.
-- **Три файла волны Б в `mutate` без пола в бейслайне.** Реальный прогон
-  2026-10-15 (27 минут): `booking-paid-after-cancel.ts` 84.62%,
-  `booking.transitions.ts` 86.49%, `payment.booking-webhook.ts` 84.62% —
-  `check-mutation-ratchet.mjs` только печатает «без пола», падение этих файлов
-  ничего не уронит. Пол вносится по результату прогона
-  (`scripts/mutation-golden-payments-baseline.json`); не сделано здесь, потому
-  что правка бейслайна чужих файлов — отдельное решение (правило №20).
-- **`src/utils/crypto-keys.ts` в `mutate` без пола.** Разбор ключей вынесен из
-  `crypto.ts` при переводе `ClientMeeting.clientKey` на HMAC и стоит в `mutate`
-  обоих конфигов (`stryker.config.json`, `stryker.golden-auth.config.json`), а
-  в `scripts/mutation-baseline.json` и `scripts/mutation-golden-auth-baseline.json`
-  пола нет: ночной храповик печатает «без пола». Замер ревьюера на ветке —
-  85.19% (выжили `.filter(Boolean)`, `k !== null`, `?? ''` для
-  `ENCRYPTION_KEY_OLD`, переехавшие из `crypto.ts`); пол вносится `--update`
-  по первому ночному прогону, а не по ручному замеру — конфиги гоняют разные
-  наборы спеков.
+- **45 файлов вокруг мутационных зон не измеряются мутациями**
+  (`scripts/mutation-zone-baseline.json`, у каждого причина). 15 выделены из
+  файлов зон (`magic-link`/`unlink-provider` из `auth.service`, `merge-*` из
+  `merge.service`, `subscription.charges`, `account.delete`,
+  `init-data-paths`, `auth-failure.report` и другие); 30 гейт увидел после
+  расширения 2026-11 (кандидат — файл, у которого импортёров из зоны не
+  меньше, чем вне) и при включении соседей в `mutate`: хелперы броней,
+  уведомлений, связи терапевта, части билета входа. Семь из 45 — константы и
+  реестры без логики (`user-owned-tables`, `user-data-tables`,
+  `booking.config`, `booking.schema`, `subscription.constants`,
+  `init-data-window`, `totp-challenge`), остальное — долг волны. Гейт
+  `check-mutation-zone.mjs` (#657) не даёт выпасть новому, а этим ничего не
+  мешает остаться за кадром: включать в `mutate` по одному вместе с прогоном
+  и полом в бейслайне храповика. `refresh-*`, `merge-subscriptions`,
+  `booking.{create,checkout,queries}` включены 2026-11-09 с полом 100.
+  Следующий по весу — `subscription.charges.ts` (деньги): замер 2026-11-09
+  85.71% (16 выживших и 3 NoCoverage), соседи `subscription.charge-guards.ts`
+  86.36%, `subscription.charge-activate.ts` 89.29%,
+  `subscription-paid-after-cancel.ts` 85.19%, `subscription.charge-failed.ts`
+  100% — включать вместе, иначе гейт потребует записи про каждого соседа;
+  затем `booking-public-view.ts` (выдача брони без ПДн). Слепое пятно гейта:
+  выделенный файл, у которого импортёров из зоны меньше половины или нет
+  вовсе (импортёры переехали за ним), он не видит — так к 2026-11 жили
+  `totp.service.ts`, `max-init-data.ts`, `login-ticket.service.ts` (два
+  последних теперь в `mutate`, TOTP — запись ниже). Зона для гейта —
+  объединение всех `stryker*.config.json`, включая ручной зонтичный
+  `stryker.config.json`, в nightly не гоняемый. Файлы только из типов
+  (`booking.types.ts`) кандидатами не считаются.
+- **Семейство TOTP вне мутационной зоны.** Замер 2026-11-09 (прогон
+  golden-auth с этими файлами в `mutate`): `src/auth/totp.service.ts` 77.86%
+  (27 выживших, 2 NoCoverage), `totp-code.ts` 86.67% (2), `totp-attempts.ts`
+  76.92% (6 + 3 NoCoverage), `totp-recovery.ts` 80.49% (6 + 2) — выжившие в
+  ветках включения/отключения 2FA, счётчике неверных кодов и погашении
+  резервных кодов, не только в текстах логов. В `mutate` не включены: пол ниже
+  замера закрепил бы слабость, а закрыть 48 выживших тестами в той же серии не
+  успели. Гейт зоны их не видит — ни один файл зоны их не импортирует.
+  Начать: `npx stryker run stryker.golden-auth.config.json --mutate
+  src/auth/totp.service.ts,src/auth/totp-code.ts,src/auth/totp-attempts.ts,src/auth/totp-recovery.ts`,
+  вкладка Survived; после — файлы в `mutate` и `--update`.
+- **Статические мутанты не считаются (`ignoreStatic: true`), включить их
+  ночью не на что.** Код уровня модуля судится только динамическими
+  мутантами: в golden-auth (2026-11-09) 102 статических Ignored — 66 в
+  `merge.service.ts`, 13 в `merge-combine.ts`, 9 в `telegram-init-data.ts`,
+  5 в `auth.service.ts`, 4 в `max-init-data.ts`, по одному в трёх refresh-*.
+  Замер с `ignoreStatic: false` (инкрементально поверх прогона, то есть
+  только эти 102, общая машина, `--concurrency 2`): 46 мин 49 с, 94 убиты,
+  выжили 8 — якоря `^`/`$` HASH_RE в `max-init-data.ts` (2) и 6 в
+  `merge-combine.ts`; счёт волны 95.80 → 95.59. Статический мутант гоняет все
+  связанные спеки — в ~17 раз дороже обычного (816 обычных мутантов тех же
+  файлов — 22 мин 27 с на той же машине). Цена в ночной джобе (CI вдвое
+  быстрее этой машины по замеру волны Б: 14 мин против 31): ~23 мин сверху к
+  ~34 мин волны А с файлами серии 2026-11-09 — ~57 из 60 минут
+  `timeout-minutes` джобы `mutation-golden-auth` (`.github/workflows/nightly.yml`),
+  без запаса на рост. Решение: не включать, пока волна А не разделена или
+  потолок не поднят осознанно; кризисная детекция и outbox гоняются с
+  `ignoreStatic: false` — там command-раннер и минуты, не часы. Включать —
+  вместе с тестами на 8 выживших и `--update` по ночному прогону.
+- **`src/auth/merge-combine.ts` — самый слабый файл волны А: 78.08%** (замер
+  2026-11-09, 114 из 146 обезврежено: 26 выживших и 6 NoCoverage, из них 10
+  ConditionalExpression и 5 ArrowFunction; строки 80–253 — схлопывание дублей
+  при слиянии, #1022). Файл вошёл в `mutate` golden-auth без пола вместе с
+  `merge-combine-rules.ts` (93.75%, выжили MethodExpression :12 и
+  ArrayDeclaration :35); полы теперь в `scripts/mutation-golden-auth-baseline.json`,
+  выживших не разбирали — правка тестов слияния вне записи о полах. Начать с
+  отчёта `npm run mutation:golden-auth`, вкладка Survived.
 - **Волна А растёт сама: каждый спек, пишущий шифрованное поле, удорожает
   прогон.** Мутанты горячих путей `crypto.ts`/`crypto-record.ts` покрывает до 67
   спек-файлов, и jest-раннер Stryker грузит каждый целиком: загрузок спеков за
