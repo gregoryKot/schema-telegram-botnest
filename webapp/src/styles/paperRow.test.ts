@@ -35,11 +35,18 @@ describe('pp-head — заголовок слева, картинка справ
   });
 
   it.each([
-    'components/therapy/TalkSheet.tsx', 'components/diary/quickEntry/QuickWriteStep.tsx',
+    'components/therapy/TalkSheet.tsx',
     'components/schemaSheets/SsHead.tsx', 'sections/practice/SelfHelpSheet.tsx',
   ])('%s: строка заголовка — pp-head', (f) => {
     expect(tsx(f)).toMatch(/className="pp-head[ "]/);
     expect(tsx(f)).not.toMatch(/cw-title-row|qe-head|ss-title-row/);
+  });
+
+  // b10a (2026-11): заголовок «Что на уме?» и знак — в листе-герое сущности, а не строкой над полем.
+  it('быстрая запись: заголовок со знаком — EntitySheet, своей строки заголовка нет', () => {
+    const f = tsx('components/diary/quickEntry/QuickWriteStep.tsx');
+    expect(f).toMatch(/<EntitySheet look="diary"/);
+    expect(f).not.toMatch(/cw-title-row|qe-head|ss-title-row/);
   });
 });
 
