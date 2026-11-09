@@ -28,6 +28,25 @@ function renderCelebration(props: Partial<Parameters<typeof Celebration>[0]> = {
   );
 }
 
+describe('Celebration — лист серии (живая бумага, b07)', () => {
+  it('сверху сцена серии: за листом сегодняшнего дня — листы прошлых дней; бумага соломы, число — наклейкой вне сцены', () => {
+    const { container } = renderCelebration({ streak: 5 });
+    const top = container.querySelector('.sk-celebr-top') as HTMLElement;
+    expect(top.style.getPropertyValue('--h')).toBe('70');
+    const band = top.querySelector('.sk-celebr-band.pp-paper')!;
+    expect(band.getAttribute('aria-hidden')).toBe('true');
+    expect(band.querySelectorAll('.scn-shade > rect')).toHaveLength(4); // пять дней — четыре листа позади
+    expect(band.querySelector('.sk-celebr-leaf')).toBeNull();
+    expect(band.contains(screen.getByText('5'))).toBe(false); // число читается, а не прячется в декоре
+  });
+
+  it('веха — персик и лист роста', () => {
+    const { container } = renderCelebration({ streak: 7 });
+    expect((container.querySelector('.sk-celebr-top') as HTMLElement).style.getPropertyValue('--h')).toBe('45');
+    expect(container.querySelector('.sk-celebr-band .sk-celebr-leaf svg')).not.toBeNull();
+  });
+});
+
 describe('Celebration — контент', () => {
   it('обычный стрик — число дней и без пометки вехи', () => {
     renderCelebration({ streak: 5 });

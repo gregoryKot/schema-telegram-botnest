@@ -432,9 +432,17 @@ describe('TrackerOverlay — бэкафилл прошлой даты', () => {
     mockApi.ratings.mockReturnValue(new Promise(() => {}));
     renderOverlay({ date: '2026-07-10' });
     const sk = screen.getByRole('status', { name: 'Загружаются оценки дня' });
-    expect(sk.querySelectorAll('.skel').length).toBe(8);
+    expect(sk.querySelectorAll('.skel').length).toBe(10); // лист: надпись, название, две строки; вопрос; пять ответов
     expect(screen.queryByText('Загрузка...')).toBeNull();
     expect(mockApi.ratings).toHaveBeenCalledWith('2026-07-10');
+  });
+
+  it('пока оценки дня грузятся, «Закрыть» уже работает', () => {
+    mockApi.ratings.mockReturnValue(new Promise(() => {}));
+    const onClose = vi.fn();
+    renderOverlay({ date: '2026-07-10', onClose });
+    fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('api.ratings отклонён: скелетон уходит, день пустой, отказ уходит отчётом наверх', async () => {

@@ -1,6 +1,8 @@
 /* Трекер потребностей и листы потребности (префикс tk2-; tk- занят карточкой клиента).
-   Оболочка — полноэкранный оверлей внутри .app-shell.light-lock; цвет потребности
-   приходит через --h (hueStyle(NEED_HUE[id])), заливки — классы tone-*. */
+   Оболочка трекера — полноэкранный оверлей внутри .app-shell.light-lock. Листы потребности
+   (NeedTodaySheet, NeedHistorySheet, «Об индексе», «О советах») — живая бумага 2026-11 (b07,
+   docs/design/APP_2026-11.md): шапка — лист потребности (ExScreen look), её цвет — --h
+   (hueStyle(NEED_HUE[id])), цвет её данных — --nd (needDataColor). Мелкий текст на бумаге — --text-sub. */
 /* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
    начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
@@ -14,38 +16,117 @@
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay { padding-top: var(--safe-top); } }
 /* Загрузка оверлея (бэкафилл) */
 .tk2-done { align-items: center; justify-content: center; padding: 40px 20px; }
-/* Листы потребности */
+/* Боковая колонка листа потребности из библиотеки (NeedDetailSheet, need-detail.css). */
 .tk2-aside { position: sticky; top: 40px; margin-bottom: 16px; }
-.tk2-aside-word { font: 400 28px/1.15 var(--serif); margin-bottom: 12px; }
 .tk2-aside-nums { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
 .tk2-aside-nums .ds-num { font-size: 56px; }
-.tk2-note { padding: 10px 12px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
-.tk2-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.tk2-trend { font: 400 32px/1.1 var(--serif); letter-spacing: -0.01em; margin: 4px 0 2px; }
-.tk2-trend-sub { font-size: 13px; margin-bottom: 16px; }
-.tk2-trend-sub.is-up { color: var(--ok); }
-.tk2-trend-sub.is-down { color: var(--err); }
-.tk2-chart { display: block; width: 100%; margin-bottom: 16px; }
-.tk2-area { fill: oklch(0.58 0.12 var(--h)); fill-opacity: .18; }
-.tk2-line { fill: none; stroke: oklch(0.58 0.12 var(--h)); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.tk2-dot-pt { fill: oklch(0.58 0.12 var(--h)); }
-.tk2-ref { stroke: oklch(0.58 0.12 var(--h)); stroke-opacity: .45; stroke-dasharray: 4 3; }
-.tk2-ref-t { font-size: 8px; fill: oklch(0.58 0.12 var(--h)); fill-opacity: .7; }
-.tk2-child { padding-top: 14px; border-top: 1px solid var(--paper-sunk); }
-.tk2-help { margin-left: -8px; vertical-align: middle; display: inline-flex; }
-.tk2-help-in {
-  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
-  background: var(--paper-sunk); color: var(--text-faint); font-size: 10px; font-weight: 700;
-}
-.tk2-list { margin-top: 8px; display: flex; flex-direction: column; }
-.tk2-li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--paper-sunk); }
-.tk2-li:last-child { border-bottom: none; }
-.tk2-li-mark { flex-shrink: 0; line-height: 1.5; font-size: 14px; }
 .tk2-opts { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
-.tk2-opt { text-align: left; cursor: pointer; font-family: inherit; }
-.tk2-opt.is-active { border-color: oklch(0.58 0.12 var(--h)); }
 .tk2-para { margin: 0; font-size: 16px; line-height: 1.75; color: var(--text-sub); }
-.tk2-info { display: grid; grid-template-columns: 28px 1fr; gap: 12px; margin-bottom: 12px; }
-.tk2-info-n { font-size: 20px; color: var(--accent); }
 /* Мотив потребности отдельной строкой в теле листа (NeedArtLine). */
 .pp-need-line { width: auto; justify-content: flex-start; }
+
+/* Знак потребности — две-три узкие полоски: в полосе разворота на телефоне (56) он читался точкой,
+   у листов потребности он крупнее, как у вопроса трекера. */
+@media (max-width: 1023px) {
+  .ex2-body--spread .pa-spread-side .pa-sheet[data-sign^='need_'] > .pa-sheet-art { width: 76px; }
+}
+
+/* ── «Подробнее о потребности» (NeedTodaySheet) ──────────────────────────── */
+.tk2-sheet { display: flex; flex-direction: column; gap: 28px; }
+.tk2-today { display: flex; flex-direction: column; gap: 12px; }
+.tk2-today-head { display: flex; align-items: baseline; gap: 12px; }
+.tk2-today-word { font: 400 24px/1.2 var(--serif); color: var(--text); }
+.tk2-good { margin: 0; padding: 12px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; line-height: 1.45; }
+.tk2-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ds-chip.tk2-tag { background: oklch(0.915 0.03 var(--h)); color: var(--text-sub); }
+/* Складки — строки 52px с шевроном между тонкими линиями, раскрываются на бумаге страницы. */
+.tk2-folds { display: flex; flex-direction: column; border-top: 1px solid var(--paper-sunk); }
+.tk2-folds .ds-fold { background: none; border: 0; border-bottom: 1px solid var(--paper-sunk); border-radius: 0; }
+.tk2-folds .ds-fold-btn { min-height: 52px; padding: 0 4px; }
+.tk2-folds .ds-fold-btn .ds-label { font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--text); }
+.tk2-folds .ds-fold-body { padding: 0 4px 18px; }
+.tk2-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+/* Метка строки — короткая полоска цвета данных потребности (как полоска Strokes), а не глиф «›»/«?». */
+.tk2-li { position: relative; padding-left: 20px; font-size: 14.5px; line-height: 1.55; color: var(--text-sub); }
+.tk2-li::before {
+  content: ''; position: absolute; left: 3px; top: .3em; width: 6px; height: 14px; border-radius: 3px;
+  background: var(--nd);
+}
+.tk2-list--q .tk2-li::before { height: 6px; top: .55em; }
+.tk2-opt {
+  padding: 12px 16px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface);
+  text-align: left; cursor: pointer; font-family: inherit;
+}
+.tk2-opt .ds-sub { margin-top: 4px; color: var(--text-sub); }
+.tk2-opt.is-active { background: oklch(0.915 0.03 var(--h)); border-color: oklch(0.86 0.045 var(--h)); }
+.tk2-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* «Что с этим сделать?» — плитки бумаги со знаком, куда ведут (NeedTodayActions). */
+.tk2-act { display: flex; flex-direction: column; gap: 12px; }
+.tk2-act-label { margin: 0; }
+.tk2-act-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tk2-act-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 132px; box-sizing: border-box;
+  padding: 18px 18px 14px 20px; border: 0; border-radius: 20px; text-align: left; cursor: pointer; font-family: var(--sans);
+  transition: background .12s;
+}
+.tk2-act-tile:hover { background: oklch(0.895 0.04 var(--h)); }
+.tk2-act-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tk2-act-title { font: 400 22px/1.15 var(--serif); color: var(--text); }
+.tk2-act-sub { font-size: 13.5px; line-height: 1.45; color: var(--text-sub); }
+.tk2-act-foot { margin-top: auto; width: 100%; display: flex; align-items: flex-end; justify-content: space-between; padding-top: 10px; }
+.tk2-act-foot .pp-art--square { width: 84px; height: 45px; }
+
+/* ── «Динамика потребности» (NeedHistorySheet, NeedDynamics) ─────────────── */
+.tk2-dyn { display: flex; flex-direction: column; gap: 4px; }
+.tk2-dyn > .ds-label { color: var(--text-sub); }
+.tk2-trend { margin-top: 2px; font: 400 40px/1.1 var(--serif); letter-spacing: -0.01em; color: var(--text); }
+.tk2-trend-sub { margin-bottom: 14px; font-size: 13.5px; color: var(--text-sub); }
+.tk2-chart-box { position: relative; margin: 6px 4px 16px 0; }
+.tk2-chart { display: block; width: 100%; overflow: visible; }
+.tk2-area { fill: var(--nd); fill-opacity: .16; }
+.tk2-line { fill: none; stroke: var(--nd); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.tk2-ref { stroke: var(--text-sub); stroke-opacity: .5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.tk2-ref-t { display: inline-flex; align-items: center; gap: 8px; margin: -8px 0 14px; font-size: 12px; color: var(--text-sub); }
+.tk2-ref-t::before { content: ''; width: 18px; border-top: 1.5px dashed var(--text-sub); }
+.tk2-dot-pt {
+  position: absolute; right: -5px; width: 10px; height: 10px; border-radius: 50%; transform: translateY(-50%);
+  background: var(--nd); box-shadow: 0 0 0 3px var(--bg);
+}
+.tk2-child { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; align-items: start; padding-top: 16px; border-top: 1px solid var(--paper-sunk); }
+.tk2-child .pp-row-art { margin-top: 2px; }
+.tk2-child-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tk2-child-body > .ds-label { color: var(--text-sub); }
+.tk2-child-nums { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+.tk2-child-num { font: 400 36px/1 var(--serif); color: var(--text); }
+.tk2-child-of, .tk2-child-now { font-size: 13px; color: var(--text-sub); }
+.tk2-child-note { margin: 4px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-sub); }
+/* Совет — лист бумаги потребности со знаком, «?» с зоной 44 (hitboxStyle). */
+.tk2-tip-card { display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 16px 22px; border-radius: 22px; }
+.tk2-tip-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+.tk2-tip-card .ds-label { color: var(--text-sub); }
+.tk2-tip-text { margin: 0; font: 400 21px/1.35 var(--serif); color: var(--text); text-wrap: pretty; }
+.tk2-tip-sign { align-self: flex-end; }
+.tk2-tip-sign .pp-art--square { width: 84px; height: 45px; }
+.tk2-help { flex: none; margin: -12px -12px -12px 0; background: none; border: 0; cursor: pointer; }
+.tk2-help-in {
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: var(--surface); color: var(--text-sub); font-size: 12px; font-weight: 700;
+}
+.tk2-help:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 50%; }
+
+/* ── «Об индексе дня» (IndexInfoSheet) ───────────────────────────────────── */
+.tk2-info { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--paper-sunk); }
+.tk2-info-li { display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; padding: 18px 0; border-bottom: 1px solid var(--paper-sunk); }
+.tk2-info-n { font: 400 30px/1 var(--serif); color: var(--c-amber-strong); }
+.tk2-info .tk2-para { font-size: 15.5px; line-height: 1.65; color: var(--text); }
+
+/* ── «О советах» (NeedAdviceModal) ───────────────────────────────────────── */
+.tk2-adv-head { margin-bottom: 18px; }
+.tk2-adv-p { margin: 0 0 12px; font-size: 15px; line-height: 1.65; color: var(--text-sub); }
+.tk2-adv-link {
+  display: flex; align-items: center; gap: 14px; min-height: 52px; margin-top: 6px;
+  border-top: 1px solid var(--paper-sunk); border-bottom: 1px solid var(--paper-sunk);
+  font: 600 15px var(--sans); color: var(--text); text-decoration: none;
+}
+.tk2-adv-link:hover { color: var(--accent); }
+.ds-btn.tk2-adv-ok { width: 100%; height: auto; min-height: 48px; margin-top: 18px; border-radius: 24px; font-size: 15px; }

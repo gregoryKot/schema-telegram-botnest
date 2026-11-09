@@ -14,9 +14,10 @@ interface Props {
   date?: string;
   /** Текстовая кнопка без рамки — для экранов, где «Поделиться» не главное действие. */
   plain?: boolean;
+  className?: string; // вид задаёт экран своим классом (строка «Готово» трекера) — без инлайн-стиля
 }
 
-export function DayShareButton({ needs, ratings, date, plain }: Props) {
+export function DayShareButton({ needs, ratings, date, plain, className }: Props) {
   const [open, setOpen] = useState(false);
   const share = useDayShare(needs, ratings, date, botShortUrl);
 
@@ -24,7 +25,8 @@ export function DayShareButton({ needs, ratings, date, plain }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        style={{
+        className={className}
+        style={className ? undefined : {
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',

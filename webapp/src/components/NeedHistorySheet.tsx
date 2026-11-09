@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useTr } from '../utils/addressForm';
 import { hitboxStyle } from '../utils/hitbox';
 import type { Need, DayHistory } from '../types';
@@ -6,9 +6,12 @@ import { useNeedData } from '../needData';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { NeedAdviceModal } from './NeedAdviceModal';
+import { NeedDynamics } from './NeedDynamics';
+import { SignArt } from './art/SignArt';
 import { NEED_HUE, hueStyle } from '../lib/tone';
+import { needDataStyle } from './needDataColor';
+import { needLook } from '../../../shared/src/theme/entityLook';
 import type { NeedId } from '../../../shared/src/needs/types';
-import { NeedArtLine } from './NeedArtLine';
 import '../styles/sheet-tracker.css';
 
 interface Props {
@@ -19,6 +22,11 @@ interface Props {
   onClose: () => void;
 }
 
+// Лист «Динамика потребности» (редизайн 2026-11, APP_2026-11.md, b07): шапка — тот же лист
+// потребности, что у вопроса трекера (её бумага и знак; на компьютере — колонкой разворота слева),
+// сразу под ним главное — направление за неделю, спарклайн во всю колонку и сравнение с детством
+// (NeedDynamics), ниже совет на бумаге потребности со знаком и теги. График — в широкой колонке,
+// а не под листом слева: в 440px неделя сжималась в пилу, а правая колонка оставалась пустой.
 export function NeedHistorySheet({ need, value, history, childhoodValue, onClose }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
@@ -30,107 +38,49 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
   const [tipRand] = useState(() => Math.random());
   const data = NEED_DATA[need.id];
   if (!data) return null;
-  const hue = NEED_HUE[need.id as NeedId];
-
-  const scores = history.map(d => d.ratings[need.id] ?? 0);
-  const n = scores.length;
-  const recentAvg = n > 0 ? scores.slice(0, Math.min(3, n)).reduce((s, v) => s + v, 0) / Math.min(3, n) : 0;
-  const olderAvg  = n > 0 ? scores.slice(-Math.min(3, n)).reduce((s, v) => s + v, 0) / Math.min(3, n) : 0;
-  const trendDiff = recentAvg - olderAvg;
-  const trendLabel = trendDiff > 0.5 ? '↑ Растёт' : trendDiff < -0.5 ? '↓ Падает' : '→ Стабильно';
-  const trendTone = trendDiff > 0.5 ? ' is-up' : trendDiff < -0.5 ? ' is-down' : '';
-  const trendSign = trendDiff >= 0 ? '+' : '';
+  const id = need.id as NeedId;
+  const tone = { ...hueStyle(NEED_HUE[id]), ...needDataStyle(id) } as CSSProperties;
 
   const tipKey = value <= 3 ? 'low' : value <= 6 ? 'medium' : 'high';
   const tipPool = data.tips[tipKey];
-  const tipIdx = Math.floor(tipRand * tipPool.length);
-  const tip = tipPool[tipIdx];
-
-  // Sparkline
-  const reversed = [...history].reverse();
-  const W = 240; const H = 52;
-  const xStep = reversed.length > 1 ? W / (reversed.length - 1) : W / 2;
-  const yFor = (v: number) => v === 0 ? H - 2 : (H - 8) - ((v - 1) / 9) * (H - 12) + 4;
-  const pts = reversed.map((d, i) => ({ x: i * xStep, y: yFor(d.ratings[need.id] ?? 0) }));
-  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
-  const lastPt = pts.length > 0 ? pts[pts.length - 1] : null;
-  const areaPath = lastPt ? `${linePath} L ${lastPt.x.toFixed(1)} ${H} L 0 ${H} Z` : '';
+  const tip = tipPool[Math.floor(tipRand * tipPool.length)];
+  const help = hitboxStyle(20, 20, 44);
 
   return (
     <ExScreen
       onBack={goBack}
       backLabel="Назад"
+      look={needLook(id)}
+      spread
       eyebrow={need.chartLabel}
-      title={<>Динамика<br /><span className="it">потребности</span></>}
+      title={<>Динамика <span>потребности</span></>}
       lede={data.explanation}
-      aside={
-        <div className="ds-card tk2-aside" style={hueStyle(hue)}>
-          <div className="ds-eyebrow tone-text">За 7 дней</div>
-          <div className="tk2-trend tone-text">{trendLabel}</div>
-          <div className={'tk2-trend-sub' + trendTone}>
-            {trendSign}{trendDiff.toFixed(1)} к предыдущей неделе
-          </div>
-          {reversed.length > 1 && (
-            <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="tk2-chart">
-              <path d={areaPath} className="tk2-area" />
-              <path d={linePath} className="tk2-line" />
-              {lastPt && <circle cx={lastPt.x} cy={lastPt.y} r={3} className="tk2-dot-pt" />}
-              {childhoodValue !== undefined && (() => {
-                const cy = yFor(childhoodValue);
-                return <>
-                  <line x1={0} y1={cy} x2={W} y2={cy} className="tk2-ref" strokeWidth={1} />
-                  <text x={W - 2} y={cy - 3} textAnchor="end" className="tk2-ref-t">детство {childhoodValue}</text>
-                </>;
-              })()}
-            </svg>
-          )}
-          {childhoodValue !== undefined && (
-            <div className="tk2-child">
-              <div className="ds-label">В детстве</div>
-              <div className="tk2-aside-nums">
-                <span className="ds-num tone-text" style={{ fontSize: 36 }}>{childhoodValue}</span>
-                <span className="u-faint13">/10</span>
-                {recentAvg > 0 && (
-                  <span className="ds-sub">
-                    → сейчас {recentAvg.toFixed(1)} {recentAvg > childhoodValue ? '↑' : recentAvg < childhoodValue ? '↓' : ''}
-                  </span>
-                )}
-              </div>
-              <p className="ds-sub" style={{ lineHeight: 1.55, margin: '6px 0 0' }}>
-                {childhoodValue <= 4
-                  ? 'Давняя чувствительная зона – вероятно паттерн, а не ситуация'
-                  : 'В детстве удовлетворялась. Если сейчас низко – скорее истощение'}
-              </p>
-            </div>
-          )}
-        </div>
-      }
     >
-      <div className="tk2-opts" style={hueStyle(hue)}>
-        <NeedArtLine id={need.id} />
-        {data.tags.length > 0 && (
-          <div className="tk2-tags">
-            {data.tags.map(tag => (
-              <span key={tag} className="ds-chip tone-tint">{tag}</span>
-            ))}
-          </div>
-        )}
-
-        <div className="ds-card">
-          <div className="ds-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</div>
-          <p className="tk2-para" style={{ marginTop: 8, fontSize: 15, lineHeight: 1.65 }}>
-            {tip}
-            {/* Зона 44×44 вокруг видимых 16×16; marginLeft −8 (= 6 зазор − 14 растяжки) оставляют «?» в строке текста. */}
+      <div className="tk2-sheet" style={tone}>
+        <NeedDynamics needId={need.id} history={history} childhoodValue={childhoodValue} />
+        <div className="pp-paper tk2-tip-card">
+          <div className="tk2-tip-head">
+            <span className="ds-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</span>
             <button
               onClick={() => setShowDisclaimer(true)}
               aria-label="Пояснение"
               className="tk2-help"
-              style={hitboxStyle(16, 16, 44).outer}
+              style={help.outer}
             >
-              <span className="tk2-help-in" style={hitboxStyle(16, 16, 44).inner}>?</span>
+              <span className="tk2-help-in" style={help.inner}>?</span>
             </button>
-          </p>
+          </div>
+          <p className="tk2-tip-text">{tip}</p>
+          <span className="tk2-tip-sign"><SignArt sign={needLook(id).sign} size="square" /></span>
         </div>
+
+        {data.tags.length > 0 && (
+          <div className="tk2-tags">
+            {data.tags.map(tag => (
+              <span key={tag} className="ds-chip tk2-tag">{tag}</span>
+            ))}
+          </div>
+        )}
       </div>
 
       {showDisclaimer && <NeedAdviceModal needId={need.id} onClose={() => setShowDisclaimer(false)} />}

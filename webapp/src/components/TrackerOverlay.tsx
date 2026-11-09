@@ -105,7 +105,7 @@ export function TrackerOverlay({
     !!detailNeed || showCompletion,
   );
 
-  if (localLoading) return <div className="tk2-overlay"><QuestionSkeleton /></div>;
+  if (localLoading) return <div className="tk2-overlay"><QuestionSkeleton onClose={goBack} /></div>;
 
   if (showCompletion) {
     return (
@@ -139,17 +139,17 @@ export function TrackerOverlay({
         <QuestionScreen
           idx={idx}
           total={needs.length}
-          name={nameOf(need)} needId={need.id}
+          name={nameOf(need)} needId={need.id as NeedId}
           data={NEED_DATA[need.id]}
           value={value}
           hue={NEED_HUE[need.id as NeedId]}
           yesterday={isBackfill ? undefined : yesterdayRatings[need.id]}
           caption={date ? formatDateString(date, { day: 'numeric', month: 'long' }) : undefined}
           showOriginNote={firstTime && idx === startIdx}
+          alert={rejected && <SaveErrorNote ty="Эта оценка не сохранилась. Попробуй ответить ещё раз." vy="Эта оценка не сохранилась. Попробуйте ответить ещё раз." />}
           onAnswer={handleAnswer}
           onMore={() => setDetailNeed(need)}
         />
-        {rejected && <SaveErrorNote ty="Эта оценка не сохранилась. Попробуй ответить ещё раз." vy="Эта оценка не сохранилась. Попробуйте ответить ещё раз." />}
       </div>
       {detailNeed && (
         <NeedTodaySheet
