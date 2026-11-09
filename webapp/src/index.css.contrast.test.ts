@@ -9,7 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { contrastRatio, extractBlock, luminance, overlay, parseColor, resolveToken, tokenInBlock } from './test-support/cssContrast';
+import { contrastRatio, extractBlock, luminance, oklchRgb, overlay, parseColor, resolveToken, tokenInBlock } from './test-support/cssContrast';
+import { PAPER_HUE } from '../../shared/src/theme/signKeys';
 
 const CSS = readFileSync(join(__dirname, 'index.css'), 'utf8');
 
@@ -138,5 +139,22 @@ describe('a11y: текст на песочной --panel держит ≥4.5:1',
     expect(panel).toBeLessThan(paper);
     expect(panel).toBeGreaterThan(0.5);
     expect(ink).toBeLessThan(0.1);
+  });
+});
+
+// Опасная ссылка на цветной бумаге (ревью g3, черновик ленты «Записей»): «удалить» у черновика —
+// 13px/600 цветом --accent-red (= --c-rose-strong) на бумаге своего типа oklch(0.915 0.03 h) давала
+// 4.35:1 на глине — ниже AA. На бумаге опасный текст — --on-panel-danger; сверка — по всем оттенкам
+// бумаги (PAPER_HUE): и токен, и то, что правило черновика берёт именно его.
+describe('a11y: опасная ссылка на цветной бумаге 0.915 держит ≥4.5:1 на каждом оттенке', () => {
+  const draftCss = readFileSync(join(__dirname, 'styles', 'client-diary.css'), 'utf8');
+  const token = draftCss.match(/\.cd-draft \.ds-link--danger[^{]*\{[^}]*color:\s*var\((--[a-z-]+)\)/)?.[1];
+  it('черновик красит «удалить» токеном, а не --accent-red', () => {
+    expect(token).toBeDefined();
+    expect(token).not.toBe('--accent-red');
+  });
+  it.each(Object.entries(PAPER_HUE))('бумага %s (%i)', (_name, hue) => {
+    const ink = parseColor(resolveToken(LIGHT, token ?? '--accent-red')).rgb;
+    expect(contrastRatio(ink, oklchRgb(0.915, 0.03, hue))).toBeGreaterThanOrEqual(4.5);
   });
 });

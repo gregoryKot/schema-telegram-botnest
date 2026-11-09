@@ -6,6 +6,7 @@
 // вид своего типа (таблица ENTITY_LOOK, строка «Черновик»), а не всегда бумага схем.
 import { ENTITY_LOOK, type EntityId, type Look } from '../../../../shared/src/theme/entityLook';
 import { modeLookById } from '../../components/diary/modeLookById';
+import { pebblesLaid } from '../../components/art/paper';
 import type { DiaryType } from '../../types';
 import { modeEntryKind, schemaEntryKind, type EntryKind } from './entryKind';
 import type { AnyEntry } from './diaryModel';
@@ -19,9 +20,6 @@ const KIND_ENTITY: Record<Exclude<EntryKind, 'mode'>, EntityId> = {
   schema: 'diary_schema', thought: 'diary', case: 'case', gratitude: 'gratitude', tracker: 'tracker',
 };
 
-/** Знаков-камешков в мотиве Pebbles три: больше «спасибо» — все три окрашены. */
-const PEBBLES_MAX = 3;
-const pebblesFilled = (n: number) => Math.max(0, Math.min(PEBBLES_MAX, n));
 
 /** Вид типа записи; режим — по своей группе, без режима — общий знак режимов. */
 export function kindLook(kind: EntryKind, modeId?: string): Look {
@@ -40,7 +38,7 @@ export function entryKindOf(item: EntryRef): EntryKind {
 /** Вид строки ленты по самой записи. */
 export function entryLook(item: EntryRef): FeedLook {
   if (item._type === 'mode') return kindLook(entryKindOf(item), item.entry.modeId);
-  if (item._type === 'gratitude') return { ...kindLook('gratitude'), filled: pebblesFilled(item.entry.items.length) };
+  if (item._type === 'gratitude') return { ...kindLook('gratitude'), filled: pebblesLaid(item.entry.items.length) };
   return kindLook(entryKindOf(item));
 }
 
@@ -50,5 +48,5 @@ export function draftLook(type: DiaryType, data: unknown): FeedLook {
   if (type === 'mode') return kindLook('mode', typeof d.modeId === 'string' && d.modeId ? d.modeId : undefined);
   if (type === 'schema') return kindLook('schema');
   const items = Array.isArray(d.items) ? d.items.filter((i) => typeof i === 'string' && i.trim()) : [];
-  return { ...kindLook('gratitude'), filled: pebblesFilled(items.length) };
+  return { ...kindLook('gratitude'), filled: pebblesLaid(items.length) };
 }

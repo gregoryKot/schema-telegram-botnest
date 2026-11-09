@@ -12,7 +12,7 @@
 // Сцены одной партии рисуются в её файлах; сюда — только то, что нужно двум и более.
 import type { CSSProperties } from 'react';
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
-import { ArtFrameContext, type ArtFrame } from './paper';
+import { ArtFrameContext, pebblesLaid, type ArtFrame } from './paper';
 import { INK } from './scenePaper';
 import { Lift, SceneSvg } from './sceneKit';
 import { SignArt } from './SignArt';
@@ -91,18 +91,18 @@ const PEBBLES = [
 ] as const;
 
 type Spot = { cx: number; cy: number; rx: number; ry: number };
-const pebble = (s: Spot, fill: string, laid: boolean) => (
-  <ellipse key={s.cx} data-laid={laid ? 'yes' : 'no'} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} transform={`rotate(-16 ${s.cx} ${s.cy})`} fill={fill} />
+const pebble = (s: Spot, fill: string, laid: boolean, color?: string) => (
+  <ellipse key={s.cx} data-laid={laid ? 'yes' : 'no'} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} transform={`rotate(-16 ${s.cx} ${s.cy})`} fill={fill} color={color} />
 );
 
-/** Камешек лёг: на белом листе `filled` камешков (до трёх), последний лёг только что (тень выше);
- *  остальные ждут на земле пустым тоном и без тени. `filled = 0` — пустой лист, все ждут. */
+/** Камешек лёг: на белом листе `filled` камешков (до трёх, pebblesLaid), последний лёг только что (тень
+ *  выше); остальные ждут на земле гнездом своего цвета, без тени. `filled = 0` — чистый лист, все ждут. */
 export function ScenePebbleLaid({ hue = 45, filled = 3 }: { hue?: number; filled?: number }) {
-  const n = Math.max(0, Math.min(PEBBLES.length, Math.floor(filled)));
+  const n = pebblesLaid(filled);
   const laid = PEBBLES.slice(0, n);
   return (
     <SceneSvg hue={hue} patch={135} patchAt="bl" sheet="b">
-      {PEBBLES.slice(n).map((p) => pebble(p.wait, INK.hollow, false))}
+      {PEBBLES.slice(n).map((p) => pebble(p.wait, INK.hollow, false, p.fill))}
       <g transform="rotate(-4 160 128)">
         <Lift><rect x="60" y="34" width="150" height="188" rx="14" fill={INK.sheet} /></Lift>
         <Lift by={3}>{laid.slice(0, -1).map((p) => pebble(p.on, p.fill, true))}</Lift>

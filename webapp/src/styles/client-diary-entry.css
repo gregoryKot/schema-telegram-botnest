@@ -9,9 +9,11 @@
   padding: 16px 18px 16px 20px; border-radius: 16px; background: var(--surface); text-align: left; cursor: pointer;
   box-shadow: inset 4px 0 0 var(--cd-spine); transition: background .12s ease, box-shadow .12s ease;
 }
-.cd-entry:not(.is-open):hover { background: oklch(0.985 0.008 var(--h)); }
+/* Подсветка — только у мыши: на телефоне после тапа (свернуть запись, закрыть лист поверх ленты) :hover
+   залипал на карточке под пальцем, и она читалась выбранной. */
+@media (hover: hover) { .cd-entry:not(.is-open):hover { background: oklch(0.985 0.008 var(--h)); } }
 .cd-entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.cd-entry.is-open { box-shadow: inset 4px 0 0 var(--cd-spine), 4px 5px 0 oklch(0.86 0.045 var(--h)); }
+.cd-entry.is-open { box-shadow: inset 4px 0 0 var(--cd-spine), 4px 5px 0 oklch(var(--pa-layer-lc) var(--h)); }
 .cd-sign { justify-content: flex-start; padding-top: 1px; }
 .cd-entry-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .cd-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }
@@ -40,7 +42,7 @@
 .cd-grat-more { color: var(--text-sub); font-style: italic; }
 
 /* Раскрытая запись: поля (на широкой странице в две колонки), голос Здорового Взрослого — вставкой мха на
-   всю ширину, действия одной строкой — «Поделиться» слева, «Удалить» тихо справа. */
+   всю ширину (HealthyVoice, paper-app.css), действия одной строкой — «Поделиться» слева, «Удалить» справа. */
 .cd-entry-more { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); cursor: default; }
 .cd-fields { display: grid; gap: 12px 24px; }
 @container cd-page (min-width: 640px) {
@@ -50,9 +52,10 @@
 .cd-field-label { margin-bottom: 3px; font: 600 12px/1.35 var(--sans); letter-spacing: .01em; color: var(--text-sub); }
 .cd-field-label.is-accent { color: var(--accent); }
 .cd-field-text { font-size: 14px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
-.cd-field--healthy { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; padding: 14px 16px; border-radius: 14px; }
-.cd-field-sign { display: inline-flex; padding-top: 2px; }
-.cd-field--healthy .cd-field-text { font: 400 16px/1.5 var(--serif); }
 .cd-entry-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; }
 .cd-entry-share { flex: 1 1 240px; min-width: 0; }
 .cd-entry-actions > .cd-del, .cd-entry-actions > .cd-del-row { margin-left: auto; }
+/* Подтверждение справа и при ошибке: строка с ошибкой (flex-basis 100%) растягивалась на всю ширину, и
+   «Удалить навсегда / Отмена» уезжали влево под пальцем. Ошибка — под кнопками, по правому краю. */
+.cd-entry-actions > .cd-del-row { justify-content: flex-end; }
+.cd-entry-actions > .cd-del-row > .cd-del-err { text-align: right; }

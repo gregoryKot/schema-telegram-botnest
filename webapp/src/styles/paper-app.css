@@ -76,8 +76,12 @@
 }
 
 /* ── Разворот (SpreadLayout) ─────────────────────────────────────────────── */
-/* Отступ липкой колонки сверху; экран с липкой шапкой задаёт свой на предке (ExScreen — 80). */
-:root { --pa-sticky-top: 24px; }
+/* Отступ липкой колонки сверху; экран с липкой шапкой задаёт свой на предке (ExScreen — 80).
+   --pa-layer-lc — светлота и хрома сдвинутого слоя под белым листом на бумаге (тень сплошным слоем:
+   поле записи, тетрадь, подсказка, цепочка, раскрытая карточка ленты, исход): одна на всех,
+   `oklch(var(--pa-layer-lc) var(--h))`. Оттенок берётся у места использования — целый цвет на :root
+   взял бы --h корня, а не листа. */
+:root { --pa-sticky-top: 24px; --pa-layer-lc: 0.86 0.045; }
 .pa-spread { display: flex; flex-direction: column; gap: 24px; box-sizing: border-box; width: 100%; min-width: 0; }
 .pa-spread-side, .pa-spread-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
@@ -136,7 +140,7 @@
 @supports (min-height: 100dvh) { .pa-outcome { min-height: 100dvh; } }
 .pa-outcome-card {
   width: 100%; max-width: 440px; overflow: hidden; border-radius: 28px; background: var(--surface);
-  box-shadow: 12px 13px 0 oklch(0.86 0.045 var(--h));
+  box-shadow: 12px 13px 0 oklch(var(--pa-layer-lc) var(--h));
 }
 .pa-outcome-band {
   position: relative; display: flex; align-items: center; justify-content: center;
@@ -164,7 +168,21 @@
    чипа без знака давал поле 36px слева против 10 справа, ряд таких чипов выглядел сломанным. Чип
    без знака при выборе растёт на ширину галочки — один сдвиг лучше постоянной кривизны. */
 .ds-chip.pa-chip--mark { gap: 6px; padding-left: 6px; }
+/* Невыбранный чип на бумаге страницы потока (мастера дневников и упражнений, быстрая запись) — белая бумага:
+   бежевый --paper-tint на бежевой странице давал ряд из 20 схем или 13 чувств серой пеленой (ревью g3). В
+   карточках кабинета (белый лист) чип остаётся тоном --paper-tint (cabinet.css). Выбранный — бумага сущности. */
+:is(.ex2-screen, .qe-flow) .ds-chip.ds-chip--toggle:not(.is-on) { background: var(--surface); }
 .pa-chip-sign { display: inline-flex; align-items: center; justify-content: center; width: 24px; flex-shrink: 0; }
+
+/* ── Голос Здорового Взрослого (HealthyVoice) ────────────────────────────── */
+/* Вставка мха со знаком группы «здоровые» колонкой слева: ответ в раскрытой записи ленты и пример на
+   последнем шаге дневника режимов — одно правило. Пример — курсивом (pa-voice--example). */
+.pa-voice { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; align-items: start; box-sizing: border-box; padding: 14px 16px 16px 14px; border-radius: 16px; }
+.pa-voice-sign { display: flex; padding-top: 2px; }
+.pa-voice-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pa-voice-label { color: var(--text-sub); }
+.pa-voice-text { font: 400 16px/1.5 var(--serif); color: var(--text); overflow-wrap: anywhere; }
+.pa-voice--example .pa-voice-text { font-style: italic; }
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
@@ -178,7 +196,7 @@
      с пустыми двумя третями ниже читался недогруженным экраном (ревью g1). У верха — только сбой
      раздела по месту (.sk-crash-outcome, error-screen.css). */
   .pa-outcome { padding: calc(16px + var(--safe-top)) 16px calc(24px + var(--safe-bottom)); }
-  .pa-outcome-card { box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h)); border-radius: 24px; }
+  .pa-outcome-card { box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h)); border-radius: 24px; }
   .pa-outcome-band { height: 148px; }
   .pa-outcome-band .scn-sign { width: 112px; }
   .pa-outcome-body { padding: 22px 20px 24px; }

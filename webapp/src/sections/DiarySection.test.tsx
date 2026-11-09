@@ -153,12 +153,14 @@ describe('DiarySection — пустой аккаунт (без хардкод-з
   });
 
   // b11 (сбой ≠ пусто): раньше под баннером сбоя шло объяснение новичка «Пока ни одной записи» —
-  // записи на сервере есть, просто не загрузились. Экран не падает, «Записать» остаётся.
-  it('ошибка getSchemaDiary не роняет экран — строка сбоя и место ленты, без объяснения новичка', async () => {
+  // записи на сервере есть, просто не загрузились. Экран не падает, «Записать» остаётся. Под строкой сбоя
+  // нет и силуэта ленты: серые плашки читались «ещё грузится» (ревью g3, принцип 8).
+  it('ошибка getSchemaDiary не роняет экран — строка сбоя без силуэта и без объяснения новичка', async () => {
     mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
-    renderSection();
+    const { container } = renderSection();
     await screen.findByRole('alert');
     expect(screen.queryByText('Пока ни одной записи')).toBeNull();
+    expect(container.querySelector('.skel')).toBeNull();
     expect(screen.getByRole('button', { name: 'Записать' })).toBeTruthy();
   });
 });
@@ -315,9 +317,9 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     setup();
     renderSection();
     await screen.findByText('Запись-схема');
-    expect(screen.queryByLabelText('Поделиться дневником')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Поделиться дневником' })).toBeNull();
     fireEvent.click(seg(/^Дневник/));
-    expect(screen.getByLabelText('Поделиться дневником')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Поделиться дневником' })).toBeTruthy();
   });
 });
 
@@ -496,7 +498,7 @@ describe('DiarySection — сбой удаления виден, повторн�
 
     await confirmDelete('Критика на работе');
 
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось удалить — запись на месте/);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
     expect(screen.getByText('Критика на работе')).toBeTruthy();
     expect((screen.getByText('Удалить навсегда') as HTMLButtonElement).disabled).toBe(false);
   });

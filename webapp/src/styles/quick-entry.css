@@ -21,13 +21,13 @@
   -webkit-appearance: none; appearance: none;
   padding: var(--space-16) 18px; border: none; border-radius: 14px;
   background: var(--surface); color: var(--text);
-  box-shadow: 6px 7px 0 oklch(0.86 0.045 var(--h));
+  box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h));
   font: 400 19px/1.5 var(--serif);
 }
 .qe-area::placeholder { color: var(--text-faint); }
 .qe-area:focus-visible {
   outline: none;
-  box-shadow: 6px 7px 0 oklch(0.86 0.045 var(--h)), 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)), 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 /* Под листом: теги и подсказка, справа (на телефоне — ниже) «Сохранить» и тихая ссылка. */
@@ -58,9 +58,13 @@
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .qe-flow { padding-top: 40px; gap: 20px; }
   .qe-area { min-height: 240px; padding: 20px 22px; font-size: 20px; }
-  .qe-foot { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 28px; align-items: start; }
   .qe-acts--row { flex-direction: row; align-items: center; gap: var(--space-16); }
   .qe-acts--row > .ds-btn.qe-cta { width: 260px; }
   .qe-schemas { display: block; columns: 2; column-gap: 32px; }
   .qe-schemas > * { break-inside: avoid; }
+}
+/* «Сохранить / Заполнить подробно» колонкой справа — с 1024: на 768 колонка 260 сжимала теги в две строки
+   («Благодарность» одна во второй), и подсказка кончалась висячим словом; там действия — под тегами. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .qe-foot { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 28px; align-items: start; }
 }

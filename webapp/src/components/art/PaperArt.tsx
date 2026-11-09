@@ -8,7 +8,7 @@
 // Мотив → смысл: Strokes — трекер и потребности; Ribbon — «Что случилось»;
 // Pebbles — дневник; Cup — пусто и отдых; Breath — дыхание и «здесь и сейчас»;
 // Sheets — записи и «Мой путь»; Layers — схемы и паттерны.
-import { NEED_DATA_PAPER, PAPER, type ArtProps } from './paper';
+import { NEED_DATA_PAPER, PAPER, pebblesLaid, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
 
 export interface StrokeMark { id: string; dense: boolean }
@@ -72,20 +72,18 @@ const PEBBLES = [
   { cx: 96, cy: 30, fill: PAPER.clay },
 ] as const;
 
-/** Три камешка — мысль, схема, спасибо. `filled` — сколько уже легло (благодарность по одной):
- *  остальные — пустой тон бумаги; без `filled` легли все три. */
+/** Три камешка — мысль, схема, спасибо. `filled` — сколько уже легло (благодарность по одной, pebblesLaid):
+ *  остальные — гнёзда своего цвета (`color`, правило [data-laid="no"] в paper.css); без `filled` легли все три. */
 export function Pebbles({ size, filled }: ArtProps & { filled?: number }) {
+  const n = filled === undefined ? PEBBLES.length : pebblesLaid(filled);
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      {PEBBLES.map((p, i) => {
-        const laid = filled === undefined || i < filled;
-        return (
-          <ellipse
-            key={p.cx} cx={p.cx} cy={p.cy} rx="20" ry="13" transform={`rotate(-18 ${p.cx} ${p.cy})`}
-            fill={laid ? p.fill : PAPER.hollow} data-laid={filled === undefined ? undefined : laid ? 'yes' : 'no'}
-          />
-        );
-      })}
+      {PEBBLES.map((p, i) => (
+        <ellipse
+          key={p.cx} cx={p.cx} cy={p.cy} rx="20" ry="13" transform={`rotate(-18 ${p.cx} ${p.cy})`} color={p.fill}
+          fill={i < n ? p.fill : PAPER.hollow} data-laid={filled === undefined ? undefined : i < n ? 'yes' : 'no'}
+        />
+      ))}
     </Svg>
   );
 }

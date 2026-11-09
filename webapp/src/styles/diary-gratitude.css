@@ -6,7 +6,7 @@
 .sd-grat-sheet {
   display: flex; flex-direction: column; box-sizing: border-box;
   padding: 4px 22px 6px; border-radius: 18px; background: var(--surface);
-  box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h));
+  box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h));
 }
 .sd-grat-row {
   display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; column-gap: 12px;
@@ -37,14 +37,13 @@
 .sd-grat-add-glyph { display: inline-flex; justify-content: center; color: oklch(0.47 0.07 var(--h)); }
 .sd-grat-error { margin-top: 12px; }
 .sd-grat-it { font-style: italic; }
-/* Знак-герой Pebbles filled: камешек, который ещё не лёг, — пустое место без тени-вырезки
-   (иначе пустой день читался тремя бирюзовыми камешками). */
-.sd-grat-pebbles > .pp-art:first-child [data-laid="no"] { fill-opacity: 0; }
+/* Знак-герой Pebbles filled: камешек, который ещё не лёг, — гнездо своего цвета без тени-вырезки
+   (одно правило [data-laid="no"] в paper.css — и для строки ленты, чипа и сцены «Записано»). */
 /* Разворот уже 1024: «Почему это работает» (DiaryAside, .sd-aside) — после тетради, а не между листом
    и первым полем (на 390 шапка до поля — не выше ~230px, принцип 5). Порядок держит общее правило
    мастеров дневников в diary-wizard.css (`.pa-spread:has(.sd-aside, …)`), своего тут нет. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .sd-grat-sheet { padding: 2px 16px 4px; box-shadow: 5px 6px 0 oklch(0.86 0.045 var(--h)); }
+  .sd-grat-sheet { padding: 2px 16px 4px; box-shadow: 5px 6px 0 oklch(var(--pa-layer-lc) var(--h)); }
   .sd-grat-row, .sd-grat-add { grid-template-columns: 34px minmax(0, 1fr); column-gap: 10px; }
   .sd-grat-num { font-size: 23px; }
   .sd-grat-sheet .sd-grat-field .ds-textarea { font-size: 16px; }

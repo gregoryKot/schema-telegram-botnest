@@ -5,4 +5,4 @@
 .ds-link.cd-del:hover { color: var(--text); }
 .ds-link.cd-del.ds-link--danger { color: var(--accent-red); }
 .cd-del-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; }
-.cd-del-err { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--err); }
+.cd-del-err { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--err); text-wrap: pretty; }

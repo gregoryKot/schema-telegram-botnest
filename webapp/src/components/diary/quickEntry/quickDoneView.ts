@@ -1,5 +1,6 @@
 import type { EntityId, PaperHue, SignKey } from '../../../../../shared/src/theme/entityLook';
 import { modeLookById } from '../modeLookById';
+import { pebblesLaid } from '../../art/paper';
 import { QUICK_TAG_ENTITY, type QuickSaved } from './quickEntryModel';
 
 /** Вид листа «Записано»: сущность записи, своя бумага и сцена из данных, если они есть. */
@@ -26,7 +27,7 @@ export function quickDoneView(saved: QuickSaved): QuickDoneView {
     return { entity, hue: look.hue, sprout: look.sign };
   }
   if (saved.tag === 'gratitude' && saved.gratitudeCount !== undefined) {
-    return { entity, pebbles: Math.max(0, Math.min(3, saved.gratitudeCount)) };
+    return { entity, pebbles: pebblesLaid(saved.gratitudeCount) };
   }
   return { entity };
 }

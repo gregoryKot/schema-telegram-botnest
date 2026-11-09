@@ -29,3 +29,9 @@ export function glue(text: string): string {
   }
   return out;
 }
+
+/** glue для подписи-пропа (ReactNode): строку склеивает, разметку (JSX, число) оставляет как есть. Листы
+ *  приложения (EntitySheet, DoneSheet, шаг мастера) клеят надпись и подпись сами — не на каждом вызове. */
+export function glueNode<T>(node: T): T | string {
+  return typeof node === 'string' ? glue(node) : node;
+}

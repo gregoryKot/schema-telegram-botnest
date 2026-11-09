@@ -1,0 +1,121 @@
+/* Дневник режимов (components/diary/Mode*): выбор режима (ворота по чувству и полный список), ссылки под
+   героем формы, итог «Запись сохранена» с цепочкой и шарингом, «Сравни с похожими». Вынесен из
+   diary-wizard.css (ревью g3: файл мастеров вырос до 230 строк); подключается сборником sheet-diary.css
+   сразу после него — порядок каскада прежний, медиаблоки режима — здесь, в конце файла. */
+/* ── Режим: выбор, подсказки, итог ────────────────────────────────────── */
+.sd-select-q { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--text); }
+.ds-btn.sd-list-toggle { margin: 8px 0 18px; }
+.sd-feel { margin-bottom: 12px; display: flex; flex-direction: column; gap: 14px; }
+.sd-feel-list { display: flex; flex-direction: column; gap: 10px; }
+.sd-feel-q { margin: 6px 0 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.25; }
+.sd-feel-hint { margin: -4px 0 2px; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
+/* Строка ворот — плоская бумага группы режима со знаком группы слева (не цветная точка). */
+.sd-feel-row {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; align-items: start; width: 100%;
+  padding: 14px 16px 14px 14px; border: 0; border-radius: 16px; text-align: left; font-family: inherit; color: var(--text); cursor: pointer;
+}
+.sd-feel-row:hover { background: oklch(0.89 0.04 var(--h)); }
+.sd-feel-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sd-feel-sign { display: flex; padding-top: 3px; }
+.sd-feel-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sd-feel-title { font-size: 15px; font-weight: 600; line-height: 1.35; }
+.sd-feel-desc { font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
+.sd-feel-mode { margin-top: 2px; font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
+/* Полный список (ModeGroupList): группа — бумага группы со знаком в заголовке, строки — белый список.
+   Две колонки — только когда шире 700 сам список (container sd-groups), а не окно: в колонке разворота
+   на 1280 (≈590) две колонки по 285 переносили имена («Перфекционист- / Гиперконтролёр»). */
+.sd-groups-box { container: sd-groups / inline-size; }
+.sd-groups { columns: 1; column-gap: 14px; }
+@container sd-groups (min-width: 700px) { .sd-groups { columns: 2; } }
+.sd-group-block { display: block; margin: 0 0 14px; padding: 12px; border-radius: 20px; break-inside: avoid; }
+.sd-group-head { display: flex; align-items: center; gap: 12px; margin: 0 4px 10px; font: inherit; }
+.sd-group-sign { display: flex; flex: none; width: 60px; }
+.sd-group-sign .pp-art--square { width: 60px; height: auto; }
+.sd-group-name { color: var(--text-sub); }
+.sd-group-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
+.sd-mode-card { display: flex; align-items: center; gap: 12px; min-height: 52px; box-sizing: border-box; padding: 9px 14px; cursor: pointer; }
+.sd-mode-card + .sd-mode-card { border-top: 1px solid var(--paper-sunk); }
+.sd-mode-card:hover { background: oklch(0.97 0.012 var(--h)); }
+.sd-mode-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.sd-mode-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sd-mode-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.sd-mode-short { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.sd-mode-check { display: inline-flex; flex: none; opacity: 0; color: var(--text); }
+.sd-mode-card.is-selected { background: oklch(0.9 0.035 var(--h)); }
+.sd-mode-card.is-selected .sd-mode-check { opacity: 1; }
+/* Строка внизу листа-героя формы режима, внутри его бумаги: «Сменить режим» и «Сравни с похожими» — тихие
+   ссылки (отдельной строкой на странице они опускали первое поле, ревью g3). Низ строки заходит в поле
+   листа: у ссылки зона 44, текст — посередине. */
+.sd-mode-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin: -6px 0 -12px; }
+.ds-link.sd-mode-link { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; white-space: normal; text-align: left; }
+.sd-mode-link svg { width: 14px; height: 14px; flex: none; }
+/* Пример голоса Здорового Взрослого — HealthyVoice (paper-app.css), здесь только место в шаге. */
+.sd-example { margin: 4px 0 6px; }
+.sd-alert { margin-top: 16px; }
+
+/* «Запись сохранена» (ModeEntryDone): лист «готово», цепочка и тихий шаринг одной колонкой. */
+.sd-done-page { display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; max-width: 588px; margin: 0 auto; padding: 32px 24px 96px; }
+.sd-share { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.sd-share-full { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.sd-share-note { font-size: 12px; line-height: 1.5; color: var(--text-faint); }
+.sd-done-share:empty { display: none; }
+.sd-done-share { padding: 0 6px; }
+.sd-done-share .sd-share { flex-flow: row wrap; align-items: center; gap: 0 18px; }
+.sd-done-share .sd-share-note { flex-basis: 100%; color: var(--text-sub); }
+.sd-done-share .sd-share-full { display: contents; }
+.sd-done-share .ds-btn.ds-btn--secondary { height: 44px; padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 13.5px; }
+.sd-done-share .ds-btn.ds-btn--secondary:hover { color: var(--accent-hi); }
+/* Цепочка режимов: белый лист со сдвинутым слоем, знаки «режим → группа кандидатов». */
+.sd-chain {
+  display: flex; flex-direction: column; gap: 12px; padding: 20px 22px 18px; border-radius: 22px;
+  background: var(--surface); box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h));
+}
+.sd-chain-path { display: flex; align-items: center; gap: 8px; }
+.sd-chain-sign { display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 40px; border-radius: 12px; }
+.sd-chain-arrow { width: 44px; height: 16px; flex: none; color: var(--text-sub); }
+.sd-chain-q { font-size: 15px; line-height: 1.5; color: var(--text); }
+.sd-chain-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 10px; border: 0; border-radius: 22px;
+  font: 600 13.5px var(--sans); color: var(--text); cursor: pointer;
+}
+.sd-chain-chip:hover { background: oklch(0.88 0.04 var(--h)); }
+.sd-chain-chip-sign { display: inline-flex; width: 24px; justify-content: center; }
+.sd-chain-chip--other { padding: 0 16px; background: transparent; border: 1px solid var(--line-strong); color: var(--text-sub); }
+.sd-chain-chip--other:hover { background: var(--paper-tint); }
+.sd-chain-hint { font-size: 12.5px; line-height: 1.5; color: var(--text-sub); }
+
+/* ── Сомнение в режиме (ModeDoubtSheet) ───────────────────────────────── */
+.sd-doubt { max-width: 640px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 24px) 24px; }
+.sd-doubt-now { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 18px 20px 18px 22px; border-radius: 22px; }
+.sd-doubt-now-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sd-doubt-now-name { font-family: var(--serif); font-size: 26px; line-height: 1.15; color: var(--text); }
+.sd-doubt-now-label { color: var(--text-sub); }
+.sd-doubt-now-sign { display: flex; width: 84px; }
+.sd-doubt-now-sign .pp-art--square { width: 84px; height: auto; }
+.sd-doubt-lede { margin: 18px 0 16px; font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.sd-doubt-list { display: flex; flex-direction: column; gap: 14px; }
+.sd-doubt-card { display: flex; flex-direction: column; gap: 8px; padding: 18px 18px 18px; border-radius: 20px; }
+.sd-doubt-head { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; }
+.sd-doubt-sign { display: flex; padding-top: 4px; }
+.sd-doubt-head-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sd-doubt-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 21px; line-height: 1.25; color: var(--text); }
+.sd-doubt-mode { font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
+.sd-doubt-gist { margin: 2px 0; font-size: 14px; line-height: 1.55; color: var(--text); }
+.sd-doubt-check { padding: 10px 12px; border-radius: 12px; background: var(--surface); font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+.ds-btn.sd-doubt-btn { align-self: flex-start; margin-top: 4px; }
+/* «Оставляю» липнет к низу листа: длинный список пар не прячет выход без выбора. */
+.sd-doubt-keep { position: sticky; bottom: 0; margin-top: 18px; padding: 14px 0 calc(16px + var(--safe-bottom)); background: var(--bg); }
+.ds-btn.sd-doubt-keep-btn { width: 100%; }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .sd-feel-row { padding: 12px 14px 12px 12px; gap: 12px; }
+  .sd-doubt-now-name { font-size: 24px; }
+  .sd-doubt-now-sign, .sd-doubt-now-sign .pp-art--square { width: 68px; }
+}
+/* Две ссылки — одной строкой в листе на 390 (поле листа уже страницы на 30px): стрелка у «Сменить режим»
+   уходит, кегль 12 и зазор 12 — иначе ряд переносился и лист рос на строку 44. Уже 390 — переносится. */
+@media (max-width: 559px) {
+  .sd-mode-links { gap: 0 12px; }
+  .ds-link.sd-mode-link { font-size: 12px; }
+  .sd-mode-link svg { display: none; }
+}

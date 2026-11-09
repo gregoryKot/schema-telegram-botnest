@@ -72,10 +72,11 @@ const view = (filter: DiaryFilter) => render(<DiaryEmptyExplainer filter={filter
 const spots = (el: Element, laid: 'yes' | 'no') => new Set([...el.querySelectorAll(`.cd-empty-scene [data-laid="${laid}"]`)].map((p) => p.getAttribute('cx'))).size;
 
 describe('DiaryEmptyExplainer — вид (b11)', () => {
-  it.each(['all', 'diary'] as const)('%s — сцена «первая страница»: один камешек на листе, два ждут; плитки «Схема» и «Режим»', (f) => {
+  // Ревью g3: «ничего нет» ≠ «Записано» — на листе пусто, все три камешка ждут рядом (на «Записано» один ляжет).
+  it.each(['all', 'diary'] as const)('%s — сцена «первая страница»: чистый лист, три камешка ждут; плитки «Схема» и «Режим»', (f) => {
     const el = view(f);
-    expect(spots(el, 'yes')).toBe(1);
-    expect(spots(el, 'no')).toBe(2);
+    expect(spots(el, 'yes')).toBe(0);
+    expect(spots(el, 'no')).toBe(3);
     expect([...el.querySelectorAll('.cd-explainer-name')].map((n) => n.textContent)).toEqual(['Схема', 'Режим']);
     expect(el.querySelector('.cd-empty-scene')?.getAttribute('aria-hidden')).toBe('true');
   });

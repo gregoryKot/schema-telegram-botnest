@@ -10,6 +10,7 @@ import { QuickTagChips } from './QuickTagChips';
 import type { QuickError } from './useQuickEntry';
 import { unwritableGratitudeText } from '../../../../../shared/src/api/unwritableError';
 import { useTr } from '../../../utils/addressForm';
+import { glue } from '../../../../../shared/src/utils/typo';
 
 interface Props {
   text: string;
@@ -60,7 +61,7 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
           <div className="qe-foot">
             <div className="qe-foot-main">
               <QuickTagChips tag={tag} onTag={onTag} />
-              <p className="tq-hint qe-hint">Тег необязателен. Схему или режим можно уточнить на следующем шаге.</p>
+              <p className="tq-hint qe-hint">{glue('Тег необязателен. Схему или режим можно уточнить на следующем шаге.')}</p>
               {error === 'failed' && (
                 <PaperAlert sign="pebbles" title="Не удалось сохранить." text="Текст остался на месте — можно повторить." />
               )}

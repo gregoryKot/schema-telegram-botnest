@@ -9,7 +9,8 @@ const FILTERS: { id: DiaryFilter; label: string }[] = [
 ];
 
 // Сегмент «Все · Трекер · Случаи · Дневник» и мета под ним (b11): серия дней подряд поднята сюда из-под
-// ленты, где её было не найти после длинного списка; справа — «Поделиться дневником» на «Дневнике».
+// ленты, где её было не найти после длинного списка; в той же строке справа — тихая ссылка «Поделиться
+// дневником» на «Дневнике» (ревью g3: не плашка между сегментом и серией).
 export function DiaryBar({ filter, counts, onFilter, streak, share }: {
   /** Счётчики; null — не загружено (сбой, загрузка): «0» читался бы «записей нет». */
   filter: DiaryFilter; counts: Record<DiaryFilter, number | null> | null; onFilter: (f: DiaryFilter) => void;
@@ -24,8 +25,7 @@ export function DiaryBar({ filter, counts, onFilter, streak, share }: {
           </button>
         ))}
       </div>
-      {share}
-      {streak && <p className="cd-streak">{streak}</p>}
+      {(streak || share) && <div className="cd-bar-meta">{streak && <p className="cd-streak">{streak}</p>}{share}</div>}
     </div>
   );
 }

@@ -31,6 +31,7 @@ import {
 } from '../../../../shared/src/schema/useSchemaDiaryDraftState';
 import { buildSchemaDiaryExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
 import { collectFilledFields } from '../../../../shared/src/utils/diaryFields';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Визард дневника схем (одно главное действие на экран, низкий порог для СДВГ)
 // — стиль ModeEntryForm: ExScreen, tick-strip, один вопрос на экран. Обязательна
@@ -120,16 +121,14 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
       onBack={goBack}
       backLabel="Назад к дневнику"
       look="diary_schema" spread compact={!isFirst}
-      eyebrow={hasSchemaDiaryDraft(saved) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?'}
+      eyebrow={glue(hasSchemaDiaryDraft(saved) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?')}
       title="Записать момент"
       lede={isFirst ? tr(
         'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
         'Что-то задело — приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
       ) : undefined}
-      aside={isFirst ? <SchemaEntryAside hue={HUE} /> : undefined}
+      aside={isFirst ? <><p className="sd-explainer">{buildSchemaDiaryExplainer(tr)}</p><SchemaEntryAside hue={HUE} /></> : undefined}
     >
-      {isFirst && <p className="sd-explainer">{buildSchemaDiaryExplainer(tr)}</p>}
-
       <DiaryTicks filled={tickFilled} active={stepIdx} hue={HUE} onJump={setStepIdx} />
 
       <DiaryStepCard hue={HUE} stepIdx={stepIdx} total={TOTAL} required={curRequired} filled={curFilled} filledCount={filledCount}>

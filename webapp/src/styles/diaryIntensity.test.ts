@@ -32,6 +32,12 @@ describe('.sd-int-step — зона 44, видимая полоска 26', () =>
     expect(body('.sd-int-step.is-on::before')).toMatch(/background:/);
   });
 
+  // Ревью g3: пустой шаг на бумаге страницы — 1.1:1, не видно, что шагов пять. Кромка тона записи (≥3:1, WCAG 1.4.11).
+  it('пустой шаг — гнездо с кромкой тона записи, у включённого кромки нет', () => {
+    expect(body('.sd-int-step::before')).toMatch(/box-shadow: inset 0 0 0 1\.5px oklch\(0\.62 0\.07 var\(--h\)\)/);
+    expect(body('.sd-int-step.is-on::before')).toMatch(/box-shadow: none/);
+  });
+
   it('нет медиа-правил, которые вернули бы шагу высоту', () => {
     const bad = rules.filter((r) => r.selectors.some((s) => s.startsWith('.sd-int-step')) && /(^|[;\s])height:\s*\d/.test(r.body)
       && !r.selectors.some((s) => s.endsWith('::before')));

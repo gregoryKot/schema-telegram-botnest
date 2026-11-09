@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type CSSProperties } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ExScreen } from '../exercises/ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { clearDraft } from '../../utils/drafts';
@@ -6,6 +6,7 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { hueStyle } from '../../lib/tone';
 import { GratitudeAddRow, GratitudeSaveError, GratitudeWhy } from './GratitudeParts';
 import { GratitudePebbles } from './quickEntry/GratitudePebbles';
 import { haptic } from '../../haptic';
@@ -47,7 +48,6 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
   // 409 «не читается» (E15): повтор не поможет — прежние пункты сервер бережёт.
   const [saveError, setSaveError] = useState<'failed' | 'unreadable' | null>(null);
   const firstItemRef = useRef<HTMLTextAreaElement>(null);
-
   useEffect(() => { if (ready) firstItemRef.current?.focus(); }, [ready]);
   useSeedGratitudeItem(ready, initialItem, setItems);
 
@@ -88,7 +88,7 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
       lede="Даже самое маленькое. Особенно самое маленькое. Запоминается то, что удалось назвать. Хватит и одной строки."
       aside={<GratitudeWhy hue={HUE} />}
     >
-      <div className="sd-grat" style={{ '--h': HUE } as CSSProperties}>
+      <div className="sd-grat" style={hueStyle(HUE)}>
         <GratitudeLoadState status={status} onRetry={retry} />
         {ready && (
           <div className="sd-grat-sheet">

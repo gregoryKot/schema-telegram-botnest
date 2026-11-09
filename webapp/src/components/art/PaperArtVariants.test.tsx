@@ -11,7 +11,7 @@ import { Scales } from './GuideSignsTechniques';
 import { Grounded, Pause, Haven, Join } from './AppSigns';
 import { Check } from './PaperArtSigns';
 import { SignArt } from './SignArt';
-import { NEED_DATA_PAPER, PAPER } from './paper';
+import { NEED_DATA_PAPER, PAPER, pebblesLaid } from './paper';
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 
 const rects = (ui: ReactElement) => [...render(ui).container.querySelectorAll('rect')];
@@ -60,6 +60,21 @@ describe('Pebbles filled', () => {
   it('без filled — все три, без пометок', () => {
     const els = [...render(<Pebbles />).container.querySelectorAll('ellipse')];
     expect(els.every((e) => e.getAttribute('fill') !== PAPER.hollow && !e.hasAttribute('data-laid'))).toBe(true);
+  });
+
+  // Ревью g3: пустой камешек — гнездо своего цвета (правило [data-laid="no"] в paper.css берёт `color`),
+  // а не серый призрак; число прижимается одной функцией pebblesLaid.
+  it('гнездо несёт цвет своего камешка; filled вне 0…3 прижат', () => {
+    const els = [...render(<Pebbles filled={0} />).container.querySelectorAll('ellipse')];
+    expect(els.map((e) => e.getAttribute('color'))).toEqual([PAPER.moss, PAPER.brown, PAPER.clay]);
+    expect([...render(<Pebbles filled={7} />).container.querySelectorAll('ellipse[data-laid="yes"]')]).toHaveLength(3);
+    expect([...render(<Pebbles filled={-2} />).container.querySelectorAll('ellipse[data-laid="yes"]')]).toHaveLength(0);
+  });
+});
+
+describe('pebblesLaid', () => {
+  it.each([[0, 0], [1, 1], [2.9, 2], [3, 3], [12, 3], [-1, 0], [Number.NaN, 0], [Infinity, 3]])('%s → %s', (n, want) => {
+    expect(pebblesLaid(n)).toBe(want);
   });
 });
 

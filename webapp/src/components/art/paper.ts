@@ -16,6 +16,12 @@ export const PAPER = {
   hollow: 'color-mix(in srgb, var(--text) 10%, transparent)',
 } as const;
 
+/** Сколько камешков Pebbles легло (благодарность по пунктам, «Записано», строка ленты): число прижато к
+ *  0…3 — камешков в мотиве три; дробь — вниз, NaN — ни одного. Одна функция на все места (ревью g3). */
+export function pebblesLaid(n: number): number {
+  return Number.isNaN(n) ? 0 : Math.max(0, Math.min(3, Math.floor(n)));
+}
+
 /**
  * Столбики дня на экране «Готово» трекера (DayBars): бумага полосок Strokes над ними, но без
  * шалфея — на шалфейном листе экрана он даёт 1.7:1, а столбик — данные (WCAG 1.4.11, нужно 3:1).

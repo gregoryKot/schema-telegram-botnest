@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { deleteFailedText, useDeleteAction } from '../../../../shared/src/diary/diaryDelete';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/delete-btn.css';
 
 // «Удалить» → «Удалить навсегда» в карточке записи (дневник, прошлый разбор фразы): тихая ссылка, а не
@@ -16,7 +17,7 @@ export function DeleteBtn({ onClick }: { onClick: () => void | Promise<void> }) 
     <div className="cd-del-row" role="presentation" onClick={e => e.stopPropagation()}>
       <button type="button" className="ds-link ds-link--danger cd-del" disabled={busy} aria-busy={busy || undefined} onClick={() => { void run(); }}>Удалить навсегда</button>
       <button type="button" className="ds-link cd-del" disabled={busy} onClick={() => setConfirm(false)}>Отмена</button>
-      {failed && <p role="alert" className="cd-del-err">{deleteFailedText(tr)}</p>}
+      {failed && <p role="alert" className="cd-del-err">{glue(deleteFailedText(tr))}</p>}
     </div>
   );
 }

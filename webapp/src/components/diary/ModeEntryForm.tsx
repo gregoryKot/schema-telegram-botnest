@@ -17,8 +17,9 @@ import { modeLookById } from './modeLookById';
 // Шаг 2 дневника режимов: визард-разбор режима — один вопрос на экран (низкий порог для СДВГ).
 // Обязательна только ситуация; шаги/тексты — shared/mode/modeDiarySteps (правило №3). Состояние —
 // в родителе (ModeEntrySheet). Герой — лист бумаги группы режима с его знаком (modeLook), со
-// второго шага полосой; «Сменить режим» и «Сравни с похожими» — строкой под героем, подсказка и
-// пояснение — один раз, на первом шаге (APP_2026-11.md, раздел b10b).
+// второго шага полосой; «Сменить режим» и «Сравни с похожими» — строкой внизу листа-героя, внутри его
+// бумаги; пояснение и подсказка — один раз, на первом шаге, после формы (на ≥1024 — колонкой под
+// листом): шапка до первого поля на 390 — не выше ~230px (APP_2026-11.md, раздел b10b).
 
 export interface ModeFormFields {
   situation: string; thoughts: string; feelings: string; bodyFeelings: string;
@@ -75,24 +76,23 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
       eyebrow={selectedMode?.groupName ?? 'Режим'}
       title={selectedMode?.name ?? ''}
       lede={isFirst ? selectedMode?.short ?? '' : undefined}
-      aside={
-        <>
-          <div className="sd-mode-links">
-            <button type="button" className="ds-link sd-mode-link" onClick={onChangeMode}>
-              <GlyphArrowLeft /> Сменить режим
-            </button>
-            <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
-          </div>
-          {isFirst && (
-            <DiaryAside hue={hue} eyebrow="Подсказка" title={tr('Говори от лица режима', 'Говорите от лица режима')}>
-              <p className="ds-sub">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
-            </DiaryAside>
-          )}
-        </>
+      heroFoot={
+        <div className="sd-mode-links">
+          <button type="button" className="ds-link sd-mode-link" onClick={onChangeMode}>
+            <GlyphArrowLeft /> Сменить режим
+          </button>
+          <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
+        </div>
       }
+      aside={isFirst && (
+        <>
+          <p className="sd-explainer">{buildModeDiaryExplainer(tr)}</p>
+          <DiaryAside hue={hue} eyebrow="Подсказка" title={tr('Говори от лица режима', 'Говорите от лица режима')}>
+            <p className="ds-sub">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
+          </DiaryAside>
+        </>
+      )}
     >
-      {isFirst && <p className="sd-explainer">{buildModeDiaryExplainer(tr)}</p>}
-
       {/* Прогресс: сегменты по числу шагов + «шаг N из M» */}
       <DiaryTicks filled={tickFilled} active={stepIdx} hue={hue} onJump={setStepIdx} />
 

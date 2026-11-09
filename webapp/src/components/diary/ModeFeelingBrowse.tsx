@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { getModeById } from '../../schemaTherapyData';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { haptic } from '../../haptic';
@@ -37,7 +37,7 @@ export function ModeFeelingBrowse({ onPick }: { onPick: (id: string) => void }) 
             const mode = getModeById(leaf.modeId);
             const look = modeLookById(leaf.modeId);
             return (
-              <button key={leaf.modeId} type="button" className="pp-paper sd-feel-row" style={{ '--h': look.hue } as CSSProperties}
+              <button key={leaf.modeId} type="button" className="pp-paper sd-feel-row" style={hueStyle(look.hue)}
                 onClick={() => {
                   haptic.select();
                   // Событие переехало из удалённого окна-теста (ModeTestScreen) — чипы теперь единственный вход.

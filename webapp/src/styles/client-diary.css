@@ -35,8 +35,11 @@
 }
 .cd-draft-x:hover { color: var(--text); }
 .cd-draft-x > svg { width: 14px; height: 14px; }
-/* «удалить» встаёт на место «×» и шире его — заходит влево на заголовок, а не сдвигает строку. */
+/* «удалить» встаёт на место «×» и шире его — заходит влево на заголовок, а не сдвигает строку. Мелкий
+   опасный текст на цветной бумаге — --on-panel-danger: --accent-red на бумаге 0.915 давал 4.35:1
+   (index.css.contrast.test.ts сверяет все оттенки). */
 .ds-link.cd-draft-del { justify-self: end; min-height: 44px; padding: 0 10px; }
+.cd-draft .ds-link--danger, .cd-draft .ds-link--danger:hover { color: var(--on-panel-danger); }
 .cd-draft-foot { grid-column: 1 / -1; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-width: 0; }
 .cd-draft-preview {
   flex: 1; min-width: 0; margin: 0; font: italic 400 15px/1.45 var(--serif); color: var(--text); overflow-wrap: anywhere;
@@ -44,9 +47,13 @@
 }
 .ds-link.cd-draft-go { flex-shrink: 0; margin-left: auto; min-height: 44px; padding: 0 10px; font-size: 14px; }
 
-/* Сегмент и мета под ним: серия дней подряд — строкой под фильтром, а не под длинной лентой. */
+/* Сегмент и мета под ним: серия дней подряд — строкой под фильтром, а не под длинной лентой; справа в той
+   же строке — «Поделиться дневником» тихой ссылкой со знаком «Записей». */
 .cd-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
-.cd-streak { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+.cd-bar-meta { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; min-width: 0; }
+.cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+.ds-link.cd-share-link { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13.5px; }
+.cd-share-sign { display: inline-flex; }
 
 /* Лента и «Эта неделя»: на широкой странице сводка — липкой колонкой справа, иначе её нет. */
 .cd-feed { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
@@ -81,7 +88,8 @@
   font: 600 14px/1 var(--sans); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 button.cd-tracker { cursor: pointer; transition: background .12s ease; }
-button.cd-tracker:hover { background: oklch(0.895 0.04 var(--h)); --strokes-edge: oklch(0.895 0.04 var(--h)); }
+/* Подсветка — только у мыши: на телефоне после тапа :hover залипал на пилюле под пальцем. */
+@media (hover: hover) { button.cd-tracker:hover { background: oklch(0.895 0.04 var(--h)); --strokes-edge: oklch(0.895 0.04 var(--h)); } }
 button.cd-tracker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .cd-tracker .ds-chev { margin-left: 2px; color: var(--text-sub); }
 

@@ -1,7 +1,7 @@
-import type { CSSProperties } from 'react';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
 import { SignArt } from '../art/SignArt';
+import { hueStyle } from '../../lib/tone';
 import '../../styles/sheet-diary.css';
 import { haptic } from '../../haptic';
 import { api } from '../../api';
@@ -10,8 +10,6 @@ import { modeLookById as lookOf } from './modeLookById';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
 import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import { MODE_DOUBT_SWITCHED_EVENT } from '../../../../shared/src/share/analytics';
-
-const paper = (hue: number) => ({ '--h': hue }) as CSSProperties;
 
 /**
  * Лист «Сомневаешься? Сравни с похожими» (открывает ModeDoubtButton): якорь выбранного режима и
@@ -41,7 +39,7 @@ export function ModeDoubtSheet({ modeId, onSwitch, onClose }: {
       </div>
       <div className="page">
         <div className="sd-doubt">
-          <div className="pp-paper sd-doubt-now" style={paper(now.hue)}>
+          <div className="pp-paper sd-doubt-now" style={hueStyle(now.hue)}>
             <div className="sd-doubt-now-text">
               <div className="sd-doubt-now-name">{mode?.name ?? ''}</div>
               <div className="ds-label sd-doubt-now-label">сейчас выбран</div>
@@ -56,7 +54,7 @@ export function ModeDoubtSheet({ modeId, onSwitch, onClose }: {
               const other = getModeById(d.otherId);
               const look = lookOf(d.otherId);
               return (
-                <section key={d.otherId} className="pp-paper sd-doubt-card" style={paper(look.hue)}>
+                <section key={d.otherId} className="pp-paper sd-doubt-card" style={hueStyle(look.hue)}>
                   <div className="sd-doubt-head">
                     <span className="sd-doubt-sign" aria-hidden="true"><SignArt sign={look.sign} size="row" /></span>
                     <div className="sd-doubt-head-text">

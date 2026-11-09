@@ -159,7 +159,8 @@ describe('paper-app.css — стили заготовок', () => {
   it('цвета — только токены и oklch по --h: без hex и rgb', () => {
     expect(src).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
     const all = src.match(/oklch\(/g) ?? [];
-    const byHue = src.match(/oklch\([\d.]+ [\d.]+ var\(--h\)\)/g) ?? [];
+    // Сдвинутый слой — светлота и хрома одним свойством (--pa-layer-lc), оттенок — тот же --h.
+    const byHue = src.match(/oklch\((?:[\d.]+ [\d.]+|var\(--pa-layer-lc\)) var\(--h\)\)/g) ?? [];
     expect(all.length).toBeGreaterThan(0);
     expect(byHue.length).toBe(all.length);
   });
