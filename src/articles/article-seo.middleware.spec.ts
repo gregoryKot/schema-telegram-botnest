@@ -82,7 +82,6 @@ const ARTICLE = {
   content: '<h2>Домен I</h2><p>Первый текст.</p><p>Второй текст.</p>',
   date: new Date('2025-05-10T00:00:00.000Z'),
   readMin: 10,
-  heroImage: null,
 };
 
 describe('ArticleSeoMiddleware', () => {
@@ -268,15 +267,16 @@ describe('ArticleSeoMiddleware', () => {
     expect(html).not.toContain('alert(1)');
   });
 
-  it('includes og:image / JSON-LD image when the article has a heroImage', async () => {
+  it('JSON-LD не содержит image, даже если в строке из БД есть heroImage', async () => {
     const mw = makeMiddleware({
       ...ARTICLE,
-      heroImage: 'https://schemehappens.ru/hero.jpg',
+      heroImage: 'data:image/jpeg;base64,AAAA',
     });
     const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
     await mw.use(req, res, () => {});
     const html = getSent()!;
-    expect(html).toContain('"image":"https://schemehappens.ru/hero.jpg"');
+    expect(html).not.toContain('"image"');
+    expect(html).not.toContain('data:image/jpeg');
   });
 });
 

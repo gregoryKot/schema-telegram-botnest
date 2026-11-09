@@ -1,0 +1,26 @@
+/* Карточка статьи (components/ArticleCard.tsx) — одна на лендинг (сетка .pl2-3) и список
+   /articles, и обложка шапки статьи. Обложка — сцена статьи на цветной бумаге по --h
+   (components/art/ArticleCover.tsx; docs/design/PAPER_2026-11.md, «Обложки статей»).
+   Префикс ac-. Раскладку 601–900 на лендинге держит product-landing.css. */
+.ac-card { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+.ac-cover {
+  display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9;
+  overflow: hidden; background: oklch(0.9 0.045 var(--h));
+}
+.ac-cover .scn { width: auto; height: 88%; }
+.ac-body { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 18px 20px 20px; }
+.ac-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.25; color: var(--text); }
+.ac-desc { flex: 1; margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ac-meta { margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
+
+/* Шапка статьи: та же обложка, шире и со скруглением, как блок страницы. */
+.ac-cover--hero { aspect-ratio: 5 / 2; border-radius: var(--r-20); margin: 0 0 44px; }
+
+/* Телефон: обложка карточки ниже, сцена крупнее поля — лента обложек не тянется пустым
+   цветом; шапка статьи остаётся 16:9 и показывает сцену целиком. */
+@media (max-width: 640px) {
+  .ac-cover { aspect-ratio: 3 / 1; }
+  .ac-cover .scn { height: 130%; }
+  .ac-cover--hero { aspect-ratio: 16 / 9; margin-bottom: 32px; }
+  .ac-cover--hero .scn { height: 88%; }
+}

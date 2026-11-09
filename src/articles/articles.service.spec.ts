@@ -85,6 +85,31 @@ function row(id: number, slug: string, dateStr: string): ArticleRow {
   };
 }
 
+describe('ArticlesService — heroImage не отдаётся API', () => {
+  const heroRow = { ...row(1, 'x', '2026-01-01'), heroImage: 'data:BIG' };
+
+  it('list() запрашивает select без heroImage', async () => {
+    const db = makeDb([heroRow]);
+    const list = await new ArticlesService(db as any).list();
+    const select = db.article.findMany.mock.calls[0][0].select;
+    expect(select).not.toHaveProperty('heroImage');
+    expect(list[0]).not.toHaveProperty('heroImage');
+  });
+
+  it('findBySlug() и adminList() передают omit: { heroImage: true }', async () => {
+    const db = makeDb([heroRow]);
+    const svc = new ArticlesService(db as any);
+    await svc.findBySlug('x');
+    await svc.adminList();
+    expect(db.article.findUnique.mock.calls[0][0].omit).toEqual({
+      heroImage: true,
+    });
+    expect(db.article.findMany.mock.calls[0][0].omit).toEqual({
+      heroImage: true,
+    });
+  });
+});
+
 describe('ArticlesService.list — публичный список', () => {
   it('не отдаёт поле content (тяжёлое, не нужно списку)', async () => {
     const db = makeDb([

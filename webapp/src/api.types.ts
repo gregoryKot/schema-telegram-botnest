@@ -60,10 +60,10 @@ export interface AdminBookingStatus {
   emailFallback: boolean;
 }
 export interface ArticleSummary {
-  id: number; slug: string; title: string; description: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null;
+  id: number; slug: string; title: string; description: string; date: string; readMin: number; diagramKey?: string | null;
 }
 export interface Article extends ArticleSummary { content: string; }
-export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; heroImage?: string | null; diagramKey?: string | null; };
+export type ArticleDto = { slug: string; title: string; description: string; content: string; date: string; readMin: number; diagramKey?: string | null; };
 export interface MarqueeTopic { label: string; href: string; }
 export interface HealthyAdultPhrase { id: number; text: string; enabled: boolean; sortOrder: number; }
 /** Претензия проверки качества к тексту фразы. */

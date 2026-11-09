@@ -43,7 +43,7 @@ describe('лендинг: сетка из трёх карточек на 601–9
 
   it('две колонки, последняя нечётная статья — во всю строку', () => {
     expect(rule(tablet, '.pl2-3')).toMatch(/grid-template-columns:\s*1fr 1fr/);
-    expect(rule(tablet, '.pl2-3 > .pl2-article:last-child:nth-child(odd)')).toMatch(/grid-column:\s*1 \/ -1/);
+    expect(rule(tablet, '.pl2-3 > .ac-card:last-child:nth-child(odd)')).toMatch(/grid-column:\s*1 \/ -1/);
   });
 
   it('карточки установки — одной колонкой (сильнее общего правила двух колонок)', () => {
@@ -52,7 +52,7 @@ describe('лендинг: сетка из трёх карточек на 601–9
 
   it('контрольный образец: без правила растяжки ряд 2+1 правда остаётся (на компьютере три колонки)', () => {
     expect(rule(css, '.pl2-3')).toMatch(/grid-template-columns:\s*repeat\(3, 1fr\)/);
-    expect(rule(tablet, '.pl2-3 > .pl2-article:last-child')).toBe('');
+    expect(rule(tablet, '.pl2-3 > .ac-card:last-child')).toBe('');
   });
 });
 

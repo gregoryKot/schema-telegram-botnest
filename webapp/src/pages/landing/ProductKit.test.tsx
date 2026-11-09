@@ -1,50 +1,11 @@
 // @vitest-environment jsdom
-// ProductKit: карточка статьи. Обложка из API — картинкой; статьи без обложки (их
-// большинство) раньше стояли серой пустой плашкой — теперь листы (Sheets) на цветной
-// бумаге, у соседних карточек разной. Выдуманной картинки на месте обложки нет.
+// ProductKit: плитка цветной бумаги со знаком. Карточка статьи — ArticleCard.test.tsx.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { ArticleCard, InfoCard } from './ProductKit';
+import { InfoCard } from './ProductKit';
 import { Heart } from '../../components/art/PaperArtSigns';
-import type { ArticleSummary } from '../../api';
-import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
 afterEach(() => cleanup());
-
-const article = (heroImage: string | null): ArticleSummary =>
-  ({ id: 1, slug: 'a', title: 'Т', description: 'О', date: '2026-10-01T00:00:00Z', readMin: 4, heroImage } as ArticleSummary);
-
-describe('ArticleCard', () => {
-  it('с обложкой — картинка обложки, без знака', () => {
-    const { container } = render(<ArticleCard a={article('/img/a.webp')} />);
-    expect(container.querySelector('.pl2-article-img img')?.getAttribute('src')).toBe('/img/a.webp');
-    expect(container.querySelector('.pl2-article-img svg')).toBeNull();
-  });
-
-  it('без обложки — листы на цветной бумаге, у соседей разный оттенок', () => {
-    const hue = (i: number) => {
-      const { container } = render(<ArticleCard a={article(null)} index={i} />);
-      const box = container.querySelector('.pl2-article-img') as HTMLElement;
-      expect(box.querySelector('img')).toBeNull();
-      expect(box.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
-      const h = box.style.getPropertyValue('--h');
-      cleanup();
-      return h;
-    };
-    const hues = [0, 1, 2].map(hue);
-    expect(new Set(hues).size).toBe(3);
-    expect(hue(3)).toBe(hues[0]);
-  });
-
-  // E14 (аудит 2026-11): дата — полночь UTC моментом; западнее UTC была 30 сентября.
-  it('дата статьи — тот же день в любой зоне', () => {
-    forEachTimeZone((tz) => {
-      const { container } = render(<ArticleCard a={article(null)} />);
-      expect(container.querySelector('.pl2-article-meta')?.textContent, tz).toBe('1 октября · 4 мин');
-      cleanup();
-    });
-  });
-});
 
 describe('InfoCard', () => {
   it('цветная бумага с оттенком и знаком', () => {
