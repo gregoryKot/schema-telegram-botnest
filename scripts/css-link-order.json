@@ -2,6 +2,7 @@
   "webapp/dist/index.html": [
     "sheet-tasks",
     "TherapyCaution",
+    "sceneKit",
     "index",
     "sheet-diary"
   ]

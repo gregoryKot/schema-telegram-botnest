@@ -2,11 +2,12 @@ import { EMOTIONS, INTENSITY_LABELS } from '../../schemaTherapyData';
 import { pressable } from '../../utils/a11y';
 import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import type { EmotionEntry } from '../../types';
+import { SignChip } from '../paper/SignChip';
 import '../../styles/sheet-diary.css';
 
 // Шаг «Чувства» дневника схем (webapp): чипы эмоций + шкала интенсивности
-// выбранных. Вынесено из SchemaEntrySheet — файл-источник пробивал потолок
-// 300 строк (правило №10 CLAUDE.md). Чипы — ds-chip в тоне DIARY_HUE.schema.
+// выбранных (полоски растут к «сильно», diary-wizard.css). Вынесено из SchemaEntrySheet
+// (правило №10). Чипы — SignChip: выбранное чувство — бумага глины с галочкой.
 export function SchemaEmotionsStep({
   emotions,
   onToggle,
@@ -18,16 +19,9 @@ export function SchemaEmotionsStep({
 }) {
   return (
     <>
-      <div className="sd-chips">
+      <div className="sd-chips" style={hueStyle(DIARY_HUE.schema)}>
         {EMOTIONS.map((em) => (
-          <button
-            key={em.id}
-            className={'ds-chip sd-chip' + (emotions.some((e) => e.id === em.id) ? ' is-selected tone-tint' : '')}
-            style={hueStyle(DIARY_HUE.schema)}
-            onClick={() => onToggle(em.id)}
-          >
-            {em.label}
-          </button>
+          <SignChip key={em.id} label={em.label} on={emotions.some((e) => e.id === em.id)} onToggle={() => onToggle(em.id)} />
         ))}
       </div>
       {emotions.length > 0 && (

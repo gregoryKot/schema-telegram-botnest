@@ -88,7 +88,7 @@
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
   "webapp/src/components/diary/ModeEntryDone.tsx": {
-    "reason": "Экран «Готово» записи дневника режимов на рамке ExScreen: шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "reason": "Экран «Готово» записи дневника режимов на рамке экрана упражнения (ex2-screen + ExBar, лист DoneSheet): шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
   "webapp/src/components/diary/ModeEntryForm.tsx": {
