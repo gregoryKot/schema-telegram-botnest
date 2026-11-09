@@ -4,7 +4,6 @@ import { formatDateString } from '../../../../shared/src/utils/calendarDate';
 import { glue } from '../../../../shared/src/utils/typo';
 import { TherapyLine } from '../therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
-import { Strokes } from '../art/PaperArt';
 import { SpreadLayout } from '../paper/SpreadLayout';
 import { DayBars } from './DayBars';
 import { CompletionLinks } from './CompletionLinks';
@@ -15,7 +14,7 @@ import { completionHeadline, lowestObservation, nextUnrated, summarizeDay } from
 // сервер её ещё не видел. Очередь уходит сама — на старте и по возврату сети (useOutboxFlushOnOnline).
 const QUEUED_TEXT = 'Оценки пока не дошли до сервера. Они сохранены на этом устройстве и отправятся сами';
 
-/** Экран «Готово»: лист шалфея — индекс дня (или «N из M», пока оценены не все), одно наблюдение (если оценены все),
+/** Экран «Готово»: лист шалфея без знака-полосок (картинка листа — сами столбики) — индекс дня (или «N из M», пока оценены не все), одно наблюдение (если оценены все),
  *  пять столбиков; рядом (на компьютере — разворотом справа, на телефоне — под листом) куда дальше. */
 export function CompletionScreen({
   needs,
@@ -57,7 +56,6 @@ export function CompletionScreen({
 
   const sheet = (
     <div className="tq-day pp-paper">
-      <Strokes size="hero" />
       <p className="tq-eyebrow">Трекер · {when}</p>
       <div className="tq-index" aria-label={headline.aria}>{headline.big}</div>
       <p className="tq-index-cap">{headline.caption}</p>

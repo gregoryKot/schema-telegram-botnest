@@ -40,7 +40,7 @@ export function CaseSceneStep({
       <LimitedTextarea
         max={DIARY_FIELD_MAX}
         ref={areaRef}
-        className="ds-textarea cq-field"
+        className="pa-field cq-field"
         rows={5}
         value={value}
         onChange={(e) => onChange(e.target.value)}

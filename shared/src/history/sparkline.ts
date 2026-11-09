@@ -1,5 +1,5 @@
-// Вид «Неделя» в истории трекера (оба фронтенда, SparklineRow): окно дней и
-// геометрия линии потребности. QA 2026-11 (B-М4): подпись «За 7 дней», а
+// Линия потребности по дням — одна на всё приложение: «Неделя» в истории (SparklineRow) и
+// «Динамика потребности» (NeedDynamics); окно дней и геометрия. QA 2026-11 (B-М4): подпись «За 7 дней», а
 // линии шли по всей загруженной истории (~30 точек); точка-маркер сплющивалась
 // в овал, потому что svg растянут с preserveAspectRatio="none". Теперь окно —
 // N дней, которые кончаются выбранным днём, а маркер рисуется поверх svg
@@ -32,8 +32,8 @@ export interface SparklineGeometry {
   dot: { left: number; top: number };
 }
 
-// 0 — день без оценки: точка прижата к низу графика.
-const yFor = (v: number): number =>
+/** y оценки 0–10 на холсте SPARK_W×SPARK_H; 0 — день без оценки, прижат к низу. Им же — линия детства. */
+export const sparkY = (v: number): number =>
   v <= 0 ? SPARK_H - 1 : 25 - ((Math.min(v, 10) - 1) / 9) * 23;
 
 const fx = (n: number): string => n.toFixed(1);
@@ -49,7 +49,7 @@ export function sparklineGeometry(
     n > 1 ? (i * SPARK_W) / (n - 1) : SPARK_W / 2;
   const pts = days.map((d, i) => ({
     x: xAt(i),
-    y: yFor(d.ratings[needId] ?? 0),
+    y: sparkY(d.ratings[needId] ?? 0),
   }));
   const line = pts
     .map((p, i) => `${i === 0 ? 'M' : 'L'} ${fx(p.x)} ${fx(p.y)}`)

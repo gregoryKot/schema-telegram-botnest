@@ -9,6 +9,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { TrackerOverlay } from './TrackerOverlay';
 import { AUTO_ADVANCE_MS } from './trackerOverlay/trackerFlow';
 import { TRACKER_ONBOARDING_KEY, TRACKER_ORIGIN_NOTE } from '../../../shared/src/needs/trackerOnboarding';
+import { glue } from '../../../shared/src/utils/typo';
 import type { Need } from '../types';
 import { todayStr } from '../../../shared/src/utils/format';
 
@@ -19,6 +20,8 @@ vi.mock('../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';
+// Строка склеена glue при отрисовке (U+2011 в «схема-терапии»); NBSP сводит к пробелу нормализатор testing-library.
+const NOTE = glue(TRACKER_ORIGIN_NOTE).replace(/\s+/g, ' ');
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const mockReportClientError = reportClientError as ReturnType<typeof vi.fn>;
 
@@ -281,27 +284,27 @@ describe('TrackerOverlay — экран «Готово»', () => {
 describe('TrackerOverlay — строка «откуда это»', () => {
   it('первый раз (нет оценок, флага нет): строка над вопросом; «Понятно» закрывает и ставит флаг', () => {
     renderOverlay();
-    expect(screen.getByText(TRACKER_ORIGIN_NOTE)).toBeTruthy();
+    expect(screen.getByText(NOTE)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Понятно' }));
-    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+    expect(screen.queryByText(NOTE)).toBeNull();
     expect(localStorage.getItem(TRACKER_ONBOARDING_KEY)).toBe('1');
   });
 
   it('строка не убегает из-под пальца при первом ответе и уходит вместе с первым вопросом', async () => {
     renderOverlay();
     answer(/Мало/);
-    expect(screen.getByText(TRACKER_ORIGIN_NOTE)).toBeTruthy();
+    expect(screen.getByText(NOTE)).toBeTruthy();
     await advance(AUTO_ADVANCE_MS);
-    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+    expect(screen.queryByText(NOTE)).toBeNull();
   });
 
   it('уже есть оценки или флаг стоит — строки нет', () => {
     renderOverlay({ initial: { attachment: 6 } });
-    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+    expect(screen.queryByText(NOTE)).toBeNull();
     cleanup();
     localStorage.setItem(TRACKER_ONBOARDING_KEY, '1');
     renderOverlay();
-    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+    expect(screen.queryByText(NOTE)).toBeNull();
   });
 
   it('трёх шагов старого онбординга нет', () => {
@@ -464,7 +467,7 @@ describe('TrackerOverlay — бэкафилл прошлой даты', () => {
     expect(heading('Привязанность')).toBeTruthy();
     expect(screen.getByText(/10 июля/)).toBeTruthy();
     expect(screen.queryByText(/вчера/)).toBeNull();
-    expect(screen.queryByText(TRACKER_ORIGIN_NOTE)).toBeNull();
+    expect(screen.queryByText(NOTE)).toBeNull();
   });
 
   it('ответ сохраняется с датой, автопереход и «Готово» работают так же, «Готово» зовёт onDone', async () => {

@@ -1,12 +1,11 @@
 // Колесо потребностей (история дня): лепестки-оценки, контур «колеса детства», индекс в
 // центре (wheelCenter.ts). Единственная копия (правило №3). Язык бумаги (редизайн 2026-11,
 // docs/design/APP_2026-11.md, today-history-day): у каждой потребности свой сектор белого
-// листа, оценка — вырезанный лепесток цветом данных потребности (`ink`, решение 7 «Палитра
-// данных»; без него — NEED_COLORS) с тенью сплошным сдвинутым слоем, детство — сплошной
+// листа, оценка — вырезанный лепесток цветом данных потребности (`ink` обязателен, решение 7
+// «Палитра данных»; второй палитры нет) с тенью сплошным сдвинутым слоем, детство — сплошной
 // контур без пунктира, индекс — Literata. Тени и линейки — классы nw-* (styles/history.css):
 // тон бумаги листа (--h у родителя), а не литерал. Пусто — пустые секторы и «—» в центре.
 import type { Need } from '../types';
-import { NEED_COLORS } from '../needs/needColors';
 import { wheelCenter } from '../history/wheelCenter';
 import {
   W,
@@ -30,7 +29,7 @@ export function NeedsWheel({
   ratings,
   prevRatings = {},
   childhoodRatings = {},
-  ink = {},
+  ink,
   onClickNeed,
   onClickCenter,
 }: {
@@ -38,8 +37,8 @@ export function NeedsWheel({
   ratings: Record<string, number>;
   prevRatings?: Record<string, number>;
   childhoodRatings?: Partial<Record<string, number>>;
-  /** Цвет данных потребности по id (var-токен); нет в карте — NEED_COLORS. */
-  ink?: Partial<Record<string, string>>;
+  /** Цвет данных потребности по id (var-токен, needDataColor); неизвестная — запасной --text-sub. */
+  ink: (id: string) => string | undefined;
   onClickNeed?: (n: Need) => void;
   onClickCenter?: () => void;
 }) {
@@ -56,7 +55,7 @@ export function NeedsWheel({
     .map((nd, i) => ({
       id: nd.id,
       d: petalPath(radius(ratings[nd.id]), angle(i)),
-      fill: ink[nd.id] ?? NEED_COLORS[nd.id] ?? 'var(--text-sub)',
+      fill: ink(nd.id) ?? 'var(--text-sub)',
     }))
     .filter((p) => p.d);
   const hasChildhood = Object.keys(childhoodRatings).length > 0;

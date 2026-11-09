@@ -12,7 +12,7 @@ import { CaseResumeGate } from './CaseResumeGate';
 import { CaseCollectedProvider } from './CaseStepScreen';
 import { collectedRows } from './caseSummary';
 import { useCaseQuickFlow } from '../../../../shared/src/case/quick/useCaseQuickFlow';
-import type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
+import { STEADY_GATE_ID, type CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
 
 export type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
 
@@ -99,7 +99,7 @@ function CaseFlowSteps(props: CaseQuickProps) {
       case 'modes':
         return <CaseModeScreen {...common} onPick={f.pickMode} />;
       case 'done':
-        return <CaseDoneScreen name={f.doneName} onOpenMap={props.onOpenMap} onClose={props.onClose} crisis={f.crisis} onHardNow={f.handleHardNow} />;
+        return <CaseDoneScreen name={f.doneName} steady={f.fields.gateId === STEADY_GATE_ID} onOpenMap={props.onOpenMap} onClose={props.onClose} crisis={f.crisis} onHardNow={f.handleHardNow} />;
       default:
         return null;
     }

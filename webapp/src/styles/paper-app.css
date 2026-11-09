@@ -76,10 +76,12 @@
   .pa-sheet--compact:not(.pa-sheet--plain) > .pa-sheet-body > :not(.pa-sheet-label),
   .pa-spread-side .pa-sheet:not(.pa-sheet--plain) > .pa-sheet-body > :not(.pa-sheet-label) { margin-top: 6px; }
   /* Знак потребности (NeedArt: холст 120×64, рисунок — две-три узкие полоски, «Привязанность» —
-     треть холста) меряется высотой, как бейдж теста: ~60px, а не 30×38 в слоте 72. Пустое поле холста
-     сверху и снизу уходит в отступы листа — строка надписи не растёт, шапка вопроса остаётся ~230px. */
+     треть холста) меряется высотой, как бейдж теста: ~55px, а не 30×38 в слоте 72. Знак стоит в полях
+     листа (широкая «волна» Выражения чувств с тенью уходила в верхнее и правое поле), а под ним — зазор
+     до заголовка: с отрицательными полями длинный заголовок («Динамика потребности») подходил к знаку
+     на 6px, и угол читался знаком, лежащим на слове (ревью g2 r2). Цена — шапка вопроса выше на ~10px. */
   .pa-sheet[data-sign^='need_'] > .pa-sheet-art,
-  .pa-spread-side .pa-sheet[data-sign^='need_'] > .pa-sheet-art { width: 112px; margin: -8px -4px -8px 0; }
+  .pa-spread-side .pa-sheet[data-sign^='need_'] > .pa-sheet-art { width: 104px; margin: -2px 0 0; }
 }
 @container pa-sheet (max-width: 400px) {
   .pa-sheet-title { font-size: 26px; }
@@ -181,6 +183,21 @@
    текстом читалась «выключено». Один вид на все SignChip (темы заметки, чувства и импульсы разбора,
    выбор схем и режимов) — экран его не переопределяет (ревью g2). */
 .ds-chip.pa-chip:not(.is-on) { background: var(--surface); color: var(--text); }
+
+/* ── Поле-лист: свободный текст пользователя ─────────────────────────────── */
+/* Одно поле «написать, что было» на всё приложение: заметка к дню (NoteSheet) и «Что случилось?» в разборе
+   (CaseSceneStep). Белый лист Literata, тень сплошным слоем тоном бумаги сущности (--h у поля или родителя),
+   растёт с текстом (field-sizing) без системного уголка. Высота — у экрана. Вместо .ds-textarea, а не
+   вместе с ним: системное поле (гротеск 16, кольцо фокуса) и лист спорили (ревью g2 r2). */
+.pa-field {
+  box-sizing: border-box; display: block; width: 100%; resize: none; field-sizing: content; -webkit-appearance: none; appearance: none;
+  padding: 18px 20px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); color: var(--text);
+  font: 400 19px/1.5 var(--serif); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
+}
+.pa-field::placeholder { color: var(--text-faint); }
+/* Фокус — кромка --accent, как у полей ds-input, а не кольцо поверх листа: «Что случилось?» в фокусе с
+   первого кадра (автофокус), и кольцо рамкой спорило с тенью-слоем. */
+.pa-field:focus { outline: none; border-color: var(--accent); }
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {

@@ -142,12 +142,12 @@
   .sd-week .sd-spark-score { grid-area: score; align-self: end; font-size: 28px; }
   .sd-week .sd-trend { font-size: 14px; }
 }
-/* Компьютер: колонка листа шире; листки ленты — дата слева, полоски справа. */
+/* Компьютер: колонка листа шире. Листок ленты — постоянной ширины, а не седьмая доля: семь листков по
+   ~140px на 1280 прятали всё старше недели (полосы прокрутки нет, колесо ленту не листает), а внутри
+   стояла пустота. 72px — 12–14 дней в ширину; дата над полосками, как на планшете (ревью g2 r2). */
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .sd-day-grid { grid-template-columns: 380px minmax(0, 1fr); gap: 32px; }
-  .sd-day { flex-direction: row; align-items: center; padding: 10px 14px 10px 16px; min-height: 64px; }
-  .sd-day-date { align-items: flex-start; }
-  .sd-day-strokes .pp-art { width: 40px; height: 32px; }
+  .sd-day, .sd-day-slot { flex-basis: 72px; }
   .ds-card.sd-week { gap: 16px; }
   .sd-week > .sd-spark-row { grid-template-areas: 'name score' 'plot plot'; padding: 18px 20px 22px; gap: 18px 14px; }
   .sd-week .sd-spark-score { align-self: start; font-size: 30px; }

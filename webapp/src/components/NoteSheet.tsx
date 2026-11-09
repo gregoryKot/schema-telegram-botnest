@@ -88,7 +88,7 @@ export function NoteSheet({ date, onClose }: Props) {
           placeholder="Что происходило сегодня? Любая мысль..."
           aria-label="Запись"
           rows={6}
-          className="sd-note-area"
+          className="pa-field sd-note-area"
         />
         {detectCrisisAny(text) && <CrisisCard surface="note" />}
         <NoteTagsPicker selectedTags={selectedTags} onToggle={toggleTag} />

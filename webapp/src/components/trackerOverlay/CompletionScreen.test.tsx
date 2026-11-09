@@ -40,14 +40,14 @@ describe('CompletionScreen — мост к терапевту', () => {
     expect(screen.getByText(/Если нужна терапия, есть с кем поговорить/)).toBeTruthy();
   });
 
-  it('экран «Готово» — цветная бумага с полосками над индексом; кнопки и переходы — рядом с листом, не на нём', () => {
+  it('экран «Готово» — цветная бумага: индекс и столбики без знака-полосок над ними (одна картинка, не две); кнопки — рядом с листом', () => {
     const { container } = render(
       <MemoryRouter>
         <CompletionScreen needs={NEEDS} effectiveRatings={{ attachment: 5 }} isBackfill={false} goBack={vi.fn()} onReview={vi.fn()} onOpenNote={vi.fn()} />
       </MemoryRouter>,
     );
     const sheet = container.querySelector('.pa-spread-side > .tq-day.pp-paper')!;
-    expect(sheet.querySelector(':scope > svg.pp-art--hero')).toBeTruthy();
+    expect(sheet.querySelector(':scope > svg')).toBeNull();
     expect(sheet.querySelector('.tq-bars')).toBeTruthy();
     const main = container.querySelector('.pa-spread-main')!;
     expect(main.querySelector('.ds-btn')?.textContent).toBe('На главную');

@@ -73,7 +73,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
           />
           {rangeIdx === 2 && (
             <p className="pp-paper tk2-good">
-              {tr('Хороший день – заметь это', 'Хороший день – заметьте это')}
+              {glue(tr('Хороший день – заметь это', 'Хороший день – заметьте это'))}
             </p>
           )}
           <div className="tk2-tags">

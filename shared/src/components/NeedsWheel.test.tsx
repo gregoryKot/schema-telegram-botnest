@@ -6,17 +6,25 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { NeedsWheel } from './NeedsWheel';
 import type { Need } from '../types';
-import { NEED_COLORS } from '../needs/needColors';
 
 const needs: Need[] = [
   { id: 'safety', name: 'Безопасность', emoji: '🛡' },
   { id: 'autonomy', name: 'Автономия', emoji: '🕊' },
 ] as Need[];
+const INKS: Record<string, string> = {
+  safety: 'var(--c-clay)',
+  autonomy: 'var(--c-amber-strong)',
+};
+const INK = (id: string) => INKS[id];
 
 describe('NeedsWheel', () => {
   it('центр показывает средний индекс по оценкам', () => {
     const { container } = render(
-      <NeedsWheel needs={needs} ratings={{ safety: 8, autonomy: 4 }} />,
+      <NeedsWheel
+        ink={INK}
+        needs={needs}
+        ratings={{ safety: 8, autonomy: 4 }}
+      />,
     );
     expect(container.textContent).toContain('6,0');
     expect(container.textContent).toContain('индекс');
@@ -25,6 +33,7 @@ describe('NeedsWheel', () => {
   it('prevRatings рисует сравнение со вчера (↑/↓)', () => {
     const { container } = render(
       <NeedsWheel
+        ink={INK}
         needs={needs}
         ratings={{ safety: 8, autonomy: 8 }}
         prevRatings={{ safety: 4, autonomy: 4 }}
@@ -35,7 +44,11 @@ describe('NeedsWheel', () => {
 
   it('без prevRatings строки «вчера» нет', () => {
     const { container } = render(
-      <NeedsWheel needs={needs} ratings={{ safety: 5, autonomy: 5 }} />,
+      <NeedsWheel
+        ink={INK}
+        needs={needs}
+        ratings={{ safety: 5, autonomy: 5 }}
+      />,
     );
     expect(container.textContent).not.toContain('вчера');
   });
@@ -43,6 +56,7 @@ describe('NeedsWheel', () => {
   it('вчера всё по нулям (в истории 0 — «не заполнено») — сравнение скрыто', () => {
     const { container } = render(
       <NeedsWheel
+        ink={INK}
         needs={needs}
         ratings={{ safety: 5, autonomy: 5 }}
         prevRatings={{ safety: 0, autonomy: 0 }}
@@ -55,6 +69,7 @@ describe('NeedsWheel', () => {
   it('childhoodRatings добавляет контур детства — сплошной, без пунктира', () => {
     const { container } = render(
       <NeedsWheel
+        ink={INK}
         needs={needs}
         ratings={{ safety: 5, autonomy: 5 }}
         childhoodRatings={{ safety: 9 }}
@@ -68,13 +83,15 @@ describe('NeedsWheel', () => {
 
   it('без оценок детства контура нет', () => {
     const { container } = render(
-      <NeedsWheel needs={needs} ratings={{ safety: 5 }} />,
+      <NeedsWheel ink={INK} needs={needs} ratings={{ safety: 5 }} />,
     );
     expect(container.querySelector('[data-layer="childhood"]')).toBeNull();
   });
 
   it('нулевые оценки — лепестки не рисуются (petalPath даёт пустой путь)', () => {
-    const { container } = render(<NeedsWheel needs={needs} ratings={{}} />);
+    const { container } = render(
+      <NeedsWheel ink={INK} needs={needs} ratings={{}} />,
+    );
     // залитых лепестков нет: у всех value=0 → r<1 → d='' → лепесток не рисуется
     expect(container.querySelectorAll('path[data-petal]').length).toBe(0);
   });
@@ -83,6 +100,7 @@ describe('NeedsWheel', () => {
   it('пустой день после заполненного — «—» в центре, без стрелки падения', () => {
     const { container } = render(
       <NeedsWheel
+        ink={INK}
         needs={needs}
         ratings={{}}
         prevRatings={{ safety: 6, autonomy: 6 }}
@@ -94,26 +112,29 @@ describe('NeedsWheel', () => {
     expect(container.textContent).toContain('вчера 6,0');
   });
 
-  // QA 2026-11 (B-З7): колесо красило потребности старой палитрой COLORS.
-  it('цвет лепестка — из NEED_COLORS, как на остальных экранах', () => {
+  // QA 2026-11 (B-З7) и ревью g2 r2: второй палитры (NEED_COLORS) в колесе нет — цвет только из ink.
+  it('потребность без цвета в ink — запасной --text-sub, а не hex второй палитры', () => {
     const { container } = render(
       <NeedsWheel
+        ink={() => undefined}
         needs={[{ id: 'autonomy' } as Need]}
         ratings={{ autonomy: 9 }}
       />,
     );
     expect(
-      container.querySelector(`path[fill="${NEED_COLORS.autonomy}"]`),
-    ).toBeTruthy();
+      container
+        .querySelector('path[data-petal="autonomy"]')!
+        .getAttribute('fill'),
+    ).toBe('var(--text-sub)');
   });
 
   // Решение 7 (docs/design/APP_2026-11.md, «Палитра данных»): лепесток — цвет данных потребности.
   it('ink задаёт цвет лепестка по id потребности; лепесток длиннее при большей оценке', () => {
     const { container } = render(
       <NeedsWheel
+        ink={INK}
         needs={needs}
         ratings={{ safety: 9, autonomy: 2 }}
-        ink={{ safety: 'var(--c-clay)', autonomy: 'var(--c-amber-strong)' }}
       />,
     );
     const safety = container.querySelector('path[data-petal="safety"]')!;
@@ -127,7 +148,7 @@ describe('NeedsWheel', () => {
     const arc = (el: Element) =>
       Number(/ A (\d+(?:\.\d+)?) /.exec(el.getAttribute('d')!)![1]);
     const low = render(
-      <NeedsWheel needs={needs} ratings={{ safety: 2 }} />,
+      <NeedsWheel ink={INK} needs={needs} ratings={{ safety: 2 }} />,
     ).container.querySelector('path[data-petal="safety"]')!;
     expect(arc(safety)).toBeGreaterThan(arc(low));
   });
@@ -135,7 +156,7 @@ describe('NeedsWheel', () => {
   it('потребность без цвета в реестре красится запасным токеном --text-sub, а не hex-литералом', () => {
     const alien = [{ id: 'unknown_need', name: 'X', emoji: '❓' }] as Need[];
     const { container } = render(
-      <NeedsWheel needs={alien} ratings={{ unknown_need: 9 }} />,
+      <NeedsWheel ink={INK} needs={alien} ratings={{ unknown_need: 9 }} />,
     );
     expect(
       container.querySelector('path[fill="var(--text-sub)"]'),
@@ -147,6 +168,7 @@ describe('NeedsWheel', () => {
     const onClickCenter = vi.fn();
     const { container } = render(
       <NeedsWheel
+        ink={INK}
         needs={needs}
         ratings={{ safety: 5, autonomy: 5 }}
         onClickNeed={onClickNeed}

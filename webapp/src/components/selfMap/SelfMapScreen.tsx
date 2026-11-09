@@ -9,9 +9,9 @@ import { getModeById } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
 import { buildMapLanes, type MapInput, type MapLaneId } from '../../../../shared/src/map/mapVm';
 import { caseNextStep, buildWhereIAm, type NextStepInput, type NextStepId } from '../../../../shared/src/case/caseNextStep';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/case-quick.css';
 import '../../styles/self-map.css';
-
 const groupOf = (modeId: string) => getModeById(modeId)?.groupId;
 
 /**
@@ -65,7 +65,7 @@ export function SelfMapScreen({ map, next, onBack, onPickMode, onNextStep }: {
       <div className="sm-next">
         <div className="ds-label">Что дальше</div>
         <button type="button" className="ds-btn sm-next-btn" onClick={() => { haptic.tap(); onNextStep(step.id); }}>
-          {step.time ? `${step.label} · ${step.time}` : step.label}
+          {glue(step.time ? `${step.label} · ${step.time}` : step.label)}
         </button>
         {step.hint && <p className="sm-hint">{step.hint}</p>}
       </div>

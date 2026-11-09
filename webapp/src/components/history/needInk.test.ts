@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { NEED_INK, NEED_TEXT_INK, inkVars } from './needInk';
+import { NEED_TEXT_INK, inkVars } from './needInk';
 import { needDataColor } from '../needDataColor';
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 import { NEED_HUE } from '../../../../shared/src/theme/entityHue';
@@ -28,7 +28,7 @@ function paper(h: number): Rgb {
 
 describe('needInk — цвет потребности в истории', () => {
   it('графика — один источник с трекером: needDataColor (палитра — needDataColor.test.ts)', () => {
-    NEED_ORDER.forEach((id) => expect(NEED_INK[id]).toBe(needDataColor(id)));
+    NEED_ORDER.forEach((id) => expect(inkVars(id)['--need-ink']).toBe(needDataColor(id)));
   });
 
   it('число: ≥4.5:1 к белой строке и ≥3:1 к бумаге своей потребности', () => {

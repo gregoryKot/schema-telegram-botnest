@@ -10,10 +10,10 @@
 @import './flow-frame.css';
 .tq-bar-btn:focus-visible, .tq-dot-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Край шапки трекера — по краю листов того же пути («← Назад к трекеру» в .ds-sheet-head: 24, на телефоне 16):
-   поле полосы + поле кнопки (4). Хит 44×44 прежний. Только у трекера: каркас tq-bar общий с быстрой записью
-   (flow-frame.css, b10a) — она берёт тот же край в своей партии. */
-.tk2-overlay .tq-bar { padding-inline: 20px; }
-@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay .tq-bar { padding-inline: 12px; } }
+   поле полосы + поле кнопки (4). Хит 44×44 прежний. Только у трекера: каркас tq-bar и оболочка .tk2-overlay
+   общие с быстрой записью (QuickEntrySheet, .qe-sheet, b10a) — её край не трогаем, она берёт его в своей партии. */
+.tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 20px; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 12px; } }
 .tq-dots { display: flex; justify-content: center; }
 /* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px; высота 44 держит
    палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */

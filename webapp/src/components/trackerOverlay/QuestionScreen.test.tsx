@@ -3,6 +3,7 @@
 // и знак самой потребности, а не мотив размером строки рядом с заголовком; сбой сохранения —
 // в колонке ответов, а не у края окна (раньше SaveErrorNote был сиблингом колонки).
 import { describe, expect, it, vi } from 'vitest';
+import { glue } from '../../../../shared/src/utils/typo';
 import { render, screen } from '@testing-library/react';
 import { QuestionScreen } from './QuestionScreen';
 import { NEED_HUE } from '../../../../shared/src/theme/entityHue';
@@ -37,7 +38,7 @@ describe('QuestionScreen — лист потребности', () => {
     renderQ();
     expect(screen.getByText('Потребность 4 из 5 · 10 июля')).toBeTruthy();
     const sheet = screen.getByRole('heading', { level: 1 }).closest('.pa-sheet') as HTMLElement;
-    expect(sheet.querySelector('.tq-desc')?.textContent).toBe('Игра и лёгкость');
+    expect(sheet.querySelector('.tq-desc')?.textContent).toBe(glue('Игра и лёгкость'));
     expect(sheet.querySelector('details.tq-examples')).not.toBeNull();
   });
 

@@ -136,6 +136,9 @@ describe('CaseFlowScreen — три шага и итог', () => {
         'Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.',
       ),
     ).toBeTruthy();
+    // Трудный случай — сцена сущности (лента с петлёй и росток), не полоски ровного дня.
+    expect(document.querySelector('.pa-done-scene svg.scn')).not.toBeNull();
+    expect(document.querySelector('.pa-done-scene .cq-steady-done')).toBeNull();
 
     click('Карта себя');
     expect(p.onOpenMap).toHaveBeenCalledTimes(1);
@@ -294,6 +297,9 @@ describe('CaseFlowScreen — ровный день', () => {
     expect(
       screen.getByRole('heading', { name: 'Здоровый Взрослый' }),
     ).toBeTruthy();
+    // Итог ровного дня — ровные полоски его шага, а не лента с петлёй «что задело» (ревью g2 r2).
+    expect(document.querySelector('.pa-done-scene .cq-steady-done')).not.toBeNull();
+    expect(document.querySelector('.pa-done-scene svg.scn')).toBeNull();
   });
 
   it('«Назад» с «ровного дня» возвращает к воротам', () => {

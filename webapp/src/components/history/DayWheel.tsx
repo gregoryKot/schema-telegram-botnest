@@ -6,7 +6,7 @@ import type { Need } from '../../types';
 import { NeedsWheel } from '../../../../shared/src/components/NeedsWheel';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { Wheel } from '../art/PaperArtSigns';
-import { NEED_INK } from './needInk';
+import { needDataColor } from '../needDataColor';
 
 interface Props {
   date: string;
@@ -26,7 +26,7 @@ export function DayWheel(p: Props) {
     <div className="pp-paper sd-wheel" style={{ '--h': ENTITY_LOOK.tracker.hue } as CSSProperties}>
       <div key={p.date}>
         <NeedsWheel needs={p.needs} ratings={p.ratings} prevRatings={p.prevRatings} childhoodRatings={p.childhoodRatings}
-          ink={NEED_INK} onClickNeed={p.onTapNeed} onClickCenter={p.onIndexInfo} />
+          ink={needDataColor} onClickNeed={p.onTapNeed} onClickCenter={p.onIndexInfo} />
       </div>
       {(hasChildhood || p.onOpenChildhoodWheel || p.onOpenSchemas) && (
         <div className="sd-links">

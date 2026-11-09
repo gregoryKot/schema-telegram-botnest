@@ -1,17 +1,9 @@
 /* Заметка к дню (NoteSheet, NoteTagsPicker, NoteLoadState, NoteWhy). Подключается сборником
    sheet-diary.css. Раскладка быстрой записи (редизайн 2026-11, b08): лист заметки героем
-   (ExScreen look="note", на ≥1024 — разворот), поле — белый лист с тенью тоном бумаги заметки
-   (солома, ENTITY_LOOK.note), темы дня — SignChip под полем, «Сохранить» во всю колонку. */
+   (ExScreen look="note", на ≥1024 — разворот), поле — общий поле-лист .pa-field с тенью тоном бумаги
+   заметки (солома, ENTITY_LOOK.note), темы дня — SignChip под полем, «Сохранить» во всю колонку. */
 .sd-note-form { --h: 70; display: flex; flex-direction: column; gap: 18px; }
-.sd-note-area {
-  /* Поле само растёт с текстом (field-sizing, как .sd-grat-field): системный уголок размера на бумажном
-     листе выбивался из языка бумаги и отличал поле от «Что случилось?» в разборе. */
-  box-sizing: border-box; width: 100%; min-height: 200px; resize: none; field-sizing: content; -webkit-appearance: none; appearance: none;
-  padding: 18px 20px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); color: var(--text);
-  font: 400 19px/1.5 var(--serif); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
-}
-.sd-note-area::placeholder { color: var(--text-faint); }
-.sd-note-area:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pa-field.sd-note-area { min-height: 200px; } /* вид поля — общий .pa-field (paper-app.css), тень — солома (--h 70) */
 /* Счётчик «N/предел» (CharCounter) — под полем справа, с отступом от тени поля. */
 .sd-note-area + * { margin-top: -8px; align-self: flex-end; }
 .sd-note-tags { display: flex; flex-direction: column; gap: 10px; }

@@ -1,14 +1,15 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { SignArt } from './art/SignArt';
 import { ENTITY_LOOK, type EntityId } from '../../../shared/src/theme/entityLook';
+import { glueIf } from '../../../shared/src/utils/typo';
 
 /** Плитка-переход на бумаге сущности: заголовок, подпись, внизу её знак и стрелка (как квадраты «Сегодня»). */
 function ActTile({ entity, title, sub, onClick }: { entity: EntityId; title: ReactNode; sub: ReactNode; onClick: () => void }) {
   const { hue, sign } = ENTITY_LOOK[entity];
   return (
     <button type="button" className="pp-paper tk2-act-tile" style={{ '--h': hue } as CSSProperties} onClick={onClick}>
-      <span className="tk2-act-title">{title}</span>
-      <span className="tk2-act-sub">{sub}</span>
+      <span className="tk2-act-title">{glueIf(title)}</span>
+      <span className="tk2-act-sub">{glueIf(sub)}</span>
       <span className="tk2-act-foot">
         <SignArt sign={sign} size="square" />
         <span className="pp-arrow" aria-hidden="true">→</span>
