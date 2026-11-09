@@ -23,8 +23,6 @@ export function shortName(name: string): string {
     .replace('Недостаточность ', 'Недост. ');
 }
 
-// Разбор локальной копии списка — общий с «Портретом» (useAboutMe), живёт в shared.
-export { readLocalIds } from '../../../../shared/src/utils/storageKeys';
 
 /** Домен и схема по id схемы; null — id неизвестен. */
 export function findSchema(domains: SchemaDomain[], id: string) {

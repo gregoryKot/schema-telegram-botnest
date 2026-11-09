@@ -296,6 +296,18 @@ describe('useAboutMe — нечитаемый на сервере список �
     expect(r.myModeIds).toEqual(['vulnerable_child']);
   });
 
+  it('нечитаем только один список — второй остаётся серверным', async () => {
+    localStorage.setItem('my_schema_ids', JSON.stringify(['defectiveness']));
+    localStorage.setItem('my_mode_ids', JSON.stringify(['angry_child']));
+    const r = await load({
+      mySchemaIds: [],
+      myModeIds: ['vulnerable_child'],
+      unreadableLists: ['mySchemaIds'],
+    });
+    expect(r.mySchemaIds).toEqual(['defectiveness']);
+    expect(r.myModeIds).toEqual(['vulnerable_child']);
+  });
+
   it('контроль: прочитанный пустой список — пусто, локальная копия не всплывает', async () => {
     localStorage.setItem('my_schema_ids', JSON.stringify(['defectiveness']));
     const r = await load({ mySchemaIds: [], unreadableLists: [] });
