@@ -104,7 +104,7 @@ describe('CaseFlowScreen — три шага и итог', () => {
     expect(screen.getByText(SCENE)).toBeTruthy();
     expect(screen.getByText('Страшно, тревожно')).toBeTruthy();
     expect(screen.getByText('свернуть разговор')).toBeTruthy();
-    click('Минута дыхания 4-4-6');
+    click(/^Минута дыхания 4.4.6$/); // дефисы неразрывные (CaseResultHelp)
     expect(screen.getByText('practice-breathing')).toBeTruthy();
     click('practice-breathing');
     expect(screen.queryByText('practice-breathing')).toBeNull();
@@ -341,7 +341,7 @@ describe('CaseFlowScreen — кризис и «Тяжело прямо сейч�
   it('кризисная сцена не показывает «Вернуться к разбору»', () => {
     renderFlow();
     typeScene('хочу умереть');
-    expect(screen.queryByText('Вернуться к разбору ▲')).toBeNull();
+    expect(screen.queryByText('Вернуться к разбору')).toBeNull();
   });
 
   // docs/open/frontend-ux.md: флаг crisis получали все шаги, кроме итога —
@@ -395,7 +395,7 @@ describe('CaseFlowScreen — кризис и «Тяжело прямо сейч�
     click(HARD_NOW);
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
     expect(p.onClose).not.toHaveBeenCalled();
-    click('Вернуться к разбору ▲');
+    click('Вернуться к разбору');
     expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
     expect(screen.getByText('Похоже на режим')).toBeTruthy();
   });

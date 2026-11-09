@@ -1,0 +1,39 @@
+/* «Карта себя» (components/selfMap/*), редизайн 2026-11 (docs/design/APP_2026-11.md, b09). Префикс sm-.
+   Герой — лист режимов (небо) со сценой-театром SceneStage во всю ширину (правило сцены-героя —
+   case-quick.css, общее с итогом разбора); на компьютере — разворот, полосы справа. Строки полос —
+   ds-list-row со знаком группы режима (.pp-row-art), «Где я сейчас» — лист соломы, «Что дальше» —
+   одна залитая кнопка. Мелкий текст — --text-sub. Цвета — токены и oklch от --h. */
+
+.sm-lane { margin: 0 0 24px; }
+.ds-label.sm-lane-title { margin: 0 0 10px; color: var(--text-sub); }
+.sm-lane-empty { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+.sm-list .ds-list-row { min-height: 60px; }
+.sm-list .ds-list-row.is-dormant .pp-row-art { opacity: .45; }
+.sm-list .ds-list-row.is-dormant .ds-list-title { color: var(--text-sub); }
+.sm-card-mark {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: 12px; font-weight: 600; color: var(--text-sub);
+}
+
+.sm-note { margin: -4px 0 24px; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+
+.sm-where { --h: 70; display: flex; flex-direction: column; gap: 8px; margin: 0 0 28px; padding: 18px 22px 20px; border-radius: 20px; }
+.sm-where .ds-label { color: var(--text-sub); }
+.sm-where-text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text); text-wrap: pretty; }
+
+.sm-next { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.sm-next .ds-label { color: var(--text-sub); }
+/* Подпись шага бывает длинной («Разобрать, кто стоит за Тянет к телефону…»): переносится внутри
+   кнопки, а не выталкивает её за край экрана на 390 (аудит diary-selfmap). */
+.ds-btn.sm-next-btn { max-width: 100%; height: auto; min-height: 48px; border-radius: 24px; padding-top: 12px; padding-bottom: 12px; white-space: normal; text-align: center; text-wrap: balance; overflow-wrap: anywhere; }
+.sm-hint { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+
+/* Силуэт загрузки: место под сцену — лист тоном глубже бумаги, по пропорции холста сцены. */
+.sm-scene-skel { display: block; width: 100%; aspect-ratio: 320 / 260; border-radius: 22px; background: oklch(0.895 0.035 var(--h)); }
+.sm-skel { display: flex; flex-direction: column; gap: 14px; }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .sm-next { align-items: stretch; }
+  .ds-btn.sm-next-btn { width: 100%; }
+  .sm-where { padding: 16px 18px 18px; }
+}

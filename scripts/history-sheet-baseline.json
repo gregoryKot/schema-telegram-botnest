@@ -59,33 +59,9 @@
     "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
-  "webapp/src/components/caseFlow/CaseFeelStep.tsx": {
-    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
-  },
-  "webapp/src/components/caseFlow/CaseImpulseStep.tsx": {
-    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
-  },
-  "webapp/src/components/caseFlow/CaseModeScreen.tsx": {
-    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
-  },
-  "webapp/src/components/caseFlow/CaseResultStep.tsx": {
-    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
-  },
-  "webapp/src/components/caseFlow/CaseResumeGate.tsx": {
-    "reason": "Развилка «продолжить черновик?» сценария «Что случилось» на рамке ExScreen: обёртка потока, onBack — exitFlow из useHistorySheet в CaseFlowScreen.tsx; своя запись истории дала бы вторую на один лист.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
-  },
-  "webapp/src/components/caseFlow/CaseSceneStep.tsx": {
-    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
-  },
-  "webapp/src/components/caseFlow/CaseSteadyStep.tsx": {
-    "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  "webapp/src/components/caseFlow/CaseStepScreen.tsx": {
+    "reason": "Рамка шага сценария «Что случилось» на ExScreen (лист шалфея, разворот, «Что собрали»): useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги и развилка черновика получают «Назад» пропом; хук в рамке дал бы запись истории на каждый шаг.",
+    "since": "b09-case, редизайн 2026-11"
   },
   "webapp/src/components/diary/ModeEntryDone.tsx": {
     "reason": "Экран «Готово» записи дневника режимов на рамке ExScreen: шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",

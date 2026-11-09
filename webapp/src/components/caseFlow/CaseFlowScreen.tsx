@@ -9,6 +9,8 @@ import { CaseModeScreen } from './CaseModeScreen';
 import { CaseDoneScreen } from './CaseDoneScreen';
 import { CaseSupportProvider } from './CaseSupportFoot';
 import { CaseResumeGate } from './CaseResumeGate';
+import { CaseCollectedProvider } from './CaseStepScreen';
+import { collectedRows } from './caseSummary';
 import { useCaseQuickFlow } from '../../../../shared/src/case/quick/useCaseQuickFlow';
 import type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
 
@@ -18,10 +20,10 @@ const DEPS = { trackEvent: api.trackEvent };
 
 /**
  * Оркестратор «Что случилось» на сайте (простой клиент, этап 4): момент → что
- * внутри → что хотелось → итог → «Записано». ExScreen на каждом шаге,
- * useHistorySheet ОДИН раз здесь: все «Назад»/«Закрыть» идут через exitFlow.
- * «Тяжело прямо сейчас» открывает поддержку на месте. Состояние — shared
- * useCaseQuickFlow; черновик — сначала «продолжить или заново» (CaseResumeGate).
+ * внутри → что хотелось → итог → «Записано». Рамка шага — CaseStepScreen (лист шалфея,
+ * на компьютере разворот с «Что собрали»), useHistorySheet ОДИН раз здесь: все «Назад»/
+ * «Закрыть» идут через exitFlow. «Тяжело прямо сейчас» открывает поддержку на месте.
+ * Состояние — shared useCaseQuickFlow; черновик — сначала «продолжить или заново».
  */
 export function CaseFlowScreen(props: CaseQuickProps) {
   const exitFlow = useHistorySheet(props.onClose);
@@ -31,8 +33,12 @@ export function CaseFlowScreen(props: CaseQuickProps) {
 function CaseFlowSteps(props: CaseQuickProps) {
   const f = useCaseQuickFlow(props, DEPS);
   const common = { crisis: f.crisis, onHardNow: f.handleHardNow, onBack: f.back };
-
-  return <CaseSupportProvider flow={f}>{renderStep()}</CaseSupportProvider>;
+  const collected = collectedRows(f.step, f.fields, f.bodyChips);
+  return (
+    <CaseSupportProvider flow={f}>
+      <CaseCollectedProvider rows={collected}>{renderStep()}</CaseCollectedProvider>
+    </CaseSupportProvider>
+  );
 
   function renderStep() {
     switch (f.step) {
@@ -93,15 +99,7 @@ function CaseFlowSteps(props: CaseQuickProps) {
       case 'modes':
         return <CaseModeScreen {...common} onPick={f.pickMode} />;
       case 'done':
-        return (
-          <CaseDoneScreen
-            name={f.doneName}
-            onOpenMap={props.onOpenMap}
-            onClose={props.onClose}
-            crisis={f.crisis}
-            onHardNow={f.handleHardNow}
-          />
-        );
+        return <CaseDoneScreen name={f.doneName} onOpenMap={props.onOpenMap} onClose={props.onClose} crisis={f.crisis} onHardNow={f.handleHardNow} />;
       default:
         return null;
     }

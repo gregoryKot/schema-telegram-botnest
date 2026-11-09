@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ExScreen } from '../exercises/ExScreen';
+import { CaseStepScreen } from './CaseStepScreen';
 import { useTr } from '../../utils/addressForm';
 import { haptic } from '../../haptic';
 import { ModeFeelingBrowse } from '../diary/ModeFeelingBrowse';
@@ -11,7 +11,8 @@ import { CaseFlowFoot } from './caseFlowUi';
  * Переиспользует существующий webapp-механизм (ModeFeelingBrowse +
  * ModeGroupList, тот же, что в ModeSelectScreen.tsx дневника режимов):
  * правило «одна механика — один компонент». Выбранный режим возвращается на
- * итог разбора.
+ * итог разбора. Лист шалфея — полосой, как у шагов; «Знаю режим» — второстепенная
+ * кнопка с рамкой (одно действие — один вид с дневником режимов).
  */
 export function CaseModeScreen({
   onBack,
@@ -28,9 +29,8 @@ export function CaseModeScreen({
   const [listOpen, setListOpen] = useState(false);
 
   return (
-    <ExScreen
-      onBack={onBack}
-      backLabel="Назад"
+    <CaseStepScreen
+      onBack={onBack} compact
       eyebrow="Что случилось"
       title="Другие режимы"
       lede={tr(
@@ -48,7 +48,7 @@ export function CaseModeScreen({
 
       <button
         type="button"
-        className="ds-btn ex2-ghost ex2-gap"
+        className="ds-btn ds-btn--secondary ex2-gap cq-known"
         onClick={() => {
           haptic.tap();
           setListOpen((v) => !v);
@@ -60,6 +60,6 @@ export function CaseModeScreen({
       {listOpen && <ModeGroupList modeId="" onPick={onPick} />}
 
       <CaseFlowFoot crisis={crisis} onHardNow={onHardNow} />
-    </ExScreen>
+    </CaseStepScreen>
   );
 }
