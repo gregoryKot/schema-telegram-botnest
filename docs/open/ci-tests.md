@@ -66,15 +66,14 @@
   `auth.service.ts` — 5, `crypto.ts` — 1; в счёт они не входят, так что 100% по
   таким файлам не значит «все мутации убиты». Включать ли статические мутанты
   (`ignoreStatic: false` — минуты прогона на мутант) — решение не принято.
-- **`src/utils/crypto-keys.ts` в `mutate` без пола.** Разбор ключей вынесен из
-  `crypto.ts` при переводе `ClientMeeting.clientKey` на HMAC и стоит в `mutate`
-  обоих конфигов (`stryker.config.json`, `stryker.golden-auth.config.json`), а
-  в `scripts/mutation-baseline.json` и `scripts/mutation-golden-auth-baseline.json`
-  пола нет: ночной храповик печатает «без пола». Замер ревьюера на ветке —
-  85.19% (выжили `.filter(Boolean)`, `k !== null`, `?? ''` для
-  `ENCRYPTION_KEY_OLD`, переехавшие из `crypto.ts`); пол вносится `--update`
-  по первому ночному прогону, а не по ручному замеру — конфиги гоняют разные
-  наборы спеков.
+- **`src/auth/merge-combine.ts` — самый слабый файл волны А: 78.08%** (замер
+  2026-11-09, 114 из 146 обезврежено: 26 выживших и 6 NoCoverage, из них 10
+  ConditionalExpression и 5 ArrowFunction; строки 80–253 — схлопывание дублей
+  при слиянии, #1022). Файл вошёл в `mutate` golden-auth без пола вместе с
+  `merge-combine-rules.ts` (93.75%, выжили MethodExpression :12 и
+  ArrayDeclaration :35); полы теперь в `scripts/mutation-golden-auth-baseline.json`,
+  выживших не разбирали — правка тестов слияния вне записи о полах. Начать с
+  отчёта `npm run mutation:golden-auth`, вкладка Survived.
 - **Волна А растёт сама: каждый спек, пишущий шифрованное поле, удорожает
   прогон.** Мутанты горячих путей `crypto.ts`/`crypto-record.ts` покрывает до 67
   спек-файлов, и jest-раннер Stryker грузит каждый целиком: загрузок спеков за
