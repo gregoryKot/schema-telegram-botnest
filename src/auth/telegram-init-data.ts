@@ -32,7 +32,15 @@ export interface VerifiedTelegramInitData {
 export const INIT_DATA_EXPIRED_MESSAGE = 'init data expired';
 
 function byCodePoint(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
+  if (a < b) return -1;
+  // Stryker disable next-line EqualityOperator,ConditionalExpression: сортировка смотрит только на «меньше» — 1 и 0 для неё одно «не меньше», повторный ключ остаётся на месте
+  return a > b ? 1 : 0;
+}
+
+/** id пользователя Telegram: положительное целое в пределах точности double;
+ * у примитива вместо объекта (`5`, `"x"`) `id` нет — отсеивается здесь же. */
+function isUserId(v: unknown): v is number {
+  return Number.isSafeInteger(v) && (v as number) > 0;
 }
 
 /**
@@ -69,8 +77,9 @@ export function verifyTelegramInitDataSignature(
 
   // auth_date входит в подписанную строку: подделать нельзя, можно лишь
   // переслать старую подпись целиком. Нет даты — это формат, а не просрочка.
-  const rawAuthDate = params.get('auth_date');
-  if (rawAuthDate === null || !AUTH_DATE_RE.test(rawAuthDate)) {
+  // Нет поля — String(null) даёт «null», его отвергает тот же AUTH_DATE_RE.
+  const rawAuthDate = String(params.get('auth_date'));
+  if (!AUTH_DATE_RE.test(rawAuthDate)) {
     throw new Error('Invalid auth_date in initData');
   }
   const authDate = Number(rawAuthDate);
@@ -93,13 +102,7 @@ export function readTelegramUser(
   } catch {
     throw new Error('Invalid user JSON in initData');
   }
-  if (
-    user === null ||
-    typeof user !== 'object' ||
-    typeof user.id !== 'number' ||
-    !Number.isSafeInteger(user.id) ||
-    user.id <= 0
-  ) {
+  if (user === null || !isUserId(user.id)) {
     throw new Error('Missing user id in initData');
   }
   return {

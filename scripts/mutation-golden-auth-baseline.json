@@ -1,5 +1,5 @@
 {
-  "total": 93.73,
+  "total": 94.17,
   "files": {
     "src/api/telegram-auth.guard.ts": 93.1,
     "src/auth/auth.service.ts": 95.39,
@@ -9,6 +9,7 @@
     "src/auth/merge.service.ts": 93.1,
     "src/auth/security-log-redact.ts": 100,
     "src/auth/security-log.service.ts": 100,
+    "src/auth/telegram-init-data.ts": 100,
     "src/therapy/therapy-relations.service.ts": 98.28,
     "src/utils/crypto-keys.ts": 100,
     "src/utils/crypto-record.ts": 96.77,

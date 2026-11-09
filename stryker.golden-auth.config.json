@@ -17,6 +17,7 @@
     "src/utils/crypto-keys.ts",
     "src/utils/crypto-record.ts",
     "src/auth/auth.service.ts",
+    "src/auth/telegram-init-data.ts",
     "src/auth/merge.service.ts",
     "src/auth/merge-combine.ts",
     "src/auth/merge-combine-rules.ts",

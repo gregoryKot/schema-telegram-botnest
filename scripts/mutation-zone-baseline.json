@@ -5,6 +5,9 @@
   "src/api/init-data-paths.ts": {
     "reason": "Вынесен из telegram-auth.guard.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации входа по initData Telegram/MAX не измеряются — долг волны, а не решение."
   },
+  "src/api/init-data-window.ts": {
+    "reason": "Одна числовая константа окна свежести initData (INIT_DATA_MAX_AGE_S) без логики: мутировать нечего, кроме литерала уровня модуля; границу окна пинит telegram-init-data.spec.ts («ровно INIT_DATA_MAX_AGE_S — принято, на секунду старше — просрочено»), отсутствие второго литерала — telegram-init-data.invariants.spec.ts."
+  },
   "src/auth/magic-link.ts": {
     "reason": "Вынесен из auth.service.ts (правило №10) до появления гейта мутационной зоны; в `mutate` не включён, мутации выдачи ссылки входа по почте не измеряются — долг волны, а не решение."
   },

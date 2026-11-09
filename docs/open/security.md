@@ -18,13 +18,6 @@
 - **Владельцу, в env прода** (Amvera): если
   `ALLOWED_ORIGINS` задан явно и содержит
   `kotlarewski.*` — убрать; проверка env теперь предупреждает об этом (F-2).
-- **`src/auth/telegram-init-data.ts` вне мутационной зоны `golden-auth`, пол
-  `auth.service.ts` не пересчитан.** Верификатор подписи ушёл из `auth.service.ts`
-  (пол 94.29 в `scripts/mutation-golden-auth-baseline.json`) в новый файл; прогон
-  Stryker по нему (107 мутантов) не уложился в 15 минут на общей машине. Прогнать
-  `npx stryker run stryker.golden-auth.config.json`, добавить файл в `mutate`
-  `stryker.golden-auth.config.json` с полом по результату и сверить пол
-  `auth.service.ts` (убавилось мутантов проверки — процент мог сдвинуться).
 
 **Хвосты решения по PII записи** (находка L3 аудита 2026-07-20, решение
 владельца 2026-10-08 — ретенция 12 месяцев, `booking-retention.service.ts`;
