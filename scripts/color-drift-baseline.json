@@ -2,7 +2,6 @@
   "shared/src/flashcard/modes.ts": 4,
   "webapp/src/components/landing-kit-hooks.ts": 2,
   "webapp/src/components/useModeMapExport.ts": 1,
-  "webapp/src/pages/ArticlesPage.tsx": 1,
   "webapp/src/pages/landing/constants.ts": 1,
   "webapp/src/pages/landing/ContentSections.tsx": 2,
   "webapp/src/pages/LandingPage.tsx": 6,

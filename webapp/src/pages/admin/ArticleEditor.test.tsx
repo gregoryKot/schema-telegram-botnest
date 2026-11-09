@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
-// ArticleEditor: форма создания/редактирования статьи. compressImage
-// мокается (canvas/createImageBitmap не поддерживаются jsdom, отдельная
-// ответственность imageCompress.test.ts — см. PhotoSection.test.tsx для того
-// же паттерна). TipTap-редактор реально монтируется — в отличие от
+// ArticleEditor: форма создания/редактирования статьи. Фото-обложку больше не
+// загружают: обложка — иллюстрация по slug, форма показывает её превью. TipTap-
+// редактор реально монтируется — в отличие от
 // ArticlesSection.test.tsx мы не обходим экран редактирования, а проверяем
 // именно его: валидацию, DTO, который улетает на сервер, и что ошибка
 // сохранения видна пользователю, а не молча проглатывается.
@@ -10,6 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { ArticleEditor } from './ArticleEditor';
 import type { Article } from '../../api';
+import { ARTICLE_COVER_HUE } from '../../components/art/articleCoverModel';
 
 vi.mock('../../api', () => ({
   api: {
@@ -20,12 +20,6 @@ vi.mock('../../api', () => ({
 import { api } from '../../api';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
-vi.mock('./imageCompress', () => ({
-  compressImage: vi.fn(),
-}));
-import { compressImage } from './imageCompress';
-const mockCompress = compressImage as unknown as ReturnType<typeof vi.fn>;
-
 const existingArticle: Article = {
   id: 7,
   slug: 'trevoga-i-telo',
@@ -33,7 +27,6 @@ const existingArticle: Article = {
   description: 'Как тело реагирует на тревогу',
   date: '2026-01-10T00:00:00.000Z',
   readMin: 6,
-  heroImage: null,
   diagramKey: null,
   content: '<p>Текст</p>',
 };
@@ -45,11 +38,6 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
 });
-
-function uploadFile(input: HTMLElement) {
-  const file = new File(['x'], 'hero.jpg', { type: 'image/jpeg' });
-  fireEvent.change(input, { target: { files: [file] } });
-}
 
 describe('ArticleEditor — новая статья', () => {
   it('заголовок формы «Новая статья», поля пустые', () => {
@@ -145,29 +133,28 @@ describe('ArticleEditor — редактирование существующе�
   });
 });
 
-describe('ArticleEditor — картинка-хедер', () => {
-  it('успешная загрузка — превью появляется, кнопка «Убрать» его очищает', async () => {
-    mockCompress.mockResolvedValue('data:image/jpeg;base64,NEW');
-    const { container } = render(<ArticleEditor adminKey="k" article={null} onDone={() => {}} onCancel={() => {}} />);
-    uploadFile(container.querySelector('input[type="file"]')!);
+describe('ArticleEditor — обложка', () => {
+  it('фото не загружаются: превью — иллюстрация статьи по slug, в DTO нет heroImage', async () => {
+    mockApi.adminUpdateArticle.mockResolvedValue(existingArticle);
+    const article = { ...existingArticle, slug: 'rezhimy-v-schema-terapii' };
+    const { container } = render(<ArticleEditor adminKey="k" article={article} onDone={() => {}} onCancel={() => {}} />);
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+    const cover = container.querySelector('.ac-cover') as HTMLElement;
+    expect(cover.style.getPropertyValue('--h')).toBe(String(ARTICLE_COVER_HUE['rezhimy-v-schema-terapii']));
+    await waitFor(() => expect(cover.querySelector('svg.scn')).not.toBeNull());
 
-    await waitFor(() => expect(container.querySelector('img')).toBeTruthy());
-    const img = container.querySelector('img') as HTMLImageElement;
-    expect(img.src).toBe('data:image/jpeg;base64,NEW');
-    // Бюджет под хедер — 160кб, отдельный от бюджета обычных картинок PhotoSection.
-    expect(mockCompress).toHaveBeenCalledWith(expect.any(File), 1400, 160 * 1024);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Убрать' }));
-    expect(container.querySelector('img')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await waitFor(() => expect(mockApi.adminUpdateArticle).toHaveBeenCalled());
+    expect(mockApi.adminUpdateArticle.mock.calls[0][2]).not.toHaveProperty('heroImage');
   });
 
-  it('ошибка сжатия — видна пользователю, превью не появляется', async () => {
-    mockCompress.mockRejectedValue(new Error('Файл повреждён'));
+  it('у новой статьи без своей сцены превью — листы веером, slug меняет его на лету', () => {
     const { container } = render(<ArticleEditor adminKey="k" article={null} onDone={() => {}} onCancel={() => {}} />);
-    uploadFile(container.querySelector('input[type="file"]')!);
-
-    await screen.findByText('Файл повреждён');
-    expect(screen.queryByRole('img')).toBeNull();
+    const hueOf = () => (container.querySelector('.ac-cover') as HTMLElement).style.getPropertyValue('--h');
+    const fallback = hueOf();
+    fireEvent.change(screen.getByPlaceholderText('moya-statya'), { target: { value: 'skhemy-yanga-spisok' } });
+    expect(hueOf()).toBe(String(ARTICLE_COVER_HUE['skhemy-yanga-spisok']));
+    expect(hueOf()).not.toBe(fallback);
   });
 });
 

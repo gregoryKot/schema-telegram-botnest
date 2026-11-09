@@ -4,7 +4,8 @@ import { useRecentArticles } from '../components/landing-kit-hooks';
 // Логотип и кнопка — общие модули бренда (используются и в /tests).
 import { Logo, Cta } from './landing/BrandKit';
 import { TRUST, NAV_LINKS } from './landing/productContent';
-import { InfoCard, ArticleCard, FaqList } from './landing/ProductKit';
+import { InfoCard, FaqList } from './landing/ProductKit';
+import { ArticleCard } from './landing/ArticleCard';
 import { Rich } from './landing/Rich';
 import { HOME_HEADINGS, HOME_FINAL } from '../../../src/articles/home-landing.content';
 import { ProductHero } from './landing/ProductHero';
@@ -21,12 +22,11 @@ import { glue } from './landing/typo';
 import { PaperBand } from './landing/PaperBand';
 import '../styles/product-landing.css';
 
-// Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru).
-// Тот же язык «бумажной аппликации», что у кабинета (docs/design/PAPER_2026-11.md),
-// свёрстанный как иллюстрированный журнал: полосы цветной бумаги (PaperBand), плитки
-// и крупные сцены (components/art/LandingScenes*.tsx). Вид — styles/product-landing*.css; корень на
-// .light-lock, как кабинет. Текст — src/articles/home-landing.content.ts (его же сервер
-// вкладывает в #root для робота без JS), вид пунктов — landing/productContent.ts.
+// Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru), тот же язык
+// «бумажной аппликации», что у кабинета (docs/design/PAPER_2026-11.md): полосы цветной бумаги
+// (PaperBand), плитки, крупные сцены (components/art/LandingScenes*.tsx), обложки статей
+// (ArticleCard). Вид — styles/product-landing*.css, корень на .light-lock. Текст —
+// src/articles/home-landing.content.ts (он же в #root для робота без JS), вид — productContent.ts.
 export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
   const articles = useRecentArticles(3);

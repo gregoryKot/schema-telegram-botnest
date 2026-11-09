@@ -177,14 +177,16 @@
   на 413 называет причину — «текст слишком длинный» (`webapp/src/components/useModeMapAutosave.ts`).
   Общий потолок не поднимать — разбор в `src/infra/body-limit.ts`.
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
-- Таяние долга `check-color-drift.mjs`: 19 литералов в 8 файлах (сверка 2026-11-08,
+- Таяние долга `check-color-drift.mjs`: 18 литералов в 7 файлах (сверка 2026-11-09,
   `scripts/color-drift-baseline.json`; админка и `indexColor` переведены на токены). Остаток по ролям:
   визитка (`webapp/src/pages/LandingPage.tsx`, `landing/ContentSections.tsx`, `landing-kit-hooks.ts`,
   `landing/constants.ts` — свой стиль, тёмная секция без токенов, решение владельца 2026-10-16 «лендинг и
   визитка в старом виде»); цвета групп режимов (`shared/src/flashcard/modes.ts`) уходят в картинку шаринга
   (canvas, `ModeShareButton`) — нужна пара `css`/`hex`, как в `journeyMeta.ts`; `theme-color` браузера
-  (`webapp/src/utils/theme.ts`) и запасной фон экспорта карты (`useModeMapExport.ts`) — значения вне CSS;
-  тень карточки статьи (`ArticlesPage.tsx`, `<style>`). Брать ролями, а не файлами.
+  (`webapp/src/utils/theme.ts`) и запасной фон экспорта карты (`useModeMapExport.ts`) — значения вне CSS.
+  Брать ролями, а не файлами.
+
+**Колонка `Article.heroImage` — данные без читателя (осознанно, 2026-11-08).** Обложки статей теперь рисует сайт по slug (`webapp/src/components/art/articleCoverScenes.ts`); API heroImage не читает и не пишет (`src/articles/articles.service.ts`: `list()` без поля, `findBySlug`/`adminList` с `omit`), но в проде в колонке лежат 11 старых JPEG data URI (~1,4 МБ). Колонку не сносили, чтобы замена фото на иллюстрации откатывалась без потери. Снести — миграцией `ALTER TABLE "Article" DROP COLUMN "heroImage"` вместе с полем в `prisma/schema.prisma` и записью в `src/utils/encryption-policy.infra.ts`, когда владелец подтвердит, что старые картинки не нужны.
 
 **Остатки мини-аппа для старых клиентов** (удалён, #908):
 - **`source: 'miniapp'` в отчёте об ошибках клиента.** `src/api/dto/client-error.dto.ts` (`@IsIn(['webapp','miniapp'])`) и строка «приложение в мессенджере» в блоке ошибок `/stats` (`src/bot/client-error-metrics.*`) оставлены: открытое до удаления окно мини-аппа ещё может прислать отчёт. Новых источников нет — через месяц-два после удаления убрать значение и строку вместе со спеками и `test/raw-sql-live-stats.e2e-spec.ts`.

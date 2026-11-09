@@ -17,7 +17,6 @@ export interface SeoArticle extends Dated {
   title: string;
   description: string;
   content: string;
-  heroImage?: string | null;
 }
 
 /** Элемент списка, как его отдаёт `ArticlesService.list()`. */
@@ -59,7 +58,6 @@ export function buildArticleJsonLd(article: SeoArticle, url: string) {
     author: { '@type': 'Person', name: AUTHOR_NAME, url: SITE_URL },
     publisher: { '@type': 'Person', name: AUTHOR_NAME },
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
-    ...(article.heroImage ? { image: article.heroImage } : {}),
     inLanguage: 'ru',
   };
 }

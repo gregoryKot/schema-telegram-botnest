@@ -4,8 +4,8 @@ import StarterKit from '@tiptap/starter-kit';
 import { api } from '../../api';
 import type { Article, ArticleDto } from '../../api';
 import { card, btn, btnGhost, input } from './shared';
-import { compressImage } from './imageCompress';
 import { DIAGRAM_OPTIONS } from '../articleDiagrams';
+import { ArticleCover } from '../../components/art/ArticleCover';
 
 /** Create/edit form for a single article, with a TipTap WYSIWYG editor for the body. */
 export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
@@ -16,7 +16,6 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
   const [description, setDescription] = useState(article?.description ?? '');
   const [date, setDate] = useState(article?.date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10));
   const [readMin, setReadMin] = useState(article?.readMin ?? 5);
-  const [heroImage, setHeroImage] = useState<string | null>(article?.heroImage ?? null);
   const [diagramKey, setDiagramKey] = useState<string>(article?.diagramKey ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,18 +25,6 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
     content: article?.content ?? '<p></p>',
   });
 
-  const onHeroFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError(null);
-    try {
-      // Budget keeps hero + article body under the 256kb request limit.
-      setHeroImage(await compressImage(file, 1400, 160 * 1024));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось обработать картинку');
-    }
-  };
-
   const save = async () => {
     if (!slug.trim() || !title.trim()) { setError('Заполните заголовок и slug'); return; }
     setSaving(true);
@@ -45,7 +32,7 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
     const dto: ArticleDto = {
       slug: slug.trim(), title: title.trim(), description: description.trim(),
       content: editor?.getHTML() ?? '', date, readMin: Math.max(1, Math.round(readMin)),
-      heroImage, diagramKey: diagramKey || null,
+      diagramKey: diagramKey || null,
     };
     try {
       if (article) await api.adminUpdateArticle(adminKey, article.id, dto);
@@ -74,11 +61,11 @@ export function ArticleEditor({ adminKey, article, onDone, onCancel }: {
         <Field label="Время чтения (мин)" style={{ width: 140 }}><input style={input} type="number" min={1} value={readMin} onChange={e => setReadMin(Number(e.target.value))} /></Field>
       </div>
 
-      <Field label="Картинка-хедер (необязательно)">
-        <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'center', flexWrap: 'wrap' }}>
-          {heroImage && <img src={heroImage} alt="" style={{ width: 160, height: 90, objectFit: 'cover', borderRadius: 'var(--r-10)', border: '1px solid var(--line)' }} />}
-          <input type="file" accept="image/*" onChange={onHeroFile} />
-          {heroImage && <button type="button" style={{ ...btnGhost, padding: '5px 12px', fontSize: 13 }} onClick={() => setHeroImage(null)}>Убрать</button>}
+      {/* Фото-обложек больше нет: обложка — иллюстрация стиля сайта по slug (articleCoverModel.ts);
+          у статьи без своей — листы веером. Превью показывает, что увидит читатель. */}
+      <Field label="Обложка — иллюстрация по slug, фото не загружаются">
+        <div style={{ width: 240, borderRadius: 'var(--r-10)', overflow: 'hidden' }}>
+          <ArticleCover slug={slug.trim()} className="ac-cover" />
         </div>
       </Field>
 

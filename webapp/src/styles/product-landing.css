@@ -98,19 +98,6 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 .pl2-card-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
 .pl2-card-list { margin: 0; padding: 0 0 0 18px; display: grid; gap: 6px; font-size: 14.5px; line-height: 1.6; color: var(--text-sub); }
 
-/* ── Статьи: без обложки — листы на цветной бумаге ──────────────────────── */
-.pl2-article { display: flex; flex-direction: column; text-decoration: none; color: inherit; }
-.pl2-article-img {
-  display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9;
-  overflow: hidden; background: oklch(0.9 0.045 var(--h));
-}
-.pl2-article-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.pl2-article-img .scn { width: auto; height: 88%; }
-.pl2-article-body { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 18px 20px 20px; }
-.pl2-article-title { margin: 0; font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--text); }
-.pl2-article-desc { flex: 1; margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
-.pl2-article-meta { margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
-
 /* ── Вопросы: слева заголовок и знак, справа строки ─────────────────────── */
 .pl2-faq-wrap { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 64px; align-items: start; }
 .pl2-faq-side .pl2-h2 { margin-bottom: 32px; }
@@ -194,9 +181,9 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
    styles/landingGrid.test.ts и обход ширин в скриншотах. */
 @media (min-width: 601px) and (max-width: 900px) {
   .pl2-3 { grid-template-columns: 1fr 1fr; }
-  .pl2-3 > .pl2-article:last-child:nth-child(odd) { grid-column: 1 / -1; flex-direction: row; }
-  .pl2-3 > .pl2-article:last-child:nth-child(odd) .pl2-article-img { flex: 0 0 42%; aspect-ratio: auto; min-height: 180px; }
-  .pl2-3 > .pl2-article:last-child:nth-child(odd) .pl2-article-img .scn { height: 88%; }
+  .pl2-3 > .ac-card:last-child:nth-child(odd) { grid-column: 1 / -1; flex-direction: row; }
+  .pl2-3 > .ac-card:last-child:nth-child(odd) .ac-cover { flex: 0 0 42%; aspect-ratio: auto; min-height: 180px; }
+  .pl2-3 > .ac-card:last-child:nth-child(odd) .ac-cover .scn { height: 88%; }
   .pl2-3.pl2-3--above-actions { grid-template-columns: 1fr; gap: 14px; }
   .ds-card.pl2-install { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 28px; }
   .pl2-install .pl2-card-title, .pl2-install .pl2-card-meta { grid-column: 1; }
@@ -213,9 +200,6 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
   }
   .pl2-final-corner--a { left: 18px; width: 100px; }
   .pl2-final-corner--b { right: 14px; top: 16px; width: 100px; }
-  /* Обложка ниже, листы крупнее поля: три обложки подряд не тянут ленту пустым цветом. */
-  .pl2-article-img { aspect-ratio: 3 / 1; }
-  .pl2-article-img .scn { height: 130%; }
   /* Квадрат со знаком — над надзаголовком, как сцена «Приложения»: рядом с ним «Частые
      вопросы» (247px при 30px) не влезали в строку и до 390px рвались на две. */
   .pl2-faq-side { grid-template-columns: minmax(0, 1fr); grid-template-areas: "art" "eyebrow" "title"; }
