@@ -18,6 +18,8 @@
     "src/utils/crypto-record.ts",
     "src/auth/auth.service.ts",
     "src/auth/telegram-init-data.ts",
+    "src/auth/max-init-data.ts",
+    "src/auth/login-ticket/login-ticket.service.ts",
     "src/auth/merge.service.ts",
     "src/auth/merge-combine.ts",
     "src/auth/merge-combine-rules.ts",

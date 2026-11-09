@@ -1,8 +1,10 @@
 {
-  "total": 94.17,
+  "total": 95.24,
   "files": {
     "src/api/telegram-auth.guard.ts": 93.1,
     "src/auth/auth.service.ts": 95.39,
+    "src/auth/login-ticket/login-ticket.service.ts": 100,
+    "src/auth/max-init-data.ts": 100,
     "src/auth/merge-combine-rules.ts": 93.75,
     "src/auth/merge-combine.ts": 78.08,
     "src/auth/merge-relations.ts": 100,

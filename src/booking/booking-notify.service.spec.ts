@@ -6,7 +6,6 @@
 // notifyAdminBoth), даже когда Telegram успешен — иначе почта о записях
 // молчит неделями, пока Telegram не сбоит (владелец не узнаёт о заявках).
 // alertAdmin (общие алерты) остаётся Telegram-first — контрольный тест ниже.
-import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { BookingStatus, SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
@@ -63,7 +62,6 @@ function makeService(
   const email = {
     sendAdminNotification: jest.fn(() => Promise.resolve(undefined)),
   };
-  const config = { get: () => undefined } as unknown as ConfigService;
   const claimRun = jest.fn().mockResolvedValue(opts.claimRun ?? true);
   const cronLeader = { claimRun } as any;
   const service = new BookingNotifyService(
@@ -72,7 +70,6 @@ function makeService(
     calDav as any,
     meeting as any,
     email as any,
-    config,
     cronLeader,
   );
   return { service, prisma, telegram, calDav, meeting, email, claimRun };
@@ -577,5 +574,76 @@ describe('BookingNotifyService.sendReminders (@Cron) — окна 24ч/2ч', () 
     expect(prisma.booking.findMany).not.toHaveBeenCalled();
     expect(telegram.notifyAdmin).not.toHaveBeenCalled();
     expect(email.sendAdminNotification).not.toHaveBeenCalled();
+  });
+});
+
+// Ночной мутационный замер (stryker.golden-payments.config.json): границы окон
+// напоминаний, их подписи и следы сбоев каналов в логе.
+describe('BookingNotifyService — окна напоминаний и логи под мутационным замером', () => {
+  const T = new Date('2026-11-09T09:00:00.000Z').getTime();
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('окна — ровно «сейчас + 24 ч» и «сейчас + 2 ч»', async () => {
+    const { service, prisma } = makeService();
+    jest.useFakeTimers({ now: T, doNotFake: ['nextTick', 'queueMicrotask'] });
+    await service.sendReminders();
+    const bounds = prisma.booking.findMany.mock.calls.map((c: any) => [
+      c[0].where.startsAt.gt.getTime(),
+      c[0].where.startsAt.lte.getTime(),
+    ]);
+    expect(bounds).toEqual([
+      [T, T + 24 * 3_600_000],
+      [T, T + 2 * 3_600_000],
+    ]);
+  });
+
+  it('подписи окон: «завтра» у суточного, «через 2 часа» у двухчасового', async () => {
+    const { service, telegram } = makeService({
+      dueReminders: [booking({ id: 5 })],
+    });
+    await service.sendReminders();
+    const texts = telegram.notifyAdmin.mock.calls.map((c: any) => c[0]);
+    expect(texts[0]).toContain('Напоминание: сессия завтра');
+    expect(texts[1]).toContain('Напоминание: сессия через 2 часа');
+  });
+
+  it('итог тика в лог — только когда что-то захвачено', async () => {
+    const log = jest
+      .spyOn(Logger.prototype, 'log')
+      .mockImplementation(() => undefined);
+    await makeService().service.sendReminders();
+    expect(log).not.toHaveBeenCalled();
+    await makeService({
+      dueReminders: [booking({ id: 5 })],
+    }).service.sendReminders();
+    expect(log).toHaveBeenCalledWith('Claimed 1 reminder24SentAt reminder(s)');
+    expect(log).toHaveBeenCalledWith('Claimed 1 reminder2SentAt reminder(s)');
+  });
+
+  it('событие брони: письмо упало — error в лог, Telegram ушёл', async () => {
+    const { service, telegram, email } = makeService();
+    const smtp = new Error('smtp down');
+    email.sendAdminNotification.mockRejectedValueOnce(smtp);
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    await service.notifyAdminBoth('<b>Бронь</b>', 'Бронь');
+    expect(telegram.notifyAdmin).toHaveBeenCalledWith('<b>Бронь</b>');
+    expect(error).toHaveBeenCalledWith('Critical admin e-mail failed', smtp);
+  });
+
+  it('Telegram не принял алерт — warn в лог перед запасным письмом', async () => {
+    const { service, telegram } = makeService();
+    telegram.notifyAdmin.mockResolvedValueOnce(false);
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    await service.alertAdmin('<b>Критично</b>');
+    expect(warn).toHaveBeenCalledWith(
+      'Admin Telegram notify failed — falling back to e-mail',
+    );
   });
 });

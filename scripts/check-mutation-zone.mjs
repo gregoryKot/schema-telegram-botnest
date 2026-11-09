@@ -9,33 +9,28 @@
 // а тихо исчезнуть из зоны проще всего именно при дроблении по правилу №10.
 //
 // Что делает. Зона = объединение `mutate` всех stryker*.config.json. Кандидат —
-// файл вне зоны (src/**, shared/src/**, без спеков), у которого ВСЕ
-// нетестовые импортёры лежат в зоне: он либо выделен из файла
-// зоны, либо живёт только ради него. Каждый кандидат обязан быть классифицирован
-// в scripts/mutation-zone-baseline.json — `{ "reason": "…" }`: «ещё не в зоне,
-// это долг» — допустимая запись, молчаливое отсутствие записи — нет. Новый файл,
-// выделенный из файла зоны, краснеет сразу: автор либо добавляет его в `mutate`
-// (и пол в бейслайн храповика по результату прогона), либо вносит запись
-// с честной причиной — и она видна в диффе PR.
+// файл вне зоны (src/**, shared/src/**, без спеков), у которого нетестовых
+// импортёров из зоны НЕ МЕНЬШЕ, чем вне: выделен из файла зоны или живёт в
+// основном ради неё. До 2026-11 порог был «все импортёры в зоне», и выделенный
+// файл, понадобившийся ещё модулю вне зоны (`booking-notify.service.ts` —
+// 11 в зоне, 11 вне; AUDIT_2026-10_FINDINGS.md), выпадал из поля зрения.
+// Кандидат обязан быть в scripts/mutation-zone-baseline.json — `{ "reason" }`:
+// «ещё не в зоне, это долг» допустимо, молчаливое отсутствие записи — нет.
+// Новый выделенный файл краснеет сразу: автор добавляет его в `mutate` (пол —
+// по прогону) либо пишет честную причину, видную в диффе PR.
 //
 // Чего гейт не видит (честно, чтобы класс не считали закрытым целиком):
-//  - файл, выделенный из файла зоны, но ещё и импортируемый кодом вне зоны
-//    (booking-notify.service.ts, totp.service.ts, max-init-data.ts,
-//    login-ticket.service.ts — AUDIT_2026-10_FINDINGS.md), кандидатом не
-//    считается: «все импортёры в зоне» — единственный дешёвый признак
-//    «выделен ради зоны». Эти файлы классифицируются глазами при дроблении;
-//  - зона — объединение ВСЕХ stryker*.config.json, включая зонтичный
-//    stryker.config.json (ручной `npm run mutation`, в nightly не гоняется;
-//    ночью работают stryker.golden-*.config.json): файл, добавленный только
-//    туда, в зону для гейта входит, но ночным замером не измеряется.
-// Файл только с типами (interface/type, `import type`) кандидатом не считается:
-// в нём нечего мутировать, а запись «мутации не измеряются» про него была бы
-// ложным долгом (правило №15 п.4). Признак — isTypeOnly().
+//  - выделенный файл, у которого импортёров из зоны меньше половины или нет
+//    вовсе (импортёры переехали за ним: `totp.service.ts`, `max-init-data.ts`,
+//    `login-ticket.service.ts` к 2026-11). Граф импортов этого не помнит;
+//  - зона включает зонтичный stryker.config.json (ручной `npm run mutation`,
+//    ночью не гоняется): файл только оттуда ночным замером не измеряется.
+// Файл только с типами (isTypeOnly) не кандидат: мутировать нечего, запись о
+// нём была бы ложным долгом (правило №15 п.4).
 //
-// Гейт ищет не признак, а требует классификации — как check-cron-leader.mjs.
-// Флага --update нет намеренно: это решение человека, не счётчик. Протухшая
-// запись (файл удалён, вошёл в зону или у него появился импортёр вне зоны)
-// тоже красная: не уборка, а сигнал «сверься, что произошло».
+// Гейт требует классификации, а не ищет признак — как check-cron-leader.mjs.
+// Флага --update нет: это решение человека, не счётчик. Протухшая запись (файл
+// удалён, вошёл в зону или нужен в основном коду вне зоны) тоже красная.
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { dirname, join, normalize, resolve } from 'path';
 
@@ -55,7 +50,11 @@ function walk(dir, out = []) {
     const rel = `${dir}/${e.name}`;
     if (e.isDirectory()) {
       if (!SKIP_DIRS.has(e.name)) walk(rel, out);
-    } else if (/\.tsx?$/.test(e.name) && !/\.d\.ts$/.test(e.name) && !isTestFile(rel)) {
+    } else if (
+      /\.tsx?$/.test(e.name) &&
+      !/\.d\.ts$/.test(e.name) &&
+      !isTestFile(rel)
+    ) {
       out.push(rel);
     }
   }
@@ -85,7 +84,9 @@ const TYPE_ONLY_LINE =
 
 /** Файл целиком из типов: мутировать нечего. Консервативно: сомнение = не type-only. */
 export function isTypeOnly(source) {
-  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const code = source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
   const topLevel = code.split('\n').filter((l) => /^[A-Za-z_$]/.test(l));
   return topLevel.length > 0 && topLevel.every((l) => TYPE_ONLY_LINE.test(l));
 }
@@ -95,7 +96,9 @@ function localImports(rel) {
   const src = readFileSync(join(ROOT, rel), 'utf8');
   const found = [];
   for (const m of src.matchAll(IMPORT_RE)) {
-    const base = normalize(join(dirname(rel), m[1])).split('\\').join('/');
+    const base = normalize(join(dirname(rel), m[1]))
+      .split('\\')
+      .join('/');
     for (const tail of ['.ts', '.tsx', '/index.ts']) {
       if (existsSync(join(ROOT, base + tail))) {
         found.push(base + tail);
@@ -106,7 +109,7 @@ function localImports(rel) {
   return found;
 }
 
-/** Кандидаты: файл вне зоны, все нетестовые импортёры которого — в зоне. */
+/** Кандидаты: файл вне зоны, у которого импортёров из зоны не меньше, чем вне. */
 export function findCandidates(zone) {
   const files = SCAN_DIRS.flatMap((d) => walk(d));
   const importers = new Map();
@@ -120,7 +123,10 @@ export function findCandidates(zone) {
   for (const [target, from] of importers) {
     if (zone.has(target)) continue;
     if (isTypeOnly(readFileSync(join(ROOT, target), 'utf8'))) continue;
-    if ([...from].every((f) => zone.has(f))) out.set(target, [...from].sort());
+    const inZone = [...from].filter((f) => zone.has(f)).sort();
+    const outside = from.size - inZone.length;
+    if (inZone.length > 0 && inZone.length >= outside)
+      out.set(target, { inZone, outside });
   }
   return out;
 }
@@ -141,11 +147,12 @@ function main() {
     : {};
   const problems = [];
 
-  for (const [file, from] of candidates) {
+  for (const [file, { inZone, outside }] of candidates) {
     const entry = baseline[file];
     if (!entry) {
+      const rest = outside > 0 ? `, вне зоны ещё ${outside}` : '';
       problems.push(
-        `${file} (импортируется только из зоны: ${from.join(', ')}) — не в \`mutate\` ` +
+        `${file} (импортёры из зоны: ${inZone.join(', ')}${rest}) — не в \`mutate\` ` +
           'и не классифицирован',
       );
       continue;
@@ -156,13 +163,15 @@ function main() {
   for (const file of Object.keys(baseline)) {
     if (candidates.has(file)) continue;
     problems.push(
-      `протухшая запись ${file}: файл удалён, вошёл в зону или у него появился ` +
-        'импортёр вне зоны — сверься и убери запись',
+      `протухшая запись ${file}: файл удалён, вошёл в зону или нужен в основном ` +
+        'коду вне зоны — сверься и убери запись',
     );
   }
 
   if (problems.length > 0) {
-    console.error('❌ гейт мутационной зоны: файл выпал из зоны Stryker молча:');
+    console.error(
+      '❌ гейт мутационной зоны: файл выпал из зоны Stryker молча:',
+    );
     for (const p of problems) console.error(`   ${p}`);
     console.error(
       '\nФайл, выделенный из файла зоны, измеряется мутациями только если он в\n' +

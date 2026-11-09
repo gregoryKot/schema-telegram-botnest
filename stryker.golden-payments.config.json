@@ -36,6 +36,9 @@
     "src/booking/payment.result-guard.ts",
     "src/booking/booking-paid-after-cancel.ts",
     "src/booking/booking.transitions.ts",
+    "src/booking/booking-notify.service.ts",
+    "src/booking/booking-notify.price.ts",
+    "src/booking/booking-reminders.ts",
     "src/donation/donation.service.ts",
     "src/notification/notification.planner.service.ts"
   ],

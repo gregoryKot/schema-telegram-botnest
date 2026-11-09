@@ -44,22 +44,38 @@
   `scripts/zero-coverage-baseline.json` как «покрыто e2e», но e2e в `coverage-summary.json` не
   входит: сломай e2e — гейт не узнает. Файл, покрытый одной строкой из десяти, гейт тоже не
   видит — порог «ноль», а не процент.
-- **21 файл, выделенный из файлов мутационных зон, не измеряется мутациями**
-  (`scripts/mutation-zone-baseline.json`: `refresh-issue`/`refresh-reuse`/
-  `magic-link`/`unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
+- **49 файлов вокруг мутационных зон не измеряются мутациями**
+  (`scripts/mutation-zone-baseline.json`, у каждого причина). 22 выделены из
+  файлов зон (`refresh-issue`/`refresh-reuse`/`magic-link`/
+  `unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
   `booking.{create,checkout,queries}`, `subscription.charges`, `account.delete`
-  и другие). Гейт `check-mutation-zone.mjs` (#657) не даёт выпасть новому,
-  а этим двадцати одному ничего не мешает остаться за кадром: включать их в
-  `mutate` по одному вместе с прогоном и полом в бейслайне храповика (прогон
-  волны А — десятки минут, поэтому не пачкой). Первыми — `refresh-*` и
-  `merge-subscriptions` (деньги и сессии). Слепое пятно гейта: кандидат — файл,
-  все нетестовые импортёры которого в зоне; выделенный файл, который импортирует
-  ещё и код вне зоны (`booking-notify.service.ts`, `totp.service.ts`,
-  `max-init-data.ts`, `login-ticket.service.ts` — AUDIT_2026-10_FINDINGS.md), он
-  не видит, так что класс закрыт не целиком. Зона для гейта — объединение всех
-  `stryker*.config.json`, включая ручной зонтичный `stryker.config.json`, в
-  nightly не гоняемый. Файлы только из типов (`booking.types.ts`) кандидатами не
-  считаются: мутировать в них нечего.
+  и другие); 27 гейт увидел после расширения 2026-11 (кандидат — файл, у
+  которого импортёров из зоны не меньше, чем вне): хелперы броней,
+  уведомлений, связи терапевта, части билета входа. Семь из 49 — константы и
+  реестры без логики (`user-owned-tables`, `user-data-tables`,
+  `booking.config`, `booking.schema`, `subscription.constants`,
+  `init-data-window`, `totp-challenge`), остальное — долг волны. Гейт
+  `check-mutation-zone.mjs` (#657) не даёт выпасть новому, а этим ничего не
+  мешает остаться за кадром: включать в `mutate` по одному вместе с прогоном
+  и полом в бейслайне храповика. Первыми — `refresh-*` и `merge-subscriptions`
+  (деньги и сессии). Слепое пятно гейта: выделенный файл, у которого
+  импортёров из зоны меньше половины или нет вовсе (импортёры переехали за
+  ним), он не видит — так к 2026-11 жили `totp.service.ts`, `max-init-data.ts`,
+  `login-ticket.service.ts` (два последних теперь в `mutate`, TOTP — запись
+  ниже). Зона для гейта — объединение всех `stryker*.config.json`, включая
+  ручной зонтичный `stryker.config.json`, в nightly не гоняемый. Файлы только
+  из типов (`booking.types.ts`) кандидатами не считаются.
+- **Семейство TOTP вне мутационной зоны.** Замер 2026-11-09 (прогон
+  golden-auth с этими файлами в `mutate`): `src/auth/totp.service.ts` 77.86%
+  (27 выживших, 2 NoCoverage), `totp-code.ts` 86.67% (2), `totp-attempts.ts`
+  76.92% (6 + 3 NoCoverage), `totp-recovery.ts` 80.49% (6 + 2) — выжившие в
+  ветках включения/отключения 2FA, счётчике неверных кодов и погашении
+  резервных кодов, не только в текстах логов. В `mutate` не включены: пол ниже
+  замера закрепил бы слабость, а закрыть 48 выживших тестами в той же серии не
+  успели. Гейт зоны их не видит — ни один файл зоны их не импортирует.
+  Начать: `npx stryker run stryker.golden-auth.config.json --mutate
+  src/auth/totp.service.ts,src/auth/totp-code.ts,src/auth/totp-attempts.ts,src/auth/totp-recovery.ts`,
+  вкладка Survived; после — файлы в `mutate` и `--update`.
 - **Мутационный замер волны А уже его реального охвата.** В отчёте golden-auth
   (2026-10-15) `merge.service.ts` — 66 из 158 мутантов Ignored (статические,
   `ignoreStatic: true`: код уровня модуля судится только динамическими мутантами),

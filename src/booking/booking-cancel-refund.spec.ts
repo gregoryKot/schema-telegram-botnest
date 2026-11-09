@@ -2,7 +2,6 @@
 // «❌ Запись отменена», что и отмена неоплаченной, — о возврате денег не
 // говорил ни DM, ни письмо. Теперь оплаченная (paidAt из вебхука Robokassa)
 // отменяется с «нужен возврат, X ₽» в обоих каналах.
-import { ConfigService } from '@nestjs/config';
 import { SessionType } from '@prisma/client';
 import { BookingNotifyService } from './booking-notify.service';
 import { cancelledNotice, cancelledTitle } from './booking-admin-note';
@@ -38,7 +37,6 @@ function makeService() {
     calDav as never,
     {} as never,
     email as never,
-    { get: () => undefined } as unknown as ConfigService,
     {} as never,
   );
   return { service, telegram, email };

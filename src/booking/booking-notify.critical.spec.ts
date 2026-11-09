@@ -18,7 +18,6 @@ function makeService(opts: { tgOk: boolean; emailFails?: boolean }) {
     {} as any,
     {} as any,
     email as any,
-    { get: () => undefined } as any,
     {} as any,
   );
   return { service, telegram, email };

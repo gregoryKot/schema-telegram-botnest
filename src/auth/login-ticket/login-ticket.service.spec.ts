@@ -7,7 +7,7 @@
 //      (правило про read-after-write);
 //   2. одноразовость — второй опрос второй сессии не даёт;
 //   3. отказ («это не я») отличим от истечения — экран обязан сказать разное.
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import {
   makeDeps,
   startLogin,
@@ -358,5 +358,98 @@ describe('события пути входа', () => {
 
     expect((await tickets.poll(deviceCode)).status).toBe('pending');
     expect((report.step as jest.Mock).mock.calls).toEqual([]);
+  });
+});
+
+// Ночной мутационный замер (stryker.golden-auth.config.json): границы срока,
+// гонка одноразовости, шаги воронки только у входа и следы провалов в логе.
+describe('LoginTicketService — границы под мутационным замером', () => {
+  const T = new Date('2026-11-09T12:00:00.000Z');
+  const steps = (report: { step: unknown }) =>
+    (report.step as jest.Mock).mock.calls.map(([s]) => s as string);
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  it('expiresAt ровно «сейчас» — билет ещё жив во всех трёх входах (<, не <=)', async () => {
+    const { tickets, rows } = makeDeps();
+    const { userCode, deviceCode } = await startLogin(tickets);
+    jest.useFakeTimers({ now: T, doNotFake: ['nextTick', 'queueMicrotask'] });
+    rows[0].expiresAt = new Date(T);
+    expect(await tickets.forConfirm(userCode)).not.toBeNull();
+    expect(await tickets.poll(deviceCode)).toEqual({ status: 'pending' });
+    await tickets.deny(userCode);
+    expect(rows[0].deniedAt).not.toBeNull();
+  });
+
+  it('код с пробелами и в нижнем регистре: карточка отдаёт его нормализованным', async () => {
+    const { tickets, rows } = makeDeps();
+    const { userCode } = await startLogin(tickets);
+    const card = await tickets.forConfirm(` ${userCode.toLowerCase()}  `);
+    expect(card?.userCode).toBe(userCode);
+    await tickets.deny(`  ${userCode.toLowerCase()} `);
+    expect(rows[0].deniedAt).not.toBeNull();
+  });
+
+  it('гонка опроса: строку забрал другой опрос между чтением и claim — expired, токенов нет', async () => {
+    const { tickets, prisma, auth } = makeDeps();
+    const { userCode, deviceCode } = await startLogin(tickets);
+    await tickets.approveLogin(userCode, TG_USER);
+    jest
+      .spyOn(prisma.loginTicket, 'updateMany')
+      .mockResolvedValueOnce({ count: 0 });
+    expect(await tickets.poll(deviceCode)).toEqual({ status: 'expired' });
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+
+  it('claim гасит только свою строку — соседний билет остаётся живым', async () => {
+    const { tickets, rows } = makeDeps();
+    const mine = await startLogin(tickets);
+    await startLogin(tickets);
+    await tickets.approveLogin(mine.userCode, TG_USER);
+    expect((await tickets.poll(mine.deviceCode)).status).toBe('linked');
+    expect(rows[1].consumedAt).toBeNull();
+  });
+
+  it('у привязки (не входа) шагов воронки нет: ни too_late, ни bot_opened, ни denied', async () => {
+    const { tickets, rows, report } = makeDeps();
+    const link = await startLink(tickets);
+    (report.step as jest.Mock).mockClear();
+    expect(await tickets.forConfirm(link.userCode, TG_USER)).not.toBeNull();
+    await tickets.deny(link.userCode, TG_USER);
+    rows[0].deniedAt = null;
+    rows[0].expiresAt = new Date(Date.now() - 1000);
+    expect(await tickets.forConfirm(link.userCode, TG_USER)).toBeNull();
+    expect(steps(report)).toEqual([]);
+  });
+
+  it('сбой чтения билета — null и error в лог с причиной', async () => {
+    const { tickets, prisma } = makeDeps();
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    jest
+      .spyOn(prisma.loginTicket, 'findUnique')
+      .mockRejectedValueOnce(new Error('db down'));
+    expect(await tickets.forConfirm('ABCDEFGH')).toBeNull();
+    expect(error).toHaveBeenCalledWith(
+      'ticket lookup failed: db down',
+      expect.any(String),
+    );
+  });
+
+  it('approveLoginIfPossible: провал — false и warn с причиной', async () => {
+    const { tickets } = makeDeps();
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+    expect(await tickets.approveLoginIfPossible('ZZZZZZZZ', TG_USER)).toBe(
+      false,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      'ticket approve skipped: Код не найден или истёк',
+    );
   });
 });
