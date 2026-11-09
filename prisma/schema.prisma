@@ -794,7 +794,10 @@ model ScheduledNotification {
   /// Захват строки очередью до отправки (backend#15, notification-claim.ts).
   attemptedAt DateTime?
 
-  @@index([sendAt, sentAt, cancelledAt])
+  // Тик очереди (getDue) идёт частичным индексом ScheduledNotification_due_sendAt_idx
+  // (sendAt) WHERE sentAt IS NULL AND cancelledAt IS NULL — Prisma его не описывает,
+  // он в миграции 20261109010000_notification_due_index (P6, docs/PERF_PLANS.md).
+  @@index([type, sendAt])
   @@index([userId, type, sentAt])
 }
 
