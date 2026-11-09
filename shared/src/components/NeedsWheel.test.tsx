@@ -51,7 +51,8 @@ describe('NeedsWheel', () => {
     expect(container.textContent).not.toContain('вчера');
   });
 
-  it('childhoodRatings добавляет пунктирный контур (stroke-dasharray)', () => {
+  // Редизайн 2026-11: контур детства — сплошная линия, пунктира в колесе нет.
+  it('childhoodRatings добавляет контур детства — сплошной, без пунктира', () => {
     const { container } = render(
       <NeedsWheel
         needs={needs}
@@ -59,13 +60,23 @@ describe('NeedsWheel', () => {
         childhoodRatings={{ safety: 9 }}
       />,
     );
-    expect(container.querySelector('[stroke-dasharray]')).toBeTruthy();
+    expect(
+      container.querySelectorAll('[data-layer="childhood"] path').length,
+    ).toBe(1);
+    expect(container.querySelector('[stroke-dasharray]')).toBeNull();
+  });
+
+  it('без оценок детства контура нет', () => {
+    const { container } = render(
+      <NeedsWheel needs={needs} ratings={{ safety: 5 }} />,
+    );
+    expect(container.querySelector('[data-layer="childhood"]')).toBeNull();
   });
 
   it('нулевые оценки — лепестки не рисуются (petalPath даёт пустой путь)', () => {
     const { container } = render(<NeedsWheel needs={needs} ratings={{}} />);
-    // залитых лепестков нет: у всех value=0 → r<1 → d='' → null-ветка
-    expect(container.querySelectorAll('path[fill-opacity]').length).toBe(0);
+    // залитых лепестков нет: у всех value=0 → r<1 → d='' → лепесток не рисуется
+    expect(container.querySelectorAll('path[data-petal]').length).toBe(0);
   });
 
   // QA 2026-11 (B-З6): пустой день показывал «индекс 0.0 ↓ вчера 6.0».
@@ -94,6 +105,31 @@ describe('NeedsWheel', () => {
     expect(
       container.querySelector(`path[fill="${NEED_COLORS.autonomy}"]`),
     ).toBeTruthy();
+  });
+
+  // Решение 7 (docs/design/APP_2026-11.md, «Палитра данных»): лепесток — цвет данных потребности.
+  it('ink задаёт цвет лепестка по id потребности; лепесток длиннее при большей оценке', () => {
+    const { container } = render(
+      <NeedsWheel
+        needs={needs}
+        ratings={{ safety: 9, autonomy: 2 }}
+        ink={{ safety: 'var(--c-clay)', autonomy: 'var(--c-amber-strong)' }}
+      />,
+    );
+    const safety = container.querySelector('path[data-petal="safety"]')!;
+    expect(safety.getAttribute('fill')).toBe('var(--c-clay)');
+    expect(
+      container
+        .querySelector('path[data-petal="autonomy"]')!
+        .getAttribute('fill'),
+    ).toBe('var(--c-amber-strong)');
+    // Длина лепестка — радиус дуги «A r r» в пути: у оценки 9 он больше, чем у 2.
+    const arc = (el: Element) =>
+      Number(/ A (\d+(?:\.\d+)?) /.exec(el.getAttribute('d')!)![1]);
+    const low = render(
+      <NeedsWheel needs={needs} ratings={{ safety: 2 }} />,
+    ).container.querySelector('path[data-petal="safety"]')!;
+    expect(arc(safety)).toBeGreaterThan(arc(low));
   });
 
   it('потребность без цвета в реестре красится фолбэком #888', () => {
