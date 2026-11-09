@@ -12,7 +12,6 @@ import { MaxProvider } from '../auth/providers/max.provider';
 import { SecurityLogService } from '../auth/security-log.service';
 import { applyTelegramInitData, applyMaxInitData } from './init-data-paths';
 import { reportAuthFailure } from './auth-failure.report';
-import { reportAuthSuccess } from './auth-success.report';
 import { assertLiveAccess } from '../auth/live-access';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { Request } from 'express';
@@ -50,9 +49,6 @@ export class TelegramAuthGuard implements CanActivate {
       // refresh-кука слитого уже переехала на целевой userId.
       await assertLiveAccess(this.prisma, userId, sid);
       req.webUser = { userId };
-      reportAuthSuccess(userId, 'web', {
-        track: (meta) => void this.analytics.track(null, 'auth_success', meta),
-      });
       return true;
     }
 
@@ -64,7 +60,6 @@ export class TelegramAuthGuard implements CanActivate {
         this.authService,
         this.securityLog,
         this.logger,
-        this.analytics,
       );
       return true;
     }
@@ -77,7 +72,6 @@ export class TelegramAuthGuard implements CanActivate {
         this.authService,
         this.securityLog,
         this.logger,
-        this.analytics,
       );
       return true;
     }

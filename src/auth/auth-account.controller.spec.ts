@@ -582,10 +582,12 @@ describe('AuthAccountController.telegramWebApp', () => {
       req,
       res,
     );
-    // IP уходит в верификатор: по нему троттлится алерт о подделке подписи.
+    // IP уходит в верификатор: по нему троттлится алерт о подделке подписи;
+    // третьим аргументом — колбэк строки отказа обмена для /stats.
     expect(auth.verifyTelegramWebAppData).toHaveBeenCalledWith(
       'init-data',
       req.ip,
+      expect.any(Function),
     );
     expect(auth.findOrCreateUserByProvider).toHaveBeenCalledWith(
       'telegram',
@@ -671,14 +673,65 @@ describe('AuthAccountController.telegramWebApp', () => {
     );
   });
 
-  it('отказ в подписи — запуска нет: событие не пишется', async () => {
+  // Находка 2026-11-08: отказ обмена уходил только в журнал безопасности, и
+  // /stats не видел, что сайт в Telegram не может войти. Мок ведёт себя как
+  // AuthService: зовёт колбэк отказа и бросает 401. Троттлинг строки — по
+  // площадке и IP (exchange-failure.report.ts), поэтому у каждого теста свой IP.
+  const rejectWith = (auth: AuthMock, err: Error) =>
+    auth.verifyTelegramWebAppData.mockImplementation(
+      (_i: string, _ip: string, onReject?: (e: unknown) => void) => {
+        onReject?.(err);
+        throw new UnauthorizedException('Invalid initData');
+      },
+    );
+  const reqFrom = (ip: string) =>
+    Object.assign(makeReq(), { ip }) as unknown as Request;
+
+  it('подделка → 401 и строка отказа: площадка, платформа, причина suspicious', async () => {
+    const { controller, auth, analytics } = makeController();
+    rejectWith(auth, new Error('Invalid initData signature'));
+    await expect(
+      controller.telegramWebApp(
+        { initData: 'forged', platform: 'weba' },
+        reqFrom('203.0.113.31'),
+        makeRes(),
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    // Запуска не было — платформа в messenger_launch не засчитывается.
+    expect(analytics.track).toHaveBeenCalledTimes(1);
+    expect(analytics.track).toHaveBeenCalledWith(
+      null,
+      'messenger_launch_failed',
+      { host: 'telegram', platform: 'weba', reason: 'suspicious' },
+    );
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+
+  it('просрочка → строка отказа с причиной expired', async () => {
+    const { controller, auth, analytics } = makeController();
+    rejectWith(auth, new Error('init data expired'));
+    await expect(
+      controller.telegramWebApp(
+        { initData: 'stale', platform: 'ios' },
+        reqFrom('203.0.113.32'),
+        makeRes(),
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(analytics.track).toHaveBeenCalledWith(
+      null,
+      'messenger_launch_failed',
+      { host: 'telegram', platform: 'ios', reason: 'expired' },
+    );
+  });
+
+  it('отказ без вызова колбэка (не проверка подписи) — событий нет', async () => {
     const { controller, auth, analytics } = makeController();
     auth.verifyTelegramWebAppData.mockImplementation(() => {
-      throw new UnauthorizedException('bad');
+      throw new Error('BOT_TOKEN not set');
     });
     await expect(
-      controller.telegramWebApp({ initData: 'forged' }, makeReq(), makeRes()),
-    ).rejects.toThrow(UnauthorizedException);
+      controller.telegramWebApp({ initData: 'x' }, makeReq(), makeRes()),
+    ).rejects.toThrow('BOT_TOKEN not set');
     expect(analytics.track).not.toHaveBeenCalled();
   });
 });

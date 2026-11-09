@@ -951,6 +951,21 @@ describe('messenger_launch', () => {
   });
 });
 
+// Отказ обмена подписи (exchange-failure.report.ts): пишут только ручки
+// обмена с userId = null; /stats считает лишь строки с host и reason, и
+// подделка через POST /api/event без meta в отчёт не попадает.
+describe('messenger_launch_failed', () => {
+  it('host, platform и reason с клиента отбрасываются целиком', () => {
+    expect(
+      sanitizeMeta('messenger_launch_failed', {
+        host: 'max',
+        platform: 'desktop',
+        reason: 'suspicious',
+      }),
+    ).toBeUndefined();
+  });
+});
+
 // Стёртый тест схем: attempts пишет только DELETE /api/ysq-data, с клиента
 // он не проходит — /stats считает только строки с attempts.
 describe('ysq_data_deleted', () => {

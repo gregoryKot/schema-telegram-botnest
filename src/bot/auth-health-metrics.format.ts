@@ -1,75 +1,75 @@
-// Блок «Вход в мессенджере» для /stats (правило №8: метрика, которой нет в
-// отчёте, — невидима). Чистый форматтер, покрыт тестом, включая пустую БД.
+// Блок «Вход в мессенджере» для /stats (правило №8): чистый форматтер, тест
+// покрывает все ветки, включая пустую БД. Зачем: 2026-08-08 вход был сломан у
+// ВСЕХ пользователей Telegram, а узнали об этом от человека.
 //
-// Зачем блок вообще есть. 2026-08-08 вход был сломан у ВСЕХ пользователей
-// Telegram, и узнали об этом от человека, который написал в личку. На сервере
-// авария выглядела как обычные 401: их никто не считал. Теперь «мини-апп
-// открыт, а подписи нет» — отдельная строка отчёта.
-//
-// Успехи (auth_success) добавлены рядом с отказами не для красоты: рост
-// отказов виден, только если клиент ДОХОДИТ до guard'а. Клиент, который до
-// сервера вообще не доехал (сломанный бандл, DNS, мёртвое вебвью), не пишет
-// ни отказ, ни успех — такую аварию видно ТОЛЬКО как провал числа успехов,
-// а не как скачок отказов. Отсюда пара и отсюда доля успешных — не просто
-// число, а ориентир «сколько вообще входов было, чтобы отказы было с чем
-// сравнивать».
-//
-// Язык простой: «вошли N раз, не смогли M», а не «auth_success events».
-
-export interface AuthHealthMetrics {
-  /** За сутки: сколько раз мини-апп пришёл без подписи (по площадкам). */
-  day: { telegram: number; max: number };
-  /** За неделю — то же, чтобы видеть, разовый это сбой или тянется. */
-  week: { telegram: number; max: number };
-  /** Сколько раз вход прошёл успешно — сессии, а не запросы (троттлинг в
-   *  src/api/auth-success.report.ts). */
-  successDay: number;
-  successWeek: number;
-}
+// Почему обмен подписи, а не guard (находка 2026-11-08): сайт в мессенджере
+// ходит с Bearer и меняет подпись на сессию в ручках обмена; прежняя пара
+// считала путь мини-аппа в guard'е. Что считается — auth-health-rows.ts.
+import { plural } from './plural';
+import type {
+  AuthHealthMetrics,
+  ExchangeCounts,
+  Window,
+} from './auth-health-rows';
 
 const HOSTS = [
   ['telegram', 'Telegram'],
   ['max', 'MAX'],
 ] as const;
+const fails = (c: ExchangeCounts, w: Window) => c.expired[w] + c.suspicious[w];
+const times = (n: number) => `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
+
+/** «вошли N, не смогли M (устарела X, не сошлась Y)» — причины без нулей. */
+function pair(c: ExchangeCounts, w: Window): string {
+  const why = [
+    c.expired[w] > 0 ? `устарела ${c.expired[w]}` : '',
+    c.suspicious[w] > 0 ? `не сошлась ${c.suspicious[w]}` : '',
+  ].filter(Boolean);
+  const tail = why.length ? ` (${why.join(', ')})` : '';
+  return `вошли ${c.ok[w]}, не смогли ${fails(c, w)}${tail}`;
+}
+
+function failureLines(m: AuthHealthMetrics, ok: number, fail: number) {
+  const out = ['Не все смогли войти из мессенджера:'];
+  const hosts = HOSTS.map(([k, title]) => [m.hosts[k], title] as const);
+  for (const [c, title] of hosts) {
+    if (c.ok.week + fails(c, 'week') === 0) continue;
+    const day = pair(c, 'day');
+    out.push(`${title} за неделю: ${pair(c, 'week')}; за сутки: ${day}`);
+  }
+  const pct = Math.round((ok / (ok + fail)) * 100);
+  out.push(`Успешных входов за неделю: ${ok} из ${ok + fail} (${pct}%).`);
+  if (hosts.some(([c]) => c.expired.week > 0))
+    out.push('Подпись устарела — окно висело открытым дольше часа.');
+  if (hosts.some(([c]) => c.suspicious.week > 0))
+    out.push('Подпись не сошлась — подделка или сменился токен бота.');
+  out.push(
+    hosts.some(([c]) => fails(c, 'day') > 0)
+      ? 'Это происходит прямо сейчас — открой приложение в мессенджере и проверь вход.'
+      : 'За сутки сбоев не было — похоже, уже починено.',
+  );
+  return out;
+}
 
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatAuthHealth(m: AuthHealthMetrics): string {
   const lines = ['🔑 <b>Вход в мессенджере</b>'];
-  const failWeek = m.week.telegram + m.week.max;
-
-  // Пусто с обеих сторон — не «всё хорошо», а «сравнивать не с чем»: на
-  // чистой БД (или в первую неделю после установки) входов ещё не было.
-  if (failWeek === 0 && m.successWeek === 0) {
-    lines.push('За неделю никто не пытался войти — сравнивать пока не с чем.');
-    return lines.join('\n');
-  }
-
-  if (failWeek === 0) {
-    lines.push(`За неделю вошли ${m.successWeek} раз, ни одного сбоя.`);
-    return lines.join('\n');
-  }
-
-  lines.push(
-    'Приложение открывали в мессенджере, но пропуска у него не было — ' +
-      'значит сломан сам вход, а не пользователь:',
-  );
-  for (const [key, title] of HOSTS) {
-    const day = m.day[key];
-    const week = m.week[key];
-    if (week === 0) continue;
-    lines.push(`${title}: за сутки ${day}, за неделю ${week}`);
-  }
-  const totalWeek = m.successWeek + failWeek;
-  const pct = Math.round((m.successWeek / totalWeek) * 100);
-  lines.push(
-    `Успешных входов за неделю: ${m.successWeek} из ${totalWeek} (${pct}%).`,
-  );
-  if (m.day.telegram + m.day.max > 0) {
+  const sum = (f: (c: ExchangeCounts) => number) =>
+    HOSTS.reduce((s, [k]) => s + f(m.hosts[k]), 0);
+  const ok = sum((c) => c.ok.week);
+  const fail = sum((c) => fails(c, 'week'));
+  if (ok + fail === 0)
     lines.push(
-      'Это происходит прямо сейчас — открой приложение и проверь вход.',
+      'За неделю входов из мессенджера не было — сравнивать пока не с чем.',
     );
-  } else {
-    lines.push('За последние сутки такого не было — похоже, уже починено.');
-  }
+  else if (fail === 0)
+    lines.push(`За неделю вошли из мессенджера ${times(ok)}, сбоев не было.`);
+  else lines.push(...failureLines(m, ok, fail));
+  const legacy = m.legacyEmptyWeek;
+  if (legacy > 0)
+    lines.push(
+      `Без подписи пришли старые окна: ${times(legacy)} за неделю. Их открыли ` +
+        'до того, как убрали мини-приложение, — со временем таких не останется.',
+    );
   return lines.join('\n');
 }

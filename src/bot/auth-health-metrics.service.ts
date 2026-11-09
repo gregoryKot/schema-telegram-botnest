@@ -1,18 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { formatAuthHealth } from './auth-health-metrics.format';
 import {
-  AuthHealthMetrics,
-  formatAuthHealth,
-} from './auth-health-metrics.format';
+  parseAuthHealthRows,
+  type AuthHealthMetrics,
+  type AuthHealthRow,
+} from './auth-health-rows';
 import {
   formatLaunchPlatforms,
   type LaunchPlatformRow,
 } from './launch-platform-metrics.format';
 
-// Счётчики здоровья входа для /stats: auth_rejected (отказы) и auth_success
-// (успехи) — оба пишет только TelegramAuthGuard (src/api/auth-failure.report.ts,
-// src/api/auth-success.report.ts); messenger_launch (запуски по платформам) —
-// ручки обмена подписи. Свой домен — свой файл (правило №10).
+// Счётчики здоровья входа для /stats: обмен подписи на сессию прошёл / не
+// прошёл (messenger_launch / messenger_launch_failed — ручки обмена, разбор и
+// причины — auth-health-rows.ts) и пустая подпись старых окон мини-аппа
+// (auth_rejected, src/api/auth-failure.report.ts). Свой домен — свой файл.
 @Injectable()
 export class AuthHealthMetricsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -63,50 +65,19 @@ export class AuthHealthMetricsService {
     const now = Date.now();
     const since7 = new Date(now - 7 * 86_400_000);
     const since1 = new Date(now - 86_400_000);
-    // userId IS NULL — обязательное условие для ОБОИХ событий, а не украшение:
-    // /api/event открыт авторизованным клиентам, и без этого фильтра любой
-    // из них мог бы накрутить отчёт о здоровье входа (в свою пользу — раздув
-    // либо отказы, либо успехи). Оба события пишет только guard, всегда без
-    // userId.
-    const [row] = await this.prisma.$queryRaw<
-      Array<{
-        tg_day: bigint;
-        max_day: bigint;
-        tg_week: bigint;
-        max_week: bigint;
-        success_day: bigint;
-        success_week: bigint;
-      }>
-    >`
-      SELECT
-        count(*) FILTER (WHERE "name" = 'auth_rejected'
-                           AND "meta"->>'host' = 'telegram'
-                           AND "createdAt" >= ${since1})::bigint AS tg_day,
-        count(*) FILTER (WHERE "name" = 'auth_rejected'
-                           AND "meta"->>'host' = 'max'
-                           AND "createdAt" >= ${since1})::bigint AS max_day,
-        count(*) FILTER (WHERE "name" = 'auth_rejected'
-                           AND "meta"->>'host' = 'telegram')::bigint AS tg_week,
-        count(*) FILTER (WHERE "name" = 'auth_rejected'
-                           AND "meta"->>'host' = 'max')::bigint AS max_week,
-        count(*) FILTER (WHERE "name" = 'auth_success'
-                           AND "createdAt" >= ${since1})::bigint AS success_day,
-        count(*) FILTER (WHERE "name" = 'auth_success')::bigint AS success_week
+    // userId IS NULL — обязательное условие, а не украшение: /api/event открыт
+    // авторизованным клиентам, и без него любой мог бы накрутить отчёт о
+    // здоровье входа в любую сторону. Все три события пишет только сервер
+    // (ручки обмена и guard), всегда без userId.
+    const rows = await this.prisma.$queryRaw<AuthHealthRow[]>`
+      SELECT "name", "meta"->>'host' AS host, "meta"->>'reason' AS reason,
+        count(*) FILTER (WHERE "createdAt" >= ${since1})::bigint AS day,
+        count(*)::bigint AS week
       FROM "AnalyticsEvent"
       WHERE "userId" IS NULL
-        AND "name" IN ('auth_rejected', 'auth_success')
-        AND "createdAt" >= ${since7}`;
-    return {
-      day: {
-        telegram: Number(row?.tg_day ?? 0n),
-        max: Number(row?.max_day ?? 0n),
-      },
-      week: {
-        telegram: Number(row?.tg_week ?? 0n),
-        max: Number(row?.max_week ?? 0n),
-      },
-      successDay: Number(row?.success_day ?? 0n),
-      successWeek: Number(row?.success_week ?? 0n),
-    };
+        AND "name" IN ('messenger_launch', 'messenger_launch_failed', 'auth_rejected')
+        AND "createdAt" >= ${since7}
+      GROUP BY "name", "meta"->>'host', "meta"->>'reason'`;
+    return parseAuthHealthRows(rows);
   }
 }

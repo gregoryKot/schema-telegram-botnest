@@ -183,6 +183,8 @@ describe('AuthMaxController.maxWebApp', () => {
       makeReq(),
       makeRes(),
     );
+    // Успех пишет только запуск — строки отказа обмена нет.
+    expect(analytics.track).toHaveBeenCalledTimes(1);
     expect(analytics.track).toHaveBeenCalledWith(null, 'messenger_launch', {
       host: 'max',
       platform: 'desktop',
@@ -190,19 +192,32 @@ describe('AuthMaxController.maxWebApp', () => {
   });
 
   it('просроченная подпись → 401 с кодом initdata_expired, без алерта', async () => {
-    const { controller, maxProvider, securityLog, auth } = makeController();
+    const { controller, maxProvider, securityLog, auth, analytics } =
+      makeController();
     maxProvider.verifyInitData.mockImplementation(() => {
       throw new Error('init data expired');
     });
+    const req = makeReq();
+    (req as unknown as { ip: string }).ip = '203.0.113.41';
 
     await expect(
-      controller.maxWebApp({ initData: 'stale' }, makeReq(), makeRes()),
+      controller.maxWebApp(
+        { initData: 'stale', platform: 'ios' },
+        req,
+        makeRes(),
+      ),
     ).rejects.toMatchObject({
       response: { code: INITDATA_EXPIRED_CODE },
       status: 401,
     });
     expect(securityLog.log).not.toHaveBeenCalled();
     expect(auth.findOrCreateUserByProvider).not.toHaveBeenCalled();
+    // Находка 2026-11-08: отказ обмена виден в /stats — с причиной.
+    expect(analytics.track).toHaveBeenCalledWith(
+      null,
+      'messenger_launch_failed',
+      { host: 'max', platform: 'ios', reason: 'expired' },
+    );
   });
 
   it('поддельная подпись → 401 + securityLog.log("suspicious_initdata")', async () => {
@@ -221,23 +236,34 @@ describe('AuthMaxController.maxWebApp', () => {
       'suspicious_initdata',
       expect.objectContaining({ ip: '6.6.6.6' }),
     );
-    // Запуска не было — платформа в /stats не засчитывается.
-    expect(analytics.track).not.toHaveBeenCalled();
+    // Запуска не было — засчитан только отказ, причина «подделка»; ни IP,
+    // ни текста ошибки в meta нет.
+    expect(analytics.track).toHaveBeenCalledTimes(1);
+    expect(analytics.track).toHaveBeenCalledWith(
+      null,
+      'messenger_launch_failed',
+      { host: 'max', platform: 'other', reason: 'suspicious' },
+    );
   });
 
   // Пока MAX_BOT_TOKEN не проставлен, КАЖДАЯ попытка входа из мессенджера
   // приходила бы админу как «подделка подписи». Это наша несобранная
   // конфигурация: отвечаем 503 и молчим в аудит-лог.
   it('нет MAX_BOT_TOKEN → 503, и админ НЕ получает алерт о подделке', async () => {
-    const { controller, maxProvider, securityLog, auth } = makeController();
+    const { controller, maxProvider, securityLog, auth, analytics } =
+      makeController();
     maxProvider.verifyInitData.mockImplementation(() => {
       throw new MaxNotConfiguredError();
     });
+    const req = makeReq();
+    (req as unknown as { ip: string }).ip = '203.0.113.42';
 
     await expect(
-      controller.maxWebApp({ initData: 'что угодно' }, makeReq(), makeRes()),
+      controller.maxWebApp({ initData: 'что угодно' }, req, makeRes()),
     ).rejects.toThrow(ServiceUnavailableException);
     expect(securityLog.log).not.toHaveBeenCalled();
     expect(auth.issueTokens).not.toHaveBeenCalled();
+    // Это не клиент не смог войти, а мы не настроили вход: в /stats отказа нет.
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 });

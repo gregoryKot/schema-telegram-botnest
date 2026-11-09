@@ -103,9 +103,10 @@ const section = ids(
   'auth login today diary schemas practice profile help cabinet booking other',
 );
 
-// Перекос в пользу событий, которые читает /stats (все имена ниже — оттуда).
-// Имена обязаны быть в ANALYTICS_EVENTS: seed.ts падает на устаревшем, а
-// добавленное в allow-list и не описанное здесь событие получит минимальный вес.
+// Перекос в пользу событий, которые читает /stats. Имя обязано быть в
+// ANALYTICS_EVENTS или RETIRED_EVENTS (иначе seed.ts падает); событие из
+// allow-list, не описанное здесь, получит минимальный вес.
+const RETIRED_EVENTS: readonly string[] = ['auth_success'];
 // prettier-ignore
 export const EVENT_SPECS: readonly EventSpec[] = [
   { name: 'onboarding_step', weight: 60, meta: { step: A.ONBOARDING_STEPS } },
@@ -158,18 +159,17 @@ export const EVENT_SPECS: readonly EventSpec[] = [
   { name: 'game_cta_click', weight: 2, anon: 100, meta: gameFrom },
   { name: 'game_share', weight: 2, anon: 100, meta: gameFrom },
   { name: 'game_over', weight: 3, anon: 100, meta: chapter },
+  // Писатель удалён (2026-11), строки на проде истекают по ретеншну (90 дней).
   { name: 'auth_success', weight: 45, anon: 100, meta: { host: ['telegram', 'telegram', 'telegram', 'max', 'web'] } },
   { name: 'auth_rejected', weight: 3, anon: 100, meta: { host: ['telegram', 'max'] } },
   { name: 'client_error', weight: 8, anon: 100, meta: { section, source: ['webapp', 'miniapp'] } },
 ];
 
-/**
- * EVENT_SPECS, сверенные с allow-list: устаревшее имя — ошибка (отчёт мерил
- * бы событие, которого нет), новое необъявленное получает минимальный вес.
- * rows — сколько строк достаётся событию из PERF_PROFILE.analyticsEvents.
- */
+/** EVENT_SPECS против allow-list: устаревшее имя — ошибка (отчёт мерил бы
+ *  событие, которого нет), неописанное получает минимальный вес; rows — доля
+ *  события в PERF_PROFILE.analyticsEvents. */
 export function eventPlan(): Array<EventSpec & { rows: number }> {
-  const known = new Set<string>(A.ANALYTICS_EVENTS);
+  const known = new Set<string>([...A.ANALYTICS_EVENTS, ...RETIRED_EVENTS]);
   const stale = EVENT_SPECS.filter((s) => !known.has(s.name));
   if (stale.length) {
     const names = stale.map((s) => s.name).join(', ');
