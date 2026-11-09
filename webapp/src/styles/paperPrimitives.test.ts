@@ -66,6 +66,14 @@ describe('глобальные правки примитивов (cabinet.css)',
     expect(idle).not.toMatch(/opacity/);
   });
 
+  it('на терракотовой карточке простаивающая контурная читается: плашка и --text-sub, не прозрачная', () => {
+    // Регресс волны 0: «Сохранить» следующей сессии на ds-card--accent — подпись сливалась с заливкой.
+    const onAccent = decls(cabinet, '.ds-card--accent .ds-btn.ds-btn--secondary:disabled');
+    expect(prop(onAccent, 'background')).toMatch(/^color-mix\(in srgb, var\(--surface\) \d+%, var\(--accent\)\)$/);
+    expect(prop(onAccent, 'color')).toBe('var(--text-sub)');
+    expect(decls(cabinet, '.ds-card--accent .ds-btn.ds-btn--secondary:disabled:hover')).toBe(onAccent);
+  });
+
   it('занятая контурная (aria-busy) — статус «Загружаю…»: плашка и --text-faint (≥4.5:1), не призрачная', () => {
     // --text-ghost в index.css — «только плейсхолдеры/декор, не текст»; ревью волны 0, круг 2
     expect(prop(busy, 'background')).toBe('var(--surface)');

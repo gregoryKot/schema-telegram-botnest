@@ -175,6 +175,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-btn:disabled[aria-busy='true'] { cursor: progress; }
 .ds-btn.ds-btn--secondary:disabled, .ds-btn.ds-btn--secondary:disabled:hover { background: transparent; color: color-mix(in srgb, var(--text-faint) 60%, transparent); border-color: var(--line); }
 .ds-btn.ds-btn--secondary:disabled[aria-busy='true'], .ds-btn.ds-btn--secondary:disabled[aria-busy='true']:hover { background: var(--surface); color: var(--text-faint); }
+/* На терракотовой карточке (ds-card--accent) прозрачная простаивающая сливалась с заливкой: подпись
+   --text-faint 60% на --accent ~1.1:1. Здесь — приглушённая светлая плашка и --text-sub (~5.7:1). */
+.ds-card--accent .ds-btn.ds-btn--secondary:disabled, .ds-card--accent .ds-btn.ds-btn--secondary:disabled:hover { background: color-mix(in srgb, var(--surface) 70%, var(--accent)); color: var(--text-sub); border-color: transparent; }
 .ds-btn.ds-btn--icon:disabled, .ds-btn.ds-btn--icon:disabled:hover { background: transparent; color: var(--text-ghost); border-color: var(--line); }
 .ds-btn--sm { height: 40px; padding: 0 18px; border-radius: 20px; }
 .ds-btn--lg { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; } /* на телефоне во всю колонку — в блоке ≤767; на компьютере по тексту */
