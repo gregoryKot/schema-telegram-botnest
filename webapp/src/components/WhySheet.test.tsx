@@ -56,8 +56,8 @@ describe('WhySheet', () => {
   it('три действия, итоговая строка и короткое вступление про пять потребностей', () => {
     renderSheet();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Три вещи, которые здесь можно делать');
-    const rows = document.querySelectorAll('.cw-list .ds-list-row .ds-list-title');
-    expect([...rows].map(r => r.textContent)).toEqual(['Трекер', 'Что случилось', 'Дневник']);
+    const rows = screen.getAllByRole('heading', { level: 2 });
+    expect(rows.map(r => r.textContent)).toEqual(['Трекер', 'Что случилось', 'Дневник']);
     expect(screen.getByText('Не нужно делать всё. Одно действие в день — уже работа.')).toBeTruthy();
     const lead = document.querySelector('.cw-lead')!.textContent!;
     expect(lead.replace(/\s+/g, ' ')).toBe(

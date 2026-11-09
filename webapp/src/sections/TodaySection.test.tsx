@@ -189,11 +189,12 @@ describe('TodaySection — плитка трекера по реальным о�
     expect(screen.getByText('Посмотреть сегодня →')).toBeTruthy();
   });
 
-  it('полоски картинки плотные только у оценённых потребностей', () => {
+  it('полоски картинки — по оценкам дня: оценённая встаёт своей высотой, остальные пустые', () => {
     const { container } = renderSection({ ratings: { attachment: 4 } });
-    const strokes = container.querySelectorAll('.ct-main [data-need]');
+    const strokes = container.querySelectorAll('.ct-main .ct-strokes > svg:last-child rect');
     expect(strokes).toHaveLength(5);
-    expect(container.querySelectorAll('.ct-main [data-rated="yes"]')).toHaveLength(1);
+    const rated = container.querySelectorAll('.ct-main .ct-strokes > svg:last-child [data-rated="yes"]');
+    expect([...rated].map((r) => r.getAttribute('data-value'))).toEqual(['4']);
   });
 
   it('клик по плитке открывает трекер и шлёт home_tile', () => {
