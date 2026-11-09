@@ -69,7 +69,10 @@ describe('SafePlaceEx — сохранение и обращение ты/вы',
     const save = screen.getByRole('button', { name: /Сохранить место/ }) as HTMLButtonElement;
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
-    expect(await screen.findByText('«дача у бабушки»')).toBeTruthy();
+    // «…» места есть и в превью формы: ждём сам экран «сохранено», иначе под
+    // нагрузкой проверка опережала ответ сохранения (кнопка ещё «Сохраняю…»).
+    expect(await screen.findByText('Безопасное место · сохранено')).toBeTruthy();
+    expect(screen.getByText('«дача у бабушки»')).toBeTruthy();
     expect(screen.getByText('скрип половиц')).toBeTruthy();
     expect(mockApi.saveSafePlace).toHaveBeenCalledWith(expect.stringContaining('дача у бабушки'));
   });
