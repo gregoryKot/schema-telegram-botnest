@@ -180,7 +180,7 @@ function PhraseRow({ adminKey, row, onPatch, onDrop }: {
           <button style={{ ...btnGhost, color: 'var(--accent-red)' }} onClick={del.ask} disabled={busy}>
             Удалить
           </button>
-          {saved && <span style={{ color: '#4a6335', fontSize: 13 }}>Сохранено ✓</span>}
+          {saved && <span style={{ color: 'var(--accent-green)', fontSize: 13 }}>Сохранено ✓</span>}
           {!row.enabled && <span style={{ color: 'var(--text-sub)', fontSize: 12 }}>выключена</span>}
           {error && <span style={{ color: 'var(--accent-red)', fontSize: 13 }}>{error}</span>}
         </div>

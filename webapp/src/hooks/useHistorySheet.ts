@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useId } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { markSheetOpen } from './openSheets';
+import { useDialogLayer } from '../../../shared/src/utils/dialogStack';
 import { PAGE_LIFE, backDepth, pushSheetState, sheetStackOf } from './historySheetStack';
 
 /**
@@ -10,10 +11,6 @@ import { PAGE_LIFE, backDepth, pushSheetState, sheetStackOf } from './historyShe
  * идёт после onClose, когда снятие записи дошло до истории (пуш соседа в одном
  * такте с go(-1) терялся в Chromium). onClick={goBack} даёт событие — не then.
  */
-// Стек id смонтированных листов — модульный, не state хука: Escape с общего
-// document-листенера закрывает ИМЕННО верхний лист из наложенных (иначе все разом).
-const openSheetIds: string[] = [];
-
 export function useHistorySheet(onClose: () => void) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,6 +25,9 @@ export function useHistorySheet(onClose: () => void) {
   const ready = useRef(false);
   const then = useRef<(() => void) | null>(null);
   const closing = useRef(false); // goBack ушёл, переход ещё не пришёл
+  // Слой в общем стеке диалогов (dialogStack): Escape закрывает верхний лист из наложенных и не
+  // достаётся листу под окном, которое закрылось само или держит Escape (несворачиваемое).
+  const layer = useDialogLayer({ kind: 'sheet' });
 
   useEffect(() => {
     navigate(location.pathname + location.search + location.hash, { replace: false, state: pushSheetState(location.state, id) });
@@ -46,26 +46,17 @@ export function useHistorySheet(onClose: () => void) {
     ref.current(); next?.();
   }, [location, id]);
 
-  useEffect(() => {
-    openSheetIds.push(id);
-    const unmark = markSheetOpen(id);
-    return () => {
-      unmark();
-      const idx = openSheetIds.lastIndexOf(id);
-      if (idx !== -1) openSheetIds.splice(idx, 1);
-    };
-  }, [id]);
+  useEffect(() => markSheetOpen(id), [id]);
+  useEffect(() => layer.join(), [layer]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return; // диалог поверх уже закрылся (dialogStack)
-      // Не верхний из наложенных листов — Escape его не касается.
-      if (openSheetIds[openSheetIds.length - 1] !== id) return;
+      if (e.key !== 'Escape' || e.defaultPrevented || !layer.ownsEscape()) return;
       navigate(-backDepth(loc.current.state, id));
     };
-    document.addEventListener('keydown', handler);
+    document.addEventListener('keydown', handler); // всплытие: поле ввода может погасить Escape
     return () => document.removeEventListener('keydown', handler);
-  }, [id, navigate]);
+  }, [id, navigate, layer]);
 
   // goBack закрывает СВОЙ лист: снимает его запись и всё, что легло сверху (запись
   // ребёнка, в том числе брошенную без goBack). Повтор до прихода перехода (dblclick)

@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { createRef } from 'react';
-import { LimitedTextarea } from './LimitedTextarea';
+import { LimitedInput, LimitedTextarea } from './LimitedTextarea';
 
 afterEach(() => {
   cleanup();
@@ -124,5 +124,55 @@ describe('LimitedTextarea', () => {
     expect(container.querySelector('#f-limit')?.textContent).toContain(
       'Осталось знаков: 10',
     );
+  });
+});
+
+describe('LimitedInput', () => {
+  it('однострочное поле получает тот же предел, метку Вебвизора и счётчик', () => {
+    const { container, rerender } = render(
+      <LimitedInput
+        id="i"
+        max={100}
+        value="абв"
+        onChange={() => {}}
+        placeholder="Строка"
+        className="ds-input"
+      />,
+    );
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Строка');
+    expect(input.tagName).toBe('INPUT');
+    expect(input.maxLength).toBe(100);
+    expect(input.className).toBe('ym-disable-keys ds-input');
+    expect(container.querySelector('div')).toBeNull();
+    rerender(
+      <LimitedInput
+        id="i"
+        max={100}
+        value={'а'.repeat(100)}
+        onChange={() => {}}
+        placeholder="Строка"
+      />,
+    );
+    expect(input.getAttribute('aria-describedby')).toBe('i-limit');
+    expect(container.querySelector('#i-limit')?.textContent).toContain(
+      'Достигнут предел',
+    );
+  });
+
+  it('ref и обработчики клавиш доходят до input', () => {
+    const ref = createRef<HTMLInputElement>();
+    const keys: string[] = [];
+    render(
+      <LimitedInput
+        ref={ref}
+        max={50}
+        value=""
+        onChange={() => {}}
+        onKeyDown={(e) => keys.push(e.key)}
+      />,
+    );
+    expect(ref.current?.tagName).toBe('INPUT');
+    fireEvent.keyDown(ref.current!, { key: 'Enter' });
+    expect(keys).toEqual(['Enter']);
   });
 });

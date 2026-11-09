@@ -30,6 +30,7 @@ import { MidnightPlanner } from './telegram.midnight-planner';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { isConnectionError } from '../logger/db-outage';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
+import { PushService } from '../push/push.service';
 
 @Injectable()
 export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
@@ -48,6 +49,7 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
     private readonly plannerService: NotificationPlannerService,
     private readonly cronLeader: CronLeaderService,
     @Optional() private readonly analytics?: AnalyticsService,
+    @Optional() private readonly push?: PushService,
   ) {
     this.midnight = new MidnightPlanner(
       accountService,
@@ -149,6 +151,7 @@ export class TelegramScheduleService implements OnModuleInit, OnModuleDestroy {
       logger: this.logger,
       track: (t) => this.analytics?.track(null, 'notify_queue_tick', t),
       rejects: this.queueRejects,
+      push: this.push,
     });
   }
 

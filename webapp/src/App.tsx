@@ -40,9 +40,9 @@ const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m
 if (savedTheme() === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); // saved theme before first render; без try хранилище роняло модуль — белый экран (E10)
 
 // ── Root layout – providers wrapper ───────────────────────────────────────────
-function Root() {
+function Root({ personal }: { personal: boolean }) {
   return (
-    <AuthProvider bootstrapSession={!isPersonalSite}>
+    <AuthProvider bootstrapSession={!personal}>
       <TokenBridge />
       <MetrikaTracker />
       <Outlet />
@@ -52,11 +52,6 @@ function Root() {
     </AuthProvider>
   );
 }
-
-// ── Domain detection ──────────────────────────────────────────────────────────
-const isPersonalSite = resolvePersonalSite(window.location.hostname, window.location.search, import.meta.env.DEV); // S15
-
-if (isPersonalSite) applyPersonalSiteChrome();
 
 // ── Router ─────────────────────────────────────────────────────────────────────
 const personalRoutes = [
@@ -141,14 +136,30 @@ const appRoutes = [
   },
 ];
 
-const router = createBrowserRouter([
-  {
-    element: <Root />,
-    errorElement: <RouteErrorScreen />,
-    children: isPersonalSite ? personalRoutes : appRoutes,
-  },
-]);
+// ── Domain detection + router ────────────────────────────────────────────────
+// Домен и роутер считаются при первом рендере, а не при импорте модуля: App.test
+// подменяет адрес и рендерит App без пересборки всего графа (docs/open/ci-tests.md).
+// Кэш по объекту location: в браузере он один — роутер создаётся один раз (и
+// StrictMode, дважды зовущий рендер, второго не создаст); в тесте у каждого
+// подменённого адреса свой объект — свой роутер.
+const routers = new WeakMap<Location, ReturnType<typeof createBrowserRouter>>();
+
+function routerFor(loc: Location) {
+  const cached = routers.get(loc);
+  if (cached) return cached;
+  const isPersonalSite = resolvePersonalSite(loc.hostname, loc.search, import.meta.env.DEV); // S15
+  if (isPersonalSite) applyPersonalSiteChrome();
+  const router = createBrowserRouter([
+    {
+      element: <Root personal={isPersonalSite} />,
+      errorElement: <RouteErrorScreen />,
+      children: isPersonalSite ? personalRoutes : appRoutes,
+    },
+  ]);
+  routers.set(loc, router);
+  return router;
+}
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={routerFor(window.location)} />;
 }

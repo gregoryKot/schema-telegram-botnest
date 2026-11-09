@@ -1,7 +1,7 @@
 // Единственное место, которое знает имя события пути входа и форму его meta.
 //
-// userId всегда null — тот же приём, что у auth_success/auth_rejected
-// (src/api/auth-success.report.ts). Причин две. На шаге «выписали код»
+// userId всегда null — тот же приём, что у messenger_launch/auth_rejected
+// (src/auth/exchange-failure.report.ts). Причин две. На шаге «выписали код»
 // пользователя ещё нет вовсе, а отчёт считает строки с `userId IS NULL` —
 // значит подделать его через открытый /api/event нельзя.
 //

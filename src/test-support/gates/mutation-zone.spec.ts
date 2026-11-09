@@ -7,8 +7,8 @@
 // осталась без мутационного замера. Гейт обязан краснеть на таком файле и
 // зеленеть, когда файл в `mutate` или осознанно классифицирован. Контрольные
 // образцы (правило №15): похожий, но законный/незаконный случай ведёт себя
-// наоборот — файл, нужный не только зоне, не кандидат; запись без причины и
-// протухшая запись красные.
+// наоборот — файл, нужный в основном коду вне зоны, не кандидат; запись без
+// причины и протухшая запись красные.
 import { runGate } from './gate-sandbox';
 
 const GATE = 'check-mutation-zone.mjs';
@@ -81,14 +81,58 @@ describe('check-mutation-zone.mjs', () => {
     expect(res.stderr).toContain('src/helper.ts');
   });
 
-  it('контроль: файл, нужный и коду вне зоны, — не кандидат, записи не требует', () => {
+  // Слепое пятно до 2026-11: выделенный файл, понадобившийся ещё модулю вне
+  // зоны (booking-notify.service.ts — 11 импортёров в зоне и 11 вне), не был
+  // кандидатом и выпадал из поля зрения. Порог — зона хотя бы половина
+  // потребителей; контроль ниже — файл, нужный в основном коду вне зоны.
+  const user = (n: number) =>
+    `import { redact } from './helper';\nexport const u${n} = redact({});\n`;
+
+  it.each([
+    ['1 в зоне, 1 вне', ['src/service.ts'], 1],
+    ['2 в зоне, 1 вне', ['src/service.ts', 'src/service2.ts'], 1],
+  ])(
+    'выделенный файл, нужный ещё и коду вне зоны (%s), — красно',
+    (_n, mutate, outside) => {
+      // Импортёры из зоны — ровно файлы `mutate`, вне — `other*`.
+      const files: Record<string, string> = {
+        'src/helper.ts': helper,
+        'stryker.a.config.json': config(mutate),
+      };
+      mutate.forEach((f, i) => (files[f] = i === 0 ? service : user(0)));
+      for (let i = 1; i <= outside; i += 1) files[`src/other${i}.ts`] = user(i);
+      const res = runGate(GATE, files);
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain('src/helper.ts');
+      expect(res.stderr).toContain(`вне зоны ещё ${outside}`);
+    },
+  );
+
+  it('контроль: файл, нужный в основном коду вне зоны (1 в зоне, 2 вне), — не кандидат', () => {
     const res = runGate(GATE, {
       'src/service.ts': service,
       'src/helper.ts': helper,
-      'src/other.ts': "import { redact } from './helper';\nredact({});\n",
+      'src/other1.ts': user(1),
+      'src/other2.ts': user(2),
       'stryker.a.config.json': config(['src/service.ts']),
     });
     expect(res.status).toBe(0);
+    expect(res.stdout).toContain('0 выделенных вне неё классифицировано');
+  });
+
+  it('протухшая запись (файл стал нужен в основном коду вне зоны) — красно', () => {
+    const res = runGate(GATE, {
+      'src/service.ts': service,
+      'src/helper.ts': helper,
+      'src/other1.ts': user(1),
+      'src/other2.ts': user(2),
+      'stryker.a.config.json': config(['src/service.ts']),
+      'scripts/mutation-zone-baseline.json': baseline({
+        'src/helper.ts': { reason: GOOD_REASON },
+      }),
+    });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('протухшая запись src/helper.ts');
   });
 
   it.each([

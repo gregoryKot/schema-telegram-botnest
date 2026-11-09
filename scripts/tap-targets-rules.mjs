@@ -16,7 +16,10 @@
 // ВЕРХНИЙ уровень style-объекта: `...(x ? { width: 20 } : {})` решением не
 // является, а гейт, угадывающий ветку, краснел бы на законном.
 
+import { classTargetSize, classTokens } from './tap-targets-css.mjs';
+
 export const MIN_TARGET_PX = 44;
+const INLINE_SIZE_RE = /\b(?:width|minWidth|height|minHeight)\s*:/;
 
 const INTERACTIVE_ROLE_RE = /['"](?:button|checkbox|slider)['"]/;
 // Значение целиком — число (`30`, `30.5`) либо строка с ним (`'30px'`,
@@ -119,8 +122,10 @@ const isInteractive = (tag) =>
     ([n, v]) => n === 'onClick' || (n === 'role' && INTERACTIVE_ROLE_RE.test(v ?? '')),
   );
 
-// Все подпороговые тап-цели файла (src уже без комментариев): [{ line, tag, w, h }].
-export function findTapTargets(src) {
+// Все подпороговые тап-цели файла (src уже без комментариев): [{ line, tag, w, h, cls }].
+// classProps (tap-targets-css.mjs) — размеры из CSS: смотрятся, когда инлайн
+// размера не задаёт вовсе; без них считается только инлайн.
+export function findTapTargets(src, classProps = null) {
   const hits = [];
   let line = 1;
   let counted = 0;
@@ -128,13 +133,19 @@ export function findTapTargets(src) {
     if (src[i] !== '<' || /[\w$)\].]/.test(src[i - 1] ?? ' ')) continue;
     const tag = parseTag(src, i);
     if (!tag) continue;
+    if (!isInteractive(tag) || src.slice(i, tag.end).includes('hitboxStyle')) continue;
     const style = tag.attrs.find(([n]) => n === 'style')?.[1];
-    if (style == null || !isInteractive(tag)) continue;
-    if (src.slice(i, tag.end).includes('hitboxStyle')) continue;
-    const size = numericSize(style);
+    let size = style == null ? null : numericSize(style);
+    let cls = null;
+    if (!size && classProps && !(style != null && INLINE_SIZE_RE.test(style))) {
+      const value = tag.attrs.find(([n]) => n === 'className')?.[1];
+      const tokens = value == null ? [] : classTokens(value);
+      size = classTargetSize(tokens, classProps);
+      cls = size && tokens.filter((t) => classProps.has(t)).join(' ');
+    }
     if (!size || size.w >= MIN_TARGET_PX || size.h >= MIN_TARGET_PX) continue;
     for (; counted < i; counted++) if (src[counted] === '\n') line++;
-    hits.push({ line, tag: tag.name, w: size.w, h: size.h });
+    hits.push({ line, tag: tag.name, w: size.w, h: size.h, cls });
   }
   return hits;
 }

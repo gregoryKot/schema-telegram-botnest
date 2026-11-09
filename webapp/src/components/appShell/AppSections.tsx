@@ -150,7 +150,7 @@ export function AppSections({
             onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
             refreshKey={profileRefreshKey}
             displayName={displayName}
-            onTakeTest={() => { ov.setSchemaAutoStartTest(true); ov.setSchemaInitialTab('needs'); ov.setShowSchemaInfo(true); }}
+            onTakeTest={() => ov.openSchema({ startTest: true })}
           />
         )}
         {section === 'practice' && (
@@ -161,7 +161,7 @@ export function AppSections({
               onOpenPlans={() => ov.setShowPlans(true)}
               onOpenTracker={() => { ov.setTrackerNeedId(null); ov.setShowTrackerOverlay(true); }}
               onOpenDiaries={() => ov.setShowDiaries(true)}
-              onOpenSchema={(opts) => { ov.setSchemaAutoStartTest(!!opts?.startTest); ov.setSchemaInitialTab(opts?.tab ?? 'needs'); ov.setShowSchemaInfo(true); }}
+              onOpenSchema={ov.openSchema}
               refreshKey={helpTasksKey}
               onTasksChanged={() => setHelpTasksKey(k => k + 1)}
             />

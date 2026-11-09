@@ -221,6 +221,39 @@ describe('ChannelPublisherService', () => {
       expect(delivered).toEqual([expect.objectContaining({ platform: 'max' })]);
     });
 
+    // Хвост волны 9: слот не вышел нигде, после окна его взяла досылка. Пост
+    // обязан попасть в историю — иначе его нет в lastPostAt и дедупе пула.
+    it('первый выход слота досылкой — пост в истории, фраза из пула', async () => {
+      const max = makeTarget('max', 'c1');
+      const { svc, recordPost } = makePhrases();
+
+      await new ChannelPublisherService([max.target], svc, journal()).retry(
+        'утро',
+        'фраза слота',
+        ['max'],
+        true,
+      );
+
+      expect(recordPost.mock.calls).toEqual([['фраза слота', 'pool']]);
+      expect(svc.pickFromPool).not.toHaveBeenCalled();
+    });
+
+    it('первый выход, но досылка снова не дошла — истории нет', async () => {
+      const max = makeTarget('max', 'c1');
+      max.send.mockRejectedValue(new Error('403'));
+      const { svc, recordPost } = makePhrases();
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+      const res = await new ChannelPublisherService(
+        [max.target],
+        svc,
+        journal(),
+      ).retry('утро', 'фраза слота', ['max'], true);
+
+      expect(res.posted).toBe(false);
+      expect(recordPost).not.toHaveBeenCalled();
+    });
+
     it('площадка выключилась между попытками — в сеть не идём', async () => {
       const off = makeTarget('max', null);
       const { svc } = makePhrases();

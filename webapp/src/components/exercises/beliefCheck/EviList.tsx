@@ -2,6 +2,8 @@ import type { Dispatch, SetStateAction } from 'react';
 import { GlyphPlus, GlyphX } from '../ExScreen';
 import { UndoBar } from '../../UndoBar';
 import { useUndoRemove } from '../../../../../shared/src/hooks/useUndoRemove';
+import { LimitedInput } from '../../../../../shared/src/components/LimitedTextarea';
+import { EXERCISE_TEXT_MAX } from '../../../../../shared/src/limits/textLimits';
 
 // Список доказательств (за/против) в проверке убеждения: строки с
 // удалением + поле добавления (правило №10). «×» видна всегда, зона 44×44;
@@ -42,7 +44,8 @@ export function EviList({
         <span className="ex2-evi-plus">
           <GlyphPlus />
         </span>
-        <input
+        <LimitedInput
+          max={EXERCISE_TEXT_MAX}
           className="ds-input"
           value={input}
           onChange={(e) => onInput(e.target.value)}

@@ -169,16 +169,15 @@ describe('patchConcept / autoSave', () => {
     expect(result.current.saveStatus).toBe('idle'); // ответ прежнему клиенту карточку нового не трогает
   });
 
-  it('autoSave отправляет собранный payload со всеми полями конкретуализации', async () => {
+  // Частичное сохранение (docs/open/therapy.md, потолок тела 256 КБ): уходит только изменённое
+  // и версия строки, от которой считан патч (null — концептуализации ещё нет).
+  it('autoSave отправляет только изменённые поля и версию строки', async () => {
     mockApi.saveConceptualization.mockResolvedValue({ id: 1 });
     const { result } = await openedHook();
     act(() => { result.current.patchConcept({ earlyExperience: 'детство', goals: 'цель' }); });
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(mockApi.saveConceptualization).toHaveBeenCalledWith(1, {
-      schemaIds: [], modeIds: [], earlyExperience: 'детство', unmetNeeds: '',
-      triggers: '', copingStyles: '', goals: 'цель', currentProblems: '', modeTransitions: '',
-      modeLinks: [],
-      schemaLinks: [],
+      earlyExperience: 'детство', goals: 'цель', baseVersion: null,
     });
   });
 

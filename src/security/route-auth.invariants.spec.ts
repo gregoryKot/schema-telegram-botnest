@@ -13,6 +13,8 @@
 // Теперь в контроллере вне PUBLIC_BY_DESIGN/ADMIN_KEY_GATED каждый роут-метод
 // либо под гвардом (класс или метод), либо назван в ANONYMOUS_BY_DESIGN с
 // причиной. Разбор — src/test-support/route-method-auth.ts (AST).
+// OptionalJwtGuard защитой не считается (аноним проходит, аудит 2026-11):
+// метод под ним назван в OPTIONAL_AUTH_BY_DESIGN с причиной.
 //
 // Классификация (стены PUBLIC_BY_DESIGN/ADMIN_KEY_GATED) живёт в
 // controller-classification.ts — общий источник с e2e-route-coverage.
@@ -27,12 +29,15 @@ import {
   PUBLIC_BY_DESIGN,
   ADMIN_KEY_GATED,
   ANONYMOUS_BY_DESIGN,
+  OPTIONAL_AUTH_BY_DESIGN,
 } from './controller-classification';
 import {
   GUARD_NAMES,
   GUARD_RE,
+  OPTIONAL_GUARD_NAMES,
   duplicateKeys,
   routeMethods,
+  unclassifiedRoutes,
 } from '../test-support/route-method-auth';
 
 const REL = 'x/x.controller.ts';
@@ -72,27 +77,31 @@ describe('трипваер: каждый контроллер защищён (gu
     },
   );
 
-  it('каждый роут-метод под гвардом либо назван в ANONYMOUS_BY_DESIGN', () => {
-    const unprotected = METHOD_CHECKED.flatMap(methodsOf)
-      .filter((m) => !m.guard && !ANONYMOUS_BY_DESIGN[m.key])
-      .map((m) => m.key);
-    expect(unprotected).toEqual([]);
+  it('каждый роут-метод под гвардом либо назван в ANONYMOUS/OPTIONAL_AUTH_BY_DESIGN', () => {
+    const methods = METHOD_CHECKED.flatMap(methodsOf);
+    expect(
+      unclassifiedRoutes(methods, ANONYMOUS_BY_DESIGN, OPTIONAL_AUTH_BY_DESIGN),
+    ).toEqual([]);
   });
 
-  it('в ANONYMOUS_BY_DESIGN нет протухших записей (метод есть и без гварда)', () => {
-    const anonymousNow = new Set(
-      METHOD_CHECKED.flatMap(methodsOf)
-        .filter((m) => !m.guard)
-        .map((m) => m.key),
-    );
-    const stale = Object.keys(ANONYMOUS_BY_DESIGN).filter(
-      (k) => !anonymousNow.has(k),
-    );
-    expect(stale).toEqual([]);
-  });
+  it.each([
+    ['ANONYMOUS_BY_DESIGN', ANONYMOUS_BY_DESIGN, false],
+    ['OPTIONAL_AUTH_BY_DESIGN', OPTIONAL_AUTH_BY_DESIGN, true],
+  ] as const)(
+    'в %s нет протухших записей (метод есть, без гварда, нужного класса)',
+    (_name, registry, optional) => {
+      const now = new Set(
+        METHOD_CHECKED.flatMap(methodsOf)
+          .filter((m) => !m.guard && !!m.optional === optional)
+          .map((m) => m.key),
+      );
+      expect(Object.keys(registry).filter((k) => !now.has(k))).toEqual([]);
+    },
+  );
 
-  it('у каждой записи ANONYMOUS_BY_DESIGN есть причина', () => {
-    for (const [key, reason] of Object.entries(ANONYMOUS_BY_DESIGN)) {
+  it('у каждой записи ANONYMOUS/OPTIONAL_AUTH_BY_DESIGN есть причина', () => {
+    const all = { ...ANONYMOUS_BY_DESIGN, ...OPTIONAL_AUTH_BY_DESIGN };
+    for (const [key, reason] of Object.entries(all)) {
       expect({ key, ok: reason.length >= 20 }).toEqual({ key, ok: true });
     }
   });
@@ -109,10 +118,19 @@ describe('трипваер: каждый контроллер защищён (gu
       expect({ name, re: GUARD_RE.test(src) }).toEqual({ name, re: true });
       expect(routeMethods(REL, src).map((m) => m.guard)).toEqual(['method']);
     }
+    // OptionalJwtGuard: файл разбирается по методу, но метод не защищён.
+    for (const name of OPTIONAL_GUARD_NAMES) {
+      const src = `@Controller('x') export class C { @Get('a') @UseGuards(${name}) a() {} }`;
+      expect({ name, re: GUARD_RE.test(src) }).toEqual({ name, re: true });
+      const [m] = routeMethods(REL, src);
+      expect([m.guard, m.optional]).toEqual([null, 'method']);
+    }
     // Контроль: чужой гвард не засчитывается ни тем, ни другим.
     const other = `@Controller('x') export class C { @Get('a') @UseGuards(SomeOtherGuard) a() {} }`;
     expect(GUARD_RE.test(other)).toBe(false);
-    expect(routeMethods(REL, other).map((m) => m.guard)).toEqual([null]);
+    expect(routeMethods(REL, other).map((m) => [m.guard, m.optional])).toEqual([
+      [null, null],
+    ]);
   });
 
   it('нет контроллеров вне классификации (новый = защити или внеси в allowlist)', () => {
@@ -144,5 +162,8 @@ describe('трипваер: каждый контроллер защищён (gu
     // guarded-контроллеров (вход, OAuth-колбэки, восстановление, refresh,
     // logout, poll тикета). Может только сокращаться.
     expect(Object.keys(ANONYMOUS_BY_DESIGN).length).toBeLessThanOrEqual(14);
+    // 6 (2026-11): реестр назвал роуты входа под OptionalJwtGuard, которые
+    // раньше числились guarded. Может только сокращаться.
+    expect(Object.keys(OPTIONAL_AUTH_BY_DESIGN).length).toBeLessThanOrEqual(6);
   });
 });

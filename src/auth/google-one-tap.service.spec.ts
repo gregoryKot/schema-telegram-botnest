@@ -26,8 +26,13 @@ function make() {
   const signInOrLinkOrMerge = jest.fn();
   const providers = { get: jest.fn(() => ({ verifyIdToken })) };
   const flow = { signInOrLinkOrMerge };
-  const svc = new GoogleOneTapService(providers as never, flow as never);
-  return { svc, verifyIdToken, signInOrLinkOrMerge };
+  const analytics = { track: jest.fn().mockResolvedValue(undefined) };
+  const svc = new GoogleOneTapService(
+    providers as never,
+    flow as never,
+    analytics as never,
+  );
+  return { svc, verifyIdToken, signInOrLinkOrMerge, analytics };
 }
 
 function makeRes() {
@@ -79,6 +84,33 @@ describe('GoogleOneTapService.login', () => {
     expect(out).toEqual({ accessToken: 'acc', expiresIn: 900 });
   });
 
+  // Аудит 2026-10 (правило №8): входы через окно One Tap не были видны в /stats.
+  // Событие пишет только сервер и с userId = null — подделку через /api/event
+  // (там userId всегда есть) отчёт не считает.
+  it.each([
+    ['tokens', 'signed_in'],
+    ['totp_challenge', 'twofa'],
+  ] as const)(
+    'исход %s → событие login_one_tap {outcome: %s}',
+    async (kind, outcome) => {
+      const { svc, verifyIdToken, signInOrLinkOrMerge, analytics } = make();
+      verifyIdToken.mockResolvedValue(IDENTITY);
+      signInOrLinkOrMerge.mockResolvedValue(
+        kind === 'tokens'
+          ? {
+              kind,
+              userId: 7n,
+              tokens: { accessToken: 'a', refreshToken: 'r', expiresIn: 900 },
+            }
+          : { kind, userId: 7n, challengeToken: 'ct' },
+      );
+      await svc.login('h.p.s', 'cookie-1', makeRes());
+      expect(analytics.track).toHaveBeenCalledWith(null, 'login_one_tap', {
+        outcome,
+      });
+    },
+  );
+
   it('включён 2FA → сессию НЕ выдаём, возвращаем challenge', async () => {
     const { svc, verifyIdToken, signInOrLinkOrMerge } = make();
     verifyIdToken.mockResolvedValue(IDENTITY);
@@ -108,5 +140,21 @@ describe('GoogleOneTapService.login', () => {
     // До выдачи сессии дело не дошло.
     expect(signInOrLinkOrMerge).not.toHaveBeenCalled();
     expect(res.cookie).not.toHaveBeenCalled();
+  });
+
+  it('отказ верификатора → событие {outcome: rejected}; прочие сбои — без события', async () => {
+    const { svc, verifyIdToken, signInOrLinkOrMerge, analytics } = make();
+    verifyIdToken.mockRejectedValue(new UnauthorizedException('bad'));
+    await expect(svc.login('x', 'c', makeRes())).rejects.toThrow('bad');
+    expect(analytics.track).toHaveBeenCalledWith(null, 'login_one_tap', {
+      outcome: 'rejected',
+    });
+
+    // Контроль: упала база на входе — это не «Google не принял», событие не пишем.
+    analytics.track.mockClear();
+    verifyIdToken.mockResolvedValue(IDENTITY);
+    signInOrLinkOrMerge.mockRejectedValue(new Error('db down'));
+    await expect(svc.login('x', 'c', makeRes())).rejects.toThrow('db down');
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 });

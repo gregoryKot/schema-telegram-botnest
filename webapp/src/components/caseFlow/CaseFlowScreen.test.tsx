@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CaseFlowScreen } from './CaseFlowScreen';
 import { CRISIS_HOTLINE_DISPLAY, CRISIS_HOTLINES } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
 
 const trackEvent = vi.fn();
@@ -308,29 +309,39 @@ describe('CaseFlowScreen — ровный день', () => {
   });
 });
 
+describeCrisisField('webapp/src/components/caseFlow/CaseSceneStep.tsx', {
+  label: 'сцена',
+  open: () => renderFlow(),
+  enter: typeScene,
+});
+// «Своё» на шагах тела и импульса — поле CaseChipGrid, детекция в useCaseQuickFlow.
+const enterOwn = (placeholder: string) => (text: string) =>
+  fireEvent.change(screen.getByPlaceholderText(placeholder), { target: { value: text } });
+const toFeel = () => {
+  renderFlow();
+  typeScene(SCENE);
+  click('Дальше');
+  click('Страшно, тревожно');
+};
+describeCrisisField('webapp/src/components/caseFlow/CaseChipGrid.tsx', {
+  label: '«своё» в теле',
+  open: toFeel,
+  enter: enterOwn('Например: сжало в груди'),
+});
+describeCrisisField('webapp/src/components/caseFlow/CaseChipGrid.tsx', {
+  label: '«свой» импульс',
+  open: () => {
+    toFeel();
+    click('Дальше');
+  },
+  enter: enterOwn('Например: хотелось всё бросить'),
+});
+
 describe('CaseFlowScreen — кризис и «Тяжело прямо сейчас» (правило №7)', () => {
-  it('кризисная фраза в сцене показывает CrisisCard', () => {
+  it('кризисная сцена не показывает «Вернуться к разбору»', () => {
     renderFlow();
     typeScene('хочу умереть');
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
     expect(screen.queryByText('Вернуться к разбору ▲')).toBeNull();
-  });
-
-  it('нейтральный текст карточку не вызывает', () => {
-    renderFlow();
-    typeScene(SCENE);
-    expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
-  });
-
-  it('кризисное «своё» на втором шаге тоже показывает карточку', () => {
-    renderFlow();
-    typeScene(SCENE);
-    click('Дальше');
-    click('Страшно, тревожно');
-    fireEvent.change(screen.getByPlaceholderText('Например: сжало в груди'), {
-      target: { value: 'хочу умереть' },
-    });
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
   });
 
   // docs/open/frontend-ux.md: флаг crisis получали все шаги, кроме итога —

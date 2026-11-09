@@ -3,16 +3,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { isNotifyTimezone } from '../notification/notify-timezones';
 import { adoptDeviceTimezone } from './device-timezone';
 import { canonicalUserId, telegramIdsFor } from '../auth/telegram-identity';
-import { WEB_USER_ID_MIN, isTelegramUserId } from '../auth/user-id-range';
+import { isTelegramUserId } from '../auth/user-id-range';
 import { deleteAllUserData } from './account.delete';
 // Реестр живёт отдельным файлом (им пользуется и account.delete.ts);
 // ре-экспорт — чтобы импорты соседей и спек продолжали работать.
 export { USER_DATA_TABLES } from './user-data-tables';
+import type { SendSettings } from './send-settings';
+import { loadSendSettings } from './send-settings.load';
 import {
-  SEND_SETTINGS_SELECT,
-  toSendSettings,
-  type SendSettings,
-} from './send-settings';
+  notifyAudience,
+  notifyRouteOf,
+  type NotifyRoute,
+} from './notify-channel';
 export type { SendSettings } from './send-settings';
 
 // Жизненный цикл аккаунта: регистрация/идентичность, роль, статус блокировки
@@ -108,22 +110,13 @@ export class AccountService {
    *
    * Отсекаем ИМЕННО здесь, до создания строки: тогда веха (streak_7 и
    * соседи) не сгорает у человека, который привяжет Telegram позже.
+   *
+   * Подписка на уведомления в приложении — свой адрес (notify-channel.ts):
+   * с ней человек в выборке и без Telegram, и с заблокированным ботом.
    */
   async getAllUsersWithSettings() {
     return this.prisma.user.findMany({
-      where: {
-        notifyEnabled: true,
-        botBlockedAt: null,
-        deletedAt: null,
-        // Либо есть привязка к Telegram, либо номер сам телеграмный (старый
-        // пользователь бота без строки AuthProvider). Веб-номер без привязки
-        // отсекаем: чата по нему нет, и раньше такие люди молча копили
-        // botBlockedAt на неудачных отправках.
-        OR: [
-          { authProviders: { some: { provider: 'telegram' } } },
-          { id: { lt: WEB_USER_ID_MIN } },
-        ],
-      },
+      where: { notifyEnabled: true, deletedAt: null, OR: notifyAudience() },
       select: {
         id: true,
         notifyLocalHour: true,
@@ -150,25 +143,25 @@ export class AccountService {
     });
   }
 
-  /** Тихие часы, пауза, пояс, форма и адрес для пачки юзеров (processQueue) */
+  /** Тихие часы, пауза, пояс, форма и адреса для пачки юзеров (processQueue) */
   async getSendSettingsFor(ids: bigint[]): Promise<Map<string, SendSettings>> {
-    if (ids.length === 0) return new Map();
-    const rows = await this.prisma.user.findMany({
-      where: { id: { in: ids } },
-      select: SEND_SETTINGS_SELECT,
-    });
-    return new Map(rows.map((r) => [r.id.toString(), toSendSettings(r)]));
+    return loadSendSettings(this.prisma, ids);
   }
 
   /**
-   * Доходят ли до человека уведомления: тот же адрес, по которому их шлёт
-   * очередь (getSendSettingsFor → chatId). QA 2026-11 (З5): веб-клиент без
-   * Telegram видел включённые тумблеры, а очередь снимала его уведомления
-   * как «доставить некому».
+   * Куда очередь отправит уведомление прямо сейчас — тот же загрузчик и та же
+   * функция выбора, что у очереди (notify-channel.ts). QA 2026-11 (З5):
+   * веб-клиент без Telegram видел включённые тумблеры, а очередь снимала его
+   * уведомления как «доставить некому».
    */
-  async isNotifyReachable(userId: bigint): Promise<boolean> {
+  async notifyRoute(userId: bigint): Promise<NotifyRoute> {
     const s = await this.getSendSettingsFor([userId]);
-    return (s.get(userId.toString())?.chatId ?? null) !== null;
+    return notifyRouteOf(s.get(String(userId)));
+  }
+
+  /** Доходят ли до человека уведомления хоть каким-то каналом. */
+  async isNotifyReachable(userId: bigint): Promise<boolean> {
+    return (await this.notifyRoute(userId)).channel !== null;
   }
 
   /**

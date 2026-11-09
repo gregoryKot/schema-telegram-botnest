@@ -5,6 +5,7 @@ import { Dialog } from './Dialog';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { DeleteAccountConfirm } from '../../../shared/src/components/DeleteAccountConfirm';
 import { deleteAccountCopy, wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
+import { dropPushAfterAccountDeletion } from '../push/pushSubscription';
 
 // Удаление аккаунта на сайте — один диалог на «Профиль» и «Настройки → Данные»
 // (QA 2026-11, К2). Раньше их было два: копия в «Профиле» не знала про шаг
@@ -13,7 +14,7 @@ import { deleteAccountCopy, wipeAfterAccountDeletion } from '../../../shared/src
 // - текст говорит правду: уходит аккаунт целиком, со способами входа и связью
 //   с терапевтом (З2), — shared/account/accountDeletion.ts;
 // - последний шаг и код 2FA — общий с мини-аппом DeleteAccountConfirm;
-// - после удаления — уборка хранилища и экран входа «Аккаунт удалён»;
+// - после удаления — уборка хранилища, подписки на пуши и экран входа «Аккаунт удалён»;
 // - сбой виден и прямо говорит, что данные на месте (операция без отмены);
 // - «Назад» браузера закрывает диалог, а не экран под ним (useHistorySheet).
 export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
@@ -33,7 +34,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
         <DeleteAccountConfirm
           tr={tr} deleting={deleting} setDeleting={setDeleting} deleteAllUserData={api.deleteAllUserData}
           onFailed={() => { setConfirming(false); setFailed(true); }}
-          onDeleted={() => { wipeAfterAccountDeletion(); window.location.reload(); }}
+          onDeleted={() => void dropPushAfterAccountDeletion().finally(() => { wipeAfterAccountDeletion(); window.location.reload(); })}
         />
       )}
       <div className="sk-dialog-actions">

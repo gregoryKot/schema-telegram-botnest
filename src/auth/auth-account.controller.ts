@@ -41,6 +41,9 @@ import {
   mergeOrThrow,
 } from './merge-confirm';
 import type { Request, Response } from 'express';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { messengerLaunchMeta } from '../analytics/launch-platforms.constants';
+import { failureSinks, reportExchangeFailure } from './exchange-failure.report';
 import {
   isCrossSiteRequest,
   requireCsrf,
@@ -62,6 +65,7 @@ export class AuthAccountController {
     private readonly totp: TotpService,
     private readonly tickets: TicketDeviceService,
     private readonly notice: SecurityNoticeService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -149,25 +153,27 @@ export class AuthAccountController {
     requireCsrf(req, 'telegram/webapp', this.securityLog);
     const { initData } = dto;
     if (!initData) throw new BadRequestException('Missing initData');
-    // IP — для троттлинга алерта о подделке подписи (rejectInitData).
-    const tg = this.auth.verifyTelegramWebAppData(initData, req.ip);
+    // IP — троттлинг алерта о подделке (rejectInitData) и строки отказа входа
+    // в /stats. Нет BOT_TOKEN — наша конфигурация: в отказы входа не идёт.
+    const sinks = failureSinks(this.analytics);
+    const tg = this.auth.verifyTelegramWebAppData(initData, req.ip, (err) =>
+      reportExchangeFailure(err, 'telegram', dto.platform, req.ip, sinks),
+    );
     const userId = await this.auth.findOrCreateUserByProvider(
       'telegram',
       String(tg.id),
       tg.firstName,
     );
-    const tokens = await this.auth.issueTokens(
-      userId,
-      req.ip,
-      req.headers['user-agent'],
-    );
+    const ua = req.headers['user-agent'];
+    const tokens = await this.auth.issueTokens(userId, req.ip, ua);
     // Telegram Web (Web A/K) грузит мини-апп в iframe, как MAX: strict-кука
     // там не продлевается (2026-08-21). Нативное вебвью остаётся на strict.
-    const crossSite = isCrossSiteRequest(
-      req,
-      this.config.getOrThrow<string>('WEBAPP_URL'),
-    );
+    const webappUrl = this.config.getOrThrow<string>('WEBAPP_URL');
+    const crossSite = isCrossSiteRequest(req, webappUrl);
     setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
+    // Платформа запуска — server-events.constants.ts; track() не бросает.
+    const meta = messengerLaunchMeta('telegram', dto.platform);
+    void this.analytics.track(null, 'messenger_launch', meta);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 

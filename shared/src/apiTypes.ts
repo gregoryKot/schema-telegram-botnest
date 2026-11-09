@@ -24,7 +24,9 @@ export interface UserSettings {
   therapistShareCards: boolean;
   therapistShareProfile: boolean;
   uiPrefs?: UiPrefsPatch | null; // настройки экранов; POST заменяет объект целиком
-  notifyReachable?: boolean; // только GET: есть ли куда слать уведомления (Telegram)
+  notifyReachable?: boolean; // только GET: есть ли куда слать уведомления (=== notifyChannel !== null)
+  notifyChannel?: 'push' | 'telegram' | null; // только GET: push — подписано хоть одно устройство; иначе telegram, если привязан
+  telegramLinked?: boolean; // только GET: привязан ли Telegram (подпись тумблера пушей «вместо Telegram»)
 }
 
 export interface StreakData {

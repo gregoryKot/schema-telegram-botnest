@@ -2,7 +2,7 @@ import { buildProbes } from './registry';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 describe('buildProbes', () => {
-  it('собирает все 19 проб с уникальными id', () => {
+  it('собирает все 21 пробу с уникальными id', () => {
     const probes = buildProbes({} as unknown as PrismaService);
     const ids = probes.map((p) => p.id);
     expect(ids.sort()).toEqual(
@@ -15,17 +15,21 @@ describe('buildProbes', () => {
         'clientIp',
         'cronLeases',
         'db',
+        'dependabotPrs',
         'email',
         'encryptionReadable',
         'googleOAuth',
+        'max',
         'oauthRedirects',
         'paymentWebhooks',
         'robokassa',
         'runtimeMode',
         'telegram',
+        'telegramDomain',
         'telegramPolling',
         'throttleStorage',
         'vkOAuth',
+        'webPush',
       ].sort(),
     );
     expect(new Set(ids).size).toBe(ids.length);
@@ -43,8 +47,11 @@ describe('buildProbes', () => {
         'backupFreshness',
         'caldav',
         'googleOAuth',
+        'max',
         'telegram',
+        'telegramDomain',
         'vkOAuth',
+        'webPush',
       ].sort(),
     );
   });

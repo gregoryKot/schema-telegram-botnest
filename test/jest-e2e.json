@@ -7,7 +7,10 @@
     "<rootDir>/e2e-support/env.setup.ts",
     "<rootDir>/setup-e2e.ts"
   ],
-  "setupFilesAfterEnv": ["<rootDir>/e2e-support/throttle-reset.setup.ts"],
+  "setupFilesAfterEnv": [
+    "<rootDir>/e2e-support/throttle-reset.setup.ts",
+    "<rootDir>/../src/test-support/exit-code-leak.setup.ts"
+  ],
   "moduleNameMapper": {
     "^jose$": "<rootDir>/e2e-support/jose.stub.ts"
   },

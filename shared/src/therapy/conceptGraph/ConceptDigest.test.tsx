@@ -17,6 +17,13 @@ const SKIN: ConceptSkin = {
   link: 'sk-link',
   card: 'sk-card',
   fold: { root: 'f-root', btn: 'f-btn', chev: 'f-chev', body: 'f-body' },
+  digest: {
+    title: 'dg-title',
+    list: 'dg-list',
+    row: 'dg-row',
+    term: 'dg-term',
+    value: 'dg-value',
+  },
 };
 
 const ROWS: DigestRow[] = [
@@ -76,14 +83,26 @@ describe('ConceptDigest', () => {
     const card = screen.getByRole('region', { name: 'Коротко' });
     expect(card.className).toBe('sk-card');
     expect(card.getAttribute('style')).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Коротко' }).className).toBe(
-      'sk-label',
-    );
-    for (const t of within(card).getAllByRole('term'))
-      expect(t.className).toBe('sk-label');
+    // Раскладка ветки skin — классами, а не инлайном: инлайн margin/flex/lineHeight спорил с ds-label.
+    const head = screen.getByRole('heading', { name: 'Коротко' });
+    expect(head.className).toBe('sk-label dg-title');
+    expect(head.getAttribute('style')).toBeNull();
+    const list = card.querySelector('dl')!;
+    expect(list.className).toBe('dg-list');
+    expect(list.getAttribute('style')).toBeNull();
+    for (const row of Array.from(list.children)) {
+      expect(row.className).toBe('dg-row');
+      expect(row.getAttribute('style')).toBeNull();
+    }
+    for (const t of within(card).getAllByRole('term')) {
+      expect(t.className).toBe('sk-label dg-term');
+      expect(t.getAttribute('style')).toBeNull();
+    }
     const [schemas, modes, goal] = within(card).getAllByRole('definition');
-    expect(goal.style.fontSize).toBe('');
-    expect(goal.style.color).toBe('');
+    for (const d of [schemas, modes, goal]) {
+      expect(d.className).toBe('dg-value');
+      expect(d.getAttribute('style')).toBeNull();
+    }
     // плашки сущностей — тег skin в тоне домена / группы, слово «→» — без тега
     const chip = within(schemas).getByText('Неуспешность');
     expect(chip.className).toBe('sk-tag');

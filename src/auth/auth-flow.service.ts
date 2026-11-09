@@ -21,6 +21,7 @@ import {
   redirectToCallbackHost,
   assertOAuthStateMatches,
 } from './oauth-host';
+import { disabledProviderRedirect } from './oauth-provider-switch';
 
 export type SignInOutcome =
   | {
@@ -40,9 +41,7 @@ export type SignInOutcome =
       otherDisplay: string | null;
     };
 
-// Shared, injectable OAuth/sign-in flow helpers used by the auth controllers.
-// Extracted verbatim from AuthController so route handlers stay thin and the
-// controller files stay under the size ratchet — no behaviour change.
+// Общий OAuth/вход для auth-контроллеров (вынесен из AuthController, №10).
 @Injectable()
 export class AuthFlowService {
   private readonly logger = new Logger(AuthFlowService.name);
@@ -204,10 +203,8 @@ export class AuthFlowService {
   }
 
   // ─── OAuth helpers ────────────────────────────────────────────────────────
-  // Each redirect-flow provider has a tiny controller stub calling these
-  // helpers (oauthRedirect/oauthCallback). Adding a new one (Yandex, Apple,
-  // …): provider file + registry/module registration + @Get(id) и
-  // @Get(id + '/callback') стабы. Не Get(':provider') — затенил бы /me, /refresh.
+  // Новый провайдер: файл + регистрация + стабы @Get(id), @Get(id + '/callback')
+  // (не Get(':provider') — затенил бы /me, /refresh) + env в oauth-provider-switch.
 
   oauthRedirect(provider: string, req: Request, res: Response): void {
     const handler = this.providers.get(provider);
@@ -215,6 +212,8 @@ export class AuthFlowService {
       throw new BadRequestException(
         `Provider ${provider} doesn't support OAuth`,
       );
+    const off = disabledProviderRedirect(provider, this.config); // env снят — не 500
+    if (off) return res.redirect(off);
     // Алиас-домен (kotlarewski.gr) отдаёт /api/auth/*, но колбэк провайдера
     // всегда на канонический хост — кука здесь не увидится (2026-09-08).
     // Только АНОНИМНЫЙ вход: у привязки кука link_token/сессия на текущем

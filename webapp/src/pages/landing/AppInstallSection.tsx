@@ -7,22 +7,22 @@ import { SceneHomeScreen } from '../../components/art/LandingScenesMore';
 import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { hideInstallOffers, subscribeAppInstalled } from '../../utils/pwaInstall';
+import { useHostId } from '../../host/useHostId';
 
-// Секция «значок на экране» лендинга — полоса небесной бумаги: сайт ставится как приложение из
-// браузера (манифест ведёт в /today; страница — /install). Шаги — из installSteps (один
-// источник текста). Рядом с заголовком — сцена «значок на экране» (SceneHomeScreen: знак
-// продукта среди значков на экране телефона): самая длинная полоса страницы не без картинки.
+// Секция «значок на экране» лендинга — полоса небесной бумаги: сайт ставится как приложение из браузера
+// (манифест ведёт в /today; страница — /install). Шаги — из installSteps (один источник текста). Рядом
+// с заголовком — сцена SceneHomeScreen: самая длинная полоса страницы не без картинки.
 // Аналитика анонимная: событие в POST /api/public-event (userId = null).
 const trackInstall = (action: 'add' | 'added') =>
   api.trackPublicEvent('home_screen_offer', { action, surface: 'site_landing' });
 
 export function AppInstallSection() {
   const { canPrompt, install } = useInstallPrompt();
+  const hostId = useHostId(); // SDK мессенджера может доехать после рендера — секция не мигает
   useEffect(() => subscribeAppInstalled(() => trackInstall('added')), []);
 
-  // Лендинг в scope установленного приложения: открытый изнутри standalone,
-  // он не должен предлагать поставить то, что уже стоит.
-  if (hideInstallOffers()) return null;
+  // Лендинг в scope установленного приложения (standalone) не предлагает поставить то, что уже стоит.
+  if (hideInstallOffers(hostId)) return null;
 
   return (
     <PaperBand id="app" calm>

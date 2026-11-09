@@ -48,10 +48,13 @@ const STRUCTURED_INPUT_MODES = new Set([
   'url',
 ]);
 
-/** Текст атрибутов каждого `<input …>` в исходнике (между `<input` и `>`). */
+/** Текст атрибутов каждого `<input …>` в исходнике (между `<input` и `>`).
+ *  `<LimitedInput` (shared/src/components/LimitedTextarea.tsx — `<input>` со
+ *  счётчиком предела) — тот же тег свободного текста: без этого поле, переведённое
+ *  на общий контрол, выпадало бы из кризисного трипваера молча. */
 export function inputTags(src: string): string[] {
   const out: string[] = [];
-  const re = /<input\b/g;
+  const re = /<(?:input|LimitedInput)\b/g;
   for (let m = re.exec(src); m !== null; m = re.exec(src)) {
     let depth = 0;
     let i = m.index + m[0].length;

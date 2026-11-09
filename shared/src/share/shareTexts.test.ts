@@ -84,7 +84,7 @@ describe('achievementShareText', () => {
   it('название достижения и ссылка попадают в текст, форма нейтральная (1-е лицо)', () => {
     const text = achievementShareText('Неделя подряд', 't.me/TestBot');
     expect(text).toBe(
-      'Новое достижение — «Неделя подряд»!\n\nВеду дневник потребностей. t.me/TestBot',
+      'Новое достижение — «Неделя подряд»!\n\nВеду трекер потребностей. t.me/TestBot',
     );
   });
 });
@@ -92,7 +92,7 @@ describe('achievementShareText', () => {
 describe('streakShareText', () => {
   it('склоняет «день/дня/дней» по числу и подставляет ссылку', () => {
     expect(streakShareText(1, 't.me/TestBot')).toBe(
-      '🔥 1 день подряд в дневнике потребностей!\n\nОтслеживаю своё состояние каждый день. t.me/TestBot',
+      '🔥 1 день подряд в трекере потребностей!\n\nОтслеживаю своё состояние каждый день. t.me/TestBot',
     );
     expect(streakShareText(3, 't.me/TestBot')).toContain('3 дня подряд');
     expect(streakShareText(7, 't.me/TestBot')).toContain('7 дней подряд');
@@ -149,7 +149,7 @@ describe('achievementsShareText', () => {
   it('счёт «получено из всего», ссылка на месте', () => {
     const text = achievementsShareText(5, 12, 't.me/TestBot');
     expect(text).toBe(
-      '🏅 Достижения в дневнике потребностей: 5 из 12.\n\nt.me/TestBot',
+      '🏅 Достижения в трекере потребностей: 5 из 12.\n\nt.me/TestBot',
     );
   });
 });
@@ -167,5 +167,21 @@ describe('gratitudeShareText', () => {
   it('без текста самой записи (он на картинке) — только ссылка', () => {
     const text = gratitudeShareText('t.me/TestBot');
     expect(text).toBe('🌱 Моя благодарность сегодня.\n\nt.me/TestBot');
+  });
+});
+
+// Оценка пяти потребностей — «трекер потребностей» (docs/architecture/glossary.md), «дневник» —
+// записи схем и режимов. Шаринг достижений и серии звал трекер дневником (docs/open/frontend-ux.md).
+describe('шаринг трекера — словом из глоссария', () => {
+  it('ни один текст не зовёт трекер «дневником потребностей»', () => {
+    const texts = [
+      achievementShareText('Неделя подряд', 'l'),
+      streakShareText(3, 'l'),
+      achievementsShareText(5, 12, 'l'),
+    ];
+    for (const t of texts) {
+      expect(t).not.toMatch(/дневник\S* потребност/i);
+      expect(t).toMatch(/трекер\S* потребностей/);
+    }
   });
 });

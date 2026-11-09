@@ -4,16 +4,11 @@ import { pressable } from '../../utils/a11y';
 import { TherapyCaution } from '../therapy/TherapyCaution';
 import { useExBackLabel } from './exBackLabel';
 import { Skeleton, SkeletonCard } from '../Skeleton';
+import { ExBar } from './ExBar';
 import '../../styles/sheet-exercises.css';
 
 // ── Shared SVG icons ─────────────────────────────────────────────────────────
-export function GlyphArrowLeft() {
-  return (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 8H3M7 4L3 8l4 4" />
-    </svg>
-  );
-}
+export { GlyphArrowLeft } from './ExBar';
 export function GlyphArrowRight() {
   return (
     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -53,9 +48,7 @@ export function ExScreen({ onBack, backLabel, eyebrow, art, title, lede, caution
   const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
-      <div className="ds-sheet-head ex2-top">
-        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{backLabel ?? hostBackLabel}</button>
-      </div>
+      <ExBar onBack={onBack} label={backLabel ?? hostBackLabel} sticky />
       <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
         <div className="ex2-main">
           {art}<div className="ds-eyebrow">{eyebrow}</div>
@@ -78,9 +71,7 @@ export function ExScreenSkeleton({ onBack }: { onBack: () => void }) {
   const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
-      <div className="ds-sheet-head ex2-top">
-        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{hostBackLabel}</button>
-      </div>
+      <ExBar onBack={onBack} label={hostBackLabel} sticky />
       <div className="ex2-body ex2-body--single" aria-hidden>
         <div className="ex2-main ex2-skel">
           <Skeleton width={120} height={12} />

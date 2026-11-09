@@ -38,8 +38,7 @@ export function renderActivityTemplate(
             ]
           : [[openDiaryButton]];
       return {
-        // Формулировка намеренно безличная: она одинаково звучит
-        // и в «ты», и в «вы», и не навязывает читателю мужской род.
+        // Безлично: одинаково звучит в «ты» и «вы», без рода читателя.
         text: `🎯 План на сегодня:\n\n${text}`,
         keyboard: Markup.inlineKeyboard(buttons),
       };
@@ -47,6 +46,7 @@ export function renderActivityTemplate(
 
     case 'practice_missed': {
       const text = payload?.practiceText as string | undefined;
+      const day = payload?.day as string | undefined; // «на пятницу», weekly.ts
       const planId = payload?.planId as number | undefined;
       if (!text) return null;
       const buttons =
@@ -63,7 +63,7 @@ export function renderActivityTemplate(
             ]
           : [[openDiaryButton]];
       return {
-        text: `🎯 Вчера был план:\n\n${text}\n\nКак получилось?`,
+        text: `🎯 ${day ? `План ${day}` : 'Вчера был план'}:\n\n${text}\n\nКак получилось?`,
         keyboard: Markup.inlineKeyboard(buttons),
       };
     }

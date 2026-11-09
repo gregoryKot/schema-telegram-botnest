@@ -3,6 +3,7 @@ paths:
   - "src/api/**"
   - "src/auth/**"
   - "src/main.ts"
+  - "src/infra/configure-app.ts"
   - "src/*.middleware.ts"
   - "src/infra/canonical-host.ts"
   - "src/**/*.controller.ts"
@@ -72,7 +73,7 @@ Inline-интерфейсы в `@Body()` дают только compile-time ил
 
 16 сентября этот же редирект зациклил вход через Google и VK у всех
 (`ERR_TOO_MANY_REDIRECTS`): `GOOGLE_REDIRECT_URI` в проде указывал на
-legacy-домен `schemalab.ru`, который `main.ts` 301-ит обратно на канонический.
+legacy-домен `schemalab.ru`, который `configureApp` (`src/infra/configure-app.ts`) 301-ит обратно на канонический.
 Агент, писавший фикс, **предположил**, что адрес возврата канонический, и не
 проверил env; тест не проверял «хост назначения сам редиректится»; проверки
 конфигурации при старте не было. Восемь дней без входа через Google и VK —
@@ -100,7 +101,7 @@ legacy-домен `schemalab.ru`, который `main.ts` 301-ит обратн
   (правило №4): страница, добавленная в SPA визитки без строки в middleware,
   роняет jest — и наоборот.
 - **`src/infra/canonical-host.ts`** — один источник «какие хосты 301-ятся на
-  канонический» (legacy, `www.`); `main.ts` и `oauth-host.ts` сверяются с ним,
+  канонический» (legacy, `www.`); `configure-app.ts` и `oauth-host.ts` сверяются с ним,
   а не с копиями списка.
 - **`src/auth/oauth-redirect-config.ts`** — при старте адреса возврата всех
   настроенных провайдеров сверяются с каноническим хостом; мисконфиг — `error`

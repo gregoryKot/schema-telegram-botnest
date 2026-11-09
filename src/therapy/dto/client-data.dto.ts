@@ -4,7 +4,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
@@ -12,6 +11,7 @@ import {
 } from 'class-validator';
 import { CLIENT_NAME_MAX, SESSION_NOTE_MAX } from '../../utils/text-limits';
 import { IsCalendarDay } from '../../utils/calendar-day';
+import { IsDayOrWallMoment } from '../../utils/wall-moment';
 import { NotFutureDay } from './not-future-day';
 
 /**
@@ -39,8 +39,8 @@ export class CreateSessionNoteDto {
 // therapyStartDate/nextSession: строка, null (сброс) или undefined (не менять).
 // Формат (аудит 2026-10, T6) уходит в БД и карточки как есть: therapyStartDate —
 // настоящий день (IsCalendarDay) не в будущем; nextSession — день или настенное
-// время терапевта `YYYY-MM-DDTHH:mm[:ss]` (день без времени — встреча «в этот день»).
-const DAY_OR_MOMENT_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/;
+// время терапевта `YYYY-MM-DDTHH:mm[:ss]` (день без времени — встреча «в этот день»):
+// день настоящий, часы 00–23, минуты 00–59 (IsDayOrWallMoment).
 
 export class SessionInfoDto {
   @IsOptional()
@@ -55,7 +55,7 @@ export class SessionInfoDto {
   @ValidateIf((_, v) => v !== null)
   @IsString()
   @MaxLength(19)
-  @Matches(DAY_OR_MOMENT_RE)
+  @IsDayOrWallMoment()
   nextSession?: string | null;
 
   @IsOptional()

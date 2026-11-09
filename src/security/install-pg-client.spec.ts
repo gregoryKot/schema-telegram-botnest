@@ -16,7 +16,7 @@ import {
   chmodSync,
 } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { dirname, join, relative } from 'path';
 
 const SCRIPT = join(__dirname, '../../deploy/install-pg-client.sh');
 const DOCKERFILE = readFileSync(join(__dirname, '../../Dockerfile'), 'utf8');
@@ -196,5 +196,29 @@ describe('Dockerfile: клиент Postgres и скрипты бэкапа в ru
 
   it('deploy/ копируется целиком — планировщик и pg-url-env.cjs приезжают вместе с entrypoint', () => {
     expect(runtime).toMatch(/COPY --from=build[^\n]*\/app\/deploy \.\/deploy/);
+  });
+
+  // Подпись S3 живёт в deploy/s3-sign.cjs, а приложение берёт её из
+  // dist/infra/s3-sigv4.js относительным require: путь неверен — приложение
+  // не стартует. Сборку образа в CI никто не запускает, поэтому раскладка
+  // сверяется здесь: rootDir/outDir tsconfig → путь в dist → тот же WORKDIR.
+  it('dist/infra/s3-sigv4.js в образе находит deploy/s3-sign.cjs', () => {
+    const root = join(__dirname, '../..');
+    const ts = JSON.parse(
+      readFileSync(join(root, 'tsconfig.json'), 'utf8'),
+    ) as { compilerOptions: { rootDir: string; outDir: string } };
+    const src = 'src/infra/s3-sigv4.ts';
+    const spec = /from '(\.\.\/\.\.\/deploy\/s3-sign\.cjs)'/.exec(
+      readFileSync(join(root, src), 'utf8'),
+    )?.[1];
+    expect(spec).toBeDefined();
+    const built = join(
+      ts.compilerOptions.outDir,
+      relative(ts.compilerOptions.rootDir, dirname(src)),
+    );
+    expect(join(built, spec!)).toBe(join('deploy', 's3-sign.cjs'));
+    expect(existsSync(join(root, 'deploy', 's3-sign.cjs'))).toBe(true);
+    expect(runtime).toMatch(/COPY --from=build[^\n]*\/app\/dist \.\/dist/);
+    expect(runtime.match(/^WORKDIR .*$/gm)).toEqual(['WORKDIR /app']);
   });
 });

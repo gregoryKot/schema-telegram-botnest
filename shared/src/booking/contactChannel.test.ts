@@ -40,8 +40,9 @@ describe('contactChannel', () => {
 
   describe('telegramNumberHint', () => {
     it('номер в Telegram — подсказка про @username', () => {
-      expect(telegramNumberHint('telegram', '+79990001122')).toMatch(
-        /@username/,
+      // Гостевая запись — формы обращения нет: текст безличный, без «укажите».
+      expect(telegramNumberHint('telegram', '+79990001122')).toBe(
+        'Если профиль закрыт от поиска по номеру, нужен @username',
       );
       expect(
         telegramNumberHint('telegram', '+7 (999) 000-11-22'),

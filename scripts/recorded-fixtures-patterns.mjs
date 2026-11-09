@@ -17,12 +17,12 @@ export const PARSER_PATH_PATTERNS = [
   // - robokassa.service.ts: подпись md5(outSum:invId:pass), не HMAC и не JSON;
   // - channel-http.ts: fetch адаптеров канала идёт через переменную (`send(`);
   // - s3-list-objects.ts: XML ListObjectsV2 разбирается регэкспом, fetch —
-  //   параметром (`fetchFn(`);
+  //   параметром (`fetchFn(`); s3-sigv4.ts — вход в подпись, createHmac( в deploy/s3-sign.cjs;
   // - telegram-rate-limit.ts: ответ 429 (parameters.retry_after) приходит уже
   //   разобранным telegraf-ом в TelegramError.response.
   /^src\/booking\/robokassa\.service\.ts$/,
   /^src\/channel\/channel-http\.ts$/,
-  /^src\/infra\/s3-list-objects\.ts$/,
+  /^src\/infra\/s3-(list-objects|sigv4)\.ts$/,
   /^src\/telegram\/telegram-rate-limit\.ts$/,
 ];
 

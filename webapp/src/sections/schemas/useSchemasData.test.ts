@@ -184,3 +184,41 @@ describe('useSchemasData — пустой список с сервера сти�
     expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual(['abandonment']);
   });
 });
+
+// docs/open/frontend-ux.md: после 409 на «моих схемах» перезагрузка показывала
+// пустой список — сервер отдавал нечитаемый список `[]`, экран и кэш верили
+// ему. Теперь сервер называет такой список в unreadableLists.
+describe('useSchemasData — нечитаемый список на сервере не затирает локальный выбор', () => {
+  const unreadableProfile = {
+    mySchemaIds: [], myModeIds: [], unreadableLists: ['mySchemaIds'],
+    ysq: { activeSchemaIds: [], completedAt: null },
+  };
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    mockApi.getYsqHistory.mockResolvedValue([]);
+    mockApi.getYsqProgress.mockResolvedValue(null);
+    mockApi.listMyModeMaps.mockResolvedValue([]);
+  });
+
+  it('выбрал → 409 → перезагрузка: выбор на экране и в кэше', async () => {
+    mockApi.getProfile.mockResolvedValue(unreadableProfile);
+    mockApi.updateSettings.mockRejectedValue(unwritable);
+    const first = await mounted();
+    await act(async () => { first.result.current.saveSchemas(['abandonment']); });
+    await waitFor(() => expect(first.result.current.saveBlocked).toBe(true));
+    first.unmount();
+
+    const { result } = await mounted();
+    expect(result.current.manualSchemaIds).toEqual(['abandonment']);
+    expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual(['abandonment']);
+  });
+
+  it('контроль: читаемый соседний список с сервера по-прежнему источник правды', async () => {
+    localStorage.setItem(MY_MODE_IDS_KEY, JSON.stringify(['vulnerable_child']));
+    mockApi.getProfile.mockResolvedValue(unreadableProfile);
+    const { result } = await mounted();
+    expect(result.current.myModeIds).toEqual([]);
+    expect(localStorage.getItem(MY_MODE_IDS_KEY)).toBe('[]');
+  });
+});

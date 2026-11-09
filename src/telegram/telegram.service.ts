@@ -7,8 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Telegraf, Context } from 'telegraf';
-import { TELEGRAF_BOT, CABINET_URL, DONATE_URL } from './telegram.constants';
-import { BOT_COMMANDS, ERROR_RETRY } from './telegram.constants';
+import { TELEGRAF_BOT, DONATE_URL } from './telegram.constants';
+import { ERROR_RETRY } from './telegram.constants';
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { AccountService } from '../bot/account.service';
@@ -36,7 +36,7 @@ import { isLinkPayload } from './link-payload';
 import { TelegramLoginService } from './telegram.login.service';
 import { TelegramLinkService } from './telegram.link.service';
 import { snoozeReminder, snoozeFailText } from './telegram.snooze';
-import { retryWithBackoff } from '../utils/retry';
+import { setupBotMenu } from './telegram.menu-setup';
 import { practiceOwnerTelegramId } from '../utils/practice-owner';
 import { sendOnce } from './telegram.send-once';
 import { BotLauncher } from './telegram.launch';
@@ -62,6 +62,7 @@ const THERAPIST_FALLBACK =
 @Injectable()
 export class TelegramService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(TelegramService.name);
+  private readonly shutdown = new AbortController(); // гасит ретраи меню
 
   constructor(
     @Inject(TELEGRAF_BOT)
@@ -437,28 +438,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
       }
     });
 
-    // Декоративные вызовы Telegram API (меню команд, кнопка мини-аппа).
-    // На свежем контейнере сеть может подняться позже процесса — ретраим с
-    // бэкоффом и НЕ будим админа error-алертом: бот полноценно работает и
-    // без них (инцидент 2026-07-12: «🚨 setMyCommands failed» на деплое).
-    // fire-and-forget — не задерживаем launch().
-    void retryWithBackoff(() =>
-      this.bot!.telegram.setMyCommands(BOT_COMMANDS),
-    ).then((ok) => {
-      if (!ok) this.logger.warn('setMyCommands failed after retries');
-    });
-
-    void retryWithBackoff(() =>
-      this.bot!.telegram.callApi('setChatMenuButton', {
-        menu_button: {
-          type: 'web_app',
-          text: 'Всё по схеме',
-          web_app: { url: CABINET_URL },
-        },
-      }),
-    ).then((ok) => {
-      if (!ok) this.logger.warn('setChatMenuButton failed after retries');
-    });
+    setupBotMenu(this.bot, this.logger, this.shutdown.signal);
 
     this.launcher.start();
     // DM о старте — не здесь (это каждый рестарт, до listen): src/telegram/start-announce.ts.
@@ -480,6 +460,7 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleDestroy() {
+    this.shutdown.abort();
     this.launcher?.stop();
     try {
       this.bot?.stop();

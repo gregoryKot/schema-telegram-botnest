@@ -13,11 +13,11 @@ export function pluralEntries(n: number): string {
 }
 
 export function achievementShareText(title: string, link: string): string {
-  return `Новое достижение — «${title}»!\n\nВеду дневник потребностей. ${link}`;
+  return `Новое достижение — «${title}»!\n\nВеду трекер потребностей. ${link}`;
 }
 
 export function streakShareText(streak: number, link: string): string {
-  return `🔥 ${streak} ${pluralDays(streak)} подряд в дневнике потребностей!\n\nОтслеживаю своё состояние каждый день. ${link}`;
+  return `🔥 ${streak} ${pluralDays(streak)} подряд в трекере потребностей!\n\nОтслеживаю своё состояние каждый день. ${link}`;
 }
 
 export function schemaShareText(name: string, link: string): string {
@@ -86,7 +86,7 @@ export function achievementsShareText(
   total: number,
   link: string,
 ): string {
-  return `🏅 Достижения в дневнике потребностей: ${earned} из ${total}.\n\n${link}`;
+  return `🏅 Достижения в трекере потребностей: ${earned} из ${total}.\n\n${link}`;
 }
 
 export function phraseShareText(phrase: string): string {

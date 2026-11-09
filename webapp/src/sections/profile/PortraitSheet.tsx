@@ -2,7 +2,7 @@
 // режимы» с частотой за неделю и статусом карточки. Строка открывает экран
 // паттерна — тот же PatternSheet и тот же слой, что в разделе «Паттерны»
 // (usePatternLayer: частоты и статусы считаются там, второго счёта нет).
-// Слой читает дневники только когда лист открыт.
+// Дневники слой не читает: записи уже есть у useAboutMe профиля (один запрос).
 import { SsSheet, SsHead } from '../../components/schemaSheets/SsSheet';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
@@ -23,7 +23,7 @@ interface Props {
 export function PortraitSheet({ aboutMe, onClose }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
-  const pat = usePatternLayer();
+  const pat = usePatternLayer({ ...aboutMe, ready: aboutMe.diaries === 'ready' });
   const txt = portraitTexts(tr);
   const isEmpty = aboutMe.mySchemaIds.length === 0 && aboutMe.myModeIds.length === 0;
   const freq = pat.entriesReady ? { schema: pat.schemaFreq, mode: pat.modeFreq } : undefined;

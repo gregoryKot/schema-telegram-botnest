@@ -25,8 +25,7 @@
     "mutation:golden-auth": "stryker run stryker.golden-auth.config.json",
     "mutation:golden-payments": "stryker run stryker.golden-payments.config.json",
     "mutation:crisis": "stryker run stryker.crisis.config.json",
-    "mutation:outbox": "stryker run stryker.outbox.config.json",
-    "check-phrases": "ts-node scripts/check-db-phrases.ts"
+    "mutation:outbox": "stryker run stryker.outbox.config.json"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.1.0",
@@ -55,7 +54,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "telegraf": "^4.16.3",
-    "undici": "^8.10.2"
+    "undici": "^8.10.2",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -75,6 +75,7 @@
     "@types/node": "^26.6.6",
     "@types/qrcode": "^1.5.6",
     "@types/supertest": "^7.2.1",
+    "@types/web-push": "3.6.4",
     "babel-jest": "^30.5.1",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.0.1",
@@ -101,7 +102,7 @@
     "eslint-plugin-jsx-a11y": {
       "eslint": "$eslint"
     },
-    "fast-uri": "^3.1.7",
+    "fast-uri": "^3.1.9",
     "mysql2": "^3.24.3",
     "deepmerge-ts": "^8.0.1",
     "multer": "^2.3.0"

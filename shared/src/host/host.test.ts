@@ -213,8 +213,16 @@ describe('адаптер Telegram', () => {
     fakeTelegram();
     expect(createTelegramHost().sessionExchange()).toEqual({
       path: '/api/auth/telegram/webapp',
-      body: { initData: 'user=%7B%22id%22%3A1%7D&hash=abc' },
+      body: { initData: 'user=%7B%22id%22%3A1%7D&hash=abc', platform: 'ios' },
     });
+  });
+
+  // Аудит 2026-10: платформа запуска уходит в обмен — /stats по платформам.
+  it('платформа в обмене — только из списка, незнакомая уходит как other', () => {
+    fakeTelegram({ platform: 'webk' });
+    expect(createTelegramHost().sessionExchange()?.body.platform).toBe('webk');
+    fakeTelegram({ platform: 'unknown' });
+    expect(createTelegramHost().sessionExchange()?.body.platform).toBe('other');
   });
 
   it('платформа перечитывается, а не запоминается при создании моста', () => {
@@ -458,7 +466,7 @@ describe('адаптер MAX', () => {
     fakeMax();
     expect(createMaxHost().sessionExchange()).toEqual({
       path: '/api/auth/max/webapp',
-      body: { initData: 'query_id=abc&hash=def' },
+      body: { initData: 'query_id=abc&hash=def', platform: 'android' },
     });
   });
 
@@ -480,6 +488,16 @@ describe('адаптер MAX', () => {
 
     fakeMax({ platform: 'web' });
     expect(createMaxHost().capabilities.haptics).toBe(false);
+  });
+
+  // Хвост E6: downloadFile моста берёт только https — файл отдаёт сервер.
+  it('с downloadFile у моста data:-URL файлов не берёт, без моста — берёт', () => {
+    fakeMax();
+    expect(createMaxHost().capabilities.dataUrlFiles).toBe(false);
+    fakeMax({ downloadFile: undefined });
+    expect(createMaxHost().capabilities.dataUrlFiles).toBe(true);
+    delete (globalThis as { WebApp?: unknown }).WebApp;
+    expect(createMaxHost().capabilities.dataUrlFiles).toBe(true);
   });
 
   it('close у площадки нет, backButton есть', () => {
@@ -799,9 +817,10 @@ describe('MAX: стартовые параметры из адреса', () => {
   it('подпись для обмена берётся из адреса, когда моста нет', () => {
     setHash('#WebAppData=auth_date%3D1%26hash%3Dabc&WebAppPlatform=ios');
     const host = createMaxHost();
+    // Платформа тоже берётся из адреса: мост ещё не доехал.
     expect(host.sessionExchange()).toEqual({
       path: '/api/auth/max/webapp',
-      body: { initData: 'auth_date=1&hash=abc' },
+      body: { initData: 'auth_date=1&hash=abc', platform: 'ios' },
     });
     expect(host.authHeaders()).toEqual({
       'x-max-init-data': 'auth_date=1&hash=abc',
@@ -812,16 +831,16 @@ describe('MAX: стартовые параметры из адреса', () => {
     // Во фрагменте значение закодировано ещё раз поверх внутреннего: бэкенд
     // ждёт строку, где значения остались процент-кодированными.
     setHash('#WebAppData=user%3D%257B%2522id%2522%253A7%257D%26hash%3Dabc');
-    expect(createMaxHost().sessionExchange()?.body).toEqual({
-      initData: 'user=%7B%22id%22%3A7%7D&hash=abc',
-    });
+    expect(createMaxHost().sessionExchange()?.body.initData).toBe(
+      'user=%7B%22id%22%3A7%7D&hash=abc',
+    );
   });
 
   it('буквальный + переживает разбор (URLSearchParams сделал бы из него пробел)', () => {
     setHash('#WebAppData=ip%3D1%2B2%26hash%3Dabc');
-    expect(createMaxHost().sessionExchange()?.body).toEqual({
-      initData: 'ip=1+2&hash=abc',
-    });
+    expect(createMaxHost().sessionExchange()?.body.initData).toBe(
+      'ip=1+2&hash=abc',
+    );
   });
 
   it('мост, если доехал, важнее адреса', () => {
@@ -829,6 +848,7 @@ describe('MAX: стартовые параметры из адреса', () => {
     fakeMax({ initData: 'from=bridge&hash=abc' });
     expect(createMaxHost().sessionExchange()?.body).toEqual({
       initData: 'from=bridge&hash=abc',
+      platform: 'android',
     });
   });
 

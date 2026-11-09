@@ -59,7 +59,6 @@ async function acceptedBy(initData: string) {
       { findOrCreateUserByProvider: findOrCreate } as never,
       { log: jest.fn() } as never,
       { warn: jest.fn() } as unknown as Logger,
-      { track: jest.fn().mockResolvedValue(undefined) } as never,
     );
   } catch (e) {
     expect(e).toBeInstanceOf(UnauthorizedException);

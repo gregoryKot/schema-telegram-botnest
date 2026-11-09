@@ -1,8 +1,8 @@
 // Классификация *.controller.ts — guarded (A) / admin-key-gated (B) /
 // public-by-design (C): единственный источник правды для двух трипваеров
 // (route-auth и e2e-route-coverage; правило №4 — копий без сверки нет).
-// Анонимные методы внутри guarded-файлов — в anonymous-routes.ts.
 export { ANONYMOUS_BY_DESIGN } from './anonymous-routes';
+export { OPTIONAL_AUTH_BY_DESIGN } from './optional-auth-routes';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';

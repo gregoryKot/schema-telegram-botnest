@@ -168,6 +168,13 @@ export const EXPORT_POLICY: Record<string, ExportDecision> = {
       'код входа/привязки устройства (device-code) — короткоживущий секрет ' +
       'входа, попадание в файл экспорта = угон сессии входа',
   },
+  PushSubscription: {
+    status: 'withhold',
+    reason:
+      'адрес подписки браузера на уведомления — capability-URL: с ним и ' +
+      'ключами можно слать человеку уведомления от имени приложения; ' +
+      'устройство, а не данные о человеке',
+  },
   WebSession: {
     status: 'withhold',
     reason:

@@ -10,6 +10,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';
 import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
+import { ENTRY_DELETE_TYPES } from '../analytics/entry-delete.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
@@ -57,11 +58,6 @@ const BACKEND_ONLY: Record<string, string> = {
     'серверное событие: пишет только TelegramAuthGuard, когда мини-апп ' +
     'пришёл с пустой подписью (src/api/auth-failure.report.ts). Фронт его ' +
     'не шлёт и не должен — отчёт /stats считает только строки с userId = null',
-  auth_success:
-    'серверное событие: пишет только TelegramAuthGuard после подтверждённого ' +
-    'JWT/Telegram/MAX входа (src/api/auth-success.report.ts), с троттлингом ' +
-    'per userId+host. Фронт его не шлёт и не должен — та же защита userId = ' +
-    'null, что и у auth_rejected',
   crisis_card_shown:
     'шлётся из общего хука shared/src/analytics/useCrisisCardTracking.ts ' +
     "вызовом track('crisis_card_shown', …), где track — параметр функции " +
@@ -128,7 +124,7 @@ const BACKEND_ONLY: Record<string, string> = {
     'POST /api/client-errors (src/api/client-errors.controller.ts), не ' +
     'trackEvent() — фронт шлёт reportClientError(), а не аналитику напрямую. ' +
     'userId = null и троттлинг по source+section+ip — тот же приём, что у ' +
-    'auth_rejected/auth_success',
+    'auth_rejected',
   signup_source:
     'серверное событие: пишет только бот в /start, когда payload — ' +
     'deep-link `src_<slug>` (parseSourceSlug, src/telegram/start-source.ts), ' +
@@ -143,7 +139,7 @@ const BACKEND_ONLY: Record<string, string> = {
   login_ticket_step:
     'серверное событие: пишет единственный шов LoginTicketReport ' +
     '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
-    'тот же приём, что у auth_rejected/auth_success. Фронт его не шлёт и не ' +
+    'тот же приём, что у auth_rejected. Фронт его не шлёт и не ' +
     'должен: шаги воронки входа известны только серверу (подтверждение ' +
     'происходит в боте или во внешнем браузере, а не в контейнере, который ' +
     'просил билет), и отчёт /stats считает строки с userId IS NULL',
@@ -180,9 +176,9 @@ const BACKEND_ONLY: Record<string, string> = {
     'trigger? }) (мост к терапевту); тот же приём, что у home_tile',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
-    '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
-    'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
-    'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — общий ' +
+    'trackEntryDeleted (shared/src/analytics/trackEntryDeleted.ts) зовут ' +
+    'useJourneyDelete, deleteDiaryEntry и PhraseHistoryCard сразу за успешным ' +
     'удалением записи; та же причина, что у share_card',
   notify_queue_tick:
     'серверное событие: пишет только крон очереди уведомлений бота ' +
@@ -230,6 +226,29 @@ const BACKEND_ONLY: Record<string, string> = {
     'quietShift. Кнопка «Напомню через час» живёт под сообщением бота, у ' +
     'сайта такого действия нет; ветка sanitizeMeta отбрасывает meta с ' +
     'клиента, а /stats считает только строки с quietShift',
+  login_one_tap:
+    'серверное событие: пишет только GoogleOneTapService после проверки ' +
+    'токена окна Google (src/auth/google-one-tap.service.ts), userId = null. ' +
+    'Исход (вошёл / второй фактор / не принят) знает только сервер; слать его ' +
+    'с фронта значило бы открыть отчёт о входе для накрутки через /api/event',
+  messenger_launch:
+    'серверное событие: пишут ручки обмена подписи на сессию telegram/webapp ' +
+    'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
+    'userId = null. Фронт присылает только поле platform в теле обмена ' +
+    '(shared/src/host/launchPlatform.ts), отдельного trackEvent у него нет',
+  messenger_launch_failed:
+    'серверное событие: пара к messenger_launch — пишут те же ручки обмена, ' +
+    'когда подпись не сменилась на сессию (src/auth/exchange-failure.report.ts), ' +
+    'userId = null. Причину отказа знает только сервер; клиент получил 401 и ' +
+    'слать о нём отдельное событие ему незачем',
+  asset_recovered:
+    'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
+    "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
+    'скрипта сверяет src/analytics/asset-recovery.constants.spec.ts',
+  ysq_data_deleted:
+    'серверное событие: пишет YsqController после транзакции DELETE ' +
+    '/api/ysq-data (кнопка «Удалить результаты теста»). Сколько попыток ' +
+    'стёрто, знает только сервер; кликать на фронте второй раз нечего',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -238,6 +257,24 @@ const BACKEND_ONLY: Record<string, string> = {
     '(AppInstallSection, surface site_landing) — та же причина, что у ' +
     "crisis_card_shown. Единственный литерал trackEvent('home_screen_offer') " +
     'жил в баннере кабинета MobileAppBanner, убранном 2026-10 (PR #771)',
+  push_subscribed:
+    'серверное событие: пишет только PushService.subscribe ' +
+    '(src/push/push.service.ts) после сохранённой подписки и пробного ' +
+    'уведомления, meta — delivered и service. Включение — сам HTTP-запрос ' +
+    'POST /api/push/subscription; ветка sanitizeMeta отбрасывает meta с ' +
+    'клиента, а /stats считает только строки с service',
+  push_unsubscribed:
+    'серверное событие: пишет только PushService.unsubscribe после ' +
+    'POST /api/push/unsubscribe, meta — reason (user|logout); с клиента meta ' +
+    'отбрасывается, /stats считает только строки с reason',
+  push_gone:
+    'серверное событие: пишет PushService, когда push-сервис ответил, что ' +
+    'подписки больше нет, и сервер её удалил (очередь уведомлений или ' +
+    'пробная отправка), meta — service. У фронта такого действия нет',
+  push_denied:
+    'шлётся через импортируемую константу PUSH_DENIED_EVENT ' +
+    '(shared/src/share/analytics.ts), когда человек отказал в разрешении ' +
+    'браузера на уведомления; та же причина, что у share_card',
 };
 
 describe('трипваер: имена событий фронта ⊆ allow-list бэкенда (правило №8)', () => {
@@ -270,7 +307,7 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // share_card/onboarding_step/mode_card_saved, не обход правила.
     // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
     // слать не может по замыслу (отказ входа фиксирует guard). 22 —
-    // auth_success: пара к нему, тот же guard, тот же приём userId = null.
+    // auth_success, удалён 2026-11 (его место занял messenger_launch_failed).
     // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
     // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
     // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
@@ -310,6 +347,42 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // кнопка под сообщением бота, у сайта такого действия нет.
     // 41 — booking_currency_chosen (2026-11, решение владельца Р5): серверное —
     // форма записи анонимная, выбор валюты приходит полем брони.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(41);
+    // 42–44 — push_subscribed/push_unsubscribed/push_gone (2026-11,
+    // уведомления в приложении): серверные — подписку сохраняет и удаляет
+    // HTTP-запрос, мёртвую подписку находит очередь. 45 — push_denied:
+    // константа PUSH_DENIED_EVENT, как entry_deleted.
+    // 46 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
+    // исход проверки токена есть только у сервера, тот же приём userId = null.
+    // 47 — messenger_launch (аудит 2026-10, платформа запуска): серверное —
+    // пишет ручка обмена подписи, клиент шлёт только поле platform в её теле.
+    // messenger_launch_failed (2026-11, на место auth_success): серверное —
+    // отказ обмена подписи, причину знает только ручка обмена.
+    // 48 — ysq_data_deleted (стёртый тест схем): серверное — удаление делает
+    // HTTP-запрос, число стёртых попыток видно только в транзакции.
+    // 49 — asset_recovered (инцидент 2026-11-04, #928): шлёт скрипт из
+    // webapp/public, а не бандл; FRONTEND_DIRS его не видят по устройству.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(49);
+  });
+});
+
+// Тип удалённой записи (meta.type события entry_deleted): фронт держит union
+// EntryDeleteType, бэк — allow-list ENTRY_DELETE_TYPES. Значение, которого нет
+// на бэке, sanitizeMeta молча выбросит, и удаление пропадёт из /stats.
+// До 2026-11 тип события был тем же, что «удаляемо в Моём пути»
+// (JourneyDeletableType), и разбор фразы с дневником в него не помещались.
+describe('трипваер: EntryDeleteType фронта = ENTRY_DELETE_TYPES бэка (правило №4)', () => {
+  const FRONT = 'shared/src/share/analytics.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const m = src.match(/export type EntryDeleteType\s*=([^;]+);/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('union EntryDeleteType найден и непуст', () => {
+    expect(front.length).toBeGreaterThan(0);
+  });
+
+  it('списки совпадают в обе стороны', () => {
+    expect([...front].sort()).toEqual([...ENTRY_DELETE_TYPES].sort());
   });
 });

@@ -38,6 +38,7 @@ export const USER_DATA_TABLES = [
   'emailToken',
   'analyticsEvent',
   'loginTicket',
+  'pushSubscription',
 ] as const;
 
 // Проверка на этапе компиляции: неверное имя выше станет ошибкой здесь.

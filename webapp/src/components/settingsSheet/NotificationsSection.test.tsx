@@ -22,28 +22,32 @@ const settings = (over: Partial<UserSettings> = {}): UserSettings => ({
   ...over,
 });
 
-function renderSection(s: UserSettings, onOpenAccount = vi.fn(), patch = vi.fn()) {
+function renderSection(s: UserSettings, leaveTo = vi.fn(), patch = vi.fn()) {
   render(
-    <NotificationsSection settings={s} tzLabel="Москва" patch={patch} openSubView={vi.fn()} onOpenAccount={onOpenAccount} />,
+    <NotificationsSection settings={s} tzLabel="Москва" patch={patch} openSubView={vi.fn()} leaveTo={leaveTo}
+      reloadSettings={vi.fn()} />,
   );
-  return onOpenAccount;
+  return leaveTo;
 }
 
 const switchOf = (name: string) => screen.getByRole('switch', { name });
 
 describe('NotificationsSection (сайт)', () => {
-  it('Telegram не привязан — без тумблеров и времени; причина и путь в «Аккаунт»', () => {
-    const onOpenAccount = renderSection(settings({ notifyReachable: false }));
-    expect(screen.getByRole('note').textContent).toMatch(/приходят в Telegram.*не привязан/);
+  it('каналу некуда прийти — без тумблеров и времени; причина и путь в «Аккаунт»', () => {
+    const leaveTo = renderSection(settings({ notifyReachable: false }));
+    // jsdom — браузер без веб-пушей: остаётся Telegram и совет открыть сайт в Chrome/Safari.
+    expect(screen.getByRole('note').textContent).toMatch(/^Этот браузер не присылает уведомления\. Открой сайт в Chrome или Safari/);
+    expect(screen.getByText('Пока не приходят')).toBeTruthy();
     expect(screen.queryByText('Итоги дня')).toBeNull();
     expect(screen.queryByText('Напоминания')).toBeNull();
     expect(screen.queryByText('Время')).toBeNull();
     fireEvent.click(screen.getByText('Привязать Telegram'));
-    expect(onOpenAccount).toHaveBeenCalledTimes(1);
+    expect(leaveTo).toHaveBeenCalledWith('/account');
   });
 
   it('Telegram есть — тумблеры и настройки времени на месте', () => {
     renderSection(settings({ notifyReachable: true }));
+    expect(screen.getByText(/^Приходят через Telegram — @/)).toBeTruthy();
     expect(screen.getByText('Итоги дня')).toBeTruthy();
     expect(screen.getByText('Время')).toBeTruthy();
     expect(screen.queryByRole('note')).toBeNull();
@@ -81,10 +85,28 @@ describe('NotificationsSection (сайт)', () => {
       expect(screen.getByText('Время')).toBeTruthy();
     });
 
-    it('оба выключены — время, частота и пояс скрыты', () => {
+    it('оба выключены — время и частота скрыты, пояс остаётся', () => {
       renderSection(settings({ notifyEnabled: false, notifySummaryEnabled: false }));
       expect(screen.queryByText('Время')).toBeNull();
-      expect(screen.queryByText('Часовой пояс')).toBeNull();
+      expect(screen.getByText('Часовой пояс')).toBeTruthy();
+    });
+  });
+
+  // Пояс считает и «сегодня» заданий (TherapyTasksService.getTasks → notifyTimezone), поэтому строка
+  // живёт вне ветки «уведомления включены»: у веб-клиента без канала её не было вовсе.
+  describe('«Часовой пояс» — вне условной ветки уведомлений', () => {
+    it.each([
+      ['канала нет', settings({ notifyReachable: false })],
+      ['уведомления выключены', settings({ notifyEnabled: false, notifySummaryEnabled: false })],
+      ['уведомления включены', settings({ notifyReachable: true })],
+    ])('%s — строка с поясом видна ровно одна и открывает выбор', (_label, s) => {
+      const openSubView = vi.fn();
+      render(<NotificationsSection settings={s} tzLabel="Москва" patch={vi.fn()} openSubView={openSubView}
+        leaveTo={vi.fn()} reloadSettings={vi.fn()} />);
+      expect(screen.getAllByText('Часовой пояс')).toHaveLength(1);
+      expect(screen.getByText('Москва')).toBeTruthy();
+      fireEvent.click(screen.getByText('Часовой пояс'));
+      expect(openSubView).toHaveBeenCalledWith('tz');
     });
   });
 });

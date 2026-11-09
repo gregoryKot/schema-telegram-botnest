@@ -12,6 +12,8 @@
 // Страница читала только (1) — первый вход (2 или 3) уходил в
 // telegram_no_data, второй (случайно совпадавший с форматом 1) — срабатывал.
 
+import { base64UrlToText } from '../../../shared/src/utils/base64url';
+
 export type TelegramAuthResultOutcome =
   | { kind: 'none' }
   | { kind: 'error' }
@@ -29,11 +31,7 @@ export type TelegramAuthResultOutcome =
  * Uint8Array.from их подбирает обратно в байты, TextDecoder собирает UTF-8.
  */
 function decodeBase64UrlJson(value: string): Record<string, unknown> {
-  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
-  const binary = atob(base64);
-  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-  const json = new TextDecoder().decode(bytes);
-  return JSON.parse(json) as Record<string, unknown>;
+  return JSON.parse(base64UrlToText(value)) as Record<string, unknown>;
 }
 
 /** null/undefined отфильтрованы, остальное приведено к строке — как ждёт verifyClientData на бэкенде. */

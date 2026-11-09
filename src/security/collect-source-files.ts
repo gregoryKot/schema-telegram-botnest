@@ -38,17 +38,20 @@ export interface CollectSourceFilesOptions {
    * отбрасывания тестов/деклараций (напр. только `*.controller.ts`).
    */
   filter?: (path: string) => boolean;
+  /** Брать и `*.spec.*`/`*.test.*` — для сверок «у каждого X есть тест». */
+  includeTests?: boolean;
 }
 
 /**
  * Рекурсивно собирает исходники из `dir`: пропускает скрытые каталоги и файлы,
- * `*.spec.*`, `*.test.*` и `*.d.ts`.
+ * `*.d.ts` и (без `includeTests`) `*.spec.*`, `*.test.*`.
  */
 export function collectSourceFiles(
   dir: string,
   options: CollectSourceFilesOptions = {},
 ): string[] {
-  const { extensions = ['.ts'], filter } = options;
+  const { extensions = ['.ts'], filter, includeTests = false } = options;
+  const skip = includeTests ? /\.d\.ts$/ : NON_SOURCE_RE;
   const out: string[] = [];
 
   for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
@@ -64,7 +67,7 @@ export function collectSourceFiles(
       continue;
     }
     if (!extensions.some((ext) => path.endsWith(ext))) continue;
-    if (NON_SOURCE_RE.test(path)) continue;
+    if (skip.test(path)) continue;
     if (filter && !filter(path)) continue;
     out.push(path);
   }

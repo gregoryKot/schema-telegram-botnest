@@ -26,6 +26,8 @@ const apiError = (code: number, description: string) => ({
 function queueWith(callApi: jest.Mock) {
   const notifications = {
     getDue: jest.fn().mockResolvedValue([ROW]),
+    claim: jest.fn().mockResolvedValue(true),
+    releaseClaim: jest.fn().mockResolvedValue(undefined),
     markSent: jest.fn().mockResolvedValue(undefined),
     cancelOne: jest.fn().mockResolvedValue(undefined),
   };

@@ -492,7 +492,7 @@ describe('TherapistClientSheet — сайдбар «Обзор»: индекс �
     fireEvent.click(screen.getByText('Анна'));
     await screen.findByText('Обзор');
 
-    await screen.findByText('7.4');
+    await screen.findByText('7,4');
     expect(screen.getByText('Привязанность')).toBeTruthy();
     expect(screen.getByText('Автономия')).toBeTruthy();
   });

@@ -7,7 +7,10 @@ import { LoginTicketMetricsService } from './login-ticket-metrics.service';
 
 describe('LoginTicketMetricsService.getMetrics', () => {
   const build = (rows: Array<Record<string, unknown>>) => {
-    const queryRaw = jest.fn().mockResolvedValueOnce(rows);
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce(rows)
+      .mockResolvedValue([]);
     const prisma = { $queryRaw: queryRaw } as never;
     return { service: new LoginTicketMetricsService(prisma), queryRaw };
   };
@@ -68,5 +71,32 @@ describe('LoginTicketMetricsService.getMetrics', () => {
   it('render отдаёт готовый текст блока', async () => {
     const { service } = build([]);
     await expect(service.render()).resolves.toContain('Вход по коду');
+  });
+
+  // Аудит 2026-10 (правило №8): входы через окно One Tap — в том же блоке входа.
+  it('render добавляет строку окна Google из серверных строк login_one_tap', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ signed_in: 9n, twofa: 1n, rejected: 0n }]);
+    const service = new LoginTicketMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    const text = await service.render();
+    expect(text).toContain('Вошли одним касанием: 9');
+    const sql = (queryRaw.mock.calls[1][0] as string[]).join('?');
+    expect(sql).toContain('"userId" IS NULL');
+    expect(sql).toContain(`"name" = 'login_one_tap'`);
+  });
+
+  it('getOneTap на пустой базе — нули, а не NaN', async () => {
+    const service = new LoginTicketMetricsService({
+      $queryRaw: jest.fn().mockResolvedValueOnce([]),
+    } as never);
+    await expect(service.getOneTap()).resolves.toEqual({
+      signedIn: 0,
+      twofa: 0,
+      rejected: 0,
+    });
   });
 });

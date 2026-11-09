@@ -6,6 +6,8 @@ import { NeedArt } from '../art/NeedArt';
 import { FlashcardFrame, FlashcardStepHead, FlashcardProgress } from './FlashcardFrame';
 import { flashcardModeHue, flashcardNeedHue } from './flashcardTone';
 import type { ModeData, NeedData } from '../schemaFlashcard/types';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 type Tr = (ty: string, vy: string) => string;
 interface Common { stepIndex: number; total: number; onBack: () => void; backLabel: string }
@@ -52,7 +54,8 @@ export function StepResponse({ tr, response, reflection, setReflection, onNext, 
       <div className="sk-fc-ask">
         Что отзывается? <span className="ds-sub">(необязательно)</span>
       </div>
-      <textarea
+      <LimitedTextarea
+        max={EXERCISE_TEXT_MAX}
         value={reflection}
         onChange={e => setReflection(e.target.value)}
         placeholder="Что хочется сказать себе..."
@@ -107,7 +110,8 @@ export function StepAction({ tr, need, action, setAction, onSave, ...c }: Common
       <p className="sk-fc-ask">
         {tr('Что одно маленькое действие ты можешь сделать прямо сейчас?', 'Что одно маленькое действие вы можете сделать прямо сейчас?')}
       </p>
-      <textarea
+      <LimitedTextarea
+        max={EXERCISE_TEXT_MAX}
         value={action}
         onChange={e => setAction(e.target.value)}
         placeholder="Написать другу, выйти подышать, обнять подушку..."

@@ -15,6 +15,7 @@ import { YsqService } from '../bot/ysq.service';
 import { TelegramAuthGuard } from './telegram-auth.guard';
 import { computeYsqScores } from '../utils/ysq';
 import { YsqProgressDto, YsqResultDto } from './dto/ratings.dto';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 interface AuthRequest extends Request {
   webUser: { userId: bigint };
@@ -33,7 +34,10 @@ const toHistoryDto = (r: Attempt) => ({
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
 export class YsqController {
-  constructor(private readonly ysqService: YsqService) {}
+  constructor(
+    private readonly ysqService: YsqService,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   // ─── Progress ───────────────────────────────────────────────────────────────
 
@@ -78,9 +82,14 @@ export class YsqController {
   }
 
   // Кнопка «Удалить результаты теста» в настройках: итог, история и прогресс.
+  // Событие — иначе воронка теста в /stats не отличит «не дошёл» от «дошёл и
+  // стёр» (правило №8); track() не бросает.
   @Delete('ysq-data')
   async deleteAllYsqData(@Req() req: AuthRequest) {
-    await this.ysqService.deleteAllYsqData(uid(req));
+    const { attempts } = await this.ysqService.deleteAllYsqData(uid(req));
+    await this.analytics.track(uid(req), 'ysq_data_deleted', {
+      attempts: Math.min(attempts, 1000),
+    });
     return { ok: true };
   }
 

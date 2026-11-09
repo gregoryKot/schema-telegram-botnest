@@ -416,6 +416,29 @@ describe('ProfileSection — портрет и тёплые слова', () => {
     expect(screen.getByText('1 фраза')).toBeTruthy();
   });
 
+  // Профиль читал дневники схем и режимов трижды: счётчик ProfileSection, useAboutMe и лист
+  // портрета (usePatternLayer). Источник один — useAboutMe; лист берёт его записи.
+  it('дневники схем и режимов запрашиваются один раз — и для счётчика, и для листа портрета', async () => {
+    mockApi.getProfile.mockResolvedValue(profileWith(['abandonment'], []));
+    const at = '2026-08-10T00:00:00.000Z';
+    mockApi.getSchemaDiary.mockResolvedValue([1, 2].map(id => ({ id, createdAt: at, schemaIds: ['abandonment'] })));
+    mockApi.getModeDiary.mockResolvedValue([{ id: 3, createdAt: at, modeId: 'vulnerable_child' }]);
+    mockApi.getGratitudeDiary.mockResolvedValue([{ id: 4 }]);
+    await act(async () => { renderSection(); });
+    expect(screen.getByText('4')).toBeTruthy(); // 2 + 1 + 1 записи
+    fireEvent.click(await screen.findByLabelText('Мой портрет'));
+    expect(await screen.findByText('Мои схемы')).toBeTruthy();
+    await act(async () => {});
+    expect(mockApi.getSchemaDiary).toHaveBeenCalledTimes(1);
+    expect(mockApi.getModeDiary).toHaveBeenCalledTimes(1);
+  });
+
+  it('сбой дневника — баннер ошибки, а не тихий заниженный счётчик', async () => {
+    mockApi.getModeDiary.mockRejectedValue(new Error('net'));
+    await act(async () => { renderSection(); });
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось загрузить часть данных/);
+  });
+
   it('сбой загрузки портрета уходит в отчёт, а не в консоль', async () => {
     mockApi.getProfile.mockRejectedValue(new Error('net'));
     await act(async () => { renderSection(); });

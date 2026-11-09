@@ -11,9 +11,9 @@
 // команде). Гоняется в CI-джобе `migrations`.
 import { ChildProcess, spawn, spawnSync } from 'child_process';
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { createServer } from 'net';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { reservePort } from '../src/test-support/ephemeral-port';
 
 jest.setTimeout(300_000);
 
@@ -69,17 +69,6 @@ const writeMigration = (name: string, body: string) => {
   writeFileSync(join(migrationDir(name), 'migration.sql'), body);
 };
 
-function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const srv = createServer();
-    srv.once('error', reject);
-    srv.listen(0, '127.0.0.1', () => {
-      const { port } = srv.address() as { port: number };
-      srv.close(() => resolve(port));
-    });
-  });
-}
-
 // Настоящий entrypoint образа N с дефолтными RECOVER_CMD и MIGRATE_CMD. Он
 // дошёл до приложения, если запустил APP_CMD (файл-маркер) и вышел с кодом 0.
 async function runEntrypoint(): Promise<{ code: number | null; out: string }> {
@@ -87,8 +76,10 @@ async function runEntrypoint(): Promise<{ code: number | null; out: string }> {
   const env = {
     ...process.env,
     DATABASE_URL: DB_URL,
-    PORT: String(await freePort()),
-    APP_PORT: String(await freePort()),
+    // front берёт порт у ядра сам; APP_PORT никто не слушает (APP_CMD пишет
+    // маркер и выходит) — номер только для адреса проксирования.
+    PORT: '0',
+    APP_PORT: String(await reservePort()),
     APP_CMD: `node -e "require('fs').writeFileSync('${marker}','1')"`,
     MIGRATE_MAX_ATTEMPTS: '1',
     MIGRATE_BACKOFF_MS: '0',

@@ -103,39 +103,38 @@ export interface SeoPage {
 export function injectSeo(baseHtml: string, page: SeoPage): string {
   const url = esc(page.canonicalUrl);
   const desc = esc(page.description);
+  const cardTitle = esc(page.ogTitle ?? page.title);
+  // twitter:* читают X и площадки помимо og:* (Telegram и VK берут og:*):
+  // без этих строк превью статьи там показывало заголовок сайта или визитки.
+  const metas: [attr: string, key: string, value: string][] = [
+    ['name', 'description', desc],
+    ['property', 'og:url', url],
+    ['property', 'og:title', cardTitle],
+    ['property', 'og:description', desc],
+    ['property', 'og:type', esc(page.ogType)],
+    ['name', 'twitter:title', cardTitle],
+    ['name', 'twitter:description', desc],
+  ];
   // `<` в JSON экранируется, чтобы текст вроде "</script>" не закрыл тег.
   const jsonLdTag = page.jsonLd
     ? `<script type="application/ld+json">${JSON.stringify(page.jsonLd).replace(/</g, '\\u003c')}</script>`
     : '';
-  return baseHtml
+  return metas
+    .reduce(
+      (out, [attr, key, value]) =>
+        out.replace(
+          new RegExp(`<meta ${attr}="${key}"\\s+content="[^"]*"\\s*/?>`),
+          () => `<meta ${attr}="${key}" content="${value}" />`,
+        ),
+      baseHtml,
+    )
     .replace(
       /<title>[\s\S]*?<\/title>/,
       () => `<title>${esc(page.title)}</title>`,
     )
     .replace(
-      /<meta name="description" content="[\s\S]*?"\s*\/?>/,
-      () => `<meta name="description" content="${desc}" />`,
-    )
-    .replace(
-      /<link rel="canonical" href="[\s\S]*?"\s*\/?>/,
+      /<link rel="canonical" href="[^"]*"\s*\/?>/,
       () => `<link rel="canonical" href="${url}" />`,
-    )
-    .replace(
-      /<meta property="og:url"\s+content="[\s\S]*?"\s*\/?>/,
-      () => `<meta property="og:url" content="${url}" />`,
-    )
-    .replace(
-      /<meta property="og:title"\s+content="[\s\S]*?"\s*\/?>/,
-      () =>
-        `<meta property="og:title" content="${esc(page.ogTitle ?? page.title)}" />`,
-    )
-    .replace(
-      /<meta property="og:description"\s+content="[\s\S]*?"\s*\/?>/,
-      () => `<meta property="og:description" content="${desc}" />`,
-    )
-    .replace(
-      /<meta property="og:type"\s+content="[\s\S]*?"\s*\/?>/,
-      () => `<meta property="og:type" content="${esc(page.ogType)}" />`,
     )
     .replace(
       '<div id="root"></div>',

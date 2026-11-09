@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dayIndex, fmtIndex } from './dayIndex';
+import { dayIndex, fmtIndex, fmtIndexDelta } from './dayIndex';
 
 describe('dayIndex', () => {
   it('среднее, когда оценены все потребности', () => {
@@ -23,5 +23,13 @@ describe('fmtIndex', () => {
   it('нет индекса — прочерк, а не выдуманный ноль', () => {
     expect(fmtIndex(null)).toBe('—');
     expect(fmtIndex(undefined)).toBe('—');
+  });
+});
+
+describe('fmtIndexDelta', () => {
+  it('знак всегда: «+2,0», «−1,5» (типографский минус), ноль — с плюсом', () => {
+    expect(fmtIndexDelta(2)).toBe('+2,0');
+    expect(fmtIndexDelta(-1.46)).toBe('−1,5');
+    expect(fmtIndexDelta(0)).toBe('+0,0');
   });
 });

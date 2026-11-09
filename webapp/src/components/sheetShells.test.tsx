@@ -4,7 +4,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { OverlayFrame } from './OverlayFrame';
-import { Topbar } from './SchemaFlashcardTopbar';
+import { ExBar } from './exercises/ExBar';
+import { ExScreen } from './exercises/ExScreen';
+import { FlashcardFrame } from './flashcard/FlashcardFrame';
 import { SsSheet } from './schemaSheets/SsSheet';
 
 afterEach(cleanup);
@@ -24,15 +26,26 @@ describe('оболочки листов — ds-sheet-head/ds-back', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it('Topbar флешкарт: подпись по умолчанию «Закрыть», своя подпись и клик', () => {
+  it('ExBar — бар упражнения: подпись, клик; sticky добавляет липкость .ex2-top', () => {
     const onBack = vi.fn();
-    const { rerender } = render(<Topbar onBack={onBack} />);
-    const b = screen.getByRole('button', { name: /Закрыть/ });
+    const { rerender } = render(<ExBar onBack={onBack} label="Закрыть" />);
+    const b = screen.getByRole('button', { name: 'Закрыть' });
     expectHead(b);
+    expect(b.parentElement?.classList.contains('ex2-top')).toBe(false);
     fireEvent.click(b);
     expect(onBack).toHaveBeenCalledTimes(1);
-    rerender(<Topbar onBack={onBack} label="Назад" />);
-    expect(screen.getByRole('button', { name: /Назад/ })).toBeTruthy();
+    rerender(<ExBar onBack={onBack} label="Назад" sticky />);
+    expect(screen.getByRole('button', { name: 'Назад' }).parentElement?.classList.contains('ex2-top')).toBe(true);
+  });
+
+  it('флешкарты и экран упражнения — один бар: та же разметка, у флешкарт без липкости (грид держит отступ)', () => {
+    const { container: fc } = render(<FlashcardFrame onBack={vi.fn()} label="Закрыть">x</FlashcardFrame>);
+    const { container: ex } = render(<ExScreen onBack={vi.fn()} backLabel="Закрыть" eyebrow="e" title="t" />);
+    const fcBar = fc.querySelector('.ds-sheet-head')!;
+    const exBar = ex.querySelector('.ds-sheet-head')!;
+    expect(fcBar.innerHTML).toBe(exBar.innerHTML);
+    expect(exBar.className).toBe('ds-sheet-head ex2-top');
+    expect(fcBar.className).toBe('ds-sheet-head');
   });
 
   it('SsSheet: «Назад» слева, правый слот последним ребёнком шапки', () => {

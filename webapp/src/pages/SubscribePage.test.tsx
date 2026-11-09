@@ -143,6 +143,27 @@ describe('SubscribePage — управление подпиской по ток�
     expect(screen.queryByText('Загружаем…')).toBeNull();
   });
 
+  // Экран-тупик шлёт отчёт наверх (правило №14, гейт check-dead-end-report):
+  // до 2026-11 отказ загрузки был виден только человеку на экране.
+  it('отказ загрузки (500) — отчёт наверх с кодом, без токена ссылки', async () => {
+    mockApi.getSubscriptionByToken.mockRejectedValue(new ApiError(500, 'boom'));
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    render(<SubscribePage />);
+
+    await screen.findByText(/Не удалось загрузить подписку/);
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'subscription load failed: HTTP 500', section: 'subscription' });
+    expect(JSON.stringify(vi.mocked(reportClientError).mock.calls)).not.toContain('tok1');
+  });
+
+  it('контроль: 404 (ссылка устарела) — экран ошибки без отчёта наверх', async () => {
+    mockApi.getSubscriptionByToken.mockRejectedValue(new ApiError(404, 'not found'));
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    render(<SubscribePage />);
+
+    await screen.findByText(/Не удалось загрузить подписку/);
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
   it('кнопка «Обновить» на экране ошибки перезагружает страницу', async () => {
     // window.location.reload не переопределяется через vi.spyOn в jsdom
     // (навигация — не конфигурируемое свойство) — подменяем сам объект
@@ -226,6 +247,15 @@ describe('SubscribePage — отмена подписки (отказ не гл�
     fireEvent.click(cancelBtn());
     await screen.findByRole('alert');
     expect(JSON.stringify(vi.mocked(reportClientError).mock.calls)).not.toContain('tok1');
+  });
+
+  it('сбой без ответа сервера: в отчёте тип сбоя, а не текст ошибки с адресом', async () => {
+    // Раньше не-HTTP ошибка уходила своим message — а он может нести адрес с токеном.
+    mockApi.cancelSubscription.mockRejectedValue(new TypeError('Failed to fetch /api/subscription/tok1/cancel'));
+    await openManage();
+    fireEvent.click(cancelBtn());
+    await screen.findByRole('alert');
+    expect(reportClientError).toHaveBeenCalledWith({ message: 'subscription cancel failed: network', section: 'subscription' });
   });
 
   it('404: «ссылка устарела», без отчёта наверх (ожидаемый исход)', async () => {

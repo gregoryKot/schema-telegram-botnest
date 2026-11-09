@@ -14,6 +14,7 @@
 // пересборки).
 import { ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
+import { isSerializationFailure } from '../prisma/serializable-retry';
 import { encryptJson } from '../utils/crypto';
 import {
   assertWritable,
@@ -122,7 +123,7 @@ export async function saveGratitudeDay(
       );
     } catch (err) {
       const code = (err as { code?: string } | null)?.code;
-      if (code !== 'P2034' && code !== 'P2002') throw err;
+      if (!isSerializationFailure(err) && code !== 'P2002') throw err;
       if (attempt >= MERGE_RETRIES) {
         throw new ConflictException('Gratitude day changed concurrently');
       }

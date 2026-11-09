@@ -787,6 +787,78 @@ describe('setup-merge-drivers --check: атрибут без драйвера н
       expect(res.stderr).not.toContain('только на точном пути');
     });
   });
+
+  // Сам .gitattributes сводится union: две стороны, переписавшие ОДНУ строку
+  // по-разному, оставляют обе, и git молча берёт последнюю.
+  it('один путь в двух строках (след union-слияния) — красное', () => {
+    const res = runGate(
+      SETUP,
+      {
+        '.gitattributes': `${ATTR}scripts/foo-baseline.json  merge=ratchet-max\n`,
+        'scripts/foo-baseline.json': '{}',
+        ...STUBS,
+      },
+      { args: ['--check'] },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain(
+      '.gitattributes: scripts/foo-baseline.json встречается дважды',
+    );
+  });
+});
+
+describe('настоящее .gitattributes сводит само себя (merge=union)', () => {
+  // Два PR с новыми гейтами вставляют по строке бейслайна в одно место
+  // .gitattributes — до union это был текстовый конфликт по построению,
+  // который агенты разрешали руками.
+  const REPO = join(REAL_SCRIPTS, '..');
+  const ANCHOR =
+    'scripts/file-size-baseline.json           merge=ratchet-sum\n';
+  const lineFor = (name: string) =>
+    `scripts/${name}-baseline.json  merge=ratchet-min\n`;
+
+  function twoNewGates(attributes: string) {
+    const tmp = mkdtempSync(join(tmpdir(), 'attrs-union-'));
+    try {
+      const git = repoWithRealDrivers(tmp);
+      const path = join(tmp, '.gitattributes');
+      const insert = (line: string) =>
+        writeFileSync(path, attributes.replace(ANCHOR, ANCHOR + line));
+      writeFileSync(path, attributes);
+      git('add', '-A');
+      git('commit', '-qm', 'base');
+      const base = git('rev-parse', '--abbrev-ref', 'HEAD').stdout.trim();
+      git('checkout', '-qb', 'agent-b');
+      insert(lineFor('beta'));
+      git('commit', '-qam', 'агент B: новый гейт');
+      git('checkout', '-q', base);
+      insert(lineFor('alpha'));
+      git('commit', '-qam', 'агент A: новый гейт');
+      const merge = git('merge', 'agent-b', '-m', 'merge');
+      return { status: merge.status, text: readFileSync(path, 'utf8') };
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  const real = readFileSync(join(REPO, '.gitattributes'), 'utf8');
+
+  it('соседние вставки двух веток сливаются без конфликта, обе строки на месте', () => {
+    expect(real).toContain(ANCHOR);
+    const { status, text } = twoNewGates(real);
+    expect(status).toBe(0);
+    expect(text).not.toContain('<<<<<<<');
+    expect(text).toContain(lineFor('alpha'));
+    expect(text).toContain(lineFor('beta'));
+  });
+
+  it('контроль: без строки `.gitattributes merge=union` та же пара веток конфликтует', () => {
+    const without = real.replace(/^\.gitattributes\s+merge=union\n/m, '');
+    expect(without).not.toBe(real);
+    const { status, text } = twoNewGates(without);
+    expect(status).not.toBe(0);
+    expect(text).toContain('<<<<<<<');
+  });
 });
 
 describe('настоящее .gitattributes сводит бейслайны, у которых раньше не было атрибута', () => {

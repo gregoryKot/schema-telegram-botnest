@@ -10,7 +10,9 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { SafePlaceEx } from './SafePlaceEx';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
+import { SAFE_PLACE_FIELD_MAX } from './safePlaceText';
+import { SAFE_PLACE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: {
@@ -41,28 +43,16 @@ afterEach(() => {
   cleanup();
 });
 
-describe('SafePlaceEx — кризисная детекция', () => {
-  it('кризисная фраза в общем описании места показывает CrisisCard', () => {
-    renderEx();
-    const overview = screen.getByPlaceholderText(/полянка в лесу/);
-    fireEvent.change(overview, { target: { value: 'не хочу жить, хочу исчезнуть' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('кризисная фраза в одном из органов чувств тоже показывает CrisisCard', () => {
-    renderEx();
-    const hear = screen.getByPlaceholderText(/шорох листьев/);
-    fireEvent.change(hear, { target: { value: 'слышу тишину, хочу исчезнуть' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', () => {
-    renderEx();
-    const overview = screen.getByPlaceholderText(/полянка в лесу/);
-    fireEvent.change(overview, { target: { value: 'дача у бабушки, веранда' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+// Общее описание места и любое из четырёх чувств — одна детекция на все поля.
+describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
+  label: 'общее описание места',
+  open: () => renderEx(),
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText(/полянка в лесу/), { target: { value: text } }),
+});
+describeCrisisField('webapp/src/components/exercises/SafePlaceEx.tsx', {
+  label: 'что слышно',
+  open: () => renderEx(),
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: text } }),
 });
 
 describe('SafePlaceEx — сохранение и обращение ты/вы', () => {
@@ -79,7 +69,10 @@ describe('SafePlaceEx — сохранение и обращение ты/вы',
     const save = screen.getByRole('button', { name: /Сохранить место/ }) as HTMLButtonElement;
     expect(save.disabled).toBe(false);
     fireEvent.click(save);
-    expect(await screen.findByText('«дача у бабушки»')).toBeTruthy();
+    // «…» места есть и в превью формы: ждём сам экран «сохранено», иначе под
+    // нагрузкой проверка опережала ответ сохранения (кнопка ещё «Сохраняю…»).
+    expect(await screen.findByText('Безопасное место · сохранено')).toBeTruthy();
+    expect(screen.getByText('«дача у бабушки»')).toBeTruthy();
     expect(screen.getByText('скрип половиц')).toBeTruthy();
     expect(mockApi.saveSafePlace).toHaveBeenCalledWith(expect.stringContaining('дача у бабушки'));
   });
@@ -138,5 +131,23 @@ describe('SafePlaceEx — сохранение и обращение ты/вы',
     fireEvent.change(screen.getByPlaceholderText(/шорох листьев/), { target: { value: 'тишина' } });
     fireEvent.click(screen.getByRole('button', { name: /Сохранить место/ }));
     expect(await screen.findByText('Ваше')).toBeTruthy();
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('SafePlaceEx — пределы полей', () => {
+  it('все пять полей несут предел, при котором описание целиком влезает в DTO', async () => {
+    renderEx();
+    const fields = screen.getAllByRole('textbox') as HTMLInputElement[];
+    expect(fields).toHaveLength(5);
+    for (const f of fields) expect(f.maxLength).toBe(SAFE_PLACE_FIELD_MAX);
+    const full = 'я'.repeat(SAFE_PLACE_FIELD_MAX);
+    for (const f of fields) fireEvent.change(f, { target: { value: full } });
+    fireEvent.click(screen.getByText(/Сохранить место/));
+    await screen.findByText('безопасное место.');
+    const sent = mockApi.saveSafePlace.mock.calls[0][0] as string;
+    expect(sent.length).toBeLessThanOrEqual(SAFE_PLACE_TEXT_MAX);
   });
 });

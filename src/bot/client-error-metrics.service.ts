@@ -5,21 +5,44 @@ import {
   formatClientErrorMetrics,
 } from './client-error-metrics.format';
 import type { ClientErrorMetricsRow } from './client-error-metrics.row';
+import {
+  type AssetRecoveryMetrics,
+  formatAssetRecovery,
+} from './asset-recovery-metrics.format';
 
 // Счётчики поломок клиента для /stats (волна 9 щита покрытия,
 // docs/SHIELD_PROMPT.md): событие client_error пишет только
 // ClientErrorsController (src/api/client-errors.controller.ts), всегда
 // userId = null — тот же приём и тот же повод, что у AuthHealthMetricsService:
 // /api/event открыт авторизованным клиентам, и без фильтра "userId IS NULL"
-// любой из них мог бы накрутить отчёт своим userId. Свой домен — свой файл
-// (правило №10), образец — auth-health-metrics.service.ts.
+// любой из них мог бы накрутить отчёт своим userId.
 @Injectable()
 export class ClientErrorMetricsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
-    return formatClientErrorMetrics(await this.getMetrics());
+    const [m, recovered] = await Promise.all([
+      this.getMetrics(),
+      this.getAssetRecovery(),
+    ]);
+    return `${formatClientErrorMetrics(m)}\n${formatAssetRecovery(recovered)}`;
+  }
+
+  /** Сработавшие повторы asset-recovery.js за неделю. Событие анонимное
+   *  (POST /api/public-event): строки с userId — подделка через /api/event. */
+  async getAssetRecovery(): Promise<AssetRecoveryMetrics> {
+    const since7 = new Date(Date.now() - 7 * 86_400_000);
+    const [row] = await this.prisma.$queryRaw<
+      Array<{ css: bigint; js: bigint }>
+    >`
+      SELECT count(*) FILTER (WHERE meta->>'kind' = 'css')::bigint AS css,
+             count(*) FILTER (WHERE meta->>'kind' = 'js')::bigint AS js
+      FROM "AnalyticsEvent"
+      WHERE "userId" IS NULL
+        AND "name" = 'asset_recovered'
+        AND "createdAt" >= ${since7}`;
+    return { cssWeek: Number(row?.css ?? 0n), jsWeek: Number(row?.js ?? 0n) };
   }
 
   async getMetrics(): Promise<ClientErrorMetrics> {
@@ -27,9 +50,7 @@ export class ClientErrorMetricsService {
     const since7 = new Date(now - 7 * 86_400_000);
     const since1 = new Date(now - 86_400_000);
     // Один проход FILTER'ами вместо GROUP BY: секций и площадок — известный
-    // ограниченный список (CLIENT_ERROR_SECTIONS), раскладывать который по
-    // строкам дороже и сложнее тестировать, чем по колонкам (тот же приём,
-    // что у account-link-metrics.service.ts).
+    // список (CLIENT_ERROR_SECTIONS), по колонкам проще тестировать.
     // Тип строки — client-error-metrics.row.ts: опечатка в ключе ломает tsc.
     const [row] = await this.prisma.$queryRaw<ClientErrorMetricsRow[]>`
       SELECT
@@ -48,6 +69,7 @@ export class ClientErrorMetricsService {
         count(*) FILTER (WHERE meta->>'section' = 'cabinet')::bigint AS cabinet_week,
         count(*) FILTER (WHERE meta->>'section' = 'booking')::bigint AS booking_week,
         count(*) FILTER (WHERE meta->>'section' = 'assets')::bigint AS assets_week,
+        count(*) FILTER (WHERE meta->>'section' = 'subscription')::bigint AS subscription_week,
         count(*) FILTER (WHERE meta->>'section' = 'other')::bigint AS other_week,
         count(*) FILTER (WHERE meta->>'source' = 'webapp')::bigint AS webapp_week,
         count(*) FILTER (WHERE meta->>'source' = 'miniapp')::bigint AS miniapp_week,
@@ -74,6 +96,7 @@ export class ClientErrorMetricsService {
         cabinet: n(row?.cabinet_week),
         booking: n(row?.booking_week),
         assets: n(row?.assets_week),
+        subscription: n(row?.subscription_week),
         other: n(row?.other_week),
       },
       bySource: {

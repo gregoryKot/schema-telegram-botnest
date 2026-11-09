@@ -7,8 +7,7 @@
 // Здесь шаг не пересказывается, а ИСПОЛНЯЕТСЯ: `run:` вытаскивается из
 // настоящего YAML и идёт в bash с пустыми и заполненными секретами и
 // подменённым `curl` в PATH (шов — сам скрипт воркфлоу, не его описание).
-// YAML-парсера в зависимостях нет, шаги режутся по отступу; слом отступа
-// многострочного run (известная ловушка аудита 2026-09) ломает и этот разбор.
+// Разбор шагов по отступу — src/test-support/workflow-steps.ts.
 import { spawnSync } from 'child_process';
 import {
   chmodSync,
@@ -20,37 +19,17 @@ import {
 } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import {
+  jobBody,
+  runBlock,
+  stepName,
+  steps,
+} from '../test-support/workflow-steps';
 
 const WORKFLOWS = join(process.cwd(), '.github', 'workflows');
 const read = (file: string) => readFileSync(join(WORKFLOWS, file), 'utf8');
 
-/** Тело джобы `alarm`: от её ключа до следующего ключа джобы (отступ 2). */
-function alarmJob(yml: string): string {
-  const start = yml.search(/^ {2}alarm:\n/m);
-  if (start < 0) throw new Error('джобы alarm нет');
-  const rest = yml.slice(start + 1);
-  const next = rest.search(/^ {2}\S/m);
-  return next < 0 ? rest : rest.slice(0, next);
-}
-
-/** Шаги джобы: каждый начинается с `      - ` (отступ 6). */
-function steps(job: string): string[] {
-  return job.split(/^ {6}- /m).slice(1);
-}
-
-const stepName = (s: string) => /^name: (.*)$/m.exec(s)?.[1] ?? '';
-
-function runBlock(step: string): string {
-  const lines = step.split('\n');
-  const at = lines.findIndex((l) => /^ {8}run: \|\s*$/.test(l));
-  if (at < 0) throw new Error(`у шага «${stepName(step)}» нет run: |`);
-  const body: string[] = [];
-  for (const l of lines.slice(at + 1)) {
-    if (l.trim() !== '' && !l.startsWith(' '.repeat(10))) break;
-    body.push(l.slice(10));
-  }
-  return body.join('\n');
-}
+const alarmJob = (yml: string) => jobBody(yml, 'alarm');
 
 const dmStep = (file: string) => {
   const found = steps(alarmJob(read(file))).find((s) =>
@@ -180,67 +159,88 @@ describe.each(['prod-smoke.yml', 'nightly.yml'])(
   },
 );
 
-// Шаг issue ci-alarm в nightly.yml исполняется с поддельными github/context:
-// новая красная джоба не должна тонуть в продолжающемся «Упали джобы».
-describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
-  const step = steps(alarmJob(read('nightly.yml'))).find((s) =>
+// Шаг issue ci-alarm исполняется с поддельными github/context/core: `script:`
+// вытаскивается из настоящего YAML (github-script отдаёт его AsyncFunction).
+type Call = { kind: string; args: Record<string, unknown> };
+type Issue = {
+  number: number;
+  title: string;
+  body: string;
+  updated_at?: string;
+};
+
+function issueScript(file: string): string {
+  const step = steps(alarmJob(read(file))).find((s) =>
     stepName(s).startsWith('issue ci-alarm'),
   );
-  if (!step) throw new Error('шага issue ci-alarm нет');
+  if (!step) throw new Error(`шага issue ci-alarm нет в ${file}`);
   const lines = step.split('\n');
   const at = lines.findIndex((l) => /^ {10}script: \|\s*$/.test(l));
-  const script = lines
+  return lines
     .slice(at + 1)
     .filter((l) => l.trim() === '' || l.startsWith(' '.repeat(12)))
     .map((l) => l.slice(12))
     .join('\n');
-  const AsyncFunction = Object.getPrototypeOf(async () => 0).constructor;
+}
 
-  type Call = { kind: string; args: Record<string, unknown> };
-  async function exec(opts: {
-    failed: string;
-    issue?: { number: number; title: string; body: string };
+async function execIssueStep(
+  file: string,
+  opts: {
+    env: Record<string, string>;
+    issue?: Issue;
     comments?: { body: string; user: { type: string } }[];
-  }) {
-    const calls: Call[] = [];
-    const outputs: Record<string, string> = {};
-    const rec = (kind: string) => async (args: Record<string, unknown>) => {
-      calls.push({ kind, args });
-      return {};
-    };
-    const github = {
-      paginate: async () => opts.comments ?? [],
-      rest: {
-        issues: {
-          listForRepo: async () => ({
-            data: opts.issue ? [opts.issue] : [],
-          }),
-          listComments: () => undefined,
-          create: rec('create'),
-          createComment: rec('comment'),
-          update: rec('update'),
-        },
+  },
+) {
+  const calls: Call[] = [];
+  const outputs: Record<string, string> = {};
+  const rec = (kind: string) => async (args: Record<string, unknown>) => {
+    calls.push({ kind, args });
+    return {};
+  };
+  const github = {
+    paginate: async () => opts.comments ?? [],
+    rest: {
+      issues: {
+        listForRepo: async () => ({ data: opts.issue ? [opts.issue] : [] }),
+        listComments: () => undefined,
+        create: rec('create'),
+        createComment: rec('comment'),
+        update: rec('update'),
       },
-    };
-    const context = {
-      serverUrl: 'https://github.com',
-      runId: 7,
-      repo: { owner: 'o', repo: 'r' },
-    };
-    const core = {
-      setOutput: (k: string, v: string) => (outputs[k] = v),
-      warning: () => undefined,
-    };
-    const fn = new AsyncFunction(
-      'github',
-      'context',
-      'core',
-      'process',
-      script,
-    );
-    await fn(github, context, core, { env: { FAILED: opts.failed } });
-    return { calls, outputs };
-  }
+    },
+  };
+  const context = {
+    serverUrl: 'https://github.com',
+    runId: 7,
+    repo: { owner: 'o', repo: 'r' },
+  };
+  const core = {
+    setOutput: (k: string, v: string) => (outputs[k] = v),
+    warning: () => undefined,
+  };
+  const AsyncFunction = Object.getPrototypeOf(async () => 0).constructor;
+  const fn = new AsyncFunction(
+    'github',
+    'context',
+    'core',
+    'process',
+    issueScript(file),
+  );
+  await fn(github, context, core, { env: opts.env });
+  return { calls, outputs };
+}
+
+describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', () => {
+  const exec = (opts: {
+    failed: string;
+    issue?: Issue;
+    comments?: { body: string; user: { type: string } }[];
+  }) =>
+    execIssueStep('nightly.yml', {
+      env: { FAILED: opts.failed },
+      issue: opts.issue,
+      comments: opts.comments,
+    });
 
   const TITLE = 'Ночная flaky-детекция — красный прогон';
   const bot = (body: string) => ({ body, user: { type: 'Bot' } });
@@ -310,5 +310,48 @@ describe('nightly.yml: шаг issue ci-alarm — строка «Новые»', (
     });
     expect(r.status).toBe(0);
     expect(r.curlCalls[0]).toContain('Новые: b.');
+  });
+});
+
+// Issue без исполнителя не приходит владельцу ни уведомлением, ни в «Assigned
+// to me» (аудит 2026-10, «Красный смок не говорит, что именно лежит»): пока
+// нет секретов DM, это единственный канал, который GitHub доставляет сам.
+describe.each([
+  ['prod-smoke.yml', { PROD_SMOKE_RESULT: 'failure' }],
+  ['nightly.yml', { FAILED: 'backend-flaky' }],
+])('%s: новая issue ci-alarm', (file, env) => {
+  it('назначается владельцу репозитория (assignees: [context.repo.owner])', async () => {
+    const r = await execIssueStep(file, { env });
+    const create = r.calls.filter((c) => c.kind === 'create');
+    expect(create).toHaveLength(1);
+    expect(create[0].args.assignees).toEqual(['o']);
+    expect(create[0].args.labels).toEqual(['ci-alarm']);
+  });
+
+  // Правило №20: починка инцидента приезжает со строкой в docs/INCIDENTS.md.
+  // Три коротких красных смока октября закрылись сами без строки (аудит
+  // 2026-10, «Реестр инцидентов отстаёт»): напоминание стоит в самой issue.
+  it('в теле — чеклист «строка в docs/INCIDENTS.md», ссылка на прогон на месте', async () => {
+    const r = await execIssueStep(file, { env });
+    const body = String(r.calls[0].args.body);
+    expect(body).toMatch(/^- \[ \] строка в docs\/INCIDENTS\.md/m);
+    expect(body).toContain(
+      'Ссылка на прогон: https://github.com/o/r/actions/runs/7',
+    );
+  });
+
+  it('контроль: повторный провал дописывает комментарий без второго чеклиста', async () => {
+    const r = await execIssueStep(file, {
+      env,
+      issue: {
+        number: 1,
+        title: String((await execIssueStep(file, { env })).calls[0].args.title),
+        body: 'Упали джобы: backend-flaky.',
+        updated_at: '2000-01-01T00:00:00Z',
+      },
+    });
+    const comments = r.calls.filter((c) => c.kind === 'comment');
+    expect(comments).toHaveLength(1);
+    expect(String(comments[0].args.body)).not.toContain('INCIDENTS');
   });
 });

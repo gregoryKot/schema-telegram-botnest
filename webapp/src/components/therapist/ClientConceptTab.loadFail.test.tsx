@@ -88,7 +88,7 @@ describe('ClientConceptTab: концептуализация не загрузи
     expect(handle.current!.saveStatus).toBe('idle');
   });
 
-  it('«Повторить» грузит заново; правка после него несёт сохранённые поля, а не пустые', async () => {
+  it('«Повторить» грузит заново; правка после него — патч от загруженной строки, сохранённое не затирается', async () => {
     mockApi.getConceptualization.mockResolvedValueOnce(SAVED);
     render(<Harness />);
     await screen.findByRole('alert');
@@ -103,9 +103,11 @@ describe('ClientConceptTab: концептуализация не загрузи
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1);
     const body = mockApi.saveConceptualization.mock.calls[0][1] as Record<string, unknown>;
     expect(body.triggers).toBe('опоздания');
-    expect(body.goals).toBe('цели Анны');
-    expect(body.earlyExperience).toBe('детство Анны');
-    expect(body.schemaIds).toEqual(['abandonment']);
+    // Патч от загруженной строки: сохранённые поля не уходят пустыми — они не уходят вовсе.
+    expect(body.baseVersion).toBe(SAVED.updatedAt);
+    expect(body).not.toHaveProperty('goals');
+    expect(body).not.toHaveProperty('earlyExperience');
+    expect(body).not.toHaveProperty('schemaIds');
   });
 
   it('повтор тоже упал — плашка на месте, кнопка снова доступна, сбой ушёл в телеметрию', async () => {

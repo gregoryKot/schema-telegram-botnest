@@ -14,55 +14,41 @@
 // броском, если после удаления не осталось ни одного способа входа.
 import { ConflictException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
+import { inSerializableTx } from '../prisma/serializable-retry';
 
 // Текст идёт на экран как есть (humanizeResponseError пропускает русский):
 // английская строка подменялась общим «Не удалось отвязать способ входа», и
 // человек не узнавал причину (QA 2026-11, М2).
 export const LAST_METHOD_MESSAGE =
   'Это единственный способ входа — без него в аккаунт не войти. Сначала нужно привязать другой.';
-const SERIALIZATION_RETRIES = 3;
-
-function isSerializationFailure(err: unknown): boolean {
-  return (err as { code?: string } | null)?.code === 'P2034';
-}
 
 export async function unlinkProviderSafely(
   prisma: PrismaService,
   userId: bigint,
   provider: string,
 ): Promise<void> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      await prisma.$transaction(
-        async (tx) => {
-          const all = await tx.authProvider.findMany({
-            where: { userId },
-            select: { id: true, provider: true },
-          });
-          if (all.length <= 1) throw new ConflictException(LAST_METHOD_MESSAGE);
-          const victims = all.filter((r) => r.provider === provider);
-          // Отвязка снесла бы ВСЕ способы входа (две строки одного провайдера).
-          if (victims.length >= all.length) {
-            throw new ConflictException(LAST_METHOD_MESSAGE);
-          }
-          if (victims.length === 0) return;
-          await tx.authProvider.deleteMany({
-            where: { id: { in: victims.map((r) => r.id) } },
-          });
-          // Откат броском: если после удаления входа не осталось — не коммитим.
-          const left = await tx.authProvider.count({ where: { userId } });
-          if (left < 1) throw new ConflictException(LAST_METHOD_MESSAGE);
-        },
-        { isolationLevel: 'Serializable' },
-      );
-      return;
-    } catch (err) {
-      if (!isSerializationFailure(err)) throw err;
-      if (attempt >= SERIALIZATION_RETRIES) {
-        throw new ConflictException(
-          'Способы входа менялись одновременно — повторите',
-        );
+  await inSerializableTx(
+    prisma,
+    async (tx) => {
+      const all = await tx.authProvider.findMany({
+        where: { userId },
+        select: { id: true, provider: true },
+      });
+      if (all.length <= 1) throw new ConflictException(LAST_METHOD_MESSAGE);
+      const victims = all.filter((r) => r.provider === provider);
+      // Отвязка снесла бы ВСЕ способы входа (две строки одного провайдера).
+      if (victims.length >= all.length) {
+        throw new ConflictException(LAST_METHOD_MESSAGE);
       }
-    }
-  }
+      if (victims.length === 0) return;
+      await tx.authProvider.deleteMany({
+        where: { id: { in: victims.map((r) => r.id) } },
+      });
+      // Откат броском: если после удаления входа не осталось — не коммитим.
+      const left = await tx.authProvider.count({ where: { userId } });
+      if (left < 1) throw new ConflictException(LAST_METHOD_MESSAGE);
+    },
+    () =>
+      new ConflictException('Способы входа менялись одновременно — повторите'),
+  );
 }

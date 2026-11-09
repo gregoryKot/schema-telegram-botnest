@@ -17,15 +17,19 @@
 //     2 минуты (паузы 1/4/15 с), метки — в sessionStorage.
 // Не помогло — отчёт в /api/client-errors, секция 'assets' (свой бакет в
 // src/api/client-error-section.ts и своя строка «Файлы сайта не загрузились»
-// в блоке «Поломки на клиенте» отчёта /stats).
+// в блоке «Поломки на клиенте» отчёта /stats). Помогло — анонимное событие
+// asset_recovered в /api/public-event (kind css|js, attempts — с какой попытки;
+// src/analytics/asset-recovery.constants.ts), строка «повтор помог» там же.
 // Тест: webapp/src/assetRecovery.test.ts; в браузере — e2e-browser/asset-recovery.spec.ts.
 (function () {
   var CSS_RETRY_DELAYS_MS = [1000, 2000, 4000, 8000, 16000, 32000, 64000];
   var RELOAD_DELAYS_MS = [1000, 4000, 15000];
   var RELOAD_WINDOW_MS = 120000;
   var RELOAD_KEY = 'asset-reload-at';
+  var RECOVERED_KEY = 'asset-recovered-for';
   var OWN_ASSET = /^\/(game\/)?assets\//;
   var reported = {};
+  var moduleFailed = false;
 
   // Путь файла сборки этого сайта; null — чужой хост, другой каталог, битый адрес.
   function assetPath(url) {
@@ -39,19 +43,9 @@
     return null;
   }
 
-  // Один отчёт на файл за страницу. В url только путь: во фрагменте бывает
-  // токен входа (H0, shared/src/api/clientErrorReport.ts).
-  function report(kind, path) {
-    if (reported[path]) return;
-    reported[path] = true;
-    var body = {
-      source: 'webapp',
-      section: 'assets',
-      message: 'Файл сборки не загрузился: ' + kind + ' ' + path,
-      url: location.pathname,
-    };
+  function post(url, body) {
     try {
-      fetch('/api/client-errors', {
+      fetch(url, {
         method: 'POST',
         keepalive: true,
         headers: { 'Content-Type': 'application/json' },
@@ -60,6 +54,28 @@
     } catch (e) {
       // Отчёт не роняет страницу.
     }
+  }
+
+  // Один отчёт на файл за страницу. В url только путь: во фрагменте бывает
+  // токен входа (H0, shared/src/api/clientErrorReport.ts).
+  function report(kind, path) {
+    if (reported[path]) return;
+    reported[path] = true;
+    post('/api/client-errors', {
+      source: 'webapp',
+      section: 'assets',
+      message: 'Файл сборки не загрузился: ' + kind + ' ' + path,
+      url: location.pathname,
+    });
+  }
+
+  // Повтор помог: без сигнала видны только неудачи, а сколько выкладок задело
+  // людей без последствий — нет. Без пути и адреса: только вид и попытка.
+  function recovered(kind, attempts) {
+    post('/api/public-event', {
+      name: 'asset_recovered',
+      meta: { kind: kind, attempts: attempts },
+    });
   }
 
   function retryStylesheet(link, path) {
@@ -73,6 +89,9 @@
       if (cors !== null) next.setAttribute('crossorigin', cors);
       next.href = path + '?retry=' + (attempt + 1);
       next.setAttribute('data-asset-retry', String(attempt + 1));
+      next.addEventListener('load', function () {
+        recovered('css', attempt + 1);
+      });
       link.parentNode.insertBefore(next, link.nextSibling);
     }, CSS_RETRY_DELAYS_MS[attempt]);
   }
@@ -123,9 +142,29 @@
       if (cssPath) retryStylesheet(el, cssPath);
     } else if (tag === 'SCRIPT' && /^module$/i.test(el.type)) {
       var jsPath = assetPath(el.src);
-      if (jsPath) reloadForModule(jsPath);
+      if (jsPath) {
+        moduleFailed = true;
+        reloadForModule(jsPath);
+      }
     }
   }
 
+  // Страница догрузилась без сбоя модуля, а свежие метки перезагрузок есть —
+  // перезагрузка помогла. Один сигнал на серию: метка последней перезагрузки
+  // запоминается; без памяти не шлём, иначе сигнал на каждой загрузке.
+  function onLoad() {
+    var recent = moduleFailed ? null : recentReloads(Date.now());
+    if (!recent || recent.length === 0) return;
+    var last = String(recent[recent.length - 1]);
+    try {
+      if (sessionStorage.getItem(RECOVERED_KEY) === last) return;
+      sessionStorage.setItem(RECOVERED_KEY, last);
+    } catch (e) {
+      return;
+    }
+    recovered('js', recent.length);
+  }
+
   window.addEventListener('error', onError, true);
+  window.addEventListener('load', onLoad);
 })();

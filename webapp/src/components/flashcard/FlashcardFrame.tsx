@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { Topbar } from '../SchemaFlashcardTopbar';
+import { ExBar } from '../exercises/ExBar';
 
-/** Каркас экрана «Мне плохо»: полноэкранный лист, верхняя полоса, колонка контента. */
+/** Каркас экрана «Мне плохо»: полноэкранный лист, бар упражнения (ExBar), колонка контента. */
 export function FlashcardFrame({ onBack, label, children, center }: {
   onBack: () => void;
   label: string;
@@ -10,7 +10,7 @@ export function FlashcardFrame({ onBack, label, children, center }: {
 }) {
   return (
     <div className="u-sheet-grid">
-      <Topbar onBack={onBack} label={label} />
+      <ExBar onBack={onBack} label={label} />
       <div className={'sk-fc-body' + (center ? ' is-center' : '')}>{children}</div>
     </div>
   );

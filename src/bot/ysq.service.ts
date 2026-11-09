@@ -54,12 +54,15 @@ export class YsqService {
 
   // «Удалить результаты теста» в настройках (решение владельца 2026-10-22):
   // итог, вся история и прогресс — одной транзакцией, без половины.
-  async deleteAllYsqData(userId: bigint): Promise<void> {
-    await this.prisma.$transaction([
+  // attempts — сколько пройденных попыток стёрто: история, у строк до неё —
+  // итог (для события ysq_data_deleted, правило №8).
+  async deleteAllYsqData(userId: bigint): Promise<{ attempts: number }> {
+    const [result, history] = await this.prisma.$transaction([
       this.prisma.ysqResult.deleteMany({ where: { userId } }),
       this.prisma.ysqResultHistory.deleteMany({ where: { userId } }),
       this.prisma.ysqProgress.deleteMany({ where: { userId } }),
     ]);
+    return { attempts: Math.max(result.count, history.count) };
   }
 
   async saveYsqResult(userId: bigint, answers: number[]): Promise<void> {

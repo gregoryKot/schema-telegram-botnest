@@ -12,6 +12,7 @@ export function mockCardCtx() {
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
+    closePath: vi.fn(),
     stroke: vi.fn(),
     fill: vi.fn(),
     fillRect: vi.fn(),

@@ -944,7 +944,7 @@ describe('SettingsSheet — «Перестать быть специалисто
     const onResign = vi.fn().mockResolvedValue(undefined);
     render(
       <MemoryRouter>
-        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onResignTherapist={onResign} />
+        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onSetTherapistMode={vi.fn()} onResignTherapist={onResign} />
       </MemoryRouter>,
     );
     await screen.findByText('Настройки');
@@ -958,7 +958,7 @@ describe('SettingsSheet — «Перестать быть специалисто
     const onResign = vi.fn().mockResolvedValue(undefined);
     render(
       <MemoryRouter>
-        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onResignTherapist={onResign} />
+        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onSetTherapistMode={vi.fn()} onResignTherapist={onResign} />
       </MemoryRouter>,
     );
     await screen.findByText('Настройки');
@@ -973,7 +973,7 @@ describe('SettingsSheet — «Перестать быть специалисто
     const onResign = vi.fn().mockResolvedValue(undefined);
     render(
       <MemoryRouter>
-        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onResignTherapist={onResign} />
+        <SettingsSheet onClose={vi.fn()} userRole="THERAPIST" onSetTherapistMode={vi.fn()} onResignTherapist={onResign} />
       </MemoryRouter>,
     );
     await screen.findByText('Настройки');

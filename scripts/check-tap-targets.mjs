@@ -18,7 +18,9 @@
 // Образец правильной узкой шкалы — шкала оценки потребности (NeedRatingBar):
 // `flex: 1` + `padding: '17px 0'` → 46px по высоте при ~30 по ширине.
 // Не считаются значения-не-числа (`'var(--x)'`, `'100%'`, переменные) и стили вне
-// инлайна (`style={styles.btn}`): их размер статически неизвестен.
+// инлайна (`style={styles.btn}`): их размер статически неизвестен. Размер из
+// CSS-класса (`.ds-switch--sm`, вместе с зоной `::before` с отрицательным inset)
+// считается, когда инлайн его не задаёт, — scripts/tap-targets-css.mjs.
 //
 // Снизил — зафиксируй: node scripts/check-tap-targets.mjs --update
 // Что именно насчитано: node scripts/check-tap-targets.mjs --verbose
@@ -26,6 +28,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from '
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { findTapTargets, MIN_TARGET_PX } from './tap-targets-rules.mjs';
+import { cssTargetProps } from './tap-targets-css.mjs';
 import { stripComments } from './gate-strip-comments.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
@@ -49,7 +52,7 @@ function walk(dir, acc = []) {
     if (st.isDirectory()) {
       if (name === 'node_modules' || name === 'dist') continue;
       walk(rel, acc);
-    } else if (/\.tsx$/.test(name) && !/\.(spec|test)\.tsx$/.test(name)) {
+    } else if (/\.(tsx|css)$/.test(name) && !/\.(spec|test)\.tsx$/.test(name)) {
       acc.push(rel);
     }
   }
@@ -59,16 +62,18 @@ function walk(dir, acc = []) {
 function main() {
   const counts = {};
   const details = {};
-  for (const dir of SCAN_DIRS) {
-    for (const file of walk(dir)) {
-      const src = readFileSync(join(ROOT, file), 'utf8');
-      const hits = findTapTargets(stripComments(src, false)).map(
-        (h) => `  L${h.line} <${h.tag}> ${h.w}×${h.h}`,
-      );
-      if (hits.length > 0) {
-        counts[file] = hits.length;
-        details[file] = hits;
-      }
+  const files = SCAN_DIRS.flatMap((d) => walk(d)).sort();
+  const classProps = cssTargetProps(
+    files.filter((f) => f.endsWith('.css')).map((f) => readFileSync(join(ROOT, f), 'utf8')),
+  );
+  for (const file of files.filter((f) => f.endsWith('.tsx'))) {
+    const src = readFileSync(join(ROOT, file), 'utf8');
+    const hits = findTapTargets(stripComments(src, false), classProps).map(
+      (h) => `  L${h.line} <${h.tag}> ${h.w}×${h.h}${h.cls ? ` (класс ${h.cls})` : ''}`,
+    );
+    if (hits.length > 0) {
+      counts[file] = hits.length;
+      details[file] = hits;
     }
   }
 
@@ -123,7 +128,8 @@ function main() {
         `\nКнопка или иконка с шириной и высотой меньше ${MIN_TARGET_PX}px — до неё трудно попасть пальцем\n` +
           '(правило «Онбординг и очевидность» CLAUDE.md, дизайн-аудит 2026-08, К3).\n' +
           'Оберни через `hitboxStyle` из shared/src/utils/hitbox.ts (визуальный размер\n' +
-          `не меняется, зона нажатия растёт до ${MIN_TARGET_PX}×${MIN_TARGET_PX}) либо подними размер до ${MIN_TARGET_PX}.\n` +
+          `не меняется, зона нажатия растёт до ${MIN_TARGET_PX}×${MIN_TARGET_PX}) либо подними размер до ${MIN_TARGET_PX};\n` +
+          'размер из CSS-класса — зона `::before` с отрицательным inset (как у `.ds-switch`).\n' +
           'Бейслайн обновляется только вниз: node scripts/check-tap-targets.mjs --update',
       );
     }

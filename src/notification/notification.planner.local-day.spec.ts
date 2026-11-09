@@ -47,6 +47,10 @@ function make(daysSince = 1) {
       (u: bigint, t: string, at: Date, p?: object): Promise<unknown> =>
         schedule(u, t, at, p),
     ),
+    swapReminder: jest.fn(
+      (u: bigint, t: string, at: Date, p?: object): Promise<unknown> =>
+        schedule(u, t, at, p),
+    ),
   };
   const cadence = {
     claimPlanDay: jest.fn().mockResolvedValue(true),

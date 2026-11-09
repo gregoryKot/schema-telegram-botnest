@@ -52,6 +52,20 @@ describe('ожидание подтверждения', () => {
     expect(screen.getByText(/ВКонтакте/)).toBeTruthy();
   });
 
+  // Аудит 2026-10 (гейт обращения): экран до входа — формы обращения ещё нет,
+  // и «Подтвердите» показывало «вы» тому, кто выбрал «ты». Текст безличный.
+  it.each([
+    [
+      'telegram',
+      'Осталось подтвердить вход в Telegram — там появится этот код:',
+    ],
+    ['vk', 'Осталось подтвердить вход через ВКонтакте. Код входа:'],
+  ] as const)('%s: подсказка безличная, без «ты» и «вы»', (provider, text) => {
+    const { container } = renderOpened({ ...waiting, provider });
+    expect(screen.getByText(text)).toBeTruthy();
+    expect(container.textContent).not.toMatch(/Подтверди(те)?(?![а-яё])/);
+  });
+
   it('ничего не рисует, пока вход не начат', () => {
     const { container } = render(
       <LoginTicketWait state={{ kind: 'idle' }} onRetry={() => {}} />,

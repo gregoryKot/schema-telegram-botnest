@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // Карточка недели трекера — чистые расчёты (среднее по потребности за
 // неделю, диапазон дат, индекс недели, текст шаринга кратким/детальным).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -6,7 +7,9 @@ import {
   weekRange,
   weekIndex,
   buildWeeklyShareText,
+  drawWeeklyCard,
 } from './weeklyCard';
+import { canvasWithMockCtx, printedText } from './canvas.test-helpers';
 import type { Need, DayHistory } from '../../types';
 
 const NEEDS: Need[] = [
@@ -81,8 +84,9 @@ describe('buildWeeklyShareText', () => {
 
   it('детальный вариант перечисляет каждую потребность со своим средним', () => {
     const text = buildWeeklyShareText(NEEDS, history, 0, true, 'link');
-    expect(text).toContain('Привяз.: 7.0');
-    expect(text).toContain('Автоном.: 6.0');
+    expect(text).toContain('Привяз.: 7,0');
+    expect(text).toContain('Автоном.: 6,0');
+    expect(text).toContain('Индекс: 6,5/10');
   });
 
   it('детальный вариант: незаполненная потребность — «—», не 0.0', () => {
@@ -97,5 +101,19 @@ describe('buildWeeklyShareText', () => {
       'link',
     );
     expect(text).toContain('Игра: —');
+  });
+});
+
+// Индекс и средние — десятичной запятой, как на экранах (fmtIndex, shared/src/needs/dayIndex.ts).
+// Ширина строк на холсте при этом не меняется: в Chromium «6,4» и «6.4» шрифтом карточек
+// (bold 24 и bold 14) — ровно одной ширины (замер 2026-11-08), колонка значений выровнена вправо.
+describe('drawWeeklyCard — числа на картинке', () => {
+  it('центр радара и значения строк — «6,5», «7,0», без точки', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    drawWeeklyCard(canvas, NEEDS, history, 0);
+    const printed = printedText(ctx);
+    expect(printed).toContain('6,5');
+    expect(printed).toContain('7,0');
+    expect(printed).not.toMatch(/\d\.\d/);
   });
 });

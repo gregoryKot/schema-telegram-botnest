@@ -13,6 +13,7 @@
 export const NEEDS_BUILD = {
   'check-coverage-ratchet.mjs':
     'сам гоняет весь jest с покрытием — минуты и сборка',
+  'check-zero-coverage.mjs': 'судит coverage-summary.json прогона check-coverage-ratchet',
   'check-frontend-coverage-ratchet.mjs':
     'сам гоняет vitest с покрытием, нужен npm ci во фронтендах',
   'check-bundle-size-ratchet.mjs':
@@ -25,6 +26,8 @@ export const NEEDS_BUILD = {
     'судит отчёт Stryker reports/mutation/*.json — его пишет прогон Stryker (джоба mutation-changed)',
   'mutation-changed-files.mjs':
     'сравнивает ветку с origin/main и пишет в $GITHUB_OUTPUT — только в CI',
+  'jest-exit-guard.mjs':
+    'не гейт, а сторож полного прогона jest (джоба backend) — минуты',
 };
 
 // Шаг ci.yml вида `- run: node scripts/<имя>.mjs [аргументы]` (или `run:` без

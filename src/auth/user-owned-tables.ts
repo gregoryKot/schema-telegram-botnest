@@ -36,6 +36,10 @@ export const USER_OWNED_TABLES = [
   // Запись из приложения (#546): при слиянии бронь едет за человеком; при
   // удалении аккаунта — отвязывается, а не удаляется (account.delete.ts).
   'Booking',
+  // Подписка браузера на уведомления (src/push/): при слиянии едет за
+  // человеком — тот же браузер продолжает получать уведомления. Unique по
+  // endpointHash глобальный, без userId, — правила в UNIQUE_RULES не нужно.
+  'PushSubscription',
 ] as const;
 // Note: Pair / TherapyRelation / TherapistNote / ClientConceptualization
 // handled separately below — multi-column refs (therapistId/clientId/userId1/userId2).

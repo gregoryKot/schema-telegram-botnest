@@ -1,0 +1,6 @@
+{
+  "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo}/pulls?state=open&per_page=100 (открытые PR, публичный эндпоинт)",
+  "recordedAt": "2026-11-08",
+  "how": "записано из сессии агента командой `gh api 'repos/gregoryKot/schema-telegram-botnest/pulls?state=open&per_page=100'`, HTTP 200, 7 открытых PR, из них 2 от dependabot[bot]",
+  "redacted": "из каждого PR оставлены только поля, которые читает probe-dependabot-prs.ts (number, html_url, user.login, user.type, created_at), плюс state, draft, title, updated_at для опознания; убраны тело PR, ветки head/base с вложенными объектами репозитория, ссылки API, аватары и id аккаунтов — персональных данных сверх публичных логинов в ответе не было"
+}

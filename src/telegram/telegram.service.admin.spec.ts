@@ -7,6 +7,7 @@ import { TelegramService } from './telegram.service';
 import { makeFakeBot } from './telegram.test-helpers.spec';
 import { TelegramError } from 'telegraf';
 import { loadRecordedFixture } from '../test-support/recorded-fixture';
+import { BOT_COMMANDS } from './telegram.constants';
 
 const OLD_ADMIN_ID = process.env.ADMIN_ID;
 const OLD_REDIRECT = process.env.BOT_REDIRECT_USERNAME;
@@ -134,6 +135,26 @@ describe('TelegramService — onModuleDestroy', () => {
     });
     expect(() => service.onModuleDestroy()).not.toThrow();
     expect(fakeBot.bot.stop).toHaveBeenCalledWith();
+  });
+
+  // Ретраи меню, начатые в onModuleInit, держали процесс после app.close():
+  // e2e-спеки не выходили сразу после тестов (2026-11-08).
+  it('обрывает ретраи меню старта: после остановки попыток больше нет', async () => {
+    jest.useFakeTimers();
+    try {
+      const { service, fakeBot } = makeDeps();
+      fakeBot.telegram.setMyCommands.mockRejectedValue(new Error('down'));
+      service.onModuleInit();
+      await jest.advanceTimersByTimeAsync(0);
+      expect(fakeBot.telegram.setMyCommands).toHaveBeenCalledTimes(1);
+      service.onModuleDestroy();
+      await jest.advanceTimersByTimeAsync(20_000);
+      expect(fakeBot.telegram.setMyCommands.mock.calls).toEqual([
+        [BOT_COMMANDS],
+      ]);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });
 

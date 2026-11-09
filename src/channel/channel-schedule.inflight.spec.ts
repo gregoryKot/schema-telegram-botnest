@@ -166,9 +166,26 @@ describe('ChannelScheduleService — публикация «в полёте» (R
     await flush();
     await service.catchUp(at(11, 15));
 
-    expect(retry.mock.calls).toEqual([['утро', 'фраза', ['telegram']]]);
+    expect(retry.mock.calls).toEqual([['утро', 'фраза', ['telegram'], true]]);
     slow.release();
     await first;
+  });
+
+  // Хвост волны 8: слот не вышел нигде, окно закрылось, а последняя попытка
+  // тика ещё идёт — её исхода в журнале нет, слот досылке не отдаём.
+  it('окно закрылось, публикация слота ещё идёт — досылка слот не берёт', async () => {
+    const slow = slowCall();
+    const { service, retry } = setup({ publish: slow.fn });
+
+    const tick = service.maybePost(at(10, 55));
+    await flush();
+    await service.catchUp(at(11, 0));
+    expect(retry).not.toHaveBeenCalled();
+
+    slow.release({ ...POSTED, posted: false, delivered: [] });
+    await tick;
+    await service.catchUp(at(11, 15));
+    expect(retry.mock.calls).toEqual([['утро', 'фраза', ['telegram'], true]]);
   });
 
   it('досылка упала — флаг снят, следующий тик пробует', async () => {
@@ -182,8 +199,8 @@ describe('ChannelScheduleService — публикация «в полёте» (R
     await service.catchUp(at(11, 15));
 
     expect(retry.mock.calls).toEqual([
-      ['утро', 'фраза', ['telegram']],
-      ['утро', 'фраза', ['telegram']],
+      ['утро', 'фраза', ['telegram'], true],
+      ['утро', 'фраза', ['telegram'], true],
     ]);
   });
 });

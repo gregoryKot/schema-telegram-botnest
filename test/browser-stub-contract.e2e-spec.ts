@@ -44,6 +44,9 @@ const VOLATILE: Record<string, Record<string, string>> = {
     '*.id': 'autoincrement: номер зависит от порядка сида и прошлых прогонов',
     '*.updatedAt': 'время вставки сида в БД, не дата статьи',
   },
+  'GET /api/auth/me': {
+    userId: 'id пользователя кейса: у каждой ручки свой',
+  },
   'POST /api/auth/refresh': {
     accessToken: 'JWT с временем выдачи: каждый раз другая строка',
   },
@@ -57,6 +60,10 @@ const VOLATILE: Record<string, Record<string, string>> = {
 const BODIES: Record<string, unknown> = {
   'POST /api/activity': {},
   'POST /api/event': { name: ANALYTICS_EVENTS[0] },
+  'POST /api/public-event': {
+    name: 'asset_recovered',
+    meta: { kind: 'css', attempts: 1 },
+  },
   'POST /api/init': { timezone: 'Europe/Moscow' },
   'POST /api/auth/refresh': {},
   'POST /api/settings': { notifyEnabled: true },

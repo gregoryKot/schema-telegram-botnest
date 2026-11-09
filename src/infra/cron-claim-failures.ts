@@ -15,18 +15,13 @@ import { isConnectionError } from '../logger/db-outage';
  */
 const lastDbFailureAt = new Map<string, number>();
 
-/** Отказ пула выдать соединение: pg-pool пишет его своими словами, без
- * кода Prisma (`P2024` — тот же смысл в старом движке, он уже в списке
- * признаков db-outage.ts). */
-const POOL_CHECKOUT_TIMEOUT = /timeout exceeded when trying to connect/i;
-
 /** Недоступна ли база, судя по ошибке `claimRun`. Контекст «это база» здесь
  * задан самим вызовом — поэтому мягкая проверка обрыва соединения, а не
- * строгая `isDbUnreachable`, которой нужно упоминание БД в тексте. */
+ * строгая `isDbUnreachable`, которой нужно упоминание БД в тексте. Отказ пула
+ * pg (`timeout exceeded when trying to connect`) — в общих признаках,
+ * src/logger/db-outage-signals.ts. */
 export function isClaimDbOutage(err: unknown): boolean {
-  if (isConnectionError(err)) return true;
-  const message = err instanceof Error ? err.message : String(err);
-  return POOL_CHECKOUT_TIMEOUT.test(message);
+  return isConnectionError(err);
 }
 
 /** Запомнить отказ захвата аренды `name` в момент тика `at`. */

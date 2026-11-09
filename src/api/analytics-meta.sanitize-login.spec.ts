@@ -3,6 +3,7 @@
 // Свободный текст и PII в meta недопустимы (правило №7), и молчаливый пропуск
 // незнакомого поля превратил бы отчёт о входе в дыру для чужих данных.
 import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeMeta } from './analytics-meta.sanitize';
 import {
   LOGIN_TICKET_HOSTS,
   LOGIN_TICKET_STEPS,
@@ -54,5 +55,38 @@ describe('sanitizeLoginTicketMeta', () => {
     expect(
       sanitizeLoginTicketMeta({ step: 'toString', host: 'constructor' }),
     ).toBeUndefined();
+  });
+});
+
+// Окно Google One Tap (аудит 2026-10, правило №8): событие пишет сервер; из
+// meta пропускается только outcome из закрытого списка.
+describe('sanitizeMeta: login_one_tap', () => {
+  it.each(['signed_in', 'twofa', 'rejected'])(
+    'пропускает исход «%s»',
+    (outcome) => {
+      expect(
+        sanitizeMeta('login_one_tap', { outcome, email: 'a@b.c' }),
+      ).toEqual({
+        outcome,
+      });
+    },
+  );
+
+  it.each([
+    { outcome: 'hacked' },
+    { outcome: 1 },
+    {},
+    { step: 'issued', host: 'web' },
+  ])('чужое значение или поле — meta целиком отбрасывается: %j', (meta) => {
+    expect(sanitizeMeta('login_one_tap', meta)).toBeUndefined();
+  });
+
+  it('контроль: шаг билета по-прежнему проходит через ту же ветку', () => {
+    expect(
+      sanitizeMeta('login_ticket_step', { step: 'issued', host: 'web' }),
+    ).toEqual({
+      step: 'issued',
+      host: 'web',
+    });
   });
 });

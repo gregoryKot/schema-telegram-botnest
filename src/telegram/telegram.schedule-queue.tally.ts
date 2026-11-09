@@ -1,22 +1,23 @@
-// Темп и итог одного прогона очереди уведомлений. Вынесено из
-// telegram.schedule-queue.ts (правило №10).
-//
-// Темп — PacedSender (пауза между отправками и ожидание по 429). Итог —
-// числа прогона: в лог одной строкой, если прогон остановлен лимитом, и
-// событием notify_queue_tick в отчёт /stats (блок «Напоминания из бота»,
-// src/bot/notify-queue-metrics.*). Строки на каждое уведомление нет: авария —
-// это поток, сотня строк равна замьюченному логу (урок 2026-07-29).
+// Темп и итог одного прогона очереди уведомлений (вынесено из
+// telegram.schedule-queue.ts, правило №10). Темп — PacedSender (пауза между
+// отправками и ожидание по 429). Итог — числа прогона: в лог одной строкой,
+// если прогон остановлен лимитом, и событием notify_queue_tick в /stats
+// (src/bot/notify-queue-metrics.*). Строки на каждое уведомление нет: авария —
+// поток, сотня строк равна замьюченному логу (урок 2026-07-29).
 import type { Logger } from '@nestjs/common';
 import { PacedSender, type PaceOptions } from './telegram.paced-sender';
 import { QUEUE_TICK_BUDGET_MS } from './telegram.schedule-queue.budget';
 
-// type, а не interface: значение уходит в meta события как
-// Record<string, unknown>, а interface без индексной сигнатуры туда не встаёт.
+// type, а не interface: уходит в meta события (Record<string, unknown>).
 export type QueueTickTally = {
-  /** Доставлено. */
+  /** Доставлено (оба канала). */
   sent: number;
+  /** Из них — уведомлением в приложение (веб-пуш, src/push/). */
+  pushed: number;
   /** Временный сбой (наш или сети): строка осталась, повтор на следующем тике. */
   transient: number;
+  /** Ответа не дождались (таймаут, обрыв после записи): помечено отправленным. */
+  unknown: number;
   /** Telegram ответил 429, подождали retry_after и повторили. */
   waited: number;
   /** Осталось на следующий тик: лимит Telegram или кончился бюджет прогона. */
@@ -39,15 +40,38 @@ export function describeQueueStop(stop: Stop, tally: QueueTickTally): string {
 export class QueueTick {
   readonly tally: QueueTickTally = {
     sent: 0,
+    pushed: 0,
     transient: 0,
+    unknown: 0,
     waited: 0,
     deferred: 0,
   };
   private stop: Stop | null = null;
   private readonly pacer: PacedSender;
+  private readonly now: () => number;
+  private readonly deadline: number;
 
   constructor(pace?: PaceOptions) {
     this.pacer = new PacedSender({ budgetMs: QUEUE_TICK_BUDGET_MS, ...pace });
+    this.now = pace?.now ?? Date.now;
+    this.deadline = this.now() + (pace?.budgetMs ?? QUEUE_TICK_BUDGET_MS);
+  }
+
+  /**
+   * Уведомлению в приложение темп Telegram не нужен, но бюджет прогона общий:
+   * false — время вышло, строка и `left - 1` следующих ждут следующего тика.
+   */
+  hasTime(left: number): boolean {
+    if (this.now() < this.deadline) return true;
+    this.stop = 'out_of_time';
+    this.tally.deferred = left;
+    return false;
+  }
+
+  /** Уведомление в приложение принято push-сервисом. */
+  notePushed(): void {
+    this.tally.sent++;
+    this.tally.pushed++;
   }
 
   /**

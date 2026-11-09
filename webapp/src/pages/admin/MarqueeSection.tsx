@@ -80,7 +80,7 @@ function TopicListEditor({ title, adminKey, group, topics, onChange }: {
         <button style={btn} onClick={save} disabled={saving}>{saving ? 'Сохранение…' : 'Сохранить'}</button>
       </div>
       {error && <p style={{ color: 'var(--accent-red)', fontSize: 13, margin: '10px 0 0' }}>{error}</p>}
-      {saved && <p style={{ color: '#4a6335', fontSize: 13, margin: '10px 0 0' }}>Сохранено ✓</p>}
+      {saved && <p style={{ color: 'var(--accent-green)', fontSize: 13, margin: '10px 0 0' }}>Сохранено ✓</p>}
     </section>
   );
 }

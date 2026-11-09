@@ -94,7 +94,9 @@ function make() {
     botService,
     {
       setAdaptiveLevel: jest.fn(),
-      isNotifyReachable: jest.fn().mockResolvedValue(true),
+      notifyRoute: jest
+        .fn()
+        .mockResolvedValue({ channel: 'telegram', telegramLinked: true }),
     } as never,
     schedule,
   );

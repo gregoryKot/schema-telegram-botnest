@@ -23,7 +23,7 @@ on:
 
 jobs:
   backend-flaky:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Установка (~1 мин) + сумма timeout-minutes шагов ниже: зависший шаг
     # падает сам, со своей причиной, раньше, чем джобу снимут целиком
     # (сверка — src/test-support/gates/nightly-jest-steps.spec.ts).
@@ -69,7 +69,7 @@ jobs:
         run: node scripts/jest-exit-guard.mjs --budget 600 --exit-grace 60 -- npx jest --detectOpenHandles
 
   frontend-flaky:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -135,11 +135,10 @@ jobs:
   # (4 vCPU, 16 ГБ) простаивала. Замер на одном куске кода: 87 с → 46 с.
   # Память воркера доходит до ~2,8 ГБ — четыре помещаются.
   mutation-golden-auth:
-    runs-on: ubuntu-24.04
-    # Волна А (docs/TEST_TRUST_PLAN.md) — 9 файлов входа/шифрования/приватности
-    # (crypto, crypto-record, auth.service, merge.service, merge-relations,
-    # telegram-auth.guard, security-log.service, security-log-redact,
-    # therapy-relations.service) — список в stryker.golden-auth.config.json.
+    runs-on: ubuntu-26.04
+    # Волна А (docs/TEST_TRUST_PLAN.md) — вход, шифрование, приватность.
+    # Состав — только `mutate` в stryker.golden-auth.config.json: перечень здесь
+    # устаревал (писал «9 файлов», когда их было уже 22).
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -167,10 +166,9 @@ jobs:
           retention-days: 14
 
   mutation-golden-payments:
-    runs-on: ubuntu-24.04
-    # Волна Б — 9 файлов денег/бронирования/напоминаний (tz, robokassa,
-    # booking, subscription, slot, pricing, payment.controller, donation,
-    # notification.planner), ~1650 строк — сопоставимо с волной А по объёму.
+    runs-on: ubuntu-26.04
+    # Волна Б — деньги, бронирование, напоминания. Состав — только `mutate` в
+    # stryker.golden-payments.config.json (перечень здесь устаревал так же).
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -224,7 +222,7 @@ jobs:
   #
   # Движок: Chromium (webapp).
   browser-smoke:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -273,7 +271,7 @@ jobs:
   # тот же AppModule гоняет джоба `migrations` в ci.yml. Chromium — тот, что
   # ставит playwright install: PW_CHROMIUM_PATH на раннере не задан.
   browser-live:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Замер первого прогона (2026-11-05, ран 42037717484, 11 сценариев): вся
     # джоба 2 мин 11 с, из них Playwright — 17 с; стенд успевает подняться,
     # пока собирается сайт и ставится Chromium. 30 — запас на холодный кэш и
@@ -467,7 +465,7 @@ jobs:
   # и схемы. Щит обязан уметь краснеть — последние два шага портят
   # файл/ключ и требуют, чтобы restore упал.
   backup-restore:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     services:
       postgres:
@@ -505,15 +503,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
-      # ubuntu-latest — тот же образ, что и в джобе `migrations` — но там
-      # pg_dump/psql не нужны (только `prisma migrate deploy`, у него свой
-      # драйвер). Здесь дампим и заливаем реальным клиентом, версия обязана
-      # совпадать с сервером (postgres:16 выше) — Ubuntu 24.04 (noble) несёт
-      # postgresql-client-16 в основных репах, отдельный apt-репозиторий pgdg
-      # не нужен. xxd ставим явно, а не полагаемся на то, что он уже есть в
-      # образе — backup-upload.sh и restore-backup.sh оба на нём завязаны.
-      - name: клиент Postgres 16 + xxd
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client-16 xxd
+      # Дампим и заливаем реальным клиентом, его версия обязана совпадать с
+      # сервером (postgres:16 выше). xxd ставим явно: backup-upload.sh и
+      # restore-backup.sh оба на нём завязаны.
+      # Образ ubuntu-26.04 несёт PostgreSQL 18, а сервис джобы — Postgres 16:
+      # pg_dump 17+ пишет `SET transaction_timeout`, которого в 16 нет (#789).
+      # Клиент 16 — только из PGDG (раннер удаляет репозиторий после сборки
+      # образа), и его bin — первым в PATH: обёртка pg_wrapper иначе взяла бы
+      # 18-й. Пин — src/test-support/gates/runner-pin.spec.ts.
+      - name: клиент Postgres 16 из PGDG — первым в PATH, + xxd
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL --retry 3 -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client-16 xxd
+          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
       - name: создать исходную БД и применить миграции — ловит битые миграции тем же приёмом, что джоба migrations
         run: |
           psql -c "CREATE DATABASE backup_rehearsal_src;"
@@ -582,7 +587,7 @@ jobs:
   # шагов ci.yml: dev-цепочку не гейтим. Шаг исполняется в
   # src/test-support/gates/lockfile-audit.spec.ts с подменённым npm.
   npm-audit:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -631,6 +636,57 @@ jobs:
             exit 1
           fi
 
+  # Живой ruleset `main` и настройки слияния ↔ копия .github/rulesets/main.json
+  # (аудит 2026-10, правило №13). Не PR-гейт: новая джоба законно не обязательна
+  # между своим мержем и правкой ruleset владельцем. Тест —
+  # src/test-support/gates/live-ruleset.spec.ts.
+  live-ruleset:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: живой ruleset main совпадает с копией
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-live-ruleset.mjs
+
+  # Правило №20: закрытая issue ci-alarm, продержавшаяся больше одного прогона
+  # (у неё есть напоминание бота), обязана получить строку в docs/INCIDENTS.md
+  # с номером issue — иначе запись с причиной в
+  # scripts/incident-registry-baseline.json. До гейта реестр отставал на месяц
+  # (аудит 2026-10). Ходит в GitHub API: код 2 — GitHub не ответил, не нарушение.
+  incident-registry:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: закрытые тревоги ci-alarm — строки в реестре инцидентов
+        # Код 2 — GitHub API не ответил: данных нет, реестр не нарушен. Красное
+        # тут завело бы ci-alarm на сбой GitHub (ложная тревога), поэтому шаг
+        # зелёный с предупреждением; следующей ночью сверка повторится.
+        # Поведение по кодам держит incident-registry-step.spec.ts.
+        run: |
+          code=0
+          node scripts/check-incident-registry.mjs || code=$?
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::GitHub API не ответил — реестр инцидентов этой ночью не сверен"
+            exit 0
+          fi
+          exit "$code"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Сигнализация (щит): красный nightly раньше был виден только тому, кто сам
   # зашёл во вкладку Actions — 6 из 7 ночных ранов с 2026-09-10 были красными,
   # и никто не заметил. Эта джоба — единственный наблюдатель после самих
@@ -647,8 +703,10 @@ jobs:
       - macos-build
       - backup-restore
       - npm-audit
+      - live-ruleset
+      - incident-registry
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       issues: write
@@ -731,8 +789,13 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   title,
-                  body,
+                  // Правило №20: починка инцидента приезжает со строкой в
+                  // реестре. Чеклист — только в новой issue, не в напоминаниях.
+                  body: `${body}\n\n- [ ] строка в docs/INCIDENTS.md (симптом, корень, класс, кто заметил, сколько жило)`,
                   labels: [label],
+                  // Без исполнителя issue не приходит владельцу ни уведомлением,
+                  // ни в «Assigned to me» (аудит 2026-10).
+                  assignees: [context.repo.owner],
                 });
               }
             } else if (existing) {

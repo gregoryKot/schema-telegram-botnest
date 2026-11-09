@@ -5,8 +5,8 @@
 // Событие в реальности пишет только эндпоинт выгрузки данных (GET
 // /api/account/export, право на доступ по 152-ФЗ/GDPR) с реальным userId —
 // эта ветка на клиентский путь POST /api/event попасть не должна. Whitelist
-// здесь — defence in depth (тот же приём, что у auth_success): даже если
-// кто-то дёрнет эндпоинт руками, meta ограничена двумя целыми числами с
+// здесь — defence in depth (серверное событие, как messenger_launch): даже
+// если кто-то дёрнет эндпоинт руками, meta ограничена двумя целыми числами с
 // потолком, никакого свободного текста/PII.
 export function sanitizeDataExportMeta(
   meta: Record<string, unknown>,

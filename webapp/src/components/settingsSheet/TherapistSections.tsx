@@ -17,7 +17,7 @@ type Relation = ReturnType<typeof useTherapyRelationSettings>;
 // запасом под ссылку, ввод чистит общий хук), отключение шло одним тапом,
 // статус «Анна Терапевт подключён» был мужским родом.
 export function MyTherapistSection({ rel, settings, patch }: {
-  rel: Relation; settings: UserSettings; patch: (u: Partial<UserSettings>) => Promise<void>;
+  rel: Relation; settings: UserSettings; patch: (u: Partial<UserSettings>) => Promise<unknown>;
 }) {
   const tr = useTr();
   const { therapyRelation, join, leave } = rel;

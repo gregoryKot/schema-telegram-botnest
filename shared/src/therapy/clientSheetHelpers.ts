@@ -71,7 +71,7 @@ export function nextSessionLabel(dateStr: string): string {
 
 /** Цвет индекса дня клиента; согласован с цветами RosterSparkline. */
 export function indexColor(v: number) {
-  if (v >= 7) return '#06d6a0';
+  if (v >= 7) return 'var(--accent-green)';
   if (v >= 4) return 'var(--accent-yellow)';
   return 'var(--accent-red)';
 }

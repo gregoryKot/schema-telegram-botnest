@@ -75,6 +75,7 @@ const PROFILE = {
   },
   mySchemaIds: [],
   myModeIds: [],
+  unreadableLists: [],
 };
 
 // GET /api/settings — умолчания src/api/settings.controller.ts, кроме addressForm:
@@ -99,6 +100,10 @@ const SETTINGS = {
   therapistShareProfile: true,
   uiPrefs: {},
   notifyReachable: false,
+  // Куда уходят уведомления (src/bot/notify-channel.ts): у нового аккаунта
+  // без Telegram и без подписки в приложении — никуда.
+  notifyChannel: null,
+  telegramLinked: false,
 };
 
 // GET /api/user-flags (src/api/api.controller.ts) — поля FLAG_FIELDS
@@ -146,6 +151,12 @@ const ARTICLES = ARTICLE_SEED.map((a, i) => ({
 export const FIXTURES: Record<string, unknown> = {
   ...SCREEN_FIXTURES, // «Профиль» и «Паттерны»: stubScreens.ts
   'GET /api/articles': ARTICLES,
+  // auth.controller.ts me(): способов входа и 2FA у чистого веб-клиента нет («/account»)
+  'GET /api/auth/me': {
+    userId: '1',
+    providers: [],
+    totp: { enabled: false, recoveryCodesLeft: 0 },
+  },
   'GET /api/belief-checks': [], // exercises.controller.ts
   'GET /api/childhood-ratings': {}, // BotService.getChildhoodRatings
   'GET /api/diary/gratitude': [], // diary.controller.ts
@@ -164,6 +175,8 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/practice-sessions': { breathing: 0, grounding: 0, stop: 0 },
   'GET /api/practices': [], // plans.controller.ts
   'GET /api/profile': PROFILE,
+  // push.controller.ts: без VAPID-ключей (как в e2e) включение не предлагается.
+  'GET /api/push/config': { publicKey: null },
   'GET /api/safe-place': null, // ExercisesService.getSafePlace
   'GET /api/schema-notes': [], // notes.controller.ts
   'GET /api/settings': SETTINGS,
@@ -187,6 +200,7 @@ export const FIXTURES: Record<string, unknown> = {
   'POST /api/activity': { ok: true }, // tracker.controller.ts
   'POST /api/auth/refresh': { accessToken: 'e2e-test-token', expiresIn: 900 },
   'POST /api/event': { ok: true }, // analytics.controller.ts
+  'POST /api/public-event': { ok: true }, // public-events.controller.ts (asset-recovery.js)
   'POST /api/init': { ok: true }, // api.controller.ts
   'POST /api/settings': { ok: true }, // settings.controller.ts
 };

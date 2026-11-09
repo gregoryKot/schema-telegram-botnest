@@ -3,11 +3,15 @@
 // уходило в консоль), а второй клик слал ещё один DELETE и ловил 404 тоже
 // необработанным исключением.
 import { useRef, useState } from 'react';
+import {
+  trackEntryDeleted,
+  type EntryDeletedTracker,
+} from '../analytics/trackEntryDeleted';
 
 export type DiaryEntryType = 'schema' | 'mode' | 'gratitude';
 
-/** Срез api площадки: удаление записей трёх дневников. */
-export interface DiaryDeleteApi {
+/** Срез api площадки: удаление записей трёх дневников и событие удаления. */
+export interface DiaryDeleteApi extends EntryDeletedTracker {
   deleteSchemaDiary(id: number): Promise<unknown>;
   deleteModeDiary(id: number): Promise<unknown>;
   deleteGratitudeDiary(id: number): Promise<unknown>;
@@ -19,8 +23,9 @@ const statusOf = (err: unknown): number | undefined =>
     : undefined;
 
 /** Удаляет запись. 404 — записи уже нет (второй клик, другая вкладка): для
- *  человека это успех. Любой другой сбой пробрасывается — экран говорит о нём,
- *  а запись остаётся в списке. */
+ *  человека это успех, но событие entry_deleted не шлётся — удалял не этот
+ *  запрос. Любой другой сбой пробрасывается — экран говорит о нём, а запись
+ *  остаётся в списке. */
 export async function deleteDiaryEntry(
   api: DiaryDeleteApi,
   type: DiaryEntryType,
@@ -32,7 +37,9 @@ export async function deleteDiaryEntry(
     else await api.deleteGratitudeDiary(id);
   } catch (err) {
     if (statusOf(err) !== 404) throw err;
+    return;
   }
+  trackEntryDeleted(api, 'diary');
 }
 
 export const deleteFailedText = (tr: (ty: string, vy: string) => string) =>

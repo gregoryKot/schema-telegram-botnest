@@ -103,7 +103,7 @@ describe('begin — выписка билета', () => {
     // а аккуратно показывает «не получилось». Без отчёта такая авария
     // невидима — правило №14: обработанная авария невидимее необработанной.
     const api = makeApi({
-      start: vi.fn().mockRejectedValue(new Error('нет сети')),
+      start: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
     });
     const { result, reportError } = setup(api);
 
@@ -112,7 +112,29 @@ describe('begin — выписка билета', () => {
     });
 
     expect(reportError).toHaveBeenCalledWith({
-      message: 'login ticket start failed',
+      message: 'login ticket start failed: network',
+      section: LOGIN_TICKET_SECTION,
+    });
+  });
+
+  it('в отчёте причина: код ответа сервера отличим от обрыва сети', async () => {
+    // Раньше отчёт был постоянной строкой — 429 от лимита и обрыв сети
+    // выглядели одинаково (docs/open/backend.md, разбор 2026-10-03).
+    const api = makeApi({
+      start: vi
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error('HTTP 429'), { status: 429 }),
+        ),
+    });
+    const { result, reportError } = setup(api);
+
+    await act(async () => {
+      await result.current.begin('telegram');
+    });
+
+    expect(reportError).toHaveBeenCalledWith({
+      message: 'login ticket start failed: HTTP 429',
       section: LOGIN_TICKET_SECTION,
     });
   });

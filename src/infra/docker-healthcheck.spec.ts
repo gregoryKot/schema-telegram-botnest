@@ -10,10 +10,10 @@
 import { ChildProcess, execFile, spawn } from 'child_process';
 import { readFileSync } from 'fs';
 import { createServer, Server } from 'http';
-import { createServer as createTcp } from 'net';
 import { join } from 'path';
 import { HealthController } from '../api/health.controller';
 import { PrismaService } from '../prisma/prisma.service';
+import { listenOn, REFUSED_PORT } from '../test-support/ephemeral-port';
 
 const ROOT = join(__dirname, '..', '..');
 const DOCKERFILE = readFileSync(join(ROOT, 'Dockerfile'), 'utf8');
@@ -27,18 +27,6 @@ function healthcheckCommand(): string {
   const m = line.match(/\sCMD\s+(.*)$/);
   if (!m) throw new Error('у HEALTHCHECK нет CMD');
   return m[1].trim();
-}
-
-function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const srv = createTcp();
-    srv.on('error', reject);
-    srv.listen(0, '127.0.0.1', () => {
-      const addr = srv.address();
-      const port = typeof addr === 'object' && addr ? addr.port : 0;
-      srv.close(() => (port ? resolve(port) : reject(new Error('нет порта'))));
-    });
-  });
 }
 
 /** Исполняет команду HEALTHCHECK как Docker; отдаёт её код выхода. */
@@ -66,36 +54,39 @@ describe('Dockerfile HEALTHCHECK', () => {
     );
   });
 
-  /** Настоящий front на свободном порту, апстрим — appPort. */
+  /**
+   * Настоящий front, апстрим — appPort. Порт front выбирает ядро (PORT=0), номер
+   * — из его лога: занять порт заранее и отпустить — гонка с соседним
+   * воркером (#547, гейт scripts/check-ephemeral-port.mjs).
+   */
   async function startFront(appPort: number): Promise<number> {
-    const port = await freePort();
     const proc = spawn('node', [join(ROOT, 'deploy', 'front-server.mjs')], {
-      env: { ...process.env, PORT: String(port), APP_PORT: String(appPort) },
+      env: { ...process.env, PORT: '0', APP_PORT: String(appPort) },
       stdio: ['ignore', 'ignore', 'pipe'],
     });
     procs.push(proc);
-    await new Promise<void>((resolve, reject) => {
+    return new Promise<number>((resolve, reject) => {
       const t = setTimeout(() => reject(new Error('front не поднялся')), 5000);
+      let log = '';
       proc.stderr?.on('data', (d: Buffer) => {
-        if (/поднят на порту/.test(d.toString())) {
+        log += d.toString();
+        const m = /поднят на порту (\d+)/.exec(log);
+        if (m) {
           clearTimeout(t);
-          resolve();
+          resolve(Number(m[1]));
         }
       });
     });
-    return port;
   }
 
   /** Фейковое приложение: на /health отдаёт status и тело. */
   async function startUpstream(status: number, body: string): Promise<number> {
-    const port = await freePort();
     const srv = createServer((_q, s) => {
       s.writeHead(status, { 'content-type': 'application/json' });
       s.end(body);
     });
     servers.push(srv);
-    await new Promise<void>((r) => srv.listen(port, '127.0.0.1', r));
-    return port;
+    return listenOn(srv);
   }
 
   const healthyPrisma = {
@@ -103,7 +94,7 @@ describe('Dockerfile HEALTHCHECK', () => {
   } as unknown as PrismaService;
 
   it('приложение не поднято, front отдаёт техработы (200) → HEALTHCHECK красный', async () => {
-    const port = await startFront(await freePort()); // апстрима нет
+    const port = await startFront(REFUSED_PORT); // апстрима нет
     const res = await fetch(`http://127.0.0.1:${port}/health`);
     expect(res.status).toBe(200); // именно поэтому `r.ok` не годился
     expect(await res.text()).not.toContain(MARKER);
@@ -135,7 +126,7 @@ describe('Dockerfile HEALTHCHECK', () => {
   }, 20000);
 
   it('никто не слушает порт → HEALTHCHECK красный', async () => {
-    expect(await runHealthcheck(await freePort())).not.toBe(0);
+    expect(await runHealthcheck(REFUSED_PORT)).not.toBe(0);
   }, 20000);
 
   // Правило №4: один маркер в двух местах, обязанных совпадать.

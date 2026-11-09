@@ -62,7 +62,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
       setClients(cl);
       setLoadFailed(false);
       const c = findClientByRef(cl, openClientRef);
-      if (c) detail.openClient(c, routeTab ?? 'overview');
+      if (c) void detail.openClient(c, routeTab ?? 'overview'); // openClient не отклоняется: каждый источник ловит сам и шлёт отчёт
     }).catch(() => {
       setLoadFailed(true);
       reportClientError({ message: 'therapy clients load failed', section: 'therapist.clients' });
@@ -80,7 +80,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
     if (!openClientRef || loading) return;
     if (detail.selectedClient && matchesClientRef(detail.selectedClient, openClientRef)) return;
     const c = findClientByRef(clients, openClientRef);
-    if (c) detail.openClient(c, routeTab ?? 'overview');
+    if (c) void detail.openClient(c, routeTab ?? 'overview'); // не отклоняется (см. выше)
   }, [openClientRef, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Back button handler ──────────────────────────────────────────────────────

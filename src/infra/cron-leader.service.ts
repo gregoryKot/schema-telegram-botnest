@@ -17,7 +17,7 @@ import { CronRunLedger } from './cron-run-done';
 // окно просто истекает. Отметка завершения и prisma — в базе (cron-run-done.ts).
 
 /** Кто отработал — для разбора «почему тик пропущен» видно в самой строке. */
-const INSTANCE_ID =
+export const INSTANCE_ID =
   process.env.HOSTNAME?.trim() ||
   `pid-${process.pid}-${randomBytes(3).toString('hex')}`;
 

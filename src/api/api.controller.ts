@@ -2,10 +2,8 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
   Logger,
-  Param,
   Post,
   Req,
   UseGuards,
@@ -19,13 +17,10 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { TelegramScheduleService } from '../telegram/telegram.schedule.service';
-import { SaveDraftDto, UpdateNameDto, InitDto } from './dto/misc.dto';
-import { UserFlagsDto } from './dto/user-flags.dto';
-import { encryptJson, decryptJson } from '../utils/crypto';
+import { UpdateNameDto, InitDto } from './dto/misc.dto';
 import { FLAG_FIELDS } from './flag-fields';
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   telegramFirstName?: string;
   webUser: { userId: bigint };
 }
@@ -35,26 +30,9 @@ interface AuthRequest extends Request {
 // ysq/pairs/plans/exercises/notes/tracker.controller.ts.
 
 // Реестр FLAG_FIELDS — см. ./flag-fields.ts (переиспользуется merge.service
-// при слиянии аккаунтов, правило №4). Модульная константа (не поле класса) —
-// нужна для type-level сверки с UserFlagsDto ниже.
-
-// Компайл-тайм сверка: набор ключей FLAG_FIELDS обязан совпадать с полями
-// UserFlagsDto один-в-один — иначе список того, что читает/пишет контроллер,
-// и список того, что пропускает ValidationPipe, разъедутся молча. Обе
-// стрелки: каждый FLAG_FIELDS обязан быть полем DTO, и каждое поле DTO
-// обязано быть в FLAG_FIELDS. Чисто type-level, без рантайм-кода.
-type _FlagFieldsAreDtoFields =
-  (typeof FLAG_FIELDS)[number] extends keyof UserFlagsDto
-    ? true
-    : ['FLAG_FIELDS содержит поле, которого нет в UserFlagsDto'];
-type _DtoFieldsAreFlagFields =
-  keyof UserFlagsDto extends (typeof FLAG_FIELDS)[number]
-    ? true
-    : ['UserFlagsDto содержит поле, которого нет в FLAG_FIELDS'];
-type _VerifyFlagFieldsMatchDto = [
-  _FlagFieldsAreDtoFields,
-  _DtoFieldsAreFlagFields,
-];
+// при слиянии аккаунтов, правило №4). Писателя у флагов через API нет:
+// POST /api/user-flags писал только удалённый мини-апп (#908); колонки и
+// чтение остались (GET — therapistMode для сайта).
 
 @Controller('api')
 @UseGuards(TelegramAuthGuard)
@@ -71,7 +49,7 @@ export class ApiController {
 
   // ─── Typed UI flags ────────────────────────────────────────────────────────
 
-  // Read-only flags — returned by GET but not writable via POST.
+  // Флаги для GET: реестр плюс therapistMode (его ставит сервер из role).
   private readonly FLAG_FIELDS_READ = [
     ...FLAG_FIELDS,
     'therapistMode',
@@ -86,81 +64,6 @@ export class ApiController {
       select,
     });
     return u ?? {};
-  }
-
-  @Post('user-flags')
-  async setUserFlags(
-    @Req() req: AuthRequest,
-    @Body() body: UserFlagsDto,
-  ): Promise<{ ok: true }> {
-    if (!body || typeof body !== 'object')
-      throw new BadRequestException('Invalid body');
-    const data: Record<string, unknown> = {};
-    for (const k of FLAG_FIELDS) if (k in body) data[k] = body[k];
-    if (Object.keys(data).length === 0) return { ok: true };
-    await this.prisma.user.update({
-      where: { id: uid(req) },
-      data,
-    });
-    return { ok: true };
-  }
-
-  // ─── Diary drafts ──────────────────────────────────────────────────────────
-
-  @Get('drafts')
-  async getDrafts(@Req() req: AuthRequest) {
-    const rows = await this.prisma.diaryDraft.findMany({
-      where: { userId: uid(req) },
-      select: { type: true, startedAt: true, data: true },
-    });
-    return Object.fromEntries(
-      rows.map((r) => [
-        r.type,
-        {
-          startedAt: r.startedAt.toISOString(),
-          // Черновик — шифрованный JSON-блоб; легаси-строки хранят объект как есть.
-          data: typeof r.data === 'string' ? decryptJson(r.data) : r.data,
-        },
-      ]),
-    );
-  }
-
-  @Post('drafts/:type')
-  async saveDraft(
-    @Req() req: AuthRequest,
-    @Param('type') type: string,
-    @Body() body: SaveDraftDto,
-  ): Promise<{ ok: true }> {
-    if (!['schema', 'mode', 'gratitude'].includes(type))
-      throw new BadRequestException('Invalid type');
-    if (!body?.startedAt) throw new BadRequestException('Missing startedAt');
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(body.startedAt))
-      throw new BadRequestException('Invalid startedAt format');
-    const startedAt = new Date(body.startedAt);
-    if (isNaN(startedAt.getTime()))
-      throw new BadRequestException('Invalid startedAt value');
-    // Черновик содержит тот же свободный текст, что и готовая запись дневника —
-    // шифруется так же (в Json-колонке лежит зашифрованная строка).
-    const data = (encryptJson(body.data) ?? body.data) as Prisma.InputJsonValue;
-    await this.prisma.diaryDraft.upsert({
-      where: { userId_type: { userId: uid(req), type } },
-      update: { data, startedAt },
-      create: { userId: uid(req), type, data, startedAt },
-    });
-    return { ok: true };
-  }
-
-  @Delete('drafts/:type')
-  async deleteDraft(
-    @Req() req: AuthRequest,
-    @Param('type') type: string,
-  ): Promise<{ ok: true }> {
-    if (!['schema', 'mode', 'gratitude'].includes(type))
-      throw new BadRequestException('Invalid type');
-    await this.prisma.diaryDraft.deleteMany({
-      where: { userId: uid(req), type },
-    });
-    return { ok: true };
   }
 
   @Get('profile')

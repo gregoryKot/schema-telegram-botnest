@@ -49,6 +49,8 @@ export default defineConfig({
         'therapy-smoke.spec.ts',
         'public-pages.spec.ts',
         'a11y-smoke.spec.ts',
+        'a11y-nested-sheet.spec.ts',
+        'desktop-layout.spec.ts',
         'asset-recovery.spec.ts',
         'today-fit.spec.ts',
         'screen-customize.spec.ts',

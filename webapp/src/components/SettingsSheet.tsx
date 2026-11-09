@@ -67,12 +67,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       .catch(() => setSettings(DEFAULT_SETTINGS));
   }, []);
 
-  async function patch(update: Partial<UserSettings>) {
-    if (!settings) return;
+  /** Сохранить настройки; исход — сохранилось ли (отказ уже откатил `settings` и показал «Не сохранилось»). */
+  async function patch(update: Partial<UserSettings>): Promise<boolean> {
+    if (!settings) return false;
     const prev = settings; setSettings(s => s ? { ...s, ...update } : s);
-    try { await api.updateSettings(update); flashSaved(); }
-    catch { setSettings(prev); flashSaveError(); }
+    try { await api.updateSettings(update); flashSaved(); return true; }
+    catch { setSettings(prev); flashSaveError(); return false; }
   }
+  const reloadSettings = () => api.getSettings().then(setSettings, (e: unknown) => console.warn('настройки не перечитались', e)); // после веб-пушей: новый notifyChannel
 
   const scrollTo = (id: string) => scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
 
@@ -136,12 +138,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
 
               {subView === 'main' && (<>
                 {isTherapist && onSetTherapistMode && <ModeSection therapistMode={!!therapistMode}
-                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} />}
-                <AppearanceSection userRole={userRole} onResignTherapist={onResignTherapist} onSaved={flashSaved} />
+                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} onResign={onResignTherapist} />}
+                <AppearanceSection onSaved={flashSaved} />
                 {homeMode && <HomeScreenSection mode={homeMode} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
                 <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView}
-                  onOpenAccount={() => goBack(() => navigate('/account'))} />
+                  leaveTo={(path) => goBack(() => navigate(path))} reloadSettings={reloadSettings} />
                 <AddressSection settings={settings} patch={patch} />
                 {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
                 {!isTherapist && <BecomeTherapistSection />}

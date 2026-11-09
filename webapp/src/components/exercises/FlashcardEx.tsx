@@ -15,6 +15,8 @@ import { buildModeIntroQuestions } from '../../../../shared/src/mode/modeIntroQu
 import { getModeCard } from '../../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../../shared/src/share/analytics';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { NOTE_CARD_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import { SCHEMA_QUESTIONS, type Q } from './flashcardQuestions';
 import { ModePortrait } from './ModePortrait';
 import { PickRow, PickGroupHead } from './PickRow';
@@ -72,7 +74,7 @@ function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questio
       </div>
       <div className="ex2-flash-q">{q.label}</div>
       <div className="ex2-flash-hint">{q.hint}</div>
-      <textarea ref={areaRef} className="ds-textarea" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
+      <LimitedTextarea max={NOTE_CARD_FIELD_MAX} ref={areaRef} className="ds-textarea" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
     </div>
     {detectCrisisAny(...Object.values(data)) && <CrisisCard surface="flashcard" />}
     {isLast && error && (

@@ -1,6 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { NeedId, NEED_IDS } from './bot.service';
 import { localDate } from '../utils/tz';
+import { addDaysLocal } from '../notification/notification.time';
 import { userTimezone } from './user-tz';
 import { ActivityStreakMetrics } from './bot.activity-streak';
 
@@ -15,8 +16,7 @@ const DAY_NAMES = [
 ];
 
 // Инсайты по истории: недельная динамика, «портрет», ачивки, лучший/худший
-// день недели. Вынесено из BotAnalyticsService (правило №10); публичный API
-// остался на фасаде bot.analytics.service.ts.
+// день недели. Вынесено из BotAnalyticsService (правило №10), API — на фасаде.
 export class InsightMetrics {
   constructor(
     private readonly prisma: PrismaService,
@@ -26,13 +26,13 @@ export class InsightMetrics {
   async getWeeklyStats(
     userId: bigint,
     tzArg?: string,
+    endDate?: string, // последний день недели; нет — местное сегодня
   ): Promise<
     Array<{ needId: NeedId; avg: number | null; trend: '↑' | '↓' | '→' }>
   > {
     const tz = tzArg ?? (await userTimezone(this.prisma, userId));
-    const last14 = Array.from({ length: 14 }, (_, i) =>
-      localDate(tz, new Date(Date.now() - i * 86_400_000)),
-    );
+    const end = endDate ?? localDate(tz);
+    const last14 = Array.from({ length: 14 }, (_, i) => addDaysLocal(end, -i));
     const rows = await this.prisma.rating.findMany({
       where: { userId, date: { in: last14 } },
     });

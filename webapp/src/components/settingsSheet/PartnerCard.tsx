@@ -7,11 +7,11 @@ import {
   PARTNER_EMPTY_TEXT,
 } from '../../../../shared/src/pair/partnerCard';
 import { telegramChatUrl } from '../../../../shared/src/utils/therapistContact';
+import { fmtIndex } from '../../../../shared/src/needs/dayIndex';
 
 type Partner = PairsData['partners'][number];
 
-// Карточка партнёра в паре на сайте — парная к мини-аппу (правило №3): индекс
-// дня, недельные бары, «Написать», контекстная фраза, выход с подтверждением.
+// Карточка партнёра в паре: индекс дня, недельные бары, «Написать», фраза, выход с подтверждением.
 // Логика и пороги — shared/src/pair/partnerCard.ts, цвета — токены через
 // классы st-pc-tone--* (sheet-settings.css). Выход из пары разрывает связь у
 // обоих, поэтому первый тап только просит подтверждение.
@@ -36,7 +36,7 @@ export function PartnerCard({ partner, confirmLeaveCode, setConfirmLeaveCode, on
         <div>
           <div className="st-text">{name} сегодня</div>
           {done
-            ? <div className={`st-pair-num st-pc-tone--${indexTone(idx)}`}>{idx.toFixed(1)}<small>/10</small></div>
+            ? <div className={`st-pair-num st-pc-tone--${indexTone(idx)}`}>{fmtIndex(idx)}<small>/10</small></div>
             : <div className="st-text">{PARTNER_EMPTY_TEXT}</div>}
         </div>
         {chatUrl && (

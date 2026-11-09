@@ -13,6 +13,7 @@
 // require-await в typed-линте.
 
 import { makeFakeExecuteRaw } from './fake-cron-lease';
+import { makeFakeQueryRaw } from '../../src/test-support/fake-client-streaks';
 import { makeTable, withDefaults } from './fake-prisma-engine';
 import { withUserJoin } from './fake-user-join';
 import { withCreatedAt, withUpdatedAt } from './fake-updated-at';
@@ -52,6 +53,8 @@ export function makeFakePrisma() {
       createdAt: new Date(), // @default(now()): экран сверки показывает время (S9)
     })),
     emailToken: makeTable(),
+    // Уведомления в приложении (test/push-ownership.e2e-spec.ts).
+    pushSubscription: makeTable(),
     throttleHit: makeTable(), // S11 totp-attempts.ts: чтение; инкремент (сырой SQL) — warn
     // Затрагивается TherapyTasksService.checkStreakTasks (fire-and-forget
     // побочный вызов из tracker/diary контроллеров) — пустая таблица
@@ -110,7 +113,7 @@ export function makeFakePrisma() {
       userTable,
     ),
     therapistNote: makeTable(),
-    clientConceptualization: makeTable(),
+    clientConceptualization: withUpdatedAt(makeTable()),
     modeMap: makeTable(),
     therapistCustomMode: makeTable(),
     // TherapyTasksService.scheduleTaskNotification (POST /api/therapy/tasks
@@ -142,9 +145,10 @@ export function makeFakePrisma() {
       if (typeof fnOrArr === 'function') return fnOrArr(prisma);
       return Promise.all(fnOrArr);
     }),
-    // Единственный сырой запрос, который эмулирует фейк, — захват аренды крона
-    // (см. fake-cron-lease.ts, там же почему не заглушкой «всегда лидер»).
+    // Сырые запросы фейк эмулирует поштучно, почему не заглушкой — в шапках:
+    // аренда крона (fake-cron-lease.ts), стрик клиентов (fake-client-streaks.ts).
     $executeRaw: makeFakeExecuteRaw(tables.cronLease._rows),
+    $queryRaw: makeFakeQueryRaw(() => tables.rating._rows),
   };
   return prisma;
 }

@@ -5,7 +5,7 @@
 // Подпись в тесте собирается САМОСТОЯТЕЛЬНО по алгоритму спеки (не через
 // verifyMaxInitData), чтобы тест был честной проверкой, а не подгонкой.
 import { createHmac } from 'crypto';
-import { verifyMaxInitData } from './max-init-data';
+import { MaxNotConfiguredError, verifyMaxInitData } from './max-init-data';
 
 const BOT_TOKEN = '999888:MAX_TEST_TOKEN';
 
@@ -221,6 +221,135 @@ describe('verifyMaxInitData', () => {
         message = (err as Error).message;
       }
       expect(message).toContain('значения ещё кодированы: нет');
+    });
+  });
+});
+
+// Ночной мутационный замер (stryker.golden-auth.config.json): разбор строки,
+// граница срока и форма сообщения, которых прежние тесты не различали.
+describe('verifyMaxInitData — разбор и границы под мутационным замером', () => {
+  const NOW = 1_700_000_000_000;
+  const NOW_S = NOW / 1000;
+
+  /** Пары в заданном порядке; подпись — по отсортированным ключам, как у MAX. */
+  function signPairs(pairs: [string, string][], token = BOT_TOKEN): string {
+    const checkString = [...pairs]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n');
+    const secret = createHmac('sha256', 'WebAppData').update(token).digest();
+    const hash = createHmac('sha256', secret).update(checkString).digest('hex');
+    return [...pairs.map(([k, v]) => `${k}=${encodeURIComponent(v)}`)]
+      .concat(`hash=${hash}`)
+      .join('&');
+  }
+  const userPair: [string, string] = ['user', JSON.stringify({ id: 7 })];
+  const failMessage = (initData: string): string => {
+    try {
+      verifyMaxInitData(initData, BOT_TOKEN, { now: NOW });
+    } catch (err) {
+      return (err as Error).message;
+    }
+    return '';
+  };
+
+  it('MaxNotConfiguredError — своё имя и текст', () => {
+    const err = new MaxNotConfiguredError();
+    expect(err.name).toBe('MaxNotConfiguredError');
+    expect(err.message).toBe('MAX_BOT_TOKEN not configured');
+  });
+
+  it('ключ без «=» — поле с пустым значением, подпись сходится', () => {
+    const signed = signPairs([
+      ['auth_date', String(NOW_S)],
+      ['flag', ''],
+      userPair,
+    ]);
+    const bare = signed.replace('flag=&', 'flag&');
+    expect(bare).toContain('&flag&');
+    expect(verifyMaxInitData(bare, BOT_TOKEN, { now: NOW }).id).toBe('7');
+  });
+
+  it('пустые пары («&&», хвостовой «&») пропускаются, а не становятся полем', () => {
+    const signed = signPairs([['auth_date', String(NOW_S)], userPair]);
+    expect(
+      verifyMaxInitData(`&${signed.replace('&', '&&')}&`, BOT_TOKEN, {
+        now: NOW,
+      }).id,
+    ).toBe('7');
+  });
+
+  it('битое процент-кодирование — своя ошибка, а не URIError', () => {
+    expect(failMessage(`auth_date=%E0%A4%A&hash=${'0'.repeat(64)}`)).toBe(
+      'Malformed initData encoding',
+    );
+  });
+
+  it('auth_date не первым полем — срок считается по нему, а не по первому', () => {
+    const initData = signPairs([
+      ['query_id', '4c0ab423-test'],
+      ['auth_date', String(NOW_S)],
+      userPair,
+    ]);
+    expect(verifyMaxInitData(initData, BOT_TOKEN, { now: NOW }).id).toBe('7');
+  });
+
+  it('без auth_date — просрочено (дата 0), а не принято', () => {
+    expect(failMessage(signPairs([userPair]))).toBe('init data expired');
+  });
+
+  it('ровно час — ещё принято, на секунду старше — просрочено', () => {
+    const at = (s: number) => signPairs([['auth_date', String(s)], userPair]);
+    expect(
+      verifyMaxInitData(at(NOW_S - 3600), BOT_TOKEN, { now: NOW }).id,
+    ).toBe('7');
+    expect(failMessage(at(NOW_S - 3601))).toBe('init data expired');
+  });
+
+  it('user не JSON — своя ошибка', () => {
+    expect(
+      failMessage(
+        signPairs([
+          ['auth_date', String(NOW_S)],
+          ['user', '{oops'],
+        ]),
+      ),
+    ).toBe('Invalid user JSON in initData');
+  });
+
+  it('first_name и username не строкой отбрасываются', () => {
+    const initData = signPairs([
+      ['auth_date', String(NOW_S)],
+      ['user', JSON.stringify({ id: 7, first_name: 9, username: false })],
+    ]);
+    expect(verifyMaxInitData(initData, BOT_TOKEN, { now: NOW })).toEqual({
+      id: '7',
+      firstName: undefined,
+      username: undefined,
+    });
+  });
+
+  describe('форма строки в сообщении', () => {
+    const forged = (pairs: [string, string][]) =>
+      failMessage(signPairs(pairs, 'чужой-токен'));
+
+    it('имена полей отсортированы, даже если пришли вразнобой', () => {
+      expect(
+        forged([userPair, ['query_id', 'q'], ['auth_date', String(NOW_S)]]),
+      ).toContain('поля: auth_date,query_id,user;');
+    });
+
+    it('ни одного поля, кроме hash, — прочерк', () => {
+      expect(failMessage(`hash=${'0'.repeat(64)}`)).toContain('поля: —;');
+    });
+
+    it('«%» с одним hex-символом — не остаток кодирования', () => {
+      expect(
+        forged([
+          ['auth_date', String(NOW_S)],
+          ['note', '%Az'],
+        ]),
+      ).toContain('значения ещё кодированы: нет');
     });
   });
 });

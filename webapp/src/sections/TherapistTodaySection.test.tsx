@@ -98,7 +98,7 @@ describe('TherapistTodaySection — реальные данные клиенто
 
     await waitFor(() => expect(screen.getAllByText('Иван').length).toBeGreaterThanOrEqual(1));
     expect(screen.getByText('Мария')).toBeTruthy();
-    expect(screen.getByText('7.2')).toBeTruthy();
+    expect(screen.getByText('7,2')).toBeTruthy();
     expect(screen.getByText('активность сегодня')).toBeTruthy();
     expect(screen.getByText('активность вчера')).toBeTruthy();
     // Счётчики — ds-card--row с подписью ds-label (#906), без своего радиуса;

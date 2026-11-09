@@ -70,6 +70,16 @@ describe('listBookings — имя обезличенной брони', () => {
     expect(anonymized.anonymizedAt).toEqual(stamp);
     expect(anonymized.id).toBe(2);
   });
+
+  it('без фильтра — предстоящие живые брони, ближайшая первой (мутационный замер)', async () => {
+    const findMany = jest.fn(async () => []);
+    await listBookings({ booking: { findMany } } as never, BOOKING_SCHEMA);
+    const [args] = findMany.mock.calls[0] as unknown as [
+      { where: { status: unknown }; orderBy: unknown },
+    ];
+    expect(args.where.status).toEqual({ in: ['HELD', 'CONFIRMED'] });
+    expect(args.orderBy).toEqual({ startsAt: 'asc' });
+  });
 });
 
 describe('decryptBookingForAdmin', () => {

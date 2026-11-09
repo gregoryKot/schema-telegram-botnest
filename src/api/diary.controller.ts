@@ -24,7 +24,6 @@ import { isCalendarDay } from '../utils/calendar-day';
 const id32 = (raw: string) => parseId(raw, { int32: true });
 
 interface AuthRequest extends Request {
-  telegramUserId: number;
   webUser: { userId: bigint };
 }
 

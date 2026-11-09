@@ -24,7 +24,7 @@ export async function currentFamily(
 /**
  * Отозвать все живые сессии аккаунта, кроме семьи текущей куки. Куки нет или
  * она чужая — отзываются все: оставлять «на всякий случай» нечего.
- * Access-токены отозванных сессий доживают свои ≤15 минут (они без состояния).
+ * Access-токены отозванных сессий гаснут на следующем запросе (sid, live-access.ts).
  */
 export async function revokeOtherSessions(
   prisma: PrismaService,

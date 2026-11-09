@@ -6,8 +6,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { BeliefCheckEx } from './BeliefCheckEx';
+import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 import { AddressFormContext } from '../../utils/addressForm';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 
 vi.mock('../../api', () => ({
   api: {
@@ -37,27 +38,25 @@ afterEach(() => {
   cleanup();
 });
 
-describe('BeliefCheckEx — кризисная детекция (belief)', () => {
-  it('кризисная фраза в убеждении показывает CrisisCard', () => {
-    renderSheet();
-    const textarea = screen.getByPlaceholderText(
-      'Например: я всегда всё порчу, меня никто не любит…',
-    );
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
+const BELIEF_PLACEHOLDER = 'Например: я всегда всё порчу, меня никто не любит…';
+const enterBelief = (text: string) =>
+  fireEvent.change(screen.getByPlaceholderText(BELIEF_PLACEHOLDER), { target: { value: text } });
 
-  it('нейтральный текст не показывает CrisisCard', () => {
+describeCrisisField('webapp/src/components/exercises/BeliefCheckEx.tsx', {
+  label: 'убеждение',
+  open: renderSheet,
+  enter: enterBelief,
+});
+// Поле доводов — дочерний контрол EviList, детекция у родителя по вводу и списку.
+describeCrisisField('webapp/src/components/exercises/beliefCheck/EviList.tsx', {
+  label: 'доказательство «за»',
+  open: () => {
     renderSheet();
-    const textarea = screen.getByPlaceholderText(
-      'Например: я всегда всё порчу, меня никто не любит…',
-    );
-    fireEvent.change(textarea, {
-      target: { value: 'Я иногда ошибаюсь на работе' },
-    });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+    enterBelief('Я всегда всё порчу');
+    fireEvent.click(screen.getByText(/Дальше · доказательства за/));
+  },
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Добавить доказательство…'), { target: { value: text } }),
 });
 
 // ── Полный проход мастера: 4 шага до сохранения ──────────────────────────────
@@ -281,5 +280,22 @@ describe('BeliefCheckEx — недобавленный текст не теря�
     fireEvent.click(screen.getByText(/Дальше · доказательства за/));
     expect(screen.getByText('Опоздание')).toBeTruthy();
     expect((screen.getByPlaceholderText('Добавить доказательство…') as HTMLInputElement).value).toBe('');
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('BeliefCheckEx — пределы полей', () => {
+  it('мысль и доказательство несут предел DTO проверки убеждения', () => {
+    toForStep();
+    fireEvent.click(screen.getByRole('button', { name: /^Назад$/ }));
+    const belief = screen.getByPlaceholderText(BELIEF_PH) as HTMLTextAreaElement;
+    expect(belief.maxLength).toBe(EXERCISE_TEXT_MAX);
+    fireEvent.click(screen.getByText(/Дальше · доказательства за/));
+    const evidence = screen.getByPlaceholderText(
+      'Добавить доказательство…',
+    ) as HTMLInputElement;
+    expect(evidence.maxLength).toBe(EXERCISE_TEXT_MAX);
   });
 });

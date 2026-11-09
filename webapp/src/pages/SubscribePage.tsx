@@ -5,9 +5,11 @@ import { Cup } from '../components/art/PaperArt';
 import { Leaf } from '../components/art/PaperArtSigns';
 import { CANCEL_SUPPORT_LINK } from '../components/booking/cancelPolicy';
 import { CancelControl } from './subscribe/CancelControl';
+import { reportSubscriptionLoadFailure } from './subscribe/useSubscriptionCancel';
 import { usePageShowReset } from '../hooks/usePageShowReset';
 import { SubscribeForm } from './subscribe/SubscribeForm';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
+import { dropUrlParam } from '../utils/dropUrlParam';
 
 type Sub = { status: string; period: string; amount: number; nextChargeAt: string | null };
 
@@ -33,7 +35,7 @@ export function SubscribePage() {
   // capability token doesn't linger in history / leak via Referer to analytics.
   const [token] = useState<string | null>(() => new URLSearchParams(window.location.search).get('token'));
   useEffect(() => {
-    if (token) { const u = new URL(window.location.href); u.searchParams.delete('token'); window.history.replaceState(window.history.state, '', u.pathname + u.search); }
+    if (token) dropUrlParam('token');
   }, [token]);
 
   const [opts, setOpts] = useState<Opt[]>([]);
@@ -55,7 +57,7 @@ export function SubscribePage() {
       .catch(() => { setEnabled(false); setOpts([]); });
   }, []);
   useEffect(() => {
-    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch(() => setSubFailed(true));
+    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch((err: unknown) => { reportSubscriptionLoadFailure(err); setSubFailed(true); });
   }, [token]);
 
   const submit = async () => {

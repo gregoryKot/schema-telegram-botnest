@@ -60,6 +60,16 @@ describe('createBookingGuarded — резерв для заявки (инцид�
     expect(subject).toContain('не сохранилась');
   });
 
+  it('провал пишется в error стабильным текстом с причиной (мутационный замер)', async () => {
+    const { deps, logger } = makeDeps({ lockError: new Error('pool closed') });
+    await expect(
+      createBookingGuarded(deps, { clientName: 'x' } as any, LEAD),
+    ).rejects.toThrow('pool closed');
+    expect(logger.error).toHaveBeenCalledWith(
+      'Booking create failed, lead alerted: pool closed',
+    );
+  });
+
   it('БД недоступна ещё до лока (сам $transaction бросает) — тоже лид админу', async () => {
     const { deps, notify } = makeDeps();
     deps.prisma.$transaction.mockRejectedValueOnce(

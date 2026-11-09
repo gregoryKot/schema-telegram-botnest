@@ -78,15 +78,35 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'data_export' },
   { name: 'home_screen_offer', meta: { via: 'banner' } },
   { name: 'entry_deleted', meta: { type: 'belief_check' } },
+  // Стёртый тест схем: приведение meta->>'attempts' к int в FILTER.
+  { name: 'ysq_data_deleted', meta: { attempts: 2 } },
 ];
 // Серверные/анонимные строки (userId IS NULL) — вход, поломки клиента, лиды.
 const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'auth_rejected', meta: { host: 'telegram', reason: 'empty' } },
-  { name: 'auth_success', meta: { host: 'telegram' } },
+  // Платформа запуска (аудит 2026-10): GROUP BY по meta->>'host'/'platform'.
+  { name: 'messenger_launch', meta: { host: 'telegram', platform: 'weba' } },
+  // Отказ обмена подписи (2026-11): GROUP BY name/host/reason и count FILTER
+  // по суткам в AuthHealthMetricsService.getMetrics — обе причины.
+  {
+    name: 'messenger_launch_failed',
+    meta: { host: 'telegram', platform: 'ios', reason: 'expired' },
+  },
+  {
+    name: 'messenger_launch_failed',
+    meta: { host: 'telegram', platform: 'weba', reason: 'suspicious' },
+  },
   { name: 'login_ticket_step', meta: { step: 'issued' } },
+  // Окно Google One Tap (2026-11): count(*) FILTER по meta->>'outcome' в
+  // LoginTicketMetricsService.getOneTap — все три исхода.
+  { name: 'login_one_tap', meta: { outcome: 'signed_in' } },
+  { name: 'login_one_tap', meta: { outcome: 'twofa' } },
+  { name: 'login_one_tap', meta: { outcome: 'rejected' } },
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
   { name: 'client_error', meta: { section: 'assets', source: 'webapp' } },
+  // Сработавший повтор asset-recovery.js (#928): FILTER по meta->>'kind'.
+  { name: 'asset_recovered', meta: { kind: 'css', attempts: 1 } },
   // Шквал (находка аудита 2026-10-11): meta.suppressed суммируется приведением
   // ::int, meta.unlogged считается FILTER'ом — оба идут через драйвер.
   {
@@ -143,6 +163,13 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     ]);
     expectSaneReport(core);
     expectSaneReport(product);
+    // Окно Google One Tap: getOneTap отдаёт целые числа (bigint → number), а
+    // на пустой базе блок говорит словами, без нулей (правило №8).
+    const oneTap = await report.loginTicket.getOneTap();
+    for (const n of Object.values(oneTap))
+      expect(Number.isInteger(n)).toBe(true);
+    if (oneTap.signedIn + oneTap.twofa + oneTap.rejected === 0)
+      expect(product).toContain('За неделю через окно не входили.');
     // Пустое состояние (правило №8): без шквала строк про него нет.
     expect(product).not.toContain('Повторные отчёты с одного устройства');
     expect(product).not.toContain(
@@ -178,6 +205,7 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(product).toContain('Запись на консультацию');
     // Секция 'assets' (asset-recovery.js, инцидент 2026-11-04) — свой FILTER.
     expect(product).toContain('Файлы сайта не загрузились');
+    expect(product).toMatch(/повтор помог: стиль — [1-9]\d* раз/);
     // Сумма meta.suppressed и счёт meta.unlogged: сырой SQL приводит jsonb-текст
     // к int на живой базе (мок $queryRaw этого не доказывает, правило №18).
     expect(product).toMatch(
@@ -185,6 +213,28 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     );
     expect(product).toMatch(
       /Подробности не записаны из-за общего потолка: [1-9]\d* —/,
+    );
+    // Окно Google One Tap: FILTER по meta->>'outcome' на живой базе видит все
+    // три исхода фикстур, и строка блока входа попадает в общий /stats.
+    const oneTap = await report.loginTicket.getOneTap();
+    expect(oneTap.signedIn).toBeGreaterThanOrEqual(1);
+    expect(oneTap.twofa).toBeGreaterThanOrEqual(1);
+    expect(oneTap.rejected).toBeGreaterThanOrEqual(1);
+    expect(product).toMatch(/Вошли одним касанием: [1-9]\d*/);
+    expect(product).toMatch(/Сервер не принял вход из окна: [1-9]\d*/);
+    // Стёртый тест: count(DISTINCT) с FILTER по ("meta"->>'attempts')::int.
+    expect(product).toMatch(
+      /Стёрли результаты теста схем: [1-9]\d* раз\S* · людей: [1-9]\d*, из них проходили тест до конца: [1-9]/,
+    );
+    // Платформы запуска: группировка по двум ключам meta через драйвер.
+    expect(product).toMatch(/Telegram · браузер, Web A — [1-9]\d* \(\d+\)/);
+    // Вход в мессенджере: обмен прошёл / не прошёл по причине, группировка по
+    // name и двум ключам meta, count FILTER за сутки — через драйвер.
+    expect(product).toMatch(
+      /Telegram за неделю: вошли [1-9]\d*, не смогли [1-9]\d* \(устарела [1-9]\d*, не сошлась [1-9]\d*\); за сутки: вошли [1-9]/,
+    );
+    expect(product).toMatch(
+      /Без пропуска входа пришли старые окна: [1-9]\d* раз/,
     );
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
     expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);

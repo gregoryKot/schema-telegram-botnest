@@ -72,13 +72,13 @@ export function SelfMapScreen({
         {tr('Это части, а не ты целиком.', 'Это части, а не вы целиком.')}
       </div>
 
-      <div className="aside-card" style={{ margin: '0 0 24px' }}>
-        <div className="aside-card-eyebrow">Где я сейчас</div>
-        <p className="body">{whereIAm}</p>
+      <div className="ds-card ds-card--row u-mb24">
+        <div className="ds-label u-mb10">Где я сейчас</div>
+        <p className="ds-sub">{whereIAm}</p>
       </div>
 
       <div className="eyebrow u-mb10">Что дальше</div>
-      <button type="button" className="ex-btn ex-btn-primary" onClick={() => { haptic.tap(); onNextStep(step.id); }}>
+      <button type="button" className="ds-btn" onClick={() => { haptic.tap(); onNextStep(step.id); }}>
         {step.time ? `${step.label} · ${step.time}` : step.label}
       </button>
       {step.hint && (

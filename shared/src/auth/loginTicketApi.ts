@@ -34,6 +34,11 @@ export interface LoginTicketApi {
  * анонимным, поэтому параметр необязательный, а второй сетевой модуль рядом
  * заводить незачем (правило «одна механика — один компонент»).
  */
+// Код ответа — ещё и полем `status`: по нему отчёт о сорванной выписке
+// называет причину (shared/src/api/describeFailure.ts), не читая текст.
+const httpError = (status: number) =>
+  Object.assign(new Error(`HTTP ${status}`), { status });
+
 export function createLoginTicketApi(
   base: string,
   authedFetch?: (path: string, init: RequestInit) => Promise<Response>,
@@ -50,7 +55,7 @@ export function createLoginTicketApi(
       headers,
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw httpError(res.status);
     return (await res.json()) as T;
   };
 
@@ -64,7 +69,7 @@ export function createLoginTicketApi(
         headers,
         body: JSON.stringify(input),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw httpError(res.status);
       return (await res.json()) as StartedTicket;
     },
     // Опрос идёт БЕЗ авторизации намеренно: к моменту подтверждения аккаунт

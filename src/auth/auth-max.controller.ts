@@ -19,6 +19,9 @@ import { rejectInitData } from '../api/initdata-alert';
 import { requireCsrf, setRefreshCookie } from './auth-http.util';
 import { MaxNotConfiguredError } from './max-init-data';
 import { MaxWebAppDto } from './dto/max-webapp.dto';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { messengerLaunchMeta } from '../analytics/launch-platforms.constants';
+import { failureSinks, reportExchangeFailure } from './exchange-failure.report';
 
 // MAX mini-app auto-auth — как telegram/webapp (auth-account.controller.ts):
 // initData меняется на сессию без аутентификации, поэтому requireCsrf (login-CSRF).
@@ -30,6 +33,7 @@ export class AuthMaxController {
     private readonly maxProvider: MaxProvider,
     private readonly auth: AuthService,
     private readonly securityLog: SecurityLogService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Post('max/webapp')
@@ -51,11 +55,13 @@ export class AuthMaxController {
       identity = this.maxProvider.verifyInitData(body.initData);
     } catch (err) {
       // Нет токена — это мы не дособрали конфигурацию, а не клиент подделал
-      // подпись: в rejectInitData такую ошибку отдавать нельзя.
+      // подпись: ни в rejectInitData, ни в отказы входа /stats её не отдаём.
       if (err instanceof MaxNotConfiguredError) {
         this.logger.error('вход из MAX недоступен: не задан MAX_BOT_TOKEN');
         throw new ServiceUnavailableException('MAX login is not configured');
       }
+      const sinks = failureSinks(this.analytics);
+      reportExchangeFailure(err, 'max', body.platform, req.ip, sinks);
       rejectInitData(err, req.ip, this.logger, this.securityLog);
     }
 
@@ -64,14 +70,14 @@ export class AuthMaxController {
       identity.providerId,
       identity.displayName,
     );
-    const tokens = await this.auth.issueTokens(
-      userId,
-      req.ip,
-      req.headers['user-agent'],
-    );
+    const ua = req.headers['user-agent'];
+    const tokens = await this.auth.issueTokens(userId, req.ip, ua);
     // crossSite: MAX открывает мини-апп в iframe, и strict-куку браузер оттуда
     // не пошлёт — сессия перестала бы продлеваться через 15 минут.
     setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, true);
+    // Платформа запуска — server-events.constants.ts; track() не бросает.
+    const meta = messengerLaunchMeta('max', body.platform);
+    void this.analytics.track(null, 'messenger_launch', meta);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 }

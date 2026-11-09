@@ -35,7 +35,7 @@ describe('PartnerCard — день партнёра', () => {
 
   it('день заполнен: индекс с тоном и фраза по порогу', () => {
     const { container } = setup(make({ partnerTodayDone: true, partnerIndex: 8.3 }));
-    expect(screen.getByText('8.3')).toBeTruthy();
+    expect(screen.getByText('8,3')).toBeTruthy();
     expect(container.querySelector('.st-pc-tone--good')).not.toBeNull();
     expect(screen.getByText(/хороший день/)).toBeTruthy();
   });

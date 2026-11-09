@@ -5,6 +5,7 @@ import {
   catchUpSlot,
   dueSlot,
   mskParts,
+  postedInSlot,
   type HealthyAdultSlot,
 } from '../bot/healthy-adult.schedule';
 import { DeliveryLogService } from './delivery-log.service';
@@ -195,7 +196,6 @@ export class ChannelScheduleService {
     const slotKey = `${mskParts(now).dateKey}:${slot}`;
     const key = `${slotKey}:повтор`;
     if (!this.retries.allow(key)) return;
-
     const name = SLOT_NAME[slot];
     // Окно слота длится два часа, поэтому трёх часов назад заведомо хватает.
     const since = new Date(now.getTime() - 3 * 60 * 60 * 1000);
@@ -204,8 +204,12 @@ export class ChannelScheduleService {
     // Пост мог выйти — не досылаем, просим проверить руками (хвост R7).
     await this.warnUnknown(slotKey, name, plan.unknown);
     if (plan.platforms.length === 0) return;
-
-    const res = await this.publisher.retry(name, plan.text, plan.platforms);
+    const owner = await this.slotOwner(now, slot);
+    if (owner === 'tick') return;
+    // Слот не вышел нигде — досылка его первый выход (хвост волны 9).
+    const firstOut = owner === 'catchUp' && !plan.delivered;
+    const { text, platforms } = plan;
+    const res = await this.publisher.retry(name, text, platforms, firstOut);
     if (res.ok) {
       this.retries.reset(key);
       // Хорошая новость закрывает историю: владелец уже получил «дошло не
@@ -221,6 +225,20 @@ export class ChannelScheduleService {
     );
   }
 
+  /**
+   * У слота один механизм повтора (хвост волны 8). Не вышел нигде, а окно
+   * открыто — повторяет тик новой фразой всем (`tick`): досылка старой дала бы
+   * ожившей площадке второй пост. Окно закрылось — слот берёт досылка
+   * (`catchUp`), но не в полёт публикации. Пост вышел — добор долга (`posted`).
+   */
+  private async slotOwner(now: Date, slot: HealthyAdultSlot) {
+    const lastPostAt = await this.phrases.lastPostAt();
+    if (postedInSlot(now, lastPostAt, slot)) return 'posted';
+    const tick =
+      dueSlot(now, lastPostAt) === slot || !!this.publisher.inFlight.holder;
+    return tick ? 'tick' : 'catchUp';
+  }
+
   /** «Исход неизвестен» — раз на площадку в слоте: ключ общий у тика и досылки. */
   private async warnUnknown(
     slotKey: string,
@@ -234,11 +252,9 @@ export class ChannelScheduleService {
   }
 
   /**
-   * Сообщение владельцу — напрямую, а не через `logger.error` → AlertLogger.
-   * Инцидент 2026-07-31: пост вышел не на все площадки, а DM не пришёл. На
-   * пути этого сообщения стояло лишнее звено с собственным троттлингом по
-   * нормализованному тексту, обрезкой до 300 символов и молчаливым
-   * проглатыванием ошибок. Алерт о канале слишком редкий, чтобы его троттлить.
+   * Сообщение владельцу — напрямую, а не через `logger.error` → AlertLogger
+   * (инцидент 2026-07-31: DM не пришёл — лишнее звено троттлило, обрезало и
+   * глотало ошибки). Алерт о канале слишком редкий, чтобы его троттлить.
    */
   private async alert(
     text: string,

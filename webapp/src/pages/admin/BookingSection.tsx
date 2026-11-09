@@ -30,13 +30,13 @@ export function BookingSection({ adminKey }: { adminKey: string }) {
 // ── Integration status ──────────────────────────────────────────────────────
 
 const StatusDot = ({ on }: { on: boolean }) => (
-  <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 9, marginRight: 7, background: on ? '#4a6335' : '#b8860b' }} />
+  <span style={{ display: 'inline-block', width: 9, height: 9, borderRadius: 9, marginRight: 7, background: on ? 'var(--ok)' : 'var(--warn)' }} />
 );
 const StatusRow = ({ label, on, note, error }: { label: string; on: boolean; note?: string; error?: string }) => ( // error красной пометкой перекрывает note (2026-09-13)
   <div style={{ display: 'flex', alignItems: 'center', fontSize: 14, padding: '5px 0' }}>
     <StatusDot on={on} /><span className="u-fg">{label}</span>
     <span className="u-flex1" />
-    <span style={{ color: error ? 'var(--accent-red)' : on ? 'var(--text-sub)' : '#b8860b', fontSize: 13 }}>{error ? `чтение не работает: ${error}` : on ? (note ?? 'вкл') : 'выкл'}</span>
+    <span style={{ color: error ? 'var(--accent-red)' : on ? 'var(--text-sub)' : 'var(--warn-ink)', fontSize: 13 }}>{error ? `чтение не работает: ${error}` : on ? (note ?? 'вкл') : 'выкл'}</span>
   </div>
 );
 

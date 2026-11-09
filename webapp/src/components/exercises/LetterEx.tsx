@@ -11,6 +11,8 @@ import { wordsLabel } from './letterWords';
 import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
 import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { LETTER_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 // Имя — из каталога («Письмо себе в детстве»), первое слово над строкой курсивом.
 const [TITLE_HEAD, ...TITLE_TAIL] = exerciseCard('letter').title.split(' ');
@@ -168,7 +170,8 @@ export function LetterEx({
     >
       <div className="ds-card ex2-letter">
         <div className="ex2-letter-hi">Здравствуй,</div>
-        <textarea
+        <LimitedTextarea
+          max={LETTER_TEXT_MAX}
           ref={textRef}
           value={text}
           onChange={(e) => setText(e.target.value)}

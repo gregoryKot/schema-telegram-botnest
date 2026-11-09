@@ -27,6 +27,8 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
   const [pickKind, setPickKind] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  // Отказ открыть, переименовать или удалить карту виден терапевту (до 2026-11 промисы шли без catch, нашёл no-floating-promises).
+  const [mapFail, setMapFail] = useState<'open' | 'rename' | 'delete' | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const newBtnRef = useRef<HTMLButtonElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -59,13 +61,17 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
     return () => { alive = false; };
   }, [clientId, initialMapId]);
 
-  async function selectMap(id: number) {
+  // back — карта, которая остаётся в редакторе при отказе: вкладка подсвечивает то, что открыто, а не то, что не загрузилось.
+  async function selectMap(id: number, back: ModeMapFull | null = activeMap) {
     if (activeId === id) return;
     setActiveId(id);
     setLoading(true);
+    setMapFail(null);
     try {
       const full = await api.getModeMap(id);
       setActiveMap(full);
+    } catch {
+      setActiveId(back?.id ?? null); setActiveMap(back); setMapFail('open');
     } finally { setLoading(false); }
   }
 
@@ -83,18 +89,20 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
 
   async function deleteMap(id: number) {
     setDeleteTargetId(null);
-    await api.deleteModeMap(id);
+    setMapFail(null);
+    try { await api.deleteModeMap(id); } catch { setMapFail('delete'); return; } // карта на месте — и на экране тоже
     const newMaps = maps.filter(m => m.id !== id);
     setMaps(newMaps);
     if (activeId === id) {
-      if (newMaps.length > 0) selectMap(newMaps[0].id);
+      if (newMaps.length > 0) void selectMap(newMaps[0].id, null); // сбой ловит сам: mapFail; удалённую карту не возвращает
       else { setActiveId(null); setActiveMap(null); }
     }
   }
 
   async function renameMap(id: number, title: string) {
     const t = title.trim() || KIND_META[maps.find(m => m.id === id)?.kind ?? 'free'].label;
-    await api.updateModeMap(id, { title: t });
+    setMapFail(null);
+    try { await api.updateModeMap(id, { title: t }); } catch { setMapFail('rename'); return; } // поле остаётся открытым с введённым текстом
     setMaps(prev => prev.map(m => m.id === id ? { ...m, title: t } : m));
     setEditingId(null);
   }
@@ -118,7 +126,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
               onBlur={() => renameMap(m.id, editTitle)}
-              onKeyDown={e => { if (e.key === 'Enter') renameMap(m.id, editTitle); if (e.key === 'Escape') setEditingId(null); }}
+              onKeyDown={e => { if (e.key === 'Enter') void renameMap(m.id, editTitle); /* сбой ловит сам: mapFail */ if (e.key === 'Escape') setEditingId(null); }}
               className="ds-input ds-input--sm mm2-rename"
             />
           ) : (
@@ -153,6 +161,12 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
 
       {newMap.failed && (
         <p role="alert" className="mm2-create-err">{tr('Не получилось создать карту. Попробуй ещё раз.', 'Не получилось создать карту. Попробуйте ещё раз.')}</p>
+      )}
+      {mapFail && (
+        <p role="alert" className="mm2-create-err">
+          {mapFail === 'open' ? 'Не получилось открыть карту.' : mapFail === 'rename' ? 'Не получилось переименовать карту.' : 'Не получилось удалить карту.'}{' '}
+          {tr('Попробуй ещё раз.', 'Попробуйте ещё раз.')}
+        </p>
       )}
       {/* Editor area */}
       <div ref={bodyRef} className="mm2-body">

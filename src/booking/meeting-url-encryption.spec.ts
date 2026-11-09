@@ -192,7 +192,6 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
       calDav as never,
       meeting as never,
       email as never,
-      { get: () => undefined } as unknown as ConfigService,
       { claimRun: jest.fn() } as never,
     );
 

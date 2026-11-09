@@ -8,6 +8,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { fillHistoryGaps } from './appShell/navigation';
+import { useTr } from '../utils/addressForm';
 import '../styles/sheet-diary.css';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
@@ -17,6 +18,8 @@ interface Props {
   needs: Need[];
   history: DayHistory[];
   historyLoading: boolean;
+  /** Загрузка истории упала: сбой ≠ пусто, вместо пустой истории — «не загрузилось». */
+  historyFailed?: boolean;
   ratings: Record<string, number>;
   childhoodRatings: Record<string, number>;
   pendingPlans: PracticePlan[];
@@ -32,7 +35,7 @@ interface Props {
 }
 
 export function HistorySheet({
-  needs, history, historyLoading, ratings, childhoodRatings,
+  needs, history, historyLoading, historyFailed = false, ratings, childhoodRatings,
   pendingPlans, todayDate, historyDays,
   onClose, onOpenTracker, onOpenSchemas, onOpenChildhoodWheel,
   onDismissPlan, onHistoryRefreshed,
@@ -40,6 +43,7 @@ export function HistorySheet({
   const goBack = useHistorySheet(onClose);
   const [backfillDate, setBackfillDate] = useState<string | null>(null);
   const dialogA11y = useDialogA11y();
+  const tr = useTr();
 
   return (
     <div {...dialogA11y} className="u-sheet-grid">
@@ -61,6 +65,10 @@ export function HistorySheet({
 
         {historyLoading
           ? <HistorySheetSkeleton />
+          : historyFailed
+          ? <div role="alert" className="ds-card ds-card--row sd-banner">
+              {tr('Не удалось загрузить историю. Проверь соединение и открой её ещё раз — оценки на месте, просто не загрузились', 'Не удалось загрузить историю. Проверьте соединение и откройте её ещё раз — оценки на месте, просто не загрузились')}
+            </div>
           : <Suspense fallback={<HistorySheetSkeleton />}>
               <HistoryView
                 needs={needs}

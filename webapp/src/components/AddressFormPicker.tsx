@@ -62,16 +62,16 @@ function AddressFormPickerModal({ onClose }: { onClose: (answered: boolean) => v
   );
 
   return (
-    <Dialog label="Как удобнее общаться?" zIndex={300}>
+    <Dialog label="Как удобнее общаться?" zIndex={300} onEscape={() => goBack()}>
       <h2 className="dialog-title">Как удобнее общаться?</h2>
       <p className="dialog-text" style={{ marginBottom: 20 }}>
         Поменять можно в любой момент в настройках.
       </p>
       <div className="dialog-actions" style={{ marginBottom: 10 }}>
-        <button className="btn-primary" onClick={() => choose('ty')}>
+        <button className="ds-btn" onClick={() => choose('ty')}>
           На «ты»
         </button>
-        <button className="btn-outline" onClick={() => choose('vy')}>
+        <button className="ds-btn ds-btn--secondary" onClick={() => choose('vy')}>
           На «вы»
         </button>
       </div>

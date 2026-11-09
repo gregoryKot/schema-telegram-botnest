@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useTr } from '../../utils/addressForm';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 import { useResendPause } from './useResendPause';
 import { LoginEmailSent } from './LoginEmailSent';
@@ -14,7 +13,6 @@ const SEND_FAILED = 'Не удалось отправить письмо';
 // Вход по ссылке из письма. Ошибки отдаёт наверх (общая строка ошибки страницы).
 // `?via=email` открывает форму сразу: так ведёт «Ссылка устарела» (authErrorScreens.ts).
 export function LoginEmailForm({ setError }: { setError: (e: string | null) => void }) {
-  const tr = useTr();
   const { search } = useLocation();
   const [show, setShow] = useState(() => new URLSearchParams(search).get('via') === 'email');
   const [value, setValue] = useState('');
@@ -48,7 +46,7 @@ export function LoginEmailForm({ setError }: { setError: (e: string | null) => v
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isEmail(value)) { setError(tr('Введи корректный email', 'Введите корректный email')); return; }
+    if (!isEmail(value)) { setError('Адрес почты выглядит неверно'); return; }
     void send();
   };
 

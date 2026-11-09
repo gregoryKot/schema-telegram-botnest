@@ -37,6 +37,8 @@
 | Запрос упирается в таймаут БД, долгая операция | `src/prisma/statement-timeout.ts` (`withStatementTimeout`, `DB_STATEMENT_TIMEOUT_MS`) | data |
 | Команда или кнопка бота | `src/telegram/telegram.service.ts` и соседние `src/telegram/telegram.*.service.ts` (хендлеры регистрируются в `onModuleInit`) | telegram, texts |
 | Текст уведомления | `src/notification/notification.templates.ts`, форма ты/вы — `src/notification/address-form.ts` | texts |
+| Куда уходит уведомление (Telegram или в приложение) | `src/bot/notify-channel.ts` (выбор канала, одна функция на очередь и `GET /api/settings`), очередь — `src/telegram/telegram.schedule-queue.ts`, пуш — `src/push/push.service.ts` | backend-api, security |
+| Уведомления в приложение на сайте: тумблер «На этом устройстве», service worker | `webapp/src/push/` (`pushState.ts` — состояния, `pushSubscription.ts` — включение и отписка при выходе, `usePushDevice.ts`), строка — `webapp/src/components/settingsSheet/PushDeviceRow.tsx`, воркер — `webapp/public/sw.js` (без `fetch`: кэша нет), канал и тексты — `shared/src/settings/notifyReach.ts` | frontend, texts, ops |
 | Обращение ты/вы во фронте | `shared/src/utils/addressForm.ts` (`useTr`) | texts |
 | Новый крон | `src/infra/cron-leader.service.ts` (`claimRun`), `scripts/cron-leader-baseline.json`, `src/infra/self-check/cron-lease-registry.ts`; обход, который доделывается после рестарта, — `finishRun` (`src/infra/cron-run-done.ts`) и `COMPLETING_LEASES` (`src/infra/self-check/cron-lease-done.ts`), образец — `src/telegram/telegram.midnight-planner.ts` | ops |
 | Событие аналитики и блок `/stats` | `src/analytics/analytics.constants.ts`, `src/api/analytics-meta.sanitize.ts`, `src/bot/stats-report.service.ts`, `src/bot/stats-report.blocks.ts`, `src/bot/stats-sections.ts`, `shared/src/share/analytics.ts` | analytics |
@@ -107,6 +109,7 @@
 | `src/telegram/` | Telegraf: `/start`, онбординг, тесты, настройки, админ-команды, отправка очереди уведомлений | backend-core |
 | `src/channel/` | Посты канала «Здоровый Взрослый» в Telegram, VK, MAX, Threads, Pinterest | backend-core |
 | `src/notification/` | Очередь и планировщик напоминаний, адаптивная частота, шаблоны, ты/вы бэкенда | backend-core |
+| `src/push/` | Уведомления в приложении (веб-пуши): подписки браузеров, отправка, список push-сервисов; канал выбирает `src/bot/notify-channel.ts` | backend-core |
 | `src/analytics/` | Allow-list событий и запись `AnalyticsEvent`; счётчик заходов роботов нейросетей (`crawler-hits.ts`) | backend-core |
 | `src/articles/` | Статьи сайта, SEO для краулеров (статьи и главная: текст в `#root`), `sitemap.xml`; текст продуктового лендинга — `home-landing.content.ts` (читают сайт и сервер) | backend-core |
 | `src/quiz/` | Публичные мини-тесты (бот и сайт) | backend-core |
@@ -122,7 +125,7 @@
 | `src/therapy/` | Кабинет терапевта: связи, заметки, концептуализация, задания, заявки | backend-platform |
 | `src/booking/` | Запись, слоты, оплата, CalDAV, встречи, заявки с формы | backend-platform |
 | `src/infra/` | Аренда кронов, env-реестр, самопроверка, HTTP-края, бэкапы | backend-platform |
-| `src/prisma/` | `PrismaService` (глобальный), предел запроса `statement-timeout.ts`, фильтр ошибок Prisma, волны дошифровки | backend-platform |
+| `src/prisma/` | `PrismaService` (глобальный), предел запроса `statement-timeout.ts`, «проверка + запись» в Serializable с ретраем `serializable-retry.ts`, фильтр ошибок Prisma, волны дошифровки | backend-platform |
 | `src/utils/` | Шифрование и его реестр, админ-алерты, лимиты текста, таймзоны | backend-platform |
 | `src/cli/` | Ротация `ENCRYPTION_KEY` | backend-platform |
 | `src/test-support/` | Хелперы jest, фейки Prisma/S3/Telegram; `src/test-support/gates/` — тесты гейтов | backend-platform |
@@ -133,7 +136,7 @@
 
 Подробно, включая все подкаталоги `shared/src/*/`, — [architecture/frontends.md](architecture/frontends.md).
 
-- **webapp:** `webapp/src/App.tsx` — все роуты (`personalRoutes` для визитки, `appRoutes` для продукта); `webapp/src/pages/` — страницы-роуты; `webapp/src/sections/` — разделы кабинета; `webapp/src/components/` — остальной UI; `webapp/src/hooks/`, `webapp/src/utils/`, `webapp/src/auth/`, `webapp/src/host/`, `webapp/src/styles/`.
+- **webapp:** `webapp/src/App.tsx` — все роуты (`personalRoutes` для визитки, `appRoutes` для продукта); `webapp/src/pages/` — страницы-роуты; `webapp/src/sections/` — разделы кабинета; `webapp/src/components/` — остальной UI; `webapp/src/hooks/`, `webapp/src/utils/`, `webapp/src/auth/`, `webapp/src/host/`, `webapp/src/styles/`; `webapp/src/push/` — веб-пуши на устройстве (состояние, подписка, отписка при выходе).
 - **shared:** `shared/src/<область>/` — по каталогу на фичу (`shared/src/therapy/`, `shared/src/journey/`, `shared/src/practices/`…), `shared/src/theme/` — CSS-токены, `shared/src/api/` — общий API.
 
 ## Команды
