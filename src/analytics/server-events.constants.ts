@@ -6,15 +6,6 @@
 //                   признаку отчёт и отличает настоящие отказы от возможной
 //                   подделки с клиента. Инцидент 2026-08-08: вход был сломан у
 //                   всех пользователей Telegram, а отказ не считал никто.
-//   auth_success  — guard подтвердил вход по JWT, Telegram или MAX initData
-//                   (meta.host: telegram|max|web). Пишется только guard'ом
-//                   (src/api/auth-success.report.ts), всегда с userId = null
-//                   (тот же приём, что у auth_rejected) и с троттлингом раз в
-//                   5 минут на userId+площадку — это счётчик СЕССИЙ входа, не
-//                   запросов. Пара к auth_rejected для блока «Вход в
-//                   мессенджере»: падение входа не всегда выглядит ростом
-//                   отказов, иногда клиент просто перестаёт доезжать до
-//                   сервера — тогда виден провал именно этого счётчика.
 //   client_error  — поломка фронтенда, meta.source + meta.section (бакет, см.
 //                   client-error-section.ts). Пишет ClientErrorsController,
 //                   userId = null; строка на source+section+ip за 5 мин, плюс
@@ -49,15 +40,19 @@
 //   messenger_launch — сайт открыли в мессенджере и подпись сменилась на сессию
 //                   (meta.host + meta.platform, launch-platforms.constants.ts):
 //                   пишут ручки обмена telegram/webapp и max/webapp, userId = null
-//                   (тот же приём, что у auth_success); с клиента meta не
-//                   принимается. /stats — платформы в блоке «Вход в мессенджере».
+//                   (тот же приём, что у auth_rejected); с клиента meta не
+//                   принимается. /stats — блок «Вход в мессенджере».
+//   messenger_launch_failed — пара к нему: подпись НЕ сменилась на сессию
+//                   (meta.host + meta.platform + meta.reason: expired|suspicious,
+//                   src/auth/exchange-failure.report.ts). Пишут те же ручки,
+//                   userId = null, строка на площадку+IP за 5 минут; с клиента
+//                   meta не принимается.
 //   ysq_data_deleted — «Удалить результаты теста» (DELETE /api/ysq-data): пишет
 //                   YsqController после транзакции, meta.attempts — сколько
 //                   пройденных попыток стёрто. С клиента meta не принимается,
 //                   /stats («Удаление своих записей») считает строки с attempts.
 export const SERVER_EVENTS = [
   'auth_rejected',
-  'auth_success',
   'client_error',
   'signup_source',
   'data_export',
@@ -68,15 +63,18 @@ export const SERVER_EVENTS = [
   'reminder_snoozed',
   'login_one_tap',
   'messenger_launch',
+  'messenger_launch_failed',
   'ysq_data_deleted',
 ] as const;
 
 // meta этих событий пишет только сервер: «Напомню через час» — бот, запуск в
-// мессенджере — ручка обмена подписи, стёртый тест схем — DELETE /api/ysq-data.
-// sanitizeMeta отбрасывает их meta с клиента целиком, /stats считает только
-// строки с meta — подделка через /api/event в отчёт не попадает.
+// мессенджере и его отказ — ручки обмена подписи, стёртый тест схем —
+// DELETE /api/ysq-data. sanitizeMeta отбрасывает их meta с клиента целиком,
+// /stats считает только строки с meta — подделка через /api/event в отчёт не
+// попадает.
 export const SERVER_META_EVENTS: ReadonlySet<string> = new Set([
   'messenger_launch',
+  'messenger_launch_failed',
   'reminder_snoozed',
   'ysq_data_deleted',
 ]);

@@ -203,25 +203,12 @@ export function sanitizeMeta(
   if (name === 'signup_source') {
     // Пишет только бот в /start (payload src_<slug>, см. parseSourceSlug в
     // src/telegram/start-source.ts) — на клиентский POST /api/event эта
-    // ветка попасть не должна. Whitelist здесь — defence in depth (тот же
-    // приём, что у auth_success): даже если кто-то дёрнет эндпоинт руками,
-    // meta ограничена уже нормализованным src из allow-list, свободный
-    // slug сюда попасть не может.
+    // ветка попасть не должна. Whitelist здесь — defence in depth: даже если
+    // кто-то дёрнет эндпоинт руками, meta ограничена уже нормализованным src
+    // из allow-list, свободный slug сюда попасть не может.
     const src = meta.src;
     if (typeof src === 'string' && SIGNUP_SOURCE_SET.has(src)) {
       return { src };
-    }
-    return undefined;
-  }
-  if (name === 'auth_success') {
-    // Событие в реальности пишет только guard (userId = null, см.
-    // analytics.constants.ts) — эта ветка на клиентский путь POST /api/event
-    // не должна попасть. Whitelist здесь defence in depth: если бы кто-то
-    // всё же прислал это имя с фронта, meta ограничена площадкой и ничем
-    // больше, никакого свободного текста/PII.
-    const host = meta.host;
-    if (host === 'telegram' || host === 'max' || host === 'web') {
-      return { host };
     }
     return undefined;
   }

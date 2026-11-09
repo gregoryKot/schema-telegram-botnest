@@ -35,10 +35,8 @@ function isValidEmail(s: string): boolean {
 const ACCESS_TOKEN_TTL_S = 15 * 60; // 15 minutes
 const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
 
-// JWT identity — pinned so tokens can't be replayed across services that
-// happen to share JWT_SECRET. Existing in-flight access tokens (issued
-// before this change) will fail verification once → frontend will hit
-// /api/auth/refresh which is DB-backed and continues to work.
+// Издатель и аудитория JWT прибиты: токен не переиграть в другом сервисе,
+// который случайно делит с нами JWT_SECRET.
 const JWT_ISSUER = 'schemehappens.ru';
 const JWT_AUDIENCE = 'schemehappens.ru';
 
@@ -48,6 +46,7 @@ export interface TokenPair {
   expiresIn: number; // seconds
   rotated: boolean; // false = кука не меняется, см. refresh-rotation.ts
 }
+type OnReject = (err: unknown) => void; // см. exchange-failure.report.ts
 
 @Injectable()
 export class AuthService {
@@ -62,8 +61,8 @@ export class AuthService {
 
   // ─── Telegram WebApp initData ──────────────────────────────────────────────
 
-  // Тип ответа — { id, firstName }: выводится из return ниже.
-  verifyTelegramWebAppData(initData: string, ip?: string) {
+  // Тип ответа — из return ниже. onReject — отказ до 401, строка в /stats.
+  verifyTelegramWebAppData(initData: string, ip?: string, onReject?: OnReject) {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN');
     // Один верификатор на все входы (telegram-init-data.ts); отказ — как у
     // гарда: просрочка → 401 `initdata_expired`, подделка → `suspicious_initdata`.
@@ -71,6 +70,7 @@ export class AuthService {
       const { user } = verifyTelegramInitData(initData, botToken);
       return { id: user.id, firstName: user.first_name ?? '' };
     } catch (err) {
+      onReject?.(err);
       rejectInitData(err, ip, this.logger, this.securityLog);
     }
   }

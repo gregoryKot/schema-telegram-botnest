@@ -84,9 +84,18 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
 // Серверные/анонимные строки (userId IS NULL) — вход, поломки клиента, лиды.
 const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'auth_rejected', meta: { host: 'telegram', reason: 'empty' } },
-  { name: 'auth_success', meta: { host: 'telegram' } },
   // Платформа запуска (аудит 2026-10): GROUP BY по meta->>'host'/'platform'.
   { name: 'messenger_launch', meta: { host: 'telegram', platform: 'weba' } },
+  // Отказ обмена подписи (2026-11): GROUP BY name/host/reason и count FILTER
+  // по суткам в AuthHealthMetricsService.getMetrics — обе причины.
+  {
+    name: 'messenger_launch_failed',
+    meta: { host: 'telegram', platform: 'ios', reason: 'expired' },
+  },
+  {
+    name: 'messenger_launch_failed',
+    meta: { host: 'telegram', platform: 'weba', reason: 'suspicious' },
+  },
   { name: 'login_ticket_step', meta: { step: 'issued' } },
   // Окно Google One Tap (2026-11): count(*) FILTER по meta->>'outcome' в
   // LoginTicketMetricsService.getOneTap — все три исхода.
@@ -219,6 +228,14 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     );
     // Платформы запуска: группировка по двум ключам meta через драйвер.
     expect(product).toMatch(/Telegram · браузер, Web A — [1-9]\d* \(\d+\)/);
+    // Вход в мессенджере: обмен прошёл / не прошёл по причине, группировка по
+    // name и двум ключам meta, count FILTER за сутки — через драйвер.
+    expect(product).toMatch(
+      /Telegram за неделю: вошли [1-9]\d*, не смогли [1-9]\d* \(устарела [1-9]\d*, не сошлась [1-9]\d*\); за сутки: вошли [1-9]/,
+    );
+    expect(product).toMatch(
+      /Без пропуска входа пришли старые окна: [1-9]\d* раз/,
+    );
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
     expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);
     expect(product).toMatch(/Связи режимов заполняли [1-9]\d* раз/);

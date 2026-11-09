@@ -470,6 +470,57 @@ describe('AuthService — verifyTelegramWebAppData', () => {
     expect(securityLog.log).not.toHaveBeenCalled();
   });
 
+  // Находка 2026-11-08: отказ обмена подписи не доходил до /stats. Колбэк
+  // получает исходную ошибку (по ней ручка классифицирует причину), а 401
+  // летит как раньше.
+  it('отказ → колбэк получает ошибку до 401, 401 всё равно летит', () => {
+    const { svc, securityLog } = makeService();
+    const onReject = jest.fn();
+    const initData = signInitData({ user: { id: 42 }, hash: 'b'.repeat(64) });
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '192.0.2.201', onReject),
+    ).toThrow(UnauthorizedException);
+    expect(onReject).toHaveBeenCalledTimes(1);
+    expect(onReject.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '192.0.2.201' }),
+    );
+  });
+
+  it('просрочка → колбэк получает ошибку «init data expired»', () => {
+    const { svc } = makeService();
+    const onReject = jest.fn();
+    const initData = signInitData({
+      user: { id: 42 },
+      authDate: Math.floor(Date.now() / 1000) - 3700,
+    });
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '192.0.2.202', onReject),
+    ).toThrow(UnauthorizedException);
+    expect((onReject.mock.calls[0][0] as Error).message).toMatch(
+      /^init data expired/i,
+    );
+  });
+
+  it('валидная подпись — колбэк отказа не зовётся', () => {
+    const { svc } = makeService();
+    const onReject = jest.fn();
+    const initData = signInitData({ user: { id: 7, first_name: 'Аня' } });
+    expect(
+      svc.verifyTelegramWebAppData(initData, '192.0.2.203', onReject),
+    ).toEqual({ id: 7, firstName: 'Аня' });
+    expect(onReject).not.toHaveBeenCalled();
+  });
+
+  it('без колбэка отказ ведёт себя как прежде — 401 без TypeError', () => {
+    const { svc } = makeService();
+    const initData = signInitData({ user: { id: 42 }, hash: 'c'.repeat(64) });
+    expect(() => svc.verifyTelegramWebAppData(initData, '192.0.2.204')).toThrow(
+      UnauthorizedException,
+    );
+  });
+
   it('user отсутствует в initData целиком (не просто user.id) → UnauthorizedException, не TypeError', () => {
     // Без `user=` вообще (не путать с "user есть, но без id" — см. отдельный
     // тест ниже). JSON.parse(null) не бросает (парсит как "null"), поэтому

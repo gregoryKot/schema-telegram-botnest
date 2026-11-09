@@ -112,7 +112,7 @@
 | Элемент спрятан через `opacity: 0` и раскрывается только по `:hover` — на телефоне его нет, с клавиатуры он фокусируем, но невидим (аудит 2026-10: кнопка удаления доказательства) | `scripts/check-hover-only-reveal.mjs` — нужны два пути без hover: для пальца `@media (hover: none)`/`(pointer: coarse)` и для клавиатуры `:focus-within`/`:focus-visible` (класс состояния закрывает оба); без бейслайна, тест — `src/test-support/gates/hover-only-reveal.spec.ts` |
 | e2e-спек лежит в `test/`, а ни одна джоба CI его не запускает (аудит 2026-10-11: `exercise-delete-ownership`, `max-auth` не гонялись месяцами; jest с несколькими паттернами молча пропускает несовпавший) | `scripts/check-e2e-in-ci.mjs` — каждый `test/**/*.e2e-spec.ts` покрыт путём в шаге `jest-e2e`, и каждый путь в CI соответствует файлу; бейслайна нет |
 | Тихий отказ входа | `src/api/auth-failure.report.ts` + блок «Вход в мессенджере» в `/stats` |
-| Успех входа не считался (виден только рост отказов, не провал успехов) | `src/api/auth-success.report.ts` (событие `auth_success`, троттлинг per userId+host) + расширенный блок «Вход в мессенджере» (`auth-health-metrics.service.ts`/`.format.ts`) |
+| Вход сайта в мессенджере не считался: блок смотрел путь мини-аппа в guard'е, а сайт меняет подпись на сессию в ручках обмена, чьи отказы шли только в журнал безопасности (находка 2026-11-08) | пара `messenger_launch` / `messenger_launch_failed` из ручек обмена `telegram/webapp` и `max/webapp` (`src/auth/exchange-failure.report.ts`: причина «устарела»/«не сошлась», строка на площадку+IP за 5 минут) + блок «Вход в мессенджере» (`src/bot/auth-health-metrics.service.ts`/`.format.ts`, разбор — `auth-health-rows.ts`) |
 | Экран-тупик без отчёта наверх | `useAuthFailureReport` (`shared/`, оба фронта) |
 | Обвал сборки из-за чужой сети | `deploy/install-openssl.sh`, `deploy/install-pg-client.sh` (клиент Postgres 16: ретраи + зеркала, проверка версии) |
 | Молчаливая деградация merge-драйверов; бейслайн без атрибута в `.gitattributes` (до 2026-10 12 из 37 сводились текстово, `--check` смотрел только «атрибут → драйвер») | `setup-merge-drivers.mjs --check` (`scripts/merge-drivers-check.mjs`): драйвер у каждого `merge=`, строка у каждого `*-baseline.json`, протухшая строка красная; тест на реальном `.gitattributes` и настоящем `git merge` — `src/test-support/gates/merge-drivers.spec.ts` |
@@ -196,9 +196,10 @@
   гейт кронов знает только про `@Cron`.
 
 - **Клиент, который совсем не доехал до сервера (не может отправить ни один
-  запрос), по-прежнему невидим с обеих сторон.** И `auth_success`, и
-  `auth_rejected` пишет один и тот же guard (`TelegramAuthGuard`) — оба
-  события существуют, только если запрос вообще дошёл до сервера. Если DNS не
+  запрос), по-прежнему невидим с обеих сторон.** И `messenger_launch`, и
+  `messenger_launch_failed` пишут ручки обмена подписи на сессию
+  (`src/auth/exchange-failure.report.ts`) — оба события существуют, только если
+  запрос обмена вообще дошёл до сервера. Если DNS не
   резолвится, сети нет, или вебвью падает настолько рано, что не может
   выполнить вообще ни один fetch (включая `POST /api/client-errors`), — не
   пишется НИ отказ, НИ успех, НИ `client_error`. С сервера такая авария

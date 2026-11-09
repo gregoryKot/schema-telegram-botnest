@@ -58,11 +58,6 @@ const BACKEND_ONLY: Record<string, string> = {
     'серверное событие: пишет только TelegramAuthGuard, когда мини-апп ' +
     'пришёл с пустой подписью (src/api/auth-failure.report.ts). Фронт его ' +
     'не шлёт и не должен — отчёт /stats считает только строки с userId = null',
-  auth_success:
-    'серверное событие: пишет только TelegramAuthGuard после подтверждённого ' +
-    'JWT/Telegram/MAX входа (src/api/auth-success.report.ts), с троттлингом ' +
-    'per userId+host. Фронт его не шлёт и не должен — та же защита userId = ' +
-    'null, что и у auth_rejected',
   crisis_card_shown:
     'шлётся из общего хука shared/src/analytics/useCrisisCardTracking.ts ' +
     "вызовом track('crisis_card_shown', …), где track — параметр функции " +
@@ -129,7 +124,7 @@ const BACKEND_ONLY: Record<string, string> = {
     'POST /api/client-errors (src/api/client-errors.controller.ts), не ' +
     'trackEvent() — фронт шлёт reportClientError(), а не аналитику напрямую. ' +
     'userId = null и троттлинг по source+section+ip — тот же приём, что у ' +
-    'auth_rejected/auth_success',
+    'auth_rejected',
   signup_source:
     'серверное событие: пишет только бот в /start, когда payload — ' +
     'deep-link `src_<slug>` (parseSourceSlug, src/telegram/start-source.ts), ' +
@@ -144,7 +139,7 @@ const BACKEND_ONLY: Record<string, string> = {
   login_ticket_step:
     'серверное событие: пишет единственный шов LoginTicketReport ' +
     '(src/auth/login-ticket/login-ticket.report.ts), всегда с userId = null — ' +
-    'тот же приём, что у auth_rejected/auth_success. Фронт его не шлёт и не ' +
+    'тот же приём, что у auth_rejected. Фронт его не шлёт и не ' +
     'должен: шаги воронки входа известны только серверу (подтверждение ' +
     'происходит в боте или во внешнем браузере, а не в контейнере, который ' +
     'просил билет), и отчёт /stats считает строки с userId IS NULL',
@@ -241,6 +236,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
     'userId = null. Фронт присылает только поле platform в теле обмена ' +
     '(shared/src/host/launchPlatform.ts), отдельного trackEvent у него нет',
+  messenger_launch_failed:
+    'серверное событие: пара к messenger_launch — пишут те же ручки обмена, ' +
+    'когда подпись не сменилась на сессию (src/auth/exchange-failure.report.ts), ' +
+    'userId = null. Причину отказа знает только сервер; клиент получил 401 и ' +
+    'слать о нём отдельное событие ему незачем',
   asset_recovered:
     'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
     "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
@@ -307,7 +307,7 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // share_card/onboarding_step/mode_card_saved, не обход правила.
     // 21 — auth_rejected: единственное СЕРВЕРНОЕ событие в списке, фронт его
     // слать не может по замыслу (отказ входа фиксирует guard). 22 —
-    // auth_success: пара к нему, тот же guard, тот же приём userId = null.
+    // auth_success, удалён 2026-11 (его место занял messenger_launch_failed).
     // 23 — client_error (волна 9 щита покрытия): пишет ClientErrorsController,
     // а не trackEvent(), тот же приём userId = null, что у auth_rejected.
     // 24 — signup_source (атрибуция посевов, 2026-08): пишет только бот в
@@ -355,6 +355,8 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // исход проверки токена есть только у сервера, тот же приём userId = null.
     // 47 — messenger_launch (аудит 2026-10, платформа запуска): серверное —
     // пишет ручка обмена подписи, клиент шлёт только поле platform в её теле.
+    // messenger_launch_failed (2026-11, на место auth_success): серверное —
+    // отказ обмена подписи, причину знает только ручка обмена.
     // 48 — ysq_data_deleted (стёртый тест схем): серверное — удаление делает
     // HTTP-запрос, число стёртых попыток видно только в транзакции.
     // 49 — asset_recovered (инцидент 2026-11-04, #928): шлёт скрипт из

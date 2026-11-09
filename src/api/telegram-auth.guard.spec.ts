@@ -479,40 +479,36 @@ describe('отказ входа: пустая подпись слышна', () =
   });
 });
 
-// Пара к «отказ входа»: успешный вход тоже даёт сигнал — иначе клиент,
-// который просто перестал доезжать до сервера, неотличим с сервера от
-// «сегодня никто не открывал приложение» (docs/SHIELD_PROMPT.md, известные
-// дыры). Троттлинг проверен отдельно и детерминированно в
-// auth-success.report.spec.ts — здесь только проверка, что guard реально
-// зовёт его на всех трёх путях, с правильной площадкой.
-describe('успешный вход считается (auth_success)', () => {
-  it('путь 1 (JWT) → auth_success, host=web, userId в БД не попадает', async () => {
+// Успешный вход в guard'е в аналитику не пишется: строка auth_success шла на
+// каждый Bearer-запрос (раз в 5 минут на человека) и после пересборки блока
+// «Вход в мессенджере» никем не читалась. Блок считает обмен подписи на
+// сессию — messenger_launch / messenger_launch_failed из ручек обмена
+// (src/auth/exchange-failure.report.ts). Горячий путь guard'а пишет в БД только
+// отказ с пустой подписью (auth_rejected, тесты выше).
+describe('успешный вход в guard не пишет событий', () => {
+  it('путь 1 (JWT) — ни одной строки аналитики', async () => {
     const { guard, authService, analytics } = makeGuard();
     authService.verifyAccessToken.mockReturnValue({ userId: 111_001n });
     const req: FakeRequest = { headers: { authorization: 'Bearer tok' } };
 
-    await guard.canActivate(makeCtx(req));
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
 
-    expect(analytics.track).toHaveBeenCalledWith(null, 'auth_success', {
-      host: 'web',
-    });
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 
-  it('путь 2 (Telegram initData) → auth_success, host=telegram', async () => {
+  it('путь 2 (Telegram initData) — ни одной строки аналитики', async () => {
     const { guard, authService, analytics } = makeGuard();
     authService.findOrCreateUserByProvider.mockResolvedValue(111_002n);
     const req: FakeRequest = {
       headers: { 'x-telegram-init-data': signInitData({ user: { id: 42 } }) },
     };
 
-    await guard.canActivate(makeCtx(req));
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
 
-    expect(analytics.track).toHaveBeenCalledWith(null, 'auth_success', {
-      host: 'telegram',
-    });
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 
-  it('путь 3 (MAX initData) → auth_success, host=max', async () => {
+  it('путь 3 (MAX initData) — ни одной строки аналитики', async () => {
     const verifyInitData = jest
       .fn()
       .mockReturnValue({ providerId: '77', displayName: 'Оля' });
@@ -523,57 +519,8 @@ describe('успешный вход считается (auth_success)', () => {
     authService.findOrCreateUserByProvider.mockResolvedValue(111_003n);
     const req: FakeRequest = { headers: { 'x-max-init-data': 'raw' } };
 
-    await guard.canActivate(makeCtx(req));
+    await expect(guard.canActivate(makeCtx(req))).resolves.toBe(true);
 
-    expect(analytics.track).toHaveBeenCalledWith(null, 'auth_success', {
-      host: 'max',
-    });
-  });
-
-  // Критичное для стоимости: guard проверяет подпись на КАЖДЫЙ запрос экрана
-  // мини-аппа (полтора десятка за одно открытие) — без троттлинга это было
-  // бы полтора десятка строк auth_success вместо одной сессии.
-  it('шквал запросов одного юзера — ОДНА строка auth_success, не по одной на запрос', async () => {
-    const { guard, authService, analytics } = makeGuard();
-    authService.findOrCreateUserByProvider.mockResolvedValue(111_004n);
-    const makeReq = (): FakeRequest => ({
-      headers: { 'x-telegram-init-data': signInitData({ user: { id: 42 } }) },
-    });
-
-    for (let i = 0; i < 5; i += 1) {
-      await guard.canActivate(makeCtx(makeReq()));
-    }
-
-    const successCalls = (analytics.track as jest.Mock).mock.calls.filter(
-      ([, name]) => name === 'auth_success',
-    );
-    expect(successCalls).toEqual([
-      [null, 'auth_success', { host: 'telegram' }],
-    ]);
-  });
-
-  // Два РАЗНЫХ юзера в том же окне — обе сессии реальны и обе обязаны
-  // засчитаться, троттлинг режет повтор, а не разных людей.
-  it('два разных юзера в том же окне — ДВЕ строки auth_success', async () => {
-    const { guard, authService, analytics } = makeGuard();
-    authService.findOrCreateUserByProvider
-      .mockResolvedValueOnce(111_005n)
-      .mockResolvedValueOnce(111_006n);
-    const makeReq = (id: number): FakeRequest => ({
-      headers: {
-        'x-telegram-init-data': signInitData({ user: { id } }),
-      },
-    });
-
-    await guard.canActivate(makeCtx(makeReq(501)));
-    await guard.canActivate(makeCtx(makeReq(502)));
-
-    const successCalls = (analytics.track as jest.Mock).mock.calls.filter(
-      ([, name]) => name === 'auth_success',
-    );
-    expect(successCalls).toEqual([
-      [null, 'auth_success', { host: 'telegram' }],
-      [null, 'auth_success', { host: 'telegram' }],
-    ]);
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 });
