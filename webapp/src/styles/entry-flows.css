@@ -73,13 +73,21 @@
   .pa-sheet.ef-art.ef-bare[data-sign] > .pa-sheet-art { width: 66px; }
   .pa-sheet.ef-art.ef-bare.pa-sheet--scene > .pa-sheet-art { width: 76px; }
 }
-/* Слово длиннее колонки рядом со знаком (ef-long: «Присоединиться» 186px при колонке 162 на 320,
-   «конфиденциальность» 241 при поле 242): знак встаёт строкой над заголовком, заголовок — во всю
-   ширину листа, кегль на ступень меньше. До 345 колонка у знака ещё уже слова. */
-@container pa-sheet (max-width: 270px) {
-  .ef-head .pa-sheet.ef-head-sheet.ef-long .pa-sheet-title { font-size: 21px; }
+/* Слово длиннее колонки рядом со знаком (ef-long): «Присоединиться» кеглем 25 — 212px, а колонка у знака
+   на телефоне 369–391 — 190–210 (на 320 — 186 при 162). До поля 319 (телефон до ~397) знак встаёт строкой
+   над заголовком, заголовок — во всю ширину листа. Кегль — чтобы «и конфиденциальность» (glue держит «и»
+   со словом, 11.8em) встало в поле: 24 до 319, 22 до 290, 20 на 320 (поле 242). Сверка на стенде —
+   замер entry.js на 320, 360, 370, 375, 380, 390 (scratchpad g1 fix-r2). */
+@container pa-sheet (max-width: 319px) {
+  .ef-head .pa-sheet.ef-head-sheet.ef-long .pa-sheet-title { font-size: 24px; }
   .pa-sheet.ef-art.ef-bare.ef-long > .pa-sheet-art { grid-column: 1; grid-row: 1; justify-self: start; }
   .pa-sheet.ef-bare.ef-long:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { grid-column: 1 / -1; grid-row: 2; margin-top: 10px; }
+}
+@container pa-sheet (max-width: 290px) {
+  .ef-head .pa-sheet.ef-head-sheet.ef-long .pa-sheet-title { font-size: 22px; }
+}
+@container pa-sheet (max-width: 270px) {
+  .ef-head .pa-sheet.ef-head-sheet.ef-long .pa-sheet-title { font-size: 20px; }
 }
 
 /* ── Согласия: текст прокручивается, галочка и кнопки стоят ──────────────── */
@@ -108,15 +116,18 @@
 .pa-alert.ef-alert { margin: 0 0 14px; }
 
 /* ── «Как удобнее общаться?» — две равные плитки бумаги ─────────────────── */
+/* Плитки — сами ответы и единственная картинка окна: подпись по центру по высоте, плитка невысокая.
+   Прижатая к низу (раскладка pp-square под знак сверху) оставляла пустую верхнюю половину — читалось
+   как незагрузившийся знак (ревью владельца g1 r2). */
 .ef-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
 .ef-form.pp-paper {
-  display: flex; align-items: flex-end; min-height: 84px; padding: 14px 16px; border: 0; border-radius: 18px;
+  display: flex; align-items: center; min-height: 64px; padding: 14px 16px; border: 0; border-radius: 18px;
   font: 400 23px/1.1 var(--serif); color: var(--text); text-align: left; cursor: pointer;
   box-shadow: 4px 5px 0 oklch(0.84 0.045 var(--h)); transition: transform .12s ease, box-shadow .12s ease;
 }
 .ef-form.pp-paper:hover { background: oklch(0.89 0.04 var(--h)); }
 .ef-form.pp-paper:active { transform: translate(2px, 3px); box-shadow: 2px 2px 0 oklch(0.84 0.045 var(--h)); }
 @media (prefers-reduced-motion: reduce) { .ef-form.pp-paper { transition: none; } }
-@media (max-width: 359px) { .ef-form.pp-paper { min-height: 72px; padding: 12px 14px; font-size: 20px; } }
+@media (max-width: 359px) { .ef-form.pp-paper { min-height: 56px; padding: 12px 14px; font-size: 20px; } }
 .sk-dialog-text.ef-note { margin-bottom: 16px; }
 .ef-later.ds-link { display: block; width: 100%; min-height: 44px; color: var(--text-sub); font-weight: 500; }

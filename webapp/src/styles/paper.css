@@ -59,6 +59,15 @@
 /* Опорный элемент главной и героя потока на компьютере (пропорция поля Strokes 120×100);
    в узкой колонке не шире её. */
 .pp-art--scene { width: 180px; height: 150px; max-width: 100%; }
+/* Полоски дня (Strokes values) — главная, карточка дня в меню и силуэт «Сегодня»: одно правило, один вид.
+   Пустое место — сплошной бледный тон своей потребности (её цвет — в `color` полоски), кромка — цветом
+   бумаги под знаком (--strokes-edge: на .pp-paper — её бумага, иначе фон страницы): наклонённые полоски сходятся верхушками
+   и без кромки сливались. Полупрозрачный PAPER.hollow темнел там, где полоски сходятся, и читался серым
+   (ревью g1); тень-вырезку (SignScene) пустое место не отбрасывает. */
+:root { --strokes-edge: var(--bg); }
+.pp-paper { --strokes-edge: oklch(0.915 0.03 var(--h)); }
+.pp-strokes-values > [data-rated="no"] { fill: color-mix(in srgb, currentColor 34%, var(--bg)); stroke: var(--strokes-edge); stroke-width: 2.5; }
+.scn-sign > .pp-art:first-child .pp-strokes-values > [data-rated="no"] { visibility: hidden; }
 
 /* ── Пустое состояние: картинка и текст ─────────────────────────────────── */
 .pp-empty { display: flex; align-items: center; gap: 16px; }

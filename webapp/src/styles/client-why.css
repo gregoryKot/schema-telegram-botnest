@@ -53,8 +53,13 @@
   margin: 0; padding: 18px 18px 20px 20px; border-radius: 22px;
 }
 .cw-thing-title { grid-column: 1; grid-row: 1; margin: 0; font-weight: 400; font-size: 24px; }
-.cw-thing > .pp-art { grid-column: 2; grid-row: 1; width: 84px; height: auto; }
+/* Знак в шапке листа — бокс одной высоты (40) по центру строки названия, у края: полоски (поле 120×100)
+   при ширине 84 вставали вдвое выше ленты и камешков (120×64), и текст «Трекера» начинался ниже, чем у
+   соседей (ревью вёрстки g1 r2). Ширина — по пропорции знака. */
+.cw-thing > .pp-art { grid-column: 2; grid-row: 1; justify-self: end; width: auto; height: 40px; }
 .cw-thing-text { grid-column: 1 / -1; grid-row: 2; margin: 0; }
+/* Последнее слово абзаца не остаётся одно на строке («Одно действие в день — уже / работа.»). */
+.cw-why .cw-lead, .cw-why .cw-tip, .cw-thing-text, .cw-legend-row dd { text-wrap: pretty; }
 
 .cw-legend { display: flex; flex-direction: column; gap: 12px; }
 .cw-legend-list { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
@@ -81,7 +86,7 @@
   .cw-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   .cw-thing { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; row-gap: 10px; align-items: start; padding: 28px 28px 30px; }
   /* Знаки разной пропорции (полоски выше ленты) — по одной высоте: названия трёх листов на одной линии. */
-  .cw-thing > .pp-art { grid-column: 1; grid-row: 1; width: auto; height: 76px; margin: 0 0 14px -6px; }
+  .cw-thing > .pp-art { grid-column: 1; grid-row: 1; justify-self: start; width: auto; height: 76px; margin: 0 0 14px -6px; }
   .cw-thing-title { grid-row: 2; font-size: 28px; }
   .cw-thing-text { grid-row: 3; }
   /* Кнопка сразу за листами (аудит 2026-11: «Понятно, начнём» была далеко внизу), легенда — справкой

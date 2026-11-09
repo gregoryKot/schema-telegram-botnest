@@ -1,14 +1,15 @@
 // Шапка окон первого входа (docs/design/APP_2026-11.md, b06-entry): лист цветной бумаги во всю ширину окна —
 // надпись, заголовок Literata и знак сущности в углу, как лист-герой потока (лист рисует EntitySheet, здесь —
-// место в окне). Один каркас на «ты/вы», три шага согласий, приглашения терапевта и пары, «Поддержать проект»;
-// вид — paper/entryLook.ts.
+// место в окне). Один каркас на «ты/вы», три шага согласий, приглашения, донат; вид — paper/entryLook.ts.
 //  • scene — сцена во всю ширину над надписью (коллаж приветствия): знак в углу её бы сжал;
 //  • sticker — наклейка на сцене (бета): текст, а не декор — сцена скрыта от чтения, наклейка нет;
 //  • без надписи заголовок на узком листе встаёт рядом со знаком (ef-bare): иначе слева пустая строка;
-//  • слово длиннее колонки у знака на 320 (ef-long, hasLongWord) — знак строкой над заголовком, без переноса.
+//  • слово длиннее колонки у знака на телефоне (ef-long, hasLongWord) — знак строкой над заголовком, без
+//    переноса; короткое слово не висит в конце строки («Данные и / конфиденциальность») — glue.
 // Окно (Dialog) отдаёт шапке свои поля: entry-flows.css — `.sk-dialog-box:has(> .ef-head)`.
 import type { ReactNode } from 'react';
 import type { EntityId, PaperHue, SheetLook } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 import { hueStyle } from '../../lib/tone';
 import { BrandMark } from '../art/BrandMark';
 import { EntitySheet } from './EntitySheet';
@@ -27,9 +28,8 @@ export interface EntryHeadProps {
 }
 
 export function EntryHead({ look, label, title, sub, art, scene }: EntryHeadProps) {
-  const sheetLook = scene ? { hue: scene.hue } : look;
-  const long = typeof title === 'string' && hasLongWord(title);
-  const cls = `ef-head-sheet ef-art${label ? '' : ' ef-bare'}${long ? ' ef-long' : ''}`;
+  const text = typeof title === 'string' ? title : null;
+  const cls = `ef-head-sheet ef-art${label ? '' : ' ef-bare'}${text && hasLongWord(text) ? ' ef-long' : ''}`;
   return (
     <div className="ef-head">
       {scene && (
@@ -38,7 +38,7 @@ export function EntryHead({ look, label, title, sub, art, scene }: EntryHeadProp
           {scene.sticker && <span className="ef-sticker">{scene.sticker}</span>}
         </div>
       )}
-      <EntitySheet look={sheetLook} label={label} title={title} sub={sub} art={art} className={cls} />
+      <EntitySheet look={scene ? { hue: scene.hue } : look} label={label} title={text ? glue(text) : title} sub={sub} art={art} className={cls} />
     </div>
   );
 }

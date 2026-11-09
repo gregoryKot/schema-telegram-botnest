@@ -10,11 +10,14 @@
 .cmd-search .ds-input { flex: 1; min-width: 0; }
 .cmd-icon { color: var(--text-sub); flex-shrink: 0; display: flex; align-items: center; }
 /* Нижний край списка гаснет — видно, что ниже есть ещё; поле снизу — последняя строка в конце прокрутки
-   выходит из тени целиком. */
+   выходит из тени целиком. Высота режет строку (48) примерно пополам: край списка в зазоре между группами
+   и гаснущая следом строка читались концом списка — пять действий ниже «Режима» не угадывались (ревью g1
+   r2). У списка клиента край — на середине «Благодарности» (900 и выше, планшет 768×1024) и «Режима» (800);
+   маска 20 — верх резаной строки виден. */
 .cmd-list {
-  max-height: min(60vh, 520px); overflow-y: auto; padding: 4px 6px 28px;
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  max-height: min(calc(60vh + 8px), 536px); overflow-y: auto; padding: 4px 6px 24px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
 }
 .cmd-group { margin: 0; padding: 14px 12px 4px; }
 .cmd-row { display: flex; align-items: center; gap: 12px; padding: 6px 12px 6px 8px; border-bottom: none; border-radius: 14px; font-size: 14px; color: var(--text-sub); min-height: 48px; box-sizing: border-box; }

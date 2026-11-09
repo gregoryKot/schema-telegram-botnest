@@ -1,7 +1,7 @@
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { glue } from '../../../../shared/src/utils/typo';
 import { hueStyle } from '../../lib/tone';
-import { SignArt } from '../art/SignArt';
+import { WhySign } from './WhySign';
 
 // Три действия приложения — те же листы цветной бумаги и знаки, что квадраты главной «Сегодня»
 // (ENTITY_LOOK: трекер — солома и полоски, «Что случилось» — шалфей и лента, дневник — персик и
@@ -23,7 +23,7 @@ export function WhyThree() {
           <li key={entity} className="pp-paper cw-thing" style={hueStyle(hue)}>
             <h2 className="pp-title cw-thing-title">{title}</h2>
             <p className="pp-text cw-thing-text">{glue(text)}</p>
-            <SignArt sign={sign} size="square" />
+            <WhySign sign={sign} size="square" />
           </li>
         );
       })}

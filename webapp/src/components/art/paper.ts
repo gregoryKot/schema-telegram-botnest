@@ -28,7 +28,7 @@ export const BAR_PAPER = [PAPER.moss, PAPER.slate, PAPER.brown, PAPER.clay, PAPE
  * спонтанность, границы) — полоска, которая значит конкретную потребность (Strokes values,
  * столбик дня): оттенок NEED_HUE, текстовый токен с контрастом ≥3:1 к бумаге каждого из десяти
  * оттенков (docs/design/APP_2026-11.md, «Палитра данных», решение 7). Обезличенные полоски
- * (меню, пустая плитка, лендинг) остаются на палитре Strokes.
+ * (меню, пустая плитка, лендинг) остаются на палитре Strokes; «Зачем это всё» — эта (why/WhySign).
  */
 export const NEED_DATA_PAPER = [
   'var(--c-clay)', 'var(--c-amber-strong)', 'var(--c-slate)', 'var(--c-plum)', 'var(--c-moss)',

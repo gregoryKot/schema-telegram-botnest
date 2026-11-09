@@ -37,6 +37,11 @@ describe('EntryHead', () => {
     expect(sheet().className).not.toContain('ef-long');
   });
 
+  it('короткое слово заголовка не висит в конце строки: «и» держится со следующим словом (glue)', () => {
+    render(<EntryHead look={{ hue: 240, sign: 'limits' }} label="Шаг 2 из 3" title="Данные и конфиденциальность" />);
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Данные и\u00a0конфиденциальность');
+  });
+
   it('сцена над листом: та же бумага, сцена скрыта от чтения, наклейка — текст; лист без знака', () => {
     const { container } = render(
       <EntryHead look={{ hue: 45 }} title="Всё по схеме" scene={{ art: <svg data-testid="art" />, hue: 45, sticker: 'БЕТА-ВЕРСИЯ' }} />,

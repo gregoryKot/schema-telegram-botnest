@@ -23,22 +23,20 @@
 .ct-tile { border-radius: 20px; }
 /* Полоски дня (TrackerBlock: SignScene со Strokes values). Телефон и планшет — эталон владельца: знак
    плоско, без тени-вырезки, 112 (на телефоне 96). Пустое место (оценки нет) — бледный тон своей
-   потребности (её цвет — в `color` полоски), сплошной и без тени: пять мест «ждут» каждое своего
-   цвета. Полупрозрачный PAPER.hollow на крупном знаке темнел там, где наклонённые полоски сходятся, и
-   читался серым; один тон соломы на все пять — «выцвело, выключено» (ревью владельца g1, 2026-11);
-   тень под пустым местом просвечивала бы второй полоской. */
+   потребности с кромкой цветом бумаги, без тени: одно правило с карточкой дня в меню и силуэтом
+   (.pp-strokes-values, paper.css); один тон соломы на все пять — «выцвело» (ревью владельца g1). */
 .ct-strokes { width: 112px; }
 .ct-strokes > .pp-art:first-child { display: none; }
-.ct-strokes > .pp-art:first-child [data-rated="no"] { visibility: hidden; }
-/* Кромка цветом бумаги под знаком: наклонённые пустые полоски сходятся верхушками и иначе сливались
-   в одну фигуру — пять мест должны читаться пятью. */
-.ct-strokes > .pp-art:last-child [data-rated="no"] { fill: color-mix(in srgb, currentColor 34%, var(--bg)); stroke: var(--bg); stroke-width: 2.5; }
 /* Мета квадрата рядом со стрелкой: короткая («Пока записей нет», «Сегодня 2 записи») — одной строкой
    и на 360 (аудит 2026-11: рвалась на две — на телефоне без разрядки и с узким зазором, ниже).
    Длинная («Последняя запись — вчера») переносится ровными строками, стрелка — у последней:
    многоточие съело бы «вчера», а это и есть данные. Колонки — minmax(0, 1fr): длинная мета не
    раздвигает квадрат за край экрана. */
 .ct-squares.pp-squares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Квадрат — контейнер своего названия: на узком телефоне (320–345, квадрат 137–150) «случилось» кеглем
+   26 шире поля квадрата и вылезал за край листа (ревью вёрстки g1 r2, на 320 — на 15px). Кегль названия —
+   не больше доли поля квадрата (cqi, ниже), так слово встаёт в поле на любой ширине; на 390 — прежний. */
+.ct-squares > .pp-square { container-type: inline-size; }
 .ct-home .pp-square-foot { align-items: flex-end; }
 .ct-home .pp-square-foot .pp-meta { min-width: 0; text-wrap: balance; }
 .ct-home .pp-arrow { flex-shrink: 0; }
@@ -55,8 +53,8 @@
   .ct-main .pp-hero-body { gap: calc(6px + var(--fit-room) * .02); }
   .ct-main .pp-hero-title { font-size: calc(26px + var(--fit-size) * .05); }
   .ct-home .pp-square { min-height: 0; padding: calc(14px + var(--fit-room) * .03) 18px calc(12px + var(--fit-room) * .02); gap: calc(4px + var(--fit-room) * .02); }
-  .ct-home .pp-title { font-size: calc(22px + var(--fit-size) * .0333); }
-  .ct-home .pp-art--square { height: calc(36px + var(--fit-size) * .2); width: auto; aspect-ratio: 120 / 64; }
+  .ct-home .pp-title { font-size: min(calc(22px + var(--fit-size) * .0333), 19.2cqi); }
+  .ct-home .pp-art--square { height: calc(36px + var(--fit-size) * .2); width: auto; max-width: 100%; aspect-ratio: 120 / 64; }
   /* Мета 12 без разрядки, стрелка 19, зазор 4: «Пока записей нет», «Сегодня 2 записи», «Сегодня: 1 разбор»
      встают в строку на 390 (квадрат 169, поле под мету 110 — замер шрифта 2026-11), на 360 — с полем ниже. */
   .ct-home .pp-square-foot { margin-top: calc(4px + var(--fit-room) * .03); gap: 4px; }
@@ -66,6 +64,9 @@
 }
 @media (max-width: 374px) {
   .ct-home .pp-square { padding-left: 16px; padding-right: 14px; }
+}
+@media (max-width: 345px) {
+  .ct-home .pp-square { padding-left: 14px; padding-right: 12px; }
 }
 
 /* Компьютер (≥1024) — разворот (docs/design/APP_2026-11.md, b05): слева лист соломы трекера с
@@ -78,14 +79,13 @@
   .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
   .ct-main.pp-block {
     justify-content: space-between; gap: 28px; padding: 30px 36px 36px; border: 0; border-radius: 28px;
-    background: oklch(0.915 0.03 var(--h)); transition: background .12s;
+    background: oklch(0.915 0.03 var(--h)); transition: background .12s; --strokes-edge: oklch(0.915 0.03 var(--h));
   }
   .ct-main.pp-block:hover { background: oklch(0.895 0.04 var(--h)); }
   .ct-main .pp-hero { grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
   /* Знак встаёт по левому краю надписи: поле холста Strokes (~7% ширины) — сдвигом назад. */
   .ct-main .ct-strokes { order: -1; width: 216px; margin-left: -14px; }
   .ct-main .ct-strokes > .pp-art:first-child { display: block; }
-  .ct-main .ct-strokes > .pp-art:last-child [data-rated="no"] { stroke: oklch(0.915 0.03 var(--h)); }
   /* Мелкий текст на цветной бумаге — --text-sub: --text-faint на ней ниже 4.5:1. */
   .ct-main .ds-label { color: var(--text-sub); }
   .ct-main .pp-hero-title { font-size: 36px; }

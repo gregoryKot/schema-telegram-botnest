@@ -12,7 +12,7 @@ import { Strokes } from './art/PaperArt';
 import { Skeleton, SkeletonList, ScreenSkeleton } from './Skeleton';
 import '../styles/shell-skeletons.css';
 
-/** Знак трекера без данных: пять полосок пустым тоном бумаги — как у неоценённого дня, ничего выдуманного. */
+/** Знак трекера без данных: пять пустых мест, как у неоценённого дня главной (правило .pp-strokes-values). */
 const EMPTY_DAY = [null, null, null, null, null];
 
 function Head({ title = '60%' }: { title?: string }) {
@@ -51,7 +51,7 @@ export function ClientTodaySkeleton() {
       <div className="sks-today-home">
         <div className="pp-block sks-paper sks-today-main" style={hueStyle(70)}>
           <div className="pp-hero">
-            <div className="sks-col sks-col--hero">
+            <div className="sks-col">
               <Line kind="label" bars={[56]} h={11} />
               <Line kind="title" bars={['82%', '56%']} h={26} />
               <Line kind="text" bars={['92%', '48%']} h={13} />

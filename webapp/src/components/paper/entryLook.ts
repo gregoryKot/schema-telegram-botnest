@@ -30,8 +30,8 @@ export const DONATE_HUE: PaperHue = 70;
 export const JOIN_DONE_LOOK: SheetLook = OUTCOME_LOOK_LIT.done;
 export const JOIN_STALE_LOOK: SheetLook = OUTCOME_LOOK_LIT.wait;
 
-/** Слово не встаёт в строку рядом со знаком на 320 («Присоединиться» 186px при колонке 162): знак — строкой
- *  над заголовком (`ef-long`, entry-flows.css), а не перенос по слогам — тот рвал и влезающие слова. */
+/** Слово не встаёт в строку рядом со знаком на телефоне («Присоединиться» 212px при колонке 190–210 на 370–390):
+ *  знак — строкой над заголовком (`ef-long`, entry-flows.css), а не перенос по слогам — тот рвал и влезающие. */
 export const hasLongWord = (title: string): boolean => /\p{L}{13,}/u.test(title);
 
 /** Шапка приглашения по ссылке: пара — её вид (NeedArt attachment), терапевт — Talk на небе, в том
