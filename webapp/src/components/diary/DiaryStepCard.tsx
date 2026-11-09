@@ -3,9 +3,9 @@ import { hueStyle } from '../../lib/tone';
 import { pressable } from '../../utils/a11y';
 import '../../styles/sheet-diary.css';
 
-// Общая оболочка шага мастера записи (схема / режим): полоска прогресса,
-// карточка с «Шаг N из M» и вопросом-заголовком. Один компонент на все
-// мастера дневников (правило «одна механика — один компонент»).
+// Общая оболочка шага мастера записи (схема / режим): полоска прогресса, «Шаг N из M» и
+// вопрос. Один компонент на все мастера дневников. 2026-11: шаг — на бумаге страницы без
+// карточки, цветная бумага — у листа-героя (APP_2026-11.md, принцип 4).
 
 export function DiaryTicks({ filled, active, hue, onJump }: {
   filled: boolean[]; active: number; hue: number | undefined; onJump: (i: number) => void;
@@ -25,36 +25,36 @@ export function DiaryStepCard({ hue, stepIdx, total, required, filled, filledCou
   filled: boolean; filledCount: number; children: ReactNode;
 }) {
   return (
-    <div className={'ds-card sd-step' + (filled ? ' is-filled' : '')} style={hueStyle(hue)}>
+    <section className={'sd-step' + (filled ? ' is-filled' : '')} style={hueStyle(hue)}>
       <div className="sd-step-head">
-        <span className="ds-eyebrow tone-text">Шаг {stepIdx + 1} из {total}</span>
+        <span className="ds-label sd-step-n">Шаг {stepIdx + 1} из {total}</span>
         <span className={'sd-step-flag' + (required ? ' is-required' : '')}>
           {required ? '· обязательно' : '· можно пропустить'}
         </span>
         <span className="sd-step-count">{filledCount} / {total} заполнено</span>
       </div>
       {children}
-    </div>
+    </section>
   );
 }
 
 export function DiaryStepQ({ id, title, hint }: { id?: string; title: ReactNode; hint?: ReactNode }) {
   return (
     <>
-      <h2 id={id} className="ds-h2">{title}</h2>
-      {hint && <div className="ds-sub sd-step-hint">{hint}</div>}
+      <h2 id={id} className="sd-step-q">{title}</h2>
+      {hint && <div className="sd-step-hint">{hint}</div>}
     </>
   );
 }
 
-/** Боковая подсказка листа записи: карточка в тоне записи. */
+/** Подсказка листа записи: белый лист со сдвинутым слоем бумаги записи, без контура и тинта. */
 export function DiaryAside({ hue, eyebrow, title, children }: {
   hue: number | undefined; eyebrow: string; title: ReactNode; children: ReactNode;
 }) {
   return (
-    <div className="ds-card sd-aside tone-soft" style={hueStyle(hue)}>
-      <div className="ds-eyebrow tone-text">{eyebrow}</div>
-      <h3 className="ds-h3">{title}</h3>
+    <div className="sd-aside" style={hueStyle(hue)}>
+      <div className="ds-label sd-aside-label">{eyebrow}</div>
+      <h3 className="sd-aside-title">{title}</h3>
       {children}
     </div>
   );
