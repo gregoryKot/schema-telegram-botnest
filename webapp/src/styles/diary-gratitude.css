@@ -1,7 +1,55 @@
-/* Дневник благодарности (GratitudeEntrySheet). Подключается сборником sheet-diary.css. */
+/* Дневник благодарности (GratitudeEntrySheet, GratitudeLoadState). Подключается сборником sheet-diary.css.
+   Редизайн 2026-11 (APP_2026-11.md, b10a): тетрадь — белый лист на бирюзе благодарности (--h с
+   .sd-grat), тень сплошным сдвинутым слоем, строки 01–05 через линейку, поля без рамок. */
 /* ── Благодарность ────────────────────────────────────────────────────── */
-.sd-grat { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-.sd-grat-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 14px; }
-.sd-grat-row.is-filled { border-color: oklch(0.8 0.07 var(--h)); }
-.sd-grat-num { font-size: 28px; color: oklch(0.58 0.12 var(--h)); padding-top: 6px; }
+.sd-grat { display: flex; flex-direction: column; gap: 16px; }
+.sd-grat-sheet {
+  display: flex; flex-direction: column; box-sizing: border-box;
+  padding: 4px 22px 6px; border-radius: 18px; background: var(--surface);
+  box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h));
+}
+.sd-grat-row {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; column-gap: 12px;
+  padding: 12px 0 10px; border-bottom: 1px solid var(--paper-sunk);
+}
+/* Строка в фокусе — линейка под ней становится акцентом в два пикселя (поле без рамки). */
+.sd-grat-row:focus-within { border-bottom-color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); }
+.sd-grat-row--skel { align-items: center; min-height: 52px; padding: 0; }
+.sd-grat-num {
+  padding-top: 5px; font: 400 26px/1.1 var(--serif); font-variant-numeric: tabular-nums;
+  color: oklch(0.47 0.07 var(--h));
+}
 .sd-grat-field { min-width: 0; }
+.sd-grat-sheet .sd-grat-field .ds-textarea {
+  min-height: 2.9em; padding: 8px 0 6px; border: none; border-radius: 0; background: transparent;
+  font: 17px/1.5 var(--serif); color: var(--text);
+}
+.sd-grat-sheet .sd-grat-field .ds-textarea:focus { outline: none; }
+.sd-grat-sheet .sd-grat-field .ds-textarea::placeholder { color: var(--text-faint); }
+/* «Добавить ещё пункт» — строкой тетради: «+» в колонке номеров, тихая подпись. */
+.sd-grat-add {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; column-gap: 12px;
+  min-height: 52px; padding: 0; border: none; background: none; cursor: pointer; text-align: left;
+  font: 600 14px var(--sans); color: var(--text-sub);
+}
+.sd-grat-add:hover { color: var(--text); }
+.sd-grat-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.sd-grat-add-glyph { display: inline-flex; justify-content: center; color: oklch(0.47 0.07 var(--h)); }
+.sd-grat-error { margin-top: 12px; }
+.sd-grat-it { font-style: italic; }
+/* Знак-герой Pebbles filled: камешек, который ещё не лёг, — пустое место без тени-вырезки
+   (иначе пустой день читался тремя бирюзовыми камешками). */
+.sd-grat-pebbles > .pp-art:first-child [data-laid="no"] { fill-opacity: 0; }
+/* Разворот уже 1024: «Почему это работает» — после тетради, а не между листом и первым полем
+   (на 390 шапка до поля — не выше ~230px, принцип 5). Колонка листа растворяется в общей ленте
+   разворота, подсказка уходит в её конец. */
+@media (max-width: 1023px) {
+  .ex2-body--spread:has(.sd-grat) .pa-spread-side { display: contents; }
+  .ex2-body--spread:has(.sd-grat) .ex2-aside { order: 1; }
+}
+@media (max-width: 767px) {
+  .sd-grat-sheet { padding: 2px 16px 4px; box-shadow: 5px 6px 0 oklch(0.86 0.045 var(--h)); }
+  .sd-grat-row, .sd-grat-add { grid-template-columns: 34px minmax(0, 1fr); column-gap: 10px; }
+  .sd-grat-num { font-size: 23px; }
+  .sd-grat-sheet .sd-grat-field .ds-textarea { font-size: 16px; }
+}

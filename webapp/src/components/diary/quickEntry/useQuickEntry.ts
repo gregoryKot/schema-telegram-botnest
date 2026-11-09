@@ -4,7 +4,7 @@ import { haptic } from '../../../haptic';
 import { todayStr } from '../../../utils/format';
 import { clearQuickDraft, loadQuickDraft, saveQuickDraft } from '../../../../../shared/src/utils/quickDraft';
 import {
-  appendGratitudeItem, modeEntryInput, quickSaveTag, schemaEntryInput, type QuickTag,
+  appendGratitudeItem, modeEntryInput, quickSaveTag, schemaEntryInput, type QuickSaved, type QuickTag,
 } from './quickEntryModel';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';
 import { noteCrisisSeen } from '../../../../../shared/src/therapy/bridge/therapyBridgeState';
@@ -28,11 +28,14 @@ export function useQuickEntry(onSaved?: () => void) {
   const [error, setError] = useState<QuickError | null>(null);
   // Кризисный текст виден и после очистки поля: карточка остаётся на экране «Записано».
   const [crisis, setCrisis] = useState(false);
+  // Что легло — лист «Записано» берёт вид по типу записи (и сцену из её данных).
+  const [saved, setSaved] = useState<QuickSaved>({ tag: 'thought' });
 
   useEffect(() => { saveQuickDraft(text); }, [text]);
 
-  const finish = (savedTag: QuickTag, detailed: boolean) => {
+  const finish = (savedTag: QuickTag, detailed: boolean, data: Omit<QuickSaved, 'tag'> = {}) => {
     const hasCrisis = detectCrisisAny(text);
+    setSaved({ tag: savedTag, ...data });
     setCrisis(hasCrisis);
     if (hasCrisis) noteCrisisSeen();
     clearQuickDraft();
@@ -42,14 +45,14 @@ export function useQuickEntry(onSaved?: () => void) {
     onSaved?.();
   };
 
-  const run = async (work: () => Promise<unknown>, savedTag: QuickTag = tag) => {
+  const run = async (work: () => Promise<Omit<QuickSaved, 'tag'> | void>, savedTag: QuickTag = tag) => {
     if (saving || !text.trim()) return;
     setSaving(true);
     setError(null);
     haptic.success();
     try {
-      await work();
-      finish(savedTag, false);
+      const data = await work();
+      finish(savedTag, false, data ?? {});
     } catch (e) {
       haptic.error();
       // 409 unreadable_data: прежние пункты дня не читаются — повтор не поможет, «проверь связь» соврёт.
@@ -67,10 +70,13 @@ export function useQuickEntry(onSaved?: () => void) {
     const items = appendGratitudeItem(base, text);
     if (!items) throw new GratitudeFullError();
     await api.createGratitudeDiary(date, items, base);
+    return { gratitudeCount: items.length };
   };
 
-  const saveSchema = (ids: string[]) => run(() => api.createSchemaDiary(schemaEntryInput(text, ids)), quickSaveTag(tag, ids));
-  const saveMode = (modeId: string) => run(() => api.createModeDiary(modeEntryInput(text, modeId)));
+  const saveSchema = (ids: string[]) =>
+    run(async () => { await api.createSchemaDiary(schemaEntryInput(text, ids)); }, quickSaveTag(tag, ids));
+  const saveMode = (modeId: string) =>
+    run(async () => { await api.createModeDiary(modeEntryInput(text, modeId)); return { modeId }; });
 
   /** «Сохранить» на первом экране: мысль и благодарность уходят сразу, схема и режим — на второй экран. */
   const submit = () => {
@@ -84,7 +90,7 @@ export function useQuickEntry(onSaved?: () => void) {
   const restart = () => { setTag('thought'); setError(null); setStage('write'); };
 
   return {
-    text, setText, tag, setTag, stage, setStage, saving, error, setError, crisis,
+    text, setText, tag, setTag, stage, setStage, saving, error, setError, crisis, saved,
     submit, saveSchema, saveMode, finish, restart,
   };
 }

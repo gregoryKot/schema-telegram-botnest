@@ -313,3 +313,39 @@ describe('QuickEntrySheet — «Заполнить подробно»', () => {
     await waitFor(() => expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Передумал'));
   });
 });
+
+// b10a (2026-11): «Записано» — лист по типу записи (ENTITY_LOOK), сцена — из сохранённых данных.
+describe('QuickEntrySheet — «Записано» по типу записи', () => {
+  const done = () => document.querySelector('.pa-done') as HTMLElement;
+  const paper = () => (document.querySelector('.pa-done-sheet') as HTMLElement).style.getPropertyValue('--h');
+
+  it('мысль — лист быстрой записи на персике', async () => {
+    setup();
+    type('Опять промолчал');
+    await press('Сохранить');
+    expect(done().getAttribute('data-entity')).toBe('diary');
+    expect(paper()).toBe('45');
+  });
+
+  it('режим — бумага группы выбранного режима (детские — глина)', async () => {
+    setup();
+    type('Накричал на ребёнка');
+    tag('Режим');
+    await press('Дальше');
+    fireEvent.click(screen.getByText('Знаю режим – выбрать из списка'));
+    await act(async () => { fireEvent.click(screen.getByText('Уязвимый Ребёнок')); });
+    expect(done().getAttribute('data-entity')).toBe('diary_mode');
+    expect(paper()).toBe('28');
+  });
+
+  it('благодарность — на листе легло столько камешков, сколько пунктов за день', async () => {
+    m.getGratitudeDiary.mockResolvedValue([{ id: 1, date: todayStr(), items: ['Чай'] }]);
+    setup();
+    type('Солнце');
+    tag('Благодарность');
+    await press('Сохранить');
+    expect(done().getAttribute('data-entity')).toBe('gratitude');
+    // Два пункта за день: два камешка на листе, третий ждёт на земле.
+    expect(done().querySelectorAll('ellipse[data-laid="no"]')).toHaveLength(1);
+  });
+});
