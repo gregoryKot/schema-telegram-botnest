@@ -5,7 +5,11 @@ import { useSetAddressForm } from '../utils/addressForm';
 import { useAddressFormChoice } from '../../../shared/src/settings/useAddressFormChoice';
 import { shouldAskAddressForm, markAddressFormAsked } from '../../../shared/src/settings/addressFormPrompt';
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { hueStyle } from '../lib/tone';
 import { Dialog } from './Dialog';
+import { EntryBrand, EntryHead } from './paper/EntryHead';
+import { PaperAlert } from './paper/PaperAlert';
+import { ADDRESS_FORM_HUE, ENTRY_HUE } from './paper/entryLook';
 
 /**
  * Выбор обращения («ты»/«вы») при первом входе — пока addressForm в настройках null.
@@ -54,33 +58,26 @@ function AddressFormPickerModal({ onClose }: { onClose: (answered: boolean) => v
   const navType = useNavigationType();
   const goBack = useHistorySheet(() => onClose(navType === 'POP'));
   // onSaved — тот же goBack, что у «Назад» браузера (CLAUDE.md: после сохранения — goBack()).
-  const { failed, choose } = useAddressFormChoice(
-    setForm,
-    api.updateSettings,
-    reportClientError,
-    goBack,
-  );
+  const { failed, choose } = useAddressFormChoice(setForm, api.updateSettings, reportClientError, goBack);
 
+  // Первый вопрос продукта: шапка-лист персика со знаком продукта («это мы»), два равных ответа —
+  // плитки бумаги без заливки: до выбора ни один не выглядит выбранным (кольца автофокуса нет — Dialog).
   return (
-    <Dialog label="Как удобнее общаться?" zIndex={300} onEscape={() => goBack()}>
-      <h2 className="dialog-title">Как удобнее общаться?</h2>
-      <p className="dialog-text" style={{ marginBottom: 20 }}>
-        Поменять можно в любой момент в настройках.
-      </p>
-      <div className="dialog-actions" style={{ marginBottom: 10 }}>
-        <button className="ds-btn" onClick={() => choose('ty')}>
+    <Dialog label="Как удобнее общаться?" zIndex={300} onEscape={() => goBack()} maxWidth={480}>
+      <EntryHead look={{ hue: ENTRY_HUE }} art={<EntryBrand />} title="Как удобнее общаться?" />
+      <p className="sk-dialog-text ef-note">Поменять можно в любой момент в настройках.</p>
+      <div className="ef-forms">
+        <button type="button" className="pp-paper ef-form" style={hueStyle(ADDRESS_FORM_HUE.ty)} onClick={() => choose('ty')}>
           На «ты»
         </button>
-        <button className="ds-btn ds-btn--secondary" onClick={() => choose('vy')}>
+        <button type="button" className="pp-paper ef-form" style={hueStyle(ADDRESS_FORM_HUE.vy)} onClick={() => choose('vy')}>
           На «вы»
         </button>
       </div>
       {failed && (
-        <div className="dialog-error">
-          Не удалось сохранить выбор. Проверить соединение и попробовать ещё раз — или «Позже».
-        </div>
+        <PaperAlert className="ef-alert" title="Не удалось сохранить выбор." text="Проверить соединение и попробовать ещё раз — или «Позже»." />
       )}
-      <button className="dialog-link" onClick={goBack}>
+      <button type="button" className="ds-link ef-later" onClick={goBack}>
         Позже
       </button>
     </Dialog>

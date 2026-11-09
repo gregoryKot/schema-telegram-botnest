@@ -1,4 +1,79 @@
-/* Входы в кабинет из мессенджера: экран согласий и согласие на присоединение. */
+/* Входы в кабинет из мессенджера (редизайн 2026-11, docs/design/APP_2026-11.md, b06-entry): выбор
+   формы обращения, три шага согласий, приглашения терапевта и пары, «Поддержать проект». Каркас один —
+   окно (Dialog) с шапкой-листом цветной бумаги (EntryHead → EntitySheet): лист во всю ширину окна,
+   знак сущности в углу, текст и кнопки — на белом под ним. Глубина — сплошным слоем, без blur.
+   Правила против классов pa- и ds- — на два класса и больше: paper-app.css может встать в сборке позже. */
+
+/* ── Окно с шапкой-листом ────────────────────────────────────────────────── */
+/* Окно отдаёт шапке поле сверху и по бокам: лист встаёт от края до края, его надпись — по той же
+   левой линии, что текст окна (--ef-pad). Подложка на телефоне уже — окну 358px, а не 342. */
+.sk-dialog-backdrop:has(> .sk-dialog-box > .ef-head) { padding: 16px; }
+.sk-dialog-box:has(> .ef-head) { --ef-pad: 22px; padding: 0 var(--ef-pad) 20px; }
+.ef-head { margin: 0 calc(-1 * var(--ef-pad)) 18px; }
+.ef-head > .pa-sheet.ef-head-sheet { border-radius: 0; padding: 18px var(--ef-pad) 18px; }
+.ef-head .pa-sheet.ef-head-sheet .pa-sheet-title { font-size: 25px; }
+@container pa-sheet (min-width: 400px) {
+  .ef-head .pa-sheet.ef-head-sheet .pa-sheet-title { font-size: 28px; }
+}
+/* Лист без надписи (шапка окна, «Держи под рукой»): на узком листе заголовок — рядом со знаком, на
+   его строке, а не под ним (иначе слева от знака пустая строка высотой в знак). */
+@container pa-sheet (max-width: 440px) {
+  .pa-sheet.ef-bare:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { grid-column: 1; grid-row: 1; align-self: center; margin-top: 0; }
+}
+.ef-head .pa-sheet.ef-head-sheet .pa-sheet-sub { color: var(--text); font-weight: 600; font-size: 14px; }
+/* Две кнопки не влезают в строку (320: «Присоединиться») — главная встаёт сверху во всю ширину,
+   вторая под ней, а не вылезает за край окна. */
+.sk-dialog-box:has(> .ef-head) > .sk-dialog-actions { flex-wrap: wrap-reverse; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .sk-dialog-backdrop:has(> .sk-dialog-box > .ef-head) { padding: 24px; }
+  .sk-dialog-box:has(> .ef-head) { --ef-pad: 30px; padding-bottom: 26px; }
+  .ef-head { margin-bottom: 22px; }
+  .ef-head > .pa-sheet.ef-head-sheet { padding: 24px var(--ef-pad) 24px; }
+}
+
+/* Сцена во всю ширину над надписью (приветствие) и наклейка на ней. */
+.ef-head-scene { position: relative; display: flex; justify-content: center; border-radius: 0; padding: 18px var(--ef-pad) 0; }
+.ef-head-scene-art { width: min(100%, 340px); }
+.ef-head-scene + .pa-sheet.ef-head-sheet { padding-top: 10px; }
+.ef-sticker {
+  position: absolute; top: 14px; left: calc(var(--ef-pad) - 4px); padding: 5px 10px; border-radius: 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; line-height: 1.2; color: var(--accent);
+  background: var(--surface); box-shadow: 3px 4px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-4deg);
+}
+
+/* Шаги потока — бумажки их оттенков перед «Шаг 1 из 3». */
+.ef-steps { display: inline-flex; gap: 5px; margin-right: 10px; vertical-align: -1px; }
+.ef-steps > i { width: 11px; height: 11px; border-radius: 3px; background: oklch(0.95 0.015 var(--h)); box-shadow: inset 0 0 0 1.5px oklch(0.78 0.05 var(--h)); }
+.ef-steps > i.is-done { background: oklch(0.78 0.07 var(--h)); box-shadow: none; }
+.ef-steps > i.is-on { background: oklch(0.66 0.1 var(--h)); box-shadow: none; transform: rotate(-10deg) scale(1.2); }
+
+/* Знак продукта плиткой — значок приложения на листе (выбор формы обращения, «Поддержать проект»,
+   «Держи под рукой»). */
+.ef-brand { position: relative; display: inline-flex; border-radius: 15px; box-shadow: 5px 6px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-5deg); }
+.ef-brand > svg { width: 100%; height: auto; max-width: 64px; }
+
+/* Картинка в углу листа лежит на втором листе тоном глубже, под углом — как знак исхода в полосе
+   PaperOutcome: знак строчного масштаба на большом листе иначе терялся. Знак крупнее, чем в
+   листе-герое потока (72): в окне он — единственная картинка. */
+.pa-sheet.ef-art > .pa-sheet-art { position: relative; }
+.pa-sheet.ef-art > .pa-sheet-art::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 74%; aspect-ratio: 1; border-radius: 18%;
+  background: oklch(0.875 0.04 var(--h)); transform: translate(-50%, -50%) rotate(8deg);
+}
+@container pa-sheet (max-width: 440px) {
+  .pa-sheet.ef-art[data-sign] > .pa-sheet-art { width: 88px; }
+  .pa-sheet.ef-art.pa-sheet--scene > .pa-sheet-art { width: 92px; padding: 6px 0; }
+}
+/* 320 и 360 (контейнер — поле содержимого листа: на 390 оно 312, на 360 — 282): «конфиденциальность»
+   и «Присоединиться» рядом со знаком не влезали в строку — кегль и знак меньше, длинное слово
+   переносится по слогам (lang="ru"). Окно на компьютере (поле 418 и шире) — кегль 28. */
+@container pa-sheet (max-width: 290px) {
+  .ef-head .pa-sheet.ef-head-sheet .pa-sheet-title { font-size: 22px; hyphens: auto; }
+  .pa-sheet.ef-art.ef-bare[data-sign] > .pa-sheet-art { width: 66px; }
+  .pa-sheet.ef-art.ef-bare.pa-sheet--scene > .pa-sheet-art { width: 76px; }
+}
+
+/* ── Согласия: текст прокручивается, галочка и кнопки стоят ──────────────── */
 .ef-consent-text p { margin: 0 0 12px; }
 .ef-consent-text p:last-child { margin-bottom: 0; }
 /* Низкий экран (390×664, 360×640): галочка и «Далее» уходили за край окна, и согласие нельзя было дать, не
@@ -7,15 +82,32 @@
 .sk-dialog-box:has(> .ef-consent-text) { display: flex; flex-direction: column; max-height: min(90vh, calc(100dvh - 32px)); }
 /* Сжимается только текст: у галочки свой min-height, и без flex-shrink: 0 она сплющивалась под кнопки. */
 .sk-dialog-box:has(> .ef-consent-text) > :not(.ef-consent-text) { flex-shrink: 0; }
-.sk-dialog-box:has(> .ef-consent-text) > .ef-beta { align-self: flex-start; }
 .sk-dialog-box > .ef-consent-text {
   flex: 1 1 auto; min-height: 80px; overflow-y: auto; overscroll-behavior: contain;
   background:
     linear-gradient(transparent, var(--surface) 60%) bottom / 100% 24px no-repeat local,
     linear-gradient(to top, rgba(var(--fg-rgb), 0.12), transparent) bottom / 100% 10px no-repeat scroll;
 }
-.ef-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; margin: 0 0 16px; cursor: pointer; font-size: 14px; line-height: 1.55; color: var(--text); }
-.ef-check input { flex-shrink: 0; width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--accent); cursor: pointer; }
-.ef-hint { margin: 0 0 16px; font-size: 13px; line-height: 1.5; color: var(--accent-orange); }
-.ef-error { margin: 0 0 16px; font-size: 14px; line-height: 1.55; color: var(--accent-red); }
-.ef-beta { display: inline-block; margin: 0 0 16px; padding: 3px 12px; border-radius: var(--r-20); font-size: 11px; font-weight: 700; letter-spacing: .1em; color: var(--warn-ink); background: color-mix(in srgb, var(--accent-yellow) 14%, transparent); }
+.sk-dialog-box > .ef-consent-text + .ds-link { margin-top: 10px; align-self: flex-start; }
+/* Галочка — главное действие шага: плашка бумаги шага, как его шапка. */
+.ef-check {
+  display: flex; align-items: flex-start; gap: 12px; min-height: 44px; margin: 14px 0 16px; padding: 14px 16px;
+  border-radius: 16px; cursor: pointer; font-size: 14px; line-height: 1.5; color: var(--text);
+}
+.ef-check input { flex-shrink: 0; width: 22px; height: 22px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.ef-hint { margin: 0 0 14px; font-size: 13px; line-height: 1.5; color: var(--accent-orange); }
+.pa-alert.ef-alert { margin: 0 0 14px; }
+
+/* ── «Как удобнее общаться?» — две равные плитки бумаги ─────────────────── */
+.ef-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 14px; }
+.ef-form.pp-paper {
+  display: flex; align-items: flex-end; min-height: 84px; padding: 14px 16px; border: 0; border-radius: 18px;
+  font: 400 23px/1.1 var(--serif); color: var(--text); text-align: left; cursor: pointer;
+  box-shadow: 4px 5px 0 oklch(0.84 0.045 var(--h)); transition: transform .12s ease, box-shadow .12s ease;
+}
+.ef-form.pp-paper:hover { background: oklch(0.89 0.04 var(--h)); }
+.ef-form.pp-paper:active { transform: translate(2px, 3px); box-shadow: 2px 2px 0 oklch(0.84 0.045 var(--h)); }
+@media (prefers-reduced-motion: reduce) { .ef-form.pp-paper { transition: none; } }
+@media (max-width: 359px) { .ef-form.pp-paper { min-height: 72px; padding: 12px 14px; font-size: 20px; } }
+.sk-dialog-text.ef-note { margin-bottom: 16px; }
+.ef-later.ds-link { display: block; width: 100%; min-height: 44px; color: var(--text-sub); font-weight: 500; }
