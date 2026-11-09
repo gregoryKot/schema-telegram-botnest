@@ -32,4 +32,12 @@ describe('fmtIndexDelta', () => {
     expect(fmtIndexDelta(-1.46)).toBe('−1,5');
     expect(fmtIndexDelta(0)).toBe('+0,0');
   });
+
+  // Ревью g2 r4: знак брался от неокруглённой разницы — −0,04 давало «−0,0 к предыдущей неделе».
+  it('знак — по разнице, округлённой до десятых: около нуля — «+0,0», без «−0,0»', () => {
+    expect(fmtIndexDelta(-0.04)).toBe('+0,0');
+    expect(fmtIndexDelta(0.04)).toBe('+0,0');
+    expect(fmtIndexDelta(-0.05)).toBe('−0,1');
+    expect(fmtIndexDelta(-0.06)).toBe('−0,1');
+  });
 });

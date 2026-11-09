@@ -37,6 +37,17 @@ describe('needTrend', () => {
     expect(needTrend([8, 8, 8, 4, 4, 4])!.diffText).toBeNull();
   });
 
+  // Ревью g2 r4: «сейчас» в строке детства — три самых новых дня с оценкой (как в main), а не вся неделя:
+  // на неделе 2,2,2,6,6,6,6 лист писал «↓ Падает» и тут же «сейчас 4,3 ↑» над детством 2.
+  it('«сейчас» — среднее до трёх самых новых дней недели с оценкой; пропуски не считаются', () => {
+    expect(needTrend([2, 2, 2, 6, 6, 6, 6])).toMatchObject({
+      dir: 'down',
+      recentAvg: 2,
+    });
+    expect(needTrend([0, 8, 0, 7, 8, 1, 1])!.recentAvg).toBeCloseTo(23 / 3);
+    expect(needTrend([0, 0, 5])!.recentAvg).toBe(5);
+  });
+
   it('один день — стабильно и без «+0,0»; в неделе нет оценок — null, а не нули', () => {
     expect(needTrend([6])).toMatchObject({
       dir: 'flat',

@@ -1,38 +1,132 @@
-// Вопрос трекера на телефоне: все пять ответов — на первом экране (ревью g2 r3,
-// docs/design/APP_2026-11.md, раздел b07, принцип 5).
+// Вопрос трекера на телефоне (ревью g2, docs/design/APP_2026-11.md, раздел b07, принцип 5).
 //
-// Лист потребности над вопросом вырос до 241px (знак отдельным рядом над
-// названием), и на 390×844 «Полностью» уходил под сгиб (низ ≈ 892), а в
-// Telegram со своей шапкой — две верхние ступени шкалы. Высоту считает только
-// браузер (jsdom CSS не исполняет), поэтому замер — здесь, на прод-сборке.
-// Раскладка — webapp/src/styles/tracker-question.css (≤560px).
-import { test, expect } from './support/test';
+// 1) Все пять ответов — на первом экране 390×844. Лист потребности над вопросом
+//    вырос до 241px, и «Полностью» уходил под сгиб (низ ≈ 892). Круг 4: меряем
+//    каждый из пяти вопросов, а не только первый — у «Автономии», «Границ» и
+//    «Выражения чувств» запас был 3–8px, и строчка в описании молча вернула бы
+//    пятый ответ под сгиб. Отдельно — первый показ, со строкой «откуда это».
+// 2) Верхняя полоса помещается в узкий телефон: на 360 «Пропустить» вылезал за
+//    край окна (круг 1 поднял поле полосы до 12px), на 320 полоска текущей точки
+//    наезжала на «Закрыть» (круг 4).
+// Высоту и ширину считает только браузер (jsdom CSS не исполняет), поэтому
+// замер — здесь, на прод-сборке. Раскладка — webapp/src/styles/tracker-question.css.
+import { test, expect, type Page } from './support/test';
 
-// Обычный вопрос (не первый раз: строки «откуда это» над листом нет).
 const PHONE = { width: 390, height: 844, fold: 830 };
 
-test(`вопрос трекера ${PHONE.width}×${PHONE.height}: пятый ответ выше ${PHONE.fold}`, async ({
-  page,
-}) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('tracker_onboarding_v1', '1');
-  });
-  await page.setViewportSize({ width: PHONE.width, height: PHONE.height });
+async function openTracker(page: Page, { seen = true } = {}) {
+  if (seen) {
+    await page.addInitScript(() => {
+      localStorage.setItem('tracker_onboarding_v1', '1');
+    });
+  }
   await page.goto('/today');
   // На чистом аккаунте сам открывается лист «Зачем это всё» — закрываем его.
   await page.getByRole('button', { name: 'Понятно, начнём' }).click();
   await page.getByRole('button', { name: /^Трекер/ }).click();
-  const answers = page.locator('.tk2-overlay .tq-ask').getByRole('button', {
-    name: / из 10$/,
-  });
-  await expect(answers).toHaveCount(5);
   await page.evaluate(() => document.fonts.ready);
+}
 
+/** Низ пятого ответа текущего вопроса и высота листа потребности над ним. */
+async function fifthAnswerBottom(page: Page) {
+  const answers = page
+    .locator('.tk2-overlay .tq-ask')
+    .getByRole('button', { name: / из 10$/ });
+  await expect(answers).toHaveCount(5);
   const sheet = await page.locator('.tq-sheet').boundingBox();
   const last = await answers.nth(4).boundingBox();
   expect(last, 'пятый ответ не найден').not.toBeNull();
-  expect(
-    last!.y + last!.height,
-    `низ пятого ответа под сгибом (лист потребности ${Math.round(sheet?.height ?? 0)}px)`,
-  ).toBeLessThanOrEqual(PHONE.fold);
+  return {
+    bottom: last!.y + last!.height,
+    sheet: Math.round(sheet?.height ?? 0),
+  };
+}
+
+test(`вопрос трекера ${PHONE.width}×${PHONE.height}: у каждого из пяти вопросов пятый ответ выше ${PHONE.fold}`, async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: PHONE.width, height: PHONE.height });
+  await openTracker(page);
+  const dots = page.locator('.tk2-overlay .tq-dot-hit');
+  await expect(dots).toHaveCount(5);
+  for (let i = 0; i < 5; i++) {
+    await expect(dots.nth(i)).toHaveAttribute('aria-current', 'step');
+    const need = await dots.nth(i).getAttribute('aria-label');
+    const { bottom, sheet } = await fifthAnswerBottom(page);
+    expect(
+      bottom,
+      `«${need}»: низ пятого ответа под сгибом (лист потребности ${sheet}px)`,
+    ).toBeLessThanOrEqual(PHONE.fold);
+    if (i < 4) await page.getByRole('button', { name: 'Пропустить' }).click();
+  }
 });
+
+// Первый показ — осознанное исключение из запаса 830 (раздел b07, «Не сделано»): строка «откуда это»
+// в три строки над листом; ужата до ~841 (было 855, в main 928), дальше — только короче сам текст.
+// Держим «все пять ответов в окне».
+test(`первый показ ${PHONE.width}×${PHONE.height}: со строкой «откуда это» пятый ответ в окне`, async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: PHONE.width, height: PHONE.height });
+  await openTracker(page, { seen: false });
+  await expect(page.locator('.tq-note')).toBeVisible();
+  const { bottom, sheet } = await fifthAnswerBottom(page);
+  expect(
+    bottom,
+    `низ пятого ответа за окном (лист потребности ${sheet}px, над ним «откуда это»)`,
+  ).toBeLessThanOrEqual(PHONE.height);
+});
+
+/** Прямоугольники полосы: «Закрыть» и «Пропустить» (кнопка и сам текст), полоска текущей точки. */
+async function barRects(page: Page) {
+  return page.evaluate(() => {
+    const bar = document.querySelector('.tk2-overlay .tq-bar') as HTMLElement;
+    const box = (r: DOMRect) => ({ left: r.left, right: r.right });
+    const text = (el: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return box(range.getBoundingClientRect());
+    };
+    const close = bar.querySelector(':scope > .tq-bar-btn')!;
+    const skip = bar.querySelector('.tq-skip')!;
+    return {
+      innerWidth,
+      scrollWidth: bar.scrollWidth,
+      clientWidth: bar.clientWidth,
+      closeText: text(close),
+      skipBtn: box(skip.getBoundingClientRect()),
+      skipText: text(skip),
+      pill: box(
+        bar.querySelector('.tq-dot.is-current')!.getBoundingClientRect(),
+      ),
+    };
+  });
+}
+
+for (const vp of [
+  { width: 360, height: 640 },
+  { width: 320, height: 568 },
+]) {
+  test(`шапка вопроса ${vp.width}×${vp.height}: «Закрыть», точки и «Пропустить» в окне, не наезжают`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(vp);
+    await openTracker(page);
+    await expect(page.locator('.tk2-overlay .tq-dot.is-current')).toBeVisible();
+    const m = await barRects(page);
+    expect(m.scrollWidth, 'полоса шире окна').toBeLessThanOrEqual(
+      m.clientWidth,
+    );
+    expect(m.skipText.right, '«Пропустить» за краем окна').toBeLessThanOrEqual(
+      m.innerWidth,
+    );
+    expect(
+      m.skipText.right,
+      '«Пропустить» вылезает из своей кнопки',
+    ).toBeLessThanOrEqual(m.skipBtn.right + 0.5);
+    expect(
+      m.pill.left,
+      'полоска текущей точки наезжает на «Закрыть»',
+    ).toBeGreaterThanOrEqual(m.closeText.right);
+  });
+}

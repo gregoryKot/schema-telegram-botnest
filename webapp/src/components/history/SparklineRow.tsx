@@ -10,7 +10,9 @@ interface Props {
   /** Окно «За N дней» (weekWindow): выбранный день первым. */
   need: Need; days: DayHistory[]; selectedRatings: Record<string, number>; onClick?: () => void;
 }
-/** «Потребность — линия — оценка и стрелка»: строка на телефоне, карточка на бумаге потребности с 768; цвет — needInk.ts. */
+/** Пути одной линии (sparklineGeometry): заливка, мостики через пропуск, линия, одиночные дни точками. */
+const PATHS = [['area', 'sd-spark-area'], ['gaps', 'sd-spark-gap'], ['line', 'sd-spark-line'], ['singles', 'sd-spark-pts']] as const;
+/** «Потребность — линия — оценка»: строка на телефоне, карточка с 768; цвет — needInk.ts; маркер дня — HTML (в svg круг сплющивался). */
 export function SparklineRow({ need, days, selectedRatings, onClick }: Props) {
   const g = sparklineGeometry(days, need.id);
   const score = selectedRatings[need.id] ?? 0;
@@ -21,11 +23,9 @@ export function SparklineRow({ need, days, selectedRatings, onClick }: Props) {
     <div className={'ds-list-row sd-spark-row' + (onClick ? ' ds-list-row--hover' : '')}
       style={{ ...hueStyle(NEED_HUE[need.id as NeedId]), ...inkVars(need.id) } as CSSProperties} {...(onClick ? pressable(onClick) : {})}>
       <span className="sd-spark-name"><NeedArt id={need.id} size="row" />{need.chartLabel}</span>
-      {/* Маркер — HTML поверх растянутого svg: в svg круг сплющивался в овал. */}
       <span className="sd-spark-plot">
         <svg className="sd-spark-svg" viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none">
-          <path d={g.area} className="sd-spark-area" />
-          <path d={g.line} className="sd-spark-line" />
+          {PATHS.map(([k, cls]) => <path key={k} d={g[k]} className={cls} />)}
         </svg>
         {g.dot && <span className="sd-spark-dot" style={{ left: `${g.dot.left}%`, top: `${g.dot.top}%` }} />}
       </span>

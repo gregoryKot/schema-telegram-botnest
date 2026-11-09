@@ -92,6 +92,10 @@
    страницы выходил серым (ревью g2). Линия — сам цвет данных. */
 .tk2-area { fill: oklch(0.915 0.03 var(--h)); fill: color-mix(in srgb, var(--nd) 22%, oklch(0.915 0.03 var(--h))); }
 .tk2-line { fill: none; stroke: var(--nd); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+/* Одиночный день — точкой 7px, через пропуск — тихий пунктир точками (не штрихом, как пунктир детства .tk2-ref;
+   как .sd-spark-pts/-gap «Недели», ревью g2 r4). */
+.tk2-pts { fill: none; stroke: var(--nd); stroke-width: 7; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.tk2-gap { fill: none; stroke: color-mix(in srgb, var(--nd) 45%, transparent); stroke-width: 2.5; stroke-dasharray: 0 6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .tk2-ref { stroke: var(--text-sub); stroke-opacity: .5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
 .tk2-ref-t { display: inline-flex; align-items: center; gap: 8px; margin: -8px 0 14px; font-size: 12px; color: var(--text-sub); }
 .tk2-ref-t::before { content: ''; width: 18px; border-top: 1.5px dashed var(--text-sub); }

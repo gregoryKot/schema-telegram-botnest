@@ -3,7 +3,7 @@
 // выбранным днём (не вся история), маркер — HTML поверх svg по процентам (в растянутом
 // preserveAspectRatio="none" круг сплющивался). День без оценки линию рвёт (sparkRuns.ts).
 import type { DayHistory } from '../types';
-import { runPath, runsArea, sparkRuns, type SparkPt } from './sparkRuns';
+import { sparkPaths, type SparkPaths, type SparkPt } from './sparkRuns';
 
 export const SPARK_W = 100;
 export const SPARK_H = 28;
@@ -23,12 +23,7 @@ export function weekWindow(
   return history.slice(selectedIdx, selectedIdx + days);
 }
 
-export interface SparklineGeometry {
-  /** Путь линии (`d`) и заливки под ней в координатах viewBox; пропуск рвёт оба. */
-  line: string;
-  area: string;
-  /** Сколько дней окна с оценкой нарисовано. */
-  count: number;
+export interface SparklineGeometry extends SparkPaths {
   /** Маркер выбранного дня в процентах; у дня без оценки маркера нет. */
   dot: { left: number; top: number } | null;
 }
@@ -48,12 +43,9 @@ export function sparklineGeometry(
     const v = d.ratings[needId] ?? 0;
     return v > 0 ? { x: xAt(i), y: sparkY(v) } : null;
   });
-  const runs = sparkRuns(pts);
   const last = pts[n - 1];
   return {
-    line: runs.map(runPath).join(' '),
-    area: runsArea(runs, SPARK_H),
-    count: runs.reduce((s, r) => s + r.length, 0),
+    ...sparkPaths(pts, SPARK_H),
     dot: last
       ? { left: (last.x / SPARK_W) * 100, top: (last.y / SPARK_H) * 100 }
       : null,

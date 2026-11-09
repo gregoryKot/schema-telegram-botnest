@@ -14,9 +14,18 @@
    общие с быстрой записью (QuickEntrySheet, .qe-sheet, b10a) — её край не трогаем, она берёт его в своей партии. */
 .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 20px; }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 12px; } }
+/* Узкий телефон: полоса — «Закрыть» 66 + точки 200 + «Пропустить» 86 = 352, в 360 с полем 12 не помещалась
+   («Пропустить» за краем окна, ревью g2 r4) — край main (4). Уже 360 — точки 36, подписи 13px без полей кнопки
+   (ширину ≥44 держит min-width): иначе на 320 «Пропустить» за краем, а полоска текущей точки на «Закрыть».
+   Сверка — e2e-browser/tracker-fit.spec.ts (360×640 и 320×568). */
+@media (max-width: 374px) { .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 4px; } }
+@media (max-width: 359px) {
+  .tk2-overlay:not(.qe-sheet) .tq-bar-btn { padding-inline: 0; font-size: 13px; }
+  .tk2-overlay:not(.qe-sheet) .tq-dot-hit { width: 36px; }
+}
 .tq-dots { display: flex; justify-content: center; }
-/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px; высота 44 держит
-   палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
+/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px (уже — 36, выше);
+   высота 44 держит палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
 .tq-dot-hit {
   width: 40px; height: 44px; padding: 0; background: none; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -67,14 +76,18 @@
   .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 34px; }
 }
 @container pa-sheet (max-width: 330px) { .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 26px; } }
+/* Телефон (≤560) и низкий экран (Safari на iPhone с панелями — 664, Chrome на Android — 640): вопрос плотнее,
+   чтобы ответы начинались на первом экране, а не за краем (QA мобильной версии 2026-11, З5). */
+@media (max-width: 560px), (max-height: 700px) and (max-width: 1023px) {
+  .tq-ask { padding-top: var(--space-12); }
+  .tq-ask .pa-spread { gap: var(--space-16); }
+  .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
+}
 /* Телефон (≤560): лист вопроса — полоса ~175px, а не герой ~243 (ревью g2 r3, принцип 5: шапка до первого ответа
    на 390 ≤ ~230). Знак (~55 по высоте) не держит свой ряд над названием, а стоит справа на два ряда — надпись
    и название; поля 16/20, «Например» без зазора над чертой. Цель — пятый ответ на 390×844 выше 830
    (e2e-browser/tracker-fit.spec.ts). Планшет и разворот — прежние правила выше. */
 @media (max-width: 560px) {
-  .tq-ask { padding-top: var(--space-12); }
-  .tq-ask .pa-spread { gap: var(--space-16); }
-  .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
   .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 8px; padding: 16px 20px 4px; }
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body { display: contents; }
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) .pa-sheet-label { grid-column: 1; grid-row: 1; align-self: end; }
@@ -88,6 +101,14 @@
     grid-column: 1 / -1; margin-top: 8px; font-size: 14.5px; line-height: 1.45;
   }
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-examples { grid-column: 1 / -1; margin-top: 2px; }
+  /* Ответы — поле 16, а не 20: подписи склеены glue (круг 4), и у «Выражения чувств» средняя уходила в третью
+     строку — «Полностью» 822 → 839, под сгиб; с полем 16 — снова 822. */
+  .tq-ask .ns-word { padding-inline: 16px; }
+  /* Первый показ: «откуда это» плотнее и ближе к листу — низ «Полностью» на 390×844 855 → ~841, в окне
+     (в main 928); до 830 — только короче сам текст (раздел b07, «Не сделано»). */
+  .tq-note, .tq-note-x { font-size: 13px; line-height: 1.4; }
+  .tq-note { margin-bottom: calc(-1 * var(--space-8)); }
+  .tq-note-x::after { inset: -13px -10px; } /* строка 18,2 + 26 — зона «Понятно» по-прежнему ≥44 */
 }
 /* Узкий телефон (поле листа ≤300 — окно ≤372): название 22, знак 88; ≤260 (окно 320) — название 20:
    «Привязанность» встаёт рядом со знаком, а не вылезает за край. */
@@ -103,14 +124,5 @@
   .tq-ask { max-width: none; padding: var(--space-40) var(--space-32) 56px; }
   .tq-question { font: 400 22px/1.35 var(--serif); letter-spacing: -0.005em; }
   .tq-ask .pa-spread-main { padding-top: var(--space-8); }
-}
-/* Низкий экран (Safari на iPhone с панелями — 664, Chrome на Android — 640): вопрос плотнее, чтобы ответы
-   начинались на первом экране, а не за краем (QA мобильной версии 2026-11, З5). */
-@media (max-height: 700px) and (max-width: 1023px) {
-  .tq-ask { padding-top: var(--space-12); }
-  .tq-ask { padding-top: var(--space-12); }
-  .tq-ask .pa-spread { gap: var(--space-16); }
-  .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
-  .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
 }
 .tq-more:focus-visible, .tq-btn:focus-visible, .tq-go-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

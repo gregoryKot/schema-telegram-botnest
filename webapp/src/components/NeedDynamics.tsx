@@ -11,7 +11,8 @@ import { glue } from '../../../shared/src/utils/typo';
  * на всю ширину цветом данных потребности (--nd), сравнение с детством строкой со знаком колеса
  * детства. Лежит на бумаге страницы под листом потребности (на компьютере — в левой колонке
  * разворота), а не в белой карточке сбоку. Данные — только реальные: нет детства — нет строки;
- * нет оценок в прошлой неделе — нет сравнения с ней; день без оценки линия пропускает.
+ * нет оценок в прошлой неделе — нет сравнения с ней; день без оценки линия пропускает (одиночный день —
+ * точкой, через пропуск — тихий мостик пунктиром).
  * Неделя — та же, что у строки «Недели» в истории: 7 дней, которые кончаются выбранным днём.
  */
 export function NeedDynamics({ needId, history, selectedIdx = 0, childhoodValue }: { needId: string; history: DayHistory[]; selectedIdx?: number; childhoodValue?: number }) {
@@ -20,19 +21,22 @@ export function NeedDynamics({ needId, history, selectedIdx = 0, childhoodValue 
   const trend = needTrend(week.map(score), weekWindow(history, selectedIdx + WEEK_DAYS, WEEK_DAYS).map(score));
   // Линия — та же геометрия и то же окно, что строка «Недели» в истории: одна кривая одной недели.
   const g = sparklineGeometry(week, needId);
-  const now = trend?.weekAvg ?? 0;
+  const now = trend?.recentAvg ?? 0; // три самых новых дня с оценкой, как в main (ревью g2 r4)
   const childY = childhoodValue === undefined ? null : sparkY(childhoodValue);
   const chart = week.length > 1 && g.count > 0;
   return (
     <section className="tk2-dyn">
       <span className="ds-label">За 7 дней</span>
-      {trend && <div className="tk2-trend">{trend.label}</div>}
+      {/* Нет оценок в неделе — «—» под подписью, а не подпись над пустым местом. */}
+      <div className="tk2-trend">{trend?.label ?? '—'}</div>
       {trend?.diffText && <div className="tk2-trend-sub">{trend.diffText} к предыдущей неделе</div>}
       {chart && (
         <div className="tk2-chart-box">
           <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none" className="tk2-chart" aria-hidden="true">
             <path d={g.area} className="tk2-area" />
+            <path d={g.gaps} className="tk2-gap" />
             <path d={g.line} className="tk2-line" />
+            <path d={g.singles} className="tk2-pts" />
             {childY !== null && <line x1={0} y1={childY} x2={SPARK_W} y2={childY} className="tk2-ref" strokeWidth={1} />}
           </svg>
           {/* Точка — разметкой поверх: svg тянется по ширине (preserveAspectRatio="none"), круг в нём сплющивался. */}

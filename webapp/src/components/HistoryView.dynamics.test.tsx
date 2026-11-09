@@ -26,21 +26,26 @@ const history = (rate: (i: number) => number | null): DayHistory[] => Array.from
   return { date: `2020-01-${String(30 - i).padStart(2, '0')}`, ratings: v === null ? {} : { attachment: v } };
 });
 
-async function openDynamics(h: DayHistory[], dayNum?: string) {
+const d = (root: ParentNode, sel: string) => root.querySelector(sel)?.getAttribute('d') ?? '';
+
+async function openDynamics(h: DayHistory[], dayNum?: string, childhood = 3) {
   const utils = render(
     <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
       <MemoryRouter>
-        <HistoryView needs={NEEDS} history={h} currentRatings={{}} childhoodRatings={{ attachment: 3 }} />
+        <HistoryView needs={NEEDS} history={h} currentRatings={{}} childhoodRatings={{ attachment: childhood }} />
       </MemoryRouter>
     </AddressFormContext.Provider>,
   );
   await act(async () => {});
   if (dayNum) await act(async () => { fireEvent.click(screen.getByText(dayNum)); });
   fireEvent.click(screen.getByText('Неделя'));
-  const rowLine = utils.container.querySelector('.sd-spark-row .sd-spark-line')!.getAttribute('d')!;
-  fireEvent.click(screen.getByText('Привяз.'));
-  const sheetLine = utils.container.querySelector('.tk2-line')!.getAttribute('d')!;
-  return { rowLine, sheetLine };
+  const row = utils.container.querySelector('.sd-spark-row')!;
+  const rowLine = d(row, '.sd-spark-line');
+  const rowPts = d(row, '.sd-spark-pts');
+  const rowGaps = d(row, '.sd-spark-gap');
+  fireEvent.click(row); // по строке: имя потребности бывает и в карточке «внимание»
+  const sheetLine = d(utils.container, '.tk2-line');
+  return { rowLine, sheetLine, rowPts, sheetPts: d(utils.container, '.tk2-pts'), rowGaps, sheetGaps: d(utils.container, '.tk2-gap') };
 }
 
 afterEach(() => cleanup());
@@ -52,7 +57,7 @@ describe('HistoryView → «Неделя» → «Динамика потребн
     expect(sheetLine.match(/[ML] /g)).toHaveLength(7);
     // (55/7 − 5) = 2,857 → «+2,9»
     expect(screen.getByText('+2,9 к предыдущей неделе')).toBeTruthy();
-    expect(screen.getByText(/сейчас 7,9/)).toBeTruthy();
+    expect(screen.getByText(/сейчас 7,7/)).toBeTruthy(); // три новых дня: (8+7+8)/3
   });
 
   it('выбранный в ленте день двигает неделю: неделя прошлого дня против недели до неё', async () => {
@@ -62,10 +67,35 @@ describe('HistoryView → «Неделя» → «Динамика потребн
   });
 
   it('пропуски: линия рвётся одинаково в обоих местах, «сейчас» не занижено', async () => {
-    const { rowLine, sheetLine } = await openDynamics(history((i) => (i === 3 || i === 5 ? null : score(i))));
-    expect(sheetLine).toBe(rowLine);
-    expect(sheetLine.match(/M /g)).toHaveLength(3);
-    expect(screen.getByText(/сейчас 7,8/)).toBeTruthy(); // (8+7+8+8+8)/5
+    const r = await openDynamics(history((i) => (i === 3 || i === 5 ? null : score(i))));
+    expect(r.sheetLine).toBe(r.rowLine);
+    // Неделя 8,7,8,–,8,–,8 (от новых): отрезок из трёх дней — линией, два одиночных — точками.
+    expect(r.sheetLine.match(/M /g)).toHaveLength(1);
+    expect(r.sheetPts).toBe(r.rowPts);
+    expect(r.sheetPts.match(/M /g)).toHaveLength(2);
+    expect(screen.getByText(/сейчас 7,7/)).toBeTruthy(); // три новых дня с оценкой: (8+7+8)/3
+  });
+
+  // Ревью g2 r4: отметки через день давали одиночные дни — отрезки нулевой длины точкой в 2px, «Неделя»
+  // и «Динамика» читались пустыми. Каждый день с оценкой виден: в отрезке — изломом линии, одиночный —
+  // точкой (.sd-spark-pts / .tk2-pts), через пропуск — тихий пунктирный мостик без значения.
+  it('история через день: точка на каждый день с оценкой, мостики через пропуски — одинаково в строке и листе', async () => {
+    const r = await openDynamics(history((i) => (i % 2 ? null : score(i))));
+    expect(r.rowLine).toBe('');
+    expect(r.rowPts.match(/M /g)).toHaveLength(4); // дни 0, 2, 4, 6 недели
+    expect(r.sheetPts).toBe(r.rowPts);
+    expect(r.rowGaps.match(/M /g)).toHaveLength(3);
+    expect(r.sheetGaps).toBe(r.rowGaps);
+  });
+
+  // Ревью g2 r4: «сейчас» стало средним недели — на 2,2,2,6,6,6,6 при детстве 2 лист писал «↓ Падает» и
+  // «сейчас 4,3 ↑», хотя линия легла на пунктир детства.
+  it('падает к детству: «сейчас» — три новых дня, без стрелки «выше детства»', async () => {
+    const falling = [2, 2, 2, 6, 6, 6, 6];
+    await openDynamics(history((i) => (i < 7 ? falling[i] : null)), undefined, 2);
+    expect(screen.getByText('↓ Падает')).toBeTruthy();
+    const now = screen.getByText(/сейчас/);
+    expect(now.textContent!.trim()).toBe('→ сейчас 2,0');
   });
 
   it('один день истории — без «+0,0 к предыдущей неделе»', async () => {

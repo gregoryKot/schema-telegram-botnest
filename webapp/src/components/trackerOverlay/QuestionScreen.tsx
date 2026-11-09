@@ -67,7 +67,7 @@ export function QuestionScreen({
           needId={needId}
           label={name}
           yesterday={yesterday}
-          sublabels={data ? wordAnchorDescriptions(data.ranges) : undefined}
+          sublabels={data ? wordAnchorDescriptions(data.ranges).map((s) => s && glue(s)) : undefined}
           onChange={onAnswer}
         />
         <p className="tq-hint">Выбор сохраняется сразу и сам открывает следующий вопрос.</p>

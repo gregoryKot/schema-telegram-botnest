@@ -9,6 +9,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { Celebration } from './Celebration';
 import { AddressFormContext } from '../utils/addressForm';
 import { needDataColor } from './needDataColor';
+import { checkInBarH } from './art/checkInBars';
 import { NEED_ORDER } from '../../../shared/src/needs/types';
 
 beforeEach(() => {
@@ -48,6 +49,20 @@ describe('Celebration — лист серии (живая бумага, b07)', (
     const { container } = renderCelebration({ streak: 5 });
     const bars = [...container.querySelectorAll('.sk-celebr-band .scn-shade g rect[rx="10"]')];
     expect(bars.map((b) => b.getAttribute('fill'))).toEqual(NEED_ORDER.map((id) => needDataColor(id)));
+  });
+
+  // Ревью g2 r4: высоты полосок были лендинговыми (100/124/70/112/88) — у человека с сегодняшними 2,2,2,2,2
+  // сцена показывала высокие столбики. Высоты — сегодняшние оценки в порядке NEED_ORDER; оценок нет — ровно.
+  it('высоты полосок — сегодняшние оценки в порядке NEED_ORDER; без оценок — одной высоты', () => {
+    const heights = (c: HTMLElement) =>
+      [...c.querySelectorAll('.sk-celebr-band .scn-shade g rect[rx="10"]')].map((b) => Number(b.getAttribute('height')));
+    const ratings = { attachment: 2, autonomy: 9, expression: 2, play: 5, limits: 10 };
+    const low = heights(renderCelebration({ streak: 5, ratings }).container);
+    expect(low).toEqual(NEED_ORDER.map((id) => checkInBarH(ratings[id as keyof typeof ratings])));
+    expect(low[0]).toBeLessThan(low[1]);
+    cleanup();
+    const flat = heights(renderCelebration({ streak: 5 }).container);
+    expect(new Set(flat).size).toBe(1);
   });
 
   it('веха — персик и лист роста', () => {

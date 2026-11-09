@@ -17,8 +17,10 @@ export interface NeedTrend {
   diff: number;
   /** «+2,7» / «−0,5» к прошлой неделе; в прошлой неделе нет оценок — null. */
   diffText: string | null;
-  /** Среднее недели по дням с оценкой. */
+  /** Среднее недели по дням с оценкой (сравнение недель). */
   weekAvg: number;
+  /** «Сейчас» строки детства: до трёх самых новых дней недели с оценкой (как в main, ревью g2 r4). */
+  recentAvg: number;
 }
 
 const TREND_STEP = 0.5;
@@ -43,9 +45,10 @@ export function needTrend(
   const prev = prevWeek.filter((v) => v > 0);
   const weekAvg = avg(cur);
   const k = Math.min(3, cur.length);
+  const recentAvg = avg(cur.slice(0, k));
   const diff = prev.length
     ? weekAvg - avg(prev)
-    : avg(cur.slice(0, k)) - avg(cur.slice(-k));
+    : recentAvg - avg(cur.slice(-k));
   const dir: TrendDir =
     diff > TREND_STEP ? 'up' : diff < -TREND_STEP ? 'down' : 'flat';
   return {
@@ -54,5 +57,6 @@ export function needTrend(
     diff,
     diffText: prev.length ? fmtIndexDelta(diff) : null,
     weekAvg,
+    recentAvg,
   };
 }

@@ -4,7 +4,7 @@
 // Celebration.tsx. onDone зовут только действия человека.
 // Вид (редизайн 2026-11, b07): сверху сцена SceneCheckIn на соломе — лист сегодняшнего дня
 // поверх листов прошлых дней серии (из ежедневных отметок складывается картина); его пять полосок —
-// цвета данных потребностей в порядке NEED_ORDER, как столбики «Готово» и линии «Истории»; число серии —
+// сегодняшние оценки: цвета данных потребностей в порядке NEED_ORDER и высоты по оценкам (checkInBars); число серии —
 // Literata на бумажной наклейке цветом текста, а не красной цифрой; веха — персик и Leaf (рост).
 import type { CSSProperties } from 'react';
 import { getMilestoneText, pluralDays } from '../../../shared/src/utils/celebrationText';
@@ -13,19 +13,21 @@ import { CopyFailedHint } from '../../../shared/src/components/CopyFailedHint';
 import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 import { SceneCheckIn } from './art/LandingScenesMore';
 import { SignArt } from './art/SignArt';
-import { NEED_DATA_PAPER } from './art/paper';
+import { checkInBars } from './art/checkInBars';
 import { Dialog } from './Dialog';
 
 interface Props {
   streak: number;
   onDone: () => void;
   insight?: string | null;
+  /** Сегодняшние оценки — высоты полосок сцены; нет — полоски одной высоты. */
+  ratings?: Record<string, number>;
   tr: (ty: string, vy: string) => string;
   botShortUrl: string;
   trackEvent: (name: string, meta?: Record<string, unknown>) => void;
 }
 
-export function CelebrationDialog({ streak, onDone, insight, tr, botShortUrl, trackEvent }: Props) {
+export function CelebrationDialog({ streak, onDone, insight, ratings, tr, botShortUrl, trackEvent }: Props) {
   const { canvasRef, copied, failed, share, isMilestone } = useCelebration(streak, botShortUrl, trackEvent);
   const hue = isMilestone ? ENTITY_LOOK.diary.hue : ENTITY_LOOK.tracker.hue;
 
@@ -41,7 +43,7 @@ export function CelebrationDialog({ streak, onDone, insight, tr, botShortUrl, tr
     >
       <div className="sk-celebr-top" style={{ '--h': hue } as CSSProperties}>
         <div className="pp-paper sk-celebr-band" aria-hidden="true">
-          <SceneCheckIn hue={hue} days={streak} inks={NEED_DATA_PAPER} />
+          <SceneCheckIn hue={hue} days={streak} {...checkInBars(ratings)} />
           {isMilestone && <span className="sk-celebr-leaf"><SignArt sign="leaf" size="square" /></span>}
         </div>
         <div data-milestone={isMilestone ? 'yes' : 'no'} className="ds-num sk-celebr-num">{streak}</div>

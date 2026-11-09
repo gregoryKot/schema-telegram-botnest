@@ -47,10 +47,12 @@ describe('NeedDynamics', () => {
     expect(screen.getByText(/сейчас 6,0/)).toBeTruthy();
   });
 
-  it('в неделе нет ни одной оценки — ни направления, ни «сейчас», ни линии', () => {
+  it('в неделе нет ни одной оценки — ни направления, ни «сейчас», ни линии; под «За 7 дней» — «—»', () => {
     const { container } = render(<NeedDynamics needId="play" history={[day('2026-11-08'), day('2026-11-07')]} childhoodValue={3} />);
     expect(screen.queryByText(/Растёт|Падает|Стабильно/)).toBeNull();
     expect(screen.queryByText(/сейчас/)).toBeNull();
     expect(container.querySelector('svg.tk2-chart')).toBeNull();
+    // Ревью g2 r4: подпись стояла одна над пустым местом — «нет данных → «—»».
+    expect(container.querySelector('.tk2-trend')!.textContent).toBe('—');
   });
 });

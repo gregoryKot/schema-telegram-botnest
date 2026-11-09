@@ -306,7 +306,7 @@ export function AppShell() {
 
         {/* ── Celebration ── */}
         {celebrationStreak !== null && (
-          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} onDone={() => {
+          <Celebration streak={celebrationStreak} insight={todayInsightPhrase(ratings)} ratings={ratings} onDone={() => {
             setCelebrationStreak(null);
             if (childhoodWheelPending) { setChildhoodWheelPending(false); ov.setShowChildhoodWheel(true); }
           }} />

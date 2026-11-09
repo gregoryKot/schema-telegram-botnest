@@ -6,6 +6,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { HistoryWeekView } from './HistoryWeekView';
 import type { DayHistory, Need } from '../../types';
+import { needDataColor } from '../needDataColor';
+import { checkInBarH } from '../art/checkInBars';
+import { NEED_ORDER } from '../../../../shared/src/needs/types';
 
 const NEEDS = [{ id: 'autonomy', emoji: '', title: 'Автономия', chartLabel: 'Автономия' }] as Need[];
 const HISTORY: DayHistory[] = Array.from({ length: 30 }, (_, i) => ({
@@ -15,7 +18,7 @@ const HISTORY: DayHistory[] = Array.from({ length: 30 }, (_, i) => ({
 
 function renderWeek(selectedIdx: number) {
   return render(
-    <HistoryWeekView needs={NEEDS} history={HISTORY} days={7} selectedIdx={selectedIdx}
+    <HistoryWeekView needs={NEEDS} history={HISTORY} selectedIdx={selectedIdx}
       selectedRatings={HISTORY[selectedIdx].ratings} needsLow={[]} isTherapist={false}
       bookingLink={null} onTapNeed={vi.fn()} onWeekCard={vi.fn()} />,
   );
@@ -34,5 +37,18 @@ describe('HistoryWeekView — «За 7 дней»', () => {
     expect(container.querySelector('svg circle')).toBeNull();
     const dot = container.querySelector<HTMLElement>('.sd-spark-dot')!;
     expect(dot.style.left).toBe('100%');
+  });
+
+  // Ревью g2 r4: сцена «Карточки недели» под пятью строками потребностей шла в палитре лендинга (мох, янтарь,
+  // глина…), а строки — цветами данных (глина, янтарь, сланец…). Полоски = потребности: те же цвета и порядок,
+  // высоты — оценки выбранного дня.
+  it('полоски «Карточки недели» — цвета данных в порядке NEED_ORDER, высоты — оценки выбранного дня', () => {
+    const { container } = renderWeek(2);
+    const bars = [...container.querySelectorAll('.sd-weekcard-scene .scn-shade g rect[rx="10"]')];
+    expect(bars.map((b) => b.getAttribute('fill'))).toEqual(NEED_ORDER.map((id) => needDataColor(id)));
+    // Оценена только автономия (3 в выбранном дне) — остальные короткими пеньками, не выдуманной высотой.
+    const h = bars.map((b) => Number(b.getAttribute('height')));
+    expect(h[NEED_ORDER.indexOf('autonomy')]).toBe(checkInBarH(HISTORY[2].ratings.autonomy));
+    expect(Math.max(...h.filter((_, i) => i !== NEED_ORDER.indexOf('autonomy')))).toBeLessThan(40);
   });
 });
