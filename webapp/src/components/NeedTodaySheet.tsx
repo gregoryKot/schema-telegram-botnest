@@ -2,15 +2,16 @@ import { useState } from 'react';
 import type { Need } from '../types';
 import { useNeedData } from '../needData';
 import { ExScreen, GlyphCheck } from './exercises/ExScreen';
-import { NeedAdviceModal } from './NeedAdviceModal';
 import { PlanSheet } from './PlanSheet';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
 import { NeedScale } from './NeedScale';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import { NeedFold } from './NeedFold';
+import { NeedTodayActions } from './NeedTodayActions';
+import { needDataStyle } from './needDataColor';
 import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWords';
-import { NeedArtLine } from './NeedArtLine';
+import { needLook } from '../../../shared/src/theme/entityLook';
 import '../styles/sheet-tracker.css';
 import type { NeedId } from '../../../shared/src/needs/types';
 import { api } from '../api';
@@ -27,10 +28,13 @@ interface Props {
   onOpenHelp?: () => void;
 }
 
+// Лист «Подробнее о потребности» (редизайн 2026-11, APP_2026-11.md, b07): та же шапка, что у вопроса
+// трекера, — лист бумаги потребности с её знаком (ExScreen look = needLook), на компьютере
+// разворотом слева. Сразу под шапкой — «Сегодня» со шкалой, ниже складки и при низкой оценке
+// плитки «Что с этим сделать?». «Хороший день» — бумага потребности, а не розовая плашка.
 export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose, onPlanSaved, onOpenHelp }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const NEED_DATA = useNeedData();
   const notifyReach = useNotifyReach(api.getSettings); // «напомним» — только если дойдёт (U5)
@@ -46,110 +50,83 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
     <ExScreen
       onBack={goBack}
       backLabel="Назад к трекеру"
+      look={needLook(need.id as NeedId)}
+      spread
       eyebrow={tr('Оцени сейчас', 'Оцените сейчас')}
-      title={<>{need.chartLabel}</>}
+      title={need.chartLabel}
       lede={data.question}
-      aside={
-        <div className="ds-card tk2-aside" style={hueStyle(hue)}>
-          <div className="ds-eyebrow tone-text">Сегодня</div>
-          <div className="tk2-aside-word tone-text">{wordForValue(value)?.label ?? '—'}</div>
-          <div className="u-mb12">
-            <NeedScale
-              value={value > 0 ? value : undefined}
-              hue={hue}
-              onChange={onChange}
-              label={need.chartLabel}
-              yesterday={yesterdayValue}
-            />
+    >
+      <div className="tk2-sheet" style={{ ...hueStyle(hue), ...needDataStyle(need.id) }}>
+        <section className="tk2-today">
+          <div className="tk2-today-head">
+            <span className="ds-label">Сегодня</span>
+            <span className="tk2-today-word">{wordForValue(value)?.label ?? '—'}</span>
           </div>
+          <NeedScale
+            value={value > 0 ? value : undefined}
+            hue={hue}
+            needId={need.id}
+            onChange={onChange}
+            label={need.chartLabel}
+            yesterday={yesterdayValue}
+          />
           {rangeIdx === 2 && (
-            <div className="tk2-note tone-tint">
+            <p className="pp-paper tk2-good">
               {tr('Хороший день – заметь это', 'Хороший день – заметьте это')}
-            </div>
+            </p>
           )}
           <div className="tk2-tags">
             {data.tags.map(tag => (
-              <span key={tag} className="ds-chip ds-chip--sm tone-tint">{tag}</span>
+              <span key={tag} className="ds-chip tk2-tag">{tag}</span>
             ))}
           </div>
-        </div>
-      }
-    >
-      <div className="tk2-opts" style={hueStyle(hue)}>
-        <NeedArtLine id={need.id} />
-        <NeedFold title="Как это выглядит в жизни">
-          <div className="tk2-list">
-            {data.examples.map((ex, i) => (
-              <div key={i} className="tk2-li">
-                <span className="tk2-li-mark tone-text">›</span>
-                <span className="u-sub14-lh15">{ex}</span>
-              </div>
-            ))}
-          </div>
-        </NeedFold>
+        </section>
 
-        {data.reflection?.length > 0 && (
-          <NeedFold title="Вопросы для рефлексии">
-            <div className="tk2-list">
-              {data.reflection.map((q, i) => (
-                <div key={i} className="tk2-li">
-                  <span className="tk2-li-mark tone-text">?</span>
-                  <span className="u-sub14-lh15">{q}</span>
-                </div>
-              ))}
+        <div className="tk2-folds">
+          <NeedFold title="Как это выглядит в жизни">
+            <ul className="tk2-list">
+              {data.examples.map((ex, i) => <li key={i} className="tk2-li">{ex}</li>)}
+            </ul>
+          </NeedFold>
+
+          {data.reflection?.length > 0 && (
+            <NeedFold title="Вопросы для рефлексии">
+              <ul className="tk2-list tk2-list--q">
+                {data.reflection.map((q, i) => <li key={i} className="tk2-li">{q}</li>)}
+              </ul>
+            </NeedFold>
+          )}
+
+          <NeedFold title="Как понять оценку">
+            <div className="tk2-opts">
+              {data.ranges.map((range, i) => {
+                const active = i === rangeIdx;
+                return (
+                  <div
+                    key={range.label}
+                    onClick={() => onChange(RANGE_VALUES[i])}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(RANGE_VALUES[i]); } }}
+                    className={'tk2-opt' + (active ? ' is-active' : '')}
+                  >
+                    <div className="ds-head-row">
+                      <div className="ds-h3">{range.label}</div>
+                      {active && <GlyphCheck />}
+                    </div>
+                    <div className="ds-sub">{range.description}</div>
+                  </div>
+                );
+              })}
             </div>
           </NeedFold>
-        )}
-
-        <NeedFold title="Как понять оценку">
-          <div className="tk2-opts">
-            {data.ranges.map((range, i) => {
-              const active = i === rangeIdx;
-              return (
-                <div
-                  key={range.label}
-                  onClick={() => onChange(RANGE_VALUES[i])}
-                  role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(RANGE_VALUES[i]); } }}
-                  className={'ds-card ds-card--row tk2-opt' + (active ? ' is-active' : '')}
-                >
-                  <div className="ds-head-row">
-                    <div className="ds-h3">{range.label}</div>
-                    {active && <span className="tone-text"><GlyphCheck /></span>}
-                  </div>
-                  <div className="ds-sub">{range.description}</div>
-                </div>
-              );
-            })}
-          </div>
-        </NeedFold>
+        </div>
 
         {value <= 3 && (
-          <div className="ds-card ds-card--row">
-            <div className="ds-label">Что с этим сделать?</div>
-            <div className="tk2-opts">
-              <div
-                onClick={() => setShowPlan(true)}
-                role="button" tabIndex={0}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowPlan(true); } }}
-                className="ds-card ds-card--row ds-card--hover tk2-opt"
-              >
-                <div className="ds-h3">Запланировать шаг на завтра</div>
-                <div className="ds-sub">{planStepHint(notifyReach)}</div>
-              </div>
-              {onOpenHelp && (
-                <div
-                  onClick={() => { onOpenHelp(); goBack(); }}
-                  role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenHelp(); goBack(); } }}
-                  className="ds-card ds-card--row ds-card--hover tk2-opt"
-                >
-                  <div className="ds-h3">Раздел Помощь</div>
-                  <div className="ds-sub">Инструменты прямо сейчас</div>
-                </div>
-              )}
-            </div>
-          </div>
+          <NeedTodayActions
+            planHint={planStepHint(notifyReach)}
+            onPlan={() => setShowPlan(true)}
+            onHelp={onOpenHelp && (() => { onOpenHelp(); goBack(); })}
+          />
         )}
       </div>
 
@@ -161,8 +138,6 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
           onSaved={() => { setShowPlan(false); onPlanSaved?.(need.id); goBack(); }}
         />
       )}
-
-      {showDisclaimer && <NeedAdviceModal needId={need.id} onClose={() => setShowDisclaimer(false)} />}
     </ExScreen>
   );
 }

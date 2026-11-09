@@ -1,7 +1,28 @@
-/* Праздник серии (CelebrationDialog): число, вывод, конфетти.
-   Подключается сборником sheet-tasks.css. */
-.sk-celebr-num { font-size: 72px; letter-spacing: -.02em; color: var(--text); margin-bottom: 8px; }
-.sk-celebr-num[data-milestone='yes'] { color: var(--accent); }
+/* Праздник серии (CelebrationDialog): лист бумаги со сценой серии во всю ширину окна сверху
+   (солома; веха — персик и Leaf), число серии — бумажной наклейкой на краю листа, вывод,
+   конфетти. Глубина — сплошным сдвинутым слоем, без blur. Подключается сборником sheet-tasks.css. */
+.sk-celebr-top { display: flex; flex-direction: column; align-items: center; margin: -28px -24px 10px; }
+.sk-celebr-band {
+  position: relative; display: flex; align-items: flex-end; justify-content: center; box-sizing: border-box;
+  width: 100%; height: 188px; padding: 20px 24px 30px; border-radius: 0;
+}
+.sk-celebr-band > .scn { width: auto; height: 100%; max-width: 100%; }
+.sk-celebr-leaf { position: absolute; top: 16px; right: 18px; transform: rotate(10deg); }
+.sk-celebr-leaf .pp-art--square { width: 72px; height: 39px; }
+/* Наклейка: белый лист с тенью цвета бумаги под ним, чуть повёрнут, наезжает на край листа. */
+.sk-celebr-num {
+  position: relative; z-index: 1; min-width: 84px; box-sizing: border-box; margin-top: -30px;
+  padding: 6px 20px 8px; border-radius: 16px; background: var(--surface); transform: rotate(-3deg);
+  box-shadow: 5px 6px 0 oklch(0.86 0.045 var(--h)); font-size: 64px; letter-spacing: -.02em; color: var(--text);
+}
 .sk-celebr-insight { padding-top: 12px; border-top: 1px solid var(--paper-sunk); font-size: 13px; }
 .sk-celebr-canvas { position: absolute; inset: 0; pointer-events: none; }
 .sk-celebr-tight { margin-bottom: 12px; }
+.sk-celebr-check { display: inline-flex; margin-right: 2px; }
+.ds-btn.sk-celebr-share { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .sk-celebr-band { height: 168px; }
+  .sk-celebr-num { font-size: 56px; }
+}
+/* «Закрыть» по центру и на телефоне: там .ds-link — inline-flex (cabinet.css), и ссылка во всю ширину жалась влево. */
+.sk-celebr-top ~ .ds-link.sk-dialog-link { justify-content: center; }

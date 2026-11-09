@@ -53,10 +53,10 @@ describe('NeedTodaySheet', () => {
   });
 
   it('раскрывающийся блок «Как это выглядит в жизни» показывает примеры из needData', () => {
-    renderSheet();
+    const { container } = renderSheet();
     fireEvent.click(screen.getByText('Как это выглядит в жизни'));
     // Хотя бы один пример потребности «привязанность» должен появиться.
-    expect(screen.getAllByText('›').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.tk2-li').length).toBeGreaterThan(0);
   });
 
   it('блок «Как понять оценку» — клик по диапазону меняет значение (onChange)', () => {

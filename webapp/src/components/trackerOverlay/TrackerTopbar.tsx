@@ -2,8 +2,9 @@ import type { Need } from '../../types';
 import { hueStyle, NEED_HUE } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import { isRated } from '../../../../shared/src/needs/ratingRecord';
+import { needDataStyle } from '../needDataColor';
 
-/** Верх вопроса трекера: «Закрыть», точки прогресса (тап — к этой потребности), «Пропустить». */
+/** Верх вопроса трекера: «Закрыть», точки прогресса цветом данных потребности (тап — к ней), «Пропустить». */
 export function TrackerTopbar({
   needs, idx, ratings, nameOf, onClose, onPick, onSkip,
 }: {
@@ -30,7 +31,7 @@ export function TrackerTopbar({
               aria-current={i === idx ? 'step' : undefined}
               onClick={() => onPick(i)}
             >
-              <span className={'tq-dot' + state} style={hueStyle(NEED_HUE[n.id as NeedId])} />
+              <span className={'tq-dot' + state} style={{ ...hueStyle(NEED_HUE[n.id as NeedId]), ...needDataStyle(n.id) }} />
             </button>
           );
         })}
