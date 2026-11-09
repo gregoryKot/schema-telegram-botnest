@@ -10,7 +10,7 @@ import { ExHead, type ExHeadProps } from './ExHead';
 import { ExBar } from './ExBar';
 import '../../styles/sheet-exercises.css';
 
-export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExGlyphs'; // дом глифов — ExGlyphs
+export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphChevron, GlyphPlus, GlyphRibbonArrow, GlyphX } from './ExGlyphs'; // дом глифов — ExGlyphs
 
 // ── Обёртка упражнения. Шапка — ExBar (ds-sheet-head/ds-back, #906; sticky .ex2-top — safeTop.test.ts).
 // Подпись без «←»: имя кнопки ищут тесты потребителей; без backLabel её задаёт хост (exBackLabel.ts).

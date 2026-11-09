@@ -1,19 +1,29 @@
 /* Карточка записи ленты «Записей» (sections/diary/EntryShell.tsx, b11): плоская бумага светлее страницы без
-   обводки; тип читается корешком 4px цвета типа слева (--h карточки — бумага типа из feedLook), знаком
+   обводки; тип читается корешком цвета типа слева (--h карточки — бумага типа из feedLook), знаком
    колонкой слева и ярлыком тоном бумаги типа. Раскрытая карточка поднимается тенью-слоем бумаги типа
-   (сплошной сдвинутый слой, как плитки лендинга), а не обводкой. Узкая страница — знак в строке ярлыка,
-   текст на всю ширину карточки. */
+   (сплошной сдвинутый слой, как плитки лендинга), а не обводкой. Узкая карточка — знак в строке ярлыка,
+   текст на всю ширину.
+   Раскладка — по ширине самой карточки (обёртка .cd-entry-box — контейнер cd-entry), а не страницы: та же
+   карточка стоит и вне ленты («Записи дневника» в «Моей карточке», PatternEntriesSection), где контейнера
+   cd-page нет, и на 390 там была широкой раскладкой с колонкой знака (ревью g3 r2). */
+.cd-entry-box { container: cd-entry / inline-size; }
+/* Корешок — прямая полоса ::before на всю высоту, обрезанная скруглением карточки (overflow: clip): наружный
+   край повторяет угол, внутренний прямой, как корешок тетради. Inset-тень на скруглённой карточке давала серп,
+   сходящий на нет к углам, — «цветную выноску» админки (ревью g3 r2). Сдвинутый слой раскрытой — box-shadow,
+   его overflow не режет. */
 .cd-entry {
   --cd-spine: oklch(0.74 0.09 var(--h));
+  position: relative; overflow: hidden; overflow: clip;
   display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; row-gap: 6px; align-items: start;
-  padding: 16px 18px 16px 20px; border-radius: 16px; background: var(--surface); text-align: left; cursor: pointer;
-  box-shadow: inset 4px 0 0 var(--cd-spine); transition: background .12s ease, box-shadow .12s ease;
+  padding: 16px 18px 16px 21px; border-radius: 16px; background: var(--surface); text-align: left; cursor: pointer;
+  transition: background .12s ease, box-shadow .12s ease;
 }
+.cd-entry::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: 0; inline-size: 5px; background: var(--cd-spine); pointer-events: none; }
 /* Подсветка — только у мыши: на телефоне после тапа (свернуть запись, закрыть лист поверх ленты) :hover
    залипал на карточке под пальцем, и она читалась выбранной. */
 @media (hover: hover) { .cd-entry:not(.is-open):hover { background: oklch(0.985 0.008 var(--h)); } }
 .cd-entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.cd-entry.is-open { box-shadow: inset 4px 0 0 var(--cd-spine), 4px 5px 0 oklch(var(--pa-layer-lc) var(--h)); }
+.cd-entry.is-open { box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) var(--h)); }
 .cd-sign { justify-content: flex-start; padding-top: 1px; }
 .cd-entry-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .cd-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }
@@ -28,8 +38,8 @@
 .cd-entry-meta { font-size: 12.5px; line-height: 1.45; color: var(--text-sub); margin-top: 4px; }
 .cd-entry-more-hint { font-weight: 600; color: var(--accent); white-space: nowrap; }
 
-@container cd-page (max-width: 520px) {
-  .cd-entry { column-gap: 10px; padding: 14px 14px 14px 16px; }
+@container cd-entry (max-width: 440px) {
+  .cd-entry { column-gap: 10px; padding: 14px 14px 14px 17px; }
   .cd-entry-body { display: contents; }
   .cd-entry-head { grid-column: 2; }
   .cd-entry-body > :not(.cd-entry-head) { grid-column: 1 / -1; }
@@ -45,7 +55,7 @@
    всю ширину (HealthyVoice, paper-app.css), действия одной строкой — «Поделиться» слева, «Удалить» справа. */
 .cd-entry-more { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); cursor: default; }
 .cd-fields { display: grid; gap: 12px 24px; }
-@container cd-page (min-width: 640px) {
+@container cd-entry (min-width: 560px) {
   .cd-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cd-field--healthy { grid-column: 1 / -1; }
 }

@@ -44,10 +44,13 @@
 .sd-mode-card.is-selected { background: oklch(0.9 0.035 var(--h)); }
 .sd-mode-card.is-selected .sd-mode-check { opacity: 1; }
 /* Строка внизу листа-героя формы режима, внутри его бумаги: «Сменить режим» и «Сравни с похожими» — тихие
-   ссылки (отдельной строкой на странице они опускали первое поле, ревью g3). Низ строки заходит в поле
-   листа: у ссылки зона 44, текст — посередине. */
-.sd-mode-links { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin: -6px 0 -12px; }
-.ds-link.sd-mode-link { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; white-space: normal; text-align: left; }
+   ссылки (отдельной строкой на странице они опускали первое поле, ревью g3). Ссылка — строка 24, зона 44
+   добрана прозрачным ::before (приём .ds-switch), а не межстрочным расстоянием: уже 390 ссылки встают в две
+   строки, и с зоной 44 на каждую они висели одна под другой с пустотой ~40px, съедая ~90px героя (ревью
+   g3 r2). Низ зоны заходит в поле листа. */
+.sd-mode-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin: 2px 0 -2px; }
+.ds-link.sd-mode-link { position: relative; min-height: 24px; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; white-space: normal; text-align: left; }
+.ds-link.sd-mode-link::before { content: ''; position: absolute; inset: -10px -6px; }
 .sd-mode-link svg { width: 14px; height: 14px; flex: none; }
 /* Пример голоса Здорового Взрослого — HealthyVoice (paper-app.css), здесь только место в шаге. */
 .sd-example { margin: 4px 0 6px; }
@@ -113,9 +116,9 @@
   .sd-doubt-now-sign, .sd-doubt-now-sign .pp-art--square { width: 68px; }
 }
 /* Две ссылки — одной строкой в листе на 390 (поле листа уже страницы на 30px): стрелка у «Сменить режим»
-   уходит, кегль 12 и зазор 12 — иначе ряд переносился и лист рос на строку 44. Уже 390 — переносится. */
+   уходит, кегль 12 и зазор 12. Уже 390 — переносится второй строкой через 4px, а не 44. */
 @media (max-width: 559px) {
-  .sd-mode-links { gap: 0 12px; }
+  .sd-mode-links { column-gap: 12px; }
   .ds-link.sd-mode-link { font-size: 12px; }
   .sd-mode-link svg { display: none; }
 }

@@ -2,7 +2,7 @@
 // короткое слово не висит в конце строки, короткое название в кавычках не рвётся; слова не меняются.
 // Тексты самого лендинга — webapp/src/pages/landing/glueContent.test.ts.
 import { describe, it, expect } from 'vitest';
-import { glue, glueNode } from './typo';
+import { glue, glueIf } from './typo';
 
 const NB = '\u00a0';
 const NBH = '\u2011';
@@ -64,14 +64,14 @@ describe('glue: неразрывные пробелы', () => {
 });
 
 // Ревью g3: подписи листов приходят пропом (ReactNode) — склеивается только строка.
-describe('glueNode', () => {
+describe('glueIf', () => {
   it('строку склеивает, разметку и пустое не трогает', () => {
-    expect(
-      glueNode('Она в «Моём пути» — можно перечитать в любой момент'),
-    ).toBe(glue('Она в «Моём пути» — можно перечитать в любой момент'));
+    expect(glueIf('Она в «Моём пути» — можно перечитать в любой момент')).toBe(
+      glue('Она в «Моём пути» — можно перечитать в любой момент'),
+    );
     const el = { type: 'b' };
-    expect(glueNode(el)).toBe(el);
-    expect(glueNode(undefined)).toBeUndefined();
-    expect(glueNode(3)).toBe(3);
+    expect(glueIf(el)).toBe(el);
+    expect(glueIf(undefined)).toBeUndefined();
+    expect(glueIf(3)).toBe(3);
   });
 });

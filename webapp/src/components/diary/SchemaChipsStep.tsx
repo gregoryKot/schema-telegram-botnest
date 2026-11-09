@@ -1,6 +1,7 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { SignChip } from '../paper/SignChip';
 import { SignArt } from '../art/SignArt';
+import { GlyphChevron } from '../exercises/ExGlyphs'; // не через ExScreen: шаг есть и в быстрой записи, без ExScreen
 import { domainLook } from '../../../../shared/src/theme/entityLook';
 import '../../styles/sheet-diary.css';
 
@@ -48,9 +49,7 @@ export function SchemaChipsStep({
       })}
       {hasPersonalSchemas && (
         <button onClick={onToggleShowAll} className="ds-link sd-show-all" aria-expanded={showAllSchemas}>
-          <svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d={showAllSchemas ? 'M2 8 L6 4 L10 8' : 'M2 4 L6 8 L10 4'} />
-          </svg>
+          <GlyphChevron up={showAllSchemas} />
           {showAllSchemas ? 'Только мои' : 'Показать все'}
         </button>
       )}

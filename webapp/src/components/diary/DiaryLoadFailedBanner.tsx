@@ -12,5 +12,5 @@ export function DiaryLoadFailedBanner({ onRetry }: { onRetry: () => void }) {
     'Не удалось загрузить записи дневника. Проверь соединение — записи на месте, просто не загрузились',
     'Не удалось загрузить записи дневника. Проверьте соединение — записи на месте, просто не загрузились',
   ));
-  return <PaperAlert title={title} text={text} sign="sheets" onRetry={onRetry} retryLabel="Обновить" className="cd-alert" />;
+  return <PaperAlert title={title} text={text} sign="sheets" onRetry={onRetry} retryLabel="Обновить" />;
 }

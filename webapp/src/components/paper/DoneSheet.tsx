@@ -5,11 +5,11 @@
 // подпись, одна залитая кнопка и тихая ссылка. Кризисная карточка (CrisisCard) — отдельным листом
 // над «готово», через зазор: бережная роза 25 рядом с глиной 28 иначе читалась бы одним листом.
 // На телефоне лист во всю ширину, на компьютере 480–560 по центру первого экрана. Тексты передаёт
-// экран — у примитива своих слов нет; надпись и подпись-строки склеиваются здесь (glueNode).
+// экран — у примитива своих слов нет; надпись и подпись-строки склеиваются здесь (glueIf).
 import type { CSSProperties, ReactNode } from 'react';
 import { ENTITY_LOOK, type EntityId, type PaperHue } from '../../../../shared/src/theme/entityLook';
 import { DoneScene } from '../art/AppScenesMore';
-import { glueNode } from '../../../../shared/src/utils/typo';
+import { glueIf } from '../../../../shared/src/utils/typo';
 import '../../styles/paper-app.css';
 
 export interface DoneAction {
@@ -45,9 +45,9 @@ export function DoneSheet({ entity, hue, scene, days, label, title, sub, primary
       {crisis && <div className="pa-done-crisis">{crisis}</div>}
       <div className="pp-paper pa-done-sheet" style={{ '--h': hue ?? look.hue } as CSSProperties}>
         {picture != null && <div className="pa-done-scene" aria-hidden="true">{picture}</div>}
-        <span className="ds-label pa-done-label">{glueNode(label)}</span>
+        <span className="ds-label pa-done-label">{glueIf(label)}</span>
         <Title className="pa-done-title">{title}</Title>
-        {sub && <p className="pa-done-sub">{glueNode(sub)}</p>}
+        {sub && <p className="pa-done-sub">{glueIf(sub)}</p>}
         {children}
         <div className="pa-done-actions">
           <button type="button" className="ds-btn ds-btn--lg pa-done-primary" onClick={primary.onClick}>{primary.label}</button>

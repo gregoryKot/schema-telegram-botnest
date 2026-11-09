@@ -186,6 +186,25 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  // Ревью g3 r2: повторная загрузка (после быстрой записи, «Повторить» трекера) упала — строка сбоя
+  // заменяла уже показанную ленту одной плашкой «записи на месте» без единой записи, и пропадали числа
+  // в сегменте. Сбой повторной загрузки ставит строку НАД лентой.
+  it('первая загрузка ок, повторная упала — записи и числа сегмента на месте, строка сбоя сверху', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Уже показанная запись' })]);
+    renderSection();
+    await screen.findByText('Уже показанная запись');
+    fireEvent.click(screen.getByRole('button', { name: 'Записать' }));
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network blink'));
+    fireEvent.click(screen.getByText('Имитировать сохранение'));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не удалось загрузить записи дневника/);
+    expect(screen.getByText('Уже показанная запись')).toBeTruthy();
+    expect(seg(/^Все/).textContent).toMatch(/1/);
+    // Строка сбоя — над лентой, а не под ней.
+    const card = screen.getByText('Уже показанная запись');
+    expect(alert.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('сбой истории трекера и профиля не роняет дневники', async () => {
     mockApi.history.mockRejectedValue(new Error('offline'));
     mockApi.getProfile.mockRejectedValue(new Error('network down'));
@@ -217,6 +236,8 @@ describe('DiarySection — реальные записи из api', () => {
     renderSection();
     const thought = (await screen.findByText('Просто мысль дня')).closest('.cd-entry') as HTMLElement;
     expect(thought.querySelector('.cd-kind')?.textContent).toBe('Мысль');
+    // Своя обёртка-контейнер у каждой карточки: раскладка по её ширине и вне ленты (client-diary-entry.css).
+    expect(thought.parentElement?.classList.contains('cd-entry-box')).toBe(true);
     const full = screen.getByText('Разобранный момент').closest('.cd-entry') as HTMLElement;
     expect(full.querySelector('.cd-kind')?.textContent).toBe('Схема');
   });

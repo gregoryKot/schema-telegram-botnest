@@ -127,7 +127,7 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
         'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
         'Что-то задело — приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
       ) : undefined}
-      aside={isFirst ? <><p className="sd-explainer">{buildSchemaDiaryExplainer(tr)}</p><SchemaEntryAside hue={HUE} /></> : undefined}
+      aside={isFirst ? <><p className="sd-explainer">{glue(buildSchemaDiaryExplainer(tr))}</p><SchemaEntryAside hue={HUE} /></> : undefined}
     >
       <DiaryTicks filled={tickFilled} active={stepIdx} hue={HUE} onJump={setStepIdx} />
 

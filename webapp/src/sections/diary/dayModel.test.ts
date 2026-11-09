@@ -84,9 +84,13 @@ describe('segCounts: «0» в сегменте — только когда за�
   const counts = { all: 3, tracker: 1, case: 0, diary: 2 };
   const ok = { loading: false, loadFailed: false, trackerFailed: false };
   it('загружено — числа как есть', () => expect(segCounts(counts, ok)).toEqual(counts));
-  it('загрузка и сбой ленты — без чисел', () => {
+  it('загрузка и сбой первой загрузки (записей ещё нет) — без чисел', () => {
     expect(segCounts(counts, { ...ok, loading: true })).toBeNull();
-    expect(segCounts(counts, { ...ok, loadFailed: true })).toBeNull();
+    const none = { all: 0, tracker: 0, case: 0, diary: 0 };
+    expect(segCounts(none, { ...ok, loadFailed: true })).toBeNull();
+  });
+  it('сбой повторной загрузки при показанных записях — числа на месте', () => {
+    expect(segCounts(counts, { ...ok, loadFailed: true })).toEqual(counts);
   });
   it('сбой трекера — без числа у «Трекера», остальные на месте', () => {
     expect(segCounts(counts, { ...ok, trackerFailed: true })).toEqual({ ...counts, tracker: null });

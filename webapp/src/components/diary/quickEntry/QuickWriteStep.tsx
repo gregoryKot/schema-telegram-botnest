@@ -71,7 +71,7 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
                   onRetry={() => onTag('thought')} retryLabel="Записать как мысль" />
               )}
             </div>
-            <div className="qe-acts">
+            <div className="qe-acts qe-acts--row">
               <button type="button" className="ds-btn qe-cta" disabled={!text.trim() || saving}
                 aria-busy={saving || undefined} onClick={onSubmit}>
                 {saving ? 'Сохраняю…' : hasSecondStep(tag) ? 'Дальше' : 'Сохранить'}

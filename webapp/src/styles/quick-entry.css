@@ -35,6 +35,11 @@
 .qe-foot-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .qe-tags { display: flex; flex-wrap: wrap; gap: var(--space-8); }
 .ds-chip.qe-tag { min-height: 44px; padding-right: 14px; font-size: 14px; }
+/* Знак тега — на плашке бумаги своей сущности и у невыбранного чипа: «Просто мысль» и «Благодарность» несут
+   один мотив (Pebbles), и на белом чипе различались только числом залитых камешков (ревью g3 r2). Плашка
+   различает их цветом (персик против бирюзы); слот один у обоих состояний — чип при выборе не прыгает. */
+.ds-chip.qe-tag .pa-chip-sign { width: 30px; height: 30px; border-radius: 9px; }
+.ds-chip.qe-tag:not(.is-on) .pa-chip-sign { background: oklch(0.915 0.03 var(--h)); }
 .qe-tag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .qe-hint { margin: 0; }
 .qe-acts { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
@@ -64,7 +69,11 @@
   .qe-schemas > * { break-inside: avoid; }
 }
 /* «Сохранить / Заполнить подробно» колонкой справа — с 1024: на 768 колонка 260 сжимала теги в две строки
-   («Благодарность» одна во второй), и подсказка кончалась висячим словом; там действия — под тегами. */
+   («Благодарность» одна во второй), и подсказка кончалась висячим словом; там действия — под тегами той же
+   строкой, что у шага схемы (кнопка 260 и ссылка рядом, qe-acts--row), а не полосой во всю ширину поля:
+   внутри одного потока кнопки прыгали от 730–870px к 260 (ревью g3 r2). В колонке 260 — снова столбиком. */
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .qe-foot { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 28px; align-items: start; }
+  .qe-foot > .qe-acts--row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .qe-foot > .qe-acts--row > .ds-btn.qe-cta { width: 100%; }
 }

@@ -1,8 +1,9 @@
 // Тело ленты «Записей» под сегментом (b11): сбой загрузки, силуэт, пустое состояние, дни и «Показать
 // ещё»; на широком экране справа — «Эта неделя». Пусто ≠ сбой ≠ загрузка (APP_2026-11.md, принцип 8):
-// при сбое — строка-лист PaperAlert, а не объяснение новичка «пока ни одной записи» (записи на сервере
-// есть, просто не загрузились) и не силуэт ленты под ним (силуэт читается «ещё грузится»); сбой
-// трекера — та же строка, а не серый текст.
+// сбой первой загрузки — одна строка-лист PaperAlert, а не объяснение новичка «пока ни одной записи»
+// (записи на сервере есть, просто не загрузились) и не силуэт ленты под ним (силуэт читается «ещё
+// грузится»). Сбой повторной загрузки (после быстрой записи, «Повторить») ленту не прячет: строка над
+// уже показанными днями (ревью g3 r2). Сбой трекера — та же строка, а не серый текст.
 import type { DiaryType } from '../../types';
 import { DiaryEmptyExplainer } from '../../components/diary/DiaryEmptyExplainer';
 import { DiaryLoadFailedBanner } from '../../components/diary/DiaryLoadFailedBanner';
@@ -30,10 +31,12 @@ export interface DiaryFeedProps {
 
 export function DiaryFeed({ loading, loadFailed, trackerFailed, filter, groups, week, more, onRetry, onDelete, onOpenTrackerHistory }: DiaryFeedProps) {
   if (loading) return <DiaryTimelineSkeleton />;
-  if (loadFailed) return <DiaryLoadFailedBanner onRetry={onRetry} />;
+  const failed = loadFailed && <DiaryLoadFailedBanner onRetry={onRetry} />;
+  if (loadFailed && groups.length === 0) return failed;
   return (
     <>
-      {trackerFailed && <PaperAlert title="Отметки трекера не загрузились." sign="strokes" role="status" onRetry={onRetry} className="cd-alert" />}
+      {failed}
+      {trackerFailed && <PaperAlert title="Отметки трекера не загрузились." sign="strokes" role="status" onRetry={onRetry} />}
       {groups.length === 0 ? <DiaryEmptyExplainer filter={filter} /> : (
         <div className={week.length > 0 ? 'cd-feed cd-feed--week' : 'cd-feed'}>
           <div className="cd-feed-main">

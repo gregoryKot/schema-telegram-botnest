@@ -18,7 +18,9 @@ export function EntryShell({ look, kind, title, time, text, preview, children }:
   preview?: ReactNode; children?: (open: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  // Обёртка — контейнер cd-entry: раскладка карточки по её ширине, а не страницы (лента и «Моя карточка»).
   return (
+    <div className="cd-entry-box">
     <div className={'cd-entry' + (open ? ' is-open' : '')} style={hueStyle(look.hue)} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <FeedSign look={look} />
       <div className="cd-entry-body">
@@ -30,6 +32,7 @@ export function EntryShell({ look, kind, title, time, text, preview, children }:
         <div className="cd-entry-text">{text && <EntryPreviewText text={text} open={open} />}{preview}</div>
         {children?.(open)}
       </div>
+    </div>
     </div>
   );
 }

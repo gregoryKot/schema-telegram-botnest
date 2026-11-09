@@ -6,6 +6,7 @@ import { ENTITY_LOOK, type EntityId } from '../../../../shared/src/theme/entityL
 import { buildDiaryExplainers, DIARY_HUB_INTRO } from '../../../../shared/src/diary/diaryExplainers';
 import type { DiaryFilter } from '../../sections/diary/diaryModel';
 import '../../styles/client-diary-empty.css';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Пустая лента «Записей» (b11): новичку — сцена «первая страница» на бумаге страницы (ScenePebbleLaid filled=0:
 // чистый лист, камешки ждут рядом гнёздами; «Записано» кладёт первый на лист — «ничего нет» и «получилось» не
@@ -30,9 +31,9 @@ export function DiaryEmptyExplainer({ filter }: { filter: DiaryFilter }) {
       {filter === 'all' || filter === 'diary' ? (
         <div className="cd-empty">
           <div className="cd-empty-scene" aria-hidden="true"><ScenePebbleLaid hue={ENTITY_LOOK.diary.hue} filled={0} /></div>
-          <div className="cd-empty-body"><h2 className="cd-empty-title">{TITLE[filter]}</h2>{filter === 'all' && <p className="cd-empty-sub">{INTRO.all}</p>}<p className="cd-empty-foot">{FOOT[filter]}</p></div>
+          <div className="cd-empty-body"><h2 className="cd-empty-title">{TITLE[filter]}</h2>{filter === 'all' && <p className="cd-empty-sub">{glue(INTRO.all)}</p>}<p className="cd-empty-foot">{glue(FOOT[filter])}</p></div>
         </div>
-      ) : <EntitySheet look={LOOK[filter]} title={TITLE[filter]} sub={INTRO[filter]} meta={FOOT[filter]} className="cd-empty-sheet" />}
+      ) : <EntitySheet look={LOOK[filter]} title={TITLE[filter]} sub={glue(INTRO[filter])} meta={glue(FOOT[filter])} />}
       {(filter === 'all' || filter === 'diary') && <div className="cd-explainers">
         {(['schema', 'mode'] as const).map((type) => <ExplainerPaperCard key={type} type={type} what={explainers[type].what} why={explainers[type].why} />)}
       </div>}

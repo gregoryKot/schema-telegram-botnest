@@ -16,18 +16,24 @@ const px = (decls: string, prop: string) => {
   return m ? Number(m[1]) : NaN;
 };
 
-describe('.sd-int-step — зона 44, видимая полоска 26', () => {
-  it('зона нажатия: min-height 44 и отрицательный margin, раскладка остаётся 26', () => {
+// Ревью g3 r2: полоски 6–10px и 10–24px по высоте читались индикатором загрузки — толщина мотива Strokes (≥10)
+// и рост до 36; старшая ступень задаёт высоту строки в раскладке.
+describe('.sd-int-step — зона 44, видимая полоска до 36', () => {
+  it('зона нажатия: min-height 44 и отрицательный margin, раскладка — высота старшей ступени', () => {
     const step = body('.sd-int-step');
     expect(px(step, 'min-height')).toBe(44);
     const margin = px(step, 'margin-block');
-    expect(44 + 2 * margin).toBe(26);
+    expect(44 + 2 * margin).toBe(px(body('.sd-int-step::before'), 'height'));
     expect(step).not.toMatch(/(^|[;\s])height:/);
     expect(step).not.toMatch(/background:/);
   });
 
-  it('видимая полоска — ::before высотой 26, «включённая» красится там же', () => {
-    expect(px(body('.sd-int-step::before'), 'height')).toBe(26);
+  it('видимая полоска — ::before толщиной ≥10 и высотой 36, ступени растут; «включённая» красится там же', () => {
+    expect(px(body('.sd-int-step::before'), 'height')).toBe(36);
+    expect(body('.sd-int-step::before')).toMatch(/width: min\(100%, 1[0-9]px\)/);
+    const hs = [1, 2, 3, 4].map((n) => px(body(`.sd-int-step:nth-child(${n})::before`), 'height'));
+    expect(hs[0]).toBeGreaterThanOrEqual(14);
+    expect([...hs, 36]).toEqual([...hs, 36].slice().sort((a, b) => a - b));
     expect(body('.sd-int-step::before')).toMatch(/background: var\(--paper-sunk\)/);
     expect(body('.sd-int-step.is-on::before')).toMatch(/background:/);
   });

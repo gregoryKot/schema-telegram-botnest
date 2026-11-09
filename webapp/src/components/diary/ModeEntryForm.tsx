@@ -6,13 +6,14 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { PaperAlert } from '../paper/PaperAlert';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
-import { ModeDoubtButton } from './ModeDoubtButton';
+import { useModeDoubt } from './ModeDoubtButton';
 import { ModeHealthyExample } from './ModeHealthyExample';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 import { buildModeDiarySteps } from '../../../../shared/src/mode/modeDiarySteps';
 import { buildModeDiaryExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 import { modeLookById } from './modeLookById';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Шаг 2 дневника режимов: визард-разбор режима — один вопрос на экран (низкий порог для СДВГ).
 // Обязательна только ситуация; шаги/тексты — shared/mode/modeDiarySteps (правило №3). Состояние —
@@ -67,8 +68,11 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
 
   const goPrev = () => (isFirst ? onChangeMode() : setStepIdx(s => Math.max(0, s - 1)));
   const goNext = () => setStepIdx(s => Math.min(totalSteps - 1, s + 1));
+  // Ссылка — в листе-герое, лист сравнения — сиблингом после ExScreen, не в липкой колонке разворота.
+  const doubt = useModeDoubt(modeId, onSwitchMode);
 
   return (
+    <>
     <ExScreen
       onBack={onBack}
       backLabel="Назад к дневнику"
@@ -81,12 +85,12 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
           <button type="button" className="ds-link sd-mode-link" onClick={onChangeMode}>
             <GlyphArrowLeft /> Сменить режим
           </button>
-          <ModeDoubtButton modeId={modeId} onSwitch={onSwitchMode} />
+          {doubt.link}
         </div>
       }
       aside={isFirst && (
         <>
-          <p className="sd-explainer">{buildModeDiaryExplainer(tr)}</p>
+          <p className="sd-explainer">{glue(buildModeDiaryExplainer(tr))}</p>
           <DiaryAside hue={hue} eyebrow="Подсказка" title={tr('Говори от лица режима', 'Говорите от лица режима')}>
             <p className="ds-sub">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
           </DiaryAside>
@@ -130,5 +134,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
         <PaperAlert role="status" sign="cluster" className="sd-alert" title={tr('Не удалось сохранить. Черновик остался — попробуй ещё раз.', 'Не удалось сохранить. Черновик остался — попробуйте ещё раз.')} />
       )}
     </ExScreen>
+    {doubt.sheet}
+    </>
   );
 }

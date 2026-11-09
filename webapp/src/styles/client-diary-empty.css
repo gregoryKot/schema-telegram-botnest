@@ -10,7 +10,7 @@
 .cd-empty-body { display: flex; flex-direction: column; gap: 10px; justify-self: stretch; }
 .cd-empty-title { margin: 0; font: 400 28px/1.15 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
 .cd-empty-sub { margin: 0; max-width: 52ch; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
-.cd-empty-foot { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text-sub); }
+.cd-empty-foot { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text-sub); text-wrap: pretty; }
 
 .cd-explainers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .cd-explainer { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 22px; border-radius: 22px; }
@@ -18,8 +18,8 @@
 .cd-explainer-name { margin: 0; font: 400 24px/1.1 var(--serif); color: var(--text); }
 .cd-explainer-sign { display: flex; width: 84px; flex-shrink: 0; }
 .cd-explainer-sign .scn-sign { width: 100%; }
-.cd-explainer-what { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text); }
-.cd-explainer-why { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text-sub); }
+.cd-explainer-what { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text); text-wrap: pretty; }
+.cd-explainer-why { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 
 @container cd-page (min-width: 640px) {
   .cd-empty { grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); justify-items: stretch; align-items: center; column-gap: 40px; padding: 8px 0 16px; }

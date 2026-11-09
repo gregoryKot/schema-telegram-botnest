@@ -65,11 +65,12 @@ export function diaryWeek(entries: AnyEntry[], lists: LoadedLists, today: string
   return covered ? weekRows(entries, today) : [];
 }
 
-/** Счётчики сегмента: пока лента не загружена (загрузка, сбой) — нет чисел, «0» читался бы «записей нет»;
- *  сбой истории трекера — без числа у «Трекера» по той же причине. */
+/** Счётчики сегмента: пока ленты нет (загрузка, сбой первой загрузки) — нет чисел, «0» читался бы «записей
+ *  нет»; сбой повторной загрузки при уже показанных записях числа не прячет — лента на месте. Сбой истории
+ *  трекера — без числа у «Трекера» по той же причине. */
 export function segCounts(
   counts: Record<DiaryFilter, number>, s: { loading: boolean; loadFailed: boolean; trackerFailed: boolean },
 ): Record<DiaryFilter, number | null> | null {
-  if (s.loading || s.loadFailed) return null;
+  if (s.loading || (s.loadFailed && counts.all === 0)) return null;
   return s.trackerFailed ? { ...counts, tracker: null } : counts;
 }

@@ -30,8 +30,8 @@ export function glue(text: string): string {
   return out;
 }
 
-/** glue для подписи-пропа (ReactNode): строку склеивает, разметку (JSX, число) оставляет как есть. Листы
- *  приложения (EntitySheet, DoneSheet, шаг мастера) клеят надпись и подпись сами — не на каждом вызове. */
-export function glueNode<T>(node: T): T | string {
-  return typeof node === 'string' ? glue(node) : node;
-}
+/** Проп, который бывает и не строкой (ReactNode): строку склеивает, остальное (JSX, число) отдаёт как есть.
+ *  Имя и сигнатура — как у параллельной g2 (glueIf): при сведении одна функция, а не две (APP_2026-11.md,
+ *  «Сведение с g2»). Листы приложения (DoneSheet, шаг мастера) клеят надпись и подпись сами. */
+export const glueIf = <T>(text: T): T | string =>
+  typeof text === 'string' ? glue(text) : text;

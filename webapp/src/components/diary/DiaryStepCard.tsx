@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { hueStyle } from '../../lib/tone';
 import { pressable } from '../../utils/a11y';
-import { glueNode } from '../../../../shared/src/utils/typo';
+import { glueIf } from '../../../../shared/src/utils/typo';
 import '../../styles/sheet-diary.css';
 
 // Общая оболочка шага мастера записи (схема / режим): полоска прогресса, «Шаг N из M» и
@@ -43,7 +43,7 @@ export function DiaryStepQ({ id, title, hint }: { id?: string; title: ReactNode;
   return (
     <>
       <h2 id={id} className="sd-step-q">{title}</h2>
-      {hint && <div className="sd-step-hint">{glueNode(hint)}</div>}
+      {hint && <div className="sd-step-hint">{glueIf(hint)}</div>}
     </>
   );
 }

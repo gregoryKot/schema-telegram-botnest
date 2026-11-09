@@ -63,6 +63,29 @@ describe('«Записи»: шапка в строку и компактная �
   });
 });
 
+// Ревью g3 r2: узкая раскладка карточки записи включалась по контейнеру cd-page — вне ленты («Записи
+// дневника» в «Моей карточке») его нет, и на 390 карточка шла широкой раскладкой с колонкой знака 44.
+// Раскладка — по ширине самой карточки: обёртка EntryShell — контейнер cd-entry. Корешок — прямая полоса
+// ::before под overflow: clip, а не inset-тень (на скруглённой карточке она давала серп).
+describe('карточка записи «Записей»: раскладка по своей ширине, корешок полосой', () => {
+  const F = 'client-diary-entry.css';
+  const css = readCss(F);
+  it('обёртка карточки — контейнер cd-entry; правила карточки не смотрят на cd-page', () => {
+    expect(css.find((r) => r.media === '' && r.selectors.includes('.cd-entry-box'))?.body).toMatch(/container:\s*cd-entry \/ inline-size/);
+    const scoped = css.filter((r) => /@container/.test(r.media));
+    expect(scoped.length).toBeGreaterThan(0);
+    for (const r of scoped) expect(media(r)).toMatch(/^@container cd-entry /);
+    const narrow = scoped.filter((r) => /max-width/.test(r.media) && r.selectors.includes('.cd-entry-body'));
+    expect(narrow.map((r) => r.body).join(';')).toMatch(/display:\s*contents/);
+  });
+  it('корешок — ::before на всю высоту, карточка режет его скруглением; inset-тени нет', () => {
+    const own = css.filter((r) => r.media === '' && r.selectors.some((x) => x.startsWith('.cd-entry'))).map((r) => r.body).join(';');
+    expect(own).not.toMatch(/inset\s+\d+px\s+0\s+0/);
+    expect(css.find((r) => r.selectors.includes('.cd-entry::before'))?.body).toMatch(/inset-block:\s*0/);
+    expect(css.find((r) => r.media === '' && r.selectors.includes('.cd-entry'))?.body).toMatch(/overflow:\s*clip/);
+  });
+});
+
 describe('«Ещё» и «Активность» на компьютере', () => {
   it('cm-phone-only скрыт только под ≥768; список и кризисная кнопка — колонка 720', () => {
     const hide = rulesOf('client-more.css', '.cm-phone-only');
