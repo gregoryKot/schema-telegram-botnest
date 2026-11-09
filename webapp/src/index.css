@@ -1034,17 +1034,12 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 /* ── Accessibility: keyboard focus indicators ─────────────────────────────── */
 /* Убирает outline только для мышь/тач; сохраняет для клавиатуры */
 *:focus { outline: none; }
+/* Радиус фокусу не задаём: обводка повторяет скругление самого элемента. Свой border-radius
+   здесь перебивал форму — таблетка .ds-btn с автофокусом в окне становилась прямоугольником
+   с углами 8px (button:focus-visible 0,1,1 сильнее .ds-btn 0,1,0), ревью g1 2026-11-09. */
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: var(--r-4);
-}
-/* Кнопки и ссылки – чуть больший радиус */
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: var(--r-8);
 }
 /* Инпуты уже получают box-shadow при focus – outline не нужен */
 input:focus-visible,
