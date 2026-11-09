@@ -1851,7 +1851,7 @@
   "webapp/src/components/exercises/childhoodWheel/WheelSvg.tsx": 90,
   "webapp/src/components/exercises/ChildhoodWheelEx.tsx": 135,
   "webapp/src/components/exercises/exBackLabel.ts": 13,
-  "webapp/src/components/exercises/ExBar.tsx": 22,
+  "webapp/src/components/exercises/ExBar.tsx": 16,
   "webapp/src/components/exercises/ExGlyphs.tsx": 26,
   "webapp/src/components/exercises/ExHead.tsx": 44,
   "webapp/src/components/exercises/exHue.ts": 10,

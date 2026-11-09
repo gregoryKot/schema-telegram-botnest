@@ -36,7 +36,7 @@ export function PaperAlert({ title, text, sign, hue = 70, onRetry, retryLabel = 
         {text && <p className="pa-alert-text">{text}</p>}
       </div>
       {onRetry && (
-        <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm pa-alert-retry" onClick={onRetry} disabled={retrying}>
+        <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm pa-alert-retry" onClick={onRetry} disabled={retrying} aria-busy={retrying || undefined}>
           {retryLabel}
         </button>
       )}

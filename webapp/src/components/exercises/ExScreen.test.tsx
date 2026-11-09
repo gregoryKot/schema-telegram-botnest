@@ -7,6 +7,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ExScreen, ExScreenSkeleton } from './ExScreen';
+import { PHONE_MEDIA } from '../../utils/phoneLayout';
 
 afterEach(cleanup);
 
@@ -99,7 +100,8 @@ describe('ExScreen — герой и раскладки', () => {
     expect(container.firstElementChild!.className).toBe('ex2-screen');
     // два заголовка Literata 26 подряд (h1 листа и вопрос) — плоская иерархия (ревью волны 0, круг 2)
     const css = readFileSync(join(__dirname, '../../styles/sheet-exercises.css'), 'utf8');
-    expect(css).toMatch(/@media \(max-width: 767px\) \{ \.ex2-screen--hero \.ex2-prompt-label \{ font-size: 22px; \} \}/);
+    // блок телефона — каноническая строка (utils/phoneLayout.test.ts), не голый (max-width: 767px)
+    expect(css).toContain(`@media ${PHONE_MEDIA} { .ex2-screen--hero .ex2-prompt-label { font-size: 22px; } }`);
   });
 
   it('look + heroArt — сцена с данными вместо знака; прежний art при look не рисуется', () => {

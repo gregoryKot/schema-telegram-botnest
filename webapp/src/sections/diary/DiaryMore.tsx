@@ -6,7 +6,7 @@ export function DiaryMore({ state, onMore }: { state: MoreState; onMore: () => v
   return (
     <>
       {state === 'failed' && <p className="cd-streak" role="status">Более ранние записи не загрузились.</p>}
-      <button type="button" className="ds-btn ds-btn--secondary" disabled={state === 'loading'} onClick={onMore}>
+      <button type="button" className="ds-btn ds-btn--secondary" disabled={state === 'loading'} aria-busy={state === 'loading' || undefined} onClick={onMore}>
         {state === 'loading' ? 'Загружаю…' : state === 'failed' ? 'Повторить' : 'Показать ещё'}
       </button>
     </>

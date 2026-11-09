@@ -52,7 +52,7 @@ export function OfflineInviteCard({ selectedClient }: Props) {
             У клиента пока нет приложения. Когда по коду подключится аккаунт, кабинет спросит, тот ли
             это человек. После «Да» задания, заметки, карта режимов и концептуализация переедут на его аккаунт.
           </p>
-          <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={create} disabled={submitting}>
+          <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={create} disabled={submitting} aria-busy={submitting || undefined}>
             {submitting ? '…' : 'Пригласить в приложение'}
           </button>
           {error && <div role="alert" className="tk-error">{error}</div>}

@@ -160,14 +160,21 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
    50% читалась розовой и активной (аудит 2026-11, «неактивные кнопки розовые»).
    • Залитая — утопленная бумага и --text-faint: подпись занятости («Сохраняю…», «Впускаю…») —
      статус, его читают, поэтому не призрачная.
-   • Контурные (--secondary, --icon) заливки не получают: фон как у активной, рамка --line —
-     иначе неактивная «Отвязать» тяжелее активной, а «Это не я» сливалась с «Впускаю…». Подпись
-     контурной — --text-faint, как у залитой: в неактивном виде она тоже несёт статус («Загружаю…»,
-     «Готовлю картинку…»), а --text-ghost — только декор (index.css). Призрачный цвет — лишь у
-     --icon: там глиф без подписи. Записаны на два класса (0,3,0): их фон не решает порядок файлов.
+   • Контурные (--secondary, --icon) утопленной заливки не получают — иначе неактивная «Отвязать»
+     тяжелее активной. Простаивающая контурная (концепта ещё нет, первый шаг, единственный способ
+     входа, «Отмена» пока сохраняется форма) лежит в странице, а не стоит на ней белой плашкой:
+     фон прозрачный, рамка --line, подпись — --text-faint на 60% (неактивный элемент от порога
+     контраста свободен, WCAG 1.4.3). С белой плашкой и --text-faint её «Экспорт концепта» читался
+     нажимаемым (ревью волны 0, круг 3).
+   • Занятая контурная (aria-busy="true": «Загружаю…», «Готовлю картинку…») — статус, его читают:
+     плашка как у активной и --text-faint (≥4.5:1), курсор «в работе».
+   • --text-ghost — только глиф --icon без подписи (index.css: «только декор»). Записаны на два
+     класса (0,3,0), занятая — на 0,4,0: их фон не решает порядок файлов.
    Своя заливка у .ds-btn.x — с :not(:disabled) или с парой .ds-btn.x:disabled (paperPrimitives.test). */
 .ds-btn:disabled, .ds-btn:disabled:hover { background: var(--paper-sunk); color: var(--text-faint); border-color: var(--paper-sunk); cursor: default; }
-.ds-btn.ds-btn--secondary:disabled, .ds-btn.ds-btn--secondary:disabled:hover { background: var(--surface); color: var(--text-faint); border-color: var(--line); }
+.ds-btn:disabled[aria-busy='true'] { cursor: progress; }
+.ds-btn.ds-btn--secondary:disabled, .ds-btn.ds-btn--secondary:disabled:hover { background: transparent; color: color-mix(in srgb, var(--text-faint) 60%, transparent); border-color: var(--line); }
+.ds-btn.ds-btn--secondary:disabled[aria-busy='true'], .ds-btn.ds-btn--secondary:disabled[aria-busy='true']:hover { background: var(--surface); color: var(--text-faint); }
 .ds-btn.ds-btn--icon:disabled, .ds-btn.ds-btn--icon:disabled:hover { background: transparent; color: var(--text-ghost); border-color: var(--line); }
 .ds-btn--sm { height: 40px; padding: 0 18px; border-radius: 20px; }
 .ds-btn--lg { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; } /* на телефоне во всю колонку — в блоке ≤767; на компьютере по тексту */

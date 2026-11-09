@@ -123,7 +123,7 @@ function LinkDeviceContent({ code }: { code: string }) {
               <button className="ds-btn" onClick={() => void approve()} disabled={busy !== null || !acknowledged}>
                 {busy === 'approve' ? 'Привязываю…' : 'Разрешить доступ'}
               </button>
-              <button className="ds-btn ds-btn--secondary" onClick={() => void deny()} disabled={busy !== null}>
+              <button className="ds-btn ds-btn--secondary" onClick={() => void deny()} disabled={busy !== null} aria-busy={busy === 'deny' || undefined}>
                 Это не я
               </button>
             </div>

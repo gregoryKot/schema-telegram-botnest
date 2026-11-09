@@ -2,7 +2,8 @@
 // Глобальные правки примитивов и стили заготовок редизайна 2026-11 (b03, docs/design/APP_2026-11.md).
 // CSS в jsdom не исполняется — сверяем исходники (приём dsPrimitives.test.ts):
 //  • тумблер — мох палитры, не ярко-зелёный --ok; неактивная кнопка — утопленная бумага, а не
-//    терракота на 50% («розовая и будто активная»); выбранный чип — бумага --h с кромкой тона;
+//    терракота на 50% («розовая и будто активная»); контурная простаивающая лежит в странице, занятая
+//    (aria-busy) читается статусом; выбранный чип — бумага --h с кромкой тона;
 //  • строка-переход со знаком слева — три колонки везде (одно правило в paper.css, paperRow.test.ts);
 //  • подложка диалога — тёплый тон из токенов; «тихое» окно гасит кольцо автофокуса;
 //  • paper-app.css: только токены, без размытия и фильтров, мелкий текст на цветной бумаге не
@@ -42,17 +43,36 @@ describe('глобальные правки примитивов (cabinet.css)',
     for (const v of ['secondary', 'icon']) {
       const off = decls(cabinet, `.ds-btn.ds-btn--${v}:disabled`);
       expect(off, v).not.toContain('--paper-sunk');
-      expect(off, v).toMatch(/background: var\(--surface\)|background: transparent/);
+      expect(off, v).toContain('background: transparent');
       expect(off, v).toContain('border-color: var(--line)');
       expect(decls(cabinet, `.ds-btn.ds-btn--${v}:disabled:hover`), v).toBe(off);
     }
   });
 
-  it('подпись неактивной контурной — --text-faint (это статус «Загружаю…»), призрачный --text-ghost — только у глифа --icon', () => {
+  // Ревью волны 0, круг 3: с белой плашкой и --text-faint простаивающая «Экспорт концепта» и «← Назад»
+  // на первом вопросе читались нажимаемыми — у активной та же плашка и форма, разница в одном тоне.
+  const prop = (d: string, p: string) => d.match(new RegExp(`(?:^|;)\\s*${p}:\\s*([^;]+)`))?.[1].trim();
+  const active = decls(cabinet, '.ds-btn--secondary');
+  const idle = decls(cabinet, '.ds-btn.ds-btn--secondary:disabled');
+  const busy = decls(cabinet, ".ds-btn.ds-btn--secondary:disabled[aria-busy='true']");
+
+  it('простаивающая неактивная контурная не похожа на активную: ни плашки, ни рамки, ни цвета подписи активной', () => {
+    expect(prop(active, 'background')).toBe('var(--surface)');
+    expect(prop(idle, 'background')).toBe('transparent');
+    expect(prop(idle, 'border-color')).not.toBe(prop(active, 'border')?.split(' ').pop());
+    expect(prop(idle, 'color')).not.toBe(prop(active, 'color'));
+    // и не --text-faint: это обычный цвет вторичного текста, а не неактивный тон
+    expect(prop(idle, 'color')).toMatch(/^color-mix\(in srgb, var\(--text-faint\) \d+%, transparent\)$/);
+    expect(idle).not.toMatch(/opacity/);
+  });
+
+  it('занятая контурная (aria-busy) — статус «Загружаю…»: плашка и --text-faint (≥4.5:1), не призрачная', () => {
     // --text-ghost в index.css — «только плейсхолдеры/декор, не текст»; ревью волны 0, круг 2
-    const secondary = decls(cabinet, '.ds-btn.ds-btn--secondary:disabled');
-    expect(secondary).toContain('color: var(--text-faint)');
-    expect(secondary).not.toContain('--text-ghost');
+    expect(prop(busy, 'background')).toBe('var(--surface)');
+    expect(prop(busy, 'color')).toBe('var(--text-faint)');
+    expect(busy).not.toContain('--text-ghost');
+    expect(decls(cabinet, ".ds-btn.ds-btn--secondary:disabled[aria-busy='true']:hover")).toBe(busy);
+    expect(decls(cabinet, ".ds-btn:disabled[aria-busy='true']")).toContain('cursor: progress');
     expect(decls(cabinet, '.ds-btn.ds-btn--icon:disabled')).toContain('color: var(--text-ghost)');
   });
 

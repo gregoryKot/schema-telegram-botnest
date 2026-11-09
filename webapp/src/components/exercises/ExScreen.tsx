@@ -10,20 +10,15 @@ import { ExHead, type ExHeadProps } from './ExHead';
 import { ExBar } from './ExBar';
 import '../../styles/sheet-exercises.css';
 
-// Глифы живут в ExGlyphs.tsx (один дом, ExBar берёт стрелку оттуда); потребители импортируют их отсюда.
-export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExGlyphs';
+export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExGlyphs'; // дом глифов — ExGlyphs
 
-// ── Shared exercise wrapper ───────────────────────────────────────────────────
-// Шапка — общая ds-sheet-head/ds-back (#906): .ex2-top держит sticky и --safe-top
-// (safeTop.test.ts). Стрелка — SVG, подпись без «←»: имя кнопки («Назад», «Закрыть»,
-// «Назад к упражнениям») ищут по тексту тесты десятков потребителей ExScreen.
-// Без backLabel подпись задаёт хост упражнений (exBackLabel.ts).
+// ── Обёртка упражнения. Шапка — ExBar (ds-sheet-head/ds-back, #906; sticky .ex2-top — safeTop.test.ts).
+// Подпись без «←»: имя кнопки ищут тесты потребителей; без backLabel её задаёт хост (exBackLabel.ts).
 // Герой (look, ExHead) и раскладки редизайна 2026-11 — по желанию экрана, без них DOM прежний:
 //  • hintBeforeField — на ≤900 подсказка (aside) между шапкой и полем, а не после «Сохранить»;
 //  • spread — разворот (SpreadLayout): на ≥1024 шапка и подсказка слева колонкой, форма справа;
-//  • «самопомощь» у героя — наклейкой под кнопками (после foot) во всех раскладках: на 390 до
-//    первого поля остаются только шапка и лист (APP_2026-11.md, принцип 5); cautionAt="head"
-//    ставит её под лист, если экрану так нужно. Без look — полное предупреждение под шапкой.
+//  • «самопомощь» у героя — наклейкой под кнопками (после foot): на 390 до поля только шапка и лист
+//    (APP_2026-11.md, принцип 5); cautionAt="head" — под лист. Без look — полное под шапкой.
 interface ExScreenProps extends ExHeadProps {
   /** Предупреждение «самопомощь» — только на первом экране. */
   caution?: boolean;
@@ -81,8 +76,7 @@ export function ExScreen({ onBack, backLabel, ...body }: ExScreenProps) {
 }
 
 // ── Силуэт экрана упражнения, пока грузится его чанк (Suspense в TaskExerciseHost) ──
-// Та же рамка: шапка с «Назад», надзаголовок, заголовок, абзац, карточка. Записи
-// истории ещё нет (её делает упражнение после загрузки), поэтому «Назад» — onBack хоста.
+// Та же рамка: шапка, надзаголовок, заголовок, абзац, карточка. Записи истории ещё нет — «Назад» — onBack хоста.
 export function ExScreenSkeleton({ onBack }: { onBack: () => void }) {
   const hostBackLabel = useExBackLabel();
   return (

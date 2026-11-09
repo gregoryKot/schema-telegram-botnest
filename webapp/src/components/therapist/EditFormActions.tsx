@@ -18,7 +18,7 @@ export function EditFormActions({ saving, error, onSave, onCancel, onAccent = fa
   return (
     <>
       <div className="tk-edit-actions">
-        <button className={onAccent ? 'ds-btn ds-btn--secondary ds-btn--sm' : 'ds-btn ds-btn--sm'} disabled={saving || hint !== null} onClick={() => void onSave()}>
+        <button className={onAccent ? 'ds-btn ds-btn--secondary ds-btn--sm' : 'ds-btn ds-btn--sm'} disabled={saving || hint !== null} aria-busy={saving || undefined} onClick={() => void onSave()}>
           {saving ? '...' : 'Сохранить'}
         </button>
         <button className="ds-btn ds-btn--secondary ds-btn--sm" onClick={onCancel}>Отмена</button>
