@@ -21,6 +21,26 @@
    components/art/PaperArt.tsx. Здесь только то, что своё у главной. */
 .ct-home { display: flex; flex-direction: column; gap: 20px; }
 .ct-tile { border-radius: 20px; }
+/* Полоски дня (TrackerBlock: SignScene со Strokes values). Телефон и планшет — эталон владельца: знак
+   плоско, без тени-вырезки, 112 (на телефоне 96). Пустое место (оценки нет) — тон соломы трекера
+   глубже бумаги, сплошной и без тени: полупрозрачный пустой тон (PAPER.hollow) на крупном знаке
+   темнел там, где наклонённые полоски сходятся, а на бумаге страницы телефона читался серым
+   («выключено», аудит 2026-11); тень под ним просвечивала бы второй полоской. */
+.ct-strokes { width: 112px; }
+.ct-strokes > .pp-art:first-child { display: none; }
+.ct-strokes > .pp-art:first-child [data-rated="no"] { visibility: hidden; }
+/* Кромка цветом бумаги под знаком: наклонённые пустые полоски сходятся верхушками и иначе сливались
+   в одну фигуру — пять мест должны читаться пятью. */
+.ct-strokes > .pp-art:last-child [data-rated="no"] { fill: oklch(0.86 0.045 var(--h)); stroke: var(--bg); stroke-width: 2.5; }
+/* Мета квадрата рядом со стрелкой: короткая («Пока записей нет», «Сегодня 2 записи») — одной строкой
+   и на 360 (аудит 2026-11: рвалась на две — на телефоне без разрядки и с узким зазором, ниже).
+   Длинная («Последняя запись — вчера») переносится ровными строками, стрелка — у последней:
+   многоточие съело бы «вчера», а это и есть данные. Колонки — minmax(0, 1fr): длинная мета не
+   раздвигает квадрат за край экрана. */
+.ct-squares.pp-squares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ct-home .pp-square-foot { align-items: flex-end; }
+.ct-home .pp-square-foot .pp-meta { min-width: 0; text-wrap: balance; }
+.ct-home .pp-arrow { flex-shrink: 0; }
 
 /* Телефон: «Сегодня» — один экран без прокрутки (владелец 2026-11-06). Страница уезжала на ~70px
    под статус-бар: нижнее поле .ds-page (40) стояло поверх зазора над панелью у .canvas (24). Поля и
@@ -36,11 +56,57 @@
   .ct-home .pp-square { min-height: 0; padding: calc(14px + var(--fit-room) * .03) 18px calc(12px + var(--fit-room) * .02); gap: calc(4px + var(--fit-room) * .02); }
   .ct-home .pp-title { font-size: calc(22px + var(--fit-size) * .0333); }
   .ct-home .pp-art--square { height: calc(36px + var(--fit-size) * .2); width: auto; aspect-ratio: 120 / 64; }
-  .ct-home .pp-square-foot { margin-top: calc(4px + var(--fit-room) * .03); }
+  /* Мета 12 без разрядки, стрелка 19, зазор 4: «Пока записей нет», «Сегодня 2 записи», «Сегодня: 1 разбор»
+     встают в строку на 390 (квадрат 169, поле под мету 110 — замер шрифта 2026-11), на 360 — с полем ниже. */
+  .ct-home .pp-square-foot { margin-top: calc(4px + var(--fit-room) * .03); gap: 4px; }
+  .ct-home .pp-square-foot .pp-meta { font-size: 12px; letter-spacing: 0; }
+  .ct-home .pp-arrow { font-size: 19px; }
+  .ct-strokes { width: 96px; }
+}
+@media (max-width: 374px) {
+  .ct-home .pp-square { padding-left: 16px; padding-right: 14px; }
 }
 
-/* Компьютер: блок трекера и квадраты — в два столбца с 1024; на 768–1023 всё столбиком (#925).
-   Заданий и ленты на главной нет (владелец 2026-11-05: только три кнопки). */
+/* Компьютер (≥1024) — разворот (docs/design/APP_2026-11.md, b05): слева лист соломы трекера с
+   полосками дня крупно и тенью-вырезкой — опорный элемент экрана; справа квадраты горизонтальными
+   плитками, знак справа от текста. Колонки равные, зазор как в бенто лендинга; всё — в первом экране.
+   На 768–1023 — одна колонка, как на телефоне (#925). Заданий и ленты на главной нет (владелец
+   2026-11-05: только три кнопки). */
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
-  .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: stretch; }
+  .ct-head-top { justify-content: flex-start; gap: 20px; }
+  .ct-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+  .ct-main.pp-block {
+    justify-content: space-between; gap: 28px; padding: 30px 36px 36px; border: 0; border-radius: 28px;
+    background: oklch(0.915 0.03 var(--h)); transition: background .12s;
+  }
+  .ct-main.pp-block:hover { background: oklch(0.895 0.04 var(--h)); }
+  .ct-main .pp-hero { grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+  /* Знак встаёт по левому краю надписи: поле холста Strokes (~7% ширины) — сдвигом назад. */
+  .ct-main .ct-strokes { order: -1; width: 216px; margin-left: -14px; }
+  .ct-main .ct-strokes > .pp-art:first-child { display: block; }
+  .ct-main .ct-strokes > .pp-art:last-child [data-rated="no"] { stroke: oklch(0.915 0.03 var(--h)); }
+  /* Мелкий текст на цветной бумаге — --text-sub: --text-faint на ней ниже 4.5:1. */
+  .ct-main .ds-label { color: var(--text-sub); }
+  .ct-main .pp-hero-title { font-size: 36px; }
+  .ct-squares.pp-squares { grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: 24px; }
+  /* Плитка как в бенто лендинга: название и подпись во всю ширину, стрелка — в углу на строке
+     названия, знак крупно в нижнем правом углу, мета — внизу слева (строка ног раскрыта в сетку). */
+  .ct-home .pp-square {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr auto;
+    column-gap: 20px; row-gap: 8px; min-height: 0; padding: 28px 30px 26px 32px; border-radius: 28px;
+  }
+  .ct-home .pp-square > .pp-title { grid-column: 1 / -1; grid-row: 1; padding-right: 40px; }
+  .ct-home .pp-square > .pp-text { grid-column: 1 / -1; grid-row: 2; }
+  .ct-home .pp-square > .pp-art { grid-column: 2; grid-row: 3 / 5; align-self: end; margin: 0 -4px -2px 0; width: 168px; height: auto; }
+  .ct-home .pp-square > .pp-square-foot { display: contents; }
+  .ct-home .pp-square-foot > .pp-meta { grid-column: 1; grid-row: 4; align-self: end; }
+  .ct-home .pp-square-foot > .pp-arrow { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; }
+  .ct-home .pp-title { font-size: 30px; }
+}
+/* 1024–1199: колонка ~330px — знаки меньше, иначе знак плитки наезжает на подпись. */
+@media (min-width: 1024px) and (max-width: 1199px) and (min-height: 501px), (min-width: 1024px) and (max-width: 1199px) and (pointer: fine) {
+  .ct-home .pp-square > .pp-art { width: 124px; }
+  .ct-main .ct-strokes { width: 180px; margin-left: -12px; }
+  .ct-main .pp-hero-title { font-size: 32px; }
+  .ct-home .pp-title { font-size: 27px; }
 }
