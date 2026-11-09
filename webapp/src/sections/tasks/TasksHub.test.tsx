@@ -103,6 +103,33 @@ describe('TasksHub — список', () => {
     await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(1, true));
   });
 
+  // До 2026-11 узел не брал taskError из useTaskActions: отказ «Готово» и новой
+  // цели проходил молча (нашлось при разборе no-floating-promises в webapp).
+  it('«Готово» отклонено сервером — в списке видна ошибка, задание на месте', async () => {
+    mockApi.getTasks.mockResolvedValue([task({ id: 1, assignedBy: 9, type: 'custom', text: 'Позвонить маме' })]);
+    mockApi.completeTask.mockRejectedValue(new Error('500'));
+    renderHub();
+    await screen.findByText('Позвонить маме');
+    expect(screen.queryByRole('alert')).toBeNull();
+    await act(async () => { fireEvent.click(screen.getAllByText('Готово')[0]); });
+    expect(screen.getByRole('alert').textContent).toContain('Не удалось сохранить изменение задания');
+    expect(screen.getByText('Позвонить маме')).toBeTruthy();
+  });
+
+  it('новая цель создана, а список не перечитался — после возврата к списку видна ошибка', async () => {
+    mockApi.getTasks.mockResolvedValueOnce([]).mockRejectedValue(new Error('503'));
+    renderHub();
+    await screen.findByText('Задания', { selector: 'h1' });
+    await act(async () => {});
+    fireEvent.click(document.querySelector('.sk-overlay .sk-wide-btn')!);
+    await screen.findByText('Новая цель');
+    // Тип по умолчанию — «серия в трекере», текста не требует.
+    await act(async () => { fireEvent.click(document.querySelector('.sk-submit .ds-btn')!); });
+    expect(mockApi.createTask).toHaveBeenCalledTimes(1);
+    expect((await screen.findByRole('alert')).textContent).toContain('Не удалось сохранить изменение задания');
+    expect(await screen.findByText('Задания', { selector: 'h1' })).toBeTruthy();
+  });
+
   it('«+ Поставить цель» открывает создание цели вместо списка; «Назад» возвращает список, узел не закрывается', async () => {
     const onClose = vi.fn();
     mockApi.getTasks.mockResolvedValue([task({ type: 'diary_streak', text: 'Дневник 7 дней' })]);

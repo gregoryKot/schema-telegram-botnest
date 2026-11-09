@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ModeEntrySheet } from './ModeEntrySheet';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 
 vi.mock('../../api', () => ({
@@ -33,21 +33,25 @@ afterEach(() => {
   cleanup();
 });
 
-describe('ModeEntrySheet — кризисная детекция', () => {
-  it('кризисная фраза в описании ситуации показывает CrisisCard', () => {
-    renderSheetOnFormStep();
-    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
+describeCrisisField('webapp/src/components/diary/ModeEntryForm.tsx', {
+  label: 'что произошло',
+  open: renderSheetOnFormStep,
+  enter: (text) =>
+    fireEvent.change(
+      screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».'),
+      { target: { value: text } },
+    ),
+});
 
-  it('нейтральный текст не показывает CrisisCard', () => {
+// Последний шаг — ответ Здорового Взрослого, своё поле и своё состояние.
+describeCrisisField('webapp/src/components/diary/ModeEntryForm.tsx', {
+  label: 'ответ Здорового Взрослого',
+  open: () => {
     renderSheetOnFormStep();
-    const textarea = screen.getByPlaceholderText('Например: позвонил папа, начал расспрашивать про работу — и я чувствую, что «выключаюсь».');
-    fireEvent.change(textarea, { target: { value: 'Обычный звонок с папой' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+    const ticks = screen.getAllByRole('button', { name: /^Шаг \d+$/ });
+    fireEvent.click(ticks[ticks.length - 1]);
+  },
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText('Напиши своими словами…'), { target: { value: text } }),
 });
 
 // В7 дизайн-аудита 2026-08: поле связано с видимым вопросом (aria-labelledby),

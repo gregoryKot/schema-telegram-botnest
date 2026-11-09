@@ -2,10 +2,12 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertLiveAccess } from './live-access';
 import type { Request } from 'express';
 
 export interface WebUser {
@@ -14,8 +16,8 @@ export interface WebUser {
 
 // Validates JWT Bearer token issued by AuthService.
 // Sets req.webUser = { userId } on success.
-// Аккаунт обязан быть жив (A5, аудит 2026-10): токен живёт 15 минут — дольше
-// удаления/слияния аккаунта. Как в TelegramAuthGuard, но без upsert.
+// Аккаунт и сессия токена обязаны быть живы (A5 аудита 2026-10, хвост S12
+// аудита 2026-11) — live-access.ts, общий с TelegramAuthGuard.
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
@@ -30,33 +32,41 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing Bearer token');
 
     const token = header.slice(7);
-    const { userId } = this.auth.verifyAccessToken(token);
-    const a = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { deletedAt: true },
-    });
-    if (!a || a.deletedAt) throw new UnauthorizedException('Account gone');
+    const { userId, sid } = this.auth.verifyAccessToken(token);
+    await assertLiveAccess(this.prisma, userId, sid);
     req.webUser = { userId };
     return true;
   }
 }
 
-// Same as JwtAuthGuard but doesn't throw if token is missing/invalid.
-// Used by endpoints that behave differently for anonymous vs authed users
-// (e.g. /api/auth/google: anonymous → sign-up, authed → link to existing).
+// Как JwtAuthGuard, но без 401: нет токена, он битый, аккаунт удалён или
+// сессия отозвана — аноним (роуты входа: optional-auth-routes.ts).
 @Injectable()
 export class OptionalJwtGuard implements CanActivate {
-  constructor(private readonly auth: AuthService) {}
+  private readonly logger = new Logger(OptionalJwtGuard.name);
 
-  canActivate(context: ExecutionContext): boolean {
+  constructor(
+    private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
     const header = req.headers['authorization'];
     if (header?.startsWith('Bearer ')) {
       try {
-        const { userId } = this.auth.verifyAccessToken(header.slice(7));
+        const { userId, sid } = this.auth.verifyAccessToken(header.slice(7));
+        await assertLiveAccess(this.prisma, userId, sid);
         req.webUser = { userId };
-      } catch {
-        /* ignore — treat as anonymous */
+      } catch (err) {
+        // 401-исходы (битый токен, мёртвый аккаунт, отозванная сессия) — аноним.
+        // Прочее (сбой базы) — тоже аноним, но видно: имя и код, без текста.
+        if (!(err instanceof UnauthorizedException)) {
+          const { name, code } = err as { name?: string; code?: string };
+          this.logger.warn(
+            `проверка сессии не удалась, запрос идёт анонимом: ${name ?? 'Error'} ${code ?? ''}`,
+          );
+        }
       }
     }
     // Link-token для OAuth-редиректов — ТОЛЬКО httpOnly-кука `link_token`

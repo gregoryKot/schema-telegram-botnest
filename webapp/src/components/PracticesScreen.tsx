@@ -62,7 +62,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
       await api.addPractice(NEED_IDS[needIdx], text);
       setInput('');
       flashAdded();
-      reloadPractices();
+      void reloadPractices(); // reload из useAsyncData не отклоняется: сбой ставит practicesFailed, экран говорит «не загрузилось»
     } catch {
       flashError();
     } finally {
@@ -76,7 +76,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
     // практика «исчезала», оставаясь в БД, и воскресала при следующем заходе).
     api.deletePractice(id).catch(() => {
       flashError();
-      reloadPractices();
+      void reloadPractices(); // не отклоняется (см. выше)
     });
   }
 
@@ -97,7 +97,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             <h1 className="ds-h2 sk-title">Что меня<br /><em className="sk-it">питает</em></h1>
             <div className="ds-sub sk-lead sk-intro">
               {buildPracticesIntro(tr)}
-              {onOpenTracker &&<> Что-то просело? <span {...pressable(onOpenTracker)} className="ds-link ds-link--inline">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
+              {onOpenTracker &&<> Что-то просело? <span {...pressable(() => goBack(onOpenTracker))} className="ds-link ds-link--inline">{tr('Открой трекер →', 'Откройте трекер →')}</span></>}
             </div>
           </div>
           <div className="sk-head-actions">
@@ -165,7 +165,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
+              onKeyDown={e => { if (e.key === 'Enter') void handleAdd(); /* сбой ловит сам: тост ошибки */ }}
               placeholder="Добавить действие..."
               maxLength={PRACTICE_TEXT_MAX}
               className="ds-input"

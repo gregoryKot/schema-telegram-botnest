@@ -9,6 +9,7 @@
 // билета вход оттуда был невозможен в принципе (разбор 2026-08-28).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LoginProvider, LoginTicketApi } from './loginTicketApi';
+import { describeFailure } from '../api/describeFailure';
 
 export interface LoginTicketDeps {
   api: LoginTicketApi;
@@ -130,12 +131,12 @@ export function useLoginTicket(deps: LoginTicketDeps) {
           provider,
           hostId: d.hostId,
         });
-      } catch {
+      } catch (err) {
         // Текст ошибки не пересылаем: он приходит от браузера и может нести
-        // адрес с секретом во фрагменте (правило №7 и разбор H0). Факта
-        // достаточно — экран и так один.
+        // адрес с секретом во фрагменте (правило №7 и разбор H0). Причина —
+        // из закрытого списка describeFailure: код ответа или тип сбоя.
         d.reportError?.({
-          message: 'login ticket start failed',
+          message: `login ticket start failed: ${describeFailure(err)}`,
           section: LOGIN_TICKET_SECTION,
         });
         if (alive.current && gen.current === myGen)

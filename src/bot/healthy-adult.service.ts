@@ -85,11 +85,10 @@ export class HealthyAdultService {
 
   /**
    * Выбрать фразу из пула для публикации по принципу «давно не звучала»
-   * (LRU): берём включённые с самым старым lastPostedAt (ни разу — первыми),
-   * случайно среди равных, и помечаем выбранную. Так ни ручной тест, ни
-   * рестарт, ни расписание не дают повтор подряд (фикс дубля).
-   * Если в БД нет включённых фраз — фолбэк на встроенный пул (без дубля с
-   * недавними постами).
+   * (LRU): включённые с самым старым lastPostedAt (ни разу — первыми),
+   * случайно среди равных. Вышедшей фраза помечается не здесь, а по факту
+   * выхода (recordPost): фраза неудачной попытки остаётся в ротации (хвост
+   * волны 9). Нет включённых в БД — встроенный пул без дубля с недавними.
    */
   async pickFromPool(recentPosts: string[] = []): Promise<string | null> {
     const rows = await this.prisma.healthyAdultPhrase.findMany({
@@ -101,12 +100,7 @@ export class HealthyAdultService {
     const key = (d: Date | null) => (d ? d.getTime() : 0);
     const oldest = Math.min(...rows.map((r) => key(r.lastPostedAt)));
     const candidates = rows.filter((r) => key(r.lastPostedAt) === oldest);
-    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-    await this.prisma.healthyAdultPhrase.update({
-      where: { id: chosen.id },
-      data: { lastPostedAt: new Date() },
-    });
-    return chosen.text;
+    return candidates[Math.floor(Math.random() * candidates.length)].text;
   }
 
   private pickFromBuiltin(recentPosts: string[]): string {
@@ -115,9 +109,15 @@ export class HealthyAdultService {
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
-  /** Записать факт публикации (для дедупа и контекста генератора). */
+  /** Пост вышел: история (дедуп, lastPostAt) и пометка фразы пула — разом. */
   async recordPost(text: string, source: 'ai' | 'pool'): Promise<void> {
-    await this.prisma.healthyAdultPost.create({ data: { text, source } });
+    await this.prisma.$transaction([
+      this.prisma.healthyAdultPost.create({ data: { text, source } }),
+      this.prisma.healthyAdultPhrase.updateMany({
+        where: { text },
+        data: { lastPostedAt: new Date() },
+      }),
+    ]);
   }
 
   /**

@@ -55,8 +55,7 @@ OJWT = `OptionalJwtGuard` · — = без гварда (валидация вн�
 
 | Метод + путь | Tier | Статус |
 |--------------|------|--------|
-| GET user-flags · POST user-flags | Medium | ⬜ |
-| GET drafts · POST drafts/:type · DELETE drafts/:type | Medium | ⬜ |
+| GET user-flags | Medium | ⬜ |
 | GET profile · POST profile/name | Low | ⬜ |
 | POST init | Low | ⬜ |
 | GET disclaimer · POST disclaimer | Low | ⬜ |

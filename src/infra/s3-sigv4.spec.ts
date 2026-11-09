@@ -55,6 +55,45 @@ describe('SigV4 — тест-векторы AWS', () => {
   });
 });
 
+// Эталоны именно для S3 (сервис s3, x-amz-content-sha256): пример из
+// документации S3 и подпись botocore для курсора листинга с `+` — случай, где
+// curl 8.18 с `--aws-sigv4` подписывал `%2B` как `%20` (источник — .meta.json).
+interface S3Case {
+  name: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  region: string;
+  date: string;
+  method: string;
+  url: string;
+  authz: string;
+}
+const S3_CASES = (
+  JSON.parse(loadRecordedFixture('s3-sigv4-reference.json')) as {
+    cases: S3Case[];
+  }
+).cases;
+const signS3 = (c: S3Case, url = c.url) =>
+  signRequest({
+    method: c.method,
+    url: new URL(url),
+    credentials: c,
+    now: new Date(c.date),
+  }).authorization;
+
+describe('SigV4 для S3 — документация S3 и botocore', () => {
+  it.each(S3_CASES.map((c) => [c.name, c] as const))('%s', (_n, c) => {
+    expect(signS3(c)).toBe(c.authz);
+  });
+
+  it('контроль: `+` курсора, подписанный как `%20` (так делал curl 8.18), — другая подпись', () => {
+    const plus = S3_CASES.find((c) => c.url.includes('%2B'));
+    expect(plus).toBeDefined();
+    const asSpace = plus!.url.replace('%2B', '%20');
+    expect(signS3(plus!, asSpace)).not.toBe(plus!.authz);
+  });
+});
+
 describe('SigV4 — детали', () => {
   it('для S3 добавляет x-amz-content-sha256 и подписывает его; host наружу не отдаёт', () => {
     const h = signRequest({

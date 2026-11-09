@@ -8,19 +8,19 @@ import * as ts from 'typescript';
 
 const ROUTE_DECORATORS = new Set(['Get', 'Post', 'Patch', 'Delete', 'Put']);
 
-// Единственный список гвардов: по нему идёт и разбор по методу (hasGuard), и
-// файловый GUARD_RE ниже, которым пользуются classify() и трипваер «контроллер
-// классифицирован». Второй копии списка нет (правило №4).
-export const GUARD_NAMES = [
-  'TelegramAuthGuard',
-  'JwtAuthGuard',
-  'OptionalJwtGuard',
-] as const;
+// Единственные списки гвардов (правило №4): по ним идёт и разбор по методу, и
+// файловый GUARD_RE (classify(), «контроллер классифицирован»). Защищает только
+// GUARD_NAMES; OPTIONAL_GUARD_NAMES пропускают анонима, и такой метод обязан
+// быть в OPTIONAL_AUTH_BY_DESIGN (`src/security/optional-auth-routes.ts`; до
+// 2026-11 шесть роутов входа под OptionalJwtGuard числились защищёнными).
+export const GUARD_NAMES = ['TelegramAuthGuard', 'JwtAuthGuard'] as const;
+export const OPTIONAL_GUARD_NAMES = ['OptionalJwtGuard'] as const;
 const GUARD_SET = new Set<string>(GUARD_NAMES);
+const OPTIONAL_SET = new Set<string>(OPTIONAL_GUARD_NAMES);
+const ANY_GUARD = [...GUARD_NAMES, ...OPTIONAL_GUARD_NAMES].join('|');
 
-export const GUARD_RE = new RegExp(
-  `@UseGuards\\(\\s*[^)]*(${GUARD_NAMES.join('|')})`,
-);
+/** Файл с любым гвардом входа — контроллер разбирается по методу. */
+export const GUARD_RE = new RegExp(`@UseGuards\\(\\s*[^)]*(${ANY_GUARD})`);
 
 export interface RouteMethod {
   /**
@@ -31,6 +31,8 @@ export interface RouteMethod {
   key: string;
   /** где стоит @UseGuards с одним из GUARD_NAMES */
   guard: 'class' | 'method' | null;
+  /** где стоит @UseGuards с одним из OPTIONAL_GUARD_NAMES (аноним проходит) */
+  optional: 'class' | 'method' | null;
   /** тело метода зовёт `assertAdminKey(` */
   callsAdminKey: boolean;
 }
@@ -44,15 +46,19 @@ function decoratorName(d: ts.Decorator): string | null {
   return call && ts.isIdentifier(call.expression) ? call.expression.text : null;
 }
 
-/** Есть ли среди декораторов `@UseGuards(<известный гвард>)`. */
-function hasGuard(node: ts.HasDecorators): boolean {
+/** Есть ли среди декораторов `@UseGuards(<гвард из names>)`. */
+function hasGuard(node: ts.HasDecorators, names: Set<string>): boolean {
   return (ts.getDecorators(node) ?? []).some((d) => {
     if (decoratorName(d) !== 'UseGuards') return false;
     return (decoratorCall(d)?.arguments ?? []).some(
-      (a) => ts.isIdentifier(a) && GUARD_SET.has(a.text),
+      (a) => ts.isIdentifier(a) && names.has(a.text),
     );
   });
 }
+
+type Node = ts.HasDecorators;
+const where = (cls: Node, m: Node, names: Set<string>) =>
+  hasGuard(cls, names) ? 'class' : hasGuard(m, names) ? 'method' : null;
 
 function callsAssertAdminKey(body: ts.Node | undefined): boolean {
   let found = false;
@@ -78,7 +84,6 @@ export function routeMethods(rel: string, src: string): RouteMethod[] {
       (d) => decoratorName(d) === 'Controller',
     );
     if (!isController) continue;
-    const classGuard = hasGuard(cls);
     for (const m of cls.members.filter(ts.isMethodDeclaration)) {
       const isRoute = (ts.getDecorators(m) ?? []).some((d) =>
         ROUTE_DECORATORS.has(decoratorName(d) ?? ''),
@@ -86,12 +91,25 @@ export function routeMethods(rel: string, src: string): RouteMethod[] {
       if (!isRoute) continue;
       out.push({
         key: `${rel}:${m.name.getText(sf)}`,
-        guard: classGuard ? 'class' : hasGuard(m) ? 'method' : null,
+        guard: where(cls, m, GUARD_SET),
+        optional: where(cls, m, OPTIONAL_SET),
         callsAdminKey: callsAssertAdminKey(m.body),
       });
     }
   }
   return out;
+}
+
+/** Не под гвардом и не в своём реестре: optional — OPTIONAL_AUTH_BY_DESIGN, иначе ANONYMOUS_BY_DESIGN. */
+export function unclassifiedRoutes(
+  methods: RouteMethod[],
+  anonymous: Record<string, string>,
+  optional: Record<string, string>,
+): string[] {
+  return methods
+    .filter((m) => !m.guard)
+    .filter((m) => !(m.optional ? optional[m.key] : anonymous[m.key]))
+    .map((m) => m.key);
 }
 
 /** Ключи, встретившиеся дважды: ANONYMOUS_BY_DESIGN не различил бы такие методы. */

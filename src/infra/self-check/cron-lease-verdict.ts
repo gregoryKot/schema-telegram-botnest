@@ -1,27 +1,23 @@
 import { cronGapsMs } from './cron-gap';
 import { latestTicks } from './cron-ticks';
+import type { ProcessSpan } from './process-lives';
 
 /**
- * Правило пробы `cronLeases`: пропустил ли крон тики, которые этот процесс
- * обязан был отработать. Не «давно ли захватывали аренду» — по возрасту
- * оконный крон канала после аварии базы краснел до следующего окна, до ~16 ч
- * после восстановления (2026-10-17), а до того порог не из того источника уже
- * красил смок круглосуточно (2026-09-16, #503; оба — docs/INCIDENTS.md).
- *
- * Сбой — когда ДВА последних по расписанию тика не захвачены и оба пришлись на
- * зону ответственности процесса: после его старта и после последнего отказа
- * этой аренды из-за недоступной базы (cron-claim-failures.ts). Один пропуск —
- * не сбой: notificationQueue законно выходит по isProcessing до claimRun.
+ * Правило пробы `cronLeases`: пропустил ли крон тики, которые приложение
+ * обязано было отработать. Не «давно ли захватывали аренду» — по возрасту
+ * оконный крон канала краснел до ~16 ч после аварии базы (2026-10-17), а
+ * порог не из того источника красил смок круглосуточно (2026-09-16, #503;
+ * docs/INCIDENTS.md). Сбой — ДВА последних тика не захвачены и оба пришлись
+ * на зону ответственности: этого процесса (после старта и последнего отказа
+ * аренды из-за базы, cron-claim-failures.ts) или прошлого (process-lives.ts).
+ * Один пропуск — не сбой: notificationQueue выходит по isProcessing до claimRun.
  */
-
-/** Сколько ждать после номинального тика: claimRun — первое, что делает тик,
- * но при больной базе запрос висит до таймаута пула (30 с). */
+/** Ждём после тика: claimRun при больной базе висит до таймаута пула (30 с). */
 export const TICK_GRACE_MS = 90_000;
 /** Захват чуть раньше номинала (дрожание часов планировщика) — тот же тик. */
 export const TICK_TOLERANCE_MS = 5_000;
-/** Предел оправданий рестартом и аварией базы: деплои чаще раза в сутки иначе
- * навсегда прятали бы мёртвый суточный крон — его два тика никогда не
- * попадали бы в жизнь одного процесса. */
+/** Предел оправданий: тики, на которые не пришёлся ни один известный процесс
+ * (умер до первой пробы, авария базы), не прячут мёртвый крон вечно. */
 export const EXCUSE_BACKSTOP_MS = 2 * 24 * 3_600_000;
 
 /** Порог возраста аренды из расписания (`cronGapsMs`): один пропущенный тик
@@ -45,6 +41,8 @@ export interface LeaseFacts {
   startedAt: number;
   /** Последний отказ claimRun этой аренды из-за недоступной базы. */
   lastDbFailureAt?: number;
+  /** Когда работали прошлые процессы (process-lives.ts). */
+  earlier?: ProcessSpan[];
 }
 
 function ago(ms: number): string {
@@ -77,16 +75,18 @@ export function leaseProblem(
   if (!ticks || ticks.length < 2) return byAge(f, maxAge);
   const [t1, t2] = ticks.map((d) => d.getTime());
   if (f.runAt !== undefined && f.runAt >= t2 - TICK_TOLERANCE_MS) return null;
-
-  const coverageStart = Math.max(f.startedAt, f.lastDbFailureAt ?? -Infinity);
-  if (t2 > coverageStart) {
+  const own = Math.max(f.startedAt, f.lastDbFailureAt ?? -Infinity);
+  const judged = (t: number) =>
+    t > own ||
+    !!f.earlier?.some((p) => p.from < t && t + TICK_GRACE_MS <= p.to);
+  if (judged(t2) && judged(t1)) {
     if (f.runAt === undefined) return 'ни разу не отработал';
     return (
       `два тика подряд не отработали (${hhmm(t2)} и ${hhmm(t1)} UTC), ` +
       `последний раз ${ago(f.now - f.runAt)}`
     );
   }
-  // Тики пришлись на рестарт или аварию базы — не судим, но не бесконечно.
+  // Тики пришлись на смену процессов или аварию базы — не судим, но не вечно.
   if (f.runAt !== undefined && f.now - f.runAt > maxAge + EXCUSE_BACKSTOP_MS)
     return `последний раз ${ago(f.now - f.runAt)}`;
   return null;

@@ -5,6 +5,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { PhraseCheckDto, UpdatePhraseCheckDto } from './phrase-check.dto';
 import { PHRASE_MARK_IDS } from '../../bot/phrase-check.constants';
+import { EXERCISE_TEXT_MAX } from '../../utils/text-limits';
 
 async function errorsFor(body: Record<string, unknown>): Promise<string[]> {
   const dto = plainToInstance(PhraseCheckDto, body);
@@ -53,6 +54,21 @@ describe('PhraseCheckDto', () => {
     await expect(
       errorsFor({ ...VALID, phrase: 'я'.repeat(3001) }),
     ).resolves.toContain('phrase');
+  });
+
+  // Поля фразы и ответа на сайте получают maxLength из той же константы.
+  it('предел фразы и ответа — EXERCISE_TEXT_MAX', async () => {
+    const at = 'я'.repeat(EXERCISE_TEXT_MAX);
+    const over = 'я'.repeat(EXERCISE_TEXT_MAX + 1);
+    await expect(
+      errorsFor({ ...VALID, phrase: at, rewrite: at }),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor({ ...VALID, phrase: over, rewrite: over }),
+    ).resolves.toEqual(['phrase', 'rewrite']);
+    await expect(errorsForUpdate({ rewrite: over })).resolves.toEqual([
+      'rewrite',
+    ]);
   });
 
   it('переформулировка необязательна', async () => {

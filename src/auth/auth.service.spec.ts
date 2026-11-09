@@ -172,13 +172,27 @@ describe('AuthService — refresh-token rotation', () => {
     );
   });
 
+  // Хвост S12 (аудит 2026-11): sid в access-токене — family его цепочки; по нему
+  // гвард (live-access.ts) узнаёт отзыв сессии сразу. Ротация sid не меняет.
+  it('access-токен несёт sid = family сессии, и при выдаче, и после ротации', async () => {
+    const { svc, webSessions } = makeService();
+    const issued = await svc.issueTokens(1n);
+    const family = webSessions[0].family as string;
+    expect(svc.verifyAccessToken(issued.accessToken)).toEqual({
+      userId: 1n,
+      sid: family,
+    });
+    const rotated = await svc.rotateRefreshToken(issued.refreshToken);
+    expect(svc.verifyAccessToken(rotated.accessToken).sid).toBe(family);
+  });
+
   it('rotateRefreshToken ищет сессию именно по своему tokenHash, а не берёт первую строку таблицы (иначе можно получить чужой accessToken)', async () => {
     const { svc } = makeService();
     await svc.issueTokens(2n); // окажется первой строкой в таблице
     const mine = await svc.issueTokens(1n);
     const rotated = await svc.rotateRefreshToken(mine.refreshToken);
     // Идентичность нового accessToken — от МОЕГО userId, не от первой строки.
-    expect(svc.verifyAccessToken(rotated.accessToken)).toEqual({ userId: 1n });
+    expect(svc.verifyAccessToken(rotated.accessToken).userId).toBe(1n);
   });
 
   it('theft-detection отзывает только family украденного токена, не сессии посторонних пользователей (updateMany обязан фильтровать по family)', async () => {
@@ -454,6 +468,57 @@ describe('AuthService — verifyTelegramWebAppData', () => {
       code: 'initdata_expired',
     });
     expect(securityLog.log).not.toHaveBeenCalled();
+  });
+
+  // Находка 2026-11-08: отказ обмена подписи не доходил до /stats. Колбэк
+  // получает исходную ошибку (по ней ручка классифицирует причину), а 401
+  // летит как раньше.
+  it('отказ → колбэк получает ошибку до 401, 401 всё равно летит', () => {
+    const { svc, securityLog } = makeService();
+    const onReject = jest.fn();
+    const initData = signInitData({ user: { id: 42 }, hash: 'b'.repeat(64) });
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '192.0.2.201', onReject),
+    ).toThrow(UnauthorizedException);
+    expect(onReject).toHaveBeenCalledTimes(1);
+    expect(onReject.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(securityLog.log).toHaveBeenCalledWith(
+      'suspicious_initdata',
+      expect.objectContaining({ ip: '192.0.2.201' }),
+    );
+  });
+
+  it('просрочка → колбэк получает ошибку «init data expired»', () => {
+    const { svc } = makeService();
+    const onReject = jest.fn();
+    const initData = signInitData({
+      user: { id: 42 },
+      authDate: Math.floor(Date.now() / 1000) - 3700,
+    });
+    expect(() =>
+      svc.verifyTelegramWebAppData(initData, '192.0.2.202', onReject),
+    ).toThrow(UnauthorizedException);
+    expect((onReject.mock.calls[0][0] as Error).message).toMatch(
+      /^init data expired/i,
+    );
+  });
+
+  it('валидная подпись — колбэк отказа не зовётся', () => {
+    const { svc } = makeService();
+    const onReject = jest.fn();
+    const initData = signInitData({ user: { id: 7, first_name: 'Аня' } });
+    expect(
+      svc.verifyTelegramWebAppData(initData, '192.0.2.203', onReject),
+    ).toEqual({ id: 7, firstName: 'Аня' });
+    expect(onReject).not.toHaveBeenCalled();
+  });
+
+  it('без колбэка отказ ведёт себя как прежде — 401 без TypeError', () => {
+    const { svc } = makeService();
+    const initData = signInitData({ user: { id: 42 }, hash: 'c'.repeat(64) });
+    expect(() => svc.verifyTelegramWebAppData(initData, '192.0.2.204')).toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('user отсутствует в initData целиком (не просто user.id) → UnauthorizedException, не TypeError', () => {
@@ -1309,6 +1374,7 @@ describe('AuthService — issueTokens/rotateRefreshToken: accessToken реаль
     const tokens = await svc.issueTokens(42n);
     expect(svc.verifyAccessToken(tokens.accessToken)).toEqual({
       userId: 42n,
+      sid: expect.any(String),
     });
   });
 
@@ -1318,6 +1384,7 @@ describe('AuthService — issueTokens/rotateRefreshToken: accessToken реаль
     const rotated = await svc.rotateRefreshToken(issued.refreshToken);
     expect(svc.verifyAccessToken(rotated.accessToken)).toEqual({
       userId: 42n,
+      sid: expect.any(String),
     });
   });
 });

@@ -64,7 +64,7 @@ const MODES = `
     <text class="dg-cap-acc" x="346" y="42">КРИТИК</text>
     <text class="dg-t" x="346" y="72">Карающий · Требовательный</text>
     <text class="dg-s" x="346" y="94">внутренний критик,</text>
-    <text class="dg-s" x="346" y="112">«ты недостаточно хорош»</text>
+    <text class="dg-s" x="346" y="112">«этого недостаточно»</text>
     <rect class="dg-node" x="14" y="146" width="300" height="118" rx="16"/>
     <text class="dg-cap-acc" x="34" y="174">КОПИНГИ</text>
     <text class="dg-t" x="34" y="204">Защитник · Капитулянт</text>
@@ -235,7 +235,7 @@ const LAYERS = `
     <text class="dg-s" x="188" y="148">тревога, злость, стыд</text>
     <rect class="dg-chip" x="168" y="176" width="432" height="70" rx="14"/>
     <text class="dg-t" x="188" y="206">Убеждения о себе</text>
-    <text class="dg-s" x="188" y="226">«я недостаточно хорош»</text>
+    <text class="dg-s" x="188" y="226">«со мной что-то не так»</text>
     <rect class="dg-chip" x="168" y="254" width="432" height="70" rx="14"/>
     <text class="dg-t" x="188" y="284">Детский опыт и потребности</text>
     <text class="dg-s" x="188" y="304">что не было закрыто тогда</text>

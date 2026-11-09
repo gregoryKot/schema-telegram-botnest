@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BookingPicker } from './BookingPicker';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 
 vi.mock('../api', () => ({
   api: { getSlots: vi.fn(), getBookingOptions: vi.fn(), bookSlot: vi.fn(), cancelBooking: vi.fn(), trackPublicEvent: vi.fn(), trackEvent: vi.fn() },
@@ -44,6 +45,15 @@ beforeEach(() => {
   mockApi.bookSlot.mockResolvedValue({ id: 1, cancelToken: 't', heldUntil: null, status: 'confirmed', paymentUrl: null, eventDurationMin: 50 });
 });
 afterEach(() => cleanup());
+
+describeCrisisField('webapp/src/components/booking/RequestField.tsx', {
+  label: '«Запрос» в записи на слот, до отправки',
+  open: async () => {
+    render(<BookingPicker />);
+    fireEvent.click(await screen.findByText(timeLabel));
+  },
+  enter: (text) => fireEvent.change(screen.getByLabelText(/Запрос/), { target: { value: text } }),
+});
 
 describe('BookingPicker — кризисный путь поля «Запрос»', () => {
   it('кризисный текст: карточка до отправки, текст уходит как есть, на «Заявка принята» карточка остаётся', async () => {

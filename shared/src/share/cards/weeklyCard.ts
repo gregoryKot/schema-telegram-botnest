@@ -1,8 +1,8 @@
-// Карточка недели трекера потребностей — единственная копия для обоих
-// фронтендов. Чистые расчёты (calcWeekAvg, weekIndex, weekRange,
-// buildWeeklyShareText) экспортируются для тестов.
+// Карточка недели трекера потребностей; числа — fmtIndex. Чистые расчёты
+// (calcWeekAvg, weekIndex, weekRange, buildWeeklyShareText) экспортируются для тестов.
 import { NEED_COLORS } from '../../needs/needColors';
 import type { Need, DayHistory } from '../../types';
+import { fmtIndex } from '../../needs/dayIndex';
 import { fmtDate } from '../../utils/format';
 import { drawNeedsRadarCard } from './needsRadarCard';
 import { pluralDays } from '../../utils/celebrationText';
@@ -41,7 +41,7 @@ export function buildWeeklyShareText(
   link: string,
 ): string {
   const idx = weekIndex(needs, history);
-  const idxStr = idx !== null ? idx.toFixed(1) : '—';
+  const idxStr = fmtIndex(idx);
   const range = weekRange(history);
   const streakSuffix = streak > 0 ? ` · Серия: ${streak} дней 🔥` : '';
   if (!detailed)
@@ -49,7 +49,7 @@ export function buildWeeklyShareText(
   const rows = needs
     .map((n) => {
       const avg = calcWeekAvg(history, n.id);
-      return `${n.emoji} ${n.chartLabel}: ${avg !== null ? avg.toFixed(1) : '—'}`;
+      return `${n.emoji} ${n.chartLabel}: ${fmtIndex(avg)}`;
     })
     .join('\n');
   return `Трекер потребностей · ${range}\n\n${rows}\n\nИндекс: ${idxStr}/10${streakSuffix}\n\n${link}`;
@@ -73,10 +73,10 @@ export function drawWeeklyCard(
         label: n.chartLabel,
         color: NEED_COLORS[n.id] ?? '#888',
         value: avg,
-        valueText: avg !== null ? avg.toFixed(1) : '—',
+        valueText: fmtIndex(avg),
       };
     }),
-    center: { value: idx !== null ? idx.toFixed(1) : '—', caption: 'индекс' },
+    center: { value: fmtIndex(idx), caption: 'индекс' },
     tiles: [
       {
         label: 'Дней отмечено',

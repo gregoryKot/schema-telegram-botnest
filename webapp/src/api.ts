@@ -147,7 +147,7 @@ export const api = {
   getQuizzes: (form?: 'ty' | 'vy') => get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
   getAllTherapyTasks:       () => get<{ clientId: UserId; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
   getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
-  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>>, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body, opts),
+  saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>> | import('../../shared/src/therapy/conceptGraph/conceptPatch').ConceptPatchRequest, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body, opts), // патч с версией строки — 409, если её изменили
   appendConceptualization: (clientId: UserId, body: ConceptAppendBody, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}/append`, body, opts), // холст дописывает: сервер объединяет, не удаляет
   shareConceptualization: (clientId: UserId, shared: boolean) => patchJson<{ sharedWithClientAt: string | null }>(`/api/therapy/conceptualization/${clientId}/share`, { shared }), // тумблер «Показать клиенту»
   getMyConcept: () => get<ClientSharedConcept>('/api/therapy/my-concept'), // схема случая клиента; не показана — 404

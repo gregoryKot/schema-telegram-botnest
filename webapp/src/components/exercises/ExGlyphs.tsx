@@ -1,6 +1,6 @@
 // Значки-глифы оболочки упражнений (стрелки, галочка, плюс, крестик): SVG в цвет текста.
-// Отдельный файл, чтобы ExScreen.tsx держал раскладку экрана; потребители по-прежнему
-// импортируют их из './ExScreen' (реэкспорт там).
+// Один дом глифов: ExBar берёт стрелку отсюда, остальные потребители импортируют глифы из
+// './ExScreen' (единственный реэкспорт), ExScreen.tsx держит раскладку экрана.
 export function GlyphArrowLeft() {
   return (
     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">

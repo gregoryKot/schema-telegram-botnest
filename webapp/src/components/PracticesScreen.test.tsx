@@ -12,10 +12,12 @@ import {
   waitFor,
   act,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation, type Location } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { PracticesScreen } from './PracticesScreen';
+import { sheetStackOf } from '../hooks/historySheetStack';
 import { AddressFormContext } from '../utils/addressForm';
-import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 
 const getPractices = vi.fn();
 const addPractice = vi.fn();
@@ -52,6 +54,32 @@ function renderScreen(form: 'ty' | 'vy' = 'ty') {
     </MemoryRouter>,
   );
 }
+
+// «Открой трекер →»: каталог уходил из дерева мимо своего goBack (AppOverlays: setShowPractices(false)),
+// запись истории оставалась брошенной — следующее системное «Назад» уходило вхолостую.
+describe('PracticesScreen — переход в трекер', () => {
+  it('каталог закрывается своим goBack: записи истории не остаётся, потом открывается трекер', async () => {
+    ratingsMock.mockResolvedValue({ attachment: 2 });
+    const snap = { loc: null as Location | null };
+    const onOpenTracker = vi.fn();
+    function Overlays() {
+      const [open, setOpen] = useState(true);
+      const loc = useLocation();
+      useEffect(() => { snap.loc = loc; });
+      return open ? <PracticesScreen onClose={() => setOpen(false)} onOpenTracker={() => { setOpen(false); onOpenTracker(); }} /> : null;
+    }
+    render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}><Overlays /></AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    const link = await screen.findByText('Открой трекер →');
+    expect(sheetStackOf(snap.loc!.state)).toHaveLength(1);
+    fireEvent.click(link);
+    await waitFor(() => expect(onOpenTracker).toHaveBeenCalledTimes(1));
+    expect(sheetStackOf(snap.loc!.state)).toHaveLength(0);
+  });
+});
 
 describe('PracticesScreen — список практик', () => {
   it('на чистом аккаунте (нет практик) показывает пустое состояние, не выдуманные карточки', async () => {
@@ -199,28 +227,15 @@ describe('PracticesScreen — удаление практики', () => {
   });
 });
 
-describe('PracticesScreen — кризисная детекция поля «добавить практику» (правило №7)', () => {
-  // Регрессия: поле было чистым свободным текстом без crisisMarkers — тот же
-  // класс дефекта, что закрыт в TaskCreateSheet/LetterEx, здесь его не было.
-  it('тревожный текст в поле показывает карточку помощи ДО отправки', async () => {
+// Регрессия: поле «добавить практику» было чистым свободным текстом без
+// crisisMarkers — тот же класс дефекта, что закрыт в TaskCreateSheet/LetterEx.
+describeCrisisField('webapp/src/components/PracticesScreen.tsx', {
+  label: 'добавить практику',
+  open: async () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), {
-      target: { value: 'не хочу жить' },
-    });
-    expect(
-      await screen.findByText(new RegExp(CRISIS_HOTLINE_DISPLAY)),
-    ).toBeTruthy();
-  });
-
-  it('нейтральный текст карточку не показывает', async () => {
-    renderScreen();
-    await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), {
-      target: { value: 'прогулка 20 минут' },
-    });
-    expect(screen.queryByText(new RegExp(CRISIS_HOTLINE_DISPLAY))).toBeNull();
-  });
+  },
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), { target: { value: text } }),
 });
 
 describe('PracticesScreen — ты/вы', () => {

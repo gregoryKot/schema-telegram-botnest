@@ -5,6 +5,7 @@ import { BadRequestException, RequestMethod } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { YsqController } from './ysq.controller';
 import type { YsqService } from '../bot/ysq.service';
+import type { AnalyticsService } from '../analytics/analytics.service';
 
 function makeReq(userId = 1n) {
   return { webUser: { userId } } as any;
@@ -21,11 +22,16 @@ function makeController(overrides: Partial<YsqService> = {}) {
     deleteYsqProgress: jest.fn().mockResolvedValue(undefined),
     getYsqResult: jest.fn().mockResolvedValue(null),
     saveYsqResult: jest.fn().mockResolvedValue(undefined),
-    deleteAllYsqData: jest.fn().mockResolvedValue(undefined),
+    deleteAllYsqData: jest.fn().mockResolvedValue({ attempts: 2 }),
     getYsqHistory: jest.fn().mockResolvedValue([]),
     ...overrides,
   } as unknown as YsqService;
-  return { controller: new YsqController(ysqService), ysqService };
+  const analytics = { track: jest.fn().mockResolvedValue(undefined) };
+  const controller = new YsqController(
+    ysqService,
+    analytics as unknown as AnalyticsService,
+  );
+  return { controller, ysqService, analytics };
 }
 
 describe('YsqController.saveYsqProgress', () => {
@@ -172,6 +178,36 @@ describe('YsqController.deleteAllYsqData (DELETE /api/ysq-data)', () => {
     // Всё стирает одна транзакция сервиса, отдельного удаления итога нет.
     expect(Object.keys(ysqService)).not.toContain('deleteYsqResult');
     expect(res).toEqual({ ok: true });
+  });
+
+  // Правило №8: без события воронка теста в /stats не отличала «не дошёл» от
+  // «дошёл и стёр» (docs/open/backend.md, 2026-10-24).
+  it('пишет ysq_data_deleted под userId из подписи с числом стёртых попыток', async () => {
+    const { controller, analytics } = makeController();
+    await controller.deleteAllYsqData(makeReq(16n));
+    expect(analytics.track).toHaveBeenCalledWith(16n, 'ysq_data_deleted', {
+      attempts: 2,
+    });
+  });
+
+  it('число попыток в meta — с потолком', async () => {
+    const { controller, analytics } = makeController({
+      deleteAllYsqData: jest.fn().mockResolvedValue({ attempts: 5000 }),
+    });
+    await controller.deleteAllYsqData(makeReq(16n));
+    expect(analytics.track).toHaveBeenCalledWith(16n, 'ysq_data_deleted', {
+      attempts: 1000,
+    });
+  });
+
+  it('удаление упало — события нет', async () => {
+    const { controller, analytics } = makeController({
+      deleteAllYsqData: jest.fn().mockRejectedValue(new Error('db down')),
+    });
+    await expect(controller.deleteAllYsqData(makeReq(16n))).rejects.toThrow(
+      'db down',
+    );
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 });
 

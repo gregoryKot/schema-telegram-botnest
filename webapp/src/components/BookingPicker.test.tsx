@@ -685,3 +685,28 @@ describe('BookingPicker — галочка «понятно про подтве�
     expect((screen.getByRole('checkbox', { name: NOTICE }) as HTMLInputElement).checked).toBe(true);
   });
 });
+
+// docs/open/ci-tests.md: возврат с Robokassa чистил адрес целиком
+// (`pathname + hash`) и уносил метки визита вместе с `?payment=ok`.
+describe('BookingPicker — возврат с оплаты не стирает метки визита', () => {
+  const here = () => window.location.pathname + window.location.search + window.location.hash;
+
+  it('?payment=ok: из адреса уходит только параметр оплаты — utm_source, yclid и фрагмент на месте', async () => {
+    window.history.pushState({}, '', '/?utm_source=vk&payment=ok&yclid=42#book');
+    await act(async () => { render(<BookingPicker />); });
+    expect(here()).toBe('/?utm_source=vk&yclid=42#book');
+  });
+
+  it('?payment=fail: экран неудачной оплаты, метки тоже остаются', async () => {
+    window.history.pushState({}, '', '/?payment=fail&utm_source=tg');
+    await act(async () => { render(<BookingPicker />); });
+    expect(screen.getByText('Оплата не прошла')).toBeTruthy();
+    expect(here()).toBe('/?utm_source=tg');
+  });
+
+  it('контроль: без параметра оплаты адрес не меняется', async () => {
+    window.history.pushState({}, '', '/?utm_source=vk&yclid=42');
+    await renderLoaded();
+    expect(here()).toBe('/?utm_source=vk&yclid=42');
+  });
+});

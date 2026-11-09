@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { Logger } from '@nestjs/common';
-import { HEX_KEY_RE, KEYS } from './crypto-keys';
+import { KEYS } from './crypto-keys';
 
 // Multi-key support for online key rotation (разбор env — crypto-keys.ts).
 // During rotation: add new key as ENCRYPTION_KEY, move previous to OLD, run
@@ -8,17 +8,13 @@ import { HEX_KEY_RE, KEYS } from './crypto-keys';
 const { current: CURRENT_KEY, all: ALL_KEYS } = KEYS;
 
 // Старый ключ, молча отброшенный из-за опечатки, — это нечитаемые данные после
-// ротации. В проде такой ENCRYPTION_KEY_OLD роняет бут, как и битый текущий.
-if (process.env.NODE_ENV === 'production') {
-  const bad = (process.env.ENCRYPTION_KEY_OLD ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s && !HEX_KEY_RE.test(s));
-  if (bad.length > 0)
-    throw new Error(
-      `FATAL: ENCRYPTION_KEY_OLD содержит ключи не в формате 64 hex-символа (${bad.length} шт.) — ` +
-        'такой ключ молча не использовался бы для расшифровки.',
-    );
+// ротации. В проде такой ENCRYPTION_KEY_OLD роняет бут, как и битый текущий
+// (счёт битых — crypto-keys.ts, единственное место разбора env).
+if (process.env.NODE_ENV === 'production' && KEYS.badOld > 0) {
+  throw new Error(
+    `FATAL: ENCRYPTION_KEY_OLD содержит ключи не в формате 64 hex-символа (${KEYS.badOld} шт.) — ` +
+      'такой ключ молча не использовался бы для расшифровки.',
+  );
 }
 
 // Fail loudly in production if no key is configured — silently storing

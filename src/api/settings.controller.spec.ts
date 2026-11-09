@@ -27,7 +27,9 @@ function makeController(
   } as unknown as BotService;
   const accountService = {
     setAdaptiveLevel: jest.fn().mockResolvedValue(undefined),
-    isNotifyReachable: jest.fn().mockResolvedValue(true),
+    notifyRoute: jest
+      .fn()
+      .mockResolvedValue({ channel: 'telegram', telegramLinked: true }),
     ...overrides.accountService,
   } as unknown as AccountService;
   const scheduleService = {
@@ -64,7 +66,9 @@ describe('SettingsController.getSettings', () => {
       therapistShareCards: true,
       therapistShareProfile: true,
       uiPrefs: {},
+      notifyChannel: 'telegram',
       notifyReachable: true,
+      telegramLinked: true,
     });
   });
 
@@ -72,11 +76,35 @@ describe('SettingsController.getSettings', () => {
   // которые очередь снимала как «доставить некому».
   it('notifyReachable — от адреса очереди уведомлений этого человека', async () => {
     const { controller, accountService } = makeController({
-      accountService: { isNotifyReachable: jest.fn().mockResolvedValue(false) },
+      accountService: {
+        notifyRoute: jest
+          .fn()
+          .mockResolvedValue({ channel: null, telegramLinked: false }),
+      },
     });
     const res = await controller.getSettings(makeReq(7n));
     expect(res.notifyReachable).toBe(false);
-    expect(accountService.isNotifyReachable).toHaveBeenCalledWith(7n);
+    expect(res.notifyChannel).toBeNull();
+    expect(res.telegramLinked).toBe(false);
+    expect(accountService.notifyRoute).toHaveBeenCalledWith(7n);
+  });
+
+  // Уведомления в приложении: подписка выигрывает у Telegram, экран говорит
+  // «вместо Telegram» — для этого и telegramLinked.
+  it('notifyChannel push при привязанном Telegram — канал push, Telegram виден', async () => {
+    const { controller } = makeController({
+      accountService: {
+        notifyRoute: jest
+          .fn()
+          .mockResolvedValue({ channel: 'push', telegramLinked: true }),
+      },
+    });
+    const res = await controller.getSettings(makeReq(7n));
+    expect(res).toMatchObject({
+      notifyChannel: 'push',
+      notifyReachable: true,
+      telegramLinked: true,
+    });
   });
 
   it('запрашивает настройки под userId из req', async () => {

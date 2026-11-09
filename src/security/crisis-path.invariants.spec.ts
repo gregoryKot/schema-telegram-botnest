@@ -13,6 +13,8 @@
 //       текст проверяет названный файл-детектор (он обязан звать detectCrisis*),
 //       либо в SHORT_INPUT_ALLOWLIST — короткое поле не о переживаниях (имя,
 //       код, поиск, подпись), с причиной; потолок — только вниз.
+// Здесь (A) — текст файла. Что карточка правда показывается для поля (A) и
+// (C1), держит поведенческая сверка crisis-card-behavior.invariants.spec.ts.
 //
 // Какой <input> — свободный текст (аудит 2026-10, до этого трипваер смотрел
 // только <textarea>): признак — src/test-support/free-text-inputs.ts.
@@ -24,43 +26,20 @@
 // стоит строки allowlist'а, пропущенный — карточки телефона доверия.
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { collectSourceFiles } from './collect-source-files';
 import {
-  hasFreeTextInput,
   inputTags,
   isStructuredInput,
+  hasFreeTextInput,
 } from '../test-support/free-text-inputs';
-
-const ROOT = join(__dirname, '..', '..');
-
-// Директории фронтендов, где вообще может жить пользовательский ввод.
-const FRONTEND_DIRS = ['webapp/src', 'shared/src'];
-
-// `<LimitedTextarea` — общая обёртка поля с пределом длины (shared): без неё в
-// регэкспе все поля, переехавшие на обёртку, выпали бы из-под трипваера.
-const TEXTAREA_RE = /<(?:textarea|LimitedTextarea)/i;
-// Детекцией считается и прямой вызов detectCrisis*, и общий гейт-примитив
-// <BookingCrisisNote> (webapp/src/components/booking/BookingCrisisNote.tsx,
-// форма записи на визитке) — он инкапсулирует detectCrisisAny + карточку; что
-// сам он реально зовёт detectCrisis, фиксирует отдельный тест ниже.
-const DETECT_CRISIS_RE = /detectCrisis|BookingCrisisNote/;
-
-// Все .tsx-файлы с <textarea> (свободный текст пользователя), путь
-// относительно корня репозитория.
-const TEXTAREA_FILES = FRONTEND_DIRS.flatMap((rel) => {
-  const dir = join(ROOT, rel);
-  return collectSourceFiles(dir, { extensions: ['.tsx'] })
-    .filter((p) => TEXTAREA_RE.test(readFileSync(p, 'utf8')))
-    .map((p) => p.replace(ROOT + '/', ''));
-});
-
-// Все .tsx-файлы с <input> свободного текста (признак — шапка файла).
-const FREE_INPUT_FILES = FRONTEND_DIRS.flatMap((rel) => {
-  const dir = join(ROOT, rel);
-  return collectSourceFiles(dir, { extensions: ['.tsx'] })
-    .filter((p) => hasFreeTextInput(readFileSync(p, 'utf8')))
-    .map((p) => p.replace(ROOT + '/', ''));
-});
+// Выборка файлов, регэксп детекции и дочерние контролы — общие с
+// поведенческой сверкой crisis-card-behavior.invariants.spec.ts.
+import {
+  DETECT_CRISIS_RE,
+  FREE_INPUT_FILES,
+  INPUT_CHILD_CONTROLS,
+  ROOT,
+  TEXTAREA_FILES,
+} from '../test-support/crisis-field-files';
 
 // (B) Осознанно НЕ терапевтический свободный текст — кризисная детекция тут
 // не нужна по смыслу поля. Каждая запись — с обоснованием. Сокращать можно,
@@ -76,11 +55,9 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
   // не числится: посетитель описывает там своё состояние до всякого контакта,
   // это свободный текст о переживаниях — кризисный путь подключён (аудит
   // 2026-10, frontends#5; RequestField → BookingCrisisNote), запись снята.
-  // Планы/задачи/заметки настроек — операционный текст (что сделать), а не
-  // рефлексия/переживание.
-  'webapp/src/components/PlanSheet.tsx': 'план действий — операционный текст',
-  'webapp/src/components/TaskCreateSheet.tsx':
-    'создание задачи — операционный текст',
+  // PlanSheet и TaskCreateSheet («операционный текст») здесь больше не
+  // числятся: в своей практике и своей цели пишут и о себе, детекция там
+  // давно стоит и под поведенческой строкой — запись была протухшей (2026-11).
   // SettingsSheet распилен (правило №10): <textarea> анкеты «стать
   // терапевтом» уехал в BecomeTherapistSection, сам SettingsSheet остался
   // без свободного текста — запись переехала за полем, а не добавилась.
@@ -97,6 +74,11 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'карта режимов: переименование узла',
   'webapp/src/components/ModeMapNodeEditor.tsx':
     'подпись узла карты режимов — короткая метка, не рефлексия',
+  // Аудит холста 2026-11 (#1039): «Неудовлетворённая потребность» и «Что
+  // сказал бы Здоровый Взрослый» уехали из ModeMapNodeEditor в смысловые поля
+  // панели — запись переехала за полями; в редакторе остались название и заметка.
+  'webapp/src/components/modeMap/NodeMeaningFields.tsx':
+    'карта режимов: потребность и ответ Здорового Взрослого в узле — пишет терапевт, не клиент',
   // Терапевтская сторона — заметки специалиста о клиенте, не собственный
   // свободный текст клиента о своём состоянии.
   'webapp/src/components/therapist/ClientSessionsTab.tsx':
@@ -183,9 +165,28 @@ describe('трипваер: кризисная детекция для своб�
     // в EXPECTED_CRISIS_FILES, а не в allowlist.
     // 19 → 20 (2026-11, карта режимов): modeMap/nodeParts.tsx — переименование
     // узла стало <textarea> (перенос строк), запись переехала из списка <input>.
+    // 20 → 21 (2026-11, аудит холста #1039): modeMap/NodeMeaningFields.tsx —
+    // поля потребности и ответа Здорового Взрослого вынесены из
+    // ModeMapNodeEditor (правило №10); новых полей нет, у самого редактора
+    // остались название и заметка, поэтому его запись тоже на месте.
+    // 21 → 19 (2026-11): PlanSheet.tsx и TaskCreateSheet.tsx сняты — детекция
+    // в них есть, запись «детекция не нужна» протухла (тест ниже).
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
-      20,
+      19,
     );
+  });
+
+  it('записи allowlist не протухли: в файле из списка нет детекции', () => {
+    // Запись значит «детекция тут не нужна». Файл с детекцией и записью
+    // разом молча проходил бы и после её удаления: сверка (A) не смотрит
+    // дальше allowlist. Так в списке жили PlanSheet и TaskCreateSheet.
+    const stale = [
+      ...Object.keys(NON_THERAPEUTIC_ALLOWLIST),
+      ...Object.keys(SHORT_INPUT_ALLOWLIST),
+    ].filter((rel) =>
+      DETECT_CRISIS_RE.test(readFileSync(join(ROOT, rel), 'utf8')),
+    );
+    expect(stale).toEqual([]);
   });
 
   it('BookingCrisisNote (форма записи на визитке) сам зовёт detectCrisisAny и карточку', () => {
@@ -229,19 +230,8 @@ describe('трипваер: кризисная детекция для своб�
 
 // ─── <input> свободного текста (аудит 2026-10) ──────────────────────────────
 
-// (C1) Дочерний контрол: поле живёт в одном файле, детекция — в другом, и
-// названный файл-детектор проверяет ИМЕННО этот текст (как — в `why`).
-const INPUT_CHILD_CONTROLS: Record<string, { detector: string; why: string }> =
-  {
-    'webapp/src/components/exercises/beliefCheck/EviList.tsx': {
-      detector: 'webapp/src/components/exercises/BeliefCheckEx.tsx',
-      why: 'доводы за/против: detectCrisisAny(forInput, ...forList) у родителя',
-    },
-    'webapp/src/components/caseFlow/CaseChipGrid.tsx': {
-      detector: 'shared/src/case/quick/useCaseQuickFlow.ts',
-      why: '«своё» тело/импульс пишется в поля быстрого потока на каждый ввод (bodyOwn/impulseOwn): detectCrisisAny(scene, bodyOwn, impulseOwn)',
-    },
-  };
+// (C1) Дочерние контролы (поле в одном файле, детектор — в другом) —
+// INPUT_CHILD_CONTROLS в src/test-support/crisis-field-files.ts.
 
 // (C2) Короткое поле не о переживаниях. Сокращать можно, добавлять — с ревью.
 const SHORT_INPUT_ALLOWLIST: Record<string, string> = {

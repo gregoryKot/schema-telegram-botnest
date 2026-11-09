@@ -22,7 +22,7 @@ export interface HostCapabilities {
   backButton: boolean;
   /** Приложение можно закрыть изнутри (в браузере вкладку не закрыть). */
   close: boolean;
-  /** saveFile берёт data:-URL; false — только https-ссылку с сервера (Telegram). */
+  /** saveFile берёт data:-URL; false — только https-ссылку с сервера (Telegram, MAX с мостом). */
   dataUrlFiles: boolean;
 }
 

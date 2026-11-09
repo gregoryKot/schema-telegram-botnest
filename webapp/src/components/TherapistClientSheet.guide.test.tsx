@@ -40,6 +40,7 @@ vi.mock('../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api } from '../api';
+import { applyConceptSave } from './therapist/conceptServer.test-helpers';
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -198,9 +199,8 @@ describe('TherapistClientSheet — история подсказок', () => {
   });
 
   it('«Делали сегодня» → связь режима с отметкой уходит в сохранение → после загрузки «делали 7 ноя»', async () => {
-    mockApi.saveConceptualization.mockImplementation(async (_id: number, body: object) => ({
-      ...(await mockApi.getConceptualization()), ...body,
-    }));
+    mockApi.saveConceptualization.mockImplementation(async (_id: number, body: Record<string, unknown>) =>
+      applyConceptSave(await mockApi.getConceptualization(), body));
     await openPlaque();
     fireEvent.click(screen.getByRole('button', { name: 'Работа со стульями' }));
     const technique = screen.getByRole('dialog', { name: 'Работа со стульями' });
@@ -208,14 +208,15 @@ describe('TherapistClientSheet — история подсказок', () => {
     expect(tracked(CONCEPT_GUIDE_MARK_DONE_EVENT)).toBe(1);
     expect(within(technique).getByRole('button', { name: 'Отменить сегодняшнюю отметку' })).toBeTruthy();
     await waitFor(() => expect(mockApi.saveConceptualization).toHaveBeenCalled(), { timeout: 3000 });
-    const body = mockApi.saveConceptualization.mock.calls.at(-1)![1];
+    // Патч связи лёг на сервер (applyConceptSave — как src/therapy/concept-save.ts).
+    const saved = await mockApi.getConceptualization();
+    const onServer = applyConceptSave(saved, mockApi.saveConceptualization.mock.calls.at(-1)![1]);
     const done = [{ techniqueId: 'chairwork', day: '2026-11-07' }];
-    expect(body.modeLinks).toEqual([expect.objectContaining({ modeId: 'vulnerable_child', done })]);
+    expect(onServer.modeLinks).toEqual([expect.objectContaining({ modeId: 'vulnerable_child', done })]);
 
     // перезагрузка: карточка открывается заново и читает сохранённое с сервера
     cleanup();
-    const saved = await mockApi.getConceptualization();
-    mockApi.getConceptualization.mockResolvedValue({ ...saved, modeLinks: body.modeLinks });
+    mockApi.getConceptualization.mockResolvedValue({ ...saved, modeLinks: onServer.modeLinks });
     await openPlaque();
     expect(screen.getByText('· делали 7 ноя')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Работа со стульями' }));
@@ -282,7 +283,7 @@ describe('TherapistClientSheet — журнал техник', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Снять отметку за 5 ноя' }));
     expect(within(sheet).getByRole('button', { name: 'Вернуть отметку за 5 ноя' })).toBeTruthy();
     await waitFor(() => expect(mockApi.saveConceptualization).toHaveBeenCalled(), { timeout: 3000 });
-    const body = mockApi.saveConceptualization.mock.calls.at(-1)![1];
-    expect(body.modeLinks[0].done ?? []).toEqual([]);
+    const onServer = applyConceptSave(await mockApi.getConceptualization(), mockApi.saveConceptualization.mock.calls.at(-1)![1]);
+    expect((onServer.modeLinks as { done?: unknown[] }[])[0].done ?? []).toEqual([]);
   });
 });

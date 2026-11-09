@@ -32,16 +32,25 @@ export function CustomModesPalette({ state, setState, onAdd }: Props) {
   const [newCopingSub, setNewCopingSub] = useState<'over' | 'avoid' | 'surr'>('over');
   const addInputRef = useRef<HTMLInputElement>(null);
   const addFormRef = useRef<HTMLDivElement>(null);
+  // Отказ сохранить или удалить режим виден терапевту: до 2026-11 промис шёл без catch
+  // (нашёл no-floating-promises) — форма просто не закрывалась, режим молча не появлялся.
+  const [failed, setFailed] = useState<'save' | 'remove' | null>(null);
 
   async function save() {
     if (!newName.trim()) return;
-    const m = await api.createCustomMode({ name: newName.trim(), emoji: newEmoji, nodeType: newType });
-    setState(prev => [...(Array.isArray(prev) ? prev : []), m]);
-    setNewName(''); setNewEmoji('⬡'); setAdding(false);
+    setFailed(null);
+    try {
+      const m = await api.createCustomMode({ name: newName.trim(), emoji: newEmoji, nodeType: newType });
+      setState(prev => [...(Array.isArray(prev) ? prev : []), m]);
+      setNewName(''); setNewEmoji('⬡'); setAdding(false);
+    } catch { setFailed('save'); } // введённое остаётся в форме: повтор в один тап
   }
   async function remove(id: number) {
-    await api.deleteCustomMode(id);
-    setState(prev => Array.isArray(prev) ? prev.filter(m => m.id !== id) : prev);
+    setFailed(null);
+    try {
+      await api.deleteCustomMode(id);
+      setState(prev => Array.isArray(prev) ? prev.filter(m => m.id !== id) : prev);
+    } catch { setFailed('remove'); }
   }
   const toggleForm = () => {
     const next = !adding;
@@ -64,7 +73,7 @@ export function CustomModesPalette({ state, setState, onAdd }: Props) {
             <input ref={addInputRef} value={newEmoji} onChange={e => setNewEmoji(e.target.value)}
               className="ds-input mm2-add-emoji" maxLength={2} />
             <input value={newName} onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setAdding(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') void save(); /* сбой ловит сам: failed */ if (e.key === 'Escape') setAdding(false); }}
               placeholder="Название…" maxLength={CUSTOM_MODE_NAME_MAX} className="ds-input" />
           </div>
           <ShapePicker newType={newType} newCopingSub={newCopingSub} setNewType={setNewType} setNewCopingSub={setNewCopingSub} />
@@ -72,6 +81,9 @@ export function CustomModesPalette({ state, setState, onAdd }: Props) {
             <button onClick={save} className="ds-btn ds-btn--sm">Сохранить</button>
             <button onClick={() => setAdding(false)} aria-label="Отменить" className="ds-btn ds-btn--icon ds-btn--sm"><MMIcon name="close" size={13} /></button>
           </div>
+          {failed === 'save' && (
+            <div role="alert" className="mm2-pal-sub is-err">Не получилось сохранить режим. {tr('Попробуй ещё раз.', 'Попробуйте ещё раз.')}</div>
+          )}
         </div>
       )}
 
@@ -82,6 +94,9 @@ export function CustomModesPalette({ state, setState, onAdd }: Props) {
         </div>
       ))}
 
+      {failed === 'remove' && (
+        <div role="alert" className="mm2-pal-sub is-err">Не получилось удалить режим. {tr('Попробуй ещё раз.', 'Попробуйте ещё раз.')}</div>
+      )}
       {state === 'failed' && (
         <div className="mm2-pal-sub is-err">{tr('Не удалось загрузить твои режимы', 'Не удалось загрузить ваши режимы')}</div>
       )}

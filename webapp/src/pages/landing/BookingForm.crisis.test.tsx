@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { BookingForm } from './BookingForm';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 
 vi.mock('../../api', () => ({
   api: { submitBooking: vi.fn(), trackPublicEvent: vi.fn(), trackEvent: vi.fn() },
@@ -36,6 +37,18 @@ beforeEach(() => {
   mockApi.submitBooking.mockResolvedValue({ ok: true });
 });
 afterEach(() => cleanup());
+
+const renderForm = () => render(<BookingForm />);
+describeCrisisField('webapp/src/components/booking/RequestField.tsx', {
+  label: '«Запрос» в простой заявке, до отправки',
+  open: renderForm,
+  enter: typeRequest,
+});
+describeCrisisField('webapp/src/pages/landing/BookingForm.tsx', {
+  label: 'экран «Заявка отправлена»',
+  open: renderForm,
+  enter: submitWith,
+});
 
 describe('BookingForm — кризисный путь поля «Запрос»', () => {
   it.each([

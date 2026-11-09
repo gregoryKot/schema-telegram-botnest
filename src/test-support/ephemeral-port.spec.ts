@@ -1,7 +1,13 @@
 // Хелпер порта для спеков с поздним биндом (ephemeral-port.ts): поздний бинд
 // переживает занятый порт, пока тот не освободится, и не глотает чужие ошибки.
-import { createServer, Server } from 'net';
-import { listenOn, listenWithRetry, reservePort } from './ephemeral-port';
+import { connect, createServer, Server } from 'net';
+import { existsSync, readFileSync } from 'fs';
+import {
+  listenOn,
+  listenWithRetry,
+  REFUSED_PORT,
+  reservePort,
+} from './ephemeral-port';
 
 const close = (s: Server) => new Promise<void>((r) => s.close(() => r()));
 
@@ -37,5 +43,30 @@ describe('ephemeral-port', () => {
     const make = jest.fn(() => createServer());
     await expect(listenWithRetry(make, 70_000)).rejects.toThrow();
     expect(make).toHaveBeenCalledTimes(1);
+  });
+});
+
+// «БД недоступна» на номере от reservePort() мигнуло в полном jest (run
+// 42287170557): отпущенный номер занял соседний воркер, и TCP-проба БД прошла.
+describe('REFUSED_PORT: connect гарантированно отказан', () => {
+  it('вне эфемерного диапазона ядра — ни listen(0), ни исходящий сокет его не возьмут', () => {
+    const range = '/proc/sys/net/ipv4/ip_local_port_range';
+    const low = existsSync(range)
+      ? Number(readFileSync(range, 'utf8').trim().split(/\s+/)[0])
+      : 1024; // не Linux: хотя бы привилегированный порт
+    expect(REFUSED_PORT).toBeGreaterThan(0);
+    expect(REFUSED_PORT).toBeLessThan(Math.min(low, 1024));
+  });
+
+  it('connect на 127.0.0.1:REFUSED_PORT — ECONNREFUSED', async () => {
+    const code = await new Promise<string>((resolve) => {
+      const s = connect(REFUSED_PORT, '127.0.0.1');
+      s.once('connect', () => {
+        s.destroy();
+        resolve('connected');
+      });
+      s.once('error', (e: NodeJS.ErrnoException) => resolve(e.code ?? '?'));
+    });
+    expect(code).toBe('ECONNREFUSED');
   });
 });

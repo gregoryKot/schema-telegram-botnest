@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotAnalyticsService } from './bot.analytics.service';
 import { computeActiveSchemas } from '../utils/ysq';
-import { decryptRecord } from '../utils/crypto';
+import { decryptRecord, unreadableFields } from '../utils/crypto';
 import { decodeYsqAnswers } from './ysq.service';
 
 function toStringArray(val: unknown): string[] {
   return Array.isArray(val) ? (val as string[]) : [];
 }
+
+const MY_LISTS = ['mySchemaIds', 'myModeIds'] as const;
+type MyList = (typeof MY_LISTS)[number];
 
 export interface UserProfile {
   name: string | null;
@@ -31,6 +34,14 @@ export interface UserProfile {
   };
   mySchemaIds: string[];
   myModeIds: string[];
+  /**
+   * Списки, которые сейчас не расшифровываются (ключ не подошёл): в
+   * `mySchemaIds`/`myModeIds` для них `[]`, но это не «пусто». Клиент не
+   * затирает свой локальный выбор этим `[]` — запись поверх всё равно
+   * отбивается 409 (`assertWritable`), и после перезагрузки выбор пропадал
+   * с экрана (docs/open/frontend-ux.md, 2026-11).
+   */
+  unreadableLists: MyList[];
 }
 
 @Injectable()
@@ -74,6 +85,10 @@ export class ProfileService {
         select: { date: true },
       }),
     ]);
+    const lists = user
+      ? decryptRecord(user, { model: 'User', jsonArrays: [...MY_LISTS] })
+      : null;
+    const unreadable = lists ? unreadableFields(lists) : [];
 
     return {
       name: user?.firstName ?? null,
@@ -101,16 +116,9 @@ export class ProfileService {
           : null,
         gratitudeDiary: lastGratitude?.date ?? null,
       },
-      mySchemaIds: toStringArray(
-        user
-          ? decryptRecord(user, { jsonArrays: ['mySchemaIds'] }).mySchemaIds
-          : null,
-      ),
-      myModeIds: toStringArray(
-        user
-          ? decryptRecord(user, { jsonArrays: ['myModeIds'] }).myModeIds
-          : null,
-      ),
+      mySchemaIds: toStringArray(lists?.mySchemaIds),
+      myModeIds: toStringArray(lists?.myModeIds),
+      unreadableLists: MY_LISTS.filter((f) => unreadable.includes(f)),
     };
   }
 }

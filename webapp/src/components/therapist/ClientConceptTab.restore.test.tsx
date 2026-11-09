@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
 // «Восстановить версию» концептуализации на сайте (паритет с мини-аппом,
 // этап 3): подтверждение → поля версии уходят в автосохранение (настоящий
-// useClientDetail, мок только сети). Отмена не пишет ничего.
+// useClientDetail, мок только сети). Отмена не пишет ничего. Подтверждение
+// держит свою запись истории (HistoryConfirmDialog): «Назад» закрывает его,
+// а не уводит из карточки клиента.
 import { useEffect, useRef } from 'react';
+import { MemoryRouter, Route, Routes, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -80,7 +84,11 @@ const concept = (patch: Record<string, unknown> = {}) => ({
   ...patch,
 });
 
+const snap = { nav: null as NavigateFunction | null };
+
 function Harness() {
+  const nav = useNavigate();
+  useEffect(() => { snap.nav = nav; });
   const detail = useClientDetail({
     switchView: () => {},
     setClients: () => {},
@@ -98,7 +106,14 @@ function Harness() {
 
 async function openTab(server: unknown) {
   mockApi.getConceptualization.mockResolvedValue(server);
-  render(<Harness />);
+  render(
+    <MemoryRouter initialEntries={['/cabinet', '/cabinet/7']} initialIndex={1}>
+      <Routes>
+        <Route path="/cabinet" element={<div>список клиентов</div>} />
+        <Route path="/cabinet/7" element={<Harness />} />
+      </Routes>
+    </MemoryRouter>,
+  );
   await screen.findByRole('button', { name: 'Ещё действия' }); // шапка вкладки без заголовка (#906)
 }
 
@@ -152,10 +167,20 @@ describe('ClientConceptTab: восстановление версии', () => {
     expect(screen.queryByText('Восстановить версию 1?')).toBeNull();
   });
 
+  it('«Назад» браузера закрывает подтверждение и оставляет карточку, ничего не сохраняя', async () => {
+    await openVersion();
+    await act(async () => {});
+    await act(async () => { snap.nav!(-1); });
+    await waitFor(() => expect(screen.queryByText('Восстановить версию 1?')).toBeNull());
+    expect(screen.queryByText('список клиентов')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ещё действия' })).toBeTruthy();
+    expect(mockApi.saveConceptualization).not.toHaveBeenCalled();
+  });
+
   it('отмена закрывает диалог и ничего не сохраняет', async () => {
     await openVersion();
     fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
-    expect(screen.queryByText('Восстановить версию 1?')).toBeNull();
+    await waitFor(() => expect(screen.queryByText('Восстановить версию 1?')).toBeNull());
     await new Promise((r) => setTimeout(r, 900));
     expect(mockApi.saveConceptualization).not.toHaveBeenCalled();
   });

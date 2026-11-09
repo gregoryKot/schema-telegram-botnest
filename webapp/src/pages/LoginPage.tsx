@@ -12,7 +12,6 @@ import { LoginConsentNote } from './login/LoginConsentNote';
 import { exchangeErrorText, exchangeThrownText } from './login/exchangeError';
 import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/src/account/accountDeletion';
-import { useTr } from '../utils/addressForm';
 import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
 import { useAfterLoginPath } from '../auth/returnTo';
 import '../styles/auth-login.css';
@@ -23,16 +22,13 @@ export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const tr = useTr();
   const afterLogin = useAfterLoginPath(); // адрес, с которого увели на вход (E14)
   useLoginConsentMark();
   // В5: после провала OAuth AuthCallback уводит сюда с ?error=no_token (читаем один раз).
   const [error, setError] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('error') === 'no_token'
-      ? tr(
-          'Вход не получился: окно входа закрылось раньше времени. Попробуй ещё раз',
-          'Вход не получился: окно входа закрылось раньше времени. Попробуйте ещё раз',
-        )
+      ? // Безлично: /login вне AddressFormProvider, формы до входа нет (как DonatePage).
+        'Вход не получился: окно входа закрылось раньше времени. Можно попробовать ещё раз.'
       : null,
   );
   const isTelegramContext = !!getHost().sessionExchange();

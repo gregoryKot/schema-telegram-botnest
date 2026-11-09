@@ -150,7 +150,7 @@ export function NodeLabel({ id, data, light, hideSchema }: { id?: string; data: 
         color: light ? 'rgba(255,255,255,0.7)' : 'var(--accent)' }}>потребность: {data.unmetNeed}</div>}
       {showHealthy && <div style={{ fontSize: subFs - 1, marginTop: 4, lineHeight: 1.3, wordBreak: 'break-word',
         color: light ? 'rgba(255,255,255,0.8)' : 'var(--c-moss)' }}>{data.healthyResponse}</div>}
-      {showSchema && <SchemaPills modeId={data.modeId} schemaId={data.schemaId} light={light} fontSize={subFs - 1.5} />}
+      {showSchema && <SchemaPills data={data} light={light} fontSize={subFs - 1.5} />}
     </div>
   );
 }

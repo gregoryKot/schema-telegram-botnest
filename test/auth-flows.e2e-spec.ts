@@ -204,6 +204,30 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(extractSetCookie(res, 'refresh_token')).toMatch(/refresh_token=;/);
       expect(sessionFor(raw).revokedAt).not.toBeNull();
     });
+
+    // Хвост S12 (аудит 2026-11): access-токен несёт sid (family цепочки), и
+    // гвард сверяет его с WebSession на каждом запросе — после «Выйти» токен
+    // мёртв сразу, а не через ≤15 минут. Соседняя сессия того же аккаунта жива.
+    it('после logout access-токен этой сессии — 401 сразу; другая сессия жива', async () => {
+      const a = await loginViaTelegramWebapp(910_202);
+      const b = await loginViaTelegramWebapp(910_202);
+      expect(a.status).toBe(200);
+      const me = (token: string) =>
+        request(app.getHttpServer())
+          .get('/api/auth/me')
+          .set('Authorization', `Bearer ${token}`);
+      expect((await me(a.body.accessToken)).status).toBe(200);
+
+      const rawA = extractCookieValue(a, 'refresh_token')!;
+      const out = await post('/api/auth/logout').set(
+        'Cookie',
+        `refresh_token=${rawA}`,
+      );
+      expect(out.status).toBe(200);
+
+      expect((await me(a.body.accessToken)).status).toBe(401);
+      expect((await me(b.body.accessToken)).status).toBe(200);
+    });
   });
 
   describe('CSRF protection (x-requested-with, or JSON content-type as fallback)', () => {
@@ -425,6 +449,25 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       expect(res.body.nonce).toBe(hashToken(secret));
       expect(res.headers['cache-control']).toContain('no-store');
     });
+  });
+
+  // Рубильник Google/VK (2026-11): в e2e-окружении GOOGLE_*/VK_* не заданы —
+  // ровно состояние «провайдер выключен». Раньше старт падал 500 на
+  // getOrThrow; теперь — 302 на экран ошибки входа с понятной причиной.
+  describe('старт OAuth без конфигурации провайдера', () => {
+    it.each(['google', 'vk'])(
+      'GET /api/auth/%s → 302 на /auth/error?reason=<id>_disabled, без куки state',
+      async (provider) => {
+        const res = await request(app.getHttpServer())
+          .get(`/api/auth/${provider}`)
+          .set('Host', 'schemehappens.ru');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe(
+          `https://schemehappens.ru/auth/error?reason=${provider}_disabled`,
+        );
+        expect(extractSetCookie(res, 'oauth_state')).toBeFalsy();
+      },
+    );
   });
 
   // Экран /account/merge берёт имя и сводку здесь, а не из query редиректа.

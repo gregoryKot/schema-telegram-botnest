@@ -76,12 +76,14 @@
 //                         (meta.kind — PROFILE_PATTERN_KINDS: schema|mode).
 //   concept_*/cabinet_*  — кабинет терапевта (без meta); реестры — concept-/cabinet-events.constants.ts.
 //   client_booking_*/booking_slot_taken — запись на сессию: booking-events.constants.ts.
+//   push_*               — уведомления в приложении (веб-пуши): push-events.constants.ts.
 //   case_*               — разбор случая («Что это было»); имена, мета и
 //                         описания каждого — в case-steps.constants.ts.
 //   game_*               — события игры (game/); реестр, meta и описания
 //                         каждого — game-events.constants.ts.
-//   entry_deleted        — удалил свою запись из архива «Мой путь» (проверка убеждения /
-//                         письмо себе / кризисная карточка, meta.type — ENTRY_DELETE_TYPES):
+//   asset_recovered      — повтор файла сборки помог (анонимно): asset-recovery.constants.ts.
+//   entry_deleted        — удалил свою запись: «Мой путь», разбор фразы, дневник
+//                         (meta.type — ENTRY_DELETE_TYPES, entry-delete.constants.ts):
 //                         текст там очень личный — видно, находят ли удаление вообще.
 import { CASE_EVENTS } from './case-steps.constants';
 import { CABINET_EVENTS } from './cabinet-events.constants';
@@ -91,6 +93,8 @@ import { GAME_EVENTS } from './game-events.constants';
 import { HOME_EVENTS } from './home-events.constants';
 import { SERVER_EVENTS } from './server-events.constants';
 import { PUBLIC_CRISIS_EVENTS } from './public-crisis.constants';
+import { PUSH_EVENTS } from './push-events.constants';
+import { ASSET_RECOVERY_EVENTS } from './asset-recovery.constants';
 
 export const ANALYTICS_EVENTS = [
   'share_card',
@@ -134,10 +138,12 @@ export const ANALYTICS_EVENTS = [
   ...CASE_EVENTS,
   // События игры (game/) — реестр рядом с фичей, тот же приём, что у CASE_EVENTS.
   ...GAME_EVENTS,
-  // Удалил запись из архива «Мой путь» — belief_check|letter|flashcard.
+  // Удалил свою запись — meta.type из ENTRY_DELETE_TYPES.
   'entry_deleted',
   ...HOME_EVENTS,
   ...BOOKING_EVENTS,
+  ...PUSH_EVENTS, // уведомления в приложении: push-events.constants.ts
+  ...ASSET_RECOVERY_EVENTS,
 ] as const;
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
@@ -150,6 +156,7 @@ export const PUBLIC_ANALYTICS_EVENTS = [
   'home_screen_offer',
   ...GAME_EVENTS,
   ...PUBLIC_CRISIS_EVENTS,
+  ...ASSET_RECOVERY_EVENTS, // public/asset-recovery.js работает до входа
 ] as const;
 export type PublicAnalyticsEventName = (typeof PUBLIC_ANALYTICS_EVENTS)[number];
 
@@ -240,16 +247,13 @@ export const SITE_INSTALL_SURFACES = [
 ] as const;
 export type SiteInstallSurface = (typeof SITE_INSTALL_SURFACES)[number];
 
-// ONBOARDING_STEPS/OnboardingStep — вынесены в onboarding-steps.constants.ts
-// (правило №10, тот же приём, что у SHARE_CARD_KINDS ниже).
+// ONBOARDING_STEPS/OnboardingStep — вынесены в onboarding-steps.constants.ts (правило №10).
 export {
   ONBOARDING_STEPS,
   type OnboardingStep,
 } from './onboarding-steps.constants';
 
-// SHARE_CARD_KINDS/ShareCardKind — вынесены в share-card-kinds.constants.ts
-// (правило №10: файл сверх потолка обязан таять, а не расти вместе со
-// списком; тот же приём, что у CRISIS_SURFACES ниже).
+// SHARE_CARD_KINDS/ShareCardKind — вынесены в share-card-kinds.constants.ts (правило №10).
 export {
   SHARE_CARD_KINDS,
   type ShareCardKind,
@@ -269,8 +273,7 @@ export {
 export const PROFILE_PATTERN_KINDS = ['schema', 'mode'] as const;
 export type ProfilePatternKind = (typeof PROFILE_PATTERN_KINDS)[number];
 
-// CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts
-// (правило №10: файл держим ≤201 строки).
+// CRISIS_SURFACES/CrisisSurface — вынесены в crisis-surfaces.constants.ts (правило №10).
 export {
   CRISIS_SURFACES,
   type CrisisSurface,

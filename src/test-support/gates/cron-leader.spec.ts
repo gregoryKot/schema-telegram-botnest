@@ -303,7 +303,7 @@ describe('scripts/cron-leader-baseline.json соответствует свои�
     const keys = Object.keys(baseline);
     expect(keys).toEqual([...keys].sort());
     for (const [key, v] of Object.entries(baseline)) {
-      expect(['leader', 'exempt']).toContain(v.status);
+      expect(['leader', 'exempt', 'shared']).toContain(v.status);
       if (v.reason.trim().length < 20)
         throw new Error(`${key}: reason too short`);
     }

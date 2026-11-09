@@ -25,7 +25,7 @@ export function SsHead({ eyebrow, title, lede, center, layers, cluster, paperHue
       {paper && <Layers size="square" />}
       {eyebrow && <div className="ds-eyebrow">{eyebrow}</div>}
       {(layers || cluster) && !paper
-        ? <div className="ss-title-row"><h1 className="ss-title">{title}</h1>{layers ? <Layers size="row" /> : <Cluster size="row" />}</div>
+        ? <div className="pp-head"><h1 className="ss-title">{title}</h1>{layers ? <Layers size="row" /> : <Cluster size="row" />}</div>
         : <h1 className="ss-title">{title}</h1>}
       {lede && <p className="ss-lede">{lede}</p>}
     </div>

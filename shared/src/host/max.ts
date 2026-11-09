@@ -8,6 +8,7 @@ import type {
   HostUser,
 } from './types';
 import { hasMaxInitDataShape } from './maxLaunchShape';
+import { launchPlatform } from './launchPlatform';
 
 type MaxWebApp = {
   initData?: string;
@@ -120,35 +121,32 @@ function isMaxDeepLink(url: string): boolean {
 
 export function createMaxHost(): HostBridge {
   const wa = () => maxWebApp();
+  // Мост знает платформу точнее, но её же присылают в адресе — значит
+  // ответ есть и до его загрузки.
+  const platform = () => wa()?.platform ?? launchParams()['WebAppPlatform'];
 
   return {
     id: 'max',
     // Читаем каждый раз, а не запоминаем при создании: клиент может
     // дозаполнить объект уже после загрузки скрипта.
-    // Мост знает платформу точнее, но её же присылают в адресе — значит
-    // ответ есть и до его загрузки.
     get platform(): string | undefined {
-      return wa()?.platform ?? launchParams()['WebAppPlatform'];
+      return platform();
     },
     get capabilities(): HostCapabilities {
       const w = wa();
       return {
         // Без моста хаптик нет физически — звать нечего, сколько бы
         // подходящей ни была платформа.
-        haptics:
-          !!w?.HapticFeedback &&
-          HAPTIC_PLATFORMS.has(
-            w.platform ?? launchParams()['WebAppPlatform'] ?? '',
-          ),
+        haptics: !!w?.HapticFeedback && HAPTIC_PLATFORMS.has(platform() ?? ''),
         backButton: !!w?.BackButton,
         // Закрыть мини-апп изнутри нельзя — только предупреждение о закрытии.
         close: false,
-        dataUrlFiles: true, // data:-URL — ссылкой на скачивание (saveFile ниже)
+        // downloadFile берёт только https: есть он — файл отдаёт сервер.
+        dataUrlFiles: !w?.downloadFile,
       };
     },
 
-    // MAX Bridge предзагружает данные сам — ready() ждать нечего.
-    ready: () => {},
+    ready: () => {}, // мост предзагружает данные сам — ждать нечего
     // Управления разворотом вьюпорта у площадки нет.
     expand: () => {},
     // Метода закрыть себя изнутри у площадки нет — capabilities.close = false,
@@ -174,9 +172,8 @@ export function createMaxHost(): HostBridge {
     authHeaders: () => ({ 'x-max-init-data': launchInitData() }),
     sessionExchange() {
       const initData = launchInitData();
-      return initData
-        ? { path: '/api/auth/max/webapp', body: { initData } }
-        : null;
+      const body = { initData, platform: launchPlatform(platform()) };
+      return initData ? { path: '/api/auth/max/webapp', body } : null;
     },
 
     // Своей темы площадка не навязывает — решает система.
@@ -197,11 +194,11 @@ export function createMaxHost(): HostBridge {
       if (isMaxDeepLink(url)) wa()?.openMaxLink?.(url);
       else wa()?.openLink?.(url);
     },
-    // downloadFile требует https-ссылку, а нам приходит data:-URL (.ics файл
-    // практики) — для неё отдаём обычную ссылку на скачивание, как в браузере.
+    // Без downloadFile (моста нет) — ссылка на скачивание, как в браузере.
     saveFile: (dataUrl, filename) => {
-      if (/^https?:/i.test(dataUrl)) {
-        wa()?.downloadFile?.(dataUrl, filename);
+      const w = wa();
+      if (w?.downloadFile && /^https?:/i.test(dataUrl)) {
+        w.downloadFile(dataUrl, filename);
         return;
       }
       const a = document.createElement('a');

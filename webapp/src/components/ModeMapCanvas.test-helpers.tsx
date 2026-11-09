@@ -2,11 +2,10 @@
 // используется в одиночку (только через ModeMapEditor), но именно он несёт
 // почти всю бизнес-логику холста (тулбар, контекстные меню, drop, реконнект
 // рёбер), поэтому у него отдельный хелпер: настоящие useNodesState/
-// useEdgesState/useModeMapHistory (как в проде), плюс debug-JSON снапшот
-// текущей модели — тест проверяет РЕЗУЛЬТАТ (какие узлы/рёбра остались), а не
-// что колбэк был вызван.
+// useEdgesState/useModeMapHistory (как в проде), плюс debug-JSON снапшот модели —
+// тест проверяет РЕЗУЛЬТАТ (какие узлы/рёбра остались и что ушло в сохранение).
 import { vi } from 'vitest';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { render } from '@testing-library/react';
 import { ReactFlowProvider, useNodesState, useEdgesState } from '@xyflow/react';
 import { ModeMapCanvas } from './ModeMapCanvas';
@@ -16,6 +15,7 @@ import type { FlowNode, FlowEdge } from './modeMapFlow';
 import type { ModeMapKind } from '../api';
 
 export const getConceptualization = vi.fn();
+export const scheduleSaveMock = vi.fn(); // scheduleSave холста; сбрасывать в beforeEach
 vi.mock('../api', () => ({
   api: { getConceptualization: (...a: unknown[]) => getConceptualization(...a) },
   reportClientError: vi.fn(),
@@ -48,7 +48,7 @@ function Harness({
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
   }, []);
-  const scheduleSave = useMemo(() => vi.fn(), []);
+  const scheduleSave = scheduleSaveMock;
   const { pushHistory, undo, redo, canUndo, canRedo } = useModeMapHistory({
     nodesRef,
     edgesRef,

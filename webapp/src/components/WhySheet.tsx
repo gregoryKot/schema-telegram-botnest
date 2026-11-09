@@ -1,14 +1,13 @@
 import { useHistorySheet } from '../hooks/useHistorySheet';
+import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { WhyActions, WhyHero } from './why/WhyActions';
 import { WhyLegend } from './why/WhyLegend';
 import { TherapyLine } from './therapy/TherapyLine';
 import { useTherapyBridgeTexts } from './therapy/useTherapyBridgeTexts';
 import '../styles/client-why.css';
 
-interface Props {
-  auto?: boolean; // true — лист открылся сам при первом входе; false — по кнопке «Зачем это?» или из «Ещё»
-  onClose: () => void;
-}
+// auto: true — лист открылся сам при первом входе; false — по кнопке «Зачем это?» или из «Ещё»
+interface Props { auto?: boolean; onClose: () => void }
 
 // «Зачем это всё»: откуда взялись три действия и что даёт каждое — «откуда это и зачем» на пути
 // пользователя (frontend-visual.md). Шапка листа с «← Закрыть» (ds-sheet-head, #906); «Понятно, начнём»
@@ -16,8 +15,9 @@ interface Props {
 export function WhySheet({ auto = false, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const bridge = useTherapyBridgeTexts();
+  const dialogA11y = useDialogA11y(); // фокус на «← Закрыть», Tab внутри, возврат к вызвавшей строке
   return (
-    <div className="u-sheet cw-sheet" role="dialog" aria-modal="true" aria-label="Зачем это всё">
+    <div {...dialogA11y} className="u-sheet cw-sheet" aria-label="Зачем это всё">
       <div className="ds-sheet-head ds-sheet-head--page cw-head">
         <button type="button" className="ds-back" onClick={goBack}>← Закрыть</button>
       </div>

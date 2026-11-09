@@ -38,7 +38,7 @@ export function QuickWriteStep({ text, tag, saving, error, onText, onTag, onSubm
       </div>
       <div className="tq-body">
         <div className="tq-inner">
-          <div className="qe-head">
+          <div className="pp-head">
             <h1 className="tq-title">Что на уме?</h1>
             <Pebbles size="row" />
           </div>

@@ -14,10 +14,11 @@ import {
 import { PublicEventDto } from './dto/public-event.dto';
 import { sanitizePublicCrisisMeta } from './public-crisis.sanitize';
 import { isQuizId, quizResultIdSet } from '../quiz/quiz-registry';
+import { sanitizeAssetRecoveredMeta } from '../analytics/asset-recovery.constants';
 
 // Анонимная аналитика (правило №8): мини-тест, клик на сайт практики, блок
-// установки, игра (game/, правило №5/№14), кризисная карточка записи — событие
-// пишется с userId = null. Идентичность не верифицирована: бакет по IP, лимит жёстче.
+// установки, игра (game/, правило №5/№14), кризисная карточка записи, повтор
+// файла сборки — событие пишется с userId = null. Идентичность не верифицирована: бакет по IP, лимит жёстче.
 @Controller('api')
 export class PublicEventsController {
   private readonly validResults = quizResultIdSet();
@@ -67,6 +68,8 @@ export class PublicEventsController {
     if (name === 'crisis_card_shown' || name === 'crisis_hotline_tapped') {
       return sanitizePublicCrisisMeta(meta);
     }
+    // Повтор файла сборки помог (public/asset-recovery.js, до входа).
+    if (name === 'asset_recovered') return sanitizeAssetRecoveredMeta(meta);
     if (name === 'home_screen_offer') {
       const action = meta?.action;
       const surface = meta?.surface;

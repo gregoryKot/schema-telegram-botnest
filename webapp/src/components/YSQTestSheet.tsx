@@ -98,7 +98,7 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             onRetakeConfirm={setRetakeConfirm}
             onRetake={handleRetake}
             onShare={() => setShowShare(true)}
-            onOpenSchema={(name) => (onViewSchemas ? onViewSchemas(name) : goBack())}
+            onOpenSchema={(name) => goBack(onViewSchemas && (() => onViewSchemas(name)))}
             onDone={goBack}
           />
         )}

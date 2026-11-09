@@ -2,9 +2,11 @@ import { getTherapistContact } from '../utils/therapistContact';
 import { BottomSheetShell } from './BottomSheetShell';
 import { NeedArtLine } from './NeedArtLine';
 import { ExternalLink } from '../host/ExternalLink';
+import { useHistorySheet } from '../hooks/useHistorySheet';
 
 // Оверлей «О советах» под шитами потребности — общий для NeedHistorySheet и
-// NeedTodaySheet (правило №11: один и тот же блок жил дословно в обоих).
+// NeedTodaySheet (правило №11: один и тот же блок жил дословно в обоих). Своя запись
+// истории: «Назад» закрывает шторку, а не лист потребности под ней.
 const DISCLAIMER_CONTENT = [
   'Дневник помогает видеть паттерны и чуть лучше понимать себя.',
   'Советы внутри — это приглашение к размышлению, не инструкция.',
@@ -13,8 +15,9 @@ const DISCLAIMER_CONTENT = [
 
 export function NeedAdviceModal({ onClose, needId }: { onClose: () => void; needId?: string }) {
   const contact = getTherapistContact();
+  const goBack = useHistorySheet(onClose);
   return (
-    <BottomSheetShell goBack={onClose} zIndex={300}>
+    <BottomSheetShell goBack={goBack} zIndex={300}>
         {needId && <NeedArtLine id={needId} />}
         <div className="eyebrow" style={{ color: 'var(--accent)', marginBottom: 16 }}>О советах</div>
         {DISCLAIMER_CONTENT.map((p, i) => (
@@ -25,11 +28,7 @@ export function NeedAdviceModal({ onClose, needId }: { onClose: () => void; need
           <ExternalLink href={contact.url} style={{ display: 'inline-block', fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>
             → Записаться на консультацию</ExternalLink>
         )}
-        <button
-          onClick={onClose}
-          className="ex-btn ex-btn-ghost"
-          style={{ display: 'block', margin: '18px auto 0' }}
-        >
+        <button onClick={goBack} className="ex-btn ex-btn-ghost" style={{ display: 'block', margin: '18px auto 0' }}>
           Понятно
         </button>
     </BottomSheetShell>

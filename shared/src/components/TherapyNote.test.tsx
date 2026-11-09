@@ -50,6 +50,13 @@ describe('TherapyNote', () => {
     expect(container.textContent).toContain('Записаться');
   });
 
+  it('компакт: ссылка — ds-link в строке текста, зона 44 по высоте отступом', () => {
+    const { container } = withForm(<TherapyNote compact />);
+    const a = container.querySelector('a')!;
+    expect(a.className).toBe('ds-link ds-link--inline');
+    expect(a.style.padding).toBe('14px 0px');
+  });
+
   it('терапевт: «вы»-форма согласована, ссылки на запись нет', () => {
     contactMock.current.isTherapist = true;
     const { container } = withForm(<TherapyNote compact />, 'vy');

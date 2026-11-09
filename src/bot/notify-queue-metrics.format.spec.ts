@@ -7,7 +7,9 @@ import {
 const totals = (t: Partial<QueueTotals> = {}): QueueTotals => ({
   ticks: 0,
   sent: 0,
+  pushed: 0,
   transient: 0,
+  unknown: 0,
   waited: 0,
   deferred: 0,
   ...t,
@@ -78,6 +80,32 @@ describe('formatNotifyQueueMetrics', () => {
     expect(out).toContain('За неделю ушло 5');
   });
 
+  // Исход «неизвестно» (r2-3#3): строку метим отправленной, повтор не шлём —
+  // если запрос до Telegram не дошёл, напоминание пропало. Число видно здесь,
+  // а не только в warn лога; ноль не пишется.
+  it('ответа не дождались — число за сутки и за неделю', () => {
+    const out = formatNotifyQueueMetrics({
+      day: totals({ ticks: 3, sent: 10, unknown: 2 }),
+      week: totals({ ticks: 9, sent: 40, unknown: 5 }),
+      snooze: noSnooze,
+    });
+    expect(out).toContain(
+      'За сутки ушло 10, сбоев не было. Ответа не дождались у 2 — могло дойти, повтор не слали.',
+    );
+    expect(out).toContain(
+      'отложено 0. Ответа не дождались у 5 — могло дойти, повтор не слали.',
+    );
+  });
+
+  it('у всех ответ получен — строки про неизвестный исход нет', () => {
+    const out = formatNotifyQueueMetrics({
+      day: totals({ ticks: 3, sent: 10 }),
+      week: totals({ ticks: 9, sent: 40 }),
+      snooze: noSnooze,
+    });
+    expect(out).not.toContain('не дождались');
+  });
+
   it('все упали: 100%, без деления на ноль', () => {
     const out = formatNotifyQueueMetrics({
       day: totals({ ticks: 1, transient: 4 }),
@@ -128,5 +156,23 @@ describe('formatNotifyQueueMetrics — «Напомню через час»', ()
     });
     expect(out).toContain('За неделю напоминаний из очереди не было.');
     expect(out).toContain('отложили 1 раз. Пришло 1.');
+  });
+
+  // Уведомления в приложении (src/push/): доля пушей видна в том же итоге,
+  // а при нуле строки «из них» нет вовсе.
+  it('ушедшие в приложение показаны долей недели, ноль не пишется', () => {
+    const week = totals({ ticks: 10, sent: 40, pushed: 12 });
+    const out = formatNotifyQueueMetrics({
+      day: totals(),
+      week,
+      snooze: noSnooze,
+    });
+    expect(out).toContain('За неделю ушло 40 (из них в приложение 12),');
+    const none = formatNotifyQueueMetrics({
+      day: totals(),
+      week: totals({ ticks: 10, sent: 40 }),
+      snooze: noSnooze,
+    });
+    expect(none).not.toContain('в приложение');
   });
 });

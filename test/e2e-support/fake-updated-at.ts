@@ -1,14 +1,22 @@
 import { makeTable } from './fake-prisma-engine';
 
+// Строго растущий момент: updatedAt концептуализации — версия строки для
+// 409 (src/therapy/concept-save.ts), две записи в одну мс её бы не сдвинули.
+let last = 0;
+const tick = () => new Date((last = Math.max(Date.now(), last + 1)));
+
 /**
- * Имитация `@updatedAt`: create/update/updateMany ставят updatedAt (явная
+ * Имитация `@updatedAt`: create/update/updateMany/upsert ставят updatedAt (явная
  * `data.updatedAt` сильнее). Код брони читает возраст строки (минимальный
  * возраст повтора в confirm(), крон-добор — security#21); без этого поле в
  * фейке было бы `undefined`, а Postgres его всегда заполняет.
  */
 export function withUpdatedAt(table: ReturnType<typeof makeTable>) {
-  const { create, update, updateMany } = table;
-  const stamp = (data: any) => ({ updatedAt: new Date(), ...data });
+  const { create, update, updateMany, upsert } = table;
+  const stamp = (data: any) => ({ updatedAt: tick(), ...data });
+  table.upsert = jest.fn((args: any) =>
+    upsert({ ...args, create: stamp(args.create), update: stamp(args.update) }),
+  );
   table.create = jest.fn(({ data }: any) => create({ data: stamp(data) }));
   table.update = jest.fn((args: any) =>
     update({ ...args, data: stamp(args.data) }),

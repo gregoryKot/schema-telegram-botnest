@@ -23,6 +23,13 @@ const SKIN: ConceptSkin = {
   link: 'sk-link',
   card: 'sk-card',
   fold: { root: 'f-root', btn: 'f-btn', chev: 'f-chev', body: 'f-body' },
+  digest: {
+    title: 'dg-title',
+    list: 'dg-list',
+    row: 'dg-row',
+    term: 'dg-term',
+    value: 'dg-value',
+  },
 };
 
 describe('ConceptViewSwitch', () => {

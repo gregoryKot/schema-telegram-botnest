@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // Карточка дня трекера — чистые части (индекс дня, текст шаринга, строки
 // радара). drawDayCard/makeDayShare.draw не вызываем — canvas не рисуем,
 // но makeDayShare проверяем как объект пропсов (title/shareText/filename).
@@ -7,7 +8,9 @@ import {
   buildDayShareText,
   dayRadarRows,
   makeDayShare,
+  drawDayCard,
 } from './dayCard';
+import { canvasWithMockCtx, printedText } from './canvas.test-helpers';
 import type { Need } from '../../types';
 
 const NEEDS: Need[] = [
@@ -43,7 +46,7 @@ describe('buildDayShareText', () => {
       'https://t.me/bot',
     );
     expect(text).toContain('17 июл');
-    expect(text).toContain('5.5/10');
+    expect(text).toContain('5,5/10');
     expect(text).toContain('https://t.me/bot');
   });
 
@@ -73,5 +76,15 @@ describe('makeDayShare', () => {
     expect(share.eventKind).toBe('day');
     expect(share.shareText).toContain('17 июл');
     expect(typeof share.draw).toBe('function');
+  });
+});
+
+describe('drawDayCard — индекс на картинке', () => {
+  it('центр радара — «5,5», десятичной запятой, как на экранах (fmtIndex)', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    drawDayCard(canvas, NEEDS, { attachment: 7, autonomy: 4 }, '17 июл');
+    const printed = printedText(ctx);
+    expect(printed).toContain('5,5');
+    expect(printed).not.toMatch(/\d\.\d/);
   });
 });

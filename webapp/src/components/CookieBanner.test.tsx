@@ -15,6 +15,7 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { CookieBanner } from './CookieBanner';
 import { Dialog } from './Dialog';
 import { markSheetOpen } from '../hooks/openSheets';
+import { AppShellSkeleton } from './appShell/AppShellSkeleton';
 
 beforeEach(() => {
   localStorage.clear();
@@ -191,6 +192,22 @@ describe('CookieBanner — не перекрывает модальные шаг
     act(() => { unmark = markSheetOpen('why-sheet'); });
     expect(banner()).toBeNull();
     act(() => unmark());
+    expect(banner()).toBeTruthy();
+  });
+
+  // QA 2026-11: пока AppShell грузит данные, модального слоя («ты/вы») ещё
+  // нет — баннер мелькал у новичка на силуэте кабинета. Публичных страниц
+  // силуэт не касается: без него баннер виден сразу (тест «первый визит»).
+  it('смонтирован силуэт кабинета — баннера нет; данные пришли — баннер появляется', () => {
+    const { rerender } = render(
+      <>
+        <AppShellSkeleton section="today" therapistMode={false} />
+        <CookieBanner />
+      </>,
+    );
+    expect(screen.getByTestId('app-shell-skeleton')).toBeTruthy();
+    expect(banner()).toBeNull();
+    rerender(<CookieBanner />);
     expect(banner()).toBeTruthy();
   });
 

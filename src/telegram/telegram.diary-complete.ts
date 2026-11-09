@@ -14,15 +14,15 @@ import {
 } from '../notification/notification.time';
 import { normalizeAddressForm } from '../notification/address-form';
 import { cancelOnFill } from '../notification/notification.fill-cancel';
+import { refreshWeeklyOnFill } from '../notification/notification.weekly';
 import { maybeNotifyPairPartners } from './telegram.pair-activity';
 export { maybeNotifyPairPartners } from './telegram.pair-activity';
 
-// Что происходит после заполнения трекера: сводка дня, «с возвращением»
-// после перерыва, вехи (серии/онбординг/годовщины) и мягкий сигнал
-// напарнику. Вынесено из telegram.schedule.service.ts (правило №10).
-// R2 (аудит 2026-11, решение владельца Р1): сводка, вехи и «с возвращением»
-// слушаются тумблера «Итоги дня» (notifySummaryEnabled), напоминания —
-// «Напоминаний» (notifyEnabled, планировщик). Раньше итоги приходили всегда.
+// Что происходит после заполнения трекера: сводка дня, «с возвращением»,
+// вехи (серии/онбординг/годовщины), сигнал напарнику, свежая сводка недели.
+// Вынесено из telegram.schedule.service.ts (правило №10). R2 (аудит 2026-11,
+// Р1): сводка, вехи и «с возвращением» слушаются тумблера «Итоги дня»
+// (notifySummaryEnabled), напоминания — «Напоминаний» (notifyEnabled).
 
 export interface DiaryCompleteDeps {
   botService: BotService;
@@ -34,9 +34,8 @@ export interface DiaryCompleteDeps {
 }
 
 /**
- * Веха вида `<prefix>_<days>`: шлём один раз в жизни, ровно когда счётчик
- * совпал с порогом. Три семейства (серии, онбординг, годовщины) отличались
- * только префиксом и списком порогов — раньше это были три копии цикла.
+ * Веха `<prefix>_<days>`: один раз в жизни, ровно когда счётчик совпал с
+ * порогом. Три семейства отличались только префиксом и порогами.
  */
 async function scheduleMilestone(
   deps: DiaryCompleteDeps,
@@ -80,6 +79,8 @@ export async function runDiaryComplete(
   const settings = await deps.botService.getUserSettings(userId);
   const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
   const todayStr = localDateString(tz, now);
+  // Сводка на завтра собрана обходом раньше конца дня (notification.weekly.ts).
+  await refreshWeeklyOnFill(deps, userId, tz, todayStr, settings?.addressForm);
   // E16 (аудит 2026-11): две параллельные «последние оценки» обе видели день
   // заполненным, и сводок выходило две. День забирает один условный UPDATE;
   // повторное заполнение того же дня (правка оценки) только освежает текст
@@ -103,8 +104,7 @@ export async function runDiaryComplete(
   if (settings?.notifySummaryEnabled === false) return;
 
   const text = await summaryText(deps, userId, tz, settings?.addressForm);
-  // Schedule summary after milestones: if notify hour passed, add 5 min so milestones (sent now)
-  // arrive first and summary follows in the next processQueue cycle.
+  // Час прошёл — +5 мин: вехи (сейчас) уйдут раньше сводки (следующий тик).
   const hour = settings?.notifyLocalHour ?? 21;
   const todaySendAt = utcInstantForLocalHour(todayStr, hour, tz);
   const sendAt =

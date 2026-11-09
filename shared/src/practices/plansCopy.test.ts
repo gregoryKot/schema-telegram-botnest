@@ -22,7 +22,7 @@ describe('plansEmptyText', () => {
     expect(plansEmptyText(vy, false)).toContain('Выберите,');
   });
 
-  // U5 (аудит 2026-11): уведомления уходят только в Telegram.
+  // U5 (аудит 2026-11): без канала уведомлений напоминание не дойдёт.
   it('«с напоминанием» — только когда напоминанию есть куда прийти', () => {
     expect(plansEmptyText(ty, true)).toContain('с напоминанием');
     expect(plansEmptyText(ty, false)).not.toContain('напоминани');
@@ -42,10 +42,10 @@ describe('planStepHint', () => {
 
 describe('planNoReminderNote', () => {
   it('говорит, почему напоминания не будет, в обеих формах', () => {
-    expect(planNoReminderNote(ty)).toContain('у тебя он не подключён. Поставь');
-    expect(planNoReminderNote(vy)).toContain(
-      'у вас он не подключён. Поставьте',
-    );
+    expect(planNoReminderNote(ty)).toContain('«Уведомления». Поставь шаг');
+    expect(planNoReminderNote(vy)).toContain('«Уведомления». Поставьте шаг');
+    // Канал не только Telegram: с веб-пушами «подключи Telegram» — неправда.
+    expect(planNoReminderNote(ty)).not.toContain('Telegram');
   });
 });
 

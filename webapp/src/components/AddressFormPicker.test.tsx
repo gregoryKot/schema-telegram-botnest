@@ -252,6 +252,15 @@ describe('AddressFormPicker — чужая навигация не считае�
     expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
   });
 
+  // Dialog без closeOnEscape держит Escape — выбор формы объявляет его явно (onEscape = goBack).
+  it('Escape — тоже ответ «позже»: закрывает и ставит снуз', async () => {
+    renderWithNav();
+    await act(async () => {});
+    await act(async () => { fireEvent.keyDown(document, { key: 'Escape' }); });
+    expect(screen.queryByText('Как удобнее общаться?')).toBeNull();
+    expect(Number(localStorage.getItem('addr_form_asked'))).toBeGreaterThan(0);
+  });
+
   it('«Назад» браузера (шаг назад) — это ответ «позже»: закрывает и ставит снуз', async () => {
     renderWithNav();
     await act(async () => {});

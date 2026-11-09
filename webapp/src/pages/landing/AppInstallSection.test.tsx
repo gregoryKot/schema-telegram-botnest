@@ -3,7 +3,7 @@
 // источника installSteps, CTA в /today, нативная кнопка установки при
 // пойманном beforeinstallprompt; аналитика анонимная (public-event).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 
 import { installTelegram, removeTelegram } from '../../host/tgStub.test-helpers';
 
@@ -81,5 +81,20 @@ describe('AppInstallSection внутри мессенджера', () => {
     installTelegram();
     render(<AppInstallSection />);
     expect(screen.queryByText(INSTALL_STEPS.ios.title)).toBeNull();
+  });
+
+  // telegram-web-app.js грузится async: хост может стать telegram уже после
+  // первого рендера. Секция перечитывает его (useHostId), а не мигает до конца.
+  it('хост стал telegram после рендера → секция скрыта', () => {
+    vi.useFakeTimers();
+    try {
+      render(<AppInstallSection />);
+      expect(screen.getByText(INSTALL_STEPS.ios.title)).toBeTruthy();
+      installTelegram();
+      act(() => { vi.advanceTimersByTime(3000); });
+      expect(screen.queryByText(INSTALL_STEPS.ios.title)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

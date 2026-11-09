@@ -178,6 +178,27 @@ model User {
   appActivities          AppActivity[]
   analyticsEvents        AnalyticsEvent[]
   bookings               Booking[]
+  pushSubscriptions      PushSubscription[]
+}
+
+// Подписка браузера на уведомления в приложении (веб-пуши, src/push/).
+// endpoint — capability-URL push-сервиса: по нему можно слать человеку
+// уведомления, поэтому он и ключи шифрования лежат зашифрованными, а поиск
+// идёт по endpointHash (sha256 от endpoint). Unique глобальный, без userId:
+// одна подписка браузера — один аккаунт; вход другим аккаунтом в том же
+// браузере переносит подписку к нему (upsert по хэшу, push-subscription.store.ts).
+model PushSubscription {
+  id           Int      @id @default(autoincrement())
+  userId       BigInt
+  endpointHash String   @unique
+  endpoint     String
+  p256dh       String
+  auth         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Email magic-link tokens — вход по ссылке и привязка адреса.
@@ -770,8 +791,13 @@ model ScheduledNotification {
   payload     Json?
   sentAt      DateTime?
   cancelledAt DateTime?
+  /// Захват строки очередью до отправки (backend#15, notification-claim.ts).
+  attemptedAt DateTime?
 
-  @@index([sendAt, sentAt, cancelledAt])
+  // Тик очереди (getDue) идёт частичным индексом ScheduledNotification_due_sendAt_idx
+  // (sendAt) WHERE sentAt IS NULL AND cancelledAt IS NULL — Prisma его не описывает,
+  // он в миграции 20261109010000_notification_due_index (P6, docs/PERF_PLANS.md).
+  @@index([type, sendAt])
   @@index([userId, type, sentAt])
 }
 
@@ -1072,6 +1098,19 @@ model CronLease {
   runAt      DateTime
   instanceId String
   doneRunAt  DateTime?
+}
+
+/// Жизнь процесса приложения — для пробы cronLeases (src/infra/self-check/
+/// process-lives.ts): тик крона, пришедшийся на жизнь прошлого процесса, тоже
+/// судится, а не прощается рестартом (суточный крон при деплоях чаще раза в
+/// сутки иначе ловился на 4-е сутки). id — HOSTNAME и время старта; seenAt —
+/// последний прогон пробы этим процессом; dbFailureAt — последний отказ аренды
+/// из-за недоступной базы (тики до него прощаются, как у живого процесса).
+model ProcessLife {
+  id          String    @id
+  startedAt   DateTime
+  seenAt      DateTime
+  dbFailureAt DateTime?
 }
 
 /// Счётчик троттлинга для денежных/заявочных ручек (инцидент 2026-09-13):

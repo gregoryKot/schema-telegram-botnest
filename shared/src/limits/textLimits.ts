@@ -18,7 +18,7 @@ export const CONCEPT_FIELD_TEXT_MAX = 5000; // концептуализация,
 export const CONCEPT_MODE_ALIAS_MAX = 80; // графическая концептуализация: как режим называет клиент
 export const CONCEPT_MODE_TEXT_MAX = 1000; // графическая концептуализация: истоки / проявления / работа с режимом
 export const CONCEPT_SCHEMA_TEXT_MAX = 1000; // графическая концептуализация: убеждение схемы / как нарушалась потребность
-export const CONCEPT_TECHNIQUE_MARKS_MAX = 200; // графическая концептуализация: отметок «Делали сегодня» у одной связи режима или схемы
+export const CONCEPT_TECHNIQUE_MARKS_MAX = 50; // графическая концептуализация: отметок «Делали сегодня» у одной связи режима или схемы (худшее тело запроса < потолка, concept-save.dto.spec.ts)
 export const CUSTOM_MODE_NAME_MAX = 80; // название своего режима на карте
 export const CUSTOM_MODE_EMOJI_MAX = 8; // значок своего режима
 export const THERAPIST_REQUEST_NAME_MAX = 100; // заявка «Я психолог»: ФИО
@@ -31,6 +31,10 @@ export const BOOKING_MESSAGE_MAX = 500; // заявка с сайта: запр�
 export const BOOKING_SOURCE_MAX = 200; // заявка с сайта: откуда (leadSource())
 export const CLIENT_NAME_MAX = 100; // имя/псевдоним клиента у терапевта (добавление офлайн-клиента и переименование)
 export const TASK_TEXT_MAX = 10000; // «Своё задание»: текст задания (терапевта клиенту или своей цели)
+export const EXERCISE_TEXT_MAX = 3000; // упражнения: проверка убеждения (мысль, доказательство, новый взгляд), разбор фразы критика (фраза и ответ), флешкарта (отклик и шаг)
+export const NOTE_CARD_FIELD_MAX = 3000; // карточка схемы или режима: каждое поле (триггеры, чувства, голос, истоки…)
+export const LETTER_TEXT_MAX = 10000; // письмо себе в детстве
+export const SAFE_PLACE_TEXT_MAX = 10000; // безопасное место: описание целиком (общее впечатление и органы чувств одной строкой)
 
 /** С какой доли заполнения показывать остаток: до этого счётчик — шум. */
 export const COUNTER_FROM_RATIO = 0.8;

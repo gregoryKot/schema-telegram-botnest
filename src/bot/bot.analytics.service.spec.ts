@@ -147,6 +147,19 @@ describe('BotAnalyticsService', () => {
       expect(att.avg).toBeCloseTo(7);
     });
 
+    // Хвост волны 3: сводка недели — по дню плана человека, а не по местному
+    // «сегодня» на момент обхода (notification.weekly.ts).
+    it('endDate задаёт последний день окна: неделя и прошлая неделя от него', async () => {
+      const prisma = makePrisma();
+      const svc = new BotAnalyticsService(prisma);
+      await svc.getWeeklyStats(1, 'Asia/Vladivostok', '2026-11-08');
+      const asked = prisma.rating.findMany.mock.calls[0][0].where.date.in;
+      expect(asked[0]).toBe('2026-11-08');
+      expect(asked[6]).toBe('2026-11-02');
+      expect(asked[13]).toBe('2026-10-26');
+      expect(asked).toHaveLength(14);
+    });
+
     it('marks trend ↑ when current significantly higher than prev', async () => {
       const prisma = makePrisma();
       prisma.rating.findMany.mockResolvedValue([
@@ -353,6 +366,33 @@ describe('BotAnalyticsService', () => {
     it('returns empty array with no ratings in the window', async () => {
       const svc = new BotAnalyticsService(makePrisma());
       expect(await svc.getHistoryRatings(1, 5)).toEqual([]);
+    });
+
+    // Замер perf #1049: на `date IN (365)` план прыгал между индексами
+    // (378 ↔ 1 476 страниц) — окно спрашивается диапазоном, строки вне окна
+    // отсеиваются.
+    it('asks the window as a date range (oldest..today) and drops rows outside the days', async () => {
+      const prisma = makePrisma();
+      prisma.rating.findMany.mockResolvedValue([
+        { date: d(1), needId: 'attachment', value: 5 },
+        { date: d(9), needId: 'attachment', value: 1 },
+      ]);
+      const history = await new BotAnalyticsService(prisma).getHistoryRatings(
+        1,
+        3,
+      );
+      expect(prisma.rating.findMany).toHaveBeenCalledWith({
+        where: { userId: 1, date: { gte: d(2), lte: d(0) } },
+      });
+      expect(history.map((h) => h.date)).toEqual([d(1)]);
+    });
+
+    it('zero-day window asks nothing', async () => {
+      const prisma = makePrisma();
+      expect(
+        await new BotAnalyticsService(prisma).getHistoryRatings(1, 0),
+      ).toEqual([]);
+      expect(prisma.rating.findMany).not.toHaveBeenCalled();
     });
   });
 

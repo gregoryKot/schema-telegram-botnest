@@ -9,6 +9,8 @@ import type { GoogleProvider } from './providers/google.provider';
 import { AuthFlowService } from './auth-flow.service';
 import { setRefreshCookie } from './auth-http.util';
 import { clearOneTapNonce } from './google-one-tap-nonce';
+import { AnalyticsService } from '../analytics/analytics.service';
+import type { OneTapOutcome } from '../analytics/login-one-tap.constants';
 
 /**
  * Что вернуть браузеру. `tokens` — сессия выдана (refresh уехал в куку, access
@@ -24,7 +26,15 @@ export class GoogleOneTapService {
   constructor(
     private readonly providers: AuthProviderRegistry,
     private readonly flow: AuthFlowService,
+    private readonly analytics: AnalyticsService,
   ) {}
+
+  // Правило №8: входы через окно видны в /stats (one-tap-metrics.format.ts).
+  // userId = null, как у login_ticket_step: /api/event пишет с userId, и
+  // подделка с клиента в отчёт не попадёт. track глотает свои ошибки сам.
+  private report(outcome: OneTapOutcome): void {
+    void this.analytics.track(null, 'login_one_tap', { outcome });
+  }
 
   async login(
     credential: string,
@@ -36,7 +46,12 @@ export class GoogleOneTapService {
     const google = this.providers.get('google') as GoogleProvider;
     // Тот же верификатор, что у обмена кода (издатель/получатель/срок/подпись) +
     // nonce из куки; подделка/чужой aud/просрочка/нет nonce — Unauthorized.
-    const identity = await google.verifyIdToken(credential, { nonceCookie });
+    const identity = await google
+      .verifyIdToken(credential, { nonceCookie })
+      .catch((err: unknown) => {
+        this.report('rejected'); // токен окна не принят — сам сбой летит дальше
+        throw err;
+      });
     clearOneTapNonce(res); // одноразовая: повтор того же токена не пройдёт
 
     // Всегда ВХОД (linkUserId=null): One Tap не привязывает второй аккаунт.
@@ -47,12 +62,14 @@ export class GoogleOneTapService {
     });
 
     if (outcome.kind === 'totp_challenge') {
+      this.report('twofa');
       return { twofa: true, challengeToken: outcome.challengeToken };
     }
     if (outcome.kind === 'tokens') {
       // crossSite:false — One Tap живёт в first-party JS на нашем origin, не в
       // iframe и не редиректом; кука обычная same-site (правило №5).
       setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
+      this.report('signed_in');
       return {
         accessToken: outcome.tokens.accessToken,
         expiresIn: outcome.tokens.expiresIn,

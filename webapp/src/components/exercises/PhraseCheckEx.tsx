@@ -23,6 +23,8 @@ import { CrisisCard } from '../CrisisCard';
 import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
 import { usePhraseCheckState } from '../../../../shared/src/phraseCheck/usePhraseCheckState';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 const TOTAL_STEPS = PHRASE_CRITERIA.length + 2; // фраза + 9 примет + переписать
 
@@ -183,7 +185,8 @@ export function PhraseCheckEx({
                   'Дословно, теми же словами. Дальше проверим её по девяти приметам.',
                 )}
               </p>
-              <textarea
+              <LimitedTextarea
+                max={EXERCISE_TEXT_MAX}
                 ref={phraseRef}
                 className="ds-textarea"
                 rows={3}
@@ -202,7 +205,7 @@ export function PhraseCheckEx({
           </div>
           {pastEntries.length > 0 && (
             <div className="u-mt8">
-              <div className="aside-card-eyebrow u-mb10">Прошлые разборы · {history.length}</div>
+              <div className="ds-label u-mb10">Прошлые разборы · {history.length}</div>
               <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} showRewrite />
             </div>
           )}

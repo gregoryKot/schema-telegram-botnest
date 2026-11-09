@@ -127,6 +127,8 @@ describe('шов: настоящий Telegraf против медленного 
     const sent = new Set<number>();
     const notificationService: any = {
       getDue: jest.fn(() => Promise.resolve(sent.has(row.id) ? [] : [row])),
+      claim: jest.fn().mockResolvedValue(true),
+      releaseClaim: jest.fn().mockResolvedValue(undefined),
       markSent: jest.fn((id: number) => {
         sent.add(id);
         return Promise.resolve();

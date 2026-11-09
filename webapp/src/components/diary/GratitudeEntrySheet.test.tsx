@@ -11,7 +11,7 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { GratitudeEntrySheet } from './GratitudeEntrySheet';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import { api } from '../../api';
 
 vi.mock('../../api', () => ({
@@ -40,26 +40,17 @@ afterEach(() => {
   cleanup();
 });
 
-describe('GratitudeEntrySheet — кризисная детекция', () => {
-  it('кризисная фраза в одном из пунктов показывает CrisisCard', async () => {
-    renderSheet();
-    const textarea = await screen.findByPlaceholderText(
-      'Что-то хорошее, что произошло сегодня…',
-    );
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
+// Проверка по всем пунктам, а не только по первому: строка на первый и на второй.
+for (const n of [1, 2]) {
+  describeCrisisField('webapp/src/components/diary/GratitudeEntrySheet.tsx', {
+    label: `пункт ${n}`,
+    open: renderSheet,
+    enter: async (text) =>
+      fireEvent.change(await screen.findByLabelText(new RegExp(`Пункт ${n}:`)), {
+        target: { value: text },
+      }),
   });
-
-  it('нейтральный текст не показывает CrisisCard', async () => {
-    renderSheet();
-    const textarea = await screen.findByPlaceholderText(
-      'Что-то хорошее, что произошло сегодня…',
-    );
-    fireEvent.change(textarea, { target: { value: 'Тёплый чай вечером' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
-});
+}
 
 // В7 дизайн-аудита 2026-08: каждый пункт связан со своим вопросом через
 // aria-label, а не только через исчезающий при вводе placeholder.

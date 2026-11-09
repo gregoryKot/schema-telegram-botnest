@@ -30,5 +30,3 @@
    «Сохраняю…» 1.93:1 почти сливалась с фоном. */
 .qe-cta:disabled { cursor: default; }
 
-.qe-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.qe-head .tq-title { min-width: 0; }

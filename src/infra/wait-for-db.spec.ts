@@ -13,6 +13,7 @@ import { createServer, Server } from 'net';
 import {
   listenOn,
   listenWithRetry,
+  REFUSED_PORT,
   reservePort,
 } from '../test-support/ephemeral-port';
 import { join } from 'path';
@@ -76,28 +77,17 @@ describe('wait-for-db (ждём готовности БД перед migrate dep
   }, 20000);
 
   it('БД недоступна за отведённый бюджет → выходит с кодом 1 (не виснет)', async () => {
-    // Порт, где никто не слушает (connect → ECONNREFUSED), маленький таймаут.
-    //
-    // Зеркало той же гонки: порт от reservePort() пуст в момент выдачи, но за
-    // 600мс бюджета на нём может подняться слушатель соседнего воркера — тогда
-    // connect удастся, процесс выйдет с 0, и тест упадёт с другой стороны.
-    // Держать порт «закрытым» нельзя: bind без listen в Node не выражается, а
-    // слушающий сокет принимает соединение, как бы мы его потом ни рвали.
-    // Поэтому нарушенное предусловие не замалчиваем, а переигрываем на новом
-    // порту. Настоящий регресс (код 0 на реально пустом порту) даёт 0 на ВСЕХ
-    // попытках — тест всё равно краснеет, просто на пару секунд позже.
-    let code = 0;
-    for (let i = 0; i < 5 && code !== 1; i++) {
-      const run = runWait({
-        DATABASE_URL: url(await reservePort()),
-        DB_WAIT_INTERVAL_MS: '100',
-        DB_WAIT_CONNECT_MS: '200',
-        DB_WAIT_TIMEOUT_MS: '600',
-      });
-      alive.push(run.proc);
-      code = await run.code;
-    }
-    expect(code).toBe(1);
+    // REFUSED_PORT никто не слушает (connect → ECONNREFUSED), маленький
+    // таймаут. Номер от reservePort() здесь переигрывали до пяти раз: за 600мс
+    // бюджета на нём мог подняться слушатель соседнего воркера.
+    const { proc, code } = runWait({
+      DATABASE_URL: url(REFUSED_PORT),
+      DB_WAIT_INTERVAL_MS: '100',
+      DB_WAIT_CONNECT_MS: '200',
+      DB_WAIT_TIMEOUT_MS: '600',
+    });
+    alive.push(proc);
+    expect(await code).toBe(1);
   }, 20000);
 
   it('БД поднялась позже (та самая гонка старта) → ретраи дожидаются, код 0', async () => {

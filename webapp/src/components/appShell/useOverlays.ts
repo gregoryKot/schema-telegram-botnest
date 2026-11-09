@@ -49,7 +49,7 @@ export function useOverlays() {
     showPlans, setShowPlans,
     showSchemaInfo, setShowSchemaInfo,
     schemaAutoStartTest, setSchemaAutoStartTest,
-    schemaInitialTab, setSchemaInitialTab,
+    schemaInitialTab,
     schemaHighlight, setSchemaHighlight,
     showTracker, setShowTracker,
     showTrackerOverlay, setShowTrackerOverlay,

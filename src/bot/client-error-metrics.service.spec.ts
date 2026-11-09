@@ -28,6 +28,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         cabinet_week: 4n,
         booking_week: 2n,
         assets_week: 6n,
+        subscription_week: 1n,
         other_week: 13n,
         webapp_week: 22n,
         miniapp_week: 18n,
@@ -51,6 +52,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         cabinet: 4,
         booking: 2,
         assets: 6,
+        subscription: 1,
         other: 13,
       },
       bySource: { webapp: 22, miniapp: 18 },
@@ -77,6 +79,7 @@ describe('ClientErrorMetricsService.getMetrics', () => {
         cabinet: 0,
         booking: 0,
         assets: 0,
+        subscription: 0,
         other: 0,
       },
       bySource: { webapp: 0, miniapp: 0 },
@@ -128,5 +131,41 @@ describe('ClientErrorMetricsService.getMetrics', () => {
     for (const s of expected) {
       expect(sql).toContain(`meta->>'section' = '${s}')::bigint AS ${s}_week`);
     }
+  });
+});
+
+// Инцидент 2026-11-04 (#928): сработавший повтор asset-recovery.js.
+describe('ClientErrorMetricsService.getAssetRecovery', () => {
+  it('раскладывает сработавшие повторы по виду, пусто — нули', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([{ css: 3n, js: 1n }])
+      .mockResolvedValueOnce([]);
+    const service = new ClientErrorMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    await expect(service.getAssetRecovery()).resolves.toEqual({
+      cssWeek: 3,
+      jsWeek: 1,
+    });
+    await expect(service.getAssetRecovery()).resolves.toEqual({
+      cssWeek: 0,
+      jsWeek: 0,
+    });
+    // Событие анонимное: строка с userId — подделка через /api/event.
+    const sql = (queryRaw.mock.calls[0][0] as string[]).join('?');
+    expect(sql).toContain(`"name" = 'asset_recovered'`);
+    expect(sql).toContain('"userId" IS NULL');
+  });
+
+  it('render — блок поломок и строка про повторы, пустая БД без NaN', async () => {
+    const queryRaw = jest.fn().mockResolvedValue([]);
+    const service = new ClientErrorMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    const text = await service.render();
+    expect(text).toContain('Поломки на клиенте');
+    expect(text).toContain('повтором за неделю не понадобилось');
+    expect(text).not.toMatch(/NaN|undefined/);
   });
 });

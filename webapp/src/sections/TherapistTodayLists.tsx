@@ -2,6 +2,7 @@ import type { TherapyClientSummary, UserId } from '../api';
 import { clientHue, hueStyle, indexLevel } from '../lib/tone';
 import { clientAvatarInitials, clientDisplayName } from '../../../shared/src/therapy/clientInitials';
 import { activityStatus, latestIndex, sparkPoints } from './therapistTodayModel';
+import { fmtIndex } from '../../../shared/src/needs/dayIndex';
 
 interface RowProps { client: TherapyClientSummary; onOpen: (id: UserId) => void }
 
@@ -24,7 +25,7 @@ export function ActivityRow({ client, onOpen }: RowProps) {
             style={{ height: p.height ? `${p.height}%` : undefined }} />
         ))}
       </span>
-      <span className={`tt-idx ds-idx-${level}`}>{idx != null ? idx.toFixed(1) : '—'}</span><span className="ds-chev" aria-hidden="true" />
+      <span className={`tt-idx ds-idx-${level}`}>{fmtIndex(idx)}</span><span className="ds-chev" aria-hidden="true" />
     </button>
   );
 }

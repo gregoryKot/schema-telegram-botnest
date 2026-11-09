@@ -13,6 +13,8 @@ import { HealthController } from './health.controller';
 import type { PrismaService } from '../prisma/prisma.service';
 import { selfCheckState } from '../infra/self-check/state';
 import { builtAt } from '../utils/build-info';
+import { PROCESS_STARTED_AT_MS } from './health-report';
+import { STARTUP_ENV } from '../telegram/start-launch-env';
 
 const mockBuiltAt = builtAt as jest.Mock;
 
@@ -41,6 +43,9 @@ describe('HealthController', () => {
       db: 'up',
       builtAt: '2026-09-16T10:08:00.000Z',
       selfCheck: { ranAt: null, stale: false, failed: [] },
+      startedAt: new Date(PROCESS_STARTED_AT_MS).toISOString(),
+      launch: null,
+      crashesDay: null,
     });
   });
 
@@ -60,6 +65,9 @@ describe('HealthController', () => {
       db: 'up',
       builtAt: null,
       selfCheck: { ranAt: null, stale: false, failed: [] },
+      startedAt: new Date(PROCESS_STARTED_AT_MS).toISOString(),
+      launch: null,
+      crashesDay: null,
     });
   });
 
@@ -158,6 +166,67 @@ describe('HealthController', () => {
     it('снимка нет, а процесс живёт дольше грейса → stale: true', async () => {
       jest.spyOn(process, 'uptime').mockReturnValue(3_600);
       expect((await check()).selfCheck.stale).toBe(true);
+    });
+  });
+
+  // Аудит 2026-10 («Красный смок не говорит, что лежит»): рестарт приложения
+  // внутри живого контейнера снаружи был не виден. Номер запуска и падения за
+  // сутки считает супервизор (deploy/crash-window.mjs) и передаёт через env —
+  // те же имена, что читает DM о старте (src/telegram/start-launch-env.ts).
+  describe('startedAt, launch, crashesDay', () => {
+    const prisma = {
+      $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+    };
+    const check = () =>
+      new HealthController(prisma as unknown as PrismaService).check();
+    const saved = {
+      launch: process.env[STARTUP_ENV.launch],
+      crashes: process.env[STARTUP_ENV.crashes],
+    };
+    const restore = (name: string, value: string | undefined) => {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    };
+    afterEach(() => {
+      restore(STARTUP_ENV.launch, saved.launch);
+      restore(STARTUP_ENV.crashes, saved.crashes);
+    });
+
+    it('перезапуск после падений: номер запуска и падения за сутки — числами', async () => {
+      process.env[STARTUP_ENV.launch] = '3';
+      process.env[STARTUP_ENV.crashes] = '2';
+      const res = await check();
+      expect(res.launch).toBe(3);
+      expect(res.crashesDay).toBe(2);
+    });
+
+    it('без супервизора (локальный запуск) или мусор в env — null, а не NaN', async () => {
+      delete process.env[STARTUP_ENV.launch];
+      process.env[STARTUP_ENV.crashes] = 'abc';
+      const res = await check();
+      expect(res.launch).toBeNull();
+      expect(res.crashesDay).toBeNull();
+    });
+
+    it('startedAt — момент старта процесса: ISO, в прошлом, один и тот же между запросами', async () => {
+      jest.restoreAllMocks(); // настоящий uptime
+      const before = Date.now();
+      const first = await check();
+      const second = await check();
+      expect(first.startedAt).toBe(second.startedAt);
+      const at = Date.parse(first.startedAt);
+      expect(new Date(at).toISOString()).toBe(first.startedAt);
+      expect(at).toBeLessThanOrEqual(before);
+      expect(before - at).toBeLessThanOrEqual(process.uptime() * 1000 + 1000);
+    });
+
+    // Смок и HEALTHCHECK читают /health по полям и подстроке — новые поля
+    // аддитивны и не сдвигают маркеры, которые они ищут.
+    it('маркеры смока и HEALTHCHECK на месте', async () => {
+      const body = JSON.stringify(await check());
+      expect(body).toContain('"status":"ok"');
+      expect(body).toContain('"db":"up"');
+      expect(body).toContain('"failed":[]');
     });
   });
 

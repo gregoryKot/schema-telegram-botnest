@@ -12,7 +12,7 @@ afterEach(cleanup);
 describe('SsHead', () => {
   it('без look — прежняя шапка ss-head с заголовком ss-title', () => {
     const { container } = render(<SsHead eyebrow="Схема" title="Покинутость" lede="Ожидание ухода" layers />);
-    expect(container.querySelector('.ss-head .ss-title-row h1.ss-title')?.textContent).toBe('Покинутость');
+    expect(container.querySelector('.ss-head .pp-head h1.ss-title')?.textContent).toBe('Покинутость');
     expect(container.querySelector('.pa-sheet')).toBeNull();
   });
 

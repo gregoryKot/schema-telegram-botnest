@@ -8,7 +8,7 @@ export type SubView = 'main' | 'time' | 'tz' | 'freq' | 'quiet';
 interface Props {
   subView: Exclude<SubView, 'main'>;
   settings: UserSettings;
-  patch: (update: Partial<UserSettings>) => Promise<void>;
+  patch: (update: Partial<UserSettings>) => Promise<unknown>;
   onDone: () => void;
 }
 

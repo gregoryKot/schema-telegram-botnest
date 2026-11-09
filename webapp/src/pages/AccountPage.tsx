@@ -3,7 +3,7 @@ import { useAuth } from '../auth/authContext';
 import { useTr } from '../utils/addressForm';
 import { hueStyle, clientHue } from '../lib/tone';
 import { Leaf } from '../components/art/PaperArtSigns';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { HistoryConfirmDialog } from '../components/HistoryConfirmDialog';
 import { TherapistRequestSection } from './account/TherapistRequestSection';
 import { TwoFactorSection } from './account/TwoFactorSection';
 import { AccountLinkSection } from './account/AccountLinkSection';
@@ -70,13 +70,13 @@ export function AccountPage() {
         <AccountFooter logout={logout} />
       </div>
 
+      {/* Своя запись истории: «Назад» закрывает диалог; отвязка (и окно кода 2FA) — после снятия записи. */}
       {unlinkProvider && (
-        <ConfirmDialog
+        <HistoryConfirmDialog
           title={`Отвязать ${PROVIDER_NAMES[unlinkProvider]}?`}
           message="Понадобится другой способ входа в аккаунт."
           confirmLabel="Отвязать"
-          busy={actions.busy}
-          onConfirm={() => actions.performUnlink(unlinkProvider)}
+          onConfirm={() => { void actions.performUnlink(unlinkProvider); }}
           onCancel={() => actions.setUnlinkProvider(null)}
         />
       )}

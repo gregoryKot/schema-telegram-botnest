@@ -11,6 +11,7 @@ const empty: ClientErrorMetrics = {
   authDay: 0,
   authWeek: 0,
   bySection: {
+    login: 0,
     today: 0,
     diary: 0,
     schemas: 0,
@@ -20,6 +21,7 @@ const empty: ClientErrorMetrics = {
     cabinet: 0,
     booking: 0,
     assets: 0,
+    subscription: 0,
     other: 0,
   },
   bySource: { webapp: 0, miniapp: 0 },
@@ -101,6 +103,18 @@ describe('formatClientErrorMetrics', () => {
       bySection: { ...empty.bySection, assets: 3 },
     });
     expect(text).toContain('По разделам: Файлы сайта не загрузились — 3.');
+    expect(text).not.toContain('другое —');
+  });
+
+  // Отказ отмены подписки (useSubscriptionCancel.ts) — своя строка: до 2026-11
+  // он оседал в «другое» вместе с незаведёнными экранами.
+  it('отказы отмены подписки — строкой «Подписка», а не «другое»', () => {
+    const text = formatClientErrorMetrics({
+      ...empty,
+      totalWeek: 2,
+      bySection: { ...empty.bySection, subscription: 2 },
+    });
+    expect(text).toContain('По разделам: Подписка — 2.');
     expect(text).not.toContain('другое —');
   });
 

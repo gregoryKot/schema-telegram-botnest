@@ -1,7 +1,7 @@
 // Сверка merge-драйверов для `setup-merge-drivers.mjs --check` (CI, джоба
 // `checks`). Вынесена из setup, чтобы тот не рос (правило №10).
 //
-// Проверяются четыре вещи, и каждая — отдельный способ тихо сломаться:
+// Проверяются пять вещей, и каждая — отдельный способ тихо сломаться:
 //   1. у каждого `merge=<имя>` из .gitattributes есть драйвер в setup. Встроенные
 //      git `union`/`text`/`binary` — только для НЕ-бейслайнов и на точном пути
 //      (union держит обе стороны журнала на дозапись; маска `*.json merge=union`
@@ -13,7 +13,9 @@
 //      ручное разрешение откатывает чужой прогресс (правило №13). До проверки
 //      12 из 37 бейслайнов жили без атрибута, и CI молчал;
 //   4. строка .gitattributes про `*-baseline.json`, которого нет на диске,
-//      протухла (файл удалён или переименован) — тоже красная.
+//      протухла (файл удалён или переименован) — тоже красная;
+//   5. один путь в двух строках: сам .gitattributes сводится union, и две
+//      стороны, переписавшие ОДНУ строку, оставят обе — git молча возьмёт последнюю.
 //
 // Catch-all `scripts/*-baseline.json merge=…` запрещён проверкой (3): забытый
 // «больше — лучше» бейслайн получил бы min. Списка исключений и `--update` нет.
@@ -79,6 +81,13 @@ export function checkMergeDrivers(root, drivers) {
     }
   }
 
+  const seen = new Set();
+  for (const { pattern } of rows) {
+    if (seen.has(pattern)) {
+      problems.push(`.gitattributes: ${pattern} встречается дважды — оставь одну строку`);
+    }
+    seen.add(pattern);
+  }
   const byPattern = new Map(rows.map((r) => [r.pattern, r.driver]));
   const baselines = listBaselines(root);
   for (const file of baselines) {

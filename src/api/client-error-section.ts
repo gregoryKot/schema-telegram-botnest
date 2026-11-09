@@ -1,10 +1,8 @@
-// Бакет для meta.section события client_error (волна 9 щита покрытия, см.
-// docs/SHIELD_PROMPT.md). `body.section` в POST /api/client-errors — литерал,
-// который разработчик задаёт в JSX (`<ErrorBoundary section="…">`,
+// Бакет для meta.section события client_error (волна 9, docs/SHIELD_PROMPT.md).
+// `body.section` в POST /api/client-errors — литерал из JSX (`<ErrorBoundary section="…">`,
 // `AUTH_FAILURE_SECTION`), но эндпоинт БЕЗ auth-гарда (client-errors.controller.ts) —
-// значит теоретически прислать можно что угодно. Чтобы meta оставалась
-// СТРУКТУРНОЙ (правило №7/№8: никакого свободного текста в аналитике), а не
-// произвольной строкой с клиента, бакетим в канонический ограниченный набор;
+// значит прислать можно что угодно. Чтобы meta оставалась СТРУКТУРНОЙ (№7/№8:
+// никакого свободного текста в аналитике), бакетим в ограниченный набор;
 // всё незнакомое — в 'other'.
 export const CLIENT_ERROR_SECTIONS = [
   'auth',
@@ -18,14 +16,15 @@ export const CLIENT_ERROR_SECTIONS = [
   'cabinet',
   'booking',
   'assets',
+  'subscription',
   'other',
 ] as const;
 export type ClientErrorSection = (typeof CLIENT_ERROR_SECTIONS)[number];
 
 // Известные литералы сайта → канонический бакет (сверено грепом по webapp/src;
 // ключи удалённого мини-аппа — для старых клиентов). Новый экран заведёт секцию
-// не из списка — она осядет в 'other', просто не разложится дальше; расширять
-// список стоит, когда 'other' в /stats станет заметной долей.
+// не из списка — она осядет в 'other'; расширять список, когда 'other' в /stats
+// станет заметной долей.
 const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   auth: 'auth', // AUTH_FAILURE_SECTION, shared/src/host/authFailureReport.ts
   // Своя секция, а не 'auth': тот бакет заведён под инцидент 2026-08-08 как
@@ -52,6 +51,7 @@ const KNOWN: Readonly<Record<string, ClientErrorSection>> = {
   booking: 'booking', // webapp/src/components/bookingFailure.ts
   // Файл сборки не догрузился и повторы не помогли (инцидент 2026-11-04, #928).
   assets: 'assets', // webapp/public/asset-recovery.js
+  subscription: 'subscription', // отмена не прошла: useSubscriptionCancel.ts
 };
 
 /** Чистая функция: сырой `section` → канонический бакет. */

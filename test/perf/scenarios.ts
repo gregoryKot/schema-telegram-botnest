@@ -15,6 +15,13 @@ import { getFormerTherapistInfo } from '../../src/therapy/former-therapist-info'
 import { NotificationService } from '../../src/notification/notification.service';
 import { proactiveBudgetSpent } from '../../src/notification/notification.budget';
 import { buildStatsReport } from '../e2e-support/stats-report.factory';
+import { assertLiveAccess } from '../../src/auth/live-access';
+import { ClientBookingService } from '../../src/booking/client-booking.service';
+import type { BookingService } from '../../src/booking/booking.service';
+import type { AnalyticsService } from '../../src/analytics/analytics.service';
+import { AccountService } from '../../src/bot/account.service';
+import { ConfigService } from '@nestjs/config';
+import { vapidEnv, withEnv } from './scenario-env';
 import type { ScenarioContext } from './worst-case-ids';
 
 export { resolveWorstCaseIds, type ScenarioContext } from './worst-case-ids';
@@ -53,6 +60,17 @@ export const SCENARIOS: Scenario[] = [
         new BotClientOverviewService(prisma),
       ).getClients(therapistId),
   },
+  {
+    name: 'therapist-clients-long-streaks',
+    title: 'Список клиентов терапевта: у каждого годы ежедневных оценок',
+    // Стрик считается в SQL без общего потолка строк (src/bot/client-streaks.ts);
+    // когорта 50 × 2600 дней — test/perf/seed-streaks.ts.
+    run: ({ prisma, streakTherapistId }) =>
+      new TherapyRelationsService(
+        prisma,
+        new BotClientOverviewService(prisma),
+      ).getClients(streakTherapistId),
+  },
   // 30 — экран истории; 365 — лента «Записи», потолок HISTORY_MAX_DAYS.
   ...[30, 365].map((days) => ({
     name: `history-${days}d`,
@@ -83,6 +101,61 @@ export const SCENARIOS: Scenario[] = [
         await proactiveBudgetSpent(notifications, notifiedUserId, tz, now),
         await proactiveBudgetSpent(notifications, notifiedUserId, tz, now, 1),
       ];
+    },
+  },
+  {
+    name: 'bearer-guard',
+    title: 'Проверка Bearer на каждом запросе (аккаунт + живая сессия, S12)',
+    // Ровно то, что делают JwtAuthGuard/TelegramAuthGuard/OptionalJwtGuard на
+    // каждом запросе сайта (src/auth/live-access.ts) — на семье с самой
+    // длинной цепочкой ротаций (seed-sessions.ts).
+    run: ({ prisma, session }) =>
+      assertLiveAccess(prisma, session.userId, session.family),
+  },
+  {
+    name: 'client-booking',
+    title:
+      'Запись из приложения: можно ли и ближайшие брони (GET /api/client-booking)',
+    // Ровно ClientBookingService.overview (#546): владелец по ADMIN_ID через
+    // AuthProvider, связь клиента с ним, брони по (userId, startsAt). Уходит
+    // при каждом открытии профиля клиентом с терапевтом. BookingService и
+    // аналитику overview не трогает — заглушки; синтетика — seed-booking.ts.
+    run: ({ prisma, bookingClient: c }) =>
+      withEnv({ ADMIN_ID: c.ownerTelegramId }, async () => {
+        const view = await new ClientBookingService(
+          prisma,
+          {} as BookingService,
+          {} as AnalyticsService,
+          new ConfigService(),
+        ).overview(c.userId);
+        // Без владельца или броней код ушёл бы короткой веткой — мерить нечего.
+        if (!view.eligible || view.upcoming.length === 0) {
+          throw new Error(
+            'client-booking: клиент владельца без связи или броней',
+          );
+        }
+        return view;
+      }),
+  },
+  {
+    name: 'notify-queue-tick',
+    title: 'Тик очереди уведомлений: пачка getDue и настройки отправки',
+    // Читающая часть runProcessQueue (telegram.schedule-queue.ts) до отправки:
+    // getDue (take 500, старейшие первыми) и getSendSettingsFor — User с
+    // адресом в Telegram и PushSubscription по userId IN (…). Отправка и
+    // пометки — запись, её гейт не мерит. Хвост просроченных строк, который
+    // даёт полную пачку, — seed-notifications.ts; подписки — seed-push.ts.
+    run: async ({ prisma }) => {
+      const due = await new NotificationService(prisma).getDue();
+      if (due.length === 0) {
+        throw new Error(
+          'notify-queue-tick: очередь пуста — нет хвоста в синтетике',
+        );
+      }
+      const ids = [...new Set(due.map((n) => n.userId))];
+      return withEnv(vapidEnv(), () =>
+        new AccountService(prisma).getSendSettingsFor(ids),
+      );
     },
   },
 ];

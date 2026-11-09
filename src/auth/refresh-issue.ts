@@ -20,7 +20,7 @@ export interface RotatingSession {
 export interface IssueRotatedDeps {
   prisma: PrismaService;
   hashToken: (raw: string) => string;
-  signAccessToken: (userId: bigint) => string;
+  signAccessToken: (userId: bigint, sid: string) => string;
   accessTtlS: number;
   refreshTtlS: number;
 }
@@ -124,13 +124,13 @@ export async function issueRotatedPair(
 
   if (!won) {
     return accessOnlyPair(
-      deps.signAccessToken(session.userId),
+      deps.signAccessToken(session.userId, session.family),
       rawRefresh,
       deps.accessTtlS,
     );
   }
   return {
-    accessToken: deps.signAccessToken(session.userId),
+    accessToken: deps.signAccessToken(session.userId, session.family),
     refreshToken: newRaw,
     expiresIn: deps.accessTtlS,
     rotated: true,

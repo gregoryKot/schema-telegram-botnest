@@ -33,6 +33,21 @@ async function failFirstRequest(page: Page, pathname: RegExp) {
   return seen;
 }
 
+/** Сигналы «повтор помог» (asset_recovered → POST /api/public-event): только
+ *  наблюдение за запросом, ответ даёт общий стаб (support/stubApi.ts). */
+function collectRecoveries(page: Page) {
+  const bodies: unknown[] = [];
+  page.on('request', (request) => {
+    if (
+      request.method() === 'POST' &&
+      new URL(request.url()).pathname === '/api/public-event'
+    ) {
+      bodies.push(request.postDataJSON());
+    }
+  });
+  return bodies;
+}
+
 /** Загрузки документа во вкладке: перезагрузка — вторая. */
 function countDocumentLoads(page: Page) {
   const loads = { count: 0 };
@@ -52,6 +67,7 @@ test.describe('файл сборки не дошёл с первого раза'
     await page.setViewportSize({ width: 1280, height: 800 });
     const css = await failFirstRequest(page, /^\/assets\/index-[^/]+\.css$/);
     const loads = countDocumentLoads(page);
+    const recoveries = collectRecoveries(page);
 
     await page.goto('/donate');
 
@@ -77,6 +93,12 @@ test.describe('файл сборки не дошёл с первого раза'
     await expect(page.locator('link[data-asset-retry="1"]')).toHaveCount(1);
     expect(css.requests).toBe(2);
     expect(loads.count, 'страница не перезагружалась').toBe(1);
+    // Повтор помог — сигнал в /stats: настоящий Chromium шлёт load новому <link>.
+    await expect
+      .poll(() => recoveries)
+      .toEqual([
+        { name: 'asset_recovered', meta: { kind: 'css', attempts: 1 } },
+      ]);
   });
 
   test('входной модуль — одна перезагрузка, страница рендерится', async ({
@@ -84,6 +106,7 @@ test.describe('файл сборки не дошёл с первого раза'
   }) => {
     const js = await failFirstRequest(page, /^\/assets\/index-[^/]+\.js$/);
     const loads = countDocumentLoads(page);
+    const recoveries = collectRecoveries(page);
 
     await page.goto('/donate');
 
@@ -96,5 +119,11 @@ test.describe('файл сборки не дошёл с первого раза'
       JSON.parse(sessionStorage.getItem('asset-reload-at') ?? 'null'),
     );
     expect(stamps).toHaveLength(1);
+    // Перезагрузка помогла: window load после неё шлёт один сигнал js/1.
+    await expect
+      .poll(() => recoveries)
+      .toEqual([
+        { name: 'asset_recovered', meta: { kind: 'js', attempts: 1 } },
+      ]);
   });
 });

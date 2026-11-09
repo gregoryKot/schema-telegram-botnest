@@ -46,15 +46,15 @@ describe('ContactChannelField', () => {
 
   it('подсказка про закрытый профиль — на номер в Telegram, не на @username', () => {
     const { rerender, props } = renderField({ value: '+79990001122' });
-    expect(screen.getByText(/укажите @username/)).toBeTruthy();
+    expect(screen.getByText(/нужен @username/)).toBeTruthy();
     rerender(<ContactChannelField {...props} value="@anya" />);
-    expect(screen.queryByText(/укажите @username/)).toBeNull();
+    expect(screen.queryByText(/нужен @username/)).toBeNull();
   });
 
   it('подсказка валидации перекрывает подсказку про Telegram и красит поле invalid', () => {
     renderField({ value: '+79990001122', hint: 'Оставьте контакт', invalid: true });
     expect(screen.getByText('Оставьте контакт')).toBeTruthy();
-    expect(screen.queryByText(/укажите @username/)).toBeNull();
+    expect(screen.queryByText(/нужен @username/)).toBeNull();
     const input = screen.getByLabelText('Где вам удобнее отвечать *');
     expect(input.getAttribute('aria-invalid')).toBe('true');
     expect(input.getAttribute('aria-describedby')).toBe('cf-hint');

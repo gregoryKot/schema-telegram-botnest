@@ -130,7 +130,61 @@ export function classOverlays(rawSrc, overlayClassSet) {
   return found;
 }
 
+// Рамки рисуют fixed-оболочку сами (в бейслайне), у потребителя своего fixed нет: файл с тегом
+// рамки — тоже оверлей (2026-11: «О советах» поверх листа жила с локальным onClose). Dialog не
+// в списке: его потребители-подтверждения закрываются кнопками и Escape (стек диалогов).
+export const FRAME_TAGS = ['ExScreen', 'BottomSheetShell'];
+
+/** Теги рамок-оверлеев в .tsx (`<ExScreen`, но не `<ExScreenSkeleton`). */
+export function frameOverlays(rawSrc) {
+  const src = stripComments(rawSrc, false);
+  return FRAME_TAGS.flatMap((tag) =>
+    [...src.matchAll(new RegExp(`<${tag}(?![\\w$])`, 'g'))].map((m) => ({
+      line: lineAt(src, m.index),
+      what: `рамка <${tag}> (оверлей рисует она)`,
+    })),
+  );
+}
+
 /** Вызывает ли файл хук (в коде, не в комментарии). */
 export function callsHistorySheet(rawSrc) {
   return /\buseHistorySheet\s*\(/.test(stripComments(rawSrc, false));
+}
+
+// Объявление верхнего уровня — с нулевым отступом (так форматирует prettier):
+// функция-компонент или const/let. Тело тянется до следующего такого объявления.
+const TOP_DECL =
+  /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function\s*\*?\s*([A-Za-z_$][\w$]*)|(?:const|let)\s+([A-Za-z_$][\w$]*)\s*[:=])/;
+
+/**
+ * Компоненты файла: объявления верхнего уровня со строками и признаком вызова
+ * хука в СВОЁМ теле. Хук соседнего компонента оверлей не закрывает: лист с
+ * хуком и чек-ин без него в одном файле — два решения, а не одно.
+ */
+export function topLevelComponents(rawSrc) {
+  const lines = stripComments(rawSrc, false).split('\n');
+  const comps = [];
+  lines.forEach((l, i) => {
+    const m = TOP_DECL.exec(l);
+    if (m) comps.push({ name: m[1] ?? m[2], start: i + 1 });
+  });
+  return comps.map((c, i) => {
+    const end = i + 1 < comps.length ? comps[i + 1].start - 1 : lines.length;
+    return { ...c, end, hook: callsHistorySheet(lines.slice(c.start - 1, end).join('\n')) };
+  });
+}
+
+/**
+ * Оверлеи файла по компонентам: [{ name, hook, hits }]. Находка выше первого
+ * объявления относится к псевдокомпоненту «(модуль)» без хука.
+ */
+export function overlaysByComponent(rawSrc, hits) {
+  const comps = topLevelComponents(rawSrc);
+  const out = new Map();
+  for (const h of hits) {
+    const c = comps.filter((x) => x.start <= h.line).pop() ?? { name: '(модуль)', hook: false };
+    if (!out.has(c.name)) out.set(c.name, { name: c.name, hook: c.hook, hits: [] });
+    out.get(c.name).hits.push(h);
+  }
+  return [...out.values()];
 }

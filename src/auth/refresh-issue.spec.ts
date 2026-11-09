@@ -22,7 +22,7 @@ function makeDeps(rows: Row[]): { deps: IssueRotatedDeps; rows: Row[] } {
   const deps: IssueRotatedDeps = {
     prisma,
     hashToken: (raw: string) => `h:${raw}`,
-    signAccessToken: (id: bigint) => `acc:${id}`,
+    signAccessToken: (id: bigint, sid: string) => `acc:${id}:${sid}`,
     accessTtlS: 900,
     refreshTtlS: 2_592_000,
   };
@@ -85,7 +85,7 @@ describe('issueRotatedPair — обычная ротация', () => {
 
     expect(res.rotated).toBe(false);
     expect(res.refreshToken).toBe(RAW); // кука прежняя
-    expect(res.accessToken).toBe('acc:7');
+    expect(res.accessToken).toBe('acc:7:fam-1'); // sid = family цепочки (S12)
     // Ни одной новой строки: наследник не создан.
     expect(rows).toHaveLength(1);
   });
@@ -196,5 +196,35 @@ describe('issueRotatedPair — метка recoveredAt', () => {
     if (!res.rotated) throw new Error('unreachable');
     const born = rows.find((r) => r.tokenHash === `h:${res.refreshToken}`)!;
     expect(born.recoveredAt ?? null).toBeNull();
+  });
+});
+
+// Ночной мутационный замер (stryker.golden-auth.config.json): при
+// восстановлении репойнт пишется в строку ПРЕДЪЯВЛЕННОГО токена, а не в
+// первую попавшуюся.
+describe('issueRotatedPair — восстановление трогает только свою строку', () => {
+  it('чужая сессия, стоящая в таблице первой, остаётся как была', async () => {
+    const other = live({ id: 'sess-0', tokenHash: 'h:other', family: 'fam-0' });
+    const parent = live({ revokedAt: new Date(), replacedByHash: 'h:succ' });
+    const succ = live({ id: 'sess-2', tokenHash: 'h:succ' });
+    const { deps, rows } = makeDeps([other, parent, succ]);
+    const res = await issueRotatedPair(
+      deps,
+      {
+        tokenHash: 'h:parent',
+        userId: 7n,
+        family: 'fam-1',
+        replacedByHash: 'h:succ',
+      },
+      RAW,
+    );
+    if (!res.rotated) throw new Error('unreachable');
+    const newHash = `h:${res.refreshToken}`;
+    expect(rows.find((r) => r.tokenHash === 'h:parent')!.replacedByHash).toBe(
+      newHash,
+    );
+    const untouched = rows.find((r) => r.tokenHash === 'h:other')!;
+    expect(untouched.revokedAt).toBeNull();
+    expect(untouched.replacedByHash).toBeNull();
   });
 });

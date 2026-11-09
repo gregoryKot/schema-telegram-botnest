@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { useBootstrapLoad } from './useBootstrapLoad';
+import { ApiError } from '../../apiClient';
 import { MY_MODE_IDS_KEY, MY_SCHEMA_IDS_KEY, THERAPIST_MODE_KEY } from '../../utils/storageKeys';
 import { todayStr } from '../../../../shared/src/utils/format';
 import { shiftCalendarDay } from '../../../../shared/src/utils/calendarDate';
@@ -128,6 +129,29 @@ describe('useBootstrapLoad — сбои фоновых источников не
     expect(result.current.error).toBeTruthy();
     expect(mockReport).toHaveBeenCalledTimes(1);
     expect(mockReport.mock.calls[0][0].message).toContain('needs/ratings');
+  });
+
+  // docs/open/backend.md: отчёт нёс только имена — сеть, лимит, авария сервера
+  // и битое тело были неразличимы, разбор 2026-10-03 потребовал чтения кода.
+  it('у каждого имени — причина: код ответа, обрыв сети, битое тело', async () => {
+    mockApi.getProfile.mockRejectedValue(new ApiError(503, 'Service Unavailable'));
+    mockApi.needs.mockRejectedValue(new TypeError('Failed to fetch'));
+    mockApi.getYsqResult.mockRejectedValue(new SyntaxError('Unexpected token < in JSON'));
+    setup();
+    await flush();
+    expect(mockReport).toHaveBeenCalledTimes(1);
+    const message = mockReport.mock.calls[0][0].message as string;
+    expect(message).toContain('профиль [HTTP 503]');
+    expect(message).toContain('needs/ratings [network]');
+    expect(message).toContain('YSQ [parse]');
+  });
+
+  it('текст исключения в отчёт не уезжает — только причина из закрытого списка', async () => {
+    mockApi.getPendingPlans.mockRejectedValue(new Error('fetch /auth#access_token=СЕКРЕТ'));
+    setup();
+    await flush();
+    const message = mockReport.mock.calls[0][0].message as string;
+    expect(message).toBe('appshell bootstrap fail: задания [Error]');
   });
 });
 

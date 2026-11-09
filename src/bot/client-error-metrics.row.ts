@@ -2,8 +2,7 @@
 // что отдаёт SELECT (все — count()/sum() с ::bigint, поэтому не null). Отдельный
 // файл — чтобы сервис не рос из-за списка колонок (правило №10) и при этом тип
 // остался строгим: опечатка в ключе (`row?.repeats_wek`) ломает tsc, а не молча
-// даёт 0. Порядок и состав колонок сверяет спек сервиса и живой спек /stats
-// (test/raw-sql-live-stats.e2e-spec.ts).
+// даёт 0. Состав сверяет спек сервиса и test/raw-sql-live-stats.e2e-spec.ts.
 export interface ClientErrorMetricsRow {
   total_day: bigint;
   total_week: bigint;
@@ -19,6 +18,7 @@ export interface ClientErrorMetricsRow {
   cabinet_week: bigint;
   booking_week: bigint;
   assets_week: bigint;
+  subscription_week: bigint;
   other_week: bigint;
   webapp_week: bigint;
   miniapp_week: bigint;

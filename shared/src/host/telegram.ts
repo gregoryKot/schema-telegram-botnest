@@ -6,6 +6,7 @@ import type {
   HostInsets,
   HostUser,
 } from './types';
+import { launchPlatform } from './launchPlatform';
 
 type TgWebApp = {
   initData?: string;
@@ -117,9 +118,8 @@ export function createTelegramHost(): HostBridge {
     authHeaders: () => ({ 'x-telegram-init-data': tg()?.initData ?? '' }),
     sessionExchange() {
       const initData = tg()?.initData;
-      return initData
-        ? { path: '/api/auth/telegram/webapp', body: { initData } }
-        : null;
+      const body = { initData, platform: launchPlatform(tg()?.platform) };
+      return initData ? { path: '/api/auth/telegram/webapp', body } : null;
     },
 
     colorScheme: () => tg()?.colorScheme ?? null,

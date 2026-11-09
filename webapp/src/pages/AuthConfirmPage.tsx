@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
-import { useTr } from '../utils/addressForm';
 import { ServicePage } from './service/ServicePage';
 import { TicketDenied } from './service/TicketDenied';
 import { TicketNotFound, ToAppLink } from './service/TicketNotFound';
@@ -30,7 +29,6 @@ export function AuthConfirmPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { getAccessToken, refreshToken } = useAuth();
-  const tr = useTr();
   const code = params.get('code') ?? '';
   const [phase, setPhase] = useState<Phase>('ask');
   const [typed, setTyped] = useState('');
@@ -105,26 +103,17 @@ export function AuthConfirmPage() {
     <ServicePage>
       <div className="as-body">
         <div className="ds-eyebrow">Вход по коду</div>
-        <h1 className="ds-h2">{tr('Это ты открываешь приложение?', 'Это вы открываете приложение?')}</h1>
-        <p className="as-lead">
-          {tr(
-            'Набери код, который показан в приложении, откуда ты входишь.',
-            'Наберите код, который показан в приложении, откуда вы входите.',
-          )}
-        </p>
+        {/* Безлично: страница вне AddressFormProvider, формы взять неоткуда (как DonatePage). */}
+        <h1 className="ds-h2">Это свой вход в приложение?</h1>
+        <p className="as-lead">Код показан в приложении, из которого идёт вход, — его нужно набрать здесь.</p>
         <TicketCodeField value={typed} onChange={setTyped} matches={matches} disabled={phase === 'busy'} />
         {preview.kind === 'ok' && <p className="as-lead">Устройство: <b>{preview.deviceLabel ?? 'не определилось'}</b>, запрошено в {momentTime(preview.createdAt)}</p>}
         <p className="as-lead">
-          {tr(
-            'Если кода перед тобой нет, вход начинал кто-то другой. Нажми «Это не я»: ссылку могли прислать, чтобы попасть в твой аккаунт.',
-            'Если кода перед вами нет, вход начинал кто-то другой. Нажмите «Это не я»: ссылку могли прислать, чтобы попасть в ваш аккаунт.',
-          )}
+          Если кода перед глазами нет, вход начинал кто-то другой. Тогда — «Это не я»: ссылку могли прислать, чтобы попасть в аккаунт.
         </p>
         <div className="as-actions">
           <button type="button" onClick={confirm} disabled={phase === 'busy' || !matches || preview.kind === 'loading'} className="ds-btn">
-            {phase === 'busy'
-              ? tr('Впускаю…', 'Впускаю…')
-              : tr('Да, это я — впустить', 'Да, это я — впустить')}
+            {phase === 'busy' ? 'Впускаю…' : 'Да, это я — впустить'}
           </button>
           <button type="button" onClick={deny} disabled={phase === 'busy'} className="ds-btn ds-btn--secondary as-btn-deny">
             Это не я

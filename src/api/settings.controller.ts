@@ -27,9 +27,9 @@ export class SettingsController {
 
   @Get('settings')
   async getSettings(@Req() req: AuthRequest) {
-    const [s, notifyReachable] = await Promise.all([
+    const [s, route] = await Promise.all([
       this.botService.getUserSettings(uid(req)),
-      this.accountService.isNotifyReachable(uid(req)),
+      this.accountService.notifyRoute(uid(req)),
     ]);
     return {
       notifyEnabled: s?.notifyEnabled ?? true,
@@ -54,9 +54,12 @@ export class SettingsController {
       // в колонке лежит устаревшая/битая форма (например ключ, выведенный
       // из SYNCED_PREF_KEYS в более старой версии контракта).
       uiPrefs: sanitizeUiPrefs(s?.uiPrefs) ?? {},
-      // Есть ли куда слать уведомления (Telegram) — экран не обещает
+      // Куда очередь пошлёт уведомление сейчас (notify-channel.ts): 'push' —
+      // в приложение, 'telegram', null — некуда; экран не обещает
       // напоминаний, которые не придут (QA 2026-11, З5).
-      notifyReachable,
+      notifyChannel: route.channel,
+      notifyReachable: route.channel !== null,
+      telegramLinked: route.telegramLinked,
     };
   }
 

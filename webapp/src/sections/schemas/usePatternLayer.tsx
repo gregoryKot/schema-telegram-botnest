@@ -1,20 +1,19 @@
-// Всё, что «Мои паттерны» открывает поверх экрана для схемы или режима:
-// экран паттерна (PatternSheet), статус карточки для строки списка и
-// упражнение режима для плиток «Карты режимов». Вынесено из SchemasSection
-// (правило №10): секция остаётся раскладкой, а состояние листов живёт здесь.
+// Всё, что «Мои паттерны» открывает поверх экрана для схемы или режима: экран паттерна (PatternSheet),
+// статус карточки для строки списка и упражнение режима для плиток «Карты режимов». Вынесено из
+// SchemasSection (правило №10). source — записи, уже прочитанные экраном (профиль: useAboutMe).
 import { useMemo, useState, type ReactNode } from 'react';
 import { api } from '../../api';
 import { PatternSheet } from '../../components/patternSheet/PatternSheet';
 import { ModeExOverlay } from './ModeExOverlay';
-import { usePatternEntries } from './usePatternEntries';
+import { usePatternEntries, type PatternEntriesSource } from './usePatternEntries';
 import { usePatternStatus } from '../../../../shared/src/pattern/usePatternStatus';
 import { schemaEntryCounts, modeEntryCounts } from '../../../../shared/src/pattern/patternStatus';
 import { weekSchemaFrequency, weekModeFrequency, weekModeSummary, weekPatternTop } from '../../../../shared/src/pattern/patternsSummary';
 import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
-export function usePatternLayer() {
+export function usePatternLayer(source?: PatternEntriesSource) {
   const [pattern, setPattern] = useState<{ kind: MyCardsKind; id: string } | null>(null);
   const [exModeId, setExModeId] = useState<string | null>(null);
-  const entries = usePatternEntries();
+  const entries = usePatternEntries(source);
   const schemaStatus = usePatternStatus('schema', schemaEntryCounts(entries.schemaEntries), api);
   const modeStatus = usePatternStatus('mode', modeEntryCounts(entries.modeEntries), api);
   const pick = (kind?: MyCardsKind) => (kind === 'mode' ? modeStatus : schemaStatus);

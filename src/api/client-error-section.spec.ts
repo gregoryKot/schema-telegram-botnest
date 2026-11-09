@@ -25,6 +25,14 @@ describe('classifyClientErrorSection', () => {
     expect(classifyClientErrorSection('login.ticket')).toBe('login');
   });
 
+  // Отказ отмены подписки (webapp/src/pages/subscribe/useSubscriptionCancel.ts,
+  // SUBSCRIPTION_SECTION) до 2026-11 оседал в 'other' — в /stats не было видно,
+  // что сломалась именно отмена.
+  it('отказ отмены подписки — свой бакет, а не other', () => {
+    expect(classifyClientErrorSection('subscription')).toBe('subscription');
+    expect(CLIENT_ERROR_SECTIONS).toContain('subscription');
+  });
+
   it('сбой выписки билета не сливается с отказом входа', () => {
     // Контроль: бакет 'auth' заведён под инцидент 2026-08-08 и остаётся
     // единственным свидетелем «подпись пустая, экран-тупик». Смешать их

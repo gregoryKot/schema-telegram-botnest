@@ -14,10 +14,14 @@ import {
 import { sanitizeScreenMeta } from './analytics-meta.sanitize-screens';
 import { sanitizeCaseMeta } from './analytics-meta.sanitize-case';
 import { sanitizeQuickActionMeta } from './analytics-meta.sanitize-quick-actions';
-import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import { sanitizeLoginMeta } from './analytics-meta.sanitize-login';
 import { sanitizeHomeMeta } from './analytics-meta.sanitize-home';
 import { sanitizeDataExportMeta } from './analytics-meta.sanitize-data-export';
 import { sanitizeCrawlerMeta } from '../analytics/crawler-visit.meta';
+import { PUSH_EVENTS } from '../analytics/push-events.constants';
+import { SERVER_META_EVENTS } from '../analytics/server-events.constants';
+
+const PUSH_EVENT_SET: ReadonlySet<string> = new Set(PUSH_EVENTS);
 
 // Санитизация meta для POST /api/event (правило №7/№10): пропускаем ТОЛЬКО
 // известные поля конкретного события, чтобы в БД не утёк произвольный
@@ -156,7 +160,7 @@ export function sanitizeMeta(
   if (name === 'quick_action_toggle' || name === 'quick_action_move') {
     return sanitizeQuickActionMeta(name, meta);
   }
-  if (name === 'login_ticket_step') return sanitizeLoginTicketMeta(meta);
+  if (name.startsWith('login_')) return sanitizeLoginMeta(name, meta);
   if (name === 'account_link_started') {
     const host = meta.host;
     if (typeof host === 'string' && ACCOUNT_LINK_HOST_SET.has(host)) {
@@ -199,25 +203,12 @@ export function sanitizeMeta(
   if (name === 'signup_source') {
     // Пишет только бот в /start (payload src_<slug>, см. parseSourceSlug в
     // src/telegram/start-source.ts) — на клиентский POST /api/event эта
-    // ветка попасть не должна. Whitelist здесь — defence in depth (тот же
-    // приём, что у auth_success): даже если кто-то дёрнет эндпоинт руками,
-    // meta ограничена уже нормализованным src из allow-list, свободный
-    // slug сюда попасть не может.
+    // ветка попасть не должна. Whitelist здесь — defence in depth: даже если
+    // кто-то дёрнет эндпоинт руками, meta ограничена уже нормализованным src
+    // из allow-list, свободный slug сюда попасть не может.
     const src = meta.src;
     if (typeof src === 'string' && SIGNUP_SOURCE_SET.has(src)) {
       return { src };
-    }
-    return undefined;
-  }
-  if (name === 'auth_success') {
-    // Событие в реальности пишет только guard (userId = null, см.
-    // analytics.constants.ts) — эта ветка на клиентский путь POST /api/event
-    // не должна попасть. Whitelist здесь defence in depth: если бы кто-то
-    // всё же прислал это имя с фронта, meta ограничена площадкой и ничем
-    // больше, никакого свободного текста/PII.
-    const host = meta.host;
-    if (host === 'telegram' || host === 'max' || host === 'web') {
-      return { host };
     }
     return undefined;
   }
@@ -245,9 +236,13 @@ export function sanitizeMeta(
   // через POST /api/event в отчёт /stats не попадёт.
   if (name === 'client_booking_opened' || name === 'client_booking_created')
     return undefined;
-  // «Напомню через час» пишет только бот (server-events.constants.ts): quietShift
-  // с клиента не принимается — подделка без него в /stats не считается.
-  if (name === 'reminder_snoozed') return undefined;
+  // meta этих событий пишет только сервер (SERVER_META_EVENTS): с клиента не
+  // принимается ничего — подделка без meta в /stats не считается.
+  if (SERVER_META_EVENTS.has(name)) return undefined;
+  // Уведомления в приложении (push-events.constants.ts): push_subscribed/
+  // unsubscribed/gone пишет только сервер — meta с клиента не принимается,
+  // /stats считает только строки с meta; push_denied клиент шлёт без полей.
+  if (PUSH_EVENT_SET.has(name)) return undefined;
   // Без meta: breath_start / stop_start / journey_open / ysq_help_open /
   // CONCEPT_EVENTS, CABINET_EVENTS; серверные notify_queue_tick, therapist_resigned, booking_slot_taken, booking_currency_chosen (подделке — без чисел).
   // Главная простого клиента (home_tile, tracker_skip, diary_quick_save) — свой файл.

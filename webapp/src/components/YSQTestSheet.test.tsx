@@ -7,7 +7,10 @@
 // `new Date()`/относительные, литералов не используем (CLAUDE.md).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate, type Location, type NavigateFunction } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useHistorySheet } from '../hooks/useHistorySheet';
+import { sheetStackOf } from '../hooks/historySheetStack';
 import { AddressFormContext } from '../utils/addressForm';
 import { YSQTestSheet } from './YSQTestSheet';
 import { QUESTIONS, YSQ_PROGRESS_KEY, YSQ_RESULT_KEY } from '../hooks/useYsqTest';
@@ -135,6 +138,44 @@ describe('YSQTestSheet — результат: реальный подсчёт �
     seedResult(1);
     renderSheet();
     await waitFor(() => expect(screen.getByText('Выраженных схем нет — отличный результат.')).toBeTruthy());
+  });
+
+  // «Читать карточку схемы» из результата (SchemaInfoSheet.handleViewSchemas) убирал тест из
+  // дерева мимо его goBack: запись истории оставалась, и следующее «Назад» уходило вхолостую.
+  it('«Читать карточку схемы» закрывает тест своим goBack: записи не остаётся, «Назад» закрывает лист под ним', async () => {
+    seedResult(6);
+    const snap = { nav: null as NavigateFunction | null, loc: null as Location | null };
+    const parentClosed = vi.fn();
+    const viewed = vi.fn();
+    function Parent() {
+      useHistorySheet(parentClosed);
+      const [test, setTest] = useState(false);
+      const nav = useNavigate();
+      const loc = useLocation();
+      useEffect(() => { snap.nav = nav; snap.loc = loc; });
+      return (
+        <>
+          <button onClick={() => setTest(true)}>открыть тест</button>
+          {test && <YSQTestSheet onClose={() => setTest(false)} onViewSchemas={(n) => { viewed(n); setTest(false); }} />}
+        </>
+      );
+    }
+    render(
+      <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
+        <MemoryRouter initialEntries={['/schemas']}><Parent /></MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    await act(async () => {});
+    fireEvent.click(screen.getByText('открыть тест'));
+    const link = (await screen.findAllByText('Читать карточку схемы'))[0];
+    await act(async () => {});
+    expect(sheetStackOf(snap.loc!.state)).toHaveLength(2);
+    fireEvent.click(link);
+    await waitFor(() => expect(viewed).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Читать карточку схемы')).toBeNull();
+    expect(sheetStackOf(snap.loc!.state)).toHaveLength(1);
+    await act(async () => { snap.nav!(-1); });
+    await waitFor(() => expect(parentClosed).toHaveBeenCalledTimes(1));
   });
 
   it('все ответы «Полностью про меня» (6) → показывает активные схемы со РЕАЛЬНЫМ средним баллом', async () => {

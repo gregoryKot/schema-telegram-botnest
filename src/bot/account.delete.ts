@@ -1,7 +1,5 @@
-// Полное удаление аккаунта (right-to-erasure). Вынесено из account.service.ts
-// отдельным файлом: транзакция перечисляет двадцать с лишним таблиц и по
-// правилу №10 не имеет права жить внутри сервиса, у которого есть ещё десяток
-// обязанностей.
+// Полное удаление аккаунта (right-to-erasure). Отдельный файл: транзакция на
+// двадцать с лишним таблиц не живёт в многозадачном account.service.ts (№10).
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,12 +21,9 @@ export async function deleteAllUserData(
   userId: bigint,
 ): Promise<void> {
   const uid = userId;
-  // Подписку ищем по АДРЕСУ в Telegram, а не по userId. Раньше здесь стояло
-  // `telegramId: uid` с пояснением «у телеграм-пользователей userId ===
-  // telegramId» — после слияния аккаунтов это перестаёт быть правдой, и
-  // удаление веб-аккаунта не отменяло подписку: списания продолжались с
-  // человека, который аккаунт удалил. Веб-подписки без telegramId к аккаунту
-  // не привязаны — ими управляют по собственному cancelToken.
+  // Подписку ищем по АДРЕСУ в Telegram, а не по userId: после слияния они
+  // расходятся, и прежнее `telegramId: uid` не отменяло подписку удалившего
+  // аккаунт (списания шли дальше). Веб-подписки без telegramId — по cancelToken.
   const telegramId = await telegramIdFor(prisma, uid);
   const subscriptionIds = [uid, ...(telegramId !== null ? [telegramId] : [])];
 
@@ -76,6 +71,11 @@ export async function deleteAllUserData(
     prisma.authProvider.deleteMany({ where: { userId: uid } }),
     prisma.webSession.deleteMany({ where: { userId: uid } }),
     prisma.therapistRequest.deleteMany({ where: { userId: uid } }),
+    // Чужие заявки, рассмотренные им (reviewedBy = Telegram-id): остаются, ссылка — нет.
+    prisma.therapistRequest.updateMany({
+      where: { reviewedBy: { in: subscriptionIds } },
+      data: { reviewedBy: null },
+    }),
     // Билеты входа, где человек стоит НЕ в колонке userId: `shownToTelegramId`
     // — сырой telegramId того, кому бот показал карточку сверки,
     // `approvedUserId` — кто её подтвердил. Реестр чистит LoginTicket только по

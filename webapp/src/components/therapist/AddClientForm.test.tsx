@@ -95,6 +95,27 @@ describe('AddClientForm — приглашение: код отдельно, о�
     expect(mockApi.addVirtualClient).not.toHaveBeenCalled();
   });
 
+  // Главное после приглашения — отдать ссылку: залитая одна «Скопировать», «Добавить ещё» — вторичная.
+  it('с приглашением залитая кнопка одна — «Скопировать»; «Добавить ещё» вторичная', async () => {
+    mockApi.createTherapyInvite.mockResolvedValue({ code: 'C0DE', url: 'https://example.com/invite' });
+    render(<Host />);
+    fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Мария К.' } });
+    fireEvent.click(screen.getByLabelText('Пригласить в приложение (ссылка и код)'));
+    await act(async () => { fireEvent.click(screen.getByText('Создать приглашение')); });
+    await screen.findByText('Приглашение создано');
+    expect(screen.getByRole('button', { name: 'Скопировать' }).classList.contains('ds-btn--secondary')).toBe(false);
+    expect(screen.getByRole('button', { name: 'Добавить ещё' }).classList.contains('ds-btn--secondary')).toBe(true);
+  });
+
+  it('без приглашения «Добавить ещё» остаётся залитой — она там главная', async () => {
+    mockApi.addVirtualClient.mockResolvedValue([]);
+    render(<Host />);
+    fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Пётр' } });
+    await act(async () => { fireEvent.click(screen.getByText('Создать карточку')); });
+    await screen.findByText('Клиент добавлен');
+    expect(screen.getByRole('button', { name: 'Добавить ещё' }).classList.contains('ds-btn--secondary')).toBe(false);
+  });
+
   it('без галочки — «Создать карточку» и офлайн-клиент, приглашения нет', async () => {
     mockApi.addVirtualClient.mockResolvedValue([]);
     render(<Host />);

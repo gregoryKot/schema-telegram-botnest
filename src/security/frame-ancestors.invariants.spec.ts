@@ -2,7 +2,7 @@
 // хотя код выдавал для него кросс-сайтовую куку. Мини-апп в web.telegram.org
 // не рисовался («Refused to frame»), сервер отвечал 200, сигнала не было.
 // Тест на шве: заголовок собирает настоящий helmet с настоящим конфигом
-// (helmetOptions — ровно то, что main.ts передаёт в app.use), запрос идёт
+// (helmetOptions — ровно то, что configureApp передаёт в app.use), запрос идёт
 // через HTTP, а не регэкспом по исходнику.
 import express from 'express';
 import helmet from 'helmet';

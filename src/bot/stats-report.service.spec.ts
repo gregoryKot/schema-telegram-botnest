@@ -95,6 +95,9 @@ describe('StatsReportService.render', () => {
     const crawlers = {
       render: jest.fn().mockResolvedValue('роботы нейросетей: 4'),
     };
+    const push = {
+      render: jest.fn().mockResolvedValue('уведомления в приложении: 3'),
+    };
     return {
       blocks: {
         entryDelete,
@@ -122,6 +125,7 @@ describe('StatsReportService.render', () => {
         notifyQueue,
         therapistExit,
         crawlers,
+        push,
       },
       service: new StatsReportService(
         product as never,
@@ -154,6 +158,7 @@ describe('StatsReportService.render', () => {
         notifyQueue as never,
         therapistExit as never,
         crawlers as never,
+        push as never,
       ),
     };
   };
@@ -169,7 +174,7 @@ describe('StatsReportService.render', () => {
       'разборы фраз: 7\n\nудаление записей: 2\n\nперенос данных: 2',
     );
     expect(out).toContain(
-      'кнопка плюс: 4\n\nустановка с сайта: 8\n\nнастройка экранов: 1',
+      'кнопка плюс: 4\n\nустановка с сайта: 8\n\nуведомления в приложении: 3\n\nнастройка экранов: 1',
     );
     expect(out).toContain(
       'настройка экранов: 1\n\nпаттерны со вкладки «Я»: 4\n\nсхема случая по режимам: 3\n\nпоказ экрана: 2\n\nсправочник терапевта: 5\n\nвход в мессенджере: всё хорошо',
@@ -282,6 +287,7 @@ describe('StatsReportService.render', () => {
     expect(blocks.therapyInvites.render).toHaveBeenCalledTimes(1);
     expect(blocks.notifyQueue.render).toHaveBeenCalledTimes(1);
     expect(blocks.therapistExit.render).toHaveBeenCalledTimes(1);
+    expect(blocks.push.render).toHaveBeenCalledTimes(1);
     expect(out).toContain('удаление записей: 2');
     expect(out).toContain('перенос данных: 2');
     expect(out).toContain('кнопка плюс: 4');

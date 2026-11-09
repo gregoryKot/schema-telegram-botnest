@@ -1,28 +1,35 @@
 import type { UserSettings } from '../../api';
 import { botHandle } from '../../utils/botConfig';
-import { FREQ_LABELS, pad, quietLabel, hourInQuiet } from '../../../../shared/src/settings/constants';
+import { useTr } from '../../utils/addressForm';
 import { SSection, SRow, Toggle, ChevronVal } from './ui';
 import type { SubView } from './SubViews';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
-import { NOTIFY_UNREACHABLE, notifyReachable } from '../../../../shared/src/settings/notifyReach';
+import { NotifyScheduleRows } from './NotifyScheduleRows';
+import { PushDeviceRow } from './PushDeviceRow';
+import { usePushDevice } from '../../push/usePushDevice';
+import { notifyChannelHint, notifyChannelOf, notifyUnreachableCopy } from '../../../../shared/src/settings/notifyReach';
 import { remindersOn, remindersPatch, summaryOn } from '../../../../shared/src/settings/notifyToggles';
 
 interface Props {
   settings: UserSettings;
   tzLabel: string;
-  patch: (update: Partial<UserSettings>) => Promise<void>;
+  patch: (update: Partial<UserSettings>) => Promise<unknown>;
   openSubView: (v: SubView) => void;
-  onOpenAccount: () => void; // «Аккаунт» — там привязывают Telegram, куда приходят уведомления
+  leaveTo: (path: '/account' | '/install') => void; // закрыть лист и уйти: привязать Telegram / установить приложение
+  reloadSettings: () => Promise<void>; // после включения пушей на устройстве меняется notifyChannel
 }
 
-// Раздел «Уведомления» — вынесен из SettingsSheet.tsx (правило №10). Без
-// Telegram уведомлениям некуда прийти: вместо тумблеров — честная причина и
-// путь привязать его (QA 2026-11, З5). Два тумблера — shared/src/settings/notifyToggles.ts.
-export function NotificationsSection({ settings, tzLabel, patch, openSubView, onOpenAccount }: Props) {
-  const localHour = settings.notifyLocalHour;
-  const [reachable, reminders, summary] = [notifyReachable(settings), remindersOn(settings), summaryOn(settings)];
+// «Уведомления»: канал — веб-пуш или Telegram (shared/src/settings/notifyReach.ts), без канала — причина и
+// два пути (QA 2026-11, З5); тумблеры — shared/src/settings/notifyToggles.ts. «Часовой пояс» — вне ветки
+// уведомлений: он считает и «сегодня» заданий (TherapyTasksService.getTasks → notifyTimezone).
+export function NotificationsSection({ settings, tzLabel, patch, openSubView, leaveTo, reloadSettings }: Props) {
+  const tr = useTr();
+  const channel = notifyChannelOf(settings);
+  const push = usePushDevice(channel, reloadSettings);
+  const [reminders, summary] = [remindersOn(settings), summaryOn(settings)];
+  const unreachable = notifyUnreachableCopy(tr, push.state !== 'unsupported');
   return (
-    <SSection id="s-notifications" label="Уведомления" hint={reachable ? `Приходят через Telegram — ${botHandle}` : NOTIFY_UNREACHABLE.hint}
+    <SSection id="s-notifications" label="Уведомления" hint={notifyChannelHint(channel, botHandle)}
       help={<SettingsInfoHelp infoKey="notify" />}>
       {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
         <div className="st-pause">
@@ -32,27 +39,20 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, on
           <button className="ds-link" onClick={() => patch({ notifyPausedUntil: null } as Partial<UserSettings>)}>Возобновить</button>
         </div>
       )}
-      {reachable ? (<>
+      <PushDeviceRow device={push} telegramLinked={settings.telegramLinked ?? channel === 'telegram'} onInstall={() => leaveTo('/install')} />
+      {channel ? (<>
         <SRow title="Напоминания" sub="Заполнить трекер в выбранный час" right={<Toggle label="Напоминания" on={reminders} onClick={() => patch(remindersPatch(!reminders))} />} />
         <SRow title="Итоги дня" sub="Сводка и вехи после заполнения трекера" right={<Toggle label="Итоги дня" on={summary} onClick={() => patch({ notifySummaryEnabled: !summary })} />} />
       </>) : (
         <div className="st-body-block" role="note">
-          <p className="st-text">{NOTIFY_UNREACHABLE.text}</p>
-          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onOpenAccount}>{NOTIFY_UNREACHABLE.linkButton}</button>
+          <p className="st-text">{unreachable.text}</p>
+          <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => leaveTo('/account')}>{unreachable.linkButton}</button>
         </div>
       )}
-      {reachable && (reminders || summary) && (<>
-        <SRow title="Время" right={<ChevronVal text={`${pad(localHour)}:00`} />} onClick={() => openSubView('time')} />
-        <SRow title="Частота" right={<ChevronVal text={FREQ_LABELS[settings.notifyFrequency ?? 0]} />} onClick={() => openSubView('freq')} />
-        <SRow title="Игровой режим" sub="Серии и «ещё день до вехи»" right={<Toggle label="Игровой режим" on={!!settings.notifyGamified} onClick={() => patch({ notifyGamified: !settings.notifyGamified })} />} />
-        <SRow title="Тихие часы" right={<ChevronVal text={quietLabel(settings.notifyQuietStart, settings.notifyQuietEnd)} />} onClick={() => openSubView('quiet')} />
-        <SRow title="Часовой пояс" right={<ChevronVal text={tzLabel} />} onClick={() => openSubView('tz')} />
-        {hourInQuiet(localHour, settings.notifyQuietStart, settings.notifyQuietEnd) && (
-          <div className="st-text--warn">
-            Время уведомления попадает в тихие часы — сообщение придёт после их окончания
-          </div>
-        )}
-      </>)}
+      {channel && (reminders || summary) && (
+        <NotifyScheduleRows settings={settings} patch={patch} openSubView={openSubView} />
+      )}
+      <SRow title="Часовой пояс" sub="От него считается «сегодня» и час напоминаний" right={<ChevronVal text={tzLabel} />} onClick={() => openSubView('tz')} />
     </SSection>
   );
 }

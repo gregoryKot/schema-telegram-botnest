@@ -16,7 +16,11 @@
 //    заполнения: его отсекает фильтр по типу;
 //  · строки лежат в куче по времени (ORDER BY sendAt), как в проде, где
 //    планировщик ставит их на сутки вперёд. Порядок «по людям» разбросал бы
-//    окно в 7 дней по всей таблице и мерил бы артефакт сидера.
+//    окно в 7 дней по всей таблице и мерил бы артефакт сидера;
+//  · хвост после даунтайма: ~600 строк за сутки до запуска, не отправленных
+//    и не снятых, — больше пачки getDue (take 500). Сегодняшние строки (16–21 ч
+//    UTC) стоят позже хвоста, поэтому тик в любой час прогона берёт одну и ту
+//    же полную пачку (сценарий notify-queue-tick), а не 0 или 500 строк.
 // Итого ~2,1 млн строк при 10 000 людей. Детерминировано: только арифметика.
 import { PERF_ID_BASE as B, PERF_PROFILE as P } from './seed-profile';
 import { at1 } from './seed-sql';
@@ -33,6 +37,7 @@ const PROACTIVE_MIX = [
   'pre_reminder',
 ];
 const REACTIVE_MIX = [...fill(3, 'summary'), 'comeback', 'streak_7'];
+const BACKLOG = 700; // минус выключившие уведомления (u % 8 = 0) — 612 строк
 
 /** `a` — SQL-выражение момента запуска сидера (timestamp UTC). */
 export function scheduledNotificationSql(a: string): string {
@@ -51,6 +56,12 @@ FROM (
   CROSS JOIN LATERAL generate_series(-1::bigint, (u.u * 7919) % ${P.userSpreadDays}) d(d)
   CROSS JOIN generate_series(0, 1) k(k)
   WHERE u.u % 8 <> 0 AND (k.k = 0 OR (d.d >= 1 AND (u.u + d.d) % 3 = 0))
+  UNION ALL
+  SELECT b.u, 0, 2, ${a} - make_interval(hours => 25, secs => (b.i * 5)::int),
+    ${at1(PROACTIVE_MIX, 'b.i')}, false
+  FROM (SELECT g.i, 1 + (g.i * 4999) % ${P.users} AS u
+    FROM generate_series(1::bigint, ${BACKLOG}::bigint) g(i)) b
+  WHERE b.u % 8 <> 0
 ) s
 ORDER BY s.at, s.u, s.k`;
 }

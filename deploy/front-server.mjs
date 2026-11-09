@@ -21,13 +21,12 @@
 // Остаётся непокрытым лишь окно пересборки образа при деплое (контейнера ещё нет
 // физически) — это уровень платформы, изнутри контейнера недостижимо.
 import { createServer as createTcpServer, connect } from 'node:net';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   answerWhileDown,
   DEFAULT_DIST_DIR,
   rawResponse,
 } from './front-static.mjs';
+import { loadMaintenancePage, withReason } from './maintenance-page.mjs';
 
 const PORT =
   process.env.PORT !== undefined && process.env.PORT !== ''
@@ -35,25 +34,12 @@ const PORT =
     : 3000;
 const APP_PORT = Number(process.env.APP_PORT ?? 3001);
 
-// HTML читаем один раз при старте. Если файл почему-то недоступен — не падаем,
-// отдаём минимальный встроенный текст (страница техработ важнее красоты).
-export function loadMaintenancePage() {
-  try {
-    return readFileSync(join(import.meta.dirname, 'maintenance.html'), 'utf8');
-  } catch {
-    return (
-      '<!doctype html><meta charset="utf-8"><title>Технические работы</title>' +
-      '<body style="font-family:sans-serif;text-align:center;padding:60px">' +
-      '<h1>Небольшие технические работы</h1>' +
-      '<p>Приложение скоро снова будет доступно.</p>'
-    );
-  }
-}
-
 export function startFront({
   port = PORT,
   appPort = APP_PORT,
   distDir = DEFAULT_DIST_DIR,
+  // Причина техработ (supervisor-status.mjs) → заголовок X-Maintenance-Reason.
+  reason = () => null,
 } = {}) {
   // Страница техработ. Статус 200 (не 503) — намеренно: если прокси Amvera
   // перехватывает 5xx и подменяет своей generic-ошибкой, наша страница до
@@ -86,7 +72,7 @@ export function startFront({
       // До connect: приложение не поднято → файл с диска или страница техработ.
       // После connect: обрыв апстрима на лету → закрываем обе стороны.
       if (piped) killBoth();
-      else answerWhileDown(client, maintenance, distDir);
+      else answerWhileDown(client, withReason(maintenance, reason()), distDir);
     });
   });
 

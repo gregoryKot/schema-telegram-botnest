@@ -30,6 +30,8 @@ const row = (id: number) => ({
 function makeService(due: ReturnType<typeof row>[], callApi: jest.Mock) {
   const notificationService: any = {
     getDue: jest.fn().mockResolvedValue(due),
+    claim: jest.fn().mockResolvedValue(true),
+    releaseClaim: jest.fn().mockResolvedValue(undefined),
     markSent: jest.fn().mockResolvedValue(undefined),
     defer: jest.fn(),
     cancelOne: jest.fn(),
@@ -100,7 +102,9 @@ describe('очередь и лимит Telegram', () => {
     // Итог прогона уходит в /stats событием без userId.
     expect(analytics.track).toHaveBeenCalledWith(null, 'notify_queue_tick', {
       sent: 1,
+      pushed: 0,
       transient: 0,
+      unknown: 0,
       waited: 1,
       deferred: 0,
     });
@@ -122,7 +126,9 @@ describe('очередь и лимит Telegram', () => {
     ]);
     expect(analytics.track).toHaveBeenCalledWith(null, 'notify_queue_tick', {
       sent: 0,
+      pushed: 0,
       transient: 0,
+      unknown: 0,
       waited: 0,
       deferred: 3,
     });
@@ -154,7 +160,37 @@ describe('очередь и лимит Telegram', () => {
     expect(accountService.markUserBlocked).not.toHaveBeenCalled();
     expect(analytics.track).toHaveBeenCalledWith(null, 'notify_queue_tick', {
       sent: 0,
+      pushed: 0,
       transient: 2,
+      unknown: 0,
+      waited: 0,
+      deferred: 0,
+    });
+  });
+
+  // Исход «неизвестно» (обрыв после записи запроса): строка помечена
+  // отправленной, и число попадает в итог прогона — блок /stats его покажет.
+  it('ответа не дождались — счётчик unknown в итоге прогона', async () => {
+    const reset = Object.assign(new Error('socket hang up'), {
+      code: 'ECONNRESET',
+    });
+    const callApi = jest
+      .fn()
+      .mockRejectedValueOnce(reset)
+      .mockResolvedValueOnce(undefined);
+    const { service, notificationService, analytics } = makeService(
+      [row(1), row(2)],
+      callApi,
+    );
+    const tick = service.processQueue();
+    await jest.advanceTimersByTimeAsync(1_000);
+    await tick;
+    expect(notificationService.markSent.mock.calls).toEqual([[1], [2]]);
+    expect(analytics.track).toHaveBeenCalledWith(null, 'notify_queue_tick', {
+      sent: 1,
+      pushed: 0,
+      transient: 0,
+      unknown: 1,
       waited: 0,
       deferred: 0,
     });

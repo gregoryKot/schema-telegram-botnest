@@ -11,6 +11,7 @@
 // цепочкой, что в проде.
 import { TherapyRelationsService } from './therapy-relations.service';
 import { BotClientOverviewService } from '../bot/bot.client-overview.service';
+import { makeFakeQueryRaw } from '../test-support/fake-client-streaks';
 
 const T = 100n;
 const MSK_TODAY = 1n; // Москва, оценил 27-го — у него сегодня
@@ -66,30 +67,18 @@ function makePrisma() {
       ),
     },
     rating: {
-      findMany: jest.fn(
-        async ({
-          where,
-          distinct,
-        }: {
-          where: RatingWhere;
-          distinct?: unknown;
-        }) => {
-          const rows = RATINGS.filter(
-            (r) =>
-              where.userId.in.includes(r.userId) &&
-              (!where.date || where.date.in.includes(r.date)),
-          );
-          if (!distinct) return rows;
-          const seen = new Set<string>();
-          return rows.filter((r) => {
-            const k = `${r.userId}|${r.date}`;
-            if (seen.has(k)) return false;
-            seen.add(k);
-            return true;
-          });
-        },
+      findMany: jest.fn(async ({ where }: { where: RatingWhere }) =>
+        RATINGS.filter(
+          (r) =>
+            where.userId.in.includes(r.userId) &&
+            (!where.date || where.date.in.includes(r.date)),
+        ),
       ),
     },
+    // Стрик и день последней оценки — сырой запрос (client-streaks.ts):
+    // эмуляция той же формулой по тем же строкам; «сегодня» клиента в него
+    // передаёт сервис.
+    $queryRaw: makeFakeQueryRaw(() => RATINGS),
   };
 }
 

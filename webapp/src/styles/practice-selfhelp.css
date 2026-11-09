@@ -15,8 +15,7 @@
    (ds-btn ds-btn--icon); предупреждение задаёт только цвет, без заливки --warn. */
 .ds-btn--icon.cp-selfhelp, .ds-btn--icon.cp-selfhelp:hover { color: var(--warn-ink); -webkit-tap-highlight-color: transparent; }
 
-.sh-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); margin-bottom: var(--space-12); }
-.sh-head .pp-art { width: 84px; height: auto; }
+.sh-head { margin-bottom: var(--space-12); } /* строка — pp-head (paper.css) */
 .sh-title { margin: 0; }
 .sh-text { margin: 0 0 var(--space-12); font-size: 14px; line-height: 1.65; color: var(--text-sub); }
 .sh-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-top: var(--space-16); }

@@ -6,7 +6,6 @@ import { BadRequestException } from '@nestjs/common';
 
 export interface AuthRequest {
   webUser: { userId: bigint };
-  telegramUserId?: number;
   telegramFirstName?: string;
 }
 

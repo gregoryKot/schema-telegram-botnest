@@ -6,7 +6,7 @@
 // остальные. Поверх НАСТОЯЩЕГО useClientDetail (мок только сети).
 import { useEffect, useRef } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 vi.mock('../../api', () => ({
   api: {
@@ -88,8 +88,12 @@ describe('поля концептуализации: предел сервера
   it('тег, дописанный кнопкой к полю на пределе, не выводит его за предел', async () => {
     await openFields(concept({ triggers: 'т'.repeat(CONCEPT_FIELD_TEXT_MAX) }));
     fireEvent.click(screen.getByRole('button', { name: 'Критика' }));
-    await waitFor(() => expect(mockApi.saveConceptualization).toHaveBeenCalled(), { timeout: 2000 });
-    expect(mockApi.saveConceptualization.mock.calls[0][1].triggers.length).toBe(CONCEPT_FIELD_TEXT_MAX);
+    await new Promise((r) => setTimeout(r, 900)); // автосохранение уходит через 700 мс
+    // Тег не влез — поле не изменилось и в патч не ушло; ушло бы — не длиннее предела.
+    expect((field('triggers') as HTMLTextAreaElement).value.length).toBe(CONCEPT_FIELD_TEXT_MAX);
+    for (const [, body] of mockApi.saveConceptualization.mock.calls) {
+      expect(String(body.triggers ?? '').length).toBeLessThanOrEqual(CONCEPT_FIELD_TEXT_MAX);
+    }
   });
 
   it('сервер отказал из-за длинного поля (сохранено до предела) — баннер называет поле', async () => {

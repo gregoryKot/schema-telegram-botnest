@@ -37,8 +37,8 @@ const makeClient = (o: Partial<Record<string, unknown>>) => ({
 const ALPHA = makeClient({ telegramId: 1, name: 'Альфа' });
 const BETA = makeClient({ telegramId: 2, name: 'Бета' });
 const CONCEPTS: Record<number, Record<string, unknown>> = {
-  1: { id: 11, schemaIds: ['abandonment'], modeIds: ['vulnerable_child'], goals: 'цели Альфы', earlyExperience: 'детство Альфы' },
-  2: { id: 22, schemaIds: ['defectiveness'], modeIds: [], goals: 'цели Беты', earlyExperience: 'детство Беты' },
+  1: { id: 11, schemaIds: ['abandonment'], modeIds: ['vulnerable_child'], goals: 'цели Альфы', earlyExperience: 'детство Альфы', updatedAt: '2026-10-01T00:00:01.000Z' },
+  2: { id: 22, schemaIds: ['defectiveness'], modeIds: [], goals: 'цели Беты', earlyExperience: 'детство Беты', updatedAt: '2026-10-02T00:00:02.000Z' },
 };
 
 function deferred<T>() {
@@ -81,9 +81,9 @@ describe('концептуализация: правка у А и быстрая
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
 
     expect(savedIds()).toEqual([1]);
-    expect(mockApi.saveConceptualization.mock.calls[0][1]).toMatchObject({
-      goals: 'новые цели Альфы', earlyExperience: 'детство Альфы',
-      schemaIds: ['abandonment'], modeIds: ['vulnerable_child'],
+    // Патч Альфы от ЕЁ версии строки; её сохранённые поля не уходят и не затираются.
+    expect(mockApi.saveConceptualization.mock.calls[0][1]).toEqual({
+      goals: 'новые цели Альфы', baseVersion: CONCEPTS[1].updatedAt,
     });
     expect(result.current.localConcept.goals).toBe('цели Беты');
     expect(result.current.concept?.goals).toBe('цели Беты');
@@ -99,8 +99,8 @@ describe('концептуализация: правка у А и быстрая
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
 
     expect(savedIds()).toEqual([1]);
-    expect(mockApi.saveConceptualization.mock.calls[0][1]).toMatchObject({
-      goals: 'новые цели Альфы', schemaIds: ['abandonment'],
+    expect(mockApi.saveConceptualization.mock.calls[0][1]).toEqual({
+      goals: 'новые цели Альфы', baseVersion: CONCEPTS[1].updatedAt,
     });
     await act(async () => { betaConcept.resolve(CONCEPTS[2]); });
     expect(result.current.localConcept.goals).toBe('цели Беты');

@@ -39,9 +39,13 @@ export const ONBOARDING_STEP_EVENT = 'onboarding_step';
 // на бэке; метрика видна в /stats («Архив „Мой путь“»).
 export const JOURNEY_OPEN_EVENT = 'journey_open';
 
-// Удаление записи упражнения из «Моего пути»: meta { type }. Парный
-// allow-list (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts.
+// Удаление своей записи: meta { type } (shared/src/analytics/trackEntryDeleted.ts).
+// Тип события шире удаляемого в «Моём пути»: разбор фразы и записи дневника
+// удаляются на своих экранах. Парный allow-list — ENTRY_DELETE_TYPES
+// (src/analytics/entry-delete.constants.ts), сверка — analytics-sync.invariants.spec.ts.
 export const ENTRY_DELETED_EVENT = 'entry_deleted';
+export type EntryDeleteType =
+  'belief_check' | 'letter' | 'flashcard' | 'phrase_check' | 'diary';
 export type JourneyDeletableType = 'belief_check' | 'letter' | 'flashcard';
 
 // Клик по ссылке на сайт практики автора (kotlarewski.gr) с публичного сайта:
@@ -120,6 +124,11 @@ export type OnboardingStep =
 export const ACCOUNT_LINK_STARTED_EVENT = 'account_link_started';
 export const ACCOUNT_LINK_CONFIRMED_EVENT = 'account_link_confirmed';
 export const ACCOUNT_LINK_FAILED_EVENT = 'account_link_failed';
+
+// Веб-пуши: человек запретил уведомления в окне браузера («Настройки → Уведомления»).
+// Без меты; шлёт webapp/src/push/pushSubscription.ts через api.trackEvent. Парный
+// allow-list — src/analytics/push-events.constants.ts (в analytics-sync — BACKEND_ONLY).
+export const PUSH_DENIED_EVENT = 'push_denied';
 
 /** Откуда переносят: meta.host. 'web' — карточка объединения на сайте. */
 export type AccountLinkHost = 'max' | 'telegram' | 'web';

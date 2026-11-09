@@ -1,9 +1,5 @@
 /* Листы «Зачем это всё» (components/WhySheet.tsx) и «Поговорить с кем-то»
    (components/therapy/TalkSheet.tsx). Префикс cw-. Кегли — ds-h1/ds-sub из cabinet.css. */
-/* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
-   начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
-   этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
-@import './talk-sheet.css';
 .cw-sheet { --sheet-col: 560px; --sheet-pad: 20px; display: flex; flex-direction: column; align-items: center; }
 /* Шапка листа — ds-sheet-head во всю ширину; одинокий «← Закрыть» держит слева сам примитив. */
 .cw-head { width: 100%; }

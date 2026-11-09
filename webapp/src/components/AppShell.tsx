@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } fro
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTr } from '../utils/addressForm';
 import { api, type StreakData } from '../api';
-import type { DayHistory } from '../types';
 import { useCabinetLightTheme } from '../utils/useCabinetLightTheme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel } from '../utils/storageKeys';
@@ -18,7 +17,8 @@ import { EntryFlowsDoneContext } from './appShell/entryQueue';
 import { AppSections } from './appShell/AppSections';
 import { AppShellSkeleton } from './appShell/AppShellSkeleton';
 import { Sidebar } from './appShell/Sidebar';
-import { type Section, sectionFromPath, fillHistoryGaps } from './appShell/navigation';
+import { type Section, sectionFromPath } from './appShell/navigation';
+import { useTrackerHistory } from './appShell/useTrackerHistory';
 import { MOBILE_NAV_ITEMS, DESKTOP_NAV_ITEMS } from './appShell/navItems';
 import '../styles/client-frame.css'; // рамка клиентских страниц на ≥768 (#925)
 import { MobileNav } from './appShell/MobileNav';
@@ -57,7 +57,7 @@ export function AppShell() {
 
   // ── Section and therapist mode derived from URL ────────────────────────────
   const section: Section = useMemo(() => sectionFromPath(location.pathname), [location.pathname]);
-  const setSection = useCallback((s: Section) => navigate('/' + s), [navigate]);
+  const setSection = useCallback((s: Section) => { navigate('/' + s); }, [navigate]);
 
   const therapistMode = location.pathname.startsWith('/cabinet');
   const openClientRef = parseClientRef(clientIdParam); // код карточки или старый числовой id
@@ -98,8 +98,6 @@ export function AppShell() {
     todayDate,
   } = useBootstrapLoad({ navigate, initialPathname: location.pathname });
 
-  const [history, setHistory] = useState<DayHistory[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const isOffline = useIsOffline();
   useOutboxFlushOnOnline();
   const [helpTasksKey, setHelpTasksKey] = useState(0);
@@ -138,24 +136,8 @@ export function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ov.setCmdOpen стабильный сеттер useState; ov как объект не нужен в deps (не хотим переустанавливать обработчик на каждый чужой оверлей)
   }, [therapistMode, setSection]);
 
-  // Show the history loading state the moment the history tab is opened.
-  // Adjusting state during render (not in an effect) keeps this off
-  // set-state-in-effect; the fetch itself runs in the effect below.
-  const [seenTrackerTab, setSeenTrackerTab] = useState(ov.trackerTab);
-  if (ov.trackerTab !== seenTrackerTab) {
-    setSeenTrackerTab(ov.trackerTab);
-    if (ov.trackerTab === 'history') setHistoryLoading(true);
-  }
-
-  // History load when tracker history tab opens (historyDays is a constant).
-  useEffect(() => {
-    if (ov.trackerTab !== 'history') return;
-    let alive = true;
-    api.history(historyDays)
-      .then(h => { if (alive) setHistory(fillHistoryGaps(h)); })
-      .finally(() => { if (alive) setHistoryLoading(false); });
-    return () => { alive = false; };
-  }, [ov.trackerTab]);
+  // История трекера грузится, когда открыли вкладку; сбой ≠ пусто (useTrackerHistory).
+  const hist = useTrackerHistory(ov.trackerTab, historyDays);
 
   // Refresh Today after overlays close
   const prevOverlayRef = useRef(false);
@@ -242,7 +224,7 @@ export function AppShell() {
           <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
             <span>Перейти к…</span>
             <span className="sp-spacer" />
-            <span className="kbd kbd-hint">⌘K</span>
+            <span className="ds-kbd kbd-hint">⌘K</span>
           </button>
         </div>
 
@@ -305,8 +287,9 @@ export function AppShell() {
           <Suspense fallback={null}>
             <HistorySheet
               needs={needs}
-              history={history}
-              historyLoading={historyLoading}
+              history={hist.history}
+              historyLoading={hist.historyLoading}
+              historyFailed={hist.historyFailed}
               ratings={ratings}
               childhoodRatings={childhoodRatings}
               pendingPlans={pendingPlans}
@@ -317,7 +300,7 @@ export function AppShell() {
               onOpenSchemas={() => ov.setShowSchemaInfo(true)}
               onOpenChildhoodWheel={() => ov.setShowChildhoodWheel(true)}
               onDismissPlan={(id) => setPendingPlans(prev => prev.filter(p => p.id !== id))}
-              onHistoryRefreshed={(h) => { setHistory(h); setHistoryLoading(false); }}
+              onHistoryRefreshed={hist.onHistoryRefreshed}
             />
           </Suspense>
         )}

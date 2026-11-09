@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fmtDate, momentDayKey } from '../../../utils/format';
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../../schemaTherapyData';
-import { ConfirmDialog } from '../../ConfirmDialog';
+import { HistoryConfirmDialog } from '../../HistoryConfirmDialog';
 import type { ClientDetail } from '../clientSheetTypes';
 import { snapshotToConceptFields } from '../../../../../shared/src/therapy/conceptSnapshotRestore';
 
@@ -10,7 +10,8 @@ import { snapshotToConceptFields } from '../../../../../shared/src/therapy/conce
 // ClientConceptTab, правило №10) + «Восстановить»: паритет с мини-аппом
 // (ConceptHistoryPanel). Восстановление идёт через patchConcept → обычное
 // автосохранение; текущая версия при этом сама попадает в историю на сервере,
-// поэтому откат обратим — об этом и текст подтверждения.
+// поэтому откат обратим — об этом и текст подтверждения. Подтверждение — со своей
+// записью истории (HistoryConfirmDialog): «Назад» закрывает его, а не карточку.
 export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
   const { concept, expandedSnapshot, setExpandedSnapshot, patchConcept } = detail;
   // Индекс версии, ожидающей подтверждения (null — диалога нет).
@@ -107,15 +108,12 @@ export function ConceptVersionHistory({ detail }: { detail: ClientDetail }) {
       </div>
 
       {restoreIdx !== null && pending && (
-        <ConfirmDialog
+        <HistoryConfirmDialog
           title={`Восстановить версию ${concept.history.length - restoreIdx}?`}
           message="Текущие поля заменятся содержимым этой версии. То, что сейчас, останется в истории — к нему можно вернуться."
           confirmLabel="Восстановить"
           danger={false}
-          onConfirm={() => {
-            patchConcept(snapshotToConceptFields(pending));
-            setRestoreIdx(null);
-          }}
+          onConfirm={() => patchConcept(snapshotToConceptFields(pending))}
           onCancel={() => setRestoreIdx(null)}
         />
       )}

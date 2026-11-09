@@ -9,7 +9,7 @@ import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
-import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 import { setHost, type HostBridge } from '../../../shared/src/host';
 
 vi.mock('../api', () => ({
@@ -215,21 +215,13 @@ describe('PlanSheet — .ics-экспорт (паритет с мини-аппо
   });
 });
 
-describe('PlanSheet — кризисная детекция (правило №7)', () => {
-  it('кризисный маркер в свободном тексте плана показывает CrisisCard с телефоном доверия', async () => {
-    await act(async () => renderSheet());
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('нейтральный текст плана не показывает CrisisCard', async () => {
-    await act(async () => renderSheet());
-    const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
-    fireEvent.change(textarea, { target: { value: 'Погулять в парке 20 минут' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+describeCrisisField('webapp/src/components/PlanSheet.tsx', {
+  label: 'своя практика',
+  open: () => renderSheet(),
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Что-то конкретное, маленькое...'), {
+      target: { value: text },
+    }),
 });
 
 describe('PlanSheet — useHistorySheet (браузерная «Назад»)', () => {

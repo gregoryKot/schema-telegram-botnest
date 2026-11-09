@@ -173,9 +173,9 @@ describe('isActiveToday', () => {
 // порог 5; мини-апп: accent-* и порог 4) — карточка и спарклайн рядом
 // красились по-разному. Канон — accent-версия, пороги 7/4.
 describe('indexColor', () => {
-  it('высокий индекс (≥7) — зелёный', () => {
-    expect(indexColor(7)).toBe('#06d6a0');
-    expect(indexColor(10)).toBe('#06d6a0');
+  it('высокий индекс (≥7) — зелёный акцент (токен, не литерал)', () => {
+    expect(indexColor(7)).toBe('var(--accent-green)');
+    expect(indexColor(10)).toBe('var(--accent-green)');
   });
   it('средний (4–6.9) — жёлтый акцент', () => {
     expect(indexColor(4)).toBe('var(--accent-yellow)');

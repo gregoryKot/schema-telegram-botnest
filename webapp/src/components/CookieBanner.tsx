@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { isPracticeHost } from '../utils/domainChrome';
 import { useAnySheetOpen } from '../hooks/openSheets';
+import { useShellLoading } from '../hooks/shellLoading';
 import { useAnyDialogOpen } from '../../../shared/src/utils/dialogStack';
 import { readLocal, writeLocal } from '../../../shared/src/utils/safeLocalStorage';
 
@@ -66,15 +67,14 @@ export function CookieBanner() {
   // 'all' и 'necessary' из старых визитов одинаково прячут баннер.
   const [visible, setVisible] = useState(() => !readLocal(CONSENT_KEY)); // заблокированное хранилище — баннер, а не белый экран (E10)
 
-  // Метрику баннер НЕ грузит: её включает MetrikaTracker через шлюз
-  // (lib/metrikaGate) — только на публичных страницах и без сессии. Согласия
-  // счётчик не ждёт (решение владельца), баннер — просто уведомление.
-
-  // Баннер ждёт, пока закроются диалоги и листы: поверх согласий (zIndex 400)
-  // он закрывал «Далее», и новичок видел три слоя сразу (QA 2026-11, A-З7).
+  // Метрику баннер НЕ грузит: её включает MetrikaTracker через шлюз (lib/metrikaGate) — только
+  // на публичных страницах и без сессии. Согласия счётчик не ждёт (решение владельца).
+  // Баннер ждёт, пока закроются диалоги, листы и силуэт загрузки кабинета: поверх
+  // согласий (zIndex 400) он закрывал «Далее», новичок видел три слоя (QA 2026-11, A-З7).
   const sheetOpen = useAnySheetOpen();
   const dialogOpen = useAnyDialogOpen();
-  if (!visible || sheetOpen || dialogOpen) return null;
+  const shellLoading = useShellLoading();
+  if (!visible || sheetOpen || dialogOpen || shellLoading) return null;
 
   const dismiss = () => {
     writeLocal(CONSENT_KEY, 'all');

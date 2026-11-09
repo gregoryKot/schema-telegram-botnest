@@ -276,7 +276,12 @@ describe('ChannelScheduleService', () => {
 
       await service.catchUp(msk(10, 30));
 
-      expect(retry).toHaveBeenCalledWith('утро', 'фраза этого слота', ['max']);
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max'],
+        false,
+      );
       // Обычная публикация не повторяется — иначе дубль там, где пост вышел.
       expect(publish).not.toHaveBeenCalled();
     });
@@ -316,8 +321,8 @@ describe('ChannelScheduleService', () => {
 
       // Досылка — только тому, кто точно не получил.
       expect((retry as jest.Mock).mock.calls).toEqual([
-        ['утро', 'фраза этого слота', ['max']],
-        ['утро', 'фраза этого слота', ['max']],
+        ['утро', 'фраза этого слота', ['max'], false],
+        ['утро', 'фраза этого слота', ['max'], false],
       ]);
       const checks = alertTexts().filter((t) =>
         t.includes('проверить вручную'),
@@ -355,7 +360,40 @@ describe('ChannelScheduleService', () => {
       expect(retry).toHaveBeenCalledTimes(3);
       // Каждая попытка — та же фраза тем же должникам.
       expect((retry as jest.Mock).mock.calls).toEqual(
-        Array(3).fill(['утро', 'фраза этого слота', ['max']]),
+        Array(3).fill(['утро', 'фраза этого слота', ['max'], false]),
+      );
+    });
+
+    // Хвост волны 9: слот не вышел нигде, окно закрылось — досылка его
+    // первый выход, и пост обязан попасть в историю (lastPostAt, дедуп пула).
+    it('слот не вышел нигде — досылка помечена первым выходом', async () => {
+      spyLogger();
+      const { service, retry } = makeService(okResult, null, [
+        row('max', false),
+        row('telegram', false),
+      ]);
+      await service.catchUp(msk(11, 0));
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max', 'telegram'],
+        true,
+      );
+    });
+
+    it('прошлая досылка уже дошла до одной площадки — добор, не первый выход', async () => {
+      spyLogger();
+      const { service, retry } = makeService(okResult, null, [
+        { ...row('telegram', true), source: 'утро — повтор' },
+        row('max', false),
+        row('telegram', false),
+      ]);
+      await service.catchUp(msk(11, 30));
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max'],
+        false,
       );
     });
 
@@ -365,7 +403,12 @@ describe('ChannelScheduleService', () => {
       spyLogger();
       const { service, retry } = closedSlot([row('max', false)]);
       await service.catchUp(msk(14, 0));
-      expect(retry).toHaveBeenCalledWith('утро', 'фраза этого слота', ['max']);
+      expect(retry).toHaveBeenCalledWith(
+        'утро',
+        'фраза этого слота',
+        ['max'],
+        false,
+      );
     });
 
     it('ночью не досылает — подписчики спят, утром выйдет свежая фраза', async () => {
@@ -409,8 +452,8 @@ describe('ChannelScheduleService', () => {
       await service.catchUp(msk(9, 15));
       await service.catchUp(msk(9, 31));
       expect(retry.mock.calls).toEqual([
-        ['утро', 'фраза этого слота', ['max']],
-        ['утро', 'фраза этого слота', ['max']],
+        ['утро', 'фраза этого слота', ['max'], false],
+        ['утро', 'фраза этого слота', ['max'], false],
       ]);
     });
 
@@ -437,7 +480,7 @@ describe('ChannelScheduleService', () => {
         jest.useRealTimers();
       }
       expect(retry.mock.calls).toEqual([
-        ['утро', 'фраза этого слота', ['max']],
+        ['утро', 'фраза этого слота', ['max'], false],
       ]);
     });
   });

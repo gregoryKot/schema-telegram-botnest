@@ -35,10 +35,8 @@ function isValidEmail(s: string): boolean {
 const ACCESS_TOKEN_TTL_S = 15 * 60; // 15 minutes
 const REFRESH_TOKEN_TTL_S = 30 * 24 * 3600; // 30 days
 
-// JWT identity — pinned so tokens can't be replayed across services that
-// happen to share JWT_SECRET. Existing in-flight access tokens (issued
-// before this change) will fail verification once → frontend will hit
-// /api/auth/refresh which is DB-backed and continues to work.
+// Издатель и аудитория JWT прибиты: токен не переиграть в другом сервисе,
+// который случайно делит с нами JWT_SECRET.
 const JWT_ISSUER = 'schemehappens.ru';
 const JWT_AUDIENCE = 'schemehappens.ru';
 
@@ -48,6 +46,7 @@ export interface TokenPair {
   expiresIn: number; // seconds
   rotated: boolean; // false = кука не меняется, см. refresh-rotation.ts
 }
+type OnReject = (err: unknown) => void; // см. exchange-failure.report.ts
 
 @Injectable()
 export class AuthService {
@@ -62,8 +61,8 @@ export class AuthService {
 
   // ─── Telegram WebApp initData ──────────────────────────────────────────────
 
-  // Тип ответа — { id, firstName }: выводится из return ниже.
-  verifyTelegramWebAppData(initData: string, ip?: string) {
+  // Тип ответа — из return ниже. onReject — отказ до 401, строка в /stats.
+  verifyTelegramWebAppData(initData: string, ip?: string, onReject?: OnReject) {
     const botToken = this.config.getOrThrow<string>('BOT_TOKEN');
     // Один верификатор на все входы (telegram-init-data.ts); отказ — как у
     // гарда: просрочка → 401 `initdata_expired`, подделка → `suspicious_initdata`.
@@ -71,6 +70,7 @@ export class AuthService {
       const { user } = verifyTelegramInitData(initData, botToken);
       return { id: user.id, firstName: user.first_name ?? '' };
     } catch (err) {
+      onReject?.(err);
       rejectInitData(err, ip, this.logger, this.securityLog);
     }
   }
@@ -337,10 +337,10 @@ export class AuthService {
 
   // ─── Token issuance ────────────────────────────────────────────────────────
 
-  // Общий для issueTokens/rotateRefreshToken JWT access-токен.
-  private signAccessToken(userId: bigint): string {
+  // Access-токен issueTokens/rotateRefreshToken; sid = family цепочки (live-access.ts).
+  private signAccessToken(userId: bigint, sid: string): string {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    return jwt.sign({ sub: String(userId), type: 'access' }, secret, {
+    return jwt.sign({ sub: String(userId), type: 'access', sid }, secret, {
       expiresIn: ACCESS_TOKEN_TTL_S,
       algorithm: 'HS256',
       issuer: JWT_ISSUER,
@@ -353,11 +353,10 @@ export class AuthService {
     ip?: string,
     userAgent?: string,
   ): Promise<TokenPair> {
-    const accessToken = this.signAccessToken(userId);
-
+    const family = crypto.randomBytes(16).toString('hex');
+    const accessToken = this.signAccessToken(userId, family);
     const rawRefresh = crypto.randomBytes(40).toString('hex');
     const tokenHash = this.hashToken(rawRefresh);
-    const family = crypto.randomBytes(16).toString('hex');
     const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_S * 1000);
 
     await this.prisma.webSession.create({
@@ -411,17 +410,18 @@ export class AuthService {
 
   // ─── Token verification ────────────────────────────────────────────────────
 
-  verifyAccessToken(token: string): { userId: bigint } {
+  verifyAccessToken(token: string): { userId: bigint; sid?: string } {
     const secret = this.config.getOrThrow<string>('JWT_SECRET');
     try {
       const payload = jwt.verify(token, secret, {
         algorithms: ['HS256'],
         issuer: JWT_ISSUER,
         audience: JWT_AUDIENCE,
-      }) as { sub: string; type: string };
+      }) as { sub: string; type: string; sid?: unknown };
       if (payload.type !== 'access')
         throw new UnauthorizedException('Wrong token type');
-      return { userId: BigInt(payload.sub) };
+      const sid = typeof payload.sid === 'string' ? payload.sid : undefined;
+      return { userId: BigInt(payload.sub), sid };
     } catch (err) {
       if (err instanceof UnauthorizedException) throw err;
       throw new UnauthorizedException('Invalid or expired access token');
@@ -464,7 +464,7 @@ export class AuthService {
     // Ротировали недавно — только access, кука прежняя (rotated:false).
     if (shouldSkipRotation(session.createdAt, now)) {
       return {
-        accessToken: this.signAccessToken(session.userId),
+        accessToken: this.signAccessToken(session.userId, session.family),
         expiresIn: ACCESS_TOKEN_TTL_S,
         refreshToken: rawRefresh,
         rotated: false,
@@ -483,7 +483,7 @@ export class AuthService {
     const deps = {
       prisma: this.prisma,
       hashToken: (raw: string) => this.hashToken(raw),
-      signAccessToken: (id: bigint) => this.signAccessToken(id),
+      signAccessToken: (u: bigint, s: string) => this.signAccessToken(u, s),
       accessTtlS: ACCESS_TOKEN_TTL_S,
       refreshTtlS: REFRESH_TOKEN_TTL_S,
     };

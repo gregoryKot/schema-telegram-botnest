@@ -31,6 +31,7 @@ scripts/tiny-fonts-baseline.json          merge=ratchet-sum
 scripts/scale-drift-baseline.json         merge=ratchet-sum
 scripts/render-poison-baseline.json       merge=ratchet-sum
 scripts/tap-targets-baseline.json         merge=ratchet-sum
+scripts/utility-inline-baseline.json      merge=ratchet-sum
 scripts/color-drift-baseline.json         merge=ratchet-sum
 scripts/second-person-baseline.json       merge=ratchet-sum
 
@@ -49,18 +50,23 @@ e2e-browser/a11y-baseline.json            merge=ratchet-min
 scripts/alert-throttle-baseline.json      merge=ratchet-min
 scripts/body-dto-baseline.json            merge=ratchet-min
 scripts/body-truncation-baseline.json     merge=ratchet-min
+scripts/dead-end-report-baseline.json     merge=ratchet-min
 scripts/dead-files-baseline.json          merge=ratchet-min
+scripts/doc-refs-baseline.json            merge=ratchet-min
 scripts/dto-string-bounds-baseline.json   merge=ratchet-min
 scripts/public-scripts-baseline.json      merge=ratchet-min
 scripts/capability-registry-baseline.json merge=ratchet-min
 scripts/cron-leader-baseline.json         merge=ratchet-min
 scripts/history-sheet-baseline.json       merge=ratchet-min
+scripts/incident-registry-baseline.json   merge=ratchet-min
 scripts/local-cache-baseline.json         merge=ratchet-min
 scripts/mutation-zone-baseline.json       merge=ratchet-min
 scripts/persistent-throttle-baseline.json merge=ratchet-min
 scripts/raw-sql-live-baseline.json        merge=ratchet-min
 scripts/recorded-fixtures-baseline.json   merge=ratchet-min
+scripts/timer-cleanup-baseline.json       merge=ratchet-min
 scripts/unwatched-code-baseline.json      merge=ratchet-min
+scripts/zero-coverage-baseline.json       merge=ratchet-min
 
 # больше — лучше
 scripts/coverage-baseline.json            merge=ratchet-max
@@ -82,3 +88,9 @@ scripts/mutation-golden-payments-baseline.json merge=ratchet-max
 # бейслайнам union не подходит — им нужна семантика храповика. Оба условия
 # держит scripts/merge-drivers-check.mjs.
 docs/agent/NAV_LOG.md                     merge=union
+# Сам этот файл: каждый новый бейслайн приносит сюда строку, и два PR с новыми
+# гейтами вставляли их в соседние места — текстовый конфликт по построению.
+# Строки про разные точные пути друг от друга не зависят, union оставляет обе.
+# Обе стороны переписали ОДНУ строку — останутся обе, и повтор пути краснит
+# `setup-merge-drivers.mjs --check` (scripts/merge-drivers-check.mjs, п. 5).
+.gitattributes                            merge=union

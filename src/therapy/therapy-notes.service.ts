@@ -4,11 +4,8 @@ import { TherapyRelationsService } from './therapy-relations.service';
 import { encrypt } from '../utils/crypto';
 import { requireAffected } from '../utils/require-affected';
 import { findSessionNotesPage } from './session-notes-page';
-import {
-  conceptView,
-  encryptConceptFields,
-  writeConceptWithHistory,
-} from './concept-store';
+import { conceptView } from './concept-store';
+import { saveConceptVersioned, type ConceptSaveInput } from './concept-save';
 
 // Заметки терапевта о сессиях + кейс-концептуализация клиента (включая
 // историю версий). Доступ к чужому клиенту закрыт через
@@ -59,38 +56,15 @@ export class TherapyNotesService {
     return row ? conceptView(row, row.history) : null;
   }
 
+  /** Полное тело или патч с версией строки — concept-save.ts. */
   async saveConceptualization(
     therapistId: bigint,
     clientId: bigint,
-    body: {
-      schemaIds?: string[];
-      modeIds?: string[];
-      earlyExperience?: string;
-      unmetNeeds?: string;
-      triggers?: string;
-      copingStyles?: string;
-      goals?: string;
-      currentProblems?: string;
-      modeTransitions?: string;
-      modeMapNodes?: unknown[];
-      modeMapEdges?: unknown[];
-      modeLinks?: unknown[];
-      schemaLinks?: unknown[];
-    },
+    body: ConceptSaveInput,
   ) {
     await this.relationsService.assertHasClient(therapistId, clientId);
-    const key = { therapistId, clientId };
-    const enc = encryptConceptFields(body);
-    const nowMs = Date.now();
-    // Read-modify-write по history-массиву — в транзакции (аудит 2026-07,
-    // 2.3): две вкладки/двойной клик гонялись за одним прочитанным history →
-    // потерянный или задвоенный snapshot.
-    const { row, history } = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.clientConceptualization.findUnique({
-        where: { therapistId_clientId: key },
-      });
-      return writeConceptWithHistory(tx, key, existing, enc, nowMs);
-    });
-    return conceptView(row, history);
+    // Read-modify-write по history и связям — в транзакции (аудит 2026-07,
+    // 2.3; правило №4), версия строки — там же.
+    return saveConceptVersioned(this.prisma, { therapistId, clientId }, body);
   }
 }

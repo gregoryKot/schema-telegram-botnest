@@ -18,6 +18,7 @@
 // Кнопка «Удалить результаты теста» в настройках (DELETE /api/ysq-data,
 // YsqService.deleteAllYsqData) стирает все три таблицы — человек законно
 // выпадает и из «начали», и из «дошли» (решение владельца 2026-10-22).
+// Сколько людей так выпало — событие ysq_data_deleted, блок «Удаление своих записей».
 import type { PrismaService } from '../prisma/prisma.service';
 
 export interface YsqFunnel {

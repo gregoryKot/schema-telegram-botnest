@@ -230,3 +230,51 @@ describe('jest-exit-guard-rules.mjs: runFinished', () => {
     );
   });
 });
+
+// Джоба backend в ci.yml держит кэш ts-jest в JEST_CACHE_DIR; jest env не
+// читает, а `"$JEST_CACHE_DIR"` в строке шага не разобрал бы precheck —
+// флаг дописывает сторож (как check-coverage-ratchet.mjs).
+describe('jest-exit-guard.mjs: JEST_CACHE_DIR → --cacheDirectory', () => {
+  // Двойник печатает свои аргументы и чистую сводку, выходит с 0.
+  const argvThenClean = fakeJest(
+    '',
+    `process.stderr.write(JSON.stringify(process.argv.slice(1)) + "\\n" + ${JSON.stringify(REC.silentWorkersClean)});`,
+  );
+  const runWith = (env: Record<string, string>, extra: string[] = []) =>
+    spawnSync(
+      NODE,
+      [
+        SCRIPT,
+        '--budget',
+        '20',
+        '--',
+        NODE,
+        '-e',
+        argvThenClean,
+        'jest',
+        ...extra,
+      ],
+      { encoding: 'utf8', timeout: 30_000, env: { ...process.env, ...env } },
+    );
+
+  it('команде с jest дописывает --cacheDirectory=<JEST_CACHE_DIR>', () => {
+    const r = runWith({ JEST_CACHE_DIR: '/tmp/jc' });
+    expect(r.status).toBe(0);
+    expect(r.stderr).toContain('["jest","--cacheDirectory=/tmp/jc"]');
+  });
+
+  it('контроль: без JEST_CACHE_DIR и при явном --cacheDirectory не трогает', () => {
+    const bare = { ...process.env };
+    delete bare.JEST_CACHE_DIR;
+    const r1 = spawnSync(
+      NODE,
+      [SCRIPT, '--budget', '20', '--', NODE, '-e', argvThenClean, 'jest'],
+      { encoding: 'utf8', timeout: 30_000, env: bare },
+    );
+    expect(r1.stderr).toContain('["jest"]');
+    const r2 = runWith({ JEST_CACHE_DIR: '/tmp/jc' }, [
+      '--cacheDirectory=/own',
+    ]);
+    expect(r2.stderr).toContain('["jest","--cacheDirectory=/own"]');
+  });
+});

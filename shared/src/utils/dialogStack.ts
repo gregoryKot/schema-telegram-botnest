@@ -1,22 +1,22 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
-// Стек открытых диалогов: один на Tab-трап и Escape (useDialogA11y).
-// Два слоя с собственными слушателями дрались: Escape звал onClose у каждого
-// смонтированного шита, а трапы по очереди тянули фокус к себе (аудит
-// 2026-10). Теперь слушатель Escape один, на window в фазе capture: он идёт
-// раньше любых document-слушателей и ставит preventDefault, когда слой
-// закрылся сам, — поэтому useHistorySheet пропускает такое событие.
-//
-// Верхний слой — с наибольшим номером из render, а не по порядку эффектов:
-// эффекты ребёнка срабатывают раньше родительских, и вложенный диалог,
-// смонтированный в одном коммите с родителем, иначе оказался бы под ним.
+// Стек открытых диалогов и листов — один на Tab-трап и Escape (useDialogA11y, useHistorySheet): слои
+// со своими слушателями дрались (аудит 2026-10). Слушатель Escape один, на window в фазе capture;
+// Escape берёт верхний слой, который его не пропускает: onEscape — закрывается сам, holdEscape —
+// несворачиваемое окно держит Escape, ни того ни другого — прозрачен (фокус-трап листа). Лист
+// (kind 'sheet') закрывается сам во всплытии (ownsEscape): поле ввода может погасить Escape.
+// Верхний — с наибольшим номером из render, не по порядку эффектов: эффекты ребёнка идут раньше
+// родительских, и вложенный слой, смонтированный в одном коммите с родителем, оказался бы под ним.
 interface Layer {
   seq: number;
-  // Читается в момент нажатия: свежий onClose без пересоздания слоя.
-  getEscape: () => (() => void) | undefined;
+  sheet: boolean;
+  // Читаются в момент нажатия: свежие опции без пересоздания слоя.
+  opts: () => LayerOpts;
 }
 export interface LayerOpts {
   onEscape?: () => void;
+  holdEscape?: boolean;
+  kind?: 'dialog' | 'sheet';
 }
 
 let layers: Layer[] = [];
@@ -25,14 +25,20 @@ let counter = 0;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
+/** Чей Escape: верхний слой, который его не пропускает. */
+function escapeOwner(): Layer | undefined {
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const { onEscape, holdEscape } = layers[i].opts();
+    if (layers[i].sheet || onEscape || holdEscape) return layers[i];
+  }
+  return undefined;
+}
+
 function onKeyDown(e: KeyboardEvent) {
-  if (e.key !== 'Escape') return;
-  // Слушатель живёт, только пока стек не пуст.
-  const escape = layers[layers.length - 1].getEscape();
-  // Верхний слой без onEscape (несворачиваемый) нижние не закрывает.
-  if (!escape) return;
-  e.preventDefault();
-  escape();
+  const owner = e.key === 'Escape' ? escapeOwner() : undefined;
+  if (!owner || owner.sheet) return; // лист закроется во всплытии
+  e.preventDefault(); // закрылся сам или держит Escape: листы под ним его не получат
+  owner.opts().onEscape?.();
 }
 
 function pushLayer(layer: Layer) {
@@ -59,27 +65,29 @@ const subscribe = (cb: () => void) => {
 export function useAnyDialogOpen(): boolean {
   return useSyncExternalStore(
     subscribe,
-    () => layers.length > 0,
+    () => layers.some((l) => !l.sheet), // листы отмечает openSheets
     () => false,
   );
 }
 
-// Слой диалога: join() вызывают из эффекта монтирования (возвращает отписку),
-// isTop() — из обработчика клавиши. Объект стабилен между рендерами.
-export function useDialogLayer({ onEscape }: LayerOpts) {
-  const escapeRef = useRef(onEscape);
+// Слой: join() вызывают из эффекта монтирования (возвращает отписку), isTop() и
+// ownsEscape() — из обработчика клавиши. Объект стабилен между рендерами.
+export function useDialogLayer(opts: LayerOpts) {
+  const optsRef = useRef(opts);
   useEffect(() => {
-    escapeRef.current = onEscape;
+    optsRef.current = opts;
   });
-  // Один объект на всё время жизни диалога: годится в зависимости эффекта.
+  // Один объект на всё время жизни слоя: годится в зависимости эффекта.
   const [handle] = useState(() => {
-    const layer: Layer = { seq: ++counter, getEscape: () => escapeRef.current };
+    const sheet = opts.kind === 'sheet';
+    const layer: Layer = { seq: ++counter, sheet, opts: () => optsRef.current };
     return {
       join: () => {
         pushLayer(layer);
         return () => removeLayer(layer);
       },
       isTop: () => layers[layers.length - 1] === layer,
+      ownsEscape: () => escapeOwner() === layer,
     };
   });
   return handle;

@@ -18,7 +18,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
   const [toDelete, setToDelete] = useState<Article | null>(null);
   const del = useConfirmedAction(
     () => (toDelete ? api.adminDeleteArticle(adminKey, toDelete.id) : Promise.resolve()),
-    () => { setToDelete(null); reload(); },
+    () => { setToDelete(null); void reload(); }, // reload из useAsyncData не отклоняется: сбой → failed на экране
   );
   const askDelete = (a: Article) => { setToDelete(a); del.ask(); };
   const cancelDelete = () => { setToDelete(null); del.cancel(); };
@@ -28,7 +28,7 @@ export function ArticlesSection({ adminKey }: { adminKey: string }) {
       <ArticleEditor
         adminKey={adminKey}
         article={editing === 'new' ? null : editing}
-        onDone={() => { setEditing(null); reload(); }}
+        onDone={() => { setEditing(null); void reload(); /* не отклоняется: сбой → failed */ }}
         onCancel={() => setEditing(null)}
       />
     );

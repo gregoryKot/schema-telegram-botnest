@@ -7,9 +7,10 @@ import { useExBackLabel } from './exBackLabel';
 import { Skeleton, SkeletonCard } from '../Skeleton';
 import { SpreadLayout } from '../paper/SpreadLayout';
 import { ExHead, type ExHeadProps } from './ExHead';
-import { GlyphArrowLeft } from './ExGlyphs';
+import { ExBar } from './ExBar';
 import '../../styles/sheet-exercises.css';
 
+// Глифы живут в ExGlyphs.tsx (один дом, ExBar берёт стрелку оттуда); потребители импортируют их отсюда.
 export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from './ExGlyphs';
 
 // ── Shared exercise wrapper ───────────────────────────────────────────────────
@@ -73,9 +74,7 @@ export function ExScreen({ onBack, backLabel, ...body }: ExScreenProps) {
   // ex2-screen--hero: на телефоне вопрос (.ex2-prompt-label) ступенью ниже заголовка листа
   return (
     <div className={body.look === undefined ? 'ex2-screen' : 'ex2-screen ex2-screen--hero'}>
-      <div className="ds-sheet-head ex2-top">
-        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{backLabel ?? hostBackLabel}</button>
-      </div>
+      <ExBar onBack={onBack} label={backLabel ?? hostBackLabel} sticky />
       <ExBody {...body} />
     </div>
   );
@@ -88,9 +87,7 @@ export function ExScreenSkeleton({ onBack }: { onBack: () => void }) {
   const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
-      <div className="ds-sheet-head ex2-top">
-        <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{hostBackLabel}</button>
-      </div>
+      <ExBar onBack={onBack} label={hostBackLabel} sticky />
       <div className="ex2-body ex2-body--single" aria-hidden>
         <div className="ex2-main ex2-skel">
           <Skeleton width={120} height={12} />
