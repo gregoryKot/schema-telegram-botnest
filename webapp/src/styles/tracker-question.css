@@ -15,18 +15,18 @@
 .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 20px; }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 12px; } }
 /* Узкий телефон: полоса — «Закрыть» 66 + точки 200 + «Пропустить» 86 = 352, в 360 с полем 12 не помещалась
-   («Пропустить» за краем окна, ревью g2 r4) — край main (4). Уже 360 — подписи 13px без полей кнопки (ширину ≥44
-   держит min-width), точки 34 и поле полосы 8: 8 + 54 + 170 + 76 + 8 = 316, текст на 8–312, как в main на 360
-   (с полем 0 подписи стояли в 4px от края окна — под скруглением WebView, ревью g2 r5). Сверка —
-   e2e-browser/tracker-fit.spec.ts (360×640 и 320×568, все пять вопросов). */
-@media (max-width: 374px) { .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 4px; } }
-@media (max-width: 359px) {
+   («Пропустить» за краем окна, ревью g2 r4). Уже 375 — подписи 13px без полей кнопки (ширину ≥44 держит
+   min-width) и поле полосы 8: 8 + 54 + 200 + 76 + 8 = 346 в 360 (с полем 4 и подписью 15px на 360 «Пропустить»
+   кончался в 5px от края и выходил из своей кнопки, ревью g2 r6; с полем 0 подписи стояли в 4px от края —
+   под скруглением WebView, ревью g2 r5). Уже 360 — ещё и точки 34: 8 + 54 + 170 + 76 + 8 = 316, текст на
+   8–312, как в main на 360. Сверка — e2e-browser/tracker-fit.spec.ts (360×640 и 320×568, все пять вопросов). */
+@media (max-width: 374px) {
   .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 8px; }
   .tk2-overlay:not(.qe-sheet) .tq-bar-btn { padding-inline: 0; font-size: 13px; }
-  .tk2-overlay:not(.qe-sheet) .tq-dot-hit { width: 34px; }
 }
+@media (max-width: 359px) { .tk2-overlay:not(.qe-sheet) .tq-dot-hit { width: 34px; } }
 .tq-dots { display: flex; justify-content: center; }
-/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px (уже — 36, выше);
+/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px (уже 360 — 34, выше);
    высота 44 держит палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
 .tq-dot-hit {
   width: 40px; height: 44px; padding: 0; background: none; border: none; cursor: pointer;

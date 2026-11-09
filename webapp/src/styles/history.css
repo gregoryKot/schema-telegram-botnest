@@ -64,6 +64,15 @@
 .sd-need-level { font-size: 11px; font-weight: 600; }
 .sd-need-val { font-size: 24px; min-width: 28px; text-align: right; color: var(--need-text); }
 .sd-need-val.is-empty { color: var(--text-faint); }
+/* Уже 340 имени с уровнем в одной строке тесно: «Привязанность», «Спонтанность» рвались посреди слова
+   (ревью g2 r6). Уровень («средне») — второй строкой под именем, знак и число — на обе строки. */
+@media (max-width: 339px) {
+  .ds-list-row.sd-need-row { grid-template-columns: auto minmax(0, 1fr) auto; row-gap: 0; }
+  .sd-need-row > .pp-row-art, .sd-need-row > .sd-need-val { grid-row: 1 / span 2; }
+  .sd-need-row > .sd-need-name { grid-column: 2; grid-row: 1; }
+  .sd-need-row > .sd-need-level { grid-column: 2; grid-row: 2; }
+  .sd-need-row > .sd-need-val { grid-column: 3; }
+}
 /* «Стоит уделить внимание» — лист бумаги потребности с её знаком (AttentionCard). */
 .sd-low { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 14px; align-items: start; padding: 16px 18px; border-radius: 18px; }
 .sd-low-sign { display: inline-flex; padding-top: 2px; }

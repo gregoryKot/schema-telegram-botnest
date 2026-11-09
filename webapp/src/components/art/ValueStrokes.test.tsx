@@ -9,6 +9,8 @@ import { join } from 'node:path';
 import { ValueStrokes } from './ValueStrokes';
 import { NEED_DATA_PAPER, PAPER } from './paper';
 import { CHECK_IN_GEOM, strokeLen } from './strokeLen';
+import { SceneCheckIn } from './LandingScenesMore';
+import { INK } from './scenePaper';
 
 const draw = (values: (number | null)[]) => {
   const { container } = render(<svg><ValueStrokes values={values} at="checkIn" /></svg>);
@@ -35,5 +37,19 @@ describe('ValueStrokes', () => {
   it('пустое место красит одно правило .pp-strokes-values: бледный тон своей потребности с кромкой', () => {
     const css = readFileSync(join(__dirname, '../../styles/paper.css'), 'utf8');
     expect(css).toMatch(/\.pp-strokes-values > \[data-rated="no"\] \{ fill: color-mix\(in srgb, currentColor \d+%, var\(--bg\)\); stroke: var\(--strokes-edge\)/);
+  });
+
+  // Ревью g2 r6: кромка пустых полосок бралась снаружи сцены (персик праздника, фон «Карточки недели»),
+  // а полоски стоят на белом листе дня — по краю шло цветное кольцо 2,5px. Кромка — цвет того листа, на
+  // котором стоят полоски (класс листа → его правило в paper.css); у вида лендинга (без оценок) лист прежний.
+  it('сцена дня: кромка пустых полосок — цвет её белого листа, лендинг без своей кромки', () => {
+    const { container } = render(<SceneCheckIn days={3} values={[null, 6, null, null, null]} />);
+    const sheet = container.querySelector('.pp-strokes-values')!.parentElement!;
+    expect(sheet.querySelector(':scope > rect')!.getAttribute('fill')).toBe(INK.sheet); // лист под полосками
+    const cls = sheet.getAttribute('class') ?? '(нет класса)';
+    const css = readFileSync(join(__dirname, '../../styles/paper.css'), 'utf8');
+    const edge = css.match(new RegExp(`\\.${cls}\\s*\\{\\s*--strokes-edge:\\s*([^;]+);`))?.[1];
+    expect(edge).toBe(INK.sheet);
+    expect(render(<SceneCheckIn days={3} />).container.querySelector(`.${cls}`)).toBeNull();
   });
 });

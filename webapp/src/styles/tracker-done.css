@@ -31,6 +31,11 @@
 .tq-bar-col.is-rated { background: var(--bar); height: calc(var(--v) * var(--bar-max)); min-height: 28px; }
 .tq-bar-col:not(.is-rated) { height: 6px; margin: 0 4px 4px; border-radius: 3px; background: color-mix(in srgb, var(--text) 22%, transparent); }
 .tq-bar-cap { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--text-sub); }
+/* Уже 360 колонка столбика — 40px, а «Привяз.» в 11,5px — 42: подпись резалась многоточием (ревью g2 r6).
+   Зазор 8 вместо 12 даёт колонке 43px; паз 28 и кегль остаются. */
+@media (max-width: 359px) {
+  .tq-bars { gap: var(--space-8); }
+}
 
 /* Куда дальше: две кнопки, строки-переходы со знаком слева, строка моста к терапевту. */
 .tq-fin .pa-spread-main { gap: var(--space-20); }

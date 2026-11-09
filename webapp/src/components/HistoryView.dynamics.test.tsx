@@ -8,6 +8,7 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { HistoryView } from './HistoryView';
+import { getNeedData } from '../needData';
 import type { Need, DayHistory } from '../types';
 
 vi.mock('../api', () => ({
@@ -94,12 +95,24 @@ describe('HistoryView → «Неделя» → «Динамика потребн
 
   // Ревью g2 r4: «сейчас» стало средним недели — на 2,2,2,6,6,6,6 при детстве 2 лист писал «↓ Падает» и
   // «сейчас 4,3 ↑», хотя линия легла на пунктир детства.
+  // Ревью g2 r6: совет «Попробуй сегодня» под графиком случаен, а в пуле low у «Привязанности» есть
+  // советы со словом «сейчас» — голый getByText(/сейчас/) ловил два элемента в ~13% прогонов. Прибиваем
+  // худший случай (совет со «сейчас») и ищем саму строку сравнения с детством, а не слово на экране.
   it('падает к детству: «сейчас» — три новых дня, без стрелки «выше детства»', async () => {
-    const falling = [2, 2, 2, 6, 6, 6, 6];
-    await openDynamics(history((i) => (i < 7 ? falling[i] : null)), undefined, 2);
-    expect(screen.getByText('↓ Падает')).toBeTruthy();
-    const now = screen.getByText(/сейчас/);
-    expect(now.textContent!.trim()).toBe('→ сейчас 2,0');
+    const low = getNeedData('ty').attachment.tips.low;
+    const withNow = low.findIndex((t) => t.includes('сейчас'));
+    expect(withNow).toBeGreaterThanOrEqual(0);
+    const rnd = vi.spyOn(Math, 'random').mockReturnValue((withNow + 0.5) / low.length);
+    try {
+      const falling = [2, 2, 2, 6, 6, 6, 6];
+      await openDynamics(history((i) => (i < 7 ? falling[i] : null)), undefined, 2);
+      expect(screen.getByText('↓ Падает')).toBeTruthy();
+      expect(document.querySelector('.tk2-tip-text')!.textContent).toContain('сейчас');
+      const now = document.querySelector('.tk2-child-now');
+      expect(now?.textContent?.trim()).toBe('→ сейчас 2,0');
+    } finally {
+      rnd.mockRestore();
+    }
   });
 
   it('один день истории — без «+0,0 к предыдущей неделе»', async () => {

@@ -51,7 +51,7 @@ export function SceneCheckIn({ hue = 135, days, values }: { hue?: number; days?:
         {PAST.slice(0, n).reverse().map((s) => (
           <rect key={s.deg} x={s.x} y={s.y} width={s.w} height={s.h} rx="16" transform={`rotate(${s.deg} ${s.x + s.w / 2} ${s.y + s.h / 2})`} fill={s.fill} />
         ))}
-        <g transform="rotate(4 186 134)">
+        <g transform="rotate(4 186 134)" className={values ? 'pp-strokes-sheet' : undefined}>
           <rect x="96" y="44" width="182" height="180" rx="18" fill={INK.sheet} />
           {total > 0 && (values ? <ValueStrokes values={values} at="checkIn" /> : BARS.map((b, i) => (
             <rect key={i} x={116 + i * 31} y={204 - b.h} width="20" height={b.h} rx="10" fill={b.fill} />
