@@ -47,4 +47,17 @@ describe('DiariesOverlay', () => {
     fireEvent.click(screen.getByText('история трекера'));
     expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
   });
+
+  // b11: до 2026-11 шапки у листа не было (DiarySection игнорировал onClose) — выйти можно было
+  // только системным «назад», на компьютере лист закрывал рабочую область без выхода.
+  it('«Назад» в шапке листа закрывает его через goBack (useHistorySheet)', () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter>
+        <DiariesOverlay onClose={onClose} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

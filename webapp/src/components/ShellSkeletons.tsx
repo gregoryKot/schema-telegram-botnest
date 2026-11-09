@@ -10,8 +10,8 @@
 import { hueStyle } from '../lib/tone';
 import { Strokes } from './art/PaperArt';
 import { Skeleton, SkeletonList, ScreenSkeleton } from './Skeleton';
+import { DiaryFeedSkeleton } from '../sections/diary/DiaryFeedSkeleton';
 import '../styles/shell-skeletons.css';
-
 /** Знак трекера без данных: пять пустых мест, как у неоценённого дня главной (правило .pp-strokes-values). */
 const EMPTY_DAY = [null, null, null, null, null];
 
@@ -127,7 +127,7 @@ export function ClientCardSkeleton() {
   );
 }
 
-/** Силуэт раздела по адресу: «Сегодня» и «Ещё» клиента, «Сегодня» и карточка терапевта, остальное — общий. */
+/** Силуэт раздела по адресу: «Сегодня», «Записи» и «Ещё» клиента, «Сегодня» и карточка терапевта, остальное — общий. */
 export function SectionSkeleton({ pathname, therapistMode }: { pathname: string; therapistMode: boolean }) {
   if (therapistMode) {
     if (pathname === '/cabinet/today') return <TherapistTodaySkeleton />;
@@ -137,7 +137,7 @@ export function SectionSkeleton({ pathname, therapistMode }: { pathname: string;
   const seg = pathname.split('/')[1] || 'today';
   if (seg === 'today') return <ClientTodaySkeleton />;
   if (seg === 'more') return <MoreSkeleton />;
-  return <ScreenSkeleton />;
+  return seg === 'diary' ? <DiaryFeedSkeleton /> : <ScreenSkeleton />;
 }
 
 /** Нижняя панель телефона в силуэте (на ≥768 скрыта правилом .mobile-nav): пять или три места, без прыжка. */

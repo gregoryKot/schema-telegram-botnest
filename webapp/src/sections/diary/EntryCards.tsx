@@ -1,55 +1,16 @@
-import { useState, type ReactNode } from 'react';
-import type { DiaryType, SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, EmotionEntry } from '../../types';
-import { pressable } from '../../utils/a11y';
+import type { SchemaDiaryEntry, ModeDiaryEntry, GratitudeDiaryEntry, EmotionEntry } from '../../types';
 import { EMOTIONS, getModeById, getSchemaById } from '../../schemaTherapyData';
 import { ModeEntryShare } from '../../components/diary/ModeEntryShare';
 import { GratitudeShare } from '../../components/diary/GratitudeShare';
-import { DIARY_HUE, hueStyle } from '../../lib/tone';
 import { fmtTime, fmtDateKey, fmtDayMonth } from './dateHelpers';
-import { schemaEntryRows, modeEntryRows, type FieldRow } from './entryRows';
-import { EntryPreviewText } from './EntryPreviewText';
+import { schemaEntryRows, modeEntryRows } from './entryRows';
 import { DeleteBtn } from './DeleteBtn';
-import { modeEntryKind, schemaEntryKind, type EntryKind } from './entryKind';
-import { EntryKindChip } from './EntryKindChip';
+import { modeEntryKind, schemaEntryKind } from './entryKind';
+import { entryLook } from './feedLook';
+import { EntryFields } from './EntryFields';
+import { EntryMore, EntryShell } from './EntryShell';
 import '../../styles/client-diary.css';
-// Карточки записей дневника: бейдж типа в тоне DIARY_HUE, заголовок, текст; клик раскрывает детали и удаление.
-
-export function ExpandField({ label, text, accent }: { label: string; text: string; accent?: boolean }) {
-  return (
-    <div className="cd-field">
-      <div className={'cd-field-label' + (accent ? ' is-accent' : '')}>{label}</div>
-      <div className="cd-field-text">{text}</div>
-    </div>
-  );
-}
-
-// type — тон карточки (дневник), kind — ярлык (общий с лентой «Сегодня»).
-function EntryShell({ type, kind, title, time, text, preview, children }: {
-  type: DiaryType; kind: EntryKind; title?: string; time?: string;
-  /** Текст записи: длинный в закрытой карточке обрезается (EntryPreviewText). */
-  text?: string | null;
-  preview?: ReactNode; children?: (open: boolean) => ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="ds-card ds-card--row ds-card--hover cd-entry" style={hueStyle(DIARY_HUE[type])} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
-      <div className="cd-entry-head">
-        <EntryKindChip kind={kind} />
-        {title && <span className="cd-entry-title">{title}</span>}
-        {time && <span className="cd-entry-time">{time}</span>}
-      </div>
-      <div className="cd-entry-text">{text && <EntryPreviewText text={text} open={open} />}{preview}</div>
-      {children?.(open)}
-    </div>
-  );
-}
-
-const stop = (e: React.SyntheticEvent) => e.stopPropagation();
-function ExpandFields({ rows }: { rows: FieldRow[] }) {
-  return <>{rows.filter(([, text]) => text).map(([label, text, accent]) => (
-    <ExpandField key={label} label={label} text={text!} accent={accent} />
-  ))}</>;
-}
+// Карточки записей трёх дневников в ленте «Записей»: вид — по типу записи (feedLook), каркас — EntryShell.
 
 export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDelete: () => void | Promise<void> }) {
   const schemas = entry.schemaIds.map(id => getSchemaById(id)).filter(Boolean);
@@ -57,19 +18,14 @@ export function SchemaEntry({ entry, onDelete }: { entry: SchemaDiaryEntry; onDe
   const kind = schemaEntryKind(entry);
   return (
     <EntryShell
-      type="schema"
+      look={entryLook({ _type: 'schema', entry })}
       kind={kind}
       title={schemas.length > 0 ? schemas.slice(0, 2).map(s => s!.name).join(' · ') : kind === 'thought' ? undefined : 'Дневник схем'}
       time={fmtTime(entry.createdAt)}
       text={entry.trigger}
       preview={emotions.length > 0 && <div className="cd-entry-meta">{emotions.slice(0, 4).map(e => e.label).join(' · ')}</div>}
     >
-      {open => open && (
-        <div className="cd-entry-more" role="presentation" onClick={stop}>
-          <ExpandFields rows={schemaEntryRows(entry)} />
-          <DeleteBtn onClick={onDelete} />
-        </div>
-      )}
+      {open => open && <EntryMore fields={<EntryFields rows={schemaEntryRows(entry)} />} remove={<DeleteBtn onClick={onDelete} />} />}
     </EntryShell>
   );
 }
@@ -78,23 +34,18 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
   const mode = getModeById(entry.modeId);
   return (
     <EntryShell
-      type="mode"
+      look={entryLook({ _type: 'mode', entry })}
       kind={modeEntryKind(entry)}
       title={mode ? mode.name : 'Дневник режимов'}
       time={fmtTime(entry.createdAt)}
       text={entry.situation}
     >
       {open => open ? (
-        <div className="cd-entry-more" role="presentation" onClick={stop}>
-          <ExpandFields rows={modeEntryRows(entry)} />
-          <DeleteBtn onClick={onDelete} />
-          <ModeEntryShare
-            mode={mode}
-            healthyResponse={entry.healthyResponse}
-            entry={entry}
-            dateLabel={fmtDayMonth(fmtDateKey(entry.createdAt))}
-          />
-        </div>
+        <EntryMore
+          fields={<EntryFields rows={modeEntryRows(entry)} />}
+          share={<ModeEntryShare mode={mode} healthyResponse={entry.healthyResponse} entry={entry} dateLabel={fmtDayMonth(fmtDateKey(entry.createdAt))} />}
+          remove={<DeleteBtn onClick={onDelete} />}
+        />
       ) : entry.actualNeed && (
         <div className="cd-entry-meta">что было нужно › {entry.actualNeed.slice(0, 80)}</div>
       )}
@@ -106,7 +57,7 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
   const n = entry.items.length;
   return (
     <EntryShell
-      type="gratitude"
+      look={entryLook({ _type: 'gratitude', entry })}
       kind="gratitude"
       title={`${n} ${n === 1 ? 'пункт' : n < 5 ? 'пункта' : 'пунктов'}`}
     >
@@ -118,12 +69,7 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
             ))}
             {!open && n > 2 && <li className="cd-grat-more"><span className="cd-grat-num">···</span>ещё {n - 2}</li>}
           </ul>
-          {open && (
-            <div className="cd-entry-more" role="presentation" onClick={stop}>
-              <DeleteBtn onClick={onDelete} />
-              <GratitudeShare items={entry.items} dateLabel={fmtDayMonth(entry.date)} />
-            </div>
-          )}
+          {open && <EntryMore share={<GratitudeShare items={entry.items} dateLabel={fmtDayMonth(entry.date)} />} remove={<DeleteBtn onClick={onDelete} />} />}
         </>
       )}
     </EntryShell>

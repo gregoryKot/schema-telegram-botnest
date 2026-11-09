@@ -4,7 +4,7 @@
 // «Все · Трекер · Дневник», строки трекера по дням, серия, удаление с
 // подтверждением, черновики мастеров, ошибки API не роняют экран.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DiarySection } from './DiarySection';
 import { saveDraft, clearDraft } from '../utils/drafts';
@@ -109,6 +109,9 @@ afterEach(() => {
   cleanup();
 });
 
+/** Кнопка сегмента: у трекера дня в строке даты тоже имя «Трекер — …», поэтому ищем внутри сегмента. */
+const seg = (name: RegExp) => within(screen.getByRole('group', { name: 'Тип записей' })).getByRole('button', { name });
+
 const rated = (date: string, values: number[]) => ({
   date,
   ratings: Object.fromEntries(['attachment', 'autonomy', 'expression', 'play', 'limits'].slice(0, values.length).map((id, i) => [id, values[i]])),
@@ -149,11 +152,14 @@ describe('DiarySection — пустой аккаунт (без хардкод-з
     expect(screen.queryByText(/дней подряд|день подряд/)).toBeNull();
   });
 
-  it('ошибка getSchemaDiary не роняет экран — остаётся пустое состояние', async () => {
+  // b11 (сбой ≠ пусто): раньше под баннером сбоя шло объяснение новичка «Пока ни одной записи» —
+  // записи на сервере есть, просто не загрузились. Экран не падает, «Записать» остаётся.
+  it('ошибка getSchemaDiary не роняет экран — строка сбоя и место ленты, без объяснения новичка', async () => {
     mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
     renderSection();
-    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
-    expect(screen.getByText('Пока ни одной записи')).toBeTruthy();
+    await screen.findByRole('alert');
+    expect(screen.queryByText('Пока ни одной записи')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Записать' })).toBeTruthy();
   });
 });
 
@@ -189,7 +195,7 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     expect(screen.getByRole('status').textContent).toMatch(/Отметки трекера не загрузились/);
     mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
-    await screen.findByText('Трекер — индекс 7,2');
+    await screen.findByLabelText('Трекер — индекс 7,2');
     expect(screen.queryByRole('status')).toBeNull();
   });
 });
@@ -208,9 +214,9 @@ describe('DiarySection — реальные записи из api', () => {
     ]);
     renderSection();
     const thought = (await screen.findByText('Просто мысль дня')).closest('.cd-entry') as HTMLElement;
-    expect(thought.querySelector('.ds-chip')?.textContent).toBe('Мысль');
+    expect(thought.querySelector('.cd-kind')?.textContent).toBe('Мысль');
     const full = screen.getByText('Разобранный момент').closest('.cd-entry') as HTMLElement;
-    expect(full.querySelector('.ds-chip')?.textContent).toBe('Схема');
+    expect(full.querySelector('.cd-kind')?.textContent).toBe('Схема');
   });
 
   it('запись благодарности показывает реальные пункты, а не заглушку', async () => {
@@ -239,21 +245,21 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
   it('в ленте за день — строка трекера: «индекс 7,2» при всех пяти оценках, «3 из 5» при неполных', async () => {
     setup();
     renderSection();
-    await screen.findByText('Трекер — индекс 7,2');
-    expect(screen.getByText('Трекер: 3 из 5')).toBeTruthy();
+    await screen.findByLabelText('Трекер — индекс 7,2');
+    expect(screen.getByLabelText('Трекер: 3 из 5')).toBeTruthy();
   });
 
   it('«Трекер» скрывает дневниковые записи, «Дневник» — строки трекера', async () => {
     setup();
     renderSection();
     await screen.findByText('Запись-схема');
-    fireEvent.click(screen.getByRole('button', { name: /^Трекер/ }));
+    fireEvent.click(seg(/^Трекер/));
     expect(screen.queryByText('Запись-схема')).toBeNull();
-    expect(screen.getByText('Трекер — индекс 7,2')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /^Дневник/ }));
+    expect(screen.getByLabelText('Трекер — индекс 7,2')).toBeTruthy();
+    fireEvent.click(seg(/^Дневник/));
     expect(screen.getByText('Запись-схема')).toBeTruthy();
     expect(screen.getByText('Запись-режим')).toBeTruthy();
-    expect(screen.queryByText('Трекер — индекс 7,2')).toBeNull();
+    expect(screen.queryByLabelText('Трекер — индекс 7,2')).toBeNull();
   });
 
   it('«Случаи» показывает только разборы (fromCase), «Дневник» их не показывает', async () => {
@@ -265,10 +271,10 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     await screen.findByText('Тишина в ответ');
     const counts = [...document.querySelectorAll('.ds-seg-btn')].map(b => b.textContent);
     expect(counts).toEqual(['Все2', 'Трекер0', 'Случаи1', 'Дневник1']);
-    fireEvent.click(screen.getByRole('button', { name: /^Случаи/ }));
+    fireEvent.click(seg(/^Случаи/));
     expect(screen.getByText('Тишина в ответ')).toBeTruthy();
     expect(screen.queryByText('Обычная запись режима')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /^Дневник/ }));
+    fireEvent.click(seg(/^Дневник/));
     expect(screen.getByText('Обычная запись режима')).toBeTruthy();
     expect(screen.queryByText('Тишина в ответ')).toBeNull();
   });
@@ -277,7 +283,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: /^Случаи/ }));
+    fireEvent.click(seg(/^Случаи/));
     await screen.findByText('Разборов пока нет');
     expect(screen.getByText(/плитка «Что случилось» на главной/)).toBeTruthy();
   });
@@ -286,7 +292,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: /^Трекер/ }));
+    fireEvent.click(seg(/^Трекер/));
     await screen.findByText('Отметок трекера пока нет');
   });
 
@@ -294,7 +300,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
     const onOpenTrackerHistory = vi.fn();
     renderSection(onOpenTrackerHistory);
-    fireEvent.click(await screen.findByText('Трекер — индекс 7,2'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Трекер — индекс 7,2' }));
     expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
   });
 
@@ -310,7 +316,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     renderSection();
     await screen.findByText('Запись-схема');
     expect(screen.queryByLabelText('Поделиться дневником')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /^Дневник/ }));
+    fireEvent.click(seg(/^Дневник/));
     expect(screen.getByLabelText('Поделиться дневником')).toBeTruthy();
   });
 });

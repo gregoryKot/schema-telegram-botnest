@@ -1,19 +1,18 @@
-import type { CSSProperties } from 'react';
-import { Layers } from '../art/PaperArt';
-import { Cluster } from '../art/PaperArtSigns';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { SignHero } from '../paper/SignHero';
+import { hueStyle } from '../../lib/tone';
 
-/** Карточка «Схема»/«Режим» пустых «Записей»: цветная бумага (персик/небо) и мотив над текстом (docs/design/PAPER_2026-11.md). */
-const PAPER_CARD = {
-  schema: { hue: 45, art: <Layers size="row" /> },
-  mode: { hue: 240, art: <Cluster size="row" /> },
-} as const;
+/** Плитка «Схема»/«Режим» пустых «Записей» (b11): бумага и знак из ENTITY_LOOK — схемы вообще (Layers на глине),
+ *  режимы вообще (Cluster на небе), знак крупно с тенью-вырезкой, название Literata и два абзаца. */
+const CARD = { schema: { look: ENTITY_LOOK.schemas, name: 'Схема' }, mode: { look: ENTITY_LOOK.modes, name: 'Режим' } } as const;
 
 export function ExplainerPaperCard({ type, what, why }: { type: 'schema' | 'mode'; what: string; why: string }) {
+  const { look, name } = CARD[type];
   return (
-    <div className="pp-paper sd-explainer-card cd-explainer-card" style={{ '--h': PAPER_CARD[type].hue } as CSSProperties}>
-      <span className="pp-row-art cd-explainer-art">{PAPER_CARD[type].art}</span>
-      <div>{what}</div>
-      <div className="ds-sub sd-explainer-why">{why}</div>
+    <div className="pp-paper cd-explainer" style={hueStyle(look.hue)}>
+      <div className="cd-explainer-top"><h3 className="cd-explainer-name">{name}</h3><span className="cd-explainer-sign" aria-hidden="true"><SignHero sign={look.sign} /></span></div>
+      <p className="cd-explainer-what">{what}</p>
+      <p className="cd-explainer-why">{why}</p>
     </div>
   );
 }
