@@ -1,18 +1,15 @@
-import { Pebbles, Ribbon, Strokes } from '../../components/art/PaperArt';
+import { Pebbles } from '../../components/art/PaperArt';
+import { SignArt } from '../../components/art/SignArt';
 import { ENTRY_KIND_LABEL, type EntryKind } from './entryKind';
+import type { FeedLook } from './feedLook';
 
-/** Мотив записи по типу: трекер — полоски, разбор («Что случилось») — лента, записи дневников — камешки. */
-export function EntryArt({ kind }: { kind: EntryKind }) {
-  const Art = kind === 'tracker' ? Strokes : kind === 'case' ? Ribbon : Pebbles;
-  return <span className="pp-row-art"><Art size="row" /></span>;
+/** Знак записи по её виду (feedLook): благодарность — камешки по числу «спасибо», остальное — знак по ключу. */
+export function FeedSign({ look }: { look: FeedLook }) {
+  const art = look.filled !== undefined ? <Pebbles size="row" filled={look.filled} /> : <SignArt sign={look.sign} size="row" />;
+  return <span className="pp-row-art cd-sign" aria-hidden="true">{art}</span>;
 }
 
-/** Мотив и ярлык типа записи в шапке карточки. */
+/** Ярлык типа — тоном бумаги своего типа (`--h` карточки), без обводки и «конфетной» заливки. */
 export function EntryKindChip({ kind }: { kind: EntryKind }) {
-  return (
-    <>
-      <EntryArt kind={kind} />
-      <span className="ds-chip ds-chip--sm tone-tint">{ENTRY_KIND_LABEL[kind]}</span>
-    </>
-  );
+  return <span className="cd-kind">{ENTRY_KIND_LABEL[kind]}</span>;
 }

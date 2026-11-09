@@ -1,0 +1,58 @@
+/* Карточка записи ленты «Записей» (sections/diary/EntryShell.tsx, b11): плоская бумага светлее страницы без
+   обводки; тип читается корешком 4px цвета типа слева (--h карточки — бумага типа из feedLook), знаком
+   колонкой слева и ярлыком тоном бумаги типа. Раскрытая карточка поднимается тенью-слоем бумаги типа
+   (сплошной сдвинутый слой, как плитки лендинга), а не обводкой. Узкая страница — знак в строке ярлыка,
+   текст на всю ширину карточки. */
+.cd-entry {
+  --cd-spine: oklch(0.74 0.09 var(--h));
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; row-gap: 6px; align-items: start;
+  padding: 16px 18px 16px 20px; border-radius: 16px; background: var(--surface); text-align: left; cursor: pointer;
+  box-shadow: inset 4px 0 0 var(--cd-spine); transition: background .12s ease, box-shadow .12s ease;
+}
+.cd-entry:not(.is-open):hover { background: oklch(0.985 0.008 var(--h)); }
+.cd-entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cd-entry.is-open { box-shadow: inset 4px 0 0 var(--cd-spine), 4px 5px 0 oklch(0.86 0.045 var(--h)); }
+.cd-sign { justify-content: flex-start; padding-top: 1px; }
+.cd-entry-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cd-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 26px; }
+.cd-kind {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px;
+  background: oklch(0.915 0.03 var(--h)); font: 600 12px/1 var(--sans); color: var(--text); white-space: nowrap;
+}
+.cd-entry-time { font-size: 12.5px; color: var(--text-sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cd-entry-title { font-size: 15.5px; font-weight: 650; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; }
+.cd-entry-text { font-size: 14.5px; line-height: 1.55; color: var(--text-sub); overflow-wrap: anywhere; }
+.cd-entry-text:empty { display: none; }
+.cd-entry-meta { font-size: 12.5px; line-height: 1.45; color: var(--text-sub); margin-top: 4px; }
+.cd-entry-more-hint { font-weight: 600; color: var(--accent); white-space: nowrap; }
+
+@container cd-page (max-width: 520px) {
+  .cd-entry { column-gap: 10px; padding: 14px 14px 14px 16px; }
+  .cd-entry-body { display: contents; }
+  .cd-entry-head { grid-column: 2; }
+  .cd-entry-body > :not(.cd-entry-head) { grid-column: 1 / -1; }
+}
+
+/* Благодарность: пункты списком, номер тише текста. */
+.cd-grat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14.5px; line-height: 1.55; color: var(--text); }
+.cd-grat li { overflow-wrap: anywhere; }
+.cd-grat-num { font-size: 11px; color: var(--text-sub); margin-right: 10px; font-variant-numeric: tabular-nums; }
+.cd-grat-more { color: var(--text-sub); font-style: italic; }
+
+/* Раскрытая запись: поля (на широкой странице в две колонки), голос Здорового Взрослого — вставкой мха на
+   всю ширину, действия одной строкой — «Поделиться» слева, «Удалить» тихо справа. */
+.cd-entry-more { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); cursor: default; }
+.cd-fields { display: grid; gap: 12px 24px; }
+@container cd-page (min-width: 640px) {
+  .cd-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cd-field--healthy { grid-column: 1 / -1; }
+}
+.cd-field-label { margin-bottom: 3px; font: 600 12px/1.35 var(--sans); letter-spacing: .01em; color: var(--text-sub); }
+.cd-field-label.is-accent { color: var(--accent); }
+.cd-field-text { font-size: 14px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
+.cd-field--healthy { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; padding: 14px 16px; border-radius: 14px; }
+.cd-field-sign { display: inline-flex; padding-top: 2px; }
+.cd-field--healthy .cd-field-text { font: 400 16px/1.5 var(--serif); }
+.cd-entry-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; }
+.cd-entry-share { flex: 1 1 240px; min-width: 0; }
+.cd-entry-actions > .cd-del, .cd-entry-actions > .cd-del-row { margin-left: auto; }

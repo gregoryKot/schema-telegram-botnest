@@ -1,5 +1,8 @@
-/* Экран «Записи» клиента (вкладка и лист «Дневники»). Префикс cd-. */
-.cd-page { max-width: 1100px; }
+/* Экран «Записи» клиента (вкладка и лист «Дневники»). Префикс cd-. Раскладка — по ширине самой страницы
+   (container cd-page), а не окна: лист «Дневники» идёт без бокового меню, раздел — рядом с ним.
+   Карточка записи — client-diary-entry.css, пустая лента — client-diary-empty.css, силуэт —
+   client-diary-skeleton.css (грузится с оболочкой). Живая бумага — docs/design/APP_2026-11.md, b11. */
+.cd-page { max-width: 1100px; container: cd-page / inline-size; }
 
 /* «Записать» — ds-btn--lg (48/r24, во всю ширину на телефоне); на ноутбуке пилюля по тексту. */
 .cd-write { align-self: stretch; }
@@ -12,73 +15,90 @@
   .cd-head .cd-write { align-self: center; flex-shrink: 0; }
 }
 
-.cd-drafts { display: flex; flex-direction: column; gap: 10px; }
+/* Черновики: недописанный лист бумаги своего типа — нижний край срезан ножницами прямыми отрезками
+   (как край полос лендинга PaperBand), без пунктира. Верх — знак, «Черновик» и тип с давностью одной
+   строкой; низ — начало текста Literata курсивом и «Продолжить →». На широкой странице — в ряд. */
+.cd-drafts { display: grid; gap: 12px; }
+@container cd-page (min-width: 640px) { .cd-drafts { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); } }
 .cd-draft {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px;
-  background: var(--surface); border: 1.5px dashed oklch(0.7 0.1 var(--h)); border-radius: 16px; padding: 14px 18px;
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; column-gap: 12px; row-gap: 6px;
+  padding: 12px 6px 22px 16px; border-radius: 18px 18px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 7px), 81% calc(100% - 2px), 60% calc(100% - 8px), 36% 100%, 15% calc(100% - 6px), 0 calc(100% - 1px));
 }
-.cd-draft-tag { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.cd-draft-title { flex: 1; font-size: 14px; min-width: 0; }
-.cd-draft-go, .cd-draft-del { min-height: 44px; font-weight: 700; }
+.cd-draft-head { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cd-draft-meta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; font-size: 12.5px; color: var(--text-sub); }
+.cd-draft-meta .ds-label { color: var(--text-sub); }
+.cd-draft-title { font-size: 16px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cd-draft-x {
-  min-width: 44px; min-height: 44px; font-size: 20px; line-height: 1; color: var(--text-ghost);
-  background: none; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0;
+  color: var(--text-sub); background: none; border: none; border-radius: 50%; cursor: pointer;
 }
-.cd-draft-preview { flex-basis: 100%; font-size: 13px; line-height: 1.45; color: var(--text-sub); overflow-wrap: anywhere; }
+.cd-draft-x:hover { color: var(--text); }
+.cd-draft-x > svg { width: 14px; height: 14px; }
+/* «удалить» встаёт на место «×» и шире его — заходит влево на заголовок, а не сдвигает строку. */
+.ds-link.cd-draft-del { justify-self: end; min-height: 44px; padding: 0 10px; }
+.cd-draft-foot { grid-column: 1 / -1; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-width: 0; }
+.cd-draft-preview {
+  flex: 1; min-width: 0; margin: 0; font: italic 400 15px/1.45 var(--serif); color: var(--text); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ds-link.cd-draft-go { flex-shrink: 0; margin-left: auto; min-height: 44px; padding: 0 10px; font-size: 14px; }
 
-.cd-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+/* Сегмент и мета под ним: серия дней подряд — строкой под фильтром, а не под длинной лентой. */
+.cd-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.cd-streak { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 
+/* Лента и «Эта неделя»: на широкой странице сводка — липкой колонкой справа, иначе её нет. */
+.cd-feed { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+.cd-feed-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.cd-week { display: none; }
+@container cd-page (min-width: 880px) {
+  .cd-feed--week { grid-template-columns: minmax(0, 1fr) 224px; }
+  .cd-week { display: flex; position: sticky; top: 24px; }
+}
+.cd-week { flex-direction: column; gap: 10px; box-sizing: border-box; padding: 18px 18px 12px; border-radius: 20px; }
+.cd-week .ds-label { color: var(--text-sub); }
+.cd-week-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.cd-week-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; column-gap: 10px; min-height: 40px; font-size: 14px; color: var(--text); }
+.cd-week-row + .cd-week-row { border-top: 1px solid var(--paper-sunk); }
+.cd-week-n { font: 400 22px/1 var(--serif); font-variant-numeric: tabular-nums; }
+
+/* Дни: строка даты (DayHead) — дата Literata, «сегодня · понедельник», справа трекер дня полосками. */
 .cd-timeline { display: flex; flex-direction: column; gap: 28px; }
-.cd-day { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 20px; }
-.cd-day-date { font-family: var(--serif); font-size: 30px; line-height: 1; }
-.cd-day-rel { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
+.cd-day { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cd-day--bare + .cd-day--bare { margin-top: -12px; }
+.cd-day-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.cd-day-when { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cd-day-date { font-family: var(--serif); font-size: 22px; line-height: 1.15; color: var(--text); white-space: nowrap; }
+.cd-day-rel { font-size: 12.5px; line-height: 1.35; color: var(--text-sub); }
 .cd-day-items { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
-.cd-entry { display: flex; flex-direction: column; gap: 8px; text-align: left; }
-.cd-entry-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.cd-entry-head .ds-chip { white-space: nowrap; }
-.cd-entry-title { font-size: 15px; font-weight: 700; flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.cd-entry-time { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
-.cd-entry-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); overflow-wrap: anywhere; }
-.cd-entry-text:empty { display: none; }
-.cd-entry-meta { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
-.cd-entry-more-hint { font-weight: 600; color: var(--accent); white-space: nowrap; }
-.cd-entry-more { padding-top: 12px; border-top: 1px solid var(--paper-sunk); cursor: default; }
-.cd-field { margin-bottom: 10px; }
-.cd-field-label { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 3px; }
-.cd-field-label.is-accent { color: var(--accent); }
-.cd-field-text { font-size: 13px; color: var(--text-sub); line-height: 1.55; overflow-wrap: anywhere; }
-.cd-grat { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
-.cd-grat li { overflow-wrap: anywhere; }
-.cd-grat-num { font-size: 11px; color: var(--text-ghost); margin-right: 10px; }
-.cd-grat-more { color: var(--text-faint); font-style: italic; }
+/* Трекер дня: полоски дня (Strokes values) и индекс на бумаге трекера — чип, а не карточка. */
+.cd-tracker {
+  --strokes-edge: oklch(0.915 0.03 var(--h));
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; box-sizing: border-box; min-height: 44px;
+  padding: 0 12px 0 4px; border: 0; border-radius: 999px; background: oklch(0.915 0.03 var(--h));
+  font: 600 14px/1 var(--sans); color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+button.cd-tracker { cursor: pointer; transition: background .12s ease; }
+button.cd-tracker:hover { background: oklch(0.895 0.04 var(--h)); --strokes-edge: oklch(0.895 0.04 var(--h)); }
+button.cd-tracker:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cd-tracker .ds-chev { margin-left: 2px; color: var(--text-sub); }
 
-/* Дата группы на ≥768 — компактная подпись в колонке слева: «4 ноября» и под ней «среда» (#925). */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cd-day { grid-template-columns: 136px minmax(0, 1fr); gap: var(--space-24); }
-  .cd-day-date { font: 600 15px/1.3 var(--sans); white-space: nowrap; }
-  .cd-day-rel { font-size: 12px; margin-top: 2px; }
+/* Широкая страница: дата — колонкой слева, трекер — первой тонкой строкой ленты дня, под ним карточки.
+   День только с трекером — одна строка. */
+@container cd-page (min-width: 600px) {
+  .cd-day { display: grid; grid-template-columns: 136px minmax(0, 1fr); column-gap: 24px; row-gap: 10px; }
+  .cd-day-head { display: contents; }
+  .cd-day-when { grid-column: 1; grid-row: 1 / span 2; align-self: start; padding-top: 6px; }
+  .cd-day .cd-tracker { grid-column: 2; justify-self: start; }
+  .cd-day-items { grid-column: 2; }
 }
 
-@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  /* Кегль заголовка — ds-h1 (#906); .cd-head — обычный блок, своих flex-правил нет. */
+/* «Показать ещё» — тихая ссылка по центру со знаком «Записей»; сбой — PaperAlert с «Повторить». */
+.ds-link.cd-more { align-self: center; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; font-size: 14px; }
+.cd-more-sign { display: inline-flex; }
 
-  /* Записи: бейдж и время в одной строке, заголовок на всю ширину под ним */
-  .cd-entry-head { flex-wrap: wrap; row-gap: var(--space-4); }
-  .cd-entry-head .ds-chip { order: 1; }
-  .cd-entry-time { order: 2; margin-left: auto; }
-  .cd-entry-title { order: 3; flex: 0 0 100%; }
-
-  .cd-day { grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
-  .cd-day > div:first-child { display: flex; align-items: baseline; gap: var(--space-8); }
-  .cd-day-date { font-size: 22px; }
-}
-
-/* Строка трекера в ленте дня и серия внизу */
-.cd-entry--tracker { flex-direction: row; align-items: center; gap: var(--space-8); font-size: 15px; font-weight: 600; }
-.cd-retry { min-height: 44px; padding: 0 var(--space-8); background: none; border: none; cursor: pointer; font: 600 13px var(--sans); color: var(--accent); }
-.cd-streak { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-faint); }
-
-/* Пустая лента: карточки «Схема» и «Режим» — цветная бумага с мотивом над текстом */
-.cd-explainer-card { padding: 16px 18px; }
-.cd-explainer-art { display: flex; justify-content: flex-start; width: auto; margin-bottom: 8px; }
+/* Лист «Дневники» (DiariesOverlay): под шапкой с «Назад» — прокрутка, лента по центру листа. */
+.cd-sheet-scroll { min-height: 0; overflow-y: auto; }
+.cd-sheet-scroll .cd-page { margin: 0 auto; }

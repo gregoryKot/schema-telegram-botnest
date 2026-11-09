@@ -5,8 +5,6 @@ import { SchemaEntrySheet } from '../components/diary/SchemaEntrySheet';
 import { ModeEntrySheet } from '../components/diary/ModeEntrySheet';
 import { GratitudeEntrySheet } from '../components/diary/GratitudeEntrySheet';
 import { loadDraft, clearDraft } from '../utils/drafts';
-import { DiaryEmptyExplainer } from '../components/diary/DiaryEmptyExplainer';
-import { DiaryLoadFailedBanner } from '../components/diary/DiaryLoadFailedBanner';
 import { QuickEntrySheet } from '../components/diary/QuickEntrySheet';
 import { TherapyLine } from '../components/therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../components/therapy/useTherapyBridgeTexts';
@@ -16,26 +14,22 @@ import { diaryToday } from '../../../shared/src/diary/diaryDay';
 import { deleteDiaryEntry } from '../../../shared/src/diary/diaryDelete';
 import { DiaryDraft } from './diary/DiaryDraft';
 import { DiaryHeader } from './diary/DiaryHeader';
-import { DiaryTimeline, DiaryTimelineSkeleton } from './diary/DiaryTimeline';
+import { DiaryBar } from './diary/DiaryBar';
+import { DiaryFeed } from './diary/DiaryFeed';
 import { buildTrackerDays, type TrackerDay } from './diary/trackerEntries';
 import { fetchFirstDiaryPages, useDiaryLists } from './diary/useDiaryLists';
-import { DiaryMore } from './diary/DiaryMore';
+import { diaryWeek, segCounts } from './diary/dayModel';
 import {
   buildEntries, filterCounts, filterEntries, groupByDay, streakLine,
   type DiaryFilter,
 } from './diary/diaryModel';
 
-const FILTERS: { id: DiaryFilter; label: string }[] = [
-  { id: 'all', label: 'Все' },
-  { id: 'tracker', label: 'Трекер' },
-  { id: 'case', label: 'Случаи' },
-  { id: 'diary', label: 'Дневник' },
-];
 // Год — потолок GET /api/history (HISTORY_MAX_DAYS, src/api/dto/history-query.dto.ts).
 const TRACKER_DAYS = 365;
 const DRAFT_TYPES: DiaryType[] = ['schema', 'mode', 'gratitude'];
 
-export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onClose?: () => void; onOpenTrackerHistory?: () => void } = {}) {
+// «Записи» клиента — раздел и лист «Дневники» (DiariesOverlay рисует свою шапку с «Назад»).
+export function DiarySection({ onOpenTrackerHistory }: { onOpenTrackerHistory?: () => void } = {}) {
   const bridge = useTherapyBridgeTexts();
   // Три дневника постранично: «Показать ещё» догружает старые (R6).
   const lists = useDiaryLists();
@@ -50,7 +44,7 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   const [filter,           setFilter]           = useState<DiaryFilter>('all');
   const [newEntry,         setNewEntry]         = useState<DiaryType | null>(null);
   const [draftKey,         setDraftKey]         = useState(0);
-  // Сбой ≠ пусто (пара к miniapp): предупреждение сверху, а не тихое [].
+  // Сбой ≠ пусто (пара к miniapp): строка-лист на месте ленты, а не тихое [].
   const [loadFailed,       setLoadFailed]       = useState(false);
 
   const load = useCallback(() =>
@@ -90,6 +84,7 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   );
   const groups = useMemo(() => groupByDay(filterEntries(allEntries, filter)), [allEntries, filter]);
   const counts = useMemo(() => filterCounts(allEntries), [allEntries]);
+  const week = diaryWeek(allEntries, lists, today); // «Эта неделя» справа от ленты на широком экране
   const streakText = loading ? null : streakLine(streak);
 
   // Show entry sheet instead of hub
@@ -133,8 +128,6 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
   const drafts = DRAFT_TYPES.filter(t => loadDraft(t));
   return (
     <div className="ds-page cd-page">
-      {loadFailed && <DiaryLoadFailedBanner onRetry={() => { void load(); }} />}
-
       <DiaryHeader onWrite={() => setQuickOpen(true)} />
 
       {drafts.length > 0 && <div className="cd-drafts">{/* пустая обёртка удваивала gap (page-rhythm.spec.ts) */}
@@ -144,38 +137,15 @@ export function DiarySection({ onClose: _onClose, onOpenTrackerHistory }: { onCl
         ))}
       </div>}
 
-      <div className="cd-bar">
-        <div className="ds-seg ds-seg--scroll" role="group" aria-label="Тип записей">
-          {FILTERS.map(f => (
-            <button
-              key={f.id}
-              className={'ds-seg-btn' + (filter === f.id ? ' is-active' : '')}
-              onClick={() => setFilter(f.id)}
-            >
-              {f.label}<span className="ds-count">{counts[f.id]}</span>
-            </button>
-          ))}
-        </div>
-        {filter === 'diary' && counts.diary > 0 && (
-          <DiaryShareButton emoji="📓" title="Мой дневник" color="var(--c-rose)" entries={[...schemaEntries, ...modeEntries, ...gratitudeEntries]} />
-        )}
-      </div>
+      <DiaryBar filter={filter} counts={segCounts(counts, { loading, loadFailed, trackerFailed })} onFilter={setFilter} streak={streakText} share={filter === 'diary' && counts.diary > 0 && (
+        <DiaryShareButton emoji="📓" title="Мой дневник" color="var(--c-rose)" entries={[...schemaEntries, ...modeEntries, ...gratitudeEntries]} />
+      )} />
 
-      {trackerFailed && !loadFailed && (
-        <p className="cd-streak" role="status">
-          Отметки трекера не загрузились. <button type="button" className="cd-retry" onClick={() => { void load(); }}>Повторить</button>
-        </p>
-      )}
-
-      {loading && <DiaryTimelineSkeleton />}
-
-      {/* Пустая лента: для новичка отвечает «что это и зачем», первое действие — кнопка «Записать» выше */}
-      {!loading && groups.length === 0 && <DiaryEmptyExplainer filter={filter} />}
-
-      {!loading && groups.length > 0 && <DiaryTimeline groups={groups} onDelete={handleDelete} onOpenTrackerHistory={onOpenTrackerHistory} />}
-      {!loading && lists.hasMore && filter !== 'tracker' && <DiaryMore state={lists.moreState} onMore={() => { void lists.loadMore(); }} />}
-
-      {streakText && <p className="cd-streak">{streakText}</p>}
+      <DiaryFeed
+        loading={loading} loadFailed={loadFailed} trackerFailed={trackerFailed} filter={filter} groups={groups} week={week}
+        more={{ has: lists.hasMore, state: lists.moreState, load: () => { void lists.loadMore(); } }}
+        onRetry={() => { void load(); }} onDelete={handleDelete} onOpenTrackerHistory={onOpenTrackerHistory}
+      />
 
       {quickOpen && <QuickEntrySheet onClose={() => setQuickOpen(false)} onSaved={() => { void load(); }} />}
 

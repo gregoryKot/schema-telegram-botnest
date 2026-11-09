@@ -8,6 +8,7 @@ import type { ReactElement } from 'react';
 import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 import { hasTyForms } from '../../../../shared/src/utils/tyFormsSweep';
 import { DiaryEmptyExplainer } from './DiaryEmptyExplainer';
+import type { DiaryFilter } from '../../sections/diary/diaryModel';
 
 function renderWithForm(ui: ReactElement, form: AddressForm) {
   return render(
@@ -61,5 +62,35 @@ describe('DiaryEmptyExplainer (webapp) — пустой архив объясн�
       expect(hasTyForms(container.textContent ?? '')).toBe(false);
       unmount();
     }
+  });
+});
+
+// Вид (b11): сцена «первая страница» — у всей ленты и у пустого «Дневника», лист своей сущности со знаком —
+// у пустых «Трекера» и «Случаев»; «Схема» и «Режим» — только там, где речь о дневнике.
+const view = (filter: DiaryFilter) => render(<DiaryEmptyExplainer filter={filter} />).container;
+/** Камешки по месту (тень-вырезка Lift повторяет лёгший камешек — считаем места, а не фигуры). */
+const spots = (el: Element, laid: 'yes' | 'no') => new Set([...el.querySelectorAll(`.cd-empty-scene [data-laid="${laid}"]`)].map((p) => p.getAttribute('cx'))).size;
+
+describe('DiaryEmptyExplainer — вид (b11)', () => {
+  it.each(['all', 'diary'] as const)('%s — сцена «первая страница»: один камешек на листе, два ждут; плитки «Схема» и «Режим»', (f) => {
+    const el = view(f);
+    expect(spots(el, 'yes')).toBe(1);
+    expect(spots(el, 'no')).toBe(2);
+    expect([...el.querySelectorAll('.cd-explainer-name')].map((n) => n.textContent)).toEqual(['Схема', 'Режим']);
+    expect(el.querySelector('.cd-empty-scene')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it.each([['tracker', 'strokes', 'Отметок трекера пока нет'], ['case', 'ribbon', 'Разборов пока нет']] as const)(
+    '%s — лист своей сущности со знаком %s, без сцены и без плиток дневника', (f, sign, title) => {
+      const el = view(f);
+      expect(el.querySelector('.pa-sheet')?.getAttribute('data-sign')).toBe(sign);
+      expect(el.querySelector('.pa-sheet-title')?.textContent).toBe(title);
+      expect(el.querySelector('.cd-empty-scene')).toBeNull();
+      expect(el.querySelector('.cd-explainers')).toBeNull();
+    });
+
+  it('подпись новичку — только у всей ленты, у пустого «Дневника» её нет (как раньше)', () => {
+    expect(view('all').querySelector('.cd-empty-sub')).not.toBeNull();
+    expect(view('diary').querySelector('.cd-empty-sub')).toBeNull();
   });
 });

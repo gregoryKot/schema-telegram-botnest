@@ -51,12 +51,15 @@ describe('«Записи»: шапка в строку и компактная �
     expect(at(F, '.pp-block.cd-head', 768)).toMatch(/justify-content:\s*space-between/);
     expect(phoneSees(F, '.pp-block.cd-head', /flex-direction:\s*row/)).toEqual([]);
   });
-  it('дата группы: подпись мелким шрифтом и узкая колонка — под ≥768; телефонный размер 22px не тронут', () => {
-    const date = at(F, '.cd-day-date', 768);
-    expect(Number(date.match(/(\d+)px/)?.[1])).toBeLessThanOrEqual(16);
-    expect(at(F, '.cd-day', 768)).toMatch(/grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)/);
-    const phone = readCss(F).filter((r) => isPhone(r.media) && r.selectors.includes('.cd-day-date'));
-    expect(phone.map((r) => r.body)).toEqual([expect.stringMatching(/font-size:\s*22px/)]);
+  // b11 (редизайн 2026-11, аудит diary-feed): дата — Literata 22 и на компьютере (была подпись 15px), колонкой
+  // слева — по ширине самой страницы (container cd-page), а не окна: лист «Дневники» идёт без бокового меню.
+  it('дата группы: Literata 22 везде; узкая колонка — только на широкой странице (container cd-page)', () => {
+    const date = rulesOf(F, '.cd-day-date');
+    expect(date.map((r) => r.media)).toEqual(['']);
+    expect(date[0].body).toMatch(/font-size:\s*22px/);
+    const wide = rulesOf(F, '.cd-day').filter((r) => /^@container cd-page \(min-width: \d+px\)$/.test(media(r)));
+    expect(wide.map((r) => r.body).join(' ')).toMatch(/grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)/);
+    expect(rulesOf(F, '.cd-day').filter((r) => r.media === '' && /grid-template-columns/.test(r.body))).toEqual([]);
   });
 });
 
