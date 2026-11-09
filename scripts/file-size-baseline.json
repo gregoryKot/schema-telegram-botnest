@@ -809,7 +809,7 @@
   "src/articles/article-html-allowlist.ts": 26,
   "src/articles/article-html-sanitize.ts": 191,
   "src/articles/article-seo.middleware.ts": 122,
-  "src/articles/article-seo.render.ts": 146,
+  "src/articles/article-seo.render.ts": 145,
   "src/articles/article-seo.routes.ts": 21,
   "src/articles/article.dto.ts": 77,
   "src/articles/articles-admin.controller.ts": 66,
