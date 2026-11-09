@@ -1,0 +1,52 @@
+/* Силуэты разделов кабинета (components/ShellSkeletons.tsx). Префикс sks- (sk- занят листами sheet-tasks.css). Плашки — общий .skel
+   (shared/src/theme/tokens.css); бумага силуэта — тот же лист pp-paper, что у экрана, но тише:
+   хрома вдвое ниже (oklch 0.94 0.015 h) — место уже цветное, а данных ещё нет. */
+.sks-head { display: flex; flex-direction: column; gap: 12px; }
+.sks-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; }
+.sks-col--hero { gap: 12px; }
+.sks-rows { display: flex; flex-direction: column; }
+.sks-row { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 10px 18px; }
+.sks-row + .sks-row { border-top: 1px solid var(--paper-sunk); }
+.sks-card { background: var(--surface); border-radius: 20px; overflow: hidden; }
+.sks-card--pad { padding: 18px; }
+.sks-sheet { display: flex; flex-direction: column; gap: 14px; padding: 22px 20px; background: oklch(0.94 0.015 var(--h)); }
+
+/* «Сегодня» клиента — классы HomeTiles (pp-block, pp-hero, pp-squares из paper.css): та же рамка. */
+.sks-today-home { display: flex; flex-direction: column; gap: 20px; }
+.sks-today-main { display: flex; flex-direction: column; gap: 18px; padding: 18px 0 20px; }
+.sks-strokes { display: flex; }
+.pp-square.sks-square { cursor: default; background: oklch(0.94 0.015 var(--h)); }
+.pp-square.sks-square:hover { background: oklch(0.94 0.015 var(--h)); }
+/* Компьютер — разворот «Сегодня» (b05): слева лист соломы трекера с его знаком крупно сверху, справа
+   квадраты горизонтальными плитками друг под другом. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .sks-today-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+  .pp-block.sks-today-main {
+    justify-content: space-between; gap: 28px; padding: 30px 36px 36px; border: 0; border-radius: 28px;
+    background: oklch(0.94 0.015 var(--h));
+  }
+  .sks-today-main .pp-hero { grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+  .sks-strokes { order: -1; margin-left: -14px; }
+  .sks-strokes .pp-art--hero { width: 216px; height: auto; }
+  .sks-today-home .pp-squares { grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: 24px; }
+  .pp-square.sks-square { min-height: 0; padding: 28px 30px 26px 32px; border-radius: 28px; }
+}
+
+/* Кабинет терапевта: три плитки счётчиков и две колонки. */
+.sks-counters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.sks-counter { display: flex; flex-direction: column; gap: 12px; min-height: 118px; box-sizing: border-box; padding: 18px; background: oklch(0.94 0.015 var(--h)); }
+.sks-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.sks-two .sks-col { gap: 14px; }
+.sks-two--overview { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.sks-card-head { display: flex; align-items: center; gap: 16px; }
+.sks-tabs { display: flex; gap: 22px; padding-bottom: 12px; border-bottom: 1px solid var(--paper-sunk); overflow: hidden; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .sks-counters { gap: 8px; }
+  .sks-counter { min-height: 104px; padding: 14px 12px; }
+  .sks-two, .sks-two--overview { grid-template-columns: minmax(0, 1fr); }
+  .sks-tabs { gap: 18px; }
+  .sks-row { padding: 10px 14px; }
+}
+
+/* Нижняя панель телефона в силуэте — те же место и высота, что у .mobile-nav. */
+.sks-mobile-nav-item { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 44px; }

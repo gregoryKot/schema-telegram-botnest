@@ -4,10 +4,13 @@ import { useTr } from '../utils/addressForm';
 import { buildPlusActions, type QuickActionId } from '../../../shared/src/quickActions/quickActions';
 import type { TherapyClientSummary, UserId } from '../api';
 import { isActiveToday } from '../../../shared/src/therapy/clientSheetHelpers';
-import { clientDisplayName } from '../../../shared/src/therapy/clientInitials';
+import { clientAvatarInitials, clientDisplayName } from '../../../shared/src/therapy/clientInitials';
 import { clientStatus } from './therapist/rosterOrder';
 import { matchesSearch } from '../../../shared/src/utils/searchNormalize';
-import { pressable } from '../utils/a11y';
+import { clientHue } from '../lib/tone';
+import { CmdList, type CmdRow } from './CommandPaletteList';
+import { QUICK_ACTION_SIGN } from './quickActionSign';
+import { SECTION_LOOK } from './appShell/navLook';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import type { Section } from './appShell/navigation';
@@ -33,33 +36,6 @@ const NAV_ITEMS: { id: Section; label: string; sub: string; hint: string }[] = [
   { id: 'profile', label: 'Профиль',  sub: 'Аккаунт',   hint: '' },
   { id: 'practice', label: 'Практики', sub: 'Дыхание, упражнения, планы', hint: '' },
 ];
-
-// ── Icons ──────────────────────────────────────────────────────────────────────
-
-function IconPerson() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx={12} cy={8} r={4} />
-      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-    </svg>
-  );
-}
-
-function IconArrow() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
-  );
-}
-
-function IconBolt() {
-  return (
-    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-    </svg>
-  );
-}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -88,44 +64,40 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
     }
   }, [userRole]);
 
-  type RowType = 'client' | 'nav' | 'action';
-  interface Row { type: RowType; label: string; sub?: string; activeToday?: boolean; hint?: string; action: () => void }
-
-  const rows = useMemo<Row[]>(() => {
-    const clientRows: Row[] = screenShare ? [] : clients.map(c => ({
-      type: 'client' as const,
+  const rows = useMemo<CmdRow[]>(() => {
+    const clientRows: CmdRow[] = screenShare ? [] : clients.map(c => ({
       label: clientDisplayName(c),
       ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: clientStatus(c).label }),
       hint: 'Открыть карточку',
+      mark: { initials: clientAvatarInitials(c), hue: clientHue(c.telegramId) },
+      search: clientDisplayName(c),
       action: () => onOpenClient?.(c.telegramId),
     }));
 
     // In therapist cabinet — skip client navigation sections
-    const navRows: Row[] = therapistMode ? [] : NAV_ITEMS.map(n => ({
-      type: 'nav' as const,
-      label: n.label, sub: n.sub, hint: n.hint,
+    const navRows: CmdRow[] = therapistMode ? [] : NAV_ITEMS.map(n => ({
+      label: n.label, sub: n.sub, hint: n.hint, mark: { sign: SECTION_LOOK[n.id].sign },
+      search: `${n.label} ${n.sub}`,
       action: () => onNavigate(n.id),
     }));
 
-    const actionRows: Row[] = [
+    const toggle = therapistMode ? 'Переключиться в режим клиента' : 'Переключиться в кабинет терапевта';
+    const toggleSub = therapistMode ? 'Клиентский вид' : 'Кабинет';
+    const actionRows: CmdRow[] = [
       ...(userRole === 'THERAPIST' ? [{
-        type: 'action' as const,
-        label: therapistMode ? 'Переключиться в режим клиента' : 'Переключиться в кабинет терапевта',
-        sub: therapistMode ? 'Клиентский вид' : 'Кабинет',
+        label: toggle, sub: toggleSub, mark: { sign: 'cluster' as const }, search: `${toggle} ${toggleSub}`,
         action: () => onToggleMode?.(),
       }] : []),
-      // Те же быстрые действия, что в «+» на телефоне (общий реестр).
-      ...(!therapistMode ? buildPlusActions(tr).flatMap(g => g.actions.map(a => ({ a, group: g.title }))).map(({ a, group }) => ({
-        type: 'action' as const,
-        label: a.label,
-        sub: `${group} · ${a.sub}`,
+      // Те же быстрые действия, что в «+» на телефоне (общий реестр); группа — подписью над строками.
+      ...(!therapistMode ? buildPlusActions(tr).flatMap(g => g.actions.map(a => ({
+        group: g.title, label: a.label, sub: a.sub, mark: { sign: QUICK_ACTION_SIGN[a.id] },
+        search: `${a.label} ${g.title} ${a.sub}`,
         action: () => onQuickAction?.(a.id),
-      })) : []),
+      }))) : []),
     ];
 
-    const all: Row[] = [...clientRows, ...navRows, ...actionRows];
     // Регистр и «ё/е» не различаются — тот же поиск, что в списке клиентов.
-    return all.filter(r => matchesSearch(`${r.label} ${r.sub ?? ''}`, q));
+    return [...clientRows, ...navRows, ...actionRows].filter(r => matchesSearch(r.search, q));
   }, [q, clients, screenShare, userRole, therapistMode, onNavigate, onOpenClient, onToggleMode, onQuickAction, tr]);
 
   useEffect(() => {
@@ -163,31 +135,9 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             placeholder={screenShare ? 'Найти страницу или действие…' : 'Найти клиента, страницу или действие…'}
           />
         </div>
-        <div className="cmd-list">
-          {screenShare && userRole === 'THERAPIST' && <p className="ds-sub cmd-empty">Клиенты скрыты: включён показ экрана</p>}
-          {rows.length === 0 && <p className="ds-empty cmd-empty">Ничего не найдено</p>}
-          {rows.map((row, i) => (
-            <div
-              key={i}
-              className={`ds-list-row ds-list-row--hover cmd-row${i === sel ? ' is-sel' : ''}`}
-              onMouseEnter={() => setSel(i)}
-              {...pressable(() => goBack(row.action))}
-            >
-              <span className="cmd-icon">
-                {row.type === 'client' ? <IconPerson /> : row.type === 'nav' ? <IconArrow /> : <IconBolt />}
-              </span>
-              <span className="cmd-main">
-                <span className="cmd-label">{row.label}</span>
-                {row.sub && (
-                  <span className={'ds-sub cmd-sub' + (row.activeToday ? ' is-ok' : '')}>
-                    {row.sub}
-                  </span>
-                )}
-              </span>
-              {row.hint && <span className={row.hint.startsWith('⌘') ? 'ds-kbd kbd-hint' : 'ds-sub'}>{row.hint}</span>}
-            </div>
-          ))}
-        </div>
+        {/* «Показ экрана»: одна строка почему клиентов нет — без второй «Ничего не найдено» под ней. */}
+        <CmdList rows={rows} sel={sel} onSelect={setSel} onRun={(row) => goBack(row.action)}
+                 note={screenShare && userRole === 'THERAPIST' ? 'Клиенты скрыты: включён показ экрана' : undefined} />
       </div>
     </div>
   );
