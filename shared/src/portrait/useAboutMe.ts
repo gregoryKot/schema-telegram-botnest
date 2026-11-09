@@ -17,6 +17,12 @@ import {
   type WarmWordsPhraseCheckSource,
 } from '../warmWords/collectWarmWords';
 import type { SchemaDiaryEntry, ModeDiaryEntry, UserProfile } from '../types';
+import {
+  MY_MODE_IDS_KEY,
+  MY_SCHEMA_IDS_KEY,
+  cachedMyIds,
+  trustedProfileLists,
+} from '../utils/storageKeys';
 import type { YsqHistoryEntry } from '../apiTypes';
 
 export interface AboutMeApi {
@@ -74,8 +80,14 @@ export function useAboutMe(api: AboutMeApi, options: AboutMeOptions = {}) {
         .then((p) => {
           setYsqCompletedAt(p.ysq.completedAt);
           setActiveSchemaIds(p.ysq.activeSchemaIds ?? []);
-          setManualSchemaIds(p.mySchemaIds ?? []);
-          setMyModeIds(p.myModeIds ?? []);
+          // Нечитаемый на сервере список приходит `[]` с пометкой в
+          // unreadableLists — это «не прочиталось», а не «пусто»: «Портрет»
+          // берёт локальную копию, как экран «Мои паттерны» (useSchemasData).
+          const lists = trustedProfileLists(p);
+          setManualSchemaIds(
+            lists.mySchemaIds ?? cachedMyIds(MY_SCHEMA_IDS_KEY),
+          );
+          setMyModeIds(lists.myModeIds ?? cachedMyIds(MY_MODE_IDS_KEY));
         })
         .catch(fail('getProfile')),
       a.getYsqHistory().then(setYsqHistory).catch(fail('getYsqHistory')),

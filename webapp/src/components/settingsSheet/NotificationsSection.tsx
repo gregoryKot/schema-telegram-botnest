@@ -13,7 +13,7 @@ import { remindersOn, remindersPatch, summaryOn } from '../../../../shared/src/s
 interface Props {
   settings: UserSettings;
   tzLabel: string;
-  patch: (update: Partial<UserSettings>) => Promise<void>;
+  patch: (update: Partial<UserSettings>) => Promise<unknown>;
   openSubView: (v: SubView) => void;
   leaveTo: (path: '/account' | '/install') => void; // закрыть лист и уйти: привязать Telegram / установить приложение
   reloadSettings: () => Promise<void>; // после включения пушей на устройстве меняется notifyChannel

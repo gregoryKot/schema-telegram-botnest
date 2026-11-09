@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import {
   rankExpressed, groupMap, countSchemas, domainCountLabel, needLevel,
-  shortName, readLocalIds, findSchema, schemasWord, domainsWord,
+  shortName, findSchema, schemasWord, domainsWord,
 } from './schemasModel';
+import { readLocalIds } from '../../utils/storageKeys';
 
 const [a, b, c] = SCHEMA_DOMAINS[0].schemas;
 

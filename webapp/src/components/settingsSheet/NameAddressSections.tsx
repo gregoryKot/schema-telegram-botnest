@@ -39,7 +39,7 @@ export function NameSection({ value, onChange, displayName, onNameChanged, onSav
 }
 
 // Раздел «Обращение» (ты/вы).
-export function AddressSection({ settings, patch }: { settings: UserSettings; patch: (u: Partial<UserSettings>) => Promise<void> }) {
+export function AddressSection({ settings, patch }: { settings: UserSettings; patch: (u: Partial<UserSettings>) => Promise<boolean> }) {
   const setAddressForm = useSetAddressForm();
   return (
     <SSection id="s-address" label="Обращение">
@@ -49,7 +49,13 @@ export function AddressSection({ settings, patch }: { settings: UserSettings; pa
             const active = (settings.addressForm ?? 'ty') === form;
             return (
               <button key={form} className={`ds-seg-btn${active ? ' is-active' : ''}`}
-                onClick={() => { setAddressForm(form); void patch({ addressForm: form }); /* patch ловит сбой сам: откат и «Не сохранилось» */ }}
+                onClick={() => {
+                  // Форма ставится сразу (интерфейс говорит по-новому без ожидания), а на
+                  // отказе откатывается вместе с переключателем: patch возвращает исход.
+                  const prev = settings.addressForm ?? 'ty';
+                  setAddressForm(form);
+                  void patch({ addressForm: form }).then((ok) => { if (!ok) setAddressForm(prev); });
+                }}
               >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
             );
           })}

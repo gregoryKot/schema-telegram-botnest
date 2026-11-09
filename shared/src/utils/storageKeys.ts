@@ -44,6 +44,27 @@ export function trustedProfileLists(p: MyLists): {
   };
   return { mySchemaIds: pick('mySchemaIds'), myModeIds: pick('myModeIds') };
 }
+/** Список id из сырой строки localStorage; мусор и не-строки — мимо. */
+export function readLocalIds(raw: string | null): string[] {
+  try {
+    const parsed: unknown = JSON.parse(raw ?? '[]');
+    return Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+/** Локальная копия «моих» схем или режимов (хранилище недоступно — пусто). */
+export function cachedMyIds(
+  key: typeof MY_SCHEMA_IDS_KEY | typeof MY_MODE_IDS_KEY,
+): string[] {
+  try {
+    return readLocalIds(localStorage.getItem(key));
+  } catch {
+    return [];
+  }
+}
 export function cacheMyPatternsFromProfile(p: MyLists): void {
   const { mySchemaIds, myModeIds } = trustedProfileLists(p);
   if (mySchemaIds) cacheMySchemaIds(mySchemaIds);

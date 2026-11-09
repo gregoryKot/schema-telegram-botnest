@@ -67,11 +67,12 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
       .catch(() => setSettings(DEFAULT_SETTINGS));
   }, []);
 
-  async function patch(update: Partial<UserSettings>) {
-    if (!settings) return;
+  /** Сохранить настройки; исход — сохранилось ли (отказ уже откатил `settings` и показал «Не сохранилось»). */
+  async function patch(update: Partial<UserSettings>): Promise<boolean> {
+    if (!settings) return false;
     const prev = settings; setSettings(s => s ? { ...s, ...update } : s);
-    try { await api.updateSettings(update); flashSaved(); }
-    catch { setSettings(prev); flashSaveError(); }
+    try { await api.updateSettings(update); flashSaved(); return true; }
+    catch { setSettings(prev); flashSaveError(); return false; }
   }
   const reloadSettings = () => api.getSettings().then(setSettings, (e: unknown) => console.warn('настройки не перечитались', e)); // после веб-пушей: новый notifyChannel
 

@@ -5,7 +5,7 @@ import type { SubView } from './SubViews';
 
 interface Props {
   settings: UserSettings;
-  patch: (update: Partial<UserSettings>) => Promise<void>;
+  patch: (update: Partial<UserSettings>) => Promise<unknown>;
   openSubView: (v: SubView) => void;
 }
 
