@@ -44,27 +44,34 @@
   `scripts/zero-coverage-baseline.json` как «покрыто e2e», но e2e в `coverage-summary.json` не
   входит: сломай e2e — гейт не узнает. Файл, покрытый одной строкой из десяти, гейт тоже не
   видит — порог «ноль», а не процент.
-- **49 файлов вокруг мутационных зон не измеряются мутациями**
-  (`scripts/mutation-zone-baseline.json`, у каждого причина). 22 выделены из
-  файлов зон (`refresh-issue`/`refresh-reuse`/`magic-link`/
-  `unlink-provider` из `auth.service`, `merge-*` из `merge.service`,
-  `booking.{create,checkout,queries}`, `subscription.charges`, `account.delete`
-  и другие); 27 гейт увидел после расширения 2026-11 (кандидат — файл, у
-  которого импортёров из зоны не меньше, чем вне): хелперы броней,
-  уведомлений, связи терапевта, части билета входа. Семь из 49 — константы и
+- **45 файлов вокруг мутационных зон не измеряются мутациями**
+  (`scripts/mutation-zone-baseline.json`, у каждого причина). 15 выделены из
+  файлов зон (`magic-link`/`unlink-provider` из `auth.service`, `merge-*` из
+  `merge.service`, `subscription.charges`, `account.delete`,
+  `init-data-paths`, `auth-failure.report` и другие); 30 гейт увидел после
+  расширения 2026-11 (кандидат — файл, у которого импортёров из зоны не
+  меньше, чем вне) и при включении соседей в `mutate`: хелперы броней,
+  уведомлений, связи терапевта, части билета входа. Семь из 45 — константы и
   реестры без логики (`user-owned-tables`, `user-data-tables`,
   `booking.config`, `booking.schema`, `subscription.constants`,
   `init-data-window`, `totp-challenge`), остальное — долг волны. Гейт
   `check-mutation-zone.mjs` (#657) не даёт выпасть новому, а этим ничего не
   мешает остаться за кадром: включать в `mutate` по одному вместе с прогоном
-  и полом в бейслайне храповика. Первыми — `refresh-*` и `merge-subscriptions`
-  (деньги и сессии). Слепое пятно гейта: выделенный файл, у которого
-  импортёров из зоны меньше половины или нет вовсе (импортёры переехали за
-  ним), он не видит — так к 2026-11 жили `totp.service.ts`, `max-init-data.ts`,
-  `login-ticket.service.ts` (два последних теперь в `mutate`, TOTP — запись
-  ниже). Зона для гейта — объединение всех `stryker*.config.json`, включая
-  ручной зонтичный `stryker.config.json`, в nightly не гоняемый. Файлы только
-  из типов (`booking.types.ts`) кандидатами не считаются.
+  и полом в бейслайне храповика. `refresh-*`, `merge-subscriptions`,
+  `booking.{create,checkout,queries}` включены 2026-11-09 с полом 100.
+  Следующий по весу — `subscription.charges.ts` (деньги): замер 2026-11-09
+  85.71% (16 выживших и 3 NoCoverage), соседи `subscription.charge-guards.ts`
+  86.36%, `subscription.charge-activate.ts` 89.29%,
+  `subscription-paid-after-cancel.ts` 85.19%, `subscription.charge-failed.ts`
+  100% — включать вместе, иначе гейт потребует записи про каждого соседа;
+  затем `booking-public-view.ts` (выдача брони без ПДн). Слепое пятно гейта:
+  выделенный файл, у которого импортёров из зоны меньше половины или нет
+  вовсе (импортёры переехали за ним), он не видит — так к 2026-11 жили
+  `totp.service.ts`, `max-init-data.ts`, `login-ticket.service.ts` (два
+  последних теперь в `mutate`, TOTP — запись ниже). Зона для гейта —
+  объединение всех `stryker*.config.json`, включая ручной зонтичный
+  `stryker.config.json`, в nightly не гоняемый. Файлы только из типов
+  (`booking.types.ts`) кандидатами не считаются.
 - **Семейство TOTP вне мутационной зоны.** Замер 2026-11-09 (прогон
   golden-auth с этими файлами в `mutate`): `src/auth/totp.service.ts` 77.86%
   (27 выживших, 2 NoCoverage), `totp-code.ts` 86.67% (2), `totp-attempts.ts`

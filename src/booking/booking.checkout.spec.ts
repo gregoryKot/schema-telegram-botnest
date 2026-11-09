@@ -219,4 +219,63 @@ describe('completeCheckout — эффекты подтверждения пос�
       'Booking confirm effects failed, retry cron finishes: #5 zoom down',
     );
   });
+
+  it('эффекты упали не Error-ом (undefined) — в логе всё равно номер брони', async () => {
+    const onConfirmed = jest.fn().mockRejectedValue(undefined);
+    const { deps, logger } = confirmDeps(onConfirmed);
+    const error = jest.spyOn(logger, 'error').mockImplementation(() => {});
+    await completeCheckout(deps, row(70, 'EUR'), {
+      ...OPTS,
+      manual: true,
+      heldUntil: null,
+    });
+    await new Promise((r) => setImmediate(r));
+    expect(error).toHaveBeenCalledWith(
+      'Booking confirm effects failed, retry cron finishes: #5 undefined',
+    );
+  });
+});
+
+// Ночной мутационный замер (stryker.golden-payments.config.json): e-mail для
+// чека Robokassa и отказ оплаты в проде без кассы.
+describe('completeCheckout — e-mail для чека и отказ без кассы', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it.each([
+    ['обычный адрес', 'anna@mail.ru', true],
+    ['с пробелами вокруг', '  anna@mail.ru ', true],
+    ['телефон', '+7 999 000-00-00', false],
+    ['ник', '@anna', false],
+    ['без точки в домене', 'anna@mail', false],
+  ])('контакт «%s» → e-mail в счёт: %s', async (_n, contact, passed) => {
+    const { deps, robokassa } = makeDeps();
+    await completeCheckout(deps, row(4200), {
+      ...OPTS,
+      clientContact: contact,
+    });
+    const [args] = robokassa.buildPaymentUrl.mock.calls[0] as unknown as [
+      { email?: string },
+    ];
+    expect(args.email).toBe(passed ? contact : undefined);
+  });
+
+  it('прод без кассы — 503 и error с видом платежа «booking»', async () => {
+    const { deps, robokassa } = makeDeps();
+    robokassa.enabled = false;
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    const error = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+    try {
+      await expect(completeCheckout(deps, row(4200), OPTS)).rejects.toThrow(
+        'PAYMENT_UNAVAILABLE',
+      );
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+    expect(error).toHaveBeenCalledWith(
+      'Robokassa not configured in production: booking refused',
+    );
+  });
 });

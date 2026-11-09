@@ -1,5 +1,5 @@
 {
-  "total": 95.24,
+  "total": 95.56,
   "files": {
     "src/booking/booking-amount-alert.ts": 93.75,
     "src/booking/booking-amount.ts": 100,
@@ -9,6 +9,10 @@
     "src/booking/booking-paid-after-cancel.ts": 84.62,
     "src/booking/booking-pricing-path.ts": 100,
     "src/booking/booking-reminders.ts": 100,
+    "src/booking/booking-slot-lock.ts": 100,
+    "src/booking/booking.checkout.ts": 100,
+    "src/booking/booking.create.ts": 100,
+    "src/booking/booking.queries.ts": 100,
     "src/booking/booking.service.ts": 95.77,
     "src/booking/booking.transitions.ts": 90.57,
     "src/booking/payment-guard.ts": 100,

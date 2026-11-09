@@ -155,3 +155,41 @@ describe('shouldSkipRotation', () => {
     expect(shouldSkipRotation(undefined, NOW)).toBe(false);
   });
 });
+
+// Ночной мутационный замер (stryker.golden-auth.config.json): текст лога у
+// каждой ветки кражи и граница срока наследника.
+describe('classifyReuse — лог кражи и граница срока наследника', () => {
+  const THEFT_LOG =
+    'Refresh token reuse detected — revoking family (userId 42)';
+
+  it('наследник пропал из базы — кража с тем же текстом лога', () => {
+    const v = classifyReuse(
+      { revokedAt: NOW, replacedByHash: 'succ-hash' },
+      null,
+      NOW,
+      42n,
+    );
+    expect(v).toEqual({ outcome: 'theft', logMessage: THEFT_LOG });
+  });
+
+  it('строка без наследника, повтор за окном — кража с тем же текстом лога', () => {
+    const old = new Date(NOW.getTime() - REFRESH_REUSE_GRACE_MS - 1);
+    const v = classifyReuse(
+      { revokedAt: old, replacedByHash: null },
+      null,
+      NOW,
+      42n,
+    );
+    expect(v).toEqual({ outcome: 'theft', logMessage: THEFT_LOG });
+  });
+
+  it('наследник истекает ровно «сейчас» — уже отказ, а не восстановление (<=)', () => {
+    const v = classifyReuse(
+      { revokedAt: NOW, replacedByHash: 'succ-hash' },
+      { revokedAt: null, expiresAt: NOW },
+      NOW,
+      42n,
+    );
+    expect(v.outcome).toBe('reject');
+  });
+});
