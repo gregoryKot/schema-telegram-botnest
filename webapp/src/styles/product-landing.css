@@ -70,7 +70,7 @@ html:has(.pl2-root) { scroll-behavior: smooth; }
 .pl2-fine { margin: 18px 0 0; font-size: 13px; color: var(--text-faint); }
 .pl2-nowrap { white-space: nowrap; }
 /* Висячие слова в крупных заголовках — выравнивание строк; строку, начатую тире, держит
-   неразрывный пробел перед « — » (landing/typo.ts, glue). У .pl2-h2 balance нет: оно рвало
+   неразрывный пробел перед « — » (shared/src/utils/typo.ts, glue). У .pl2-h2 balance нет: оно рвало
    «схема-терапии» по дефису, там pretty и слово с дефисом в .pl2-nowrap. */
 .pl2-card-title, .pl2-final-title, .pl2-spread-title, .pl2-tile-title { text-wrap: balance; }
 .pl2-h2, .pl2-lead, .pl2-sub, .pl2-fine, .pl2-card-text, .pl2-author-text, .pl2-spread-text, .pl2-tile-text, .pl2-final-text { text-wrap: pretty; }

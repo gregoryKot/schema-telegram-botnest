@@ -10,17 +10,6 @@
 }
 /* Заголовок прямо в колонке с gap (TalkSheet): без верхнего отступа ds-h1. */
 .cw-lead { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
-/* Три действия — строки одной карточки: название Manrope 600, пояснение 14px. */
-.cw-list { margin: 0; padding: 0; list-style: none; }
-/* Выравнивание и зазор — у .ds-list-row (на той же строке): своё «start / 2px 14px» здесь
-   никогда не действовало — этот файл шёл в сборке раньше cabinet.css, — а со сменой чанков
-   (b03, 2026-11) начало бы. Правило не спорит с примитивом и не зависит от порядка. */
-.cw-item { grid-template-columns: auto minmax(0, 1fr); }
-.cw-item-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-/* Герой: три мотива в ряд; на узком экране сжимаются, а не переносятся. */
-.cw-hero { display: flex; gap: 12px; }
-.cw-hero .pp-art { flex: 1 1 0; min-width: 0; width: auto; height: 60px; }
-.cw-item-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); }
 /* Ободряющая фраза перед кнопкой. Не .cw-note: это имя занято колесом детства (sheet-childhood.css). */
 .cw-tip { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }
 /* Подпись внизу «Зачем это всё» — строка моста (TherapyLine, th-line): слева и цветом ds-sub, без своего отступа (его даёт gap). */
@@ -37,18 +26,73 @@
   }
 }
 
-/* Компьютер: три отдельные карточки с засечными заголовками, как в макете (REDESIGN_2026-10). */
+/* Компьютер: кнопка листа — во всю колонку 560 (TalkSheet и «Зачем это всё» до 1024). */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cw-sheet .cw-list { display: flex; flex-direction: column; gap: 16px; background: none; border: none; border-radius: 0; overflow: visible; }
-  .cw-sheet .cw-item { padding: 22px 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; gap: 8px; }
-  .cw-sheet .cw-item .ds-list-title { font: 400 20px/1.25 var(--serif); }
-  .cw-sheet .cw-item-text { font-size: 15px; }
   .cw-inner .ds-btn--lg { width: 100%; }
 }
 
-/* Легенда «Что означают картинки» (WhyLegend): знак — смысл, одной колонкой. */
-.cw-legend { display: flex; flex-direction: column; gap: 10px; }
-.cw-legend-list { margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.cw-legend-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; font-size: 14px; line-height: 1.5; }
-.cw-legend-row dt { font-weight: 600; color: var(--text); }
-.cw-legend-row dd { margin: 0; color: var(--text-sub); }
+/* ── «Зачем это всё» (WhySheet, b05 редизайна 2026-11): рассказ о продукте ──────────────────────────
+   Шапка — надпись, заголовок и лид, справа знак продукта (на телефоне — в углу на строке надписи,
+   заголовок во всю ширину). Три действия — листы бумаги оттенков главной со знаком (WhyThree): на
+   телефоне вширь, знак в углу на строке названия; с 768 — знак справа во всю высоту; с 1024 — три в
+   ряд, знак сверху. Легенда — знак, слово, смысл; на компьютере в две колонки и после кнопки. */
+.cw-why-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; row-gap: 10px; align-items: center; }
+.cw-why-head > .ds-eyebrow { grid-column: 1; grid-row: 1; }
+/* Знак продукта — значком на листе неба (как «Значок на экране» лендинга): плитка знака бумагой
+   страницы на цветном листе, наклон и тень сплошным сдвинутым слоем, без размытия. */
+.cw-why-mark {
+  --h: 240; grid-column: 2; grid-row: 1; display: grid; place-items: center; width: 60px; height: 60px;
+  border-radius: 16px; transform: rotate(-4deg); box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h));
+}
+.cw-why-mark > svg { width: 42px; height: 42px; }
+.cw-why-head > .ds-h1, .cw-why-head > .cw-lead { grid-column: 1 / -1; margin: 0; }
+
+.cw-three { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.cw-thing {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 14px; row-gap: 8px; align-items: center;
+  margin: 0; padding: 18px 18px 20px 20px; border-radius: 22px;
+}
+.cw-thing-title { grid-column: 1; grid-row: 1; margin: 0; font-weight: 400; font-size: 24px; }
+/* Знак в шапке листа — бокс одной высоты (40) по центру строки названия, у края: полоски (поле 120×100)
+   при ширине 84 вставали вдвое выше ленты и камешков (120×64), и текст «Трекера» начинался ниже, чем у
+   соседей (ревью вёрстки g1 r2). Ширина — по пропорции знака. */
+.cw-thing > .pp-art { grid-column: 2; grid-row: 1; justify-self: end; width: auto; height: 40px; }
+.cw-thing-text { grid-column: 1 / -1; grid-row: 2; margin: 0; }
+/* Последнее слово абзаца не остаётся одно на строке («Одно действие в день — уже / работа.»). */
+.cw-why .cw-lead, .cw-why .cw-tip, .cw-thing-text, .cw-legend-row dd { text-wrap: pretty; }
+
+.cw-legend { display: flex; flex-direction: column; gap: 12px; }
+.cw-legend-list { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.cw-legend-row { display: flex; flex-direction: column; gap: 2px; font-size: 14px; line-height: 1.5; }
+.cw-legend-row dt { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text); }
+.cw-legend-row dd { margin: 0 0 0 56px; color: var(--text-sub); }
+
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cw-why-mark { grid-row: 1 / 4; align-self: start; width: 96px; height: 96px; border-radius: 22px; box-shadow: 6px 8px 0 oklch(0.8 0.06 var(--h)); }
+  .cw-why-mark > svg { width: 64px; height: 64px; }
+  .cw-why-head > .ds-h1, .cw-why-head > .cw-lead { grid-column: 1; }
+  .cw-thing { grid-template-rows: auto 1fr; column-gap: 24px; padding: 24px 26px 26px 28px; border-radius: 24px; }
+  .cw-thing > .pp-art { grid-row: 1 / 3; width: auto; height: 64px; }
+  .cw-thing-text { grid-column: 1; align-self: start; }
+}
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  /* Шапка листа (ds-sheet-head--page) встаёт по той же колонке: «← Закрыть» над краем текста. */
+  .cw-sheet.cw-why { --sheet-col: 1040px; --sheet-pad: 48px; }
+  .cw-why .cw-inner { max-width: 1040px; padding: 32px 48px 56px; gap: 20px; }
+  .cw-why-head { column-gap: 40px; margin-bottom: 8px; }
+  .cw-why-head > .cw-lead { max-width: 64ch; font-size: 16px; }
+  .cw-why-mark { width: 128px; height: 128px; margin: 6px 8px 0 0; border-radius: 28px; box-shadow: 8px 10px 0 oklch(0.8 0.06 var(--h)); }
+  .cw-why-mark > svg { width: 84px; height: 84px; }
+  .cw-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .cw-thing { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; row-gap: 10px; align-items: start; padding: 28px 28px 30px; }
+  /* Знаки разной пропорции (полоски выше ленты) — по одной высоте: названия трёх листов на одной линии. */
+  .cw-thing > .pp-art { grid-column: 1; grid-row: 1; justify-self: start; width: auto; height: 76px; margin: 0 0 14px -6px; }
+  .cw-thing-title { grid-row: 2; font-size: 28px; }
+  .cw-thing-text { grid-row: 3; }
+  /* Кнопка сразу за листами (аудит 2026-11: «Понятно, начнём» была далеко внизу), легенда — справкой
+     ниже. Порядок фокуса не меняется: в легенде и в фразе фокусируемого нет. */
+  .cw-why .cw-inner > .cw-legend { order: 1; margin-top: 20px; }
+  .cw-why .cw-inner > .cw-foot { order: 2; }
+  .cw-why .cw-sticky .ds-btn--lg { width: auto; min-width: 320px; }
+  .cw-legend-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; row-gap: 18px; }
+}

@@ -29,6 +29,15 @@ describe('clientInitials', () => {
     expect(clientInitials('')).toBe('?');
     expect(clientInitials('   ')).toBe('?');
   });
+
+  // Аудит 2026-11: «Ира (пятница)» в сайдбаре и на «Сегодня» терапевта — «И(».
+  it('скобки и тире — не буква: берётся первая буква слова, слово без неё пропускается', () => {
+    expect(clientInitials('Ира (пятница)')).toBe('ИП');
+    expect(clientInitials('Сергей П. (офлайн)')).toBe('СП');
+    expect(clientInitials('Анна — Крылова')).toBe('АК');
+    expect(clientInitials('«Лена» 2')).toBe('Л2');
+    expect(clientInitials('( )')).toBe('?');
+  });
 });
 
 // docs/open/therapy.md: клиент без имени звался «#123» на «Сегодня» и в

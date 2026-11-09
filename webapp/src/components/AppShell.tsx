@@ -1,13 +1,11 @@
 import { lazy, Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useTr } from '../utils/addressForm';
 import { api, type StreakData } from '../api';
 import { useCabinetLightTheme } from '../utils/useCabinetLightTheme';
 import { syncMotionAttr } from '../utils/reducedMotion';
 import { shouldShowChildhoodWheel } from '../utils/storageKeys';
 import { cacheTherapistMode } from './appShell/therapistModeCache';
 import { isTherapistDisclaimerSeen } from './therapistDisclaimerSeen';
-import { CommandPalette } from './CommandPalette';
 import { useBootstrapLoad } from './appShell/useBootstrapLoad';
 import { isCelebrated, markCelebrated } from '../../../shared/src/utils/todayConstants';
 import { useOverlays } from './appShell/useOverlays';
@@ -32,7 +30,8 @@ import { Celebration } from './Celebration';
 import { todayInsightPhrase } from '../utils/todayInsight';
 import { DonateNudge } from './DonateNudge';
 import { donateNudgeBlocked } from './donateNudgeBlocked';
-import { hueStyle } from '../lib/tone';
+import { LoadErrorScreen } from './appShell/LoadErrorScreen';
+import { ShellTopbar } from './appShell/ShellTopbar';
 
 // – lazy: heavy overlays –
 // SettingsSheet/PracticesScreen/PlansScreen/SchemaInfoSheet/ChildhoodWheelEx/
@@ -41,6 +40,7 @@ import { hueStyle } from '../lib/tone';
 const TrackerOverlay = lazy(() => import('./TrackerOverlay').then(m => ({ default: m.TrackerOverlay })));
 const DiariesOverlay = lazy(() => import('./DiariesOverlay').then(m => ({ default: m.DiariesOverlay })));
 const HistorySheet   = lazy(() => import('./HistorySheet').then(m => ({ default: m.HistorySheet })));
+const CommandPalette = lazy(() => import('./CommandPalette').then(m => ({ default: m.CommandPalette }))); // ⌘K — по требованию
 
 import { withRating } from '../../../shared/src/needs/ratingRecord';
 import { clientPath, parseClientRef } from '../../../shared/src/utils/clientRef';
@@ -50,7 +50,6 @@ syncMotionAttr();
 export function AppShell() {
   useHostShell();
   useCabinetLightTheme(); // кабинет — только светлая тема (решение владельца 2026-10-15)
-  const tr = useTr();
   const location = useLocation();
   const navigate = useNavigate();
   const { clientId: clientIdParam } = useParams<{ clientId?: string }>();
@@ -181,19 +180,9 @@ export function AppShell() {
     || ov.showChildhoodWheel || ov.showTodayNote
     || ov.showTherapistDisclaimer || ov.showSosCard || ov.quickAction !== null || celebrationStreak !== null;
 
-  if (loading) return <AppShellSkeleton section={section} therapistMode={therapistMode} />;
+  if (loading) return <AppShellSkeleton section={section} therapistMode={therapistMode} pathname={location.pathname} />;
 
-  if (error) {
-    return (
-      <div style={{ padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', gap: 16, textAlign: 'center' }}>
-        <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)' }}>Не удалось загрузить</div>
-        <div style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{tr('Проверь подключение и попробуй ещё раз', 'Проверьте подключение и попробуйте ещё раз')}</div>
-        <button onClick={() => window.location.reload()} style={{ padding: '10px 24px', border: 'none', borderRadius: 'var(--r-8)', background: 'var(--text)', color: 'var(--bg)', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-          Повторить
-        </button>
-      </div>
-    );
-  }
+  if (error) return <LoadErrorScreen />;
 
   return (
     <div className="app-shell light-lock">
@@ -212,21 +201,8 @@ export function AppShell() {
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <div className={`main${therapistMode ? ' main--cabinet' : ''}`}>
+        <ShellTopbar therapistMode={therapistMode} onSearch={() => ov.setCmdOpen(true)} onSos={() => ov.setShowSosCard(true)} />
         <OfflineBanner offline={isOffline} />
-        {/* Topbar – shown in all modes */}
-        <div className="topbar">
-          <div className="t-spacer" />
-          {isOffline && <span className="topbar-offline">офлайн</span>}
-          {!therapistMode && (
-            <button className="topbar-sos tone-tint" style={hueStyle(28)}
-                    onClick={() => ov.setShowSosCard(true)}>Мне плохо</button>
-          )}
-          <button className="search-pill" onClick={() => ov.setCmdOpen(true)}>
-            <span>Перейти к…</span>
-            <span className="sp-spacer" />
-            <span className="ds-kbd kbd-hint">⌘K</span>
-          </button>
-        </div>
 
         {/* Canvas */}
         <div className="canvas">
@@ -340,11 +316,11 @@ export function AppShell() {
       </div>{/* end main */}
 
       {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
-      <MobileNav items={MOBILE_NAV_ITEMS} therapist={therapistMode} onSearch={() => ov.setCmdOpen(true)} onProfile={() => ov.setShowSettings(true)} />
+      <MobileNav items={MOBILE_NAV_ITEMS} therapist={therapistMode} onProfile={() => ov.setShowSettings(true)} />
 
       <QuickActions ov={ov} />
       {/* ── Command palette ─────────────────────────────────────────────────── */}
-      {ov.cmdOpen && (
+      {ov.cmdOpen && (<Suspense fallback={null}>
         <CommandPalette
           section={section}
           onNavigate={(s) => { setSection(s); }}
@@ -355,7 +331,7 @@ export function AppShell() {
           onOpenClient={(id) => { navigate(clientPath(id, therapistClients)); }}
           onQuickAction={ov.runQuickAction}
         />
-      )}
+      </Suspense>)}
 
       {/* Periodic donate nudge (once ~monthly, dismissible) */}
       <DonateNudge blocked={donateNudgeBlocked({ section, anyOverlayOpen, entryDone })} />

@@ -6,7 +6,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { SidebarSkeleton } from './SidebarRail';
+import { SidebarSkeleton } from './SidebarSkeleton';
 import { DESKTOP_NAV_ITEMS } from './navItems';
 import { SIDEBAR_COLLAPSED_KEY, setSidebarCollapsed } from './sidebarCollapse';
 
@@ -69,14 +69,15 @@ describe('боковое меню — свернуть и развернуть',
     expect(screen.getByRole('link', { name: 'Григорий' }).getAttribute('href')).toBe('/profile');
   });
 
-  it('терапевт: Сегодня, Справочник, Все клиенты; «Все клиенты» горит на списке', () => {
-    renderSidebar({ therapist: true, path: '/cabinet/tasks' });
+  // Решение 9 (docs/design/APP_2026-11.md): у доски «Задания» свой пункт; «Все клиенты» горит на списке.
+  it.each([['/cabinet', 'Все клиенты'], ['/cabinet/tasks', 'Задания']])('терапевт на %s: пункты кабинета со знаками, горит «%s»', (path, on) => {
+    renderSidebar({ therapist: true, path });
     fireEvent.click(screen.getByRole('button', { name: 'Свернуть меню' }));
-    expect(navLinks().map((a) => a.getAttribute('aria-label'))).toEqual(['Сегодня', 'Справочник', 'Все клиенты']);
-    expect(navLinks().map((a) => a.getAttribute('href'))).toEqual(['/cabinet/today', '/cabinet/guide', '/cabinet']);
-    const all = screen.getByRole('link', { name: 'Все клиенты' });
-    expect(all.getAttribute('aria-current')).toBe('page');
-    expect(all.getAttribute('title')).toBe('Все клиенты');
+    expect(navLinks().map((a) => a.getAttribute('aria-label'))).toEqual(['Сегодня', 'Справочник', 'Задания', 'Все клиенты']);
+    expect(navLinks().map((a) => a.getAttribute('href'))).toEqual(['/cabinet/today', '/cabinet/guide', '/cabinet/tasks', '/cabinet']);
+    expect(navLinks().every((a) => a.querySelector('svg.pp-art--nav'))).toBe(true);
+    const active = navLinks().filter((a) => a.getAttribute('aria-current') === 'page');
+    expect(active.map((a) => a.getAttribute('title'))).toEqual([on]);
   });
 
   it('запоминается на устройстве: ключ в localStorage, после перерисовки меню снова свёрнуто', () => {
@@ -101,6 +102,11 @@ describe('боковое меню — свернуть и развернуть',
     expect(rail.querySelector('.sb-brand')).toBeNull();
     expect(rail.querySelector('.sb-rail-head [data-brand-mark]')).toBeTruthy();
     expect(rail.querySelector('a')).toBeNull(); // в силуэте знак — не ссылка
+  });
+
+  it('силуэт меню на «Сегодня» — без карточки дня, как само меню; в других разделах — с ней', () => {
+    expect(render(<SidebarSkeleton today />).container.querySelector('.sb-skel-today')).toBeNull();
+    expect(render(<SidebarSkeleton />).container.querySelector('.sb-skel-today')).toBeTruthy();
   });
 });
 

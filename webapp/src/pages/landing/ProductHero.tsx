@@ -3,7 +3,7 @@ import { AppPreview } from './AppPreview';
 import type { entryCta } from './entryCta';
 import { HeroCollage } from '../../components/art/HeroCollage';
 import { HOME_HERO } from '../../../../src/articles/home-landing.content';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/product-landing.css';
 import '../../styles/product-landing-hero.css';
 

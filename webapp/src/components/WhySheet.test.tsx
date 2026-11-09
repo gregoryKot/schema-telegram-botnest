@@ -44,6 +44,18 @@ describe('WhySheet', () => {
     opener.remove();
   });
 
+  // Ревью g1: открывшийся сам лист показывал толстое кольцо у «← Закрыть» (Chrome даёт :focus-visible
+  // программному фокусу) — та же «тихая» схема, что у Dialog (hooks/useQuietFocus.ts).
+  it('открыт касанием или сам: лист тихий, фокус всё равно на «← Закрыть»; Tab возвращает кольцо', () => {
+    fireEvent.pointerDown(document.body);
+    renderSheet({ auto: true });
+    const sheet = screen.getByRole('dialog', { name: 'Зачем это всё' });
+    expect(sheet.getAttribute('data-focus')).toBe('quiet');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: '← Закрыть' }));
+    fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
+    expect(sheet.hasAttribute('data-focus')).toBe(false);
+  });
+
   it('при автопоказе подпись «Первый раз здесь», по кнопке — «Зачем это всё»', () => {
     renderSheet({ auto: true });
     expect(screen.getByText('Первый раз здесь')).toBeTruthy();
@@ -56,11 +68,13 @@ describe('WhySheet', () => {
   it('три действия, итоговая строка и короткое вступление про пять потребностей', () => {
     renderSheet();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Три вещи, которые здесь можно делать');
-    const rows = document.querySelectorAll('.cw-list .ds-list-row .ds-list-title');
-    expect([...rows].map(r => r.textContent)).toEqual(['Трекер', 'Что случилось', 'Дневник']);
+    const rows = screen.getAllByRole('heading', { level: 2 });
+    expect(rows.map(r => r.textContent)).toEqual(['Трекер', 'Что случилось', 'Дневник']);
     expect(screen.getByText('Не нужно делать всё. Одно действие в день — уже работа.')).toBeTruthy();
     const lead = document.querySelector('.cw-lead')!.textContent!;
-    expect(lead.replace(/\s+/g, ' ')).toBe(
+    // Слова те же; glue держит «схема‑терапии» и короткие слова неразрывными (ревью g1, висячие предлоги).
+    expect(lead).toContain('схема\u2011терапии');
+    expect(lead.replace(/\u2011/g, '-').replace(/\s+/g, ' ')).toBe(
       'Всё строится на схема-терапии: у человека есть пять базовых потребностей — привязанность, автономия, '
       + 'выражение чувств, спонтанность, границы. Когда их долго не хватает, включаются старые паттерны. '
       + 'Приложение помогает это замечать.',

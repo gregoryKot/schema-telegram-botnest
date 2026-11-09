@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { BottomSheetShell } from './BottomSheetShell';
+import { Dialog } from './Dialog';
+import { EntryBrand, EntryHead } from './paper/EntryHead';
+import { DONATE_HUE } from './paper/entryLook';
 import { ExternalLink } from '../host/ExternalLink';
 import '../styles/sheet-tasks.css';
 
@@ -27,9 +29,7 @@ export function DonateNudge({ blocked = false }: { blocked?: boolean } = {}) {
 
   useEffect(() => {
     // Впервые видим юзера — фиксируем момент, чтобы отсчитывать «пару дней».
-    if (!localStorage.getItem(SEEN_KEY)) {
-      localStorage.setItem(SEEN_KEY, String(Date.now()));
-    }
+    if (!localStorage.getItem(SEEN_KEY)) localStorage.setItem(SEEN_KEY, String(Date.now()));
   }, []);
 
   if (!show || blocked) return null;
@@ -39,23 +39,21 @@ export function DonateNudge({ blocked = false }: { blocked?: boolean } = {}) {
   return <DonateNudgeSheet onClose={() => setShow(false)} />;
 }
 
+// Окно входа, а не лист снизу: та же шапка-лист, что у согласий (солома и знак продукта — просьба
+// о самом продукте), кольцо автофокуса на «Поддержать» только с клавиатуры (Dialog).
 function DonateNudgeSheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const close = () => { localStorage.setItem(SHOWN_KEY, String(Date.now())); goBack(); };
   return (
-    <BottomSheetShell goBack={close} zIndex={200} maxWidth={440}>
-      <div className="sk-nudge">
-        <h2 className="ds-h2">Поддержать проект</h2>
-        <p className="sk-nudge-text">
-          {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает.', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает.')}
-        </p>
-        <ExternalLink href="/donate" onClick={close} className="ds-btn sk-wide-btn sk-nudge-link">
-          Поддержать</ExternalLink>
-        <button onClick={close} className="ds-link sk-nudge-later">
-          Позже
-        </button>
-      </div>
-    </BottomSheetShell>
+    <Dialog label="Поддержать проект" onClose={close} closeOnEscape zIndex={200} maxWidth={440}>
+      <EntryHead look={{ hue: DONATE_HUE }} art={<EntryBrand />} title="Поддержать проект" />
+      <p className="sk-dialog-text sk-nudge-text">
+        {tr('«Всё по схеме» бесплатное и без рекламы. Если оно тебе помогает — поддержи развитие любой суммой. Это правда помогает.', '«Всё по схеме» бесплатное и без рекламы. Если оно вам помогает — поддержите развитие любой суммой. Это правда помогает.')}
+      </p>
+      <ExternalLink href="/donate" onClick={close} className="ds-btn sk-wide-btn sk-nudge-link">
+        Поддержать</ExternalLink>
+      <button type="button" onClick={close} className="ds-link ef-later">Позже</button>
+    </Dialog>
   );
 }

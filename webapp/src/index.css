@@ -441,6 +441,10 @@ a { color: inherit; text-decoration: none; }
 .sidebar.is-collapsed .sb-home { width: 44px; justify-content: center; }
 .sidebar.is-collapsed .sb-foot-wrap { align-items: center; }
 .sb-item.sb-rail-item, .sb-account.sb-rail-account { width: 44px; min-height: 44px; padding: 0; justify-content: center; }
+/* Знак в полоске крупнее, чем в строке с подписью: он один несёт пункт. */
+.sb-rail-item > .pp-art--nav { width: 30px; height: 18px; }
+/* Клиенты кабинета под пунктами полоски — бледные кружки (.sb-client-av), отделены линией. */
+.sb-rail-rule { width: 28px; height: 1px; margin: 8px auto; background: var(--panel-line); }
 
 .sb-mode-switch {
   display: grid; grid-template-columns: 1fr 1fr;
@@ -455,7 +459,7 @@ a { color: inherit; text-decoration: none; }
   transition: color .12s, background .12s;
 }
 .sb-mode-btn:hover { color: var(--on-panel); }
-.sb-mode-btn.is-active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow-1); }
+.sb-mode-btn.is-active { background: var(--panel-3); color: var(--on-panel); font-weight: 600; }
 
 .sb-section-label {
   padding: 0 10px 6px;
@@ -472,12 +476,11 @@ a { color: inherit; text-decoration: none; }
   transition: background .1s, color .1s;
 }
 .sb-item:hover { background: var(--panel-2); color: var(--on-panel); }
-/* «Выйти» — роль «опасность» на панели: --on-panel-danger (5.7:1 к --panel). */
-.sb-item.sb-danger { color: var(--on-panel-danger); }
-.sb-item.sb-danger:hover { background: var(--panel-2); color: var(--on-panel-danger); }
 .sb-item.is-active { background: var(--panel-3); color: var(--on-panel); font-weight: 600; }
-/* Цветной квадрат раздела клиента (оттенок задаёт --h на элементе). */
-.sb-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; background: oklch(0.58 0.12 var(--h)); }
+/* Знак раздела у пункта (NavSign, navLook.ts): неактивный тише, активный и под мышью — в полную силу.
+   Подпись рядом — смысл пункта, знак декор (aria-hidden). */
+.sb-item > .pp-art--nav { width: 30px; height: 17px; opacity: .72; transition: opacity .12s; }
+.sb-item:hover > .pp-art--nav, .sb-item.is-active > .pp-art--nav, .sb-item:focus-visible > .pp-art--nav { opacity: 1; }
 /* Фокус с клавиатуры виден (WCAG 2.4.7): фон меняется только по :hover, поэтому кольцо
    цветом текста панели, внутрь — соседние строки его не перекрывают. */
 .sb-item:focus-visible, .sb-account:focus-visible { outline: 2px solid var(--on-panel); outline-offset: -2px; }
@@ -490,13 +493,15 @@ a { color: inherit; text-decoration: none; }
    --accent — 5.04:1 (пара под index.css.contrast.test.ts). */
 .sb-item.is-active .badge { color: var(--accent); }
 
-.sb-clients { display: flex; flex-direction: column; gap: 4px; }
+.sb-clients { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; }
 .sb-client-item { padding: 7px 10px; font-size: 13px; }
 .sb-client-av {
   width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
-  background: oklch(0.56 0.11 var(--h)); color: #fff;
+  /* Бледный, как ds-avatar на «Сегодня» и в карточке: один человек выглядит везде одинаково. */
+  background: oklch(0.9 0.04 var(--h)); color: oklch(0.36 0.09 var(--h));
   display: grid; place-items: center; font-size: 10px; font-weight: 700;
 }
+.sb-rail-item > .sb-client-av { width: 30px; height: 30px; font-size: 11px; }
 .sb-active-dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: oklch(0.7 0.12 145); flex-shrink: 0; margin-left: auto;
@@ -519,32 +524,39 @@ a { color: inherit; text-decoration: none; }
   padding-top: 12px;
   border-top: 1px solid var(--panel-line);
 }
-/* Карточка «Сегодня» над подвалом — плашка --panel-2 */
+/* Карточка дня над подвалом (SidebarFoot) — лист бумаги трекера: шалфей, когда день оценён,
+   солома — когда нет; справа знак трекера по оценкам дня. Мелкий текст на цветной бумаге —
+   --text / --text-sub (AA), не --text-faint. */
 .sb-today {
-  background: var(--panel-2); border-radius: 14px;
-  padding: 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px;
+  border-radius: 16px; padding: 14px 14px 14px 16px;
 }
+.sb-today-body { min-width: 0; }
+.sb-today-art { display: flex; padding-bottom: 4px; }
+.sb-today-art .pp-art--row { width: 52px; height: 44px; }
 .sb-today-label {
-  font-size: 11px; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--on-panel-faint); margin-bottom: var(--space-6);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-sub); margin-bottom: var(--space-6);
 }
 .sb-today-index { display: flex; align-items: baseline; gap: 3px; }
 .sb-today-num {
-  font-family: var(--serif); font-size: 40px; font-weight: 400;
-  color: var(--on-panel); line-height: 1;
+  font-family: var(--serif); font-size: 38px; font-weight: 400;
+  color: var(--text); line-height: 1;
 }
-.sb-today-denom { font-size: 12px; color: var(--on-panel-faint); padding-bottom: 3px; }
-.sb-today-sub { font-size: 12px; color: var(--on-panel-faint); margin-top: 3px; }
+.sb-today-denom { font-size: 12px; color: var(--text-sub); padding-bottom: 3px; }
+.sb-today-sub { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
 .sb-today-cta {
-  width: 100%; min-height: 44px; margin-top: 10px; padding: 8px 10px; border-radius: var(--r-8);
+  grid-column: 1 / -1;
+  width: 100%; min-height: 44px; padding: 8px 14px; border-radius: 22px;
   background: var(--surface);
-  border: 1px solid var(--panel-line); color: var(--text);
+  border: 0; color: var(--text);
   font-size: 13px; font-weight: 600; font-family: inherit;
   text-align: left; cursor: pointer;
-  transition: border-color .1s;
+  box-shadow: 3px 3px 0 oklch(0.86 0.045 var(--h));
+  transition: box-shadow .1s;
 }
 /* Тихая кнопка: единственная залитая кнопка экрана «Сегодня» — в главной плитке (HomeTiles). */
-.sb-today-cta:hover { border-color: var(--line-hover); }
+.sb-today-cta:hover { box-shadow: 4px 4px 0 oklch(0.82 0.05 var(--h)); }
 
 .sb-account {
   display: flex; align-items: center; gap: var(--space-10);
@@ -568,17 +580,25 @@ a { color: inherit; text-decoration: none; }
 .sb-links { display: flex; gap: 14px; padding: 6px 10px; }
 .sb-links .sb-item { width: auto; min-height: 24px; padding: 0; font-size: 12px; color: var(--on-panel-faint); background: none; }
 .sb-links .sb-item:hover { color: var(--on-panel); background: none; }
-.sb-links .sb-item.sb-danger { color: var(--on-panel-danger); }
 .sb-legal a { display: inline-flex; align-items: center; min-height: 24px; font-size: 11px; color: var(--on-panel-faint); text-decoration: none; }
 .sb-legal a:hover { color: var(--on-panel-sub); }
 /* Тап-цели 44 в сайдбаре — только под палец (как блок в cabinet.css, #911): на компьютере с мышью
    пункты компактные, как до #912, но не меньше 24px по высоте. */
 @media (pointer: coarse), (max-width: 767px) {
-  .sb-nav > .sb-item { min-height: 44px; }
+  .sb-nav > .sb-item, .sb-clients .sb-client-item, .sb-mode-btn { min-height: 44px; }
   .sb-links { padding: 0 10px; }
   .sb-links .sb-item { min-width: 44px; min-height: 44px; }
   .sb-legal a { min-width: 44px; min-height: 44px; }
 }
+/* Силуэт меню (SidebarSkeleton): плашки тоном панели, строки — по форме пунктов. */
+.skel.sb-skel { background: var(--panel-2); flex-shrink: 0; }
+.sb-skel-item { display: flex; align-items: center; gap: var(--space-10); min-height: 40px; padding: 0 10px; }
+.sb-skel-rail { width: 44px; height: 44px; border-radius: var(--r-8); }
+.sb-skel-avatar { width: 32px; height: 32px; border-radius: 50%; }
+.sb-skel-clients { display: flex; flex-direction: column; gap: 2px; padding: 14px 0 0 10px; }
+.sb-skel-clients .sb-skel-item { padding-left: 0; min-height: 36px; }
+.sb-skel-today { --h: 70; display: flex; flex-direction: column; gap: 10px; height: 96px; box-sizing: border-box; }
+.sb-skel-account { padding-top: 12px; border-top: 1px solid var(--panel-line); }
 .sb-search {
   margin: 0 0 4px; width: 100%; padding: 6px 10px; border-radius: var(--r-8);
   border: 1px solid var(--panel-line); background: var(--surface);
@@ -619,33 +639,53 @@ a { color: inherit; text-decoration: none; }
 .search-pill {
   position: relative;
   display: flex; align-items: center; gap: var(--space-8);
-  padding: 5px 10px;
-  height: 34px; padding: 0 12px;
-  background: var(--paper-sunk);
-  border: 1px solid transparent;
-  border-radius: var(--r-8);
-  color: var(--text-faint);
+  height: 36px; padding: 0 10px 0 14px;
+  /* Тише кризисного входа рядом: бумага страницы и линия, а не залитая плашка. */
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--text-sub);
   font-size: 13px;
-  min-width: 260px;
+  width: 260px;
   cursor: pointer;
-  transition: background .12s, border-color .12s;
+  transition: border-color .12s, color .12s;
 }
-.search-pill:hover { background: var(--surface-3); border-color: var(--line); color: var(--text-sub); }
+.search-pill:hover { border-color: var(--line-hover); color: var(--text); }
 .search-pill .sp-spacer { flex: 1; }
-/* «Мне плохо» — постоянный вход в помощь из любого раздела (редизайн 2026-10).
-   Цвет — тон домена D1 (.tone-tint + --h на элементе). */
+/* «Мне плохо» — постоянный вход в помощь из любого раздела (ShellTopbar): бережная бумага
+   «Мне плохо» (ENTITY_LOOK.sos, роза 25) со знаком Heart; по весу — главная кнопка строки. */
 .topbar-sos {
-  position: relative;
-  border: none; border-radius: 16px; padding: 7px 14px; cursor: pointer;
-  font: 700 13px var(--sans); white-space: nowrap; flex-shrink: 0;
+  --h: 25;
+  position: relative; display: inline-flex; align-items: center; gap: 8px;
+  height: 36px; padding: 0 16px 0 12px; border: none; border-radius: 18px; cursor: pointer;
+  background: oklch(0.915 0.03 var(--h)); color: var(--text);
+  box-shadow: 3px 3px 0 oklch(0.86 0.045 var(--h));
+  font: 600 14px var(--sans); white-space: nowrap; flex-shrink: 0;
+  transition: background .12s;
 }
+.topbar-sos:hover { background: oklch(0.895 0.04 var(--h)); }
+.topbar-sos:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.topbar-sos > .pp-art--nav { width: 26px; height: 16px; }
 /* Зона нажатия «Мне плохо» и «Перейти к…» — 44 по высоте без смены видимой
    плашки (QA 2026-11, A-М8: были 32 и 34): прозрачный слой над кнопкой. Топбар
-   56px, слой в него помещается. */
-.topbar-sos::after, .search-pill::after { content: ''; position: absolute; inset: -6px 0; }
-.topbar-offline { font-size: 12px; color: var(--accent-red); font-weight: 500; }
-/* Плашка офлайна: только на мобильной вёрстке, где topbar скрыт */
-.offline-banner { display: none; }
+   56px, слой в него помещается. inset слоя считается от края под рамкой: у поиска
+   рамка 1px, поэтому его слой выходит на 5px (иначе 42, ревью g1). */
+.topbar-sos::after, .search-pill::after { content: ''; position: absolute; inset: -4px 0; }
+.search-pill::after { inset: -5px -1px; }
+/* Плашка «нет сети» (OfflineBanner) — полоса соломы со знаком Cup («подождём»): смысл текста —
+   «всё сохранится», поэтому без красного. На компьютере — под верхней строкой (третья строка
+   сетки .main), на телефоне — вверху страницы. */
+.offline-banner {
+  --h: 70; display: flex; align-items: center; gap: 10px; min-height: 40px; box-sizing: border-box;
+  margin: 12px 32px 0; padding: 8px 14px; border-radius: 12px;
+  font-size: 13px; line-height: 1.4; color: var(--text);
+}
+/* Чашка — на пластине тоном глубже соломы, под углом (как знак в полосе PaperOutcome и в углу окон входа):
+   светлая чашка пустого состояния на самой соломе сливалась в пятно (ревью владельца g1 r2). */
+.offline-banner-art { position: relative; display: flex; flex-shrink: 0; }
+.offline-banner-art::before { content: ''; position: absolute; inset: -3px -2px; border-radius: 9px; background: oklch(0.85 0.05 var(--h)); transform: rotate(-6deg); }
+.offline-banner-art > .pp-art { position: relative; width: 34px; height: 29px; }
+.main:has(> .offline-banner) { grid-template-rows: auto auto 1fr; }
 
 .canvas {
   overflow: hidden; min-height: 0;
@@ -757,7 +797,10 @@ a { color: inherit; text-decoration: none; }
 .animate-fade  { animation: fade-in .18s ease backwards; }
 .animate-slide { animation: slide-up .22s ease backwards; }
 
-/* ─── Cookie consent banner – editorial: сплошная бумага, тонкая рамка ───── */
+/* ─── Баннер куки (CookieBanner.tsx) — лист соломы без контура ──────────────────
+   Тень — сплошной сдвинутый слой, как у листов бумаги, а не мягкая размытая. Кнопка — общая
+   ds-btn (тот же кирпич, что везде). На компьютере — компактный лист в левом нижнем углу, не над
+   формой входа по центру; на телефоне — во всю ширину, над нижней панелью, если она есть. */
 .cookie-banner-wrap {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
   padding: 0 16px calc(20px + var(--safe-bottom)); pointer-events: none;
@@ -768,34 +811,54 @@ a { color: inherit; text-decoration: none; }
   body:has(.mobile-nav) .cookie-banner-wrap { bottom: calc(var(--mobile-nav-h) + var(--safe-bottom)); padding-bottom: var(--space-12); }
 }
 .cookie-banner {
-  background: var(--bg-elev);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-12);
-  box-shadow: 0 24px 64px -16px rgba(28,25,22,0.22);
+  --h: 70;
+  width: min(100%, 440px); margin: 0 auto; box-sizing: border-box; pointer-events: auto;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px 18px;
+  border-radius: 18px; box-shadow: 6px 7px 0 oklch(0.85 0.045 var(--h));
   animation: cookie-in .35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-
-/* Кнопка у баннера одна («Понятно») — главная, залитая акцентом. */
-.cookie-btn {
-  min-height: 44px;
-  padding: 11px 22px;
-  border: none;
-  border-radius: var(--r-8);
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background .12s, color .12s;
-  -webkit-tap-highlight-color: transparent;
+.cookie-banner--compact { flex-direction: row; align-items: center; padding: 12px 14px; }
+/* Карточка: заголовок и «Понятно» в одной строке, текст под ними — баннер ниже на высоту кнопки. */
+.cookie-banner:not(.cookie-banner--compact) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; }
+.cookie-banner:not(.cookie-banner--compact) .cookie-body { display: contents; }
+.cookie-banner:not(.cookie-banner--compact) .cookie-title { grid-column: 1; grid-row: 1; }
+.cookie-banner:not(.cookie-banner--compact) .cookie-text { grid-column: 1 / -1; grid-row: 2; }
+.cookie-banner:not(.cookie-banner--compact) .ds-btn.cookie-btn { grid-column: 2; grid-row: 1; }
+.cookie-body { display: flex; flex-direction: column; gap: 4px; }
+.cookie-title { font-family: var(--serif); font-size: 18px; line-height: 1.2; color: var(--text); }
+.cookie-text { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-sub); }
+.cookie-link { color: var(--accent-hi); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+/* «Понятно» — 44 по высоте и на компьютере (на планшете это касание): --sm там 40 (ревью g1). */
+.ds-btn.cookie-btn { flex: 0 0 auto; align-self: flex-end; height: 44px; border-radius: 22px; }
+.cookie-banner--compact .ds-btn.cookie-btn { align-self: center; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .cookie-banner-wrap { right: auto; width: 440px; padding-left: 24px; }
+  .cookie-banner { margin: 0; }
+  /* В кабинете — у края колонки контента, а не поверх меню и его карточки дня. */
+  body:has(.app-shell > .sidebar) .cookie-banner-wrap { left: var(--sidebar-w); }
+  body:has(.app-shell > .sidebar.is-collapsed) .cookie-banner-wrap { left: 64px; }
 }
-.cookie-btn:hover { background: var(--accent-hi); color: var(--on-accent); }
-.cookie-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   .cookie-banner { animation: fade-in .2s ease both; }
 }
+
+/* ─── Силуэт раздела без своего (Skeleton.tsx, ScreenSkeleton) ───────────────
+   Во всю ширину колонки и в ритме .ds-page: шапка, лист бумаги тише экрана и строки списка.
+   Шапка, лист и тихая бумага — общие с силуэтами разделов (ShellSkeletons, shell-skeletons.css): здесь,
+   в главном CSS, потому что общий силуэт рисуется и без их чанка. Тихая бумага — тот же лист pp-paper,
+   что у экрана, хрома вдвое ниже (место уже цветное, а данных ещё нет); --sks-paper — для блока, который
+   бумагой становится только на компьютере (разворот «Сегодня»). */
+.sks-head { display: flex; flex-direction: column; gap: 12px; }
+.sks-paper { --sks-paper: oklch(0.94 0.015 var(--h, 70)); }
+.pp-paper.sks-paper, .pp-paper.sks-paper:hover { background: var(--sks-paper); cursor: default; }
+.sks-sheet { display: flex; flex-direction: column; gap: 14px; padding: 22px 20px; }
+/* Лист общего силуэта (ScreenSkeleton) — без оттенка: у раздела без своего силуэта («Записи», «Профиль»)
+   чужой цвет мигал до экрана (ревью владельца g1 r2); силуэт по форме ленты — партии раздела (b11, b21). */
+.sks-sheet--plain { border-radius: 20px; background: var(--paper-sunk); }
+/* Страница аккаунта, пока вход поднимается (AuthGateViews): колонка по центру, без меню кабинета. */
+.gate-page { flex: 1; display: flex; justify-content: center; min-height: 100vh; background: var(--bg); }
+.gate-page > .sks-screen { max-width: 720px; }
 
 /* ─── Loader / spinner ───────────────────────────────────────────────────── */
 .loader-center {
@@ -859,9 +922,17 @@ a { color: inherit; text-decoration: none; }
 }
 /* Активный пункт — терракота, без «таблетки» и точки (референс 2026-11-04). */
 .mobile-nav-item.active { color: var(--accent); font-weight: 600; }
-/* Точка «есть новое» у «Ещё» (новые задания терапевта, U2): у иконки справа, вне потока — пункт не растёт. */
+/* Знак раздела (NavSign, navLook.ts) вместо контурной пиктограммы: те же знаки, что в меню
+   компьютера. Неактивный тише, активный — в полную силу; высота пункта прежняя (44). */
+.mobile-nav-item > .pp-art--nav { width: 30px; height: 18px; opacity: .58; transition: opacity .15s; }
+.mobile-nav-item.active > .pp-art--nav { opacity: 1; }
+/* Точка «есть новое» у «Ещё» (новые задания терапевта, U2): у знака справа, вне потока — пункт не растёт.
+   Кольцо цвета страницы отделяет её от знака. */
 .mobile-nav-item { position: relative; }
-.mobile-nav-dot { position: absolute; top: 2px; left: calc(50% + 8px); width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.mobile-nav-dot {
+  position: absolute; top: 1px; left: calc(50% + 10px); width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--bg);
+}
 /* Счётчик новых заданий терапевта (U2): строка «Задания» в «Ещё» и пункт «Ещё» сайдбара. */
 .new-badge {
   display: inline-block; margin-left: 8px; min-width: 20px; padding: 0 6px; border-radius: 10px;
@@ -886,10 +957,7 @@ a { color: inherit; text-decoration: none; }
     flex: 1; overflow: visible;
   }
   .topbar { display: none; }
-  .offline-banner {
-    display: block; padding: var(--space-8) 16px; font-size: 13px; line-height: 1.4;
-    color: var(--err); background: var(--surface-2); border-bottom: 1px solid var(--line);
-  }
+  .offline-banner { margin: 8px 16px 0; }
   .canvas {
     overflow: visible; display: block;
     /* Высота панели .mobile-nav (--mobile-nav-h) + safe-area: низ контента не
@@ -966,23 +1034,22 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
 /* ── Accessibility: keyboard focus indicators ─────────────────────────────── */
 /* Убирает outline только для мышь/тач; сохраняет для клавиатуры */
 *:focus { outline: none; }
+/* Радиус фокусу не задаём: обводка повторяет скругление самого элемента. Свой border-radius
+   здесь перебивал форму — таблетка .ds-btn с автофокусом в окне становилась прямоугольником
+   с углами 8px (button:focus-visible 0,1,1 сильнее .ds-btn 0,1,0), ревью g1 2026-11-09. */
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: var(--r-4);
-}
-/* Кнопки и ссылки – чуть больший радиус */
-button:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: var(--r-8);
 }
 /* Инпуты уже получают box-shadow при focus – outline не нужен */
 input:focus-visible,
 textarea:focus-visible {
   outline: none;
 }
+/* Окно или лист открыты касанием или сами (useQuietFocus: Dialog, WhySheet — data-focus="quiet") —
+   автофокус первой кнопки без кольца: двойное кольцо на «На «ты»» и на «← Закрыть» листа «Зачем это
+   всё» читалось выбором. С клавиатуры кольцо есть сразу, а после первого Tab — и в «тихом» окне. */
+[data-focus='quiet'] :focus-visible, [data-focus='quiet']:focus-visible { outline: none; }
 
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках

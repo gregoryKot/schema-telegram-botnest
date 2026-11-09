@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { reportClientError } from '../api';
 import { isChunkLoadError, reloadForFreshChunks } from '../utils/chunkReload';
+import { PaperOutcome } from './paper/PaperOutcome';
 import '../styles/sheet-tasks.css';
 
 interface Props { children: ReactNode; section: string }
@@ -34,42 +35,30 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.error) return this.props.children;
-    const isChunkError = isChunkLoadError(this.state.error.message);
+    // Устарел чанк — «обновилось» (Leaf на шалфее); упал раздел — «на нашей стороне» (Breath на персике).
+    // Тот же PaperOutcome, что у исходов служебных страниц, по месту раздела (error-screen.css).
+    const chunk = isChunkLoadError(this.state.error.message);
     return (
       <div className="sk-crash" data-crash-screen="boundary">
-        <div className="ds-card sk-crash-card">
-          {isChunkError ? (
-            <>
-              <h1 className="ds-h2">Страница устарела</h1>
-              <p className="sk-crash-text">
-                Приложение обновилось — нужна свежая версия страницы.
-              </p>
-              <button className="ds-btn" onClick={() => window.location.reload()}>
-                Обновить страницу
-              </button>
-            </>
-          ) : (
-            <>
-              <h1 className="ds-h2">Раздел упал</h1>
-              <p className="sk-crash-text">
-                Что-то сломалось в разделе <b>{this.props.section}</b>.
-              </p>
-              <details className="sk-crash-details">
-                <summary>Детали ошибки</summary>
-                <div className="sk-crash-msg">{this.state.error.message}</div>
-                <div className="sk-crash-stack">
-                  {this.state.info?.componentStack ?? this.state.error.stack ?? '(нет stack)'}
-                </div>
-              </details>
-              <button
-                className="ds-btn ds-btn--secondary"
-                onClick={() => { this.setState({ error: null, info: null }); }}
-              >
-                Попробовать снова
-              </button>
-            </>
-          )}
-        </div>
+        {chunk ? (
+          <PaperOutcome outcome="updated" className="sk-crash-outcome" title="Страница устарела"
+                        lead="Приложение обновилось — нужна свежая версия страницы."
+                        action={{ label: 'Обновить страницу', onClick: () => window.location.reload() }} />
+        ) : (
+          <PaperOutcome outcome="our_side" className="sk-crash-outcome" title="Раздел упал"
+                        lead={<>Что-то сломалось в разделе <b>{this.props.section}</b>.</>}>
+            <button type="button" className="ds-btn ds-btn--lg pa-outcome-action"
+                    onClick={() => this.setState({ error: null, info: null })}>Попробовать снова</button>
+            {/* Детали — под кнопкой, тихо, для поддержки: стек моноширинным серым, не красным во весь лист. */}
+            <details className="sk-crash-details">
+              <summary>Детали ошибки</summary>
+              <div className="sk-crash-msg">{this.state.error.message}</div>
+              <div className="sk-crash-stack">
+                {this.state.info?.componentStack ?? this.state.error.stack ?? '(нет stack)'}
+              </div>
+            </details>
+          </PaperOutcome>
+        )}
       </div>
     );
   }

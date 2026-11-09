@@ -1,7 +1,7 @@
 import { AUTHOR_SITE, trackPracticeClick } from './practiceLink';
 import type { RichText } from '../../../../src/articles/home-landing.content';
 import type { PracticeLinkPlace } from '../../../../shared/src/share/analytics';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Текст лендинга со ссылками внутри (src/articles/home-landing.content.ts).
 // Внешняя ссылка — в новой вкладке; ссылка на сайт практики ещё и считается

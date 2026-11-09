@@ -4,7 +4,7 @@
 import { Link } from 'react-router-dom';
 import type { ArticleSummary } from '../../api';
 import { ArticleCover } from '../../components/art/ArticleCover';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import { formatDateString, utcCalendarDay } from '../../../../shared/src/utils/calendarDate';
 
 interface ArticleCardProps {

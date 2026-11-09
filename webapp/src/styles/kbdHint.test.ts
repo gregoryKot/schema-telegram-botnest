@@ -42,7 +42,7 @@ describe('.kbd-hint', () => {
 describe('.ds-kbd — одна плашка клавиши на топбар и палитру', () => {
   it('топбар «⌘K» и хоткеи палитры — ds-kbd', () => {
     expect(all).toContain('className="ds-kbd kbd-hint">⌘K');
-    const palette = readFileSync(join(SRC, 'components', 'CommandPalette.tsx'), 'utf8');
+    const palette = readFileSync(join(SRC, 'components', 'CommandPaletteList.tsx'), 'utf8'); // строки палитры (b04)
     expect(palette).toMatch(/row\.hint\.startsWith\('⌘'\) \? 'ds-kbd kbd-hint'/);
   });
 

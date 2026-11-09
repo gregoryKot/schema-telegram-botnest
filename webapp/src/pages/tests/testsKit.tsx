@@ -5,7 +5,7 @@
 import { Link } from 'react-router-dom';
 import { Logo, Cta } from '../landing/BrandKit';
 import { botUrl } from '../../utils/botConfig';
-import { glue } from '../landing/typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import { useAppEntry } from './appEntry';
 import '../../styles/product-landing.css';
 import '../../styles/product-tests.css';

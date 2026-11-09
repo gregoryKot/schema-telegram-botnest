@@ -32,9 +32,9 @@ export function clientAvatarInitials(c: ClientNameSource): string {
   return clientInitials(ownName(c) ?? '');
 }
 
-/** Первые буквы двух первых слов имени, заглавными; пустое имя → «?». */
+const WORD_MARK = /[\p{L}\p{N}\p{Extended_Pictographic}]/u;
+/** Первые буквы двух первых слов, заглавными; скобки и тире — не буква («Ира (пятница)» → «ИП», а не «И(»); пусто → «?». */
 export function clientInitials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const letters = words.slice(0, 2).map((w) => Array.from(w)[0].toUpperCase());
-  return letters.join('') || '?';
+  const marks = name.split(/\s+/).flatMap((w) => w.match(WORD_MARK) ?? []);
+  return marks.slice(0, 2).join('').toUpperCase() || '?';
 }

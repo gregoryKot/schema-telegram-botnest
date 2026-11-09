@@ -1,9 +1,22 @@
-/* Экран сбоя (ErrorBoundary, RouteErrorScreen). Подключается сборником sheet-tasks.css. */
-/* ── ErrorBoundary ── */
-.sk-crash { max-width: 760px; margin: 0 auto; padding: 48px clamp(16px, 4vw, 40px); box-sizing: border-box; }
-.sk-crash-card { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; border-color: var(--err); }
-.sk-crash-text { margin: 0; max-width: 560px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
-.sk-crash-details { align-self: stretch; background: var(--paper-sunk); border-radius: 12px; padding: 14px 16px; font-family: ui-monospace, monospace; font-size: 12px; }
-.sk-crash-details summary { cursor: pointer; font-weight: 600; }
-.sk-crash-msg { color: var(--err); margin: 8px 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.sk-crash-stack { color: var(--text-sub); white-space: pre-wrap; max-height: 300px; overflow: auto; }
+/* Экран сбоя (ErrorBoundary, RouteErrorScreen). Подключается сборником sheet-tasks.css.
+   Вид — PaperOutcome (components/paper, paper-app.css): лист с полосой бумаги исхода и знаком.
+   Здесь — только то, что своё у сбоя: место раздела и тихие «Детали ошибки». */
+/* Маршрут — на всю страницу: обёртка с маркером data-crash-screen не мешает листу встать по центру. */
+.sk-crash-route { display: flex; flex: 1; min-width: 0; }
+/* ErrorBoundary — по месту раздела (под верхней строкой кабинета), а не на весь экран. Два класса —
+   правило сильнее .pa-outcome при любом порядке CSS. */
+.sk-crash { flex: 1; min-width: 0; }
+/* Без min-height от высоты окна: раздел — в прокрутке .page, лист стоит у верха колонки. */
+.pa-outcome.sk-crash-outcome { min-height: 0; align-items: flex-start; padding: 72px 24px 48px; background: transparent; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .pa-outcome.sk-crash-outcome { min-height: 0; padding: 16px 16px 24px; }
+}
+.sk-crash-details { align-self: stretch; margin-top: 4px; font-size: 13px; color: var(--text-sub); }
+.sk-crash-details summary {
+  display: inline-flex; align-items: center; min-height: 44px; cursor: pointer;
+  font-weight: 600; color: var(--text-sub);
+}
+.sk-crash-details summary:hover { color: var(--text); }
+.sk-crash-msg, .sk-crash-stack { font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sk-crash-msg { margin: 4px 0 8px; color: var(--text); }
+.sk-crash-stack { max-height: 240px; overflow: auto; padding: 10px 12px; border-radius: 12px; background: var(--paper-sunk); color: var(--text-sub); }

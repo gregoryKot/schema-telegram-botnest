@@ -1,13 +1,20 @@
-import { Link, NavLink } from 'react-router-dom';
-import { Skeleton } from '../Skeleton';
+import { NavLink } from 'react-router-dom';
+import type { TherapyClientSummary } from '../../api';
 import { BrandMark } from '../art/BrandMark';
+import { clientHue, hueStyle } from '../../lib/tone';
+import { todayStr } from '../../utils/format';
+import { sortRoster } from '../therapist/rosterOrder';
+import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
+import { clientRef } from '../../../../shared/src/utils/clientRef';
 import { BrandHomeLink, type BrandMenu } from './BrandHome';
-import { MobileNavIcon, type MobileNavIconId } from './MobileNavIcon';
+import { NavSign, type NavSignKey } from './NavSign';
+import { SECTION_LOOK, THERAPIST_NAV } from './navLook';
 import type { Section } from './navigation';
-import { setSidebarCollapsed, useSidebarCollapsed } from './sidebarCollapse';
+import { useScreenShare } from './screenShareMode';
+import { setSidebarCollapsed } from './sidebarCollapse';
 
 // Части бокового меню, которые зависят от того, свёрнуто ли оно (sidebarCollapse.ts):
-// шапка с кнопкой «свернуть», свёрнутая полоска с иконками и силуэт меню на загрузке.
+// шапка с кнопкой «свернуть» и свёрнутая полоска со знаками; силуэт меню на загрузке — SidebarSkeleton.tsx.
 // Развёрнутое меню — Sidebar.tsx. На телефоне меню скрыто целиком (index.css), там MobileNav.
 // Ширину колонки задаёт .sidebar.is-collapsed через --sidebar-w (index.css): контент справа,
 // холст «Графических карт» в том числе, забирает освободившееся место сам.
@@ -36,78 +43,64 @@ export function SidebarBrand({ menu }: { menu?: BrandMenu }) {
   );
 }
 
-const SIDEBAR_BAR = { background: 'var(--panel-2)' };
-
 /** Верх свёрнутой полоски: знак на месте развёрнутого (меню не прыгает), под ним шеврон;
- *  в силуэте загрузки вместо шеврона — плашка. */
-function RailHead({ menu }: { menu?: BrandMenu }) {
+ *  в силуэте загрузки вместо шеврона — плашка (SidebarSkeleton). */
+export function RailHead({ menu }: { menu?: BrandMenu }) {
   return (
     <div className="sb-rail-head">
       {menu ? <BrandHomeLink {...menu}><BrandMark size={32} /></BrandHomeLink> : <BrandMark size={32} />}
-      {menu ? <SidebarToggle collapsed /> : <Skeleton width={44} height={44} style={SIDEBAR_BAR} />}
+      {menu ? <SidebarToggle collapsed /> : <span className="skel sb-skel" style={{ width: 44, height: 44 }} aria-hidden />}
     </div>
   );
 }
 
-type RailItem = { to: string; icon: MobileNavIconId; label: string };
-// Кабинет — те же пункты и порядок, что в развёрнутом меню («Справочник» до клиентов);
-// список клиентов, поиск и «Показ экрана» — только в развёрнутом.
-const THERAPIST_ITEMS: RailItem[] = [
-  { to: '/cabinet/today', icon: 'today', label: 'Сегодня' },
-  { to: '/cabinet/guide', icon: 'guide', label: 'Справочник' },
-];
-const railClass = (on: boolean) => `sb-item sb-rail-item${on ? ' is-active' : ''}`;
-// Подпись пункта — aria-label и title: текста рядом с иконкой в полоске нет.
-const railLink = ({ to, icon, label }: RailItem) => (
-  <NavLink key={to} to={to} className={({ isActive }) => railClass(isActive)} aria-label={label} title={label}>
-    <MobileNavIcon id={icon} />
+type RailItem = { to: string; sign: NavSignKey; label: string; end?: boolean };
+const railClass = ({ isActive }: { isActive: boolean }) => `sb-item sb-rail-item${isActive ? ' is-active' : ''}`;
+// Подпись пункта — aria-label и title: текста рядом со знаком в полоске нет.
+const railLink = ({ to, sign, label, end }: RailItem) => (
+  <NavLink key={to} to={to} end={end} className={railClass} aria-label={label} title={label}>
+    <NavSign sign={sign} />
   </NavLink>
 );
+/** Сколько клиентов кабинета видно в полоске: остальные — в развёрнутом меню и «Все клиенты». */
+const RAIL_CLIENTS = 6;
 
 interface RailProps {
   items: { id: Section; label: string }[];
   therapistMode: boolean;
-  /** «Все клиенты» горит на обеих вкладках списка (/cabinet и /cabinet/tasks) — как в Sidebar. */
-  onList: boolean;
   displayName: string | null;
+  /** Клиенты кабинета — бледными кружками под пунктами; в «Показе экрана» их нет. */
+  clients?: TherapyClientSummary[];
 }
 
-/** Свёрнутое меню: полоска с иконками разделов и аватаром профиля. */
-export function SidebarRail({ items, therapistMode, onList, displayName }: RailProps) {
+/** Свёрнутое меню: полоска со знаками разделов (те же, что в развёрнутом, navLook.ts) и аватаром профиля. */
+export function SidebarRail({ items, therapistMode, displayName, clients = [] }: RailProps) {
   const account = displayName || 'Профиль';
+  const screenShare = useScreenShare();
+  const { today, guide, tasks, clients: all } = THERAPIST_NAV;
+  const shown = therapistMode && !screenShare ? sortRoster(clients, todayStr()).slice(0, RAIL_CLIENTS) : [];
   return (
     <aside className="sidebar is-collapsed">
       <RailHead menu={{ therapistMode }} />
       <nav className="sb-nav">
-        {therapistMode ? (<>
-          {THERAPIST_ITEMS.map(railLink)}
-          <Link to="/cabinet" className={railClass(onList)} aria-current={onList ? 'page' : undefined}
-                aria-label="Все клиенты" title="Все клиенты"><MobileNavIcon id="clients" /></Link>
-        </>) : items.map((i) => railLink({ to: '/' + i.id, icon: i.id, label: i.label }))}
+        {therapistMode
+          ? [today, guide, tasks, all].map(railLink)
+          : items.map((i) => railLink({ to: '/' + i.id, sign: SECTION_LOOK[i.id].sign, label: i.label }))}
+        {shown.length > 0 && <span className="sb-rail-rule" aria-hidden="true" />}
+        {shown.map(c => {
+          const name = clientDisplayName(c);
+          return (
+            <NavLink key={c.telegramId} to={`/cabinet/${clientRef(c)}`} className={railClass} aria-label={name} title={name}>
+              <span className="sb-client-av" style={hueStyle(clientHue(c.telegramId))}>{clientAvatarInitials(c)}</span>
+            </NavLink>
+          );
+        })}
       </nav>
       <div className="sb-foot-wrap">
         <NavLink to="/profile" className={({ isActive }) => `sb-account sb-rail-account${isActive ? ' is-active' : ''}`}
                  aria-label={account} title={account}>
           <div className="sb-avatar">{account[0].toUpperCase()}</div>
         </NavLink>
-      </div>
-    </aside>
-  );
-}
-
-/** Силуэт меню на первой загрузке (AppShellSkeleton): свёрнутое — сразу полоской, без прыжка. */
-export function SidebarSkeleton() {
-  const collapsed = useSidebarCollapsed();
-  const square = collapsed ? 44 : undefined;
-  return (
-    <aside className={`sidebar${collapsed ? ' is-collapsed' : ''}`} aria-hidden="true">
-      {collapsed ? <RailHead /> : <SidebarBrand />}
-      <div className="sb-nav">
-        {[0, 1, 2].map(i => <Skeleton key={i} width={square} height={44} style={SIDEBAR_BAR} />)}
-      </div>
-      <div className="sb-foot-wrap">
-        {!collapsed && <Skeleton height={96} radius={14} style={SIDEBAR_BAR} />}
-        <Skeleton width={square} height={44} style={SIDEBAR_BAR} />
       </div>
     </aside>
   );

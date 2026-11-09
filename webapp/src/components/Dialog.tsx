@@ -6,13 +6,11 @@
 // диалогов (useDialogA11y): onEscape или closeOnEscape (тогда onClose) закрывают
 // верхнее окно; без них окно держит Escape — лист под ним его не получает.
 //
-// Кольцо фокуса — только с клавиатуры. useDialogA11y ставит фокус на первую кнопку, а
-// Chrome показывает :focus-visible и у программного фокуса, если человек ещё ничего не
-// нажимал (окно открылось само) — первая кнопка выглядела выбранной. Окно, открытое не с
-// клавиатуры, «тихое» (data-focus="quiet", dialogs.css): кольца нет до первой клавиши
-// перехода внутри окна. Чем открыли — последний ввод на странице (клавиша или касание).
-import { useState, type KeyboardEvent, type ReactNode } from 'react';
+// Кольцо фокуса — только с клавиатуры: окно, открытое касанием или само, «тихое» до первой клавиши
+// перехода (hooks/useQuietFocus.ts — та же механика у листа «Зачем это всё»).
+import type { ReactNode } from 'react';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
+import { useQuietFocus } from '../hooks/useQuietFocus';
 import '../styles/sheet-tasks.css';
 
 interface Props {
@@ -30,20 +28,6 @@ interface Props {
   children: ReactNode;
 }
 
-/** Последний ввод на странице — клавиатура? Слушатели ставятся один раз, при загрузке модуля. */
-let lastInputKeyboard = false;
-let tracking = false;
-function trackInputModality() {
-  if (tracking || typeof document === 'undefined') return;
-  tracking = true;
-  document.addEventListener('keydown', (e) => { if (!e.metaKey && !e.ctrlKey && !e.altKey) lastInputKeyboard = true; }, true);
-  document.addEventListener('pointerdown', () => { lastInputKeyboard = false; }, true);
-}
-trackInputModality();
-
-/** Клавиши, которыми ходят по окну: после них кольцо нужно и в «тихом» окне. */
-const NAV_KEYS = new Set(['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End']);
-
 export function Dialog({
   label,
   onClose,
@@ -56,8 +40,7 @@ export function Dialog({
   children,
 }: Props) {
   const dialogA11y = useDialogA11y({ onEscape: onEscape ?? (closeOnEscape ? onClose : undefined), holdEscape: true });
-  const [quiet, setQuiet] = useState(() => !lastInputKeyboard);
-  const onKeyDown = quiet ? (e: KeyboardEvent) => { if (NAV_KEYS.has(e.key)) setQuiet(false); } : undefined;
+  const quietFocus = useQuietFocus();
 
   return (
     <div
@@ -77,8 +60,8 @@ export function Dialog({
         aria-label={label}
         className={center ? 'ds-card sk-dialog-box sk-dialog-box--center' : 'ds-card sk-dialog-box'}
         style={maxWidth ? { maxWidth } : undefined}
-        data-focus={quiet ? 'quiet' : undefined}
-        onKeyDown={onKeyDown}
+        data-focus={quietFocus['data-focus']}
+        onKeyDown={quietFocus.onKeyDown}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

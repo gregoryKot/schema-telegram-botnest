@@ -617,11 +617,11 @@ describe('AppShell — командная палитра: закрытие и п
 
 describe('AppShell — сайдбар: индекс дня и поиск⌘K открываются кликом (не только по клавише)', () => {
   // QA 2026-11 (A-З9): подпись «Заполнить дневник →» открывала трекер, а
-  // «Дневник» на главной — отдельная плитка. Подпись и действие совпадают.
+  // «Дневник» на главной — отдельная плитка. Подпись и действие совпадают. Карточка дня — вне «Сегодня».
   it('CTA «Заполнить трекер» в сайдбаре реально открывает трекер', async () => {
     mockApi.needs.mockResolvedValueOnce([{ id: 'safety', emoji: '', title: 'Безопасность', chartLabel: 'Без.' }]);
     mockApi.ratings.mockResolvedValueOnce({}).mockResolvedValueOnce({});
-    renderAppShell('/today');
+    renderAppShell('/diary');
     await waitFor(() => expect(screen.getByText('Заполнить трекер →')).toBeTruthy());
     expect(screen.queryByText(/Заполнить дневник/)).toBeNull();
     fireEvent.click(screen.getByText('Заполнить трекер →'));

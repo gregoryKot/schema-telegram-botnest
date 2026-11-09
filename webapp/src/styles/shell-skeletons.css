@@ -1,0 +1,75 @@
+/* Силуэты разделов кабинета (components/ShellSkeletons.tsx). Префикс sks- (sk- занят листами sheet-tasks.css). Плашки — общий .skel
+   (shared/src/theme/tokens.css); шапка, лист и тихая бумага (.sks-head, .sks-sheet, .sks-paper) — в index.css:
+   общий силуэт ScreenSkeleton рисуется и без этого чанка. */
+.sks-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; }
+.sks-rows { display: flex; flex-direction: column; }
+.sks-row { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 10px 18px; }
+.sks-row + .sks-row { border-top: 1px solid var(--paper-sunk); }
+.sks-card { background: var(--surface); border-radius: 20px; overflow: hidden; }
+.sks-card--pad { padding: 18px; }
+
+/* Строка силуэта высотой строки экрана (ShellSkeletons Line): плашки по числу строк текста, по центру
+   своих строк. Высоты — замер экрана «Сегодня» (ревью g1: силуэт был ниже на 120–130px на 390 и на 56
+   на 1280, контент прыгал при загрузке): телефон — заголовок трекера и подпись в две строки. */
+.sks-line { display: flex; flex-direction: column; justify-content: space-evenly; flex-shrink: 0; overflow: hidden; }
+.sks-line--top { height: 44px; justify-content: center; }
+.sks-line--h1 { height: 38px; }
+.sks-line--label { height: 18px; }
+.sks-line--title, .sks-line--th-title { height: 70px; }
+.sks-line--text { height: 46px; }
+.sks-line--meta { height: 20px; }
+.sks-line--sq-title { height: 55px; }
+.sks-line--sq-text { height: 44px; }
+/* Ноги квадрата — внизу, над ними место знака (60) и зазор, как у квадрата экрана. */
+.sks-line--sq-foot { height: 19px; margin-top: auto; padding-top: 78px; box-sizing: content-box; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .sks-line--h1 { height: 62px; }
+  .sks-line--title { height: 35px; }
+  .sks-line--text, .sks-line--sq-text { height: 23px; }
+  .sks-line--title > .skel + .skel, .sks-line--text > .skel + .skel, .sks-line--sq-text > .skel + .skel { display: none; }
+}
+
+/* «Сегодня» клиента — классы HomeTiles (pp-block, pp-hero, pp-squares из paper.css): та же рамка и поля. */
+.sks-head--today { gap: 4px; margin-bottom: 8px; }
+.sks-today-home { display: flex; flex-direction: column; gap: 20px; }
+.sks-today-main { display: flex; flex-direction: column; gap: 22px; padding: 24px 0 28px; }
+.sks-strokes { display: flex; }
+/* Компьютер — разворот «Сегодня» (b05): слева лист соломы трекера с его знаком крупно сверху, справа
+   квадраты горизонтальными плитками друг под другом. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .sks-today-home { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+  .pp-block.sks-today-main {
+    justify-content: space-between; gap: 28px; padding: 30px 36px 36px; border: 0; border-radius: 28px;
+    background: var(--sks-paper); --strokes-edge: var(--sks-paper);
+  }
+  .sks-today-main .pp-hero { grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+  .sks-strokes { order: -1; margin-left: -14px; }
+  .sks-strokes .pp-art--hero { width: 216px; height: auto; }
+  .sks-line--title, .sks-line--th-title { height: 40px; }
+  .sks-line--sq-title { height: 32px; }
+  .sks-line--th-title > .skel + .skel, .sks-line--sq-title > .skel + .skel { display: none; }
+  .sks-line--sq-foot { padding-top: 0; }
+  .sks-today-home .pp-squares { grid-template-columns: minmax(0, 1fr); grid-auto-rows: 1fr; gap: 24px; }
+  .pp-square.sks-square { min-height: 0; padding: 28px 30px 26px 32px; border-radius: 28px; }
+}
+
+/* Кабинет терапевта: место сцены Talk в шапке; счётчики — плашки тоном панели, как загрузка самого
+   экрана (TherapistTodaySection), и по его сетке (therapist-today.css): на 768 с меню — 2+1, колонки
+   списков — одна, пока поле уже ~800. Бумагу счётчиков включит b29 вместе с экраном. */
+.sks-scene { display: block; }
+.sks-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); grid-auto-rows: 116px; gap: 16px; }
+.sks-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.sks-two--today { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; }
+.sks-two .sks-col { gap: 14px; }
+.sks-two--overview { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+.sks-card-head { display: flex; align-items: center; gap: 16px; }
+.sks-tabs { display: flex; gap: 22px; padding-bottom: 12px; border-bottom: 1px solid var(--paper-sunk); overflow: hidden; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .sks-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 96px; gap: 8px; }
+  .sks-two, .sks-two--overview { grid-template-columns: minmax(0, 1fr); }
+  .sks-tabs { gap: 18px; }
+  .sks-row { padding: 10px 14px; }
+}
+
+/* Нижняя панель телефона в силуэте — те же место и высота, что у .mobile-nav. */
+.sks-mobile-nav-item { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 44px; }
