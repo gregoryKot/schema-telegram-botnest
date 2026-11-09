@@ -9,7 +9,7 @@ const CONSENT_KEY = 'cookie_consent';
 
 function PrivacyLink() {
   return (
-    <a href="/privacy#cookies" style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2, fontWeight: 500 }}>
+    <a href="/privacy#cookies" className="cookie-link">
       Подробнее
     </a>
   );
@@ -20,12 +20,11 @@ function PrivacyLink() {
 function CompactBody({ onDismiss }: { onDismiss: () => void }) {
   return (
     <>
-      <p className="u-fill" style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.45 }}>
+      <p className="u-fill cookie-text">
         Публичные страницы обезличенно считают посещения в Яндекс.Метрике.{' '}
         <PrivacyLink />
       </p>
-      {/* flex: 0 0 auto — в строке кнопка не должна растягиваться */}
-      <button onClick={onDismiss} className="cookie-btn" style={{ flex: '0 0 auto' }}>
+      <button onClick={onDismiss} className="ds-btn ds-btn--sm cookie-btn">
         Понятно
       </button>
     </>
@@ -35,28 +34,14 @@ function CompactBody({ onDismiss }: { onDismiss: () => void }) {
 function CardBody({ onDismiss }: { onDismiss: () => void }) {
   return (
     <>
-      {/* Header row */}
-      <div style={{ display: 'flex', gap: 'var(--space-14)', alignItems: 'flex-start', position: 'relative' }}>
-        <div className="u-fill">
-          <div style={{
-            fontFamily: 'var(--serif)', fontSize: 21, lineHeight: 1.15,
-            color: 'var(--text)', marginBottom: 6, letterSpacing: '0.01em',
-          }}>
-            Немного о куки
-          </div>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55 }}>
-            Часть нужна для входа — без них сайт не работает. Ещё на публичных страницах (главная, статьи, тесты) считаются обезличенные посещения в Яндекс.Метрике: сколько людей заходит и какие страницы читают. В приложении и кабинете счётчика нет.{' '}
-            <PrivacyLink />
-          </p>
-        </div>
+      <div className="cookie-body">
+        <div className="cookie-title">Немного о куки</div>
+        <p className="cookie-text">
+          Часть нужна для входа — без них сайт не работает. Ещё на публичных страницах (главная, статьи, тесты) считаются обезличенные посещения в Яндекс.Метрике: сколько людей заходит и какие страницы читают. В приложении и кабинете счётчика нет.{' '}
+          <PrivacyLink />
+        </p>
       </div>
-
-      {/* Action */}
-      <div className="u-row10">
-        <button onClick={onDismiss} className="cookie-btn">
-          Понятно
-        </button>
-      </div>
+      <button onClick={onDismiss} className="ds-btn ds-btn--sm cookie-btn">Понятно</button>
     </>
   );
 }
@@ -85,18 +70,8 @@ export function CookieBanner() {
 
   return (
     <div className="cookie-banner-wrap">
-      <div
-        className="cookie-banner"
-        role="dialog"
-        aria-label="Уведомление об использовании куки"
-        style={{
-          width: 'min(100%, 440px)', margin: '0 auto',
-          pointerEvents: 'auto',
-          ...(compact
-            ? { padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }
-            : { padding: '20px 22px 18px', display: 'flex', flexDirection: 'column', gap: 18 }),
-        }}
-      >
+      {/* Лист соломы без контура, тень — сплошной сдвинутый слой (index.css, .cookie-banner). */}
+      <div className={`pp-paper cookie-banner${compact ? ' cookie-banner--compact' : ''}`} role="dialog" aria-label="Уведомление об использовании куки">
         {compact ? <CompactBody onDismiss={dismiss} /> : <CardBody onDismiss={dismiss} />}
       </div>
     </div>

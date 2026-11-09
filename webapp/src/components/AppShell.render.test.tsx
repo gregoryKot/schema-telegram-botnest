@@ -137,16 +137,18 @@ describe('AppShell — роутинг: URL решает, какая секция
 });
 
 describe('AppShell — офлайн-индикатор (реальное browser-событие, не константа)', () => {
-  it('событие offline показывает метку «офлайн», online её убирает', async () => {
+  // b04 (2026-11): одна плашка «Нет сети» на телефоне и компьютере вместо слова «офлайн» в шапке.
+  it('событие offline показывает плашку «Нет сети», online её убирает', async () => {
     renderAppShell('/today');
     await waitFor(() => expect(screen.getByTestId('today-section')).toBeTruthy());
-    expect(screen.queryByText('офлайн')).toBeNull();
+    expect(screen.queryByText(/^Нет сети\./)).toBeNull();
 
     fireEvent(window, new Event('offline'));
-    await waitFor(() => expect(screen.getByText('офлайн')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/^Нет сети\./)).toBeTruthy());
+    expect(screen.queryByText('офлайн')).toBeNull();
 
     fireEvent(window, new Event('online'));
-    await waitFor(() => expect(screen.queryByText('офлайн')).toBeNull());
+    await waitFor(() => expect(screen.queryByText(/^Нет сети\./)).toBeNull());
   });
 });
 

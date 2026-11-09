@@ -36,7 +36,9 @@ describe('CommandPalette — «Показ экрана»', () => {
     expect(screen.getByText(NOTE)).toBeTruthy();
     fireEvent.change(screen.getByPlaceholderText(/Найти/), { target: { value: 'ива' } });
     expect(screen.queryByText('Иван')).toBeNull();
-    expect(screen.getByText('Ничего не найдено')).toBeTruthy();
+    // Аудит 2026-11: одна строка почему, без второй «Ничего не найдено» под ней.
+    expect(screen.getByText(NOTE)).toBeTruthy();
+    expect(screen.queryByText('Ничего не найдено')).toBeNull();
   });
 
   it('контроль: без режима клиент на месте и подписи нет; выключение возвращает его сразу', async () => {

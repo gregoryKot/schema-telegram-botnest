@@ -3,6 +3,7 @@
 // подпись и инициалы — общие clientDisplayName/clientAvatarInitials. QA 2026-11: сайдбар шёл в порядке сервера,
 // искал по точной подстроке и резал имя slice(0, 2) («Анна Крылова» → «АН»).
 // «Показ экрана» (screenShareMode) прячет имена и поиск; без клиентов прятать нечего — блока нет.
+// Тумблер «Показа экрана» — в подвале меню (SidebarFoot): список идёт сразу под подписью «Клиенты».
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { TherapyClientSummary } from '../../api';
@@ -12,7 +13,6 @@ import { matchesRosterSearch, sortRoster } from '../therapist/rosterOrder';
 import { clientAvatarInitials, clientDisplayName } from '../../../../shared/src/therapy/clientInitials';
 import { clientRef } from '../../../../shared/src/utils/clientRef';
 import { useScreenShare } from './screenShareMode';
-import { ScreenShareSwitch } from './ScreenShareSwitch';
 
 /** С какого числа клиентов в сайдбаре появляется поиск. */
 const SEARCH_FROM = 5;
@@ -20,14 +20,14 @@ const SEARCH_FROM = 5;
 export function SidebarClients({ clients }: { clients: TherapyClientSummary[] }) {
   const [search, setSearch] = useState('');
   const screenShare = useScreenShare();
-  if (clients.length === 0) return null;
+  // В «Показе экрана» блока нет совсем: ни имён, ни подписи над пустым местом.
+  if (clients.length === 0 || screenShare) return null;
   // Местный день терапевта: с ним sortRoster сравнивает nextSession (его настенное время).
-  const shown = screenShare ? [] : sortRoster(clients.filter(c => matchesRosterSearch(c, search)), todayStr());
+  const shown = sortRoster(clients.filter(c => matchesRosterSearch(c, search)), todayStr());
   return (
     <div className="sb-clients">
       <div className="sb-section-label">Клиенты</div>
-      <ScreenShareSwitch on={screenShare} />
-      {!screenShare && clients.length >= SEARCH_FROM && (
+      {clients.length >= SEARCH_FROM && (
         <input className="sb-search" value={search} placeholder="Поиск клиента…" aria-label="Поиск клиента"
                onChange={e => setSearch(e.target.value)} />
       )}

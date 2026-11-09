@@ -1,6 +1,7 @@
 // Оттенки редизайна кабинетов 2026-10. Таблицы домен/группа режимов/потребность
 // и toneHex живут в shared/src/theme/entityHue.ts (одна на сайт и мини-апп),
-// здесь реэкспорт; тип записи, раздел и нейтральный тон — локально.
+// здесь реэкспорт; тип записи и нейтральный тон — локально. Разделы меню — знаками
+// своей сущности (components/appShell/navLook.ts), а не цветными квадратами.
 // Компонент кладёт число в `--h` и берёт класс .tone-* из styles/cabinet.css;
 // L/C у всей гаммы общие, так что домены различаются только оттенком.
 import type { CSSProperties } from 'react';
@@ -12,16 +13,6 @@ export const DIARY_HUE: Record<'schema' | 'mode' | 'gratitude', number> = {
   schema: 28,
   mode: 240,
   gratitude: 145,
-};
-
-/** Разделы кабинета клиента — цветной квадрат в сайдбаре. */
-export const SECTION_HUE: Record<'today' | 'diary' | 'more' | 'schemas' | 'practice' | 'profile', number> = {
-  today: 28,
-  diary: 240,
-  more: 70,
-  schemas: 310,
-  practice: 145,
-  profile: 70,
 };
 
 const NEUTRAL_HUE = 70;

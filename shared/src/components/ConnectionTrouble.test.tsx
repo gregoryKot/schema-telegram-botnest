@@ -3,7 +3,10 @@
 // из webapp/src/components/ConnectionTrouble.tsx, инцидент 31.08.2026).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { ConnectionTrouble } from './ConnectionTrouble';
+import {
+  ConnectionTrouble,
+  type ConnectionTroubleView,
+} from './ConnectionTrouble';
 
 beforeEach(() => {
   localStorage.clear();
@@ -53,5 +56,27 @@ describe('ConnectionTrouble', () => {
         'Это на нашей стороне — вход не слетел. Попробуйте ещё раз через минуту.',
       ),
     ).toBeTruthy();
+  });
+
+  // Сайт рисует экран своим листом исхода (webapp PaperOutcome): тексты и повтор — отсюда.
+  it('Frame получает те же тексты и повтор, простого экрана нет', () => {
+    const onRetry = vi.fn();
+    const seen: ConnectionTroubleView[] = [];
+    const Frame = (v: ConnectionTroubleView) => {
+      seen.push(v);
+      return <button onClick={v.onRetry}>{v.retryLabel}</button>;
+    };
+    const { container } = render(
+      <ConnectionTrouble onRetry={onRetry} retrying Frame={Frame} />,
+    );
+    expect(seen[0]).toMatchObject({
+      title: 'Сервер не отвечает',
+      retryLabel: 'Проверяем…',
+      retrying: true,
+    });
+    expect(seen[0].lead).toMatch(/^Это на нашей стороне/);
+    expect(container.querySelector('h1')).toBeNull();
+    fireEvent.click(screen.getByText('Проверяем…'));
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });

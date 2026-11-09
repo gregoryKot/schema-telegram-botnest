@@ -9,7 +9,7 @@
 import { lazy, Suspense, useEffect, type MutableRefObject } from 'react';
 import { useLocation, type NavigateFunction } from 'react-router-dom';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { ScreenSkeleton } from '../Skeleton';
+import { SectionSkeleton } from '../ShellSkeletons';
 import type { Need } from '../../types';
 import type { TherapyClientSummary, UserId } from '../../api';
 import { leaveClientTarget, openClientRoute, type Section } from './navigation';
@@ -71,7 +71,7 @@ export function AppSections({
     // (.page/.main--cabinet контент остаётся прямым flex-ребёнком canvas),
     // существует только как узел DOM для inert.
     <div style={{ display: 'contents' }} inert={inert}>
-    <Suspense fallback={<ScreenSkeleton />}>
+    <Suspense fallback={<div className="page"><SectionSkeleton pathname={pathname} therapistMode={therapistMode} /></div>}>
     {/* Therapist mode */}
     {therapistMode && pathname === '/cabinet/today' && (
       <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
