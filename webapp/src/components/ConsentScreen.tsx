@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
+import { hueStyle } from '../lib/tone';
 import { Dialog } from './Dialog';
 import { ConsentWelcome } from './ConsentWelcome';
+import { EntryHead, EntrySteps } from './paper/EntryHead';
+import { PaperAlert } from './paper/PaperAlert';
+import { CONSENT_HUES, CONSENT_LOOK, CONSENT_STEPS, type ConsentStep as Step } from './paper/entryLook';
 import {
   CONSENT_NOT_THERAPY_CHECK, CONSENT_NOT_THERAPY_TEXT, CONSENT_NOT_THERAPY_TITLE,
   CONSENT_PRIVACY_CHECK, CONSENT_PRIVACY_PARAGRAPHS, CONSENT_PRIVACY_TITLE,
@@ -10,9 +14,6 @@ import {
 } from '../../../shared/src/onboarding/consents';
 import { ONBOARDING_STEP_EVENT, type OnboardingStep } from '../../../shared/src/share/analytics';
 import '../styles/entry-flows.css';
-
-type Step = 'welcome' | 'privacy' | 'not_therapy';
-const STEP_NUMBER: Record<Step, number> = { welcome: 1, privacy: 2, not_therapy: 3 };
 
 interface Props {
   onAccept: () => void;
@@ -25,6 +26,8 @@ interface Props {
 // без согласия нельзя (нет onClose, поэтому и useHistorySheet не нужен: «Назад»
 // браузера не должен обходить согласия), принять — только после обеих галочек.
 // Шаги уходят в `onboarding_step` теми же именами, что в мини-аппе (воронка общая).
+// Вид: окно с шапкой-листом бумаги шага (EntryHead, вид — paper/entryLook.ts), галочка — на
+// плашке той же бумаги, сбой сохранения — PaperAlert, а не красная строка.
 export function ConsentScreen({ onAccept, failed }: Props) {
   const tr = useTr();
   const [step, setStep] = useState<Step>('welcome');
@@ -45,22 +48,20 @@ export function ConsentScreen({ onAccept, failed }: Props) {
     onAccept();
   }
 
-  const isPrivacy = step === 'privacy';
-  const hint = step === 'not_therapy' ? consentHint(privacy, notTherapy, tr) : null;
+  const at = CONSENT_STEPS.indexOf(step);
+  const label = <><EntrySteps hues={CONSENT_HUES} at={at} />Шаг {at + 1} из 3</>;
   if (step === 'welcome') {
     return (
-      <Dialog label="Приветствие" zIndex={400} maxWidth={480}>
-        <div className="ds-eyebrow">Шаг 1 из 3</div>
-        <ConsentWelcome onNext={() => setStep('privacy')} />
+      <Dialog label="Приветствие" zIndex={400} maxWidth={540}>
+        <ConsentWelcome label={label} onNext={() => setStep('privacy')} />
       </Dialog>
     );
   }
+  const isPrivacy = step === 'privacy';
+  const hint = isPrivacy ? null : consentHint(privacy, notTherapy, tr);
   return (
-    <Dialog label="Согласия" zIndex={400} maxWidth={480}>
-      <div className="ds-eyebrow">Шаг {STEP_NUMBER[step]} из 3</div>
-      <h2 className="ds-h2 sk-dialog-title">
-        {isPrivacy ? CONSENT_PRIVACY_TITLE : CONSENT_NOT_THERAPY_TITLE}
-      </h2>
+    <Dialog label="Согласия" zIndex={400} maxWidth={540}>
+      <EntryHead look={CONSENT_LOOK[step]} label={label} title={isPrivacy ? CONSENT_PRIVACY_TITLE : CONSENT_NOT_THERAPY_TITLE} />
       <div className="sk-dialog-text ef-consent-text">
         {isPrivacy
           ? CONSENT_PRIVACY_PARAGRAPHS.map((p) => <p key={p}>{p}</p>)
@@ -71,7 +72,7 @@ export function ConsentScreen({ onAccept, failed }: Props) {
           </a>
         )}
       </div>
-      <label className="ef-check">
+      <label className="pp-paper ef-check" style={hueStyle(CONSENT_LOOK[step].hue)}>
         <input
           type="checkbox"
           checked={isPrivacy ? privacy : notTherapy}
@@ -81,9 +82,7 @@ export function ConsentScreen({ onAccept, failed }: Props) {
       </label>
       {hint && <p className="ef-hint">{hint}</p>}
       {failed && (
-        <p role="alert" className="ef-hint">
-          {tr('Не получилось сохранить согласие. Проверь сеть и попробуй ещё раз.', 'Не получилось сохранить согласие. Проверьте сеть и попробуйте ещё раз.')}
-        </p>
+        <PaperAlert className="ef-alert" title="Не получилось сохранить согласие." text={tr('Проверь сеть и попробуй ещё раз.', 'Проверьте сеть и попробуйте ещё раз.')} />
       )}
       <div className="sk-dialog-actions">
         <button type="button" className="ds-btn ds-btn--secondary" onClick={() => setStep(isPrivacy ? 'welcome' : 'privacy')}>

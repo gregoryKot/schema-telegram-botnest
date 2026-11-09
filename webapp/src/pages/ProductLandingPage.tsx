@@ -18,7 +18,7 @@ import { ProductMobileMenu } from './landing/ProductMobileMenu';
 import { entryCta } from './landing/entryCta';
 import { FinalCorners, SignScene } from '../components/art/SceneParts';
 import { Pebbles } from '../components/art/PaperArt';
-import { glue } from './landing/typo';
+import { glue } from '../../../shared/src/utils/typo';
 import { PaperBand } from './landing/PaperBand';
 import '../styles/product-landing.css';
 

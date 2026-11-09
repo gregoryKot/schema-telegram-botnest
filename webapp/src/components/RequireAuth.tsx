@@ -7,20 +7,20 @@ import { rememberReturnTo } from '../auth/returnTo';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
 import { UiPrefsGate } from './UiPrefsGate';
 import { StepUpProvider } from './stepUp/StepUpProvider';
+import { ConnectionOutcome, GateSkeleton } from './AuthGateViews';
+import { useRetrying } from './useRetrying';
 
-/** Auth guard как layout-маршрут: приватные страницы доступны только после входа. */
+/** Auth guard (layout-маршрут): пока вход поднимается — силуэт экрана (AuthGateViews); StepUpProvider — окно кода 2FA (S12). */
 export function RequireAuth() {
   const { isAuthenticated, isLoading, authError, refreshToken } = useAuth();
   const { pathname, search } = useLocation();
-  // Ссылка-приглашение или кнопка уведомления без входа: параметр запуска ждёт
-  // входа (его заберёт useStartParam), адрес — экран входа (E14, returnTo.ts).
-  useEffect(() => {
+  const [retrying, retry] = useRetrying(refreshToken); // «Повторить» видно занятым, пока refresh идёт
+  useEffect(() => { // без входа параметр запуска ждёт входа (useStartParam), адрес — экран входа (E14, returnTo.ts)
     if (isAuthenticated) return;
     rememberLaunchParam(search);
     if (!isLoading && authError !== 'transient') rememberReturnTo(pathname + search);
   }, [isAuthenticated, isLoading, authError, pathname, search]);
-  if (isLoading) return <div className="loader-center"><div className="spinner" /></div>;
-  if (!isAuthenticated) return authError === 'transient' ? <ConnectionTrouble onRetry={() => void refreshToken()} /> : <Navigate to="/login" replace />;
-  // StepUpProvider — окно кода 2FA для привязки и отвязки способов входа (S12).
+  if (isLoading) return <GateSkeleton pathname={pathname} />;
+  if (!isAuthenticated) return authError === 'transient' ? <ConnectionTrouble onRetry={retry} retrying={retrying} Frame={ConnectionOutcome} /> : <Navigate to="/login" replace />;
   return <AddressFormProvider><StepUpProvider><UiPrefsGate><Outlet /></UiPrefsGate></StepUpProvider></AddressFormProvider>;
 }

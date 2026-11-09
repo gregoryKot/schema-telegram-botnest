@@ -3,7 +3,7 @@ import type { ArtProps } from '../../components/art/paper';
 import { SignScene } from '../../components/art/SceneParts';
 import { FAQ } from './productContent';
 import { Rich } from './Rich';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Карточки продуктового лендинга (плитка со знаком, FAQ); карточка статьи — ArticleCard.tsx.
 // Вид — styles/product-landing*.css; данные — productContent.ts (react-refresh: раздельно).

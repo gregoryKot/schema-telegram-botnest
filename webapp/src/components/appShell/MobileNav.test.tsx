@@ -64,12 +64,16 @@ describe('MobileNav', () => {
     expect(screen.getByText('Профиль').closest('a')?.getAttribute('href')).toBe('/account');
   });
 
-  it.each([['/cabinet', true], ['/cabinet/tasks', true], ['/cabinet/abcdefgh', false], ['/cabinet/today', false]])(
-    'терапевт на %s: «Клиенты» горит — %s (доска «Задания» — вкладка списка)', (path, on) => {
+  // Решение 9 (docs/design/APP_2026-11.md): у доски «Задания» свой пункт — «Клиенты» на ней не горит.
+  it.each([['/cabinet', true, false], ['/cabinet/tasks', false, true], ['/cabinet/abcdefgh', false, false], ['/cabinet/today', false, false]])(
+    'терапевт на %s: «Клиенты» горит — %s, «Задания» — %s', (path, clientsOn, tasksOn) => {
       render(<MemoryRouter initialEntries={[path]}><MobileNav items={ITEMS} therapist /></MemoryRouter>);
       const clients = screen.getByText('Клиенты').closest('a')!;
-      expect(clients.className.includes('active')).toBe(on);
-      expect(clients.getAttribute('aria-current')).toBe(on ? 'page' : null);
+      expect(clients.className.includes('active')).toBe(clientsOn);
+      expect(clients.getAttribute('aria-current')).toBe(clientsOn ? 'page' : null);
+      const tasks = screen.getByText('Задания').closest('a')!;
+      expect(tasks.getAttribute('href')).toBe('/cabinet/tasks');
+      expect(tasks.className.includes('active')).toBe(tasksOn);
     });
 
   // «Справочник» терапевта (#995): свой раздел /cabinet/guide, горит только на нём.
@@ -87,11 +91,12 @@ describe('MobileNav', () => {
     expect(screen.queryByText('Справочник')).toBeNull();
   });
 
-  it('терапевт: «Поиск» открывает палитру команд', () => {
-    const onSearch = vi.fn();
-    render(<MemoryRouter><MobileNav items={ITEMS} therapist onSearch={onSearch} /></MemoryRouter>);
-    fireEvent.click(screen.getByText('Поиск'));
-    expect(onSearch).toHaveBeenCalledOnce();
+  // Решение 9: «Задания» вместо «Поиска» — поиск клиентов есть в «Клиентах» и в ⌘K.
+  it('терапевт: «Поиска» в панели нет, у каждого пункта — знак (svg), а не контурная пиктограмма', () => {
+    const { container } = render(<MemoryRouter><MobileNav items={ITEMS} therapist /></MemoryRouter>);
+    expect(screen.queryByText('Поиск')).toBeNull();
+    const items = Array.from(container.querySelectorAll('.mobile-nav-item'));
+    expect(items.every(n => n.querySelector('svg.pp-art--nav'))).toBe(true);
   });
 
   // #902: лист настроек — единственное место с переключателем режима, а сайдбар
@@ -107,7 +112,7 @@ describe('MobileNav', () => {
     expect(onProfile).toHaveBeenCalledOnce();
     // порядок и состав пунктов от onProfile не зависят
     expect(Array.from(container.querySelectorAll('.mobile-nav-item')).map(n => n.textContent))
-      .toEqual(['Сегодня', 'Клиенты', 'Справочник', 'Поиск', 'Профиль']);
+      .toEqual(['Сегодня', 'Клиенты', 'Справочник', 'Задания', 'Профиль']);
   });
 
   it('клиент: onProfile раздел «Профиль» в его панель не добавляет', () => {

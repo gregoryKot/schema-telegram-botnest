@@ -1,6 +1,6 @@
-// Неразрывные пробелы в тексте лендинга — при отрисовке, а не в контенте: текст
-// src/articles/home-landing.content.ts общий с HTML для робота (home-seo.render.ts), и
-// слова там не меняются. Что держим вместе:
+// Неразрывные пробелы — при отрисовке, а не в контенте (одна механика на лендинг и листы приложения:
+// «Зачем это всё», WhyThree, легенда знаков): текст src/articles/home-landing.content.ts общий с HTML
+// для робота (home-seo.render.ts), и слова там не меняются. Что держим вместе:
 //  • тире и точка-разделитель не начинают строку — пробел перед « — » и « · » неразрывный;
 //  • «схема-терапия» не рвётся на дефисе — дефис неразрывный (U+2011);
 //  • короткий предлог, союз или число не висят в конце строки («в вашем», «без рекламы»,
@@ -18,7 +18,10 @@ const SHORT_QUOTE = /«[^«»]{1,14}»/g;
 const NO_START = new Set(['—', '·']);
 
 export function glue(text: string): string {
-  const words = text.replace(SHORT_QUOTE, (q) => q.replace(/ /g, NBSP)).replace(/(схема)-(терапи)/gi, '$1\u2011$2').split(' ');
+  const words = text
+    .replace(SHORT_QUOTE, (q) => q.replace(/ /g, NBSP))
+    .replace(/(схема)-(терапи)/gi, '$1\u2011$2')
+    .split(' ');
   let out = words[0];
   for (let i = 1; i < words.length; i++) {
     const keep = NO_START.has(words[i]) || SHORT.test(words[i - 1]);

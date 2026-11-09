@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRouteError } from 'react-router-dom';
 import { reportClientError } from '../api';
 import { isChunkLoadError, reloadForFreshChunks } from '../utils/chunkReload';
+import { PaperOutcome } from './paper/PaperOutcome';
 import '../styles/sheet-tasks.css';
 
 // Ошибка уровня маршрута (ленивая страница не догрузилась, падение вне
@@ -35,21 +36,18 @@ export function RouteErrorScreen() {
     });
   }, [chunk, message, error]);
 
+  // Служебный исход на всю страницу (PaperOutcome): устарел чанк — «обновилось» (Leaf на шалфее),
+  // иначе — «на нашей стороне» (Breath на персике). Тексты прежние.
   return (
-    <div className="sk-crash" data-crash-screen="route">
-      <div className="ds-card sk-crash-card">
-        <h1 className="ds-h2">
-          {chunk ? 'Страница устарела' : 'Что-то пошло не так'}
-        </h1>
-        <p className="sk-crash-text">
-          {chunk
-            ? 'Приложение обновилось — нужна свежая версия страницы.'
-            : 'Ошибка уже отправлена разработчику. Обычно помогает перезагрузка.'}
-        </p>
-        <button className="ds-btn" onClick={() => window.location.reload()}>
-          Обновить страницу
-        </button>
-      </div>
+    <div data-crash-screen="route" className="sk-crash-route">
+      <PaperOutcome
+        outcome={chunk ? 'updated' : 'our_side'}
+        title={chunk ? 'Страница устарела' : 'Что-то пошло не так'}
+        lead={chunk
+          ? 'Приложение обновилось — нужна свежая версия страницы.'
+          : 'Ошибка уже отправлена разработчику. Обычно помогает перезагрузка.'}
+        action={{ label: 'Обновить страницу', onClick: () => window.location.reload() }}
+      />
     </div>
   );
 }

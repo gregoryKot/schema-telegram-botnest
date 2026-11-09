@@ -7,6 +7,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
 import { HomeTiles } from './HomeTiles';
 import { trackerCta } from './trackerCta';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 vi.mock('../../haptic', () => ({ haptic: { tap: vi.fn() } }));
 
@@ -55,19 +56,37 @@ describe('HomeTiles', () => {
     expect(screen.getByText('Как вы сегодня?')).toBeTruthy();
   });
 
-  it('полоски: оценённая потребность плотная, остальные бледные', () => {
+  // b05: полоски дня — Strokes values (высота по оценке), рисунок верхнего слоя знака с тенью-вырезкой.
+  const top = (sel: string) => document.querySelectorAll(`.ct-strokes > svg:last-child ${sel}`);
+
+  it('полоски: у оценённой потребности — высота по оценке, остальные — пустое место', () => {
     render(<HomeTiles {...base} ratings={{ attachment: 4 }} />);
-    const rated = document.querySelectorAll('[data-rated="yes"]');
+    const rated = top('[data-rated="yes"]');
     expect(rated.length).toBe(1);
-    expect(rated[0].getAttribute('data-need')).toBe('attachment');
-    expect(document.querySelectorAll('[data-rated="no"]').length).toBe(4);
+    expect(rated[0].getAttribute('data-value')).toBe('4');
+    expect([...top('rect')].indexOf(rated[0])).toBe(0);
+    expect(top('[data-rated="no"]').length).toBe(4);
+  });
+
+  it('пустой день — пять пустых мест, ни одной выдуманной оценки', () => {
+    render(<HomeTiles {...base} />);
+    expect(top('[data-rated="yes"]').length).toBe(0);
+    expect(top('[data-rated="no"]').length).toBe(5);
   });
 
   // Аудит 2026-11, E4: 0 — «не оценено» (откат отклонённой оценки), полоска не плотная.
-  it('оценка 0 — полоска бледная, как без оценки', () => {
+  it('оценка 0 — пустое место, как без оценки', () => {
     render(<HomeTiles {...base} ratings={{ attachment: 0, autonomy: 6 }} />);
-    const rated = document.querySelectorAll('[data-rated="yes"]');
-    expect([...rated].map((r) => r.getAttribute('data-need'))).toEqual(['autonomy']);
+    expect([...top('[data-rated="yes"]')].map((r) => r.getAttribute('data-value'))).toEqual(['6']);
+  });
+
+  it('квадраты — бумага и знак своей сущности из ENTITY_LOOK', () => {
+    render(<HomeTiles {...base} />);
+    const hue = (name: RegExp) => screen.getByRole('button', { name }).style.getPropertyValue('--h');
+    expect(hue(/Что случилось/)).toBe(String(ENTITY_LOOK.case.hue));
+    expect(hue(/Дневник/)).toBe(String(ENTITY_LOOK.diary.hue));
+    expect(hue(/Трекер/)).toBe(String(ENTITY_LOOK.tracker.hue));
+    expect(screen.getByRole('button', { name: /Дневник/ }).querySelector('svg.pp-art--square')).toBeTruthy();
   });
 
   it('три плитки зовут свои обработчики', () => {

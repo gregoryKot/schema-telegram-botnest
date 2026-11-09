@@ -90,9 +90,10 @@ describe('лист «Зачем это всё» (client-why.css)', () => {
   it('отступ на --safe-top даёт .u-sheet (shared/theme/utilities.css), своего padding-top у .cw-sheet нет', () => {
     expect(css).not.toMatch(/\.cw-sheet \{[^}]*padding-top/);
   });
-  it('строки трёх действий — ds-list-row в одну колонку, пояснение Manrope 14, без засечного кегля', () => {
-    expect(declsOf(css, '.cw-item')).toContain('grid-template-columns');
-    expect(declsOf(css, '.cw-item-text')).toContain('font-size: 14px');
-    expect(css).not.toMatch(/\.cw-item-title/);
+  // b05 (редизайн 2026-11): три действия — листы бумаги оттенков главной, а не строки белой карточки.
+  it('три действия — листы бумаги со знаком в углу; строк ds-list-row и белой карточки больше нет', () => {
+    expect(declsOf(css, '.cw-thing')).toContain('grid-template-columns');
+    expect(declsOf(css, '.cw-thing > .pp-art')).toContain('grid-column: 2');
+    expect(css).not.toMatch(/\.cw-item|\.cw-list|\.cw-hero/);
   });
 });

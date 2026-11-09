@@ -17,11 +17,12 @@ const LIGHT = extractBlock(CSS, ':root, html[data-theme="light"]');
 const DARK = extractBlock(CSS, 'html[data-theme="dark"]');
 
 describe('a11y: цвета токенов --text-muted (⌘K) / --c-rose-strong держат ≥4.5:1', () => {
-  it('.ds-kbd (⌘K) на --paper-sunk поля поиска — светлая тема', () => {
+  // b04 (2026-11): поле «Перейти к…» тише кризисного входа рядом — бумага страницы (--bg) и линия.
+  it('.ds-kbd (⌘K) на --bg поля поиска — светлая тема', () => {
     const css = CSS + readFileSync(join(__dirname, 'styles', 'cabinet.css'), 'utf8');
-    expect(css).toMatch(/\.search-pill \{[^}]*background: var\(--paper-sunk\)/);
+    expect(css).toMatch(/\.search-pill \{[^}]*background: var\(--bg\)/);
     expect(css).toMatch(/\.ds-kbd \{[^}]*color: var\(--text-muted\)/);
-    const bg = parseColor(tokenInBlock(LIGHT, '--paper-sunk')).rgb;
+    const bg = parseColor(tokenInBlock(LIGHT, '--bg')).rgb;
     const fg = parseColor(tokenInBlock(LIGHT, '--text-muted')).rgb;
     expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });

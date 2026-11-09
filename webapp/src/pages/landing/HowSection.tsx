@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { STEPS } from './productContent';
 import { PaperBand } from './PaperBand';
 import { HOME_HEADINGS } from '../../../../src/articles/home-landing.content';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/product-landing-journal.css';
 
 // «Как это работает» — журнальный разворот на полосе соломенной бумаги (PaperBand): у

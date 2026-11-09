@@ -141,9 +141,10 @@ describe('диалоги (dialogs.css)', () => {
     expect(box).not.toMatch(/rgba\(/);
   });
 
-  it('«тихое» окно гасит кольцо и у кнопок внутри, и у самого окна', () => {
-    expect(decls(dialogs, ".sk-dialog-box[data-focus='quiet'] :focus-visible")).toContain('outline: none');
-    expect(decls(dialogs, ".sk-dialog-box[data-focus='quiet']:focus-visible")).toContain('outline: none');
+  it('«тихое» окно и лист (useQuietFocus) гасят кольцо и у кнопок внутри, и у себя — правило в index.css', () => {
+    const index = rules('../index.css');
+    expect(decls(index, "[data-focus='quiet'] :focus-visible")).toContain('outline: none');
+    expect(decls(index, "[data-focus='quiet']:focus-visible")).toContain('outline: none');
   });
 
   it('опасная кнопка неактивной выглядит как все неактивные: её цвет — только у активной', () => {

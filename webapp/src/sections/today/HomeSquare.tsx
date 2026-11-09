@@ -1,9 +1,10 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { hueStyle } from '../../lib/tone';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { SignArt } from '../../components/art/SignArt';
 
 interface Props {
-  /** Оттенок цветной бумаги плитки (hue для .pp-paper, styles/paper.css). */
-  hue: number;
-  art: ReactNode;
+  /** Сущность плитки: бумага и знак — из ENTITY_LOOK, а не на месте. */
+  entity: 'case' | 'diary';
   title: string;
   text: string;
   /** null — данные ещё грузятся: плашка-скелетон вместо выдуманной подписи. */
@@ -11,19 +12,18 @@ interface Props {
   onClick: () => void;
 }
 
-/** Квадрат цветной бумаги на главной «Сегодня» (референс владельца 2026-11-04):
- *  заголовок, подпись, картинка-аппликация, внизу мета из данных и стрелка.
- *  Не ds-card--nav: там строка «картинка слева — текст — шеврон», здесь колонка. */
-export function HomeSquare({ hue, art, title, text, meta, onClick }: Props) {
+/** Квадрат цветной бумаги на главной «Сегодня» (референс владельца 2026-11-04): заголовок, подпись,
+ *  знак сущности, внизу мета из данных и стрелка (мета — одной строкой). На компьютере — плитка
+ *  вширь, знак справа (client-today.css). Не ds-card--nav: там строка «картинка — текст — шеврон». */
+export function HomeSquare({ entity, title, text, meta, onClick }: Props) {
+  const { hue, sign } = ENTITY_LOOK[entity];
   return (
-    <button type="button" className="ct-tile pp-paper pp-square" style={{ '--h': hue } as CSSProperties} onClick={onClick}>
+    <button type="button" className="ct-tile pp-paper pp-square" style={hueStyle(hue)} onClick={onClick}>
       <span className="pp-title">{title}</span>
       <span className="pp-text">{text}</span>
-      {art}
+      <SignArt sign={sign} size="square" />
       <span className="pp-square-foot">
-        {meta === null
-          ? <span className="pp-meta pp-meta--skeleton" aria-hidden="true" />
-          : <span className="pp-meta">{meta}</span>}
+        {meta === null ? <span className="pp-meta pp-meta--skeleton" aria-hidden="true" /> : <span className="pp-meta">{meta}</span>}
         <span className="pp-arrow" aria-hidden="true">→</span>
       </span>
     </button>

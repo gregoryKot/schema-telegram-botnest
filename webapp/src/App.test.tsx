@@ -239,7 +239,9 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     const App = await loadApp();
     const { container } = render(<App />);
 
-    expect(container.querySelector('.loader-center')).toBeTruthy();
+    // b04 (2026-11): силуэт экрана (колонка страницы аккаунта), а не крутилка.
+    expect(container.querySelector('.gate-page[aria-busy="true"]')).toBeTruthy();
+    expect(container.querySelector('.spinner')).toBeNull();
     resolveRefresh(jsonResponse(401, {}));
     await screen.findByRole('link', { name: /Войти через Google/ });
   });

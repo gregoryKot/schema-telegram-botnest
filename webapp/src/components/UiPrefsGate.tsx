@@ -7,10 +7,11 @@ import {
 } from '../utils/uiPrefsSync';
 import { useUiPrefsStartupSync } from '../utils/useUiPrefsStartupSync';
 import { onPageLeave } from '../../../shared/src/utils/pageLeave';
+import { GateSkeleton } from './AuthGateViews';
 
 /**
  * Не пускает экраны кабинета, пока настройки экранов с сервера не применены к
- * localStorage (экраны читают его при монтировании). Заставка — как у входа.
+ * localStorage (экраны читают его при монтировании). Пока ждём — силуэт экрана, как у входа (AuthGateViews).
  */
 // Стабильная ссылка: новая стрелка на рендер перезапускала синхронизацию (GET + закрытый пуш).
 const loadSettings = () => api.getSettings();
@@ -24,12 +25,6 @@ export function UiPrefsGate({ children }: { children: ReactNode }) {
   // досылаем сразу, а не через окно debounce (#922): другое устройство видит её
   // раньше. Не дошла — досылает следующий старт (маркер в uiPrefsSync).
   useEffect(() => onPageLeave(flushUiPrefs), []);
-  if (!settled) {
-    return (
-      <div className="loader-center">
-        <div className="spinner" />
-      </div>
-    );
-  }
+  if (!settled) return <GateSkeleton />;
   return <>{children}</>;
 }

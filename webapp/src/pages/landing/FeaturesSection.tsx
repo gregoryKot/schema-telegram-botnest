@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { FEATURES } from './productContent';
 import { SignScene } from '../../components/art/SceneParts';
 import { HOME_HEADINGS } from '../../../../src/articles/home-landing.content';
-import { glue } from './typo';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/product-landing-journal.css';
 
 // «Возможности» — бенто из плиток цветной бумаги в 4 колонки без дыр: ряды 2+1+1 и

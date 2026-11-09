@@ -23,20 +23,16 @@ export function Skeleton({
 }
 
 /**
- * Силуэт целого экрана (шапка + карточки) — фолбэк для Suspense-границы
- * основного контента AppShell (переключение раздела / вход в кабинет
- * терапевта). Аудит 2026-08-22: раньше единый Suspense на весь canvas ронял
- * ЛЮБУЮ ленивую шторку в общий крутилка-на-всю-высоту `Loader`; для замены
- * основного контента (не шторки поверх) правило CLAUDE.md требует силуэт по
- * форме, а не спиннер.
+ * Силуэт раздела без своего (ShellSkeletons.tsx — «Сегодня», «Ещё», кабинет): шапка страницы, лист
+ * без оттенка и строки списка (чужая бумага мигала бы до экрана). Силуэт по форме, а не крутилка. На всю
+ * ширину колонки (.sks-screen, index.css): в flex-ряду canvas он схлопывался в узкие пилюли (2026-11).
  */
 export function ScreenSkeleton() {
   return (
-    <div aria-hidden style={{ padding: '20px 20px 40px', display: 'flex', flexDirection: 'column', gap: 'var(--space-12)' }}>
-      <Skeleton width="45%" height={22} style={{ marginBottom: 4 }} />
-      <SkeletonCard />
-      <SkeletonCard />
-      <SkeletonCard height={80} />
+    <div aria-hidden className="ds-page sks-screen">
+      <div className="sks-head"><Skeleton width={120} height={12} /><Skeleton width="55%" height={34} radius={10} /></div>
+      <div className="sks-sheet sks-sheet--plain"><Skeleton width="45%" height={20} /><Skeleton width="80%" height={12} /></div>
+      <SkeletonList rows={3} height={64} />
     </div>
   );
 }
