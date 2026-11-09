@@ -4,8 +4,8 @@
 // бумага своей группы (modeLook: Карающий Критик — Looming на сливе), благодарность — Pebbles
 // filled на бирюзе: окрашено столько камешков, сколько записано «спасибо» (решение 2). Черновик —
 // вид своего типа (таблица ENTITY_LOOK, строка «Черновик»), а не всегда бумага схем.
-import { ENTITY_LOOK, modeLook, type EntityId, type Look } from '../../../../shared/src/theme/entityLook';
-import { getModeById } from '../../schemaTherapyData';
+import { ENTITY_LOOK, type EntityId, type Look } from '../../../../shared/src/theme/entityLook';
+import { modeLookById } from '../../components/diary/modeLookById';
 import type { DiaryType } from '../../types';
 import { modeEntryKind, schemaEntryKind, type EntryKind } from './entryKind';
 import type { AnyEntry } from './diaryModel';
@@ -25,7 +25,7 @@ const pebblesFilled = (n: number) => Math.max(0, Math.min(PEBBLES_MAX, n));
 
 /** Вид типа записи; режим — по своей группе, без режима — общий знак режимов. */
 export function kindLook(kind: EntryKind, modeId?: string): Look {
-  if (kind === 'mode' && modeId) return modeLook(modeId, getModeById(modeId)?.groupId);
+  if (kind === 'mode' && modeId) return modeLookById(modeId);
   const { hue, sign } = ENTITY_LOOK[kind === 'mode' ? 'diary_mode' : KIND_ENTITY[kind]];
   return { hue, sign };
 }

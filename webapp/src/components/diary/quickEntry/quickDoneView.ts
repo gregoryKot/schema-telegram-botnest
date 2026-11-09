@@ -1,5 +1,5 @@
-import { modeLook, type EntityId, type PaperHue, type SignKey } from '../../../../../shared/src/theme/entityLook';
-import { getModeById } from '../../../schemaTherapyData';
+import type { EntityId, PaperHue, SignKey } from '../../../../../shared/src/theme/entityLook';
+import { modeLookById } from '../modeLookById';
 import { QUICK_TAG_ENTITY, type QuickSaved } from './quickEntryModel';
 
 /** Вид листа «Записано»: сущность записи, своя бумага и сцена из данных, если они есть. */
@@ -22,7 +22,7 @@ export interface QuickDoneView {
 export function quickDoneView(saved: QuickSaved): QuickDoneView {
   const entity = QUICK_TAG_ENTITY[saved.tag];
   if (saved.tag === 'mode' && saved.modeId) {
-    const look = modeLook(saved.modeId, getModeById(saved.modeId)?.groupId);
+    const look = modeLookById(saved.modeId);
     return { entity, hue: look.hue, sprout: look.sign };
   }
   if (saved.tag === 'gratitude' && saved.gratitudeCount !== undefined) {

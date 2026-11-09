@@ -55,7 +55,7 @@
 }
 .th-line.qe-done-line { margin: 14px 0 0; padding: 0 var(--space-8); }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .qe-flow { padding-top: 40px; gap: 20px; }
   .qe-area { min-height: 240px; padding: 20px 22px; font-size: 20px; }
   .qe-foot { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 28px; align-items: start; }

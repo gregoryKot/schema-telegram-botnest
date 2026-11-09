@@ -40,14 +40,10 @@
 /* Знак-герой Pebbles filled: камешек, который ещё не лёг, — пустое место без тени-вырезки
    (иначе пустой день читался тремя бирюзовыми камешками). */
 .sd-grat-pebbles > .pp-art:first-child [data-laid="no"] { fill-opacity: 0; }
-/* Разворот уже 1024: «Почему это работает» — после тетради, а не между листом и первым полем
-   (на 390 шапка до поля — не выше ~230px, принцип 5). Колонка листа растворяется в общей ленте
-   разворота, подсказка уходит в её конец. */
-@media (max-width: 1023px) {
-  .ex2-body--spread:has(.sd-grat) .pa-spread-side { display: contents; }
-  .ex2-body--spread:has(.sd-grat) .ex2-aside { order: 1; }
-}
-@media (max-width: 767px) {
+/* Разворот уже 1024: «Почему это работает» (DiaryAside, .sd-aside) — после тетради, а не между листом
+   и первым полем (на 390 шапка до поля — не выше ~230px, принцип 5). Порядок держит общее правило
+   мастеров дневников в diary-wizard.css (`.pa-spread:has(.sd-aside, …)`), своего тут нет. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sd-grat-sheet { padding: 2px 16px 4px; box-shadow: 5px 6px 0 oklch(0.86 0.045 var(--h)); }
   .sd-grat-row, .sd-grat-add { grid-template-columns: 34px minmax(0, 1fr); column-gap: 10px; }
   .sd-grat-num { font-size: 23px; }

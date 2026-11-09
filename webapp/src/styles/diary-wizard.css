@@ -201,7 +201,7 @@
   .sd-tick { min-height: 44px; padding: 0 2px; }
   .sd-chip { min-height: 44px; }
 }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Подвал мастера липнет к низу: раскрытые «Все 20» схем и длинный текст не уводят «Дальше» за экран. */
   .sd-wfoot {
     position: sticky; bottom: 0; z-index: 2; margin: 14px -16px 0;
