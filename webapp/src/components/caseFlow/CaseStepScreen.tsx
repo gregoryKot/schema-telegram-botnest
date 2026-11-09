@@ -4,11 +4,11 @@
 // шага (CaseCollectedProvider кладёт строки, экраны шагов их не пробрасывают); форма — справа. Итог
 // подменяет вид листа (бумага группы режима и своя сцена — look, heroArt). «Самопомощь» у героя —
 // строкой под кнопками (ExScreen). Запись истории — одна на поток (useHistorySheet в CaseFlowScreen).
+// Неразрывные пробелы надписи, заголовка и подписи ставит сам лист (EntitySheet → glue).
 import { createContext, useContext, type ReactNode } from 'react';
 import type { EntityId, SheetLook } from '../../../../shared/src/theme/entityLook';
 import type { QuickResultRow } from '../../../../shared/src/case/quick/caseQuick';
 import { ExScreen } from '../exercises/ExScreen';
-import { glue } from '../../../../shared/src/utils/typo';
 import { CaseSummaryAside } from './CaseSummaryAside';
 import '../../styles/case-quick.css';
 
@@ -37,14 +37,11 @@ interface Props {
   children: ReactNode;
 }
 
-/** Строка — с неразрывными пробелами (тире и «·» не начинают строку, «1 из 3» не рвётся). */
-const typo = (text: ReactNode) => (typeof text === 'string' ? glue(text) : text);
-
 export function CaseStepScreen({ look = 'case', spread = true, backLabel = 'Назад', children, eyebrow, title, lede, ...head }: Props) {
   const rows = useContext(Collected);
   const aside = rows.length > 0 ? <CaseSummaryAside rows={rows} className="cq-summary--aside" /> : undefined;
   return (
-    <ExScreen {...head} eyebrow={typo(eyebrow)} title={typo(title)} lede={typo(lede)} look={look} spread={spread} backLabel={backLabel} aside={spread ? aside : undefined}>
+    <ExScreen {...head} eyebrow={eyebrow} title={title} lede={lede} look={look} spread={spread} backLabel={backLabel} aside={spread ? aside : undefined}>
       <div className="cq-step">{children}</div>
     </ExScreen>
   );

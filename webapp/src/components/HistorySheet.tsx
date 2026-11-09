@@ -10,6 +10,7 @@ import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { fillHistoryGaps } from './appShell/navigation';
 import { useTr } from '../utils/addressForm';
 import { PaperAlert } from './paper/PaperAlert';
+import { glue } from '../../../shared/src/utils/typo';
 import '../styles/sheet-diary.css';
 
 const HistoryView   = lazy(() => import('./HistoryView').then(m => ({ default: m.HistoryView })));
@@ -72,7 +73,7 @@ export function HistorySheet({
           ? <HistorySheetSkeleton />
           : historyFailed
           ? <div className="sd-history"><PaperAlert sign="strokes" title="Не удалось загрузить историю."
-              text={tr('Проверь соединение и открой её ещё раз — оценки на месте, просто не загрузились', 'Проверьте соединение и откройте её ещё раз — оценки на месте, просто не загрузились')} /></div>
+              text={glue(tr('Проверь соединение и открой её ещё раз — оценки на месте, просто не загрузились', 'Проверьте соединение и откройте её ещё раз — оценки на месте, просто не загрузились'))} /></div>
           : <Suspense fallback={<HistorySheetSkeleton />}>
               <HistoryView needs={needs} history={history} currentRatings={ratings} childhoodRatings={childhoodRatings}
                 onOpenSchemas={onOpenSchemas} onOpenChildhoodWheel={onOpenChildhoodWheel}

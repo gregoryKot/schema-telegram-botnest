@@ -2,7 +2,8 @@ import type { MutableRefObject } from 'react';
 import type { DayHistory } from '../../types';
 import { Strokes } from '../art/PaperArt';
 import { getDayAbbr, getDayNum } from './historyMath';
-import { dayValues, useStripEdges } from './dayStrip';
+import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
+import { useStripEdges } from './dayStrip';
 
 interface Props {
   history: DayHistory[];
@@ -26,7 +27,7 @@ export function DateStrip({ history, selectedIdx, onSelect, btnRefs }: Props) {
           onClick={() => onSelect(i)} aria-pressed={i === selectedIdx}
           className={'sd-day' + (i === selectedIdx ? ' is-active' : '')}>
           <span className="sd-day-date"><span className="sd-day-dow">{getDayAbbr(day.date)}</span><span className="sd-day-num">{getDayNum(day.date)}</span></span>
-          <span className="sd-day-strokes" aria-hidden="true"><Strokes values={dayValues(day.ratings)} size="nav" /></span>
+          <span className="sd-day-strokes" aria-hidden="true"><Strokes values={dayStrokeValues(day.ratings)} size="nav" /></span>
         </button>
       ))}
     </div>

@@ -5,8 +5,9 @@ import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 /**
  * Куда дальше с экрана «Готово»: строки-переходы со знаком сущности слева (как строки «Ещё»), а не
- * мелкие ссылки в одну строку — заметка к дню (знак заметки из ENTITY_LOOK), история (знак
- * трекера), «Поделиться днём» (своя иконка). Заметки нет у дооценки прошлого дня.
+ * мелкие ссылки в одну строку — заметка к дню (знак заметки из ENTITY_LOOK), история (`Sheets` —
+ * собранные дни; `Strokes` уже стоит на листе трекера рядом, второй раз в кадре он обесценивается),
+ * «Поделиться днём» (своя иконка). Заметки нет у дооценки прошлого дня.
  */
 export function CompletionLinks({ needs, ratings, date, isBackfill, onOpenNote, onOpenHistory }: {
   needs: Need[];
@@ -26,7 +27,7 @@ export function CompletionLinks({ needs, ratings, date, isBackfill, onOpenNote, 
       )}
       {onOpenHistory && (
         <button type="button" className="tq-go-row" onClick={onOpenHistory}>
-          <span className="pp-row-art"><SignArt sign={ENTITY_LOOK.tracker.sign} size="row" /></span>История →
+          <span className="pp-row-art"><SignArt sign="sheets" size="row" /></span>История →
         </button>
       )}
       <DayShareButton needs={needs} ratings={ratings} date={date} className="tq-go-row tq-go-row--share" />

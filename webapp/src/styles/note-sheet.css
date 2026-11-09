@@ -4,7 +4,9 @@
    (солома, ENTITY_LOOK.note), темы дня — SignChip под полем, «Сохранить» во всю колонку. */
 .sd-note-form { --h: 70; display: flex; flex-direction: column; gap: 18px; }
 .sd-note-area {
-  box-sizing: border-box; width: 100%; min-height: 200px; resize: vertical; -webkit-appearance: none; appearance: none;
+  /* Поле само растёт с текстом (field-sizing, как .sd-grat-field): системный уголок размера на бумажном
+     листе выбивался из языка бумаги и отличал поле от «Что случилось?» в разборе. */
+  box-sizing: border-box; width: 100%; min-height: 200px; resize: none; field-sizing: content; -webkit-appearance: none; appearance: none;
   padding: 18px 20px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); color: var(--text);
   font: 400 19px/1.5 var(--serif); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
 }
@@ -18,12 +20,11 @@
 .pa-alert.sd-note-alert { margin-top: 18px; }
 .ds-btn.sd-note-save { width: 100%; height: 48px; margin-top: 22px; border-radius: 24px; font-size: 15px; }
 /* «Зачем это?» — тихая строка-раскрывашка под листом (NoteWhy), без карточки. */
-.sd-why { border-top: 1px solid var(--paper-sunk); border-bottom: 1px solid var(--paper-sunk); }
-.sd-why-btn {
-  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; width: 100%; min-height: 48px; box-sizing: border-box;
-  padding: 12px 2px; border: 0; background: none; font: inherit; color: var(--text); text-align: left; cursor: pointer;
-}
-.sd-why-btn > .ds-label { color: var(--text-sub); }
+/* Механика — общая ds-fold (NeedFold); здесь снят вид карточки и заголовок в строку с переносом. */
+.ds-fold.sd-why { background: none; border: 0; border-radius: 0; border-top: 1px solid var(--paper-sunk); border-bottom: 1px solid var(--paper-sunk); }
+.sd-why > .ds-fold-btn { align-items: baseline; justify-content: flex-start; flex-wrap: wrap; gap: 4px 12px; padding: 12px 2px; font: inherit; color: var(--text); }
+.sd-why > .ds-fold-btn > .ds-label { color: var(--text-sub); }
 .sd-why-title { font-family: var(--serif); font-size: 17px; line-height: 1.3; }
-.sd-why-btn > .ds-fold-chev { margin-left: auto; align-self: center; }
+.sd-why > .ds-fold-btn > .ds-fold-chev { margin-left: auto; align-self: center; }
+.sd-why > .ds-fold-body { padding: 0 2px; }
 .sd-why-body { margin: 0 0 14px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }

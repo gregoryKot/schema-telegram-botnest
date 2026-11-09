@@ -38,8 +38,9 @@ describe('collectedRows — «Что собрали» растёт по шага
 });
 
 describe('rowSign', () => {
-  it('у каждой строки итога есть знак', () => {
-    for (const r of buildQuickResult(full, body, CASE_IMPULSES).rows) expect(rowSign(r.label)).not.toBeNull();
+  it('знак — только у момента (лента разбора); у «Внутри» и «Хотелось» чужих знаков нет', () => {
+    const signs = buildQuickResult(full, body, CASE_IMPULSES).rows.map((r) => [r.label, rowSign(r.label)]);
+    expect(signs).toEqual([['Момент', 'ribbon'], ['Внутри', null], ['Хотелось', null]]);
   });
   it('неизвестная подпись и ключи прототипа — без знака', () => {
     expect(rowSign('Другое')).toBeNull();

@@ -5,13 +5,13 @@
 // выбирается на месте. Заменяет одинокий Ribbon над полем, NeedArt 16px в заголовке и «2» на 2FA.
 //  • compact — второй и следующие шаги того же потока: тот же лист полосой (знак 56–64, Literata
 //    22–24); подпись не обрезается — экран сам решает, передавать ли её со второго шага;
-//  • art — своя сцена вместо знака (Strokes values, SceneCheckIn) — данные несёт сцена; на узком
-//    листе она встаёт в угол, как знак, но крупнее (pa-sheet--scene, paper-app.css);
-//  • meta — строка из данных под подписью («Шаг 2 из 4», «Сегодня 2 записи»);
-//  • в развороте (SpreadLayout) на ≥1024 лист встаёт колонкой: знак сверху, крупнее.
-// Декор (знак, сцена) скрыт от чтения с экрана — смысл несут заголовок и подпись.
+//  • art — своя сцена вместо знака (Strokes values, SceneCheckIn) — данные несёт сцена; на узком листе — в угол, крупнее знака;
+//  • meta — строка из данных под подписью («Шаг 2 из 4»); в развороте ≥1024 — колонкой, знак сверху.
+// Декор (знак, сцена) скрыт от чтения с экрана — смысл несут заголовок и подпись. Строки — через glue:
+// тире не начинает строку, короткое слово не висит («а / точка»), «кто-то» не рвётся (shared/src/utils/typo.ts).
 import type { CSSProperties, ReactNode } from 'react';
 import { ENTITY_LOOK, type EntityId, type SheetLook } from '../../../../shared/src/theme/entityLook';
+import { glueIf } from '../../../../shared/src/utils/typo';
 import { SignHero } from './SignHero';
 import '../../styles/paper-app.css';
 
@@ -40,9 +40,9 @@ export function EntitySheet({ look, label, title, sub, meta, art, compact, title
   return (
     <div className={cls} style={{ '--h': hue } as CSSProperties} data-sign={art ? undefined : sign}>
       <div className="pa-sheet-body">
-        {label && <span className="ds-label pa-sheet-label">{label}</span>}
-        <Title className="pa-sheet-title">{title}</Title>
-        {sub && <p className="pa-sheet-sub">{sub}</p>}
+        {label && <span className="ds-label pa-sheet-label">{glueIf(label)}</span>}
+        <Title className="pa-sheet-title">{glueIf(title)}</Title>
+        {sub && <p className="pa-sheet-sub">{glueIf(sub)}</p>}
         {meta && <div className="pa-sheet-meta">{meta}</div>}
         {children}
       </div>

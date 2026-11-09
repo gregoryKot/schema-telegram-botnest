@@ -6,6 +6,7 @@ import { SceneCheckIn } from '../art/LandingScenesMore';
 import { weekWindow } from '../../../../shared/src/history/sparkline';
 import { isRated } from '../../../../shared/src/needs/ratingRecord';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 
 interface Props {
   needs: Need[]; history: DayHistory[]; days: number; selectedIdx: number; selectedRatings: Record<string, number>;
@@ -28,7 +29,7 @@ export function HistoryWeekView({ needs, history, days, selectedIdx, selectedRat
       {needsLow.length > 0 && (
         <AttentionCard need={needsLow[0]}>
           <div className="sd-low-text">
-            <strong>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!isTherapist && ' – разобраться рядом с живым человеком бывает легче'}.
+            <strong>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!isTherapist && glue(' – разобраться рядом с живым человеком бывает легче')}.
           </div>
           {bookingLink}
         </AttentionCard>

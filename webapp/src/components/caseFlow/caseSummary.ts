@@ -36,12 +36,13 @@ export function collectedRows(step: CaseQuickStep, f: CaseQuickFields, bodyChips
   return buildQuickResult(asked, bodyChips, CASE_IMPULSES).rows;
 }
 
-/** Знак строки: момент — лента разбора, внутри — полоски состояния, хотелось — камешки мысли
- *  (аудит diary-case-result). Подпись без знака в таблице — строка без знака, не выдуманный. */
+/** Знак строки — только у момента: лента — мотив самого разбора. «Внутри» и «Хотелось» — без знака:
+ *  полоски (`Strokes`) — это трекер и потребности, камешки (`Pebbles`) — дневник, и в итоге разбора
+ *  знаки чужих сущностей путали смысл (ревью g2, PAPER_2026-11.md «один мотив на сущность»).
+ *  Подпись без знака в таблице — строка без знака, не выдуманный; колонка знака остаётся — текст
+ *  строк стоит по одному краю. */
 export const ROW_SIGN: Record<string, SignKey> = {
   Момент: 'ribbon',
-  Внутри: 'strokes',
-  Хотелось: 'pebbles',
 };
 
 export const rowSign = (label: string): SignKey | null => (Object.hasOwn(ROW_SIGN, label) ? ROW_SIGN[label] : null);

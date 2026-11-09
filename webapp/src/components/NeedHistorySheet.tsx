@@ -7,10 +7,10 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { NeedAdviceModal } from './NeedAdviceModal';
 import { NeedDynamics } from './NeedDynamics';
-import { SignArt } from './art/SignArt';
 import { NEED_HUE, hueStyle } from '../lib/tone';
 import { needDataStyle } from './needDataColor';
 import { needLook } from '../../../shared/src/theme/entityLook';
+import { glue } from '../../../shared/src/utils/typo';
 import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tracker.css';
 
@@ -70,8 +70,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
               <span className="tk2-help-in" style={help.inner}>?</span>
             </button>
           </div>
-          <p className="tk2-tip-text">{tip}</p>
-          <span className="tk2-tip-sign"><SignArt sign={needLook(id).sign} size="square" /></span>
+          <p className="tk2-tip-text">{glue(tip)}</p>
         </div>
 
         {data.tags.length > 0 && (

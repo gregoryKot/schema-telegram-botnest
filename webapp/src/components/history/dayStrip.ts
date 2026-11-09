@@ -1,12 +1,6 @@
-// Полоса дат истории (DateStrip): листок дня с пятью полосками его оценок и затухание краёв.
+// Полоса дат истории (DateStrip): затухание краёв ленты. Полоски дня — общая dayStrokeValues
+// (shared/src/needs/dayStrokes.ts), та же, что у главной и меню.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { NEED_ORDER } from '../../../../shared/src/needs/types';
-import { isRated } from '../../../../shared/src/needs/ratingRecord';
-
-/** Оценки дня по NEED_ORDER для Strokes values; не оценена (0 или нет ключа) — null, пустой тон. */
-export function dayValues(ratings: Readonly<Record<string, number>>): (number | null)[] {
-  return NEED_ORDER.map((id) => (isRated(ratings, id) ? ratings[id] : null));
-}
 
 /**
  * С какой стороны за краем полосы ещё есть дни — там край затухает (маска в history.css),

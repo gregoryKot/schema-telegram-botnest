@@ -7,6 +7,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { ENTITY_LOOK, needLook, type SheetLook } from '../../../shared/src/theme/entityLook';
 import { NEED_ORDER, type NeedId } from '../../../shared/src/needs/types';
+import { glue } from '../../../shared/src/utils/typo';
 import '../styles/sheet-tracker.css';
 
 // Оверлей «О советах» под шитами потребности — общий для NeedHistorySheet и
@@ -32,7 +33,7 @@ export function NeedAdviceModal({ onClose, needId }: { onClose: () => void; need
     <BottomSheetShell goBack={goBack} zIndex={300}>
       <EntitySheet look={lookOf(needId)} label={needName} title="О советах" compact className="tk2-adv-head" />
       <div className="tk2-adv-body">
-        {DISCLAIMER_CONTENT.map((p, i) => <p key={i} className="tk2-adv-p">{p}</p>)}
+        {DISCLAIMER_CONTENT.map((p, i) => <p key={i} className="tk2-adv-p">{glue(p)}</p>)}
       </div>
       {/* Терапевту не предлагаем ссылку на самого себя; без канала — некуда (З6). */}
       {!contact.isTherapist && contact.url && (

@@ -1,13 +1,13 @@
 // @vitest-environment node
 // Цвет данных потребности в истории (needInk.ts, решение 7 «Палитра данных»): число строки —
 // текст на белой строке (≥4.5:1), крупная цифра карточки недели — на бумаге своей потребности
-// (крупный текст, ≥3:1); графика — тот же цвет, что полоски Strokes values (NEED_DATA_PAPER).
+// (крупный текст, ≥3:1); графика — needDataColor, его сверка с NEED_DATA_PAPER — needDataColor.test.ts.
 // Кабинет рисуется в светлой теме (needDataContrast.test.ts) — значения берём из неё.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { NEED_INK, NEED_TEXT_INK, inkVars } from './needInk';
-import { NEED_DATA_PAPER } from '../art/paper';
+import { needDataColor } from '../needDataColor';
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 import { NEED_HUE } from '../../../../shared/src/theme/entityHue';
 import { contrastRatio, extractBlock, hexToRgb, resolveToken, type Rgb } from '../../test-support/cssContrast';
@@ -27,8 +27,8 @@ function paper(h: number): Rgb {
 }
 
 describe('needInk — цвет потребности в истории', () => {
-  it('графика — тот же цвет, что полоски дня (NEED_DATA_PAPER по NEED_ORDER)', () => {
-    NEED_ORDER.forEach((id, i) => expect(NEED_INK[id]).toBe(NEED_DATA_PAPER[i]));
+  it('графика — один источник с трекером: needDataColor (палитра — needDataColor.test.ts)', () => {
+    NEED_ORDER.forEach((id) => expect(NEED_INK[id]).toBe(needDataColor(id)));
   });
 
   it('число: ≥4.5:1 к белой строке и ≥3:1 к бумаге своей потребности', () => {
@@ -40,12 +40,16 @@ describe('needInk — цвет потребности в истории', () => 
     }
   });
 
+  it('число — текстовый токен (*-strong или --accent-*), не палитровый --c-* для заливок', () => {
+    for (const id of NEED_ORDER) expect(NEED_TEXT_INK[id]).toMatch(/^var\(--(c-[a-z]+-strong|accent-[a-z]+)\)$/);
+  });
+
   it('контрольный образец: палитровый --c-clay мелким текстом на белой строке не проходит', () => {
     expect(contrastRatio(token('var(--c-clay)'), token('var(--surface)'))).toBeLessThan(4.5);
   });
 
   it('inkVars: знакомая потребность — её цвета, незнакомая — нейтральный текст', () => {
-    expect(inkVars('play')).toEqual({ '--need-ink': NEED_INK.play, '--need-text': NEED_TEXT_INK.play });
+    expect(inkVars('play')).toEqual({ '--need-ink': needDataColor('play'), '--need-text': NEED_TEXT_INK.play });
     expect(inkVars('unknown')).toEqual({ '--need-ink': 'var(--text-sub)', '--need-text': 'var(--text)' });
   });
 });

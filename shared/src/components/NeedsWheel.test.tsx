@@ -132,12 +132,14 @@ describe('NeedsWheel', () => {
     expect(arc(safety)).toBeGreaterThan(arc(low));
   });
 
-  it('потребность без цвета в реестре красится фолбэком #888', () => {
+  it('потребность без цвета в реестре красится запасным токеном --text-sub, а не hex-литералом', () => {
     const alien = [{ id: 'unknown_need', name: 'X', emoji: '❓' }] as Need[];
     const { container } = render(
       <NeedsWheel needs={alien} ratings={{ unknown_need: 9 }} />,
     );
-    expect(container.querySelector('path[fill="#888"]')).toBeTruthy();
+    expect(
+      container.querySelector('path[fill="var(--text-sub)"]'),
+    ).toBeTruthy();
   });
 
   it('onClickNeed и onClickCenter зовутся по клик-зонам', () => {

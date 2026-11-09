@@ -2,6 +2,7 @@ import { Skeleton, SkeletonList } from '../Skeleton';
 import { SpreadLayout } from '../paper/SpreadLayout';
 import { hueStyle } from '../../lib/tone';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { TrackerBarFrame } from './TrackerBarFrame';
 
 /**
  * Загрузка бэкфилла: силуэт экрана вопроса — верхняя полоса с живым «Закрыть» (выйти можно и
@@ -11,13 +12,9 @@ import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 export function QuestionSkeleton({ onClose }: { onClose: () => void }) {
   return (
     <>
-      <div className="tq-bar">
-        <button type="button" className="tq-bar-btn" onClick={onClose}>Закрыть</button>
-        <div className="tq-dots" aria-hidden>
-          {[0, 1, 2, 3, 4].map((i) => <span key={i} className="tq-dot-hit"><span className="tq-dot" /></span>)}
-        </div>
-        <span />
-      </div>
+      <TrackerBarFrame onClose={onClose}>
+        {[0, 1, 2, 3, 4].map((i) => <span key={i} className="tq-dot-hit"><span className="tq-dot" /></span>)}
+      </TrackerBarFrame>
       <div className="tq-body" role="status" aria-busy="true" aria-label="Загружаются оценки дня">
         <div className="tq-ask" aria-hidden>
           <SpreadLayout side={

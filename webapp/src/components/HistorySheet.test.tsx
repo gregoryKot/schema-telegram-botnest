@@ -91,7 +91,8 @@ describe('HistorySheet', () => {
   it('historyFailed — «Не удалось загрузить историю», а не пустая история', async () => {
     renderSheet({ historyLoading: false, history: [], historyFailed: true });
     expect(screen.getByRole('alert').textContent).toContain('Не удалось загрузить историю');
-    expect(screen.getByRole('alert').textContent).toContain('оценки на месте');
+    // текст идёт через glue: неразрывные пробелы — те же слова (shared/src/utils/typo.ts)
+    expect(screen.getByRole('alert').textContent?.replace(/\u00a0/g, ' ')).toContain('оценки на месте');
     await act(async () => {});
     expect(screen.queryByText(/трекер сегодня/)).toBeNull();
   });

@@ -9,6 +9,11 @@
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './flow-frame.css';
 .tq-bar-btn:focus-visible, .tq-dot-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Край шапки трекера — по краю листов того же пути («← Назад к трекеру» в .ds-sheet-head: 24, на телефоне 16):
+   поле полосы + поле кнопки (4). Хит 44×44 прежний. Только у трекера: каркас tq-bar общий с быстрой записью
+   (flow-frame.css, b10a) — она берёт тот же край в своей партии. */
+.tk2-overlay .tq-bar { padding-inline: 20px; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay .tq-bar { padding-inline: 12px; } }
 .tq-dots { display: flex; justify-content: center; }
 /* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px; высота 44 держит
    палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
@@ -47,12 +52,13 @@
 .tq-examples-list { margin: 0; padding: 0 0 var(--space-4) var(--space-16); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
 .tq-examples-list li + li { margin-top: var(--space-4); }
 .tq-question { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text); text-wrap: pretty; }
-/* Лист вопроса уже 1024 — не полоса разворота (знак 56, Literata 22), а герой: знак 84, Literata 30.
+/* Лист вопроса уже 1024 — не полоса разворота (знак 56, Literata 22), а герой: знак потребности
+   высотой ~60 (слот 112, поле холста уходит в отступы — paper-app.css), Literata 30.
    Шапка до первого ответа на 390 остаётся ~230px: описание короткое, примеры свёрнуты. */
 @media (max-width: 1023px) {
   .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 16px; padding: 20px 20px 16px 22px; border-radius: 22px; }
   .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 30px; }
-  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 84px; }
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 112px; }
   .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > :not(.pa-sheet-label) { margin-top: 10px; }
   .tq-ask .pa-spread-side .tq-sheet .pa-sheet-body > .tq-examples { margin-top: 6px; }
 }

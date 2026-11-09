@@ -1,6 +1,7 @@
 import type { Need } from '../../types';
 import { useNeedData } from '../../needData';
 import { formatDateString } from '../../../../shared/src/utils/calendarDate';
+import { glue } from '../../../../shared/src/utils/typo';
 import { TherapyLine } from '../therapy/TherapyLine';
 import { useTherapyBridgeTexts } from '../therapy/useTherapyBridgeTexts';
 import { Strokes } from '../art/PaperArt';
@@ -61,7 +62,7 @@ export function CompletionScreen({
       <div className="tq-index" aria-label={headline.aria}>{headline.big}</div>
       <p className="tq-index-cap">{headline.caption}</p>
       <p className="tq-obs">
-        {complete && lowest ? lowestObservation(nameOf(lowest)) : 'Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.'}
+        {glue(complete && lowest ? lowestObservation(nameOf(lowest)) : 'Остальное можно дооценить позже — хоть вечером, хоть завтра из истории.')}
       </p>
       {queued && <p className="tq-index-cap" role="status">{QUEUED_TEXT}</p>}
       <DayBars needs={needs} ratings={effectiveRatings} />

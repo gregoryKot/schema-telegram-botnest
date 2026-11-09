@@ -12,6 +12,7 @@ import { NeedTodayActions } from './NeedTodayActions';
 import { needDataStyle } from './needDataColor';
 import { rangeCardIndex, wordForValue } from '../../../shared/src/needs/ratingWords';
 import { needLook } from '../../../shared/src/theme/entityLook';
+import { glue } from '../../../shared/src/utils/typo';
 import '../styles/sheet-tracker.css';
 import type { NeedId } from '../../../shared/src/needs/types';
 import { api } from '../api';
@@ -85,14 +86,14 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
         <div className="tk2-folds">
           <NeedFold title="Как это выглядит в жизни">
             <ul className="tk2-list">
-              {data.examples.map((ex, i) => <li key={i} className="tk2-li">{ex}</li>)}
+              {data.examples.map((ex, i) => <li key={i} className="tk2-li">{glue(ex)}</li>)}
             </ul>
           </NeedFold>
 
           {data.reflection?.length > 0 && (
             <NeedFold title="Вопросы для рефлексии">
               <ul className="tk2-list tk2-list--q">
-                {data.reflection.map((q, i) => <li key={i} className="tk2-li">{q}</li>)}
+                {data.reflection.map((q, i) => <li key={i} className="tk2-li">{glue(q)}</li>)}
               </ul>
             </NeedFold>
           )}
@@ -113,7 +114,7 @@ export function NeedTodaySheet({ need, value, yesterdayValue, onChange, onClose,
                       <div className="ds-h3">{range.label}</div>
                       {active && <GlyphCheck />}
                     </div>
-                    <div className="ds-sub">{range.description}</div>
+                    <div className="ds-sub">{glue(range.description)}</div>
                   </div>
                 );
               })}

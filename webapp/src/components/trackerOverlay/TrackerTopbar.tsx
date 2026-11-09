@@ -3,6 +3,7 @@ import { hueStyle, NEED_HUE } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import { isRated } from '../../../../shared/src/needs/ratingRecord';
 import { needDataStyle } from '../needDataColor';
+import { TrackerBarFrame } from './TrackerBarFrame';
 
 /** Верх вопроса трекера: «Закрыть», точки прогресса цветом данных потребности (тап — к ней), «Пропустить». */
 export function TrackerTopbar({
@@ -17,26 +18,23 @@ export function TrackerTopbar({
   onSkip: () => void;
 }) {
   return (
-    <div className="tq-bar">
-      <button type="button" className="tq-bar-btn" onClick={onClose}>Закрыть</button>
-      <div className="tq-dots" role="group" aria-label="Потребности">
-        {needs.map((n, i) => {
-          const state = i === idx ? ' is-current' : isRated(ratings, n.id) ? ' is-done' : '';
-          return (
-            <button
-              key={n.id}
-              type="button"
-              className="tq-dot-hit"
-              aria-label={nameOf(n)}
-              aria-current={i === idx ? 'step' : undefined}
-              onClick={() => onPick(i)}
-            >
-              <span className={'tq-dot' + state} style={{ ...hueStyle(NEED_HUE[n.id as NeedId]), ...needDataStyle(n.id) }} />
-            </button>
-          );
-        })}
-      </div>
-      <button type="button" className="tq-bar-btn tq-skip" onClick={onSkip}>Пропустить</button>
-    </div>
+    <TrackerBarFrame onClose={onClose} label="Потребности"
+      end={<button type="button" className="tq-bar-btn tq-skip" onClick={onSkip}>Пропустить</button>}>
+      {needs.map((n, i) => {
+        const state = i === idx ? ' is-current' : isRated(ratings, n.id) ? ' is-done' : '';
+        return (
+          <button
+            key={n.id}
+            type="button"
+            className="tq-dot-hit"
+            aria-label={nameOf(n)}
+            aria-current={i === idx ? 'step' : undefined}
+            onClick={() => onPick(i)}
+          >
+            <span className={'tq-dot' + state} style={{ ...hueStyle(NEED_HUE[n.id as NeedId]), ...needDataStyle(n.id) }} />
+          </button>
+        );
+      })}
+    </TrackerBarFrame>
   );
 }

@@ -22,7 +22,7 @@ export function CaseSteadyStep({ saving, failed, onBack, onSave, crisis, onHardN
   return (
     <CaseStepScreen
       onBack={onBack} spread={false}
-      heroArt={<SignScene Art={EvenStrokes} />}
+      heroArt={<SignScene Art={EvenStrokes} className="cq-steady-art" />}
       eyebrow="Что случилось"
       title="Ровный день — тоже запись"
       lede="Спокойные дни остаются в записях рядом с трудными — так видно, что помогает."

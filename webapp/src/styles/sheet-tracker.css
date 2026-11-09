@@ -26,9 +26,13 @@
 .pp-need-line { width: auto; justify-content: flex-start; }
 
 /* Знак потребности — две-три узкие полоски: в полосе разворота на телефоне (56) он читался точкой,
-   у листов потребности он крупнее, как у вопроса трекера. */
+   у листов потребности он той же ступени, что у вопроса трекера: ~60 высотой на телефоне
+   (paper-app.css), 132 на планшете. */
 @media (max-width: 1023px) {
-  .ex2-body--spread .pa-spread-side .pa-sheet[data-sign^='need_'] > .pa-sheet-art { width: 76px; }
+  .ex2-body--spread .pa-spread-side .pa-sheet[data-sign^='need_'] > .pa-sheet-art { width: 112px; }
+}
+@container pa-sheet (min-width: 560px) {
+  .ex2-body--spread .pa-spread-side .pa-sheet[data-sign^='need_'] > .pa-sheet-art { width: 132px; }
 }
 
 /* ── «Подробнее о потребности» (NeedTodaySheet) ──────────────────────────── */
@@ -83,7 +87,9 @@
 .tk2-trend-sub { margin-bottom: 14px; font-size: 13.5px; color: var(--text-sub); }
 .tk2-chart-box { position: relative; margin: 6px 4px 16px 0; }
 .tk2-chart { display: block; width: 100%; overflow: visible; }
-.tk2-area { fill: var(--nd); fill-opacity: .16; }
+/* Площадь под линией — бумага потребности, чуть глубже цветом данных: прозрачный сланец на бумаге
+   страницы выходил серым (ревью g2). Линия — сам цвет данных. */
+.tk2-area { fill: oklch(0.915 0.03 var(--h)); fill: color-mix(in srgb, var(--nd) 22%, oklch(0.915 0.03 var(--h))); }
 .tk2-line { fill: none; stroke: var(--nd); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .tk2-ref { stroke: var(--text-sub); stroke-opacity: .5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
 .tk2-ref-t { display: inline-flex; align-items: center; gap: 8px; margin: -8px 0 14px; font-size: 12px; color: var(--text-sub); }
@@ -101,12 +107,10 @@
 .tk2-child-of, .tk2-child-now { font-size: 13px; color: var(--text-sub); }
 .tk2-child-note { margin: 4px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-sub); }
 /* Совет — лист бумаги потребности со знаком, «?» с зоной 44 (hitboxStyle). */
-.tk2-tip-card { display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 16px 22px; border-radius: 22px; }
+.tk2-tip-card { display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 22px 22px; border-radius: 22px; }
 .tk2-tip-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
 .tk2-tip-card .ds-label { color: var(--text-sub); }
 .tk2-tip-text { margin: 0; font: 400 21px/1.35 var(--serif); color: var(--text); text-wrap: pretty; }
-.tk2-tip-sign { align-self: flex-end; }
-.tk2-tip-sign .pp-art--square { width: 84px; height: 45px; }
 .tk2-help { flex: none; margin: -12px -12px -12px 0; background: none; border: 0; cursor: pointer; }
 .tk2-help-in {
   display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;

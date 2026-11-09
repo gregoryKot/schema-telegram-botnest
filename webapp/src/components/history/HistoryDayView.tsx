@@ -3,9 +3,10 @@ import type { Need } from '../../types';
 import { NeedArt } from '../art/NeedArt';
 import { Strokes } from '../art/PaperArt';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 import { pressable } from '../../utils/a11y';
 import { needLevel } from './historyMath';
-import { dayValues } from './dayStrip';
+import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
 import { inkVars } from './needInk';
 import { DayWheel } from './DayWheel';
 import { AttentionCard } from './AttentionCard';
@@ -44,7 +45,7 @@ export function HistoryDayView(p: Props) {
       <div className="sd-col">
         {p.onBackfill && !p.isToday && (
           <div className="pp-paper sd-fill-day" style={{ '--h': ENTITY_LOOK.tracker.hue } as CSSProperties} {...pressable(() => p.onBackfill?.(p.date))}>
-            <span className="sd-fill-day-sign" aria-hidden="true"><Strokes values={dayValues(p.ratings)} size="row" /></span>
+            <span className="sd-fill-day-sign" aria-hidden="true"><Strokes values={dayStrokeValues(p.ratings)} size="row" /></span>
             <div className="ds-list-body">
               <div className="ds-list-title">{p.ratedCount === 0 ? 'Заполнить этот день' : 'Дополнить оценки'}</div>
               <div className="ds-sub">{p.ratedCount === 0 ? 'Оценки не заполнены' : `Заполнено ${p.ratedCount} из ${p.needs.length}`}</div>
@@ -79,7 +80,7 @@ export function HistoryDayView(p: Props) {
         <DayNote text={p.noteText} tags={p.noteTags} onOpen={p.onOpenNote} />
         {p.historyLen < 3 && (
           <div className="sd-hint">
-            Ещё {3 - p.historyLen} {3 - p.historyLen === 1 ? 'день' : 'дня'} – и паттерн начнёт проявляться
+            {glue(`Ещё ${3 - p.historyLen} ${3 - p.historyLen === 1 ? 'день' : 'дня'} – и паттерн начнёт проявляться`)}
           </div>
         )}
       </div>

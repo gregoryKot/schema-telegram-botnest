@@ -49,6 +49,13 @@
   .pa-sheet-sub { max-width: 52ch; }
   .pa-sheet--compact .pa-sheet-art, .pa-spread-side .pa-sheet-art { width: 104px; }
 }
+/* Полоса на планшете (лист 561–719px: подробности потребности, динамика, заметка, шаг разбора на 768):
+   знак 104 и подпись до 60ch — со знаком 64 и подписью 46ch справа в листе оставалось ~250px пустоты,
+   и переход «вопрос → подробнее» скакал по масштабу шапки. */
+@container pa-sheet (min-width: 561px) {
+  .pa-sheet--compact .pa-sheet-art, .pa-spread-side .pa-sheet-art { width: 104px; }
+  .pa-sheet--compact .pa-sheet-sub, .pa-spread-side .pa-sheet-sub { max-width: 60ch; }
+}
 @container pa-sheet (max-width: 560px) {
   .pa-sheet-title { font-size: 28px; }
   .pa-sheet-art { width: 112px; }
@@ -68,6 +75,11 @@
   .pa-sheet--compact.pa-sheet--scene > .pa-sheet-art, .pa-spread-side .pa-sheet--scene > .pa-sheet-art { width: 72px; }
   .pa-sheet--compact:not(.pa-sheet--plain) > .pa-sheet-body > :not(.pa-sheet-label),
   .pa-spread-side .pa-sheet:not(.pa-sheet--plain) > .pa-sheet-body > :not(.pa-sheet-label) { margin-top: 6px; }
+  /* Знак потребности (NeedArt: холст 120×64, рисунок — две-три узкие полоски, «Привязанность» —
+     треть холста) меряется высотой, как бейдж теста: ~60px, а не 30×38 в слоте 72. Пустое поле холста
+     сверху и снизу уходит в отступы листа — строка надписи не растёт, шапка вопроса остаётся ~230px. */
+  .pa-sheet[data-sign^='need_'] > .pa-sheet-art,
+  .pa-spread-side .pa-sheet[data-sign^='need_'] > .pa-sheet-art { width: 112px; margin: -8px -4px -8px 0; }
 }
 @container pa-sheet (max-width: 400px) {
   .pa-sheet-title { font-size: 26px; }
@@ -165,6 +177,10 @@
    без знака при выборе растёт на ширину галочки — один сдвиг лучше постоянной кривизны. */
 .ds-chip.pa-chip--mark { gap: 6px; padding-left: 6px; }
 .pa-chip-sign { display: inline-flex; align-items: center; justify-content: center; width: 24px; flex-shrink: 0; }
+/* Невыбранный — белый лист с тонкой кромкой и текстом --text: серая заливка --paper-tint с бледным
+   текстом читалась «выключено». Один вид на все SignChip (темы заметки, чувства и импульсы разбора,
+   выбор схем и режимов) — экран его не переопределяет (ревью g2). */
+.ds-chip.pa-chip:not(.is-on) { background: var(--surface); color: var(--text); }
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {

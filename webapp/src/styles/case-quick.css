@@ -24,14 +24,19 @@
   .pa-spread-side .ex2-hero.pa-sheet:has(.cq-scene) > .pa-sheet-art { width: 100%; margin: -8px 0 4px; }
 }
 
+/* «Ровный день»: Strokes even — холст 120×100, в слоте сцены 96 знак выходил ~90 высотой, строка
+   надписи растягивалась, и «Что случилось» отрывалось от заголовка на ~70px. Слот как у Ribbon (~56). */
+@container pa-sheet (max-width: 440px) {
+  .pa-sheet.pa-sheet--scene > .pa-sheet-art:has(> .cq-steady-art) { width: 66px; }
+}
+
 /* ── Поле и подсказка шага 1 ─────────────────────────────────────────────── */
 .ds-textarea.cq-field { display: block; min-height: 140px; padding: 16px 18px; border-color: transparent; border-radius: 18px; font-size: 16px; line-height: 1.55; box-shadow: 0 0 0 1px var(--line); }
 .ds-textarea.cq-field:focus { border-color: transparent; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
 .cq-faint { margin: 10px 2px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 
-/* ── Чипы: белые на бумаге страницы, выбранный — бумага шалфея с галочкой (SignChip) ── */
+/* ── Чипы: вид — общий SignChip (paper-app.css: белые, выбранный — бумага с галочкой); здесь размер ── */
 .ex2-chips.cq-chips { gap: 8px; margin-bottom: 0; }
-.cq-chips > .ds-chip--toggle:not(.is-on) { background: var(--surface); color: var(--text); }
 .cq-chips > .ds-chip--toggle { font-size: 13.5px; padding-right: 14px; }
 .cq-chips > .ds-chip--toggle:not(.pa-chip--mark) { padding-left: 14px; }
 .cq-body { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--paper-sunk); }

@@ -8,27 +8,19 @@
 import type { Need } from '../types';
 import { NEED_COLORS } from '../needs/needColors';
 import { wheelCenter } from '../history/wheelCenter';
+import {
+  W,
+  H,
+  CX,
+  CY,
+  R,
+  CENTER_R,
+  petalPath,
+  arcPath,
+  wheelAngle,
+  wheelSectors,
+} from './needsWheelGeometry';
 
-const W = 360,
-  H = 280,
-  CX = W / 2,
-  CY = H / 2,
-  R = CY - 20,
-  CENTER_R = 41;
-const SPREAD = (34 * Math.PI) / 180;
-
-function petalPath(r: number, ca: number): string {
-  if (r < 1) return '';
-  const [a1, a2] = [ca - SPREAD, ca + SPREAD];
-  const p = (a: number) =>
-    `${(CX + r * Math.cos(a)).toFixed(2)} ${(CY + r * Math.sin(a)).toFixed(2)}`;
-  return `M ${CX} ${CY} L ${p(a1)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 1 ${p(a2)} Z`;
-}
-function arcPath(r: number, ca: number): string {
-  const p = (a: number) =>
-    `${(CX + r * Math.cos(a)).toFixed(2)} ${(CY + r * Math.sin(a)).toFixed(2)}`;
-  return `M ${p(ca - SPREAD)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 1 ${p(ca + SPREAD)}`;
-}
 /** Радиус лепестка по оценке 0–10: площадь растёт с оценкой, а не радиус. */
 const radius = (v: number | undefined) =>
   Math.sqrt(Math.min(10, Math.max(0, v ?? 0)) / 10) * R;
@@ -56,15 +48,15 @@ export function NeedsWheel({
     ratings,
     prevRatings,
   );
-  const angle = (i: number) => -Math.PI / 2 + (2 * Math.PI * i) / needs.length;
-  const sectors = needs.map((nd, i) => (
-    <path key={nd.id} d={petalPath(R, angle(i))} />
+  const angle = (i: number) => wheelAngle(i, needs.length);
+  const sectors = wheelSectors(needs.length).map((d, i) => (
+    <path key={needs[i].id} d={d} />
   ));
   const petals = needs
     .map((nd, i) => ({
       id: nd.id,
       d: petalPath(radius(ratings[nd.id]), angle(i)),
-      fill: ink[nd.id] ?? NEED_COLORS[nd.id] ?? '#888',
+      fill: ink[nd.id] ?? NEED_COLORS[nd.id] ?? 'var(--text-sub)',
     }))
     .filter((p) => p.d);
   const hasChildhood = Object.keys(childhoodRatings).length > 0;
