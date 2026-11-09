@@ -8,7 +8,7 @@ export function ConceptLoadFailed({ load, onRetry }: { load: ClientDetail['conce
     <div className="page-inner-wide tcp-page">
       <div role="alert" className="tc-alert">
         <p>Концептуализация не загрузилась. Записанное на сервере цело — поля откроются, когда она придёт</p>
-        <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onRetry} disabled={load.reloading}>
+        <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onRetry} disabled={load.reloading} aria-busy={load.reloading || undefined}>
           {load.reloading ? 'Загружаю…' : 'Повторить'}
         </button>
       </div>

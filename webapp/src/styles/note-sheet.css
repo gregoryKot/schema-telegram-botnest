@@ -1,0 +1,2 @@
+/* Заметка к дню (NoteSheet). Подключается сборником sheet-diary.css. */
+.sd-note-field { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }

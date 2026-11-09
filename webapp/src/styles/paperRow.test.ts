@@ -5,11 +5,13 @@
 // (.cm-page …:has(> .pp-row-art)): в выборе потребности для плана шеврон уезжал на вторую строку
 // (docs/open/frontend-ux.md, хвост #921). CSS в jsdom не исполняется — сверяем исходники.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { cssBundle } from './cssBundle.test-helpers';
 
 const SRC = join(__dirname, '..');
-const css = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+// Сборник (sheet-schemas.css) читается вместе с частями (@import): правило могло уехать в ss-sheet.css.
+const css = (f: string) => cssBundle(f).replace(/\/\*[\s\S]*?\*\//g, '');
 const tsx = (f: string) => readFileSync(join(SRC, f), 'utf8');
 const body = (src: string, sel: string) =>
   [...src.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((m) => m[1].split(',').map((s) => s.trim()).includes(sel)).map((m) => m[2]).join(';');
@@ -48,5 +50,13 @@ describe('строка-переход с картинкой: сетка «кар
 
   it('у «Ещё» своей копии сетки нет', () => {
     expect(css('client-more.css')).not.toMatch(/:has\(> \.pp-row-art\)/);
+  });
+
+  it('копий сетки нет нигде, кроме paper.css (раньше ещё cabinet.css и client-more.css)', () => {
+    const own = (readdirSync(__dirname) as string[]).filter((f) => f.endsWith('.css'))
+      .map((f) => [f, readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')] as const)
+      .concat([['index.css', readFileSync(join(SRC, 'index.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')]]);
+    const withGrid = own.filter(([, src]) => body(src, '.ds-list-row--nav:has(> .pp-row-art)').includes('grid-template-columns')).map(([f]) => f);
+    expect(withGrid).toEqual(['paper.css']);
   });
 });

@@ -114,6 +114,7 @@
 .ds-list-row--danger .ds-list-title { color: var(--accent-red); }
 .ds-list-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .ds-list-row--nav { grid-template-columns: minmax(0, 1fr) auto; min-height: 44px; box-sizing: border-box; }
+/* Строка-переход со знаком слева (.pp-row-art) — три колонки, правило в paper.css (paperRow.test.ts). */
 .ds-list-row--inset { padding-left: 0; padding-right: 0; }
 .ds-list-row--inset.ds-list-row--hover:hover { background: none; }
 .ds-list-row--inset.ds-list-row--hover:hover .ds-list-title { color: var(--accent); }
@@ -155,8 +156,29 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   transition: background .12s, border-color .12s;
 }
 .ds-btn:hover { background: var(--accent-hi); }
-.ds-btn:disabled { opacity: .5; cursor: default; }
-.ds-btn:disabled:hover { background: var(--accent); }
+/* Неактивная хранит силуэт своего варианта и гасит содержимое, без прозрачности: терракота на
+   50% читалась розовой и активной (аудит 2026-11, «неактивные кнопки розовые»).
+   • Залитая — утопленная бумага и --text-faint: подпись занятости («Сохраняю…», «Впускаю…») —
+     статус, его читают, поэтому не призрачная.
+   • Контурные (--secondary, --icon) утопленной заливки не получают — иначе неактивная «Отвязать»
+     тяжелее активной. Простаивающая контурная (концепта ещё нет, первый шаг, единственный способ
+     входа, «Отмена» пока сохраняется форма) лежит в странице, а не стоит на ней белой плашкой:
+     фон прозрачный, рамка --line, подпись — --text-faint на 60% (неактивный элемент от порога
+     контраста свободен, WCAG 1.4.3). С белой плашкой и --text-faint её «Экспорт концепта» читался
+     нажимаемым (ревью волны 0, круг 3).
+   • Занятая контурная (aria-busy="true": «Загружаю…», «Готовлю картинку…») — статус, его читают:
+     плашка как у активной и --text-faint (≥4.5:1), курсор «в работе».
+   • --text-ghost — только глиф --icon без подписи (index.css: «только декор»). Записаны на два
+     класса (0,3,0), занятая — на 0,4,0: их фон не решает порядок файлов.
+   Своя заливка у .ds-btn.x — с :not(:disabled) или с парой .ds-btn.x:disabled (paperPrimitives.test). */
+.ds-btn:disabled, .ds-btn:disabled:hover { background: var(--paper-sunk); color: var(--text-faint); border-color: var(--paper-sunk); cursor: default; }
+.ds-btn:disabled[aria-busy='true'] { cursor: progress; }
+.ds-btn.ds-btn--secondary:disabled, .ds-btn.ds-btn--secondary:disabled:hover { background: transparent; color: color-mix(in srgb, var(--text-faint) 60%, transparent); border-color: var(--line); }
+.ds-btn.ds-btn--secondary:disabled[aria-busy='true'], .ds-btn.ds-btn--secondary:disabled[aria-busy='true']:hover { background: var(--surface); color: var(--text-faint); }
+/* На терракотовой карточке (ds-card--accent) прозрачная простаивающая сливалась с заливкой: подпись
+   --text-faint 60% на --accent ~1.1:1. Здесь — приглушённая светлая плашка и --text-sub (~5.7:1). */
+.ds-card--accent .ds-btn.ds-btn--secondary:disabled, .ds-card--accent .ds-btn.ds-btn--secondary:disabled:hover { background: color-mix(in srgb, var(--surface) 70%, var(--accent)); color: var(--text-sub); border-color: transparent; }
+.ds-btn.ds-btn--icon:disabled, .ds-btn.ds-btn--icon:disabled:hover { background: transparent; color: var(--text-ghost); border-color: var(--line); }
 .ds-btn--sm { height: 40px; padding: 0 18px; border-radius: 20px; }
 .ds-btn--lg { height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; } /* на телефоне во всю колонку — в блоке ≤767; на компьютере по тексту */
 .ds-btn--secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
@@ -213,7 +235,12 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 500; }
 .ds-chip--sm { font-size: 11px; font-weight: 700; padding: 4px 9px; }
 .ds-chip--toggle { min-height: 36px; box-sizing: border-box; border: 1px solid var(--line); background: var(--paper-tint); color: var(--text-muted); font-family: inherit; cursor: pointer; }
-.ds-chip--toggle.is-on { background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h)); border-color: oklch(0.58 0.12 var(--h)); font-weight: 600; }
+/* Выбранный — бумага сущности (--h, APP_2026-11.md, принципы 5 и 6: цвет — бумага, а не заливка) и
+   тёмная кромка того же оттенка почти без хромы (к фону ≥4:1, WCAG 1.4.11): заливка к невыбранному
+   чипу ~1.15:1, состояние держат кромка, жирность и галочка SignChip, а не насыщенный цвет (рыжие
+   чипы с коричневой обводкой в брифе были громче всего рабочего экрана). У чипа без --h у предков —
+   запасной оттенок 70 (солома, NEUTRAL_HUE в lib/tone.ts): без него фон и кромка падали в transparent. */
+.ds-chip--toggle.is-on { background: oklch(0.9 0.035 var(--h, 70)); color: var(--text); border-color: oklch(0.55 0.04 var(--h, 70)); font-weight: 600; }
 .ds-badge { display: inline-block; border-radius: 10px; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--paper-sunk); color: var(--text-sub); }
 .ds-badge--ok { background: var(--ok-bg); color: var(--ok-ink); }
 .ds-badge--warn { background: var(--warn-bg); color: var(--warn-ink); }
@@ -231,7 +258,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 /* ── Тумблер (role="switch") ─────────────────────────────────────────────── */
 .ds-switch { position: relative; flex-shrink: 0; width: 44px; height: 26px; border-radius: 13px; border: none; padding: 0; background: var(--line-strong); cursor: pointer; transition: background .15s; }
 .ds-switch::before { content: ''; position: absolute; inset: -9px -2px; }
-.ds-switch[aria-checked="true"] { background: var(--ok); }
+/* Включённый — мох бумажной палитры, а не ярко-зелёный --ok: самый яркий цвет экрана
+   настроек был у тумблеров (аудит 2026-11). Мох к --surface 4.2:1, к --bg 3.8:1 (WCAG 1.4.11 ≥3). */
+.ds-switch[aria-checked="true"] { background: var(--c-moss); }
 .ds-switch:disabled { opacity: .5; cursor: default; }
 .ds-switch[aria-busy="true"] { opacity: .5; cursor: progress; }
 .ds-switch-knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); transition: left .15s; }

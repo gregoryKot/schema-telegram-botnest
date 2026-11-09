@@ -14,13 +14,13 @@ export function ConceptGraphToolbar({ image, canvas }: Pick<GraphActions, 'image
   );
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-12)' }}>
-      <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={image.download} disabled={image.busy}>
+      <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={image.download} disabled={image.busy} aria-busy={image.busy || undefined}>
         {image.busy ? 'Готовлю картинку…' : '↓ Скачать картинкой'}
       </button>
       {image.failed && alert(tr('Не удалось сохранить картинку. Попробуй ещё раз.', 'Не удалось сохранить картинку. Попробуйте ещё раз.'))}
       {canvas && (
         <>
-          <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={canvas.open} disabled={canvas.busy} title={CANVAS_HINT}>
+          <button type="button" className="ds-btn ds-btn--secondary ds-btn--sm" onClick={canvas.open} disabled={canvas.busy} aria-busy={canvas.busy || undefined} title={CANVAS_HINT}>
             {canvas.busy ? 'Переношу на холст…' : 'Открыть на холсте'}
           </button>
           {canvas.failed && alert(tr('Не получилось перенести на холст. Попробуй ещё раз.', 'Не получилось перенести на холст. Попробуйте ещё раз.'))}

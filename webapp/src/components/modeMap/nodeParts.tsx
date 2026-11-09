@@ -12,11 +12,11 @@ import { MODE_MAP_NODE_TEXT_MAX } from '../../../../shared/src/limits/textLimits
 // схемы случая (ConceptNodes.tsx) брали те же куски, а не копии.
 
 // Connection dots at the 4 sides. Hidden by default, revealed on node hover
-// (CSS rule .react-flow__node:hover .mm-handle in index.css) so it's obvious
+// (CSS rule .react-flow__node:hover .mm-handle in styles/modemap-handles.css) so it's obvious
 // you can drag from here to draw a line. connectionRadius makes the drop
 // forgiving. Each side has source + target (same id) for loose mode + swap.
 // Bigger hit area (18px) so it's easy to grab and start a line; the visible
-// dot is drawn via the ::after pseudo in index.css. Source on top of target.
+// dot is drawn via the ::after pseudo in styles/modemap-handles.css. Source on top of target.
 const dotStyle: React.CSSProperties = {
   width: 18, height: 18, background: 'transparent', border: 'none',
 };
@@ -31,7 +31,7 @@ function SideHandles({ pos, id }: { pos: Position; id: string }) {
 }
 
 // Full-node drop target — only catches pointer events while a connection is being
-// drawn (.react-flow.connecting in index.css). Lets you drop a line ANYWHERE on a
+// drawn (.react-flow.connecting in styles/modemap-handles.css). Lets you drop a line ANYWHERE on a
 // node instead of hunting for a dot. Normal dragging still works (pointer-events:none).
 const coverStyle: React.CSSProperties = {
   position: 'absolute', inset: 0, width: '100%', height: '100%',

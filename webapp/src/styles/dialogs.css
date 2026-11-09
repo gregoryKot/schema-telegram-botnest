@@ -1,0 +1,23 @@
+/* Диалоги по центру (Dialog, ConfirmDialog, окно праздника): подложка, коробка, кнопки.
+   Подключается сборником sheet-tasks.css. */
+/* ── Диалоги (Dialog / ConfirmDialog / Celebration) ── */
+/* Подложка — тёплый тёмный тон бумаги (текст с долей терракоты), а не серо-оливковый
+   rgba(--fg-rgb): под окном та же бумага, только в тени (аудит 2026-11); 38%, а не 46% — на 46%
+   страница под окном становилась буро-серой. Коробка — лист со сплошным сдвинутым слоем бумаги
+   (как карточка PaperOutcome), а не мягкая чёрная тень: один язык глубины, без размытия. */
+.sk-dialog-backdrop { position: fixed; inset: 0; z-index: 300; background: color-mix(in srgb, color-mix(in srgb, var(--accent) 24%, var(--text)) 38%, transparent); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
+.sk-dialog-box { position: relative; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; padding: 28px 24px; box-shadow: 10px 11px 0 var(--paper-sunk); animation: modal-in .18s ease; }
+.sk-dialog-box--center { text-align: center; }
+.sk-dialog-title { margin: 0 0 10px; }
+.sk-dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
+.sk-dialog-error { margin: 0 0 16px; }
+.sk-dialog-actions { display: flex; gap: 10px; }
+.sk-dialog-actions > .ds-btn { flex: 1; }
+.ds-btn.sk-btn-danger:not(:disabled) { background: var(--accent-red); color: var(--on-accent-red); }
+.ds-btn.sk-btn-danger:hover:not(:disabled) { background: var(--accent-red); opacity: .9; }
+/* Окно открыто касанием или само (Dialog: data-focus="quiet") — автофокус первой кнопки без
+   кольца: двойное кольцо на «На «ты»» и первой кнопке каждого окна входа читалось выбором.
+   С клавиатуры кольцо есть сразу, а после первого Tab — и в «тихом» окне. */
+.sk-dialog-box[data-focus='quiet'] :focus-visible, .sk-dialog-box[data-focus='quiet']:focus-visible { outline: none; }
+.sk-dialog-link { display: block; width: 100%; min-height: 44px; margin-top: 6px; }
+.sk-dialog-box .ds-btn.sk-wide { width: 100%; }

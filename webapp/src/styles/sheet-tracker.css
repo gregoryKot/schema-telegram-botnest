@@ -1,6 +1,11 @@
 /* Трекер потребностей и листы потребности (префикс tk2-; tk- занят карточкой клиента).
    Оболочка — полноэкранный оверлей внутри .app-shell.light-lock; цвет потребности
    приходит через --h (hueStyle(NEED_HUE[id])), заливки — классы tone-*. */
+/* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
+   начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
+   этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
+@import './need-detail.css';
+@import './checkin.css';
 .tk2-overlay {
   position: fixed; inset: 0; z-index: 80; background: var(--bg);
   display: flex; flex-direction: column; overflow: hidden;
@@ -14,12 +19,8 @@
 .tk2-aside-word { font: 400 28px/1.15 var(--serif); margin-bottom: 12px; }
 .tk2-aside-nums { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
 .tk2-aside-nums .ds-num { font-size: 56px; }
-.tk2-aside-unit { font-size: 14px; color: var(--text-faint); }
 .tk2-note { padding: 10px 12px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
 .tk2-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.tk2-bars { display: flex; gap: 3px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); }
-.tk2-bars > i { flex: 1; height: 4px; border-radius: 2px; background: var(--paper-sunk); }
-.tk2-bars > i.is-on { background: oklch(0.58 0.12 var(--h)); }
 .tk2-trend { font: 400 32px/1.1 var(--serif); letter-spacing: -0.01em; margin: 4px 0 2px; }
 .tk2-trend-sub { font-size: 13px; margin-bottom: 16px; }
 .tk2-trend-sub.is-up { color: var(--ok); }
@@ -43,21 +44,7 @@
 .tk2-opts { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
 .tk2-opt { text-align: left; cursor: pointer; font-family: inherit; }
 .tk2-opt.is-active { border-color: oklch(0.58 0.12 var(--h)); }
-.tk2-tips { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; }
-.tk2-tip { display: flex; gap: 14px; }
-.tk2-tip-n { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center; font: 400 15px var(--serif); }
-.tk2-tip p { margin: 0; padding-top: 3px; font-size: 15px; line-height: 1.65; color: var(--text-sub); }
 .tk2-para { margin: 0; font-size: 16px; line-height: 1.75; color: var(--text-sub); }
-/* Чек-ин по плану */
-.tk2-ci-q { margin: 0 0 24px; }
-.tk2-ci-need { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--text-sub); }
-.tk2-ci-plan { margin-bottom: 24px; border-left: 3px solid oklch(0.58 0.12 var(--h)); font-size: 16px; line-height: 1.55; color: var(--text); }
-.tk2-ci-ask { font-size: 14px; color: var(--text-sub); margin-bottom: 14px; }
-.tk2-ci-btns { display: flex; gap: 10px; }
-.tk2-ci-btns .ds-btn { flex: 1; }
-.tk2-ci-btns .ds-btn:last-child { flex: 2; }
-.tk2-ci-err { margin-top: 12px; font-size: 13px; color: var(--err); }
-.tk2-ci-skip { margin-top: 10px; min-height: 44px; }
 .tk2-info { display: grid; grid-template-columns: 28px 1fr; gap: 12px; margin-bottom: 12px; }
 .tk2-info-n { font-size: 20px; color: var(--accent); }
 /* Мотив потребности отдельной строкой в теле листа (NeedArtLine). */

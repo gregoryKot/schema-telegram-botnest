@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import '../../styles/sheet-schemas.css';
 import { GlyphArrowLeft } from '../exercises/ExScreen';
+import { SpreadLayout } from '../paper/SpreadLayout';
 
 interface Props {
   onBack: () => void;
@@ -8,11 +9,17 @@ interface Props {
   zIndex?: number;
   barRight?: ReactNode;
   narrow?: boolean;
+  /** Герой листа (SsHead с look — лист сущности) над содержимым; со spread — колонкой слева. */
+  hero?: ReactNode;
+  /** Разворот на ≥1024: герой слева, содержимое справа (SpreadLayout); уже — герой сверху. */
+  spread?: boolean;
   children: ReactNode;
 }
 
-/** Оболочка листа схем/режимов: верхняя полоса с «Назад» + прокручиваемое тело. */
-export function SsSheet({ onBack, backLabel = 'Назад', zIndex, barRight, narrow, children }: Props) {
+/** Оболочка листа схем/режимов: верхняя полоса с «Назад» + прокручиваемое тело.
+ *  Без hero и spread разметка прежняя: экраны переходят на героя по одному (редизайн 2026-11). */
+export function SsSheet({ onBack, backLabel = 'Назад', zIndex, barRight, narrow, hero, spread, children }: Props) {
+  const inner = `ss-inner${narrow ? ' ss-inner--narrow' : ''}${spread ? ' ss-inner--spread' : ''}`;
   return (
     <div className="ss-sheet" style={zIndex ? { zIndex } : undefined}>
       <div className="ds-sheet-head">
@@ -22,7 +29,9 @@ export function SsSheet({ onBack, backLabel = 'Назад', zIndex, barRight, na
         {barRight}
       </div>
       <div className="ss-scroll">
-        <div className={`ss-inner${narrow ? ' ss-inner--narrow' : ''}`}>{children}</div>
+        <div className={inner}>
+          {spread ? <SpreadLayout side={hero}>{children}</SpreadLayout> : <>{hero}{children}</>}
+        </div>
       </div>
     </div>
   );

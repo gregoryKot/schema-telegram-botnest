@@ -1,0 +1,7 @@
+/* Праздник серии (CelebrationDialog): число, вывод, конфетти.
+   Подключается сборником sheet-tasks.css. */
+.sk-celebr-num { font-size: 72px; letter-spacing: -.02em; color: var(--text); margin-bottom: 8px; }
+.sk-celebr-num[data-milestone='yes'] { color: var(--accent); }
+.sk-celebr-insight { padding-top: 12px; border-top: 1px solid var(--paper-sunk); font-size: 13px; }
+.sk-celebr-canvas { position: absolute; inset: 0; pointer-events: none; }
+.sk-celebr-tight { margin-bottom: 12px; }

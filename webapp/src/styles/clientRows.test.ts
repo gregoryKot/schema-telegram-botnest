@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { cssBundle } from './cssBundle.test-helpers';
 
-const read = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+// Файл вместе с частями, подключёнными через @import (раскрой 2026-11): сверка смотрит на весь раздел.
+const read = (f: string) => cssBundle(f).replace(/\/\*[\s\S]*?\*\//g, '');
 
 describe('строки-переходы клиента: локальные хаки удалены (#906, волна 2)', () => {
   it.each(['!important', 'font-size: 0', "content: '›'", '.cp-breath', '.cp-chev', '--crisis', '.cp-empty', 'var(--err)'])(

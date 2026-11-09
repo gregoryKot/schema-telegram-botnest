@@ -8,6 +8,7 @@ import {
   SCREEN_BLOCK_ORDER,
   BLOCK_META,
 } from './screenBlocks';
+import { SIGN_KEYS } from '../theme/entityLook';
 
 describe('SCREEN_BLOCK_IDS', () => {
   it('id уникальны', () => {
@@ -76,4 +77,17 @@ describe('BLOCK_META', () => {
       expect(meta?.sub).toBeTruthy();
     }
   });
+
+  // Строка листа «Настроить экран» — со знаком блока (редизайн 2026-11, CustomizeRow): ключ из
+  // реестра знаков, и в одном экране два блока одним знаком не говорят.
+  it.each(['profile', 'patterns'] as const)(
+    '%s: у каждого блока знак из SIGN_KEYS, знаки не повторяются',
+    (screen) => {
+      const signs = SCREEN_BLOCK_ORDER[screen].map(
+        (id) => BLOCK_META[id]?.sign,
+      );
+      for (const sign of signs) expect(SIGN_KEYS).toContain(sign);
+      expect(new Set(signs).size).toBe(signs.length);
+    },
+  );
 });

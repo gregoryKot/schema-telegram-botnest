@@ -1,0 +1,11 @@
+/* Чек-ин по плану (CheckInSheet). Подключается из sheet-tracker.css. */
+/* Чек-ин по плану */
+.tk2-ci-q { margin: 0 0 24px; }
+.tk2-ci-need { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 13px; color: var(--text-sub); }
+.tk2-ci-plan { margin-bottom: 24px; border-left: 3px solid oklch(0.58 0.12 var(--h)); font-size: 16px; line-height: 1.55; color: var(--text); }
+.tk2-ci-ask { font-size: 14px; color: var(--text-sub); margin-bottom: 14px; }
+.tk2-ci-btns { display: flex; gap: 10px; }
+.tk2-ci-btns .ds-btn { flex: 1; }
+.tk2-ci-btns .ds-btn:last-child { flex: 2; }
+.tk2-ci-err { margin-top: 12px; font-size: 13px; color: var(--err); }
+.tk2-ci-skip { margin-top: 10px; min-height: 44px; }

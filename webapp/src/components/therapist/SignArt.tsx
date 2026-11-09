@@ -1,17 +1,16 @@
 import type { ReactNode } from 'react';
-import { Layers, Pebbles, Strokes } from '../art/PaperArt';
-import { Check, Cluster, Heart, Talk } from '../art/PaperArtSigns';
+import type { SignKey } from '../../../../shared/src/theme/entityLook';
+import { SignArt } from '../art/SignArt';
 import '../../styles/therapist-sign.css';
 
 // Знаки кабинета терапевта (docs/design/PAPER_2026-11.md, «Язык знаков»): круги-реплики — люди и
 // разговор, камешки — заметки, галочка — задание, слои — схемы и концептуализация, круги — режимы,
-// полоски — индекс и трекер, сердце — «требуют внимания».
-const SIGNS = { talk: Talk, pebbles: Pebbles, check: Check, layers: Layers, cluster: Cluster, strokes: Strokes, heart: Heart } as const;
-export type SignKind = keyof typeof SIGNS;
+// полоски — индекс и трекер, сердце — «требуют внимания». Рисунок — из общего реестра SignArt
+// (одна карта «ключ → мотив» на кабинет клиента и терапевта); здесь — только набор ключей и место.
+export type SignKind = Extract<SignKey, 'talk' | 'pebbles' | 'check' | 'layers' | 'cluster' | 'strokes' | 'heart'>;
 
 export function Sign({ kind, className = '' }: { kind: SignKind; className?: string }) {
-  const Art = SIGNS[kind];
-  return <span className={`pp-row-art ${className}`.trim()}><Art size="row" /></span>;
+  return <span className={`pp-row-art ${className}`.trim()}><SignArt sign={kind} size="row" /></span>;
 }
 
 type HeadTag = 'h2' | 'h3' | 'div';

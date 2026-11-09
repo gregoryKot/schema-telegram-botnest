@@ -53,11 +53,14 @@ function hasRule(block: string, cls: string, decl: string): boolean {
 const OVERLAY_ROOTS: [string, string[], Record<string, string>?][] = [
   ['styles/sheet-settings.css', ['.st-overlay']],
   ['styles/sheet-exercises.css', ['.ex2-screen'], { '.ex2-screen': '.ex2-top' }],
-  ['styles/sheet-schemas.css', ['.ss-sheet', '.ss-test']],
+  ['styles/ss-sheet.css', ['.ss-sheet']],
+  ['styles/schema-library.css', ['.ss-test']],
   ['styles/sheet-tracker.css', ['.tk2-overlay']],
-  ['styles/sheet-tasks.css', ['.sk-sheet', '.sk-overlay', '.sk-priv']],
+  ['styles/plans.css', ['.sk-sheet']],
+  ['styles/all-tasks.css', ['.sk-overlay']],
+  ['styles/therapist-disclaimer.css', ['.sk-priv']],
   ['styles/client-schemas.css', ['.cs-sheet']],
-  ['index.css', ['.ex-screen']],
+  ['styles/ex-legacy.css', ['.ex-screen']],
   ['styles/product-landing-menu.css', ['.pl2-menu']],
 ];
 

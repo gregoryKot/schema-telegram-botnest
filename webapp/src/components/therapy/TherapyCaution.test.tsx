@@ -35,6 +35,30 @@ describe('TherapyCaution', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  // Редизайн 2026-11: наклейка — знак Limits у первой фразы, пояснение тише второй строкой и ссылка в
+  // конце его текста (текст не убран до решения владельца); ветки «кто ответит» и событие shown —
+  // те же, что у полного предупреждения.
+  it('compact: знак Limits у фразы, пояснение со ссылкой в конце строки; shown так же', () => {
+    render(<MemoryRouter><TherapyCaution place="exercise_start" compact /></MemoryRouter>);
+    const note = screen.getByRole('note');
+    expect(note.className).toBe('th-caution th-caution--compact');
+    expect(note.querySelector('.th-caution-sign')?.getAttribute('aria-hidden')).toBe('true');
+    // строчный размер, не nav: в 24×14 рамка Limits с точкой читалась пятном (ревью волны 0, круг 2)
+    expect(note.querySelector('.th-caution-sign svg.pp-art--row')).toBeTruthy();
+    expect(screen.getByText('Это самопомощь, не замена терапии.').className).toBe('th-caution-lead');
+    const body = note.querySelector('.th-caution-body')!;
+    expect(body.textContent).toMatch(/^Станет тяжело — остановись, это нормально\..* Поговорить →$/);
+    expect(body.lastElementChild).toBe(screen.getByRole('button', { name: 'Поговорить →' }));
+    expect(track).toHaveBeenCalledWith('exercise_start', 'shown');
+  });
+
+  it('по умолчанию — полное предупреждение с пояснением, без знака', () => {
+    const { container } = renderCaution();
+    expect(screen.getByRole('note').className).toBe('th-caution');
+    expect(container.querySelector('.th-caution-body')).toBeTruthy();
+    expect(container.querySelector('.th-caution-sign')).toBeNull();
+  });
+
   it('пользователь сам терапевт: пусто, событий нет', () => {
     localStorage.setItem('therapy_contact_url', 'tg://user?id=1');
     localStorage.setItem('therapy_contact_name', 'вам');

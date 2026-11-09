@@ -83,6 +83,12 @@ export const FALLBACK_ALLOW = [
   '--pill-color',
   '--pill-fg',
   '--pill-border',
+  // Оттенок бумаги сущности (живая бумага 2026-11): ставится инлайном на лист,
+  // чип или обёртку (hueStyle в webapp/src/lib/tone.ts, ENTITY_LOOK, SignChip hue).
+  // Выбранный ds-chip--toggle (cabinet.css) без --h у предков падал в transparent
+  // и выглядел слабее невыбранного (бриф концептуализации) — фолбэк 70
+  // (NEUTRAL_HUE) и есть «экземпляр оттенка не задал».
+  '--h',
 ];
 
 // Свойства площадки: их ставит не наш CSS, а клиент мессенджера

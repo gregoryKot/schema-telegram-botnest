@@ -41,11 +41,21 @@ describe('знаки листов подсказок', () => {
     for (const m of ALL_MODES) expect(modeSign(m.id), m.id).not.toBe('cluster');
   });
 
+  it('«Сердитый Ребёнок» — свой знак Flare (решение 6), заголовок его группы — знак группы', () => {
+    expect(ALL_MODES.some((m) => m.id === 'angry_child')).toBe(true);
+    expect(modeSign('angry_child')).toBe('flare');
+    expect(modeGroupSign('child')).toBe('child_care');
+    expect(modeSign('constructor')).toBe('cluster');
+  });
+
   it('знак группы по id (заголовок группы в палитре холста); неизвестная группа — общий знак режимов', () => {
     for (const g of MODE_GROUPS) expect(modeGroupSign(g.id), g.id).toBe(MODE_GROUP_SIGN[g.id as keyof typeof MODE_GROUP_SIGN]);
     expect(modeGroupSign('critic')).toBe('looming');
     expect(modeGroupSign('нет_такой')).toBe('cluster');
     expect(modeGroupSign(undefined)).toBe('cluster');
+    // ключ прототипа — не знак: прежняя копия таблицы (MODE_GROUP_SIGN[g] || 'cluster') вернула бы функцию
+    expect(modeGroupSign('toString')).toBe('cluster');
+    expect(modeSign('hasOwnProperty')).toBe('cluster');
   });
 
   it('у каждого листа режима в подсказках есть знак группы', () => {

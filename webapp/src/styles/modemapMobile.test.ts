@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Холст «Карта режимов» на телефоне (#906, волна 1). На ноутбуке высоту холсту
-// даёт цепочка flex от .therapist-sheet (index.css, ≥768); на телефоне страница
+// даёт цепочка flex от .therapist-sheet (therapist-sheet.css, ≥768); на телефоне страница
 // течёт блоком, .mm2-fill { height: 100% } и .mm2-body { flex: 1 } наследовали
 // auto, и вкладка была пустой — ни холста, ни тулбара, ни пустого состояния.
 // CSS в jsdom не исполняется, поэтому сверяем строки sheet-modemap.css: на
@@ -129,7 +129,7 @@ describe('холст карты режимов на телефоне (sheet-mode
   });
 
   it('ручки связи на (hover: none) видны всегда (T-4); на ноутбуке — по наведению', () => {
-    const idx = read('../index.css');
+    const idx = read('modemap-handles.css'); // ручки вынесены из index.css (раскрой 2026-11)
     expect(idx).toMatch(/@media \(hover: none\)\s*\{\s*\.mm-handle\s*\{\s*opacity: 1/);
     expect(idx).toMatch(/\.mm-handle\s*\{\s*opacity: 0;/);
   });

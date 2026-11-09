@@ -11,7 +11,7 @@ import { isPracticeHost } from '../utils/domainChrome';
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
 import { SectionNav, MobileMenu } from './landing/nav';
 import { HeroSection } from './landing/HeroSection';
-import { AuthorAvatar } from './landing/AuthorAvatar';
+import { AuthorAvatar } from '../components/AuthorAvatar';
 import { MarqueeStrip } from './landing/MarqueeStrip';
 import { BookingEntry } from './landing/BookingEntry';
 import { FaqList } from './landing/cards';

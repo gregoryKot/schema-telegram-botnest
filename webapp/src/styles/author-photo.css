@@ -1,0 +1,35 @@
+/* Фотокарточка автора (AuthorPhoto, components/AuthorAvatar.tsx): наклеенное фото в белой рамке
+   с полоской скотча, в углу наклейка со знаком Talk. Сдвинутая тень — у фотокарточки (тоном
+   бумаги под ней, --h места) и у наклейки (шалфей): опорный элемент блока. Размер наклейки на
+   узком экране — здесь же, у всех мест; ширину рамки и место задаёт экран — «Кто это делает»
+   лендинга (product-landing-author.css), листы «Поговорить». */
+.author-photo {
+  position: relative; width: 100%; box-sizing: border-box;
+  padding: 12px 12px 16px; border-radius: 8px; background: var(--surface); transform: rotate(-2.5deg);
+  box-shadow: 12px 13px 0 oklch(0.79 0.07 var(--h));
+}
+/* Полоска скотча сверху — фото приклеено к листу. Сплошной тон, без прозрачности. */
+.author-photo::before {
+  content: ''; position: absolute; top: -12px; left: 50%; width: 96px; height: 26px; margin-left: -48px;
+  border-radius: 3px; background: oklch(0.9 0.055 85); transform: rotate(-4deg);
+}
+.author-photo-img {
+  display: block; width: 100%; aspect-ratio: 5 / 6;
+  object-fit: cover; object-position: center top; border-radius: 4px;
+}
+.author-photo-sticker {
+  --h: 135; position: absolute; right: -30px; bottom: -26px;
+  display: flex; align-items: center; justify-content: center;
+  width: 96px; height: 96px; border-radius: 22px; transform: rotate(9deg);
+  background: oklch(0.9 0.06 var(--h)); box-shadow: 6px 7px 0 oklch(0.78 0.07 var(--h));
+}
+.author-photo-sticker .scn-sign { width: 72px; }
+/* Узкий экран: наклейка меньше и ближе к рамке. На ≤360 фотокарточка во всю колонку — наклейка
+   (с поворотом и тенью) вылезала за край листа на 5–10px; ближе к углу рамки, тень внутри листа. */
+@media (max-width: 640px) {
+  .author-photo-sticker { right: -18px; bottom: -22px; width: 80px; height: 80px; border-radius: 18px; }
+  .author-photo-sticker .scn-sign { width: 60px; }
+}
+@media (max-width: 360px) {
+  .author-photo-sticker { right: -4px; }
+}

@@ -128,3 +128,39 @@ describe('Dialog — несколько окон', () => {
   });
 });
 
+// Аудит 2026-11: окно, открытое касанием или само, показывало кольцо фокуса на первой кнопке
+// (Chrome даёт :focus-visible программному фокусу) — «На «ты»» выглядела выбранной. Кольцо —
+// только с клавиатуры: «тихое» окно (data-focus="quiet", dialogs.css) до первой клавиши перехода.
+describe('Dialog — кольцо фокуса только с клавиатуры', () => {
+  it('открыто касанием: окно тихое, фокус всё равно внутри; Tab возвращает кольцо', () => {
+    fireEvent.pointerDown(document.body);
+    renderDialog();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.getAttribute('data-focus')).toBe('quiet');
+    expect(document.activeElement).toBe(screen.getByText('Первая'));
+    fireEvent.keyDown(screen.getByText('Первая'), { key: 'Tab' });
+    expect(dialog.hasAttribute('data-focus')).toBe(false);
+  });
+
+  it('не клавиша перехода (Enter) кольцо не возвращает', () => {
+    fireEvent.pointerDown(document.body);
+    renderDialog();
+    fireEvent.keyDown(screen.getByText('Первая'), { key: 'Enter' });
+    expect(screen.getByRole('dialog').getAttribute('data-focus')).toBe('quiet');
+  });
+
+  it('открыто с клавиатуры (Enter на кнопке): кольцо сразу', () => {
+    fireEvent.pointerDown(document.body);
+    fireEvent.keyDown(document.body, { key: 'Enter' });
+    renderDialog();
+    expect(screen.getByRole('dialog').hasAttribute('data-focus')).toBe(false);
+  });
+
+  it('сочетание с Ctrl/Cmd — не ввод с клавиатуры: окно остаётся тихим', () => {
+    fireEvent.pointerDown(document.body);
+    fireEvent.keyDown(document.body, { key: 'k', metaKey: true });
+    renderDialog();
+    expect(screen.getByRole('dialog').getAttribute('data-focus')).toBe('quiet');
+  });
+});
+

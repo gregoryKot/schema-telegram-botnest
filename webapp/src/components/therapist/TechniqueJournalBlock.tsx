@@ -49,7 +49,7 @@ export function TechniqueJournalBlock({ detail, onOpenConcept, takeFocus }: Prop
       {load?.failed ? (
         <div className="tb-journal-empty">
           <div className="tb-meta" role="status">Журнал не загрузился вместе с концептуализацией.</div>
-          <button type="button" className="tb-journal-link" onClick={detail.reloadConcept} disabled={load.reloading}>
+          <button type="button" className="tb-journal-link" onClick={detail.reloadConcept} disabled={load.reloading} aria-busy={load.reloading || undefined}>
             {load.reloading ? 'Загружаю…' : 'Повторить'}
           </button>
         </div>

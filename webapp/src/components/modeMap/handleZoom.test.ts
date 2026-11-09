@@ -37,7 +37,8 @@ describe('handleHitPx — зона ручки в px холста', () => {
 
 describe('CSS ручки берёт размер из переменной', () => {
   it('на (hover: none) ширина и высота .mm-handle — var(--mm-handle-hit), по умолчанию 28px в :root', () => {
-    const css = readFileSync(join(__dirname, '..', '..', 'index.css'), 'utf8');
+    // Ручки связи уехали из index.css в свою часть хвоста (раскрой 2026-11, styles/index-tail.css).
+    const css = readFileSync(join(__dirname, '..', '..', 'styles', 'modemap-handles.css'), 'utf8');
     const block = css.match(/@media \(hover: none\)\s*\{\s*\.mm-handle\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(HANDLE_HIT_VAR).toBe('--mm-handle-hit');
     expect(block).toMatch(/width: var\(--mm-handle-hit\) !important/);

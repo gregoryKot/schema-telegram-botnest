@@ -63,7 +63,7 @@ describe('MeetingDaysCard', () => {
     expect(screen.getByText('Пн')).toBeTruthy();
   });
 
-  it('выбранный день — ds-chip--toggle is-on, --h задан у предка (иначе чип не красится)', () => {
+  it('выбранный день — ds-chip--toggle is-on, --h задан у предка (иначе чип красится запасным нейтральным оттенком)', () => {
     render(<MeetingDaysCard selectedClient={client([1])} detail={detailOf()} />);
     fireEvent.click(screen.getByText('Изменить →'));
     const on = screen.getByRole('button', { name: 'Пн' });

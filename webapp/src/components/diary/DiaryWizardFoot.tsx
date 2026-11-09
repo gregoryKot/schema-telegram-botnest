@@ -37,7 +37,7 @@ export function DiaryWizardFoot({
       {canSave && !isLast && (
         <button
           className="ds-btn ds-btn--secondary"
-          disabled={saving}
+          disabled={saving} aria-busy={saving || undefined}
           onClick={onSave}
         >
           {saving ? 'Сохраняю…' : 'Сохранить'} {!saving && <GlyphCheck />}

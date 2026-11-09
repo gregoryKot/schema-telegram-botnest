@@ -1,7 +1,7 @@
 import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
 import { DOMAIN_HUE, hueStyle } from '../../../lib/tone';
 
-// Полный выбор актуальных схем: чипы всех 20 по доменам; выбранные — tint и рамка цвета домена (--h на обёртке).
+// Полный выбор актуальных схем: чипы всех 20 по доменам; выбранные — бумага цвета домена с кромкой того же тона (--h на обёртке).
 export function ConceptSchemaEditor({ activeIds, onToggle }: { activeIds: string[]; onToggle: (id: string) => void }) {
   return (
     <div className="tcp-pickers">

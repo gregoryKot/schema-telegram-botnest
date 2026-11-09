@@ -54,6 +54,11 @@
 .pp-art--square { width: 112px; height: 60px; }
 .pp-art--row { width: 44px; height: 24px; }
 .pp-art--empty { width: 56px; height: 48px; }
+/* Меню, вкладки, чипы: знак рядом с подписью, не крупнее строки текста. */
+.pp-art--nav { width: 24px; height: 14px; }
+/* Опорный элемент главной и героя потока на компьютере (пропорция поля Strokes 120×100);
+   в узкой колонке не шире её. */
+.pp-art--scene { width: 180px; height: 150px; max-width: 100%; }
 
 /* ── Пустое состояние: картинка и текст ─────────────────────────────────── */
 .pp-empty { display: flex; align-items: center; gap: 16px; }

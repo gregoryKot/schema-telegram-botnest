@@ -142,7 +142,7 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
           ))}
         </div>
         {activeMeta && <RenameDeleteMenu label="Действия с картой" deleteLabel="Удалить карту" onRename={() => startEdit(activeMeta)} onDelete={maps.length > 1 ? () => setDeleteTargetId(activeMeta.id) : undefined} />}
-        <button ref={newBtnRef} onClick={() => setPickKind(o => !o)} disabled={creating}
+        <button ref={newBtnRef} onClick={() => setPickKind(o => !o)} disabled={creating} aria-busy={creating || undefined}
           className={`ds-btn ds-btn--secondary ds-btn--sm mm2-new${pickKind ? ' is-active' : ''}`}>
           {creating ? '…' : (
             <span>

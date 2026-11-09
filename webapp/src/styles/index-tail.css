@@ -1,0 +1,8 @@
+/* Хвост index.css: разделы экранов, вынесенные из него (раскрой 2026-11). main.tsx
+   подключает этот файл сразу после index.css и до utilities.css — там они и стояли
+   в каскаде. Порядок @import не менять; новое правило — в файл своего экрана. */
+@import './therapist-sheet.css';
+@import './settings-nav.css';
+@import './dialog-center.css';
+@import './ex-legacy.css';
+@import './modemap-handles.css';

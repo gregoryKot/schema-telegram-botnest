@@ -1,0 +1,29 @@
+/* Старые классы экранов упражнений (ex-screen, ex-btn): ими ещё пользуются
+   сомнение в режиме, «Карта себя», «Разбор фразы» и совет по потребности. Новые — ex2-
+   (sheet-exercises.css). Подключается через index-tail.css. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
+     overflow:visible override above would clip content behind ex-screen's
+     overflow:hidden. Re-enable scroll for .page inside fixed overlays. */
+  .ex-screen .page { overflow-y: auto !important; }
+  /* Старый экран упражнения — тоже полноэкранный корень: статус-бар установленного
+     приложения (#902; новые листы отступают в styles/sheet-*.css). */
+  .ex-screen { padding-top: var(--safe-top); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Exercises – Hub & fullscreen exercise screens
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Exercise screen ────────────────────────────────────────────────── */
+.ex-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: grid; grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+/* Ex buttons (exercise-scoped) */
+.ex-btn { display: inline-flex; align-items: center; gap: var(--space-8); padding: 11px 22px; border-radius: var(--r-8); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; border: none; font-family: inherit; }
+.ex-btn-ghost { color: var(--text-sub); background: none; }
+.ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }

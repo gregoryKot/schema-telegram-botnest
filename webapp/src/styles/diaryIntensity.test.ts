@@ -4,9 +4,11 @@
 // margin держит в раскладке прежние 26, видимая полоска — ::before. CSS в jsdom не исполняется —
 // сверяем исходник.
 import { describe, it, expect } from 'vitest';
-import { readCss, type Rule } from './cssRules.test-helpers';
+import { parseRules, type Rule } from './cssRules.test-helpers';
+import { cssBundle } from './cssBundle.test-helpers';
 
-const rules = readCss('sheet-diary.css');
+// sheet-diary.css — сборник (раскрой 2026-11): шкала живёт в diary-wizard.css, читаем вместе с частями.
+const rules = parseRules(cssBundle('sheet-diary.css'));
 const body = (sel: string, list: Rule[] = rules) =>
   list.filter((r) => r.media === '' && r.selectors.includes(sel)).map((r) => r.body).join(';');
 const px = (decls: string, prop: string) => {

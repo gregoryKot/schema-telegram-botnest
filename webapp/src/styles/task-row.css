@@ -1,0 +1,8 @@
+/* Строка задания (sections/practice/TaskRow): полоска «от терапевта», галочка, заметка,
+   статус. Общий ряд .cp-task — в client-practice.css, откуда этот файл и подключается. */
+.cp-task-bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--accent); }
+.cp-task-from { color: var(--accent); margin-bottom: 4px; }
+.cp-task--done { opacity: .6; }
+.cp-task-check { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--ok-bg); color: var(--ok-ink); }
+.cp-task-note { margin-top: var(--space-4); font-size: 13px; color: var(--ok-ink); }
+.cp-task-status { margin-top: var(--space-6); }

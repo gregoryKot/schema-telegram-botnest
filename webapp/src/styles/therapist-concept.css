@@ -1,4 +1,8 @@
 /* Вкладка «Концептуализация» кабинета терапевта (префикс tcp-). */
+/* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
+   начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
+   этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
+@import './concept-graph.css';
 .tcp-fields { display: flex; flex-direction: column; gap: 52px; min-width: 0; max-width: 880px; }
 
 /* ── Прогресс и якоря ── */
@@ -54,16 +58,6 @@
 }
 .tcp-node-kind { display: inline-flex; align-items: center; gap: 6px; }
 
-/* Сводка «Коротко»: отступ, который раньше давал инлайн-CARD. Раскладка строк — классами
-   skin.digest (ConceptDigest), заголовок и метка стоят вместе с ds-label: метка слева 104px,
-   плашки на узком экране переносятся под неё сами (flex-wrap + flex-basis). */
-.tcp-digest { margin-bottom: 16px; }
-.tcp-dg-title { margin: 0 0 var(--space-10); }
-.tcp-dg-list { margin: 0; display: grid; gap: var(--space-10); }
-.tcp-dg-row { display: flex; flex-wrap: wrap; gap: 4px 16px; }
-.tcp-dg-term { flex: 0 0 104px; line-height: 26px; }
-.tcp-dg-value { flex: 1 1 260px; min-width: 0; margin: 0; line-height: 1.5; }
-
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-fields { gap: 40px; }
   .tcp-sec-head { gap: 12px; }
@@ -77,77 +71,11 @@
   .tcp-chain-item { flex-direction: column; align-items: stretch; }
   .tcp-arrow { transform: rotate(90deg); align-self: center; }
 }
-
-/* ── Шапка вкладки ── */
-/* Компьютер (≥768): слева заголовок и подпись, справа статус, «Схема · Поля» и
-   «⋯ Ещё»; узко заголовок уходит отдельной строкой (перенос flex, без порога). Телефон
-   (#906): заголовка нет — вкладка над шапкой уже называется «Концептуализация»;
-   одна строка управления: «Схема · Поля» слева, «⋯» (ds-btn--icon с aria-label)
-   справа. */
-.tcp-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
-.tcp-save { margin-left: auto; min-width: 110px; }
-.tcp-head-title { flex: 1 1 320px; min-width: 0; }
-/* В DOM порядок = видимому (заголовок, статус, «Схема · Поля», «⋯»), order нет:
-   Tab идёт слева направо. */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .tcp-save { margin-left: 0; }
-  .tcp-more .ds-btn--icon { width: auto; min-width: 44px; padding: 0 16px; border-radius: 22px; }
-}
-/* Группа действий (статус, «Схема · Поля», «⋯»): на телефоне растворена
-   (display: contents) — дети лежат прямо в .tcp-head, как раньше. На ≥768 —
-   одна неразрывная группа справа; не хватило места — заголовок остаётся
-   строкой выше, а группа уходит вниз целиком, даже со статусом
-   «Не сохранилось · Повторить». */
-.tcp-head-actions { display: contents; }
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .tcp-head-actions { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; flex: 0 0 auto; }
-}
 /* Пункт меню в две строки: название и подсказка под ним (подсказка переносится): ширина 220 — у .ds-menu, тап-цель 44 — у .ds-menu-item. */
 .tcp-menu .ds-menu-item { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; line-height: 1.3; }
 .tcp-menu-hint { font-size: 11px; line-height: 1.35; color: var(--text-faint); white-space: normal; }
-/* Строка под шапкой: занятость или отказ действия из меню, «Текст скопирован». */
-.tcp-status { font-size: 13px; color: var(--text-sub); margin: -16px 0 20px; }
-.tcp-status.is-err { color: var(--err); }
-/* «Показать клиенту» под шапкой: подпись слева, тумблер справа (ConceptShareRow). */
-.tcp-share { display: flex; align-items: center; gap: 12px; margin: -16px 0 20px; }
-.tcp-share-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
-.tcp-share-title { font-size: 14px; font-weight: 600; color: var(--text); }
-.tcp-share-sub { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
-/* Телефон (#902): «Схема · Поля» слева, «⋯» справа; статус сохранения — своей
-   строкой ниже, мелко, слева. justify-content с !important: SaveStatusLine
-   (shared) ставит выравнивание инлайн по пропу align="right", нужному ноутбуку. */
-@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .tcp-head { margin-bottom: 16px; }
-  .tcp-head-title, .tcp-more-txt { display: none; }
-  .tcp-status { margin: -4px 0 16px; } /* на телефоне шапка ниже на 16px: отрицательный отступ строки статуса не должен съедать весь зазор */
-  .tcp-share { margin: -4px 0 16px; }
-  .tcp-save { order: 1; width: 100%; min-width: 0; margin-left: 0; text-align: left; justify-content: flex-start !important; }
-  .tcp-more { margin-left: auto; }
-}
-
-/* ── Схема и раскрывашки под содержанием ── */
-.tcp-graph { padding: var(--space-8) 0; }
 /* Раскрывашки — общий ds-fold (cabinet.css), подпись — ds-label без своего кегля. */
 .tcp-folds { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; max-width: 880px; }
-/* Верхний отступ вкладки — как у ds-page: 40 на ноутбуке, на телефоне 20 из
-   .page-inner-wide (index.css); u-pt40 из shared/utilities.css держал 40 и там. */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .page-inner-wide.tcp-page { padding-top: 40px; } }
-/* Компьютер: «Как читать схему» — не полоса во всю ширину, а компактная
-   раскрывашка по содержимому без рамки (как до волны #906: маленькая ссылка);
-   открытая — на ширину колонки, чтобы читался текст. */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .tcp-graph [data-export-skip] > .ds-fold { width: fit-content; max-width: 100%; background: transparent; border-color: transparent; }
-  .tcp-graph [data-export-skip] > .ds-fold:has(> .ds-fold-btn[aria-expanded="true"]) { width: 100%; background: var(--surface); border-color: var(--line); }
-  .tcp-graph [data-export-skip] > .ds-fold > .ds-fold-btn { width: auto; padding: 0 8px; }
-}
-/* Вид «Схема»: четыре колонки схеме нужны от 960px (WIDE_MIN). Ноутбук 1280 минус
-   сайдбар 240 — 1040; с отступами --tk-gutter (48px с каждой стороны) оставалось
-   944 и схема падала в столбик. Здесь отступ 20px: 1040 − 40 = 1000 ≥ 960.
-   max-width остаётся --tk-max: на широком мониторе колонка стоит по центру,
-   как остальные экраны кабинета. Селектор специфичнее therapist-card.css. */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .tk-tabs-body > .page-inner-wide.tcp--graph { padding-inline: 20px; }
-}
 
 /* ── «Главное»: кнопка в шапке и экран с самым важным (2026-11) ── */
 .tcp-brief-btn { height: 44px; padding: 0 16px; }

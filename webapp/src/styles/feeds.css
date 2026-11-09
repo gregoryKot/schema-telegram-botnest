@@ -1,0 +1,14 @@
+/* «Что питает» — список практик (PracticesScreen) и строка «Задание · имя» в создании
+   задания. Подключается сборником sheet-tasks.css. */
+/* ── Практики ── */
+.sk-intro { max-width: 560px; line-height: 1.6; font-size: 14px; }
+.sk-head-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.sk-ok { font-size: 13px; font-weight: 500; color: var(--ok); }
+.sk-hint { padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.55; max-width: 600px; }
+.sk-practice { display: flex; align-items: center; gap: 12px; }
+.sk-practice-text { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.sk-add { display: flex; gap: 8px; max-width: 600px; flex-wrap: wrap; }
+.sk-add .ds-input { flex: 1; min-width: 200px; }
+/* «Задание · имя» — одна строка с многоточием: длинное имя одним словом
+   обрезалось краем экрана (498px текста при 328 места). */
+.sk-eyebrow-one { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

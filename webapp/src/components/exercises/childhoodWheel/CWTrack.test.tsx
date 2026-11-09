@@ -13,7 +13,7 @@ afterEach(() => cleanup());
 
 describe('CWTrack', () => {
   it('трек отдаёт вертикальный жест прокрутке (touch-action: pan-y)', () => {
-    const css = readFileSync(join(__dirname, '../../../styles/sheet-exercises.css'), 'utf8');
+    const css = readFileSync(join(__dirname, '../../../styles/ex-wheel.css'), 'utf8');
     const rule = css.match(/\.ex2-cw-track\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(rule).toMatch(/touch-action:\s*pan-y/);
   });

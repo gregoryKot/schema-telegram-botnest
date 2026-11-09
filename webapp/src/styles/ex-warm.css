@@ -1,0 +1,6 @@
+/* Упражнение «Тёплые слова» (WarmWordsEx). Подключается из sheet-exercises.css. */
+/* ── Тёплые слова ─────────────────────────────────────────────────────── */
+.ex2-count.ds-sub { margin-bottom: 14px; }
+.ex2-warm-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.ex2-warm-mode { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.ex2-warm-when { text-align: right; flex-shrink: 0; }

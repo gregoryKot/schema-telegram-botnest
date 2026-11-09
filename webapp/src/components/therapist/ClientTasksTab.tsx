@@ -72,7 +72,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
                   </div>
                   <TaskStatusBadge status={status} />
                   {therapistClosesTask(t) && (
-                    <button className="ds-btn ds-btn--sm ds-btn--secondary" disabled={actions.busyId === t.id} onClick={() => void actions.markDone(t.id)}>
+                    <button className="ds-btn ds-btn--sm ds-btn--secondary" disabled={actions.busyId === t.id} aria-busy={actions.busyId === t.id || undefined} onClick={() => void actions.markDone(t.id)}>
                       Выполнено
                     </button>
                   )}

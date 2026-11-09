@@ -1,0 +1,19 @@
+/* Упражнение «Проверка убеждения» (BeliefCheckEx, EviList, BeliefDoneScreen).
+   Подключается из sheet-exercises.css. */
+.ex2-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+.ex2-ev { margin: 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.5; color: var(--on-panel-sub); }
+.ex2-ev li { padding: 6px 0; border-bottom: 1px solid var(--panel-line); }
+.ex2-ev li:last-child { border-bottom: 0; }
+
+/* ── Доказательства (за/против) ───────────────────────────────────────── */
+.ex2-evi { display: flex; flex-direction: column; margin-bottom: 16px; }
+.ex2-evi-row, .ex2-evi-add { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--paper-sunk); }
+.ex2-evi-num { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-ghost); }
+.ex2-evi-text { font-size: 15px; line-height: 1.55; color: var(--text); padding: 8px 0; }
+.ex2-evi-x { width: 44px; height: 44px; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: var(--text-faint); cursor: pointer; }
+.ex2-evi-x:hover { background: var(--paper-tint); color: var(--text); }
+.ex2-evi-add { border-bottom: none; padding-top: 14px; }
+.ex2-evi-plus { display: grid; place-items: center; color: var(--text-faint); }
+.ds-btn.ex2-evi-go.is-ready { color: var(--accent); border-color: var(--accent); }
+.ex2-recap.ds-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; }
+.ex2-recap-row { padding: 4px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }

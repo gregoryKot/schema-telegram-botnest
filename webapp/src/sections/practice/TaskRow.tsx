@@ -38,7 +38,7 @@ export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }
       {st.showComplete && (
         <button
           className="ds-btn ds-btn--sm ds-btn--secondary"
-          disabled={completing}
+          disabled={completing} aria-busy={completing || undefined}
           onClick={e => { e.stopPropagation(); complete(); }}
         >
           {completing ? '...' : 'Готово'}

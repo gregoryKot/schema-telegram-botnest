@@ -817,38 +817,6 @@ a { color: inherit; text-decoration: none; }
 /* ─── Sparkline ──────────────────────────────────────────────────────────── */
 .spark { width: 100%; display: block; }
 
-/* ─── Therapist cabinet (TherapistClientSheet) ───────────────────────────────
-   Desktop: fill canvas via a flex chain. Mobile: natural block flow so the
-   whole page scrolls like a regular section. Layout is kept in CSS (not inline
-   styles) so mobile breakpoint can cleanly override without !important hacks. */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .therapist-sheet {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  /* List view: fills sheet, scrolls internally */
-  .therapist-scroll--list {
-    flex: 1;
-    overflow: auto;
-  }
-  /* Client view outer: fixed header + scrollable tab area */
-  .therapist-scroll--client {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  /* Tab content: scrolls independently inside the client view */
-  .therapist-scroll--tabs {
-    flex: 1;
-    overflow: auto;
-  }
-}
-
 /* Mobile: header padding + horizontal tab scroll */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tabs {
@@ -935,48 +903,11 @@ a { color: inherit; text-decoration: none; }
     padding-bottom: calc(var(--mobile-nav-h) + var(--space-24) + var(--safe-bottom));
   }
   .page { overflow: visible; height: auto; }
-  /* Fixed fullscreen overlays (.ex-screen) need their own scroll — the global
-     overflow:visible override above would clip content behind ex-screen's
-     overflow:hidden. Re-enable scroll for .page inside fixed overlays. */
-  .ex-screen .page { overflow-y: auto !important; }
-  /* Старый экран упражнения — тоже полноэкранный корень: статус-бар установленного
-     приложения (#902; новые листы отступают в styles/sheet-*.css). */
-  .ex-screen { padding-top: var(--safe-top); }
 }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .mobile-nav { display: none !important; }
-  /* Settings overlay: don't cover the sidebar on desktop */
-  .settings-overlay { left: var(--sidebar-w) !important; }
-  /* Settings left nav: visible on desktop */
-  .settings-sidenav { display: flex !important; }
   .mobile-only { display: none !important; }
 }
-
-/* ─── Settings side nav ──────────────────────────────────────────────────── */
-.settings-sidenav {
-  display: none; /* hidden on mobile */
-  flex-direction: column;
-  width: 180px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--line);
-  padding: 32px 0;
-  overflow-y: auto;
-  gap: 1px;
-}
-.settings-sidenav-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 7px 20px;
-  background: none;
-  border: none;
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--text-sub);
-  cursor: pointer;
-  transition: color 0.1s;
-}
-.settings-sidenav-item:hover { color: var(--text); }
 
 /* ─── Шторки: лист снизу на телефоне, окно по центру на десктопе ─────────────
    Единственный набор правил для BottomSheetShell и InfoModal настроек.
@@ -1012,30 +943,6 @@ a { color: inherit; text-decoration: none; }
 }
 html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6); }
 
-/* ─── Диалог по центру (компонент Dialog) ───────────────────────────────────
-   Один вид для всех центрированных окон сайта (подтверждение, выбор «ты/вы»,
-   достижение, празднование): бумага, тонкая рамка, мягкая тень, заголовок —
-   serif обычного начертания, кнопки — .ds-btn / .ds-btn--secondary. Раньше у
-   каждого окна были свои радиусы (12/20/24/28), тени и пружинные анимации. */
-.dialog-title {
-  font-family: var(--serif); font-weight: 400;
-  font-size: 26px; line-height: 1.15; letter-spacing: -0.015em;
-  color: var(--text); margin: 0 0 10px;
-}
-.dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
-.dialog-error { font-size: 14px; line-height: 1.5; color: var(--accent-red); margin: 0 0 16px; }
-.dialog-actions { display: flex; gap: var(--space-10); }
-.dialog-actions > .ds-btn { flex: 1; }
-.dialog-link { /* 44 по высоте: «Позже» в выборе «ты/вы» было 40 (QA мобильной версии 2026-11, М1) */
-  display: block; width: 100%; min-height: 44px; margin-top: 6px; padding: 10px 0;
-  background: none; border: none; cursor: pointer; font-family: inherit;
-  font-size: 13px; color: var(--text-faint);
-}
-.dialog-link:hover { color: var(--text-sub); }
-/* Settings content area: center on desktop */
-.settings-content-inner { max-width: 600px; }
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .settings-content-inner { margin: 0 auto; } }
-
 /* ─── BottomSheet → Modal on desktop ────────────────────────────────────── */
 @keyframes modal-in {
   from { opacity: 0; transform: scale(0.96) translateY(8px); }
@@ -1046,26 +953,11 @@ html[data-theme="dark"] .sheet-modal-box { box-shadow: 0 24px 64px -16px rgba(0,
   to   { transform: translateY(0); }
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   Exercises – Hub & fullscreen exercise screens
-   ══════════════════════════════════════════════════════════════════════ */
-
-/* ── Exercise screen ────────────────────────────────────────────────── */
-.ex-screen {
-  position: fixed; inset: 0; z-index: 200;
-  background: var(--bg);
-  display: grid; grid-template-rows: auto 1fr;
-  overflow: hidden;
-}
-
+/* Старые классы экранов упражнений без потребителей в разметке (.prompt, .flash;
+   .entry и .intensity удалены в 2026-11). Живые соседи — в styles/ex-legacy.css (раскрой 2026-11). */
 /* Prompt */
 /* Prompt – shared by exercises and diary flows */
 .prompt { display: grid; grid-template-columns: 56px 1fr; gap: var(--space-24); align-items: start; margin-bottom: 28px; }
-
-/* Ex buttons (exercise-scoped) */
-.ex-btn { display: inline-flex; align-items: center; gap: var(--space-8); padding: 11px 22px; border-radius: var(--r-8); font-size: 14px; font-weight: 600; cursor: pointer; transition: background .12s, color .12s; white-space: nowrap; border: none; font-family: inherit; }
-.ex-btn-ghost { color: var(--text-sub); background: none; }
-.ex-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 
 /* Flashcards */
 .flash { border: 1px solid var(--line); border-radius: var(--r-16); padding: 36px 40px 32px; background: var(--surface); margin-bottom: 28px; }
@@ -1091,74 +983,6 @@ input:focus-visible,
 textarea:focus-visible {
   outline: none;
 }
-
-/* ─── Mode map: connection dots — big hit area, small visible dot ──────────── */
-/* Custom "draw connection" cursor: an accent dot with an arrow (instead of the
-   plain crosshair). White halo keeps it visible on any background. Hotspot at the dot. */
-:root {
-  --mm-connect-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='4.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Cg fill='none' stroke='%234d4799' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6%2020L17%209'/%3E%3Cpath d='M17%209h-5M17%209v5'/%3E%3C/g%3E%3Ccircle cx='6' cy='20' r='4' fill='%23ffffff'/%3E%3Ccircle cx='6' cy='20' r='2.6' fill='%234d4799'/%3E%3C/svg%3E") 6 20, grab;
-  /* Зона ручки связи под пальцем в px холста; холст переписывает её по зуму (modeMap/handleZoom.ts). */
-  --mm-handle-hit: 28px;
-}
-.mm-handle {
-  opacity: 0;
-  transition: opacity 0.12s ease;
-  cursor: var(--mm-connect-cursor);
-}
-/* React Flow forces `cursor: crosshair` on .react-flow__handle.connectionindicator
-   (more specific than .mm-handle) — override it hard so we never get the cross. */
-.react-flow__handle.mm-handle,
-.react-flow__handle.connectionindicator.mm-handle,
-.react-flow__handle.connectingfrom.mm-handle { cursor: var(--mm-connect-cursor) !important; }
-/* Visible dot centred inside the larger (18px) invisible hit area */
-.mm-handle::after {
-  content: '';
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 13px; height: 13px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--bg-elev);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  transition: width 0.1s ease, height 0.1s ease, box-shadow 0.1s ease;
-}
-/* Grow + soft glow on hover so it's obvious you can grab & pull a line from here */
-.mm-handle:hover::after {
-  width: 19px; height: 19px;
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 22%, transparent);
-}
-.react-flow__node:hover .mm-handle,
-.react-flow__node.selected .mm-handle { opacity: 1; }
-/* Без наведения (телефон, планшет) ручки видны всегда: показывать их по :hover
-   или у выделенного узла нечем, а выделенный узел на телефоне закрыт панелью
-   правки (QA 2026-11, T-4). Связь — потянуть точку к другому узлу или тапнуть
-   точку одного узла и точку другого (React Flow connectOnClick). Зона 28px —
-   компромисс: 44 соседние ручки узла перекрыли бы друг друга и сам узел. Ручка в
-   координатах холста: --mm-handle-hit = 28 / зум (modeMap/handleZoom.ts), на экране те же 28. */
-@media (hover: none) {
-  .mm-handle { opacity: 1; width: var(--mm-handle-hit) !important; height: var(--mm-handle-hit) !important; } /* !important: размер ручки задан инлайн (nodeParts dotStyle) */
-}
-/* While dragging a connection, reveal all handles so targets are obvious */
-.react-flow.connecting .mm-handle { opacity: 0.85; }
-/* Keep the connect-cursor while actively dragging the line over the canvas */
-.react-flow.connecting,
-.react-flow.connecting .react-flow__pane,
-.react-flow.connecting .react-flow__node { cursor: var(--mm-connect-cursor) !important; }
-
-/* Whole-node drop target: inert normally, active only while drawing a connection,
-   so you can drop the line anywhere on a node instead of aiming at a dot. */
-.mm-node-target { pointer-events: none !important; }
-.react-flow.connecting .mm-node-target { pointer-events: all !important; }
-.react-flow.connecting .react-flow__node:hover { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); border-radius: var(--r-8); }
-
-/* Node body shows a grab hand, not the 4-arrow move cross (the confusing «крестик») */
-.react-flow__node { cursor: grab; }
-.react-flow__node:active { cursor: grabbing; }
-
-/* Круг потребностей (схема случая) лежит под своими потребностями, в том числе
-   когда выбран: xyflow поднимает выбранную ноду inline-стилем z-index — отсюда !important. */
-.react-flow__node-needs { z-index: -1 !important; }
 
 /* ── Reduced motion (нейроинклюзивность) ───────────────────────────────────────
    Системный prefers-reduced-motion ИЛИ ручной выбор в настройках

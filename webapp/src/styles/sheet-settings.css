@@ -1,6 +1,6 @@
 /* ── Лист «Настройки» (префикс st-) ───────────────────────────────────────
    Позиционирование на десктопе (отступ под сайдбар) и боковое оглавление
-   живут в index.css под классами settings-overlay / settings-sidenav —
+   живут в settings-nav.css под классами settings-overlay / settings-sidenav —
    здесь только вид. Тумблер — общий .ds-switch, шапка листа («← Закрыть/Назад»,
    заголовок ds-h2, статус справа) — общие .ds-sheet-head/.ds-back из cabinet.css (#906). */
 .st-overlay {

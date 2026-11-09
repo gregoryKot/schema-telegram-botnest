@@ -1,0 +1,13 @@
+/* Лист шаринга карточки (ShareCardSheet, WeeklyCardSheet). Подключается сборником sheet-diary.css. */
+.sd-canvas { margin-bottom: 18px; }
+.sd-canvas-el { display: block; width: 100%; height: auto; }
+.sd-share-title { margin-bottom: 4px; }
+.sd-share-sub { margin-bottom: 16px; }
+.sd-pre {
+  font: 12px/1.6 var(--sans); color: var(--text-sub); background: var(--paper-sunk); border-radius: 12px;
+  padding: 12px 14px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; margin: 0 0 14px; user-select: all;
+}
+.sd-wide { width: 100%; }
+.sd-wide-gap { margin-top: 10px; }
+.sd-wide.is-ok, .sd-btn-ok { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-bg); }
+.sd-wide.is-err { color: var(--err); }
