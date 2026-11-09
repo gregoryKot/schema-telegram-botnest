@@ -176,8 +176,7 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/practice-sessions': { breathing: 0, grounding: 0, stop: 0 },
   'GET /api/practices': [], // plans.controller.ts
   'GET /api/profile': PROFILE,
-  // push.controller.ts: без VAPID-ключей (как в e2e) включение не предлагается.
-  'GET /api/push/config': { publicKey: null },
+  'GET /api/push/config': { publicKey: null }, // push.controller.ts: без VAPID-ключей (как в e2e) не предлагается
   'GET /api/safe-place': null, // ExercisesService.getSafePlace
   'GET /api/schema-notes': [], // notes.controller.ts
   'GET /api/settings': SETTINGS,

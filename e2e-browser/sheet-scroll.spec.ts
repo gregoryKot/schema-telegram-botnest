@@ -15,7 +15,10 @@ const PHONES = [
 ];
 
 for (const phone of PHONES) {
-  test(`${phone.name}: лист «История» прокручивается до конца`, async ({ page, api }) => {
+  test(`${phone.name}: лист «История» прокручивается до конца`, async ({
+    page,
+    api,
+  }) => {
     // Неделя оценок, сегодняшний день заполнен целиком — трекер откроется на «Готово».
     for (let i = 0; i < 7; i++) {
       const d = new Date();
@@ -35,11 +38,13 @@ for (const phone of PHONES) {
     await sheet.getByRole('button', { name: 'Неделя' }).click();
 
     const scroller = sheet.locator(':scope > .page');
-    const { overflowY, scrollHeight, clientHeight } = await scroller.evaluate((el) => ({
-      overflowY: getComputedStyle(el).overflowY,
-      scrollHeight: el.scrollHeight,
-      clientHeight: el.clientHeight,
-    }));
+    const { overflowY, scrollHeight, clientHeight } = await scroller.evaluate(
+      (el) => ({
+        overflowY: getComputedStyle(el).overflowY,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+      }),
+    );
     // Неделя на телефоне длиннее окна — иначе проверка ничего не доказывает.
     expect(scrollHeight).toBeGreaterThan(clientHeight);
     expect(['auto', 'scroll']).toContain(overflowY);
