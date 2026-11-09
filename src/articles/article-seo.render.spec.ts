@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { practicePreviewHtml } from '../practice-preview';
 import {
   buildArticleBody,
   buildArticleJsonLd,
@@ -98,6 +101,8 @@ describe('injectSeo', () => {
 <meta property="og:title"       content="old" />
 <meta property="og:description" content="old" />
 <meta property="og:type"        content="website" />
+<meta name="twitter:title"       content="old" />
+<meta name="twitter:description" content="old" />
 </head><body><div id="root"></div></body>`;
 
   it('заменяет каждый тег и тело, JSON-LD добавляет после #root', () => {
@@ -124,6 +129,12 @@ describe('injectSeo', () => {
       '<meta property="og:description" content="D &lt;d&gt;" />',
     );
     expect(out).toContain('<meta property="og:type" content="article" />');
+    expect(out).toContain(
+      '<meta name="twitter:title" content="T &amp; &quot;q&quot;" />',
+    );
+    expect(out).toContain(
+      '<meta name="twitter:description" content="D &lt;d&gt;" />',
+    );
     expect(out).toContain('<div id="root"><p>тело $& </p></div>');
     expect(out).toContain('<script type="application/ld+json">');
     expect(out).not.toContain('</script><b>');
@@ -140,6 +151,39 @@ describe('injectSeo', () => {
       bodyHtml: '',
     });
     expect(out).toContain('<meta property="og:title" content="Т" />');
+    expect(out).toContain('<meta name="twitter:title" content="Т" />');
     expect(out).not.toContain('ld+json');
+  });
+
+  // Карточка ссылки статьи на настоящем index.html (находка 2026-11-08):
+  // og:* переписывались, а twitter:* оставались от сайта — X показывал
+  // заголовок продукта, на визитке — карточку практики. Регэксп замены
+  // обязан совпасть с форматом тегов в файле, поэтому сверка — по нему.
+  describe('настоящий webapp/index.html', () => {
+    const source = readFileSync(
+      join(__dirname, '..', '..', 'webapp', 'index.html'),
+      'utf8',
+    );
+    const page = {
+      title: 'Статья – Автор',
+      ogTitle: 'Статья',
+      description: 'Лид статьи',
+      canonicalUrl: 'https://schemehappens.ru/articles/x',
+      ogType: 'article',
+      bodyHtml: '',
+    };
+    const metaIn = (html: string, key: string) =>
+      new RegExp(`<meta name="${key}"\\s+content="([^"]*)"`).exec(html)?.[1];
+
+    it.each([
+      ['продукт', source],
+      ['визитка', practicePreviewHtml(source)],
+    ])('%s: twitter:title и twitter:description — статьи', (_host, base) => {
+      // Контрольный образец: теги в файле есть, иначе сверка пустая.
+      expect(metaIn(base, 'twitter:title')).toBeTruthy();
+      const out = injectSeo(base, page);
+      expect(metaIn(out, 'twitter:title')).toBe('Статья');
+      expect(metaIn(out, 'twitter:description')).toBe('Лид статьи');
+    });
   });
 });
