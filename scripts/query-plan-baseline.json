@@ -13,7 +13,7 @@
       "msCeiling": 500
     },
     "history-30d": {
-      "blocks": 37,
+      "blocks": 38,
       "msCeiling": 500
     },
     "history-365d": {
@@ -21,7 +21,7 @@
       "msCeiling": 500
     },
     "notify-queue-tick": {
-      "blocks": 3461,
+      "blocks": 1208,
       "msCeiling": 1500
     },
     "proactive-budget": {
@@ -29,11 +29,11 @@
       "msCeiling": 500
     },
     "stats-report": {
-      "blocks": 68452,
+      "blocks": 69644,
       "msCeiling": 10000
     },
     "therapist-clients": {
-      "blocks": 2815,
+      "blocks": 2817,
       "msCeiling": 1500
     },
     "therapist-clients-long-streaks": {
