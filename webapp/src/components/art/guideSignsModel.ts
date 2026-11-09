@@ -7,7 +7,7 @@
 // GuideSignsTechniques.tsx, два знака «Для терапевта» — GuideSignsPractice.tsx). Тип техники —
 // только тип: тексты подсказок грузятся отдельным чанком (guideLoader), и сюда они не тянутся.
 import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
-import { MODE_GROUP_SIGN } from '../../../../shared/src/theme/entityLook';
+import { MODE_GROUP_SIGN, modeGroupLook, modeLook } from '../../../../shared/src/theme/entityLook';
 import { getModeById, getSchemaById, SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
 /** Все знаки листов: по группе режимов, общий знак режимов, по технике, по разделу «Для терапевта».
@@ -29,7 +29,6 @@ export type GuideSign = (typeof GUIDE_SIGNS)[number];
  * шаринга — терапевт и клиент говорят на одном языке.
  */
 export { MODE_GROUP_SIGN };
-type ModeGroupId = keyof typeof MODE_GROUP_SIGN;
 
 /** Знак техники: у каждой свой, общих нет. */
 export const TECHNIQUE_SIGN: Record<TechniqueId, GuideSign> = {
@@ -75,19 +74,13 @@ export const PRACTICE_NOTE_SIGN: Record<string, GuideSign> = {
 export const practiceNoteSign = (noteId: string): GuideSign | null =>
   Object.hasOwn(PRACTICE_NOTE_SIGN, noteId) ? PRACTICE_NOTE_SIGN[noteId] : null;
 
-/** Знак группы режимов по id (лист режима, заголовок группы в палитре холста); без группы — общий знак режимов. */
-export const modeGroupSign = (groupId: string | undefined): GuideSign =>
-  (groupId && MODE_GROUP_SIGN[groupId as ModeGroupId]) || 'cluster';
-/**
- * Режимы со своим знаком внутри группы: «Сердитый Ребёнок» — Flare (часть вспыхнула, рядом
- * ровный круг мха), иначе два детских режима различала бы только подпись. Заголовок группы
- * остаётся знаком группы (ChildCare). Решение 6, docs/design/APP_2026-11.md.
- */
-const MODE_OWN_SIGN: Record<string, GuideSign> = { angry_child: 'flare' };
+/** Знак группы режимов по id (лист режима, заголовок группы в палитре холста); без группы — общий
+ *  знак режимов. Таблица и защита от ключей прототипа — modeGroupLook (shared). */
+export const modeGroupSign = (groupId: string | undefined): GuideSign => modeGroupLook(groupId).sign;
 
-/** Знак режима — свой (MODE_OWN_SIGN) или знак его группы; режим без группы (свой режим терапевта) — общий знак режимов. */
-export const modeSign = (modeId: string): GuideSign =>
-  (Object.hasOwn(MODE_OWN_SIGN, modeId) ? MODE_OWN_SIGN[modeId] : null) ?? modeGroupSign(getModeById(modeId)?.groupId);
+/** Знак режима — свой («Сердитый Ребёнок» — Flare, решение 6) или знак его группы; режим без группы
+ *  (свой режим терапевта) — общий знак режимов. Таблица своих знаков — MODE_OWN_SIGN (shared). */
+export const modeSign = (modeId: string): GuideSign => modeLook(modeId, getModeById(modeId)?.groupId).sign;
 
 /** Номер домена схемы 1–5 для DomainArt; неизвестная схема — 0, картинки нет. */
 export function schemaDomain(schemaId: string): number {

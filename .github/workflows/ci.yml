@@ -736,6 +736,10 @@ jobs:
       # после сборки: гейту нужен готовый webapp/dist, иначе он падает с
       # понятной подсказкой «сначала собери».
       - run: node scripts/check-bundle-size-ratchet.mjs
+      # Порядок <link rel="stylesheet"> в собранном index.html (ревью волны 0, 2026-11-09): каскад
+      # правил с равной специфичностью задаёт разбиение на чанки, а не исходник; переезд CSS в другой
+      # чанк находили только снимки стенда. Тоже читает свежий webapp/dist — сразу после сборки.
+      - run: node scripts/check-css-link-order.mjs
       # Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1; по
       # образцу scripts/check-coverage-ratchet.mjs бэкенда): сам гоняет
       # `vitest run --coverage` и падает при просадке покрытия ниже

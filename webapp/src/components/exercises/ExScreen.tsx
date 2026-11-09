@@ -70,8 +70,9 @@ function ExBody({ aside, foot, children, hintBeforeField, spread, caution, cauti
 
 export function ExScreen({ onBack, backLabel, ...body }: ExScreenProps) {
   const hostBackLabel = useExBackLabel();
+  // ex2-screen--hero: на телефоне вопрос (.ex2-prompt-label) ступенью ниже заголовка листа
   return (
-    <div className="ex2-screen">
+    <div className={body.look === undefined ? 'ex2-screen' : 'ex2-screen ex2-screen--hero'}>
       <div className="ds-sheet-head ex2-top">
         <button type="button" className="ds-back" onClick={onBack}><GlyphArrowLeft />{backLabel ?? hostBackLabel}</button>
       </div>

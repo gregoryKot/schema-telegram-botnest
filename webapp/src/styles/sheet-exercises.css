@@ -82,6 +82,9 @@
 .ex2-prompt-num { font-family: var(--serif); font-style: italic; font-size: 30px; line-height: 1.1; color: var(--text-ghost); }
 .ex2-prompt-label { font-family: var(--serif); font-size: 26px; line-height: 1.2; color: var(--text); margin-bottom: 8px; }
 .ex2-prompt-label--sm { font-size: 22px; }
+/* Экран с листом-героем (ExScreen look): на телефоне заголовок листа — Literata 26–28, и вопрос того
+   же кегля прямо под ним спорил с ним за главное — вопрос ступенью ниже. */
+@media (max-width: 767px) { .ex2-screen--hero .ex2-prompt-label { font-size: 22px; } }
 .ex2-prompt-hint { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .ex2-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--paper-sunk); }
 .ex2-spacer { flex: 1; }

@@ -17,6 +17,8 @@ export const NEEDS_BUILD = {
     'сам гоняет vitest с покрытием, нужен npm ci во фронтендах',
   'check-bundle-size-ratchet.mjs':
     'меряет готовые webapp/dist — нужна сборка фронтенда',
+  'check-css-link-order.mjs':
+    'читает собранный webapp/dist/index.html — нужна сборка фронтенда',
   'check-eslint-ratchet.mjs':
     'запускает eslint по всему репозиторию — нужны node_modules всех пакетов и prisma generate; локально: node scripts/check-eslint-ratchet.mjs --changed',
   'check-query-plans.mjs':

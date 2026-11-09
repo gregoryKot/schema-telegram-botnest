@@ -5,23 +5,26 @@
 // перерисовывается: каждый ключ ведёт в тот же мотив, что виден в кабинете. Знаки листов
 // подсказок — таблица guideSignDrawings.ts (её же берёт GuideSignArt), здесь — остальные.
 // Внутри сцены (ArtFrameContext) знак ложится вложенным svg своей рамки — см. PaperSvg.tsx.
+// plate="surface" — знак крупно на своей бумаге (SignHero, SignInScene): плашку Check рисует
+// бумагой --surface (вариант мотива); знаки без плашки проп не читают.
 import type { ReactElement } from 'react';
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
 import type { ArtProps } from './paper';
 import { Cup, Strokes } from './PaperArt';
-import { Leaf, Wheel } from './PaperArtSigns';
+import { Check, Leaf, Wheel, type CheckPlate } from './PaperArtSigns';
 import { Limits, NeedArt } from './NeedArt';
 import { DomainArt } from './DomainArt';
 import { Grounded, Haven, Join, Pause } from './AppSigns';
 import { GUIDE_SIGN_ART } from './guideSignDrawings';
 
-type Art = (p: ArtProps) => ReactElement | null;
+type Art = (p: ArtProps & { plate?: CheckPlate }) => ReactElement | null;
 
 const need = (id: string): Art => function NeedSign({ size }) { return <NeedArt id={id} size={size} />; };
 const domain = (n: number): Art => function DomainSign({ size }) { return <DomainArt domain={n} size={size} />; };
 
 const BY_KEY: Record<SignKey, Art> = {
   ...GUIDE_SIGN_ART,
+  check: Check,
   strokes: Strokes, cup: Cup, leaf: Leaf, wheel: Wheel,
   need_attachment: need('attachment'), need_autonomy: need('autonomy'), need_expression: need('expression'),
   need_play: need('play'), need_limits: Limits,
@@ -32,7 +35,7 @@ const BY_KEY: Record<SignKey, Art> = {
 };
 
 /** Знак по ключу; ключа нет в реестре (данные с сервера, старая запись) — ничего, без выдуманной картинки. */
-export function SignArt({ sign, size }: ArtProps & { sign: SignKey }) {
+export function SignArt({ sign, size, plate }: ArtProps & { sign: SignKey; plate?: CheckPlate }) {
   const Art = Object.hasOwn(BY_KEY, sign) ? BY_KEY[sign] : null;
-  return Art ? <Art size={size} /> : null;
+  return Art ? <Art size={size} plate={plate} /> : null;
 }

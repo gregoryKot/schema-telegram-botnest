@@ -43,7 +43,8 @@ describe('TherapyCaution', () => {
     const note = screen.getByRole('note');
     expect(note.className).toBe('th-caution th-caution--compact');
     expect(note.querySelector('.th-caution-sign')?.getAttribute('aria-hidden')).toBe('true');
-    expect(note.querySelector('.th-caution-sign svg.pp-art--nav')).toBeTruthy();
+    // строчный размер, не nav: в 24×14 рамка Limits с точкой читалась пятном (ревью волны 0, круг 2)
+    expect(note.querySelector('.th-caution-sign svg.pp-art--row')).toBeTruthy();
     expect(screen.getByText('Это самопомощь, не замена терапии.').className).toBe('th-caution-lead');
     const body = note.querySelector('.th-caution-body')!;
     expect(body.textContent).toMatch(/^Станет тяжело — остановись, это нормально\..* Поговорить →$/);

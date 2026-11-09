@@ -44,18 +44,20 @@ export function SceneJourney({ count, hue = 135 }: { count: number; hue?: number
   );
 }
 
-/** Пустые листы-силуэты стопкой на земле: ещё не легли — бледные и без тени. */
+/** Пустые листы-силуэты стопкой на земле: ещё не легли — бледные и без тени. Тон сплошной, не
+ *  прозрачность: полупрозрачные листы двоились краями там, где ложатся друг на друга (глубина в
+ *  языке — сплошным слоем). Стопка снизу вверх: нижний лист чуть глубже, верхний — бумага страницы. */
 const BLANKS = [
-  { x: 166, y: 148, deg: -3 },
-  { x: 174, y: 134, deg: 2.5 },
-  { x: 170, y: 120, deg: -1.5 },
+  { x: 166, y: 148, deg: -3, fill: 'color-mix(in srgb, var(--text) 16%, var(--bg))' },
+  { x: 174, y: 134, deg: 2.5, fill: 'color-mix(in srgb, var(--text) 8%, var(--bg))' },
+  { x: 170, y: 120, deg: -1.5, fill: 'var(--bg)' },
 ] as const;
 
 export function ScenePathStart({ hue = 135 }: { hue?: number }) {
   return (
     <SceneSvg hue={hue} patch={70} patchAt="bl" sheet="c">
       {BLANKS.map((b) => (
-        <rect key={b.y} x={b.x} y={b.y} width="104" height="58" rx="10" fill={INK.sheet} fillOpacity=".45" transform={`rotate(${b.deg} ${b.x + 52} ${b.y + 29})`} />
+        <rect key={b.y} data-blank="" x={b.x} y={b.y} width="104" height="58" rx="10" fill={b.fill} transform={`rotate(${b.deg} ${b.x + 52} ${b.y + 29})`} />
       ))}
       <Lift>
         <path d="M36 210 H284" stroke={INK.sage} strokeWidth="7" strokeLinecap="round" />

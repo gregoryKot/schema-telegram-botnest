@@ -21,6 +21,12 @@ describe('PaperOutcome', () => {
     expect(band.querySelectorAll('.scn-sign > svg.pp-art').length).toBe(2);
   });
 
+  it('«готово»: плашка Check — бумагой --surface пропом мотива, не CSS-селектором внутрь svg', () => {
+    const { container } = render(<PaperOutcome outcome="done" title="Готово" />);
+    const front = container.querySelector('.scn-sign > svg.pp-art:last-child rect')!;
+    expect(front.getAttribute('fill')).toBe('var(--surface)');
+  });
+
   it('надпись, h1, лид, кнопка-действие, тихая ссылка и код поддержки', () => {
     const onAction = vi.fn();
     const onLink = vi.fn();

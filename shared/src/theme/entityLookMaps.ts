@@ -144,7 +144,7 @@ export const ACHIEVEMENT_LOOK: Record<string, Look> = {
   total_50: { hue: 240, sign: 'sheets' },
   high_day: { hue: 195, sign: 'leaf' },
   all_above7: { hue: 45, sign: 'wheel' },
-  comeback: { hue: 45, sign: 'heart' },
+  comeback: { hue: 70, sign: 'heart' },
   growth: { hue: 70, sign: 'need_autonomy' },
   pair_connected: { hue: 28, sign: 'need_attachment' },
 };

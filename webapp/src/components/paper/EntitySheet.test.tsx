@@ -41,14 +41,14 @@ describe('EntitySheet', () => {
     expect(screen.getByRole('heading', { level: 1 }).className).toBe('pa-sheet-title');
   });
 
-  it('своя сцена вместо знака; compact — класс шага; meta и дети — в теле листа', () => {
+  it('своя сцена вместо знака (pa-sheet--scene: на узком листе — в угол, крупнее знака); compact — класс шага; meta и дети — в теле листа', () => {
     const { container } = render(
       <EntitySheet look="tracker" title="Автономия" compact art={<svg className="scn" data-testid="scene" />} meta="Шаг 2 из 5">
         <button type="button">Ответ</button>
       </EntitySheet>,
     );
     const sheet = container.firstElementChild!;
-    expect(sheet.className).toBe('pp-paper pa-sheet pa-sheet--compact');
+    expect(sheet.className).toBe('pp-paper pa-sheet pa-sheet--compact pa-sheet--scene');
     expect(sheet.hasAttribute('data-sign')).toBe(false);
     expect(container.querySelector('.pa-sheet-art [data-testid="scene"]')).toBeTruthy();
     expect(container.querySelector('.scn-sign')).toBeNull();

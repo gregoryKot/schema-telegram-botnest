@@ -10,7 +10,9 @@ import {
   SIGN_KEYS,
   DONE_SCENES,
   MODE_GROUP_SIGN,
+  MODE_OWN_SIGN,
   modeGroupLook,
+  modeLook,
   domainLook,
   needLook,
   JOURNEY_ENTITY,
@@ -128,6 +130,40 @@ describe('ENTITY_LOOK: одна сущность — один оттенок, о
     }
   });
 
+  it('общий знак — бумага дальше 40° по кругу: иначе герой и «готово» двух сущностей одинаковы', () => {
+    // «Мне плохо» (роза 25) и «Тёплые слова» (персик 45) с одним Heart на экране не различались
+    // (ревью волны 0, круг 2). Семья вида (LOOK_FAMILY) — одна сущность, её не сравниваем.
+    // Исключение — пара без своего героя и листа «готово»: в строке ленты её различает подпись.
+    const CLOSE_OK: [EntityId, EntityId, string][] = [
+      [
+        'note',
+        'diary',
+        'заметка к дню — поле трекера: ни героя, ни листа «готово»',
+      ],
+    ];
+    const ok = (a: EntityId, b: EntityId) =>
+      CLOSE_OK.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+    const heads = ids.filter((id) => !LOOK_FAMILY[id]);
+    for (const a of heads)
+      for (const b of heads) {
+        if (a >= b || ENTITY_LOOK[a].sign !== ENTITY_LOOK[b].sign || ok(a, b))
+          continue;
+        expect(
+          arc(hue(a), hue(b)),
+          `${a}/${b}: ${ENTITY_LOOK[a].sign}`,
+        ).toBeGreaterThanOrEqual(40);
+      }
+    // исключение живо, пока нужно: пара правда делит знак и стоит ближе 40°, и листа «готово» у одной нет
+    for (const [a, b] of CLOSE_OK) {
+      expect(ENTITY_LOOK[a].sign, `${a}/${b}`).toBe(ENTITY_LOOK[b].sign);
+      expect(arc(hue(a), hue(b)), `${a}/${b}`).toBeLessThan(40);
+      expect(
+        ENTITY_LOOK[a].done === null || ENTITY_LOOK[b].done === null,
+        `${a}/${b}`,
+      ).toBe(true);
+    }
+  });
+
   it('опоры главной: трекер — солома + полоски, «Что случилось» — шалфей + лента, быстрая запись — персик + камешки', () => {
     expect(ENTITY_LOOK.tracker).toMatchObject({ hue: 70, sign: 'strokes' });
     expect(ENTITY_LOOK.case).toMatchObject({ hue: 135, sign: 'ribbon' });
@@ -168,6 +204,26 @@ describe('схема, режим, потребность — вид по дом�
     const modes = { hue: ENTITY_LOOK.modes.hue, sign: 'cluster' };
     expect(modeGroupLook(undefined)).toEqual(modes);
     expect(modeGroupLook('own_mode')).toEqual(modes);
+  });
+
+  it('режим: бумага группы, знак — свой (решение 6) или группы; ключ прототипа — не знак', () => {
+    expect(modeLook('angry_child', 'child')).toEqual({
+      hue: MODE_GROUP_HUE.child,
+      sign: 'flare',
+    });
+    expect(modeLook('vulnerable_child', 'child')).toEqual(
+      modeGroupLook('child'),
+    );
+    expect(modeLook('constructor', undefined)).toEqual(
+      modeGroupLook(undefined),
+    );
+    expect(modeGroupLook('toString').sign).toBe('cluster');
+    for (const sign of Object.values(MODE_OWN_SIGN)) {
+      expect((SIGN_KEYS as readonly string[]).includes(sign), sign).toBe(true);
+      expect(Object.values(MODE_GROUP_SIGN) as string[], sign).not.toContain(
+        sign,
+      );
+    }
   });
 
   it('у каждого домена — бумага домена и его знак; незнакомый домен — без знака', () => {

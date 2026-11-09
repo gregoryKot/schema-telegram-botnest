@@ -18,7 +18,8 @@
   margin: 16px 0 0; padding: 10px 14px 10px 12px; border-left: 0; border-radius: 12px;
   background: var(--paper-sunk); font-size: 13px; line-height: 1.45;
 }
-.th-caution-sign { display: inline-flex; flex-shrink: 0; padding-top: 2px; }
+/* Знак строчного размера (row 44×24) по первой строке: высота знака ≈ строке фразы (13px × 1.45). */
+.th-caution-sign { display: inline-flex; flex-shrink: 0; margin-top: -3px; }
 .th-caution--compact .th-caution-lead { margin: 0; font-weight: 600; color: var(--text-sub); }
 .th-caution--compact .th-caution-body { grid-column: 2; margin: 2px 0 0; color: var(--text-sub); text-wrap: pretty; }
 .th-caution--compact .th-link { display: inline; margin-top: 0; font-size: 13px; }

@@ -53,6 +53,9 @@ describe('знаки листов подсказок', () => {
     expect(modeGroupSign('critic')).toBe('looming');
     expect(modeGroupSign('нет_такой')).toBe('cluster');
     expect(modeGroupSign(undefined)).toBe('cluster');
+    // ключ прототипа — не знак: прежняя копия таблицы (MODE_GROUP_SIGN[g] || 'cluster') вернула бы функцию
+    expect(modeGroupSign('toString')).toBe('cluster');
+    expect(modeSign('hasOwnProperty')).toBe('cluster');
   });
 
   it('у каждого листа режима в подсказках есть знак группы', () => {

@@ -74,7 +74,7 @@ export const ENTITY_LOOK = {
   letter: { hue: 290, sign: 'sheets', done: 'sprout' },
   safe_place: { hue: 135, sign: 'haven', done: 'sprout' },
   childhood_wheel: { hue: 45, sign: 'wheel', done: 'sprout' },
-  warm_words: { hue: 45, sign: 'heart', done: 'sprout' },
+  warm_words: { hue: 70, sign: 'heart', done: 'sprout' },
   phrase_check: { hue: 310, sign: 'looming', done: 'sprout' },
   nourish: { hue: 145, sign: 'leaf', done: null },
   plan: { hue: 135, sign: 'check', done: 'sprout' },
@@ -108,17 +108,49 @@ export const MODE_GROUP_SIGN = {
   healthy: 'together',
 } as const satisfies Record<string, SignKey>;
 
+/**
+ * Режимы со своим знаком внутри группы: «Сердитый Ребёнок» — Flare (часть вспыхнула, рядом ровный
+ * круг мха), иначе два детских режима различала бы только подпись. Заголовок группы остаётся знаком
+ * группы (ChildCare). Решение 6, docs/design/APP_2026-11.md. Здесь, а не в webapp: тот же знак
+ * берут лист подсказок терапевта, строки клиента и canvas шаринга — терапевт и клиент не расходятся.
+ */
+export const MODE_OWN_SIGN = { angry_child: 'flare' } as const satisfies Record<
+  string,
+  SignKey
+>;
+
+/** Знак режима: группы, свой или общий знак режимов (подмножество GUIDE_SIGNS в webapp). */
+export type ModeSignKey =
+  | (typeof MODE_GROUP_SIGN)[keyof typeof MODE_GROUP_SIGN]
+  | (typeof MODE_OWN_SIGN)[keyof typeof MODE_OWN_SIGN]
+  | 'cluster';
+export interface ModeLook extends Look {
+  sign: ModeSignKey;
+}
+
 const isPaperHue = (h: number | undefined): h is PaperHue =>
   h !== undefined && (Object.values(PAPER_HUE) as number[]).includes(h);
 
 /** Вид режима по группе: бумага группы и её знак; без группы (свой режим) — общий знак режимов. */
-export function modeGroupLook(groupId: string | undefined): Look {
+export function modeGroupLook(groupId: string | undefined): ModeLook {
   const hue = groupId ? MODE_GROUP_HUE[groupId] : undefined;
-  const sign =
+  const sign: ModeSignKey =
     groupId && Object.hasOwn(MODE_GROUP_SIGN, groupId)
       ? MODE_GROUP_SIGN[groupId as keyof typeof MODE_GROUP_SIGN]
       : 'cluster';
   return { hue: isPaperHue(hue) ? hue : ENTITY_LOOK.modes.hue, sign };
+}
+
+/** Вид одного режима: бумага его группы, знак — свой (MODE_OWN_SIGN) или группы. Группу передаёт
+ *  вызывающий (данные режимов сюда не тянутся: таблица вида живёт в главном чанке). */
+export function modeLook(
+  modeId: string,
+  groupId: string | undefined,
+): ModeLook {
+  const group = modeGroupLook(groupId);
+  return Object.hasOwn(MODE_OWN_SIGN, modeId)
+    ? { ...group, sign: MODE_OWN_SIGN[modeId as keyof typeof MODE_OWN_SIGN] }
+    : group;
 }
 
 /** Вид схемы по домену; неизвестный домен — null (без выдуманного знака). */

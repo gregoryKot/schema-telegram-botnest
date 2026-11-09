@@ -9,6 +9,8 @@ import { render } from '@testing-library/react';
 import { Strokes, Pebbles } from './PaperArt';
 import { Scales } from './GuideSignsTechniques';
 import { Grounded, Pause, Haven, Join } from './AppSigns';
+import { Check } from './PaperArtSigns';
+import { SignArt } from './SignArt';
 import { NEED_DATA_PAPER, PAPER } from './paper';
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 
@@ -130,5 +132,23 @@ describe('новые знаки: Grounded, Pause, Haven, Join', () => {
     expect(circles.map((c) => c.getAttribute('cy'))).toEqual(['38', '38']);
     expect(circles[0].hasAttribute('fill-opacity')).toBe(false);
     expect(circles[0].getAttribute('fill')).not.toBe(circles[1].getAttribute('fill'));
+  });
+});
+
+describe('Check: плашка — вариант мотива пропом', () => {
+  it('без пропа — шалфейная плашка, как в строках; plate="surface" — бумагой --surface, галочка та же', () => {
+    const sage = rects(<Check size="row" />);
+    expect(sage).toHaveLength(1);
+    expect(sage[0].getAttribute('fill')).toBe(PAPER.sage);
+    const surface = render(<Check size="hero" plate="surface" />).container;
+    expect(surface.querySelector('rect')!.getAttribute('fill')).toBe('var(--surface)');
+    expect(surface.querySelector('path')!.getAttribute('stroke')).toBe(PAPER.moss);
+  });
+
+  it('SignArt передаёт plate мотиву; знак без плашки его не читает', () => {
+    expect(rects(<SignArt sign="check" plate="surface" />)[0].getAttribute('fill')).toBe('var(--surface)');
+    expect(rects(<SignArt sign="check" />)[0].getAttribute('fill')).toBe(PAPER.sage);
+    const leaf = render(<SignArt sign="leaf" plate="surface" />).container.innerHTML;
+    expect(leaf).toBe(render(<SignArt sign="leaf" />).container.innerHTML);
   });
 });

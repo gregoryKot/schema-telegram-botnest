@@ -23,6 +23,7 @@
 | check-color-drift.mjs | захардкоженные хроматические hex/rgb вне токенов палитры | `scripts/color-drift-baseline.json` | да | webapp |
 | check-coverage-ratchet.mjs | просадка покрытия бэкенда (сам гоняет jest --coverage) | `scripts/coverage-baseline.json` | да | backend |
 | check-cron-leader.mjs | `@Cron` без классификации leader-election (двойной запуск) | `scripts/cron-leader-baseline.json` | нет | checks |
+| check-css-link-order.mjs | порядок `<link rel="stylesheet">` в собранном `webapp/dist/index.html` сменился (CSS переехал в другой чанк) | `scripts/css-link-order.json` | да | webapp |
 | check-db-phrases.ts | мужской род и брак в пуле фраз «ЗВ» в БД | — | нет | — |
 | check-dead-files.mjs | файл без нетестовых потребителей (мёртвый код) | `scripts/dead-files-baseline.json` | да | checks |
 | check-deploy-lag.mjs | образ на проде старее последнего коммита main | — | нет | prod-smoke |

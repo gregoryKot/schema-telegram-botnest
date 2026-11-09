@@ -45,6 +45,13 @@ describe('Sprout и знак в сцене', () => {
     expect(signs[1].innerHTML).toBe(alone.querySelector('svg')!.innerHTML);
   });
 
+  it('Check в сцене «готово» — плашкой бумаги, а не шалфеем на шалфее (неактивный чекбокс)', () => {
+    const { container } = render(<Sprout sign="check" hue={135} />);
+    const front = [...container.querySelectorAll('svg.pp-art rect')].filter(outside);
+    expect(front).toHaveLength(1);
+    expect(front[0].getAttribute('fill')).toBe('var(--surface)');
+  });
+
   it('SignInScene кладёт знак в рамку холста', () => {
     const { container } = render(<svg><SignInScene sign="leaf" x={1} y={2} w={3} h={4} /></svg>);
     expect(container.querySelector('svg svg')?.getAttribute('width')).toBe('3');
@@ -115,11 +122,16 @@ describe('ScenePebbleLaid, SceneJourney, ScenePathStart, SceneConceptStart', () 
     expectEmptyScene(<SceneJourney count={0} />, '[data-sheet]');
   });
 
-  it('начало пути: одна полоска, пустые листы-силуэты бледные и без тени', () => {
+  it('начало пути: одна полоска, пустые листы-силуэты бледные, без тени и сплошным тоном стопкой', () => {
     const { container } = render(<ScenePathStart />);
-    const blanks = [...container.querySelectorAll('rect[fill-opacity]')];
+    const blanks = [...container.querySelectorAll('rect[data-blank]')];
     expect(blanks).toHaveLength(3);
     expect(blanks.every(outside)).toBe(true);
+    // полупрозрачные листы двоились краями в наложении (ревью волны 0, круг 2): тон — сплошной,
+    // у каждого листа стопки свой, верхний (последний в DOM) — светлее
+    expect(blanks.some((r) => r.hasAttribute('fill-opacity'))).toBe(false);
+    expect(new Set(blanks.map((r) => r.getAttribute('fill'))).size).toBe(3);
+    expect(blanks[2].getAttribute('fill')).toBe('var(--bg)');
   });
 
   it('пустая схема случая: потребность и два слоя легли с тенью, третий бледный и без тени', () => {

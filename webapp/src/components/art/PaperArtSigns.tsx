@@ -48,10 +48,15 @@ export function Beads({ size }: ArtProps) {
   );
 }
 
-export function Check({ size }: ArtProps) {
+/** Плашка Check: шалфей в строке; `surface` — бумагой --surface, когда знак крупно лежит на своей
+ *  бумаге (герой, исход, сцена «готово»): шалфейная плашка на шалфее и небе читалась неактивным
+ *  чекбоксом. Вариант — пропом мотива, а не CSS-селектором внутрь svg (PAPER_2026-11.md, принцип 9). */
+export type CheckPlate = 'sage' | 'surface';
+
+export function Check({ size, plate = 'sage' }: ArtProps & { plate?: CheckPlate }) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <rect x="14" y="10" width="92" height="44" rx="10" fill={PAPER.sage} />
+      <rect x="14" y="10" width="92" height="44" rx="10" fill={plate === 'surface' ? 'var(--surface)' : PAPER.sage} />
       <path d="M40 34 L 54 46 L 82 20" fill="none" stroke={PAPER.moss} strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );

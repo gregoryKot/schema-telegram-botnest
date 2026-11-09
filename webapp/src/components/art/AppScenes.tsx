@@ -21,7 +21,7 @@ import { SignArt } from './SignArt';
 export function SignInScene({ sign, ...frame }: { sign: SignKey } & ArtFrame) {
   return (
     <ArtFrameContext.Provider value={frame}>
-      <SignArt sign={sign} />
+      <SignArt sign={sign} plate="surface" />
     </ArtFrameContext.Provider>
   );
 }

@@ -3,8 +3,10 @@
 // справа знак сущности крупно с тенью-вырезкой — как плитки «Сегодня» и лендинга. Вид берётся
 // из ENTITY_LOOK по id сущности или готовым Look (домен, группа режима, потребность), а не
 // выбирается на месте. Заменяет одинокий Ribbon над полем, NeedArt 16px в заголовке и «2» на 2FA.
-//  • compact — второй и следующие шаги того же потока: тот же лист, знак 72px, Literata 28;
-//  • art — своя сцена вместо знака (Strokes values, SceneCheckIn) — данные несёт сцена;
+//  • compact — второй и следующие шаги того же потока: тот же лист полосой (знак 56–64, Literata
+//    22–24); подпись не обрезается — экран сам решает, передавать ли её со второго шага;
+//  • art — своя сцена вместо знака (Strokes values, SceneCheckIn) — данные несёт сцена; на узком
+//    листе она встаёт в угол, как знак, но крупнее (pa-sheet--scene, paper-app.css);
 //  • meta — строка из данных под подписью («Шаг 2 из 4», «Сегодня 2 записи»);
 //  • в развороте (SpreadLayout) на ≥1024 лист встаёт колонкой: знак сверху, крупнее.
 // Декор (знак, сцена) скрыт от чтения с экрана — смысл несут заголовок и подпись.
@@ -33,7 +35,8 @@ export interface EntitySheetProps {
 export function EntitySheet({ look, label, title, sub, meta, art, compact, titleAs: Title = 'h2', className, children }: EntitySheetProps) {
   const { hue, sign }: SheetLook = typeof look === 'string' ? ENTITY_LOOK[look] : look;
   const picture = art ?? (sign ? <SignHero sign={sign} /> : null);
-  const cls = ['pp-paper', 'pa-sheet', compact && 'pa-sheet--compact', !picture && 'pa-sheet--plain', className].filter(Boolean).join(' ');
+  const cls = ['pp-paper', 'pa-sheet', compact && 'pa-sheet--compact', art ? 'pa-sheet--scene' : !picture && 'pa-sheet--plain', className]
+    .filter(Boolean).join(' ');
   return (
     <div className={cls} style={{ '--h': hue } as CSSProperties} data-sign={art ? undefined : sign}>
       <div className="pa-sheet-body">

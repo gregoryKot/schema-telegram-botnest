@@ -38,15 +38,22 @@ describe('глобальные правки примитивов (cabinet.css)',
     expect(decls(cabinet, '.ds-btn:disabled:hover')).toBe(off);
   });
 
-  it('неактивная контурная (--secondary, --icon) хранит силуэт: без утопленной заливки, рамка --line, подпись гаснет', () => {
+  it('неактивная контурная (--secondary, --icon) хранит силуэт: без утопленной заливки, рамка --line', () => {
     for (const v of ['secondary', 'icon']) {
       const off = decls(cabinet, `.ds-btn.ds-btn--${v}:disabled`);
       expect(off, v).not.toContain('--paper-sunk');
       expect(off, v).toMatch(/background: var\(--surface\)|background: transparent/);
       expect(off, v).toContain('border-color: var(--line)');
-      expect(off, v).toContain('color: var(--text-ghost)');
       expect(decls(cabinet, `.ds-btn.ds-btn--${v}:disabled:hover`), v).toBe(off);
     }
+  });
+
+  it('подпись неактивной контурной — --text-faint (это статус «Загружаю…»), призрачный --text-ghost — только у глифа --icon', () => {
+    // --text-ghost в index.css — «только плейсхолдеры/декор, не текст»; ревью волны 0, круг 2
+    const secondary = decls(cabinet, '.ds-btn.ds-btn--secondary:disabled');
+    expect(secondary).toContain('color: var(--text-faint)');
+    expect(secondary).not.toContain('--text-ghost');
+    expect(decls(cabinet, '.ds-btn.ds-btn--icon:disabled')).toContain('color: var(--text-ghost)');
   });
 
   it('своя заливка у .ds-btn.x — с :not(:disabled) или с парой .ds-btn.x:disabled: исход не решает порядок файлов', () => {
@@ -68,12 +75,19 @@ describe('глобальные правки примитивов (cabinet.css)',
     expect(bad).toEqual([]);
   });
 
-  it('выбранный чип — бумага по --h с кромкой того же тона, текст основным цветом', () => {
+  it('выбранный чип — бумага по --h (хрома бумаги, не конфета) с тёмной кромкой того же тона, текст основным цветом', () => {
     const on = decls(cabinet, '.ds-chip--toggle.is-on');
-    expect(on).toMatch(/background: oklch\(0\.885 [\d.]+ var\(--h, \d+\)\)/);
+    const bg = on.match(/background: oklch\(([\d.]+) ([\d.]+) var\(--h, \d+\)\)/);
+    expect(bg).toBeTruthy();
+    expect(Number(bg![1])).toBeGreaterThanOrEqual(0.88);
+    expect(Number(bg![2])).toBeLessThanOrEqual(0.04); // бумага .pp-paper — 0.03; 0.06 читался рыжим пятном
     // кромка темнее бумаги: состояние держится не одной жирностью (WCAG 1.4.11, к фону ≥3:1)
-    expect(on).toMatch(/border-color: oklch\(0\.5\d [\d.]+ var\(--h, \d+\)\)/);
+    const edge = on.match(/border-color: oklch\(([\d.]+) ([\d.]+) var\(--h, \d+\)\)/);
+    expect(edge).toBeTruthy();
+    expect(Number(edge![1])).toBeLessThanOrEqual(0.6);
+    expect(Number(edge![2])).toBeLessThanOrEqual(0.05);
     expect(on).toContain('color: var(--text)');
+    expect(on).toContain('font-weight: 600');
   });
 
   it('выбранный чип без --h у предков не прозрачный: у фона и кромки запасной оттенок', () => {
@@ -144,20 +158,74 @@ describe('paper-app.css — стили заготовок', () => {
 
   // Лист-герой не съедает первый экран потока (принцип 5: на 390 до первого поля — шапка и лист).
   // Разметку CSS jsdom не считает — сверяем правила; замер на стенде — с первым экраном-потребителем.
-  it('узкий лист (≤440): знак в углу на строке надписи (≤64px), заголовок и подпись на всю ширину', () => {
-    const narrow = src.match(/@container pa-sheet \(max-width: 440px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
-    expect(narrow).toMatch(/\.pa-sheet\[data-sign\] > \.pa-sheet-body \{ display: contents; \}/);
-    expect(narrow).toMatch(/\.pa-sheet\[data-sign\] > \.pa-sheet-art \{[^}]*grid-row: 1;[^}]*width: (5[6-9]|6[0-4])px/);
+  const narrow = src.match(/@container pa-sheet \(max-width: 440px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+  const px = (block: string, sel: RegExp) => Number(block.match(sel)?.[1]);
+
+  it('узкий лист (≤440): картинка — в углу на строке надписи, заголовок и подпись на всю ширину', () => {
+    expect(narrow).toMatch(/\.pa-sheet:not\(\.pa-sheet--plain\) > \.pa-sheet-body \{ display: contents; \}/);
+    expect(narrow).toMatch(/\.pa-sheet:not\(\.pa-sheet--plain\) > \.pa-sheet-art \{[^}]*grid-row: 1;/);
     expect(narrow).toMatch(/:not\(\.pa-sheet-label\) \{ grid-column: 1 \/ -1;/);
   });
 
-  it('compact и лист разворота уже 1024 — полоса: Literata ≤24, подпись в две строки; колонка ≥1024 — своим контейнером', () => {
+  it('узкий лист: знак 72 (compact и полоса — 56), своя сцена с данными — крупнее знака, а не 48 в колонке', () => {
+    // на 48–60 тень-вырезка не видна, лист — пастельная карточка с иконкой (ревью волны 0, круг 2)
+    expect(px(narrow, /\.pa-sheet\[data-sign\] > \.pa-sheet-art \{ width: (\d+)px/)).toBe(72);
+    expect(px(narrow, /\.pa-sheet--compact\[data-sign\] > \.pa-sheet-art[^{]*\{ width: (\d+)px/)).toBe(56);
+    const scene = px(narrow, /\.pa-sheet\.pa-sheet--scene > \.pa-sheet-art \{ width: (\d+)px/);
+    expect(scene).toBeGreaterThanOrEqual(84);
+    expect(scene).toBeLessThanOrEqual(96);
+    expect(px(narrow, /\.pa-sheet--compact\.pa-sheet--scene > \.pa-sheet-art[^{]*\{ width: (\d+)px/)).toBeGreaterThan(56);
+  });
+
+  it('ширину картинки задаёт только слот: правил «> .scn» с шириной у листа нет (svg во flex-слоте их не слушал)', () => {
+    const sheetRules = paperRules.filter((r) => r.selectors.some((x) => /\.pa-(sheet|spread)/.test(x)));
+    for (const r of sheetRules) for (const x of r.selectors) expect(x, x).not.toMatch(/>\s*\.scn\b/);
+  });
+
+  it('подпись листа не обрезается нигде: ни в compact, ни в полосе разворота уже 1024 (ответ «откуда и зачем»)', () => {
+    // полоса — первый экран потока; обрезка в две строки с многоточием прятала объяснение без
+    // способа раскрыть его (frontend-visual.md: объяснение не прячется за медиавыражение)
+    expect(src).not.toMatch(/line-clamp/);
+    const strip = decls(paperRules, '.pa-spread-side .pa-sheet-sub');
+    expect(strip).not.toMatch(/overflow:\s*hidden|display:\s*-webkit-box/);
+    expect(decls(paperRules, '.pa-sheet--compact .pa-sheet-sub')).toBe(strip);
+  });
+
+  it('compact и лист разворота уже 1024 — полоса: Literata ≤24; колонка ≥1024 — своим контейнером', () => {
     const compactTitle = decls(paperRules, '.pa-sheet--compact .pa-sheet-title');
     expect(Number(compactTitle.match(/font-size: (\d+)px/)?.[1])).toBeLessThanOrEqual(24);
     expect(decls(paperRules, '.pa-spread-side .pa-sheet-title')).toBe(compactTitle);
-    expect(decls(paperRules, '.pa-sheet--compact .pa-sheet-sub')).toMatch(/-webkit-line-clamp: 2/);
     // на ≥1024 колонка разворота уходит из-под узких правил pa-sheet (знак сверху, Literata 32)
     expect(src).toMatch(/\.pa-spread-side \.pa-sheet \{\s*container-name: pa-spread-sheet;/);
+  });
+
+  it('полоса на планшете (лист ≥720) — знак крупнее 64: не мёртвая середина баннера', () => {
+    const wide = src.match(/@container pa-sheet \(min-width: 720px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+    const strip = px(wide, /\.pa-sheet--compact \.pa-sheet-art, \.pa-spread-side \.pa-sheet-art \{ width: (\d+)px/);
+    expect(strip).toBeGreaterThanOrEqual(96);
+    expect(strip).toBeLessThanOrEqual(120);
+  });
+
+  it('знак в колонке разворота — по левому краю текста: поле холста знака снято сдвигом назад', () => {
+    const column = src.slice(src.indexOf('container-name: pa-spread-sheet'));
+    expect(column).toMatch(/\.pa-spread-side \.pa-sheet\[data-sign\] > \.pa-sheet-art \{ margin-left: -\d+px; \}/);
+  });
+
+  it('вариант мотива — пропом мотива, а не селектором внутрь svg знака', () => {
+    // .pa-outcome-card[data-sign=check] … .pp-art:last-child rect перекрашивал не тот слой при любой
+    // правке Check; плашку держит Check plate="surface" (SignHero, Sprout)
+    for (const r of paperRules) for (const x of r.selectors) expect(x, x).not.toMatch(/\.pp-art|\brect\b|\bpath\b/);
+  });
+
+  it('второй лист в полосе исхода — целиком в полосе и тоном бумаги (хрома ≤0.04), а не обрывком', () => {
+    const corner = decls(paperRules, '.pa-outcome-band::before');
+    expect(corner).not.toMatch(/(right|bottom):\s*-/);
+    expect(Number(corner.match(/oklch\([\d.]+ ([\d.]+) var\(--h\)\)/)?.[1])).toBeLessThanOrEqual(0.04);
+  });
+
+  it('слот знака у чипа — только с меткой (pa-chip--mark): у чипа без знака поля ровные', () => {
+    expect(decls(paperRules, '.ds-chip.pa-chip--mark')).toContain('padding-left: 6px');
+    expect(decls(paperRules, '.ds-chip.pa-chip')).toBe('');
   });
 
   it('размер листа-героя — по ширине самого листа (container query), разворот — с 1024', () => {

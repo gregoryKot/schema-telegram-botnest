@@ -3,6 +3,7 @@
 // Один вход для героев потоков (EntitySheet), исходов (PaperOutcome) и наклеек: экран
 // передаёт ключ, а не импортирует мотив на месте. SignScene ждёт компонент — компонент
 // на ключ создаётся один раз и живёт в кэше: новый на каждый рендер React перемонтировал бы.
+// Знак крупно лежит на своей бумаге — плашка Check бумагой --surface (plate, вариант мотива).
 import type { ReactElement } from 'react';
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
 import type { ArtProps } from '../art/paper';
@@ -16,7 +17,7 @@ function artFor(sign: SignKey): Art {
   let art = ART_BY_KEY.get(sign);
   if (!art) {
     art = function KeySign({ size }: ArtProps) {
-      return <SignArt sign={sign} size={size} />;
+      return <SignArt sign={sign} size={size} plate="surface" />;
     };
     ART_BY_KEY.set(sign, art);
   }
