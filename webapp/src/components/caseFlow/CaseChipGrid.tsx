@@ -1,10 +1,12 @@
 import type { CaseChip } from '../../../../shared/src/case/caseBodyChips';
 import { isOwnChipId } from '../../../../shared/src/case/useCaseOwnSync';
-import { hueStyle } from '../../lib/tone';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { SignChip } from '../paper/SignChip';
 
 /**
  * Шаги body/impulse: поле «своё» + чипы-варианты (правило «одна механика —
- * один компонент»). Разметка — ds-input + ds-chip--toggle (зона нажатия 44px).
+ * один компонент»). Разметка — ds-input + SignChip (ds-chip--toggle, зона нажатия 44px;
+ * выбранный — бумага шалфея «Что случилось» с галочкой).
  *
  * Поле рендерится ВСЕГДА и ПЕРВЫМ (фидбек владельца 2026-08-31: «по
  * умолчанию поле ввода, а снизу варианты»), чипы `*_own` («Своё…») не
@@ -36,23 +38,14 @@ export function CaseChipGrid({
         placeholder={ownPlaceholder}
         aria-label={ownPlaceholder}
         maxLength={60}
-        className="ds-input ex2-gap-b"
+        className="ds-input ex2-gap-b cq-own"
       />
-      <div className="ex2-chips" style={hueStyle(undefined)}>
+      <div className="ex2-chips cq-chips">
         {chips
           .filter((chip) => !isOwnChipId(chip.id))
-          .map((chip) => {
-            const sel = selectedIds.includes(chip.id);
-            return (
-              <button
-                key={chip.id} type="button"
-                className={'ds-chip ds-chip--toggle' + (sel ? ' is-on' : '')}
-                aria-pressed={sel} onClick={() => onToggle(chip.id)}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
+          .map((chip) => (
+            <SignChip key={chip.id} label={chip.label} on={selectedIds.includes(chip.id)} hue={ENTITY_LOOK.case.hue} onToggle={() => onToggle(chip.id)} />
+          ))}
       </div>
     </div>
   );

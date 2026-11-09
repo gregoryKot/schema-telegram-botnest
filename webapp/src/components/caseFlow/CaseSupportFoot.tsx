@@ -1,6 +1,8 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { CrisisCard } from '../CrisisCard';
 import { TertiaryLink } from './caseLinks';
+import { SignArt } from '../art/SignArt';
+import { GlyphArrowLeft } from '../exercises/ExGlyphs';
 import { useSupportCardReveal } from '../../../../shared/src/case/useCaseSupport';
 
 /**
@@ -41,8 +43,9 @@ export function CaseSupportProvider({
 
 /**
  * Сам блок: карточка (текстовая детекция ИЛИ ручное открытие), над ручной —
- * «Вернуться к разбору ▲», ниже — строка-открывашка (спрятана, пока открыто
- * рукой; карточку от детекции «Вернуться» не прячет — та постоянная).
+ * «Вернуться к разбору» со стрелкой вверх, ниже — строка-открывашка с сердцем
+ * (знак «Мне плохо»; спрятана, пока открыто рукой; карточку от детекции
+ * «Вернуться» не прячет — та постоянная).
  */
 export function CaseSupportBlock({
   crisis,
@@ -58,16 +61,13 @@ export function CaseSupportBlock({
       {(crisis || hardNow) && (
         <div ref={revealRef} className="ex2-support">
           {hardNow && (
-            <TertiaryLink
-              label="Вернуться к разбору ▲"
-              onClick={closeSupport}
-            />
+            <TertiaryLink label="Вернуться к разбору" lead={<span className="cq-up"><GlyphArrowLeft /></span>} onClick={closeSupport} />
           )}
           <CrisisCard surface="case" />
         </div>
       )}
       {!hardNow && (
-        <TertiaryLink label="Тяжело прямо сейчас →" onClick={onHardNow} />
+        <TertiaryLink label="Тяжело прямо сейчас →" lead={<SignArt sign="heart" size="nav" />} onClick={onHardNow} />
       )}
     </>
   );
