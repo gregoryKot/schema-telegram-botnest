@@ -16,6 +16,15 @@ const HOSTS = [
   ['telegram', 'Telegram'],
   ['max', 'MAX'],
 ] as const;
+const TEXT = {
+  empty: 'За неделю входов из мессенджера не было — сравнивать пока не с чем.',
+  expired:
+    '«Устарела» — окно мессенджера висело открытым дольше часа, и пропуск входа истёк.',
+  suspicious:
+    '«Не сошлась» — пропуск входа не прошёл проверку: подделка или сменился ключ бота.',
+  now: 'Это происходит прямо сейчас — открой приложение в мессенджере и проверь вход.',
+  fixed: 'За сутки сбоев не было — похоже, уже починено.',
+} as const;
 const fails = (c: ExchangeCounts, w: Window) => c.expired[w] + c.suspicious[w];
 const times = (n: number) => `${n} ${plural(n, 'раз', 'раза', 'раз')}`;
 
@@ -39,15 +48,9 @@ function failureLines(m: AuthHealthMetrics, ok: number, fail: number) {
   }
   const pct = Math.round((ok / (ok + fail)) * 100);
   out.push(`Успешных входов за неделю: ${ok} из ${ok + fail} (${pct}%).`);
-  if (hosts.some(([c]) => c.expired.week > 0))
-    out.push('Подпись устарела — окно висело открытым дольше часа.');
-  if (hosts.some(([c]) => c.suspicious.week > 0))
-    out.push('Подпись не сошлась — подделка или сменился токен бота.');
-  out.push(
-    hosts.some(([c]) => fails(c, 'day') > 0)
-      ? 'Это происходит прямо сейчас — открой приложение в мессенджере и проверь вход.'
-      : 'За сутки сбоев не было — похоже, уже починено.',
-  );
+  for (const k of ['expired', 'suspicious'] as const)
+    if (hosts.some(([c]) => c[k].week > 0)) out.push(TEXT[k]);
+  out.push(hosts.some(([c]) => fails(c, 'day') > 0) ? TEXT.now : TEXT.fixed);
   return out;
 }
 
@@ -58,17 +61,14 @@ export function formatAuthHealth(m: AuthHealthMetrics): string {
     HOSTS.reduce((s, [k]) => s + f(m.hosts[k]), 0);
   const ok = sum((c) => c.ok.week);
   const fail = sum((c) => fails(c, 'week'));
-  if (ok + fail === 0)
-    lines.push(
-      'За неделю входов из мессенджера не было — сравнивать пока не с чем.',
-    );
+  if (ok + fail === 0) lines.push(TEXT.empty);
   else if (fail === 0)
     lines.push(`За неделю вошли из мессенджера ${times(ok)}, сбоев не было.`);
   else lines.push(...failureLines(m, ok, fail));
   const legacy = m.legacyEmptyWeek;
   if (legacy > 0)
     lines.push(
-      `Без подписи пришли старые окна: ${times(legacy)} за неделю. Их открыли ` +
+      `Без пропуска входа пришли старые окна: ${times(legacy)} за неделю. Их открыли ` +
         'до того, как убрали мини-приложение, — со временем таких не останется.',
     );
   return lines.join('\n');

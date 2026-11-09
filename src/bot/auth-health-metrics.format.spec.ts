@@ -56,8 +56,8 @@ describe('formatAuthHealth', () => {
     );
     // 150 удачных из 165 попыток → 91%.
     expect(text).toContain('Успешных входов за неделю: 150 из 165 (91%).');
-    expect(text).toContain('окно висело открытым дольше часа');
-    expect(text).toContain('подделка или сменился токен бота');
+    expect(text).toContain('окно мессенджера висело открытым дольше часа');
+    expect(text).toContain('подделка или сменился ключ бота');
     expect(text).toContain(
       'Это происходит прямо сейчас — открой приложение в мессенджере и проверь вход.',
     );
@@ -70,7 +70,7 @@ describe('formatAuthHealth', () => {
     expect(text).not.toContain('прямо сейчас');
     // Устаревших не было — пояснение про час не нужно.
     expect(text).not.toContain('дольше часа');
-    expect(text).toContain('подделка или сменился токен бота');
+    expect(text).toContain('подделка или сменился ключ бота');
   });
 
   it('площадка без событий за неделю в строки не попадает', () => {
@@ -83,7 +83,7 @@ describe('formatAuthHealth', () => {
   it('старые окна мини-аппа — строка с пояснением, только если они были', () => {
     const withLegacy = formatAuthHealth(metrics(counts([3, 9]), counts(), 5));
     expect(withLegacy).toContain(
-      'Без подписи пришли старые окна: 5 раз за неделю.',
+      'Без пропуска входа пришли старые окна: 5 раз за неделю.',
     );
     expect(withLegacy).toContain('до того, как убрали мини-приложение');
     // Обменов не было, а старые окна есть — обе строки, без NaN.
