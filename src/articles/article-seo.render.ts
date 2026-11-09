@@ -105,42 +105,54 @@ export interface SeoPage {
 export function injectSeo(baseHtml: string, page: SeoPage): string {
   const url = esc(page.canonicalUrl);
   const desc = esc(page.description);
+  const cardTitle = esc(page.ogTitle ?? page.title);
   // `<` в JSON экранируется, чтобы текст вроде "</script>" не закрыл тег.
   const jsonLdTag = page.jsonLd
     ? `<script type="application/ld+json">${JSON.stringify(page.jsonLd).replace(/</g, '\\u003c')}</script>`
     : '';
-  return baseHtml
-    .replace(
-      /<title>[\s\S]*?<\/title>/,
-      () => `<title>${esc(page.title)}</title>`,
-    )
-    .replace(
-      /<meta name="description" content="[\s\S]*?"\s*\/?>/,
-      () => `<meta name="description" content="${desc}" />`,
-    )
-    .replace(
-      /<link rel="canonical" href="[\s\S]*?"\s*\/?>/,
-      () => `<link rel="canonical" href="${url}" />`,
-    )
-    .replace(
-      /<meta property="og:url"\s+content="[\s\S]*?"\s*\/?>/,
-      () => `<meta property="og:url" content="${url}" />`,
-    )
-    .replace(
-      /<meta property="og:title"\s+content="[\s\S]*?"\s*\/?>/,
-      () =>
-        `<meta property="og:title" content="${esc(page.ogTitle ?? page.title)}" />`,
-    )
-    .replace(
-      /<meta property="og:description"\s+content="[\s\S]*?"\s*\/?>/,
-      () => `<meta property="og:description" content="${desc}" />`,
-    )
-    .replace(
-      /<meta property="og:type"\s+content="[\s\S]*?"\s*\/?>/,
-      () => `<meta property="og:type" content="${esc(page.ogType)}" />`,
-    )
-    .replace(
-      '<div id="root"></div>',
-      () => `<div id="root">${page.bodyHtml}</div>${jsonLdTag}`,
-    );
+  return (
+    baseHtml
+      .replace(
+        /<title>[\s\S]*?<\/title>/,
+        () => `<title>${esc(page.title)}</title>`,
+      )
+      .replace(
+        /<meta name="description" content="[\s\S]*?"\s*\/?>/,
+        () => `<meta name="description" content="${desc}" />`,
+      )
+      .replace(
+        /<link rel="canonical" href="[\s\S]*?"\s*\/?>/,
+        () => `<link rel="canonical" href="${url}" />`,
+      )
+      .replace(
+        /<meta property="og:url"\s+content="[\s\S]*?"\s*\/?>/,
+        () => `<meta property="og:url" content="${url}" />`,
+      )
+      .replace(
+        /<meta property="og:title"\s+content="[\s\S]*?"\s*\/?>/,
+        () => `<meta property="og:title" content="${cardTitle}" />`,
+      )
+      .replace(
+        /<meta property="og:description"\s+content="[\s\S]*?"\s*\/?>/,
+        () => `<meta property="og:description" content="${desc}" />`,
+      )
+      // X и площадки, читающие twitter:*, без этих двух замен показывали
+      // заголовок сайта (или визитки) вместо статьи — Telegram и VK берут og:*.
+      .replace(
+        /<meta name="twitter:title"\s+content="[\s\S]*?"\s*\/?>/,
+        () => `<meta name="twitter:title" content="${cardTitle}" />`,
+      )
+      .replace(
+        /<meta name="twitter:description"\s+content="[\s\S]*?"\s*\/?>/,
+        () => `<meta name="twitter:description" content="${desc}" />`,
+      )
+      .replace(
+        /<meta property="og:type"\s+content="[\s\S]*?"\s*\/?>/,
+        () => `<meta property="og:type" content="${esc(page.ogType)}" />`,
+      )
+      .replace(
+        '<div id="root"></div>',
+        () => `<div id="root">${page.bodyHtml}</div>${jsonLdTag}`,
+      )
+  );
 }
