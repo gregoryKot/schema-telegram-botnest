@@ -35,7 +35,7 @@ export function SelfMapScreen({ map, next, onBack, onPickMode, onNextStep }: {
   const lanes = useMemo(() => buildMapLanes(map), [map]);
   const stage = useMemo(() => buildStage(lanes, groupOf), [lanes]);
   const step = useMemo(() => caseNextStep(next, tr), [next, tr]);
-  const whereIAm = useMemo(() => buildWhereIAm(next, tr), [next, tr]);
+  const whereIAm = useMemo(() => glue(buildWhereIAm(next, tr)), [next, tr]);
 
   const emptyHints: Record<MapLaneId, string> = {
     healthy: 'Появится, когда в разборе прозвучат свои слова поддержки.',

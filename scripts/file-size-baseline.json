@@ -1801,7 +1801,7 @@
   "webapp/src/components/caseFlow/caseLinks.tsx": 16,
   "webapp/src/components/caseFlow/CaseModeScreen.tsx": 65,
   "webapp/src/components/caseFlow/CaseResultHelp.tsx": 27,
-  "webapp/src/components/caseFlow/CaseResultStep.tsx": 63,
+  "webapp/src/components/caseFlow/CaseResultStep.tsx": 55,
   "webapp/src/components/caseFlow/CaseResumeGate.tsx": 52,
   "webapp/src/components/caseFlow/CaseSaveError.tsx": 8,
   "webapp/src/components/caseFlow/CaseSceneStep.tsx": 60,

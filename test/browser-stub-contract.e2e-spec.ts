@@ -81,6 +81,7 @@ const BODIES: Record<string, unknown> = {
 // Ручки, которым без query сервер отвечает 400: стаб матчит путь без query.
 const QUERIES: Record<string, string> = {
   'GET /api/practices': '?needId=attachment',
+  'GET /api/note': '?date=2026-11-10', // tracker.controller.ts: без календарного дня — 400
 };
 
 function mask(value: unknown, path: string[]): unknown {

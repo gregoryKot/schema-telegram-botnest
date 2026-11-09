@@ -15,9 +15,8 @@ const PREINSTALLED_CHROMIUM = [
   '/opt/pw-browsers/chromium', // ссылка образа на текущую ревизию
   '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
 ];
-// PW_CHROMIUM_PATH — локальный путь к браузеру (в CI не задан, конфиг не меняется).
 const executablePath =
-  process.env.PW_CHROMIUM_PATH ||
+  process.env.PW_CHROMIUM_PATH || // локальный путь к браузеру (в CI не задан, конфиг не меняется)
   PREINSTALLED_CHROMIUM.find((p) => existsSync(p));
 
 // Общие настройки проектов.
@@ -54,6 +53,7 @@ export default defineConfig({
         'today-fit.spec.ts',
         'tracker-fit.spec.ts',
         'screen-customize.spec.ts',
+        'sheet-scroll.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },

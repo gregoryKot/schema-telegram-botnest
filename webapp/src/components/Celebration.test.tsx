@@ -95,6 +95,8 @@ describe('Celebration — контент', () => {
   it('insight, если передан, рендерится отдельным блоком', () => {
     renderCelebration({ insight: 'Ты чаще заботишься о границах' });
     expect(screen.getByText('Ты чаще заботишься о границах')).toBeTruthy();
+    // glue: «о» не висит в конце строки
+    expect(screen.getByText('Ты чаще заботишься о границах').textContent).toContain('о\u00a0границах');
   });
 
   it('без insight дополнительный блок не рендерится', () => {

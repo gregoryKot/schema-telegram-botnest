@@ -4,7 +4,7 @@
 // время historyLoading (форма загрузки, а не пустой экран), реальный рендер
 // истории после загрузки, кнопки «Назад»/«Оценить» и напоминание о
 // просроченном плане практики (CheckInSheet) для реальной, а не выдуманной даты.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import {
   render,
   screen,
@@ -61,6 +61,10 @@ function renderSheet(props: Partial<Parameters<typeof HistorySheet>[0]> = {}) {
   );
 }
 
+// Холодный ленивый импорт HistoryView под нагрузкой дольше секунды waitFor —
+// тест падал 1 из 20 (сведение g2). Модуль прогрет до тестов: Suspense ждёт
+// только микротаск, а не трансформацию файла.
+beforeAll(() => import('./HistoryView'));
 afterEach(() => cleanup());
 beforeEach(() => vi.clearAllMocks());
 
@@ -83,7 +87,7 @@ describe('HistorySheet', () => {
 
   it('после загрузки рендерит HistoryView (лениво, через Suspense)', async () => {
     renderSheet({ historyLoading: false, history: [] });
-    await waitFor(() => expect(screen.getByText(/трекер сегодня/)).toBeTruthy());
+    expect(await screen.findByText(/трекер сегодня/, undefined, { timeout: 5000 })).toBeTruthy();
   });
 
   // Сбой ≠ пусто (2026-11, useTrackerHistory): отказ загрузки рисовал пустую

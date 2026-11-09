@@ -169,7 +169,8 @@ describe('TrackerOverlay — ответ и автопереход', () => {
     expect(screen.getByText('Трекер · сегодня')).toBeTruthy();
     expect(screen.queryByText(/не дошли до сервера/)).toBeNull(); // вторая ещё в debounce
     await advance(500);
-    expect(screen.getByRole('status').textContent).toBe(
+    // строка через glue (CompletionScreen): слова те же, пробелы после коротких слов неразрывные
+    expect(screen.getByRole('status').textContent?.replace(/\u00a0/g, ' ')).toBe(
       'Оценки пока не дошли до сервера. Они сохранены на этом устройстве и отправятся сами',
     );
   });

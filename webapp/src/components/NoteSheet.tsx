@@ -8,6 +8,7 @@ import { CrisisCard } from './CrisisCard';
 import { NoteWhy } from './NoteWhy';
 import { PaperAlert } from './paper/PaperAlert';
 import { formatDateString } from '../../../shared/src/utils/calendarDate';
+import { glue } from '../../../shared/src/utils/typo';
 import { todayStr } from '../../../shared/src/utils/format';
 import '../styles/sheet-diary.css';
 import { NoteTagsPicker } from './NoteTagsPicker';
@@ -70,11 +71,10 @@ export function NoteSheet({ date, onClose }: Props) {
   // поле-лист на всю ширину, темы дня чипами под полем, «Сохранить» во всю колонку.
   return (
     <ExScreen
-      onBack={goBack}
-      backLabel="Назад"
+      onBack={goBack} backLabel="Назад"
       look="note"
       spread
-      eyebrow={day ? <>Дневник · {day}</> : 'Дневник'}
+      eyebrow={day ? glue(`Дневник · ${day}`) : 'Дневник'}
       title={<>Заметка <span className="it">к дню</span></>}
       lede={tr('Запиши момент — что происходило и какие были чувства.', 'Запишите момент — что происходило и какие были чувства.')}
       aside={<NoteWhy />}

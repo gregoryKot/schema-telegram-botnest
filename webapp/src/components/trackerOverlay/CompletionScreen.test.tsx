@@ -66,4 +66,16 @@ describe('CompletionScreen — мост к терапевту', () => {
     expect(screen.getByRole('button', { name: 'Готово' })).toBeTruthy();
     expect(screen.getByText('Трекер · 10 июля')).toBeTruthy();
   });
+
+  it('оценки в офлайн-очереди: строка статуса через glue — предлоги не висят в конце строки', () => {
+    render(
+      <MemoryRouter>
+        <CompletionScreen needs={NEEDS} effectiveRatings={{}} isBackfill={false} queued goBack={vi.fn()} onReview={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const status = screen.getByRole('status').textContent ?? '';
+    expect(status.replace(/\u00a0/g, ' ')).toContain('Оценки пока не дошли до сервера');
+    expect(status).toContain('до\u00a0сервера');
+    expect(status).toContain('на\u00a0этом');
+  });
 });

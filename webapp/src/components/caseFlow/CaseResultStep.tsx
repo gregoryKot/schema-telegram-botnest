@@ -8,6 +8,7 @@ import { SceneCaseFound } from '../art/SceneCaseFound';
 import { getModeById } from '../../schemaTherapyData';
 import { modeLook } from '../../../../shared/src/theme/entityLook';
 import type { QuickResultView } from '../../../../shared/src/case/quick/caseQuick';
+import { glue } from '../../../../shared/src/utils/typo';
 
 /**
  * Итог разбора: предложенный режим, что собрали, что поможет сейчас. «Сохранить»
@@ -15,16 +16,7 @@ import type { QuickResultView } from '../../../../shared/src/case/quick/caseQuic
  * Лист — бумага группы режима со сценой SceneCaseFound (лента и знак группы), а не шалфей
  * шагов: главное — кто взял управление. На телефоне сцена углом (cq-scene--found).
  */
-export function CaseResultStep({
-  view,
-  saving,
-  failed,
-  onBack,
-  onSave,
-  onDoubt,
-  crisis,
-  onHardNow,
-}: {
+export function CaseResultStep({ view, saving, failed, onBack, onSave, onDoubt, crisis, onHardNow }: {
   view: QuickResultView;
   saving: boolean;
   failed: boolean;
@@ -44,7 +36,7 @@ export function CaseResultStep({
       title={view.name}
       lede={view.desc || undefined}
     >
-      {view.need && <p className="cq-need">Что ему нужно: {view.need}</p>}
+      {view.need && <p className="cq-need">{glue(`Что ему нужно: ${view.need}`)}</p>}
       <CaseSummaryAside rows={view.rows} signs={false} />
       <CaseResultHelp />
       {failed && <CaseSaveError />}

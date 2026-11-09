@@ -101,6 +101,8 @@ describe('CaseFlowScreen — три шага и итог', () => {
       screen.getByRole('heading', { name: 'Избегающий Защитник' }),
     ).toBeTruthy();
     expect(screen.getByText(/Что ему нужно:/)).toBeTruthy();
+    // строка через glue: короткий предлог не висит в конце строки («с тем» — неразрывный пробел)
+    expect(screen.getByText(/Что ему нужно:/).textContent).toContain('с\u00a0тем');
     expect(screen.getByText(SCENE)).toBeTruthy();
     expect(screen.getByText('Страшно, тревожно')).toBeTruthy();
     expect(screen.getByText('свернуть разговор')).toBeTruthy();

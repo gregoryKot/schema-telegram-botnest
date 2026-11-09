@@ -33,5 +33,7 @@ describe('темы дня: выбор в заметке → подписи в и
     render(<DayNote text={null} tags={[]} onOpen={onOpen} />);
     fireEvent.click(screen.getByText('Добавить заметку к этому дню'));
     expect(onOpen).toHaveBeenCalledTimes(1);
+    // glue: «к» не висит в конце строки — пробел после него неразрывный
+    expect(screen.getByText('Добавить заметку к этому дню').textContent).toContain('к\u00a0этому');
   });
 });

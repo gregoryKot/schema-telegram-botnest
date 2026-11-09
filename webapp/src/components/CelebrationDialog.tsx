@@ -14,6 +14,7 @@ import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 import { SceneCheckIn } from './art/LandingScenesMore';
 import { SignArt } from './art/SignArt';
 import { dayStrokeValues } from '../../../shared/src/needs/dayStrokes';
+import { glue } from '../../../shared/src/utils/typo';
 import { Dialog } from './Dialog';
 
 interface Props {
@@ -36,8 +37,7 @@ export function CelebrationDialog({ streak, onDone, insight, ratings, tr, botSho
       label={`${streak} ${pluralDays(streak)} подряд`}
       onClose={onDone}
       closeOnEscape
-      zIndex={500}
-      maxWidth={420}
+      zIndex={500} maxWidth={420}
       center
       underlay={<canvas ref={canvasRef} className="sk-celebr-canvas" />}
     >
@@ -50,7 +50,7 @@ export function CelebrationDialog({ streak, onDone, insight, ratings, tr, botSho
       </div>
       <h2 className="ds-h2 sk-dialog-title">{pluralDays(streak)} подряд</h2>
       <p className={'sk-dialog-text' + (insight ? ' sk-celebr-tight' : '')}>{getMilestoneText(streak)}</p>
-      {insight && <p className="sk-dialog-text sk-celebr-insight">{insight}</p>}
+      {insight && <p className="sk-dialog-text sk-celebr-insight">{glue(insight)}</p>}
       <button className="ds-btn sk-wide sk-celebr-share" onClick={share}>
         {copied && <span className="sk-celebr-check" aria-hidden="true"><SignArt sign="check" size="nav" /></span>}
         {copied ? 'Скопировано!' : 'Поделиться'}
