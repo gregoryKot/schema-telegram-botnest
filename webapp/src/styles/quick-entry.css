@@ -26,7 +26,9 @@
   font: 600 14px var(--sans); color: var(--accent); text-decoration: underline;
 }
 .qe-cta { min-height: 52px; width: 100%; border-radius: 26px; font-size: 16px; }
-.qe-cta:disabled { opacity: .5; cursor: default; }
+/* Неактивная — общий вид .ds-btn:disabled (cabinet.css); своя прозрачность гасила его второй раз:
+   «Сохраняю…» 1.93:1 почти сливалась с фоном. */
+.qe-cta:disabled { cursor: default; }
 
 .qe-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .qe-head .tq-title { min-width: 0; }

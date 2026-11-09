@@ -1,6 +1,7 @@
 /* Блок «Кто это делает» продуктового лендинга (AuthorSection.tsx): плитка персиковой
    бумаги; фото — общая фотокарточка автора (AuthorPhoto, styles/author-photo.css: рамка,
-   скотч, наклейка Talk, сдвинутая тень); здесь — её место и размер на узких экранах.
+   скотч, наклейка Talk, сдвинутая тень, размер наклейки на узких экранах); здесь — её место
+   и ширина рамки.
    База — product-landing.css. */
 
 .pp-paper.pl2-author {
@@ -20,15 +21,6 @@
 @media (max-width: 900px) {
   .pp-paper.pl2-author { grid-template-columns: minmax(0, 1fr); gap: 48px; padding: 44px 24px 32px; }
   .pl2-author-frame { max-width: 250px; }
-}
-@media (max-width: 640px) {
-  .pl2-author .author-photo-sticker { right: -18px; bottom: -22px; width: 80px; height: 80px; border-radius: 18px; }
-  .pl2-author .author-photo-sticker .scn-sign { width: 60px; }
-}
-/* ≤360: фотокарточка во всю колонку — наклейка (с поворотом и тенью) вылезала за край листа
-   на 5–10px; ближе к углу рамки, вместе с тенью внутри листа. */
-@media (max-width: 360px) {
-  .pl2-author .author-photo-sticker { right: -4px; }
 }
 /* «Познакомиться: сайт практики ↗» в строку не влезает уже 360px — кнопка во всю
    ширину и переносит текст, а не уходит за край экрана. */

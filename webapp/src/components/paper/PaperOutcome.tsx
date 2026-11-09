@@ -18,6 +18,7 @@ export interface OutcomeAction {
 }
 
 export interface PaperOutcomeProps {
+  /** Исход из OUTCOME_LOOK или вид со знаком (Look — SheetLook со знаком: в полосе знак и есть смысл). */
   outcome: OutcomeId | Look;
   eyebrow?: ReactNode;
   title: ReactNode;

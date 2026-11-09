@@ -4,14 +4,18 @@
    (.scn-sign, paper-scenes.css). Глубина — сплошным сдвинутым слоем, без blur и filter.
    Файл подключают сами компоненты, и в сборке он может встать раньше index.css: правило,
    которое спорит с примитивом ds-*, пишется на два класса (.ds-btn.pa-…), а не полагается
-   на порядок. Мелкий текст на цветной бумаге — --text-sub: --text-faint на ней ниже 4.5:1. */
+   на порядок. Состояния примитива той же специфичности (.ds-btn:disabled — 0,2,0) два класса не
+   перебивают надёжно: фон у .ds-btn.pa-… — с :not(:disabled) или с парой .ds-btn.pa-…:disabled.
+   Мелкий текст на цветной бумаге — --text-sub: --text-faint на ней ниже 4.5:1. */
 
 /* ── Лист-герой сущности (EntitySheet) ───────────────────────────────────── */
 /* Размер знака и кегль — по ширине самого листа (container query), а не окна: лист живёт и во
-   всю колонку, и плиткой в сетке, и колонкой разворота; узкий лист с знаком 160px душил слово. */
+   всю колонку, и плиткой в сетке, и колонкой разворота; узкий лист с знаком 160px душил слово.
+   Ряды — без зазора: в обычной раскладке ряд один, а в узкой (тело — display: contents) зазоры
+   задают отступы самих строк. */
 .pa-sheet {
   container: pa-sheet / inline-size;
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 24px; row-gap: 0;
   box-sizing: border-box; width: 100%; padding: 28px 28px 28px 32px; border-radius: 24px;
 }
 .pa-sheet-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -26,23 +30,49 @@
 .pa-sheet-art .scn-sign { width: 100%; }
 .pa-sheet-art > .scn { width: 200px; }
 .pa-sheet--plain { grid-template-columns: minmax(0, 1fr); }
-.pa-sheet--compact { gap: 18px; padding: 18px 22px 18px 26px; }
-.pa-sheet--compact .pa-sheet-title { font-size: 28px; }
-.pa-sheet--compact .pa-sheet-art { width: 80px; }
-.pa-sheet--compact .pa-sheet-art > .scn { width: 120px; }
+/* compact (со второго шага) и лист разворота уже 1024 — полоса: тесные поля, знак 64, Literata 24,
+   подпись в две строки (текст целиком в DOM, обрезан только показ). Разворот ≥1024 возвращает
+   колонку своим блоком ниже. */
+.pa-sheet--compact, .pa-spread-side .pa-sheet { column-gap: 16px; padding: 14px 18px 14px 22px; border-radius: 20px; }
+.pa-sheet--compact .pa-sheet-body, .pa-spread-side .pa-sheet-body { gap: 6px; }
+.pa-sheet--compact .pa-sheet-title, .pa-spread-side .pa-sheet-title { font-size: 24px; }
+.pa-sheet--compact .pa-sheet-sub, .pa-spread-side .pa-sheet-sub {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.pa-sheet--compact .pa-sheet-art, .pa-spread-side .pa-sheet-art { width: 64px; }
+.pa-sheet--compact .pa-sheet-art > .scn, .pa-spread-side .pa-sheet-art > .scn { width: 120px; }
 
+/* Широкий лист (на всю колонку 1280): знак крупнее и подпись длиннее — иначе середина листа
+   оставалась мёртвым полем, и лист читался баннером. */
+@container pa-sheet (min-width: 720px) {
+  .pa-sheet-art { width: 210px; }
+  .pa-sheet-art > .scn { width: 260px; }
+  .pa-sheet-sub { max-width: 52ch; }
+}
 @container pa-sheet (max-width: 560px) {
   .pa-sheet-title { font-size: 28px; }
   .pa-sheet-art { width: 112px; }
   .pa-sheet-art > .scn { width: 150px; }
+}
+/* Узкий лист со знаком (телефон, плитка): знак — в правом верхнем углу на строке надписи,
+   заголовок и подпись — на всю ширину, а не колонкой рядом со знаком (на 320 заголовок шёл в три
+   строки, подпись в четыре). Своя сцена с данными (без data-sign) остаётся справа. */
+@container pa-sheet (max-width: 440px) {
+  .pa-sheet[data-sign] > .pa-sheet-body { display: contents; }
+  .pa-sheet[data-sign] .pa-sheet-label { grid-column: 1; grid-row: 1; align-self: center; }
+  .pa-sheet[data-sign] > .pa-sheet-art { grid-column: 2; grid-row: 1; align-self: start; width: 60px; }
+  .pa-sheet[data-sign] > .pa-sheet-body > :not(.pa-sheet-label) { grid-column: 1 / -1; margin-top: 10px; }
+  .pa-sheet--compact[data-sign] > .pa-sheet-art, .pa-spread-side .pa-sheet[data-sign] > .pa-sheet-art { width: 48px; }
+  .pa-sheet--compact[data-sign] > .pa-sheet-body > :not(.pa-sheet-label),
+  .pa-spread-side .pa-sheet[data-sign] > .pa-sheet-body > :not(.pa-sheet-label) { margin-top: 6px; }
 }
 @container pa-sheet (max-width: 400px) {
   .pa-sheet-title { font-size: 26px; }
   .pa-sheet-sub { font-size: 14.5px; }
   .pa-sheet-art { width: 84px; }
   .pa-sheet-art > .scn { width: 116px; }
-  .pa-sheet--compact .pa-sheet-title { font-size: 24px; }
-  .pa-sheet--compact .pa-sheet-art { width: 64px; }
+  .pa-sheet--compact .pa-sheet-title, .pa-spread-side .pa-sheet-title { font-size: 22px; }
+  .pa-sheet--compact .pa-sheet-art, .pa-spread-side .pa-sheet-art { width: 48px; }
 }
 
 /* ── Разворот (SpreadLayout) ─────────────────────────────────────────────── */
@@ -57,17 +87,18 @@
   }
   /* Колонка липнет; выше окна — прокручивается сама, а не прячет низ под край экрана. */
   .pa-spread-side { position: sticky; top: var(--pa-sticky-top); max-height: calc(100vh - var(--pa-sticky-top) - 16px); overflow-y: auto; }
-  /* Лист колонкой: знак сверху и крупнее — на 440px рядом с ним Literata 32 жалась бы в две буквы. */
-  .pa-spread-side .pa-sheet { grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 32px 32px 36px; }
+  /* Лист колонкой: знак сверху и крупнее — на 440px рядом с ним Literata 32 жалась бы в две буквы.
+     Своё имя контейнера: узкие правила pa-sheet (знак в углу, полоса) колонку не трогают. */
+  .pa-spread-side .pa-sheet {
+    container-name: pa-spread-sheet; grid-template-columns: minmax(0, 1fr); gap: 18px; padding: 32px 32px 36px; border-radius: 24px;
+  }
+  .pa-spread-side .pa-sheet-body { gap: 10px; }
+  .pa-spread-side .pa-sheet-sub { display: block; -webkit-line-clamp: none; line-clamp: none; overflow: visible; }
   .pa-spread-side .pa-sheet-art { order: -1; justify-self: start; justify-content: flex-start; width: 180px; }
   .pa-spread-side .pa-sheet-title { font-size: 32px; }
   .pa-spread-side .pa-sheet--compact .pa-sheet-title { font-size: 28px; }
   .pa-spread-side .pa-sheet-art > .scn { width: 260px; }
   .pa-spread-side .pa-sheet--compact .pa-sheet-art { width: 120px; }
-}
-/* Уже разворота лист стоит сверху компактной полосой. */
-@media (max-width: 1023px) {
-  .pa-spread-side .pa-sheet:not(.pa-sheet--compact) { gap: 18px; padding: 22px 24px 22px 26px; }
 }
 
 /* ── Лист «готово» (DoneSheet) ───────────────────────────────────────────── */
@@ -84,9 +115,11 @@
 .ds-link.pa-done-link:hover { color: var(--text); }
 
 /* ── Сбой строкой (PaperAlert) ───────────────────────────────────────────── */
+/* Знак и фразы — неразрывным рядом (основа тела ~140px влезает рядом со знаком и на 320);
+   на новую строку переносится только «Повторить». */
 .pa-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; box-sizing: border-box; padding: 14px 16px 14px 18px; border-radius: 16px; }
 .pa-alert-sign { display: inline-flex; flex-shrink: 0; opacity: .55; }
-.pa-alert-body { flex: 1 1 200px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pa-alert-body { flex: 1 1 140px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pa-alert-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--text); }
 .pa-alert-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
 .ds-btn.pa-alert-retry { flex: none; }
@@ -112,6 +145,9 @@
   border-radius: 20px; transform: rotate(-11deg); background: oklch(0.885 0.06 var(--h));
 }
 .pa-outcome-band .scn-sign { position: relative; width: 136px; }
+/* «Готово» (Check на шалфее): шалфейная плашка на шалфейной полосе крупно читалась неактивным
+   чекбоксом — в исходе плашка бумагой --surface, галочка мха остаётся (вариант мотива, PAPER_2026-11.md). */
+.pa-outcome-card[data-sign='check'] .pa-outcome-band .scn-sign > .pp-art:last-child rect { fill: var(--surface); }
 .pa-outcome-body { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 26px 30px 30px; }
 .pa-outcome-eyebrow { color: var(--accent); }
 .pa-outcome-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
@@ -122,15 +158,14 @@
 .pa-outcome-code { margin: 4px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-muted); word-break: break-all; }
 
 /* ── Чип со знаком (SignChip) ────────────────────────────────────────────── */
+/* Слот знака — 24px всегда, и пустой: ширина чипа не прыгает при выборе. */
 .ds-chip.pa-chip { gap: 6px; padding-left: 6px; }
 .pa-chip-sign { display: inline-flex; align-items: center; justify-content: center; width: 24px; flex-shrink: 0; }
-.pa-chip-sign--idle .pp-art [fill]:not([fill='none']) { fill: color-mix(in srgb, var(--text) 14%, transparent); }
-.pa-chip-sign--idle .pp-art [stroke]:not([stroke='none']) { stroke: color-mix(in srgb, var(--text) 24%, transparent); }
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .pa-sheet { gap: 14px; padding: 20px 18px 20px 20px; border-radius: 20px; }
-  .pa-sheet--compact { padding: 14px 16px 14px 18px; }
+  .pa-sheet { column-gap: 14px; padding: 20px 18px 20px 20px; border-radius: 20px; }
+  .pa-sheet--compact, .pa-spread-side .pa-sheet { padding: 12px 14px 12px 16px; border-radius: 18px; }
   .pa-done-sheet { padding: 20px 20px 22px; border-radius: 24px; }
   .pa-done-scene > .scn { width: min(100%, 250px); }
   .pa-done-title { font-size: 28px; }

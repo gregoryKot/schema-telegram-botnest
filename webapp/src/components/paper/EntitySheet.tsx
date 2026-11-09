@@ -9,18 +9,13 @@
 //  • в развороте (SpreadLayout) на ≥1024 лист встаёт колонкой: знак сверху, крупнее.
 // Декор (знак, сцена) скрыт от чтения с экрана — смысл несут заголовок и подпись.
 import type { CSSProperties, ReactNode } from 'react';
-import { ENTITY_LOOK, type EntityId, type SignKey } from '../../../../shared/src/theme/entityLook';
+import { ENTITY_LOOK, type EntityId, type SheetLook } from '../../../../shared/src/theme/entityLook';
 import { SignHero } from './SignHero';
 import '../../styles/paper-app.css';
 
-/** Вид листа: бумага и знак; без знака и без art лист стоит без картинки. */
-export interface SheetLook {
-  hue: number;
-  sign?: SignKey;
-}
-
 export interface EntitySheetProps {
-  /** Сущность из ENTITY_LOOK или готовый вид (domainLook, modeGroupLook, needLook). */
+  /** Сущность из ENTITY_LOOK или готовый вид (domainLook, modeGroupLook, needLook, `{ hue, sign? }`);
+   *  без знака и без art лист стоит без картинки. */
   look: EntityId | SheetLook;
   label?: ReactNode;
   title: ReactNode;

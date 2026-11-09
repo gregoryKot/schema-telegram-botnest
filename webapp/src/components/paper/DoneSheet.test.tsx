@@ -46,7 +46,8 @@ describe('DoneSheet', () => {
     expect(container.querySelector('.pa-done-scene [data-testid="found"]')).toBeTruthy();
     expect(container.querySelector('svg.scn')).toBeNull();
     rerender(<DoneSheet entity="note" {...base} />);
-    expect(container.querySelector('.pa-done-scene')?.children.length).toBe(0);
+    expect(container.querySelector('.pa-done-scene')).toBeNull();
+    expect(container.querySelector('.pa-done-sheet')?.firstElementChild?.className).toContain('pa-done-label');
   });
 
   it('кризисная карточка — над листом, отдельно; тихая ссылка — кнопка ds-link', () => {

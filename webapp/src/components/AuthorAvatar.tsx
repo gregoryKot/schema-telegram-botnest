@@ -8,7 +8,7 @@
 // Вид карточки — styles/author-photo.css; раскладку вокруг задаёт место (className).
 import { SignScene } from './art/SceneParts';
 import { Talk } from './art/PaperArtSigns';
-import { hideOnError } from '../pages/landing/hideOnError';
+import { hideOnError } from '../utils/hideOnError';
 import '../styles/author-photo.css';
 
 const AUTHOR_NAME = 'Григорий Котляревский';

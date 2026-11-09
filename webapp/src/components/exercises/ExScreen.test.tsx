@@ -92,15 +92,45 @@ describe('ExScreen — герой и раскладки', () => {
     expect(container.querySelector('.ex2-title')).toBeNull();
   });
 
-  it('look с бумагой без знака — картинкой героя становится art; «самопомощь» — строкой под листом', () => {
-    localStorage.clear();
+  it('look + heroArt — сцена с данными вместо знака; прежний art при look не рисуется', () => {
     const { container } = render(
-      <ExScreen onBack={vi.fn()} look={{ hue: 45 }} art={<i data-testid="art" />} eyebrow="Колесо" title="Детство" caution compact>поле</ExScreen>,
+      <ExScreen onBack={vi.fn()} look="childhood_wheel" heroArt={<i data-testid="scene" />} art={<i data-testid="old" />} eyebrow="Колесо" title="Детство" compact>поле</ExScreen>,
     );
     const sheet = container.querySelector('.pa-sheet')!;
     expect(sheet.className).toContain('pa-sheet--compact');
-    expect(sheet.querySelector('.pa-sheet-art [data-testid="art"]')).toBeTruthy();
-    expect(sheet.nextElementSibling?.className).toBe('th-caution th-caution--compact');
+    expect(sheet.querySelector('.pa-sheet-art [data-testid="scene"]')).toBeTruthy();
+    expect(sheet.hasAttribute('data-sign')).toBe(false);
+    expect(container.querySelector('[data-testid="old"]')).toBeNull();
+  });
+
+  // Принцип 5: на 390 до первого поля — только шапка и лист; «самопомощь» у героя — под кнопками.
+  it('у героя «самопомощь» — наклейкой после кнопок, во всех трёх раскладках', () => {
+    localStorage.clear();
+    const foot = <button type="button">Запечатать</button>;
+    const tail = (main: Element) => [...main.children].at(-1)!;
+    const { container, rerender } = render(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution foot={foot}><textarea /></ExScreen>);
+    let main = container.querySelector('.ex2-main')!;
+    expect(main.querySelector('.pa-sheet')!.nextElementSibling?.tagName).toBe('TEXTAREA');
+    expect(tail(main).className).toBe('th-caution th-caution--compact');
+    expect(tail(main).previousElementSibling?.textContent).toBe('Запечатать');
+
+    rerender(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution foot={foot} aside={aside} hintBeforeField><textarea /></ExScreen>);
+    expect(container.querySelector('.ex2-head .th-caution')).toBeNull();
+    main = container.querySelector('.ex2-body--split > .ex2-main')!;
+    expect(tail(main).className).toBe('th-caution th-caution--compact');
+
+    rerender(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution foot={foot} aside={aside} spread><textarea /></ExScreen>);
+    const [side, spreadMain] = [...container.querySelector('.pa-spread')!.children];
+    expect(side.querySelector('.th-caution')).toBeNull();
+    expect(tail(spreadMain).className).toBe('th-caution th-caution--compact');
+  });
+
+  it('cautionAt="head" — наклейка под листом, если экран так выбрал; без look — полное под шапкой', () => {
+    localStorage.clear();
+    const { container, rerender } = render(<ExScreen onBack={vi.fn()} look="letter" eyebrow="Письмо" title="Себе" caution cautionAt="head">поле</ExScreen>);
+    expect(container.querySelector('.pa-sheet')!.nextElementSibling?.className).toBe('th-caution th-caution--compact');
+    rerender(<ExScreen onBack={vi.fn()} eyebrow="Письмо" title="Себе" lede="Подводка" caution>поле</ExScreen>);
+    expect(container.querySelector('.ex2-lede')!.nextElementSibling?.className).toBe('th-caution');
   });
 
   it('hintBeforeField: шапка, подсказка, поле — по порядку (на телефоне подсказка до поля)', () => {

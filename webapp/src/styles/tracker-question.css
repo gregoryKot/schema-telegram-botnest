@@ -6,6 +6,9 @@
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './flow-frame.css';
 .tq-bar-btn:focus-visible, .tq-dot-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* «Оценка не сохранилась» (SaveErrorNote → PaperAlert) стоит после колонки вопроса: держим её в
+   ширине колонки (.tq-inner — 560 с полями 16), а не от края до края окна. Перенос внутрь колонки — b07. */
+.tq-body > .pa-alert { width: calc(100% - 2 * var(--space-16)); max-width: calc(560px - 2 * var(--space-16)); margin: 0 auto var(--space-24); }
 .tq-dots { display: flex; justify-content: center; }
 /* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px; высота 44 держит
    палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */

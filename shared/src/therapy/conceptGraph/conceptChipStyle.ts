@@ -2,7 +2,8 @@ import type { CSSProperties } from 'react';
 import { colorMix } from '../../utils/colorMix';
 import type { ConceptSkin } from './conceptSkin';
 
-/** Цвет сущности для классов сайта: число hue в `--h` (без hue — нейтральный тон). */
+/** Цвет сущности для классов сайта: число hue в `--h`. Без hue `--h` не задаётся — берётся тон
+ *  предка, а нет его — запасной нейтральный оттенок в правиле CSS (`var(--h, 70)` у выбранного чипа). */
 export function hueVar(hue: number | undefined): CSSProperties | undefined {
   return hue === undefined ? undefined : ({ '--h': hue } as CSSProperties);
 }

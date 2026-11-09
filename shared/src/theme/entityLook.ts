@@ -25,8 +25,15 @@ export const DONE_SCENES = [
 ] as const;
 export type DoneScene = (typeof DONE_SCENES)[number];
 
-export interface Look {
+/** Вид листа заготовок (EntitySheet, ExScreen look, SsHead look, PaperAlert, DoneSheet): бумага
+ *  палитры и знак; без знака лист стоит без картинки или со своей сценой героя. Один тип на все
+ *  заготовки — вид из партии `{ hue, sign? }` подходит каждой. */
+export interface SheetLook {
   hue: PaperHue;
+  sign?: SignKey;
+}
+/** Тот же вид, где знак и есть содержание (исход PaperOutcome, достижение, строка задания). */
+export interface Look extends SheetLook {
   sign: SignKey;
 }
 export interface EntityLook extends Look {

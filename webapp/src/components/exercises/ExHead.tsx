@@ -1,17 +1,22 @@
 // Шапка экрана упражнения (ExScreen): надпись, заголовок, подводка и «самопомощь».
-//  • Без look — прежняя шапка: картинка над надписью, заголовок ds-h2, подводка ds-sub.
+//  • Без look — прежняя шапка: art (картинка над надписью), заголовок ds-h2, подводка ds-sub.
 //  • С look — герой на бумаге упражнения (EntitySheet, редизайн 2026-11): надпись, Literata 32,
-//    подводка и знак сущности крупно справа (на развороте — сверху); art — своя картинка героя,
-//    если знака по ключу нет. compact — второй и следующие шаги.
-// Предупреждение «самопомощь» (`caution` — готовый TherapyCaution от ExScreen) стоит под шапкой:
-// у прежней — полное, у героя — строкой (compact): вспомогательное тише листа.
+//    подводка и знак сущности крупно справа (на развороте — сверху). heroArt — своя сцена с
+//    данными вместо знака (SceneChildhood values); прежний art при look не рисуется — картинка
+//    над надписью и сцена героя разные вещи, и сцена не должна пропадать молча. compact — второй
+//    и следующие шаги.
+// Предупреждение «самопомощь» (`caution` — готовый TherapyCaution от ExScreen) стоит под шапкой,
+// только если экран так выбрал: у героя ExScreen ставит его под кнопки (принцип 5).
 import type { ReactNode } from 'react';
-import type { EntityId } from '../../../../shared/src/theme/entityLook';
-import { EntitySheet, type SheetLook } from '../paper/EntitySheet';
+import type { EntityId, SheetLook } from '../../../../shared/src/theme/entityLook';
+import { EntitySheet } from '../paper/EntitySheet';
 
 export interface ExHeadProps {
   eyebrow: ReactNode;
+  /** Картинка над надписью у прежней шапки (без look). */
   art?: ReactNode;
+  /** Сцена героя вместо знака сущности (только с look). */
+  heroArt?: ReactNode;
   title: ReactNode;
   lede?: ReactNode;
   /** Бумага и знак героя: сущность из ENTITY_LOOK или готовый вид (домен, группа режима). */
@@ -19,12 +24,11 @@ export interface ExHeadProps {
   compact?: boolean;
 }
 
-export function ExHead({ eyebrow, art, title, lede, look, compact, caution: warn }: ExHeadProps & { caution?: ReactNode }) {
+export function ExHead({ eyebrow, art, heroArt, title, lede, look, compact, caution: warn }: ExHeadProps & { caution?: ReactNode }) {
   if (look !== undefined) {
-    const hasSign = typeof look === 'string' || look.sign !== undefined;
     return (
       <>
-        <EntitySheet look={look} label={eyebrow} title={title} sub={lede} art={hasSign ? undefined : art} compact={compact} titleAs="h1" className="ex2-hero" />
+        <EntitySheet look={look} label={eyebrow} title={title} sub={lede} art={heroArt} compact={compact} titleAs="h1" className="ex2-hero" />
         {warn}
       </>
     );

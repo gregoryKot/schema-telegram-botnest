@@ -268,7 +268,7 @@ describe('cabinet.css: примитивы волны 2 (#906)', () => {
     expect(decls(top, '.ds-chip--toggle')).toContain('min-height: 36px');
     expect(decls(tap, '.ds-chip--toggle')).toContain('min-height: 44px');
     const on = decls(top, '.ds-chip--toggle.is-on');
-    expect(on).toMatch(/oklch\([^)]*var\(--h\)\)/);
+    expect(on).toMatch(/oklch\([^)]*var\(--h(, \d+)?\)\)/);
     expect(on).not.toContain('tone-fill');
   });
   it('строка-переход и шеврон', () => {

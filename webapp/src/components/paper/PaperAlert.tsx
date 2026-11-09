@@ -4,7 +4,7 @@
 // Заменяет красные строки, cpf-error, st-err и ds-card--warn; на нём же SaveErrorNote. Тревожного
 // красного нет: сбой — не вина человека, данные на месте.
 import type { CSSProperties, ReactNode } from 'react';
-import type { SignKey } from '../../../../shared/src/theme/entityLook';
+import type { PaperHue, SignKey } from '../../../../shared/src/theme/entityLook';
 import { SignArt } from '../art/SignArt';
 import '../../styles/paper-app.css';
 
@@ -13,8 +13,11 @@ export interface PaperAlertProps {
   text?: ReactNode;
   /** Знак сущности блока — бледно, строкой. */
   sign?: SignKey;
-  /** Бумага; по умолчанию солома (70) — «подожди, ничего страшного». */
-  hue?: number;
+  /** Бумага; по умолчанию солома (PAPER_HUE.straw, как исход wait) — «подожди, ничего страшного».
+   *  Литерал, а не импорт палитры: рантайм-импорт из entityLook в PaperAlert (SaveErrorNote — в
+   *  главном потоке) выносил entityLook и ExScreen в свои чанки, и CSS упражнений вставал раньше
+   *  index.css (docs/open/frontend-ux.md, порядок CSS). Сверка с палитрой — PaperAlert.test.tsx. */
+  hue?: PaperHue;
   onRetry?: () => void;
   retryLabel?: ReactNode;
   /** Повтор идёт — кнопка неактивна. */

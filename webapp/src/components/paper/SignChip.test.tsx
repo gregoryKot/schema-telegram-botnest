@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Чип со знаком (редизайн 2026-11): общий .ds-chip--toggle, слева знак сущности строчного размера;
 // выбранный — галочка Check на месте знака и бумага сущности (--h), состояние — aria-pressed.
-// Место знака есть всегда (у чипа без знака — бледная галочка): ширина не прыгает при выборе.
+// Место знака есть всегда (у невыбранного без знака — пустой слот): ширина не прыгает при выборе.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { SignChip } from './SignChip';
@@ -33,15 +33,17 @@ describe('SignChip', () => {
     expect(btn.style.getPropertyValue('--h')).toBe('45');
   });
 
-  it('без своего знака место занято бледной галочкой; без hue — бумага родителя', () => {
+  it('без своего знака: место — пустой слот без рисунка, галочка только у выбранного; без hue — бумага родителя', () => {
     const { rerender } = render(<SignChip label="Утро" on={false} onToggle={() => {}} />);
     let btn = screen.getByRole('button', { name: 'Утро' });
-    expect(signOf(btn).className).toBe('pa-chip-sign pa-chip-sign--idle');
-    expect(signOf(btn).getAttribute('data-sign')).toBe('check');
+    expect(signOf(btn).className).toBe('pa-chip-sign');
+    expect(signOf(btn).getAttribute('data-sign')).toBeNull();
+    expect(signOf(btn).querySelector('svg')).toBeNull();
     expect(btn.getAttribute('style')).toBeNull();
     rerender(<SignChip label="Утро" on onToggle={() => {}} />);
     btn = screen.getByRole('button', { name: 'Утро' });
-    expect(signOf(btn).className).toBe('pa-chip-sign');
+    expect(signOf(btn).getAttribute('data-sign')).toBe('check');
+    expect(signOf(btn).querySelector('svg.pp-art--nav')).toBeTruthy();
   });
 
   it('disabled — не нажимается', () => {

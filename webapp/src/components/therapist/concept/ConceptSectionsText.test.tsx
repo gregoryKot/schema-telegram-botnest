@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Теги триггеров в «Полях» концептуализации: выбранный тег получает --h,
-// иначе .ds-chip--toggle.is-on (фолбэка в var() нет) остаётся без тона.
+// иначе .ds-chip--toggle.is-on красится запасным нейтральным оттенком, а не тоном раздела.
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { ConceptTriggers, ConceptNeeds, ConceptCoping, ConceptModes, ConceptProblems } from './ConceptSectionsText';

@@ -3,7 +3,7 @@ import type { useTheme } from '../../components/landing-kit-hooks';
 import { TG_URL, menuBtnStyle, burgerLine } from './constants';
 import { TgLink, SectionNav } from './nav';
 import { AuthorAvatar } from '../../components/AuthorAvatar';
-import { hideOnError } from './hideOnError';
+import { hideOnError } from '../../utils/hideOnError';
 
 type Theme = ReturnType<typeof useTheme>['theme'];
 

@@ -48,7 +48,9 @@
 /* ── Герой и раскладки редизайна 2026-11 (ExScreen look / hintBeforeField / spread) ── */
 /* Герой — лист упражнения (EntitySheet, paper-app.css); под ним поле. */
 .ex2-main > .ex2-hero { margin-bottom: 28px; }
+/* «Самопомощь» у героя — под кнопками (ExScreen, по умолчанию); под листом — только по cautionAt="head". */
 .ex2-main > .ex2-hero + .th-caution { margin-top: -12px; margin-bottom: 28px; }
+.ex2-body--spread .pa-spread-main > .th-caution { margin-top: 0; }
 /* hintBeforeField: шапка, подсказка и поле — отдельные ячейки. На компьютере подсказка справа
    на обе строки (лишняя высота уходит во вторую строку, а не в зазор под шапкой), на ≤900 —
    между шапкой и полем: «С чего начать» стоит до «Запечатать письмо», а не после. */
@@ -85,9 +87,10 @@
 .ex2-spacer { flex: 1; }
 .ds-btn.ex2-ghost, .ds-btn.ex2-ghost:hover:not(:disabled) { background: transparent; color: var(--text-sub); }
 .ds-btn.ex2-ghost:hover:not(:disabled) { color: var(--text); background: var(--paper-tint); }
-/* Неактивная прозрачная («← Назад» на первом шаге): без подложки, но бледная — общее правило
-   .ds-btn:disabled больше не гасит прозрачностью, а этот класс перебивает его цвет. */
-.ds-btn.ex2-ghost:disabled { color: var(--text-ghost); }
+/* Неактивная прозрачная («← Назад» на первом шаге): без подложки, но бледная. Фон пишется и здесь:
+   .ds-btn:disabled той же специфичности (0,2,0), что .ds-btn.ex2-ghost, и без пары исход решал бы
+   порядок файлов в сборке (0,3,0 — всегда). */
+.ds-btn.ex2-ghost:disabled { background: transparent; color: var(--text-ghost); }
 .ex2-err { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--err); }
 .ex2-gap { margin-top: 16px; }
 .ex2-stack { display: flex; flex-direction: column; gap: 12px; }

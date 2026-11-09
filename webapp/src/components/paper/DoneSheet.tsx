@@ -7,7 +7,7 @@
 // На телефоне лист во всю ширину, на компьютере 480–560 по центру первого экрана. Тексты передаёт
 // экран — у примитива своих слов нет.
 import type { CSSProperties, ReactNode } from 'react';
-import { ENTITY_LOOK, type EntityId } from '../../../../shared/src/theme/entityLook';
+import { ENTITY_LOOK, type EntityId, type PaperHue } from '../../../../shared/src/theme/entityLook';
 import { DoneScene } from '../art/AppScenesMore';
 import '../../styles/paper-app.css';
 
@@ -19,8 +19,8 @@ export interface DoneAction {
 export interface DoneSheetProps {
   entity: EntityId;
   /** Бумага листа, если у экрана она своя (трекер: «Готово» на шалфее); по умолчанию — сущности. */
-  hue?: number;
-  /** Своя сцена экрана вместо сцены «готово» сущности. */
+  hue?: PaperHue;
+  /** Своя сцена экрана вместо сцены «готово» сущности; без неё и без `done` у сущности — без сцены. */
   scene?: ReactNode;
   /** Дни серии вместе с сегодняшним — для сцены «лист дня в серии» (только реальные). */
   days?: number;
@@ -37,12 +37,13 @@ export interface DoneSheetProps {
 
 export function DoneSheet({ entity, hue, scene, days, label, title, sub, primary, secondary, crisis, titleAs: Title = 'h2', children }: DoneSheetProps) {
   const look = ENTITY_LOOK[entity];
-  const picture = scene ?? <DoneScene entity={entity} days={days} />;
+  // Пустая обёртка сцены (align-self: stretch, отступ снизу) оставляла зазор над надписью.
+  const picture = scene ?? (look.done ? <DoneScene entity={entity} days={days} /> : null);
   return (
     <section className="pa-done" data-entity={entity}>
       {crisis && <div className="pa-done-crisis">{crisis}</div>}
       <div className="pp-paper pa-done-sheet" style={{ '--h': hue ?? look.hue } as CSSProperties}>
-        <div className="pa-done-scene" aria-hidden="true">{picture}</div>
+        {picture != null && <div className="pa-done-scene" aria-hidden="true">{picture}</div>}
         <span className="ds-label pa-done-label">{label}</span>
         <Title className="pa-done-title">{title}</Title>
         {sub && <p className="pa-done-sub">{sub}</p>}

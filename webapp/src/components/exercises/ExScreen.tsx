@@ -19,10 +19,15 @@ export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphPlus, GlyphX } from '
 // Без backLabel подпись задаёт хост упражнений (exBackLabel.ts).
 // Герой (look, ExHead) и раскладки редизайна 2026-11 — по желанию экрана, без них DOM прежний:
 //  • hintBeforeField — на ≤900 подсказка (aside) между шапкой и полем, а не после «Сохранить»;
-//  • spread — разворот (SpreadLayout): на ≥1024 шапка и подсказка слева колонкой, форма справа.
+//  • spread — разворот (SpreadLayout): на ≥1024 шапка и подсказка слева колонкой, форма справа;
+//  • «самопомощь» у героя — наклейкой под кнопками (после foot) во всех раскладках: на 390 до
+//    первого поля остаются только шапка и лист (APP_2026-11.md, принцип 5); cautionAt="head"
+//    ставит её под лист, если экрану так нужно. Без look — полное предупреждение под шапкой.
 interface ExScreenProps extends ExHeadProps {
-  /** Предупреждение «самопомощь» под шапкой — только на первом экране. */
+  /** Предупреждение «самопомощь» — только на первом экране. */
   caution?: boolean;
+  /** Где стоит «самопомощь»: под шапкой или под кнопками; по умолчанию у героя — под кнопками. */
+  cautionAt?: 'head' | 'foot';
   onBack: () => void;
   backLabel?: string;
   aside?: ReactNode;
@@ -32,28 +37,32 @@ interface ExScreenProps extends ExHeadProps {
   spread?: boolean;
 }
 
-function ExBody({ aside, foot, children, hintBeforeField, spread, caution, ...rest }: Omit<ExScreenProps, 'onBack' | 'backLabel'>) {
-  const head = { ...rest, caution: caution && <TherapyCaution place="exercise_start" compact={rest.look !== undefined} /> };
+function ExBody({ aside, foot, children, hintBeforeField, spread, caution, cautionAt, ...rest }: Omit<ExScreenProps, 'onBack' | 'backLabel'>) {
+  const hero = rest.look !== undefined;
+  const warn = caution && <TherapyCaution place="exercise_start" compact={hero} />;
+  const atFoot = (cautionAt ?? (hero ? 'foot' : 'head')) === 'foot';
+  const head = <ExHead {...rest} caution={atFoot ? undefined : warn} />;
+  const main = <>{children}{foot}{atFoot && warn}</>;
   const side = aside && <aside className="ex2-aside">{aside}</aside>;
   if (spread) {
     return (
       <div className="ex2-body ex2-body--spread">
-        <SpreadLayout side={<><ExHead {...head} />{side}</>}>{children}{foot}</SpreadLayout>
+        <SpreadLayout side={<>{head}{side}</>}>{main}</SpreadLayout>
       </div>
     );
   }
   if (hintBeforeField && side) {
     return (
       <div className="ex2-body ex2-body--split">
-        <div className="ex2-head"><ExHead {...head} /></div>
+        <div className="ex2-head">{head}</div>
         {side}
-        <div className="ex2-main">{children}{foot}</div>
+        <div className="ex2-main">{main}</div>
       </div>
     );
   }
   return (
     <div className={'ex2-body' + (aside ? '' : ' ex2-body--single')}>
-      <div className="ex2-main"><ExHead {...head} />{children}{foot}</div>
+      <div className="ex2-main">{head}{main}</div>
       {side}
     </div>
   );
