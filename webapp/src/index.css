@@ -972,7 +972,7 @@ a { color: inherit; text-decoration: none; }
   }
   .page { overflow: visible; height: auto; }
   /* Полноэкранный лист-грид (.u-sheet-grid: шапка + .page — «История») стоит fixed с
-     overflow: hidden, и без своей прокрутки его низ недоступен (инцидент 2026-11-10,
+     overflow: hidden, и без своей прокрутки его низ недоступен (инцидент 2026-11-09,
      docs/INCIDENTS.md; держит e2e-browser/sheet-scroll.spec.ts). Тот же приём, что у
      .ex-screen .page (styles/ex-legacy.css). */
   .u-sheet-grid > .page { overflow-y: auto; }
