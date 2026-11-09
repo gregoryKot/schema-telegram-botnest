@@ -104,6 +104,9 @@ describe('CaseFlowScreen — три шага и итог', () => {
     expect(screen.getByText(SCENE)).toBeTruthy();
     expect(screen.getByText('Страшно, тревожно')).toBeTruthy();
     expect(screen.getByText('свернуть разговор')).toBeTruthy();
+    // лента разбора — в сцене-герое итога; у «Момент» второй ленты нет (ревью g2 r3)
+    expect(document.querySelector('.cq-summary--nosign')).not.toBeNull();
+    expect(document.querySelector('.cq-summary .cq-row-sign')).toBeNull();
     click(/^Минута дыхания 4.4.6$/); // дефисы неразрывные (CaseResultHelp)
     expect(screen.getByText('practice-breathing')).toBeTruthy();
     click('practice-breathing');

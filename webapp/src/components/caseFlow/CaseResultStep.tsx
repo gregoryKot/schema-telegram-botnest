@@ -45,7 +45,7 @@ export function CaseResultStep({
       lede={view.desc || undefined}
     >
       {view.need && <p className="cq-need">Что ему нужно: {view.need}</p>}
-      <CaseSummaryAside rows={view.rows} />
+      <CaseSummaryAside rows={view.rows} signs={false} />
       <CaseResultHelp />
       {failed && <CaseSaveError />}
 

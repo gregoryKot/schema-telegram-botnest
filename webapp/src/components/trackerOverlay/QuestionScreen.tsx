@@ -7,14 +7,14 @@ import { SpreadLayout } from '../paper/SpreadLayout';
 import { hueStyle } from '../../lib/tone';
 import { wordAnchorDescriptions } from '../../../../shared/src/needs/ratingWords';
 import { needLook } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 import type { NeedExtra, NeedId } from '../../../../shared/src/needs/types';
 
 /**
  * Один вопрос трекера (редизайн 2026-11, APP_2026-11.md, раздел b07): лист потребности —
  * её бумага и её знак крупно (EntitySheet, needLook), в нём «Потребность N из M», название,
- * что это и примеры; на компьютере лист слева колонкой, вопрос и пять ответов справа
- * (SpreadLayout), на телефоне лист сверху. Сбой сохранения (`alert`) стоит в колонке ответов,
- * над ними, — а не у края окна. Шаги потока — один и тот же лист, меняется только бумага и знак.
+ * что это и примеры; на компьютере лист слева колонкой, вопрос (glue) и пять ответов справа
+ * (SpreadLayout), на телефоне лист сверху. Сбой сохранения (`alert`) — в колонке ответов, над ними.
  */
 export function QuestionScreen({
   idx, total, name, needId,
@@ -59,7 +59,7 @@ export function QuestionScreen({
   return (
     <div className="tq-ask" style={hueStyle(hue)}>
       <SpreadLayout side={<><TrackerOriginNote eligible={showOriginNote} />{sheet}</>}>
-        <p className="tq-question">{data?.question ?? ''}</p>
+        <p className="tq-question">{glue(data?.question ?? '')}</p>
         {alert}
         <NeedScale
           value={value > 0 ? value : undefined}

@@ -123,7 +123,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       )}
       {activeNeed && (
         <NeedHistorySheet need={activeNeed} value={selectedRatings[activeNeed.id] ?? 0}
-          history={history} childhoodValue={childhoodRatings[activeNeed.id]}
+          history={history} selectedIdx={selectedIdx} childhoodValue={childhoodRatings[activeNeed.id]}
           onClose={() => setActiveNeed(null)} />
       )}
     </div>

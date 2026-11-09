@@ -25,8 +25,8 @@ describe('HistoryWeekView — «За 7 дней»', () => {
   it('линия из 7 точек, а не по всей загруженной истории', () => {
     const { container, getByText } = renderWeek(0);
     expect(getByText('За 7 дней')).toBeTruthy();
-    const points = container.querySelector('polyline')!.getAttribute('points')!.split(' ');
-    expect(points).toHaveLength(7);
+    const d = container.querySelector('.sd-spark-line')!.getAttribute('d')!;
+    expect(d.match(/[ML] /g)).toHaveLength(7);
   });
 
   it('маркер выбранного дня — HTML-точка справа, а не круг в растянутом svg', () => {

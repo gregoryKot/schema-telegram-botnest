@@ -8,6 +8,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { Celebration } from './Celebration';
 import { AddressFormContext } from '../utils/addressForm';
+import { needDataColor } from './needDataColor';
+import { NEED_ORDER } from '../../../shared/src/needs/types';
 
 beforeEach(() => {
   localStorage.setItem('reduce_motion', '1');
@@ -38,6 +40,14 @@ describe('Celebration — лист серии (живая бумага, b07)', (
     expect(band.querySelectorAll('.scn-shade > rect')).toHaveLength(4); // пять дней — четыре листа позади
     expect(band.querySelector('.sk-celebr-leaf')).toBeNull();
     expect(band.contains(screen.getByText('5'))).toBe(false); // число читается, а не прячется в декоре
+  });
+
+  // Ревью g2 r3: пять полосок «сегодняшнего листа» читаются как пять потребностей — цвета и порядок те же,
+  // что у столбиков «Готово» и линий «Истории» (needDataColor по NEED_ORDER), а не палитра лендинга.
+  it('полоски сегодняшнего листа — цвета данных потребностей в порядке NEED_ORDER', () => {
+    const { container } = renderCelebration({ streak: 5 });
+    const bars = [...container.querySelectorAll('.sk-celebr-band .scn-shade g rect[rx="10"]')];
+    expect(bars.map((b) => b.getAttribute('fill'))).toEqual(NEED_ORDER.map((id) => needDataColor(id)));
   });
 
   it('веха — персик и лист роста', () => {

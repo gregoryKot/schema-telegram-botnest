@@ -18,6 +18,8 @@ interface Props {
   need: Need;
   value: number;
   history: DayHistory[];
+  /** Выбранный в ленте день: неделя «Динамики» кончается им, как строка «Недели» в истории. */
+  selectedIdx?: number;
   childhoodValue?: number;
   onClose: () => void;
 }
@@ -26,8 +28,10 @@ interface Props {
 // потребности, что у вопроса трекера (её бумага и знак; на компьютере — колонкой разворота слева),
 // сразу под ним главное — направление за неделю, спарклайн во всю колонку и сравнение с детством
 // (NeedDynamics), ниже совет на бумаге потребности со знаком и теги. График — в широкой колонке,
-// а не под листом слева: в 440px неделя сжималась в пилу, а правая колонка оставалась пустой.
-export function NeedHistorySheet({ need, value, history, childhoodValue, onClose }: Props) {
+// а не под листом слева, где правая колонка оставалась пустой. «Пилу» давала не ширина колонки, а
+// вся загруженная история (~30 точек) под подписью «За 7 дней» (ревью g2 r3): окно — weekWindow
+// от выбранного дня, как у строки «Недели».
+export function NeedHistorySheet({ need, value, history, selectedIdx = 0, childhoodValue, onClose }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
@@ -57,7 +61,7 @@ export function NeedHistorySheet({ need, value, history, childhoodValue, onClose
       lede={data.explanation}
     >
       <div className="tk2-sheet" style={tone}>
-        <NeedDynamics needId={need.id} history={history} childhoodValue={childhoodValue} />
+        <NeedDynamics needId={need.id} history={history} selectedIdx={selectedIdx} childhoodValue={childhoodValue} />
         <div className="pp-paper tk2-tip-card">
           <div className="tk2-tip-head">
             <span className="ds-label">{tr('Попробуй сегодня', 'Попробуйте сегодня')}</span>

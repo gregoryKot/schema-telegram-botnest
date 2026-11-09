@@ -4,13 +4,13 @@ import { trackTherapyNudge } from './trackTherapyNudge';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import { useTherapyTarget } from './useTherapyTarget';
 import { Limits } from '../art/NeedArt';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/therapy-bridge.css';
 
 /** Заметное предупреждение на входе в упражнение или тест: самопомощь, глубже — терапия. Терапевту не показывается.
  *  compact — наклейка (редизайн 2026-11): знак рамки метода Limits строчного размера (row 44×24; в nav 24×14
- *  рамка с точкой читалась пятном) рядом с «Это самопомощь, не замена
- *  терапии.», ниже тише — пояснение со ссылкой в конце строки (ссылка не отрывается от текста, переносится
- *  только фраза), без акцентной полосы; место под кнопками выбирает экран (ExScreen у героя). Убрать ли
+ *  рамка с точкой читалась пятном) у первой фразы, ниже тише — пояснение (glue: тире не начинает строку) со ссылкой
+ *  в конце строки, без акцентной полосы; место под кнопками выбирает экран (ExScreen у героя). Убрать ли
  *  пояснение из наклейки — решение владельца (docs/design/APP_2026-11.md), до него текст на месте. */
 export function TherapyCaution({ place, compact }: { place: 'exercise_start' | 'test_start'; compact?: boolean }) {
   const t = useTherapyBridgeTexts();
@@ -37,13 +37,13 @@ export function TherapyCaution({ place, compact }: { place: 'exercise_start' | '
       {compact ? (
         <div className="th-caution th-caution--compact" role="note">
           <span className="th-caution-sign" aria-hidden="true"><Limits size="row" /></span>
-          <p className="th-caution-lead">{t.cautionLead}</p>
-          <p className="th-caution-body">{t.cautionBody} {link}</p>
+          <p className="th-caution-lead">{glue(t.cautionLead)}</p>
+          <p className="th-caution-body">{glue(t.cautionBody)} {link}</p>
         </div>
       ) : (
         <div className="th-caution" role="note">
-          <p className="th-caution-lead">{t.cautionLead}</p>
-          <p className="th-caution-body">{t.cautionBody}</p>
+          <p className="th-caution-lead">{glue(t.cautionLead)}</p>
+          <p className="th-caution-body">{glue(t.cautionBody)}</p>
           {link}
         </div>
       )}

@@ -176,6 +176,17 @@ describe('варианты сцен лендинга для кабинета', (
     expect(look(3)).toEqual(look());
   });
 
+  it('SceneCheckIn inks: цвета полосок по порядку; без них — палитра лендинга, как была', () => {
+    const fills = (inks?: readonly string[]) => {
+      const { container, unmount } = render(<SceneCheckIn days={1} inks={inks} />);
+      const out = [...container.querySelectorAll('.scn-shade g rect[rx="10"]')].map((r) => r.getAttribute('fill'));
+      unmount();
+      return out;
+    };
+    expect(fills(['a', 'b', 'c', 'd', 'e'])).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(fills()).toEqual([INK.moss, INK.amber, INK.clay, INK.slate, INK.plum]);
+  });
+
   it('SceneQuizMini: тот же веер без листа-подложки, окно по карточкам', () => {
     const { container: mini } = render(<SceneQuizMini hue={135} />);
     const { container: full } = render(<SceneQuiz hue={135} />);

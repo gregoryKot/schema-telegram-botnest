@@ -37,8 +37,7 @@ export default defineConfig({
   use: commonUse,
   // Проекты за одним CI-прогоном `npx playwright test` (nightly.yml, джоба
   // browser-smoke, без фильтра по проекту):
-  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts
-  //    лежит там же: ему нужен baseURL 4173).
+  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts тоже: ему нужен baseURL 4173).
   projects: [
     {
       name: 'webapp',
@@ -53,6 +52,7 @@ export default defineConfig({
         'desktop-layout.spec.ts',
         'asset-recovery.spec.ts',
         'today-fit.spec.ts',
+        'tracker-fit.spec.ts',
         'screen-customize.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },

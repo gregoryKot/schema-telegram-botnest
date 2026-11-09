@@ -39,10 +39,10 @@ const PAST = [
 /** Окно по фигурам для 0…4 листов позади (с тенью): веер шире — окно шире. */
 const CHECKIN_BOX = ['86 34 207 206', '61 31 232 209', '34 31 259 218', '10 31 283 229', '-8 31 301 240'] as const;
 
-/** Пять полосок на листе сегодняшнего дня, позади — листы прошлых дней. `days` — дней серии
- *  вместе с сегодняшним: 0 — один лист без полосок (ещё ничего), 1 — сегодняшний лист, n — за
- *  ним n − 1 листов (до четырёх, дальше счёт словами рядом); без `days` — вид лендинга (три). */
-export function SceneCheckIn({ hue = 135, days }: { hue?: number; days?: number }) {
+/** Пять полосок на листе сегодняшнего дня, позади — листы прошлых дней. `days` — дней серии с сегодняшним:
+ *  0 — лист без полосок, n — за ним n − 1 листов (до четырёх); без `days` — вид лендинга (три). `inks` —
+ *  цвета полосок по порядку (праздник серии: цвета данных потребностей); без них — палитра лендинга. */
+export function SceneCheckIn({ hue = 135, days, inks }: { hue?: number; days?: number; inks?: readonly string[] }) {
   const total = days === undefined ? 3 : Math.max(0, Math.floor(days));
   const n = Math.min(PAST.length, Math.max(0, total - 1));
   return (
@@ -54,7 +54,7 @@ export function SceneCheckIn({ hue = 135, days }: { hue?: number; days?: number 
         <g transform="rotate(4 186 134)">
           <rect x="96" y="44" width="182" height="180" rx="18" fill={INK.sheet} />
           {total > 0 && BARS.map((b, i) => (
-            <rect key={i} x={116 + i * 31} y={204 - b.h} width="20" height={b.h} rx="10" fill={b.fill} />
+            <rect key={i} x={116 + i * 31} y={204 - b.h} width="20" height={b.h} rx="10" fill={inks?.[i] ?? b.fill} />
           ))}
         </g>
       </Lift>

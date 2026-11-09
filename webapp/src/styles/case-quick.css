@@ -61,6 +61,8 @@
 .cq-summary-label { color: var(--text-sub); }
 .cq-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: start; }
 .cq-row-sign { grid-row: 1 / 3; display: inline-flex; padding-top: 2px; }
+/* Итог разбора: лента — в сцене-герое, у строк знака нет, колонки под него тоже. */
+.cq-summary--nosign .cq-row { grid-template-columns: minmax(0, 1fr); }
 .cq-row-label { font: 600 12px/1.4 var(--sans); letter-spacing: .02em; color: var(--text-sub); }
 .cq-row-text { font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
 /* В колонке разворота лист — под листом шалфея; на телефоне и планшете его нет: ответы — на итоге. */

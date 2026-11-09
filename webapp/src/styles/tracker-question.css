@@ -53,8 +53,8 @@
 .tq-examples-list li + li { margin-top: var(--space-4); }
 .tq-question { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text); text-wrap: pretty; }
 /* Лист вопроса уже 1024 — не полоса разворота (знак 56, Literata 22), а герой: знак потребности
-   высотой ~60 (слот 112, поле холста уходит в отступы — paper-app.css), Literata 30.
-   Шапка до первого ответа на 390 остаётся ~230px: описание короткое, примеры свёрнуты. */
+   высотой ~60 (слот 112, поле холста уходит в отступы — paper-app.css), Literata 30; описание короткое,
+   примеры свёрнуты. Телефон ≤560 — полосой, правила ниже. */
 @media (max-width: 1023px) {
   .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 16px; padding: 20px 20px 16px 22px; border-radius: 22px; }
   .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 30px; }
@@ -67,6 +67,37 @@
   .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 34px; }
 }
 @container pa-sheet (max-width: 330px) { .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 26px; } }
+/* Телефон (≤560): лист вопроса — полоса ~175px, а не герой ~243 (ревью g2 r3, принцип 5: шапка до первого ответа
+   на 390 ≤ ~230). Знак (~55 по высоте) не держит свой ряд над названием, а стоит справа на два ряда — надпись
+   и название; поля 16/20, «Например» без зазора над чертой. Цель — пятый ответ на 390×844 выше 830
+   (e2e-browser/tracker-fit.spec.ts). Планшет и разворот — прежние правила выше. */
+@media (max-width: 560px) {
+  .tq-ask { padding-top: var(--space-12); }
+  .tq-ask .pa-spread { gap: var(--space-16); }
+  .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
+  .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 8px; padding: 16px 20px 4px; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body { display: contents; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) .pa-sheet-label { grid-column: 1; grid-row: 1; align-self: end; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title {
+    grid-column: 1; grid-row: 2; align-self: start; margin-top: 2px; font-size: 26px;
+  }
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art {
+    grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 104px; margin: 0 -10px 0 0;
+  }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-desc {
+    grid-column: 1 / -1; margin-top: 8px; font-size: 14.5px; line-height: 1.45;
+  }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-examples { grid-column: 1 / -1; margin-top: 2px; }
+}
+/* Узкий телефон (поле листа ≤300 — окно ≤372): название 22, знак 88; ≤260 (окно 320) — название 20:
+   «Привязанность» встаёт рядом со знаком, а не вылезает за край. */
+@container pa-sheet (max-width: 300px) {
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { font-size: 22px; }
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 88px; }
+}
+@container pa-sheet (max-width: 260px) {
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { font-size: 20px; }
+}
 /* Разворот: лист слева, вопрос ступенью Literata над ответами справа. */
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .tq-ask { max-width: none; padding: var(--space-40) var(--space-32) 56px; }
@@ -77,7 +108,9 @@
    начинались на первом экране, а не за краем (QA мобильной версии 2026-11, З5). */
 @media (max-height: 700px) and (max-width: 1023px) {
   .tq-ask { padding-top: var(--space-12); }
+  .tq-ask { padding-top: var(--space-12); }
   .tq-ask .pa-spread { gap: var(--space-16); }
+  .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
   .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
 }
 .tq-more:focus-visible, .tq-btn:focus-visible, .tq-go-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -51,6 +51,16 @@ describe('QuestionScreen — лист потребности', () => {
     expect(alert.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  // Ревью g2 r3: вопрос шёл без glue — «…а не из / страха» оставлял «из» висеть в конце строки.
+  it('вопрос склеен: короткий предлог не висит в конце строки', () => {
+    render(<QuestionScreen idx={1} total={5} name="Автономия" needId="autonomy" hue={NEED_HUE.autonomy} value={0}
+      data={{ ...DATA, question: 'Действовать из своих ценностей, а не из страха?' }} showOriginNote={false}
+      onAnswer={vi.fn()} onMore={vi.fn()} />);
+    const q = document.querySelector('.tq-question')!.textContent!;
+    expect(q).toBe(glue('Действовать из своих ценностей, а не из страха?'));
+    expect(q).toContain('из\u00a0страха');
+  });
+
   it('шкала берёт цвет данных потребности', () => {
     renderQ();
     const group = screen.getByRole('group', { name: 'Спонтанность' }) as HTMLElement;

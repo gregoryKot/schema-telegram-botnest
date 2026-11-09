@@ -25,9 +25,9 @@ export function SparklineRow({ need, days, selectedRatings, onClick }: Props) {
       <span className="sd-spark-plot">
         <svg className="sd-spark-svg" viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none">
           <path d={g.area} className="sd-spark-area" />
-          <polyline points={g.points} className="sd-spark-line" />
+          <path d={g.line} className="sd-spark-line" />
         </svg>
-        <span className="sd-spark-dot" style={{ left: `${g.dot.left}%`, top: `${g.dot.top}%` }} />
+        {g.dot && <span className="sd-spark-dot" style={{ left: `${g.dot.left}%`, top: `${g.dot.top}%` }} />}
       </span>
       <span className="sd-spark-score">
         {score || '–'}

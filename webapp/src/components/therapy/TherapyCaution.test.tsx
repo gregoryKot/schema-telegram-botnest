@@ -47,7 +47,10 @@ describe('TherapyCaution', () => {
     expect(note.querySelector('.th-caution-sign svg.pp-art--row')).toBeTruthy();
     expect(screen.getByText('Это самопомощь, не замена терапии.').className).toBe('th-caution-lead');
     const body = note.querySelector('.th-caution-body')!;
-    expect(body.textContent).toMatch(/^Станет тяжело — остановись, это нормально\..* Поговорить →$/);
+    expect(body.textContent).toMatch(/^Станет тяжело\s— остановись, это нормально\..* Поговорить →$/);
+    // ревью g2 r3: склеено glue — тире не начинает строку, предлог не висит («с терапевтом»)
+    expect(body.textContent).toContain('тяжело\u00a0—');
+    expect(body.textContent).not.toMatch(/ с /);
     expect(body.lastElementChild).toBe(screen.getByRole('button', { name: 'Поговорить →' }));
     expect(track).toHaveBeenCalledWith('exercise_start', 'shown');
   });
