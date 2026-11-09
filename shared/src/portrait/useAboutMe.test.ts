@@ -262,3 +262,43 @@ describe('useAboutMe — сбои уходят в reportError, а не в кон
     expect(reportError).toHaveBeenCalledWith('getModeDiary failed');
   });
 });
+
+// Нечитаемый на сервере список (unreadableLists) приходит `[]` — это «не
+// прочиталось», а не «пусто»: «Портрет» берёт локальную копию, как «Мои
+// паттерны» (docs/open/frontend-ux.md). Прочитанный пустой — правда сервера.
+describe('useAboutMe — нечитаемый на сервере список не показывается пустым', () => {
+  const load = async (profile: Record<string, unknown>) => {
+    mockApi.getProfile.mockResolvedValue({ ...emptyProfile, ...profile });
+    for (const k of [
+      'getYsqHistory',
+      'getSchemaDiary',
+      'getModeDiary',
+      'getModeNotes',
+      'getPhraseChecks',
+    ] as const) {
+      mockApi[k].mockResolvedValue([]);
+    }
+    const { result } = renderHook(() => useAboutMe(api, { reportError }));
+    await waitFor(() => expect(result.current.portraitReady).toBe(true));
+    return result.current;
+  };
+  afterEach(() => localStorage.clear());
+
+  it('список в unreadableLists — из локальной копии', async () => {
+    localStorage.setItem('my_schema_ids', JSON.stringify(['defectiveness']));
+    localStorage.setItem('my_mode_ids', JSON.stringify(['vulnerable_child']));
+    const r = await load({
+      mySchemaIds: [],
+      myModeIds: [],
+      unreadableLists: ['mySchemaIds', 'myModeIds'],
+    });
+    expect(r.mySchemaIds).toEqual(['defectiveness']);
+    expect(r.myModeIds).toEqual(['vulnerable_child']);
+  });
+
+  it('контроль: прочитанный пустой список — пусто, локальная копия не всплывает', async () => {
+    localStorage.setItem('my_schema_ids', JSON.stringify(['defectiveness']));
+    const r = await load({ mySchemaIds: [], unreadableLists: [] });
+    expect(r.mySchemaIds).toEqual([]);
+  });
+});
