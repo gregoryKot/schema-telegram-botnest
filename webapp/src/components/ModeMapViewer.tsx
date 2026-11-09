@@ -1,7 +1,7 @@
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Panel, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEffect, useState } from 'react';
-import { api, type ModeMapMeta, type ModeMapFull } from '../api';
+import { api, reportClientError, type ModeMapMeta, type ModeMapFull } from '../api';
 import { NODE_TYPES } from './modeMapRegistry';
 import { EDGE_TYPES } from './modeMapRegistry';
 import { toFlowNodes, toFlowEdges } from './modeMapFlow';
@@ -9,6 +9,7 @@ import { ModeMapLegend } from './ModeMapLegend';
 import { ModeMapSkeleton } from './modeMap/ModeMapSkeleton';
 import { MMIcon } from './modeMapIcons';
 import { PaperEmpty } from './art/PaperEmpty';
+import { useTr } from '../utils/addressForm';
 import '../styles/sheet-modemap.css';
 
 function Canvas({ map }: { map: ModeMapFull }) {
@@ -41,24 +42,31 @@ function ViewBtn({ children, onClick, active }: { children: React.ReactNode; onC
   );
 }
 
+const reportViewerFailure = (what: string) => reportClientError({ message: `mode map viewer: ${what} load failed`, section: 'modeMap.viewer' });
+
 /** Read-only viewer of the client's own mode maps. */
 export function ModeMapViewer() {
+  const tr = useTr();
   const [maps, setMaps] = useState<ModeMapMeta[]>([]);
   const [active, setActive] = useState<ModeMapFull | null>(null);
   const [loading, setLoading] = useState(true);
+  // Сбой ≠ пусто: отказ списка рисовал «Карты режимов пока нет», отказ карты — пустой холст
+  // (промис карты шёл без catch — нашёл no-floating-promises, 2026-11).
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     api.listMyModeMaps()
-      .then(list => { setMaps(list); if (list.length) select(list[0].id); else setLoading(false); })
-      .catch(() => setLoading(false));
+      .then(list => { setMaps(list); if (list.length) void select(list[0].id); else setLoading(false); }) // select ловит сбой сам
+      .catch(() => { setFailed(true); setLoading(false); reportViewerFailure('list'); });
   }, []);
 
   async function select(id: number) {
     setLoading(true);
-    try { setActive(await api.getMyModeMap(id)); } finally { setLoading(false); }
+    setFailed(false);
+    try { setActive(await api.getMyModeMap(id)); } catch { setFailed(true); reportViewerFailure('map'); } finally { setLoading(false); }
   }
 
-  if (!loading && maps.length === 0) {
+  if (!loading && !failed && maps.length === 0) {
     return (
       <div className="mm2-center">
         <PaperEmpty title="Карты режимов пока нет">Терапевт создаёт её на сессии — она появится здесь.</PaperEmpty>
@@ -79,6 +87,11 @@ export function ModeMapViewer() {
           ))}
           </div>
         </div>
+      )}
+      {failed && (
+        <p role="alert" className="mm2-create-err">
+          {tr('Не удалось загрузить карту режимов. Проверь соединение и попробуй ещё раз', 'Не удалось загрузить карту режимов. Проверьте соединение и попробуйте ещё раз')}
+        </p>
       )}
       <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
         {loading && <div style={{ position: 'absolute', inset: 0 }}><ModeMapSkeleton /></div>}

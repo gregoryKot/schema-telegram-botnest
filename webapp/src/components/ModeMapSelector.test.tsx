@@ -367,3 +367,67 @@ describe('ModeMapSelector — загрузка', () => {
     expect(screen.getByText('Пока нет графических карт')).toBeTruthy();
   });
 });
+
+// Отказ сервера виден терапевту (2026-11): промисы открытия, переименования и
+// удаления шли без catch — no-floating-promises в webapp нашёл их, когда правило
+// включили. Раньше отказ был невиден: вкладка подсвечивала одну карту, а в
+// редакторе оставалась другая; удаление и переименование молча не происходили.
+describe('ModeMapSelector — отказ сервера виден', () => {
+  const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Действия с картой' }));
+  const pressed = () => screen.getAllByRole('button', { pressed: true }).map((b) => b.textContent);
+
+  it('карта не открылась — в редакторе прежняя, вкладка подсвечивает её же, на экране «Не получилось открыть»', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValueOnce(full(1, 'Карта А')).mockRejectedValueOnce(new Error('503'));
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    await act(async () => { fireEvent.click(screen.getByText('Карта Б')); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось открыть карту');
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:1:problem');
+    expect(pressed()).toEqual(['Карта А']);
+    // Повтор тапом по той же вкладке работает: она не «залипла» активной.
+    getModeMap.mockResolvedValueOnce(full(2, 'Карта Б'));
+    await act(async () => { fireEvent.click(screen.getByText('Карта Б')); });
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:2:problem');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('переименование отклонено — имя прежнее, поле с введённым текстом открыто, ошибка на экране', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Старое имя')]);
+    getModeMap.mockResolvedValue(full(1, 'Старое имя'));
+    updateModeMap.mockRejectedValue(new Error('500'));
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Переименовать' }));
+    const input = screen.getByDisplayValue('Старое имя');
+    fireEvent.change(input, { target: { value: 'Новое имя' } });
+    await act(async () => { fireEvent.keyDown(input, { key: 'Enter' }); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось переименовать карту');
+    expect(screen.getByDisplayValue('Новое имя')).toBeTruthy();
+  });
+
+  it('удаление отклонено — карта остаётся в списке и в редакторе, ошибка на экране', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValue(full(1, 'Карта А'));
+    deleteModeMap.mockRejectedValue(new Error('500'));
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
+    await act(async () => { fireEvent.click(within(screen.getByRole('dialog')).getByText('Удалить')); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось удалить карту');
+    expect(screen.getByText('Карта А')).toBeTruthy();
+    expect(screen.getByTestId('mm-editor-stub').textContent).toBe('editor:1:problem');
+  });
+
+  it('удалилась, а следующая не открылась — удалённая не возвращается в редактор', async () => {
+    listModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getModeMap.mockResolvedValueOnce(full(1, 'Карта А')).mockRejectedValueOnce(new Error('503'));
+    deleteModeMap.mockResolvedValue(undefined);
+    await act(async () => { render(<ModeMapSelector clientId={5} />); });
+    openMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Удалить карту' }));
+    await act(async () => { fireEvent.click(within(screen.getByRole('dialog')).getByText('Удалить')); });
+    expect(screen.getByRole('alert').textContent).toContain('Не получилось открыть карту');
+    expect(screen.queryByTestId('mm-editor-stub')).toBeNull();
+    expect(screen.queryByText('Карта А')).toBeNull();
+  });
+});

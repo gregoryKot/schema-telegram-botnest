@@ -23,7 +23,7 @@ import { TherapyBridgeCard } from '../components/therapy/TherapyBridgeCard';
 import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
-import { AllTasksOverlay } from './today/AllTasksOverlay';
+import { AllTasksOverlay, TaskSaveError } from './today/AllTasksOverlay';
 import { useExerciseStats } from './practice/useExerciseStats';
 import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
@@ -124,11 +124,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             <h3 className="ds-h2">От терапевта</h3>
             {therapistTasks.length > 0 && <span className="ds-sub">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
           </div>
-          {taskError && (
-            <div role="alert" className="cp-alert">
-              {tr('Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз', 'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз')}
-            </div>
-          )}
+          {taskError && <TaskSaveError className="cp-alert" />}
           <div className="cp-tasks">
             {therapistTasks.map(task => (
               <TaskRow key={task.id} task={task} mark compact={phone} cta="начать →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
@@ -190,7 +186,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       {showCustomize && <Suspense fallback={null}><ToolsCustomizeSheet tools={tools} onClose={() => setShowCustomize(false)} /></Suspense>}
       {showTaskCreate && (
         <TaskCreateSheet
-          onCreated={() => { setShowTaskCreate(false); afterCreate(onTasksChanged); }}
+          onCreated={() => { setShowTaskCreate(false); void afterCreate(onTasksChanged); /* сбой ловит сам: taskError */ }}
           onClose={() => setShowTaskCreate(false)}
         />
       )}
@@ -203,6 +199,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
           onOpen={launcher.openTask}
           onComplete={t => completeTask(t.id, onTasksChanged)}
           onAdd={() => setShowTaskCreate(true)}
+          error={taskError}
         />
       )}
     </div>

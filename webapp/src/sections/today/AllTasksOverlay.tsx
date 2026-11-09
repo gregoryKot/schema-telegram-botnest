@@ -7,6 +7,7 @@ import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { TaskRow } from '../practice/TaskRow';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskStatus } from '../../../../shared/src/tasks/taskStatus';
+import { useTr } from '../../utils/addressForm';
 
 interface Props {
   /** «Все задания» на «Сегодня», «Все цели» в «Практике». */
@@ -18,6 +19,8 @@ interface Props {
   onOpen: (task: UserTask) => void;
   onComplete: (task: UserTask) => void | Promise<unknown>;
   onAdd: () => void;
+  /** Отказ «Готово» или перечитывания после новой цели (useTaskActions.taskError). */
+  error?: boolean;
 }
 
 // Полный список заданий — один на «Сегодня» и «Практику» (раньше два оверлея:
@@ -27,13 +30,14 @@ interface Props {
 // задание, у «Своего задания» — «Готово»), статус — бейдж из shared/taskStatus.
 // Открыть задание и «+ Поставить цель» — сначала снять свою запись истории
 // (goBack(then)): трекер и дневники лежат ниже оверлея (z-index 80 < 200).
-export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, onComplete, onAdd }: Props) {
+export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, onComplete, onAdd, error = false }: Props) {
   const goBack = useHistorySheet(onClose);
   const phone = useIsMobile();
   // Местный день человека: с ним сравнивается срок, который поставил терапевт (№25).
   const today = todayStr();
   return (
     <OverlayFrame title={title} onBack={goBack}>
+      {error && <TaskSaveError className="sk-error" />}
       <div className="sk-list">
         {tasks.map(t => (
           <TaskRow
@@ -65,5 +69,15 @@ export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, on
         + Поставить цель
       </button>
     </OverlayFrame>
+  );
+}
+
+/** Отказ действия с заданием — одна строка на все экраны заданий: блок «От терапевта» и этот список. */
+export function TaskSaveError({ className }: { className: string }) {
+  const tr = useTr();
+  return (
+    <div role="alert" className={className}>
+      {tr('Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз', 'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз')}
+    </div>
   );
 }
