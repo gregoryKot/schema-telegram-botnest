@@ -169,6 +169,18 @@ describe('YsqService.deleteAllYsqData — итог, история и прогр
     expect(await svc.getYsqProgress(2n)).toEqual({ answers: [4], page: 2 });
   });
 
+  // Число стёртых попыток уходит в событие ysq_data_deleted (/stats).
+  it('возвращает число стёртых пройденных попыток; без итогов — 0', async () => {
+    const db = makeDb();
+    const svc = new YsqService(db);
+    await svc.saveYsqResult(1n, [1]);
+    await svc.saveYsqResult(1n, [2]);
+    await svc.saveYsqProgress(3n, [3], 1);
+
+    await expect(svc.deleteAllYsqData(1n)).resolves.toEqual({ attempts: 2 });
+    await expect(svc.deleteAllYsqData(3n)).resolves.toEqual({ attempts: 0 });
+  });
+
   it('три удаления идут одной транзакцией и каждое — по userId', async () => {
     const db = makeDb();
     const svc = new YsqService(db);

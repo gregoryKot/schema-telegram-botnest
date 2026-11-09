@@ -5,6 +5,10 @@ import {
   formatClientErrorMetrics,
 } from './client-error-metrics.format';
 import type { ClientErrorMetricsRow } from './client-error-metrics.row';
+import {
+  type AssetRecoveryMetrics,
+  formatAssetRecovery,
+} from './asset-recovery-metrics.format';
 
 // Счётчики поломок клиента для /stats (волна 9 щита покрытия,
 // docs/SHIELD_PROMPT.md): событие client_error пишет только
@@ -18,7 +22,27 @@ export class ClientErrorMetricsService {
 
   /** Готовый текстовый блок для /stats. */
   async render(): Promise<string> {
-    return formatClientErrorMetrics(await this.getMetrics());
+    const [m, recovered] = await Promise.all([
+      this.getMetrics(),
+      this.getAssetRecovery(),
+    ]);
+    return `${formatClientErrorMetrics(m)}\n${formatAssetRecovery(recovered)}`;
+  }
+
+  /** Сработавшие повторы asset-recovery.js за неделю. Событие анонимное
+   *  (POST /api/public-event): строки с userId — подделка через /api/event. */
+  async getAssetRecovery(): Promise<AssetRecoveryMetrics> {
+    const since7 = new Date(Date.now() - 7 * 86_400_000);
+    const [row] = await this.prisma.$queryRaw<
+      Array<{ css: bigint; js: bigint }>
+    >`
+      SELECT count(*) FILTER (WHERE meta->>'kind' = 'css')::bigint AS css,
+             count(*) FILTER (WHERE meta->>'kind' = 'js')::bigint AS js
+      FROM "AnalyticsEvent"
+      WHERE "userId" IS NULL
+        AND "name" = 'asset_recovered'
+        AND "createdAt" >= ${since7}`;
+    return { cssWeek: Number(row?.css ?? 0n), jsWeek: Number(row?.js ?? 0n) };
   }
 
   async getMetrics(): Promise<ClientErrorMetrics> {

@@ -86,6 +86,16 @@ describe('HistorySheet', () => {
     await waitFor(() => expect(screen.getByText(/трекер сегодня/)).toBeTruthy());
   });
 
+  // Сбой ≠ пусто (2026-11, useTrackerHistory): отказ загрузки рисовал пустую
+  // историю с призывом «Заполнить сегодня» — читалось как «записи пропали».
+  it('historyFailed — «Не удалось загрузить историю», а не пустая история', async () => {
+    renderSheet({ historyLoading: false, history: [], historyFailed: true });
+    expect(screen.getByRole('alert').textContent).toContain('Не удалось загрузить историю');
+    expect(screen.getByRole('alert').textContent).toContain('оценки на месте');
+    await act(async () => {});
+    expect(screen.queryByText(/трекер сегодня/)).toBeNull();
+  });
+
   it('«Оценить →» сначала закрывает лист, затем открывает трекер', async () => {
     // В одном такте go(-1) закрываемого и пуш открываемого запись трекера
     // терялась (Chromium, createBrowserRouter): трекер на экране, а «Назад»

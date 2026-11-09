@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { NoteSheet } from './NoteSheet';
-import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
 
 vi.mock('../api', () => ({
@@ -34,21 +34,12 @@ afterEach(() => {
   cleanup();
 });
 
-describe('NoteSheet — кризисная детекция', () => {
-  it('кризисная фраза в тексте заметки показывает CrisisCard', async () => {
-    await act(async () => { renderSheet(); });
-    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', async () => {
-    await act(async () => { renderSheet(); });
-    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...');
-    fireEvent.change(textarea, { target: { value: 'Сегодня был спокойный день' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
+describeCrisisField('webapp/src/components/NoteSheet.tsx', {
+  open: renderSheet,
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...'), {
+      target: { value: text },
+    }),
 });
 
 // Загрузка существующей заметки (read-after-write контур: сохранённое должно

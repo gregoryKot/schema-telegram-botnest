@@ -70,4 +70,15 @@ describe('createLoginTicketApi', () => {
       'HTTP 429',
     );
   });
+
+  it('код ответа едет полем status — по нему отчёт называет причину', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 503 });
+    await expect(
+      createLoginTicketApi('').start({
+        intent: 'login',
+        provider: 'telegram',
+        hostId: 'h',
+      }),
+    ).rejects.toMatchObject({ status: 503 });
+  });
 });

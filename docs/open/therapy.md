@@ -204,7 +204,7 @@
   там — настройки, а не материалы.
 
 **Частичное сохранение концептуализации: что осознанно не решено** (реестр, волна «терапия», 2026-11-08).
-Патч с `baseVersion` (`src/therapy/concept-save.ts`, `webapp/.../conceptSaveRequests.ts`, `rebaseConcept` в
+Патч с `baseVersion` (`src/therapy/concept-save.ts`, `webapp/src/components/therapist/conceptSaveRequests.ts`, `rebaseConcept` в
 `shared/src/therapy/conceptGraph/conceptPatch.ts`) не теряет правку другого окна в ДРУГОМ поле или связи, но:
 (1) одно и то же текстовое поле или список id, изменённые в двух окнах, решаются «последний победил» целиком;
 (2) досылка при закрытии вкладки (`leaving=true`) на 409 не перечитывает строку — правка теряется, если строку

@@ -6,7 +6,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaFlashcard } from './SchemaFlashcard';
+import { EXERCISE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { CRISIS_HOTLINE_DISPLAY } from '../utils/crisisMarkers';
+import { describeCrisisField } from '../test-support/crisisCardHarness';
 
 vi.mock('../api', () => ({
   api: {
@@ -118,30 +120,23 @@ describe('SchemaFlashcard — проход мастера и сохранени�
   });
 });
 
-describe('SchemaFlashcard — кризисная детекция (reflection)', () => {
-  it('кризисная фраза в отклике показывает CrisisCard', () => {
-    renderToResponseStep();
-    const textarea = screen.getByPlaceholderText('Что хочется сказать себе...');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', () => {
-    renderToResponseStep();
-    const textarea = screen.getByPlaceholderText('Что хочется сказать себе...');
-    fireEvent.change(textarea, { target: { value: 'Стало немного легче' } });
-    expect(screen.queryByRole('status')).toBeNull();
-  });
-
-  it('кризисная фраза в шаге действия тоже показывает CrisisCard', () => {
+describeCrisisField('webapp/src/components/flashcard/FlashcardSteps.tsx', {
+  label: 'отклик Здорового Взрослого',
+  open: renderToResponseStep,
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), { target: { value: text } }),
+});
+describeCrisisField('webapp/src/components/flashcard/FlashcardSteps.tsx', {
+  label: 'шаг действия',
+  open: () => {
     renderToResponseStep();
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
-    const textarea = screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-  });
+  },
+  enter: (text) =>
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), {
+      target: { value: text },
+    }),
 });
 
 describe('SchemaFlashcard — история карточек (read-after-write)', () => {
@@ -302,5 +297,19 @@ describe('SchemaFlashcard — серверная копия не доехала'
     });
     expect(screen.getByText('Сохранено')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+// Предел поля = `@MaxLength` FlashcardDto: без него длинный отклик уходил на
+// сервер и получал 400 (docs/open, «Поля упражнений без лимита»).
+describe('SchemaFlashcard — пределы полей', () => {
+  it('отклик и шаг несут предел DTO флешкарты', () => {
+    renderToResponseStep();
+    const reflection = screen.getByPlaceholderText('Что хочется сказать себе...') as HTMLTextAreaElement;
+    expect(reflection.maxLength).toBe(EXERCISE_TEXT_MAX);
+    fireEvent.click(screen.getByText('Дальше →'));
+    fireEvent.click(screen.getByText('Привязанность'));
+    const action = screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...') as HTMLTextAreaElement;
+    expect(action.maxLength).toBe(EXERCISE_TEXT_MAX);
   });
 });

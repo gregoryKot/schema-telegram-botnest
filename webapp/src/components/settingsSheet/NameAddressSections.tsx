@@ -49,7 +49,7 @@ export function AddressSection({ settings, patch }: { settings: UserSettings; pa
             const active = (settings.addressForm ?? 'ty') === form;
             return (
               <button key={form} className={`ds-seg-btn${active ? ' is-active' : ''}`}
-                onClick={() => { setAddressForm(form); patch({ addressForm: form }); }}
+                onClick={() => { setAddressForm(form); void patch({ addressForm: form }); /* patch ловит сбой сам: откат и «Не сохранилось» */ }}
               >{form === 'ty' ? 'На «ты»' : 'На «вы»'}</button>
             );
           })}

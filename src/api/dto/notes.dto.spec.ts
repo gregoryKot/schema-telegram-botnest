@@ -3,6 +3,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { SaveNoteDto, SchemaNoteDto, ModeNoteDto } from './notes.dto';
+import { NOTE_CARD_FIELD_MAX } from '../../utils/text-limits';
 
 async function errorsFor(
   cls: new () => object,
@@ -67,6 +68,20 @@ describe('SchemaNoteDto', () => {
         feelings: 'x'.repeat(3001),
       }),
     ).resolves.toContain('feelings');
+  });
+
+  // Поле карточки на сайте (FlashcardEx) получает maxLength из той же константы.
+  it('предел поля — NOTE_CARD_FIELD_MAX: на пределе проходит, на знак больше — отказ', async () => {
+    const body = (n: number) => ({
+      schemaId: 'abandonment',
+      reality: 'я'.repeat(n),
+    });
+    await expect(
+      errorsFor(SchemaNoteDto, body(NOTE_CARD_FIELD_MAX)),
+    ).resolves.toEqual([]);
+    await expect(
+      errorsFor(SchemaNoteDto, body(NOTE_CARD_FIELD_MAX + 1)),
+    ).resolves.toContain('reality');
   });
 });
 

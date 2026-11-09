@@ -16,9 +16,6 @@
   уже читает один `useAboutMe` (поднят в `ProfileSection`, флаг `diaries`). Не сделано: экран
   ждёт свой счётчик, а `portraitReady` ждёт ещё и `getProfile` — перевод счётчика на хук задержал
   бы профиль; нужен свой флаг готовности истории в `useAboutMe`.
-- **Хаб дневника на сайте: нет подписи «Последняя отметка · N дн. назад»** у строки
-  трекера. Нужна дата последней оценки из
-  `ratings`/истории в `DiarySection`; сейчас строка отдаёт только «что это и зачем».
 - **«Восстановить» версию на сайте сразу сохраняет** (автосохранение
   `patchConcept`). Это
   осознанно: на сайте нет кнопки «Сохранить», а прежняя версия остаётся в истории
@@ -75,14 +72,6 @@
   `NeedAdviceModal.tsx`, `concept/ConceptVersionHistory.tsx`, `shared/src/practices/StepFlowSiteBody.tsx`)
   и `.ex-btn`/`.ex-btn-ghost` (`NeedAdviceModal.tsx`): `NeedAdviceModal` и `ConceptVersionHistory` в ту
   же волну правила другая ветка, перевод на `ds-label`/`ds-btn--secondary` — следующим заходом.
-- **Браузерный смок PR-CI не гоняет, поэтому PR с новой разметкой его не видит.**
-  #746 перевёл шкалу трекера сайта на `NeedScale` (кнопки без текста, имя — aria-label
-  «N из 10»), а `e2e-browser/tracker-smoke.spec.ts` искал кнопку «7». Смок краснел
-  четыре ночи подряд, с 2026-10-17 по 2026-10-20 (issue `ci-alarm` #784). Селекторы
-  починены, но сам класс открыт: Playwright запускается только в `nightly.yml`
-  (`playwright.config.ts`: «в PR-CI не лезет»). Вариант — гонять `tracker-smoke` и
-  `crisis-smoke` в джобе `webapp` из `ci.yml` на уже собранном `webapp/dist`: это
-  примерно +1,5 мин (установка Chromium ≈45 с, прогон ≈15 с). Решает владелец.
 
 **Гейт оверлеев webapp — слепые зоны и долг** (`scripts/check-history-sheet.mjs`):
 - Гейт видит оверлей, только когда `position: fixed` и покрытие экрана стоят в

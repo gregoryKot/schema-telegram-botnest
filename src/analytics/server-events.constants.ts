@@ -46,6 +46,15 @@
 //   login_one_tap — вход через окно Google «Продолжить как…» (meta.outcome —
 //                   ONE_TAP_OUTCOMES, login-one-tap.constants.ts): пишет только
 //                   GoogleOneTapService, userId = null; /stats — блок входа.
+//   messenger_launch — сайт открыли в мессенджере и подпись сменилась на сессию
+//                   (meta.host + meta.platform, launch-platforms.constants.ts):
+//                   пишут ручки обмена telegram/webapp и max/webapp, userId = null
+//                   (тот же приём, что у auth_success); с клиента meta не
+//                   принимается. /stats — платформы в блоке «Вход в мессенджере».
+//   ysq_data_deleted — «Удалить результаты теста» (DELETE /api/ysq-data): пишет
+//                   YsqController после транзакции, meta.attempts — сколько
+//                   пройденных попыток стёрто. С клиента meta не принимается,
+//                   /stats («Удаление своих записей») считает строки с attempts.
 export const SERVER_EVENTS = [
   'auth_rejected',
   'auth_success',
@@ -58,4 +67,16 @@ export const SERVER_EVENTS = [
   'crawler_visits',
   'reminder_snoozed',
   'login_one_tap',
+  'messenger_launch',
+  'ysq_data_deleted',
 ] as const;
+
+// meta этих событий пишет только сервер: «Напомню через час» — бот, запуск в
+// мессенджере — ручка обмена подписи, стёртый тест схем — DELETE /api/ysq-data.
+// sanitizeMeta отбрасывает их meta с клиента целиком, /stats считает только
+// строки с meta — подделка через /api/event в отчёт не попадает.
+export const SERVER_META_EVENTS: ReadonlySet<string> = new Set([
+  'messenger_launch',
+  'reminder_snoozed',
+  'ysq_data_deleted',
+]);

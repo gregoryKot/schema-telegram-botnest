@@ -10,6 +10,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { collectSourceFiles } from './collect-source-files';
 import { ANALYTICS_EVENTS } from '../analytics/analytics.constants';
+import { ENTRY_DELETE_TYPES } from '../analytics/entry-delete.constants';
 
 const ROOT = join(__dirname, '..', '..');
 
@@ -180,9 +181,9 @@ const BACKEND_ONLY: Record<string, string> = {
     'trigger? }) (мост к терапевту); тот же приём, что у home_tile',
   entry_deleted:
     'шлётся через импортируемую константу ENTRY_DELETED_EVENT ' +
-    '(shared/src/share/analytics.ts), не строковым литералом — общий хук ' +
-    'useJourneyDelete (shared/src/journey/journeyDelete.ts) зовёт ' +
-    'api.trackEvent(ENTRY_DELETED_EVENT, { type }) сразу за успешным ' +
+    '(shared/src/share/analytics.ts), не строковым литералом — общий ' +
+    'trackEntryDeleted (shared/src/analytics/trackEntryDeleted.ts) зовут ' +
+    'useJourneyDelete, deleteDiaryEntry и PhraseHistoryCard сразу за успешным ' +
     'удалением записи; та же причина, что у share_card',
   notify_queue_tick:
     'серверное событие: пишет только крон очереди уведомлений бота ' +
@@ -235,6 +236,19 @@ const BACKEND_ONLY: Record<string, string> = {
     'токена окна Google (src/auth/google-one-tap.service.ts), userId = null. ' +
     'Исход (вошёл / второй фактор / не принят) знает только сервер; слать его ' +
     'с фронта значило бы открыть отчёт о входе для накрутки через /api/event',
+  messenger_launch:
+    'серверное событие: пишут ручки обмена подписи на сессию telegram/webapp ' +
+    'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
+    'userId = null. Фронт присылает только поле platform в теле обмена ' +
+    '(shared/src/host/launchPlatform.ts), отдельного trackEvent у него нет',
+  asset_recovered:
+    'шлёт webapp/public/asset-recovery.js (вне бандла, до входа) через ' +
+    "fetch('/api/public-event') — грепом по trackEvent( не найти; литералы " +
+    'скрипта сверяет src/analytics/asset-recovery.constants.spec.ts',
+  ysq_data_deleted:
+    'серверное событие: пишет YsqController после транзакции DELETE ' +
+    '/api/ysq-data (кнопка «Удалить результаты теста»). Сколько попыток ' +
+    'стёрто, знает только сервер; кликать на фронте второй раз нечего',
   home_screen_offer:
     'шлётся не литералом trackEvent(...), а через колбэк track(...) общего ' +
     'хука shared/src/host/useHomeScreenOffer.ts (мини-апп и карточка ' +
@@ -339,6 +353,34 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // константа PUSH_DENIED_EVENT, как entry_deleted.
     // 46 — login_one_tap (аудит 2026-10, окно Google One Tap): серверное —
     // исход проверки токена есть только у сервера, тот же приём userId = null.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(46);
+    // 47 — messenger_launch (аудит 2026-10, платформа запуска): серверное —
+    // пишет ручка обмена подписи, клиент шлёт только поле platform в её теле.
+    // 48 — ysq_data_deleted (стёртый тест схем): серверное — удаление делает
+    // HTTP-запрос, число стёртых попыток видно только в транзакции.
+    // 49 — asset_recovered (инцидент 2026-11-04, #928): шлёт скрипт из
+    // webapp/public, а не бандл; FRONTEND_DIRS его не видят по устройству.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(49);
+  });
+});
+
+// Тип удалённой записи (meta.type события entry_deleted): фронт держит union
+// EntryDeleteType, бэк — allow-list ENTRY_DELETE_TYPES. Значение, которого нет
+// на бэке, sanitizeMeta молча выбросит, и удаление пропадёт из /stats.
+// До 2026-11 тип события был тем же, что «удаляемо в Моём пути»
+// (JourneyDeletableType), и разбор фразы с дневником в него не помещались.
+describe('трипваер: EntryDeleteType фронта = ENTRY_DELETE_TYPES бэка (правило №4)', () => {
+  const FRONT = 'shared/src/share/analytics.ts';
+  const src = readFileSync(join(ROOT, FRONT), 'utf8');
+  const m = src.match(/export type EntryDeleteType\s*=([^;]+);/);
+  const front = m
+    ? [...m[1].matchAll(/['"]([a-z][a-z0-9_]*)['"]/g)].map((x) => x[1])
+    : [];
+
+  it('union EntryDeleteType найден и непуст', () => {
+    expect(front.length).toBeGreaterThan(0);
+  });
+
+  it('списки совпадают в обе стороны', () => {
+    expect([...front].sort()).toEqual([...ENTRY_DELETE_TYPES].sort());
   });
 });

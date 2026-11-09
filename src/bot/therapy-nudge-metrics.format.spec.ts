@@ -48,9 +48,21 @@ describe('formatTherapyNudge', () => {
         })),
       }),
     );
-    expect(out).toContain('Показали строку: на главной 12, после дневника 3.');
+    expect(out).toContain(
+      'Показали строку: внизу главной или «Ещё» (прежняя метка) 12, после дневника 3.',
+    );
     expect(out).not.toContain('Пока ничего');
     expect(out).not.toContain('home');
+  });
+
+  // Находка 2026-11-06: строка внизу «Ещё» шла с меткой home, и отчёт
+  // приписывал её показы главной. Новое место — more_bottom.
+  it('строка внизу «Ещё» подписана как «Ещё», а не главная', () => {
+    const out = formatTherapyNudge(
+      metrics({ shownByPlace: [{ place: 'more_bottom', count: 4 }] }),
+    );
+    expect(out).toContain('Показали строку: внизу «Ещё» 4.');
+    expect(out).not.toContain('главн');
   });
 
   it('новые места: подписи попадают в текст, id не торчат', () => {

@@ -10,6 +10,7 @@ import type { Request, Response } from 'express';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthService, TokenPair } from './auth.service';
 import { MaxProvider } from './providers/max.provider';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { SecurityLogService } from './security-log.service';
 import { CROSS_SITE_COOKIE, REFRESH_COOKIE } from './auth-http.util';
 import { INITDATA_EXPIRED_CODE } from '../api/initdata-alert';
@@ -64,12 +65,14 @@ function makeController() {
   const auth = makeAuth();
   const maxProvider = makeMaxProvider();
   const securityLog = makeSecurityLog();
+  const analytics = { track: jest.fn().mockResolvedValue(undefined) };
   const controller = new AuthMaxController(
     maxProvider as unknown as MaxProvider,
     auth as unknown as AuthService,
     securityLog as unknown as SecurityLogService,
+    analytics as unknown as AnalyticsService,
   );
-  return { controller, auth, maxProvider, securityLog };
+  return { controller, auth, maxProvider, securityLog, analytics };
 }
 
 describe('AuthMaxController.maxWebApp', () => {
@@ -171,6 +174,21 @@ describe('AuthMaxController.maxWebApp', () => {
     });
   });
 
+  // Аудит 2026-10: платформа запуска в мессенджере — строка в /stats.
+  it('успешный обмен пишет messenger_launch с платформой MAX, userId = null', async () => {
+    const { controller, maxProvider, analytics } = makeController();
+    maxProvider.verifyInitData.mockReturnValue({ providerId: '777' });
+    await controller.maxWebApp(
+      { initData: 'signed-payload', platform: 'desktop' },
+      makeReq(),
+      makeRes(),
+    );
+    expect(analytics.track).toHaveBeenCalledWith(null, 'messenger_launch', {
+      host: 'max',
+      platform: 'desktop',
+    });
+  });
+
   it('просроченная подпись → 401 с кодом initdata_expired, без алерта', async () => {
     const { controller, maxProvider, securityLog, auth } = makeController();
     maxProvider.verifyInitData.mockImplementation(() => {
@@ -188,7 +206,8 @@ describe('AuthMaxController.maxWebApp', () => {
   });
 
   it('поддельная подпись → 401 + securityLog.log("suspicious_initdata")', async () => {
-    const { controller, maxProvider, securityLog } = makeController();
+    const { controller, maxProvider, securityLog, analytics } =
+      makeController();
     maxProvider.verifyInitData.mockImplementation(() => {
       throw new Error('Invalid MAX initData signature');
     });
@@ -202,6 +221,8 @@ describe('AuthMaxController.maxWebApp', () => {
       'suspicious_initdata',
       expect.objectContaining({ ip: '6.6.6.6' }),
     );
+    // Запуска не было — платформа в /stats не засчитывается.
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 
   // Пока MAX_BOT_TOKEN не проставлен, КАЖДАЯ попытка входа из мессенджера

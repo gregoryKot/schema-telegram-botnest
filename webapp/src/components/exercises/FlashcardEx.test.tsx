@@ -6,7 +6,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEx, ModeEx } from './FlashcardEx';
-import { CRISIS_HOTLINE_DISPLAY } from '../../utils/crisisMarkers';
+import { describeCrisisField } from '../../test-support/crisisCardHarness';
+import { NOTE_CARD_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
 
 vi.mock('../../api', () => ({
   api: {
@@ -50,15 +51,13 @@ afterEach(() => {
   cleanup();
 });
 
-describe('FlashcardEx (SchemaEx) — кризисная детекция', () => {
-  it('кризисная фраза в ответе показывает CrisisCard', async () => {
-    renderSheet();
-    const textarea = await screen.findByRole('textbox');
-    fireEvent.change(textarea, { target: { value: 'не хочу жить' } });
-    expect(screen.getByRole('status')).toBeTruthy();
-    expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
-  });
+describeCrisisField('webapp/src/components/exercises/FlashcardEx.tsx', {
+  label: 'ответ на вопрос карточки схемы',
+  open: renderSheet,
+  enter: async (text) => fireEvent.change(await screen.findByRole('textbox'), { target: { value: text } }),
+});
 
+describe('FlashcardEx (SchemaEx) — вопросы', () => {
   // Аудит 2026-10, «Доступность»: тики вопросов были pressable()-div без имени.
   it('тик назван номером вопроса, ведёт к нему и помечает текущий', async () => {
     renderSheet();
@@ -68,13 +67,6 @@ describe('FlashcardEx (SchemaEx) — кризисная детекция', () =>
     expect(screen.getByText(/^Вопрос 2 из/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Вопрос 2' }).getAttribute('aria-current')).toBe('step');
     expect(screen.getByRole('button', { name: 'Вопрос 1' }).getAttribute('aria-current')).toBeNull();
-  });
-
-  it('нейтральный текст не показывает CrisisCard', async () => {
-    renderSheet();
-    const textarea = await screen.findByRole('textbox');
-    fireEvent.change(textarea, { target: { value: 'Обычно это молчание в переписке' } });
-    expect(screen.queryByRole('status')).toBeNull();
   });
 });
 
@@ -257,5 +249,16 @@ describe('FlashcardEx — вход без initialData грузит сохран�
     );
     expect(((await screen.findByRole('textbox')) as HTMLTextAreaElement).value).toBe('Когда не отвечают');
     expect(mockedApi.getModeNotes).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Предел поля = `@MaxLength` DTO (docs/open, «Поля упражнений без лимита»):
+// без него длинный текст уходил на сервер, получал 400, а экран писал
+// «проверь соединение» — повтор не помогал.
+describe('FlashcardEx — предел поля карточки', () => {
+  it('поле ответа несёт предел поля карточки схемы', async () => {
+    renderSheet();
+    const area = (await screen.findByRole('textbox')) as HTMLTextAreaElement;
+    expect(area.maxLength).toBe(NOTE_CARD_FIELD_MAX);
   });
 });

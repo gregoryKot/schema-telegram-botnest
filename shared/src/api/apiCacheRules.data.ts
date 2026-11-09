@@ -28,6 +28,9 @@ function diaryRules(kind: 'schema' | 'mode' | 'gratitude'): Rule[] {
   return [simple('POST', write, ...all), simple('DELETE', del, ...all)];
 }
 
+const SLOTS = { prefix: '/api/booking/slots' };
+const CLIENT_BOOKING = '/api/client-booking';
+
 export const RULES: Rule[] = [
   { method: 'DELETE', pattern: /^\/api\/user$/, clearAll: true },
 
@@ -119,7 +122,7 @@ export const RULES: Rule[] = [
   simple('POST', /^\/api\/mode-notes$/, '/api/mode-notes'),
   // Быстрые практики «Здесь и сейчас» (мини-апп).
   simple('POST', /^\/api\/practice-session$/, '/api/practice-sessions'),
-  // Дневниковые инструменты (apiExercises.ts, оба фронтенда).
+  // Дневниковые инструменты (webapp/src/api.ts).
   // Префикс — список и запись по id («Мой путь», R6) разом; письмо правится.
   simple('POST', /^\/api\/belief-checks$/, { prefix: '/api/belief-checks' }),
   simple('DELETE', /^\/api\/belief-checks\/\d+$/, {
@@ -134,5 +137,17 @@ export const RULES: Rule[] = [
   simple('POST', /^\/api\/phrase-checks$/, '/api/phrase-checks'),
   simple('DELETE', /^\/api\/phrase-checks\/\d+$/, '/api/phrase-checks'),
   simple('PATCH', /^\/api\/phrase-checks\/\d+$/, '/api/phrase-checks'),
+  // Запись на слот и её отмена меняют свободное время (booking.controller.ts):
+  // слоты — префиксом (в адресе пояс посетителя), свои брони клиента
+  // терапевта — обзор /api/client-booking (client-booking.controller.ts).
+  simple('POST', /^\/api\/booking\/book$/, SLOTS),
+  simple('POST', /^\/api\/booking\/cancel\/[^/]+$/, SLOTS, CLIENT_BOOKING),
+  simple('POST', /^\/api\/client-booking\/book$/, SLOTS, CLIENT_BOOKING),
+  // Отмена подписки по ссылке: статус по тому же токену — заново, не из кеша.
+  {
+    method: 'POST',
+    pattern: /^\/api\/subscription\/cancel\/([^/]+)$/,
+    targets: (m) => [`/api/subscription/by-token/${m[1]}`],
+  },
   ...THERAPY_RULES,
 ];

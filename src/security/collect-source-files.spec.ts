@@ -90,6 +90,16 @@ describe('collectSourceFiles', () => {
     expect(collect({ extensions: ['.ts', '.tsx'] })).toEqual(['View.tsx']);
   });
 
+  it('includeTests берёт тесты (сверка «у поля есть тест»), декларации — нет', () => {
+    write('View.tsx');
+    write('View.test.tsx');
+    write('globals.d.ts');
+
+    expect(
+      collect({ extensions: ['.ts', '.tsx'], includeTests: true }),
+    ).toEqual(['View.test.tsx', 'View.tsx']);
+  });
+
   it('фильтр по пути сужает выборку (напр. только контроллеры)', () => {
     write('api/health.controller.ts');
     write('api/health.service.ts');

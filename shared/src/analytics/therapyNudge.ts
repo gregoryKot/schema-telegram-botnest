@@ -5,13 +5,15 @@
 // значений синхронь оба).
 export const THERAPY_NUDGE_EVENT = 'therapy_nudge';
 
-/** Где показана строка/карточка/лист. */
+/** Где показана строка/карточка/лист. more_bottom — строка внизу «Ещё»
+ *  (HomeTherapyLine); до 2026-11-05 она стояла внизу главной и слала home. */
 export type TherapyNudgePlace =
   | 'home'
   | 'tracker_done'
   | 'case_done'
   | 'diary_done'
   | 'more'
+  | 'more_bottom'
   | 'signal_card'
   | 'home_card'
   | 'practice'

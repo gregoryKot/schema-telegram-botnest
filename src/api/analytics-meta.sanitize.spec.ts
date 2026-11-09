@@ -323,10 +323,17 @@ describe('sanitizeMeta', () => {
     expect(sanitizeMeta('entry_deleted', { type: 'flashcard' })).toEqual({
       type: 'flashcard',
     });
+    // С 2026-11 — и вне «Моего пути»: разбор фразы и запись дневника.
+    expect(sanitizeMeta('entry_deleted', { type: 'phrase_check' })).toEqual({
+      type: 'phrase_check',
+    });
+    expect(sanitizeMeta('entry_deleted', { type: 'diary' })).toEqual({
+      type: 'diary',
+    });
   });
 
   it('entry_deleted: неизвестный/отсутствующий type → отброшено', () => {
-    expect(sanitizeMeta('entry_deleted', { type: 'diary' })).toBeUndefined();
+    expect(sanitizeMeta('entry_deleted', { type: 'note' })).toBeUndefined();
     expect(sanitizeMeta('entry_deleted', {})).toBeUndefined();
   });
 
@@ -931,5 +938,23 @@ describe('reminder_snoozed', () => {
     expect(
       sanitizeMeta('reminder_snoozed', { quietShift: true }),
     ).toBeUndefined();
+  });
+});
+
+// Платформа запуска в мессенджере (аудит 2026-10): событие пишет только ручка
+// обмена подписи с userId = null; host/platform с клиента не проходят.
+describe('messenger_launch', () => {
+  it('host и platform с клиента отбрасываются — подделка не попадёт в /stats', () => {
+    expect(
+      sanitizeMeta('messenger_launch', { host: 'telegram', platform: 'ios' }),
+    ).toBeUndefined();
+  });
+});
+
+// Стёртый тест схем: attempts пишет только DELETE /api/ysq-data, с клиента
+// он не проходит — /stats считает только строки с attempts.
+describe('ysq_data_deleted', () => {
+  it('attempts с клиента отбрасывается — подделка не попадёт в /stats', () => {
+    expect(sanitizeMeta('ysq_data_deleted', { attempts: 3 })).toBeUndefined();
   });
 });

@@ -68,12 +68,47 @@ describe('EntryDeleteMetricsService.getMetrics', () => {
   });
 
   it('render() отдаёт готовый текстовый блок для /stats', async () => {
-    const { service } = build(
+    const { service, queryRaw } = build(
       [{ deleted: 9n, users: 4n }],
       [{ type: 'flashcard', c: 9n }],
     );
-    await expect(service.render()).resolves.toContain(
-      'Удалили записей: 9 · людей: 4',
-    );
+    queryRaw.mockResolvedValueOnce([{ deleted: 2n, users: 2n, completed: 1n }]);
+    const text = await service.render();
+    expect(text).toContain('Удалили записей: 9 · людей: 4');
+    expect(text).toContain('Стёрли результаты теста схем: 2 раза · людей: 2');
+  });
+});
+
+describe('EntryDeleteMetricsService.getYsq', () => {
+  it('маппит bigint, пустой результат — нули', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([{ deleted: 3n, users: 2n, completed: 1n }])
+      .mockResolvedValueOnce([]);
+    const service = new EntryDeleteMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    await expect(service.getYsq()).resolves.toEqual({
+      deleted30: 3,
+      users30: 2,
+      completedUsers30: 1,
+    });
+    await expect(service.getYsq()).resolves.toEqual({
+      deleted30: 0,
+      users30: 0,
+      completedUsers30: 0,
+    });
+  });
+
+  // Подделка через /api/event приходит без attempts (sanitizeMeta его режет).
+  it('считает только строки ysq_data_deleted с attempts', async () => {
+    const queryRaw = jest.fn().mockResolvedValueOnce([]);
+    const service = new EntryDeleteMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    await service.getYsq();
+    const sql = (queryRaw.mock.calls[0][0] as string[]).join('?');
+    expect(sql).toContain(`"name" = 'ysq_data_deleted'`);
+    expect(sql).toContain(`"meta"->>'attempts' IS NOT NULL`);
   });
 });

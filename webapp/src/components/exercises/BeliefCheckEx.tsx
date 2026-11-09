@@ -1,12 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
-import {
-  ExScreen,
-  StepsBar,
-  GlyphArrowLeft,
-  GlyphArrowRight,
-  GlyphCheck,
-} from './ExScreen';
+import { ExScreen, StepsBar, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { buildSideHints } from './beliefCheck/sideHints';
 import { EviList } from './beliefCheck/EviList';
@@ -18,6 +12,8 @@ import { hueStyle } from '../../lib/tone';
 import { HUE_STRAIN, HUE_CARE } from './exHue';
 import { useBeliefCheckForm } from '../../../../shared/src/beliefCheck/useBeliefCheckForm';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 const STEPS = [
   'Убеждение',
@@ -25,7 +21,6 @@ const STEPS = [
   'Доказательства против',
   'Переформулировка',
 ];
-
 
 export function BeliefCheckEx({
   onBack,
@@ -151,7 +146,8 @@ export function BeliefCheckEx({
                 Одно убеждение за раз. Та самая фраза, которая повторяется в
                 голове.
               </p>
-              <textarea
+              <LimitedTextarea
+                max={EXERCISE_TEXT_MAX}
                 ref={beliefRef}
                 className="ds-textarea"
                 rows={3}
@@ -287,7 +283,8 @@ export function BeliefCheckEx({
               ))}
             </div>
           </div>
-          <textarea
+          <LimitedTextarea
+            max={EXERCISE_TEXT_MAX}
             ref={reframeRef}
             className="ds-textarea"
             value={reframe}

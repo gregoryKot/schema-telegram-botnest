@@ -27,7 +27,7 @@
 | check-dead-files.mjs | файл без нетестовых потребителей (мёртвый код) | `scripts/dead-files-baseline.json` | да | checks |
 | check-deploy-lag.mjs | образ на проде старее последнего коммита main | — | нет | prod-smoke |
 | check-deploy-paths.mjs | рассинхрон путей Dockerfile, .dockerignore, amvera.yml | — | нет | checks |
-| check-doc-refs.mjs | путь в обратных кавычках `CLAUDE.md`, `docs/SECURITY.md`, `docs/README.md`, `.claude/rules/*.md`, которого нет в дереве (маски и блоки кода не сверяются) | `scripts/doc-refs-baseline.json` | нет | checks |
+| check-doc-refs.mjs | путь в обратных кавычках `CLAUDE.md`, `docs/SECURITY.md`, `docs/README.md`, `.claude/rules/*.md`, карты (`docs/ARCHITECTURE.md`, `docs/architecture/*.md`) и реестра `docs/open/*.md`, которого нет в дереве (маски и блоки кода не сверяются) | `scripts/doc-refs-baseline.json` | нет | checks |
 | check-dto-string-bounds.mjs | строковое поле DTO без верхней границы длины | `scripts/dto-string-bounds-baseline.json` | нет | checks |
 | check-e2e-in-ci.mjs | `test/*.e2e-spec.ts`, который не запускается ни одним шагом workflow | — | нет | checks |
 | check-e2e-stop-cron.mjs | тест поднимает AppModule без `stopCronJobs(app)` после `app.init()` — настоящие `@Cron` тикают посреди спека | — | нет | checks |

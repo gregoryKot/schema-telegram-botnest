@@ -18,11 +18,13 @@ import { installFlowTestPolyfills } from '../test-support/renderWithFlow';
 
 const listMyModeMaps = vi.fn();
 const getMyModeMap = vi.fn();
+const reportClientError = vi.fn();
 vi.mock('../api', () => ({
   api: {
     listMyModeMaps: (...a: unknown[]) => listMyModeMaps(...a),
     getMyModeMap: (...a: unknown[]) => getMyModeMap(...a),
   },
+  reportClientError: (...a: unknown[]) => reportClientError(...a),
 }));
 
 function meta(id: number, title: string): ModeMapMeta {
@@ -159,5 +161,39 @@ describe('ModeMapViewer — легенда', () => {
     expect(screen.getByText('Легенда')).toBeTruthy();
     fireEvent.click(legendBtn);
     expect(screen.queryByText('Легенда')).toBeNull();
+  });
+});
+
+// Сбой ≠ пусто (2026-11): отказ списка рисовал «Карты режимов пока нет», а
+// промис карты шёл без catch (нашёл no-floating-promises) — пустой холст и
+// unhandled rejection. Теперь «не удалось загрузить» на экране и отчёт наверх.
+describe('ModeMapViewer — отказ сервера', () => {
+  it('список карт не загрузился — «Не удалось загрузить», а не «Карты режимов пока нет»; отчёт ушёл', async () => {
+    listMyModeMaps.mockRejectedValue(new Error('503'));
+    await act(async () => {
+      render(<ModeMapViewer />);
+    });
+    expect(screen.getByRole('alert').textContent).toContain('Не удалось загрузить карту режимов');
+    expect(screen.queryByText('Карты режимов пока нет')).toBeNull();
+    expect(screen.queryByTestId('mm-skeleton')).toBeNull();
+    expect(reportClientError).toHaveBeenCalledWith(expect.objectContaining({ section: 'modeMap.viewer' }));
+  });
+
+  it('карта не загрузилась — ошибка на экране, без вечного силуэта; повтор тапом по вкладке её открывает', async () => {
+    listMyModeMaps.mockResolvedValue([meta(1, 'Карта А'), meta(2, 'Карта Б')]);
+    getMyModeMap.mockRejectedValueOnce(new Error('503'));
+    await act(async () => {
+      render(<ModeMapViewer />);
+    });
+    expect(screen.getByRole('alert').textContent).toContain('Не удалось загрузить карту режимов');
+    expect(screen.queryByTestId('mm-skeleton')).toBeNull();
+    expect(reportClientError).toHaveBeenCalledTimes(1);
+
+    getMyModeMap.mockResolvedValueOnce(full(1, 'Карта А'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Карта А'));
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Триггер')).toBeTruthy();
   });
 });

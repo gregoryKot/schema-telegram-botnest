@@ -34,6 +34,7 @@ import { EmailTokenService } from './email-token.service';
 import { REFRESH_COOKIE } from './auth-http.util';
 import { CallerIdentityService } from './caller-identity';
 import { TotpService } from './totp.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { LinkSessionRequiredException } from './link-session-required.exception';
 import { hashToken } from './email.util';
 
@@ -249,6 +250,7 @@ function makeController(
     verifyCode: jest.fn().mockResolvedValue(opts.codeOk ?? false),
   };
   const notice = { linked: jest.fn(), notify: jest.fn() };
+  const analytics = { track: jest.fn().mockResolvedValue(undefined) };
   const controller = new AuthAccountController(
     auth as unknown as AuthService,
     config,
@@ -263,8 +265,10 @@ function makeController(
       securityLog as unknown as SecurityLogService,
     ),
     notice as unknown as SecurityNoticeService,
+    analytics as unknown as AnalyticsService,
   );
   return {
+    analytics,
     totp,
     controller,
     auth,
@@ -618,6 +622,64 @@ describe('AuthAccountController.telegramWebApp', () => {
       FAKE_TOKENS.refreshToken,
       expect.objectContaining({ sameSite: 'none' }),
     );
+  });
+
+  // Аудит 2026-10: платформа запуска (tgWebAppPlatform) не писалась, и тихую
+  // поломку одной платформы по /stats было не увидеть.
+  it('успешный обмен пишет messenger_launch с платформой, userId = null', async () => {
+    const { controller, analytics } = makeController();
+    await controller.telegramWebApp(
+      { initData: 'init-data', platform: 'weba' },
+      makeReq(),
+      makeRes(),
+    );
+    expect(analytics.track).toHaveBeenCalledWith(null, 'messenger_launch', {
+      host: 'telegram',
+      platform: 'weba',
+    });
+  });
+
+  it('незнакомая или пустая платформа пишется как other, вход не падает', async () => {
+    const { controller, analytics } = makeController();
+    await controller.telegramWebApp(
+      { initData: 'init-data', platform: 'tizen<script>' },
+      makeReq(),
+      makeRes(),
+    );
+    await controller.telegramWebApp(
+      { initData: 'init-data' },
+      makeReq(),
+      makeRes(),
+    );
+    expect(analytics.track).toHaveBeenNthCalledWith(
+      1,
+      null,
+      'messenger_launch',
+      {
+        host: 'telegram',
+        platform: 'other',
+      },
+    );
+    expect(analytics.track).toHaveBeenNthCalledWith(
+      2,
+      null,
+      'messenger_launch',
+      {
+        host: 'telegram',
+        platform: 'other',
+      },
+    );
+  });
+
+  it('отказ в подписи — запуска нет: событие не пишется', async () => {
+    const { controller, auth, analytics } = makeController();
+    auth.verifyTelegramWebAppData.mockImplementation(() => {
+      throw new UnauthorizedException('bad');
+    });
+    await expect(
+      controller.telegramWebApp({ initData: 'forged' }, makeReq(), makeRes()),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(analytics.track).not.toHaveBeenCalled();
   });
 });
 

@@ -1,4 +1,7 @@
 {
+  "webapp/src/components/appShell/useTrackerHistory.ts::setHistoryFailed": {
+    "status": "reports"
+  },
   "webapp/src/components/booking/BookingCancelControl.tsx::setErrorText": {
     "status": "reports"
   },
@@ -35,6 +38,10 @@
   "webapp/src/components/exercises/PhraseCheckEx.tsx::setSaveError": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); черновик упражнения не теряется"
+  },
+  "webapp/src/components/modeMap/CustomModesPalette.tsx::setFailed": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст рядом с формой или списком, палитра рабочая, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); введённое название остаётся в форме"
   },
   "webapp/src/components/modeMap/useAppendQueue.ts::setStatus": {
     "status": "reports"

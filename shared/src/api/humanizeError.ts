@@ -41,7 +41,7 @@ export function humanizeResponseError(
 
 // Статус — полем ошибки (`ApiError` сайта, `HttpStatusError` оценки): shared
 // не знает классов клиента, поэтому читает поле, а не instanceof.
-function errorStatus(err: unknown): number | undefined {
+export function errorStatus(err: unknown): number | undefined {
   const status =
     err instanceof Error ? (err as { status?: unknown }).status : undefined;
   return typeof status === 'number' ? status : undefined;

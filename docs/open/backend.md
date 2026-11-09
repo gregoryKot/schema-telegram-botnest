@@ -168,14 +168,6 @@
   Нужно письмо со ссылкой управления (или управление по сессии).
   [Находка](../AUDIT_2026-10_FINDINGS.md#деньги-и-заявки): «Отмена подписки на
   сайте глотает отказ».
-- Отчёты фронта об ошибках несут только имя источника, без причины:
-  `webapp/src/components/appShell/useBootstrapLoad.ts` шлёт
-  `appshell bootstrap fail: <имена>`, `shared/src/auth/useLoginTicket.ts` —
-  постоянное `login ticket start failed`. Код ответа и тип сбоя (сеть, 429,
-  5xx, разбор JSON) никуда не попадают, даже в лог: разбор 2026-10-03
-  (`docs/INCIDENTS.md`, пустое тело на `null`) потребовал чтения кода. Путь —
-  структурная причина из allow-list (тип + числовой статус), не текст
-  исключения (инвариант H0/H6 `src/api/client-errors.controller.ts`).
 - **Карта режимов на потолке счётчиков DTO с длинными заметками всё ещё даёт 413
   — осознанно.** Каждая строка узла и связи ограничена `MODE_MAP_NODE_TEXT_MAX`
   (`src/therapy/dto/strings-within.ts`, `maxLength` в редакторе карты), но
@@ -184,48 +176,19 @@
   Обычная карта на 30 узлов с заметками укладывается с запасом; автосохранение
   на 413 называет причину — «текст слишком длинный» (`webapp/src/components/useModeMapAutosave.ts`).
   Общий потолок не поднимать — разбор в `src/infra/body-limit.ts`.
-- **Поля упражнений без клиентского лимита врут про причину отказа на длинном
-  тексте.** 413 (тело больше 256 КБ) теперь разбирает общий маппер
-  (`shared/src/api/humanizeError.ts`, `TOO_LARGE_TEXT`; строка статуса —
-  `saveFailureText` в `shared/src/therapy/SaveStatusLine.tsx`, концептуализация
-  и карта режимов). Но реальный край у письма, безопасного места, карточки-флешкарты,
-  проверки убеждения и фразы — не 413, а 400 от `@MaxLength(10000)`/`TEXT_MAX`
-  (`src/api/dto/tools.dto.ts`): `<textarea>` без `maxLength`
-  (`webapp/src/components/exercises/LetterEx.tsx`, `FlashcardEx.tsx`,
-  `PhraseCheckEx.tsx`, `BeliefCheckEx.tsx`, `flashcard/FlashcardSteps.tsx`; `<input>`
-  в `SafePlaceEx.tsx`), экран письма и места пишет «Проверь соединение», повтор не поможет. Закрыть: `LimitedTextarea` с
-  пределом из `shared/src/limits/textLimits.ts` (как у дневников, `DIARY_FIELD_MAX`).
-- Добивание `no-unsafe-*` в проде (храповик не даёт расти).
 - Удаление мёртвой колонки `User.deletedAt` — ждёт проверки прод-данных.
-- Таяние долга `check-color-drift.mjs`: 44 литерала (сверка 2026-11-05,
-  `scripts/color-drift-baseline.json`). Брать ролями, а не файлами.
-
-**Удаление всех данных теста схем не пишет событие аналитики** (осознанно, 2026-10-24):
-`DELETE /api/ysq-data` (`src/api/ysq.controller.ts`, кнопка «Удалить результаты теста»)
-события в `ANALYTICS_EVENTS` не заводит: кнопка существовала и раньше, правило №8 — про
-новую фичу. Следствие: воронка теста в `/stats` (`src/bot/ysq-funnel-metrics.ts`) считает
-по таблицам, которые кнопка стирает, и «не дошёл» там неотличим от «дошёл и стёр».
-Понадобится «сколько людей стёрли тест» — событие `ysq_data_deleted` по образцу
-`data_export` (константа, ветка `sanitizeMeta`, строка в `/stats` с тестом пустой БД).
-
-**«Мост к терапевту» в `/stats`: место `home` подписано «на главной», а строка живёт в «Ещё»**
-(находка 2026-11-06, PR про строку клиенту с терапевтом): `HomeTherapyLine` с `place="home"` с 2026-11-05
-стоит внизу «Ещё» (`webapp/src/sections/MoreSection.tsx`, шапка `webapp/src/sections/more/HomeTherapyLine.tsx`),
-а `PLACE_LABELS.home` в `src/bot/therapy-nudge-metrics.format.ts` — «на главной»; рядом `more` — «в «Ещё»»
-(строка «Поговорить с кем-то»). Отчёт приписывает показы главной. Не правлено в том PR: смена подписи
-меняет смысл старых чисел за 30 дней, решить — переименовать подпись или завести новое место.
-
-**Удаление прошлого разбора фразы не пишет событие аналитики** (осознанно, 2026-11-06):
-кнопка в `webapp/src/components/exercises/phraseCheckEx/PhraseHistoryCard.tsx` (общий
-`DeleteBtn` дневника; удаление записей дневника события тоже не пишет). Готовое
-`entry_deleted` не подходит без переделки: `ENTRY_DELETE_TYPES`
-(`src/analytics/entry-delete.constants.ts`) сверен с `JourneyDeletableType` «Моего пути»
-(`src/security/analytics-sync.invariants.spec.ts`), а разбор фразы в «Моём пути» не
-удаляется. Понадобится «находят ли удаление» — развести тип события и тип «Моего пути»,
-добавить `phrase_check` и `diary` с подписями в `src/bot/entry-delete-metrics.format.ts`.
+- Таяние долга `check-color-drift.mjs`: 19 литералов в 8 файлах (сверка 2026-11-08,
+  `scripts/color-drift-baseline.json`; админка и `indexColor` переведены на токены). Остаток по ролям:
+  визитка (`webapp/src/pages/LandingPage.tsx`, `landing/ContentSections.tsx`, `landing-kit-hooks.ts`,
+  `landing/constants.ts` — свой стиль, тёмная секция без токенов, решение владельца 2026-10-16 «лендинг и
+  визитка в старом виде»); цвета групп режимов (`shared/src/flashcard/modes.ts`) уходят в картинку шаринга
+  (canvas, `ModeShareButton`) — нужна пара `css`/`hex`, как в `journeyMeta.ts`; `theme-color` браузера
+  (`webapp/src/utils/theme.ts`) и запасной фон экспорта карты (`useModeMapExport.ts`) — значения вне CSS;
+  тень карточки статьи (`ArticlesPage.tsx`, `<style>`). Брать ролями, а не файлами.
 
 **Остатки мини-аппа для старых клиентов** (удалён, #908):
 - **`source: 'miniapp'` в отчёте об ошибках клиента.** `src/api/dto/client-error.dto.ts` (`@IsIn(['webapp','miniapp'])`) и строка «приложение в мессенджере» в блоке ошибок `/stats` (`src/bot/client-error-metrics.*`) оставлены: открытое до удаления окно мини-аппа ещё может прислать отчёт. Новых источников нет — через месяц-два после удаления убрать значение и строку вместе со спеками и `test/raw-sql-live-stats.e2e-spec.ts`.
+- **Блок «Вход в мессенджере» в `/stats` считает путь мини-аппа** (находка 2026-11-08). Отказы `auth_rejected` и успехи `auth_success` с host `telegram`/`max` пишет `TelegramAuthGuard` по заголовкам `x-telegram-init-data`/`x-max-init-data` (`src/api/telegram-auth.guard.ts`, `src/api/init-data-paths.ts`), а сайт их не шлёт: `webapp/src/apiClient.ts` ходит только с `Authorization: Bearer`, подпись меняется на сессию в `POST /api/auth/telegram/webapp` и `/api/auth/max/webapp`, чьи отказы в аналитику не пишутся (только `securityLog` через `rejectInitData`). Итог: отказы в блоке — только старые клиенты, «успешных входов» — все Bearer-сессии `web`, включая браузер. Запуски по платформам (`messenger_launch`) уже считают удачный обмен; не хватает отказов обмена (просрочка, подделка) — событие с причиной из ручек обмена и пересборка блока вокруг пары «обмен прошёл / не прошёл».
 
 **Роуты без вызова с сайта** (бывшие записи гейта паритета `check-feature-parity`, удалён вместе с мини-аппом, #908; сверка 2026-11-04, [#908](https://github.com/gregorykot/schema-telegram-botnest/issues/908)). Сайт их не ждёт; каждый решается отдельным PR — удалить или подключить:
 - **Таблица `DiaryDraft` без писателя** (ручки `/api/drafts*` удалены; черновики — в localStorage, `shared/src/utils/drafts.ts`). Таблица осталась — DROP после `SELECT count(*) FROM "DiaryDraft"` на проде (решение владельца: в строках может лежать текст черновиков). До тех пор модель в реестрах (`USER_DATA_TABLES`, `USER_OWNED_TABLES`, `UNIQUE_RULES`, экспорт, шифрование, ротация `TARGETS`) — удаление аккаунта и слияние строки чистят/переносят. DROP — одной миграцией вместе с выносом из реестров.
@@ -233,9 +196,6 @@
 - **`GET /health`** остаётся: это HEALTHCHECK в Docker, не долг.
 
 **Перекос ассетов при выкладке — что не сделано и что не выяснено** (инцидент 2026-11-04, #928):
-- **Сработавшие повторы `asset-recovery.js` не считает никто.** Отчёт (секция `assets`,
-  строка «Файлы сайта не загрузились» в `/stats`) уходит из `webapp/public/asset-recovery.js`,
-  только когда восстановление не помогло; сколько выкладок задело людей без последствий — не видно.
 - **Файлы прошлой сборки в образе не держим.** Новый контейнер отвечал бы на старые хеши
   файлом, а не 404: страница, загруженная до окна выкладки, и давно открытые вкладки
   дотягивали бы ленивые чанки и повторённый CSS без перезагрузки. Amvera собирает образ из

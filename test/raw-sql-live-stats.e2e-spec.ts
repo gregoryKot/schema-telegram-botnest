@@ -78,11 +78,15 @@ const USER_EVENTS: Array<{ name: string; meta?: Record<string, unknown> }> = [
   { name: 'data_export' },
   { name: 'home_screen_offer', meta: { via: 'banner' } },
   { name: 'entry_deleted', meta: { type: 'belief_check' } },
+  // Стёртый тест схем: приведение meta->>'attempts' к int в FILTER.
+  { name: 'ysq_data_deleted', meta: { attempts: 2 } },
 ];
 // Серверные/анонимные строки (userId IS NULL) — вход, поломки клиента, лиды.
 const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'auth_rejected', meta: { host: 'telegram', reason: 'empty' } },
   { name: 'auth_success', meta: { host: 'telegram' } },
+  // Платформа запуска (аудит 2026-10): GROUP BY по meta->>'host'/'platform'.
+  { name: 'messenger_launch', meta: { host: 'telegram', platform: 'weba' } },
   { name: 'login_ticket_step', meta: { step: 'issued' } },
   // Окно Google One Tap (2026-11): count(*) FILTER по meta->>'outcome' в
   // LoginTicketMetricsService.getOneTap — все три исхода.
@@ -92,6 +96,8 @@ const ANON_EVENTS: Array<{ name: string; meta: Record<string, unknown> }> = [
   { name: 'client_error', meta: { section: 'booking', source: 'webapp' } },
   { name: 'client_error', meta: { section: 'auth', source: 'miniapp' } },
   { name: 'client_error', meta: { section: 'assets', source: 'webapp' } },
+  // Сработавший повтор asset-recovery.js (#928): FILTER по meta->>'kind'.
+  { name: 'asset_recovered', meta: { kind: 'css', attempts: 1 } },
   // Шквал (находка аудита 2026-10-11): meta.suppressed суммируется приведением
   // ::int, meta.unlogged считается FILTER'ом — оба идут через драйвер.
   {
@@ -190,6 +196,7 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(product).toContain('Запись на консультацию');
     // Секция 'assets' (asset-recovery.js, инцидент 2026-11-04) — свой FILTER.
     expect(product).toContain('Файлы сайта не загрузились');
+    expect(product).toMatch(/повтор помог: стиль — [1-9]\d* раз/);
     // Сумма meta.suppressed и счёт meta.unlogged: сырой SQL приводит jsonb-текст
     // к int на живой базе (мок $queryRaw этого не доказывает, правило №18).
     expect(product).toMatch(
@@ -206,6 +213,12 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     expect(oneTap.rejected).toBeGreaterThanOrEqual(1);
     expect(product).toMatch(/Вошли одним касанием: [1-9]\d*/);
     expect(product).toMatch(/Сервер не принял вход из окна: [1-9]\d*/);
+    // Стёртый тест: count(DISTINCT) с FILTER по ("meta"->>'attempts')::int.
+    expect(product).toMatch(
+      /Стёрли результаты теста схем: [1-9]\d* раз\S* · людей: [1-9]\d*, из них проходили тест до конца: [1-9]/,
+    );
+    // Платформы запуска: группировка по двум ключам meta через драйвер.
+    expect(product).toMatch(/Telegram · браузер, Web A — [1-9]\d* \(\d+\)/);
     // groupBy по userId (distinct-терапевты) исполнен драйвером и увидел фикстуры.
     expect(product).toMatch(/Открывали [1-9]\d* раз, терапевтов: [1-9]\d*/);
     expect(product).toMatch(/Связи режимов заполняли [1-9]\d* раз/);

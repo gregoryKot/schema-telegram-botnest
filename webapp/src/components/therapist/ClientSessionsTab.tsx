@@ -13,7 +13,7 @@ interface Props {
 export function ClientSessionsTab({ detail }: Props) {
   const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
   const canSave = !!newNoteText.trim() && !noteSaving;
-  const save = () => { if (canSave) addNote(); };
+  const save = () => { if (canSave) void addNote(); }; // addNote ловит сбой сам: noteError над списком
   return (
     <div className="ds-page tb-page--narrow">
       <div className="ds-card tb-composer">

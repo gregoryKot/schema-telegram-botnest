@@ -14,6 +14,7 @@ vi.mock('../../../api', () => ({
   api: { trackEvent: vi.fn(), updatePhraseCheck: vi.fn(), deletePhraseCheck: vi.fn() },
 }));
 const deletePhraseCheck = api.deletePhraseCheck as unknown as ReturnType<typeof vi.fn>;
+const trackEvent = api.trackEvent as unknown as ReturnType<typeof vi.fn>;
 
 mockCanvas2d();
 
@@ -72,6 +73,8 @@ describe('PhraseHistoryCard — удаление разбора', () => {
     expect(deletePhraseCheck).toHaveBeenCalledWith(1);
     await waitFor(() => expect(onDeleted).toHaveBeenCalledWith(1));
     expect(onClose).toHaveBeenCalled();
+    // Правило №8: удаление видно в /stats («Удаление своих записей»).
+    expect(trackEvent).toHaveBeenCalledWith('entry_deleted', { type: 'phrase_check' });
   });
 
   it('«Отмена» после «Удалить» ничего не удаляет', () => {
@@ -95,5 +98,6 @@ describe('PhraseHistoryCard — удаление разбора', () => {
     expect(onDeleted).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByText('«я всё порчу»')).toBeTruthy();
+    expect(trackEvent).not.toHaveBeenCalledWith('entry_deleted', expect.anything());
   });
 });

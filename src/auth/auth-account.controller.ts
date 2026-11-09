@@ -41,6 +41,8 @@ import {
   mergeOrThrow,
 } from './merge-confirm';
 import type { Request, Response } from 'express';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { messengerLaunchMeta } from '../analytics/launch-platforms.constants';
 import {
   isCrossSiteRequest,
   requireCsrf,
@@ -62,6 +64,7 @@ export class AuthAccountController {
     private readonly totp: TotpService,
     private readonly tickets: TicketDeviceService,
     private readonly notice: SecurityNoticeService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   // ─── Email magic-link login ───────────────────────────────────────────────
@@ -168,6 +171,9 @@ export class AuthAccountController {
       this.config.getOrThrow<string>('WEBAPP_URL'),
     );
     setRefreshCookie(res, tokens.refreshToken, 30 * 24 * 3600, crossSite);
+    // Платформа запуска — server-events.constants.ts; track() не бросает.
+    const meta = messengerLaunchMeta('telegram', dto.platform);
+    void this.analytics.track(null, 'messenger_launch', meta);
     return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn };
   }
 

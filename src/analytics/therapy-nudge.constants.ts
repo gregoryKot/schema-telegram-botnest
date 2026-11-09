@@ -10,12 +10,15 @@
 //               (therapy-nudge-metrics.format.ts).
 export const THERAPY_NUDGE_EVENT = 'therapy_nudge';
 
+// home — строка внизу главной до 2026-11-05; переехав в «Ещё», шлёт more_bottom
+// (home остался для старых строк и старых вкладок).
 export const THERAPY_NUDGE_PLACES = [
   'home',
   'tracker_done',
   'case_done',
   'diary_done',
   'more',
+  'more_bottom',
   'signal_card',
   'home_card',
   'practice',

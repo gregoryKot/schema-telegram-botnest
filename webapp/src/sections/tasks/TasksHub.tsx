@@ -28,7 +28,8 @@ interface Props {
 // закрывается сам. По ссылке с заданием список ждёт загрузки: задание с листом
 // открывается сразу, остальные — списком (tasksLaunch.taskToOpen).
 export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoodWheel, refreshKey, onTasksChanged, openTaskId }: Props) {
-  const { tasks, taskHistory, loaded, completeTask, afterCreate } = useTaskActions(refreshKey);
+  // taskError — отказ «Готово» или новой цели: до 2026-11 узел его не показывал, сбой проходил молча.
+  const { tasks, taskHistory, taskError, loaded, completeTask, afterCreate } = useTaskActions(refreshKey);
   // Задание из ссылки ждёт загрузки списка; решение принимается один раз (ref), пока ждём — узел «занят».
   const pendingId = useRef(openTaskId ?? null);
   const [waiting, setWaiting] = useState(openTaskId !== undefined);
@@ -65,11 +66,12 @@ export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoo
           onOpen={launcher.openTask}
           onComplete={task => completeTask(task.id, onTasksChanged)}
           onAdd={() => setShowTaskCreate(true)}
+          error={taskError}
         />
       )}
       {showTaskCreate && (
         <TaskCreateSheet
-          onCreated={() => { setShowTaskCreate(false); afterCreate(onTasksChanged); }}
+          onCreated={() => { setShowTaskCreate(false); void afterCreate(onTasksChanged); /* сбой ловит сам: taskError */ }}
           onClose={() => setShowTaskCreate(false)}
         />
       )}

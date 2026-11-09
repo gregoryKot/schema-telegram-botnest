@@ -133,3 +133,39 @@ describe('ClientErrorMetricsService.getMetrics', () => {
     }
   });
 });
+
+// Инцидент 2026-11-04 (#928): сработавший повтор asset-recovery.js.
+describe('ClientErrorMetricsService.getAssetRecovery', () => {
+  it('раскладывает сработавшие повторы по виду, пусто — нули', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([{ css: 3n, js: 1n }])
+      .mockResolvedValueOnce([]);
+    const service = new ClientErrorMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    await expect(service.getAssetRecovery()).resolves.toEqual({
+      cssWeek: 3,
+      jsWeek: 1,
+    });
+    await expect(service.getAssetRecovery()).resolves.toEqual({
+      cssWeek: 0,
+      jsWeek: 0,
+    });
+    // Событие анонимное: строка с userId — подделка через /api/event.
+    const sql = (queryRaw.mock.calls[0][0] as string[]).join('?');
+    expect(sql).toContain(`"name" = 'asset_recovered'`);
+    expect(sql).toContain('"userId" IS NULL');
+  });
+
+  it('render — блок поломок и строка про повторы, пустая БД без NaN', async () => {
+    const queryRaw = jest.fn().mockResolvedValue([]);
+    const service = new ClientErrorMetricsService({
+      $queryRaw: queryRaw,
+    } as never);
+    const text = await service.render();
+    expect(text).toContain('Поломки на клиенте');
+    expect(text).toContain('повтором за неделю не понадобилось');
+    expect(text).not.toMatch(/NaN|undefined/);
+  });
+});

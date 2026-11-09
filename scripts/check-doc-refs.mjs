@@ -9,7 +9,8 @@
 // сверяет только markdown-ссылки `[…](…)`; пути в кавычках не сверял никто.
 //
 // Что сверяется: `CLAUDE.md`, `docs/SECURITY.md`, `docs/README.md`,
-// `.claude/rules/*.md`. Путём считается span в обратных кавычках без пробелов,
+// `.claude/rules/*.md`, карта (`docs/ARCHITECTURE.md`, `docs/architecture/*.md`)
+// и реестр открытого (`docs/open/*.md`) — по ним агент тоже идёт в код. Путём считается span в обратных кавычках без пробелов,
 // который начинается с каталога верхнего уровня репозитория (`src/`,
 // `webapp/`, …) или называет корневой файл из списка `ROOT_FILES`
 // (`package.json`, `Dockerfile`…). Хвосты `:12`, `:12-40`, `#якорь`,
@@ -30,10 +31,10 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'doc-refs-baseline.json');
 const ROOT_FILES = new Set(['package.json', 'Dockerfile', 'amvera.yml', 'CLAUDE.md', 'HEALTHY_ADULT.md', 'README.md', 'tsconfig.json', 'tsconfig.build.json', '.gitattributes', '.gitignore', '.dockerignore', 'eslint.config.mjs', 'playwright.config.ts', 'nest-cli.json']);
 
 export function docFiles() {
-  const files = ['CLAUDE.md', 'docs/SECURITY.md', 'docs/README.md'];
-  const rules = join(ROOT, '.claude', 'rules');
-  if (existsSync(rules)) {
-    for (const n of readdirSync(rules).sort()) if (n.endsWith('.md')) files.push(`.claude/rules/${n}`);
+  const files = ['CLAUDE.md', 'docs/SECURITY.md', 'docs/README.md', 'docs/ARCHITECTURE.md'];
+  for (const dir of ['.claude/rules', 'docs/architecture', 'docs/open']) {
+    if (!existsSync(join(ROOT, dir))) continue;
+    for (const n of readdirSync(join(ROOT, dir)).sort()) if (n.endsWith('.md')) files.push(`${dir}/${n}`);
   }
   return files.filter((f) => existsSync(join(ROOT, f)));
 }
@@ -66,13 +67,18 @@ export function extractPaths(text, dirs) {
   return out;
 }
 
+// Шаблон каталога (`.jest-cache/`) git сопоставляет с несуществующим путём
+// только со слешем на конце: каталога нет — git не знает, что это каталог.
 function gitIgnored(path) {
-  try {
-    execFileSync('git', ['check-ignore', '-q', path], { cwd: ROOT, stdio: 'ignore' });
-    return true;
-  } catch {
-    return false; // не игнорируется или не git-дерево
+  for (const p of path.endsWith('/') ? [path] : [path, `${path}/`]) {
+    try {
+      execFileSync('git', ['check-ignore', '-q', p], { cwd: ROOT, stdio: 'ignore' });
+      return true;
+    } catch {
+      // не игнорируется (или не git-дерево) — пробуем следующий вид
+    }
   }
+  return false;
 }
 
 function main() {

@@ -9,6 +9,7 @@ import { reportSubscriptionLoadFailure } from './subscribe/useSubscriptionCancel
 import { usePageShowReset } from '../hooks/usePageShowReset';
 import { SubscribeForm } from './subscribe/SubscribeForm';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
+import { dropUrlParam } from '../utils/dropUrlParam';
 
 type Sub = { status: string; period: string; amount: number; nextChargeAt: string | null };
 
@@ -34,7 +35,7 @@ export function SubscribePage() {
   // capability token doesn't linger in history / leak via Referer to analytics.
   const [token] = useState<string | null>(() => new URLSearchParams(window.location.search).get('token'));
   useEffect(() => {
-    if (token) { const u = new URL(window.location.href); u.searchParams.delete('token'); window.history.replaceState(window.history.state, '', u.pathname + u.search); }
+    if (token) dropUrlParam('token');
   }, [token]);
 
   const [opts, setOpts] = useState<Opt[]>([]);

@@ -26,11 +26,14 @@ const fetchMock = vi.fn((_url: string, _init: RequestInit) =>
   Promise.resolve(new Response(null, { status: 204 })),
 );
 let listeners: EventListenerOrEventListenerObject[] = [];
+let loadListeners: EventListenerOrEventListenerObject[] = [];
 
-/** Закрыть страницу: её слушатель и теги уходят, sessionStorage остаётся. */
+/** Закрыть страницу: её слушатели и теги уходят, sessionStorage остаётся. */
 function closePage() {
   for (const fn of listeners) window.removeEventListener('error', fn, true);
+  for (const fn of loadListeners) window.removeEventListener('load', fn);
   listeners = [];
+  loadListeners = [];
   document.head.innerHTML = '';
 }
 
@@ -44,11 +47,15 @@ function openPage(url = '/donate') {
   });
   const spy = vi.spyOn(window, 'addEventListener');
   new Function(SOURCE)();
-  listeners = spy.mock.calls
-    .filter(([type]) => type === 'error')
-    .map(([, fn]) => fn as EventListenerOrEventListenerObject);
+  const of = (kind: string) =>
+    spy.mock.calls
+      .filter(([type]) => type === kind)
+      .map(([, fn]) => fn as EventListenerOrEventListenerObject);
+  listeners = of('error');
+  loadListeners = of('load');
   spy.mockRestore();
   expect(listeners).toHaveLength(1);
+  expect(loadListeners).toHaveLength(1);
 }
 
 function add(tag: string, attrs: Record<string, string>) {
@@ -64,7 +71,20 @@ const fail = (target: EventTarget) => target.dispatchEvent(new Event('error'));
 const failEntryModule = () =>
   fail(add('script', { type: 'module', crossorigin: '', src: JS }));
 const reports = () =>
-  fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init.body)));
+  fetchMock.mock.calls
+    .filter(([url]) => url === '/api/client-errors')
+    .map(([, init]) => JSON.parse(String(init.body)));
+/** Сигналы «повтор помог» (POST /api/public-event, событие asset_recovered). */
+const recoveries = () =>
+  fetchMock.mock.calls
+    .filter(([url]) => url === '/api/public-event')
+    .map(([, init]) => JSON.parse(String(init.body)));
+const recoveredBody = (kind: string, attempts: number) => ({
+  name: 'asset_recovered',
+  meta: { kind, attempts },
+});
+/** Страница догрузилась (window load): модули отработали или упали раньше. */
+const pageLoaded = () => window.dispatchEvent(new Event('load'));
 /** Тело отчёта по контракту src/api/dto/client-error.dto.ts; url — только путь. */
 const report = (kind: string, path: string) => ({
   source: 'webapp',
@@ -252,6 +272,87 @@ describe('входной модуль не загрузился', () => {
       expect(reports()).toEqual([report('JS', JS)]);
     },
   );
+});
+
+// Инцидент 2026-11-04 (#928): неудачу видно по отчёту, а сработавший повтор
+// не считал никто — сколько выкладок задело людей без последствий, не видно.
+describe('повтор помог — сигнал asset_recovered', () => {
+  it('стиль догрузился со второй попытки — один сигнал css/1, отчёта о сбое нет', () => {
+    openPage('/donate#access_token=abc');
+    const failed = addStylesheet(CSS);
+    fail(failed);
+    vi.advanceTimersByTime(1000);
+    const retry = failed.nextElementSibling as HTMLLinkElement;
+    retry.dispatchEvent(new Event('load'));
+    expect(recoveries()).toEqual([recoveredBody('css', 1)]);
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init).toMatchObject({ method: 'POST', keepalive: true });
+    // Ни пути файла, ни адреса страницы с токеном.
+    expect(String(init.body)).not.toMatch(/assets|donate|token/);
+    expect(reports()).toEqual([]);
+  });
+
+  it('догрузился с третьей попытки — attempts 3; упавшие повторы сигнала не шлют', () => {
+    openPage();
+    let link = addStylesheet(CSS);
+    [1000, 2000, 4000].forEach((delay) => {
+      fail(link);
+      vi.advanceTimersByTime(delay);
+      link = link.nextElementSibling as HTMLLinkElement;
+    });
+    expect(recoveries()).toEqual([]);
+    link.dispatchEvent(new Event('load'));
+    expect(recoveries()).toEqual([recoveredBody('css', 3)]);
+  });
+
+  it('стиль загрузился с первого раза — сигнала нет', () => {
+    openPage();
+    addStylesheet(CSS).dispatchEvent(new Event('load'));
+    pageLoaded();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('модуль: после перезагрузки страница догрузилась — один сигнал js/1 на серию', () => {
+    openPage();
+    failEntryModule();
+    pageLoaded(); // упавшая страница: модуль не встал — не сигнал
+    vi.advanceTimersByTime(1000);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(recoveries()).toEqual([]);
+    openPage();
+    vi.advanceTimersByTime(2000);
+    pageLoaded();
+    expect(recoveries()).toEqual([recoveredBody('js', 1)]);
+    // Та же серия на следующей загрузке (внутри 2 минут) — без повтора сигнала.
+    openPage();
+    pageLoaded();
+    expect(recoveries()).toHaveLength(1);
+  });
+
+  it('модуль: понадобились две перезагрузки — attempts 2', () => {
+    [1000, 4000].forEach((delay) => {
+      openPage();
+      failEntryModule();
+      vi.advanceTimersByTime(delay);
+    });
+    openPage();
+    pageLoaded();
+    expect(recoveries()).toEqual([recoveredBody('js', 2)]);
+  });
+
+  it('обычная загрузка без меток перезагрузки — сигнала нет', () => {
+    openPage();
+    pageLoaded();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('sessionStorage бросает — сигнала нет (иначе он слался бы на каждой загрузке)', () => {
+    sessionStorage.setItem(KEY, JSON.stringify([NOW - 1000]));
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(blocked);
+    openPage();
+    pageLoaded();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('остальные сбои — не наши', () => {

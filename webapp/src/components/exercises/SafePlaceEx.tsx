@@ -10,32 +10,11 @@ import { hueStyle, DIARY_HUE } from '../../lib/tone';
 import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
 import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
+import { LimitedInput } from '../../../../shared/src/components/LimitedTextarea';
+import { SENSES, SAFE_PLACE_FIELD_MAX, buildSafePlaceDescription } from './safePlaceText';
 
 // Безопасное место — ресурс, тон «здорового» (зелёный) как у благодарности.
 const SAFE_HUE = DIARY_HUE.gratitude;
-
-const SENSES = [
-  {
-    k: 'see',
-    label: 'Что я вижу',
-    ph: 'высокие сосны, солнце сквозь ветки, мхом покрытый камень…',
-  },
-  {
-    k: 'hear',
-    label: 'Что я слышу',
-    ph: 'шорох листьев, где-то птица, тишина…',
-  },
-  {
-    k: 'feel',
-    label: 'Что я чувствую телом',
-    ph: 'тёплый ветер, шершавая кора под рукой, мягкая земля…',
-  },
-  {
-    k: 'smell',
-    label: 'Что я обоняю',
-    ph: 'хвоя, дождь, дым от далёкого костра…',
-  },
-] as const;
 
 export function SafePlaceEx({
   onBack,
@@ -69,12 +48,7 @@ export function SafePlaceEx({
   // двойного нажатия. useSavingAction — общий примитив (см. его комментарий).
   const { saving, error, run } = useSavingAction();
   async function save() {
-    const desc = [
-      overview,
-      ...SENSES.filter((s) => senses[s.k].trim()).map(
-        (s) => `${s.label}: ${senses[s.k]}`,
-      ),
-    ].join('\n');
+    const desc = buildSafePlaceDescription(overview, senses);
     const ok = await run(() => api.saveSafePlace(desc));
     if (ok) { clearDraft(); onComplete?.(); setDone(true); }
   }
@@ -181,7 +155,8 @@ export function SafePlaceEx({
           <p className="ex2-prompt-hint">
             Одно-два предложения. Общее впечатление.
           </p>
-          <input
+          <LimitedInput
+            max={SAFE_PLACE_FIELD_MAX}
             ref={overviewRef}
             className="ds-input"
             value={overview}
@@ -206,7 +181,8 @@ export function SafePlaceEx({
               <span className="ds-dot tone-fill" style={hueStyle(SAFE_HUE)} />
               {s.label}
             </div>
-            <input
+            <LimitedInput
+              max={SAFE_PLACE_FIELD_MAX}
               className="ds-input"
               value={senses[s.k]}
               onChange={(e) => update(s.k, e.target.value)}

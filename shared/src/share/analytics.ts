@@ -39,9 +39,13 @@ export const ONBOARDING_STEP_EVENT = 'onboarding_step';
 // на бэке; метрика видна в /stats («Архив „Мой путь“»).
 export const JOURNEY_OPEN_EVENT = 'journey_open';
 
-// Удаление записи упражнения из «Моего пути»: meta { type }. Парный
-// allow-list (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts.
+// Удаление своей записи: meta { type } (shared/src/analytics/trackEntryDeleted.ts).
+// Тип события шире удаляемого в «Моём пути»: разбор фразы и записи дневника
+// удаляются на своих экранах. Парный allow-list — ENTRY_DELETE_TYPES
+// (src/analytics/entry-delete.constants.ts), сверка — analytics-sync.invariants.spec.ts.
 export const ENTRY_DELETED_EVENT = 'entry_deleted';
+export type EntryDeleteType =
+  'belief_check' | 'letter' | 'flashcard' | 'phrase_check' | 'diary';
 export type JourneyDeletableType = 'belief_check' | 'letter' | 'flashcard';
 
 // Клик по ссылке на сайт практики автора (kotlarewski.gr) с публичного сайта:

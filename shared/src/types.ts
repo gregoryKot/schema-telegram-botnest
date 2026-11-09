@@ -87,6 +87,9 @@ export interface UserProfile {
   };
   mySchemaIds: string[];
   myModeIds: string[];
+  /** Списки, которые на сервере не расшифровались: в полях выше для них `[]`,
+   *  но это не «пусто» (src/bot/profile.service.ts). Нет у старого сервера. */
+  unreadableLists?: ('mySchemaIds' | 'myModeIds')[];
 }
 
 // Сводка клиента в кабинете терапевта — единственная фронтовая копия (правило
