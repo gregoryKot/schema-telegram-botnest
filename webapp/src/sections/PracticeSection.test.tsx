@@ -43,7 +43,9 @@ vi.mock('../api', () => ({
 // как BreathingCard в HelpSection.test.tsx мини-аппа: тесты экрана «Практика»
 // про библиотеку упражнений и задания, а не про быстрые практики.
 vi.mock('./practice/HereAndNowBlock', () => ({
-  HereAndNowBlock: ({ extraRows }: { extraRows?: React.ReactNode }) => <div data-testid="here-and-now-block">{extraRows}</div>,
+  HereAndNowBlock: ({ extraRows, onSos }: { extraRows?: React.ReactNode; onSos?: () => void }) => (
+    <div data-testid="here-and-now-block">{onSos && <button onClick={onSos}>Мне плохо</button>}{extraRows}</div>
+  ),
 }));
 
 vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
@@ -119,12 +121,12 @@ describe('PracticeSection — ты/вы вилка', () => {
     expect(screen.queryByText(/твои личные цели/)).toBeNull();
   });
 
-  it('подсказки блока «В трудный момент» звучат на «ты»', () => {
+  it('подпись «Карты режимов» в «Каталогах» звучит на «ты»', () => {
     renderSection({}, 'ty');
     expect(screen.getByText(/Найди Уязвимого Ребёнка, Критика, Защитника/)).toBeTruthy();
   });
 
-  it('подсказки блока «В трудный момент» звучат на «вы»', () => {
+  it('подпись «Карты режимов» в «Каталогах» звучит на «вы»', () => {
     renderSection({}, 'vy');
     expect(screen.getByText(/Найдите Уязвимого Ребёнка, Критика, Защитника/)).toBeTruthy();
   });
@@ -158,7 +160,7 @@ describe('PracticeSection — статистика упражнений из р�
     mockApi.getBeliefChecks.mockResolvedValue([{ id: 1, createdAt: new Date().toISOString() }]);
     renderSection();
 
-    const stat = await screen.findByText(/1 запись/);
+    const stat = (await screen.findByText(/1 запись/)).closest('.cp-ex-state')!;
     expect(stat.textContent).toContain('сегодня');
   });
 });
@@ -394,19 +396,17 @@ describe('PracticeSection — баннер ближайшей сессии', () 
   });
 });
 
-// Хвост 5.6/волны 4: после снятия теста в блоке «В трудный момент» осталась
-// одна «Карта режимов» — в трудную минуту нечего сделать сразу.
-describe('PracticeSection — «В трудный момент»', () => {
-  it('есть «Здесь и сейчас»: ведёт к быстрым практикам вверху страницы (тот же переход, что у верхнего ряда)', async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+// Хвост 5.6/волны 4: после снятия теста в блоке «В трудный момент» осталась одна «Карта
+// режимов», а «Здесь и сейчас» повторяло переход к героям вверху. b14: раздел-сирота снят,
+// «Карта режимов» — строкой в «Каталогах»; верхнего ряда, повторявшего героя дыхания, нет.
+describe('PracticeSection — раздела «В трудный момент» и верхнего ряда нет', () => {
+  it('«Карта режимов» — строка «Каталогов» со знаком; «В трудный момент» не рисуется', async () => {
     renderSection();
-    const block = screen.getByRole('heading', { name: 'В трудный момент' }).closest('section')!;
-    fireEvent.click(within(block).getByRole('button', { name: /Здесь и сейчас/ }));
-    expect(scroll).toHaveBeenCalledTimes(1);
-    expect(scroll.mock.contexts[0]).toBe(document.getElementById('practice-here-and-now'));
-    expect(within(block).getByText(/Карта режимов/)).toBeTruthy();
-    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    expect(screen.queryByText('В трудный момент')).toBeNull();
+    const block = screen.getByRole('heading', { name: 'Каталоги' }).closest('section')!;
+    const row = within(block).getByText('Карта режимов').closest('[role="button"]')!;
+    expect(row.querySelector('.pp-row-art svg')).not.toBeNull();
+    expect(screen.queryByText('Помощь рядом', { selector: '.ds-label' })).toBeNull();
   });
 });
 
@@ -431,7 +431,7 @@ describe('PracticeSection — «Инструменты»: скрытие и по
   const HIDDEN = 'quick_actions_hidden_tools';
   const ORDER = 'quick_actions_order_tools';
   const hide = (...ids: string[]) => localStorage.setItem(HIDDEN, JSON.stringify(ids));
-  const cardTitles = () => Array.from(document.querySelectorAll('.cp-ex-title')).map(e => e.textContent);
+  const cardTitles = () => Array.from(document.querySelectorAll('.cp-ex-title')).map(e => e.textContent?.replace(/\u00a0/g, ' '));
   const setWidth = (w: number) => Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: w });
   afterEach(() => setWidth(1024));
 
@@ -444,13 +444,13 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.getByText('Планы')).toBeTruthy();
   });
 
-  it('скрытая карточка (belief_check) исчезает, номера и счётчик идут по показанному', () => {
+  it('скрытая карточка (belief_check) исчезает, счётчик идёт по показанному; номеров 01–08 нет', () => {
     hide('belief_check');
     renderSection();
     expect(cardTitles()).not.toContain('Проверка убеждения');
     expect(cardTitles()).toHaveLength(7);
     expect(screen.getByText('7 упражнений')).toBeTruthy();
-    expect(Array.from(document.querySelectorAll('.cp-ex-num')).map(e => e.textContent)).toEqual(['01', '02', '03', '04', '05', '06', '07']);
+    expect(document.querySelector('.cp-ex-num')).toBeNull();
   });
 
   it('карточки схемы и режима не скрываются, даже если все пункты реестра скрыты', () => {
@@ -474,10 +474,11 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.getByText('Каталоги')).toBeTruthy();
   });
 
-  it('скрыты оба каталога — заголовок «Каталоги» не рисуется', () => {
+  it('скрыты оба каталога — в «Каталогах» остаётся «Карта режимов» (её пункта в «Инструментах» нет)', () => {
     hide('practices', 'plans');
     renderSection();
-    expect(screen.queryByText('Каталоги')).toBeNull();
+    const block = screen.getByRole('heading', { name: 'Каталоги' }).closest('section')!;
+    expect(within(block).getAllByRole('button').map(b => b.textContent)).toEqual([expect.stringContaining('Карта режимов')]);
   });
 
   it('скрытая «Мне плохо» в «Инструментах» убирает карточку на десктопе; контакты помощи остаются', () => {
@@ -495,12 +496,20 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.getByText('Мне очень плохо')).toBeTruthy();
   });
 
+  it('без сохранённого порядка — порядок библиотеки (в нём соседи бенто разной бумаги)', () => {
+    renderSection();
+    expect(cardTitles()).toEqual([
+      'Проверка убеждения', 'Карточка схемы', 'Карточка режима', 'Письмо себе в детстве',
+      'Безопасное место', 'Колесо детства', 'Тёплые слова', 'Критик или забота?',
+    ]);
+  });
+
   it('сохранённый порядок переставляет карточки с пунктами; схема и режим стоят на своих местах', () => {
     localStorage.setItem(ORDER, JSON.stringify(['warm_words', 'phrase_check']));
     renderSection();
     expect(cardTitles()).toEqual([
       'Тёплые слова', 'Карточка схемы', 'Карточка режима', 'Критик или забота?',
-      'Проверка убеждения', 'Безопасное место', 'Письмо себе в детстве', 'Колесо детства',
+      'Проверка убеждения', 'Письмо себе в детстве', 'Безопасное место', 'Колесо детства',
     ]);
   });
 
@@ -560,7 +569,7 @@ describe('PracticeSection — «давность» и число записей 
     const yesterday = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
     mockApi.getBeliefChecks.mockResolvedValue([{ id: 1, createdAt: yesterday }]);
     renderSection();
-    const stat = await screen.findByText(/1 запись/);
+    const stat = (await screen.findByText(/1 запись/)).closest('.cp-ex-state')!;
     expect(stat.textContent).toContain('вчера');
   });
 
@@ -568,7 +577,7 @@ describe('PracticeSection — «давность» и число записей 
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
     mockApi.getBeliefChecks.mockResolvedValue([{ id: 1, createdAt: threeDaysAgo }]);
     renderSection();
-    const stat = await screen.findByText(/1 запись/);
+    const stat = (await screen.findByText(/1 запись/)).closest('.cp-ex-state')!;
     expect(stat.textContent).toContain('3 дн. назад');
   });
 
@@ -691,7 +700,7 @@ describe('PracticeSection — задания терапевта: остальн�
   });
 });
 
-describe('PracticeSection — «В трудный момент»: быстрые карточки открывают верный экран', () => {
+describe('PracticeSection — кризисный вход и каталоги открывают верный экран', () => {
   it('«Мне плохо» открывает SchemaFlashcard', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
@@ -699,10 +708,9 @@ describe('PracticeSection — «В трудный момент»: быстрые
     await screen.findByText('Стало чуть лучше – разобраться →');
   });
 
-  it('тест на 116 вопросов в «В трудный момент» не предлагается: в трудную минуту он не помогает (FIX_PLAN 4.10)', async () => {
+  it('тест на 116 вопросов на странице не предлагается: в трудную минуту он не помогает (FIX_PLAN 4.10)', async () => {
     renderSection();
     await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalled());
-    expect(screen.getByText('В трудный момент')).toBeTruthy();
     expect(screen.queryByText('Тест на схемы')).toBeNull();
     expect(screen.queryByText(/116 вопросов/)).toBeNull();
   });

@@ -49,7 +49,7 @@
 - **`useHistorySheet`:** `webapp/src/hooks/useHistorySheet.ts`, стек листов в `webapp/src/hooks/historySheetStack.ts`, реестр открытых — `webapp/src/hooks/openSheets.ts`.
   - Хук делает `navigate()` через react-router и кладёт стек id в `location.state.__sheetStack`. Прямой `history.pushState` запрещён.
   - Лист закрывается, когда его id пропал из стека. Escape закрывает верхний лист. Возвращаемый `goBack` используется для всех закрытий листа.
-- Волна 6: страницы «Записей» — `webapp/src/sections/diary/diaryPages.ts`; адрес возврата из ссылки письма — `webapp/src/auth/emailReturnTo.ts`; прокрутка к блоку «Практик» — `webapp/src/sections/practice/scrollToBlock.ts`.
+- Волна 6: страницы «Записей» — `webapp/src/sections/diary/diaryPages.ts`; адрес возврата из ссылки письма — `webapp/src/auth/emailReturnTo.ts`; вид плиток, квадратов и строк «Практик» литералами ENTITY_LOOK — `webapp/src/sections/practice/practiceLook.ts` (верхний ряд с прокруткой к блокам снят в b14).
 
 ### Мини-апп Telegram/MAX (каталога нет)
 - Отдельный каталог мини-аппа удалён целиком (решения владельца 2026-10-17 и 2026-11-04, #908). Кнопки бота (`web_app`) в Telegram и MAX открывают сайт — кабинет `/today`; вход по подписи мессенджера (`x-telegram-init-data` / `x-max-init-data`) обрабатывает `webapp/`. Старый адрес `/app/*` навсегда отвечает 302 → `/today` (`src/unified-frontend.middleware.ts`).

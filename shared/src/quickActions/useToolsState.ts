@@ -25,8 +25,8 @@ export interface ToolsState {
   onReorder: (id: string, toIndex: number) => 'up' | 'down' | false;
 }
 
-/** orderable — id пунктов, у которых на площадке есть что переставлять (на
- * сайте — карточки библиотеки); остальные пункты только скрываются. */
+/** orderable — переставляемые пункты (на сайте — карточки библиотеки) в порядке по умолчанию: порядок
+ * библиотеки, в нём соседи бенто разной бумаги (entityLook.test.ts); остальные пункты только скрываются. */
 export function useToolsState(
   props: ToolRowsProps,
   onChanged?: () => void,
@@ -41,7 +41,7 @@ export function useToolsState(
     TOOLS_ACTIONS_ORDER_KEY,
     orderable
       ? [
-          all.filter((r) => orderable.includes(r.id)),
+          orderable.flatMap((id) => all.filter((r) => r.id === id)),
           all.filter((r) => !orderable.includes(r.id)),
         ]
       : [all],

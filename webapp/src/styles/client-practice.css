@@ -4,17 +4,41 @@
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './task-row.css';
 @import './breathing.css';
+/* Редизайн b14 (docs/design/APP_2026-11.md): герой дыхания, квадраты бумаги быстрых практик,
+   кризисная полоса, бенто библиотеки. Белые ds-card остались у плотных строк (задания, цели,
+   каталоги); цвет — бумага oklch(0.915 0.03 var(--h)), мелкий текст на ней — --text-sub. */
 .cp-page { max-width: 1100px; }
 .cp-open-card { display: contents; } /* обёртка не участвует в flex-gap .cp-block (телефон как в main) */
 .cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
 .cp-block .section { margin: 0; }
+.cp-here { gap: 18px; container: cp-here / inline-size; }
+.cp-here-text { margin: 0; max-width: 78ch; line-height: 1.6; text-wrap: pretty; }
 
-/* Верхний ряд */
-.cp-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-.cp-top-card { display: flex; flex-direction: column; gap: 6px; cursor: pointer; min-height: 130px; box-sizing: border-box; padding: 20px; }
-.cp-top-go { margin-top: auto; font-size: 13px; font-weight: 700; }
-.cp-top-line { font-size: 16px; font-weight: 700; }
-.cp-top-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+/* Квадраты «Здесь и сейчас» (QuickSquares): как два квадрата «Сегодня», знак — с тенью-вырезкой.
+   Знак лежит в своём слоте: правило .pp-square .pp-art (paper.css) не должно двигать слои знака.
+   Колонки minmax(0, 1fr), кегль названия — по ширине квадрата: «Заземление» Literata 26 на 320
+   распирало колонку и уводило второй квадрат за край экрана. Три квадрата в узкой колонке
+   (компьютер 768 с меню) — два в ряд, «Мне плохо» под ними вширь, знак справа. */
+.cp-squares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cp-squares--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cp-sq { min-height: 0; container-type: inline-size; }
+.cp-sq > .pp-title { font-size: clamp(18px, 16cqi, 26px); line-height: 1.08; }
+@container cp-here (max-width: 640px) {
+  .cp-squares--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-squares--3 > .cp-sq:last-child {
+    grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px;
+    grid-template-areas: "title art" "text art" "foot foot"; align-content: start;
+  }
+  .cp-squares--3 > .cp-sq:last-child > .pp-title { grid-area: title; }
+  .cp-squares--3 > .cp-sq:last-child > .pp-text { grid-area: text; }
+  .cp-squares--3 > .cp-sq:last-child > .cp-sq-art { grid-area: art; align-self: center; width: 104px; margin: 0; }
+  .cp-squares--3 > .cp-sq:last-child > .pp-square-foot { grid-area: foot; }
+}
+.cp-sq-art { display: block; width: 118px; margin: auto 0 0 -8px; }
+.cp-sq-art .scn-sign { width: 100%; }
+.cp-sq .scn-sign > .pp-art { margin: 0; }
+.cp-sq .pp-square-foot { margin-top: 4px; }
+.cp-sq:focus-visible, .cp-ex:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* Задания и цели */
 .cp-tasks { display: flex; flex-direction: column; gap: 10px; }
@@ -24,67 +48,75 @@
 .cp-actions { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .cp-alert { font-size: 13px; color: var(--err); }
 
-/* Быстрые инструменты и каталоги */
-.cp-tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-.cp-tool { padding: 18px 20px; display: flex; flex-direction: column; gap: 6px; border-top: 3px solid var(--line-strong); }
-.cp-tool-title { font-size: 15px; font-weight: 700; }
-.cp-tool-sub { font-size: 13px; line-height: 1.5; color: var(--text-muted); }
-.cp-tool .ds-link { margin-top: auto; padding-top: 8px; align-self: flex-start; }
-
-/* Библиотека */
-.cp-lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+/* Библиотека — бенто плиток бумаги (ExerciseTile): знак и время, название, строка описания,
+   мета и стрелка. Колонки — по ширине самого раздела (container), без дыр: последняя плитка
+   неполного ряда растягивается и ложится вширь (знак справа), как широкие плитки лендинга. */
+.cp-lib-block { container: cp-lib / inline-size; }
+.cp-lib { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .cp-ex {
-  border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px;
-  cursor: pointer; min-height: 180px; box-sizing: border-box; color: var(--text);
-  transition: transform .12s;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr auto;
+  grid-template-areas: "art time" "title title" "desc desc" "foot foot"; column-gap: 12px; row-gap: 6px;
+  align-items: start; box-sizing: border-box; min-height: 236px; padding: 18px 22px 16px; border: 0;
+  border-radius: 22px; text-align: left; cursor: pointer; font-family: var(--sans); color: var(--text);
+  transition: background .12s;
 }
-.cp-ex:hover { transform: translateY(-2px); }
-.cp-ex-top { display: flex; justify-content: space-between; align-items: baseline; }
-.cp-ex-num { font-size: 32px; }
-.cp-ex-time { font-size: 12px; color: var(--text-sub); white-space: nowrap; }
-.cp-ex-title { font-size: 17px; font-weight: 700; line-height: 1.25; }
-.cp-ex-desc { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
-.cp-ex-state { margin-top: auto; font-size: 12px; color: var(--text-sub); }
+.cp-ex:hover { background: oklch(0.895 0.04 var(--h)); }
+.cp-ex-art { grid-area: art; display: block; width: 104px; margin: 0 0 8px -8px; }
+.cp-ex-art .scn-sign { width: 100%; }
+.cp-ex-time { grid-area: time; justify-self: end; font-size: 12.5px; font-weight: 600; color: var(--text-sub); white-space: nowrap; }
+.cp-ex-title { grid-area: title; font-family: var(--serif); font-size: 23px; line-height: 1.12; letter-spacing: -0.005em; text-wrap: balance; }
+.cp-ex-desc { grid-area: desc; font-size: 14px; line-height: 1.45; color: var(--text-sub); text-wrap: pretty; }
+.cp-ex-foot { grid-area: foot; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.cp-ex-state { font-size: 13px; font-weight: 600; color: var(--text-sub); }
+.cp-ex-state > span { white-space: nowrap; } /* «3 дн. назад» не рвётся посередине — только после « ·» */
+@container cp-lib (min-width: 720px) {
+  .cp-ex:last-child:nth-child(3n+2) { grid-column: span 2; }
+  .cp-ex:last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+  .cp-ex:last-child:not(:nth-child(3n)) { grid-template-areas: "time art" "title art" "desc art" "foot foot"; }
+  .cp-ex:last-child:not(:nth-child(3n)) > .cp-ex-desc { max-width: 46ch; }
+  .cp-ex:last-child:not(:nth-child(3n)) > .cp-ex-art { align-self: center; width: 150px; margin: 0 8px 0 0; }
+  .cp-ex:last-child:not(:nth-child(3n)) > .cp-ex-time { justify-self: start; }
+}
+@container cp-lib (max-width: 719px) {
+  .cp-lib { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cp-ex:last-child:nth-child(2n+1) { grid-column: 1 / -1; grid-template-areas: "time art" "title art" "desc art" "foot foot"; }
+  .cp-ex:last-child:nth-child(2n+1) > .cp-ex-art { align-self: center; width: 120px; margin: 0; }
+  .cp-ex:last-child:nth-child(2n+1) > .cp-ex-time { justify-self: start; }
+}
 
 /* ── Телефон (.cp-page--phone ставит PracticeSection по useIsMobile) ──────────
-   Ориентир — экран «Помощь» мини-аппа: дыхание первым, инструменты строками
-   (название + одна строка подписи + шеврон), а не цветными плитками. Шапка и
-   заголовки блоков — те же, что на ноутбуке (ds-eyebrow + ds-h1 + ds-sub,
-   секции — Literata ds-h2; #906). */
+   Шапка и заголовки блоков — те же, что на ноутбуке (ds-eyebrow + ds-h1 + ds-sub,
+   секции — Literata ds-h2; #906). Дыхание первым, под ним два квадрата и лист кризисных
+   строк; «Инструменты» — плитки в две колонки: знак, название, время и мета (описание —
+   у экрана упражнения). */
 .cp-here-lead { margin: 0; font-size: 14px; line-height: 1.5; }
+.cp-here-intro { display: flex; flex-direction: column; align-items: flex-start; }
+.cp-here-intro > .cp-selfhelp { margin-bottom: -8px; }
 .cp-page--phone .cp-block { gap: var(--space-10); }
+.cp-page--phone .cp-here { gap: var(--space-12); }
+.cp-page--phone .cp-squares { gap: var(--space-10); }
+.cp-page--phone .cp-sq { padding: 18px 16px 14px; gap: 6px; }
+.cp-page--phone .cp-sq .pp-text { font-size: 14px; line-height: 1.4; }
+.cp-page--phone .cp-sq-art { width: 92px; margin-left: -6px; }
+.cp-page--phone .cp-sq .pp-meta { font-size: 12.5px; letter-spacing: 0; }
 
-/* Строки «Если нужно больше», цели, каталоги */
+/* Строки целей и каталогов */
 .cp-page--phone .cp-task { gap: var(--space-12); min-height: 56px; padding: var(--space-12) var(--space-16); }
-.cp-page--phone .cp-tool > .ds-chev { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
 
-/* Инструменты: плитка библиотеки -> строка карточки ds-card */
-.cp-page--phone .cp-lib { grid-template-columns: 1fr; gap: var(--space-8); }
-.cp-page--phone .cp-lib .cp-ex {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: var(--space-12); row-gap: var(--space-2);
-  align-items: baseline; min-height: 56px; padding: var(--space-12) var(--space-16);
-  border-radius: var(--r-16);
+/* Плитки «Инструментов» */
+.cp-page--phone .cp-lib { gap: var(--space-10); }
+.cp-page--phone .cp-ex {
+  min-height: 0; padding: 14px 14px 12px 16px; border-radius: 18px; row-gap: 4px;
+  grid-template-areas: "art art" "title title" "time time" "foot foot"; grid-template-rows: auto auto auto 1fr;
 }
-.cp-page--phone .cp-lib .cp-ex:hover { transform: none; }
-.cp-page--phone .cp-ex-top { display: contents; }
-.cp-page--phone .cp-ex-num, .cp-page--phone .cp-ex-eyebrow { display: none; }
-.cp-page--phone .cp-ex-title { grid-column: 1; grid-row: 1; font-size: 15px; }
-.cp-page--phone .cp-ex-time { grid-column: 2; grid-row: 1; text-align: right; }
-.cp-page--phone .cp-ex-desc {
-  grid-column: 1 / span 2; grid-row: 2; font-size: 13px; line-height: 1.4;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-/* «не начато» на телефоне — шум: показываем статистику, только когда она есть */
-.cp-page--phone .cp-ex-state { grid-column: 1 / span 2; grid-row: 3; margin: 0; color: var(--text-sub); }
-.cp-page--phone .cp-ex-state.is-new { display: none; }
-.cp-page--phone .cp-ex > .ds-chev { grid-column: 3; grid-row: 1 / span 3; align-self: center; }
-
-/* Быстрые инструменты («Тест на схемы» и соседи) — тоже строки */
-.cp-page--phone .cp-tools { grid-template-columns: 1fr; gap: var(--space-8); }
-.cp-page--phone .cp-tool {
-  position: relative; border-top-width: 1px; border-top-color: var(--line);
-  padding: var(--space-12) var(--space-40) var(--space-12) var(--space-16); gap: var(--space-2);
-}
+.cp-page--phone .cp-ex:hover { background: oklch(0.915 0.03 var(--h)); }
+.cp-page--phone .cp-ex-art { width: 78px; margin: -2px 0 6px -6px; }
+.cp-page--phone .cp-ex-title { font-size: 19px; line-height: 1.15; }
+.cp-page--phone .cp-ex-time { justify-self: start; font-size: 12.5px; }
+.cp-page--phone .cp-ex-desc { display: none; }
+.cp-page--phone .cp-ex-foot { align-self: end; margin-top: 6px; }
+/* «не начато» на телефоне — шум: внизу плитки только стрелка, статистика — когда она есть */
+.cp-page--phone .cp-ex-state.is-new { visibility: hidden; }
 
 /* Компьютер: прежнее правило для .ds-card внутри обёртки (закреплено desktopLayout.test.ts; дыхание теперь pp-block, правило не срабатывает). */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {

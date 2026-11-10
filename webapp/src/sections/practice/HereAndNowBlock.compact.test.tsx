@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Телефонный вариант блока «Здесь и сейчас»: заголовок уходит в шапку
-// страницы, дополнительные строки («Мне плохо», контакты помощи) встают в тот
-// же список после заземления и «Стопа», вместо «начать →» — шеврон.
+// страницы, под вводной — ссылка «Важное о самопомощи», кризисные строки
+// («Мне плохо», контакты помощи) встают после квадратов заземления и «Стопа».
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -11,6 +11,7 @@ vi.mock('../../api', () => ({
   api: {
     trackEvent: vi.fn(),
     getPracticeSessions: vi.fn().mockResolvedValue({ breathing: 0, grounding: 0, stop: 0 }),
+    getFlashcards: vi.fn().mockResolvedValue([]),
     recordPracticeSession: vi.fn(),
   },
 }));
@@ -30,9 +31,10 @@ describe('HereAndNowBlock compact', () => {
     expect(screen.getByTestId('breathing')).toBeTruthy();
     expect(screen.getByText(/Три коротких практики самопомощи/)).toBeTruthy();
     expect(screen.queryByText(/счётчик покажет/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Важное о самопомощи' })).toBeTruthy();
   });
 
-  it('extraRows идут в списке после заземления и «Стопа»; «начать →» нет', () => {
+  it('extraRows идут после квадратов заземления и «Стопа»; «начать →» нет', () => {
     renderBlock({ compact: true, extraRows: <div data-testid="extra">строка</div> });
     const stop = screen.getByText('Техника «Стоп»');
     const extra = screen.getByTestId('extra');
@@ -40,9 +42,10 @@ describe('HereAndNowBlock compact', () => {
     expect(screen.queryByText('начать →')).toBeNull();
   });
 
-  it('десктопный вариант по умолчанию не меняется: заголовок и «начать →»', () => {
-    renderBlock({});
+  it('компьютер: заголовок блока, три квадрата с «Мне плохо» (onSos), «Важное» — в шапке, не здесь', () => {
+    renderBlock({ onSos: () => {} });
     expect(screen.getByRole('heading', { name: 'Здесь и сейчас' })).toBeTruthy();
-    expect(screen.getAllByText('начать →')).toHaveLength(2);
+    expect(document.querySelectorAll('.cp-squares--3 > .cp-sq')).toHaveLength(3);
+    expect(screen.queryByRole('button', { name: 'Важное о самопомощи' })).toBeNull();
   });
 });
