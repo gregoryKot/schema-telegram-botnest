@@ -1,10 +1,9 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { PaperEmpty } from '../components/art/PaperEmpty';
 import { useLocation } from 'react-router-dom';
-import { api } from '../api';
+import { api, type TherapyRelationInfo } from '../api';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
-import type { TherapyRelationInfo } from '../api';
 import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
 import { useTaskActions } from './today/useTaskActions';
@@ -19,7 +18,8 @@ import { TherapyBridgeCard } from '../components/therapy/TherapyBridgeCard';
 import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
-import { AllTasksOverlay, TaskSaveError } from './today/AllTasksOverlay';
+import { AllTasksOverlay } from './today/AllTasksOverlay';
+import { TaskSaveError } from './today/TaskSaveError';
 import { useExerciseStats } from './practice/useExerciseStats';
 import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
@@ -118,7 +118,7 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             <h3 className="ds-h2">От терапевта</h3>
             {therapistTasks.length > 0 && <span className="ds-sub">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
           </div>
-          {taskError && <TaskSaveError className="cp-alert" />}
+          {taskError && <TaskSaveError />}
           <div className="cp-tasks">
             {therapistTasks.map(task => (
               <TaskRow key={task.id} task={task} compact={phone} cta="начать →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />

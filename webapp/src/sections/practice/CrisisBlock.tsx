@@ -11,6 +11,7 @@
 // и лист контактов. 112 и разговор с близким — на той же
 // бумаге, что телефоны доверия, а не серым абзацем под ней; 112 — ссылкой tel:.
 import { CrisisCard } from '../../components/CrisisCard';
+import { glue } from '../../../../shared/src/utils/typo';
 
 /** heading — блок раздела: надпись «Помощь рядом» — заголовок h3, как у соседних блоков страницы.
  *  signless — без своего сердца: вплотную выше стоит квадрат «Мне плохо» со своим (ревью g4 r3). */
@@ -21,10 +22,7 @@ export function CrisisBlock({ inset, heading, signless }: { inset?: boolean; hea
         <p className="cr-line">
           Если есть угроза жизни —{'\u00a0'}<a className="cr-112" href="tel:112">112</a><span className="cr-dot">.</span>
         </p>
-        <p className="cr-text">
-          Разговор с близким человеком тоже считается: иногда одно сообщение
-          «мне плохо» — уже первый шаг.
-        </p>
+        <p className="cr-text">{glue('Разговор с близким человеком тоже считается: иногда одно сообщение «мне плохо» — уже первый шаг.')}</p>
       </div>
     </CrisisCard>
   );

@@ -103,7 +103,7 @@
 .sk-fc-row-sign { padding-top: 20px; }
 .ds-label.sk-fc-row-label { color: var(--text-sub); }
 .sk-fc-value { margin-top: 3px; font-size: 16px; font-weight: 600; line-height: 1.45; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
-.sk-fc-value--text { font: 400 18px/1.5 var(--serif); }
+.sk-fc-value--text { font: 400 18px/1.5 var(--serif); text-wrap: pretty; }
 .pp-paper.sk-fc-alert { align-self: stretch; margin-top: 4px; }
 .sk-fc-card { position: relative; box-sizing: border-box; width: 100%; padding: 22px 24px 10px; }
 .pp-paper.sk-fc-card { border-radius: 24px; }
@@ -116,7 +116,7 @@
 .ds-card.sk-fc-hist { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 14px; align-items: start; padding: 14px 16px; cursor: pointer; }
 .sk-fc-hist-sign { padding-top: 1px; }
 .sk-fc-hist-body { min-width: 0; }
-.sk-fc-hist-action { margin-top: 4px; font: 400 16px/1.45 var(--serif); color: var(--text-sub); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.sk-fc-hist-action { margin-top: 4px; font: 400 16px/1.45 var(--serif); color: var(--text-sub); text-wrap: pretty; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .sk-fc-hist-date { padding-top: 2px; font-size: 13px; font-weight: 600; color: var(--text-sub); white-space: nowrap; }
 
 /* ── Разворот на компьютере: лист-герой и шапка шага слева, колонка справа ── */

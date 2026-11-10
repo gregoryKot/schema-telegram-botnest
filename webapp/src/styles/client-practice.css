@@ -45,7 +45,6 @@
 .cp-task-body { flex: 1; min-width: 0; }
 .cp-task-title { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
 .cp-actions { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
-.cp-alert { font-size: 13px; color: var(--err); }
 
 /* Библиотека — бенто плиток бумаги (ExerciseTile): знак и время, название, строка описания,
    мета и стрелка. Колонки — по ширине самого раздела (container), без дыр: последняя плитка
@@ -136,13 +135,10 @@
 .cp-page--phone .cp-ex-art { width: 78px; margin: -2px 0 6px -6px; }
 .cp-page--phone .cp-ex-title { font-size: 19px; line-height: 1.15; }
 .cp-page--phone .cp-ex-time { justify-self: start; font-size: 12.5px; }
-.cp-page--phone .cp-ex-desc {
-  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
-  margin-top: 2px; font-size: 13px; line-height: 1.4;
-}
-/* ≤359: описание (оно только у не начатой плитки — меты нет) — в три строки: на двух «Тёплые слова»
-   обрывались на «Слова поддержки —…»; ряд и так вровень с более высокой соседкой (ревью g4 r3). */
-@media (max-width: 359px) { .cp-page--phone .cp-ex-desc { -webkit-line-clamp: 3; } }
+/* Описание — только у не начатой плитки (меты нет): ответ новичку «откуда это и зачем», поэтому целиком, без
+   многоточия — с обрезкой в 2–3 строки на 390 «Тёплые слова» обрывались на «Слова поддержки — перечитать, когда…»,
+   а в пустом разделе обрезались 5 описаний из 8; ряд и так вровень с более высокой соседкой (ревью g4 r3, r5). */
+.cp-page--phone .cp-ex-desc { margin-top: 2px; font-size: 13px; line-height: 1.4; }
 .cp-page--phone .cp-ex-foot { align-self: end; margin-top: 6px; justify-content: flex-end; }
 .cp-page--phone .cp-ex-state { margin-right: auto; }
 

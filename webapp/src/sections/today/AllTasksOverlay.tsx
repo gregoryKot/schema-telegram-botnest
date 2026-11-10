@@ -7,7 +7,7 @@ import { fmtDate, momentDayKey, todayStr } from '../../utils/format';
 import { TaskRow } from '../practice/TaskRow';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskStatus } from '../../../../shared/src/tasks/taskStatus';
-import { useTr } from '../../utils/addressForm';
+import { TaskSaveError } from './TaskSaveError';
 
 interface Props {
   /** «Все задания» на «Сегодня», «Все цели» в «Практике». */
@@ -37,7 +37,7 @@ export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, on
   const today = todayStr();
   return (
     <OverlayFrame title={title} onBack={goBack}>
-      {error && <TaskSaveError className="sk-error" />}
+      {error && <TaskSaveError />}
       <div className="sk-list">
         {tasks.map(t => (
           <TaskRow
@@ -69,15 +69,5 @@ export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, on
         + Поставить цель
       </button>
     </OverlayFrame>
-  );
-}
-
-/** Отказ действия с заданием — одна строка на все экраны заданий: блок «От терапевта» и этот список. */
-export function TaskSaveError({ className }: { className: string }) {
-  const tr = useTr();
-  return (
-    <div role="alert" className={className}>
-      {tr('Не удалось сохранить изменение задания. Проверь соединение и попробуй ещё раз', 'Не удалось сохранить изменение задания. Проверьте соединение и попробуйте ещё раз')}
-    </div>
   );
 }

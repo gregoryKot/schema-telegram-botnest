@@ -1,8 +1,7 @@
-// «История карточек» и просмотр сохранённой карточки «Мне плохо». Вид (редизайн 2026-11, b12):
-// список — плотные строки со знаком режима слева (знак группы, как в «Моих паттернах»), заголовок
-// «Режим · Потребность» и шаг Literata; подпись режима — из общего словаря (flashcardModeView), а не
-// сырой id; пусто — знак Heart и строка. Просмотр — тот же вид, что итог «Сохранено»: бережный лист
-// с датой и строками FlashcardRows.
+// «История карточек» и просмотр сохранённой карточки «Мне плохо». Вид (b12): список — плотные строки со знаком режима
+// слева (знак группы, как в «Моих паттернах»), заголовок «Режим · Потребность» и шаг Literata; подпись режима — из общего
+// словаря (flashcardModeView), а не сырой id; пусто — знак Heart и строка. Просмотр — вид итога «Сохранено»: бережный лист
+// с датой и строками FlashcardRows. Шаг и рефлексия — текст человека: glueSpaces (только пробелы, дефисы его).
 import { FlashcardFrame } from './FlashcardFrame';
 import { FlashcardRows } from './FlashcardRows';
 import { flashcardSummary, flashcardTitle } from './flashcardLook';
@@ -12,6 +11,7 @@ import { Heart } from '../art/PaperArtSigns';
 import { SignArt } from '../art/SignArt';
 import type { FlashcardEntry, ModeData, NeedData } from '../schemaFlashcard/types';
 import { FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
+import { glueSpaces } from '../../../../shared/src/utils/typo';
 
 interface ListProps {
   cards: FlashcardEntry[];
@@ -38,7 +38,7 @@ export function FlashcardHistoryList({ cards, modes, needs, onBack, onOpen }: Li
                 <span className="sk-fc-hist-sign" aria-hidden="true">{parts.mode?.sign && <SignArt sign={parts.mode.sign} size="row" />}</span>
                 <div className="sk-fc-hist-body">
                   <div className="ds-list-title">{flashcardTitle(parts)}</div>
-                  {card.action && <div className="sk-fc-hist-action">{card.action}</div>}
+                  {card.action && <div className="sk-fc-hist-action">{glueSpaces(card.action)}</div>}
                 </div>
                 <span className="sk-fc-hist-date">{card.date}</span>
               </div>

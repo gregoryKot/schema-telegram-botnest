@@ -51,6 +51,7 @@ vi.mock('./practice/HereAndNowBlock', () => ({
 vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
 import { notifyPrefsChanged } from '../utils/uiPrefsSync';
 import { api } from '../api';
+import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const noopProps = {
@@ -234,7 +235,7 @@ describe('PracticeSection — регрессия: та же механика з�
     await act(async () => { fireEvent.click(screen.getByText(/Запечатать письмо/)); });
     await act(async () => { fireEvent.click(screen.getByText('Закрыть')); });
 
-    expect(screen.getByRole('alert').textContent).toContain('Не удалось сохранить изменение задания');
+    expect(plainText(screen.getByRole('alert'))).toContain('Не удалось сохранить изменение задания');
     expect(onTasksChanged).not.toHaveBeenCalled();
   });
 

@@ -4,7 +4,7 @@
 // рамка — граница; лист растения — рост. Стулья, письма, осознанность, самосострадание
 // и когнитивная работа берут готовый мотив (Talk, Sheets, Breath, Heart, Pebbles) — их здесь нет.
 // Какой знак у какой техники — guideSignsModel.ts.
-import { Talk } from './PaperArtSigns';
+import { HEART_PATH, Talk } from './PaperArtSigns';
 import { PAPER, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
 
@@ -67,15 +67,12 @@ export function Flashcard({ size }: ArtProps) {
   );
 }
 
-const HEART_D =
-  'M60 58 C 40 46, 20 36, 20 22 C 20 12, 30 6, 40 10 C 48 13, 56 20, 60 26 C 64 20, 72 13, 80 10 C 90 6, 100 12, 100 22 C 100 36, 80 46, 60 58 Z';
-
 /** Эмпатическая конфронтация: сердце в рамке — бережно и с границей одновременно. */
 export function HeartFrame({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <rect x="27" y="4" width="66" height="56" rx="14" fill="none" stroke={PAPER.moss} strokeWidth="6" />
-      <path d={HEART_D} transform="translate(60 33) scale(.55) translate(-60 -32)" fill={PAPER.clay} />
+      <path d={HEART_PATH} transform="translate(60 33) scale(.55) translate(-60 -32)" fill={PAPER.clay} />
     </Svg>
   );
 }
