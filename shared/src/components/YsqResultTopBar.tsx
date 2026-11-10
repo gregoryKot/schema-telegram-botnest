@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ShareIcon } from '../share/ShareIcon';
 
 interface Props {
   /** useTr() вызывающего фронтенда: выбирает вариант обращения по addressForm. */
@@ -12,6 +13,8 @@ interface Props {
 // кнопка «Как понимать» раскрывает заботливое объяснение — что это, что значат
 // цифры, про ответы из режима защитника и что разбирать результат лучше с
 // терапевтом; рядом — «Поделиться» (переехала сюда из подвала экрана).
+// Вид (редизайн 2026-11, b16): две тихие пилюли без эмодзи и глифов ▾ — шеврон и
+// значок шаринга рисунком; классы ss-topbar* — webapp/src/styles/schema-library.css.
 export function YsqResultTopBar({ tr, onShare, onHelpOpen }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -22,72 +25,40 @@ export function YsqResultTopBar({ tr, onShare, onHelpOpen }: Props) {
 
   const para = (title: string, text: string, last = false) => (
     <div style={{ marginBottom: last ? 0 : 12 }}>
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: 'var(--text)',
-          marginBottom: 3,
-        }}
-      >
-        {title}
-      </div>
+      <div className="ss-help-title">{title}</div>
       <div className="u-sub13-lh16">{text}</div>
     </div>
   );
 
   return (
-    <div className="u-mb16">
-      <div style={{ display: 'flex', gap: 8 }}>
+    <div className="ss-topbar">
+      <div className="ss-topbar-row">
         <button
           onClick={toggleHelp}
           aria-expanded={open}
-          style={{
-            flex: 1,
-            minHeight: 44,
-            padding: '11px 8px',
-            border: 'none',
-            borderRadius: 12,
-            background: open
-              ? 'rgba(var(--fg-rgb),0.1)'
-              : 'rgba(var(--fg-rgb),0.06)',
-            color: 'var(--text-sub)',
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: 'pointer',
-          }}
+          className="ss-topbar-btn"
         >
-          ℹ️ Как понимать {open ? '▴' : '▾'}
+          Как понимать
+          <svg
+            className={`ss-topbar-chev${open ? ' is-open' : ''}`}
+            viewBox="0 0 12 12"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M2 4 L6 8 L10 4" />
+          </svg>
         </button>
-        <button
-          onClick={onShare}
-          style={{
-            flex: 1,
-            minHeight: 44,
-            padding: '11px 8px',
-            border:
-              '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
-            borderRadius: 12,
-            background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-            color: 'var(--accent)',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          📤 Поделиться
+        <button onClick={onShare} className="ss-topbar-btn">
+          <ShareIcon /> Поделиться
         </button>
       </div>
 
       {open && (
-        <div
-          style={{
-            marginTop: 10,
-            background: 'rgba(var(--fg-rgb),0.04)',
-            borderRadius: 14,
-            padding: '14px 16px',
-          }}
-        >
+        <div className="ss-help">
           {para(
             'Что это такое',
             'Опросник для самонаблюдения из схема-терапии — не диагноз и не ' +

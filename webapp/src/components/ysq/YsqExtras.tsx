@@ -1,6 +1,7 @@
 import { avgBarPct, countActiveInHistory, type SchemaInfo, type YsqHistoryEntry } from '../../hooks/useYsqTest';
+import { GlyphChevron } from '../exercises/ExGlyphs';
 
-/** Свёрнутый список неактивных схем с мини-барами («на грани» — тёплым). */
+/** Свёрнутый список неактивных схем с мини-барами («на грани» — тёплым); раскрытие — SVG-шевроном, не ▼. */
 export function YsqInactiveList({ schemas, scores, expanded, onToggle }: {
   schemas: SchemaInfo[];
   scores: Record<string, { avg: number }>;
@@ -8,23 +9,20 @@ export function YsqInactiveList({ schemas, scores, expanded, onToggle }: {
   onToggle: () => void;
 }) {
   return (
-    <div className="ss-res">
+    <div className="ss-res ss-res--plain">
       <button onClick={onToggle} aria-expanded={expanded} className="ds-btn ds-btn--secondary ss-toggle">
         <span>Остальные схемы ({schemas.length})</span>
-        <span aria-hidden="true">{expanded ? '▲' : '▼'}</span>
+        <span className="ss-chev" aria-hidden="true"><GlyphChevron up={expanded} /></span>
       </button>
-      {expanded && schemas.map(schema => {
+      {expanded && <div className="ss-minis">{schemas.map(schema => {
         const { avg } = scores[schema.name];
         return (
           <div key={schema.name} className={`ss-mini${avg >= 3 ? ' is-mid' : ''}`}>
-            <div className="ss-mini-top">
-              <span>{schema.name}</span>
-              <b>{avg} из 6</b>
-            </div>
+            <div className="ss-mini-top"><span>{schema.name}</span><b>{avg} из 6</b></div>
             <div className="ss-mini-track"><span style={{ width: `${avgBarPct(avg)}%` }} /></div>
           </div>
         );
-      })}
+      })}</div>}
     </div>
   );
 }
@@ -34,8 +32,8 @@ const schemaWord = (n: number) => (n === 1 ? 'схема' : n < 5 ? 'схемы'
 /** История прохождений: сколько схем было выражено и как менялось. */
 export function YsqHistory({ history }: { history: YsqHistoryEntry[] }) {
   return (
-    <div className="ss-res">
-      <div className="ds-eyebrow">История прохождений</div>
+    <div className="ss-res ss-res--plain">
+      <div className="ds-label">История прохождений</div>
       {history.map((entry, idx) => {
         const active = countActiveInHistory(entry);
         const prev = history[idx + 1];

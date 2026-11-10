@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { SignArt } from '../art/SignArt';
 import { SsSheet, SsHead } from '../schemaSheets/SsSheet';
 import { buildModeCheckin, type ModeCheckinItem } from './data';
+import { checkinLook } from './modesLook';
 
 // Чек-ин «Режим прямо сейчас»: выбор ощущения → режим и что помогает. Оба шага —
 // один лист с одной записью истории (один хук на весь поток): системная «Назад»
 // и Escape закрывают чек-ин, справочник схем под ним остаётся. «Назад» на
-// экране результата закрывает весь чек-ин, а не возвращает к выбору — как и было.
+// экране результата закрывает весь чек-ин, а не возвращает к выбору. Вид (2026-11): плитки бумаги группы
+// со знаком (checkinLook), результат — лист-герой режима, «Что помогает» — белый лист с Leaf.
 export function ModeCheckinOverlay({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
@@ -17,34 +19,32 @@ export function ModeCheckinOverlay({ onClose }: { onClose: () => void }) {
   if (mode) {
     return (
       <SsSheet onBack={goBack} zIndex={400} narrow>
-        <div className="ss-center">
-          <IdentityDot color={mode.color} size={40} />
-          <SsHead center eyebrow="Режим" title={mode.mode} />
+        <SsHead look={checkinLook(mode)} eyebrow="Режим" title={mode.mode} />
+        <div className="ds-card ss-card-stack ss-tip-card">
+          <div className="ss-tip-head"><span className="pp-row-art" aria-hidden="true"><SignArt sign="leaf" size="row" /></span><div className="ds-eyebrow">Что помогает</div></div>
+          <p className="ss-body ss-body--lead">{mode.tip}</p>
         </div>
-        <div className="ds-card ss-card-stack">
-          <div className="ds-eyebrow">Что помогает</div>
-          <p className="ss-body">{mode.tip}</p>
-        </div>
-        <div className="ss-foot">
-          <button onClick={goBack} className="ds-btn">Понятно</button>
-        </div>
+        <div className="ss-foot"><button onClick={goBack} className="ds-btn">Понятно</button></div>
       </SsSheet>
     );
   }
   return (
     <SsSheet onBack={goBack} zIndex={400}>
-      <SsHead cluster
+      <SsHead look="modes" compact
         eyebrow="Режим прямо сейчас"
         title={<>{tr('Как ты', 'Как вы')}<br /><i>сейчас?</i></>}
         lede={tr('Выбери самое близкое ощущение', 'Выберите самое близкое ощущение')}
       />
       <div className="ss-checkin-grid">
-        {buildModeCheckin(tr).map((item) => (
-          <button key={item.label} onClick={() => setMode(item)} className="ds-card ds-card--hover ss-checkin-btn">
-            <IdentityDot color={item.color} size={22} />
-            {item.label}
-          </button>
-        ))}
+        {buildModeCheckin(tr).map((item) => {
+          const look = checkinLook(item);
+          return (
+            <button key={item.label} onClick={() => setMode(item)} className="pp-paper ss-checkin-btn" style={{ '--h': look.hue } as CSSProperties}>
+              <span className="ss-checkin-tile-sign" aria-hidden="true"><SignArt sign={look.sign} size="square" /></span>
+              {item.label}
+            </button>
+          );
+        })}
       </div>
     </SsSheet>
   );

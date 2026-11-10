@@ -1,73 +1,139 @@
-/* Библиотека и тест YSQ (SchemaInfoSheet, SchemaDetailSheet, YSQTestSheet, ysq/*,
-   DomainMark): вкладки, домены, плитки, режимы, вопросы теста, результат.
-   Подключается из sheet-schemas.css. */
-.ss-stack { display: flex; flex-direction: column; gap: 10px; }
+/* Справочник и тест YSQ (SchemaInfoSheet, SchemaDetailSheet, YSQTestSheet, ysq/*, DomainMark) на живой
+   бумаге (редизайн 2026-11, docs/design/APP_2026-11.md, b16): лист потребности, домена, группы режима —
+   oklch(0.915 0.03 var(--h)) со знаком у подписи; строки — белые листы без контура; тень — сплошным
+   сдвинутым слоем. Мелкий текст на цветной бумаге — --text-sub. Подключается из sheet-schemas.css. */
 .ss-actions { display: flex; flex-direction: column; gap: 10px; }
 .ss-actions .ds-btn { width: 100%; }
 .ss-actions--row { flex-direction: row; flex-wrap: wrap; }
 .ss-actions--row .ds-btn { width: auto; flex: 1 1 160px; }
 .ss-body { margin: 0; font-size: 14px; line-height: 1.7; color: var(--text-sub); }
-.ss-body--sm { font-size: 13px; line-height: 1.6; }
+.ss-body--sm { font-size: 13.5px; line-height: 1.6; }
+.ss-body--lead { font-size: 16px; line-height: 1.6; color: var(--text); }
 
 /* ── Вкладки справочника ────────────────────────────────────────────────── */
-.ss-tabs { border-bottom: 1px solid var(--line); }
+.ss-tabs { border-bottom: 1px solid var(--line); gap: 24px; }
 .ss-tabs .ds-tab { min-height: 44px; padding: 0 2px 12px; }
-.ss-tabs { gap: 24px; }
 .ss-pane { display: flex; flex-direction: column; gap: 16px; }
-.ss-need { display: flex; flex-direction: column; gap: 10px; }
-.ss-need-head { display: flex; align-items: center; gap: 14px; }
-.ss-need-title { font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--text); }
-.ss-domain { display: flex; flex-direction: column; gap: 10px; }
-.ss-domain-head {
-  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; text-align: left; cursor: pointer;
-  padding: 10px 16px; border-radius: 14px; border: 1.5px solid transparent; font: inherit;
-}
-.ss-domain-name { flex: 1; font-family: var(--serif); font-size: 17px; line-height: 1.25; min-width: 0; }
-.ss-domain-count { font-size: 12px; font-weight: 600; flex-shrink: 0; }
-.ss-chev { flex-shrink: 0; transition: transform .2s; }
+.ss-chev { display: inline-flex; flex-shrink: 0; color: var(--text-sub); transition: transform .2s; }
+.ss-chev svg { width: 12px; height: 12px; }
 .ss-chev.is-open { transform: rotate(180deg); }
-.ss-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 8px; }
-.ss-tile {
-  display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px 14px; min-height: 44px;
-  border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--text-sub);
+
+/* Вход в тест на листе справочника (YsqEntryTile): белый лист на бумаге схем, тень слоем. */
+.ss-ysq-tile {
+  display: flex; align-items: center; gap: 14px; width: 100%; box-sizing: border-box; margin-top: 8px;
+  min-height: 72px; padding: 10px 16px 10px 10px; border: 0; border-radius: 16px; text-align: left; cursor: pointer;
+  font: inherit; background: var(--surface); color: var(--text); box-shadow: 5px 6px 0 oklch(var(--pa-layer-lc) var(--h));
+  transition: transform .12s;
 }
-.ss-tile.is-hl { border-width: 1.5px; }
-.ss-tile-name { font-family: var(--serif); font-size: 15px; line-height: 1.25; }
-.ss-tile-desc { font-size: 12.5px; line-height: 1.5; color: var(--text-sub); }
-.ss-group-eyebrow { display: inline-flex; align-items: center; gap: 8px; }
-.ss-mode { display: flex; flex-direction: column; gap: 6px; }
-.ss-mode-name { margin: 0; font-weight: 400; font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--text); }
-.ss-mode-feel { font-size: 12px; color: var(--text-muted); }
-.ss-cta { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; cursor: pointer; font: inherit; color: var(--text); }
-.ss-cta-text { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.ss-cta-title { font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--accent); }
-.ss-cta-arrow { font-size: 22px; color: var(--accent); flex-shrink: 0; }
-.ss-checkin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: 10px; }
-.ss-checkin-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 88px; justify-content: center; text-align: center; font: 600 13px var(--sans); color: var(--text); cursor: pointer; }
-.ss-center { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.ss-ysq-tile:hover { transform: translate(-1px, -1px); }
+.ss-ysq-tile:focus-visible, .ss-checkin-cta:focus-visible, .ss-checkin-btn:focus-visible, .ss-mode-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ss-ysq-tile-art { display: flex; flex: none; width: 64px; }
+.ss-ysq-tile-label { color: var(--text-sub); }
+.ss-ysq-tile-sub { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
+.ss-ysq-tile-go { display: flex; flex: none; color: var(--accent); }
+.ss-ysq-tile-go svg { width: 18px; height: 18px; }
+.ss-cta-text { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.ss-cta-title { font-family: var(--serif); font-size: 19px; line-height: 1.2; color: var(--text); }
+
+/* ── Потребности, группы режимов, группы результата: лист бумаги со знаком у подписи ── */
+.ss-needs { display: grid; gap: 12px; }
+.ss-need { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px 20px 16px; }
+.ss-need-head, .ss-group-head { display: flex; align-items: center; gap: 12px; margin: 0; font: inherit; }
+.ss-group-sign { display: flex; flex: none; width: 60px; }
+.ss-group-sign .pp-art--square { width: 60px; height: auto; }
+.ss-group-signs { display: flex; flex: none; gap: 2px; }
+.ss-group-signs.is-many .ss-group-sign, .ss-group-signs.is-many .ss-group-sign .pp-art--square { width: 44px; }
+/* Узкая группа с тремя знаками (копинги на 320): подпись уходит под знаки, а не за край листа. */
+.ss-group-head { flex-wrap: wrap; row-gap: 6px; }
+.ss-group-name { flex: 1 1 140px; min-width: 0; color: var(--text-sub); }
+.ss-need-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 21px; line-height: 1.2; color: var(--text); }
+.ss-need-sub { margin-top: 2px; font-size: 13px; line-height: 1.35; color: var(--text-sub); }
+.ss-need .ss-body { padding-left: 4px; }
+
+/* ── Домены схем: аккордеон на бумаге домена, схемы — белые листы ───────── */
+.ss-domains { display: flex; flex-direction: column; gap: 10px; }
+.ss-domain { display: flex; flex-direction: column; border-radius: 18px; }
+.ss-domain-head {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; box-sizing: border-box;
+  padding: 8px 18px 8px 10px; border: 0; border-radius: 18px; background: none; text-align: left; cursor: pointer;
+  font: inherit; color: var(--text);
+}
+.ss-domain-head:hover { background: oklch(0.895 0.04 var(--h)); }
+.ss-domain-name { flex: 1; font-family: var(--serif); font-size: 18px; line-height: 1.25; min-width: 0; }
+.ss-domain-count { flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.ss-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; padding: 2px 10px 12px; }
+.ss-tile { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--surface); }
+/* Схема из результата теста — лист приподнят над соседями сплошным слоем бумаги домена. */
+.ss-tile.is-hl { transform: translate(-3px, -3px); box-shadow: 7px 8px 0 oklch(0.76 0.08 var(--h)); }
+.ss-tile-name { font-family: var(--serif); font-size: 16px; line-height: 1.25; color: var(--text); }
+.ss-tile.is-hl .ss-tile-name { font-weight: 600; }
+.ss-tile-desc { font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+
+/* ── Режимы: чек-ин плиткой неба, группы — лист бумаги, режимы — белый список ── */
+.ss-checkin-cta {
+  display: flex; align-items: center; gap: 16px; width: 100%; box-sizing: border-box; padding: 16px 16px 16px 22px;
+  border: 0; text-align: left; cursor: pointer; font: inherit; color: var(--text); transition: background .12s;
+}
+.ss-checkin-cta:hover, .ss-checkin-btn:hover { background: oklch(0.895 0.04 var(--h)); }
+.ss-checkin-eyebrow { color: var(--text-sub); }
+.ss-checkin-title { font-family: var(--serif); font-size: 22px; line-height: 1.2; color: var(--text); }
+.ss-checkin-sign { display: flex; flex: none; width: 92px; }
+.ss-checkin-sign .scn-sign, .ss-deep-art .scn-sign { width: 100%; }
+.ss-group { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+.ss-group-head { margin: 2px 4px 0; }
+.ss-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
+.ss-mode + .ss-mode { border-top: 1px solid var(--paper-sunk); }
+.ss-mode.is-open { background: oklch(0.975 0.01 var(--h)); }
+.ss-mode-head {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; box-sizing: border-box;
+  padding: 10px 16px; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--text);
+}
+.ss-mode-head:focus-visible { outline-offset: -2px; }
+.ss-mode-head:hover { background: oklch(0.96 0.015 var(--h)); }
+.ss-mode-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ss-mode-name { font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--text); }
+.ss-mode-feel { font-size: 12.5px; line-height: 1.45; color: var(--text-sub); }
+.ss-mode-more { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 0 16px 4px; }
+.ss-share-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+
+/* Чек-ин: плитки бумаги группы, знак над подписью; «Что помогает» — белый лист с Leaf. */
+.ss-checkin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 132px), 1fr)); gap: 10px; }
+.ss-checkin-btn {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 12px;
+  min-height: 112px; box-sizing: border-box; padding: 14px 14px 14px 16px; border: 0; text-align: left; cursor: pointer;
+  font: 600 14px/1.3 var(--sans); color: var(--text); transition: background .12s;
+}
+.ss-checkin-tile-sign { display: flex; width: 60px; margin-left: -6px; }
+.ss-checkin-tile-sign .pp-art--square { width: 60px; height: auto; }
+.ss-card-stack { display: flex; flex-direction: column; gap: 14px; }
+.ss-tip-head { display: flex; align-items: center; gap: 10px; }
+.ss-tip-head .pp-row-art { justify-content: flex-start; }
 
 /* ── Карточка схемы ─────────────────────────────────────────────────────── */
-.ss-belief { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--paper-sunk); }
-.ss-belief:first-of-type { border-top: none; }
-.ss-belief-dot { font-family: var(--serif); font-size: 22px; line-height: 1; flex-shrink: 0; }
-.ss-belief-text { font-family: var(--serif); font-size: 18px; font-style: italic; line-height: 1.55; color: var(--text); }
-.ss-card-stack { display: flex; flex-direction: column; gap: 14px; }
+.ss-belief { display: flex; gap: 14px; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--paper-sunk); }
+.ss-belief:first-of-type { border-top: none; padding-top: 4px; }
+/* Камешек реплики цветом бумаги домена — мотив Pebbles, не точка-глиф. */
+.ss-belief-dot { flex: none; width: 13px; height: 10px; border-radius: 50%; background: oklch(0.7 0.08 var(--h)); transform: translateY(-2px); }
+.ss-belief-text { font-family: var(--serif); font-size: 19px; font-style: italic; line-height: 1.5; color: var(--text); }
+.ss-detail-actions { display: flex; flex-direction: column; gap: 12px; }
+.ds-btn.ss-detail-go { width: 100%; }
+.ss-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
 /* ── Тест YSQ ───────────────────────────────────────────────────────────── */
 .ss-test { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; flex-direction: column; }
 .ss-test-head { flex-shrink: 0; padding: 12px clamp(16px, 4vw, 32px) 0; display: flex; flex-direction: column; gap: 10px; max-width: 760px; width: 100%; margin: 0 auto; box-sizing: border-box; }
 .ss-test-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ss-test-count { font-variant-numeric: tabular-nums; }
-.ss-progress { height: 4px; border-radius: 2px; background: var(--paper-sunk); overflow: hidden; }
-.ss-progress > span { display: block; height: 100%; background: var(--accent); border-radius: 2px; transition: width .25s ease; }
+.ss-progress { height: 6px; border-radius: 3px; background: oklch(0.9 0.03 var(--h)); overflow: hidden; }
+.ss-progress > span { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .25s ease; }
 .ss-test-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px clamp(16px, 4vw, 32px) 24px; }
 .ss-test-col { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 .ss-slide-r { animation: ss-in-r .22s cubic-bezier(.25, .46, .45, .94); }
 .ss-slide-l { animation: ss-in-l .22s cubic-bezier(.25, .46, .45, .94); }
 @keyframes ss-in-r { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
 @keyframes ss-in-l { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
-.ss-q { padding: 28px 28px; display: flex; flex-direction: column; gap: 14px; }
-.ss-q-text { margin: 0; font-family: var(--serif); font-size: 24px; line-height: 1.35; letter-spacing: -.01em; color: var(--text); }
+.ss-q { padding: 32px 32px 36px; display: flex; flex-direction: column; gap: 14px; box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h)); }
+.ss-q-text { margin: 0; font-family: var(--serif); font-size: 26px; line-height: 1.35; letter-spacing: -.01em; color: var(--text); }
 .ss-scale { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .ss-scale-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
@@ -76,64 +142,114 @@
   transition: background .12s, border-color .12s, color .12s;
 }
 .ss-scale-btn:hover { border-color: var(--line-hover); }
-.ss-scale-btn.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hi); }
+.ss-scale-btn.is-active { background: oklch(0.915 0.03 var(--h)); border-color: oklch(0.7 0.07 var(--h)); color: var(--text); }
+.ss-scale-btn.is-active .ss-scale-num { color: var(--c-clay-strong); }
 .ss-scale-num { font-family: var(--serif); font-size: 22px; line-height: 1; }
 .ss-scale-lbl { font-size: 11.5px; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
 .ss-test-nav { flex-shrink: 0; max-width: 760px; width: 100%; margin: 0 auto; padding: 8px clamp(16px, 4vw, 32px) 24px; box-sizing: border-box; display: flex; }
 
-/* Интро и результат */
-.ss-facts { display: flex; flex-direction: column; gap: 8px; }
-.ss-fact { padding: 12px 16px; border-radius: 14px; background: var(--paper-tint); display: flex; flex-direction: column; gap: 2px; }
-.ss-fact b { font-size: 14px; color: var(--text); }
-.ss-fact span { font-size: 13px; color: var(--text-sub); }
+/* Вступление: сцена героя (веер вопросов с Layers), факты одной карточкой, шкала. */
+.ss-quiz-scene { position: relative; display: block; width: 100%; }
+.ss-quiz-sign { position: absolute; left: 53.8%; top: 60.6%; width: 34%; display: flex; justify-content: center; transform: translate(-50%, -50%) rotate(8deg); }
+.ss-quiz-sign .scn-sign { width: 100%; }
+@container pa-sheet (min-width: 561px) { .pa-sheet.ss-ysq-hero > .pa-sheet-art { width: 260px; } }
+@container pa-sheet (max-width: 440px) {
+  /* Итог теста — исход, а не шаг потока: на телефоне знак и число крупнее полосы разворота. */
+  .pa-spread-side .pa-sheet.ss-res-hero[data-sign] > .pa-sheet-art { width: 84px; }
+  .pa-spread-side .pa-sheet.ss-res-hero .pa-sheet-title { font-size: 27px; }
+  .pa-sheet.pa-sheet--scene.ss-ysq-hero > .pa-sheet-art { grid-column: 1 / -1; grid-row: 1; justify-self: center; width: min(240px, 84%); margin-bottom: 2px; }
+}
+.ss-facts { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.ss-fact { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; }
+.ss-fact + .ss-fact { border-top: 1px solid var(--paper-sunk); }
+.ss-fact b { font-family: var(--serif); font-weight: 400; font-size: 19px; line-height: 1.25; color: var(--text); }
+.ss-fact span { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.ss-legend-card { padding: 18px 20px; }
 .ss-legend { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; text-align: center; }
-.ss-legend-n { height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; background: var(--paper-sunk); color: var(--text-sub); }
-.ss-legend-n.is-high { color: var(--accent); }
-.ss-legend-t { font-size: 10.5px; line-height: 1.3; color: var(--text-faint); margin-top: 4px; }
-.ss-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-faint); text-align: center; }
-.ss-res { display: flex; flex-direction: column; gap: 10px; }
-.ss-res-card { display: flex; flex-direction: column; gap: 10px; }
+.ss-legend-n { height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font: 400 19px var(--serif); background: var(--paper-tint); color: var(--text-sub); }
+.ss-legend-n.is-high { background: color-mix(in srgb, var(--c-clay) 16%, var(--surface)); color: var(--c-clay-strong); }
+.ss-legend-t { margin-top: 4px; font-size: 10.5px; line-height: 1.3; color: var(--text-sub); }
+.ss-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); text-align: center; }
+
+/* Результат: группа — бумага потребности (--h, --need-ink, --need-text), схемы — белые листы. */
+.ss-res { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 20px; }
+.ss-res--plain { padding: 0; border-radius: 0; }
+.ss-res-card { display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 4px; border-radius: 14px; background: var(--surface); }
 .ss-res-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.ss-res-name { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; line-height: 1.35; min-width: 0; }
-.ss-res-val { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; font-family: var(--serif); font-size: 22px; line-height: 1; }
-.ss-res-val small { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--text-faint); }
+.ss-res-name { min-width: 0; font-family: var(--serif); font-size: 18px; line-height: 1.25; color: var(--text); }
+.ss-res-val { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; font-family: var(--serif); font-size: 26px; line-height: 1; }
+.ss-res-num { color: var(--need-text); }
+.ss-res-val small { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--text-sub); }
 .ss-delta { font: 700 12px var(--sans); }
 .ss-delta.is-up { color: var(--err); }
 .ss-delta.is-down { color: var(--ok); }
-.ss-bar-track { height: 8px; border-radius: 4px; background: var(--paper-tint); overflow: hidden; }
-.ss-bar-fill { display: block; height: 100%; border-radius: 4px; }
-.ss-res-meta { font-size: 12px; color: var(--text-faint); }
-.ss-res-desc { font-size: 13px; line-height: 1.55; color: var(--text-sub); }
-.ss-res-tip { padding: 10px 14px; border-radius: 12px; background: var(--paper-tint); font-size: 13px; line-height: 1.5; color: var(--text-sub); }
-.ss-res-hint { padding: 8px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn-ink); font-size: 12.5px; line-height: 1.4; }
+.ss-bar-track { height: 8px; border-radius: 4px; background: oklch(0.92 0.03 var(--h)); overflow: hidden; }
+.ss-bar-fill { display: block; height: 100%; border-radius: 4px; background: var(--need-ink); }
+.ss-res-meta { font-size: 12px; color: var(--text-sub); }
+.ss-res-desc { font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+.ss-res-tip { padding: 10px 14px; border-radius: 12px; background: oklch(0.965 0.014 var(--h)); font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.ss-res-hint { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.4; color: var(--text); }
+.ss-res-hint-sign { display: inline-flex; flex: none; }
 .ss-res-link { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; }
-.ss-mini { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: var(--paper-tint); }
-.ss-mini-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-sub); }
-.ss-mini-track { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.ss-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; }
+.ss-minis { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.ss-mini { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; }
+.ss-mini + .ss-mini { border-top: 1px solid var(--paper-sunk); }
+.ss-mini-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; color: var(--text-sub); }
+.ss-mini-track { height: 4px; border-radius: 2px; background: var(--paper-sunk); overflow: hidden; }
 .ss-mini-track > span { display: block; height: 100%; border-radius: 2px; background: var(--text-ghost); }
 .ss-mini.is-mid .ss-mini-track > span { background: var(--warn); }
-.ss-toggle { width: 100%; min-height: 44px; justify-content: space-between; display: flex; }
-.ss-hist { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: var(--paper-tint); font-size: 13px; color: var(--text-sub); }
+.ss-hist { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: var(--surface); font-size: 13px; color: var(--text-sub); }
 .ss-hist.is-now { color: var(--text); font-weight: 600; }
 .ss-hist .ds-dot { background: var(--line-strong); border-radius: 50%; }
 .ss-hist.is-now .ds-dot { background: var(--accent); }
 .ss-hist-grow { flex: 1; }
-.ss-confirm { padding: 16px; border-radius: 14px; background: var(--warn-bg); color: var(--warn-ink); display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
+.ss-confirm { padding: 16px; border-radius: 16px; background: var(--paper-tint); color: var(--text); display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
 .ss-confirm .ds-btn { flex: 1; }
+.ss-deep { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 16px; align-items: start; padding: 18px 20px 20px 16px; }
+.ss-deep-art { display: flex; width: 76px; padding-top: 2px; }
+.ss-deep-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ss-deep-title { font-family: var(--serif); font-size: 20px; line-height: 1.25; color: var(--text); }
+.ss-deep-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ds-btn.ss-deep-link { align-self: flex-start; margin-top: 4px; text-decoration: none; }
+.ds-btn.ss-deep-link:not(:disabled) { background: var(--surface); }
+.ss-topbar { display: flex; flex-direction: column; gap: 10px; }
+.ss-topbar-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ss-topbar-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 1 1 auto; min-height: 44px; padding: 0 18px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); font: 600 14px var(--sans); cursor: pointer;
+}
+.ss-topbar-btn:hover { border-color: var(--line-hover); }
+.ss-topbar-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ss-topbar-chev { width: 12px; height: 12px; transition: transform .2s; }
+.ss-topbar-chev.is-open { transform: rotate(180deg); }
+.ss-help { padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.ss-help-title { margin-bottom: 3px; font-size: 13.5px; font-weight: 600; color: var(--text); }
 
+/* Шире телефона: действия в ряд по ширине текста, факты — три колонки, две колонки потребностей. */
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .ss-actions--wide, .ss-detail-actions { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .ss-actions--wide > .ds-btn, .ds-btn.ss-detail-go { width: auto; min-width: 200px; }
+  .ss-actions--wide > .ss-confirm, .ss-detail-actions > .pa-alert { flex-basis: 100%; }
+  .ss-detail-row { flex: 1; justify-content: flex-start; gap: 20px; }
+  .ss-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ss-checkin-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ss-fact { padding: 16px 20px 18px; }
+  .ss-fact + .ss-fact { border-top: 0; border-left: 1px solid var(--paper-sunk); }
+}
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ss-test { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
-  .ss-q { padding: 20px 18px; }
+  .ss-q { padding: 22px 20px 24px; box-shadow: 5px 6px 0 oklch(0.86 0.045 var(--h)); }
   .ss-q-text { font-size: 22px; }
   .ss-scale { grid-template-columns: 1fr; }
   .ss-scale-btn { flex-direction: row; min-height: 52px; justify-content: flex-start; padding: 8px 16px; gap: 14px; }
   .ss-scale-lbl { font-size: 14px; text-align: left; }
+  .ss-deep { grid-template-columns: 56px minmax(0, 1fr); gap: 12px; }
+  .ss-deep-art { width: 56px; }
+  .ss-checkin-sign { width: 72px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ss-slide-r, .ss-slide-l { animation: none; }
 }
-.ss-mode-share { margin-left: auto; flex-shrink: 0; }
-/* Мотив домена рядом с названием: в шапке схемы — «квадрат», в строках — «ряд» (DomainMark). */
-.ss-domain-line { display: flex; align-items: center; gap: var(--space-12); flex-wrap: wrap; }
-.ss-res-head { display: flex; align-items: center; gap: var(--space-8); }
+/* Мотив домена рядом с названием: в строках — «ряд» (DomainMark). */
 .pp-domain-art--square { width: auto; }

@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react';
 import { ANSWER_LABELS, QUESTIONS, TOTAL_PAGES } from '../../hooks/useYsqTest';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 interface Props {
   page: number;
@@ -10,13 +12,12 @@ interface Props {
   onClose: () => void;
 }
 
-/** Полноэкранная фаза теста: прогресс, карточка вопроса, шкала 1–6, «Назад».
- *  Название шкалы над утверждением не показываем: оно подсказывает, что
- *  измеряет вопрос, и сдвигает ответ (QA 2026-11, B-М11). */
+/** Полноэкранная фаза теста: прогресс, вопрос на листе глины (ENTITY_LOOK.ysq), шкала 1–6, «Назад».
+ *  Название шкалы и домен над утверждением не показываем: они подсказывают, что измеряет вопрос (B-М11). */
 export function YsqQuestion({ page, slideKey, slideDir, answer, onSelect, onBack, onClose }: Props) {
   const pct = ((page + 1) / TOTAL_PAGES) * 100;
   return (
-    <div className="ss-test">
+    <div className="ss-test" style={{ '--h': ENTITY_LOOK.ysq.hue } as CSSProperties}>
       <div className="ss-test-head">
         <div className="ss-test-row">
           <span className="ds-label ss-test-count">Вопрос {page + 1} из {TOTAL_PAGES}</span>
@@ -29,9 +30,7 @@ export function YsqQuestion({ page, slideKey, slideDir, answer, onSelect, onBack
 
       <div className="ss-test-body">
         <div key={slideKey} className={`ss-test-col ${slideDir === 'forward' ? 'ss-slide-r' : 'ss-slide-l'}`}>
-          <div className="ds-card ss-q">
-            <p className="ss-q-text">{QUESTIONS[page]}</p>
-          </div>
+          <div className="pp-paper ss-q"><p className="ss-q-text">{QUESTIONS[page]}</p></div>
           <div className="ss-scale" role="radiogroup" aria-label="Ответ от 1 до 6">
             {ANSWER_LABELS.map((label, i) => {
               const value = i + 1;

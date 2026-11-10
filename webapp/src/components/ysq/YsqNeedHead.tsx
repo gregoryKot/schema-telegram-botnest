@@ -1,11 +1,11 @@
 import { NeedArt } from '../art/NeedArt';
 
-/** Заголовок группы результата YSQ: мотив потребности и её название. */
+/** Заголовок группы результата YSQ на бумаге потребности: её знак и название (как у групп «Справочника»). */
 export function YsqNeedHead({ needId, label }: { needId: string; label: string }) {
   return (
-    <div className="ss-res-head">
-      <span className="pp-row-art"><NeedArt id={needId} size="row" /></span>
-      <div className="ds-chip tone-tint">{label}</div>
-    </div>
+    <h3 className="ss-group-head ss-res-head">
+      <span className="ss-group-sign" aria-hidden="true"><NeedArt id={needId} size="square" /></span>
+      <span className="ds-label ss-group-name">{label}</span>
+    </h3>
   );
 }

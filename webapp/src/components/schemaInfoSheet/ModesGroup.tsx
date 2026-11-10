@@ -1,0 +1,46 @@
+import type { CSSProperties } from 'react';
+import { SignArt } from '../art/SignArt';
+import { GlyphChevron } from '../exercises/ExGlyphs';
+import type { buildModes } from './data';
+import { libraryGroupLook } from './modesLook';
+import { ModeShareButton } from './ModeShareButton';
+
+type Group = ReturnType<typeof buildModes>[number];
+
+/** Группа режимов справочника: лист бумаги группы со знаком (у копингов — три) у подписи; режимы — белый
+ *  список: имя и «Чувствуется как», описание и «Поделиться» — по раскрытию строки (открыта одна, openMode). */
+export function ModesGroup({ group: g, openMode, onToggle }: { group: Group; openMode: string | null; onToggle: (name: string) => void }) {
+  const look = libraryGroupLook(g);
+  return (
+    <section className="pp-paper ss-group" style={{ '--h': look.hue } as CSSProperties}>
+      <h3 className="ss-group-head">
+        <span className={`ss-group-signs${look.signs.length > 1 ? ' is-many' : ''}`} aria-hidden="true">
+          {look.signs.map((s) => <span key={s} className="ss-group-sign"><SignArt sign={s} size="square" /></span>)}
+        </span>
+        <span className="ds-label ss-group-name">{g.group}</span>
+      </h3>
+      <div className="ss-rows">
+        {g.items.map((m) => {
+          const isOpen = openMode === m.name;
+          return (
+            <div key={m.name} className={`ss-mode${isOpen ? ' is-open' : ''}`}>
+              <button type="button" className="ss-mode-head" aria-expanded={isOpen} onClick={() => onToggle(m.name)}>
+                <span className="ss-mode-text">
+                  <span className="ss-mode-name">{m.name}</span>
+                  <span className="ss-mode-feel">Чувствуется как: {m.feel}</span>
+                </span>
+                <span className={`ss-chev${isOpen ? ' is-open' : ''}`} aria-hidden="true"><GlyphChevron /></span>
+              </button>
+              {isOpen && (
+                <div className="ss-mode-more">
+                  <p className="ss-body ss-body--sm">{m.desc}</p>
+                  <ModeShareButton group={g.group} color={g.color} name={m.name} feel={m.feel} desc={m.desc} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

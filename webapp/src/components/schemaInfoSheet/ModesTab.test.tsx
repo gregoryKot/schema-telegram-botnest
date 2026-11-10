@@ -53,8 +53,8 @@ describe('ModesTab — чек-ин живёт в истории браузера
     openCheckin();
     expect(screen.getByText('Выбери самое близкое ощущение')).toBeTruthy();
     expect(screen.queryByText('HOST-CLOSED')).toBeNull();
-    // Справочник на месте: его заголовок виден.
-    expect(screen.getByText('Схема-терапия')).toBeTruthy();
+    // Справочник на месте: его надпись видна (дефис неразрывный — glue в EntitySheet).
+    expect(screen.getByText(/^Схема.терапия$/)).toBeTruthy();
   });
 
   it('системная «Назад» на выборе закрывает только чек-ин; второе «Назад» — справочник', () => {
@@ -153,14 +153,23 @@ describe('ModesTab — «Поделиться» у режима (паритет 
     fireEvent.click(screen.getByText('Режимы'));
   }
 
-  it('у каждого режима своя кнопка шаринга', () => {
+  // Редизайн 2026-11 (b16): кнопка шаринга у каждой из одиннадцати строк была шумом — строка режима
+  // раскрывается (описание + «Поделиться»), открыта одна строка за раз.
+  it('строка режима раскрывается: описание и «Поделиться» этого режима, одна строка за раз', () => {
     openModes();
-    expect(screen.getAllByRole('button', { name: /^Поделиться режимом/ }).length).toBe(11);
+    expect(screen.queryAllByRole('button', { name: /^Поделиться режимом/ })).toHaveLength(0);
+    const rows = screen.getAllByRole('button', { expanded: false }).filter((b) => b.classList.contains('ss-mode-head'));
+    expect(rows).toHaveLength(11);
+    fireEvent.click(screen.getByRole('button', { name: /^Карающий Критик/ }));
     expect(screen.getByRole('button', { name: 'Поделиться режимом «Карающий Критик»' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Здоровый Взрослый/ }));
+    expect(screen.getAllByRole('button', { name: /^Поделиться режимом/ })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Поделиться режимом «Здоровый Взрослый»' })).toBeTruthy();
   });
 
   it('тап открывает лист «Карточка режима» и рисует карточку именно этого режима', () => {
     openModes();
+    fireEvent.click(screen.getByRole('button', { name: /^Карающий Критик/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Поделиться режимом «Карающий Критик»' }));
     expect(screen.getByText('Карточка режима')).toBeTruthy();
     expect(drawSchemaCard).toHaveBeenCalled();
