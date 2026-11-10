@@ -1,24 +1,25 @@
-import { ExScreen, ExDone, GlyphCheck } from '../ExScreen';
+import { ExBar } from '../ExBar';
+import { useExBackLabel } from '../exBackLabel';
+import { DoneSheet } from '../../paper/DoneSheet';
+import { SignArt } from '../../art/SignArt';
+import { CardDialogue } from '../cardFlow/CardDialogue';
+import { BeliefRecap } from './BeliefParts';
 import { fmtAgo } from '../../../utils/format';
 import type { api } from '../../../api';
+import { ENTITY_LOOK } from '../../../../../shared/src/theme/entityLook';
+import { glueSpaces } from '../../../../../shared/src/utils/typo';
 import { hueStyle } from '../../../lib/tone';
-import { HUE_STRAIN, HUE_CARE } from '../exHue';
+import '../../../styles/sheet-diary.css';
 
 type BeliefCheckRow = Awaited<ReturnType<typeof api.getBeliefChecks>>[number];
+const LOOK = ENTITY_LOOK.belief_check;
 
-// Экран «сохранено» проверки убеждения: карточка результата, прошлые
-// проверки в боковой колонке, кнопки «ещё одна»/«закрыть».
-// Вынесено из BeliefCheckEx.tsx (правило №10).
-export function BeliefDoneScreen({
-  goBack,
-  belief,
-  forList,
-  againstList,
-  reframe,
-  history,
-  pastChecks,
-  onRestart,
-}: {
+// «Проверка сохранена»: лист «готово» на соломе упражнения — весы с проросшим листом (Sprout, ENTITY_LOOK
+// belief_check), «Закрыть» главная, «Проверить ещё одну» тихая. Ниже — итог диалогом: убеждение на
+// бумаге упражнения и «Точнее» — голосом Здорового Взрослого (CardDialogue, тот же, что у карточек), обе
+// чаши столбцами (BeliefRecap), следующий шаг со знаком Layers и прошлые проверки тихими строками.
+// Рамка — ex2-screen с баром упражнения; goBack — useHistorySheet в BeliefCheckEx.tsx.
+export function BeliefDoneScreen({ goBack, belief, forList, againstList, reframe, history, pastChecks, onRestart }: {
   goBack: () => void;
   belief: string;
   forList: string[];
@@ -28,88 +29,39 @@ export function BeliefDoneScreen({
   pastChecks: BeliefCheckRow[];
   onRestart: () => void;
 }) {
+  const backLabel = useExBackLabel();
   return (
-  <ExScreen
-    onBack={goBack}
-    eyebrow="Проверка убеждения · сохранено"
-    title={
-      <>
-        Готово.
-        <br />
-        <span className="it">Мысль проверена.</span>
-      </>
-    }
-    lede="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Проверка сохранена в разделе «Мой путь»."
-    aside={
-      <>
-        <div className="ds-card ex2-note">
-          <div className="ds-label">Что попробовать дальше</div>
-          <h3 className="ex2-note-h">Знакомство со схемой</h3>
-          <p className="ex2-note-body">
-            Если эта мысль возвращается часто – стоит копнуть, какая схема
-            за ней стоит.
-          </p>
+    <div className="ex2-screen">
+      <ExBar onBack={goBack} label={backLabel} sticky />
+      <div className="sd-done-page ex2-card-done">
+        <DoneSheet entity="belief_check" titleAs="h1" label="Проверка убеждения · сохранено"
+          title={<>Готово.<br /><span className="it">Мысль проверена.</span></>}
+          sub="Иногда достаточно увидеть доказательства, чтобы мысль потеряла силу. Проверка сохранена в разделе «Мой путь»."
+          primary={{ label: 'Закрыть', onClick: goBack }} secondary={{ label: 'Проверить ещё одну', onClick: onRestart }} />
+        <CardDialogue look={LOOK}
+          voice={{ label: 'Убеждение', text: <>«{glueSpaces(belief)}»</> }}
+          healthy={reframe.trim() ? { label: 'Точнее', text: <>«{glueSpaces(reframe)}»</> } : undefined} />
+        <BeliefRecap forList={forList} againstList={againstList} />
+        <div className="pp-paper ex2-next" style={hueStyle(ENTITY_LOOK.schema_card.hue)}>
+          <span className="ex2-next-sign" aria-hidden="true"><SignArt sign={ENTITY_LOOK.schema_card.sign} size="row" /></span>
+          <div className="ex2-next-body">
+            <div className="ds-label ex2-next-label">Что попробовать дальше</div>
+            <h2 className="ex2-next-title">Знакомство со схемой</h2>
+            <p className="ex2-next-text">Если эта мысль возвращается часто – стоит копнуть, какая схема за ней стоит.</p>
+          </div>
         </div>
         {pastChecks.length > 0 && (
-          <div className="ds-card ex2-note">
-            <div className="ds-label">
-              Прошлые проверки · {history.length}
-            </div>
+          <section className="ex2-answers ex2-past">
+            <div className="ds-label ex2-past-head">Прошлые проверки · {history.length}</div>
             {pastChecks.map((h, i) => (
               <div key={i} className="ex2-hist-row">
                 <span className="ex2-hist-date">{fmtAgo(h.createdAt)}</span>
-                <span className="ex2-hist-snip">«{h.belief}»</span>
+                <span className="ex2-hist-snip">«{glueSpaces(h.belief)}»</span>
               </div>
             ))}
-          </div>
+          </section>
         )}
-      </>
-    }
-  >
-    <ExDone>
-      <div className="ex2-stamp">
-        <GlyphCheck /> Сохранено ·{' '}
-        {new Date().toLocaleDateString('ru-RU', {
-          day: 'numeric',
-          month: 'long',
-        })}
       </div>
-      <div className="ex2-dlabel">Убеждение</div>
-      <div className="ex2-quote ex2-quote--em">«{belief}»</div>
-      <div className="ex2-cols">
-        <div style={hueStyle(HUE_STRAIN)}>
-          <div className="ex2-dlabel is-tone">За · {forList.length}</div>
-          <ul className="ex2-ev">
-            {forList.map((f, i) => (
-              <li key={i}>{f}</li>
-            ))}
-          </ul>
-        </div>
-        <div style={hueStyle(HUE_CARE)}>
-          <div className="ex2-dlabel is-tone">Против · {againstList.length}</div>
-          <ul className="ex2-ev">
-            {againstList.map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      {reframe.trim() && (
-        <>
-          <div className="ex2-dlabel">Точнее</div>
-          <div className="ex2-quote">«{reframe}»</div>
-        </>
-      )}
-    </ExDone>
-    <div className="ex2-foot">
-      <button className="ds-btn ds-btn--secondary" onClick={onRestart}>
-        Проверить ещё одну
-      </button>
-      <span className="ex2-spacer" />
-      <button className="ds-btn" onClick={goBack}>
-        Закрыть
-      </button>
     </div>
-  </ExScreen>
   );
 }

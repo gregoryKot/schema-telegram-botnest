@@ -52,7 +52,7 @@
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/sections/schemas/ModeExOverlay.tsx": {
-    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:148); обёртка только позиционирует.",
+    "reason": "Класс u-sheet здесь — обёртка вокруг ModeEx, который сам вызывает useHistorySheet (FlashcardEx.tsx:71); обёртка только позиционирует.",
     "since": "docs/AUDIT_2026-10_FINDINGS.md"
   },
   "webapp/src/components/caseFlow/CaseDoneScreen.tsx": {
@@ -71,8 +71,12 @@
     "reason": "Выбор режима на рамке ExScreen: шаг потоков ModeEntrySheet.tsx и QuickEntrySheet.tsx, в каждом useHistorySheet вызван один раз; onBack приходит пропом (goBack родителя).",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
+  "webapp/src/components/exercises/cardFlow/CardDone.tsx": {
+    "reason": "«Карточка сохранена» карточек схемы и режима на рамке экрана упражнения (ex2-screen + ExBar, лист DoneSheet): шаг SchemaEx/ModeEx (FlashcardEx.tsx), где useHistorySheet вызван один раз; «Назад» и «Закрыть» приходят пропом onClose (goBack).",
+    "since": "b17-ex-cards, 2026-11"
+  },
   "webapp/src/components/exercises/beliefCheck/BeliefDoneScreen.tsx": {
-    "reason": "Экран «Готово» проверки убеждения на рамке ExScreen: шаг BeliefCheckEx.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "reason": "Экран «Готово» проверки убеждения на рамке экрана упражнения (ex2-screen + ExBar, лист DoneSheet): шаг BeliefCheckEx.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
   "webapp/src/components/exercises/childhoodWheel/ChildhoodFill.tsx": {

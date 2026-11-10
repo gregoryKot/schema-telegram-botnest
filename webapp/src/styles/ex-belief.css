@@ -1,19 +1,55 @@
-/* Упражнение «Проверка убеждения» (BeliefCheckEx, EviList, BeliefDoneScreen).
-   Подключается из sheet-exercises.css. */
-.ex2-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
-.ex2-ev { margin: 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.5; color: var(--on-panel-sub); }
-.ex2-ev li { padding: 6px 0; border-bottom: 1px solid var(--panel-line); }
-.ex2-ev li:last-child { border-bottom: 0; }
+/* Упражнение «Проверка убеждения» (BeliefCheckEx, beliefCheck/*). Подключается из sheet-exercises.css.
+   Шаг — как у мастера дневника (sd-ticks, sd-step-q, sd-area — diary-wizard.css), подсказка — тихая
+   раскрывашка sd-why (note-sheet.css); здесь — своё: камешки чаш, доводы, сводка, итог. */
+.ex2-belief { display: flex; flex-direction: column; gap: 12px; }
+.ex2-belief-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+.ex2-belief-progress > .sd-ticks { margin-bottom: 4px; }
+.ex2-belief-step { color: var(--text-sub); }
+.ex2-belief-quote { font-style: italic; }
+/* Живые весы на листе-герое крупнее знака: камешки доводов должны читаться и на полосе второго шага. */
+.ex2-hero.pa-sheet > .pa-sheet-art:has(> .ex2-belief-scales) { width: 112px; }
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) { .pa-spread-side .ex2-hero.pa-sheet > .pa-sheet-art:has(> .ex2-belief-scales) { width: 220px; } }
+.ex2-belief > .ex2-foot { margin-top: 12px; }
+/* Подсказка шага: подписи-капители нет — заголовок Literata (BeliefHint). */
+.ex2-belief-hint > .ds-fold-btn > .ds-label:empty { display: none; }
+.ex2-belief-hint-list { margin: -6px 0 14px; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+
+/* ── Камешек чаши (Pebble): «за» — мох, «против» — глина, как на весах листа-героя ── */
+.ex2-pebble { flex: none; width: 16px; height: 11px; }
 
 /* ── Доказательства (за/против) ───────────────────────────────────────── */
-.ex2-evi { display: flex; flex-direction: column; margin-bottom: 16px; }
-.ex2-evi-row, .ex2-evi-add { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--paper-sunk); }
-.ex2-evi-num { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-ghost); }
-.ex2-evi-text { font-size: 15px; line-height: 1.55; color: var(--text); padding: 8px 0; }
-.ex2-evi-x { width: 44px; height: 44px; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: var(--text-faint); cursor: pointer; }
+.ex2-evi { display: flex; flex-direction: column; }
+.ex2-evi-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) 44px; gap: 12px; align-items: center; min-height: 48px; border-bottom: 1px solid var(--paper-sunk); }
+.ex2-evi-text { padding: 10px 0; font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.ex2-evi-x { width: 44px; height: 44px; display: grid; place-items: center; border: none; border-radius: 50%; background: none; color: var(--text-sub); cursor: pointer; }
 .ex2-evi-x:hover { background: var(--paper-tint); color: var(--text); }
-.ex2-evi-add { border-bottom: none; padding-top: 14px; }
-.ex2-evi-plus { display: grid; place-items: center; color: var(--text-faint); }
+/* Поле во всю ширину, «Добавить» — круглая кнопка-иконка 44×44 справа. */
+.ex2-evi-add { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; align-items: center; padding-top: 14px; }
+.ds-input.ex2-evi-input { min-height: 44px; }
+.ds-btn.ex2-evi-go { width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
 .ds-btn.ex2-evi-go.is-ready { color: var(--accent); border-color: var(--accent); }
-.ex2-recap.ds-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; }
-.ex2-recap-row { padding: 4px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+
+/* ── Сводка обеих чаш (BeliefRecap) — перед переформулировкой и на итоге ── */
+.ex2-recap { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 28px; padding: 16px 18px 12px; border-radius: 18px; background: var(--surface); }
+.ex2-recap-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: var(--text-sub); }
+.ex2-recap-row { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--paper-sunk); font-size: 14px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.ex2-recap-row > .ex2-pebble { width: 12px; height: 8px; }
+/* Переформулировка — Literata, как слова на листе, а не служебное поле. */
+.ds-textarea.ex2-reframe { min-height: calc(7.5em + 26px); field-sizing: content; font-family: var(--serif); font-size: 18px; line-height: 1.5; }
+
+/* ── Итог (BeliefDoneScreen): следующий шаг со знаком схем и прошлые проверки ── */
+.ex2-next { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; padding: 14px 18px 16px 14px; border-radius: 18px; }
+.ex2-next-sign { display: flex; padding-top: 2px; }
+.ex2-next-label { color: var(--text-sub); }
+.ex2-next-title { margin: 4px 0; font: 400 20px/1.25 var(--serif); color: var(--text); }
+.ex2-next-text { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+.ex2-past { padding: 14px 18px 4px; }
+.ex2-past-head { margin-bottom: 2px; color: var(--text-sub); }
+.ex2-past .ex2-hist-row:last-child { border-bottom: 0; }
+.ex2-past .ex2-hist-date { color: var(--text-sub); }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* Главная кнопка шага — во всю ширину отдельной строкой, «Назад» — над ней слева. */
+  .ex2-belief > .ex2-foot > .ds-btn:not(.ex2-ghost) { flex: 1 1 100%; }
+  .ds-textarea.ex2-reframe { font-size: 17px; }
+}

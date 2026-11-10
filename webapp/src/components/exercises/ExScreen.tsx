@@ -17,8 +17,7 @@ export { GlyphArrowLeft, GlyphArrowRight, GlyphCheck, GlyphChevron, GlyphPlus, G
 // Герой (look, ExHead) и раскладки редизайна 2026-11 — по желанию экрана, без них DOM прежний:
 //  • hintBeforeField — на ≤900 подсказка (aside) между шапкой и полем, а не после «Сохранить»;
 //  • spread — разворот (SpreadLayout): на ≥1024 шапка и подсказка слева колонкой, форма справа;
-//  • «самопомощь» у героя — наклейкой под кнопками (после foot): на 390 до поля только шапка и лист
-//    (APP_2026-11.md, принцип 5); cautionAt="head" — под лист. Без look — полное под шапкой.
+//  • «самопомощь» у героя — наклейкой под кнопками (принцип 5), cautionAt="head" — под лист; без look — под шапкой.
 interface ExScreenProps extends ExHeadProps {
   /** Предупреждение «самопомощь» — только на первом экране. */
   caution?: boolean;
@@ -75,21 +74,22 @@ export function ExScreen({ onBack, backLabel, ...body }: ExScreenProps) {
   );
 }
 
-// ── Силуэт экрана упражнения, пока грузится его чанк (Suspense в TaskExerciseHost) ──
-// Та же рамка: шапка, надзаголовок, заголовок, абзац, карточка. Записи истории ещё нет — «Назад» — onBack хоста.
-export function ExScreenSkeleton({ onBack }: { onBack: () => void }) {
+// ── Силуэт упражнения, пока грузится чанк (TaskExerciseHost): лист-герой сразу на бумаге упражнения (hue —
+// exerciseHue хоста), место знака справа, поле, на ≥901 — колонка подсказки; «Назад» — onBack хоста.
+export function ExScreenSkeleton({ onBack, hue }: { onBack: () => void; hue?: number }) {
   const hostBackLabel = useExBackLabel();
   return (
     <div className="ex2-screen">
       <ExBar onBack={onBack} label={hostBackLabel} sticky />
-      <div className="ex2-body ex2-body--single" aria-hidden>
+      <div className="ex2-body" aria-hidden>
         <div className="ex2-main ex2-skel">
-          <Skeleton width={120} height={12} />
-          <Skeleton width="62%" height={30} />
-          <Skeleton width="92%" height={14} />
-          <Skeleton width="74%" height={14} />
+          <div className="pp-paper pa-sheet ex2-skel-hero" style={{ '--h': hue ?? 70 } as CSSProperties}>
+            <div className="pa-sheet-body"><Skeleton width={120} height={12} /><Skeleton width="62%" height={30} /><Skeleton width="86%" height={14} /></div>
+            <div className="pa-sheet-art"><Skeleton height={88} radius={16} /></div>
+          </div>
           <SkeletonCard height={220} />
         </div>
+        <aside className="ex2-aside ex2-skel-aside"><SkeletonCard height={180} /></aside>
       </div>
     </div>
   );

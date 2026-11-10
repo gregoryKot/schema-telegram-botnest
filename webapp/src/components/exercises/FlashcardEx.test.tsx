@@ -51,7 +51,7 @@ afterEach(() => {
   cleanup();
 });
 
-describeCrisisField('webapp/src/components/exercises/FlashcardEx.tsx', {
+describeCrisisField('webapp/src/components/exercises/cardFlow/CardQuestions.tsx', {
   label: 'ответ на вопрос карточки схемы',
   open: renderSheet,
   enter: async (text) => fireEvent.change(await screen.findByRole('textbox'), { target: { value: text } }),
@@ -166,7 +166,7 @@ describe('FlashcardEx (ModeEx) — портрет режима: первый п�
     fireEvent.click(screen.getByText('Заполнить свою карточку →'));
     expect(await screen.findByRole('textbox')).toBeTruthy();
 
-    fireEvent.click(screen.getByText('ⓘ Про режим'));
+    fireEvent.click(screen.getByText('Про режим'));
     expect(screen.getByText('Назад к вопросам →')).toBeTruthy();
 
     fireEvent.click(screen.getByText('Назад к вопросам →'));
@@ -237,7 +237,8 @@ describe('FlashcardEx — вход без initialData грузит сохран�
     renderSheet();
     expect(((await screen.findByRole('textbox')) as HTMLTextAreaElement).value).toBe('');
     // Пустая форма без объяснения читалась бы как «написанное пропало».
-    expect(screen.getByRole('alert').textContent).toMatch(/Не получилось загрузить/);
+    // Сбой — лист PaperAlert: строки склеены неразрывными пробелами (glue), отсюда \s.
+    expect(screen.getByRole('alert').textContent).toMatch(/Не\sполучилось\sзагрузить/);
   });
 
   it('ModeEx: поля стартуют с сохранённой карточки режима', async () => {
@@ -260,5 +261,34 @@ describe('FlashcardEx — предел поля карточки', () => {
     renderSheet();
     const area = (await screen.findByRole('textbox')) as HTMLTextAreaElement;
     expect(area.maxLength).toBe(NOTE_CARD_FIELD_MAX);
+  });
+});
+
+// Редизайн b17 (APP_2026-11.md): выбор по доменам со знаком у подписи, герой — бумага домена,
+// «готово» — лист DoneSheet; «Изменить карточку» открывает вопросы с написанным, без пустой формы.
+describe('FlashcardEx (SchemaEx) — выбор, герой домена, «готово»', () => {
+  it('выбор: группа на бумаге домена со знаком, описания в две строки; тап — герой домена', async () => {
+    const { container } = render(<MemoryRouter><SchemaEx onBack={vi.fn()} /></MemoryRouter>);
+    const blocks = [...container.querySelectorAll<HTMLElement>('.sd-group-block')];
+    expect(blocks.length).toBeGreaterThan(3);
+    expect(blocks.every((b) => b.querySelector('.sd-group-sign svg'))).toBe(true);
+    expect(container.querySelector('.sd-groups.is-clamped')).not.toBeNull();
+    fireEvent.click(screen.getByText('Эмоциональная депривация'));
+    const hero = container.querySelector<HTMLElement>('.ex2-hero')!;
+    expect(hero.getAttribute('data-sign')).toBe('domain_rejection');
+    expect(await screen.findByRole('textbox')).toBeTruthy();
+  });
+
+  it('«готово» — лист с ростком; «Изменить карточку» — вопросы с написанным, без второго запроса', async () => {
+    renderSheet();
+    await goToLastStep();
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить карточку/ }));
+    await screen.findByText(/Карточка сохранена/);
+    expect(document.querySelector('.pa-done[data-entity="schema_card"]')).not.toBeNull();
+    expect(screen.getByText('Пример ответа')).toBeTruthy();
+    const calls = mockedApi.getSchemaNotes.mock.calls.length;
+    fireEvent.click(screen.getByText('Изменить карточку'));
+    expect(((await screen.findByRole('textbox')) as HTMLTextAreaElement).value).toBe('Пример ответа');
+    expect(mockedApi.getSchemaNotes.mock.calls.length).toBe(calls);
   });
 });
