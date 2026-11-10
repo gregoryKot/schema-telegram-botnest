@@ -5,8 +5,11 @@ import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
-import { DIARY_HUE } from '../lib/tone';
-import { DiaryAside } from './diary/DiaryStepCard';
+import { NoteWhy } from './NoteWhy';
+import { PaperAlert } from './paper/PaperAlert';
+import { formatDateString } from '../../../shared/src/utils/calendarDate';
+import { glue } from '../../../shared/src/utils/typo';
+import { todayStr } from '../../../shared/src/utils/format';
 import '../styles/sheet-diary.css';
 import { NoteTagsPicker } from './NoteTagsPicker';
 import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
@@ -61,49 +64,44 @@ export function NoteSheet({ date, onClose }: Props) {
     }
   }
 
+  // Прошлый день — дата на листе (ds-label), а не только подпись в истории.
+  const day = date === todayStr() ? null : formatDateString(date, { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Раскладка быстрой записи: лист заметки (ENTITY_LOOK.note) героем, на ≥1024 — разворот,
+  // поле-лист на всю ширину, темы дня чипами под полем, «Сохранить» во всю колонку.
   return (
     <ExScreen
-      onBack={goBack}
-      backLabel="Назад"
-      eyebrow="Дневник"
-      title={<>Заметка<br /><span className="it">к дню</span></>}
+      onBack={goBack} backLabel="Назад"
+      look="note"
+      spread
+      eyebrow={day ? glue(`Дневник · ${day}`) : 'Дневник'}
+      title={<>Заметка <span className="it">к дню</span></>}
       lede={tr('Запиши момент — что происходило и какие были чувства.', 'Запишите момент — что происходило и какие были чувства.')}
-      aside={
-        <DiaryAside hue={DIARY_HUE.schema} eyebrow="Зачем это?" title="Рефлексия помогает">
-          <p className="ds-sub">Регулярные короткие записи помогают увидеть паттерны и понять, что происходит внутри.</p>
-        </DiaryAside>
-      }
+      aside={<NoteWhy />}
     >
-      {status !== 'ready' ? <NoteLoadState status={status} onRetry={reload} /> : <>
+      {status !== 'ready' ? <NoteLoadState status={status} onRetry={reload} /> : <div className="sd-note-form">
+        <LimitedTextarea
+          max={Math.max(DAY_NOTE_MAX, applied?.text?.length ?? 0)} // слитая заметка — правка без роста (src/bot/day-note-limit.ts)
+          alwaysCount
+          value={text}
+          onChange={e => { setDirty(true); setText(e.target.value); }}
+          placeholder="Что происходило сегодня? Любая мысль..."
+          aria-label="Запись"
+          rows={6}
+          className="pa-field sd-note-area"
+        />
+        {detectCrisisAny(text) && <CrisisCard surface="note" />}
         <NoteTagsPicker selectedTags={selectedTags} onToggle={toggleTag} />
-        <div className="ds-card sd-note-field">
-          <div className="ds-label">Запись</div>
-          <LimitedTextarea
-            max={Math.max(DAY_NOTE_MAX, applied?.text?.length ?? 0)} // слитая заметка — правка без роста (src/bot/day-note-limit.ts)
-            alwaysCount
-            value={text}
-            onChange={e => { setDirty(true); setText(e.target.value); }}
-            placeholder="Что происходило сегодня? Любая мысль..."
-            rows={5}
-            className="ds-textarea"
-          />
-        </div>
-      </>}
-
-      {detectCrisisAny(text) && <CrisisCard surface="note" />}
+      </div>}
 
       {error && (
-        <div role="status" className="sd-save-error">
-          {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
-        </div>
+        <PaperAlert role="status" sign="pebbles" className="sd-note-alert"
+          title={tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')} />
       )}
 
-      <div className="sd-foot">
-        <span className="sd-spacer" />
-        <button onClick={handleSave} disabled={!ready || !hasContent || saving} className="ds-btn">
-          {saving ? '…' : 'Сохранить'}
-        </button>
-      </div>
+      <button onClick={handleSave} disabled={!ready || !hasContent || saving} className="ds-btn sd-note-save">
+        {saving ? '…' : 'Сохранить'}
+      </button>
     </ExScreen>
   );
 }

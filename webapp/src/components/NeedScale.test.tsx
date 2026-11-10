@@ -7,7 +7,7 @@ afterEach(() => cleanup());
 
 describe('NeedScale', () => {
   it('рисует пять кнопок со словами и значением в aria-label', () => {
-    render(<NeedScale value={undefined} hue={28} onChange={vi.fn()} label="Привязанность" />);
+    render(<NeedScale value={undefined} hue={28} needId="attachment" onChange={vi.fn()} label="Привязанность" />);
     expect(screen.getByRole('group', { name: 'Привязанность' })).toBeTruthy();
     expect(screen.getAllByRole('button').map(b => b.getAttribute('aria-label'))).toEqual([
       'Совсем нет — 2 из 10',
@@ -20,7 +20,7 @@ describe('NeedScale', () => {
 
   it('тап отдаёт чётное значение слова', () => {
     const onChange = vi.fn();
-    render(<NeedScale value={undefined} hue={28} onChange={onChange} label="x" />);
+    render(<NeedScale value={undefined} hue={28} needId="attachment" onChange={onChange} label="x" />);
     fireEvent.click(screen.getByRole('button', { name: /В основном да/ }));
     expect(onChange).toHaveBeenCalledWith(8);
     fireEvent.click(screen.getByRole('button', { name: /Совсем нет/ }));
@@ -28,33 +28,40 @@ describe('NeedScale', () => {
   });
 
   it('старая оценка 1–10 подсвечивает ближайшее слово, без оценки нажатой нет', () => {
-    const { rerender } = render(<NeedScale value={7} hue={28} onChange={vi.fn()} label="x" />);
+    const { rerender } = render(<NeedScale value={7} hue={28} needId="attachment" onChange={vi.fn()} label="x" />);
     const pressed = () => screen.getAllByRole('button').filter(b => b.getAttribute('aria-pressed') === 'true');
     expect(pressed().map(b => b.getAttribute('aria-label'))).toEqual(['В основном да — 8 из 10']);
-    rerender(<NeedScale value={3} hue={28} onChange={vi.fn()} label="x" />);
+    rerender(<NeedScale value={3} hue={28} needId="attachment" onChange={vi.fn()} label="x" />);
     expect(pressed().map(b => b.getAttribute('aria-label'))).toEqual(['Мало — 4 из 10']);
-    rerender(<NeedScale value={undefined} hue={28} onChange={vi.fn()} label="x" />);
+    rerender(<NeedScale value={undefined} hue={28} needId="attachment" onChange={vi.fn()} label="x" />);
     expect(pressed()).toHaveLength(0);
   });
 
   it('пипсы: закрашено столько, каков порядковый номер ответа', () => {
-    render(<NeedScale value={undefined} hue={28} onChange={vi.fn()} label="x" />);
+    render(<NeedScale value={undefined} hue={28} needId="attachment" onChange={vi.fn()} label="x" />);
     const filled = screen.getAllByRole('button').map(b => b.querySelectorAll('.ns-pip.is-on').length);
     expect(filled).toEqual([1, 2, 3, 4, 5]);
     expect(screen.getAllByRole('button')[0].querySelectorAll('.ns-pip')).toHaveLength(5);
   });
 
+  it('пипсы — цвет данных своей потребности (--nd), бумага выбранного — её оттенок (--h)', () => {
+    render(<NeedScale value={undefined} hue={135} needId="limits" onChange={vi.fn()} label="x" />);
+    const group = screen.getByRole('group', { name: 'x' }) as HTMLElement;
+    expect(group.style.getPropertyValue('--nd')).toBe('var(--c-moss)');
+    expect(group.style.getPropertyValue('--h')).toBe('135');
+  });
+
   it('вчерашняя оценка помечается словом «вчера» на ближайшем ответе, без неё пометки нет', () => {
-    const { rerender } = render(<NeedScale value={8} hue={28} onChange={vi.fn()} label="x" yesterday={5} />);
+    const { rerender } = render(<NeedScale value={8} hue={28} needId="attachment" onChange={vi.fn()} label="x" yesterday={5} />);
     const marked = screen.getAllByRole('button').filter(b => b.textContent?.includes('вчера'));
     expect(marked.map(b => b.getAttribute('aria-label'))).toEqual(['Наполовину — 6 из 10']);
-    rerender(<NeedScale value={8} hue={28} onChange={vi.fn()} label="x" />);
+    rerender(<NeedScale value={8} hue={28} needId="attachment" onChange={vi.fn()} label="x" />);
     expect(screen.queryByText('вчера')).toBeNull();
   });
 
   it('одна шкала: ни кнопки «0», ни ответа ниже 2 — «не оценено» не уходит на сервер', () => {
     const onChange = vi.fn();
-    render(<NeedScale value={undefined} hue={28} onChange={onChange} label="x" />);
+    render(<NeedScale value={undefined} hue={28} needId="attachment" onChange={onChange} label="x" />);
     screen.getAllByRole('button').forEach(b => fireEvent.click(b));
     expect(onChange.mock.calls.map(c => c[0])).toEqual([2, 4, 6, 8, 10]);
   });

@@ -15,9 +15,8 @@ const PREINSTALLED_CHROMIUM = [
   '/opt/pw-browsers/chromium', // ссылка образа на текущую ревизию
   '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
 ];
-// PW_CHROMIUM_PATH — локальный путь к браузеру (в CI не задан, конфиг не меняется).
 const executablePath =
-  process.env.PW_CHROMIUM_PATH ||
+  process.env.PW_CHROMIUM_PATH || // локальный путь к браузеру (в CI не задан, конфиг не меняется)
   PREINSTALLED_CHROMIUM.find((p) => existsSync(p));
 
 // Общие настройки проектов.
@@ -37,8 +36,7 @@ export default defineConfig({
   use: commonUse,
   // Проекты за одним CI-прогоном `npx playwright test` (nightly.yml, джоба
   // browser-smoke, без фильтра по проекту):
-  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts
-  //    лежит там же: ему нужен baseURL 4173).
+  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts тоже: ему нужен baseURL 4173).
   projects: [
     {
       name: 'webapp',
@@ -53,7 +51,9 @@ export default defineConfig({
         'desktop-layout.spec.ts',
         'asset-recovery.spec.ts',
         'today-fit.spec.ts',
+        'tracker-fit.spec.ts',
         'screen-customize.spec.ts',
+        'sheet-scroll.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
+import { glue } from '../../../../shared/src/utils/typo';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { NeedExplainer } from './NeedExplainer';
 import type { NeedExtra } from '../../../../shared/src/needs/types';
@@ -15,7 +16,7 @@ describe('NeedExplainer', () => {
   it('описание потребности всегда на экране, примеров не больше двух', () => {
     render(<NeedExplainer data={data} />);
     expect(screen.getByText('Рядом есть надёжные люди.')).toBeTruthy();
-    expect(screen.getByText('Кто-то обнял')).toBeTruthy();
+    expect(screen.getByText(glue('Кто-то обнял'))).toBeTruthy();
     expect(screen.getByText('Был разговор, где услышали')).toBeTruthy();
     expect(screen.queryByText('Третий пример, который не показываем')).toBeNull();
   });

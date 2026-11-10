@@ -33,4 +33,12 @@ describe('ClientIndexCard', () => {
     expect(screen.getByText('4,5')).toBeTruthy();
     expect(screen.getByText(/^−\d,\d к нед\.$/).className).toContain('ds-idx-err');
   });
+
+  // Ревью g2 r5: текст брал знак от округлённого числа (−0,04 → «+0,0»), а цвет — от сырого `delta >= 0`:
+  // терапевт видел «+0,0 к нед.» красным. Знак текста и цвета — один, deltaSign.
+  it('разница −0,04 — «+0,0 к нед.» спокойным цветом, а не плюс красным', () => {
+    const history = [day(6), day(6), day(6), day(6), day(6), day(6), day(6.04)];
+    render(<ClientIndexCard todayIndex={6} history={history} />);
+    expect(screen.getByText('+0,0 к нед.').className).toContain('ds-idx-ok');
+  });
 });

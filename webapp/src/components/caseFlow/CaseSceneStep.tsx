@@ -1,18 +1,17 @@
 import { useEffect, useRef } from 'react';
-import { ExScreen } from '../exercises/ExScreen';
-import { Ribbon } from '../art/PaperArt';
+import { CaseStepScreen } from './CaseStepScreen';
 import { CaseFlowFoot } from './caseFlowUi';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
-import '../../styles/case-quick.css';
 
 /**
  * Шаг 1 из 3 — единственное текстовое поле потока: момент своими словами,
  * без шаблонов сцен (владелец 2026-10-27). Кризисная детекция (правило №7)
  * стоит прямо в файле с полем: трипваер crisis-path.invariants ищет вызов
  * здесь; карточку рисует нижняя панель шага. `crisis` из хука покрывает
- * остальные поля потока, локальный вызов — сам текст на экране.
+ * остальные поля потока, локальный вызов — сам текст на экране. Лента —
+ * на листе шалфея (CaseStepScreen), а не отдельной строкой над полем.
  */
 export function CaseSceneStep({
   value,
@@ -32,19 +31,17 @@ export function CaseSceneStep({
   const areaRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { areaRef.current?.focus(); }, []);
   return (
-    <ExScreen
-      onBack={onBack}
-      backLabel="Назад" caution
+    <CaseStepScreen
+      onBack={onBack} caution
       eyebrow="Что случилось · 1 из 3"
       title="Что случилось?"
       lede="Крупное необязательно. Хватит мелочи: сообщение, взгляд, тишина в ответ."
     >
-      <Ribbon size="square" />
       <LimitedTextarea
         max={DIARY_FIELD_MAX}
         ref={areaRef}
-        className="ds-textarea"
-        rows={4}
+        className="pa-field cq-field"
+        rows={5}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Например: сообщение прочитано час назад, ответа нет"
@@ -58,6 +55,6 @@ export function CaseSceneStep({
         crisis={crisis || detectCrisisAny(value)}
         onHardNow={onHardNow}
       />
-    </ExScreen>
+    </CaseStepScreen>
   );
 }

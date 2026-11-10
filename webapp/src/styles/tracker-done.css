@@ -1,0 +1,60 @@
+/* Экран «Готово» трекера (CompletionScreen, b07, docs/design/APP_2026-11.md): лист шалфея —
+   надпись, индекс дня Literata 72, наблюдение и пять столбиков в пазах (знака-полосок над ними
+   нет: та же картинка дважды, ревью g2 r2); на компьютере
+   разворотом (SpreadLayout) — лист слева 400–480, справа кнопки и строки-переходы со знаками;
+   на телефоне лист сверху, под ним то же колонкой. Столбик — цвет данных потребности (--bar,
+   needDataColor), паз — тон глубже бумаги. Правила спора с примитивом пишутся на два класса
+   (.tq-fin .pa-spread): файл может встать в сборке и раньше, и позже paper-app.css. */
+.tq-fin { box-sizing: border-box; width: 100%; max-width: 600px; margin: 0 auto; padding: var(--space-16) var(--space-16) var(--space-32); }
+.tq-day {
+  --h: 135; --bar-max: 112px;
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-8); box-sizing: border-box;
+  padding: var(--space-24) var(--space-20) var(--space-20); border-radius: 28px; text-align: center;
+}
+.tq-day .tq-eyebrow { margin-top: var(--space-4); color: var(--text-sub); }
+.tq-index { font: 400 72px/1 var(--serif); letter-spacing: -0.03em; color: var(--text); margin-top: var(--space-4); }
+.tq-index-cap { margin: 0; font-size: 13px; color: var(--text-sub); }
+.tq-day .tq-obs { margin-top: var(--space-4); }
+
+/* Столбики: паз во всю высоту (куда расти; пустой день — пять пазов с метками, не дыра), в нём столбик. */
+.tq-bars {
+  list-style: none; margin: var(--space-16) 0 var(--space-4); padding: 0; width: 100%; max-width: 340px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-12);
+}
+.tq-bars li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-8); min-width: 0; }
+.tq-bar-slot {
+  display: flex; align-items: flex-end; width: 100%; max-width: 28px; height: var(--bar-max);
+  border-radius: 14px; background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+/* Столбик — полоска бумаги, как в знаке Strokes: скругление во всю ширину, низкая оценка — короткая полоска, не точка. */
+.tq-bar-col { display: block; width: 100%; border-radius: 14px; }
+.tq-bar-col.is-rated { background: var(--bar); height: calc(var(--v) * var(--bar-max)); min-height: 28px; }
+.tq-bar-col:not(.is-rated) { height: 6px; margin: 0 4px 4px; border-radius: 3px; background: color-mix(in srgb, var(--text) 22%, transparent); }
+.tq-bar-cap { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--text-sub); }
+/* Уже 360 колонка столбика — 40px, а «Привяз.» в 11,5px — 42: подпись резалась многоточием (ревью g2 r6).
+   Зазор 8 вместо 12 даёт колонке 43px; паз 28 и кегль остаются. */
+@media (max-width: 359px) {
+  .tq-bars { gap: var(--space-8); }
+}
+
+/* Куда дальше: две кнопки, строки-переходы со знаком слева, строка моста к терапевту. */
+.tq-fin .pa-spread-main { gap: var(--space-20); }
+.tq-fin .tq-acts { gap: var(--space-10); }
+.ds-btn.tq-fin-btn { width: 100%; height: auto; min-height: 52px; border-radius: 26px; font-size: 15px; }
+.tq-go { display: flex; flex-direction: column; border-top: 1px solid var(--paper-sunk); }
+.tq-go-row {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 52px; box-sizing: border-box;
+  padding: 0 var(--space-4); background: none; border: 0; border-bottom: 1px solid var(--paper-sunk);
+  font: 600 15px var(--sans); color: var(--text); text-align: left; cursor: pointer; border-radius: 0;
+}
+.tq-go-row:hover { color: var(--accent); }
+/* Иконка «поделиться» — в той же колонке 44px, что знаки строк над ней. */
+.tq-go-row--share > svg { flex: none; width: 18px; height: 18px; margin: 0 13px; color: var(--text-sub); }
+.tq-fin .th-line { margin: 0; text-align: left; }
+
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .tq-fin { max-width: none; padding: 56px var(--space-32); }
+  .tq-fin .pa-spread { grid-template-columns: minmax(400px, 480px) minmax(0, 400px); gap: 56px; align-items: center; }
+  .tq-day { --bar-max: 140px; padding: 36px 32px 32px; }
+  .tq-bars { max-width: 360px; }
+}

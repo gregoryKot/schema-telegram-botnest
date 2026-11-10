@@ -1,2 +1,22 @@
-/* Заметка к дню (NoteSheet). Подключается сборником sheet-diary.css. */
-.sd-note-field { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+/* Заметка к дню (NoteSheet, NoteTagsPicker, NoteLoadState, NoteWhy). Подключается сборником
+   sheet-diary.css. Раскладка быстрой записи (редизайн 2026-11, b08): лист заметки героем
+   (ExScreen look="note", на ≥1024 — разворот), поле — общий поле-лист .pa-field с тенью тоном бумаги
+   заметки (солома, ENTITY_LOOK.note), темы дня — SignChip под полем, «Сохранить» во всю колонку. */
+.sd-note-form { --h: 70; display: flex; flex-direction: column; gap: 18px; }
+.pa-field.sd-note-area { min-height: 200px; } /* вид поля — общий .pa-field (paper-app.css), тень — солома (--h 70) */
+/* Счётчик «N/предел» (CharCounter) — под полем справа, с отступом от тени поля. */
+.sd-note-area + * { margin-top: -8px; align-self: flex-end; }
+.sd-note-tags { display: flex; flex-direction: column; gap: 10px; }
+.sd-note-tags > .ds-label { color: var(--text-sub); }
+.sd-note-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pa-alert.sd-note-alert { margin-top: 18px; }
+.ds-btn.sd-note-save { width: 100%; height: 48px; margin-top: 22px; border-radius: 24px; font-size: 15px; }
+/* «Зачем это?» — тихая строка-раскрывашка под листом (NoteWhy), без карточки. */
+/* Механика — общая ds-fold (NeedFold); здесь снят вид карточки и заголовок в строку с переносом. */
+.ds-fold.sd-why { background: none; border: 0; border-radius: 0; border-top: 1px solid var(--paper-sunk); border-bottom: 1px solid var(--paper-sunk); }
+.sd-why > .ds-fold-btn { align-items: baseline; justify-content: flex-start; flex-wrap: wrap; gap: 4px 12px; padding: 12px 2px; font: inherit; color: var(--text); }
+.sd-why > .ds-fold-btn > .ds-label { color: var(--text-sub); }
+.sd-why-title { font-family: var(--serif); font-size: 17px; line-height: 1.3; }
+.sd-why > .ds-fold-btn > .ds-fold-chev { margin-left: auto; align-self: center; }
+.sd-why > .ds-fold-body { padding: 0 2px; }
+.sd-why-body { margin: 0 0 14px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }

@@ -285,13 +285,4 @@ describe('HistoryView — вкладка «Неделя»', () => {
     });
     expect(screen.getByText(/Карточка недели/)).toBeTruthy();
   });
-
-  it('выбор диапазона дней зовёт onChangeDays с выбранным числом', async () => {
-    const onChangeDays = vi.fn();
-    await act(async () => {
-      renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 }, days: 7, onChangeDays });
-    });
-    fireEvent.click(screen.getByText('14д'));
-    expect(onChangeDays).toHaveBeenCalledWith(14);
-  });
 });

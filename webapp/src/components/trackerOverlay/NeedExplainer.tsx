@@ -3,7 +3,7 @@
 // примера — в <details> «Например», свёрнуты и раскрываются по тапу: раскрытые сразу,
 // они на 390×664 и 360×640 сталкивали все пять ответов за край (QA мобильной, З5).
 import type { NeedExtra } from '../../../../shared/src/needs/types';
-
+import { glue } from '../../../../shared/src/utils/typo';
 const EXAMPLES_SHOWN = 2;
 
 export function NeedExplainer({ data }: { data: NeedExtra | undefined }) {
@@ -11,13 +11,13 @@ export function NeedExplainer({ data }: { data: NeedExtra | undefined }) {
   const examples = data.examples.slice(0, EXAMPLES_SHOWN);
   return (
     <>
-      <p className="tq-desc">{data.desc}</p>
+      <p className="tq-desc">{glue(data.desc)}</p>
       {examples.length > 0 && (
         <details className="tq-examples">
           <summary className="tq-examples-sum">Например</summary>
           <ul className="tq-examples-list">
             {examples.map((ex) => (
-              <li key={ex}>{ex}</li>
+              <li key={ex}>{glue(ex)}</li>
             ))}
           </ul>
         </details>

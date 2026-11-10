@@ -66,6 +66,10 @@
    (ревью g1); тень-вырезку (SignScene) пустое место не отбрасывает. */
 :root { --strokes-edge: var(--bg); }
 .pp-paper { --strokes-edge: oklch(0.915 0.03 var(--h)); }
+/* Полоски-оценки на белом листе сцены дня (SceneCheckIn values: праздник, «Карточка недели») — кромка цветом
+   этого листа (INK.sheet), а не бумаги вокруг сцены: персик праздника и фон карточки давали на белом цветное
+   кольцо (ревью g2 r6). Сверка с INK.sheet — ValueStrokes.test.tsx. */
+.pp-strokes-sheet { --strokes-edge: var(--surface); }
 .pp-strokes-values > [data-rated="no"] { fill: color-mix(in srgb, currentColor 34%, var(--bg)); stroke: var(--strokes-edge); stroke-width: 2.5; }
 .scn-sign > .pp-art:first-child .pp-strokes-values > [data-rated="no"] { visibility: hidden; }
 /* Камешек, который ещё не лёг (Pebbles filled, ScenePebbleLaid), — гнездо: бледный тон своего камешка

@@ -8,36 +8,26 @@
 // Мотив → смысл: Strokes — трекер и потребности; Ribbon — «Что случилось»;
 // Pebbles — дневник; Cup — пусто и отдых; Breath — дыхание и «здесь и сейчас»;
 // Sheets — записи и «Мой путь»; Layers — схемы и паттерны.
-import { NEED_DATA_PAPER, PAPER, pebblesLaid, type ArtProps } from './paper';
+import { PAPER, pebblesLaid, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
+import { ValueStrokes } from './ValueStrokes';
 
 export interface StrokeMark { id: string; dense: boolean }
 const STROKE_PAPER = [PAPER.moss, PAPER.sage, PAPER.brown, PAPER.clay, PAPER.sage];
 const STROKE_TILT = [-6, 3, -2, 5, -4];
-/** Полоска по оценке 0–10: от кружка (16) до полной (84), низ всех полосок на одной линии; без оценки — 72. */
-const STROKE_FOOT = 92;
-const strokeHeight = (v: number | null) => (v == null ? 72 : 16 + Math.round((Math.min(10, Math.max(0, v)) / 10) * 68));
 
 /**
  * Пять полосок цветной бумаги. `marks` — по одной на потребность: плотная или бледная. `values` —
- * оценки дня в порядке NEED_ORDER (0–10, null — не оценена): высота по оценке, цвет — цвет данных своей
- * потребности (NEED_DATA_PAPER, он же в `color`); пустое место — бледный тон своей потребности с кромкой
- * цветом бумаги (одно правило `.pp-strokes-values`, paper.css). `even` — ровный день, без наклона.
+ * оценки дня в порядке NEED_ORDER (0–10, null — не оценена): разметка ValueStrokes, та же, что у
+ * сегодняшнего листа SceneCheckIn (длина по оценке от кружка 16 до 84, низ на одной линии; пустое
+ * место — бледный тон своей потребности с кромкой). `even` — ровный день, без наклона.
  */
 export function Strokes({ marks, values, even, size }: ArtProps & { marks?: StrokeMark[]; values?: readonly (number | null)[]; even?: boolean }) {
   const tilt = (i: number, y: number) => (even ? undefined : `rotate(${STROKE_TILT[i]} ${16 + i * 22} ${y})`);
   if (values) {
     return (
       <Svg size={size} viewBox="0 0 120 100">
-        <g className="pp-strokes-values">
-          {values.slice(0, 5).map((v, i) => (
-            <rect
-              key={i} data-rated={v == null ? 'no' : 'yes'} data-value={v ?? undefined} color={NEED_DATA_PAPER[i]}
-              x={8 + i * 22} y={STROKE_FOOT - strokeHeight(v)} width="16" height={strokeHeight(v)} rx="8"
-              fill={v == null ? PAPER.hollow : NEED_DATA_PAPER[i]} transform={tilt(i, STROKE_FOOT)}
-            />
-          ))}
-        </g>
+        <ValueStrokes values={values} at="strokes" tilt={even ? undefined : STROKE_TILT} />
       </Svg>
     );
   }

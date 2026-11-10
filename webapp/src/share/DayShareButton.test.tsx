@@ -45,6 +45,17 @@ describe('DayShareButton', () => {
     expect(screen.getByText('Поделиться днём').closest('button')!.getAttribute('style')).toMatch(/border:\s*1px solid/);
   });
 
+  it('className: вид задаёт экран — класс на кнопке, инлайн-стиля нет', () => {
+    render(
+      <MemoryRouter>
+        <DayShareButton needs={NEEDS} ratings={{ safety: 7 }} className="tq-go-row" />
+      </MemoryRouter>,
+    );
+    const btn = screen.getByRole('button', { name: 'Поделиться днём' });
+    expect(btn.className).toBe('tq-go-row');
+    expect(btn.getAttribute('style')).toBeNull();
+  });
+
   it('клик по кнопке открывает шит карточки дня', () => {
     renderButton();
     fireEvent.click(screen.getByText('Поделиться днём'));
