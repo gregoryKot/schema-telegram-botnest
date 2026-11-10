@@ -31,11 +31,14 @@
 .sg-cols { columns: 1; column-gap: 14px; }
 .sg-cols > .sg-group { margin: 0 0 14px; }
 .sg-cols > .sg-group:last-child { margin-bottom: 0; }
-/* Две колонки — сеткой по рядам (align-items: start): колонками три группы вставали «одна слева, две справа», и ряд
-   начинался пустотой ~200px (ревью g5 r3). Три колонки — снова колонками: группы разной высоты не оставляют дыр. */
+/* «Мои схемы / режимы» (.sg-cols--rows, MineGroupsList) в две колонки — сеткой по рядам (align-items: start): колонками
+   три группы вставали «одна слева, две справа», и ряд начинался пустотой ~200px (ревью g5 r3). Листы выбора схем и
+   режимов остаются колонками: там группы от 1 до 8 строк, и в ряду «Детские режимы» стояли бы рядом с одной строкой
+   «Капитуляции» с дырой ~400px (ревью g5 r5). Три колонки — колонками у всех: разная высота не оставляет дыр. */
+@container sg-cols (min-width: 660px) { .sg-cols { columns: 2; } }
 @container sg-cols (min-width: 660px) and (max-width: 959.98px) {
-  .sg-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
-  .sg-cols > .sg-group { margin: 0; }
+  .sg-cols.sg-cols--rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .sg-cols.sg-cols--rows > .sg-group { margin: 0; }
 }
 @container sg-cols (min-width: 960px) { .sg-cols { columns: 3; } }
 

@@ -153,6 +153,17 @@ describe('вводная новичку', () => {
     expect(await screen.findByText('Встретить своего Критика')).toBeTruthy();
   });
 
+  it('вводная режимов (слива) над «Моими схемами» с группой глины: плитка теста — белый лист, не бумага теста (ревью g5 r5)', async () => {
+    const tile = async () => (await screen.findByText('Тест на схемы')).closest('.cs-test')!;
+    mockApi.getProfile.mockResolvedValue(profile(['abandonment'], []));
+    renderSection();
+    expect((await tile()).classList.contains('cs-test--white')).toBe(true);
+    cleanup();
+    mockApi.getProfile.mockResolvedValue(profile(['self_sacrifice'], []));
+    renderSection();
+    expect((await tile()).classList.contains('cs-test--white')).toBe(false);
+  });
+
   it('всё выбрано, дневник пуст: ведёт в дневник', async () => {
     renderSection();
     fireEvent.click(await screen.findByText('Открыть дневник →'));

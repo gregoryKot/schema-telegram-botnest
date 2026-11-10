@@ -18,15 +18,15 @@ interface Props {
 /**
  * «Мои схемы / Мои режимы» — группы на бумаге домена или группы режимов со знаком у подписи
  * (SignGroup, редизайн 2026-11), внутри белый список «название + статус карточки + частота».
- * Одна механика на схемы и режимы, телефон и компьютер: на широкой колонке группы встают в две-три
- * колонки (контейнер .sg-cols), внизу на телефоне — «+ Добавить …» (ds-btn--secondary ds-btn--lg, #906).
+ * Одна механика на схемы и режимы, телефон и компьютер: на широкой колонке группы встают в две (по рядам,
+ * .sg-cols--rows) или три колонки (контейнер .sg-cols), внизу на телефоне — «+ Добавить …» (ds-btn--secondary ds-btn--lg, #906).
  */
 export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, statusFor, freq }: Props) {
   return (
     <section className="cs-block">
       {freq && <FreqHint kind={kind} freq={freq} />}
       {groups.length > 0 && (
-        <div className="sg-cols-box"><div className="sg-cols">
+        <div className="sg-cols-box"><div className="sg-cols sg-cols--rows">
           {groups.map(g => (
             <SignGroup key={g.id} look={mineGroupLook(kind, g.id)} title={g.title} aside={g.ids.length} rowsClassName="cs-grp">
               {g.ids.map(id => {

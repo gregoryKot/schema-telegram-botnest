@@ -62,7 +62,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 
       {show.hero && (
         <PatternsTopStack
-          blocks={blocks} mobile={mobile} ysqEntry={ysqEntry} ysqProgressAnswered={d.ysqProgressAnswered} ysqCompletedAt={d.ysqCompletedAt} onStartTest={startTest}
+          blocks={blocks} mobile={mobile} ysqEntry={top.ysqEntry} ysqProgressAnswered={d.ysqProgressAnswered} ysqCompletedAt={d.ysqCompletedAt} onStartTest={startTest}
           hero={
             <PatternsTopCards blocks={blocks} hero={hero} top={pat.top} testProgress={d.ysqProgressAnswered} white={top.heroWhite}
               onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={startTest} />
@@ -73,7 +73,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {show.schemas && (
         <PatternsSchemasPane
           mobile={mobile} d={d} pat={pat} allSchemaIds={allSchemaIds}
-          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} top={top.pair} ysqEntry={ysqEntry}
+          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} top={top.pair} ysqEntry={top.ysqEntry}
           note={noteFor('schemas')}
         />
       )}

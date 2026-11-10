@@ -119,7 +119,8 @@
 @keyframes ss-in-r { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
 @keyframes ss-in-l { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 .ss-q { padding: 32px 32px 36px; display: flex; flex-direction: column; gap: 14px; box-shadow: 7px 8px 0 oklch(0.86 0.045 var(--h)); }
-.ss-q-text { margin: 0; font-family: var(--serif); font-size: 26px; line-height: 1.35; letter-spacing: -.01em; color: var(--text); text-wrap: pretty; }
+/* Вопрос в 1–4 строки — balance: pretty в Chromium оставлял одно слово в последней строке (ревью g5 r5, 768). */
+.ss-q-text { margin: 0; font-family: var(--serif); font-size: 26px; line-height: 1.35; letter-spacing: -.01em; color: var(--text); text-wrap: balance; }
 .ss-scale { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .ss-scale-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;

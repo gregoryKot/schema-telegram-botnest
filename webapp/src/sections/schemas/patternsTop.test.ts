@@ -1,6 +1,7 @@
 // @vitest-environment node
 // Верх «Паттернов» (ревью g5 r3): герой над первой группой «Моих схем / режимов» близкой бумаги — на белом листе;
-// белая строка или плитка теста и «Выраженные схемы» между ними уже разделяют листы.
+// белая строка или плитка теста и «Выраженные схемы» между ними уже разделяют листы. Плитка теста на бумаге глины над
+// первой группой близкой бумаги — белая (ревью g5 r5): на компьютере без «Выраженных» под ней сразу «Мои схемы».
 import { describe, it, expect } from 'vitest';
 import { firstGroupHue, patternsTop } from './patternsTop';
 import { patternsHero } from './patternsHero';
@@ -57,5 +58,32 @@ describe('patternsTop — белый лист героя', () => {
   it('пара «Выраженные + Тест»: выраженные — по ранжированным схемам, а не по сырым id', () => {
     expect(patternsTop({ ...base, d: { ...d, ysqSchemaIds: ['нет-такой'] } }).pair).toEqual({ expressed: false, tile: true });
     expect(patternsTop({ ...base, blocks: blocks(['ysq_status']) }).pair).toEqual({ expressed: false, tile: false });
+  });
+});
+
+describe('patternsTop — вид плитки теста по листу ниже', () => {
+  const desk = { ...base, mobile: false, ysqEntry: 'paper' as const };
+  const none = patternsHero({ ready: true, top: null, hasSchemas: true, hasModes: true, hasEntries: true });
+
+  it('бумага теста над первой группой глины («Нарушение связи», 28) — белый лист; далёкая группа или групп нет — бумага', () => {
+    expect(patternsTop({ ...desk, hero: none, schemaIds: ['abandonment'] }).ysqEntry).toBe('white');
+    expect(patternsTop({ ...desk, hero: week('subjugation'), schemaIds: ['abandonment'] }).ysqEntry).toBe('white');
+    expect(patternsTop({ ...desk, hero: none, schemaIds: ['self_sacrifice'] }).ysqEntry).toBe('paper');
+    expect(patternsTop({ ...desk, hero: none, schemaIds: [] }).ysqEntry).toBe('paper');
+  });
+
+  it('белый от героя и скрытый вход не меняются группой ниже', () => {
+    expect(patternsTop({ ...desk, ysqEntry: 'white', schemaIds: ['self_sacrifice'] }).ysqEntry).toBe('white');
+    expect(patternsTop({ ...desk, ysqEntry: 'hidden', schemaIds: ['abandonment'] }).ysqEntry).toBe('hidden');
+  });
+
+  it('между героем и группами разделяет только белая плитка: бумага теста — не белый лист между ними', () => {
+    // «Подчинение» (небо 240) над группой «Направленность на других» (240), плитка на глине между ними.
+    const sky = { ...desk, hero: week('subjugation'), schemaIds: ['self_sacrifice'] };
+    expect(patternsTop(sky).ysqEntry).toBe('paper');
+    expect(patternsTop(sky).heroWhite).toBe(true);
+    expect(patternsTop({ ...sky, ysqEntry: 'white' }).heroWhite).toBe(false);
+    // Телефон: строка теста между ними всегда белая.
+    expect(patternsTop({ ...sky, mobile: true }).heroWhite).toBe(false);
   });
 });

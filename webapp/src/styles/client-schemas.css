@@ -132,7 +132,8 @@
   .cs-testrow-text { flex-basis: 150px; }
 }
 .cs-testrow-title { font-size: 16px; font-weight: 600; }
-.cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--text-sub); }
+/* «Пройден 25 окт · результаты внутри» на 320/360 — в две ровные строки, а не слово одно внизу (ревью g5 r5). */
+.cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--text-sub); text-wrap: balance; }
 .cs-testrow .ds-btn { flex: none; margin-left: auto; padding: 0 var(--space-12); border-radius: var(--r-14); }
 
 /* «Мои схемы / Мои режимы» — группы SignGroup (sheet-schemas.css); строка: название + статус, справа частота и шеврон. */
