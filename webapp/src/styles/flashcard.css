@@ -127,10 +127,11 @@
   .sk-fc-aside { right: 16px; }
   .sk-fc-hero { padding: 14px 18px 20px; }
   .sk-fc-hero-title { font-size: 30px; }
-}
-/* Низкий телефон: телефоны доверия — в первом экране (C-К1), сцена уступает место. */
-@media (max-height: 700px) and (max-width: 767px) {
-  .sk-fc-hero-art > .scn { width: 160px; }
+  /* Низкий телефон: телефоны доверия — в первом экране (C-К1), сцена уступает место.
+     Вложено в каноническое условие телефона (phoneLayout.test.ts). */
+  @media (max-height: 700px) {
+    .sk-fc-hero-art > .scn { width: 160px; }
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .sk-fc-choice, .sk-fc-need { transition: none; }

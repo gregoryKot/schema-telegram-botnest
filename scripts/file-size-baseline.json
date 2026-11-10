@@ -19,7 +19,7 @@
   "e2e-browser/live/playwright.config.ts": 24,
   "e2e-browser/support/clientTasks.ts": 29,
   "e2e-browser/support/stubApi.ts": 149,
-  "e2e-browser/support/stubFixtures.ts": 211,
+  "e2e-browser/support/stubFixtures.ts": 212,
   "e2e-browser/support/stubPublic.ts": 97,
   "e2e-browser/support/stubScreens.ts": 43,
   "e2e-browser/support/stubSettings.ts": 57,

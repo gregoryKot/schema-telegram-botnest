@@ -1,8 +1,9 @@
 {
   "webapp/dist/index.html": [
     "sheet-tasks",
-    "TherapyCaution",
     "sceneKit",
+    "SignHero",
+    "TherapyCaution",
     "index"
   ]
 }

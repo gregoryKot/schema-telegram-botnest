@@ -406,7 +406,10 @@ describe('PracticeSection — раздела «В трудный момент» 
     const block = screen.getByRole('heading', { name: 'Каталоги' }).closest('section')!;
     const row = within(block).getByText('Карта режимов').closest('[role="button"]')!;
     expect(row.querySelector('.pp-row-art svg')).not.toBeNull();
-    expect(screen.queryByText('Помощь рядом', { selector: '.ds-label' })).toBeNull();
+    // Плитки верхнего ряда «Помощь рядом» нет; та же надпись у самой кризисной карточки (b12) — законна.
+    const tiles = screen.queryAllByText('Помощь рядом', { selector: '.ds-label' })
+      .filter((el) => !el.closest('[data-crisis-card]'));
+    expect(tiles).toEqual([]);
   });
 });
 

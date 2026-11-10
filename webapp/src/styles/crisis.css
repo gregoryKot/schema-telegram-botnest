@@ -22,7 +22,7 @@
 .cr-sheet { display: flex; flex-direction: column; }
 .sh-close { margin-top: var(--space-16); }
 .ds-btn.sh-close { width: 100%; min-height: 48px; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cr-sheet { min-height: 78vh; }
   .ds-btn.sh-close { margin-top: auto; }
   .cr-sheet > [data-crisis-card] { margin-bottom: var(--space-16); }
