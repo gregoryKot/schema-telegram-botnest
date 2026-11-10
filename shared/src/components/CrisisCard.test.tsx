@@ -6,6 +6,8 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { CrisisCardView, revealAboveKeyboard } from './CrisisCard';
+import { CRISIS_CARD_STYLE, CRISIS_HUE } from './crisisCardStyle';
+import { ENTITY_LOOK } from '../theme/entityLook';
 import {
   CRISIS_HOTLINE_DISPLAY,
   CRISIS_HOTLINE_TEL,
@@ -32,6 +34,21 @@ describe('CrisisCardView — рендер', () => {
     const link = screen.getByText(child.display);
     expect(link.getAttribute('href')).toBe(child.tel);
     expect(screen.getByText(child.audienceNote!)).toBeTruthy();
+  });
+
+  // Регрессия g4 r2: в контейнере шире ~510px детская линия вставала в ряд со взрослой.
+  it('линии — столбиком: детская ссылка идёт после взрослой, второй строкой', () => {
+    render(<CrisisCardView surface="note" tr={tr} track={vi.fn()} />);
+    const adult = screen.getByText(CRISIS_HOTLINES[0].display);
+    const child = screen.getByText(CRISIS_HOTLINES[1].display).closest('a')!;
+    const box = adult.parentElement!;
+    expect(box).toBe(child.parentElement);
+    expect(box.style.flexDirection).toBe('column');
+    expect(box.style.flexWrap).toBe('');
+    expect(Array.from(box.children).indexOf(child)).toBe(
+      Array.from(box.children).indexOf(adult) + 1,
+    );
+    expect(child.style.flex).toBe('');
   });
 
   it('обе формы обращения (ты/вы) присутствуют в тексте через tr()', () => {
@@ -151,5 +168,61 @@ describe('CrisisCardView — прокрутка над клавиатурой (C
 
   it('revealAboveKeyboard(null) безопасен', () => {
     expect(() => revealAboveKeyboard(null)).not.toThrow();
+  });
+});
+
+// Бумага кризисного пути литералом (CRISIS_HUE: карточка, лист «Мне плохо», строки телефонной
+// «Практики») — тот же оттенок, что ENTITY_LOOK.sos: правка таблицы без этой строки краснеет (№4).
+describe('бумага кризисного пути', () => {
+  it('CRISIS_HUE — оттенок «Мне плохо» из ENTITY_LOOK', () => {
+    expect(CRISIS_HUE).toBe(ENTITY_LOOK.sos.hue);
+  });
+
+  // Регрессия g4 r3: на визитке в тёмной теме светлые --text/--text-sub ложились на светлую
+  // розовую бумагу. Своя бумага карточки держит светлые токены сама (.light-lock).
+  it('своя бумага — светлая при любой теме (light-lock); flat — без своей бумаги и замка', () => {
+    const { container, unmount } = render(
+      <CrisisCardView tr={tr} track={vi.fn()} />,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toBe('light-lock pp-paper');
+    expect(root.style.getPropertyValue('--h')).toBe(String(CRISIS_HUE));
+    unmount();
+    const flat = render(<CrisisCardView flat tr={tr} track={vi.fn()} />);
+    expect((flat.container.firstElementChild as HTMLElement).className).toBe(
+      '',
+    );
+  });
+
+  // Ревью g4 r7: знак берёт display: var(--crisis-card-art) без запасного значения, а переменную ставила только
+  // не-flat ветка — у flat-карточки со знаком значение было невалидно. Переменная задана в обеих ветках.
+  it.each([
+    ['своя бумага', false],
+    ['flat', true],
+  ])('%s + art: у знака задана --crisis-card-art', (_, flat) => {
+    const { container } = render(
+      <CrisisCardView
+        flat={flat}
+        art={<svg data-sign="" />}
+        tr={tr}
+        track={vi.fn()}
+      />,
+    );
+    const sign = container.querySelector('[data-sign]')!.parentElement!;
+    expect(sign.style.display).toBe('var(--crisis-card-art)');
+    let el: HTMLElement | null = sign;
+    while (el && !el.style.getPropertyValue('--crisis-card-art'))
+      el = el.parentElement;
+    expect(el?.style.getPropertyValue('--crisis-card-art')).toBe('inline-flex');
+  });
+});
+
+// Ревью g3 (2026-11-09): подпись детской линии и сноска «Круглосуточно, бесплатно, анонимно…» шли --text-faint —
+// 4.42:1 на бумаге карточки, ниже AA. b12 перевёл мелкий текст на --text-sub; сверка держит, что faint не вернётся.
+describe('CrisisCardView — мелкий текст читается (AA)', () => {
+  it('подпись линии и сноска — --text-sub; --text-faint в стилях карточки нет', () => {
+    expect(CRISIS_CARD_STYLE.note.color).toBe('var(--text-sub)');
+    expect(CRISIS_CARD_STYLE.foot.color).toBe('var(--text-sub)');
+    expect(JSON.stringify(CRISIS_CARD_STYLE)).not.toContain('--text-faint');
   });
 });

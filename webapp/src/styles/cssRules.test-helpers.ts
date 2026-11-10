@@ -5,7 +5,7 @@ import { PHONE_MEDIA } from '../utils/phoneLayout';
 
 export type Rule = { media: string; selectors: string[]; body: string; f?: string };
 
-/** Правила со своим медиа-контекстом ('' — вне @media). Один уровень вложенности — как во всех css пакета; `@import` пропущен. */
+/** Правила со своим медиа-контекстом ('' — вне @media); один уровень вложенности, `@import` пропущен; запятая внутри `:has(…)` селектор не режет. */
 export function parseRules(css: string): Rule[] {
   const src = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/@import[^;]*;/g, '');
   const out: Rule[] = [];
@@ -19,7 +19,7 @@ export function parseRules(css: string): Rule[] {
       for (; j < text.length && depth > 0; j++) depth += text[j] === '{' ? 1 : text[j] === '}' ? -1 : 0;
       const inner = text.slice(open + 1, j - 1);
       if (head.startsWith('@media') || head.startsWith('@container')) walk(inner, head);
-      else if (!head.startsWith('@')) out.push({ media, selectors: head.split(',').map((s) => s.trim()), body: inner });
+      else if (!head.startsWith('@')) out.push({ media, selectors: head.split(/,(?![^(]*\))/).map((s) => s.trim()), body: inner });
       i = j;
     }
   };

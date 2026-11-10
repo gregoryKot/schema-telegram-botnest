@@ -69,7 +69,7 @@
   Старые классы `.btn*`, `.chip*`, `.section`, `.aside-card` этим страницам не нужны и
   удалены 2026-11-08 вместе с последними потребителями в кабинете (сверка
   `webapp/src/styles/legacyClasses.test.ts`). Остались старые `.eyebrow` (`selfMap/SelfMapScreen.tsx`,
-  `NeedAdviceModal.tsx`, `concept/ConceptVersionHistory.tsx`, `shared/src/practices/StepFlowSiteBody.tsx`)
+  `NeedAdviceModal.tsx`, `concept/ConceptVersionHistory.tsx`)
   и `.ex-btn`/`.ex-btn-ghost` (`NeedAdviceModal.tsx`): `NeedAdviceModal` и `ConceptVersionHistory` в ту
   же волну правила другая ветка, перевод на `ds-label`/`ds-btn--secondary` — следующим заходом.
 

@@ -274,7 +274,8 @@ describe('SchemaFlashcard — серверная копия не доехала'
   it('отказ сервера — «Сохранено» с оговоркой про это устройство', async () => {
     await saveWithServerDown();
     expect(screen.getByText('Сохранено')).toBeTruthy();
-    expect(screen.getByRole('alert').textContent).toContain(
+    // неразрывные пробелы (glue: предлог не висит в конце строки) — те же слова
+    expect(screen.getByRole('alert').textContent?.replace(/\s/g, ' ')).toContain(
       'осталась только на этом устройстве',
     );
     // Локальная копия существует — это не потеря, а честная деградация.

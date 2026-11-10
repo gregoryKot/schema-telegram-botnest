@@ -54,10 +54,14 @@ describe('экраны клиента: кегли и ярлыки — из cabin
 });
 
 describe('экраны клиента: действия и кнопки — ds-* (#906)', () => {
-  it('значок самопомощи — цвет поверх ds-btn--icon, без заливки, рамки и своих размеров', () => {
-    const d = declsOf(read('practice-selfhelp.css'), '.ds-btn--icon.cp-selfhelp');
-    expect(d).toContain('color: var(--warn-ink)');
-    expect(d).not.toMatch(/background|width|height|border|--warn\)/);
+  // b14: ⚠ у заголовка читался ошибкой — «Важное о самопомощи» стало тихой ссылкой ds-link со знаком
+  // Limits; свой цвет предупреждения и копия иконочной кнопки не возвращаются.
+  it('«Важное о самопомощи» — тихая ссылка ds-link: зона 44, без цвета предупреждения и заливки', () => {
+    const css = read('practice-selfhelp.css');
+    const d = declsOf(css, '.ds-link.cp-selfhelp');
+    expect(d).toContain('min-height: 44px');
+    expect(d).not.toMatch(/color|background|border/);
+    expect(css).not.toMatch(/ds-btn--icon\.cp-selfhelp|--warn/);
   });
 
   it('действия шапок «Профиль», «Паттерны», «Практика» — группа справа, при нехватке места второй строкой', () => {

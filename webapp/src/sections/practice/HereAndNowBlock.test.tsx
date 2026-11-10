@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-// Блок «Здесь и сейчас» раздела «Практика»: обе строки-практики (заземление,
-// «Стоп») рендерятся, реальный счётчик из getPracticeSessions подставляется в
-// подпись строки, а при упавшем запросе остаётся статичная подпись — НЕ
-// выдуманный ноль (правило CLAUDE.md «никаких хардкод-заглушек вместо
-// реальных данных»). Клик по строке открывает лист именно той практики, что
-// подписана на строке — регрессия здесь означала бы «Стоп» открывает
-// заземление или наоборот.
+// Блок «Здесь и сейчас» раздела «Практика»: оба квадрата практик (заземление,
+// «Стоп») рендерятся, реальный счётчик из getPracticeSessions встаёт в мету
+// квадрата, пока он грузится — плашка-скелетон, а при упавшем запросе квадрат
+// без меты — НЕ выдуманный ноль (правило CLAUDE.md «никаких хардкод-заглушек
+// вместо реальных данных»). Клик по квадрату открывает лист именно той
+// практики, что на нём подписана — регрессия здесь означала бы «Стоп»
+// открывает заземление или наоборот. Квадрат «Мне плохо» — только с onSos.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   render,
@@ -21,6 +21,7 @@ vi.mock('../../api', () => ({
   api: {
     trackEvent: vi.fn(),
     getPracticeSessions: vi.fn(),
+    getFlashcards: vi.fn(),
     recordPracticeSession: vi.fn(),
   },
 }));
@@ -42,13 +43,14 @@ async function flush() {
   });
 }
 
-function renderBlock() {
+function renderBlock(onSos?: () => void) {
   return render(
     <MemoryRouter>
-      <HereAndNowBlock />
+      <HereAndNowBlock onSos={onSos} />
     </MemoryRouter>,
   );
 }
+const square = (title: RegExp) => screen.getByText(title).closest('button')!;
 
 describe('HereAndNowBlock', () => {
   it('рендерит обе быстрые практики: заземление и «Стоп»', () => {
@@ -58,11 +60,32 @@ describe('HereAndNowBlock', () => {
       stop: 0,
     });
     renderBlock();
-    expect(screen.getByText('Заземление 5-4-3-2-1')).toBeTruthy();
-    expect(screen.getByText('Техника «Стоп»')).toBeTruthy();
+    expect(square(/Заземление/).classList.contains('pp-paper')).toBe(true);
+    expect(square(/Техника «Стоп»/).classList.contains('pp-paper')).toBe(true);
+    expect(screen.queryByText('Мне плохо')).toBeNull();
+    expect(mockApi.getFlashcards).not.toHaveBeenCalled();
   });
 
-  it('реальный счётчик из getPracticeSessions виден в подписи строки', async () => {
+  it('пока счётчики грузятся — плашка-скелетон в мете, а не ноль', () => {
+    mockApi.getPracticeSessions.mockReturnValue(new Promise(() => {}));
+    const { container } = renderBlock();
+    expect(container.querySelectorAll('.pp-meta--skeleton')).toHaveLength(2);
+    expect(screen.queryByText(/прошли/)).toBeNull();
+  });
+
+  it('квадрат «Мне плохо» с onSos: мета — число сохранённых карточек, клик зовёт onSos', async () => {
+    mockApi.getPracticeSessions.mockResolvedValue({ breathing: 0, grounding: 0, stop: 0 });
+    mockApi.getFlashcards.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    const onSos = vi.fn();
+    renderBlock(onSos);
+    await flush();
+    const sos = square(/Мне плохо/);
+    expect(sos.textContent).toMatch(/прошли 2\s+раза/);
+    fireEvent.click(sos);
+    expect(onSos).toHaveBeenCalledTimes(1);
+  });
+
+  it('реальный счётчик из getPracticeSessions виден в мете квадрата', async () => {
     mockApi.getPracticeSessions.mockResolvedValue({
       breathing: 0,
       grounding: 3,
@@ -77,32 +100,31 @@ describe('HereAndNowBlock', () => {
     mockApi.getPracticeSessions.mockRejectedValue(new Error('offline'));
     renderBlock();
     await flush();
-    // Статичная подпись строки заземления (ROWS[0].sub) — на месте.
+    // Подпись квадрата заземления — на месте, меты и скелетона нет.
     expect(screen.getByText('вернуться в тело и в комнату')).toBeTruthy();
     expect(screen.queryByText(/прошли/)).toBeNull();
+    expect(document.querySelector('.pp-meta--skeleton')).toBeNull();
   });
 
-  it('клик по строке «Стоп» открывает именно лист «Стоп», а не заземления', () => {
+  it('клик по квадрату «Стоп» открывает именно лист «Стоп», а не заземления', () => {
     mockApi.getPracticeSessions.mockResolvedValue({
       breathing: 0,
       grounding: 0,
       stop: 0,
     });
     renderBlock();
-    fireEvent.click(screen.getByText('Техника «Стоп»').closest('[role="button"]')!);
+    fireEvent.click(square(/Техника «Стоп»/));
     expect(screen.getByText('С — Стоп. Замри на секунду')).toBeTruthy();
   });
 
-  it('клик по строке заземления открывает именно лист заземления', () => {
+  it('клик по квадрату заземления открывает именно лист заземления', () => {
     mockApi.getPracticeSessions.mockResolvedValue({
       breathing: 0,
       grounding: 0,
       stop: 0,
     });
     renderBlock();
-    fireEvent.click(
-      screen.getByText('Заземление 5-4-3-2-1').closest('[role="button"]')!,
-    );
+    fireEvent.click(square(/Заземление/));
     expect(screen.getByText('Найди 5 вещей, которые видишь')).toBeTruthy();
   });
 });

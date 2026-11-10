@@ -1,0 +1,68 @@
+/* Пошаговый лист «Здесь и сейчас» (QuickStepBody: заземление 5-4-3-2-1, «Стоп») и подвал
+   практики (PracticeDoneFooterSite, pf-*). Лист оттенка практики сверху, шаг-герой с числом или
+   буквой на белом квадратике, счётчик формой; кнопки под листом, предупреждение — под кнопками.
+   Подключают сами компоненты (в сборке файл может встать раньше index.css): правило, спорящее с
+   ds-*, — на два класса. Мелкий текст на цветной бумаге — --text-sub. Тень — сплошным слоем. */
+.qs { display: flex; flex-direction: column; gap: 14px; }
+.qs-sheet { display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 20px 20px 18px 22px; }
+.pp-paper.qs-sheet { border-radius: 24px; }
+.qs-head { display: flow-root; }
+/* Знак практики — в правом верхнем углу, «зачем» обтекает его и уходит под него во всю ширину. */
+.qs-sign { float: right; display: flex; width: 112px; margin: -6px -6px 6px 14px; }
+.qs-sign .scn-sign { width: 100%; }
+.ds-label.qs-label { display: block; margin: 2px 0 6px; color: var(--text-sub); }
+.qs-sub { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text-sub); }
+
+/* Шаг: число или буква крупно на белом квадратике, рядом заголовок и подпись. */
+.qs-step {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: start; padding-top: 4px;
+}
+.qs-step > .qs-step-body:only-child { grid-column: 1 / -1; }
+.qs-mark {
+  display: grid; place-items: center; width: 64px; height: 64px; margin-top: 4px; border-radius: 16px;
+  background: var(--surface); box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-4deg);
+  font: 400 40px/1 var(--serif); color: var(--text);
+}
+.qs-step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ds-label.qs-count { color: var(--text-sub); }
+.qs-title { margin: 0; font: 400 26px/1.18 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.qs-hint { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+
+/* Счётчики шагов (StepCounter): камешки 5-4-3-2-1, буквы С-Т-О-П, отрезки. */
+.qs-pebbles { display: block; width: min(100%, 248px); height: auto; overflow: visible; }
+.qs-letters, .qs-lines { display: flex; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.qs-letters > li {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px;
+  font: 400 22px/1 var(--serif); color: var(--text-sub);
+}
+/* Впереди — буква плоско, без рамки: обведённые квадраты читались кнопками-клавишами (ревью g4). */
+.qs-letters > li.is-done { background: oklch(0.84 0.06 var(--h)); color: var(--text); box-shadow: none; }
+.qs-letters > li.is-now { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 3px 4px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-3deg); }
+.qs-lines { gap: 4px; }
+.qs-lines > li { flex: 1; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--text) 14%, transparent); }
+.qs-lines > li.is-done, .qs-lines > li.is-now { background: var(--text); }
+
+/* Кнопки под листом — как у листа «готово» (DoneSheet): «Дальше» во всю ширину, тихое «Закрыть» под ней. */
+.qs-actions { display: flex; flex-direction: column; align-items: stretch; gap: 2px; }
+.qs > .th-caution--compact { margin-top: 0; }
+
+/* Подвал практики: счётчик прохождений крупнее служебной подписи, на бумаге — --text-sub; в листе
+   «готово» (колонка по левому краю) подвал во всю ширину — «поделиться →» уходит вправо. */
+.ds-sub.pf-count { font-size: 14px; color: var(--text-sub); }
+.pa-done-sheet > .pf-foot { align-self: stretch; }
+
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .qs-sheet { padding: 18px 16px 16px 18px; }
+  .pp-paper.qs-sheet { border-radius: 22px; }
+  .qs-sign { width: 96px; margin: -4px -4px 4px 12px; }
+  .qs-mark { width: 54px; height: 54px; font-size: 34px; border-radius: 14px; }
+  .qs-title { font-size: 24px; }
+}
+/* Узкий телефон (320–374): знак и квадратик меньше — название практики и заголовок шага не рвутся
+   по слову в строку. */
+@media (max-width: 374px) {
+  .qs-sign { width: 68px; margin: -2px -4px 2px 10px; }
+  .qs-mark { width: 46px; height: 46px; font-size: 28px; border-radius: 12px; }
+  .qs-step { column-gap: 12px; }
+  .qs-title { font-size: 22px; }
+}

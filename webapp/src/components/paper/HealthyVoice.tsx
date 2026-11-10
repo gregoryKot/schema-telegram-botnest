@@ -6,7 +6,6 @@ import type { ReactNode } from 'react';
 import { modeGroupLook } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
 import { SignArt } from '../art/SignArt';
-import '../../styles/paper-app.css';
 
 const HEALTHY = modeGroupLook('healthy');
 

@@ -74,7 +74,9 @@ const SCREENS: Screen[] = [
       p.getByText('Безопасное место', { exact: true }),
       p.getByText('Колесо детства', { exact: true }),
       p.getByRole('heading', { name: 'Мои цели' }),
-      p.getByRole('heading', { name: 'Каталоги' }),
+      // «Каталоги» не пропадают целиком: «Карта режимов» — их строка без пункта в «Инструментах» (b14).
+      p.getByText('Что питает', { exact: true }),
+      p.getByText('Планы', { exact: true }),
     ],
   },
 ];

@@ -57,6 +57,30 @@ function srgbToLin(c: number): number {
 export function luminance([r, g, b]: Rgb): number {
   return 0.2126 * srgbToLin(r) + 0.7152 * srgbToLin(g) + 0.0722 * srgbToLin(b);
 }
+/** OKLab → линейный sRGB 0–1 (с обрезкой) для oklch(L C h) — одна формула у яркости и у sRGB (сведение g3 и g4). */
+function oklchLinear(L: number, C: number, h: number): Rgb {
+  const a = C * Math.cos((h * Math.PI) / 180);
+  const b = C * Math.sin((h * Math.PI) / 180);
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const clamp = (x: number) => Math.min(1, Math.max(0, x));
+  return [
+    clamp(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+    clamp(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+    clamp(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
+  ];
+}
+/** Яркость oklch(L C h) — бумаги .pp-paper (oklch(0.915 0.03 h)). */
+export function oklchLuminance(L: number, C: number, h: number): number {
+  const [R, G, B] = oklchLinear(L, C, h);
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+}
+/** sRGB 0–255 для oklch(L C h) — бумага .pp-paper (oklch(0.915 0.03 h)) и тона от --h в CSS. */
+export function oklchRgb(L: number, C: number, h: number): Rgb {
+  const enc = (c: number) => Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
+  return oklchLinear(L, C, h).map(enc) as Rgb;
+}
 export function contrastRatio(fg: Rgb, bg: Rgb): number {
   const L1 = luminance(fg);
   const L2 = luminance(bg);
@@ -68,20 +92,3 @@ export function overlay(fg: Rgb, alpha: number, bg: Rgb): Rgb {
   return [0, 1, 2].map((i) => alpha * fg[i] + (1 - alpha) * bg[i]) as Rgb;
 }
 
-/** sRGB 0–255 для oklch(L C h) — бумага .pp-paper (oklch(0.915 0.03 h)) и тона от --h в CSS. */
-export function oklchRgb(L: number, C: number, h: number): Rgb {
-  const a = C * Math.cos((h * Math.PI) / 180);
-  const b = C * Math.sin((h * Math.PI) / 180);
-  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
-  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
-  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
-  const enc = (x: number) => {
-    const c = Math.min(1, Math.max(0, x));
-    return Math.round(255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
-  };
-  return [
-    enc(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
-    enc(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
-    enc(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
-  ];
-}

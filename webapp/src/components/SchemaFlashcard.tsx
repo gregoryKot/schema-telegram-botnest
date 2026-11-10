@@ -6,6 +6,7 @@ import { FlashcardDoneScreen } from './flashcard/FlashcardDoneScreen';
 import { FlashcardGrounding } from './flashcard/FlashcardGrounding';
 import { FlashcardHistoryList, FlashcardView } from './flashcard/FlashcardHistory';
 import { StepMode, StepResponse, StepNeed, StepAction } from './flashcard/FlashcardSteps';
+import { flashcardSummary } from './flashcard/flashcardLook';
 import '../styles/sheet-tasks.css';
 import {
   STORAGE_KEY,
@@ -84,8 +85,7 @@ export function SchemaFlashcard({ onClose, onOpenTracker, onComplete }: Props) {
   if (done) {
     return (
       <FlashcardDoneScreen
-        modeLabel={MODES.find(m => m.id === selectedMode)?.label}
-        needLabel={NEEDS.find(n => n.id === selectedNeed)?.label}
+        parts={flashcardSummary({ mode: selectedMode ?? '', needId: selectedNeed ?? '' }, MODES, NEEDS)}
         action={action}
         syncFailed={syncFailed}
         onOpenTracker={onOpenTracker}

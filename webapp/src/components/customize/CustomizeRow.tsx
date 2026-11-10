@@ -2,6 +2,7 @@ import { useId, type ReactNode } from 'react';
 import type { DragHandleProps } from '../../../../shared/src/hooks/useDragReorder';
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
 import { SignArt } from '../art/SignArt';
+import { glue } from '../../../../shared/src/utils/typo';
 
 interface Props {
   title: string;
@@ -25,17 +26,16 @@ function Text({ title, sub, sign, off }: { title: string; sub: string; sign?: Si
     <>
       {sign && <span className={off ? 'pp-row-art cz-sign is-off' : 'pp-row-art cz-sign'} aria-hidden="true"><SignArt sign={sign} size="row" /></span>}
       <span className="cz-text">
-        <span className="cz-title">{title}</span>
-        <span className="cz-sub">{sub}</span>
+        <span className="cz-title">{glue(title)}</span>
+        <span className="cz-sub">{glue(sub)}</span>
       </span>
     </>
   );
 }
 
-// Строка блока в листе «Настроить экран» (любого экрана — «Сегодня», «Профиль», «Паттерны»): подпись + тумблер (весь ряд — это
-// label тумблера, тап по тексту переключает) и ручка «≡» для перестановки.
-// Тумблер — тот же .ds-switch, что в настройках и в листе «+» (включённый — мох).
-// Знак блока слева (sign) — тот же, что у блока на экране; выключенный — бледный.
+// Строка блока в листе «Настроить экран» (любого экрана — «Сегодня», «Профиль», «Паттерны»): подпись (glue) + тумблер (весь
+// ряд — label тумблера, тап по тексту переключает; имя тумблера — как есть) и ручка «≡» для перестановки. Тумблер — тот же
+// .ds-switch, что в настройках и в листе «+» (включённый — мох). Знак слева (sign) — как у блока на экране; выключенный — бледный.
 export function CustomizeRow({ title, sub, on, onToggle, handle, rowRef, offsetY, lifted, highlighted, sign }: Props) {
   const switchId = useId();
   const body: ReactNode = onToggle ? (

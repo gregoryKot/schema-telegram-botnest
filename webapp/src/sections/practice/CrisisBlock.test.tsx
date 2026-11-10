@@ -23,6 +23,20 @@ describe('CrisisBlock — постоянный «спасательный кру
     expect(screen.getByRole('status')).toBeTruthy();
   });
 
+  it('в разделе «Помощь рядом» — заголовок h3 (навигация по заголовкам находит кризисный блок); в листе — надпись', () => {
+    render(<CrisisBlock heading />);
+    expect(screen.getByRole('heading', { level: 3, name: 'Помощь рядом' })).toBeTruthy();
+    cleanup();
+    render(<CrisisBlock inset />);
+    expect(screen.queryByRole('heading', { name: 'Помощь рядом' })).toBeNull();
+  });
+
+  it('112 — ссылкой tel:, текст строки прежний (точка видна читалке)', () => {
+    render(<CrisisBlock />);
+    expect(screen.getByText('112').closest('a')?.getAttribute('href')).toBe('tel:112');
+    expect(document.querySelector('.cr-line')?.textContent).toBe('Если есть угроза жизни —\u00a0112.');
+  });
+
   it('телефон доверия виден и кликабелен (реальная tel:-ссылка)', () => {
     render(<CrisisBlock />);
     const link = screen.getByText(CRISIS_HOTLINE_DISPLAY).closest('a');

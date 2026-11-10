@@ -20,7 +20,7 @@ const PHONE_HIDDEN: [string, string][] = [['concept-graph.css', '.tcp-head-title
 /** Обёртки и правила компьютера, при которых телефон обязан остаться как в main: [селектор, вне медиа, только под ≥768]. */
 const C = /display:\s*contents/;
 const PHONE_SAME: [string, RegExp | null, RegExp | null][] = [
-  ['.cp-open-card', C, null], ['.cp-open-card > .ds-card', null, /background:\s*none/], // дыхание: обёртка не в flex-gap
+  ['.cp-open-card', C, null], // дыхание: обёртка не в flex-gap (внутри — лист .qb, правила для .ds-card в ней нет)
   ['.tcp-head-actions', C, /display:\s*inline-flex/], ['.tb-tab-title .ds-sub', null, /margin/],
   ['.ap-home', /display:\s*none/, /display:\s*inline-flex/], ['.ap-donate-shell', C, /display:\s*flex/],
 ];
@@ -34,6 +34,8 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/paper/PaperOutcome.tsx': ['own', '.ds-btn.pa-outcome-action'], // во всю карточку исхода 440
   'components/ErrorBoundary.tsx': ['own', '.ds-btn.pa-outcome-action'], // своя кнопка в листе исхода (под ней «Детали»)
   'components/AuthGateViews.tsx': ['own', '.ds-btn.pa-outcome-action'], // занятая «Проверяем…» в листе исхода
+  'components/practice/BreathActions.tsx': ['stretch', '.qb-actions'], // лист дыхания: колонка, на широком листе — строкой
+  'components/practice/QuickStepBody.tsx': ['stretch', '.qs-actions'], // пошаговый лист: «Дальше» во всю ширину, как DoneSheet
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
   'sections/today/TrackerBlock.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину колонки

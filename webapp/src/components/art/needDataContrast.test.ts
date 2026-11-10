@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { NEED_DATA_PAPER } from './paper';
 import { PAPER_HUE } from '../../../../shared/src/theme/signKeys';
+import { oklchLuminance } from '../../test-support/cssContrast';
 
 const css = readFileSync(join(__dirname, '../../index.css'), 'utf8');
 const light = css.slice(0, css.indexOf('html[data-theme="dark"]'));
@@ -26,20 +27,6 @@ const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 
 function hexLuminance(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16) / 255));
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** Яркость oklch(L C h): та же формула, что toneHex в shared/src/theme/entityHue.ts. */
-function oklchLuminance(L: number, C: number, h: number): number {
-  const a = C * Math.cos((h * Math.PI) / 180);
-  const b = C * Math.sin((h * Math.PI) / 180);
-  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
-  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
-  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
-  const clamp = (x: number) => Math.min(1, Math.max(0, x));
-  const R = clamp(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s);
-  const G = clamp(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s);
-  const B = clamp(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s);
-  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
 }
 
 const contrast = (y1: number, y2: number) => (Math.max(y1, y2) + 0.05) / (Math.min(y1, y2) + 0.05);

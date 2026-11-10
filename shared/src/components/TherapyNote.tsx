@@ -46,7 +46,7 @@ export function TherapyNote({ compact }: { compact?: boolean }) {
               target="_blank"
               rel="noopener noreferrer"
               className="ds-link ds-link--inline"
-              style={{ padding: '14px 0', fontSize: 'inherit' }}
+              style={{ padding: '15px 0', fontSize: 'inherit' }} // зона ≥44 по высоте: 14px давали 43 (ревью g4)
             >
               {contact.name === 'автору'
                 ? 'Записаться →'

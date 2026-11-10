@@ -28,7 +28,7 @@ const SPLIT: Record<string, string[]> = {
   'sheet-schemas.css': ['ss-sheet.css', 'schema-library.css'],
   'sheet-tracker.css': ['need-detail.css', 'checkin.css'],
   'tracker-question.css': ['flow-frame.css'],
-  'client-practice.css': ['task-row.css', 'breathing.css'],
+  'client-practice.css': ['task-row.css'],
   'practice-selfhelp.css': ['crisis.css'],
   'therapy-bridge.css': ['therapy-caution.css'],
   'therapist-concept.css': ['concept-graph.css'],

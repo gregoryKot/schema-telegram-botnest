@@ -85,6 +85,18 @@ describe('PracticeDoneFooterSite', () => {
     expect(screen.getByText('поделиться →')).toBeTruthy();
   });
 
+  it('«поделиться» без счётчика — с начала строки; packed — сразу за счётчиком', () => {
+    const { container, rerender } = render(
+      <PracticeDoneFooterSite count={null} onShare={vi.fn()} />,
+    );
+    const foot = () => container.querySelector<HTMLElement>('.pf-foot')!;
+    const link = () => screen.getByText('поделиться →');
+    expect(link().style.marginLeft).toBe('');
+    expect(foot().style.justifyContent).toBe('space-between'); // одна ссылка встаёт в начало строки
+    rerender(<PracticeDoneFooterSite count={3} onShare={vi.fn()} packed />);
+    expect(foot().style.justifyContent).toBe('flex-start');
+  });
+
   it('onShown зовётся один раз при показе', () => {
     const onShown = vi.fn();
     render(

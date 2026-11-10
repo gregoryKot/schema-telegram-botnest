@@ -54,7 +54,8 @@ describe('TherapyNote', () => {
     const { container } = withForm(<TherapyNote compact />);
     const a = container.querySelector('a')!;
     expect(a.className).toBe('ds-link ds-link--inline');
-    expect(a.style.padding).toBe('14px 0px');
+    // 15px: строка 11px даёт ~15, с отступом 14 замер в браузере был 43 (ревью g4) — нужно ≥44
+    expect(a.style.padding).toBe('15px 0px');
   });
 
   it('терапевт: «вы»-форма согласована, ссылки на запись нет', () => {

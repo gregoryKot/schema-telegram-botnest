@@ -13,7 +13,6 @@ import type { CSSProperties, ReactNode } from 'react';
 import { ENTITY_LOOK, type EntityId, type SheetLook } from '../../../../shared/src/theme/entityLook';
 import { glueIf } from '../../../../shared/src/utils/typo';
 import { SignHero } from './SignHero';
-import '../../styles/paper-app.css';
 
 export interface EntitySheetProps {
   /** Сущность из ENTITY_LOOK или готовый вид (domainLook, modeGroupLook, needLook, `{ hue, sign? }`);

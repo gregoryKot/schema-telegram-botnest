@@ -175,6 +175,13 @@ describe('ENTITY_LOOK: одна сущность — один оттенок, о
       expect(arc(hue(a), hue(b)), `${a}/${b}`).toBeGreaterThanOrEqual(40);
     gridNeighbours<EntityId>(['tracker', 'case', 'diary'], 3).forEach(far);
     gridNeighbours<EntityId>(['grounding', 'stop', 'sos'], 3).forEach(far);
+    // «Практики»: герой дыхания во всю ширину над рядом квадратов — сосед каждого квадрата первого ряда
+    // (компьютер — три в ряд с «Мне плохо», узкая колонка и телефон — заземление и «Стоп»); персик 45
+    // над розой 25 читался одним розовым пятном (ревью g4)
+    const heroOver = (row: EntityId[]): [EntityId, EntityId][] =>
+      row.map((x) => ['breathing', x]);
+    heroOver(['grounding', 'stop', 'sos']).forEach(far);
+    heroOver(['grounding', 'stop']).forEach(far);
     const library = EXERCISES.map((e) => EX[e.id]);
     gridNeighbours(library, 2).forEach(far);
     gridNeighbours(library, 3).forEach(far);

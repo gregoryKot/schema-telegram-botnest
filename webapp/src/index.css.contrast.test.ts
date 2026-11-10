@@ -9,7 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { contrastRatio, extractBlock, luminance, oklchRgb, overlay, parseColor, resolveToken, tokenInBlock } from './test-support/cssContrast';
+import { contrastRatio, extractBlock, luminance, oklchLuminance, oklchRgb, overlay, parseColor, resolveToken, tokenInBlock } from './test-support/cssContrast';
+import { CRISIS_HUE } from '../../shared/src/components/crisisCardStyle';
 import { PAPER_HUE } from '../../shared/src/theme/signKeys';
 
 const CSS = readFileSync(join(__dirname, 'index.css'), 'utf8');
@@ -79,6 +80,20 @@ describe('a11y: .landing-personal-brand — текст на залитом --acc
 
     expect(fill.alpha).toBe(1);
     expect(contrastRatio(ink.rgb, fill.rgb)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // g4 r3: кризисная карточка (BookingCrisisNote) — светлая бумага розы при любой теме визитки
+  // (.light-lock). Её номера красятся --accent: внутри замка — светлый индиго из блока бренда,
+  // тёмный индиго #9089e0 на этой бумаге — около 2:1 (контрольный образец).
+  it('кризисная карточка визитки: светлый индиго на её бумаге ≥4.5:1 и при тёмной теме', () => {
+    expect(CSS).toMatch(/\.landing-personal-brand \.light-lock\[data-crisis-card\],\s*\.landing-personal-brand \{/);
+    const paper = oklchLuminance(0.915, 0.03, CRISIS_HUE);
+    const ratio = (hex: string) => {
+      const y = luminance(parseColor(hex).rgb);
+      return (Math.max(y, paper) + 0.05) / (Math.min(y, paper) + 0.05);
+    };
+    expect(ratio(resolveToken(LIGHT_BRAND, '--accent'))).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(resolveToken(DARK_BRAND, '--accent'))).toBeLessThan(4.5);
   });
 });
 

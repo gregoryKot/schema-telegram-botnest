@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// Пошаговый лист сайта (StepFlowSheet): тело общее
-// (shared/practices/StepFlowBody), оболочка своя — BottomSheetShell +
+// Пошаговый лист сайта (StepFlowSheet): тело — QuickStepBody на общей логике
+// шагов (shared/practices/useStepFlow), оболочка — BottomSheetShell +
 // useHistorySheet. Проверяем кейсы
 // (первый шаг, «Дальше», done-экран, «Ещё круг», кастомный repeatLabel), и
 // отдельно честно проверяем «Закрыть»: в вебе кнопка ведёт через goBack()
@@ -28,6 +28,7 @@ function renderFlow(onClose = vi.fn(), extra: Record<string, unknown> = {}) {
   render(
     <MemoryRouter>
       <StepFlowSheet
+        id="grounding"
         title="Тестовая техника"
         subtitle="Подзаголовок листа"
         steps={STEPS}
@@ -82,7 +83,7 @@ describe('StepFlowSheet (webapp)', () => {
   it('«Закрыть» реально закрывает лист через историю (goBack), а не остаётся молча открытым', () => {
     const onClose = renderFlow();
     fireEvent.click(screen.getByText('Закрыть'));
-    // Кнопка внутри StepFlowBody получает goBack (не onClose напрямую) —
+    // Кнопка внутри QuickStepBody получает goBack (не onClose напрямую) —
     // именно goBack() обязан довести до вызова onClose через попап истории
     // (см. webapp/src/hooks/useHistorySheet.test.tsx: тот же путь для
     // goBack() и для «Назад» браузера).
