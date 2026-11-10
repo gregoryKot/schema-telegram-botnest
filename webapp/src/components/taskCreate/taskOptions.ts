@@ -1,6 +1,6 @@
 import { exerciseCard, type ExId } from '../../../../shared/src/exercises/exerciseCatalog';
 import { ENTITY_LOOK, type PaperHue, type SignKey } from '../../../../shared/src/theme/entityLook';
-import { taskEntity } from '../../sections/practice/taskListModel';
+import { taskEntity } from '../../sections/practice/taskEntity';
 
 export type TaskType = 'diary_streak' | 'tracker_streak' | 'belief_check' | 'letter_to_self' | 'safe_place' | 'flashcard' | 'schema_intro' | 'mode_intro' | 'custom';
 /** Бумага и знак — сущности, куда задание ведёт (ENTITY_LOOK, как у TaskSign), а не templateHue по названию (b20). */

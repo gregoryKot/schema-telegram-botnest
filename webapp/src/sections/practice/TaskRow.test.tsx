@@ -5,7 +5,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TaskRow } from './TaskRow';
 import { taskRowState } from './taskRowState';
-import { SEGMENTED_MAX, groupTasks, progressSegments, rowStatus, taskEntity } from './taskListModel';
+import { SEGMENTED_MAX, groupTasks, progressSegments, rowStatus } from './taskListModel';
+import { taskEntity } from './taskEntity';
 import type { UserTask } from '../../api';
 
 afterEach(cleanup);

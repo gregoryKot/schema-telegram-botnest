@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { Leaf } from '../art/PaperArtSigns';
 import { pressable } from '../../utils/a11y';
 // Порядок импортов держит общий чанк TherapyCaution: его CSS идёт до index.css (docs/open/frontend-ux.md).
 import { TherapyCaution } from '../therapy/TherapyCaution';
@@ -91,16 +90,6 @@ export function ExScreenSkeleton({ onBack, hue }: { onBack: () => void; hue?: nu
         </div>
         <aside className="ex2-aside ex2-skel-aside"><SkeletonCard height={180} /></aside>
       </div>
-    </div>
-  );
-}
-
-// ── Экран «готово»: цветная бумага (шалфей) с листком над содержимым ─────────
-export function ExDone({ className = '', children }: { className?: string; children: ReactNode }) {
-  return (
-    <div className={`pp-paper ex2-done ${className}`.trim()} style={{ '--h': 135 } as CSSProperties}>
-      <Leaf size="square" />
-      {children}
     </div>
   );
 }

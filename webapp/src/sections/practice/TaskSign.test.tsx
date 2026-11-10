@@ -2,7 +2,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { TaskSign } from './TaskSign';
-import { taskEntity } from './taskListModel';
+import { taskEntity } from './taskEntity';
 import { SignArt } from '../../components/art/SignArt';
 import { ENTITY_LOOK, type SignKey } from '../../../../shared/src/theme/entityLook';
 

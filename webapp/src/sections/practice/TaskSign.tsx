@@ -2,7 +2,7 @@ import { SignArt } from '../../components/art/SignArt';
 import type { ArtProps } from '../../components/art/paper';
 import type { UserTask } from '../../api';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
-import { taskEntity } from './taskListModel';
+import { taskEntity } from './taskEntity';
 
 /**
  * Знак задания — знак его сущности из ENTITY_LOOK (docs/design/APP_2026-11.md, b20): трекер Strokes, дневник

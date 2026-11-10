@@ -43,10 +43,10 @@
 .ex2-next-label { color: var(--text-sub); }
 .ex2-next-title { margin: 4px 0; font: 400 20px/1.25 var(--serif); color: var(--text); }
 .ex2-next-text { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
-.ex2-past { padding: 14px 18px 4px; }
-.ex2-past-head { margin-bottom: 2px; color: var(--text-sub); }
-.ex2-past .ex2-hist-row:last-child { border-bottom: 0; }
-.ex2-past .ex2-hist-date { color: var(--text-sub); }
+.ex2-belief-past { padding: 14px 18px 4px; }
+.ex2-belief-past-head { margin-bottom: 2px; color: var(--text-sub); }
+.ex2-belief-past .ex2-hist-row:last-child { border-bottom: 0; }
+.ex2-belief-past .ex2-hist-date { color: var(--text-sub); }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Главная кнопка шага — во всю ширину отдельной строкой, «Назад» — над ней слева. */

@@ -51,8 +51,8 @@ export function BeliefDoneScreen({ goBack, belief, forList, againstList, reframe
           </div>
         </div>
         {pastChecks.length > 0 && (
-          <section className="ex2-answers ex2-past">
-            <div className="ds-label ex2-past-head">Прошлые проверки · {history.length}</div>
+          <section className="ex2-answers ex2-belief-past">
+            <div className="ds-label ex2-belief-past-head">Прошлые проверки · {history.length}</div>
             {pastChecks.map((h, i) => (
               <div key={i} className="ex2-hist-row">
                 <span className="ex2-hist-date">{fmtAgo(h.createdAt)}</span>

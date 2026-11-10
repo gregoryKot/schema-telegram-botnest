@@ -1,23 +1,10 @@
 // @vitest-environment jsdom
-// Экран «готово» упражнений: шалфейная бумага с листком над содержимым (docs/design/PAPER_2026-11.md).
+// Шапка листов схем и режимов: картинка рядом с заголовком или бумага нужного оттенка (docs/design/PAPER_2026-11.md).
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
-import { ExDone } from './ExScreen';
-import { SsHead } from '../schemaSheets/SsHead';
+import { render, cleanup } from '@testing-library/react';
+import { SsHead } from './SsHead';
 
 afterEach(cleanup);
-
-describe('ExDone', () => {
-  it('pp-paper с листком первым ребёнком, содержимое на месте', () => {
-    const { container } = render(<ExDone className="ex2-scene"><p>Сохранено</p></ExDone>);
-    const root = container.firstElementChild as HTMLElement;
-    expect(root.className).toContain('pp-paper');
-    expect(root.className).toContain('ex2-scene');
-    expect(root.style.getPropertyValue('--h')).toBe('135');
-    expect(root.firstElementChild?.tagName.toLowerCase()).toBe('svg');
-    expect(screen.getByText('Сохранено')).toBeTruthy();
-  });
-});
 
 describe('SsHead', () => {
   it('layers — слои рядом с заголовком', () => {

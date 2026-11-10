@@ -5,7 +5,7 @@
 // уводить трекер с первого места (перебор всех порядков, b20).
 import { describe, expect, it } from 'vitest';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
-import { taskEntity } from '../../sections/practice/taskListModel';
+import { taskEntity } from '../../sections/practice/taskEntity';
 import { TASK_OPTIONS } from './taskOptions';
 
 const dist = (a: number, b: number) => { const x = Math.abs(a - b) % 360; return Math.min(x, 360 - x); };
