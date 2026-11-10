@@ -53,4 +53,19 @@ describe('SignChip', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Вечер' }));
     expect(onToggle).not.toHaveBeenCalled();
   });
+
+  // Ревью g3: теги быстрой записи повторяли разметку чипа ради радиогруппы и своего рисунка.
+  it('radio: role="radio" и aria-checked вместо aria-pressed; свой рисунок у невыбранного, галочка у выбранного', () => {
+    const art = <svg data-testid="own-art" />;
+    const { rerender } = render(<SignChip label="Благодарность" on={false} onToggle={vi.fn()} art={art} radio hue={195} className="qe-tag" />);
+    const btn = screen.getByRole('radio', { name: 'Благодарность' });
+    expect(btn.getAttribute('aria-checked')).toBe('false');
+    expect(btn.hasAttribute('aria-pressed')).toBe(false);
+    expect(btn.className).toBe('ds-chip ds-chip--toggle pa-chip pa-chip--mark qe-tag');
+    expect(signOf(btn).querySelector('[data-testid="own-art"]')).not.toBeNull();
+    rerender(<SignChip label="Благодарность" on onToggle={vi.fn()} art={art} radio hue={195} className="qe-tag" />);
+    expect(screen.getByRole('radio', { name: 'Благодарность' }).getAttribute('aria-checked')).toBe('true');
+    expect(signOf(screen.getByRole('radio')).getAttribute('data-sign')).toBe('check');
+    expect(screen.queryByTestId('own-art')).toBeNull();
+  });
 });

@@ -72,6 +72,15 @@
 .pp-strokes-sheet { --strokes-edge: var(--surface); }
 .pp-strokes-values > [data-rated="no"] { fill: color-mix(in srgb, currentColor 34%, var(--bg)); stroke: var(--strokes-edge); stroke-width: 2.5; }
 .scn-sign > .pp-art:first-child .pp-strokes-values > [data-rated="no"] { visibility: hidden; }
+/* Камешек, который ещё не лёг (Pebbles filled, ScenePebbleLaid), — гнездо: бледный тон своего камешка
+   (его цвет — в `color`) с кромкой этого цвета, а не серый призрак PAPER.hollow (ревью g3: на бирюзе
+   благодарности 1.2:1 — пустой лист читался выключенным). Кромка 1.75px при любом размере: в чипе 24px
+   и в сцене одна толщина. Тени-вырезки у гнезда нет. */
+:is(.pp-art, .scn) [data-laid="no"] {
+  fill: color-mix(in srgb, currentColor 22%, var(--strokes-edge));
+  stroke: currentColor; stroke-width: 1.75px; vector-effect: non-scaling-stroke;
+}
+.scn-sign > .pp-art:first-child [data-laid="no"] { visibility: hidden; }
 
 /* ── Пустое состояние: картинка и текст ─────────────────────────────────── */
 .pp-empty { display: flex; align-items: center; gap: 16px; }

@@ -2,8 +2,8 @@
 // PhraseCheckEx.tsx). Правится только ответ Здорового Взрослого — фраза и
 // приметы критика неизменны (см. UpdatePhraseCheckDto). Состояние — общее
 // (shared/usePhraseHistoryCard), вёрстка своя. Read-after-write: onUpdated
-// обновляет список у родителя сразу после PATCH. Удаление — DeleteBtn
-// дневника («Удалить» → «Удалить навсегда», сбой — строкой, запись на месте);
+// обновляет список у родителя сразу после PATCH. Удаление — DeleteBtn дневника («Удалить» →
+// «Удалить навсегда», сбой — компактным листом соломы (PaperAlert), запись на месте);
 // после DELETE — событие entry_deleted, лист закрывается, onDeleted убирает строку.
 import { useHistorySheet } from '../../../hooks/useHistorySheet';
 import { detectCrisisAny } from '../../../utils/crisisMarkers';

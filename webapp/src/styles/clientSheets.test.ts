@@ -48,14 +48,10 @@ describe('Записи и история', () => {
   });
   it('в sheet-diary.css нет копий пустого состояния, ссылок и строк-переходов', () => {
     for (const cls of ['sd-explainer-wrap', 'sd-explainer-title', 'sd-explainer-intro', 'sd-explainer-foot',
-      'sd-weekly-empty', 'sd-empty-title', 'sd-empty-text', 'sd-backfill', 'sd-backfill-title']) {
+      'sd-explainer-stack', 'sd-explainer-card', 'sd-explainer-why', 'sd-area-gap', 'sd-weekly-empty', 'sd-empty-title', 'sd-empty-text', 'sd-backfill', 'sd-backfill-title']) {
       expect(hasClass(sheetDiary, cls)).toBe(false);
     }
     expect(selectors(sheetDiary)).not.toContain('.sd-links .ds-link');
-  });
-  it('карточки-объяснялки пустого дневника — 14px, не кегль карточки по умолчанию', () => {
-    expect(sheetDiary).toMatch(/\.sd-explainer-card\s*\{[^}]*font-size:\s*14px/);
-    expect(sheetDiary).toMatch(/\.sd-explainer-why\s*\{[^}]*font-size:\s*13px/);
   });
   it('пустые состояния дневника и истории без курсива', () => {
     for (const [sels, body] of rulesOf(sheetDiary)) {

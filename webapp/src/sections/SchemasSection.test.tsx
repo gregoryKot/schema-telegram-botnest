@@ -25,6 +25,7 @@ vi.mock('../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';
+import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
@@ -196,7 +197,7 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
       expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mySchemaIds') }),
     ));
     // Отказ виден человеку, не только телеметрии (SaveErrorNote), и на «ты».
-    expect((await screen.findByRole('alert')).textContent).toMatch(/проверь связь и попробуй ещё раз/);
+    expect(plainText((await screen.findByRole('alert')))).toMatch(/проверь связь и попробуй ещё раз/);
   });
 
   it('пока сохранение не падало — плашки «не удалось сохранить» нет; успех после отказа убирает её', async () => {
@@ -209,7 +210,7 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
     const options = screen.getAllByText('Покинутость / Нестабильность');
     fireEvent.click(options[options.length - 1]);
     fireEvent.click(screen.getByText('Готово'));
-    expect((await screen.findByRole('alert')).textContent).toMatch(/проверьте связь и попробуйте ещё раз/);
+    expect(plainText((await screen.findByRole('alert')))).toMatch(/проверьте связь и попробуйте ещё раз/);
 
     fireEvent.click((await screen.findAllByText('+ Добавить'))[0]);
     await screen.findByText(/Выберите схемы, которые вам близки/);

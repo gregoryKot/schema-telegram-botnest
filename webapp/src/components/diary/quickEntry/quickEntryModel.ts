@@ -1,4 +1,5 @@
 import type { DiaryQuickTag } from '../../../../../shared/src/analytics/homeTile';
+import type { EntityId } from '../../../../../shared/src/theme/entityLook';
 
 // Чистая модель «Дневника одной страницей»: теги, подписи и то, что уходит на
 // сервер по каждому тегу. Без React и без сети — покрыта quickEntryModel.test.ts.
@@ -11,6 +12,26 @@ export const QUICK_TAGS: ReadonlyArray<{ id: QuickTag; label: string }> = [
   { id: 'mode', label: 'Режим' },
   { id: 'gratitude', label: 'Благодарность' },
 ];
+
+/**
+ * Тег → сущность ENTITY_LOOK (docs/design/APP_2026-11.md, b10a): бумага выбранного чипа и лист
+ * «Записано». Мысль — быстрая запись (персик, Pebbles), схема и режим — их дневники, благодарность —
+ * бирюза с Pebbles filled. Строки, а не импорт таблицы: модель остаётся без рантайм-зависимостей.
+ */
+export const QUICK_TAG_ENTITY = {
+  thought: 'diary',
+  schema: 'diary_schema',
+  mode: 'diary_mode',
+  gratitude: 'gratitude',
+} as const satisfies Record<QuickTag, EntityId>;
+
+/** Что легло в записи — для листа «Записано»: тег и данные сцены (режим, пункты дня благодарности). */
+export interface QuickSaved {
+  tag: QuickTag;
+  modeId?: string;
+  /** Пунктов благодарности за день после сохранения — сколько камешков легло. */
+  gratitudeCount?: number;
+}
 
 /** Сервер держит до 20 пунктов на день, форма благодарности — пять. */
 export const GRATITUDE_MAX_ITEMS = 5;

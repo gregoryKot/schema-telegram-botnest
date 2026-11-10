@@ -51,12 +51,38 @@ describe('«Записи»: шапка в строку и компактная �
     expect(at(F, '.pp-block.cd-head', 768)).toMatch(/justify-content:\s*space-between/);
     expect(phoneSees(F, '.pp-block.cd-head', /flex-direction:\s*row/)).toEqual([]);
   });
-  it('дата группы: подпись мелким шрифтом и узкая колонка — под ≥768; телефонный размер 22px не тронут', () => {
-    const date = at(F, '.cd-day-date', 768);
-    expect(Number(date.match(/(\d+)px/)?.[1])).toBeLessThanOrEqual(16);
-    expect(at(F, '.cd-day', 768)).toMatch(/grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)/);
-    const phone = readCss(F).filter((r) => isPhone(r.media) && r.selectors.includes('.cd-day-date'));
-    expect(phone.map((r) => r.body)).toEqual([expect.stringMatching(/font-size:\s*22px/)]);
+  // b11 (редизайн 2026-11, аудит diary-feed): дата — Literata 22 и на компьютере (была подпись 15px), колонкой
+  // слева — по ширине самой страницы (container cd-page), а не окна: лист «Дневники» идёт без бокового меню.
+  it('дата группы: Literata 22 везде; узкая колонка — только на широкой странице (container cd-page)', () => {
+    const date = rulesOf(F, '.cd-day-date');
+    expect(date.map((r) => r.media)).toEqual(['']);
+    expect(date[0].body).toMatch(/font-size:\s*22px/);
+    const wide = rulesOf(F, '.cd-day').filter((r) => /^@container cd-page \(min-width: \d+px\)$/.test(media(r)));
+    expect(wide.map((r) => r.body).join(' ')).toMatch(/grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)/);
+    expect(rulesOf(F, '.cd-day').filter((r) => r.media === '' && /grid-template-columns/.test(r.body))).toEqual([]);
+  });
+});
+
+// Ревью g3 r2: узкая раскладка карточки записи включалась по контейнеру cd-page — вне ленты («Записи
+// дневника» в «Моей карточке») его нет, и на 390 карточка шла широкой раскладкой с колонкой знака 44.
+// Раскладка — по ширине самой карточки: обёртка EntryShell — контейнер cd-entry. Корешок — прямая полоса
+// ::before под overflow: clip, а не inset-тень (на скруглённой карточке она давала серп).
+describe('карточка записи «Записей»: раскладка по своей ширине, корешок полосой', () => {
+  const F = 'client-diary-entry.css';
+  const css = readCss(F);
+  it('обёртка карточки — контейнер cd-entry; правила карточки не смотрят на cd-page', () => {
+    expect(css.find((r) => r.media === '' && r.selectors.includes('.cd-entry-box'))?.body).toMatch(/container:\s*cd-entry \/ inline-size/);
+    const scoped = css.filter((r) => /@container/.test(r.media));
+    expect(scoped.length).toBeGreaterThan(0);
+    for (const r of scoped) expect(media(r)).toMatch(/^@container cd-entry /);
+    const narrow = scoped.filter((r) => /max-width/.test(r.media) && r.selectors.includes('.cd-entry-body'));
+    expect(narrow.map((r) => r.body).join(';')).toMatch(/display:\s*contents/);
+  });
+  it('корешок — ::before на всю высоту, карточка режет его скруглением; inset-тени нет', () => {
+    const own = css.filter((r) => r.media === '' && r.selectors.some((x) => x.startsWith('.cd-entry'))).map((r) => r.body).join(';');
+    expect(own).not.toMatch(/inset\s+\d+px\s+0\s+0/);
+    expect(css.find((r) => r.selectors.includes('.cd-entry::before'))?.body).toMatch(/inset-block:\s*0/);
+    expect(css.find((r) => r.media === '' && r.selectors.includes('.cd-entry'))?.body).toMatch(/overflow:\s*clip/);
   });
 });
 

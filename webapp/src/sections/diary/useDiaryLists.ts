@@ -64,5 +64,5 @@ export function useDiaryLists() {
   };
 
   const hasMore = more.schema || more.mode || more.gratitude;
-  return { schema, setSchema, mode, setMode, gratitude, setGratitude, hasMore, moreState, applyFirst, loadMore };
+  return { schema, setSchema, mode, setMode, gratitude, setGratitude, more, hasMore, moreState, applyFirst, loadMore };
 }

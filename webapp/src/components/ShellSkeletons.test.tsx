@@ -12,6 +12,7 @@ describe('SectionSkeleton', () => {
   it.each([
     ['/today', false, 'today-skeleton'],
     ['/more', false, 'more-skeleton'],
+    ['/diary', false, 'diary-skeleton'],
     ['/cabinet/today', true, 'therapist-today-skeleton'],
     ['/cabinet/annapeka', true, 'client-card-skeleton'],
     ['/cabinet/annapeka/concept', true, 'client-card-skeleton'],
@@ -19,7 +20,7 @@ describe('SectionSkeleton', () => {
     expect(shape(path, therapist).getAttribute('data-testid')).toBe(testId);
   });
 
-  it.each([['/diary', false], ['/profile', false], ['/cabinet', true], ['/cabinet/guide', true], ['/cabinet/tasks', true]])(
+  it.each([['/profile', false], ['/cabinet', true], ['/cabinet/guide', true], ['/cabinet/tasks', true]])(
     '%s → общий силуэт раздела во всю ширину колонки', (path, therapist) => {
       const el = shape(path, therapist);
       expect(el.getAttribute('data-testid')).toBeNull();

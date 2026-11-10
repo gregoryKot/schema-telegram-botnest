@@ -1,32 +1,67 @@
-/* «Дневник одной страницей» (components/diary/QuickEntrySheet.tsx). Префикс qe-;
-   оболочка и шапка — .tk2-overlay / .tq-* (sheet-tracker.css, tracker-question.css). */
-.qe-bar-title { text-align: center; }
-.qe-area {
-  box-sizing: border-box; width: 100%; min-height: 220px; resize: none; -webkit-appearance: none; appearance: none;
-  padding: var(--space-16); border-radius: 18px;
-  border: 1px solid var(--line-strong); background: var(--surface); color: var(--text);
-  font: 400 19px/1.5 var(--serif);
-}
-.qe-area::placeholder { color: var(--text-faint); }
-.qe-area:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.qe-tags { display: flex; flex-wrap: wrap; gap: var(--space-8); }
-.qe-tag {
-  min-height: 44px; padding: 0 var(--space-16); border-radius: 22px; cursor: pointer;
-  font: 600 14px var(--sans); color: var(--text-sub);
-  background: var(--surface); border: 1px solid var(--line-strong);
-}
-.qe-tag.is-active {
-  color: var(--text); border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-}
-.qe-tag:focus-visible, .qe-error-act:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.qe-error { margin: 0; font-size: 14px; line-height: 1.5; color: var(--err); }
-.qe-error-act {
-  min-height: 44px; padding: 0 var(--space-8); background: none; border: none; cursor: pointer;
-  font: 600 14px var(--sans); color: var(--accent); text-decoration: underline;
-}
-.qe-cta { min-height: 52px; width: 100%; border-radius: 26px; font-size: 16px; }
-/* Неактивная — общий вид .ds-btn:disabled (cabinet.css); своя прозрачность гасила его второй раз:
-   «Сохраняю…» 1.93:1 почти сливалась с фоном. */
-.qe-cta:disabled { cursor: default; }
+/* «Дневник одной страницей» (components/diary/QuickEntrySheet.tsx, quickEntry/*). Префикс qe-;
+   оболочка и шапка — .tk2-overlay / .tq-* (sheet-tracker.css, flow-frame.css), лист-герой и
+   «готово» — EntitySheet / DoneSheet (paper-app.css). Редизайн 2026-11 (APP_2026-11.md, b10a):
+   поле — общий поле-лист .pa-field на персике героя, глубина — сплошным сдвинутым слоем, без blur. */
 
+/* Колонка потока: на телефоне во всю ширину, на компьютере — лист 920 по центру, а не узкая
+   телефонная колонка посреди пустого экрана. Шаги одного потока стоят в одной колонке. */
+.qe-flow {
+  box-sizing: border-box; width: 100%; max-width: 920px; margin: 0 auto;
+  padding: var(--space-16) var(--space-16) var(--space-32);
+  display: flex; flex-direction: column; gap: var(--space-16);
+}
+
+/* Поле — общий поле-лист .pa-field (paper-app.css), как у заметки и разбора: белый лист Literata, тень
+   сплошным слоем тоном персика героя (--h листа), фокус — кромкой. Здесь — только высота (сведение с g2). */
+.qe-page { margin-top: 6px; }
+/* Широкий лист: камешки — внизу справа, как на плитке «Дневник» главной, а не в середине поля. */
+@container pa-sheet (min-width: 720px) { .qe-sheet > .pa-sheet-art { align-self: end; margin-bottom: 4px; } }
+.pa-field.qe-area { min-height: 200px; }
+
+/* Под листом: теги и подсказка, справа (на телефоне — ниже) «Сохранить» и тихая ссылка. */
+.qe-foot { display: flex; flex-direction: column; gap: var(--space-16); }
+.qe-foot-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.qe-tags { display: flex; flex-wrap: wrap; gap: var(--space-8); }
+.ds-chip.qe-tag { min-height: 44px; padding-right: 14px; font-size: 14px; }
+/* Знак тега — на плашке бумаги своей сущности и у невыбранного чипа: «Просто мысль» и «Благодарность» несут
+   один мотив (Pebbles), и на белом чипе различались только числом залитых камешков (ревью g3 r2). Плашка
+   различает их цветом (персик против бирюзы); слот один у обоих состояний — чип при выборе не прыгает. */
+.ds-chip.qe-tag .pa-chip-sign { width: 30px; height: 30px; border-radius: 9px; }
+.ds-chip.qe-tag:not(.is-on) .pa-chip-sign { background: oklch(0.915 0.03 var(--h)); }
+.qe-tag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qe-hint { margin: 0; }
+.qe-acts { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.ds-btn.qe-cta { width: 100%; height: auto; min-height: 52px; border-radius: 26px; font-size: 16px; }
+.qe-cta:disabled { cursor: default; }
+.tq-more.qe-more { align-self: center; text-underline-offset: 3px; }
+.tq-more.qe-more:disabled { cursor: default; opacity: .6; }
+
+/* Второй шаг (схема): группы доменов — колонками на широком экране. */
+.qe-schemas { display: flex; flex-direction: column; }
+
+/* «Записано»: лист по центру экрана, строка моста — под листом, тише кнопок. */
+.tq-body.qe-done-body { display: flex; flex-direction: column; }
+.qe-done {
+  box-sizing: border-box; width: 100%; max-width: 572px; margin: auto;
+  padding: var(--space-16) var(--space-16) var(--space-32);
+  display: flex; flex-direction: column;
+}
+.th-line.qe-done-line { margin: 14px 0 0; padding: 0 var(--space-8); }
+
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .qe-flow { padding-top: 40px; gap: 20px; }
+  .pa-field.qe-area { min-height: 240px; }
+  .qe-acts--row { flex-direction: row; align-items: center; gap: var(--space-16); }
+  .qe-acts--row > .ds-btn.qe-cta { width: 260px; }
+  .qe-schemas { display: block; columns: 2; column-gap: 32px; }
+  .qe-schemas > * { break-inside: avoid; }
+}
+/* «Сохранить / Заполнить подробно» колонкой справа — с 1024: на 768 колонка 260 сжимала теги в две строки
+   («Благодарность» одна во второй), и подсказка кончалась висячим словом; там действия — под тегами той же
+   строкой, что у шага схемы (кнопка 260 и ссылка рядом, qe-acts--row), а не полосой во всю ширину поля:
+   внутри одного потока кнопки прыгали от 730–870px к 260 (ревью g3 r2). В колонке 260 — снова столбиком. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .qe-foot { display: grid; grid-template-columns: minmax(0, 1fr) 260px; column-gap: 28px; align-items: start; }
+  .qe-foot > .qe-acts--row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .qe-foot > .qe-acts--row > .ds-btn.qe-cta { width: 100%; }
+}

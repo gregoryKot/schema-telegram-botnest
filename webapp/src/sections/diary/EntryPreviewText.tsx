@@ -1,9 +1,9 @@
 import { clipPreview } from './entryPreview';
+import { glueSpaces } from '../../../../shared/src/utils/typo';
 
-/** Текст записи: в закрытой карточке — начало и «показать ещё», в открытой — целиком. */
+/** Текст записи: закрытая карточка — начало и «показать ещё», открытая — целиком; текст пользователя — glueSpaces. */
 export function EntryPreviewText({ text, open }: { text: string; open: boolean }) {
   const clip = clipPreview(text);
-  if (open || !clip.clipped) return <>{text}</>;
-  // Нажимается вся карточка (EntryShell): подпись — подсказка, а не вторая кнопка.
-  return <>{clip.text} <span className="cd-entry-more-hint">показать ещё</span></>;
+  if (open || !clip.clipped) return <>{glueSpaces(text)}</>;
+  return <>{glueSpaces(clip.text)} <span className="cd-entry-more-hint">показать ещё</span></>;
 }

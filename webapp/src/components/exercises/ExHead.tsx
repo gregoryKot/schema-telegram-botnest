@@ -4,7 +4,8 @@
 //    подводка и знак сущности крупно справа (на развороте — сверху). heroArt — своя сцена с
 //    данными вместо знака (SceneChildhood values); прежний art при look не рисуется — картинка
 //    над надписью и сцена героя разные вещи, и сцена не должна пропадать молча. compact — второй
-//    и следующие шаги.
+//    и следующие шаги. heroFoot — строка внизу листа, внутри его бумаги (тихие ссылки «Сменить
+//    режим / Сравни с похожими»): отдельной строкой на странице она опускала первое поле.
 // Предупреждение «самопомощь» (`caution` — готовый TherapyCaution от ExScreen) стоит под шапкой,
 // только если экран так выбрал: у героя ExScreen ставит его под кнопки (принцип 5).
 import type { ReactNode } from 'react';
@@ -22,13 +23,15 @@ export interface ExHeadProps {
   /** Бумага и знак героя: сущность из ENTITY_LOOK или готовый вид (домен, группа режима). */
   look?: EntityId | SheetLook;
   compact?: boolean;
+  /** Строка внизу листа-героя, внутри его бумаги (только с look). */
+  heroFoot?: ReactNode;
 }
 
-export function ExHead({ eyebrow, art, heroArt, title, lede, look, compact, caution: warn }: ExHeadProps & { caution?: ReactNode }) {
+export function ExHead({ eyebrow, art, heroArt, title, lede, look, compact, heroFoot, caution: warn }: ExHeadProps & { caution?: ReactNode }) {
   if (look !== undefined) {
     return (
       <>
-        <EntitySheet look={look} label={eyebrow} title={title} sub={lede} art={heroArt} compact={compact} titleAs="h1" className="ex2-hero" />
+        <EntitySheet look={look} label={eyebrow} title={title} sub={lede} art={heroArt} compact={compact} titleAs="h1" className="ex2-hero">{heroFoot}</EntitySheet>
         {warn}
       </>
     );

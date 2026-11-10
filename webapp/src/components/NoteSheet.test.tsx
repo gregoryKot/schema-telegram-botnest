@@ -16,6 +16,7 @@ vi.mock('../api', () => ({
   },
 }));
 import { api } from '../api';
+import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function renderSheet() {
@@ -58,7 +59,7 @@ describe('NoteSheet — загрузка существующей заметки
     mockApi.getNote.mockRejectedValue(new Error('network down'));
     await act(async () => { renderSheet(); });
     expect(screen.queryByPlaceholderText(PLACEHOLDER)).toBeNull();
-    expect(screen.getByRole('alert').textContent).toContain('Заметка не загрузилась');
+    expect(plainText(screen.getByRole('alert'))).toContain('Заметка не загрузилась'); // заголовок PaperAlert склеен glue
   });
 });
 

@@ -8,6 +8,7 @@ import { SchemaEntryAside } from './SchemaEntryAside';
 import { saveDraft, loadDraft, clearDraft } from '../../utils/drafts';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
+import { PaperAlert } from '../paper/PaperAlert';
 import { haptic } from '../../haptic';
 import { SchemaEmotionsStep } from './SchemaEmotionsStep';
 import { SchemaChipsStep } from './SchemaChipsStep';
@@ -30,11 +31,14 @@ import {
 } from '../../../../shared/src/schema/useSchemaDiaryDraftState';
 import { buildSchemaDiaryExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
 import { collectFilledFields } from '../../../../shared/src/utils/diaryFields';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Визард дневника схем (одно главное действие на экран, низкий порог для СДВГ)
 // — стиль ModeEntryForm: ExScreen, tick-strip, один вопрос на экран. Обязательна
 // только ситуация (trigger); сохранить можно с любого шага. Порядок и текст
 // шагов — shared/schema/schemaDiarySteps (правило №3); чип-шаги — рядом.
+// Герой — лист глины с Layers (ENTITY_LOOK.diary_schema), на ≥1024 разворотом слева;
+// со второго шага — полосой; подводка, пояснение и «Совет» — один раз, на первом шаге.
 
 interface Props {
   activeSchemaIds?: string[];
@@ -64,9 +68,7 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
   // Фокус на поле при смене шага — сразу видно, куда писать.
-  useEffect(() => {
-    areaRef.current?.focus();
-  }, [stepIdx]);
+  useEffect(() => { areaRef.current?.focus(); }, [stepIdx]);
 
   useEffect(() => {
     saveDraft('schema', { ...values, emotions, schemaIds });
@@ -80,11 +82,7 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
     haptic.success();
     setSaving(true);
     try {
-      const optional = collectFilledFields(
-        values,
-        SCHEMA_DIARY_FIELD_KEYS,
-        'trigger',
-      );
+      const optional = collectFilledFields(values, SCHEMA_DIARY_FIELD_KEYS, 'trigger');
       await onSave({ trigger: values.trigger, emotions, schemaIds, ...optional });
       clearDraft('schema');
       goBack();
@@ -97,9 +95,7 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
   };
 
   const STEPS = buildSchemaDiarySteps(tr);
-  const stepByKey = Object.fromEntries(
-    STEPS.map((s) => [s.key, s]),
-  ) as Record<SchemaDiaryFieldKey, (typeof STEPS)[number]>;
+  const stepByKey = Object.fromEntries(STEPS.map((s) => [s.key, s])) as Record<SchemaDiaryFieldKey, (typeof STEPS)[number]>;
   const chipLabels = buildSchemaDiaryChipLabels(tr);
   const TOTAL = SCHEMA_DIARY_STEP_ORDER.length;
   const kind = SCHEMA_DIARY_STEP_ORDER[stepIdx];
@@ -107,8 +103,7 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
 
   const filledFor = (k: SchemaDiaryStepKind): boolean => {
     if (k === 'emotions') return emotions.length > 0;
-    if (k === 'schemas')
-      return schemaIds.length > 0 || values.schemaOrigin.trim().length > 0;
+    if (k === 'schemas') return schemaIds.length > 0 || values.schemaOrigin.trim().length > 0;
     return values[k].trim().length > 0;
   };
   const tickFilled = SCHEMA_DIARY_STEP_ORDER.map(filledFor);
@@ -125,16 +120,15 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
     <ExScreen
       onBack={goBack}
       backLabel="Назад к дневнику"
+      look="diary_schema" spread compact={!isFirst}
       eyebrow={hasSchemaDiaryDraft(saved) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?'}
-      title={<>Записать<br /><span className="it">момент</span></>}
-      lede={tr(
+      title="Записать момент"
+      lede={isFirst ? tr(
         'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
         'Что-то задело — приходите сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',
-      )}
-      aside={<SchemaEntryAside hue={HUE} />}
+      ) : undefined}
+      aside={isFirst ? <><p className="sd-explainer">{glue(buildSchemaDiaryExplainer(tr))}</p><SchemaEntryAside hue={HUE} /></> : undefined}
     >
-      <p className="ds-sub sd-explainer">{buildSchemaDiaryExplainer(tr)}</p>
-
       <DiaryTicks filled={tickFilled} active={stepIdx} hue={HUE} onJump={setStepIdx} />
 
       <DiaryStepCard hue={HUE} stepIdx={stepIdx} total={TOTAL} required={curRequired} filled={curFilled} filledCount={filledCount}>
@@ -156,18 +150,18 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
             />
             {/* Свободный текст — здесь, а не в SchemaChipsStep: detectCrisisAny ниже
                 прогоняет его вместе с остальными полями (правило №7). */}
-            <LimitedTextarea max={DIARY_FIELD_MAX} className="ds-textarea sd-area-gap" rows={2}
+            <label className="sd-field-label" htmlFor="schema-origin">{stepByKey.schemaOrigin.title}</label>
+            <LimitedTextarea max={DIARY_FIELD_MAX} id="schema-origin" className="ds-textarea sd-area" rows={4}
               value={values.schemaOrigin}
               onChange={(e) => setField('schemaOrigin', e.target.value)}
               placeholder={stepByKey.schemaOrigin.example}
-              aria-label={stepByKey.schemaOrigin.title}
             />
           </>
         )}
         {textStep && (
           <>
             <DiaryStepQ id="schema-entry-question" title={textStep.title} hint={textStep.hint} />
-            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className="ds-textarea" rows={textStep.rows ?? 3}
+            <LimitedTextarea max={DIARY_FIELD_MAX} ref={areaRef} className="ds-textarea sd-area" rows={4}
               value={values[textStep.key]}
               onChange={(e) => setField(textStep.key, e.target.value)}
               placeholder={textStep.example}
@@ -178,7 +172,7 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
       </DiaryStepCard>
 
       {detectCrisisAny(...Object.values(values)) && <CrisisCard surface="schema" />}
-      {saveError && <div role="alert" className="sd-save-error">Не удалось сохранить. Текст остался черновиком — можно повторить</div>}
+      {saveError && <PaperAlert sign="layers" className="sd-alert" title="Не удалось сохранить." text="Текст остался черновиком — можно повторить" />}
 
       <DiaryWizardFoot
         onBack={goPrev}

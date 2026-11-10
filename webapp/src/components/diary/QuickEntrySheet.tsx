@@ -95,7 +95,7 @@ export function QuickEntrySheet({ onClose, onSaved }: Props) {
           onSave={q.saveSchema}
         />
       )}
-      {q.stage === 'done' && <QuickDone crisis={q.crisis} onHome={goBack} onAgain={q.restart} />}
+      {q.stage === 'done' && <QuickDone saved={q.saved} crisis={q.crisis} onHome={goBack} onAgain={q.restart} />}
     </div>
   );
 }

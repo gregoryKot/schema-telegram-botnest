@@ -12,7 +12,7 @@ export type PatternDiaryDeleteApi = DiaryDeleteApi;
 // в консоль — человек видел «удалил, а она снова тут» без единого слова, и
 // 404 (записи уже нет) тоже считался сбоем. Теперь запись уходит из списка
 // только после ответа сервера; отказ пробрасывается — кнопка «Удалить
-// навсегда» (DeleteBtn → useDeleteAction) показывает deleteFailedText, запись
+// навсегда» (DeleteBtn → useDeleteAction) показывает deleteFailedNote, запись
 // остаётся на месте.
 export function usePatternEntryDelete({
   api,

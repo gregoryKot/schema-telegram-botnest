@@ -18,7 +18,7 @@ export function parseRules(css: string): Rule[] {
       let depth = 1, j = open + 1;
       for (; j < text.length && depth > 0; j++) depth += text[j] === '{' ? 1 : text[j] === '}' ? -1 : 0;
       const inner = text.slice(open + 1, j - 1);
-      if (head.startsWith('@media')) walk(inner, head);
+      if (head.startsWith('@media') || head.startsWith('@container')) walk(inner, head);
       else if (!head.startsWith('@')) out.push({ media, selectors: head.split(',').map((s) => s.trim()), body: inner });
       i = j;
     }

@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 // Кризисная детекция в дневнике режимов (CLAUDE.md, правило №7).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ModeEntrySheet } from './ModeEntrySheet';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
+import { stickyAncestorsOf, stickyClasses } from '../../test-support/stickyAncestors';
+import { allCssRules, indexCssRules } from '../../styles/cssRules.test-helpers';
 import { healthyAdultHint } from '../../../../shared/src/mode/healthyAdultHints';
 
 vi.mock('../../api', () => ({
@@ -75,5 +77,31 @@ describe('ModeEntrySheet — пример Здорового Взрослого'
     const example = screen.getByText(/^«Мне сейчас больно/);
     expect(example.textContent).toBe(healthyAdultHint('vulnerable_child'));
     expect(example.textContent).not.toMatch(/««|»»/);
+  });
+});
+
+// Ревью g3 r2: лист «Сравни с похожими» рисовался в колонке разворота (.pa-spread-side, sticky на
+// ≥1024) и ложился под липкую шапку мастера — тап по «← Назад» в углу закрывал весь мастер.
+// Лист — сиблинг экрана формы, без липких предков; его «Назад» закрывает только его.
+describe('ModeEntrySheet — лист сравнения вне колонки разворота', () => {
+  it('лист сравнения — не потомок экрана формы и без липких предков', () => {
+    renderSheetOnFormStep();
+    fireEvent.click(screen.getByText('Сомневаешься? Сравни с похожими'));
+    const sheet = screen.getByText('сейчас выбран').closest('.ex-screen')!;
+    expect(sheet).toBeTruthy();
+    expect(stickyAncestorsOf(sheet, stickyClasses([...indexCssRules(), ...allCssRules()]))).toEqual([]);
+    expect(sheet.closest('.ex2-screen')).toBeNull();
+    // Позже экрана формы в DOM — при равном z-index лежит выше него.
+    const form = document.querySelector('.ex2-screen')!;
+    expect(form.compareDocumentPosition(sheet) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('«Назад» листа сравнения закрывает только его — форма режима остаётся', () => {
+    renderSheetOnFormStep();
+    fireEvent.click(screen.getByText('Сомневаешься? Сравни с похожими'));
+    const sheet = screen.getByText('сейчас выбран').closest('.ex-screen') as HTMLElement;
+    fireEvent.click(within(sheet).getByText('Назад'));
+    expect(screen.queryByText('сейчас выбран')).toBeNull();
+    expect(screen.getByLabelText('Что произошло?')).toBeTruthy();
   });
 });

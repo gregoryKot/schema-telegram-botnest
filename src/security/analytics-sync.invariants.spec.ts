@@ -102,11 +102,11 @@ const BACKEND_ONLY: Record<string, string> = {
     '«разобрать связанный режим»',
   mode_doubt_opened:
     'константа MODE_DOUBT_OPENED_EVENT (shared/src/share/analytics.ts), ' +
-    'шлётся из ModeDoubtButton.tsx (оба фронта) при открытии листа ' +
+    'шлётся из useModeDoubt.tsx (оба фронта) при открытии листа ' +
     '«С чем путают режим»',
   mode_doubt_switched:
     'константа MODE_DOUBT_SWITCHED_EVENT (shared/src/share/analytics.ts), ' +
-    'шлётся из ModeDoubtButton.tsx (оба фронта) при нажатии «Это ближе»',
+    'шлётся из ModeDoubtSheet.tsx (оба фронта) при нажатии «Это ближе»',
   account_link_started:
     'константа ACCOUNT_LINK_STARTED_EVENT (shared/src/share/analytics.ts), ' +
     'шлётся из useAccountLink.ts (мини-апп) при нажатии «У меня уже есть ' +

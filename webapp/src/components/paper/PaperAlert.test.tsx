@@ -16,8 +16,8 @@ describe('PaperAlert', () => {
     // дефолт — литерал (не рантайм-импорт палитры, см. PaperAlert.tsx), сверка с палитрой здесь
     expect(alert.style.getPropertyValue('--h')).toBe(String(PAPER_HUE.straw));
     expect(OUTCOME_LOOK.wait.hue).toBe(PAPER_HUE.straw);
-    expect(alert.querySelector('.pa-alert-title')?.textContent).toBe('Записи не загрузились');
-    expect(alert.querySelector('.pa-alert-text')?.textContent).toBe('Сервер не ответил');
+    expect(alert.querySelector('.pa-alert-title')?.textContent).toBe('Записи не\u00a0загрузились');
+    expect(alert.querySelector('.pa-alert-text')?.textContent).toBe('Сервер не\u00a0ответил');
     expect(container.querySelector('button')).toBeNull();
     expect(container.querySelector('.pa-alert-sign')).toBeNull();
   });
@@ -39,5 +39,15 @@ describe('PaperAlert', () => {
     const box = screen.getByRole('status');
     expect(box.style.getPropertyValue('--h')).toBe('45');
     expect((screen.getByRole('button', { name: 'Ещё раз' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  // Ревью g3 r3: «Отметки трекера не / загрузились.», «записи на / месте» — короткое слово висело в конце строки.
+  // Примитив склеивает сам (glueIf): предлог держится со следующим словом неразрывным пробелом, JSX — как есть.
+  it('строки склеены: короткое слово приходит в DOM с неразрывным пробелом', () => {
+    const { container } = render(<PaperAlert title="Отметки трекера не загрузились." text="Записи в порядке и на месте." />);
+    expect(container.querySelector('.pa-alert-title')!.textContent).toBe('Отметки трекера не\u00a0загрузились.');
+    expect(container.querySelector('.pa-alert-text')!.textContent).toBe('Записи в\u00a0порядке и\u00a0на\u00a0месте.');
+    render(<PaperAlert title={<b>как есть</b>} />);
+    expect(screen.getByText('как есть').tagName).toBe('B');
   });
 });
