@@ -1,9 +1,7 @@
-// Вид записи в ленте «Записей» (docs/design/APP_2026-11.md, b11-diary-feed): знак и бумага по типу
-// записи берутся из ENTITY_LOOK — как строка задания и «Моего пути», а не выбираются на месте.
-// Схема — Layers на глине, мысль — Pebbles на персике, разбор — Ribbon на шалфее, режим — знак и
-// бумага своей группы (modeLook: Карающий Критик — Looming на сливе), благодарность — Pebbles
-// filled на бирюзе: окрашено столько камешков, сколько записано «спасибо» (решение 2). Черновик —
-// вид своего типа (таблица ENTITY_LOOK, строка «Черновик»), а не всегда бумага схем.
+// Вид записи в ленте «Записей» (APP_2026-11.md, b11): знак и бумага по типу — из ENTITY_LOOK, как у строки задания и
+// «Моего пути». Схема — Layers на глине, мысль — Pebbles на персике, разбор — Ribbon на шалфее, режим — знак группы
+// (modeLook) на небе дневника режимов (kindHue), благодарность — Pebbles filled на бирюзе (камешков — сколько «спасибо»,
+// решение 2). Черновик — вид своего типа (ENTITY_LOOK, строка «Черновик»), а не всегда бумага схем.
 import { ENTITY_LOOK, type EntityId, type Look } from '../../../../shared/src/theme/entityLook';
 import { modeLookById } from '../../components/diary/modeLookById';
 import { pebblesLaid } from '../../components/art/paper';
@@ -20,13 +18,15 @@ const KIND_ENTITY: Record<Exclude<EntryKind, 'mode'>, EntityId> = {
   schema: 'diary_schema', thought: 'diary', case: 'case', gratitude: 'gratitude', tracker: 'tracker',
 };
 
-
 /** Вид типа записи; режим — по своей группе, без режима — общий знак режимов. */
 export function kindLook(kind: EntryKind, modeId?: string): Look {
   if (kind === 'mode' && modeId) return modeLookById(modeId);
   const { hue, sign } = ENTITY_LOOK[kind === 'mode' ? 'diary_mode' : KIND_ENTITY[kind]];
   return { hue, sign };
 }
+/** Бумага карточки и черновика (корешок, ярлык, слой) — ТИП записи, группу режима показывает знак: детские (28) = схема,
+ *  здоровые (145) ≈ разбор (135), корешок переставал различать тип (ревью g3 r3, как благодарность в решении 1). */
+export const kindHue = (kind: EntryKind): number => kindLook(kind).hue;
 
 /** Тип строки ленты — тот же ярлык, что на главной (entryKind.ts). */
 export function entryKindOf(item: EntryRef): EntryKind {
@@ -42,7 +42,7 @@ export function entryLook(item: EntryRef): FeedLook {
   return kindLook(entryKindOf(item));
 }
 
-/** Вид черновика: бумага и знак своего типа; режим — группы выбранного режима, если он уже выбран. */
+/** Вид черновика: знак своего типа; у режима — знак группы выбранного режима, если он уже выбран. */
 export function draftLook(type: DiaryType, data: unknown): FeedLook {
   const d = (data ?? {}) as Record<string, unknown>;
   if (type === 'mode') return kindLook('mode', typeof d.modeId === 'string' && d.modeId ? d.modeId : undefined);

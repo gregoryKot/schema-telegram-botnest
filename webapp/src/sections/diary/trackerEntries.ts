@@ -17,9 +17,7 @@ export function buildTrackerDays(history: DayHistory[], needIds: string[] = NEED
 }
 
 const complete = (d: TrackerDay) => d.index !== null && d.filled >= d.total;
-/** «Трекер — индекс 7,2» или «Трекер: 3 из 5» — имя кнопки строки дня. */
+/** «Трекер — индекс 7,2» или «Трекер: 3 из 5» — надпись и имя кнопки строки дня. Укоротить до «индекс 7,2» —
+ *  предложение на решение владельца (APP_2026-11.md, b11 «Тексты»), до ответа видимый текст прежний (ревью g3 r3). */
 export const trackerDayLabel = (d: TrackerDay): string =>
   complete(d) ? `Трекер — индекс ${fmtIndex(d.index!)}` : `Трекер: ${d.filled} из ${d.total}`;
-/** Та же цифра без слова «Трекер» — рядом с полосками дня, знак трекера и есть подпись. */
-export const trackerDayValue = (d: TrackerDay): string =>
-  complete(d) ? `индекс ${fmtIndex(d.index!)}` : `${d.filled} из ${d.total}`;

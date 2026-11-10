@@ -20,6 +20,7 @@ vi.mock('../../api', () => ({
   },
 }));
 import { api } from '../../api';
+import { plainText } from '../../test-support/plainText';
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const PLACEHOLDER = 'Можно одним предложением. Можно без точки.';
@@ -195,7 +196,7 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     type('Шестое');
     tag('Благодарность');
     await press('Сохранить');
-    expect(screen.getByRole('alert').textContent).toMatch(/На сегодня уже пять пунктов/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/На сегодня уже пять пунктов/);
     expect(m.createGratitudeDiary).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Записать как мысль' }));
     expect(screen.getByRole('radio', { name: 'Просто мысль' }).getAttribute('aria-checked')).toBe('true');
@@ -213,7 +214,7 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     type('Солнце');
     tag('Благодарность');
     await press('Сохранить');
-    const alert = screen.getByRole('alert').textContent ?? '';
+    const alert = plainText(screen.getByRole('alert'));
     expect(alert).toMatch(/сегодняшние пункты сейчас не читаются/);
     expect(alert).toMatch(/сохрани его как мысль или попробуй позже/);
     expect(alert).not.toMatch(/Не удалось сохранить/);
@@ -230,7 +231,7 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     tag('Благодарность');
     await press('Сохранить');
     expect(m.createGratitudeDiary).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось сохранить/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/Не удалось сохранить/);
   });
 });
 
@@ -240,7 +241,7 @@ describe('QuickEntrySheet — отказ и выход', () => {
     const { onClose } = setup();
     type('Важная мысль');
     await press('Сохранить');
-    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось сохранить/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/Не удалось сохранить/);
     expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Важная мысль');
     expect((screen.getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement).disabled).toBe(false);
     expect(localStorage.getItem('diary_draft_quick')).toBe('Важная мысль');

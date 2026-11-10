@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SchemaEntrySheet } from './SchemaEntrySheet';
+import { plainText } from '../../test-support/plainText';
 
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
 
@@ -33,7 +34,7 @@ describe('SchemaEntrySheet — сохранение', () => {
     const { onClose } = setup(onSave);
     fireEvent.change(screen.getByPlaceholderText(PLACEHOLDER), { target: { value: 'Созвон с командой' } });
     await act(async () => { fireEvent.click(screen.getByText('Сохранить')); });
-    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось сохранить/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/Не удалось сохранить/);
     expect(onClose).not.toHaveBeenCalled();
     expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Созвон с командой');
     expect((screen.getByText('Сохранить').closest('button') as HTMLButtonElement).disabled).toBe(false);

@@ -3,11 +3,11 @@ import { SignChip } from '../paper/SignChip';
 import { SignArt } from '../art/SignArt';
 import { GlyphChevron } from '../exercises/ExGlyphs'; // не через ExScreen: шаг есть и в быстрой записи, без ExScreen
 import { domainLook } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/sheet-diary.css';
 
 // Шаг «Схемы» дневника схем (webapp): чипы по доменам + «Только мои/Показать все». Вынесено из
-// SchemaEntrySheet (правило №10). Подпись домена — знак домена (DomainArt через domainLook), а не
-// цветной квадратик; выбранная схема — SignChip на бумаге своего домена.
+// SchemaEntrySheet (правило №10). Подпись домена — знак домена (domainLook), выбранная схема — SignChip домена.
 // Свободный текст («откуда это знакомо») рендерит РОДИТЕЛЬ: правило №7 —
 // поле свободного текста живёт в файле, который прогоняет detectCrisisAny
 // (инвариант src/security/crisis-path.invariants.spec.ts).
@@ -37,7 +37,7 @@ export function SchemaChipsStep({
           <div key={domain.id} className="sd-group">
             <div className="ds-label sd-group-label">
               {look && <span aria-hidden="true"><SignArt sign={look.sign} size="row" /></span>}
-              {domain.domain}
+              {glue(domain.domain)}
             </div>
             <div className="sd-chips">
               {schemas.map((s) => (

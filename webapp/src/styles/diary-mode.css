@@ -6,6 +6,12 @@
 .sd-select-q { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--text); }
 .ds-btn.sd-list-toggle { margin: 8px 0 18px; }
 .sd-feel { margin-bottom: 12px; display: flex; flex-direction: column; gap: 14px; }
+/* Ворота по чувству — главный выбор экрана и осознанное исключение из одного вида SignChip (paper-app.css):
+   светлая бумага неба (--h 240 у .sd-feel) с кромкой того же тона, кегль 14, высота 44 и на компьютере. Белые
+   прямоугольники 12.5px под ярким героем читались фильтрами или выключенными кнопками (ревью g3 r3). */
+.sd-feel > .sd-chips > .ds-chip.ds-chip--toggle { min-height: 44px; padding: 0 14px; font-size: 14px; color: var(--text); }
+.sd-feel > .sd-chips > .ds-chip.ds-chip--toggle.pa-chip--mark { padding-left: 8px; }
+.sd-feel > .sd-chips > .ds-chip.ds-chip--toggle:not(.is-on) { background: oklch(0.95 0.02 var(--h)); border-color: oklch(0.8 0.05 var(--h)); }
 .sd-feel-list { display: flex; flex-direction: column; gap: 10px; }
 .sd-feel-q { margin: 6px 0 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.25; }
 .sd-feel-hint { margin: -4px 0 2px; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
@@ -45,10 +51,12 @@
 .sd-mode-card.is-selected .sd-mode-check { opacity: 1; }
 /* Строка внизу листа-героя формы режима, внутри его бумаги: «Сменить режим» и «Сравни с похожими» — тихие
    ссылки (отдельной строкой на странице они опускали первое поле, ревью g3). Ссылка — строка 24, зона 44
-   добрана прозрачным ::before (приём .ds-switch), а не межстрочным расстоянием: уже 390 ссылки встают в две
-   строки, и с зоной 44 на каждую они висели одна под другой с пустотой ~40px, съедая ~90px героя (ревью
-   g3 r2). Низ зоны заходит в поле листа. */
-.sd-mode-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; margin: 2px 0 -2px; }
+   добрана прозрачным ::before на 10px вверх и вниз (приём .ds-switch), а не высотой строки (ревью g3 r2:
+   две строки по 44 съедали ~90px героя). Уже 390 (и в форме «вы») ссылки встают в две строки — между ними
+   20: шаг 44, зоны встык, без перекрытия. При зазоре 4 зона нижней ссылки лежала поверх нижней трети
+   верхней, и тап по «Сменить режим» открывал сравнение (ревью g3 r3). Сверка — styles/modeLinksHit.test.ts,
+   проба стенда — рецепт diary-mode-links-hit. Низ зоны заходит в поле листа. */
+.sd-mode-links { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 18px; margin: 2px 0 -2px; }
 .ds-link.sd-mode-link { position: relative; min-height: 24px; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; white-space: normal; text-align: left; }
 .ds-link.sd-mode-link::before { content: ''; position: absolute; inset: -10px -6px; }
 .sd-mode-link svg { width: 14px; height: 14px; flex: none; }
@@ -116,7 +124,7 @@
   .sd-doubt-now-sign, .sd-doubt-now-sign .pp-art--square { width: 68px; }
 }
 /* Две ссылки — одной строкой в листе на 390 (поле листа уже страницы на 30px): стрелка у «Сменить режим»
-   уходит, кегль 12 и зазор 12. Уже 390 — переносится второй строкой через 4px, а не 44. */
+   уходит, кегль 12 и зазор 12 (зоны по 6 с боков встык). Уже 390 — второй строкой через 20 (см. выше). */
 @media (max-width: 559px) {
   .sd-mode-links { column-gap: 12px; }
   .ds-link.sd-mode-link { font-size: 12px; }

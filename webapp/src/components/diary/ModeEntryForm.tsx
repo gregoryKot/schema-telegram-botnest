@@ -6,7 +6,7 @@ import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
 import { PaperAlert } from '../paper/PaperAlert';
 import { DiaryWizardFoot } from './DiaryWizardFoot';
-import { useModeDoubt } from './ModeDoubtButton';
+import { useModeDoubt } from './useModeDoubt';
 import { ModeHealthyExample } from './ModeHealthyExample';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { DIARY_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
@@ -79,7 +79,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
       look={modeLookById(modeId)} spread compact={!isFirst}
       eyebrow={selectedMode?.groupName ?? 'Режим'}
       title={selectedMode?.name ?? ''}
-      lede={isFirst ? selectedMode?.short ?? '' : undefined}
+      lede={isFirst ? glue(selectedMode?.short ?? '') : undefined}
       heroFoot={
         <div className="sd-mode-links">
           <button type="button" className="ds-link sd-mode-link" onClick={onChangeMode}>
@@ -91,9 +91,8 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
       aside={isFirst && (
         <>
           <p className="sd-explainer">{glue(buildModeDiaryExplainer(tr))}</p>
-          <DiaryAside hue={hue} eyebrow="Подсказка" title={tr('Говори от лица режима', 'Говорите от лица режима')}>
-            <p className="ds-sub">«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком.</p>
-          </DiaryAside>
+          <DiaryAside hue={hue} eyebrow="Подсказка" title={tr('Говори от лица режима', 'Говорите от лица режима')}
+            text="«Этот режим говорит мне…», «Он чувствует…». Так легче увидеть его как часть, а не отождествлять себя с ним целиком." />
         </>
       )}
     >

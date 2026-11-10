@@ -8,9 +8,9 @@ import { SignArt } from '../art/SignArt';
 import { modeLookById } from './modeLookById';
 import { MODE_TEST_COMPLETED_EVENT } from '../../../../shared/src/share/analytics';
 import { MODE_PICKER_GROUPS, type FeelGate } from '../../../../shared/src/mode/modeFeelGates';
+import { glue } from '../../../../shared/src/utils/typo';
 
-/**
- * Ворота выбора режима «по базовым чувствам» (shared/mode/modeFeelGates) —
+/** Ворота выбора режима «по базовым чувствам» (shared/mode/modeFeelGates) —
  * восемь чувств, каждая раскрывается вопросом-уточнением и списком знакомых
  * фраз. Переиспользует данные теста (правило №11). Ворота — SignChip на небе
  * режимов; строка-фраза — бумага группы режима со знаком группы (modeLook), а не
@@ -31,8 +31,8 @@ export function ModeFeelingBrowse({ onPick }: { onPick: (id: string) => void }) 
 
       {group && (
         <div className="sd-feel-list">
-          <div className="sd-feel-q">{group.question}</div>
-          <div className="sd-feel-hint">{group.hint}</div>
+          <div className="sd-feel-q">{glue(group.question)}</div>
+          <div className="sd-feel-hint">{glue(group.hint)}</div>
           {group.leaves.map((leaf) => {
             const mode = getModeById(leaf.modeId);
             const look = modeLookById(leaf.modeId);
@@ -47,8 +47,8 @@ export function ModeFeelingBrowse({ onPick }: { onPick: (id: string) => void }) 
               >
                 <span className="sd-feel-sign" aria-hidden="true"><SignArt sign={look.sign} size="row" /></span>
                 <span className="sd-feel-text">
-                  <span className="sd-feel-title">{leaf.label}</span>
-                  <span className="sd-feel-desc">{leaf.desc}</span>
+                  <span className="sd-feel-title">{glue(leaf.label)}</span>
+                  <span className="sd-feel-desc">{glue(leaf.desc)}</span>
                   <span className="sd-feel-mode">→ {mode?.name ?? leaf.label}</span>
                 </span>
               </button>

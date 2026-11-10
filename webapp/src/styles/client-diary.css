@@ -74,8 +74,11 @@
 .cd-timeline { display: flex; flex-direction: column; gap: 28px; }
 .cd-day { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .cd-day--bare + .cd-day--bare { margin-top: -12px; }
-.cd-day-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
-.cd-day-when { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* Узкая страница: дата слева, трекер справа; не помещаются рядом (320: «Трекер — индекс 6,0» ~210px против
+   колонки даты) — трекер переносится строкой под дату, а не наезжает на неё (ревью g3 r3). Колонка даты —
+   по самой длинной строке без переноса (дата nowrap), подпись дня переносится внутри. */
+.cd-day-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; min-height: 44px; }
+.cd-day-when { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-width: min-content; }
 .cd-day-date { font-family: var(--serif); font-size: 22px; line-height: 1.15; color: var(--text); white-space: nowrap; }
 .cd-day-rel { font-size: 12.5px; line-height: 1.35; color: var(--text-sub); }
 .cd-day-items { display: flex; flex-direction: column; gap: 10px; min-width: 0; }

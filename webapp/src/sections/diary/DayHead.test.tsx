@@ -9,12 +9,12 @@ import { buildTrackerDays } from './trackerEntries';
 const [day] = buildTrackerDays([{ date: '2026-10-15', ratings: { attachment: 8, autonomy: 6, expression: 7, play: 7, limits: 8 } }]);
 
 describe('DayHead', () => {
-  it('трекер дня — кнопка с полным именем, видно «индекс 7,2» и полоски по оценкам', () => {
+  it('трекер дня — кнопка, видно «Трекер — индекс 7,2» (до решения владельца) и полоски по оценкам', () => {
     const onOpen = vi.fn();
     const { container } = render(<DayHead dateKey="2026-10-15" tracker={day} onOpenTracker={onOpen} />);
     fireEvent.click(screen.getByRole('button', { name: 'Трекер — индекс 7,2' }));
     expect(onOpen).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('индекс 7,2')).toBeTruthy();
+    expect(screen.getByText('Трекер — индекс 7,2')).toBeTruthy();
     expect(container.querySelectorAll('[data-rated="yes"]')).toHaveLength(5);
   });
 

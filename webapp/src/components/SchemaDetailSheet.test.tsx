@@ -18,6 +18,7 @@ vi.mock('../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api } from '../api';
+import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function renderSheet(schemaId = 'emotional_deprivation', onClose = vi.fn()) {
@@ -115,7 +116,7 @@ describe('SchemaDetailSheet — отказ записи «в мои схемы»
     renderSheet();
     addSchema();
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/прежний список сейчас не читается/);
+    expect(plainText(alert)).toMatch(/прежний список сейчас не читается/);
     expect(alert.textContent).not.toMatch(/проверь связь/);
     // Выбор остался на устройстве — экран не врёт про локальное состояние.
     expect(screen.getAllByText('В моих схемах').length).toBeGreaterThan(0);
@@ -125,7 +126,7 @@ describe('SchemaDetailSheet — отказ записи «в мои схемы»
     mockApi.updateSettings.mockRejectedValueOnce(new TypeError('Failed to fetch'));
     renderSheet();
     addSchema();
-    expect((await screen.findByRole('alert')).textContent).toMatch(/только на этом устройстве — проверь связь/);
+    expect(plainText((await screen.findByRole('alert')))).toMatch(/только на этом устройстве — проверь связь/);
   });
 
   it('успех: плашки нет', async () => {

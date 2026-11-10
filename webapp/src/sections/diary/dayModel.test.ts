@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildEntries } from './diaryModel';
-import { buildTrackerDays, trackerDayValue } from './trackerEntries';
+import { buildTrackerDays, trackerDayLabel } from './trackerEntries';
 import { diaryWeek, listCoversWeek, segCounts, splitDay, weekRows, weekStart } from './dayModel';
 
 const s = (id: number, createdAt: string, schemaIds: string[] = ['abandonment']) => ({ id, createdAt, trigger: 't', emotions: [], schemaIds });
@@ -26,8 +26,8 @@ describe('splitDay: трекер — в строку даты, записи — 
   it('полоски дня — оценки по потребностям, пустое место — null (не выдуманная высота)', () => {
     const [d] = buildTrackerDays([{ date: '2026-10-15', ratings: { attachment: 4, play: 9 } }]);
     expect(d.values).toEqual([4, null, null, 9, null]);
-    expect(trackerDayValue(d)).toBe('2 из 5');
-    expect(trackerDayValue(tracker[0])).toBe('индекс 7,0');
+    expect(trackerDayLabel(d)).toBe('Трекер: 2 из 5');
+    expect(trackerDayLabel(tracker[0])).toBe('Трекер — индекс 7,0');
   });
 });
 

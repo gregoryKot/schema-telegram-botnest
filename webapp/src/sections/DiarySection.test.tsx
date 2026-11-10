@@ -80,6 +80,7 @@ vi.mock('../api', () => {
   return { api };
 });
 import { api } from '../api';
+import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function schemaEntry(overrides: Partial<{ id: number; createdAt: string; trigger: string; schemaIds: string[] }> = {}) {
@@ -172,7 +173,7 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
     renderSection();
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Не удалось загрузить записи дневника/);
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
     expect(screen.getByRole('button', { name: 'Записать' })).toBeTruthy();
   });
 
@@ -197,7 +198,7 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     mockApi.getSchemaDiary.mockRejectedValue(new Error('network blink'));
     fireEvent.click(screen.getByText('Имитировать сохранение'));
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Не удалось загрузить записи дневника/);
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
     expect(screen.getByText('Уже показанная запись')).toBeTruthy();
     expect(seg(/^Все/).textContent).toMatch(/1/);
     // Строка сбоя — над лентой, а не под ней.
@@ -213,11 +214,28 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     await screen.findByText('Видно несмотря на сбой');
     expect(screen.queryByRole('alert')).toBeNull();
     // Сбой трекера ≠ «отметок нет»: об этом сказано, а «Повторить» перезапрашивает историю.
-    expect(screen.getByRole('status').textContent).toMatch(/Отметки трекера не загрузились/);
+    expect(plainText(screen.getByRole('status'))).toMatch(/Отметки трекера не загрузились/);
     mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
     await screen.findByLabelText('Трекер — индекс 7,2');
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  // Ревью g3 r3: трекер не загрузился, «Повторить» уронил и записи — над лентой вставали две одинаковые
+  // песочные плашки подряд. Сбой записей — одна строка: её «Обновить» перезапрашивает и трекер.
+  it('сбой трекера, затем сбой записей — одна строка сбоя над лентой, а не две', async () => {
+    mockApi.history.mockRejectedValue(new Error('offline'));
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Запись до сбоя' })]);
+    renderSection();
+    await screen.findByText('Запись до сбоя');
+    expect(plainText(screen.getByRole('status'))).toMatch(/Отметки трекера не загрузились/);
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network blink'));
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getAllByRole('button', { name: /^(Повторить|Обновить)$/ })).toHaveLength(1);
+    expect(screen.getByText('Запись до сбоя')).toBeTruthy();
   });
 });
 
@@ -265,7 +283,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     expect(counts).toEqual(['Все4', 'Трекер2', 'Случаи0', 'Дневник2']);
   });
 
-  it('в ленте за день — строка трекера: «индекс 7,2» при всех пяти оценках, «3 из 5» при неполных', async () => {
+  it('в ленте за день — строка трекера: «Трекер — индекс 7,2» при всех пяти оценках, «Трекер: 3 из 5» при неполных', async () => {
     setup();
     renderSection();
     await screen.findByLabelText('Трекер — индекс 7,2');
@@ -519,7 +537,7 @@ describe('DiarySection — сбой удаления виден, повторн�
 
     await confirmDelete('Критика на работе');
 
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
+    expect(plainText((await screen.findByRole('alert')))).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
     expect(screen.getByText('Критика на работе')).toBeTruthy();
     expect((screen.getByText('Удалить навсегда') as HTMLButtonElement).disabled).toBe(false);
   });

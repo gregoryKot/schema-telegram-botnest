@@ -1,9 +1,9 @@
 // Тело ленты «Записей» под сегментом (b11): сбой загрузки, силуэт, пустое состояние, дни и «Показать
 // ещё»; на широком экране справа — «Эта неделя». Пусто ≠ сбой ≠ загрузка (APP_2026-11.md, принцип 8):
 // сбой первой загрузки — одна строка-лист PaperAlert, а не объяснение новичка «пока ни одной записи»
-// (записи на сервере есть, просто не загрузились) и не силуэт ленты под ним (силуэт читается «ещё
-// грузится»). Сбой повторной загрузки (после быстрой записи, «Повторить») ленту не прячет: строка над
-// уже показанными днями (ревью g3 r2). Сбой трекера — та же строка, а не серый текст.
+// и не силуэт ленты (читается «ещё грузится»). Сбой повторной загрузки ленту не прячет: строка над
+// показанными днями (ревью g3 r2). Сбой трекера — та же строка, а не серый текст; упали и записи —
+// строка одна, записей: её «Обновить» перезапрашивает и трекер (ревью g3 r3: две плашки подряд).
 import type { DiaryType } from '../../types';
 import { DiaryEmptyExplainer } from '../../components/diary/DiaryEmptyExplainer';
 import { DiaryLoadFailedBanner } from '../../components/diary/DiaryLoadFailedBanner';
@@ -36,7 +36,7 @@ export function DiaryFeed({ loading, loadFailed, trackerFailed, filter, groups, 
   return (
     <>
       {failed}
-      {trackerFailed && <PaperAlert title="Отметки трекера не загрузились." sign="strokes" role="status" onRetry={onRetry} />}
+      {trackerFailed && !loadFailed && <PaperAlert title="Отметки трекера не загрузились." sign="strokes" role="status" onRetry={onRetry} />}
       {groups.length === 0 ? <DiaryEmptyExplainer filter={filter} /> : (
         <div className={week.length > 0 ? 'cd-feed cd-feed--week' : 'cd-feed'}>
           <div className="cd-feed-main">

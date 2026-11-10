@@ -19,6 +19,7 @@ vi.mock('../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';
+import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const mockReportClientError = reportClientError as ReturnType<typeof vi.fn>;
 
@@ -166,7 +167,7 @@ describe('TrackerOverlay — ответ и автопереход', () => {
     expect(screen.getByText('Трекер · сегодня')).toBeTruthy();
     expect(screen.queryByText(/не дошли до сервера/)).toBeNull(); // вторая ещё в debounce
     await advance(500);
-    expect(screen.getByRole('status').textContent).toBe(
+    expect(plainText(screen.getByRole('status'))).toBe(
       'Оценки пока не дошли до сервера. Они сохранены на этом устройстве и отправятся сами',
     );
   });
@@ -374,7 +375,7 @@ describe('TrackerOverlay — сохранение оценки', () => {
     await advance(500);
     expect(heading('Привязанность')).toBeTruthy();
     expect(onChange).toHaveBeenLastCalledWith('attachment', 4);
-    expect(screen.getByRole('alert').textContent).toBe('Эта оценка не сохранилась. Попробуй ответить ещё раз.');
+    expect(plainText(screen.getByRole('alert'))).toBe('Эта оценка не сохранилась. Попробуй ответить ещё раз.');
     answer(/Полностью/); // новый ответ убирает сообщение
     expect(screen.queryByRole('alert')).toBeNull();
   });

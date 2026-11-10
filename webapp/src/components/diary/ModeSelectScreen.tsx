@@ -7,6 +7,7 @@ import { haptic } from '../../haptic';
 import { ModeFeelingBrowse } from './ModeFeelingBrowse';
 import { ModeGroupList } from './ModeGroupList';
 import { CrisisCard } from '../CrisisCard';
+import { glue } from '../../../../shared/src/utils/typo';
 
 /**
  * Шаг 1 дневника режимов (webapp): выбор режима.
@@ -32,21 +33,16 @@ export function ModeSelectScreen({ modeId, onPick, onBack, crisis = false }: {
       spread
       eyebrow="Дневник режимов · новая запись"
       title="Кто сейчас взял управление?"
-      lede={tr(
+      lede={glue(tr(
         'Режим – состояние, которое сейчас «за рулём». Не знаешь названия – определим по чувству, в пару тапов.',
         'Режим – состояние, которое сейчас «за рулём». Не знаете названия – определим по чувству, в пару тапов.',
-      )}
+      ))}
       aside={
-        <DiaryAside hue={DIARY_HUE.mode} eyebrow="Подсказка" title="Как его узнать">
-          <p className="ds-sub">
-            Режим узнаётся не по мыслям, а по тому, как меняется тело и тон
-            голоса в голове.{' '}
-            {tr(
-              'Замечай резкие переключения – это его след.',
-              'Замечайте резкие переключения – это его след.',
-            )}
-          </p>
-        </DiaryAside>
+        <DiaryAside hue={DIARY_HUE.mode} eyebrow="Подсказка" title="Как его узнать"
+          text={'Режим узнаётся не по мыслям, а по тому, как меняется тело и тон голоса в голове. ' + tr(
+            'Замечай резкие переключения – это его след.',
+            'Замечайте резкие переключения – это его след.',
+          )} />
       }
     >
       {crisis && <CrisisCard surface="schema" />}

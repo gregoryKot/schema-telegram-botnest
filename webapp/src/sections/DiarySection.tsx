@@ -19,10 +19,8 @@ import { DiaryFeed } from './diary/DiaryFeed';
 import { buildTrackerDays, type TrackerDay } from './diary/trackerEntries';
 import { fetchFirstDiaryPages, useDiaryLists } from './diary/useDiaryLists';
 import { diaryWeek, segCounts } from './diary/dayModel';
-import {
-  buildEntries, filterCounts, filterEntries, groupByDay, streakLine,
-  type DiaryFilter,
-} from './diary/diaryModel';
+import { buildEntries, filterCounts, filterEntries, groupByDay, streakLine, type DiaryFilter } from './diary/diaryModel';
+import { glue } from '../../../shared/src/utils/typo';
 
 // Год — потолок GET /api/history (HISTORY_MAX_DAYS, src/api/dto/history-query.dto.ts).
 const TRACKER_DAYS = 365;
@@ -149,7 +147,7 @@ export function DiarySection({ onOpenTrackerHistory }: { onOpenTrackerHistory?: 
 
       {quickOpen && <QuickEntrySheet onClose={() => setQuickOpen(false)} onSaved={() => { void load(); }} />}
 
-      <TherapyLine place="diary" text={bridge.lineDiaryList} />
+      <TherapyLine place="diary" text={glue(bridge.lineDiaryList)} />
     </div>
   );
 }

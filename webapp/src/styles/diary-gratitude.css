@@ -41,7 +41,7 @@
    (одно правило [data-laid="no"] в paper.css — и для строки ленты, чипа и сцены «Записано»). */
 /* Разворот уже 1024: «Почему это работает» (DiaryAside, .sd-aside) — после тетради, а не между листом
    и первым полем (на 390 шапка до поля — не выше ~230px, принцип 5). Порядок держит общее правило
-   мастеров дневников в diary-wizard.css (`.pa-spread:has(.sd-aside, …)`), своего тут нет. */
+   мастеров дневников в diary-wizard.css (`.pa-spread:has(.sd-aside)`), своего тут нет. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sd-grat-sheet { padding: 2px 16px 4px; box-shadow: 5px 6px 0 oklch(var(--pa-layer-lc) var(--h)); }
   .sd-grat-row, .sd-grat-add { grid-template-columns: 34px minmax(0, 1fr); column-gap: 10px; }

@@ -31,9 +31,9 @@ export function DiaryEmptyExplainer({ filter }: { filter: DiaryFilter }) {
       {filter === 'all' || filter === 'diary' ? (
         <div className="cd-empty">
           <div className="cd-empty-scene" aria-hidden="true"><ScenePebbleLaid hue={ENTITY_LOOK.diary.hue} filled={0} /></div>
-          <div className="cd-empty-body"><h2 className="cd-empty-title">{TITLE[filter]}</h2>{filter === 'all' && <p className="cd-empty-sub">{glue(INTRO.all)}</p>}<p className="cd-empty-foot">{glue(FOOT[filter])}</p></div>
+          <div className="cd-empty-body"><h2 className="cd-empty-title">{glue(TITLE[filter])}</h2>{filter === 'all' && <p className="cd-empty-sub">{glue(INTRO.all)}</p>}<p className="cd-empty-foot">{glue(FOOT[filter])}</p></div>
         </div>
-      ) : <EntitySheet look={LOOK[filter]} title={TITLE[filter]} sub={glue(INTRO[filter])} meta={glue(FOOT[filter])} />}
+      ) : <EntitySheet look={LOOK[filter]} title={glue(TITLE[filter])} sub={glue(INTRO[filter])} meta={glue(FOOT[filter])} />}
       {(filter === 'all' || filter === 'diary') && <div className="cd-explainers">
         {(['schema', 'mode'] as const).map((type) => <ExplainerPaperCard key={type} type={type} what={explainers[type].what} why={explainers[type].why} />)}
       </div>}

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ENTITY_LOOK, modeGroupLook } from '../../../../shared/src/theme/entityLook';
 import { buildEntries } from './diaryModel';
-import { draftLook, entryLook, kindLook } from './feedLook';
+import { draftLook, entryKindOf, entryLook, kindHue, kindLook } from './feedLook';
 import type { EntryKind } from './entryKind';
 
 const at = '2026-10-15T09:00:00Z';
@@ -51,5 +51,30 @@ describe('draftLook: черновик — вид своего типа (рань
   it('битый черновик не роняет экран', () => {
     expect(draftLook('gratitude', null).filled).toBe(0);
     expect(draftLook('mode', { modeId: 42 }).sign).toBe('cluster');
+  });
+});
+
+// Ревью g3 r3: корешок и ярлык «Режим» красились бумагой группы — у детских режимов 28, ровно как у схемы, у
+// здоровых 145 — почти разбор (135). Бумага карточки — тип записи, группа режима — знаком.
+describe('kindHue: бумага карточки — тип записи, группа режима — только знак', () => {
+  const [child, healthy] = buildEntries([], [
+    { id: 7, createdAt: '2026-10-15T12:00:00Z', modeId: 'vulnerable_child', situation: 's' },
+    { id: 8, createdAt: '2026-10-15T11:00:00Z', modeId: 'healthy_adult', situation: 's' },
+  ], []);
+
+  it('детский режим: знак — группы, ярлык и корешок — небо режимов, не глина схемы', () => {
+    expect(entryLook(child)).toEqual(modeGroupLook('child'));
+    expect(kindHue(entryKindOf(child))).toBe(ENTITY_LOOK.diary_mode.hue);
+    expect(kindHue(entryKindOf(child))).not.toBe(kindHue(entryKindOf(schema)));
+  });
+
+  it('здоровый режим: ярлык не бумаги разбора', () => {
+    expect(entryLook(healthy)).toEqual(modeGroupLook('healthy'));
+    expect(Math.abs(kindHue(entryKindOf(healthy)) - kindHue('case'))).toBeGreaterThan(30);
+  });
+
+  it('у всех типов бумага карточки своя', () => {
+    const kinds: EntryKind[] = ['schema', 'thought', 'mode', 'case', 'gratitude', 'tracker'];
+    expect(new Set(kinds.map(kindHue)).size).toBe(kinds.length);
   });
 });

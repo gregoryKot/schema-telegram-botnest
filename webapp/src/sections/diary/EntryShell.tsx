@@ -1,14 +1,14 @@
-// Карточка записи ленты «Записей» (docs/design/APP_2026-11.md, b11): плоская бумага светлее страницы
-// без обводки, корешок цвета типа слева, знак типа колонкой слева от текста (feedLook — тот же вид,
-// что у строки задания и «Моего пути»), ярлык — тоном бумаги типа. Нажатие раскрывает поля и
-// действия; раскрытая карточка поднимается тенью-слоем бумаги типа (client-diary-entry.css).
+// Карточка записи ленты «Записей» (docs/design/APP_2026-11.md, b11): плоская бумага без обводки, корешок
+// и ярлык — тоном бумаги типа (kindHue), знак записи колонкой слева (feedLook — тот же вид, что у строки
+// задания и «Моего пути»; у режима — знак группы). Нажатие раскрывает поля и действия; раскрытая
+// карточка поднимается тенью-слоем бумаги типа (client-diary-entry.css).
 import { useState, type ReactNode } from 'react';
 import { pressable } from '../../utils/a11y';
 import { hueStyle } from '../../lib/tone';
 import { EntryPreviewText } from './EntryPreviewText';
 import { EntryKindChip, FeedSign } from './EntryKindChip';
 import type { EntryKind } from './entryKind';
-import type { FeedLook } from './feedLook';
+import { kindHue, type FeedLook } from './feedLook';
 import '../../styles/client-diary-entry.css';
 
 export function EntryShell({ look, kind, title, time, text, preview, children }: {
@@ -21,7 +21,7 @@ export function EntryShell({ look, kind, title, time, text, preview, children }:
   // Обёртка — контейнер cd-entry: раскладка карточки по её ширине, а не страницы (лента и «Моя карточка»).
   return (
     <div className="cd-entry-box">
-    <div className={'cd-entry' + (open ? ' is-open' : '')} style={hueStyle(look.hue)} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
+    <div className={'cd-entry' + (open ? ' is-open' : '')} style={hueStyle(kindHue(kind))} aria-expanded={open} {...pressable(() => setOpen(v => !v))}>
       <FeedSign look={look} />
       <div className="cd-entry-body">
         <div className="cd-entry-head">

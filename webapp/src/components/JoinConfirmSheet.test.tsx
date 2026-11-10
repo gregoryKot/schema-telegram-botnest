@@ -10,6 +10,7 @@ vi.mock('../utils/addressForm', () => ({
 }));
 import { api } from '../api';
 import { JoinConfirmSheet } from './JoinConfirmSheet';
+import { plainText } from '../test-support/plainText';
 
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
@@ -89,7 +90,7 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
     it('код уже не действует (400) — сказано сразу, кнопки «Присоединиться» нет', async () => {
       m.previewTherapyInvite.mockRejectedValue({ status: 400 });
       setup('therapy');
-      expect((await screen.findByRole('alert')).textContent).toMatch(/больше не действует/);
+      expect(plainText((await screen.findByRole('alert')))).toMatch(/больше не действует/);
       expect(screen.queryByText('Присоединиться')).toBeNull();
       expect(screen.getByText('Закрыть')).toBeTruthy();
       // QA 2026-11, М1: у недействительной ссылки нет заголовка согласия.
@@ -99,7 +100,7 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
     it('уже подключены к этому терапевту — «Подключение уже есть», без «попросите новую»', async () => {
       m.previewTherapyInvite.mockResolvedValue({ therapistName: 'Анна', connection: 'same' });
       setup('therapy');
-      expect((await screen.findByRole('status')).textContent).toMatch(/уже есть/);
+      expect(plainText((await screen.findByRole('status')))).toMatch(/уже есть/);
       expect(screen.getByText('Подключение уже есть')).toBeTruthy();
       expect(screen.queryByText('Присоединиться')).toBeNull();
       expect(screen.queryByText(/Попроси/)).toBeNull();
@@ -108,7 +109,7 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
     it('подключены к другому терапевту — сказано до нажатия, «Присоединиться» нет', async () => {
       m.previewTherapyInvite.mockResolvedValue({ therapistName: 'Анна', connection: 'other' });
       setup('therapy');
-      expect((await screen.findByRole('alert')).textContent).toMatch(/подключение к другому терапевту/);
+      expect(plainText((await screen.findByRole('alert')))).toMatch(/подключение к другому терапевту/);
       expect(screen.queryByText('Присоединиться')).toBeNull();
       expect(m.joinTherapy).not.toHaveBeenCalled();
     });
@@ -118,7 +119,7 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
       await screen.findByText('Приглашение от терапевта: Анна');
       fireEvent.click(screen.getByText('Присоединиться'));
       expect(await screen.findByText('Доступ открыт')).toBeTruthy();
-      expect(screen.getByRole('status').textContent).toMatch(/^Терапевт Анна видит твой трекер потребностей и задания/);
+      expect(plainText(screen.getByRole('status'))).toMatch(/^Терапевт Анна видит твой трекер потребностей и задания/);
       expect(onJoined).toHaveBeenCalledWith('therapy');
       fireEvent.click(screen.getByText('Понятно'));
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -129,7 +130,7 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
     m.joinTherapy.mockRejectedValue({ status: 409, reason: 'already_connected' });
     const { onJoined } = setup('therapy');
     fireEvent.click(screen.getByText('Присоединиться'));
-    expect((await screen.findByRole('alert')).textContent).toMatch(/уже есть подключение к терапевту/);
+    expect(plainText((await screen.findByRole('alert')))).toMatch(/уже есть подключение к терапевту/);
     expect(onJoined).not.toHaveBeenCalled();
   });
 
@@ -137,6 +138,6 @@ describe('JoinConfirmSheet (M1: согласие до присоединения
     m.joinPair.mockRejectedValue(new Error('boom'));
     setup('pair');
     fireEvent.click(screen.getByText('Присоединиться'));
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Не получилось присоединиться/);
+    expect(plainText((await screen.findByRole('alert')))).toMatch(/Не получилось присоединиться/);
   });
 });

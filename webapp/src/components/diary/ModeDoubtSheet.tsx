@@ -10,15 +10,16 @@ import { modeLookById as lookOf } from './modeLookById';
 import { getDoubtsForMode } from '../../../../shared/src/mode/modeDoubts';
 import { getModeLeafLabel } from '../../../../shared/src/mode/modeFeelGates';
 import { MODE_DOUBT_SWITCHED_EVENT } from '../../../../shared/src/share/analytics';
+import { glue } from '../../../../shared/src/utils/typo';
 
 /**
- * Лист «Сомневаешься? Сравни с похожими» (открывает ModeDoubtButton): якорь выбранного режима и
+ * Лист «Сомневаешься? Сравни с похожими» (открывает useModeDoubt): якорь выбранного режима и
  * соседи по путанице (shared/mode/modeDoubts). Лист — fixed-оверлей, поэтому useHistorySheet.
  * Редизайн 2026-11: якорь — бумага группы выбранного режима с его знаком; сосед — бумага своей
  * группы и её знак у заголовка (не цветная точка), «Проверить» — белой вставкой, «Это ближе» —
  * второстепенной кнопкой, «Оставляю: …» — залитой, липнет к низу листа. Заголовок карточки —
  * живая фраза соседа (getModeLeafLabel), термин — пометкой «→ имя». «Это ближе» переключает
- * выбор через onSwitch и закрывает лист.
+ * выбор через onSwitch и закрывает лист. Тексты карточек склеиваются (glue): предлог не висит в конце строки.
  */
 export function ModeDoubtSheet({ modeId, onSwitch, onClose }: {
   modeId: string;
@@ -46,9 +47,7 @@ export function ModeDoubtSheet({ modeId, onSwitch, onClose }: {
             </div>
             <span className="sd-doubt-now-sign" aria-hidden="true"><SignArt sign={now.sign} size="square" /></span>
           </div>
-          <p className="sd-doubt-lede">
-            Вот с чем его чаще всего путают — и как отличить.
-          </p>
+          <p className="sd-doubt-lede">{glue('Вот с чем его чаще всего путают — и как отличить.')}</p>
           <div className="sd-doubt-list">
             {doubts.map((d) => {
               const other = getModeById(d.otherId);
@@ -58,12 +57,12 @@ export function ModeDoubtSheet({ modeId, onSwitch, onClose }: {
                   <div className="sd-doubt-head">
                     <span className="sd-doubt-sign" aria-hidden="true"><SignArt sign={look.sign} size="row" /></span>
                     <div className="sd-doubt-head-text">
-                      <h3 className="sd-doubt-title">{getModeLeafLabel(d.otherId) ?? other?.name ?? d.otherId}</h3>
+                      <h3 className="sd-doubt-title">{glue(getModeLeafLabel(d.otherId) ?? other?.name ?? d.otherId)}</h3>
                       <div className="sd-doubt-mode">→ {other?.name ?? d.otherId}</div>
                     </div>
                   </div>
-                  <p className="sd-doubt-gist">{d.gist}</p>
-                  <div className="sd-doubt-check">Проверить: {d.check}</div>
+                  <p className="sd-doubt-gist">{glue(d.gist)}</p>
+                  <div className="sd-doubt-check">{glue(`Проверить: ${d.check}`)}</div>
                   <button
                     type="button"
                     className="ds-btn ds-btn--secondary sd-doubt-btn"

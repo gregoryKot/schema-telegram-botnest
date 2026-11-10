@@ -4,9 +4,8 @@ import { pressable } from '../../utils/a11y';
 import { glueIf } from '../../../../shared/src/utils/typo';
 import '../../styles/sheet-diary.css';
 
-// Общая оболочка шага мастера записи (схема / режим): полоска прогресса, «Шаг N из M» и
-// вопрос. Один компонент на все мастера дневников. 2026-11: шаг — на бумаге страницы без
-// карточки, цветная бумага — у листа-героя (APP_2026-11.md, принцип 4).
+// Оболочка шага мастера записи (схема / режим): прогресс, «Шаг N из M» и вопрос — один компонент на все мастера.
+// 2026-11: шаг — на бумаге страницы без карточки, цветная бумага — у листа-героя (APP_2026-11.md, принцип 4).
 
 export function DiaryTicks({ filled, active, hue, onJump }: {
   filled: boolean[]; active: number; hue: number | undefined; onJump: (i: number) => void;
@@ -48,14 +47,15 @@ export function DiaryStepQ({ id, title, hint }: { id?: string; title: ReactNode;
   );
 }
 
-/** Подсказка листа записи: белый лист со сдвинутым слоем бумаги записи, без контура и тинта. */
-export function DiaryAside({ hue, eyebrow, title, children }: {
-  hue: number | undefined; eyebrow: string; title: ReactNode; children: ReactNode;
+/** Подсказка листа записи: белый лист со сдвинутым слоем бумаги записи; заголовок и абзац `text` склеиваются здесь. */
+export function DiaryAside({ hue, eyebrow, title, text, children }: {
+  hue: number | undefined; eyebrow: string; title: ReactNode; text?: ReactNode; children?: ReactNode;
 }) {
   return (
     <div className="sd-aside" style={hueStyle(hue)}>
       <div className="ds-label sd-aside-label">{eyebrow}</div>
-      <h3 className="sd-aside-title">{title}</h3>
+      <h3 className="sd-aside-title">{glueIf(title)}</h3>
+      {text && <p className="ds-sub">{glueIf(text)}</p>}
       {children}
     </div>
   );

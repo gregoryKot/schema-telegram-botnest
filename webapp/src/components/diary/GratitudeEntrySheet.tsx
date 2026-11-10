@@ -7,7 +7,7 @@ import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
-import { GratitudeAddRow, GratitudeSaveError, GratitudeWhy } from './GratitudeParts';
+import { GratitudeAddRow, GratitudeLede, GratitudeSaveError, GratitudeWhy } from './GratitudeParts';
 import { GratitudePebbles } from './quickEntry/GratitudePebbles';
 import { haptic } from '../../haptic';
 import { SaveEntryButton } from './SaveEntryButton';
@@ -85,7 +85,7 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
       spread
       eyebrow={`Дневник благодарности · ${dateLabel}`}
       title={<>Три вещи,<br /><span className="it sd-grat-it">за которые сегодня – спасибо</span></>}
-      lede="Даже самое маленькое. Особенно самое маленькое. Запоминается то, что удалось назвать. Хватит и одной строки."
+      lede={<GratitudeLede />}
       aside={<GratitudeWhy hue={HUE} />}
     >
       <div className="sd-grat" style={hueStyle(HUE)}>

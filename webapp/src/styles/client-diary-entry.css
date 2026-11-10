@@ -66,6 +66,9 @@
 .cd-entry-share { flex: 1 1 240px; min-width: 0; }
 .cd-entry-actions > .cd-del, .cd-entry-actions > .cd-del-row { margin-left: auto; }
 /* Подтверждение справа и при ошибке: строка с ошибкой (flex-basis 100%) растягивалась на всю ширину, и
-   «Удалить навсегда / Отмена» уезжали влево под пальцем. Ошибка — под кнопками, по правому краю. */
+   «Удалить навсегда / Отмена» уезжали влево под пальцем — ссылки прижаты вправо. Ошибка — под ними на всю
+   ширину карточки от левого края: по правому краю двухстрочная красная строка с рваным левым краем висела
+   подписью к ссылкам (ревью g3 r3). */
 .cd-entry-actions > .cd-del-row { justify-content: flex-end; }
-.cd-entry-actions > .cd-del-row > .cd-del-err { text-align: right; }
+.cd-entry-actions > .cd-del-row:has(> .cd-del-err) { flex-basis: 100%; }
+.cd-entry-actions > .cd-del-row > .cd-del-err { text-align: start; }
