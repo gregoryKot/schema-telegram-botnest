@@ -6,7 +6,12 @@
 .cs-head { align-items: flex-end; gap: 16px 24px; }
 .cs-head-text { flex: 1 1 240px; min-width: 0; }
 .cs-head-sub { margin-top: 8px; }
-.cs-head-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.cs-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; min-width: 0; margin-left: auto; }
+/* 320–374: три действия встают в строку плотнее, а не «Библиотека» одна второй строкой. */
+@media (max-width: 374px) {
+  .cs-head-actions { gap: 8px 6px; }
+  .cs-head-actions .ds-btn.ds-btn--secondary { padding-inline: 14px; }
+}
 .ds-h1 i { font-style: italic; }
 .cs-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
 .cs-expressed { display: flex; flex-direction: column; gap: 14px; }
@@ -17,46 +22,62 @@
   font: inherit; text-align: left; color: var(--text);
 }
 .cs-bar-name { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.cs-bar-mark { width: 4px; height: 20px; border-radius: 2px; flex-shrink: 0; }
-.cs-bar-track { height: 8px; border-radius: 4px; background: var(--paper-tint); overflow: hidden; }
+.cs-bar-sign { display: inline-flex; flex: none; width: 24px; }
+.cs-bar-track { height: 8px; border-radius: 4px; background: var(--paper-sunk); overflow: hidden; }
 .cs-bar-fill { display: block; height: 100%; border-radius: 4px; }
 .cs-bar-val { text-align: right; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-.cs-test { --h: 70; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 20px; }
-.cs-test-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.cs-test-text { margin: 8px 0 0; font-family: var(--serif); font-size: 22px; line-height: 1.3; }
+/* Плитка теста YSQ (компьютер): бумага теста, подпись Literata, знак слоёв крупно справа внизу. */
+.cs-test { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; padding: 24px 24px 22px 26px; border-radius: 24px; box-sizing: border-box; }
+.cs-test-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; align-self: stretch; }
+.ds-label.cs-test-label { color: var(--text-sub); }
+.cs-test-text { flex: 1; margin: 0; font-family: var(--serif); font-size: 24px; line-height: 1.25; text-wrap: balance; }
 .cs-test-btn { align-self: flex-start; }
+.cs-test-art { display: flex; width: 132px; }
+.cs-test-art .scn-sign { width: 100%; }
 
 .cs-block, .cs-map { display: flex; flex-direction: column; gap: 16px; }
 .cs-map { gap: 22px; }
-.cs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.cs-chip {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 14px;
-  border-radius: 18px; border: 1.5px solid; font: 600 13px var(--sans); cursor: pointer;
-}
-.cs-domain { display: flex; flex-direction: column; gap: 10px; }
-.cs-domain-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.cs-domain-line { width: 24px; height: 3px; flex-shrink: 0; }
-.cs-domain-name { font-size: 14px; font-weight: 700; }
-.cs-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; }
-.cs-tiles--modes { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
-.cs-tile {
-  display: flex; flex-direction: column; gap: 4px; text-align: left; min-height: 44px;
-  padding: 12px 14px; border-radius: 14px; border: 1.5px solid var(--line);
-  background: var(--surface); color: var(--text-sub); font: inherit; cursor: pointer;
-}
-.cs-tile:hover { border-color: var(--line-hover); }
-.cs-tile-name { font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text); }
-.cs-tile-desc { font-size: 12px; line-height: 1.4; opacity: .8; }
-.cs-tile.is-mine .cs-tile-desc { opacity: .75; }
 
-.cs-banner {
-  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; cursor: pointer;
-  border: none; border-radius: 20px; padding: 20px 24px; min-height: 44px; font: inherit; box-sizing: border-box;
+/* Аккордеоны «Полной карты» и «Карты режимов» (MapFold): лист бумаги домена/группы, шапка-кнопка со
+   знаком 60, название Literata и подпись из данных; внутри — белые плитки, своя — бумагой с галочкой. */
+.cs-mapfolds { display: flex; flex-direction: column; gap: 10px; }
+.cs-mapfold { box-sizing: border-box; min-width: 0; padding: 4px; border-radius: 20px; }
+.cs-mapfold-head {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; box-sizing: border-box;
+  padding: 8px 14px 8px 10px; border: 0; border-radius: 16px; background: transparent; color: var(--text);
+  font: inherit; text-align: left; cursor: pointer;
 }
-.cs-banner-text { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.cs-banner-sub { font-size: 13px; color: var(--text-sub); }
-.cs-banner-arrow { font-size: 20px; flex-shrink: 0; }
+.cs-mapfold-head:hover { background: oklch(0.895 0.04 var(--h)); }
+.cs-mapfold-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.cs-mapfold-name { font-family: var(--serif); font-size: 20px; line-height: 1.2; }
+.cs-mapfold-meta { font-size: 13px; color: var(--text-sub); }
+.cs-mapfold-head .ds-fold-chev { color: var(--text-sub); }
+.cs-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; padding: 4px 8px 10px; }
+.cs-tile {
+  display: flex; flex-direction: column; gap: 4px; text-align: left; min-height: 44px; box-sizing: border-box;
+  padding: 12px 14px; border-radius: 14px; border: 0; background: var(--surface); color: var(--text-sub); font: inherit; cursor: pointer;
+}
+.cs-tile:hover { background: oklch(0.97 0.012 var(--h)); }
+.cs-tile-name { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text); }
+.cs-tile-check { display: inline-flex; flex: none; margin-top: 1px; }
+.cs-tile-desc { font-size: 12px; line-height: 1.4; }
+.cs-tile.is-mine { background: oklch(0.87 0.05 var(--h)); }
+.cs-tile.is-mine .cs-tile-name { font-weight: 700; }
+.cs-tile.is-mine .cs-tile-desc { color: var(--text); }
+
+/* Баннер «Карта режимов с терапевтом»: лист неба, текст слева, знак режимов крупно справа. */
+.cs-banner {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; width: 100%;
+  min-height: 44px; box-sizing: border-box; padding: 22px 24px 22px 26px; border: 0; border-radius: 24px;
+  font: inherit; text-align: left; color: var(--text); cursor: pointer;
+}
+.cs-banner:hover { background: oklch(0.895 0.04 var(--h)); }
+.cs-banner-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cs-banner-sub { font-size: 14px; line-height: 1.45; color: var(--text-sub); }
+.cs-banner-arrow { margin-top: 4px; }
+.cs-banner-art { display: flex; width: 120px; }
+.cs-banner-art .scn-sign { width: 100%; }
 
 .cs-need { grid-template-columns: 44px minmax(0, 1fr) auto; min-height: 44px; }
 .cs-need-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -79,43 +100,51 @@
   .cs-expressed { padding: var(--space-16); gap: var(--space-8); }
   .cs-expressed .ds-head-row { gap: var(--space-2) var(--space-12); }
   .cs-test-text { font-size: 19px; }
+  .cs-banner { padding: 18px 16px 18px 20px; gap: 12px; }
+  .cs-banner-art { width: 88px; }
+  .cs-mapfold-name { font-size: 18px; }
+  .cs-hero-skel { min-height: 150px; padding: 20px; }
 
 
   .cs-block { gap: var(--space-12); }
   .cs-map { gap: var(--space-16); }
 }
 
-/* Строка про тест YSQ на телефоне: цветная бумага, картинка и подпись слева, действие справа. */
-.cs-testrow { --h: 70; display: flex; align-items: center; gap: var(--space-12); padding: var(--space-12) var(--space-16); }
-.cs-testrow-text { flex: 1 1 auto; min-width: 0; }
+/* Строка про тест YSQ на телефоне: белая строка со знаком теста, подпись слева, действие справа. */
+.cs-testrow.ds-card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-8) var(--space-12); padding: var(--space-12) var(--space-16); }
+/* На 320 текст не жмётся в столбик по слову: меньше ~150px — кнопка уходит второй строкой вправо. */
+.cs-testrow-text { flex: 1 1 150px; min-width: 0; }
 .cs-testrow-title { font-size: 16px; font-weight: 600; }
 .cs-testrow-sub { margin-top: var(--space-2); font-size: 12px; line-height: 1.35; color: var(--text-sub); }
-.cs-testrow .ds-btn { flex-shrink: 0; padding: 0 var(--space-12); border-radius: var(--r-14); }
+.cs-testrow .ds-btn { flex-shrink: 0; margin-left: auto; padding: 0 var(--space-12); border-radius: var(--r-14); }
 
-/* «Мои схемы» строками по доменам (телефон). */
-.cs-grp-wrap { display: flex; flex-direction: column; gap: var(--space-8); }
-.cs-grp-head { display: flex; justify-content: space-between; gap: var(--space-8); padding: 0 var(--space-4); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-.cs-grp { border: 1px solid; border-radius: var(--r-20); overflow: hidden; } /* подложка и рамка — тон группы: tone-tint tone-border */
+/* «Мои схемы / Мои режимы» — группы SignGroup (sheet-schemas.css); строка: название + статус, справа частота и шеврон. */
+.cs-grp > .cs-mine-row:last-child { border-bottom: 0; }
 .cs-grp-right { display: inline-flex; align-items: center; gap: 12px; }
 .cs-grp .cs-freq { font-size: 13px; opacity: 1; color: var(--text-sub); flex-shrink: 0; }
+.cs-skel-group { background: var(--paper-sunk); }
+.cs-skel-rows { gap: 1px; }
 
-/* Чип «Мои схемы» со статусом карточки второй строкой. */
-.cs-chip--stacked { flex-direction: column; align-items: flex-start; gap: 2px; border-radius: 14px; min-height: 44px; }
-.cs-chip-status { font-size: 11px; font-weight: 500; opacity: .8; }
-
-/* Недельная частота рядом с чипом и подсказка к ней. */
+/* Недельная частота рядом со строкой и подсказка к ней. */
 .cs-freq { display: inline-flex; align-items: center; gap: var(--space-6); font-size: 11px; font-weight: 500; opacity: .85; }
 .cs-freq-bar { display: block; height: 5px; border-radius: var(--r-4); }
 .cs-hint { margin: 0; font-size: 12px; color: var(--text-sub); line-height: 1.45; }
 
-/* «Паттерн недели» — карточка-кнопка: цвет сущности берёт текст заголовка. */
-.cs-week { display: flex; flex-direction: column; gap: var(--space-6); width: 100%; text-align: left; font: inherit; box-sizing: border-box; min-height: 44px; }
-.cs-week-label { font-size: 13px; font-weight: 700; color: var(--text-sub); }
-.cs-week-title { font-family: var(--serif); font-size: 24px; line-height: 1.2; }
-.cs-week-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+/* «Паттерн недели» — лист-герой (EntitySheet) целиком тап-цель; фокус — кольцом листа. */
+.cs-week { display: block; border-radius: 24px; cursor: pointer; }
+.cs-week:hover .pa-sheet { background: oklch(0.895 0.04 var(--h)); }
+.cs-week:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-/* Вводная новичку. */
-.cs-intro { gap: var(--space-16); }
+/* Вводная новичку и колесо детства: кнопка — в листе, по ширине текста. */
+.ds-btn.cs-intro-btn { justify-self: start; align-self: flex-start; margin-top: 6px; }
+/* Колесо детства на узком листе — без надписи: заголовок встаёт в строку знака, а не под пустой строкой. */
+@container pa-sheet (max-width: 440px) {
+  .cs-wheel.pa-sheet > .pa-sheet-body > .pa-sheet-title { grid-column: 1; grid-row: 1; align-self: center; margin-top: 0; }
+}
+
+/* Силуэт героя, пока профиль и записи грузятся: место под надпись, заголовок и знак. */
+.cs-hero-skel { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; min-height: 180px; box-sizing: border-box; padding: 28px; border-radius: 24px; }
+.cs-hero-skel-body { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
 /* Верх вкладки «Режимы» (телефон): карточка и строки-входы под ней. */
 .cs-hero-stack { display: flex; flex-direction: column; gap: var(--space-12); }

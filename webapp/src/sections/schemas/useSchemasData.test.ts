@@ -83,6 +83,31 @@ describe('useSchemasData — отказ записи поверх нечитае
     await waitFor(() => expect(result.current.saveFailed).toBe(false));
     expect(result.current.saveBlocked).toBe(false);
   });
+
+  // b15: сбой показывается у блока, где сделан выбор (saveKind), и «Повторить» шлёт тот же список.
+  it('обрыв → «Повторить» шлёт тот же список режимов; удача снимает сбой; блок — режимы', async () => {
+    mockApi.updateSettings.mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValue(undefined);
+    const { result } = await mounted();
+    await act(async () => { result.current.saveModes(['vulnerable_child']); });
+    await waitFor(() => expect(result.current.saveFailed).toBe(true));
+    expect(result.current.saveKind).toBe('modes');
+
+    await act(async () => { result.current.retrySave(); });
+    await waitFor(() => expect(result.current.saveFailed).toBe(false));
+    expect(mockApi.updateSettings).toHaveBeenCalledTimes(2);
+    expect(mockApi.updateSettings).toHaveBeenLastCalledWith({ myModeIds: ['vulnerable_child'] });
+  });
+
+  it('контроль: последним сохранялись схемы — блок схем, повтор шлёт схемы', async () => {
+    mockApi.updateSettings.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = await mounted();
+    await act(async () => { result.current.saveModes(['vulnerable_child']); });
+    await act(async () => { result.current.saveSchemas(['abandonment']); });
+    await waitFor(() => expect(result.current.saveFailed).toBe(true));
+    expect(result.current.saveKind).toBe('schemas');
+    await act(async () => { result.current.retrySave(); });
+    expect(mockApi.updateSettings).toHaveBeenLastCalledWith({ mySchemaIds: ['abandonment'] });
+  });
 });
 
 // «Мои паттерны» под открытым тестом YSQ (QA 2026-10-26): после «✕» карточка

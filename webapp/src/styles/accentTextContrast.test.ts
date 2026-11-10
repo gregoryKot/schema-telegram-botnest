@@ -93,7 +93,9 @@ const CASES = [...collectCases(), ...tsxCases()];
 
 describe('a11y: текст акцентным или палитровым токеном читается на бумаге (WCAG AA)', () => {
   it('скан находит правила с акцентным текстом (иначе проверка пуста)', () => {
-    expect(CASES.map((c) => c.selector)).toContain('.ps-adult-title');
+    // Образец — стабильный примитив; правило инцидента (.ps-adult-title) ушло в b15: голос Здорового
+    // Взрослого на экране паттерна — общий HealthyVoice, подпись --text-sub.
+    expect(CASES.map((c) => c.selector)).toContain('.ds-link--danger');
     expect(CASES.length).toBeGreaterThanOrEqual(10);
   });
 

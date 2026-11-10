@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
 import { SelectionSaveNote } from './SelectionSaveNote';
 import { plainText } from '../../test-support/plainText';
 
 afterEach(cleanup);
 
-function renderNote(failed: boolean, blocked: boolean, form: 'ty' | 'vy' = 'ty') {
+function renderNote(failed: boolean, blocked: boolean, form: 'ty' | 'vy' = 'ty', onRetry = vi.fn()) {
   return render(
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      <SelectionSaveNote failed={failed} blocked={blocked} />
+      <SelectionSaveNote failed={failed} blocked={blocked} sign="layers" onRetry={onRetry} />
     </AddressFormContext.Provider>,
   );
 }
@@ -24,6 +24,18 @@ describe('SelectionSaveNote', () => {
   it('обычный сбой — «проверь связь»', () => {
     renderNote(true, false);
     expect(plainText(screen.getByRole('alert'))).toMatch(/проверь связь и попробуй ещё раз/);
+  });
+
+  it('обычный сбой — «Повторить» у строки повторяет запись', () => {
+    const retry = vi.fn();
+    renderNote(true, false, 'ty', retry);
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it('409 — «Повторить» нет: повтор того же списка не поможет', () => {
+    renderNote(true, true);
+    expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
   });
 
   it('409 «не читается» — свой текст, без «проверь связь»; «ты»', () => {

@@ -7,6 +7,7 @@ import { Cluster } from '../../components/art/PaperArtSigns';
 import { Pebbles } from '../../components/art/PaperArt';
 import { WeekPatternCard } from './WeekPatternCard';
 import { PatternsIntro } from './PatternsIntro';
+import { PatternsHeroSkeleton } from './PatternsTopCards';
 import { ScreenBlock } from '../../components/customize/ScreenBlock';
 import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
 
@@ -45,7 +46,7 @@ function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void }
 export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLibrary, onPickManually, onOpenMode, blocks }: Props) {
   const tr = useTr();
   const navigate = useNavigate();
-  if (!ready) return null;
+  if (!ready) return blocks.isHidden('heroes') ? null : <PatternsHeroSkeleton />;
   const m = modesHeroModel(tr, { hasModes, summary, canOpenDiary: true });
   if (m.kind === 'none') return null;
   return (

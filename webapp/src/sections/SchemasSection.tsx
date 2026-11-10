@@ -15,6 +15,7 @@ import { PatternsTopCards } from './schemas/PatternsTopCards';
 import { PatternsTopStack } from './schemas/PatternsTopStack';
 import { ModesTopCards } from './schemas/ModesTopCards';
 import { INTRO_MODE_ID } from '../../../shared/src/pattern/weekPatternText';
+import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 import { ScreenCustomizeHost } from '../components/customize/ScreenCustomizeHost';
 import { useScreenBlocks } from '../components/customize/useScreenBlocks';
 import { PatternsSchemasPane } from './schemas/PatternsSchemasPane';
@@ -44,12 +45,15 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const show = visibleBlocks(tab, mobile);
   const startTest = () => onOpenSchema({ startTest: true });
   const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
+  // Сбой сохранения — у блока, где сделан выбор (схемы или режимы), а не над героем.
+  const noteFor = (kind: 'schemas' | 'modes') => d.saveKind === kind && (
+    <SelectionSaveNote failed={d.saveFailed} blocked={d.saveBlocked} sign={ENTITY_LOOK[kind].sign} onRetry={d.retrySave} />
+  );
 
   return (
     <div className="ds-page cs-page">
       <PatternsHeader mobile={mobile} onOpenLibrary={() => onOpenSchema()} onCustomize={blocks.openByGear} onOpenSettings={onOpenSettings} />
       {mobile && <PatternsTabsBar tab={tab} onChange={setTab} />}
-      <SelectionSaveNote failed={d.saveFailed} blocked={d.saveBlocked} />
 
       {show.hero && (
         <PatternsTopStack
@@ -68,6 +72,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <PatternsSchemasPane
           mobile={mobile} d={d} pat={pat} allSchemaIds={allSchemaIds}
           onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} blocks={blocks}
+          note={noteFor('schemas')}
         />
       )}
       {show.modesHero && (
@@ -79,7 +84,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       )}
       {show.modes && (
         <PatternsModesPane
-          mobile={mobile} d={d} pat={pat} onAdd={() => setShowModePicker(true)}
+          mobile={mobile} d={d} pat={pat} onAdd={() => setShowModePicker(true)} note={noteFor('modes')}
           banner={d.myMapCount > 0 ? <ModeMapBanner count={d.myMapCount} onOpen={() => setShowMyMap(true)} /> : undefined}
         />
       )}
