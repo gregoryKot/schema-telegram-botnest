@@ -321,7 +321,12 @@ html[data-theme="dark"] {
    (см. docs/DESIGN_AUDIT_2026-08.md, В11, п.4 задачи волны). landing-kit.tsx
    и pages/landing/*.tsx читают только --accent/--accent-soft/--accent-line/
    --accent-rgb/--serif — этого набора достаточно, дочерние элементы
-   наследуют переопределение через каскад. */
+   наследуют переопределение через каскад.
+   Кризисная карточка (BookingCrisisNote) — светлая бумага при любой теме
+   (.light-lock сбрасывает токены, в том числе акцент на терракоту): светлый
+   индиго бренда она получает здесь же, и в тёмной теме визитки тоже —
+   тёмный индиго #9089e0 на светлой бумаге не читается (g4 r3). */
+.landing-personal-brand .light-lock[data-crisis-card],
 .landing-personal-brand {
   --accent:        #4d4799;
   --accent-soft:   rgba(77,71,153,0.10);

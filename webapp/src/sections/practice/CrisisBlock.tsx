@@ -12,10 +12,11 @@
 // бумаге, что телефоны доверия, а не серым абзацем под ней; 112 — ссылкой tel:.
 import { CrisisCard } from '../../components/CrisisCard';
 
-/** heading — блок раздела: надпись «Помощь рядом» — заголовок h3, как у соседних блоков страницы. */
-export function CrisisBlock({ inset, heading }: { inset?: boolean; heading?: boolean }) {
+/** heading — блок раздела: надпись «Помощь рядом» — заголовок h3, как у соседних блоков страницы.
+ *  signless — без своего сердца: вплотную выше стоит квадрат «Мне плохо» со своим (ревью g4 r3). */
+export function CrisisBlock({ inset, heading, signless }: { inset?: boolean; heading?: boolean; signless?: boolean }) {
   return (
-    <CrisisCard standing flat={inset} label="Помощь рядом" labelAs={heading ? 'h3' : 'span'}>
+    <CrisisCard standing flat={inset} signless={signless} label="Помощь рядом" labelAs={heading ? 'h3' : 'span'}>
       <div className="cr-more">
         <p className="cr-line">
           Если есть угроза жизни —{'\u00a0'}<a className="cr-112" href="tel:112">112</a><span className="cr-dot">.</span>

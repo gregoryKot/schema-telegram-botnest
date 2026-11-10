@@ -103,11 +103,11 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       <PracticeHeader phone={phone} banner={sessionBanner} onCustomize={() => setShowCustomize(true)} />
       {/* Герой дыхания, квадраты заземления, «Стопа» и «Мне плохо» (на телефоне «Мне плохо» — в
           листе кризисных строк под квадратами), затем «Помощь рядом» одной полосой (на телефоне —
-          раскрытием той же строки). Кризисный путь — до «Инструментов» и заданий. */}
+          раскрытием той же строки; под квадратом с сердцем — без второго). Кризисный путь — до «Инструментов» и заданий. */}
       <div className="cp-block cp-here">
         <HereAndNowBlock compact={phone} onSos={phone ? undefined : onSos} extraRows={phone ? <PhoneHelpRows onSteps={onSos} /> : undefined} />
       </div>
-      {!phone && <div className="cp-block"><CrisisBlock heading /></div>}
+      {!phone && <div className="cp-block"><CrisisBlock heading signless={!!onSos} /></div>}
 
       {/* Мост к терапевту — после быстрых практик и кризисного входа, перед «Инструментами»: кризисный путь остаётся первым. */}
       <TherapyBridgeCard place="practice" />

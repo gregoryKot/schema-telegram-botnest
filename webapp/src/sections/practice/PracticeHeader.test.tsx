@@ -28,13 +28,13 @@ function renderHeader(phone: boolean, form: 'ty' | 'vy' = 'ty') {
 }
 
 describe('PracticeHeader — встреча', () => {
-  it('имя терапевта в строке встречи не рвётся: пробелы имени неразрывные, слова те же', () => {
+  it('«Терапевт: Имя Фамилия» в строке встречи не рвётся, «·» строку не начинает; слова те же', () => {
     render(
       <MemoryRouter>
         <PracticeHeader phone banner={{ label: 'завтра', isToday: false, partnerName: 'Ольга  Миронова' }} onCustomize={vi.fn()} />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/Терапевт:/).textContent).toBe(' · Терапевт: Ольга\u00a0Миронова');
+    expect(screen.getByText(/Терапевт:/).textContent).toBe('\u00a0· Терапевт:\u00a0Ольга\u00a0Миронова');
   });
 });
 

@@ -44,6 +44,11 @@ export function glue(text: string): string {
   return out;
 }
 
+/** Короткая подпись целиком на одной строке — «Терапевт: Ольга Миронова» не рвётся ни на имени, ни
+ *  после двоеточия: все пробелы (и их серии) — один неразрывный. Только короткое: длинное не переносится. */
+export const glueName = (text: string): string =>
+  text.trim().replace(/\s+/g, NBSP);
+
 /** Проп, который бывает и не строкой (ReactNode): строку склеивает, остальное отдаёт как есть. */
 export const glueIf = <T>(text: T): T | string =>
   typeof text === 'string' ? glue(text) : text;

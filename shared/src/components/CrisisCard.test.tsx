@@ -177,4 +177,20 @@ describe('бумага кризисного пути', () => {
   it('CRISIS_HUE — оттенок «Мне плохо» из ENTITY_LOOK', () => {
     expect(CRISIS_HUE).toBe(ENTITY_LOOK.sos.hue);
   });
+
+  // Регрессия g4 r3: на визитке в тёмной теме светлые --text/--text-sub ложились на светлую
+  // розовую бумагу. Своя бумага карточки держит светлые токены сама (.light-lock).
+  it('своя бумага — светлая при любой теме (light-lock); flat — без своей бумаги и замка', () => {
+    const { container, unmount } = render(
+      <CrisisCardView tr={tr} track={vi.fn()} />,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toBe('light-lock pp-paper');
+    expect(root.style.getPropertyValue('--h')).toBe(String(CRISIS_HUE));
+    unmount();
+    const flat = render(<CrisisCardView flat tr={tr} track={vi.fn()} />);
+    expect((flat.container.firstElementChild as HTMLElement).className).toBe(
+      '',
+    );
+  });
 });

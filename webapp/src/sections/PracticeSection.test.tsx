@@ -491,6 +491,17 @@ describe('PracticeSection — «Инструменты»: скрытие и по
     expect(screen.getAllByText('Помощь рядом').length).toBeGreaterThan(0);
   });
 
+  // Ревью g4 r3: сердце квадрата «Мне плохо» стояло вплотную над сердцем «Помощи рядом».
+  it('«Помощь рядом» под квадратом «Мне плохо» — без своего сердца; квадрат скрыт — сердце у блока', () => {
+    renderSection();
+    expect(screen.getByText('Мне плохо')).toBeTruthy();
+    expect(document.querySelector('[data-crisis-card] svg')).toBeNull();
+    cleanup();
+    hide('flashcard');
+    renderSection();
+    expect(document.querySelector('[data-crisis-card] svg')).not.toBeNull();
+  });
+
   it('скрытая «Мне плохо» в «Инструментах» убирает строку на телефоне, «Мне очень плохо» остаётся', () => {
     setWidth(390);
     hide('flashcard');

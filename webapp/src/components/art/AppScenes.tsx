@@ -4,7 +4,7 @@
 //  • Sprout — «готово»: знак сущности стоит на земле, рядом проросший лист. Знак не
 //    перерисован: тот же мотив по ключу (SignArt) вложенным svg (SignInScene). Исключение — `Pause`
 //    («Стоп»): крупно длинная лента в две волны читалась червяком, поэтому в сцене — вариант мотива
-//    (StopPalms): лента короче и спокойнее, главная фигура — дуга-ладони мха (PAPER_2026-11.md).
+//    (StopPalms.tsx): лента короче и спокойнее, главная фигура — дуга-ладони мха (PAPER_2026-11.md).
 //  • SceneBreath — дыхание: две дуги Breath над полоской; дуги расходятся на вдохе, стоят на
 //    задержке, опускаются на выдохе; `rest` — дыхание улеглось, у основания полоски вырос лист.
 //    Движение — только transform с переходом (paper-scenes.css), reduced-motion его снимает.
@@ -18,6 +18,7 @@ import { ArtFrameContext, type ArtFrame } from './paper';
 import { INK } from './scenePaper';
 import { Lift, SceneSvg } from './sceneKit';
 import { SignArt } from './SignArt';
+import { StopPalms } from './StopPalms';
 
 /** Знак кабинета внутри сцены: тот же мотив по ключу, вложенным svg в рамке холста. */
 export function SignInScene({ sign, ...frame }: { sign: SignKey } & ArtFrame) {
@@ -39,17 +40,6 @@ function SproutLeaf() {
   );
 }
 
-/** «Стоп» в сцене: короткая лента-импульс одной спокойной волной подходит к дуге мха и не
- *  касается её; дуга-ладони Здорового Взрослого стоит на земле и крупнее ленты. */
-function StopPalms() {
-  return (
-    <g data-motif="pause">
-      <path d="M50 152 C 72 128, 98 160, 128 140" fill="none" stroke={INK.clay} strokeWidth="12" strokeLinecap="round" />
-      <path d="M150 90 A 50 50 0 0 1 150 190" fill="none" stroke={INK.moss} strokeWidth="26" strokeLinecap="round" />
-    </g>
-  );
-}
-
 /** «Готово»: знак сущности на земле и проросший лист — сделанное прорастает. Рамка знака
  *  ставит его линию земли (у знаков с землёй — y 60 из 64) на землю сцены. */
 export function Sprout({ sign, hue = 135, patch }: { sign: SignKey; hue?: number; patch?: number }) {
@@ -67,11 +57,12 @@ export function Sprout({ sign, hue = 135, patch }: { sign: SignKey; hue?: number
 export type BreathScenePhase = 'in' | 'hold' | 'out' | 'rest';
 
 /** Положение дуг по фазе; центр масштаба — середина земли под дугами (160 206, paper-scenes.css).
- *  Размах заметный и на телефоне (герой 124px): вдох к выдоху ≥ 1.25 (AppScenes.test). `rest` —
- *  дуги осели: шире и ниже выдоха, лист у полоски остаётся под ними. */
+ *  Размах заметный и на телефоне (герой 124px): вдох к выдоху ≥ 1.25 (AppScenes.test). На вдохе
+ *  внешняя дуга (R 104 + штрих 22) — x 29–291, ножки в пределах земли 30–290 (при 1.18 выходили
+ *  к краю листа, ревью g4 r3). `rest` — дуги осели: шире и ниже выдоха, лист у полоски под ними. */
 const ARCS: Record<BreathScenePhase, string> = {
-  in: 'scale(1.18)',
-  hold: 'scale(1.18)',
+  in: 'scale(1.14)',
+  hold: 'scale(1.14)',
   out: 'scale(0.86)',
   rest: 'scale(0.9, 0.8)',
 };

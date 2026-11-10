@@ -38,7 +38,7 @@ export function FlashcardDoneScreen({ parts, action, syncFailed, onOpenTracker, 
         secondary={{ label: 'Ещё одну', onClick: handleNew }}
       >
         {syncFailed && (
-          <PaperAlert sign="cup" className="sk-fc-alert"
+          <PaperAlert sign="sheets" className="sk-fc-alert"
             title={glue('Карточка осталась только на этом устройстве — до сервера не доехала.')}
             text={glue('На других устройствах и у терапевта её не будет.')} />
         )}

@@ -100,7 +100,7 @@ describe('SceneBreath: фаза → положение дуг', () => {
   };
 
   it('вдох — дуги расходятся, задержка — стоят там же, выдох — сходятся', () => {
-    expect(arcs('in').transform).toBe('scale(1.18)');
+    expect(arcs('in').transform).toBe('scale(1.14)');
     expect(arcs('hold').transform).toBe(arcs('in').transform);
     expect(arcs('out').transform).toBe('scale(0.86)');
   });
@@ -111,6 +111,19 @@ describe('SceneBreath: фаза → положение дуг', () => {
     const outS = scaleOf(arcs('out').transform);
     expect(inS.x / outS.x).toBeGreaterThanOrEqual(1.25);
     expect(inS.y / outS.y).toBeGreaterThanOrEqual(1.25);
+  });
+
+  // Регрессия g4 r3: при 1.18 ножки внешней дуги выходили за землю к краю листа. Геометрия — из
+  // самой сцены: внешний край дуги — радиус + полштриха от центра 160, земля — её концы и скругление.
+  it('на вдохе внешняя дуга не шире земли', () => {
+    const { container, unmount } = render(<SceneBreath phase="in" />);
+    const outer = container.querySelector('.scn-breath-arcs path')!;
+    const r = Number(/A(\d+)/.exec(outer.getAttribute('d')!)![1]) + Number(outer.getAttribute('stroke-width')) / 2;
+    const ground = Array.from(container.querySelectorAll('path')).find((p) => /^M30 210 H290$/.test(p.getAttribute('d')!))!;
+    const reach = 130 + Number(ground.getAttribute('stroke-width')) / 2;
+    unmount();
+    expect(r * scaleOf(arcs('in').transform).x).toBeLessThanOrEqual(reach);
+    expect(r * 1.18).toBeGreaterThan(reach); // контрольный образец: прежний масштаб выходил за землю
   });
 
   it('полоска вытягивается на вдохе и задержке, на выдохе и в покое стоит ровно; переход той же длины', () => {

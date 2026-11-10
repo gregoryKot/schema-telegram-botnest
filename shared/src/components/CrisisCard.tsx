@@ -8,6 +8,8 @@
 // взрослая линия — белая плашка с тенью сплошным слоем (≥56px), детская — второй строкой тише.
 // Стили инлайном (crisisCardStyle.ts): карточку берут и кабинет, и визитка (BookingCrisisNote), CSS
 // экрана туда не доезжает. flat — та же карточка без своей бумаги: на листе экрана, который уже бережный.
+// Своя бумага держит светлые токены сама (light-lock, как PaperOutcome и ArticleCover): визитка живёт
+// вне светлой оболочки кабинета, и в её тёмной теме светлые чернила пропадали на розовой бумаге (№7).
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { CRISIS_HOTLINES } from '../utils/crisisMarkers';
 import { useCrisisCardTracking } from '../analytics/useCrisisCardTracking';
@@ -68,7 +70,7 @@ export function CrisisCardView({
     <div
       ref={ref}
       role="status"
-      className={flat ? undefined : 'pp-paper'}
+      className={flat ? undefined : 'light-lock pp-paper'}
       data-crisis-card=""
       style={box}
     >

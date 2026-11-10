@@ -140,6 +140,9 @@
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
   margin-top: 2px; font-size: 13px; line-height: 1.4;
 }
+/* ≤359: описание (оно только у не начатой плитки — меты нет) — в три строки: на двух «Тёплые слова»
+   обрывались на «Слова поддержки —…»; ряд и так вровень с более высокой соседкой (ревью g4 r3). */
+@media (max-width: 359px) { .cp-page--phone .cp-ex-desc { -webkit-line-clamp: 3; } }
 .cp-page--phone .cp-ex-foot { align-self: end; margin-top: 6px; justify-content: flex-end; }
 .cp-page--phone .cp-ex-state { margin-right: auto; }
 
