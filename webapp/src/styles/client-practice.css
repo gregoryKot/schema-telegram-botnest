@@ -3,7 +3,6 @@
    начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './task-row.css';
-@import './breathing.css';
 .cp-page { max-width: 1100px; }
 .cp-open-card { display: contents; } /* обёртка не участвует в flex-gap .cp-block (телефон как в main) */
 .cp-block { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 16px; }
