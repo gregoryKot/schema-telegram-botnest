@@ -16,6 +16,7 @@ import {
 import { MemoryRouter } from 'react-router-dom';
 import { HistorySheet } from './HistorySheet';
 import type { Need, PracticePlan } from '../api';
+import { plainText } from '../test-support/plainText';
 
 vi.mock('../api', () => ({
   api: {
@@ -94,9 +95,9 @@ describe('HistorySheet', () => {
   // историю с призывом «Заполнить сегодня» — читалось как «записи пропали».
   it('historyFailed — «Не удалось загрузить историю», а не пустая история', async () => {
     renderSheet({ historyLoading: false, history: [], historyFailed: true });
-    expect(screen.getByRole('alert').textContent).toContain('Не удалось загрузить историю');
-    // текст идёт через glue: неразрывные пробелы — те же слова (shared/src/utils/typo.ts)
-    expect(screen.getByRole('alert').textContent?.replace(/\u00a0/g, ' ')).toContain('оценки на месте');
+    // заголовок и текст сбоя идут через glue (PaperAlert, shared/src/utils/typo.ts) — сверяем фразу без склейки
+    expect(plainText(screen.getByRole('alert'))).toContain('Не удалось загрузить историю');
+    expect(plainText(screen.getByRole('alert'))).toContain('оценки на месте');
     await act(async () => {});
     expect(screen.queryByText(/трекер сегодня/)).toBeNull();
   });

@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { PracticeHeader } from './PracticeHeader';
 import { AddressFormContext } from '../../utils/addressForm';
 import { CRISIS_HOTLINE_DISPLAY, CRISIS_HOTLINE_TEL } from '../../utils/crisisMarkers';
+import { plain } from '../../test-support/plainText';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -28,13 +29,28 @@ function renderHeader(phone: boolean, form: 'ty' | 'vy' = 'ty') {
 }
 
 describe('PracticeHeader — встреча', () => {
-  it('«Терапевт: Имя Фамилия» в строке встречи не рвётся, «·» строку не начинает; слова те же', () => {
+  const tail = (partnerName: string) => {
     render(
       <MemoryRouter>
-        <PracticeHeader phone banner={{ label: 'завтра', isToday: false, partnerName: 'Ольга  Миронова' }} onCustomize={vi.fn()} />
+        <PracticeHeader phone banner={{ label: 'завтра', isToday: false, partnerName }} onCustomize={vi.fn()} />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/Терапевт:/).textContent).toBe('\u00a0· Терапевт:\u00a0Ольга\u00a0Миронова');
+    return screen.getByText(/Терапевт:/).textContent ?? '';
+  };
+
+  it('короткое имя: «·» строку не начинает, «Терапевт:» не отрывается от имени; слова те же', () => {
+    expect(tail('Ольга Миронова')).toBe('\u00a0· Терапевт:\u00a0Ольга Миронова');
+  });
+
+  // Ревью g4 r5: подпись склеивалась целиком (все пробелы неразрывные) — имя из данных терапевта длиной 40+
+  // знаков не переносилось и вылезало за край строки встречи на телефоне.
+  it('длинное имя переносится: пробелы внутри имени обычные, дефис пользователя тот же', () => {
+    const name = 'Александра Константиновна Покровская-Вишневецкая';
+    expect(name.length).toBeGreaterThan(40);
+    const text = tail(name);
+    expect(text).toContain('Терапевт:\u00a0Александра Константиновна Покровская-Вишневецкая');
+    expect(text).not.toMatch(/[\u2011\u2060]/);
+    expect(plain(text)).toBe(` · Терапевт: ${name}`);
   });
 });
 

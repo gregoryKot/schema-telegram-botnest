@@ -2,16 +2,17 @@ import { useTr } from '../../utils/addressForm';
 import { SelfHelpEntry } from './SelfHelpEntry';
 import { CustomizeLink } from '../../components/customize/CustomizeGear';
 import { therapistNameLine } from '../../../../shared/src/therapy/therapistLinkCopy';
-import { glue, glueName } from '../../../../shared/src/utils/typo';
+import { glue, glueSpaces } from '../../../../shared/src/utils/typo';
 import '../../styles/practice-selfhelp.css';
 
 export interface SessionBannerInfo { label: string; isToday: boolean; partnerName?: string | null }
 
-/** Шапка «Практики»: надпись, заголовок, подпись, встреча; в ряду надписи справа — тихие ссылки
- * «Важное о самопомощи» (знак Limits вместо ⚠, который читался ошибкой) и «Настроить инструменты»
- * (в ряд с заголовком они не влезали уже на 1280). Телефон: в шапке только «Настроить», «Важное» —
- * под вводной практик (HereAndNowIntro); страница там начинается с «Здесь и сейчас», и заголовок
- * зовётся так же (#906). */
+// « · Терапевт: Имя»: «·» и «Терапевт:» держатся с соседним словом; имя — данные человека (glueSpaces), переносится (g4 r5).
+const partnerTail = (name: string) => glueSpaces(` · ${therapistNameLine(name.trim()).replace(/^(\S+:) +/, '$1\u00a0')}`);
+
+/** Шапка «Практики»: надпись, заголовок, подпись, встреча; справа в ряду надписи — «Важное о самопомощи» (знак Limits вместо ⚠,
+ * читался ошибкой) и «Настроить инструменты» (в ряд с заголовком не влезали уже на 1280). Телефон: в шапке только «Настроить»,
+ * «Важное» — под вводной практик (HereAndNowIntro); страница начинается с «Здесь и сейчас», заголовок зовётся так же (#906). */
 export function PracticeHeader({ phone, banner, onCustomize }: { phone: boolean; banner: SessionBannerInfo | null; onCustomize: () => void }) {
   const tr = useTr();
   return (
@@ -29,8 +30,7 @@ export function PracticeHeader({ phone, banner, onCustomize }: { phone: boolean;
       {banner && (
         <div className={'ds-sub cp-head-banner' + (banner.isToday ? ' is-today' : '')}>
           {banner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${banner.label}`}
-          {/* «Терапевт: Имя Фамилия» — одной строкой, «·» строку не начинает (ревью g4 r2–r3). */}
-          {banner.partnerName && <span>{glue(` · ${glueName(therapistNameLine(banner.partnerName))}`)}</span>}
+          {banner.partnerName && <span>{partnerTail(banner.partnerName)}</span>}
         </div>
       )}
     </div>

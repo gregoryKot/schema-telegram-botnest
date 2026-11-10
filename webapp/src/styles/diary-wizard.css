@@ -1,35 +1,58 @@
 /* Мастера дневников схем и режимов (components/diary/*): шаги, подвал .sd-foot (им
-   пользуются ещё заметка, благодарность и лист шаринга), чипы, интенсивность, выбор
-   режима, итог, сомнение. Подключается сборником sheet-diary.css. */
+   пользуются ещё заметка, благодарность и лист шаринга), чипы, интенсивность, герой полосой.
+   Выбор режима, итог, цепочка и сомнение — diary-mode.css (следующий в сборнике).
+   Подключается сборником sheet-diary.css — может встать раньше index.css: правило против
+   ds-* пишется на два класса (.ds-btn.sd-…).
+   Редизайн 2026-11 (docs/design/APP_2026-11.md, раздел b10b): лист-герой сущности сверху
+   (на ≥1024 — разворот слева), шаг — на бумаге страницы, подвал мастера в одну строку,
+   режимы — знаком и бумагой группы, без цветных точек. */
 /* ── Мастер записи: прогресс, шаг, подвал ─────────────────────────────── */
-.sd-explainer { font-size: 13px; line-height: 1.5; margin: 0 0 16px; }
+.sd-explainer { font-size: 13px; line-height: 1.55; margin: 0 0 16px; color: var(--text-sub); max-width: 62ch; text-wrap: pretty; }
 .sd-ticks { display: flex; gap: 4px; margin-bottom: 14px; }
 /* Шаг-полоска прыгает на шаг: зона нажатия 44 по высоте, отрицательный margin держит прежние 24 в раскладке. */
 .sd-tick { flex: 1; min-height: 44px; margin-block: -10px; cursor: pointer; display: flex; align-items: center; }
 .sd-tick::before { content: ''; display: block; width: 100%; height: 5px; border-radius: 3px; background: var(--line-strong); }
 .sd-tick.is-filled::before { background: oklch(0.58 0.12 var(--h)); }
 .sd-tick.is-active::before { height: 8px; box-shadow: 0 0 0 2px oklch(0.88 0.06 var(--h)); }
-.sd-step { display: flex; flex-direction: column; gap: 10px; }
-.sd-step.is-filled { border-color: oklch(0.8 0.07 var(--h)); }
+.sd-step { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .sd-step-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
-.sd-step-flag { font-size: 12px; color: var(--text-faint); }
+.sd-step-n { color: var(--text-sub); }
+.sd-step-flag { font-size: 12px; color: var(--text-sub); }
 .sd-step-flag.is-required { color: var(--accent); font-weight: 600; }
-.sd-step-count { margin-left: auto; font-size: 12px; color: var(--text-faint); }
-.sd-step-hint { line-height: 1.5; }
-.sd-area-gap { margin-top: 12px; }
-.sd-aside { position: sticky; top: 40px; display: flex; flex-direction: column; gap: 8px; }
-.sd-aside p { margin: 0; line-height: 1.55; }
+.sd-step-count { margin-left: auto; font-size: 12px; color: var(--text-sub); }
+.sd-step-q { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.15; color: var(--text); text-wrap: balance; }
+.sd-step-hint { margin-top: -2px; font-size: 14px; line-height: 1.5; color: var(--text-sub); max-width: 60ch; text-wrap: pretty; }
+/* Поле ростом от подсказки: обрезанный на середине плейсхолдер («…чем / требовала ситуация?»)
+   читался сломанным полем. Не ниже четырёх строк; где браузер умеет field-sizing — растёт с текстом. */
+.ds-textarea.sd-area { min-height: calc(6em + 26px); field-sizing: content; }
+.sd-field-label { display: block; margin: 14px 0 6px; font-size: 14px; font-weight: 600; color: var(--text); }
+/* Подсказка (DiaryAside): белый лист со сдвинутым слоем бумаги записи — тише цветного героя. Поле
+   справа и снизу под слой — всегда, а не только в колонке разворота: в колонке (overflow: auto) слой
+   резался краем, в листе «Заметка» заходил в правый отступ страницы (16 слева, ≈7 справа). */
+.sd-aside {
+  position: sticky; top: 40px; display: flex; flex-direction: column; gap: 8px;
+  margin: 0 8px 9px 0; padding: 20px 22px 22px; border-radius: 20px; background: var(--surface);
+  box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h));
+}
+.sd-aside-label { color: var(--text-sub); }
+.sd-aside-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 21px; line-height: 1.25; color: var(--text); }
+.sd-aside p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text-sub); }
 .sd-aside-list { margin: 0; padding-left: 18px; font-size: 13px; color: var(--text-sub); line-height: 1.7; }
 .sd-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .sd-spacer { flex: 1; }
+/* Перенос главной кнопки подвала (счётчик «3 / 3 заполнено» и «Сохранить запись ✓» не встают в строку,
+   320) — она во всю ширину строки, а не по тексту у левого края. */
+.sd-foot > .ds-btn:last-child { margin-left: auto; }
 .sd-save-error { flex-basis: 100%; margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--err); }
-.sd-example { margin: 4px 0 12px; display: flex; flex-direction: column; gap: 6px; }
-.sd-example-text { font-size: 14px; font-style: italic; color: var(--text-sub); line-height: 1.55; }
+/* Подвал мастера — одна строка: «Назад», ранний «Сохранить», главная на остаток (DiaryWizardFoot). */
+.sd-wfoot { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin-top: 22px; }
+.ds-btn.sd-wfoot-back, .ds-btn.sd-wfoot-save { flex: none; }
+.ds-btn.sd-wfoot-next { flex: 0 1 auto; min-width: 0; margin-left: auto; padding-inline: 24px; }
 
 /* ── Чипы, группы, интенсивность ──────────────────────────────────────── */
 .sd-group { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
-.sd-group-label { display: flex; align-items: center; gap: 8px; }
-.sd-group-label .ds-dot { background: oklch(0.58 0.12 var(--h)); }
+.sd-group-label { display: flex; align-items: center; gap: 10px; color: var(--text-sub); }
+.sd-group-label .pp-art--row { flex: none; }
 .sd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .sd-chip {
   min-height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); background: var(--surface);
@@ -40,56 +63,58 @@
   background: oklch(0.94 0.035 var(--h)); color: oklch(0.38 0.1 var(--h));
   border-color: oklch(0.58 0.12 var(--h)); font-weight: 600;
 }
-.sd-show-all { min-height: 44px; }
-.sd-int-list { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--paper-sunk); }
-.sd-int { display: grid; grid-template-columns: minmax(90px, 1fr) 2fr minmax(70px, 1fr); align-items: center; gap: 10px; padding: 6px 0; }
-.sd-int-name { font-size: 13px; }
-.sd-int-bar { display: flex; gap: 3px; }
-/* Приём .sd-tick: зона нажатия 44 по высоте, отрицательный margin держит в раскладке прежние 26,
-   видимая полоска — ::before (diaryIntensity.test.ts). */
-.sd-int-step { flex: 1; min-height: 44px; margin-block: -9px; display: flex; align-items: center; cursor: pointer; }
-.sd-int-step::before { content: ''; display: block; width: 100%; height: 26px; border-radius: 4px; background: var(--paper-sunk); }
-.sd-int-step.is-on::before { background: oklch(0.58 0.12 var(--h)); }
-.sd-int-label { font-size: 12px; color: var(--text-faint); text-align: right; }
+.ds-link.sd-show-all { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.sd-show-all svg { width: 12px; height: 12px; }
+.sd-int-list { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--paper-sunk); }
+.sd-int { display: grid; grid-template-columns: minmax(90px, 1fr) 2fr minmax(70px, 1fr); grid-template-areas: "name bar label"; align-items: center; gap: 10px; padding: 6px 0; }
+.sd-int-name { grid-area: name; font-size: 14px; font-weight: 600; }
+/* Шаги — на всю колонку шкалы: последняя ступень подходит к подписи, и подпись читается значением
+   шкалы, а не отдельным словом в 130–280px от неё (ревью g3 r2). */
+.sd-int-bar { grid-area: bar; display: flex; gap: 2px; }
+/* Приём .sd-tick: зона нажатия 44 по высоте, отрицательный margin держит в раскладке 36 (высота
+   старшей ступени), видимая полоска — ::before (diaryIntensity.test.ts). Полоски — толщиной мотива
+   Strokes (12px) и растут к «сильно» от 14 до 36: сила чувства видна высотой, а не только заливкой;
+   низ — общий, по линии земли. Пустой шаг — гнездо с кромкой тона записи (≥3:1 к бумаге страницы,
+   WCAG 1.4.11): --paper-sunk без кромки давал 1.1:1, и было не видно, что шагов пять. */
+.sd-int-step { flex: 1 1 0; min-width: 0; min-height: 44px; margin-block: -4px; padding-bottom: 4px; box-sizing: border-box; display: flex; align-items: flex-end; justify-content: center; cursor: pointer; }
+.sd-int-step::before { content: ''; display: block; box-sizing: border-box; width: min(100%, 12px); height: 36px; border-radius: 6px; background: var(--paper-sunk); box-shadow: inset 0 0 0 1.5px oklch(0.62 0.07 var(--h)); }
+.sd-int-step:nth-child(1)::before { height: 14px; }
+.sd-int-step:nth-child(2)::before { height: 19px; }
+.sd-int-step:nth-child(3)::before { height: 25px; }
+.sd-int-step:nth-child(4)::before { height: 30px; }
+.sd-int-step.is-on::before { background: oklch(0.58 0.12 var(--h)); box-shadow: none; }
+.sd-int-label { grid-area: label; font-size: 12px; color: var(--text-sub); }
 
-/* ── Режим: выбор, подсказки, итог ────────────────────────────────────── */
-.sd-select-q { margin: 0 0 10px; }
-.sd-list-toggle { margin: 4px 0 16px; }
-.sd-feel { margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
-.sd-feel-list { display: flex; flex-direction: column; gap: 8px; }
-.sd-feel-q { margin-top: 4px; }
-.sd-feel-row { display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left; font-family: inherit; color: var(--text); }
-.sd-feel-dot { padding-top: 4px; }
-.sd-feel-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.sd-feel-title { font-size: 14px; font-weight: 600; }
-.sd-feel-mode { font-size: 12px; font-weight: 600; }
-.sd-mode-card { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.sd-mode-body { flex: 1; min-width: 0; }
-.sd-mode-name { font-size: 15px; font-weight: 600; }
-.sd-mode-check { opacity: 0; display: inline-flex; }
-.sd-mode-card.is-selected { border-color: oklch(0.58 0.12 var(--h)); }
-.sd-mode-card.is-selected .sd-mode-check { opacity: 1; }
-.sd-done { --h: 45; margin: 0 0 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-.sd-done .sd-share-note { color: var(--text-sub); }
-.sd-done-btn { margin-top: 16px; }
-.sd-share { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.sd-share-full { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-.sd-share-note { font-size: 12px; line-height: 1.5; color: var(--text-faint); }
-.sd-chain { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
-.sd-chain-q { font-size: 14px; line-height: 1.45; }
+/* ── Герой полосой ────────────────────────────────────────────────────── */
+/* Надпись героя — на всю ширину листа, знак — справа у строки заголовка: в полосе мастера (шаги 2+) на
+   узком листе надпись рвалась у знака («ДНЕВНИК СХЕМ · ПРОДОЛЖАЕМ С / ТОГО МЕСТА»). У благодарности так
+   на любой ширине вне разворота: на планшете подводка шла половиной листа, правая половина пустовала.
+   Колонку разворота ≥1024 (контейнер pa-spread-sheet) правила не трогают. */
+@container pa-sheet (max-width: 440px) {
+  .ex2-hero.pa-sheet.pa-sheet--compact > .pa-sheet-body > .pa-sheet-label { grid-column: 1 / -1; }
+  .ex2-hero.pa-sheet.pa-sheet--compact > .pa-sheet-body > .pa-sheet-title { grid-column: 1; }
+  .ex2-hero.pa-sheet.pa-sheet--compact > .pa-sheet-art { grid-row: 2; align-self: center; }
+}
+@container pa-sheet (min-width: 1px) {
+  .ex2-hero.pa-sheet:has(.sd-grat-pebbles) > .pa-sheet-body { display: contents; }
+  .ex2-hero.pa-sheet:has(.sd-grat-pebbles) > .pa-sheet-body > * { grid-column: 1 / -1; margin-top: 10px; }
+  .ex2-hero.pa-sheet:has(.sd-grat-pebbles) > .pa-sheet-body > .pa-sheet-label { margin-top: 0; }
+  .ex2-hero.pa-sheet:has(.sd-grat-pebbles) > .pa-sheet-body > .pa-sheet-title { grid-column: 1; }
+  .ex2-hero.pa-sheet:has(.sd-grat-pebbles) > .pa-sheet-art { grid-column: 2; grid-row: 2; align-self: center; }
+  .ex2-hero.pa-sheet:has(.sd-grat-pebbles) .pa-sheet-sub { max-width: none; }
+}
+/* Планшет: камешки — размером знака листа, а не 64px в углу полосы. */
+@container pa-sheet (min-width: 441px) { .ex2-hero.pa-sheet:has(.sd-grat-pebbles) > .pa-sheet-art { width: 132px; } }
 
-/* ── Сомнение в режиме, пустое состояние, баннер ──────────────────────── */
-.sd-doubt { max-width: 640px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 24px) 80px; }
-.sd-doubt-now { margin-bottom: 14px; }
-.sd-doubt-now-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.sd-doubt-lede { line-height: 1.5; margin: 0 0 24px; }
-.sd-doubt-list { display: flex; flex-direction: column; gap: 12px; }
-.sd-doubt-card { display: flex; flex-direction: column; gap: 6px; }
-.sd-doubt-title { display: flex; align-items: center; gap: 8px; }
-.sd-doubt-gist { margin: 4px 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
-.sd-doubt-check { border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
-.sd-doubt-btn { width: 100%; }
-.sd-doubt-keep { margin-top: 20px; }
+/* Разворот мастера на телефоне и планшете (<1024): лист-герой, форма, а пояснение и подсказка — после
+   формы (один раз, тише главного; на ≥1024 они в левой колонке под листом): шапка до первого поля на 390 —
+   не выше ~230px. Колонка разворота и её aside раскрываются в поток (display: contents), порядок — order. */
+@media (max-width: 1023px) {
+  .pa-spread:has(.sd-aside) > .pa-spread-side,
+  .pa-spread:has(.sd-aside) > .pa-spread-side > .ex2-aside { display: contents; }
+  .pa-spread:has(.sd-aside) > .pa-spread-main { order: 2; }
+  .pa-spread .ex2-aside > :is(.sd-aside, .sd-explainer) { order: 3; position: static; }
+}
 
 /* Палец (QA мобильной версии 2026-11, М1): сегмент шага был 32×24, чип чувства — 40 по высоте. Высота 44;
    по ширине десять шагов в 360px до 44 не дотянуть — сегменты стоят встык (зазор рисует отступ полоски),
@@ -98,4 +123,30 @@
   .sd-ticks { gap: 0; margin-bottom: 4px; }
   .sd-tick { min-height: 44px; padding: 0 2px; }
   .sd-chip { min-height: 44px; }
+}
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* Подвал мастера липнет к низу: раскрытые «Все 20» схем и длинный текст не уводят «Дальше» за экран. */
+  .sd-wfoot {
+    position: sticky; bottom: 0; z-index: 2; margin: 14px -16px 0;
+    padding: 10px 16px calc(10px + var(--safe-bottom)); background: var(--bg);
+  }
+  .sd-step-q { font-size: 24px; }
+  .sd-step-count { display: none; }
+}
+/* Узкий подвал: «Назад» — круг 44 со стрелкой, главная кнопка забирает остаток строки. */
+@media (max-width: 559px) {
+  .ds-btn.sd-wfoot-back { width: 44px; padding: 0; }
+  .sd-wfoot-back-label { display: none; }
+  .ds-btn.sd-wfoot-save { padding-inline: 16px; }
+  .ds-btn.sd-wfoot-next { flex: 1 1 auto; padding-inline: 12px; }
+  /* Сила чувства: имя и подпись строкой, пять шагов под ними на всю ширину — шаг 44 и на 320 (в три
+     колонки шаг ужимался до 27–31px). Подпись — по правому краю, над старшей ступенью. */
+  .sd-int { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name label" "bar bar"; row-gap: 2px; }
+  .sd-int-label { text-align: right; }
+}
+@media (max-width: 359px) {
+  .sd-foot > .sd-spacer + .ds-btn:last-child { flex: 1 1 100%; }
+  .sd-wfoot { gap: 6px; }
+  .ds-btn.sd-wfoot-save { padding-inline: 12px; }
+  .ds-btn.sd-wfoot-next { padding-inline: 8px; }
 }

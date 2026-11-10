@@ -20,6 +20,7 @@ vi.mock('../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';
+import { plainText } from '../test-support/plainText';
 // Строка склеена glue при отрисовке (U+2011 в «схема-терапии»); NBSP сводит к пробелу нормализатор testing-library.
 const NOTE = glue(TRACKER_ORIGIN_NOTE).replace(/\s+/g, ' ');
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
@@ -170,7 +171,7 @@ describe('TrackerOverlay — ответ и автопереход', () => {
     expect(screen.queryByText(/не дошли до сервера/)).toBeNull(); // вторая ещё в debounce
     await advance(500);
     // строка через glue (CompletionScreen): слова те же, пробелы после коротких слов неразрывные
-    expect(screen.getByRole('status').textContent?.replace(/\u00a0/g, ' ')).toBe(
+    expect(plainText(screen.getByRole('status'))).toBe(
       'Оценки пока не дошли до сервера. Они сохранены на этом устройстве и отправятся сами',
     );
   });
@@ -378,7 +379,7 @@ describe('TrackerOverlay — сохранение оценки', () => {
     await advance(500);
     expect(heading('Привязанность')).toBeTruthy();
     expect(onChange).toHaveBeenLastCalledWith('attachment', 4);
-    expect(screen.getByRole('alert').textContent).toBe('Эта оценка не сохранилась. Попробуй ответить ещё раз.');
+    expect(plainText(screen.getByRole('alert'))).toBe('Эта оценка не сохранилась. Попробуй ответить ещё раз.');
     answer(/Полностью/); // новый ответ убирает сообщение
     expect(screen.queryByRole('alert')).toBeNull();
   });

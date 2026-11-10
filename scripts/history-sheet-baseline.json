@@ -59,12 +59,8 @@
     "reason": "Шаг сценария «Что случилось» на рамке ExScreen: useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги получают «Назад» пропом; хук в шаге дал бы запись истории на каждый шаг.",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
-  "webapp/src/components/caseFlow/CaseStepScreen.tsx": {
-    "reason": "Рамка шага сценария «Что случилось» на ExScreen (лист шалфея, разворот, «Что собрали»): useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги и развилка черновика получают «Назад» пропом; хук в рамке дал бы запись истории на каждый шаг.",
-    "since": "b09-case, редизайн 2026-11"
-  },
   "webapp/src/components/diary/ModeEntryDone.tsx": {
-    "reason": "Экран «Готово» записи дневника режимов на рамке ExScreen: шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
+    "reason": "Экран «Готово» записи дневника режимов на рамке экрана упражнения (ex2-screen + ExBar, лист DoneSheet): шаг потока ModeEntrySheet.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
   "webapp/src/components/diary/ModeEntryForm.tsx": {
@@ -94,5 +90,9 @@
   "webapp/src/components/selfMap/SelfMapScreen.tsx": {
     "reason": "Экран «Карта себя» на рамке ExScreen: его оборачивает SelfMapOverlay.tsx, где useHistorySheet вызван один раз; «Назад» и переходы — его goBack, пропом.",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  },
+  "webapp/src/components/caseFlow/CaseStepScreen.tsx": {
+    "reason": "Рамка шага сценария «Что случилось» на ExScreen (лист шалфея, разворот, «Что собрали»): useHistorySheet вызван один раз на весь поток в CaseFlowScreen.tsx (exitFlow), шаги и развилка черновика получают «Назад» пропом; хук в рамке дал бы запись истории на каждый шаг.",
+    "since": "b09-case, редизайн 2026-11"
   }
 }

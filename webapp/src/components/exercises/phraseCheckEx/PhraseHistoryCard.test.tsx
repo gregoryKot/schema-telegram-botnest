@@ -94,7 +94,7 @@ describe('PhraseHistoryCard — удаление разбора', () => {
     renderCard('бывает', { onClose, onDeleted });
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     fireEvent.click(screen.getByRole('button', { name: 'Удалить навсегда' }));
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось удалить — запись на месте/);
+    expect((await screen.findByRole('status')).textContent).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
     expect(onDeleted).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByText('«я всё порчу»')).toBeTruthy();

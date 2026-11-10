@@ -66,6 +66,9 @@ vi.mock('../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api, reportClientError } from '../api';
+import { plain } from '../test-support/plainText';
+// Заголовок листа-героя склеен glue (EntitySheet): «на уме» держится неразрывным пробелом.
+const QUICK_TITLE = (name: string) => plain(name) === 'Что на уме?';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 const mockReport = reportClientError as unknown as ReturnType<typeof vi.fn>;
 
@@ -218,10 +221,10 @@ describe('TodaySection — плитка дневника', () => {
   it('плитка дневника открывает «Дневник одной страницей», а не список дневников', async () => {
     renderSection();
     fireEvent.click(screen.getByRole('button', { name: /Дневник/ }));
-    expect(screen.getByRole('heading', { name: 'Что на уме?' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: QUICK_TITLE })).toBeTruthy();
     expect(mockApi.trackEvent).toHaveBeenCalledWith('home_tile', { tile: 'diary' });
     fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }));
-    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Что на уме?' })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('heading', { name: QUICK_TITLE })).toBeNull());
   });
 
   it('сбой любого дневника не роняет экран и уходит в отчёт', async () => {

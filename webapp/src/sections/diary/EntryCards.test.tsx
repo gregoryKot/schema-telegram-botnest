@@ -63,6 +63,13 @@ describe('EntryCards — aria-expanded на раскрывашках (Ж7)', () 
     expect(screen.queryByText('Разбор')).toBeNull();
   });
 
+  // Ревью g3 r3: детский режим красил корешок и ярлык глиной схемы (28) — бумага карточки по типу записи.
+  it('ModeEntry детского режима — бумага дневника режимов, а не схемы', () => {
+    const { container } = render(<ModeEntry entry={{ ...MODE_ENTRY, modeId: 'vulnerable_child' }} onDelete={() => {}} />);
+    const card = container.querySelector<HTMLElement>('.cd-entry')!;
+    expect(card.style.getPropertyValue('--h')).toBe('240');
+  });
+
   it('GratitudeEntry: aria-expanded переключается по клику', () => {
     render(<GratitudeEntry entry={GRATITUDE_ENTRY} onDelete={() => {}} />);
     const card = screen.getByText('Тёплый чай').closest('[role="button"]')!;

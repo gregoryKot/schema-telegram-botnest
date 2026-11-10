@@ -6,6 +6,7 @@ vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
 vi.mock('../utils/addressForm', () => ({ useTr: () => (ty: string) => ty }));
 import { api } from '../api';
 import { ConsentScreen } from './ConsentScreen';
+import { plainText } from '../test-support/plainText';
 
 const track = (api as unknown as { trackEvent: ReturnType<typeof vi.fn> }).trackEvent;
 
@@ -72,6 +73,6 @@ describe('ConsentScreen', () => {
   it('failed показывает ошибку', () => {
     render(<ConsentScreen onAccept={vi.fn()} failed />);
     toPrivacy();
-    expect(screen.getByRole('alert').textContent).toMatch(/Не получилось сохранить/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/Не получилось сохранить/);
   });
 });

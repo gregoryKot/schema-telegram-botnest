@@ -4,7 +4,7 @@
 // «Все · Трекер · Дневник», строки трекера по дням, серия, удаление с
 // подтверждением, черновики мастеров, ошибки API не роняют экран.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DiarySection } from './DiarySection';
 import { saveDraft, clearDraft } from '../utils/drafts';
@@ -80,6 +80,7 @@ vi.mock('../api', () => {
   return { api };
 });
 import { api } from '../api';
+import { plainText } from '../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function schemaEntry(overrides: Partial<{ id: number; createdAt: string; trigger: string; schemaIds: string[] }> = {}) {
@@ -108,6 +109,9 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
 });
+
+/** Кнопка сегмента: у трекера дня в строке даты тоже имя «Трекер — …», поэтому ищем внутри сегмента. */
+const seg = (name: RegExp) => within(screen.getByRole('group', { name: 'Тип записей' })).getByRole('button', { name });
 
 const rated = (date: string, values: number[]) => ({
   date,
@@ -149,11 +153,16 @@ describe('DiarySection — пустой аккаунт (без хардкод-з
     expect(screen.queryByText(/дней подряд|день подряд/)).toBeNull();
   });
 
-  it('ошибка getSchemaDiary не роняет экран — остаётся пустое состояние', async () => {
+  // b11 (сбой ≠ пусто): раньше под баннером сбоя шло объяснение новичка «Пока ни одной записи» —
+  // записи на сервере есть, просто не загрузились. Экран не падает, «Записать» остаётся. Под строкой сбоя
+  // нет и силуэта ленты: серые плашки читались «ещё грузится» (ревью g3, принцип 8).
+  it('ошибка getSchemaDiary не роняет экран — строка сбоя без силуэта и без объяснения новичка', async () => {
     mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
-    renderSection();
-    await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
-    expect(screen.getByText('Пока ни одной записи')).toBeTruthy();
+    const { container } = renderSection();
+    await screen.findByRole('alert');
+    expect(screen.queryByText('Пока ни одной записи')).toBeNull();
+    expect(container.querySelector('.skel')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Записать' })).toBeTruthy();
   });
 });
 
@@ -164,7 +173,7 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     mockApi.getSchemaDiary.mockRejectedValue(new Error('network down'));
     renderSection();
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Не удалось загрузить записи дневника/);
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
     expect(screen.getByRole('button', { name: 'Записать' })).toBeTruthy();
   });
 
@@ -178,6 +187,25 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  // Ревью g3 r2: повторная загрузка (после быстрой записи, «Повторить» трекера) упала — строка сбоя
+  // заменяла уже показанную ленту одной плашкой «записи на месте» без единой записи, и пропадали числа
+  // в сегменте. Сбой повторной загрузки ставит строку НАД лентой.
+  it('первая загрузка ок, повторная упала — записи и числа сегмента на месте, строка сбоя сверху', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Уже показанная запись' })]);
+    renderSection();
+    await screen.findByText('Уже показанная запись');
+    fireEvent.click(screen.getByRole('button', { name: 'Записать' }));
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network blink'));
+    fireEvent.click(screen.getByText('Имитировать сохранение'));
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
+    expect(screen.getByText('Уже показанная запись')).toBeTruthy();
+    expect(seg(/^Все/).textContent).toMatch(/1/);
+    // Строка сбоя — над лентой, а не под ней.
+    const card = screen.getByText('Уже показанная запись');
+    expect(alert.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('сбой истории трекера и профиля не роняет дневники', async () => {
     mockApi.history.mockRejectedValue(new Error('offline'));
     mockApi.getProfile.mockRejectedValue(new Error('network down'));
@@ -186,11 +214,28 @@ describe('DiarySection — сбой загрузки (сбой ≠ пусто)',
     await screen.findByText('Видно несмотря на сбой');
     expect(screen.queryByRole('alert')).toBeNull();
     // Сбой трекера ≠ «отметок нет»: об этом сказано, а «Повторить» перезапрашивает историю.
-    expect(screen.getByRole('status').textContent).toMatch(/Отметки трекера не загрузились/);
+    expect(plainText(screen.getByRole('status'))).toMatch(/Отметки трекера не загрузились/);
     mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
-    await screen.findByText('Трекер — индекс 7,2');
+    await screen.findByLabelText('Трекер — индекс 7,2');
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  // Ревью g3 r3: трекер не загрузился, «Повторить» уронил и записи — над лентой вставали две одинаковые
+  // песочные плашки подряд. Сбой записей — одна строка: её «Обновить» перезапрашивает и трекер.
+  it('сбой трекера, затем сбой записей — одна строка сбоя над лентой, а не две', async () => {
+    mockApi.history.mockRejectedValue(new Error('offline'));
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry({ trigger: 'Запись до сбоя' })]);
+    renderSection();
+    await screen.findByText('Запись до сбоя');
+    expect(plainText(screen.getByRole('status'))).toMatch(/Отметки трекера не загрузились/);
+    mockApi.getSchemaDiary.mockRejectedValue(new Error('network blink'));
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    const alert = await screen.findByRole('alert');
+    expect(plainText(alert)).toMatch(/Не удалось загрузить записи дневника/);
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getAllByRole('button', { name: /^(Повторить|Обновить)$/ })).toHaveLength(1);
+    expect(screen.getByText('Запись до сбоя')).toBeTruthy();
   });
 });
 
@@ -208,9 +253,11 @@ describe('DiarySection — реальные записи из api', () => {
     ]);
     renderSection();
     const thought = (await screen.findByText('Просто мысль дня')).closest('.cd-entry') as HTMLElement;
-    expect(thought.querySelector('.ds-chip')?.textContent).toBe('Мысль');
+    expect(thought.querySelector('.cd-kind')?.textContent).toBe('Мысль');
+    // Своя обёртка-контейнер у каждой карточки: раскладка по её ширине и вне ленты (client-diary-entry.css).
+    expect(thought.parentElement?.classList.contains('cd-entry-box')).toBe(true);
     const full = screen.getByText('Разобранный момент').closest('.cd-entry') as HTMLElement;
-    expect(full.querySelector('.ds-chip')?.textContent).toBe('Схема');
+    expect(full.querySelector('.cd-kind')?.textContent).toBe('Схема');
   });
 
   it('запись благодарности показывает реальные пункты, а не заглушку', async () => {
@@ -236,24 +283,24 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     expect(counts).toEqual(['Все4', 'Трекер2', 'Случаи0', 'Дневник2']);
   });
 
-  it('в ленте за день — строка трекера: «индекс 7,2» при всех пяти оценках, «3 из 5» при неполных', async () => {
+  it('в ленте за день — строка трекера: «Трекер — индекс 7,2» при всех пяти оценках, «Трекер: 3 из 5» при неполных', async () => {
     setup();
     renderSection();
-    await screen.findByText('Трекер — индекс 7,2');
-    expect(screen.getByText('Трекер: 3 из 5')).toBeTruthy();
+    await screen.findByLabelText('Трекер — индекс 7,2');
+    expect(screen.getByLabelText('Трекер: 3 из 5')).toBeTruthy();
   });
 
   it('«Трекер» скрывает дневниковые записи, «Дневник» — строки трекера', async () => {
     setup();
     renderSection();
     await screen.findByText('Запись-схема');
-    fireEvent.click(screen.getByRole('button', { name: /^Трекер/ }));
+    fireEvent.click(seg(/^Трекер/));
     expect(screen.queryByText('Запись-схема')).toBeNull();
-    expect(screen.getByText('Трекер — индекс 7,2')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /^Дневник/ }));
+    expect(screen.getByLabelText('Трекер — индекс 7,2')).toBeTruthy();
+    fireEvent.click(seg(/^Дневник/));
     expect(screen.getByText('Запись-схема')).toBeTruthy();
     expect(screen.getByText('Запись-режим')).toBeTruthy();
-    expect(screen.queryByText('Трекер — индекс 7,2')).toBeNull();
+    expect(screen.queryByLabelText('Трекер — индекс 7,2')).toBeNull();
   });
 
   it('«Случаи» показывает только разборы (fromCase), «Дневник» их не показывает', async () => {
@@ -265,10 +312,10 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     await screen.findByText('Тишина в ответ');
     const counts = [...document.querySelectorAll('.ds-seg-btn')].map(b => b.textContent);
     expect(counts).toEqual(['Все2', 'Трекер0', 'Случаи1', 'Дневник1']);
-    fireEvent.click(screen.getByRole('button', { name: /^Случаи/ }));
+    fireEvent.click(seg(/^Случаи/));
     expect(screen.getByText('Тишина в ответ')).toBeTruthy();
     expect(screen.queryByText('Обычная запись режима')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /^Дневник/ }));
+    fireEvent.click(seg(/^Дневник/));
     expect(screen.getByText('Обычная запись режима')).toBeTruthy();
     expect(screen.queryByText('Тишина в ответ')).toBeNull();
   });
@@ -277,7 +324,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: /^Случаи/ }));
+    fireEvent.click(seg(/^Случаи/));
     await screen.findByText('Разборов пока нет');
     expect(screen.getByText(/плитка «Что случилось» на главной/)).toBeTruthy();
   });
@@ -286,7 +333,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     mockApi.getSchemaDiary.mockResolvedValue([schemaEntry()]);
     renderSection();
     await waitFor(() => expect(mockApi.getSchemaDiary).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('button', { name: /^Трекер/ }));
+    fireEvent.click(seg(/^Трекер/));
     await screen.findByText('Отметок трекера пока нет');
   });
 
@@ -294,7 +341,7 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     mockApi.history.mockResolvedValue([rated('2026-08-01', [8, 6, 7, 7, 8])]);
     const onOpenTrackerHistory = vi.fn();
     renderSection(onOpenTrackerHistory);
-    fireEvent.click(await screen.findByText('Трекер — индекс 7,2'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Трекер — индекс 7,2' }));
     expect(onOpenTrackerHistory).toHaveBeenCalledTimes(1);
   });
 
@@ -309,9 +356,9 @@ describe('DiarySection — сегмент «Все · Трекер · Случа
     setup();
     renderSection();
     await screen.findByText('Запись-схема');
-    expect(screen.queryByLabelText('Поделиться дневником')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /^Дневник/ }));
-    expect(screen.getByLabelText('Поделиться дневником')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Поделиться дневником' })).toBeNull();
+    fireEvent.click(seg(/^Дневник/));
+    expect(screen.getByRole('button', { name: 'Поделиться дневником' })).toBeTruthy();
   });
 });
 
@@ -490,7 +537,10 @@ describe('DiarySection — сбой удаления виден, повторн�
 
     await confirmDelete('Критика на работе');
 
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Не удалось удалить — запись на месте/);
+    // сбой удаления — компактный лист соломы (PaperAlert role=status) под ссылками, а не красная строка (ревью g3 r5)
+    const note = await screen.findByRole('status');
+    expect(note.classList.contains('pa-alert')).toBe(true);
+    expect(plainText(note)).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
     expect(screen.getByText('Критика на работе')).toBeTruthy();
     expect((screen.getByText('Удалить навсегда') as HTMLButtonElement).disabled).toBe(false);
   });
@@ -518,6 +568,7 @@ describe('DiarySection — сбой удаления виден, повторн�
 
     await waitFor(() => expect(screen.queryByText('Уже удалённая')).toBeNull());
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText(/Не\sудалось\sудалить/)).toBeNull();
   });
 });
 

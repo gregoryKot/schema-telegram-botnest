@@ -8,7 +8,8 @@ import { PatternSheet } from './PatternSheet';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../../types';
 import type { PatternEntries } from '../../sections/schemas/usePatternEntries';
 import type { MyCardItem } from '../../../../shared/src/pattern/useMyCards';
-import { deleteFailedText } from '../../../../shared/src/diary/diaryDelete';
+import { deleteFailedNote } from '../../../../shared/src/diary/deleteFailedNote';
+import { plainText } from '../../test-support/plainText';
 
 const deleteSchemaDiary = vi.fn().mockResolvedValue(undefined);
 const deleteModeDiary = vi.fn().mockResolvedValue(undefined);
@@ -149,7 +150,8 @@ describe('PatternSheet — записи дневника', () => {
     fireEvent.click(screen.getByText(/Триггер 1/));
     fireEvent.click(screen.getByText('Удалить'));
     fireEvent.click(screen.getByText('Удалить навсегда'));
-    expect((await screen.findByRole('alert')).textContent).toBe(deleteFailedText((ty) => ty));
+    const { title, text } = deleteFailedNote((ty) => ty);
+    expect(plainText(await screen.findByRole('status'))).toBe(title + text); // лист сбоя: заголовок и текст, склейка — при отрисовке
     expect(entries.setSchemaEntries).not.toHaveBeenCalled();
     expect(screen.getByText(/Триггер 1/)).toBeTruthy();
   });

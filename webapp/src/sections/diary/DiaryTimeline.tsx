@@ -1,46 +1,29 @@
 import type { DiaryType } from '../../types';
-import { Skeleton } from '../../components/Skeleton';
-import { dateRelLabel, fmtDayMonth, fmtWeekday } from './dateHelpers';
 import { EntryRow } from './EntryRow';
+import { DayHead } from './DayHead';
 import { entryKey, type AnyEntry } from './diaryModel';
+import { splitDay } from './dayModel';
 
-export function DiaryTimelineSkeleton() {
-  return (
-    <div className="cd-timeline" aria-hidden>
-      {[0, 1].map(i => (
-        <div key={i} className="cd-day">
-          <Skeleton width={72} height={30} />
-          <div className="cd-day-items">
-            <Skeleton height={86} radius={16} />
-            <Skeleton height={86} radius={16} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Лента, сгруппированная по дням: слева дата и «сегодня/вчера», справа карточки записей.
+// Лента, сгруппированная по дням: строка даты (DayHead — дата и трекер дня полосками), под ней
+// карточки записей; на компьютере дата — колонкой слева (client-diary.css). День только с трекером —
+// одна строка даты без карточек.
 export function DiaryTimeline({ groups, onDelete, onOpenTrackerHistory }: {
   groups: { dateKey: string; items: AnyEntry[] }[];
   onDelete: (type: DiaryType, id: number) => Promise<void>;
-  /** Тап по строке трекера; без него строка не нажимается (лист «Дневники» из практик). */
+  /** Тап по трекеру дня; без него строка не нажимается (лист «Дневники» из практик). */
   onOpenTrackerHistory?: () => void;
 }) {
   return (
     <div className="cd-timeline">
       {groups.map(({ dateKey, items }) => {
-        const rel = dateRelLabel(dateKey);
+        const { tracker, entries } = splitDay(items);
         return (
-          <div key={dateKey} className="cd-day">
-            <div>
-              <div className="cd-day-date">{fmtDayMonth(dateKey)}</div>
-              <div className="cd-day-rel">{rel ? `${rel} · ` : ''}{fmtWeekday(dateKey)}</div>
-            </div>
-            <div className="cd-day-items">
-              {items.map(item => <EntryRow key={entryKey(item)} item={item} onDelete={onDelete} onOpenTrackerHistory={onOpenTrackerHistory} />)}
-            </div>
-          </div>
+          <section key={dateKey} className={entries.length ? 'cd-day' : 'cd-day cd-day--bare'}>
+            <DayHead dateKey={dateKey} tracker={tracker} onOpenTracker={onOpenTrackerHistory} />
+            {entries.length > 0 && <div className="cd-day-items">
+              {entries.map(item => <EntryRow key={entryKey(item)} item={item} onDelete={onDelete} />)}
+            </div>}
+          </section>
         );
       })}
     </div>

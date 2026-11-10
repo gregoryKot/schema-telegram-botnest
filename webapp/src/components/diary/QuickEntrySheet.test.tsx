@@ -20,6 +20,9 @@ vi.mock('../../api', () => ({
   },
 }));
 import { api } from '../../api';
+import { plain, plainText } from '../../test-support/plainText';
+// Заголовок листа-героя склеен glue (EntitySheet): «на уме» держится неразрывным пробелом.
+const QUICK_TITLE = (name: string) => plain(name) === 'Что на уме?';
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const PLACEHOLDER = 'Можно одним предложением. Можно без точки.';
@@ -52,7 +55,7 @@ afterEach(cleanup);
 describe('QuickEntrySheet — первый экран', () => {
   it('заголовок, четыре тега, «Просто мысль» выбран, «Сохранить» выключена на пустом тексте', () => {
     setup();
-    expect(screen.getByRole('heading', { name: 'Что на уме?' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: QUICK_TITLE })).toBeTruthy();
     const radios = screen.getAllByRole('radio');
     expect(radios.map((r) => r.textContent)).toEqual(['Просто мысль', 'Схема', 'Режим', 'Благодарность']);
     expect(radios[0].getAttribute('aria-checked')).toBe('true');
@@ -195,7 +198,7 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     type('Шестое');
     tag('Благодарность');
     await press('Сохранить');
-    expect(screen.getByRole('alert').textContent).toMatch(/На сегодня уже пять пунктов/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/На сегодня уже пять пунктов/);
     expect(m.createGratitudeDiary).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Записать как мысль' }));
     expect(screen.getByRole('radio', { name: 'Просто мысль' }).getAttribute('aria-checked')).toBe('true');
@@ -213,7 +216,7 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     type('Солнце');
     tag('Благодарность');
     await press('Сохранить');
-    const alert = screen.getByRole('alert').textContent ?? '';
+    const alert = plainText(screen.getByRole('alert'));
     expect(alert).toMatch(/сегодняшние пункты сейчас не читаются/);
     expect(alert).toMatch(/сохрани его как мысль или попробуй позже/);
     expect(alert).not.toMatch(/Не удалось сохранить/);
@@ -230,7 +233,7 @@ describe('QuickEntrySheet — сохранение по тегам', () => {
     tag('Благодарность');
     await press('Сохранить');
     expect(m.createGratitudeDiary).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось сохранить/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/Не удалось сохранить/);
   });
 });
 
@@ -240,7 +243,7 @@ describe('QuickEntrySheet — отказ и выход', () => {
     const { onClose } = setup();
     type('Важная мысль');
     await press('Сохранить');
-    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось сохранить/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/Не удалось сохранить/);
     expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Важная мысль');
     expect((screen.getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement).disabled).toBe(false);
     expect(localStorage.getItem('diary_draft_quick')).toBe('Важная мысль');
@@ -311,5 +314,41 @@ describe('QuickEntrySheet — «Заполнить подробно»', () => {
     await press('Заполнить подробно →');
     await act(async () => { fireEvent.click(screen.getByText(/Назад к дневнику/)); });
     await waitFor(() => expect((screen.getByPlaceholderText(PLACEHOLDER) as HTMLTextAreaElement).value).toBe('Передумал'));
+  });
+});
+
+// b10a (2026-11): «Записано» — лист по типу записи (ENTITY_LOOK), сцена — из сохранённых данных.
+describe('QuickEntrySheet — «Записано» по типу записи', () => {
+  const done = () => document.querySelector('.pa-done') as HTMLElement;
+  const paper = () => (document.querySelector('.pa-done-sheet') as HTMLElement).style.getPropertyValue('--h');
+
+  it('мысль — лист быстрой записи на персике', async () => {
+    setup();
+    type('Опять промолчал');
+    await press('Сохранить');
+    expect(done().getAttribute('data-entity')).toBe('diary');
+    expect(paper()).toBe('45');
+  });
+
+  it('режим — бумага группы выбранного режима (детские — глина)', async () => {
+    setup();
+    type('Накричал на ребёнка');
+    tag('Режим');
+    await press('Дальше');
+    fireEvent.click(screen.getByText('Знаю режим – выбрать из списка'));
+    await act(async () => { fireEvent.click(screen.getByText('Уязвимый Ребёнок')); });
+    expect(done().getAttribute('data-entity')).toBe('diary_mode');
+    expect(paper()).toBe('28');
+  });
+
+  it('благодарность — на листе легло столько камешков, сколько пунктов за день', async () => {
+    m.getGratitudeDiary.mockResolvedValue([{ id: 1, date: todayStr(), items: ['Чай'] }]);
+    setup();
+    type('Солнце');
+    tag('Благодарность');
+    await press('Сохранить');
+    expect(done().getAttribute('data-entity')).toBe('gratitude');
+    // Два пункта за день: два камешка на листе, третий ждёт на земле.
+    expect(done().querySelectorAll('ellipse[data-laid="no"]')).toHaveLength(1);
   });
 });

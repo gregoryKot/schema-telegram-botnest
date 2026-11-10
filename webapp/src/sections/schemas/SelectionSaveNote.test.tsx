@@ -3,6 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
 import { SelectionSaveNote } from './SelectionSaveNote';
+import { plainText } from '../../test-support/plainText';
 
 afterEach(cleanup);
 
@@ -22,12 +23,12 @@ describe('SelectionSaveNote', () => {
 
   it('обычный сбой — «проверь связь»', () => {
     renderNote(true, false);
-    expect(screen.getByRole('alert').textContent).toMatch(/проверь связь и попробуй ещё раз/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/проверь связь и попробуй ещё раз/);
   });
 
   it('409 «не читается» — свой текст, без «проверь связь»; «ты»', () => {
     renderNote(true, true);
-    const text = screen.getByRole('alert').textContent ?? '';
+    const text = plainText(screen.getByRole('alert'));
     expect(text).toMatch(/прежний список сейчас не читается/);
     expect(text).toMatch(/попробуй ещё раз позже$/);
     expect(text).not.toMatch(/проверь связь/);
@@ -35,6 +36,6 @@ describe('SelectionSaveNote', () => {
 
   it('409 «не читается» — форма «вы»', () => {
     renderNote(true, true, 'vy');
-    expect(screen.getByRole('alert').textContent).toMatch(/попробуйте ещё раз позже$/);
+    expect(plainText(screen.getByRole('alert'))).toMatch(/попробуйте ещё раз позже$/);
   });
 });

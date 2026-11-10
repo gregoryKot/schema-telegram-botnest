@@ -14,7 +14,7 @@
 // Сцены одной партии рисуются в её файлах; сюда — только то, что нужно двум и более.
 import type { CSSProperties } from 'react';
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
-import { ArtFrameContext, type ArtFrame } from './paper';
+import { ArtFrameContext, pebblesLaid, type ArtFrame } from './paper';
 import { INK } from './scenePaper';
 import { Lift, SceneSvg } from './sceneKit';
 import { SignArt } from './SignArt';
@@ -103,26 +103,30 @@ export function SceneBreath({ phase = 'in', hue = 45, seconds }: { phase?: Breat
   );
 }
 
-/** Камешки: место на листе (лёг) и место на земле справа от листа (ждёт) — у каждого своё. */
+/** Камешки: место на листе (лёг) — у каждого своё. */
 const PEBBLES = [
-  { on: { cx: 100, cy: 176, rx: 22, ry: 14 }, wait: { cx: 236, cy: 212, rx: 18, ry: 11 }, fill: INK.moss },
-  { on: { cx: 142, cy: 164, rx: 19, ry: 12 }, wait: { cx: 264, cy: 200, rx: 15, ry: 9.5 }, fill: INK.amber },
-  { on: { cx: 176, cy: 148, rx: 16, ry: 10 }, wait: { cx: 272, cy: 222, rx: 13, ry: 8 }, fill: INK.clay },
+  { on: { cx: 100, cy: 176, rx: 22, ry: 14 }, fill: INK.moss },
+  { on: { cx: 142, cy: 164, rx: 19, ry: 12 }, fill: INK.amber },
+  { on: { cx: 176, cy: 148, rx: 16, ry: 10 }, fill: INK.clay },
 ] as const;
+/** Очередь на земле у нижнего угла листа: первый ждущий — у самого листа, следующие — за ним. Ждущий
+ *  камешек того же размера, что уложенный: маленькое колечко в углу читалось соринкой (ревью g3 r2). */
+const QUEUE = [{ cx: 248, cy: 214 }, { cx: 266, cy: 191 }, { cx: 272, cy: 168 }] as const;
 
 type Spot = { cx: number; cy: number; rx: number; ry: number };
-const pebble = (s: Spot, fill: string, laid: boolean) => (
-  <ellipse key={s.cx} data-laid={laid ? 'yes' : 'no'} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} transform={`rotate(-16 ${s.cx} ${s.cy})`} fill={fill} />
+const pebble = (s: Spot, fill: string, laid: boolean, color?: string) => (
+  <ellipse key={s.cx} data-laid={laid ? 'yes' : 'no'} cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} transform={`rotate(-16 ${s.cx} ${s.cy})`} fill={fill} color={color} />
 );
 
-/** Камешек лёг: на белом листе `filled` камешков (до трёх), последний лёг только что (тень выше);
- *  остальные ждут на земле пустым тоном и без тени. `filled = 0` — пустой лист, все ждут. */
+/** Камешек лёг: на белом листе `filled` камешков (до трёх, pebblesLaid), последний лёг только что (тень
+ *  выше); остальные ждут очередью на земле у угла листа гнездом своего цвета, без тени. `filled = 0` —
+ *  чистый лист, все ждут. */
 export function ScenePebbleLaid({ hue = 45, filled = 3 }: { hue?: number; filled?: number }) {
-  const n = Math.max(0, Math.min(PEBBLES.length, Math.floor(filled)));
+  const n = pebblesLaid(filled);
   const laid = PEBBLES.slice(0, n);
   return (
     <SceneSvg hue={hue} patch={135} patchAt="bl" sheet="b">
-      {PEBBLES.slice(n).map((p) => pebble(p.wait, INK.hollow, false))}
+      {PEBBLES.slice(n).map((p, i) => pebble({ ...p.on, ...QUEUE[i] }, INK.hollow, false, p.fill))}
       <g transform="rotate(-4 160 128)">
         <Lift><rect x="60" y="34" width="150" height="188" rx="14" fill={INK.sheet} /></Lift>
         <Lift by={3}>{laid.slice(0, -1).map((p) => pebble(p.on, p.fill, true))}</Lift>

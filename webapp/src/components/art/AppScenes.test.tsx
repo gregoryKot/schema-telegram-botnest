@@ -164,6 +164,17 @@ describe('ScenePebbleLaid, SceneJourney, ScenePathStart, SceneConceptStart', () 
     expect(container.querySelectorAll('ellipse[data-laid="no"]')).toHaveLength(2);
   });
 
+  // Ревью g3 r2: за день два пункта — третий ждущий был колечком втрое меньше уложенных в углу листа.
+  it('ждущий камешек — того же размера, что уложенный, и первым в очереди у угла листа', () => {
+    const size = (e: Element) => [e.getAttribute('rx'), e.getAttribute('ry')];
+    const laid = [...render(<ScenePebbleLaid filled={3} />).container.querySelectorAll('ellipse[data-laid="yes"]')].filter(outside);
+    const wait = [...render(<ScenePebbleLaid filled={0} />).container.querySelectorAll('ellipse[data-laid="no"]')];
+    expect(wait.map(size)).toEqual(laid.map(size));
+    const lastOne = render(<ScenePebbleLaid filled={2} />).container.querySelector('ellipse[data-laid="no"]')!;
+    expect(size(lastOne)).toEqual(size(laid[2]));
+    expect(lastOne.getAttribute('cx')).toBe(wait[0].getAttribute('cx'));
+  });
+
   it('последний камешек только лёг: своя тень выше остальных', () => {
     const { container } = render(<ScenePebbleLaid filled={3} />);
     const shades = [...container.querySelectorAll('.scn-shade')].filter((g) => g.querySelector('ellipse'));

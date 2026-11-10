@@ -12,8 +12,8 @@ import { CrisisCard } from '../CrisisCard';
  * Шаг 1 дневника режимов (webapp): выбор режима.
  * Выбор = чипы «по ощущению» (9 семей, включая вход «не знаю, что
  * чувствую» — ModeFeelingBrowse) + свёрнутый полный список групп для тех,
- * кто знает точное название (ModeGroupList). Вынесено из ModeEntrySheet
- * (правило №10). Парный по смыслу с miniapp ModeSelectStep. listOpen — локален.
+ * кто знает точное название (ModeGroupList). Герой — лист неба режимов с Cluster
+ * (ENTITY_LOOK.diary_mode), на ≥1024 разворотом слева вместе с подсказкой.
  */
 export function ModeSelectScreen({ modeId, onPick, onBack, crisis = false }: {
   modeId: string;
@@ -28,34 +28,25 @@ export function ModeSelectScreen({ modeId, onPick, onBack, crisis = false }: {
     <ExScreen
       onBack={onBack}
       backLabel="Назад к дневнику"
+      look="diary_mode"
+      spread
       eyebrow="Дневник режимов · новая запись"
-      title={
-        <>
-          Кто сейчас
-          <br />
-          <span className="it">взял управление?</span>
-        </>
-      }
+      title="Кто сейчас взял управление?"
       lede={tr(
         'Режим – состояние, которое сейчас «за рулём». Не знаешь названия – определим по чувству, в пару тапов.',
         'Режим – состояние, которое сейчас «за рулём». Не знаете названия – определим по чувству, в пару тапов.',
       )}
       aside={
-        <DiaryAside hue={DIARY_HUE.mode} eyebrow="Подсказка" title="Как его узнать">
-          <p className="ds-sub">
-            Режим узнаётся не по мыслям, а по тому, как меняется тело и тон
-            голоса в голове.{' '}
-            {tr(
-              'Замечай резкие переключения – это его след.',
-              'Замечайте резкие переключения – это его след.',
-            )}
-          </p>
-        </DiaryAside>
+        <DiaryAside hue={DIARY_HUE.mode} eyebrow="Подсказка" title="Как его узнать"
+          text={'Режим узнаётся не по мыслям, а по тому, как меняется тело и тон голоса в голове. ' + tr(
+            'Замечай резкие переключения – это его след.',
+            'Замечайте резкие переключения – это его след.',
+          )} />
       }
     >
       {crisis && <CrisisCard surface="schema" />}
       {/* Главное действие: выбор по ощущению */}
-      <div className="ds-sub sd-select-q">
+      <div className="sd-select-q">
         {tr(
           'Что сейчас чувствуешь? Выбери самое близкое:',
           'Что сейчас чувствуете? Выберите самое близкое:',
@@ -66,7 +57,8 @@ export function ModeSelectScreen({ modeId, onPick, onBack, crisis = false }: {
       {/* Третичное: полный список для тех, кто знает режим */}
       <button
         type="button"
-        className="ds-btn ds-btn--secondary ds-btn--sm sd-list-toggle"
+        className="ds-btn ds-btn--secondary sd-list-toggle"
+        aria-expanded={listOpen}
         onClick={() => {
           haptic.tap();
           setListOpen((v) => !v);

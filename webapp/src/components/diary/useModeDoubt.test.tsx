@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// ModeDoubtButton (webapp) — «Сомневаешься? Сравни с похожими» на карточке
+// useModeDoubt (webapp) — «Сомневаешься? Сравни с похожими» на карточке
 // выбранного режима: кнопка видна, тап открывает лист с парами (fixed-оверлей
 // с useHistorySheet), «Это ближе» переключает выбор и шлёт mode_doubt_switched,
 // открытие шлёт mode_doubt_opened.
@@ -12,7 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { ModeDoubtButton } from './ModeDoubtButton';
+import { useModeDoubt } from './useModeDoubt';
 import {
   MODE_DOUBT_OPENED_EVENT,
   MODE_DOUBT_SWITCHED_EVENT,
@@ -30,12 +30,18 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+// Ссылка и лист отдаются порознь (лист экран рисует сиблингом после ExScreen) — хост ставит их рядом.
+function Host({ modeId, onSwitch }: { modeId: string; onSwitch: (id: string) => void }) {
+  const { link, sheet } = useModeDoubt(modeId, onSwitch);
+  return <>{link}{sheet}</>;
+}
+
 function renderButton(modeId: string, onSwitch = vi.fn()) {
   return {
     onSwitch,
     ...render(
       <MemoryRouter>
-        <ModeDoubtButton modeId={modeId} onSwitch={onSwitch} />
+        <Host modeId={modeId} onSwitch={onSwitch} />
       </MemoryRouter>,
     ),
   };
@@ -47,7 +53,7 @@ function openSheet(modeId = 'vulnerable_child', onSwitch = vi.fn()) {
   return onSwitch;
 }
 
-describe('ModeDoubtButton (webapp)', () => {
+describe('useModeDoubt (webapp)', () => {
   it('кнопка «Сомневаешься? Сравни с похожими» видна при выбранном режиме', () => {
     renderButton('vulnerable_child');
     expect(
