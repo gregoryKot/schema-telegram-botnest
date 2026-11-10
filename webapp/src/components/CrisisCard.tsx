@@ -1,12 +1,16 @@
 // Тонкая обёртка над общей CrisisCardView (правило №3): прокидывает свой tr
-// (ты/вы) и track (аналитика). Тело карточки — в shared/src/components.
+// (ты/вы), track (аналитика) и знак Heart (ENTITY_LOOK.sos). Тело карточки — в
+// shared/src/components. flat — карточка на бережном листе экрана: его знак уже
+// стоит рядом, второй Heart в шаг от первого не ставится.
+import type { ReactNode } from 'react';
 import { useTr } from '../utils/addressForm';
 import { CrisisCardView } from '../../../shared/src/components/CrisisCard';
+import { Heart } from './art/PaperArtSigns';
 import { api } from '../api';
 
-type Props = { surface?: string; standing?: boolean; compact?: boolean };
+type Props = { surface?: string; standing?: boolean; compact?: boolean; flat?: boolean; label?: ReactNode; children?: ReactNode };
 
 export function CrisisCard(p: Props = {}) {
   const tr = useTr();
-  return <CrisisCardView {...p} tr={tr} track={api.trackEvent} />;
+  return <CrisisCardView {...p} art={p.flat ? undefined : <Heart size="row" />} tr={tr} track={api.trackEvent} />;
 }

@@ -1,12 +1,20 @@
 import { FlashcardFrame } from './FlashcardFrame';
+import { FlashcardRows } from './FlashcardRows';
+import type { FlashcardSummaryParts } from './flashcardLook';
+import { DoneSheet } from '../paper/DoneSheet';
+import { PaperAlert } from '../paper/PaperAlert';
+import { FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
 
 // Экран «Сохранено» карточки схемы. Вынесен из SchemaFlashcard.tsx (файл
 // сверх потолка 300, правило №10) вместе с оговоркой про несинхронизированную
 // карточку: локальная копия честно существует, но серверной нет — раньше
 // экран говорил «Сохранено» без оговорок и при упавшем createFlashcard.
+// Вид (редизайн 2026-11, b12): общий лист «готово» (DoneSheet) — бережная роза и сцена «готово»
+// «Мне плохо» (Sprout с Heart); режим и потребность — строками со знаками (FlashcardRows, те же,
+// что в просмотре из истории); «Готово» — залитая, «Ещё одну» и «Открыть трекер» — тихие ссылки;
+// оговорка про сервер — наклейкой соломы (PaperAlert), а не красным абзацем по центру.
 interface Props {
-  modeLabel?: string;
-  needLabel?: string;
+  parts: FlashcardSummaryParts;
   action: string;
   syncFailed: boolean;
   onOpenTracker?: () => void;
@@ -15,40 +23,30 @@ interface Props {
   tr: (ty: string, vy: string) => string;
 }
 
-export function FlashcardDoneScreen({ modeLabel, needLabel, action, syncFailed, onOpenTracker, goBack, handleNew, tr }: Props) {
-  const rows = [
-    { label: 'Режим', value: modeLabel },
-    needLabel ? { label: 'Потребность', value: needLabel } : null,
-    action ? { label: 'Шаг', value: action } : null,
-  ].filter((r): r is { label: string; value: string | undefined } => r !== null);
+export function FlashcardDoneScreen({ parts, action, syncFailed, onOpenTracker, goBack, handleNew, tr }: Props) {
   return (
-    <FlashcardFrame onBack={goBack} label="Закрыть" center>
-      <h1 className="ds-h2 sk-fc-hero">Сохранено</h1>
-      <p className="sk-fc-lead">
-        {tr('Это твой шаг навстречу себе. Уже немало.', 'Это ваш шаг навстречу себе. Уже немало.')}
-      </p>
-      {syncFailed && (
-        <div role="alert" className="sk-error">
-          Карточка осталась только на этом устройстве — до сервера не доехала. На других устройствах и у терапевта её не будет.
-        </div>
-      )}
-      <div className="ds-card sk-fc-rows">
-        {rows.map((row, i) => (
-          <div key={row.label} className="sk-fc-row">
-            <div className="ds-eyebrow">{row.label}</div>
-            <div className={i === 0 ? 'ds-h3' : 'sk-fc-value'}>{row.value}</div>
-          </div>
-        ))}
-      </div>
+    <FlashcardFrame onBack={goBack} label="Закрыть">
+      <DoneSheet
+        entity="sos"
+        titleAs="h1"
+        label={FLASHCARD_TITLE}
+        title="Сохранено"
+        sub={tr('Это твой шаг навстречу себе. Уже немало.', 'Это ваш шаг навстречу себе. Уже немало.')}
+        primary={{ label: 'Готово', onClick: goBack }}
+        secondary={{ label: 'Ещё одну', onClick: handleNew }}
+      >
+        {syncFailed && (
+          <PaperAlert sign="heart" className="sk-fc-alert"
+            title="Карточка осталась только на этом устройстве — до сервера не доехала."
+            text="На других устройствах и у терапевта её не будет." />
+        )}
+        <FlashcardRows parts={parts} action={action || undefined} />
+      </DoneSheet>
       {onOpenTracker && (
-        <button onClick={() => { goBack(); setTimeout(onOpenTracker, 100); }} className="ds-btn ds-btn--secondary sk-fc-wide">
+        <button onClick={() => { goBack(); setTimeout(onOpenTracker, 100); }} className="ds-link sk-fc-quiet">
           Открыть трекер →
         </button>
       )}
-      <div className="sk-fc-pair">
-        <button onClick={handleNew} className="ds-btn ds-btn--secondary">Ещё одну</button>
-        <button onClick={goBack} className="ds-btn">Готово</button>
-      </div>
     </FlashcardFrame>
   );
 }

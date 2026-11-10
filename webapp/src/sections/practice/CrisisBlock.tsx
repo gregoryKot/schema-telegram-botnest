@@ -5,19 +5,25 @@
 // (правило №3: контент выверен, не переписываем заново). CrisisCard — без
 // surface: это не реактивный показ по детекции, а постоянный блок (см.
 // useCrisisCardTracking — карточка без surface не засоряет crisis_card_shown).
+// «Помощь рядом» — один лист на все три места (редизайн 2026-11, b12): блок раздела на
+// компьютере, раскрытие строки «Мне очень плохо» на телефоне (inset — без своей бумаги и знака,
+// на розовом листе строки; «Помощь рядом» — надписью, а не заголовком между строкой и карточкой)
+// и лист контактов. 112 и разговор с близким — на той же
+// бумаге, что телефоны доверия, а не серым абзацем под ней; 112 — ссылкой tel:.
 import { CrisisCard } from '../../components/CrisisCard';
 
-export function CrisisBlock() {
+export function CrisisBlock({ inset }: { inset?: boolean }) {
   return (
-    <>
-      <div className="ds-head-row">
-        <h3 className="ds-h2">Помощь рядом</h3>
+    <CrisisCard standing flat={inset} label="Помощь рядом">
+      <div className="cr-more">
+        <p className="cr-line">
+          Если есть угроза жизни — <a className="cr-112" href="tel:112">112</a>.
+        </p>
+        <p className="cr-text">
+          Разговор с близким человеком тоже считается: иногда одно сообщение
+          «мне плохо» — уже первый шаг.
+        </p>
       </div>
-      <CrisisCard standing />
-      <p className="ds-sub" style={{ lineHeight: 1.6 }}>
-        Если есть угроза жизни — 112. Разговор с близким человеком тоже
-        считается: иногда одно сообщение «мне плохо» — уже первый шаг.
-      </p>
-    </>
+    </CrisisCard>
   );
 }
