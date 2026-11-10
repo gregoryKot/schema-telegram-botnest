@@ -1,12 +1,14 @@
+import type { CSSProperties } from 'react';
 import { ExScreen } from './exercises/ExScreen';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useNeedData } from '../needData';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
-import { IdentityDot } from '../../../shared/src/components/IdentityDot';
 import { useTr } from '../utils/addressForm';
-import { NEED_HUE, hueStyle } from '../lib/tone';
+import { needLook } from '../../../shared/src/theme/entityLook';
 import type { NeedId } from '../../../shared/src/needs/types';
-import { NeedArtLine } from './NeedArtLine';
+import { inkVars } from './history/needInk';
+import { DomainMark } from './DomainMark';
+import { SignArt } from './art/SignArt';
 import '../styles/sheet-tracker.css';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
@@ -24,12 +26,15 @@ interface Props {
   onClose: () => void;
 }
 
+/** Лист потребности (редизайн 2026-11, b16): герой — бумага потребности с её знаком крупно (ExScreen look,
+ *  needLook), а не NeedArt 16px между абзацами; связанные схемы — строки со знаком домена без вложенной
+ *  рамки; балл в детстве — десять полосок цветом данных потребности (решение 7); советы — белый лист со
+ *  знаком Leaf у надписи («что питает»). Стили — need-detail.css. */
 export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
   const NEED_DATA = useNeedData();
   const need = NEED_DATA[needId];
-  const hue = NEED_HUE[needId as NeedId];
 
   if (!need) return null;
 
@@ -43,61 +48,56 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
   const domainIds = NEED_DOMAIN_MAP[needId] ?? [];
   const relatedSchemas = SCHEMA_DOMAINS
     .filter(d => domainIds.includes(d.id))
-    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)).map(s => ({ ...s, domainColor: d.color })));
+    .flatMap(d => d.schemas.filter(s => activeSchemaIds.includes(s.id)).map(s => ({ ...s, domainId: d.id })));
 
   const tips = level ? need.tips[level].slice(0, 3) : need.actions.slice(0, 3);
+  const look = needLook(needId as NeedId);
+  const ink = { '--h': look.hue, ...inkVars(needId) } as CSSProperties;
 
   return (
     <ExScreen
       onBack={goBack}
       backLabel="Назад"
+      look={look}
       eyebrow="Потребность"
       title={<>{need.name}<br /><span className="it">{need.subtitle}</span></>}
       lede={need.explanation}
       aside={
         childhoodRating !== undefined ? (
-          <div className="ds-card tk2-aside" style={hueStyle(hue)}>
-            <div className="ds-eyebrow tone-text">{tr('Твой балл в детстве', 'Ваш балл в детстве')}</div>
-            <div className="tk2-aside-nums">
-              <span className="ds-num tone-text">{childhoodRating}</span>
-              <span className="tk2-aside-unit">из 10</span>
-            </div>
-            {rangeDesc && <p className="ds-sub" style={{ lineHeight: 1.65 }}>{rangeDesc}</p>}
-            <div className="tk2-bars">
-              {Array.from({ length: 10 }, (_, i) => (
-                <i key={i} className={i < childhoodRating ? 'is-on' : ''} />
-              ))}
+          <div className="ds-card tk2-aside nd-score" style={ink}>
+            <div className="ds-label">{tr('Твой балл в детстве', 'Ваш балл в детстве')}</div>
+            <div className="nd-score-nums"><span className="nd-score-n">{childhoodRating}</span><span className="nd-score-unit">из 10</span></div>
+            {rangeDesc && <p className="nd-score-desc">{rangeDesc}</p>}
+            <div className="nd-bars" role="img" aria-label={`${childhoodRating} из 10`}>
+              {Array.from({ length: 10 }, (_, i) => <i key={i} className={i < childhoodRating ? 'is-on' : ''} />)}
             </div>
           </div>
         ) : undefined
       }
     >
-      <div className="tk2-opts" style={hueStyle(hue)}>
-        <NeedArtLine id={needId} />
+      <div className="nd-main" style={ink}>
         {relatedSchemas.length > 0 && (
-          <div className="ds-card ds-card--row">
+          <div className="ds-card nd-card">
             <div className="ds-label">Связанные схемы</div>
-            <div className="tk2-opts">
+            <div className="nd-rows">
               {relatedSchemas.map(s => (
-                <div key={s.id} className="ds-card ds-card--row">
-                  <div className="ds-h3 u-ac6"><IdentityDot color={s.domainColor} size={8} />{s.name}</div>
-                  <div className="ds-sub">{s.desc}</div>
+                <div key={s.id} className="nd-row">
+                  <DomainMark domainId={s.domainId} />
+                  <div className="nd-row-text"><div className="nd-row-name">{s.name}</div><div className="nd-row-desc">{s.desc}</div></div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="ds-card">
-          <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Что питает'}</div>
-          <div className="tk2-tips">
-            {tips.map((tip, i) => (
-              <div key={i} className="tk2-tip">
-                <div className="tk2-tip-n tone-tint">{i + 1}</div>
-                <p>{tip}</p>
-              </div>
-            ))}
+        <div className="ds-card nd-card">
+          <div className="nd-tips-head">
+            <span className="pp-row-art" aria-hidden="true"><SignArt sign="leaf" size="row" /></span>
+            <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Что питает'}</div>
           </div>
+          <ol className="nd-tips">
+            {tips.map((tip, i) => <li key={i}><span className="nd-tip-n">{i + 1}</span><p>{tip}</p></li>)}
+          </ol>
         </div>
       </div>
     </ExScreen>

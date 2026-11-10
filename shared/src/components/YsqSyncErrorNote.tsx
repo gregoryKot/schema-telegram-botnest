@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useTr } from '../utils/addressForm';
 
 interface Props {
@@ -27,33 +28,25 @@ const TEXTS = {
 // (YsqResultView) молчали на сайте (нарушение правила 14 — экран-тупик без
 // сигнала). Оба фронтенда рендерят этот компонент напрямую (образец
 // CopyFailedHint — useTr берётся из общего контекста, без обёртки на фронт).
+// Вид (редизайн 2026-11, b16) — сбой строкой на листе соломы (классы PaperAlert, paper-app.css
+// webapp): без красного текста и розовой залитой кнопки над главной — повтор второстепенной кнопкой,
+// залитой на экране остаётся одна. Рисунок PaperAlert из webapp сюда не импортируется (shared).
 export function YsqSyncErrorNote({ variant, onRetry }: Props) {
   const tr = useTr();
   const { ty, vy, retryLabel } = TEXTS[variant];
   return (
-    <div className="u-mb14">
-      <div
-        style={{
-          fontSize: 12,
-          color: 'var(--accent-red)',
-          marginBottom: 10,
-        }}
-      >
-        {tr(ty, vy)}
+    <div
+      className="pp-paper pa-alert u-mb14"
+      role="alert"
+      style={{ '--h': 70 } as CSSProperties}
+    >
+      <div className="pa-alert-body">
+        <p className="pa-alert-text">{tr(ty, vy)}</p>
       </div>
       <button
+        type="button"
         onClick={onRetry}
-        style={{
-          width: '100%',
-          padding: '11px 0',
-          border: 'none',
-          borderRadius: 12,
-          background: 'color-mix(in srgb, var(--accent-red) 12%, transparent)',
-          color: 'var(--accent-red)',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}
+        className="ds-btn ds-btn--secondary ds-btn--sm pa-alert-retry"
       >
         {retryLabel}
       </button>

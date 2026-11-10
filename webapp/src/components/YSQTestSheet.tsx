@@ -8,14 +8,9 @@ import { SsSheet } from './schemaSheets/SsSheet';
 import { YsqIntro } from './ysq/YsqIntro';
 import { YsqQuestion } from './ysq/YsqQuestion';
 import { YsqResult } from './ysq/YsqResult';
+import { YsqResultHero } from './ysq/YsqResultHero';
 import { useHistorySheet } from '../hooks/useHistorySheet';
-import {
-  useYsqTest,
-  useYsqSchemas,
-  buildShareText,
-  YSQ_RESULT_KEY,
-  YSQ_PROGRESS_KEY,
-} from '../hooks/useYsqTest';
+import { useYsqTest, useYsqSchemas, buildShareText, YSQ_RESULT_KEY, YSQ_PROGRESS_KEY } from '../hooks/useYsqTest';
 import { api } from '../api';
 
 export { YSQ_RESULT_KEY, YSQ_PROGRESS_KEY };
@@ -66,9 +61,12 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
   }
 
   // ── Intro + Result ────────────────────────────────────────────────────────────
+  // Результат — разворот: на компьютере герой и «Как понимать» слева колонкой, схемы справа.
+  const result = phase === 'result' && scores && resultView ? resultView : null;
   return (
     <>
-      <SsSheet onBack={goBack} zIndex={300} narrow>
+      <SsSheet onBack={goBack} zIndex={300} spread={!!result}
+        hero={result ? <YsqResultHero tr={tr} view={result} onShare={() => setShowShare(true)} /> : undefined}>
         {phase === 'intro' && (
           <YsqIntro
             tr={tr}
@@ -81,11 +79,11 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             onCancel={goBack}
           />
         )}
-        {phase === 'result' && scores && resultView && (
+        {result && scores && (
           <YsqResult
             tr={tr}
             scores={scores}
-            view={resultView}
+            view={result}
             ysqSchemas={ysqSchemas}
             history={history}
             ratings={ratings}
@@ -97,7 +95,6 @@ export function YSQTestSheet({ onClose, ratings, autoResume, onViewSchemas }: Pr
             retakeConfirm={retakeConfirm}
             onRetakeConfirm={setRetakeConfirm}
             onRetake={handleRetake}
-            onShare={() => setShowShare(true)}
             onOpenSchema={(name) => goBack(onViewSchemas && (() => onViewSchemas(name)))}
             onDone={goBack}
           />

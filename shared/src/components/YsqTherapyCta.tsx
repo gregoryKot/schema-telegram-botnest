@@ -1,3 +1,4 @@
+import type { CSSProperties, ReactNode } from 'react';
 import type { ContactCta } from '../utils/therapistContact';
 
 interface Props {
@@ -6,64 +7,44 @@ interface Props {
   tr: (ty: string, vy: string) => string;
   /** Аналитика клика (practice_link_click, place 'ysq_result'). */
   onLinkClick: () => void;
+  /** Знак листа (Talk) — рисунок фронтенда. */
+  art?: ReactNode;
 }
 
 // CTA «разобраться глубже» в результатах теста схем. Общий для обоих
 // фронтендов (правило №3); обёртки дают свой useTr и трекинг. Родитель
 // уже проверил activeCount > 0 && !cta.isSelf перед рендером.
-export function YsqTherapyCta({ cta, tr, onLinkClick }: Props) {
+// Вид (редизайн 2026-11, b16): лист бумаги терапевта (небо 240, ENTITY_LOOK.therapist)
+// со знаком Talk от экрана (art — рисунок webapp, shared его не импортирует), ссылка —
+// второстепенной кнопкой: залитая на экране результата одна, «Сохранить и закрыть».
+// Розовая плашка с розовой кнопкой внутри уходит. Классы ss-deep* — schema-library.css.
+export function YsqTherapyCta({ cta, tr, onLinkClick, art }: Props) {
   return (
-    <div
-      style={{
-        marginTop: 8,
-        marginBottom: 16,
-        background: 'color-mix(in srgb, var(--accent) 7%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)',
-        borderRadius: 16,
-        padding: '16px 18px',
-      }}
-    >
-      <div
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: 'var(--accent)',
-          marginBottom: 8,
-        }}
-      >
-        {tr('Хочешь разобраться глубже?', 'Хотите разобраться глубже?')}
+    <div className="pp-paper ss-deep" style={{ '--h': 240 } as CSSProperties}>
+      {art && (
+        <span className="ss-deep-art" aria-hidden="true">
+          {art}
+        </span>
+      )}
+      <div className="ss-deep-body">
+        <div className="ss-deep-title">
+          {tr('Хочешь разобраться глубже?', 'Хотите разобраться глубже?')}
+        </div>
+        <div className="ss-deep-text">
+          Схемы — паттерны, сложившиеся давно. Их можно менять, но это требует
+          времени и поддержки. Схема-терапия — один из самых изученных методов
+          для этой работы.
+        </div>
+        <a
+          href={cta.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onLinkClick}
+          className="ds-btn ds-btn--secondary ss-deep-link"
+        >
+          {cta.label}
+        </a>
       </div>
-      <div
-        style={{
-          fontSize: 13,
-          color: 'var(--text-sub)',
-          lineHeight: 1.65,
-          marginBottom: 12,
-        }}
-      >
-        Схемы — паттерны, сложившиеся давно. Их можно менять, но это требует
-        времени и поддержки. Схема-терапия — один из самых изученных методов для
-        этой работы.
-      </div>
-      <a
-        href={cta.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={onLinkClick}
-        style={{
-          display: 'block',
-          textAlign: 'center',
-          padding: '11px 0',
-          borderRadius: 12,
-          background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-          color: 'var(--accent)',
-          fontSize: 14,
-          fontWeight: 500,
-          textDecoration: 'none',
-        }}
-      >
-        {cta.label}
-      </a>
     </div>
   );
 }

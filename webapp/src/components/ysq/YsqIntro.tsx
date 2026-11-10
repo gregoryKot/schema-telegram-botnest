@@ -1,7 +1,8 @@
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
 import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
 import { TherapyCaution } from '../therapy/TherapyCaution';
-import { SsHead } from '../schemaSheets/SsSheet';
+import { EntitySheet } from '../paper/EntitySheet';
+import { YsqQuizScene } from './YsqQuizScene';
 
 type Tr = (ty: string, vy: string) => string;
 
@@ -16,7 +17,8 @@ interface Props {
   onCancel: () => void;
 }
 
-/** Интро теста YSQ: что за тест, шкала ответов, старт/продолжение. */
+/** Интро теста YSQ: герой со сценой (лист глины, веер вопросов с Layers), три факта одной карточкой, шкала,
+ *  старт/продолжение — одна залитая кнопка; «самопомощь» наклейкой под кнопками (APP_2026-11.md, принцип 5). */
 export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed, retryResumeCheck, onContinue, onStartFresh, onCancel }: Props) {
   const facts = [
     ['116 утверждений', tr('Оцени каждое от 1 до 6', 'Оцените каждое от 1 до 6')],
@@ -25,19 +27,15 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
   ];
   return (
     <>
-      <SsHead center layers title="Тест на схемы" lede="Паттерны мышления и поведения, сложившиеся в детстве" />
-      <TherapyCaution place="test_start" />
-
+      <EntitySheet look="ysq" title="Тест на схемы" sub="Паттерны мышления и поведения, сложившиеся в детстве"
+        art={<YsqQuizScene />} titleAs="h1" className="ss-hero ss-ysq-hero" />
       <div className="ss-facts">
         {facts.map(([title, desc]) => (
-          <div key={title} className="ss-fact">
-            <b>{title}</b>
-            <span>{desc}</span>
-          </div>
+          <div key={title} className="ss-fact"><b>{title}</b><span>{desc}</span></div>
         ))}
       </div>
 
-      <div className="ds-card ss-card-stack">
+      <div className="ds-card ss-card-stack ss-legend-card">
         <div className="ds-label">Шкала ответов</div>
         <div className="ss-legend">
           {[1, 2, 3, 4, 5, 6].map(n => (
@@ -49,10 +47,8 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
         </div>
       </div>
 
-      <p className="ss-note">Ответы привязаны к аккаунту и не передаются третьим лицам.</p>
-
       {!hasProgress && resumeCheckFailed && retryResumeCheck && <YsqSyncErrorNote variant="resume-check" onRetry={retryResumeCheck} />}
-      <div className="ss-actions">
+      <div className="ss-actions ss-actions--wide">
         {hasProgress ? (
           <>
             <button onClick={onContinue} className="ds-btn">Продолжить ({progressAnswered} из 116)</button>
@@ -63,7 +59,9 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
         )}
         <button onClick={onCancel} className="ds-btn ds-btn--secondary">Отмена</button>
       </div>
+      <TherapyCaution place="test_start" compact />
 
+      <p className="ss-note">Ответы привязаны к аккаунту и не передаются третьим лицам.</p>
       <YsqDisclaimer mt={4} />
     </>
   );
