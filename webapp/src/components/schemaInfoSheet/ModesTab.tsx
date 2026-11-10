@@ -1,55 +1,32 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { MODE_GROUP_HUE, hueStyle } from '../../lib/tone';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
-import { Cluster } from '../art/PaperArtSigns';
+import { SignHero } from '../paper/SignHero';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { buildModes } from './data';
+import { glue } from '../../../../shared/src/utils/typo';
 import { ModeCheckinOverlay } from './ModeCheckinOverlay';
-import { ModeShareButton } from './ModeShareButton';
+import { ModesGroup } from './ModesGroup';
 
-/** Группы справочника → ключ MODE_GROUP_HUE (копинги в палитре все одного тона). */
-const GROUP_HUE_KEY: Record<string, string> = {
-  'Детские режимы': 'child', 'Дисфункциональные копинги': 'coping_surrender',
-  'Критикующие режимы': 'critic', 'Здоровые режимы': 'healthy',
-};
-
-// Вкладка «режимы» справочника схем: карточки режимов + чек-ин (вынесено из SchemaInfoSheet, правило №10).
+// Вкладка «режимы» справочника схем: чек-ин + режимы по группам (вынесено из SchemaInfoSheet,
+// правило №10). Чек-ин — плитка бумаги режимов с Cluster; группы — ModesGroup: лист бумаги группы со
+// знаком у подписи, «Поделиться» — в раскрытой строке, а не кнопкой у каждой из одиннадцати (аудит 2026-11).
 export function ModesTab() {
   const tr = useTr();
   const [showCheckin, setShowCheckin] = useState(false);
-  const open = () => setShowCheckin(true);
+  const [openMode, setOpenMode] = useState<string | null>(null);
+  const modes = ENTITY_LOOK.modes;
   return (
     <div className="ss-pane">
-      <div
-        onClick={open} role="button" tabIndex={0}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } }}
-        className="ds-card ds-card--hover ss-cta"
-      >
-        <Cluster size="row" /><div className="ss-cta-text">
-          <div className="ds-eyebrow">Режим прямо сейчас</div>
-          <div className="ss-need-title">{tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →')}</div>
-        </div>
-      </div>
+      <button type="button" onClick={() => setShowCheckin(true)} className="pp-paper ss-checkin-cta" style={{ '--h': modes.hue } as CSSProperties}>
+        <span className="ss-cta-text">
+          <span className="ds-label ss-checkin-eyebrow">Режим прямо сейчас</span>
+          <span className="ss-checkin-title">{glue(tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →'))}</span>
+        </span>
+        <span className="ss-checkin-sign" aria-hidden="true"><SignHero sign={modes.sign} /></span>
+      </button>
       <p className="ss-body">Режим – это актуальное состояние психики прямо сейчас. Цель – расширить доступ к Здоровому Взрослому.</p>
       {buildModes(tr).map((g) => (
-        <div key={g.group} className="ss-pane" style={hueStyle(MODE_GROUP_HUE[GROUP_HUE_KEY[g.group]])}>
-          <span className="ds-chip tone-tint u-self-start"><span className="ds-dot tone-fill" />{g.group}</span>
-          {g.items.map((m) => (
-            <div key={m.name} className="ds-card ss-mode">
-              <div className="ss-need-head">
-                <IdentityDot color={g.color} size={16} />
-                <div>
-                  <div className="ss-mode-name">{m.name}</div>
-                  <div className="ss-mode-feel">Чувствуется как: {m.feel}</div>
-                </div>
-                <span className="ss-mode-share">
-                  <ModeShareButton group={g.group} color={g.color} {...m} />
-                </span>
-              </div>
-              <p className="ss-body ss-body--sm">{m.desc}</p>
-            </div>
-          ))}
-        </div>
+        <ModesGroup key={g.group} group={g} openMode={openMode} onToggle={(name) => setOpenMode(openMode === name ? null : name)} />
       ))}
       {showCheckin && <ModeCheckinOverlay onClose={() => setShowCheckin(false)} />}
     </div>

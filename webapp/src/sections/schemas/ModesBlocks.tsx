@@ -1,24 +1,26 @@
-import { MODE_GROUPS, ALL_MODES } from '../../schemaTherapyData';
+import type { ReactNode } from 'react';
 import { PaperEmpty } from '../../components/art/PaperEmpty';
 import { useTr } from '../../utils/addressForm';
-import { hueStyle, MODE_GROUP_HUE } from '../../lib/tone';
-import { FreqMark, FreqHint } from './FreqMark';
-import { Skeleton } from '../../components/Skeleton';
+import { MineGroupsSkeleton } from './MineGroupsSkeleton';
+import { MyModesList } from './MyModesList';
 import { ModeMap } from './ModeMap';
 import { MODE_WHAT } from '../../../../shared/src/pattern/patternTerms';
 
 interface Props {
   loading: boolean; myModeIds: string[]; onAdd: () => void; onOpenMode: (id: string) => void;
   modeFreq?: Record<string, number>; // дней за неделю по дневнику; undefined — пока не загрузилось
-  onOpenPattern: (id: string) => void; // чип «Мои режимы» → экран паттерна; плитки карты → onOpenMode
+  statusFor?: (id: string) => string; // статус карточки словами; undefined — пока грузится
+  onOpenPattern: (id: string) => void; // строка «Мои режимы» → экран паттерна; плитки карты → onOpenMode
+  /** Сбой сохранения выбора — строкой у блока, где выбор сделан. */
+  note?: ReactNode;
+  /** «Карта режимов с терапевтом» — между своими режимами и картой всех (как на телефоне). */
+  banner?: ReactNode;
 }
 
-const MODE_HUE: Record<string, number | undefined> = Object.fromEntries(MODE_GROUPS.flatMap(g => g.items.map(m => [m.id, MODE_GROUP_HUE[g.id]])),);
-
-/** Десктоп: «Мои режимы» (чипы) и «Карта режимов» (все режимы по группам); пусто — что такое режим. */
-export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern, modeFreq }: Props) {
+/** Компьютер: «Мои режимы» группами на бумаге группы (как на телефоне) и «Карта режимов» — все режимы
+ *  по группам; пусто — что такое режим. */
+export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPattern, modeFreq, statusFor, note, banner }: Props) {
   const tr = useTr();
-  const myModes = myModeIds.map(id => ALL_MODES.find(m => m.id === id)).filter(Boolean) as typeof ALL_MODES;
   return (
     <>
       <section className="cs-block">
@@ -26,28 +28,14 @@ export function ModesBlocks({ loading, myModeIds, onAdd, onOpenMode, onOpenPatte
           <h3 className="ds-h3">Мои режимы</h3>
           <button onClick={onAdd} className="ds-link">+ Добавить</button>
         </div>
-        {loading ? (
-          <div className="cs-chips">
-            {[90, 110, 80].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
-          </div>
-        ) : myModes.length === 0 ? (
+        {note}
+        {loading ? <MineGroupsSkeleton /> : myModeIds.length === 0 ? (
           <PaperEmpty>{MODE_WHAT} {tr('Добавь режимы, которые узнаёшь у себя.', 'Добавьте режимы, которые узнаёте у себя.')}</PaperEmpty>
         ) : (
-          <>
-          {modeFreq && <FreqHint kind="mode" freq={modeFreq} />}
-          <div className="cs-chips">
-            {myModes.map(m => (
-              <button key={m.id} className={`cs-chip tone-tint tone-border${modeFreq?.[m.id] ? ' cs-chip--stacked' : ''}`} style={hueStyle(MODE_HUE[m.id])} onClick={() => onOpenPattern(m.id)}>
-                <i className="ds-dot tone-fill" />
-                {m.name}
-                {modeFreq && <FreqMark freq={modeFreq[m.id] ?? 0} />}
-              </button>
-            ))}
-          </div>
-          </>
+          <MyModesList loading={false} ids={myModeIds} onAdd={onAdd} onOpenMode={onOpenPattern} statusFor={statusFor} freq={modeFreq} withAdd={false} />
         )}
       </section>
-
+      {banner}
       <ModeMap myModeIds={myModeIds} onOpenMode={onOpenMode} />
     </>
   );

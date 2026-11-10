@@ -1,5 +1,7 @@
 import type { SchemaDomain, ModeGroup } from '../../schemaTherapyData';
 import { DOMAIN_HUE, MODE_GROUP_HUE } from '../../lib/tone';
+import { ENTITY_LOOK, domainLook, modeGroupLook, type SheetLook } from '../../../../shared/src/theme/entityLook';
+import type { WeekPatternKind } from '../../../../shared/src/pattern/patternsSummary';
 
 export interface MineGroup { id: string; title: string; hue: number | undefined; ids: string[] }
 
@@ -23,3 +25,7 @@ export function groupMineByDomain(domains: SchemaDomain[], ids: string[]): MineG
 export function groupMineByModeGroup(groups: ModeGroup[], ids: string[]): MineGroup[] {
   return groupMine(groups.map(g => ({ id: g.id, title: g.group, hue: MODE_GROUP_HUE[g.id], memberIds: g.items.map(m => m.id) })), ids);
 }
+
+/** Вид группы: схема — бумага и знак домена, режим — бумага и знак группы режимов (MineGroupsList, сверка героя). */
+export const mineGroupLook = (kind: WeekPatternKind, id: string): SheetLook =>
+  kind === 'schema' ? domainLook(id) ?? ENTITY_LOOK.schemas : modeGroupLook(id);

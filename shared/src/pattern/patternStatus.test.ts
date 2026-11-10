@@ -24,7 +24,17 @@ describe('patternStatusText', () => {
     [11, 'карточка заполнена · 11 записей'],
     [21, 'карточка заполнена · 21 запись'],
   ])('заполненная карточка с %i записями → «%s»', (count, expected) => {
-    expect(patternStatusText(true, count)).toBe(expected);
+    // Текст тот же; пробелы у «·» и между числом и словом — неразрывные (glue).
+    expect(patternStatusText(true, count).replace(/\u00a0/g, ' ')).toBe(
+      expected,
+    );
+  });
+
+  it('число не отрывается от слова, «·» не начинает строку (ревью g5 r3: на 320 «· 1 / запись»)', () => {
+    expect(patternStatusText(true, 1)).toBe(
+      'карточка заполнена\u00a0· 1\u00a0запись',
+    );
+    expect(patternStatusText(true, 21)).toContain('21\u00a0запись');
   });
 });
 

@@ -18,12 +18,8 @@
 .tk2-done { align-items: center; justify-content: center; padding: 40px 20px; }
 /* Боковая колонка листа потребности из библиотеки (NeedDetailSheet, need-detail.css). */
 .tk2-aside { position: sticky; top: 40px; margin-bottom: 16px; }
-.tk2-aside-nums { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
-.tk2-aside-nums .ds-num { font-size: 56px; }
 .tk2-opts { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
 .tk2-para { margin: 0; font-size: 16px; line-height: 1.75; color: var(--text-sub); }
-/* Мотив потребности отдельной строкой в теле листа (NeedArtLine). */
-.pp-need-line { width: auto; justify-content: flex-start; }
 
 /* Знак потребности — две-три узкие полоски: в полосе разворота на телефоне (56) он читался точкой,
    у листов потребности он той же ступени, что у вопроса трекера: ~60 высотой на телефоне

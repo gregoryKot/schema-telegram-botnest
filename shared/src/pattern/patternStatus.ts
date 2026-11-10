@@ -1,14 +1,18 @@
 // Статус строки в списке «Мои схемы»/«Мои режимы» — заполнена ли карточка
 // и сколько записей дневника набралось (правило CLAUDE.md: статус словами,
 // не только цветом — иначе не читается при цветовой слепоте). Плюрализация —
-// готовый хелпер pluralEntries, а не своя копия (правило переиспользования).
+// готовый хелпер pluralEntries, а не своя копия (правило переиспользования). Число и слово склеены (glue): на 320
+// строка рвалась «· 1 / запись» (ревью g5 r3); текст тот же, пробелы неразрывные.
 import { pluralEntries } from '../share/shareTexts';
+import { glue } from '../utils/typo';
 import type { SchemaDiaryEntry, ModeDiaryEntry } from '../types';
 
 export function patternStatusText(filled: boolean, entryCount: number): string {
   if (!filled) return 'карточка пока пустая';
   if (entryCount === 0) return 'карточка заполнена';
-  return `карточка заполнена · ${entryCount} ${pluralEntries(entryCount)}`;
+  return glue(
+    `карточка заполнена · ${entryCount} ${pluralEntries(entryCount)}`,
+  );
 }
 
 /** Сколько записей дневника схем упоминают каждую схему — одна запись может

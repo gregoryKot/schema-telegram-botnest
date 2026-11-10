@@ -38,7 +38,9 @@
 .ex2-skel { display: flex; flex-direction: column; gap: 14px; } /* силуэт загрузки (ExScreenSkeleton) */
 .ex2-aside { position: sticky; top: 80px; min-width: 0; }
 .ds-h2.ex2-title { margin: 8px 0 12px; } /* кегль — ds-h2, без локального (#906) */
-.ex2-title .it { font-style: italic; }
+/* Курсив хвоста заголовка (.it) — и в заголовке-тексте, и в листе-герое ExScreen look (NeedDetailSheet,
+   NoteSheet «Заметка к дню»; до сведения g5 правило жило в need-detail.css и работало, только если тот загружен). */
+.ex2-title .it, .ex2-hero .pa-sheet-title .it { font-style: italic; }
 .ex2-lede.ds-sub { margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: var(--text-sub); max-width: 560px; }
 @media (max-width: 900px) {
   .ex2-body { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-top: 24px; padding-bottom: 120px; }

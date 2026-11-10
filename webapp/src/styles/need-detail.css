@@ -1,10 +1,30 @@
-/* Лист потребности из библиотеки (NeedDetailSheet): единица, полоски, советы.
+/* Лист потребности из библиотеки (NeedDetailSheet, редизайн 2026-11, b16): герой — ExScreen look (бумага
+   потребности), здесь — связанные схемы строками со знаком домена, советы с Leaf, балл в детстве — десять
+   полосок цветом данных потребности (--need-ink, --need-text из inkVars; бумага — --h потребности).
    Общая боковая колонка .tk2-aside — в sheet-tracker.css. Подключается оттуда же. */
-.tk2-aside-unit { font-size: 14px; color: var(--text-faint); }
-.tk2-bars { display: flex; gap: 3px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); }
-.tk2-bars > i { flex: 1; height: 4px; border-radius: 2px; background: var(--paper-sunk); }
-.tk2-bars > i.is-on { background: oklch(0.58 0.12 var(--h)); }
-.tk2-tips { margin-top: 8px; display: flex; flex-direction: column; gap: 16px; }
-.tk2-tip { display: flex; gap: 14px; }
-.tk2-tip-n { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center; font: 400 15px var(--serif); }
-.tk2-tip p { margin: 0; padding-top: 3px; font-size: 15px; line-height: 1.65; color: var(--text-sub); }
+.nd-main { display: flex; flex-direction: column; gap: 14px; }
+.nd-card { display: flex; flex-direction: column; gap: 10px; }
+.nd-rows { display: flex; flex-direction: column; }
+.nd-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; }
+.nd-row + .nd-row { border-top: 1px solid var(--paper-sunk); }
+.nd-row > .pp-row-art { padding-top: 2px; }
+.nd-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.nd-row-name { font: 400 18px/1.25 var(--serif); color: var(--text); }
+.nd-row-desc { font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
+.nd-tips { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.nd-tips > li { display: flex; gap: 14px; }
+/* Номер совета — мелкий текст на бумаге потребности: --text (AA 4.5:1), а не --need-text (тот держит 4.5:1
+   только к белому, ≥3:1 к бумаге — для крупной цифры; сверка — needInk.test.ts). */
+.nd-tip-n {
+  display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 9px;
+  font: 400 15px var(--serif); background: oklch(0.915 0.03 var(--h)); color: var(--text);
+}
+.nd-tips p { margin: 0; padding-top: 3px; font-size: 15px; line-height: 1.6; color: var(--text-sub); }
+.nd-score { display: flex; flex-direction: column; gap: 8px; }
+.nd-score-nums { display: flex; align-items: baseline; gap: 6px; }
+.nd-score-n { font: 400 56px/1 var(--serif); color: var(--need-text); }
+.nd-score-unit { font-size: 14px; color: var(--text-sub); }
+.nd-score-desc { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+.nd-bars { display: flex; gap: 4px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); }
+.nd-bars > i { flex: 1; height: 18px; border-radius: 5px; background: oklch(0.93 0.025 var(--h)); }
+.nd-bars > i.is-on { background: var(--need-ink); }

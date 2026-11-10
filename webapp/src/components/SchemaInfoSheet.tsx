@@ -1,15 +1,16 @@
-import { useState, lazy, Suspense } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useYsqLocalState } from '../../../shared/src/hooks/ysqProgressStore';
 import { TherapyNote } from './TherapyNote';
-import { useTr } from '../utils/addressForm';
 import { api } from '../api';
-import { useYsqRequested, ysqEntrySub } from '../../../shared/src/tasks/ysqRequestMark';
+import { useYsqRequested } from '../../../shared/src/tasks/ysqRequestMark';
 import { ModesTab } from './schemaInfoSheet/ModesTab';
 import { NeedsTab } from './schemaInfoSheet/NeedsTab';
-import { Layers } from './art/PaperArt';
 import { SchemasTab } from './schemaInfoSheet/SchemasTab';
-import { SsSheet, SsHead } from './schemaSheets/SsSheet';
+import { YsqEntryTile } from './schemaInfoSheet/YsqEntryTile';
+import { SsSheet } from './schemaSheets/SsSheet';
+import { EntitySheet } from './paper/EntitySheet';
+import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 
 const YSQTestSheet = lazy(() => import('./YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
@@ -45,8 +46,16 @@ export type SchemaInfoTab = 'needs' | 'schemas' | 'modes';
 interface Props { onClose: () => void; ratings?: Record<string, number>; autoStartTest?: boolean; initialTab?: SchemaInfoTab; highlightSchema?: string }
 
 export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, highlightSchema: initHighlight }: Props) {
-  const goBack = useHistorySheet(onClose); const tr = useTr();
-  const [showTest, setShowTest] = useState(autoStartTest ?? false);
+  const goBack = useHistorySheet(onClose);
+  // Тест «сразу» (из «Ещё», задания) встаёт следующим коммитом, после записи истории справочника: в одном
+  // коммите оба листа писали запись от одного и того же location, и «Читать карточку схемы» из результата
+  // закрывало оба листа вместо перехода к схеме (стенд b16, diary-library-highlight).
+  const [showTest, setShowTest] = useState(false);
+  useEffect(() => {
+    if (!autoStartTest) return;
+    const t = setTimeout(() => setShowTest(true));
+    return () => clearTimeout(t);
+  }, [autoStartTest]);
   const [contentKey, setContentKey] = useState(0);
   const [contentInitialTab, setContentInitialTab] = useState<Tab>(initialTab ?? 'needs');
   // Под открытым результатом теста карточка не зовёт «Незаконченный тест» (QA 2026-11).
@@ -61,44 +70,19 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
     setContentKey(k => k + 1);
   };
 
+  // Справочник — раздел со своим героем (редизайн 2026-11): лист схем (глина) с входом в тест внутри; на
+  // компьютере — разворот, лист слева колонкой, вкладки справа (SpreadLayout). Отдельного знака у листа нет:
+  // картинку несёт веер теста на плитке входа — два рисунка в одной композиции повторялись (ревью g5 r2).
+  const hero = (
+    <EntitySheet look={{ hue: ENTITY_LOOK.schemas.hue }} label="Схема-терапия" title={<>Как это <i>работает</i></>} titleAs="h1" className="ss-hero">
+      <YsqEntryTile state={{ hasResult, hasProgress, requested: ysqRequested }} onOpen={() => setShowTest(true)} />
+    </EntitySheet>
+  );
+
   return (
     <>
-      <SsSheet onBack={goBack} zIndex={80}>
-        <SsHead layers eyebrow="Схема-терапия" title={<>Как это <i>работает</i></>} />
-
+      <SsSheet onBack={goBack} zIndex={80} spread hero={hero}>
         <SchemaInfoContent key={contentKey} initialTab={contentInitialTab} highlight={highlightSchema} />
-
-        <div className="ss-stack">
-          {hasProgress && !hasResult && (
-            <div
-              onClick={() => setShowTest(true)}
-              role="button" tabIndex={0}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
-              className="ds-card ds-card--warn ds-card--hover ss-cta"
-            >
-              <span aria-hidden="true">⏸</span>
-              <div className="ss-cta-text">
-                <div className="ss-need-title">Незаконченный тест</div>
-                <div className="ds-sub">{tr('Нажми, чтобы продолжить с места остановки', 'Нажмите, чтобы продолжить с места остановки')}</div>
-              </div>
-              <span className="ss-cta-arrow">›</span>
-            </div>
-          )}
-          <div
-            onClick={() => setShowTest(true)}
-            role="button" tabIndex={0}
-            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowTest(true); } }}
-            className="ds-card ds-card--hover ss-cta"
-          >
-            <Layers size="row" /><div className="ss-cta-text">
-              <div className="ss-cta-title">
-                {hasResult ? 'Мои результаты теста' : hasProgress ? 'Продолжить тест' : 'Пройти тест на схемы'}
-              </div>
-              <div className="ds-sub">{ysqEntrySub({ hasResult, requested: ysqRequested })}</div>
-            </div>
-            <span className="ss-cta-arrow">›</span>
-          </div>
-        </div>
       </SsSheet>
 
       {showTest && (

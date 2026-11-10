@@ -1,6 +1,6 @@
-// Компактная кнопка «Поделиться» (иконка). Один
-// примитив на несколько кнопок шаринга (правило «одна механика — один
-// компонент»): DiaryShareButton, MonthShareButton, ModeShareButton, AchievementsShare.
+// Компактная кнопка «Поделиться» (иконка). Один примитив на кнопки шаринга
+// (правило «одна механика — один компонент»): heatmapShare, AchievementsShare;
+// тихая ссылка со словом — ShareLink рядом.
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
 
 export function SharePillButton({ onClick, label }: { onClick: () => void; label: string }) {
