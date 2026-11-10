@@ -20,7 +20,9 @@ vi.mock('../../api', () => ({
   },
 }));
 import { api } from '../../api';
-import { plainText } from '../../test-support/plainText';
+import { plain, plainText } from '../../test-support/plainText';
+// Заголовок листа-героя склеен glue (EntitySheet): «на уме» держится неразрывным пробелом.
+const QUICK_TITLE = (name: string) => plain(name) === 'Что на уме?';
 const m = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const PLACEHOLDER = 'Можно одним предложением. Можно без точки.';
@@ -53,7 +55,7 @@ afterEach(cleanup);
 describe('QuickEntrySheet — первый экран', () => {
   it('заголовок, четыре тега, «Просто мысль» выбран, «Сохранить» выключена на пустом тексте', () => {
     setup();
-    expect(screen.getByRole('heading', { name: 'Что на уме?' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: QUICK_TITLE })).toBeTruthy();
     const radios = screen.getAllByRole('radio');
     expect(radios.map((r) => r.textContent)).toEqual(['Просто мысль', 'Схема', 'Режим', 'Благодарность']);
     expect(radios[0].getAttribute('aria-checked')).toBe('true');

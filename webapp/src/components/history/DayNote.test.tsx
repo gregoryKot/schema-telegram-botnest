@@ -36,4 +36,11 @@ describe('темы дня: выбор в заметке → подписи в и
     // glue: «к» не висит в конце строки — пробел после него неразрывный
     expect(screen.getByText('Добавить заметку к этому дню').textContent).toContain('к\u00a0этому');
   });
+
+  // Ревью g3 r5: заметка — текст самого человека; glue менял в нём дефис на U+2011 и тире диапазона на U+2060.
+  it('текст заметки — дефисы и тире как ввёл человек, склеены только пробелы', () => {
+    const { container } = render(<DayNote text="Кто-то позвонил в 3–5 часов" tags={[]} onOpen={vi.fn()} />);
+    expect(container.textContent).toContain('Кто-то позвонил в\u00a03–5 часов');
+    expect(container.textContent).not.toMatch(/[\u2011\u2060]/);
+  });
 });

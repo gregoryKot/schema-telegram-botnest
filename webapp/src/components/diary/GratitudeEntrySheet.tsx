@@ -7,7 +7,7 @@ import { CrisisCard } from '../CrisisCard';
 import { fmtDateLong, todayStr } from '../../utils/format';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
-import { GratitudeAddRow, GratitudeLede, GratitudeSaveError, GratitudeWhy } from './GratitudeParts';
+import { GratitudeAddRow, GratitudeLede, GratitudeSaveError, GratitudeTitle, GratitudeWhy } from './GratitudeParts';
 import { GratitudePebbles } from './quickEntry/GratitudePebbles';
 import { haptic } from '../../haptic';
 import { SaveEntryButton } from './SaveEntryButton';
@@ -84,14 +84,14 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
       heroArt={<GratitudePebbles filled={filled.length} />}
       spread
       eyebrow={`Дневник благодарности · ${dateLabel}`}
-      title={<>Три вещи,<br /><span className="it sd-grat-it">за которые сегодня – спасибо</span></>}
+      title={<GratitudeTitle />}
       lede={<GratitudeLede />}
       aside={<GratitudeWhy hue={HUE} />}
     >
       <div className="sd-grat" style={hueStyle(HUE)}>
         <GratitudeLoadState status={status} onRetry={retry} />
         {ready && (
-          <div className="sd-grat-sheet">
+          <div className="pa-field sd-grat-sheet">
             {items.map((item, i) => (
               <div key={i} className={'sd-grat-row' + (item.trim() ? ' is-filled' : '')}>
                 <span className="sd-grat-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>

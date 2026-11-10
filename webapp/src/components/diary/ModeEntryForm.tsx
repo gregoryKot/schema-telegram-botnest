@@ -79,7 +79,7 @@ export function ModeEntryForm({ selectedMode, modeId, values, set, healthyRespon
       look={modeLookById(modeId)} spread compact={!isFirst}
       eyebrow={selectedMode?.groupName ?? 'Режим'}
       title={selectedMode?.name ?? ''}
-      lede={isFirst ? glue(selectedMode?.short ?? '') : undefined}
+      lede={isFirst ? selectedMode?.short : undefined}
       heroFoot={
         <div className="sd-mode-links">
           <button type="button" className="ds-link sd-mode-link" onClick={onChangeMode}>

@@ -121,7 +121,7 @@ export function SchemaEntrySheet({ activeSchemaIds, initialTrigger, onClose, onS
       onBack={goBack}
       backLabel="Назад к дневнику"
       look="diary_schema" spread compact={!isFirst}
-      eyebrow={glue(hasSchemaDiaryDraft(saved) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?')}
+      eyebrow={hasSchemaDiaryDraft(saved) ? 'Дневник схем · продолжаем с того места' : 'Дневник схем · с чего начнём?'}
       title="Записать момент"
       lede={isFirst ? tr(
         'Что-то задело — приходи сюда. Обязательна только ситуация, остальное можно дополнить по шагам.',

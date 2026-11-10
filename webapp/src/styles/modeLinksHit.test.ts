@@ -45,6 +45,8 @@ describe('ссылки формы режима — зоны 44 без перек
   it.each(contexts)('%s: выноски соседей не длиннее зазора строк и колонок', (_name, media) => {
     const [v, hz = v] = last(`${LINK}::before`, 'inset', media)!;
     const { row, col } = gaps(media);
+    const h = last(LINK, 'min-height', media)![0];
+    expect(h - 2 * v, `зона по высоте: ${h} + 2×${-v} < 44`).toBeGreaterThanOrEqual(44);
     expect(-2 * v, `строки: выноски ${-v}+${-v} > row-gap ${row}`).toBeLessThanOrEqual(row);
     expect(-2 * hz, `колонки: выноски ${-hz}+${-hz} > column-gap ${col}`).toBeLessThanOrEqual(col);
   });

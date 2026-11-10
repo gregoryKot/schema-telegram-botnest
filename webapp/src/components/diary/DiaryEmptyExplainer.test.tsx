@@ -9,6 +9,7 @@ import { AddressFormContext, type AddressForm } from '../../utils/addressForm';
 import { hasTyForms } from '../../../../shared/src/utils/tyFormsSweep';
 import { DiaryEmptyExplainer } from './DiaryEmptyExplainer';
 import type { DiaryFilter } from '../../sections/diary/diaryModel';
+import { plainText } from '../../test-support/plainText';
 
 function renderWithForm(ui: ReactElement, form: AddressForm) {
   return render(
@@ -20,8 +21,8 @@ function renderWithForm(ui: ReactElement, form: AddressForm) {
 
 afterEach(cleanup);
 
-// Абзацы склеены при отрисовке (glue: неразрывные пробел и дефис, ревью g3 r2) — текст сверяем без них.
-const plain = (el: Element) => (el.textContent ?? '').replace(/\u2011/g, '-').replace(/\s+/g, ' ');
+// Абзацы склеены при отрисовке (glue: неразрывные пробел, дефис и связка диапазона, ревью g3 r2) — текст сверяем без них.
+const plain = (el: Element) => plainText(el).replace(/\s+/g, ' ');
 
 describe('DiaryEmptyExplainer (webapp) — пустой архив объясняет «зачем»', () => {
   it('сегмент «Все»: общий зачин и карточки схем и режимов', () => {

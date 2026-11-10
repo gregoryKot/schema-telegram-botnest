@@ -22,7 +22,7 @@
   .cdk-write { width: 132px; }
 }
 @container cd-page (min-width: 600px) {
-  .cdk-day { display: grid; grid-template-columns: 136px minmax(0, 1fr); column-gap: 24px; row-gap: 10px; }
+  .cdk-day { display: grid; grid-template-columns: 156px minmax(0, 1fr); column-gap: 24px; row-gap: 10px; }
   .cdk-head { display: contents; }
   .cdk-head > .cdk-col { grid-column: 1; grid-row: 1 / span 2; align-self: start; padding-top: 6px; }
   .cdk-head > .skel { grid-column: 2; }

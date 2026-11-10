@@ -9,6 +9,7 @@ import { CaseFlowScreen } from './CaseFlowScreen';
 import { CRISIS_HOTLINE_DISPLAY, CRISIS_HOTLINES } from '../../utils/crisisMarkers';
 import { describeCrisisField } from '../../test-support/crisisCardHarness';
 import type { CaseQuickProps } from '../../../../shared/src/case/quick/caseQuick';
+import { byPlainText } from '../../test-support/plainText';
 
 const trackEvent = vi.fn();
 vi.mock('../../api', () => ({
@@ -137,8 +138,9 @@ describe('CaseFlowScreen — три шага и итог', () => {
       modeId: 'avoidant_protector',
     });
     expect(
+      // подпись DoneSheet склеена glue (диапазон «2–3» держится связкой) — фраза без знаков склейки
       screen.getByText(
-        'Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.',
+        byPlainText('Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.'),
       ),
     ).toBeTruthy();
     // Трудный случай — сцена сущности (лента с петлёй и росток), не полоски ровного дня.

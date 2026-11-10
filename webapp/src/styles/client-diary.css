@@ -17,9 +17,13 @@
 
 /* Черновики: недописанный лист бумаги своего типа — нижний край срезан ножницами прямыми отрезками
    (как край полос лендинга PaperBand), без пунктира. Верх — знак, «Черновик» и тип с давностью одной
-   строкой; низ — начало текста Literata курсивом и «Продолжить →». На широкой странице — в ряд. */
+   строкой; низ — начало текста Literata курсивом и «Продолжить →». На широкой странице один черновик — шириной
+   колонки ленты (до 560), а не стикер 300 с превью в 150 и пустотой справа; два-три — в ряд (ревью g3 r5). */
 .cd-drafts { display: grid; gap: 12px; }
-@container cd-page (min-width: 640px) { .cd-drafts { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); } }
+@container cd-page (min-width: 640px) {
+  .cd-drafts { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .cd-drafts:has(> .cd-draft:only-child) { grid-template-columns: min(100%, 560px); }
+}
 .cd-draft {
   display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; column-gap: 12px; row-gap: 6px;
   padding: 12px 6px 22px 16px; border-radius: 18px 18px 0 0;
@@ -76,11 +80,12 @@
 .cd-day--bare + .cd-day--bare { margin-top: -12px; }
 /* Узкая страница: дата слева, трекер справа; не помещаются рядом (320: «Трекер — индекс 6,0» ~210px против
    колонки даты) — трекер переносится строкой под дату, а не наезжает на неё (ревью g3 r3). Колонка даты —
-   по самой длинной строке без переноса (дата nowrap), подпись дня переносится внутри. */
+   по самой длинной строке без переноса: дата и подпись дня nowrap — «·» не повисает в конце строки («вчера · /
+   понедельник» на 375–390), чип уходит строкой под дату (ревью g3 r5). */
 .cd-day-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; min-height: 44px; }
 .cd-day-when { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-width: min-content; }
 .cd-day-date { font-family: var(--serif); font-size: 22px; line-height: 1.15; color: var(--text); white-space: nowrap; }
-.cd-day-rel { font-size: 12.5px; line-height: 1.35; color: var(--text-sub); }
+.cd-day-rel { font-size: 12.5px; line-height: 1.35; color: var(--text-sub); white-space: nowrap; }
 .cd-day-items { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
 /* Трекер дня: полоски дня (Strokes values) и индекс на бумаге трекера — чип, а не карточка. */
@@ -97,9 +102,10 @@ button.cd-tracker:focus-visible { outline: 2px solid var(--accent); outline-offs
 .cd-tracker .ds-chev { margin-left: 2px; color: var(--text-sub); }
 
 /* Широкая страница: дата — колонкой слева, трекер — первой тонкой строкой ленты дня, под ним карточки.
-   День только с трекером — одна строка. */
+   День только с трекером — одна строка. Колонка 156 — по самой длинной подписи одной строкой
+   («2 дн. назад · воскресенье» ≈149px; силуэт — та же колонка, client-diary-skeleton.css). */
 @container cd-page (min-width: 600px) {
-  .cd-day { display: grid; grid-template-columns: 136px minmax(0, 1fr); column-gap: 24px; row-gap: 10px; }
+  .cd-day { display: grid; grid-template-columns: 156px minmax(0, 1fr); column-gap: 24px; row-gap: 10px; }
   .cd-day-head { display: contents; }
   .cd-day-when { grid-column: 1; grid-row: 1 / span 2; align-self: start; padding-top: 6px; }
   .cd-day .cd-tracker { grid-column: 2; justify-self: start; }

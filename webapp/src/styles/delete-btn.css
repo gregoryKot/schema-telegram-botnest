@@ -5,4 +5,7 @@
 .ds-link.cd-del:hover { color: var(--text); }
 .ds-link.cd-del.ds-link--danger { color: var(--accent-red); }
 .cd-del-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; }
-.cd-del-err { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: var(--err); text-wrap: pretty; }
+/* Сбой удаления — компактный лист соломы (PaperAlert) строкой под ссылками, а не красная строка: запись на месте,
+   ничего страшного (принципы 6 и 8, ревью g3 r5). */
+.pa-alert.cd-del-err { flex-basis: 100%; margin: 2px 0 6px; padding: 10px 14px 10px 12px; gap: 6px 10px; border-radius: 14px; }
+.pa-alert.cd-del-err .pa-alert-title { font-size: 14px; }

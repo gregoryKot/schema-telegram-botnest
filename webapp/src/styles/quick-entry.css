@@ -1,7 +1,7 @@
 /* «Дневник одной страницей» (components/diary/QuickEntrySheet.tsx, quickEntry/*). Префикс qe-;
    оболочка и шапка — .tk2-overlay / .tq-* (sheet-tracker.css, flow-frame.css), лист-герой и
    «готово» — EntitySheet / DoneSheet (paper-app.css). Редизайн 2026-11 (APP_2026-11.md, b10a):
-   поле — белый лист без контура на персике, глубина — сплошным сдвинутым слоем, без blur. */
+   поле — общий поле-лист .pa-field на персике героя, глубина — сплошным сдвинутым слоем, без blur. */
 
 /* Колонка потока: на телефоне во всю ширину, на компьютере — лист 920 по центру, а не узкая
    телефонная колонка посреди пустого экрана. Шаги одного потока стоят в одной колонке. */
@@ -11,24 +11,12 @@
   display: flex; flex-direction: column; gap: var(--space-16);
 }
 
-/* Белый лист поля на бумаге листа-героя: без рамки, тень — тот же лист тоном глубже бумаги со
-   сдвигом (как .pa-outcome-card). Фокус — мягкое кольцо, а не красная двойная обводка. */
+/* Поле — общий поле-лист .pa-field (paper-app.css), как у заметки и разбора: белый лист Literata, тень
+   сплошным слоем тоном персика героя (--h листа), фокус — кромкой. Здесь — только высота (сведение с g2). */
 .qe-page { margin-top: 6px; }
 /* Широкий лист: камешки — внизу справа, как на плитке «Дневник» главной, а не в середине поля. */
 @container pa-sheet (min-width: 720px) { .qe-sheet > .pa-sheet-art { align-self: end; margin-bottom: 4px; } }
-.qe-area {
-  box-sizing: border-box; display: block; width: 100%; min-height: 200px; resize: none;
-  -webkit-appearance: none; appearance: none;
-  padding: var(--space-16) 18px; border: none; border-radius: 14px;
-  background: var(--surface); color: var(--text);
-  box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h));
-  font: 400 19px/1.5 var(--serif);
-}
-.qe-area::placeholder { color: var(--text-faint); }
-.qe-area:focus-visible {
-  outline: none;
-  box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)), 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
-}
+.pa-field.qe-area { min-height: 200px; }
 
 /* Под листом: теги и подсказка, справа (на телефоне — ниже) «Сохранить» и тихая ссылка. */
 .qe-foot { display: flex; flex-direction: column; gap: var(--space-16); }
@@ -62,7 +50,7 @@
 
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .qe-flow { padding-top: 40px; gap: 20px; }
-  .qe-area { min-height: 240px; padding: 20px 22px; font-size: 20px; }
+  .pa-field.qe-area { min-height: 240px; }
   .qe-acts--row { flex-direction: row; align-items: center; gap: var(--space-16); }
   .qe-acts--row > .ds-btn.qe-cta { width: 260px; }
   .qe-schemas { display: block; columns: 2; column-gap: 32px; }

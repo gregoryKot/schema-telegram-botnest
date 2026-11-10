@@ -1,13 +1,10 @@
 /* Дневник благодарности (GratitudeEntrySheet, GratitudeLoadState). Подключается сборником sheet-diary.css.
-   Редизайн 2026-11 (APP_2026-11.md, b10a): тетрадь — белый лист на бирюзе благодарности (--h с
-   .sd-grat), тень сплошным сдвинутым слоем, строки 01–05 через линейку, поля без рамок. */
+   Редизайн 2026-11 (APP_2026-11.md, b10a): тетрадь — общий поле-лист .pa-field (paper-app.css) на бирюзе
+   благодарности (--h с .sd-grat): белый лист, тень сплошным слоем, фокус кромкой; строки 01–05 через
+   линейку, поля строк без рамок. Здесь — только раскладка листа и строк (сведение с g2). */
 /* ── Благодарность ────────────────────────────────────────────────────── */
 .sd-grat { display: flex; flex-direction: column; gap: 16px; }
-.sd-grat-sheet {
-  display: flex; flex-direction: column; box-sizing: border-box;
-  padding: 4px 22px 6px; border-radius: 18px; background: var(--surface);
-  box-shadow: 7px 8px 0 oklch(var(--pa-layer-lc) var(--h));
-}
+.pa-field.sd-grat-sheet { display: flex; flex-direction: column; padding: 4px 22px 6px; }
 .sd-grat-row {
   display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: start; column-gap: 12px;
   padding: 12px 0 10px; border-bottom: 1px solid var(--paper-sunk);
@@ -37,13 +34,14 @@
 .sd-grat-add-glyph { display: inline-flex; justify-content: center; color: oklch(0.47 0.07 var(--h)); }
 .sd-grat-error { margin-top: 12px; }
 .sd-grat-it { font-style: italic; }
+.sd-grat-nowrap { white-space: nowrap; } /* хвост заголовка «сегодня – спасибо» — одной строкой (GratitudeTitle) */
 /* Знак-герой Pebbles filled: камешек, который ещё не лёг, — гнездо своего цвета без тени-вырезки
    (одно правило [data-laid="no"] в paper.css — и для строки ленты, чипа и сцены «Записано»). */
 /* Разворот уже 1024: «Почему это работает» (DiaryAside, .sd-aside) — после тетради, а не между листом
    и первым полем (на 390 шапка до поля — не выше ~230px, принцип 5). Порядок держит общее правило
    мастеров дневников в diary-wizard.css (`.pa-spread:has(.sd-aside)`), своего тут нет. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .sd-grat-sheet { padding: 2px 16px 4px; box-shadow: 5px 6px 0 oklch(var(--pa-layer-lc) var(--h)); }
+  .pa-field.sd-grat-sheet { padding: 2px 16px 4px; }
   .sd-grat-row, .sd-grat-add { grid-template-columns: 34px minmax(0, 1fr); column-gap: 10px; }
   .sd-grat-num { font-size: 23px; }
   .sd-grat-sheet .sd-grat-field .ds-textarea { font-size: 16px; }

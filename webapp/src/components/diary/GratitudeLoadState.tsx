@@ -14,7 +14,7 @@ export function GratitudeLoadState({
 }) {
   if (status === 'loading') {
     return (
-      <div className="sd-grat-sheet" aria-busy="true" aria-label="Загружаю сегодняшние записи">
+      <div className="pa-field sd-grat-sheet" aria-busy="true" aria-label="Загружаю сегодняшние записи">
         {[72, 58, 64].map((w, i) => (
           <div key={i} className="sd-grat-row sd-grat-row--skel">
             <Skeleton width={30} height={24} radius={6} />

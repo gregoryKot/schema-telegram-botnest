@@ -32,20 +32,24 @@ function keepHyphens(text: string): string {
     .replace(/(^|[\s«("])(по)-(?=[а-яё])/gi, `$1$2${NBHY}`);
 }
 
-export function glue(text: string): string {
-  const words = keepHyphens(
-    text.replace(SHORT_QUOTE, (q) => q.replace(/ /g, NBSP)),
-  ).split(' ');
-  let out = words[0];
-  for (let i = 1; i < words.length; i++) {
-    const keep = NO_START.has(words[i]) || SHORT.test(words[i - 1]);
-    out += (keep ? NBSP : ' ') + words[i];
-  }
-  return out;
+/** Пробелы: неразрывный перед тире и «·» и после короткого слова (с новой строки — по ней); знаки как есть. */
+function glueWords(text: string): string {
+  const ws = text.split(' ');
+  const keep = (i: number) =>
+    NO_START.has(ws[i]) || SHORT.test(ws[i - 1].split('\n').pop() ?? '');
+  return ws.reduce((out, w, i) => out + (keep(i) ? NBSP : ' ') + w);
 }
 
+export function glue(text: string): string {
+  const quoted = text.replace(SHORT_QUOTE, (q) => q.replace(/ /g, NBSP));
+  return glueWords(keepHyphens(quoted));
+}
+
+/** Текст, который ввёл сам человек (запись дневника, заметка): только пробелы glueWords — дефисы, тире и цифры
+ *  его, без U+2011 и U+2060: скопированная запись приходит теми же знаками, поиск «кто-то» её находит (g3 r5). */
+export const glueSpaces = glueWords;
+
 /** Проп, который бывает и не строкой (ReactNode): строку склеивает, остальное (JSX, число) отдаёт как есть.
- *  Одна функция у g2 и g3 (APP_2026-11.md, «Сведение с g2»): листы приложения (DoneSheet, шаг мастера)
- *  клеят надпись и подпись сами. */
+ *  Одна функция у g2 и g3 (APP_2026-11.md, «Сведение с g2»): EntitySheet, DoneSheet, шаг мастера клеят сами. */
 export const glueIf = <T>(text: T): T | string =>
   typeof text === 'string' ? glue(text) : text;

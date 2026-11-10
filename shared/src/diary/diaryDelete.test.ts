@@ -3,11 +3,7 @@
 // любой другой сбой виден, повторное нажатие во время запроса ничего не шлёт.
 import { describe, it, expect, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import {
-  deleteDiaryEntry,
-  deleteFailedText,
-  useDeleteAction,
-} from './diaryDelete';
+import { deleteDiaryEntry, useDeleteAction } from './diaryDelete';
 
 const httpError = (status: number) =>
   Object.assign(new Error('API error'), { status });
@@ -93,14 +89,5 @@ describe('useDeleteAction', () => {
       await first;
     });
     expect(result.current.busy).toBe(false);
-  });
-});
-
-describe('deleteFailedText', () => {
-  it('в обеих формах обращения', () => {
-    const tr = (ty: string, vy: string) => `${ty}|${vy}`;
-    const [ty, vy] = deleteFailedText(tr).split('|');
-    expect(ty).toMatch(/попробуй ещё раз/);
-    expect(vy).toMatch(/попробуйте ещё раз/);
   });
 });

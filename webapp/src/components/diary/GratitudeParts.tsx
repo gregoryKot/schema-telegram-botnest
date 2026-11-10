@@ -1,16 +1,17 @@
-// Части дневника благодарности (GratitudeEntrySheet — в бейслайне размера, правило №10): подводка героя (склеена здесь:
-// импорт typo в EntitySheet уносит ExScreen в свой CSS-чанк), «Почему это работает», «Добавить ещё пункт», сбой.
+// Части дневника благодарности (GratitudeEntrySheet — в бейслайне размера, правило №10): заголовок и подводка героя
+// (разметка — glueIf листа её не склеивает, клеим здесь), «Почему это работает», «Добавить ещё пункт», сбой.
 import { GlyphPlus } from '../exercises/ExGlyphs';
 import { glue } from '../../../../shared/src/utils/typo';
 import { PaperAlert } from '../paper/PaperAlert';
 import { DiaryAside } from './DiaryStepCard';
 
+// «сегодня – спасибо» одной строкой (nowrap: после «–» браузер рвёт строку и при неразрывном пробеле), ревью g3 r5.
+export const GratitudeTitle = () => <>Три вещи,<br /><span className="it sd-grat-it">{glue('за которые')} <span className="sd-grat-nowrap">сегодня – спасибо</span></span></>;
 export const GratitudeLede = () => <>{glue('Даже самое маленькое. Особенно самое маленькое. Запоминается то, что удалось назвать. Хватит и одной строки.')}</>;
 export function GratitudeWhy({ hue }: { hue: number }) {
   return <DiaryAside hue={hue} eyebrow="Почему это работает" title="Мозг учится замечать"
     text="Психика устроена так, чтобы запоминать опасное. Регулярная практика благодарности – не «позитивное мышление», а тренировка нервной системы замечать тёплое наряду с тревожным." />;
 }
-
 /** «Добавить ещё пункт» — последней строкой тетради: «+» в колонке номеров. */
 export function GratitudeAddRow({ onAdd }: { onAdd: () => void }) {
   return (
@@ -20,7 +21,6 @@ export function GratitudeAddRow({ onAdd }: { onAdd: () => void }) {
     </button>
   );
 }
-
 /** Сбой сохранения: лист открыт, текст черновиком. 409 «не читается» (E15) — без «можно повторить»:
  *  повтор получит тот же отказ, прежние пункты сервер бережёт. */
 export function GratitudeSaveError({ kind }: { kind: 'failed' | 'unreadable' }) {

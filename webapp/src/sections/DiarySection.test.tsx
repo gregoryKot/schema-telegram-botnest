@@ -537,7 +537,10 @@ describe('DiarySection — сбой удаления виден, повторн�
 
     await confirmDelete('Критика на работе');
 
-    expect(plainText((await screen.findByRole('alert')))).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
+    // сбой удаления — компактный лист соломы (PaperAlert role=status) под ссылками, а не красная строка (ревью g3 r5)
+    const note = await screen.findByRole('status');
+    expect(note.classList.contains('pa-alert')).toBe(true);
+    expect(plainText(note)).toMatch(/Не\sудалось\sудалить\s—\sзапись\sна\sместе/);
     expect(screen.getByText('Критика на работе')).toBeTruthy();
     expect((screen.getByText('Удалить навсегда') as HTMLButtonElement).disabled).toBe(false);
   });
@@ -565,6 +568,7 @@ describe('DiarySection — сбой удаления виден, повторн�
 
     await waitFor(() => expect(screen.queryByText('Уже удалённая')).toBeNull());
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText(/Не\sудалось\sудалить/)).toBeNull();
   });
 });
 
