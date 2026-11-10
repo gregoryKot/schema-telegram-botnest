@@ -17,10 +17,7 @@ import { ModeMapZones } from './ModeMapZones';
 import { ModeMapCoupleLanes } from './ModeMapCoupleLanes';
 import { NodeActionsContext, type NodeActions } from './modeMapActions';
 import { autoLayout, layoutByZones, layoutCouple } from './modeMapLayout';
-import {
-  type FlowNode, type FlowEdge,
-  edgeColor, makeMarker, edgeStyle, toFlowNodes, toFlowEdges,
-} from './modeMapFlow';
+import { type FlowNode, type FlowEdge, toFlowNodes, toFlowEdges } from './modeMapFlow';
 import { CanvasToolbar } from './modeMap/CanvasToolbar';
 import { ZoomBar } from './modeMap/ZoomBar';
 import { ClearMapDialog } from './modeMap/ClearMapDialog';
@@ -30,7 +27,7 @@ import { useGenerateFromConcept } from './modeMap/useGenerateFromConcept';
 import { ConceptSyncLine } from './modeMap/ConceptSyncLine';
 import { CanvasEmpty } from './modeMap/CanvasEmpty';
 import { useCanvasSpace } from './modeMap/useCanvasSpace';
-import { expandDraft } from './modeMap/hubFill';
+import { connectEdge } from './modeMap/connectEdge';
 
 export interface CanvasProps {
   clientId: UserId; mapId: number; kind: ModeMapKind;
@@ -104,14 +101,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
 
   const onConnect = useCallback((conn: Connection) => {
     if (conn.source === conn.target) return; // extra guard
-    pushHistory();
-    const color = edgeColor({ edgeType: 'activates' });
-    const newEdges = addEdge({
-      ...conn, type: 'floating',
-      data: { edgeType: 'activates' } as Record<string, unknown>,
-      style: edgeStyle(color),
-      markerEnd: makeMarker(color),
-    }, edges);
+    pushHistory(); // к сектору колеса потребностей — сразу ✗ от схемы / ✓ от здорового режима
+    const newEdges = addEdge(connectEdge(conn, nodes), edges);
     setEdges(newEdges); scheduleSave(nodes, newEdges);
   }, [edges, nodes, setEdges, scheduleSave, pushHistory]);
 
@@ -124,8 +115,8 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
       const partial: Omit<ModeMapNode, 'position'> = JSON.parse(raw);
       const freshId = `${partial.data.modeId ?? 'node'}_${Date.now()}`;
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-      pushHistory(); // круг потребностей — сразу с пятью потребностями, под ними (toFlowNodes: zIndex −1)
-      const newNodes = [...nodes, ...toFlowNodes(expandDraft({ ...partial, id: freshId }, position))];
+      pushHistory(); // круг потребностей встаёт под фигуры (toFlowNodes: zIndex −1)
+      const newNodes = [...nodes, ...toFlowNodes([{ ...partial, id: freshId, position }])];
       setNodes(newNodes); scheduleSave(newNodes, edges);
     } catch { /* ignore */ }
   }, [nodes, edges, setNodes, scheduleSave, screenToFlowPosition, pushHistory]);

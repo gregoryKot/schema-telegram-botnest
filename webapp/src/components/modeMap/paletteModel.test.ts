@@ -47,10 +47,10 @@ describe('paletteModel — данные палитры холста', () => {
     expect(clientSchemaItem('нет_такой')).toBeNull();
   });
 
-  it('фигуры: круг потребностей кладётся с диаметром, потребность — без чужих полей', () => {
+  it('фигуры: круг потребностей кладётся колесом, потребность — без чужих полей', () => {
     const byType = Object.fromEntries(FIGURES.map(f => [f.type, f]));
     expect(FIGURES.map(f => f.type)).toEqual(['trigger', 'behavior', 'schema', 'origin', 'need', 'needs']);
-    expect(byType.needs.draft().data).toMatchObject({ label: 'Базовые эмоциональные потребности', diameter: 340 });
+    expect(byType.needs.draft().data).toEqual({ label: 'Базовые эмоциональные потребности', wheel: {} });
     expect(byType.need.draft().data).toEqual({ label: 'Потребность' });
     expect(byType.trigger.draft()).toMatchObject({ type: 'trigger', data: { label: 'Триггер' } });
   });

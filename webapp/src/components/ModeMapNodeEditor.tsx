@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { ModeMapNode } from '../api';
+import type { ModeMapNode, UserId } from '../api';
 import { TYPE_COLORS } from './modeMapData';
 import '../styles/sheet-modemap.css';
 import { ClinicalHint } from './modeMap/ClinicalHint';
@@ -9,7 +9,8 @@ import { nodeTexts } from './modeMap/nodeTexts';
 import { COLOR_PRESETS } from './modeMap/editorStyles';
 import { EditorHead, SegRow, Swatches } from './modeMap/EditorParts';
 import { MODE_MAP_NODE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
-import { NodeIdentityField, NodeMeaningFields, type HubFill } from './modeMap/NodeMeaningFields';
+import { NodeIdentityField, NodeMeaningFields } from './modeMap/NodeMeaningFields';
+import { isWheel } from './modeMap/needWheel';
 
 // Панель редактирования связи жила в этом же файле — вынесена (правило №10);
 // ре-экспорт сохраняет прежний путь импорта у консьюмеров.
@@ -21,10 +22,11 @@ interface NodeEditorProps {
   onDelete: () => void;
   onClose: () => void;
   coupleMode?: boolean;   // карта пары → показать выбор партнёра
-  hub?: HubFill;          // круг потребностей: достроить недостающие потребности
+  clientId?: UserId; onToWheel?: () => void; // колесо: «Колесо детства» клиента; старый круг → колесо
 }
 
-export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMode, hub }: NodeEditorProps) {
+export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMode, clientId, onToWheel }: NodeEditorProps) {
+  const wheel = isWheel(node.data); // у колеса нет оформления: цвет, контур и текст на нём ничего не меняют
   const nameRef = useRef<HTMLInputElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const needRef = useRef<HTMLInputElement>(null);
@@ -51,11 +53,8 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
     return () => window.removeEventListener('modemap-focus-need', h);
   }, []);
 
-  const fillOpts = [
-    { label: 'Лёгкая', filled: false, fillFull: false },
-    { label: 'Средняя', filled: true,  fillFull: false },
-    { label: 'Полная',  filled: false, fillFull: true  },
-  ];
+  const fillOpts = [{ label: 'Лёгкая', filled: false, fillFull: false }, { label: 'Средняя', filled: true, fillFull: false },
+    { label: 'Полная', filled: false, fillFull: true }];
   const strokeOpts = [
     { v: 'thin' as const,   label: 'Тонкий', h: 1.5 },
     { v: 'normal' as const, label: 'Обычный', h: 2.5 },
@@ -97,7 +96,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
         </>
       )}
 
-      <NodeIdentityField node={node} patchData={patchData} hub={hub} />
+      <NodeIdentityField node={node} patchData={patchData} clientId={clientId} onToWheel={onToWheel} />
 
       <ClinicalHint node={node}
         onPickNote={() => { noteRef.current?.focus(); }}
@@ -113,7 +112,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       <NodeMeaningFields node={node} patchData={patchData} needRef={needRef} healthyRef={healthyRef} />
 
       {/* Сначала смысл фигуры, потом оформление: клинические поля стояли под шестью переключателями стиля (аудит 2026-11). */}
-      <div className="ds-label mm2-panel-sec">Оформление</div>
+      {!wheel && <><div className="ds-label mm2-panel-sec">Оформление</div>
       {node.type !== 'needs' && <div className="ds-label">Форма и тип</div>}
       {node.type !== 'needs' && <div className="mm2-shape-grid">
         {SHAPE_OPTIONS.map((opt, i) => {
@@ -157,7 +156,7 @@ export function ModeMapNodeEditor({ node, onChange, onDelete, onClose, coupleMod
       <SegRow items={displayOpts.map(opt => ({
         key: opt.v, label: opt.label, active: (node.data.display ?? 'full') === opt.v,
         onPick: () => patchData({ display: opt.v }),
-      }))} />
+      }))} /></>}
 
       <button onClick={onDelete} className="ds-btn ds-btn--secondary mm2-del">Удалить фигуру</button>
     </div>

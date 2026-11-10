@@ -71,7 +71,7 @@ describe('useOpenConceptCanvas', () => {
     expect(result.current).toMatchObject({ busy: false, failed: false });
   });
 
-  it('пустая схема тоже переносится: круг и пять потребностей без рёбер', async () => {
+  it('пустая схема тоже переносится: колесо потребностей без рёбер', async () => {
     vi.mocked(api.createModeMap).mockResolvedValue({ id: 9 } as never);
     vi.mocked(api.updateModeMap).mockResolvedValue({} as never);
     const onOpened = vi.fn();
@@ -84,7 +84,7 @@ describe('useOpenConceptCanvas', () => {
     );
     await act(async () => { await result.current.open(); });
     const body = vi.mocked(api.updateModeMap).mock.calls[0][1] as { nodes: { type: string }[]; edges: unknown[] };
-    expect(body.nodes.map((n) => n.type).sort()).toEqual(['need', 'need', 'need', 'need', 'need', 'needs']);
+    expect(body.nodes.map((n) => n.type)).toEqual(['needs']); // колесо: потребности — его секторы, не таблетки
     expect(body.edges).toEqual([]);
     expect(onOpened).toHaveBeenCalledWith(9);
     // литерал в хуке (его видит трипваер analytics-sync) и константа не разъезжаются

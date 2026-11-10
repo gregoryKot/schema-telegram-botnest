@@ -179,3 +179,67 @@ describe('appendToConcept — отметки техник в связи', () => 
     ]);
   });
 });
+
+// Колесо потребностей (линии «✓» режим → потребность и «✗» схема →
+// потребность): дописанное находит вкладка «Концептуализация», в «БД» —
+// шифротекст, тексты записи схемы не теряются.
+describe('appendToConcept — потребности', () => {
+  const SCHEMA_LINK = {
+    schemaId: 'defectiveness',
+    belief: 'Со мной что-то не так',
+    origin: 'Критика дома',
+    needIds: ['attachment'],
+  };
+
+  it('needIds режима и schemaLinks → getConceptualization их нашёл', async () => {
+    const { notes, concept, append } = setup();
+    await notes.saveConceptualization(T1, CLIENT, {
+      modeIds: ['punitive_critic'],
+      schemaIds: ['defectiveness'],
+      modeLinks: [LINK],
+      schemaLinks: [SCHEMA_LINK],
+    });
+    await append({
+      modeLinks: [
+        { modeId: 'healthy_adult', schemaIds: [], needIds: ['limits'] },
+      ],
+      schemaLinks: [
+        { schemaId: 'defectiveness', needIds: ['expression'] },
+        { schemaId: 'abandonment', needIds: ['attachment'] },
+      ],
+    });
+    expect(concept.row.schemaLinks).not.toContain('abandonment');
+    const got = await notes.getConceptualization(T1, CLIENT);
+    expect(got!.schemaIds).toEqual(['defectiveness', 'abandonment']);
+    expect(got!.modeIds).toEqual(['punitive_critic', 'healthy_adult']);
+    expect(got!.modeLinks).toEqual([
+      LINK,
+      expect.objectContaining({ modeId: 'healthy_adult', needIds: ['limits'] }),
+    ]);
+    expect(got!.schemaLinks).toEqual([
+      { ...SCHEMA_LINK, needIds: ['attachment', 'expression'] },
+      {
+        schemaId: 'abandonment',
+        belief: '',
+        origin: '',
+        needIds: ['attachment'],
+      },
+    ]);
+  });
+
+  it('повторное добавление тех же потребностей — без записи', async () => {
+    const { prisma, notes, append } = setup();
+    await notes.saveConceptualization(T1, CLIENT, {
+      schemaIds: ['defectiveness'],
+      schemaLinks: [SCHEMA_LINK],
+    });
+    prisma.clientConceptualization.upsert.mockClear();
+    await append({
+      schemaLinks: [{ schemaId: 'defectiveness', needIds: ['attachment'] }],
+    });
+    expect(prisma.clientConceptualization.upsert).not.toHaveBeenCalled();
+    // концептуализация та же: связь схемы с потребностью на месте, с текстами
+    const after = await notes.getConceptualization(T1, CLIENT);
+    expect(after?.schemaLinks).toEqual([SCHEMA_LINK]);
+  });
+});

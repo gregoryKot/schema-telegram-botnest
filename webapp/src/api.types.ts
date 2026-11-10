@@ -1,6 +1,5 @@
-// Типы API webapp (зеркало бэкенда), вынесены из api.ts (правило №10).
-// Типы, общие с мини-аппом, живут в shared/src/apiTypes (правило №3) — здесь
-// только ре-экспорт. ClientConceptualization локальный: в webapp он расширяет
+// Типы API webapp (зеркало бэкенда), вынесены из api.ts (правило №10). Общие с мини-аппом — в
+// shared/src/apiTypes (правило №3), здесь ре-экспорт. ClientConceptualization локальный: расширяет
 // общую ClientConceptualizationBase полями mode-map.
 import type { UserId } from '../../shared/src/apiTypes'; import type { Currency } from '../../shared/src/booking/priceRegion';
 import type { ClientConceptualizationBase } from '../../shared/src/therapy/clientConceptualization';
@@ -107,12 +106,13 @@ export interface ModeMapNode {
     fontSize?: 'sm' | 'md' | 'lg';        // размер текста в фигуре
     side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
     schemaId?: string; schemaIds?: string[]; // схема фигуры «схема»/«опыт»; схемы режима — таблетки на фигуре (schemaId у режима — старая одна)
-    needId?: string; diameter?: number;    // потребность таблетки; диаметр круга потребностей
+    needId?: string; diameter?: number;    // потребность таблетки; диаметр старого круга потребностей
+    wheel?: { period?: WheelPeriod; compare?: boolean; ratings?: Partial<Record<WheelPeriod, Record<string, number>>>; notes?: Partial<Record<WheelPeriod, Record<string, string>>> }; // колесо потребностей: оценки 0–10 и текст листа по периодам (modeMap/needWheel.ts)
     settle?: boolean;                      // свежая схема случая: после замера колонки раздвинутся по высоте (useSettleFresh), флаг снимется
   };
   width?: number; height?: number;
 }
-
+type WheelPeriod = 'child' | 'teen' | 'now';
 export type EdgeType = 'activates' | 'protects' | 'suppresses' | 'leads_to' | 'blocks' | 'meets'; // ✗ схема блокирует потребность, ✓ забота о ней
 
 export type LineStyle = 'solid' | 'dashed' | 'dotted';
