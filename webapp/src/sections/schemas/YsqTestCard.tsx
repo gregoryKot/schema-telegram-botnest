@@ -12,13 +12,15 @@ interface Props {
   /** Бумага теста — только если герой над плиткой отстоит от глины на 40° и больше (ysqEntryLook);
    *  иначе белый лист с тенью-слоем глины, как строка теста на телефоне и вход в тест справочника. */
   onPaper: boolean;
+  /** Одна во весь ряд (пустых «Выраженных» рядом нет, topPair). */
+  solo?: boolean;
 }
 
 const YSQ = ENTITY_LOOK.ysq;
 
 /** Плитка теста YSQ (компьютер): знак теста из ENTITY_LOOK (слои крупно, с тенью-вырезкой) на бумаге теста
  *  или белом листе (onPaper), подпись Literata и одно действие — пройти / продолжить / посмотреть результаты. */
-export function YsqTestCard({ progressAnswered, completedAt, onStart, onPaper }: Props) {
+export function YsqTestCard({ progressAnswered, completedAt, onStart, onPaper, solo }: Props) {
   const tr = useTr();
   // Незаконченный прогресс приоритетнее результата: кнопка ведёт в тест на
   // сохранённый вопрос (autoResume), поэтому и подпись — «продолжить».
@@ -33,7 +35,7 @@ export function YsqTestCard({ progressAnswered, completedAt, onStart, onPaper }:
       ? 'Результаты, история прохождений и «поделиться» – внутри'
       : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут');
   return (
-    <div className={onPaper ? 'pp-paper cs-test' : 'cs-test cs-test--white'} style={{ '--h': YSQ.hue } as CSSProperties}>
+    <div className={`${onPaper ? 'pp-paper cs-test' : 'cs-test cs-test--white'}${solo ? ' cs-test--solo' : ''}`} style={{ '--h': YSQ.hue } as CSSProperties}>
       <div className="cs-test-body">
         <div className="ds-label cs-test-label">Тест на схемы</div>
         <p className="cs-test-text">{glue(text)}</p>

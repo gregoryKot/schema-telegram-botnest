@@ -5,7 +5,7 @@ import { describe, it, expect } from 'vitest';
 import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
 import { ENTITY_LOOK, modeGroupLook } from '../../../../shared/src/theme/entityLook';
 import { NEIGHBOUR_HUE_GAP, hueGap } from '../../../../shared/src/theme/hueGap';
-import { INTRO_LOOK, patternsHero, ysqEntryLook, type PatternsHero } from './patternsHero';
+import { INTRO_LOOK, heroClass, heroWord, patternsHero, topPair, ysqEntryLook, type PatternsHero } from './patternsHero';
 
 const base = { ready: true, top: null, hasSchemas: false, hasModes: false, hasEntries: false };
 const top = (kind: 'schema' | 'mode', id: string) => ({ kind, id, days: 3, windowDays: 7 });
@@ -62,5 +62,33 @@ describe('ysqEntryLook — вход в тест рядом с героем', () 
     expect([...seen].sort()).toEqual(['paper', 'white']);
     expect(ysqEntryLook(patternsHero({ ...base, top: top('schema', 'abandonment') }), false)).toBe('white');
     expect(ysqEntryLook(patternsHero({ ...base, hasSchemas: true, hasModes: true }), false)).toBe('white');
+  });
+});
+
+// Ревью g5 r2: заголовок героя на телефоне рвался по слогам («Дефек-/тивность») — переноса нет, длинное слово
+// берёт кегль по ширине листа (cs-hero--long), короткое остаётся кеглем героя.
+describe('heroClass — длинное слово заголовка героя', () => {
+  it('слово от 13 букв — cs-hero--long; короче — только cs-hero', () => {
+    expect(heroClass('Дефективность')).toBe('cs-hero cs-hero--long');
+    expect(heroClass('Привилегированность')).toBe('cs-hero cs-hero--long');
+    expect(heroClass('Покинутость')).toBe('cs-hero');
+    expect(heroClass('Картина недели появится из дневника')).toBe('cs-hero');
+  });
+
+  it('heroWord — буквы самого длинного слова: кегль cs-hero--long делит ширину листа на длину слова', () => {
+    expect(heroWord('Недисциплинированный Ребёнок')).toBe(20);
+    expect(heroWord('Самопожертвование')).toBe(17);
+    expect(heroWord('Импульсивный / Недисциплинированный Ребёнок')).toBe(20);
+    expect(heroWord('')).toBe(0);
+  });
+});
+
+describe('topPair — верхняя пара «Выраженные + Тест» на компьютере', () => {
+  it('пустых «Выраженных» нет — плитка теста одна; с данными или пока грузятся — пара', () => {
+    expect(topPair(true, false, 0)).toEqual({ expressed: false, tile: true });
+    expect(topPair(true, false, 5)).toEqual({ expressed: true, tile: true });
+    expect(topPair(true, true, 0)).toEqual({ expressed: true, tile: true });
+    expect(topPair(false, false, 3)).toEqual({ expressed: true, tile: false });
+    expect(topPair(false, false, 0)).toEqual({ expressed: false, tile: false });
   });
 });

@@ -2,10 +2,11 @@
 // раскрытая строка режима справочника. Одна на сайт (ревью g5 r1: две ручные копии разметки); крупная
 // иконка-кнопка — SharePillButton рядом. aria-label — когда слово «Поделиться» не называет, чем делятся.
 import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+import '../styles/sheet-schemas.css';
 
 export function ShareLink({ onClick, ariaLabel }: { onClick: () => void; ariaLabel?: string }) {
   return (
-    <button type="button" className="ds-link ds-share-link" aria-label={ariaLabel} onClick={onClick}>
+    <button type="button" className="ds-link ss-share-link" aria-label={ariaLabel} onClick={onClick}>
       <ShareIcon /> Поделиться
     </button>
   );

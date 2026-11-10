@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
-import { YsqTherapyCta } from '../../../../shared/src/components/YsqTherapyCta';
+import { YsqTherapyCta } from './YsqTherapyCta';
 import { YsqSyncNote } from './YsqSyncNote';
 import { api } from '../../api';
 import type { contactCta } from '../../utils/therapistContact';
@@ -73,7 +73,7 @@ export function YsqResult(p: Props) {
         <YsqInactiveList schemas={inactiveSchemas} scores={p.scores} expanded={p.inactiveExpanded} onToggle={p.onToggleInactive} />
       )}
 
-      {/* CTA — общий компонент (shared, правило №3), клик трекается
+      {/* CTA — YsqTherapyCta (только сайт), клик трекается
           (правило №8, place 'ysq_result'). Прячем целиком, если сам
           пользователь терапевт (isSelf): «Написать вам» бессмысленно. */}
       {activeCount > 0 && !p.cta.isSelf && (
@@ -84,7 +84,7 @@ export function YsqResult(p: Props) {
       {p.history.length >= 2 && <YsqHistory history={p.history} />}
 
       <div className="ss-actions ss-actions--wide">
-        <button onClick={p.onDone} className="ds-btn">Сохранить и закрыть</button>
+        <button onClick={p.onDone} className={p.retakeConfirm ? 'ds-btn ds-btn--secondary' : 'ds-btn'}>Сохранить и закрыть</button>
         {p.retakeConfirm ? (
           <div className="pp-paper ss-confirm">
             <div>Прошлый результат останется в истории, новый появится после последнего вопроса.</div>

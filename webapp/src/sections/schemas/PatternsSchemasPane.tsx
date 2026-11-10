@@ -10,7 +10,7 @@ import { SchemaMapFold } from './SchemaMapFold';
 import { countSchemas, schemasWord } from './schemasModel';
 import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
 import type { ReactNode } from 'react';
-import type { YsqEntryLook } from './patternsHero';
+import { topPair, type YsqEntryLook } from './patternsHero';
 
 interface Props {
   mobile: boolean;
@@ -40,14 +40,14 @@ export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest,
   );
   const mine = { onAdd, onOpenSchema: (id: string) => pat.openPattern('schema', id), statusFor: pat.statusOf('schema').statusFor, freq: pat.entriesReady ? pat.schemaFreq : undefined };
   if (!mobile) {
-    const tile = ysqEntry !== 'hidden' && !blocks.isHidden('ysq_status');
-    // Пустые «Выраженные схемы» зовут «пройти справа» — без плитки теста рядом (вводная схем) их нет, как на телефоне.
+    // Пустые «Выраженные схемы» не рисуются, как на телефоне: плитка теста тогда одна во весь ряд (topPair).
+    const top = topPair(ysqEntry !== 'hidden' && !blocks.isHidden('ysq_status'), d.loading, d.ysqSchemaIds.length);
     return (
       <>
-        {(tile || d.loading || d.ysqSchemaIds.length > 0) && (
+        {(top.tile || top.expressed) && (
           <div className="cs-top">
-            {expressed}
-            {tile && <YsqTestCard progressAnswered={d.ysqProgressAnswered} completedAt={d.ysqCompletedAt} onStart={onStartTest} onPaper={ysqEntry === 'paper'} />}
+            {top.expressed && expressed}
+            {top.tile && <YsqTestCard progressAnswered={d.ysqProgressAnswered} completedAt={d.ysqCompletedAt} onStart={onStartTest} onPaper={ysqEntry === 'paper'} solo={!top.expressed} />}
           </div>
         )}
         <MySchemasBlock loading={d.loading} ids={allSchemaIds} {...mine} note={note} />

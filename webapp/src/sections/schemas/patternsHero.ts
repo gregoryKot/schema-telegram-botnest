@@ -9,6 +9,7 @@ import { ENTITY_LOOK, type SheetLook } from '../../../../shared/src/theme/entity
 import { NEIGHBOUR_HUE_GAP, hueGap } from '../../../../shared/src/theme/hueGap';
 import { patternLook } from '../../components/patternSheet/patternHue';
 import { introStep, type IntroStep } from './introStep';
+import { hasLongWord } from '../../components/paper/entryLook';
 
 /** Вид вводной — сущность шага: схемы (глина + слои), режимы — группа Критика (слива + Looming: шаг
  *  ведёт к знакомству с Критиком, а не к режимам вообще), дневник (персик + камешки). */
@@ -63,4 +64,20 @@ export function ysqEntryLook(hero: PatternsHero, heroHidden: boolean, resultsOnl
   if (hero.kind === 'loading') return 'hidden';
   if (hero.kind === 'intro' && hero.step === 'schemas' && !resultsOnly) return 'hidden';
   return hueGap(hero.look.hue, ENTITY_LOOK.ysq.hue) >= NEIGHBOUR_HUE_GAP ? 'paper' : 'white';
+}
+
+/** Класс листа-героя: слово от 13 букв («Самопожертвование», «Недисциплинированный») не встаёт рядом со знаком
+ *  или во всю ширину узкого листа кеглем героя — cs-hero--long берёт кегль по ширине листа и длине слова
+ *  (heroWord, client-schemas.css), а не перенос по слогам (ревью g5 r2). */
+export const heroClass = (title: string): string => `cs-hero${hasLongWord(title) ? ' cs-hero--long' : ''}`;
+
+/** Букв в самом длинном слове заголовка — `--cs-hero-word` для кегля cs-hero--long; ставит его тот, кто ставит
+ *  класс (обёртка «Паттерна недели» — `WeekPatternCard`; заголовки вводных короче 13 букв в слове). */
+export const heroWord = (title: string): number => Math.max(0, ...(title.match(/\p{L}+/gu) ?? []).map((w) => w.length));
+
+/** Верхняя пара компьютера: «Выраженные схемы» — только с данными (или пока грузятся): пустая карточка звала
+ *  «пройти справа» и стояла тусклым листом рядом с плиткой, а в колонку — над ней (ревью g5 r2). Без неё плитка
+ *  теста одна во весь ряд, как строка теста на телефоне. */
+export function topPair(tile: boolean, loading: boolean, expressedCount: number): { expressed: boolean; tile: boolean } {
+  return { expressed: loading || expressedCount > 0, tile };
 }

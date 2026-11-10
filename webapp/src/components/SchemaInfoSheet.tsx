@@ -10,6 +10,7 @@ import { SchemasTab } from './schemaInfoSheet/SchemasTab';
 import { YsqEntryTile } from './schemaInfoSheet/YsqEntryTile';
 import { SsSheet } from './schemaSheets/SsSheet';
 import { EntitySheet } from './paper/EntitySheet';
+import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 
 const YSQTestSheet = lazy(() => import('./YSQTestSheet').then(m => ({ default: m.YSQTestSheet })));
 
@@ -69,10 +70,11 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
     setContentKey(k => k + 1);
   };
 
-  // Справочник — раздел со своим героем (редизайн 2026-11): лист схем (глина, Layers) с входом в тест
-  // внутри; на компьютере — разворот, лист слева колонкой, вкладки справа (SpreadLayout).
+  // Справочник — раздел со своим героем (редизайн 2026-11): лист схем (глина) с входом в тест внутри; на
+  // компьютере — разворот, лист слева колонкой, вкладки справа (SpreadLayout). Отдельного знака у листа нет:
+  // картинку несёт веер теста на плитке входа — два рисунка в одной композиции повторялись (ревью g5 r2).
   const hero = (
-    <EntitySheet look="schemas" label="Схема-терапия" title={<>Как это <i>работает</i></>} titleAs="h1" className="ss-hero ss-lib-hero">
+    <EntitySheet look={{ hue: ENTITY_LOOK.schemas.hue }} label="Схема-терапия" title={<>Как это <i>работает</i></>} titleAs="h1" className="ss-hero ss-lib-hero">
       <YsqEntryTile state={{ hasResult, hasProgress, requested: ysqRequested }} onOpen={() => setShowTest(true)} />
     </EntitySheet>
   );

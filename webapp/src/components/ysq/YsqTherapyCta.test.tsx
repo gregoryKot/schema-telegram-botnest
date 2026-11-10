@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
-// Тест общего CTA «разобраться глубже» в результатах теста схем
-// (shared/src/components/YsqTherapyCta). Проверяем связку: рендер в вы-форме,
+// Тест CTA «разобраться глубже» в результатах теста схем
+// (components/ysq/YsqTherapyCta). Проверяем связку: рендер в вы-форме,
 // ссылка на практику, клик зовёт onLinkClick (правило №8 — трекинг
 // practice_link_click place 'ysq_result' навешивают обёртки фронтендов).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { YsqTherapyCta } from '../../../shared/src/components/YsqTherapyCta';
-import type { ContactCta } from '../../../shared/src/utils/therapistContact';
-import { ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
+import { YsqTherapyCta } from './YsqTherapyCta';
+import type { ContactCta } from '../../../../shared/src/utils/therapistContact';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 const CTA: ContactCta = {
   isSelf: false,

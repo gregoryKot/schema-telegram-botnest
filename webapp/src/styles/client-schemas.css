@@ -16,8 +16,11 @@
   .cs-head-actions .ds-btn.ds-btn--secondary { padding-inline: 14px; }
 }
 .ds-h1 i { font-style: italic; }
-.cs-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
-.cs-expressed { display: flex; flex-direction: column; gap: 14px; }
+/* Пара «Выраженные + Тест» встаёт в две колонки, только когда обе помещаются (420 на карточку — поле ~856, на
+   компьютере с открытым меню — окно ~1200); уже — в колонку, как на 900 (ревью g5 r2: на 1024–1199 карточки по 340
+   рвали названия по слогам, а знак теста ложился на кнопку). */
+.cs-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.cs-expressed { container: cs-expressed / inline-size; display: flex; flex-direction: column; gap: 14px; }
 .cs-expressed-list { display: flex; flex-direction: column; gap: 4px; }
 .cs-bar-row {
   display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(56px, 1fr) 48px; gap: 14px; align-items: center;
@@ -25,15 +28,26 @@
   font: inherit; text-align: left; color: var(--text);
 }
 /* Знак домена строки 44 (ревью g5 r1) — колонке названия больше места, чем полоске: «Самопожертвование»
-   целиком, а не «…овани / е»; длинное слово переносится по слогам. */
-.cs-bar-name { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
+   целиком, а не «…овани / е». Без переноса по слогам (ревью g5 r2): узкая карточка берёт раскладку телефона. */
+.cs-bar-name { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
 .cs-bar-sign { display: inline-flex; flex: none; width: 44px; }
 .cs-bar-track { height: 8px; border-radius: 4px; background: var(--paper-sunk); overflow: hidden; }
 .cs-bar-fill { display: block; height: 100%; border-radius: 4px; }
 .cs-bar-val { text-align: right; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 320 (поле карточки ~256): знак 32 и зазор 8 — «Самопожертвование» целиком рядом со знаком и баллом. */
+@container cs-expressed (max-width: 300px) {
+  .cs-bar-name { gap: 8px; }
+  .cs-bar-sign, .cs-bar-sign .pp-art--row { width: 32px; height: auto; }
+}
+/* Узкая карточка (телефон; на компьютере — поле уже 400): название и балл строкой, полоска под ними во всю ширину —
+   по ширине самой карточки, а не окна. */
+@container cs-expressed (max-width: 400px) {
+  .cs-bar-row { grid-template-columns: minmax(0, 1fr) 48px; gap: 6px 10px; padding: 6px 0; }
+  .cs-bar-track { grid-column: 1 / -1; grid-row: 2; height: 6px; }
+}
 
 /* Плитка теста YSQ (компьютер): бумага теста, подпись Literata, знак слоёв крупно справа внизу. */
-.cs-test { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; padding: 24px 24px 22px 26px; border-radius: 24px; box-sizing: border-box; }
+.cs-test { container: cs-test / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; padding: 24px 24px 22px 26px; border-radius: 24px; box-sizing: border-box; }
 .cs-test-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; align-self: stretch; }
 .ds-label.cs-test-label { color: var(--text-sub); }
 .cs-test-text { flex: 1; margin: 0; font-family: var(--serif); font-size: 24px; line-height: 1.25; text-wrap: balance; }
@@ -43,6 +57,16 @@
 .cs-test--white { background: var(--surface); box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)); }
 .cs-test-art { display: flex; width: 132px; }
 .cs-test-art .scn-sign { width: 100%; }
+/* Узкая плитка (поле уже ~410: текст рядом со знаком 132 уже кнопки «пройден … · результаты →»): знак 88 — в строке
+   подписи, текст и кнопка — во всю ширину под ним (ревью g5 r2: на 1024–1140 знак ложился на кнопку). */
+@container cs-test (max-width: 410px) {
+  .cs-test > .cs-test-body { display: contents; }
+  .cs-test .cs-test-label { grid-column: 1; grid-row: 1; align-self: center; }
+  .cs-test > .cs-test-art { grid-column: 2; grid-row: 1; align-self: start; width: 88px; }
+  .cs-test .cs-test-text, .cs-test .cs-test-btn { grid-column: 1 / -1; }
+}
+/* Пустых «Выраженных» рядом нет (patternsHero.topPair) — плитка одна во весь ряд: текст не тянется в строку на 900. */
+.cs-test--solo .cs-test-text { max-width: 30ch; }
 
 .cs-block, .cs-map { display: flex; flex-direction: column; gap: 16px; }
 .cs-map { gap: 22px; }
@@ -76,8 +100,6 @@
   .cs-sheet { padding-top: var(--safe-top); } /* статус-бар установленного приложения (#902) */
   .cs-head { gap: var(--space-12) var(--space-16); }
 
-  .cs-bar-row { grid-template-columns: minmax(0, 1fr) 48px; gap: 6px 10px; padding: 6px 0; }
-  .cs-bar-track { grid-column: 1 / -1; grid-row: 2; height: 6px; }
   .cs-expressed { padding: var(--space-16); gap: var(--space-8); }
   .cs-expressed .ds-head-row { gap: var(--space-2) var(--space-12); }
   .cs-test-text { font-size: 19px; }
@@ -110,6 +132,12 @@
 .cs-grp > .cs-mine-row:last-child { border-bottom: 0; }
 .cs-grp-right { display: inline-flex; align-items: center; gap: 12px; }
 .cs-grp .cs-freq { font-size: 13px; opacity: 1; color: var(--text-sub); flex-shrink: 0; }
+/* 320 (колонка групп ~288): «Самопожертвование» с частотой «2 дня» — плотнее строка и правый край, а не слово
+   на частоту (ревью g5 r2, рецепт r2-long-pattern). */
+@container sg-cols (max-width: 300px) {
+  .cs-grp > .cs-mine-row { gap: 10px; padding-inline: 14px 12px; }
+  .cs-grp .cs-grp-right { gap: 6px; }
+}
 .cs-skel-group { background: var(--paper-sunk); }
 .cs-skel-rows { gap: 1px; }
 
@@ -123,15 +151,19 @@
 .cs-week:hover .pa-sheet { background: oklch(0.895 0.04 var(--h)); }
 .cs-week:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-/* Герой «Паттернов» на узком листе (телефон): знак размера героя справа от надписи и заголовка, как сцена
-   «Дыши со мной», а не знак строки в углу у надписи (ревью g5 r1: рядом с героями «Сегодня» и «Практик»
-   «Паттерны» на телефоне выглядели тише). Заголовок встаёт в колонку рядом со знаком, подпись — во всю ширину;
-   на 320 (лист уже 280) колонке не хватает места под «Покинутость» — знак 88 остаётся в строке надписи. */
+/* Герой «Паттернов» на узком листе (телефон, планшет): знак размера героя 88 в строке надписи, а не знак строки
+   в углу (ревью g5 r1: рядом с героями «Сегодня» и «Практик» «Паттерны» выглядели тише); заголовок — во всю
+   ширину. Колонки заголовка рядом со знаком нет (ревью g5 r2: колонка 180–287 на 360–430 и 768 рвала
+   «Дефек-/тивность» по слогам). Перенос по слогам не включаем (как entry-flows.css): Chrome добивает им строку
+   и там, где слово влезает целиком; строки делит balance заголовка. */
 @container pa-sheet (max-width: 440px) { .pa-sheet.cs-hero[data-sign] > .pa-sheet-art { width: 88px; } }
-@container pa-sheet (min-width: 280px) and (max-width: 440px) {
-  .pa-sheet.cs-hero[data-sign] > .pa-sheet-art { grid-row: 1 / span 2; width: 96px; }
-  .pa-sheet.cs-hero[data-sign] > .pa-sheet-body > .pa-sheet-title { grid-column: 1; hyphens: auto; }
-}
+/* Слово от 13 букв (cs-hero--long; --cs-hero-word — его буквы, heroWord): кегль — не больше, чем ширина колонки
+   заголовка на слово (Literata — ~0.64em на букву, «Недисциплинированный» 26px — 333), чтобы слово встало целиком:
+   на узком листе колонка во всю ширину, шире — за вычетом знака (112 + 24 до 560, 160 + 24 до 720). */
+@container pa-sheet (max-width: 400px) { .pa-sheet.cs-hero--long .pa-sheet-title { font-size: min(26px, calc(100cqi / (0.66 * var(--cs-hero-word)))); } }
+@container pa-sheet (min-width: 401px) and (max-width: 440px) { .pa-sheet.cs-hero--long .pa-sheet-title { font-size: min(28px, calc(100cqi / (0.66 * var(--cs-hero-word)))); } }
+@container pa-sheet (min-width: 441px) and (max-width: 560px) { .pa-sheet.cs-hero--long .pa-sheet-title { font-size: min(28px, calc((100cqi - 136px) / (0.66 * var(--cs-hero-word)))); } }
+@container pa-sheet (min-width: 561px) and (max-width: 719px) { .pa-sheet.cs-hero--long .pa-sheet-title { font-size: min(32px, calc((100cqi - 184px) / (0.66 * var(--cs-hero-word)))); } }
 
 /* Вводная новичку и колесо детства: кнопка — в листе, по ширине текста. */
 .ds-btn.cs-intro-btn { justify-self: start; align-self: flex-start; margin-top: 6px; }

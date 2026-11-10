@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { ANSWER_LABELS, QUESTIONS, TOTAL_PAGES } from '../../hooks/useYsqTest';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 
 interface Props {
   page: number;
@@ -30,7 +31,7 @@ export function YsqQuestion({ page, slideKey, slideDir, answer, onSelect, onBack
 
       <div className="ss-test-body">
         <div key={slideKey} className={`ss-test-col ${slideDir === 'forward' ? 'ss-slide-r' : 'ss-slide-l'}`}>
-          <div className="pp-paper ss-q"><p className="ss-q-text">{QUESTIONS[page]}</p></div>
+          <div className="pp-paper ss-q"><p className="ss-q-text">{glue(QUESTIONS[page])}</p></div>
           <div className="ss-scale" role="radiogroup" aria-label="Ответ от 1 до 6">
             {ANSWER_LABELS.map((label, i) => {
               const value = i + 1;
@@ -44,7 +45,7 @@ export function YsqQuestion({ page, slideKey, slideDir, answer, onSelect, onBack
                   className={`ss-scale-btn${active ? ' is-active' : ''}`}
                 >
                   <span className="ss-scale-num">{value}</span>
-                  <span className="ss-scale-lbl">{label}</span>
+                  <span className="ss-scale-lbl">{glue(label)}</span>
                 </button>
               );
             })}

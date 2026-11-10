@@ -3,6 +3,7 @@ import { useTr } from '../../utils/addressForm';
 import { SignHero } from '../paper/SignHero';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { buildModes } from './data';
+import { glue } from '../../../../shared/src/utils/typo';
 import { ModeCheckinOverlay } from './ModeCheckinOverlay';
 import { ModesGroup } from './ModesGroup';
 
@@ -19,7 +20,7 @@ export function ModesTab() {
       <button type="button" onClick={() => setShowCheckin(true)} className="pp-paper ss-checkin-cta" style={{ '--h': modes.hue } as CSSProperties}>
         <span className="ss-cta-text">
           <span className="ds-label ss-checkin-eyebrow">Режим прямо сейчас</span>
-          <span className="ss-checkin-title">{tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →')}</span>
+          <span className="ss-checkin-title">{glue(tr('Как ты себя чувствуешь? →', 'Как вы себя чувствуете? →'))}</span>
         </span>
         <span className="ss-checkin-sign" aria-hidden="true"><SignHero sign={modes.sign} /></span>
       </button>

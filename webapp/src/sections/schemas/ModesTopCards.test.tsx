@@ -52,7 +52,7 @@ describe('ModesTopCards', () => {
 
   it('режимы есть, записей за неделю нет: строка ведёт в дневник', () => {
     setup({ hasModes: true });
-    fireEvent.click(screen.getByRole('button', { name: /Картина недели появится из дневника/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Картина недели появится из\sдневника/ }));
     expect(screen.getByText('экран дневника')).toBeTruthy();
   });
 

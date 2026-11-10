@@ -7,6 +7,9 @@
 @import './ss-sheet.css';
 @import './schema-library.css';
 .ss-foot { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; padding-top: 8px; }
+/* Тихая ссылка «Поделиться» (share/ShareLink — карточка схемы и строка режима справочника): иконка и слово,
+   зона нажатия 44. Файл группы, а не глобальный cabinet.css (ревью g5 r2): ShareLink подключает его сам. */
+.ds-link.ss-share-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 .cs-mapfold-head:focus-visible, .cs-tile:focus-visible, .ss-row:focus-visible, .ss-pick:focus-visible, .ss-scale-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── Группа на бумаге (SignGroup): лист домена или группы, знак 60 у подписи, белый список ── */
@@ -48,8 +51,9 @@
 .cs-mapfold-sign { display: flex; flex: none; width: 60px; }
 .cs-mapfold-sign .pp-art--square { width: 100%; height: auto; }
 .cs-mapfold-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
-/* Длинное слово («Сверхбдительность», «Гиперкомпенсация») не выходит за колонку: перенос по слогам. */
-.cs-mapfold-name { font-family: var(--serif); font-size: 20px; line-height: 1.2; overflow-wrap: anywhere; hyphens: auto; }
+/* Длинное слово («Сверхбдительность», «Гиперкомпенсация») не выходит за колонку; перенос по слогам — только на узком
+   листе (≤340), шире Literata с дефисом посреди слова смотрится неряшливо (ревью g5 r2). */
+.cs-mapfold-name { font-family: var(--serif); font-size: 20px; line-height: 1.2; overflow-wrap: anywhere; }
 .cs-mapfold-meta { font-size: 13px; color: var(--text-sub); }
 .cs-mapfold-head .ds-fold-chev { flex: none; color: var(--text-sub); }
 .cs-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; padding: 4px 8px 10px; }
@@ -75,7 +79,7 @@ button.cs-tile:hover { background: oklch(0.97 0.012 var(--h)); }
   .cs-mapfold-name { font-size: 18px; }
   .cs-tiles { padding: 2px 4px 6px; }
 }
-@container mapfold (max-width: 340px) { .cs-mapfold-name { font-size: 17px; } }
+@container mapfold (max-width: 340px) { .cs-mapfold-name { font-size: 17px; hyphens: auto; } }
 
 /* ── Строка выбора (PickRow) в белом списке группы: выбранная — бумага группы с галочкой ── */
 .ss-pick {

@@ -16,7 +16,7 @@ export function YsqEntryTile({ state, onOpen }: { state: YsqEntryState; onOpen: 
       <span className="ss-ysq-tile-art" aria-hidden="true"><SceneQuizMini hue={ENTITY_LOOK.ysq.hue} /></span>
       <span className="ss-cta-text">
         {label && <span className="ds-label ss-ysq-tile-label">{label}</span>}
-        <span className="ss-cta-title">{title}</span>
+        <span className="ss-cta-title">{glue(title)}</span>
         <span className="ss-ysq-tile-sub">{glue(sub)}</span>
       </span>
       <span className="ss-ysq-tile-go" aria-hidden="true"><GlyphArrowRight /></span>

@@ -23,7 +23,7 @@ export function NeedsBlock({ childhoodRatings, onOpenChildhoodWheel, onOpenNeed 
       </div>
       {!hasChildhood && <p className="ds-empty">{NEEDS_WHAT}</p>}
       {!hasChildhood && (
-        <EntitySheet look="childhood_wheel" title="Колесо детства" sub="Как потребности удовлетворялись в детстве?" className="cs-wheel">
+        <EntitySheet look="childhood_wheel" title="Колесо детства" sub="Как потребности удовлетворялись в детстве?" className="cs-wheel cs-hero">
           <button type="button" className="ds-btn cs-intro-btn" onClick={() => onOpenChildhoodWheel?.()}>Пройти колесо детства →</button>
         </EntitySheet>
       )}

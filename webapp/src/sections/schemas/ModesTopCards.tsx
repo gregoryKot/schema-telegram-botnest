@@ -4,6 +4,7 @@ import { useTr } from '../../utils/addressForm';
 import type { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import { modesHeroModel, type ModesHeroRow } from '../../../../shared/src/pattern/modesHeroModel';
 import { Pebbles } from '../../components/art/PaperArt';
+import { glue } from '../../../../shared/src/utils/typo';
 import { WeekPatternCard } from './WeekPatternCard';
 import { PatternsIntro } from './PatternsIntro';
 import { PatternsHeroSkeleton } from './PatternsTopCards';
@@ -31,7 +32,7 @@ function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void }
     <div className="ds-card ds-card--flush">
       {rows.map((r) => (
         <button key={r.label} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={r.onClick}>
-          {art && <span className="pp-row-art">{art}</span>}<span className="ds-list-body"><span className="ds-list-title">{r.label}</span><span className="ds-list-sub">{r.sub}</span></span>
+          {art && <span className="pp-row-art">{art}</span>}<span className="ds-list-body"><span className="ds-list-title">{glue(r.label)}</span><span className="ds-list-sub">{glue(r.sub)}</span></span>
           <span className="ds-chev" aria-hidden="true" />
         </button>
       ))}

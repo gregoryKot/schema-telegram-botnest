@@ -1,20 +1,21 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { ENTITY_LOOK } from '../theme/entityLook';
-import type { ContactCta } from '../utils/therapistContact';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import type { ContactCta } from '../../../../shared/src/utils/therapistContact';
+import { glue } from '../../../../shared/src/utils/typo';
 
 interface Props {
   cta: ContactCta;
-  /** useTr() вызывающего фронтенда: выбирает вариант обращения по addressForm. */
+  /** useTr() вызывающего экрана: выбирает вариант обращения по addressForm. */
   tr: (ty: string, vy: string) => string;
   /** Аналитика клика (practice_link_click, place 'ysq_result'). */
   onLinkClick: () => void;
-  /** Знак листа (Talk) — рисунок фронтенда. */
+  /** Знак листа (Talk) — SignHero по ENTITY_LOOK.therapist.sign. */
   art?: ReactNode;
 }
 
-// CTA «разобраться глубже» в результатах теста схем. Общий для обоих
-// фронтендов (правило №3); обёртки дают свой useTr и трекинг. Родитель
-// уже проверил activeCount > 0 && !cta.isSelf перед рендером.
+// CTA «разобраться глубже» в результатах теста схем. Только сайт (webapp — единственный потребитель; из
+// shared перенесён в ревью g5 r2, как YsqSyncNote): классы pp-paper, ss-deep*, ds-btn — его стили
+// (schema-library.css). Родитель уже проверил activeCount > 0 && !cta.isSelf перед рендером.
 // Вид (редизайн 2026-11, b16): лист бумаги терапевта (ENTITY_LOOK.therapist, оттенок отсюда же)
 // со знаком от экрана (art — рисунок webapp по ENTITY_LOOK.therapist.sign), ссылка —
 // второстепенной кнопкой: залитая на экране результата одна, «Сохранить и закрыть».
@@ -35,9 +36,7 @@ export function YsqTherapyCta({ cta, tr, onLinkClick, art }: Props) {
           {tr('Хочешь разобраться глубже?', 'Хотите разобраться глубже?')}
         </div>
         <div className="ss-deep-text">
-          Схемы — паттерны, сложившиеся давно. Их можно менять, но это требует
-          времени и поддержки. Схема-терапия — один из самых изученных методов
-          для этой работы.
+          {glue('Схемы — паттерны, сложившиеся давно. Их можно менять, но это требует времени и поддержки. Схема-терапия — один из самых изученных методов для этой работы.')}
         </div>
         <a
           href={cta.url}

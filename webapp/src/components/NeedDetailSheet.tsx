@@ -9,7 +9,7 @@ import type { NeedId } from '../../../shared/src/needs/types';
 import { glue } from '../../../shared/src/utils/typo';
 import { inkVars } from './history/needInk';
 import { DomainMark } from './DomainMark';
-import { SignArt } from './art/SignArt';
+import { TipHead } from './schemaSheets/TipHead';
 import '../styles/sheet-tracker.css';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
@@ -88,10 +88,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
         )}
 
         <div className="ds-card nd-card">
-          <div className="nd-tips-head">
-            <span className="pp-row-art" aria-hidden="true"><SignArt sign="leaf" size="row" /></span>
-            <div className="ds-label">{level === 'low' ? 'Что поможет сейчас' : 'Что питает'}</div>
-          </div>
+          <TipHead>{level === 'low' ? 'Что поможет сейчас' : 'Что питает'}</TipHead>
           <ol className="nd-tips">
             {tips.map((tip, i) => <li key={i}><span className="nd-tip-n">{i + 1}</span><p>{tip}</p></li>)}
           </ol>

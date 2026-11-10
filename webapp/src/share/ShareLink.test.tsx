@@ -12,7 +12,7 @@ describe('ShareLink', () => {
     render(<ShareLink onClick={onClick} ariaLabel="Поделиться режимом «Уязвимый Ребёнок»" />);
     const btn = screen.getByRole('button', { name: 'Поделиться режимом «Уязвимый Ребёнок»' });
     expect(btn.textContent?.trim()).toBe('Поделиться');
-    expect(btn.className).toBe('ds-link ds-share-link');
+    expect(btn.className).toBe('ds-link ss-share-link');
     fireEvent.click(btn);
     expect(onClick).toHaveBeenCalledTimes(1);
   });

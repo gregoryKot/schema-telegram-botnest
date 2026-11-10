@@ -49,8 +49,8 @@ export function MapFold({ look, title, meta, tiles, onOpen, open: openProp, onTo
             const hl = t.id === highlightId;
             const cls = 'cs-tile' + (t.isMine ? ' is-mine' : '') + (hl ? ' is-hl' : '');
             const body = <>
-              <span className="cs-tile-name">{t.name}{t.isMine && <span className="cs-tile-check" aria-hidden="true"><GlyphCheck /></span>}</span>
-              <span className="cs-tile-desc">{t.desc}</span>
+              <span className="cs-tile-name">{glue(t.name)}{t.isMine && <span className="cs-tile-check" aria-hidden="true"><GlyphCheck /></span>}</span>
+              <span className="cs-tile-desc">{glue(t.desc)}</span>
             </>;
             return onOpen
               ? <button key={t.id} type="button" className={cls} onClick={() => onOpen(t.id)} ref={hl ? (el) => { hlRef.current = el; } : undefined} aria-current={hl || undefined}>{body}</button>

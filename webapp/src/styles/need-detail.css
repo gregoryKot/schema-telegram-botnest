@@ -11,8 +11,6 @@
 .nd-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .nd-row-name { font: 400 18px/1.25 var(--serif); color: var(--text); }
 .nd-row-desc { font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
-.nd-tips-head { display: flex; align-items: center; gap: 10px; }
-.nd-tips-head .pp-row-art { justify-content: flex-start; }
 .nd-tips { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 .nd-tips > li { display: flex; gap: 14px; }
 /* Номер совета — мелкий текст на бумаге потребности: --text (AA 4.5:1), а не --need-text (тот держит 4.5:1

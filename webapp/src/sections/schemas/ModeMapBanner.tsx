@@ -16,7 +16,7 @@ export function ModeMapBanner({ count, onOpen }: { count: number; onOpen: () => 
   return (
     <button className="pp-paper cs-banner" style={hueStyle(MODES.hue)} onClick={onOpen}>
       <span className="cs-banner-text">
-        <span className="ds-h3">Карта режимов с терапевтом</span>
+        <span className="ds-h3">{glue('Карта режимов с терапевтом')}</span>
         <span className="cs-banner-sub">{glue(count === 1 ? 'Схема того, как режимы развиваются на триггер' : `${count} карты · как режимы развиваются на триггер`)}</span>
         <span className="pp-arrow cs-banner-arrow" aria-hidden="true">→</span>
       </span>

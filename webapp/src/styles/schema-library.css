@@ -56,6 +56,7 @@
 .ss-checkin-sign { display: flex; flex: none; width: 92px; }
 .ss-checkin-sign .scn-sign, .ss-deep-art .scn-sign { width: 100%; }
 /* Группа режимов — SignGroup (sheet-schemas.css, sg-*): лист и белый список общие с «Паттернами». */
+.ss-mode { container: ss-mode / inline-size; }
 .ss-mode + .ss-mode { border-top: 1px solid var(--paper-sunk); }
 .ss-mode.is-open { background: oklch(0.975 0.01 var(--h)); }
 .ss-mode-head {
@@ -65,7 +66,11 @@
 .ss-mode-head:focus-visible { outline-offset: -2px; }
 .ss-mode-head:hover { background: oklch(0.96 0.015 var(--h)); }
 .ss-mode-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.ss-mode-name { font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; hyphens: auto; }
+.ss-mode-name { font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; }
+/* Без переноса по слогам (ревью g5 r2: на 390 «Импульсивный / Недисциплинированный Ребёнок» рвался внутри слова, а
+   не после « / »; на 320 Chrome рвал и влезающий «Разъярённый»). В узкой строке (320) — кегль 16: «Недисциплинированный»
+   встаёт целиком (208 при колонке 208 — поле строки шире на 8). */
+@container ss-mode (max-width: 300px) { .ss-mode-head { padding-inline: 12px; } .ss-mode-name { font-size: 16px; } }
 .ss-mode-feel { font-size: 12.5px; line-height: 1.45; color: var(--text-sub); }
 .ss-mode-more { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 0 16px 4px; }
 
@@ -77,8 +82,11 @@
   font: 600 14px/1.3 var(--sans); color: var(--text); transition: background .12s;
 }
 .ss-checkin-tile-sign { display: flex; width: 60px; margin-left: -6px; }
+/* Плитка без знака (тот же знак у соседа слева, checkinSigns) — подпись внизу, как у соседних. */
+.ss-checkin-label { margin-top: auto; }
 .ss-checkin-tile-sign .pp-art--square { width: 60px; height: auto; }
 .ss-card-stack { display: flex; flex-direction: column; gap: 14px; }
+/* Шапка карточки совета (TipHead): Leaf строкой и подпись — чек-ин режима и лист потребности. */
 .ss-tip-head { display: flex; align-items: center; gap: 10px; }
 .ss-tip-head .pp-row-art { justify-content: flex-start; }
 
@@ -94,7 +102,9 @@
 
 /* ── Тест YSQ ───────────────────────────────────────────────────────────── */
 .ss-test { position: fixed; inset: 0; z-index: 300; background: var(--bg); display: flex; flex-direction: column; }
-.ss-test-head { flex-shrink: 0; padding: 12px clamp(16px, 4vw, 32px) 0; display: flex; flex-direction: column; gap: 10px; max-width: 760px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+/* Шапка, колонка вопроса и «Назад» — одна колонка 760 (ревью g5 r2: шапка с отступом внутри max-width была уже
+   листа вопроса на 64px — на 1280 x=292 против 260). */
+.ss-test-head { flex-shrink: 0; padding: 12px clamp(16px, 4vw, 32px) 0; display: flex; flex-direction: column; gap: 10px; max-width: calc(760px + 2 * clamp(16px, 4vw, 32px)); width: 100%; margin: 0 auto; box-sizing: border-box; }
 .ss-test-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ss-test-count { font-variant-numeric: tabular-nums; }
 .ss-progress { height: 6px; border-radius: 3px; background: oklch(0.9 0.03 var(--h)); overflow: hidden; }
@@ -115,11 +125,12 @@
   transition: background .12s, border-color .12s, color .12s;
 }
 .ss-scale-btn:hover { border-color: var(--line-hover); }
+/* Выбранный ответ — бумага теста и рамка; цифра — --text, как подпись: --c-clay-strong на глине 4.33:1 при 22px
+   (ревью g5 r2, сверка — accentTextContrast.test.ts «на цветной бумаге»). */
 .ss-scale-btn.is-active { background: oklch(0.915 0.03 var(--h)); border-color: oklch(0.7 0.07 var(--h)); color: var(--text); }
-.ss-scale-btn.is-active .ss-scale-num { color: var(--c-clay-strong); }
 .ss-scale-num { font-family: var(--serif); font-size: 22px; line-height: 1; }
 .ss-scale-lbl { font-size: 11.5px; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
-.ss-test-nav { flex-shrink: 0; max-width: 760px; width: 100%; margin: 0 auto; padding: 8px clamp(16px, 4vw, 32px) 24px; box-sizing: border-box; display: flex; }
+.ss-test-nav { flex-shrink: 0; max-width: calc(760px + 2 * clamp(16px, 4vw, 32px)); width: 100%; margin: 0 auto; padding: 8px clamp(16px, 4vw, 32px) 24px; box-sizing: border-box; display: flex; }
 
 /* Вступление: сцена героя (веер вопросов с Layers), факты одной карточкой, шкала. */
 .ss-quiz-scene { position: relative; display: block; width: 100%; }
@@ -152,10 +163,10 @@
 .ss-res--plain { padding: 0; border-radius: 0; }
 .ss-res-card { container: ss-res-card / inline-size; display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 4px; border-radius: 14px; background: var(--surface); }
 .ss-res-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 10px; }
-.ss-res-name { flex: 1 1 auto; min-width: 0; font-family: var(--serif); font-size: 18px; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; hyphens: auto; }
+.ss-res-name { flex: 1 1 auto; min-width: 0; font-family: var(--serif); font-size: 18px; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; }
 /* Узкая карточка (320): «Самопожертвование» шире места рядом с баллом — балл с дельтой уходит под название,
    а не название на дельту (ревью g5 r1). */
-@container ss-res-card (max-width: 280px) { .ss-res-top { flex-wrap: wrap; } .ss-res-name { flex-basis: 100%; } }
+@container ss-res-card (max-width: 280px) { .ss-res-top { flex-wrap: wrap; } .ss-res-name { flex-basis: 100%; hyphens: auto; } }
 .ss-res-val { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; font-family: var(--serif); font-size: 26px; line-height: 1; }
 .ss-res-num { color: var(--need-text); }
 .ss-res-val small { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--text-sub); }
@@ -175,6 +186,9 @@
 .ss-mini { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; }
 .ss-mini + .ss-mini { border-top: 1px solid var(--paper-sunk); }
 .ss-mini-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; color: var(--text-sub); }
+/* Балл «2.6 из 6» не рвётся на две строки рядом с длинным названием (ревью g5 r2) — переносится название. */
+.ss-mini-top > span { min-width: 0; }
+.ss-mini-top b { flex: none; white-space: nowrap; }
 .ss-mini-track { height: 4px; border-radius: 2px; background: var(--paper-sunk); overflow: hidden; }
 .ss-mini-track > span { display: block; height: 100%; border-radius: 2px; background: var(--text-ghost); }
 .ss-mini.is-mid .ss-mini-track > span { background: var(--warn); }
@@ -226,6 +240,11 @@
   .ss-deep { grid-template-columns: 56px minmax(0, 1fr); gap: 12px; }
   .ss-deep-art { width: 56px; }
   .ss-checkin-sign { width: 72px; }
+}
+/* 320–359: «чувствуешь? →» держится вместе (glue) — знак и кегль меньше, чтобы связка встала в колонку. */
+@media (max-width: 359px) {
+  .ss-checkin-sign { width: 56px; }
+  .ss-checkin-title { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ss-slide-r, .ss-slide-l { animation: none; }

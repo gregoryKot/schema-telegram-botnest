@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildModeCheckin, buildModes } from './data';
-import { checkinLook, libraryGroupLook } from './modesLook';
+import { checkinLook, checkinTiles, libraryGroupLook } from './modesLook';
 
 const tr = (ty: string) => ty;
 
@@ -41,5 +41,21 @@ describe('checkinLook — плитка чек-ина', () => {
 
   it('у каждой плитки есть знак', () => {
     items.forEach((i) => expect(checkinLook(i).sign).toBeTruthy());
+  });
+});
+
+describe('checkinTiles — знак у первой плитки серии', () => {
+  const tiles = checkinTiles(buildModeCheckin(tr));
+  const sign = (label: string) => tiles.find((t) => t.item.label === label)!.sign;
+
+  it('три Критика и три здоровых режима подряд — знак только у первой плитки серии, бумага у всех', () => {
+    expect([sign('Давление / «надо больше»'), sign('Стыдно / со мной что-то не так'), sign('Вина / долг перед всеми')]).toEqual(['looming', null, null]);
+    expect([sign('Поддерживаю себя'), sign('Легко и радостно'), sign('Спокойно и устойчиво')]).toEqual(['together', null, null]);
+    expect(tiles.every((t) => t.hue === checkinLook(t.item).hue)).toBe(true);
+  });
+
+  it('свой знак и разные знаки соседей остаются: Flare рядом с ChildCare, три копинга — три знака', () => {
+    expect([sign('Одиноко / страшно'), sign('Злюсь / несправедливо')]).toEqual(['child_care', 'flare']);
+    expect([sign('Хочу отключиться'), sign('Соглашаюсь, хотя не хочу'), sign('Контролирую / превосхожу')]).toEqual(['shelter', 'yield', 'shield']);
   });
 });
