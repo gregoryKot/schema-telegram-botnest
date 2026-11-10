@@ -4,7 +4,16 @@ import { fmtDate, momentDayKey } from '../../utils/format';
 import { useTr } from '../../utils/addressForm';
 import { hueStyle } from '../../lib/tone';
 import { Skeleton } from '../../components/Skeleton';
-import { rankExpressed, type YsqScore } from './schemasModel';
+import { SignArt } from '../../components/art/SignArt';
+import { domainLook } from '../../../../shared/src/theme/entityLook';
+import { findSchema, rankExpressed, type YsqScore } from './schemasModel';
+
+/** Знак домена схемы у строки (строчный размер вместо цветной палочки): какой домен — видно знаком. */
+function DomainSign({ id }: { id: string }) {
+  const domain = findSchema(SCHEMA_DOMAINS, id)?.domain;
+  const look = domain ? domainLook(domain.id) : null;
+  return <span className="cs-bar-sign" aria-hidden="true">{look && <SignArt sign={look.sign} size="nav" />}</span>;
+}
 
 interface Props {
   loading: boolean;
@@ -14,7 +23,8 @@ interface Props {
   onOpenSchema: (id: string) => void;
 }
 
-/** Карточка «Выраженные схемы»: бары цвета домена по результатам YSQ. */
+/** Карточка «Выраженные схемы»: бары цвета домена по результатам YSQ — плотный список данных на белом
+ *  листе (принцип 6: белая карточка остаётся у плотных списков), у строки — знак домена. */
 export function ExpressedCard({ loading, ysqSchemaIds, ysqScores, completedAt, onOpenSchema }: Props) {
   const tr = useTr();
   const items = rankExpressed(SCHEMA_DOMAINS, ysqSchemaIds, ysqScores);
@@ -34,7 +44,7 @@ export function ExpressedCard({ loading, ysqSchemaIds, ysqScores, completedAt, o
         <div className="cs-expressed-list">
           {items.map(it => (
             <button key={it.id} className="cs-bar-row" style={hueStyle(it.hue)} onClick={() => onOpenSchema(it.id)}>
-              <span className="cs-bar-name"><i className="cs-bar-mark tone-fill" />{it.name}</span>
+              <span className="cs-bar-name"><DomainSign id={it.id} />{it.name}</span>
               <span className="cs-bar-track"><span className="cs-bar-fill tone-fill" style={{ width: `${it.barPct}%` }} /></span>
               <span className="cs-bar-val tone-ink">{it.valueLabel}</span>
             </button>

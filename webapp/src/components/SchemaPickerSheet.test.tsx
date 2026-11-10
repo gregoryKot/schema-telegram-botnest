@@ -65,9 +65,13 @@ describe('SchemaPickerSheet — выбор', () => {
     expect(row?.className).not.toContain('is-selected');
   });
 
-  it('«Готово» видна всегда — не завязана на счётчик', () => {
+  it('«Готово» видна всегда — не завязана на счётчик (внизу листа и в шапке, b15)', () => {
     renderSheet({});
-    expect(screen.getByText('Готово')).toBeTruthy();
+    // Без выбора обе кнопки — «Готово»: в шапке счётчик появляется только с выбором («Готово · N»).
+    expect(screen.getAllByRole('button', { name: 'Готово' })).toHaveLength(2);
+    fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
+    expect(screen.getByRole('button', { name: 'Готово · 1' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Готово' })).toBeTruthy();
   });
 });
 
@@ -97,7 +101,7 @@ describe('SchemaPickerSheet — автосохранение (баг PR #237)', 
     const onClose = vi.fn();
     const { unmount } = renderSheet({ onSave, onClose });
     fireEvent.click(screen.getByText('Покинутость / Нестабильность'));
-    fireEvent.click(screen.getByText('Готово'));
+    fireEvent.click(screen.getByRole('button', { name: 'Готово · 1' }));
     expect(onClose).toHaveBeenCalledTimes(1);
     unmount();
     expect(onSave).toHaveBeenCalledTimes(1);

@@ -7,6 +7,7 @@ import { PatternsIntro } from './PatternsIntro';
 import { introStep } from './introStep';
 import { ScreenBlock } from '../../components/customize/ScreenBlock';
 import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
+import { Skeleton } from '../../components/Skeleton';
 
 interface Props {
   /** Профиль ещё грузится или записи дневника не пришли — ничего не рисуем. */
@@ -23,13 +24,23 @@ interface Props {
   blocks: SiteScreenBlocks;
 }
 
+/** Силуэт героя, пока профиль и записи грузятся: лист с местом под знак, а не пустота (принцип 8). */
+export function PatternsHeroSkeleton() {
+  return (
+    <div className="sks-sheet sks-sheet--plain cs-hero-skel" aria-hidden="true">
+      <div className="cs-hero-skel-body"><Skeleton width={120} height={11} /><Skeleton width="55%" height={30} /><Skeleton width="80%" height={13} /></div>
+      <Skeleton width={88} height={88} radius={44} />
+    </div>
+  );
+}
+
 /**
  * Верх экрана «Мои паттерны»: есть запись за неделю — «паттерн недели»;
  * нет — вводная новичку с одним главным действием (тест / режим / дневник).
  */
 export function PatternsTopCards({ ready, hasSchemas, hasModes, hasEntries, top, testProgress, onOpenPattern, onOpenModeEx, onStartTest, blocks }: Props) {
   const navigate = useNavigate();
-  if (!ready) return null;
+  if (!ready) return blocks.isHidden('heroes') ? null : <PatternsHeroSkeleton />;
   const step = introStep(hasSchemas, hasModes);
   if (!top && step === 'diary' && hasEntries) return null;
   const act = step === 'schemas' ? onStartTest : step === 'modes' ? () => onOpenModeEx(INTRO_MODE_ID) : () => navigate('/diary');

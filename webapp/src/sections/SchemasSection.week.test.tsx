@@ -96,7 +96,7 @@ describe('паттерн недели', () => {
       schemaEntry(2, daysAgo(1), ['abandonment']),
     ]);
     renderSection();
-    const card = (await screen.findByText('Чаще всего звучит')).closest('button')!;
+    const card = (await screen.findByText('Чаще всего звучит')).closest<HTMLElement>('[role="button"]')!;
     expect(within(card).getByText(/2 из 7 дней/)).toBeTruthy();
     fireEvent.click(card);
     expect((await screen.findAllByText(/Покинутость/)).length).toBeGreaterThan(1);

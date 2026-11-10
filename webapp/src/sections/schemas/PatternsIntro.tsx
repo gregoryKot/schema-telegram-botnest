@@ -1,6 +1,6 @@
 import { useTr } from '../../utils/addressForm';
-import { Layers, Pebbles } from '../../components/art/PaperArt';
-import { Cluster } from '../../components/art/PaperArtSigns';
+import type { EntityId } from '../../../../shared/src/theme/entityLook';
+import { EntitySheet } from '../../components/paper/EntitySheet';
 import type { IntroStep } from './introStep';
 import { schemaIntro, modeIntro, diaryIntro } from '../../../../shared/src/pattern/weekPatternText';
 interface Props {
@@ -10,7 +10,11 @@ interface Props {
   onAction: () => void;
 }
 
-/** Вводная новичку («откуда это и зачем») с одним главным действием. */
+/** Вид вводной — сущность шага из ENTITY_LOOK: схемы (глина + слои), режимы (небо + круги), дневник. */
+const LOOK: Record<IntroStep, EntityId> = { schemas: 'schemas', modes: 'modes', diary: 'diary' };
+
+/** Вводная новичку («откуда это и зачем») с одним главным действием — тот же лист-герой, что у
+ *  «Паттерна недели»: бумага сущности шага и её знак крупно, кнопка — в листе. */
 export function PatternsIntro({ step, testProgress, onAction }: Props) {
   const tr = useTr();
   const intro = step === 'schemas' ? schemaIntro(tr) : step === 'modes' ? modeIntro(tr) : null;
@@ -19,14 +23,8 @@ export function PatternsIntro({ step, testProgress, onAction }: Props) {
     ? (testProgress !== null ? `Продолжить тест (${testProgress} из 116) →` : 'Начать тест →')
     : step === 'modes' ? 'Начать знакомство →' : 'Открыть дневник →';
   return (
-    <div className="pp-block cs-intro">
-      <div className="pp-hero"><div className="pp-hero-body">
-          <div className="ds-label">{intro ? `${intro.label} · ${intro.chip}` : 'Дневник'}</div>
-          <h3 className="pp-hero-title">{title}</h3>
-          <p className="pp-hero-text">{sub}</p>
-        </div>{step === 'schemas' ? <Layers size="hero" /> : step === 'modes' ? <Cluster size="hero" /> : <Pebbles size="hero" />}
-      </div>
-      <button className="ds-btn cs-test-btn" onClick={onAction}>{button}</button>
-    </div>
+    <EntitySheet look={LOOK[step]} label={intro ? `${intro.label} · ${intro.chip}` : 'Дневник'} title={title} sub={sub} className="cs-intro">
+      <button type="button" className="ds-btn cs-intro-btn" onClick={onAction}>{button}</button>
+    </EntitySheet>
   );
 }

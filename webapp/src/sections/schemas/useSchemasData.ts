@@ -1,5 +1,5 @@
 // Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс теста, число карт режимов от терапевта и сохранение ручных выборов.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY, cacheMySchemaIds, cacheMyModeIds, cacheMyPatternsFromProfile, cachedMyIds, trustedProfileLists } from '../../utils/storageKeys';
 import type { YsqScore } from './schemasModel';
@@ -19,6 +19,9 @@ export function useSchemasData() {
   const [loading, setLoading] = useState(true);
   // Отказ записи виден человеку (SaveErrorNote в SchemasSection), не только телеметрии.
   const save = useSaveFailure();
+  // Что сохранялось последним: сбой показывается у этого блока, «Повторить» шлёт этот же список.
+  const [saveKind, setSaveKind] = useState<'schemas' | 'modes'>('schemas');
+  const lastSave = useRef<(() => void) | null>(null);
   const ysqVersion = useYsqResultVersion(); // тест сдан поверх экрана — перечитать профиль без F5 (QA 2026-11)
 
   useEffect(() => {
@@ -57,18 +60,23 @@ export function useSchemasData() {
   function saveSchemas(ids: string[]) {
     cacheMySchemaIds(ids);
     setManualSchemaIds(ids);
-    save.track(api.updateSettings({ mySchemaIds: ids }), () => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
+    setSaveKind('schemas');
+    lastSave.current = () => save.track(api.updateSettings({ mySchemaIds: ids }), () => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
+    lastSave.current();
   }
 
   function saveModes(ids: string[]) {
     cacheMyModeIds(ids);
     setMyModeIds(ids);
-    save.track(api.updateSettings({ myModeIds: ids }), () => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
+    setSaveKind('modes');
+    lastSave.current = () => save.track(api.updateSettings({ myModeIds: ids }), () => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
+    lastSave.current();
   }
 
   return {
     loading, manualSchemaIds, myModeIds, ysqSchemaIds, ysqScores,
-    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes, saveFailed: save.failed,
+    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes, saveFailed: save.failed, saveKind,
+    retrySave: () => lastSave.current?.(), // повтор того же списка; при 409 (saveBlocked) не нужен
     saveBlocked: save.failed && isUnwritableError(save.error), // 409: прежний список не читается — повтор не поможет
   };
 }

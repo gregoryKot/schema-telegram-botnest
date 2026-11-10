@@ -9,6 +9,7 @@ import { SchemaMap } from './SchemaMap';
 import { SchemaMapFold } from './SchemaMapFold';
 import { countSchemas, schemasWord } from './schemasModel';
 import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
+import type { ReactNode } from 'react';
 
 interface Props {
   mobile: boolean;
@@ -20,14 +21,16 @@ interface Props {
   onOpenDetail: (id: string) => void;
   /** Скрытие карточки теста («Настроить экран»); на телефоне строка теста стоит выше, в PatternsTopStack. */
   blocks: Pick<SiteScreenBlocks, 'isHidden'>;
+  /** Сбой сохранения выбора схем — строкой у «Моих схем». */
+  note?: ReactNode;
 }
 
 /**
- * Всё про схемы на экране «Паттерны». Десктоп — как раньше (карточки, чипы, полная карта).
- * Телефон — как в мини-аппе: выраженные схемы, строки по доменам,
- * полная карта под сворачиваемым «Все N схем».
+ * Всё про схемы на экране «Паттерны». Компьютер — выраженные схемы и плитка теста рядом, «Мои схемы»
+ * группами на бумаге домена в колонки, полная карта аккордеонами доменов. Телефон — как в мини-аппе:
+ * выраженные схемы, те же группы строками, полная карта под сворачиваемым «Все N схем».
  */
-export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest, onAdd, onOpenDetail, blocks }: Props) {
+export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest, onAdd, onOpenDetail, blocks, note }: Props) {
   const expressed = (
     <ExpressedCard loading={d.loading} ysqSchemaIds={d.ysqSchemaIds} ysqScores={d.ysqScores} completedAt={d.ysqCompletedAt} onOpenSchema={onOpenDetail} />
   );
@@ -39,7 +42,7 @@ export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest,
           {expressed}
           {!blocks.isHidden('ysq_status') && <YsqTestCard progressAnswered={d.ysqProgressAnswered} completedAt={d.ysqCompletedAt} onStart={onStartTest} />}
         </div>
-        <MySchemasBlock loading={d.loading} ids={allSchemaIds} {...mine} />
+        <MySchemasBlock loading={d.loading} ids={allSchemaIds} {...mine} note={note} />
         <SchemaMap mineIds={allSchemaIds} onOpenSchema={onOpenDetail} />
       </>
     );
@@ -48,6 +51,7 @@ export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest,
   return (
     <>
       {(d.loading || d.ysqSchemaIds.length > 0) && expressed}
+      {note}
       <MySchemasList ids={allSchemaIds} {...mine} />
       <SchemaMapFold label={`Все ${total} ${schemasWord(total)}`}>
         <SchemaMap mineIds={allSchemaIds} onOpenSchema={onOpenDetail} />

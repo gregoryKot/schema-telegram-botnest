@@ -1,22 +1,50 @@
-/* Экран паттерна (схема/режим) на сайте. Префикс ps-. Цвет — через --h и
-   tone-* (lib/tone.ts), подложки — color-mix от токенов, литералов цвета нет. */
-.ps-tag { align-self: flex-start; }
+/* Экран паттерна (схема/режим) на сайте. Префикс ps-. Герой — SsHead look (лист бумаги домена или
+   группы со знаком, EntitySheet), на ≥1024 разворот. Цвет — через --h и токены, литералов цвета нет.
+   Мелкий текст на бумаге — --text-sub. Правила против ds-* — на два класса (файл грузится с листом). */
+.ps-body { display: contents; } /* несёт --h паттерна содержимому (тень-слой карточки), раскладку не трогает */
 .ps-block { display: flex; flex-direction: column; gap: 12px; }
-.ps-card { display: flex; flex-direction: column; gap: 16px; }
-.ps-field-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
-.ps-field-text { font-size: 15px; line-height: 1.55; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
-.ps-explainer { font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ps-block + .ps-block { margin-top: 16px; } /* разделы экрана — с воздухом, а не впритык к кнопкам карточки */
+.ds-label.ps-label { color: var(--text-sub); }
+.ds-link.ps-about { align-self: flex-start; min-height: 44px; padding: 0; color: var(--text); font-weight: 600; }
+
+/* «Моя карточка» — белый лист с тенью-слоем тона паттерна (сплошной сдвинутый слой, без blur). */
+.ps-card {
+  display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 22px 24px;
+  border-radius: 20px; background: var(--surface); box-shadow: 6px 6px 0 oklch(var(--pa-layer-lc) var(--h));
+}
+.ds-label.ps-field-label { display: block; margin-bottom: 4px; color: var(--text-sub); }
+.ps-field-text { font: 400 17px/1.5 var(--serif); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ps-explainer { font-size: 15px; line-height: 1.6; color: var(--text-sub); }
 .ps-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .ps-actions .ds-btn { flex: 1 1 160px; }
-.ps-adult {
-  display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 16px;
-  background: color-mix(in srgb, var(--accent-green) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent-green) 22%, transparent);
+
+/* «Что поможет»: совет и потребность — тихим текстом; практики — плитки бумаги со знаком. */
+.ps-tip { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text); }
+.ps-need { display: flex; flex-direction: column; gap: 2px; }
+.ps-practices-box { container: ps-practices / inline-size; }
+.ps-practices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.ps-practice {
+  display: flex; flex-direction: column; gap: 6px; min-height: 132px; box-sizing: border-box; min-width: 0;
+  padding: 14px 14px 12px; border: 0; border-radius: 18px; font: inherit; text-align: left; color: var(--text); cursor: pointer;
 }
-.ps-adult-title { font-size: 12px; font-weight: 700; color: var(--accent-green); }
-.ps-adult-text { font-size: 14px; line-height: 1.55; color: var(--text); }
-.ps-tip { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
-.ps-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ps-practice:hover { background: oklch(0.895 0.04 var(--h)); }
+.ps-practice-title { font-size: 15px; font-weight: 700; line-height: 1.25; }
+.ps-practice-sub { font-size: 12.5px; line-height: 1.4; color: var(--text-sub); }
+.ps-practice-sign { display: flex; width: 72px; margin-top: auto; padding-top: 8px; }
+.ps-practice-sign .pp-art--square { width: 72px; height: auto; }
+/* Узкий ряд (телефон): три плитки по ~110px не вмещают «зачем» — плитки встают строками бумаги:
+   знак слева, название и подпись справа; подпись не прячется. */
+@container ps-practices (max-width: 520px) {
+  .ps-practices { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .ps-practice {
+    display: grid; grid-template-columns: 60px minmax(0, 1fr); grid-template-areas: 'sign title' 'sign sub';
+    column-gap: 14px; row-gap: 2px; align-items: center; min-height: 72px; padding: 12px 14px;
+  }
+  .ps-practice-title { grid-area: title; align-self: end; }
+  .ps-practice-sub { grid-area: sub; align-self: start; }
+  .ps-practice-sign { grid-area: sign; width: 60px; margin: 0; padding: 0; }
+  .ps-practice-sign .pp-art--square { width: 60px; }
+}
+
 .ps-entries { display: flex; flex-direction: column; gap: 12px; }
-.ps-entry-date { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
-.ps-about { align-self: center; min-height: 44px; padding: 0 16px; color: var(--text-sub); }
+.ps-entry-date { font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 4px; }
