@@ -9,7 +9,7 @@ export const CRISIS_HUE = 25;
 export const CRISIS_CARD_STYLE = {
   head: { display: 'flex', alignItems: 'center', gap: 12 },
   art: { display: 'inline-flex', flexShrink: 0 },
-  label: { display: 'block', marginBottom: 4, color: 'var(--text-sub)' },
+  label: { display: 'block', margin: '0 0 4px', color: 'var(--text-sub)' },
   title: {
     margin: 0,
     fontFamily: 'var(--serif)',

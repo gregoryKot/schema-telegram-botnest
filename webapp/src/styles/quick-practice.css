@@ -4,12 +4,13 @@
    Подключают сами компоненты (в сборке файл может встать раньше index.css): правило, спорящее с
    ds-*, — на два класса. Мелкий текст на цветной бумаге — --text-sub. Тень — сплошным слоем. */
 .qs { display: flex; flex-direction: column; gap: 14px; }
-.qs-sheet { display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 20px 20px 18px 22px; border-radius: 24px; }
+.qs-sheet { display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; padding: 20px 20px 18px 22px; }
+.pp-paper.qs-sheet { border-radius: 24px; }
 .qs-head { display: flow-root; }
 /* Знак практики — в правом верхнем углу, «зачем» обтекает его и уходит под него во всю ширину. */
 .qs-sign { float: right; display: flex; width: 112px; margin: -6px -6px 6px 14px; }
 .qs-sign .scn-sign { width: 100%; }
-.qs-label { display: block; margin: 2px 0 6px; color: var(--text-sub); }
+.ds-label.qs-label { display: block; margin: 2px 0 6px; color: var(--text-sub); }
 .qs-sub { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text-sub); }
 
 /* Шаг: число или буква крупно на белом квадратике, рядом заголовок и подпись. */
@@ -23,7 +24,7 @@
   font: 400 40px/1 var(--serif); color: var(--text);
 }
 .qs-step-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.qs-count { color: var(--text-sub); }
+.ds-label.qs-count { color: var(--text-sub); }
 .qs-title { margin: 0; font: 400 26px/1.18 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
 .qs-hint { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 
@@ -33,8 +34,8 @@
 .qs-letters > li {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px;
   font: 400 22px/1 var(--serif); color: var(--text-sub);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--text) 22%, transparent);
 }
+/* Впереди — буква плоско, без рамки: обведённые квадраты читались кнопками-клавишами (ревью g4). */
 .qs-letters > li.is-done { background: oklch(0.84 0.06 var(--h)); color: var(--text); box-shadow: none; }
 .qs-letters > li.is-now { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 3px 4px 0 oklch(0.8 0.06 var(--h)); transform: rotate(-3deg); }
 .qs-lines { gap: 4px; }
@@ -53,7 +54,8 @@
 .pa-done-sheet > .pf-foot { align-self: stretch; }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .qs-sheet { padding: 18px 16px 16px 18px; border-radius: 22px; }
+  .qs-sheet { padding: 18px 16px 16px 18px; }
+  .pp-paper.qs-sheet { border-radius: 22px; }
   .qs-sign { width: 96px; margin: -4px -4px 4px 12px; }
   .qs-mark { width: 54px; height: 54px; font-size: 34px; border-radius: 14px; }
   .qs-title { font-size: 24px; }

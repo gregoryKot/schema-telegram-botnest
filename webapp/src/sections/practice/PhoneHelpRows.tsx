@@ -1,34 +1,31 @@
 // Две строки «Если нужно больше», которых на десктопе нет в списке (там они —
-// карточки верхнего ряда и отдельный блок «Помощь рядом»): карточка
+// квадрат «Мне плохо» и отдельный блок «Помощь рядом»): карточка
 // «Мне плохо» и «Мне очень плохо» с контактами помощи. Контакты раскрываются
 // на месте одним касанием (правило №7: кризисный путь не прячется глубже
 // одного нажатия), блок «Помощь рядом» тот же, что на десктопе.
-// Вид (редизайн 2026-11, b12): обе строки — один лист бережной бумаги (роза 25, ENTITY_LOOK.sos),
-// знак Heart — один на лист, у первой строки; раскрытие — внутри того же листа, под строкой, без
-// заголовка-клина между строкой и карточкой («Помощь рядом» — надписью внутри): связь «нажал —
-// раскрылось» видна по бумаге.
+// Вид (редизайн 2026-11, b12): обе строки — один лист бережной бумаги (роза CRISIS_HUE = ENTITY_LOOK.sos),
+// знак Heart — один на лист, колонкой слева на высоту обеих строк (пустой слот у второй строки читался
+// незагрузившейся иконкой, ревью g4); раскрытие — внутри того же листа, под строками, во всю ширину.
 import { useState, type CSSProperties } from 'react';
 import { pressable } from '../../utils/a11y';
 import { Heart } from '../../components/art/PaperArtSigns';
 import { CrisisBlock } from './CrisisBlock';
-import { HELP_BLOCK_ID } from './PracticeTopRow';
+import { CRISIS_HUE } from '../../../../shared/src/components/crisisCardStyle';
 import { FLASHCARD_SUB, FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
 
-const SOS_PAPER = { '--h': 25 } as CSSProperties;
-
-/** Слот знака строки: знак — только у первой строки листа, у второй — пустое место того же размера. */
-function RowSign({ on }: { on: boolean }) {
-  return <span className="pp-row-art cr-row-art" aria-hidden="true">{on && <Heart size="row" />}</span>;
-}
+/** id раскрытого блока «Помощь рядом»: на него указывает aria-controls строки «Мне очень плохо». */
+export const HELP_BLOCK_ID = 'practice-help-nearby';
+const SOS_PAPER = { '--h': CRISIS_HUE } as CSSProperties;
 
 // Без onSteps (пункт «Мне плохо» скрыт в «Инструментах») строки нет; «Мне очень плохо» — всегда.
 export function PhoneHelpRows({ onSteps }: { onSteps?: () => void }) {
   const [crisisOpen, setCrisisOpen] = useState(false);
+  const cls = 'pp-paper cr-rows' + (onSteps ? '' : ' cr-rows--one') + (crisisOpen ? ' is-open' : '');
   return (
-    <div className={'pp-paper cr-rows' + (crisisOpen ? ' is-open' : '')} style={SOS_PAPER}>
+    <div className={cls} style={SOS_PAPER}>
+      <span className="pp-row-art cr-rows-art" aria-hidden="true"><Heart size="row" /></span>
       {onSteps && (
         <div className="cr-row" {...pressable(onSteps)}>
-          <RowSign on />
           <div className="cr-row-body">
             <div className="ds-list-title">{FLASHCARD_TITLE}</div>
             <div className="ds-sub">{FLASHCARD_SUB}</div>
@@ -36,8 +33,8 @@ export function PhoneHelpRows({ onSteps }: { onSteps?: () => void }) {
           <span className="ds-chev" aria-hidden="true" />
         </div>
       )}
-      <div className="cr-row" aria-expanded={crisisOpen} {...pressable(() => setCrisisOpen(v => !v))}>
-        <RowSign on={!onSteps} />
+      <div className="cr-row" aria-expanded={crisisOpen} aria-controls={crisisOpen ? HELP_BLOCK_ID : undefined}
+        {...pressable(() => setCrisisOpen(v => !v))}>
         <div className="cr-row-body">
           <div className="ds-list-title">Мне очень плохо</div>
           <div className="ds-sub">контакты помощи прямо сейчас</div>

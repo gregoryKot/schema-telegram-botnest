@@ -66,7 +66,7 @@ export const ENTITY_LOOK = {
   modes: { hue: 240, sign: 'cluster', done: null },
   diary_mode: { hue: 240, sign: 'cluster', done: 'sprout' },
   mode_card: { hue: 240, sign: 'cluster', done: 'sprout' },
-  breathing: { hue: 45, sign: 'breath', done: 'breath_rest' },
+  breathing: { hue: 195, sign: 'breath', done: 'breath_rest' },
   grounding: { hue: 135, sign: 'grounded', done: 'sprout' },
   stop: { hue: 70, sign: 'pause', done: 'sprout' },
   sos: { hue: 25, sign: 'heart', done: 'sprout' },

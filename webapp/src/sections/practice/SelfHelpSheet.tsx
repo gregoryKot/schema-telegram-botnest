@@ -33,7 +33,7 @@ export function SelfHelpSheet({ onClose }: { onClose: () => void }) {
           <button type="button" className="ds-btn" onClick={goBack}>Понятно</button>
         </div>
       </BottomSheetShell>
-      {contacts && <CrisisContactsSheet onClose={() => setContacts(false)} />}
+      {contacts && <CrisisContactsSheet overSheet onClose={() => setContacts(false)} />}
     </>
   );
 }

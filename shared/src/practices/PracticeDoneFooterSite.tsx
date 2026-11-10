@@ -1,15 +1,20 @@
 // Подвал завершённой практики для сайта: подпись счётчика слева (ds-sub, на цветном
-// листе — класс pf-count тоном --text-sub), «поделиться →» ссылкой ds-link.
+// листе — класс pf-count тоном --text-sub), «поделиться →» ссылкой ds-link: со счётчиком — у правого
+// края (space-between), без него — с начала строки, а не одна посреди ряда (ревью g4); лист дыхания
+// ставит её сразу за счётчиком (packed).
 // Тот же контракт, что у PracticeDoneFooter (мини-апп); выбирает площадка.
 import { useEffect } from 'react';
 import { pluralRu } from '../utils/pluralRu';
 import type { PracticeDoneFooterProps } from './PracticeDoneFooter';
 
+/** packed — «поделиться» сразу за счётчиком, а не у правого края (лист дыхания: на широком листе
+ *  край колонки текста висел посреди карточки между текстом и сценой). */
 export function PracticeDoneFooterSite({
   count,
   onShare,
   onShown,
-}: PracticeDoneFooterProps) {
+  packed = false,
+}: PracticeDoneFooterProps & { packed?: boolean }) {
   useEffect(() => {
     onShown?.();
   }, [onShown]);
@@ -22,7 +27,7 @@ export function PracticeDoneFooterSite({
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: packed ? 'flex-start' : 'space-between',
         gap: 'var(--space-8) var(--space-16)',
       }}
     >
@@ -31,12 +36,7 @@ export function PracticeDoneFooterSite({
           Пройдено уже {count} {pluralRu(count, 'раз', 'раза', 'раз')}
         </div>
       )}
-      <button
-        type="button"
-        className="ds-link"
-        onClick={onShare}
-        style={{ marginLeft: 'auto' }}
-      >
+      <button type="button" className="ds-link" onClick={onShare}>
         поделиться →
       </button>
     </div>

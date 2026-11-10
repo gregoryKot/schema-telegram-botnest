@@ -56,9 +56,9 @@
   display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr auto;
   grid-template-areas: "art time" "title title" "desc desc" "foot foot"; column-gap: 12px; row-gap: 6px;
   align-items: start; box-sizing: border-box; min-height: 236px; padding: 18px 22px 16px; border: 0;
-  border-radius: 22px; text-align: left; cursor: pointer; font-family: var(--sans); color: var(--text);
-  transition: background .12s;
+  text-align: left; cursor: pointer; font-family: var(--sans); transition: background .12s;
 }
+.pp-paper.cp-ex { border-radius: 22px; } /* на два класса: .pp-paper (20px) не зависит от порядка чанков */
 .cp-ex:hover { background: oklch(0.895 0.04 var(--h)); }
 .cp-ex-art { grid-area: art; display: block; width: 104px; margin: 0 0 8px -8px; }
 .cp-ex-art .scn-sign { width: 100%; }
@@ -98,9 +98,32 @@
 .cp-page--phone .cp-sq .pp-text { font-size: 14px; line-height: 1.4; }
 .cp-page--phone .cp-sq-art { width: 92px; margin-left: -6px; }
 .cp-page--phone .cp-sq .pp-meta { font-size: 12.5px; letter-spacing: 0; }
+/* Герой дыхания на телефоне — компактный: сцена 124px справа от надписи и заголовка, текст, кнопка и
+   подвал во всю ширину. Сцена 248px над заголовком занимала первый экран: на 360×640 «Начать дыхание»
+   уходило под нижнее меню, на 390×844 квадраты и строки «Мне плохо» — за сгиб (ревью g4). Крупная
+   сцена остаётся листу из ⌘K и итога разбора, где она — единственное содержание. */
+.cp-page--phone .qb-in { grid-template-columns: minmax(0, 1fr) 124px; column-gap: 12px; row-gap: 8px; }
+.cp-page--phone .qb-body { display: contents; }
+.cp-page--phone .qb-scene { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 100%; }
+.cp-page--phone .qb-label { grid-column: 1; grid-row: 1; align-self: end; }
+.cp-page--phone .qb-title { grid-column: 1; grid-row: 2; align-self: start; font-size: 28px; }
+.cp-page--phone .qb-body > :not(.qb-label):not(.qb-title) { grid-column: 1 / -1; }
+.cp-page--phone .qb-count { width: 40px; height: 40px; border-radius: 10px; font-size: 24px; }
 
 /* Строки целей и каталогов */
 .cp-page--phone .cp-task { gap: var(--space-12); min-height: 56px; padding: var(--space-12) var(--space-16); }
+/* Слово не рвётся посередине («недостаточ / но»): ломается только токен длиннее строки. Без hyphens: auto —
+   Chrome рвал по слогам и влезающие слова (ревью g1). */
+.cp-page--phone .cp-task-title { overflow-wrap: break-word; }
+.cp-page--phone .cp-sq .pp-meta { white-space: nowrap; } /* «прошли 3 раза» — одной строкой */
+/* Узкий телефон: «Готово» у задания — под текстом, а не сбоку (колонке текста оставалось ≈110px на 320). */
+@media (max-width: 374px) {
+  .cp-page--phone .cp-task:has(> .ds-btn) { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; row-gap: var(--space-8); }
+  .cp-page--phone .cp-task:has(> .ds-btn) > .pp-row-art { grid-column: 1; grid-row: 1 / span 2; align-self: start; }
+  .cp-page--phone .cp-task:has(> .ds-btn) > .cp-task-body { grid-column: 2; grid-row: 1; }
+  .cp-page--phone .cp-task:has(> .ds-btn) > .ds-btn { grid-column: 2; grid-row: 2; justify-self: start; }
+  .cp-page--phone .cp-task:has(> .ds-btn) > .ds-chev { grid-column: 3; grid-row: 1 / span 2; }
+}
 
 /* Плитки «Инструментов» */
 .cp-page--phone .cp-lib { gap: var(--space-10); }
@@ -117,7 +140,3 @@
 /* «не начато» на телефоне — шум: внизу плитки только стрелка, статистика — когда она есть */
 .cp-page--phone .cp-ex-state.is-new { visibility: hidden; }
 
-/* Компьютер: прежнее правило для .ds-card внутри обёртки (закреплено desktopLayout.test.ts; дыхание — лист .qb, b13, правило не срабатывает). */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cp-open-card > .ds-card { background: none; border: 0; border-radius: 0; padding: 28px 0; }
-}

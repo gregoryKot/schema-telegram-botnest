@@ -6,6 +6,8 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { CrisisCardView, revealAboveKeyboard } from './CrisisCard';
+import { CRISIS_HUE } from './crisisCardStyle';
+import { ENTITY_LOOK } from '../theme/entityLook';
 import {
   CRISIS_HOTLINE_DISPLAY,
   CRISIS_HOTLINE_TEL,
@@ -151,5 +153,13 @@ describe('CrisisCardView — прокрутка над клавиатурой (C
 
   it('revealAboveKeyboard(null) безопасен', () => {
     expect(() => revealAboveKeyboard(null)).not.toThrow();
+  });
+});
+
+// Бумага кризисного пути литералом (CRISIS_HUE: карточка, лист «Мне плохо», строки телефонной
+// «Практики») — тот же оттенок, что ENTITY_LOOK.sos: правка таблицы без этой строки краснеет (№4).
+describe('бумага кризисного пути', () => {
+  it('CRISIS_HUE — оттенок «Мне плохо» из ENTITY_LOOK', () => {
+    expect(CRISIS_HUE).toBe(ENTITY_LOOK.sos.hue);
   });
 });

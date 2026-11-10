@@ -12,12 +12,13 @@
 // бумаге, что телефоны доверия, а не серым абзацем под ней; 112 — ссылкой tel:.
 import { CrisisCard } from '../../components/CrisisCard';
 
-export function CrisisBlock({ inset }: { inset?: boolean }) {
+/** heading — блок раздела: надпись «Помощь рядом» — заголовок h3, как у соседних блоков страницы. */
+export function CrisisBlock({ inset, heading }: { inset?: boolean; heading?: boolean }) {
   return (
-    <CrisisCard standing flat={inset} label="Помощь рядом">
+    <CrisisCard standing flat={inset} label="Помощь рядом" labelAs={heading ? 'h3' : 'span'}>
       <div className="cr-more">
         <p className="cr-line">
-          Если есть угроза жизни — <a className="cr-112" href="tel:112">112</a>.
+          Если есть угроза жизни —{'\u00a0'}<a className="cr-112" href="tel:112">112</a><span className="cr-dot">.</span>
         </p>
         <p className="cr-text">
           Разговор с близким человеком тоже считается: иногда одно сообщение

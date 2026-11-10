@@ -9,7 +9,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { ENTITY_LOOK, type EntityId, type PaperHue } from '../../../../shared/src/theme/entityLook';
 import { DoneScene } from '../art/AppScenesMore';
-import '../../styles/paper-app.css';
 
 export interface DoneAction {
   label: ReactNode;

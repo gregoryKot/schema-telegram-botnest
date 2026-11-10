@@ -33,7 +33,11 @@ export interface BreathingCardProps {
   frame?: (view: ReactNode) => ReactNode;
   /** Слой карточки шаринга над листом (лист 300 → карточка 320). */
   shareZIndex?: number;
+  /** Уровень заголовка «Дыши со мной»: в листе — h2, на странице — под заголовком блока. */
+  titleAs?: BreathTitleTag;
 }
+
+export type BreathTitleTag = 'h2' | 'h3' | 'h4';
 
 /** Что рамка отдаёт вёрстке карточки. */
 export interface BreathingViewProps {
@@ -49,6 +53,7 @@ export interface BreathingViewProps {
   note?: ReactNode;
   /** Счётчик прохождений и «поделиться» (Footer площадки). */
   footer: ReactNode;
+  titleAs?: BreathTitleTag;
 }
 
 export const createBreathingCard = (
@@ -63,6 +68,7 @@ export const createBreathingCard = (
     note,
     frame,
     shareZIndex,
+    titleAs,
   }: BreathingCardProps) {
     const tr = useTr();
     const { active, finished, elapsed, count, start, stop } =
@@ -87,6 +93,7 @@ export const createBreathingCard = (
         stop={stop}
         onClose={onClose}
         note={note}
+        titleAs={titleAs}
         footer={<Footer count={count} onShare={() => setShowShare(true)} />}
       />
     );

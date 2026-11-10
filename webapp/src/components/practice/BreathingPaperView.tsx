@@ -1,21 +1,22 @@
-// Вёрстка «Дыши со мной» (рамка createBreathingCard): лист персика (ENTITY_LOOK.breathing) с живой
+// Вёрстка «Дыши со мной» (рамка createBreathingCard): лист бирюзы, «воздух» (QUICK_LOOK.breathing) с живой
 // сценой SceneBreath — дуги над полоской расходятся на вдохе, стоят на задержке, опускаются на
 // выдохе; на итоге ложатся, у полоски вырастает лист. Сниженная анимация — сцена стоит, меняются
 // подпись, отсчёт и полоса фаз. Одна вёрстка для раздела «Практики» и листа (⌘K, итог разбора,
 // паттерн): в листе есть «Закрыть», на итоге она главнее «Ещё минуту».
 import type { CSSProperties } from 'react';
-import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { glue } from '../../../../shared/src/utils/typo';
 import type { BreathingViewProps } from '../../../../shared/src/practices/createBreathingCard';
 import { SceneBreath } from '../art/AppScenes';
 import { BreathActions } from './BreathActions';
 import { BreathPhases } from './BreathPhases';
 import { breathScenePhase } from './breathScene';
+import { QUICK_LOOK } from './quickLook';
 import '../../styles/breathing.css';
 import '../../styles/quick-practice.css';
 
-export function BreathingPaperView({ stage, st, text, reduced, start, stop, onClose, note, footer }: BreathingViewProps) {
-  const { hue } = ENTITY_LOOK.breathing;
+export function BreathingPaperView({ stage, st, text, reduced, start, stop, onClose, note, footer, titleAs }: BreathingViewProps) {
+  const Title = titleAs ?? 'h2'; // лист — h2; на странице — уровнем ниже заголовка блока (HereAndNowBlock)
+  const { hue } = QUICK_LOOK.breathing;
   const active = stage === 'active';
   const scene = breathScenePhase(stage, st.phase, reduced);
   return (
@@ -28,7 +29,7 @@ export function BreathingPaperView({ stage, st, text, reduced, start, stop, onCl
           </div>
           <div className="qb-body">
             <span className="ds-label qb-label">Дыхание 4-4-6</span>
-            <h2 className="qb-title" aria-live="polite">{text.title}</h2>
+            <Title className="qb-title" aria-live="polite">{text.title}</Title>
             {active && text.cycle ? (
               <BreathPhases cycle={text.cycle} st={st} />
             ) : (

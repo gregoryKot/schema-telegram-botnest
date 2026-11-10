@@ -1,10 +1,12 @@
 // Вид сущностей раздела «Практики» (ENTITY_LOOK, shared/src/theme/entityLook.ts) — плитки библиотеки,
-// квадраты быстрых практик, строки «Каталогов»: бумага и знак сущности, а не выбор на месте.
+// герой дыхания и квадраты быстрых практик (общие с листом практики — QUICK_LOOK), строки «Каталогов»:
+// бумага и знак сущности, а не выбор на месте.
 // Литералы, а не рантайм-импорт entityLook: он перекраивал чанки — CSS упражнений вставал раньше
 // index.css (check-css-link-order; тот же обход — paper/outcomeLook.ts, quickActionSign.ts).
 // Сверка с таблицей — practiceLook.test.ts.
 import type { EntityId, Look } from '../../../../shared/src/theme/entityLook';
 import type { ExId } from './exerciseLibraryModel';
+import { QUICK_LOOK } from '../../components/practice/quickLook';
 
 export const PRACTICE_LOOK = {
   belief_check: { hue: 70, sign: 'scales' },
@@ -15,8 +17,9 @@ export const PRACTICE_LOOK = {
   childhood_wheel: { hue: 45, sign: 'wheel' },
   warm_words: { hue: 70, sign: 'heart' },
   phrase_check: { hue: 310, sign: 'looming' },
-  grounding: { hue: 135, sign: 'grounded' },
-  stop: { hue: 70, sign: 'pause' },
+  breathing: QUICK_LOOK.breathing,
+  grounding: QUICK_LOOK.grounding,
+  stop: QUICK_LOOK.stop,
   sos: { hue: 25, sign: 'heart' },
   nourish: { hue: 145, sign: 'leaf' },
   plan: { hue: 135, sign: 'check' },

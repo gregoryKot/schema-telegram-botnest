@@ -7,7 +7,6 @@ import type { Look, OutcomeId } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
 import { OUTCOME_LOOK_LIT } from './outcomeLook';
 import { SignHero } from './SignHero';
-import '../../styles/paper-app.css';
 
 /** Кнопка или ссылка (`href` — переход на другую страницу сайта). */
 export interface OutcomeAction { label: ReactNode; onClick?: () => void; href?: string }

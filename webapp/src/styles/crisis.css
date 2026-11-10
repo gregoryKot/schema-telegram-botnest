@@ -17,22 +17,30 @@
 }
 .cr-text { margin: 0; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
 
-/* Лист контактов: «Закрыть» — второстепенной во всю ширину; на телефоне лист не ниже родителя
-   («Важное о самопомощи» ~78% высоты), иначе его край торчал над шторкой. */
+/* Лист контактов: «Закрыть» — второстепенной во всю ширину, сразу под карточкой. Поверх «Важного о
+   самопомощи» (cr-sheet--fill) на телефоне лист не ниже родителя (~78% высоты), иначе его край торчал
+   над шторкой; отдельный лист (из «Ещё») — по содержимому, без пустоты над «Закрыть». */
 .cr-sheet { display: flex; flex-direction: column; }
 .sh-close { margin-top: var(--space-16); }
 .ds-btn.sh-close { width: 100%; min-height: 48px; }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .cr-sheet { min-height: 78vh; }
-  .ds-btn.sh-close { margin-top: auto; }
-  .cr-sheet > [data-crisis-card] { margin-bottom: var(--space-16); }
+  .cr-sheet--fill { min-height: 78vh; }
+  .cr-sheet--fill > .ds-btn.sh-close { margin-top: auto; }
+  .cr-sheet--fill > [data-crisis-card] { margin-bottom: var(--space-16); }
 }
+/* Точка после плашки 112 висела отдельно у её края и читалась мусором: видна только читалке. */
+.cr-dot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* ── Кризисные строки «Практики» на телефоне: один лист розы, знак — у первой строки ── */
-.cr-rows { display: flex; flex-direction: column; overflow: hidden; }
+/* ── Кризисные строки «Практики» на телефоне: один лист розы, знак Heart — колонкой слева на высоту
+   обеих строк (пустой слот у второй строки читался незагрузившейся иконкой); раскрытие — во всю ширину. ── */
+.cr-rows { display: grid; grid-template-columns: auto minmax(0, 1fr); overflow: hidden; }
+.cr-rows-art { grid-column: 1; grid-row: 1 / span 2; align-self: center; padding-left: 14px; }
+.cr-rows--one > .cr-rows-art { grid-row: 1; }
+.cr-rows > .cr-row { grid-column: 2; }
+.cr-rows > .cr-open { grid-column: 1 / -1; }
 .cr-row {
   display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box;
-  padding: 12px 16px 12px 14px; cursor: pointer; transition: background .12s;
+  padding: 12px 16px 12px 12px; cursor: pointer; transition: background .12s;
 }
 .cr-row + .cr-row { border-top: 1px solid var(--panel-line); }
 .cr-row:hover { background: oklch(0.895 0.04 var(--h)); }

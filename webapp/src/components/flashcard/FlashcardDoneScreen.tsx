@@ -4,6 +4,7 @@ import type { FlashcardSummaryParts } from './flashcardLook';
 import { DoneSheet } from '../paper/DoneSheet';
 import { PaperAlert } from '../paper/PaperAlert';
 import { FLASHCARD_TITLE } from '../../../../shared/src/flashcard/flashcardNames';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Экран «Сохранено» карточки схемы. Вынесен из SchemaFlashcard.tsx (файл
 // сверх потолка 300, правило №10) вместе с оговоркой про несинхронизированную
@@ -37,8 +38,8 @@ export function FlashcardDoneScreen({ parts, action, syncFailed, onOpenTracker, 
       >
         {syncFailed && (
           <PaperAlert sign="heart" className="sk-fc-alert"
-            title="Карточка осталась только на этом устройстве — до сервера не доехала."
-            text="На других устройствах и у терапевта её не будет." />
+            title={glue('Карточка осталась только на этом устройстве — до сервера не доехала.')}
+            text={glue('На других устройствах и у терапевта её не будет.')} />
         )}
         <FlashcardRows parts={parts} action={action || undefined} />
       </DoneSheet>

@@ -4,8 +4,10 @@
 .sk-celebr-top { display: flex; flex-direction: column; align-items: center; margin: -28px -24px 10px; }
 .sk-celebr-band {
   position: relative; display: flex; align-items: flex-end; justify-content: center; box-sizing: border-box;
-  width: 100%; height: 188px; padding: 20px 24px 30px; border-radius: 0;
+  width: 100%; height: 188px; padding: 20px 24px 30px;
 }
+/* Полоса во всю ширину окна — без скругления; на два класса: .pp-paper (20px) из index.css встаёт в сборке позже. */
+.pp-paper.sk-celebr-band { border-radius: 0; }
 .sk-celebr-band > .scn { width: auto; height: 100%; max-width: 100%; }
 .sk-celebr-leaf { position: absolute; top: 16px; right: 18px; transform: rotate(10deg); }
 .sk-celebr-leaf .pp-art--square { width: 72px; height: 39px; }

@@ -24,7 +24,8 @@ export function HereAndNowBlock({ compact = false, onSos, extraRows }: { compact
   return (
     <>
       <HereAndNowIntro compact={compact} />
-      <div className="cp-open-card"><BreathingCard /></div>
+      {/* Заголовок героя — уровнем ниже заголовка блока: на телефоне блок называет h1 шапки, на компьютере — h3. */}
+      <div className="cp-open-card"><BreathingCard titleAs={compact ? 'h2' : 'h4'} /></div>
       <QuickSquares counts={counts} onOpen={setActive} onSos={onSos} />
       {extraRows}
       {active && <QuickPracticeSheet id={active} onClose={() => setActive(null)} />}

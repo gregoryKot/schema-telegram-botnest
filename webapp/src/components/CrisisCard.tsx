@@ -8,7 +8,7 @@ import { CrisisCardView } from '../../../shared/src/components/CrisisCard';
 import { Heart } from './art/PaperArtSigns';
 import { api } from '../api';
 
-type Props = { surface?: string; standing?: boolean; compact?: boolean; flat?: boolean; label?: ReactNode; children?: ReactNode };
+type Props = { surface?: string; standing?: boolean; compact?: boolean; flat?: boolean; label?: ReactNode; labelAs?: 'span' | 'h2' | 'h3'; children?: ReactNode };
 
 export function CrisisCard(p: Props = {}) {
   const tr = useTr();

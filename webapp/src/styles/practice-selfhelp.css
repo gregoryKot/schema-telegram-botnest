@@ -19,7 +19,7 @@
 .cp-selfhelp-sign > .pp-art { width: 28px; height: auto; }
 
 /* Лист: шапка — бумага шалфея со знаком (строка pp-head, paper.css), лид — Literata, остальное — текст. */
-.sh-head { margin-bottom: var(--space-16); padding: 18px 18px 18px 22px; border-radius: 20px; }
+.sh-head { margin-bottom: var(--space-16); padding: 18px 18px 18px 22px; } /* скругление — 20 у .pp-paper */
 .pp-head.sh-head > .scn-sign { flex: none; width: 92px; }
 .sh-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1.12; color: var(--text); text-wrap: balance; }
 .sh-lead { margin: 0 0 var(--space-16); font-family: var(--serif); font-size: 18px; line-height: 1.5; color: var(--text); text-wrap: pretty; }

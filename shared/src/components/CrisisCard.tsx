@@ -13,6 +13,7 @@ import { CRISIS_HOTLINES } from '../utils/crisisMarkers';
 import { useCrisisCardTracking } from '../analytics/useCrisisCardTracking';
 import { crisisCardCopy } from './crisisCardCopy';
 import { CRISIS_CARD_STYLE as S, CRISIS_HUE } from './crisisCardStyle';
+import { glue } from '../utils/typo';
 
 type Tr = (ty: string, vy: string) => string;
 type Track = (name: string, meta?: Record<string, unknown>) => void;
@@ -25,6 +26,7 @@ export function CrisisCardView({
   flat,
   art,
   label,
+  labelAs: Label = 'span',
   children,
   tr,
   track,
@@ -42,6 +44,8 @@ export function CrisisCardView({
   art?: ReactNode;
   /** Надпись над заголовком (постоянный блок «Помощь рядом»). */
   label?: ReactNode;
+  /** Роль надписи: блок раздела «Помощь рядом» — заголовок (h3), его находят навигацией по заголовкам. */
+  labelAs?: 'span' | 'h2' | 'h3';
   /** Продолжение карточки на той же бумаге (112, разговор с близким). */
   children?: ReactNode;
   tr: Tr;
@@ -76,14 +80,14 @@ export function CrisisCardView({
         )}
         <div style={{ minWidth: 0 }}>
           {label && (
-            <span className="ds-label" style={S.label}>
+            <Label className="ds-label" style={S.label}>
               {label}
-            </span>
+            </Label>
           )}
-          <p style={S.title}>{copy.title}</p>
+          <p style={S.title}>{glue(copy.title)}</p>
         </div>
       </div>
-      {!compact && <p style={S.lead}>{copy.lead}</p>}
+      {!compact && <p style={S.lead}>{glue(copy.lead)}</p>}
       <div style={S.lines}>
         {CRISIS_HOTLINES.map((hotline, i) => (
           <a
@@ -101,7 +105,7 @@ export function CrisisCardView({
           </a>
         ))}
       </div>
-      {!compact && <p style={S.foot}>{copy.foot}</p>}
+      {!compact && <p style={S.foot}>{glue(copy.foot)}</p>}
       {children}
     </div>
   );

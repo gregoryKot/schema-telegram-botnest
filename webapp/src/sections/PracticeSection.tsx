@@ -13,7 +13,6 @@ import { TaskExerciseHost } from './today/TaskExerciseHost';
 import { sessionMoment } from './today/model';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
-import { HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
 import { PracticeHeader } from './practice/PracticeHeader';
 import { PhoneHelpRows } from './practice/PhoneHelpRows';
 import { TherapyBridgeCard } from '../components/therapy/TherapyBridgeCard';
@@ -105,10 +104,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
       {/* Герой дыхания, квадраты заземления, «Стопа» и «Мне плохо» (на телефоне «Мне плохо» — в
           листе кризисных строк под квадратами), затем «Помощь рядом» одной полосой (на телефоне —
           раскрытием той же строки). Кризисный путь — до «Инструментов» и заданий. */}
-      <div id={HERE_BLOCK_ID} className="cp-block cp-here">
+      <div className="cp-block cp-here">
         <HereAndNowBlock compact={phone} onSos={phone ? undefined : onSos} extraRows={phone ? <PhoneHelpRows onSteps={onSos} /> : undefined} />
       </div>
-      {!phone && <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>}
+      {!phone && <div className="cp-block"><CrisisBlock heading /></div>}
 
       {/* Мост к терапевту — после быстрых практик и кризисного входа, перед «Инструментами»: кризисный путь остаётся первым. */}
       <TherapyBridgeCard place="practice" />

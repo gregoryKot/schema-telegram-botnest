@@ -15,6 +15,7 @@ import type { ModeData, NeedData } from '../schemaFlashcard/types';
 import { modeGroupLook } from '../../../../shared/src/theme/entityLook';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
+import { glue } from '../../../../shared/src/utils/typo';
 
 type Tr = (ty: string, vy: string) => string;
 interface Common { stepIndex: number; total: number; onBack: () => void; backLabel: string }
@@ -58,7 +59,7 @@ export function StepResponse({ tr, response, reflection, setReflection, onNext, 
       <div className="pp-paper sk-fc-voice" style={paper(HEALTHY.hue)}>
         <span className="sk-fc-voice-sign" aria-hidden="true"><SignHero sign={HEALTHY.sign} /></span>
         <div className="ds-label sk-fc-voice-label">{tr('Говорит тебе', 'Говорит вам')}</div>
-        <p className="sk-fc-voice-text">{response}</p>
+        <p className="sk-fc-voice-text">{response && glue(response)}</p>
       </div>
       <div className="sk-fc-ask">
         Что отзывается? <span className="sk-fc-ask-opt">(необязательно)</span>

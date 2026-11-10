@@ -1,9 +1,10 @@
-/* Лист «Дыши со мной» (BreathingPaperView): персик ENTITY_LOOK.breathing, живая сцена SceneBreath,
+/* Лист «Дыши со мной» (BreathingPaperView): бирюза QUICK_LOOK.breathing («воздух»), живая сцена SceneBreath,
    отсчёт фазы белым квадратиком на сцене, полоса фаз 4 : 4 : 6. Подключает сам компонент: лист из
    ⌘K и с итога разбора живёт вне раздела «Практики», и в сборке файл может встать раньше
    index.css — правило, спорящее с ds-*, пишется на два класса. Мелкий текст на бумаге — --text-sub.
    Размеры — по ширине самого листа (container query): он стоит и в колонке раздела, и в листе 560. */
-.qb { container: qb / inline-size; box-sizing: border-box; width: 100%; padding: 18px 20px 16px; border-radius: 24px; }
+.qb { container: qb / inline-size; box-sizing: border-box; width: 100%; padding: 18px 20px 16px; }
+.pp-paper.qb { border-radius: 24px; }
 /* Сетка — во внутренней обёртке: запрос по ширине контейнера не меняет сам контейнер. */
 .qb-in { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 6px; }
 .qb-scene { position: relative; justify-self: center; width: min(100%, 248px); }
@@ -16,7 +17,7 @@
   font: 400 32px/1 var(--serif); color: var(--text); font-variant-numeric: tabular-nums;
 }
 .qb-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
-.qb-label { color: var(--text-sub); }
+.ds-label.qb-label { color: var(--text-sub); }
 .qb-title { margin: 0; font: 400 34px/1.1 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
 .qb-text { margin: 0; max-width: 44ch; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 
@@ -34,7 +35,8 @@
 .qb-seg.is-now .qb-seg-label { color: var(--text); font-weight: 700; }
 
 /* Кнопки: на узком листе — главная во всю ширину, тихая ссылка под ней по центру. */
-.qb-actions { display: flex; flex-direction: column; align-items: stretch; gap: 2px; width: 100%; margin-top: 6px; }
+/* Высота блока — по главной кнопке: «Начать дыхание» сменяется тихим «Достаточно», карточка не прыгает. */
+.qb-actions { display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 2px; width: 100%; min-height: 48px; margin-top: 6px; }
 .ds-link.qb-quiet { align-self: center; min-height: 44px; padding: 0 8px; font-size: 14px; color: var(--text-sub); }
 .ds-link.qb-quiet:hover { color: var(--text); }
 .qb-foot { align-self: stretch; margin-top: 2px; }
@@ -46,7 +48,7 @@
   .qb-body { grid-column: 1; grid-row: 1; align-self: center; }
   .qb-title { font-size: 40px; }
   .qb-count { width: 64px; height: 64px; font-size: 40px; }
-  .qb-actions { flex-direction: row; align-items: center; gap: 4px 20px; }
+  .qb-actions { flex-direction: row; justify-content: flex-start; align-items: center; gap: 4px 20px; }
   .ds-link.qb-quiet { padding: 0; }
 }
 /* Узкий лист (телефон 320): подписи фаз мельче, чтобы «задержка 4» и «выдох 6» не слипались. */

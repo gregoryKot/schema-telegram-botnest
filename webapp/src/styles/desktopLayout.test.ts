@@ -20,7 +20,7 @@ const PHONE_HIDDEN: [string, string][] = [['concept-graph.css', '.tcp-head-title
 /** Обёртки и правила компьютера, при которых телефон обязан остаться как в main: [селектор, вне медиа, только под ≥768]. */
 const C = /display:\s*contents/;
 const PHONE_SAME: [string, RegExp | null, RegExp | null][] = [
-  ['.cp-open-card', C, null], ['.cp-open-card > .ds-card', null, /background:\s*none/], // дыхание: обёртка не в flex-gap
+  ['.cp-open-card', C, null], // дыхание: обёртка не в flex-gap (внутри — лист .qb, правила для .ds-card в ней нет)
   ['.tcp-head-actions', C, /display:\s*inline-flex/], ['.tb-tab-title .ds-sub', null, /margin/],
   ['.ap-home', /display:\s*none/, /display:\s*inline-flex/], ['.ap-donate-shell', C, /display:\s*flex/],
 ];

@@ -55,7 +55,7 @@ export function QuickActionCustomizeSheet({
             <div key={g.id}>
               <div className="ds-label cz-group">{g.title}</div>
               {g.note && <div className="ds-sub cz-hint">{g.note}</div>}
-              <div className="cz-card">
+              <div className={g.fixedOrder && sections.some((o) => !o.fixedOrder) ? 'cz-card cz-card--slot' : 'cz-card'}>
                 {g.items.map((a) => {
                   const wasHidden = hidden.includes(a.id);
                   const { dragHandleProps, rowRef, drag } = rowProps(a);

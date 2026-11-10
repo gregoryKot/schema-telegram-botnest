@@ -1,22 +1,22 @@
 // Тело пошагового листа «Здесь и сейчас» (заземление 5-4-3-2-1, «Стоп») на живой бумаге: лист
-// оттенка практики (ENTITY_LOOK[id]) — название, «зачем» и знак практики (Grounded, Pause) сверху,
+// оттенка практики (QUICK_LOOK[id], литерал ENTITY_LOOK) — название, «зачем» и знак практики (Grounded, Pause) сверху,
 // ниже шаг-герой: число или буква шага крупно на белом квадратике, заголовок Literata, подпись и
 // счётчик формой (камешки 5-4-3-2-1, буквы С-Т-О-П). Кнопки под листом, предупреждение площадки —
 // под кнопками первого шага, тише самого шага. Итог — DoneSheet: знак практики с ростком,
 // «Закрыть» главнее «Ещё круг». Логика шагов — useStepFlow (shared), запись — QuickPracticeFlow.
 import type { CSSProperties } from 'react';
-import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { useStepFlow } from '../../../../shared/src/practices/useStepFlow';
 import { glue } from '../../../../shared/src/utils/typo';
 import type { StepFlowProps } from '../../../../shared/src/practices/stepFlowTypes';
 import { DoneSheet } from '../paper/DoneSheet';
 import { SignHero } from '../paper/SignHero';
 import { StepCounter } from './StepCounter';
+import { QUICK_LOOK } from './quickLook';
 import '../../styles/quick-practice.css';
 
 export function QuickStepBody({ id, title, subtitle, steps, done, counter, repeatLabel, doneExtra, note, onClose }: StepFlowProps) {
   const [step, isDone, cur, nextLabel, onNext] = useStepFlow(steps, done, repeatLabel);
-  const { hue, sign } = ENTITY_LOOK[id];
+  const { hue, sign } = QUICK_LOOK[id];
   if (isDone) {
     return (
       <DoneSheet
