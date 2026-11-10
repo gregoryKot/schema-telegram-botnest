@@ -22,7 +22,7 @@ export interface PaperAlertProps {
   retryLabel?: ReactNode;
   /** Повтор идёт — кнопка неактивна. */
   retrying?: boolean;
-  /** alert — сбой случился сейчас; status — спокойное напоминание (уже показанный сбой). */
+  /** alert — сбой случился сейчас; status — спокойное напоминание: уже показанный сбой или сбой, где данные целы (удаление записи, DeleteBtn). */
   role?: 'alert' | 'status';
   className?: string;
 }

@@ -9,11 +9,12 @@
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './flow-frame.css';
 .tq-bar-btn:focus-visible, .tq-dot-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* Край шапки трекера — по краю листов того же пути («← Назад к трекеру» в .ds-sheet-head: 24, на телефоне 16):
-   поле полосы + поле кнопки (4). Хит 44×44 прежний. Только у трекера: каркас tq-bar и оболочка .tk2-overlay
-   общие с быстрой записью (QuickEntrySheet, .qe-sheet, b10a) — её край не трогаем, она берёт его в своей партии. */
-.tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 20px; }
-@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 12px; } }
+/* Край шапки — по краю листов того же пути («← Назад к трекеру» в .ds-sheet-head: 24, на телефоне 16):
+   поле полосы + поле кнопки (4). Хит 44×44 прежний. Каркас tq-bar и оболочка .tk2-overlay общие у трекера
+   и быстрой записи (QuickEntrySheet, .qe-sheet, b10a): край полосы у обоих один (у быстрой записи было 8 —
+   «Закрыть» у самого края, ревью g3 r6). Точки и подписи кнопок ниже — только трекера: у быстрой записи точек нет. */
+.tk2-overlay .tq-bar { padding-inline: 20px; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay .tq-bar { padding-inline: 12px; } }
 /* Узкий телефон: полоса — «Закрыть» 66 + точки 200 + «Пропустить» 86 = 352, в 360 с полем 12 не помещалась
    («Пропустить» за краем окна, ревью g2 r4). Уже 375 — подписи 13px без полей кнопки (ширину ≥44 держит
    min-width) и поле полосы 8: 8 + 54 + 200 + 76 + 8 = 346 в 360 (с полем 4 и подписью 15px на 360 «Пропустить»
@@ -21,7 +22,7 @@
    под скруглением WebView, ревью g2 r5). Уже 360 — ещё и точки 34: 8 + 54 + 170 + 76 + 8 = 316, текст на
    8–312, как в main на 360. Сверка — e2e-browser/tracker-fit.spec.ts (360×640 и 320×568, все пять вопросов). */
 @media (max-width: 374px) {
-  .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 8px; }
+  .tk2-overlay .tq-bar { padding-inline: 8px; }
   .tk2-overlay:not(.qe-sheet) .tq-bar-btn { padding-inline: 0; font-size: 13px; }
 }
 @media (max-width: 359px) { .tk2-overlay:not(.qe-sheet) .tq-dot-hit { width: 34px; } }

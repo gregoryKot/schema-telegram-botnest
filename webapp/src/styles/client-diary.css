@@ -44,12 +44,18 @@
    (index.css.contrast.test.ts сверяет все оттенки). */
 .ds-link.cd-draft-del { justify-self: end; min-height: 44px; padding: 0 10px; }
 .cd-draft .ds-link--danger, .cd-draft .ds-link--danger:hover { color: var(--on-panel-danger); }
-.cd-draft-foot { grid-column: 1 / -1; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; min-width: 0; }
+/* «Продолжить →» — на базовой линии последней строки превью (last baseline): по нижнему краю (flex-end) текст
+   кнопки стоял по центру её зоны 44, на 10–12px выше однострочного превью (ревью g3 r6). Зона 44 — сама кнопка,
+   текст в ней прижат книзу: строка подвала не растёт, зона не заходит на «×» над ней. */
+.cd-draft-foot { grid-column: 1 / -1; display: flex; align-items: last baseline; justify-content: space-between; gap: 12px; min-width: 0; }
 .cd-draft-preview {
   flex: 1; min-width: 0; margin: 0; font: italic 400 15px/1.45 var(--serif); color: var(--text); overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.ds-link.cd-draft-go { flex-shrink: 0; margin-left: auto; min-height: 44px; padding: 0 10px; font-size: 14px; }
+.ds-link.cd-draft-go {
+  flex-shrink: 0; margin-left: auto; display: inline-flex; align-items: flex-end;
+  min-height: 44px; padding: 0 10px; font-size: 14px; line-height: 20px;
+}
 
 /* Сегмент и мета под ним: серия дней подряд — строкой под фильтром, а не под длинной лентой; справа в той
    же строке — «Поделиться дневником» тихой ссылкой со знаком «Записей». */

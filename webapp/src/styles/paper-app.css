@@ -142,7 +142,8 @@
 .pa-alert-sign { display: inline-flex; flex-shrink: 0; opacity: .55; }
 .pa-alert-body { flex: 1 1 140px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pa-alert-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--text); }
-.pa-alert-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
+/* pretty: вторая фраза сбоя не кончается висячим словом («…попробуй ещё / раз.» на 360, ревью g3 r6). */
+.pa-alert-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
 .ds-btn.pa-alert-retry { flex: none; }
 .ds-btn.pa-alert-retry:not(:disabled) { background: var(--surface); }
 
@@ -212,9 +213,10 @@
 }
 .pa-field::placeholder { color: var(--text-faint); }
 /* Фокус — кромка --accent, как у полей ds-input, а не кольцо поверх листа: «Что случилось?» в фокусе с
-   первого кадра (автофокус), и кольцо рамкой спорило с тенью-слоем. focus-within — и у самого поля, и у
-   тетради, где фокус у строки внутри листа. */
-.pa-field:focus-within { outline: none; border-color: var(--accent); }
+   первого кадра (автофокус), и кольцо рамкой спорило с тенью-слоем. Кромку даёт только само поле (textarea);
+   у тетради благодарности (лист — div, поля строк внутри) фокус показывает строка — акцентной линейкой
+   (.sd-grat-row:focus-within, diary-gratitude.css): с кромкой листа знаков фокуса было два (ревью g3 r6). */
+.pa-field:focus { outline: none; border-color: var(--accent); }
 
 /* ── Телефон ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
