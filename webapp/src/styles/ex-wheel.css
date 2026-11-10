@@ -1,30 +1,40 @@
-/* Колесо детства: шкалы, итог (ChildhoodWheelEx, childhoodWheel/*); своё у колеса ещё
-   в sheet-childhood.css. Подключается из sheet-exercises.css. */
-/* ── Колесо детства ───────────────────────────────────────────────────── */
-.ex2-cw-scale { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--paper-sunk); font-size: 12px; color: var(--text-faint); }
-.ex2-cw-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 64px; gap: 16px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--paper-sunk); }
-.ex2-cw-num { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--text-ghost); }
-.ex2-cw-label { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-.ex2-cw-q { font-size: 12.5px; line-height: 1.5; color: var(--text-faint); margin-bottom: 4px; }
-.ex2-cw-track { position: relative; height: 44px; display: flex; align-items: center; cursor: pointer; touch-action: pan-y; user-select: none; }
-.ex2-cw-line { position: relative; width: 100%; height: 2px; background: var(--line-strong); }
-.ex2-cw-fill { position: absolute; left: 0; top: 0; height: 2px; background: oklch(0.58 0.12 var(--h)); }
-.ex2-cw-pip { position: absolute; top: -3px; width: 1px; height: 8px; background: var(--text-ghost); }
-.ex2-cw-thumb { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: oklch(0.58 0.12 var(--h)); border: 2px solid var(--surface); box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
-.ex2-cw-value { font-family: var(--serif); font-size: 26px; line-height: 1; text-align: right; font-variant-numeric: tabular-nums; color: oklch(0.58 0.12 var(--h)); }
-.ex2-cw-value span { font-family: var(--sans); font-size: 12px; color: var(--text-faint); }
-.ex2-cw-value.is-unset { color: var(--text-ghost); }
-.ex2-cw-left { font-size: 12.5px; color: var(--text-faint); }
-.ex2-cw-ends { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px 16px; margin-top: 4px; }
-.ex2-cw-end { font-size: 11.5px; line-height: 1.55; color: var(--text-faint); }
-.ex2-cw-end.is-low { color: var(--err); font-weight: 500; }
-.ex2-cw-end.is-high { color: var(--ok); font-weight: 500; }
-.ex2-cw-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; }
-@media (max-width: 900px) { .ex2-cw-grid { grid-template-columns: minmax(0, 1fr); } }
-.ex2-cw-svg { display: block; margin: 0 auto; overflow: visible; max-width: 100%; }
-.ex2-cw-dot { fill: oklch(0.58 0.12 var(--h)); }
-.ex2-cw-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--paper-sunk); }
-.ex2-cw-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-sub); }
-.ex2-cw-legend-val { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ok); }
-.ex2-cw-legend-val.is-low { color: var(--err); }
-.ex2-cw-legend-val.is-mid { color: var(--warn); }
+/* Колесо детства, шаг оценки (ChildhoodFill → NeedRateRow, CWTrack): шкала, строки потребностей,
+   ползунок. Редизайн 2026-11 (docs/design/APP_2026-11.md, b19): знак потребности у названия, дорожка —
+   бумага потребности (--h = NEED_HUE), заливка и бегунок — цвет данных (--need-ink, history/needInk.ts),
+   число — текст потребности (--need-text). Полюса шкалы — без красного и зелёного: ближний к оценке
+   полюс ложится на бумагу потребности. Остальное у колеса — sheet-childhood.css. Подключается из
+   sheet-exercises.css. */
+.ex2-cw-scale { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; font-size: 12.5px; line-height: 1.4; color: var(--text-sub); }
+
+/* Строка: знак, название и число в одну строку; вопрос, ползунок, полюса и примеры — во всю ширину. */
+.ex2-cw-row {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 12px; align-items: center;
+  padding: 22px 0 12px; border-bottom: 1px solid var(--paper-sunk);
+}
+.ex2-cw-row > :nth-child(n + 4) { grid-column: 1 / -1; }
+.ex2-cw-label { font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text); }
+.ex2-cw-q { margin-top: 10px; font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.ex2-cw-value { font-family: var(--serif); font-size: 28px; line-height: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--need-text); }
+.ex2-cw-value span { font-family: var(--sans); font-size: 12px; color: var(--text-sub); }
+.ex2-cw-value.is-unset { font-size: 22px; color: var(--text-faint); }
+
+/* Ползунок: зона 44 во всю ширину; дорожка 8px — бумага потребности на тон глубже листа; бегунок —
+   цвет данных в кольце бумаги, тень — сплошной сдвинутый слой (без размытия). */
+.ex2-cw-track { position: relative; height: 44px; margin-top: 2px; display: flex; align-items: center; cursor: pointer; touch-action: pan-y; user-select: none; border-radius: 10px; }
+.ex2-cw-track:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ex2-cw-line { position: relative; width: 100%; height: 8px; border-radius: 4px; background: oklch(0.88 0.035 var(--h)); }
+.ex2-cw-fill { position: absolute; left: 0; top: 0; height: 8px; border-radius: 4px; background: var(--need-ink); }
+.ex2-cw-pip { position: absolute; top: 2px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: color-mix(in srgb, var(--text) 24%, transparent); }
+.ex2-cw-thumb {
+  position: absolute; top: 50%; width: 24px; height: 24px; margin: -12px 0 0 -12px; box-sizing: border-box; border-radius: 50%;
+  background: var(--need-ink); border: 4px solid var(--surface); box-shadow: 2px 3px 0 oklch(0.8 0.05 var(--h));
+}
+
+/* Полюса шкалы: оба на месте, ближний к оценке — на бумаге потребности, текст темнее. Отступы у обоих
+   одинаковые — при смене оценки строка не прыгает. */
+.ex2-cw-ends { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 12px; margin: 2px -10px 0; }
+.ex2-cw-end { padding: 8px 10px; border-radius: 12px; font-size: 12.5px; line-height: 1.5; color: var(--text-faint); }
+.ex2-cw-end b { font-weight: 600; color: var(--text-sub); }
+.ex2-cw-end.is-on { background: oklch(0.915 0.03 var(--h)); color: var(--text-sub); }
+.ex2-cw-end.is-on b { color: var(--text); }
+.ex2-cw-left { font-size: 13px; color: var(--text-sub); }

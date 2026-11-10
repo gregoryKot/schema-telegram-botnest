@@ -1,36 +1,144 @@
-/* ── Колесо детства (префикс chw-): примеры, схемы по низким зонам, вступление ──
-   Цвета — токены; оттенок потребности приходит в --h (lib/tone.ts). */
+/* ── Колесо детства (префикс chw-): сцена-герой, липкая полоса шага оценки, итог, схемы, примеры ──
+   Редизайн 2026-11 (docs/design/APP_2026-11.md, b19): радар ушёл, колесо — сцена лендинга «шаг 01» с
+   данными (SceneChildhood values, childhoodWheel/WheelScene.tsx) на листе персика (ENTITY_LOOK
+   childhood_wheel). Строки и ползунок шага оценки — ex-wheel.css. Цвета — токены и oklch от --h (оттенок
+   потребности приходит в --h, lib/tone.ts). Правило, которое спорит с примитивами pa-/ex2-, пишется на два
+   класса: файлы встают в сборке в разном порядке. Мелкий текст на цветной бумаге — --text-sub. */
 
-.chw-examples { margin-top: 6px; }
-.chw-examples-toggle { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 13px; background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
+/* ── Сцена в листе-герое ─────────────────────────────────────────────── */
+/* Сцену читают, а не узнают: на узком листе (вступление, итог, загрузка) она встаёт над надписью во
+   всю ширину, а не углом 96px, как знак сущности (EntitySheet); на широком — справа 280; в колонке
+   разворота — во всю колонку. :has — сцена своя у экрана, класс листа не задать. */
+.chw-scene { display: block; width: 100%; }
+.chw-scene > .scn { display: block; width: 100%; height: auto; }
+.chw-scene--skel { aspect-ratio: 320 / 260; border-radius: 22px; background: oklch(0.885 0.035 var(--h)); }
+@container pa-sheet (max-width: 560px) {
+  .ex2-hero.pa-sheet:has(.chw-scene--hero) > .pa-sheet-art {
+    grid-column: 1 / -1; grid-row: 1; justify-self: center; align-self: auto; width: min(100%, 280px); margin: -14px 0 2px;
+  }
+  .ex2-hero.pa-sheet:has(.chw-scene--hero) > .pa-sheet-body { grid-column: 1 / -1; grid-row: 2; display: flex; }
+  .ex2-hero.pa-sheet:has(.chw-scene--hero) > .pa-sheet-body > * { margin-top: 0; }
+  .ex2-hero.pa-sheet:has(.chw-scene--hero) .pa-sheet-label { align-self: flex-start; }
+}
+@container pa-sheet (min-width: 561px) {
+  .ex2-hero.pa-sheet:has(.chw-scene--hero) > .pa-sheet-art { width: 280px; }
+}
+
+/* Шаг оценки: одна сцена на экран. Без разворота (телефон, планшет) лист-герой стоит без картинки, а
+   колесо растёт в липкой полосе над строками — рядом со шкалой, которая нужна на каждой строке. В
+   развороте полоса — просто шкала, колесо — во всю липкую колонку листа. */
+.ex2-hero.pa-sheet:has(.chw-scene--side) > .pa-sheet-art { display: none; }
+.chw-strip {
+  position: sticky; top: 56px; z-index: 1;
+  display: grid; grid-template-columns: minmax(0, 1fr) 112px; align-items: center; column-gap: 12px;
+  margin: 0 calc(-1 * clamp(16px, 4vw, 56px)); padding: 6px clamp(16px, 4vw, 56px);
+  background: var(--bg); border-bottom: 1px solid var(--paper-sunk);
+}
+.chw-strip > .ex2-cw-scale { flex-direction: column; justify-content: center; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .chw-strip { top: calc(56px + var(--safe-top)); } }
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .pa-spread-side .ex2-hero.pa-sheet:has(.chw-scene--hero, .chw-scene--side) > .pa-sheet-art { display: flex; width: 100%; margin: -8px 0 4px; }
+  .chw-strip { position: static; display: block; margin: 0; padding: 0 0 14px; background: none; }
+  .chw-strip > .ex2-cw-scale { flex-direction: row; justify-content: space-between; }
+  .chw-scene--strip { display: none; }
+}
+
+/* ── «Защитная идеализация» — лист соломы под листом-героем, до первой строки ──
+   Плоский, как герой и PaperAlert (солома — «внимание, ничего страшного»): сдвинутый слой резала бы
+   липкая колонка разворота (overflow) и он спорил бы с героем за громкость. */
+.chw-idealize { --h: 70; padding: 16px 20px 18px; border-radius: 20px; }
+.chw-idealize > .ds-label { color: var(--text-sub); }
+.chw-idealize-h { margin: 4px 0 6px; font-family: var(--serif); font-weight: 400; font-size: 20px; line-height: 1.2; color: var(--text); }
+.chw-idealize-body { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+@media (max-width: 559px) {
+  .chw-idealize { padding: 14px 18px 16px; border-radius: 18px; }
+  .chw-idealize-h { font-size: 18px; }
+  .chw-idealize-body { font-size: 13.5px; }
+}
+.pa-alert.chw-save-err { margin-top: 20px; }
+
+/* ── Вступление ──────────────────────────────────────────────────────── */
+.chw-intro-body { margin: 0 0 14px; max-width: 60ch; font-size: 16px; line-height: 1.65; color: var(--text); }
+.chw-intro-body b { font-weight: 600; }
+.chw-intro-small { margin: 0; max-width: 60ch; font-size: 13.5px; line-height: 1.55; color: var(--text-sub); }
+.chw-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 28px 0 20px; }
+/* Главная кнопка: на телефоне во всю ширину, «Пропустить» под ней; на ≥768 — по содержимому, в строку
+   (потребитель ds-btn--lg, desktopLayout.test.ts). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .chw-actions { flex-direction: column; align-items: stretch; }
+  .chw-actions > .ds-btn--lg { width: 100%; }
+}
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .chw-actions > .ds-btn--lg { width: auto; }
+}
+
+/* ── Итог: пять оценок ───────────────────────────────────────────────── */
+.chw-res { list-style: none; margin: 0; padding: 0; }
+.chw-res-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--paper-sunk); }
+.chw-res-row:first-child { padding-top: 4px; }
+.chw-res-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.chw-res-label { font-size: 15px; font-weight: 600; color: var(--text); }
+.chw-res-text { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+.chw-res-value { font-family: var(--serif); font-size: 28px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--need-text); }
+.chw-res-value span { font-family: var(--sans); font-size: 12px; color: var(--text-sub); }
+
+/* ── Возможные активные схемы: лист бумаги потребности, схемы — тихие кнопки на светлой бумаге ── */
+.chw-hints { margin-top: 36px; }
+.chw-hints > .ds-label { margin: 0 0 8px; }
+.chw-hints-lede { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.chw-hint { padding: 18px 20px 20px; margin-bottom: 14px; border-radius: 20px; }
+.chw-hint-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; align-items: center; margin-bottom: 14px; }
+.chw-hint-sign { grid-row: 1 / span 2; align-self: start; margin-top: 2px; }
+.chw-hint-name { font-size: 16px; font-weight: 600; color: var(--text); }
+.chw-hint-score { font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--text-sub); }
+.chw-hint-domain { grid-column: 2 / -1; display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.4; color: var(--text-sub); }
+.chw-hint-domain-art { flex: none; display: inline-flex; }
+.chw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chw-chip {
+  min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
+  font: 500 14px/1.3 var(--sans); color: var(--text); text-align: left; cursor: pointer;
+}
+.chw-chip:hover { border-color: var(--line-strong); }
+.chw-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chw-hints > .ds-card--nav { margin-top: 4px; }
+
+.chw-good { --h: 145; margin-top: 32px; padding: 20px 22px; border-radius: 20px; }
+.chw-good-title { margin-bottom: 6px; font-family: var(--serif); font-size: 20px; line-height: 1.2; color: var(--text); }
+.chw-good-body { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+
+/* ── «Связать с сегодня» — плитка соломы трекера: текст слева, справа стрелка и знак Strokes ── */
+.chw-next {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; box-sizing: border-box; width: 100%;
+  margin-top: 28px; padding: 20px 20px 18px 22px; border: 0; border-radius: 22px; font: inherit; text-align: left; color: var(--text);
+}
+.chw-next--link { cursor: pointer; transition: background .12s; }
+.chw-next--link:hover { background: oklch(0.895 0.04 var(--h)); }
+.chw-next--link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.chw-next-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chw-next-label { color: var(--text-sub); }
+.chw-next-title { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--text); }
+.chw-next-text { font-size: 14px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
+.chw-next-foot { display: flex; flex-direction: column-reverse; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.chw-next-foot .pp-art { width: 88px; height: auto; }
+.chw-note { margin-top: 20px; }
+
+/* ── Загрузка: силуэт пяти строк ─────────────────────────────────────── */
+.chw-skeleton { display: flex; flex-direction: column; }
+.chw-skel-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 40px; column-gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--paper-sunk); }
+.chw-skel-lines { display: flex; flex-direction: column; gap: 8px; }
+.chw-skeleton > :last-child { margin-top: 28px; }
+
+/* ── Примеры под ползунком: четыре точки шкалы с живыми историями ───── */
+.chw-examples { margin-top: 2px; }
+.chw-examples-toggle { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 13.5px; background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
 .chw-examples-list { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
 .chw-example + .chw-example { border-top: 1px solid var(--paper-sunk); }
 /* Шапка примера — общая ds-fold-btn (раскладка, шеврон ds-fold-chev по aria-expanded); здесь только
    тон строки и высота 44 вместо 48: четыре примера стоят плотным списком. */
 .chw-example-head.ds-fold-btn { min-height: 44px; padding: 6px 14px; background: var(--paper-tint); font: inherit; }
-.chw-example-text { margin: 0; padding: 10px 14px 14px; font-size: 13px; line-height: 1.6; color: var(--text-sub); }
-.chw-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 10px; font-variant-numeric: tabular-nums; }
-.chw-badge.is-low { background: color-mix(in srgb, var(--err) 14%, transparent); color: var(--err); }
-.chw-badge.is-mid { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn-ink); }
-.chw-badge.is-high { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok-ink); }
-
-.chw-hints { margin-top: 32px; }
-.chw-hints-lede { margin: 0 0 14px; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
-.chw-hint.ds-card { padding: 16px 18px; margin-bottom: 12px; }
-.chw-hint-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.chw-hint-name { font-size: 14px; font-weight: 600; color: var(--text); }
-.chw-hint-score { margin-left: auto; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--text-faint); }
-.chw-hint-domain { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--text-faint); }
-.chw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chw-chip { min-height: 44px; border: none; cursor: pointer; font-family: inherit; text-align: left; }
-.chw-good.ds-card { padding: 16px 18px; margin-top: 32px; background: color-mix(in srgb, var(--ok) 9%, var(--surface)); border-color: color-mix(in srgb, var(--ok) 25%, transparent); }
-.chw-good-title { margin-bottom: 6px; font-size: 14px; font-weight: 600; color: var(--ok-ink); }
-.chw-good-body { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
-.chw-note { margin-top: 24px; }
-
-.chw-intro.ds-card { padding: 20px 22px; margin-bottom: 14px; }
-.chw-intro-body { margin: 0; font-size: 14px; line-height: 1.7; color: var(--text-sub); }
-.chw-intro-body b { font-weight: 600; color: var(--text); }
-.chw-intro-small { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--text-faint); }
-.chw-skeleton { display: flex; flex-direction: column; gap: 12px; }
-.chw-hints .ds-label { margin-bottom: 8px; }
+.chw-example-text { margin: 0; padding: 10px 14px 14px; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+/* Оценка примера — бумагой потребности: ниже — бледнее (как недополученная полоска колеса), выше — гуще;
+   не красный и зелёный. */
+.chw-badge { padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); background: oklch(0.915 0.03 var(--h)); }
+.chw-badge.is-low { background: oklch(0.955 0.014 var(--h)); }
+.chw-badge.is-high { background: oklch(0.87 0.05 var(--h)); }

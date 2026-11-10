@@ -1,25 +1,23 @@
 import { CHILDHOOD_SCHEMA_HINTS } from '../../../../../shared/src/childhoodWheel/childhoodWheel';
 import type { NeedId } from '../../../../../shared/src/needs/types';
 import { NeedArt } from '../../art/NeedArt';
-import { DomainMark } from '../../DomainMark';
-import { hintDomainId } from './hintDomainId';
+import { DomainArt } from '../../art/DomainArt';
+import { hintDomainNum } from './hintDomainId';
 import { NEEDS } from './needs';
 
-/** Шапка карточки подсказки: знак потребности, имя, оценка; ниже домен со своим знаком. */
+/** Шапка подсказки: знак потребности — одна колонка слева; имя и оценка, под именем — домен со знаком строчкой меню (nav). */
 export function SchemaHintHead({ id, score }: { id: NeedId; score: number }) {
   const label = NEEDS.find((n) => n.id === id)?.label ?? id;
-  const domainId = hintDomainId(id);
+  const domain = hintDomainNum(id);
   return (
-    <>
-      <div className="chw-hint-head">
-        <span className="pp-row-art"><NeedArt id={id} size="row" /></span>
-        <span className="chw-hint-name">{label}</span>
-        <span className="chw-hint-score">{score}/10 в детстве</span>
-      </div>
-      <div className="chw-hint-domain">
-        {domainId && <DomainMark domainId={domainId} />}
+    <div className="chw-hint-head">
+      <span className="pp-row-art chw-hint-sign" aria-hidden="true"><NeedArt id={id} size="row" /></span>
+      <span className="chw-hint-name">{label}</span>
+      <span className="chw-hint-score">{score}/10 в детстве</span>
+      <span className="chw-hint-domain">
+        {domain > 0 && <span className="chw-hint-domain-art" aria-hidden="true"><DomainArt domain={domain} size="nav" /></span>}
         <span>Домен: {CHILDHOOD_SCHEMA_HINTS[id].domain}</span>
-      </div>
-    </>
+      </span>
+    </div>
   );
 }

@@ -28,6 +28,7 @@ const PHONE_SAME: [string, RegExp | null, RegExp | null][] = [
 /** Каждый потребитель ds-btn--lg решает ширину на ≥768: own — своё width: 100%, stretch — колонка растягивает, content — по содержимому. */
 const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/WhySheet.tsx': ['own', '.cw-inner .ds-btn--lg'],
+  'components/exercises/childhoodWheel/ChildhoodIntro.tsx': ['content', '.chw-actions > .ds-btn--lg'], // вступление колеса: в строку с «Пропустить»
   'components/booking/ClientBookingSheet.tsx': ['own', '.cbk-actions .ds-btn'], // колонка листа до 560 (client-booking.css)
   'components/settingsSheet/AboutSheet.tsx': ['own', '.st-done'],
   'components/paper/DoneSheet.tsx': ['own', '.ds-btn.pa-done-primary'], // во весь лист «готово» 480–540
