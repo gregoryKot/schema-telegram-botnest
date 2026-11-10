@@ -27,6 +27,17 @@ function renderHeader(phone: boolean, form: 'ty' | 'vy' = 'ty') {
   );
 }
 
+describe('PracticeHeader — встреча', () => {
+  it('имя терапевта в строке встречи не рвётся: пробелы имени неразрывные, слова те же', () => {
+    render(
+      <MemoryRouter>
+        <PracticeHeader phone banner={{ label: 'завтра', isToday: false, partnerName: 'Ольга  Миронова' }} onCustomize={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/Терапевт:/).textContent).toBe(' · Терапевт: Ольга\u00a0Миронова');
+  });
+});
+
 describe('PracticeHeader — «Важное о самопомощи»', () => {
   it('компьютер: ссылка в шапке рядом с «Настроить инструменты», без ⚠ и без цвета предупреждения; лист закрыт', () => {
     renderHeader(false);

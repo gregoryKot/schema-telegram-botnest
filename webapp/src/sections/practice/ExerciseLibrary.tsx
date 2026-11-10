@@ -18,7 +18,7 @@ export function ExerciseLibrary({ stats, onOpen, phone = false, items = EXERCISE
         <span className="ds-sub">{items.length} {pluralRu(items.length, 'упражнение', 'упражнения', 'упражнений')}</span>
       </div>
       <div className="cp-lib">
-        {items.map(ex => <ExerciseTile key={ex.id} ex={ex} stat={stats[ex.id]} onOpen={() => onOpen(ex.id)} />)}
+        {items.map(ex => <ExerciseTile key={ex.id} ex={ex} stat={stats[ex.id]} phone={phone} onOpen={() => onOpen(ex.id)} />)}
       </div>
     </section>
   );

@@ -129,8 +129,13 @@
 .pa-done-sub { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 .pa-done-actions { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 16px; }
 .ds-btn.pa-done-primary { width: 100%; }
-.ds-link.pa-done-link { min-height: 44px; color: var(--text-sub); }
-.ds-link.pa-done-link:hover { color: var(--text); }
+
+/* ── Тихая ссылка под главной кнопкой («Ещё круг», «Закрыть», «История», «Достаточно») ── одна на все
+   листы бумаги (правило №3, ревью g4 r2: три копии в flashcard, breathing и quick-practice). Зона 44,
+   тон --text-sub (на любой бумаге AA), наведение — --text; --pad — поля и кегль 14 у листов практик. */
+.ds-link.pa-quiet { align-self: center; min-height: 44px; color: var(--text-sub); text-decoration: none; }
+.ds-link.pa-quiet:hover { color: var(--text); }
+.ds-link.pa-quiet--pad { padding: 0 8px; font-size: 14px; }
 
 /* ── Сбой строкой (PaperAlert) ───────────────────────────────────────────── */
 /* Знак и фразы — неразрывным рядом (основа тела ~140px влезает рядом со знаком и на 320);
@@ -170,8 +175,6 @@
 .pa-outcome-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
 .pa-outcome-lead { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 .ds-btn.pa-outcome-action { width: 100%; margin-top: 10px; text-decoration: none; }
-.ds-link.pa-outcome-link { align-self: center; min-height: 44px; color: var(--text-sub); text-decoration: none; }
-.ds-link.pa-outcome-link:hover { color: var(--text); }
 .pa-outcome-code { margin: 4px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-muted); word-break: break-all; }
 
 /* ── Чип со знаком (SignChip) ────────────────────────────────────────────── */

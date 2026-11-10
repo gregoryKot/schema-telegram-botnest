@@ -15,7 +15,7 @@ export const PRACTICE_LOOK = {
   letter: { hue: 290, sign: 'sheets' },
   safe_place: { hue: 135, sign: 'haven' },
   childhood_wheel: { hue: 45, sign: 'wheel' },
-  warm_words: { hue: 70, sign: 'heart' },
+  warm_words: { hue: 70, sign: 'child_care' },
   phrase_check: { hue: 310, sign: 'looming' },
   breathing: QUICK_LOOK.breathing,
   grounding: QUICK_LOOK.grounding,
@@ -26,6 +26,10 @@ export const PRACTICE_LOOK = {
   modes: { hue: 240, sign: 'cluster' },
 } as const satisfies Partial<Record<EntityId, Look>>;
 export type PracticeEntity = keyof typeof PRACTICE_LOOK;
+
+/** Шапка листа «Важное о самопомощи»: шалфей (PAPER_HUE.sage) и рамка метода Limits — своей сущности у листа
+ *  нет; литерал сверяет practiceLook.test.ts (правило №4). */
+export const SELF_HELP_LOOK = { hue: 135, sign: 'limits' } as const satisfies Look;
 
 /** Упражнение → сущность: с пунктом «Инструментов» — сущность быстрого действия (QUICK_ACTION_ENTITY,
  *  как в ⌘K и листе настройки), карточки схемы и режима — сущности карточек (сверка — тест). */

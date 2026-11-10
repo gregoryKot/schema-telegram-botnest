@@ -6,6 +6,10 @@ import '../../styles/practice-selfhelp.css';
 
 export interface SessionBannerInfo { label: string; isToday: boolean; partnerName?: string | null }
 
+/** Имя и фамилия не рвутся между строками («Ольга / Миронова», ревью g4 r2): пробелы имени —
+ *  неразрывные при выводе, сама строка не меняется. */
+const keepName = (name: string) => name.trim().replace(/\s+/g, '\u00a0');
+
 /** Шапка «Практики»: надпись, заголовок, подпись, встреча; в ряду надписи справа — тихие ссылки
  * «Важное о самопомощи» (знак Limits вместо ⚠, который читался ошибкой) и «Настроить инструменты»
  * (в ряд с заголовком они не влезали уже на 1280). Телефон: в шапке только «Настроить», «Важное» —
@@ -28,7 +32,7 @@ export function PracticeHeader({ phone, banner, onCustomize }: { phone: boolean;
       {banner && (
         <div className={'ds-sub cp-head-banner' + (banner.isToday ? ' is-today' : '')}>
           {banner.isToday ? '● Сегодня встреча' : `Следующая встреча: ${banner.label}`}
-          {banner.partnerName && <span> · {therapistNameLine(banner.partnerName)}</span>}
+          {banner.partnerName && <span> · {therapistNameLine(keepName(banner.partnerName))}</span>}
         </div>
       )}
     </div>

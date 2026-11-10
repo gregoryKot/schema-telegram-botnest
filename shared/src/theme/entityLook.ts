@@ -74,7 +74,7 @@ export const ENTITY_LOOK = {
   letter: { hue: 290, sign: 'sheets', done: 'sprout' },
   safe_place: { hue: 135, sign: 'haven', done: 'sprout' },
   childhood_wheel: { hue: 45, sign: 'wheel', done: 'sprout' },
-  warm_words: { hue: 70, sign: 'heart', done: 'sprout' },
+  warm_words: { hue: 70, sign: 'child_care', done: 'sprout' },
   phrase_check: { hue: 310, sign: 'looming', done: 'sprout' },
   nourish: { hue: 145, sign: 'leaf', done: null },
   plan: { hue: 135, sign: 'check', done: 'sprout' },

@@ -44,8 +44,6 @@
 
 /* Кнопки под листом — как у листа «готово» (DoneSheet): «Дальше» во всю ширину, тихое «Закрыть» под ней. */
 .qs-actions { display: flex; flex-direction: column; align-items: stretch; gap: 2px; }
-.ds-link.qs-close { align-self: center; min-height: 44px; padding: 0 8px; font-size: 14px; color: var(--text-sub); }
-.ds-link.qs-close:hover { color: var(--text); }
 .qs > .th-caution--compact { margin-top: 0; }
 
 /* Подвал практики: счётчик прохождений крупнее служебной подписи, на бумаге — --text-sub; в листе

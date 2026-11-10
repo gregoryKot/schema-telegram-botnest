@@ -2,7 +2,8 @@
 // оттенка практики (QUICK_LOOK[id], литерал ENTITY_LOOK) — название, «зачем» и знак практики (Grounded, Pause) сверху,
 // ниже шаг-герой: число или буква шага крупно на белом квадратике, заголовок Literata, подпись и
 // счётчик формой (камешки 5-4-3-2-1, буквы С-Т-О-П). Кнопки под листом, предупреждение площадки —
-// под кнопками первого шага, тише самого шага. Итог — DoneSheet: знак практики с ростком,
+// под кнопками на всех шагах, тише самого шага: только на первом шаге лист терял его на втором и
+// «Дальше» уезжало из-под пальца на ~110px (ревью g4 r2). Итог — DoneSheet: знак практики с ростком,
 // «Закрыть» главнее «Ещё круг». Логика шагов — useStepFlow (shared), запись — QuickPracticeFlow.
 import type { CSSProperties } from 'react';
 import { useStepFlow } from '../../../../shared/src/practices/useStepFlow';
@@ -51,9 +52,9 @@ export function QuickStepBody({ id, title, subtitle, steps, done, counter, repea
       </div>
       <div className="qs-actions">
         <button type="button" className="ds-btn ds-btn--lg qs-next" onClick={onNext}>{nextLabel}</button>
-        <button type="button" className="ds-link qs-close" onClick={onClose}>Закрыть</button>
+        <button type="button" className="ds-link pa-quiet pa-quiet--pad" onClick={onClose}>Закрыть</button>
       </div>
-      {step === 0 && note}
+      {note}
     </div>
   );
 }

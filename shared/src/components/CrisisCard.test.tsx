@@ -36,6 +36,21 @@ describe('CrisisCardView — рендер', () => {
     expect(screen.getByText(child.audienceNote!)).toBeTruthy();
   });
 
+  // Регрессия g4 r2: в контейнере шире ~510px детская линия вставала в ряд со взрослой.
+  it('линии — столбиком: детская ссылка идёт после взрослой, второй строкой', () => {
+    render(<CrisisCardView surface="note" tr={tr} track={vi.fn()} />);
+    const adult = screen.getByText(CRISIS_HOTLINES[0].display);
+    const child = screen.getByText(CRISIS_HOTLINES[1].display).closest('a')!;
+    const box = adult.parentElement!;
+    expect(box).toBe(child.parentElement);
+    expect(box.style.flexDirection).toBe('column');
+    expect(box.style.flexWrap).toBe('');
+    expect(Array.from(box.children).indexOf(child)).toBe(
+      Array.from(box.children).indexOf(adult) + 1,
+    );
+    expect(child.style.flex).toBe('');
+  });
+
   it('обе формы обращения (ты/вы) присутствуют в тексте через tr()', () => {
     render(<CrisisCardView surface="note" tr={tr} track={vi.fn()} />);
     // tr() вызван ровно с двумя вариантами, объединёнными для проверки —

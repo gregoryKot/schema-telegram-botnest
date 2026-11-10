@@ -28,7 +28,7 @@ const HEALTHY = modeGroupLook('healthy');
 export function StepMode({ modes, hasHistory, onHistory, onPick, ...c }: Common & {
   modes: ModeData[]; hasHistory: boolean; onHistory: () => void; onPick: (id: string) => void;
 }) {
-  const history = hasHistory ? <button onClick={onHistory} className="ds-link sk-fc-quiet">История</button> : undefined;
+  const history = hasHistory ? <button onClick={onHistory} className="ds-link pa-quiet">История</button> : undefined;
   return (
     <FlashcardFrame onBack={c.onBack} label={c.backLabel} aside={history}
       side={<FlashcardStepHead n={c.stepIndex + 1} total={c.total} title="Что сейчас активно?" />}>

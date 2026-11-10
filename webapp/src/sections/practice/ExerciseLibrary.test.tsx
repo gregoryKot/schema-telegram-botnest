@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 // Библиотека упражнений — бенто плиток бумаги (b14): у каждой плитки бумага и знак своей
-// сущности (exerciseLook), без номеров 01–08. Подпись «не начато» помечена классом is-new, чтобы
-// телефонная раскладка прятала её и показывала статистику, только когда она есть (реальные
+// сущности (exerciseLook), без номеров 01–08. Подпись «не начато» помечена классом is-new; на
+// телефоне её нет вовсе — на её месте описание, статистика — только когда она есть (реальные
 // данные, не выдуманные).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { ExerciseLibrary } from './ExerciseLibrary';
 import { EXERCISES } from './exerciseLibraryModel';
 import { exerciseLook } from './practiceLook';
+import { glue } from '../../../../shared/src/utils/typo';
 
 afterEach(cleanup);
 
@@ -58,6 +59,26 @@ describe('ExerciseLibrary', () => {
   it('с датой прохождения — давность из fmtAgo', () => {
     render(<ExerciseLibrary stats={{ letter: { count: 2, lastDone: new Date().toISOString() } }} onOpen={vi.fn()} />);
     expect(screen.getByText(/2 записи/).closest('.cp-ex-state')!.textContent).toBe('2 записи\u00a0· сегодня');
+  });
+
+  // Ревью g4 r2: на телефоне плитки без описания — новичок видел «Колесо детства 8–12 мин» без
+  // «зачем». Не начатое — описание на месте меты; начатое — статистика, описание не теснит её.
+  it('телефон: у не начатого упражнения описание вместо «не начато», у начатого — статистика без описания', () => {
+    const safe = EXERCISES.find(e => e.id === 'safe')!;
+    const letter = EXERCISES.find(e => e.id === 'letter')!;
+    render(<ExerciseLibrary phone stats={{ safe: { count: 3, lastDone: null } }} onOpen={vi.fn()} />);
+    const tile = (title: string) => screen.getByText(title).closest('button')!;
+    expect(tile(letter.title).querySelector('.cp-ex-desc')!.textContent).toBe(glue(letter.desc));
+    expect(tile(letter.title).querySelector('.cp-ex-state')).toBeNull();
+    expect(screen.queryByText('не начато')).toBeNull();
+    expect(tile(safe.title).querySelector('.cp-ex-desc')).toBeNull();
+    expect(tile(safe.title).querySelector('.cp-ex-state')!.textContent).toContain('3 записи');
+  });
+
+  it('компьютер: описание у каждой плитки, и у начатой, и у не начатой', () => {
+    const { container } = render(<ExerciseLibrary stats={{ safe: { count: 3, lastDone: null } }} onOpen={vi.fn()} />);
+    expect(container.querySelectorAll('.cp-ex-desc')).toHaveLength(8);
+    expect(container.querySelectorAll('.cp-ex-state')).toHaveLength(8);
   });
 
   it('заголовок: «Библиотека» на десктопе, «Инструменты» на телефоне', () => {

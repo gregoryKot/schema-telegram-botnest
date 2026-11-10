@@ -2,7 +2,9 @@
 // «Сцены»): тот же каркас, что у лендинга (sceneKit: лист-подложка по --h, тень сплошным
 // сдвинутым слоем Lift, холст 320×260 с равными полями), те же элементы языка.
 //  • Sprout — «готово»: знак сущности стоит на земле, рядом проросший лист. Знак не
-//    перерисован: тот же мотив по ключу (SignArt) вложенным svg (SignInScene).
+//    перерисован: тот же мотив по ключу (SignArt) вложенным svg (SignInScene). Исключение — `Pause`
+//    («Стоп»): крупно длинная лента в две волны читалась червяком, поэтому в сцене — вариант мотива
+//    (StopPalms): лента короче и спокойнее, главная фигура — дуга-ладони мха (PAPER_2026-11.md).
 //  • SceneBreath — дыхание: две дуги Breath над полоской; дуги расходятся на вдохе, стоят на
 //    задержке, опускаются на выдохе; `rest` — дыхание улеглось, у основания полоски вырос лист.
 //    Движение — только transform с переходом (paper-scenes.css), reduced-motion его снимает.
@@ -37,6 +39,17 @@ function SproutLeaf() {
   );
 }
 
+/** «Стоп» в сцене: короткая лента-импульс одной спокойной волной подходит к дуге мха и не
+ *  касается её; дуга-ладони Здорового Взрослого стоит на земле и крупнее ленты. */
+function StopPalms() {
+  return (
+    <g data-motif="pause">
+      <path d="M50 152 C 72 128, 98 160, 128 140" fill="none" stroke={INK.clay} strokeWidth="12" strokeLinecap="round" />
+      <path d="M150 90 A 50 50 0 0 1 150 190" fill="none" stroke={INK.moss} strokeWidth="26" strokeLinecap="round" />
+    </g>
+  );
+}
+
 /** «Готово»: знак сущности на земле и проросший лист — сделанное прорастает. Рамка знака
  *  ставит его линию земли (у знаков с землёй — y 60 из 64) на землю сцены. */
 export function Sprout({ sign, hue = 135, patch }: { sign: SignKey; hue?: number; patch?: number }) {
@@ -44,7 +57,7 @@ export function Sprout({ sign, hue = 135, patch }: { sign: SignKey; hue?: number
     <SceneSvg hue={hue} patch={patch} patchAt="bl" sheet="c">
       <Lift>
         <path d="M30 204 H286" stroke={INK.sage} strokeWidth="7" strokeLinecap="round" />
-        <SignInScene sign={sign} x={18} y={90} w={228} h={122} />
+        {sign === 'pause' ? <StopPalms /> : <SignInScene sign={sign} x={18} y={90} w={228} h={122} />}
         <SproutLeaf />
       </Lift>
     </SceneSvg>
@@ -53,26 +66,42 @@ export function Sprout({ sign, hue = 135, patch }: { sign: SignKey; hue?: number
 
 export type BreathScenePhase = 'in' | 'hold' | 'out' | 'rest';
 
-/** Положение дуг по фазе; центр масштаба — середина земли под дугами (160 206, paper-scenes.css). */
+/** Положение дуг по фазе; центр масштаба — середина земли под дугами (160 206, paper-scenes.css).
+ *  Размах заметный и на телефоне (герой 124px): вдох к выдоху ≥ 1.25 (AppScenes.test). `rest` —
+ *  дуги осели: шире и ниже выдоха, лист у полоски остаётся под ними. */
 const ARCS: Record<BreathScenePhase, string> = {
-  in: 'scale(1.08)',
-  hold: 'scale(1.08)',
+  in: 'scale(1.18)',
+  hold: 'scale(1.18)',
+  out: 'scale(0.86)',
+  rest: 'scale(0.9, 0.8)',
+};
+
+/** Полоска на вдохе вытягивается вверх от земли (центр — её основание 160 208), на выдохе опускается. */
+const FIGURE: Record<BreathScenePhase, string> = {
+  in: 'scale(1, 1.14)',
+  hold: 'scale(1, 1.14)',
   out: 'scale(1)',
-  rest: 'scale(0.94, 0.86)',
+  rest: 'scale(1)',
 };
 
 /** Дыхание: полоска стоит под двумя дугами Breath, дуги дышат. `phase` — вдох, задержка,
  *  выдох, улеглось (дуги осели, у полоски вырос лист); `seconds` — длина перехода (длина фазы). */
 export function SceneBreath({ phase = 'in', hue = 45, seconds }: { phase?: BreathScenePhase; hue?: number; seconds?: number }) {
-  const arcs = { transform: ARCS[phase], transitionDuration: seconds ? `${seconds}s` : undefined } as CSSProperties;
+  const duration = seconds ? `${seconds}s` : undefined;
+  const arcs = { transform: ARCS[phase], transitionDuration: duration } as CSSProperties;
+  const figure = { transform: FIGURE[phase], transitionDuration: duration } as CSSProperties;
   const arc = { fill: 'none', strokeWidth: 22, strokeLinecap: 'butt' } as const;
   return (
     <SceneSvg hue={hue} patch={135} patchAt="tr" sheet="a" className={`scn-breath scn-breath--${phase}`}>
       <Lift>
         <path d="M30 210 H290" stroke={INK.sage} strokeWidth="7" strokeLinecap="round" />
-        <rect x="146" y="166" width="28" height="42" rx="14" fill={INK.clay} />
         {phase === 'rest' && <path d="M178 206 C176 190 184 180 198 176 C200 190 194 202 178 206 Z" fill={INK.moss} />}
       </Lift>
+      <g className="scn-breath-fig" style={figure}>
+        <Lift>
+          <rect x="146" y="166" width="28" height="42" rx="14" fill={INK.clay} />
+        </Lift>
+      </g>
       <g className="scn-breath-arcs" style={arcs}>
         <Lift>
           <path d="M56 206 A104 104 0 0 1 264 206" stroke={INK.sage} {...arc} />

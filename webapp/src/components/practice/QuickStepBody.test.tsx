@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Тело пошагового листа (QuickStepBody): лист оттенка практики со знаком, число или буква шага
-// крупно, счётчик формой (камешки заземления, буквы «Стопа»), предупреждение — только на первом
-// шаге и под кнопками; итог — лист «готово» со знаком практики, «Закрыть» главнее «Ещё круг».
+// крупно, счётчик формой (камешки заземления, буквы «Стопа»), предупреждение — под кнопками на
+// всех шагах (лист не меняет высоту, «Дальше» не уезжает); итог — лист «готово» со знаком практики, «Закрыть» главнее «Ещё круг».
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QuickStepBody } from './QuickStepBody';
@@ -58,11 +58,13 @@ describe('QuickStepBody', () => {
     expect([...container.querySelectorAll('.qs-letters > li')].map((l) => l.className)).toEqual(['is-done', 'is-now', 'is-next', 'is-next']);
   });
 
-  it('предупреждение — только на первом шаге', () => {
+  // Ревью g4 r2: предупреждение только на первом шаге — лист короче со второго, «Дальше» уезжало вниз.
+  it('предупреждение — под кнопками на каждом шаге, тот же узел (лист не меняет высоту)', () => {
     renderBody('stop');
-    expect(screen.getByText('предупреждение')).toBeTruthy();
+    const first = screen.getByText('предупреждение');
+    expect(first.previousElementSibling?.className).toBe('qs-actions');
     fireEvent.click(screen.getByText('Дальше'));
-    expect(screen.queryByText('предупреждение')).toBeNull();
+    expect(screen.getByText('предупреждение')).toBe(first);
   });
 
   it('итог: сцена «готово» практики, «Закрыть» — залитая, «Ещё круг» — ссылкой и возвращает к первому шагу', () => {

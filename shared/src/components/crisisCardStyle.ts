@@ -25,9 +25,10 @@ export const CRISIS_CARD_STYLE = {
     lineHeight: 1.55,
     color: 'var(--text-sub)',
   },
+  // Линии — всегда столбиком (правило №7): взрослая плашка во всю ширину (до 680), детская — под ней.
   lines: {
     display: 'flex',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 10,
     marginTop: 14,
     maxWidth: 680,
@@ -39,7 +40,6 @@ export const CRISIS_CARD_STYLE = {
     columnGap: 10,
     rowGap: 2,
     boxSizing: 'border-box',
-    flex: '1 1 250px',
     minWidth: 0,
     padding: '8px 18px',
     borderRadius: 16,

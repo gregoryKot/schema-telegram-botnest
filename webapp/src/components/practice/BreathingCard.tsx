@@ -1,6 +1,6 @@
 // «Дыши со мной» на сайте — обёртка над общей рамкой дыхания 4-4-6
 // (createBreathingCard в shared/practices, правило №3): api, ShareCardSheet и
-// botShortUrl — инъекцией, вёрстка — лист персика с живой сценой (BreathingPaperView).
+// botShortUrl — инъекцией, вёрстка — лист бирюзы 195 («воздух») с живой сценой (BreathingPaperView).
 // В разделе «Практики» — на странице, из ⌘K, итога разбора и паттерна — в листе (BreathingSheet).
 import { api } from '../../api';
 import { ShareCardSheet } from '../../share/ShareCardSheet';

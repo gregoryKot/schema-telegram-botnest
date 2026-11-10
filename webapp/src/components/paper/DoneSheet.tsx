@@ -49,7 +49,7 @@ export function DoneSheet({ entity, hue, scene, days, label, title, sub, primary
         {children}
         <div className="pa-done-actions">
           <button type="button" className="ds-btn ds-btn--lg pa-done-primary" onClick={primary.onClick}>{primary.label}</button>
-          {secondary && <button type="button" className="ds-link pa-done-link" onClick={secondary.onClick}>{secondary.label}</button>}
+          {secondary && <button type="button" className="ds-link pa-quiet" onClick={secondary.onClick}>{secondary.label}</button>}
         </div>
       </div>
     </section>

@@ -53,6 +53,20 @@ describe('Sprout и знак в сцене', () => {
     expect(front[0].getAttribute('fill')).toBe('var(--surface)');
   });
 
+  // Ревью g4 r2: крупный Pause (длинная лента в две волны у дуги) в итоге «Стопа» читался червяком.
+  it('«Стоп» в сцене «готово» — вариант мотива: лента короче дуги-ладоней, дуга толще ленты, лист на месте', () => {
+    const { container } = render(<Sprout sign="pause" hue={70} />);
+    const motif = [...container.querySelectorAll('[data-motif="pause"]')].find(outside)!;
+    expect(container.querySelector('svg.pp-art')).toBeNull(); // знак не вложен крупно
+    const [ribbon, palms] = [...motif.querySelectorAll('path')];
+    const xs = (ribbon.getAttribute('d')!.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number).filter((_, i) => i % 2 === 0);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(100); // лента — меньше трети холста
+    expect(Number(palms.getAttribute('stroke-width'))).toBeGreaterThan(Number(ribbon.getAttribute('stroke-width')) * 2 - 1);
+    expect(ribbon.getAttribute('stroke')).toBe(INK.clay);
+    expect(palms.getAttribute('stroke')).toBe(INK.moss);
+    expectSceneContract(<Sprout sign="pause" hue={70} />);
+  });
+
   it('SignInScene кладёт знак в рамку холста', () => {
     const { container } = render(<svg><SignInScene sign="leaf" x={1} y={2} w={3} h={4} /></svg>);
     expect(container.querySelector('svg svg')?.getAttribute('width')).toBe('3');
@@ -68,20 +82,48 @@ describe('SceneBreath: фаза → положение дуг', () => {
   const arcs = (phase: BreathScenePhase, seconds?: number) => {
     const { container, unmount } = render(<SceneBreath phase={phase} seconds={seconds} />);
     const g = container.querySelector('.scn-breath-arcs') as SVGGElement;
-    const out = { transform: g.style.transform, duration: g.style.transitionDuration, leaf: container.querySelectorAll('path[d^="M178 206"]').length };
+    const fig = container.querySelector('.scn-breath-fig') as SVGGElement;
+    const out = {
+      transform: g.style.transform,
+      figure: fig.style.transform,
+      duration: g.style.transitionDuration,
+      figDuration: fig.style.transitionDuration,
+      leaf: container.querySelectorAll('path[d^="M178 206"]').length,
+    };
     unmount();
     return out;
   };
+  /** Масштаб из `scale(a)` или `scale(x, y)` — по каждой оси. */
+  const scaleOf = (t: string) => {
+    const [x, y = x] = t.replace(/^scale\(|\)$/g, '').split(',').map(Number);
+    return { x, y };
+  };
 
-  it('вдох — дуги расходятся, задержка — стоят там же, выдох — возвращаются', () => {
-    expect(arcs('in').transform).toBe('scale(1.08)');
+  it('вдох — дуги расходятся, задержка — стоят там же, выдох — сходятся', () => {
+    expect(arcs('in').transform).toBe('scale(1.18)');
     expect(arcs('hold').transform).toBe(arcs('in').transform);
-    expect(arcs('out').transform).toBe('scale(1)');
+    expect(arcs('out').transform).toBe('scale(0.86)');
   });
 
-  it('улеглось — дуги осели ниже обычного, у основания полоски вырос лист (с тенью)', () => {
+  // Регрессия g4 r2: при 1.08 ↔ 1 дуги в герое 124px сдвигались на ~3px — сцена читалась стоящей.
+  it('размах дыхания виден глазом: вдох к выдоху ≥ 1.25 по обеим осям', () => {
+    const inS = scaleOf(arcs('in').transform);
+    const outS = scaleOf(arcs('out').transform);
+    expect(inS.x / outS.x).toBeGreaterThanOrEqual(1.25);
+    expect(inS.y / outS.y).toBeGreaterThanOrEqual(1.25);
+  });
+
+  it('полоска вытягивается на вдохе и задержке, на выдохе и в покое стоит ровно; переход той же длины', () => {
+    expect(scaleOf(arcs('in').figure).y).toBeGreaterThan(1);
+    expect(arcs('hold').figure).toBe(arcs('in').figure);
+    expect(arcs('out').figure).toBe('scale(1)');
+    expect(arcs('rest').figure).toBe('scale(1)');
+    expect(arcs('in', 4).figDuration).toBe('4s');
+  });
+
+  it('улеглось — дуги осели ниже выдоха, у основания полоски вырос лист (с тенью)', () => {
     const rest = arcs('rest');
-    expect(rest.transform).toBe('scale(0.94, 0.86)');
+    expect(scaleOf(rest.transform).y).toBeLessThan(scaleOf(arcs('out').transform).y);
     expect(rest.leaf).toBe(2);
     expect(arcs('in').leaf).toBe(0);
   });
@@ -89,7 +131,7 @@ describe('SceneBreath: фаза → положение дуг', () => {
   it('длина перехода — длина фазы; reduced-motion снимает движение; бесконечной анимации нет', () => {
     expect(arcs('out', 6).duration).toBe('6s');
     const css = readFileSync(join(__dirname, '../../styles/paper-scenes.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.scn-breath-arcs\s*\{\s*transition:\s*none;?\s*\}/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.scn-breath-arcs,\s*\.scn-breath-fig\s*\{\s*transition:\s*none;?\s*\}/);
     expect(css).not.toMatch(/infinite/);
   });
 });

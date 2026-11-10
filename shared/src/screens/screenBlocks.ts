@@ -100,6 +100,6 @@ export const BLOCK_META: Partial<Record<ScreenBlockId, ScreenBlockMeta>> = {
   warm_words: {
     label: 'Тёплые слова',
     sub: 'поддерживающие фразы из карточек и дневников',
-    sign: 'heart',
+    sign: 'child_care',
   },
 };

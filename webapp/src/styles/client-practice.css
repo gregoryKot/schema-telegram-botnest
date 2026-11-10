@@ -86,8 +86,8 @@
 /* ── Телефон (.cp-page--phone ставит PracticeSection по useIsMobile) ──────────
    Шапка и заголовки блоков — те же, что на ноутбуке (ds-eyebrow + ds-h1 + ds-sub,
    секции — Literata ds-h2; #906). Дыхание первым, под ним два квадрата и лист кризисных
-   строк; «Инструменты» — плитки в две колонки: знак, название, время и мета (описание —
-   у экрана упражнения). */
+   строк; «Инструменты» — плитки в две колонки: знак, название, время и внизу мета, а у не
+   начатого упражнения — описание в две строки на её месте (ExerciseTile, ревью g4 r2). */
 .cp-here-lead { margin: 0; font-size: 14px; line-height: 1.5; }
 .cp-here-intro { display: flex; flex-direction: column; align-items: flex-start; }
 .cp-here-intro > .cp-selfhelp { margin-bottom: -8px; }
@@ -116,8 +116,9 @@
    Chrome рвал по слогам и влезающие слова (ревью g1). */
 .cp-page--phone .cp-task-title { overflow-wrap: break-word; }
 .cp-page--phone .cp-sq .pp-meta { white-space: nowrap; } /* «прошли 3 раза» — одной строкой */
-/* Узкий телефон: «Готово» у задания — под текстом, а не сбоку (колонке текста оставалось ≈110px на 320). */
-@media (max-width: 374px) {
+/* Телефон до 559px: «Готово» у задания — под текстом, а не сбоку. На 320 колонке текста оставалось ≈110px,
+   на 390 — ≈180px: «Заметить три момента…» шло столбиком в шесть строк (ревью g4 r2). */
+@media (max-width: 559px) {
   .cp-page--phone .cp-task:has(> .ds-btn) { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; row-gap: var(--space-8); }
   .cp-page--phone .cp-task:has(> .ds-btn) > .pp-row-art { grid-column: 1; grid-row: 1 / span 2; align-self: start; }
   .cp-page--phone .cp-task:has(> .ds-btn) > .cp-task-body { grid-column: 2; grid-row: 1; }
@@ -129,14 +130,16 @@
 .cp-page--phone .cp-lib { gap: var(--space-10); }
 .cp-page--phone .cp-ex {
   min-height: 0; padding: 14px 14px 12px 16px; border-radius: 18px; row-gap: 4px;
-  grid-template-areas: "art art" "title title" "time time" "foot foot"; grid-template-rows: auto auto auto 1fr;
+  grid-template-areas: "art art" "title title" "time time" "desc desc" "foot foot"; grid-template-rows: auto auto auto auto 1fr;
 }
 .cp-page--phone .cp-ex:hover { background: oklch(0.915 0.03 var(--h)); }
 .cp-page--phone .cp-ex-art { width: 78px; margin: -2px 0 6px -6px; }
 .cp-page--phone .cp-ex-title { font-size: 19px; line-height: 1.15; }
 .cp-page--phone .cp-ex-time { justify-self: start; font-size: 12.5px; }
-.cp-page--phone .cp-ex-desc { display: none; }
-.cp-page--phone .cp-ex-foot { align-self: end; margin-top: 6px; }
-/* «не начато» на телефоне — шум: внизу плитки только стрелка, статистика — когда она есть */
-.cp-page--phone .cp-ex-state.is-new { visibility: hidden; }
+.cp-page--phone .cp-ex-desc {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  margin-top: 2px; font-size: 13px; line-height: 1.4;
+}
+.cp-page--phone .cp-ex-foot { align-self: end; margin-top: 6px; justify-content: flex-end; }
+.cp-page--phone .cp-ex-state { margin-right: auto; }
 

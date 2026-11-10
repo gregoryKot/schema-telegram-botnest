@@ -13,7 +13,8 @@ import { glue } from '../../../../shared/src/utils/typo';
 // Вид (редизайн 2026-11, b12): общий лист «готово» (DoneSheet) — бережная роза и сцена «готово»
 // «Мне плохо» (Sprout с Heart); режим и потребность — строками со знаками (FlashcardRows, те же,
 // что в просмотре из истории); «Готово» — залитая, «Ещё одну» и «Открыть трекер» — тихие ссылки;
-// оговорка про сервер — наклейкой соломы (PaperAlert), а не красным абзацем по центру.
+// оговорка про сервер — наклейкой соломы (PaperAlert) с нейтральной чашкой исхода «подожди», а не
+// красным абзацем по центру и не вторым сердцем под сценой с сердцем (ревью g4 r2).
 interface Props {
   parts: FlashcardSummaryParts;
   action: string;
@@ -37,14 +38,14 @@ export function FlashcardDoneScreen({ parts, action, syncFailed, onOpenTracker, 
         secondary={{ label: 'Ещё одну', onClick: handleNew }}
       >
         {syncFailed && (
-          <PaperAlert sign="heart" className="sk-fc-alert"
+          <PaperAlert sign="cup" className="sk-fc-alert"
             title={glue('Карточка осталась только на этом устройстве — до сервера не доехала.')}
             text={glue('На других устройствах и у терапевта её не будет.')} />
         )}
         <FlashcardRows parts={parts} action={action || undefined} />
       </DoneSheet>
       {onOpenTracker && (
-        <button onClick={() => { goBack(); setTimeout(onOpenTracker, 100); }} className="ds-link sk-fc-quiet">
+        <button onClick={() => { goBack(); setTimeout(onOpenTracker, 100); }} className="ds-link pa-quiet">
           Открыть трекер →
         </button>
       )}

@@ -7,6 +7,7 @@ import { glue } from '../../../../shared/src/utils/typo';
 import { buildSelfHelpParagraphs, SELF_HELP_TITLE } from '../../../../shared/src/selfHelp/selfHelpText';
 import { SignHero } from '../../components/paper/SignHero';
 import { CrisisContactsSheet } from './CrisisContactsSheet';
+import { SELF_HELP_LOOK } from './practiceLook';
 import '../../styles/practice-selfhelp.css';
 
 /**
@@ -14,7 +15,6 @@ import '../../styles/practice-selfhelp.css';
  * (рамка метода), первый абзац (жилет в шторм) — лидом Literata. «Контакты помощи» открывают
  * телефоны доверия поверх листа, чтобы после них человек вернулся к тексту, а не потерял место.
  */
-const SAGE = 135; // шалфей (PAPER_HUE.sage) литералом: рантайм-импорт entityLook перекраивал чанки (practiceLook.ts)
 export function SelfHelpSheet({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
@@ -23,8 +23,8 @@ export function SelfHelpSheet({ onClose }: { onClose: () => void }) {
   return (
     <>
       <BottomSheetShell goBack={goBack} zIndex={310} maxWidth={560} label={SELF_HELP_TITLE}>
-        <div className="pp-head pp-paper sh-head" style={hueStyle(SAGE)}>
-          <h2 className="sh-title">{glue(SELF_HELP_TITLE)}</h2><SignHero sign="limits" />
+        <div className="pp-head pp-paper sh-head" style={hueStyle(SELF_HELP_LOOK.hue)}>
+          <h2 className="sh-title">{glue(SELF_HELP_TITLE)}</h2><SignHero sign={SELF_HELP_LOOK.sign} />
         </div>
         <p className="sh-lead">{glue(lead)}</p>
         {rest.map((p) => <p key={p} className="sh-text">{glue(p)}</p>)}

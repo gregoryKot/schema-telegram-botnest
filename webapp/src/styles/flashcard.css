@@ -19,8 +19,6 @@
 .sk-fc-col > *, .sk-fc-spread .pa-spread-main > * { flex-shrink: 0; } /* колонка прокручивается, а не сплющивает кнопки (C-З6) */
 .sk-fc-spread.pa-spread { max-width: 600px; margin: 0 auto; gap: 22px; }
 .ds-btn.sk-fc-wide { width: 100%; height: auto; min-height: 48px; border-radius: 24px; font-size: 15px; }
-.ds-link.sk-fc-quiet { align-self: center; min-height: 44px; color: var(--text-sub); font-weight: 500; }
-.ds-link.sk-fc-quiet:hover { color: var(--text); }
 .sk-fc-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 24px; }
 .sk-fc-note { margin-top: 4px; }
 

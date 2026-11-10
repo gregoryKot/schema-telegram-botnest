@@ -41,7 +41,7 @@ export function PaperOutcome({ outcome, eyebrow, title, lead, action, link, code
           {lead && <p className="pa-outcome-lead">{lead}</p>}
           {children}
           {action && <ActionView action={action} cls="ds-btn ds-btn--lg pa-outcome-action" />}
-          {link && <ActionView action={link} cls="ds-link pa-outcome-link" />}
+          {link && <ActionView action={link} cls="ds-link pa-quiet" />}
           {code && <p className="pa-outcome-code">{code}</p>}
         </div>
       </div>

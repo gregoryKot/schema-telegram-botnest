@@ -7,7 +7,7 @@ type ActionProps = Pick<BreathingViewProps, 'stage' | 'text' | 'start' | 'stop' 
  *  «Закрыть» залитая и «Ещё минуту» ссылкой, на странице — «Ещё минуту» контурной. */
 export function BreathActions({ stage, text, start, stop, onClose }: ActionProps) {
   const main = 'ds-btn ds-btn--lg qb-main';
-  const quiet = 'ds-link qb-quiet';
+  const quiet = 'ds-link pa-quiet pa-quiet--pad'; // тихая ссылка — одна на листы бумаги (paper-app.css)
   if (stage === 'active') return <button type="button" className={quiet} onClick={stop}>{text.action}</button>;
   if (stage === 'idle') {
     return (

@@ -36,8 +36,10 @@
    задаёт компонент (transition-duration), бесконечной анимации нет; reduced-motion — без
    движения, меняется только положение. Центр — середина земли под дугами (160 206 в единицах холста). */
 .scn-breath-arcs { transform-box: view-box; transform-origin: 160px 206px; transition: transform 4s ease-in-out; }
+/* Полоска под дугами вытягивается на вдохе от своего основания (160 208) — тем же переходом. */
+.scn-breath-fig { transform-box: view-box; transform-origin: 160px 208px; transition: transform 4s ease-in-out; }
 @media (prefers-reduced-motion: reduce) {
-  .scn-breath-arcs { transition: none; }
+  .scn-breath-arcs, .scn-breath-fig { transition: none; }
 }
 
 /* Листы коллажа первого экрана (HeroCollage.tsx): персик под мокапом, клочки неба и шалфея. */

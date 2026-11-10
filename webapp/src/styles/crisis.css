@@ -28,21 +28,28 @@
   .cr-sheet--fill > .ds-btn.sh-close { margin-top: auto; }
   .cr-sheet--fill > [data-crisis-card] { margin-bottom: var(--space-16); }
 }
-/* Точка после плашки 112 висела отдельно у её края и читалась мусором: видна только читалке. */
-.cr-dot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Пока «Помощь рядом» открыта поверх «Важного о самопомощи», бумага родителя спрятана: на компьютере
+   окно 560 торчало из-под 520 рамкой со всех сторон (матрёшка, ревью g4 r2). Порядок слоёв не меняется —
+   под-лист по-прежнему выше (z-index 320 над 310); родитель вернётся, когда лист контактов закроют. */
+.sheet-modal:has(+ .sheet-modal .cr-sheet--fill) > .sheet-modal-box { visibility: hidden; }
+/* Точка после плашки 112 — часть текста кризисного пути (тексты не меняются, №7, ревью g4 r2): видна,
+   прижата к плашке на 2px — тем же зазором, что слева, и не висит отдельно у её края. */
+.cr-dot { margin-left: 2px; }
 
 /* ── Кризисные строки «Практики» на телефоне: один лист розы, знак Heart — колонкой слева на высоту
-   обеих строк (пустой слот у второй строки читался незагрузившейся иконкой); раскрытие — во всю ширину. ── */
+   обеих строк (пустой слот у второй строки читался незагрузившейся иконкой), но на уровне первой строки:
+   по центру колонки он висел на разделителе и не принадлежал ни одной строке (ревью g4 r2). Разделители
+   начинаются после колонки знака и кончаются в поле листа (16px справа), как у раскрытия. ── */
 .cr-rows { display: grid; grid-template-columns: auto minmax(0, 1fr); overflow: hidden; }
-.cr-rows-art { grid-column: 1; grid-row: 1 / span 2; align-self: center; padding-left: 14px; }
+.cr-rows-art { grid-column: 1; grid-row: 1 / span 2; align-self: start; height: 64px; padding-left: 14px; } /* высота первой строки */
 .cr-rows--one > .cr-rows-art { grid-row: 1; }
 .cr-rows > .cr-row { grid-column: 2; }
 .cr-rows > .cr-open { grid-column: 1 / -1; }
 .cr-row {
-  display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box;
+  position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box;
   padding: 12px 16px 12px 12px; cursor: pointer; transition: background .12s;
 }
-.cr-row + .cr-row { border-top: 1px solid var(--panel-line); }
+.cr-row + .cr-row::before { content: ''; position: absolute; top: 0; left: 0; right: 16px; border-top: 1px solid var(--panel-line); }
 .cr-row:hover { background: oklch(0.895 0.04 var(--h)); }
 .cr-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 20px; }
 .cr-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
