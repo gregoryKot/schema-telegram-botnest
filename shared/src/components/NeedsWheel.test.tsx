@@ -181,4 +181,20 @@ describe('NeedsWheel', () => {
     fireEvent.click(container.querySelector('circle[fill="transparent"]')!);
     expect(onClickCenter).toHaveBeenCalled();
   });
+
+  // Колесо потребностей на холсте терапевта: в центре период и средний процент, а не индекс дня.
+  it('center заменяет индекс своей подписью и значением', () => {
+    const { container } = render(
+      <NeedsWheel
+        ink={INK}
+        needs={needs}
+        ratings={{ safety: 8, autonomy: 4 }}
+        center={{ label: 'сейчас', value: '60%' }}
+      />,
+    );
+    expect(container.textContent).toContain('сейчас');
+    expect(container.textContent).toContain('60%');
+    expect(container.textContent).not.toContain('индекс');
+    expect(container.textContent).not.toContain('6,0');
+  });
 });

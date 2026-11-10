@@ -11,11 +11,13 @@ import { installFlowTestPolyfills } from '../test-support/renderWithFlow';
 const updateModeMap = vi.fn();
 const getConceptualization = vi.fn();
 const appendConceptualization = vi.fn();
+const getTherapyClientData = vi.fn();
 vi.mock('../api', () => ({
   api: {
     updateModeMap: (...a: unknown[]) => updateModeMap(...a),
     getConceptualization: (...a: unknown[]) => getConceptualization(...a),
     appendConceptualization: (...a: unknown[]) => appendConceptualization(...a),
+    getTherapyClientData: (...a: unknown[]) => getTherapyClientData(...a),
     listCustomModes: () => Promise.resolve([]),
   },
   reportClientError: vi.fn(),
@@ -105,15 +107,26 @@ describe('ModeMapEditor — собрать руками то же, что схе
     expect(appendConceptualization).toHaveBeenCalledWith(7, { modeLinks: [{ modeId: 'vulnerable_child', schemaIds: ['self_sacrifice'] }] });
   });
 
-  it('«Круг потребностей» из палитры приезжает с пятью потребностями внутри', async () => {
+  // Владелец 2026-11-10: круг — колесо с процентами по периодам; «Колесо детства» клиента переносится одной кнопкой.
+  it('«Круг потребностей» из палитры — колесо: оценка в панели видна на колесе и уходит в сохранение', async () => {
     getConceptualization.mockResolvedValue(null);
+    getTherapyClientData.mockResolvedValue({ childhoodRatings: { attachment: 3, play: 8 } });
     await renderEditor([]);
     fireEvent.click(screen.getByText('Круг потребностей').closest('button')!);
-    const nodes = [...document.querySelectorAll('.react-flow__node')];
-    expect(nodes.filter(n => n.classList.contains('react-flow__node-need'))).toHaveLength(5);
-    expect(nodes.filter(n => n.classList.contains('react-flow__node-needs'))).toHaveLength(1);
-    for (const name of ['Привязанность', 'Автономия', 'Выражение чувств', 'Спонтанность', 'Границы']) {
-      expect(nodes.some(n => n.textContent?.includes(name))).toBe(true);
-    }
+    const wheel = () => document.querySelector('.react-flow__node-needs')!;
+    expect(document.querySelectorAll('.react-flow__node-need')).toHaveLength(0);
+    expect(wheel().textContent).toContain('Привязанность');
+    fireEvent.click(wheel().querySelector('.mm2-wheel-legend')!);
+    // «Сейчас» у «Привязанности»: ползунок 0–10 тот же, что в упражнении; стрелка от середины → 6 = 60%
+    const slider = screen.getByRole('slider', { name: 'Привязанность: Сейчас' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(wheel().querySelector('[data-need="attachment"]')?.textContent).toContain('60%');
+    // «Колесо детства» клиента → период «Детство»
+    fireEvent.click(await screen.findByText('Перенести в «Детство»'));
+    expect(getTherapyClientData).toHaveBeenCalledWith(7);
+    await act(async () => { await new Promise(r => setTimeout(r, 1300)); });
+    const saved = updateModeMap.mock.calls.at(-1)?.[1] as { nodes: ModeMapNode[] } | undefined;
+    const data = saved?.nodes.find(n => n.type === 'needs')?.data;
+    expect(data?.wheel?.ratings).toEqual({ now: { attachment: 6 }, child: { attachment: 3, play: 8 } });
   });
 });

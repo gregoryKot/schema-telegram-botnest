@@ -3,18 +3,19 @@
 // concept-append.spec.ts.
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { mergeConceptAppend, type ConceptAppendState } from './concept-append';
 import {
   APPEND_LINK_SCHEMAS_MAX,
   APPEND_MODE_LINKS_MAX,
-  mergeConceptAppend,
-  type ConceptAppendState,
-} from './concept-append';
+  APPEND_SCHEMA_LINKS_MAX,
+} from './concept-append-links';
 import { ConceptualizationDto } from './dto/conceptualization.dto';
 
 const empty = (): ConceptAppendState => ({
   modeIds: [],
   schemaIds: [],
   modeLinks: [],
+  schemaLinks: [],
 });
 
 const CRITIC_LINK = {
@@ -47,6 +48,7 @@ describe('mergeConceptAppend', () => {
 
   it('всё уже есть или тело пустое — патч пустой (писать нечего)', () => {
     const cur = {
+      ...empty(),
       modeIds: ['punitive_critic'],
       schemaIds: ['defectiveness'],
       modeLinks: [CRITIC_LINK],
@@ -108,7 +110,12 @@ describe('mergeConceptAppend', () => {
   it('ничего не удаляет: прежние связи и id остаются в патче целиком', () => {
     const other = { ...CRITIC_LINK, modeId: 'demanding_critic', alias: 'Босс' };
     const patch = mergeConceptAppend(
-      { modeIds: ['x'], schemaIds: ['y'], modeLinks: [CRITIC_LINK, other] },
+      {
+        ...empty(),
+        modeIds: ['x'],
+        schemaIds: ['y'],
+        modeLinks: [CRITIC_LINK, other],
+      },
       { modeIds: ['z'], modeLinks: [{ modeId: 'm', schemaIds: ['y'] }] },
     );
     expect(patch.modeIds).toEqual(['x', 'z', 'm']);
@@ -148,5 +155,168 @@ describe('mergeConceptAppend', () => {
     });
     const errs = await validate(over, { whitelist: true });
     expect(errs.map((e) => e.property)).toContain('modeLinks');
+  });
+});
+
+// Колесо потребностей на холсте: «✓» режим → потребность (modeLinks[].needIds)
+// и «✗» схема → потребность (schemaLinks[].needIds). Только добавление.
+const SCHEMA_LINK = {
+  schemaId: 'defectiveness',
+  belief: 'Со мной что-то не так',
+  origin: 'Критика дома',
+  needIds: ['attachment'],
+  done: [{ techniqueId: 'chairwork', day: '2026-11-05' }],
+};
+
+describe('mergeConceptAppend — потребности', () => {
+  it('needIds режима дописываются в существующую связь, alias/схемы/тексты остаются', () => {
+    const link = { ...CRITIC_LINK, needIds: ['attachment'] };
+    const patch = mergeConceptAppend(
+      { ...empty(), modeIds: ['punitive_critic'], modeLinks: [link] },
+      {
+        modeLinks: [
+          {
+            modeId: 'punitive_critic',
+            schemaIds: [],
+            needIds: ['attachment', 'limits'],
+          },
+        ],
+      },
+    );
+    expect(patch).toEqual({
+      modeLinks: [{ ...link, needIds: ['attachment', 'limits'] }],
+    });
+  });
+
+  it('связи режима нет — заводится связь только с потребностями', () => {
+    const patch = mergeConceptAppend(empty(), {
+      modeLinks: [
+        { modeId: 'healthy_adult', schemaIds: [], needIds: ['play'] },
+      ],
+    });
+    expect(patch.modeIds).toEqual(['healthy_adult']);
+    expect(patch.schemaIds).toBeUndefined();
+    expect(patch.modeLinks).toEqual([
+      {
+        modeId: 'healthy_adult',
+        alias: '',
+        schemaIds: [],
+        needIds: ['play'],
+        origin: '',
+        manifest: '',
+        strategy: '',
+      },
+    ]);
+  });
+
+  it('схемы и потребности в одной линии — одна новая связь с обоими', () => {
+    const patch = mergeConceptAppend(empty(), {
+      modeLinks: [{ modeId: 'm', schemaIds: ['shame'], needIds: ['autonomy'] }],
+    });
+    expect(patch.modeLinks).toHaveLength(1);
+    expect(patch.modeLinks![0]).toMatchObject({
+      schemaIds: ['shame'],
+      needIds: ['autonomy'],
+    });
+  });
+
+  it('schemaLinks: needIds дописываются в запись схемы, убеждение/опыт/отметки остаются', () => {
+    const patch = mergeConceptAppend(
+      {
+        ...empty(),
+        schemaIds: ['defectiveness'],
+        schemaLinks: [SCHEMA_LINK],
+      },
+      {
+        schemaLinks: [
+          { schemaId: 'defectiveness', needIds: ['expression', 'attachment'] },
+        ],
+      },
+    );
+    expect(patch).toEqual({
+      schemaLinks: [{ ...SCHEMA_LINK, needIds: ['attachment', 'expression'] }],
+    });
+  });
+
+  it('schemaLinks: записи нет — новая в форме ConceptSchemaLink, схема — в schemaIds', () => {
+    const patch = mergeConceptAppend(
+      { ...empty(), schemaLinks: [SCHEMA_LINK] },
+      { schemaLinks: [{ schemaId: 'abandonment', needIds: ['attachment'] }] },
+    );
+    expect(patch.schemaIds).toEqual(['abandonment']);
+    expect(patch.schemaLinks).toEqual([
+      SCHEMA_LINK,
+      {
+        schemaId: 'abandonment',
+        belief: '',
+        origin: '',
+        needIds: ['attachment'],
+      },
+    ]);
+  });
+
+  it('неизвестные needId отброшены; только неизвестные — связь не заводится', () => {
+    const patch = mergeConceptAppend(empty(), {
+      modeLinks: [{ modeId: 'm', schemaIds: [], needIds: ['safety', 'play'] }],
+      schemaLinks: [
+        { schemaId: 's1', needIds: ['safety', 'limits', 'limits'] },
+        { schemaId: 's2', needIds: ['x'] },
+      ],
+    });
+    expect(patch.modeLinks![0].needIds).toEqual(['play']);
+    expect(patch.schemaLinks).toEqual([
+      { schemaId: 's1', belief: '', origin: '', needIds: ['limits'] },
+    ]);
+    // Схема без единой известной потребности — в общий список, без записи.
+    expect(patch.schemaIds).toEqual(['s1', 's2']);
+  });
+
+  it('повторное добавление того же — патч пустой (писать нечего)', () => {
+    const cur = {
+      ...empty(),
+      modeIds: ['punitive_critic'],
+      schemaIds: ['defectiveness'],
+      modeLinks: [CRITIC_LINK],
+      schemaLinks: [SCHEMA_LINK],
+    };
+    expect(
+      mergeConceptAppend(cur, {
+        modeLinks: [
+          { modeId: 'punitive_critic', schemaIds: [], needIds: ['safety'] },
+        ],
+        schemaLinks: [{ schemaId: 'defectiveness', needIds: ['attachment'] }],
+      }),
+    ).toEqual({});
+  });
+
+  it('предел записей схем: новая сверх потолка не заводится, существующая дописывается', async () => {
+    const full = Array.from({ length: APPEND_SCHEMA_LINKS_MAX }, (_, i) => ({
+      ...SCHEMA_LINK,
+      schemaId: `s${i}`,
+      needIds: ['attachment', 'autonomy', 'expression', 'play'],
+    }));
+    const patch = mergeConceptAppend(
+      { ...empty(), schemaLinks: full },
+      {
+        schemaLinks: [
+          { schemaId: 'overflow', needIds: ['play'] },
+          { schemaId: 's0', needIds: ['limits', 'play'] },
+        ],
+      },
+    );
+    expect(patch.schemaLinks).toHaveLength(APPEND_SCHEMA_LINKS_MAX);
+    expect(patch.schemaLinks![0].needIds).toHaveLength(5);
+    expect(patch.schemaIds).toEqual(['overflow', 's0']);
+    // Сверка с ConceptualizationDto (правило №4): результат проходит полное
+    // сохранение полей, а на одну запись больше — уже нет.
+    const ok = plainToInstance(ConceptualizationDto, {
+      schemaLinks: patch.schemaLinks,
+    });
+    await expect(validate(ok, { whitelist: true })).resolves.toEqual([]);
+    const over = plainToInstance(ConceptualizationDto, {
+      schemaLinks: [...patch.schemaLinks!, { schemaId: 'extra' }],
+    });
+    const errs = await validate(over, { whitelist: true });
+    expect(errs.map((e) => e.property)).toContain('schemaLinks');
   });
 });

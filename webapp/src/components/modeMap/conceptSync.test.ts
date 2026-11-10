@@ -121,9 +121,11 @@ describe('missingOnCanvas — в полях есть, на карте нет', (
 
 describe('toClientConcept', () => {
   it('ответ сервера → списки и нормализованные связи; null — пустая концептуализация', () => {
-    expect(toClientConcept(null)).toEqual({ schemaIds: [], modeIds: [], modeLinks: [] });
+    expect(toClientConcept(null)).toEqual({ schemaIds: [], modeIds: [], modeLinks: [], schemaLinks: [] });
     const c = toClientConcept({ modeIds: ['demanding_critic', 5], modeLinks: [{ modeId: 'demanding_critic', schemaIds: ['failure'] }, { alias: 'без id' }] });
     expect(c.modeIds).toEqual(['demanding_critic']);
     expect(c.modeLinks).toHaveLength(1);
+    // связи схем с потребностями нужны панели колеса («✗ блокирует …»)
+    expect(toClientConcept({ schemaLinks: [{ schemaId: 'abandonment', needIds: ['attachment'] }] }).schemaLinks?.[0].needIds).toEqual(['attachment']);
   });
 });

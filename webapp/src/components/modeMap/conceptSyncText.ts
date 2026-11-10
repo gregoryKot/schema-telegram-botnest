@@ -1,17 +1,17 @@
-// Тексты строки связи холста с концептуализацией (#963). Без обращения и без рода — ни ты/вы,
-// ни «добавил(а)»; имена режимов и схем — из справочника сайта, а не id.
+// Тексты строки связи холста с концептуализацией (#963): без обращения и рода, имена — из справочника, не id.
 import { getModeById, getSchemaById } from '../../schemaTherapyData';
+import { getNeedData } from '../../needData';
 import type { ConceptAppendBody } from '../../../../shared/src/therapy/conceptAppend';
 import type { ConceptMissing } from './conceptSync';
 import type { ConceptSyncState } from './conceptSyncContext';
 
 export type SyncLineState = 'off' | 'couple' | 'error' | 'loading' | 'failed' | 'added' | 'missing' | 'synced';
-/** text — строка в одну линию; full — она же со всеми именами (title и раскрытие по тапу), есть только у списков. */
-export interface SyncLineView { state: SyncLineState; text: string; full?: string; action?: 'retry' | 'add' }
+export interface SyncLineView { state: SyncLineState; text: string; full?: string; action?: 'retry' | 'add' } // full — все имена (title, тап)
 
 const MAX_NAMES = 3;
 const modeName = (id: string) => getModeById(id)?.name ?? id;
 const schemaName = (id: string) => getSchemaById(id)?.name ?? id;
+const needName = (id: string) => getNeedData('ty')[id as keyof ReturnType<typeof getNeedData>]?.name ?? id;
 
 /** «A, B, C и ещё 2»: строка над холстом не растёт вместе с концептуализацией; max = Infinity — все имена. */
 export function listNames(names: readonly string[], max = MAX_NAMES): string {
@@ -24,6 +24,8 @@ export function addedNames(body: ConceptAppendBody): string[] {
     ...(body.modeIds ?? []).map(modeName),
     ...(body.schemaIds ?? []).map(schemaName),
     ...(body.modeLinks ?? []).flatMap((l) => l.schemaIds.map((s) => `${schemaName(s)} → ${modeName(l.modeId)}`)),
+    ...(body.schemaLinks ?? []).flatMap((l) => l.needIds.map((n) => `✗ ${schemaName(l.schemaId)} → ${needName(n)}`)),
+    ...(body.modeLinks ?? []).flatMap((l) => (l.needIds ?? []).map((n) => `✓ ${modeName(l.modeId)} → ${needName(n)}`)),
   ];
 }
 
@@ -31,10 +33,8 @@ export const missingNames = (m: ConceptMissing): string[] => [...m.modeIds.map(m
 
 type ViewInput = Pick<ConceptSyncState, 'active' | 'couple' | 'concept' | 'missing' | 'status' | 'lastAdded'>;
 
-/**
- * Что сказать над холстом: ошибка записи, загрузка, «Добавлено…» (гаснет после «Добавить на карту»), «Нет на
- * карте N…» (обе части в одну строку, если вместе), иначе «Совпадает». Число впереди: хвост режет многоточие.
- */
+// Над холстом: ошибка записи, загрузка, «Добавлено…» (гаснет после «Добавить на карту»), «Нет на карте N…» (обе
+// части в одну строку, если вместе), иначе «Совпадает». Число впереди: хвост режет многоточие.
 export function syncLineView(s: ViewInput): SyncLineView {
   if (!s.active) return { state: 'off', text: '' };
   if (s.couple) return { state: 'couple', text: 'Карта пары в концептуализацию не пишет' };

@@ -59,6 +59,7 @@ function makeDb(rels: Rel[]) {
   const gratitudeDiary: any[] = [];
   const schemaNotes: any[] = [];
   const modeNotes: any[] = [];
+  const childhood: any[] = [];
   const tasks: any[] = [];
   const taskWhere = (t: any, w: any) =>
     Object.entries(w).every(([k, v]: [string, any]) =>
@@ -106,6 +107,7 @@ function makeDb(rels: Rel[]) {
     gratitudeDiaryEntry: { findMany: many(gratitudeDiary, 'date') },
     userSchemaNote: { findMany: findByUser(schemaNotes) },
     userModeNote: { findMany: findByUser(modeNotes) },
+    childhoodRating: { findMany: findByUser(childhood) },
     therapistNote: { deleteMany: jest.fn(() => Promise.resolve({ count: 0 })) },
     clientConceptualization: {
       deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
@@ -158,6 +160,7 @@ function makeDb(rels: Rel[]) {
     gratitudeDiary,
     schemaNotes,
     modeNotes,
+    childhood,
     tasks,
     modeMaps,
   };
@@ -493,13 +496,90 @@ describe('TherapyClientDataService — виртуальный клиент (id<0
       ysqActiveSchemaIds: [],
       ysqHistory: [],
       ysqRequestPending: false,
+      childhoodRatings: {},
     });
     expect(db.user.findUnique).not.toHaveBeenCalled();
+    expect(db.childhoodRating.findMany).not.toHaveBeenCalled();
   });
 
   it('getClientData для виртуального клиента без активной связи → отказ', async () => {
     const { svc } = makeService([relA]);
     await expect(svc.getClientData(T1, -999)).rejects.toThrow(
+      'No active relation',
+    );
+  });
+});
+
+// «Колесо детства» клиента на холсте терапевта: сохранённые клиентом оценки
+// (ChildhoodRating) доходят до getClientData под той же приватностью, что YSQ.
+describe('TherapyClientDataService — getClientData: «Колесо детства» (childhoodRatings)', () => {
+  const rate = (userId: bigint, needId: string, value: unknown) => ({
+    userId,
+    needId,
+    value,
+  });
+
+  it('отдаёт оценки клиента одним findMany с select needId/value', async () => {
+    const { svc, users, childhood, db } = makeService([relA, relB]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    childhood.push(
+      rate(CLIENT_A, 'attachment', 2),
+      rate(CLIENT_A, 'limits', 0),
+      rate(CLIENT_A, 'play', 10),
+      rate(CLIENT_B, 'autonomy', 7), // чужой клиент того же терапевта
+    );
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.childhoodRatings).toEqual({
+      attachment: 2,
+      limits: 0,
+      play: 10,
+    });
+    expect(db.childhoodRating.findMany).toHaveBeenCalledTimes(1);
+    expect(db.childhoodRating.findMany).toHaveBeenCalledWith({
+      where: { userId: CLIENT_A },
+      select: { needId: true, value: true },
+    });
+  });
+
+  it('мусор отброшен: неизвестный needId, дробь, вне 0–10, не число', async () => {
+    const { svc, users, childhood } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    childhood.push(
+      rate(CLIENT_A, 'autonomy', 5),
+      rate(CLIENT_A, 'safety', 4),
+      rate(CLIENT_A, 'attachment', 11),
+      rate(CLIENT_A, 'expression', -1),
+      rate(CLIENT_A, 'play', 3.5),
+      rate(CLIENT_A, 'limits', '7'),
+    );
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.childhoodRatings).toEqual({ autonomy: 5 });
+  });
+
+  it('клиент не проходил упражнение → {}', async () => {
+    const { svc, users } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    expect((await svc.getClientData(T1, CID_A)).childhoodRatings).toEqual({});
+  });
+
+  it('профиль скрыт клиентом (therapistShareProfile=false) → {}', async () => {
+    const { svc, users, childhood } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', [], false));
+    childhood.push(rate(CLIENT_A, 'attachment', 2));
+    const data = await svc.getClientData(T1, CID_A);
+    expect(data.childhoodRatings).toEqual({});
+    // Контрольный образец: тот же клиент с открытым профилем — оценка видна.
+    users[0].therapistShareProfile = true;
+    expect((await svc.getClientData(T1, CID_A)).childhoodRatings).toEqual({
+      attachment: 2,
+    });
+  });
+
+  it('чужой терапевт оценок не получает — отказ связи', async () => {
+    const { svc, users, childhood } = makeService([relA]);
+    users.push(mkUser(CLIENT_A, 'Аня', []));
+    childhood.push(rate(CLIENT_A, 'attachment', 2));
+    await expect(svc.getClientData(T2, CID_A)).rejects.toThrow(
       'No active relation',
     );
   });

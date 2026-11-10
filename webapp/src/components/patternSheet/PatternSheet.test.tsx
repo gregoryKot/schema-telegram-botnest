@@ -91,6 +91,22 @@ describe('PatternSheet — карточка', () => {
     expect(screen.queryByText('Заполнить карточку')).toBeNull();
   });
 
+  // b15, сбой ≠ пусто: заметки не загрузились — не «карточка пуста» с «Заполнить» (пустой опросник
+  // поверх сохранённой карточки затёр бы её), а строка сбоя; «Повторить» перечитывает заметки.
+  it('заметки не загрузились — строка сбоя с «Повторить», без «Заполнить» и объяснения пустой', () => {
+    const p = renderSheet({ failed: true });
+    expect(plainText(screen.getByRole('alert'))).toMatch(/Карточка не загрузилась/);
+    expect(screen.queryByText('Заполнить карточку')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(p.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('контроль: заполненная карточка при сбое перечитки остаётся на месте (сбой не прячет данные)', () => {
+    renderSheet({ failed: true, items: [FILLED] });
+    expect(screen.getByText('Когда не отвечают')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('«Заполнить» открывает упражнение схемы с этой схемой; после «готово» карточки перечитываются', async () => {
     const p = renderSheet();
     fireEvent.click(screen.getByText('Заполнить карточку'));
@@ -220,6 +236,18 @@ describe('PatternSheet — стек листов (инцидент 2026-11-05)',
     expect(ex.classList.contains('ex2-screen')).toBe(true);
     expect(isAfter(ex, sheet)).toBe(true);
     expect(sheet.style.zIndex).toBe('');
+  });
+
+  // b15 (рецепт стенда *-from-pattern-bug): опросник лежал в обёртке .u-sheet с z-index 80 — она
+  // создавала свой контекст наложения, и .ex2-screen (200) внутри неё оставался ПОД экраном паттерна
+  // (200). Под-лист — сиблинг экрана паттерна без промежуточной обёртки.
+  it('«Дополнить»: опросник — сиблинг экрана паттерна, без обёртки со своим z-index', async () => {
+    renderSheet({ items: [FILLED] });
+    const sheet = patternSheet();
+    fireEvent.click(screen.getByText('Дополнить'));
+    const ex = await screen.findByTestId('schema-ex');
+    expect(ex.parentElement).toBe(sheet.parentElement);
+    expect(ex.closest('.u-sheet')).toBeNull();
   });
 
   it('режим, «Дополнить»: опросник режима после экрана паттерна', async () => {

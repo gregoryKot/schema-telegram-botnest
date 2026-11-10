@@ -52,18 +52,23 @@ describe('ModesTopCards', () => {
 
   it('режимы есть, записей за неделю нет: строка ведёт в дневник', () => {
     setup({ hasModes: true });
-    fireEvent.click(screen.getByRole('button', { name: /Картина недели появится из дневника/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Картина недели появится из\sдневника/ }));
     expect(screen.getByText('экран дневника')).toBeTruthy();
   });
 
-  it('пока грузится или режим из сводки неизвестен — пусто, ничего не выдумываем', () => {
-    expect(setup({ ready: false }).container.innerHTML).toBe('');
-    cleanup();
+  it('пока грузится — силуэт героя без слов (место под знак), ничего не выдумываем', () => {
+    const { container } = setup({ ready: false });
+    expect(container.querySelector('.cs-hero-skel')).toBeTruthy();
+    expect(container.textContent).toBe('');
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+  });
+
+  it('режим из сводки неизвестен — пусто', () => {
     expect(setup({ hasModes: true, summary: { ...summary, id: 'nope' } }).container.innerHTML).toBe('');
   });
 
   it('скрыт блоком «Подсказка сверху» — не рисуется ни в одном состоянии', () => {
-    for (const p of [{}, { hasModes: true }, { hasModes: true, summary }]) {
+    for (const p of [{}, { hasModes: true }, { hasModes: true, summary }, { ready: false }]) {
       expect(setup({ ...p, blocks: blocks(['heroes']) }).container.innerHTML).toBe('');
       cleanup();
     }

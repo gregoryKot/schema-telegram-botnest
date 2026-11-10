@@ -76,7 +76,7 @@ export function blankPairArrays(src) {
 // Объектные пары { ty: '…', vy: '…' } — построчно, т.к. каждое значение уже
 // однострочный литерал (в отличие от вилок/массивов, где прettier переносит
 // аргументы на несколько строк). Единственный реальный образец на 2026-08 —
-// shared/src/components/YsqSyncErrorNote.tsx.
+// webapp/src/components/ysq/YsqSyncNote.tsx (до 2026-11 — shared/src/components/YsqSyncErrorNote.tsx).
 function keyLineRe(key) {
   return new RegExp(
     `^(\\s*${key}:\\s*)(['"\`])((?:\\\\.|(?!\\2)[^\\\\])*)\\2(.*)$`,

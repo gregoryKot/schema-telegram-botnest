@@ -72,6 +72,13 @@ describe('ConceptSyncLine — состояния', () => {
     expect(text(container)).toBe('Добавлено в концептуализацию: Неуспешность, Неуспешность → Требовательный Критик');
   });
 
+  it('связи с потребностями колеса — «✗ схема → потребность», «✓ режим → потребность»', () => {
+    const { container } = renderLine(state({
+      lastAdded: { schemaLinks: [{ schemaId: 'failure', needIds: ['autonomy'] }], modeLinks: [{ modeId: 'healthy_adult', schemaIds: [], needIds: ['play'] }] },
+    }));
+    expect(text(container)).toBe('Добавлено в концептуализацию: ✗ Неуспешность → Автономия, ✓ Здоровый Взрослый → Спонтанность');
+  });
+
   it('записали и в полях есть недостающее — обе части в одной строке, кнопка остаётся', () => {
     const { container } = renderLine(state({
       lastAdded: { modeIds: ['punitive_critic'] }, missing: { modeIds: ['demanding_critic'], schemaIds: [] },

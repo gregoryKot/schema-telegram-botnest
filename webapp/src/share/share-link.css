@@ -1,0 +1,4 @@
+/* Тихая ссылка «Поделиться» (share/ShareLink — карточка схемы и строка режима справочника): иконка и слово,
+   зона нажатия 44. Свой файл, а не sheet-schemas.css: тот тянет каркас листов и справочник (ss-sheet.css,
+   schema-library.css) ради одного правила (ревью g5 r3). */
+.ds-link.ss-share-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }

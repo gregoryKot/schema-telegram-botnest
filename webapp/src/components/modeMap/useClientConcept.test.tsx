@@ -26,7 +26,7 @@ describe('useClientConcept', () => {
   it('концептуализации нет (null) — пустые списки, а не сбой', async () => {
     getConceptualization.mockResolvedValue(null);
     const { result } = renderHook(() => useClientConcept(7));
-    await waitFor(() => expect(result.current).toEqual({ schemaIds: [], modeIds: [], modeLinks: [] }));
+    await waitFor(() => expect(result.current).toEqual({ schemaIds: [], modeIds: [], modeLinks: [], schemaLinks: [] }));
   });
 
   it('сбой запроса — «failed», не пустой список', async () => {

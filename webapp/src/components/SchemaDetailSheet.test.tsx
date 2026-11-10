@@ -129,6 +129,21 @@ describe('SchemaDetailSheet — отказ записи «в мои схемы»
     expect(plainText((await screen.findByRole('alert')))).toMatch(/только на этом устройстве — проверь связь/);
   });
 
+  // Ревью g5 r1: «попробуй ещё раз» без кнопки, а повторный тап по чипу снимал выбор. Теперь — знак домена и
+  // «Повторить» тем же списком, как на «Паттернах».
+  it('обрыв сети → «Повторить» шлёт тот же список, выбор не снимается; удача убирает плашку', async () => {
+    mockApi.updateSettings.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    renderSheet();
+    addSchema();
+    const alert = await screen.findByRole('alert');
+    expect(alert.querySelector('.pa-alert-sign')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+    expect(mockApi.updateSettings).toHaveBeenCalledTimes(2);
+    expect(mockApi.updateSettings).toHaveBeenLastCalledWith({ mySchemaIds: ['emotional_deprivation'] });
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
+    expect(screen.getAllByText('В моих схемах').length).toBeGreaterThan(0);
+  });
+
   it('успех: плашки нет', async () => {
     renderSheet();
     addSchema();

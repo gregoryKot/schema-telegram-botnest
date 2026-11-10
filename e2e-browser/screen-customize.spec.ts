@@ -50,10 +50,9 @@ const SCREENS: Screen[] = [
     path: '/schemas',
     open: 'Настроить экран',
     key: 'screen_hidden_patterns',
-    blocks: (p) => [
-      p.getByText('Узнать свои схемы'),
-      p.getByText('Тест на схемы', { exact: true }),
-    ],
+    // Под вводной «Узнать свои схемы» второго входа в тест нет (ysqEntryLook → 'hidden',
+    // webapp/src/sections/schemas/patternsHero.ts, ревью g5 r1): кнопка теста — на самой вводной.
+    blocks: (p) => [p.getByText('Узнать свои схемы')],
   },
   {
     name: '«Паттерны» → «Режимы»',

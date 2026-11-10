@@ -91,7 +91,7 @@ describe('ModeMapCanvas — генерация из концептуализац
     schemaLinks: RICH.schemaLinks,
   };
 
-  it('добавляет режимы клиента и вместе с ними круг потребностей', async () => {
+  it('добавляет режимы клиента и вместе с ними колесо потребностей (без таблеток)', async () => {
     getConceptualization.mockResolvedValue({ modeIds: ['vulnerable_child'] });
     const { container } = renderCanvas({ initialNodes: [] });
     clickToolbarButton(container, 'Шаблоны и генерация');
@@ -102,7 +102,7 @@ describe('ModeMapCanvas — генерация из концептуализац
     );
     expect(screen.getByText('Уязвимый Ребёнок')).toBeTruthy();
     expect(types(container).filter((t) => t === 'needs')).toHaveLength(1);
-    expect(types(container).filter((t) => t === 'need')).toHaveLength(5);
+    expect(types(container).filter((t) => t === 'need')).toHaveLength(0);
     await settle();
   });
 

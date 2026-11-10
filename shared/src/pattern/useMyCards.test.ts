@@ -85,11 +85,19 @@ describe('useMyCards — схемы', () => {
     expect(result.current.items).toEqual([]);
   });
 
-  it('сеть упала → пустой список, а не зависшая загрузка', async () => {
+  it('сеть упала → пустой список, а не зависшая загрузка; failed отличает сбой от «пусто»', async () => {
     getSchemaNotes.mockRejectedValue(new Error('network'));
     const { result } = renderHook(() => useMyCards('schema', api));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.items).toEqual([]);
+    expect(result.current.failed).toBe(true);
+  });
+
+  it('контроль: пустой ответ сервера — не сбой', async () => {
+    getSchemaNotes.mockResolvedValue([]);
+    const { result } = renderHook(() => useMyCards('schema', api));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.failed).toBe(false);
   });
 });
 
@@ -147,5 +155,29 @@ describe('useMyCards — reload', () => {
     act(() => result.current.reload());
     await waitFor(() => expect(result.current.items).toHaveLength(1));
     expect(result.current.items[0].excerpt).toBe('Новое');
+  });
+
+  // b15: сбой → «Повторить» на экране паттерна → карточка нашлась (сбой снят, поля на месте).
+  it('сбой, затем reload() с ответом — failed снят, заполненная карточка на месте', async () => {
+    getSchemaNotes.mockRejectedValueOnce(new Error('network'));
+    const { result } = renderHook(() => useMyCards('schema', api));
+    await waitFor(() => expect(result.current.failed).toBe(true));
+
+    getSchemaNotes.mockResolvedValueOnce([
+      {
+        schemaId: 'abandonment',
+        triggers: 'Сохранённое',
+        feelings: '',
+        thoughts: '',
+        origins: '',
+        reality: '',
+        healthyView: '',
+        behavior: '',
+        updatedAt: '2026-01-02',
+      },
+    ]);
+    act(() => result.current.reload());
+    await waitFor(() => expect(result.current.failed).toBe(false));
+    expect(result.current.items[0].excerpt).toBe('Сохранённое');
   });
 });

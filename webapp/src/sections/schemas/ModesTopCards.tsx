@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTr } from '../../utils/addressForm';
 import type { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import { modesHeroModel, type ModesHeroRow } from '../../../../shared/src/pattern/modesHeroModel';
-import { Cluster } from '../../components/art/PaperArtSigns';
 import { Pebbles } from '../../components/art/PaperArt';
+import { glue } from '../../../../shared/src/utils/typo';
 import { WeekPatternCard } from './WeekPatternCard';
 import { PatternsIntro } from './PatternsIntro';
+import { PatternsHeroSkeleton } from './PatternsTopCards';
 import { ScreenBlock } from '../../components/customize/ScreenBlock';
 import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
 
@@ -22,14 +23,18 @@ interface Props {
   onOpenMode: (id: string) => void;
   /** Скрытие блока «Подсказка сверху» и долгое нажатие («Настроить экран»). */
   blocks: SiteScreenBlocks;
+  /** «Чаще всего включается» на белом листе: под ним группа «Моих режимов» близкой бумаги (patternsTop). */
+  white?: boolean;
 }
 
-function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void })[]; art: ReactNode }) {
+/** Строки-входы под героем; знак — только там, где он свой (дневник — камешки). Под вводной режимов строки
+ *  без знака: Cluster стоял у героя и у обеих строк — один знак четыре раза на вкладке (ревью g5 r1). */
+function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void })[]; art?: ReactNode }) {
   return (
     <div className="ds-card ds-card--flush">
       {rows.map((r) => (
         <button key={r.label} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={r.onClick}>
-          <span className="pp-row-art">{art}</span><span className="ds-list-body"><span className="ds-list-title">{r.label}</span><span className="ds-list-sub">{r.sub}</span></span>
+          {art && <span className="pp-row-art">{art}</span>}<span className="ds-list-body"><span className="ds-list-title">{glue(r.label)}</span><span className="ds-list-sub">{glue(r.sub)}</span></span>
           <span className="ds-chev" aria-hidden="true" />
         </button>
       ))}
@@ -42,10 +47,10 @@ function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void }
  * и два входа, опытному «Чаще всего включается», а без записей за неделю —
  * строка в дневник. Состояние и слова — shared/pattern/modesHeroModel.
  */
-export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLibrary, onPickManually, onOpenMode, blocks }: Props) {
+export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLibrary, onPickManually, onOpenMode, blocks, white }: Props) {
   const tr = useTr();
   const navigate = useNavigate();
-  if (!ready) return null;
+  if (!ready) return blocks.isHidden('heroes') ? null : <PatternsHeroSkeleton />;
   const m = modesHeroModel(tr, { hasModes, summary, canOpenDiary: true });
   if (m.kind === 'none') return null;
   return (
@@ -53,10 +58,10 @@ export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLi
       {m.kind === 'intro' && (
         <>
           <PatternsIntro step="modes" testProgress={null} onAction={onMeetCritic} />
-          <ToolRows rows={[{ ...m.library, onClick: onOpenLibrary }, { ...m.manual, onClick: onPickManually }]} art={<Cluster size="row" />} />
+          <ToolRows rows={[{ ...m.library, onClick: onOpenLibrary }, { ...m.manual, onClick: onPickManually }]} />
         </>
       )}
-      {m.kind === 'week' && summary && <WeekPatternCard top={{ kind: 'mode', ...summary }} onOpen={(_, id) => onOpenMode(id)} />}
+      {m.kind === 'week' && summary && <WeekPatternCard top={{ kind: 'mode', ...summary }} onOpen={(_, id) => onOpenMode(id)} white={white} />}
       {m.kind === 'diary' && <ToolRows rows={[{ ...m.row, onClick: () => navigate('/diary') }]} art={<Pebbles size="row" />} />}
     </ScreenBlock>
   );

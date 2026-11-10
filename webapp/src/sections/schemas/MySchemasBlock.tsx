@@ -1,10 +1,8 @@
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import type { ReactNode } from 'react';
 import { PaperEmpty } from '../../components/art/PaperEmpty';
 import { useTr } from '../../utils/addressForm';
-import { hueStyle, DOMAIN_HUE } from '../../lib/tone';
-import { Skeleton } from '../../components/Skeleton';
-import { FreqMark, FreqHint } from './FreqMark';
-import { findSchema, shortName } from './schemasModel';
+import { MineGroupsSkeleton } from './MineGroupsSkeleton';
+import { MySchemasList } from './MySchemasList';
 
 interface Props {
   loading: boolean;
@@ -12,37 +10,24 @@ interface Props {
   onAdd: () => void; onOpenSchema: (id: string) => void;
   statusFor?: (id: string) => string; // статус карточки словами; undefined — пока грузится
   freq?: Record<string, number>; // дней за неделю по дневнику; undefined — пока не загрузилось
+  /** Сбой сохранения выбора — строкой у блока, где выбор сделан (SelectionSaveNote). */
+  note?: ReactNode;
 }
 
-/** «Мои схемы»: чипы цвета домена со статусом карточки и добавление вручную. */
-export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema, statusFor, freq }: Props) {
+/** «Мои схемы» (компьютер): заголовок с «+ Добавить», группы на бумаге домена в колонки — та же
+ *  механика, что строки телефона (MineGroupsList), а не чипы с цветной рамкой. */
+export function MySchemasBlock({ loading, ids, onAdd, onOpenSchema, statusFor, freq, note }: Props) {
   const tr = useTr();
   return (
     <section className="cs-block">
       <div className="ds-head-row">
         <h3 className="ds-h3">Мои схемы</h3><button onClick={onAdd} className="ds-link">+ Добавить</button>
       </div>
-      {loading ? (
-        <div className="cs-chips">
-          {[80, 100, 90, 110].map((w, i) => <Skeleton key={i} height={32} width={w} radius={16} />)}
-        </div>
-      ) : ids.length === 0 ? (
+      {note}
+      {loading ? <MineGroupsSkeleton /> : ids.length === 0 ? (
         <PaperEmpty>{tr('Пройди тест на схемы или добавь вручную', 'Пройдите тест на схемы или добавьте вручную')}</PaperEmpty>
       ) : (
-        <>
-        {freq && <FreqHint kind="schema" freq={freq} />}
-        <div className="cs-chips">
-          {ids.map(id => {
-            const found = findSchema(SCHEMA_DOMAINS, id);
-            if (!found) return null;
-            return (
-              <button key={id} className={`cs-chip tone-tint tone-border${statusFor || freq?.[id] ? ' cs-chip--stacked' : ''}`} style={hueStyle(DOMAIN_HUE[found.domain.id])} onClick={() => onOpenSchema(id)}>
-                {shortName(found.schema.name)}{statusFor && <span className="cs-chip-status">{statusFor(id)}</span>}{freq && <FreqMark freq={freq[id] ?? 0} />}
-              </button>
-            );
-          })}
-        </div>
-        </>
+        <MySchemasList ids={ids} onAdd={onAdd} onOpenSchema={onOpenSchema} statusFor={statusFor} freq={freq} withAdd={false} />
       )}
     </section>
   );

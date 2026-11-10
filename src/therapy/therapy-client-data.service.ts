@@ -14,18 +14,18 @@ import {
   ClientDiaryEntry,
   readClientDiaryEntries,
 } from './client-diary-entries';
-// Схемы шифрования — общий источник правды с NotesService (правило №4
-// CLAUDE.md: не копипастить список полей, иначе рассинхрон при новом поле).
+import { readChildhoodRatings } from './client-childhood';
+// Схемы шифрования — общие с NotesService (правило №4: один список полей).
 import { SCHEMA_NOTE_SCHEMA, MODE_NOTE_SCHEMA } from '../bot/notes.service';
 
-// Профиль, которого терапевт не видит: офлайн-клиент (Telegram нет — и запрос
-// YSQ не висит) или профиль скрыт клиентом (свой запрос YSQ терапевт видит).
+// Скрыто: офлайн-карточка или профиль, закрытый клиентом (свой запрос YSQ виден).
 const HIDDEN = {
   mySchemaIds: [] as string[],
   myModeIds: [] as string[],
   ysqCompletedAt: null,
   ysqActiveSchemaIds: [] as string[],
   ysqHistory: [],
+  childhoodRatings: {} as Record<string, number>,
 };
 
 // Данные клиента для терапевта: профиль/YSQ, история, дневники, заметки,
@@ -45,7 +45,7 @@ export class TherapyClientDataService {
     if (clientId < 0n)
       return { name: null, ...HIDDEN, ysqRequestPending: false };
     const uid = clientId;
-    const [user, ysq, rawHistory, ysqRequestPending] = await Promise.all([
+    const [user, ysq, hist, ysqRequestPending, childhood] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: uid },
         select: {
@@ -62,6 +62,7 @@ export class TherapyClientDataService {
         take: 20,
       }),
       isOwnYsqRequestPending(this.prisma, therapistId, uid),
+      readChildhoodRatings(this.prisma, uid),
     ]);
 
     if (user?.therapistShareProfile === false) {
@@ -71,7 +72,7 @@ export class TherapyClientDataService {
     const ysqActiveSchemaIds = ysq?.answers
       ? computeActiveSchemas(decodeYsqAnswers(ysq.answers))
       : [];
-    const ysqHistory = rawHistory.map((r) => ({
+    const ysqHistory = hist.map((r) => ({
       id: r.id,
       completedAt: r.completedAt.toISOString(),
       scores: computeYsqScores(decodeYsqAnswers(r.answers)),
@@ -91,6 +92,7 @@ export class TherapyClientDataService {
       ysqActiveSchemaIds,
       ysqHistory,
       ysqRequestPending,
+      childhoodRatings: childhood,
     };
   }
 
@@ -169,7 +171,6 @@ export class TherapyClientDataService {
     );
   }
 
-  // ─── Session Info ────────────────────────────────────────────────────────────
   async updateSessionInfo(
     therapistId: bigint,
     clientId: bigint,
@@ -193,7 +194,6 @@ export class TherapyClientDataService {
     });
   }
 
-  // ─── Remove client from list ─────────────────────────────────────────────────
   async removeClient(therapistId: bigint, clientId: bigint): Promise<void> {
     await removeTherapistClient(this.prisma, therapistId, clientId);
   }

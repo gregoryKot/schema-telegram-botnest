@@ -76,7 +76,9 @@ describe('SchemasSection — пустой аккаунт (без хардкод-
     // скелетон (красный webapp на #269, 2026-08).
     await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText(/Добавь режимы, которые узнаёшь у себя/)).toBeTruthy();
-    expect(screen.getByText('Начать →')).toBeTruthy();
+    // Вводная схем зовёт в тест сама — второй плитки «Начать →» под ней нет (ревью g5 r1).
+    expect(screen.getByText('Начать тест →')).toBeTruthy();
+    expect(screen.queryByText('Начать →')).toBeNull();
   });
 
   it('ошибка getProfile не роняет экран — остаётся пустое состояние вместо краха', async () => {
@@ -109,14 +111,14 @@ describe('SchemasSection — ты/вы вилка', () => {
     renderSection({}, 'ty');
     await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText(/Добавь режимы, которые узнаёшь у себя/)).toBeTruthy();
-    expect(screen.getByText(/Определи схемы автоматически/)).toBeTruthy();
+    expect(screen.getByText(/утверждениям увидишь/)).toBeTruthy();
   });
 
   it('на «вы»: те же подсказки во множественном числе, ни одной "ты"-формы', async () => {
     renderSection({}, 'vy');
     await screen.findByText('Пройдите тест на схемы или добавьте вручную');
     expect(screen.getByText(/Добавьте режимы, которые узнаёте у себя/)).toBeTruthy();
-    expect(screen.getByText(/Определите схемы автоматически/)).toBeTruthy();
+    expect(screen.getByText(/утверждениям увидите/)).toBeTruthy();
     expect(screen.queryByText('Пройди тест на схемы или добавь вручную')).toBeNull();
     expect(screen.queryByText(/Добавь режимы/)).toBeNull();
   });
@@ -143,9 +145,18 @@ describe('SchemasSection — реальные данные YSQ/профиля', 
 
   it('незавершённый тест показывает реальный прогресс "продолжить (N из 116)"', async () => {
     mockApi.getYsqProgress.mockResolvedValue({ answers: [1, 2, 0, 3], page: 1 });
+    mockApi.getProfile.mockResolvedValue(profile({ mySchemaIds: ['abandonment'] }));
     renderSection();
 
     await screen.findByText('продолжить (3 из 116) →');
+  });
+
+  it('вводная схем с незаконченным тестом: «Продолжить» одно — в герое, плитки теста нет', async () => {
+    mockApi.getYsqProgress.mockResolvedValue({ answers: [1, 2, 0, 3], page: 1 });
+    renderSection();
+
+    await screen.findByText('Продолжить тест (3 из 116) →');
+    expect(screen.queryByText('продолжить (3 из 116) →')).toBeNull();
   });
 
   it('завершённый тест без прогресса — "пройден <дата> · результаты →"', async () => {
@@ -191,7 +202,7 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
     fireEvent.click(options[options.length - 1]);
     // Автосохранение (useAutosavedSelection): закрытие листа размонтирует
     // его и досылает несохранённое немедленно — ждать дебаунс не нужно.
-    fireEvent.click(screen.getByText('Готово'));
+    fireEvent.click(screen.getAllByText('Готово').at(-1)!); // «Готово» внизу листа; в шапке — «Готово · N»
 
     await waitFor(() => expect(mockReport).toHaveBeenCalledWith(
       expect.objectContaining({ section: 'schemas', message: expect.stringContaining('mySchemaIds') }),
@@ -209,14 +220,14 @@ describe('SchemasSection — мои схемы/режимы (ручной выб
     await screen.findByText(/Выберите схемы, которые вам близки/);
     const options = screen.getAllByText('Покинутость / Нестабильность');
     fireEvent.click(options[options.length - 1]);
-    fireEvent.click(screen.getByText('Готово'));
+    fireEvent.click(screen.getAllByText('Готово').at(-1)!); // «Готово» внизу листа; в шапке — «Готово · N»
     expect(plainText((await screen.findByRole('alert')))).toMatch(/проверьте связь и попробуйте ещё раз/);
 
     fireEvent.click((await screen.findAllByText('+ Добавить'))[0]);
     await screen.findByText(/Выберите схемы, которые вам близки/);
     const again = screen.getAllByText('Покинутость / Нестабильность');
     fireEvent.click(again[again.length - 1]);
-    fireEvent.click(screen.getByText('Готово'));
+    fireEvent.click(screen.getAllByText('Готово').at(-1)!); // «Готово» внизу листа; в шапке — «Готово · N»
     await waitFor(() => expect(screen.queryByRole('alert')).toBeNull());
   });
 });
@@ -344,11 +355,12 @@ describe('SchemasSection — экран паттерна (этап 3А план�
     expect(screen.queryByText('Познакомиться →')).toBeNull();
   });
 
-  it('тап по чипу «Мои режимы» открывает экран паттерна, а не упражнение', async () => {
+  it('тап по строке «Мои режимы» открывает экран паттерна, а не упражнение', async () => {
     mockApi.getProfile.mockResolvedValue(profile({ myModeIds: ['vulnerable_child'] }));
     renderSection();
-    await waitFor(() => expect(document.querySelector('.cs-chip')).toBeTruthy());
-    fireEvent.click(document.querySelector('.cs-chip')!);
+    // Строки «Моих схем» и «Моих режимов» — в группах (.cs-grp); у режима — его строка.
+    await waitFor(() => expect(screen.getByRole('button', { name: /Уязвимый Ребёнок/ })).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /Уязвимый Ребёнок/ }));
     expect(await screen.findByText('Заполнить карточку')).toBeTruthy();
     expect(screen.getByText('О режиме →')).toBeTruthy();
   });

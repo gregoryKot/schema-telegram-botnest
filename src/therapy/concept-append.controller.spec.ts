@@ -71,4 +71,15 @@ describe('ConceptAppendController.append', () => {
       therapistId_clientId: { therapistId: 42n, clientId: -57n },
     });
   });
+
+  it('линии к потребностям (schemaLinks) доходят до записи вместе со схемой', async () => {
+    const { ctrl, tx } = makeController();
+    await ctrl.append(req, '7', {
+      schemaLinks: [{ schemaId: 'defectiveness', needIds: ['play'] }],
+    });
+    const { create } = tx.clientConceptualization.upsert.mock.calls[0][0];
+    expect(typeof create.schemaLinks).toBe('string');
+    expect(create.schemaLinks).not.toBe('[]');
+    expect(typeof create.schemaIds).toBe('string'); // без схем — [] массивом
+  });
 });

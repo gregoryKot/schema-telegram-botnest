@@ -39,7 +39,7 @@ function D3({ size }: ArtProps) {
 function D4({ size }: ArtProps) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
-      <path d="M12 44 A48 48 0 0 1 108 44" fill="none" stroke={PAPER.moss} strokeWidth="11" strokeLinecap="round" />
+      <path d="M12 54 A48 48 0 0 1 108 54" fill="none" stroke={PAPER.moss} strokeWidth="11" strokeLinecap="round" />
       <Stroke x={52} h={30} deg={30} fill={PAPER.clay} />
     </Svg>
   );

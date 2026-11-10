@@ -139,7 +139,8 @@ describe('«Открыть на холсте»: создание карты', ()
     const [mapId, body] = mockApi.updateModeMap.mock.calls[0];
     expect(mapId).toBe(41);
     const types = body.nodes.map((n: { type: string }) => n.type);
-    expect(types).toEqual(expect.arrayContaining(['critic', 'schema', 'needs', 'need']));
+    expect(types).toEqual(expect.arrayContaining(['critic', 'schema', 'needs']));
+    expect(types).not.toContain('need'); // потребности — секторы колеса
     expect(body.edges.length).toBeGreaterThan(0);
     expect(mockApi.trackEvent).toHaveBeenCalledWith('concept_canvas_open');
     // порядок: событие и переход — только после того, как карта сохранена

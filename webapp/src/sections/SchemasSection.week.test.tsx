@@ -96,7 +96,7 @@ describe('паттерн недели', () => {
       schemaEntry(2, daysAgo(1), ['abandonment']),
     ]);
     renderSection();
-    const card = (await screen.findByText('Чаще всего звучит')).closest('button')!;
+    const card = (await screen.findByText('Чаще всего звучит')).closest<HTMLElement>('[role="button"]')!;
     expect(within(card).getByText(/2 из 7 дней/)).toBeTruthy();
     fireEvent.click(card);
     expect((await screen.findAllByText(/Покинутость/)).length).toBeGreaterThan(1);
@@ -109,6 +109,17 @@ describe('паттерн недели', () => {
     ]);
     renderSection();
     expect(await screen.findByText('Чаще всего включается')).toBeTruthy();
+  });
+
+  it('сразу под ним группа той же бумаги (тест скрыт) — белый лист с тенью-слоем; с плиткой теста между ними — бумага (ревью g5 r3)', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry(1, daysAgo(0), ['abandonment'])]);
+    const sheet = async () => (await screen.findByText('Чаще всего звучит')).closest('.pa-sheet')!;
+    renderSection();
+    expect((await sheet()).className).not.toContain('pa-sheet--white');
+    cleanup();
+    localStorage.setItem('screen_hidden_patterns', '["ysq_status"]');
+    renderSection();
+    expect((await sheet()).className).toContain('pa-sheet--white');
   });
 
   it('на пустых данных не рисуется', async () => {
@@ -140,6 +151,17 @@ describe('вводная новичку', () => {
     mockApi.getProfile.mockResolvedValue(profile(['abandonment'], []));
     renderSection();
     expect(await screen.findByText('Встретить своего Критика')).toBeTruthy();
+  });
+
+  it('вводная режимов (слива) над «Моими схемами» с группой глины: плитка теста — белый лист, не бумага теста (ревью g5 r5)', async () => {
+    const tile = async () => (await screen.findByText('Тест на схемы')).closest('.cs-test')!;
+    mockApi.getProfile.mockResolvedValue(profile(['abandonment'], []));
+    renderSection();
+    expect((await tile()).classList.contains('cs-test--white')).toBe(true);
+    cleanup();
+    mockApi.getProfile.mockResolvedValue(profile(['self_sacrifice'], []));
+    renderSection();
+    expect((await tile()).classList.contains('cs-test--white')).toBe(false);
   });
 
   it('всё выбрано, дневник пуст: ведёт в дневник', async () => {

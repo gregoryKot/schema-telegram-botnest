@@ -10,21 +10,14 @@ import { NEED_TEXT_INK, inkVars } from './needInk';
 import { needDataColor } from '../needDataColor';
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
 import { NEED_HUE } from '../../../../shared/src/theme/entityHue';
-import { contrastRatio, extractBlock, hexToRgb, resolveToken, type Rgb } from '../../test-support/cssContrast';
+import { contrastRatio, extractBlock, hexToRgb, oklchRgb, resolveToken, type Rgb } from '../../test-support/cssContrast';
+import { allCssRules, parseRules, type Rule } from '../../styles/cssRules.test-helpers';
 
 const LIGHT = extractBlock(readFileSync(join(__dirname, '../../index.css'), 'utf8'), ':root, html[data-theme="light"]');
 const token = (v: string): Rgb => hexToRgb(resolveToken(LIGHT, /^var\((--[a-z0-9-]+)\)$/.exec(v)![1]));
 
 /** Бумага oklch(0.915 0.03 h) в sRGB 0–255 (формула toneHex, shared/src/theme/entityHue.ts). */
-function paper(h: number): Rgb {
-  const [a, b] = [0.03 * Math.cos((h * Math.PI) / 180), 0.03 * Math.sin((h * Math.PI) / 180)];
-  const l = (0.915 + 0.3963377774 * a + 0.2158037573 * b) ** 3;
-  const m = (0.915 - 0.1055613458 * a - 0.0638541728 * b) ** 3;
-  const s = (0.915 - 0.0894841775 * a - 1.291485548 * b) ** 3;
-  const lin = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
-  const g = (x: number) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055);
-  return lin.map((x) => Math.round(Math.min(1, Math.max(0, g(x))) * 255)) as Rgb;
-}
+const paper = (h: number): Rgb => oklchRgb(0.915, 0.03, h);
 
 describe('needInk — цвет потребности в истории', () => {
   it('графика — один источник с трекером: needDataColor (палитра — needDataColor.test.ts)', () => {
@@ -51,5 +44,37 @@ describe('needInk — цвет потребности в истории', () => 
   it('inkVars: знакомая потребность — её цвета, незнакомая — нейтральный текст', () => {
     expect(inkVars('play')).toEqual({ '--need-ink': needDataColor('play'), '--need-text': NEED_TEXT_INK.play });
     expect(inkVars('unknown')).toEqual({ '--need-ink': 'var(--text-sub)', '--need-text': 'var(--text)' });
+  });
+});
+
+// Ревью g5 r1: номер совета листа потребности (.nd-tip-n, 15px) красился --need-text на бумаге своей
+// потребности — 4.08–4.38:1 при норме 4.5:1. Контракт --need-text — ≥4.5:1 только к белому, к бумаге —
+// ≥3:1 для крупной цифры. Мелкий текст этим цветом стоит только на белом (селектор в ON_WHITE — осознанно),
+// на бумаге — --text/--text-sub.
+const ON_WHITE = new Set(['.sd-spark-score', '.ss-res-num']);
+const fontPx = (body: string) => Number(body.match(/font(?:-size)?\s*:[^;]*?([\d.]+)px/)?.[1] ?? 0);
+const PAPER_BG = /background(?:-color)?\s*:\s*oklch\(0\.9/;
+function smallNeedTextOnPaper(rules: Rule[]): string[] {
+  return rules
+    .filter((r) => /(?:^|;)\s*color\s*:\s*var\(--need-text\)/.test(r.body) && fontPx(r.body) < 24)
+    .filter((r) => PAPER_BG.test(r.body) || !r.selectors.every((sel) => ON_WHITE.has(sel)))
+    .map((r) => `${r.f ?? ''} ${r.selectors.join(', ')}`);
+}
+
+describe('мелкий текст цветом потребности — только на белом', () => {
+  it('ни одно правило styles/*.css не ставит мелкий --need-text на бумагу или неизвестный фон', () => {
+    expect(smallNeedTextOnPaper(allCssRules())).toEqual([]);
+  });
+
+  it('контрольный образец: прежний номер совета краснеет; крупная цифра и номер цветом --text — нет', () => {
+    const was = parseRules('.nd-tip-n { font: 400 15px var(--serif); background: oklch(0.915 0.03 var(--h)); color: var(--need-text); }');
+    expect(smallNeedTextOnPaper(was)).toEqual([' .nd-tip-n']);
+    expect(smallNeedTextOnPaper(parseRules('.nd-score-n { font: 400 56px/1 var(--serif); color: var(--need-text); }'))).toEqual([]);
+    expect(smallNeedTextOnPaper(parseRules('.nd-tip-n { font: 400 15px var(--serif); color: var(--text); }'))).toEqual([]);
+  });
+
+  it('почему: к бумаге своей потребности --need-text ниже 4.5:1 хотя бы у одной потребности', () => {
+    const worst = Math.min(...NEED_ORDER.map((id) => contrastRatio(token(NEED_TEXT_INK[id]), paper(NEED_HUE[id]))));
+    expect(worst).toBeLessThan(4.5);
   });
 });
