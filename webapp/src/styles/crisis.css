@@ -1,2 +1,49 @@
-/* «Помощь рядом» (CrisisContactsSheet). Подключается из practice-selfhelp.css. */
+/* «Помощь рядом» (CrisisBlock, CrisisContactsSheet) и кризисные строки телефонной «Практики»
+   (PhoneHelpRows). Подключается из practice-selfhelp.css. Сама карточка с телефонами — инлайном в
+   shared/src/components/CrisisCard.tsx (её берёт и визитка, куда этот файл не доезжает).
+   Бумага — бережная роза (--h 25, ENTITY_LOOK.sos); мелкий текст на ней — --text-sub, разделитель —
+   --panel-line (--paper-sunk светлее бумаги и на ней пропадает). */
+
+/* Продолжение карточки на той же бумаге: 112 ссылкой tel: и разговор с близким. */
+.cr-more {
+  display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding-top: 10px;
+  border-top: 1px solid var(--panel-line);
+}
+.cr-line { margin: 0; font-size: 14.5px; line-height: 44px; color: var(--text); }
+.cr-112 {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px;
+  box-sizing: border-box; padding: 0 12px; margin-left: 2px; vertical-align: middle; border-radius: 14px;
+  background: var(--surface); color: var(--accent); font: 700 17px/1 var(--sans); text-decoration: none;
+}
+.cr-text { margin: 0; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+
+/* Лист контактов: «Закрыть» — второстепенной во всю ширину; на телефоне лист не ниже родителя
+   («Важное о самопомощи» ~78% высоты), иначе его край торчал над шторкой. */
+.cr-sheet { display: flex; flex-direction: column; }
 .sh-close { margin-top: var(--space-16); }
+.ds-btn.sh-close { width: 100%; min-height: 48px; }
+@media (max-width: 767px) {
+  .cr-sheet { min-height: 78vh; }
+  .ds-btn.sh-close { margin-top: auto; }
+  .cr-sheet > [data-crisis-card] { margin-bottom: var(--space-16); }
+}
+
+/* ── Кризисные строки «Практики» на телефоне: один лист розы, знак — у первой строки ── */
+.cr-rows { display: flex; flex-direction: column; overflow: hidden; }
+.cr-row {
+  display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box;
+  padding: 12px 16px 12px 14px; cursor: pointer; transition: background .12s;
+}
+.cr-row + .cr-row { border-top: 1px solid var(--panel-line); }
+.cr-row:hover { background: oklch(0.895 0.04 var(--h)); }
+.cr-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 20px; }
+.cr-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cr-row .ds-list-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.cr-row .ds-sub { color: var(--text-sub); }
+.cr-row .ds-chev { color: var(--text-sub); }
+/* Раскрыто: шеврон вниз, контакты — на том же листе под строкой. */
+.cr-rows.is-open .cr-chev { transform: rotate(90deg); }
+.cr-open { margin: 0 16px; padding: 14px 0 18px; border-top: 1px solid var(--panel-line); }
+@media (prefers-reduced-motion: reduce) {
+  .cr-row .ds-chev { transition: none; }
+}
