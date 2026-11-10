@@ -8,9 +8,9 @@ import { MySchemasList } from './MySchemasList';
 import { SchemaMap } from './SchemaMap';
 import { SchemaMapFold } from './SchemaMapFold';
 import { countSchemas, schemasWord } from './schemasModel';
-import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
 import type { ReactNode } from 'react';
-import { topPair, type YsqEntryLook } from './patternsHero';
+import type { YsqEntryLook } from './patternsHero';
+import type { PatternsTop } from './patternsTop';
 
 interface Props {
   mobile: boolean;
@@ -20,8 +20,9 @@ interface Props {
   onStartTest: () => void;
   onAdd: () => void;
   onOpenDetail: (id: string) => void;
-  /** Скрытие карточки теста («Настроить экран»); на телефоне строка теста стоит выше, в PatternsTopStack. */
-  blocks: Pick<SiteScreenBlocks, 'isHidden'>;
+  /** Верхняя пара (patternsTop → topPair): «Выраженные» — только с данными или пока грузятся, на любой ширине;
+   *  плитка теста — на компьютере (на телефоне строка теста стоит выше, в PatternsTopStack). */
+  top: PatternsTop['pair'];
   /** Плитка теста рядом с героем (ysqEntryLook): под вводной схем её нет — вход в тест уже в герое. */
   ysqEntry: YsqEntryLook;
   /** Сбой сохранения выбора схем — строкой у «Моих схем». */
@@ -34,14 +35,13 @@ interface Props {
  * группами на бумаге домена в колонки, полная карта аккордеонами доменов. Телефон — как в мини-аппе:
  * выраженные схемы, те же группы строками, полная карта под сворачиваемым «Все N схем».
  */
-export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest, onAdd, onOpenDetail, blocks, ysqEntry, note }: Props) {
+export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest, onAdd, onOpenDetail, top, ysqEntry, note }: Props) {
   const expressed = (
     <ExpressedCard loading={d.loading} ysqSchemaIds={d.ysqSchemaIds} ysqScores={d.ysqScores} completedAt={d.ysqCompletedAt} onOpenSchema={onOpenDetail} />
   );
   const mine = { onAdd, onOpenSchema: (id: string) => pat.openPattern('schema', id), statusFor: pat.statusOf('schema').statusFor, freq: pat.entriesReady ? pat.schemaFreq : undefined };
   if (!mobile) {
     // Пустые «Выраженные схемы» не рисуются, как на телефоне: плитка теста тогда одна во весь ряд (topPair).
-    const top = topPair(ysqEntry !== 'hidden' && !blocks.isHidden('ysq_status'), d.loading, d.ysqSchemaIds.length);
     return (
       <>
         {(top.tile || top.expressed) && (
@@ -58,7 +58,7 @@ export function PatternsSchemasPane({ mobile, d, pat, allSchemaIds, onStartTest,
   const total = countSchemas(SCHEMA_DOMAINS);
   return (
     <>
-      {(d.loading || d.ysqSchemaIds.length > 0) && expressed}
+      {top.expressed && expressed}
       {note}
       <MySchemasList ids={allSchemaIds} {...mine} />
       <SchemaMapFold label={`Все ${total} ${schemasWord(total)}`}>

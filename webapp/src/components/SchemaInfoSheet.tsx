@@ -74,7 +74,7 @@ export function SchemaInfoSheet({ onClose, ratings, autoStartTest, initialTab, h
   // компьютере — разворот, лист слева колонкой, вкладки справа (SpreadLayout). Отдельного знака у листа нет:
   // картинку несёт веер теста на плитке входа — два рисунка в одной композиции повторялись (ревью g5 r2).
   const hero = (
-    <EntitySheet look={{ hue: ENTITY_LOOK.schemas.hue }} label="Схема-терапия" title={<>Как это <i>работает</i></>} titleAs="h1" className="ss-hero ss-lib-hero">
+    <EntitySheet look={{ hue: ENTITY_LOOK.schemas.hue }} label="Схема-терапия" title={<>Как это <i>работает</i></>} titleAs="h1" className="ss-hero">
       <YsqEntryTile state={{ hasResult, hasProgress, requested: ysqRequested }} onOpen={() => setShowTest(true)} />
     </EntitySheet>
   );

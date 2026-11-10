@@ -182,3 +182,19 @@ describe('ModesTab — «Поделиться» у режима (паритет 
     expect(data.belief).toMatch(/^Чувствуется как: стыд/);
   });
 });
+
+describe('ModesTab — плитки чек-ина', () => {
+  // Подпись склеена (glue: неразрывные пробелы и дефис в «что-то») — ищем по началу.
+  const tile = (label: RegExp) => screen.getByText(label).closest('button')!;
+
+  it('знак — у первой плитки серии; у остальных нет пустого места под знак, подпись по центру (ревью g5 r3)', () => {
+    openCheckin();
+    const first = tile(/^Давление/);
+    expect(first.querySelector('.ss-checkin-tile-sign svg')).toBeTruthy();
+    expect(first.className).not.toContain('ss-checkin-btn--bare');
+    for (const label of [/^Стыдно/, /^Вина/]) {
+      expect(tile(label).querySelector('.ss-checkin-tile-sign')).toBeNull();
+      expect(tile(label).className).toContain('ss-checkin-btn--bare');
+    }
+  });
+});

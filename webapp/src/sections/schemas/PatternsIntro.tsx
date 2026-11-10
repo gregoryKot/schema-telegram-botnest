@@ -8,12 +8,14 @@ interface Props {
   /** Отвеченных вопросов незаконченного теста (null — не начат). */
   testProgress: number | null;
   onAction: () => void;
+  /** Белый лист с тенью-слоем: сразу под вводной — группа близкой бумаги (patternsTop). */
+  white?: boolean;
 }
 
 /** Вводная новичку («откуда это и зачем») с одним главным действием — тот же лист-герой, что у
  *  «Паттерна недели»: бумага и знак шага (INTRO_LOOK: схемы — глина + слои, режимы — Критик, дневник)
  *  крупно, кнопка — в листе. */
-export function PatternsIntro({ step, testProgress, onAction }: Props) {
+export function PatternsIntro({ step, testProgress, onAction, white }: Props) {
   const tr = useTr();
   const intro = step === 'schemas' ? schemaIntro(tr) : step === 'modes' ? modeIntro(tr) : null;
   const { title, sub } = intro ?? diaryIntro(tr);
@@ -21,7 +23,7 @@ export function PatternsIntro({ step, testProgress, onAction }: Props) {
     ? (testProgress !== null ? `Продолжить тест (${testProgress} из 116) →` : 'Начать тест →')
     : step === 'modes' ? 'Начать знакомство →' : 'Открыть дневник →';
   return (
-    <EntitySheet look={INTRO_LOOK[step]} label={intro ? `${intro.label} · ${intro.chip}` : 'Дневник'} title={title} sub={sub} className="cs-intro cs-hero">
+    <EntitySheet look={INTRO_LOOK[step]} label={intro ? `${intro.label} · ${intro.chip}` : 'Дневник'} title={title} sub={sub} className={white ? 'cs-intro cs-hero pa-sheet--white' : 'cs-intro cs-hero'}>
       <button type="button" className="ds-btn cs-intro-btn" onClick={onAction}>{button}</button>
     </EntitySheet>
   );

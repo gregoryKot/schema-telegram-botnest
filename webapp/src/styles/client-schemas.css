@@ -7,9 +7,9 @@
 .cs-head-text { flex: 1 1 240px; min-width: 0; }
 .cs-head-sub { margin-top: 8px; }
 .cs-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 12px; min-width: 0; margin-left: auto; }
-/* Вкладки «Схемы / Режимы / Потребности» на 320–340: ширина по словам, а не поровну — «Потребности» целиком,
-   без многоточия (ревью g5 r1). */
-@media (max-width: 340px) { .cs-tabs.ds-seg--full > .ds-seg-btn { flex: 1 1 auto; padding-left: 4px; padding-right: 4px; } }
+/* Вкладки «Схемы / Режимы / Потребности» на 320–374: ширина по словам, а не поровну — «Потребности» целиком,
+   без многоточия (ревью g5 r1; r3: на 341–345 порог 340 оставлял «Потребнос…»). */
+@media (max-width: 374px) { .cs-tabs.ds-seg--full > .ds-seg-btn { flex: 1 1 auto; padding-left: 4px; padding-right: 4px; } }
 /* 320–374: три действия встают в строку плотнее, а не «Библиотека» одна второй строкой. */
 @media (max-width: 374px) {
   .cs-head-actions { gap: 8px 6px; }
@@ -31,6 +31,9 @@
    целиком, а не «…овани / е». Без переноса по слогам (ревью g5 r2): узкая карточка берёт раскладку телефона. */
 .cs-bar-name { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
 .cs-bar-sign { display: inline-flex; flex: none; width: 44px; }
+/* Продолжение серии домена (знак — у первой строки): штрих тоном домена по высоте строки, а не пустое гнездо. */
+.cs-bar-sign--run { align-self: stretch; justify-content: center; }
+.cs-bar-run { width: 2px; border-radius: 1px; background: oklch(0.58 0.12 var(--h) / .45); }
 .cs-bar-track { height: 8px; border-radius: 4px; background: var(--paper-sunk); overflow: hidden; }
 .cs-bar-fill { display: block; height: 100%; border-radius: 4px; }
 .cs-bar-val { text-align: right; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -46,20 +49,24 @@
   .cs-bar-track { grid-column: 1 / -1; grid-row: 2; height: 6px; }
 }
 
-/* Плитка теста YSQ (компьютер): бумага теста, подпись Literata, знак слоёв крупно справа внизу. */
-.cs-test { container: cs-test / inline-size; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; padding: 24px 24px 22px 26px; border-radius: 24px; box-sizing: border-box; }
+/* Плитка теста YSQ (компьютер): бумага теста, подпись Literata, знак слоёв крупно справа внизу. Контейнер — обёртка
+   .cs-test-box: так узкая раскладка правит и саму сетку плитки (align-content), а лист тянется на высоту ряда. */
+.cs-test-box { container: cs-test / inline-size; display: grid; min-width: 0; }
+.cs-test { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 16px; padding: 24px 24px 22px 26px; border-radius: 24px; box-sizing: border-box; }
 .cs-test-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; align-self: stretch; }
 .ds-label.cs-test-label { color: var(--text-sub); }
 .cs-test-text { flex: 1; margin: 0; font-family: var(--serif); font-size: 24px; line-height: 1.25; text-wrap: balance; }
-.cs-test-btn { align-self: flex-start; }
+.cs-test-btn { align-self: flex-start; justify-self: start; }
 /* Под героем той же глины (или оттенка ближе 40°) — белый лист с тенью-слоем глины, как строка теста на
    телефоне и вход в тест справочника (ysqEntryLook): два глиняных листа подряд читались одним. */
 .cs-test--white { background: var(--surface); box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)); }
 .cs-test-art { display: flex; width: 132px; }
 .cs-test-art .scn-sign { width: 100%; }
-/* Узкая плитка (поле уже ~410: текст рядом со знаком 132 уже кнопки «пройден … · результаты →»): знак 88 — в строке
-   подписи, текст и кнопка — во всю ширину под ним (ревью g5 r2: на 1024–1140 знак ложился на кнопку). */
-@container cs-test (max-width: 410px) {
+/* Узкая плитка (поле уже ~480: рядом со знаком 132 текст 24px шёл колонкой ~250px, «внутри» — одно в строке): знак 88 —
+   в строке подписи, текст и кнопка — во всю ширину под ним (ревью g5 r2: на 1024–1140 знак ложился на кнопку; r3 — на 768
+   с меню плитка ~470). Ряды — по верху: рядом с высокой соседкой полоса пустоты уходит вниз, под кнопку. */
+@container cs-test (max-width: 480px) {
+  .cs-test { align-content: start; }
   .cs-test > .cs-test-body { display: contents; }
   .cs-test .cs-test-label { grid-column: 1; grid-row: 1; align-self: center; }
   .cs-test > .cs-test-art { grid-column: 2; grid-row: 1; align-self: start; width: 88px; }
@@ -149,6 +156,7 @@
 /* «Паттерн недели» — лист-герой (EntitySheet) целиком тап-цель; фокус — кольцом листа. */
 .cs-week { display: block; border-radius: 24px; cursor: pointer; }
 .cs-week:hover .pa-sheet { background: oklch(0.895 0.04 var(--h)); }
+.cs-week:hover .pa-sheet.pa-sheet--white { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .cs-week:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* Герой «Паттернов» на узком листе (телефон, планшет): знак размера героя 88 в строке надписи, а не знак строки

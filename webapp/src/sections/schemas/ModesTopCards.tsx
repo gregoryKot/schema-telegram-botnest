@@ -23,6 +23,8 @@ interface Props {
   onOpenMode: (id: string) => void;
   /** Скрытие блока «Подсказка сверху» и долгое нажатие («Настроить экран»). */
   blocks: SiteScreenBlocks;
+  /** «Чаще всего включается» на белом листе: под ним группа «Моих режимов» близкой бумаги (patternsTop). */
+  white?: boolean;
 }
 
 /** Строки-входы под героем; знак — только там, где он свой (дневник — камешки). Под вводной режимов строки
@@ -45,7 +47,7 @@ function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void }
  * и два входа, опытному «Чаще всего включается», а без записей за неделю —
  * строка в дневник. Состояние и слова — shared/pattern/modesHeroModel.
  */
-export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLibrary, onPickManually, onOpenMode, blocks }: Props) {
+export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLibrary, onPickManually, onOpenMode, blocks, white }: Props) {
   const tr = useTr();
   const navigate = useNavigate();
   if (!ready) return blocks.isHidden('heroes') ? null : <PatternsHeroSkeleton />;
@@ -59,7 +61,7 @@ export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLi
           <ToolRows rows={[{ ...m.library, onClick: onOpenLibrary }, { ...m.manual, onClick: onPickManually }]} />
         </>
       )}
-      {m.kind === 'week' && summary && <WeekPatternCard top={{ kind: 'mode', ...summary }} onOpen={(_, id) => onOpenMode(id)} />}
+      {m.kind === 'week' && summary && <WeekPatternCard top={{ kind: 'mode', ...summary }} onOpen={(_, id) => onOpenMode(id)} white={white} />}
       {m.kind === 'diary' && <ToolRows rows={[{ ...m.row, onClick: () => navigate('/diary') }]} art={<Pebbles size="row" />} />}
     </ScreenBlock>
   );

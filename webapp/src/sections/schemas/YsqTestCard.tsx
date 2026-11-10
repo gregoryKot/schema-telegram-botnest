@@ -35,13 +35,13 @@ export function YsqTestCard({ progressAnswered, completedAt, onStart, onPaper, s
       ? 'Результаты, история прохождений и «поделиться» – внутри'
       : tr('Определи схемы автоматически – 116 вопросов, 10 минут', 'Определите схемы автоматически – 116 вопросов, 10 минут');
   return (
-    <div className={`${onPaper ? 'pp-paper cs-test' : 'cs-test cs-test--white'}${solo ? ' cs-test--solo' : ''}`} style={{ '--h': YSQ.hue } as CSSProperties}>
+    <div className="cs-test-box"><div className={`${onPaper ? 'pp-paper cs-test' : 'cs-test cs-test--white'}${solo ? ' cs-test--solo' : ''}`} style={{ '--h': YSQ.hue } as CSSProperties}>
       <div className="cs-test-body">
         <div className="ds-label cs-test-label">Тест на схемы</div>
         <p className="cs-test-text">{glue(text)}</p>
         <button className="ds-btn ds-btn--secondary cs-test-btn" onClick={onStart}>{action}</button>
       </div>
       <div className="cs-test-art" aria-hidden="true"><SignHero sign={YSQ.sign} /></div>
-    </div>
+    </div></div>
   );
 }

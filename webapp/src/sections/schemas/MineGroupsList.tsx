@@ -1,7 +1,6 @@
-import { ENTITY_LOOK, domainLook, modeGroupLook, type SheetLook } from '../../../../shared/src/theme/entityLook';
 import { SignGroup } from '../../components/schemaSheets/SignGroup';
 import { FreqMark, FreqHint } from './FreqMark';
-import type { MineGroup } from './mineGroups';
+import { mineGroupLook, type MineGroup } from './mineGroups';
 import type { WeekPatternKind } from '../../../../shared/src/pattern/patternsSummary';
 
 interface Props {
@@ -16,10 +15,6 @@ interface Props {
   freq?: Record<string, number>;
 }
 
-/** Вид группы: схема — бумага и знак домена, режим — бумага и знак группы режимов. */
-const groupLook = (kind: WeekPatternKind, id: string): SheetLook =>
-  kind === 'schema' ? domainLook(id) ?? ENTITY_LOOK.schemas : modeGroupLook(id);
-
 /**
  * «Мои схемы / Мои режимы» — группы на бумаге домена или группы режимов со знаком у подписи
  * (SignGroup, редизайн 2026-11), внутри белый список «название + статус карточки + частота».
@@ -33,7 +28,7 @@ export function MineGroupsList({ kind, groups, nameOf, addLabel, onAdd, onOpen, 
       {groups.length > 0 && (
         <div className="sg-cols-box"><div className="sg-cols">
           {groups.map(g => (
-            <SignGroup key={g.id} look={groupLook(kind, g.id)} title={g.title} aside={g.ids.length} rowsClassName="cs-grp">
+            <SignGroup key={g.id} look={mineGroupLook(kind, g.id)} title={g.title} aside={g.ids.length} rowsClassName="cs-grp">
               {g.ids.map(id => {
                 const name = nameOf(id);
                 if (!name) return null;

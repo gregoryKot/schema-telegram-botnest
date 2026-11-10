@@ -6,8 +6,8 @@ import { ysqEntryTile, type YsqEntryState } from './ysqEntry';
 import { glue } from '../../../../shared/src/utils/typo';
 
 // Вход в тест внутри листа справочника: белый лист на бумаге схем со сплошной тенью, слева веер
-// карточек теста (SceneQuizMini — тест говорит своей сценой, Layers на листе уже у схем), справа
-// стрелка. Одна плитка на все состояния (ysqEntry.ts).
+// карточек теста (SceneQuizMini — единственная картинка героя: своего знака у листа справочника нет,
+// ревью g5 r2), справа стрелка. Одна плитка на все состояния (ysqEntry.ts).
 export function YsqEntryTile({ state, onOpen }: { state: YsqEntryState; onOpen: () => void }) {
   const tr = useTr();
   const { label, title, sub } = ysqEntryTile(state, tr);

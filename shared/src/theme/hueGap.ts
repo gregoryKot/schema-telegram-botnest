@@ -10,3 +10,12 @@ export function hueGap(a: number, b: number): number {
   const d = Math.abs(a - b) % 360;
   return Math.min(d, 360 - d);
 }
+
+/** Два листа оттенков ближе зазора соседей подряд читаются одним: плитке теста под героем или герою над первой
+ *  группой — белый лист с тенью-слоем своего оттенка. Нет второго листа (null) — не близко. */
+export function hueTooNear(
+  a: number | null | undefined,
+  b: number | null | undefined,
+): boolean {
+  return a != null && b != null && hueGap(a, b) < NEIGHBOUR_HUE_GAP;
+}

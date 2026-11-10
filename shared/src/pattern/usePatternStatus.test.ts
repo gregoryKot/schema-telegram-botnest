@@ -34,8 +34,9 @@ describe('usePatternStatus', () => {
       usePatternStatus('schema', { abandonment: 3 }, api),
     );
     await waitFor(() => expect(result.current.loading).toBe(false));
+    // Пробелы у «·» и между числом и словом — неразрывные (patternStatusText, glue).
     expect(result.current.statusFor('abandonment')).toBe(
-      'карточка заполнена · 3 записи',
+      'карточка заполнена\u00a0· 3\u00a0записи',
     );
   });
 

@@ -111,6 +111,17 @@ describe('паттерн недели', () => {
     expect(await screen.findByText('Чаще всего включается')).toBeTruthy();
   });
 
+  it('сразу под ним группа той же бумаги (тест скрыт) — белый лист с тенью-слоем; с плиткой теста между ними — бумага (ревью g5 r3)', async () => {
+    mockApi.getSchemaDiary.mockResolvedValue([schemaEntry(1, daysAgo(0), ['abandonment'])]);
+    const sheet = async () => (await screen.findByText('Чаще всего звучит')).closest('.pa-sheet')!;
+    renderSection();
+    expect((await sheet()).className).not.toContain('pa-sheet--white');
+    cleanup();
+    localStorage.setItem('screen_hidden_patterns', '["ysq_status"]');
+    renderSection();
+    expect((await sheet()).className).toContain('pa-sheet--white');
+  });
+
   it('на пустых данных не рисуется', async () => {
     renderSection();
     await screen.findByText('Мои схемы');

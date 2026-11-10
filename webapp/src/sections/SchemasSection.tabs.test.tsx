@@ -7,9 +7,10 @@ import type { ReactNode } from 'react';
 
 const mobile = vi.hoisted(() => ({ value: true }));
 vi.mock('../components/useIsMobile', () => ({ useIsMobile: () => mobile.value }));
+// «Выраженные» рисуются по ранжированным схемам (patternsTop), поэтому id — настоящей схемы.
 vi.mock('./schemas/useSchemasData', () => ({
   useSchemasData: () => ({
-    loading: false, ysqSchemaIds: ['s'], manualSchemaIds: [], ysqScores: {}, ysqCompletedAt: null,
+    loading: false, ysqSchemaIds: ['abandonment'], manualSchemaIds: [], ysqScores: {}, ysqCompletedAt: null,
     ysqProgressAnswered: null, myModeIds: [], myMapCount: 1, saveSchemas: vi.fn(), saveModes: vi.fn(),
     schemasSave: { failed: false, blocked: false }, modesSave: { failed: false, blocked: false },
   }),

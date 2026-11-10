@@ -19,6 +19,8 @@ interface Props {
   onStartTest: () => void;
   /** Скрытие блока «Подсказка сверху» и долгое нажатие («Настроить экран»). */
   blocks: SiteScreenBlocks;
+  /** Белый лист с тенью-слоем: сразу под героем — группа «Моих схем» близкой бумаги (patternsTop). */
+  white?: boolean;
 }
 
 /** Силуэт героя, пока профиль и записи грузятся: лист с местом под знак, а не пустота (принцип 8). */
@@ -35,7 +37,7 @@ export function PatternsHeroSkeleton() {
  * Верх экрана «Мои паттерны»: есть запись за неделю — «паттерн недели»;
  * нет — вводная новичку с одним главным действием (тест / режим / дневник).
  */
-export function PatternsTopCards({ hero, top, testProgress, onOpenPattern, onOpenModeEx, onStartTest, blocks }: Props) {
+export function PatternsTopCards({ hero, top, testProgress, onOpenPattern, onOpenModeEx, onStartTest, blocks, white }: Props) {
   const navigate = useNavigate();
   if (hero.kind === 'loading') return blocks.isHidden('heroes') ? null : <PatternsHeroSkeleton />;
   if (hero.kind === 'none') return null;
@@ -43,7 +45,7 @@ export function PatternsTopCards({ hero, top, testProgress, onOpenPattern, onOpe
   const act = step === 'schemas' ? onStartTest : step === 'modes' ? () => onOpenModeEx(INTRO_MODE_ID) : () => navigate('/diary');
   return (
     <ScreenBlock id="heroes" blocks={blocks}>
-      {step ? <PatternsIntro step={step} testProgress={testProgress} onAction={act} /> : <WeekPatternCard top={top} onOpen={onOpenPattern} />}
+      {step ? <PatternsIntro step={step} testProgress={testProgress} onAction={act} white={white} /> : <WeekPatternCard top={top} onOpen={onOpenPattern} white={white} />}
     </ScreenBlock>
   );
 }

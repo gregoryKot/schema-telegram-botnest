@@ -30,6 +30,10 @@
 .pa-sheet-art { display: flex; align-items: center; justify-content: center; width: 160px; }
 .pa-sheet-art .scn-sign { width: 100%; }
 .pa-sheet--plain { grid-template-columns: minmax(0, 1fr); }
+/* Белый лист героя с тенью-слоем своего оттенка: сразу под ним лист близкой бумаги (hueTooNear — первая группа
+   «Моих схем / режимов», группа потребности в результате YSQ), два листа одной бумаги подряд читались одним (ревью
+   g5 r3). Колонкой разворота ≥1024 рядом с содержимым, а не над ним, — снова бумага (правило в блоке разворота). */
+.pp-paper.pa-sheet--white { background: var(--surface); --strokes-edge: var(--surface); box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h)); }
 /* compact (со второго шага) и лист разворота уже 1024 — полоса: тесные поля, знак 64, Literata 24.
    Подпись — целиком, без обрезки: на первом шаге разворота это ответ «откуда и зачем»
    (frontend-visual.md), а со второго шага экран сам решает, передавать ли подпись. Разворот
@@ -120,6 +124,7 @@
   .pa-spread-side .pa-sheet--compact .pa-sheet-title { font-size: 28px; }
   .pa-spread-side .pa-sheet--compact .pa-sheet-art { width: 120px; }
   .pa-spread-side .pa-sheet--compact[data-sign] > .pa-sheet-art { margin-left: -13px; }
+  .pa-spread-side .pp-paper.pa-sheet--white { background: oklch(0.915 0.03 var(--h)); --strokes-edge: oklch(0.915 0.03 var(--h)); box-shadow: none; }
 }
 
 /* ── Лист «готово» (DoneSheet) ───────────────────────────────────────────── */

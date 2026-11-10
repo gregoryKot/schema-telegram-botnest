@@ -6,7 +6,7 @@
 import type { WeekPatternTop } from '../../../../shared/src/pattern/patternsSummary';
 import { INTRO_MODE_ID } from '../../../../shared/src/pattern/weekPatternText';
 import { ENTITY_LOOK, type SheetLook } from '../../../../shared/src/theme/entityLook';
-import { NEIGHBOUR_HUE_GAP, hueGap } from '../../../../shared/src/theme/hueGap';
+import { hueTooNear } from '../../../../shared/src/theme/hueGap';
 import { patternLook } from '../../components/patternSheet/patternHue';
 import { introStep, type IntroStep } from './introStep';
 import { hasLongWord } from '../../components/paper/entryLook';
@@ -63,13 +63,14 @@ export function ysqEntryLook(hero: PatternsHero, heroHidden: boolean, resultsOnl
   if (heroHidden || hero.kind === 'none') return 'paper';
   if (hero.kind === 'loading') return 'hidden';
   if (hero.kind === 'intro' && hero.step === 'schemas' && !resultsOnly) return 'hidden';
-  return hueGap(hero.look.hue, ENTITY_LOOK.ysq.hue) >= NEIGHBOUR_HUE_GAP ? 'paper' : 'white';
+  return hueTooNear(hero.look.hue, ENTITY_LOOK.ysq.hue) ? 'white' : 'paper';
 }
 
 /** Класс листа-героя: слово от 13 букв («Самопожертвование», «Недисциплинированный») не встаёт рядом со знаком
  *  или во всю ширину узкого листа кеглем героя — cs-hero--long берёт кегль по ширине листа и длине слова
  *  (heroWord, client-schemas.css), а не перенос по слогам (ревью g5 r2). */
-export const heroClass = (title: string): string => `cs-hero${hasLongWord(title) ? ' cs-hero--long' : ''}`;
+export const heroClass = (title: string, white = false): string =>
+  `cs-hero${hasLongWord(title) ? ' cs-hero--long' : ''}${white ? ' pa-sheet--white' : ''}`;
 
 /** Букв в самом длинном слове заголовка — `--cs-hero-word` для кегля cs-hero--long; ставит его тот, кто ставит
  *  класс (обёртка «Паттерна недели» — `WeekPatternCard`; заголовки вводных короче 13 букв в слове). */

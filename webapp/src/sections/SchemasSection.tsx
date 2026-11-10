@@ -23,6 +23,7 @@ import { PatternsHeader } from './schemas/PatternsHeader';
 import { PatternsTabsBar } from './schemas/PatternsTabsBar';
 import { readStoredTab, visibleBlocks, writeStoredTab } from './schemas/patternsTab';
 import { patternsHero, ysqEntryLook } from './schemas/patternsHero';
+import { patternsTop } from './schemas/patternsTop';
 
 interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
@@ -48,6 +49,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
   const hero = patternsHero({ ready: !d.loading && pat.entriesReady, top: pat.top, hasSchemas: allSchemaIds.length > 0, hasModes: d.myModeIds.length > 0, hasEntries: pat.hasEntries });
   const ysqEntry = ysqEntryLook(hero, blocks.isHidden('heroes'), d.ysqCompletedAt !== null && d.ysqProgressAnswered === null);
+  const top = patternsTop({ mobile, hero, ysqEntry, blocks, d, schemaIds: allSchemaIds, modeTop: pat.modeTop });
   // Сбой сохранения — у блока, где сделан выбор (схемы или режимы), а не над героем.
   const noteFor = (kind: 'schemas' | 'modes', s = kind === 'schemas' ? d.schemasSave : d.modesSave) => (
     <SelectionSaveNote failed={s.failed} blocked={s.blocked} sign={ENTITY_LOOK[kind].sign} onRetry={s.retry} />
@@ -62,7 +64,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
         <PatternsTopStack
           blocks={blocks} mobile={mobile} ysqEntry={ysqEntry} ysqProgressAnswered={d.ysqProgressAnswered} ysqCompletedAt={d.ysqCompletedAt} onStartTest={startTest}
           hero={
-            <PatternsTopCards blocks={blocks} hero={hero} top={pat.top} testProgress={d.ysqProgressAnswered}
+            <PatternsTopCards blocks={blocks} hero={hero} top={pat.top} testProgress={d.ysqProgressAnswered} white={top.heroWhite}
               onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={startTest} />
           }
         />
@@ -71,13 +73,13 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {show.schemas && (
         <PatternsSchemasPane
           mobile={mobile} d={d} pat={pat} allSchemaIds={allSchemaIds}
-          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} blocks={blocks} ysqEntry={ysqEntry}
+          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} top={top.pair} ysqEntry={ysqEntry}
           note={noteFor('schemas')}
         />
       )}
       {show.modesHero && (
         <ModesTopCards
-          blocks={blocks} ready={!d.loading && pat.entriesReady} hasModes={d.myModeIds.length > 0} summary={pat.modeTop}
+          blocks={blocks} ready={!d.loading && pat.entriesReady} hasModes={d.myModeIds.length > 0} summary={pat.modeTop} white={top.modesHeroWhite}
           onMeetCritic={() => pat.openModeEx(INTRO_MODE_ID)} onOpenLibrary={() => onOpenSchema({ tab: 'modes' })}
           onPickManually={() => setShowModePicker(true)} onOpenMode={(id) => pat.openPattern('mode', id)}
         />

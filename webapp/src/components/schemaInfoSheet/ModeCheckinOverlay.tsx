@@ -10,9 +10,10 @@ import { checkinLook, checkinTiles } from './modesLook';
 
 // Чек-ин «Режим прямо сейчас»: выбор ощущения → режим и что помогает. Оба шага — один лист с одной записью
 // истории (один хук на весь поток): системная «Назад» и Escape закрывают чек-ин, справочник под ним остаётся;
-// «Назад» на результате закрывает весь чек-ин. Вид (2026-11): плитки бумаги группы со знаком (checkinLook),
-// подпись склеена (glue); результат — разворот: на ≥1024 лист-герой режима со знаком крупно слева, «Что
-// помогает» (белый лист с Leaf) справа, а не узкая колонка посреди пустоты (ревью g5 r1).
+// «Назад» на результате закрывает весь чек-ин. Вид (2026-11): плитки бумаги группы со знаком (checkinLook), у плитки
+// без знака (серия, checkinTiles) подпись по центру — без пустого слота сверху; подпись склеена (glue); результат —
+// разворот: на ≥1024 лист-герой режима со знаком крупно слева, «Что помогает» (белый лист с Leaf) справа, а не узкая
+// колонка посреди пустоты (ревью g5 r1).
 export function ModeCheckinOverlay({ onClose }: { onClose: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
@@ -38,7 +39,7 @@ export function ModeCheckinOverlay({ onClose }: { onClose: () => void }) {
       />
       <div className="ss-checkin-grid">
         {checkinTiles(buildModeCheckin(tr)).map(({ item, hue, sign }) => (
-          <button key={item.label} onClick={() => setMode(item)} className="pp-paper ss-checkin-btn" style={{ '--h': hue } as CSSProperties}>
+          <button key={item.label} onClick={() => setMode(item)} className={sign ? 'pp-paper ss-checkin-btn' : 'pp-paper ss-checkin-btn ss-checkin-btn--bare'} style={{ '--h': hue } as CSSProperties}>
             {sign && <span className="ss-checkin-tile-sign" aria-hidden="true"><SignArt sign={sign} size="square" /></span>}
             <span className="ss-checkin-label">{glue(item.label)}</span>
           </button>

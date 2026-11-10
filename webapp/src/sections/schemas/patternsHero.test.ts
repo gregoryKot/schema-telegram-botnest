@@ -73,6 +73,9 @@ describe('heroClass — длинное слово заголовка героя'
     expect(heroClass('Привилегированность')).toBe('cs-hero cs-hero--long');
     expect(heroClass('Покинутость')).toBe('cs-hero');
     expect(heroClass('Картина недели появится из дневника')).toBe('cs-hero');
+    // Над группой близкой бумаги (patternsTop) — белый лист с тенью-слоем.
+    expect(heroClass('Дефективность', true)).toBe('cs-hero cs-hero--long pa-sheet--white');
+    expect(heroClass('Покинутость', true)).toBe('cs-hero pa-sheet--white');
   });
 
   it('heroWord — буквы самого длинного слова: кегль cs-hero--long делит ширину листа на длину слова', () => {
