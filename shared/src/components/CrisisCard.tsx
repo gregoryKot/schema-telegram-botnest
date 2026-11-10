@@ -59,7 +59,7 @@ export function CrisisCardView({
     if (scrollIntoView ?? !standing) revealAboveKeyboard(ref.current);
   }, [scrollIntoView, standing]);
   const box: CSSProperties = flat
-    ? { margin: 0 }
+    ? ({ margin: 0, '--crisis-card-art': 'inline-flex' } as CSSProperties) // и у flat: без значения display знака невалиден
     : ({
         '--h': CRISIS_HUE,
         '--crisis-card-art': 'inline-flex',

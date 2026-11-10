@@ -12,9 +12,12 @@
    место у КАЖДОГО ребёнка строки: полоса «от терапевта» без места вставала в первую свободную ячейку — к правому
    краю карточки (ревью g4 r6). Правило на самой строке, а не под .cp-page--phone: «Практики», «Все цели», «Задания»
    (/more) и «Все задания» с «Сегодня» — одна строка. Колонки lead (полоса или галочка) и end (шеврон или ссылка) —
-   только при таком ребёнке: пустая колонка съела бы промежуток. .ds-card в селекторе — row-gap сильнее
-   `.cp-page--phone .cp-task { gap }`, стоящего в каскаде ниже. Сверка — styles/taskRowGrid.test.tsx. */
+   только при таком ребёнке: пустая колонка съела бы промежуток. Плотность строки (промежуток 12, поля 12/16, высота
+   от 56) — здесь же и тоже на самой строке: под .cp-page--phone она была только у «Практик», а в «Заданиях» (/more)
+   та же строка шла свободнее (ревью g4 r7). .ds-card в селекторе — сильнее .ds-card--row (cabinet.css); row-gap сетки
+   с :has сильнее gap плотности. Сверка — styles/taskRowGrid.test.tsx. */
 @media (max-width: 559px) {
+  .ds-card.cp-task { gap: var(--space-12); min-height: 56px; padding: var(--space-12) var(--space-16); }
   .ds-card.cp-task:has(> .ds-btn) {
     display: grid; row-gap: var(--space-8);
     grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "art body" "art btn";

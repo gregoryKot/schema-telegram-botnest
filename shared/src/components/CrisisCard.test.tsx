@@ -193,6 +193,28 @@ describe('бумага кризисного пути', () => {
       '',
     );
   });
+
+  // Ревью g4 r7: знак берёт display: var(--crisis-card-art) без запасного значения, а переменную ставила только
+  // не-flat ветка — у flat-карточки со знаком значение было невалидно. Переменная задана в обеих ветках.
+  it.each([
+    ['своя бумага', false],
+    ['flat', true],
+  ])('%s + art: у знака задана --crisis-card-art', (_, flat) => {
+    const { container } = render(
+      <CrisisCardView
+        flat={flat}
+        art={<svg data-sign="" />}
+        tr={tr}
+        track={vi.fn()}
+      />,
+    );
+    const sign = container.querySelector('[data-sign]')!.parentElement!;
+    expect(sign.style.display).toBe('var(--crisis-card-art)');
+    let el: HTMLElement | null = sign;
+    while (el && !el.style.getPropertyValue('--crisis-card-art'))
+      el = el.parentElement;
+    expect(el?.style.getPropertyValue('--crisis-card-art')).toBe('inline-flex');
+  });
 });
 
 // Ревью g3 (2026-11-09): подпись детской линии и сноска «Круглосуточно, бесплатно, анонимно…» шли --text-faint —

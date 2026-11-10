@@ -6,7 +6,7 @@
 // исходники каскада строки (client-practice.css и task-row.css). Каждый прямой ребёнок строки с «Готово» обязан
 // иметь своё место (grid-area из шаблона, который действует на эту строку, или явный grid-column). Строка та же
 // вне «Практик» («Задания» в /more, «Все задания» с «Сегодня»): сетка не зависит от .cp-page--phone. Живая
-// раскладка 320/360/390 — зонд стенда r6-task-grid (левый край полосы левее знака).
+// раскладка 320/360/390 — зонд стенда r6-task-grid (левый край полосы левее знака). Плотность строки (r7) — внизу файла.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import type { ReactElement } from 'react';
@@ -121,5 +121,44 @@ describe('строка задания до 559px: место у каждого �
       .cp-task:has(> .ds-btn) > .cp-task-body { grid-area: body; }
       .cp-task:has(> .ds-btn) > .ds-btn { grid-area: btn; } }`);
     expect(gridProblems(noLead, row)).toEqual(['cp-task-bar: области «lead» нет в шаблоне строки']);
+  });
+});
+
+// Плотность строки до 559px (ревью g4 r7): промежуток 12, поля 12/16, высота от 56 стояли под .cp-page--phone — только в
+// «Практиках»; в «Заданиях» (/more) и «Все задания» та же строка шла свободнее (промежуток 16, поля .ds-card--row 16/20,
+// высота от 44). Теперь плотность — правило на самой строке в task-row.css, рядом с сеткой.
+const DENSE: [string, RegExp][] = [
+  ['gap', /(?:^|;)\s*gap\s*:\s*var\(--space-12\)/],
+  ['min-height', /min-height\s*:\s*56px/],
+  ['padding', /padding\s*:\s*var\(--space-12\)\s+var\(--space-16\)/],
+];
+/** Чего из плотности нет у строки: среди правил, чей селектор подходит к строке и сильнее .ds-card--row (один класс). */
+function densityMissing(rules: Rule[], row: Element): string[] {
+  const mine = rules.flatMap((r) => r.selectors.map((s) => ({ s, body: r.body }))).filter((x) => spec(x.s) > 1 && row.matches(x.s));
+  return DENSE.filter(([, re]) => !mine.some((x) => re.test(x.body))).map(([name]) => name);
+}
+
+describe('строка задания до 559px: плотность одна на всех экранах', () => {
+  const rules = cascade();
+
+  it.each(CONTEXTS)('%s: промежуток 12, поля 12/16, высота от 56', (_, wrap) => {
+    for (const [name, el] of VARIANTS) {
+      for (const row of rows(el, wrap)) expect(densityMissing(rules, row), name).toEqual([]);
+      cleanup();
+    }
+  });
+
+  it('плотность не дублируется под .cp-page--phone в client-practice.css', () => {
+    const scoped = readCss('client-practice.css').filter((r) => r.selectors.some((s) => s.includes('.cp-page--phone') && /\.cp-task(?![\w-])/.test(s)));
+    expect(scoped.map((r) => r.selectors.join(', '))).toEqual([]);
+  });
+
+  it('контрольный образец: плотность r6 под .cp-page--phone — в «Практиках» есть, в «Заданиях» нет', () => {
+    const r6 = parseRules('.cp-page--phone .cp-task { gap: var(--space-12); min-height: 56px; padding: var(--space-12) var(--space-16); }');
+    const [inPractice] = rows(VARIANTS[1][1], 'ds-page cp-page cp-page--phone');
+    expect(densityMissing(r6, inPractice)).toEqual([]);
+    cleanup();
+    const [inTasks] = rows(VARIANTS[1][1], 'sk-list');
+    expect(densityMissing(r6, inTasks)).toEqual(['gap', 'min-height', 'padding']);
   });
 });

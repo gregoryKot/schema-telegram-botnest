@@ -86,7 +86,7 @@ export function StepNeed({ needs, selected, onPick, ...c }: Common & {
   return (
     <FlashcardFrame onBack={c.onBack} label={c.backLabel}
       side={<FlashcardStepHead n={c.stepIndex + 1} total={c.total} title="Что за этим стоит?" />}>
-      <p className="sk-fc-ask">Какая потребность сейчас не удовлетворена?</p>
+      <p className="sk-fc-ask">{glue('Какая потребность сейчас не удовлетворена?')}</p>
       <div className="sk-fc-tiles sk-fc-tiles--needs">
         {needs.map(n => {
           const look = flashcardNeedLook(n.id);
@@ -122,7 +122,7 @@ export function StepAction({ tr, need, action, setAction, onSave, ...c }: Common
         </div>
       )}
       <p className="sk-fc-ask">
-        {tr('Что одно маленькое действие ты можешь сделать прямо сейчас?', 'Что одно маленькое действие вы можете сделать прямо сейчас?')}
+        {glue(tr('Что одно маленькое действие ты можешь сделать прямо сейчас?', 'Что одно маленькое действие вы можете сделать прямо сейчас?'))}
       </p>
       <LimitedTextarea
         max={EXERCISE_TEXT_MAX}

@@ -43,7 +43,8 @@
 .cp-tasks { display: flex; flex-direction: column; gap: 10px; }
 .cp-task { display: flex; align-items: center; gap: 16px; min-height: 44px; }
 .cp-task-body { flex: 1; min-width: 0; }
-.cp-task-title { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+/* Название — текст терапевта или клиента: склейка пробелов в TaskRow (glueSpaces), pretty — без одинокого слова в последней строке. */
+.cp-task-title { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; text-wrap: pretty; }
 .cp-actions { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 
 /* Библиотека — бенто плиток бумаги (ExerciseTile): знак и время, название, строка описания,
@@ -109,13 +110,11 @@
 .cp-page--phone .qb-body > :not(.qb-label):not(.qb-title) { grid-column: 1 / -1; }
 .cp-page--phone .qb-count { width: 40px; height: 40px; border-radius: 10px; font-size: 24px; }
 
-/* Строки целей и каталогов */
-.cp-page--phone .cp-task { gap: var(--space-12); min-height: 56px; padding: var(--space-12) var(--space-16); }
+/* Строки целей и каталогов: плотность и сетка «Готово под текстом» до 559px — на самой строке, в task-row.css. */
 /* Слово не рвётся посередине («недостаточ / но»): ломается только токен длиннее строки. Без hyphens: auto —
    Chrome рвал по слогам и влезающие слова (ревью g1). */
 .cp-page--phone .cp-task-title { overflow-wrap: break-word; }
 .cp-page--phone .cp-sq .pp-meta { white-space: nowrap; } /* «прошли 3 раза» — одной строкой */
-/* Телефон до 559px: «Готово» у задания — под текстом; сетка — на самой строке, в task-row.css (ревью g4 r2, r6). */
 
 /* Плитки «Инструментов» */
 .cp-page--phone .cp-lib { gap: var(--space-10); }

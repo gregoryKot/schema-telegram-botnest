@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TherapyBridgeCard } from './TherapyBridgeCard';
+import { plain } from '../../test-support/plainText';
 
 const track = vi.hoisted(() => vi.fn());
 vi.mock('./trackTherapyNudge', () => ({ trackTherapyNudge: track }));
@@ -59,6 +60,15 @@ describe('TherapyBridgeCard', () => {
     const { container } = renderCard();
     expect(container.textContent).toBe('');
     expect(track).not.toHaveBeenCalled();
+  });
+
+  // Ревью g4 r7: на 390 строка заголовка начиналась с тире («глубже / — на встречах»), на 360 и 768 висело «с».
+  it('заголовок склеен (glue в TherapyCardFrame): тире не начинает строку, «с терапевтом» вместе; слова те же', () => {
+    renderCard();
+    const title = screen.getByRole('heading', { level: 2 }).textContent ?? '';
+    expect(title).toContain('глубже —');
+    expect(title).toContain('с терапевтом');
+    expect(plain(title)).toBe('Самопомощь помогает держаться. Разобраться глубже — на встречах с терапевтом.');
   });
 
   it('пользователь сам терапевт: пусто, событий нет', () => {

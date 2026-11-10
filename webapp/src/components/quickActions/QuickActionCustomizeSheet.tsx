@@ -12,6 +12,7 @@ import type { QuickActionSurface } from '../../../../shared/src/quickActions/qui
 import { CustomizeRow } from '../customize/CustomizeRow';
 import { CustomizeSheetFrame } from '../customize/CustomizeSheetFrame';
 import { ReorderHint } from '../customize/ReorderHint';
+import { glue } from '../../../../shared/src/utils/typo';
 
 export interface SheetGroup {
   id: string;
@@ -54,15 +55,14 @@ export function QuickActionCustomizeSheet({
           {sections.map((g) => (
             <div key={g.id}>
               <div className="ds-label cz-group">{g.title}</div>
-              {g.note && <div className="ds-sub cz-hint">{g.note}</div>}
+              {g.note && <div className="ds-sub cz-hint">{glue(g.note)}</div>}
               <div className={g.fixedOrder && sections.some((o) => !o.fixedOrder) ? 'cz-card cz-card--slot' : 'cz-card'}>
                 {g.items.map((a) => {
                   const wasHidden = hidden.includes(a.id);
                   const { dragHandleProps, rowRef, drag } = rowProps(a);
                   return (
                     <CustomizeRow
-                      key={a.id}
-                      title={a.label}
+                      key={a.id} title={a.label}
                       sub={a.sub} sign={a.sign}
                       on={!wasHidden}
                       onToggle={() => handlers.handleToggle(a.id, wasHidden)}

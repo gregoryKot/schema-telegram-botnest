@@ -8,6 +8,7 @@ import { TaskRow } from '../practice/TaskRow';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskStatus } from '../../../../shared/src/tasks/taskStatus';
 import { TaskSaveError } from './TaskSaveError';
+import { glueSpaces } from '../../../../shared/src/utils/typo';
 
 interface Props {
   /** «Все задания» на «Сегодня», «Все цели» в «Практике». */
@@ -23,11 +24,10 @@ interface Props {
   error?: boolean;
 }
 
-// Полный список заданий — один на «Сегодня» и «Практику» (раньше два оверлея:
-// AllTasksOverlay и AllGoalsOverlay). QA 2026-11 (A-З8): в «Все задания» у
-// заданий не было ни кнопки, ни нажатия — список был тупиком, а статус
-// показывала одинокая точка «·». Теперь строка — общий TaskRow (открывает
-// задание, у «Своего задания» — «Готово»), статус — бейдж из shared/taskStatus.
+// Полный список заданий — один на «Сегодня» и «Практику» (раньше два оверлея: AllTasksOverlay и AllGoalsOverlay).
+// QA 2026-11 (A-З8): в «Все задания» у заданий не было ни кнопки, ни нажатия — список был тупиком, а статус
+// показывала одинокая точка «·». Теперь строка — общий TaskRow (открывает задание, у «Своего задания» — «Готово»),
+// статус — бейдж из shared/taskStatus; название в «Выполнено» — текст терапевта или клиента, glueSpaces, как у TaskRow.
 // Открыть задание и «+ Поставить цель» — сначала снять свою запись истории
 // (goBack(then)): трекер и дневники лежат ниже оверлея (z-index 80 < 200).
 export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, onComplete, onAdd, error = false }: Props) {
@@ -56,7 +56,7 @@ export function AllTasksOverlay({ title, tasks, taskHistory, onClose, onOpen, on
             {taskHistory.map(t => (
               <div key={t.id} className="ds-card ds-card--row sk-task is-past">
                 <div className="sk-task-main">
-                  <div className="sk-task-text">{resolveTaskDisplayText(t, 'compact')}</div>
+                  <div className="sk-task-text">{glueSpaces(resolveTaskDisplayText(t, 'compact'))}</div>
                   {t.completedAt && <div className="ds-sub">{fmtDate(momentDayKey(t.completedAt))}</div>}
                 </div>
                 <TaskStatusBadge status={taskStatus(t, today)} />
