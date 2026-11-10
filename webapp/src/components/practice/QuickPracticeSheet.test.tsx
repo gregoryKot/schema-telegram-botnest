@@ -52,10 +52,10 @@ async function flush() {
   });
 }
 
-function renderSheet(id: 'stop' | 'grounding', onClose = vi.fn()) {
+function renderSheet(id: 'stop' | 'grounding' | 'breathing', onClose = vi.fn(), caution?: boolean) {
   return render(
     <MemoryRouter>
-      <QuickPracticeSheet id={id} onClose={onClose} />
+      <QuickPracticeSheet id={id} onClose={onClose} caution={caution} />
     </MemoryRouter>,
   );
 }
@@ -129,5 +129,24 @@ describe('QuickPracticeSheet (webapp) — заземление 5-4-3-2-1', () =>
     expect(screen.queryByText(/Пройдено уже/)).toBeNull();
     // «Поделиться» остаётся доступной и без счётчика
     expect(screen.getByText('поделиться →')).toBeTruthy();
+  });
+});
+
+// Одна механика дыхания (правило №3): из ⌘K, итога разбора и паттерна открывается живой лист,
+// а не пошаговые «Вдохни на 4 счёта / Дальше». Предупреждение — под кнопками; из разбора — без него.
+describe('QuickPracticeSheet (webapp) — дыхание и предупреждение', () => {
+  it('дыхание — живой лист «Дыши со мной», без пошаговых шагов', () => {
+    renderSheet('breathing');
+    expect(screen.getByText('Начать дыхание')).toBeTruthy();
+    expect(screen.queryByText('Вдохни на 4 счёта')).toBeNull();
+    expect(screen.queryByText('Дальше')).toBeNull();
+  });
+
+  it.each(['breathing', 'stop'] as const)('%s: предупреждение о самопомощи есть, caution={false} — нет', (id) => {
+    const { unmount } = renderSheet(id);
+    expect(screen.getByText(/самопомощь, не замена терапии/)).toBeTruthy();
+    unmount();
+    renderSheet(id, vi.fn(), false);
+    expect(screen.queryByText(/самопомощь, не замена терапии/)).toBeNull();
   });
 });

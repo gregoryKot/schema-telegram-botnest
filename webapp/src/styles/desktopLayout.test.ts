@@ -34,6 +34,8 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/paper/PaperOutcome.tsx': ['own', '.ds-btn.pa-outcome-action'], // во всю карточку исхода 440
   'components/ErrorBoundary.tsx': ['own', '.ds-btn.pa-outcome-action'], // своя кнопка в листе исхода (под ней «Детали»)
   'components/AuthGateViews.tsx': ['own', '.ds-btn.pa-outcome-action'], // занятая «Проверяем…» в листе исхода
+  'components/practice/BreathActions.tsx': ['stretch', '.qb-actions'], // лист дыхания: колонка, на широком листе — строкой
+  'components/practice/QuickStepBody.tsx': ['stretch', '.qs-actions'], // пошаговый лист: «Дальше» во всю ширину, как DoneSheet
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
   'sections/today/TrackerBlock.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину колонки
