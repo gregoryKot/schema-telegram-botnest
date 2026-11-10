@@ -12,6 +12,7 @@ import type { ModeMapEdge, ModeMapNode } from '../../api';
 import { DOMAIN_HUE, toneHex } from '../../../../shared/src/theme/entityHue';
 import { getSchemaById } from '../../schemaTherapyData';
 import { conceptToModeMap } from './conceptToModeMap';
+import { WHEEL_CENTER_Y, WHEEL_PX, needOfHandle } from './needWheel';
 
 const graphOf = (patch: Partial<ConceptGraphSource>) => buildConceptGraph(source(patch), (ty) => ty);
 const RICH_GRAPH = graphOf(RICH);
@@ -23,11 +24,12 @@ const edgesOf = (edges: ModeMapEdge[], kind: string) => edges.filter((e) => kind
 describe('conceptToModeMap — пустая концептуализация', () => {
   const { nodes, edges } = conceptToModeMap(graphOf({}), [], 1);
 
-  it('даёт круг потребностей и пять потребностей, ни одного ребра', () => {
+  // Владелец 2026-11-10: круг потребностей — колесо с процентами, а не рамка с таблетками.
+  it('даёт одно колесо потребностей без таблеток и ни одного ребра', () => {
     expect(byType(nodes, 'needs')).toHaveLength(1);
-    expect(byType(nodes, 'need').map((n) => n.data.needId)).toEqual(NEED_ORDER);
-    expect(byType(nodes, 'need')).toHaveLength(5);
-    expect(nodes).toHaveLength(6);
+    expect(byType(nodes, 'needs')[0].data.wheel).toEqual({});
+    expect(byType(nodes, 'need')).toHaveLength(0);
+    expect(nodes).toHaveLength(1);
     expect(edges).toEqual([]);
   });
 
@@ -35,20 +37,11 @@ describe('conceptToModeMap — пустая концептуализация', (
     expect(nodes.some((n) => n.data.label.includes('не отмечен'))).toBe(false);
   });
 
-  it('круг: диаметр и верхний левый угол берутся из круга раскладки', () => {
-    const { cx, cy, r, title } = layoutConceptDiagram(graphOf({}), 1400).circle;
+  it('колесо встаёт центром в центр круга раскладки, подпись — заголовок круга', () => {
+    const { cx, cy, title } = layoutConceptDiagram(graphOf({}), 1400).circle;
     const hub = byType(nodes, 'needs')[0];
-    expect(hub.data.diameter).toBe(2 * r);
     expect(hub.data.label).toBe(title);
-    expect(hub.position).toEqual({ x: cx - r, y: cy - r });
-  });
-
-  it('потребности — таблетки с needId, цветом потребности и мелким шрифтом (стоят в круге плотно)', () => {
-    for (const n of byType(nodes, 'need')) {
-      expect(n.data.customColor).toBe(needColor(n.data.needId!));
-      expect(n.data.fontSize).toBe('sm');
-      expect(n.data.label.length).toBeGreaterThan(0);
-    }
+    expect(hub.position).toEqual({ x: cx - WHEEL_PX / 2, y: cy - WHEEL_CENTER_Y });
   });
 });
 
@@ -119,9 +112,9 @@ describe('conceptToModeMap — богатый случай', () => {
     }
   });
 
-  it('✗: от схемы к потребности, красная пунктирная, с подписью ✗', () => {
+  it('✗: от схемы к сектору потребности на колесе, красная пунктирная, с подписью ✗', () => {
     const map = byId(nodes);
-    const pairs = edgesOf(edges, 'blocks').map((e) => `${map.get(e.source)!.data.schemaId}>${map.get(e.target)!.data.needId}`);
+    const pairs = edgesOf(edges, 'blocks').map((e) => `${map.get(e.source)!.data.schemaId}>${needOfHandle(e.targetHandle)}`);
     expect(pairs.sort()).toEqual([
       'emotional_deprivation>attachment',
       'emotional_deprivation>expression',
@@ -130,15 +123,15 @@ describe('conceptToModeMap — богатый случай', () => {
     ]);
     for (const e of edgesOf(edges, 'blocks')) {
       expect(map.get(e.source)!.type).toBe('schema');
-      expect(map.get(e.target)!.type).toBe('need');
+      expect(map.get(e.target)!.type).toBe('needs');
       expect(e.label).toBe('✗');
       expect(e.data).toEqual({ edgeType: 'blocks', color: 'var(--accent-red)', lineStyle: 'dashed' });
     }
   });
 
-  it('✓: от Здорового Взрослого к потребности, зелёная, с подписью ✓', () => {
+  it('✓: от Здорового Взрослого к сектору потребности, зелёная, с подписью ✓', () => {
     const map = byId(nodes);
-    const needs = edgesOf(edges, 'meets').map((e) => map.get(e.target)!.data.needId);
+    const needs = edgesOf(edges, 'meets').map((e) => needOfHandle(e.targetHandle));
     expect(needs.sort()).toEqual(['attachment', 'autonomy', 'play']);
     for (const e of edgesOf(edges, 'meets')) {
       expect(map.get(e.source)!.type).toBe('healthy');
@@ -161,10 +154,10 @@ describe('conceptToModeMap — богатый случай', () => {
 describe('conceptToModeMap — флаг осадки', () => {
   // Раскладка диаграммы режет текст по BODY_LINES, а на холсте он виден целиком:
   // каждая новая фигура просит раздвинуть колонки после замера (useSettleFresh).
-  it('каждая новая нода — режим, схема, опыт, потребность и круг — несёт data.settle', () => {
+  it('каждая новая нода — режим, схема, опыт и колесо — несёт data.settle', () => {
     const { nodes } = conceptToModeMap(RICH_GRAPH, [], 9);
     const types = new Set(nodes.map((n) => n.type));
-    for (const t of ['schema', 'origin', 'need', 'needs']) expect(types.has(t as ModeMapNode['type'])).toBe(true);
+    for (const t of ['schema', 'origin', 'needs']) expect(types.has(t as ModeMapNode['type'])).toBe(true);
     expect(nodes.some((n) => n.data.modeId)).toBe(true);
     for (const n of nodes) expect(n.data.settle).toBe(true);
   });
@@ -211,15 +204,35 @@ describe('conceptToModeMap — слияние в непустую карту', (
     const added = conceptToModeMap(RICH_GRAPH, old.nodes, 2, old.edges);
 
     expect(added.nodes.map((n) => n.data.modeId)).toEqual(['healthy_adult']);
-    const right = Math.max(...old.nodes.map((n) => n.position.x + (n.type === 'needs' ? n.data.diameter! : 0)));
+    const right = Math.max(...old.nodes.map((n) => n.position.x + (n.type === 'needs' ? WHEEL_PX : 0)));
     expect(added.nodes[0].position.x).toBe(right + 240);
-    // Рёбра ✓ ведут от новой ноды к потребностям, которые уже стоят на карте.
-    const oldIds = new Set(old.nodes.map((n) => n.id));
+    // Рёбра ✓ ведут от новой ноды к секторам колеса, которое уже стоит на карте.
+    const wheel = old.nodes.find((n) => n.type === 'needs')!;
     expect(added.edges).toHaveLength(3);
     for (const e of added.edges) {
       expect(e.source).toBe(added.nodes[0].id);
-      expect(oldIds.has(e.target)).toBe(true);
+      expect(e.target).toBe(wheel.id);
+      expect(needOfHandle(e.targetHandle)).toBeTruthy();
     }
+  });
+
+  it('карта со старым кругом-рамкой собирается по-старому: таблетки и рёбра к ним, без второго круга', () => {
+    const hub: ModeMapNode = { id: 'hub', type: 'needs', position: { x: 0, y: 0 }, data: { label: 'К', diameter: 340 } };
+    const out = conceptToModeMap(RICH_GRAPH, [hub], 8);
+    expect(byType(out.nodes, 'needs')).toHaveLength(0);
+    expect(byType(out.nodes, 'need').map((n) => n.data.needId)).toEqual(NEED_ORDER);
+    const map = byId(out.nodes);
+    for (const e of edgesOf(out.edges, 'blocks')) {
+      expect(map.get(e.target)!.type).toBe('need');
+      expect(e.targetHandle).toBeUndefined();
+      expect(map.get(e.target)!.data.customColor).toBe(needColor(map.get(e.target)!.data.needId!));
+    }
+  });
+
+  it('повтор по карте с колесом: ✗ к другому сектору того же колеса — отдельное ребро, к тому же — дубль', () => {
+    const again = conceptToModeMap(RICH_GRAPH, first.nodes, 3, first.edges.filter((e) => kindOf(e) !== 'blocks' || needOfHandle(e.targetHandle) !== 'limits'));
+    expect(again.edges).toHaveLength(1);
+    expect(needOfHandle(again.edges[0].targetHandle)).toBe('limits');
   });
 
   it('левый край новых нод встаёт ровно на правый край старых + 240, внутренняя раскладка сохраняется', () => {

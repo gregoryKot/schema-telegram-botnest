@@ -6,13 +6,13 @@ import { getEdgeParams } from './modeMap/edgeGeometry';
 import { edgeLabelStyle } from './modeMap/edgeLabel';
 
 // ── Floating edge — clean straight line between the two shape borders ──────────
-export function FloatingEdge({ id, source, target, selected, markerEnd, markerStart, style, label, labelStyle }: EdgeProps) {
+export function FloatingEdge({ id, source, target, sourceHandleId, targetHandleId, selected, markerEnd, markerStart, style, label, labelStyle }: EdgeProps) {
   const rf = useReactFlow();
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   if (!sourceNode || !targetNode) return null;
 
-  const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode);
+  const { sx, sy, tx, ty } = getEdgeParams(sourceNode, targetNode, sourceHandleId, targetHandleId); // к колесу — край сектора
 
   const [path, labelX, labelY] = getStraightPath({
     sourceX: sx, sourceY: sy, targetX: tx, targetY: ty,

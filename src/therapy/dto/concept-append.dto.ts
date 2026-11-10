@@ -10,26 +10,17 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  ConceptAppendLinkDto,
+  ConceptAppendSchemaLinkDto,
+} from './concept-append-links.dto';
 
 // Тело «дописать в концептуализацию с холста» (POST
 // /api/therapy/conceptualization/:clientId/append, #963). Контракт —
 // ConceptAppendBody в shared/src/therapy/conceptAppend.ts (сверка —
 // concept-append.dto.spec.ts). Только id: свободного текста холст в поля не
 // пишет. Лимиты — как у ConceptualizationDto: 64 символа на id, связь режима
-// несёт до 20 схем, режимов на карте не больше 40.
-
-/** Линия «схема питает режим», проведённая на холсте. */
-export class ConceptAppendLinkDto {
-  @IsString()
-  @MaxLength(64)
-  modeId!: string;
-
-  @IsArray()
-  @ArrayMaxSize(20)
-  @IsString({ each: true })
-  @MaxLength(64, { each: true })
-  schemaIds!: string[];
-}
+// несёт до 20 схем, режимов на карте не больше 40. Линии — concept-append-links.dto.ts.
 
 export class ConceptAppendDto {
   @IsOptional()
@@ -54,4 +45,11 @@ export class ConceptAppendDto {
   @ValidateNested({ each: true })
   @Type(() => ConceptAppendLinkDto)
   modeLinks?: ConceptAppendLinkDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @ValidateNested({ each: true })
+  @Type(() => ConceptAppendSchemaLinkDto)
+  schemaLinks?: ConceptAppendSchemaLinkDto[];
 }

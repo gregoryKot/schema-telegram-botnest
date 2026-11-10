@@ -1,4 +1,5 @@
 import type { InternalNode, Node } from '@xyflow/react';
+import { wheelEnd } from './needWheel';
 
 // ── Geometry: exact point where the REAL shape outline faces the other node ───
 // Each shape's actual contour (matching its SVG path) is intersected, so arrows
@@ -26,8 +27,7 @@ function polyFor(node: InternalNode<Node>): [number, number][] | null {
   return null; // child/origin/need/needs → ellipse, rect (incl. schema)/pill → box
 }
 
-// Фигуры-эллипсы: ребёнок, овал опыта, таблетка потребности, круг потребностей (a = b).
-const ELLIPSE_TYPES = new Set(['child', 'origin', 'need', 'needs']);
+const ELLIPSE_TYPES = new Set(['child', 'origin', 'need', 'needs']); // эллипсы: ребёнок, опыт, таблетка, старый круг (a = b)
 
 // Nearest exit point of the ray (cx,cy)+t·(dx,dy), t>0, through a polygon (actual coords).
 function rayPolygon(cx: number, cy: number, dx: number, dy: number, pts: [number, number][]) {
@@ -78,8 +78,8 @@ function getNodeIntersection(node: InternalNode<Node>, other: InternalNode<Node>
   return { x: p.x - (dx / len) * 1, y: p.y - (dy / len) * 1 };
 }
 
-export function getEdgeParams(source: InternalNode<Node>, target: InternalNode<Node>) {
-  const sp = getNodeIntersection(source, target);
-  const tp = getNodeIntersection(target, source);
+export function getEdgeParams(source: InternalNode<Node>, target: InternalNode<Node>, sourceHandle?: string | null, targetHandle?: string | null) {
+  const sp = wheelEnd(source, sourceHandle) ?? getNodeIntersection(source, target);
+  const tp = wheelEnd(target, targetHandle) ?? getNodeIntersection(target, source);
   return { sx: sp.x, sy: sp.y, tx: tp.x, ty: tp.y };
 }

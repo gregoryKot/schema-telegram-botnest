@@ -32,6 +32,7 @@ export function NeedsWheel({
   ink,
   onClickNeed,
   onClickCenter,
+  center: own,
 }: {
   needs: Need[];
   ratings: Record<string, number>;
@@ -41,12 +42,16 @@ export function NeedsWheel({
   ink: (id: string) => string | undefined;
   onClickNeed?: (n: Need) => void;
   onClickCenter?: () => void;
+  /** Своя подпись центра вместо индекса дня (колесо потребностей холста: период и средний процент). */
+  center?: { label: string; value: string };
 }) {
-  const center = wheelCenter(
-    needs.map((nd) => nd.id),
-    ratings,
-    prevRatings,
-  );
+  const center = own
+    ? { index: own.value, prev: null }
+    : wheelCenter(
+        needs.map((nd) => nd.id),
+        ratings,
+        prevRatings,
+      );
   const angle = (i: number) => wheelAngle(i, needs.length);
   const sectors = wheelSectors(needs.length).map((d, i) => (
     <path key={needs[i].id} d={d} />
@@ -95,7 +100,7 @@ export function NeedsWheel({
       <circle className="nw-shade" cx={CX + 3} cy={CY + 4} r={CENTER_R} />
       <circle className="nw-center" cx={CX} cy={CY} r={CENTER_R} />
       <text className="nw-label" x={CX} y={CY - 19} textAnchor="middle">
-        индекс
+        {own?.label ?? 'индекс'}
       </text>
       <text className="nw-index" x={CX} y={CY + 10} textAnchor="middle">
         {center.index}

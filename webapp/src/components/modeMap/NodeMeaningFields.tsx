@@ -1,47 +1,42 @@
 import type { RefObject } from 'react';
-import type { ModeMapNode } from '../../api';
+import type { ModeMapNode, UserId } from '../../api';
 import { NEED_ORDER, getNeedData } from '../../needData';
 import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { useTr } from '../../utils/addressForm';
 import { MODE_MAP_NODE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 import { ModeSchemasField, SchemaOptions } from './ModeSchemasField';
 import { pickNeed, pickSchema } from './identityPick';
+import { isWheel } from './needWheel';
+import { WheelFields } from './WheelFields';
 
-// Смысловые поля панели фигуры по её типу (вынесено из ModeMapNodeEditor.tsx):
-// вверху — чем фигура является (какая схема, какая потребность, как заполнять
-// круг), внизу — связи режима (схемы, потребность, ответ Здорового Взрослого).
+// Смысловые поля панели фигуры по её типу (вынесено из ModeMapNodeEditor.tsx): вверху — чем фигура является
+// (какая схема, какая потребность, колесо потребностей), внизу — связи режима (схемы, потребность, ответ ЗВ).
 
 type Data = ModeMapNode['data'];
 type Patch = (d: Partial<Data>) => void;
-/** Достройка круга потребностей: сколько из пяти не хватает внутри и чем их поставить. */
-export interface HubFill { missing: number; fill: () => void }
 
 const NEEDS = getNeedData('ty'); // названия потребностей одинаковы в обеих формах
 const CORE_NEEDS = NEED_ORDER.map(id => NEEDS[id]?.name).filter(Boolean) as string[];
 const MODES = new Set<ModeMapNode['type']>(['child', 'critic', 'coping', 'healthy', 'custom', 'trigger', 'behavior']);
 
-function HubHowTo({ hub }: { hub?: HubFill }) {
-  const tr = useTr();
+/** Старый круг-рамка с таблетками внутри (до колеса): что изменится и одна кнопка. */
+function OldHub({ onToWheel }: { onToWheel?: () => void }) {
   return (
     <div className="mm2-hint">
-      <div className="ds-label">Как заполнять</div>
-      <p className="mm2-hint-p">Внутри — пять базовых потребностей, они двигаются вместе с кругом.</p>
-      <p className="mm2-hint-p">{tr(
-        'Какая потребность не удовлетворялась — проведи к ней линию от схемы и выбери «✗ блокирует». Кто о ней заботится — линия «✓» от Здорового Взрослого.',
-        'Какая потребность не удовлетворялась — проведите к ней линию от схемы и выберите «✗ блокирует». Кто о ней заботится — линия «✓» от Здорового Взрослого.')}</p>
-      {hub && hub.missing > 0 && (
-        <button onClick={hub.fill} className="ds-btn ds-btn--secondary mm2-hint-btn">
-          {hub.missing === 5 ? 'Поставить пять потребностей' : `Добавить недостающие (${hub.missing})`}
-        </button>
-      )}
+      <div className="ds-label">Круг потребностей</div>
+      <p className="mm2-hint-p">Здесь потребности стоят таблетками. В колесе у каждой — процент по периодам (детство, 11–17 лет,
+        сейчас) и текст листа; линии к таблеткам перейдут к секторам, заметки таблеток — в «Сейчас».</p>
+      {onToWheel && <button onClick={onToWheel} className="ds-btn ds-btn--secondary mm2-hint-btn">Превратить в колесо</button>}
     </div>
   );
 }
 
 /** Верх панели: чем является фигура схемы случая. У режимов, триггера и поведения пусто. */
-export function NodeIdentityField({ node, patchData, hub }: { node: ModeMapNode; patchData: Patch; hub?: HubFill }) {
+export function NodeIdentityField({ node, patchData, clientId, onToWheel }: {
+  node: ModeMapNode; patchData: Patch; clientId?: UserId; onToWheel?: () => void;
+}) {
   const d = node.data;
-  if (node.type === 'needs') return <HubHowTo hub={hub} />;
+  if (node.type === 'needs') return isWheel(d) ? <WheelFields data={d} patchData={patchData} clientId={clientId} /> : <OldHub onToWheel={onToWheel} />;
   if (node.type === 'schema') return (
     <>
       <label className="ds-label" htmlFor="mm-node-which-schema">Какая это схема</label>

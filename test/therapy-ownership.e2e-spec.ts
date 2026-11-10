@@ -118,6 +118,17 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(data.body.mySchemaIds).toEqual([]);
   });
 
+  // «Колесо детства» клиента — на холсте терапевта (сохранил → нашёл через HTTP).
+  it('C1 оценил «Колесо детства» → client-data T1 отдаёт оценки', async () => {
+    const saved = await agentAs(C1).post('/api/childhood-ratings', {
+      attachment: 3,
+      play: 9,
+    });
+    expect(saved.status).toBeLessThan(300);
+    const data = await agentAs(T1).get(`/api/therapy/client-data/${C1_ID}`);
+    expect(data.body.childhoodRatings).toEqual({ attachment: 3, play: 9 });
+  });
+
   // QA 2026-11: «запрос отправлен» переживает перезагрузку — признак приходит
   // в client-data своего терапевта (сохранил → нашёл через HTTP).
   it('T1 запрашивает YSQ у C1 → client-data отдаёт ysqRequestPending', async () => {
@@ -265,6 +276,11 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
         modeLinks: [
           { modeId: 'punitive_critic', schemaIds: ['defectiveness'] },
         ],
+        // Колесо потребностей: «✗» схема → потребность; belief холст не
+        // пишет — whitelist отрезает его внутри связи.
+        schemaLinks: [
+          { schemaId: 'defectiveness', needIds: ['attachment'], belief: 'x' },
+        ],
       },
     );
     expect(res.status).toBeLessThan(300);
@@ -272,6 +288,20 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(got.body.schemaIds).toEqual(['abandonment', 'defectiveness']);
     expect(got.body.modeIds).toEqual(['vulnerable_child', 'punitive_critic']);
     expect(got.body.earlyExperience).toBe('ранний опыт клиента');
+    expect(got.body.schemaLinks).toEqual([
+      {
+        schemaId: 'defectiveness',
+        belief: '',
+        origin: '',
+        needIds: ['attachment'],
+      },
+    ]);
+    // Неизвестная потребность — 400 (DTO), а не тихая запись.
+    const bad = await t1.post(
+      `/api/therapy/conceptualization/${C1_ID}/append`,
+      { schemaLinks: [{ schemaId: 'defectiveness', needIds: ['safety'] }] },
+    );
+    expect(bad.status).toBe(400);
   });
 
   it('T2 без связи с C1 не может дописать в концептуализацию — 403, строк не прибавилось', async () => {

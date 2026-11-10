@@ -1,27 +1,26 @@
-// Связь холста с полями концептуализации (#963), чистая часть: что на холсте
-// относится к концептуализации, что на нём появилось и чего на нём нет.
-// Режим — узел с data.modeId из справочника (свой режим терапевта id не имеет);
-// схема — фигура «схема» с data.schemaId (опыт и потребности в поля не идут);
-// связь «схема питает режим» — линия между схемой и режимом в любую сторону или
-// таблетка схемы, поставленная на режим в панели. Прочие стрелки и текст — нет.
+// Связь холста с полями концептуализации (#963), чистая часть: что на холсте относится к концептуализации,
+// что на нём появилось и чего нет. Режим — узел с data.modeId из справочника; схема — фигура «схема» с
+// data.schemaId; «схема питает режим» — линия схема ⇄ режим или таблетка схемы на режиме; связи с
+// потребностями (✗ схема, ✓ здоровый режим к колесу или таблетке) — conceptNeedSync.ts. Прочее — нет.
 import { getModeById, getSchemaById } from '../../schemaTherapyData';
 import { normalizeModeLinks } from '../../../../shared/src/therapy/conceptGraph/modeLinks';
-import { conceptSchemaIds } from '../../../../shared/src/therapy/conceptGraph/schemaLinks';
+import { conceptSchemaIds, normalizeSchemaLinks } from '../../../../shared/src/therapy/conceptGraph/schemaLinks';
 import type { ConceptAppendBody } from '../../../../shared/src/therapy/conceptAppend';
 import type { ClientConcept, ClientConceptState } from './clientConceptContext';
 import { ownSchemaIds } from './nodeSchemaIds';
+import { needAppend, needLinksOf } from './conceptNeedSync';
 
 export type GraphNode = { id: string; type?: string; data?: Record<string, unknown> };
-export type GraphEdge = { source: string; target: string };
+export type GraphEdge = { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null };
 /** Ответ сервера с концептуализацией (getConceptualization, appendConceptualization). */
-export type ConceptResponse = { schemaIds?: unknown; modeIds?: unknown; modeLinks?: unknown } | null | undefined;
+export type ConceptResponse = { schemaIds?: unknown; modeIds?: unknown; modeLinks?: unknown; schemaLinks?: unknown } | null | undefined;
 
-/** Холст в терминах концептуализации; связь — ключ `modeId schemaId`. */
-export interface CanvasConcept { modes: ReadonlySet<string>; schemas: ReadonlySet<string>; links: ReadonlySet<string> }
+/** Холст в терминах концептуализации; связь — ключ `modeId schemaId`, связь с потребностью — needLinksOf. */
+export interface CanvasConcept { modes: ReadonlySet<string>; schemas: ReadonlySet<string>; links: ReadonlySet<string>; needs: ReadonlySet<string> }
 /** Режимы и схемы концептуализации, которых нет на холсте. */
 export interface ConceptMissing { modeIds: string[]; schemaIds: string[] }
 
-export const EMPTY_CANVAS: CanvasConcept = { modes: new Set(), schemas: new Set(), links: new Set() };
+export const EMPTY_CANVAS: CanvasConcept = { modes: new Set(), schemas: new Set(), links: new Set(), needs: new Set() };
 
 const SEP = ' ';
 const NOT_MODE = new Set(['schema', 'origin', 'need', 'needs']);
@@ -30,7 +29,7 @@ const idOf = (v: unknown): string | undefined => (typeof v === 'string' && v ? v
 
 /** Ответ сервера → то, что нужно холсту: схемы, режимы, нормализованные связи. */
 export function toClientConcept(c: ConceptResponse): ClientConcept {
-  return { schemaIds: strs(c?.schemaIds), modeIds: strs(c?.modeIds), modeLinks: normalizeModeLinks(c?.modeLinks) };
+  return { schemaIds: strs(c?.schemaIds), modeIds: strs(c?.modeIds), modeLinks: normalizeModeLinks(c?.modeLinks), schemaLinks: normalizeSchemaLinks(c?.schemaLinks) };
 }
 
 function entityOf(n: GraphNode): { mode?: string; schema?: string; own?: string[] } {
@@ -56,12 +55,12 @@ export function canvasConcept(nodes: readonly GraphNode[], edges: readonly Graph
     const schema = a?.schema ?? b?.schema;
     if (mode && schema) links.add(mode + SEP + schema);
   }
-  return { modes, schemas, links };
+  return { modes, schemas, links, needs: needLinksOf(nodes, edges) };
 }
 
 type SetOp = (a: ReadonlySet<string>, b: ReadonlySet<string>) => ReadonlySet<string>;
 const each = (op: SetOp) => (a: CanvasConcept, b: CanvasConcept): CanvasConcept =>
-  ({ modes: op(a.modes, b.modes), schemas: op(a.schemas, b.schemas), links: op(a.links, b.links) });
+  ({ modes: op(a.modes, b.modes), schemas: op(a.schemas, b.schemas), links: op(a.links, b.links), needs: op(a.needs, b.needs) });
 
 /** Что появилось на холсте по сравнению с его прошлым состоянием; убранное не в счёт. */
 export const addedOnCanvas = (prev: CanvasConcept, next: CanvasConcept) =>
@@ -69,7 +68,7 @@ export const addedOnCanvas = (prev: CanvasConcept, next: CanvasConcept) =>
 export const unionCanvas = each((a, b) => new Set([...a, ...b]));
 /** Только то, что и сейчас стоит на холсте: поставил и тут же убрал — писать нечего. */
 export const keepOnCanvas = each((a, b) => new Set([...a].filter((x) => b.has(x))));
-export const isEmptyCanvas = (c: CanvasConcept) => c.modes.size + c.schemas.size + c.links.size === 0;
+export const isEmptyCanvas = (c: CanvasConcept) => c.modes.size + c.schemas.size + c.links.size + c.needs.size === 0;
 
 /** Схемы концептуализации — те же, что ставит на холст «Из концептуализации клиента»: актуальные и из связей режимов. */
 const conceptSchemas = (c: ClientConcept) => conceptSchemaIds(c.schemaIds, c.modeIds, c.modeLinks);
@@ -91,13 +90,12 @@ export function appendBody(added: CanvasConcept, concept: ClientConceptState): C
     const [modeId, schemaId] = key.split(SEP);
     byMode.set(modeId, [...(byMode.get(modeId) ?? []), schemaId]);
   }
-  const modeLinks = [...byMode].map(([modeId, ids]) => ({ modeId, schemaIds: ids }));
-  if (modeIds.length + schemaIds.length + modeLinks.length === 0) return null;
-  return {
-    ...(modeIds.length ? { modeIds } : {}),
-    ...(schemaIds.length ? { schemaIds } : {}),
-    ...(modeLinks.length ? { modeLinks } : {}),
-  };
+  const { schemaLinks, modeNeeds } = needAppend(added.needs, c);
+  const modeLinks = [...new Set([...byMode.keys(), ...modeNeeds.keys()])]
+    .map((modeId) => ({ modeId, schemaIds: byMode.get(modeId) ?? [], ...(modeNeeds.has(modeId) ? { needIds: modeNeeds.get(modeId) } : {}) }));
+  if (modeIds.length + schemaIds.length + modeLinks.length + schemaLinks.length === 0) return null;
+  return { ...(modeIds.length ? { modeIds } : {}), ...(schemaIds.length ? { schemaIds } : {}),
+    ...(modeLinks.length ? { modeLinks } : {}), ...(schemaLinks.length ? { schemaLinks } : {}) };
 }
 
 /** В полях есть, на холсте нет — то, что допишет «Добавить на карту» (неизвестные id не в счёт). */

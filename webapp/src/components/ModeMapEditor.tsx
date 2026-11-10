@@ -18,8 +18,8 @@ import { useSettleFresh } from './modeMap/useSettleFresh';
 import { useCanvasSpace } from './modeMap/useCanvasSpace';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
 import { useMapKeys } from './modeMap/useMapKeys';
-import { expandDraft } from './modeMap/hubFill';
-import { useHubFill } from './modeMap/useHubFill';
+import { WHEEL_SIZE } from './modeMap/needWheel';
+import { useWheelConvert } from './modeMap/useWheelConvert';
 
 // ─── Public component ─────────────────────────────────────────────────────────
 
@@ -71,14 +71,12 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
   const handleAddMany = useCallback((partials: Omit<ModeMapNode, 'position'>[]) => {
     if (!partials.length) return;
     pushHistory();
-    const hub = partials.find(p => p.type === 'needs')?.data.diameter; // круг занимает больше места, чем режим
-    const spots = place(nodes, partials.length, hub ? { w: hub, h: hub } : undefined);
-    // Круг потребностей приезжает с пятью потребностями внутри и встаёт под них (toFlowNodes: zIndex −1).
-    const newNodes = [...nodes, ...toFlowNodes(partials.flatMap((p, i) => expandDraft(p, spots[i])))];
+    const spots = place(nodes, partials.length, partials.some(p => p.type === 'needs') ? WHEEL_SIZE : undefined); // колесо больше режима
+    const newNodes = [...nodes, ...toFlowNodes(partials.map((p, i) => ({ ...p, position: spots[i] })))]; // круг — под фигурами (zIndex −1)
     setNodes(newNodes); scheduleSave(newNodes, edges);
   }, [nodes, edges, setNodes, scheduleSave, pushHistory, place]);
   const handleAddNode = useCallback((partial: Omit<ModeMapNode, 'position'>) => handleAddMany([partial]), [handleAddMany]);
-  const hubFill = useHubFill({ nodes, edges, setNodes, scheduleSave, pushHistory });
+  const toWheel = useWheelConvert({ nodes, edges, setNodes, setEdges, scheduleSave, pushHistory });
 
   const handleNodeChange = useCallback((updated: ModeMapNode) => {
     pushHistory();
@@ -146,7 +144,7 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
   const nodeEditor = selectedNode && (
     <ModeMapNodeEditor
       node={{ id: selectedNode.id, type: selectedNode.type as ModeMapNode['type'], position: selectedNode.position, data: selectedNode.data as unknown as ModeMapNode['data'] }}
-      onChange={handleNodeChange} onDelete={handleDeleteNode} hub={selectedNode.type === 'needs' ? hubFill(selectedNode) : undefined}
+      onChange={handleNodeChange} onDelete={handleDeleteNode} clientId={clientId} onToWheel={() => toWheel(selectedNode.id)}
       coupleMode={kind === 'couple'}
       onClose={() => setSelectedNodeId(null)} />
   );

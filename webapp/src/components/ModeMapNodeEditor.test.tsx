@@ -9,7 +9,7 @@
 // (двойной клик по ноде на холсте → modemap-focus-name, шаг гайда «Потребность»
 // → modemap-focus-need).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { AddressFormContext } from '../utils/addressForm';
 import { ModeMapNodeEditor } from './ModeMapNodeEditor';
 import type { ModeMapNode } from '../api';
@@ -325,30 +325,62 @@ describe('ModeMapNodeEditor — предел длины текстовых по�
 // Аудит холста 2026-11: у фигур схемы случая панель говорит, чем фигура является,
 // и не показывает того, что на ней ничего не меняет.
 describe('ModeMapNodeEditor — круг потребностей, потребность, схема', () => {
-  it('круг: подсказка «Как заполнять», без выбора формы и без схем режима', () => {
-    renderEditor(baseNode({ type: 'needs', data: { label: 'Базовые эмоциональные потребности' } }));
-    expect(screen.getByText('Как заполнять')).toBeTruthy();
+  const wheelNode = (wheel = {}) => baseNode({ type: 'needs', data: { label: 'Круг', wheel } });
+
+  it('колесо: объяснение листа, без оформления, без выбора формы и без схем режима', () => {
+    renderEditor(wheelNode());
+    expect(screen.getByText('Колесо потребностей')).toBeTruthy();
+    expect(screen.getByText(/по листу Фаррелл и Шоу/)).toBeTruthy();
+    expect(screen.queryByText('Оформление')).toBeNull();
     expect(screen.queryByText('Форма и тип')).toBeNull();
     expect(screen.queryByLabelText('Схемы режима')).toBeNull();
   });
 
-  it('пустой круг: кнопка ставит пять потребностей; полный — кнопки нет', () => {
-    const fill = vi.fn();
-    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), { hub: { missing: 5, fill } });
-    fireEvent.click(screen.getByText('Поставить пять потребностей'));
-    expect(fill).toHaveBeenCalledTimes(1);
-    cleanup();
-    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), { hub: { missing: 2, fill } });
-    expect(screen.getByText('Добавить недостающие (2)')).toBeTruthy();
-    cleanup();
-    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), { hub: { missing: 0, fill } });
-    expect(screen.queryByText('Поставить пять потребностей')).toBeNull();
-    expect(screen.queryByText(/Добавить недостающие/)).toBeNull();
+  it('колесо: период на колесе и контур детства пишутся в data.wheel', () => {
+    const { onChange } = renderEditor(wheelNode({ period: 'now' }));
+    fireEvent.click(screen.getByRole('button', { name: '11–17 лет' }));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ wheel: { period: 'teen' } }) }));
+    fireEvent.click(screen.getByLabelText('Контур детства поверх'));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ wheel: { period: 'now', compare: true } }) }));
   });
 
-  it('подсказка круга — в форме «вы» для «вы»', () => {
-    renderEditor(baseNode({ type: 'needs', data: { label: 'К' } }), {}, 'vy');
-    expect(screen.getByText(/проведите к ней линию/)).toBeTruthy();
+  it('колесо: на «Детстве» контур детства недоступен', () => {
+    renderEditor(wheelNode({ period: 'child', compare: true }));
+    const box = screen.getByLabelText('Контур детства поверх') as HTMLInputElement;
+    expect(box.disabled).toBe(true);
+    expect(box.checked).toBe(false);
+  });
+
+  it('колесо: клик по сектору открывает потребность, текст листа пишется по ней и периоду', () => {
+    const { onChange } = renderEditor(wheelNode());
+    act(() => { window.dispatchEvent(new CustomEvent('modemap-wheel-need', { detail: 'play' })); });
+    expect(screen.getByRole('button', { name: /Спонтанность/ }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.change(screen.getByLabelText('Детский опыт, связанный с потребностью'), { target: { value: 'Играть было некогда' } });
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ wheel: { notes: { child: { play: 'Играть было некогда' } } } }),
+    }));
+  });
+
+  it('колесо: «сбросить» снимает оценку периода, у неоценённого кнопки нет', () => {
+    const { onChange } = renderEditor(wheelNode({ ratings: { now: { attachment: 4 } } }));
+    expect(screen.getAllByText('сбросить')).toHaveLength(1);
+    fireEvent.click(screen.getByText('сбросить'));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ wheel: { ratings: { now: {} } } }) }));
+  });
+
+  it('колесо: подсказка в форме «вы» для «вы»', () => {
+    renderEditor(wheelNode(), {}, 'vy');
+    expect(screen.getByText(/Выберите потребность или нажмите на её сектор/)).toBeTruthy();
+  });
+
+  it('старый круг с таблетками: «Превратить в колесо» зовёт превращение; без обработчика кнопки нет', () => {
+    const onToWheel = vi.fn();
+    renderEditor(baseNode({ type: 'needs', data: { label: 'К', diameter: 340 } }), { onToWheel });
+    fireEvent.click(screen.getByText('Превратить в колесо'));
+    expect(onToWheel).toHaveBeenCalledTimes(1);
+    cleanup();
+    renderEditor(baseNode({ type: 'needs', data: { label: 'К', diameter: 340 } }));
+    expect(screen.queryByText('Превратить в колесо')).toBeNull();
   });
 
   it('потребность: выбор из пяти пишет needId, название и цвет', () => {

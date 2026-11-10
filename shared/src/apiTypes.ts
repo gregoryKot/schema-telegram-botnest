@@ -188,8 +188,8 @@ export interface ClientData {
   ysqCompletedAt: string | null;
   ysqActiveSchemaIds: string[];
   ysqHistory: YsqHistoryEntry[];
-  /** Запрос YSQ терапевта ещё не ушёл клиенту (src/therapy/ysq-request.ts). */
-  ysqRequestPending?: boolean;
+  ysqRequestPending?: boolean; // запрос YSQ терапевта ещё не ушёл клиенту (src/therapy/ysq-request.ts)
+  childhoodRatings?: Record<string, number>; // «Колесо детства»: needId → 0–10; {} — профиль скрыт
 }
 
 export interface Insights {

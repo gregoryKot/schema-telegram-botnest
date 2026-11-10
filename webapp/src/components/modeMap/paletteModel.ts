@@ -7,7 +7,6 @@ import { getModeById, MODE_GROUPS, SCHEMA_DOMAINS, type ModeGroup, type SchemaDo
 import { COPING_KIND_LABEL } from '../../../../shared/src/therapy/conceptGraph/modeLanes';
 import { NEEDS_TITLE } from '../../../../shared/src/therapy/conceptGraph/diagram/diagramCircle';
 import { GROUP_TO_TYPE, TYPE_COLORS, type NodeType } from '../modeMapData';
-import { HUB_DIAMETER } from './hubGeometry';
 import { findModeMeta } from './modeNodeMeta';
 import { makeModeNode, type Draft } from './modeDraft';
 import { nodeTexts } from './nodeTexts';
@@ -92,7 +91,7 @@ export interface Figure { type: FigureType; caption: string; hint: string; words
 const conceptDraft = (type: 'schema' | 'origin' | 'need' | 'needs'): Draft => {
   const texts = nodeTexts(type);
   const label = type === 'origin' ? texts.note : type === 'needs' ? NEEDS_TITLE : texts.title;
-  return { id: `${type}_${Date.now()}`, type, data: type === 'needs' ? { label, diameter: HUB_DIAMETER } : { label } };
+  return { id: `${type}_${Date.now()}`, type, data: type === 'needs' ? { label, wheel: {} } : { label } }; // круг — колесо (needWheel.ts)
 };
 const figure = (type: FigureType, caption: string, hint: string, words: string, draft: () => Draft): Figure => ({ type, caption, hint, words, draft });
 
@@ -103,7 +102,7 @@ export const FIGURES: Figure[] = [
   figure('schema', 'Схема', 'Схема с убеждением', 'схема убеждение', () => conceptDraft('schema')),
   figure('origin', 'Опыт детства', nodeTexts('origin').note, 'опыт детства', () => conceptDraft('origin')),
   figure('need', 'Потребность', 'Одна из пяти потребностей', 'потребность', () => conceptDraft('need')),
-  figure('needs', 'Круг потребностей', 'Круг потребностей: потребности внутри едут вместе с кругом', 'круг потребностей', () => conceptDraft('needs')),
+  figure('needs', 'Круг потребностей', 'Колесо пяти потребностей: насколько каждая удовлетворялась в детстве, в 11–17 лет и сейчас', 'круг потребностей', () => conceptDraft('needs')),
 ];
 
 /** Поиск по всей палитре, включая закрытый каталог: плоский список, без групп. */

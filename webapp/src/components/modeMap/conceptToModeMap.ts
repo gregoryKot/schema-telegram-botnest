@@ -5,11 +5,11 @@ import type { DiagramEdge, DiagramNode } from '../../../../shared/src/therapy/co
 import { HUB_DIAMETER } from './hubGeometry';
 import { modeNodeType } from './modeNodeMeta';
 import { EDGE_TYPE_STYLE } from './edgeTypes';
+import { WHEEL_CENTER_Y, WHEEL_PX, isWheel, needHandle } from './needWheel';
 
-// Схема случая → карта режимов. Единственный конвертер: его берут и кнопка
-// «Открыть на холсте» (новая карта), и пункт меню «Из концептуализации клиента»
-// (дописать в открытую карту). Позиции — из той же раскладки, что рисует схема
-// случая, поэтому холст сразу выглядит как автоматическая схема.
+// Схема случая → карта режимов: «Открыть на холсте» (новая карта) и «Из концептуализации клиента» (дописать в
+// открытую). Позиции — из раскладки схемы случая. Потребности — колесо (needWheel.ts), ✗/✓ идут к его секторам;
+// на карте со старым кругом-рамкой — как раньше, к таблеткам внутри него.
 
 /** Ширина раскладки: четыре колонки в базовых размерах (от 960 раскладка широкая). */
 const LAYOUT_WIDTH = 1400;
@@ -56,14 +56,10 @@ function buildNode(d: DiagramNode, id: string): ModeMapNode {
 const slug = (s: string) => s.replace(/\W+/g, '_');
 
 /**
- * Собирает ноды и рёбра карты из модели схемы случая.
- *
- * Слияние: сущность, которая уже есть в `existing` (режим по modeId, схема и опыт
- * по schemaId у своего типа, потребность по needId, круг по типу), заново не
- * создаётся — рёбра берут её id. Новые ноды целиком сдвигаются правее
- * существующих, а ребро между двумя старыми нодами добавляется, только если в
- * `existingEdges` такого ещё нет (связь «режим ⇄ схема» двусторонняя, поэтому
- * для неё порядок концов не важен).
+ * Ноды и рёбра карты из модели схемы случая. Сущность из `existing` (режим по modeId, схема и опыт по
+ * schemaId, потребность по needId, круг по типу) заново не создаётся — рёбра берут её id. Новые ноды целиком
+ * правее существующих; ребро между двумя старыми — только если в `existingEdges` такого нет (с той же
+ * ручкой сектора; «режим ⇄ схема» двусторонняя — порядок концов не важен).
  */
 export function conceptToModeMap(
   graph: ConceptGraphModel,
@@ -91,29 +87,31 @@ export function conceptToModeMap(
   };
 
   const { cx, cy, r, title } = layout.circle;
-  add(HUB_KEY, (id) => ({ id, type: 'needs', position: { x: cx - r, y: cy - r }, data: { label: title, diameter: 2 * r } }));
-  for (const d of layout.nodes) {
-    if (d.kind !== 'placeholder') add(d.id, (id) => buildNode(d, id));
-  }
+  const oldHub = existing.find((n) => n.type === 'needs');
+  const wheel = !oldHub || isWheel(oldHub.data); // колесо, если на карте нет старого круга с таблетками
+  add(HUB_KEY, (id) => (wheel ? { id, type: 'needs', position: { x: cx - WHEEL_PX / 2, y: cy - WHEEL_CENTER_Y }, data: { label: title, wheel: {} } }
+    : { id, type: 'needs', position: { x: cx - r, y: cy - r }, data: { label: title, diameter: 2 * r } }));
+  for (const d of layout.nodes) if (d.kind !== 'placeholder' && !(wheel && d.kind === 'need')) add(d.id, (id) => buildNode(d, id));
 
   // Новое целиком правее старого: левый край новых = правый край существующих + GAP.
   if (existing.length > 0 && fresh.length > 0) {
-    const right = Math.max(...existing.map((n) => n.position.x + (n.type === 'needs' ? (n.data.diameter ?? HUB_DIAMETER) : 0)));
+    const right = Math.max(...existing.map((n) => n.position.x + (n.type !== 'needs' ? 0 : isWheel(n.data) ? WHEEL_PX : (n.data.diameter ?? HUB_DIAMETER))));
     const dx = right + GAP - Math.min(...fresh.map((n) => n.position.x));
     for (const n of fresh) n.position = { x: n.position.x + dx, y: n.position.y };
   }
 
   const freshIds = new Set(fresh.map((n) => n.id));
-  const exists = (a: string, b: string, both: boolean) =>
-    existingEdges.some((e) => (e.source === a && e.target === b) || (both && e.source === b && e.target === a));
+  const exists = (a: string, b: string, both: boolean, th?: string) => existingEdges.some((e) =>
+    (e.source === a && e.target === b && (e.targetHandle ?? undefined) === th) || (both && e.source === b && e.target === a));
+  // Конец ребра: у колеса — сектор потребности (ручка need:<id>) на узле круга.
+  const end = (key: string) => (wheel && key.startsWith('need:') ? { id: idOf.get(HUB_KEY), h: needHandle(key.slice(5)) } : { id: idOf.get(key) });
   const edges: ModeMapEdge[] = [];
   for (const e of layout.edges) {
-    const source = idOf.get(e.from);
-    const target = idOf.get(e.to);
-    if (!source || !target) continue;
-    const bothOld = !freshIds.has(source) && !freshIds.has(target);
-    if (bothOld && exists(source, target, e.kind === 'link')) continue;
-    edges.push({ id: `cc_${e.kind}_${slug(e.from)}_${slug(e.to)}_${stamp}`, source, target, ...arrowOf(e.kind) });
+    const [s, t] = [end(e.from), end(e.to)];
+    if (!s.id || !t.id) continue;
+    if (!freshIds.has(s.id) && !freshIds.has(t.id) && exists(s.id, t.id, e.kind === 'link', t.h)) continue;
+    edges.push({ id: `cc_${e.kind}_${slug(e.from)}_${slug(e.to)}_${stamp}`, source: s.id, target: t.id,
+      ...(s.h ? { sourceHandle: s.h } : {}), ...(t.h ? { targetHandle: t.h } : {}), ...arrowOf(e.kind) });
   }
   return { nodes: fresh, edges };
 }
