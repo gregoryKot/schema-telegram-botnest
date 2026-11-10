@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 export function SchemaMapFold({ label, children }: { label: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="ds-fold">
+    <div className="ds-fold cs-allfold">
       <button type="button" className="ds-fold-btn" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         <span className="ds-label">{label}</span><span className="ds-fold-chev" aria-hidden="true" />
       </button>

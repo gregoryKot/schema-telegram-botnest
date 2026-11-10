@@ -6,17 +6,14 @@ import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { useTr } from '../utils/addressForm';
 import { needLook } from '../../../shared/src/theme/entityLook';
 import type { NeedId } from '../../../shared/src/needs/types';
+import { glue } from '../../../shared/src/utils/typo';
 import { inkVars } from './history/needInk';
 import { DomainMark } from './DomainMark';
 import { SignArt } from './art/SignArt';
 import '../styles/sheet-tracker.css';
 
 const NEED_DOMAIN_MAP: Record<string, string[]> = {
-  attachment: ['rejection'],
-  autonomy:   ['autonomy'],
-  expression: ['other_directed', 'vigilance'],
-  play:       ['vigilance'],
-  limits:     ['limits'],
+  attachment: ['rejection'], autonomy: ['autonomy'], expression: ['other_directed', 'vigilance'], play: ['vigilance'], limits: ['limits'],
 };
 
 interface Props {
@@ -60,7 +57,7 @@ export function NeedDetailSheet({ needId, childhoodRating, activeSchemaIds, onCl
       backLabel="Назад"
       look={look}
       eyebrow="Потребность"
-      title={<>{need.name}<br /><span className="it">{need.subtitle}</span></>}
+      title={<>{glue(need.name)}<br /><span className="it">{glue(need.subtitle)}</span></>}
       lede={need.explanation}
       aside={
         childhoodRating !== undefined ? (

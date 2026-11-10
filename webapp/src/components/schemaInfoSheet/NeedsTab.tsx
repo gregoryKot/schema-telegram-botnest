@@ -15,7 +15,7 @@ export function NeedsTab() {
       <div className="ss-needs">{needs.map((n, i) => (
         <section key={n.title} className="pp-paper ss-need" style={hueStyle(NEED_HUE[NEED_ORDER[i]])}>
           <div className="ss-need-head">
-            <span className="ss-group-sign" aria-hidden="true"><NeedArt id={NEED_ORDER[i]} size="square" /></span>
+            <span className="sg-sign" aria-hidden="true"><NeedArt id={NEED_ORDER[i]} size="square" /></span>
             <div><h3 className="ss-need-title">{n.title}</h3><div className="ss-need-sub">{n.subtitle}</div></div>
           </div>
           <p className="ss-body">{n.desc}</p>

@@ -2,6 +2,7 @@ import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { SignArt } from '../../components/art/SignArt';
 import { useTr } from '../../utils/addressForm';
 import { ysqRowText } from './ysqRowText';
+import { glue } from '../../../../shared/src/utils/typo';
 
 interface Props {
   progressAnswered: number | null;
@@ -20,7 +21,7 @@ export function YsqTestRow({ progressAnswered, completedAt, onStart }: Props) {
   return (
     <div className="ds-card ds-card--flush cs-testrow">
       <span className="pp-row-art" aria-hidden="true"><SignArt sign={YSQ.sign} size="row" /></span>
-      <div className="cs-testrow-text"><div className="cs-testrow-title">Тест на схемы</div><div className="cs-testrow-sub">{t.sub}</div></div>
+      <div className="cs-testrow-text"><div className="cs-testrow-title">Тест на схемы</div><div className="cs-testrow-sub">{glue(t.sub)}</div></div>
       <button className="ds-btn ds-btn--secondary" onClick={onStart}>{t.action}</button>
     </div>
   );

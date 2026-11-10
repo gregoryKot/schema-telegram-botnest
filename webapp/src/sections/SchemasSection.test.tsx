@@ -76,7 +76,9 @@ describe('SchemasSection — пустой аккаунт (без хардкод-
     // скелетон (красный webapp на #269, 2026-08).
     await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText(/Добавь режимы, которые узнаёшь у себя/)).toBeTruthy();
-    expect(screen.getByText('Начать →')).toBeTruthy();
+    // Вводная схем зовёт в тест сама — второй плитки «Начать →» под ней нет (ревью g5 r1).
+    expect(screen.getByText('Начать тест →')).toBeTruthy();
+    expect(screen.queryByText('Начать →')).toBeNull();
   });
 
   it('ошибка getProfile не роняет экран — остаётся пустое состояние вместо краха', async () => {
@@ -109,14 +111,14 @@ describe('SchemasSection — ты/вы вилка', () => {
     renderSection({}, 'ty');
     await screen.findByText('Пройди тест на схемы или добавь вручную');
     expect(screen.getByText(/Добавь режимы, которые узнаёшь у себя/)).toBeTruthy();
-    expect(screen.getByText(/Определи схемы автоматически/)).toBeTruthy();
+    expect(screen.getByText(/утверждениям увидишь/)).toBeTruthy();
   });
 
   it('на «вы»: те же подсказки во множественном числе, ни одной "ты"-формы', async () => {
     renderSection({}, 'vy');
     await screen.findByText('Пройдите тест на схемы или добавьте вручную');
     expect(screen.getByText(/Добавьте режимы, которые узнаёте у себя/)).toBeTruthy();
-    expect(screen.getByText(/Определите схемы автоматически/)).toBeTruthy();
+    expect(screen.getByText(/утверждениям увидите/)).toBeTruthy();
     expect(screen.queryByText('Пройди тест на схемы или добавь вручную')).toBeNull();
     expect(screen.queryByText(/Добавь режимы/)).toBeNull();
   });
@@ -143,9 +145,18 @@ describe('SchemasSection — реальные данные YSQ/профиля', 
 
   it('незавершённый тест показывает реальный прогресс "продолжить (N из 116)"', async () => {
     mockApi.getYsqProgress.mockResolvedValue({ answers: [1, 2, 0, 3], page: 1 });
+    mockApi.getProfile.mockResolvedValue(profile({ mySchemaIds: ['abandonment'] }));
     renderSection();
 
     await screen.findByText('продолжить (3 из 116) →');
+  });
+
+  it('вводная схем с незаконченным тестом: «Продолжить» одно — в герое, плитки теста нет', async () => {
+    mockApi.getYsqProgress.mockResolvedValue({ answers: [1, 2, 0, 3], page: 1 });
+    renderSection();
+
+    await screen.findByText('Продолжить тест (3 из 116) →');
+    expect(screen.queryByText('продолжить (3 из 116) →')).toBeNull();
   });
 
   it('завершённый тест без прогресса — "пройден <дата> · результаты →"', async () => {

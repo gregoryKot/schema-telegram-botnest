@@ -22,6 +22,7 @@ import { PatternsSchemasPane } from './schemas/PatternsSchemasPane';
 import { PatternsHeader } from './schemas/PatternsHeader';
 import { PatternsTabsBar } from './schemas/PatternsTabsBar';
 import { readStoredTab, visibleBlocks, writeStoredTab } from './schemas/patternsTab';
+import { patternsHero, ysqEntryLook } from './schemas/patternsHero';
 
 interface Props {
   onOpenSchema: (opts?: { startTest?: boolean; tab?: 'needs'|'schemas'|'modes'; highlight?: string }) => void;
@@ -45,9 +46,11 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
   const show = visibleBlocks(tab, mobile);
   const startTest = () => onOpenSchema({ startTest: true });
   const allSchemaIds = [...new Set([...d.ysqSchemaIds, ...d.manualSchemaIds])];
+  const hero = patternsHero({ ready: !d.loading && pat.entriesReady, top: pat.top, hasSchemas: allSchemaIds.length > 0, hasModes: d.myModeIds.length > 0, hasEntries: pat.hasEntries });
+  const ysqEntry = ysqEntryLook(hero, blocks.isHidden('heroes'), d.ysqCompletedAt !== null && d.ysqProgressAnswered === null);
   // Сбой сохранения — у блока, где сделан выбор (схемы или режимы), а не над героем.
-  const noteFor = (kind: 'schemas' | 'modes') => d.saveKind === kind && (
-    <SelectionSaveNote failed={d.saveFailed} blocked={d.saveBlocked} sign={ENTITY_LOOK[kind].sign} onRetry={d.retrySave} />
+  const noteFor = (kind: 'schemas' | 'modes', s = kind === 'schemas' ? d.schemasSave : d.modesSave) => (
+    <SelectionSaveNote failed={s.failed} blocked={s.blocked} sign={ENTITY_LOOK[kind].sign} onRetry={s.retry} />
   );
 
   return (
@@ -57,13 +60,10 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
 
       {show.hero && (
         <PatternsTopStack
-          blocks={blocks} mobile={mobile} ysqProgressAnswered={d.ysqProgressAnswered} ysqCompletedAt={d.ysqCompletedAt} onStartTest={startTest}
+          blocks={blocks} mobile={mobile} ysqEntry={ysqEntry} ysqProgressAnswered={d.ysqProgressAnswered} ysqCompletedAt={d.ysqCompletedAt} onStartTest={startTest}
           hero={
-            <PatternsTopCards
-              blocks={blocks} ready={!d.loading && pat.entriesReady} hasSchemas={allSchemaIds.length > 0} hasModes={d.myModeIds.length > 0}
-              hasEntries={pat.hasEntries} top={pat.top} testProgress={d.ysqProgressAnswered}
-              onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={startTest}
-            />
+            <PatternsTopCards blocks={blocks} hero={hero} top={pat.top} testProgress={d.ysqProgressAnswered}
+              onOpenPattern={pat.openPattern} onOpenModeEx={pat.openModeEx} onStartTest={startTest} />
           }
         />
       )}
@@ -71,7 +71,7 @@ export function SchemasSection({ onOpenSchema, childhoodRatings = {}, onOpenChil
       {show.schemas && (
         <PatternsSchemasPane
           mobile={mobile} d={d} pat={pat} allSchemaIds={allSchemaIds}
-          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} blocks={blocks}
+          onStartTest={startTest} onAdd={() => setShowSchemaPicker(true)} onOpenDetail={setDetailSchemaId} blocks={blocks} ysqEntry={ysqEntry}
           note={noteFor('schemas')}
         />
       )}

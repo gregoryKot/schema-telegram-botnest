@@ -1,11 +1,10 @@
 // Данные экрана «Мои паттерны»: профиль, последний результат YSQ, прогресс теста, число карт режимов от терапевта и сохранение ручных выборов.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY, cacheMySchemaIds, cacheMyModeIds, cacheMyPatternsFromProfile, cachedMyIds, trustedProfileLists } from '../../utils/storageKeys';
 import type { YsqScore } from './schemasModel';
-import { useSaveFailure } from '../../hooks/useSaveFailure';
+import { useListSave } from './useListSave';
 import { useYsqProgressListener, useYsqResultVersion } from '../../../../shared/src/hooks/ysqProgressStore';
-import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => cachedMyIds(MY_SCHEMA_IDS_KEY));
@@ -17,11 +16,10 @@ export function useSchemasData() {
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [myMapCount, setMyMapCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  // Отказ записи виден человеку (SaveErrorNote в SchemasSection), не только телеметрии.
-  const save = useSaveFailure();
-  // Что сохранялось последним: сбой показывается у этого блока, «Повторить» шлёт этот же список.
-  const [saveKind, setSaveKind] = useState<'schemas' | 'modes'>('schemas');
-  const lastSave = useRef<(() => void) | null>(null);
+  // Отказ записи виден человеку (SelectionSaveNote у блока схем или режимов), не только телеметрии; у
+  // каждого списка свой трекер — успех одного не стирает сбой другого, «Повторить» шлёт свой же список.
+  const schemasSave = useListSave(ids => api.updateSettings({ mySchemaIds: ids }), 'schemas save mySchemaIds failed');
+  const modesSave = useListSave(ids => api.updateSettings({ myModeIds: ids }), 'schemas save myModeIds failed');
   const ysqVersion = useYsqResultVersion(); // тест сдан поверх экрана — перечитать профиль без F5 (QA 2026-11)
 
   useEffect(() => {
@@ -60,23 +58,19 @@ export function useSchemasData() {
   function saveSchemas(ids: string[]) {
     cacheMySchemaIds(ids);
     setManualSchemaIds(ids);
-    setSaveKind('schemas');
-    lastSave.current = () => save.track(api.updateSettings({ mySchemaIds: ids }), () => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
-    lastSave.current();
+    schemasSave.run(ids);
   }
 
   function saveModes(ids: string[]) {
     cacheMyModeIds(ids);
     setMyModeIds(ids);
-    setSaveKind('modes');
-    lastSave.current = () => save.track(api.updateSettings({ myModeIds: ids }), () => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
-    lastSave.current();
+    modesSave.run(ids);
   }
 
   return {
     loading, manualSchemaIds, myModeIds, ysqSchemaIds, ysqScores,
-    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes, saveFailed: save.failed, saveKind,
-    retrySave: () => lastSave.current?.(), // повтор того же списка; при 409 (saveBlocked) не нужен
-    saveBlocked: save.failed && isUnwritableError(save.error), // 409: прежний список не читается — повтор не поможет
+    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes,
+    /** Запись списка схем / режимов: failed, blocked (409 — повтор не поможет), retry — тот же список. */
+    schemasSave, modesSave,
   };
 }

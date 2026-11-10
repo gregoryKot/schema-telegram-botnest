@@ -14,7 +14,7 @@ interface Props {
 }
 
 /** Карточка выраженной схемы — белый лист на бумаге потребности (группа задаёт --h, --need-ink, --need-text);
- *  совпадение с дневником — строка соломы со знаком трекера (Strokes), а не жёлтая плашка. */
+ *  совпадение с дневником — строка бумаги той же потребности со знаком трекера (Strokes), а не жёлтая плашка. */
 export function YsqSchemaCard({ schema, avg, n5plus, nQuestions, tip, delta, diaryRating, onOpen }: Props) {
   const showDiaryHint = diaryRating !== undefined && diaryRating <= 4;
   return (

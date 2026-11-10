@@ -3,19 +3,46 @@
 // схемы / Мои режимы», «Мои схемы / Мои режимы» экрана «Паттерны», группы режимов «Справочника»
 // клиента — b16). Тот же вид, что у списка режимов дневника (ModeGroupList, b10b) и «Справочника»
 // терапевта: знак группы у подписи, строки без точек и цветных рамок. Вид — SheetLook (domainLook,
-// modeGroupLook), а не цвет на месте.
+// modeGroupLook), а не цвет на месте. Шапка — SignGroupHead: её же берут группы результата теста
+// (YsqNeedHead, знак потребности), одна шапка вместо копии .ss-group-* (ревью g5 r1).
 import type { CSSProperties, ReactNode } from 'react';
 import type { SheetLook, SignKey } from '../../../../shared/src/theme/entityLook';
 import { SignArt } from '../art/SignArt';
+import { glueIf } from '../../../../shared/src/utils/typo';
 import '../../styles/sheet-schemas.css';
+
+interface HeadProps {
+  /** Знаки у подписи: один — 60, несколько (копинги справочника — Yield, Shelter, Shield) — 44 вплотную,
+   *  подпись на узком листе уходит под них. */
+  signs: readonly SignKey[];
+  title: ReactNode;
+  /** Справа в шапке: число строк группы. */
+  aside?: ReactNode;
+  className?: string;
+}
+
+export function SignGroupHead({ signs, title, aside, className }: HeadProps) {
+  const many = signs.length > 1;
+  const cls = ['sg-head', many && 'is-many', className].filter(Boolean).join(' ');
+  return (
+    <h3 className={cls}>
+      {!many && signs[0] && <span className="sg-sign" aria-hidden="true"><SignArt sign={signs[0]} size="square" /></span>}
+      {many && (
+        <span className="sg-signs" aria-hidden="true">
+          {signs.map((s) => <span key={s} className="sg-sign"><SignArt sign={s} size="square" /></span>)}
+        </span>
+      )}
+      <span className="ds-label sg-name">{glueIf(title)}</span>
+      {aside !== undefined && <span className="sg-aside">{aside}</span>}
+    </h3>
+  );
+}
 
 interface Props {
   look: SheetLook;
-  /** Несколько знаков у подписи вместо `look.sign`: группа собирает разные стили (копинги справочника —
-   *  Yield, Shelter, Shield). Знаки 44 вплотную, подпись на узком листе уходит под них. */
+  /** Несколько знаков у подписи вместо `look.sign` (копинги справочника). */
   signs?: readonly SignKey[];
   title: ReactNode;
-  /** Справа в шапке: число строк группы. */
   aside?: ReactNode;
   /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). */
   rowsClassName?: string;
@@ -23,20 +50,9 @@ interface Props {
 }
 
 export function SignGroup({ look, signs, title, aside, rowsClassName, children }: Props) {
-  const many = signs !== undefined && signs.length > 1;
-  const one = many ? undefined : (signs?.[0] ?? look.sign);
   return (
     <section className="pp-paper sg-group" style={{ '--h': look.hue } as CSSProperties}>
-      <h3 className={many ? 'sg-head is-many' : 'sg-head'}>
-        {one && <span className="sg-sign" aria-hidden="true"><SignArt sign={one} size="square" /></span>}
-        {many && (
-          <span className="sg-signs" aria-hidden="true">
-            {signs.map((s) => <span key={s} className="sg-sign"><SignArt sign={s} size="square" /></span>)}
-          </span>
-        )}
-        <span className="ds-label sg-name">{title}</span>
-        {aside !== undefined && <span className="sg-aside">{aside}</span>}
-      </h3>
+      <SignGroupHead signs={signs ?? (look.sign ? [look.sign] : [])} title={title} aside={aside} />
       <div className={rowsClassName ? `sg-rows ${rowsClassName}` : 'sg-rows'}>{children}</div>
     </section>
   );

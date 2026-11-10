@@ -2,15 +2,14 @@ import { useCallback, useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SsSheet, SsHead } from './schemaSheets/SsSheet';
 import { SignChip } from './paper/SignChip';
-import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+import { ShareLink } from '../share/ShareLink';
 import { domainLook, ENTITY_LOOK } from '../../../shared/src/theme/entityLook';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { SCHEMA_DOMAINS } from '../schemaTherapyData';
 import { MY_SCHEMA_IDS_KEY, cacheMySchemaIds } from '../utils/storageKeys';
-import { api, reportClientError } from '../api';
-import { useSaveFailure } from '../hooks/useSaveFailure';
+import { api } from '../api';
+import { useListSave } from '../sections/schemas/useListSave';
 import { SelectionSaveNote } from '../sections/schemas/SelectionSaveNote';
-import { isUnwritableError } from '../../../shared/src/api/unwritableError';
 import { BELIEFS } from './schemaSheets/schemaBeliefs';
 import { ShareCardSheet } from '../share/ShareCardSheet';
 import { drawSchemaCard } from '../../../shared/src/share/cards/schemaCard';
@@ -36,8 +35,8 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
   const schema = domainEntry?.schemas.find(s => s.id === schemaId);
   const [myIds, setMyIds] = useState<string[]>(readSchemaIds);
   const [showShare, setShowShare] = useState(false);
-  // Отказ записи виден человеку, как на экране «Мои паттерны»: 409 «не читается» — свой текст.
-  const save = useSaveFailure();
+  // Отказ записи — как на «Паттернах» (одна механика): знак домена, «Повторить» шлёт тот же список; 409 — свой текст.
+  const save = useListSave(ids => api.updateSettings({ mySchemaIds: ids }), 'schema sheet save mySchemaIds failed');
   const isAdded = myIds.includes(schemaId);
 
   const drawShareCard = useCallback(
@@ -64,7 +63,7 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
       : [...myIds, schemaId];
     cacheMySchemaIds(next);
     setMyIds(next);
-    save.track(api.updateSettings({ mySchemaIds: next }), () => reportClientError({ message: 'schema sheet save mySchemaIds failed', section: 'schemas' }));
+    save.run(next);
   }
 
   const lede = schema.libraryDesc ?? schema.desc;
@@ -94,11 +93,9 @@ export function SchemaDetailSheet({ schemaId, onClose }: Props) {
         </button>
         <div className="ss-detail-row">
           <SignChip label={isAdded ? 'В моих схемах' : '+ В мои схемы'} on={isAdded} onToggle={toggleSchema} hue={look.hue} />
-          <button type="button" onClick={() => setShowShare(true)} className="ds-link ss-share-link">
-            <ShareIcon /> Поделиться
-          </button>
+          <ShareLink onClick={() => setShowShare(true)} />
         </div>
-        <SelectionSaveNote failed={save.failed} blocked={save.failed && isUnwritableError(save.error)} />
+        <SelectionSaveNote failed={save.failed} blocked={save.blocked} sign={look.sign} onRetry={save.retry} />
       </div>
 
       {showShare && (

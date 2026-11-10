@@ -7,14 +7,14 @@
 @import './ss-sheet.css';
 @import './schema-library.css';
 .ss-foot { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; padding-top: 8px; }
-.ss-domain-head:focus-visible, .ss-tile:focus-visible, .ss-row:focus-visible, .ss-pick:focus-visible, .ss-scale-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cs-mapfold-head:focus-visible, .cs-tile:focus-visible, .ss-row:focus-visible, .ss-pick:focus-visible, .ss-scale-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── Группа на бумаге (SignGroup): лист домена или группы, знак 60 у подписи, белый список ── */
 .sg-group { display: block; box-sizing: border-box; min-width: 0; padding: 12px; border-radius: 20px; break-inside: avoid; }
 .sg-head { display: flex; align-items: center; gap: 12px; min-width: 0; margin: 2px 4px 10px; font: inherit; }
 .sg-sign { display: flex; flex: none; width: 60px; }
 .sg-sign .pp-art--square { width: 60px; height: auto; }
-.ds-label.sg-name { flex: 1 1 auto; min-width: 0; color: var(--text-sub); }
+.ds-label.sg-name { flex: 1 1 auto; min-width: 0; color: var(--text-sub); overflow-wrap: anywhere; }
 .sg-aside { flex: none; font-size: 13px; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 .sg-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
 /* Несколько знаков (копинги справочника: Yield, Shelter, Shield) — 44 вплотную; на узком листе (320)
@@ -22,7 +22,9 @@
 .sg-signs { display: flex; flex: none; gap: 2px; }
 .sg-signs .sg-sign, .sg-signs .sg-sign .pp-art--square { width: 44px; }
 .sg-head.is-many { flex-wrap: wrap; row-gap: 6px; }
-.sg-head.is-many .sg-name { flex-basis: 140px; }
+/* Подпись уходит под знаки, как только места меньше её слова в капсе («ДИСФУНКЦИОНАЛЬНЫЕ» — 159px): на 360
+   при основе 140 она выходила за край белого списка (ревью g5 r1). */
+.sg-head.is-many .sg-name { flex-basis: 170px; }
 /* Колонки групп — по ширине самого списка (контейнер), а не окна: в листе выбора 720 и в колонке
    «Паттернов» 1000 разное число колонок; на телефоне — одна. */
 .sg-cols-box { container: sg-cols / inline-size; min-width: 0; }
@@ -31,6 +33,49 @@
 .sg-cols > .sg-group:last-child { margin-bottom: 0; }
 @container sg-cols (min-width: 660px) { .sg-cols { columns: 2; } }
 @container sg-cols (min-width: 960px) { .sg-cols { columns: 3; } }
+
+/* ── Домен схем или группа режимов аккордеоном (MapFold): «Полная карта», «Карта режимов», вкладка «Схемы»
+   справочника. Лист бумаги домена/группы, шапка-кнопка со знаком, название Literata и подпись из данных;
+   внутри — белые плитки, своя — бумагой с галочкой, схема из результата теста — приподнята слоем. ── */
+.cs-mapfolds { display: flex; flex-direction: column; gap: 10px; }
+.cs-mapfold { container: mapfold / inline-size; box-sizing: border-box; min-width: 0; padding: 4px; border-radius: 20px; }
+.cs-mapfold-head {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; box-sizing: border-box;
+  padding: 8px 14px 8px 10px; border: 0; border-radius: 16px; background: transparent; color: var(--text);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.cs-mapfold-head:hover { background: oklch(0.895 0.04 var(--h)); }
+.cs-mapfold-sign { display: flex; flex: none; width: 60px; }
+.cs-mapfold-sign .pp-art--square { width: 100%; height: auto; }
+.cs-mapfold-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+/* Длинное слово («Сверхбдительность», «Гиперкомпенсация») не выходит за колонку: перенос по слогам. */
+.cs-mapfold-name { font-family: var(--serif); font-size: 20px; line-height: 1.2; overflow-wrap: anywhere; hyphens: auto; }
+.cs-mapfold-meta { font-size: 13px; color: var(--text-sub); }
+.cs-mapfold-head .ds-fold-chev { flex: none; color: var(--text-sub); }
+.cs-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; padding: 4px 8px 10px; }
+.cs-tile {
+  display: flex; flex-direction: column; gap: 4px; text-align: left; min-height: 44px; box-sizing: border-box;
+  padding: 12px 14px; border-radius: 14px; border: 0; background: var(--surface); color: var(--text-sub); font: inherit;
+}
+button.cs-tile { cursor: pointer; }
+button.cs-tile:hover { background: oklch(0.97 0.012 var(--h)); }
+.cs-tile-name { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; }
+.cs-tile-check { display: inline-flex; flex: none; margin-top: 1px; }
+.cs-tile-desc { font-size: 13px; line-height: 1.45; }
+.cs-tile.is-mine { background: oklch(0.87 0.05 var(--h)); }
+.cs-tile.is-mine .cs-tile-name { font-weight: 700; }
+.cs-tile.is-mine .cs-tile-desc { color: var(--text); }
+.cs-tile.is-hl { transform: translate(-3px, -3px); box-shadow: 7px 8px 0 oklch(0.76 0.08 var(--h)); }
+.cs-tile.is-hl .cs-tile-name { font-weight: 700; }
+/* Узкий лист (телефон, аккордеон внутри «Все 20 схем»): знак 44 и плотнее шапка — название получает место
+   (ревью g5 r1: на 320–375 «Сверхбдительность и подавление» выходило за колонку и наезжало на шеврон). */
+@container mapfold (max-width: 420px) {
+  .cs-mapfold-head { gap: 10px; min-height: 56px; padding: 6px 10px 6px 6px; }
+  .cs-mapfold-sign { width: 44px; }
+  .cs-mapfold-name { font-size: 18px; }
+  .cs-tiles { padding: 2px 4px 6px; }
+}
+@container mapfold (max-width: 340px) { .cs-mapfold-name { font-size: 17px; } }
 
 /* ── Строка выбора (PickRow) в белом списке группы: выбранная — бумага группы с галочкой ── */
 .ss-pick {
@@ -45,8 +90,14 @@
 .ss-pick-name { font-size: 14px; font-weight: 600; line-height: 1.3; }
 .ss-pick.is-selected .ss-pick-name { font-weight: 700; }
 .ss-pick-desc { font-size: 12.5px; line-height: 1.45; color: var(--text-sub); }
-.ss-pick-check { display: inline-flex; flex: none; color: var(--text); opacity: 0; }
-.ss-pick.is-selected .ss-pick-check { opacity: 1; }
+/* Отметка выбора — галочка на плашке чернил группы (22, белым), читается и периферийным зрением на списке
+   из 20 строк (ревью g5 r1: тон строки совпадал с бумагой листа группы и выбранная читалась «дырой»). */
+.ss-pick-check {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px;
+  border-radius: 50%; color: var(--surface); visibility: hidden;
+}
+.ss-pick-check svg { width: 14px; height: 14px; }
+.ss-pick.is-selected .ss-pick-check { visibility: visible; background: oklch(0.48 0.09 var(--h)); }
 /* «Готово · N» в шапке листа выбора — та же кнопка, что внизу списка. */
 .ss-done-top { flex: none; }
 .ds-label.ss-pick-all { margin: 4px 4px -10px; color: var(--text-sub); }

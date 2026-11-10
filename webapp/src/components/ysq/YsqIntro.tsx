@@ -1,5 +1,5 @@
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
-import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
+import { YsqSyncNote } from './YsqSyncNote';
 import { TherapyCaution } from '../therapy/TherapyCaution';
 import { EntitySheet } from '../paper/EntitySheet';
 import { YsqQuizScene } from './YsqQuizScene';
@@ -38,16 +38,12 @@ export function YsqIntro({ tr, hasProgress, progressAnswered, resumeCheckFailed,
       <div className="ds-card ss-card-stack ss-legend-card">
         <div className="ds-label">Шкала ответов</div>
         <div className="ss-legend">
-          {[1, 2, 3, 4, 5, 6].map(n => (
-            <div key={n}>
-              <div className={`ss-legend-n${n >= 4 ? ' is-high' : ''}`}>{n}</div>
-              <div className="ss-legend-t">{n === 1 ? 'Совсем не про меня' : n === 6 ? 'Полностью про меня' : ''}</div>
-            </div>
-          ))}
+          {[1, 2, 3, 4, 5, 6].map(n => <div key={n} className={`ss-legend-n${n >= 4 ? ' is-high' : ''}`}>{n}</div>)}
+          <div className="ss-legend-t">Совсем не про меня</div><div className="ss-legend-t">Полностью про меня</div>
         </div>
       </div>
 
-      {!hasProgress && resumeCheckFailed && retryResumeCheck && <YsqSyncErrorNote variant="resume-check" onRetry={retryResumeCheck} />}
+      {!hasProgress && resumeCheckFailed && retryResumeCheck && <YsqSyncNote variant="resume-check" onRetry={retryResumeCheck} />}
       <div className="ss-actions ss-actions--wide">
         {hasProgress ? (
           <>

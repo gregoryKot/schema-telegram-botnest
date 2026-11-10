@@ -67,6 +67,8 @@
 /* Опасное действие текстом (#906, волна 3). */
 .ds-link--danger { color: var(--accent-red); }
 .ds-link--danger:hover { color: var(--accent-red); text-decoration: underline; }
+/* Тихая ссылка «Поделиться» (share/ShareLink): иконка и слово, зона нажатия 44. */
+.ds-link.ds-share-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 /* Ссылка внутри бегущего текста: остаётся в строке абзаца, без зоны 44 (#906). */
 .ds-link--inline { display: inline; }
 /* Пустое состояние списка/карточки: обычный текст, без рамки и курсива. */

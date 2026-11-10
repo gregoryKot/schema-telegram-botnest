@@ -8,11 +8,11 @@ import { SignArt } from '../../components/art/SignArt';
 import { domainLook } from '../../../../shared/src/theme/entityLook';
 import { findSchema, rankExpressed, type YsqScore } from './schemasModel';
 
-/** Знак домена схемы у строки (строчный размер вместо цветной палочки): какой домен — видно знаком. */
+/** Знак домена у строки — размер строки (44×24), как в SignGroup: размер меню читался «\ /» (ревью g5 r1). */
 function DomainSign({ id }: { id: string }) {
   const domain = findSchema(SCHEMA_DOMAINS, id)?.domain;
   const look = domain ? domainLook(domain.id) : null;
-  return <span className="cs-bar-sign" aria-hidden="true">{look && <SignArt sign={look.sign} size="nav" />}</span>;
+  return <span className="cs-bar-sign" aria-hidden="true">{look && <SignArt sign={look.sign} size="row" />}</span>;
 }
 
 interface Props {

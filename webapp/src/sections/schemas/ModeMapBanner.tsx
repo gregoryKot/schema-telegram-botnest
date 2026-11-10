@@ -4,6 +4,7 @@ import { GlyphArrowLeft } from '../../components/exercises/ExScreen';
 import { hueStyle } from '../../lib/tone';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { SignHero } from '../../components/paper/SignHero';
+import { glue } from '../../../../shared/src/utils/typo';
 
 const ModeMapViewer = lazy(() => import('../../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
 
@@ -16,7 +17,7 @@ export function ModeMapBanner({ count, onOpen }: { count: number; onOpen: () => 
     <button className="pp-paper cs-banner" style={hueStyle(MODES.hue)} onClick={onOpen}>
       <span className="cs-banner-text">
         <span className="ds-h3">Карта режимов с терапевтом</span>
-        <span className="cs-banner-sub">{count === 1 ? 'Схема того, как режимы развиваются на триггер' : `${count} карты · как режимы развиваются на триггер`}</span>
+        <span className="cs-banner-sub">{glue(count === 1 ? 'Схема того, как режимы развиваются на триггер' : `${count} карты · как режимы развиваются на триггер`)}</span>
         <span className="pp-arrow cs-banner-arrow" aria-hidden="true">→</span>
       </span>
       <span className="cs-banner-art" aria-hidden="true"><SignHero sign={MODES.sign} /></span>

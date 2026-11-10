@@ -3,6 +3,7 @@ import { SceneQuizMini } from '../art/LandingScenesMore';
 import { GlyphArrowRight } from '../exercises/ExGlyphs';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { ysqEntryTile, type YsqEntryState } from './ysqEntry';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Вход в тест внутри листа справочника: белый лист на бумаге схем со сплошной тенью, слева веер
 // карточек теста (SceneQuizMini — тест говорит своей сценой, Layers на листе уже у схем), справа
@@ -16,7 +17,7 @@ export function YsqEntryTile({ state, onOpen }: { state: YsqEntryState; onOpen: 
       <span className="ss-cta-text">
         {label && <span className="ds-label ss-ysq-tile-label">{label}</span>}
         <span className="ss-cta-title">{title}</span>
-        <span className="ss-ysq-tile-sub">{sub}</span>
+        <span className="ss-ysq-tile-sub">{glue(sub)}</span>
       </span>
       <span className="ss-ysq-tile-go" aria-hidden="true"><GlyphArrowRight /></span>
     </button>

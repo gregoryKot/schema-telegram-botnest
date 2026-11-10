@@ -26,4 +26,3 @@ describe('DomainMark', () => {
     expect(container.innerHTML).toBe('');
   });
 });
-

@@ -55,11 +55,13 @@ describe('SchemaInfoSheet — вкладки', () => {
   it('клик по домену схем раскрывает список схем внутри него', () => {
     renderSheet();
     fireEvent.click(screen.getByText('Схемы'));
-    const domainHeader = screen.getAllByRole('button').find(b => b.textContent?.includes('Нарушение связи и отвержение'));
+    const domainHeader = screen.getAllByRole('button').find(b => b.textContent?.includes('Нарушение связи'));
     expect(domainHeader).toBeTruthy();
+    expect(screen.queryByText('Покинутость / Нестабильность')).toBeNull();
     fireEvent.click(domainHeader!);
-    // После раскрытия появляется хотя бы одна схема этого домена.
-    expect(screen.getAllByRole('button').length).toBeGreaterThan(3);
+    // После раскрытия видны схемы этого домена (плитки-описания MapFold, без тапа).
+    expect(screen.getByText('Покинутость / Нестабильность')).toBeTruthy();
+    expect(domainHeader!.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('переключение на «Режимы» показывает группы режимов', () => {

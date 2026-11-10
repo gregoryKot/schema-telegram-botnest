@@ -1,7 +1,7 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
 import { ENTITY_LOOK, domainLook } from '../../../../shared/src/theme/entityLook';
-import { MapFold } from './MapFold';
+import { MapFold } from '../../components/schemaSheets/MapFold';
 import { countSchemas, domainCountLabel, domainsWord, groupMap, schemasWord } from './schemasModel';
 
 interface Props {

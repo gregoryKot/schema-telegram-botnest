@@ -4,17 +4,14 @@ import type { WeekPatternTop } from '../../../../shared/src/pattern/patternsSumm
 import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 import { WeekPatternCard } from './WeekPatternCard';
 import { PatternsIntro } from './PatternsIntro';
-import { introStep } from './introStep';
+import type { PatternsHero } from './patternsHero';
 import { ScreenBlock } from '../../components/customize/ScreenBlock';
 import type { SiteScreenBlocks } from '../../components/customize/useScreenBlocks';
 import { Skeleton } from '../../components/Skeleton';
 
 interface Props {
-  /** Профиль ещё грузится или записи дневника не пришли — ничего не рисуем. */
-  ready: boolean;
-  hasSchemas: boolean;
-  hasModes: boolean;
-  hasEntries: boolean;
+  /** Какой герой наверху (patternsHero): пока грузится — силуэт, а не выдуманное состояние. */
+  hero: PatternsHero;
   top: WeekPatternTop | null;
   testProgress: number | null;
   onOpenPattern: (kind: MyCardsKind, id: string) => void;
@@ -38,15 +35,15 @@ export function PatternsHeroSkeleton() {
  * Верх экрана «Мои паттерны»: есть запись за неделю — «паттерн недели»;
  * нет — вводная новичку с одним главным действием (тест / режим / дневник).
  */
-export function PatternsTopCards({ ready, hasSchemas, hasModes, hasEntries, top, testProgress, onOpenPattern, onOpenModeEx, onStartTest, blocks }: Props) {
+export function PatternsTopCards({ hero, top, testProgress, onOpenPattern, onOpenModeEx, onStartTest, blocks }: Props) {
   const navigate = useNavigate();
-  if (!ready) return blocks.isHidden('heroes') ? null : <PatternsHeroSkeleton />;
-  const step = introStep(hasSchemas, hasModes);
-  if (!top && step === 'diary' && hasEntries) return null;
+  if (hero.kind === 'loading') return blocks.isHidden('heroes') ? null : <PatternsHeroSkeleton />;
+  if (hero.kind === 'none') return null;
+  const step = hero.kind === 'intro' ? hero.step : null;
   const act = step === 'schemas' ? onStartTest : step === 'modes' ? () => onOpenModeEx(INTRO_MODE_ID) : () => navigate('/diary');
   return (
     <ScreenBlock id="heroes" blocks={blocks}>
-      {top ? <WeekPatternCard top={top} onOpen={onOpenPattern} /> : <PatternsIntro step={step} testProgress={testProgress} onAction={act} />}
+      {step ? <PatternsIntro step={step} testProgress={testProgress} onAction={act} /> : <WeekPatternCard top={top} onOpen={onOpenPattern} />}
     </ScreenBlock>
   );
 }

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Отказ записи «моих схем/режимов» с 409 unreadable_data: прежний список на
 // сервере не читается, и сервер не дал его стереть. Экран отличает этот отказ
-// от обрыва связи (saveBlocked), а выбор человека остаётся на устройстве.
+// от обрыва связи (blocked), а выбор человека остаётся на устройстве; у схем и режимов — свой трекер.
 // Второй блок — прогресс теста YSQ живой (QA 2026-10-26).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
@@ -42,71 +42,77 @@ describe('useSchemasData — отказ записи поверх нечитае
     mockApi.listMyModeMaps.mockResolvedValue([]);
   });
 
-  it('409 unreadable_data на схемах → saveBlocked, выбор остался в state и localStorage', async () => {
+  it('409 unreadable_data на схемах → blocked, выбор остался в state и localStorage', async () => {
     mockApi.updateSettings.mockRejectedValue(unwritable);
     const { result } = await mounted();
     await act(async () => { result.current.saveSchemas(['abandonment']); });
 
-    await waitFor(() => expect(result.current.saveBlocked).toBe(true));
-    expect(result.current.saveFailed).toBe(true);
+    await waitFor(() => expect(result.current.schemasSave.blocked).toBe(true));
+    expect(result.current.schemasSave.failed).toBe(true);
+    expect(result.current.modesSave.failed).toBe(false);
     expect(result.current.manualSchemaIds).toEqual(['abandonment']);
     expect(JSON.parse(localStorage.getItem(MY_SCHEMA_IDS_KEY)!)).toEqual(['abandonment']);
     expect(reportClientError).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('mySchemaIds') }));
   });
 
-  it('409 unreadable_data на режимах → saveBlocked, выбор режимов сохранён локально', async () => {
+  it('409 unreadable_data на режимах → blocked, выбор режимов сохранён локально', async () => {
     mockApi.updateSettings.mockRejectedValue(unwritable);
     const { result } = await mounted();
     await act(async () => { result.current.saveModes(['vulnerable_child']); });
 
-    await waitFor(() => expect(result.current.saveBlocked).toBe(true));
+    await waitFor(() => expect(result.current.modesSave.blocked).toBe(true));
     expect(result.current.myModeIds).toEqual(['vulnerable_child']);
     expect(JSON.parse(localStorage.getItem(MY_MODE_IDS_KEY)!)).toEqual(['vulnerable_child']);
   });
 
-  it('контроль: обрыв сети — saveFailed без saveBlocked', async () => {
+  it('контроль: обрыв сети — failed без blocked', async () => {
     mockApi.updateSettings.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = await mounted();
     await act(async () => { result.current.saveSchemas(['abandonment']); });
 
-    await waitFor(() => expect(result.current.saveFailed).toBe(true));
-    expect(result.current.saveBlocked).toBe(false);
+    await waitFor(() => expect(result.current.schemasSave.failed).toBe(true));
+    expect(result.current.schemasSave.blocked).toBe(false);
   });
 
-  it('контроль: удачная запись после отказа снимает оба флага', async () => {
+  it('контроль: удачная запись того же списка после отказа снимает оба флага', async () => {
     mockApi.updateSettings.mockRejectedValueOnce(unwritable).mockResolvedValue(undefined);
     const { result } = await mounted();
     await act(async () => { result.current.saveSchemas(['abandonment']); });
-    await waitFor(() => expect(result.current.saveBlocked).toBe(true));
+    await waitFor(() => expect(result.current.schemasSave.blocked).toBe(true));
     await act(async () => { result.current.saveSchemas(['mistrust']); });
 
-    await waitFor(() => expect(result.current.saveFailed).toBe(false));
-    expect(result.current.saveBlocked).toBe(false);
+    await waitFor(() => expect(result.current.schemasSave.failed).toBe(false));
+    expect(result.current.schemasSave.blocked).toBe(false);
   });
 
-  // b15: сбой показывается у блока, где сделан выбор (saveKind), и «Повторить» шлёт тот же список.
-  it('обрыв → «Повторить» шлёт тот же список режимов; удача снимает сбой; блок — режимы', async () => {
+  // b15: сбой показывается у блока, где сделан выбор, и «Повторить» шлёт тот же список.
+  it('обрыв → «Повторить» шлёт тот же список режимов; удача снимает сбой', async () => {
     mockApi.updateSettings.mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValue(undefined);
     const { result } = await mounted();
     await act(async () => { result.current.saveModes(['vulnerable_child']); });
-    await waitFor(() => expect(result.current.saveFailed).toBe(true));
-    expect(result.current.saveKind).toBe('modes');
+    await waitFor(() => expect(result.current.modesSave.failed).toBe(true));
+    expect(result.current.schemasSave.failed).toBe(false);
 
-    await act(async () => { result.current.retrySave(); });
-    await waitFor(() => expect(result.current.saveFailed).toBe(false));
+    await act(async () => { result.current.modesSave.retry(); });
+    await waitFor(() => expect(result.current.modesSave.failed).toBe(false));
     expect(mockApi.updateSettings).toHaveBeenCalledTimes(2);
     expect(mockApi.updateSettings).toHaveBeenLastCalledWith({ myModeIds: ['vulnerable_child'] });
   });
 
-  it('контроль: последним сохранялись схемы — блок схем, повтор шлёт схемы', async () => {
-    mockApi.updateSettings.mockRejectedValue(new TypeError('Failed to fetch'));
+  // Ревью g5 r1: с общим трекером удачная запись режимов стирала сбой схем — список схем не доходил до сервера.
+  it('схемы упали → режимы записались: сбой схем остаётся, «Повторить» у схем шлёт mySchemaIds', async () => {
+    mockApi.updateSettings.mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValue(undefined);
     const { result } = await mounted();
-    await act(async () => { result.current.saveModes(['vulnerable_child']); });
     await act(async () => { result.current.saveSchemas(['abandonment']); });
-    await waitFor(() => expect(result.current.saveFailed).toBe(true));
-    expect(result.current.saveKind).toBe('schemas');
-    await act(async () => { result.current.retrySave(); });
+    await waitFor(() => expect(result.current.schemasSave.failed).toBe(true));
+    await act(async () => { result.current.saveModes(['vulnerable_child']); });
+    await waitFor(() => expect(mockApi.updateSettings).toHaveBeenCalledTimes(2));
+
+    expect(result.current.modesSave.failed).toBe(false);
+    expect(result.current.schemasSave.failed).toBe(true);
+    await act(async () => { result.current.schemasSave.retry(); });
     expect(mockApi.updateSettings).toHaveBeenLastCalledWith({ mySchemaIds: ['abandonment'] });
+    await waitFor(() => expect(result.current.schemasSave.failed).toBe(false));
   });
 });
 
@@ -231,7 +237,7 @@ describe('useSchemasData — нечитаемый список на сервер
     mockApi.updateSettings.mockRejectedValue(unwritable);
     const first = await mounted();
     await act(async () => { first.result.current.saveSchemas(['abandonment']); });
-    await waitFor(() => expect(first.result.current.saveBlocked).toBe(true));
+    await waitFor(() => expect(first.result.current.schemasSave.blocked).toBe(true));
     first.unmount();
 
     const { result } = await mounted();

@@ -1,6 +1,6 @@
 import { MODE_GROUPS } from '../../schemaTherapyData';
 import { modeGroupLook } from '../../../../shared/src/theme/entityLook';
-import { MapFold } from './MapFold';
+import { MapFold } from '../../components/schemaSheets/MapFold';
 
 interface Props {
   myModeIds: string[];

@@ -38,33 +38,12 @@
 /* ── Потребности, группы режимов, группы результата: лист бумаги со знаком у подписи ── */
 .ss-needs { display: grid; gap: 12px; }
 .ss-need { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px 20px 16px; }
-.ss-need-head, .ss-group-head { display: flex; align-items: center; gap: 12px; margin: 0; font: inherit; }
-.ss-group-sign { display: flex; flex: none; width: 60px; }
-.ss-group-sign .pp-art--square { width: 60px; height: auto; }
-.ss-group-head { flex-wrap: wrap; row-gap: 6px; margin: 2px 4px 0; }
-.ss-group-name { flex: 1 1 140px; min-width: 0; color: var(--text-sub); }
+.ss-need-head { display: flex; align-items: center; gap: 12px; margin: 0; font: inherit; }
+/* Шапка группы результата — SignGroupHead (sheet-schemas.css, sg-*); отступ до карточек держит gap листа. */
+.sg-head.ss-res-head { margin-bottom: 0; }
 .ss-need-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 21px; line-height: 1.2; color: var(--text); }
 .ss-need-sub { margin-top: 2px; font-size: 13px; line-height: 1.35; color: var(--text-sub); }
 .ss-need .ss-body { padding-left: 4px; }
-
-/* ── Домены схем: аккордеон на бумаге домена, схемы — белые листы ───────── */
-.ss-domains { display: flex; flex-direction: column; gap: 10px; }
-.ss-domain { display: flex; flex-direction: column; border-radius: 18px; }
-.ss-domain-head {
-  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; box-sizing: border-box;
-  padding: 8px 18px 8px 10px; border: 0; border-radius: 18px; background: none; text-align: left; cursor: pointer;
-  font: inherit; color: var(--text);
-}
-.ss-domain-head:hover { background: oklch(0.895 0.04 var(--h)); }
-.ss-domain-name { flex: 1; font-family: var(--serif); font-size: 18px; line-height: 1.25; min-width: 0; }
-.ss-domain-count { flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
-.ss-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 8px; padding: 2px 10px 12px; }
-.ss-tile { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--surface); }
-/* Схема из результата теста — лист приподнят над соседями сплошным слоем бумаги домена. */
-.ss-tile.is-hl { transform: translate(-3px, -3px); box-shadow: 7px 8px 0 oklch(0.76 0.08 var(--h)); }
-.ss-tile-name { font-family: var(--serif); font-size: 16px; line-height: 1.25; color: var(--text); }
-.ss-tile.is-hl .ss-tile-name { font-weight: 600; }
-.ss-tile-desc { font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 
 /* ── Режимы: чек-ин плиткой неба, группы — лист бумаги, режимы — белый список ── */
 .ss-checkin-cta {
@@ -86,10 +65,9 @@
 .ss-mode-head:focus-visible { outline-offset: -2px; }
 .ss-mode-head:hover { background: oklch(0.96 0.015 var(--h)); }
 .ss-mode-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.ss-mode-name { font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--text); }
+.ss-mode-name { font-family: var(--serif); font-size: 17px; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; hyphens: auto; }
 .ss-mode-feel { font-size: 12.5px; line-height: 1.45; color: var(--text-sub); }
 .ss-mode-more { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 0 16px 4px; }
-.ss-share-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 
 /* Чек-ин: плитки бумаги группы, знак над подписью; «Что помогает» — белый лист с Leaf. */
 .ss-checkin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 132px), 1fr)); gap: 10px; }
@@ -163,15 +141,21 @@
 .ss-legend { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; text-align: center; }
 .ss-legend-n { height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font: 400 19px var(--serif); background: var(--paper-tint); color: var(--text-sub); }
 .ss-legend-n.is-high { background: color-mix(in srgb, var(--c-clay) 16%, var(--surface)); color: var(--c-clay-strong); }
-.ss-legend-t { margin-top: 4px; font-size: 10.5px; line-height: 1.3; color: var(--text-sub); }
+/* Подписи краёв шкалы — под краями ряда во всю его ширину (слева — по левому краю, справа — по правому), а не
+   в ширину клетки: на 320–375 «Полностью / про / меня» шло в три строки и упиралось в рамку (ревью g5 r1). */
+.ss-legend-t { grid-column: 1 / 4; margin-top: 2px; font-size: 12px; line-height: 1.3; text-align: left; color: var(--text-sub); }
+.ss-legend-t + .ss-legend-t { grid-column: 4 / 7; text-align: right; }
 .ss-note { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); text-align: center; }
 
 /* Результат: группа — бумага потребности (--h, --need-ink, --need-text), схемы — белые листы. */
 .ss-res { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 20px; }
 .ss-res--plain { padding: 0; border-radius: 0; }
-.ss-res-card { display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 4px; border-radius: 14px; background: var(--surface); }
-.ss-res-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.ss-res-name { min-width: 0; font-family: var(--serif); font-size: 18px; line-height: 1.25; color: var(--text); }
+.ss-res-card { container: ss-res-card / inline-size; display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 4px; border-radius: 14px; background: var(--surface); }
+.ss-res-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px 10px; }
+.ss-res-name { flex: 1 1 auto; min-width: 0; font-family: var(--serif); font-size: 18px; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; hyphens: auto; }
+/* Узкая карточка (320): «Самопожертвование» шире места рядом с баллом — балл с дельтой уходит под название,
+   а не название на дельту (ревью g5 r1). */
+@container ss-res-card (max-width: 280px) { .ss-res-top { flex-wrap: wrap; } .ss-res-name { flex-basis: 100%; } }
 .ss-res-val { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; font-family: var(--serif); font-size: 26px; line-height: 1; }
 .ss-res-num { color: var(--need-text); }
 .ss-res-val small { font-family: var(--sans); font-size: 11px; font-weight: 600; color: var(--text-sub); }

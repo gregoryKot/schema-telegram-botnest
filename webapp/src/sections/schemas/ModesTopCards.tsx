@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTr } from '../../utils/addressForm';
 import type { WeekTopSummary } from '../../../../shared/src/pattern/patternsSummary';
 import { modesHeroModel, type ModesHeroRow } from '../../../../shared/src/pattern/modesHeroModel';
-import { Cluster } from '../../components/art/PaperArtSigns';
 import { Pebbles } from '../../components/art/PaperArt';
 import { WeekPatternCard } from './WeekPatternCard';
 import { PatternsIntro } from './PatternsIntro';
@@ -25,12 +24,14 @@ interface Props {
   blocks: SiteScreenBlocks;
 }
 
-function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void })[]; art: ReactNode }) {
+/** Строки-входы под героем; знак — только там, где он свой (дневник — камешки). Под вводной режимов строки
+ *  без знака: Cluster стоял у героя и у обеих строк — один знак четыре раза на вкладке (ревью g5 r1). */
+function ToolRows({ rows, art }: { rows: (ModesHeroRow & { onClick: () => void })[]; art?: ReactNode }) {
   return (
     <div className="ds-card ds-card--flush">
       {rows.map((r) => (
         <button key={r.label} type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={r.onClick}>
-          <span className="pp-row-art">{art}</span><span className="ds-list-body"><span className="ds-list-title">{r.label}</span><span className="ds-list-sub">{r.sub}</span></span>
+          {art && <span className="pp-row-art">{art}</span>}<span className="ds-list-body"><span className="ds-list-title">{r.label}</span><span className="ds-list-sub">{r.sub}</span></span>
           <span className="ds-chev" aria-hidden="true" />
         </button>
       ))}
@@ -54,7 +55,7 @@ export function ModesTopCards({ ready, hasModes, summary, onMeetCritic, onOpenLi
       {m.kind === 'intro' && (
         <>
           <PatternsIntro step="modes" testProgress={null} onAction={onMeetCritic} />
-          <ToolRows rows={[{ ...m.library, onClick: onOpenLibrary }, { ...m.manual, onClick: onPickManually }]} art={<Cluster size="row" />} />
+          <ToolRows rows={[{ ...m.library, onClick: onOpenLibrary }, { ...m.manual, onClick: onPickManually }]} />
         </>
       )}
       {m.kind === 'week' && summary && <WeekPatternCard top={{ kind: 'mode', ...summary }} onOpen={(_, id) => onOpenMode(id)} />}

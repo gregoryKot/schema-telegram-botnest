@@ -1,10 +1,11 @@
 import type { CSSProperties } from 'react';
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
 import { YsqTherapyCta } from '../../../../shared/src/components/YsqTherapyCta';
-import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
+import { YsqSyncNote } from './YsqSyncNote';
 import { api } from '../../api';
 import type { contactCta } from '../../utils/therapistContact';
 import { NEED_HUE } from '../../lib/tone';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import type { ResultView, SchemaInfo, SchemaScore, YsqHistoryEntry } from '../../hooks/useYsqTest';
 import { inkVars } from '../history/needInk';
@@ -13,8 +14,7 @@ import { YsqNeedHead } from './YsqNeedHead';
 import { YsqSchemaCard } from './YsqSchemaCard';
 import { YsqInactiveList, YsqHistory } from './YsqExtras';
 
-type Tr = (ty: string, vy: string) => string;
-type Cta = ReturnType<typeof contactCta>;
+type Tr = (ty: string, vy: string) => string; type Cta = ReturnType<typeof contactCta>;
 
 interface Props {
   tr: Tr;
@@ -42,7 +42,7 @@ export function YsqResult(p: Props) {
   const { inactiveSchemas, activeByDomain, activeCount } = p.view;
   return (
     <>
-      {p.resultSaveError && p.retrySaveResult && <YsqSyncErrorNote variant="result-save" onRetry={p.retrySaveResult} />}
+      {p.resultSaveError && p.retrySaveResult && <YsqSyncNote variant="result-save" onRetry={p.retrySaveResult} />}
 
       {activeCount === 0 && <p className="ss-body">Выраженных схем нет — отличный результат.</p>}
 
@@ -77,7 +77,7 @@ export function YsqResult(p: Props) {
           (правило №8, place 'ysq_result'). Прячем целиком, если сам
           пользователь терапевт (isSelf): «Написать вам» бессмысленно. */}
       {activeCount > 0 && !p.cta.isSelf && (
-        <YsqTherapyCta cta={p.cta} tr={p.tr} art={<SignHero sign="talk" />}
+        <YsqTherapyCta cta={p.cta} tr={p.tr} art={<SignHero sign={ENTITY_LOOK.therapist.sign} />}
           onLinkClick={() => api.trackPublicEvent('practice_link_click', { place: 'ysq_result' })} />
       )}
 

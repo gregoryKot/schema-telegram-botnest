@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ShareIcon } from '../../../../shared/src/share/ShareIcon';
+import { ShareLink } from '../../share/ShareLink';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { drawSchemaCard } from '../../../../shared/src/share/cards/schemaCard';
 import { modeShareText } from '../../../../shared/src/share/shareTexts';
@@ -29,9 +29,7 @@ export function ModeShareButton({ group, color, name, feel, desc }: {
   );
   return (
     <>
-      <button type="button" className="ds-link ss-share-link" aria-label={`Поделиться режимом «${name}»`} onClick={() => setOpen(true)}>
-        <ShareIcon /> Поделиться
-      </button>
+      <ShareLink ariaLabel={`Поделиться режимом «${name}»`} onClick={() => setOpen(true)} />
       {open && (
         <ShareCardSheet
           title="Карточка режима"

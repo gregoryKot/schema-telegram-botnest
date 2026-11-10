@@ -6,6 +6,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PickRow, PickDone } from './PickRow';
 import { SignGroup } from './SignGroup';
+import { YsqNeedHead } from '../ysq/YsqNeedHead';
 import { SchemaPickerSheet } from '../SchemaPickerSheet';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 
@@ -58,6 +59,17 @@ describe('SignGroup', () => {
     const single = render(<SignGroup look={{ hue: 240 }} signs={['Shield']} title="Один из списка"><span /></SignGroup>);
     expect(single.container.querySelectorAll('.sg-sign')).toHaveLength(1);
     expect(single.container.querySelector('.sg-signs')).toBeNull();
+  });
+});
+
+describe('SignGroupHead — одна шапка группы', () => {
+  it('группа результата теста (YsqNeedHead) — та же шапка: знак потребности у подписи, без своих классов', () => {
+    const { container } = render(<YsqNeedHead needId="attachment" label="Связь и принятие" />);
+    const head = container.querySelector('h3.sg-head.ss-res-head')!;
+    expect(head).toBeTruthy();
+    expect(head.querySelectorAll('.sg-sign')).toHaveLength(1);
+    expect(head.querySelector('.sg-name')!.textContent).toBe('Связь и\u00a0принятие');
+    expect(container.querySelector('[class*="ss-group"]')).toBeNull();
   });
 });
 

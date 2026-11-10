@@ -36,7 +36,7 @@ describe('SchemaInfoSheet autoStartTest → «Читать карточку сх
     await waitFor(() => expect(screen.queryByText('Читать карточку схемы')).toBeNull());
     expect(screen.queryByText('HOST-CLOSED')).toBeNull();
     const tile = await screen.findByText('Покинутость / Нестабильность');
-    expect(tile.closest('.ss-tile')?.getAttribute('aria-current')).toBe('true');
+    expect(tile.closest('.cs-tile')?.getAttribute('aria-current')).toBe('true');
     expect(scrolled).toHaveBeenCalledTimes(1);
   });
 });
