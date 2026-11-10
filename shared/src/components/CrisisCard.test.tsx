@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { CrisisCardView, revealAboveKeyboard } from './CrisisCard';
-import { CRISIS_HUE } from './crisisCardStyle';
+import { CRISIS_CARD_STYLE, CRISIS_HUE } from './crisisCardStyle';
 import { ENTITY_LOOK } from '../theme/entityLook';
 import {
   CRISIS_HOTLINE_DISPLAY,
@@ -192,5 +192,15 @@ describe('бумага кризисного пути', () => {
     expect((flat.container.firstElementChild as HTMLElement).className).toBe(
       '',
     );
+  });
+});
+
+// Ревью g3 (2026-11-09): подпись детской линии и сноска «Круглосуточно, бесплатно, анонимно…» шли --text-faint —
+// 4.42:1 на бумаге карточки, ниже AA. b12 перевёл мелкий текст на --text-sub; сверка держит, что faint не вернётся.
+describe('CrisisCardView — мелкий текст читается (AA)', () => {
+  it('подпись линии и сноска — --text-sub; --text-faint в стилях карточки нет', () => {
+    expect(CRISIS_CARD_STYLE.note.color).toBe('var(--text-sub)');
+    expect(CRISIS_CARD_STYLE.foot.color).toBe('var(--text-sub)');
+    expect(JSON.stringify(CRISIS_CARD_STYLE)).not.toContain('--text-faint');
   });
 });

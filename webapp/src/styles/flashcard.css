@@ -125,6 +125,9 @@
   .sk-fc-spread.pa-spread { max-width: 1088px; gap: 48px; }
   .sk-fc .pa-sheet.sk-fc-step { padding: 4px 0 0; }
   .sk-fc .pa-sheet.sk-fc-step > .pa-sheet-art { display: flex; }
+  /* Heart героя шага стоит рядом — кризисная карточка шага без своего (ревью g4 r5); уже 1024 героя нет, знак у неё (r6).
+     Карточка сама ставит --crisis-card-art: inline-flex инлайном, поэтому переопределение — у её шапки (первый ребёнок). */
+  .sk-fc-spread:has(.sk-fc-step > .pa-sheet-art) [data-crisis-card] > :first-child { --crisis-card-art: none; }
   .sk-fc-hero { padding: 26px 30px 32px; gap: 12px; }
   .sk-fc-hero-art > .scn { width: 100%; }
   .sk-fc-hero-title { font-size: 36px; }

@@ -8,7 +8,7 @@ export const CRISIS_HUE = 25;
 
 export const CRISIS_CARD_STYLE = {
   head: { display: 'flex', alignItems: 'center', gap: 12 },
-  art: { display: 'inline-flex', flexShrink: 0 },
+  art: { display: 'var(--crisis-card-art)', flexShrink: 0 }, // inline-flex — с карточки (CrisisCard.tsx), экран может погасить
   label: { display: 'block', margin: '0 0 4px', color: 'var(--text-sub)' },
   title: {
     margin: 0,

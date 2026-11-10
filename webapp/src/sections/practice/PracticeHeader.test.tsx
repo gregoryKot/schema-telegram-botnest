@@ -9,6 +9,7 @@ import { PracticeHeader } from './PracticeHeader';
 import { AddressFormContext } from '../../utils/addressForm';
 import { CRISIS_HOTLINE_DISPLAY, CRISIS_HOTLINE_TEL } from '../../utils/crisisMarkers';
 import { plain } from '../../test-support/plainText';
+import { readCss } from '../../styles/cssRules.test-helpers';
 
 vi.mock('../../api', () => ({
   api: { trackEvent: vi.fn() },
@@ -51,6 +52,14 @@ describe('PracticeHeader — встреча', () => {
     expect(text).toContain('Терапевт:\u00a0Александра Константиновна Покровская-Вишневецкая');
     expect(text).not.toMatch(/[\u2011\u2060]/);
     expect(plain(text)).toBe(` · Терапевт: ${name}`);
+  });
+
+  // Ревью g4 r6: после r5 короткое имя на 360–390 рвалось пополам — «…· Терапевт: Ольга / Миронова», фамилия одна во
+  // второй строке. text-wrap: pretty у строки встречи уводит «Терапевт: Ольга Миронова» вниз целиком; длинное имя
+  // переносится как прежде (пробелы имени обычные — тест выше). Живая раскладка — снимки r6-banner-name 320/360/390.
+  it('строка встречи переносится без одинокого последнего слова (text-wrap: pretty)', () => {
+    const banner = readCss('practice-selfhelp.css').find((r) => r.media === '' && r.selectors.includes('.cp-head-banner'));
+    expect(banner?.body).toMatch(/text-wrap:\s*pretty/);
   });
 });
 

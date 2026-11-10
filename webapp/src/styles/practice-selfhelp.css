@@ -11,7 +11,9 @@
 .cp-head .ds-h1 { margin: var(--space-8) 0 0; min-width: 0; }
 .cp-head-end { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-24); }
 .cp-head-sub { margin: var(--space-8) 0 0; line-height: 1.5; }
-.cp-head-banner { margin-top: var(--space-8); }
+/* pretty: короткое имя не рвётся пополам («…· Терапевт: Ольга / Миронова» на 360–390) — «Терапевт:» склеен с первым
+   словом имени, и подпись уходит вниз целиком; длинное имя по-прежнему переносится (ревью g4 r6). */
+.cp-head-banner { margin-top: var(--space-8); text-wrap: pretty; }
 .cp-head-banner.is-today { color: var(--ok-ink); }
 /* «Важное о самопомощи» — тихая ссылка со знаком Limits (рамка метода), а не тревожный ⚠. */
 .ds-link.cp-selfhelp { min-height: 44px; display: inline-flex; align-items: center; gap: var(--space-8); }

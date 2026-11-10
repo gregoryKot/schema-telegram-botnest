@@ -115,15 +115,7 @@
    Chrome рвал по слогам и влезающие слова (ревью g1). */
 .cp-page--phone .cp-task-title { overflow-wrap: break-word; }
 .cp-page--phone .cp-sq .pp-meta { white-space: nowrap; } /* «прошли 3 раза» — одной строкой */
-/* Телефон до 559px: «Готово» у задания — под текстом, а не сбоку. На 320 колонке текста оставалось ≈110px,
-   на 390 — ≈180px: «Заметить три момента…» шло столбиком в шесть строк (ревью g4 r2). */
-@media (max-width: 559px) {
-  .cp-page--phone .cp-task:has(> .ds-btn) { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; row-gap: var(--space-8); }
-  .cp-page--phone .cp-task:has(> .ds-btn) > .pp-row-art { grid-column: 1; grid-row: 1 / span 2; align-self: start; }
-  .cp-page--phone .cp-task:has(> .ds-btn) > .cp-task-body { grid-column: 2; grid-row: 1; }
-  .cp-page--phone .cp-task:has(> .ds-btn) > .ds-btn { grid-column: 2; grid-row: 2; justify-self: start; }
-  .cp-page--phone .cp-task:has(> .ds-btn) > .ds-chev { grid-column: 3; grid-row: 1 / span 2; }
-}
+/* Телефон до 559px: «Готово» у задания — под текстом; сетка — на самой строке, в task-row.css (ревью g4 r2, r6). */
 
 /* Плитки «Инструментов» */
 .cp-page--phone .cp-lib { gap: var(--space-10); }

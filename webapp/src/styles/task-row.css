@@ -6,3 +6,31 @@
 .cp-task-check { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--ok-bg); color: var(--ok-ink); }
 .cp-task-note { margin-top: var(--space-4); font-size: 13px; color: var(--ok-ink); }
 .cp-task-status { margin-top: var(--space-6); }
+
+/* Телефон до 559px: «Готово» у задания — под текстом, а не сбоку. На 320 колонке текста оставалось ≈110px, на 390 —
+   ≈180px: «Заметить три момента…» шло столбиком в шесть строк (ревью g4 r2). Сетка по именованным областям, и своё
+   место у КАЖДОГО ребёнка строки: полоса «от терапевта» без места вставала в первую свободную ячейку — к правому
+   краю карточки (ревью g4 r6). Правило на самой строке, а не под .cp-page--phone: «Практики», «Все цели», «Задания»
+   (/more) и «Все задания» с «Сегодня» — одна строка. Колонки lead (полоса или галочка) и end (шеврон или ссылка) —
+   только при таком ребёнке: пустая колонка съела бы промежуток. .ds-card в селекторе — row-gap сильнее
+   `.cp-page--phone .cp-task { gap }`, стоящего в каскаде ниже. Сверка — styles/taskRowGrid.test.tsx. */
+@media (max-width: 559px) {
+  .ds-card.cp-task:has(> .ds-btn) {
+    display: grid; row-gap: var(--space-8);
+    grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "art body" "art btn";
+  }
+  .ds-card.cp-task:has(> .ds-btn):has(> .cp-task-bar, > .cp-task-check) {
+    grid-template-columns: auto 44px minmax(0, 1fr); grid-template-areas: "lead art body" "lead art btn";
+  }
+  .ds-card.cp-task:has(> .ds-btn):has(> .ds-chev, > .ds-link) {
+    grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "art body end" "art btn end";
+  }
+  .ds-card.cp-task:has(> .ds-btn):has(> .cp-task-bar, > .cp-task-check):has(> .ds-chev, > .ds-link) {
+    grid-template-columns: auto 44px minmax(0, 1fr) auto; grid-template-areas: "lead art body end" "lead art btn end";
+  }
+  .cp-task:has(> .ds-btn) > .cp-task-bar, .cp-task:has(> .ds-btn) > .cp-task-check { grid-area: lead; }
+  .cp-task:has(> .ds-btn) > .pp-row-art { grid-area: art; align-self: start; }
+  .cp-task:has(> .ds-btn) > .cp-task-body { grid-area: body; }
+  .cp-task:has(> .ds-btn) > .ds-btn { grid-area: btn; justify-self: start; }
+  .cp-task:has(> .ds-btn) > .ds-chev, .cp-task:has(> .ds-btn) > .ds-link { grid-area: end; }
+}

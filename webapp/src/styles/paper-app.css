@@ -147,8 +147,9 @@
 .pa-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; box-sizing: border-box; padding: 14px 16px 14px 18px; border-radius: 16px; }
 .pa-alert-sign { display: inline-flex; flex-shrink: 0; opacity: .55; }
 .pa-alert-body { flex: 1 1 140px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pa-alert-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--text); }
-/* pretty: вторая фраза сбоя не кончается висячим словом («…попробуй ещё / раз.» на 360, ревью g3 r6). */
+/* pretty: фраза сбоя не кончается висячим словом — вторая («…попробуй ещё / раз.» на 360, ревью g3 r6) и первая
+   («…изменение / задания.» на 390, ревью g4 r6). */
+.pa-alert-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--text); text-wrap: pretty; }
 .pa-alert-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
 .ds-btn.pa-alert-retry { flex: none; }
 .ds-btn.pa-alert-retry:not(:disabled) { background: var(--surface); }

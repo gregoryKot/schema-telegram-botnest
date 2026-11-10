@@ -1,8 +1,8 @@
 // Четыре шага «Мне плохо» (порядок шагов и тексты не меняются — кризисный путь). Вид (b12): шапка — лист «Мне плохо»
 // с «Шаг N из 4» и полосой (FlashcardStepHead), без огромной цифры; ответы — плитки бумаги группы режима со знаком группы
 // (ChildCare, Flare, Shelter, Looming) и бумаги потребности с NeedArt — языком «Моих паттернов»; голос Здорового Взрослого —
-// лист мха со знаком Together; поле — общий поле-лист. Кризисная карточка шага — signless: весь путь — «Мне плохо», на
-// компьютере Heart героя шага стоит рядом, второе сердце в шаг от него не ставится (ревью g4 r5).
+// лист мха со знаком Together; поле — общий поле-лист. Кризисная карточка шага — с Heart; на ≥1024 рядом Heart героя шага,
+// и знак карточки гасит тот же @media, что показывает героя (flashcard.css; ревью g4 r5, r6 — на телефоне знак на месте).
 import type { CSSProperties } from 'react';
 import { TherapyNote } from '../TherapyNote';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
@@ -72,7 +72,7 @@ export function StepResponse({ tr, response, reflection, setReflection, onNext, 
         rows={3}
         className="pa-field sk-fc-field"
       />
-      {detectCrisisAny(reflection) && <CrisisCard surface="flashcard" signless />}
+      {detectCrisisAny(reflection) && <CrisisCard surface="flashcard" />}
       <button onClick={onNext} className="ds-btn sk-fc-wide">Дальше →</button>
       <div className="sk-fc-note"><TherapyNote compact /></div>
     </FlashcardFrame>
@@ -132,7 +132,7 @@ export function StepAction({ tr, need, action, setAction, onSave, ...c }: Common
         rows={3}
         className="pa-field sk-fc-field"
       />
-      {detectCrisisAny(action) && <CrisisCard surface="flashcard" signless />}
+      {detectCrisisAny(action) && <CrisisCard surface="flashcard" />}
       <button onClick={onSave} disabled={!action.trim()} className="ds-btn sk-fc-wide">Сохранить</button>
       <div className="sk-fc-note"><TherapyNote compact /></div>
     </FlashcardFrame>
