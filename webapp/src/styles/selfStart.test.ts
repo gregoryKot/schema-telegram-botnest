@@ -34,8 +34,8 @@ describe('u-self-start вместо инлайн alignSelf', () => {
     expect(bad).toEqual([]);
   });
 
+  // ModesTab.tsx ушёл из списка с редизайном справочника (b16): чипа группы с alignSelf там больше нет.
   it.each([
-    'components/schemaInfoSheet/ModesTab.tsx',
     'components/therapist/ClientYSQTab.tsx',
     'components/therapist/concept/YsqCrossCheck.tsx',
     'sections/guide/GuideReference.tsx',

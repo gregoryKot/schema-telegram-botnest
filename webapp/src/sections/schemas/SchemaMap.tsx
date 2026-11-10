@@ -1,7 +1,7 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
-import { DomainMark } from '../../components/DomainMark';
-import { hueStyle } from '../../lib/tone';
+import { ENTITY_LOOK, domainLook } from '../../../../shared/src/theme/entityLook';
+import { MapFold } from '../../components/schemaSheets/MapFold';
 import { countSchemas, domainCountLabel, domainsWord, groupMap, schemasWord } from './schemasModel';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
   onOpenSchema: (id: string) => void;
 }
 
-/** «Полная карта»: схемы по доменам; отмеченные пользователем подсвечены. */
+/** «Полная карта»: схемы по доменам — аккордеоны на бумаге домена со знаком; отмеченные — с галочкой. */
 export function SchemaMap({ mineIds, onOpenSchema }: Props) {
   const tr = useTr();
   const domains = groupMap(SCHEMA_DOMAINS, mineIds);
@@ -22,27 +22,11 @@ export function SchemaMap({ mineIds, onOpenSchema }: Props) {
           {domains.length} {domainsWord(domains.length)} · {tr('нажми на схему, чтобы открыть описание', 'нажмите на схему, чтобы открыть описание')}
         </span>
       </div>
-      {domains.map(d => (
-        <div key={d.id} className="cs-domain" style={hueStyle(d.hue)}>
-          <div className="cs-domain-head">
-            <DomainMark domainId={d.id} />
-            <span className="cs-domain-name tone-ink">{d.title}</span>
-            <span className="ds-sub">{domainCountLabel(d)}</span>
-          </div>
-          <div className="cs-tiles">
-            {d.schemas.map(s => (
-              <button
-                key={s.id}
-                className={`cs-tile${s.isMine ? ' is-mine tone-tint tone-border' : ''}`}
-                onClick={() => onOpenSchema(s.id)}
-              >
-                <span className="cs-tile-name">{s.name}</span>
-                <span className="cs-tile-desc">{s.desc}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+      <div className="cs-mapfolds">
+        {domains.map(d => (
+          <MapFold key={d.id} look={domainLook(d.id) ?? ENTITY_LOOK.schemas} title={d.title} meta={domainCountLabel(d)} tiles={d.schemas} onOpen={onOpenSchema} />
+        ))}
+      </div>
     </section>
   );
 }

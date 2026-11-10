@@ -55,6 +55,9 @@ function toItem(
 export function useMyCards(kind: MyCardsKind, api: PatternNotesApi) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<MyCardItem[]>([]);
+  // Сбой загрузки ≠ «карточек нет»: без флага экран паттерна звал «Заполнить карточку»
+  // поверх незагруженной — новое легло бы поверх сохранённого (b15, принцип 8).
+  const [failed, setFailed] = useState(false);
   // Счётчик перезагрузок: карточка правится в отдельном листе, и без этого
   // список остаётся со старой выжимкой, а только что заполненная карточка не
   // появляется вовсе, пока не уйдёшь с вкладки и не вернёшься (правило
@@ -87,11 +90,14 @@ export function useMyCards(kind: MyCardsKind, api: PatternNotesApi) {
             );
     load
       .then((built) => {
-        if (alive)
-          setItems(built.filter((it): it is MyCardItem => it !== null));
+        if (!alive) return;
+        setItems(built.filter((it): it is MyCardItem => it !== null));
+        setFailed(false);
       })
       .catch(() => {
-        if (alive) setItems([]);
+        if (!alive) return;
+        setItems([]);
+        setFailed(true);
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -101,5 +107,5 @@ export function useMyCards(kind: MyCardsKind, api: PatternNotesApi) {
     };
   }, [kind, reloadKey, api]);
 
-  return { loading, items, reload: () => setReloadKey((k) => k + 1) };
+  return { loading, failed, items, reload: () => setReloadKey((k) => k + 1) };
 }

@@ -1,11 +1,9 @@
-import { NeedArt } from '../art/NeedArt';
+import { needLook } from '../../../../shared/src/theme/entityLook';
+import type { NeedId } from '../../../../shared/src/needs/types';
+import { SignGroupHead } from '../schemaSheets/SignGroup';
 
-/** Заголовок группы результата YSQ: мотив потребности и её название. */
+/** Заголовок группы результата YSQ на бумаге потребности: её знак и название — та же шапка, что у групп
+ *  «Паттернов» и «Справочника» (SignGroupHead). */
 export function YsqNeedHead({ needId, label }: { needId: string; label: string }) {
-  return (
-    <div className="ss-res-head">
-      <span className="pp-row-art"><NeedArt id={needId} size="row" /></span>
-      <div className="ds-chip tone-tint">{label}</div>
-    </div>
-  );
+  return <SignGroupHead signs={[needLook(needId as NeedId).sign]} title={label} className="ss-res-head" />;
 }

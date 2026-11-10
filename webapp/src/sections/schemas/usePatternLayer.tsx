@@ -30,8 +30,8 @@ export function usePatternLayer(source?: PatternEntriesSource) {
     };
   }, [schemaEntries, modeEntries]);
 
-  // Пока заметки или записи не загрузились, «карточка пока пустая» была бы враньём.
-  const statusOf = (kind: MyCardsKind) => ({ filled: new Set(pick(kind).items.map((i) => i.id)), statusFor: ready && !pick(kind).loading ? pick(kind).statusFor : undefined });
+  // Пока заметки или записи не загрузились (или загрузка упала), «карточка пока пустая» была бы враньём.
+  const statusOf = (kind: MyCardsKind) => ({ filled: new Set(pick(kind).items.map((i) => i.id)), statusFor: ready && !pick(kind).loading && !pick(kind).failed ? pick(kind).statusFor : undefined });
   const layer: ReactNode = (
     <>
       {pattern && (
@@ -40,6 +40,7 @@ export function usePatternLayer(source?: PatternEntriesSource) {
           id={pattern.id}
           items={open.items}
           loading={open.loading}
+          failed={open.failed}
           reload={open.reload}
           entries={entries}
           onClose={() => setPattern(null)}

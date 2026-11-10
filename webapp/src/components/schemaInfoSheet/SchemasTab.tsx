@@ -1,55 +1,32 @@
 import { useState } from 'react';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
-import { DomainMark } from '../DomainMark';
-import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
+import { ENTITY_LOOK, domainLook } from '../../../../shared/src/theme/entityLook';
+import { MapFold } from '../schemaSheets/MapFold';
+import { glue } from '../../../../shared/src/utils/typo';
 
-// Вкладка «схемы» справочника: домены-аккордеон, внутри плитки схем.
-// Вынесено из SchemaInfoSheet.tsx (правило №10).
+// Вкладка «схемы» справочника: домены — те же аккордеоны MapFold, что «Полная карта» на «Паттернах»
+// (одна механика, ревью g5 r1): бумага и знак домена, внутри — белые плитки с описанием, без тапа. Открыт
+// один домен. Схема, к которой пришли из результата теста (highlight — имя схемы), — плитка, приподнятая
+// над остальными сплошным слоем бумаги домена, а не глиф «◀»; при открытии подъезжает к ней один раз.
 export function SchemasTab({ highlight }: { highlight?: string }) {
-  const initialDomain = highlight
-    ? SCHEMA_DOMAINS.find(d => d.schemas.some(s => s.name === highlight))?.domain ?? null
-    : null;
-  const [open, setOpen] = useState<string | null>(initialDomain);
+  const hl = highlight ? SCHEMA_DOMAINS.flatMap(d => d.schemas).find(s => s.name === highlight) : undefined;
+  const [open, setOpen] = useState<string | null>(hl ? SCHEMA_DOMAINS.find(d => d.schemas.includes(hl))?.id ?? null : null);
 
   return (
     <div className="ss-pane">
       <p className="ss-body">
-        20 ранних дезадаптивных схем сгруппированы в 5 доменов. Схема – не диагноз, а паттерн, который когда-то помогал выжить.
+        {glue('20 ранних дезадаптивных схем сгруппированы в 5 доменов. Схема – не диагноз, а паттерн, который когда-то помогал выжить.')}
       </p>
-      {SCHEMA_DOMAINS.map((d) => {
-        const isOpen = open === d.domain;
-        const toggle = () => setOpen(isOpen ? null : d.domain);
-        return (
-          <div key={d.domain} className="ss-domain" style={hueStyle(DOMAIN_HUE[d.id])}>
-            <div
-              onClick={toggle}
-              role="button" tabIndex={0} aria-expanded={isOpen}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
-              className="ss-domain-head tone-tint"
-            >
-              <DomainMark domainId={d.id} />
-              <span className="ss-domain-name">{d.domain}</span>
-              <span className="ss-domain-count">{d.schemas.length}</span>
-              <svg className={`ss-chev${isOpen ? ' is-open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
-            {isOpen && (
-              <div className="ss-tiles">
-                {d.schemas.map(s => {
-                  const hl = s.name === highlight;
-                  return (
-                    <div key={s.name} className={`ss-tile ${hl ? 'tone-tint tone-border' : 'tone-soft'}`}>
-                      <div className="ss-tile-name tone-ink">{s.name}{hl && ' ◀'}</div>
-                      <div className="ss-tile-desc">{(s as { libraryDesc?: string; desc: string }).libraryDesc ?? s.desc}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      <div className="cs-mapfolds">
+        {SCHEMA_DOMAINS.map((d) => (
+          <MapFold
+            key={d.id} look={domainLook(d.id) ?? ENTITY_LOOK.schemas} title={d.domain}
+            meta={String(d.schemas.length)} highlightId={hl?.id}
+            tiles={d.schemas.map(s => ({ id: s.id, name: s.name, desc: s.libraryDesc ?? s.desc }))}
+            open={open === d.id} onToggle={() => setOpen(open === d.id ? null : d.id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }

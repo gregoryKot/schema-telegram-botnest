@@ -13,8 +13,9 @@ vi.mock('../utils/uiPrefsSync', () => ({ notifyPrefsChanged: vi.fn() }));
 vi.mock('../api', () => ({ api: { trackEvent: vi.fn() } }));
 vi.mock('./schemas/useSchemasData', () => ({
   useSchemasData: () => ({
-    loading: false, saveFailed: false, ysqSchemaIds: ['s'], manualSchemaIds: [], ysqScores: {}, ysqCompletedAt: null,
+    loading: false, ysqSchemaIds: ['s'], manualSchemaIds: [], ysqScores: {}, ysqCompletedAt: null,
     ysqProgressAnswered: null, myModeIds: [], myMapCount: 0, saveSchemas: vi.fn(), saveModes: vi.fn(),
+    schemasSave: { failed: false, blocked: false }, modesSave: { failed: false, blocked: false },
   }),
 }));
 vi.mock('./schemas/usePatternLayer', () => ({

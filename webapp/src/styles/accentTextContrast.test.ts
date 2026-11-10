@@ -10,8 +10,9 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { contrastRatio, extractBlock, parseColor, resolveToken } from '../test-support/cssContrast';
-import { allCssRules, indexCssRules, type Rule } from './cssRules.test-helpers';
+import { contrastRatio, extractBlock, oklchRgb, parseColor, resolveToken } from '../test-support/cssContrast';
+import { allCssRules, indexCssRules, parseRules, type Rule } from './cssRules.test-helpers';
+import { PAPER_HUE } from '../../../shared/src/theme/signKeys';
 
 const INDEX_CSS = readFileSync(join(__dirname, '..', 'index.css'), 'utf8');
 const THEMES = {
@@ -93,7 +94,9 @@ const CASES = [...collectCases(), ...tsxCases()];
 
 describe('a11y: текст акцентным или палитровым токеном читается на бумаге (WCAG AA)', () => {
   it('скан находит правила с акцентным текстом (иначе проверка пуста)', () => {
-    expect(CASES.map((c) => c.selector)).toContain('.ps-adult-title');
+    // Образец — стабильный примитив; правило инцидента (.ps-adult-title) ушло в b15: голос Здорового
+    // Взрослого на экране паттерна — общий HealthyVoice, подпись --text-sub.
+    expect(CASES.map((c) => c.selector)).toContain('.ds-link--danger');
     expect(CASES.length).toBeGreaterThanOrEqual(10);
   });
 
@@ -150,5 +153,50 @@ describe('порог AA по размеру правила', () => {
     expect(SOLID_FILL.test('background: color-mix(in srgb, var(--accent-green) 8%, transparent); color: var(--accent-green)')).toBe(false);
     expect(accentTextToken('border-color: var(--c-moss); background-color: var(--c-moss)')).toBeNull();
     expect(accentTextToken('color: var(--text); color: var(--c-moss)')).toBe('--c-moss');
+  });
+});
+
+// Ревью g5 r2: цифра выбранного ответа теста (.ss-scale-btn.is-active .ss-scale-num, 22px) красилась
+// --c-clay-strong на бумаге глины выбранной плитки — 4.33:1 при норме 4.5:1. Скан выше сверяет акцентный текст
+// только с --bg и --surface; здесь — с цветной бумагой oklch(0.9… C var(--h)): правило само кладёт её фоном или
+// стоит потомком правила, которое её кладёт. Оттенок --h задаёт разметка, поэтому сверка — с худшим из PAPER_HUE.
+const PAPER_FILL = /(?:^|;)\s*background(?:-color)?\s*:\s*oklch\((0\.9\d*)\s+([\d.]+)\s+var\(--h\)\)/;
+const paperOf = (body: string): [number, number] | null => {
+  const m = PAPER_FILL.exec(body);
+  return m ? [Number(m[1]), Number(m[2])] : null;
+};
+
+function accentOnPaper(rules: Rule[], block: string): string[] {
+  const papers = rules.flatMap((r) => {
+    const p = paperOf(r.body);
+    return p ? r.selectors.map((sel) => ({ sel, p })) : [];
+  });
+  const bad: string[] = [];
+  for (const r of rules) {
+    const token = accentTextToken(r.body);
+    if (!token || SHARED_TOKENS.has(token)) continue;
+    const own = paperOf(r.body);
+    const under = r.selectors.flatMap((sel) => papers.filter((x) => sel.startsWith(`${x.sel} `)).map((x) => x.p));
+    const fg = parseColor(resolveToken(block, token)).rgb;
+    for (const [L, C] of own ? [own] : under) {
+      const worst = Math.min(...Object.values(PAPER_HUE).map((h) => contrastRatio(fg, oklchRgb(L, C, h))));
+      if (worst < aaThreshold(r.body)) bad.push(`${r.f ?? ''} ${r.selectors.join(', ')}: ${token} на бумаге oklch(${L} ${C} h) — ${worst.toFixed(2)}:1`);
+    }
+  }
+  return bad;
+}
+
+describe('a11y: акцентный текст на цветной бумаге oklch(0.9… var(--h)) — по худшему оттенку', () => {
+  it('ни одно правило styles/*.css не ставит мелкий акцентный текст на цветную бумагу ниже нормы', () => {
+    expect(accentOnPaper(allCssRules(), THEMES.light)).toEqual([]);
+  });
+
+  it('контрольный образец: прежняя цифра выбранного ответа краснеет; цифра цветом --text и текст на белом — нет', () => {
+    const was = parseRules(
+      '.ss-scale-btn.is-active { background: oklch(0.915 0.03 var(--h)); color: var(--text); } .ss-scale-btn.is-active .ss-scale-num { color: var(--c-clay-strong); }',
+    ).map((r) => ({ ...r, f: 'schema-library.css' }));
+    expect(accentOnPaper(was, THEMES.light)).toHaveLength(1);
+    expect(accentOnPaper(parseRules('.a { background: oklch(0.915 0.03 var(--h)); } .a .n { color: var(--text); }'), THEMES.light)).toEqual([]);
+    expect(accentOnPaper(parseRules('.a { background: var(--surface); } .a .n { color: var(--c-clay-strong); }'), THEMES.light)).toEqual([]);
   });
 });

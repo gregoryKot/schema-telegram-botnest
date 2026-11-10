@@ -1,19 +1,20 @@
+import type { CSSProperties } from 'react';
 import { YsqDisclaimer } from '../../../../shared/src/components/YsqDisclaimer';
-import { YsqTherapyCta } from '../../../../shared/src/components/YsqTherapyCta';
-import { YsqResultTopBar } from '../../../../shared/src/components/YsqResultTopBar';
-import { YsqSyncErrorNote } from '../../../../shared/src/components/YsqSyncErrorNote';
+import { YsqTherapyCta } from './YsqTherapyCta';
+import { YsqSyncNote } from './YsqSyncNote';
 import { api } from '../../api';
 import type { contactCta } from '../../utils/therapistContact';
-import { NEED_HUE, hueStyle } from '../../lib/tone';
+import { NEED_HUE } from '../../lib/tone';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import type { NeedId } from '../../../../shared/src/needs/types';
 import type { ResultView, SchemaInfo, SchemaScore, YsqHistoryEntry } from '../../hooks/useYsqTest';
+import { inkVars } from '../history/needInk';
+import { SignHero } from '../paper/SignHero';
 import { YsqNeedHead } from './YsqNeedHead';
 import { YsqSchemaCard } from './YsqSchemaCard';
 import { YsqInactiveList, YsqHistory } from './YsqExtras';
-import { SsHead } from '../schemaSheets/SsSheet';
 
-type Tr = (ty: string, vy: string) => string;
-type Cta = ReturnType<typeof contactCta>;
+type Tr = (ty: string, vy: string) => string; type Cta = ReturnType<typeof contactCta>;
 
 interface Props {
   tr: Tr;
@@ -30,26 +31,24 @@ interface Props {
   retakeConfirm: boolean;
   onRetakeConfirm: (v: boolean) => void;
   onRetake: () => void;
-  onShare: () => void;
   onOpenSchema: (name: string) => void;
   onDone: () => void;
 }
 
-/** Экран результатов теста YSQ: выраженные схемы по доменам, остальные, история, действия. */
+/** Экран результатов теста YSQ: выраженные схемы по потребностям — лист бумаги потребности со знаком,
+ *  карточки схем белые; остальные, история, действия. Герой и «Как понимать» — YsqResultHero
+ *  (колонкой слева на компьютере). Полоска балла — цвет данных потребности (решение 7). */
 export function YsqResult(p: Props) {
-  const { inactiveSchemas, activeByDomain, dateLabel, activeCount, activeLabel, getSchemaDelta } = p.view;
+  const { inactiveSchemas, activeByDomain, activeCount } = p.view;
   return (
     <>
-      {p.resultSaveError && p.retrySaveResult && <YsqSyncErrorNote variant="result-save" onRetry={p.retrySaveResult} />}
-      {/* «Как понимать» + «Поделиться» — с самого верха (правило онбординга) */}
-      <YsqResultTopBar tr={p.tr} onShare={p.onShare} onHelpOpen={() => api.trackEvent('ysq_help_open')} />
-
-      <SsHead paperHue={70} title={activeLabel} lede={dateLabel ? `Пройдено ${dateLabel}` : undefined} />
+      {p.resultSaveError && p.retrySaveResult && <YsqSyncNote variant="result-save" onRetry={p.retrySaveResult} />}
 
       {activeCount === 0 && <p className="ss-body">Выраженных схем нет — отличный результат.</p>}
 
       {activeByDomain.map(domain => (
-        <div key={domain.needId} className="ss-res" style={hueStyle(NEED_HUE[domain.needId as NeedId])}>
+        <section key={domain.needId} className="pp-paper ss-res"
+          style={{ '--h': NEED_HUE[domain.needId as NeedId], ...inkVars(domain.needId) } as CSSProperties}>
           <YsqNeedHead needId={domain.needId} label={domain.label} />
           {domain.schemas.map(schema => {
             const s = p.scores[schema.name];
@@ -61,32 +60,33 @@ export function YsqResult(p: Props) {
                 n5plus={s.n5plus}
                 nQuestions={s.nQuestions}
                 tip={p.ysqSchemas.find(sc => sc.name === schema.name)?.tip ?? schema.tip}
-                delta={getSchemaDelta(schema.name)}
+                delta={p.view.getSchemaDelta(schema.name)}
                 diaryRating={p.ratings?.[schema.needId]}
                 onOpen={() => p.onOpenSchema(schema.name)}
               />
             );
           })}
-        </div>
+        </section>
       ))}
 
       {inactiveSchemas.length > 0 && (
         <YsqInactiveList schemas={inactiveSchemas} scores={p.scores} expanded={p.inactiveExpanded} onToggle={p.onToggleInactive} />
       )}
 
-      {/* CTA — общий компонент (shared, правило №3), клик трекается
+      {/* CTA — YsqTherapyCta (только сайт), клик трекается
           (правило №8, place 'ysq_result'). Прячем целиком, если сам
           пользователь терапевт (isSelf): «Написать вам» бессмысленно. */}
       {activeCount > 0 && !p.cta.isSelf && (
-        <YsqTherapyCta cta={p.cta} tr={p.tr} onLinkClick={() => api.trackPublicEvent('practice_link_click', { place: 'ysq_result' })} />
+        <YsqTherapyCta cta={p.cta} tr={p.tr} art={<SignHero sign={ENTITY_LOOK.therapist.sign} />}
+          onLinkClick={() => api.trackPublicEvent('practice_link_click', { place: 'ysq_result' })} />
       )}
 
       {p.history.length >= 2 && <YsqHistory history={p.history} />}
 
-      <div className="ss-actions">
-        <button onClick={p.onDone} className="ds-btn">Сохранить и закрыть</button>
+      <div className="ss-actions ss-actions--wide">
+        <button onClick={p.onDone} className={p.retakeConfirm ? 'ds-btn ds-btn--secondary' : 'ds-btn'}>Сохранить и закрыть</button>
         {p.retakeConfirm ? (
-          <div className="ss-confirm">
+          <div className="pp-paper ss-confirm">
             <div>Прошлый результат останется в истории, новый появится после последнего вопроса.</div>
             <div className="ss-actions ss-actions--row">
               <button onClick={() => p.onRetakeConfirm(false)} className="ds-btn ds-btn--secondary">Отмена</button>

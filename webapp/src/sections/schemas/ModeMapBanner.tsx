@@ -1,21 +1,26 @@
 import { lazy, Suspense } from 'react';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { GlyphArrowLeft } from '../../components/exercises/ExScreen';
-import { DIARY_HUE, hueStyle } from '../../lib/tone';
-import { Cluster } from '../../components/art/PaperArtSigns';
+import { hueStyle } from '../../lib/tone';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { SignHero } from '../../components/paper/SignHero';
+import { glue } from '../../../../shared/src/utils/typo';
 
 const ModeMapViewer = lazy(() => import('../../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
 
-/** Баннер «Карта режимов с терапевтом» — виден, только если карты есть. */
+const MODES = ENTITY_LOOK.modes;
+
+/** Баннер «Карта режимов с терапевтом» — виден, только если карты есть: лист неба режимов, знак
+ *  режимов крупно с тенью-вырезкой справа (как плитки «Сегодня»), весь лист — тап-цель. */
 export function ModeMapBanner({ count, onOpen }: { count: number; onOpen: () => void }) {
   return (
-    <button className="cs-banner tone-tint" style={hueStyle(DIARY_HUE.mode)} onClick={onOpen}>
-      <span className="pp-row-art"><Cluster size="row" /></span>
+    <button className="pp-paper cs-banner" style={hueStyle(MODES.hue)} onClick={onOpen}>
       <span className="cs-banner-text">
-        <span className="ds-h3">Карта режимов с терапевтом</span>
-        <span className="cs-banner-sub">{count === 1 ? 'Схема того, как режимы развиваются на триггер' : `${count} карты · как режимы развиваются на триггер`}</span>
+        <span className="ds-h3">{glue('Карта режимов с терапевтом')}</span>
+        <span className="cs-banner-sub">{glue(count === 1 ? 'Схема того, как режимы развиваются на триггер' : `${count} карты · как режимы развиваются на триггер`)}</span>
+        <span className="pp-arrow cs-banner-arrow" aria-hidden="true">→</span>
       </span>
-      <span className="cs-banner-arrow">→</span>
+      <span className="cs-banner-art" aria-hidden="true"><SignHero sign={MODES.sign} /></span>
     </button>
   );
 }

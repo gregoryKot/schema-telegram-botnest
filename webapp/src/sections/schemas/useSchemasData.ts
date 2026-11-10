@@ -3,9 +3,8 @@ import { useEffect, useState } from 'react';
 import { api, reportClientError } from '../../api';
 import { MY_SCHEMA_IDS_KEY, MY_MODE_IDS_KEY, cacheMySchemaIds, cacheMyModeIds, cacheMyPatternsFromProfile, cachedMyIds, trustedProfileLists } from '../../utils/storageKeys';
 import type { YsqScore } from './schemasModel';
-import { useSaveFailure } from '../../hooks/useSaveFailure';
+import { useListSave } from './useListSave';
 import { useYsqProgressListener, useYsqResultVersion } from '../../../../shared/src/hooks/ysqProgressStore';
-import { isUnwritableError } from '../../../../shared/src/api/unwritableError';
 
 export function useSchemasData() {
   const [manualSchemaIds, setManualSchemaIds] = useState<string[]>(() => cachedMyIds(MY_SCHEMA_IDS_KEY));
@@ -17,8 +16,10 @@ export function useSchemasData() {
   const [ysqCompletedAt, setYsqCompletedAt] = useState<string | null>(null);
   const [myMapCount, setMyMapCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  // Отказ записи виден человеку (SaveErrorNote в SchemasSection), не только телеметрии.
-  const save = useSaveFailure();
+  // Отказ записи виден человеку (SelectionSaveNote у блока схем или режимов), не только телеметрии; у
+  // каждого списка свой трекер — успех одного не стирает сбой другого, «Повторить» шлёт свой же список.
+  const schemasSave = useListSave(ids => api.updateSettings({ mySchemaIds: ids }), 'schemas save mySchemaIds failed');
+  const modesSave = useListSave(ids => api.updateSettings({ myModeIds: ids }), 'schemas save myModeIds failed');
   const ysqVersion = useYsqResultVersion(); // тест сдан поверх экрана — перечитать профиль без F5 (QA 2026-11)
 
   useEffect(() => {
@@ -57,18 +58,19 @@ export function useSchemasData() {
   function saveSchemas(ids: string[]) {
     cacheMySchemaIds(ids);
     setManualSchemaIds(ids);
-    save.track(api.updateSettings({ mySchemaIds: ids }), () => reportClientError({ message: 'schemas save mySchemaIds failed', section: 'schemas' }));
+    schemasSave.run(ids);
   }
 
   function saveModes(ids: string[]) {
     cacheMyModeIds(ids);
     setMyModeIds(ids);
-    save.track(api.updateSettings({ myModeIds: ids }), () => reportClientError({ message: 'schemas save myModeIds failed', section: 'schemas' }));
+    modesSave.run(ids);
   }
 
   return {
     loading, manualSchemaIds, myModeIds, ysqSchemaIds, ysqScores,
-    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes, saveFailed: save.failed,
-    saveBlocked: save.failed && isUnwritableError(save.error), // 409: прежний список не читается — повтор не поможет
+    ysqProgressAnswered, ysqCompletedAt, myMapCount, saveSchemas, saveModes,
+    /** Запись списка схем / режимов: failed, blocked (409 — повтор не поможет), retry — тот же список. */
+    schemasSave, modesSave,
   };
 }

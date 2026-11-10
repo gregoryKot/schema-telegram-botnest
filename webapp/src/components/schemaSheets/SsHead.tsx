@@ -16,7 +16,7 @@ export function SsHead({ eyebrow, title, lede, center, layers, cluster, paperHue
   look?: EntityId | SheetLook; heroArt?: ReactNode; meta?: ReactNode; compact?: boolean;
 }) {
   if (look !== undefined) {
-    return <EntitySheet look={look} label={eyebrow} title={title} sub={lede} art={heroArt} meta={meta} compact={compact} titleAs="h1" className="ss-hero" />;
+    return <EntitySheet look={look} label={eyebrow} title={title} sub={lede} art={heroArt} meta={meta} compact={compact} titleAs="h1" className={eyebrow ? 'ss-hero' : 'ss-hero ss-hero--bare'} />;
   }
   const paper = paperHue !== undefined;
   return (

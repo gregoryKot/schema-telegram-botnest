@@ -1,17 +1,22 @@
 // Единый экран паттерна на сайте (схема ИЛИ режим) — открывается тапом по
 // «Моим схемам»/«Моим режимам» вместо прямого упражнения или справки. Состав:
-// карточка
-// (заполнена → ответы, пусто → объяснение и «Заполнить»), «Что поможет»,
-// записи дневника с этим паттерном, ссылка на справку. В упражнение ведёт
-// только явная кнопка; после него карточки перечитываются (сохранил → нашёл).
-import { useState, lazy, Suspense } from 'react';
+// герой — лист бумаги домена/группы со знаком паттерна и ссылкой «О схеме/режиме»
+// (на ≥1024 — разворот: герой слева, содержимое справа), карточка (заполнена →
+// ответы, пусто → объяснение и «Заполнить», сбой загрузки → строка с «Повторить»,
+// без «Заполнить»: новое не ляжет поверх сохранённого), «Что поможет», записи
+// дневника с этим паттерном. В упражнение ведёт только явная кнопка; после него
+// карточки перечитываются (сохранил → нашёл). Под-листы (опросник, «О схеме»,
+// «О режиме») — сиблинги экрана позже в DOM, без своей обёртки: обёртка .u-sheet
+// (z-index 80) прятала опросник z 200 ПОД экраном паттерна (рецепт стенда
+// *-from-pattern-bug, b15).
+import { useState, lazy, Suspense, type CSSProperties } from 'react';
 import '../../styles/pattern-sheet.css';
-import { SsSheet } from '../schemaSheets/SsSheet';
+import { SsSheet, SsHead } from '../schemaSheets/SsSheet';
 import { SchemaDetailSheet } from '../SchemaDetailSheet';
 import { ShareCardSheet } from '../../share/ShareCardSheet';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { hueStyle } from '../../lib/tone';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { api } from '../../api';
 import { botShortUrl } from '../../utils/botConfig';
 import { patternMeta } from '../../../../shared/src/pattern/patternMeta';
@@ -26,7 +31,7 @@ import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaF
 import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 import type { MyCardsKind, MyCardItem } from '../../../../shared/src/pattern/useMyCards';
 import type { PatternEntries } from '../../sections/schemas/usePatternEntries';
-import { patternHue } from './patternHue';
+import { patternLook } from './patternHue';
 import { PatternCardSection } from './PatternCardSection';
 import { PatternHelpSection } from './PatternHelpSection';
 import { PatternEntriesSection } from './PatternEntriesSection';
@@ -42,6 +47,8 @@ interface Props {
   items: MyCardItem[];
   /** Заметки ещё грузятся (силуэт вместо ложного «карточка пуста»). */
   loading?: boolean;
+  /** Заметки не загрузились: «Повторить» вместо «Заполнить» (сбой ≠ пусто). */
+  failed?: boolean;
   reload: () => void;
   /** Дневники схем и режимов (общий источник со статусом строки). */
   entries: PatternEntries;
@@ -51,7 +58,7 @@ interface Props {
 type Sub = 'edit' | 'about' | null;
 
 export function PatternSheet({
-  kind, id, items, loading, reload, entries: diary, onClose,
+  kind, id, items, loading, failed, reload, entries: diary, onClose,
 }: Props) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
@@ -64,39 +71,38 @@ export function PatternSheet({
   const entries = kind === 'schema' ? diary.schemaEntries.filter((e) => e.schemaIds.includes(id)) : diary.modeEntries.filter((e) => e.modeId === id);
 
   const closeSub = () => { setSub(null); reload(); };
-  const hue = hueStyle(patternHue(kind, id));
+  const look = patternLook(kind, id) ?? ENTITY_LOOK[kind === 'schema' ? 'schemas' : 'modes'];
+  const about = (
+    <button type="button" className="ds-link ps-about" onClick={() => setSub('about')}>
+      {kind === 'schema' ? 'О схеме' : 'О режиме'} →
+    </button>
+  );
 
   return (
     <>
-      <SsSheet onBack={goBack}>
-        <div className="ss-head" style={hue}>
-          {meta.subtitle && <span className="ds-chip tone-tint ps-tag">{meta.subtitle}</span>}
-          <h1 className="ss-title">{meta.name}</h1>
-        </div>
-
+      <SsSheet onBack={goBack} spread hero={<SsHead look={look} eyebrow={meta.subtitle} title={meta.name} meta={about} />}>
+        <div className="ps-body" style={{ '--h': look.hue } as CSSProperties}>
         <PatternCardSection
           explainer={kind === 'schema' ? buildSchemaIntroExplainer(tr) : buildModeIntroExplainer(tr)}
           fields={item?.cardFields ?? null}
           loading={loading}
+          failed={failed}
+          sign={look.sign}
+          onRetry={reload}
           onEdit={() => setSub('edit')}
           onShare={() => setShowShare(true)}
         />
         <PatternHelpSection kind={kind} id={id} />
         <PatternEntriesSection kind={kind} entries={entries} onDeleteEntry={deleteEntry} emptyText={PATTERN_EMPTY_ENTRIES[kind]} />
-
-        <button className="ds-link ps-about" onClick={() => setSub('about')}>
-          {kind === 'schema' ? 'О схеме' : 'О режиме'} →
-        </button>
+        </div>
       </SsSheet>
 
       {sub === 'edit' && (
-        <div className="u-sheet">
-          <Suspense fallback={null}>
-            {kind === 'schema'
-              ? <SchemaEx initialSchemaId={id} initialData={item?.values} onBack={closeSub} onComplete={reload} />
-              : <ModeEx initialModeId={id} initialData={item?.values} onBack={closeSub} onComplete={reload} />}
-          </Suspense>
-        </div>
+        <Suspense fallback={null}>
+          {kind === 'schema'
+            ? <SchemaEx initialSchemaId={id} initialData={item?.values} onBack={closeSub} onComplete={reload} />
+            : <ModeEx initialModeId={id} initialData={item?.values} onBack={closeSub} onComplete={reload} />}
+        </Suspense>
       )}
       {sub === 'about' && (kind === 'schema'
         ? <SchemaDetailSheet schemaId={id} onClose={() => setSub(null)} />

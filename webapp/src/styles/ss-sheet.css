@@ -25,3 +25,8 @@
   .ss-inner { padding-top: 24px; }
 }
 .ss-head--center .pp-head { justify-content: center; }
+/* Герой без надписи (SsHead без eyebrow — «Мои режимы»): на узком листе заголовок встаёт в строку знака, а не под
+   пустой строкой с одним знаком; парный лист «Мои схемы» с надписью — как был (ревью g5 r2). */
+@container pa-sheet (max-width: 440px) {
+  .pa-sheet.ss-hero.ss-hero--bare > .pa-sheet-body > .pa-sheet-title { grid-column: 1; grid-row: 1; align-self: center; margin-top: 0; }
+}

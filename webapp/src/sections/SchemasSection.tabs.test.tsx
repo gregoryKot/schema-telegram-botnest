@@ -3,13 +3,16 @@
 // своё; на десктопе вкладок нет и виден весь экран.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import type { ReactNode } from 'react';
 
 const mobile = vi.hoisted(() => ({ value: true }));
 vi.mock('../components/useIsMobile', () => ({ useIsMobile: () => mobile.value }));
+// «Выраженные» рисуются по ранжированным схемам (patternsTop), поэтому id — настоящей схемы.
 vi.mock('./schemas/useSchemasData', () => ({
   useSchemasData: () => ({
-    loading: false, saveFailed: false, ysqSchemaIds: ['s'], manualSchemaIds: [], ysqScores: {}, ysqCompletedAt: null,
+    loading: false, ysqSchemaIds: ['abandonment'], manualSchemaIds: [], ysqScores: {}, ysqCompletedAt: null,
     ysqProgressAnswered: null, myModeIds: [], myMapCount: 1, saveSchemas: vi.fn(), saveModes: vi.fn(),
+    schemasSave: { failed: false, blocked: false }, modesSave: { failed: false, blocked: false },
   }),
 }));
 vi.mock('./schemas/usePatternLayer', () => ({
@@ -27,7 +30,8 @@ vi.mock('./schemas/YsqTestCard', () => ({ YsqTestCard: stub('test-card') }));
 vi.mock('./schemas/MySchemasList', () => ({ MySchemasList: stub('my-list') }));
 vi.mock('./schemas/MySchemasBlock', () => ({ MySchemasBlock: stub('my-chips') }));
 vi.mock('./schemas/SchemaMap', () => ({ SchemaMap: stub('map') }));
-vi.mock('./schemas/ModesBlocks', () => ({ ModesBlocks: stub('modes') }));
+// ModesBlocks рисует переданный баннер между своими режимами и картой (b15) — заглушка тоже.
+vi.mock('./schemas/ModesBlocks', () => ({ ModesBlocks: ({ banner }: { banner?: ReactNode }) => <><div data-testid="modes" />{banner}</> }));
 vi.mock('./schemas/MyModesList', () => ({ MyModesList: stub('my-modes') }));
 vi.mock('./schemas/ModeMap', () => ({ ModeMap: stub('modes-map') }));
 vi.mock('./schemas/ModeMapBanner', () => ({ ModeMapBanner: stub('mode-map'), MyModeMapSheet: stub('mode-map-sheet') }));
