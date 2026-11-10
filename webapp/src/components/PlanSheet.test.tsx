@@ -9,6 +9,7 @@ import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
+import { plainText } from '../test-support/plainText';
 import { describeCrisisField } from '../test-support/crisisCardHarness';
 import { setHost, type HostBridge } from '../../../shared/src/host';
 
@@ -232,13 +233,14 @@ describe('PlanSheet — useHistorySheet (браузерная «Назад»)', 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('на шаге подтверждения «← Выбрать другое» возвращает к выбору, а НЕ закрывает лист', async () => {
+  it('на шаге подтверждения «Выбрать другое» возвращает к выбору, а НЕ закрывает лист (одна стрелка — у полосы, b20)', async () => {
     const { onClose } = renderSheet();
     await act(async () => {});
     const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
     fireEvent.change(textarea, { target: { value: 'Практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
-    fireEvent.click(screen.getByText('← Выбрать другое'));
+    expect(screen.queryByText(/←/)).toBeNull(); // «← ← Выбрать другое»: стрелка в подписи дублировала глиф полосы
+    fireEvent.click(screen.getByText('Выбрать другое'));
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByPlaceholderText('Что-то конкретное, маленькое...')).toBeTruthy();
   });
@@ -252,7 +254,7 @@ describe('PlanSheet — сбой загрузки своих практик (с�
     renderSheet();
     await act(async () => {});
 
-    expect(screen.getByRole('alert').textContent).toContain(
+    expect(plainText(screen.getByRole('alert'))).toContain(
       'Не удалось загрузить твой список «Что меня питает»',
     );
     // Кураторский список работает — деградация, не пустота.

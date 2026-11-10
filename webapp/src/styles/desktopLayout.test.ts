@@ -42,6 +42,9 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
   'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560
   'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'], // во всю колонку 400
+  'sections/today/AllTasksOverlay.tsx': ['own', '.sk-wide-btn'], // «+ Поставить цель» во всю колонку листа «задания» (b20)
+  'components/plans/PlanConfirm.tsx': ['own', '.sk-ics'], // «Сохранить план» и календарь — во всю колонку разворота (b20)
+  'components/TaskCreateSheet.tsx': ['content', '.sk-submit .ds-btn'], // полоса внизу листа: справа по содержимому (b20)
 };
 function lgDecisionOk(rules: Rule[], kind: 'own' | 'stretch' | 'content', sel: string): boolean {
   const mine = rules.filter((r) => r.selectors.includes(sel) && !isPhone(r.media) && !isTouch(r.media));

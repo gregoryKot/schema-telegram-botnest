@@ -69,7 +69,8 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
   it('своя цель — язык клиента: «Новая цель», «Выбери цель», «Поставить цель»', () => {
     renderSheet();
     expect(screen.getByText('Новая цель')).toBeTruthy();
-    expect(screen.getByText('цель', { selector: 'em' })).toBeTruthy();
+    // b20: вопрос одной строкой Literata в листе-шапке (было «Выбери» / курсивом «цель» в две строки).
+    expect(screen.getByRole('heading', { level: 1, name: 'Выбери цель' })).toBeTruthy();
     expect(screen.queryByText(/Назначить|Новое задание/)).toBeNull();
   });
 
@@ -87,8 +88,8 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
         </AddressFormContext.Provider>
       </MemoryRouter>,
     );
-    expect(screen.getByText('Выберите')).toBeTruthy();
-    expect(screen.queryByText('Выбери')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Выберите цель' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /Выбери / })).toBeNull();
     fireEvent.click(screen.getByText('Поставить цель'));
     expect(screen.queryByText('Выбери схему')).toBeNull(); // не должно быть тыкающей ошибки
     expect(screen.getByText('Выберите схему')).toBeTruthy();

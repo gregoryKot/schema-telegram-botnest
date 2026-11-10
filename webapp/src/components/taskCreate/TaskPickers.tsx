@@ -1,15 +1,13 @@
-import { SCHEMA_DOMAINS, ALL_MODES } from '../../schemaTherapyData';
-import { pressable } from '../../utils/a11y';
-import { DomainMark } from '../DomainMark';
-import { Cluster } from '../art/PaperArtSigns';
-
-const ALL_SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ id: s.id, name: s.name, domainId: d.id })));
-
-function Check() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><polyline points="2,7 5.5,10.5 12,3.5" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-  );
-}
+// Выбор схемы и режима для карточки-задания (TaskCreateSheet, b20). Режимы — общий список по группам (ModeGroupList:
+// бумага группы и её знак, как в дневнике режимов и «Справочнике»): до b20 здесь шли 36 строк с одним и тем же
+// Cluster. Схемы — так же по доменам: бумага домена и DomainArt у подписи группы, строки без знака.
+import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import { haptic } from '../../haptic';
+import { hueStyle } from '../../lib/tone';
+import { domainLook } from '../../../../shared/src/theme/entityLook';
+import { SignArt } from '../art/SignArt';
+import { GlyphCheck } from '../exercises/ExScreen';
+import { ModeGroupList } from '../diary/ModeGroupList';
 
 interface PickerProps { value: string; onPick: (id: string) => void }
 
@@ -17,16 +15,28 @@ export function SchemaPicker({ value, onPick }: PickerProps) {
   return (
     <div className="sk-field">
       <div className="ds-label">Какую схему изучить?</div>
-      <div className="ds-card ds-card--flush">
-        {ALL_SCHEMAS_FLAT.map(s => (
-          <div key={s.id} className="ds-list-row ds-list-row--hover sk-pick" {...pressable(() => onPick(s.id))}>
-            <span className="sk-pick-name">
-              <DomainMark domainId={s.domainId} />
-              <span className={value === s.id ? 'sk-strong' : undefined}>{s.name}</span>
-            </span>
-            {value === s.id && <Check />}
-          </div>
-        ))}
+      <div className="sk-domains">
+        {SCHEMA_DOMAINS.map(d => {
+          const look = domainLook(d.id);
+          return (
+            <section key={d.id} className="pp-paper sk-domain" style={hueStyle(look?.hue)}>
+              <h3 className="sk-domain-head">
+                {look && <span className="sk-domain-sign" aria-hidden="true"><SignArt sign={look.sign} size="row" /></span>}
+                <span className="ds-label">{d.domain}</span>
+              </h3>
+              <div className="sk-domain-rows">
+                {d.schemas.map(s => (
+                  <button key={s.id} type="button" aria-pressed={value === s.id}
+                    className={'sk-pick' + (value === s.id ? ' is-on' : '')}
+                    onClick={() => { haptic.select(); onPick(s.id); }}>
+                    <span className="sk-pick-name">{s.name}</span>
+                    <span className="sk-pick-check" aria-hidden="true"><GlyphCheck /></span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
@@ -36,17 +46,7 @@ export function ModePicker({ value, onPick }: PickerProps) {
   return (
     <div className="sk-field">
       <div className="ds-label">Какой режим изучить?</div>
-      <div className="ds-card ds-card--flush">
-        {ALL_MODES.map(m => (
-          <div key={m.id} className="ds-list-row ds-list-row--hover sk-pick" {...pressable(() => onPick(m.id))}>
-            <span className="sk-pick-name">
-              <span className="pp-row-art"><Cluster size="row" /></span>
-              <span className={value === m.id ? 'sk-strong' : undefined}>{m.name}</span>
-            </span>
-            {value === m.id && <Check />}
-          </div>
-        ))}
-      </div>
+      <ModeGroupList modeId={value} onPick={onPick} />
     </div>
   );
 }

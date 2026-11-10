@@ -68,13 +68,15 @@ describe('AllTasksOverlay — каждое задание открывается
 });
 
 describe('AllTasksOverlay — статус бейджем из shared/taskStatus, а не точкой', () => {
-  it('в работе, выполнено и «не вышло» — словами; одинокой «·» нет', () => {
+  // b20: «В работе» стояло у каждой строки и шумело — в строке только то, что просит внимания (срок); итог истории —
+  // словами в мете строки «Выполнено».
+  it('выполнено и «не вышло» — словами; «В работе» у строк нет; одинокой «·» нет', () => {
     renderOverlay(
       [task({ id: 1, type: 'belief_check', text: '' })],
       [task({ id: 2, text: 'Сделала', done: true, completedAt: '2026-11-02T10:00:00.000Z' }),
         task({ id: 3, text: 'Серия', type: 'diary_streak', done: false })],
     );
-    expect(screen.getByText('В работе')).toBeTruthy();
+    expect(screen.queryByText('В работе')).toBeNull();
     expect(screen.getByText('Выполнено', { selector: '.ds-badge' })).toBeTruthy();
     expect(screen.getByText('Не вышло')).toBeTruthy();
     expect(screen.queryByText('·')).toBeNull();
@@ -98,5 +100,49 @@ describe('AllTasksOverlay — статус бейджем из shared/taskStatus
         vi.useRealTimers();
       }
     });
+  });
+});
+
+// b20: список группами, как на «Практиках»: «От терапевта», «Мои цели», «Выполнено» (свёрнуто, пока есть активные —
+// строки истории в DOM, смок «Выполнено» их находит); пусто — лист «задания» с подписью и одной кнопкой; пока грузится —
+// силуэт строк, а не «пусто».
+describe('AllTasksOverlay — группы, пусто, загрузка', () => {
+  const by = 9 as UserTask['assignedBy'];
+
+  it('группы по порядку: от терапевта, мои цели, выполнено; история свёрнута и раскрывается', () => {
+    renderOverlay(
+      [task({ id: 1, text: 'Своя', type: 'belief_check' }), task({ id: 2, text: 'Назначенная', type: 'belief_check', assignedBy: by })],
+      [task({ id: 3, text: 'Готовая', done: true })],
+    );
+    const heads = [...document.querySelectorAll('.sk-group-title')].map(h => h.textContent);
+    expect(heads).toEqual(['От терапевта', 'Мои цели', 'Выполнено']);
+    const toggle = screen.getByRole('button', { name: /Выполнено/ });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    const history = document.querySelector('.sk-done-group .sk-list') as HTMLElement;
+    expect(history.hidden).toBe(true);
+    expect(history.textContent).toContain('Готовая');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(history.hidden).toBe(false);
+  });
+
+  it('только история — «Выполнено» раскрыто сразу', () => {
+    renderOverlay([], [task({ id: 3, text: 'Готовая', done: true })]);
+    expect(screen.getByRole('button', { name: /Выполнено/ }).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('пусто: заголовок, подпись и одна кнопка; групп нет', () => {
+    renderOverlay([]);
+    expect(screen.getByRole('heading', { level: 1, name: 'Все задания' })).toBeTruthy();
+    expect(screen.getByText(/Поставь цель и иди к ней/)).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: '+ Поставить цель' })).toHaveLength(1);
+    expect(document.querySelector('.sk-group-title')).toBeNull();
+  });
+
+  it('загрузка: силуэт строк вместо «пусто»', () => {
+    const props = { onClose: vi.fn(), onOpen: vi.fn(), onComplete: vi.fn(), onAdd: vi.fn() };
+    render(<MemoryRouter><AllTasksOverlay title="Задания" tasks={[]} taskHistory={[]} loading {...props} /></MemoryRouter>);
+    expect(screen.queryByText(/Поставь цель и иди к ней/)).toBeNull();
+    expect(document.querySelectorAll('.skel').length).toBeGreaterThan(0);
   });
 });

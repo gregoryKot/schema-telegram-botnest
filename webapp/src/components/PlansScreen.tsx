@@ -1,17 +1,17 @@
 import { useCallback } from 'react';
 import { api } from '../api';
 import type { PracticePlan } from '../api';
-import { Skeleton, SkeletonList } from './Skeleton';
-import { useNeedData } from '../needData';
+import { SkeletonList } from './Skeleton';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useAsyncData } from '../hooks/useAsyncData';
-import { NEED_HUE, hueStyle } from '../lib/tone';
-import type { NeedId } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
 import { useTr } from '../utils/addressForm';
-import { planDateLabel, plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
+import { plansEmptyText, plansSummary } from '../../../shared/src/practices/plansCopy';
 import { PlanNeedPicker } from './plans/PlanNeedPicker';
-import { PaperEmpty } from './art/PaperEmpty';
+import { PlanCard } from './plans/PlanCard';
+import { EntitySheet } from './paper/EntitySheet';
+import { PaperAlert } from './paper/PaperAlert';
+import { GlyphArrowLeft } from './exercises/ExScreen';
 import { useNotifyReach } from '../../../shared/src/settings/useNotifyReach';
 
 interface Props {
@@ -19,18 +19,9 @@ interface Props {
   onOpenTracker?: () => void;
 }
 
-function statusClass(done: boolean | null) {
-  if (done === true)  return 'sk-status is-ok';
-  if (done === false) return 'sk-status is-err';
-  return 'sk-status';
-}
-
-function statusIcon(done: boolean | null) {
-  if (done === true)  return '✓';
-  if (done === false) return '×';
-  return '·';
-}
-
+// «История планов» (b20): шапка — лист плана (шалфей 135 + Check из ENTITY_LOOK) с итогом «1 активный · 3
+// завершённых» и полосой мха; пусто — тот же лист «Планов пока нет» и пять плиток потребностей (NeedTiles);
+// сбой — наклейка PaperAlert с повтором; строки — PlanCard. «Закрыть» — в полосе листа, а не кнопкой в шапке.
 export function PlansScreen({ onClose, onOpenTracker }: Props) {
   const goBack = useHistorySheet(onClose);
   const tr = useTr();
@@ -43,116 +34,64 @@ export function PlansScreen({ onClose, onOpenTracker }: Props) {
 
   const pending   = (plans ?? []).filter(p => p.done === null);
   const completed = (plans ?? []).filter(p => p.done !== null);
-
   const total = (plans ?? []).length;
+  const empty = !loadFailed && plans !== null && total === 0;
 
-  return (
-    <div className="u-sheet">
-      <div className="sk-page sk-page--wide">
-        <div className="ds-head-row sk-head">
-          <div>
-            <div className="ds-eyebrow">Планы</div>
-            <h1 className="ds-h2 sk-title">История<br /><em className="sk-it">планов</em></h1>
-            {plans !== null && plans.length > 0 && (
-              <div className="ds-sub sk-lead">{plansSummary(pending.length, completed.length)}</div>
-            )}
-          </div>
-          <button onClick={goBack} className="ds-btn ds-btn--secondary">Закрыть</button>
-        </div>
-
-        {plans !== null && total > 0 && (
-          <div className="sk-bar" aria-hidden="true">
-            <i style={{ width: `${Math.round((completed.length / total) * 100)}%` }} />
-          </div>
-        )}
-
-        {loadFailed ? (
-          // Сбой ≠ пусто: не путать с «Планов пока нет» ниже — там реальный
-          // пустой ответ, здесь запрос не прошёл вовсе.
-          <div role="alert" className="ds-card sk-alert">
-            <p className="sk-error">
-              {tr('Не удалось загрузить планы. Проверь соединение', 'Не удалось загрузить планы. Проверьте соединение')}
-            </p>
-            <button onClick={load} className="ds-btn">
-              Попробовать ещё раз
-            </button>
-          </div>
-        ) : !plans ? (
-          <div className="sk-group" aria-hidden><Skeleton width={150} height={12} /><SkeletonList rows={3} height={112} /></div>
-        ) : plans.length === 0 ? (
-          <div className="sk-group">
-            <PaperEmpty title="Планов пока нет">{plansEmptyText(tr, notifyReach)}</PaperEmpty>
-            <PlanNeedPicker onPlanned={load} />
-            {onOpenTracker && (
-              <button onClick={() => goBack(onOpenTracker)} className="ds-link sk-self-start">
-                Открыть трекер →
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            {pending.length > 0 && (
-              <div className="sk-group">
-                <div className="ds-label">Ожидают выполнения</div>
-                <div className="sk-list">
-                  {pending.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
-                </div>
-              </div>
-            )}
-
-            {completed.length > 0 && (
-              <div className="sk-group">
-                <div className="ds-label">Выполненные</div>
-                <div className="sk-list">
-                  {completed.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans}/>)}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+  const bar = total > 0 && (
+    <div className="sk-bar" aria-hidden="true"><i style={{ width: `${Math.round((completed.length / total) * 100)}%` }} /></div>
   );
-}
-
-function PlanCard({ plan, onUpdate }: { plan: PracticePlan; onUpdate: React.Dispatch<React.SetStateAction<PracticePlan[] | null>> }) {
-  const isPending  = plan.done === null;
-  const NEED_DATA = useNeedData();
-  const needData   = NEED_DATA[plan.needId];
-
-  function checkin(done: boolean) {
-    onUpdate(prev => prev?.map(p => p.id === plan.id ? { ...p, done } : p) ?? null);
-    api.checkinPlan(plan.id, done).catch(() => {
-      onUpdate(prev => prev?.map(p => p.id === plan.id ? { ...p, done: null } : p) ?? null);
-    });
-  }
 
   return (
-    <div className="ds-card ds-card--row sk-plan">
-      <div className="sk-plan-top">
-        <div className="sk-plan-meta">
-          {needData && <span className="ds-dot tone-fill" style={hueStyle(NEED_HUE[plan.needId as NeedId])} />}
-          <span className="sk-plan-need tone-ink" style={hueStyle(NEED_HUE[plan.needId as NeedId])}>
-            {needData?.name ?? plan.needId}
-          </span>
-          <span className="ds-sub">·</span>
-          <span className="ds-sub">{planDateLabel(plan.scheduledDate)}</span>
-        </div>
-        <span className={statusClass(plan.done)}>{statusIcon(plan.done)}</span>
+    <div className="u-sheet-grid sk-plans-sheet">
+      <div className="ds-sheet-head">
+        <button type="button" className="ds-back" onClick={goBack}><GlyphArrowLeft /> Закрыть</button>
       </div>
+      <div className="sk-scroll">
+        <div className="sk-page sk-page--wide">
+          {empty ? (
+            <EntitySheet look="plan" label="Планы" title="Планов пока нет" titleAs="h1" sub={plansEmptyText(tr, notifyReach)} />
+          ) : (
+            <EntitySheet look="plan" label="Планы" title="История планов" titleAs="h1"
+              sub={total > 0 ? plansSummary(pending.length, completed.length) : undefined} meta={bar || undefined} />
+          )}
 
-      <div className="sk-plan-text">{plan.practiceText}</div>
-
-      {isPending && (
-        <div className="sk-plan-actions">
-          <button onClick={() => checkin(true)} className="ds-btn ds-btn--sm ds-btn--secondary">
-            Выполнено
-          </button>
-          <button onClick={() => checkin(false)} className="ds-btn ds-btn--sm ds-btn--secondary">
-            Не вышло
-          </button>
+          {loadFailed ? (
+            // Сбой ≠ пусто: не путать с «Планов пока нет» — там реальный пустой ответ, здесь запрос не прошёл вовсе.
+            <PaperAlert title={tr('Не удалось загрузить планы. Проверь соединение', 'Не удалось загрузить планы. Проверьте соединение')}
+              sign="check" onRetry={load} retryLabel="Попробовать ещё раз" />
+          ) : !plans ? (
+            <div className="sk-group" aria-hidden><SkeletonList rows={3} height={104} /></div>
+          ) : empty ? (
+            <div className="sk-group">
+              <PlanNeedPicker onPlanned={load} />
+              {onOpenTracker && (
+                <button onClick={() => goBack(onOpenTracker)} className="ds-link sk-self-start">
+                  Открыть трекер →
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {pending.length > 0 && (
+                <div className="sk-group">
+                  <h2 className="sk-group-title">Ожидают выполнения</h2>
+                  <div className="sk-list">
+                    {pending.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />)}
+                  </div>
+                </div>
+              )}
+              {completed.length > 0 && (
+                <div className="sk-group">
+                  <h2 className="sk-group-title">Выполненные</h2>
+                  <div className="sk-list">
+                    {completed.map(plan => <PlanCard key={plan.id} plan={plan} onUpdate={setPlans} />)}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -91,7 +91,10 @@ describe('PlanSheet — напоминанию некуда прийти', () =>
   it('«Сохранить без календаря» сохраняет план без файла; второй тап не создаёт второй план', async () => {
     await openConfirm(false);
     await act(async () => { fireEvent.click(screen.getByText('Сохранить без календаря')); });
-    await act(async () => { fireEvent.click(screen.getByText('Google Календарь ↗')); });
+    // b20: после сохранения шаг сменяется листом «Запланировано» — второго тапа по календарю не бывает (защита от
+    // второго плана в самом usePlanSheetState — его тест).
+    expect(screen.getByText('Запланировано')).toBeTruthy();
+    expect(screen.queryByText('Google Календарь ↗')).toBeNull();
     expect(saveFile).not.toHaveBeenCalled();
     expect(mockApi.createPlan).toHaveBeenCalledTimes(1);
   });
