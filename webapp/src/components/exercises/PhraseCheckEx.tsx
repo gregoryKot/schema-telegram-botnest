@@ -7,24 +7,30 @@
 // (правило №10). Свободный текст проходит кризисный гейт ДО сохранения
 // (правило №7). Строки истории кликабельны — открывают PhraseHistoryCard
 // с правкой ответа (паритет с miniapp, гейт паритета фич правило №16).
+// Вид (редизайн 2026-11, b18): герой — лист сливы со сценой двух голосов (ScenePhrase), со второго шага
+// компактнее и без подводки; ход — девять бусин на листе (PhraseBeads); подсказка — наклейкой соломы
+// (на телефоне — после шага); итог — PhraseDoneScreen в той же рамке экрана.
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import type { PhraseCheckEntry } from '../../api';
-import { ExScreen, GlyphArrowRight } from './ExScreen';
+import { ExScreen } from './ExScreen';
+import { ExBar } from './ExBar';
+import { useExBackLabel } from './exBackLabel';
+import { PhraseStartStep } from './phraseCheckEx/PhraseStartStep';
 import { PhraseMarkStep } from './phraseCheckEx/PhraseMarkStep';
 import { PhraseRewriteStep } from './phraseCheckEx/PhraseRewriteStep';
-import { PhraseDoneCard } from './phraseCheckEx/PhraseDoneCard';
+import { PhraseDoneScreen } from './phraseCheckEx/PhraseDoneScreen';
 import { PhraseHistoryCard } from './phraseCheckEx/PhraseHistoryCard';
 import { PhraseHistoryRows } from './phraseCheckEx/PhraseHistoryRows';
+import { PhraseBeads } from './phraseCheckEx/PhraseBeads';
+import { ScenePhrase } from '../art/ScenePhrase';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { detectCrisisAny } from '../../utils/crisisMarkers';
-import { CrisisCard } from '../CrisisCard';
+import { hueStyle } from '../../lib/tone';
 import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
 import { usePhraseCheckState } from '../../../../shared/src/phraseCheck/usePhraseCheckState';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
-import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
-import { EXERCISE_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
+import { PAPER_HUE } from '../../../../shared/src/theme/entityLook';
 
 const TOTAL_STEPS = PHRASE_CRITERIA.length + 2; // фраза + 9 примет + переписать
 
@@ -37,6 +43,7 @@ export function PhraseCheckEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
+  const backLabel = useExBackLabel();
   const {
     phrase, setPhrase, markIndex, setMarkIndex, marks,
     rewrite, setRewrite, inWarmWords, setInWarmWords, answer, reset, clearDraft,
@@ -86,7 +93,6 @@ export function PhraseCheckEx({
   const onMarks = markIndex >= 0 && markIndex < PHRASE_CRITERIA.length;
   const onRewrite = markIndex >= PHRASE_CRITERIA.length;
   const stepNumber = markIndex < 0 ? 1 : Math.min(markIndex + 2, TOTAL_STEPS);
-  const progress = (stepNumber / TOTAL_STEPS) * 100;
   const pastEntries = history.filter((h) => h.phrase !== phrase.trim()).slice(0, 3);
   const openHistoryEntry = history.find((h) => h.id === openHistoryId);
 
@@ -104,34 +110,25 @@ export function PhraseCheckEx({
       tr={tr}
     />
   );
+  const pastRows = pastEntries.length > 0 && (
+    <section className="ex2-past-list">
+      <div className="ds-label">Прошлые разборы · {history.length}</div>
+      <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} showRewrite />
+    </section>
+  );
 
   if (done) {
     return (
       <>
-        <ExScreen
-          onBack={goBack}
-          eyebrow="Критик или забота? · сохранено"
-          title={<>Разобрано.<br /><span className="it">Голос учится заново.</span></>}
-          lede={tr(
-            'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
-            'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
-          )}
-          aside={
-            pastEntries.length > 0 ? (
-              <div className="ds-card ex2-note">
-                <div className="ds-label">Прошлые разборы · {history.length}</div>
-                <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} />
-              </div>
-            ) : undefined
-          }
-        >
-          <PhraseDoneCard phrase={phrase.trim()} rewrite={rewrite} marks={marks} />
-          <div className="ex2-foot">
-            <button className="ds-btn ds-btn--secondary" onClick={again}>Проверить ещё одну</button>
-            <span className="ex2-spacer" />
-            <button className="ds-btn" onClick={goBack}>Закрыть</button>
-          </div>
-        </ExScreen>
+        <div className="ex2-screen">
+          <ExBar onBack={goBack} label={backLabel} sticky />
+          <PhraseDoneScreen phrase={phrase.trim()} rewrite={rewrite} marks={marks} past={pastEntries} total={history.length}
+            onOpenPast={setOpenHistoryId} onAgain={again} onClose={goBack}
+            lede={tr(
+              'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
+              'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
+            )} />
+        </div>
         {historyOverlay}
       </>
     );
@@ -149,73 +146,32 @@ export function PhraseCheckEx({
   return (
     <>
     <ExScreen
-      onBack={goBack} caution
+      onBack={goBack} caution look="phrase_check" compact={markIndex >= 0}
+      heroArt={<ScenePhrase />}
+      heroFoot={<PhraseBeads marks={marks} markIndex={markIndex} step={stepNumber} total={TOTAL_STEPS} />}
       eyebrow={exerciseCard('phrase').eyebrow}
       title={<>Критик<br /><span className="it">или забота?</span></>}
-      lede={tr(
+      lede={markIndex < 0 ? tr(
         'Запиши дословно фразу, которую говоришь себе или слышишь от других. Разбери её по девяти приметам и перепиши голосом, который помогает.',
         'Запишите дословно фразу, которую говорите себе или слышите от других. Разберите её по девяти приметам и перепишите голосом, который помогает.',
-      )}
+      ) : undefined}
       aside={
-        <div className="ds-card ex2-note">
-          <div className="ds-label">{asideCard.title}</div>
-          <p className="ex2-note-body">{asideCard.body}</p>
-        </div>
+        <>
+          <div className="pp-paper ex2-sticker" style={hueStyle(PAPER_HUE.straw)}>
+            <div className="ds-label">{asideCard.title}</div>
+            <p className="ex2-note-body">{asideCard.body}</p>
+          </div>
+          {markIndex < 0 && pastRows}
+        </>
       }
     >
-      <div
-        role="progressbar" aria-label="Шаг упражнения"
-        aria-valuenow={stepNumber}
-        aria-valuemin={1}
-        aria-valuemax={TOTAL_STEPS}
-        className="ex2-progress"
-      >
-        <i style={{ width: `${progress}%` }} />
-      </div>
-
       {markIndex < 0 && (
-        <>
-          <div className="ex2-prompt">
-            <div className="ex2-prompt-num">01.</div>
-            <div>
-              <div className="ex2-prompt-label">Что сказал внутренний голос?</div>
-              <p className="ex2-prompt-hint">
-                {tr(
-                  'Дословно, теми же словами. Дальше проверим её по девяти приметам.',
-                  'Дословно, теми же словами. Дальше проверим её по девяти приметам.',
-                )}
-              </p>
-              <LimitedTextarea
-                max={EXERCISE_TEXT_MAX}
-                ref={phraseRef}
-                className="ds-textarea"
-                rows={3}
-                value={phrase}
-                onChange={(e) => setPhrase(e.target.value)}
-                placeholder="Например: опять всё завалила, ни на что не гожусь"
-              />
-            </div>
-          </div>
-          {detectCrisisAny(phrase) && <CrisisCard surface="phrase_check" />}
-          <div className="ex2-foot">
-            <span className="ex2-spacer" />
-            <button className="ds-btn" disabled={!phrase.trim()} onClick={() => setMarkIndex(0)}>
-              Проверить <GlyphArrowRight />
-            </button>
-          </div>
-          {pastEntries.length > 0 && (
-            <div className="u-mt8">
-              <div className="ds-label u-mb10">Прошлые разборы · {history.length}</div>
-              <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} showRewrite />
-            </div>
-          )}
-        </>
+        <PhraseStartStep phrase={phrase} setPhrase={setPhrase} fieldRef={phraseRef} onNext={() => setMarkIndex(0)} />
       )}
 
       {onMarks && (
         <PhraseMarkStep
           index={markIndex}
-          total={PHRASE_CRITERIA.length}
           phrase={phrase.trim()}
           onAnswer={answer}
         />
@@ -223,6 +179,7 @@ export function PhraseCheckEx({
 
       {onRewrite && (
         <PhraseRewriteStep
+          phrase={phrase.trim()}
           marks={marks}
           rewrite={rewrite}
           setRewrite={setRewrite}
@@ -239,4 +196,3 @@ export function PhraseCheckEx({
     </>
   );
 }
-

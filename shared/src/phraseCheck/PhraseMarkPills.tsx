@@ -1,27 +1,13 @@
-// Пилюли с приметами критика в карточке прошлого разбора — единственная
-// копия (правило №3): вёрстка совпадала 1-в-1 на обоих фронтендах (только
-// контейнер с цитатой фразы вокруг неё стилизован по-разному — он остаётся
-// у каждого фронтенда свой).
+// Найденные приметы критика в карточке прошлого разбора — бусинами сливы с подписью (b18: тот же язык,
+// что девять бусин хода разбора), а не бледно-розовыми чипами. Единственная копия (правило №3); вид —
+// .ex2-mark-beads (webapp/src/styles/ex-phrase.css), бусина — декоративный ::before.
 export function PhraseMarkPills({ labels }: { labels: string[] }) {
   if (labels.length === 0) return null;
   return (
-    <div
-      style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}
-    >
+    <ul className="ex2-mark-beads">
       {labels.map((m) => (
-        <span
-          key={m}
-          style={{
-            fontSize: 11.5,
-            padding: '4px 9px',
-            borderRadius: 999,
-            background: 'color-mix(in srgb, var(--accent-red) 8%, transparent)',
-            color: 'var(--text-sub)',
-          }}
-        >
-          {m}
-        </span>
+        <li key={m}>{m}</li>
       ))}
-    </div>
+    </ul>
   );
 }

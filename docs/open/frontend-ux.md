@@ -184,6 +184,9 @@
   `all-tasks.css`), `.tk2-done` (`sheet-tracker.css`), `.ss-group-eyebrow`, `.ss-row` в списке фокуса
   (`schema-library.css`, `sheet-schemas.css`), `.prompt`, `.flash`, `.flash-q`
   (`webapp/src/index.css`, перед блоком фокуса; `.entry` и `.intensity` main удалил в 2026-11). Доказано grep по классу; удалять — тому, кто правит экран.
+  С b18 (2026-11-10) к ним добавился `.ex2-scene.pp-paper` (`webapp/src/styles/sheet-exercises.css`, «Лист «готово»
+  «Безопасного места»»): итог места теперь `DoneSheet` со сценой `SceneHaven`, класса `ex2-scene` в разметке нет;
+  файл чужой для партии — удалить правилом владельца файла.
 - **Шторка `.sheet-modal*` осталась в `index.css`**, хотя разделы «диалог по центру» и настроек уехали в хвост
   (`styles/index-tail.css`): вынесенный за блок фокуса, её радиус проиграл бы `*:focus-visible { border-radius }`
   у контейнера с `tabIndex=-1` (`shared/src/utils/dialogA11y.ts`). Владельца у `BottomSheetShell` в плане нет —
