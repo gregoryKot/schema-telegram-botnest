@@ -19,7 +19,7 @@ export interface SheetGroup {
   /** Пояснение под заголовком группы. */
   note?: string;
   fixedOrder?: boolean;
-  actions: { id: string; label: string; sub: string }[];
+  actions: { id: string; label: string; sub: string; sign?: Parameters<typeof CustomizeRow>[0]['sign'] }[];
 }
 
 interface Props {
@@ -63,7 +63,7 @@ export function QuickActionCustomizeSheet({
                     <CustomizeRow
                       key={a.id}
                       title={a.label}
-                      sub={a.sub}
+                      sub={a.sub} sign={a.sign}
                       on={!wasHidden}
                       onToggle={() => handlers.handleToggle(a.id, wasHidden)}
                       handle={g.fixedOrder ? undefined : dragHandleProps}

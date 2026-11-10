@@ -166,6 +166,7 @@ export const FIXTURES: Record<string, unknown> = {
   'GET /api/diary/page/schema': { items: [], hasMore: false },
   'GET /api/diary/schema': [],
   'GET /api/disclaimer': { accepted: true }, // согласие уже дано
+  'GET /api/flashcards': [], // exercises.controller.ts: мета квадрата «Мне плохо» в «Практиках» (b14)
   'GET /api/letters': [], // exercises.controller.ts
   'GET /api/mode-notes': [], // notes.controller.ts
   'GET /api/needs': STUB_NEEDS,

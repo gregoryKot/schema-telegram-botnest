@@ -1,22 +1,28 @@
-/* ── Шапка «Практики»: ряд заголовка, значок «Важное о самопомощи» и его лист ── */
+/* ── Шапка «Практики»: ряд заголовка, тихие ссылки «Важное о самопомощи» и «Настроить», лист ── */
 /* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
    начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './crisis.css';
-/* Ряд: заголовок, значок, справа ссылка «Настроить инструменты». На телефоне
-   ссылка не помещается рядом с заголовком и переносится второй строкой, вправо. */
-.cp-head-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-8) var(--space-12); margin-top: var(--space-8); }
-.cp-head-row .ds-h1 { margin: 0; min-width: 0; }
-.cp-head-end { margin-left: auto; display: flex; }
+/* Ряд надписи: «Практики», справа ссылки; не помещаются — переносятся второй строкой вправо.
+   Зона нажатия ссылок 44px не раздвигает ряд: отрицательные поля ссылок съедают её запас. На
+   телефоне в ряду только «Настроить», «Важное о самопомощи» — под вводной практик (.cp-here-intro). */
+.cp-head-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0 var(--space-12); }
+.cp-head-row > .cp-head-end { margin-block: -14px; }
+.cp-head .ds-h1 { margin: var(--space-8) 0 0; min-width: 0; }
+.cp-head-end { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--space-24); }
 .cp-head-sub { margin: var(--space-8) 0 0; line-height: 1.5; }
 .cp-head-banner { margin-top: var(--space-8); }
 .cp-head-banner.is-today { color: var(--ok-ink); }
-/* Значок — та же иконочная кнопка, что шестерёнка и остальные действия в шапке
-   (ds-btn ds-btn--icon); предупреждение задаёт только цвет, без заливки --warn. */
-.ds-btn--icon.cp-selfhelp, .ds-btn--icon.cp-selfhelp:hover { color: var(--warn-ink); -webkit-tap-highlight-color: transparent; }
+/* «Важное о самопомощи» — тихая ссылка со знаком Limits (рамка метода), а не тревожный ⚠. */
+.ds-link.cp-selfhelp { min-height: 44px; display: inline-flex; align-items: center; gap: var(--space-8); }
+.cp-selfhelp-sign { display: inline-flex; }
+.cp-selfhelp-sign > .pp-art { width: 28px; height: auto; }
 
-.sh-head { margin-bottom: var(--space-12); } /* строка — pp-head (paper.css) */
-.sh-title { margin: 0; }
-.sh-text { margin: 0 0 var(--space-12); font-size: 14px; line-height: 1.65; color: var(--text-sub); }
+/* Лист: шапка — бумага шалфея со знаком (строка pp-head, paper.css), лид — Literata, остальное — текст. */
+.sh-head { margin-bottom: var(--space-16); padding: 18px 18px 18px 22px; border-radius: 20px; }
+.pp-head.sh-head > .scn-sign { flex: none; width: 92px; }
+.sh-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1.12; color: var(--text); text-wrap: balance; }
+.sh-lead { margin: 0 0 var(--space-16); font-family: var(--serif); font-size: 18px; line-height: 1.5; color: var(--text); text-wrap: pretty; }
+.sh-text { margin: 0 0 var(--space-12); font-size: 14.5px; line-height: 1.65; color: var(--text-sub); text-wrap: pretty; }
 .sh-actions { display: flex; flex-wrap: wrap; gap: var(--space-8); margin-top: var(--space-16); }
 .sh-actions .ds-btn:last-child { flex: 1; }
