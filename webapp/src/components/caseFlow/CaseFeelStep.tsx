@@ -1,16 +1,17 @@
-import { ExScreen } from '../exercises/ExScreen';
+import { CaseStepScreen } from './CaseStepScreen';
 import { CaseChipGrid } from './CaseChipGrid';
 import { CaseFlowFoot } from './caseFlowUi';
-import { hueStyle } from '../../lib/tone';
+import { SignChip } from '../paper/SignChip';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { FEEL_GATES } from '../../../../shared/src/mode/modeFeelGates';
 import type { CaseChip } from '../../../../shared/src/case/caseBodyChips';
 import type { CaseGateId } from '../../../../shared/src/case/caseTypes';
-import '../../styles/case-quick.css';
 
 /**
  * Шаг 2 из 3 — «Что внутри?»: ряд ворот чувств, после выбора ворот под ними
  * появляются телесные приметы (необязательно). Ворота «спокойно, хорошо»
- * уводят на «Ровный день» — это решает хук (pickGate), не экран.
+ * уводят на «Ровный день» — это решает хук (pickGate), не экран. Чипы — SignChip:
+ * белые на бумаге страницы, выбранный — бумага шалфея с галочкой.
  */
 export function CaseFeelStep({
   gateId,
@@ -38,24 +39,10 @@ export function CaseFeelStep({
   onHardNow: () => void;
 }) {
   return (
-    <ExScreen
-      onBack={onBack}
-      backLabel="Назад"
-      eyebrow="Что случилось · 2 из 3"
-      title="Что внутри?"
-      lede="Тело замечает раньше головы."
-    >
-      <div className="ex2-chips" style={hueStyle(undefined)} role="group" aria-label="Что внутри">
+    <CaseStepScreen onBack={onBack} compact eyebrow="Что случилось · 2 из 3" title="Что внутри?" lede="Тело замечает раньше головы.">
+      <div className="ex2-chips cq-chips" role="group" aria-label="Что внутри">
         {FEEL_GATES.map((g) => (
-          <button
-            key={g.id}
-            type="button"
-            aria-pressed={gateId === g.id}
-            className={'ds-chip ds-chip--toggle' + (gateId === g.id ? ' is-on' : '')}
-            onClick={() => onGate(g.id as CaseGateId)}
-          >
-            {g.title}
-          </button>
+          <SignChip key={g.id} label={g.title} on={gateId === g.id} hue={ENTITY_LOOK.case.hue} onToggle={() => onGate(g.id as CaseGateId)} />
         ))}
       </div>
 
@@ -82,6 +69,6 @@ export function CaseFeelStep({
         crisis={crisis}
         onHardNow={onHardNow}
       />
-    </ExScreen>
+    </CaseStepScreen>
   );
 }

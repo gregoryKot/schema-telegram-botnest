@@ -40,12 +40,42 @@ describe('CompletionScreen — мост к терапевту', () => {
     expect(screen.getByText(/Если нужна терапия, есть с кем поговорить/)).toBeTruthy();
   });
 
-  it('экран «Готово» — цветная бумага с полосками над индексом', () => {
+  it('экран «Готово» — цветная бумага: индекс и столбики без знака-полосок над ними (одна картинка, не две); кнопки — рядом с листом', () => {
     const { container } = render(
       <MemoryRouter>
-        <CompletionScreen needs={NEEDS} effectiveRatings={{ attachment: 5 }} isBackfill={false} goBack={vi.fn()} onReview={vi.fn()} />
+        <CompletionScreen needs={NEEDS} effectiveRatings={{ attachment: 5 }} isBackfill={false} goBack={vi.fn()} onReview={vi.fn()} onOpenNote={vi.fn()} />
       </MemoryRouter>,
     );
-    expect(container.querySelector('.tq-done.pp-paper > svg.pp-art--hero')).toBeTruthy();
+    const sheet = container.querySelector('.pa-spread-side > .tq-day.pp-paper')!;
+    expect(sheet.querySelector(':scope > svg')).toBeNull();
+    expect(sheet.querySelector('.tq-bars')).toBeTruthy();
+    const main = container.querySelector('.pa-spread-main')!;
+    expect(main.querySelector('.ds-btn')?.textContent).toBe('На главную');
+    // «Заметка» — строка со знаком заметки слева
+    const note = Array.from(main.querySelectorAll('button.tq-go-row')).find((b) => b.textContent === 'Заметка')!;
+    expect(note.querySelector('.pp-row-art svg')).toBeTruthy();
+  });
+
+  it('дооценка прошлого дня: заметки нет, главная кнопка — «Готово»', () => {
+    render(
+      <MemoryRouter>
+        <CompletionScreen needs={NEEDS} effectiveRatings={{}} isBackfill date="2026-07-10" goBack={vi.fn()} onReview={vi.fn()} onOpenNote={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('button', { name: 'Заметка' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Готово' })).toBeTruthy();
+    expect(screen.getByText('Трекер · 10 июля')).toBeTruthy();
+  });
+
+  it('оценки в офлайн-очереди: строка статуса через glue — предлоги не висят в конце строки', () => {
+    render(
+      <MemoryRouter>
+        <CompletionScreen needs={NEEDS} effectiveRatings={{}} isBackfill={false} queued goBack={vi.fn()} onReview={vi.fn()} />
+      </MemoryRouter>,
+    );
+    const status = screen.getByRole('status').textContent ?? '';
+    expect(status.replace(/\u00a0/g, ' ')).toContain('Оценки пока не дошли до сервера');
+    expect(status).toContain('до\u00a0сервера');
+    expect(status).toContain('на\u00a0этом');
   });
 });

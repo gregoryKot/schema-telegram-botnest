@@ -8,6 +8,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { Celebration } from './Celebration';
 import { AddressFormContext } from '../utils/addressForm';
+import { needDataColor } from './needDataColor';
+import { CHECK_IN_GEOM, strokeLen } from './art/strokeLen';
+import { PAPER } from './art/paper';
+import { NEED_ORDER } from '../../../shared/src/needs/types';
 
 beforeEach(() => {
   localStorage.setItem('reduce_motion', '1');
@@ -27,6 +31,49 @@ function renderCelebration(props: Partial<Parameters<typeof Celebration>[0]> = {
     </AddressFormContext.Provider>,
   );
 }
+
+describe('Celebration — лист серии (живая бумага, b07)', () => {
+  it('сверху сцена серии: за листом сегодняшнего дня — листы прошлых дней; бумага соломы, число — наклейкой вне сцены', () => {
+    const { container } = renderCelebration({ streak: 5 });
+    const top = container.querySelector('.sk-celebr-top') as HTMLElement;
+    expect(top.style.getPropertyValue('--h')).toBe('70');
+    const band = top.querySelector('.sk-celebr-band.pp-paper')!;
+    expect(band.getAttribute('aria-hidden')).toBe('true');
+    expect(band.querySelectorAll('.scn-shade > rect')).toHaveLength(4); // пять дней — четыре листа позади
+    expect(band.querySelector('.sk-celebr-leaf')).toBeNull();
+    expect(band.contains(screen.getByText('5'))).toBe(false); // число читается, а не прячется в декоре
+  });
+
+  // Ревью g2 r3: пять полосок «сегодняшнего листа» читаются как пять потребностей — цвета и порядок те же,
+  // что у столбиков «Готово» и линий «Истории» (needDataColor по NEED_ORDER), а не палитра лендинга.
+  // Ревью g2 r4: высоты — сегодняшние оценки (у человека с 2,2,2,2,2 лендинг рисовал высокие столбики).
+  const bars = (c: HTMLElement) => [...c.querySelectorAll('.sk-celebr-band svg > g:not(.scn-shade) rect[rx="10"]')];
+  it('полоски сегодняшнего листа — цвета данных в порядке NEED_ORDER, высоты — сегодняшние оценки', () => {
+    const ratings = { attachment: 2, autonomy: 9, expression: 2, play: 5, limits: 10 };
+    const b = bars(renderCelebration({ streak: 5, ratings }).container);
+    expect(b.map((r) => r.getAttribute('fill'))).toEqual(NEED_ORDER.map((id) => needDataColor(id)));
+    expect(b.map((r) => Number(r.getAttribute('height')))).toEqual(
+      NEED_ORDER.map((id) => strokeLen(ratings[id as keyof typeof ratings], CHECK_IN_GEOM)),
+    );
+  });
+
+  // Ревью g2 r5: праздник открывается на первом сохранении дня — оценена одна потребность, и четыре цветных
+  // «пенька» ниже оценки 1 читались очень низкими оценками. Неоценённая — пустым тоном, как на главной.
+  it('первое сохранение дня — цвет данных у одной полоски, четыре пустым тоном; без оценок — все пустые', () => {
+    const b = bars(renderCelebration({ streak: 3, ratings: { attachment: 7 } }).container);
+    expect(b.map((r) => r.getAttribute('data-rated'))).toEqual(['yes', 'no', 'no', 'no', 'no']);
+    expect(b.slice(1).every((r) => r.getAttribute('fill') === PAPER.hollow)).toBe(true);
+    cleanup();
+    const none = bars(renderCelebration({ streak: 3 }).container);
+    expect(none.map((r) => r.getAttribute('fill'))).toEqual(Array(5).fill(PAPER.hollow));
+  });
+
+  it('веха — персик и лист роста', () => {
+    const { container } = renderCelebration({ streak: 7 });
+    expect((container.querySelector('.sk-celebr-top') as HTMLElement).style.getPropertyValue('--h')).toBe('45');
+    expect(container.querySelector('.sk-celebr-band .sk-celebr-leaf svg')).not.toBeNull();
+  });
+});
 
 describe('Celebration — контент', () => {
   it('обычный стрик — число дней и без пометки вехи', () => {
@@ -48,6 +95,8 @@ describe('Celebration — контент', () => {
   it('insight, если передан, рендерится отдельным блоком', () => {
     renderCelebration({ insight: 'Ты чаще заботишься о границах' });
     expect(screen.getByText('Ты чаще заботишься о границах')).toBeTruthy();
+    // glue: «о» не висит в конце строки
+    expect(screen.getByText('Ты чаще заботишься о границах').textContent).toContain('о\u00a0границах');
   });
 
   it('без insight дополнительный блок не рендерится', () => {

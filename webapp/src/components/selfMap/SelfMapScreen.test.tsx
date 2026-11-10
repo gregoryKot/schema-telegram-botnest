@@ -72,6 +72,8 @@ describe('SelfMapScreen', () => {
       },
     );
     expect(screen.getByText('Стена')).toBeTruthy();
+    // «Где я сейчас» через glue: «в 2 из 2» не рвётся на предлоге и числе
+    expect(document.querySelector('.sm-where-text')!.textContent).toContain('в\u00a02\u00a0из\u00a02');
   });
 
   it('«что дальше» — ровно одна кнопка, тап отдаёт наверх id шага', () => {

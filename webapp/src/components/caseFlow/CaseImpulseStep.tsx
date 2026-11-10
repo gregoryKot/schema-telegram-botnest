@@ -1,4 +1,4 @@
-import { ExScreen } from '../exercises/ExScreen';
+import { CaseStepScreen } from './CaseStepScreen';
 import { CaseChipGrid } from './CaseChipGrid';
 import { CaseFlowFoot } from './caseFlowUi';
 import { CASE_IMPULSES } from '../../../../shared/src/case/caseImpulses';
@@ -24,9 +24,8 @@ export function CaseImpulseStep({
   onHardNow: () => void;
 }) {
   return (
-    <ExScreen
-      onBack={onBack}
-      backLabel="Назад"
+    <CaseStepScreen
+      onBack={onBack} compact
       eyebrow="Что случилось · 3 из 3"
       title="Что хотелось сделать?"
       lede="Не то, что получилось, а первый импульс."
@@ -46,6 +45,6 @@ export function CaseImpulseStep({
         crisis={crisis}
         onHardNow={onHardNow}
       />
-    </ExScreen>
+    </CaseStepScreen>
   );
 }

@@ -1,75 +1,130 @@
-/* Трекер «один вопрос на экран» и экран «Готово» (простой клиент, этап 2).
-   Префикс tq-; оболочка — .tk2-overlay (sheet-tracker.css). Цвет потребности
-   приходит через --h (hueStyle), цвета — только токены. */
+/* Трекер «один вопрос на экран» и экран «Готово» (простой клиент, этап 2; живая бумага — b07,
+   docs/design/APP_2026-11.md). Префикс tq-; оболочка — .tk2-overlay (sheet-tracker.css).
+   Вопрос — лист потребности (EntitySheet, needLook) и ответы в развороте (SpreadLayout,
+   paper-app.css); «Готово» — лист шалфея с индексом и столбиками, рядом куда дальше.
+   Цвет потребности — --h (hueStyle), цвет её данных — --nd (needDataColor); цвета — токены
+   и oklch от --h, как у .pp-paper. Мелкий текст на цветной бумаге — --text-sub. */
 /* Разделы других экранов — в своих файлах (раскрой 2026-11). @import обязан стоять в
    начале файла, поэтому их правила идут раньше здешних; общих элементов с правилами
    этого файла у них нет (сверка порядка — при раскрое). Порядок @import не менять. */
 @import './flow-frame.css';
 .tq-bar-btn:focus-visible, .tq-dot-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* «Оценка не сохранилась» (SaveErrorNote → PaperAlert) стоит после колонки вопроса: держим её в
-   ширине колонки (.tq-inner — 560 с полями 16), а не от края до края окна. Перенос внутрь колонки — b07. */
-.tq-body > .pa-alert { width: calc(100% - 2 * var(--space-16)); max-width: calc(560px - 2 * var(--space-16)); margin: 0 auto var(--space-24); }
+/* Край шапки трекера — по краю листов того же пути («← Назад к трекеру» в .ds-sheet-head: 24, на телефоне 16):
+   поле полосы + поле кнопки (4). Хит 44×44 прежний. Только у трекера: каркас tq-bar и оболочка .tk2-overlay
+   общие с быстрой записью (QuickEntrySheet, .qe-sheet, b10a) — её край не трогаем, она берёт его в своей партии. */
+.tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 20px; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 12px; } }
+/* Узкий телефон: полоса — «Закрыть» 66 + точки 200 + «Пропустить» 86 = 352, в 360 с полем 12 не помещалась
+   («Пропустить» за краем окна, ревью g2 r4). Уже 375 — подписи 13px без полей кнопки (ширину ≥44 держит
+   min-width) и поле полосы 8: 8 + 54 + 200 + 76 + 8 = 346 в 360 (с полем 4 и подписью 15px на 360 «Пропустить»
+   кончался в 5px от края и выходил из своей кнопки, ревью g2 r6; с полем 0 подписи стояли в 4px от края —
+   под скруглением WebView, ревью g2 r5). Уже 360 — ещё и точки 34: 8 + 54 + 170 + 76 + 8 = 316, текст на
+   8–312, как в main на 360. Сверка — e2e-browser/tracker-fit.spec.ts (360×640 и 320×568, все пять вопросов). */
+@media (max-width: 374px) {
+  .tk2-overlay:not(.qe-sheet) .tq-bar { padding-inline: 8px; }
+  .tk2-overlay:not(.qe-sheet) .tq-bar-btn { padding-inline: 0; font-size: 13px; }
+}
+@media (max-width: 359px) { .tk2-overlay:not(.qe-sheet) .tq-dot-hit { width: 34px; } }
 .tq-dots { display: flex; justify-content: center; }
-/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px; высота 44 держит
-   палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
+/* 40 по ширине, а не 44: пять точек (200px) + «Закрыть» и «Пропустить» должны поместиться в 360px (уже 360 — 34, выше);
+   высота 44 держит палец, как у NeedRatingBar мини-аппа (46 по высоте при ~30 по ширине, пять целей в строке). */
 .tq-dot-hit {
   width: 40px; height: 44px; padding: 0; background: none; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.tq-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .2s; }
-.tq-dot.is-done { background: oklch(0.58 0.12 var(--h)); }
-.tq-dot.is-current { background: var(--accent); }
-.tq-note {
-  padding: var(--space-12) var(--space-16); border-radius: 14px;
-  background: var(--paper-tint); font-size: 13px; line-height: 1.5; color: var(--text-sub);
-}
+/* Точка — цвет данных своей потребности; текущая вытянута полоской (как полоска Strokes), а не красный кружок. */
+.tq-dot { width: 10px; height: 10px; border-radius: 5px; background: var(--line); transition: width .2s, background .2s; }
+.tq-dot.is-done { background: var(--nd); }
+.tq-dot.is-current { width: 24px; background: var(--nd); }
+
+/* ── Вопрос: лист потребности + ответы ─────────────────────────────────── */
+.tq-ask { box-sizing: border-box; width: 100%; max-width: 640px; margin: 0 auto; padding: var(--space-16) var(--space-16) var(--space-32); }
+/* «Откуда это» над листом — тихая строка на бумаге страницы, не серая коробка. */
+.tq-note { padding: 0 var(--space-4); font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
 /* «Понятно» — в строке за текстом, а не отдельной строкой в 44px: на 360×640 эти 48px решали, виден ли первый
-   ответ (QA мобильной версии 2026-11, З5). Зона нажатия 44 по высоте — псевдоэлементом поверх отступа плашки. */
+   ответ (QA мобильной версии 2026-11, З5). Зона нажатия 44 по высоте — псевдоэлементом поверх отступа строки. */
 .tq-note-x {
   position: relative; padding: 0; margin-left: var(--space-4); white-space: nowrap;
-  background: none; border: none; font: 600 13px/1.5 var(--sans); color: var(--accent); cursor: pointer;
+  background: none; border: none; font: 600 13.5px/1.5 var(--sans); color: var(--accent); cursor: pointer;
 }
 .tq-note-x::after { content: ''; position: absolute; inset: -12px -10px; }
 .tq-note-x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-8); }
-.tq-question { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text-sub); }
-/* «Что это за потребность» и примеры (NeedExplainer): описание всегда, примеры — нативный <details>. */
-.tq-desc { margin: calc(var(--space-8) * -1) 0 0; font-size: 15px; line-height: 1.5; color: var(--text-sub); }
-.tq-examples { margin: 0; border-radius: 14px; background: var(--paper-tint); padding: 0 var(--space-16); }
+/* Что это за потребность и примеры (NeedExplainer) — на листе, под названием. */
+.tq-desc { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
+.tq-examples { margin: 0; border-top: 1px solid var(--panel-line); }
 .tq-examples-sum {
   min-height: 44px; display: flex; align-items: center; cursor: pointer; list-style: none;
-  font: 600 14px var(--sans); color: var(--text-sub);
+  font: 600 14px var(--sans); color: var(--text);
 }
 .tq-examples-sum::-webkit-details-marker { display: none; }
-.tq-examples-sum::after { content: '›'; margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-faint); transition: transform .2s; }
+.tq-examples-sum::after { content: '›'; margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-sub); transition: transform .2s; }
 .tq-examples[open] .tq-examples-sum::after { transform: rotate(90deg); }
 .tq-examples-sum:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-8); }
-.tq-examples-list { margin: 0; padding: 0 0 var(--space-12) var(--space-16); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
+.tq-examples-list { margin: 0; padding: 0 0 var(--space-4) var(--space-16); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
 .tq-examples-list li + li { margin-top: var(--space-4); }
-/* Низкий экран (Safari на iPhone с панелями — 664, Chrome на Android — 640): вопрос плотнее, чтобы ответы
-   начинались на первом экране, а не за краем (QA мобильной версии 2026-11, З5). */
-@media (max-height: 700px) {
-  .tq-ask { padding-top: var(--space-16); gap: var(--space-12); }
-  .tq-ask .tq-desc { margin-top: calc(var(--space-4) * -1); }
+.tq-question { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text); text-wrap: pretty; }
+/* Лист вопроса уже 1024 — не полоса разворота (знак 56, Literata 22), а герой: знак потребности
+   высотой ~60 (слот 112, поле холста уходит в отступы — paper-app.css), Literata 30; описание короткое,
+   примеры свёрнуты. Телефон ≤560 — полосой, правила ниже. */
+@media (max-width: 1023px) {
+  .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 16px; padding: 20px 20px 16px 22px; border-radius: 22px; }
+  .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 30px; }
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 112px; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > :not(.pa-sheet-label) { margin-top: 10px; }
+  .tq-ask .pa-spread-side .tq-sheet .pa-sheet-body > .tq-examples { margin-top: 6px; }
+}
+@container pa-sheet (min-width: 560px) {
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 132px; }
+  .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 34px; }
+}
+@container pa-sheet (max-width: 330px) { .tq-ask .pa-spread-side .tq-sheet .pa-sheet-title { font-size: 26px; } }
+/* Телефон (≤560) и низкий экран (Safari на iPhone с панелями — 664, Chrome на Android — 640): вопрос плотнее,
+   чтобы ответы начинались на первом экране, а не за краем (QA мобильной версии 2026-11, З5). */
+@media (max-width: 560px), (max-height: 700px) and (max-width: 1023px) {
+  .tq-ask { padding-top: var(--space-12); }
+  .tq-ask .pa-spread { gap: var(--space-16); }
   .tq-ask .tq-question { font-size: 16px; line-height: 1.45; }
 }
-.tq-more:focus-visible, .tq-link:focus-visible, .tq-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.tq-index { font: 400 72px/1 var(--serif); letter-spacing: -0.03em; color: var(--text); margin-top: var(--space-8); }
-.tq-index-cap { margin: 0; font-size: 13px; color: var(--text-faint); }
-.tq-bars {
-  list-style: none; margin: var(--space-16) 0; padding: 0; width: 100%; max-width: 360px;
-  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-12);
+/* Телефон (≤560): лист вопроса — полоса ~175px, а не герой ~243 (ревью g2 r3, принцип 5: шапка до первого ответа
+   на 390 ≤ ~230). Знак (~55 по высоте) не держит свой ряд над названием, а стоит справа на два ряда — надпись
+   и название; поля 16/20, «Например» без зазора над чертой. Цель — пятый ответ на 390×844 выше 830
+   (e2e-browser/tracker-fit.spec.ts). Планшет и разворот — прежние правила выше. */
+@media (max-width: 560px) {
+  .tq-ask .pa-spread-side .pa-sheet.tq-sheet { column-gap: 8px; padding: 16px 20px 4px; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body { display: contents; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) .pa-sheet-label { grid-column: 1; grid-row: 1; align-self: end; }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title {
+    grid-column: 1; grid-row: 2; align-self: start; margin-top: 2px; font-size: 26px;
+  }
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art {
+    grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 104px; margin: 0 -10px 0 0;
+  }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-desc {
+    grid-column: 1 / -1; margin-top: 8px; font-size: 14.5px; line-height: 1.45;
+  }
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .tq-examples { grid-column: 1 / -1; margin-top: 2px; }
+  /* Ответы — поле 16, а не 20: подписи склеены glue (круг 4), и у «Выражения чувств» средняя уходила в третью
+     строку — «Полностью» 822 → 839, под сгиб; с полем 16 — снова 822. */
+  .tq-ask .ns-word { padding-inline: 16px; }
+  /* Первый показ: «откуда это» плотнее и ближе к листу — низ «Полностью» на 390×844 855 → ~841, в окне
+     (в main 928); до 830 — только короче сам текст (раздел b07, «Не сделано»). */
+  .tq-note, .tq-note-x { font-size: 13px; line-height: 1.4; }
+  .tq-note { margin-bottom: calc(-1 * var(--space-8)); }
+  .tq-note-x::after { inset: -13px -10px; } /* строка 18,2 + 26 — зона «Понятно» по-прежнему ≥44 */
 }
-.tq-bars li { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-8); min-height: 120px; }
-.tq-bar-col { width: 100%; max-width: 40px; border-radius: 8px; }
-/* Оценённый — бумажная палитра (--bar ставит DayBars из BAR_PAPER), без оценки — серый. */
-.tq-bar-col.is-rated { background: var(--bar); }
-.tq-bar-col:not(.is-rated) { background: var(--line); }
-.tq-bar-cap { font-size: 11px; color: var(--text-faint); }
-.tq-links { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-8); }
-.tq-link {
-  min-height: 44px; padding: 0 var(--space-12); background: none; border: none;
-  font: 600 14px var(--sans); color: var(--text-sub); cursor: pointer;
+/* Узкий телефон (поле листа ≤300 — окно ≤372): название 22, знак 88; ≤260 (окно 320) — название 20:
+   «Привязанность» встаёт рядом со знаком, а не вылезает за край. */
+@container pa-sheet (max-width: 300px) {
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { font-size: 22px; }
+  .tq-ask .pa-spread-side .tq-sheet[data-sign] > .pa-sheet-art { width: 88px; }
 }
-/* Название потребности и её мотив в одной строке: картинка не уводит ответы за сгиб (390×844). */
-.tq-namerow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); }
-.tq-namerow .pp-row-art { width: auto; }
+@container pa-sheet (max-width: 260px) {
+  .tq-ask .pa-spread-side .tq-sheet:not(.pa-sheet--plain) > .pa-sheet-body > .pa-sheet-title { font-size: 20px; }
+}
+/* Разворот: лист слева, вопрос ступенью Literata над ответами справа. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .tq-ask { max-width: none; padding: var(--space-40) var(--space-32) 56px; }
+  .tq-question { font: 400 22px/1.35 var(--serif); letter-spacing: -0.005em; }
+  .tq-ask .pa-spread-main { padding-top: var(--space-8); }
+}
+.tq-more:focus-visible, .tq-btn:focus-visible, .tq-go-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

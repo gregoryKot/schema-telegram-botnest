@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { NoteSheet } from './NoteSheet';
 import { describeCrisisField } from '../test-support/crisisCardHarness';
 import { DAY_NOTE_MAX } from '../../../shared/src/limits/textLimits';
+import { todayStr } from '../../../shared/src/utils/format';
 
 vi.mock('../api', () => ({
   api: {
@@ -179,5 +180,23 @@ describe('NoteSheet — слитая заметка длиннее предел�
     fireEvent.change(textarea, { target: { value: edited } });
     await act(async () => { fireEvent.click(screen.getByText('Сохранить')); });
     expect(mockApi.saveNote).toHaveBeenCalledWith('2026-07-20', edited, []);
+  });
+});
+
+// Надпись листа: сегодня — «Дневник», прошлый день — «Дневник · день недели, число месяц»
+// (правило №2: ветвление во фронтенде — с тестом; №25: прогон и под TZ=Australia/Sydney).
+describe('NoteSheet — надпись листа по дню', () => {
+  const label = async (date: string) => {
+    await act(async () => { render(<MemoryRouter><NoteSheet date={date} onClose={vi.fn()} /></MemoryRouter>); });
+    return document.querySelector('.pa-sheet-label')!.textContent;
+  };
+
+  it('сегодня — просто «Дневник», без даты', async () => {
+    expect(await label(todayStr())).toBe('Дневник');
+  });
+
+  it('прошлый день — «Дневник · понедельник, 20 июля»: календарный день, а не сдвиг зоны', async () => {
+    // через glue: «·» не начинает строку, «20 июля» не рвётся (неразрывные пробелы)
+    expect(await label('2026-07-20')).toBe('Дневник\u00a0· понедельник, 20\u00a0июля');
   });
 });

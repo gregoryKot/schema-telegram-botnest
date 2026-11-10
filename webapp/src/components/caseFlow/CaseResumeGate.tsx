@@ -1,11 +1,10 @@
 import { useState, type ReactNode } from 'react';
-import { ExScreen } from '../exercises/ExScreen';
+import { CaseStepScreen } from './CaseStepScreen';
 import { clipPreview } from '../../sections/diary/entryPreview';
 import {
   clearQuickDraft,
   loadQuickDraft,
 } from '../../../../shared/src/case/quick/caseQuickDraft';
-import '../../styles/case-quick.css';
 
 /** Сколько знаков начатой сцены видно на экране выбора. */
 const SCENE_PREVIEW_MAX = 140;
@@ -15,7 +14,8 @@ const SCENE_PREVIEW_MAX = 140;
  * раньше поток молча открывался на шаге недельной давности (бэклог «Разбор
  * случая, четыре дырки», п. 4). Теперь сначала выбор: продолжить или начать
  * заново (черновик стирается). Поток (`children`) монтируется после выбора:
- * useCaseQuickFlow читает черновик при старте.
+ * useCaseQuickFlow читает черновик при старте. Вид — лист шалфея потока, начатый
+ * момент — листок бумаги с цитатой, одна залитая кнопка и тихая.
  */
 export function CaseResumeGate({
   onBack,
@@ -32,22 +32,14 @@ export function CaseResumeGate({
     setDraft(null);
   };
   return (
-    <ExScreen
-      onBack={onBack}
-      backLabel="Закрыть"
+    <CaseStepScreen
+      onBack={onBack} backLabel="Закрыть" spread={false}
       eyebrow="Что случилось"
       title="Есть начатый разбор"
+      lede="Можно продолжить с того же места или начать с чистого листа — тогда черновик сотрётся."
     >
-      {scene && (
-        <p className="ds-sub cq-desc">
-          «{clipPreview(scene, SCENE_PREVIEW_MAX).text}»
-        </p>
-      )}
-      <p className="ds-sub ex2-gap-b">
-        Можно продолжить с того же места или начать с чистого листа — тогда
-        черновик сотрётся.
-      </p>
-      <div className="ex2-foot">
+      {scene && <p className="cq-draft">«{clipPreview(scene, SCENE_PREVIEW_MAX).text}»</p>}
+      <div className="ex2-foot cq-foot cq-foot--pair">
         <button type="button" className="ds-btn" onClick={() => setDraft(null)}>
           Продолжить
         </button>
@@ -55,6 +47,6 @@ export function CaseResumeGate({
           Начать заново
         </button>
       </div>
-    </ExScreen>
+    </CaseStepScreen>
   );
 }

@@ -37,10 +37,16 @@ describe('AppShell — трекер: сохранение со стриком з
     fireEvent.click(screen.getByTestId('today-section-tracker'));
     await waitFor(() => expect(screen.getByTestId('tracker-overlay')).toBeTruthy());
 
+    fireEvent.click(screen.getByTestId('tracker-overlay-change')); // оценка дня: привязанность 5
+    await waitFor(() =>
+      expect(JSON.parse(screen.getByTestId('tracker-overlay-state').textContent ?? '{}')).toEqual({ attachmentRating: 5 }));
     fireEvent.click(screen.getByTestId('tracker-overlay-saveWithStreak'));
     // Стрик = 3 (см. AppShell.test-helpers.tsx) — testid содержит реальное
     // значение, а не захардкоженное «вчерашнее».
     await waitFor(() => expect(screen.getByTestId('celebration-streak-3')).toBeTruthy());
+    // Ревью g2 r5: полоски сцены праздника — сегодняшние оценки; потерянный проп `ratings` молча делал
+    // сцену пустой. Шов AppShell → Celebration несёт то, что трекер только что сохранил.
+    expect(JSON.parse(screen.getByTestId('celebration-streak-3-state').textContent ?? '{}')).toEqual({ ratings: { attachment: 5 } });
 
     // «Закрыть» закрывает — заметка дня сама не открывается (2026-11-06,
     // владелец: «само закрылось, там заметки открылись»). Заметка — ссылка

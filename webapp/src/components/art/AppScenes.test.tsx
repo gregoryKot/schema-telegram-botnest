@@ -15,6 +15,7 @@ import { SceneChildhood } from './LandingScenes';
 import { SceneCheckIn, SceneQuiz, SceneQuizMini } from './LandingScenesMore';
 import { HeroCollage } from './HeroCollage';
 import { INK } from './scenePaper';
+import { NEED_DATA_PAPER, PAPER } from './paper';
 import { SignArt } from './SignArt';
 
 const outside = (el: Element) => !el.closest('.scn-shade');
@@ -174,6 +175,19 @@ describe('варианты сцен лендинга для кабинета', (
     expect(look(1).bars).toBe(5);
     expect(look()).toEqual({ behind: 2, bars: 5, box: '34 31 259 218' });
     expect(look(3)).toEqual(look());
+  });
+
+  it('SceneCheckIn values: полоски дня как у Strokes values (ValueStrokes); без них — палитра лендинга, как была', () => {
+    const look = (values?: readonly (number | null)[]) => {
+      const { container, unmount } = render(<SceneCheckIn days={1} values={values} />);
+      const out = [...container.querySelectorAll('svg > g:not(.scn-shade) rect[rx="10"]')].map((r) => [r.getAttribute('fill'), r.getAttribute('data-rated')]);
+      unmount();
+      return out;
+    };
+    expect(look([4, null, 7, null, 1])).toEqual([
+      [NEED_DATA_PAPER[0], 'yes'], [PAPER.hollow, 'no'], [NEED_DATA_PAPER[2], 'yes'], [PAPER.hollow, 'no'], [NEED_DATA_PAPER[4], 'yes'],
+    ]);
+    expect(look()).toEqual([INK.moss, INK.amber, INK.clay, INK.slate, INK.plum].map((f) => [f, null]));
   });
 
   it('SceneQuizMini: тот же веер без листа-подложки, окно по карточкам', () => {

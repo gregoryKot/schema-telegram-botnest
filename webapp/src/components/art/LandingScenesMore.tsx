@@ -1,7 +1,6 @@
 // Сцены возможностей, мини-тестов и статей (вторая половина LandingScenes.tsx):
-//  • SceneCheckIn — пять полосок разной высоты на белом листе сегодняшнего дня,
-//    позади листы прошлых дней: из ежедневных отметок складывается картина; `days` —
-//    дней серии (праздник серии в кабинете; 0 — пустой лист, пустая история).
+//  • SceneCheckIn — пять полосок на белом листе сегодняшнего дня, позади листы прошлых дней: из
+//    отметок складывается картина; `days` — дней серии (0 — пустой лист), `values` — оценки дня.
 //  • SceneQuiz — карточки-вопросы веером (сверху белая) на вырезанном листе оттенка
 //    теста; задние карточки цветные и не в тон листу (fanFor). На верхней — строки
 //    вопроса и под ними три плашки-ответа, одна выбрана (шапка /tests); с `sign` низ
@@ -20,6 +19,7 @@
 import { INK } from './scenePaper';
 import { Lift, SceneSvg } from './sceneKit';
 import { BrandMark } from './BrandMark';
+import { ValueStrokes } from './ValueStrokes';
 
 const BARS = [
   { h: 100, fill: INK.moss },
@@ -39,10 +39,10 @@ const PAST = [
 /** Окно по фигурам для 0…4 листов позади (с тенью): веер шире — окно шире. */
 const CHECKIN_BOX = ['86 34 207 206', '61 31 232 209', '34 31 259 218', '10 31 283 229', '-8 31 301 240'] as const;
 
-/** Пять полосок на листе сегодняшнего дня, позади — листы прошлых дней. `days` — дней серии
- *  вместе с сегодняшним: 0 — один лист без полосок (ещё ничего), 1 — сегодняшний лист, n — за
- *  ним n − 1 листов (до четырёх, дальше счёт словами рядом); без `days` — вид лендинга (три). */
-export function SceneCheckIn({ hue = 135, days }: { hue?: number; days?: number }) {
+/** Пять полосок на листе сегодняшнего дня, позади — листы прошлых дней. `days` — дней серии с сегодняшним:
+ *  0 — лист без полосок, n — за ним n − 1 листов (до четырёх); без `days` — вид лендинга (три). `values` —
+ *  оценки дня (dayStrokeValues): полоски ValueStrokes, как у знака Strokes values; без них — вид лендинга. */
+export function SceneCheckIn({ hue = 135, days, values }: { hue?: number; days?: number; values?: readonly (number | null)[] }) {
   const total = days === undefined ? 3 : Math.max(0, Math.floor(days));
   const n = Math.min(PAST.length, Math.max(0, total - 1));
   return (
@@ -51,11 +51,11 @@ export function SceneCheckIn({ hue = 135, days }: { hue?: number; days?: number 
         {PAST.slice(0, n).reverse().map((s) => (
           <rect key={s.deg} x={s.x} y={s.y} width={s.w} height={s.h} rx="16" transform={`rotate(${s.deg} ${s.x + s.w / 2} ${s.y + s.h / 2})`} fill={s.fill} />
         ))}
-        <g transform="rotate(4 186 134)">
+        <g transform="rotate(4 186 134)" className={values ? 'pp-strokes-sheet' : undefined}>
           <rect x="96" y="44" width="182" height="180" rx="18" fill={INK.sheet} />
-          {total > 0 && BARS.map((b, i) => (
+          {total > 0 && (values ? <ValueStrokes values={values} at="checkIn" /> : BARS.map((b, i) => (
             <rect key={i} x={116 + i * 31} y={204 - b.h} width="20" height={b.h} rx="10" fill={b.fill} />
-          ))}
+          )))}
         </g>
       </Lift>
     </SceneSvg>

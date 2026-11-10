@@ -26,16 +26,13 @@ interface Props {
   childhoodRatings?: Partial<Record<string, number>>;
   onOpenSchemas?: () => void;
   onOpenChildhoodWheel?: () => void;
-  days?: number;
-  onChangeDays?: (days: number) => void;
   onGoToToday?: () => void;
   onBackfill?: (date: string) => void;
 }
 
 const HISTORY_HINT_KEY = 'history_hint_dismissed';
-const DAYS_OPTIONS = [7, 14, 30];
 
-export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, days = 7, onChangeDays, onGoToToday, onBackfill }: Props) {
+export function HistoryView({ needs, history, currentRatings, childhoodRatings = {}, onOpenSchemas, onOpenChildhoodWheel, onGoToToday, onBackfill }: Props) {
   const tr = useTr();
   const contact = getTherapistContact();
   // Терапевту не предлагаем запись к самому себе, без канала связи — некуда (null); один элемент на оба блока.
@@ -78,7 +75,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
 
   return (
     <div className="sd-history">
-      <DateStrip history={history} needs={needs} selectedIdx={selectedIdx} onSelect={setSelectedIdx} btnRefs={dateBtnRefs} />
+      <DateStrip history={history} selectedIdx={selectedIdx} onSelect={setSelectedIdx} btnRefs={dateBtnRefs} />
 
       <div className="sd-toolbar">
         <div className="ds-seg ds-seg--full" role="group" aria-label="Вид">
@@ -88,13 +85,6 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             </button>
           ))}
         </div>
-        {onChangeDays && (
-          <div className="ds-seg ds-seg--full" role="group" aria-label="Период">
-            {DAYS_OPTIONS.map(d => (
-              <button key={d} onClick={() => onChangeDays(d)} className={'ds-seg-btn' + (days === d ? ' is-active' : '')}>{d}д</button>
-            ))}
-          </div>
-        )}
         {showHint && <span className="sd-toolbar-hint">{trackerTapHint(tr)}</span>}
       </div>
 
@@ -107,7 +97,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
             onOpenNote={() => setShowNote(true)} onOpenSchemas={onOpenSchemas}
             onOpenChildhoodWheel={onOpenChildhoodWheel} onBackfill={onBackfill} />
         ) : (
-          <HistoryWeekView needs={needs} history={history} days={days} selectedIdx={selectedIdx}
+          <HistoryWeekView needs={needs} history={history} selectedIdx={selectedIdx}
             selectedRatings={selectedRatings} needsLow={needsLow} isTherapist={contact.isTherapist}
             bookingLink={bookingLink} onTapNeed={handleTapNeed} onWeekCard={() => setShowWeekCard(true)} />
         )}
@@ -123,7 +113,7 @@ export function HistoryView({ needs, history, currentRatings, childhoodRatings =
       )}
       {activeNeed && (
         <NeedHistorySheet need={activeNeed} value={selectedRatings[activeNeed.id] ?? 0}
-          history={history} childhoodValue={childhoodRatings[activeNeed.id]}
+          history={history} selectedIdx={selectedIdx} childhoodValue={childhoodRatings[activeNeed.id]}
           onClose={() => setActiveNeed(null)} />
       )}
     </div>

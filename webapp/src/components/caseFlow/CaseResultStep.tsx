@@ -1,25 +1,22 @@
-import { useState } from 'react';
-import { ExScreen } from '../exercises/ExScreen';
+import { CaseStepScreen } from './CaseStepScreen';
 import { CaseFlowFoot } from './caseFlowUi';
 import { TertiaryLink } from './caseLinks';
-import { QuickPracticeSheet } from '../practice/QuickPracticeSheet';
+import { CaseSummaryAside } from './CaseSummaryAside';
+import { CaseResultHelp } from './CaseResultHelp';
+import { CaseSaveError } from './CaseSaveError';
+import { SceneCaseFound } from '../art/SceneCaseFound';
+import { getModeById } from '../../schemaTherapyData';
+import { modeLook } from '../../../../shared/src/theme/entityLook';
 import type { QuickResultView } from '../../../../shared/src/case/quick/caseQuick';
-import '../../styles/case-quick.css';
+import { glue } from '../../../../shared/src/utils/typo';
 
 /**
  * Итог разбора: предложенный режим, что собрали, что поможет сейчас. «Сохранить»
  * — это и согласие с режимом; сомнение уходит в «Не похоже — другие режимы».
+ * Лист — бумага группы режима со сценой SceneCaseFound (лента и знак группы), а не шалфей
+ * шагов: главное — кто взял управление. На телефоне сцена углом (cq-scene--found).
  */
-export function CaseResultStep({
-  view,
-  saving,
-  failed,
-  onBack,
-  onSave,
-  onDoubt,
-  crisis,
-  onHardNow,
-}: {
+export function CaseResultStep({ view, saving, failed, onBack, onSave, onDoubt, crisis, onHardNow }: {
   view: QuickResultView;
   saving: boolean;
   failed: boolean;
@@ -29,43 +26,20 @@ export function CaseResultStep({
   crisis: boolean;
   onHardNow: () => void;
 }) {
-  const [breathing, setBreathing] = useState(false);
+  const look = modeLook(view.modeId, getModeById(view.modeId)?.groupId);
   return (
-    <ExScreen
+    <CaseStepScreen
       onBack={onBack}
-      backLabel="Назад"
+      look={look}
+      heroArt={<SceneCaseFound sign={look.sign} hue={look.hue} className="cq-scene cq-scene--found" />}
       eyebrow="Похоже на режим"
       title={view.name}
+      lede={view.desc || undefined}
     >
-      {view.desc && <p className="ds-sub cq-desc">{view.desc}</p>}
-      {view.need && (
-        <p className="ds-sub cq-desc">Что ему нужно: {view.need}</p>
-      )}
-
-      <div className="ds-card cq-rows" aria-label="Что собрали">
-        <div className="ds-label">Что собрали</div>
-        {view.rows.map((r) => (
-          <div key={r.label} className="cq-row">
-            <span className="cq-row-label">{r.label}</span>
-            <span className="cq-row-text">{r.text}</span>
-          </div>
-        ))}
-      </div>
-
-      <button
-        type="button"
-        className="ds-card ds-card--row ds-card--hover cq-calm"
-        onClick={() => setBreathing(true)}
-      >
-        <span className="ds-label">Что поможет сейчас</span>
-        <span className="cq-calm-text">Минута дыхания 4-4-6</span>
-      </button>
-
-      {failed && (
-        <p role="alert" className="cq-error">
-          Не удалось сохранить. Всё на месте — можно повторить.
-        </p>
-      )}
+      {view.need && <p className="cq-need">{glue(`Что ему нужно: ${view.need}`)}</p>}
+      <CaseSummaryAside rows={view.rows} signs={false} />
+      <CaseResultHelp />
+      {failed && <CaseSaveError />}
 
       <CaseFlowFoot
         primaryLabel={saving ? 'Сохраняю…' : 'Сохранить'}
@@ -76,13 +50,6 @@ export function CaseResultStep({
       >
         <TertiaryLink label="Не похоже — другие режимы" onClick={onDoubt} />
       </CaseFlowFoot>
-
-      {breathing && (
-        <QuickPracticeSheet
-          id="breathing"
-          onClose={() => setBreathing(false)}
-        />
-      )}
-    </ExScreen>
+    </CaseStepScreen>
   );
 }

@@ -3,7 +3,7 @@
 // Показывается, пока нет ни одной оценки и флаг не стоит (localStorage, как в мини-аппе).
 import { useState } from 'react';
 import { TRACKER_ONBOARDING_KEY, TRACKER_ORIGIN_NOTE } from '../../../../shared/src/needs/trackerOnboarding';
-
+import { glue } from '../../../../shared/src/utils/typo';
 // Приватный режим: хранилища нет — строка покажется ещё раз, это не ошибка.
 const seen = (): boolean => {
   try { return !!localStorage.getItem(TRACKER_ONBOARDING_KEY); } catch { return false; }
@@ -22,7 +22,7 @@ export function TrackerOriginNote({ eligible }: { eligible: boolean }) {
   };
   return (
     <div className="tq-note" role="note">
-      <span>{TRACKER_ORIGIN_NOTE}</span>{' '}
+      <span>{glue(TRACKER_ORIGIN_NOTE)}</span>{' '}
       <button type="button" className="tq-note-x" onClick={dismiss}>Понятно</button>
     </div>
   );

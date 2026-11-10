@@ -4,7 +4,7 @@
 // время historyLoading (форма загрузки, а не пустой экран), реальный рендер
 // истории после загрузки, кнопки «Назад»/«Оценить» и напоминание о
 // просроченном плане практики (CheckInSheet) для реальной, а не выдуманной даты.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 import {
   render,
   screen,
@@ -61,6 +61,10 @@ function renderSheet(props: Partial<Parameters<typeof HistorySheet>[0]> = {}) {
   );
 }
 
+// Холодный ленивый импорт HistoryView под нагрузкой дольше секунды waitFor —
+// тест падал 1 из 20 (сведение g2). Модуль прогрет до тестов: Suspense ждёт
+// только микротаск, а не трансформацию файла.
+beforeAll(() => import('./HistoryView'));
 afterEach(() => cleanup());
 beforeEach(() => vi.clearAllMocks());
 
@@ -83,7 +87,7 @@ describe('HistorySheet', () => {
 
   it('после загрузки рендерит HistoryView (лениво, через Suspense)', async () => {
     renderSheet({ historyLoading: false, history: [] });
-    await waitFor(() => expect(screen.getByText(/трекер сегодня/)).toBeTruthy());
+    expect(await screen.findByText(/трекер сегодня/, undefined, { timeout: 5000 })).toBeTruthy();
   });
 
   // Сбой ≠ пусто (2026-11, useTrackerHistory): отказ загрузки рисовал пустую
@@ -91,7 +95,8 @@ describe('HistorySheet', () => {
   it('historyFailed — «Не удалось загрузить историю», а не пустая история', async () => {
     renderSheet({ historyLoading: false, history: [], historyFailed: true });
     expect(screen.getByRole('alert').textContent).toContain('Не удалось загрузить историю');
-    expect(screen.getByRole('alert').textContent).toContain('оценки на месте');
+    // текст идёт через glue: неразрывные пробелы — те же слова (shared/src/utils/typo.ts)
+    expect(screen.getByRole('alert').textContent?.replace(/\u00a0/g, ' ')).toContain('оценки на месте');
     await act(async () => {});
     expect(screen.queryByText(/трекер сегодня/)).toBeNull();
   });
@@ -101,10 +106,20 @@ describe('HistorySheet', () => {
     // терялась (Chromium, createBrowserRouter): трекер на экране, а «Назад»
     // уводил со страницы. Трекер открывается в onClose, после снятия записи.
     const log: string[] = [];
-    renderSheet({ onClose: () => log.push('close'), onOpenTracker: () => log.push('tracker') });
-    await waitFor(() => expect(screen.getByText(/трекер сегодня/)).toBeTruthy());
+    HTMLElement.prototype.scrollIntoView = vi.fn();
+    renderSheet({ onClose: () => log.push('close'), onOpenTracker: () => log.push('tracker'),
+      history: [{ date: '2020-01-09', ratings: { attachment: 6 } }] });
+    await waitFor(() => expect(screen.getByText('Привяз.')).toBeTruthy());
     fireEvent.click(screen.getByText('Оценить →'));
     expect(log).toEqual(['close', 'tracker']);
+  });
+
+  // Аудит 2026-11 (today-history-empty): «Оценить →» в шапке и «Заполнить сегодня» в листе —
+  // две кнопки одного действия. В пустой истории остаётся одна, в листе.
+  it('пустая история — без «Оценить →» в шапке, действие одно', async () => {
+    renderSheet({ history: [] });
+    await waitFor(() => expect(screen.getByText('Заполнить сегодня')).toBeTruthy());
+    expect(screen.queryByText('Оценить →')).toBeNull();
   });
 
   it('просроченный план практики (scheduledDate < todayDate) показывает CheckInSheet', async () => {

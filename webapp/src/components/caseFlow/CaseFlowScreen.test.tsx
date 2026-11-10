@@ -101,10 +101,15 @@ describe('CaseFlowScreen — три шага и итог', () => {
       screen.getByRole('heading', { name: 'Избегающий Защитник' }),
     ).toBeTruthy();
     expect(screen.getByText(/Что ему нужно:/)).toBeTruthy();
+    // строка через glue: короткий предлог не висит в конце строки («с тем» — неразрывный пробел)
+    expect(screen.getByText(/Что ему нужно:/).textContent).toContain('с\u00a0тем');
     expect(screen.getByText(SCENE)).toBeTruthy();
     expect(screen.getByText('Страшно, тревожно')).toBeTruthy();
     expect(screen.getByText('свернуть разговор')).toBeTruthy();
-    click('Минута дыхания 4-4-6');
+    // лента разбора — в сцене-герое итога; у «Момент» второй ленты нет (ревью g2 r3)
+    expect(document.querySelector('.cq-summary--nosign')).not.toBeNull();
+    expect(document.querySelector('.cq-summary .cq-row-sign')).toBeNull();
+    click(/^Минута дыхания 4.4.6$/); // дефисы неразрывные (CaseResultHelp)
     expect(screen.getByText('practice-breathing')).toBeTruthy();
     click('practice-breathing');
     expect(screen.queryByText('practice-breathing')).toBeNull();
@@ -136,6 +141,9 @@ describe('CaseFlowScreen — три шага и итог', () => {
         'Теперь это есть в записях. Через 2–3 разбора видно, что повторяется.',
       ),
     ).toBeTruthy();
+    // Трудный случай — сцена сущности (лента с петлёй и росток), не полоски ровного дня.
+    expect(document.querySelector('.pa-done-scene svg.scn')).not.toBeNull();
+    expect(document.querySelector('.pa-done-scene .cq-steady-done')).toBeNull();
 
     click('Карта себя');
     expect(p.onOpenMap).toHaveBeenCalledTimes(1);
@@ -294,6 +302,9 @@ describe('CaseFlowScreen — ровный день', () => {
     expect(
       screen.getByRole('heading', { name: 'Здоровый Взрослый' }),
     ).toBeTruthy();
+    // Итог ровного дня — ровные полоски его шага, а не лента с петлёй «что задело» (ревью g2 r2).
+    expect(document.querySelector('.pa-done-scene .cq-steady-done')).not.toBeNull();
+    expect(document.querySelector('.pa-done-scene svg.scn')).toBeNull();
   });
 
   it('«Назад» с «ровного дня» возвращает к воротам', () => {
@@ -341,7 +352,7 @@ describe('CaseFlowScreen — кризис и «Тяжело прямо сейч�
   it('кризисная сцена не показывает «Вернуться к разбору»', () => {
     renderFlow();
     typeScene('хочу умереть');
-    expect(screen.queryByText('Вернуться к разбору ▲')).toBeNull();
+    expect(screen.queryByText('Вернуться к разбору')).toBeNull();
   });
 
   // docs/open/frontend-ux.md: флаг crisis получали все шаги, кроме итога —
@@ -395,7 +406,7 @@ describe('CaseFlowScreen — кризис и «Тяжело прямо сейч�
     click(HARD_NOW);
     expect(screen.getByText(CRISIS_HOTLINE_DISPLAY)).toBeTruthy();
     expect(p.onClose).not.toHaveBeenCalled();
-    click('Вернуться к разбору ▲');
+    click('Вернуться к разбору');
     expect(screen.queryByText(CRISIS_HOTLINE_DISPLAY)).toBeNull();
     expect(screen.getByText('Похоже на режим')).toBeTruthy();
   });

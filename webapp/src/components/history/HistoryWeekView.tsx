@@ -1,44 +1,44 @@
 import type { ReactNode } from 'react';
 import type { Need, DayHistory } from '../../types';
 import { SparklineRow } from './SparklineRow';
-import { weekWindow } from '../../../../shared/src/history/sparkline';
+import { AttentionCard } from './AttentionCard';
+import { SceneCheckIn } from '../art/LandingScenesMore';
+import { WEEK_DAYS, weekWindow } from '../../../../shared/src/history/sparkline';
+import { isRated } from '../../../../shared/src/needs/ratingRecord';
+import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 
 interface Props {
-  needs: Need[];
-  history: DayHistory[];
-  days: number;
-  selectedIdx: number;
-  selectedRatings: Record<string, number>;
-  needsLow: Need[];
-  isTherapist: boolean;
-  bookingLink: ReactNode;
-  onTapNeed: (n: Need) => void;
-  onWeekCard: () => void;
+  needs: Need[]; history: DayHistory[]; selectedIdx: number; selectedRatings: Record<string, number>;
+  needsLow: Need[]; isTherapist: boolean; bookingLink: ReactNode; onTapNeed: (n: Need) => void; onWeekCard: () => void;
 }
 
-/** Вид «Неделя»: линии потребностей за N дней до выбранного + карточка недели. */
-export function HistoryWeekView({ needs, history, days, selectedIdx, selectedRatings, needsLow, isTherapist, bookingLink, onTapNeed, onWeekCard }: Props) {
-  const weekDays = weekWindow(history, selectedIdx, days);
+/** «Неделя»: линии потребностей за WEEK_DAYS до выбранного дня (та же неделя у «Динамики»), внимание и «Карточка недели» —
+ *  сцена: листки отмеченных дней, сверху выбранный день его оценками (dayStrokeValues — как его листок в ленте дат). */
+export function HistoryWeekView({ needs, history, selectedIdx, selectedRatings, needsLow, isTherapist, bookingLink, onTapNeed, onWeekCard }: Props) {
+  const weekDays = weekWindow(history, selectedIdx, WEEK_DAYS);
+  const ratedDays = weekDays.filter(d => needs.some(n => isRated(d.ratings, n.id))).length;
   return (
     <div className="sd-col">
-      <div className="ds-label">За {days} дней</div>
-      <div className="ds-card ds-card--flush">
+      <div className="ds-label">За {WEEK_DAYS} дней</div>
+      <div className="ds-card ds-card--flush sd-week">
         {needs.map(need => (
-          <SparklineRow key={need.id} need={need} days={weekDays}
-            selectedRatings={selectedRatings} onClick={() => onTapNeed(need)} />
+          <SparklineRow key={need.id} need={need} days={weekDays} selectedRatings={selectedRatings} onClick={() => onTapNeed(need)} />
         ))}
       </div>
-
       {needsLow.length > 0 && (
-        <div className="ds-card ds-card--row">
+        <AttentionCard need={needsLow[0]}>
           <div className="sd-low-text">
-            <strong>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!isTherapist && ' – разобраться рядом с живым человеком бывает легче'}.
+            <strong>{needsLow[0].chartLabel}</strong> остаётся низкой несколько дней{!isTherapist && glue(' – разобраться рядом с живым человеком бывает легче')}.
           </div>
           {bookingLink}
-        </div>
+        </AttentionCard>
       )}
-
-      <button onClick={onWeekCard} className="ds-btn ds-btn--secondary">Карточка недели →</button>
+      <button type="button" onClick={onWeekCard} className="ds-card ds-card--row ds-card--hover sd-weekcard">
+        <span className="sd-weekcard-scene" aria-hidden="true"><SceneCheckIn hue={ENTITY_LOOK.tracker.hue} days={ratedDays} values={dayStrokeValues(selectedRatings)} /></span>
+        <span className="sd-weekcard-label">Карточка недели →</span>
+      </button>
     </div>
   );
 }

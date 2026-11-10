@@ -147,7 +147,7 @@ describe('HistorySheet — fillHistoryGaps после сохранения (read
     expect(onHistoryRefreshed).not.toHaveBeenCalled();
     // Экран остаётся смонтированным (не упал), TrackerOverlay всё равно закрылся.
     expect(screen.queryByText(/бэкафилл-трекер/)).toBeNull();
-    expect(screen.getByText('Оценить →')).toBeTruthy();
+    expect(screen.getByText('Назад к трекеру')).toBeTruthy();
   });
 
   it('история без дырки (пустая, только сегодня) не добавляет лишних дней', async () => {
