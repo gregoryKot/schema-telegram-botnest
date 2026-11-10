@@ -38,7 +38,7 @@ export function PatternCardSection({ explainer, fields, loading, failed, sign, o
       <section className="ps-block">
         <div className="ds-label ps-label">Моя карточка</div>
         <PaperAlert sign={sign} title="Карточка не загрузилась."
-          text="Заполнить её можно после загрузки — чтобы новое не легло поверх сохранённого" onRetry={onRetry} />
+          text="Заполнить её можно после загрузки — чтобы новое не легло поверх сохранённого." onRetry={onRetry} />
       </section>
     );
   }
