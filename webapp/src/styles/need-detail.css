@@ -28,4 +28,3 @@
 .nd-bars { display: flex; gap: 4px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--paper-sunk); }
 .nd-bars > i { flex: 1; height: 18px; border-radius: 5px; background: oklch(0.93 0.025 var(--h)); }
 .nd-bars > i.is-on { background: var(--need-ink); }
-.ex2-hero .pa-sheet-title .it { font-style: italic; }

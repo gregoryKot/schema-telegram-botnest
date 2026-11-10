@@ -44,6 +44,21 @@ describe('SignGroup', () => {
     expect(screen.getByText('2')).toBeTruthy();
     expect(container.querySelector('.sg-sign')).toBeNull();
   });
+
+  it('один знак — слот у подписи; несколько (signs) — ряд знаков и шапка с переносом; signs из одного — как один', () => {
+    const one = render(<SignGroup look={{ hue: 240, sign: 'Yield' }} title="Одна"><span /></SignGroup>);
+    expect(one.container.querySelectorAll('.sg-sign')).toHaveLength(1);
+    expect(one.container.querySelector('.sg-signs')).toBeNull();
+    expect(one.container.querySelector('.sg-head')!.classList.contains('is-many')).toBe(false);
+    cleanup();
+    const many = render(<SignGroup look={{ hue: 240 }} signs={['Yield', 'Shelter', 'Shield']} title="Копинги"><span /></SignGroup>);
+    expect(many.container.querySelectorAll('.sg-signs .sg-sign')).toHaveLength(3);
+    expect(many.container.querySelector('.sg-head')!.classList.contains('is-many')).toBe(true);
+    cleanup();
+    const single = render(<SignGroup look={{ hue: 240 }} signs={['Shield']} title="Один из списка"><span /></SignGroup>);
+    expect(single.container.querySelectorAll('.sg-sign')).toHaveLength(1);
+    expect(single.container.querySelector('.sg-signs')).toBeNull();
+  });
 });
 
 describe('SchemaPickerSheet', () => {

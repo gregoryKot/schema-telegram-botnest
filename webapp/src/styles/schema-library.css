@@ -41,10 +41,7 @@
 .ss-need-head, .ss-group-head { display: flex; align-items: center; gap: 12px; margin: 0; font: inherit; }
 .ss-group-sign { display: flex; flex: none; width: 60px; }
 .ss-group-sign .pp-art--square { width: 60px; height: auto; }
-.ss-group-signs { display: flex; flex: none; gap: 2px; }
-.ss-group-signs.is-many .ss-group-sign, .ss-group-signs.is-many .ss-group-sign .pp-art--square { width: 44px; }
-/* Узкая группа с тремя знаками (копинги на 320): подпись уходит под знаки, а не за край листа. */
-.ss-group-head { flex-wrap: wrap; row-gap: 6px; }
+.ss-group-head { flex-wrap: wrap; row-gap: 6px; margin: 2px 4px 0; }
 .ss-group-name { flex: 1 1 140px; min-width: 0; color: var(--text-sub); }
 .ss-need-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 21px; line-height: 1.2; color: var(--text); }
 .ss-need-sub { margin-top: 2px; font-size: 13px; line-height: 1.35; color: var(--text-sub); }
@@ -79,9 +76,7 @@
 .ss-checkin-title { font-family: var(--serif); font-size: 22px; line-height: 1.2; color: var(--text); }
 .ss-checkin-sign { display: flex; flex: none; width: 92px; }
 .ss-checkin-sign .scn-sign, .ss-deep-art .scn-sign { width: 100%; }
-.ss-group { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
-.ss-group-head { margin: 2px 4px 0; }
-.ss-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
+/* Группа режимов — SignGroup (sheet-schemas.css, sg-*): лист и белый список общие с «Паттернами». */
 .ss-mode + .ss-mode { border-top: 1px solid var(--paper-sunk); }
 .ss-mode.is-open { background: oklch(0.975 0.01 var(--h)); }
 .ss-mode-head {
