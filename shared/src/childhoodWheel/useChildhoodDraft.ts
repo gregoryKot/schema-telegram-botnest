@@ -21,16 +21,6 @@ export function unratedHint(count: number): string {
   return `Ещё не оценено: ${count} из ${NEED_ORDER.length}`;
 }
 
-/** Оценки для предпросмотра колеса: неоценённая потребность — пустой сектор, а не пятёрка. */
-export function previewRatings(
-  ratings: ChildhoodRatings,
-  unrated: readonly NeedId[],
-): ChildhoodRatings {
-  const out = { ...ratings };
-  for (const id of unrated) out[id] = 0;
-  return out;
-}
-
 export function useChildhoodDraft(
   initial?: ChildhoodRatings,
   hasSaved = false,
