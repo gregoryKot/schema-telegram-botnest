@@ -1,14 +1,17 @@
-/* «Что питает» — список практик (PracticesScreen) и строка «Задание · имя» в создании
-   задания. Подключается сборником sheet-tasks.css. */
-/* ── Практики ── */
-.sk-intro { max-width: 560px; line-height: 1.6; font-size: 14px; }
-.sk-head-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.sk-ok { font-size: 13px; font-weight: 500; color: var(--ok); }
-.sk-hint { padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.55; max-width: 600px; }
-.sk-practice { display: flex; align-items: center; gap: 12px; }
-.sk-practice-text { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+/* «Что меня питает» (PracticesScreen, plans/NourishParts). Подключается сборником sheet-tasks.css.
+   b20: шапка — лист «Что питает», выбор потребности — плитки (NeedTiles, plans.css), открытая потребность —
+   знак и название Literata, подсказка по оценке — строкой, действия — строки с Leaf, «удалить» — тихо. */
+.sk-feeds .ds-sheet-head > .sk-error, .sk-feeds .ds-sheet-head > .sk-ok { margin-left: auto; }
+.sk-ok { font-size: 13px; font-weight: 600; color: var(--ok-ink); }
+.sk-feed-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sk-feed-head > .ds-sub { margin-left: auto; white-space: nowrap; }
+.sk-feed-hint { margin: 0; max-width: 62ch; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+.sk-feed-hint b { color: var(--text); font-weight: 600; }
+.ds-card.sk-practice { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 12px 10px 16px; }
+.sk-practice-text { flex: 1; min-width: 0; font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.ds-link.sk-practice-del { flex: none; min-height: 44px; padding: 0 6px; color: var(--text-sub); font-weight: 500; }
+.ds-link.sk-practice-del:hover { color: var(--text); }
+.ds-link.sk-practice-del.is-pending { color: var(--err); font-weight: 600; }
+.sk-feed-add { gap: 10px; }
 .sk-add { display: flex; gap: 8px; max-width: 600px; flex-wrap: wrap; }
 .sk-add .ds-input { flex: 1; min-width: 200px; }
-/* «Задание · имя» — одна строка с многоточием: длинное имя одним словом
-   обрезалось краем экрана (498px текста при 328 места). */
-.sk-eyebrow-one { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

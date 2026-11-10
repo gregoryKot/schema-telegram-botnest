@@ -819,7 +819,7 @@ describe('PracticeSection — создание цели обновляет сп�
     renderSection();
     fireEvent.click(await screen.findByText('все цели →'));
     const overlayTitle = await screen.findByText('Все цели');
-    const overlay = overlayTitle.parentElement!;
+    const overlay = overlayTitle.closest('.sk-overlay') as HTMLElement; // заголовок — в листе-шапке (b20), список — рядом
 
     fireEvent.click(within(overlay).getByText('Цель 1'));
     await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());
@@ -834,7 +834,7 @@ describe('PracticeSection — создание цели обновляет сп�
     renderSection();
     fireEvent.click(await screen.findByText('все цели →'));
     const overlayTitle = await screen.findByText('Все цели');
-    const overlay = overlayTitle.parentElement!;
+    const overlay = overlayTitle.closest('.sk-overlay') as HTMLElement; // заголовок — в листе-шапке (b20), список — рядом
 
     fireEvent.click(within(overlay).getByText('+ Поставить цель'));
     await waitFor(() => expect(screen.queryByText('Все цели')).toBeNull());

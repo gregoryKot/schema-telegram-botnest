@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { api, type PracticePlan } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
-import { NEED_HUE, hueStyle } from '../lib/tone';
+import { needLook } from '../../../shared/src/theme/entityLook';
 import type { NeedId } from '../../../shared/src/needs/types';
+import { glueSpaces } from '../../../shared/src/utils/typo';
 import '../styles/sheet-tracker.css';
 import { BottomSheetShell } from './BottomSheetShell';
+import { EntitySheet } from './paper/EntitySheet';
+import { GlyphCheck } from './exercises/ExScreen';
 
 interface Props {
   plan: PracticePlan;
@@ -13,8 +16,9 @@ interface Props {
   onDone: () => void;
 }
 
+// «Вчера в планах было» (b20): шапка — лист потребности плана (бумага NEED_HUE + NeedArt вместо точки-квадратика),
+// сам шаг — Literata без коробки с цветной полосой, две равные кнопки, «Да, получилось» — залитая с галочкой-SVG.
 export function CheckInSheet({ plan, needLabel, onDone }: Props) {
-  const hue = NEED_HUE[plan.needId as NeedId];
   const tr = useTr();
   const goBack = useHistorySheet(onDone);
   const [saving, setSaving] = useState(false);
@@ -37,18 +41,10 @@ export function CheckInSheet({ plan, needLabel, onDone }: Props) {
   return (
     // Клик по фону = «Пропустить»; пока идёт сохранение — не закрываем.
     <BottomSheetShell goBack={() => { if (!saving) goBack(); }} zIndex={250}>
-        <div className="tk2-ci-q" style={hueStyle(hue)}>
-          <div className="ds-h2">
-            {tr('Вчера в планах было', 'Вчера вы планировали')}
-          </div>
-          <div className="tk2-ci-need">
-            <span className="ds-dot tone-fill" /> {needLabel}
-          </div>
-        </div>
+        <EntitySheet look={needLook(plan.needId as NeedId)} label={needLabel} compact
+          title={tr('Вчера в планах было', 'Вчера вы планировали')} className="tk2-ci-q" />
 
-        <div className="ds-card ds-card--row tk2-ci-plan" style={hueStyle(hue)}>
-          {plan.practiceText}
-        </div>
+        <p className="tk2-ci-plan">{glueSpaces(plan.practiceText)}</p>
 
         <div className="tk2-ci-ask">
           Получилось?
@@ -59,18 +55,18 @@ export function CheckInSheet({ plan, needLabel, onDone }: Props) {
             Не вышло
           </button>
           <button onClick={() => checkin(true)} disabled={saving} className="ds-btn">
-            {saving ? 'Сохранение...' : 'Да, получилось ✓'}
+            {saving ? 'Сохранение...' : <>Да, получилось <GlyphCheck /></>}
           </button>
         </div>
         {error && (
-          <div className="tk2-ci-err">
+          <div className="tk2-ci-err" role="alert">
             {tr(
               'Не удалось сохранить – попробуй ещё раз',
               'Не удалось сохранить – попробуйте ещё раз',
             )}
           </div>
         )}
-        <button onClick={goBack} disabled={saving} className="ds-link tk2-ci-skip">
+        <button onClick={goBack} disabled={saving} className="ds-link pa-quiet tk2-ci-skip">
           Пропустить
         </button>
     </BottomSheetShell>

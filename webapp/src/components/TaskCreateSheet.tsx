@@ -1,23 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
-import { Check } from './art/PaperArtSigns';
+import { EntitySheet } from './paper/EntitySheet';
 import { api, type UserId } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { haptic } from '../haptic';
-import { pressable } from '../utils/a11y';
 import { detectCrisisAny } from '../utils/crisisMarkers';
 import { CrisisCard } from './CrisisCard';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useTr } from '../utils/addressForm';
 import { taskSheetCopy } from '../../../shared/src/tasks/taskSheetCopy';
-import { hueStyle } from '../lib/tone';
 import { TASK_OPTIONS, STREAK_OPTIONS, type TaskType } from './taskCreate/taskOptions';
 import { SchemaPicker, ModePicker } from './taskCreate/TaskPickers';
+import { TaskTypeTiles } from './taskCreate/TaskTypeTiles';
 import { LimitedTextarea } from '../../../shared/src/components/LimitedTextarea';
 import { TASK_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 import { taskPayloadText } from '../../../shared/src/tasks/taskPayload';
 import { assignLead, assignableOptions } from '../../../shared/src/tasks/assignCopy';
 import '../styles/sheet-tasks.css';
+import '../styles/task-create.css';
 
 interface Props {
   clientId?: UserId; clientName?: string;
@@ -87,42 +87,12 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
 
       <div className="sk-scroll">
         <div className="sk-page">
-          <div>
-            <Check size="row" />
-            <div className="ds-eyebrow sk-eyebrow-one">{copy.title}</div>
-            <h1 className="ds-h2 sk-title">{tr('Выбери', 'Выберите')}<br /><em className="sk-it">{copy.what}</em></h1>
-            {lead && <p className="ds-sub sk-lead">{lead}</p>}
-          </div>
+          {/* Шапка — лист «задания» (небо 240 + Check): надпись, вопрос одной строкой Literata (до b20 — «Выбери» /
+              курсивом «цель» в две строки и мелкий Check над надписью), подводка терапевту. */}
+          <EntitySheet look="task" label={copy.title} titleAs="h1"
+            title={`${tr('Выбери', 'Выберите')} ${copy.what}`} sub={lead ?? undefined} className="sk-create-head" />
 
-          <div className="sk-grid">
-            {options.map(opt => {
-              const isSelected = type === opt.type;
-              return (
-                <div
-                  key={opt.type}
-                  className={'sk-tpl tone-tint' + (isSelected ? ' is-selected tone-border' : '')}
-                  style={hueStyle(opt.hue)}
-                  aria-pressed={isSelected}
-                  {...pressable(() => { haptic.select(); setType(opt.type); })}
-                >
-                  <div className="sk-tpl-body">
-                    <div className="sk-tpl-label">{opt.label}</div>
-                    <div className="sk-tpl-sub">{opt.sub}</div>
-                  </div>
-                  <div className="sk-tpl-side">
-                    <span className="sk-tpl-time">{opt.time}</span>
-                    <span className={'sk-radio' + (isSelected ? ' is-on' : '')} aria-hidden="true">
-                      {isSelected && (
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <polyline points="1.5,5 4,7.5 8.5,2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <TaskTypeTiles options={options} value={type} onPick={setType} />
 
           <div ref={configRef} className="sk-config">
             {selected.hasStreak && (
@@ -168,12 +138,15 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
             )}
           </div>
 
-          <div className="sk-submit">
-            {error ? <span className="sk-error">{error}</span> : <span />}
-            <button className="ds-btn" onClick={handleCreate} disabled={!canSave || saving}>
-              {saving ? copy.saving : copy.submit}
-            </button>
-          </div>
+        </div>
+      </div>
+      {/* Главная кнопка закреплена внизу листа: на телефоне до неё было девять плиток и настройки. */}
+      <div className="sk-submit-bar">
+        <div className="sk-submit">
+          {error ? <span className="sk-error">{error}</span> : <span />}
+          <button className="ds-btn ds-btn--lg" onClick={handleCreate} disabled={!canSave || saving}>
+            {saving ? copy.saving : copy.submit}
+          </button>
         </div>
       </div>
     </div>
