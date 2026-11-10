@@ -8,6 +8,6 @@ import type { QuickActionId } from '../../../shared/src/quickActions/quickAction
 export const QUICK_ACTION_SIGN: Record<QuickActionId, SignKey> = {
   case: 'ribbon', tracker: 'strokes', diary_schema: 'layers', diary_mode: 'cluster', diary_gratitude: 'pebbles',
   breathing: 'breath', grounding: 'grounded', stop: 'pause', belief_check: 'scales', phrase_check: 'looming',
-  flashcard: 'heart', safe_place: 'haven', letter_to_self: 'sheets', warm_words: 'heart', childhood_wheel: 'wheel',
+  flashcard: 'heart', safe_place: 'haven', letter_to_self: 'sheets', warm_words: 'child_care', childhood_wheel: 'wheel',
   tasks: 'check', practices: 'leaf', plans: 'check',
 };

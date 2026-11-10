@@ -5,6 +5,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { PAPER_HUE, OUTCOME_LOOK } from '../../../../shared/src/theme/entityLook';
 import { PaperAlert } from './PaperAlert';
+import { readCss } from '../../styles/cssRules.test-helpers';
 
 afterEach(cleanup);
 
@@ -49,5 +50,14 @@ describe('PaperAlert', () => {
     expect(container.querySelector('.pa-alert-text')!.textContent).toBe('Записи в\u00a0порядке и\u00a0на\u00a0месте.');
     render(<PaperAlert title={<b>как есть</b>} />);
     expect(screen.getByText('как есть').tagName).toBe('B');
+  });
+
+  // Ревью g4 r6: «Не удалось сохранить изменение / задания.» на 390 — одно слово во второй строке заголовка. Склейка
+  // коротких слов этого не ловит (последнее слово длинное) — обе фразы переносятся с text-wrap: pretty.
+  it('заголовок и вторая фраза — без висячего последнего слова (text-wrap: pretty)', () => {
+    const css = readCss('paper-app.css');
+    for (const cls of ['.pa-alert-title', '.pa-alert-text']) {
+      expect(css.find((r) => r.media === '' && r.selectors.includes(cls))?.body, cls).toMatch(/text-wrap:\s*pretty/);
+    }
   });
 });

@@ -6,11 +6,12 @@ import { TaskProgressBar } from '../../components/TaskProgressBar';
 import { TaskStatusBadge } from '../../components/TaskStatusBadge';
 import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
+import { glueSpaces } from '../../../../shared/src/utils/typo';
 import { taskRowState } from './taskRowState';
 import { TaskSign } from './TaskSign';
 import '../../styles/client-practice.css';
 
-/** Строка задания/цели: название, срок, действие справа; в полном списке — бейдж статуса. */
+/** Строка задания/цели: название (текст терапевта или клиента — glueSpaces, дефисы его), срок, действие справа; в полном списке — бейдж статуса. */
 export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }: {
   task: UserTask; cta: string; mark?: boolean; compact?: boolean; status?: TaskStatus; onOpen: () => void;
   /** Закрыть цель без упражнения; промис нужен, чтобы вернуть кнопку при сбое. */
@@ -29,7 +30,7 @@ export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }
       <span className="pp-row-art"><TaskSign task={task} /></span>
       <div className="cp-task-body">
         {mark && !st.doneToday && <div className="ds-label cp-task-from">от терапевта</div>}
-        <div className="cp-task-title">{resolveTaskDisplayText(task, 'compact')}</div>
+        <div className="cp-task-title">{glueSpaces(resolveTaskDisplayText(task, 'compact'))}</div>
         {st.streakNote && <div className="cp-task-note">Сделано сегодня — завтра снова</div>}
         <TaskProgressBar task={task} />
         {task.dueDate && <div className="ds-sub">до {fmtDate(task.dueDate)}</div>}
@@ -37,8 +38,7 @@ export function TaskRow({ task, cta, mark, compact, status, onOpen, onComplete }
       </div>
       {st.showComplete && (
         <button
-          className="ds-btn ds-btn--sm ds-btn--secondary"
-          disabled={completing} aria-busy={completing || undefined}
+          className="ds-btn ds-btn--sm ds-btn--secondary" disabled={completing} aria-busy={completing || undefined}
           onClick={e => { e.stopPropagation(); complete(); }}
         >
           {completing ? '...' : 'Готово'}

@@ -43,6 +43,7 @@ vi.mock('../../api', () => ({
   reportClientError: vi.fn(),
 }));
 import { api } from '../../api';
+import { plainText } from '../../test-support/plainText';
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function task(overrides: Partial<{ id: number; assignedBy: number | null; type: string; text: string; done: boolean | null }> = {}) {
@@ -112,7 +113,7 @@ describe('TasksHub — список', () => {
     await screen.findByText('Позвонить маме');
     expect(screen.queryByRole('alert')).toBeNull();
     await act(async () => { fireEvent.click(screen.getAllByText('Готово')[0]); });
-    expect(screen.getByRole('alert').textContent).toContain('Не удалось сохранить изменение задания');
+    expect(plainText(screen.getByRole('alert'))).toContain('Не удалось сохранить изменение задания');
     expect(screen.getByText('Позвонить маме')).toBeTruthy();
   });
 
@@ -126,7 +127,7 @@ describe('TasksHub — список', () => {
     // Тип по умолчанию — «серия в трекере», текста не требует.
     await act(async () => { fireEvent.click(document.querySelector('.sk-submit .ds-btn')!); });
     expect(mockApi.createTask).toHaveBeenCalledTimes(1);
-    expect((await screen.findByRole('alert')).textContent).toContain('Не удалось сохранить изменение задания');
+    expect(plainText(await screen.findByRole('alert'))).toContain('Не удалось сохранить изменение задания');
     expect(await screen.findByText('Задания', { selector: 'h1' })).toBeTruthy();
   });
 

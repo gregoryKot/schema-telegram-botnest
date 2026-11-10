@@ -33,6 +33,17 @@ describe('createPracticeSessionsApi', () => {
     expect(counts).toEqual({ breathing: 1, grounding: 2, stop: 3 });
   });
 
+  it('одновременные чтения — один GET (герой и квадраты «Практик»), после ответа — снова на сервер', async () => {
+    const [a, b] = await Promise.all([
+      api.getPracticeSessions(),
+      api.getPracticeSessions(),
+    ]);
+    expect(calls).toEqual([{ verb: 'get', path: '/api/practice-sessions' }]);
+    expect(a).toEqual(b);
+    await api.getPracticeSessions();
+    expect(calls).toHaveLength(2);
+  });
+
   it('recordPracticeSession шлёт id практики в теле POST и возвращает ответ', async () => {
     const res = await api.recordPracticeSession('stop');
     expect(calls).toEqual([

@@ -1,2 +1,64 @@
-/* «Помощь рядом» (CrisisContactsSheet). Подключается из practice-selfhelp.css. */
+/* «Помощь рядом» (CrisisBlock, CrisisContactsSheet) и кризисные строки телефонной «Практики»
+   (PhoneHelpRows). Подключается из practice-selfhelp.css. Сама карточка с телефонами — инлайном в
+   shared/src/components/CrisisCard.tsx (её берёт и визитка, куда этот файл не доезжает).
+   Бумага — бережная роза (--h 25, ENTITY_LOOK.sos); мелкий текст на ней — --text-sub, разделитель —
+   --panel-line (--paper-sunk светлее бумаги и на ней пропадает). */
+
+/* Продолжение карточки на той же бумаге: 112 ссылкой tel: и разговор с близким. */
+.cr-more {
+  display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding-top: 10px;
+  border-top: 1px solid var(--panel-line);
+}
+.cr-line { margin: 0; font-size: 14.5px; line-height: 44px; color: var(--text); }
+.cr-112 {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px;
+  box-sizing: border-box; padding: 0 12px; margin-left: 2px; vertical-align: middle; border-radius: 14px;
+  background: var(--surface); color: var(--accent); font: 700 17px/1 var(--sans); text-decoration: none;
+}
+.cr-text { margin: 0; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
+
+/* Лист контактов: «Закрыть» — второстепенной во всю ширину, сразу под карточкой. Поверх «Важного о
+   самопомощи» (cr-sheet--fill) на телефоне лист не ниже родителя (~78% высоты), иначе его край торчал
+   над шторкой; отдельный лист (из «Ещё») — по содержимому, без пустоты над «Закрыть». */
+.cr-sheet { display: flex; flex-direction: column; }
 .sh-close { margin-top: var(--space-16); }
+.ds-btn.sh-close { width: 100%; min-height: 48px; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cr-sheet--fill { min-height: 78vh; }
+  .cr-sheet--fill > .ds-btn.sh-close { margin-top: auto; }
+  .cr-sheet--fill > [data-crisis-card] { margin-bottom: var(--space-16); }
+}
+/* Пока «Помощь рядом» открыта поверх «Важного о самопомощи», бумага родителя спрятана: на компьютере
+   окно 560 торчало из-под 520 рамкой со всех сторон (матрёшка, ревью g4 r2). Порядок слоёв не меняется —
+   под-лист по-прежнему выше (z-index 320 над 310); родитель вернётся, когда лист контактов закроют. */
+.sheet-modal:has(+ .sheet-modal .cr-sheet--fill) > .sheet-modal-box { visibility: hidden; }
+/* Точка после плашки 112 — часть текста кризисного пути (тексты не меняются, №7, ревью g4 r2): видна,
+   прижата к плашке на 2px — тем же зазором, что слева, и не висит отдельно у её края. */
+.cr-dot { margin-left: 2px; }
+
+/* ── Кризисные строки «Практики» на телефоне: один лист розы, знак Heart — колонкой слева на высоту
+   обеих строк (пустой слот у второй строки читался незагрузившейся иконкой), но на уровне первой строки:
+   по центру колонки он висел на разделителе и не принадлежал ни одной строке (ревью g4 r2). Разделители
+   начинаются после колонки знака и кончаются в поле листа (16px справа), как у раскрытия. ── */
+.cr-rows { display: grid; grid-template-columns: auto minmax(0, 1fr); overflow: hidden; }
+.cr-rows-art { grid-column: 1; grid-row: 1 / span 2; align-self: start; height: 64px; padding-left: 14px; } /* высота первой строки */
+.cr-rows--one > .cr-rows-art { grid-row: 1; }
+.cr-rows > .cr-row { grid-column: 2; }
+.cr-rows > .cr-open { grid-column: 1 / -1; }
+.cr-row {
+  position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; box-sizing: border-box;
+  padding: 12px 16px 12px 12px; cursor: pointer; transition: background .12s;
+}
+.cr-row + .cr-row::before { content: ''; position: absolute; top: 0; left: 0; right: 16px; border-top: 1px solid var(--panel-line); }
+.cr-row:hover { background: oklch(0.895 0.04 var(--h)); }
+.cr-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 20px; }
+.cr-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cr-row .ds-list-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.cr-row .ds-sub { color: var(--text-sub); }
+.cr-row .ds-chev { color: var(--text-sub); }
+/* Раскрыто: шеврон вниз, контакты — на том же листе под строкой. */
+.cr-rows.is-open .cr-chev { transform: rotate(90deg); }
+.cr-open { margin: 0 16px; padding: 14px 0 18px; border-top: 1px solid var(--panel-line); }
+@media (prefers-reduced-motion: reduce) {
+  .cr-row .ds-chev { transition: none; }
+}

@@ -1,12 +1,9 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { PaperEmpty } from '../components/art/PaperEmpty';
-import { Cluster } from '../components/art/PaperArtSigns';
-import { Breath } from '../components/art/PaperArt';
 import { useLocation } from 'react-router-dom';
-import { api } from '../api';
+import { api, type TherapyRelationInfo } from '../api';
 import { TaskCreateSheet } from '../components/TaskCreateSheet';
 import { CHILDHOOD_DONE_KEY } from '../utils/storageKeys';
-import type { TherapyRelationInfo } from '../api';
 import { pressable } from '../utils/a11y';
 import { useTr } from '../utils/addressForm';
 import { useTaskActions } from './today/useTaskActions';
@@ -15,15 +12,14 @@ import { TaskExerciseHost } from './today/TaskExerciseHost';
 import { sessionMoment } from './today/model';
 import { CrisisBlock } from './practice/CrisisBlock';
 import { HereAndNowBlock } from './practice/HereAndNowBlock';
-import { PracticeTopRow, HERE_BLOCK_ID, HELP_BLOCK_ID } from './practice/PracticeTopRow';
-import { scrollToBlock } from './practice/scrollToBlock';
 import { PracticeHeader } from './practice/PracticeHeader';
 import { PhoneHelpRows } from './practice/PhoneHelpRows';
 import { TherapyBridgeCard } from '../components/therapy/TherapyBridgeCard';
 import { useIsMobile } from '../components/useIsMobile';
 import { ExerciseLibrary } from './practice/ExerciseLibrary';
 import { TaskRow } from './practice/TaskRow';
-import { AllTasksOverlay, TaskSaveError } from './today/AllTasksOverlay';
+import { AllTasksOverlay } from './today/AllTasksOverlay';
+import { TaskSaveError } from './today/TaskSaveError';
 import { useExerciseStats } from './practice/useExerciseStats';
 import { useCatalogCounts } from './practice/catalogCounts';
 import { usePracticeTools } from './practice/usePracticeTools';
@@ -63,7 +59,9 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   const [showCustomize,  setShowCustomize]  = useState(false);
   const { tools, cards, catalogRows } = usePracticeTools({
     goalsCount: tasks.filter(t => t.assignedBy === null).length, catalog, childhoodDone, onOpenPractices, onOpenPlans,
+    modesRow: { sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'), onClick: () => onOpenSchema?.({ tab: 'modes' }) },
   });
+  const onSos = tools.isShown('flashcard') ? openFlashcard : undefined;
 
   // Detect openSchemaEx state from navigation. «Мне плохо» топбара сюда больше
   // не ведёт — карточка открывается поверх текущего раздела (AppOverlays).
@@ -103,17 +101,13 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
   return (
     <div className={'ds-page cp-page animate-fade' + (phone ? ' cp-page--phone' : '')}>
       <PracticeHeader phone={phone} banner={sessionBanner} onCustomize={() => setShowCustomize(true)} />
-      {phone ? (
-        <div id={HERE_BLOCK_ID} className="cp-block">
-          <HereAndNowBlock compact extraRows={<PhoneHelpRows onSteps={tools.isShown('flashcard') ? openFlashcard : undefined} />} />
-        </div>
-      ) : (
-        <>
-          <PracticeTopRow onCrisis={tools.isShown('flashcard') ? openFlashcard : undefined} />
-          <div id={HERE_BLOCK_ID} className="cp-block"><HereAndNowBlock /></div>
-          <div id={HELP_BLOCK_ID} className="cp-block"><CrisisBlock /></div>
-        </>
-      )}
+      {/* Герой дыхания, квадраты заземления, «Стопа» и «Мне плохо» (на телефоне «Мне плохо» — в
+          листе кризисных строк под квадратами), затем «Помощь рядом» одной полосой (на телефоне —
+          раскрытием той же строки; под квадратом с сердцем — без второго). Кризисный путь — до «Инструментов» и заданий. */}
+      <div className="cp-block cp-here">
+        <HereAndNowBlock compact={phone} onSos={phone ? undefined : onSos} extraRows={phone ? <PhoneHelpRows onSteps={onSos} /> : undefined} />
+      </div>
+      {!phone && <div className="cp-block"><CrisisBlock heading signless={!!onSos} /></div>}
 
       {/* Мост к терапевту — после быстрых практик и кризисного входа, перед «Инструментами»: кризисный путь остаётся первым. */}
       <TherapyBridgeCard place="practice" />
@@ -124,10 +118,10 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
             <h3 className="ds-h2">От терапевта</h3>
             {therapistTasks.length > 0 && <span className="ds-sub">{therapistTasks.length} {plural(therapistTasks.length, 'задание', 'задания', 'заданий')}</span>}
           </div>
-          {taskError && <TaskSaveError className="cp-alert" />}
+          {taskError && <TaskSaveError />}
           <div className="cp-tasks">
             {therapistTasks.map(task => (
-              <TaskRow key={task.id} task={task} mark compact={phone} cta="начать →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
+              <TaskRow key={task.id} task={task} compact={phone} cta="начать →" onOpen={() => launcher.openTask(task)} onComplete={() => completeTask(task.id, onTasksChanged)} />
             ))}
           </div>
         </section>
@@ -139,24 +133,6 @@ export function PracticeSection({ onOpenChildhoodWheel, onOpenPractices, onOpenP
         items={cards}
         onOpen={id => { if (id === 'wheel') { onOpenChildhoodWheel(); return; } launcher.openExercise({ ex: id }); }}
       />
-
-      <section className="cp-block">
-        <div className="ds-head-row"><h3 className="ds-h2">В трудный момент</h3></div>
-        {/* Тест убран (FIX_PLAN 4.10); «Здесь и сейчас» — переход к быстрым практикам вверху: что сделать сразу. */}
-        <div className="cp-tools">
-          {[
-            { label: 'Здесь и сейчас', sub: 'Дыхание, заземление, «Стоп» — на одну-три минуты', onClick: () => scrollToBlock(HERE_BLOCK_ID), art: <Breath size="row" /> },
-            { label: 'Карта режимов',   sub: tr('Найди Уязвимого Ребёнка, Критика, Защитника', 'Найдите Уязвимого Ребёнка, Критика, Защитника'),         onClick: () => onOpenSchema?.({ tab: 'modes' }), art: <Cluster size="row" /> },
-          ].map(item => (
-            <div key={item.label} className="ds-card ds-card--hover cp-tool" {...pressable(item.onClick)}>
-              {item.art}
-              <div className="cp-tool-title">{item.label}</div>
-              <div className="cp-tool-sub">{item.sub}</div>
-              {phone ? <span className="ds-chev" aria-hidden="true" /> : <span className="ds-link">начать →</span>}
-            </div>
-          ))}
-        </div>
-      </section>
 
       {tools.isShown('tasks') && <section className="cp-block">
         <div className="ds-head-row">

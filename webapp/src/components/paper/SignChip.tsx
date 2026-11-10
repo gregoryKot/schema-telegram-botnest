@@ -11,7 +11,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { PaperHue, SignKey } from '../../../../shared/src/theme/entityLook';
 import { SignArt } from '../art/SignArt';
-import '../../styles/paper-app.css';
 
 export interface SignChipProps {
   label: ReactNode;

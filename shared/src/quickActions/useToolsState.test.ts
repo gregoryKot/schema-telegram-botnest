@@ -97,6 +97,24 @@ describe('useToolsState', () => {
       expect(result.current.rows).toHaveLength(10);
     });
 
+    // Порядок по умолчанию — порядок, переданный площадкой (у сайта — порядок библиотеки), а не
+    // исторический порядок строк мини-аппа: иначе «Критик или забота?» вставал первым, а колесо
+    // детства и «Тёплые слова» (45° и 70°) оказывались соседями в бенто (b14).
+    it('без сохранённого порядка карточки идут в порядке orderable', () => {
+      const { result } = renderHook(() =>
+        useToolsState(PROPS, undefined, [
+          'warm_words',
+          'phrase_check',
+          'belief_check',
+        ]),
+      );
+      expect(result.current.groups[0].map((r) => r.id)).toEqual([
+        'warm_words',
+        'phrase_check',
+        'belief_check',
+      ]);
+    });
+
     it('индекс перестановки — внутри группы карточек, остальные не двигаются', () => {
       const { result } = renderHook(() =>
         useToolsState(PROPS, undefined, CARDS),

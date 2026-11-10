@@ -1,8 +1,63 @@
-/* Круг отсчёта дыхания (BreathingPaperView). Подключается из client-practice.css. */
-/* Круг с отсчётом во время дыхания — на месте картинки героя «Дыши со мной». */
-.cp-ring {
-  width: clamp(64px, 18vw, 88px); height: clamp(64px, 18vw, 88px); flex-shrink: 0; border-radius: 50%;
-  border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--serif); font-size: clamp(24px, 6vw, 32px); color: var(--text); font-variant-numeric: tabular-nums;
+/* Лист «Дыши со мной» (BreathingPaperView): бирюза QUICK_LOOK.breathing («воздух»), живая сцена SceneBreath,
+   отсчёт фазы белым квадратиком на сцене, полоса фаз 4 : 4 : 6. Подключает сам компонент: лист из
+   ⌘K и с итога разбора живёт вне раздела «Практики», и в сборке файл может встать раньше
+   index.css — правило, спорящее с ds-*, пишется на два класса. Мелкий текст на бумаге — --text-sub.
+   Размеры — по ширине самого листа (container query): он стоит и в колонке раздела, и в листе 560. */
+.qb { container: qb / inline-size; box-sizing: border-box; width: 100%; padding: 18px 20px 16px; }
+.pp-paper.qb { border-radius: 24px; }
+/* Сетка — во внутренней обёртке: запрос по ширине контейнера не меняет сам контейнер. */
+.qb-in { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 6px; }
+.qb-scene { position: relative; justify-self: center; width: min(100%, 248px); }
+.qb-scene > .scn { width: 100%; }
+/* Отсчёт фазы — белый квадратик в свободном углу сцены (дуги начинаются правее), тень сплошным слоем. */
+.qb-count {
+  position: absolute; top: 3%; left: 0; display: grid; place-items: center;
+  width: 54px; height: 54px; border-radius: 14px; background: var(--surface);
+  box-shadow: 4px 5px 0 oklch(0.79 0.07 var(--h)); transform: rotate(-6deg);
+  font: 400 32px/1 var(--serif); color: var(--text); font-variant-numeric: tabular-nums;
+}
+.qb-body { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.ds-label.qb-label { color: var(--text-sub); }
+.qb-title { margin: 0; font: 400 34px/1.1 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.qb-text { margin: 0; max-width: 44ch; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+/* Место подписи и полосы фаз — по самой высокой из них (итог: три строки подписи на 320–390), чтобы
+   герой не менял высоту на старте и в итоге (ревью g4 r2: квадраты под ним прыгали на 7–24px). */
+.qb-slot { width: 100%; min-height: calc(15px * 1.55 * 3); }
+
+/* Полоса фаз: «круг 1 из 4» и отрезки по длине фаз; текущий заполняется за свою длину. */
+.qb-phases { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 420px; }
+.qb-cycle { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--text-sub); }
+.qb-track { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.qb-seg { flex: 1 1 0; min-width: min-content; display: flex; flex-direction: column; gap: 6px; }
+.qb-bar { position: relative; display: block; height: 8px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.qb-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--c-moss); transform-origin: left center; transform: scaleX(0); }
+.qb-seg.is-done .qb-fill { transform: scaleX(1); }
+.qb-seg.is-now .qb-fill { animation: qb-fill var(--qb-s) linear forwards; }
+@keyframes qb-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.qb-seg-label { font-size: 13px; line-height: 1.3; color: var(--text-sub); white-space: nowrap; }
+.qb-seg.is-now .qb-seg-label { color: var(--text); font-weight: 700; }
+
+/* Кнопки: на узком листе — главная во всю ширину, тихая ссылка под ней по центру. */
+/* Высота блока — по главной кнопке: «Начать дыхание» сменяется тихим «Достаточно», карточка не прыгает. */
+.qb-actions { display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 2px; width: 100%; min-height: 48px; margin-top: 6px; }
+/* В листе в покое и в итоге две кнопки столбиком (48 + 2 + 44), во время дыхания — одно «Достаточно»:
+   ряд держит высоту двух, лист не прыгает верхом на старте. */
+.qb--sheet .qb-actions { min-height: 94px; }
+.qb-foot { align-self: stretch; margin-top: 2px; }
+
+/* Широкий лист (раздел на компьютере, планшет): сцена справа, текст слева, кнопки строкой. */
+@container qb (min-width: 560px) {
+  .qb-in { grid-template-columns: minmax(0, 1fr) clamp(220px, 40%, 290px); column-gap: 32px; }
+  .qb-scene { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 100%; }
+  .qb-body { grid-column: 1; grid-row: 1; align-self: center; }
+  .qb-title { font-size: 40px; }
+  .qb-count { width: 64px; height: 64px; font-size: 40px; }
+  .qb-actions, .qb--sheet .qb-actions { flex-direction: row; justify-content: flex-start; align-items: center; gap: 4px 20px; min-height: 48px; }
+  .qb-actions .ds-link.pa-quiet--pad { padding: 0; } /* тихая ссылка — pa-quiet (paper-app.css) */
+}
+/* Узкий лист (телефон 320): подписи фаз мельче, чтобы «задержка 4» и «выдох 6» не слипались. */
+@container qb (max-width: 300px) {
+  .qb-track { gap: 8px; }
+  .qb-seg-label { font-size: 12px; }
+  .qb-title { font-size: 30px; }
 }

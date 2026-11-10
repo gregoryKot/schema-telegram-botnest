@@ -5,7 +5,6 @@
 // пустого экрана уходит. Один класс колонки на трекер, дооценку, разбор, дневник, «Мне плохо»,
 // листы потребности. Отступ липкой колонки сверху — --pa-sticky-top у экрана (шапка листа).
 import type { ReactNode } from 'react';
-import '../../styles/paper-app.css';
 
 export function SpreadLayout({ side, className, children }: { side: ReactNode; className?: string; children: ReactNode }) {
   return (

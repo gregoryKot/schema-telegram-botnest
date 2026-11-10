@@ -62,12 +62,11 @@ export function Check({ size, plate = 'sage' }: ArtProps & { plate?: CheckPlate 
   );
 }
 
+/** Кривая сердца (холст 120×64) — одна на знак Heart, сцену SceneSos и знак техники HeartFrame. */
+export const HEART_PATH = 'M60 58 C 40 46, 20 36, 20 22 C 20 12, 30 6, 40 10 C 48 13, 56 20, 60 26 C 64 20, 72 13, 80 10 C 90 6, 100 12, 100 22 C 100 36, 80 46, 60 58 Z';
+
 export function Heart({ size }: ArtProps) {
-  return (
-    <Svg size={size} viewBox="0 0 120 64">
-      <path d="M60 58 C 40 46, 20 36, 20 22 C 20 12, 30 6, 40 10 C 48 13, 56 20, 60 26 C 64 20, 72 13, 80 10 C 90 6, 100 12, 100 22 C 100 36, 80 46, 60 58 Z" fill={PAPER.clay} />
-    </Svg>
-  );
+  return <Svg size={size} viewBox="0 0 120 64"><path d={HEART_PATH} fill={PAPER.clay} /></Svg>;
 }
 
 export function Wheel({ size }: ArtProps) {

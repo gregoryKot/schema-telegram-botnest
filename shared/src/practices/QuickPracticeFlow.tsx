@@ -1,9 +1,9 @@
 // Быстрая практика «Здесь и сейчас» с пошаговым флоу (заземление 5-4-3-2-1,
-// техника «Стоп») — один компонент на обе площадки (правило №3). Контент —
-// quickPractices, тело — StepFlowBody, done-экран фиксирует прохождение
-// (useQuickPractice) и показывает счётчик + «Поделиться» (Footer).
-// Площадочное — инъекцией (лист, ShareCardSheet, api). stop_start — только «Стоп».
-import { useEffect, useState, type ComponentType } from 'react';
+// техника «Стоп») — рамка логики (правило №3). Контент — quickPractices, вёрстка —
+// лист площадки (StepFlow), done-экран фиксирует прохождение (useQuickPractice) и
+// показывает счётчик + «Поделиться» (Footer). Площадочное — инъекцией (лист,
+// ShareCardSheet, api, предупреждение `note`). stop_start — только «Стоп».
+import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import type { PracticeDoneFooterProps } from './PracticeDoneFooter';
 import { practiceCountLabel } from './practiceCountLabel';
 import type { StepFlowProps } from './stepFlowTypes';
@@ -28,6 +28,8 @@ export interface QuickPracticeFlowProps {
   shareZIndex: number;
   /** Подвал done-экрана: вёрстка площадки (PracticeDoneFooter / ...Site). */
   Footer: ComponentType<PracticeDoneFooterProps>;
+  /** Под кнопками первого шага (предупреждение площадки). */
+  note?: ReactNode;
 }
 
 export function QuickPracticeFlow({
@@ -39,6 +41,7 @@ export function QuickPracticeFlow({
   botShortUrl,
   shareZIndex,
   Footer,
+  note,
 }: QuickPracticeFlowProps) {
   const tr = useTr();
   const practice = buildQuickPractice(id, tr);
@@ -54,10 +57,13 @@ export function QuickPracticeFlow({
   return (
     <>
       <StepFlow
+        id={id}
         title={practice.title}
         subtitle={practice.subtitle}
         steps={practice.steps}
+        counter={practice.counter}
         done={practice.done}
+        note={note}
         doneExtra={
           <Footer
             count={count}

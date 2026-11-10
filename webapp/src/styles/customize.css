@@ -4,6 +4,10 @@
 .cz-lead { margin-top: var(--space-4); }
 .cz-group { margin: var(--space-20) var(--space-4) var(--space-8); }
 .cz-hint { margin: 0 var(--space-4) var(--space-8); font-size: 12px; line-height: 1.5; color: var(--text-faint); }
+/* Подсказка «Порядок … меняется за ручку» сразу под подзаголовком — вторая строка того же абзаца: тот же
+   левый край, кегль и тон, что у .cz-lead (было сдвинуто на 4px и мельче — читалось другим блоком). */
+.cz-lead, .cz-lead + .cz-hint { line-height: 1.5; }
+.cz-lead + .cz-hint { margin: 2px 0 var(--space-8); font-size: 13px; color: var(--text-muted); }
 .cz-card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-16);
   overflow: hidden;
@@ -42,6 +46,8 @@ label.cz-row { cursor: pointer; }
   -webkit-tap-highlight-color: transparent;
 }
 .cz-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* Группа без ручки в листе, где у соседней группы она есть: пустое место ручки — тумблеры на одной вертикали. */
+.cz-card--slot > .cz-block { padding-right: 44px; }
 
 .cz-done { width: 100%; height: 52px; margin-top: var(--space-20); border-radius: 26px; font-size: 16px; }
 

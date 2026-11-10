@@ -4,8 +4,7 @@
 // «Помощь рядом» с настоящей tel:-ссылкой, второе касание сворачивает.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
-import { PhoneHelpRows } from './PhoneHelpRows';
-import { HELP_BLOCK_ID } from './PracticeTopRow';
+import { HELP_BLOCK_ID, PhoneHelpRows } from './PhoneHelpRows';
 import { CRISIS_HOTLINE_DISPLAY, CRISIS_HOTLINE_TEL } from '../../utils/crisisMarkers';
 
 vi.mock('../../api', () => ({ api: { trackEvent: vi.fn() } }));
@@ -29,6 +28,16 @@ describe('PhoneHelpRows', () => {
     const link = screen.getByText(CRISIS_HOTLINE_DISPLAY).closest('a');
     expect(link?.getAttribute('href')).toBe(CRISIS_HOTLINE_TEL);
     expect(document.getElementById(HELP_BLOCK_ID)).toBeTruthy();
+    expect(crisisRow().getAttribute('aria-controls')).toBe(HELP_BLOCK_ID);
+  });
+
+  it('знак Heart — один на лист, у строк пустых слотов нет', () => {
+    const { container } = render(<PhoneHelpRows onSteps={vi.fn()} />);
+    expect(container.querySelectorAll('.cr-rows-art')).toHaveLength(1);
+    expect(container.querySelectorAll('.cr-row .pp-row-art')).toHaveLength(0);
+    cleanup();
+    const one = render(<PhoneHelpRows />).container;
+    expect(one.querySelector('.cr-rows--one .cr-rows-art')).not.toBeNull();
   });
 
   it('открывается и с клавиатуры, второе нажатие сворачивает блок', () => {

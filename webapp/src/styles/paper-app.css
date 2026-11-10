@@ -2,9 +2,10 @@
    docs/design/APP_2026-11.md; компоненты — components/paper/*). Префикс pa-.
    База — paper.css (.pp-paper: oklch(0.915 0.03 var(--h)), .pp-art--*) и знаки с тенью-вырезкой
    (.scn-sign, paper-scenes.css). Глубина — сплошным сдвинутым слоем, без blur и filter.
-   Файл подключают сами компоненты, и в сборке он может встать раньше index.css: правило,
-   которое спорит с примитивом ds-*, пишется на два класса (.ds-btn.pa-…), а не полагается
-   на порядок. Состояния примитива той же специфичности (.ds-btn:disabled — 0,2,0) два класса не
+   Файл подключает main.tsx после utilities.css — в главном чанке после cabinet.css и paper.css (из
+   компонентов он уезжал в общий чанк перед index.css, и .ds-label/.pp-paper перебивали надписи и
+   скругления листов, ревью g4; сверка — cascadePairs.test.ts). Правило, которое спорит с примитивом
+   ds-*, всё равно пишется на два класса (.ds-btn.pa-…), а не полагается на порядок. Состояния примитива той же специфичности (.ds-btn:disabled — 0,2,0) два класса не
    перебивают надёжно: фон у .ds-btn.pa-… — с :not(:disabled) или с парой .ds-btn.pa-…:disabled.
    Мелкий текст на цветной бумаге — --text-sub: --text-faint на ней ниже 4.5:1. */
 
@@ -137,8 +138,13 @@
 .pa-done-sub { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 .pa-done-actions { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 16px; }
 .ds-btn.pa-done-primary { width: 100%; }
-.ds-link.pa-done-link { min-height: 44px; color: var(--text-sub); }
-.ds-link.pa-done-link:hover { color: var(--text); }
+
+/* ── Тихая ссылка под главной кнопкой («Ещё круг», «Закрыть», «История», «Достаточно») ── одна на все
+   листы бумаги (правило №3, ревью g4 r2: три копии в flashcard, breathing и quick-practice). Зона 44,
+   тон --text-sub (на любой бумаге AA), наведение — --text; --pad — поля и кегль 14 у листов практик. */
+.ds-link.pa-quiet { align-self: center; min-height: 44px; color: var(--text-sub); text-decoration: none; }
+.ds-link.pa-quiet:hover { color: var(--text); }
+.ds-link.pa-quiet--pad { padding: 0 8px; font-size: 14px; }
 
 /* ── Сбой строкой (PaperAlert) ───────────────────────────────────────────── */
 /* Знак и фразы — неразрывным рядом (основа тела ~140px влезает рядом со знаком и на 320);
@@ -146,8 +152,9 @@
 .pa-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; box-sizing: border-box; padding: 14px 16px 14px 18px; border-radius: 16px; }
 .pa-alert-sign { display: inline-flex; flex-shrink: 0; opacity: .55; }
 .pa-alert-body { flex: 1 1 140px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pa-alert-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--text); }
-/* pretty: вторая фраза сбоя не кончается висячим словом («…попробуй ещё / раз.» на 360, ревью g3 r6). */
+/* pretty: фраза сбоя не кончается висячим словом — вторая («…попробуй ещё / раз.» на 360, ревью g3 r6) и первая
+   («…изменение / задания.» на 390, ревью g4 r6). */
+.pa-alert-title { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--text); text-wrap: pretty; }
 .pa-alert-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
 .ds-btn.pa-alert-retry { flex: none; }
 .ds-btn.pa-alert-retry:not(:disabled) { background: var(--surface); }
@@ -179,8 +186,6 @@
 .pa-outcome-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.15; letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
 .pa-outcome-lead { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
 .ds-btn.pa-outcome-action { width: 100%; margin-top: 10px; text-decoration: none; }
-.ds-link.pa-outcome-link { align-self: center; min-height: 44px; color: var(--text-sub); text-decoration: none; }
-.ds-link.pa-outcome-link:hover { color: var(--text); }
 .pa-outcome-code { margin: 4px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-muted); word-break: break-all; }
 
 /* ── Чип со знаком (SignChip) ────────────────────────────────────────────── */

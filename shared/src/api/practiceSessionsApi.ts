@@ -11,9 +11,21 @@ import type { QuickPracticeId } from '../practices/quickPractices';
 // Форма ответа выражена через QuickPracticeId — отдельный интерфейс в
 // apiTypes.ts не заводим: тот файл потокенно зеркалит api.ts и уже висит
 // в jscpd-храповике как клон, каждая новая строка удлиняет дубль.
-export const createPracticeSessionsApi = (t: ApiTransport) => ({
-  recordPracticeSession: (tool: QuickPracticeId) =>
-    t.postJson<{ ok: true; count: number }>('/api/practice-session', { tool }),
-  getPracticeSessions: () =>
-    t.get<Record<QuickPracticeId, number>>('/api/practice-sessions'),
-});
+// Чтение счётчиков — один запрос в пути на всех: на «Практиках» герой дыхания (useQuickPractice) и квадраты
+// (useQuickCounts) монтируются вместе и спрашивают одно и то же (ревью g4). Ответ дольше запроса не живёт:
+// следующий вызов после ответа идёт на сервер заново.
+export const createPracticeSessionsApi = (t: ApiTransport) => {
+  let inflight: Promise<Record<QuickPracticeId, number>> | null = null;
+  return {
+    recordPracticeSession: (tool: QuickPracticeId) =>
+      t.postJson<{ ok: true; count: number }>('/api/practice-session', {
+        tool,
+      }),
+    getPracticeSessions: () =>
+      (inflight ??= t
+        .get<Record<QuickPracticeId, number>>('/api/practice-sessions')
+        .finally(() => {
+          inflight = null;
+        })),
+  };
+};

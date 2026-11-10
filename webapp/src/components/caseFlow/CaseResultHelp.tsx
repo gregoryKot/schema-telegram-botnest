@@ -1,6 +1,6 @@
 // «Что поможет сейчас» на итоге разбора — плитка цветной бумаги дыхания (ENTITY_LOOK.breathing:
 // персик + Breath), как квадраты главной: видно, что это вход в практику, а не белая плашка с тенью.
-// Тап открывает минуту дыхания поверх итога (QuickPracticeSheet, свой лист со своей записью истории).
+// Тап открывает минуту дыхания поверх итога (QuickPracticeSheet, свой лист; без повтора предупреждения).
 import { useState } from 'react';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { glue } from '../../../../shared/src/utils/typo';
@@ -21,7 +21,7 @@ export function CaseResultHelp() {
         <span className="cq-help-art" aria-hidden="true"><SignArt sign={sign} size="square" /></span>
         <span className="pp-arrow cq-help-arrow" aria-hidden="true">→</span>
       </button>
-      {breathing && <QuickPracticeSheet id="breathing" onClose={() => setBreathing(false)} />}
+      {breathing && <QuickPracticeSheet id="breathing" caution={false} onClose={() => setBreathing(false)} />}
     </>
   );
 }

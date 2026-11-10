@@ -47,6 +47,13 @@ describe('ToolsCustomizeSheet', () => {
     expect(screen.queryByRole('button', { name: 'Переставить: Мне плохо' })).toBeNull();
   });
 
+  it('у разделов без ручки — пустое место под неё: тумблеры двух групп на одной вертикали', () => {
+    setup();
+    const cards = document.querySelectorAll('.cz-card');
+    expect(cards[0].classList.contains('cz-card--slot')).toBe(false);
+    expect(cards[1].classList.contains('cz-card--slot')).toBe(true);
+  });
+
   it('перестановка с клавиатуры: порядок в ключ, quick_action_move с surface tools, notifyPrefsChanged', () => {
     setup();
     const before = screen.getByTestId('cards').textContent!.split(',');

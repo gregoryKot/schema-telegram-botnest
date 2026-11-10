@@ -131,7 +131,7 @@ export const dataKindEntity = (table: string): EntityId | null =>
  * смыслу, оттенок — бумага сущности этого знака (APP_2026-11.md). Первый шаг — камешек
  * дневника; серии — пять полосок трекера (плотнее к длинной серии — вариантом мотива на
  * экране); дни всего — листы «Моего пути»; хороший день — лист профиля; баланс — колесо;
- * возвращение — сердце тёплых слов; рост — полоска автономии стоит прямо; партнёр — привязанность.
+ * возвращение — ладони тёплых слов (ChildCare); рост — полоска автономии стоит прямо; партнёр — привязанность.
  */
 export const ACHIEVEMENT_LOOK: Record<string, Look> = {
   first_day: { hue: 45, sign: 'pebbles' },
@@ -144,7 +144,7 @@ export const ACHIEVEMENT_LOOK: Record<string, Look> = {
   total_50: { hue: 240, sign: 'sheets' },
   high_day: { hue: 195, sign: 'leaf' },
   all_above7: { hue: 45, sign: 'wheel' },
-  comeback: { hue: 70, sign: 'heart' },
+  comeback: { hue: 70, sign: 'child_care' },
   growth: { hue: 70, sign: 'need_autonomy' },
   pair_connected: { hue: 28, sign: 'need_attachment' },
 };

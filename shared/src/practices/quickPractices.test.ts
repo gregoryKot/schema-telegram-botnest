@@ -68,4 +68,28 @@ describe('buildQuickPractice', () => {
     const p = buildQuickPractice('stop', tyTr);
     expect(p.steps).toHaveLength(4);
   });
+
+  // Число или буква шага крупно на листе (mark) — второе место того же знака: заголовок шага.
+  // Разъедутся при правке текста — лист покажет «4» над «Найди 5 вещей» (правило №4).
+  it.each([
+    ['grounding', ['5', '4', '3', '2', '1']],
+    ['stop', ['С', 'Т', 'О', 'П']],
+  ] as const)(
+    '%s: mark шага стоит в его заголовке в обеих формах',
+    (id, marks) => {
+      for (const tr of [tyTr, vyTr]) {
+        const p = buildQuickPractice(id, tr);
+        expect(p.steps.map((s) => s.mark)).toEqual(marks);
+        p.steps.forEach((s) =>
+          expect(s.title).toMatch(new RegExp(`(^|\\s)${s.mark}(\\s|$)`)),
+        );
+      }
+    },
+  );
+
+  it('счётчик шагов: камешки у заземления, буквы у «Стопа», у дыхания — нет', () => {
+    expect(buildQuickPractice('grounding', tyTr).counter).toBe('pebbles');
+    expect(buildQuickPractice('stop', tyTr).counter).toBe('letters');
+    expect(buildQuickPractice('breathing', tyTr).counter).toBeUndefined();
+  });
 });

@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { ExternalLink } from '../../host/ExternalLink';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import type { TherapyTarget } from './useTherapyTarget';
+import { glue } from '../../../../shared/src/utils/typo';
 import '../../styles/therapy-bridge.css';
-
-/** Общая разметка карточки моста: сигнальной («Не сейчас») и постоянной («Скрыть») — вторая кнопка в `extra`.
+/** Общая разметка карточки моста: сигнальной («Не сейчас») и постоянной («Скрыть») — вторая кнопка в `extra`; заголовок — glue.
  *  Без своего терапевта под заголовком только кнопка: кто ведёт встречи, говорит лист (2026-11-08). */
 export function TherapyCardFrame({
   eyebrow,
@@ -21,7 +21,7 @@ export function TherapyCardFrame({
   return (
     <section className="th-card" aria-label={t.cardTalk}>
       <div className="ds-eyebrow">{eyebrow}</div>
-      <h2 className="th-card-title">{title}</h2>
+      <h2 className="th-card-title">{glue(title)}</h2>
       {/* Свой терапевт: с каналом — повод написать, без канала — про ближайшую встречу (волна 6). */}
       {target.write ? <p className="th-card-sub">{t.cardSubTherapist}</p>
         : target.connected ? <p className="th-card-sub">{t.cardSubTherapistNoChannel}</p> : null}
