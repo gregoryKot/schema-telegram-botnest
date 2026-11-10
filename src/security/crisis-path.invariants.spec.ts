@@ -112,7 +112,9 @@ const EXPECTED_CRISIS_FILES = [
   'webapp/src/components/flashcard/FlashcardSteps.tsx',
   'webapp/src/components/exercises/LetterEx.tsx',
   'webapp/src/components/exercises/BeliefCheckEx.tsx',
-  'webapp/src/components/exercises/FlashcardEx.tsx',
+  // Карточки схемы и режима (b17, 2026-11): вопросы со свободным текстом и детекция переехали
+  // из FlashcardEx.tsx в cardFlow/CardQuestions.tsx, экраны выбора и «готово» — без <textarea>.
+  'webapp/src/components/exercises/cardFlow/CardQuestions.tsx',
   // Дневниковые шиты — образец правильного пути (уже сделаны), санити-якорь
   // на случай, если грепы выше молча сломаются. В webapp форма дневника режимов
   // вынесена в ModeEntryForm — детекция живёт там (ModeEntrySheet теперь без

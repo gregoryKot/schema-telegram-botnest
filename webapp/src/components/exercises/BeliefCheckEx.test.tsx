@@ -72,7 +72,7 @@ function walkToLastStep() {
   fireEvent.change(screen.getByPlaceholderText('Добавить доказательство…'), {
     target: { value: 'Вчера забыл про встречу' },
   });
-  fireEvent.click(screen.getByText('⏎ добавить'));
+  fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
   fireEvent.click(screen.getByText(/Дальше · доказательства против/));
 
   fireEvent.change(
@@ -81,7 +81,7 @@ function walkToLastStep() {
       target: { value: 'На прошлой неделе всё получилось' },
     },
   );
-  fireEvent.click(screen.getByText('⏎ добавить'));
+  fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
   fireEvent.click(screen.getByText(/Дальше · переформулировка/));
 
   fireEvent.change(
@@ -234,7 +234,7 @@ describe('BeliefCheckEx — сохранение: отказ сети виден
 });
 
 // docs/open/frontend-ux.md: текст, набранный в поле доказательства, но не
-// добавленный «⏎ добавить», молча терялся при «Дальше» — onAdd() перед
+// добавленный кнопкой «Добавить», молча терялся при «Дальше» — onAdd() перед
 // переходом не вызывался. Теперь переход шага дописывает его в список.
 const BELIEF_PH = 'Например: я всегда всё порчу, меня никто не любит…';
 function toForStep() {
@@ -297,5 +297,21 @@ describe('BeliefCheckEx — пределы полей', () => {
       'Добавить доказательство…',
     ) as HTMLInputElement;
     expect(evidence.maxLength).toBe(EXERCISE_TEXT_MAX);
+  });
+});
+
+// Живые весы (b17): со второго шага знак листа-героя — Scales со счётом, камешков на чашах столько,
+// сколько доказательств «за» и «против» (вариант мотива left/right); у строки довода — камешек чаши.
+describe('BeliefCheckEx — живые весы на листе-герое', () => {
+  const pebbles = () => document.querySelector('.ex2-belief-scales svg')?.querySelectorAll('ellipse').length;
+  it('доводы «за» ложатся камешками на чашу', () => {
+    toForStep();
+    expect(pebbles()).toBe(0);
+    for (const t of ['Опоздала', 'Забыла']) {
+      fireEvent.change(screen.getByPlaceholderText('Добавить доказательство…'), { target: { value: t } });
+      fireEvent.click(screen.getByRole('button', { name: 'Добавить' }));
+    }
+    expect(pebbles()).toBe(2);
+    expect(document.querySelectorAll('.ex2-evi-row .ex2-pebble')).toHaveLength(2);
   });
 });
