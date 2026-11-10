@@ -1,6 +1,17 @@
-/* Упражнение «Тёплые слова» (WarmWordsEx). Подключается из sheet-exercises.css. */
-/* ── Тёплые слова ─────────────────────────────────────────────────────── */
-.ex2-count.ds-sub { margin-bottom: 14px; }
-.ex2-warm-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.ex2-warm-mode { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
-.ex2-warm-when { text-align: right; flex-shrink: 0; }
+/* Упражнение «Тёплые слова» (WarmWordsEx, WarmWordNote). Подключается из sheet-exercises.css.
+   Записки тёплой бумаги колонками разной высоты: на телефоне одна, с 640 — две, на широком экране — три
+   (колонка экрана шире 720 только у этого экрана: записки, а не форма). */
+.ex2-body--single:has(.ex2-notes) { grid-template-columns: minmax(0, 980px); }
+.ex2-count { margin: 0 0 14px; font-size: 13px; color: var(--text-sub); }
+.ex2-notes { column-count: 1; column-gap: 16px; }
+.ex2-notes > * { break-inside: avoid; margin-bottom: 16px; }
+@media (min-width: 640px) { .ex2-notes { column-count: 2; } }
+@media (min-width: 1100px) { .ex2-notes { column-count: 3; } }
+.ex2-warm-note { display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; padding: 20px 20px 16px 22px; border-radius: 20px; }
+.ex2-warm-text { margin: 0; font-family: var(--serif); font-size: 20px; line-height: 1.4; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: pretty; }
+.ex2-warm-meta { display: flex; align-items: center; gap: 10px; }
+.ex2-warm-meta > .pp-art { flex: none; }
+.ex2-warm-by { display: flex; flex-direction: column; min-width: 0; }
+.ex2-warm-mode { font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--text); }
+.ex2-warm-when { font-size: 12px; line-height: 1.4; color: var(--text-sub); }
+@media (max-width: 767px) { .ex2-warm-text { font-size: 18px; } }
