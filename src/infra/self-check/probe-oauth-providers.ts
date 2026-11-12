@@ -15,10 +15,10 @@ import { Probe, ProbeResult } from './types';
 const TIMEOUT_MS = 8_000;
 // Строка той же формы, что настоящий state (JWT с точками): проверяем, что
 // наш способ передачи переживает площадку целиком.
-const SAMPLE_STATE =
+export const SAMPLE_STATE =
   'eyJhbGciOiJIUzI1NiJ9.eyJzZWxmQ2hlY2siOnRydWV9.c2VsZi1jaGVjaw';
 type Env = Record<string, string | undefined>;
-function configFrom(env: Env): ConfigService {
+export function configFrom(env: Env): ConfigService {
   return {
     getOrThrow: (key: string) => {
       const value = env[key]?.trim();
@@ -28,18 +28,18 @@ function configFrom(env: Env): ConfigService {
   } as unknown as ConfigService;
 }
 
-interface FirstHop {
+export interface FirstHop {
   status: number;
   location: string | null;
 }
-async function firstHop(url: string): Promise<FirstHop> {
+export async function firstHop(url: string): Promise<FirstHop> {
   const res = await fetch(url, {
     redirect: 'manual',
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   return { status: res.status, location: res.headers.get('location') };
 }
-const isRedirect = (status: number) => status >= 300 && status < 400;
+export const isRedirect = (status: number) => status >= 300 && status < 400;
 
 export function judgeVk(hop: FirstHop, sentState: string): ProbeResult {
   if (!isRedirect(hop.status) || !hop.location) {
@@ -65,7 +65,7 @@ export function judgeVk(hop: FirstHop, sentState: string): ProbeResult {
   };
 }
 
-const failed = (e: unknown, who: string): ProbeResult => ({
+export const failed = (e: unknown, who: string): ProbeResult => ({
   ok: false,
   detail: `${who} не ответил: ${(e as Error)?.message?.slice(0, 200) ?? 'ошибка'}`,
 });

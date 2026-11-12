@@ -48,6 +48,33 @@ describe('findMisconfiguredOauthRedirects', () => {
     ]);
   });
 
+  it('YANDEX_REDIRECT_URI на legacy- и www-хосте — находит проблему', () => {
+    expect(
+      findMisconfiguredOauthRedirects({
+        YANDEX_REDIRECT_URI: 'https://schemalab.ru/api/auth/yandex/callback',
+      }),
+    ).toEqual([{ envVar: 'YANDEX_REDIRECT_URI', host: 'schemalab.ru' }]);
+    expect(
+      findMisconfiguredOauthRedirects({
+        VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
+        YANDEX_REDIRECT_URI:
+          'https://www.schemehappens.ru/api/auth/yandex/callback',
+        WEBAPP_URL: 'https://schemehappens.ru',
+      }),
+    ).toEqual([
+      { envVar: 'YANDEX_REDIRECT_URI', host: 'www.schemehappens.ru' },
+    ]);
+  });
+
+  it('канонический адрес возврата Яндекса — нет проблем (контроль)', () => {
+    expect(
+      findMisconfiguredOauthRedirects({
+        YANDEX_REDIRECT_URI:
+          'https://schemehappens.ru/api/auth/yandex/callback',
+      }),
+    ).toEqual([]);
+  });
+
   it('алиас-домен (kotlarewski.gr) — не мисконфиг', () => {
     expect(
       findMisconfiguredOauthRedirects({
@@ -76,5 +103,17 @@ describe('buildOauthRedirectCapability', () => {
     expect(cap.id).toBe('oauthRedirectSane');
     expect(cap.offReason.length).toBeGreaterThan(10);
     expect(cap.critical).toBe(false);
+  });
+
+  it('называет все проверяемые переменные — и в envVars, и в причине', () => {
+    const cap = buildOauthRedirectCapability({});
+    expect(cap.envVars).toEqual([
+      'VK_REDIRECT_URI',
+      'YANDEX_REDIRECT_URI',
+      'WEBAPP_URL',
+    ]);
+    expect(cap.offReason).toContain(
+      'VK_REDIRECT_URI/YANDEX_REDIRECT_URI/WEBAPP_URL указывают не на',
+    );
   });
 });

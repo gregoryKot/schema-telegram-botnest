@@ -5,7 +5,7 @@ import {
   formatLoginTicket,
 } from './login-ticket-metrics.format';
 import { OneTapMetrics, formatOneTap } from './one-tap-metrics.format';
-import { formatLoginOffer, loadLoginOffer } from './login-offer-metrics';
+import { renderLoginMethods } from './oauth-login-metrics';
 
 // Счётчики пути входа по билету для /stats. Событие пишет только
 // LoginTicketService (src/auth/login-ticket/login-ticket.report.ts), всегда
@@ -16,14 +16,14 @@ import { formatLoginOffer, loadLoginOffer } from './login-offer-metrics';
 export class LoginTicketMetricsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Блок /stats: вход по коду, окно Google (история), приглашение добавить почту. */
+  /** Блок /stats: вход по коду, окно Google (история), вход через VK и Яндекс, приглашение добавить почту. */
   async render(): Promise<string> {
-    const [ticket, oneTap, offer] = await Promise.all([
+    const [ticket, oneTap, methods] = await Promise.all([
       this.getMetrics(),
       this.getOneTap(),
-      loadLoginOffer(this.prisma),
+      renderLoginMethods(this.prisma),
     ]);
-    return `${formatLoginTicket(ticket)}\n\n${formatOneTap(oneTap)}\n\n${formatLoginOffer(offer)}`;
+    return `${formatLoginTicket(ticket)}\n\n${formatOneTap(oneTap)}\n\n${methods}`;
   }
 
   /** Входы через окно Google за неделю — те же правила: только userId IS NULL. */

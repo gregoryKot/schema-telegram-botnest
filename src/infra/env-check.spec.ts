@@ -146,6 +146,48 @@ describe('checkEnv', () => {
       );
     });
 
+    // Яндекс ID: задан ClientID — обязаны быть секрет и адрес возврата, иначе
+    // рубильник держит вход выключенным, а владелец думает, что настроил его.
+    const YANDEX_ID = '11c76b6012374a5c8ad05acaeca11895';
+
+    it('YANDEX_CLIENT_ID без секрета и адреса возврата — одна проблема с обоими именами', () => {
+      const result = checkEnv({ ...ALL_VALID, YANDEX_CLIENT_ID: YANDEX_ID });
+      const issue = result.crossCheckIssues.find(
+        (i) => i.id === 'yandexIdRequiresSecretAndRedirect',
+      );
+      expect(issue?.problem).toContain('YANDEX_CLIENT_SECRET');
+      expect(issue?.problem).toContain('YANDEX_REDIRECT_URI');
+      expect(result.invalid).toEqual([]);
+    });
+
+    it('полный набор Яндекс ID — без проблем; без переменных вовсе — тоже (вход просто выключен)', () => {
+      const full = checkEnv(
+        {
+          ...ALL_VALID,
+          YANDEX_CLIENT_ID: YANDEX_ID,
+          YANDEX_CLIENT_SECRET: 'secret',
+          YANDEX_REDIRECT_URI:
+            'https://schemehappens.ru/api/auth/yandex/callback',
+        },
+        'production',
+      );
+      expect(full).toEqual({ missing: [], invalid: [], crossCheckIssues: [] });
+      expect(checkEnv(ALL_VALID, 'production').missing).toEqual([]);
+    });
+
+    it('YANDEX_CLIENT_ID не по форме и адрес возврата по http — неверный формат', () => {
+      const result = checkEnv({
+        ...ALL_VALID,
+        YANDEX_CLIENT_ID: 'client id',
+        YANDEX_CLIENT_SECRET: 'secret',
+        YANDEX_REDIRECT_URI: 'http://schemehappens.ru/api/auth/yandex/callback',
+      });
+      expect(result.invalid.map((i) => i.name).sort()).toEqual([
+        'YANDEX_CLIENT_ID',
+        'YANDEX_REDIRECT_URI',
+      ]);
+    });
+
     it('ROBOKASSA_MERCHANT_LOGIN без паролей — одна проблема с обоими именами (M3)', () => {
       const result = checkEnv({
         ...ALL_VALID,

@@ -69,23 +69,50 @@ describe('PrivacyPage', () => {
 // D-4 / D-11 (аудит 2026-10): политика называет всех получателей данных и
 // честно описывает, где работает счётчик. Список — privacy/processors.ts.
 describe('PrivacyPage — получатели данных', () => {
-  it('называет Telegram, Resend, Cloudflare R2 и Яндекс Метрику с назначением', () => {
+  it('называет Telegram, Cloudflare R2, Yandex Cloud Postbox, Яндекс ID и Яндекс Метрику с назначением', () => {
     render(<PrivacyPage />);
-    for (const name of ['Telegram (Telegram', 'Resend', 'Cloudflare R2 (Cloudflare', 'Яндекс Метрика (ООО']) {
+    for (const name of [
+      'Telegram (Telegram', 'Cloudflare R2 (Cloudflare', 'Yandex Cloud Postbox (ООО «Яндекс.Облако»)',
+      'Яндекс ID (ООО «Яндекс»)', 'Яндекс Метрика (ООО',
+    ]) {
       expect(screen.getAllByText(new RegExp(name.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
     }
     expect(screen.getByText(/ссылки для входа и восстановления доступа/)).toBeTruthy();
   });
 
+  // Запрос РКН №08-1063539 (2026-11): письма шлёт российский Yandex Cloud
+  // Postbox, вход через Яндекс ID — тоже российский сервис. Оба стоят
+  // отдельным перечнем после иностранных и до статистики; Resend не назван.
+  it('российские сервисы — отдельный перечень: не трансграничная передача; слова «Resend» на странице нет', () => {
+    const { container } = render(<PrivacyPage />);
+    const text = container.textContent ?? '';
+    expect(text).toContain('Российские сервисы. Письма и вход через Яндекс работают на серверах в России и трансграничной передачей не являются:');
+    expect(text).not.toMatch(/resend|plus five five/i);
+    const order = ['Трансграничная передача данных.', 'Cloudflare R2 (Cloudflare', 'Видеовстреча консультации проходит в сервисе Zoom',
+      'Российские сервисы.', 'Yandex Cloud Postbox', 'Яндекс ID (ООО', 'Статистика посещений.'].map((s) => text.indexOf(s));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    // Иностранный перечень (первый список главы 7 после «Трансграничная…») российских сервисов не содержит.
+    const foreign = text.slice(order[0], order[2]);
+    expect(foreign).not.toMatch(/Postbox|Яндекс ID/);
+  });
+
+  it('способы входа: п. 3.2 и гл. 8 называют VK ID и Яндекс ID', () => {
+    const { container } = render(<PrivacyPage />);
+    const text = container.textContent ?? '';
+    expect(text).toContain('Идентификатор способа входа: адрес электронной почты, идентификатор VK ID, Яндекс ID или MAX; идентификатор Telegram – у тех, кто открывает приложение внутри Telegram');
+    expect(text).toContain('Беспарольная аутентификация: на сайте – вход по ссылке из письма, через VK ID или Яндекс ID, внутри MAX и Telegram – по подписи мессенджера; пароли не создаются и не хранятся');
+  });
+
   // Запрос РКН №08-1063539 (2026-11): iCloud и Zoom данных клиента не получают,
   // вход через Telegram на сайте убран — политика говорит то, что делает код.
-  it('Zoom и iCloud — без данных клиента; способы входа на сайте — почта и VK ID', () => {
+  it('Zoom и iCloud — без данных клиента; способы входа на сайте — почта, VK ID и Яндекс ID', () => {
     const { container } = render(<PrivacyPage />);
     const text = container.textContent ?? '';
     expect(text).toContain('не передаёт сервису имя, контакт или иные данные клиента');
     expect(text).toContain('В календарь Оператора (Apple iCloud) попадают только время и вид записи');
     expect(text).not.toMatch(/имя клиента в названии встречи|имя, контакт, текст обращения и время встречи/);
-    expect(text).toContain('на сайте – вход по ссылке из письма или через VK ID, внутри MAX и Telegram – по подписи мессенджера');
+    expect(text).toContain('на сайте – вход по ссылке из письма, через VK ID или Яндекс ID, внутри MAX и Telegram – по подписи мессенджера');
     expect(text).toContain('идентификатор Telegram – у тех, кто открывает приложение внутри Telegram');
     expect(text).not.toMatch(/вход через Telegram или OAuth-провайдера/);
     expect(text).toContain('для входа на сайт не используется');

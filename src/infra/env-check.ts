@@ -5,6 +5,8 @@ import { findMisconfiguredOauthRedirects } from '../auth/oauth-redirect-config';
 import { BACKUP_CROSS_CHECKS } from './env-check.backup';
 import { EMAIL_CROSS_CHECKS } from './env-check.email';
 import { HOST_CROSS_CHECKS } from './env-check.hosts';
+import { OAUTH_CROSS_CHECKS } from './env-check.oauth';
+import { requiresToo } from './env-check.requires';
 
 type Env = Record<string, string | undefined>;
 
@@ -29,28 +31,13 @@ export interface CrossCheck {
   check: (env: Env, mode: string) => string | null;
 }
 
-const isSet = (env: Env, key: string): boolean => Boolean(env[key]?.trim());
-
-/** «X задан → Y тоже обязан быть задан» — короче, чем писать это каждый раз. */
-function requiresToo(id: string, cause: string, ...deps: string[]): CrossCheck {
-  return {
-    id,
-    check: (env) => {
-      if (!isSet(env, cause)) return null;
-      const missing = deps.filter((d) => !isSet(env, d));
-      if (missing.length === 0) return null;
-      return `${cause} задан, но не задан(ы) ${missing.join(', ')}`;
-    },
-  };
-}
-
 // Кросс-проверки связывают несколько переменных; адрес возврата OAuth сверяет oauth-redirect-config.ts.
 export const CROSS_CHECKS: CrossCheck[] = [
   ...BACKUP_CROSS_CHECKS,
   ...HOST_CROSS_CHECKS,
   // Почта: ключи Postbox парой, с ними ADMIN_EMAIL и EMAIL_FROM.
   ...EMAIL_CROSS_CHECKS,
-  requiresToo('vkAppRequiresRedirect', 'VK_APP_ID', 'VK_REDIRECT_URI'),
+  ...OAUTH_CROSS_CHECKS, // вход через VK ID и Яндекс ID
   // M3 (аудит 2026-10): логин без паролей — подпись вебхука считалась бы от
   // пустого пароля и подделывалась бы любым желающим.
   requiresToo(

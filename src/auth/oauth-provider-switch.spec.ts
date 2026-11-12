@@ -1,4 +1,4 @@
-// Рубильник VK: какой env выключает провайдера и что знает экран ошибки.
+// Рубильник VK и Яндекса: какой env выключает провайдера и что знает экран ошибки.
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
@@ -12,6 +12,9 @@ import { CROSS_CHECKS } from '../infra/env-check';
 const FULL: Record<string, string> = {
   VK_APP_ID: 'vkid',
   VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
+  YANDEX_CLIENT_ID: '11c76b6012374a5c8ad05acaeca11895',
+  YANDEX_CLIENT_SECRET: 'yandex-secret',
+  YANDEX_REDIRECT_URI: 'https://schemehappens.ru/api/auth/yandex/callback',
   WEBAPP_URL: 'https://schemehappens.ru/',
 };
 
@@ -24,8 +27,22 @@ const reader = (env: Record<string, string | undefined>): EnvReader => ({
 });
 
 describe('disabledProviderRedirect', () => {
-  it('полная конфигурация — провайдер включён (null)', () => {
-    expect(disabledProviderRedirect('vk', reader(FULL))).toBeNull();
+  it.each(Object.keys(OAUTH_PROVIDER_ENV))(
+    '%s: полная конфигурация — провайдер включён (null)',
+    (provider) => {
+      expect(disabledProviderRedirect(provider, reader(FULL))).toBeNull();
+    },
+  );
+
+  // Запись в рубильнике обязательна: провайдер вне списка ушёл бы в
+  // buildAuthUrl и упал на getOrThrow голым 500.
+  it('рубильник знает оба OAuth-провайдера и полный набор env Яндекса', () => {
+    expect(Object.keys(OAUTH_PROVIDER_ENV).sort()).toEqual(['vk', 'yandex']);
+    expect(OAUTH_PROVIDER_ENV.yandex).toEqual([
+      'YANDEX_CLIENT_ID',
+      'YANDEX_CLIENT_SECRET',
+      'YANDEX_REDIRECT_URI',
+    ]);
   });
 
   it.each(

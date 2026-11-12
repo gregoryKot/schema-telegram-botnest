@@ -130,6 +130,14 @@ describe('тексты уведомлений', () => {
       'ty',
     );
     expect(t.body).toContain('VK ID');
+    for (const form of ['ty', 'vy'] as const) {
+      const yandex = securityNoticeText(
+        { kind: 'provider_linked', provider: 'yandex' },
+        form,
+      );
+      expect(yandex.body).toContain('способ входа: Яндекс ID.');
+      expect(yandex.body).not.toContain('yandex');
+    }
   });
 
   it('сообщение бота собирается через renderTemplate очереди', () => {

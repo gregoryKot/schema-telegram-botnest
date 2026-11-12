@@ -14,7 +14,9 @@
 Что проверяется дополнительно (не сводится к формату одной переменной) — кросс-проверки
 в `src/infra/env-check.ts` (`CROSS_CHECKS`): ключи почты `POSTBOX_ACCESS_KEY_ID` и
 `POSTBOX_SECRET_ACCESS_KEY` задаются только парой, и вместе с ними обязаны быть
-заданы `ADMIN_EMAIL` и `EMAIL_FROM` (`src/infra/env-check.email.ts`); если задан `VK_APP_ID` — `VK_REDIRECT_URI`; если задан `ROBOKASSA_MERCHANT_LOGIN` — `ROBOKASSA_PASSWORD1`
+заданы `ADMIN_EMAIL` и `EMAIL_FROM` (`src/infra/env-check.email.ts`); если задан `VK_APP_ID` — `VK_REDIRECT_URI`,
+если задан `YANDEX_CLIENT_ID` — `YANDEX_CLIENT_SECRET` и `YANDEX_REDIRECT_URI` (`src/infra/env-check.oauth.ts`: без
+полного набора вход через провайдера выключен рубильником); если задан `ROBOKASSA_MERCHANT_LOGIN` — `ROBOKASSA_PASSWORD1`
 и `ROBOKASSA_PASSWORD2` (пустой пароль позволил бы подделать подпись вебхука); `ENCRYPTION_KEY_OLD`
 не должен совпадать с текущим `ENCRYPTION_KEY`; если задан `BACKUP_S3_BUCKET` — обязаны быть
 `BACKUP_S3_ENDPOINT`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` и `BACKUP_ENCRYPTION_KEY`
@@ -43,6 +45,9 @@
 | `SKIP_AUTH` | опциональна | oneOf(true, false) | Dev-only обход проверки initData — хардкод-запрет в проде (src/api/init-data-paths.ts), в реестре только для формата/кросс-проверки. |
 | `VK_APP_ID` | опциональна | nonEmpty | OAuth client id входа через VK ID. Рубильник: без него (или без `VK_REDIRECT_URI`) вход через VK выключен — кнопка остаётся, нажатие ведёт на экран «Вход через ВКонтакте отключён» (`src/auth/oauth-provider-switch.ts`). |
 | `VK_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата VK после входа — обязан вести на канонический хост. |
+| `YANDEX_CLIENT_ID` | опциональна | yandexClientId | ClientID приложения Яндекс ID (кабинет oauth.yandex.ru) — вход через Яндекс. Рубильник: без него (или без `YANDEX_CLIENT_SECRET`, `YANDEX_REDIRECT_URI`) вход через Яндекс выключен — нажатие ведёт на экран ошибки входа с причиной `yandex_disabled` (`src/auth/oauth-provider-switch.ts`). 32 hex-символа; приложение «Всё по схеме», права — только `login:email` и `login:info`. |
+| `YANDEX_CLIENT_SECRET` | опциональна | nonEmpty | Client secret того же приложения Яндекс ID — им сервер обменивает код входа на токен; в браузер не попадает. Утёк — перевыпустить в кабинете oauth.yandex.ru и заменить значение: вход через Яндекс не работает, пока секрет на сервере старый. |
+| `YANDEX_REDIRECT_URI` | опциональна | httpsUrl | Адрес возврата Яндекса после входа (Redirect URI в кабинете приложения) — обязан вести на канонический хост. На проде — `https://schemehappens.ru/api/auth/yandex/callback`, символ в символ как в кабинете. |
 
 ## Бот и мини-апп
 

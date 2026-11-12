@@ -4,7 +4,7 @@ import { caldavProbe } from './probe-caldav';
 import { ciRunsProbe } from './probe-ci-runs';
 import { dependabotPrsProbe } from './probe-dependabot-prs';
 import { backupFreshnessProbe } from './probe-backup-freshness';
-import { vkOAuthProbe } from './probe-oauth-providers';
+import { oauthProbes } from './registry.oauth';
 import { deliveryProbes } from './registry.delivery';
 import { maxProbe } from './probe-max';
 
@@ -14,7 +14,7 @@ export function liveIntegrationProbes(): Probe[] {
     ...telegramProbes(),
     maxProbe(),
     caldavProbe(),
-    vkOAuthProbe(),
+    ...oauthProbes(),
     ciRunsProbe(),
     dependabotPrsProbe(),
     backupFreshnessProbe(),

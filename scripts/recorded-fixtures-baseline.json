@@ -26,6 +26,13 @@
     "status": "exempt",
     "reason": "Ответы VK ID OAuth (token/userинфо) в спеке — авторская форма по документации VK ID, не захваченный с прода вызов; тестового VK-приложения с логами нет."
   },
+  "src/auth/providers/yandex.provider.ts": {
+    "status": "recorded",
+    "fixtures": [
+      "yandex-id-oauth.json"
+    ],
+    "spec": "src/auth/providers/yandex.provider.spec.ts"
+  },
   "src/auth/telegram-init-data.ts": {
     "status": "exempt",
     "reason": "Единый верификатор подписи initData Telegram (бывшие копии в auth.service.ts и throttler-init-data.ts) — HMAC в спеках самоподписан фейковым BOT_TOKEN и синтетическим initData; настоящей строки initData от клиента Telegram в логах не сохранялось (docs/SHIELD_PROMPT.md: записать при следующем реальном логине)."
