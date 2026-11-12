@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { rememberReturnTo } from '../auth/returnTo';
 import { totalItems as sumItems } from '../utils/mergeLabels';
 import { useTr } from '../utils/addressForm';
-import { ServicePage } from './service/ServicePage';
-import { ServiceRows } from './service/ServiceRows';
-import { TicketDenied } from './service/TicketDenied';
+import { PaperAlert } from '../components/paper/PaperAlert';
 import { AckCheck } from './merge/AckCheck';
+import { MergeRows } from './merge/MergeRows';
+import { MergeSpread } from './merge/MergeSpread';
+import { LinkOutcome } from './merge/LinkOutcome';
 import { linkAckText, useLinkTicket } from './merge/useLinkTicket';
 import { combinedText } from './merge/combinedText';
 import { providerName } from './account/providerNames';
 import { Skeleton } from '../components/Skeleton';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
+import { WarnNote } from '../components/WarnNote';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
 import { StepUpProvider } from '../components/stepUp/StepUpProvider';
 
@@ -26,6 +28,7 @@ import { StepUpProvider } from '../components/stepUp/StepUpProvider';
 // вторыми; плюс явное предупреждение не подтверждать код, пришедший со стороны.
 // Раньше текст кадрировал согласие как «импорт данных ко мне» — доступ к своему
 // аккаунту читался как побочная деталь.
+// Вид (b27): лист-герой SceneMerge + форма (MergeSpread), исходы — LinkOutcome.
 export function LinkDevicePage() {
   const [params] = useSearchParams();
   const { isAuthenticated, isLoading } = useAuth();
@@ -50,86 +53,72 @@ export function LinkDevicePage() {
 
 function LinkDeviceContent({ code }: { code: string }) {
   const tr = useTr();
-  const navigate = useNavigate();
-  const { preview, error, busy, phase, approve, deny } = useLinkTicket(code);
+  const { preview, error, failOutcome, busy, phase, approve, deny } = useLinkTicket(code);
   // Эффект тот же, что у MergePage (второй аккаунт вливается и удаляется), —
   // и подтверждение то же: без галочки кнопка недоступна.
   const [acknowledged, setAcknowledged] = useState(false);
-  const done = phase === 'done';
 
   const messenger = preview ? providerName(preview.provider) ?? preview.provider : '';
   const total = preview ? sumItems(preview.summary) : 0;
   const combined = preview && !preview.sameAccount ? combinedText(preview.combined, tr) : null; // без числа — прежний текст
 
-  if (phase === 'denied') {
-    return (
-      <TicketDenied>
-        <p className="as-lead">
-          Код не подтверждён: приложение в {messenger} не получило доступ к аккаунту, данные остались на месте.
-        </p>
-        <button className="ds-btn ds-btn--secondary" onClick={() => navigate('/account')}>В аккаунт</button>
-      </TicketDenied>
-    );
-  }
+  if (phase === 'denied' || phase === 'done') return <LinkOutcome kind={phase} messenger={messenger} />;
+  // Сводка не загрузилась — исход на весь экран с выходом из него.
+  if (!preview && error) return <LinkOutcome kind={failOutcome ?? 'our_side'} messenger={messenger} error={error} />;
 
   return (
-    <ServicePage>
-      <div className="as-body">
-        <div className="ds-eyebrow">Аккаунт</div>
-        <h1 className="ds-h2">{done ? 'Готово' : 'Привязать приложение'}</h1>
+    <MergeSpread>
+      <div className="ds-eyebrow">Аккаунт</div>
+      <h1 className="ds-h2 am-title">Привязать приложение</h1>
 
-        {done && <p className="as-lead">{tr('Вернись в приложение', 'Вернитесь в приложение')} — оно уже работает с этим аккаунтом.</p>}
+      {!preview && (
+        <div className="am-skel" aria-hidden="true">
+          <Skeleton height={14} /><Skeleton height={14} width="85%" /><Skeleton height={64} radius={16} />
+        </div>
+      )}
 
-        {!done && error && <div className="ds-card as-err">{error}</div>}
+      {preview && (
+        <>
+          <p className="am-lead">
+            Приложение в {messenger}
+            {preview.displayName ? ` (${preview.displayName})` : ''} хочет войти в этот аккаунт — {tr('твой', 'ваш')}.
+            После подтверждения оно сможет открывать его и видеть, менять и удалять все {tr('твои', 'ваши')} данные.
+            {preview.sameAccount
+              ? ` ${tr('Это тот же аккаунт, ты уже в нём', 'Это тот же аккаунт, вы уже в нём')} — переносить нечего.`
+              : ` Данные приложения (ниже) при этом переедут к ${tr('тебе', 'вам')}, а его прежний аккаунт исчезнет.`}
+          </p>
 
-        {!done && !error && !preview && (
-          <>
-            <Skeleton height={14} />
-            <Skeleton height={14} width="85%" />
-          </>
-        )}
+          <WarnNote>
+            {tr('Подтверждай, только если код запрошен тобой в этом приложении.', 'Подтверждайте, только если код запрошен вами в этом приложении.')}{' '}
+            {tr('Если код прислали со стороны — нажми «Это не я»: подтверждённый чужой код отдаёт аккаунт постороннему.', 'Если код прислали со стороны — нажмите «Это не я»: подтверждённый чужой код отдаёт аккаунт постороннему.')}
+          </WarnNote>
 
-        {!done && preview && (
-          <>
-            <p className="as-lead">
-              Приложение в {messenger}
-              {preview.displayName ? ` (${preview.displayName})` : ''} хочет войти в этот аккаунт — {tr('твой', 'ваш')}.
-              После подтверждения оно сможет открывать его и видеть, менять и удалять все {tr('твои', 'ваши')} данные.
-              {preview.sameAccount
-                ? ` ${tr('Это тот же аккаунт, ты уже в нём', 'Это тот же аккаунт, вы уже в нём')} — переносить нечего.`
-                : ` Данные приложения (ниже) при этом переедут к ${tr('тебе', 'вам')}, а его прежний аккаунт исчезнет.`}
-            </p>
+          {!preview.sameAccount && total > 0 && (
+            <>
+              <div className="ds-label">Что переедет из приложения:</div>
+              <MergeRows summary={preview.summary} />
+            </>
+          )}
+          {combined && <p className="am-lead">{combined}</p>}
 
-            <p className="as-warn">
-              {tr('Подтверждай, только если код запрошен тобой в этом приложении.', 'Подтверждайте, только если код запрошен вами в этом приложении.')}{' '}
-              {tr('Если код прислали со стороны — нажми «Это не я»: подтверждённый чужой код отдаёт аккаунт постороннему.', 'Если код прислали со стороны — нажмите «Это не я»: подтверждённый чужой код отдаёт аккаунт постороннему.')}
-            </p>
+          {preview.twoFactorLost && <TwoFactorLossNote />}
 
-            {!preview.sameAccount && total > 0 && (
-              <>
-                <div className="ds-label">Что переедет из приложения:</div>
-                <ServiceRows summary={preview.summary} />
-              </>
-            )}
-            {combined && <p className="as-lead">{combined}</p>}
+          {error && <PaperAlert title={error} sign="limits" />}
 
-            {preview.twoFactorLost && <TwoFactorLossNote />}
+          <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy !== null}>
+            {linkAckText(messenger, preview.sameAccount)}
+          </AckCheck>
 
-            <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy !== null}>
-              {linkAckText(messenger, preview.sameAccount)}
-            </AckCheck>
-
-            <div className="as-actions-row">
-              <button className="ds-btn" onClick={() => void approve()} disabled={busy !== null || !acknowledged}>
-                {busy === 'approve' ? 'Привязываю…' : 'Разрешить доступ'}
-              </button>
-              <button className="ds-btn ds-btn--secondary" onClick={() => void deny()} disabled={busy !== null} aria-busy={busy === 'deny' || undefined}>
-                Это не я
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </ServicePage>
+          <div className="am-actions">
+            <button className="ds-btn" onClick={() => void approve()} disabled={busy !== null || !acknowledged} aria-busy={busy === 'approve' || undefined}>
+              {busy === 'approve' ? 'Привязываю…' : 'Разрешить доступ'}
+            </button>
+            <button className="ds-btn ds-btn--secondary" onClick={() => void deny()} disabled={busy !== null} aria-busy={busy === 'deny' || undefined}>
+              Это не я
+            </button>
+          </div>
+        </>
+      )}
+    </MergeSpread>
   );
 }
