@@ -28,6 +28,7 @@ const PHONE_SAME: [string, RegExp | null, RegExp | null][] = [
 /** Каждый потребитель ds-btn--lg решает ширину на ≥768: own — своё width: 100%, stretch — колонка растягивает, content — по содержимому. */
 const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/WhySheet.tsx': ['own', '.cw-inner .ds-btn--lg'],
+  'components/exercises/childhoodWheel/ChildhoodIntro.tsx': ['content', '.chw-actions > .ds-btn--lg'], // вступление колеса: в строку с «Пропустить»
   'components/booking/ClientBookingSheet.tsx': ['own', '.cbk-actions .ds-btn'], // колонка листа до 560 (client-booking.css)
   'components/settingsSheet/AboutSheet.tsx': ['own', '.st-done'],
   'components/paper/DoneSheet.tsx': ['own', '.ds-btn.pa-done-primary'], // во весь лист «готово» 480–540
@@ -43,6 +44,9 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
   'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560
   'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'], // во всю колонку 400
+  'sections/today/AllTasksOverlay.tsx': ['own', '.sk-wide-btn'], // «+ Поставить цель» во всю колонку листа «задания» (b20)
+  'components/plans/PlanConfirm.tsx': ['own', '.sk-ics'], // «Сохранить план» и календарь — во всю колонку разворота (b20)
+  'components/TaskCreateSheet.tsx': ['content', '.sk-submit .ds-btn'], // полоса внизу листа: справа по содержимому (b20)
   'components/journey/WebJourneyHero.tsx': ['content', '.ds-btn.jr-hero-cta'], // пустой «Мой путь»: «Оценить день» по тексту на ≥768
   'journey/JourneyItemDetail.tsx': ['content', '.ds-btn.jr-share'], // shared: «Поделиться карточкой» — на телефоне во всю ширину, на ≥768 по тексту
 };

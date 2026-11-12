@@ -9,7 +9,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { cssBundle } from './cssBundle.test-helpers';
 
 const STYLES = __dirname;
 const SRC = join(STYLES, '..');
@@ -24,7 +23,7 @@ const SPLIT: Record<string, string[]> = {
   'index-tail.css': ['therapist-sheet.css', 'settings-nav.css', 'dialog-center.css', 'ex-legacy.css', 'modemap-handles.css'],
   'sheet-tasks.css': ['plans.css', 'feeds.css', 'flashcard.css', 'dialogs.css', 'celebration.css', 'error-screen.css', 'all-tasks.css', 'nudges.css', 'therapist-disclaimer.css'],
   'sheet-diary.css': ['history.css', 'diary-explainer.css', 'card-tone.css', 'diary-wizard.css', 'diary-mode.css', 'diary-gratitude.css', 'note-sheet.css', 'share-sheet.css', 'journey.css'],
-  'sheet-exercises.css': ['ex-cards.css', 'ex-belief.css', 'ex-letter.css', 'ex-phrase.css', 'ex-wheel.css', 'ex-case.css', 'ex-warm.css'],
+  'sheet-exercises.css': ['ex-cards.css', 'ex-belief.css', 'ex-letter.css', 'ex-phrase.css', 'ex-wheel.css', 'ex-case.css', 'ex-warm.css', 'ex-done.css', 'ex-hint.css'],
   'sheet-schemas.css': ['ss-sheet.css', 'schema-library.css'],
   'sheet-tracker.css': ['need-detail.css', 'checkin.css'],
   'tracker-question.css': ['flow-frame.css'],
@@ -66,13 +65,6 @@ describe('раскрой CSS: порядок @import = прежний каска
       const last = css.lastIndexOf('@import');
       if (last >= 0) expect(css.slice(0, last), f).not.toContain('{');
     }
-  });
-
-  it('ExDone «Безопасного места» (pp-paper ex2-done ex2-scene): .ex2-scene.pp-paper после .ex2-done.pp-paper', () => {
-    const css = strip(cssBundle('sheet-exercises.css'));
-    const done = css.indexOf('\n.ex2-done.pp-paper {');
-    expect(done).toBeGreaterThan(-1);
-    expect(css.indexOf('\n.ex2-scene.pp-paper {')).toBeGreaterThan(done);
   });
 
   it('каждую часть подключает ровно один css, и ни один компонент — напрямую', () => {

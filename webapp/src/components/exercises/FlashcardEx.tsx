@@ -1,196 +1,117 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { api } from '../../api';
-import { SCHEMA_DOMAINS, MODE_GROUPS } from '../../schemaTherapyData';
-import { ExScreen, ExDone, GlyphArrowLeft, GlyphArrowRight, GlyphCheck } from './ExScreen';
+import { ExScreen } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
-import { useSavingAction } from '../../hooks/useSavingAction';
 import { useTr } from '../../utils/addressForm';
-import { pressable } from '../../utils/a11y';
-import { hueStyle, DOMAIN_HUE, MODE_GROUP_HUE } from '../../lib/tone';
-import { detectCrisisAny } from '../../utils/crisisMarkers';
-import { CrisisCard } from '../CrisisCard';
+import { ExHint, ExHintText } from './ExHint';
+import { ModeGroupList } from '../diary/ModeGroupList';
 import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
 import { buildModeIntroQuestions } from '../../../../shared/src/mode/modeIntroQuestions';
 import { getModeCard } from '../../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../../shared/src/share/analytics';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
-import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
-import { NOTE_CARD_FIELD_MAX } from '../../../../shared/src/limits/textLimits';
-import { SCHEMA_QUESTIONS, type Q } from './flashcardQuestions';
+import { SCHEMA_QUESTIONS } from './flashcardQuestions';
 import { ModePortrait } from './ModePortrait';
-import { PickRow, PickGroupHead } from './PickRow';
+import { PickGroups } from './PickGroups';
 import { SavedNoteGate } from './SavedNoteGate';
+import { CardQuestions } from './cardFlow/CardQuestions';
+import { CardDone } from './cardFlow/CardDone';
+import { CardHeroLinks, CardAside } from './cardFlow/CardHeroParts';
+import { useCardFlow } from './cardFlow/useCardFlow';
+import { findSchema, findMode, SCHEMA_PICK_GROUPS } from './cardFlow/cardEntities';
 
+// Карточки схемы и режима (редизайн 2026-11, APP_2026-11.md, b17): выбор — лист-герой упражнения
+// (глина + Layers, небо + Cluster) и список по доменам или группам со знаком у подписи (PickGroups);
+// вопросы — лист-герой домена или группы разворотом, со второго вопроса компактнее; «готово» — CardDone.
 // Портрет режима показывается один раз на устройство — ключ в localStorage.
 const portraitSeenKey = (modeId: string) => `mode_portrait_seen_${modeId}`;
 
-function FlashcardFlow({ questions, hue, onSave, explainer, initial }: { questions: Q[]; hue: number; onSave: (data: Record<string,string>) => Promise<void>; explainer?: string; initial?: Record<string,string> }) {
-  const tr = useTr();
-  const [data, setData] = useState<Record<string,string>>(() => ({ ...Object.fromEntries(questions.map(q => [q.key, ''])), ...initial }));
-  const [step, setStep] = useState(0);
-  const [done, setDone] = useState(false);
-  const areaRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => { areaRef.current?.focus(); }, []);
+type ExProps = { onBack: () => void; onComplete?: () => void; initialData?: Record<string, string> };
 
-  const filled = questions.map(q => !!data[q.key].trim());
-  const q = questions[step];
-  const isLast = step === questions.length - 1;
-
-  // Аудит 2026-08-22 (находка №2): сохранение без состояния отправки, защиты от
-  // двойного нажатия и с молчаливым сбоем — человек не понимал, приняли ли нажатие.
-  const { saving, error, run } = useSavingAction();
-  async function handleSave() {
-    const ok = await run(() => onSave(data));
-    if (ok) setDone(true);
-  }
-
-  if (done) {
-    return (
-      <ExDone className="animate-slide">
-        <div className="ex2-stamp"><GlyphCheck /> Карточка сохранена · {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</div>
-        {questions.map((qq, i) => data[qq.key].trim() && (
-          <div key={qq.key}>
-            <div className={'ex2-dlabel' + (i % 2 === 0 ? ' is-tone' : '')}>{String(i + 1).padStart(2, '0')} · {qq.label}</div>
-            <div className="ex2-dtext">{data[qq.key]}</div>
-          </div>
-        ))}
-        <button className="ds-btn ds-btn--secondary ex2-gap" onClick={() => { setDone(false); setStep(0); }}>Изменить карточку</button>
-      </ExDone>
-    );
-  }
-
-  return (<>
-    {explainer && <p className="ex2-fine">{explainer}</p>}
-    <div className="ex2-ticks" style={hueStyle(hue)}>
-      {questions.map((_, i) => <div key={i} className={'ex2-tick' + (filled[i] ? ' is-filled' : '') + (i === step ? ' is-active' : '')} {...pressable(() => setStep(i))} aria-label={`Вопрос ${i + 1}`} aria-current={i === step ? 'step' : undefined} />)}
-    </div>
-    <div className={'ds-card ex2-flash' + (data[q.key].trim() ? ' tone-border' : '')} style={hueStyle(hue)}>
-      <div className="ds-label ex2-flash-eyebrow">
-        <span className="ds-dot tone-fill" />
-        <span className="tone-ink">Вопрос {step + 1} из {questions.length}</span>
-        {q.optional && <span>· можно пропустить</span>}
-        <span className="ex2-flash-counter">{filled.filter(x => x).length} / {questions.length} заполнено</span>
-      </div>
-      <div className="ex2-flash-q">{q.label}</div>
-      <div className="ex2-flash-hint">{q.hint}</div>
-      <LimitedTextarea max={NOTE_CARD_FIELD_MAX} ref={areaRef} className="ds-textarea" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
-    </div>
-    {detectCrisisAny(...Object.values(data)) && <CrisisCard surface="flashcard" />}
-    {isLast && error && (
-      <div role="alert" className="ex2-err">
-        {tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')}
-      </div>
-    )}
-    <div className="ex2-foot">
-      <button className="ds-btn ex2-ghost" disabled={step === 0} onClick={() => setStep(s => Math.max(0, s - 1))}><GlyphArrowLeft /> Назад</button>
-      <span className="ex2-spacer" />
-      {!isLast
-        ? <button className="ds-btn" onClick={() => setStep(s => s + 1)}>{data[q.key].trim() ? 'Дальше' : 'Пропустить'} <GlyphArrowRight /></button>
-        : <button className="ds-btn" disabled={!filled.some(x => x) || saving} onClick={handleSave}>{saving ? 'Сохраняю…' : <>Сохранить карточку <GlyphCheck /></>}</button>
-      }
-    </div>
-  </>);
-}
-
-export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: { onBack: () => void; initialSchemaId?: string; onComplete?: () => void; initialData?: Record<string,string> }) {
+export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: ExProps & { initialSchemaId?: string }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const [picked, setPicked] = useState<{ id: string; name: string; desc: string; hue: number; domain: string } | null>(() => {
-    if (!initialSchemaId) return null;
-    for (const d of SCHEMA_DOMAINS) {
-      const s = d.schemas.find(s => s.id === initialSchemaId);
-      if (s) return { id: s.id, name: s.name, desc: s.libraryDesc, hue: DOMAIN_HUE[d.id], domain: d.domain };
-    }
-    return null;
-  });
+  const [picked, setPicked] = useState(() => findSchema(initialSchemaId));
+  const card = useCardFlow(initialData);
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} caution eyebrow={exerciseCard('schema').eyebrow}
-        title={<>Карточка<br/><span className="it">схемы</span></>}
+      <ExScreen onBack={goBack} caution cautionAt="head" look="schema_card" eyebrow={exerciseCard('schema').eyebrow} title="Карточка схемы"
         lede={tr('Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.', 'Выберите одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.')}
-        aside={<div className="ds-card ex2-note"><div className="ds-label">Зачем это</div><h3 className="ex2-note-h">Назвать – значит вернуть себе власть</h3><p className="ex2-note-body">{tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')}</p></div>}
+        aside={<ExHint label="Зачем это" title="Назвать – значит вернуть себе власть"><ExHintText>{tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')}</ExHintText></ExHint>}
       >
-        {SCHEMA_DOMAINS.map(d => (
-          <div key={d.id}>
-            <PickGroupHead hue={DOMAIN_HUE[d.id]}>{d.domain}</PickGroupHead>
-            <div className="ex2-picklist">
-              {d.schemas.map(s => (
-                <PickRow key={s.id} hue={DOMAIN_HUE[d.id]} name={s.name} desc={s.libraryDesc}
-                  onPick={() => setPicked({ id: s.id, name: s.name, desc: s.libraryDesc, hue: DOMAIN_HUE[d.id], domain: d.domain })} />
-              ))}
-            </div>
-          </div>
-        ))}
+        <PickGroups clamp groups={SCHEMA_PICK_GROUPS} onPick={id => { card.reset(); setPicked(findSchema(id)); }} />
       </ExScreen>
     );
   }
 
+  if (card.done && card.values) {
+    return <CardDone entity="schema_card" subject={picked} questions={SCHEMA_QUESTIONS} data={card.values} onClose={goBack} onEdit={card.edit} />;
+  }
+  const first = card.step === 0;
   return (
-    <ExScreen onBack={goBack} caution={Boolean(initialSchemaId)} eyebrow={picked.domain} title={picked.name} lede={picked.desc}
-      aside={<>
-        <div className="ds-card ex2-note ex2-tint" style={hueStyle(picked.hue)}>
-          <div className="ds-label">Совет</div>
-          <h3 className="ex2-note-h">Без правильных ответов</h3>
-          <p className="ex2-note-body">{tr('Пиши коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.', 'Пишите коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.')}</p>
-        </div>
-        <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setPicked(null)}><GlyphArrowLeft /> Сменить схему</button>
-      </>}
+    <ExScreen onBack={goBack} caution={Boolean(initialSchemaId)} look={picked.look} spread compact={!first}
+      eyebrow={picked.group} title={picked.name} lede={first ? picked.desc : undefined}
+      heroFoot={<CardHeroLinks changeLabel="Сменить схему" onChange={() => setPicked(null)} />}
+      aside={<CardAside explainer={first ? buildSchemaIntroExplainer(tr) : undefined} eyebrow="Совет" title="Без правильных ответов"
+        text={tr('Пиши коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.', 'Пишите коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.')} />}
     >
-      <SavedNoteGate kind="schema" id={picked.id} preset={initialData}>{initial => <FlashcardFlow initial={initial} questions={SCHEMA_QUESTIONS} hue={picked.hue} onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} explainer={buildSchemaIntroExplainer(tr)} />}</SavedNoteGate>
+      <SavedNoteGate kind="schema" id={picked.id} preset={card.values}>{initial => (
+        <CardQuestions initial={initial} questions={SCHEMA_QUESTIONS} hue={picked.look.hue} sign="layers" step={card.step} onStep={card.setStep} onSaved={card.saved}
+          onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} />
+      )}</SavedNoteGate>
     </ExScreen>
   );
 }
 
-export function ModeEx({ onBack, initialModeId, onComplete, initialData }: { onBack: () => void; initialModeId?: string; onComplete?: () => void; initialData?: Record<string,string> }) {
+export function ModeEx({ onBack, initialModeId, onComplete, initialData }: ExProps & { initialModeId?: string }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const [picked, setPicked] = useState<{ id: string; name: string; short: string; hue: number; group: string } | null>(() => {
-    if (!initialModeId) return null;
-    for (const g of MODE_GROUPS) {
-      const m = g.items.find(m => m.id === initialModeId);
-      if (m) return { id: m.id, name: m.name, short: m.short, hue: MODE_GROUP_HUE[g.id], group: g.group };
-    }
-    return null;
-  });
+  const [picked, setPicked] = useState(() => findMode(initialModeId));
+  const card = useCardFlow(initialData);
   // Портрет режима — один раз на устройство, дальше сразу вопросы карточки.
   const [showPortrait, setShowPortrait] = useState(() => !initialModeId || !localStorage.getItem(portraitSeenKey(initialModeId)));
 
   if (!picked) {
     return (
-      <ExScreen onBack={goBack} caution eyebrow={exerciseCard('mode').eyebrow}
-        title={<>Карточка<br/><span className="it">режима</span></>}
+      <ExScreen onBack={goBack} caution cautionAt="head" look="mode_card" eyebrow={exerciseCard('mode').eyebrow} title="Карточка режима"
         lede="Режим – это эмоциональное состояние, которое включается целиком. Описать его – значит научиться его узнавать в моменте."
-        aside={<div className="ds-card ex2-note"><div className="ds-label">Совет</div><h3 className="ex2-note-h">{tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')}</h3><p className="ex2-note-body">Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</p></div>}
+        aside={<ExHint label="Совет" title={tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')}><ExHintText>Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</ExHintText></ExHint>}
       >
-        {MODE_GROUPS.map(g => (
-          <div key={g.id}>
-            <PickGroupHead hue={MODE_GROUP_HUE[g.id]}>{g.group}</PickGroupHead>
-            <div className="ex2-picklist">
-              {g.items.map(m => (
-                <PickRow key={m.id} hue={MODE_GROUP_HUE[g.id]} name={m.name} desc={m.short}
-                  onPick={() => { setShowPortrait(!localStorage.getItem(portraitSeenKey(m.id))); setPicked({ id: m.id, name: m.name, short: m.short, hue: MODE_GROUP_HUE[g.id], group: g.group }); }} />
-              ))}
-            </div>
-          </div>
-        ))}
+        <ModeGroupList modeId="" onPick={id => { card.reset(); setShowPortrait(!localStorage.getItem(portraitSeenKey(id))); setPicked(findMode(id)); }} />
       </ExScreen>
     );
   }
 
-  const card = getModeCard(picked.id);
+  const modeCard = getModeCard(picked.id);
+  const questions = buildModeIntroQuestions(modeCard);
+  if (card.done && card.values) {
+    return <CardDone entity="mode_card" subject={picked} questions={questions} data={card.values} onClose={goBack} onEdit={card.edit} />;
+  }
+  const portrait = showPortrait && modeCard;
   // seen — честная подпись кнопки при ручном возврате («Про режим»).
-  const seen = Boolean(card) && Boolean(localStorage.getItem(portraitSeenKey(picked.id)));
+  const seen = Boolean(modeCard) && Boolean(localStorage.getItem(portraitSeenKey(picked.id)));
+  const first = card.step === 0;
   return (
-    <ExScreen onBack={goBack} caution={Boolean(initialModeId)} eyebrow={picked.group} title={picked.name} lede={showPortrait && card ? card.about : picked.short}
-      aside={<>
-        {!showPortrait && card && <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setShowPortrait(true)}>ⓘ Про режим</button>}
-        {!showPortrait && <div className="ds-card ex2-note ex2-tint" style={hueStyle(picked.hue)}><div className="ds-label">Подсказка</div><h3 className="ex2-note-h">{tr('Говори в настоящем', 'Говорите в настоящем')}</h3><p className="ex2-note-body">«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания.</p></div>}
-        <button className="ds-btn ds-btn--sm ex2-ghost" onClick={() => setPicked(null)}><GlyphArrowLeft /> Сменить режим</button>
-      </>}
+    <ExScreen onBack={goBack} caution={Boolean(initialModeId)} look={picked.look} spread compact={!portrait && !first}
+      eyebrow={picked.group} title={picked.name} lede={portrait ? portrait.about : first ? picked.desc : undefined}
+      heroFoot={<CardHeroLinks changeLabel="Сменить режим" onChange={() => setPicked(null)}
+        about={!portrait && modeCard ? { sign: picked.look.sign, onClick: () => setShowPortrait(true) } : undefined} />}
+      aside={!portrait && <CardAside explainer={first ? buildModeIntroExplainer(tr) : undefined} eyebrow="Подсказка"
+        title={tr('Говори в настоящем', 'Говорите в настоящем')} text="«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания." />}
     >
-      {showPortrait && card ? <ModePortrait card={card} hue={picked.hue} ctaLabel={seen ? 'Назад к вопросам →' : undefined} onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} /> : <SavedNoteGate kind="mode" id={picked.id} preset={initialData}>{initial => <FlashcardFlow initial={initial} questions={buildModeIntroQuestions(card)} hue={picked.hue} onSave={async data => { await api.saveModeNote({ modeId: picked.id, ...data }); api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length }); onComplete?.(); }} explainer={buildModeIntroExplainer(tr)} />}</SavedNoteGate>}
+      {portrait
+        ? <ModePortrait card={portrait} hue={picked.look.hue} sign={picked.look.sign} ctaLabel={seen ? 'Назад к вопросам →' : undefined}
+            onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} />
+        : <SavedNoteGate kind="mode" id={picked.id} preset={card.values}>{initial => (
+            <CardQuestions initial={initial} questions={questions} hue={picked.look.hue} sign="cluster" step={card.step} onStep={card.setStep} onSaved={card.saved}
+              onSave={async data => {
+                await api.saveModeNote({ modeId: picked.id, ...data });
+                api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length });
+                onComplete?.();
+              }} />
+          )}</SavedNoteGate>}
     </ExScreen>
   );
 }

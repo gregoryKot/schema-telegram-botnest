@@ -28,8 +28,7 @@ const commonUse = {
 
 export default defineConfig({
   testDir: './e2e-browser',
-  // Смок обязан быть быстрым и не флакать: без ретраев, чтобы «иногда
-  // зелёный» не выдавался за зелёный (правило про флаки — nightly.yml).
+  // Смок быстрый и без ретраев: «иногда зелёный» не выдаётся за зелёный (флаки ловит nightly.yml).
   retries: 0,
   fullyParallel: false,
   reporter: [['list']],
@@ -54,6 +53,7 @@ export default defineConfig({
         'tracker-fit.spec.ts',
         'screen-customize.spec.ts',
         'sheet-scroll.spec.ts',
+        'wheel-fit.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },
