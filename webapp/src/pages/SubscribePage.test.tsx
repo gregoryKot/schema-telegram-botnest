@@ -164,6 +164,23 @@ describe('SubscribePage — управление подпиской по ток�
     expect(reportClientError).not.toHaveBeenCalled();
   });
 
+  it.each([[404, 'cup'], [500, 'breath']] as const)('сбой загрузки %s — исход на весь экран со знаком %s (устарело — «подожди», сервер — «наша сторона»)', async (code, sign) => {
+    mockApi.getSubscriptionByToken.mockRejectedValue(new ApiError(code, 'x'));
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    const { container } = render(<SubscribePage />);
+    await screen.findByText(/Не удалось загрузить подписку/);
+    expect(container.querySelector('.pa-outcome-card')?.getAttribute('data-sign')).toBe(sign);
+    expect(screen.getByRole('link', { name: '← На главную' }).getAttribute('href')).toBe('/');
+  });
+
+  it('загрузка по ссылке — силуэт управления, а не «Загружаем…» текстом', () => {
+    mockApi.getSubscriptionByToken.mockReturnValue(new Promise(() => {}));
+    window.history.pushState({}, '', '/subscribe?token=tok1');
+    render(<SubscribePage />);
+    expect(screen.getByRole('status', { name: 'Загружаем…' })).toBeTruthy();
+    expect(screen.queryByText('Загружаем…')).toBeNull();
+  });
+
   it('кнопка «Обновить» на экране ошибки перезагружает страницу', async () => {
     // window.location.reload не переопределяется через vi.spyOn в jsdom
     // (навигация — не конфигурируемое свойство) — подменяем сам объект
@@ -298,27 +315,44 @@ describe('SubscribePage — отмена подписки (отказ не гл�
 // #906: страница прижата к верху — шапка «← На главную» на ds-sheet-head/ds-back,
 // eyebrow + ds-h1 слева, кнопки — ds-btn--lg; центрирующего .ap-page--center нет.
 describe('SubscribePage — шапка и кнопки (#906)', () => {
-  it('служебное состояние: «← На главную» — ds-back в ds-sheet-head, заголовок ds-h1, кнопка ds-btn--lg', async () => {
+  it('«скоро»: исход «подожди» (Cup на соломе) с главным действием «Разовый донат» и тихой ссылкой на главную', async () => {
     mockApi.getSubscriptionOptions.mockResolvedValue({ enabled: false, options: [] });
     const { container } = render(<SubscribePage />);
     await screen.findByText('Подписка скоро');
-    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
-    expect(back.className).toBe('ds-back');
-    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
-    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — под кнопкой
-    expect(container.querySelector('.ap-lead')!.className).toBe('ds-sub ap-lead'); // подзаголовок как в main
-    expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
-    expect(screen.getByRole('link', { name: 'Разовый донат' }).className).toBe('ds-btn ds-btn--lg');
+    const card = container.querySelector('.pa-outcome-card')!;
+    expect(card.getAttribute('data-sign')).toBe('cup');
+    expect((container.querySelector('.pa-outcome') as HTMLElement).style.getPropertyValue('--h')).toBe('70');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Подписка скоро');
+    expect(screen.getByRole('link', { name: 'Разовый донат' }).className).toContain('ds-btn ds-btn--lg');
+    expect(screen.getByRole('link', { name: '← На главную' }).getAttribute('href')).toBe('/');
     expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn')).toBeNull();
   });
 
-  it('форма: та же шапка над сплитом, CTA — ds-btn--accent ds-btn--lg', async () => {
+  it('загрузка — силуэт формы (скелетон), а не «Загружаем…» текстом', () => {
+    mockApi.getSubscriptionOptions.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<SubscribePage />);
+    expect(screen.getByRole('status', { name: 'Загружаем…' })).toBeTruthy();
+    expect(container.querySelectorAll('.skel').length).toBeGreaterThan(3);
+    expect(screen.queryByText('Загружаем…')).toBeNull();
+  });
+
+  it('форма: шапка над разворотом, лист-герой со сценой, CTA — ds-btn--accent ds-btn--lg', async () => {
     await renderLoaded();
     const back = screen.getAllByRole('link', { name: '← На главную' })[0];
     expect(back.className).toBe('ds-back');
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
-    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу левой колонки, шапка скрыта
+    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу колонки формы, шапка скрыта
     expect(screen.getByRole('button', { name: /Оформить за/ }).className).toContain('ds-btn ds-btn--accent ds-btn--lg');
+    expect(document.querySelectorAll('.ap-sheet svg.pl2-final-corner--a, .ap-sheet svg.pl2-final-corner--b')).toHaveLength(2);
+  });
+
+  it('тарифы — плитки бумаги: галочка только у выбранного, переключение переносит её', async () => {
+    await renderLoaded();
+    const plans = () => [...document.querySelectorAll('.ap-plan')];
+    expect(plans().map((l) => [l.classList.contains('is-on'), !!l.querySelector('[data-sign="check"], .pp-art')])).toEqual([[true, true], [false, false]]);
+    fireEvent.click(screen.getByRole('radio', { name: /Год/ }));
+    expect(plans().map((l) => l.classList.contains('is-on'))).toEqual([false, true]);
+    expect(plans()[0].querySelector('.pp-art')).toBeNull();
   });
 });
 
@@ -341,7 +375,7 @@ describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () =
   it('?sub=fail: alert «Оплата не прошла», форма подписки на месте', async () => {
     window.history.pushState({}, '', '/subscribe?sub=fail');
     await renderLoaded();
-    expect(screen.getByRole('alert').textContent).toContain('Оплата не прошла');
+    expect(screen.getByRole('alert').textContent!.replace(/\u00a0/g, ' ')).toContain('Оплата не прошла'); // glue: неразрывные пробелы
     expect(screen.getByRole('button', { name: /Оформить за/ })).toBeTruthy();
     expect(screen.queryByText('Спасибо за поддержку!')).toBeNull();
   });

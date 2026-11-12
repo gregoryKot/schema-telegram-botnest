@@ -1,0 +1,11 @@
+/* Лист «спасибо» (components/paper/ThanksSheet.tsx): PaperOutcome на соломе, в полосе — сцена
+   FinalCorners. Классы сцены (pl2-final-corner--a/b) — те же, что у финала лендинга; правила здесь
+   на два класса (.pa-thanks …), чтобы product-landing.css (чанк лендинга, если он уже загружен в SPA)
+   не двигал углы. Второй лист под знаком (::before полосы) сцене не нужен — у неё свои фигуры. */
+.pa-thanks .pa-outcome-band::before { content: none; }
+.pa-thanks .pl2-final-corner--a { position: absolute; left: 28px; bottom: 0; width: 132px; height: auto; }
+.pa-thanks .pl2-final-corner--b { position: absolute; right: 28px; top: 22px; width: 128px; height: auto; }
+@media (max-width: 767px) {
+  .pa-thanks .pl2-final-corner--a { left: 20px; width: 112px; }
+  .pa-thanks .pl2-final-corner--b { right: 18px; top: 18px; width: 108px; }
+}
