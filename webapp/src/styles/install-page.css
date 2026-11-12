@@ -33,4 +33,6 @@
 }
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .pa-spread.ip-main, .ip-top { max-width: 1088px; }
+  /* Разворот по центру оставшейся высоты (ревью b28), безопасно — высокие шаги прокручиваются с верха. */
+  .pa-spread.ip-main { margin-block: auto; }
 }

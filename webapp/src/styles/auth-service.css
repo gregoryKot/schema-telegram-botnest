@@ -6,9 +6,12 @@
 .as-root {
   flex: 1 1 auto; width: 100%; min-width: 0;
   min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text);
-  font-family: var(--sans); display: flex; align-items: center; justify-content: center;
+  font-family: var(--sans); display: flex; align-items: safe center; justify-content: center;
   padding: 40px 24px; box-sizing: border-box;
 }
+/* Безопасное центрирование (см. .pa-outcome): высокая карточка на 320 прокручивается с верха, поля сверху
+   и снизу остаются (ревью b26: верх прилипал к y=0, тень снизу срезалась). */
+.as-root > .as-card { margin-block: auto; }
 .as-card {
   width: 100%; max-width: 460px; min-width: 0; overflow: hidden; border-radius: 28px; background: var(--surface);
   box-shadow: 12px 13px 0 oklch(var(--pa-layer-lc) var(--h));

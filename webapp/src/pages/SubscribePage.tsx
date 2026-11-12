@@ -70,7 +70,7 @@ export function SubscribePage() {
     if (!sub) return <PaySkeleton shape="manage" />;
     const state = sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status;
     return (
-      <PayLayout hero={<PayHero label="Управление" title="Подписка" lead={<>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {state}</>} />}>
+      <PayLayout hero={<PayHero short label="Управление" title="Подписка" lead={<>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {state}</>} />}>
         {sub.nextChargeAt && <div className="ds-card ds-card--row ap-note">Следующее списание: <b>{fmtDate(sub.nextChargeAt)}</b></div>}
         <CancelControl token={token} onCancelled={() => setCancelled(true)} />
       </PayLayout>

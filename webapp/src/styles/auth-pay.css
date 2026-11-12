@@ -108,9 +108,15 @@
   .ap-sheet .pl2-final-corner--b { right: 18px; top: 16px; width: 96px; }
 }
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
-  .pa-spread.ap-main { max-width: 1088px; padding-top: 72px; }
+  /* Разворот по центру окна, как исходы «спасибо» и «скоро» (ревью b28: нижняя половина пустовала).
+     margin-block: auto в колонке .ap-page — безопасно: высокая форма прокручивается с верха. */
+  .pa-spread.ap-main { max-width: 1088px; padding-top: 48px; flex: 0 1 auto; margin-block: auto; }
   /* В колонке разворота лист выше: сцена уходит вниз под текст, текст — во всю ширину листа. */
   .pa-spread-side .pp-paper.ap-sheet { min-height: 380px; padding: 32px 32px 168px; }
   .pa-spread-side .ap-sheet .pl2-final-corner--a { right: auto; left: 28px; width: 140px; }
   .pa-spread-side .ap-sheet .pl2-final-corner--b { top: auto; bottom: 26px; right: 26px; width: 140px; }
+  /* Управление подпиской: лист не выше колонки рядом — углы справа от текста, как на телефоне. */
+  .pa-spread-side .pp-paper.ap-sheet--short { min-height: 0; padding: 32px 128px 34px 32px; }
+  .pa-spread-side .ap-sheet--short .pl2-final-corner--a { left: auto; right: 18px; bottom: 0; width: 84px; }
+  .pa-spread-side .ap-sheet--short .pl2-final-corner--b { top: 14px; bottom: auto; right: 14px; width: 92px; }
 }

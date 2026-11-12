@@ -14,9 +14,13 @@ import { BackLabel } from '../../components/NavGlyphs';
 export interface PayHeroProps { label: ReactNode; title: ReactNode; lead: ReactNode }
 
 /** Лист-герой: надпись, h1, лид (класс ap-lead — его текст сверяют тесты формы обращения), углы сцены. */
-export function PayHero({ label, title, lead }: PayHeroProps) {
+export function PayHero({ label, title, lead, short = false }: PayHeroProps & {
+  /** Рядом мало содержимого (управление подпиской): на развороте лист не тянется до 380px — углы справа
+   *  от текста, как на телефоне (ревью b28: лист был вдвое выше строки списания и кнопки). */
+  short?: boolean;
+}) {
   return (
-    <EntitySheet look={{ hue: 70 }} label={label} title={title} titleAs="h1" sub={<span className="ap-lead">{lead}</span>} className="ap-sheet">
+    <EntitySheet look={{ hue: 70 }} label={label} title={title} titleAs="h1" sub={<span className="ap-lead">{lead}</span>} className={short ? 'ap-sheet ap-sheet--short' : 'ap-sheet'}>
       <FinalCorners hue={70} />
     </EntitySheet>
   );

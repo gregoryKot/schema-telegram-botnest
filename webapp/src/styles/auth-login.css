@@ -127,7 +127,8 @@
   .al-lead { display: block; }
   .al-cut--bottom { display: none; }
   .al-cut--right { display: block; }
-  .al-side { align-items: center; padding: 48px 56px 48px 80px; }
+  .al-side { align-items: safe center; padding: 48px 56px 48px 80px; }
+  .al-side > .al-form { margin-block: auto; } /* безопасное центрирование: высокая форма — с верха */
   .al-title { font-size: 40px; }
   .al-2fa-title { font-size: 32px; }
 }

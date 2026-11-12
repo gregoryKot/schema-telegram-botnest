@@ -37,3 +37,33 @@ describe('корни страниц вне кабинета — во всю ши
     expect(body('.x { display: flex; width: 100%; }', '.x')).not.toMatch(/(^|;)\s*flex:\s*1(\s|;|$)/);
   });
 });
+
+// Корень растянут по высоте #root (`height: 100vh`): `align-items: center` у высокого содержимого уводил верх
+// за край окна — недостижимо (ревью b27: /link и /account/merge на 1280; b26: /auth/confirm на 320).
+// Центр — только `safe center`, и у содержимого запасное `margin-block: auto` (браузер без `safe`).
+const CENTER_SLOTS: Record<string, readonly (readonly [string, string])[]> = {
+  'auth-login.css': [['.al-side', '.al-side > .al-form']],
+  'auth-service.css': [['.as-root', '.as-root > .as-card']],
+  'auth-account.css': [['.am-root', '.am-root > .am-spread']],
+  'paper-app.css': [['.pa-outcome', '.pa-outcome-card']],
+};
+const UNSAFE_CENTER = /(^|;)\s*align-items:\s*center\s*(;|$)/;
+
+describe('корни страниц центрируют безопасно', () => {
+  const roots = [...Object.entries(ROOTS), ...Object.entries(CENTER_SLOTS).map(([f, pairs]) => [f, pairs.map((p) => p[0])] as const)]
+    .flatMap(([file, classes]) => classes.map((cls) => [file, cls] as const));
+  it.each(roots)('%s %s: без небезопасного align-items: center', (file, cls) => {
+    expect(body(css(file), cls)).not.toMatch(UNSAFE_CENTER);
+  });
+
+  const slots = Object.entries(CENTER_SLOTS).flatMap(([file, pairs]) => pairs.map(([root, child]) => [file, root, child] as const));
+  it.each(slots)('%s %s: safe center и запасное margin-block: auto у %s', (file, root, child) => {
+    expect(body(css(file), root)).toMatch(/align-items:\s*safe center/);
+    expect(body(css(file), child)).toMatch(/margin-block:\s*auto/);
+  });
+
+  it('контроль: небезопасный центр ловится, safe — нет', () => {
+    expect(body('.x { display: flex; align-items: center; }', '.x')).toMatch(UNSAFE_CENTER);
+    expect(body('.x { display: flex; align-items: safe center; }', '.x')).not.toMatch(UNSAFE_CENTER);
+  });
+});

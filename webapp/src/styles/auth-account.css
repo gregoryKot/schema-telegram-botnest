@@ -142,7 +142,9 @@ details[open] > .aa-summary .aa-summary-chev { transform: rotate(180deg); }
 .am-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 @media (min-width: 1024px) {
-  .am-root { align-items: center; padding: calc(40px + var(--safe-top)) 40px 48px; }
+  /* Безопасное центрирование (ревью b27: на 1280 верх /link и /merge срезался недостижимо). */
+  .am-root { align-items: safe center; padding: calc(40px + var(--safe-top)) 40px 48px; }
+  .am-root > .am-spread { margin-block: auto; }
   /* Разворот: лист-герой слева (sticky), справа знак продукта и форма. */
   .am-spread {
     max-width: 1016px; display: grid; grid-template-columns: 400px minmax(0, 560px); column-gap: 56px; row-gap: 8px;
