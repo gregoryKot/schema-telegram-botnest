@@ -17,5 +17,5 @@ type HeadTag = 'h2' | 'h3' | 'div';
 
 /** Подпись блока со знаком слева: тот же тег и класс, что были у подписи без знака. */
 export function SignHead({ kind, as: Tag = 'h2', className, children }: { kind: SignKind; as?: HeadTag; className?: string; children: ReactNode }) {
-  return <Tag className={`sg-head ${className ?? ''}`.trim()}><Sign kind={kind} />{children}</Tag>;
+  return <Tag className={`ts-head ${className ?? ''}`.trim()}><Sign kind={kind} />{children}</Tag>;
 }

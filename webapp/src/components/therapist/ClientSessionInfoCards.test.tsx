@@ -30,7 +30,8 @@ describe('ближайшая сессия в карточке клиента', (
   it('прошедшая дата без дней встреч — «Не установлена», строки «Встреча» в шапке нет', () => {
     const c = client({ nextSession: '2026-10-17T07:00' });
     render(<><NextSessionCard selectedClient={c} detail={detail()} /><ClientHeaderBadges client={c} /></>);
-    expect(screen.getByText('Не установлена').className).toContain('ds-h3');
+    // Незаполненное — тихо (--text-sub через tk-meet-none), не крупным текстом на тёмной плитке (b30).
+    expect(screen.getByText('Не установлена').className).toBe('tk-meet-none');
     expect(screen.queryByText('Встреча')).toBeNull();
   });
 
@@ -44,12 +45,20 @@ describe('ближайшая сессия в карточке клиента', (
     const setLocal = vi.fn();
     const d = { editingStartDate: false, setEditingStartDate: vi.fn(), setLocalStartDate: setLocal } as unknown as ClientDetail;
     const { unmount } = render(<StartDateCard selectedClient={client({ therapyStartDate: null })} detail={d} />);
-    expect(screen.getByText('Не указана').className).toBe('ds-empty');
+    expect(screen.getByText('Не указана').className).toBe('tk-meet-none');
     fireEvent.click(screen.getByText('Указать →'));
     expect(setLocal).toHaveBeenCalledWith('');
     unmount();
     render(<StartDateCard selectedClient={client({ therapyStartDate: '2026-01-15' })} detail={d} />);
     fireEvent.click(screen.getByText('Изменить →'));
     expect(setLocal).toHaveBeenCalledWith('2026-01-15');
+  });
+
+  it('«Начало терапии» в правке — поле даты с lang="ru"; значение — ISO, как и без lang', () => {
+    const d = { editingStartDate: true, localStartDate: '2026-01-15', setEditingStartDate: vi.fn(), setLocalStartDate: vi.fn(), saveSessionInfo: vi.fn() } as unknown as ClientDetail;
+    render(<StartDateCard selectedClient={client({ therapyStartDate: '2026-01-15' })} detail={d} />);
+    const input = screen.getByLabelText('Начало терапии') as HTMLInputElement;
+    expect(input.lang).toBe('ru');
+    expect(input.value).toBe('2026-01-15');
   });
 });

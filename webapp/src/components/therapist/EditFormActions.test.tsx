@@ -23,11 +23,8 @@ describe('EditFormActions', () => {
     expect(screen.getByRole('alert').className).toBe('tk-error');
   });
 
-  it('на акцентной карточке: «Сохранить» secondary, ошибка — ds-sub; без ошибки alert нет', () => {
-    const { rerender } = render(<EditFormActions saving={false} error="Ошибка" onAccent onSave={vi.fn()} onCancel={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Сохранить' }).className).toContain('ds-btn--secondary');
-    expect(screen.getByRole('alert').className).toBe('ds-sub');
-    rerender(<EditFormActions saving={false} error="" onAccent onSave={vi.fn()} onCancel={vi.fn()} />);
+  it('без ошибки alert нет', () => {
+    render(<EditFormActions saving={false} error="" onSave={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -44,8 +41,10 @@ describe('EditFormActions', () => {
     fireEvent.click(save);
     expect(onSave).not.toHaveBeenCalled();
     expect(screen.getByRole('alert').textContent).toBe('Укажи время встречи');
+    expect(screen.getByRole('alert').className).toBe('ds-sub');
     rerender(<EditFormActions saving={false} error="Ошибка сети" hint={null} onSave={onSave} onCancel={vi.fn()} />);
     expect((screen.getByRole('button', { name: 'Сохранить' }) as HTMLButtonElement).disabled).toBe(false);
     expect(screen.getByRole('alert').textContent).toBe('Ошибка сети');
+    expect(screen.getByRole('alert').className).toBe('tk-error');
   });
 });
