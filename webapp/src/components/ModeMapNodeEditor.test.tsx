@@ -13,6 +13,8 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { AddressFormContext } from '../utils/addressForm';
 import { ModeMapNodeEditor } from './ModeMapNodeEditor';
 import type { ModeMapNode } from '../api';
+import { WheelContext, type WheelState } from './modeMap/wheelContext';
+import type { ConceptNeedLink } from '../../../shared/src/therapy/conceptGraph/needLinks';
 import { MODE_MAP_NODE_TEXT_MAX } from '../../../shared/src/limits/textLimits';
 
 function baseNode(overrides: Partial<ModeMapNode> = {}): ModeMapNode {
@@ -326,9 +328,21 @@ describe('ModeMapNodeEditor — предел длины текстовых по�
 // и не показывает того, что на ней ничего не меняет.
 describe('ModeMapNodeEditor — круг потребностей, потребность, схема', () => {
   const wheelNode = (wheel = {}) => baseNode({ type: 'needs', data: { label: 'Круг', wheel } });
+  const LINKS: ConceptNeedLink[] = [{ needId: 'attachment', ratings: { child: 2, now: 4 }, notes: { now: 'Ищет близости' } }];
+  const wheelState = (over: Partial<WheelState> = {}): WheelState => ({ links: LINKS, failed: false, status: 'idle', saved: true, save: vi.fn(), retry: vi.fn(), ...over });
+  /** Панель колеса с колесом клиента из концептуализации (в редакторе его даёт WheelProvider). */
+  function renderWheel(wheel = {}, state: WheelState | null = wheelState(), form: 'ty' | 'vy' = 'ty') {
+    const onChange = vi.fn();
+    render(
+      <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}><WheelContext.Provider value={state}>
+        <ModeMapNodeEditor node={wheelNode(wheel)} onChange={onChange} onDelete={vi.fn()} onClose={vi.fn()} />
+      </WheelContext.Provider></AddressFormContext.Provider>,
+    );
+    return { onChange, state };
+  }
 
   it('колесо: объяснение листа, без оформления, без выбора формы и без схем режима', () => {
-    renderEditor(wheelNode());
+    renderWheel();
     expect(screen.getByText('Колесо потребностей')).toBeTruthy();
     expect(screen.getByText(/по листу Фаррелл и Шоу/)).toBeTruthy();
     expect(screen.queryByText('Оформление')).toBeNull();
@@ -336,41 +350,72 @@ describe('ModeMapNodeEditor — круг потребностей, потреб�
     expect(screen.queryByLabelText('Схемы режима')).toBeNull();
   });
 
-  it('колесо: период на колесе и контур детства пишутся в data.wheel', () => {
-    const { onChange } = renderEditor(wheelNode({ period: 'now' }));
+  // Владелец 2026-11-12: «в боковой панели не нужно детство, юность и сейчас сразу — выбор и одно; сейчас по умолчанию».
+  it('колесо: в панели один период — «Сейчас» по умолчанию: пять ползунков этого периода, без полей других', () => {
+    renderWheel();
+    expect(screen.getByRole('button', { name: 'Сейчас' }).className).toContain('is-active');
+    expect(screen.getAllByRole('slider')).toHaveLength(5);
+    expect(screen.getByRole('slider', { name: 'Привязанность: Сейчас' }).getAttribute('aria-valuenow')).toBe('4');
+    expect(screen.queryByRole('slider', { name: /Детство/ })).toBeNull();
+    expect(screen.queryByLabelText(/Детский опыт/)).toBeNull();
+  });
+
+  it('колесо: смена периода пишется в карту (его же показывает колесо), ползунки — уже за него', () => {
+    const { onChange } = renderWheel({ period: 'child' });
+    expect(screen.getByRole('slider', { name: 'Привязанность: Детство' }).getAttribute('aria-valuenow')).toBe('2');
     fireEvent.click(screen.getByRole('button', { name: '11–17 лет' }));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ wheel: { period: 'teen' } }) }));
+  });
+
+  it('колесо: контур детства — галочка на «11–17» и «Сейчас», на «Детстве» её нет', () => {
+    const { onChange } = renderWheel({ period: 'now' });
     fireEvent.click(screen.getByLabelText('Контур детства поверх'));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ wheel: { period: 'now', compare: true } }) }));
+    cleanup();
+    renderWheel({ period: 'child', compare: true });
+    expect(screen.queryByLabelText('Контур детства поверх')).toBeNull();
   });
 
-  it('колесо: на «Детстве» контур детства недоступен', () => {
-    renderEditor(wheelNode({ period: 'child', compare: true }));
-    const box = screen.getByLabelText('Контур детства поверх') as HTMLInputElement;
-    expect(box.disabled).toBe(true);
-    expect(box.checked).toBe(false);
+  it('колесо: ползунок пишет оценку в колесо клиента (концептуализацию), а не в карту', () => {
+    const { onChange, state } = renderWheel();
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Спонтанность: Сейчас' }), { key: 'ArrowRight' });
+    expect(state!.save).toHaveBeenCalledWith([
+      { needId: 'attachment', ratings: { child: 2, now: 4 }, notes: { now: 'Ищет близости' } },
+      { needId: 'play', ratings: { now: 6 }, notes: {} },
+    ]);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('колесо: клик по сектору открывает потребность, текст листа пишется по ней и периоду', () => {
-    const { onChange } = renderEditor(wheelNode());
-    act(() => { window.dispatchEvent(new CustomEvent('modemap-wheel-need', { detail: 'play' })); });
-    expect(screen.getByRole('button', { name: /Спонтанность/ }).getAttribute('aria-pressed')).toBe('true');
-    fireEvent.change(screen.getByLabelText('Детский опыт, связанный с потребностью'), { target: { value: 'Играть было некогда' } });
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ wheel: { notes: { child: { play: 'Играть было некогда' } } } }),
-    }));
+  it('колесо: клик по сектору раскрывает потребность — поле листа за выбранный период', () => {
+    const { state } = renderWheel();
+    expect(screen.queryByLabelText('Как сейчас старается её удовлетворить')).toBeNull();
+    act(() => { window.dispatchEvent(new CustomEvent('modemap-wheel-need', { detail: 'attachment' })); });
+    const note = screen.getByLabelText('Как сейчас старается её удовлетворить') as HTMLTextAreaElement;
+    expect(note.value).toBe('Ищет близости');
+    fireEvent.change(note, { target: { value: 'Просит о поддержке' } });
+    expect(state!.save).toHaveBeenCalledWith([{ needId: 'attachment', ratings: { child: 2, now: 4 }, notes: { now: 'Просит о поддержке' } }]);
   });
 
-  it('колесо: «сбросить» снимает оценку периода, у неоценённого кнопки нет', () => {
-    const { onChange } = renderEditor(wheelNode({ ratings: { now: { attachment: 4 } } }));
+  it('колесо: «сбросить» снимает оценку периода, у неоценённых кнопки нет', () => {
+    const { state } = renderWheel();
     expect(screen.getAllByText('сбросить')).toHaveLength(1);
     fireEvent.click(screen.getByText('сбросить'));
-    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ data: expect.objectContaining({ wheel: { ratings: { now: {} } } }) }));
+    expect(state!.save).toHaveBeenCalledWith([{ needId: 'attachment', ratings: { child: 2 }, notes: { now: 'Ищет близости' } }]);
+  });
+
+  it('колесо: концептуализация не загрузилась или запись упала — сказано прямо, «Повторить» шлёт снова', () => {
+    renderWheel({}, wheelState({ links: null, failed: true }));
+    expect(screen.getByRole('alert').textContent).toContain('не загрузилась');
+    expect(screen.queryAllByRole('slider')).toHaveLength(0);
+    cleanup();
+    const { state } = renderWheel({}, wheelState({ status: 'failed' }));
+    fireEvent.click(screen.getByText('Повторить'));
+    expect(state!.retry).toHaveBeenCalledTimes(1);
   });
 
   it('колесо: подсказка в форме «вы» для «вы»', () => {
-    renderEditor(wheelNode(), {}, 'vy');
-    expect(screen.getByText(/Выберите потребность или нажмите на её сектор/)).toBeTruthy();
+    renderWheel({}, wheelState(), 'vy');
+    expect(screen.getByText(/Выберите период и поставьте процент/)).toBeTruthy();
   });
 
   it('старый круг с таблетками: «Превратить в колесо» зовёт превращение; без обработчика кнопки нет', () => {

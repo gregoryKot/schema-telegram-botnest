@@ -11,6 +11,7 @@ import {
   clientConceptView,
 } from './client-concept-view';
 import { encryptConceptFields } from './concept-store';
+import { encryptNeedLinks } from './concept-need-links';
 
 const SHARED_AT = new Date('2026-11-06T09:00:00Z');
 const UPDATED_AT = new Date('2026-11-06T10:00:00Z');
@@ -135,6 +136,23 @@ describe('clientConceptView — что видит клиент', () => {
     expect(view.modeLinks[0]).not.toHaveProperty('done');
     expect(view.schemaLinks[0]).not.toHaveProperty('done');
     expect(JSON.stringify(view)).not.toMatch(/chairwork|2026-11-05/);
+  });
+
+  // Колесо потребностей (needLinks) — рабочая запись терапевта: оценки и
+  // заметки по периодам жизни клиента в схему случая для клиента не входят.
+  it('колесо потребностей клиенту не уходит: ни поля, ни оценок, ни заметок', () => {
+    const needLinks = encryptNeedLinks([
+      {
+        needId: 'attachment',
+        ratings: { child: 2, now: 7 },
+        notes: { child: 'КОЛЕСО — заметка терапевта' },
+      },
+    ]);
+    const view = clientConceptView(row({ needLinks }))!;
+    expect(view).not.toHaveProperty('needLinks');
+    expect(JSON.stringify(view)).not.toMatch(/КОЛЕСО|ratings|attachment/);
+    expect(CLIENT_CONCEPT_FIELDS).not.toContain('needLinks');
+    expect(CLIENT_CONCEPT_HIDDEN).toHaveProperty('needLinks');
   });
 
   it('битые связи (не объект, не строки) не роняют вид', () => {

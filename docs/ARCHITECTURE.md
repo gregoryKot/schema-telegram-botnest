@@ -83,6 +83,7 @@
 | Настройки | `.claude/settings.json` — модель субагентов `sonnet`, потолки вывода Bash/Read/MCP, запрет чтения dist и lock-файлов, хуки | всегда |
 | Замер контекста | хук `.claude/hooks/log-tool-use.mjs` → журнал .claude/state/tool-log.jsonl (локальный, не в git) → `scripts/agent/session-report.mjs` | каждый вызов инструмента и загрузка правила |
 | Проверка перед пушем | `scripts/agent/precheck.mjs` (список гейтов — из `ci.yml`, логика — `precheck-lib.mjs`, `precheck-tree.mjs`) | перед `git push` и в `rules-reviewer`: быстрые гейты CI в чистом worktree, вывод — только красное |
+| Сторож длинной сессии | хук `.claude/hooks/context-guard.mjs` — «стоп, записка и новая сессия», когда контекст больше 120 тыс. токенов или уже сжимался (порог — `CLAUDE_CONTEXT_GUARD_TOKENS`) | каждое сообщение владельца, старт после сжатия, мерж PR |
 | Подсказка на старте | хук `.claude/hooks/session-start.mjs` — одна строка, только если чего-то не хватает (нет `node_modules`) | начало сессии |
 | Журнал промахов карты | [docs/agent/NAV_LOG.md](agent/NAV_LOG.md) | дописывает агент, разбирает `/retro журнал` |
 

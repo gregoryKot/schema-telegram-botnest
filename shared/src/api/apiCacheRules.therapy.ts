@@ -125,14 +125,14 @@ export const THERAPY_RULES: Rule[] = [
       ALL_TASKS,
     ],
   },
-  // Список клиентов несёт схемы из концептуализации (getClients); /append — холст.
+  // Список клиентов несёт схемы из концептуализации (getClients); /append и /needs (колесо потребностей) — холст.
   {
     method: 'POST',
-    pattern: /^\/api\/therapy\/conceptualization\/(-?\d+)(?:\/append)?$/,
+    pattern:
+      /^\/api\/therapy\/conceptualization\/(-?\d+)(?:\/(?:append|needs))?$/,
     targets: (m) => [`${T}/conceptualization/${m[1]}`, CLIENTS],
   },
-  // «Показать клиенту»: GET концептуализации несёт sharedWithClientAt — без строки
-  // вкладка после возврата 15 с показывала бы прежнее положение тумблера.
+  // «Показать клиенту»: GET концептуализации несёт sharedWithClientAt — без строки вкладка 15 с показывала бы прежнее.
   {
     method: 'PATCH',
     pattern: /^\/api\/therapy\/conceptualization\/(-?\d+)\/share$/,

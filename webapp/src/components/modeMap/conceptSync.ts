@@ -5,6 +5,7 @@
 import { getModeById, getSchemaById } from '../../schemaTherapyData';
 import { normalizeModeLinks } from '../../../../shared/src/therapy/conceptGraph/modeLinks';
 import { conceptSchemaIds, normalizeSchemaLinks } from '../../../../shared/src/therapy/conceptGraph/schemaLinks';
+import { normalizeNeedLinks } from '../../../../shared/src/therapy/conceptGraph/needLinks';
 import type { ConceptAppendBody } from '../../../../shared/src/therapy/conceptAppend';
 import type { ClientConcept, ClientConceptState } from './clientConceptContext';
 import { ownSchemaIds } from './nodeSchemaIds';
@@ -13,7 +14,7 @@ import { needAppend, needLinksOf } from './conceptNeedSync';
 export type GraphNode = { id: string; type?: string; data?: Record<string, unknown> };
 export type GraphEdge = { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null };
 /** Ответ сервера с концептуализацией (getConceptualization, appendConceptualization). */
-export type ConceptResponse = { schemaIds?: unknown; modeIds?: unknown; modeLinks?: unknown; schemaLinks?: unknown } | null | undefined;
+export type ConceptResponse = { schemaIds?: unknown; modeIds?: unknown; modeLinks?: unknown; schemaLinks?: unknown; needLinks?: unknown } | null | undefined;
 
 /** Холст в терминах концептуализации; связь — ключ `modeId schemaId`, связь с потребностью — needLinksOf. */
 export interface CanvasConcept { modes: ReadonlySet<string>; schemas: ReadonlySet<string>; links: ReadonlySet<string>; needs: ReadonlySet<string> }
@@ -27,9 +28,8 @@ const NOT_MODE = new Set(['schema', 'origin', 'need', 'needs']);
 const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
 const idOf = (v: unknown): string | undefined => (typeof v === 'string' && v ? v : undefined);
 
-/** Ответ сервера → то, что нужно холсту: схемы, режимы, нормализованные связи. */
-export function toClientConcept(c: ConceptResponse): ClientConcept {
-  return { schemaIds: strs(c?.schemaIds), modeIds: strs(c?.modeIds), modeLinks: normalizeModeLinks(c?.modeLinks), schemaLinks: normalizeSchemaLinks(c?.schemaLinks) };
+export function toClientConcept(c: ConceptResponse): ClientConcept { // ответ сервера → схемы, режимы, нормализованные связи, колесо
+  return { schemaIds: strs(c?.schemaIds), modeIds: strs(c?.modeIds), modeLinks: normalizeModeLinks(c?.modeLinks), schemaLinks: normalizeSchemaLinks(c?.schemaLinks), needLinks: normalizeNeedLinks(c?.needLinks) };
 }
 
 function entityOf(n: GraphNode): { mode?: string; schema?: string; own?: string[] } {
