@@ -12,12 +12,15 @@ const updateModeMap = vi.fn();
 const getConceptualization = vi.fn();
 const appendConceptualization = vi.fn();
 const getTherapyClientData = vi.fn();
+const saveConceptNeeds = vi.fn();
 vi.mock('../api', () => ({
   api: {
     updateModeMap: (...a: unknown[]) => updateModeMap(...a),
     getConceptualization: (...a: unknown[]) => getConceptualization(...a),
     appendConceptualization: (...a: unknown[]) => appendConceptualization(...a),
     getTherapyClientData: (...a: unknown[]) => getTherapyClientData(...a),
+    saveConceptNeeds: (...a: unknown[]) => saveConceptNeeds(...a),
+    trackEvent: vi.fn(),
     listCustomModes: () => Promise.resolve([]),
   },
   reportClientError: vi.fn(),
@@ -107,26 +110,44 @@ describe('ModeMapEditor — собрать руками то же, что схе
     expect(appendConceptualization).toHaveBeenCalledWith(7, { modeLinks: [{ modeId: 'vulnerable_child', schemaIds: ['self_sacrifice'] }] });
   });
 
-  // Владелец 2026-11-10: круг — колесо с процентами по периодам; «Колесо детства» клиента переносится одной кнопкой.
-  it('«Круг потребностей» из палитры — колесо: оценка в панели видна на колесе и уходит в сохранение', async () => {
-    getConceptualization.mockResolvedValue(null);
-    getTherapyClientData.mockResolvedValue({ childhoodRatings: { attachment: 3, play: 8 } });
+  // Владелец 2026-11-10/12: круг — колесо; проценты живут в концептуализации клиента (одно колесо на клиента).
+  it('«Круг потребностей» из палитры — колесо: оценка из панели видна у сектора и уходит в концептуализацию, не в карту', async () => {
+    getConceptualization.mockResolvedValue({ ...CONCEPT, needLinks: [{ needId: 'limits', ratings: { now: 7 }, notes: {} }] });
+    saveConceptNeeds.mockImplementation(async (_id: unknown, needLinks: unknown) => ({ ...CONCEPT, needLinks }));
     await renderEditor([]);
     fireEvent.click(screen.getByText('Круг потребностей').closest('button')!);
     const wheel = () => document.querySelector('.react-flow__node-needs')!;
+    const label = (id: string) => wheel().querySelector(`button[data-need="${id}"]`)!;
     expect(document.querySelectorAll('.react-flow__node-need')).toHaveLength(0);
-    expect(wheel().textContent).toContain('Привязанность');
-    fireEvent.click(wheel().querySelector('.mm2-wheel-legend')!);
-    // «Сейчас» у «Привязанности»: ползунок 0–10 тот же, что в упражнении; стрелка от середины → 6 = 60%
-    const slider = screen.getByRole('slider', { name: 'Привязанность: Сейчас' });
-    fireEvent.keyDown(slider, { key: 'ArrowRight' });
-    expect(wheel().querySelector('[data-need="attachment"]')?.textContent).toContain('60%');
-    // «Колесо детства» клиента → период «Детство»
-    fireEvent.click(await screen.findByText('Перенести в «Детство»'));
-    expect(getTherapyClientData).toHaveBeenCalledWith(7);
+    expect(label('limits').textContent).toContain('70%'); // колесо клиента уже было в концептуализации
+    fireEvent.click(label('attachment'));
+    fireEvent.keyDown(screen.getByRole('slider', { name: 'Привязанность: Сейчас' }), { key: 'ArrowRight' });
+    expect(label('attachment').textContent).toContain('60%');
     await act(async () => { await new Promise(r => setTimeout(r, 1300)); });
+    expect(saveConceptNeeds).toHaveBeenCalledWith(7, [
+      { needId: 'attachment', ratings: { now: 6 }, notes: {} },
+      { needId: 'limits', ratings: { now: 7 }, notes: {} },
+    ]);
     const saved = updateModeMap.mock.calls.at(-1)?.[1] as { nodes: ModeMapNode[] } | undefined;
-    const data = saved?.nodes.find(n => n.type === 'needs')?.data;
-    expect(data?.wheel?.ratings).toEqual({ now: { attachment: 6 }, child: { attachment: 3, play: 8 } });
+    expect(saved?.nodes.find(n => n.type === 'needs')?.data.wheel).toEqual({}); // в карте — только вид
+    expect(label('attachment').textContent).toContain('60%'); // после ответа сервера значение на месте
+  });
+
+  it('«Колесо детства» клиента ставится на колесо в периоде «Детство»', async () => {
+    getConceptualization.mockResolvedValue(CONCEPT);
+    saveConceptNeeds.mockImplementation(async (_id: unknown, needLinks: unknown) => ({ ...CONCEPT, needLinks }));
+    getTherapyClientData.mockResolvedValue({ childhoodRatings: { attachment: 3, play: 8 } });
+    await renderEditor([{ id: 'w', type: 'needs', position: { x: 0, y: 0 }, data: { label: 'К', wheel: {} } }]);
+    fireEvent.click(document.querySelector('.react-flow__node-needs button[data-need="play"]')!);
+    expect(screen.queryByText('Поставить на колесо')).toBeNull(); // на «Сейчас» блока упражнения нет
+    fireEvent.click(screen.getByRole('button', { name: 'Детство' }));
+    fireEvent.click(await screen.findByText('Поставить на колесо'));
+    expect(getTherapyClientData).toHaveBeenCalledWith(7);
+    expect(document.querySelector('.react-flow__node-needs button[data-need="play"]')!.textContent).toContain('80%');
+    await act(async () => { await new Promise(r => setTimeout(r, 900)); });
+    expect(saveConceptNeeds).toHaveBeenCalledWith(7, [
+      { needId: 'attachment', ratings: { child: 3 }, notes: {} },
+      { needId: 'play', ratings: { child: 8 }, notes: {} },
+    ]);
   });
 });

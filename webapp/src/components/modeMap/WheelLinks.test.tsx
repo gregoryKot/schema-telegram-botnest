@@ -14,37 +14,40 @@ beforeEach(() => { getTherapyClientData.mockReset(); });
 
 describe('WheelChildhood — «Колесо детства» клиента', () => {
   it('без клиента ничего не грузит и не рисует', () => {
-    const { container } = render(<WheelChildhood wheel={{}} onApply={vi.fn()} />);
+    const { container } = render(<WheelChildhood links={[]} onApply={vi.fn()} />);
     expect(container.textContent).toBe('');
     expect(getTherapyClientData).not.toHaveBeenCalled();
   });
 
-  it('оценки клиента в процентах; «Перенести в «Детство»» кладёт их в период детства', async () => {
+  it('оценки клиента в процентах; «Поставить на колесо» кладёт их в период детства колеса клиента', async () => {
     getTherapyClientData.mockResolvedValue({ childhoodRatings: { attachment: 3, play: 8 } });
     const onApply = vi.fn();
-    render(<WheelChildhood clientId={7} wheel={{ ratings: { now: { attachment: 6 } } }} onApply={onApply} />);
+    render(<WheelChildhood clientId={7} links={[{ needId: 'attachment', ratings: { now: 6 }, notes: {} }]} onApply={onApply} />);
     expect(await screen.findByText('Привязанность 30% · Спонтанность 80%')).toBeTruthy();
-    fireEvent.click(screen.getByText('Перенести в «Детство»'));
-    expect(onApply).toHaveBeenCalledWith({ ratings: { now: { attachment: 6 }, child: { attachment: 3, play: 8 } } });
+    fireEvent.click(screen.getByText('Поставить на колесо'));
+    expect(onApply).toHaveBeenCalledWith([
+      { needId: 'attachment', ratings: { now: 6, child: 3 }, notes: {} },
+      { needId: 'play', ratings: { child: 8 }, notes: {} },
+    ]);
   });
 
   it('уже перенесено — кнопки нет, так и сказано', async () => {
     getTherapyClientData.mockResolvedValue({ childhoodRatings: { attachment: 3 } });
-    render(<WheelChildhood clientId={7} wheel={{ ratings: { child: { attachment: 3 } } }} onApply={vi.fn()} />);
-    expect(await screen.findByText('Уже стоит в периоде «Детство».')).toBeTruthy();
-    expect(screen.queryByText('Перенести в «Детство»')).toBeNull();
+    render(<WheelChildhood clientId={7} links={[{ needId: 'attachment', ratings: { child: 3 }, notes: {} }]} onApply={vi.fn()} />);
+    expect(await screen.findByText('Уже стоит на колесе.')).toBeTruthy();
+    expect(screen.queryByText('Поставить на колесо')).toBeNull();
   });
 
   it('оценок нет — честно: не проходил или закрыл профиль; не выдуманные цифры', async () => {
     getTherapyClientData.mockResolvedValue({ childhoodRatings: {} });
-    render(<WheelChildhood clientId={7} wheel={{}} onApply={vi.fn()} />);
+    render(<WheelChildhood clientId={7} links={[]} onApply={vi.fn()} />);
     expect(await screen.findByText(/ещё не проходил упражнение/)).toBeTruthy();
     expect(screen.queryByText(/%/)).toBeNull();
   });
 
   it('сбой загрузки — «Повторить» запрашивает заново', async () => {
     getTherapyClientData.mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ childhoodRatings: { limits: 5 } });
-    render(<WheelChildhood clientId={7} wheel={{}} onApply={vi.fn()} />);
+    render(<WheelChildhood clientId={7} links={[]} onApply={vi.fn()} />);
     fireEvent.click(await screen.findByText('Повторить'));
     await waitFor(() => expect(screen.getByText('Границы 50%')).toBeTruthy());
     expect(getTherapyClientData).toHaveBeenCalledTimes(2);

@@ -628,6 +628,7 @@ model ClientConceptualization {
   modeTransitions String?  // Переключение режимов
   modeLinks       Json     @default("[]")  // ConceptModeLink[] — encrypted JSON: связи режимов графической концептуализации
   schemaLinks     Json     @default("[]")  // ConceptSchemaLink[] — encrypted JSON: убеждение, детский опыт и блокируемые потребности схем графической концептуализации
+  needLinks       Json     @default("[]")  // ConceptNeedLink[] — encrypted JSON: колесо потребностей клиента (оценки 0–10 и заметки за детство, подростковый возраст и сейчас); пишет только POST conceptualization/:clientId/needs, в историю версий не входит
   modeMapNodes    Json     @default("[]")  // ModeMapNode[] — encrypted JSON
   modeMapEdges    Json     @default("[]")  // ModeMapEdge[] — encrypted JSON
   history         Json     @default("[]")  // ConceptSnapshot[]

@@ -39,6 +39,8 @@ const mods = loadWithKeys({ key: 'c4'.repeat(32) }, () => ({
     require('../therapy/therapy-notes.service') as typeof import('../therapy/therapy-notes.service'),
   modeMaps:
     require('../therapy/mode-maps.service') as typeof import('../therapy/mode-maps.service'),
+  conceptNeeds:
+    require('../therapy/concept-needs') as typeof import('../therapy/concept-needs'),
   tasks:
     require('../therapy/therapy-tasks.service') as typeof import('../therapy/therapy-tasks.service'),
 }));
@@ -88,6 +90,12 @@ function makeServices() {
     phrase: new mods.phrase.PhraseCheckService(db),
     therapyNotes: new mods.therapyNotes.TherapyNotesService(db, relations),
     modeMaps: new mods.modeMaps.ModeMapsService(db, relations),
+    saveNeeds: (links: object[]) =>
+      mods.conceptNeeds.saveConceptNeeds(
+        { prisma: db, relations },
+        { therapistId: THERAPIST, clientId: USER },
+        links,
+      ),
     tasks: new mods.tasks.TherapyTasksService(db, {} as never),
   };
 }
@@ -290,6 +298,20 @@ const CASES: Case[] = [
         goals: 'меньше избегания',
         modeLinks: [{ modeId: 'punitive_critic', alias: 'Судья' }],
       }),
+    read: (s) => s.therapyNotes.getConceptualization(THERAPIST, USER),
+  },
+  {
+    // Колесо потребностей: свой писатель (concept-needs.ts), тот же ответ.
+    model: 'ClientConceptualization',
+    route: 'POST /api/therapy/conceptualization/:clientId/needs',
+    write: (s) =>
+      s.saveNeeds([
+        {
+          needId: 'attachment',
+          ratings: { child: 2, now: 7 },
+          notes: { child: 'мама часто уезжала' },
+        },
+      ]),
     read: (s) => s.therapyNotes.getConceptualization(THERAPIST, USER),
   },
   {
