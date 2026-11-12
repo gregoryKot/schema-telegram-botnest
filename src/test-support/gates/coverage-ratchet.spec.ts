@@ -77,7 +77,7 @@ describe('check-coverage-ratchet.mjs', () => {
     }
   });
 
-  it('рост покрытия — exit 0, предлагает зафиксировать прогресс', () => {
+  it('рост покрытия — exit 0 и никакого «подними планку»', () => {
     const fake = makeFakeNpx();
     try {
       const res = runGate(
@@ -96,7 +96,8 @@ describe('check-coverage-ratchet.mjs', () => {
         },
       );
       expect(res.status).toBe(0);
-      expect(res.stdout).toContain('стало лучше');
+      expect(res.stdout).toContain('пол 80%');
+      expect(res.stdout + res.stderr).not.toContain('--update');
     } finally {
       fake.cleanup();
     }
@@ -186,7 +187,7 @@ describe('check-coverage-ratchet.mjs', () => {
       expect(res.stdout).toContain('NPX_TAIL_STDOUT');
       expect(res.stderr).toContain('NPX_TAIL_STDERR');
       expect(res.stderr).toContain('lines: 80% → 70%');
-      expect(res.stderr).toContain('TEST_COVERAGE_PLAN.md');
+      expect(res.stderr).toContain('Пол меняет владелец');
     } finally {
       fake.cleanup();
     }
@@ -220,5 +221,21 @@ describe('check-coverage-ratchet.mjs', () => {
     } finally {
       fake.cleanup();
     }
+  });
+
+  it('--update отклоняется: пол меняет владелец правкой файла', () => {
+    const res = runGate(
+      'check-coverage-ratchet.mjs',
+      {
+        'scripts/coverage-baseline.json': JSON.stringify({
+          lines: 80,
+          branches: 70,
+          floors: {},
+        }),
+      },
+      { args: ['--update'] },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('фиксированный');
   });
 });
