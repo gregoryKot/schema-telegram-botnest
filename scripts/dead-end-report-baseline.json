@@ -124,6 +124,10 @@
   "webapp/src/pages/SubscribePage.tsx::setSubFailed": {
     "status": "reports"
   },
+  "webapp/src/pages/account/EmailLinkRow.tsx::setError": {
+    "status": "exempt",
+    "reason": "ошибка действия: текст у поля адреса (b27; раньше — через onError страницы), экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
+  },
   "webapp/src/pages/account/TherapistRequestSection.tsx::setErr": {
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger)"
@@ -182,6 +186,10 @@
   "webapp/src/pages/merge/useLinkTicket.ts::setError": {
     "status": "debt",
     "reason": "долг: предпросмотр привязки (L45) — экран-тупик без отчёта наверх; вторая ветка (подтверждение) — ошибка действия у кнопки"
+  },
+  "webapp/src/pages/merge/useLinkTicket.ts::setFailOutcome": {
+    "status": "debt",
+    "reason": "долг: тот же catch предпросмотра привязки, что setError — выбирает исход экрана wait / our_side (b27), отчёта наверх по-прежнему нет"
   },
   "webapp/src/pages/merge/useMergeConfirm.ts::setError": {
     "status": "exempt",

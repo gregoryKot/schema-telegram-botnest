@@ -8,6 +8,7 @@ import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
   type AccountLinkHost,
 } from '../../../../shared/src/share/analytics';
+import { TicketHttpError, linkFailOutcome, type LinkFailOutcome } from './linkFailModel';
 
 export interface LinkPreview {
   provider: string;
@@ -20,11 +21,11 @@ export interface LinkPreview {
 
 export type LinkPhase = 'ask' | 'done' | 'denied';
 
-// Билет привязки мессенджера (`intent: 'link'`) со стороны браузера: сводка, подтверждение,
-// отказ. Вынесено из LinkDevicePage (правило №10: страница может только худеть).
+// Билет привязки мессенджера (`intent: 'link'`) со стороны браузера: сводка, подтверждение, отказ.
 export function useLinkTicket(code: string) {
   const [preview, setPreview] = useState<LinkPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [failOutcome, setFailOutcome] = useState<LinkFailOutcome | null>(null);
   const [busy, setBusy] = useState<null | 'approve' | 'deny'>(null);
   const [phase, setPhase] = useState<LinkPhase>('ask');
   const { accessToken } = useAuth();
@@ -34,7 +35,7 @@ export function useLinkTicket(code: string) {
   const call = useCallback(async (path: string) => {
     const res = await stepUp(sessionPost(`/api/auth/ticket/${path}`, accessToken, { code }));
     if (!res) return null; // окно кода закрыто — ничего не подтверждено
-    if (!res.ok) throw new Error((await readHumanError(res, 'Не получилось')).message);
+    if (!res.ok) throw new TicketHttpError((await readHumanError(res, 'Не получилось')).message, res.status);
     return res.json().catch(() => ({})) as Promise<unknown>;
   }, [code, accessToken, stepUp]);
 
@@ -42,7 +43,7 @@ export function useLinkTicket(code: string) {
     let alive = true;
     call('preview')
       .then((p) => { if (alive) setPreview(p as LinkPreview); })
-      .catch((e: unknown) => { if (alive) setError(humanizeThrown(e, 'Не получилось')); });
+      .catch((e: unknown) => { if (alive) { setError(humanizeThrown(e, 'Не получилось')); setFailOutcome(linkFailOutcome(e)); } });
     return () => { alive = false; };
   }, [call]);
 
@@ -52,8 +53,7 @@ export function useLinkTicket(code: string) {
     try {
       const res = (await call('approve')) as { merged?: boolean; repeat?: boolean } | null;
       if (!res) return;
-      // Успех считает именно этот экран (мини-апп ещё ждёт и не знает) —
-      // ровно один раз: повтор из второй вкладки уже посчитан первым.
+      // Успех считает этот экран (мини-апп ещё ждёт) ровно раз: повтор из второй вкладки уже посчитан.
       if (!res.repeat) api.trackEvent(ACCOUNT_LINK_CONFIRMED_EVENT, {
         host: (preview?.provider ?? 'max') as AccountLinkHost,
         merged: res.merged === true,
@@ -84,7 +84,7 @@ export function useLinkTicket(code: string) {
     }
   };
 
-  return { preview, error, busy, phase, approve, deny };
+  return { preview, error, failOutcome, busy, phase, approve, deny };
 }
 
 /** Текст галочки — по реальному эффекту approve (TicketLinkService.approve). */

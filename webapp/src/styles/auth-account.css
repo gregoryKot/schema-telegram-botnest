@@ -1,80 +1,147 @@
-/* Аккаунт (/account). Префикс aa-. Примитивы ds-* и токены — cabinet.css / index.css.
-   Страница живёт вне AppShell, поэтому корень сам держит светлую тему.
-   Шапка «← Назад» — общая .ds-sheet-head/.ds-back, заголовок страницы —
-   ds-eyebrow + ds-h1 + ds-sub, кнопки — ds-btn/ds-link (#906). */
-.aa-root { --sheet-col: 880px; --sheet-pad: 32px; padding-top: var(--safe-top); min-height: 100vh; background: var(--bg); color: var(--text); width: 100%; box-sizing: border-box; }
+/* Аккаунт (/account), привязка мессенджера (/link) и объединение (/account/merge). Префиксы aa-, am-,
+   alc- (карточка AccountLinkCard из shared: shared CSS не импортирует, классы живут здесь).
+   Примитивы ds-* и токены — cabinet.css / index.css. Страницы живут вне AppShell, корни сами держат
+   светлую тему и растягиваются на всю ширину ряда #root (flex: 1). Язык — docs/design/APP_2026-11.md,
+   b27: /account — рабочая форма без картинок, плоские группы с --panel-line, одна залитая кнопка
+   (карточка «Данные из Telegram»); /link и /merge — лист-герой со сценой SceneMerge + форма. */
+.aa-root { --sheet-col: 880px; --sheet-pad: 32px; flex: 1 1 auto; min-width: 0; padding-top: var(--safe-top); min-height: 100vh; background: var(--bg); color: var(--text); width: 100%; box-sizing: border-box; }
 .aa-page { max-width: 880px; margin: 0 auto; padding: 32px 32px 56px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box; }
-.aa-head { display: flex; align-items: center; gap: 20px; }
-.aa-avatar { width: 72px; height: 72px; font-size: 26px; }
+.aa-head { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.aa-head-text { flex: 1; min-width: 0; }
+.aa-avatar { width: 72px; height: 72px; font-size: 26px; flex-shrink: 0; }
 .aa-lead { margin: 8px 0 0; }
-.aa-ok { display: flex; align-items: center; gap: 10px; background: var(--ok-bg); color: var(--ok-ink); border-radius: 14px; padding: 12px 16px; font-size: 14px; font-weight: 600; }
-.aa-err { background: color-mix(in srgb, var(--accent-red) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent-red) 30%, transparent); border-radius: 14px; padding: 12px 16px; color: var(--accent-red); font-size: 13px; }
-.aa-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; align-items: start; }
-.aa-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.aa-card { padding: 8px 22px; }
-.aa-card-head { display: flex; align-items: baseline; gap: 8px; padding: 14px 0 8px; }
-.aa-methods > * + * { border-top: 1px solid var(--paper-sunk); }
-.aa-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; min-height: 44px; }
+/* Знак границы у заголовка — лист неба (2FA и доступ, 240), размер знака группы. */
+.aa-head-sign { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 112px; height: 76px; border-radius: 18px; }
+.aa-alert { margin: -8px 0 0; }
+
+/* Плоские группы на бумаге страницы: линия --panel-line сверху, без белых карточек. */
+.aa-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 0 40px; align-items: start; }
+.aa-col { display: flex; flex-direction: column; min-width: 0; }
+.aa-group { display: flex; flex-direction: column; gap: 12px; padding: 18px 0 22px; border-top: 1px solid var(--panel-line); min-width: 0; }
+.aa-group-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; }
+.aa-group-head > .ds-h3 { margin: 0; }
+.aa-group-head > .ds-sub { margin-right: auto; }
+.aa-methods > * + * { border-top: 1px solid var(--panel-line); }
+.aa-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; min-height: 44px; }
 .aa-row-main { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
 .aa-row-text { flex: 1; min-width: 0; }
 .aa-row-title { font-size: 15px; font-weight: 700; }
-.aa-row-sub { font-size: 12px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aa-row-sub { font-size: 12px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Причина серой «Отвязать» переносится, а не режется многоточием: на телефоне её было не прочесть (QA мобильной 2026-11, М9). */
 .aa-row-why { white-space: normal; }
-.aa-row-note { font-size: 12px; color: var(--text-faint); }
-.aa-row-wrap { padding: 0; }
-.aa-row-wrap > .aa-row { padding-bottom: 14px; }
-.aa-email-why { margin: -6px 0 14px; font-size: 12px; line-height: 1.5; color: var(--text-faint); }
-.aa-email-form { display: flex; gap: 8px; padding-bottom: 14px; }
-.aa-email-form .ds-input { flex: 1; min-width: 0; }
-.aa-email-sent { margin-bottom: 14px; padding: 12px 14px; background: var(--paper-tint); border-radius: 12px; font-size: 13px; color: var(--text-sub); line-height: 1.5; overflow-wrap: anywhere; }
-.aa-email-again { display: block; margin-top: 8px; min-height: 44px; background: none; border: none; padding: 0; color: var(--text-faint); font-size: 12px; text-decoration: underline; cursor: pointer; }
+.aa-row-note { font-size: 12px; color: var(--text-sub); }
+.aa-row .ds-btn { flex-shrink: 0; }
+.aa-row-wrap > .aa-row { padding-bottom: 12px; }
+.aa-email-why { margin: -4px 0 12px; font-size: 12px; line-height: 1.5; color: var(--text-sub); }
+.aa-email-form { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; }
+.aa-email-form .ds-input { flex: 1 1 180px; min-width: 0; }
+.aa-email-err { flex-basis: 100%; }
+.aa-email-sent { margin-bottom: 12px; padding: 12px 14px; background: var(--paper-tint); border-radius: 12px; font-size: 13px; color: var(--text-sub); line-height: 1.5; overflow-wrap: anywhere; }
+.aa-email-again { display: block; margin-top: 8px; min-height: 44px; background: none; border: none; padding: 0; color: var(--text-sub); font-size: 12px; text-decoration: underline; cursor: pointer; }
+/* Статус и ошибка у поля: успех — галочка рисунком, ошибка — текстом цвета ошибки, без плашки. */
+.aa-field-ok { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--ok-ink); }
+.aa-field-err { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--err); overflow-wrap: anywhere; }
+.aa-code .aa-field-err, .aa-email-form .aa-field-err, .aa-role-form .aa-field-err { margin: 0; }
+.aa-ok-mark { flex-shrink: 0; }
+/* Тихое «Отмена» рядом со вторичной кнопкой: ссылка, зона нажатия 44. */
+.aa-quiet { min-height: 44px; padding: 0 6px; }
 
 /* Двухфакторная защита */
-.aa-tfa { padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
-.aa-tfa-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.aa-tfa-text { font-size: 14px; color: var(--text-muted); line-height: 1.55; }
-.aa-recovery-row { display: flex; justify-content: space-between; align-items: center; background: var(--bg); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
-.aa-codes { font-family: monospace; font-size: 14px; line-height: 2; padding: 14px 18px; background: var(--paper-sunk); border-radius: 12px; letter-spacing: .05em; column-count: 2; column-gap: 24px; }
+.aa-scope { font-size: 13px; line-height: 1.6; color: var(--text-sub); }
+.aa-tfa-text { font-size: 14px; color: var(--text-sub); line-height: 1.55; }
+.aa-recovery-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; padding: 10px 0 0; font-size: 13px; color: var(--text-sub); }
+.aa-on { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--ok-ink); }
+.aa-codes { font-family: monospace; font-size: 14px; line-height: 2; padding: 14px 18px; background: var(--paper-tint); border-radius: 12px; letter-spacing: .05em; column-count: 2; column-gap: 24px; }
 .aa-qr { display: flex; justify-content: center; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; align-self: flex-start; }
-.aa-code-input { font-size: 18px; letter-spacing: .2em; text-align: center; font-family: monospace; }
+.aa-code { display: flex; flex-direction: column; gap: 8px; max-width: 340px; }
 .aa-stack { display: flex; flex-direction: column; gap: 12px; }
-.aa-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.aa-small { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
-.aa-fail { font-size: 13px; color: var(--accent-red); }
-.aa-secret { margin-top: 6px; padding: 10px; background: var(--paper-sunk); border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 11px; }
+.aa-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.aa-small { font-size: 13px; color: var(--text-sub); line-height: 1.55; }
+/* Строка «Не сканируется QR?» — зона нажатия 44 по высоте; маркер раскрытия остаётся (display list-item). */
+.aa-small summary { padding: 12px 0; line-height: 20px; }
+.aa-secret { margin-top: 6px; padding: 10px; background: var(--paper-tint); border-radius: 8px; word-break: break-all; font-family: monospace; font-size: 11px; }
 
-/* Роль психолога */
-.aa-block { padding: 20px 0 24px; }
-.aa-block .aa-head { min-width: 0; }
-.aa-role { --h: 135; /* шалфей — бумага роли психолога */ padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; }
+/* Роль психолога — та же плоская группа, знак Talk строкой у подписи. */
 .aa-role-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-sub); }
-.aa-role-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .aa-role-note { font-size: 13px; line-height: 1.5; color: var(--text-sub); }
-.aa-role .ds-btn:not(.ds-btn--secondary) { align-self: flex-start; }
+.aa-role > .ds-btn { align-self: flex-start; }
 .aa-role-form { display: flex; flex-direction: column; gap: 8px; }
-.aa-role .aa-fail { color: var(--err); }
+
+/* Подписка — строка-переход в своей группе, шеврон общий (.ds-chev). */
+.aa-nav { display: flex; align-items: center; gap: 12px; min-height: 44px; color: inherit; text-decoration: none; }
+.aa-nav-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* Карточка «Данные из Telegram» (AccountLinkSection + AccountLinkCard) — лист неба, единственное залитое действие. */
+.aa-link { padding: 20px 22px; }
+.alc-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.alc-sub { font-size: 13px; line-height: 1.6; color: var(--text-sub); }
+.alc-next { margin-top: 8px; }
+/* Адрес в бота — строкой, которая переносится где угодно: длинный t.me/… не рвёт вёрстку на 320. */
+.alc-url { margin-top: 8px; overflow-wrap: anywhere; word-break: break-all; }
+.ds-btn.alc-action { margin-top: 14px; text-decoration: none; }
+.ds-btn.alc-action.is-starting { pointer-events: none; }
+.alc-code { display: block; min-height: 44px; margin: 10px 0; padding: 0; border: 0; background: none; cursor: pointer; font: 700 24px/44px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 2px; color: var(--text); }
 
 /* Низ: «Выйти» — ds-btn--secondary, «Выйти со всех устройств» — ds-link с тап-целью 44 */
-.aa-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--paper-sunk); padding-top: 20px; }
+.aa-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--panel-line); padding-top: 20px; }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .aa-page { padding: 20px 16px 40px; gap: 24px; }
+  .aa-page { padding: 20px 16px 40px; gap: 22px; }
   .aa-avatar { width: 56px; height: 56px; font-size: 20px; }
   .aa-head { gap: 14px; }
-  .aa-card { padding: 4px 16px; }
-  .aa-row { gap: 12px; padding: 12px 0; }
+  .aa-head-sign { width: 72px; height: 56px; border-radius: 14px; }
+  .aa-head-sign .pp-art { width: 64px; height: auto; }
+  .aa-row { gap: 12px; }
   .aa-row .ds-btn { min-height: 44px; }
-  .aa-tfa, .aa-role { padding: 14px 16px; }
-  .aa-foot { flex-direction: column; align-items: stretch; border-top: none; padding-top: 0; margin-top: 8px; }
+  .aa-link { padding: 16px 18px; }
+  .aa-foot { flex-direction: column; align-items: stretch; padding-top: 18px; }
   .aa-foot .ds-link { align-self: center; }
 }
+/* Аватар на самом узком: три колонки шапки не помещаются — знак уходит, заголовок держит ширину. */
+@media (max-width: 359px) { .aa-head-sign { display: none; } }
 
-/* Компьютер: карточка «Подписка» — «Управлять →» акцентом справа, как до волн (телефон: серый «Управлять» и «›»).
-   Правила на прямом ребёнке колонки. */
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .aa-col > .ds-card--nav .ds-list-body { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
-  .aa-col > .ds-card--nav .ds-sub { font-size: 13px; font-weight: 700; color: var(--accent); }
-  .aa-col > .ds-card--nav .ds-chev { margin-left: 0; color: var(--accent); }
-  .aa-col > .ds-card--nav .ds-chev:empty::before { content: '→'; }
+/* Окно кода 2FA (StepUpDialog): знак границы на листе неба у заголовка. */
+.su-head { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 4px; }
+.su-head > .sk-dialog-title { margin: 0; min-width: 0; }
+.su-sign { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 40px; border-radius: 12px; }
+
+/* ── /link и /account/merge: лист-герой со сценой + форма ─────────────────────────────── */
+.am-root {
+  flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border-box; min-height: 100vh;
+  padding: calc(24px + var(--safe-top)) 16px 40px; background: var(--bg); color: var(--text); font-family: var(--sans);
+  display: flex; justify-content: center;
+}
+.am-spread { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 8px; }
+/* Место под ленивую сцену зарезервировано пропорцией холста (320×260): вёрстка не прыгает. */
+.am-hero { width: 100%; max-width: 180px; aspect-ratio: 320 / 260; align-self: center; }
+.am-form { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.am-brand { display: flex; align-items: center; gap: 10px; width: fit-content; min-height: 44px; color: inherit; text-decoration: none; }
+.am-brand-name { font-family: var(--serif); font-size: 16px; }
+.am-title { margin: 0; }
+.am-lead { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-sub); overflow-wrap: anywhere; }
+.am-skel { display: flex; flex-direction: column; gap: 10px; }
+.am-sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.am-warn { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 16px; }
+.am-warn-sign { flex-shrink: 0; display: inline-flex; padding-top: 2px; }
+.am-warn-text { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text); }
+.am-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--panel-line); }
+.am-row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--panel-line); font-size: 14px; }
+.am-row-sign { flex-shrink: 0; width: 44px; display: inline-flex; }
+.am-row-label { flex: 1; min-width: 0; }
+.am-row-n { font-family: var(--serif); font-size: 16px; }
+.am-field { display: flex; flex-direction: column; gap: 10px; max-width: 360px; }
+.am-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; min-height: 44px; }
+.am-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
+.am-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (min-width: 1024px) {
+  .am-root { align-items: center; padding: calc(40px + var(--safe-top)) 40px 48px; }
+  /* Разворот: лист-герой слева (sticky), справа знак продукта и форма. */
+  .am-spread {
+    max-width: 1016px; display: grid; grid-template-columns: 400px minmax(0, 560px); column-gap: 56px; row-gap: 8px;
+    grid-template-areas: 'hero brand' 'hero form'; grid-template-rows: auto 1fr; align-items: start;
+  }
+  .am-brand { grid-area: brand; }
+  .am-hero { grid-area: hero; position: sticky; top: 40px; max-width: 400px; }
+  .am-form { grid-area: form; }
 }

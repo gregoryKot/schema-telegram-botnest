@@ -6,6 +6,7 @@ import { OtpCells } from '../../pages/login/OtpCells';
 import { RecoveryCodeField } from '../../pages/login/RecoveryCodeField';
 import { OTP_LENGTH } from '../../pages/login/otp';
 import { Dialog } from '../Dialog';
+import { StepUpTitle } from './StepUpTitle';
 import '../../styles/auth-login.css';
 
 export interface StepUpView {
@@ -23,8 +24,7 @@ const RECOVERY_CODE_LENGTH = 10; // src/auth/totp.service.ts, RECOVERY_CODE_BYTE
 
 // Окно кода двухфакторной защиты (StepUpProvider). Поля — те же, что на экране
 // входа с 2FA (OtpCells / RecoveryCodeField): одна механика ввода кода.
-// Запись в истории — useHistorySheet: «Назад» браузера закрывает окно и
-// отменяет действие, а не уводит со страницы.
+// useHistorySheet: «Назад» браузера закрывает окно и отменяет действие.
 export function StepUpDialog({ view, onSubmit, onClosed }: {
   view: StepUpView; onSubmit: (code: string) => void; onClosed: () => void;
 }) {
@@ -54,7 +54,7 @@ export function StepUpDialog({ view, onSubmit, onClosed }: {
   return (
     <div className="light-lock">
       <Dialog label={copy.title} onClose={view.busy ? undefined : goBack} closeOnEscape={!view.busy} zIndex={400}>
-        <h2 className="ds-h2 sk-dialog-title">{copy.title}</h2>
+        <StepUpTitle title={copy.title} />
         <p className="sk-dialog-text">{copy.lead}</p>
         <form onSubmit={submit} className="al-form">
           {recovery ? (

@@ -7,7 +7,7 @@ export const SCOPE_TEXT =
 
 export function TwoFactorScopeNote() {
   return (
-    <div className="text-sm muted" style={{ lineHeight: 1.6, marginBottom: 14 }}>
+    <div className="aa-scope">
       {/* Без обращения к читателю — одна строка для обеих форм. */}
       {SCOPE_TEXT}
     </div>

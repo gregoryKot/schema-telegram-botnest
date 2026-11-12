@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { TwoFactorLossNote } from '../components/TwoFactorLossNote';
+import { WarnNote } from '../components/WarnNote';
+import { PaperAlert } from '../components/paper/PaperAlert';
 import { useMergeConfirm } from './merge/useMergeConfirm';
-import { ServicePage } from './service/ServicePage';
+import { MergeSpread } from './merge/MergeSpread';
 import { SourceTotpField } from './merge/SourceTotpField';
 import { AckCheck } from './merge/AckCheck';
 import { useMergePreview } from './merge/useMergePreview';
@@ -28,35 +30,33 @@ export function MergePage() {
   }, [token, navigate]);
 
   return (
-    <ServicePage width={560}>
-      <div className="as-body">
-        <div className="ds-eyebrow">Аккаунт</div>
-        <h1 className="ds-h2">Объединить аккаунты?</h1>
-        <MergeSummary preview={preview} />
+    <MergeSpread>
+      <div className="ds-eyebrow">Аккаунт</div>
+      <h1 className="ds-h2 am-title">Объединить аккаунты?</h1>
+      <MergeSummary preview={preview} />
 
-        <p className="as-warn">
-          Совпадающие оценки (одна и та же потребность за один день) и незаконченные черновики остаются из текущего аккаунта, дубль из второго удаляется. <b>Действие необратимо.</b>
-        </p>
+      <WarnNote>
+        Совпадающие оценки (одна и та же потребность за один день) и незаконченные черновики остаются из текущего аккаунта, дубль из второго удаляется. <b>Действие необратимо.</b>
+      </WarnNote>
 
-        {twoFactorLost && <TwoFactorLossNote />}
+      {twoFactorLost && <TwoFactorLossNote />}
 
-        {needCode && <SourceTotpField code={code} onChange={setCode} disabled={busy} />}
+      {needCode && <SourceTotpField code={code} onChange={setCode} disabled={busy} />}
 
-        {error && <div className="ds-card as-err">{error}</div>}
+      {error && <PaperAlert title={error} sign="limits" />}
 
-        <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy}>
-          Я понимаю, что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.
-        </AckCheck>
+      <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy}>
+        Я понимаю, что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.
+      </AckCheck>
 
-        <div className="as-actions-row">
-          <button disabled={busy || !acknowledged || (needCode && code.trim().length < 6)} onClick={confirm} className="ds-btn">
-            {busy ? 'Объединяю…' : 'Объединить'}
-          </button>
-          <button disabled={busy} onClick={() => navigate('/account')} className="ds-btn ds-btn--secondary">
-            Отмена
-          </button>
-        </div>
+      <div className="am-actions">
+        <button disabled={busy || !acknowledged || (needCode && code.trim().length < 6)} onClick={confirm} className="ds-btn" aria-busy={busy || undefined}>
+          {busy ? 'Объединяю…' : 'Объединить'}
+        </button>
+        <button disabled={busy} onClick={() => navigate('/account')} className="ds-btn ds-btn--secondary">
+          Отмена
+        </button>
       </div>
-    </ServicePage>
+    </MergeSpread>
   );
 }
