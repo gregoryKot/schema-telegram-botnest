@@ -38,7 +38,7 @@
 .jr-chips { --h: 240; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
 .jr-chips + .jr-chips { margin-top: 8px; }
 .ds-chip.jr-sort {
-  margin-left: auto; min-height: 36px; border: 0; background: none; font: 600 13px var(--sans);
+  margin-left: auto; min-height: 44px; border: 0; background: none; font: 600 13px var(--sans);
   color: var(--text-sub); cursor: pointer;
 }
 
@@ -82,6 +82,12 @@
 .ds-link.jr-delete-btn:disabled { opacity: .6; cursor: default; }
 .jr-delete-err { margin: 0 0 4px; font-size: 13px; line-height: 1.5; color: var(--accent-red); text-align: center; }
 
+/* Телефон: плитки ниже, чтобы начало ленты попадало на первый экран. */
+@media (max-width: 559px) {
+  .jr-stats { gap: 8px; }
+  .jr-stat { min-height: 0; padding: 8px 12px 8px 14px; row-gap: 0; }
+  .jr-stat-num { font-size: 26px; }
+}
 @media (min-width: 560px) {
   .jr-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .jr-hero:not(.jr-hero--empty) { grid-template-areas: 'label scene' 'num scene' 'text scene' 'link link'; grid-template-rows: auto auto 1fr auto; column-gap: 24px; }

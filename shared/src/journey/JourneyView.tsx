@@ -11,6 +11,8 @@ import {
 } from './journeyMeta';
 import type { JourneyState } from './useJourney';
 import { JourneyTimeline } from './JourneyTimeline';
+import { journeyStatLook } from './journeyLook';
+import { spreadStatTiles } from './journeyStatOrder';
 import type { JourneyKit } from './journeyKit';
 
 export interface JourneyViewProps {
@@ -81,7 +83,7 @@ export function JourneyView({
       <div className="pa-spread-main">
         {/* Счётчики «сколько чего» — плитки бумаги со знаком занятия */}
         <div className="jr-stats">
-          {stats.slice(0, JOURNEY_STAT_TILES).map((s) => (
+          {spreadStatTiles(stats.slice(0, JOURNEY_STAT_TILES), (s) => journeyStatLook(s.type)?.hue).map((s) => (
             <Stat key={s.label} row={s} />
           ))}
         </div>
