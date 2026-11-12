@@ -1,22 +1,30 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
+import { LetterDone } from './LetterDone';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { fmtAgo } from '../../utils/format';
 import { detectCrisisAny } from '../../utils/crisisMarkers';
 import { CrisisCard } from '../CrisisCard';
-import { hueStyle, NEED_HUE } from '../../lib/tone';
-import { wordsLabel } from './letterWords';
+import { PaperAlert } from '../paper/PaperAlert';
+import { SceneLetter } from '../art/SceneLetter';
+import { hueStyle } from '../../lib/tone';
+import { letterLines, wordsLabel } from './letterWords';
 import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
 import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { ExHint, ExHintList, ExHintSub, ExHintText } from './ExHint';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { LETTER_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
 // Имя — из каталога («Письмо себе в детстве»), первое слово над строкой курсивом.
 const [TITLE_HEAD, ...TITLE_TAIL] = exerciseCard('letter').title.split(' ');
 
+// Вид (редизайн 2026-11, b18): герой — лист сирени письма со сценой SceneLetter (строки — только
+// написанные), разворот на компьютере; «С чего начать» и подсказка — общая ExHint (на телефоне — свёрнутой
+// строкой до письма, а не после «Запечатать»); письмо — белый лист с полями на втором листе
+// сирени; сбой — PaperAlert, текст остаётся в поле. Итог — LetterDone в общей рамке ExDonePage.
 export function LetterEx({
   onBack,
   onComplete,
@@ -71,70 +79,16 @@ export function LetterEx({
   }
 
   if (done) {
-    const others = pastLetters.filter((l) => l.id !== sealedId);
     return (
-      <ExScreen
-        onBack={goBack}
-        eyebrow="Письмо · сохранено"
-          title={
-          <>
-            Письмо
-            <br />
-            <span className="it">написано.</span>
-          </>
-        }
-        lede={tr('Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернись к нему через неделю и перечитай вслух.', 'Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернитесь к нему через неделю и перечитайте вслух.')}
-        aside={
-          others.length > 0 ? (
-            <div className="ds-card ex2-note">
-              <div className="ds-label">
-                Прошлые письма · {others.length}
-              </div>
-              {others.slice(0, 2).map((l, i) => (
-                <div key={i} className="ex2-hist-row">
-                  <span className="ex2-hist-date">{fmtAgo(l.createdAt)}</span>
-                  <span className="ex2-hist-snip">
-                    «{l.text.slice(0, 120)}…»
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : undefined
-        }
-      >
-        <div className="ds-card ex2-letter">
-          <div className="ex2-letter-hi">Здравствуй,</div>
-          <div className="ex2-letter-text">{text}</div>
-          <div className="ex2-meta">
-            <span>
-              {new Date().toLocaleDateString('ru-RU', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </span>
-            <span>{wordsLabel(text)}</span>
-          </div>
-        </div>
-        <div className="ex2-foot">
-          <button
-            className="ds-btn ds-btn--secondary"
-            onClick={() => setDone(false)}
-          >
-            Изменить
-          </button>
-          <span className="ex2-spacer" />
-          <button className="ds-btn" onClick={goBack}>
-            Закрыть
-          </button>
-        </div>
-      </ExScreen>
+      <LetterDone text={text} others={pastLetters.filter((l) => l.id !== sealedId)} onEdit={() => setDone(false)} onClose={goBack}
+        lede={tr('Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернись к нему через неделю и перечитай вслух.', 'Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернитесь к нему через неделю и перечитайте вслух.')} />
     );
   }
 
   return (
     <ExScreen
-      onBack={goBack} caution
+      onBack={goBack} caution spread look="letter"
+      heroArt={<SceneLetter lines={letterLines(text)} />}
       eyebrow={exerciseCard('letter').eyebrow}
       title={
         <>
@@ -148,27 +102,17 @@ export function LetterEx({
         'Мысленно сядьте рядом со своим внутренним ребёнком — тем, кому тогда было трудно. В схема-терапии эту часть называют Уязвимым Ребёнком. Скажите то, что тогда важно было услышать.',
       )}
       aside={
-        <>
-          <div className="ds-card ex2-note ex2-tint" style={hueStyle(NEED_HUE.limits)}>
-            <div className="ds-label">С чего начать</div>
-            <h3 className="ex2-note-h">Три вопроса перед тем как писать</h3>
-            <ul className="ex2-note-list">
-              <li>Какой момент из детства – самый трудный?</li>
-              <li>Какие были чувства тогда? Чего не хватало?</li>
-              <li>Что он должен был услышать – но не услышал?</li>
-            </ul>
-          </div>
-          <div className="ds-card ex2-note">
-            <div className="ds-label">Подсказка</div>
-            <p className="ex2-note-body">
-              {tr('Не редактируй, пиши как идёт. Если становится слишком тяжело — остановись и просто посиди.',
-                'Не редактируйте, пишите как идёт. Если становится слишком тяжело — остановитесь и просто посидите.')}
-            </p>
-          </div>
-        </>
+        <ExHint label="С чего начать" title="Три вопроса перед тем как писать">
+          <ExHintList items={['Какой момент из детства – самый трудный?', 'Какие были чувства тогда? Чего не хватало?', 'Что он должен был услышать – но не услышал?']} />
+          <ExHintSub>Подсказка</ExHintSub>
+          <ExHintText>
+            {tr('Не редактируй, пиши как идёт. Если становится слишком тяжело — остановись и просто посиди.',
+              'Не редактируйте, пишите как идёт. Если становится слишком тяжело — остановитесь и просто посидите.')}
+          </ExHintText>
+        </ExHint>
       }
     >
-      <div className="ds-card ex2-letter">
+      <div className="ex2-letter" style={hueStyle(ENTITY_LOOK.letter.hue)}>
         <div className="ex2-letter-hi">Здравствуй,</div>
         <LimitedTextarea
           max={LETTER_TEXT_MAX}
@@ -184,12 +128,10 @@ export function LetterEx({
       </div>
       {detectCrisisAny(text) && <CrisisCard surface="letter" />}
       {sealError && (
-        <div role="alert" className="ex2-err">
-          {tr(
-            'Не удалось сохранить письмо — текст на месте. Проверь соединение и попробуй ещё раз.',
-            'Не удалось сохранить письмо — текст на месте. Проверьте соединение и попробуйте ещё раз.',
-          )}
-        </div>
+        <PaperAlert sign="sheets" className="ex2-alert" title={tr(
+          'Не удалось сохранить письмо — текст на месте. Проверь соединение и попробуй ещё раз.',
+          'Не удалось сохранить письмо — текст на месте. Проверьте соединение и попробуйте ещё раз.',
+        )} />
       )}
       <div className="ex2-foot">
         <span className="ex2-spacer" />

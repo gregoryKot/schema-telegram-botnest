@@ -31,7 +31,6 @@ export const CRON_LEASE_REGISTRY: Record<
     tz: MSK,
   },
   introLeadRedelivery: { window: 'fifteenMinutes', cron: '*/15 * * * *' },
-  telegramDomainWatchdog: { window: 'hourly', cron: '7 * * * *' },
   bookingConfirmRetry: { window: 'fiveMinutes', cron: '*/5 * * * *' },
   bookingReminders: { window: 'fiveMinutes', cron: '*/5 * * * *' },
   bookingExpireHolds: { window: 'everyMinute', cron: '* * * * *' },

@@ -1,17 +1,20 @@
 import { ExScreen, GlyphArrowRight } from '../ExScreen';
 import { useTr } from '../../../utils/addressForm';
-import { hueStyle, NEED_HUE } from '../../../lib/tone';
-import { NeedArt } from '../../art/NeedArt';
-import { Wheel } from '../../art/PaperArtSigns';
+import { PaperAlert } from '../../paper/PaperAlert';
 import { NEEDS } from './needs';
-import { CWTrack } from './CWTrack';
-import { WheelSvg } from './WheelSvg';
-import { NeedExamples } from './NeedExamples';
+import { NeedRateRow } from './NeedRateRow';
+import { WheelScene } from './WheelScene';
 import type { NeedId } from '../../../../../shared/src/needs/types';
-import { previewRatings, unratedHint } from '../../../../../shared/src/childhoodWheel/useChildhoodDraft';
+import { unratedHint } from '../../../../../shared/src/childhoodWheel/useChildhoodDraft';
 import { exerciseCard } from '../../../../../shared/src/exercises/exerciseCatalog';
 
-/** Ввод оценок: пять ползунков с примерами, предпросмотр колеса, сохранение. Неоценённая потребность — «—», сохранить можно, когда выставлены все. */
+/**
+ * Ввод оценок: пять строк с ползунками и примерами, сохранение. Неоценённая потребность — «—», сохранить
+ * можно, когда выставлены все. Колесо (SceneChildhood values) растёт по мере ответов: на компьютере — сцена
+ * листа-героя в липкой колонке разворота, на телефоне и планшете — мини-сцена в липкой полосе со шкалой над
+ * строками (одна сцена на экран: вторую прячет sheet-childhood.css по ширине). «Защитная идеализация» —
+ * наклейка соломы под листом, до первой строки.
+ */
 export function ChildhoodFill({
   title,
   ratings,
@@ -33,79 +36,47 @@ export function ChildhoodFill({
   onSave: () => void; saving: boolean; error: boolean;
 }) {
   const tr = useTr();
-  const val = (id: NeedId) => (unrated.includes(id) ? undefined : ratings[id]);
+  const scene = (cls: string) => <WheelScene ratings={ratings} unrated={unrated} className={cls} />;
   return (
     <ExScreen
-      onBack={onBack}
-      eyebrow={exerciseCard('wheel').eyebrow} art={<Wheel size="square" />}
+      onBack={onBack} spread compact look="childhood_wheel" heroArt={scene('chw-scene--side')}
+      eyebrow={exerciseCard('wheel').eyebrow}
       title={title}
       lede={tr(
         'Оцени пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы.',
         'Оцените пять базовых потребностей в детстве. Не отдельные моменты, а как было «в целом, большую часть времени» – там, где формировались схемы.',
       )}
       aside={
-        <>
-          <div className="ds-card ds-card--warn ex2-note">
-            <div className="ds-label">Внимание</div>
-            <h3 className="ex2-note-h">Защитная идеализация</h3>
-            <p className="ex2-note-body">
-              Психика прячет систематические паттерны и подсвечивает редкие хорошие моменты.{' '}
-              {tr('Оценивай не «как могло быть», а «как было обычно, в большинстве лет».', 'Оценивайте не «как могло быть», а «как было обычно, в большинстве лет».')}
-            </p>
-          </div>
-          <div className="ds-card ex2-note">
-            <div className="ds-label">Предпросмотр</div>
-            <WheelSvg ratings={previewRatings(ratings, unrated)} />
-            <div className="ex2-cw-legend">
-              {NEEDS.map((n) => (
-                <div key={n.id} className="ex2-cw-legend-row" style={hueStyle(NEED_HUE[n.id])}>
-                  <NeedArt id={n.id} size="row" />
-                  {n.label}
-                  <span className={'ex2-cw-legend-val' + zone(val(n.id))}>{val(n.id) ?? '—'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
+        <div className="pp-paper chw-idealize">
+          <div className="ds-label">Внимание</div>
+          <h3 className="chw-idealize-h">Защитная идеализация</h3>
+          <p className="chw-idealize-body">
+            Психика прячет систематические паттерны и подсвечивает редкие хорошие моменты.{' '}
+            {tr('Оценивай не «как могло быть», а «как было обычно, в большинстве лет».', 'Оценивайте не «как могло быть», а «как было обычно, в большинстве лет».')}
+          </p>
+        </div>
       }
     >
-      <div className="ex2-cw-scale">
-        <span>0 – почти не было</span>
-        <span>5 – где-то посередине</span>
-        <span>10 – в полной мере</span>
-      </div>
-      {NEEDS.map((n, i) => (
-        <div key={n.id} className="ex2-cw-row" style={hueStyle(NEED_HUE[n.id])}>
-          <span className="ex2-cw-num">{String(i + 1).padStart(2, '0')}</span>
-          <div>
-            <div className="ex2-cw-label">{n.label}</div>
-            <div className="ex2-cw-q">{n.question}</div>
-            <CWTrack value={val(n.id)} onChange={(v) => onChange(n.id, v)} hue={NEED_HUE[n.id]} label={n.label} />
-            <div className="ex2-cw-ends">
-              <div className={'ex2-cw-end' + ((val(n.id) ?? 5) <= 4 ? ' is-low' : '')}>
-                <b>0 – дефицит. </b>
-                {n.low}
-              </div>
-              <div className={'ex2-cw-end' + ((val(n.id) ?? 5) >= 8 ? ' is-high' : '')}>
-                <b>10 – насыщение. </b>
-                {n.high}
-              </div>
-            </div>
-            <NeedExamples needId={n.id} />
-          </div>
-          <div className={'ex2-cw-value' + (val(n.id) === undefined ? ' is-unset' : '')}>
-            {val(n.id) ?? '—'}
-            <span>{val(n.id) === undefined ? ' не оценено' : '/10'}</span>
-          </div>
+      <div className="chw-strip">
+        <div className="ex2-cw-scale">
+          <span>0 – почти не было</span>
+          <span>5 – где-то посередине</span>
+          <span>10 – в полной мере</span>
         </div>
+        {scene('chw-scene--strip')}
+      </div>
+      {NEEDS.map((n) => (
+        <NeedRateRow key={n.id} need={n} value={unrated.includes(n.id) ? undefined : ratings[n.id]} onChange={(v) => onChange(n.id, v)} />
       ))}
       {error && (
-        <div role="alert" className="ex2-err ex2-gap">
-          {tr(
+        <PaperAlert
+          className="chw-save-err"
+          sign="wheel"
+          title={tr(
             'Не удалось сохранить. Проверь связь и попробуй ещё раз',
             'Не удалось сохранить. Проверьте связь и попробуйте ещё раз',
           )}
-        </div>
+        />
       )}
       <div className="ex2-foot">
         {onCancel && (
@@ -115,12 +86,10 @@ export function ChildhoodFill({
         )}
         <span className="ex2-spacer" />
         {unrated.length > 0 && <span className="ex2-cw-left" role="status">{unratedHint(unrated.length)}</span>}
-        <button type="button" className="ds-btn" disabled={saving || unrated.length > 0} onClick={onSave}>
+        <button type="button" className="ds-btn" disabled={saving || unrated.length > 0} aria-busy={saving || undefined} onClick={onSave}>
           {saving ? 'Сохраняю…' : <>Посмотреть результат <GlyphArrowRight /></>}
         </button>
       </div>
     </ExScreen>
   );
 }
-
-const zone = (v: number | undefined) => (v === undefined ? '' : v <= 4 ? ' is-low' : v <= 6 ? ' is-mid' : '');

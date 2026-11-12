@@ -68,7 +68,7 @@ describe('PhraseCheckEx — шаг ввода', () => {
 });
 
 // Кризисный гейт ДО сохранения (правило №7): фраза на шаге ввода и переписанная фраза.
-describeCrisisField('webapp/src/components/exercises/PhraseCheckEx.tsx', {
+describeCrisisField('webapp/src/components/exercises/phraseCheckEx/PhraseStartStep.tsx', {
   label: 'фраза на шаге ввода',
   open: () => renderEx(),
   enter: (text) =>

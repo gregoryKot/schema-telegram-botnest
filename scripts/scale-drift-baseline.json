@@ -4,7 +4,6 @@
   "shared/src/journey/JourneyTimeline.tsx": 1,
   "shared/src/journey/JourneyView.tsx": 1,
   "webapp/src/components/BookingPicker.tsx": 2,
-  "webapp/src/components/CookieBanner.tsx": 1,
   "webapp/src/components/modeMap/ShapePicker.tsx": 3,
   "webapp/src/components/ModeMapViewer.tsx": 2,
   "webapp/src/pages/admin/BookingSection.tsx": 2,

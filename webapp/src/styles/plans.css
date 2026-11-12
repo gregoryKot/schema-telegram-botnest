@@ -1,67 +1,109 @@
-/* Каркас листов sk- (TaskCreateSheet, PlansScreen, PracticesScreen, PlanSheet), создание
-   задания, планы и лист плана. Подключается сборником sheet-tasks.css. */
+/* Каркас листов sk- (TaskCreateSheet, PlansScreen, PracticesScreen, PlanSheet), планы и лист плана; плитки пяти
+   потребностей (NeedTiles: пустые «Планы» и «Что питает»). Создание задания — task-create.css. Подключается
+   сборником sheet-tasks.css. b20: шапки — листы бумаги (EntitySheet), строки — знак слева колонкой, выбор —
+   плитки бумаги с галочкой (не красная рамка), ритм — 24 между полями. */
 .sk-sheet { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
 .sk-scroll { overflow-y: auto; overflow-x: hidden; flex: 1; }
+.u-sheet-grid > .sk-scroll { min-height: 0; }
 .sk-page { max-width: 760px; margin: 0 auto; padding: 32px clamp(16px, 4vw, 56px) 48px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box; }
-.sk-title { margin-top: 8px; }
-.sk-lead { margin: 8px 0 0; font-size: 14px; }
-.sk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 10px; }
-.sk-tpl { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1px solid transparent; cursor: pointer; min-width: 0; box-sizing: border-box; }
-.sk-tpl.is-selected { border-color: oklch(0.58 0.12 var(--h)); }
-.sk-tpl-body { flex: 1; min-width: 0; }
-.sk-tpl-label { font-size: 15px; font-weight: 600; line-height: 1.3; }
-.sk-tpl-sub { font-size: 13px; line-height: 1.4; margin-top: 2px; color: var(--text-sub); }
-.sk-tpl-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.sk-tpl-time { font-size: 11px; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
-.sk-radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line-strong); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.sk-radio.is-on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .sk-config { display: flex; flex-direction: column; gap: 24px; }
 .sk-field { display: flex; flex-direction: column; gap: 10px; }
-.sk-pick { grid-template-columns: 1fr auto; min-height: 44px; box-sizing: border-box; }
-.sk-pick-name { display: flex; align-items: center; gap: 10px; font-size: 14px; min-width: 0; }
-.sk-strong { font-weight: 600; }
-.sk-submit { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .sk-error { font-size: 13px; color: var(--err); }
+/* Сбой в листе плана и в подвале «Поставить цель» — компактная наклейка PaperAlert (ревью g6 r2). */
+.pa-alert.sk-alert { padding: 10px 14px 10px 12px; gap: 6px 10px; border-radius: 14px; }
+.pa-alert.sk-alert .pa-alert-title { font-size: 14px; }
+.sk-group-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.2; color: var(--text); }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sk-page { padding-top: 20px; gap: 22px; }
+  .sk-group-title { font-size: 20px; }
 }
-.sk-it { font-style: italic; color: var(--accent); }
 
 /* ── Планы ── */
-.sk-page--wide { max-width: 900px; padding-top: 40px; padding-bottom: 80px; }
-.sk-head { align-items: flex-end; }
-.sk-bar { height: 6px; border-radius: 3px; background: var(--paper-sunk); overflow: hidden; }
-.sk-bar > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
-.sk-alert { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.sk-page--wide { max-width: 900px; padding-top: 32px; padding-bottom: 80px; }
+/* Итог в листе плана: сделанная доля — мох на тоне глубже бумаги (данные ≥3:1 к шалфею), не красная линия. */
+.sk-bar { width: min(100%, 280px); height: 6px; margin-top: 4px; border-radius: 3px; background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; }
+.sk-bar > i { display: block; height: 100%; background: var(--c-moss); border-radius: 3px; }
 .sk-group { display: flex; flex-direction: column; gap: 12px; }
 .sk-list { display: flex; flex-direction: column; gap: 10px; }
-.sk-plan { display: flex; flex-direction: column; gap: 10px; }
-.sk-plan-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.sk-plan-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
-.sk-plan-need { font-size: 12px; font-weight: 600; }
-.sk-plan-text { font-size: 14px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
-.sk-plan-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ds-card.sk-plan { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; column-gap: 14px; padding: 16px 18px; border-radius: 16px; }
+.sk-plan > .pp-row-art { padding-top: 2px; }
+.sk-plan-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sk-plan-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; color: var(--text-sub); }
+.sk-plan-need { font-weight: 600; color: var(--need-text); }
+.sk-plan-text { font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.sk-plan.is-closed .sk-plan-text { color: var(--text-sub); }
+.sk-plan-actions { display: flex; gap: 8px; flex-wrap: wrap; max-width: 380px; margin-top: 4px; }
 .sk-plan-actions .ds-btn { flex: 1; }
-.sk-status { font-size: 16px; color: var(--text-sub); }
-.sk-status.is-ok { color: var(--ok); }
-.sk-status.is-err { color: var(--err); }
+.sk-plan-mark { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; }
+.sk-plan-mark svg { width: 14px; height: 14px; }
+.sk-plan-mark.is-ok { background: var(--c-moss); color: var(--on-accent); }
+.sk-plan-mark.is-no { background: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text-sub); }
+.sk-self-start { align-self: flex-start; }
+
+/* ── Пять потребностей плитками (NeedTiles) ── */
+.sk-needs { display: flex; flex-wrap: wrap; gap: 10px; }
+.pp-paper.sk-need {
+  flex: 1 1 120px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  min-height: 100px; box-sizing: border-box; padding: 14px 14px 12px; border: 0; border-radius: 18px;
+  color: var(--text); font-family: var(--sans); text-align: left; cursor: pointer; transition: background .12s;
+}
+.sk-need:hover { background: oklch(0.895 0.04 var(--h)); }
+.sk-need.is-on { background: oklch(0.87 0.05 var(--h)); box-shadow: 4px 5px 0 oklch(0.79 0.06 var(--h)); }
+.sk-need:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.sk-need-sign .pp-art--row { width: 56px; height: 30px; }
+.sk-need-name { font-size: 14px; font-weight: 600; line-height: 1.25; overflow-wrap: break-word; }
+.sk-need-score { display: block; width: 100%; height: 4px; margin-top: auto; border-radius: 2px; background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; }
+.sk-need-score > i { display: block; width: var(--score); height: 100%; border-radius: 2px; background: var(--need-ink); }
 
 /* ── Лист плана ── */
-.sk-aside { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 40px; }
-.sk-aside-title { display: flex; align-items: center; gap: 8px; }
-.sk-opt-row { display: flex; align-items: center; gap: 8px; }
-.sk-opt { flex: 1; font-size: 15px; line-height: 1.5; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; }
-.sk-opt.is-selected { border-width: 2px; }
-.sk-del { flex-shrink: 0; }
-.sk-hour { margin-left: 8px; }
-.sk-check { display: inline-flex; color: var(--accent); }
-.sk-chosen { padding: 14px 16px; border-radius: 16px; font-size: 15px; line-height: 1.5; }
+.sk-lede-next { display: block; margin-top: 8px; } /* вторая фраза подписи — абзацем: первая без точки, строки сливались */
+.sk-plan-pick, .sk-plan-confirm { display: flex; flex-direction: column; gap: 24px; }
+.sk-opt-row { display: flex; align-items: center; gap: 4px; }
+.ds-card.sk-opt {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 10px 14px 10px 16px;
+  font: inherit; font-size: 15px; line-height: 1.45; color: var(--text); text-align: left;
+}
+.ds-card.sk-opt.is-mine { background: oklch(0.915 0.03 var(--h)); border-color: transparent; }
+.sk-opt-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sk-del {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: var(--text-sub); cursor: pointer;
+}
+.sk-del:hover, .sk-del:focus-visible { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+.sk-del:disabled { opacity: .4; cursor: default; }
+.sk-field--own { margin-top: 4px; }
+/* Выбранный шаг — белый лист Literata с тенью-слоем бумаги потребности (была розовая плашка). */
+.sk-chosen {
+  padding: 16px 18px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface);
+  box-shadow: 5px 6px 0 oklch(0.88 0.04 var(--h)); font: 400 19px/1.45 var(--serif); color: var(--text); overflow-wrap: anywhere;
+}
+.pp-paper.sk-hint { margin: 0; padding: 14px 16px; border-radius: 16px; font-size: 14px; line-height: 1.55; color: var(--text); }
+/* Время — плитки в ряд (4 на компьютере, 2×2 на телефоне), выбранная — бумага потребности с галочкой. */
+.sk-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.sk-slot {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
+  min-height: 64px; box-sizing: border-box; padding: 12px 40px 12px 14px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); color: var(--text); font-family: var(--sans); text-align: left; cursor: pointer;
+}
+.sk-slot:hover { border-color: var(--line-strong); }
+.sk-slot.is-on { background: oklch(0.885 0.045 var(--h)); border-color: transparent; box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h)); }
+.sk-slot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sk-slot-label { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.sk-slot-hour { font-size: 13px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.sk-slot-check {
+  position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; background: var(--text); color: var(--surface);
+}
+.sk-plan-actions-col { display: flex; flex-direction: column; gap: 10px; }
 .sk-ics { width: 100%; }
-.sk-foot { display: flex; justify-content: flex-end; }
 .sk-center { text-align: center; }
-.sk-self-start { align-self: flex-start; }
+.sk-done-step {
+  align-self: stretch; margin: 6px 0 0; padding: 14px 16px; border-radius: 14px; background: var(--surface);
+  font: 400 18px/1.45 var(--serif); color: var(--text); overflow-wrap: anywhere;
+}
 
 /* Телефон: корень листа не уходит под статус-бар установленного приложения (#902, --safe-top в index.css). */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sk-sheet { padding-top: var(--safe-top); }
+  .ds-card.sk-plan { padding: 14px 14px 14px 12px; column-gap: 12px; }
 }

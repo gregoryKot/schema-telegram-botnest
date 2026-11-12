@@ -7,14 +7,14 @@ import '../../styles/sheet-diary.css';
 // Оболочка шага мастера записи (схема / режим): прогресс, «Шаг N из M» и вопрос — один компонент на все мастера.
 // 2026-11: шаг — на бумаге страницы без карточки, цветная бумага — у листа-героя (APP_2026-11.md, принцип 4).
 
-export function DiaryTicks({ filled, active, hue, onJump }: {
-  filled: boolean[]; active: number; hue: number | undefined; onJump: (i: number) => void;
+export function DiaryTicks({ filled, active, hue, onJump, unit = 'Шаг' }: {
+  filled: boolean[]; active: number; hue: number | undefined; onJump: (i: number) => void; unit?: string; // «Вопрос» — карточки схем и режимов
 }) {
   return (
     <div className="sd-ticks" style={hueStyle(hue)}>
       {filled.map((f, i) => (
         <div key={i} className={'sd-tick' + (f ? ' is-filled' : '') + (i === active ? ' is-active' : '')}
-          {...pressable(() => onJump(i))} aria-label={`Шаг ${i + 1}`} aria-current={i === active ? 'step' : undefined} />
+          {...pressable(() => onJump(i))} aria-label={`${unit} ${i + 1}`} aria-current={i === active ? 'step' : undefined} />
       ))}
     </div>
   );

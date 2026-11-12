@@ -66,7 +66,7 @@ export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoo
           onOpen={launcher.openTask}
           onComplete={task => completeTask(task.id, onTasksChanged)}
           onAdd={() => setShowTaskCreate(true)}
-          error={taskError}
+          error={taskError} loading={!loaded}
         />
       )}
       {showTaskCreate && (

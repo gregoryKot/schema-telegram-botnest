@@ -3,18 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { encrypt } from '../utils/crypto';
-import { sessionLabel } from './caldav-event.util';
+import { ownerEventFor } from './caldav-owner-event';
 import { formatTime, subjectFromTitle } from './booking-notify.format';
 import { CONFIRMED_SUBJECT, confirmedCardText } from './booking-confirmed-card';
 import type { PlainBooking } from './booking-notify.service';
-import { eventDurationMin } from './session-event';
 
 // Тело onConfirmed: ссылка на встречу, событие календаря, флаг, DM админу. Из
 // booking-notify.service.ts (правило №10), аудит 2026-10-11, security#21.
-
-/** Детерминированный UID события брони: по нему событие снимается и без записанного calDavUid. */
-export const bookingEventUid = (id: number): string =>
-  `booking-${id}@schemehappens.ru`;
 
 export interface ConfirmRunDeps {
   prisma: PrismaService;
@@ -67,16 +62,8 @@ export async function runConfirmEffects(
   if (fresh?.status !== BookingStatus.CONFIRMED) return;
   let uid = b.calDavUid ?? null;
   if (!uid) {
-    uid = await d.calDav.pushEvent({
-      uid: bookingEventUid(b.id),
-      startsAt: b.startsAt,
-      durationMin: eventDurationMin(b),
-      summary: `${sessionLabel(b.type)} — ${b.clientName}`,
-      description: [b.clientContact, b.message, b.meetingUrl]
-        .filter(Boolean)
-        .join('\n'),
-      location: b.meetingUrl ?? undefined,
-    });
+    // Событие обезличено: iCloud — зарубежная база (caldav-owner-event.ts).
+    uid = await d.calDav.pushEvent(ownerEventFor(b));
     if (uid) {
       // CAS по статусу: отмена могла прийти, пока шёл PUT. claimCancel тогда
       // перечитал строку без uid и DELETE не послал — событие снимаем сами,

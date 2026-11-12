@@ -2,6 +2,9 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { TaskSign } from './TaskSign';
+import { taskEntity } from './taskEntity';
+import { SignArt } from '../../components/art/SignArt';
+import { ENTITY_LOOK, type SignKey } from '../../../../shared/src/theme/entityLook';
 
 afterEach(cleanup);
 const html = (type: string, text = '') => {
@@ -28,11 +31,23 @@ describe('TaskSign', () => {
     expect(html('schema_diary')).toBe(html('diary_streak'));
     expect(html('ysq_test')).toBe(html('schema_intro'));
   });
-  // ENTITY_LOOK, строка «Цель, задание»: у упражнения — знак своей сущности, как у клиента в «Практиках»
-  // (b31: терапевт и клиент говорят одними знаками), а не «сделано».
-  it('упражнение — знак своей сущности: убеждение, письмо, безопасное место, «Мне плохо» различаются и не «сделано»', () => {
-    const ex = ['belief_check', 'letter_to_self', 'safe_place', 'flashcard'].map((t) => html(t));
-    expect(new Set(ex).size).toBe(4);
-    for (const s of ex) expect(s).not.toBe(html('custom'));
+  // b20 (ревью g4 r3): местный switch рисовал Check письму, безопасному месту, убеждению и «Мне плохо» — четыре
+  // галочки подряд на «Практиках». Знак — из ENTITY_LOOK по сущности маршрута: у упражнений свой, Check — только своё.
+  it('знак упражнения — его сущности из ENTITY_LOOK, а не «сделано»', () => {
+    const sign = (key: SignKey) => {
+      const { container, unmount } = render(<SignArt sign={key} size="row" />);
+      const s = container.innerHTML;
+      unmount();
+      return s;
+    };
+    const cases: [string, SignKey][] = [
+      ['belief_check', 'scales'], ['letter_to_self', 'sheets'], ['safe_place', 'haven'], ['flashcard', 'heart'],
+      ['childhood_wheel', 'wheel'], ['custom', 'check'],
+    ];
+    for (const [type, key] of cases) {
+      expect(ENTITY_LOOK[taskEntity({ type, text: '' })].sign, type).toBe(key);
+      expect(html(type), type).toBe(sign(key));
+    }
+    expect(new Set(cases.map(([t]) => html(t))).size).toBe(cases.length);
   });
 });

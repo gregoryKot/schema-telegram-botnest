@@ -5,14 +5,6 @@
 // проверяет: CSRF-заголовок отсутствует → UnauthorizedException ДО обращения
 // к сервису (правило "Обработка ошибок" CLAUDE.md); happy-path + основная
 // ошибка/guard-ветка — для остальных хендлеров.
-//
-// AuthProviderRegistry (реальный, импортируется контроллером через DI-тип
-// конструктора → попадает в emitDecoratorMetadata) тянет GoogleProvider, а тот —
-// пакет 'jose' (чистый ESM, ts-jest его не парсит без спец-конфига). Реальный
-// GoogleProvider тут не нужен — registry в тестах мокается двойником целиком —
-// поэтому подменяем модуль тем же способом, что и auth-flow.service.spec.ts.
-jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
-
 import {
   BadRequestException,
   ForbiddenException,

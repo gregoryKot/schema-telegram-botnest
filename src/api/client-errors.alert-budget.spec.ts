@@ -70,9 +70,9 @@ describe('S13: анонимный шум не глушит настоящий lo
   });
 
   it('шквал анонимных ошибок входа — свой малый подбюджет, основной цел', async () => {
-    const google = new Logger('GoogleProvider');
+    const oauth = new Logger('AuthOauthController');
     for (let i = 0; i < 100; i++) {
-      google.error(`Google id_token JWT verification failed: ${'x'.repeat(i)}`);
+      oauth.error(`vk callback error: ${'x'.repeat(i)}`);
     }
     await flush();
     expect(sent()).toHaveLength(ANON_BUDGET);

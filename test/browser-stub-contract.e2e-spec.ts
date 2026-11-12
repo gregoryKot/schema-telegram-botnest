@@ -70,7 +70,7 @@ const BODIES: Record<string, unknown> = {
   // Тело, которое шлёт страница /login (shared/src/auth/useLoginTicket.ts).
   'POST /api/auth/ticket/start': {
     intent: 'login',
-    provider: 'telegram',
+    provider: 'vk',
     hostId: 'web',
   },
   // deviceCode подставляется из настоящего старта: на неизвестный код сервер
@@ -129,13 +129,17 @@ describe('заглушка браузерного смока ↔ настоящ�
     const start = await request(app.getHttpServer())
       .post('/api/auth/ticket/start')
       .set('x-requested-with', 'webapp')
-      .send({ intent: 'login', provider: 'telegram' });
+      .send({ intent: 'login', provider: 'vk' });
     return start.body as Record<string, string>;
   }
 
   /** Куку refresh выдаёт настоящий вход по тикету. */
   async function refreshCookie(userId: bigint): Promise<string> {
     const { deviceCode, userCode } = await startTicket();
+    // Вход в браузере одобряет аккаунт со способом входа кроме Telegram.
+    await prisma.authProvider.create({
+      data: { userId, provider: 'email', providerId: `e2e-stub-${userId}` },
+    });
     await app.get(LoginTicketService).approveLogin(userCode, userId);
     const polled = await request(app.getHttpServer())
       .post('/api/auth/ticket/poll')

@@ -32,7 +32,7 @@ describe('viewerMayAct', () => {
 describe('LoginTicketService — привязка карточки к тому, кому её показали', () => {
   it('forConfirm закрепляет билет за первым увидевшим', async () => {
     const { tickets, rows } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
     expect(await tickets.forConfirm(userCode, OWNER)).not.toBeNull();
     expect(rows[0].shownToTelegramId).toBe(OWNER);
     // Тот же человек открывает карточку повторно — по-прежнему его.
@@ -41,7 +41,7 @@ describe('LoginTicketService — привязка карточки к тому, 
 
   it('второй увидевший получает «код не найден» и след в аудите', async () => {
     const { tickets, rows, securityLog } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
     await tickets.forConfirm(userCode, OWNER);
     expect(await tickets.forConfirm(userCode, STRANGER)).toBeNull();
     expect(rows[0].shownToTelegramId).toBe(OWNER);
@@ -49,34 +49,6 @@ describe('LoginTicketService — привязка карточки к тому, 
       'login_ticket_cross_user',
       expect.objectContaining({ shownTo: OWNER, actor: STRANGER }),
     );
-  });
-
-  it('approveLogin: чужое нажатие отклонено и не выдаёт сессию, своё проходит', async () => {
-    const { tickets, rows, securityLog } = makeDeps();
-    const { userCode } = await startLogin(tickets);
-    await tickets.forConfirm(userCode, OWNER);
-
-    await expect(
-      tickets.approveLogin(userCode, WEB_USER, STRANGER),
-    ).rejects.toThrow('Код не найден');
-    expect(rows[0].approvedUserId).toBeNull();
-    expect(securityLog.log).toHaveBeenCalledWith(
-      'login_ticket_cross_user',
-      expect.objectContaining({ shownTo: OWNER, actor: STRANGER }),
-    );
-
-    // Сверяется СЫРОЙ id: канонический (после слияния) отличается от него.
-    await tickets.approveLogin(userCode, OWNER_CANON, OWNER);
-    expect(rows[0].approvedUserId).toBe(OWNER_CANON);
-  });
-
-  it('approveLogin из Telegram по карточке, которую никому не закрепляли, — отказ', async () => {
-    const { tickets, rows } = makeDeps();
-    const { userCode } = await startLogin(tickets);
-    await expect(
-      tickets.approveLogin(userCode, WEB_USER, STRANGER),
-    ).rejects.toThrow('Код не найден');
-    expect(rows[0].approvedUserId).toBeNull();
   });
 
   it('HTTP-подтверждение (проверенная сессия) работает, пока билет не закреплён', async () => {
@@ -88,7 +60,7 @@ describe('LoginTicketService — привязка карточки к тому, 
 
   it('deny: чужое «Это не я» не гасит билет, своё гасит', async () => {
     const { tickets, rows } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
     await tickets.forConfirm(userCode, OWNER);
     await expect(tickets.deny(userCode, STRANGER)).rejects.toThrow();
     expect(rows[0].deniedAt).toBeNull();
