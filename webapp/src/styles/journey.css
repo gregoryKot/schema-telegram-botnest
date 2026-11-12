@@ -26,7 +26,7 @@
 .jr-hero-title { grid-area: label; align-self: center; margin: 0; font: 400 28px/1.15 var(--serif); color: var(--text); text-wrap: balance; }
 .jr-hero--empty { grid-template-areas: 'label scene' 'text text' 'cta cta'; padding-bottom: 22px; }
 .ds-btn.jr-hero-cta { grid-area: cta; margin-top: 14px; width: 100%; }
-@media (min-width: 560px) { .ds-btn.jr-hero-cta { justify-self: start; width: auto; padding: 0 32px; } }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .ds-btn.jr-hero-cta { justify-self: start; width: auto; padding: 0 32px; } }
 
 /* ── Плитки счётчиков 2×3, чипы ─────────────────────────────────────────── */
 .jr-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
