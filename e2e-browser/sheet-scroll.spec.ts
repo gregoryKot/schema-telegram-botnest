@@ -105,6 +105,7 @@ for (const size of WIDE) {
   test(`${size.name}: «Справочник» терапевта прокручивается до последней группы`, async ({
     page,
     api,
+    isMobile,
   }) => {
     for (const [key, body] of THERAPIST) api.overrides.set(key, body);
     await page.addInitScript(() => {
@@ -132,8 +133,13 @@ for (const size of WIDE) {
     expect(scrollHeight).toBeGreaterThan(clientHeight);
     expect(['auto', 'scroll']).toContain(overflowY);
 
-    await page.mouse.move(size.width - 200, size.height / 2);
-    await page.mouse.wheel(0, scrollHeight);
+    // Колеса у мобильного WebKit нет (Playwright бросает) — там листаем сам контейнер.
+    if (isMobile) {
+      await scroller.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    } else {
+      await page.mouse.move(size.width - 200, size.height / 2);
+      await page.mouse.wheel(0, scrollHeight);
+    }
     await expect(last).toBeInViewport({ ratio: 1 });
   });
 }

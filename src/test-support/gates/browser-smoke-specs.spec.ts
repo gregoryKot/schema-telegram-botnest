@@ -117,11 +117,10 @@ describe('testMatch playwright.config.ts ↔ спеки e2e-browser', () => {
     join(process.cwd(), 'playwright.config.ts'),
     'utf8',
   );
-  const listed = [
-    ...(/testMatch:\s*\[([^\]]*)\]/.exec(config)?.[1] ?? '').matchAll(
-      /'([^']+)'/g,
-    ),
-  ].map((m) => m[1]);
+  // Список у каждого проекта свой: спек запускается, если стоит хотя бы в одном.
+  const listed = [...config.matchAll(/testMatch:\s*\[([^\]]*)\]/g)].flatMap(
+    (list) => [...list[1].matchAll(/'([^']+)'/g)].map((m) => m[1]),
+  );
 
   it('список testMatch нашёлся', () => {
     expect(listed.length).toBeGreaterThanOrEqual(6);
