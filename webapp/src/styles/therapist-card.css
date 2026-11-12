@@ -61,7 +61,8 @@
    выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
 
 /* Компактная шапка — только «Графические карты» на компьютере и планшете (useClientHead.ts, b34):
-   одна строка «← Все клиенты · аватар · имя · действия», без статуса и «Встречи» — высота уходит
+   одна строка «← Все клиенты · аватар · имя · плашки-состояния · действия», без статуса и «Встречи»
+   (плашка «офлайн» остаётся: без неё не видно, что клиент без приложения) — высота уходит
    холсту (на 1280×900 шапка занимала 230px из 900). Боковое поле то же, что у обычной шапки:
    вбок при смене вкладки ничего не прыгает. На узком окне «← Все клиенты» остаётся своей строкой. */
 .tk-head--compact { padding-top: 6px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 20px; align-items: center; }
@@ -69,8 +70,11 @@
 .tk-head--compact > .tk-head-row { gap: 12px; flex-wrap: nowrap; min-height: 44px; }
 .tk-head--compact > .ds-tabs, .tk-head--compact > .tk-error { grid-column: 1 / -1; }
 .tk-head--compact .tk-avatar { width: 32px; height: 32px; font-size: 13px; }
-.tk-head--compact .tk-ident { min-width: 0; }
-.tk-head--compact .tk-badges { display: none; }
+/* Отступ — у самой плашки, а не gap строки: пустая строка плашек не отнимает ширину у имени. */
+.tk-head--compact .tk-ident { min-width: 0; display: flex; align-items: center; }
+.tk-head--compact .tk-badges { margin-top: 0; flex: none; flex-wrap: nowrap; gap: 0; }
+.tk-head--compact .tk-badges > * { margin-left: 10px; }
+.tk-head--compact .tk-badges > .tk-meta, .tk-head--compact .tk-badges > .tc-meeting { display: none; }
 .tk-head--compact .tk-actions .ds-btn { min-height: 36px; height: 36px; }
 @media (max-width: 1099px) {
   .tk-head--compact > .ds-back, .tk-head--compact > .tk-head-row { grid-column: 1 / -1; }

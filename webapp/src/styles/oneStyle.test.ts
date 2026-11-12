@@ -64,12 +64,10 @@ const LINE_OUTLINES: Record<string, string> = {
   '.tq-bar': 'нижний край верхней полосы вопроса',
   '.ss-tabs': 'нижний край полосы вкладок справочника',
   '.mm2-bar': 'нижний край полосы выбора карт',
-  '.mm2-statusbar': 'нижний край полосы статуса над холстом карты',
   '.th-card': 'рамка самостоятельной карточки (три стороны + акцент слева)',
   // index.css — каркас кабинета (подключён к сверке 2026-11-08):
   '.topbar': 'нижний край верхней полосы кабинета',
   '.mobile-nav': 'верхний край нижней навигации телефона',
-  '.offline-banner': 'нижний край полосы «нет сети»',
 };
 const selectorsOf = (css: string, re: RegExp) => [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
   .filter((m) => re.test(m[2])).map((m) => m[1].trim());
@@ -89,6 +87,11 @@ describe('один токен разделителя', () => {
   it.each(dividerFiles)('%s: --line в border-top/bottom только у контуров из списка', (f) => {
     const bad = selectorsOf(dividerText(f), LINE_BORDER).filter((sel) => !(sel in LINE_OUTLINES));
     expect(bad).toEqual([]);
+  });
+  // Запись списка живёт, пока у селектора есть такая линия: устаревшая запись — готовое разрешение для чужого правила.
+  it('список контуров без устаревших записей: у каждого селектора линия --line есть в css', () => {
+    const used = new Set(dividerFiles.flatMap((f) => selectorsOf(dividerText(f), LINE_BORDER)));
+    expect(Object.keys(LINE_OUTLINES).filter((sel) => !used.has(sel))).toEqual([]);
   });
   it('гейт ловит разделитель на --line и пропускает контур', () => {
     expect(selectorsOf('.x-row + .x-row { border-top: 1px solid var(--line); }', LINE_BORDER)).toEqual(['.x-row + .x-row']);

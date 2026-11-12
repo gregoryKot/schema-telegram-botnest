@@ -277,10 +277,12 @@
 .mm2-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--text-sub); text-align: center; }
 /* Типы первой карты — плитки бумаги (.pp-square) со знаком типа: пять в ряд на широком окне, 3 + 2 по центру
    на узком (сетка из шести долей, плитка — две; четвёртая начинает второй ряд со сдвигом на долю). */
-.mm2-kinds { display: grid; grid-template-columns: repeat(5, minmax(0, 190px)); gap: 14px; margin-top: 8px; justify-content: center; width: 100%; box-sizing: border-box; padding: 0 24px; }
-.mm2-kind-card.pp-square { min-height: 208px; padding: 18px 14px 16px; color: var(--text); }
+/* Кегль названия — по самому длинному слову: «Концептуализация» в Literata 16 — 157px, а у плитки на 1280 с открытым
+   меню (колонка 1040) под текст 168px. На 18px название упиралось в край плитки и обрезалось. */
+.mm2-kinds { display: grid; grid-template-columns: repeat(5, minmax(0, 200px)); gap: 12px; margin-top: 8px; justify-content: center; width: 100%; box-sizing: border-box; padding: 0 16px; }
+.mm2-kind-card.pp-square { min-height: 208px; padding: 18px 12px 16px; color: var(--text); }
 .mm2-kind-card .mm2-kind-text { gap: 6px; }
-.mm2-kind-card .mm2-kind-name { font: 400 18px/1.15 var(--serif); }
+.mm2-kind-card .mm2-kind-name { font: 400 16px/1.2 var(--serif); overflow-wrap: anywhere; }
 .mm2-kind-card .mm2-kind-hint { font-size: 13px; line-height: 1.4; }
 .mm2-kind-card .pp-art { order: 2; width: 84px; height: 45px; }
 .mm2-kind-card:disabled { cursor: default; }
@@ -292,6 +294,13 @@
   .mm2-kind-card .mm2-kind-name { font-size: 15px; }
   .mm2-kind-card { grid-column: span 2; }
   .mm2-kind-card:nth-child(4) { grid-column: 2 / span 2; }
+}
+/* Уже 1024 (планшет с открытым меню — колонка 528) три плитки в ряд узки для «Концептуализации»: 2 + 2 + 1 по центру. */
+@media (max-width: 1023px) {
+  .mm2-kinds { grid-template-columns: repeat(4, minmax(0, 120px)); }
+  .mm2-kind-card.pp-square { min-height: 168px; }
+  .mm2-kind-card:nth-child(4) { grid-column: span 2; }
+  .mm2-kind-card:nth-child(5) { grid-column: 2 / span 2; }
 }
 .mm2-create-err { margin: 0; padding: 6px 16px; font-size: 12.5px; color: var(--err); flex-shrink: 0; }
 /* Статус холста (ModeMapCanvas): связь с концептуализацией (ConceptSyncLine, #963) и сохранение — тихая

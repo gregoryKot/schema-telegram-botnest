@@ -7,6 +7,7 @@ import {
   getModeById,
   getSchemaById,
 } from '../../../schemaTherapy/schemaTherapyData';
+import { paperEdge, paperFill } from '../../../modeMap/nodePaperTone';
 import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE } from '../../../theme/entityHue';
 import type { DiagramNode } from './diagramTypes';
 
@@ -22,11 +23,8 @@ export function nodeHue(node: DiagramNode): number | undefined {
     : undefined;
 }
 
-export const paperFill = (hue: number): string => `oklch(0.915 0.03 ${hue})`;
-
-/** Контур фигуры; `faint` — режим или схема без связей: бледнее. */
-export const paperEdge = (hue: number, faint = false): string =>
-  faint ? `oklch(0.82 0.045 ${hue})` : `oklch(0.7 0.075 ${hue})`;
+// Лицо и контур — бумага узла, общая с холстом карт (modeMap/nodePaperTone.ts).
+export { paperEdge, paperFill };
 
 /** Заливка и контур фигуры; без оттенка (заготовка, свой режим) — тихая нейтральная бумага. */
 export function shapePaint(hue: number | undefined, faint?: boolean) {

@@ -162,6 +162,18 @@ describe('therapist-card.css: шапка не прыгает между вкла
     expect(own).not.toMatch(/padding(-inline|-left|-right)?\s*:|margin/);
   });
 
+  // Компактная шапка прятала всю строку .tk-badges — вместе с плашкой «офлайн». Прячутся только
+  // статус активности и «Встреча»; плашки-состояния (и любые будущие) остаются в строке с именем.
+  it('компактная шапка: строка плашек видна и стоит в одну строку с именем; скрыты только статус и «Встреча»', () => {
+    expect(decls(css, '.tk-head--compact .tk-badges')).not.toMatch(/display:\s*none/);
+    expect(decls(css, '.tk-head--compact .tk-badges')).toContain('flex-wrap: nowrap');
+    expect(decls(css, '.tk-head--compact .tk-ident')).toMatch(/display:\s*flex/);
+    const hidden = [...css.matchAll(/([^{}]+)\{([^{}]*display:\s*none[^{}]*)\}/g)]
+      .flatMap((m) => m[1].split(',').map((x) => x.trim()))
+      .filter((sel) => sel.startsWith('.tk-head--compact'));
+    expect(hidden.sort()).toEqual(['.tk-head--compact .tk-badges > .tc-meeting', '.tk-head--compact .tk-badges > .tk-meta']);
+  });
+
   it('полоса карт и строка ошибки создания — поле шапки, только под ≥768', () => {
     const field = decls(css, '.tk-head').match(/padding:\s*28px\s+(calc\(.+?\))\s+0;/)?.[1];
     expect(field).toBe('calc(var(--tk-center) + var(--tk-gutter))');

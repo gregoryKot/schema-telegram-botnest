@@ -3,6 +3,10 @@ import { getSchemaById } from '../../schemaTherapyData';
 import { needColor } from '../../../../shared/src/needs/needColors';
 import { MODE_GROUP_HUE } from '../../lib/tone';
 import { TYPE_COLORS } from '../modeMapData';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { NODE_PAPER_LC } from '../../../../shared/src/modeMap/nodePaperTone';
+import { shapePaint } from '../../../../shared/src/therapy/conceptGraph/diagram/diagramPaper';
 import { TYPE_HUE, nodeHue, nodePaper } from './nodePaper';
 
 describe('nodeHue — оттенок бумаги фигуры', () => {
@@ -77,5 +81,22 @@ describe('nodePaper — класс и переменные корня фигур
 
   it('выделенная фигура — контур акцентом', () => {
     expect(nodePaper('critic', { label: 'К' }, true).ink.line).toBe('var(--accent)');
+  });
+});
+
+// Правило №4: узел холста карт и фигура схемы случая — одна бумага (shared/src/modeMap/nodePaperTone.ts).
+// До сведения контур расходился (0.72 0.07 на холсте, 0.7 0.075 на схеме случая).
+describe('бумага узла одна на холст карт и схему случая', () => {
+  it.each(Object.entries(MODE_GROUP_HUE))('группа %s: лицо и контур совпадают с фигурой схемы случая', (_g, hue) => {
+    const { ink } = nodePaper('custom', { label: 'Р' });
+    const canvas = { fill: ink.fill.replace(/[\d.]+\)$/, `${hue})`), stroke: ink.line.replace(/[\d.]+\)$/, `${hue})`) };
+    expect(shapePaint(hue)).toEqual(canvas);
+  });
+
+  it('«Заливка» держит тот же контур; подпись дорожки в css — тот же тон', () => {
+    expect(nodePaper('critic', { label: 'К', filled: true }).ink.line).toBe(`oklch(${NODE_PAPER_LC.line} 310)`);
+    const css = readFileSync(join(__dirname, '../../styles/modemap-paper.css'), 'utf8');
+    expect(css).toContain(`.mm2-lane-input {`);
+    expect(css.match(/\.mm2-lane-input \{[^}]*border-color: oklch\(([\d. ]+) var\(--h\)\)/)?.[1]).toBe(NODE_PAPER_LC.line);
   });
 });
