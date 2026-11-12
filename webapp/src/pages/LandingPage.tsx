@@ -3,10 +3,8 @@ import { api } from '../api';
 import { Btn } from '../components/landing-kit';
 import { DARK_BG, INK_ON_DARK, useReveal, useTheme } from '../components/landing-kit-hooks';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
-import {
-  TG_URL, PRACTICE_BOOKING_URL, menuBtnStyle, burgerLine,
-  TOPICS_A, TOPICS_B,
-} from './landing/constants';
+import { TG_URL, PRACTICE_BOOKING_URL, menuBtnStyle, burgerLine, TOPICS_A, TOPICS_B } from './landing/constants';
+import { glueSpaces } from '../../../shared/src/utils/typo';
 import { isPracticeHost } from '../utils/domainChrome';
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_STATUS } from '../legal/operator';
 import { SectionNav, MobileMenu } from './landing/nav';
@@ -293,7 +291,7 @@ export function LandingPage() {
           <h2 style={{ fontFamily: 'var(--serif)', fontSize: 'clamp(30px, 3.8vw, 46px)', fontWeight: 400, color: 'var(--text)', margin: '0 0 12px', letterSpacing: '-.01em' }}>
             Записаться<br /><span style={{ fontStyle: 'italic' }}>на первую встречу</span>
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>Напишите пару слов о себе и как с вами связаться – отвечу в течение дня, и мы договоримся о времени. Если удобнее выбрать время самим, расписание откроется ниже.</p>
+          <p style={{ fontSize: 16, color: 'var(--text-sub)', lineHeight: 1.7, margin: '0 0 40px' }}>{glueSpaces('Напишите пару слов о себе и как с вами связаться – отвечу в течение дня, и мы договоримся о времени. Если удобнее выбрать время самим, расписание откроется ниже.')}</p>
           <BookingEntry />
         </section>
       </section>

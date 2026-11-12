@@ -7,6 +7,7 @@ import {
 import { LoginTicketWait } from '../../../../shared/src/components/LoginTicketWait';
 import { reportClientError } from '../../api';
 import { isStandalone } from '../../../../shared/src/host/web';
+import { PaperAlert } from '../../components/paper/PaperAlert';
 import '../../styles/auth-login.css';
 
 // Вход через ВКонтакте. Кнопки Telegram здесь нет с 2026-11: запрос
@@ -47,14 +48,13 @@ export function LoginProviderButtons({
   }, [begin, standalone]);
 
   if (standalone && state.kind !== 'waiting' && state.kind !== 'starting') {
+    // Билет сорвался (отказ, истечение, старт не прошёл): на месте кнопки — лист сбоя с повтором,
+    // без эмодзи. Во вкладке билета нет — кнопка ведёт на VK напрямую.
     return (
-      <LoginTicketWait
-        state={state}
-        onRetry={() => {
-          reset();
-          void begin('vk');
-        }}
-      />
+      <LoginTicketWait state={state} onRetry={() => { reset(); void begin('vk'); }} renderFailure={(f, onRetry) => (
+        <PaperAlert title={f.text} sign={f.kind === 'denied' ? 'limits' : 'cup'} hue={f.kind === 'denied' ? 240 : 70}
+                    onRetry={onRetry} retryLabel="Попробовать снова" className="al-alert" />
+      )} />
     );
   }
 

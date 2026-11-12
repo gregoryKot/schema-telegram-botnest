@@ -580,7 +580,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   it('режим терапевта (therapist_mode=1) — в /cabinet', async () => {
     localStorage.setItem(THERAPIST_MODE_KEY, '1');
     await renderWithHomes();
-    fireEvent.click(screen.getByText('← Назад'));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     expect(await screen.findByText('дом кабинета')).toBeTruthy();
     expect(screen.queryByText('дом клиента')).toBeNull();
   });
@@ -588,7 +588,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   it.each([['0'], [null]])('режим клиента (therapist_mode=%s) — в /today', async (flag) => {
     if (flag !== null) localStorage.setItem(THERAPIST_MODE_KEY, flag);
     await renderWithHomes();
-    fireEvent.click(screen.getByText('← Назад'));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     expect(await screen.findByText('дом клиента')).toBeTruthy();
     expect(screen.queryByText('дом кабинета')).toBeNull();
   });
@@ -600,12 +600,32 @@ describe('AccountPage — шапка и заголовок (#906)', () => {
   it('«← Назад» — ds-back внутри ds-sheet-head; eyebrow «Аккаунт» над ds-h1', async () => {
     renderPage();
     await screen.findByText('Аккаунт');
-    const back = screen.getByRole('button', { name: '← Назад' });
+    const back = screen.getByRole('button', { name: 'Назад' });
     expect(back.className).toBe('ds-back');
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
     expect(screen.getByText('Аккаунт').className).toBe('ds-eyebrow');
     expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
     expect(document.querySelector('.aa-lead')!.className).toBe('ds-sub aa-lead'); // подзаголовок как в main, общего ds-lead нет
     expect(screen.getByText('Выйти со всех устройств').className).toBe('ds-link');
+  });
+});
+
+// b27: группа 2FA — силуэт только до первой загрузки. Включение 2FA перечитывает /api/auth/me;
+// силуэт на каждый refresh размонтировал бы секцию вместе с только что выданными резервными
+// кодами (стенд pages-account-2fa-codes — коды не появлялись).
+describe('AccountPage — включение 2FA', () => {
+  it('после включения резервные коды видны, хотя страница перечитала способы входа', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/api/auth/2fa/setup')) return Promise.resolve(jsonResponse(200, { qrDataUrl: 'data:,', otpauthUrl: 'otpauth://x' }));
+      if (url.includes('/api/auth/2fa/enable')) return Promise.resolve(jsonResponse(200, { recoveryCodes: ['aaaa-1111', 'bbbb-2222'] }));
+      return routeFetch(url, init);
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole('switch', { name: 'Двухфакторная защита' }));
+    fireEvent.change(await screen.findByLabelText('Код из приложения'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByText('Подтвердить'));
+    await screen.findByText('aaaa-1111');
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/auth/me')).length).toBe(2));
+    expect(screen.getByText('aaaa-1111')).toBeTruthy();
   });
 });

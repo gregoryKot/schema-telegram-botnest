@@ -1,30 +1,20 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import '../styles/auth-pay.css';
-import { Cup } from '../components/art/PaperArt';
-import { Leaf } from '../components/art/PaperArtSigns';
 import { CANCEL_SUPPORT_LINK } from '../components/booking/cancelPolicy';
+import { PaperOutcome } from '../components/paper/PaperOutcome';
+import { ThanksSheet } from '../components/paper/ThanksSheet';
 import { CancelControl } from './subscribe/CancelControl';
 import { reportSubscriptionLoadFailure } from './subscribe/useSubscriptionCancel';
 import { usePageShowReset } from '../hooks/usePageShowReset';
 import { SubscribeForm } from './subscribe/SubscribeForm';
+import { PayHero, PayLayout, PaySkeleton } from './subscribe/PayLayout';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
 import { dropUrlParam } from '../utils/dropUrlParam';
+import { BackLabel } from '../components/NavGlyphs';
 
 type Sub = { status: string; period: string; amount: number; nextChargeAt: string | null };
 
 const fmtDate = (iso: string) => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
-
-// Заголовок служебного состояния: eyebrow + ds-h1 + ds-sub слева, страница прижата к верху (#906).
-function Hero({ eyebrow = 'Подписка', title, lead, art }: { eyebrow?: string; title: string; lead: React.ReactNode; art?: React.ReactNode }) {
-  return (
-    <div className="ap-hero">
-      {art}<div className="ds-eyebrow">{eyebrow}</div>
-      <h1 className="ds-h1">{title}</h1>
-      <p className="ds-sub ap-lead">{lead}</p>
-    </div>
-  );
-}
 
 // Public subscription page (/subscribe). Handles the return from Robokassa
 // (?sub=ok|fail), the subscribe form, and management (?token=…).
@@ -49,7 +39,7 @@ export function SubscribePage() {
   const [consent, setConsent] = useState(false);
   // Сбой ≠ пусто (правило №14, экран-тупик): раньше `sub === null` на отказе
   // рисовал «Загружаем…» — навсегда, отказ не отличить от загрузки.
-  const [subFailed, setSubFailed] = useState(false);
+  const [subFailed, setSubFailed] = useState<'wait' | 'our_side' | null>(null);
 
   useEffect(() => {
     api.getSubscriptionOptions()
@@ -57,7 +47,7 @@ export function SubscribePage() {
       .catch(() => { setEnabled(false); setOpts([]); });
   }, []);
   useEffect(() => {
-    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch((err: unknown) => { reportSubscriptionLoadFailure(err); setSubFailed(true); });
+    if (token) api.getSubscriptionByToken(token).then((s) => { setSub(s); setCancelled(s.status === 'cancelled'); }).catch((err: unknown) => setSubFailed(reportSubscriptionLoadFailure(err)));
   }, [token]);
 
   const submit = async () => {
@@ -70,64 +60,35 @@ export function SubscribePage() {
     } catch { setStatus('error'); }
   };
 
-  let body: React.ReactNode;
-
+  const home = { label: <BackLabel>На главную</BackLabel>, href: '/' };
   if (token) {
-    // Management view.
-    body = cancelled ? (
-      <>
-        <Hero art={<Cup size="square" />} title="Подписка отменена" lead="Спасибо, что были с проектом. Оформить снова можно в любой момент." />
-        <a href="/subscribe" className="ds-btn ds-btn--lg">Оформить снова</a>
-      </>
-    ) : sub ? (
-      <>
-        <Hero art={<Leaf size="square" />} eyebrow="Управление" title="Подписка" lead={<>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status}</>} />
+    // Управление. Отменена — лист Cup; сбой — исход на весь экран (404 — ссылка устарела, «подожди»;
+    // остальное — сбой на нашей стороне). Безлично, без useTr (check-second-person.mjs).
+    // Отменена — не «спасибо за оформление»: лист Cup на соломе 70 (как «скоро»), без сцены благодарности (ревью b28).
+    if (cancelled) return <PaperOutcome outcome={{ hue: 70, sign: 'cup' }} eyebrow="Подписка" title="Подписка отменена" lead="Спасибо, что были с проектом. Оформить снова можно в любой момент." action={{ label: 'Оформить снова', href: '/subscribe' }} link={home} />;
+    if (subFailed) return <div className="ap-failed" role="alert"><PaperOutcome outcome={subFailed} eyebrow="Подписка" title="Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения." action={{ label: 'Обновить', onClick: () => window.location.reload() }} link={home} /></div>;
+    if (!sub) return <PaySkeleton shape="manage" />;
+    const state = sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status;
+    return (
+      <PayLayout hero={<PayHero short label="Управление" title="Подписка" lead={<>{sub.amount.toLocaleString('ru-RU')} ₽ / {periodLabel(sub.period)} · {state}</>} />}>
         {sub.nextChargeAt && <div className="ds-card ds-card--row ap-note">Следующее списание: <b>{fmtDate(sub.nextChargeAt)}</b></div>}
         <CancelControl token={token} onCancelled={() => setCancelled(true)} />
-      </>
-    ) : subFailed ? (
-      // Сбой ≠ пусто: страница публичная, без useTr — формулировка безличная
-      // (check-second-person.mjs не видит здесь ни местоимений, ни императивов).
-      <div role="alert" className="ap-hero">
-        <p className="ap-err">Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения.</p>
-        <button type="button" onClick={() => window.location.reload()} className="ds-btn ds-btn--lg">Обновить</button>
-      </div>
-    ) : (
-      <p className="ds-sub ap-lead">Загружаем…</p>
-    );
-  } else if (ret === 'ok') {
-    body = (
-      <>
-        {/* Письма со ссылкой управления нет, а «Подписка» в аккаунте ведёт на форму —
-            обещать ни то, ни другое нельзя (open/backend.md). Безлично, как CancelControl. */}
-        <Hero art={<Leaf size="square" />} title="Спасибо за поддержку!" lead={<>Подписка оформлена. Отменить её можно в любой момент — достаточно написать мне в <a href={CANCEL_SUPPORT_LINK} style={{ color: 'inherit', textDecoration: 'underline' }}>Telegram</a>.</>} />
-        <a href="/" className="ds-btn ds-btn--lg">На главную</a>
-      </>
-    );
-  } else if (enabled === false) {
-    // Hidden until Robokassa's recurring service is live.
-    body = (
-      <>
-        <Hero art={<Cup size="square" />} title="Подписка скоро" lead="Регулярная поддержка пока в разработке. А поддержать проект разово уже можно." />
-        <a href="/donate" className="ds-btn ds-btn--lg">Разовый донат</a>
-      </>
-    );
-  } else if (enabled === null) {
-    body = <p className="ds-sub ap-lead">Загружаем…</p>;
-  } else {
-    return (
-      <SubscribeForm
-        opts={opts} period={period} setPeriod={setPeriod} email={email} setEmail={setEmail}
-        website={website} setWebsite={setWebsite} consent={consent} setConsent={setConsent}
-        status={status} failed={ret === 'fail'} onSubmit={submit}
-      />
+      </PayLayout>
     );
   }
-
+  if (ret === 'ok') {
+    // Письма со ссылкой управления нет, а «Подписка» в аккаунте ведёт на форму — обещать ни то, ни другое
+    // нельзя (open/backend.md). Безлично, как CancelControl.
+    return <ThanksSheet eyebrow="Подписка" title="Спасибо за поддержку!" lead={<>Подписка оформлена. Отменить её можно в любой момент — достаточно написать мне в <a href={CANCEL_SUPPORT_LINK} className="ds-link ds-link--inline">Telegram</a>.</>} action={{ label: 'На главную', href: '/' }} />;
+  }
+  // Скрыта, пока регулярные платежи Robokassa не включены: исход «подожди» (Cup на соломе) и разовый донат.
+  if (enabled === false) return <PaperOutcome outcome="wait" eyebrow="Подписка" title="Подписка скоро" lead="Регулярная поддержка пока в разработке. А поддержать проект разово уже можно." action={{ label: 'Разовый донат', href: '/donate' }} link={home} />;
+  if (enabled === null) return <PaySkeleton shape="form" />;
   return (
-    <div className="light-lock ap-page ap-page--state">
-      <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
-      <div className="ds-page ap-main ap-main--state">{body}{(token || ret !== 'ok') && <a href="/" className="ap-home">← На главную</a>}</div>
-    </div>
+    <SubscribeForm
+      opts={opts} period={period} setPeriod={setPeriod} email={email} setEmail={setEmail}
+      website={website} setWebsite={setWebsite} consent={consent} setConsent={setConsent}
+      status={status} failed={ret === 'fail'} onSubmit={submit}
+    />
   );
 }

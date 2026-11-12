@@ -56,18 +56,29 @@ test.describe('браузерный smoke: публичные страницы �
     });
   }
 
-  test('несуществующий путь уводит на реальный экран, а не в пустоту', async ({
+  // b26: на продукте неизвестный путь — экран 404 с одной дорогой дальше (гостю — на главную),
+  // а не молчаливый уход на вход. На визитке `*` по-прежнему ведёт на её главную.
+  test('несуществующий путь — экран 404 с кнопкой на главную, а не пустота', async ({
     page,
   }) => {
     const unknown = '/nesuschestvuyuschiy-put-12345';
     const res = await page.goto(unknown);
     expect(res?.status()).toBeLessThan(400);
+    await expect(
+      page.getByRole('heading', { name: 'Такой страницы нет' }),
+    ).toBeVisible();
+    const home = page.getByRole('link', { name: 'На главную' });
+    await expect(home).toHaveAttribute('href', '/');
+    await home.click();
+    await page.waitForURL((url) => url.pathname === '/');
+  });
+
+  test('визитка: несуществующий путь уводит на её главную', async ({
+    page,
+  }) => {
+    await page.goto('/nesuschestvuyuschiy-put-12345?site=personal');
+    await page.waitForURL((url) => url.pathname === '/');
     await expect(page.locator('#root')).not.toBeEmpty();
-    // В App.tsx два набора маршрутов: на персональном домене '*' ведёт на
-    // '/', в приложении — на '/today'. Конкретный адрес зависит от хоста,
-    // поэтому проверяем сам факт: редирект случился и мы не остались на
-    // несуществующем пути с пустым экраном.
-    await page.waitForURL((url) => url.pathname !== unknown);
   });
 });
 

@@ -101,11 +101,16 @@ export function Pebbles({ size, filled }: ArtProps & { filled?: number }) {
 }
 
 /** Чашка с паром — ничего не записано, и это нормально. */
-export function Cup({ size = 'empty' }: ArtProps) {
+/** plate="surface" — чашка строкой на бумаге (PaperAlert на соломе): кремовая чашка с бледным контуром
+ *  на кремовой бумаге не видна (ревью b26) — белая чашка и контур --text-sub (≥3:1 к бумаге), как Check plate. */
+export function Cup({ size = 'empty', plate }: ArtProps & { plate?: 'sage' | 'surface' }) {
+  const solid = plate === 'surface';
+  const fill = solid ? 'var(--surface)' : 'var(--paper-sunk)';
+  const line = solid ? 'var(--text-sub)' : 'var(--line-strong)';
   return (
     <Svg size={size} viewBox="0 0 56 48">
-      <path d="M10 22 H38 V32 A10 10 0 0 1 28 42 H20 A10 10 0 0 1 10 32 Z" fill="var(--paper-sunk)" stroke="var(--line-strong)" strokeWidth="1.5" />
-      <path d="M38 26 H42 A5 5 0 0 1 42 36 H38" fill="none" stroke="var(--line-strong)" strokeWidth="1.5" />
+      <path d="M10 22 H38 V32 A10 10 0 0 1 28 42 H20 A10 10 0 0 1 10 32 Z" fill={fill} stroke={line} strokeWidth="1.5" />
+      <path d="M38 26 H42 A5 5 0 0 1 42 36 H38" fill="none" stroke={line} strokeWidth="1.5" />
       <path d="M19 16 C19 12 22 12 22 8 M27 16 C27 12 30 12 30 8" fill="none" stroke={PAPER.slate} strokeOpacity=".6" strokeWidth="1.5" strokeLinecap="round" />
     </Svg>
   );

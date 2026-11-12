@@ -19,10 +19,10 @@ export const SUBSCRIPTION_SECTION = 'subscription';
 
 /** Отказ загрузки подписки по ссылке: экран-тупик шлёт отчёт наверх (правило
  * №14, check-dead-end-report). 404 — ссылка устарела, ожидаемый исход, как у
- * отмены: без отчёта. Токена в отчёте нет. */
-export function reportSubscriptionLoadFailure(err: unknown): void {
-  if (err instanceof ApiError && err.status === 404) return;
-  reportClientError({ message: `subscription load failed: ${describeFailure(err)}`, section: SUBSCRIPTION_SECTION });
+ * отмены: без отчёта, исход «подожди» (wait); остальное — сбой на нашей стороне (our_side). Токена в отчёте нет. */
+export function reportSubscriptionLoadFailure(err: unknown): 'wait' | 'our_side' {
+  if (err instanceof ApiError && err.status === 404) return 'wait';
+  reportClientError({ message: `subscription load failed: ${describeFailure(err)}`, section: SUBSCRIPTION_SECTION }); return 'our_side';
 }
 
 export function useSubscriptionCancel(token: string | null, onCancelled: () => void) {

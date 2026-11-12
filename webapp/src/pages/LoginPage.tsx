@@ -5,7 +5,8 @@ import { getHost } from '../../../shared/src/host';
 import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
 import { reportClientError } from '../api';
 import { LoginProviderButtons } from './login/LoginProviderButtons';
-import { LoginHero } from './login/LoginHero';
+import { LoginShell } from './login/LoginShell';
+import { PaperAlert } from '../components/paper/PaperAlert';
 import { LoginEmailForm } from './login/LoginEmailForm';
 import { LoginFormerNote } from './login/LoginFormerNote';
 import { TelegramRetry } from './login/TelegramRetry';
@@ -30,6 +31,10 @@ export function LoginPage() {
         'Вход не получился: окно входа закрылось раньше времени. Можно попробовать ещё раз.'
       : null,
   );
+  // Сбой — у того, к чему относится, выше сгиба (b26: на 390 стоял ниже согласия): у кнопок или у почты.
+  const [errorAt, setErrorAt] = useState<'providers' | 'email'>('providers');
+  const setEmailError = (e: string | null) => { setErrorAt('email'); setError(e); };
+  const errorAlert = error ? <PaperAlert title={error} sign="cup" className="al-alert" /> : null;
   const isTelegramContext = !!getHost().sessionExchange();
   const deleted = useAccountDeletedNotice(); // сразу после удаления — не «вход устарел» (К2)
 
@@ -84,35 +89,29 @@ export function LoginPage() {
   }
 
   return (
-    <div className="light-lock al-root">
-      <LoginHero />
-      <main className="al-side">
-        <div className="al-form">
-          <div className="ds-eyebrow">Вход</div>
-          <h1 className="al-title">Всё по схеме</h1>
-          {/* Новичку и человеку с истёкшей сессией нужно сказать разное
-              (парная правка к LoginScreen мини-аппа, правило №3). */}
-          <p className="al-sub" role={deleted ? 'status' : undefined}>
-            {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
-              ? 'Вход устарел — данные на месте, нужно войти заново'
-              : 'Войдите, чтобы продолжить'}
-          </p>
+    <LoginShell>
+      <div className="ds-eyebrow">Вход</div>
+      <h1 className="al-title">Всё по схеме</h1>
+      {/* Новичку и человеку с истёкшей сессией нужно сказать разное
+          (парная правка к LoginScreen мини-аппа, правило №3). */}
+      <p className="al-sub" role={deleted ? 'status' : undefined}>
+        {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
+          ? 'Вход устарел — данные на месте, нужно войти заново'
+          : 'Войдите, чтобы продолжить'}
+      </p>
 
-          <LoginProviderButtons onSession={enter} />
+      {errorAt === 'providers' && errorAlert}
+      <LoginProviderButtons onSession={enter} />
 
-          <LoginEmailForm setError={setError} />
-          <LoginFormerNote />
+      <LoginEmailForm setError={setEmailError} error={errorAt === 'email' ? errorAlert : null} />
+      <LoginFormerNote />
 
-          {error && <p className="al-error">{error}</p>}
+      <LoginConsentNote />
 
-          <LoginConsentNote />
-
-          {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
-          <p className="al-note">
-            Проект бесплатный <a href="/donate">поддержать</a>
-          </p>
-        </div>
-      </main>
-    </div>
+      {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
+      <p className="al-note">
+        Проект бесплатный <a href="/donate">поддержать</a>
+      </p>
+    </LoginShell>
   );
 }

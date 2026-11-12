@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/authContext';
 import { OtpCells } from './login/OtpCells';
 import { RecoveryCodeField } from './login/RecoveryCodeField';
-import '../styles/auth-login.css';
 import { TwoFactorIntro } from './login/TwoFactorIntro';
 import { TwoFactorExpired } from './login/TwoFactorExpired';
 import { submitTwoFactorCode } from './login/twoFactorSubmit';
 import { useChallengeAddress } from './login/useChallengeAddress';
+import { AuthShell } from './login/AuthShell';
+import { SignHero } from '../components/paper/SignHero';
+import { FieldError } from '../components/paper/FieldError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -47,29 +49,29 @@ export function TwoFactorChallengePage() {
   const switchMode = () => { setRecovery(r => !r); setCode(''); setError(null); };
   useEffect(() => { inputRef.current?.focus(); }, [recovery]);
 
-  return (
-    <div className="light-lock al-2fa">
-      <div className="al-2fa-in">
-        {!expired && <TwoFactorIntro /> /* протух: «код из приложения» над «войти заново» сбивает */}
+  // Протух — исход на весь экран: «код из приложения» над «войти заново» сбивает.
+  if (expired) return <TwoFactorExpired />;
 
-        {expired ? <TwoFactorExpired /> : <form onSubmit={submit} className="al-form">
-          {recovery ? (
-            <RecoveryCodeField ref={inputRef} value={code} onChange={setCode} disabled={busy} />
-          ) : (
-            <OtpCells ref={inputRef} value={code} onChange={setCode} disabled={busy} label="Код из приложения" />
-          )}
-          {error && <p className="al-error">{error}</p>}
-          <button type="submit" disabled={busy || !code.trim()} className="al-submit">
-            {busy ? 'Проверяю…' : 'Подтвердить'}
+  return (
+    <AuthShell hue={240} className="al-2fa" art={<SignHero sign="limits" />}>
+      <TwoFactorIntro />
+      <form onSubmit={submit} className="al-form">
+        {recovery ? (
+          <RecoveryCodeField ref={inputRef} value={code} onChange={setCode} disabled={busy} />
+        ) : (
+          <OtpCells ref={inputRef} value={code} onChange={setCode} disabled={busy} label="Код из приложения" />
+        )}
+        {error && <FieldError>{error}</FieldError>}
+        <button type="submit" disabled={busy || !code.trim()} aria-busy={busy || undefined} className="al-submit">
+          {busy ? 'Проверяю…' : 'Подтвердить'}
+        </button>
+        <p className="al-foot al-foot--center">
+          {recovery ? 'Есть телефон? ' : 'Нет телефона? '}
+          <button type="button" className="al-linkbtn" onClick={switchMode}>
+            {recovery ? 'Ввести код из приложения' : 'Ввести резервный код'}
           </button>
-          <p className="al-foot" style={{ textAlign: 'center' }}>
-            {recovery ? 'Есть телефон? ' : 'Нет телефона? '}
-            <button type="button" className="al-linkbtn" onClick={switchMode}>
-              {recovery ? 'Ввести код из приложения' : 'Ввести резервный код'}
-            </button>
-          </p>
-        </form>}
-      </div>
-    </div>
+        </p>
+      </form>
+    </AuthShell>
   );
 }
