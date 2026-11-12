@@ -99,9 +99,10 @@
   .ap-page .ap-home:hover { color: var(--accent); }
   .pa-spread.ap-main { padding: 56px 32px 48px; }
   .ap-main .ds-btn--lg { width: 100%; }
-  .pp-paper.ap-sheet { padding: 30px 190px 34px 32px; }
-  .ap-sheet .pl2-final-corner--a { right: 30px; width: 116px; }
-  .ap-sheet .pl2-final-corner--b { right: 22px; top: 18px; width: 128px; }
+  /* Полоса 768–1023: углы рядом справа, не друг на друге — полоски левее листа с камешком. */
+  .pp-paper.ap-sheet { padding: 30px 216px 34px 32px; }
+  .ap-sheet .pl2-final-corner--a { right: 118px; width: 84px; }
+  .ap-sheet .pl2-final-corner--b { right: 18px; top: 16px; width: 96px; }
 }
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .pa-spread.ap-main { max-width: 1088px; padding-top: 72px; }
