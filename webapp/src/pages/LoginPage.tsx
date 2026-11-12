@@ -5,7 +5,8 @@ import { getHost } from '../../../shared/src/host';
 import { useAuthFailureReport } from '../../../shared/src/host/authFailureReport';
 import { reportClientError } from '../api';
 import { LoginProviderButtons } from './login/LoginProviderButtons';
-import { LoginHero } from './login/LoginHero';
+import { LoginShell } from './login/LoginShell';
+import { PaperAlert } from '../components/paper/PaperAlert';
 import { LoginEmailForm } from './login/LoginEmailForm';
 import { TelegramRetry } from './login/TelegramRetry';
 import { LoginConsentNote } from './login/LoginConsentNote';
@@ -31,6 +32,10 @@ export function LoginPage() {
         'Вход не получился: окно входа закрылось раньше времени. Можно попробовать ещё раз.'
       : null,
   );
+  // Сбой — у того, к чему относится, выше сгиба (b26: на 390 стоял ниже согласия): у кнопок или у почты.
+  const [errorAt, setErrorAt] = useState<'providers' | 'email'>('providers');
+  const setEmailError = (e: string | null) => { setErrorAt('email'); setError(e); };
+  const errorAlert = error ? <PaperAlert title={error} sign="cup" className="al-alert" /> : null;
   const isTelegramContext = !!getHost().sessionExchange();
   const deleted = useAccountDeletedNotice(); // сразу после удаления — не «вход устарел» (К2)
 
@@ -82,49 +87,44 @@ export function LoginPage() {
   }
 
   return (
-    <div className="light-lock al-root">
-      <LoginHero />
-      <main className="al-side">
-        <div className="al-form">
-          <div className="ds-eyebrow">Вход</div>
-          <h1 className="al-title">Всё по схеме</h1>
-          {/* Новичку и человеку с истёкшей сессией нужно сказать разное
-              (парная правка к LoginScreen мини-аппа, правило №3). */}
-          <p className="al-sub" role={deleted ? 'status' : undefined}>
-            {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
-              ? 'Вход устарел — данные на месте, нужно войти заново'
-              : 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram'}
-          </p>
+    <LoginShell>
+      <div className="ds-eyebrow">Вход</div>
+      <h1 className="al-title">Всё по схеме</h1>
+      {/* Новичку и человеку с истёкшей сессией нужно сказать разное
+          (парная правка к LoginScreen мини-аппа, правило №3). */}
+      <p className="al-sub" role={deleted ? 'status' : undefined}>
+        {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
+          ? 'Вход устарел — данные на месте, нужно войти заново'
+          : 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram'}
+      </p>
 
-          <LoginProviderButtons
-            onSession={(token, expiresIn) => {
-              setAccessToken(token, expiresIn);
-              navigate(afterLogin(), { replace: true });
-            }}
-          />
+      {errorAt === 'providers' && errorAlert}
+      <LoginProviderButtons
+        onSession={(token, expiresIn) => {
+          setAccessToken(token, expiresIn);
+          navigate(afterLogin(), { replace: true });
+        }}
+      />
 
-          {/* Прежний путь через oauth.telegram.org остался вторым способом:
-              не требует установленного Telegram, но при первом визите просит
-              телефон и код. */}
-          <button
-            className="al-linkbtn"
-            onClick={() => { window.location.href = `${API_BASE}/api/auth/telegram/redirect`; }}
-          >
-            Войти через Telegram другим способом
-          </button>
+      {/* Прежний путь через oauth.telegram.org остался вторым способом:
+          не требует установленного Telegram, но при первом визите просит
+          телефон и код. */}
+      <button
+        className="al-linkbtn"
+        onClick={() => { window.location.href = `${API_BASE}/api/auth/telegram/redirect`; }}
+      >
+        Войти через Telegram другим способом
+      </button>
 
-          <LoginEmailForm setError={setError} />
+      <LoginEmailForm setError={setEmailError} />
+      {errorAt === 'email' && errorAlert}
 
-          {error && <p className="al-error">{error}</p>}
+      <LoginConsentNote />
 
-          <LoginConsentNote />
-
-          {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
-          <p className="al-note">
-            Проект бесплатный <a href="/donate">поддержать</a>
-          </p>
-        </div>
-      </main>
-    </div>
+      {/* Проект бесплатный — ненавязчивая точка поддержки на первом экране */}
+      <p className="al-note">
+        Проект бесплатный <a href="/donate">поддержать</a>
+      </p>
+    </LoginShell>
   );
 }

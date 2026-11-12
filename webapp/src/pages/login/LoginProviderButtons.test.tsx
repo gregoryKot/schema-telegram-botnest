@@ -131,4 +131,19 @@ describe('исход', () => {
     );
     vi.useRealTimers();
   });
+
+  // Аудит b26: при сорванном билете пропадали Google и ВКонтакте, а сбой стоял
+  // часами-эмодзи посреди формы. Теперь — лист сбоя у кнопок, другие способы видны.
+  it('билет не выписался — сбой листом с повтором, Google и ВКонтакте на месте', async () => {
+    startMock.mockReset().mockRejectedValue(new Error('500'));
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не\sполучилось начать вход/);
+    expect(alert.textContent).not.toMatch(/[⌛🛑]/u);
+    expect(screen.getByRole('link', { name: /Войти через Google/ }).getAttribute('href')).toBe('/api/auth/google');
+    expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ }).getAttribute('href')).toBe('/api/auth/vk');
+    startMock.mockResolvedValue({ deviceCode: 'd'.repeat(64), userCode: 'K7M2QX94', expiresIn: 300, interval: 3 });
+    screen.getByRole('button', { name: 'Попробовать снова' }).click();
+    await waitFor(() => expect(screen.getByRole('link', { name: /Войти через Telegram/ })).toBeTruthy());
+  });
 });
