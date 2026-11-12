@@ -3,13 +3,12 @@ import type {
   ConceptSchemaLink,
   ConceptSnapshot,
 } from '../apiTypes';
+import type { ConceptNeedLink } from './conceptGraph/needLinks';
 import type { UserId } from '../userId';
 
 /**
- * Концептуализация клиента без карты режимов (mode-map): общая часть сайта и
- * мини-аппа. Мини-апп берёт её как есть, сайт расширяет узлами и рёбрами карты
- * своим ClientConceptualization (webapp/src/api.types.ts) — поля не пишутся
- * дважды, иначе новое поле (как modeLinks) доезжает копипастой.
+ * Концептуализация клиента без карты режимов: сайт расширяет её узлами и рёбрами
+ * карты (webapp/src/api.types.ts) — поля не пишутся дважды.
  */
 export interface ClientConceptualizationBase {
   id: number;
@@ -28,6 +27,7 @@ export interface ClientConceptualizationBase {
   modeLinks: ConceptModeLink[];
   /** Тексты схем графической концептуализации (legacy-строки — []). */
   schemaLinks: ConceptSchemaLink[];
+  needLinks?: ConceptNeedLink[]; // колесо потребностей (needLinks.ts); нет у старого кэша
   history: ConceptSnapshot[];
   /** Когда терапевт показал клиенту схему случая; null — не показана (нет у старого кэша). */
   sharedWithClientAt?: string | null;

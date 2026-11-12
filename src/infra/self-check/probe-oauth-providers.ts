@@ -1,16 +1,14 @@
-// Вход через Google и VK глазами площадки (инцидент 2026-10-03). Обе поломки
-// жили на стороне, которую наш код не видит: в Google Console адрес возврата
-// стоял с точкой на конце (~17 дней без входа), а VK молча вырезал точки из
-// state (вход через VK не работал с аудита C1). oauthRedirects сверяет
-// только наш env с каноническим хостом — что ответит площадка, она не знает.
+// Вход через VK глазами площадки (инцидент 2026-10-03). Поломка жила на
+// стороне, которую наш код не видит: VK молча вырезал точки из state (вход
+// через VK не работал с аудита C1). oauthRedirects сверяет только наш env с
+// каноническим хостом — что ответит площадка, она не знает. (Проба входа через
+// Google жила здесь же до 2026-11: вход через Google убран.)
 //
 // Проба строит ссылку входа ТЕМ ЖЕ кодом провайдера, что и прод, и смотрит
 // первый ответ площадки, не переходя по редиректу (запрос анонимный, входа
-// не происходит). Наружу в /health не идёт: доступность внешних хостов с
-// Amvera бывает нестабильной (см. google.provider.ts) — сетевой сбой красил
-// бы смок прода. Владельцу — DM и /stats, как любая проба.
+// не происходит). Наружу в /health не идёт: сетевой сбой до внешнего хоста
+// красил бы смок прода. Владельцу — DM и /stats, как любая проба.
 import type { ConfigService } from '@nestjs/config';
-import { buildGoogleAuthUrl } from '../../auth/providers/google-auth-url';
 import { VkProvider } from '../../auth/providers/vk.provider';
 import { Probe, ProbeResult } from './types';
 
@@ -43,37 +41,6 @@ async function firstHop(url: string): Promise<FirstHop> {
 }
 const isRedirect = (status: number) => status >= 300 && status < 400;
 
-/** Имя ошибки из authError Google: protobuf, поле 1 — строка. */
-export function googleAuthErrorName(location: string): string | null {
-  const raw = new URL(location).searchParams.get('authError');
-  if (!raw) return null;
-  const buf = Buffer.from(raw, 'base64');
-  if (buf[0] !== 0x0a) return null;
-  return buf.subarray(2, 2 + buf[1]).toString('utf8');
-}
-
-export function judgeGoogle(hop: FirstHop, redirectUri: string): ProbeResult {
-  if (!isRedirect(hop.status) || !hop.location) {
-    return {
-      ok: false,
-      detail: `Google ответил HTTP ${hop.status} вместо перехода к выбору аккаунта`,
-    };
-  }
-  if (!hop.location.includes('/signin/oauth/error')) {
-    return { ok: true, detail: 'Google принимает запрос входа' };
-  }
-  const error = googleAuthErrorName(hop.location) ?? 'причина не распознана';
-  if (error === 'redirect_uri_mismatch') {
-    return {
-      ok: false,
-      detail:
-        `Google не принимает адрес возврата ${redirectUri}: он посимвольно ` +
-        'не совпадает с Authorised redirect URIs клиента в Google Cloud Console',
-    };
-  }
-  return { ok: false, detail: `Google отклоняет вход: ${error}` };
-}
-
 export function judgeVk(hop: FirstHop, sentState: string): ProbeResult {
   if (!isRedirect(hop.status) || !hop.location) {
     return {
@@ -102,26 +69,6 @@ const failed = (e: unknown, who: string): ProbeResult => ({
   ok: false,
   detail: `${who} не ответил: ${(e as Error)?.message?.slice(0, 200) ?? 'ошибка'}`,
 });
-
-export function googleOAuthProbe(env: Env = process.env): Probe {
-  return {
-    id: 'googleOAuth',
-    title: 'Вход через Google',
-    reportInHealth: false,
-    retryOnce: true, // живой authorize Google (Probe.retryOnce)
-    async run() {
-      const clientId = env.GOOGLE_CLIENT_ID?.trim();
-      const redirectUri = env.GOOGLE_REDIRECT_URI?.trim();
-      if (!clientId || !redirectUri) return { ok: true, detail: 'выключено' };
-      try {
-        const url = buildGoogleAuthUrl(clientId, redirectUri, 'self-check');
-        return judgeGoogle(await firstHop(url), redirectUri);
-      } catch (e) {
-        return failed(e, 'Google');
-      }
-    },
-  };
-}
 
 export function vkOAuthProbe(env: Env = process.env): Probe {
   return {

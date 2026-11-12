@@ -22,12 +22,9 @@ export const ANONYMOUS_BY_DESIGN: Record<string, string> = {
   'auth/auth-2fa.controller.ts:totpChallenge':
     'второй шаг входа: подписанный challengeToken + код TOTP, ' +
     'CSRF-заголовок, троттлинг по IP; сессии до этого шага ещё нет',
-  'auth/auth-oauth.controller.ts:googleCallback':
-    'возврат с Google: подписанный state + кука oauth_state (double-submit), ' +
-    'код обменивается на сервере; сессии до колбэка нет',
   'auth/auth-oauth.controller.ts:vkCallback':
-    'возврат с VK: тот же state и кука, что у Google, плюс PKCE; ' +
-    'сессии до колбэка нет',
+    'возврат с VK: подписанный state + кука oauth_state (double-submit) и ' +
+    'PKCE, код обменивается на сервере; сессии до колбэка нет',
   'auth/auth-ticket.controller.ts:poll':
     'контейнер забирает сессию по длинному device-коду (RFC 8628): код и ' +
     'есть доказательство, CSRF-заголовок, троттлинг по IP',

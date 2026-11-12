@@ -113,19 +113,18 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     expect(b.meetingUrl).toBe('https://existing'); // не перезаписан
   });
 
-  it('пушит событие в CalDAV с корректным UID/summary/description/location', async () => {
+  it('пушит в CalDAV обезличенное событие: только UID, время и тип записи', async () => {
     const { service, calDav } = makeService();
     const b = booking({ meetingUrl: 'https://meet.jit.si/x' });
     await service.onConfirmed(b);
-    expect(calDav.pushEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        uid: 'booking-42@schemehappens.ru',
-        startsAt: b.startsAt,
-        durationMin: 50,
-        summary: expect.stringContaining('Мария'),
-        location: 'https://meet.jit.si/x',
-      }),
-    );
+    // Точное равенство, без objectContaining: лишнее поле (имя, контакт, текст
+    // обращения, ссылка) — красное. iCloud — зарубежная база (152-ФЗ).
+    expect(calDav.pushEvent).toHaveBeenCalledWith({
+      uid: 'booking-42@schemehappens.ru',
+      startsAt: b.startsAt,
+      durationMin: 50,
+      summary: 'Сессия (50 мин)',
+    });
   });
 
   it('успешный push сохраняет calDavUid в БД', async () => {

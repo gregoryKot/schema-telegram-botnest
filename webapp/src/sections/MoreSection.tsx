@@ -3,6 +3,7 @@ import type { Section } from '../components/appShell/navigation';
 import { JourneySheet } from '../components/JourneySheet';
 import { WhySheet } from '../components/WhySheet';
 import { HomeScreenOfferCard } from '../components/HomeScreenOfferCard';
+import { SiteAccessCard } from '../components/SiteAccessCard';
 import { TherapyNudgeCard } from '../components/therapy/TherapyNudgeCard';
 import { trackHomeTile } from './today/trackHomeTile';
 import { useTodayDiaries } from './today/useTodayDiaries';
@@ -30,9 +31,8 @@ interface Props {
 }
 
 // «Ещё»: всё, что не входит в три действия главной (docs/design/CLIENT_SIMPLE_2026-10.md).
-// Владелец 2026-11-05: на главной только три кнопки — сюда переехали задания (строка
-// «Задания» → TasksHub), сигнальная карточка моста к терапевту, предложение поставить
-// значок на экран и строка «самопомощь, не замена терапии». Кризисный вход — внизу:
+// Владелец 2026-11-05: на главной три кнопки — здесь задания (TasksHub), мост к терапевту, приглашение
+// добавить вход для сайта (в Telegram), значок на экран и «самопомощь, не замена терапии». Кризисный вход — внизу:
 // сразу лист с телефонами доверия (правило №7: не глубже одного нажатия; аудит 2026-11 —
 // раньше вёл в «Практики», где контакты прятались за второй такой же строкой).
 export function MoreSection(p: Props) {
@@ -60,8 +60,8 @@ export function MoreSection(p: Props) {
         <h1 className="ds-h1">Всё остальное</h1>
       </header>
 
+      <SiteAccessCard />
       {bridge && <TherapyNudgeCard refreshKey={p.refreshKey} modeEntries={modeEntries} />}
-
       <MoreRows rows={rows} />
 
       <button type="button" className="ds-card ds-card--row ds-card--nav ds-card--crisis ds-card--hover" onClick={() => setCrisis(true)}>

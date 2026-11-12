@@ -42,7 +42,7 @@ describe('POST ticket/handoff', () => {
     );
   });
 
-  it('с заголовком — userId из сессии, hostId по умолчанию telegram', async () => {
+  it('с заголовком — userId из сессии, hostId по умолчанию max', async () => {
     const { ctl, tickets } = makeCtl();
     const res = await ctl.handoff(
       {},
@@ -51,7 +51,7 @@ describe('POST ticket/handoff', () => {
     expect(res).toEqual({ deviceCode: 'd'.repeat(64), expiresIn: 120 });
     expect(tickets.handoff).toHaveBeenCalledWith({
       userId: 555n,
-      hostId: 'telegram',
+      hostId: 'max',
       deviceLabel: expect.any(String),
     });
   });

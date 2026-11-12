@@ -1,4 +1,4 @@
-// Рубильник Google/VK: какой env выключает провайдера и что знает экран ошибки.
+// Рубильник VK: какой env выключает провайдера и что знает экран ошибки.
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
@@ -10,9 +10,6 @@ import {
 import { CROSS_CHECKS } from '../infra/env-check';
 
 const FULL: Record<string, string> = {
-  GOOGLE_CLIENT_ID: 'gid',
-  GOOGLE_CLIENT_SECRET: 'gsecret',
-  GOOGLE_REDIRECT_URI: 'https://schemehappens.ru/api/auth/google/callback',
   VK_APP_ID: 'vkid',
   VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
   WEBAPP_URL: 'https://schemehappens.ru/',
@@ -28,7 +25,6 @@ const reader = (env: Record<string, string | undefined>): EnvReader => ({
 
 describe('disabledProviderRedirect', () => {
   it('полная конфигурация — провайдер включён (null)', () => {
-    expect(disabledProviderRedirect('google', reader(FULL))).toBeNull();
     expect(disabledProviderRedirect('vk', reader(FULL))).toBeNull();
   });
 

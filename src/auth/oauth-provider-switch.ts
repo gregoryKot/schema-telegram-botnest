@@ -8,7 +8,6 @@
 // Состав — те же переменные, что требует сверка env (`requiresToo` в
 // `src/infra/env-check.ts`): без любой из них вход не доходит до конца.
 export const OAUTH_PROVIDER_ENV: Readonly<Record<string, readonly string[]>> = {
-  google: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REDIRECT_URI'],
   vk: ['VK_APP_ID', 'VK_REDIRECT_URI'],
 };
 

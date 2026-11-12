@@ -1,6 +1,5 @@
 // base64url → байты — одна реализация на сайт (правило №3): ключ VAPID для
-// подписки на пуши (webapp/src/push/), JSON входа через Telegram-виджет
-// (webapp/src/pages/telegramAuthResult.ts), `sub` из JWT (auth/dataOwnerGuard.ts).
+// подписки на пуши (webapp/src/push/), `sub` из JWT (auth/dataOwnerGuard.ts).
 //
 // Паддинг `=` не нужен: atob по спецификации (forgiving-base64) принимает
 // строку без него. Битая строка — исключение DOMException, его ловит вызывающий.

@@ -4,7 +4,7 @@
 // Доказательством служит длинный секрет, который никогда не покидает этот
 // контейнер (RFC 8628), поэтому `credentials: 'include'` тут обязателен —
 // именно СЮДА сервер положит refresh-куку, когда вход подтвердят.
-export type LoginProvider = 'telegram' | 'google' | 'vk' | 'email';
+export type LoginProvider = 'google' | 'vk' | 'email';
 
 export interface StartedTicket {
   deviceCode: string;

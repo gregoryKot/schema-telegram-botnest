@@ -68,9 +68,9 @@ describe('checkEnv', () => {
   });
 
   it('необязательная переменная с неверным форматом тоже попадает в invalid', () => {
-    const result = checkEnv({ ...ALL_VALID, GOOGLE_REDIRECT_URI: 'not a url' });
+    const result = checkEnv({ ...ALL_VALID, VK_REDIRECT_URI: 'not a url' });
     expect(result.invalid).toContainEqual({
-      name: 'GOOGLE_REDIRECT_URI',
+      name: 'VK_REDIRECT_URI',
       problem: 'не похоже на URL (не парсится)',
     });
   });
@@ -91,15 +91,6 @@ describe('checkEnv', () => {
         EMAIL_FROM: 'Bot <no-reply@b.ru>',
       });
       expect(result.crossCheckIssues).toEqual([]);
-    });
-
-    it('GOOGLE_CLIENT_ID без SECRET/REDIRECT_URI — одна проблема с обоими именами', () => {
-      const result = checkEnv({ ...ALL_VALID, GOOGLE_CLIENT_ID: 'gid' });
-      const issue = result.crossCheckIssues.find(
-        (i) => i.id === 'googleClientRequiresSecretAndRedirect',
-      );
-      expect(issue?.problem).toContain('GOOGLE_CLIENT_SECRET');
-      expect(issue?.problem).toContain('GOOGLE_REDIRECT_URI');
     });
 
     it('VK_APP_ID без VK_REDIRECT_URI — проблема', () => {
@@ -228,18 +219,16 @@ describe('checkEnv', () => {
       );
     });
 
-    it('GOOGLE_REDIRECT_URI ведёт на редиректящийся хост — сверка делегирована oauth-redirect-config.ts', () => {
+    it('VK_REDIRECT_URI ведёт на редиректящийся хост — сверка делегирована oauth-redirect-config.ts', () => {
       const result = checkEnv({
         ...ALL_VALID,
-        GOOGLE_CLIENT_ID: 'gid',
-        GOOGLE_CLIENT_SECRET: 'gsecret',
-        GOOGLE_REDIRECT_URI:
-          'https://www.schemehappens.ru/api/auth/google/callback',
+        VK_APP_ID: 'vk1',
+        VK_REDIRECT_URI: 'https://www.schemehappens.ru/api/auth/vk/callback',
       });
       const issue = result.crossCheckIssues.find(
         (i) => i.id === 'oauthRedirectCanonicalHost',
       );
-      expect(issue?.problem).toContain('GOOGLE_REDIRECT_URI');
+      expect(issue?.problem).toContain('VK_REDIRECT_URI');
       expect(issue?.problem).toContain('www.schemehappens.ru');
     });
 

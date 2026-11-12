@@ -1,7 +1,6 @@
 // Реестр продуктовых событий (правило №8 CLAUDE.md). Источник правды для
 // бэка: DTO валидирует name/kind по этим allow-list'ам, сервис пишет только
-// известные события. Фронтовые вызовы api.trackEvent должны слать те же имена
-// (парный список в схожем виде на фронтах — при добавлении события синхронь).
+// известные события; фронтовые api.trackEvent шлют те же имена.
 //
 // meta — маленький СТРУКТУРНЫЙ non-PII объект. НИКОГДА не класть свободный
 // текст пользователя (он не шифруется, см. комментарий модели AnalyticsEvent).
@@ -107,6 +106,7 @@ export const ANALYTICS_EVENTS = [
   'stop_start',
   'onboarding_step',
   'home_screen_offer',
+  'login_method_offer', // карточка «добавь почту или VK ID» (login-method-offer.constants.ts)
   'journey_open',
   'ysq_help_open',
   'quiz_started',

@@ -1,15 +1,3 @@
-// Аудит 2026-10 («Долг с механизмом»): ручки с кодом человека, TOTP и заявками
-// считали попытки в памяти процесса — деплой обнулял окно, второй инстанс вёл
-// свой счётчик. Тест идёт по настоящим контроллерам, а не по классу-двойнику:
-// метка и лимиты читаются с реальных хендлеров тем же Reflector, что и в guard.
-// AuthProviderRegistry (DI-тип конструктора контроллера) тянет GoogleProvider, а
-// тот — чистый ESM-пакет 'jose', который ts-jest не парсит. Провайдер тут не
-// нужен (читаются только метаданные декораторов), поэтому подмена — как в
-// auth-account.controller.spec.ts.
-jest.mock('../auth/providers/google.provider', () => ({
-  GoogleProvider: class {},
-}));
-
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERSISTENT_THROTTLE_KEY } from './persistent-throttle.decorator';
@@ -18,6 +6,7 @@ import { PublicEventsController } from './public-events.controller';
 import { Auth2faController } from '../auth/auth-2fa.controller';
 import { AuthAccountController } from '../auth/auth-account.controller';
 import { AuthLinkController } from '../auth/auth-link.controller';
+import { AuthEmailCodeController } from '../auth/auth-email-code.controller';
 import { AuthLoginConfirmController } from '../auth/auth-login-confirm.controller';
 import { AuthTicketController } from '../auth/auth-ticket.controller';
 import { TherapyConnectionController } from '../therapy/therapy-connection.controller';
@@ -138,9 +127,9 @@ const DB_ROUTES: Route[] = [
     20,
   ],
   [
-    'POST /api/auth/link/:provider',
-    AuthLinkController,
-    AuthLinkController.prototype.linkProvider,
+    'POST /api/auth/email/link-code',
+    AuthEmailCodeController,
+    AuthEmailCodeController.prototype.confirm,
     5,
     20,
   ],

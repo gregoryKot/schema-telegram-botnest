@@ -11,7 +11,7 @@ const isWebvisorRecordRoute = (p: string) => WEBVISOR_PATHS.test(p);
 // Маршруты, которым счётчик НЕЛЬЗЯ: вход, аккаунт, кабинет, приложение, админка.
 // Редиректы (Navigate) и '*' сюда не входят — страницы у них нет.
 const PRIVATE = [
-  '/admin', '/login', '/auth/callback', '/auth/confirm', '/auth/telegram', '/auth/2fa',
+  '/admin', '/login', '/auth/callback', '/auth/confirm', '/auth/2fa',
   '/auth/error', '/link', '/account', '/account/merge',
   '/today', '/diary', '/more', '/schemas', '/profile', '/practice', '/cabinet', '/cabinet/:clientId', '/cabinet/:clientId/:tab',
 ];
