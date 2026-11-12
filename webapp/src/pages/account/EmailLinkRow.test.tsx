@@ -235,6 +235,10 @@ describe('EmailLinkRow — код из письма', () => {
     fireEvent.change(input, { target: { value: 'ZZZZZZZZ' } });
     submit();
     await screen.findByText('Код не подошёл или истёк');
+    // Ошибка — у поля кода (b27), а не баннером страницы.
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toMatch(/^Код не\sподошёл или истёк$/);
+    expect(screen.getByLabelText('Код из письма').closest('form')!.contains(alert)).toBe(true);
     expect(onLinked).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Код из письма')).toBeTruthy();
   });

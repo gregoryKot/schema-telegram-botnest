@@ -10,7 +10,6 @@ import { humanizeThrown, readHumanError } from '../../../../shared/src/api/human
 import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
 import { sessionPost } from '../../components/stepUp/sessionRequest';
 import { EmailLinkCodeForm } from './EmailLinkCodeForm';
-import { FieldError } from '../../components/paper/FieldError';
 
 export function EmailLinkRow({
   accessToken,
@@ -85,8 +84,7 @@ export function EmailLinkRow({
           <div className="aa-email-sent">
             Если адрес свободен, письмо придёт в течение минуты на <b>{value}</b>.{' '}
             {tr('В письме — код и ссылка. Введи код здесь или перейди по ссылке в этом же браузере.', 'В письме — код и ссылка. Введите код здесь или перейдите по ссылке в этом же браузере.')}
-            <EmailLinkCodeForm accessToken={accessToken} onLinked={onLinked} onError={setCodeError} />
-            {codeError && <FieldError className="aa-email-code-err">{codeError}</FieldError>}
+            <EmailLinkCodeForm accessToken={accessToken} onLinked={onLinked} onError={setCodeError} error={codeError} />
             <button className="aa-email-again" onClick={() => { setSent(false); setValue(''); setCodeError(null); }}>
               Ввести другой email
             </button>

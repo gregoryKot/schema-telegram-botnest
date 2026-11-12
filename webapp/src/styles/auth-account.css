@@ -190,4 +190,4 @@ details[open] > .aa-summary .aa-summary-chev { transform: rotate(180deg); }
   .am-hero { position: sticky; top: 40px; width: 100%; max-width: 400px; }
 }
 .aa-email-code { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 10px; }
-.aa-email-code-err { margin-top: 8px; }
+.aa-email-code-err { flex-basis: 100%; } /* под полем кода, кнопка — следующей строкой */
