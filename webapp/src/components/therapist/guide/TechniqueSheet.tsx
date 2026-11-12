@@ -1,10 +1,10 @@
 import type { MutableRefObject } from 'react';
 import type { TechniqueGuide } from '../../../../../shared/src/schemaTherapy/guide';
-import { GuideSignArt } from '../../art/GuideSigns';
-import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
 import type { SheetBack } from '../ConceptFullscreenSheet';
 import { GuideSection } from './GuideSection';
-import { GuidePage, GuidePoints, GuideVoice } from './GuideSheet';
+import { techniqueGuideLook } from './guideLook';
+import { GuidePoints, GuideVoice } from './GuidePoints';
+import { GuidePage } from './GuideSheet';
 import { TechniqueMarkRow, type TechniqueMarkProps } from './TechniqueMarkRow';
 
 /**
@@ -23,7 +23,7 @@ export function TechniqueSheet({ technique: t, mark, onClose, backRef }: {
   return (
     <GuidePage
       label="Техника" title={t.name} lede={t.summary} onClose={onClose} backRef={backRef}
-      art={<GuideSignArt sign={TECHNIQUE_SIGN[t.id]} size="hero" />}
+      look={techniqueGuideLook(t.id)}
       more={t.more} sources={t.sources}
       moreParts={[{ title: 'Когда не делать', text: t.cautions }, { title: 'Доказательность', text: t.evidence }]}
     >

@@ -86,6 +86,7 @@ describe('ClientConceptTab: дописанное холстом (#963)', () => {
 
   it('неотправленная правка схем не теряется и уходит вместе с режимом с холста', async () => {
     await openTab();
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить: Актуальные схемы' })); // пустой выбор свёрнут (b33)
     fireEvent.click(screen.getByText('Эмоциональная депривация')); // правка ждёт 700 мс
     act(() => announceConceptAppended({ clientId: 7, concept: APPENDED as never }));
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });

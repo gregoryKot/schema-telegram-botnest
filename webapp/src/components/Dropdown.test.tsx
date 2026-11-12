@@ -89,3 +89,27 @@ describe('Dropdown', () => {
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Третий' }));
   });
 });
+
+// Меню тулбара холста лежало ПОД плашкой статуса (ревью b34): якорь внутри .react-flow,
+// у которого свой контекст наложения. С portal меню и подложка — прямые дети body.
+describe('Dropdown: portal', () => {
+  const renderIn = (portal: boolean) => {
+    const ref = createRef<HTMLDivElement>();
+    return render(
+      <div data-testid="ctx"><div ref={ref}><button type="button">Якорь</button></div>
+        <Dropdown onClose={vi.fn()} anchorRef={ref} portal={portal}><button type="button">Пункт</button></Dropdown>
+      </div>,
+    );
+  };
+  it('portal: меню и подложка — дети body, вне контекста якоря', () => {
+    renderIn(true);
+    const menu = screen.getByText('Пункт').closest('.ds-menu')!;
+    expect(menu.parentElement).toBe(document.body);
+    expect(document.querySelector('.ds-backdrop')!.parentElement).toBe(document.body);
+    expect(screen.getByTestId('ctx').contains(menu)).toBe(false);
+  });
+  it('без portal — рядом с якорем, как раньше', () => {
+    renderIn(false);
+    expect(screen.getByTestId('ctx').contains(screen.getByText('Пункт'))).toBe(true);
+  });
+});

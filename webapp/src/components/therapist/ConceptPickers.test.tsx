@@ -4,10 +4,14 @@
 // переключение вида, которое вкладка прокидывает через onGoToGraph.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { ConceptPickers } from './concept/ConceptPickers';
+import { ConceptPickers as Pickers } from './concept/ConceptPickers';
+import { ConceptPaperProvider } from './concept/ConceptPaperProvider';
 import type { ClientDetail } from './clientSheetTypes';
 
 afterEach(() => cleanup());
+
+// Вид сайта, как на вкладке: чипы и группы — детали живой бумаги (SignChip, SignGroup).
+const ConceptPickers = (p: Parameters<typeof Pickers>[0]) => <ConceptPaperProvider><Pickers {...p} /></ConceptPaperProvider>;
 
 const LINK = {
   modeId: 'punitive_critic',
@@ -115,27 +119,52 @@ describe('ConceptPickers: только выбранное', () => {
     expect(screen.getByRole('button', { name: /Готово: Карта режимов/ })).toBeTruthy();
   });
 
-  it('ничего не выбрано — полный список виден сразу, кнопки «Изменить» нет', () => {
+  it('ничего не выбрано — пикеры свёрнуты: заголовок, счётчик и «Изменить»; перечень раскрывается по кнопке', () => {
     render(<ConceptPickers detail={selection([], [])} />);
+    expect(screen.getByText('0 активны из 20')).toBeTruthy();
+    expect(screen.getByText('0 в работе')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Неуспешность' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Сердитый Ребёнок/ })).toBeNull();
+    expect(edit('Актуальные схемы').getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(edit('Актуальные схемы'));
     expect(screen.getByRole('button', { name: 'Неуспешность' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Сердитый Ребёнок/ })).toBeNull(); // вторая карточка осталась свёрнутой
+    fireEvent.click(edit('Карта режимов'));
     expect(screen.getByRole('button', { name: /Сердитый Ребёнок/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Изменить|Готово/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Готово: Актуальные схемы/ }));
+    expect(screen.queryByRole('button', { name: 'Неуспешность' })).toBeNull();
   });
 
-  it('выбор опустел после открытия вкладки (восстановили версию без схем) — первый клик не сворачивает перечень', () => {
-    const { rerender } = render(<ConceptPickers detail={selection(['failure'], [])} />);
-    expect(edit('Актуальные схемы').getAttribute('aria-expanded')).toBe('false');
+  it('раскрытый выбор сам не сворачивается: первый выбор из пустого и снятие последнего чипа оставляют перечень под пальцем', () => {
+    const { rerender } = render(<ConceptPickers detail={selection([], [])} />);
+    fireEvent.click(edit('Актуальные схемы'));
+    rerender(<ConceptPickers detail={selection(['failure'], [])} />);
+    expect(screen.getByRole('button', { name: 'Эмоциональная скованность' })).toBeTruthy();
     rerender(<ConceptPickers detail={selection([], [])} />);
     expect(screen.getByRole('button', { name: 'Эмоциональная скованность' })).toBeTruthy();
-    rerender(<ConceptPickers detail={selection(['failure'], [])} />);
-    expect(screen.getByRole('button', { name: 'Эмоциональная скованность' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Готово: Актуальные схемы/ })).toBeTruthy();
   });
 
-  it('первый выбор из пустого состояния не сворачивает выбор под пальцем', () => {
-    const { rerender } = render(<ConceptPickers detail={selection([], [])} />);
-    rerender(<ConceptPickers detail={selection(['failure'], [])} />);
-    expect(screen.getByRole('button', { name: 'Эмоциональная скованность' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Готово: Актуальные схемы/ })).toBeTruthy();
+  it('выбор опустел, пока карточка свёрнута (восстановили версию без схем) — она остаётся свёрнутой', () => {
+    const { rerender } = render(<ConceptPickers detail={selection(['failure'], [])} />);
+    rerender(<ConceptPickers detail={selection([], [])} />);
+    expect(edit('Актуальные схемы').getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('button', { name: 'Эмоциональная скованность' })).toBeNull();
+  });
+
+  it('раскрытый выбор — тихие группы со знаком домена и группы режимов в шапке (SignGroup plain, без листа бумаги), цвет — у выбранного чипа', () => {
+    const { container } = render(<ConceptPickers detail={selection(['failure'], ['punitive_critic'])} />);
+    fireEvent.click(edit('Актуальные схемы'));
+    fireEvent.click(edit('Карта режимов'));
+    const groups = Array.from(container.querySelectorAll<HTMLElement>('.sg-group'));
+    expect(groups.length).toBeGreaterThan(5); // 5 доменов и группы режимов
+    for (const g of groups) {
+      expect(g.querySelector('.sg-sign .pp-art')).toBeTruthy();
+      expect(g.classList.contains('pp-paper')).toBe(false); // 12 цветных листов подряд — радуга (ревью g11 r1)
+    }
+    expect(screen.getByRole('button', { name: 'Неуспешность' }).style.getPropertyValue('--h')).not.toBe('');
+    expect(screen.getByRole('button', { name: 'Неуспешность' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Неуспешность' }).querySelector('[data-sign="check"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Карающий Критик' }).getAttribute('aria-pressed')).toBe('true');
   });
 });

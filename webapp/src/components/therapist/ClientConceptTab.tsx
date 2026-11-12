@@ -4,8 +4,8 @@ import { ClientConceptGraph } from './ClientConceptGraph';
 import { ConceptTabHead } from './concept/ConceptTabHead';
 import { ConceptFoldouts } from './concept/ConceptFoldouts';
 import { ConceptModeIdsContext } from './concept/modeChain';
-import { CONCEPT_SITE_SKIN } from './concept/conceptSiteSkin';
-import { ConceptSkinContext } from '../../../../shared/src/therapy/conceptGraph/conceptSkin';
+import { ConceptPaperProvider } from './concept/ConceptPaperProvider';
+import { SceneConceptStart } from '../art/AppScenesMore';
 import '../../styles/therapist-concept.css';
 import { useConceptView } from '../../../../shared/src/therapy/conceptGraph/ConceptViewSwitch';
 import { ConceptDigest, useConceptDigest } from '../../../../shared/src/therapy/conceptGraph/ConceptDigest';
@@ -17,7 +17,7 @@ interface Props {
   /** «журнал →» у «делали …» в подсказках: журнал техник во вкладке «Задания». */
   onOpenJournal?: () => void;
 }
-// Вкладка «Концептуализация»: шапка, сводка, вид «Схема» или «Поля», раскрывашки; ds-вид — контекстом (CONCEPT_SITE_SKIN).
+// Вкладка «Концептуализация»: шапка, сводка, вид «Схема» или «Поля», раскрывашки; вид — контекстом (ConceptPaperProvider).
 // Загрузка упала — вместо полей плашка с «Повторить»; тело монтируется, когда ответ пришёл, и вид выбирает по нему.
 export function ClientConceptTab(props: Props) {
   const { conceptLoad, reloadConcept } = props.detail;
@@ -29,7 +29,7 @@ function ConceptTabBody({ detail, onOpenCanvas, onAssign, onOpenJournal }: Props
   const head = { detail, view, onView: setView };
   const digest = <ConceptDigest rows={useConceptDigest(detail.concept, detail.localConcept)} />;
   return (
-    <ConceptSkinContext.Provider value={CONCEPT_SITE_SKIN}>
+    <ConceptPaperProvider emptyScene={<SceneConceptStart />}>
     <div className={`page-inner-wide tcp-page${view === 'graph' ? ' tcp--graph' : ''}`}>
       {view === 'graph' ? (
         <ClientConceptGraph detail={detail} onOpenCanvas={onOpenCanvas} onAssign={onAssign} onOpenJournal={onOpenJournal} head={head} digest={digest} />
@@ -45,6 +45,6 @@ function ConceptTabBody({ detail, onOpenCanvas, onAssign, onOpenJournal }: Props
       )}
       <ConceptFoldouts detail={detail} />
     </div>
-    </ConceptSkinContext.Provider>
+    </ConceptPaperProvider>
   );
 }

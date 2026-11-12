@@ -13,7 +13,6 @@ export function ConceptModeCard({ detail, onGoToGraph }: { detail: ClientDetail;
     <ConceptPickCard
       title="Карта режимов"
       sub={`${activeModeIds.length} в работе`}
-      hasSelection={activeModeIds.length > 0}
       selected={<SelectedModes ids={activeModeIds} />}
       editor={<ConceptModePicker activeModeIds={activeModeIds} onToggle={toggleModeId} />}
     >

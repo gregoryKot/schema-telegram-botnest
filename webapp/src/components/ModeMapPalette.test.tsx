@@ -7,9 +7,9 @@ import { render, screen, fireEvent, cleanup, waitFor, act } from '@testing-libra
 import { ModeMapPalette } from './ModeMapPalette';
 import type { TherapistCustomMode } from '../api';
 import { AddressFormContext } from '../utils/addressForm';
-import { TYPE_COLORS } from './modeMapData';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
 import { paperSignName } from '../test-support/paperSign';
+import { getSchemaById } from '../schemaTherapyData';
 
 const getConceptualization = vi.fn();
 const listCustomModes = vi.fn();
@@ -53,6 +53,8 @@ const openCatalog = () => fireEvent.click(catalogRow());
 const search = (v: string) => fireEvent.change(screen.getByPlaceholderText('Режим или схема…'), { target: { value: v } });
 const headSign = (group: string) => paperSignName(document.querySelector(`[data-group="${group}"] .mm2-pal-head .mm2-pal-mark svg`));
 const rowMark = (name: string) => screen.getByText(name).closest('button')!.querySelector('svg')!.getAttribute('data-mark');
+// Знак строки режима и схемы — тот же, что в «Справочнике»: группа режимов и домен схем (ревью вкуса r1).
+const rowSign = (name: string) => paperSignName(screen.getByText(name).closest('button')!.querySelector('.mm2-pal-mark svg'));
 
 describe('ModeMapPalette — по умолчанию только клиент и фигуры', () => {
   it('видны «Этот клиент» и «Фигуры», каталог закрыт одной строкой с тихим счётчиком', async () => {
@@ -99,20 +101,22 @@ describe('ModeMapPalette — по умолчанию только клиент �
 });
 
 describe('ModeMapPalette — блок «Этот клиент»', () => {
-  it('режимы — круги со счётчиком, схемы — слои; неизвестная схема пропускается', async () => {
+  it('режимы — со знаком своей группы и счётчиком, схемы — со знаком домена; неизвестная схема пропускается', async () => {
     await renderPalette();
     expect(screen.getByText('Режимы').closest('.mm2-pal-head')!.querySelector('.mm2-pal-head-n')!.textContent).toBe('2');
     expect(screen.getByText('Схемы').closest('.mm2-pal-head')!.querySelector('.mm2-pal-head-n')!.textContent).toBe('1');
-    expect(rowMark('Требовательный Критик')).toBe('mode');
-    expect(rowMark('Покинутость / Нестабильность')).toBe('schema');
+    expect(rowSign('Требовательный Критик')).toBe('Looming');
+    expect(rowSign('Покинутость / Нестабильность')).toBe('Domain1');
     expect(paperSignName(screen.getByText('Режимы').closest('.mm2-pal-head')!.querySelector('svg'))).toBe('Cluster');
     expect(paperSignName(screen.getByText('Схемы').closest('.mm2-pal-head')!.querySelector('svg'))).toBe('Layers');
   });
 
-  it('круг режима — цвет его фигуры на холсте', async () => {
+  it('строка режима и схемы — бумажный знак 24×14, а не плоская точка цвета фигуры', async () => {
     await renderPalette();
-    const circle = screen.getByText('Требовательный Критик').closest('button')!.querySelector('circle')!;
-    expect(circle.getAttribute('fill')).toBe(TYPE_COLORS.critic);
+    const row = screen.getByText('Требовательный Критик').closest('button')!;
+    expect(row.querySelector('.mm2-mark')).toBeNull();
+    expect(row.querySelector('.mm2-pal-mark svg')!.getAttribute('class')).toContain('pp-art--nav');
+    expect(screen.getByText('Покинутость / Нестабильность').closest('button')!.querySelector('.mm2-pal-mark svg')!.getAttribute('class')).toContain('pp-art--nav');
   });
 
   it('тихое «+ все» зовёт onAddMany со всеми режимами клиента одним пакетом', async () => {
@@ -161,7 +165,7 @@ describe('ModeMapPalette — поиск по всему, плоским спис
     const { onAdd } = await renderPalette();
     search('крит');
     expect(screen.getByText('Карающий Критик')).toBeTruthy();
-    expect(rowMark('Карающий Критик')).toBe('mode');
+    expect(rowSign('Карающий Критик')).toBe('Looming');
     expect(screen.queryAllByRole('heading')).toHaveLength(0);
     expect(document.querySelector('[data-group]')).toBeNull();
     expect(screen.queryByText('Все режимы и схемы')).toBeNull();
@@ -208,14 +212,13 @@ describe('ModeMapPalette — свои режимы терапевта', () => {
     expect(screen.getByText(/Добавьте режимы, с которыми работаете/)).toBeTruthy();
   });
 
-  it('есть свои — секция в блоке клиента до фигур: круг цвета фигуры, клик кладёт режим', async () => {
+  it('есть свои — секция в блоке клиента до фигур: знак группы по типу фигуры, клик кладёт режим', async () => {
     listCustomModes.mockResolvedValue([MINE]);
     const { onAdd } = await renderPalette();
     const before = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
     expect(before(screen.getByText('Мои режимы'), screen.getByRole('heading', { name: 'Фигуры' }))).toBe(true);
     expect(paperSignName(screen.getByText('Мои режимы').closest('.mm2-pal-head')!.querySelector('svg'))).toBe('Cluster');
-    const circle = screen.getByText('Особый').closest('button')!.querySelector('circle')!;
-    expect(circle.getAttribute('fill')).toBe(TYPE_COLORS.healthy);
+    expect(rowSign('Особый')).toBe('Together');
     fireEvent.click(screen.getByText('Особый'));
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ type: 'healthy', data: expect.objectContaining({ label: 'Особый' }) }));
   });
@@ -273,12 +276,13 @@ describe('ModeMapPalette — знаки групп каталога', () => {
     expect(headSign(group)).toBe(sign);
   });
 
-  it('раскрытый домен: схемы — слои цвета домена, клик кладёт узел с этим цветом', async () => {
+  it('раскрытый домен: схемы — со знаком домена, клик кладёт узел с цветом домена', async () => {
     const { onAdd } = await renderPalette();
     openCatalog();
     fireEvent.click(screen.getByRole('button', { name: /Нарушение связи и отвержение/ }));
     const row = screen.getAllByText('Недоверие / Ожидание жестокого обращения')[0].closest('button')!;
-    const color = row.querySelector('rect')!.getAttribute('fill');
+    expect(rowSign('Недоверие / Ожидание жестокого обращения')).toBe('Domain1');
+    const color = getSchemaById('mistrust')!.domainColor;
     fireEvent.click(row);
     expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({
       type: 'schema', data: expect.objectContaining({ schemaId: 'mistrust', customColor: color }),

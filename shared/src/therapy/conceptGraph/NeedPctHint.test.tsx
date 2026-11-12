@@ -18,8 +18,11 @@ const openGuide = () =>
   fireEvent.click(screen.getByRole('button', { name: 'Как читать схему' }));
 
 describe('подсказка про проценты потребностей', () => {
-  it('оценок нет: в «Как читать схему» строка, где их ставят; на пустой схеме она видна сразу', () => {
+  it('оценок нет: в «Как читать схему» строка, где их ставят; на пустой схеме раскрывашки нет — она приходит с диаграммой', () => {
     const { unmount } = render(<Harness initial={{}} />);
+    expect(screen.queryByText(NEED_PCT_EMPTY)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Отметить схемы' }));
+    openGuide();
     expect(screen.getByText(NEED_PCT_EMPTY)).toBeTruthy();
     unmount();
 
@@ -38,7 +41,8 @@ describe('подсказка про проценты потребностей', 
   });
 
   it('подсказка не идёт в картинку схемы и звучит одинаково в обеих формах обращения', () => {
-    render(<Harness initial={{}} form="vy" />);
+    render(<Harness initial={CASE} form="vy" />);
+    openGuide();
     const hint = screen.getByText(NEED_PCT_EMPTY);
     expect(hint.closest('[data-export-skip]')).not.toBeNull();
   });

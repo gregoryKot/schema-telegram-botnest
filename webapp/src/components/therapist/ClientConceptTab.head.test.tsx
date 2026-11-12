@@ -95,7 +95,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 // Название пункта — первая строка; под ней может стоять подсказка.
-const itemLabel = (b: HTMLElement) => b.firstElementChild!.textContent;
+const itemLabel = (b: HTMLElement) => b.querySelector('.tcp-menu-text')!.firstElementChild!.textContent;
 
 describe('шапка: меню «⋯ Ещё»', () => {
   it('до открытия второстепенных кнопок в документе нет; кнопка меню подписана и объявляет меню', async () => {
@@ -113,7 +113,9 @@ describe('шапка: меню «⋯ Ещё»', () => {
     openMore();
     expect(more().getAttribute('aria-expanded')).toBe('true');
     const items = within(menu()!).getAllByRole('menuitem').map(itemLabel);
-    expect(items).toEqual(['↗ Экспорт текстом', '↓ Скачать картинкой', '⤢ На весь экран', 'Открыть на холсте']);
+    expect(items).toEqual(['Экспорт текстом', 'Скачать картинкой', 'На весь экран', 'Открыть на холсте']);
+    // слева у каждого пункта — иконка-SVG (не глиф в подписи), для ридера скрыта
+    for (const it of within(menu()!).getAllByRole('menuitem')) expect(it.firstElementChild!.matches('svg[aria-hidden="true"]')).toBe(true);
     // Подсказки — строкой под названием, не в title: видны без наведения.
     expect(within(menu()!).getByText(/четыре колонки/)).toBeTruthy();
     expect(within(menu()!).getByText(/Новая графическая карта из этой схемы/)).toBeTruthy();
@@ -127,7 +129,7 @@ describe('шапка: меню «⋯ Ещё»', () => {
   it('в виде «Поля» в меню только экспорт', async () => {
     await openTab(concept({ modeIds: [], modeLinks: [] }));
     openMore();
-    expect(within(menu()!).getAllByRole('menuitem').map(itemLabel)).toEqual(['↗ Экспорт текстом']);
+    expect(within(menu()!).getAllByRole('menuitem').map(itemLabel)).toEqual(['Экспорт текстом']);
   });
 
   // QA 2026-11: на пустом концепте экспорт молча ничего не делал.
@@ -246,14 +248,14 @@ describe('ширина под схему', () => {
     expect(root().classList.contains('tcp--graph')).toBe(true);
   });
 
-  it('провайдер сайта: сегмент ds-seg, активный вид ds-seg-btn is-active, сводка ds-card', async () => {
+  it('провайдер сайта: сегмент ds-seg, активный вид ds-seg-btn is-active, сводка — лист бумаги', async () => {
     await openTab();
     const group = screen.getByRole('group', { name: 'Вид концептуализации' });
     expect(group.classList.contains('ds-seg')).toBe(true);
     const active = within(group).getByRole('button', { name: 'Схема' });
     expect(active.classList.contains('ds-seg-btn')).toBe(true);
     expect(active.classList.contains('is-active')).toBe(true);
-    expect(screen.getByRole('region', { name: 'Коротко' }).classList.contains('ds-card')).toBe(true);
+    expect(screen.getByRole('region', { name: 'Коротко' }).className).toBe('pp-paper tcp-digest');
   });
 
   it('над схемой нет панели действий: кнопки только в листе «На весь экран»', async () => {

@@ -138,7 +138,9 @@ describe('«На весь экран»: открытие и закрытие', (
   it('в потоке пункт в меню «⋯ Ещё»; листа нет, пока его не выбрали', async () => {
     await openTab();
     expect(screen.queryByRole('button', { name: /На весь экран/ })).toBeNull();
-    expect(expandBtn().firstElementChild!.textContent).toBe('⤢ На весь экран'); // вторая строка пункта — подсказка
+    const item = expandBtn();
+    expect(item.querySelector('.tcp-menu-text')!.firstElementChild!.textContent).toBe('На весь экран'); // вторая строка пункта — подсказка
+    expect(item.querySelector('svg[aria-hidden="true"]')).toBeTruthy(); // иконка вместо глифа «⤢», в имя не входит
     expect(sheet()).toBeNull();
   });
 

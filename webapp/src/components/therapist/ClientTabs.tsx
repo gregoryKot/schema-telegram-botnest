@@ -14,11 +14,11 @@ export function ClientTabs({ detail }: { detail: ClientDetail }) {
     ['ysq', 'Схемы', clientData?.ysqHistory?.length ?? 0],
     ['client_notes', 'Записи клиента', clientSchemaNotesData.length + clientModeNotesData.length + clientDiary.length],
   ];
-  // Переход кнопкой («+ Заметка», «Запросить тест на схемы») меняет вкладку мимо полосы:
-  // активная уезжала за край и не была видна (QA 2026-11, T-11).
+  // Переход кнопкой («+ Заметка») меняет вкладку мимо полосы: активная уезжала за край (QA 2026-11, T-11).
+  // nearest, не center: видимая вкладка полосу не двигает — на 768 лента прыгала вбок при каждом переходе.
   const bar = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    scrollIntoViewSafe(bar.current?.querySelector('[aria-selected="true"]'), { block: 'nearest', inline: 'center' });
+    scrollIntoViewSafe(bar.current?.querySelector('[aria-selected="true"]'), { block: 'nearest', inline: 'nearest' });
   }, [clientTab]);
   return (
     <div className="ds-tabs" role="tablist" ref={bar}>

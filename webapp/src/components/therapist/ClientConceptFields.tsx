@@ -8,6 +8,7 @@ import { ConceptPickers } from './concept/ConceptPickers';
 import { ConceptProgress } from './concept/ConceptProgress';
 import { ConceptSectionShell, type FieldProps } from './concept/ConceptSectionShell';
 import { CONCEPT_SECTIONS, sectionNumber, type ConceptValues } from './concept/conceptSections';
+import { SECTION_SIGNS } from './concept/conceptSectionSigns';
 import {
   ConceptEarly, ConceptNeeds, ConceptTriggers, ConceptCoping, ConceptModes, ConceptProblems,
 } from './concept/ConceptSectionsText';
@@ -31,8 +32,7 @@ const FORMS: Record<string, (p: FieldProps) => ReactElement> = {
   currentProblems: ConceptProblems,
 };
 
-// Единственное поле ввода концептуализации — его берут все формы разделов
-// (concept/ConceptSectionsText.tsx); различаются только класс и высота.
+// Единственное поле ввода концептуализации — его берут все формы разделов (concept/ConceptSectionsText.tsx).
 // Предел — тот же, что `@MaxLength` сервера (инцидент 2026-10-26: без него
 // длинный текст молча не сохранялся и держал остальные поля).
 export function ConceptArea({ value, onChange, placeholder, rows = 4, className = 'ds-textarea' }: FieldProps & { rows?: number; className?: string }) {
@@ -63,7 +63,7 @@ export function ClientConceptFields({ detail, onGoToGraph }: { detail: ClientDet
             id={s.key}
             n={sectionNumber(i)}
             title={m?.label ?? s.title}
-            hint={HINTS[s.key]}
+            hint={HINTS[s.key]} signs={SECTION_SIGNS[s.key]}
           >
             <Form
               value={values[s.key] ?? ''}

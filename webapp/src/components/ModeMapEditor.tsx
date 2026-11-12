@@ -13,7 +13,8 @@ import {
 } from './modeMapFlow';
 import { useModeMapHistory } from './useModeMapHistory';
 import { useModeMapAutosave } from './useModeMapAutosave';
-import { collapseBtnStyle } from './modeMap/paletteStyle';
+import { PaletteEar } from './modeMap/PaletteEar';
+import { paletteOpenInitial } from './modeMap/paletteOpen';
 import { useSettleFresh } from './modeMap/useSettleFresh';
 import { useCanvasSpace } from './modeMap/useCanvasSpace';
 import { ModeMapConceptProvider } from './modeMap/ModeMapConceptProvider';
@@ -41,8 +42,8 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(toFlowEdges(initialEdges));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
-  const [paletteOpen, setPaletteOpen] = useState(() => localStorage.getItem('modemap_palette') !== '0');
-  useEffect(() => { localStorage.setItem('modemap_palette', paletteOpen ? '1' : '0'); }, [paletteOpen]);
+  const [paletteOpen, setPaletteOpen] = useState(() => paletteOpenInitial(localStorage.getItem('modemap_palette'), window.innerWidth));
+  const setPalette = (open: boolean) => { setPaletteOpen(open); localStorage.setItem('modemap_palette', open ? '1' : '0'); }; // пишет только выбор терапевта
 
   // Always-fresh refs (for deferred saves after React Flow internal updates).
   // Пишем в эффекте, а не в рендере (react-hooks/refs): читаются только в
@@ -157,21 +158,15 @@ function EditorBody({ mapId, clientId, kind, initialNodes, initialEdges }: Props
   );
 
   const paletteCol = (
-    <div style={{ position: 'relative', display: 'flex' }}>
+    <div className="mm2-pal-col">
       <ModeMapPalette onAdd={handleAddNode} onAddMany={handleAddMany} />
-      <button onClick={() => setPaletteOpen(false)} title="Скрыть панель режимов" aria-label="Скрыть панель режимов"
-        className="mm2-ear" style={collapseBtnStyle('left')}>‹</button>
+      <PaletteEar open onToggle={() => setPalette(false)} />
     </div>
   );
 
   return (
-    <ModeMapConceptProvider clientId={clientId} kind={kind} nodes={nodes} edges={edges}><div style={{ display: 'flex', height: '100%', background: 'var(--bg)', position: 'relative' }}>
-      {paletteOpen ? paletteCol : (
-        <button onClick={() => setPaletteOpen(true)} title="Показать панель режимов" aria-label="Показать панель режимов"
-          className="mm2-ear" style={{ ...collapseBtnStyle('left'), position: 'static', borderRadius: '0 7px 7px 0', height: 'auto', alignSelf: 'stretch', width: 22 }}>
-          ›
-        </button>
-      )}
+    <ModeMapConceptProvider clientId={clientId} kind={kind} nodes={nodes} edges={edges}><div className="mm2-editor">
+      {paletteOpen ? paletteCol : <PaletteEar open={false} onToggle={() => setPalette(true)} />}
 
       <ModeMapCanvas clientId={clientId} mapId={mapId} kind={kind} nodes={nodes} edges={edges} setNodes={setNodes} setEdges={setEdges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}

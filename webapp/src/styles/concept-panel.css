@@ -34,3 +34,18 @@
 }
 
 @keyframes cfs-panel-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ── Шапка листа (ConceptFullscreenSheet): заголовок, панель действий, кнопка закрытия ── */
+.cfs-head--full { padding: var(--space-12) var(--space-20); }
+.cfs-head--line { border-bottom: 1px solid var(--paper-sunk); } /* разделитель — --paper-sunk (oneStyle.test) */
+.cfs-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-12); }
+.cfs-title, .ds-h2.cfs-title { margin: 0 auto 0 0; }
+.cfs-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-12); }
+.cfs-tools-err { font-size: 13px; color: var(--err); }
+/* Телефон: «Свернуть» в строке с заголовком, действия — одной строкой под ними (три кнопки столбиком
+   съедали ~210px из 844, ревью g11 r1); порядок Tab прежний — заголовок, действия, закрытие. */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .cfs-head-row > .cfs-tools { order: 3; flex: 1 0 100%; gap: 8px; }
+  .cfs-tools > .ds-btn { flex: 1 1 0; min-width: 0; padding: 0 8px; font-size: 13px; }
+  .cfs-tools > .cfs-tools-err { flex: 1 0 100%; }
+}

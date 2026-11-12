@@ -1,10 +1,9 @@
 import { SCHEMA_DOMAINS } from '../../schemaTherapy/schemaTherapyData';
 import { ConceptToggleChip } from './ConceptToggleChip';
-import { ConceptGroupLabel } from './ConceptGroupLabel';
-import { DOMAIN_LABEL } from './conceptInlineStyles';
-import { DOMAIN_HUE } from '../../theme/entityHue';
+import { ConceptGroup } from './ConceptGroup';
+import { domainLook } from '../../theme/entityLook';
 
-/** Выбор схем по доменам: одна копия на «+ схема» и на поле режима. */
+/** Выбор схем по доменам: одна копия на «+ схема», поле режима и «Актуальные схемы» вида «Поля». */
 export function ConceptSchemaPicker({
   activeIds,
   onToggle,
@@ -17,41 +16,32 @@ export function ConceptSchemaPicker({
   domainTitles?: boolean;
 }) {
   return (
-    <>
+    <div className={domainTitles ? 'cg-groups' : 'cg-groups cg-groups--flat'}>
       {SCHEMA_DOMAINS.map((domain) => {
         const schemas = domain.schemas.filter(
           (s) => !onlyIds || onlyIds.has(s.id),
         );
         if (schemas.length === 0) return null;
-        const hue = DOMAIN_HUE[domain.id];
+        const look = domainLook(domain.id);
         return (
-          <div key={domain.id} style={{ marginBottom: 'var(--space-6)' }}>
-            {domainTitles && (
-              <ConceptGroupLabel hue={hue} fallback={DOMAIN_LABEL}>
-                {domain.domain}
-              </ConceptGroupLabel>
-            )}
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 'var(--space-6)',
-              }}
-            >
-              {schemas.map((s) => (
-                <ConceptToggleChip
-                  key={s.id}
-                  label={s.name}
-                  color={domain.color}
-                  hue={hue}
-                  active={activeIds.includes(s.id)}
-                  onClick={() => onToggle(s.id)}
-                />
-              ))}
-            </div>
-          </div>
+          <ConceptGroup
+            key={domain.id}
+            look={look}
+            title={domainTitles ? domain.domain : undefined}
+          >
+            {schemas.map((s) => (
+              <ConceptToggleChip
+                key={s.id}
+                label={s.name}
+                color={domain.color}
+                hue={look?.hue}
+                active={activeIds.includes(s.id)}
+                onClick={() => onToggle(s.id)}
+              />
+            ))}
+          </ConceptGroup>
         );
       })}
-    </>
+    </div>
   );
 }

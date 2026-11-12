@@ -1,6 +1,7 @@
 import type { ModeMapNode } from '../../api';
 import { SCHEMA_DOMAINS, getSchemaById } from '../../schemaTherapyData';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
+import { MMIcon } from '../modeMapIcons';
 import { useModeMapConcept, useSchemasOnCanvas } from './clientConceptContext';
 import { linkedSchemaIds, ownSchemaIds } from './nodeSchemaIds';
 
@@ -35,10 +36,7 @@ export function ModeSchemasField({ data, patchData }: { data: Data; patchData: (
   const linked = linkedSchemaIds(useModeMapConcept(), data.modeId, useSchemasOnCanvas()).filter(id => !own.includes(id));
   // Старая одиночная schemaId складывается в список при первой правке.
   const setOwn = (ids: string[]) => patchData({ schemaIds: ids.length ? ids : undefined, schemaId: undefined });
-  const chip = (id: string) => {
-    const s = getSchemaById(id)!;
-    return <><IdentityDot color={s.domainColor} size={7} /><span>{s.name}</span></>;
-  };
+  const chip = (id: string, s = getSchemaById(id)!) => <><i className="mm2-chip-dot" style={hueStyle(DOMAIN_HUE[s.domainId])} /><span>{s.name}</span></>; // домен — тихой точкой его тона
   return (
     <>
       <label className="ds-label" htmlFor="mm-node-schemas">Схемы режима</label>
@@ -47,7 +45,7 @@ export function ModeSchemasField({ data, patchData }: { data: Data; patchData: (
           {own.map(id => (
             <button key={id} onClick={() => setOwn(own.filter(x => x !== id))}
               aria-label={`Убрать схему «${getSchemaById(id)?.name}»`} title="Убрать с фигуры" className="mm2-chip is-sm">
-              {chip(id)}<span aria-hidden="true" className="mm2-chip-x">×</span>
+              {chip(id)}<MMIcon name="close" size={10} className="mm2-chip-x" />
             </button>
           ))}
           {linked.map(id => <span key={id} title={FROM_CONCEPT} className="mm2-chip is-sm is-locked">{chip(id)}</span>)}

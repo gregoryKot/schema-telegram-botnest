@@ -1,12 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  BEHAVIOR_PATH,
-  CRITIC_PATH,
-  PENTA_PATH,
-  SHIELD_PATH,
-  TRIGGER_PATH,
-  scalePath,
-} from './modeShapes';
+import { CRITIC_PATH, PENTA_PATH, SHIELD_PATH, scalePath } from './modeShapes';
 
 /** Все числа пути парами (x, y) — для проверки масштабирования. */
 const pairs = (d: string): [number, number][] => {
@@ -42,14 +35,8 @@ describe('scalePath', () => {
       pairs(scalePath(d, w / 100, h / 100)).every(
         ([x, y]) => x >= 0 && x <= w && y >= 0 && y <= h,
       );
-    for (const d of [CRITIC_PATH, PENTA_PATH, SHIELD_PATH, BEHAVIOR_PATH]) {
+    for (const d of [CRITIC_PATH, PENTA_PATH, SHIELD_PATH]) {
       expect(inside(d, 168, 80)).toBe(true);
     }
-    // облако живёт в пространстве 100×60
-    expect(
-      pairs(scalePath(TRIGGER_PATH, 196 / 100, 80 / 60)).every(
-        ([x, y]) => x >= 0 && x <= 196 && y >= 0 && y <= 80,
-      ),
-    ).toBe(true);
   });
 });

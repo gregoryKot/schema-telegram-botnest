@@ -2,18 +2,18 @@
 import type { ModeMapNode } from '../api';
 
 export type NodeType = ModeMapNode['type'];
-
-// Colours are palette tokens (index.css); coping subtypes share ONE colour (clay), told apart by SHAPE.
+// Цвет знака типа (палитра, легенда, выбор формы) — токен той же семьи, что бумага фигуры (modeMap/nodePaper.ts, TYPE_HUE); три копинга — один цвет, различает форма.
+// В узел этот цвет не пишется: фигура без customColor берёт бумагу по типу, поэтому старые сохранённые карты рисуются как новые.
 export const TYPE_COLORS: Record<string, string> = {
-  trigger:  'var(--c-slate)',
-  child:    'var(--c-teal)',
-  critic:   'var(--c-rose)',
-  coping:   'var(--c-clay)',
+  trigger:  'var(--c-amber)',    // солома: шалфей сливался со Здоровым Взрослым
+  child:    'var(--c-clay)',
+  critic:   'var(--c-plum)',
+  coping:   'var(--c-slate)',
   healthy:  'var(--c-moss)',
-  custom:   'var(--c-plum)',
-  behavior: 'var(--c-ochre)',
-  schema:   'var(--accent-red)', origin: 'var(--accent-blue)',  // схема случая на холсте (conceptToModeMap):
-  need:     'var(--c-amber)',    needs:  'var(--c-amber)',      // схема, опыт, потребность, круг потребностей
+  custom:   'var(--c-teal)',
+  behavior: 'var(--text-faint)', // поведение — не сущность с оттенком: нейтральная бумага (modeMap/plainPaper.ts)
+  schema:   'var(--accent-red)', origin: 'var(--c-clay)', // опыт детства — персик «Колеса детства»
+  need:     'var(--c-amber)',    needs:  'var(--c-amber)',
 };
 
 export const NODE_DEFAULT_SIZES: Partial<Record<string, { width: number; height: number }>> = {};
