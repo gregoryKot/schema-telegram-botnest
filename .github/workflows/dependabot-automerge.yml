@@ -1,0 +1,39 @@
+# Автомерж бот-PR Dependabot (решение владельца): patch и minor уезжают в main
+# сами, когда зелёные все обязательные джобы ci.yml; мажоры и /game ждут агента.
+# Сверка с dependabot.yml — src/test-support/gates/dependabot-automerge.spec.ts.
+name: Dependabot automerge
+
+on:
+  pull_request:
+
+# Форму блока требует гейт ci-concurrency.spec.ts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  automerge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    # Запись нужна, чтобы включить auto-merge; мержит GitHub, когда ruleset доволен.
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      # У игры тестов нет, её обновление проверяет только сборка — мержит агент.
+      - name: Включить auto-merge (squash) для patch и minor
+        if: >-
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor') &&
+          steps.meta.outputs.directory != '/game' &&
+          steps.meta.outputs.dependency-group != 'game-patch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"

@@ -100,6 +100,8 @@
 - `prod-smoke` — curl живого schemehappens.ru: `/health` (`status=ok`, `db=up`, самопроверка, `check-deploy-lag`; тело — `src/api/health-report.ts`, в нём и `startedAt`/`launch`/`crashesDay` — старт процесса и рестарты в контейнере), `/`, `/app/`, `/game/` по маркерам.
 - `alarm` — issue `ci-alarm` и DM, троттлинг напоминаний раз в 3 часа.
 
+**dependabot-automerge.yml** (`pull_request`, только PR автора `dependabot[bot]`; в обязательные проверки ruleset не входит): `automerge` — `dependabot/fetch-metadata` читает тип обновления, patch и minor получают auto-merge (squash); мержит GitHub, когда зелёные все джобы `ci.yml` и ветка свежая (`strict`). Мажоры, `/game` и красные бот-PR ждут агента. Отставший PR бот перебазирует в прогон своего расписания, поэтому дни у пакетов в `dependabot.yml` разные, час тихий (сверка — `src/test-support/gates/dependabot-automerge.spec.ts`). Мерж от `GITHUB_TOKEN` не запускает `push`-прогон `ci.yml` на main: дерево то же, что проверено в PR.
+
 ### Тесты
 
 - **Юнит (бэкенд):** `src/**/*.spec.ts` (631 файл) рядом с кодом. В `package.json` у jest `rootDir: src`, `testRegex: .*\.spec\.ts$`. `src/test-support/` — хелперы (`fake-prisma.spec-helper`, `fake-s3`). `src/test-support/gates/` (76 файлов) — спеки инвариантов CI и скриптов-гейтов (`job-timeouts`, `ci-concurrency`, `deploy-lag` и т.д.).
