@@ -27,7 +27,18 @@ export function signHeight(key: CanvasSignKey, w: number): number {
   return (w * vh) / vw;
 }
 
-function paintPrim(ctx: CanvasRenderingContext2D, p: SignPrim) {
+/** Перекраска знака: tone — силуэт одним тоном (неполученный значок), fills — свой цвет
+ *  каждой фигуре по порядку (пять полосок цветами данных потребностей). */
+export interface SignPaint {
+  tone?: string;
+  fills?: readonly (string | null)[];
+}
+
+function paintPrim(
+  ctx: CanvasRenderingContext2D,
+  p: SignPrim,
+  over: string | null | undefined,
+) {
   ctx.save();
   ctx.globalAlpha = p.alpha ?? 1;
   if (p.rot && p.rot[0] !== 0) {
@@ -43,12 +54,12 @@ function paintPrim(ctx: CanvasRenderingContext2D, p: SignPrim) {
     ctx.ellipse(p.cx, p.cy, p.rx, p.ry, 0, 0, Math.PI * 2);
   else if (typeof Path2D !== 'undefined') path = new Path2D(p.d);
   if (p.fill) {
-    ctx.fillStyle = PAPER_INK[p.fill];
+    ctx.fillStyle = over ?? PAPER_INK[p.fill];
     if (path) ctx.fill(path);
     else ctx.fill();
   }
   if ((p.t === 'path' || p.t === 'rect') && p.stroke) {
-    ctx.strokeStyle = PAPER_INK[p.stroke];
+    ctx.strokeStyle = over ?? PAPER_INK[p.stroke];
     ctx.lineWidth = p.sw ?? 1;
     ctx.lineCap = 'round';
     ctx.lineJoin = p.t === 'path' && p.join ? p.join : 'miter';
@@ -65,11 +76,14 @@ export function drawSign(
   x: number,
   y: number,
   w: number,
+  paint: SignPaint = {},
 ) {
   const s = CANVAS_SIGNS[key];
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(w / s.view[0], w / s.view[0]);
-  for (const p of s.prims) paintPrim(ctx, p);
+  (s.prims as readonly SignPrim[]).forEach((p, i) =>
+    paintPrim(ctx, p, paint.tone ?? paint.fills?.[i]),
+  );
   ctx.restore();
 }

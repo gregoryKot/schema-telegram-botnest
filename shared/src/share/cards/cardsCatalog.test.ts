@@ -4,7 +4,8 @@
 //  • ни одна строка fillText не выходит за внутренние поля листа [CARD_PAD, W − CARD_PAD]
 //    и за его низ (мера — кегль текущего шрифта, canvas.test-helpers.ts);
 //  • ни одна строка не несёт эмодзи (знаки — бумагой, docs/design/APP_2026-11.md, принцип 7).
-// Новая карточка без строки в CATALOG краснеет: так тест не отстаёт от каталога.
+// Новая карточка без строки в CATALOG краснеет: так тест не отстаёт от каталога. Исключений
+// нет (карточки b23b — достижения, «Мой путь», приглашения — перешли на знаки).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { canvasWithMockCtx, textSpan } from './canvas.test-helpers';
 import { CARD_PAD, CARD_W, sheetRect } from '../cardKit';
@@ -79,11 +80,18 @@ const YSQ = Object.fromEntries(
 type Draw = (canvas: HTMLCanvasElement) => void;
 const CATALOG: Record<string, Draw> = {
   drawAchievementCard: (c) =>
-    drawAchievementCard(c, { title: 'Первая неделя', desc: LONG }),
+    drawAchievementCard(c, {
+      id: 'streak_7',
+      title: 'Первая неделя подряд без пропусков и перерывов',
+      desc: LONG,
+    }),
   drawAchievementsCard: (c) =>
     drawAchievementsCard(c, [
-      { emoji: '🏆', earned: true },
-      { emoji: '🔥', earned: false },
+      { id: 'first_day', earned: true },
+      { id: 'streak_100', earned: false },
+      { id: 'total_50', earned: true },
+      { id: 'growth', earned: false },
+      { id: 'pair_connected', earned: true },
     ]),
   drawDayCard: (c) => drawDayCard(c, NEEDS, RATINGS, '12 ноября'),
   drawDiaryCard: (c) =>
@@ -98,44 +106,57 @@ const CATALOG: Record<string, Draw> = {
     drawGratitudeCard(c, [LONG, 'Утреннему кофе', LONG, LONG], '12 ноября'),
   drawInviteCard: (c) =>
     drawInviteCard(c, {
+      kind: 'pair',
       title: 'Приглашение в пару',
-      code: 'PAIR7K2M',
+      code: 'PAIR7K2MWWWW',
+      hint: LONG,
+    }),
+  drawInviteCardApp: (c) =>
+    drawInviteCard(c, { kind: 'app', title: 'Всё по схеме', hint: LONG }),
+  drawInviteCardTherapist: (c) =>
+    drawInviteCard(c, {
+      kind: 'therapist',
+      title: 'Приглашение от терапевта с очень длинным названием',
       hint: LONG,
     }),
   drawJourneyCard: (c) =>
     drawJourneyCard(
       c,
       [
-        {
-          emoji: '🌱',
-          label: 'Дневник благодарности',
-          day: '3 мая',
-          hex: '#4fd18b',
-        },
+        { label: LONG, day: '3 мая', hue: 195, sign: 'pebbles' },
+        { label: 'Запись', day: '30 сентября', hue: null, sign: null },
       ],
       12,
     ),
   drawJourneyItemCard: (c) =>
     drawJourneyItemCard(c, {
-      emoji: '🌱',
-      label: 'Дневник благодарности',
-      sub: 'Привязанность',
+      label: 'Заземление 5-4-3-2-1 и ещё очень длинное название шага',
+      sub: LONG,
       day: '3 мая',
-      hex: '#4fd18b',
+      hue: 135,
+      sign: 'grounded',
     }),
   drawJourneyResultCard: (c) =>
     drawJourneyResultCard(c, {
-      emoji: '📓',
       label: 'Схемный дневник',
       day: '3 мая',
-      hex: '#4fd18b',
-      parts: [{ title: 'Ситуация', text: LONG }],
+      hue: 28,
+      sign: 'layers',
+      parts: [
+        { title: 'Ситуация', text: LONG },
+        { title: 'Здоровый взгляд', text: LONG },
+        { text: LONG },
+      ],
     }),
   drawJourneyTotalsCard: (c) =>
     drawJourneyTotalsCard(
       c,
-      [{ emoji: '📊', label: 'Дни с трекером', count: 64 }],
+      [
+        { type: 'tracker_day', label: 'Дни с трекером', count: 64 },
+        { type: 'future', label: LONG, count: 12345 },
+      ],
       64,
+      { title: 'Мой месяц', subtitle: LONG },
     ),
   drawModeEntryCard: (c) =>
     drawModeEntryCard(c, {
@@ -228,20 +249,6 @@ const CATALOG: Record<string, Draw> = {
     }),
 };
 
-/**
- * Карточки следующей партии (b23b: достижения, приглашения, «Мой путь») пока рисуют эмодзи
- * и свою раскладку — их доделает b23b и уберёт этот список. Новые карточки сюда не попадают.
- */
-const B23B = new Set([
-  'drawAchievementCard',
-  'drawAchievementsCard',
-  'drawInviteCard',
-  'drawJourneyCard',
-  'drawJourneyItemCard',
-  'drawJourneyResultCard',
-  'drawJourneyTotalsCard',
-]);
-
 const EMOJI = /\p{Extended_Pictographic}/u;
 
 function render(draw: Draw) {
@@ -293,7 +300,7 @@ function outside(draw: Draw): string[] {
 }
 
 describe('текст в полях листа', () => {
-  it.each(Object.keys(CATALOG).filter((k) => !B23B.has(k)))('%s', (name) => {
+  it.each(Object.keys(CATALOG))('%s', (name) => {
     expect(outside(CATALOG[name])).toEqual([]);
   });
 
@@ -310,7 +317,7 @@ describe('текст в полях листа', () => {
 });
 
 describe('нет эмодзи', () => {
-  it.each(Object.keys(CATALOG).filter((k) => !B23B.has(k)))('%s', (name) => {
+  it.each(Object.keys(CATALOG))('%s', (name) => {
     const { ctx } = render(CATALOG[name]);
     expect(
       ctx.printed.filter((p) => EMOJI.test(p.text)).map((p) => p.text),

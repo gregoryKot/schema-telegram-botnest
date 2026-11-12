@@ -11,12 +11,13 @@ import { botShortUrl } from '../utils/botConfig';
 import { Dialog } from './Dialog';
 import { SignHero } from './paper/SignHero';
 
-interface Props { meta: AchievementMeta; look?: Look | null; onClose: () => void }
+interface Props { id: string; meta: AchievementMeta; look?: Look | null; onClose: () => void }
 
-export function AchievementDetail({ meta, look, onClose }: Props) {
+// id — знак и оттенок значка на карточке шаринга (achievementCardLook)
+export function AchievementDetail({ id, meta, look, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const [showShare, setShowShare] = useState(false);
-  const draw = useCallback((canvas: HTMLCanvasElement) => drawAchievementCard(canvas, meta), [meta]);
+  const draw = useCallback((canvas: HTMLCanvasElement) => drawAchievementCard(canvas, { ...meta, id }), [meta, id]);
   return (
     <>
       <Dialog label={meta.title} onClose={goBack} closeOnEscape zIndex={400} maxWidth={380} center>

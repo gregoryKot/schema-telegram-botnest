@@ -10,10 +10,14 @@ import {
   JOURNEY_TOTALS_MAX_ROWS,
 } from './journeyTotalsCard';
 import type { JourneyStatRow } from '../../journey/journeyStats';
+import { headerHeight } from '../cardKit';
 
 function mockCtx() {
   return {
     scale: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    ellipse: vi.fn(),
     save: vi.fn(),
     restore: vi.fn(),
     beginPath: vi.fn(),
@@ -43,11 +47,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const stat = (label: string, count: number): JourneyStatRow => ({
-  emoji: '·',
-  label,
-  count,
-});
+const stat = (
+  label: string,
+  count: number,
+  type = 'tracker_day',
+): JourneyStatRow => ({ type, label, count });
+const HEAD = headerHeight(1, 1);
 
 describe('totalsCardRows', () => {
   it('ровно 8 строк — все показаны, хвоста нет', () => {
@@ -72,20 +77,20 @@ describe('totalsCardRows', () => {
 
 describe('journeyTotalsCardHeight', () => {
   it('пустая сводка — компактнее (одна поясняющая строка вместо списка)', () => {
-    const empty = journeyTotalsCardHeight(0, false);
-    const withRows = journeyTotalsCardHeight(3, false);
+    const empty = journeyTotalsCardHeight(0, false, HEAD);
+    const withRows = journeyTotalsCardHeight(3, false, HEAD);
     expect(empty).toBeLessThan(withRows);
   });
 
   it('наличие хвоста «и ещё N» увеличивает высоту', () => {
-    expect(journeyTotalsCardHeight(3, true)).toBeGreaterThan(
-      journeyTotalsCardHeight(3, false),
+    expect(journeyTotalsCardHeight(3, true, HEAD)).toBeGreaterThan(
+      journeyTotalsCardHeight(3, false, HEAD),
     );
   });
 
   it('высота растёт монотонно с числом показанных строк', () => {
-    expect(journeyTotalsCardHeight(5, false)).toBeGreaterThan(
-      journeyTotalsCardHeight(2, false),
+    expect(journeyTotalsCardHeight(5, false, HEAD)).toBeGreaterThan(
+      journeyTotalsCardHeight(2, false, HEAD),
     );
   });
 });
@@ -114,6 +119,18 @@ describe('drawJourneyTotalsCard', () => {
       expect.any(Number),
       expect.any(Number),
     );
+  });
+
+  it('строка — знак занятия (journeyStatLook) рисуется на листе, незнакомое — без знака', () => {
+    const ctx = mockCtx();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    const canvas = document.createElement('canvas');
+    drawJourneyTotalsCard(canvas, [stat('Дыхание', 4, 'breathing')], 4);
+    const withSign = ctx.save.mock.calls.length;
+    const ctx2 = mockCtx();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx2);
+    drawJourneyTotalsCard(canvas, [stat('Что-то новое', 4, 'future')], 4);
+    expect(withSign).toBeGreaterThan(ctx2.save.mock.calls.length);
   });
 
   it('свои title/subtitle (сводка за период) переопределяют заголовок по умолчанию', () => {

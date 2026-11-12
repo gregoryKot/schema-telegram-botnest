@@ -68,8 +68,8 @@ describe('знаки canvas = SVG-мотивы сайта', () => {
     expect(svg.prims.map(strip)).toEqual(kit.prims.map((p) => strip(kitPrim(p))));
   });
 
-  it('покрыты знаки карточек этой и следующей партии', () => {
-    for (const k of ['strokes', 'pebbles', 'breath', 'sheets', 'layers', 'cluster', 'leaf', 'check', 'heart', 'wheel', 'talk', 'child_care', 'scales',
+  it('покрыты знаки карточек шаринга (b23a, b23b: шаги пути, значки, приглашения)', () => {
+    for (const k of ['strokes', 'pebbles', 'breath', 'sheets', 'layers', 'cluster', 'leaf', 'check', 'heart', 'wheel', 'talk', 'child_care', 'scales', 'haven',
       'need_attachment', 'need_autonomy', 'need_expression', 'need_play', 'need_limits'])
       expect(CANVAS_SIGN_KEYS).toContain(k);
   });

@@ -175,6 +175,14 @@ export const CANVAS_SIGNS = {
       ...CAIRN.map((s, i): SignPrim => ({ t: 'ellipse', cx: s.cx, cy: CAIRN_CY[i], rx: s.rx, ry: s.ry, fill: s.fill, rot: [s.deg, s.cx, CAIRN_CY[i]] })),
     ],
   },
+  haven: {
+    view: W64,
+    prims: [
+      { t: 'path', d: 'M26 6 V46 Q26 58 38 58 H82 Q94 58 94 46 V6', stroke: 'moss', sw: 8, join: 'round' },
+      { t: 'circle', cx: 47, cy: 44, r: 10, fill: 'clay' },
+      { t: 'path', d: 'M64 54 C 60 40, 68 26, 84 22 C 86 38, 80 50, 64 54 Z', fill: 'moss' },
+    ],
+  },
   pause: { view: W64, prims: [line('M6 42 C 14 20, 30 18, 40 32 S 66 46, 90 32', 'clay', 11), line('M90 8 A 26 26 0 0 1 90 56', 'moss', 13)] },
   looming: {
     view: W64,

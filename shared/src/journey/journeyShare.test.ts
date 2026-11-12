@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Сборка шаринга «Моего пути»: чистые части — радар дня трекера и выбор
+// Сборка шаринга «Моего пути»: чистые части — столбики дня трекера и выбор
 // правильной карточки/текста по типу записи. `draw` в основном НЕ вызываем
 // (canvas в jsdom не рисует) — проверяем собранные данные (title/shareText/
 // filename/eventKind), которые видит пользователь до нажатия «Поделиться».
@@ -10,8 +10,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import {
-  journeyRadarRows,
-  journeyRadarIndex,
+  journeyDayRows,
+  journeyDayIndex,
   buildJourneySharePayload,
   useJourneyShare,
   type JourneyShareState,
@@ -57,9 +57,9 @@ vi.mock('../share/cards/ysqProfileCard', async (importOriginal) => {
   return { ...actual, drawYsqProfileCard: vi.fn() };
 });
 
-describe('journeyRadarRows', () => {
+describe('journeyDayRows', () => {
   it('пропущенная потребность → value null и «—», а не 0 (нет выдуманных данных)', () => {
-    const rows = journeyRadarRows({ attachment: 7 });
+    const rows = journeyDayRows({ attachment: 7 });
     const attachment = rows.find(
       (r) => r.label === JOURNEY_NEED_NAMES.attachment,
     );
@@ -69,20 +69,20 @@ describe('journeyRadarRows', () => {
   });
 
   it('без ratings вообще — все пять строк пустые, но присутствуют', () => {
-    const rows = journeyRadarRows(undefined);
+    const rows = journeyDayRows(undefined);
     expect(rows).toHaveLength(5);
     expect(rows.every((r) => r.value === null)).toBe(true);
   });
 });
 
-describe('journeyRadarIndex', () => {
+describe('journeyDayIndex', () => {
   it('среднее по отмеченным потребностям, округлённое до десятых', () => {
-    expect(journeyRadarIndex({ attachment: 8, autonomy: 5 })).toBe('6.5');
+    expect(journeyDayIndex({ attachment: 8, autonomy: 5 })).toBe('6.5');
   });
 
   it('без единой оценки — «—», не NaN и не 0', () => {
-    expect(journeyRadarIndex(undefined)).toBe('—');
-    expect(journeyRadarIndex({})).toBe('—');
+    expect(journeyDayIndex(undefined)).toBe('—');
+    expect(journeyDayIndex({})).toBe('—');
   });
 });
 
@@ -158,7 +158,7 @@ describe('buildJourneySharePayload — feed', () => {
 describe('buildJourneySharePayload — item', () => {
   const link = 'https://t.me/bot';
 
-  it('tracker_day с ratings → карточка радара, eventKind journey_item', () => {
+  it('tracker_day с ratings → карточка «Мой день» столбиками, eventKind journey_item', () => {
     const share: JourneyShareState = {
       kind: 'item',
       item: { type: 'tracker_day', at: '2026-07-20' },
@@ -378,7 +378,11 @@ describe('buildJourneySharePayload — payload.draw делегирует в пр
     payload.draw(fakeCanvas);
     expect(drawJourneyResultCard).toHaveBeenCalledWith(
       fakeCanvas,
-      expect.objectContaining({ parts: [{ text: 'Письмо себе' }] }),
+      expect.objectContaining({
+        parts: [{ text: 'Письмо себе' }],
+        hue: 290,
+        sign: 'sheets',
+      }),
     );
   });
 
@@ -399,8 +403,33 @@ describe('buildJourneySharePayload — payload.draw делегирует в пр
     payload.draw(fakeCanvas);
     expect(drawJourneyItemCard).toHaveBeenCalledWith(
       fakeCanvas,
-      expect.objectContaining({ sub: 'подсказка' }),
+      expect.objectContaining({ sub: 'подсказка', hue: 70, sign: 'pebbles' }),
     );
+    // Текст сообщения — прежний, с эмодзи шага (тексты шаринга партия не меняет).
+    expect(payload.shareText).toBe(
+      `📝 Заметка дня — ещё один шаг заботы о себе.\n\n${link}`,
+    );
+  });
+
+  it('item незнакомого типа: карточка без знака, текст с «✨»', () => {
+    const payload = buildJourneySharePayload(
+      {
+        kind: 'item',
+        item: { type: 'future', at: '2026-07-20' },
+        result: null,
+      },
+      [],
+      0,
+      [],
+      () => null,
+      link,
+    );
+    payload.draw(fakeCanvas);
+    expect(drawJourneyItemCard).toHaveBeenCalledWith(
+      fakeCanvas,
+      expect.objectContaining({ label: 'Запись', hue: null, sign: null }),
+    );
+    expect(payload.shareText.startsWith('✨ Запись')).toBe(true);
   });
 });
 

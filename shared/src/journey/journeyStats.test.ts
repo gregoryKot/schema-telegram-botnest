@@ -72,7 +72,6 @@ describe('statRowsFromItems', () => {
     expect(rows).toEqual([
       {
         type: 'новый_тип_с_бэка',
-        emoji: '•',
         label: 'новый_тип_с_бэка',
         count: 1,
       },
@@ -96,12 +95,11 @@ describe('journeyStatRows — быстрые практики', () => {
     expect(rows).toEqual([
       {
         type: 'breathing',
-        emoji: '🌬',
         label: 'Дыхательные практики',
         count: 4,
       },
-      { type: 'grounding', emoji: '🌍', label: 'Заземление', count: 2 },
-      { type: 'stop', emoji: '🛑', label: 'Техника «Стоп»', count: 1 },
+      { type: 'grounding', label: 'Заземление', count: 2 },
+      { type: 'stop', label: 'Техника «Стоп»', count: 1 },
     ]);
   });
 

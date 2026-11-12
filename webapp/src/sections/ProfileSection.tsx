@@ -139,7 +139,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       )}
 
       {selectedAchievement && ACHIEVEMENT_META[selectedAchievement] && (
-        <AchievementDetail meta={ACHIEVEMENT_META[selectedAchievement]} look={badgeLook(selectedAchievement)} onClose={() => setSelectedAchievement(null)} />
+        <AchievementDetail id={selectedAchievement} meta={ACHIEVEMENT_META[selectedAchievement]} look={badgeLook(selectedAchievement)} onClose={() => setSelectedAchievement(null)} />
       )}
 
       {showBestDayInfo && <BestDayDialog onClose={() => setShowBestDayInfo(false)} />}

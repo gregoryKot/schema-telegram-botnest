@@ -7,6 +7,7 @@ import { INK } from './ink';
 import { SHEET } from './paperFrame';
 import { canvasSign } from './signs';
 import { sign, tracking, type Card } from './frame';
+import { glueSpaces } from '../../utils/typo';
 
 export interface HeaderOpts {
   /** Рубрика над заголовком — чернилами оттенка листа. */
@@ -49,10 +50,14 @@ const textWidth = (c: { W: number }, o: HeaderOpts) =>
 
 /** Строки шапки под шрифт карточки: заголовок до 2 строк, подпись до subtitleLines. */
 export function headerLines(ctx: CanvasRenderingContext2D, o: HeaderOpts) {
-  const maxW = textWidth({ W: CARD_W }, o);
+  // +1 px при знаке: «Схемный дневник» Literata 26 — 240,08 px при поле 240, и доля пикселя рвала
+  // заголовок на две строки; вылет на долю пикселя съедает зазор до знака (SIGN_GAP), не поле листа.
+  const maxW =
+    textWidth({ W: CARD_W }, o) + (o.sign && canvasSign(o.sign) ? 1 : 0);
   const measure = (s: string) => ctx.measureText(s).width;
   ctx.font = serifFont(26);
-  const title = clampLines(wrapLines(measure, o.title, maxW), 2);
+  // Короткий предлог не висит в конце строки заголовка («Приглашение от / терапевта»).
+  const title = clampLines(wrapLines(measure, glueSpaces(o.title), maxW), 2);
   ctx.font = cardFont(13.5);
   const sub = o.subtitle
     ? clampLines(wrapLines(measure, o.subtitle, maxW), o.subtitleLines ?? 3)
@@ -68,10 +73,16 @@ export function measureHeader(
   return headerLines(canvas.getContext('2d')!, o).height;
 }
 
-/** Шапка: рубрика, заголовок Literata, подпись, знак справа. Возвращает Y начала содержимого. */
-export function header(c: Card, o: HeaderOpts): number {
+export type HeaderLines = ReturnType<typeof headerLines>;
+
+/**
+ * Шапка: рубрика, заголовок Literata, подпись, знак справа. Возвращает Y начала содержимого.
+ * pre — строки, по которым карточка уже посчитала высоту до beginCard: шапка рисует их же, и
+ * заголовок на границе поля (240 px ± доли пикселя) не переносится в замере и не в рисунке по-разному.
+ */
+export function header(c: Card, o: HeaderOpts, pre?: HeaderLines): number {
   const { ctx } = c;
-  const { title, sub, height } = headerLines(ctx, o);
+  const { title, sub, height } = pre ?? headerLines(ctx, o);
   ctx.textAlign = 'left';
   if (o.sign)
     sign(

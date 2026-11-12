@@ -22,6 +22,7 @@ import {
 import { NEED_ORDER } from '../needs/types';
 import { journeyStatRows } from './journeyStats';
 import { EMPTY_JOURNEY_COUNTS } from './journeyCounts.fixture';
+import { canvasSign } from '../share/kit/signs';
 
 const HUES = Object.values(PAPER_HUE) as number[];
 
@@ -140,5 +141,21 @@ describe('isHealthyPart', () => {
     expect(isHealthyPart('Здоровый Взрослый')).toBe(true);
     expect(isHealthyPart('Здоровое поведение')).toBe(false);
     expect(isHealthyPart(undefined)).toBe(false);
+  });
+});
+
+describe('карточки шаринга рисуют знак каждого шага (b23b)', () => {
+  it.each(Object.keys(JOURNEY_TYPE_META))(
+    'у типа %s есть знак на canvas',
+    (type) => {
+      const look = journeyItemLook({ type });
+      expect(look).not.toBeNull();
+      expect(canvasSign(look!.sign)).toBe(look!.sign);
+    },
+  );
+
+  it('у шага на потребность и у колеса детства — тоже', () => {
+    for (const l of [...Object.values(JOURNEY_NEED_LOOK), CHILDHOOD_LOOK])
+      expect(canvasSign(l.sign)).toBe(l.sign);
   });
 });

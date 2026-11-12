@@ -1,83 +1,61 @@
 // @vitest-environment jsdom
-// Сводная карточка достижений: сетка эмодзи + полоска прогресса. Проверяем,
-// что пустой список (0 из 0) не делит на ноль и не падает — самое частое
-// место таких карточек ломаться (см. правило «никаких хардкод-заглушек»:
-// пустой аккаунт обязан показать 0%, а не NaN%).
+// Сводная карточка достижений (b23b): значки как в профиле — знак на бумажке своего оттенка;
+// неполученный — силуэт одним тоном на тихой бумаге; полоска «N из M», пустой список без деления
+// на ноль.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { drawAchievementsCard } from './achievementsCard';
-
-function mockCtx() {
-  return {
-    scale: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    fillRect: vi.fn(),
-    fillText: vi.fn(),
-    roundRect: vi.fn(),
-    arc: vi.fn(),
-    clip: vi.fn(),
-    setTransform: vi.fn(),
-    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    measureText: vi.fn((s: string) => ({ width: s.length * 7 })),
-    fillStyle: '',
-    strokeStyle: '',
-    font: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-  };
-}
+import { achievementRows, drawAchievementsCard } from './achievementsCard';
+import { canvasWithMockCtx } from './canvas.test-helpers';
+import { silhouetteHex } from '../cardKit';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** Цвета заливок по порядку вызовов fill (fillStyle на момент fill). */
+function fills(ctx: ReturnType<typeof canvasWithMockCtx>['ctx']) {
+  const seen: string[] = [];
+  ctx.fill.mockImplementation(() => {
+    seen.push(String(ctx.fillStyle));
+  });
+  return seen;
+}
+
 describe('drawAchievementsCard', () => {
-  it('часть достижений получена — не падает, рисует и яркие, и приглушённые', () => {
-    const ctx = mockCtx();
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    const canvas = document.createElement('canvas');
-    expect(() =>
-      drawAchievementsCard(canvas, [
-        { emoji: '🏆', earned: true },
-        { emoji: '🔥', earned: false },
-        { emoji: '🌱', earned: true },
-      ]),
-    ).not.toThrow();
-    expect(ctx.fillText).toHaveBeenCalledWith(
-      '2 из 3',
-      expect.any(Number),
-      expect.any(Number),
-    );
+  it('«N из M» и проценты', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    drawAchievementsCard(canvas, [
+      { id: 'first_day', earned: true },
+      { id: 'streak_3', earned: false },
+      { id: 'high_day', earned: true },
+    ]);
+    const texts = ctx.printed.map((p) => p.text);
+    expect(texts).toContain('2 из 3');
+    expect(texts).toContain('67%');
+  });
+
+  it('неполученный значок — знак силуэтом одним тоном', () => {
+    const earned = canvasWithMockCtx();
+    const a = fills(earned.ctx);
+    drawAchievementsCard(earned.canvas, [{ id: 'first_day', earned: true }]);
+    const missing = canvasWithMockCtx();
+    const b = fills(missing.ctx);
+    drawAchievementsCard(missing.canvas, [{ id: 'first_day', earned: false }]);
+    const tone = silhouetteHex(135);
+    expect(a).not.toContain(tone);
+    expect(b.filter((c) => c === tone)).toHaveLength(3); // три камешка Pebbles
   });
 
   it('пустой список — 0 из 0, без деления на ноль', () => {
-    const ctx = mockCtx();
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    const canvas = document.createElement('canvas');
+    const { canvas, ctx } = canvasWithMockCtx();
     expect(() => drawAchievementsCard(canvas, [])).not.toThrow();
-    expect(ctx.fillText).toHaveBeenCalledWith(
-      '0%',
-      expect.any(Number),
-      expect.any(Number),
-    );
+    expect(ctx.printed.map((p) => p.text)).toContain('0%');
   });
+});
 
-  it('больше 5 плиток переносится на вторую строку сетки, не падает', () => {
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      mockCtx(),
-    );
-    const canvas = document.createElement('canvas');
-    const items = Array.from({ length: 12 }, (_, i) => ({
-      emoji: '🏅',
-      earned: i % 2 === 0,
-    }));
-    expect(() => drawAchievementsCard(canvas, items)).not.toThrow();
+describe('achievementRows', () => {
+  it('по четыре в ряд, неполный последний ряд остаётся коротким', () => {
+    const rows = achievementRows(Array.from({ length: 13 }, (_, i) => i));
+    expect(rows.map((r) => r.length)).toEqual([4, 4, 4, 1]);
+    expect(achievementRows([])).toEqual([]);
   });
 });
