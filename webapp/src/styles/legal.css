@@ -1,0 +1,47 @@
+/* Юридические страницы (/privacy, /offer; на визитке — те же): legal/LegalPage.tsx, LegalLayout.tsx, LegalToc.tsx.
+   Префикс lg-. Корень — flex: 1 (#root — flex-ряд: без него страница липла к левому краю на 1280), колонка
+   чтения 780 по центру; на ≥1100 рядом с текстом — липкое оглавление (колонка 240), уже — свёрнутое под
+   вводной частью, раскрывается кнопкой. Типографика текста — инлайн-стили legalStyles/LegalLayout (как была). */
+.lg-root { flex: 1; width: 100%; min-width: 0; box-sizing: border-box; min-height: 100dvh; background: var(--bg); color: var(--text); }
+.lg-col { max-width: 780px; }
+.lg-doc { display: flex; flex-direction: column; gap: 32px; margin-top: 40px; }
+.lg-chapters { display: flex; flex-direction: column; gap: 40px; min-width: 0; }
+.lg-chapter { scroll-margin-top: 24px; }
+
+/* Оглавление: свёрнутое — строка бумаги с шевроном; раскрытое — список пунктов. */
+.lg-toc { border-radius: var(--r-12); background: var(--surface); border: 1px solid var(--line); }
+.lg-toc-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px;
+  padding: 0 16px; border: 0; background: none; color: var(--text); font: 600 14px/1.3 var(--sans); cursor: pointer;
+}
+.lg-toc-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-12); }
+.lg-toc-chevron {
+  width: 8px; height: 8px; margin-top: -4px; border-right: 2px solid var(--text-sub); border-bottom: 2px solid var(--text-sub);
+  transform: rotate(45deg); transition: transform .15s;
+}
+.lg-toc-toggle[aria-expanded='true'] .lg-toc-chevron { transform: rotate(-135deg); margin-top: 4px; }
+.lg-toc-head { display: none; }
+.lg-toc-list { display: none; list-style: none; margin: 0; padding: 0 8px 10px; }
+.lg-toc-list.is-open { display: block; }
+.lg-toc-link {
+  display: flex; align-items: center; min-height: 40px; padding: 4px 8px; border-radius: 8px;
+  font-size: 14px; line-height: 1.4; color: var(--text-sub); text-decoration: none;
+}
+.lg-toc-link:hover, .lg-toc-link:focus-visible { color: var(--text); background: var(--paper-sunk); }
+@media (prefers-reduced-motion: reduce) { .lg-toc-chevron { transition: none; } }
+
+/* ≥1100: текст 720 и оглавление 240 справа, липкое; список виден всегда, кнопка не нужна. */
+@media (min-width: 1100px) {
+  .lg-col { max-width: 1040px; }
+  .lg-col > :not(.lg-doc) { max-width: 720px; }
+  .lg-doc { display: grid; grid-template-columns: minmax(0, 720px) 240px; column-gap: 64px; align-items: start; margin-top: 48px; }
+  .lg-chapters { grid-column: 1; grid-row: 1; }
+  .lg-toc {
+    grid-column: 2; grid-row: 1; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto;
+    padding: 4px 0 8px; background: none; border: 0; border-left: 1px solid var(--line); border-radius: 0;
+  }
+  .lg-toc-toggle { display: none; }
+  .lg-toc-head { display: block; margin: 0 0 6px; padding: 0 16px; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-sub); }
+  .lg-toc-list, .lg-toc-list.is-open { display: block; padding: 0 0 0 8px; }
+  .lg-toc-link { min-height: 32px; font-size: 13px; }
+}
