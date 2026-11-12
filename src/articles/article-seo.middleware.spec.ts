@@ -271,7 +271,10 @@ describe('ArticleSeoMiddleware', () => {
     const mw = makeMiddleware(ARTICLE);
     const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
     await mw.use(req, res, () => {});
-    const jsonLd = /<script type="application\/ld\+json">([^<]+)<\/script>/.exec(getSent()!)?.[1] ?? '';
+    const jsonLd =
+      /<script type="application\/ld\+json">([^<]+)<\/script>/.exec(
+        getSent()!,
+      )?.[1] ?? '';
     expect(jsonLd).toContain('"@type":"Article"');
     expect(jsonLd).not.toContain('"image"');
   });
