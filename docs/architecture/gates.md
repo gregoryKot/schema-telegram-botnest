@@ -54,6 +54,7 @@
 | check-next-session-reads.mjs | чтение `.nextSession` во фронтах мимо `upcomingSession(…)` (настенная дата стареет, класс 17 INCIDENTS); исключение — форма правки `useSessionAliasEditing.ts` | — | нет | checks |
 | check-persistent-throttle.mjs | ручка с лимитом без решения о `@PersistentThrottle()` | `scripts/persistent-throttle-baseline.json` | нет | checks |
 | check-pool-sync.mjs | фразы `healthy-adult.data.ts`, не доехавшие миграциями до БД | — | нет | checks |
+| check-pr-size.mjs | PR больше 60 файлов или 1500 изменённых строк (дифф `origin/main...HEAD`; не считаются `*-baseline.json`, `package-lock.json`, `test/fixtures/**`, чистые переименования); обход — метка PR `big-pr`; только событие `pull_request`, в precheck пропускается | — | нет | checks |
 | check-public-scripts.mjs | `public/**/*.js` без теста, инлайн-`<script>` без хеша | `scripts/public-scripts-baseline.json` | да | checks |
 | check-query-plans.mjs | Seq Scan и рост страниц в EXPLAIN горячих запросов | `scripts/query-plan-baseline.json` | да | perf |
 | check-raw-sql-live.mjs | файл с `$queryRaw`/`$executeRaw` без спека на живом Postgres | `scripts/raw-sql-live-baseline.json` | нет | checks |

@@ -60,6 +60,7 @@ scripts/check-agent-docs.mjs (CI, джоба checks). Новое правило:
 - **№11** Один маршрут — один контроллер (`check-route-collisions`); дубли ≥70 токенов не растут (`check-jscpd-ratchet`); у файла есть не-тестовый потребитель (`check-dead-files`); заменил компонент — удали старый в том же PR.
 - **№13** Конфликт сводится локально: `git fetch origin main && git merge origin/main` (не кнопкой GitHub). Бейслайны сводят merge-драйверы — руками не разрешать. Новый `*-baseline.json` = строка в `.gitattributes`. `package-lock.json` — любая сторона + `npm install`. `main` под ruleset (`strict`, все джобы `ci.yml` обязательны): ветка отстала — обнови её с `main`, дождись CI заново, потом мерж или `enable_pr_auto_merge`.
 - **№15** Красный гейт чинят по существу: сначала пойми, почему он прав. Исключение — с причиной, тестом-образцом и контрольным образцом; рост бейслайна объясняется строкой в описании PR; код остаётся там, куда гейт смотрит (`game/`, `public/` — слепые зоны).
+- **Размер PR:** не больше 60 файлов и 1500 изменённых строк против `origin/main` (`check-pr-size`; не считаются `*-baseline.json`, `package-lock.json`, `test/fixtures/**`, чистые переименования) — крупное дели на несколько PR; обход — метка `big-pr`.
 - `PrismaModule` глобальный: `PrismaService` берут инъекцией, в `providers` других модулей его нет.
 
 ### Фронтенд: код и сборка → [.claude/rules/frontend.md](.claude/rules/frontend.md)
