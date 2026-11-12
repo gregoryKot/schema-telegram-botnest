@@ -1,4 +1,4 @@
-// Вкладки карточки (b30) и фильтр «Записей» (r1): активная — по центру (scrollLeft полосы, не scrollIntoView), маска у
+// Вкладки карточки (b30) и фильтр «Записей» (r1): активная — к центру, если не видна (scrollLeft полосы, не scrollIntoView), маска у
 // края; полоса выросла после эффекта (счётчики, шрифт) — ResizeObserver снова к активной (r1, L1). Расчёты — clientTabsScroll.ts.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fadeClass, tabScrollTarget, tabsFade, widthChanged, type TabsFade } from './clientTabsScroll';
@@ -15,7 +15,7 @@ export function useTabsBar(active: string) {
   const center = useCallback(() => {
     const el = ref.current;
     const tab = el?.querySelector<HTMLElement>('[aria-selected="true"]');
-    if (el && tab) el.scrollLeft = tabScrollTarget(tab.offsetLeft, tab.offsetWidth, el.clientWidth, el.scrollWidth);
+    if (el && tab) el.scrollLeft = tabScrollTarget(tab.offsetLeft, tab.offsetWidth, el.clientWidth, el.scrollWidth, el.scrollLeft);
     if (el) lastWidth.current = el.scrollWidth;
     onScroll();
   }, [onScroll]);

@@ -112,4 +112,18 @@ describe('исход (установленное приложение)', () => {
     );
     vi.useRealTimers();
   });
+
+  // Аудит b26: сбой билета стоял часами-эмодзи посреди формы — теперь лист сбоя с повтором.
+  it('билет не выписался — сбой листом с повтором на месте кнопки, повтор возвращает ВКонтакте', async () => {
+    startMock.mockReset().mockRejectedValue(new Error('500'));
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не\sполучилось начать вход/);
+    expect(alert.textContent).not.toMatch(/[⌛🛑]/u);
+    // Без кода билета ссылке вести некуда — кнопки нет, пока билет не выписан.
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
+    startMock.mockResolvedValue({ deviceCode: 'd'.repeat(64), userCode: 'K7M2QX94', expiresIn: 300, interval: 3 });
+    screen.getByRole('button', { name: 'Попробовать снова' }).click();
+    await waitFor(() => expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy());
+  });
 });

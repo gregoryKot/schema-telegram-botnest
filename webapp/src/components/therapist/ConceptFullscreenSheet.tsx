@@ -50,22 +50,17 @@ export function ConceptFullscreenSheet({ title, closeLabel, onClose, backRef, to
     return () => { backRef.current = null; };
   });
 
-  // Отступы панели задаёт concept-panel.css (на компьютере шире), листа на весь экран — инлайн, как было.
+  // Вид шапки — concept-panel.css: отступы панели (на компьютере шире) и листа на весь экран (cfs-head--full);
+  // на телефоне кнопка закрытия стоит в строке с заголовком, панель действий — строкой под ними.
   const content = (
     <>
-      <div className="cfs-head" style={{
-        padding: panel ? undefined : 'var(--space-12) var(--space-20)',
-        borderBottom: sub || column ? undefined : '1px solid var(--line)',
-      }}>
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-12)',
-          ...(column && { maxWidth: column, margin: '0 auto' }),
-        }}>
+      <div className={`cfs-head${panel ? '' : ' cfs-head--full'}${sub || column ? '' : ' cfs-head--line'}`}>
+        <div className="cfs-head-row" style={column ? { maxWidth: column, margin: '0 auto' } : undefined}>
           {label
-            ? <div className="ds-label" style={{ marginRight: 'auto' }}>{label}</div>
-            : <h2 className="ds-h2" style={{ margin: 0, marginRight: 'auto' }}>{title}</h2>}
+            ? <div className="ds-label cfs-title">{label}</div>
+            : <h2 className="ds-h2 cfs-title">{title}</h2>}
           {toolbar}
-          <button type="button" className="ds-btn ds-btn--secondary" onClick={goBack}>{closeLabel}</button>
+          <button type="button" className="ds-btn ds-btn--secondary cfs-close" onClick={goBack}>{closeLabel}</button>
         </div>
       </div>
       {sub}

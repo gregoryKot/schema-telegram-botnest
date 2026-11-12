@@ -230,6 +230,16 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-seg--full { display: flex; box-sizing: border-box; } /* на компьютере — по содержимому (блок ≥768), на телефоне во всю колонку */
 .ds-seg--full > .ds-seg-btn { flex: 1 1 0; min-width: 0; padding-left: 8px; padding-right: 8px; overflow: hidden; text-overflow: ellipsis; }
 .ds-page > .ds-seg { align-self: flex-start; }
+/* Затухание края прокручиваемого сегмента (лента карт, вкладки справочника): край ставит потребитель
+   атрибутом data-fade-* (useStripEdges, как у полосы дат истории) — только когда за краем что-то есть. */
+/* Запас прокрутки: выбранный пункт, доведённый до видимого, встаёт вне зоны затухания, крайний — до упора. */
+.ds-seg--fade { scroll-padding-inline: 36px; }
+.ds-seg--fade[data-fade-end] { -webkit-mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent); mask-image: linear-gradient(to right, var(--text) calc(100% - 32px), transparent); }
+.ds-seg--fade[data-fade-start] { -webkit-mask-image: linear-gradient(to right, transparent, var(--text) 32px); mask-image: linear-gradient(to right, transparent, var(--text) 32px); }
+.ds-seg--fade[data-fade-start][data-fade-end] {
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--text) 32px, var(--text) calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to right, transparent, var(--text) 32px, var(--text) calc(100% - 32px), transparent);
+}
 
 /* ── Чипы, бейджи, аватары ───────────────────────────────────────────────── */
 .ds-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 5px 10px; font-size: 12.5px; font-weight: 500; }

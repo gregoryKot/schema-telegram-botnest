@@ -34,7 +34,7 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, le
       {settings.notifyPausedUntil && new Date(settings.notifyPausedUntil) > new Date() && (
         <div className="st-pause">
           <span className="st-text">
-            ⏸ Уведомления на паузе до {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
+            Уведомления на паузе до {new Date(settings.notifyPausedUntil).toLocaleDateString('ru-RU')}
           </span>
           <button className="ds-link" onClick={() => patch({ notifyPausedUntil: null } as Partial<UserSettings>)}>Возобновить</button>
         </div>
@@ -52,7 +52,7 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, le
       {channel && (reminders || summary) && (
         <NotifyScheduleRows settings={settings} patch={patch} openSubView={openSubView} />
       )}
-      <SRow title="Часовой пояс" sub="От него считается «сегодня» и час напоминаний" right={<ChevronVal text={tzLabel} />} onClick={() => openSubView('tz')} />
+      <SRow title="Часовой пояс" sub="От него считается «сегодня» и час напоминаний" right={<ChevronVal text={tzLabel} />} opens="tz" onClick={() => openSubView('tz')} />
     </SSection>
   );
 }

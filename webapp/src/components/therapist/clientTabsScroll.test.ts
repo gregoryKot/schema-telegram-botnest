@@ -1,6 +1,8 @@
 // Полоса вкладок карточки клиента (b30): маска у края, за которым есть вкладки, и прокрутка к активной.
 import { describe, it, expect } from 'vitest';
-import { fadeClass, tabScrollTarget, tabsFade, widthChanged } from './clientTabsScroll';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { TAB_FADE, fadeClass, tabScrollTarget, tabsFade, widthChanged } from './clientTabsScroll';
 
 describe('tabsFade', () => {
   it('всё помещается — маски нет', () => {
@@ -24,6 +26,19 @@ describe('tabScrollTarget', () => {
   it('первая вкладка — к началу, последняя — к концу, не дальше краёв', () => {
     expect(tabScrollTarget(16, 60, 390, 900)).toBe(0);
     expect(tabScrollTarget(820, 70, 390, 900)).toBe(510);
+  });
+
+  it('с текущей прокруткой: видимая вкладка полосу не двигает, под маской или за краем — к центру', () => {
+    expect(tabScrollTarget(150, 80, 390, 900, 0)).toBe(0);
+    expect(tabScrollTarget(320, 60, 390, 900, 0)).toBe(155); // правый край 380 — под маской 40px
+    expect(tabScrollTarget(600, 80, 390, 900, 0)).toBe(445);
+    expect(tabScrollTarget(220, 80, 390, 900, 200)).toBe(65); // слева под маской
+    expect(tabScrollTarget(300, 80, 390, 900, 200)).toBe(200);
+  });
+
+  it('ширина маски — та же, что --tk-fade в CSS', () => {
+    const css = readFileSync(resolve(__dirname, '../../styles/therapist-card.css'), 'utf8');
+    expect(css).toContain(`--tk-fade: ${TAB_FADE}px`);
   });
 
   it('полоса без прокрутки — ноль', () => {

@@ -79,8 +79,8 @@ export function AppSections({
         <div className="page"><TherapistTodaySection displayName={displayName} onOpenClient={openClient} onAddClient={() => navigate('/cabinet')} /></div>
       </ErrorBoundary>
     )}
-    {therapistMode && pathname === '/cabinet/guide' && (
-      <ErrorBoundary section="Кабинет" key="cabinet-guide-boundary"><div className="page"><TherapistGuideSection /></div></ErrorBoundary>
+    {therapistMode && pathname === '/cabinet/guide' && ( // .page — прокрутка раздела: без неё .ds-page лежала в .canvas (overflow: hidden), sheet-scroll.spec.ts
+      <div className="page" key="cabinet-guide"><ErrorBoundary section="Кабинет" key="cabinet-guide-boundary"><TherapistGuideSection /></ErrorBoundary></div>
     )}
     {therapistMode && !CABINET_PAGES.includes(pathname) && (
       <ErrorBoundary section="Кабинет" key="cabinet-client-boundary">

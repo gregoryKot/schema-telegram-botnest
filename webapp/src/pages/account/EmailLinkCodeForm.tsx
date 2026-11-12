@@ -3,6 +3,7 @@ import { USER_CODE_LENGTH } from '../../../../shared/src/auth/userCodeEntry';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 import { sessionPost } from '../../components/stepUp/sessionRequest';
 import { TicketCodeField } from '../service/TicketCodeField';
+import { FieldError } from '../../components/paper/FieldError';
 
 const FAILED = 'Код не подошёл или истёк';
 
@@ -11,11 +12,13 @@ const FAILED = 'Код не подошёл или истёк';
 // открыто внутри Telegram или MAX, письмо открывается в другой программе — и
 // привязать адрес можно только кодом, здесь же, где привязку запросили.
 // С 2026-11 это путь на сайт для тех, кто входил только через Telegram.
-export function EmailLinkCodeForm({ accessToken, onLinked, onError }: {
+export function EmailLinkCodeForm({ accessToken, onLinked, onError, error = null }: {
   accessToken: string | null;
   /** Адрес привязан — экрану пора перечитать способы входа. */
   onLinked: () => void;
   onError: (message: string | null) => void;
+  /** Ошибка кода — сразу под полем (FieldError), над кнопкой; текст держит владелец onError. */
+  error?: string | null;
 }) {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -38,7 +41,8 @@ export function EmailLinkCodeForm({ accessToken, onLinked, onError }: {
   return (
     <form onSubmit={confirm} className="aa-email-code">
       <TicketCodeField label="Код из письма" value={code} onChange={setCode} matches disabled={busy} />
-      <button type="submit" disabled={busy || code.length !== USER_CODE_LENGTH} className="ds-btn ds-btn--sm">
+      {error && <FieldError className="aa-email-code-err">{error}</FieldError>}
+      <button type="submit" disabled={busy || code.length !== USER_CODE_LENGTH} className="ds-btn ds-btn--sm ds-btn--secondary" aria-busy={busy || undefined}>
         {busy ? '…' : 'Привязать'}
       </button>
     </form>

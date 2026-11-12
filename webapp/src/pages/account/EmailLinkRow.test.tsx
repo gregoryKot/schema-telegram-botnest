@@ -4,7 +4,6 @@
 // адрес не привязан, отправка ведёт на экран «письмо отправлено», а отказ
 // сервера виден человеку текстом, а не тишиной.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useState } from 'react';
 import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { StepUpProvider } from '../../components/stepUp/StepUpProvider';
@@ -22,8 +21,7 @@ function jsonResponse(status: number, body: unknown): Response {
 let fetchMock: ReturnType<typeof vi.fn>;
 const onLinked = vi.fn();
 
-/** Ошибку показывает страница — здесь её крошечный дублёр, чтобы проверять
- *  «видно текстом», а не только вызов колбэка. */
+/** Ошибку строка показывает сама, у поля адреса (b27): проверяем «видно текстом». */
 function Harness({
   linked = false,
   email = null,
@@ -33,17 +31,14 @@ function Harness({
   email?: string | null;
   form?: AddressForm;
 }) {
-  const [error, setError] = useState<string | null>(null);
   return (
     <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
-      {error && <div>{error}</div>}
       <EmailLinkRow
         accessToken="tok123"
         linked={linked}
         email={email}
         busy={false}
         onUnlink={vi.fn()}
-        onError={setError}
         onLinked={onLinked}
       />
     </AddressFormContext.Provider>
@@ -158,6 +153,30 @@ describe('EmailLinkRow — отправка письма', () => {
     expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
   });
 
+  it('ошибка отправки — у поля адреса (role=alert), поле помечено, форма на месте', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(429, { message: 'Слишком много писем' }));
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    const input = screen.getByPlaceholderText('your@email.com');
+    fireEvent.change(input, { target: { value: 'me@example.com' } });
+    fireEvent.click(screen.getByText('Отправить'));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toBe('Слишком много писем');
+    expect(input.closest('form')!.contains(alert)).toBe(true);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('возврат по ссылке из письма: успех — статусом, отказ — причиной у строки', () => {
+    const { rerender } = render(
+      <EmailLinkRow accessToken="t" linked busy={false} onUnlink={vi.fn()} notice={{ kind: 'ok', text: 'Email успешно привязан' }} />,
+    );
+    expect(screen.getByRole('status').textContent).toBe('Email успешно привязан');
+    rerender(
+      <EmailLinkRow accessToken="t" linked={false} busy={false} onUnlink={vi.fn()} notice={{ kind: 'error', text: 'Адрес занят' }} />,
+    );
+    expect(screen.getByRole('alert').textContent).toBe('Адрес занят');
+  });
+
   it('форма «вы» — подсказка после отправки во «вы»', async () => {
     render(<Harness form="vy" />);
     fireEvent.click(screen.getByText('Привязать'));
@@ -216,6 +235,10 @@ describe('EmailLinkRow — код из письма', () => {
     fireEvent.change(input, { target: { value: 'ZZZZZZZZ' } });
     submit();
     await screen.findByText('Код не подошёл или истёк');
+    // Ошибка — у поля кода (b27), а не баннером страницы.
+    const alert = screen.getByRole('alert');
+    expect(alert.textContent).toMatch(/^Код не\sподошёл или истёк$/);
+    expect(screen.getByLabelText('Код из письма').closest('form')!.contains(alert)).toBe(true);
     expect(onLinked).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Код из письма')).toBeTruthy();
   });

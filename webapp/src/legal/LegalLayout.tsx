@@ -1,22 +1,22 @@
-// Разметка юридических документов: политика (`pages/PrivacyPage.tsx`) и
-// оферта (`pages/OfferPage.tsx`). До 2026-11 у каждой страницы была своя копия
-// этих компонентов, и обе страницы были шире экрана телефона: таблица
-// реквизитов держала колонку подписи в 220px, а длинные неразрывные значения
-// (почта, адреса, имена файлов cookie) раздвигали сетку — при 390px
-// `scrollWidth` был 482. Поэтому колонка подписи сжимается до доли ширины, а
-// обе ячейки переносят слово где угодно (`minWidth: 0` + `overflowWrap`);
-// заголовок и поля страницы тоже ужимаются на узком экране. Замер в настоящем
-// браузере — `e2e-browser/public-pages.spec.ts`.
+// Разметка юридических документов: политика (`pages/PrivacyPage.tsx`) и оферта (`pages/OfferPage.tsx`).
+// До 2026-11 у каждой страницы была своя копия этих компонентов, и обе страницы были шире экрана телефона:
+// таблица реквизитов держала колонку подписи в 220px, а длинные неразрывные значения (почта, адреса, имена
+// файлов cookie) раздвигали сетку — при 390px `scrollWidth` был 482. Поэтому колонка подписи сжимается до доли
+// ширины, а обе ячейки переносят слово где угодно (`minWidth: 0` + `overflowWrap`); заголовок и поля страницы
+// тоже ужимаются на узком экране. Замер в настоящем браузере — `e2e-browser/public-pages.spec.ts`.
+// Doc ставит оглавление по главам (LegalToc, b28; вид — styles/legal.css).
 import type { CSSProperties, ReactNode } from 'react';
 import { TABLE_ROW_COLUMNS } from './legalStyles';
+import { LegalToc } from './LegalToc';
+import { chapterId, tocFromChapters } from './LegalTocModel';
 
 export function Doc({ children }: { children: ReactNode }) {
-  return <div style={{ display: 'flex', flexDirection: 'column', gap: 40, marginTop: 48 }}>{children}</div>;
+  return <div className="lg-doc"><LegalToc items={tocFromChapters(children)} /><div className="lg-chapters">{children}</div></div>;
 }
 
 export function Chapter({ n, title, id, children }: { n: string; title: string; id?: string; children: ReactNode }) {
   return (
-    <section id={id}>
+    <section id={chapterId(n, id)} className="lg-chapter">
       <h2 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 400, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-.01em', paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
         <span style={{ color: 'var(--accent)', marginRight: 10, fontSize: 14, fontFamily: 'inherit', fontStyle: 'normal' }}>{n}.</span>{title}
       </h2>

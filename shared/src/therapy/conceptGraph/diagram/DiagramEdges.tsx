@@ -1,4 +1,5 @@
 import { edgeOpacity } from './diagramFocus';
+import { NEED_LINK } from './diagramPaper';
 import type { DiagramEdge, Pt } from './diagramTypes';
 
 const ARROW = 9;
@@ -15,12 +16,12 @@ export function edgePath(points: Pt[]): string {
 }
 
 /**
- * Значок на линии: красный ✗ — схема блокирует потребность, зелёный ✓ —
- * потребность, о которой уже умеют заботиться. Знак нарисован путём, а не
- * символом: он одинаков в любом шрифте и не зависит от эмодзи платформы.
+ * Значок на линии: ✗ — схема блокирует потребность, ✓ — о ней уже заботятся. Белый
+ * кружок с кромкой и знаком тоном линии (NEED_LINK), без алой заливки; знак — путём.
  */
 function Badge({ at, kind }: { at: Pt; kind: 'block' | 'meet' }) {
   const block = kind === 'block';
+  const ink = NEED_LINK[block ? 'blocks' : 'meets'].badge;
   return (
     <g
       data-badge={kind}
@@ -28,14 +29,14 @@ function Badge({ at, kind }: { at: Pt; kind: 'block' | 'meet' }) {
     >
       <circle
         r={BADGE_R}
-        fill={block ? 'var(--accent-red)' : 'var(--accent-green)'}
-        stroke="var(--surface)"
-        strokeWidth={2}
+        fill="var(--surface)"
+        stroke={ink}
+        strokeWidth={1.5}
       />
       <path
         d={block ? 'M-4,-4 L4,4 M4,-4 L-4,4' : 'M-4.5,0.5 L-1.5,3.5 L4.5,-3.5'}
         fill="none"
-        stroke={block ? 'var(--on-accent-red)' : 'var(--on-accent)'}
+        stroke={ink}
         strokeWidth={2.2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -45,8 +46,7 @@ function Badge({ at, kind }: { at: Pt; kind: 'block' | 'meet' }) {
 }
 
 /**
- * Линии диаграммы одним слоем SVG: под фигурами. Стрелка — marker своего цвета
- * (context-stroke ещё не везде); у связи режим ⇄ схема стрелки на обоих концах.
+ * Линии одним слоем SVG под фигурами; стрелка — marker своего цвета, у режим ⇄ схема — с обоих концов.
  */
 export function DiagramEdges({
   edges,

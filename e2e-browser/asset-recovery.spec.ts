@@ -76,9 +76,9 @@ test.describe('файл сборки не дошёл с первого раза'
     // без файла ссылка остаётся inline. Шапку с той же ссылкой тот же файл на
     // компьютере прячет: симптом инцидента — две видимые «← На главную».
     await expect(page.locator('a.ap-home')).toHaveCSS('display', 'flex');
-    await expect(page.getByRole('link', { name: '← На главную' })).toHaveCount(
-      1,
-    );
+    await expect(
+      page.getByRole('link', { name: 'На главную', exact: true }),
+    ).toHaveCount(1);
     const entryStylesheetApplied = await page.evaluate(() =>
       [...document.styleSheets].some((sheet) => {
         if (!/\/assets\/index-[^/]+\.css/.test(sheet.href ?? '')) return false;

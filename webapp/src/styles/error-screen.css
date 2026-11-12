@@ -8,6 +8,7 @@
 .sk-crash { flex: 1; min-width: 0; }
 /* Без min-height от высоты окна: раздел — в прокрутке .page, лист стоит у верха колонки. */
 .pa-outcome.sk-crash-outcome { min-height: 0; align-items: flex-start; padding: 72px 24px 48px; background: transparent; }
+.pa-outcome.sk-crash-outcome > .pa-outcome-card { margin-block: 0; } /* у верха колонки, без центрирования листа */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .pa-outcome.sk-crash-outcome { min-height: 0; padding: 16px 16px 24px; }
 }

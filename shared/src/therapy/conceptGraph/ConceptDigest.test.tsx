@@ -6,13 +6,11 @@ import { describe, it, expect } from 'vitest';
 import { render, renderHook, screen, within } from '@testing-library/react';
 import { ConceptDigest, useConceptDigest } from './ConceptDigest';
 import type { DigestRow } from './conceptDigestModel';
+import { withPaper } from './conceptPaper.test-helpers';
 import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
 
 const SKIN: ConceptSkin = {
   seg: { group: 'sk-seg', btn: 'sk-seg-btn' },
-  chip: 'sk-chip',
-  tag: 'sk-tag',
-  dot: 'sk-dot',
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',
@@ -68,7 +66,7 @@ describe('ConceptDigest', () => {
       .map((el) => el.textContent);
     expect(values).toEqual([
       'Неуспешность',
-      'Карающий Критик→Здоровый Взрослый',
+      'Карающий КритикЗдоровый Взрослый',
       'Снизить тревогу',
     ]);
     expect(within(card).queryByRole('button')).toBeNull();
@@ -103,14 +101,64 @@ describe('ConceptDigest', () => {
       expect(d.className).toBe('dg-value');
       expect(d.getAttribute('style')).toBeNull();
     }
-    // плашки сущностей — тег skin в тоне домена / группы, слово «→» — без тега
+    // плашки сущностей — белые чипы без цвета в инлайне (не радуга), «→» — значок-путь, не глиф
     const chip = within(schemas).getByText('Неуспешность');
-    expect(chip.className).toBe('sk-tag');
-    expect(chip.getAttribute('style')).toBe('--h: 70;');
+    expect(chip.className).toBe('cg-tag');
+    expect(chip.getAttribute('style')).toBeNull();
     expect(
       within(modes).getByText('Карающий Критик').getAttribute('style'),
-    ).toBe('--h: 310;');
-    expect(within(modes).getByText('→').className).toBe('');
+    ).toBeNull();
+    expect(within(modes).queryByText('→')).toBeNull();
+    expect(modes.querySelector('svg[data-mark="arrow"]')).toBeTruthy();
+  });
+
+  it('на бумаге сайта: знак раздела у метки строки, знак сущности в чипе, ✗ и ✓ — значками', () => {
+    render(
+      withPaper(
+        <ConceptDigest
+          rows={[
+            {
+              key: 'schemas',
+              label: 'Схемы',
+              kind: 'chips',
+              items: [
+                { text: 'Неуспешность', hue: 70, sign: 'domain_autonomy' },
+              ],
+              text: 'Неуспешность',
+            },
+            {
+              key: 'needs',
+              label: 'Потребности',
+              kind: 'chips',
+              items: [
+                { text: '✗ блокированы:', plain: 'caption' },
+                { text: 'Автономия', hue: 70, sign: 'need_autonomy' },
+                { text: '✓ есть опора:', plain: 'caption' },
+                { text: 'Границы', hue: 135, sign: 'need_limits' },
+              ],
+              text: '',
+            },
+          ]}
+        />,
+      ),
+    );
+    const [schemasTerm, needsTerm] = screen.getAllByRole('term');
+    expect(schemasTerm.querySelector('[data-sign="layers"]')).toBeTruthy();
+    expect(
+      needsTerm
+        .querySelector('[data-sign="strokes"]')
+        ?.getAttribute('data-size'),
+    ).toBe('row');
+    expect(
+      screen
+        .getByText('Неуспешность')
+        .querySelector('[data-sign="domain_autonomy"]'),
+    ).toBeTruthy();
+    const needs = screen.getAllByRole('definition')[1];
+    // слова подписи остаются, глифов ✗ и ✓ в тексте нет — они нарисованы путём
+    expect(needs.textContent).toBe('блокированы:Автономияесть опора:Границы');
+    expect(needs.querySelector('svg[data-mark="block"]')).toBeTruthy();
+    expect(needs.querySelector('svg[data-mark="meet"]')).toBeTruthy();
   });
 
   it('пустой список строк — карточки нет', () => {

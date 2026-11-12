@@ -1,6 +1,6 @@
-// Маленькие знаки строк палитры холста — тот же язык бумажной аппликации, что у
-// знаков групп (docs/design/PAPER_2026-11.md): режим — круг (часть у руля), схема —
-// два слоя (наросло поверх потребности), триггер — лента (момент, который зацепил),
+// Маленькие знаки фигур палитры холста — тот же язык бумажной аппликации, что у
+// знаков групп (docs/design/PAPER_2026-11.md). Строка режима и схемы каталога берёт знак группы
+// и домена (PaletteRow); здесь — фигуры: схема — два слоя, триггер — лента (момент, который зацепил),
 // поведение — ступени (что человек делает дальше), опыт детства — полоска пригнулась
 // (что с потребностью случилось), потребность — полоска, круг потребностей — пять
 // полосок по кругу. Плоская бумага без обводки; цвет — цвет фигуры на холсте.
@@ -9,8 +9,7 @@ import type { MarkKind } from './paletteModel';
 
 const pale = (c: string) => `color-mix(in srgb, ${c} 45%, var(--bg))`;
 
-const SHAPES: Record<MarkKind, (c: string) => ReactElement> = {
-  mode: (c) => <circle cx="10" cy="10" r="6.5" fill={c} />,
+const SHAPES: Record<Exclude<MarkKind, 'mode'>, (c: string) => ReactElement> = {
   schema: (c) => (
     <>
       <rect x="2.5" y="10.5" width="15" height="5.5" rx="2.75" fill={c} />
@@ -45,7 +44,7 @@ const SHAPES: Record<MarkKind, (c: string) => ReactElement> = {
 };
 
 /** Знак строки палитры по виду фигуры; размер задаёт CSS (.mm2-mark), смысл несёт подпись рядом. */
-export function PaletteMark({ kind, color }: { kind: MarkKind; color: string }) {
+export function PaletteMark({ kind, color }: { kind: Exclude<MarkKind, 'mode'>; color: string }) {
   return (
     <svg className="mm2-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false" data-mark={kind}>
       {SHAPES[kind](color)}

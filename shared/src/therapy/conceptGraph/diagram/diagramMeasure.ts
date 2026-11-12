@@ -8,7 +8,7 @@ export const FONT = { title: 13, sub: 11, body: 12, caption: 11 } as const;
 export const LINE = { title: 17, sub: 14, body: 16, caption: 14 } as const;
 /** Средняя ширина буквы в долях кегля: жирный заголовок шире обычного текста. */
 const EM = { title: 0.62, body: 0.58 } as const;
-const TITLE_MAX_LINES = 2;
+export const TITLE_MAX_LINES = 3; // «Жёсткие стандарты / Придирчивость» в четырёх колонках в две строки не входит
 const CAPTION_MAX_LINES = 2;
 const BODY_GAP = 4;
 const V_PAD = 6;
@@ -68,7 +68,7 @@ export interface Measured {
 }
 
 /**
- * Высота фигуры под её текст: заголовок до двух строк, мелкая строка, подпись
+ * Высота фигуры под её текст: заголовок до трёх строк, мелкая строка, подпись
  * и текст до `bodyMax` строк. `minH` — нижняя граница, чтобы пустая фигура не
  * схлопывалась в полоску.
  */

@@ -286,7 +286,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
 
   return (
     <div className="mm2-canvas">
-      <div className="mm2-statusbar">{/* строка в потоке над холстом, не поверх тулбара (sheet-modemap.css) */}
+      <div className="mm2-statusbar">{/* тихая плашка поверх холста: рядом с тулбаром или под ним (sheet-modemap.css) */}
         <ConceptSyncLine onAddToMap={fromConcept.generate} />
         {fromConcept.failed ? <span role="alert" className="mm2-save is-err">Не получилось собрать схему из концептуализации</span>
           : <SaveStatusLine className="mm2-save" status={saveStatus} savedAt={savedAt} onRetry={onRetrySave} errorText={saveError} align="right" />}
@@ -308,7 +308,7 @@ export function ModeMapCanvas({ clientId, mapId, kind, nodes, edges, setNodes, s
         onMoveEnd={onMoveEnd}
         snapToGrid={snap} snapGrid={[20, 20]}
         selectionKeyCode="Shift" multiSelectionKeyCode={['Meta', 'Shift']}
-        zoomOnPinch panOnScroll={false}
+        zoomOnPinch panOnScroll={false} minZoom={0.2}
         deleteKeyCode={null}
         nodesDraggable nodeDragThreshold={1}
       >

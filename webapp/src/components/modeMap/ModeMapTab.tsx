@@ -21,7 +21,7 @@ export const MODE_MAP_DESKTOP_ONLY =
 
 function ModeMapDesktopOnly() {
   return (
-    <div className="mm2-center">
+    <div className="mm2-center mm2-center--note">
       <PaperEmpty art={Cluster}>{MODE_MAP_DESKTOP_ONLY}</PaperEmpty>
     </div>
   );

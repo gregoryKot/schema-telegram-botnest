@@ -100,11 +100,11 @@ export function AuthConfirmPage() {
   if (phase === 'denied') return <TicketDenied><ToAppLink /></TicketDenied>;
 
   return (
-    <ServicePage>
+    <ServicePage look={{ hue: 240, sign: 'limits' }}>
       <div className="as-body">
         <div className="ds-eyebrow">Вход по коду</div>
         {/* Безлично: страница вне AddressFormProvider, формы взять неоткуда (как DonatePage). */}
-        <h1 className="ds-h2">Это свой вход в приложение?</h1>
+        <h1 className="ds-h2 as-title">Это свой вход в приложение?</h1>
         <p className="as-lead">Код показан в приложении, из которого идёт вход, — его нужно набрать здесь.</p>
         <TicketCodeField value={typed} onChange={setTyped} matches={matches} disabled={phase === 'busy'} />
         {preview.kind === 'ok' && <p className="as-lead">Устройство: <b>{preview.deviceLabel ?? 'не определилось'}</b>, запрошено в {momentTime(preview.createdAt)}</p>}

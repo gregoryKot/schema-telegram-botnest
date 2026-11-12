@@ -105,7 +105,7 @@ describe('«Открыть на холсте»: где есть кнопка', (
     await openTab();
     expect(screen.queryByRole('button', { name: /холсте/ })).toBeNull();
     const btn = canvasBtn();
-    expect(btn.firstElementChild!.textContent).toBe('Открыть на холсте');
+    expect(btn.querySelector('.tcp-menu-text')!.firstElementChild!.textContent).toBe('Открыть на холсте');
     // Подсказка — строкой под названием, видна без наведения (не в title).
     expect(within(btn).getByText(/Новая графическая карта из этой схемы: можно двигать фигуры/)).toBeTruthy();
     expect(btn.title).toBe('');

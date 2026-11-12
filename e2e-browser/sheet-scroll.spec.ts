@@ -56,3 +56,84 @@ for (const phone of PHONES) {
     expect(box!.y + box!.height).toBeLessThanOrEqual(phone.height + 1);
   });
 }
+
+// «Справочник» терапевта прокручивается на планшете и компьютере (редизайн 2026-11, b35).
+// Раздел рисовал .ds-page прямо в .canvas (overflow: hidden) без .page: на ≥768 колесо не
+// двигало страницу, группы ниже окна («Здоровые режимы») были недоступны; на телефоне
+// прокрутка была (там листает окно). Замер тот же: у раздела есть своя прокрутка, и
+// последняя строка после колеса мыши видна в окне.
+const WIDE = [
+  { name: 'планшет 768', width: 768, height: 1024 },
+  { name: 'компьютер 1280', width: 1280, height: 800 },
+];
+
+// Сессия терапевта поверх чистого клиента: роль в профиле (полная форма UserProfile)
+// и пустой кабинет — списки без строк (src/api/therapy*.controller.ts).
+const THERAPIST: [string, unknown][] = [
+  [
+    'GET /api/profile',
+    {
+      name: 'Терапевт',
+      role: 'THERAPIST',
+      ysq: { completedAt: null, activeSchemaIds: [] },
+      notifications: {
+        enabled: true,
+        reminderEnabled: true,
+        timezone: 'Europe/Moscow',
+        localHour: 21,
+      },
+      streak: 0,
+      lastActivity: {
+        needsTracker: null,
+        schemaDiary: null,
+        modeDiary: null,
+        gratitudeDiary: null,
+      },
+      mySchemaIds: [],
+      myModeIds: [],
+      unreadableLists: [],
+    },
+  ],
+  ['GET /api/therapy/clients', []],
+  ['GET /api/therapy/invites', []],
+  ['GET /api/therapy/card-claims', []],
+  ['GET /api/therapy/tasks/all', []],
+  ['POST /api/therapy/therapist-view', { ok: true }],
+];
+
+for (const size of WIDE) {
+  test(`${size.name}: «Справочник» терапевта прокручивается до последней группы`, async ({
+    page,
+    api,
+  }) => {
+    for (const [key, body] of THERAPIST) api.overrides.set(key, body);
+    await page.addInitScript(() => {
+      localStorage.setItem('why_seen_v1', '1');
+      localStorage.setItem('therapist_privacy_disclaimer_seen', '1');
+    });
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await page.goto('/cabinet/guide');
+    await expect(
+      page.getByRole('heading', { name: 'Справочник' }),
+    ).toBeVisible();
+    const last = page.getByRole('button', { name: 'Хороший Родитель' });
+    await expect(last).toBeAttached();
+
+    const scroller = page.locator('.canvas .page');
+    await expect(scroller).toBeVisible();
+    const { overflowY, scrollHeight, clientHeight } = await scroller.evaluate(
+      (el) => ({
+        overflowY: getComputedStyle(el).overflowY,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+      }),
+    );
+    // Режимов больше, чем входит в окно, — иначе проверка ничего не доказывает.
+    expect(scrollHeight).toBeGreaterThan(clientHeight);
+    expect(['auto', 'scroll']).toContain(overflowY);
+
+    await page.mouse.move(size.width - 200, size.height / 2);
+    await page.mouse.wheel(0, scrollHeight);
+    await expect(last).toBeInViewport({ ratio: 1 });
+  });
+}

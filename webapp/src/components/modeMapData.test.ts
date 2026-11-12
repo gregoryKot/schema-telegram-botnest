@@ -18,16 +18,17 @@ describe('TYPE_COLORS', () => {
     expect(new Set(Object.keys(TYPE_COLORS))).toEqual(new Set(KNOWN_NODE_TYPES));
   });
 
-  it('каждый цвет — непустая CSS var() ссылка на палитру сайта (--c-* или смысловой --accent-*)', () => {
+  it('каждый цвет — непустая CSS var() ссылка на палитру сайта (--c-* или смысловой --accent-*); поведение — серый текста: у него нет оттенка', () => {
     for (const [type, color] of Object.entries(TYPE_COLORS)) {
       expect(color.length, type).toBeGreaterThan(0);
-      expect(color, type).toMatch(/^var\(--(c|accent)-[\w-]+\)$/);
+      expect(color, type).toMatch(type === 'behavior' ? /^var\(--text-faint\)$/ : /^var\(--(c|accent)-[\w-]+\)$/);
     }
   });
 
-  it('схема случая: схема красная, опыт синий, потребность и круг потребностей янтарные', () => {
+  it('схема случая: схема красная, опыт — персик «Колеса детства» (небо сливалось с копингами), потребность и круг потребностей янтарные', () => {
     expect(TYPE_COLORS.schema).toBe('var(--accent-red)');
-    expect(TYPE_COLORS.origin).toBe('var(--accent-blue)');
+    expect(TYPE_COLORS.origin).toBe('var(--c-clay)');
+    expect(TYPE_COLORS.trigger).not.toBe(TYPE_COLORS.healthy); // триггер и Здоровый Взрослый читались одной зелёной семьёй
     expect(TYPE_COLORS.need).toBe('var(--c-amber)');
     expect(TYPE_COLORS.needs).toBe('var(--c-amber)');
   });
@@ -35,7 +36,7 @@ describe('TYPE_COLORS', () => {
   it('copingSubtype-варианты (гипер/избегание/капитуляция) делят один цвет — их различает форма, не цвет', () => {
     // Документирует намеренное решение из комментария в исходнике: если кто-то
     // случайно заведёт три разных цвета для coping, тест это поймает.
-    expect(TYPE_COLORS.coping).toBe('var(--c-clay)');
+    expect(TYPE_COLORS.coping).toBe('var(--c-slate)'); // небо копингов (MODE_GROUP_HUE 240), как бумага фигуры
   });
 });
 

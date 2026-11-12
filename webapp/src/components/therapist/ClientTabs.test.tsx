@@ -12,7 +12,7 @@ const detailWith = (clientTab: ClientTab) => ({
 }) as unknown as ClientDetail;
 
 describe('ClientTabs', () => {
-  it('активная вкладка встаёт по центру полосы прокруткой самой полосы; смена вкладки — снова', () => {
+  it('скрытая активная вкладка встаёт по центру полосы прокруткой самой полосы; смена вкладки — снова', () => {
     const { rerender } = render(<ClientTabs detail={detailWith('overview')} />);
     const bar = screen.getByRole('tablist');
     Object.defineProperty(bar, 'clientWidth', { configurable: true, value: 390 });

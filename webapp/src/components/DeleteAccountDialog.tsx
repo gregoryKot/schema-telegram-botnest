@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api';
 import { useTr } from '../utils/addressForm';
 import { Dialog } from './Dialog';
+import { glue } from '../../../shared/src/utils/typo';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { DeleteAccountConfirm } from '../../../shared/src/components/DeleteAccountConfirm';
 import { deleteAccountCopy, wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
@@ -27,7 +28,7 @@ export function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Dialog label={copy.title} onClose={deleting ? undefined : goBack} closeOnEscape>
-      <h2 className="ds-h2 sk-dialog-title">{copy.title}</h2>
+      <h2 className="ds-h2 sk-dialog-title">{glue(copy.title)}</h2>
       <p className="sk-dialog-text">{copy.body}</p>
       {failed && <div role="alert" className="sk-error sk-dialog-error">{copy.failed}</div>}
       {confirming && (

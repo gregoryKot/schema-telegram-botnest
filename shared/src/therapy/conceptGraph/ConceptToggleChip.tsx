@@ -1,45 +1,43 @@
 import { IdentityDot } from '../../components/IdentityDot';
-import { conceptChipLook } from './conceptChipStyle';
-import { useConceptSkin } from './conceptSkin';
+import type { PaperHue, SignKey } from '../../theme/entityLook';
+import { conceptChipStyle } from './conceptChipStyle';
+import { ConceptTag, useConceptPaper } from './conceptPaper';
 
-/** Чип-переключатель: на сайте ds-chip с tint по `hue`, в мини-аппе пилюля с точкой. */
+/** Чип-переключатель: на сайте SignChip (выбранный — бумага `hue` с галочкой), без сайта — пилюля с точкой. */
 export function ConceptToggleChip({
   label,
   color,
   hue,
+  sign,
   active,
   onClick,
-  title,
   readOnly = false,
 }: {
   label: string;
   color: string;
   hue?: number;
+  /** Знак сущности у невыбранного чипа и у чипа «только показать». */
+  sign?: SignKey;
   active: boolean;
   onClick?: () => void;
-  title?: string;
-  /** Только показать: не кнопка, без зоны нажатия (спокойный вид «выбрано»). */
+  /** Только показать: не кнопка, белый чип со знаком. */
   readOnly?: boolean;
 }) {
-  const skin = useConceptSkin();
-  const look = conceptChipLook(skin, color, active, readOnly, hue);
-  const content = skin ? (
-    label
-  ) : (
-    <>
-      <IdentityDot color={color} size={7} /> {label}
-    </>
-  );
-  if (readOnly) return <span {...look}>{content}</span>;
+  const paper = useConceptPaper();
+  if (readOnly) return <ConceptTag sign={sign}>{label}</ConceptTag>;
+  const toggle = () => onClick?.();
+  if (paper) {
+    const chip = { label, sign, on: active, hue: hue as PaperHue | undefined };
+    return <paper.Chip {...chip} onToggle={toggle} />;
+  }
   return (
     <button
       type="button"
       aria-pressed={active}
-      title={title}
-      onClick={onClick}
-      {...look}
+      onClick={toggle}
+      style={conceptChipStyle(color, active, false)}
     >
-      {content}
+      <IdentityDot color={color} size={7} /> {label}
     </button>
   );
 }

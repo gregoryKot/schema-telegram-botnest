@@ -2,8 +2,6 @@
 // и красится классами ds-*, мини-апп контекст не ставит и берёт отсюда. Менять
 // значения нельзя — это прежний вид мини-аппа.
 import type { CSSProperties } from 'react';
-import { colorMix } from '../../utils/colorMix';
-import { hintStyle } from './graphStyles';
 
 export const SEG_GROUP: CSSProperties = {
   display: 'inline-flex',
@@ -28,22 +26,6 @@ export function segBtn(active: boolean): CSSProperties {
   };
 }
 
-/** Заголовок домена в выборе схем. */
-export const DOMAIN_LABEL: CSSProperties = { ...hintStyle, marginBottom: 4 };
-
-/** Заголовок группы в выборе режимов: цветной капитель. */
-export function groupLabel(color: string): CSSProperties {
-  return {
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.07em',
-    color: colorMix(color, 67),
-    textTransform: 'uppercase',
-    marginBottom: 'var(--space-6)',
-    paddingLeft: 2,
-  };
-}
-
 export const EYEBROW: CSSProperties = {
   fontSize: 11,
   fontWeight: 700,
@@ -62,16 +44,6 @@ export const MODE_NAME: CSSProperties = {
   color: 'var(--text)',
 };
 
-export function schemaTag(color: string): CSSProperties {
-  return {
-    padding: '2px 8px',
-    borderRadius: 'var(--r-20)',
-    fontSize: 12,
-    color: 'var(--text)',
-    background: colorMix(color, 14),
-  };
-}
-
 export const LINK_BTN: CSSProperties = {
   minHeight: 44,
   padding: '0 var(--space-6)',
@@ -81,29 +53,4 @@ export const LINK_BTN: CSSProperties = {
   fontSize: 13,
   cursor: 'pointer',
   textDecoration: 'underline',
-};
-
-export const DIGEST_CAPS: CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: '0.07em',
-  textTransform: 'uppercase',
-  color: 'var(--text-sub)',
-};
-
-export const DIGEST_CARD: CSSProperties = {
-  border: '1px solid var(--line)',
-  borderRadius: 'var(--r-12)',
-  background: 'var(--surface)',
-  padding: 'var(--space-12) var(--space-14)',
-  marginBottom: 'var(--space-16)',
-};
-
-export const DIGEST_VALUE: CSSProperties = {
-  flex: '1 1 260px',
-  minWidth: 0,
-  margin: 0,
-  fontSize: 14,
-  lineHeight: 1.45,
-  color: 'var(--text)',
 };

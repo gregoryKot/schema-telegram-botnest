@@ -229,19 +229,22 @@ describe('ConceptGraph: редактор схемы', () => {
   });
 });
 
+// Одна схема на карте: пустая схема случая показывает сцену и «Отметить схемы», а не секции с «+».
+const SEED = { schemaIds: ['emotional_deprivation'] };
+
 describe('ConceptGraph: «+ режим» и «+ схема»', () => {
   const chip = (name: RegExp | string, pressed?: boolean) =>
     screen.getByRole('button', { name, pressed });
 
   it('у каждой секции своя кнопка: режимы и здоровые режимы — «+ режим», схемы — «+ схема»', () => {
-    render(<Harness initial={{}} />);
+    render(<Harness initial={SEED} />);
     expect(addButton('Режимы').textContent).toBe('+ режим');
     expect(addButton('Схемы').textContent).toBe('+ схема');
     expect(addButton('Здоровые режимы').textContent).toBe('+ режим');
   });
 
   it('«+ режим» в колонке режимов: критики, детские, копинги — без здоровых; повторный тап сворачивает', () => {
-    render(<Harness initial={{}} />);
+    render(<Harness initial={SEED} />);
     const btn = addButton('Режимы');
     expect(btn.getAttribute('aria-expanded')).toBe('false');
     fireEvent.click(btn);
@@ -264,7 +267,7 @@ describe('ConceptGraph: «+ режим» и «+ схема»', () => {
   });
 
   it('«+ режим» у здоровых режимов предлагает только здоровые', () => {
-    render(<Harness initial={{}} />);
+    render(<Harness initial={SEED} />);
     fireEvent.click(addButton('Здоровые режимы'));
     expect(chip(/^Здоровый Взрослый$/)).toBeTruthy();
     expect(chip(/Счастливый Ребёнок/)).toBeTruthy();
@@ -294,7 +297,7 @@ describe('ConceptGraph: «+ режим» и «+ схема»', () => {
   });
 
   it('здоровый режим из «+ режим» встаёт в правую колонку, а не к остальным', () => {
-    render(<Harness initial={{}} />);
+    render(<Harness initial={SEED} />);
     fireEvent.click(addButton('Здоровые режимы'));
     fireEvent.click(chip(/^Здоровый Взрослый$/));
     expect(modeFigure('Здоровый Взрослый').dataset.node).toBe(
@@ -310,7 +313,7 @@ describe('ConceptGraph: «+ режим» и «+ схема»', () => {
 
   it('«+ схема»: 20 схем по доменам с подписями; тап ставит схему на схему случая, повторный — снимает', () => {
     const onToggleSchema = vi.fn();
-    render(<Harness initial={{}} spies={{ onToggleSchema }} />);
+    render(<Harness initial={SEED} spies={{ onToggleSchema }} />);
     fireEvent.click(addButton('Схемы'));
     const panel = within(
       screen.getByRole('dialog', { name: 'Схемы на схеме' }),
@@ -330,9 +333,11 @@ describe('ConceptGraph: «+ режим» и «+ схема»', () => {
     ).toBeNull();
   });
 
-  it('заготовки пустых секций открывают тот же выбор, что и «+» в заголовке', () => {
+  it('пустая схема: «Отметить схемы» открывает тот же выбор, что «+ схема»; заготовки секций — тот же выбор, что «+» в заголовке', () => {
     render(<Harness initial={{}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Схема не отмечена' }));
+    expect(document.querySelector('[data-concept-diagram]')).toBeNull();
+    expect(screen.queryByRole('button', { name: /не отмечен/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Отметить схемы' }));
     expect(screen.getByRole('dialog', { name: 'Схемы на схеме' })).toBeTruthy();
     expect(addButton('Схемы').textContent).toBe('Свернуть');
     fireEvent.click(
@@ -346,6 +351,10 @@ describe('ConceptGraph: «+ режим» и «+ схема»', () => {
     expect(
       screen.getByRole('dialog', { name: 'Режимы на схеме' }),
     ).toBeTruthy();
+    // Закрыли выбор, ничего не отметив, — снова одно пустое состояние.
+    fireEvent.click(screen.getByRole('button', { name: 'Готово' }));
+    expect(screen.getByRole('button', { name: 'Отметить схемы' })).toBeTruthy();
+    expect(document.querySelector('[data-concept-diagram]')).toBeNull();
   });
 
   it('«Готово» в выборе закрывает его; управление не попадает в картинку, фигуры — попадают', () => {
@@ -368,13 +377,13 @@ describe('ConceptGraph: «+ режим» и «+ схема»', () => {
   });
 
   it('текст выбора зависит от формы обращения', () => {
-    const { unmount } = render(<Harness initial={{}} />);
+    const { unmount } = render(<Harness initial={SEED} />);
     fireEvent.click(addButton('Схемы'));
     expect(
       screen.getByText('Нажми, чтобы поставить на схему или убрать.'),
     ).toBeTruthy();
     unmount();
-    render(<Harness initial={{}} form="vy" />);
+    render(<Harness initial={SEED} form="vy" />);
     fireEvent.click(addButton('Схемы'));
     expect(
       screen.getByText('Нажмите, чтобы поставить на схему или убрать.'),

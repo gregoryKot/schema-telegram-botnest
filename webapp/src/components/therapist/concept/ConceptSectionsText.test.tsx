@@ -44,14 +44,19 @@ describe('«Поля» без цветных плиток', () => {
     cleanup();
   });
 
-  it('режимы — без .ds-card--panel, у узла цепочки есть ds-dot', () => {
+  it('режимы — без .ds-card--panel; узел цепочки — бумага группы со знаком группы, стрелка — значком', () => {
     const { container } = render(
       <ConceptModeIdsContext.Provider value={['angry_child', 'detached_protector']}>
         <ConceptModes {...props} />
       </ConceptModeIdsContext.Provider>,
     );
     expect(container.querySelector('.ds-card--panel')).toBeNull();
-    expect(container.querySelector('.tcp-node .ds-dot')).not.toBeNull();
+    const nodes = Array.from(container.querySelectorAll<HTMLElement>('.pp-paper.tcp-node'));
+    expect(nodes.map((n) => n.style.getPropertyValue('--h'))).toEqual(['28', '240']);
+    for (const n of nodes) expect(n.querySelector('.tcp-node-kind .pp-art--nav')).not.toBeNull();
+    expect(container.querySelector('.ds-dot')).toBeNull();
+    expect(container.querySelector('.tcp-arrow svg[data-mark="arrow"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('→');
     cleanup();
   });
 

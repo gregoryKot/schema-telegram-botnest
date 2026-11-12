@@ -53,7 +53,7 @@ describe('OfferPage', () => {
 
   it('ссылка «На главную» ведёт на корень сайта', () => {
     render(<OfferPage />);
-    const link = screen.getByText('← На главную') as HTMLAnchorElement;
+    const link = screen.getByRole('link', { name: 'На главную' }) as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/');
   });
 

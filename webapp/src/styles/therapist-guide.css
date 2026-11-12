@@ -1,15 +1,30 @@
 /* Листы подсказок терапевту (#995; пилот живого языка 2026-11, components/therapist/guide/GuideSheet.tsx).
-   Герой бумажной аппликации (pp-hero, paper.css), реплика «Как это звучит» на цветной бумаге,
-   крупные шаги, «Подробнее» — раскрывашка ds-fold. Колонка чтения одна у шапки и содержимого. */
-.gd-page { margin: 0 auto; display: flex; flex-direction: column; gap: 28px; padding-bottom: 32px; }
+   Герой бумажной аппликации (pp-hero, paper.css): знак с тенью-вырезкой на квадратике бумаги группы
+   или домена; реплика «Как это звучит» — лист той же бумаги; шаги и пункты — с тихими маркерами,
+   «Подробнее» — строка-раскрывашка без карточки. Колонка чтения одна у шапки и содержимого (680 —
+   GUIDE_COLUMN в GuideSheet.tsx). Оттенок листа --h ставит GuidePage (guideLook.ts); без вида — персик. */
+.gd-page { --h: 45; max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; padding-bottom: 32px; }
 /* Герой: заголовок и знак в строку, суть под ними во всю колонку — на телефоне не узкой полосой. */
-.gd-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 16px; align-items: center; }
+.gd-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 16px; align-items: center; }
 .gd-hero > .pp-hero-text { grid-column: 1 / -1; }
 .gd-hero .pp-hero-title { font-size: clamp(24px, 6.2vw, 32px); }
-@media (max-width: 480px) { .gd-hero > .pp-art--hero { width: 84px; height: 64px; } }
+.gd-hero-art { display: grid; place-items: center; width: 96px; height: 96px; border-radius: 22px; }
+.gd-hero-art > .scn-sign { width: 72px; }
+@media (max-width: 480px) {
+  .gd-hero-art { width: 80px; height: 80px; border-radius: 18px; }
+  .gd-hero-art > .scn-sign { width: 60px; }
+}
 
-/* «Как это звучит»: реплика терапевта, кавычки ставит лист. Персиковая бумага (--h 45). */
-.gd-voice { --h: 45; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; margin: 0; }
+/* Раздел листа: подпись и абзац справочника. */
+.gd-section { display: flex; flex-direction: column; gap: var(--space-6); }
+.gd-label { margin: 0; }
+.gd-text { margin: 0; font-size: 16px; line-height: 1.6; color: var(--text); white-space: pre-line; }
+.gd-text--strong { font-weight: 600; }
+.gd-min { min-width: 0; }
+.gd-coping { margin: 0; display: flex; flex-direction: column; gap: var(--space-8); }
+
+/* «Как это звучит»: реплика терапевта, кавычки ставит лист. Бумага листа (--h от .gd-page). */
+.gd-voice { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; margin: 0; }
 .gd-voice-line { margin: 0; font-family: var(--serif); font-style: italic; font-size: 19px; line-height: 1.45; color: var(--text); }
 
 /* Шаги: номер Literata слева, счётчик CSS — текст пункта остаётся текстом шага. */
@@ -18,14 +33,14 @@
   counter-increment: gd-step; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px;
   font-size: 16px; line-height: 1.55; color: var(--text);
 }
-.gd-steps > li::before { content: counter(gd-step); font-family: var(--serif); font-size: 28px; line-height: 1; color: var(--accent); }
+.gd-steps > li::before { content: counter(gd-step); font-family: var(--serif); font-size: 28px; line-height: 1; color: var(--text-sub); }
 
-/* Главные пункты: кружок-маркер; у канала работы — подпись строкой выше. */
+/* Главные пункты: маленькая тихая точка; у канала работы — подпись строкой выше. */
 .gd-points { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
 .gd-points > li { position: relative; padding-left: 22px; font-size: 16px; line-height: 1.55; color: var(--text); }
 .gd-points > li::before {
-  content: ''; position: absolute; left: 3px; top: .55em; width: 9px; height: 9px; border-radius: 50%;
-  background: color-mix(in srgb, var(--c-moss) 70%, transparent);
+  content: ''; position: absolute; left: 5px; top: .68em; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--line-strong);
 }
 .gd-lead { display: block; font-weight: 600; }
 
@@ -43,5 +58,8 @@
 .gd-tech { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 12px; align-items: start; }
 .gd-tech > .pp-row-art { padding-top: 10px; }
 
-.gd-more .ds-fold-body { display: flex; flex-direction: column; gap: 20px; }
-.gd-sources p { font-size: 12px; line-height: 1.5; }
+/* «Подробнее» и «Источники» — вторичное, тихо: раскрывашка строкой между двумя линиями, без белой карточки. */
+.gd-more > .ds-fold { background: none; border: none; border-radius: 0; border-block: 1px solid var(--line); }
+.gd-more .ds-fold-btn { padding-inline: 0; }
+.gd-more .ds-fold-body { display: flex; flex-direction: column; gap: 20px; padding-inline: 0; }
+.gd-sources p { margin: 0; font-size: 12px; line-height: 1.5; }

@@ -17,6 +17,11 @@
 .ds-label.sg-name { flex: 1 1 auto; min-width: 0; color: var(--text-sub); overflow-wrap: anywhere; }
 .sg-aside { flex: none; font-size: 13px; font-weight: 600; color: var(--text-sub); font-variant-numeric: tabular-nums; }
 .sg-rows { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); overflow: hidden; }
+/* Тихая группа (SignGroup plain, пикеры концептуализации терапевта): ни листа, ни белой карточки — шапка со знаком и
+   содержимое на поверхности родителя. */
+.sg-group--plain { padding: 0; border-radius: 0; }
+.sg-group--plain > .sg-head { margin: 0 0 8px; }
+.sg-group--plain > .sg-rows { border-radius: 0; background: none; overflow: visible; }
 /* Несколько знаков (копинги справочника: Yield, Shelter, Shield) — 44 вплотную; на узком листе (320)
    подпись уходит под знаки, а не за край. */
 .sg-signs { display: flex; flex: none; gap: 2px; }

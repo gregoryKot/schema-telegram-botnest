@@ -233,6 +233,17 @@ describe('ModeMapCanvas — скачивание карты', () => {
     expect(screen.getByText('Документ PDF')).toBeTruthy();
   });
 
+  // Ревью b34: меню тулбара жили внутри .react-flow (свой контекст наложения) и лежали ПОД
+  // плашкой статуса — клик по «Картинка PNG» попадал в «Добавить на карту». Теперь все три — в body.
+  it.each([['Скачать карту (PNG / PDF)', 'Картинка PNG'], ['Шаблоны и генерация', 'Базовый цикл'], ['Ещё', 'Выделить всё']])(
+    'меню «%s» рисуется порталом в body, вне холста', (button, item) => {
+      const { container } = renderCanvas({ initialNodes: [mmNode('n1', 'trigger')] });
+      clickToolbarButton(container, button);
+      const menu = screen.getByText(item).closest('.ds-menu')!;
+      expect(menu.parentElement).toBe(document.body);
+      expect(container.querySelector('.ds-menu, .ds-backdrop')).toBeNull();
+    });
+
   // Регресс: onExportPng/onExportPdf раньше глушили сбой (`catch { /* ignore */ }`) —
   // рендер карты падал молча, ни файла, ни объяснения (карта режимов, три молчания).
   it('сбой рендера PNG — в меню видна строка «Не удалось подготовить файл», exporting снят', async () => {

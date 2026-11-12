@@ -1,10 +1,8 @@
-import { hueStyle } from '../../lib/tone';
-
-// Шапка экрана 2FA. Показывается до входа: обращения к читателю в тексте нет.
+// Шапка экрана 2FA. Показывается до входа: обращения к читателю в тексте нет. Картинки у формы
+// нет — знак Limits на небе стоит в листе-герое оболочки (TwoFactorChallengePage → AuthShell).
 export function TwoFactorIntro() {
   return (
     <>
-      <div className="al-2fa-mark tone-tint" style={hueStyle(240)}>2</div>
       <div className="ds-eyebrow">Двухфакторная проверка</div>
       <h1 className="al-2fa-title">Код из приложения-аутентификатора</h1>
       <p className="al-sub">

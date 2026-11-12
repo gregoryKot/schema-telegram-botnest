@@ -1,5 +1,9 @@
 import { useNeedData, NEED_ORDER } from '../../../../../shared/src/needs/needData';
-import { NEED_HUE, MODE_GROUP_HUE, hueStyle } from '../../../lib/tone';
+import { needLook, modeGroupLook } from '../../../../../shared/src/theme/entityLook';
+import { hueStyle } from '../../../lib/tone';
+import { SignChip } from '../../paper/SignChip';
+import { SignArt } from '../../art/SignArt';
+import { ConceptMark } from '../../../../../shared/src/therapy/conceptGraph/conceptPaper';
 import { appendTag, hasTag } from './conceptSections';
 import type { FieldProps } from './ConceptSectionShell';
 import { ConceptArea } from '../ClientConceptFields';
@@ -42,20 +46,8 @@ export function ConceptNeeds({ value, onChange, placeholder }: FieldProps) {
     <div className="tcp-stack">
       <div className="tcp-needs">
         {NEED_ORDER.map((id) => {
-          const on = hasTag(value, needs[id].name);
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={on}
-              className={`ds-chip ds-chip--toggle${on ? ' is-on' : ''}`}
-              style={hueStyle(NEED_HUE[id])}
-              onClick={() => onChange(appendTag(value, needs[id].name))}
-            >
-              <span className="ds-dot tone-fill" />
-              {needs[id].name}
-            </button>
-          );
+          const look = needLook(id);
+          return <SignChip key={id} label={needs[id].name} on={hasTag(value, needs[id].name)} sign={look.sign} hue={look.hue} onToggle={() => onChange(appendTag(value, needs[id].name))} />;
         })}
       </div>
       <ConceptArea value={value} onChange={onChange} placeholder={placeholder} rows={4} />
@@ -67,17 +59,7 @@ export function ConceptTriggers({ value, onChange, placeholder }: FieldProps) {
   return (
     <div className="tcp-stack">
       <div className="tcp-tags" style={hueStyle(undefined)}>
-        {TRIGGER_TAGS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-pressed={hasTag(value, t)}
-            className={`ds-chip ds-chip--toggle${hasTag(value, t) ? ' is-on' : ''}`}
-            onClick={() => onChange(appendTag(value, t))}
-          >
-            {t}
-          </button>
-        ))}
+        {TRIGGER_TAGS.map((t) => <SignChip key={t} label={t} on={hasTag(value, t)} onToggle={() => onChange(appendTag(value, t))} />)}
       </div>
       <ConceptArea value={value} onChange={onChange} placeholder={placeholder} rows={3} />
     </div>
@@ -89,7 +71,7 @@ export function ConceptCoping({ value, onChange, placeholder }: FieldProps) {
     <div className="tcp-stack">
       <div className="tcp-coping">
         {COPING.map((c) => (
-          <div key={c.label} className="ds-card ds-card--row tcp-cop">
+          <div key={c.label} className="pp-paper tcp-cop">
             <b className="ds-list-title">{c.label}</b>
             <span className="ds-sub">{c.sub}</span>
           </div>
@@ -109,9 +91,9 @@ export function ConceptModes({ value, onChange, placeholder }: FieldProps) {
         <div className="tcp-chain">
           {chain.map((m, i) => (
             <div key={m.modeId} className="tcp-chain-item">
-              {i > 0 && <span className="tcp-arrow" aria-hidden="true">→</span>}
-              <div className="tcp-node" style={hueStyle(MODE_GROUP_HUE[m.group])}>
-                <span className="ds-label tcp-node-kind"><span className="ds-dot tone-fill" />{m.kind}</span>
+              {i > 0 && <span className="tcp-arrow"><ConceptMark kind="arrow" /></span>}
+              <div className="pp-paper tcp-node" style={hueStyle(modeGroupLook(m.group).hue)}>
+                <span className="ds-label tcp-node-kind"><SignArt sign={modeGroupLook(m.group).sign} size="nav" />{m.kind}</span>
                 <b className="ds-list-title">{m.name}</b>
               </div>
             </div>

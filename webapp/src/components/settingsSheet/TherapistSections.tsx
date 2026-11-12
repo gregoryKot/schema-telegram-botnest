@@ -6,7 +6,7 @@ import { THERAPY_INVITE_CODE_PLACEHOLDER, THERAPY_INVITE_INPUT_MAX } from '../..
 import { joinDoneText, leaveTherapyCopy, SHARE_CARDS_TOGGLE as CARDS, SHARE_PROFILE_TOGGLE as PROFILE, therapistConnectedTitle, therapistSectionHint } from '../../../../shared/src/therapy/therapistLinkCopy';
 import { useTr } from '../../utils/addressForm';
 import { ConfirmDialog } from '../ConfirmDialog';
-import { SSection, SRow, SmallToggle } from './ui';
+import { SSection, SRow, Toggle, Tick } from './ui';
 import type { useTherapyRelationSettings } from './useTherapyRelationSettings';
 import { SettingsInfoHelp } from './SettingsInfoHelp';
 
@@ -28,11 +28,11 @@ export function MyTherapistSection({ rel, settings, patch }: {
         <SRow title="Загрузка..." />
       ) : therapyRelation?.status === 'active' ? (
         <div className="st-body-block">
-          <div className="ds-h3">{therapistConnectedTitle(therapyRelation.partnerName)}</div>
+          <div className="st-strong">{therapistConnectedTitle(therapyRelation.partnerName)}</div>
           {join.joined && <p className="st-text" role="status">{joinDoneText(therapyRelation.partnerName, tr, true)}</p>}
-          <div>
-            <SRow title={CARDS.title} sub={CARDS.sub} right={<SmallToggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
-            <SRow title={PROFILE.title} sub={PROFILE.sub} right={<SmallToggle label={PROFILE.title} on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
+          <div className="st-rows st-rows--ruled">
+            <SRow title={CARDS.title} sub={CARDS.sub} right={<Toggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />
+            <SRow title={PROFILE.title} sub={PROFILE.sub} right={<Toggle label={PROFILE.title} on={!!settings.therapistShareProfile} onClick={() => patch({ therapistShareProfile: !settings.therapistShareProfile })} />} />
           </div>
           <button className="ds-link ds-link--danger" onClick={leave.ask}>{leaveCopy.button}</button>
           {leave.confirming && (
@@ -89,7 +89,9 @@ export function CabinetSection({ rel, onOpenTherapistCabinet }: { rel: Relation;
           <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={createInvite}>+ Создать приглашение клиенту</button>
         </div>
         {/* Раньше «Скопировано ✓» показывалось всегда, даже если navigator.clipboard упал — теперь только при реальном успехе, иначе видна ссылка для ручного копирования. */}
-        {invite && <div className="st-text st-text--faint st-mono">{inviteCopied ? 'Ссылка скопирована ✓' : invite.url}</div>}
+        {invite && (inviteCopied
+          ? <div className="st-text st-text--ok st-copied" role="status"><Tick />Ссылка скопирована</div>
+          : <div className="st-invite-field">{invite.url}</div>)}
         {invite && <InviteCodeBox code={invite.code} />}
         {inviteError && <div className="st-err">{inviteError}</div>}
       </div>

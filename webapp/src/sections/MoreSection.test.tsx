@@ -265,7 +265,7 @@ describe('MoreSection — то, что переехало с главной', ()
   it('внизу тихая строка «самопомощь, не замена терапии» со ссылкой «Поговорить →»; без сигнала карточки нет', async () => {
     setup();
     const line = await screen.findByText(/Приложение — самопомощь, не замена терапии/);
-    expect(line.textContent).toContain('Если нужна терапия, есть с кем поговорить.');
+    expect(line.textContent?.replace(/\u00a0/g, ' ')).toContain('Если нужна терапия, есть с кем поговорить.');
     expect(screen.getByRole('button', { name: 'Поговорить →' })).toBeTruthy();
     expect(screen.queryByText('Не сейчас')).toBeNull();
   });
