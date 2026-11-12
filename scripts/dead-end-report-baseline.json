@@ -183,13 +183,15 @@
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с кнопкой, экран рабочий, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); отправка письма со ссылкой входа"
   },
+  "webapp/src/pages/merge/useLinkTicket.ts::setActionError": {
+    "status": "exempt",
+    "reason": "ошибка действия: подтверждение привязки не прошло — текст рядом с кнопкой, экран рабочий, повтор в один тап; 5xx сервер алертит сам (AlertLogger)"
+  },
   "webapp/src/pages/merge/useLinkTicket.ts::setError": {
-    "status": "debt",
-    "reason": "долг: предпросмотр привязки (L45) — экран-тупик без отчёта наверх; вторая ветка (подтверждение) — ошибка действия у кнопки"
+    "status": "reports"
   },
   "webapp/src/pages/merge/useLinkTicket.ts::setFailOutcome": {
-    "status": "debt",
-    "reason": "долг: тот же catch предпросмотра привязки, что setError — выбирает исход экрана wait / our_side (b27), отчёта наверх по-прежнему нет"
+    "status": "reports"
   },
   "webapp/src/pages/merge/useMergeConfirm.ts::setError": {
     "status": "exempt",
