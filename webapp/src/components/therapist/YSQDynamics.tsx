@@ -1,14 +1,14 @@
-import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
+import type { CSSProperties } from 'react';
+import { needDataColor } from '../needDataColor';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import type { YsqHistoryEntry } from '../../../../shared/src/apiTypes';
 import type { YsqRow } from './ysqRows';
 import { useIsMobile } from '../useIsMobile';
 import { seriesDashes, labelIndexes } from './ysqSeriesStyle';
 
-// Холст рисуется в тех пикселях, в которых виден: на телефоне viewBox 820 ужимался до ~330px,
-// и подписи 10 превращались в ~4px (QA 2026-11, T-7). Узкий — свой viewBox 300 и шрифт 12.
+// Холст — в тех пикселях, в которых виден: viewBox 820 на телефоне ужимал подписи до ~4px (QA 2026-11, T-7); узкий — 300/12.
 const CL = 30, CT = 14, CB = 192, CH = CB - CT;
-const SCHEMAS_FLAT = SCHEMA_DOMAINS.flatMap(d => d.schemas.map(s => ({ ...s, domainColor: d.color })));
 
 /** Динамика топ-схем по прохождениям (нужно ≥2): средний балл 1–6 — та же мера, что в таблице и у клиента. */
 export function YSQDynamics({ chronHist, top }: { chronHist: YsqHistoryEntry[]; top: YsqRow[] }) {
@@ -17,12 +17,13 @@ export function YSQDynamics({ chronHist, top }: { chronHist: YsqHistoryEntry[]; 
   const CR = VW - (compact ? 14 : 40), CW = CR - CL;
   const xOf = (i: number) => CL + (chronHist.length > 1 ? (i / (chronHist.length - 1)) * CW : CW / 2);
   const yOf = (avg: number) => CB - ((Math.max(1, avg) - 1) / 5) * CH;
-  const colorOf = (id: string) => SCHEMAS_FLAT.find(s => s.id === id)?.domainColor ?? 'var(--accent)';
+  // Цвет линии — цвет данных потребности домена (решение 7), как полоса в таблице; схемы одного домена различает штрих.
+  const needOf = new Map(top.map(r => [r.id, r.needId]));
+  const colorOf = (id: string) => { const n = needOf.get(id); return (n && needDataColor(n)) ?? 'var(--text-sub)'; };
   const dashOf = seriesDashes(top.map(r => r.id), colorOf);
   const labelAt = new Set(labelIndexes(chronHist.length, compact ? 3 : 8));
-
   return (
-    <div className="ds-card">
+    <div className="ds-card pp-leaf" style={{ '--h': ENTITY_LOOK.ysq.hue } as CSSProperties}>
       <div className="ds-label tb-chart-label">Динамика топ-5 схем · средний балл</div>
       <svg viewBox={`0 0 ${VW} 230`} className="tb-chart" role="img" aria-label="Динамика топ-5 схем по прохождениям">
         {[1, 2, 3, 4, 5, 6].map(v => (

@@ -44,11 +44,14 @@ describe('ClientHeaderBadges', () => {
     expect(meta(container)).toMatch(/^в приложении · в работе .+ · 3 дн\. подряд$/);
   });
 
-  it('офлайн — плашка ds-badge, «в приложении» нет', () => {
+  it('офлайн — тихий текст со знаком продукта без плашки (ревью r1), «в приложении» нет', () => {
     const { container, getByText } = render(
       <ClientHeaderBadges client={client({ telegramId: -5, streak: 2 })} />,
     );
-    expect(getByText('офлайн').className).toBe('ds-badge');
+    const off = getByText('офлайн');
+    expect(off.className).toBe('tk-offline');
+    expect(off.querySelector('[data-brand-mark]')).not.toBeNull();
+    expect(container.querySelector('.ds-badge')).toBeNull();
     expect(meta(container)).toBe('2 дн. подряд');
   });
 
