@@ -4,6 +4,7 @@ import { TwoFactorScopeNote } from './TwoFactorScopeNote';
 import { RecoveryCodesCard } from './RecoveryCodesCard';
 import { OkMark } from './OkMark';
 import { TotpCodeField } from './TotpCodeField';
+import { FieldError } from '../../components/paper/FieldError';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 // Секция двухфакторной аутентификации (TOTP), вынесена из AccountPage.tsx (правило №10).
@@ -83,7 +84,8 @@ export function TwoFactorSection({
     else if (setupOpen) cancelSetup();
     else void startSetup();
   };
-  const codeInput = <TotpCodeField value={code} onChange={setCode} disabled={busy} error={error} />;
+  const codeInput = (allowRecovery: boolean) =>
+    <TotpCodeField value={code} onChange={setCode} disabled={busy} error={error} allowRecovery={allowRecovery} />;
   const withInput = (totp.enabled && disableMode) || (!totp.enabled && setupOpen && !!qrDataUrl);
 
   return (
@@ -116,7 +118,7 @@ export function TwoFactorSection({
       {totp.enabled && disableMode && (
         <div className="aa-stack">
           <div className="aa-small">{tr('Введи текущий код из приложения, чтобы отключить:', 'Введите текущий код из приложения, чтобы отключить:')}</div>
-          {codeInput}
+          {codeInput(true)}
           <div className="aa-actions">
             <button onClick={disable} disabled={busy || !code.trim()} className="ds-btn ds-btn--secondary" aria-busy={busy || undefined}>
               {busy ? 'Отключаю…' : 'Отключить'}
@@ -144,7 +146,7 @@ export function TwoFactorSection({
               <div className="aa-secret">{otpauthUrl}</div>
             </details>
           )}
-          {codeInput}
+          {codeInput(false)}
           <div className="aa-actions">
             <button onClick={confirm} disabled={busy || !code.trim()} className="ds-btn ds-btn--secondary" aria-busy={busy || undefined}>
               {busy ? 'Проверяю…' : 'Подтвердить'}
@@ -156,7 +158,7 @@ export function TwoFactorSection({
         </div>
       )}
 
-      {error && !withInput && <p role="alert" className="aa-field-err">{error}</p>}
+      {error && !withInput && <FieldError>{error}</FieldError>}
     </section>
   );
 }

@@ -5,7 +5,8 @@ import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../uti
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
-import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { rejectedRequestText } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { FieldError } from '../../components/paper/FieldError';
 import { THERAPIST_REQUEST_PENDING, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
 
 // Секция «Роль психолога» (заявка терапевта), плоская группа /account (b27).
@@ -64,10 +65,12 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
     }
   };
 
+  const rejected = rejectedRequestText(req, tr);
   return (
     <section className="aa-group aa-role">
       <div className="aa-group-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
-      <TherapistRequestRejectedNote request={req} className="aa-role-note" />
+      {/* Отказ — тем же листом, что ошибка поля (FieldError, ревью b27), а не красной строкой; текст — общий. */}
+      {rejected && <FieldError role="status">{rejected}</FieldError>}
       {req?.status === 'pending' ? (
         <div className="aa-role-note">{THERAPIST_REQUEST_PENDING}</div>
       ) : req?.status === 'approved' ? (
@@ -93,7 +96,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
             <button disabled={busy} onClick={submit} className="ds-btn ds-btn--secondary" aria-busy={busy || undefined}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
             <button disabled={busy} onClick={() => setOpen(false)} className="ds-link aa-quiet">Отмена</button>
           </div>
-          {err && <p role="alert" className="aa-field-err">{err}</p>}
+          {err && <FieldError>{err}</FieldError>}
         </div>
       )}
     </section>

@@ -9,7 +9,7 @@ import { submitTwoFactorCode } from './login/twoFactorSubmit';
 import { useChallengeAddress } from './login/useChallengeAddress';
 import { AuthShell } from './login/AuthShell';
 import { SignHero } from '../components/paper/SignHero';
-import { PaperAlert } from '../components/paper/PaperAlert';
+import { FieldError } from '../components/paper/FieldError';
 
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
@@ -61,7 +61,7 @@ export function TwoFactorChallengePage() {
         ) : (
           <OtpCells ref={inputRef} value={code} onChange={setCode} disabled={busy} label="Код из приложения" />
         )}
-        {error && <PaperAlert title={error} className="al-alert" />}
+        {error && <FieldError>{error}</FieldError>}
         <button type="submit" disabled={busy || !code.trim()} aria-busy={busy || undefined} className="al-submit">
           {busy ? 'Проверяю…' : 'Подтвердить'}
         </button>

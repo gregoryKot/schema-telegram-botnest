@@ -158,6 +158,9 @@
 .pa-alert-text { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
 .ds-btn.pa-alert-retry { flex: none; }
 .ds-btn.pa-alert-retry:not(:disabled) { background: var(--surface); }
+/* Ошибка у поля (FieldError): тот же лист, компактнее — строкой под полем кода, почты, формы. */
+.pa-alert.pa-alert--field { width: 100%; padding: 10px 14px; border-radius: 12px; }
+.pa-alert--field .pa-alert-title { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
 
 /* ── Полноэкранный исход (PaperOutcome) ──────────────────────────────────── */
 .pa-outcome {
