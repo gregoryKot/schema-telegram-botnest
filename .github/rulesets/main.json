@@ -37,7 +37,8 @@
           { "context": "mutation-changed", "integration_id": 15368 },
           { "context": "perf", "integration_id": 15368 },
           { "context": "shared", "integration_id": 15368 },
-          { "context": "webapp", "integration_id": 15368 }
+          { "context": "webapp", "integration_id": 15368 },
+          { "context": "webapp-tz", "integration_id": 15368 }
         ]
       }
     }
