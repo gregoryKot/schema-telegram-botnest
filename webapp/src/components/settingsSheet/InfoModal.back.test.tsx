@@ -14,7 +14,7 @@ function Host() {
   const navigate = useNavigate();
   const depth = (useLocation().state as { __sheetStack?: string[] } | null)?.__sheetStack?.length ?? 0;
   useEffect(() => { snap.nav = navigate; snap.depth = depth; });
-  return <div>{open && <InfoModal onClose={() => setOpen(false)}><p>Сводка</p></InfoModal>}<span>под окном</span></div>;
+  return <div>{open && <InfoModal title="Заголовок окна" onClose={() => setOpen(false)}><p>Сводка</p></InfoModal>}<span>под окном</span></div>;
 }
 
 describe('InfoModal и «Назад»', () => {

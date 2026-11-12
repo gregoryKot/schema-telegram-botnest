@@ -16,13 +16,15 @@ import {
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LinkDevicePage } from './LinkDevicePage';
 import { useAuth } from '../auth/authContext';
-import { api } from '../api';
+import { api, reportClientError } from '../api';
+import { resetLinkReportThrottle } from './merge/linkPreviewReport';
 
 vi.mock('../auth/authContext', () => ({ useAuth: vi.fn() }));
 // getSettings — LinkDeviceContent ставит свой AddressFormProvider (страница
 // вне RequireAuth) и тут же грузит форму через него; 'vy' сохраняет
 // существующие ассерты на «вы»-текст ниже без переписывания.
 vi.mock('../api', () => ({
+  reportClientError: vi.fn(),
   api: {
     trackEvent: vi.fn(),
     getSettings: vi.fn().mockResolvedValue({ addressForm: 'vy' }),
@@ -165,6 +167,41 @@ describe('что показано до подтверждения', () => {
     await waitFor(() =>
       expect(screen.getByText('Код не найден или истёк')).toBeTruthy(),
     );
+  });
+});
+
+// Исход сводки (LinkOutcome через linkFailModel) и отчёт наверх (правило №14): 4xx — wait без отчёта,
+// 5xx и сеть — our_side с «Повторить» и отчётом без кода билета.
+describe('сводка не загрузилась', () => {
+  beforeEach(() => { resetLinkReportThrottle(); vi.mocked(reportClientError).mockClear(); });
+
+  it('4xx — исход wait: выход в аккаунт, без «Повторить» и без отчёта', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(410, { message: 'Код не найден или истёк' }));
+    renderAt('/link?code=ABCD2345');
+    await screen.findByText('Код не найден или истёк');
+    expect(screen.getByRole('button', { name: 'В аккаунт' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
+    expect(reportClientError).not.toHaveBeenCalled();
+  });
+
+  it('5xx — исход our_side: «Повторить» и отчёт наверх без кода билета', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(new Response('<html>502</html>', { status: 502 })));
+    renderAt('/link?code=ABCD2345');
+    await screen.findByRole('button', { name: 'Повторить' });
+    expect(reportClientError).toHaveBeenCalledTimes(1);
+    const sent = JSON.stringify(vi.mocked(reportClientError).mock.calls[0][0]);
+    expect(sent).toContain('link preview failed: HTTP 502');
+    expect(sent).not.toContain('ABCD2345');
+  });
+
+  it('троттлинг: второй сбой подряд отчёт не повторяет', async () => {
+    fetchMock.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')));
+    renderAt('/link?code=ABCD2345');
+    await screen.findByRole('button', { name: 'Повторить' });
+    cleanup();
+    renderAt('/link?code=ABCD2345');
+    await screen.findByRole('button', { name: 'Повторить' });
+    expect(reportClientError).toHaveBeenCalledTimes(1);
   });
 });
 

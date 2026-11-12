@@ -129,6 +129,38 @@ describe('TwoFactorSection — отключение', () => {
     expect(onChanged).not.toHaveBeenCalled();
   });
 
+  // Регресс b27: OtpCells режет ввод до 6 цифр — резервным кодом 2FA было не отключить, хотя сервер
+  // его принимает (totp.service.ts disable → verifyCode).
+  it('отключение резервным кодом: переключатель → 10 знаков уходят в /disable', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+    const { onChanged } = renderSection({ enabled: true, recoveryCodesLeft: 5 });
+
+    fireEvent.click(screen.getByRole('switch'));
+    fireEvent.click(screen.getByRole('button', { name: 'Использовать резервный код' }));
+    fireEvent.change(screen.getByLabelText('Резервный код'), { target: { value: 'a1b2-c3d4e5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отключить' }));
+
+    await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+    expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)).toEqual({ code: 'a1b2c3d4e5' });
+  });
+
+  it('при настройке — только код из приложения, без резервного', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { qrDataUrl: 'data:x', otpauthUrl: 'otpauth://x' }));
+    renderSection();
+    fireEvent.click(screen.getByRole('switch'));
+    await screen.findByAltText('QR-код для приложения-аутентификатора');
+    expect(screen.queryByRole('button', { name: 'Использовать резервный код' })).toBeNull();
+  });
+
+  it('ошибка у поля — лист с role=alert', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(400, { message: 'Неверный код' }));
+    renderSection({ enabled: true, recoveryCodesLeft: 5 });
+    fireEvent.click(screen.getByRole('switch'));
+    fireEvent.change(screen.getByPlaceholderText('123456'), { target: { value: '000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отключить' }));
+    expect((await screen.findByRole('alert')).textContent).toBe('Неверный код');
+  });
+
   it('«Отмена» в режиме отключения возвращает к обычному виду без вызова api', () => {
     renderSection({ enabled: true, recoveryCodesLeft: 5 });
     fireEvent.click(screen.getByRole('switch'));

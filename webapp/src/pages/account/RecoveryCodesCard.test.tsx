@@ -22,7 +22,7 @@ describe('RecoveryCodesCard', () => {
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
     render(<RecoveryCodesCard codes={['aaaa1111', 'bbbb2222']} onDone={vi.fn()} />);
     fireEvent.click(screen.getByText('Скопировать коды'));
-    await waitFor(() => expect(screen.getByText('✓ Скопировано')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Скопировано' })).toBeTruthy());
     expect(writeText).toHaveBeenCalledWith('aaaa1111\nbbbb2222');
   });
 

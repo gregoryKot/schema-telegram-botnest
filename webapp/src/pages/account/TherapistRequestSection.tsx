@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Talk } from '../../components/art/PaperArtSigns';
+import { GroupSkeleton } from './GroupSkeleton';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import * as LIM from '../../../../shared/src/limits/textLimits';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
-import { TherapistRequestRejectedNote } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { rejectedRequestText } from '../../../../shared/src/therapy/TherapistRequestRejectedNote';
+import { FieldError } from '../../components/paper/FieldError';
 import { THERAPIST_REQUEST_PENDING, therapistRequestApprovedText } from '../../../../shared/src/therapy/therapistRequestCopy';
 
-// Секция «Роль психолога» (заявка терапевта). Вынесено из AccountPage.tsx
-// (правило №10).
+// Секция «Роль психолога» (заявка терапевта), плоская группа /account (b27).
 interface TherapistRequest {
   id: number;
   status: 'pending' | 'approved' | 'rejected';
@@ -34,7 +35,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
       .finally(() => setLoaded(true));
   }, [accessToken]);
 
-  if (!loaded) return null;
+  if (!loaded) return <GroupSkeleton />;
 
   const submit = async () => {
     setErr(null);
@@ -64,10 +65,12 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
     }
   };
 
+  const rejected = rejectedRequestText(req, tr);
   return (
-    <div className="pp-paper aa-role">
-      <div className="aa-role-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
-      <TherapistRequestRejectedNote request={req} className="aa-role-note" />
+    <section className="aa-group aa-role">
+      <div className="aa-group-head"><div className="aa-role-label">Роль психолога</div><Talk size="row" /></div>
+      {/* Отказ — тем же листом, что ошибка поля (FieldError, ревью b27), а не красной строкой; текст — общий. */}
+      {rejected && <FieldError role="status">{rejected}</FieldError>}
       {req?.status === 'pending' ? (
         <div className="aa-role-note">{THERAPIST_REQUEST_PENDING}</div>
       ) : req?.status === 'approved' ? (
@@ -77,7 +80,7 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
       ) : !open ? (
         <>
           <div className="ds-h3">{tr('Ведёшь клиентов? Открой кабинет терапевта', 'Ведёте клиентов? Откройте кабинет терапевта')}</div>
-          <button onClick={() => setOpen(true)} className="ds-btn">
+          <button onClick={() => setOpen(true)} className="ds-btn ds-btn--secondary">
             Я психолог — подать заявку
           </button>
         </>
@@ -90,12 +93,12 @@ export function TherapistRequestSection({ accessToken }: { accessToken: string |
           <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={message} onChange={e => setMessage(e.target.value)} rows={2}
             placeholder="Сообщение админу (необязательно)" className="ds-textarea" />
           <div className="aa-actions">
-            <button disabled={busy} onClick={() => setOpen(false)} className="ds-btn ds-btn--secondary">Отмена</button>
-            <button disabled={busy} onClick={submit} className="ds-btn">{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
+            <button disabled={busy} onClick={submit} className="ds-btn ds-btn--secondary" aria-busy={busy || undefined}>{busy ? 'Отправляю…' : 'Отправить заявку'}</button>
+            <button disabled={busy} onClick={() => setOpen(false)} className="ds-link aa-quiet">Отмена</button>
           </div>
-          {err && <div className="aa-fail">{err}</div>}
+          {err && <FieldError>{err}</FieldError>}
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -1,8 +1,8 @@
 import { CANCEL_SUPPORT_LINK } from '../../components/booking/cancelPolicy';
 import { useSubscriptionCancel } from './useSubscriptionCancel';
 
-const btnSt: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textDecoration: 'underline', marginTop: 4, minHeight: 44 }; // тап-цель ≥44 и на телефоне
-const noteSt: React.CSSProperties = { color: 'var(--accent-red)', fontSize: 14, lineHeight: 1.6, margin: '12px 0 0' };
+import { PaperAlert } from '../../components/paper/PaperAlert';
+const btnSt: React.CSSProperties = { minHeight: 44 }; // тап-цель ≥44 и на телефоне; вид — ds-btn--secondary (действие экрана одно, разрушительное — не залитое)
 const linkSt: React.CSSProperties = { color: 'inherit', textDecoration: 'underline' };
 
 // Кнопка «Отменить подписку» + честный итог отказа. Страница публичная, без
@@ -14,14 +14,14 @@ export function CancelControl({ token, onCancelled }: { token: string; onCancell
   const tg = <a href={CANCEL_SUPPORT_LINK} style={linkSt}>Telegram</a>;
   return (
     <>
-      <button type="button" onClick={cancel} disabled={loading} style={{ ...btnSt, opacity: loading ? 0.5 : 1 }}>
+      <button type="button" onClick={cancel} disabled={loading} aria-busy={loading || undefined} className="ds-btn ds-btn--secondary ds-btn--lg ap-cancel" style={btnSt}>
         {loading ? 'Отменяю…' : 'Отменить подписку'}
       </button>
       {phase === 'stale' && (
-        <p role="alert" style={noteSt}>Ссылка устарела. Если списания продолжаются, можно написать мне в {tg}.</p>
+        <PaperAlert hue={70} title={<>Ссылка устарела. Если списания продолжаются, можно написать мне в {tg}.</>} />
       )}
       {phase === 'error' && (
-        <p role="alert" style={noteSt}>Не получилось отменить подписку, списания не остановлены. Можно попробовать ещё раз или написать мне в {tg}.</p>
+        <PaperAlert hue={45} title={<>Не получилось отменить подписку, списания не остановлены. Можно попробовать ещё раз или написать мне в {tg}.</>} />
       )}
     </>
   );

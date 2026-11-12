@@ -228,6 +228,31 @@ describe('LoginPage — email magic-link', () => {
     expect(screen.queryByText('Письмо отправлено')).toBeNull();
   });
 
+  // errorAt (ревью b26): сбой стоит у того, к чему относится. Ошибка почты — сразу под полем, над кнопкой
+  // «Отправить ссылку» (на 390 стояла под «Отменой», ниже сгиба); провал OAuth — над кнопками входа.
+  it('ошибка почты — под полем, до кнопки отправки; у кнопок входа её нет', () => {
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), { target: { value: 'nope' } });
+    fireEvent.submit(container.querySelector('form')!);
+    const alert = screen.getByRole('alert');
+    const form = container.querySelector('form.al-email')!;
+    expect(form.contains(alert)).toBe(true);
+    const input = screen.getByPlaceholderText('your@email.com');
+    const submit = screen.getByRole('button', { name: 'Отправить ссылку' });
+    expect(input.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(alert.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('провал OAuth — у кнопок входа, до них, а не у почты', () => {
+    renderPage(authValue(), '/login?error=no_token');
+    const alert = screen.getByRole('alert');
+    const email = screen.getByRole('button', { name: 'Войти по email' });
+    expect(alert.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
   it('«Отмена» возвращает к списку способов входа', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Войти по email' }));
@@ -382,8 +407,11 @@ describe('LoginPage — «Попробовать снова» в мессенд�
     fetchMock.mockImplementation(() => Promise.resolve(throttledLegacy()));
     const { container } = renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
-    await screen.findByText('Ошибка 429: Слишком много попыток подряд. Повторить можно чуть позже');
+    // На экране — короткий код (ревью b26), человеческий текст целиком — в отчёте.
+    await screen.findByText('Ошибка 429');
     expect(container.textContent).not.toMatch(/Throttler/);
+    await waitFor(() => expect(reportClientError).toHaveBeenCalled());
+    expect(vi.mocked(reportClientError).mock.calls[0][0].message).toContain('Ошибка 429: Слишком много попыток подряд. Повторить можно чуть позже');
   });
 
   it('502 HTML прокси — код ответа и «сервер не ответил», без разметки', async () => {
@@ -391,8 +419,10 @@ describe('LoginPage — «Попробовать снова» в мессенд�
       Promise.resolve(new Response('<html><body>502 Bad Gateway</body></html>', { status: 502 })));
     const { container } = renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
-    await screen.findByText('Ошибка 502: Сервер не ответил. Повторить можно чуть позже');
+    await screen.findByText('Ошибка 502');
     expect(container.textContent).not.toMatch(/<html|Bad Gateway/);
+    await waitFor(() => expect(reportClientError).toHaveBeenCalled());
+    expect(vi.mocked(reportClientError).mock.calls[0][0].message).toContain('Ошибка 502: Сервер не ответил');
   });
 
   it('обрыв сети — «Нет связи с сервером», не «TypeError: Failed to fetch»', async () => {
@@ -427,8 +457,12 @@ describe('LoginPage — «Попробовать снова» в мессенд�
   it('401 — тело сервера как есть: диагностика отказа подписи (инцидент 2026-08-08)', async () => {
     fetchMock.mockImplementation(() =>
       Promise.resolve(new Response('{"message":"Missing authentication","statusCode":401}', { status: 401 })));
-    renderPage();
+    const { container } = renderPage();
     fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
-    await screen.findByText(/Ошибка 401: .*Missing authentication/);
+    // Сырой JSON сервера — в отчёт, не на экран (ревью b26): там только «Ошибка 401».
+    await screen.findByText('Ошибка 401');
+    expect(container.textContent).not.toMatch(/Missing authentication|statusCode/);
+    await waitFor(() => expect(reportClientError).toHaveBeenCalled());
+    expect(vi.mocked(reportClientError).mock.calls[0][0].message).toMatch(/Ошибка 401: .*Missing authentication/);
   });
 });

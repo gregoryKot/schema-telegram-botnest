@@ -6,6 +6,7 @@ import { useClientTimeZone } from './useClientTimeZone';
 import { bookingStatusNote, nextBooking, sessionWhen } from './clientBookingModel';
 import { buildClientBookingCopy } from './clientBookingCopy';
 import { ClientBookingSheet } from './ClientBookingSheet';
+import { SessionTicket } from './SessionTicket';
 import '../../styles/client-booking.css';
 
 /**
@@ -28,12 +29,10 @@ export function ClientBookingBlock({ overview, onBooked, writeUrl }: {
   return (
     <div className="cbk-card">
       {next && (
-        <div className="cpf-therapist-next ym-hide-content">
-          <span className="cpf-therapist-label">{copy.nextLabel}</span>
-          <span>{sessionWhen(next.startsAt, tz)}</span>
+        <SessionTicket className="ym-hide-content" when={sessionWhen(next.startsAt, tz)} label={copy.nextLabel}>
           <span className="cbk-card-status">{bookingStatusNote(next, tz)}</span>
-          <ExternalLink href={next.manageUrl} className="ds-link">{copy.manage}</ExternalLink>
-        </div>
+          <ExternalLink href={next.manageUrl} className="ds-link cbk-ticket-link">{copy.manage}</ExternalLink>
+        </SessionTicket>
       )}
       {overview.eligible && (
         <button type="button" className="ds-btn ds-btn--secondary" onClick={() => setOpen(true)}>{copy.cta}</button>

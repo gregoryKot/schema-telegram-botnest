@@ -2,11 +2,16 @@ import { useNavigate } from 'react-router-dom';
 import { getTherapistContact, hasConnectedTherapist } from '../../../../shared/src/utils/therapistContact';
 import type { TherapyNudgePlace, TherapyNudgeTrigger } from '../../../../shared/src/analytics/therapyNudge';
 import { bookingUrl, telegramUrl } from '../../../../shared/src/therapy/bridge/therapyBridgeLinks';
-import { Talk } from '../art/PaperArtSigns';
+import { AuthorPhoto } from '../AuthorAvatar';
+import { EntitySheet } from '../paper/EntitySheet';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { glue } from '../../../../shared/src/utils/typo';
 import { ExternalLink } from '../../host/ExternalLink';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import type { CSSProperties } from 'react';
 import { useDialogA11y } from '../../../../shared/src/utils/dialogA11y';
 import { trackTherapyNudge } from './trackTherapyNudge';
+import { glueBridge } from './bridgeTypo';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import '../../styles/client-why.css';
 import '../../styles/therapy-bridge.css';
@@ -14,6 +19,7 @@ import '../../styles/therapy-bridge.css';
 interface Props { place: TherapyNudgePlace; trigger?: TherapyNudgeTrigger; onClose: () => void }
 
 /** Лист «Поговорить с кем-то»: куда пойти, если одной самопомощи мало. Цены на листе нет.
+ *  Лист-герой + действия (b24): лист неба сверху, кнопки сразу под ним.
  *  Без своего терапевта говорит владелец от первого лица: «если хочешь в терапию — напиши мне» (2026-11-08).
  *  Свой терапевт без канала связи (U4) — «запиши и принеси на встречу» и переход к ближайшей
  *  встрече (профиль: карточка терапевта, следующая сессия, запись): лист без действия был тупиком. */
@@ -34,16 +40,21 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
       <div className="ds-sheet-head ds-sheet-head--page cw-head">
         <button type="button" className="ds-back" onClick={goBack}><span aria-hidden="true">←</span>{t.sheetBack}</button>
       </div>
-      <div className="cw-inner">
-        <div className="ds-eyebrow">{hasTherapist ? t.sheetTherapistEyebrow : t.sheetEyebrow}</div>
-        <div className="pp-head">
-          <h1 className="ds-h1">{hasTherapist ? t.sheetTherapistTitle : t.sheetTitle}</h1>
-          <Talk size="square" />
-        </div>
+      <div className="cw-inner th-talk">
         {hasTherapist ? (
-          <p className="cw-lead">{contact.url ? t.sheetTherapistP : t.sheetTherapistNoChannelP}</p>
+          // Свой терапевт: лист неба со знаком Talk — без фото автора, это не его клиент.
+          <EntitySheet look="therapist" titleAs="h1" label={t.sheetTherapistEyebrow} title={t.sheetTherapistTitle}
+            sub={contact.url ? t.sheetTherapistP : t.sheetTherapistNoChannelP} />
         ) : (
-          <p className="cw-lead">{t.sheetP}</p>
+          // Без терапевта говорит автор: его фото с наклейкой Talk на том же листе неба (сломанное фото прячется само).
+          <div className="pp-paper th-talk-hero" style={{ '--h': ENTITY_LOOK.therapist.hue } as CSSProperties}>
+            <AuthorPhoto className="th-talk-photo" />
+            <div className="th-talk-text">
+              <div className="ds-eyebrow th-talk-label">{t.sheetEyebrow}</div>
+              <h1 className="th-talk-title">{glueBridge(t.sheetTitle)}</h1>
+              <p className="th-talk-lead">{glue(t.sheetP)}</p>
+            </div>
+          </div>
         )}
         <div className="th-sheet-acts">
           {hasTherapist ? (

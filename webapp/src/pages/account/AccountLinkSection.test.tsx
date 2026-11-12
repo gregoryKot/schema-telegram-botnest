@@ -134,15 +134,16 @@ describe('AccountLinkSection — кому показывается', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('провайдеры ещё грузятся — силуэт карточки, а не спиннер и не пустота', () => {
+  // Ревью b27: силуэт рисовал синюю плашку всегда, а у большинства Telegram уже привязан — после загрузки
+  // плашка пропадала, страница прыгала дважды. Пока способы входа неизвестны — плашки нет.
+  it('провайдеры ещё грузятся — плашки нет, билет не выписывается', () => {
     const { container } = render(
       <AddressFormContext.Provider value={{ form: 'ty', setForm: vi.fn() }}>
         <AccountLinkSection providers={[]} loading onLinked={vi.fn()} />
       </AddressFormContext.Provider>,
     );
 
-    expect(container.querySelectorAll('.skel').length).toBeGreaterThan(0);
-    expect(container.querySelector('.spinner')).toBeNull();
+    expect(container.innerHTML).toBe('');
     expect(mockedFetch).not.toHaveBeenCalled();
   });
 });

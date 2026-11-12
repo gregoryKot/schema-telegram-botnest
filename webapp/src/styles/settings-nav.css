@@ -3,7 +3,9 @@
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   /* Settings overlay: don't cover the sidebar on desktop */
   .settings-overlay { left: var(--sidebar-w) !important; }
-  /* Settings left nav: visible on desktop */
+}
+/* Боковое оглавление — с 1024: на планшете (768–1023) рядом с сайдбаром оно оставляло колонке ~250px. */
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
   .settings-sidenav { display: flex !important; }
 }
 
@@ -32,6 +34,5 @@
   transition: color 0.1s;
 }
 .settings-sidenav-item:hover { color: var(--text); }
-/* Settings content area: center on desktop */
-.settings-content-inner { max-width: 600px; }
-@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .settings-content-inner { margin: 0 auto; } }
+/* Колонка содержимого: рабочая, прижата к оглавлению (по центру широкого экрана группы висели в пустоте). */
+.settings-content-inner { max-width: 680px; }

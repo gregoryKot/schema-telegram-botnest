@@ -5,14 +5,16 @@ import { api } from '../api';
 import { useAuth } from '../auth/authContext';
 import { useInstallHandoff } from '../hooks/useInstallHandoff';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
-import { INSTALL_STEPS } from '../components/installGuide/installSteps';
+import { InstallBlock } from '../components/installGuide/InstallBlock';
 import { useTr } from '../utils/addressForm';
 import { AddressFormProvider } from '../utils/AddressFormProvider';
 import { detectInstallPlatform, isStandalone, promptInstall, subscribeAppInstalled } from '../utils/pwaInstall';
-import { ServicePage } from './service/ServicePage';
+import { PaperOutcome } from '../components/paper/PaperOutcome';
+import { InstallFrame } from './install/InstallFrame';
 import { isAndroidWebView, loginNote } from './install/installLogic';
 import { useHandoffExchange } from './install/useHandoffExchange';
 import { CabinetLink } from './install/CabinetLink';
+import { StepText } from '../components/NavGlyphs';
 
 type Action = 'shown' | 'add' | 'added' | 'handoff_ok' | 'handoff_failed';
 // Страницу видят и анонимы: событие идёт публичным путём (userId = null).
@@ -41,16 +43,13 @@ function InstallContent() {
   return <MainScreen onInstalled={() => setInstalled(true)} />;
 }
 
+// «Готово» и «уже установлено» — исход done (Check на шалфее 135). Кнопка — CabinetLink (переход в кабинет
+// с учётом Метрики), поэтому своим ребёнком исхода, а не action-ссылкой.
 function Done({ title, lead, label }: { title: string; lead: string; label: string }) {
   return (
-    <ServicePage>
-      <div className="as-body">
-        <div className="ds-eyebrow">Приложение</div>
-        <h1 className="ds-h2">{title}</h1>
-        <p className="as-lead">{lead}</p>
-        <CabinetLink className="ds-btn as-cta">{label}</CabinetLink>
-      </div>
-    </ServicePage>
+    <PaperOutcome outcome="done" eyebrow="Приложение" title={title} lead={lead}>
+      <CabinetLink className="ds-btn ds-btn--lg pa-outcome-action">{label}</CabinetLink>
+    </PaperOutcome>
   );
 }
 
@@ -69,14 +68,9 @@ function MessengerScreen() {
   const tr = useTr();
   const { href } = useInstallHandoff();
   return (
-    <ServicePage>
-      <div className="as-body">
-        <div className="ds-eyebrow">Приложение</div>
-        <h1 className="ds-h2">Установить на телефон</h1>
-        <p className="as-lead">{tr('Открой эту страницу в браузере', 'Откройте эту страницу в браузере')} — там ставится приложение.</p>
-        <AddHomeScreenButton href={href} className="ds-btn as-cta">Открыть в браузере</AddHomeScreenButton>
-      </div>
-    </ServicePage>
+    <InstallFrame title="Установить на телефон" lead={<>{tr('Открой эту страницу в браузере', 'Откройте эту страницу в браузере')} — там ставится приложение.</>}>
+      <AddHomeScreenButton href={href} className="ds-btn ds-btn--lg ip-cta">Открыть в браузере</AddHomeScreenButton>
+    </InstallFrame>
   );
 }
 
@@ -85,7 +79,6 @@ function MainScreen({ onInstalled }: { onInstalled: () => void }) {
   const { isAuthenticated } = useAuth();
   const { canPrompt } = useInstallPrompt();
   const platform = detectInstallPlatform();
-  const guide = INSTALL_STEPS[platform];
   const shown = useRef(false);
   useEffect(() => {
     if (shown.current) return;
@@ -101,34 +94,25 @@ function MainScreen({ onInstalled }: { onInstalled: () => void }) {
   const mobile = platform !== 'desktop';
   const webView = platform === 'android' && isAndroidWebView(navigator.userAgent);
   const hint = (
-    <p className="as-hint">
-      {tr(
+    <p className="ip-hint">
+      <StepText text={tr(
         'Страница открылась внутри Telegram или другого приложения? Открой её в Chrome (iPhone — в Safari): меню ⋯ → «Открыть в браузере».',
         'Страница открылась внутри Telegram или другого приложения? Откройте её в Chrome (iPhone — в Safari): меню ⋯ → «Открыть в браузере».',
-      )}
+      )} />
     </p>
   );
 
   return (
-    <ServicePage>
-      <div className="as-body">
-        <div className="ds-eyebrow">Приложение</div>
-        <h1 className="ds-h2">«Всё по схеме» на {mobile ? 'телефоне' : 'компьютере'}</h1>
-        <p className="as-lead">
-          Ставится прямо из браузера, без магазина приложений: значок на экране, запуск на весь экран, свои записи и трекер всегда под рукой.
-        </p>
-        {webView && !canPrompt && hint}
-        {canPrompt ? (
-          <button type="button" className="ds-btn as-cta" onClick={install}>Установить приложение</button>
-        ) : (
-          <div>
-            <div className="ds-label">{guide.title}. {guide.browser}</div>
-            <ol className="as-steps">{guide.steps.map((s) => <li key={s}>{s}</li>)}</ol>
-          </div>
-        )}
-        {mobile && !canPrompt && !webView && hint}
-        <p className="as-lead">{tr(note.ty, note.vy)}</p>
-      </div>
-    </ServicePage>
+    <InstallFrame
+      title={<>«Всё по схеме» на {mobile ? 'телефоне' : 'компьютере'}</>}
+      lead="Ставится прямо из браузера, без магазина приложений: значок на экране, запуск на весь экран, свои записи и трекер всегда под рукой."
+    >
+      {webView && !canPrompt && hint}
+      {canPrompt
+        ? <button type="button" className="ds-btn ds-btn--lg ip-cta" onClick={install}>Установить приложение</button>
+        : <InstallBlock platforms={[platform]} look="page" />}
+      {mobile && !canPrompt && !webView && hint}
+      <p className="ip-note">{tr(note.ty, note.vy)}</p>
+    </InstallFrame>
   );
 }

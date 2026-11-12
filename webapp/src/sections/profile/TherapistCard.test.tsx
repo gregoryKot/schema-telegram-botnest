@@ -39,6 +39,10 @@ const active: TherapyRelationInfo = {
   nextSession: null,
 };
 
+/** Строка «когда» билета сессии: день и время — в своих span, текст строки целый («Вс, 15 ноя · 18:00»). */
+const when = (text: string | RegExp) => screen.getByText((_c, el) =>
+  !!el?.classList.contains('cbk-ticket-when') && (typeof text === 'string' ? el.textContent === text : text.test(el.textContent ?? '')));
+
 describe('TherapistCard', () => {
   it('связи нет, бывший терапевт есть — сообщение с именем', async () => {
     getFormerTherapist.mockResolvedValue({ name: 'Анна', endedAt: null });
@@ -82,7 +86,7 @@ describe('TherapistCard — «Следующая сессия» не в прош
 
   it('прошедшая дата + дни встреч → ближайшая суббота с тем же временем', () => {
     renderAt({ ...active, nextSession: '2026-10-17T07:00', meetingDays: [SAT] }, (tz) => {
-      expect(screen.getByText('Сб, 31 окт · 07:00'), tz).toBeTruthy();
+      expect(when('Сб, 31 окт · 07:00'), tz).toBeTruthy();
       expect(screen.queryByText(/17 окт/), tz).toBeNull();
     });
   });
@@ -98,7 +102,7 @@ describe('TherapistCard — «Следующая сессия» не в прош
 
   it('будущая дата — как была', () => {
     renderAt({ ...active, nextSession: '2026-11-04T10:00', meetingDays: [SAT] }, (tz) => {
-      expect(screen.getByText('Ср, 4 ноя · 10:00'), tz).toBeTruthy();
+      expect(when('Ср, 4 ноя · 10:00'), tz).toBeTruthy();
     });
   });
 });
@@ -133,7 +137,8 @@ describe('TherapistCard — запись на сессию', () => {
     vi.setSystemTime(new Date('2026-11-09T09:00:00Z'));
     getClientBooking.mockResolvedValue({ eligible: true, upcoming: [booking] });
     renderCard({ ...active, nextSession: '2026-11-20T10:00' });
-    expect(await screen.findByText('Завтра, 16:00')).toBeTruthy();
+    await screen.findByText('Ближайшая сессия');
+    expect(when('Завтра, 16:00')).toBeTruthy();
     expect(screen.getByText('Запись подтверждена')).toBeTruthy();
     expect(screen.queryByText('Следующая сессия')).toBeNull();
     expect(screen.getByRole('link', { name: 'Управлять записью' }).getAttribute('href')).toBe(booking.manageUrl);

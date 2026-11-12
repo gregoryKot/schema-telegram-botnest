@@ -16,6 +16,8 @@ export interface TherapySignal {
   eyebrow: string;
   /** Для repeat_mode — режим, который повторяется. */
   modeId?: string;
+  /** Для low_index — индексы трёх последних заполненных дней, от раннего к свежему (знак карточки). */
+  days?: number[];
 }
 
 export interface TherapySignalInput {
@@ -55,11 +57,12 @@ function filledIndexes(history: DayHistory[]): number[] {
     .filter((v): v is number => v !== null);
 }
 
-function hasLowIndexStreak(history: DayHistory[]): boolean {
+/** Три последних заполненных дня, если индекс каждого не выше порога (от раннего к свежему); иначе null. */
+function lowIndexStreak(history: DayHistory[]): number[] | null {
   const last = filledIndexes(history).slice(0, LOW_INDEX_DAYS);
-  return (
-    last.length === LOW_INDEX_DAYS && last.every((v) => v <= LOW_INDEX_MAX)
-  );
+  const low =
+    last.length === LOW_INDEX_DAYS && last.every((v) => v <= LOW_INDEX_MAX);
+  return low ? last.reverse() : null;
 }
 
 /** Режим из ≥3 записей за две недели; здоровые режимы (Здоровый Взрослый, Счастливый Ребёнок) не считаются. */
@@ -119,10 +122,12 @@ export function detectTherapySignal(
   );
   if (ratedDays.length < MIN_RATED_DAYS) return null;
 
-  if (hasLowIndexStreak(history)) {
+  const lowDays = lowIndexStreak(history);
+  if (lowDays) {
     return {
       trigger: 'low_index',
       eyebrow: 'Три последних заполненных дня: индекс не выше 4',
+      days: lowDays,
     };
   }
 
