@@ -1,15 +1,14 @@
-import { useTr } from '../../utils/addressForm';
+import type { CSSProperties } from 'react';
 import type { TherapyClientSummary } from '../../api';
 import { fmtDate } from '../../utils/format';
-import { hueStyle } from '../../lib/tone';
 import { useIsMobile } from '../useIsMobile';
 import { ClientOverviewSidebar } from './ClientOverviewSidebar';
-import { PaperEmpty } from '../art/PaperEmpty';
-import { Layers } from '../art/PaperArt';
 import { SignHead } from './SignArt';
 import { ClientQuickActions } from './ClientQuickActions';
-import { ToneGroupsCard } from './ClientOverviewGroups';
+import { PaperGroups } from './ClientOverviewGroups';
+import { OverviewEmpty, OverviewEntries } from './ClientOverviewParts';
 import { diaryPreview, groupSchemasByDomain, summarizeModes } from './clientOverviewModel';
+import { domainLook, ENTITY_LOOK, modeGroupLook } from '../../../../shared/src/theme/entityLook';
 import type { ClientDetail } from './clientSheetTypes';
 import '../../styles/therapist-card.css';
 
@@ -18,18 +17,19 @@ interface Props {
   detail: ClientDetail;
 }
 
-// «Обзор» карточки клиента (#906, волна 1): каждая секция — ds-card с подписью
-// ds-label (заголовок секции = подпись карточки, второго кегля засечного нет),
-// цель терапии — обычным текстом, схемы и режимы — строками с точкой тона,
-// пустые группы режимов не показываются. На телефоне первой строкой —
-// «+ Задание / + Заметка» (ClientQuickActions): закреплённой панели больше нет.
+const paper = (h: number) => ({ '--h': h }) as CSSProperties;
+
+// «Обзор» карточки клиента (#906; живая бумага — b30, APP_2026-11.md). Цель терапии — лист соломы («Коротко»
+// схемы случая); схемы и режимы — группы на бумаге домена и группы со своим знаком (PaperGroups → SignGroup,
+// как у клиента в «Моих паттернах»); заметка сессии и последние записи — белые листы с тенью-слоем
+// (OverviewEntries). Пустой «Обзор» — одна сцена (OverviewEmpty). На телефоне первой строкой —
+// «+ Задание / + Заметка» (ClientQuickActions): закреплённой панели нет.
 export function ClientOverviewTab({ selectedClient, detail }: Props) {
-  const tr = useTr();
   const phone = useIsMobile();
   const { localConcept, concept, activeSchemaIds, activeModeIds, notes, clientDiary, setClientTab } = detail;
   const goals = (localConcept.goals || concept?.goals) as string | undefined;
-  const domains = groupSchemasByDomain(activeSchemaIds).map(d => ({ ...d, items: d.schemas }));
-  const groups = summarizeModes(activeModeIds).filter(g => g.modes.length > 0).map(g => ({ ...g, items: g.modes }));
+  const domains = groupSchemasByDomain(activeSchemaIds).map(d => ({ id: d.id, name: d.name, look: domainLook(d.id) ?? ENTITY_LOOK.schemas, items: d.schemas }));
+  const groups = summarizeModes(activeModeIds).filter(g => g.modes.length > 0).map(g => ({ id: g.id, name: g.name, look: modeGroupLook(g.id), items: g.modes }));
   const entries = diaryPreview(clientDiary);
   const isEmpty = !goals && activeSchemaIds.length === 0 && activeModeIds.length === 0 && notes.length === 0 && clientDiary.length === 0;
 
@@ -39,24 +39,22 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
         {phone && <ClientQuickActions detail={detail} />}
 
         {goals && (
-          <section className="ds-card tk-goal">
+          <section className="pp-paper tk-goal" style={paper(70)}>
             <SignHead kind="layers" className="ds-label">Цель терапии</SignHead>
             <p className="tk-text">{goals}</p>
             <button className="ds-link" onClick={() => setClientTab('concept')}>Открыть концептуализацию →</button>
           </section>
         )}
 
-        {domains.length > 0 && (
-          <ToneGroupsCard label="Активные схемы" sign="layers" sub={`${activeSchemaIds.length} в работе`} groups={domains} layout="tiles" />
-        )}
+        {domains.length > 0 && <PaperGroups label="Активные схемы" sub={`${activeSchemaIds.length} в работе`} groups={domains} />}
 
         {groups.length > 0 && (
-          <ToneGroupsCard label="Карта режимов" sign="cluster" groups={groups} layout="cols"
+          <PaperGroups label="Карта режимов" groups={groups}
             action={<button className="ds-link" onClick={() => setClientTab('concept')}>Редактировать →</button>} />
         )}
 
         {notes.length > 0 && (
-          <section className="ds-card">
+          <section className="tk-leaf" style={paper(ENTITY_LOOK.note.hue)}>
             <div className="ds-head-row tk-card-head">
               <SignHead kind="pebbles" className="ds-label">Заметка сессии</SignHead>
               <button className="ds-link" onClick={() => setClientTab('sessions')}>Все заметки →</button>
@@ -66,31 +64,9 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
           </section>
         )}
 
-        {entries.length > 0 && (
-          <section className="ds-card">
-            <div className="ds-head-row tk-card-head">
-              <SignHead kind="pebbles" className="ds-label">Последние записи</SignHead>
-              <button className="ds-link" onClick={() => setClientTab('client_notes')}>Все записи →</button>
-            </div>
-            {entries.map((e, i) => (
-              <div key={i} className="ds-list-row tk-entry">
-                <span className="ds-chip ds-chip--sm tone-tint" style={hueStyle(e.hue)}>{e.typeLabel}</span>
-                <div className="tk-entry-body">
-                  <div className="ds-list-title">{e.title}</div>
-                  {e.excerpt && <div className="ds-list-sub tk-entry-excerpt">{e.excerpt}</div>}
-                </div>
-                <span className="ds-sub">{fmtDate(e.date)}</span>
-              </div>
-            ))}
-          </section>
-        )}
+        {entries.length > 0 && <OverviewEntries entries={entries} onAll={() => setClientTab('client_notes')} />}
 
-        {isEmpty && (
-          <section className="ds-card">
-            <PaperEmpty art={Layers}>{tr('Заполни концептуализацию, чтобы увидеть схемы и режимы клиента', 'Заполните концептуализацию, чтобы увидеть схемы и режимы клиента')}</PaperEmpty>
-            <div className="tk-start"><button className="ds-btn ds-btn--sm" onClick={() => setClientTab('concept')}>Открыть концептуализацию</button></div>
-          </section>
-        )}
+        {isEmpty && <OverviewEmpty onOpen={() => setClientTab('concept')} />}
       </div>
 
       <ClientOverviewSidebar selectedClient={selectedClient} detail={detail} />

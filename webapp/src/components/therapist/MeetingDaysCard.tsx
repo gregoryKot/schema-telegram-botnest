@@ -4,18 +4,17 @@ import { MEETING_DAYS_ORDER, toggleMeetingDay, sortMeetingDays } from '../../../
 import { hueStyle } from '../../lib/tone';
 import { DAY_NAMES } from './clientSheetHelpers';
 import type { ClientDetail } from './clientSheetTypes';
-import { SignHead } from './SignArt';
 import { EditFormActions } from './EditFormActions';
 
-/** «Дни встреч» — еженедельные дни сессий; правка как в мини-аппе (SessionCard). */
+/** «Дни встреч» — строка блока «Встречи» (b30): еженедельные дни сессий; правка как в мини-аппе (SessionCard). */
 export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: TherapyClientSummary; detail: ClientDetail }) {
   const { saveSessionInfo, sessionInfoSaving, sessionInfoError } = detail;
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<number[]>([]);
   const saved = sortMeetingDays(selectedClient.meetingDays ?? []);
   return (
-    <div className="ds-card ds-card--row">
-      <SignHead kind="talk" className="ds-label">Дни встреч</SignHead>
+    <div className="tk-meet-row">
+      <h2 className="ds-label">Дни встреч</h2>
       {editing ? (
         <div className="tk-edit-form">
           <div className="tk-days" role="group" aria-label="Дни встреч" style={hueStyle(undefined)}>
@@ -30,7 +29,7 @@ export function MeetingDaysCard({ selectedClient, detail }: { selectedClient: Th
         </div>
       ) : (
         <div className="tk-start">
-          <span>{saved.length > 0 ? saved.map(d => DAY_NAMES[d]).join(', ') : <span className="ds-empty">Не указаны</span>}</span>
+          <span>{saved.length > 0 ? saved.map(d => DAY_NAMES[d]).join(', ') : <span className="tk-meet-none">Не указаны</span>}</span>
           <button className="ds-link" onClick={() => { setLocal(saved); setEditing(true); }}>{saved.length > 0 ? 'Изменить →' : 'Указать →'}</button>
         </div>
       )}

@@ -11,16 +11,13 @@ import { useIsMobile } from '../useIsMobile';
 import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { removeClientConfirmCopy } from '../../../../shared/src/therapy/removeClientConfirm';
 import { clientHue, hueStyle } from '../../lib/tone';
+import { clientNameClass } from './clientNameFit';
 import '../../styles/therapist-card.css';
 
-interface Props {
-  selectedClient: TherapyClientSummary;
-  detail: ClientDetail;
-  switchView: (v: 'list' | 'client') => void;
-}
+interface Props { selectedClient: TherapyClientSummary; detail: ClientDetail; switchView: (v: 'list' | 'client') => void }
 
-// Шапка карточки клиента (#906, волна 1): аватар tint с тёмными инициалами,
-// имя ds-h2, строка-мета и «Встреча» + дата; редкие действия (переименовать,
+// Шапка карточки клиента (#906; b30): аватар — кружок бумаги тона клиента с тенью-слоем, имя ds-h2 — до двух
+// строк, длинное на телефоне мельче и до четырёх (clientNameFit); строка-мета и «Встреча» + дата; редкие действия (переименовать,
 // удалить) — в меню «⋯». «+ Задание / + Заметка» здесь только на ноутбуке: на
 // телефоне они первой строкой «Обзора», закреплённой панели над навигацией нет.
 export function ClientHeader({ selectedClient, detail, switchView }: Props) {
@@ -39,7 +36,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
     <div className="tk-head">
       <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
-        <div className="ds-avatar ds-avatar--serif tone-tint tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
+        <div className="ds-avatar ds-avatar--serif tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
           {clientAvatarInitials(selectedClient)}
         </div>
         <div className="tk-ident">
@@ -53,7 +50,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
               {aliasError && <span className="tk-error">{aliasError}</span>}
             </div>
           ) : (
-            <h1 className="ds-h2 tk-name">{displayName}</h1>
+            <h1 className={clientNameClass(displayName)}>{displayName}</h1>
           )}
           <ClientHeaderBadges client={selectedClient} />
         </div>
