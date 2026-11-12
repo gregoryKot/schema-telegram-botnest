@@ -62,6 +62,18 @@
     списком в разделах `### b24-more-bridge` и `### b25-settings` `docs/design/APP_2026-11.md`, ждут решения
     по словам.
 
+- ⬜ **Хвост редизайна кабинета терапевта: «Сегодня», клиенты, карточка, вкладки (#1072)** — не починено в партиях b29–b31:
+  - кнопки приглашений — розовые плашки `inviteButtonStyle` (`shared/src/therapy/{InviteCodeBox,PendingInviteRow,CardClaimBanner}.tsx`,
+    тот же стиль в `webapp/src/components/settingsSheet/TherapistSections.tsx`): лист вокруг — бумага, кнопки — нет;
+  - сбой создания клиента — красная строка `tc-add-err` под полем (`webapp/src/components/therapist/AddClientForm.tsx`),
+    не `PaperAlert`: решить вместе с текстом ошибки;
+  - «Клиенты»: сбой загрузки без «Повторить» — ростер грузится одним эффектом, перезагрузки нет
+    (`webapp/src/components/TherapistClientSheet.tsx`, `ClientListView.tsx`; снимок стенда `therapist-clients-failed`);
+  - палитра ⌘K громче списка клиентов: аватар без бумаги, «Активность сегодня» зелёным
+    (`webapp/src/components/CommandPaletteList.tsx`, `.cmd-sub.is-ok` в `webapp/src/styles/command-palette.css`);
+  - на решение владельца — список в разделах `### b29`–`### b31` `docs/design/APP_2026-11.md`: тексты 3 и 4 из аудита,
+    «0 активных домашних заданий» над пустым списком, `Check` у невыполненного задания и у шаблона «Дневник режима».
+
 ## Идеи
 
 - **Холст → концептуализация — не делаем** (решено 2026-10-16, владелец доверил
