@@ -240,6 +240,10 @@ describe('SubscribePage — отмена подписки (отказ не гл�
     await openManage();
     fireEvent.click(cancelBtn());
     await screen.findByText('Подписка отменена');
+    // Отменена — лист Cup, а не «спасибо» со сценой FinalCorners (ревью b28).
+    expect(document.querySelector('.pa-outcome-card')?.getAttribute('data-sign')).toBe('cup');
+    expect(document.querySelector('.pl2-final-corner--a')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Оформить снова' }).getAttribute('href')).toBe('/subscribe');
     expect(mockApi.cancelSubscription).toHaveBeenCalledWith('tok1');
     expect(reportClientError).not.toHaveBeenCalled();
   });
