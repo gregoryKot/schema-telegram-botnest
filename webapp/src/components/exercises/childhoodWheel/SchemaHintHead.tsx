@@ -5,11 +5,7 @@ import { DomainArt } from '../../art/DomainArt';
 import { hintDomainNum } from './hintDomainId';
 import { NEEDS } from './needs';
 
-/**
- * Шапка подсказки: знак потребности — одна колонка слева; имя и оценка — одной строкой с переносом
- * (на 320 «Привязанность» не лезет под «4/10 в детстве», оценка уходит строкой ниже), под ними —
- * домен со знаком строчкой меню (nav).
- */
+/** Шапка подсказки: знак потребности слева; имя и оценка строкой с переносом (на 320 оценка уходит под имя), ниже — домен со знаком. */
 export function SchemaHintHead({ id, score }: { id: NeedId; score: number }) {
   const label = NEEDS.find((n) => n.id === id)?.label ?? id;
   const domain = hintDomainNum(id);

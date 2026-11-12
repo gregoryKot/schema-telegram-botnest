@@ -18,6 +18,7 @@ import { planEventStartMs } from '../../../../shared/src/utils/planEventStart';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 import { buildGoogleCalendarUrl } from '../booking/googleCalendarLink';
 import { reminderHour } from './planDoneModel';
+import { PaperAlert } from '../paper/PaperAlert';
 
 type PlanState = ReturnType<typeof usePlanSheetState>;
 
@@ -107,12 +108,9 @@ export function PlanConfirm({ s, needId, needLabel }: Props) {
         )}
       </div>
 
-      {s.icsFailed && <div role="alert" className="sk-error sk-center">{tr('Файл для календаря не открылся. Попробуй ещё раз.', 'Файл для календаря не открылся. Попробуйте ещё раз.')}</div>}
-      {s.saveError && (
-        <div className="sk-error sk-center">
-          {tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')}
-        </div>
-      )}
+      {/* Сбои — наклейкой PaperAlert, как у соседей по листу (ревью g6 r2: шли голой красной строкой). */}
+      {s.icsFailed && <PaperAlert className="sk-alert" sign="leaf" title={tr('Файл для календаря не открылся. Попробуй ещё раз.', 'Файл для календаря не открылся. Попробуйте ещё раз.')} />}
+      {s.saveError && <PaperAlert className="sk-alert" sign="leaf" title={tr('Не удалось сохранить. Попробуй ещё раз.', 'Не удалось сохранить. Попробуйте ещё раз.')} />}
     </div>
   );
 }

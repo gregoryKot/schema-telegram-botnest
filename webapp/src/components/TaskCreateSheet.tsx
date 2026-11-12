@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { GlyphArrowLeft } from './exercises/ExScreen';
 import { EntitySheet } from './paper/EntitySheet';
+import { PaperAlert } from './paper/PaperAlert';
 import { api, type UserId } from '../api';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { haptic } from '../haptic';
@@ -137,13 +138,12 @@ export function TaskCreateSheet({ clientId, clientName, defaultType, defaultText
               </div>
             )}
           </div>
-
         </div>
       </div>
       {/* Главная кнопка закреплена внизу листа: на телефоне до неё было девять плиток и настройки. */}
       <div className="sk-submit-bar">
         <div className="sk-submit">
-          {error ? <span className="sk-error">{error}</span> : <span />}
+          {error && <PaperAlert className="sk-alert" title={error} />}
           <button className="ds-btn ds-btn--lg" onClick={handleCreate} disabled={!canSave || saving}>
             {saving ? copy.saving : copy.submit}
           </button>

@@ -139,7 +139,7 @@ export function PhraseCheckEx({
   return (
     <>
     <ExScreen
-      onBack={goBack} caution look="phrase_check" compact={markIndex >= 0}
+      onBack={goBack} caution look="phrase_check" compact={markIndex >= 0} hintBeforeField={onMarks}
       heroArt={<ScenePhrase />}
       heroFoot={<PhraseBeads marks={marks} markIndex={markIndex} step={stepNumber} total={TOTAL_STEPS} />}
       eyebrow={exerciseCard('phrase').eyebrow}

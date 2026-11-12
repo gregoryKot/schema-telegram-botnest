@@ -50,6 +50,13 @@
 /* ── «было → стало»: итог и строки прошлых разборов ── */
 .ex2-talk { align-self: stretch; display: flex; flex-direction: column; gap: 10px; margin: 8px 0 4px; }
 .ex2-talk > .ex2-said { margin-bottom: 0; }
+/* На узком экране «Стало» — как «Было»: знак и подпись строкой, цитата во всю ширину под ними (в колонке
+   рядом со знаком первая строка оставалась из одного слова — ревью g6 r2). */
+@media (max-width: 360px) {
+  .ex2-talk .pa-voice { align-items: center; row-gap: 6px; }
+  .ex2-talk .pa-voice-body { display: contents; }
+  .ex2-talk .pa-voice-text { grid-column: 1 / -1; }
+}
 /* Прошлые разборы — общая строка ExPastRow (ex-done.css): фраза цитатой со знаком Looming, ниже «→ стало»
    со знаком Together; в колонке подсказки шага «фраза» — отступом от наклейки. */
 .ex2-aside .ex2-past-list { margin-top: 20px; }

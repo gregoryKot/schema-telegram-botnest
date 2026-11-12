@@ -48,3 +48,5 @@
   .ex2-belief > .ex2-foot > .ds-btn:not(.ex2-ghost) { flex: 1 1 100%; }
   .ds-textarea.ex2-reframe { font-size: 17px; }
 }
+/* На 320 «Запиши(те) мысль, которую» в 24px не помещалась в строку, и «которую» повисало одно (ревью g6 r2). */
+@media (max-width: 340px) { .ex2-belief .sd-step-q { font-size: 21px; } }

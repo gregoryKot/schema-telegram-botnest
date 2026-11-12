@@ -39,8 +39,8 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
   } = state;
   const look = needLook(needId as NeedId);
   const pick = phase === 'pick';
-  // Пояснение листа плана (до b20 — подпись белой карточки «Потребность») — подписью листа-героя (ревью g6).
-  const pickLede = <>{glue('Потребность восстанавливается через маленькое конкретное действие')}<br />{glue('Один маленький конкретный шаг – уже много.')}</>;
+  // Пояснение листа плана (до b20 — подпись белой карточки «Потребность») — подписью листа-героя, вторая фраза абзацем (ревью g6).
+  const pickLede = <>{glue('Потребность восстанавливается через маленькое конкретное действие')}<span className="sk-lede-next">{glue('Один маленький конкретный шаг – уже много.')}</span></>;
 
   return (
     <ExScreen
@@ -94,11 +94,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
               rows={2}
               className="ds-textarea"
             />{detectCrisisAny(customText) && <CrisisCard surface="plan" />}
-            {customText.trim() && (
-              <button onClick={handleCustomSubmit} className="ds-btn sk-self-start">
-                Продолжить →
-              </button>
-            )}
+            {customText.trim() && <button onClick={handleCustomSubmit} className="ds-btn sk-self-start">Продолжить →</button>}
           </div>
         </div>
       )}

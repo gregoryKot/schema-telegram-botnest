@@ -9,6 +9,9 @@
 .sk-config { display: flex; flex-direction: column; gap: 24px; }
 .sk-field { display: flex; flex-direction: column; gap: 10px; }
 .sk-error { font-size: 13px; color: var(--err); }
+/* Сбой в листе плана и в подвале «Поставить цель» — компактная наклейка PaperAlert (ревью g6 r2). */
+.pa-alert.sk-alert { padding: 10px 14px 10px 12px; gap: 6px 10px; border-radius: 14px; }
+.pa-alert.sk-alert .pa-alert-title { font-size: 14px; }
 .sk-group-title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.2; color: var(--text); }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sk-page { padding-top: 20px; gap: 22px; }
@@ -53,6 +56,7 @@
 .sk-need-score > i { display: block; width: var(--score); height: 100%; border-radius: 2px; background: var(--need-ink); }
 
 /* ── Лист плана ── */
+.sk-lede-next { display: block; margin-top: 8px; } /* вторая фраза подписи — абзацем: первая без точки, строки сливались */
 .sk-plan-pick, .sk-plan-confirm { display: flex; flex-direction: column; gap: 24px; }
 .sk-opt-row { display: flex; align-items: center; gap: 4px; }
 .ds-card.sk-opt {

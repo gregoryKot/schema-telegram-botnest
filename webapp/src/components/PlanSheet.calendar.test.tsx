@@ -132,7 +132,7 @@ describe('PlanSheet — Telegram: .ics по ссылке с сервера', () 
     mockApi.practiceIcsLink.mockRejectedValue(new Error('503'));
     await openConfirm(true, 'vy');
     await act(async () => { fireEvent.click(screen.getByText('Добавить в календарь (.ics)')); });
-    expect(screen.getByRole('alert').textContent).toBe('Файл для календаря не открылся. Попробуйте ещё раз.');
+    expect(screen.getByRole('alert').textContent?.replace(/\u00a0/g, ' ')).toBe('Файл для календаря не открылся. Попробуйте ещё раз.'); // PaperAlert клеит предлоги
     expect(saveFile).not.toHaveBeenCalled();
   });
 });

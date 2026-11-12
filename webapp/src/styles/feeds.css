@@ -4,7 +4,15 @@
 .sk-feeds .ds-sheet-head > .sk-error, .sk-feeds .ds-sheet-head > .sk-ok { margin-left: auto; }
 .sk-ok { font-size: 13px; font-weight: 600; color: var(--ok-ink); }
 .sk-feed-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.sk-feed-head > .ds-sub { margin-left: auto; white-space: nowrap; }
+.sk-feed-head > .ds-sub { flex: none; margin-left: auto; white-space: nowrap; }
+/* На 320 «Привязанность» и «2 действия» в строку не помещаются — счётчик уходит под название (ревью g6 r2). */
+@media (max-width: 340px) {
+  .sk-feed-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; }
+  .sk-feed-head > .pp-row-art { grid-row: span 2; }
+  .sk-feed-head > .ds-sub { grid-column: 2; margin-left: 0; }
+}
+/* «Открой трекер →» в подписи листа: зона нажатия 44 по высоте, вид строки прежний (поля гасит отрицательный margin). */
+.sk-feeds .ds-link--inline { display: inline-block; padding: 13px 0; margin: -13px 0; }
 .sk-feed-hint { margin: 0; max-width: 62ch; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
 .sk-feed-hint b { color: var(--text); font-weight: 600; }
 .ds-card.sk-practice { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 12px 10px 16px; }
