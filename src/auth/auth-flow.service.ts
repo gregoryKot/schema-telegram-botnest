@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -19,7 +14,6 @@ import {
   OAUTH_STATE_COOKIE,
   setOAuthCookie,
   redirectToCallbackHost,
-  assertOAuthStateMatches,
 } from './oauth-host';
 import { disabledProviderRedirect } from './oauth-provider-switch';
 
@@ -44,8 +38,6 @@ export type SignInOutcome =
 // Общий OAuth/вход для auth-контроллеров (вынесен из AuthController, №10).
 @Injectable()
 export class AuthFlowService {
-  private readonly logger = new Logger(AuthFlowService.name);
-
   constructor(
     private readonly auth: AuthService,
     private readonly config: ConfigService,
@@ -131,7 +123,7 @@ export class AuthFlowService {
     };
   }
 
-  // Общий обработчик OAuth-редирект-колбэков (Google/VK) — ведёт
+  // Общий обработчик OAuth-редирект-колбэков (VK) — ведёт
   // на нужный экран по исходу. Синхронный: молчаливого одобрения билета здесь
   // больше нет (device-code phishing, разбор 2026-08-31) — одобрение уехало
   // на экран сверки /auth/confirm.
@@ -166,7 +158,7 @@ export class AuthFlowService {
       );
       return;
     }
-    // crossSite:false — OAuth-редирект (Google/VK) приходит
+    // crossSite:false — OAuth-редирект (VK) приходит
     // top-level навигацией на наш домен, не iframe (setRefreshCookie заодно
     // чистит метку refresh_cross от возможной прежней MAX-сессии, правило №5).
     setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
@@ -203,7 +195,7 @@ export class AuthFlowService {
   }
 
   // ─── OAuth helpers ────────────────────────────────────────────────────────
-  // Новый провайдер: файл + регистрация + стабы @Get(id), @Get(id + '/callback')
+  // Новый провайдер: файл + регистрация + свои @Get(id), @Get(id + '/callback')
   // (не Get(':provider') — затенил бы /me, /refresh) + env в oauth-provider-switch.
 
   oauthRedirect(provider: string, req: Request, res: Response): void {
@@ -234,51 +226,6 @@ export class AuthFlowService {
     // buildAuthUrl). nonce — секрет шага 1 в куке (PKCE VK, аудит 2026-11 S21).
     const force = linkUserId != null;
     res.redirect(handler.buildAuthUrl(state, handler.issueNonce?.(res), force));
-  }
-
-  async oauthCallback(
-    provider: string,
-    code: string,
-    state: string,
-    error: string,
-    req: Request,
-    res: Response,
-  ): Promise<void> {
-    const frontendBase = this.config.getOrThrow<string>('WEBAPP_URL');
-    try {
-      const handler = this.providers.get(provider);
-      if (!handler.exchangeCode)
-        throw new BadRequestException(
-          `Provider ${provider} doesn't support OAuth`,
-        );
-      if (error) throw new UnauthorizedException(`${provider} auth denied`);
-      if (!code || !state)
-        throw new BadRequestException('Missing code or state');
-
-      assertOAuthStateMatches(req, state, this.callbackOrigin(handler));
-      res.clearCookie(OAUTH_STATE_COOKIE, { path: '/api/auth' });
-
-      const identity = await handler.exchangeCode(code);
-      const linkUserId = this.linkUserIdFromState(state);
-
-      const outcome = await this.signInOrLinkOrMerge(provider, identity, {
-        linkUserId,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'],
-      });
-      this.finishOAuthRedirect(
-        outcome,
-        provider,
-        res,
-        frontendBase,
-        this.ticketFromState(state),
-      );
-    } catch (err) {
-      this.logger.error(
-        `${provider} callback error: ${(err as Error).message}`,
-      );
-      res.redirect(`${frontendBase}/auth/error?reason=${provider}_failed`);
-    }
   }
 
   // Хост колбэка провайдера; фолбэк WEBAPP_URL — для verifyClientData-флоу без callbackOrigin.

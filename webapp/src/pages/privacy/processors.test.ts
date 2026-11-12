@@ -12,9 +12,14 @@ describe('processors', () => {
     }
   });
 
-  it('иностранные интеграции перечислены: Telegram, Google, Resend, iCloud, Zoom, Cloudflare R2', () => {
+  it('иностранные интеграции перечислены: Telegram, Resend, iCloud, Zoom, Cloudflare R2', () => {
     const names = FOREIGN_PROCESSORS.map((p) => p.name).join('|');
-    for (const n of ['Telegram', 'Google', 'Resend', 'iCloud', 'Zoom', 'Cloudflare R2']) expect(names).toContain(n);
+    for (const n of ['Telegram', 'Resend', 'iCloud', 'Zoom', 'Cloudflare R2']) expect(names).toContain(n);
+  });
+
+  // Вход через Google убран (2026-11, запрос РКН №08-1063539): получателя нет.
+  it('Google среди получателей нет', () => {
+    expect(JSON.stringify(FOREIGN_PROCESSORS)).not.toMatch(/google/i);
   });
 
   it('Метрика не в иностранных — российский сервис', () => {

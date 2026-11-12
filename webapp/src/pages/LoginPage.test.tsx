@@ -130,8 +130,11 @@ describe('LoginPage — обычный браузер (не Telegram)', () => {
       }),
     );
     renderPage();
-    expect(await screen.findByRole('link', { name: /Войти через Google/ })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
+    expect(await screen.findByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
+    // Вход через Google убран (2026-11, запрос РКН): кнопки нет, а прежним
+    // пользователям сказано, как попасть в свой аккаунт.
+    expect(screen.queryByRole('link', { name: /Google/ })).toBeNull();
+    expect(screen.getByTestId('login-google-note').textContent).toContain('с той же почтой');
     expect(screen.getByRole('link', { name: /Войти через Telegram/ })).toBeTruthy();
   });
 });
@@ -238,7 +241,7 @@ describe('LoginPage — внутри Telegram (авто-вход не удалс
     renderPage();
     expect(screen.getByText('Не удалось войти автоматически')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Попробовать снова' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Войти через Google/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
   });
 
   // Пара к AppErrorScreen мини-аппа: экран-тупик обязан назвать адрес, а не

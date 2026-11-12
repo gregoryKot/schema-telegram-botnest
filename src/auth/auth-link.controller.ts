@@ -90,12 +90,12 @@ export class AuthLinkController {
     @Param('provider') provider: string,
     @Req() req: Request,
   ): Promise<{ ok: boolean }> {
-    // Почта — способ входа без обработчика в реестре (magic link,
-    // auth.service.ts), но кабинет отвязывает её этой же ручкой.
+    // Почта (magic link) и прежний вход через Google (убран 2026-11, строки
+    // остались) — без обработчика в реестре, но отвязываются этой же ручкой.
     const email = provider === 'email';
-    if (!email && !this.providers.list().some((p) => p.id === provider)) {
+    const listed = this.providers.list().some((p) => p.id === provider);
+    if (!email && provider !== 'google' && !listed)
       throw new BadRequestException('Unknown provider');
-    }
     const userId = req.webUser!.userId;
     // Снятый адрес — до отвязки: письмо уходит и на него (хвост S12).
     const removed = email ? await this.notice.emailAddresses(userId) : [];

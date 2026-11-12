@@ -11,7 +11,7 @@ import {
 const ty = (a: string) => a;
 
 describe('knownAuthErrorReason', () => {
-  it.each(['google_failed', 'vk_failed', 'max_failed', 'telegram_failed', 'email_link_expired', 'email_network', 'telegram_no_data', 'http_401', 'http_503'])(
+  it.each(['vk_failed', 'max_failed', 'telegram_failed', 'email_link_expired', 'email_network', 'telegram_no_data', 'http_401', 'http_503'])(
     '%s — известный код',
     (code) => expect(knownAuthErrorReason(code)).toBe(code),
   );
@@ -33,7 +33,7 @@ describe('reportedAuthErrorReason', () => {
 
 describe('authErrorText', () => {
   it('у каждого кода словаря есть текст; у неизвестного — нет', () => {
-    for (const code of ['google_failed', 'telegram_expired', 'email_link_expired', 'email_network', 'http_429', 'http_502']) {
+    for (const code of ['vk_failed', 'telegram_expired', 'email_link_expired', 'email_network', 'http_429', 'http_502']) {
       expect(authErrorText(code, ty), code).toBeTruthy();
     }
     expect(authErrorText('http_403', ty)).toBeNull();
@@ -49,13 +49,12 @@ describe('telegramWidgetReason', () => {
   });
 });
 
-// Рубильник Google/VK (2026-11): сервер ведёт сюда со старта входа, когда env
+// Рубильник VK (2026-11): сервер ведёт сюда со старта входа, когда env
 // провайдера снят (`src/auth/oauth-provider-switch.ts`). Текст безличный:
 // экран публичный, формы обращения у него нет.
 describe('провайдер выключен (<id>_disabled)', () => {
   const vy = (_: string, b: string) => b;
   it.each([
-    ['google_disabled', 'Google'],
     ['vk_disabled', 'ВКонтакте'],
   ])('%s — известный код, текст про %s и другой способ, одинаковый в обеих формах', (code, name) => {
     expect(knownAuthErrorReason(code)).toBe(code);

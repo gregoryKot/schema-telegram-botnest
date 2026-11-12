@@ -7,21 +7,6 @@
     "status": "exempt",
     "reason": "MAX initData проверяется тем же HMAC-алгоритмом, что и Telegram, но с токеном бота MAX — тест подписывает данные сам, реального initData от MAX-клиента в логах прода не сохранялось."
   },
-  "src/auth/providers/google-auth-url.ts": {
-    "status": "recorded",
-    "fixtures": [
-      "oauth-authorize-responses.json"
-    ],
-    "spec": "src/infra/self-check/probe-oauth-providers.spec.ts"
-  },
-  "src/auth/providers/google-id-token.ts": {
-    "status": "exempt",
-    "reason": "id_token JWT — синтетический payload через jose-мок (google-id-token.spec.ts); реальный Google id_token содержит email/sub живого пользователя и не может лежать в репозитории как фикстура без риска PII."
-  },
-  "src/auth/providers/google.provider.ts": {
-    "status": "exempt",
-    "reason": "Ответы Google OAuth token/userinfo endpoint в спеке — авторская форма по документации Google, не захваченный с прода вызов; учётные данные тестового аккаунта Google для записи недоступны."
-  },
   "src/auth/providers/max.provider.ts": {
     "status": "exempt",
     "reason": "Тонкая обёртка над verifyMaxInitData (max-init-data.ts) — сам разбор формата не делает, делегирует. Классифицирован отдельно, т.к. подпадает под явный путь providers/*.ts."

@@ -42,7 +42,7 @@ export function loginNote(platform: InstallPlatform, isAuthenticated: boolean): 
     };
   }
   return {
-    ty: 'Вход — после установки, в самом приложении: Telegram, Google или ВКонтакте.',
-    vy: 'Вход — после установки, в самом приложении: Telegram, Google или ВКонтакте.',
+    ty: 'Вход — после установки, в самом приложении: Telegram, ВКонтакте или почта.',
+    vy: 'Вход — после установки, в самом приложении: Telegram, ВКонтакте или почта.',
   };
 }

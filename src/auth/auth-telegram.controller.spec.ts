@@ -5,14 +5,6 @@
 // requireCsrf() отдельно как «гейт до БД» (см. CLAUDE.md «Обработка ошибок» —
 // answerCbQuery/эквивалент до сайд-эффектов), плюс happy path и main guard-ветку
 // каждого маршрута.
-//
-// registry.ts (импортируется контроллером для reflect-metadata design:paramtypes,
-// нужного @Injectable) тянет GoogleProvider, а тот — пакет 'jose' (чистый ESM,
-// ts-jest не умеет его парсить). Реальный GoogleProvider тут не нужен —
-// подменяем модуль тем же способом, что и auth-flow.service.spec.ts /
-// telegram.provider.spec.ts.
-jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
-
 import {
   BadRequestException,
   ForbiddenException,

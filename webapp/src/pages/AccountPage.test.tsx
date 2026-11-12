@@ -161,19 +161,21 @@ describe('AccountPage — загрузка', () => {
     renderPage();
     await screen.findByText('Аккаунт');
 
-    // Все 4 кнопки "Привязать" (google, telegram, vk, email), ни одной "Отвязать".
-    expect(screen.getAllByText('Привязать').length).toBe(4);
+    // Все 3 кнопки "Привязать" (telegram, vk, email), ни одной "Отвязать".
+    // Google без привязки не показан вовсе: вход через него убран (2026-11).
+    expect(screen.getAllByText('Привязать').length).toBe(3);
+    expect(screen.queryByText('Google')).toBeNull();
     expect(screen.queryByText('Отвязать')).toBeNull();
     expect(screen.getByText('не привязан')).toBeTruthy();
   });
 
   it('заголовок способов входа считает реальные привязки: «N из M»', async () => {
     renderPage();
-    await screen.findByText('0 из 4');
+    await screen.findByText('0 из 3');
     cleanup();
     meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
     renderPage();
-    await screen.findByText('1 из 4');
+    await screen.findByText('1 из 4'); // прежняя привязка Google — своя строка
     expect(screen.getByText('U')).toBeTruthy();
   });
 
@@ -434,12 +436,12 @@ describe('AccountPage — привязка email', () => {
   });
 });
 
-// П5 (симптом 2026-08-21): linkGoogle/linkVk запрашивают link-token ПЕРЕД
+// П5 (симптом 2026-08-21): linkVk (и убранный linkGoogle) запрашивают link-token ПЕРЕД
 // редиректом — без этой httpOnly-куки сервер не видит текущего пользователя,
 // и вместо привязки создаётся/логинится ДРУГОЙ аккаунт. linkTelegram этого
 // не делал — здесь регрессионный тест на то, что теперь делает, как соседи.
 describe('AccountPage — привязка Telegram', () => {
-  it('перед редиректом на /api/auth/telegram/redirect запрашивает link-token (как linkGoogle/linkVk)', async () => {
+  it('перед редиректом на /api/auth/telegram/redirect запрашивает link-token (как linkVk)', async () => {
     const originalHref = window.location.href;
     Object.defineProperty(window, 'location', {
       configurable: true,
@@ -449,8 +451,8 @@ describe('AccountPage — привязка Telegram', () => {
       renderPage();
       await screen.findByText('Аккаунт');
 
-      // Кнопки «Привязать» в порядке разметки: Google, Telegram, VK, Email.
-      fireEvent.click(screen.getAllByText('Привязать')[1]);
+      // Кнопки «Привязать» в порядке разметки: Telegram, VK, Email.
+      fireEvent.click(screen.getAllByText('Привязать')[0]);
 
       await waitFor(() =>
         expect(

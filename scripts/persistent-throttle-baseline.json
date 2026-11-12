@@ -1,9 +1,4 @@
 {
-  "GET /api/auth/google/one-tap/nonce": {
-    "status": "exempt",
-    "reason": "Выдаёт одноразовый nonce без проверки кода и без заявки: ничего не перебирается. Окно в памяти допустимо, сброс деплоем даёт лишние nonce.",
-    "since": "#708"
-  },
   "GET /api/booking/by-token/:param": {
     "status": "exempt",
     "reason": "Чтение по токену записи — randomUUID, 122 бита: перебор нереален. Ответ без персональных данных, побочных эффектов нет.",
@@ -27,11 +22,6 @@
   "POST /api/auth/email/consume": {
     "status": "exempt",
     "reason": "Токен письма — 256 бит случайных (randomBytes(32)), перебор нереален; лимит только против шума. Сброс окна деплоем доступа не даёт.",
-    "since": "#708"
-  },
-  "POST /api/auth/google/one-tap": {
-    "status": "exempt",
-    "reason": "Вход по ID-токену Google, подписанному Google: подпись не перебирается, nonce одноразовый. Запись в Postgres на каждый вход через One Tap не нужна.",
     "since": "#708"
   },
   "POST /api/auth/max/webapp": {

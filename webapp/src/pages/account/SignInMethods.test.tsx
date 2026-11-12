@@ -2,7 +2,7 @@
 // QA 2026-11, М2: «Отвязать» у единственного способа входа была активна —
 // подтверждение, затем отказ сервера и общее «Не удалось отвязать».
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import { SignInMethods } from './SignInMethods';
 import type { AccountProvider } from './ProviderRows';
 
@@ -14,7 +14,7 @@ function renderMethods(providers: AccountProvider[]) {
   render(
     <SignInMethods
       providers={providers} loading={false} busy={false} accessToken="t"
-      onLink={{ google: vi.fn(), telegram: vi.fn(), vk: vi.fn() }} onUnlink={vi.fn()} onError={vi.fn()}
+      onLink={{ telegram: vi.fn(), vk: vi.fn() }} onUnlink={vi.fn()} onError={vi.fn()}
     />,
   );
 }
@@ -39,5 +39,17 @@ describe('SignInMethods — отвязка', () => {
     expect(buttons).toHaveLength(2);
     expect(buttons.every((b) => !b.disabled)).toBe(true);
     expect(screen.queryByText(/Единственный способ входа/)).toBeNull();
+  });
+
+  // Вход через Google убран (2026-11, запрос РКН): привязать его заново
+  // нельзя, а прежняя привязка видна и отвязывается, как любая другая.
+  it('Google: без привязки строки нет, с прежней привязкой — только «Отвязать»', () => {
+    renderMethods([p('telegram')]);
+    expect(screen.queryByText('Google')).toBeNull();
+    cleanup();
+    renderMethods([p('google'), p('email')]);
+    const row = screen.getByText('Google').closest('.aa-row') as HTMLElement;
+    expect(within(row).getByRole('button', { name: 'Отвязать' })).toBeTruthy();
+    expect(within(row).queryByText('Привязать')).toBeNull();
   });
 });

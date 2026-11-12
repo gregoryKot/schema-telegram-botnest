@@ -1,15 +1,14 @@
 import type { AccountProvider } from './ProviderRows';
 
 /**
- * «N из M» в заголовке способов входа. MAX в списке только когда привязан
- * (своей кнопки «Привязать» у него нет), поэтому M — реальное число строк.
+ * «N из M» в заголовке способов входа. MAX и Google (вход убран в 2026-11) в
+ * списке только когда привязаны — «Привязать» у них нет; M — число строк.
  */
 export function countMethods(providers: AccountProvider[]): { linked: number; total: number } {
   const has = (id: AccountProvider['provider']) => providers.some((p) => p.provider === id);
-  const rows = ['google', 'telegram', 'vk', 'email'] as const;
-  const total = rows.length + (has('max') ? 1 : 0);
-  const linked = rows.filter(has).length + (has('max') ? 1 : 0);
-  return { linked, total };
+  const rows = ['telegram', 'vk', 'email'] as const;
+  const extra = (['max', 'google'] as const).filter(has).length;
+  return { linked: rows.filter(has).length + extra, total: rows.length + extra };
 }
 
 /**

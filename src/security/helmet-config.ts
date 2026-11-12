@@ -16,24 +16,17 @@ export function helmetOptions(): HelmetOptions {
         // грузить его с этого CDN). Без него мост молча не загрузится, а
         // приложение внутри MAX решит, что открыто в обычном браузере.
         // telegram.org не нужен: SDK отдаём сами, вход в Telegram — переходом.
-        scriptSrc: [
-          "'self'",
-          'https://mc.yandex.ru',
-          'https://st.max.ru',
-          // Google Identity Services (One Tap) грузит свой клиент отсюда.
-          'https://accounts.google.com',
-        ],
+        scriptSrc: ["'self'", 'https://mc.yandex.ru', 'https://st.max.ru'],
         connectSrc: [
           "'self'",
           'https://mc.yandex.ru',
           'https://oauth.telegram.org',
-          // One Tap ходит на accounts.google.com за конфигом/статусом сессии.
-          'https://accounts.google.com',
         ],
         imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru', 'https://t.me'],
-        // oauth.telegram.org — iframe кнопки Telegram Login Widget;
-        // accounts.google.com — iframe всплывашки Google One Tap.
-        frameSrc: ['https://oauth.telegram.org', 'https://accounts.google.com'],
+        // oauth.telegram.org — iframe кнопки Telegram Login Widget. Хостов
+        // Google здесь нет намеренно: вход через Google убран (2026-11, запрос
+        // РКН), страница входа к Google не обращается (csp-allowlist.invariants.spec.ts).
+        frameSrc: ['https://oauth.telegram.org'],
         // Кто имеет право встроить нас в свой iframe — реестр площадок
         // src/security/embedders.ts: MAX и Telegram Web (web.telegram.org, Web
         // K/A) открывают мини-приложение именно так, поэтому одного 'self' мало:

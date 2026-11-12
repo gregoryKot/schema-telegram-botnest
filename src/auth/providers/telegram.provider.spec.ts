@@ -12,12 +12,6 @@ import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { TelegramProvider } from './telegram.provider';
-// GoogleProvider тянет пакет 'jose' (чистый ESM) — ts-jest не умеет его
-// парсить (нет transformIgnorePatterns/babel-конфига под node_modules).
-// registry.ts тестируем на фейковых провайдерах, поэтому реальный
-// GoogleProvider (с сетевым JWKS-клиентом) тут не нужен — подменяем модуль,
-// чтобы require('./google.provider') внутри registry.ts не парсил jose.
-jest.mock('./google.provider', () => ({ GoogleProvider: class {} }));
 import { AuthProviderRegistry } from './registry';
 import { AuthProviderHandler } from './types';
 
@@ -171,21 +165,19 @@ describe('AuthProviderRegistry', () => {
   }
 
   it('get() возвращает зарегистрированный провайдер по id', () => {
-    const google = fakeProvider('google');
+    const vk = fakeProvider('vk');
     const telegram = fakeProvider('telegram');
     const registry = new AuthProviderRegistry(
-      google as never,
       telegram as never,
-      fakeProvider('vk') as never,
+      vk as never,
       fakeProvider('max') as never,
     );
     expect(registry.get('telegram')).toBe(telegram);
-    expect(registry.get('google')).toBe(google);
+    expect(registry.get('vk')).toBe(vk);
   });
 
   it('get() неизвестного id → NotFoundException', () => {
     const registry = new AuthProviderRegistry(
-      fakeProvider('google') as never,
       fakeProvider('telegram') as never,
       fakeProvider('vk') as never,
       fakeProvider('max') as never,
@@ -195,7 +187,6 @@ describe('AuthProviderRegistry', () => {
 
   it('list() возвращает все зарегистрированные провайдеры', () => {
     const registry = new AuthProviderRegistry(
-      fakeProvider('google') as never,
       fakeProvider('telegram') as never,
       fakeProvider('vk') as never,
       fakeProvider('max') as never,
@@ -205,6 +196,6 @@ describe('AuthProviderRegistry', () => {
         .list()
         .map((p) => p.id)
         .sort(),
-    ).toEqual(['google', 'max', 'telegram', 'vk']);
+    ).toEqual(['max', 'telegram', 'vk']);
   });
 });

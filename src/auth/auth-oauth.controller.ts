@@ -34,27 +34,6 @@ export class AuthOauthController {
     private readonly flow: AuthFlowService,
   ) {}
 
-  // ─── Google OAuth ─────────────────────────────────────────────────────────
-
-  @Get('google')
-  @UseGuards(OptionalJwtGuard)
-  googleRedirect(@Req() req: Request, @Res() res: Response): void {
-    return this.flow.oauthRedirect('google', req, res);
-  }
-
-  // Authorization Code flow: Google redirects back with ?code=&state= via a
-  // top-level GET. The generic helper exchanges the code server-side.
-  @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<void> {
-    return this.flow.oauthCallback('google', code, state, error, req, res);
-  }
-
   // ─── VK OAuth ─────────────────────────────────────────────────────────────
 
   @Get('vk')

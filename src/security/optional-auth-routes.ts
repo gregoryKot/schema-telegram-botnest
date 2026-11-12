@@ -11,13 +11,10 @@ export const OPTIONAL_AUTH_BY_DESIGN: Record<string, string> = {
     'слияние аккаунтов: CSRF-заголовок, подписанный merge-токен, сверка ' +
     'вызывающего с целевым аккаунтом (assertMergeCaller: Bearer или refresh-кука), ' +
     'TOTP поглощаемого, счётчик в Postgres',
-  'auth/auth-oauth.controller.ts:googleRedirect':
-    'старт входа через Google: ничего не проверяет и данных не отдаёт — ' +
-    'подписывает state (с linkUserId, если сессия есть), кладёт его в куку и ' +
-    'отвечает 302 на провайдера; state и куку сверяет googleCallback',
   'auth/auth-oauth.controller.ts:vkRedirect':
-    'старт входа через VK: тот же подписанный state в куке, что у Google, ' +
-    'плюс PKCE; сверяет vkCallback, данных пользователя нет',
+    'старт входа через VK: ничего не проверяет и данных не отдаёт — ' +
+    'подписывает state (с linkUserId, если сессия есть), кладёт его в куку ' +
+    '(плюс PKCE) и отвечает 302 на провайдера; сверяет vkCallback',
   'auth/auth-telegram.controller.ts:telegramRedirect':
     'старт входа через oauth.telegram.org: при сессии — кука tg_link_user с ' +
     'подписанным linkUserId, без сессии брошенная кука стирается; только 302',

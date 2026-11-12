@@ -13,7 +13,7 @@ const NOTE = /Вход из приложения в Telegram или MAX идёт
 
 describe('TwoFactorSection — область действия 2FA', () => {
   it('текст содержит полный перечень входов, где код спрашивается, и оговорку про вход из мессенджеров', () => {
-    expect(SCOPE_TEXT).toContain('Google, VK, почту, виджет Telegram');
+    expect(SCOPE_TEXT).toContain('VK, почту, виджет Telegram');
     expect(SCOPE_TEXT).toMatch(NOTE);
   });
 

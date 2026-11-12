@@ -7,6 +7,7 @@ import { reportClientError } from '../api';
 import { LoginProviderButtons } from './login/LoginProviderButtons';
 import { LoginHero } from './login/LoginHero';
 import { LoginEmailForm } from './login/LoginEmailForm';
+import { LoginGoogleNote } from './login/LoginGoogleNote';
 import { TelegramRetry } from './login/TelegramRetry';
 import { LoginConsentNote } from './login/LoginConsentNote';
 import { exchangeErrorText, exchangeThrownText } from './login/exchangeError';
@@ -39,6 +40,10 @@ export function LoginPage() {
   }, [isAuthenticated, navigate, afterLogin]);
 
   const [miniAppLoading, setMiniAppLoading] = useState(false);
+  const enter = (accessToken: string, expiresIn: number) => {
+    setAccessToken(accessToken, expiresIn);
+    navigate(afterLogin(), { replace: true });
+  };
   // Сломанный вход обязан быть слышен нам, а не только виден пользователю
   // (инцидент 2026-08-08). Парная правка к AppErrorScreen мини-аппа; отчёт
   // уходит и для обычного веб-логина.
@@ -68,8 +73,7 @@ export function LoginPage() {
       });
       if (!res.ok) { setError(await exchangeErrorText(res)); return; }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
-      setAccessToken(accessToken, expiresIn);
-      navigate(afterLogin(), { replace: true });
+      enter(accessToken, expiresIn);
     } catch (e) {
       setError(exchangeThrownText(e));
     } finally {
@@ -96,12 +100,7 @@ export function LoginPage() {
               : 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram'}
           </p>
 
-          <LoginProviderButtons
-            onSession={(token, expiresIn) => {
-              setAccessToken(token, expiresIn);
-              navigate(afterLogin(), { replace: true });
-            }}
-          />
+          <LoginProviderButtons onSession={enter} />
 
           {/* Прежний путь через oauth.telegram.org остался вторым способом:
               не требует установленного Telegram, но при первом визите просит
@@ -114,6 +113,7 @@ export function LoginPage() {
           </button>
 
           <LoginEmailForm setError={setError} />
+          <LoginGoogleNote />
 
           {error && <p className="al-error">{error}</p>}
 

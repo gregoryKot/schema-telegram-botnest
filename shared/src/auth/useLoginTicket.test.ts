@@ -50,9 +50,9 @@ describe('loginUrl', () => {
     );
   });
 
-  it('Google — редирект бэкенда с кодом билета', () => {
-    expect(loginUrl('google', 'K7M2QX94', DEPS)).toBe(
-      '/api/auth/google?ticket=K7M2QX94',
+  it('ВКонтакте — редирект бэкенда с кодом билета', () => {
+    expect(loginUrl('vk', 'K7M2QX94', DEPS)).toBe(
+      '/api/auth/vk?ticket=K7M2QX94',
     );
   });
 
@@ -414,7 +414,7 @@ describe('отступ при ошибках и наложение входов'
 
     await act(async () => {
       const p1 = result.current.begin('telegram');
-      const p2 = result.current.begin('google');
+      const p2 = result.current.begin('vk');
       await Promise.all([p1, p2]);
     });
 

@@ -78,7 +78,7 @@ describe('App — публичные маршруты app-домена', () => {
     stubLocation({ pathname: '/login', href: 'http://localhost/login' });
     const App = await loadApp();
     render(<App />);
-    await screen.findByRole('link', { name: /Войти через Google/ });
+    await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
   });
 
   it('/ на app-домене — продуктовый лендинг (document.title)', async () => {
@@ -108,7 +108,7 @@ describe('App — хранилище недоступно', () => {
       stubLocation({ pathname: '/login', href: 'http://localhost/login' });
       const App = await loadApp();
       render(<App />);
-      await screen.findByRole('link', { name: /Войти через Google/ });
+      await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
     } finally {
       spies.forEach((s) => s.mockRestore());
     }
@@ -197,7 +197,7 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     stubLocation({ pathname: '/account', href: 'http://localhost/account' });
     const App = await loadApp();
     render(<App />);
-    await screen.findByRole('link', { name: /Войти через Google/ });
+    await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
   });
 
   it('авторизованный пользователь реально попадает на защищённую страницу (не редиректится на /login)', async () => {
@@ -213,7 +213,7 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     render(<App />);
 
     await screen.findByText('Аккаунт');
-    expect(screen.queryByRole('link', { name: /Войти через Google/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
   });
 
   it('пока идёт проверка сессии — виден лоадер, а не пустой экран или чужая страница', async () => {
@@ -243,7 +243,7 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     expect(container.querySelector('.gate-page[aria-busy="true"]')).toBeTruthy();
     expect(container.querySelector('.spinner')).toBeNull();
     resolveRefresh(jsonResponse(401, {}));
-    await screen.findByRole('link', { name: /Войти через Google/ });
+    await screen.findByRole('link', { name: /Войти через ВКонтакте/ });
   });
 
   // Диагностика «постоянно нужно логиниться заново» (2026-08-21): 5xx на
@@ -256,7 +256,7 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
     render(<App />);
 
     await screen.findByText('Сервер не отвечает', {}, { timeout: 3000 });
-    expect(screen.queryByRole('link', { name: /Войти через Google/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
   });
 });
 

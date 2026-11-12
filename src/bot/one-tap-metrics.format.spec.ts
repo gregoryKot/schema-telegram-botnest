@@ -15,7 +15,9 @@ describe('formatOneTap', () => {
   it('чистая БД — одна строка без чисел, NaN и терминов', () => {
     const text = formatOneTap(m());
     expect(text).toContain('Окно Google «Продолжить как…»');
-    expect(text).toContain('За неделю через окно не входили.');
+    expect(text).toContain(
+      'За неделю через окно не входили: вход через Google убран.',
+    );
     expect(text).not.toMatch(/NaN|undefined|\d|One Tap|credential/);
   });
 

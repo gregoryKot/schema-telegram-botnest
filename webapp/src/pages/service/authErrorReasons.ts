@@ -4,8 +4,8 @@
 // кто угодно, и этот текст стоял на нашей странице под нашим знаком.
 //
 // Откуда коды (сверять при добавлении нового редиректа на `/auth/error`):
-// - `<провайдер>_failed` — `src/auth/auth-flow.service.ts` (колбэк OAuth),
-//   `src/auth/auth-oauth.controller.ts` (`vk_failed`); id провайдеров —
+// - `<провайдер>_failed` — `src/auth/auth-oauth.controller.ts` (`vk_failed`),
+//   `pages/TelegramWidgetCallback.tsx`; id провайдеров —
 //   `src/auth/providers/*.provider.ts`;
 // - `<провайдер>_disabled` — `src/auth/oauth-provider-switch.ts` (env провайдера
 //   снят: рубильник входа; сверку словаря держит `oauth-provider-switch.spec.ts`);
@@ -33,9 +33,7 @@ const tryAgain = (lead: string) => (tr: Tr) =>
   `${lead} ${tr('Попробуй ещё раз.', 'Попробуйте ещё раз.')}`;
 
 const AUTH_ERROR_TEXTS: Record<string, (tr: Tr) => string> = {
-  google_failed: providerFailed('Google'),
   vk_failed: providerFailed('ВКонтакте'),
-  google_disabled: providerDisabled('Google'),
   vk_disabled: providerDisabled('ВКонтакте'),
   max_failed: providerFailed('MAX'),
   telegram_failed: providerFailed('Telegram'),

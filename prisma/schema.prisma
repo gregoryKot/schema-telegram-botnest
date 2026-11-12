@@ -258,12 +258,14 @@ model DiaryDraft {
   @@id([userId, type])
 }
 
-// OAuth provider link (telegram | google) → userId
+// Способ входа → userId: telegram | vk | max | email | google.
+// google — только прежние строки: вход через Google убран 2026-11, строки не
+// удаляются (по их почте человек входит ссылкой — src/auth/email-login-user.ts).
 model AuthProvider {
   id          Int      @id @default(autoincrement())
   userId      BigInt
-  provider    String   // 'telegram' | 'google'
-  providerId  String   // telegramId as string, or Google sub
+  provider    String   // 'telegram' | 'vk' | 'max' | 'email' | 'google' (прежние строки)
+  providerId  String   // telegramId, id VK/MAX, адрес почты (email) или Google sub
   email       String?
   displayName String?
   createdAt   DateTime @default(now())

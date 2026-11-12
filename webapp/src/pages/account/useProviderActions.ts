@@ -53,7 +53,6 @@ export function useProviderActions(
 
   return {
     busy, unlinkProvider, setUnlinkProvider, performUnlink,
-    linkGoogle: () => linkVia('/api/auth/google'),
     linkVk: () => linkVia('/api/auth/vk'),
     linkTelegram: () => linkVia('/api/auth/telegram/redirect'),
   };

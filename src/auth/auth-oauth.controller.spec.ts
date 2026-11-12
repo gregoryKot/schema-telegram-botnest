@@ -1,18 +1,10 @@
-// Покрытие AuthOauthController (был 0%): маршруты google/vk.
+// Покрытие AuthOauthController (был 0%): маршруты vk.
 // Контроллер инстанцируется напрямую с typed test doubles (без TestingModule)
-// — стиль auth.service.spec.ts. google-роуты — тонкие делегаты в
-// AuthFlowService (проверяем сам факт и аргументы делегирования), vk содержит
+// — стиль auth.service.spec.ts. Старт — тонкий делегат в AuthFlowService
+// (проверяем сам факт и аргументы делегирования), колбэк содержит
 // собственную PKCE/state-логику — она тестируется
 // по существу (state → cookie → provider exchange → signInOrLinkOrMerge →
 // finishOAuthRedirect), плюс основная guard-ветка (state mismatch/деним).
-//
-// registry.ts (импортируется контроллером для reflect-metadata design:paramtypes,
-// нужного @Injectable) тянет GoogleProvider, а тот — пакет 'jose' (чистый ESM,
-// ts-jest не умеет его парсить). Реальный GoogleProvider тут не нужен —
-// подменяем модуль тем же способом, что и auth-flow.service.spec.ts /
-// telegram.provider.spec.ts.
-jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
-
 import { Logger } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
@@ -27,7 +19,6 @@ const WEBAPP_URL = 'https://schemehappens.ru';
 
 interface FlowMocks {
   oauthRedirect: jest.Mock;
-  oauthCallback: jest.Mock;
   signInOrLinkOrMerge: jest.Mock;
   finishOAuthRedirect: jest.Mock;
   linkUserIdFromState: jest.Mock;
@@ -52,7 +43,6 @@ function makeConfig(): ConfigService {
 function makeFlow(): { flow: AuthFlowService; mocks: FlowMocks } {
   const mocks: FlowMocks = {
     oauthRedirect: jest.fn(),
-    oauthCallback: jest.fn().mockResolvedValue(undefined),
     signInOrLinkOrMerge: jest.fn(),
     finishOAuthRedirect: jest.fn(),
     linkUserIdFromState: jest.fn().mockReturnValue(null),
@@ -125,40 +115,16 @@ const TOKENS_OUTCOME: SignInOutcome = {
   },
 };
 
-describe('AuthOauthController.googleRedirect / vkRedirect — делегируют AuthFlowService.oauthRedirect', () => {
-  it.each(['google', 'vk'] as const)(
-    '%s: провайдер, req и res передаются как есть',
-    (provider) => {
-      const { flow, mocks } = makeFlow();
-      const controller = makeController(makeProviders({}), flow);
-      const req = makeReq();
-      const { res } = makeRes();
-
-      if (provider === 'google') controller.googleRedirect(req, res);
-      else controller.vkRedirect(req, res);
-
-      expect(mocks.oauthRedirect).toHaveBeenCalledWith(provider, req, res);
-    },
-  );
-});
-
-describe('AuthOauthController.googleCallback — делегирует AuthFlowService.oauthCallback', () => {
-  it('пробрасывает code/state/error/req/res без изменений', async () => {
+describe('AuthOauthController.vkRedirect — делегирует AuthFlowService.oauthRedirect', () => {
+  it('провайдер, req и res передаются как есть', () => {
     const { flow, mocks } = makeFlow();
     const controller = makeController(makeProviders({}), flow);
     const req = makeReq();
     const { res } = makeRes();
 
-    await controller.googleCallback('code-1', 'state-1', '', req, res);
+    controller.vkRedirect(req, res);
 
-    expect(mocks.oauthCallback).toHaveBeenCalledWith(
-      'google',
-      'code-1',
-      'state-1',
-      '',
-      req,
-      res,
-    );
+    expect(mocks.oauthRedirect).toHaveBeenCalledWith('vk', req, res);
   });
 });
 

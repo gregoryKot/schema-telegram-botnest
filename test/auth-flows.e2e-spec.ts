@@ -436,26 +436,11 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
-  describe('Google One Tap nonce (B-16)', () => {
-    it('GET nonce → кука gsi_nonce (httpOnly) + хеш секрета в теле, без кэша', async () => {
-      const res = await request(app.getHttpServer()).get(
-        '/api/auth/google/one-tap/nonce',
-      );
-      expect(res.status).toBe(200);
-      const cookie = extractSetCookie(res, 'gsi_nonce')!;
-      expect(cookie).toMatch(/HttpOnly/i);
-      expect(cookie).toMatch(/Path=\/api\/auth/);
-      const secret = extractCookieValue(res, 'gsi_nonce')!;
-      expect(res.body.nonce).toBe(hashToken(secret));
-      expect(res.headers['cache-control']).toContain('no-store');
-    });
-  });
-
-  // Рубильник Google/VK (2026-11): в e2e-окружении GOOGLE_*/VK_* не заданы —
+  // Рубильник VK (2026-11): в e2e-окружении VK_* не заданы —
   // ровно состояние «провайдер выключен». Раньше старт падал 500 на
   // getOrThrow; теперь — 302 на экран ошибки входа с понятной причиной.
   describe('старт OAuth без конфигурации провайдера', () => {
-    it.each(['google', 'vk'])(
+    it.each(['vk'])(
       'GET /api/auth/%s → 302 на /auth/error?reason=<id>_disabled, без куки state',
       async (provider) => {
         const res = await request(app.getHttpServer())
@@ -468,6 +453,21 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
         expect(extractSetCookie(res, 'oauth_state')).toBeFalsy();
       },
     );
+  });
+
+  // Вход через Google убран (2026-11, запрос РКН №08-1063539): ручек нет.
+  describe('входа через Google нет', () => {
+    it.each([
+      ['get', '/api/auth/google'],
+      ['get', '/api/auth/google/callback?code=x&state=y'],
+      ['get', '/api/auth/google/one-tap/nonce'],
+      ['post', '/api/auth/google/one-tap'],
+    ] as const)('%s %s → 404', async (method, path) => {
+      const res = await request(app.getHttpServer())
+        [method](path)
+        .set('Host', 'schemehappens.ru');
+      expect(res.status).toBe(404);
+    });
   });
 
   // Экран /account/merge берёт имя и сводку здесь, а не из query редиректа.

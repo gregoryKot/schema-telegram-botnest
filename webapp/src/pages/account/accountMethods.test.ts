@@ -5,13 +5,15 @@ import type { AccountProvider } from './ProviderRows';
 const p = (provider: AccountProvider['provider'], displayName: string | null = null, email: string | null = null): AccountProvider => ({ provider, displayName, email });
 
 describe('countMethods', () => {
-  it('чистый аккаунт — 0 из 4 (MAX без привязки не считается)', () => {
-    expect(countMethods([])).toEqual({ linked: 0, total: 4 });
+  it('чистый аккаунт — 0 из 3 (MAX и Google без привязки не считаются)', () => {
+    expect(countMethods([])).toEqual({ linked: 0, total: 3 });
   });
   it('считает привязанные', () => {
-    expect(countMethods([p('google'), p('email')])).toEqual({ linked: 2, total: 4 });
+    expect(countMethods([p('vk'), p('email')])).toEqual({ linked: 2, total: 3 });
   });
-  it('привязанный MAX добавляет строку', () => {
+  it('привязанные MAX и прежний Google добавляют по строке', () => {
+    expect(countMethods([p('vk'), p('max')])).toEqual({ linked: 2, total: 4 });
+    expect(countMethods([p('google')])).toEqual({ linked: 1, total: 4 });
     expect(countMethods([p('google'), p('max')])).toEqual({ linked: 2, total: 5 });
   });
 });

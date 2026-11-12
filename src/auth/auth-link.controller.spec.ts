@@ -2,8 +2,6 @@
 // AuthAccountController вместе с тестами). Step-up проверяет StepUpGuard —
 // его логика в step-up.spec.ts; здесь — что гард стоит на обеих ручках и что
 // после успеха владелец получает уведомление (S12, аудит 2026-11).
-jest.mock('./providers/google.provider', () => ({ GoogleProvider: class {} }));
-
 import { BadRequestException } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import type { Request } from 'express';

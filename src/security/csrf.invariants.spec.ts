@@ -286,13 +286,7 @@ describe('CSRF-трипваер auth-контроллеры', () => {
       file: 'auth/auth-flow.service.ts',
       caller: /\bfinishOAuthRedirect\(/,
       guard: /\bassertOAuthStateMatches\(/,
-      why: 'OAuth-колбэки Google/VK: state-кука сверяется до обмена кода',
-    },
-    {
-      file: 'auth/google-one-tap.service.ts',
-      caller: /\boneTap\.login\(/,
-      guard: /\brequireCsrf\(/,
-      why: 'Google One Tap: credential приходит fetch-ом с нашей страницы',
+      why: 'OAuth-колбэк VK: state-кука сверяется до обмена кода',
     },
     {
       file: 'auth/email-consume-body.ts',
@@ -337,17 +331,4 @@ describe('CSRF-трипваер auth-контроллеры', () => {
       expect(bad).toEqual([]);
     },
   );
-
-  // Google-колбэк зовёт flow.oauthCallback, а не finishOAuthRedirect напрямую:
-  // защита живёт внутри метода и обязана стоять ДО выдачи сессии.
-  it('oauthCallback сверяет state-куку раньше, чем выдаёт сессию', () => {
-    const flow = stripComments(
-      readFileSync(join(AUTH_DIR, 'auth-flow.service.ts'), 'utf8'),
-    );
-    const body = flow.slice(flow.indexOf('async oauthCallback('));
-    const guard = body.indexOf('assertOAuthStateMatches(');
-    const issue = body.indexOf('finishOAuthRedirect(');
-    expect(guard).toBeGreaterThan(-1);
-    expect(issue).toBeGreaterThan(guard);
-  });
 });

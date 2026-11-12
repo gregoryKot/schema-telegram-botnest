@@ -57,7 +57,7 @@ export function AccountPage() {
         <div className="aa-cols">
           <SignInMethods
             providers={providers} loading={loading} busy={actions.busy} accessToken={accessToken}
-            onLink={{ google: actions.linkGoogle, telegram: actions.linkTelegram, vk: actions.linkVk }}
+            onLink={{ telegram: actions.linkTelegram, vk: actions.linkVk }}
             onUnlink={actions.setUnlinkProvider} onError={setError}
           />
           <div className="aa-col">

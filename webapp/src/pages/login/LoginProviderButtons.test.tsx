@@ -53,29 +53,31 @@ describe('способы входа', () => {
     expect(href).not.toContain('oauth.telegram.org');
   });
 
-  // 2026-10-03: во вкладке браузера билет для Google/VK не нужен — кука
-  // общая. По билету вход уходил в новое окно и кончался экраном «это вы?» с
-  // кодом, что владелец принял за поломку.
-  it('во вкладке браузера Google и ВКонтакте — прямой вход в той же вкладке, без билета', async () => {
+  // 2026-10-03: во вкладке браузера билет для VK не нужен — кука общая. По
+  // билету вход уходил в новое окно и кончался экраном «это вы?» с кодом, что
+  // владелец принял за поломку.
+  it('во вкладке браузера ВКонтакте — прямой вход в той же вкладке, без билета', async () => {
     await renderReady();
-    const google = screen.getByRole('link', { name: /Войти через Google/ });
     const vk = screen.getByRole('link', { name: /Войти через ВКонтакте/ });
-    expect(google.getAttribute('href')).toBe('/api/auth/google');
     expect(vk.getAttribute('href')).toBe('/api/auth/vk');
-    expect(google.getAttribute('target')).toBeNull();
     expect(vk.getAttribute('target')).toBeNull();
   });
 
-  it('в установленном приложении Google и ВКонтакте несут код билета и открываются снаружи', async () => {
+  // Запрос РКН №08-1063539 (2026-11): авторизация через иностранный сервис
+  // убрана — ни кнопки, ни ссылки на /api/auth/google.
+  it('кнопки входа через Google нет', async () => {
+    await renderReady();
+    expect(screen.queryByRole('link', { name: /Google/ })).toBeNull();
+    expect(document.body.innerHTML).not.toMatch(/google/i);
+  });
+
+  it('в установленном приложении ВКонтакте несёт код билета и открывается снаружи', async () => {
     const matchMedia = vi.fn((q: string) => ({
       matches: q === '(display-mode: standalone)',
     }));
     vi.stubGlobal('matchMedia', matchMedia);
     try {
       await renderReady();
-      const google = screen.getByRole('link', { name: /Войти через Google/ });
-      expect(google.getAttribute('href')).toBe('/api/auth/google?ticket=K7M2QX94');
-      expect(google.getAttribute('target')).toBe('_blank');
       expect(
         screen
           .getByRole('link', { name: /Войти через ВКонтакте/ })

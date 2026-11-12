@@ -73,6 +73,14 @@ describe('CSP: у каждого внешнего источника есть п
     expect(orphanOrigins(['https://mc.yandex.ru'], sources)).toEqual([]);
   });
 
+  // Запрос РКН №08-1063539 (2026-11): авторизация через иностранный сервис
+  // убрана, страница входа не должна обращаться к Google — ни скрипт, ни
+  // запрос, ни iframe оттуда CSP не пропускает.
+  it('ни одна директива CSP не пускает хосты Google', async () => {
+    const all = [...(await directives()).values()].flat();
+    expect(all.filter((v) => /google|gstatic/i.test(v))).toEqual([]);
+  });
+
   it('контроль: источник без потребителя краснеет, подстрока не спасает', () => {
     const fixture: SourceText[] = [
       {

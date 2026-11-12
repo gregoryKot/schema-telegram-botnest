@@ -11,7 +11,7 @@ export function SignInMethods({
   loading: boolean;
   busy: boolean;
   accessToken: string | null;
-  onLink: { google: () => void; telegram: () => void; vk: () => void };
+  onLink: { telegram: () => void; vk: () => void };
   onUnlink: (id: ProviderId) => void;
   onError: (m: string | null) => void;
 }) {
@@ -39,9 +39,9 @@ export function SignInMethods({
         </div>
       ) : (
         <div className="aa-methods">
-          <ProviderRow icon={<GoogleIcon />} title="Google" linked={!!find('google')} busy={busy}
-            subtitle={find('google')?.email} unlinkBlocked={only('google')}
-            onLink={onLink.google} onUnlink={() => onUnlink('google')} />
+          {/* Google: вход убран в 2026-11 — строка только у привязавших раньше, без «Привязать». */}
+          {find('google') && <ProviderRow icon={<GoogleIcon />} title="Google" linked busy={busy}
+            subtitle={find('google')?.email} unlinkBlocked={only('google')} onUnlink={() => onUnlink('google')} />}
           <ProviderRow icon={<TelegramIcon />} title="Telegram" linked={!!find('telegram')} busy={busy}
             subtitle={find('telegram')?.displayName ?? 'привязан'} unlinkBlocked={only('telegram')}
             onLink={onLink.telegram} onUnlink={() => onUnlink('telegram')} />
