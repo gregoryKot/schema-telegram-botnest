@@ -8,4 +8,6 @@ export interface JourneyHeroProps {
 export interface JourneyEmptyHeroProps {
   tr: (ty: string, vy: string) => string;
   explainer: string;
+  /** Пустой путь — первый шаг: открыть трекер (текст героя зовёт начать с него). */
+  onStart?: () => void;
 }

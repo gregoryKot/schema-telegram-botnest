@@ -13,7 +13,7 @@ import '../../styles/sheet-diary.css';
 
 const { hue } = ENTITY_LOOK.journey;
 
-export function WebJourneyEmptyHero({ tr, explainer }: JourneyEmptyHeroProps) {
+export function WebJourneyEmptyHero({ tr, explainer, onStart }: JourneyEmptyHeroProps) {
   return (
     <div className="pp-paper jr-hero jr-hero--empty" style={hueStyle(hue)}>
       <div className="jr-hero-scene" aria-hidden="true"><ScenePathStart hue={hue} /></div>
@@ -24,6 +24,7 @@ export function WebJourneyEmptyHero({ tr, explainer }: JourneyEmptyHeroProps) {
           'Начните с трекера или любого дневника — первый шаг появится здесь.',
         )}`)}
       </p>
+      {onStart && <button type="button" className="ds-btn ds-btn--lg jr-hero-cta" onClick={onStart}>Оценить день</button>}
     </div>
   );
 }

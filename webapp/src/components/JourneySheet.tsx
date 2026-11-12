@@ -21,7 +21,8 @@ import { useJourneyDelete } from '../../../shared/src/journey/journeyDelete';
 // Уровень модуля — стабильные ссылки (см. комментарий makeJourneyProps).
 const jp = makeJourneyProps(api, { getModeById, getSchemaById });
 
-export function JourneySheet({ onClose }: { onClose: () => void }) {
+/** onOpenTracker — пустой путь зовёт начать с трекера: кнопка героя закрывает лист и открывает трекер. */
+export function JourneySheet({ onClose, onOpenTracker }: { onClose: () => void; onOpenTracker?: () => void }) {
   const tr = useTr();
   const goBack = useHistorySheet(onClose);
   const j = useJourney(jp.deps);
@@ -61,6 +62,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               onOpenItem={detail.open}
               onShareFeed={sh.shareFeed}
               kit={WEB_JOURNEY_KIT}
+              onStart={onOpenTracker && (() => goBack(onOpenTracker))}
               skeleton={
                 // Форма — как у JourneyView: лист-герой, плитки 2×3, строки ленты 56px (journey.css).
                 <div className="jr-skel">

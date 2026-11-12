@@ -150,7 +150,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       )}
 
       {showBestDayInfo && <BestDayDialog onClose={() => setShowBestDayInfo(false)} />}
-      {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
+      {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} onOpenTracker={onOpenTracker} />}
       {showDeleteConfirm && <DeleteAccountDialog onClose={() => setShowDeleteConfirm(false)} />}
       <ScreenCustomizeHost blocks={blocks} />
     </div>

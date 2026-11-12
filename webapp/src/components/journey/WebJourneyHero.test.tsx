@@ -55,7 +55,7 @@ describe('WebJourneyEmptyHero', () => {
 });
 
 describe('JourneyView на сайте', () => {
-  const view = (total: number) => {
+  const view = (total: number, onStart?: () => void) => {
     const j: JourneyState = {
       data: { counts: {} as never, items: [] },
       failed: false,
@@ -78,6 +78,7 @@ describe('JourneyView на сайте', () => {
         onShareFeed={vi.fn()}
         kit={WEB_JOURNEY_KIT}
         skeleton={<div />}
+        onStart={onStart}
       />
     );
   };
@@ -88,8 +89,23 @@ describe('JourneyView на сайте', () => {
     expect(screen.getByText('5')).toBeTruthy();
   });
 
-  it('пустой путь — пустой герой сайта', () => {
+  it('пустой путь — пустой герой сайта; без onStart кнопки нет', () => {
     render(view(0));
     expect(screen.getByText('Путь ещё впереди')).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('пустой путь не тупик: одна кнопка «Оценить день» зовёт onStart', () => {
+    const onStart = vi.fn();
+    render(view(0, onStart));
+    const btns = screen.getAllByRole('button');
+    expect(btns).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Оценить день' }));
+    expect(onStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('с записями кнопки героя-пустышки нет', () => {
+    render(view(3, vi.fn()));
+    expect(screen.queryByRole('button', { name: 'Оценить день' })).toBeNull();
   });
 });

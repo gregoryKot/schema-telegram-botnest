@@ -24,7 +24,9 @@
 .jr-hero-text { grid-area: text; margin: 14px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
 .jr-hero-link { grid-area: link; margin-top: 2px; }
 .jr-hero-title { grid-area: label; align-self: center; margin: 0; font: 400 28px/1.15 var(--serif); color: var(--text); text-wrap: balance; }
-.jr-hero--empty { grid-template-areas: 'label scene' 'text text'; padding-bottom: 22px; }
+.jr-hero--empty { grid-template-areas: 'label scene' 'text text' 'cta cta'; padding-bottom: 22px; }
+.ds-btn.jr-hero-cta { grid-area: cta; margin-top: 14px; width: 100%; }
+@media (min-width: 560px) { .ds-btn.jr-hero-cta { justify-self: start; width: auto; padding: 0 32px; } }
 
 /* ── Плитки счётчиков 2×3, чипы ─────────────────────────────────────────── */
 .jr-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -106,8 +108,8 @@
   .jr-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   /* Колонка липнет и прокручивается сама (overflow) — поле под тень-слой листа, иначе её срезает. */
   .jr-spread > .pa-spread-side { padding: 0 8px 10px 0; }
-  .jr-hero--empty { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: 'scene label' 'scene text'; column-gap: 40px; max-width: 880px; padding: 32px 40px; align-items: center; }
-  .jr-hero--empty .jr-hero-scene { width: 100%; grid-row: 1 / span 2; }
+  .jr-hero--empty { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: 'scene label' 'scene text' 'scene cta'; column-gap: 40px; padding: 32px 40px; align-items: center; }
+  .jr-hero--empty .jr-hero-scene { width: 100%; grid-row: 1 / span 3; }
   .jr-hero--empty .jr-hero-title { align-self: end; font-size: 32px; }
   .jr-hero--empty .jr-hero-text { align-self: start; }
 }

@@ -28,6 +28,8 @@ export interface JourneyViewProps {
   kit: JourneyKit;
   /** Скелетон по форме контента — из примитивов конкретного фронтенда */
   skeleton: ReactNode;
+  /** Пустой путь — кнопка героя открывает трекер; нет — герой без кнопки. */
+  onStart?: () => void;
 }
 
 /** Плиток счётчиков — 2×3: самые частые занятия; остальное видно в ленте и фильтрах. */
@@ -41,6 +43,7 @@ export function JourneyView({
   onShareFeed,
   kit,
   skeleton,
+  onStart,
 }: JourneyViewProps) {
   const {
     failed,
@@ -73,7 +76,7 @@ export function JourneyView({
         )}
       </p>
     );
-  if (total === 0) return <EmptyHero tr={tr} explainer={explainer} />;
+  if (total === 0) return <EmptyHero tr={tr} explainer={explainer} onStart={onStart} />;
 
   return (
     <div className="pa-spread jr-spread">
