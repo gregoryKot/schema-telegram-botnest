@@ -11,8 +11,8 @@ export function TelegramRetry({ loading, error, onRetry }: {
   loading: boolean; error: string | null; onRetry: () => void;
 }) {
   return (
-    <PaperOutcome outcome="our_side" className="al-retry" title="Не удалось войти автоматически"
-                  lead={error ? exchangeErrorLead(error) : null} code={error ? exchangeErrorCode(error) : null}>
+    <PaperOutcome outcome="our_side" className="al-retry" title="Не удалось войти автоматически" lead={error ? exchangeErrorLead(error) : null}
+                  code={error ? exchangeErrorCode(error) : null}>
       <button type="button" className="ds-btn ds-btn--lg pa-outcome-action" onClick={onRetry}
               disabled={loading} aria-busy={loading || undefined}>
         {loading ? 'Загрузка...' : 'Попробовать снова'}
