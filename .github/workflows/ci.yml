@@ -189,10 +189,18 @@ jobs:
     # (пять зелёных прогонов main 2026-10-15). Гейт — job-timeouts.spec.ts.
     timeout-minutes: 10
     steps:
+      # Полная история: шагу «размер PR» нужна общая база для origin/main...HEAD.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+      # PR сверх 60 файлов или 1500 строк не проверит ни владелец, ни rules-reviewer.
+      # Только pull_request: метка-обход big-pr приходит в событии PR.
+      - name: размер PR
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-pr-size.mjs
       # Один маршрут — один контроллер (аудит: найдены живые дубли маршрутов
       # с разъехавшейся privacy-логикой).
       - run: node scripts/check-route-collisions.mjs
