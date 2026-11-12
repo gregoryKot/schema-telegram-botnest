@@ -329,12 +329,9 @@ describe('трипваер: кризисная детекция для <input> �
   it('скан не ослеп: известные поля свободного текста попадают в выборку', () => {
     // Контрольный образец: без него сломанный разбор тегов дал бы пустую
     // выборку и зелёный тест выше.
-    for (const rel of [
-      'webapp/src/components/exercises/SafePlaceEx.tsx',
+    expect(FREE_INPUT_FILES).toContain(
       'webapp/src/components/exercises/beliefCheck/EviList.tsx',
-    ]) {
-      expect(FREE_INPUT_FILES).toContain(rel);
-    }
+    );
   });
 });
 
