@@ -1,9 +1,11 @@
 // Модель «Справочника» терапевта (#995, шаг 4): группы и строки — в порядке
 // реестров режимов и доменов, без своего раздела строки нет, пустой группы
-// нет; у группы и строки — знак их листа; поиск — по названиям во всех
-// разделах, без учёта регистра и «ё».
+// нет; у группы — бумага и знак (как у клиента), у строки — знак её листа;
+// поиск — по названиям во всех разделах, без учёта регистра и «ё», найденное
+// лежит на листе своей группы — знак группы один раз на серию.
 import { describe, it, expect } from 'vitest';
-import { buildReference, referenceLayout, searchReference, type ReferenceTexts } from './guideReferenceModel';
+import { buildReference, referenceLayout, type ReferenceTexts } from './guideReferenceModel';
+import { searchReference } from './guideReferenceSearch';
 import type { ModeGuide, SchemaGuide } from '../../../../shared/src/schemaTherapy/guide';
 import {
   FIXTURE_GUIDE,
@@ -36,9 +38,10 @@ describe('buildReference', () => {
     expect(modes.map((g) => g.title)).toEqual(['Детские режимы', 'Здоровые режимы']);
     expect(modes[0].items.map((i) => i.id)).toEqual(['vulnerable_child', 'angry_child']);
     expect(modes[0].items[0]).toEqual({
-      kind: 'mode', id: 'vulnerable_child', name: 'Уязвимый Ребёнок', art: { sign: 'child_care' },
+      kind: 'mode', id: 'vulnerable_child', name: 'Уязвимый Ребёнок', sign: 'child_care',
     });
-    expect(modes.map((g) => g.art)).toEqual([{ sign: 'child_care' }, { sign: 'together' }]);
+    expect(modes[0].items[1].sign).toBe('flare');
+    expect(modes.map((g) => g.look)).toEqual([{ hue: 28, sign: 'child_care' }, { hue: 145, sign: 'together' }]);
   });
 
   it('схемы — по доменам реестра, в его порядке, с названиями из реестра', () => {
@@ -47,8 +50,8 @@ describe('buildReference', () => {
     expect(schemas[0].title).toBe('Нарушение связи и отвержение');
     expect(schemas[0].items.map((i) => i.id)).toEqual(['abandonment', 'mistrust']);
     expect(schemas[0].items[0].name).toBe('Покинутость / Нестабильность');
-    expect(schemas.map((g) => g.art)).toEqual([{ domain: 1 }, { domain: 2 }]);
-    expect(schemas[1].items[0].art).toEqual({ domain: 2 });
+    expect(schemas.map((g) => g.look)).toEqual([{ hue: 28, sign: 'domain_rejection' }, { hue: 70, sign: 'domain_autonomy' }]);
+    expect(schemas[1].items[0].sign).toBe('domain_autonomy');
   });
 
   it('техники и «Для терапевта» — с сутью строкой ниже и своим знаком; раздел без знака — без картинки', () => {
@@ -56,11 +59,14 @@ describe('buildReference', () => {
     expect(techniques[0].title).toBeUndefined();
     expect(techniques[0].items[0]).toEqual({
       kind: 'technique', id: 'imagery_rescripting', name: 'Рескриптинг образов', sub: FIXTURE_TECHNIQUES[0].summary,
-      art: { sign: 'rescript' },
+      sign: 'rescript',
     });
     expect(practice[0].items).toEqual([
-      { kind: 'note', id: 'group_therapy', name: 'Групповой формат', sub: FIXTURE_PRACTICE_NOTE.summary, art: { sign: 'cluster' } },
-      { kind: 'note', id: 'свой_раздел', name: 'Свой раздел', sub: FIXTURE_PRACTICE_NOTE.summary, art: undefined },
+      { kind: 'note', id: 'group_therapy', name: 'Групповой формат', sub: FIXTURE_PRACTICE_NOTE.summary, sign: 'cluster' },
+      { kind: 'note', id: 'свой_раздел', name: 'Свой раздел', sub: FIXTURE_PRACTICE_NOTE.summary, sign: undefined },
+    ]);
+    // у листа техник и «Для терапевта» знака нет — он у каждой строки свой
+    expect([techniques[0].look, practice[0].look]).toEqual([{ hue: 45 }, { hue: 240 }
     ]);
   });
 
@@ -87,15 +93,35 @@ describe('searchReference', () => {
     expect(searchReference(ref, '   ')).toEqual([]);
   });
 
-  it('совпадения из всех разделов, группа — имя раздела; регистр и «ё» не важны', () => {
+  it('совпадения из всех разделов; регистр и «ё» не важны; у техник и «Для терапевта» лист — имя раздела', () => {
     const found = searchReference(ref, 'РЕБЕНОК');
-    expect(found.map((g) => g.title)).toEqual(['Режимы']);
+    expect(found.map((g) => g.title)).toEqual(['Детские режимы']);
     expect(found[0].items.map((i) => i.id)).toEqual(['vulnerable_child', 'angry_child']);
     const mixed = searchReference(ref, 'ов');
-    expect(mixed.map((g) => g.title)).toEqual(['Режимы', 'Схемы', 'Техники', 'Для терапевта']);
+    expect(mixed.map((g) => g.title)).toEqual(['Здоровые режимы', 'Нарушение связи и отвержение', 'Техники', 'Для терапевта']);
+    expect(mixed.map((g) => g.key)).toEqual(['modes:healthy', 'schemas:rejection', 'techniques:techniques', 'practice:practice']);
     expect(mixed.flatMap((g) => g.items.map((i) => i.name))).toEqual([
       'Здоровый Взрослый', 'Недоверие / Ожидание жестокого обращения', 'Рескриптинг образов', 'Групповой формат',
     ]);
+  });
+
+  it('серия одной группы — один лист: знак группы у подписи один раз, а не у каждой строки', () => {
+    const critics = buildReference(texts({
+      buildModeGuides: () => [mode('punitive_critic'), mode('demanding_critic'), mode('guilt_critic'), mode('vulnerable_child')],
+    }), tr);
+    const found = searchReference(critics, 'крит');
+    expect(found).toHaveLength(1);
+    expect(found[0].look).toEqual({ hue: 310, sign: 'looming' });
+    expect(found[0].items.map((i) => i.id)).toEqual(['demanding_critic', 'punitive_critic', 'guilt_critic']);
+    expect(found[0].items.every((i) => i.kind === 'mode')).toBe(true);
+  });
+
+  it('совпадения из разных групп — по листу на группу, в порядке реестра, бумага у каждой своя', () => {
+    const found = searchReference(ref, 'ый');
+    const modes = found.filter((g) => g.key.startsWith('modes:'));
+    expect(modes.map((g) => g.key)).toEqual(['modes:child', 'modes:healthy']);
+    expect(modes.map((g) => g.look.hue)).toEqual([28, 145]);
+    expect(new Set(found.map((g) => g.key)).size).toBe(found.length);
   });
 
   it('ничего не нашлось — пустой список', () => {

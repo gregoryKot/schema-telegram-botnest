@@ -4,11 +4,13 @@ import { pickForm, useAddressForm } from '../../utils/addressForm';
 import { useGuide, type Guide } from '../../../../shared/src/therapy/conceptGraph/guideLoader';
 import { useConceptGuide, type GuideOpenTrack } from '../../components/therapist/guide/useConceptGuide';
 import { PracticeNoteSheet } from '../../components/therapist/guide/PracticeNoteSheet';
+import { PaperAlert } from '../../components/paper/PaperAlert';
 import { Skeleton, SkeletonList } from '../../components/Skeleton';
 import { GuideReferenceList } from './GuideReferenceList';
 import {
-  REFERENCE_TABS, buildReference, referenceLayout, searchReference, type ReferenceItem, type ReferenceTab,
+  REFERENCE_TABS, buildReference, referenceLayout, type ReferenceItem, type ReferenceTab,
 } from './guideReferenceModel';
+import { searchReference } from './guideReferenceSearch';
 
 // Открытия листов из «Справочника» — свои события, не concept_guide_* схемы случая.
 const REFERENCE_TRACK: GuideOpenTrack = {
@@ -17,22 +19,15 @@ const REFERENCE_TRACK: GuideOpenTrack = {
   technique: () => api.trackEvent('cabinet_guide_technique_open'),
 };
 
-const columnStyle = { display: 'flex', flexDirection: 'column', gap: 'var(--space-16)' } as const;
-
 /**
  * Тело «Справочника»: пока чанк текстов грузится — силуэт списка, не
- * загрузился — тихая строка и «Повторить» (родитель монтирует тело заново).
+ * загрузился — лист соломы (PaperAlert) и «Повторить» (родитель монтирует тело заново).
  */
 export function GuideReference({ onRetry }: { onRetry: () => void }) {
   const texts = useGuide();
   if (texts === undefined) return <GuideReferenceSkeleton />;
   if (texts === null) {
-    return (
-      <div role="alert" style={{ ...columnStyle, alignItems: 'flex-start' }}>
-        <p className="ds-empty">Справочник не загрузился. Обычно помогает ещё одна попытка</p>
-        <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onRetry}>Повторить</button>
-      </div>
-    );
+    return <PaperAlert sign="layers" title="Справочник не загрузился. Обычно помогает ещё одна попытка" onRetry={onRetry} />;
   }
   return <GuideReferenceLoaded texts={texts} />;
 }
@@ -65,7 +60,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
     }
   };
   return (
-    <div style={columnStyle}>
+    <div className="gr-column">
       <input
         type="search" value={query} onChange={(e) => setQuery(e.target.value)} maxLength={80}
         placeholder="Найти по названию" aria-label="Найти в справочнике" className="ds-input ds-input--search"
@@ -94,13 +89,13 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
 /** Силуэт: строка поиска, переключатель и группы строк — в те же колонки, что группы режимов. */
 function GuideReferenceSkeleton() {
   return (
-    <div aria-hidden style={columnStyle}>
+    <div aria-hidden className="gr-column">
       <Skeleton height={44} radius={22} />
       <Skeleton width={300} height={34} radius={20} style={{ maxWidth: '100%' }} />
       <div className="gr-wrap">
         <div className="gr-list gr-list--groups">
           {[4, 3].map((rows) => (
-            <div key={rows} className="gr-group">
+            <div key={rows} className="gr-skel-group">
               <Skeleton width="40%" height={24} />
               <SkeletonList rows={rows} height={48} radius={12} gap={6} />
             </div>

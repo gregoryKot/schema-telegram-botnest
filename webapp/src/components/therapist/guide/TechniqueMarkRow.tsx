@@ -34,7 +34,7 @@ export function TechniqueDoneNote({ text, onOpenJournal }: { text?: string | nul
 export function TechniqueMarkRow({ note, marked, day, onToggle, onOpenJournal }: TechniqueMarkProps) {
   return (
     <div className="tcp-guide-task">
-      <div style={{ minWidth: 0 }}>
+      <div className="gd-min">
         {note ? <TechniqueDoneNote text={note} onOpenJournal={onOpenJournal} /> : <div className="ds-sub">Пока не отмечали</div>}
         <div className="ds-sub">Отметка остаётся в схеме случая, клиенту она не видна.</div>
       </div>
