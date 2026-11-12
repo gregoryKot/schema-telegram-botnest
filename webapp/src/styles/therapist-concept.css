@@ -76,20 +76,29 @@
   .tcp-chain-item { flex-direction: column; align-items: stretch; }
   .tcp-arrow { transform: rotate(90deg); align-self: center; }
 }
-/* Пункт меню в две строки: название и подсказка под ним (подсказка переносится): ширина 220 — у .ds-menu, тап-цель 44 — у .ds-menu-item. */
-.tcp-menu .ds-menu-item { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; line-height: 1.3; }
+/* Пункт меню: иконка действия слева, справа название и подсказка под ним (подсказка переносится): ширина 220 — у .ds-menu, тап-цель 44 — у .ds-menu-item. */
+.tcp-menu .ds-menu-item { align-items: flex-start; gap: 8px; padding: 8px 10px; line-height: 1.3; }
+.tcp-menu-icon { margin-top: 1px; color: var(--text-sub); }
+.tcp-menu-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tcp-menu-hint { font-size: 11px; line-height: 1.35; color: var(--text-faint); white-space: normal; }
 /* Раскрывашки — общий ds-fold (NeedFold) строками одной ds-card: между ними тонкая линия, своей рамки у строки нет. */
 .ds-card.tcp-folds { margin-top: 40px; max-width: 880px; padding: 4px 8px; }
 .ds-fold.tcp-fold { background: none; border: 0; border-radius: 0; }
 .ds-fold.tcp-fold + .tcp-fold { border-top: 1px solid var(--paper-sunk); }
+/* «Ещё N» сверки с YSQ: короткая ссылка, зона нажатия 44×44. */
+.ds-link.tcp-ysq-more { min-width: 44px; min-height: 44px; text-align: left; }
 
 /* ── «Главное»: кнопка в шапке и экран с самым важным (2026-11) ── */
 .tcp-brief-btn { height: 44px; padding: 0 16px; }
 .tcp-brief-pick { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 14px; border-bottom: 1px solid var(--paper-sunk); } /* разделитель — --paper-sunk, не --line (oneStyle.test) */
-/* Бенто: листы бумаги колонками — три на компьютере (≥1024), две на планшете, одна на телефоне; лист не рвётся между колонками. */
-.tcp-brief-grid { columns: 3 320px; column-gap: 16px; max-width: 1400px; }
-.tcp-brief-card { display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; min-width: 0; margin: 0 0 16px; padding: 18px 20px 20px; border-radius: 20px; break-inside: avoid; }
+/* Тихий фильтр «Что показывать»: невыбранный чип — приглушённый текст без рамки и подложки, выбранный — бумага с галочкой. */
+.ds-chip.pa-chip.tcp-brief-chip:not(.is-on) { background: transparent; border-color: transparent; color: var(--text-sub); }
+.ds-chip.pa-chip.tcp-brief-chip:not(.is-on):hover { background: var(--paper-sunk); }
+/* Бенто: карточки колонками — три на компьютере, две на планшете, одна на телефоне; по колонкам их раскладывает
+   briefColumns.ts (следующая — в самую короткую), поэтому под коротким листом нет пустоты во всю высоту соседа. */
+.tcp-brief-grid { display: flex; align-items: flex-start; gap: 16px; max-width: 1400px; }
+.tcp-brief-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.tcp-brief-card { display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; min-width: 0; padding: 18px 20px 20px; border-radius: 20px; }
 .tcp-brief-card--plain { background: var(--surface); border: 1px solid var(--line); }
 .ds-label.tcp-brief-label { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--text-sub); }
 .tcp-brief-text { font-size: 17px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -99,9 +108,9 @@
 .tcp-brief-card .cg-caption { font-size: 15px; }
 .tcp-brief-modes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .tcp-brief-mode { display: flex; flex-direction: column; gap: 3px; font-size: 17px; line-height: 1.45; }
-/* Знак группы стоит в строке имени: имя переносится вместе со знаком, вид режима — следом. */
+/* Знак группы — на плашке бумаги группы в строке имени: имя переносится следом, вид режима — за ним. */
 .tcp-brief-mode-head > b { margin-right: 8px; }
-.tcp-brief-mode-head .pp-art { display: inline-block; margin-right: 8px; vertical-align: -1px; }
+.tcp-brief-mode-sign { --h: 70; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 24px; margin-right: 8px; border-radius: 8px; background: oklch(0.915 0.03 var(--h)); vertical-align: -6px; }
 .tcp-brief-mode-text { color: var(--text-sub); }
 .tcp-brief-mode .ds-sub { color: var(--text-sub); }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {

@@ -24,7 +24,7 @@
 .cg-tag > .cg-sign { margin-left: -3px; }
 .cg-caption { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-sub); }
 .cg-mark { flex: none; color: var(--text-sub); }
-/* Выбор «+ режим / + схема»: белая панель, внутри — листы групп со знаком (SignGroup) и чипы. */
+/* Выбор «+ режим / + схема»: белая панель, внутри — тихие группы со знаком (SignGroup plain) и чипы. */
 .cg-panel {
   box-sizing: border-box; min-width: 0; max-height: min(60vh, 480px); overflow-y: auto; padding: 12px;
   border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
@@ -32,24 +32,24 @@
 .cg-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 10px 4px; }
 .cg-panel-hint { font-size: 12px; line-height: 1.5; color: var(--text-sub); }
 .cg-panel-head > .ds-btn { flex: none; }
-.cg-groups { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.sg-rows.cg-pick-rows { flex-direction: row; flex-wrap: wrap; gap: 6px; padding: 10px; overflow: visible; }
+.cg-groups { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.sg-rows.cg-pick-rows { flex-direction: row; flex-wrap: wrap; gap: 6px; }
 .cg-pick-rows--bare { display: flex; flex-wrap: wrap; gap: 6px; }
 .cg-group-title { margin-bottom: 6px; font-size: 12px; color: var(--text-sub); }
-/* Схемы режима одним рядом, без листов доменов. */
+/* Схемы режима одним рядом, без групп доменов. */
 .cg-groups--flat { flex-direction: row; flex-wrap: wrap; gap: 6px; }
 .cg-groups--flat > div, .cg-groups--flat .cg-pick-rows--bare { display: contents; }
-/* Редактор режима или схемы: лист бумаги группы или домена, знак в шапке, поля белые. */
-.pp-paper.cg-editor { box-sizing: border-box; min-width: 0; padding: 18px 20px 20px; }
-.cg-editor-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+/* Редактор режима или схемы — «лист-герой + форма»: бумага группы или домена — только шапка, поля — белой карточкой. */
+.cg-editor { box-sizing: border-box; min-width: 0; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); }
+.pp-paper.cg-editor-head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-radius: 19px 19px 0 0; }
 .cg-editor-title { flex: 1 1 auto; min-width: 0; }
 .cg-editor-name { font-family: var(--serif); font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
 .cg-editor-sub { margin-top: 2px; font-size: 13px; color: var(--text-sub); }
 .cg-editor-head > .ds-btn { flex: none; }
-.cg-editor-body { display: flex; flex-direction: column; gap: 16px; }
+.cg-editor-body { display: flex; flex-direction: column; gap: 16px; padding: 18px 20px 20px; }
 .ds-btn.cg-remove { align-self: flex-start; }
-.cg-editor .ds-btn--secondary:not(:disabled) { background: var(--surface); }
-.ds-chip.cg-all { margin-top: 6px; }
+/* «Все схемы» — текстовая ссылка (ds-link) с зоной нажатия 44, не чип. */
+.cg-all { min-height: 44px; margin-top: 2px; padding: 0 2px; }
 /* Пустая схема: сцена и одна главная кнопка вместо пунктирных заготовок. */
 .cg-empty { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 40px; }
 .cg-empty-scene { display: block; width: 260px; max-width: 100%; }
@@ -63,7 +63,9 @@
   .pp-paper.tcp-digest { padding: 16px 16px 18px; }
   .ds-label.tcp-dg-term { flex-basis: 100%; }
   .tcp-dg-value { padding-top: 0; }
-  .pp-paper.cg-editor { padding: 16px 14px 18px; }
+  .pp-paper.cg-editor-head { padding: 12px 14px; }
+  .cg-editor-body { padding: 16px 14px 18px; }
+  .cg-groups .sg-sign, .cg-groups .sg-sign .pp-art--square { width: 44px; }
   .cg-editor-name { font-size: 20px; }
   .cg-sign--square .pp-art--square { width: 44px; }
   .pp-paper.cg-my-hero { align-items: flex-start; padding: 14px 16px; gap: 12px; }
@@ -76,7 +78,7 @@
    (#906): заголовка нет — вкладка над шапкой уже называется «Концептуализация»;
    одна строка управления: «Схема · Поля» слева, «⋯» (ds-btn--icon с aria-label)
    справа. */
-.tcp-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+.tcp-head { position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
 .tcp-save { margin-left: auto; min-width: 110px; }
 .tcp-head-title { flex: 1 1 320px; min-width: 0; }
 /* В DOM порядок = видимому (заголовок, статус, «Схема · Поля», «⋯»), order нет:
@@ -102,20 +104,33 @@
 .tcp-share-text { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
 .tcp-share-title { font-size: 14px; font-weight: 600; color: var(--text); }
 .tcp-share-sub { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
-/* Телефон (#902): «Схема · Поля» слева, «⋯» справа; статус сохранения — своей
-   строкой ниже, мелко, слева. justify-content с !important: SaveStatusLine
+/* Телефон (#902): «Схема · Поля» слева, «⋯» справа; статус сохранения — мелко, слева,
+   в зазоре под рядом (абсолютом): пустой статус места не занимает, а появившийся ничего не двигает
+   (своя строка с min-height давала дыру 47px, ревью g11 r1). Отказ (role="alert", текст с «Повторить»
+   бывает в две строки) — обычной строкой во всю ширину. Пока под шапкой стоит строка действия
+   (.tcp-status), статус сохранения ей место уступает. justify-content с !important: SaveStatusLine
    (shared) ставит выравнивание инлайн по пропу align="right", нужному ноутбуку. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .tcp-head { margin-bottom: 16px; }
+  .tcp-head { margin-bottom: 26px; }
+  .tcp-save[role="status"] { position: absolute; left: 0; top: 100%; }
+  .tcp-save[role="alert"] { width: 100%; }
+  .tcp-head:has(+ .tcp-status) > .tcp-head-actions > .tcp-save[role="status"] { display: none; }
   .tcp-head-title, .tcp-more-txt { display: none; }
   .tcp-status { margin: -4px 0 16px; } /* на телефоне шапка ниже на 16px: отрицательный отступ строки статуса не должен съедать весь зазор */
   .tcp-share { margin: -4px 0 16px; }
-  .tcp-save { order: 1; width: 100%; min-width: 0; margin-left: 0; text-align: left; justify-content: flex-start !important; }
+  .tcp-save { order: 1; min-width: 0; margin-left: 0; text-align: left; justify-content: flex-start !important; }
   .tcp-more { margin-left: auto; }
+}
+/* 320: ряд «Схема · Поля», «Главное», «⋯» держится одной строкой — поля и зазоры теснее. */
+@media (max-width: 359px) {
+  .tcp-head { gap: 6px; }
+  .tcp-head .ds-seg-btn { padding-inline: 10px; }
+  .tcp-brief-btn { padding: 0 10px; }
 }
 
 /* ── Схема и раскрывашки под содержанием ── */
 .tcp-graph { padding: var(--space-8) 0; }
+/* Пустая схема: сцена и кнопка стоят сразу под сводкой — «Как читать схему» приходит вместе с диаграммой. */
 /* Верхний отступ вкладки — как у ds-page: 40 на ноутбуке, на телефоне 20 из
    .page-inner-wide (index.css); u-pt40 из shared/utilities.css держал 40 и там. */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .page-inner-wide.tcp-page { padding-top: 40px; } }
@@ -134,4 +149,14 @@
    как остальные экраны кабинета. Селектор специфичнее therapist-card.css. */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-tabs-body > .page-inner-wide.tcp--graph { padding-inline: 20px; }
+  /* Шире становится только схема: шапка, «Показать клиенту», «Коротко» и раскрывашки стоят в том же поле
+     (--tk-gutter), что в виде «Поля» и у шапки карточки, — при смене вида ничего не прыгает вбок (ревью g11 r1). */
+  .tcp--graph > .tcp-head, .tcp--graph > .tcp-status, .tcp--graph > .tcp-share,
+  .tcp--graph > .tcp-digest, .tcp--graph > .tcp-folds { margin-inline: calc(var(--tk-gutter) - 20px); }
+}
+/* 320: узкой раскладке схемы нужно 320px (MIN_WIDTH), а в полях страницы остаётся 288 — схема встаёт
+   во всю ширину экрана (по бокам у неё и так дорожки линий), правый край не срезается. */
+@media (max-width: 351px) {
+  .tcp-graph [data-concept-diagram] { width: calc(100% + 32px) !important; margin-inline: -16px; }
+  .cfs-body [data-concept-diagram] { width: calc(100% + 40px) !important; margin-inline: -20px; }
 }

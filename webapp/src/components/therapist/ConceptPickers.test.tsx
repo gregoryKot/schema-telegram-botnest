@@ -152,7 +152,7 @@ describe('ConceptPickers: только выбранное', () => {
     expect(screen.queryByRole('button', { name: 'Эмоциональная скованность' })).toBeNull();
   });
 
-  it('раскрытый выбор — группы на бумаге домена и группы режимов со знаком в шапке (SignGroup), выбранный чип нажат', () => {
+  it('раскрытый выбор — тихие группы со знаком домена и группы режимов в шапке (SignGroup plain, без листа бумаги), цвет — у выбранного чипа', () => {
     const { container } = render(<ConceptPickers detail={selection(['failure'], ['punitive_critic'])} />);
     fireEvent.click(edit('Актуальные схемы'));
     fireEvent.click(edit('Карта режимов'));
@@ -160,8 +160,9 @@ describe('ConceptPickers: только выбранное', () => {
     expect(groups.length).toBeGreaterThan(5); // 5 доменов и группы режимов
     for (const g of groups) {
       expect(g.querySelector('.sg-sign .pp-art')).toBeTruthy();
-      expect(g.style.getPropertyValue('--h')).not.toBe('');
+      expect(g.classList.contains('pp-paper')).toBe(false); // 12 цветных листов подряд — радуга (ревью g11 r1)
     }
+    expect(screen.getByRole('button', { name: 'Неуспешность' }).style.getPropertyValue('--h')).not.toBe('');
     expect(screen.getByRole('button', { name: 'Неуспешность' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: 'Неуспешность' }).querySelector('[data-sign="check"]')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Карающий Критик' }).getAttribute('aria-pressed')).toBe('true');

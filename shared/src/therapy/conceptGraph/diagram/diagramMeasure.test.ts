@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { measureNode, wrapLines } from './diagramMeasure';
+import { LINE, measureNode, wrapLines } from './diagramMeasure';
 
 describe('wrapLines', () => {
   it('короткий текст — одна строка, пустой тоже', () => {
@@ -66,13 +66,21 @@ describe('measureNode', () => {
     );
   });
 
-  it('длинное название занимает две строки и не больше', () => {
+  it('длинное название занимает три строки и не больше; фигура растёт под третью строку', () => {
     const r = measureNode(
       { shape: 'rounded', label: 'Очень длинное название режима '.repeat(5) },
       200,
       6,
       0,
     );
-    expect(r.titleLines).toBe(2);
+    expect(r.titleLines).toBe(3);
+    const two = measureNode(
+      { shape: 'rounded', label: 'Жёсткие стандарты / Придирчивость' },
+      200,
+      6,
+      0,
+    );
+    expect(two.titleLines).toBe(2);
+    expect(r.h - two.h).toBeGreaterThanOrEqual(LINE.title);
   });
 });

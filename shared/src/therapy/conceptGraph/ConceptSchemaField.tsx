@@ -57,7 +57,7 @@ export function ConceptSchemaField({
         type="button"
         aria-pressed={showAll}
         onClick={() => setShowAll((v) => !v)}
-        className="ds-chip ds-chip--toggle cg-all"
+        className="ds-link cg-all"
       >
         Все схемы
       </button>

@@ -15,15 +15,15 @@ export const SECTION_SIGNS: Record<ConceptTextField, readonly SignKey[]> = {
   currentProblems: ['pebbles'],
 };
 
-/** Блок «Главного»: бумага сущности и её знаки. Потребности — нейтральная бумага (hue нет): цвет несут чипы NeedArt. */
+/** Блок «Главного»: знаки раздела; бумага (hue) — только у трёх листов свободного текста (240 / 145 / 70, не ближе 40°), остальные — белые карточки. */
 export const BRIEF_LOOK: Record<BriefBlockId, { hue?: number; signs: readonly SignKey[] }> = {
-  schemas: { hue: 28, signs: ['layers'] },
-  modes: { hue: 240, signs: ['cluster'] },
+  schemas: { signs: ['layers'] },
+  modes: { signs: ['cluster'] },
   needs: { signs: ['strokes'] },
-  cycle: { hue: 310, signs: SECTION_SIGNS.modeTransitions },
+  cycle: { hue: 240, signs: SECTION_SIGNS.modeTransitions },
   goals: { hue: 145, signs: SECTION_SIGNS.goals },
   problems: { hue: 70, signs: SECTION_SIGNS.currentProblems },
-  triggers: { hue: 135, signs: SECTION_SIGNS.triggers },
-  coping: { hue: 240, signs: SECTION_SIGNS.copingStyles },
-  early: { hue: 45, signs: SECTION_SIGNS.earlyExperience },
+  triggers: { signs: SECTION_SIGNS.triggers },
+  coping: { signs: SECTION_SIGNS.copingStyles },
+  early: { signs: SECTION_SIGNS.earlyExperience },
 };

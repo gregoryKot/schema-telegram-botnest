@@ -25,4 +25,15 @@ describe('SignGroup', () => {
     expect(container.querySelector('.sg-head')).toBeNull();
     expect(container.querySelector('.sg-rows.gr-rows')!.textContent).toBe('строка');
   });
+
+  it('plain — тихая группа: без листа бумаги (pp-paper), шапка со знаком и строки на месте; по умолчанию лист остаётся', () => {
+    const { container, rerender } = render(<SignGroup plain look={{ hue: 310, sign: 'looming' }} title="Критикующие режимы" rowsClassName="x-rows"><p>строка</p></SignGroup>);
+    const group = container.querySelector('.sg-group')!;
+    expect(group.classList.contains('pp-paper')).toBe(false);
+    expect(group.classList.contains('sg-group--plain')).toBe(true);
+    expect(container.querySelectorAll('.sg-head svg')).toHaveLength(1);
+    expect(container.querySelector('.sg-rows.x-rows')!.textContent).toBe('строка');
+    rerender(<SignGroup look={{ hue: 310, sign: 'looming' }} title="Критикующие режимы"><p>строка</p></SignGroup>);
+    expect(container.querySelector('.sg-group')!.className).toBe('pp-paper sg-group');
+  });
 });

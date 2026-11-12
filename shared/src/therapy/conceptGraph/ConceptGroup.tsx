@@ -3,10 +3,10 @@ import type { SheetLook } from '../../theme/entityLook';
 import { useConceptPaper } from './conceptPaper';
 
 /**
- * Группа чипов выбора (домен схем, группа режимов): на сайте — лист бумаги
- * домена или группы со знаком в шапке (SignGroup, тот же вид, что у клиента),
- * внутри белое поле с чипами. Без заголовка (схемы режима одним рядом) или без
- * сайта — только ряд чипов, заголовок текстом.
+ * Группа чипов выбора (домен схем, группа режимов): на сайте — тихая группа
+ * (SignGroup `plain`): шапка со знаком, как у клиента, и чипы на поверхности
+ * карточки, без цветного листа на каждую группу; цвет несут выбранные чипы.
+ * Без заголовка (схемы режима одним рядом) или без сайта — только ряд чипов.
  */
 export function ConceptGroup({
   look,
@@ -20,7 +20,7 @@ export function ConceptGroup({
   const paper = useConceptPaper();
   if (paper && look && title) {
     return (
-      <paper.Group look={look} title={title} rowsClassName="cg-pick-rows">
+      <paper.Group look={look} title={title} rowsClassName="cg-pick-rows" plain>
         {children}
       </paper.Group>
     );

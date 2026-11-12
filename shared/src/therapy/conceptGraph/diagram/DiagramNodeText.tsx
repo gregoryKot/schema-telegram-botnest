@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { FIT, FONT, LINE } from './diagramMeasure';
+import { FIT, FONT, LINE, TITLE_MAX_LINES } from './diagramMeasure';
 import { DiagramNeedPill } from './DiagramNeedPill';
 import type { DiagramNode } from './diagramTypes';
 
@@ -70,7 +70,7 @@ export function DiagramNodeText({
       {node.label && (
         <span
           style={{
-            ...clamp(2),
+            ...clamp(TITLE_MAX_LINES),
             fontSize: FONT.title,
             lineHeight: `${LINE.title}px`,
             fontWeight: 700,

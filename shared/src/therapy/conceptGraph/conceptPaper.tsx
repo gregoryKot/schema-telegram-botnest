@@ -1,8 +1,7 @@
 // «Живая бумага» концептуализации (редизайн 2026-11, b32/b33): знаки, чип и
 // группа приходят с сайта контекстом — shared не импортирует webapp, а вид
 // обязан совпадать с клиентским (SignArt, SignChip, SignGroup). Без контекста
-// (тесты shared) знаков нет, чип и группа — простые запасные. Классы cg-* —
-// webapp/src/styles/concept-graph.css.
+// (тесты shared) знаков нет, чип и группа — простые запасные. Классы cg-* — concept-graph.css.
 import {
   createContext,
   useContext,
@@ -25,11 +24,12 @@ export interface ConceptPaper {
     sign?: SignKey;
     hue?: PaperHue;
   }>;
-  /** Группа на бумаге домена или группы режимов со знаком в шапке (SignGroup). */
+  /** Группа домена или группы режимов со знаком в шапке (SignGroup); `plain` — тихая, без листа бумаги. */
   Group: ComponentType<{
     look: SheetLook;
     title: ReactNode;
     rowsClassName?: string;
+    plain?: boolean;
     children: ReactNode;
   }>;
   /** Сцена пустой схемы случая (SceneConceptStart). */

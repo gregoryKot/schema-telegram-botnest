@@ -44,14 +44,14 @@ interface Props {
   signs?: readonly SignKey[];
   title?: ReactNode; // без подписи и знака лист стоит без шапки (техники «Справочника» терапевта)
   aside?: ReactNode; label?: string; headAs?: 'h2' | 'h3'; // label — aria-label секции, headAs — уровень заголовка шапки
-  /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). */
-  rowsClassName?: string;
+  /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). plain — тихая группа без листа и белой карточки (пикеры терапевта, g11 r1). */
+  rowsClassName?: string; plain?: boolean;
   children: ReactNode;
 }
 
-export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, aside, label, headAs, rowsClassName, children }: Props) {
+export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, aside, label, headAs, rowsClassName, plain, children }: Props) {
   return (
-    <section className="pp-paper sg-group" aria-label={label} style={{ '--h': look.hue } as CSSProperties}>
+    <section className={plain ? 'sg-group sg-group--plain' : 'pp-paper sg-group'} aria-label={label} style={{ '--h': look.hue } as CSSProperties}>
       {(title !== undefined || signs.length > 0) && <SignGroupHead signs={signs} title={title} aside={aside} as={headAs} />}
       <div className={rowsClassName ? `sg-rows ${rowsClassName}` : 'sg-rows'}>{children}</div>
     </section>

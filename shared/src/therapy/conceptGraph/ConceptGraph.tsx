@@ -67,36 +67,34 @@ export function ConceptGraph({
 
   return (
     <div style={graphColumnStyle}>
+      {(!empty || add) && <ConceptGraphIntro needLinks={graph.needLinks} />}
       {empty && !add ? (
         <ConceptGraphEmpty onStart={() => setAdd('schemas')} />
       ) : (
-        <>
-          <ConceptGraphIntro needLinks={graph.needLinks} />
-          <ConceptDiagram
-            graph={graph}
-            edit={{
-              openId:
-                open && (modeCard || schemaCard)
-                  ? `${open.kind}:${open.id}`
-                  : null,
-              addOpen: add,
-              panel: add && (
-                <ConceptAddPanel
-                  section={add}
-                  modeIds={source.modeIds}
-                  schemaIds={graph.schemas.map((s) => s.id)}
-                  onToggleMode={toggleMode}
-                  onToggleSchema={toggleSchema}
-                  onClose={() => setAdd(null)}
-                />
-              ),
-              onOpenMode: (id) => toggleOpen('mode', id),
-              onOpenSchema: (id) => toggleOpen('schema', id),
-              onAdd: (section) =>
-                setAdd((cur) => (cur === section ? null : section)),
-            }}
-          />
-        </>
+        <ConceptDiagram
+          graph={graph}
+          edit={{
+            openId:
+              open && (modeCard || schemaCard)
+                ? `${open.kind}:${open.id}`
+                : null,
+            addOpen: add,
+            panel: add && (
+              <ConceptAddPanel
+                section={add}
+                modeIds={source.modeIds}
+                schemaIds={graph.schemas.map((s) => s.id)}
+                onToggleMode={toggleMode}
+                onToggleSchema={toggleSchema}
+                onClose={() => setAdd(null)}
+              />
+            ),
+            onOpenMode: (id) => toggleOpen('mode', id),
+            onOpenSchema: (id) => toggleOpen('schema', id),
+            onAdd: (section) =>
+              setAdd((cur) => (cur === section ? null : section)),
+          }}
+        />
       )}
       {modeCard && (
         <ConceptModeEditor

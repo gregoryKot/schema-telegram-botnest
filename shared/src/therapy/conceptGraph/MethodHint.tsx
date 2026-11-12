@@ -33,7 +33,7 @@ export function MethodHint({
         margin: '0 0 var(--space-8)',
         padding: 'var(--space-12) var(--space-14)',
         borderRadius: 'var(--r-14)',
-        background: 'color-mix(in srgb, var(--surface) 55%, transparent)',
+        background: 'var(--paper-tint)', // тихая панель на белой форме редактора
       }}
     >
       <div style={labelStyle}>Обычно в методе</div>

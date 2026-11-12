@@ -1,18 +1,9 @@
 import type { CSSProperties } from 'react';
-import { colorMix } from '../../../utils/colorMix';
 import { NODE_PAPER_LC, paperTone } from '../../../modeMap/nodePaperTone';
 import { nodeHue } from './diagramPaper';
 import type { DiagramNode } from './diagramTypes';
 
-/** Заливка процента — та же бумага потребности тоном глубже (язык бумаги, без насыщенной заливки);
- *  без оттенка (неизвестная потребность) — приглушённый цвет узла. */
-const FILL_MIX = 30;
-function pctFill(node: DiagramNode): string {
-  const hue = nodeHue(node);
-  return hue === undefined
-    ? colorMix(node.color, FILL_MIX)
-    : paperTone(NODE_PAPER_LC.shade, hue);
-}
+const pctFill = (hue = 70) => paperTone(NODE_PAPER_LC.shade, hue); // заливка процента — бумага потребности тоном глубже
 
 const box: CSSProperties = {
   position: 'absolute',
@@ -75,7 +66,7 @@ export function DiagramNeedPill({
               display: 'block',
               width: `${node.pct}%`,
               height: '100%',
-              background: pctFill(node),
+              background: pctFill(nodeHue(node)),
             }}
           />
         </span>

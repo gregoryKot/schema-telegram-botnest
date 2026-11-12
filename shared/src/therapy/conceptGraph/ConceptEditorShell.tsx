@@ -4,9 +4,10 @@ import { hueVar } from './conceptChipStyle';
 import { ConceptSign } from './conceptPaper';
 
 /**
- * Оболочка редактора режима или схемы: лист бумаги группы режима или домена
- * схемы со знаком в шапке рядом с названием (цветной полосы слева нет), поля
- * внутри — белые. Открывается инлайн под диаграммой (не оверлей — ему не нужна
+ * Оболочка редактора режима или схемы — «лист-герой + форма»: бумага группы
+ * режима или домена схемы — только шапка (знак, название, «Готово»), поля ниже
+ * одной белой карточкой (форма целиком на насыщенном листе давала ~500px
+ * сплошного цвета, ревью g11 r1). Открывается инлайн под диаграммой (не оверлей — ему не нужна
  * ни история браузера, ни реестр «Назад»), а фигура может стоять высоко над
  * ним — редактор подъезжает к глазам. В картинку схемы не идёт.
  */
@@ -41,10 +42,9 @@ export function ConceptEditorShell({
       ref={ref}
       data-export-skip
       aria-label={label}
-      className="pp-paper cg-editor"
-      style={hueVar(look?.hue ?? 70)}
+      className="cg-editor"
     >
-      <div className="cg-editor-head">
+      <div className="pp-paper cg-editor-head" style={hueVar(look?.hue ?? 70)}>
         <ConceptSign sign={look?.sign} size="square" />
         <div className="cg-editor-title">
           <div className="cg-editor-name">{title}</div>

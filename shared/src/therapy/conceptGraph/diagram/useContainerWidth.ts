@@ -6,14 +6,13 @@ export const FALLBACK_WIDTH = 960;
 /**
  * Ширина блока в пикселях и её обновление при изменении размера. Диаграмма
  * раскладывается под эту ширину, поэтому до первого замера и в jsdom (там
- * ширина нулевая) берётся запасная.
+ * ширина нулевая) берётся запасная (`fallback`; бенто «Главного» берёт 0).
  */
-export function useContainerWidth(): [
-  RefObject<HTMLDivElement | null>,
-  number,
-] {
+export function useContainerWidth(
+  fallback = FALLBACK_WIDTH,
+): [RefObject<HTMLDivElement | null>, number] {
   const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(FALLBACK_WIDTH);
+  const [width, setWidth] = useState(fallback);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;

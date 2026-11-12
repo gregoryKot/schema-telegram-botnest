@@ -70,7 +70,7 @@ async function openTab() {
   render(<MemoryRouter><Harness /></MemoryRouter>);
   await screen.findByRole('button', { name: 'Ещё действия' });
 }
-const briefBtn = () => screen.getByRole('button', { name: '⊞ Главное' });
+const briefBtn = () => screen.getByRole('button', { name: 'Главное' }); // имя — слово; иконка — SVG, не глиф
 const sheet = () => screen.queryByRole('dialog', { name: 'Главное · Анна' });
 const card = (name: string) => within(sheet()!).getByRole('region', { name });
 const chip = (name: string) => within(within(sheet()!).getByRole('group', { name: 'Что показывать' })).getByRole('button', { name });
@@ -102,11 +102,17 @@ describe('ClientConceptTab: экран «Главное»', () => {
     const names = within(sheet()!).getAllByRole('region').map((r) => r.getAttribute('aria-label'));
     expect(names).toEqual(['Схемы', 'Режимы', 'Потребности', 'Переключение режимов', 'Цели терапии', 'Актуальные проблемы']);
     expect(within(card('Схемы')).getByText('Неуспешность').className).toBe('cg-tag');
-    // лист бумаги своей сущности со знаком у подписи; потребности — нейтральный лист
-    expect(card('Схемы').className).toBe('pp-paper tcp-brief-card');
-    expect(card('Схемы').style.getPropertyValue('--h')).toBe('28');
-    expect(card('Режимы').style.getPropertyValue('--h')).toBe('240');
-    expect(card('Потребности').className).toBe('tcp-brief-card tcp-brief-card--plain');
+    // бумагой — только листы свободного текста (не больше трёх-четырёх цветных на экране, соседние не ближе 40°);
+    // схемы, режимы, потребности — белые карточки со знаком раздела у подписи
+    for (const n of ['Схемы', 'Режимы', 'Потребности']) expect(card(n).className).toBe('tcp-brief-card tcp-brief-card--plain');
+    const hues = ['Переключение режимов', 'Цели терапии', 'Актуальные проблемы'].map((n) => {
+      expect(card(n).className).toBe('pp-paper tcp-brief-card');
+      return Number(card(n).style.getPropertyValue('--h'));
+    });
+    expect(hues).toEqual([240, 145, 70]);
+    expect(briefBtn().querySelector('svg[aria-hidden="true"]')).toBeTruthy();
+    // у режима — знак группы на плашке бумаги группы
+    expect(card('Режимы').querySelector<HTMLElement>('.tcp-brief-mode-sign')!.style.getPropertyValue('--h')).not.toBe('');
     for (const r of within(sheet()!).getAllByRole('region')) expect(r.querySelector('.tcp-brief-label .pp-art--row')).toBeTruthy();
     expect(within(card('Режимы')).getByText('Судья (Карающий Критик)')).toBeTruthy();
     expect(within(card('Режимы')).getByText('Ты опять всё испортил')).toBeTruthy();

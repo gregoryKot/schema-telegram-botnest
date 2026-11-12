@@ -1,5 +1,6 @@
-import { useId, useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useRef } from 'react';
 import { Dropdown } from '../../Dropdown';
+import { ConceptMenuItem as MenuItem } from './ConceptMenuItem';
 import { useMenuPick } from '../../useMenuPick';
 import { CANVAS_HINT, EXPAND_HINT, type GraphActions } from './conceptHeadText';
 import { CONCEPT_EXPORT_EMPTY } from '../../../../../shared/src/therapy/conceptExport';
@@ -23,31 +24,18 @@ export function ConceptMoreMenu({ onExport, exportEmpty, graph }: { onExport: ()
       </button>
       {open && (
         <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Ещё действия" className="tcp-menu">
-          <MenuItem disabled={exportEmpty} hint={exportEmpty ? CONCEPT_EXPORT_EMPTY : undefined} onClick={pick(onExport)}>↗ Экспорт текстом</MenuItem>
+          <MenuItem icon="file" disabled={exportEmpty} hint={exportEmpty ? CONCEPT_EXPORT_EMPTY : undefined} onClick={pick(onExport)}>Экспорт текстом</MenuItem>
           {graph && (
             <>
-              <MenuItem disabled={graph.image.busy} onClick={pick(graph.image.download)}>↓ Скачать картинкой</MenuItem>
-              <MenuItem hint={EXPAND_HINT} onClick={pick(graph.expand)}>⤢ На весь экран</MenuItem>
+              <MenuItem icon="download" disabled={graph.image.busy} onClick={pick(graph.image.download)}>Скачать картинкой</MenuItem>
+              <MenuItem icon="fit" hint={EXPAND_HINT} onClick={pick(graph.expand)}>На весь экран</MenuItem>
               {graph.canvas && (
-                <MenuItem hint={CANVAS_HINT} disabled={graph.canvas.busy} onClick={pick(graph.canvas.open)}>Открыть на холсте</MenuItem>
+                <MenuItem icon="map" hint={CANVAS_HINT} disabled={graph.canvas.busy} onClick={pick(graph.canvas.open)}>Открыть на холсте</MenuItem>
               )}
             </>
           )}
         </Dropdown>
       )}
     </div>
-  );
-}
-
-// Пункт меню: название, под ним — подсказка строкой (видна без hover, в отличие
-// от title). Имя пункта для ридера и тестов — только название (aria-labelledby),
-// подсказка — его описание.
-function MenuItem({ hint, children, ...rest }: { hint?: string; children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  const id = useId();
-  return (
-    <button type="button" role="menuitem" className="ds-menu-item" aria-labelledby={`${id}-l`} aria-describedby={hint ? `${id}-h` : undefined} {...rest}>
-      <span id={`${id}-l`}>{children}</span>
-      {hint && <span id={`${id}-h`} className="tcp-menu-hint">{hint}</span>}
-    </button>
   );
 }
