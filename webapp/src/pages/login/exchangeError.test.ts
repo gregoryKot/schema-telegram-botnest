@@ -1,6 +1,6 @@
 // Короткий код сбоя автовхода для экрана (TelegramRetry, слот `code`): тело ответа — только в отчёт.
 import { describe, it, expect } from 'vitest';
-import { exchangeErrorCode } from './exchangeError';
+import { exchangeErrorCode, exchangeErrorLead } from './exchangeError';
 
 describe('exchangeErrorCode', () => {
   it('«Ошибка 401: {json}» → «Ошибка 401»', () => {
@@ -16,5 +16,17 @@ describe('exchangeErrorCode', () => {
   });
   it('контроль: «Ошибка 4010» не принимается за код ответа', () => {
     expect(exchangeErrorCode('Ошибка 4010 что-то')).toBe('Ошибка 4010 что-то');
+  });
+});
+
+describe('exchangeErrorLead', () => {
+  it('429 и 5xx — человеческий хвост остаётся на экране', () => {
+    expect(exchangeErrorLead('Ошибка 429: Слишком много попыток. Подожди минуту.')).toBe('Слишком много попыток. Подожди минуту.');
+    expect(exchangeErrorLead('Ошибка 502: Сервер не отвечает')).toBe('Сервер не отвечает');
+  });
+  it('4xx и строки без кода — лида нет: тело сервера человеку не показываем', () => {
+    expect(exchangeErrorLead('Ошибка 401: {"message":"Invalid initData"}')).toBeNull();
+    expect(exchangeErrorLead('Нет соединения')).toBeNull();
+    expect(exchangeErrorLead('Ошибка 500: ')).toBeNull();
   });
 });

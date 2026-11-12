@@ -33,3 +33,12 @@ export function exchangeErrorCode(text: string): string {
   const m = /^(Ошибка \d{3})(?::|$)/.exec(text);
   return m ? m[1] : text;
 }
+
+// Лимит и авария сервера (429, 5xx) несут человеческий хвост («Слишком много попыток…») — он остаётся на
+// экране лидом; у 4xx хвост — сырое тело сервера, его человеку не показываем.
+export function exchangeErrorLead(text: string): string | null {
+  const m = /^Ошибка (\d{3}): (.+)$/s.exec(text);
+  if (!m) return null;
+  const status = Number(m[1]);
+  return status === 429 || status >= 500 ? m[2].trim() || null : null;
+}
