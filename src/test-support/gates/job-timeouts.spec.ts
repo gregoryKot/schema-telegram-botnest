@@ -137,6 +137,7 @@ describe('настоящие воркфлоу репозитория', () => {
       'perf',
       'shared',
       'webapp',
+      'webapp-tz',
     ]);
   });
 

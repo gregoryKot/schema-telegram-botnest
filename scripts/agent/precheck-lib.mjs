@@ -30,6 +30,7 @@ export const NEEDS_BUILD = {
     'сравнивает ветку с origin/main и пишет в $GITHUB_OUTPUT — только в CI',
   'jest-exit-guard.mjs':
     'не гейт, а сторож полного прогона jest (джоба backend) — минуты',
+  'check-pr-size.mjs': 'судит закоммиченный дифф ветки с origin/main и метку PR из события — только в CI; локально: node scripts/check-pr-size.mjs',
 };
 
 // Шаг ci.yml вида `- run: node scripts/<имя>.mjs [аргументы]` (или `run:` без
