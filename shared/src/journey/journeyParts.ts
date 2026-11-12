@@ -14,6 +14,8 @@ import { DETAIL_FIELDS } from './journeyDetailFields';
 export interface JourneyResultPart {
   title?: string;
   text: string;
+  /** Голос Здорового Взрослого (метка поля DETAIL_FIELDS) — вставка мха в детали. */
+  healthy?: true;
 }
 
 export type YsqScore = { pct5plus: number; avg: number };
@@ -145,8 +147,10 @@ export function buildJourneyDetailParts(
   const str = (k: string) => (typeof e[k] === 'string' ? e[k] : '');
   const fields = DETAIL_FIELDS[type];
   if (fields) {
-    return fields.flatMap(([k, title]) =>
-      str(k).trim() ? [{ title: title || undefined, text: str(k).trim() }] : [],
+    return fields.flatMap(([k, title, mark]) =>
+      str(k).trim()
+        ? [{ title: title || undefined, text: str(k).trim(), ...(mark === 'healthy' ? { healthy: true as const } : {}) }]
+        : [],
     );
   }
   if (type === 'gratitude') {

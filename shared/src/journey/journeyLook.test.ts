@@ -8,7 +8,6 @@ import {
   CHILDHOOD_STAT,
   JOURNEY_LOOK,
   JOURNEY_NEED_LOOK,
-  isHealthyPart,
   journeyItemLook,
   journeyStatLook,
 } from './journeyLook';
@@ -141,15 +140,6 @@ describe('journeyStatLook', () => {
       expect(journeyStatLook(r.type), r.label).not.toBeNull();
     const { hue, sign } = ENTITY_LOOK.childhood_wheel;
     expect(journeyStatLook(CHILDHOOD_STAT)).toEqual({ hue, sign });
-  });
-});
-
-describe('isHealthyPart', () => {
-  it('голос Здорового Взрослого — «Здоровый взгляд» и «Здоровый Взрослый», не «Здоровое поведение»', () => {
-    expect(isHealthyPart('Здоровый взгляд')).toBe(true);
-    expect(isHealthyPart('Здоровый Взрослый')).toBe(true);
-    expect(isHealthyPart('Здоровое поведение')).toBe(false);
-    expect(isHealthyPart(undefined)).toBe(false);
   });
 });
 

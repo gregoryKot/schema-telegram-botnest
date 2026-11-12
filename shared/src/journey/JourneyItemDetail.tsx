@@ -10,7 +10,6 @@ import {
   journeyTypeMeta,
 } from './journeyMeta';
 import type { JourneyResultPart } from './journeyContent';
-import { isHealthyPart } from './journeyLook';
 import { glueSpaces } from '../utils/typo';
 
 export interface JourneyDetailState {
@@ -106,7 +105,7 @@ export function JourneyItemDetail({
           ) : (
             <div className="jr-fields">
               {parts.map((p, i) =>
-                p.title && art.voice && isHealthyPart(p.title) ? (
+                p.title && art.voice && p.healthy ? (
                   <div key={i}>{art.voice(p.title, p.text)}</div>
                 ) : (
                   <div key={i} className="jr-field">

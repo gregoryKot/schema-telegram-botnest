@@ -149,17 +149,6 @@ export const JOURNEY_NEED_NAMES: Record<string, string> = {
   limits: 'Границы',
 };
 
-// Эмодзи потребностей — остался один потребитель, портрет профиля (portrait/portraitData.ts;
-// «Мой путь» и его карточки рисуют знаки, b22/b23b). Та же пятёрка, что JOURNEY_NEED_NAMES;
-// сверка (правило №4) — portrait/portraitData.test.ts.
-export const JOURNEY_NEED_EMOJI: Record<string, string> = {
-  attachment: '🤝',
-  autonomy: '🧭',
-  expression: '💬',
-  play: '🎉',
-  limits: '⚖️',
-};
-
 export interface JourneySubtitleSources {
   getModeById(id: string): { name: string } | undefined;
   getSchemaById(id: string): { name: string } | undefined;

@@ -40,7 +40,7 @@ describe('PortraitNeedBar', () => {
       const bar = container.querySelector<HTMLElement>('.cpf-bar')!;
       expect(bar.style.getPropertyValue('--nd')).toBe(needDataColor(n.id));
       expect(bar.querySelector('.cpf-bar-sign svg.pp-art')).not.toBeNull();
-      expect(bar.textContent).not.toContain(n.emoji);
+      expect(bar.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
       unmount();
     }
   });

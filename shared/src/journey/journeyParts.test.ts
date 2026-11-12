@@ -222,8 +222,17 @@ describe('buildJourneyDetailParts', () => {
     });
     expect(parts).toEqual([
       { title: 'Ситуация', text: 'Триггер' },
-      { title: 'Здоровый взгляд', text: long }, // без «…» — детальный вид не режет
+      { title: 'Здоровый взгляд', text: long, healthy: true }, // без «…» — детальный вид не режет
     ]);
+  });
+
+  it('голос Здорового Взрослого — по метке поля, а не по подписи: «Здоровое поведение» без метки', () => {
+    const marked = (type: string, entry: Record<string, string>) =>
+      buildJourneyDetailParts(type, entry).filter((p) => p.healthy).map((p) => p.title);
+    expect(marked('schema_diary', { healthyView: 'а', healthyBehavior: 'б' })).toEqual(['Здоровый взгляд']);
+    expect(marked('mode_diary', { healthyResponse: 'а', actualNeed: 'б' })).toEqual(['Здоровый Взрослый']);
+    expect(marked('belief_check', { reframe: 'а', belief: 'б' })).toEqual(['Здоровый взгляд']);
+    expect(marked('schema_note', { healthyView: 'а', behavior: 'б' })).toEqual(['Здоровый взгляд']);
   });
 
   it('gratitude в детальном виде — все пункты, а не только три', () => {

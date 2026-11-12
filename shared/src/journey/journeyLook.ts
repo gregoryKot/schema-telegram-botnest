@@ -72,8 +72,3 @@ export function journeyItemLook(
 /** Вид плитки счётчика: сущность занятия; колесо детства — своя сущность. */
 export const journeyStatLook = (type: string): JourneyLook | null =>
   type === CHILDHOOD_STAT ? CHILDHOOD_LOOK : journeyItemLook({ type });
-
-/** Поля-голос Здорового Взрослого (вставка мха в детали) — те же, что в ленте «Записей» (entryRows.ts). */
-const HEALTHY_TITLES = new Set(['Здоровый взгляд', 'Здоровый Взрослый']);
-export const isHealthyPart = (title: string | undefined): boolean =>
-  HEALTHY_TITLES.has(title ?? '');
