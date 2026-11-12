@@ -3,15 +3,16 @@
 // прыгает дважды. «Сегодня» клиента — из тех же классов, что HomeTiles (блок трекера с его знаком
 // без данных, два листа бумаги), высоты строк — по шапке и трекеру экрана (shell-skeletons.css, сверка
 // наложением снимков: допуск 8px); «Ещё» — заголовок, лист и строки со знаком; терапевт — «Сегодня»
-// (место сцены Talk, три счётчика тоном панели, как загрузка самого экрана, колонки по его сетке) и
+// (шапка и тело экрана TodaySkeletonBody: плитки бумаги счётчиков, лист неба сессий — b29) и
 // карточка клиента (шапка, вкладки, две колонки «Обзора»). TherapistTodaySkeleton и ClientCardSkeleton
-// берут и сами экраны терапевта (b29, b30): бумагу счётчиков силуэт включит вместе с экраном b29.
+// берут и сами экраны терапевта (b29, b30).
 // Стили — styles/shell-skeletons.css: «Сегодня» живёт в ленивом чанке, его CSS к силуэту ещё не приехал.
 import type { ReactNode } from 'react';
 import { hueStyle } from '../lib/tone';
 import { Strokes } from './art/PaperArt';
 import { Skeleton, ScreenSkeleton } from './Skeleton';
 import { DiaryFeedSkeleton } from '../sections/diary/DiaryFeedSkeleton';
+import { TodaySkeletonBody } from './therapist/TodaySkeletonBody';
 import '../styles/shell-skeletons.css';
 /** Знак трекера без данных: пять пустых мест, как у неоценённого дня главной (правило .pp-strokes-values). */
 const EMPTY_DAY = [null, null, null, null, null];
@@ -31,12 +32,12 @@ function Line({ kind, bars, h }: { kind: string; bars: (number | string)[]; h: n
 /** Лист бумаги оттенка `h` с подписью-плашкой сверху (силуэт листа карточки клиента). */
 const Sheet = ({ h, children }: { h: number; children: ReactNode }) => <div className="pp-paper sks-paper sks-sheet" style={hueStyle(h)}><Skeleton width={110} height={11} />{children}</div>;
 /** Строки списка со знаком слева (лента, «Ещё», клиенты). */
-function Rows({ n, art = 44 }: { n: number; art?: number }) {
+function Rows({ n }: { n: number }) {
   return (
     <div className="sks-rows">
       {Array.from({ length: n }, (_, i) => (
         <div key={i} className="sks-row">
-          <Skeleton width={art} height={art === 44 ? 24 : art} radius={art === 44 ? 8 : art / 2} />
+          <Skeleton width={44} height={24} radius={8} />
           <div className="sks-col"><Skeleton width={`${62 - (i % 3) * 12}%`} height={14} /><Skeleton width="78%" height={11} /></div>
         </div>
       ))}
@@ -95,16 +96,9 @@ export function TherapistTodaySkeleton() {
   return (
     <div className="ds-page sks-page sks-wide" data-testid="therapist-today-skeleton">
       <div className="pp-block pp-block--head">
-        <div className="pp-hero">
-          <div className="sks-col"><Line kind="label" bars={[150]} h={12} /><Line kind="th-title" bars={['80%', '50%']} h={30} /></div>
-          <span className="pp-art--hero sks-scene"><Skeleton height="100%" radius={18} /></span>
-        </div>
+        <div className="sks-col"><Line kind="label" bars={[150]} h={12} /><Line kind="th-title" bars={['80%', '50%']} h={30} /></div>
       </div>
-      <div className="sks-counters">{[0, 1, 2].map(i => <Skeleton key={i} height="100%" radius={16} />)}</div>
-      <div className="sks-two sks-two--today">
-        <div className="sks-col"><Skeleton width="46%" height={22} /><div className="sks-card"><Rows n={2} art={32} /></div></div>
-        <div className="sks-col"><Skeleton width="52%" height={22} /><div className="sks-card"><Rows n={3} art={32} /></div></div>
-      </div>
+      <TodaySkeletonBody />
     </div>
   );
 }

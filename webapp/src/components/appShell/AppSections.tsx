@@ -75,12 +75,12 @@ export function AppSections({
     {/* Therapist mode */}
     {therapistMode && pathname === '/cabinet/today' && (
       <ErrorBoundary section="Кабинет" key="cabinet-today-boundary">
-        {/* «Добавить клиента» у пустого кабинета — список, где форма открыта сразу. */}
-        <TherapistTodaySection displayName={displayName} onOpenClient={openClient} onAddClient={() => navigate('/cabinet')} />
+        {/* «Добавить клиента» — список с открытой формой. .page (и у «Справочника») — своя прокрутка: .canvas режет переполнение (b29). */}
+        <div className="page"><TherapistTodaySection displayName={displayName} onOpenClient={openClient} onAddClient={() => navigate('/cabinet')} /></div>
       </ErrorBoundary>
     )}
     {therapistMode && pathname === '/cabinet/guide' && (
-      <ErrorBoundary section="Кабинет" key="cabinet-guide-boundary"><TherapistGuideSection /></ErrorBoundary>
+      <ErrorBoundary section="Кабинет" key="cabinet-guide-boundary"><div className="page"><TherapistGuideSection /></div></ErrorBoundary>
     )}
     {therapistMode && !CABINET_PAGES.includes(pathname) && (
       <ErrorBoundary section="Кабинет" key="cabinet-client-boundary">
@@ -95,7 +95,7 @@ export function AppSections({
           onOpenClient={openClient}
           onClose={() => switchTherapistMode(false)}
           backHandlerRef={therapistBackHandlerRef}
-          onClientsChange={setTherapistClients}
+          onClientsChange={setTherapistClients} onOpenPalette={() => ov.setCmdOpen(true)}
         />
       </ErrorBoundary>
     )}

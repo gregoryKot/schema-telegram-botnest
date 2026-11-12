@@ -866,7 +866,7 @@ describe('TherapistClientSheet — вкладка «Задания» списк�
     fireEvent.click(screen.getByText('Задания'));
 
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Не удалось загрузить задания/);
+    expect(alert.textContent!.replace(/\u00a0/g, ' ')).toMatch(/Не удалось загрузить задания/);
     expect(screen.queryByText('Назначенных заданий пока нет')).toBeNull();
   });
 

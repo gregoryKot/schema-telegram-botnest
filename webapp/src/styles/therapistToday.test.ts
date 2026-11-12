@@ -1,5 +1,5 @@
 // @vitest-environment node
-// «Сегодня» терапевта (#906): счётчики на бумаге (ds-card--row на --surface), поэтому
+// «Сегодня» терапевта (#906, b29): счётчики на бумаге (плитки pp-paper), поэтому
 // знаменатель «/ N» красится токеном для бумаги, а не --on-panel-* (токены тёмной подложки).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -26,14 +26,21 @@ describe('therapist-today.css: контраст на бумаге', () => {
 
 // QA 2026-11: имя в «Активности клиентов» на телефоне шло в 12 строк по ~38px —
 // трек спарклайна minmax(48px, 120px) добирал 120 раньше доли 1fr имени, а
-// overflow-wrap: anywhere рвал имя посреди слова.
-describe('therapist-today.css: имена в одну строку (QA 2026-11)', () => {
-  it.each(['.tt-name', '.tt-act-name'])('%s — одна строка с многоточием, без overflow-wrap: anywhere', (sel) => {
-    const d = rule(desk, sel);
+// overflow-wrap: anywhere рвал имя посреди слова. b29: плотная строка активности —
+// одной строкой с многоточием, строки сессий и внимания — до двух строк по словам.
+describe('therapist-today.css: имена в строках (QA 2026-11, b29)', () => {
+  it('.tt-act-name — одна строка с многоточием, без overflow-wrap: anywhere', () => {
+    const d = rule(desk, '.tt-act-name');
     expect(d).toContain('white-space: nowrap');
     expect(d).toContain('overflow: hidden');
     expect(d).toContain('text-overflow: ellipsis');
     expect(css).not.toMatch(/overflow-wrap:\s*anywhere/);
+  });
+  it('.tt-name — до двух строк, многоточие только на третьей', () => {
+    const d = rule(desk, '.tt-name');
+    expect(d).toContain('-webkit-line-clamp: 2');
+    expect(d).toContain('overflow: hidden');
+    expect(d).not.toContain('white-space: nowrap');
   });
   it('колонка «имя + подпись» в сетке строки — min-width: 0', () => {
     expect(rule(desk, '.tt-who')).toContain('min-width: 0');
