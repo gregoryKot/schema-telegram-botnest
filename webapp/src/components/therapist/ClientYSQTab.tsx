@@ -1,7 +1,9 @@
 import '../../styles/therapist-tabs.css';
 import { SCHEMA_DOMAINS } from '../../schemaTherapyData';
 import { useTr } from '../../utils/addressForm';
-import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
+import type { CSSProperties } from 'react';
+import { DOMAIN_HUE } from '../../lib/tone';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import type { ClientData, TherapyClientSummary } from '../../api';
 import { isVirtualId } from '../../../../shared/src/utils/sameId';
@@ -34,7 +36,8 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
   if (!clientData?.ysqHistory || clientData.ysqHistory.length === 0) {
     return (
       <div className="ds-page tb-page--ysq">
-        <div className="u-col8">
+        {/* Пустой YSQ — бумага схем 28 со знаком Layers (ENTITY_LOOK «Схемы вообще»). */}
+        <div className="u-col8 pp-paper tb-ysq-paper" style={{ '--h': ENTITY_LOOK.ysq.hue } as CSSProperties}>
           <PaperEmpty art={Layers} title="Тест на схемы ещё не пройден">
             {virtual
               ? 'У офлайн-клиента нет аккаунта – тест пройти негде'
@@ -56,7 +59,7 @@ export function ClientYSQTab({ clientData, selectedClient, selfSchemaIds, ysqReq
               {selfSchemaIds.map(id => {
                 const s = SCHEMA_DOMAINS.flatMap(d => d.schemas).find(x => x.id === id);
                 const domain = SCHEMA_DOMAINS.find(d => d.schemas.some(x => x.id === id));
-                return <span key={id} className="ds-chip tone-tint" style={hueStyle(domain ? DOMAIN_HUE[domain.id] : undefined)}>{s?.name ?? id}</span>;
+                return <span key={id} className="pp-tag" style={(domain ? { '--h': DOMAIN_HUE[domain.id] } : undefined) as CSSProperties | undefined}>{s?.name ?? id}</span>;
               })}
             </div>
           </div>

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // Знаки бумажной аппликации в карточке клиента (владелец 2026-11-07: «на скрине нет
 // ничего из картинок стиля»). Пустая вкладка показывает знак своей сущности рядом с
-// текстом, а не одинаковую чашку: YSQ и пустой «Обзор» — слои, записи клиента —
-// камешки (docs/design/PAPER_2026-11.md, «Мотив → смысл»). Шапка карточки — без
+// текстом, а не одинаковую чашку: YSQ — слои, записи клиента — камешки; пустой «Обзор» —
+// сцена SceneConceptStart (b30; docs/design/PAPER_2026-11.md, «Мотив → смысл»). Шапка карточки — без
 // картинки (PAPER, принцип 1): имя, мета и «Встреча» на месте, знака нет.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
@@ -49,13 +49,15 @@ describe('пустые вкладки карточки клиента: знак 
     expect(screen.getByText('Клиент ещё не заполнял дневник')).toBeTruthy();
   });
 
-  it('пустой «Обзор»: слои концептуализации и путь к ней', () => {
+  it('пустой «Обзор»: сцена пустой схемы случая и путь к концептуализации', () => {
     const detail = {
       clientHistory: [], clientDiary: [], notes: [], localConcept: {}, concept: null, activeSchemaIds: [], activeModeIds: [],
       exportCopied: false, setShowAssign: vi.fn(), setClientTab: vi.fn(), handleExport: vi.fn(),
     } as unknown as ClientDetail;
     const { container } = render(<MemoryRouter><ClientOverviewTab selectedClient={offline} detail={detail} /></MemoryRouter>);
-    expect(emptySign(container.querySelector('.tk-col') as HTMLElement)).toBe('Layers');
+    const col = container.querySelector('.tk-col') as HTMLElement;
+    expect(col.querySelector('.tk-empty-scene svg.scn')).toBeTruthy();
+    expect(col.querySelector('.pp-empty')).toBeNull();
     expect(screen.getByText('Заполни концептуализацию, чтобы увидеть схемы и режимы клиента')).toBeTruthy();
   });
 });
