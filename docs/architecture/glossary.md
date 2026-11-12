@@ -61,7 +61,7 @@
 | «Поделиться», карточка-картинка | шаринг | — | `webapp/src/share/ShareCardSheet.tsx` |
 | «Черновики» | незавершённые записи дневников и упражнений с текстом | `src/api/api.controller.ts` | `shared/src/utils/drafts.ts`, упражнения — `shared/src/utils/useDraftAutosave.ts` |
 | «Телефон доверия», кризисная карточка | при тревожных маркерах | `src/bot/crisis-metrics.ts` | `shared/src/components/CrisisCard.tsx` |
-| игра, котик Мистер | отдельный пакет `game/` | `src/bot/game-metrics.service.ts` | `game/src/main.ts` |
+| игра, котик Мистер | отдельный пакет `game/`; вход — блок «Игра» лендинга (`GameTeaser.tsx`) и `/game` бота (`src/telegram/game-command.ts`); кнопки финала — `game/src/therapyCta.ts` | `src/bot/game-metrics.service.ts`, раскладка — `game-metrics.tally.ts` | `game/src/main.ts` |
 | **Сайт, вход, бот, канал** | | | |
 | «роботы нейросетей», краулеры, заходы ботов | счётчик заходов поисковых и ИИ-роботов по User-Agent, блок `/stats` «Роботы нейросетей» (GEO.md) | `src/analytics/crawler-hits.ts` (счёт, сброс — `crawler-hits.service.ts`), роботы — `src/analytics/crawler-bots.ts`, отчёт — `src/bot/crawler-metrics.format.ts` | — |
 | лендинг | продуктовая главная сайта | текст — `src/articles/home-landing.content.ts` (его же сервер вкладывает в `#root` главной для робота без JS, `src/articles/home-seo.middleware.ts`) | `webapp/src/pages/ProductLandingPage.tsx`, вид по `id` — `webapp/src/pages/landing/productContent.ts`, стиль (общий с мини-тестами `/tests`, язык бумаги кабинета) — `webapp/src/styles/product-landing.css` (база), `product-landing-hero.css` (первый экран), `product-landing-author.css` (автор), `product-landing-journal.css` (полосы, шаги, плитки), `product-landing-menu.css` (мобильное меню), `product-tests.css` (мини-тесты) |

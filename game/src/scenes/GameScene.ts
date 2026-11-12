@@ -12,6 +12,7 @@ import { t, type MsgKey } from '../i18n';
 import { unlockChapter } from '../progress';
 import { getAssist, setAssist } from '../assist';
 import { track, trackEvent } from '../analytics';
+import { openCta } from '../therapyCta';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  GAME — the gameplay engine. A "chapter" (config in chapters.ts) supplies the
@@ -568,24 +569,30 @@ export class GameScene extends Phaser.Scene {
     const top = mk(130, t('m_mister_reached'), 13, '#fff0d8');
     const sum = mk(206, t('m_cab_final'), 11, '#c0b8e8');
 
-    const ctaTxt = mk(286, t('m_learn_about_schema_therapy'), 12, '#88ffcc');
-    const cta = this.add.rectangle(W / 2, 286 * ky, ctaTxt.width + 40, 42, 0x153028)
+    const ctaTxt = mk(276, t('m_try_in_app'), 12, '#88ffcc');
+    const cta = this.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
-    const shareTxt = mk(348, t('m_share'), 10, '#c0b8e8');
-    const share = this.add.rectangle(W / 2, 348 * ky, shareTxt.width + 30, 34, 0x241d3a)
+    // вторая кнопка тише главной: честная подпись, без рамки
+    const book = mk(320, t('m_book_therapist'), 9, '#9b8fbf').setInteractive({ useHandCursor: true });
+    const shareTxt = mk(360, t('m_share'), 10, '#c0b8e8');
+    const share = this.add.rectangle(W / 2, 360 * ky, shareTxt.width + 30, 34, 0x241d3a)
       .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
-    const donTxt = mk(398, t('m_support_game'), 9, '#7a6fa0').setInteractive({ useHandCursor: true });
-    const menu = mk(444, t('m_or_back_to_menu'), 9, '#5a4f7a').setInteractive({ useHandCursor: true });
+    const donTxt = mk(404, t('m_support_game'), 9, '#7a6fa0').setInteractive({ useHandCursor: true });
+    const menu = mk(442, t('m_or_back_to_menu'), 9, '#5a4f7a').setInteractive({ useHandCursor: true });
 
     this.tweens.add({ targets: top, alpha: 1, duration: 800, delay: 300 });
     this.tweens.add({ targets: sum, alpha: 1, duration: 700, delay: 1200 });
     this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 2000 });
+    this.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 2300 });
     this.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2600 });
     this.tweens.add({ targets: [donTxt, menu], alpha: 0.85, duration: 700, delay: 3100 });
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { trackEvent('game_cta_click', { from: 'cabinet' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => openCta('cabinet', 'app'));
+    book.on('pointerover', () => book.setColor('#d8c8ec'));
+    book.on('pointerout', () => book.setColor('#9b8fbf'));
+    book.on('pointerdown', () => openCta('cabinet', 'booking'));
     share.on('pointerover', () => share.setFillStyle(0x322a52));
     share.on('pointerout', () => share.setFillStyle(0x241d3a));
     share.on('pointerdown', () => {
@@ -1305,24 +1312,30 @@ export class GameScene extends Phaser.Scene {
     const top = mk(138, t('m_this_can_t_go_on_2'), 16, '#ff8aa6');
     const sub = mk(196, t('m_and_for_the_first_time_mister'), 11, '#d8c8ec');
 
-    // Главная кнопка — записаться в терапию (честно: справиться можно, но одному долго)
-    const ctaTxt = mk(286, t('m_learn_about_schema_therapy'), 12, '#88ffcc', 154);
-    const cta = this.add.rectangle(W / 2, 286 * ky, ctaTxt.width + 40, 42, 0x153028)
+    // Главная кнопка — попробовать в приложении (честно: справиться можно, но одному долго)
+    const ctaTxt = mk(276, t('m_try_in_app'), 12, '#88ffcc', 154);
+    const cta = this.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
+    // Вторая, тише — запись к терапевту
+    const book = mk(320, t('m_book_therapist'), 9, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
     // Продолжить — смотреть путь Мистера дальше
-    const goTxt = mk(346, t('m_or_keep_going_with_mister'), 10, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+    const goTxt = mk(358, t('m_or_keep_going_with_mister'), 10, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
     // Поддержать игру донатом
-    const donTxt = mk(388, t('m_support_game'), 9, '#7a6fa0', 154).setInteractive({ useHandCursor: true });
+    const donTxt = mk(398, t('m_support_game'), 9, '#7a6fa0', 154).setInteractive({ useHandCursor: true });
 
     this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
     this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
     this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1400 });
+    this.tweens.add({ targets: book, alpha: 0.85, duration: 700, delay: 1800 });
     this.tweens.add({ targets: goTxt, alpha: 0.85, duration: 700, delay: 2200 });
     this.tweens.add({ targets: donTxt, alpha: 0.8, duration: 700, delay: 2700 });
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { trackEvent('game_cta_click', { from: 'act1' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => openCta('act1', 'app'));
+    book.on('pointerover', () => book.setColor('#d8c8ec'));
+    book.on('pointerout', () => book.setColor('#9b8fbf'));
+    book.on('pointerdown', () => openCta('act1', 'booking'));
     goTxt.on('pointerover', () => goTxt.setColor('#d8c8ec'));
     goTxt.on('pointerout', () => goTxt.setColor('#9b8fbf'));
     goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); unlockChapter(nextChapter); this.scene.restart({ chapter: nextChapter }); });
@@ -1405,7 +1418,7 @@ export class GameScene extends Phaser.Scene {
     const mode = mk(282, this.modeShort(), 16, '#ff8aa6');
     const sub  = mk(336, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
 
-    const ctaTxt = mk(404, t('m_learn_about_schema_therapy'), 11, '#88ffcc', 154);
+    const ctaTxt = mk(404, t('m_try_in_app'), 11, '#88ffcc', 154);
     const cta = this.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
       .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
     const shareTxt = mk(452, t('m_share'), 10, '#c0b8e8', 154);
@@ -1422,7 +1435,7 @@ export class GameScene extends Phaser.Scene {
 
     cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
     cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { trackEvent('game_cta_click', { from: 'ending' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
+    cta.on('pointerdown', () => openCta('ending', 'app'));
     share.on('pointerover', () => share.setFillStyle(0x322a52));
     share.on('pointerout', () => share.setFillStyle(0x241d3a));
     share.on('pointerdown', () => {
