@@ -1,20 +1,32 @@
-/* Дисклеймер терапевта (TherapistPrivacyDisclaimer). Подключается сборником sheet-tasks.css. */
-.sk-priv { position: fixed; inset: 0; z-index: 260; background: var(--bg); overflow-y: auto; }
-.sk-priv-col { max-width: 540px; margin: 0 auto; padding: 56px 24px 40px; display: flex; flex-direction: column; gap: 18px; box-sizing: border-box; }
+/* Дисклеймер терапевта (TherapistPrivacyDisclaimer). Подключается сборником sheet-tasks.css.
+   Вид (b29): сцена кабинета сверху, гарантии — плитки бумаги 2×2 со знаком (PRIVACY_TILE_LOOK),
+   ссылка на кодексы — тихий светлый лист без обводки. Лист прокручивается сам (fixed + overflow-y),
+   низ с кнопкой не уходит под нижний край и safe-area. */
+.sk-priv { position: fixed; inset: 0; z-index: 260; background: var(--bg); overflow-y: auto; overscroll-behavior: contain; }
+.sk-priv-col {
+  max-width: 600px; margin: 0 auto; padding: 40px 24px calc(40px + var(--safe-bottom));
+  display: flex; flex-direction: column; gap: 18px; box-sizing: border-box;
+}
 .sk-priv-head { text-align: center; margin-bottom: 8px; }
 .sk-priv-title { margin-bottom: 14px; }
-.sk-priv-art { display: flex; justify-content: center; margin-bottom: 18px; }
-.sk-priv-item { padding: 16px 18px; }
+.sk-priv-art { display: flex; justify-content: center; margin: 0 auto 14px; width: min(100%, 200px); }
+.sk-priv-art > .scn { display: block; width: 100%; height: auto; }
 .sk-priv-lead { font-size: 15px; line-height: 1.7; color: var(--text-sub); margin: 0; }
 .sk-priv-p { font-size: 15px; line-height: 1.75; margin: 0; }
 .sk-priv-p--sub { font-size: 14px; color: var(--text-sub); }
-.sk-priv-note { font-size: 13.5px; line-height: 1.7; color: var(--text-sub); }
+.sk-priv-note { padding: 16px 18px; border-radius: 16px; background: var(--surface); font-size: 13.5px; line-height: 1.7; color: var(--text-sub); }
 .sk-priv-em { color: var(--accent); font-weight: 600; }
-.sk-priv-list { display: flex; flex-direction: column; gap: 10px; }
-.sk-priv-item-title { font-size: 14.5px; font-weight: 600; margin-bottom: 2px; }
-.sk-priv-item-text { font-size: 13.5px; line-height: 1.65; color: var(--text-sub); }
+.sk-priv-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pp-paper.sk-priv-item { display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 18px; border-radius: 20px; min-width: 0; }
+.sk-priv-item-sign { display: flex; min-height: 28px; align-items: center; margin-bottom: 4px; }
+.sk-priv-item-title { font-size: 14.5px; font-weight: 600; overflow-wrap: break-word; hyphens: auto; }
+.sk-priv-item-text { font-size: 13.5px; line-height: 1.6; color: var(--text-sub); overflow-wrap: break-word; }
 
-/* Телефон: корень листа не уходит под статус-бар установленного приложения (#902). */
+/* Телефон: корень листа не уходит под статус-бар установленного приложения (#902); плитки уже. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .sk-priv { padding-top: var(--safe-top); }
+  .sk-priv-col { padding: 28px 16px calc(32px + var(--safe-bottom)); gap: 16px; }
+  .sk-priv-list { gap: 10px; }
+  .pp-paper.sk-priv-item { padding: 12px 12px 14px; border-radius: 16px; }
+  .sk-priv-item-text { font-size: 13px; line-height: 1.5; }
 }

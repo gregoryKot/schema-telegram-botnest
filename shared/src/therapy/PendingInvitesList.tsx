@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTr } from '../utils/addressForm';
 import { PendingInviteRow } from './PendingInviteRow';
 import type { PendingInvites } from './therapyInvites';
@@ -10,35 +11,53 @@ import type { PendingInvites } from './therapyInvites';
 //
 // Пока список грузится — ничего: у большинства терапевтов блок пуст, и
 // скелетон мигал бы на месте, где ничего не появится. Сбой ≠ пусто — строка
-// об ошибке, а не тишина.
+// об ошибке, а не тишина. Вид сайта (b29): `art` — знак у заголовка (Talk),
+// `failure` — как показать строку сбоя (PaperAlert); без них — прежний вид.
 export function PendingInvitesList({
   pending,
   className,
+  art,
+  failure,
 }: {
   pending: PendingInvites;
   className?: string;
+  art?: ReactNode;
+  failure?: (text: string) => ReactNode;
 }) {
   const tr = useTr();
   const { invites, revoke, revokeFailed } = pending;
   if (invites === undefined) return null;
-  if (invites === null)
+  if (invites === null) {
+    const text = tr(
+      'Не удалось загрузить приглашения, которые ждут подключения. Проверь связь и открой кабинет заново',
+      'Не удалось загрузить приглашения, которые ждут подключения. Проверьте связь и откройте кабинет заново',
+    );
+    if (failure) return <>{failure(text)}</>;
     return (
       <div
         role="alert"
         className={className}
         style={{ fontSize: 13, color: 'var(--accent-red)' }}
       >
-        {tr(
-          'Не удалось загрузить приглашения, которые ждут подключения. Проверь связь и открой кабинет заново',
-          'Не удалось загрузить приглашения, которые ждут подключения. Проверьте связь и откройте кабинет заново',
-        )}
+        {text}
       </div>
     );
+  }
   if (invites.length === 0) return null;
   return (
     <section className={className} aria-label="Ждут подключения">
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-        Ждут подключения · {invites.length}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+        }}
+      >
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+          Ждут подключения · {invites.length}
+        </div>
+        {art}
       </div>
       <p
         style={{

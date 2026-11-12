@@ -1,11 +1,15 @@
+import type { CSSProperties } from 'react';
 import type { UserTask, UserId } from '../../api';
 import { todayStr } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { Skeleton } from '../Skeleton';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { STATUS_LABEL, isOpenStatus, orderTasks, taskMeta, taskStatus } from './taskModel';
-import { Sign } from './SignArt';
 import { TaskStatusBadge } from '../TaskStatusBadge';
+import { TaskSign } from '../../sections/practice/TaskSign';
+import { SignArt } from '../art/SignArt';
+import { PaperAlert } from '../paper/PaperAlert';
+import { BOARD_COLUMN_LOOK } from './cabinetLook';
 import '../../styles/therapist-clients.css';
 
 interface Props {
@@ -20,18 +24,13 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
   if (loadFailed) {
     // Сбой ≠ пусто: без этой ветки отказ запроса рисовал бы терапевту
     // пустую доску («Назначенных заданий пока нет») вместо явной ошибки.
-    return (
-      <div role="alert" className="tc-alert">
-        <p>Не удалось загрузить задания</p>
-        <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={onRetry}>Попробовать ещё раз</button>
-      </div>
-    );
+    return <PaperAlert sign="check" title="Не удалось загрузить задания" onRetry={onRetry} retryLabel="Попробовать ещё раз" />;
   }
   if (loading || !allTasks) {
     return (
       <div className="tc-kanban" aria-hidden>
-        {[0, 1, 2].map(i => (
-          <div key={i} className="tc-kcol">
+        {Object.values(BOARD_COLUMN_LOOK).map(look => (
+          <div key={look.hue} className="pp-paper tc-kcol" style={{ '--h': look.hue } as CSSProperties}>
             <Skeleton width="40%" height={12} />
             <Skeleton height={76} radius={12} />
             <Skeleton height={76} radius={12} />
@@ -49,36 +48,49 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
     today,
   ).map(t => ({ ...t, status: taskStatus(t, today) }));
   if (flat.length === 0) {
-    return <p className="ds-empty">Назначенных заданий пока нет</p>;
+    // Пустая доска — знак заданий и строка (сцена кабинета — про «нет клиентов», здесь не нужна).
+    return (
+      <div className="tc-board-empty">
+        <span className="tc-block-sign" aria-hidden="true"><SignArt sign="check" size="row" /></span>
+        <p className="ds-empty">Назначенных заданий пока нет</p>
+      </div>
+    );
   }
 
-  const cols: { label: string; items: typeof flat; badge: string; name: string }[] = [
-    { label: 'Назначено', items: flat.filter(t => isOpenStatus(t.status)), badge: 'ds-badge ds-badge--accent', name: 'tc-task-client' },
-    { label: 'Выполнено', items: flat.filter(t => t.status === 'done'), badge: 'ds-badge ds-badge--ok', name: 'tc-task-client tc-task-client--ok' },
-    { label: STATUS_LABEL.failed, items: flat.filter(t => t.status === 'failed'), badge: 'ds-badge ds-badge--warn', name: 'tc-task-client tc-task-client--err' },
-  ];
+  const cols = [
+    { key: 'open', label: 'Назначено', items: flat.filter(t => isOpenStatus(t.status)) },
+    { key: 'done', label: 'Выполнено', items: flat.filter(t => t.status === 'done') },
+    { key: 'failed', label: STATUS_LABEL.failed, items: flat.filter(t => t.status === 'failed') },
+  ] as const;
 
+  // Колонка — бумага своего статуса (BOARD_COLUMN_LOOK: солома, шалфей с Check, персик); карточка —
+  // светлый лист со знаком типа задания (TaskSign, как у клиента), без Talk у каждой (баг брифа).
   return (
     <div className="tc-kanban">
-      {cols.map(col => (
-        <div key={col.label}>
-          <div className="tc-kcol-head">
-            <span className="ds-label">{col.label}</span>
-            {col.items.length > 0 && <span className={col.badge}>{col.items.length}</span>}
-          </div>
-          <div className="tc-kcol">
+      {cols.map(col => {
+        const look = BOARD_COLUMN_LOOK[col.key];
+        return (
+          <section key={col.key} className="pp-paper tc-kcol" style={{ '--h': look.hue } as CSSProperties} aria-label={col.label}>
+            <div className="tc-kcol-head">
+              <span className="ds-label">{col.label}</span>
+              {col.items.length > 0 && <span className="tc-kcol-count">{col.items.length}</span>}
+              {'sign' in look && <span className="tc-kcol-sign" aria-hidden="true"><SignArt sign={look.sign} size="row" /></span>}
+            </div>
             {col.items.length === 0 && <div className="tc-dash">–</div>}
             {col.items.map(task => (
-              <div key={task.id} className="ds-card ds-card--hover tc-task" {...pressable(() => onOpenClient(task.userId))}>
-                <div className={`${col.name} tc-task-who`}><Sign kind="talk" /><span>{task.clientName}</span></div>
-                <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
-                <div className="tc-task-due">{taskMeta(task, task.status)}</div>
-                {(task.status === 'overdue' || task.status === 'soon') && <TaskStatusBadge status={task.status} className="tc-task-flag" />}
+              <div key={task.id} className="tc-task" {...pressable(() => onOpenClient(task.userId))}>
+                <span className="tc-task-sign" aria-hidden="true"><TaskSign task={task} /></span>
+                <div className="tc-task-body">
+                  <div className="tc-task-client">{task.clientName}</div>
+                  <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
+                  <div className="tc-task-due">{taskMeta(task, task.status)}</div>
+                  {(task.status === 'overdue' || task.status === 'soon') && <TaskStatusBadge status={task.status} className="tc-task-flag" />}
+                </div>
               </div>
             ))}
-          </div>
-        </div>
-      ))}
+          </section>
+        );
+      })}
     </div>
   );
 }

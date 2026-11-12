@@ -53,11 +53,13 @@
   .pp-square.sks-square { min-height: 0; padding: 28px 30px 26px 32px; border-radius: 28px; }
 }
 
-/* Кабинет терапевта: место сцены Talk в шапке; счётчики — плашки тоном панели, как загрузка самого
-   экрана (TherapistTodaySection), и по его сетке (therapist-today.css): на 768 с меню — 2+1, колонки
-   списков — одна, пока поле уже ~800. Бумагу счётчиков включит b29 вместе с экраном. */
-.sks-scene { display: block; }
-.sks-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); grid-auto-rows: 116px; gap: 16px; }
+/* Кабинет терапевта, «Сегодня» (TodaySkeletonBody, b29): плитки бумаги счётчиков и лист неба сессий по
+   сетке экрана (therapist-today.css): три плитки в ряд, колонки списков — одна, пока поле уже ~800. */
+.sks-today-th { display: flex; flex-direction: column; gap: 32px; }
+.sks-counters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 132px; gap: 16px; }
+.sks-counter { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; padding: 16px 18px; box-sizing: border-box; }
+.sks-sessions { padding: 20px 20px 16px; border-radius: 22px; gap: 12px; }
+.sks-session { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 0 16px; border-radius: 14px; background: var(--surface); }
 .sks-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 .sks-two--today { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; }
 .sks-two .sks-col { gap: 14px; }
@@ -65,7 +67,9 @@
 .sks-card-head { display: flex; align-items: center; gap: 16px; }
 .sks-tabs { display: flex; gap: 22px; padding-bottom: 12px; border-bottom: 1px solid var(--paper-sunk); overflow: hidden; }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .sks-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 96px; gap: 8px; }
+  .sks-today-th { gap: 24px; }
+  .sks-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 112px; gap: 8px; }
+  .sks-counter { padding: 12px; }
   .sks-two, .sks-two--overview { grid-template-columns: minmax(0, 1fr); }
   .sks-tabs { gap: 18px; }
   .sks-row { padding: 10px 14px; }
