@@ -65,6 +65,7 @@
 - Входы:
   - `src/therapy/therapy-relations.service.ts` — связи; `assertHasClient`/`assertRelation` (барьер доступа)
   - `src/therapy/concept-store.ts` — запись концептуализации с шифрованием и снимком истории (общий путь `saveConceptualization` и append); `src/therapy/concept-append.ts` + `concept-append.controller.ts` — `POST conceptualization/:clientId/append`: холст «Графических карт» дописывает режимы, схемы и связи, объединение без удалений (#963)
+  - `src/therapy/concept-needs.ts` — колесо потребностей клиента (`POST conceptualization/:clientId/needs`, replace, без снимка истории); нормализация и шифрование — `src/therapy/concept-need-links.ts` (поле `needLinks` вне общего кодека: полное сохранение и история его не трогают, клиенту не отдаётся — `client-concept-view.ts`); общий вход терапевта для append и needs — `src/therapy/concept-access.ts`.
   - `src/therapy/client-map-authors.ts` — кого из авторов карт режимов клиент видит: связь `active` или `ended` (терапевт отказался от роли, #865); отключился сам — карт нет
   - `src/therapy/therapy-connection.controller.ts` — invite/join/relation/former-therapist/clients/request/become-therapist/therapist-role
   - `src/therapy/therapy-invites.controller.ts` — живые приглашения терапевта (`GET invites`, `DELETE invites/:id`) и предпросмотр кода для экрана согласия (`POST invite/preview`); логика — `src/therapy/therapy-invite-list.ts`

@@ -3,22 +3,22 @@ import { NEED_ORDER, getNeedData } from '../../needData';
 import { Skeleton } from '../Skeleton';
 import { useModeMapConcept } from './clientConceptContext';
 import { useClientChildhood } from './useClientChildhood';
-import { pctLabel, ratingsOf, withChildhood, type WheelData } from './needWheel';
+import { needPct, needRatings, type ConceptNeedLink } from '../../../../shared/src/therapy/conceptGraph/needLinks';
+import { withChildhood } from './wheelData';
 import { needInConcept } from './wheelConcept';
 
-// Связки колеса потребностей с остальными данными клиента (владелец 2026-11-10):
-// упражнение «Колесо детства», которое клиент проходит сам, и концептуализация —
-// какие схемы блокируют потребность и какой здоровый режим о ней заботится.
+// Связки колеса потребностей с данными клиента (владелец 2026-11-10): упражнение «Колесо детства», которое
+// клиент проходит сам, и концептуализация — какие схемы блокируют потребность и кто о ней заботится.
 
 const NAMES = getNeedData('ty'); // названия потребностей одинаковы в обеих формах обращения
 
 /** «Колесо детства» клиента: его оценки и перенос в период «Детство» одной кнопкой. */
-export function WheelChildhood({ clientId, wheel, onApply }: { clientId?: UserId; wheel: WheelData; onApply: (w: WheelData) => void }) {
+export function WheelChildhood({ clientId, links, onApply }: { clientId?: UserId; links: ConceptNeedLink[]; onApply: (l: ConceptNeedLink[]) => void }) {
   const { state, retry } = useClientChildhood(clientId);
   if (state.status === 'idle') return null;
   const ratings = state.status === 'ready' ? state.ratings : {};
   const ids = NEED_ORDER.filter((id) => ratings[id] !== undefined);
-  const child = ratingsOf(wheel, 'child');
+  const child = needRatings(links, 'child');
   const same = ids.every((id) => child[id] === ratings[id]);
   return (
     <div className="mm2-hint mm2-wheel-ex" aria-busy={state.status === 'loading'}>
@@ -33,10 +33,10 @@ export function WheelChildhood({ clientId, wheel, onApply }: { clientId?: UserId
       )}
       {ids.length > 0 && (
         <>
-          <p className="mm2-hint-p">{ids.map((id) => `${NAMES[id].name} ${pctLabel(ratings[id])}`).join(' · ')}</p>
-          {same ? <p className="mm2-hint-p">Уже стоит в периоде «Детство».</p> : (
-            <button type="button" className="ds-btn ds-btn--secondary mm2-hint-btn" onClick={() => onApply(withChildhood(wheel, ratings))}>
-              Перенести в «Детство»
+          <p className="mm2-hint-p">{ids.map((id) => `${NAMES[id].name} ${needPct(ratings[id])}`).join(' · ')}</p>
+          {same ? <p className="mm2-hint-p">Уже стоит на колесе.</p> : (
+            <button type="button" className="ds-btn ds-btn--secondary mm2-hint-btn" onClick={() => onApply(withChildhood(links, ratings))}>
+              Поставить на колесо
             </button>
           )}
         </>

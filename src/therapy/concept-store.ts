@@ -5,6 +5,7 @@
 import { Prisma, type ClientConceptualization } from '@prisma/client';
 import { encrypt, decrypt, encryptJson, decryptJson } from '../utils/crypto';
 import { nextConceptHistory } from './concept-history';
+import { readNeedLinks } from './concept-need-links';
 
 const CONCEPT_TEXT_FIELDS = [
   'earlyExperience',
@@ -17,9 +18,9 @@ const CONCEPT_TEXT_FIELDS = [
 ] as const;
 
 // JSON-массивы: метки схем/режимов, карта режимов (узлы и рёбра), связи
-// режимов (alias, истоки, проявления, работа в терапии) и схем (убеждение,
-// детский опыт) — клинические данные, шифруются целиком. Новое поле такого
+// режимов и схем — клинические данные, шифруются целиком. Новое поле такого
 // рода = строка здесь (и в encryption-policy / rotate-encryption/targets).
+// Колесо потребностей (needLinks) сюда не входит — concept-need-links.ts.
 const CONCEPT_JSON_ARRAY_FIELDS = [
   'schemaIds',
   'modeIds',
@@ -37,7 +38,6 @@ export function encryptConceptFields(
   for (const f of CONCEPT_TEXT_FIELDS) {
     if (body[f] !== undefined) result[f] = encrypt(body[f] as string | null);
   }
-  // Encrypted JSON string (plaintext-tolerant on read).
   for (const f of CONCEPT_JSON_ARRAY_FIELDS) {
     const v = body[f];
     if (Array.isArray(v)) result[f] = encryptJson(v) ?? JSON.stringify(v);
@@ -52,8 +52,7 @@ export function decryptConceptFields(
   for (const f of CONCEPT_TEXT_FIELDS) {
     result[f] = row[f] != null ? decrypt(row[f] as string) : null;
   }
-  // Legacy rows have plain JSON arrays; new rows have encrypted strings. Нет
-  // значения (старый снапшот истории, строка до колонки modeLinks) — [].
+  // Легаси — массив, новое — шифротекст-строка; нет значения (старый снапшот) — [].
   for (const f of CONCEPT_JSON_ARRAY_FIELDS) {
     const v = row[f];
     if (v == null) result[f] = [];
@@ -63,12 +62,13 @@ export function decryptConceptFields(
   return result;
 }
 
-/** Ответ GET/POST/append: строка с расшифрованными полями и историей. */
+/** Ответ GET/POST/append/needs: расшифрованные поля, колесо потребностей, история. */
 export function conceptView(row: ClientConceptualization, history: unknown) {
   const snaps = Array.isArray(history) ? history : [];
   return {
     ...row,
     ...decryptConceptFields(row),
+    needLinks: readNeedLinks(row.needLinks),
     history: snaps.map((h: Record<string, unknown>) => ({
       ...h,
       ...decryptConceptFields(h),

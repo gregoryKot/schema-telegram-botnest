@@ -150,24 +150,31 @@
 .mm2-chip.is-locked { cursor: default; border-style: dashed; }
 .mm2-hint-p { margin: 0 0 6px; font: 12px/1.45 var(--sans); color: var(--text-sub); }
 /* ── Колесо потребностей: узел на холсте (NeedWheelNode) и панель (WheelFields) ── */
-.mm2-wheel { position: relative; box-sizing: border-box; padding-bottom: 10px; border-radius: 18px; background: oklch(0.915 0.03 var(--h)); border: 1.5px solid transparent; box-shadow: var(--shadow-1); } /* бумага колеса дня (.pp-paper, --h трекера): белые секторы видны на ней */
+.mm2-wheel { position: relative; box-sizing: border-box; padding-bottom: 12px; border-radius: 18px; background: oklch(0.915 0.03 var(--h)); border: 1.5px solid transparent; box-shadow: var(--shadow-1); } /* бумага колеса дня (.pp-paper, --h трекера): белые секторы видны на ней */
 .mm2-wheel.is-selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-line); }
-.mm2-wheel-head { display: flex; align-items: center; gap: 8px; padding: 0 14px; }
-.mm2-wheel-title { flex: 1; min-width: 0; font: 600 13px/1.2 var(--sans); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mm2-wheel-head { display: flex; align-items: center; justify-content: center; padding: 0 14px; }
+.mm2-wheel-title { min-width: 0; font: 600 13px/1.2 var(--sans); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mm2-wheel-art { padding: 0 62px; } /* поля под подписи секторов: PAD_X в needWheel.ts */
 .mm2-wheel .nw-index { font-size: 22px; }
-.mm2-wheel-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; padding: 2px 14px 0; font: 11.5px/1.3 var(--sans); color: var(--text-sub); }
-.mm2-wheel-legend > div { display: flex; align-items: center; gap: 5px; min-width: 0; }
-.mm2-wheel-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mm2-wheel-legend b { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
-.mm2-wheel-note { padding: 4px 14px 0; font: 11px var(--sans); color: var(--text-faint); }
+/* Подпись сектора: название и процент у края своего сектора, текстом наружу от колеса. */
+.mm2-wheel-lab { position: absolute; display: flex; flex-direction: column; gap: 1px; max-width: 112px; padding: 2px 4px; border: 0; background: none; cursor: pointer; font: 11.5px/1.25 var(--sans); color: var(--text-sub); }
+.mm2-wheel-lab.is-right { align-items: flex-start; text-align: left; }
+.mm2-wheel-lab.is-left { align-items: flex-end; text-align: right; }
+.mm2-wheel-lab.is-top { flex-direction: row; align-items: baseline; gap: 6px; max-width: none; white-space: nowrap; }
+.mm2-wheel-lab b { font: 600 13px/1.2 var(--sans); color: var(--text); font-variant-numeric: tabular-nums; }
+.mm2-wheel-lab:hover .mm2-wheel-name, .mm2-wheel-lab:focus-visible .mm2-wheel-name { color: var(--text); }
+/* Подписи линий (✗, ✓, текст) — поверх фигур: под выделенным колесом знак на линии пропадал. */
+.mm2-canvas .react-flow__edgelabel-renderer { z-index: 1001; }
+.mm2-wheel-note { padding: 4px 14px 0; text-align: center; font: 11px var(--sans); color: var(--text-faint); }
 .mm2-check { display: flex; align-items: center; gap: 8px; min-height: 36px; margin: -6px 0 12px; font: 12.5px var(--sans); color: var(--text-sub); cursor: pointer; }
 .mm2-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
-.mm2-chip-val { color: var(--text-faint); font-variant-numeric: tabular-nums; }
-.mm2-wheel-concept { margin: -4px 0 12px; }
-.mm2-wp { padding-top: 10px; border-top: 1px solid var(--paper-sunk); }
-.mm2-wp-head { display: flex; align-items: baseline; gap: 8px; font: 600 12.5px var(--sans); color: var(--text); }
+.mm2-wheel-concept { margin: 0 0 10px; }
+.mm2-wp { padding: 8px 0 2px; border-top: 1px solid var(--paper-sunk); }
+.mm2-wp.is-open { padding-bottom: 10px; }
+.mm2-wp-head { display: flex; align-items: baseline; gap: 8px; font: 12.5px var(--sans); color: var(--text); }
+.mm2-wp-name { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; border: 0; background: none; cursor: pointer; text-align: left; font: 600 12.5px var(--sans); color: var(--text); }
 .mm2-wp-head b { font-variant-numeric: tabular-nums; }
-.mm2-wp-head .ds-link { margin-left: auto; font-size: 12px; }
+.mm2-wp-head .ds-link { font-size: 12px; }
 .ds-btn.mm2-hint-btn { width: 100%; min-height: 36px; margin-top: 4px; font-size: 12.5px; }
 .mm2-sugg { margin-bottom: 14px; padding: 8px 9px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-tint); }
 .mm2-sugg-head { display: flex; align-items: center; margin-bottom: 7px; }
@@ -340,7 +347,9 @@ button.mm2-sync-text { min-height: 44px; margin: -12px 0; padding: 0; border: no
   .mm2-x, .mm2-mine-plus { width: 44px; height: 44px; }
   .ds-btn.mm2-del { height: 44px; }
   .ds-btn.mm2-hint-btn { min-height: 44px; }
-  .mm2-check, .mm2-wp-head .ds-link { min-height: 44px; }
+  .mm2-check, .mm2-wp-head .ds-link, .mm2-wp-name { min-height: 44px; }
+  .mm2-wheel-lab:not(.is-top) { min-height: 44px; justify-content: center; }
+  .mm2-wheel-lab.is-top { padding-top: 26px; } /* зона растёт вверх, подпись остаётся у колеса */
   .mm2-panel .ds-input, .mm2-panel .ds-btn, .mm2-panel select.ds-input, .mm2-add-form .ds-input, .mm2-pal-search .ds-input { min-height: 44px; }
   .mm2-ear { width: 44px !important; height: 44px !important; font-size: 18px !important; }
   /* Поля холста: локальные 12.5–13px перебивали общие 16px, а iOS (и iPad, где окно шире 767)

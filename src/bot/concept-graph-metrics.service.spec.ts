@@ -21,6 +21,7 @@ function makeService(opts: {
   brief?: number;
   syncToMap?: number;
   syncFromMap?: number;
+  needsRated?: number;
   guide?: [
     modes: number,
     schemas: number,
@@ -47,6 +48,7 @@ function makeService(opts: {
     concept_brief_open: opts.brief ?? 0,
     concept_sync_to_map: opts.syncToMap ?? 0,
     concept_sync_from_map: opts.syncFromMap ?? 0,
+    concept_needs_rated: opts.needsRated ?? 0,
     concept_guide_mode_open: opts.guide?.[0] ?? 0,
     concept_guide_schema_open: opts.guide?.[1] ?? 0,
     concept_guide_technique_open: opts.guide?.[2] ?? 0,
@@ -111,6 +113,7 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      needsRated30: 0,
       guideModes30: 0,
       guideSchemas30: 0,
       guideTechniques30: 0,
@@ -160,6 +163,7 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      needsRated30: 0,
       guideModes30: 0,
       guideSchemas30: 0,
       guideTechniques30: 0,
@@ -187,6 +191,7 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      needsRated30: 0,
       guideModes30: 0,
       guideSchemas30: 0,
       guideTechniques30: 0,
@@ -214,6 +219,7 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      needsRated30: 0,
       guideModes30: 0,
       guideSchemas30: 0,
       guideTechniques30: 0,
@@ -242,6 +248,21 @@ describe('ConceptGraphMetricsService', () => {
     const text = await service.render();
     expect(text).toContain('Дописывали на карту из полей: 4 раз');
     expect(text).toContain('Холст дописывал в концептуализацию: 9 раз');
+  });
+
+  it('колесо потребностей на холсте считается отдельно и видно в /stats', async () => {
+    const { service, count } = makeService({ syncFromMap: 2, needsRated: 6 });
+    await expect(service.getMetrics()).resolves.toMatchObject({
+      opens30: 0,
+      syncFromMap30: 2,
+      needsRated30: 6,
+    });
+    expect(count).toHaveBeenCalledWith({
+      where: { name: 'concept_needs_rated', createdAt: { gte: SINCE } },
+    });
+    await expect(service.render()).resolves.toContain(
+      'Колесо потребностей на холсте заполняли 6 раз',
+    );
   });
 
   it('подсказки терапевту (#995): листы режима, схемы, техники, «Дать заданием», отметки техник и журнал считаются отдельно и видны в /stats', async () => {
@@ -308,6 +329,7 @@ describe('ConceptGraphMetricsService', () => {
       brief30: 0,
       syncToMap30: 0,
       syncFromMap30: 0,
+      needsRated30: 0,
       guideModes30: 0,
       guideSchemas30: 0,
       guideTechniques30: 0,

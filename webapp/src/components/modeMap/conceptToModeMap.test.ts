@@ -12,7 +12,7 @@ import type { ModeMapEdge, ModeMapNode } from '../../api';
 import { DOMAIN_HUE, toneHex } from '../../../../shared/src/theme/entityHue';
 import { getSchemaById } from '../../schemaTherapyData';
 import { conceptToModeMap } from './conceptToModeMap';
-import { WHEEL_CENTER_Y, WHEEL_PX, needOfHandle } from './needWheel';
+import { WHEEL_CENTER_Y, WHEEL_NODE_W, needOfHandle } from './needWheel';
 
 const graphOf = (patch: Partial<ConceptGraphSource>) => buildConceptGraph(source(patch), (ty) => ty);
 const RICH_GRAPH = graphOf(RICH);
@@ -41,7 +41,7 @@ describe('conceptToModeMap — пустая концептуализация', (
     const { cx, cy, title } = layoutConceptDiagram(graphOf({}), 1400).circle;
     const hub = byType(nodes, 'needs')[0];
     expect(hub.data.label).toBe(title);
-    expect(hub.position).toEqual({ x: cx - WHEEL_PX / 2, y: cy - WHEEL_CENTER_Y });
+    expect(hub.position).toEqual({ x: cx - WHEEL_NODE_W / 2, y: cy - WHEEL_CENTER_Y });
   });
 });
 
@@ -204,7 +204,7 @@ describe('conceptToModeMap — слияние в непустую карту', (
     const added = conceptToModeMap(RICH_GRAPH, old.nodes, 2, old.edges);
 
     expect(added.nodes.map((n) => n.data.modeId)).toEqual(['healthy_adult']);
-    const right = Math.max(...old.nodes.map((n) => n.position.x + (n.type === 'needs' ? WHEEL_PX : 0)));
+    const right = Math.max(...old.nodes.map((n) => n.position.x + (n.type === 'needs' ? WHEEL_NODE_W : 0)));
     expect(added.nodes[0].position.x).toBe(right + 240);
     // Рёбра ✓ ведут от новой ноды к секторам колеса, которое уже стоит на карте.
     const wheel = old.nodes.find((n) => n.type === 'needs')!;

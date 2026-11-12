@@ -5,8 +5,7 @@ export type FlowNode = Node<Record<string, unknown>>;
 export type FlowEdge = Edge<Record<string, unknown>>;
 
 export function edgeColor(d?: ModeMapEdge['data']): string {
-  // Colour is set explicitly by the user; the connection type only drives the
-  // text label now (not the colour). Neutral grey is the default.
+  // Colour is set explicitly by the user (the connection type only drives the label); neutral grey is the default.
   if (d?.color) return d.color;
   return 'rgba(var(--fg-rgb),0.55)';
 }
@@ -44,6 +43,7 @@ export function toFlowEdges(edges: ModeMapEdge[]): FlowEdge[] {
       style: edgeStyle(color, d?.lineStyle, d?.width),
       markerEnd: makeMarker(color, d?.width),
       markerStart: d?.bidirectional ? makeMarker(color, d?.width) : undefined,
+      ...(`${e.sourceHandle}${e.targetHandle}`.includes('need:') ? { zIndex: 1000 } : {}), // к сектору колеса: поверх колеса и когда оно выделено
       ...(e.label ? { labelStyle: { fontSize: 11, fill: 'var(--text-sub)' }, labelBgStyle: { fill: 'var(--bg-elev)', fillOpacity: 0.85 } } : {}),
     };
   });
