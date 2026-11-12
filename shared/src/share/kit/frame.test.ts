@@ -3,7 +3,7 @@
 // вправо-вниз, без градиентов), шапка Literata со знаком справа, подвал со знаком продукта.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { beginCard, footer, hueGap, paperSlip } from './frame';
-import { header, headerHeight, headerLines, measureHeader } from './header';
+import { glueSubtitle, header, headerHeight, headerLines, measureHeader } from './header';
 import { CARD_PAD, SERIF } from './theme';
 import { SHEET, layerHex, paperHex, hueFromColor } from './paperFrame';
 import { INK } from './ink';
@@ -135,6 +135,13 @@ describe('paperSlip — бумажка с тенью-вырезкой', () => {
     const pre = { ...lines, title: ['Один'], height: 99 };
     expect(header(c, o, pre)).toBe(99);
     expect(texts(ctx)).toEqual(['Один']);
+  });
+
+  it('подпись шапки: «·» не висит в конце строки — уходит со словом после', () => {
+    const g = glueSubtitle('12 записей заботы о себе · последние шаги');
+    expect(g).toContain('себе\u00a0·\u00a0последние');
+    const words = g.split(' ');
+    for (const w of words) expect(w.endsWith('·')).toBe(false);
   });
 
   it('hueGap — расстояние по кругу оттенков', () => {

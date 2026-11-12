@@ -103,7 +103,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
             <canvas ref={canvasRef} className="sd-canvas-el" />
           </div>
 
-          <div className="sd-foot">
+          <div className="sd-foot sd-foot--card">
             <span className="sd-spacer" />
             <button
               onClick={handleShare}
