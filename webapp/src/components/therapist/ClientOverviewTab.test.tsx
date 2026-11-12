@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-// «Обзор» карточки клиента (#906, волна 1): секции — карточки с подписью
-// ds-label, без плиток с заливкой, кавычки-глифа и заголовков второго кегля;
-// схемы и режимы — строками с точкой тона, пустые группы режимов не рисуются;
-// записи клиента — строки ds-list-row; пустой «Обзор» — ds-empty.
+// «Обзор» карточки клиента (#906; живая бумага — b30): цель — лист соломы, схемы и режимы — группы на бумаге
+// домена и группы режимов со своим знаком (SignGroup, как у клиента в «Моих паттернах»), без цветных
+// квадратиков-буллетов; пустые группы режимов не рисуются; заметка и записи — белые листы, у записи — знак
+// типа (noteLook) и тип тихой подписью вместо плашки; пустой «Обзор» — сцена и одна кнопка.
 // «Карта режимов» показывает режимы из концептуализации, поэтому «Редактировать →»
 // ведёт туда, где их правят, — во вкладку «Концептуализация», а не на холст
 // (QA 2026-10-26: ссылка открывала пустой холст).
@@ -23,10 +23,8 @@ const detailOf = (o: Partial<ClientDetail> = {}) =>
     ...o,
   }) as unknown as ClientDetail;
 
-const labels = (root: HTMLElement) => Array.from(root.querySelectorAll('.tk-col .ds-label')).map(el => el.textContent);
-
 describe('ClientOverviewTab', () => {
-  it('цель, схемы, режимы, заметка и записи — карточки с подписью; плиток и глифов нет, подписи — заголовки h2', () => {
+  it('цель, схемы, режимы, заметка и записи — подписи-заголовки h2; группы — бумага со знаком, без точек тона', () => {
     const { container } = render(
       <ClientOverviewTab selectedClient={client} detail={detailOf({
         localConcept: { goals: 'Меньше самокритики' },
@@ -37,42 +35,41 @@ describe('ClientOverviewTab', () => {
       } as unknown as Partial<ClientDetail>)} />,
     );
     const col = container.querySelector('.tk-col') as HTMLElement;
-    expect(labels(col)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Последние записи']);
     expect(within(col).getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Цель терапии', 'Активные схемы', 'Карта режимов', 'Заметка сессии', 'Последние записи']);
-    expect(col.querySelector('.tk-tile, .tk-quote, .tk-mode-col, .tone-soft, .tone-border, .tone-fill:not(.ds-dot)')).toBeNull();
-    // Раскладка на компьютере — только классами-вариантами (CSS ≥768), разметка общая.
-    expect(col.querySelector('.tk-groups--tiles')).toBeTruthy();
-    expect(col.querySelector('.tk-groups--cols')).toBeTruthy();
-    expect(col.querySelectorAll(':scope > .ds-card').length).toBe(5);
-    // Цель — обычный текст, без кавычки-глифа.
+    // Белых карточек с рамкой и цветных точек больше нет.
+    expect(col.querySelector('.ds-card, .ds-dot, .tone-tint, .tone-fill, .ds-chip')).toBeNull();
+    // Цель — лист соломы.
     const goal = screen.getByText('Меньше самокритики');
     expect(goal.className).toBe('tk-text');
-    expect(col.textContent).not.toContain('“');
-    // Схемы: один домен, две строки с точкой тона; счётчик — в шапке карточки.
+    expect((goal.closest('.pp-paper') as HTMLElement).style.getPropertyValue('--h')).toBe('70');
+    // Схемы: один домен — лист его бумаги со знаком, две строки; счётчик — в шапке секции.
     expect(screen.getByText('2 в работе').className).toBe('ds-sub');
-    const schemas = screen.getByText('Активные схемы').closest('.ds-card') as HTMLElement;
-    expect(schemas.querySelectorAll('.tk-item .ds-dot.tone-fill').length).toBe(2);
-    expect(within(schemas).getByText('Нарушение связи и отвержение').className).toBe('ds-sub');
-    // Режимы: только группа с активными режимами, пустых групп с «—» нет.
-    const modes = screen.getByText('Карта режимов').closest('.ds-card') as HTMLElement;
-    expect(modes.querySelectorAll('.tk-group').length).toBe(1);
-    expect(modes.querySelectorAll('.tk-item .ds-dot.tone-fill').length).toBe(1);
+    const domain = screen.getByText('Нарушение связи и отвержение').closest('.sg-group') as HTMLElement;
+    expect(domain.style.getPropertyValue('--h')).toBe('28');
+    expect(domain.querySelector('.sg-sign svg')).toBeTruthy();
+    expect(domain.querySelectorAll('.tk-item').length).toBe(2);
+    // Режимы: только группа с активными режимами, бумага группы.
+    const modes = screen.getByText('Карта режимов').closest('section') as HTMLElement;
+    expect(modes.querySelectorAll('.sg-group').length).toBe(1);
     expect(screen.queryByText('—')).toBeNull();
     expect(within(modes).getByRole('button', { name: 'Редактировать →' }).className).toBe('ds-link');
-    // Записи: строка-переход с чипом типа, заголовком и датой.
-    const row = col.querySelector('.ds-list-row.tk-entry') as HTMLElement;
-    expect(row.querySelector('.ds-chip.ds-chip--sm.tone-tint')!.textContent).toBe('Благодарность');
+    // Записи: знак типа, заголовок, тип тихой подписью, фрагмент и дата.
+    const row = col.querySelector('.tk-entry') as HTMLElement;
+    expect(row.querySelector('.pp-row-art svg')).toBeTruthy();
     expect(row.querySelector('.ds-list-title')!.textContent).toBe('Благодарность');
-    expect(row.querySelector('.ds-list-sub')!.textContent).toBe('Спасибо за день');
-    expect(row.querySelector('.ds-sub:last-child')).toBeTruthy();
+    expect(row.querySelector('.tk-entry-type')!.textContent).toBe('Благодарность');
+    expect(row.querySelector('.tk-entry-excerpt')!.textContent).toBe('Спасибо за день');
+    expect(row.querySelector('.tk-entry-date')).toBeTruthy();
   });
 
-  it('пустой «Обзор» — ds-empty и одно действие «Открыть концептуализацию»', () => {
+  it('пустой «Обзор» — сцена, текст и одно действие «Открыть концептуализацию»', () => {
     const setClientTab = vi.fn();
     const { container } = render(<ClientOverviewTab selectedClient={client} detail={detailOf({ setClientTab })} />);
     const col = container.querySelector('.tk-col') as HTMLElement;
-    expect(labels(col)).toEqual([]);
-    expect(col.querySelector('.ds-empty')!.textContent).toContain('концептуализацию');
+    expect(within(col).queryAllByRole('heading')).toEqual([]);
+    expect(col.querySelector('.tk-empty-scene svg.scn')).toBeTruthy();
+    expect(col.querySelector('.tk-empty-text')!.textContent).toContain('концептуализацию');
+    expect(within(col).getAllByRole('button').map(b => b.textContent)).toEqual(['Открыть концептуализацию']);
     within(col).getByRole('button', { name: 'Открыть концептуализацию' }).click();
     expect(setClientTab).toHaveBeenCalledWith('concept');
   });

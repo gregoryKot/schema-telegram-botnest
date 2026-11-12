@@ -17,6 +17,7 @@ vi.mock('../api', () => ({
 }));
 import { api, reportClientError } from '../api';
 import { ApiError } from '../apiClient';
+import { glueSpaces } from '../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 const OPTIONS = {
@@ -141,7 +142,7 @@ describe('SubscribePage — управление подпиской по ток�
 
     await screen.findByText(/Не удалось загрузить подписку/);
     expect(screen.queryByText('Загружаем…')).toBeNull();
-    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось загрузить подписку/); // сбой объявляется сразу (ревью b28)
+    expect(screen.getByRole('alert').textContent).toMatch(/Не\sудалось\sзагрузить\sподписку/); // сбой объявляется сразу (ревью b28)
   });
 
   // Экран-тупик шлёт отчёт наверх (правило №14, гейт check-dead-end-report):
@@ -365,7 +366,7 @@ describe('SubscribePage — возврат с оплаты (?sub=ok|fail)', () =
   it('?sub=ok: благодарность и «На главную», формы и alert нет', async () => {
     window.history.pushState({}, '', '/subscribe?sub=ok');
     render(<SubscribePage />);
-    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe('Спасибо за поддержку!');
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toBe(glueSpaces('Спасибо за поддержку!'));
     expect(screen.getByText(/Подписка оформлена/)).toBeTruthy();
     // Письма со ссылкой управления нет (open/backend.md): обещать «пришлём» нельзя,
     // путь к отмене — Telegram.
