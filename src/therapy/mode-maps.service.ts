@@ -4,7 +4,8 @@ import { TherapyRelationsService } from './therapy-relations.service';
 import { encryptRecord, decryptRecord, EncryptSchema } from '../utils/crypto';
 import { guardOverwrite } from '../utils/crypto-record';
 import { requireAffected } from '../utils/require-affected';
-import { clientMapAuthors, clientSeesMap } from './client-map-authors';
+import { clientMapAuthors } from './client-map-authors';
+import { clientModeMap } from './client-mode-map';
 import { normalizeModeMapKind } from './mode-map-kinds';
 
 // Declarative encryption schemas — single source of truth, so a newly added
@@ -135,11 +136,8 @@ export class ModeMapsService {
     return rows.map((r) => decryptRecord(r, MODE_MAP_SCHEMA));
   }
 
-  async getMyModeMap(userId: bigint, mapId: number) {
-    const row = await this.prisma.modeMap.findUnique({ where: { id: mapId } });
-    if (!row || !(await clientSeesMap(this.prisma, userId, row)))
-      throw new Error('Not found');
-    return decryptRecord(row, MODE_MAP_SCHEMA);
+  getMyModeMap(userId: bigint, mapId: number) {
+    return clientModeMap(this.prisma, userId, mapId, MODE_MAP_SCHEMA);
   }
 
   // ─── Therapist Custom Modes ──────────────────────────────────────────────────

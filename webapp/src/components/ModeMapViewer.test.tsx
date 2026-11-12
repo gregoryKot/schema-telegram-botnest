@@ -164,6 +164,39 @@ describe('ModeMapViewer — легенда', () => {
   });
 });
 
+// Шов «ответ сервера → контекст колеса → узел»: оценки клиент получает вместе со своей картой.
+describe('ModeMapViewer — колесо потребностей у клиента', () => {
+  const wheelMap = (extra: { needRatings?: unknown } = {}) => ({
+    ...full(1, 'Карта'),
+    nodes: [{ id: 'w', type: 'needs', position: { x: 0, y: 0 }, data: { label: 'Потребности', wheel: { period: 'now', compare: true } } }],
+    ...extra,
+  });
+  async function openMap(map: ReturnType<typeof wheelMap>) {
+    listMyModeMaps.mockResolvedValue([meta(1, 'Карта')]);
+    getMyModeMap.mockResolvedValue(map);
+    let result!: ReturnType<typeof render>;
+    await act(async () => {
+      result = render(<ModeMapViewer />);
+    });
+    return result.container;
+  }
+  const sector = (c: HTMLElement, id: string) => c.querySelector(`button[data-need="${id}"]`)!.textContent;
+
+  it('оценки пришли с картой — у сектора процент выбранного периода, поверх контур детства', async () => {
+    const c = await openMap(wheelMap({ needRatings: [{ needId: 'attachment', ratings: { child: 2, now: 7 } }] }));
+    expect(sector(c, 'attachment')).toContain('70%');
+    expect(c.querySelector('[data-layer="childhood"]')).not.toBeNull();
+    expect(c.textContent).toContain('контур — детство');
+  });
+
+  it('оценок в ответе нет (старый сервер) — названия и «—», не ноль', async () => {
+    const c = await openMap(wheelMap());
+    expect(sector(c, 'attachment')).toContain('Привязанность');
+    expect(sector(c, 'attachment')).toContain('—');
+    expect(sector(c, 'attachment')).not.toContain('%');
+  });
+});
+
 // Сбой ≠ пусто (2026-11): отказ списка рисовал «Карты режимов пока нет», а
 // промис карты шёл без catch (нашёл no-floating-promises) — пустой холст и
 // unhandled rejection. Теперь «не удалось загрузить» на экране и отчёт наверх.
