@@ -1,6 +1,6 @@
 import { Booking, BookingStatus } from '@prisma/client';
 import { cancelEventUid, claimCancel } from './booking.transitions';
-import { bookingEventUid } from './booking-confirm-run';
+import { bookingEventUid } from './caldav-owner-event';
 
 // Какое событие календаря снимать после отмены (аудит 2026-10-11): у HELD
 // события нет, у CONFIRMED без записанного uid (под умер между PUT и записью)

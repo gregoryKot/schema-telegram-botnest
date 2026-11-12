@@ -99,12 +99,14 @@
   - `src/booking/payment.result-guard.ts` — разбор ResultURL до подтверждения: формат InvId (эхом только число, ответ `text/plain`), подпись, `IsTest=1` на боевом магазине не подтверждается
   - `src/booking/rule-slot-match.ts` (`ruleOffersSlot`) — бронь принимается только ровно слотом сетки правила (длина = `sessionDuration`, старт на `expandRuleForDay`); зовёт `booking.availability.ts`
   - `src/booking/client-booking.controller.ts` + `client-booking.service.ts` — запись клиента владельца практики из приложения (#546): под `TelegramAuthGuard`, свой префикс `/api/client-booking` (на визитке не открывается), та же цепочка `BookingService.book` с `account` (пишет `Booking.userId` и `clientTelegramId` из подписи); имя и контакт — `client-booking.identity.ts`; владелец практики — `src/utils/practice-owner.ts` (`ADMIN_ID` с учётом слияния)
+  - `src/booking/caldav-owner-event.ts` — что уходит в iCloud владельца: только UID брони, время и тип записи; Zoom — `ZOOM_TOPIC` в `src/booking/meeting.service.ts`
 - Связи: Prisma (Booking, AvailabilityRule, SlotOverride, BookingSetting, ClientMeeting, IntroLead); `src/booking/booking.registry.ts` собирает BookingModule вместе с `src/donation/` и `src/subscription/`; `src/booking/intro-lead.module.ts` — отдельный модуль (контроллер в `src/api/booking.controller.ts`); `src/booking/admin-key.util.ts` используют admin-контроллеры `src/articles/` и `src/site-content/`.
 - Подводные камни:
   - Публичные ручки без JWT: доступ к брони — capability-токен (`by-token`, `ics`, `cancel/:token`); админка `/api/booking/admin/*` — заголовок `x-admin-key` = `ADMIN_BOOKING_KEY` (≥32 символов). Страница управления записью `/booking/manage?token=` есть только на визитке — ссылку на неё строит сервер от `SITE_URL`.
   - Связь брони с аккаунтом — только у записи из приложения (`Booking.userId`): удаление аккаунта отвязывает (`src/bot/account.delete.ts`), слияние переносит (`USER_OWNED_TABLES`), выгрузка — `src/account/export-policy.booking.ts`.
   - Статус (HELD→CONFIRMED→CANCELLED/COMPLETED) меняется только CAS: `updateMany` с текущим статусом в WHERE, эффекты — по `count===1`; создание — под `pg_advisory_xact_lock` (`src/booking/booking-slot-lock.ts`); HELD сгорает по крону раз в минуту под leader-lease.
   - Один вебхук `/api/payment/result` роутит по диапазону InvId (подписки, донаты, брони); без настроенной Robokassa в проде платный путь отдаёт 503 (`src/booking/payment-guard.ts`); PII брони зашифрована (`src/booking/booking.schema.ts`) и затирается через 12 мес.
+  - iCloud и Zoom — зарубежные базы (152-ФЗ, ч. 5 ст. 18): данные клиента туда не уходят, исходящие запросы целиком пинит `src/booking/foreign-egress.spec.ts`. Кто придёт, владелец видит в карточке брони (Telegram, почта) и в админке записи.
 
 ### `src/infra/`
 Операционный каркас: leader-election кронов, проверка env и реестр возможностей при старте, самопроверка прода (пробы), ретеншен, HTTP-края (прокси, хост, тело), конфиг бэкапов в R2.

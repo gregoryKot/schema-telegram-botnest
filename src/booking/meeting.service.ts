@@ -8,6 +8,8 @@ import { findClientMeeting, hasClientMeeting } from './client-meeting-lookup';
 import { jitsiRoom, reuseClientRoom } from './meeting-jitsi';
 import type { MeetingLink } from './meeting-link';
 
+// Zoom — зарубежная база (152-ФЗ, ч. 5 ст. 18): название одно на всех, без имени клиента.
+export const ZOOM_TOPIC = 'Сессия';
 export interface MeetingTarget {
   id: number;
   startsAt: Date;
@@ -89,7 +91,7 @@ export class MeetingService {
         !existing.zoomMeetingId &&
         existingUrl.includes('meet.jit.si')
       ) {
-        const z = await this.createZoom(b).catch((e) => {
+        const z = await this.createZoom().catch((e) => {
           this.logger.error(`Zoom upgrade failed: ${(e as Error).message}`);
           return null;
         });
@@ -110,7 +112,7 @@ export class MeetingService {
         'Zoom not configured (ZOOM_* env) — using Jitsi for new client',
       );
     const zoom = this.zoomEnabled
-      ? await this.createZoom(b).catch((e) => {
+      ? await this.createZoom().catch((e) => {
           this.logger.error(
             `Zoom create failed, falling back to Jitsi: ${(e as Error).message}`,
           );
@@ -133,10 +135,8 @@ export class MeetingService {
     return { url: meetingUrl, replaced: false };
   }
 
-  /** Create a per-client recurring Zoom meeting (no fixed time → one stable link). */
-  private async createZoom(
-    b: MeetingTarget,
-  ): Promise<{ url: string; id: string } | null> {
+  /** Per-client recurring Zoom meeting (no fixed time → one stable link); в запросе о клиенте — ничего. */
+  private async createZoom(): Promise<{ url: string; id: string } | null> {
     const token = await this.zoomToken();
     if (!token) return null;
     const res = await fetch('https://api.zoom.us/v2/users/me/meetings', {
@@ -146,7 +146,7 @@ export class MeetingService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        topic: `Сессии — ${b.clientName}`,
+        topic: ZOOM_TOPIC,
         type: 3, // recurring meeting with no fixed time → permanent join_url
         timezone: 'Europe/Moscow',
         settings: { join_before_host: true, waiting_room: true },
