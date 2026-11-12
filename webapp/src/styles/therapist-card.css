@@ -60,6 +60,22 @@
    встают в колонку кабинета, под «← Все клиенты» (правило — в блоке ≥768
    выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
 
+/* Компактная шапка — только «Графические карты» на компьютере и планшете (useClientHead.ts, b34):
+   одна строка «← Все клиенты · аватар · имя · действия», без статуса и «Встречи» — высота уходит
+   холсту (на 1280×900 шапка занимала 230px из 900). Боковое поле то же, что у обычной шапки:
+   вбок при смене вкладки ничего не прыгает. На узком окне «← Все клиенты» остаётся своей строкой. */
+.tk-head--compact { padding-top: 6px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 20px; align-items: center; }
+.tk-head--compact > .ds-back { margin: 0; align-self: center; }
+.tk-head--compact > .tk-head-row { gap: 12px; flex-wrap: nowrap; min-height: 44px; }
+.tk-head--compact > .ds-tabs, .tk-head--compact > .tk-error { grid-column: 1 / -1; }
+.tk-head--compact .tk-avatar { width: 32px; height: 32px; font-size: 13px; }
+.tk-head--compact .tk-ident { min-width: 0; }
+.tk-head--compact .tk-badges { display: none; }
+.tk-head--compact .tk-actions .ds-btn { min-height: 36px; height: 36px; }
+@media (max-width: 1099px) {
+  .tk-head--compact > .ds-back, .tk-head--compact > .tk-head-row { grid-column: 1 / -1; }
+}
+
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
 /* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.
    Две равные колонки делали сайдбар шириной с контент, а в основной колонке

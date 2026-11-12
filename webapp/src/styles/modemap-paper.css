@@ -1,0 +1,96 @@
+/* Бумага холста графических карт (docs/design/APP_2026-11.md, партия b34): фигуры узлов
+   (префикс mm2-n), таблетки схем в узле, плитки типов карты, дорожки пары, вид карты у клиента.
+   Обрамление холста (тулбар, палитра, панели) — sheet-modemap.css. Оттенок фигуры — `--h`
+   (modeMap/nodePaper.ts): заливка — бумага оттенка, контур — тот же оттенок тоном глубже,
+   тень — сплошной сдвинутый слой по форме фигуры, без размытия. */
+
+/* ── Фигура узла ── Цвета лица, контура и тени (--n-fill, --n-line, --n-shade) кладёт nodePaper.ts. */
+.mm2-n { position: relative; width: max-content; box-sizing: border-box; --n-ring: transparent; }
+.mm2-n.is-selected { --n-ring: var(--accent-line); }
+
+/* Лист (RectNode): прямоугольник, круг, капсула и фигуры схемы случая. */
+.mm2-n--box > .mm2-n-face {
+  display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden;
+  background: var(--n-fill); border: var(--n-sw) solid var(--n-line);
+  box-shadow: 0 0 0 3px var(--n-ring), 3px 4px 0 var(--n-shade);
+}
+.mm2-n--rect { min-width: 110px; max-width: 260px; min-height: 40px; }
+.mm2-n--rect > .mm2-n-face { border-radius: 10px; padding: 10px 16px; }
+.mm2-n--circle { min-width: 118px; max-width: 200px; }
+.mm2-n--circle > .mm2-n-face { min-width: 118px; min-height: 118px; border-radius: 50%; padding: 20px 28px; }
+.mm2-n--pill { min-width: 130px; max-width: 220px; }
+.mm2-n--pill > .mm2-n-face { border-radius: 9999px; padding: 10px 22px; }
+.mm2-n--need { min-width: 100px; max-width: 170px; }
+.mm2-n--need > .mm2-n-face { border-radius: 9999px; padding: 8px 12px; }
+.mm2-n--origin { min-width: 190px; max-width: 215px; }
+.mm2-n--origin > .mm2-n-face { border-radius: 46% 54% 50% 50% / 52% 46% 54% 48%; padding: 24px 30px; }
+/* Схема — слои: верхний лист уже нижнего и выглядывает над ним, как у знака схемы в палитре. */
+.mm2-n--schema { min-width: 190px; max-width: 250px; margin-top: 7px; }
+.mm2-n--schema > .mm2-n-face { border-radius: 8px; padding: 10px 16px; }
+.mm2-n--schema::before {
+  content: ''; position: absolute; left: 16%; right: 16%; top: -7px; height: 14px; box-sizing: border-box;
+  border-radius: 7px 7px 0 0; background: var(--n-shade); border: var(--n-sw) solid var(--n-line); border-bottom: 0;
+}
+.mm2-n--hub > .mm2-n-face { width: 100%; height: 100%; border-radius: 50%; align-items: flex-start; }
+.mm2-n-hub-label { max-width: 78%; }
+
+/* Фигура по контуру (SvgShapeNode): лицо и тень — один путь, тень сдвинута. */
+.mm2-n--svg { display: flex; align-items: center; justify-content: center; }
+.mm2-n-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+/* Выделение: тень-слой становится кольцом вокруг контура (сдвиг тени — атрибутом в SvgShapeNode). */
+.mm2-n.is-selected .mm2-n-svg > .mm2-n-shade { stroke: var(--n-ring); stroke-width: 7px; transform: none; }
+.mm2-n-text { position: relative; box-sizing: border-box; pointer-events: none; }
+.mm2-n--oct { min-width: 120px; min-height: 86px; max-width: 210px; }
+.mm2-n--oct > .mm2-n-text { padding: 16px 24px; }
+.mm2-n--shield { min-width: 122px; min-height: 120px; max-width: 200px; }
+.mm2-n--shield > .mm2-n-text { padding: 14px 18px 30px; }
+.mm2-n--penta { min-width: 122px; min-height: 116px; max-width: 200px; }
+.mm2-n--penta > .mm2-n-text { padding: 30px 20px 14px; }
+.mm2-n--ribbon { min-width: 140px; min-height: 60px; max-width: 230px; }
+.mm2-n--ribbon > .mm2-n-text { padding: 12px 26px; }
+.mm2-n--steps { min-width: 140px; min-height: 64px; max-width: 230px; }
+.mm2-n--steps > .mm2-n-text { padding: 28px 16px 12px; }
+
+/* ── Таблетки схем в узле режима: тихая бумага домена, точка тона контура ── */
+.mm2-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 6px; }
+.mm2-pill {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 7px; border-radius: 999px; line-height: 1.2;
+  background: color-mix(in oklch, var(--surface) 62%, transparent); color: var(--text-sub);
+}
+.mm2-pill > i { flex-shrink: 0; width: 5px; height: 5px; border-radius: 50%; background: oklch(0.66 0.09 var(--h)); }
+.mm2-pill > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm2-pills.is-light > .mm2-pill { background: color-mix(in oklch, var(--surface) 18%, transparent); color: var(--surface); }
+
+/* ── Карта у клиента (MyModeMapSheet + ModeMapViewer): шапка и выбор карты — один лист неба режимов ── */
+.mmv > .ds-sheet-head { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 20px 20px; }
+.mmv:has(.mm2-bar) > .ds-sheet-head { border-radius: 0; }
+.mmv .mm2-bar { background: oklch(0.915 0.03 var(--h)); border-bottom: 0; border-radius: 0 0 20px 20px; padding-bottom: 12px; }
+.mmv .mm2-bar > .ds-seg { background: oklch(0.87 0.045 var(--h)); }
+.mm2-view-body { flex: 1; min-height: 0; position: relative; }
+.mm2-view-load { position: absolute; inset: 0; }
+/* Карту у клиента не редактируют: ручек связи нет (на касании они видны всегда, modemap-handles.css). */
+.mm2-view .mm-handle { visibility: hidden; pointer-events: none; }
+.mm2-view-body > .react-flow { position: absolute; inset: 0; }
+
+/* ── Карта пары: дорожки партнёров — два листа бумаги (небо и персик), подписи — листки тех же оттенков ── */
+.mm2-lanes { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.mm2-lanes > div { position: absolute; transform-origin: 0 0; }
+.mm2-lane { position: absolute; }
+.mm2-lane.is-a { background: oklch(0.965 0.013 240); border-right: 1px solid var(--line); }
+.mm2-lane.is-b { background: oklch(0.965 0.013 45); }
+/* Полоса подписей — под тулбаром (он слева сверху) и под плашкой статуса на узком холсте. */
+.mm2-lane-bar { position: absolute; top: 72px; left: 0; right: 0; display: flex; justify-content: center; z-index: 4; pointer-events: none; }
+@container mm2c (max-width: 759px) { .mm2-lane-bar { top: 116px; } }
+.mm2-lane-chips { display: flex; gap: 10px; align-items: center; pointer-events: all; }
+.mm2-lane-chip {
+  display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 5px 14px; border: 0; border-radius: 12px; cursor: text;
+  font: 600 12.5px var(--sans); color: var(--text); background: oklch(0.915 0.03 var(--h)); box-shadow: 2px 3px 0 oklch(0.85 0.045 var(--h));
+}
+.mm2-lane-chip i { width: 7px; height: 7px; border-radius: 50%; background: oklch(0.66 0.09 var(--h)); }
+.mm2-lane-input { width: 140px; text-align: center; border-radius: 12px; padding: 6px 10px; font-size: 12.5px; font-weight: 600; border-color: oklch(0.72 0.07 var(--h)); }
+.mm2-lane-sep { color: var(--text-faint); }
+@media (pointer: coarse), (max-width: 767px) { .mm2-lane-chip { min-height: 44px; } }
+
+/* ── Телефон: вместо холста — спокойный лист неба режимов со знаком (ModeMapTab) ── */
+.mm2-center--note .pp-empty { max-width: 420px; padding: 20px 18px; border-radius: 20px; background: oklch(0.915 0.03 240); box-sizing: border-box; }
+.mm2-center--note .pp-empty .ds-empty { color: var(--text); }

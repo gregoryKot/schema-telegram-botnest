@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useViewport } from '@xyflow/react';
+import { MMIcon } from './modeMapIcons';
 import '../styles/sheet-modemap.css';
+import '../styles/modemap-paper.css';
 
 // Couple "Mode Cycle Clash" lanes: Partner A on the left, Partner B on the right.
-// The tinted bands live in flow coordinates (pan/zoom with the canvas); the editable
-// name chips are a fixed top bar so they stay reachable.
-const A_COLOR = 'var(--accent-blue)';
-const B_COLOR = 'var(--accent-orange)';
+// Дорожки — бумага двух оттенков (небо 240 и персик 45, не ближе 40°) в координатах холста;
+// подписи партнёров — листки тех же оттенков в полосе под тулбаром, всегда под рукой.
+const A_HUE = 240, B_HUE = 45;
 const SPAN = 4000;
 
 function nameKey(mapId: number) { return `modemap_couple_${mapId}`; }
@@ -28,16 +29,16 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
   };
 
   const chip = (side: 'a' | 'b') => {
-    const color = side === 'a' ? A_COLOR : B_COLOR;
+    const hue = { '--h': side === 'a' ? A_HUE : B_HUE } as React.CSSProperties;
     const val = side === 'a' ? names.a : names.b;
     return editing === side ? (
       <input ref={inputRef} defaultValue={val}
         onBlur={e => { save({ ...names, [side]: e.target.value.trim() || (side === 'a' ? 'Партнёр А' : 'Партнёр Б') }); setEditing(null); }}
         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditing(null); }}
-        className="ds-input mm2-lane-input" style={{ '--pc': color } as React.CSSProperties} />
+        className="ds-input mm2-lane-input" style={hue} />
     ) : (
       <button onDoubleClick={() => setEditing(side)} onClick={() => setEditing(side)} title="Переименовать партнёра" aria-label="Переименовать партнёра"
-        className="mm2-lane-chip" style={{ '--pc': color } as React.CSSProperties}>
+        className="mm2-lane-chip" style={hue}>
         <i />
         {val}
       </button>
@@ -46,22 +47,18 @@ export function ModeMapCoupleLanes({ mapId }: { mapId: number }) {
 
   return (
     <>
-      {/* Tinted bands — flow coordinates */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', transformOrigin: '0 0', transform: `translate(${x}px, ${y}px) scale(${zoom})` }}>
-          <div style={{ position: 'absolute', left: -SPAN, top: -SPAN, width: SPAN, height: SPAN * 2,
-            background: `color-mix(in srgb, ${A_COLOR} 6%, transparent)` }} />
-          <div style={{ position: 'absolute', left: 0, top: -SPAN, width: SPAN, height: SPAN * 2,
-            background: `color-mix(in srgb, ${B_COLOR} 6%, transparent)` }} />
-          <div style={{ position: 'absolute', left: -0.5, top: -SPAN, width: 1, height: SPAN * 2,
-            background: 'rgba(var(--fg-rgb),0.12)' }} />
+      {/* Дорожки — два листа бумаги в координатах холста (styles/modemap-paper.css) */}
+      <div className="mm2-lanes">
+        <div style={{ transform: `translate(${x}px, ${y}px) scale(${zoom})` }}>
+          <div className="mm2-lane is-a" style={{ left: -SPAN, top: -SPAN, width: SPAN, height: SPAN * 2 }} />
+          <div className="mm2-lane is-b" style={{ left: 0, top: -SPAN, width: SPAN, height: SPAN * 2 }} />
         </div>
       </div>
       {/* Editable partner chips — fixed top bar */}
       <div className="mm2-lane-bar">
         <div className="mm2-lane-chips">
           {chip('a')}
-          <span className="mm2-lane-sep">⇄</span>
+          <MMIcon name="swap" size={14} className="mm2-lane-sep" />
           {chip('b')}
         </div>
       </div>

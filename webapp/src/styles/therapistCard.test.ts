@@ -154,8 +154,12 @@ describe('therapist-card.css: «Обзор» — компьютер и теле�
 describe('therapist-card.css: шапка не прыгает между вкладками (2026-11-06)', () => {
   const col = block(css, `@media ${DESKTOP_MEDIA} {\n  .tk-tabs-body`);
 
-  it('модификатора ширины у шапки нет', () => {
-    expect(css).not.toContain('.tk-head--');
+  it('модификатора ширины у шапки нет: единственный .tk-head--compact («Графические карты», b34) меняет высоту, боковое поле не трогает', () => {
+    const mods = [...css.matchAll(/\.tk-head--([\w-]+)/g)].map((m) => m[1]);
+    expect(new Set(mods)).toEqual(new Set(['compact']));
+    const own = decls(css, '.tk-head--compact');
+    expect(own).toContain('padding-top');
+    expect(own).not.toMatch(/padding(-inline|-left|-right)?\s*:|margin/);
   });
 
   it('полоса карт и строка ошибки создания — поле шапки, только под ≥768', () => {

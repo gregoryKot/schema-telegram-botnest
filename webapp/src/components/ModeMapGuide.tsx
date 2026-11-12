@@ -130,7 +130,7 @@ export function ModeMapGuide({ nodes, kind, onAdd, onOpenNeed, onClose }: Props)
               title={clickable ? (s.add ? 'Добавить на холст' : 'Открыть поле') : undefined}
               className={`mm2-step${clickable ? ' is-click' : ''}`}>
               <span className={`mm2-step-n${s.ok ? ' is-done' : clickable ? ' is-click' : ''}`}>
-                {s.ok ? '✓' : clickable ? (s.add ? '+' : '✎') : i + 1}
+                {s.ok ? <MMIcon name="check" size={12} /> : clickable ? <MMIcon name={s.add ? 'plus' : 'edit'} size={11} /> : i + 1}
               </span>
               <span>
                 <span className={`mm2-step-t${s.ok ? ' is-done' : ''}`}>

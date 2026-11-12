@@ -38,8 +38,9 @@ describe('ConceptNodes — схема и опыт', () => {
     expect(screen.getByText('Как нарушалась потребность')).toBeTruthy();
     expect(screen.getByText('Мама часто уезжала')).toBeTruthy();
     expect(screen.queryByText(PILL)).toBeNull();
-    const blob = screen.getByText('Мама часто уезжала').closest('div[style*="border-radius"]') as HTMLElement;
-    expect(blob.style.borderRadius).toContain('/');
+    const blob = screen.getByText('Мама часто уезжала').closest('.mm2-n') as HTMLElement;
+    expect(blob.className).toContain('mm2-n--origin'); // радиус пятна — в styles/modemap-paper.css
+    expect(blob.style.getPropertyValue('--h')).toBe('240'); // бумага опыта детства — небо
     expect(container.querySelector('.react-flow__node-origin')).toBeTruthy();
   });
 
@@ -54,8 +55,9 @@ describe('ConceptNodes — схема и опыт', () => {
 describe('ConceptNodes — потребность и круг', () => {
   it('потребность — таблетка с названием', () => {
     renderCanvas({ initialNodes: [mmNode('n', 'need', { label: 'Привязанность', needId: 'attachment' })] });
-    const pill = screen.getByText('Привязанность').closest('div[style*="border-radius"]') as HTMLElement;
-    expect(pill.style.borderRadius).toBe('9999px');
+    const pill = screen.getByText('Привязанность').closest('.mm2-n') as HTMLElement;
+    expect(pill.className).toContain('mm2-n--need');
+    expect(pill.style.getPropertyValue('--h')).toBe('28'); // бумага потребности — её оттенок (NEED_HUE)
   });
 
   it('круг: подпись внутри, размер по умолчанию 340, круглая заливка', () => {
@@ -66,8 +68,7 @@ describe('ConceptNodes — потребность и круг', () => {
     const hub = container.querySelector('.react-flow__node-needs > div') as HTMLElement;
     expect(hub.style.width).toBe('340px');
     expect(hub.style.height).toBe('340px');
-    const disc = screen.getByText('Базовые эмоциональные потребности').closest('div[style*="border-radius: 50%"]') as HTMLElement;
-    expect(disc).toBeTruthy();
+    expect(screen.getByText('Базовые эмоциональные потребности').closest('.mm2-n--hub > .mm2-n-face')).toBeTruthy();
   });
 
   it('круг берёт диаметр из data.diameter', () => {
