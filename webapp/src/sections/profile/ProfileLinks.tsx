@@ -8,7 +8,7 @@ export function ProfileLinks({ onOpenSettings, onDeleteAccount }: Props) {
   const navigate = useNavigate(); const { logout } = useAuth();
   return (
     <>
-      <div className="mobile-only ds-card ds-card--flush">
+      <div className="mobile-only cpf-links">
         {onOpenSettings && (
           <button type="button" className="ds-list-row ds-list-row--nav ds-list-row--hover" onClick={onOpenSettings}><span className="pp-row-art"><Beads size="row" /></span><span className="ds-list-title">Настройки</span><span className="ds-chev" aria-hidden="true" /></button>
         )}
