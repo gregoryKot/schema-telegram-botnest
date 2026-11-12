@@ -116,8 +116,7 @@ export function LoginPage() {
         Войти через Telegram другим способом
       </button>
 
-      <LoginEmailForm setError={setEmailError} />
-      {errorAt === 'email' && errorAlert}
+      <LoginEmailForm setError={setEmailError} error={errorAt === 'email' ? errorAlert : null} />
 
       <LoginConsentNote />
 
