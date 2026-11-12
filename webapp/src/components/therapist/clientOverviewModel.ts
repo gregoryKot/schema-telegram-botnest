@@ -1,8 +1,8 @@
 // Чистые вычисления вкладки «Обзор» и шапки карточки клиента: группировка
 // схем по доменам, сводка режимов, бары потребностей, столбики индекса,
-// превью дневника. Цвета не здесь — только hue (lib/tone.ts) и уровни.
+// превью дневника. Цвета не здесь — только hue (lib/tone.ts), тип записи и уровни.
 import { SCHEMA_DOMAINS, MODE_GROUPS, getModeById } from '../../schemaTherapyData';
-import { DOMAIN_HUE, MODE_GROUP_HUE, DIARY_HUE, NEED_HUE, indexLevel, type IndexLevel } from '../../lib/tone';
+import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE, indexLevel, type IndexLevel } from '../../lib/tone';
 
 export interface DomainTile {
   id: string;
@@ -45,8 +45,6 @@ export interface NeedBar {
   value: number;
   /** Ширина заливки, %: оценка 0..10 → 0..100. */
   widthPct: number;
-  /** Оценка ≤4 — подсвечивается как сигнал. */
-  low: boolean;
 }
 
 const NEED_ROWS = [
@@ -63,7 +61,7 @@ export function needBars(ratings: Record<string, number> | undefined): NeedBar[]
   for (const [id, label] of NEED_ROWS) {
     const v = ratings?.[id];
     if (v == null) continue;
-    bars.push({ id, label, hue: NEED_HUE[id], value: v, widthPct: Math.max(0, Math.min(10, v)) * 10, low: v <= 4 });
+    bars.push({ id, label, hue: NEED_HUE[id], value: v, widthPct: Math.max(0, Math.min(10, v)) * 10 });
   }
   return bars;
 }
@@ -93,7 +91,8 @@ export interface DiaryEntryLike {
 }
 
 export interface DiaryPreviewRow {
-  hue: number;
+  /** Тип записи — знак строки (noteLook). */
+  type: DiaryEntryLike['type'];
   typeLabel: string;
   title: string;
   excerpt: string;
@@ -102,20 +101,20 @@ export interface DiaryPreviewRow {
 
 const flatSchemas = SCHEMA_DOMAINS.flatMap((d) => d.schemas);
 
-/** Последние записи клиента для строк превью: тип (бейдж), заголовок, фрагмент. */
+/** Последние записи клиента для строк превью: тип (знак и тихая подпись), заголовок, фрагмент. */
 export function diaryPreview(entries: readonly DiaryEntryLike[], limit = 5): DiaryPreviewRow[] {
   return entries.slice(0, limit).map((e) => {
     if (e.type === 'schema') {
       const ids = e.schemaIds ?? [];
       const first = flatSchemas.find((s) => s.id === ids[0]);
       const extra = ids.length > 1 ? ` +${ids.length - 1}` : '';
-      return { hue: DIARY_HUE.schema, typeLabel: 'Схема-дневник', title: (first ? first.name : ids.join(', ') || 'Схема') + extra, excerpt: e.excerpt, date: e.date };
+      return { type: 'schema', typeLabel: 'Схема-дневник', title: (first ? first.name : ids.join(', ') || 'Схема') + extra, excerpt: e.excerpt, date: e.date };
     }
     if (e.type === 'mode') {
       const mode = getModeById(e.modeId ?? '');
-      return { hue: DIARY_HUE.mode, typeLabel: 'Режим-дневник', title: mode ? mode.name : (e.modeId ?? 'Режим'), excerpt: e.excerpt, date: e.date };
+      return { type: 'mode', typeLabel: 'Режим-дневник', title: mode ? mode.name : (e.modeId ?? 'Режим'), excerpt: e.excerpt, date: e.date };
     }
-    return { hue: DIARY_HUE.gratitude, typeLabel: 'Благодарность', title: 'Благодарность', excerpt: e.excerpt, date: e.date };
+    return { type: 'gratitude', typeLabel: 'Благодарность', title: 'Благодарность', excerpt: e.excerpt, date: e.date };
   });
 }
 

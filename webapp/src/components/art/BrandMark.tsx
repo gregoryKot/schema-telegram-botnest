@@ -10,8 +10,8 @@ import { PAPER } from './paper';
 
 const MARK_STYLE = { display: 'block', flexShrink: 0 } as const;
 
-/** `simple` — без полоски фона, для 16–24 px: там она рассыпается в шум. `bare` — без плитки: знак строкой
- *  в колонке знаков списка («Зачем это всё» в «Ещё»), где плитка читалась бы чужой плашкой. */
+/** `simple` — без полоски фона, для 16–24 px: там она рассыпается в шум. `bare` — без плитки: знак прямо на бумаге
+ *  листа или строкой в колонке знаков списка («Зачем это всё» в «Ещё»), где плитка читалась бы чужой плашкой. */
 export function BrandMark({ size = 32, simple = false, bare = false, className }: { size?: number; simple?: boolean; bare?: boolean; className?: string }) {
   return (
     <svg className={className ? `light-lock ${className}` : 'light-lock'} style={MARK_STYLE}
