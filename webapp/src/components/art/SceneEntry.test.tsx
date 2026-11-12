@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // Сцена входа (b26): контракт сцены и состав по строке PAPER_2026-11.md — лист персика, знак
-// продукта на земле с тенью слоем, полоски, петля ленты, камешки.
+// продукта на земле с тенью слоем, полоски, лента волной, камешки.
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { expectSceneContract } from './sceneContract.test-helpers';

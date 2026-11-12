@@ -1,7 +1,7 @@
 // Сцена входа (docs/design/PAPER_2026-11.md, `SceneEntry`, партия b26): лист персика, на земле
 // знак продукта крупно — плитка с дугой-ладонями и кругом, та же геометрия, что у BrandMark и
 // favicon (shared/src/share/kit/brandMark.ts), — слева полоски-потребности стоят на земле, над
-// ними петля ленты, справа легли камешки. Вход под заботу Здорового Взрослого, где замечают
+// ними лента волной от знака вниз к полоскам, справа легли камешки. Вход под заботу Здорового Взрослого, где замечают
 // потребности, моменты и мысли. Каркас и тень — sceneKit (сплошной сдвинутый слой, без filter).
 // Едет отдельным чанком (LoginShell, React.lazy): место под сцену держит рамка `.al-scene`.
 import {
@@ -51,10 +51,11 @@ export function SceneEntry({ hue = 45, className }: { hue?: number; className?: 
           <rect key={s.x} data-entry="stroke" x={s.x} y={GROUND_Y - s.h} width="15" height={s.h} rx="7.5" fill={s.fill}
                 transform={`rotate(${s.deg} ${s.x + 7.5} ${GROUND_Y})`} />
         ))}
-        {/* Петля ленты — мотив Ribbon, уменьшенный над полосками. */}
-        <path data-entry="ribbon" transform="translate(28 40) scale(0.62)"
-              d="M8 46 C 18 18, 54 10, 66 30 C 76 48, 44 60, 36 42 C 28 24, 66 6, 112 26"
-              fill="none" stroke={INK.clay} strokeWidth="13" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Лента — мотив Ribbon спокойной дугой: выходит из-за знака продукта и спускается к полоскам. Без петли: петля над
+            полосками читалась «глазом с бровью» (ревью b26). */}
+        <path data-entry="ribbon"
+              d="M150 100 C 128 66, 96 66, 82 90 S 66 122, 66 128"
+              fill="none" stroke={INK.clay} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
         <MarkTile />
         {PEBBLES.map((p) => (
           <ellipse key={p.cx} data-entry="pebble" cx={p.cx} cy={p.cy} rx="12" ry="8" fill={p.fill}
