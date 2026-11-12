@@ -7,11 +7,12 @@ import { privacyStorageText, PRIVACY_NO_SHARE_TEXT } from '../../../../shared/sr
 import { useDataExport } from '../../../../shared/src/account/useDataExport';
 import { deleteAccountCopy } from '../../../../shared/src/account/accountDeletion';
 import { DeleteAccountDialog } from '../DeleteAccountDialog';
+import { ResignTherapistBlock } from './ResignTherapistBlock';
 
 // Раздел «Данные» (конфиденциальность + удаление аккаунта) — вынесен из
 // SettingsSheet.tsx (правило №10). Удаление — тот же диалог, что в «Профиле»
 // (QA 2026-11, К2): строка называет действие честно — уходит аккаунт целиком.
-export function DataSection() {
+export function DataSection({ onResign }: { onResign?: () => Promise<void> | void }) {
   const tr = useTr();
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -45,6 +46,7 @@ export function DataSection() {
           {tr('Тут скачать не получится — открой schemehappens.ru в браузере и попробуй там', 'Тут скачать не получится — откройте schemehappens.ru в браузере и попробуйте там')}
         </div>
       )}
+      {onResign && <ResignTherapistBlock onResign={onResign} />}
       <SRow title={deleteCopy.row} sub={deleteCopy.rowSub} danger onClick={() => setShowDelete(true)} />
       </SSection>
 

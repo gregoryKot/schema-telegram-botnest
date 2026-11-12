@@ -7,20 +7,32 @@ const onKeyActivate = (fn: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
 };
 
-/** Раздел листа: карточка с заголовком-ярлыком; id нужен боковому оглавлению. */
+/** Галочка-знак вместо глифа «✓»: цвет — текущий текст (статус «Сохранено», выбранная строка, «Скопировано»). */
+export function Tick() {
+  return (
+    <svg className="st-tick" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path d="M3 8.6l3.2 3.2L13 4.8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Раздел листа — плоская группа на бумаге страницы: ярлык, под ним строки через линию (b25);
+ *  id нужен боковому оглавлению. Без label — группа из одной строки («О приложении»). */
 export function SSection({ id, label, hint, help, children }: {
-  id: string; label: string; hint?: string; help?: React.ReactNode; children: React.ReactNode;
+  id: string; label?: string; hint?: string; help?: React.ReactNode; children: React.ReactNode;
 }) {
   return (
-    <section className="ds-card st-section">
+    <section className="st-section">
       <div id={id} className="st-sec-head">
-        <div className="st-sec-title">
-          <div className="ds-label">{label}</div>
-          {help}
-        </div>
+        {label && (
+          <div className="st-sec-title">
+            <div className="ds-label">{label}</div>
+            {help}
+          </div>
+        )}
         {hint && <div className="st-hint">{hint}</div>}
       </div>
-      {children}
+      <div className="st-rows">{children}</div>
     </section>
   );
 }
@@ -43,23 +55,14 @@ export function SRow({ title, sub, right, onClick, danger }: {
 }
 
 // busy — запрос в пути (включение пушей): тумблер бледнеет и не жмётся, спиннер — только у кнопок.
-function Switch({ on, onClick, small, label, describedBy, busy }: { on: boolean; onClick: () => void; small?: boolean; label: string; describedBy?: string; busy?: boolean }) {
+export function Toggle({ on, onClick, label, describedBy, busy }: { on: boolean; onClick: () => void; label: string; describedBy?: string; busy?: boolean }) {
   const act = busy ? () => undefined : onClick;
   return (
     <div onClick={act} role="switch" aria-checked={on} aria-label={label} aria-describedby={describedBy} tabIndex={0}
-      aria-busy={busy || undefined} aria-disabled={busy || undefined} onKeyDown={onKeyActivate(act)}
-      className={`ds-switch${small ? ' ds-switch--sm' : ''}`}>
+      aria-busy={busy || undefined} aria-disabled={busy || undefined} onKeyDown={onKeyActivate(act)} className="ds-switch">
       <div className="ds-switch-knob" />
     </div>
   );
-}
-
-export function Toggle({ on, onClick, label, describedBy, busy }: { on: boolean; onClick: () => void; label: string; describedBy?: string; busy?: boolean }) {
-  return <Switch on={on} onClick={onClick} label={label} describedBy={describedBy} busy={busy} />;
-}
-
-export function SmallToggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
-  return <Switch on={on} onClick={onClick} label={label} small />;
 }
 
 export function ChevronVal({ text }: { text: string }) {

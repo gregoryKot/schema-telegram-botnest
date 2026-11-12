@@ -142,7 +142,7 @@ describe('SettingsSheet — оглавление совпадает с разд�
     const sections = document.querySelectorAll('.settings-content-inner [id^="s-"]');
     const nav = document.querySelectorAll('.settings-sidenav .settings-sidenav-item');
     expect(sections.length).toBeGreaterThan(5);
-    expect(nav.length).toBe(sections.length);
+    expect([...nav].map((n) => n.getAttribute('data-target'))).toEqual([...sections].map((el) => el.id)); // и состав, и порядок
     expect(screen.getByRole('button', { name: 'Обращение' })).toBeTruthy();
   });
 });
@@ -282,7 +282,7 @@ describe('SettingsSheet — таймеры тоста не переживают 
     try {
       const { unmount } = await renderSheet();
       fireEvent.click(toggleForRow('Итоги дня'));
-      await screen.findByText('Сохранено ✓');
+      await screen.findByText('Сохранено');
       unmount();
       expect(vi.getTimerCount()).toBe(0);
     } finally {
@@ -310,7 +310,7 @@ describe('SettingsSheet — сохранение переключателя ви
     await waitFor(() =>
       expect(toggle.getAttribute('aria-checked')).toBe('true'),
     );
-    await screen.findByText('Сохранено ✓');
+    await screen.findByText('Сохранено');
   });
 
   it('отказ сети: показывается «Не сохранилось», тумблер откатывается назад', async () => {
@@ -331,7 +331,7 @@ describe('SettingsSheet — сохранение переключателя ви
         'false',
       ),
     );
-    expect(screen.queryByText('Сохранено ✓')).toBeNull();
+    expect(screen.queryByText('Сохранено')).toBeNull();
   });
 });
 
@@ -577,7 +577,7 @@ describe('SettingsSheet — приглашение клиенту (терапе�
     mockClipboard();
     await renderSheet('THERAPIST');
     fireEvent.click(screen.getByText('+ Создать приглашение клиенту'));
-    await screen.findByText('Ссылка скопирована ✓');
+    await screen.findByText('Ссылка скопирована');
     // Код — отдельной строкой, для клиента на сайте (инцидент 2026-10-26).
     expect(screen.getByText('7F3A9C21B04E')).toBeTruthy();
     expect(screen.getByText('Скопировать код')).toBeTruthy();
@@ -776,7 +776,7 @@ describe('SettingsSheet — «Меньше движения»: тумблер п
     await renderSheet();
     const row = screen.getByText('Меньше движения').parentElement!.parentElement!;
     fireEvent.click(within(row).getByRole('switch'));
-    await screen.findByText('Сохранено ✓');
+    await screen.findByText('Сохранено');
   });
 });
 
@@ -1157,7 +1157,7 @@ describe('SettingsSheet — пара: копирование ссылки-при
     await screen.findByText('https://schemehappens.ru/p/ABC123');
 
     fireEvent.click(within(partnerSectionContent()).getByText('Скопировать ссылку'));
-    await screen.findByText('✓ Скопировано');
+    await screen.findByText('Скопировано');
   });
 
   it('«← Назад» из формы ввода кода возвращает к экрану приглашения', async () => {
@@ -1190,7 +1190,7 @@ describe('SettingsSheet — карточки-приглашения и мода�
     await screen.findByText('текст сводки');
 
     fireEvent.click(screen.getByText('Скопировать'));
-    await screen.findByText('✓ Скопировано');
+    await screen.findByText('Скопировано');
 
     fireEvent.click(screen.getByLabelText('Закрыть'));
     await waitFor(() => expect(screen.queryByText('текст сводки')).toBeNull());
@@ -1211,16 +1211,17 @@ describe('SettingsSheet — удаление аккаунта: закрытие 
   });
 });
 
-// #906: шапка листа — общая ds-sheet-head/ds-back/ds-h2 из cabinet.css, своих
-// .st-head/.st-title нет; «← Закрыть» на главном виде, «← Назад» — в подвиде.
+// #906: шапка — общая ds-sheet-head/ds-back, своих .st-head/.st-title нет. b25: заголовок вида (ds-h2) —
+// первым в теле, а не в шапке: «Время уведомления» рядом с «← Назад» на 320–390 резалось.
 describe('SettingsSheet — шапка листа (#906)', () => {
-  it('«← Закрыть» — ds-back внутри ds-sheet-head рядом с заголовком ds-h2', async () => {
+  it('«← Закрыть» — ds-back в ds-sheet-head; заголовок ds-h2 — первым в теле листа', async () => {
     await renderSheet();
     const back = screen.getByRole('button', { name: '← Закрыть' });
     expect(back.className).toBe('ds-back');
     const head = back.parentElement!;
     expect(head.className).toBe('ds-sheet-head');
-    expect(head.querySelector('h2.ds-h2')?.textContent).toBe('Настройки');
+    expect(head.querySelector('h2')).toBeNull();
+    expect(document.querySelector('.st-inner > h2.ds-h2:first-child')?.textContent).toBe('Настройки');
     expect(document.querySelector('.st-head, .st-title')).toBeNull();
   });
 });

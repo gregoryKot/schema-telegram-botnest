@@ -15,8 +15,8 @@ export function PendingInvite({ label, url, onCancel, failed }: {
 }) {
   const tr = useTr();
   return (
-    <div className="st-body-block">
-      {url ? <PartnerInviteLink label={label} url={url} /> : <div className="st-text st-text--faint">{label}</div>}
+    <div className="st-pending">
+      {url ? <PartnerInviteLink label={label} url={url} /> : <div className="st-invite-label">{label}</div>}
       <button type="button" className="ds-link ds-link--danger" onClick={onCancel}>Отменить приглашение</button>
       {failed && (
         <div className="st-err">

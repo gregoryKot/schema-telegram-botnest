@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-// ui.tsx — презентационные примитивы SettingsSheet (SRow/Toggle/SmallToggle/
+// ui.tsx — презентационные примитивы SettingsSheet (SRow/Toggle/
 // ChevronVal/InfoModal), вынесены из SettingsSheet.tsx (правило №10). Прямые
 // тесты каждого примитива и его веток — сам SettingsSheet использует их
 // только косвенно.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './ui';
+import { SRow, Toggle, ChevronVal, InfoModal } from './ui';
 
 afterEach(() => {
   cleanup();
@@ -101,39 +101,6 @@ describe('Toggle', () => {
   it('Enter/Space зовут onClick', () => {
     const onClick = vi.fn();
     render(<Toggle label="Итоги дня" on={false} onClick={onClick} />);
-    fireEvent.keyDown(screen.getByRole('switch'), { key: 'Enter' });
-    expect(onClick).toHaveBeenCalledTimes(1);
-    fireEvent.keyDown(screen.getByRole('switch'), { key: ' ' });
-    expect(onClick).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('SmallToggle', () => {
-  it('label становится именем switch для скринридера', () => {
-    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
-    expect(screen.getByRole('switch', { name: 'Мои схемы и тест' }).getAttribute('aria-checked')).toBe('true');
-  });
-
-  it('on=false — aria-checked false', () => {
-    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={() => {}} />);
-    expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false');
-  });
-
-  it('on=true — aria-checked true', () => {
-    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
-    expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true');
-  });
-
-  it('клик зовёт onClick', () => {
-    const onClick = vi.fn();
-    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={onClick} />);
-    fireEvent.click(screen.getByRole('switch'));
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('Enter/Space зовут onClick', () => {
-    const onClick = vi.fn();
-    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={onClick} />);
     fireEvent.keyDown(screen.getByRole('switch'), { key: 'Enter' });
     expect(onClick).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(screen.getByRole('switch'), { key: ' ' });

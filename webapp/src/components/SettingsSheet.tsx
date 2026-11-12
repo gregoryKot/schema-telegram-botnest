@@ -5,6 +5,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, type UserSettings } from '../api';
 import { SettingsSkeleton } from './settingsSheet/SettingsSkeleton';
 import { useSaveBadge } from './settingsSheet/useSaveBadge';
+import { SaveBadge } from './settingsSheet/SaveBadge';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -24,6 +25,7 @@ import { PartnerSection } from './settingsSheet/PartnerSection';
 import { ShareSection, AboutSection } from './settingsSheet/ShareAboutSections';
 import { HomeScreenSection } from './settingsSheet/HomeScreenSection';
 import { homeIconMode } from './settingsSheet/homeIconMode';
+import { settingsNav } from './settingsSheet/settingsNav';
 
 // Дефолты на случай, если api.getSettings() отказал — экран не должен
 // зависнуть на Loader, показываем безопасные значения.
@@ -79,25 +81,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const scrollTo = (id: string) => scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
 
   const isTherapist = userRole === 'THERAPIST';
+  const canSwitchMode = isTherapist && onSetTherapistMode;
   const homeMode = homeIconMode();
-  const navItems = [
-    ...(isTherapist && onSetTherapistMode ? [{ id: 's-mode', label: 'Режим' }] : []),
-    { id: 's-appearance', label: 'Оформление' },
-    ...(homeMode ? [{ id: 's-home', label: 'Значок на экране' }] : []),
-    { id: 's-name', label: 'Имя' },
-    { id: 's-notifications', label: 'Уведомления' },
-    { id: 's-address', label: 'Обращение' }, // раздел был, строки в оглавлении не было (QA 2026-11, М10)
-    ...(!isTherapist ? [
-      { id: 's-therapist', label: 'Мой терапевт' },
-      { id: 's-specialist', label: 'Специалист' },
-    ] : [
-      { id: 's-cabinet', label: 'Кабинет' },
-    ]),
-    { id: 's-partner', label: 'Партнёр' },
-    { id: 's-share', label: 'Поделиться' },
-    { id: 's-about', label: 'О приложении' },
-    { id: 's-data', label: 'Данные' },
-  ];
+  const navItems = settingsNav({ therapist: isTherapist, modeSwitch: !!canSwitchMode, homeIcon: !!homeMode });
 
   if (!settings) return <div {...dialogA11y} className="settings-overlay st-overlay"><SettingsSkeleton onClose={goBack} /></div>;
 
@@ -107,49 +93,49 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
     <>
       <div {...dialogA11y} className="settings-overlay st-overlay">
 
-        {/* ── Header ── */}
+        {/* Шапка: «назад» и статус сохранения; заголовок вида — в теле (в шапке на 320–390 он резался) */}
         <div className="ds-sheet-head">
           <button type="button" className="ds-back" onClick={subView !== 'main' ? () => setSubView('main') : goBack}>
             ← {subView !== 'main' ? 'Назад' : 'Закрыть'}
           </button>
-          <h2 className="ds-h2">{SUB_TITLES[subView]}</h2>
-          <span className={`ds-badge ${outcome === 'err' ? 'st-toast is-err' : 'ds-badge--ok st-toast'}${badgeOn ? ' is-on' : ''}`}>
-            {outcome === 'err' ? 'Не сохранилось' : 'Сохранено ✓'}
-          </span>
+          <SaveBadge on={badgeOn} outcome={outcome} />
         </div>
 
-        {/* ── Body ── */}
         <div className="st-body">
           {subView === 'main' && (
             <div className="settings-sidenav">
               {navItems.map(n => (
-                <button key={n.id} onClick={() => scrollTo(n.id)} className="settings-sidenav-item st-navitem">
+                <button key={n.id} data-target={n.id} onClick={() => scrollTo(n.id)} className="settings-sidenav-item st-navitem">
                   {n.label}
                 </button>
               ))}
             </div>
           )}
 
-          <div className="st-scroll">
-            <div className="settings-content-inner st-inner">
+          {/* key: подэкран открывается с начала, а не с места прокрутки главного вида */}
+          <div className="st-scroll" key={subView}>
+            <div className={`settings-content-inner st-inner${subView !== 'main' ? ' st-inner--sub' : ''}`}>
+              <h2 className="ds-h2 st-h">{SUB_TITLES[subView]}</h2>
               {subView !== 'main' && (
                 <SettingsSubView subView={subView} settings={settings} patch={patch} onDone={() => setSubView('main')} />
               )}
 
               {subView === 'main' && (<>
-                {isTherapist && onSetTherapistMode && <ModeSection therapistMode={!!therapistMode}
-                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} onResign={onResignTherapist} />}
-                <AppearanceSection onSaved={flashSaved} />
-                {homeMode && <HomeScreenSection mode={homeMode} />}
+                {canSwitchMode && <ModeSection therapistMode={!!therapistMode}
+                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} />}
                 <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
+                <AddressSection settings={settings} patch={patch} />
                 <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView}
                   leaveTo={(path) => goBack(() => navigate(path))} reloadSettings={reloadSettings} />
-                <AddressSection settings={settings} patch={patch} />
+                <AppearanceSection onSaved={flashSaved} />
+                {homeMode && <HomeScreenSection mode={homeMode} />}
                 {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
-                {!isTherapist && <BecomeTherapistSection />}
                 {isTherapist && <CabinetSection rel={therapy} onOpenTherapistCabinet={onOpenTherapistCabinet} />}
                 <PartnerSection pair={pair} />
-                <ShareSection /><AboutSection /><DataSection />
+                <ShareSection />
+                {!isTherapist && <BecomeTherapistSection />}
+                <AboutSection />
+                <DataSection onResign={canSwitchMode ? onResignTherapist : undefined} />
               </>)}
             </div>
           </div>

@@ -58,7 +58,7 @@ export function BecomeTherapistSection() {
             {therapistRequestApprovedText(tr)}
           </div>
         ) : !showReqForm ? (
-          <div>
+          <div className="st-body-block">
             <TherapistRequestRejectedNote request={therapistReq} className="st-err" />
             <p className="st-text">
               {tr('Если ты практикующий специалист — подай заявку. Администратор проверит и откроет доступ к кабинету.', 'Если вы практикующий специалист — подайте заявку. Администратор проверит и откроет доступ к кабинету.')}

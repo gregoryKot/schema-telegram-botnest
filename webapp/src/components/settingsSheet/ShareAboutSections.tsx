@@ -57,9 +57,9 @@ export function AboutSection() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <section id="s-about" className="ds-card st-section">
+      <SSection id="s-about">
         <SRow title="О приложении" sub="Зачем это всё, пять потребностей, об авторе" onClick={() => setOpen(true)} />
-      </section>
+      </SSection>
       {open && <AboutSheet onClose={() => setOpen(false)} />}
     </>
   );
