@@ -21,7 +21,7 @@
 | check-bundle-size-ratchet.mjs | рост байт JS-бандлов webapp | `scripts/bundle-size-baseline.json` | да | webapp |
 | check-capability-registry.mjs | ветка `if (!env) return` без регистрации в capability-report | `scripts/capability-registry-baseline.json` | да | checks |
 | check-color-drift.mjs | захардкоженные хроматические hex/rgb вне токенов палитры | `scripts/color-drift-baseline.json` | да | webapp |
-| check-coverage-ratchet.mjs | просадка покрытия бэкенда (сам гоняет jest --coverage) | `scripts/coverage-baseline.json` | да | backend |
+| check-coverage-ratchet.mjs | покрытие бэкенда ниже фиксированного пола, общего и по каталогам (сам гоняет jest --coverage); пол меняет владелец правкой файла | `scripts/coverage-baseline.json` | нет | backend |
 | check-cron-leader.mjs | `@Cron` без классификации leader-election (двойной запуск); метод, до которого через `this.x()` доходят два leader-крона, без записи `shared` с причиной (правила разбора — `check-cron-leader-rules.mjs`) | `scripts/cron-leader-baseline.json` | нет | checks |
 | check-css-link-order.mjs | порядок `<link rel="stylesheet">` в собранном `webapp/dist/index.html` сменился (CSS переехал в другой чанк) | `scripts/css-link-order.json` | да | webapp |
 | check-dead-end-report.mjs | catch-ветка `webapp/src/pages/**`, `webapp/src/components/*/**` с исходом-ошибкой (`set…Error/Fail…(`, `setX('error')`) без классификации: `reports` (отчёт в catch или хук `via`), `exempt`/`debt` с причиной | `scripts/dead-end-report-baseline.json` | нет | checks |
@@ -37,7 +37,7 @@
 | check-eslint-ratchet.mjs | рост числа ошибок и варнингов eslint; полный режим — по каталогам верхнего уровня отдельными процессами (правила — `eslint-ratchet-rules.mjs`), локально `--changed` — только файлы против `origin/main` | `scripts/eslint-baseline.json` | да | eslint |
 | check-file-size-ratchet.mjs | рост файла из baseline, новый файл больше 300 строк | `scripts/file-size-baseline.json` | да | backend |
 | check-filename-case.mjs | два отслеживаемых пути, различающиеся только регистром (`diagramEdges.ts` ≈ `DiagramEdges.tsx`): на macOS Vite резолвит не тот файл | — | нет | checks |
-| check-frontend-coverage-ratchet.mjs | просадка покрытия webapp, shared (`--package`) | `scripts/frontend-coverage-baseline.json` | да | webapp, shared |
+| check-frontend-coverage-ratchet.mjs | покрытие webapp, shared (`--package`) ниже фиксированного пола; пол меняет владелец правкой файла | `scripts/frontend-coverage-baseline.json` | нет | webapp, shared |
 | check-gate-exemptions.mjs | ALLOW/EXCLUDE-списки гейтов без теста-образца | — | нет | checks |
 | check-gendered-forms.mjs | мужской род в тексте для пользователя («ты сделал»; без «ты» — по паре `tr(ты, вы)`, «Сказал» ↔ «Сказали») | `scripts/gendered-forms-baseline.json` | да | backend |
 | check-glyph-controls.mjs | `<button>`, `<a>`, элемент с control-ролью или `{...pressable()}` без `aria-label`/`aria-labelledby`, чьё содержимое — только глиф, иконка или пусто | — | нет | webapp |
@@ -78,6 +78,7 @@
 | check-webvisor-fields.mjs | текстовое поле визитки без метки `ym-disable-keys` | — | нет | webapp |
 | check-zero-coverage.mjs | файл `src/**` с 0% строк вне бейслайна (читает `coverage/coverage-summary.json` шага `check-coverage-ratchet`); `*.module.ts` и `src/main.ts` не считаются; покрытый файл из бейслайна — предупреждение «зафиксируй `--update`», не красное | `scripts/zero-coverage-baseline.json` | да (только вычёркивает) | backend |
 | setup-merge-drivers.mjs --check | merge-драйвер или baseline без строки/скрипта в .gitattributes. Режим слияния бейслайна — строка `.gitattributes`: `ratchet-sum` (счётчики: база + обе дельты), `ratchet-min`, `ratchet-max`; исключения по ключу — `scripts/merge-json-ratchet-rules.mjs` | — | нет (`--check` ничего не ставит) | checks |
+| git-hooks/commit-msg (локально, не CI) | у коммита есть тело, заголовок длиннее 120 знаков или трейлеров больше четырёх; `Merge …`/`Revert …` от git проходят | — | нет | — (тест: `src/test-support/gates/commit-msg-hook.spec.ts`, джоба backend) |
 | git-hooks/pre-push (локально, не CI) | красная сборка `webapp` перед `git push` (`tsc -b && vite build` с `VITE_BOT_USERNAME`); ставится в `core.hooksPath` скриптом `setup-git-hooks.mjs` из npm `prepare`, работает из git worktree; `--no-verify` не используется | — | нет | — (тест: `src/test-support/gates/git-hooks.spec.ts`, джоба backend) |
 
 ### Команды

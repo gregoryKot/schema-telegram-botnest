@@ -21,6 +21,7 @@ import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { CONCEPT_NEED_NOTE_MAX } from '../src/therapy/dto/concept-needs.dto';
 
 describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => {
   let app: INestApplication;
@@ -58,6 +59,8 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
       post: (url: string, body: object = {}) =>
         auth(request(app.getHttpServer()).post(url)).send(body),
       delete: (url: string) => auth(request(app.getHttpServer()).delete(url)),
+      patch: (url: string, body: object = {}) =>
+        auth(request(app.getHttpServer()).patch(url)).send(body),
     };
   }
 
@@ -215,6 +218,10 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
         c1.post(`/api/therapy/conceptualization/${C1_ID}/append`, {
           modeIds: ['x'],
         }),
+      () =>
+        c1.post(`/api/therapy/conceptualization/${C1_ID}/needs`, {
+          needLinks: [],
+        }),
     ];
     for (const call of asTherapistOnly) {
       const res = await call();
@@ -321,6 +328,123 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
       `/api/therapy/conceptualization/${C1_ID}`,
     );
     expect(got.body.modeIds).not.toContain('angry_child');
+  });
+
+  // ─── Сценарий 5б: колесо потребностей в концептуализации — свой клиент ───
+  // POST conceptualization/:clientId/needs: колесо целиком (replace); полное
+  // сохранение вкладки его не трогает; клиенту в my-concept оно не уходит.
+
+  const NEEDS_URL = `/api/therapy/conceptualization/${C1_ID}/needs`;
+  const WHEEL = [
+    {
+      needId: 'attachment',
+      ratings: { child: 2, teen: 4, now: 7 },
+      notes: { child: 'мама часто уезжала', now: 'есть близкая подруга' },
+    },
+    { needId: 'play', ratings: { now: 0 }, notes: {} },
+  ];
+
+  it('T1 сохраняет колесо потребностей C1 → GET находит, остальные поля на месте', async () => {
+    const t1 = agentAs(T1);
+    const before = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    const res = await t1.post(NEEDS_URL, {
+      // Лишние поля режет whitelist: и в теле, и в записи, и во вложенных объектах.
+      goals: 'эта ручка поля не пишет',
+      needLinks: [
+        { ...WHEEL[0], belief: 'x', ratings: { ...WHEEL[0].ratings, old: 3 } },
+        WHEEL[1],
+      ],
+    });
+    expect(res.status).toBeLessThan(300);
+    expect(res.body.needLinks).toEqual(WHEEL);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.needLinks).toEqual(WHEEL);
+    // Колесо — единственное, что изменилось: поля, связи и история прежние.
+    expect({ ...got.body, needLinks: [], updatedAt: null }).toEqual({
+      ...before.body,
+      needLinks: [],
+      updatedAt: null,
+    });
+    expect(got.body.goals).not.toBe('эта ручка поля не пишет');
+  });
+
+  it('колесо — replace: запись с меньшим набором убирает прежние значения', async () => {
+    const t1 = agentAs(T1);
+    const next = [{ needId: 'attachment', ratings: { now: 8 }, notes: {} }];
+    expect((await t1.post(NEEDS_URL, { needLinks: next })).status).toBe(201);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.needLinks).toEqual(next);
+    // Вернули полное колесо — для сценариев ниже.
+    await t1.post(NEEDS_URL, { needLinks: WHEEL });
+  });
+
+  it('колесо: оценка 11, дробная, неизвестная потребность, шесть записей — 400, колесо прежнее', async () => {
+    const t1 = agentAs(T1);
+    const link = (over: object) => ({ needId: 'limits', ...over });
+    const bodies = [
+      {},
+      { needLinks: [link({ ratings: { now: 11 } })] },
+      { needLinks: [link({ ratings: { teen: 7.5 } })] },
+      { needLinks: [{ needId: 'safety', ratings: { now: 5 } }] },
+      {
+        needLinks: [
+          link({ notes: { now: 'ж'.repeat(CONCEPT_NEED_NOTE_MAX + 1) } }),
+        ],
+      },
+      { needLinks: Array.from({ length: 6 }, () => link({})) },
+    ];
+    for (const body of bodies)
+      expect((await t1.post(NEEDS_URL, body)).status).toBe(400);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.needLinks).toEqual(WHEEL);
+  });
+
+  it('полное сохранение концептуализации колесо не трогает (и с needLinks в теле)', async () => {
+    const t1 = agentAs(T1);
+    const saved = await t1.post(`/api/therapy/conceptualization/${C1_ID}`, {
+      triggers: 'критика на работе',
+      needLinks: [],
+    });
+    expect(saved.status).toBeLessThan(300);
+    expect(saved.body.needLinks).toEqual(WHEEL);
+    const got = await t1.get(`/api/therapy/conceptualization/${C1_ID}`);
+    expect(got.body.triggers).toBe('критика на работе');
+    expect(got.body.needLinks).toEqual(WHEEL);
+    // История версий колесо не несёт.
+    for (const snap of got.body.history)
+      expect(snap).not.toHaveProperty('needLinks');
+  });
+
+  it('T2 без связи с C1 не может записать колесо — 403, колесо T1 прежнее, строк не прибавилось', async () => {
+    const res = await agentAs(T2).post(NEEDS_URL, {
+      needLinks: [{ needId: 'limits', ratings: { now: 1 }, notes: {} }],
+    });
+    expect(res.status).toBe(403);
+    expect(JSON.stringify(res.body)).not.toContain('мама часто уезжала');
+    const rows = await prisma.clientConceptualization.findMany({
+      where: { clientId: C1 },
+    });
+    expect(rows.map((r) => r.therapistId)).toEqual([T1]);
+    const got = await agentAs(T1).get(
+      `/api/therapy/conceptualization/${C1_ID}`,
+    );
+    expect(got.body.needLinks).toEqual(WHEEL);
+  });
+
+  it('клиент C1 в my-concept колесо не получает: ни поля, ни оценок, ни заметок', async () => {
+    const share = `/api/therapy/conceptualization/${C1_ID}/share`;
+    const on = await agentAs(T1).patch(share, { shared: true });
+    expect(on.status).toBe(200);
+    const mine = await agentAs(C1).get('/api/therapy/my-concept');
+    expect(mine.status).toBe(200);
+    // Схема показана (иначе проверка ниже ничего бы не доказывала).
+    expect(mine.body.schemaIds).toEqual(['abandonment', 'defectiveness']);
+    expect(mine.body).not.toHaveProperty('needLinks');
+    expect(JSON.stringify(mine.body)).not.toMatch(
+      /мама часто уезжала|есть близкая подруга|ratings/,
+    );
+    // Показ выключаем: остальные сценарии файла от него не зависят.
+    await agentAs(T1).patch(share, { shared: false });
   });
 
   // ─── Сценарий 6: задачи не текут между терапевтами ────────────────────────

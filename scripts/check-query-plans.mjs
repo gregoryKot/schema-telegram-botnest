@@ -157,7 +157,7 @@ function checkBudget(scenario, budget) {
       problems.push(
         `${num(scenario.blocks)} страниц против планки ${num(budget.blocks)} ` +
           `(+${Math.round((scenario.blocks / budget.blocks - 1) * 100)}%, допуск ${Math.round(BLOCKS_HEADROOM * 100)}%) — ` +
-          'запрос стал читать заметно больше; если рост законен, объясни его в теле коммита и зафиксируй: --update',
+          'запрос стал читать заметно больше; если рост законен, объясни его строкой в описании PR и зафиксируй: --update',
       );
     }
   }

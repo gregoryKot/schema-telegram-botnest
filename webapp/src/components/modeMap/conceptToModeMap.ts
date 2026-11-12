@@ -5,7 +5,7 @@ import type { DiagramEdge, DiagramNode } from '../../../../shared/src/therapy/co
 import { HUB_DIAMETER } from './hubGeometry';
 import { modeNodeType } from './modeNodeMeta';
 import { EDGE_TYPE_STYLE } from './edgeTypes';
-import { WHEEL_CENTER_Y, WHEEL_PX, isWheel, needHandle } from './needWheel';
+import { WHEEL_CENTER_Y, WHEEL_NODE_W, isWheel, needHandle } from './needWheel';
 
 // Схема случая → карта режимов: «Открыть на холсте» (новая карта) и «Из концептуализации клиента» (дописать в
 // открытую). Позиции — из раскладки схемы случая. Потребности — колесо (needWheel.ts), ✗/✓ идут к его секторам;
@@ -89,13 +89,13 @@ export function conceptToModeMap(
   const { cx, cy, r, title } = layout.circle;
   const oldHub = existing.find((n) => n.type === 'needs');
   const wheel = !oldHub || isWheel(oldHub.data); // колесо, если на карте нет старого круга с таблетками
-  add(HUB_KEY, (id) => (wheel ? { id, type: 'needs', position: { x: cx - WHEEL_PX / 2, y: cy - WHEEL_CENTER_Y }, data: { label: title, wheel: {} } }
+  add(HUB_KEY, (id) => (wheel ? { id, type: 'needs', position: { x: cx - WHEEL_NODE_W / 2, y: cy - WHEEL_CENTER_Y }, data: { label: title, wheel: {} } }
     : { id, type: 'needs', position: { x: cx - r, y: cy - r }, data: { label: title, diameter: 2 * r } }));
   for (const d of layout.nodes) if (d.kind !== 'placeholder' && !(wheel && d.kind === 'need')) add(d.id, (id) => buildNode(d, id));
 
   // Новое целиком правее старого: левый край новых = правый край существующих + GAP.
   if (existing.length > 0 && fresh.length > 0) {
-    const right = Math.max(...existing.map((n) => n.position.x + (n.type !== 'needs' ? 0 : isWheel(n.data) ? WHEEL_PX : (n.data.diameter ?? HUB_DIAMETER))));
+    const right = Math.max(...existing.map((n) => n.position.x + (n.type !== 'needs' ? 0 : isWheel(n.data) ? WHEEL_NODE_W : (n.data.diameter ?? HUB_DIAMETER))));
     const dx = right + GAP - Math.min(...fresh.map((n) => n.position.x));
     for (const n of fresh) n.position = { x: n.position.x + dx, y: n.position.y };
   }

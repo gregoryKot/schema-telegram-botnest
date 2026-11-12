@@ -142,11 +142,11 @@ export const api = {
   ...createPracticeSessionsApi(transport),
   ...createEntryApi(transport), // запись по id для «Моего пути», страницы «Записей»
 
-  // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и
-  // анонимная аналитика — мини-тесты и клики лендинга (userId = null).
+  // Публичные вызовы БЕЗ auth (лид-магнит): контент тестов из quiz-registry и анонимная аналитика (userId = null).
   getQuizzes: (form?: 'ty' | 'vy') => get<{ quizzes: QuizDto[] }>(`/api/quizzes${form === 'vy' ? '?form=vy' : ''}`),
   getAllTherapyTasks:       () => get<{ clientId: UserId; clientName: string; tasks: UserTask[] }[]>('/api/therapy/tasks/all'),
-  getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`),
+  getConceptualization: (clientId: UserId) => get<ClientConceptualization | null>(`/api/therapy/conceptualization/${clientId}`), // ↓ колесо потребностей целиком (replace), правит холст
+  saveConceptNeeds: (clientId: UserId, needLinks: import('../../shared/src/therapy/conceptGraph/needLinks').ConceptNeedLink[], opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}/needs`, { needLinks }, opts),
   saveConceptualization: (clientId: UserId, body: Partial<Omit<ClientConceptualization, 'id' | 'therapistId' | 'clientId' | 'history' | 'updatedAt'>> | import('../../shared/src/therapy/conceptGraph/conceptPatch').ConceptPatchRequest, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}`, body, opts), // патч с версией строки — 409, если её изменили
   appendConceptualization: (clientId: UserId, body: ConceptAppendBody, opts?: SendOptions) => postJson<ClientConceptualization>(`/api/therapy/conceptualization/${clientId}/append`, body, opts), // холст дописывает: сервер объединяет, не удаляет
   shareConceptualization: (clientId: UserId, shared: boolean) => patchJson<{ sharedWithClientAt: string | null }>(`/api/therapy/conceptualization/${clientId}/share`, { shared }), // тумблер «Показать клиенту»

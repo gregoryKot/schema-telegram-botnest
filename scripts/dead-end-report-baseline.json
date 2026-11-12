@@ -43,6 +43,9 @@
     "status": "exempt",
     "reason": "ошибка действия: текст рядом с формой или списком, палитра рабочая, повтор в один тап; ответ 5xx сервер алертит сам (AlertLogger); введённое название остаётся в форме"
   },
+  "webapp/src/components/modeMap/WheelProvider.tsx::setStatus": {
+    "status": "reports"
+  },
   "webapp/src/components/modeMap/useAppendQueue.ts::setStatus": {
     "status": "reports"
   },
