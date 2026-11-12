@@ -5,6 +5,8 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 // (oauth-callback.service.ts) — он ведёт на экран ошибки входа, а не отвечает
 // 400. Незнакомые параметры срезает whitelist глобального ValidationPipe
 // (forbidNonWhitelisted не включён): новый параметр площадки вход не ломает.
+// Повтор параметра (`?code=a&code=b`) или строка длиннее границы — 400 от
+// ValidationPipe, без экрана ошибки: площадка так не отвечает, это ручной запрос.
 // Границы — с запасом к записанному 2026-11-12 (yandex-id-oauth.json): code —
 // 16 символов, cid — 26, state Яндекс принимает до 1024.
 export class OAuthCallbackQueryDto {
