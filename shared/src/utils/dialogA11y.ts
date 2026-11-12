@@ -1,12 +1,11 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useDialogLayer, type LayerOpts } from './dialogStack';
 
-// Диалоговая семантика модалок (К4 дизайн-аудита 2026-08): один хук в
-// базовом шите чинит все места разом. При монтировании запоминает
-// activeElement, переносит фокус внутрь (на первый фокусируемый элемент,
-// иначе на контейнер), держит Tab внутри (трап), при размонтировании
-// возвращает фокус. Трап и Escape — только у верхнего (стек dialogStack.ts): onEscape —
-// закрыть, holdEscape — держать, ни того ни другого — Escape слою ниже (лист под трапом).
+// Диалоговая семантика модалок (К4 дизайн-аудита 2026-08): один хук в базовом шите чинит все места
+// разом. При монтировании запоминает activeElement, переносит фокус внутрь (на первый фокусируемый
+// элемент, иначе на контейнер), держит Tab внутри (трап), при размонтировании возвращает фокус. Трап и
+// Escape — только у верхнего (стек dialogStack.ts): onEscape — закрыть, holdEscape — держать, ни того
+// ни другого — Escape слою ниже (лист под трапом).
 export interface DialogA11yProps {
   ref: React.RefObject<HTMLDivElement | null>;
   role: 'dialog';
@@ -33,17 +32,14 @@ export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
   const ref = useRef<HTMLDivElement>(null);
   const layer = useDialogLayer(opts);
 
-  // Слой снимается в layout-фазе, вместе с DOM: пассивная очистка отстаёт от коммита, и снятое
-  // с экрана несворачиваемое окно ещё держало Escape — лист под ним его не получал.
+  // В layout-фазе, вместе с DOM: пассивная очистка отстаёт, и снятое окно ещё держало Escape.
   useLayoutEffect(() => layer.join(), [layer]);
-
   useEffect(() => {
     if (!ref.current) return;
     // Отдельный const с точным типом: TS не переносит сужение во вложенную
     // функцию, а повторная проверка внутри trapTab была бы недостижимой веткой.
     const container: HTMLElement = ref.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    // Запасная цель возврата фокуса: слой, внутри которого открыто это окно.
     const parentLayer = container.parentElement?.closest<HTMLElement>('[role="dialog"]');
 
     const first = focusableIn(container)[0];
@@ -75,8 +71,7 @@ export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
 
     return () => {
       document.removeEventListener('keydown', trapTab);
-      // Элемент, куда возвращаем фокус, мог уйти из DOM вместе с окном (действие убрало свою
-      // кнопку) — тогда фокус остаётся в слое-родителе, а не падает на body.
+      // Открыватель мог уйти из DOM вместе с окном — тогда фокус в слой-родитель, а не на body.
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
       else if (parentLayer?.isConnected) parentLayer.focus();
     };
