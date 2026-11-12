@@ -2615,7 +2615,7 @@
   "webapp/src/sections/practice/useQuickCounts.ts": 37,
   "webapp/src/sections/PracticeSection.tsx": 183,
   "webapp/src/sections/profile/AchievementBadge.tsx": 16,
-  "webapp/src/sections/profile/achievementBadgeLook.ts": 20,
+  "webapp/src/sections/profile/achievementBadgeLook.ts": 25,
   "webapp/src/sections/profile/AchievementsCard.tsx": 42,
   "webapp/src/sections/profile/AchievementsDialog.tsx": 31,
   "webapp/src/sections/profile/AchievementsShare.tsx": 38,

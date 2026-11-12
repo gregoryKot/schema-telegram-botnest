@@ -160,7 +160,7 @@
 .cpf-prog-val.is-down { color: var(--err); }
 .cpf-prog-val.is-flat { color: var(--text-faint); }
 .cpf-prog-track { height: 6px; border-radius: var(--r-4); background: var(--paper-sunk); overflow: hidden; }
-.cpf-prog-fill { height: 100%; border-radius: var(--r-4); background: var(--nd, var(--c-moss)); }
+.cpf-prog-fill { height: 100%; border-radius: var(--r-4); background: var(--nd); }
 .cpf-help { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; padding: 0; cursor: pointer; margin: -13px; }
 .cpf-help-dot { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: oklch(0.85 0.05 var(--h)); color: var(--text-sub); font-size: 11px; font-weight: 600; }
 
@@ -190,7 +190,7 @@
 .cpf-bar-name { width: 196px; flex-shrink: 0; display: flex; align-items: center; gap: var(--space-8); font-size: 14px; color: var(--text); }
 .cpf-bar-sign { display: inline-flex; width: 44px; justify-content: center; flex: none; }
 .cpf-bar-track { flex: 1; height: 8px; border-radius: var(--r-4); background: var(--paper-sunk); overflow: hidden; }
-.cpf-bar-fill { height: 100%; border-radius: var(--r-4); background: var(--nd, var(--c-moss)); transition: width .4s ease; }
+.cpf-bar-fill { height: 100%; border-radius: var(--r-4); background: var(--nd); transition: width .4s ease; }
 .cpf-bar-n { width: 16px; text-align: right; font-size: 13px; font-weight: 700; color: var(--text); }
 .cpf-bar-n.is-zero { color: var(--text-faint); }
 .cpf-needrows { display: flex; flex-direction: column; margin-bottom: var(--space-20); }
