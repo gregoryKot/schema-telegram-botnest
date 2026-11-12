@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Booking, BookingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { PlainBooking } from './booking-notify.service';
-import { bookingEventUid } from './booking-confirm-run';
+import { bookingEventUid } from './caldav-owner-event';
 
 // Переходы статуса брони. Правило одно: каждый переход — CAS, то есть
 // `updateMany` с предикатом на ТЕКУЩИЙ статус в WHERE, а побочные эффекты

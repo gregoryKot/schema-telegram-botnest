@@ -162,7 +162,7 @@ export const HOME_FAQ: readonly { readonly q: string; readonly a: RichText }[] =
     },
     {
       q: 'Нужен ли Telegram?',
-      a: ['Нет. Войти можно через Google, ВКонтакте или по ссылке на email.'],
+      a: ['Нет. Войти можно через ВКонтакте, MAX или по ссылке на email.'],
     },
   ];
 

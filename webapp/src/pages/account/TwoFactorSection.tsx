@@ -105,7 +105,7 @@ export function TwoFactorSection({
       {!totp.enabled && !setupOpen && (
         <div className="aa-tfa-text">
           Дополнительный код из приложения (Google Authenticator, 1Password, …) при каждом входе.{' '}
-          {tr('Защищает аккаунт даже если у тебя украдут Google/Telegram/VK.', 'Защищает аккаунт даже если у вас украдут Google/Telegram/VK.')}
+          {tr('Защищает аккаунт даже если у тебя украдут Telegram, VK или почту.', 'Защищает аккаунт даже если у вас украдут Telegram, VK или почту.')}
         </div>
       )}
 

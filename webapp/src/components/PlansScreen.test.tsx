@@ -8,6 +8,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlansScreen } from './PlansScreen';
+import { plainText } from '../test-support/plainText';
 import { todayStr } from '../../../shared/src/utils/format';
 import { forEachTimeZoneAsync } from '../../../shared/src/utils/timeZone.test-helpers';
 
@@ -127,7 +128,7 @@ describe('PlansScreen — сбой загрузки (сбой ≠ пусто)', 
     getPlanHistory.mockRejectedValue(new Error('network'));
     renderScreen();
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toMatch(/Не удалось загрузить планы/);
+    expect(plainText(alert)).toMatch(/Не удалось загрузить планы/);
     expect(screen.queryByText('Планов пока нет')).toBeNull();
   });
 

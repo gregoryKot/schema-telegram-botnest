@@ -62,7 +62,7 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
     const res = await srv()
       .post('/api/auth/ticket/start')
       .set('x-requested-with', 'webapp')
-      .send({ intent: 'login', provider: 'telegram' });
+      .send({ intent: 'login', provider: 'vk' });
     expect(res.status).toBe(200);
     const { deviceCode, userCode } = res.body as {
       deviceCode: string;
@@ -88,6 +88,14 @@ describe('e2e smoke: ротация refresh — потерянный ответ 
       where: { id: USER },
       update: {},
       create: { id: USER, firstName: 'E2E' },
+    });
+    // Вход в браузере одобряет аккаунт со способом входа кроме Telegram.
+    await prisma.authProvider.create({
+      data: {
+        userId: USER,
+        provider: 'email',
+        providerId: 'e2e-rr@example.com',
+      },
     });
   });
 

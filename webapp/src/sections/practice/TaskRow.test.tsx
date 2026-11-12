@@ -5,6 +5,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { TaskRow } from './TaskRow';
 import { taskRowState } from './taskRowState';
+import { SEGMENTED_MAX, groupTasks, progressSegments, rowStatus } from './taskListModel';
+import { taskEntity } from './taskEntity';
 import type { UserTask } from '../../api';
 
 afterEach(cleanup);
@@ -76,5 +78,54 @@ describe('TaskRow', () => {
     render(<TaskRow task={task({ type: 'belief_check', text: '' })} cta="начать →" onOpen={onOpen} />);
     fireEvent.click(screen.getByText('начать →'));
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('taskRowState — вид строки и группы списка (b20)', () => {
+  it('статус в строке — только «Скоро срок» и «Просрочено»', () => {
+    expect(rowStatus('soon')).toBe('soon');
+    expect(rowStatus('overdue')).toBe('overdue');
+    expect(rowStatus('active')).toBeNull();
+    expect(rowStatus('done')).toBeNull();
+    expect(rowStatus(undefined)).toBeNull();
+  });
+
+  it('серия до 14 дней — штрих на день, длиннее — сплошная полоса', () => {
+    expect(progressSegments(4, 7)).toEqual([true, true, true, true, false, false, false]);
+    expect(progressSegments(0, SEGMENTED_MAX)).toHaveLength(SEGMENTED_MAX);
+    expect(progressSegments(10, 30)).toBeNull();
+    expect(progressSegments(0, 0)).toBeNull();
+  });
+
+  it('группы: от терапевта, свои, выполненные — без потерь и пересечений', () => {
+    const by = 7 as UserTask['assignedBy'];
+    const g = groupTasks([task({ id: 1, assignedBy: by }), task({ id: 2 }), task({ id: 3, assignedBy: by })], [task({ id: 4, done: true })]);
+    expect(g.therapist.map(t => t.id)).toEqual([1, 3]);
+    expect(g.mine.map(t => t.id)).toEqual([2]);
+    expect(g.done.map(t => t.id)).toEqual([4]);
+  });
+
+  it('сущность задания — по маршруту: упражнение своё, своё задание — «задание»', () => {
+    expect(taskEntity({ type: 'letter_to_self', text: '' })).toBe('letter');
+    expect(taskEntity({ type: 'diary_streak', text: '' })).toBe('diary');
+    expect(taskEntity({ type: 'custom', text: 'Позвонить' })).toBe('task');
+  });
+});
+
+describe('TaskRow — мета и колонка действия (b20)', () => {
+  it('«от терапевта» — в мете со знаком, а не красной полосой; «В работе» не показывается', () => {
+    const by = 7 as UserTask['assignedBy'];
+    const { container } = render(<TaskRow task={task({ type: 'belief_check', assignedBy: by })} mark status="active" cta="начать →" onOpen={() => {}} />);
+    expect(container.querySelector('.cp-task-from')?.textContent).toBe('от терапевта');
+    expect(container.querySelector('.cp-task-bar')).toBeNull();
+    expect(screen.queryByText('В работе')).toBeNull();
+  });
+
+  it('«Скоро срок» — в мете; «Готово» — круглая кнопка последней в ряду', () => {
+    const { container } = render(<TaskRow task={task({ dueDate: '2026-11-12' })} status="soon" cta="открыть →" onOpen={() => {}} onComplete={() => {}} />);
+    expect(screen.getByText('Скоро срок')).toBeTruthy();
+    const row = container.querySelector('.cp-task')!;
+    expect(row.lastElementChild?.classList.contains('cp-task-done')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Готово' })).toBe(row.lastElementChild);
   });
 });

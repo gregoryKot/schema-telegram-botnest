@@ -129,7 +129,7 @@ describe('InstallPage — экраны', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('на телефоне');
     expect(document.querySelectorAll('.ib-steps li').length).toBe(3);
     expect(screen.getByText(/Откройте её в Chrome \(iPhone — в Safari\)/)).toBeTruthy();
-    expect(screen.getByText(/Выберите «Войти через Telegram»/)).toBeTruthy();
+    expect(screen.getByText(/Входите почтой или VK ID/)).toBeTruthy();
     expect(events().filter((a) => a === 'shown')).toHaveLength(1);
     expect(document.title).toBe('Установить приложение — Всё по схеме');
   });

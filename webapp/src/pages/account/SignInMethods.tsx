@@ -6,15 +6,15 @@ import { GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountPro
 
 /** Группа «Способы входа N из M»: строки провайдеров + привязка email (плоская, без карточки). */
 export function SignInMethods({
-  providers, loading, busy, accessToken, onLink, onUnlink, emailNotice = null,
+  providers, loading, busy, accessToken, onLink, onUnlink, emailNotice = null, onLinked,
 }: {
   providers: AccountProvider[];
-  loading: boolean;
-  busy: boolean;
+  loading: boolean; busy: boolean;
   accessToken: string | null;
-  onLink: { google: () => void; telegram: () => void; vk: () => void };
+  onLink: { vk: () => void };
   onUnlink: (id: ProviderId) => void;
   emailNotice?: EmailLinkNotice | null;
+  onLinked: () => void;
 }) {
   const find = (id: ProviderId) => providers.find((p) => p.provider === id);
   const { linked, total } = countMethods(providers);
@@ -39,17 +39,17 @@ export function SignInMethods({
         </div>
       ) : (
         <div className="aa-methods">
-          <ProviderRow icon={<GoogleIcon />} title="Google" linked={!!find('google')} busy={busy}
-            subtitle={find('google')?.email} unlinkBlocked={only('google')}
-            onLink={onLink.google} onUnlink={() => onUnlink('google')} />
-          <ProviderRow icon={<TelegramIcon />} title="Telegram" linked={!!find('telegram')} busy={busy}
+          {/* Google: вход убран в 2026-11 — строка только у привязавших раньше, без «Привязать». */}
+          {find('google') && <ProviderRow icon={<GoogleIcon />} title="Google" linked busy={busy}
+            subtitle={find('google')?.email} unlinkBlocked={only('google')} onUnlink={() => onUnlink('google')} />}
+          {/* Telegram: входа на сайт через него нет (2026-11) — без «Привязать»; бота подключает AccountLinkSection. */}
+          {find('telegram') && <ProviderRow icon={<TelegramIcon />} title="Telegram" linked busy={busy}
             subtitle={find('telegram')?.displayName ?? 'привязан'} unlinkBlocked={only('telegram')}
-            onLink={onLink.telegram} onUnlink={() => onUnlink('telegram')} />
+            onUnlink={() => onUnlink('telegram')} />}
           <ProviderRow icon={<VkIcon />} title="ВКонтакте" linked={!!vk} busy={busy}
             subtitle={vk?.displayName ?? vk?.email ?? 'привязан'} unlinkBlocked={only('vk')}
             onLink={onLink.vk} onUnlink={() => onUnlink('vk')} />
-          {/* MAX: своего входа для сайтов у площадки нет — привязка начинается
-              в самом приложении, поэтому кнопки «Привязать» здесь быть не может. */}
+          {/* MAX: входа для сайтов у площадки нет — привязка начинается в самом приложении. */}
           {find('max') && (
             <ProviderRow icon={<MaxIcon />} title="MAX" linked busy={busy}
               subtitle={find('max')?.displayName ?? 'привязан'} unlinkBlocked={only('max')}
@@ -57,7 +57,7 @@ export function SignInMethods({
           )}
           <EmailLinkRow accessToken={accessToken} linked={!!find('email')} busy={busy}
             email={find('email')?.email} unlinkBlocked={only('email')}
-            onUnlink={() => onUnlink('email')} notice={emailNotice} />
+            onUnlink={() => onUnlink('email')} notice={emailNotice} onLinked={onLinked} />
         </div>
       )}
     </section>

@@ -40,20 +40,14 @@
 .al-title { font-family: var(--serif); font-size: 28px; line-height: 1.1; font-weight: 400; margin: 0; }
 .al-sub { font-size: 15px; color: var(--text-sub); line-height: 1.5; margin: 0 0 6px; text-wrap: pretty; }
 
-.al-btn, .al-btn-main {
+.al-btn-main {
   display: flex; align-items: center; gap: 14px; padding: 0 20px; border-radius: 28px; min-width: 0;
   font: 600 15px var(--sans); text-decoration: none; cursor: pointer; box-sizing: border-box; width: 100%;
 }
-.al-btn { min-height: 50px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--text); }
-.al-btn:hover { border-color: var(--line-hover); }
 .al-btn-main { min-height: 54px; background: var(--accent); border: 0; color: var(--on-accent); font-weight: 700; }
 .al-btn-main:hover { background: var(--accent-hi); }
 .al-ico { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
 .al-vk { background: #0077FF; color: #fff; border-radius: 7px; font-size: 11px; font-weight: 700; }
-.al-badge {
-  margin-left: auto; font-size: 11px; font-weight: 700; background: var(--on-accent); white-space: nowrap;
-  color: var(--accent); border-radius: 10px; padding: 3px 8px; /* на кнопке --accent — вывернутая пара: 7.72:1 */
-}
 .al-ticket { background: oklch(0.95 0.015 var(--h)); border-radius: 16px; padding: 6px 14px; }
 .al-ticket:empty { display: none; }
 .al-alert { width: 100%; }
@@ -76,7 +70,7 @@
   font: 700 15px var(--sans); cursor: pointer; width: 100%;
 }
 .al-submit:disabled { opacity: .5; cursor: default; }
-/* Отправка ссылки на почту — второе действие экрана: залитая кнопка одна (Telegram). */
+/* Отправка ссылки на почту — второе действие экрана: залитая кнопка одна (ВКонтакте). */
 .al-submit--quiet { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
 
 /* Автовход в мессенджере не сработал (TelegramRetry): исход на PaperOutcome; помощь — под кнопкой. */
@@ -102,11 +96,7 @@
 @media (max-width: 359px) {
   .al-hero-art { width: 104px; }
   .al-slogan { font-size: 21px; }
-  .al-btn, .al-btn-main { gap: 10px; padding: 0 14px; }
-  /* Бейдж «рекомендуем» рвал подпись Telegram на две строки, кнопка росла выше Google/VK (ревью b26): на
-     самом узком он скрыт визуально, текст остаётся для чтения с экрана; высота — как у соседних. */
-  .al-btn-main { min-height: 50px; }
-  .al-badge { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .al-btn-main { gap: 10px; padding: 0 14px; }
 }
 @media (min-width: 600px) and (max-width: 1023px) {
   .al-hero { padding-left: 32px; padding-right: 32px; }

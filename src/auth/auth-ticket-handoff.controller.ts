@@ -1,4 +1,4 @@
-// Handoff: сайт внутри Telegram/MAX просит билет, УЖЕ подтверждённый его же
+// Handoff: сайт внутри MAX просит билет, УЖЕ подтверждённый его же
 // аккаунтом, и открывает во внешнем браузере `/install#h=<deviceCode>`;
 // страница забирает сессию обычным `POST api/auth/ticket/poll`.
 //
@@ -50,7 +50,7 @@ export class AuthTicketHandoffController {
     requireCsrf(req, 'ticket/handoff', this.securityLog);
     return this.tickets.handoff({
       userId: req.webUser!.userId,
-      hostId: body.hostId ?? 'telegram',
+      hostId: body.hostId ?? 'max',
       deviceLabel: deviceLabel(req.headers['user-agent']),
     });
   }

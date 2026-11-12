@@ -11,9 +11,6 @@
     "<rootDir>/e2e-support/throttle-reset.setup.ts",
     "<rootDir>/../src/test-support/exit-code-leak.setup.ts"
   ],
-  "moduleNameMapper": {
-    "^jose$": "<rootDir>/e2e-support/jose.stub.ts"
-  },
   "transform": {
     "/node_modules/(@nestjs/(common|core|testing|platform-express|config|schedule|serve-static)|@noble/hashes|@otplib/[a-z-]+|@scure/base)/.+\\.js$": "<rootDir>/../src/test-support/esm-to-cjs.transform.cjs",
     "^.+\\.(t|j)s$": "ts-jest"

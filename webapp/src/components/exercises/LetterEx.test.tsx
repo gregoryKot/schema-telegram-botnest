@@ -62,7 +62,8 @@ describe('LetterEx — одно имя письма везде', () => {
   it('экран упражнения носит то же имя, а термин «Уязвимый Ребёнок» объясняет в подводке', () => {
     renderSheet();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Письмосебе в детстве');
-    expect(screen.getByText(/В схема-терапии эту часть называют Уязвимым Ребёнком/)).toBeTruthy();
+    // Подпись листа-героя склеена (glue: «схема‑терапии» с неразрывным дефисом) — дефис любой.
+    expect(screen.getByText(/В схема.терапии эту часть называют Уязвимым Ребёнком/)).toBeTruthy();
   });
 });
 
@@ -201,7 +202,7 @@ describe('LetterEx — сбой сохранения не теряет пись�
       fireEvent.click(screen.getByRole('button', { name: /Запечатать письмо/ }));
     });
 
-    expect(screen.getByRole('alert').textContent).toContain('Не удалось сохранить письмо');
+    expect(screen.getByRole('alert').textContent?.replace(/\s/g, ' ')).toContain('Не удалось сохранить письмо');
     // Экран «написано.» не показан, текст остался в редактируемом поле.
     expect(screen.queryByText(/написано/)).toBeNull();
     expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe(

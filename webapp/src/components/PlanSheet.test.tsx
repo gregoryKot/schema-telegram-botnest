@@ -9,6 +9,7 @@ import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { AddressFormContext } from '../utils/addressForm';
 import { PlanSheet } from './PlanSheet';
+import { plainText } from '../test-support/plainText';
 import { describeCrisisField } from '../test-support/crisisCardHarness';
 import { setHost, type HostBridge } from '../../../shared/src/host';
 
@@ -83,6 +84,14 @@ describe('PlanSheet — свой текст', () => {
   it('без готовых вариантов подпись поля меняется по форме обращения ты/вы', async () => {
     await act(async () => renderSheet({ needId: 'nonexistent_need' }, 'vy'));
     expect(screen.getByText('Что планируете?')).toBeTruthy();
+  });
+
+  // Ревью g6: пояснение листа плана пропало вместе с белой карточкой aside в b20 — вернулось подписью листа-героя.
+  it('шаг выбора: пояснение «Потребность восстанавливается…» и «Один маленький шаг» — подписью листа', async () => {
+    await act(async () => renderSheet({ needId: 'nonexistent_need' }, 'ty'));
+    const sub = screen.getByText(/Потребность\s+восстанавливается\s+через\s+маленькое\s+конкретное\s+действие/);
+    expect(sub.closest('.pa-sheet')).toBeTruthy();
+    expect(sub.textContent).toMatch(/Один\s+маленький\s+конкретный\s+шаг\s+–\s+уже\s+много\./);
   });
 
   it('форма «ты» по умолчанию показывает «Что планируешь?»', async () => {
@@ -232,13 +241,14 @@ describe('PlanSheet — useHistorySheet (браузерная «Назад»)', 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('на шаге подтверждения «← Выбрать другое» возвращает к выбору, а НЕ закрывает лист', async () => {
+  it('на шаге подтверждения «Выбрать другое» возвращает к выбору, а НЕ закрывает лист (одна стрелка — у полосы, b20)', async () => {
     const { onClose } = renderSheet();
     await act(async () => {});
     const textarea = screen.getByPlaceholderText('Что-то конкретное, маленькое...');
     fireEvent.change(textarea, { target: { value: 'Практика' } });
     fireEvent.click(screen.getByText('Продолжить →'));
-    fireEvent.click(screen.getByText('← Выбрать другое'));
+    expect(screen.queryByText(/←/)).toBeNull(); // «← ← Выбрать другое»: стрелка в подписи дублировала глиф полосы
+    fireEvent.click(screen.getByText('Выбрать другое'));
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByPlaceholderText('Что-то конкретное, маленькое...')).toBeTruthy();
   });
@@ -252,7 +262,7 @@ describe('PlanSheet — сбой загрузки своих практик (с�
     renderSheet();
     await act(async () => {});
 
-    expect(screen.getByRole('alert').textContent).toContain(
+    expect(plainText(screen.getByRole('alert'))).toContain(
       'Не удалось загрузить твой список «Что меня питает»',
     );
     // Кураторский список работает — деградация, не пустота.

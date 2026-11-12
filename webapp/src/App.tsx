@@ -22,7 +22,6 @@ import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { LoginPage } from './pages/LoginPage'; // вход и служебные — после прочих: их PaperOutcome (sceneKit) иначе переставляет CSS-чанки (b26)
 import { AuthCallback } from './pages/AuthCallback';
-import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
 import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage'; // не ленивый: ячейки кода общие с /account (главный поток) — иначе auth-login.css уезжает в общий чанк раньше index.css (check-css-link-order)
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
@@ -110,7 +109,6 @@ const appRoutes = [
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
   { path: '/auth/confirm',   lazy: authConfirmRoute },
-  { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
   { path: '/auth/error',     lazy: authErrorRoute },
   { path: '/link',           lazy: linkRoute },

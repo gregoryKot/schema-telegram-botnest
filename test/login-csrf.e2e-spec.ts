@@ -161,15 +161,16 @@ describe('e2e: login-CSRF — установщики сессии требуют
 
   describe('POST /api/auth/ticket/poll', () => {
     it('форма с deviceCode одобренного билета → 4xx, билет не расходуется', async () => {
-      // Атакующий сам выписывает билет входа и сам подтверждает его в боте.
+      // Атакующий сам выписывает билет входа и сам подтверждает его своей
+      // сессией (аккаунт из MAX: только с Telegram вход в браузер не одобрить).
       const attacker = await prisma.authProvider.findFirst({
-        where: { provider: 'telegram', providerId: String(ATTACKER_TG) },
+        where: { provider: 'max', providerId: String(ATTACKER_MAX) },
       });
-      expect(attacker).toBeTruthy(); // создан контролем telegram/webapp выше
+      expect(attacker).toBeTruthy(); // создан контролем max/webapp выше
       const tickets = app.get(LoginTicketService);
       const { deviceCode, userCode } = await tickets.start({
         intent: 'login',
-        provider: 'telegram',
+        provider: 'vk',
         requesterUserId: null,
         hostId: 'web',
         deviceLabel: 'evil',

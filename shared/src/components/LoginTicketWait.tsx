@@ -43,10 +43,8 @@ const LINK: React.CSSProperties = {
 };
 
 const PROVIDER_NAMES: Record<string, string> = {
-  telegram: 'Telegram',
-  google: 'Google',
   vk: 'ВКонтакте',
-  email: 'почте',
+  email: 'почту',
 };
 
 export function LoginTicketWait({
@@ -102,9 +100,7 @@ function WaitingCode({
   return (
     <div className="u-tc">
       <div style={SUB}>
-        {state.provider === 'telegram'
-          ? `Осталось подтвердить вход в ${where} — там появится этот код:`
-          : `Осталось подтвердить вход через ${where}. Код входа:`}
+        {`Осталось подтвердить вход через ${where}. Код входа:`}
       </div>
       <div
         style={{

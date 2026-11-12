@@ -87,7 +87,6 @@ function bootProcess(notifications: NotificationService) {
     notifications,
     { track: jest.fn() } as never,
     stub,
-    stub,
   );
   service.onModuleInit();
   return { service, fakeBot };

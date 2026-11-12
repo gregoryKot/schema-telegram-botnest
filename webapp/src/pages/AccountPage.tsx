@@ -21,7 +21,7 @@ import { accountBackPathFromStorage } from './account/accountBackPath';
 import '../styles/auth-account.css';
 import { BackLabel } from '../components/NavGlyphs';
 
-// Форма без картинок (APP_2026-11.md, b27): плоские группы, одна залитая кнопка — «Данные из Telegram».
+// Форма без картинок (APP_2026-11.md, b27): плоские группы, одна залитая кнопка — «Данные из Telegram» (если бот не подключён).
 export function AccountPage() {
   const { accessToken, logout } = useAuth();
   const tr = useTr();
@@ -62,8 +62,8 @@ export function AccountPage() {
         <div className="aa-cols">
           <SignInMethods
             providers={providers} loading={loading} busy={actions.busy} accessToken={accessToken}
-            onLink={{ google: actions.linkGoogle, telegram: actions.linkTelegram, vk: actions.linkVk }}
-            onUnlink={actions.setUnlinkProvider} emailNotice={emailNotice}
+            onLink={{ vk: actions.linkVk }}
+            onUnlink={actions.setUnlinkProvider} emailNotice={emailNotice} onLinked={() => { void refresh(); }}
           />
           <div className="aa-col">
             {!loadedOnce ? <GroupSkeleton /> : <TwoFactorSection accessToken={accessToken} totp={totp} onChanged={refresh} />}

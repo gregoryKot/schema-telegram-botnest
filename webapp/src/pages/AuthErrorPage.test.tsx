@@ -124,17 +124,23 @@ describe('AuthErrorPage — ссылка из письма', () => {
   });
 });
 
-// Рубильник Google/VK (2026-11): вместо голого 500 — свой экран с честной
+// Рубильник VK (2026-11): вместо голого 500 — свой экран с честной
 // причиной и кнопкой к другим способам входа.
 describe('AuthErrorPage — провайдер выключен', () => {
-  it('google_disabled: свой заголовок, кнопка на /login, без кода, код в отчёте', () => {
-    const { container } = renderAt('?reason=google_disabled');
-    expect(screen.getByRole('heading').textContent).toBe('Вход через Google отключён');
+  it('vk_disabled: свой заголовок, кнопка на /login, без кода, код в отчёте', () => {
+    const { container } = renderAt('?reason=vk_disabled');
+    expect(screen.getByRole('heading').textContent).toBe('Вход через ВКонтакте отключён');
     expect(screen.getByText(/временно отключён/)).toBeTruthy();
     const link = screen.getByText('Другой способ входа') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/login');
     expect(container.querySelector('.pa-outcome-code')).toBeNull();
-    expect(reportedMessages()[0]).toMatch(/, google_disabled$/);
+    expect(reportedMessages()[0]).toMatch(/, vk_disabled$/);
+  });
+
+  // Вход через Google убран (2026-11): его кодов сервер больше не ставит.
+  it('google_disabled — неизвестная причина: общий экран', () => {
+    renderAt('?reason=google_disabled');
+    expect(screen.getByRole('heading').textContent).toBe('Вход не удался');
   });
 
   it('vk_disabled в форме «вы» — тот же безличный текст', () => {

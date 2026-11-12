@@ -23,9 +23,8 @@ export class ArticlesService implements OnModuleInit {
   // Seed / refresh the built-in articles (the ones that used to be hardcoded in
   // the webapp). Version-gated: on an empty table we insert everything; on a
   // SEED_VERSION bump we refresh the built-in articles' text/diagrams by slug.
-  // Обложки статей рисует сайт (webapp/src/components/art/articleCoverScenes.ts):
-  // heroImage API больше не читает и не пишет. Статьи, созданные админом
-  // (слаги вне сида), сид не трогает.
+  // Обложки статей рисует сайт по slug (webapp/src/components/art/articleCoverScenes.ts).
+  // Статьи, созданные админом (слаги вне сида), сид не трогает.
   async onModuleInit() {
     const stored = await this.prisma.bookingSetting.findUnique({
       where: { key: SEED_VERSION_KEY },
@@ -87,19 +86,13 @@ export class ArticlesService implements OnModuleInit {
   }
 
   async findBySlug(slug: string) {
-    const article = await this.prisma.article.findUnique({
-      where: { slug },
-      omit: { heroImage: true },
-    });
+    const article = await this.prisma.article.findUnique({ where: { slug } });
     if (!article) throw new NotFoundException('Article not found');
     return article;
   }
 
   async adminList() {
-    return this.prisma.article.findMany({
-      orderBy: { date: 'desc' },
-      omit: { heroImage: true },
-    });
+    return this.prisma.article.findMany({ orderBy: { date: 'desc' } });
   }
 
   async create(dto: ArticleDto) {

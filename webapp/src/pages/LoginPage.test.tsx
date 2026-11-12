@@ -117,22 +117,28 @@ describe('LoginPage — уже вошедший пользователь', () =>
 });
 
 describe('LoginPage — обычный браузер (не Telegram)', () => {
-  // Провайдеры теперь ССЫЛКИ: подтверждение открывается снаружи, а страница
-  // остаётся жить и забирает сессию опросом — иначе из установленного
-  // приложения войти нельзя вовсе (разбор 2026-08-28).
-  it('показывает три способа входа', async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse(200, {
-        deviceCode: 'd'.repeat(64),
-        userCode: 'K7M2QX94',
-        expiresIn: 300,
-        interval: 3,
-      }),
-    );
+  it('показывает способы входа сайта: ВКонтакте и почту', () => {
     renderPage();
-    expect(await screen.findByRole('link', { name: /Войти через Google/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Войти через Telegram/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /email/i })).toBeTruthy();
+  });
+
+  // Запрос РКН №08-1063539 (2026-11): пользователей из России нельзя
+  // авторизовать через иностранный сервис. Ни Google, ни Telegram: кнопок и
+  // ссылок входа нет, страница к их ручкам не ходит, а прежним пользователям
+  // сказано, как попасть в свой аккаунт.
+  it('входа через Google и Telegram нет; прежним пользователям — подсказка', () => {
+    const { container } = renderPage();
+    expect(screen.queryByRole('link', { name: /Google/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Войти через Telegram/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Telegram/ })).toBeNull();
+    expect(container.innerHTML).not.toMatch(
+      /api\/auth\/telegram|api\/auth\/google|oauth\.telegram|start=login_/,
+    );
+    expect(screen.getByTestId('login-google-note').textContent).toContain('с той же почтой');
+    expect(screen.getByTestId('login-telegram-note').textContent).toContain('почту или VK ID');
+    // Во вкладке браузера билет входа не выписывается — страница молчит.
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
@@ -263,7 +269,7 @@ describe('LoginPage — внутри Telegram (авто-вход не удалс
     renderPage();
     expect(screen.getByText('Не удалось войти автоматически')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Попробовать снова' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Войти через Google/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
   });
 
   // Пара к AppErrorScreen мини-аппа: экран-тупик обязан назвать адрес, а не

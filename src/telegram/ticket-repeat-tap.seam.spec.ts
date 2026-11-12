@@ -1,6 +1,6 @@
 // Двойной тап «Это я» на карточках бота — на шве (аудит 2026-10, backend#22).
 //
-// Настоящие хендлеры tglink:yes / tglogin:yes на фейковом боте + настоящие
+// Настоящие хендлеры tglink:yes на фейковом боте + настоящие
 // LoginTicketService / TicketLinkService поверх поддельной Prisma из штатной
 // оснастки. Юнит с замоканным `links.approve` проверяет только то, что хендлер
 // его позвал: ложная карточка «Не получилось объединить» поверх удавшегося
@@ -9,11 +9,9 @@ import { Logger } from '@nestjs/common';
 import {
   makeDeps,
   startLink,
-  startLogin,
   WEB_USER,
 } from '../auth/login-ticket/login-ticket.harness.spec';
 import { TelegramLinkService } from './telegram.link.service';
-import { TelegramLoginService } from './telegram.login.service';
 import { makeFakeBot, runAction } from './telegram.test-helpers.spec';
 
 const TG_RAW = 42; // сырой telegramId нажавшего
@@ -40,13 +38,6 @@ function build() {
     accountService,
     deps.securityLog,
     analytics,
-  ).onModuleInit();
-  new TelegramLoginService(
-    fakeBot.bot,
-    deps.tickets,
-    botService,
-    accountService,
-    deps.securityLog,
   ).onModuleInit();
   return { ...deps, fakeBot, analytics };
 }
@@ -170,53 +161,5 @@ describe('tglink:yes — повторный тап', () => {
     expect(b.merge.merge).not.toHaveBeenCalled();
     expect(b.rows[0].approvedUserId).toBeNull();
     expect(trackedNames(b)).toEqual(['account_link_failed']);
-  });
-});
-
-describe('tglogin:yes — повторный тап', () => {
-  async function shownLogin(b: Built) {
-    const started = await startLogin(b.tickets);
-    expect(
-      await b.tickets.forConfirm(started.userCode, BigInt(TG_RAW)),
-    ).not.toBeNull();
-    return started;
-  }
-
-  it('второй тап подряд: «Готово», воронка получает «подтвердил» один раз', async () => {
-    const b = build();
-    const { userCode } = await shownLogin(b);
-
-    const first = await tap(b, `tglogin:yes:${userCode}`);
-    const second = await tap(b, `tglogin:yes:${userCode}`);
-
-    expect(said(first)).toMatch(DONE);
-    expect(said(second)).toMatch(DONE);
-    expect(
-      (b.report.step as jest.Mock).mock.calls.filter(
-        ([s]) => s === 'confirmed',
-      ),
-    ).toHaveLength(1);
-  });
-
-  it('тап после того, как приложение забрало сессию: «Готово», а не ложный провал', async () => {
-    const b = build();
-    const { userCode, deviceCode } = await shownLogin(b);
-    await tap(b, `tglogin:yes:${userCode}`);
-    expect((await b.tickets.poll(deviceCode)).status).toBe('linked');
-
-    const late = await tap(b, `tglogin:yes:${userCode}`);
-
-    expect(said(late)).toMatch(DONE);
-    expect(b.auth.issueTokens).toHaveBeenCalledTimes(1);
-  });
-
-  it('настоящий провал (код протух) по-прежнему «Не получилось подтвердить»', async () => {
-    const b = build();
-    const { userCode } = await shownLogin(b);
-    b.rows[0].expiresAt = new Date(Date.now() - 1000);
-
-    const ctx = await tap(b, `tglogin:yes:${userCode}`);
-
-    expect(said(ctx)).toContain('Не получилось подтвердить');
   });
 });

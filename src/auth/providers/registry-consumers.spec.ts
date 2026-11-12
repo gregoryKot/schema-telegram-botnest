@@ -83,11 +83,19 @@ const frontFiles: Array<[string, string]> = FRONT_DIRS.flatMap((d) =>
 describe('провайдеры входа ⇄ registry.ts ⇄ фронт', () => {
   it('находит провайдеров (сверка не пустая)', () => {
     expect(providers.map((p) => p.id).sort()).toEqual([
-      'google',
       'max',
       'telegram',
       'vk',
     ]);
+  });
+
+  // Вход через Google убран (2026-11, запрос РКН №08-1063539): ручек
+  // /api/auth/google* на сервере нет — фронт не должен на них вести.
+  it('фронт не зовёт снятый /api/auth/google', () => {
+    const callers = frontFiles
+      .filter(([path, text]) => hasConsumer('google', [[path, text]]))
+      .map(([path]) => path);
+    expect(callers).toEqual([]);
   });
 
   it.each(providers)(

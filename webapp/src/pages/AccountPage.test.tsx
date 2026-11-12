@@ -161,19 +161,22 @@ describe('AccountPage — загрузка', () => {
     renderPage();
     await screen.findByText('Аккаунт');
 
-    // Все 4 кнопки "Привязать" (google, telegram, vk, email), ни одной "Отвязать".
-    expect(screen.getAllByText('Привязать').length).toBe(4);
+    // Обе кнопки "Привязать" (vk, email), ни одной "Отвязать". Google и
+    // Telegram без привязки не показаны вовсе: входа через них на сайте нет (2026-11).
+    expect(screen.getAllByText('Привязать').length).toBe(2);
+    expect(screen.queryByText('Google')).toBeNull();
+    expect(screen.queryByText('Telegram')).toBeNull();
     expect(screen.queryByText('Отвязать')).toBeNull();
     expect(screen.getByText('не привязан')).toBeTruthy();
   });
 
   it('заголовок способов входа считает реальные привязки: «N из M»', async () => {
     renderPage();
-    await screen.findByText('0 из 4');
+    await screen.findByText('0 из 2');
     cleanup();
     meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
     renderPage();
-    await screen.findByText('1 из 4');
+    await screen.findByText('1 из 3'); // прежняя привязка Google — своя строка
     expect(screen.getByText('U')).toBeTruthy();
   });
 
@@ -431,41 +434,6 @@ describe('AccountPage — привязка email', () => {
 
     await screen.findByText(/Email уже занят/);
     expect(screen.queryByText(/письмо придёт в течение минуты/)).toBeNull();
-  });
-});
-
-// П5 (симптом 2026-08-21): linkGoogle/linkVk запрашивают link-token ПЕРЕД
-// редиректом — без этой httpOnly-куки сервер не видит текущего пользователя,
-// и вместо привязки создаётся/логинится ДРУГОЙ аккаунт. linkTelegram этого
-// не делал — здесь регрессионный тест на то, что теперь делает, как соседи.
-describe('AccountPage — привязка Telegram', () => {
-  it('перед редиректом на /api/auth/telegram/redirect запрашивает link-token (как linkGoogle/linkVk)', async () => {
-    const originalHref = window.location.href;
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, href: '' },
-    });
-    try {
-      renderPage();
-      await screen.findByText('Аккаунт');
-
-      // Кнопки «Привязать» в порядке разметки: Google, Telegram, VK, Email.
-      fireEvent.click(screen.getAllByText('Привязать')[1]);
-
-      await waitFor(() =>
-        expect(
-          fetchMock.mock.calls.some(([url]: [string]) =>
-            String(url).includes('/api/auth/link-token'),
-          ),
-        ).toBe(true),
-      );
-      expect(window.location.href).toContain('/api/auth/telegram/redirect');
-    } finally {
-      Object.defineProperty(window, 'location', {
-        configurable: true,
-        value: { ...window.location, href: originalHref },
-      });
-    }
   });
 });
 

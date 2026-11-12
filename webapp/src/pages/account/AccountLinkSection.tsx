@@ -76,7 +76,6 @@ export function AccountLinkSection({
   const { state, begin, reset } = useLoginTicket({
     api: ticketApi,
     hostId: 'web',
-    botUsername,
     apiBase: API_BASE,
     intent: 'link',
     urlFor: (_provider, code) =>

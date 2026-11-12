@@ -121,14 +121,14 @@ describe('buildCapabilityReport', () => {
   // запись реестра ловит это до первой жалобы пользователя.
   it('oauthRedirectSane: канонический адрес возврата — on (контроль)', () => {
     const report = buildCapabilityReport({
-      GOOGLE_REDIRECT_URI: 'https://schemehappens.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
     });
     expect(report.find((c) => c.id === 'oauthRedirectSane')!.on).toBe(true);
   });
 
   it('oauthRedirectSane: адрес возврата на legacy-хосте — off, не критично', () => {
     const report = buildCapabilityReport({
-      GOOGLE_REDIRECT_URI: 'https://schemalab.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemalab.ru/api/auth/vk/callback',
     });
     const cap = report.find((c) => c.id === 'oauthRedirectSane')!;
     expect(cap.on).toBe(false);

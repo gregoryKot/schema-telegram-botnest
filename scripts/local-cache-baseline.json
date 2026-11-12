@@ -217,6 +217,10 @@
       "owner": "webapp/src/components/appShell/sidebarCollapse.ts",
       "kind": "local"
     },
+    "site_login_offer": {
+      "owner": "shared/src/account/siteLoginOffer.ts",
+      "kind": "local"
+    },
     "tasks_seen_at": {
       "owner": "webapp/src/sections/tasks/newTasks.ts",
       "kind": "local"
