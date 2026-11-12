@@ -15,15 +15,25 @@
 .th-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .th-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-/* Карточка по сигналу на главной: сплошной фон, акцентная полоска слева. */
-.th-card {
-  display: flex; flex-direction: column; gap: 8px; padding: 18px 18px 8px;
-  border-radius: 18px; border-left: 3px solid var(--accent);
-  background: var(--surface); border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
-}
-.th-card-title { margin: 0; font: 400 20px/1.3 var(--serif); color: var(--text); }
-.th-card-sub { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-sub); }
-.th-card-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 8px; }
+/* Карточка моста (TherapyCardFrame, b24): лист бумаги без контура и полосы — шалфей у спокойной, персик у
+   сигнальной (--h ставит компонент). Надзаголовок — тоном текста (красный на цветной бумаге ушёл), справа знак
+   строчного размера. Заголовок — ровным набором (balance), на узком экране кегль ниже: три строки, а не четыре. */
+.th-card { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 10px 20px; border-radius: 20px; }
+.th-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; min-height: 24px; }
+.th-card-head > .ds-eyebrow { align-self: center; min-width: 0; color: var(--text-sub); text-wrap: balance; }
+.th-card-sign { display: inline-flex; flex: none; align-items: center; }
+/* Три дня сигнала: холст Strokes 120×100 — пять мест, занято три левых, а полоски низкие (сигнал — индекс не
+   выше 4, LOW_INDEX_MAX: верх полоски не выше y≈49). Окно показывает левую нижнюю часть холста крупнее —
+   иначе три низкие полоски читались тремя точками. */
+.th-card-days { display: block; width: 42px; height: 32px; overflow: hidden; }
+.th-card-days > svg { display: block; width: 72px; height: 60px; max-width: none; margin: -26px 0 0 -2px; }
+.th-card-title { margin: 0; font: 400 20px/1.3 var(--serif); color: var(--text); text-wrap: balance; }
+.th-card-sub { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
+.th-card-acts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 6px; }
+@media (max-width: 420px) { .th-card-title { font-size: 19px; } }
+@media (max-width: 360px) { .th-card { padding: 14px 16px 8px 16px; } .th-card-title { font-size: 18px; } }
+/* 320: две кнопки в ряд не входят — главная во всю ширину, тихая по центру под ней. */
+@media (max-width: 340px) { .th-card-acts { flex-direction: column; align-items: stretch; gap: 0; } .th-card-acts .th-back { align-self: center; } }
 
 /* Кнопки карточки и листа */
 /* Поле и скругление — у .ds-btn (кнопка всегда «ds-btn th-btn»): свои 22/24 здесь не
@@ -37,10 +47,35 @@
   background: transparent; color: var(--text); border: 1px solid var(--line);
 }
 .th-back {
-  min-height: 44px; padding: 0 8px; background: none; border: 0; cursor: pointer;
+  min-height: 44px; padding: 0 12px; background: none; border: 0; cursor: pointer;
   font: 600 14px var(--sans); color: var(--text-sub);
 }
 .th-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .th-sheet-acts { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
 .th-sheet-acts .th-btn { width: 100%; }
 .th-sheet-acts .th-back { align-self: center; }
+
+/* ── Лист «Поговорить» (TalkSheet, b24): лист-герой неба + действия ────────
+   Без своего терапевта — фото автора с наклейкой Talk (AuthorPhoto) над текстом, с 768 — слева от него;
+   со своим терапевтом — EntitySheet. Кнопки сразу под листом, в той же колонке. */
+.th-talk-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; box-sizing: border-box; padding: 26px 20px 22px; border-radius: 20px; }
+.th-talk-photo.author-photo { width: 132px; flex: none; margin-left: 6px; padding: 7px 7px 10px; box-shadow: 7px 8px 0 oklch(0.79 0.07 var(--h)); }
+.th-talk-photo .author-photo-img { height: auto; }
+.th-talk-photo.author-photo::before { top: -9px; width: 56px; height: 18px; margin-left: -28px; }
+.th-talk-photo .author-photo-sticker { right: -22px; bottom: -14px; width: 56px; height: 56px; border-radius: 14px; box-shadow: 4px 5px 0 oklch(0.78 0.07 var(--h)); }
+.th-talk-photo .author-photo-sticker .scn-sign { width: 42px; }
+.th-talk-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ds-eyebrow.th-talk-label { color: var(--text-sub); }
+.th-talk-title { margin: 0; font: 400 28px/1.14 var(--serif); letter-spacing: -0.01em; color: var(--text); text-wrap: balance; }
+.th-talk-lead { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-sub); text-wrap: pretty; }
+@media (max-width: 360px) {
+  .th-talk-hero { padding: 24px 16px 18px; gap: 18px; }
+  .th-talk-photo.author-photo { width: 112px; }
+  .th-talk-title { font-size: 25px; }
+  .th-talk-lead { font-size: 14.5px; }
+}
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .th-talk-hero { flex-direction: row; align-items: center; gap: 40px; padding: 32px 32px 32px 30px; border-radius: 24px; }
+  .th-talk-photo.author-photo { width: 156px; margin: 0; }
+  .th-talk-title { font-size: 30px; }
+}

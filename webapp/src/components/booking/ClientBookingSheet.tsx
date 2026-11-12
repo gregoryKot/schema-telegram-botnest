@@ -11,7 +11,10 @@ import { BookingSlotsSection } from './BookingSlotsSection';
 import { useClientTimeZone } from './useClientTimeZone';
 import { useClientSessionPrice } from './useClientSessionPrice';
 import { ClientBookingPrice } from './ClientBookingPrice';
-import { bookOutcome, sessionWhen } from './clientBookingModel';
+import { bookOutcome, leadAndRest, sessionWhen } from './clientBookingModel';
+import { EntitySheet } from '../paper/EntitySheet';
+import { PaperAlert } from '../paper/PaperAlert';
+import { PaperEmpty } from '../art/PaperEmpty';
 import { buildClientBookingCopy } from './clientBookingCopy';
 import '../../styles/client-booking.css';
 
@@ -76,29 +79,27 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
       </section>
     );
   } else if (failed) {
-    body = <p className="cbk-note" role="alert">{copy.loadFailed}</p>;
+    body = <FailNote text={copy.loadFailed} />;
   } else if (slots === null) {
     body = <SlotsSkeleton />;
   } else if (slots.length === 0) {
-    body = <div className="cbk-actions"><p className="cbk-note">{copy.empty}</p>{write}</div>;
+    body = <div className="cbk-actions cbk-empty"><PaperEmpty>{copy.empty}</PaperEmpty>{write}</div>;
   } else {
     body = (
       <>
-        <BookingSlotsSection slots={slots} tz={tz} onTzChange={setTz} day={day} onDayChange={setDay} slot={slot} onSlotChange={pick} tr={tr} />
-        <ClientBookingPrice tz={tz} tr={tr} price={price} />
-        {phase.kind === 'failed' && (
-          <p className="cbk-error" role="alert">{phase.why === 'taken' ? copy.taken : copy.failed}</p>
-        )}
+        <BookingSlotsSection paper slots={slots} tz={tz} onTzChange={setTz} day={day} onDayChange={setDay} slot={slot} onSlotChange={pick} tr={tr} />
+        <ClientBookingPrice tz={tz} tr={tr} price={price} when={slot ? sessionWhen(slot.startsAt, tz) : undefined} />
+        {phase.kind === 'failed' && <FailNote text={phase.why === 'taken' ? copy.taken : copy.failed} />}
         {phase.kind === 'failed' && phase.why === 'error' && write}
         {slot ? (
           <div className="cbk-actions">
+            <button type="button" className="ds-btn ds-btn--lg" disabled={phase.kind === 'sending'} onClick={() => void submit()}>
+              {phase.kind === 'sending' ? copy.sending : copy.submit(localTimeLabel(slot.startsAt, tz))}
+            </button>
             <p className="cbk-offer">
               {copy.offerLead}<ExternalLink href="/offer" className="u-link">оферты</ExternalLink> и{' '}
               <ExternalLink href="/privacy" className="u-link">политики конфиденциальности</ExternalLink>.
             </p>
-            <button type="button" className="ds-btn ds-btn--lg" disabled={phase.kind === 'sending'} onClick={() => void submit()}>
-              {phase.kind === 'sending' ? copy.sending : copy.submit(localTimeLabel(slot.startsAt, tz))}
-            </button>
           </div>
         ) : (
           <p className="cbk-note">{copy.pickTime}</p>
@@ -113,25 +114,28 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
         <button type="button" className="ds-back" onClick={goBack}>{copy.close}</button>
       </div>
       <div className="cbk-inner">
-        <header>
-          <div className="ds-eyebrow">Мой терапевт</div>
-          <h1 className="ds-h1">{copy.title}</h1>
-        </header>
-        <p className="cbk-lede">{copy.lede}</p>
+        <EntitySheet look="therapist" compact titleAs="h1" label="Мой терапевт" title={copy.title} sub={copy.lede} />
         {body}
       </div>
     </div>
   );
 }
 
-/** Силуэт ленты слотов: строка дней и сетка времени — по форме BookingSlotsSection. */
+/** Сбой строкой: первая фраза — заголовком, продолжение — тише (PaperAlert); слова те же. */
+function FailNote({ text }: { text: string }) {
+  const [lead, rest] = leadAndRest(text);
+  return <PaperAlert sign="talk" title={lead} text={rest || undefined} />;
+}
+
+/** Силуэт ленты слотов: строка дней и сетка времени — по форме BookingSlotsSection (чипы 44, билет под ними). */
 function SlotsSkeleton() {
   return (
     <div className="cbk-skel" aria-hidden>
-      <Skeleton width="40%" height={12} />
-      <div className="cbk-skel-row">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={88} height={44} radius={999} />)}</div>
-      <Skeleton width="30%" height={12} />
-      <div className="cbk-skel-row">{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} width={72} height={44} radius={999} />)}</div>
+      <Skeleton width="34%" height={12} />
+      <div className="cbk-skel-row cbk-skel-row--days">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={112} height={44} radius={999} />)}</div>
+      <Skeleton width="22%" height={12} />
+      <div className="cbk-skel-row">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={74} height={44} radius={999} />)}</div>
+      <Skeleton width="70%" height={14} />
     </div>
   );
 }

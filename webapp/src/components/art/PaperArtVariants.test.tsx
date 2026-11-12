@@ -6,7 +6,7 @@
 import type { ReactElement } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { Strokes, Pebbles } from './PaperArt';
+import { Layers, Strokes, Pebbles } from './PaperArt';
 import { Scales } from './GuideSignsTechniques';
 import { Grounded, Pause, Haven, Join } from './AppSigns';
 import { Check } from './PaperArtSigns';
@@ -165,5 +165,22 @@ describe('Check: плашка — вариант мотива пропом', () 
     expect(rects(<SignArt sign="check" />)[0].getAttribute('fill')).toBe(PAPER.sage);
     const leaf = render(<SignArt sign="leaf" plate="surface" />).container.innerHTML;
     expect(leaf).toBe(render(<SignArt sign="leaf" />).container.innerHTML);
+  });
+});
+
+describe('Layers probe', () => {
+  it('без probe — три слоя, как было', () => {
+    const { container } = render(<Layers />);
+    expect(container.querySelectorAll('rect')).toHaveLength(3);
+    expect(container.querySelector('[data-probe]')).toBeNull();
+    expect(container.querySelector('circle')).toBeNull();
+  });
+
+  it('probe — те же три слоя, верхний приподнят и помечен точкой', () => {
+    const { container } = render(<Layers probe />);
+    expect(container.querySelectorAll('rect')).toHaveLength(3);
+    const top = container.querySelector('[data-probe="yes"]')!;
+    expect(top.getAttribute('transform')).toMatch(/^rotate\(/);
+    expect(top.querySelectorAll('rect, circle')).toHaveLength(2);
   });
 });

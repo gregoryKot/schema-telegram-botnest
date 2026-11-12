@@ -5,6 +5,8 @@
 import type { OptionPrice } from '../../utils/sessionPrice';
 import { Skeleton } from '../Skeleton';
 import { CurrencyChoice } from './CurrencyChoice';
+import { SessionTicket } from './SessionTicket';
+import { glue } from '../../../../shared/src/utils/typo';
 import { fieldLabel } from './fieldLabelStyle';
 import type { Tr } from './slotsCopy';
 
@@ -15,16 +17,19 @@ function clientPriceNote(price: OptionPrice): string {
     : `Сессия — ${price.text}, запись подтвердится сразу: об оплате терапевт напишет перед встречей.`;
 }
 
-export function ClientBookingPrice({ tz, tr, price }: {
+export function ClientBookingPrice({ tz, tr, price, when }: {
   tz: string;
   tr: Tr;
   /** undefined — грузится (силуэт строки); null — цены нет, строки тоже нет. */
   price: OptionPrice | null | undefined;
+  /** Окно выбрано — строка «когда» (sessionWhen): цена встаёт в билет сессии рядом с днём и временем. */
+  when?: string;
 }) {
+  const note = price === undefined ? <Skeleton width="70%" height={14} />
+    : price ? <p className="cbk-note">{glue(clientPriceNote(price))}</p> : null;
   return (
     <>
-      {price === undefined && <Skeleton width="70%" height={14} />}
-      {price && <p className="cbk-note">{clientPriceNote(price)}</p>}
+      {when ? <SessionTicket className="ym-hide-content" when={when}>{note}</SessionTicket> : note}
       <CurrencyChoice tz={tz} labelStyle={fieldLabel} tr={tr} />
     </>
   );

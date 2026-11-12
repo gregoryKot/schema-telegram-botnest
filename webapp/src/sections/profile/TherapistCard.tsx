@@ -1,4 +1,6 @@
-import { Talk } from '../../components/art/PaperArtSigns';
+import { SignArt } from '../../components/art/SignArt';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { SessionTicket } from '../../components/booking/SessionTicket';
 import { api, type TherapyRelationInfo } from '../../api';
 import { FormerTherapistNote } from '../../../../shared/src/therapy/FormerTherapistNote';
 import { upcomingSession } from '../../../../shared/src/therapy/upcomingSession';
@@ -13,6 +15,8 @@ import { MyConceptRow } from './MyConceptRow';
 // Карточка «Терапевт» профиля. Связи нет, а терапевт отказался от роли — вместо
 // пустоты сообщение о бывшем терапевте (решение владельца 2026-10-22). Терапевт
 // показал схему случая — строка «Схема случая» (MyConceptRow) под записью.
+// Лист неба (ENTITY_LOOK.therapist) со знаком Talk один раз; сессия — «билетик» (SessionTicket, b24);
+// нет сессии и записи — только шапка, пустого билета нет.
 export function TherapistCard({ relation }: { relation: TherapyRelationInfo | null }) {
   if (!relation) return <FormerTherapistNote load={api.getFormerTherapist} enabled className="ds-card cpf-former" />;
   if (relation.role !== 'client' || !relation.partnerName) return null;
@@ -26,17 +30,15 @@ function ClientTherapistCard({ relation, partnerName }: { relation: TherapyRelat
   const next = nextBooking(overview?.upcoming) ? null : upcomingSession(relation.nextSession, relation.meetingDays);
   return (
     <section className="pp-paper cpf-therapist">
-      <div className="cpf-therapist-ava" aria-hidden="true">{avatarInitial(partnerName)}</div>
-      <div className="cpf-therapist-body">
-        <div className="ds-label cpf-therapist-label">Терапевт</div>
-        <div className="cpf-therapist-name">{partnerName}</div>
-      </div><Talk size="row" />
-      {next && (
-        <div className="cpf-therapist-next">
-          <span className="cpf-therapist-label">Следующая сессия</span>
-          <span>{nextSessionLabel(next)}</span>
+      <div className="cpf-therapist-head">
+        <div className="cpf-therapist-ava" aria-hidden="true">{avatarInitial(partnerName)}</div>
+        <div className="cpf-therapist-body">
+          <div className="ds-label cpf-therapist-label">Терапевт</div>
+          <div className="cpf-therapist-name">{partnerName}</div>
         </div>
-      )}
+        <span className="cpf-therapist-sign" aria-hidden="true"><SignArt sign={ENTITY_LOOK.therapist.sign} size="row" /></span>
+      </div>
+      {next && <SessionTicket when={nextSessionLabel(next)} label="Следующая сессия" />}
       <ClientBookingBlock overview={overview} onBooked={reload} writeUrl={relation.partnerId == null ? null : telegramChatUrl(relation.partnerId)} />
       {relation.conceptSharedAt && <MyConceptRow />}
     </section>

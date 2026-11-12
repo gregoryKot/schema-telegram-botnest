@@ -54,7 +54,7 @@ describe('ClientBookingSheet', () => {
   it('открытие — событие client_booking_opened и объяснение «откуда и что после оплаты»', async () => {
     renderSheet('ty');
     expect(mockApi.trackEvent).toHaveBeenCalledWith('client_booking_opened');
-    expect(screen.getByText(/из календаря терапевта/).textContent).toContain('время останется за тобой');
+    expect(screen.getByText(/из календаря терапевта/).textContent?.replace(/\u00a0/g, ' ')).toContain('время останется за тобой');
     await screen.findByText('Выбери день');
   });
 
@@ -164,7 +164,7 @@ describe('ClientBookingSheet', () => {
     renderSheet('ty');
     fireEvent.click(await screen.findByRole('button', { name: '16:00' }));
     fireEvent.click(screen.getByRole('button', { name: 'Записаться на 16:00' }));
-    expect((await screen.findByRole('alert')).textContent).toBe('Это время только что заняли — выбери другое.');
+    expect((await screen.findByRole('alert')).textContent?.replace(/\u00a0/g, ' ')).toBe('Это время только что заняли — выбери другое.');
     fireEvent.click(screen.getByRole('button', { name: '16:00' }));
     expect(screen.queryByRole('alert')).toBeNull();
   });

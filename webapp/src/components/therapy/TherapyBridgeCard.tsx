@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { hideBridgeCard, isBridgeCardHidden } from '../../../../shared/src/therapy/bridge/therapyBridgeState';
+import { PAPER_HUE } from '../../../../shared/src/theme/entityLook';
 import { TherapyCardFrame } from './TherapyCardFrame';
+import { TherapyCardSign } from './TherapyCardSign';
 import { trackTherapyNudge } from './trackTherapyNudge';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import { useTherapyTarget } from './useTherapyTarget';
@@ -23,6 +25,8 @@ export function TherapyBridgeCard({ place }: { place: 'home_card' | 'practice' }
       eyebrow={t.cardEyebrowCalm}
       title={t.cardTitleCalm}
       target={target}
+      hue={PAPER_HUE.sage}
+      sign={<TherapyCardSign />}
       extra={
         <button
           type="button"

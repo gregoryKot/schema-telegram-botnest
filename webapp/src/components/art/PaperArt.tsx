@@ -112,12 +112,20 @@ export function Sheets({ size }: ArtProps) {
 }
 
 /** Слои — схема под схемой, паттерны родом из детства. */
-export function Layers({ size }: ArtProps) {
+/** `probe` — тест на схемы: верхний слой приподнят и помечен точкой бумаги страницы — слой проверяют. */
+export function Layers({ size, probe }: ArtProps & { probe?: boolean }) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <rect x="10" y="40" width="100" height="16" rx="8" fill={PAPER.sage} />
       <rect x="22" y="24" width="76" height="16" rx="8" fill={PAPER.moss} />
-      <rect x="36" y="8" width="48" height="16" rx="8" fill={PAPER.clay} />
+      {probe ? (
+        <g data-probe="yes" transform="rotate(-9 36 20)">
+          <rect x="36" y="4" width="48" height="16" rx="8" fill={PAPER.clay} />
+          <circle cx="72" cy="12" r="4" fill="var(--bg)" />
+        </g>
+      ) : (
+        <rect x="36" y="8" width="48" height="16" rx="8" fill={PAPER.clay} />
+      )}
     </Svg>
   );
 }

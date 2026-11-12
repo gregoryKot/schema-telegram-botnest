@@ -26,3 +26,10 @@ export function bookingStatusNote(v: ClientBookingView, tz: string): string {
 export function bookOutcome(res: { paymentUrl: string | null }): 'pay' | 'done' {
   return res.paymentUrl ? 'pay' : 'done';
 }
+
+/** Фраза сбоя → заголовок и продолжение (PaperAlert): делится по первой точке или двоеточию с пробелом;
+ *  слова и порядок те же, одна фраза — целиком в заголовке. */
+export function leadAndRest(text: string): [string, string] {
+  const m = /^(.*?[.:])\s+(.+)$/s.exec(text);
+  return m ? [m[1], m[2]] : [text, ''];
+}
