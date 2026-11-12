@@ -11,6 +11,7 @@ import { SignArt } from '../components/art/SignArt';
 import { PAPER, NEED_DATA_PAPER } from '../components/art/paper';
 import { CANVAS_SIGNS, CANVAS_SIGN_KEYS, type SignPrim } from '../../../shared/src/share/kit/signs';
 import { NEED_DATA_VARS, PAPER_VARS } from '../../../shared/src/share/kit/ink';
+import { countedDrawing } from '../../../shared/src/share/kit/countedSigns';
 
 const NAME_BY_PAPER = new Map<string, string>(Object.entries(PAPER).map(([k, v]) => [v, k]));
 NAME_BY_PAPER.set('var(--surface)', 'surface');
@@ -23,8 +24,8 @@ const rotOf = (t: string | null): [number, number, number] | undefined => {
 };
 
 /** Фигуры SVG в форме примитивов кита; поворот группы <g> переходит на фигуры внутри. */
-function svgPrims(key: string): { view: number[]; prims: Record<string, unknown>[] } {
-  const html = renderToStaticMarkup(createElement(SignArt, { sign: key as never, size: 'row' }));
+function svgPrims(key: string, count?: number): { view: number[]; prims: Record<string, unknown>[] } {
+  const html = renderToStaticMarkup(createElement(SignArt, { sign: key as never, size: 'row', count }));
   const svg = new DOMParser().parseFromString(html, 'image/svg+xml').documentElement;
   const view = (svg.getAttribute('viewBox') ?? '').split(' ').slice(2).map(Number);
   const prims: Record<string, unknown>[] = [];
@@ -67,6 +68,17 @@ describe('знаки canvas = SVG-мотивы сайта', () => {
     const strip = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
     expect(svg.prims.map(strip)).toEqual(kit.prims.map((p) => strip(kitPrim(p))));
   });
+
+  it.each([['strokes', 2], ['strokes', 3], ['strokes', 4], ['strokes', 7], ['sheets', 2], ['sheets', 4]] as const)(
+    'вариант по счёту %s × %i (значки достижений) = countedDrawing',
+    (key, n) => {
+      const svg = svgPrims(key, n);
+      const kit = countedDrawing(key, n)!;
+      expect(svg.view).toEqual([...kit.view]);
+      const strip = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+      expect(svg.prims.map(strip)).toEqual(kit.prims.map((p) => strip(kitPrim(p))));
+    },
+  );
 
   it('покрыты знаки карточек шаринга (b23a, b23b: шаги пути, значки, приглашения)', () => {
     for (const k of ['strokes', 'pebbles', 'breath', 'sheets', 'layers', 'cluster', 'leaf', 'check', 'heart', 'wheel', 'talk', 'child_care', 'scales', 'haven',

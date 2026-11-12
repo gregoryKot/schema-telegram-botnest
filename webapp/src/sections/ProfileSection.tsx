@@ -26,7 +26,7 @@ import { ACHIEVEMENT_META } from './profile/profileMeta';
 import type { InsightsData, StreakData } from './profile/profileMeta';
 import { buildLevelMap } from './profile/profileModel';
 import { freshShelf, freshStartForced, isFreshProfile } from './profile/profileLayout';
-import { badgeLook } from './profile/achievementBadgeLook';
+import { achievementCardLook } from '../../../shared/src/share/kit/cardLook';
 import { useAboutMe } from '../../../shared/src/portrait/useAboutMe';
 import { hasPortraitData } from '../../../shared/src/portrait/portraitData';
 
@@ -146,7 +146,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       )}
 
       {selectedAchievement && ACHIEVEMENT_META[selectedAchievement] && (
-        <AchievementDetail id={selectedAchievement} meta={ACHIEVEMENT_META[selectedAchievement]} look={badgeLook(selectedAchievement)} onClose={() => setSelectedAchievement(null)} />
+        <AchievementDetail id={selectedAchievement} meta={ACHIEVEMENT_META[selectedAchievement]} look={achievementCardLook(selectedAchievement)} onClose={() => setSelectedAchievement(null)} />
       )}
 
       {showBestDayInfo && <BestDayDialog onClose={() => setShowBestDayInfo(false)} />}

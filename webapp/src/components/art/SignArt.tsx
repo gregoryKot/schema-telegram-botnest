@@ -16,6 +16,8 @@ import { Limits, NeedArt } from './NeedArt';
 import { DomainArt } from './DomainArt';
 import { Grounded, Haven, Join, Pause } from './AppSigns';
 import { GUIDE_SIGN_ART } from './guideSignDrawings';
+import { CountedSign } from './CountedSign';
+import { countedDrawing } from '../../../../shared/src/share/kit/countedSigns';
 
 type Art = (p: ArtProps & { plate?: CheckPlate }) => ReactElement | null;
 
@@ -34,8 +36,11 @@ const BY_KEY: Record<SignKey, Art> = {
   grounded: Grounded, pause: Pause, haven: Haven, join: Join,
 };
 
-/** Знак по ключу; ключа нет в реестре (данные с сервера, старая запись) — ничего, без выдуманной картинки. */
-export function SignArt({ sign, size, plate }: ArtProps & { sign: SignKey; plate?: CheckPlate }) {
+/** Знак по ключу; ключа нет в реестре (данные с сервера, старая запись) — ничего, без выдуманной картинки.
+ *  `count` — вариант мотива по счёту (значки достижений, countedSigns.ts); у знака без варианта не читается. */
+export function SignArt({ sign, size, plate, count }: ArtProps & { sign: SignKey; plate?: CheckPlate; count?: number }) {
+  const counted = countedDrawing(sign, count);
+  if (counted) return <CountedSign drawing={counted} size={size} />;
   const Art = Object.hasOwn(BY_KEY, sign) ? BY_KEY[sign] : null;
   return Art ? <Art size={size} plate={plate} /> : null;
 }

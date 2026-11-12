@@ -127,8 +127,8 @@
 .cpf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 14px; background: oklch(0.915 0.03 var(--h)); box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h)); }
 .cpf-badge .pp-art { width: 42px; height: 24px; }
 .cpf-badge.is-locked { background: var(--paper-sunk); box-shadow: none; }
-.cpf-badge.is-locked svg [fill]:not([fill="none"]) { fill: color-mix(in srgb, var(--text-faint) 30%, var(--paper-sunk)); fill-opacity: 1; }
-.cpf-badge.is-locked svg [stroke]:not([stroke="none"]) { stroke: color-mix(in srgb, var(--text-faint) 30%, var(--paper-sunk)); }
+.cpf-badge.is-locked svg [fill]:not([fill="none"]) { fill: color-mix(in srgb, var(--text-faint) 80%, var(--paper-sunk)); fill-opacity: 1; }
+.cpf-badge.is-locked svg [stroke]:not([stroke="none"]) { stroke: color-mix(in srgb, var(--text-faint) 80%, var(--paper-sunk)); }
 
 /* Диалоги на бумаге: окно Dialog прозрачно, лист — обёртка (cpf-paper-dlg) со сдвинутым слоем. */
 .sk-dialog-box:has(> .cpf-paper-dlg) { padding: 0 12px 12px 0; background: transparent; border: 0; box-shadow: none; }

@@ -67,6 +67,9 @@ export {
 } from './kit/ink';
 export {
   drawSign,
+  drawDrawing,
+  drawingHeight,
+  lookDrawing,
   signHeight,
   canvasSign,
   type CanvasSignKey,

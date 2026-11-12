@@ -15,8 +15,8 @@ export const paperHex = (h: number) => oklchHex(0.915, 0.03, h);
 export const layerHex = (h: number) => oklchHex(0.86, 0.045, h);
 /** Тон бумаги глубже: пустая клетка, паз столбика. */
 export const sunkHex = (h: number) => oklchHex(0.87, 0.035, h);
-/** Силуэт знака на тихой бумаге (неполученный значок): один тон, заметно глубже паза. */
-export const silhouetteHex = (h: number) => oklchHex(0.79, 0.03, h);
+/** Силуэт знака на тихой бумаге (неполученный значок): один тон, ≥3:1 к пазу (WCAG 1.4.11). */
+export const silhouetteHex = (h: number) => oklchHex(0.56, 0.03, h);
 /** Читаемые чернила оттенка листа: эйбрау, числа, номера шагов (≥4.5:1 к бумаге). */
 export const hueInkHex = (h: number) => oklchHex(0.42, 0.08, h);
 

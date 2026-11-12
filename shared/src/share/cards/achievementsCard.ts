@@ -8,16 +8,16 @@ import {
   INK,
   achievementCardLook,
   beginCard,
-  canvasSign,
   cardFont,
+  drawDrawing,
+  drawingHeight,
+  lookDrawing,
   footer,
   header,
   headerHeight,
   paperSlip,
   progressBar,
   serifFont,
-  sign,
-  signHeight,
   silhouetteHex,
   type Card,
 } from '../cardKit';
@@ -59,14 +59,14 @@ function drawBadge(c: Card, item: AchievementsCardItem, x: number, y: number) {
       fill: c.sunk,
       shadow: false,
     });
-  const key = canvasSign(look?.sign);
-  if (!key) return;
-  const h0 = signHeight(key, SIGN_W);
+  const d = lookDrawing(look);
+  if (!d) return;
+  const h0 = drawingHeight(d, SIGN_W);
   const w = h0 > SIGN_BOX ? (SIGN_W * SIGN_BOX) / h0 : SIGN_W;
-  const h = signHeight(key, w);
-  sign(
-    c,
-    key,
+  const h = drawingHeight(d, w);
+  drawDrawing(
+    c.ctx,
+    d,
     x + (TILE - w) / 2,
     y + (TILE - h) / 2,
     w,

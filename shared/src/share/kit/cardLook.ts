@@ -2,6 +2,7 @@
 // (shared/src/theme/entityLook.ts) литералами. Карточки рисуются в ленивых чанках листов
 // шаринга, а рантайм-импорт entityLook.ts перекраивает чанки (ловушка, docs/design/APP_2026-11.md):
 // таблица здесь, сверка «совпадает с ENTITY_LOOK» — cardLook.test.ts (правило №4).
+import type { SignKey } from '../../theme/signKeys';
 export const CARD_LOOK = {
   tracker: { hue: 70, sign: 'strokes' },
   diary: { hue: 45, sign: 'pebbles' },
@@ -26,31 +27,40 @@ export interface CardLook {
   sign: string;
 }
 
-const look = (hue: number, sign: string): CardLook => ({ hue, sign });
+/** Вид значка достижения: оттенок, знак и число фигур мотива (`n`: полоски серии, листы «дней всего»). */
+export interface AchievementLook {
+  hue: number;
+  sign: SignKey;
+  n?: number;
+}
+
+const ach = (hue: number, sign: SignKey, n?: number): AchievementLook =>
+  n === undefined ? { hue, sign } : { hue, sign, n };
 
 /**
- * Значки достижений — ACHIEVEMENT_LOOK значка в профиле (theme/entityLookMaps.ts) литералами:
- * рантайм-импорт таблиц вида в карточки (главный чанк) перекраивал чанки — +20 КБ JS и CSS
- * не в том порядке (check-css-link-order). Сверка «= ACHIEVEMENT_LOOK» — cardLook.test.ts.
+ * Значки достижений — одна таблица на значок профиля (SVG) и canvas-карточки: оттенок и знак =
+ * ACHIEVEMENT_LOOK (theme/entityLookMaps.ts), литералами — рантайм-импорт таблиц вида перекраивал
+ * чанки (+20 КБ JS, CSS не в том порядке). Серия — полосок всё больше (7 — плотный ряд), дни
+ * всего — листов больше (вариант мотива, countedSigns.ts). Сверка — cardLook.test.ts.
  */
-export const ACHIEVEMENT_CARD_LOOK: Readonly<Record<string, CardLook>> = {
-  first_day: look(45, 'pebbles'),
-  streak_3: look(70, 'strokes'),
-  streak_7: look(70, 'strokes'),
-  streak_14: look(70, 'strokes'),
-  streak_30: look(70, 'strokes'),
-  streak_100: look(70, 'strokes'),
-  total_10: look(240, 'sheets'),
-  total_50: look(240, 'sheets'),
-  high_day: look(195, 'leaf'),
-  all_above7: look(45, 'wheel'),
-  comeback: look(70, 'child_care'),
-  growth: look(70, 'need_autonomy'),
-  pair_connected: look(28, 'need_attachment'),
+export const ACHIEVEMENT_CARD_LOOK: Readonly<Record<string, AchievementLook>> = {
+  first_day: ach(45, 'pebbles'),
+  streak_3: ach(70, 'strokes', 2),
+  streak_7: ach(70, 'strokes', 3),
+  streak_14: ach(70, 'strokes', 4),
+  streak_30: ach(70, 'strokes', 5),
+  streak_100: ach(70, 'strokes', 7),
+  total_10: ach(240, 'sheets', 2),
+  total_50: ach(240, 'sheets', 4),
+  high_day: ach(195, 'leaf'),
+  all_above7: ach(45, 'wheel'),
+  comeback: ach(70, 'child_care'),
+  growth: ach(70, 'need_autonomy'),
+  pair_connected: ach(28, 'need_attachment'),
 };
 
 /** Вид значка достижения; незнакомое — null (значок без выдуманного знака). */
-export const achievementCardLook = (id: string | undefined): CardLook | null =>
+export const achievementCardLook = (id: string | undefined): AchievementLook | null =>
   id && Object.hasOwn(ACHIEVEMENT_CARD_LOOK, id)
     ? ACHIEVEMENT_CARD_LOOK[id]
     : null;

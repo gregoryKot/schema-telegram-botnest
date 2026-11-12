@@ -11,20 +11,22 @@ import { SignScene } from '../art/SceneParts';
 import { SignArt } from '../art/SignArt';
 
 type Art = (p: ArtProps) => ReactElement;
-const ART_BY_KEY = new Map<SignKey, Art>();
+const ART_BY_KEY = new Map<string, Art>();
 
-function artFor(sign: SignKey): Art {
-  let art = ART_BY_KEY.get(sign);
+function artFor(sign: SignKey, count?: number): Art {
+  const id = `${sign}:${count ?? ''}`;
+  let art = ART_BY_KEY.get(id);
   if (!art) {
     art = function KeySign({ size }: ArtProps) {
-      return <SignArt sign={sign} size={size} plate="surface" />;
+      return <SignArt sign={sign} size={size} plate="surface" count={count} />;
     };
-    ART_BY_KEY.set(sign, art);
+    ART_BY_KEY.set(id, art);
   }
   return art;
 }
 
-/** Знак по ключу крупно, с тенью-вырезкой; ширину задаёт место (CSS `.scn-sign` внутри). */
-export function SignHero({ sign, className }: { sign: SignKey; className?: string }) {
-  return <SignScene Art={artFor(sign)} className={className} />;
+/** Знак по ключу крупно, с тенью-вырезкой; ширину задаёт место (CSS `.scn-sign` внутри).
+ *  `count` — вариант мотива по счёту (значок достижения). */
+export function SignHero({ sign, count, className }: { sign: SignKey; count?: number; className?: string }) {
+  return <SignScene Art={artFor(sign, count)} className={className} />;
 }

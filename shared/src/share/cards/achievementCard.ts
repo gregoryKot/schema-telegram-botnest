@@ -9,15 +9,16 @@ import {
   SERIF,
   achievementCardLook,
   beginCard,
-  canvasSign,
   cardFont,
+  drawDrawing,
+  drawingHeight,
   footer,
+  lookDrawing,
   measureClamp,
   serifFont,
-  sign,
-  signHeight,
   tracking,
 } from '../cardKit';
+import type { SignDrawing } from '../kit/signs';
 
 export interface AchievementMeta {
   title: string;
@@ -32,15 +33,14 @@ const TITLE_LH = 36;
 const DESC_LH = 21;
 
 /** Знак значка, вписанный в квадрат ART_BOX: ширина и высота. Чистая. */
-export function achievementArtSize(key: string | null): {
+export function achievementArtSize(d: SignDrawing | null): {
   w: number;
   h: number;
 } {
-  const k = canvasSign(key ?? undefined);
-  if (!k) return { w: 0, h: 0 };
-  const h = signHeight(k, ART_W);
+  if (!d) return { w: 0, h: 0 };
+  const h = drawingHeight(d, ART_W);
   const w = h > ART_BOX ? (ART_W * ART_BOX) / h : ART_W;
-  return { w, h: signHeight(k, w) };
+  return { w, h: drawingHeight(d, w) };
 }
 
 export function drawAchievementCard(
@@ -66,9 +66,10 @@ export function drawAchievementCard(
   ctx.fillText('ДОСТИЖЕНИЕ', cx, EYEBROW_Y);
   tracking(ctx, 0);
 
-  if (look) {
-    const art = achievementArtSize(look.sign);
-    sign(c, look.sign, cx - art.w / 2, ART_TOP + (ART_BOX - art.h) / 2, art.w);
+  const drawing = lookDrawing(look);
+  if (drawing) {
+    const art = achievementArtSize(drawing);
+    drawDrawing(ctx, drawing, cx - art.w / 2, ART_TOP + (ART_BOX - art.h) / 2, art.w);
   }
 
   ctx.textAlign = 'center';

@@ -3,6 +3,7 @@
 // тот же значок, что в профиле); без медальона, градиента и галочки-глифа.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { achievementArtSize, drawAchievementCard } from './achievementCard';
+import { lookDrawing } from '../kit/signs';
 import { canvasWithMockCtx, printedText } from './canvas.test-helpers';
 
 afterEach(() => {
@@ -54,8 +55,8 @@ describe('drawAchievementCard', () => {
 
 describe('achievementArtSize', () => {
   it('знак вписан в квадрат: высокий (Strokes) не выше квадрата, низкий — ниже', () => {
-    const tall = achievementArtSize('strokes');
-    const flat = achievementArtSize('pebbles');
+    const tall = achievementArtSize(lookDrawing({ sign: 'strokes' }));
+    const flat = achievementArtSize(lookDrawing({ sign: 'pebbles' }));
     expect(tall.h).toBeLessThanOrEqual(150);
     expect(flat.h).toBeLessThan(tall.h);
     expect(achievementArtSize(null)).toEqual({ w: 0, h: 0 });

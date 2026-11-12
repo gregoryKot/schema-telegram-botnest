@@ -2,7 +2,8 @@
 // сайта, сверка — webapp/src/share/signsCanvas.test.ts) — поворот, бумага по имени, контур
 // через Path2D. Ключ — SignKey ENTITY_LOOK; ключа нет в таблице — ничего не рисуется.
 import { PAPER_INK } from './ink';
-import { CANVAS_SIGNS, type SignPrim } from './signTable';
+import { CANVAS_SIGNS, type SignDrawing, type SignPrim } from './signTable';
+import { countedDrawing } from './countedSigns';
 
 export {
   CANVAS_SIGNS,
@@ -69,6 +70,32 @@ function paintPrim(
   ctx.restore();
 }
 
+/** Рисунок вида: вариант по счёту (`n`, значки достижений), иначе знак по ключу; нет ни того, ни другого — null. */
+export function lookDrawing(look: { sign: string; n?: number } | null | undefined): SignDrawing | null {
+  if (!look) return null;
+  const key = canvasSign(look.sign);
+  return countedDrawing(look.sign, look.n) ?? (key ? CANVAS_SIGNS[key] : null);
+}
+
+/** Высота рисунка шириной w по пропорции его холста. */
+export const drawingHeight = (d: SignDrawing, w: number): number => (w * d.view[1]) / d.view[0];
+
+/** Рисунок: левый верхний угол (x, y), ширина w, высота — по пропорции холста. */
+export function drawDrawing(
+  ctx: CanvasRenderingContext2D,
+  d: SignDrawing,
+  x: number,
+  y: number,
+  w: number,
+  paint: SignPaint = {},
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(w / d.view[0], w / d.view[0]);
+  d.prims.forEach((p, i) => paintPrim(ctx, p, paint.tone ?? paint.fills?.[i]));
+  ctx.restore();
+}
+
 /** Знак по ключу: левый верхний угол (x, y), ширина w, высота — по пропорции холста знака. */
 export function drawSign(
   ctx: CanvasRenderingContext2D,
@@ -78,12 +105,5 @@ export function drawSign(
   w: number,
   paint: SignPaint = {},
 ) {
-  const s = CANVAS_SIGNS[key];
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(w / s.view[0], w / s.view[0]);
-  (s.prims as readonly SignPrim[]).forEach((p, i) =>
-    paintPrim(ctx, p, paint.tone ?? paint.fills?.[i]),
-  );
-  ctx.restore();
+  drawDrawing(ctx, CANVAS_SIGNS[key] as SignDrawing, x, y, w, paint);
 }
