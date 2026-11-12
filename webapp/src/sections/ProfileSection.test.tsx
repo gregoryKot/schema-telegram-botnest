@@ -292,6 +292,9 @@ describe('ProfileSection — сбой части загрузки (регрес�
     await act(async () => { renderSection(); });
     const alert = await screen.findByRole('alert');
     expect(plainText(alert)).toMatch(/Не удалось загрузить часть данных/);
+    // Сбой на нашей стороне — исход our_side: персик 45 и `Breath` (две дуги и круг), а не лист шапки.
+    expect((alert as HTMLElement).style.getPropertyValue('--h')).toBe('45');
+    expect(alert.querySelector('.pa-alert-sign svg circle')).not.toBeNull();
     // Достижения всё же успели загрузиться и отображаются несмотря на сбой стрика.
     expect(screen.getByText('Первый шаг')).toBeTruthy();
   });

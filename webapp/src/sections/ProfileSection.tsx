@@ -4,6 +4,7 @@ import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
 import { JourneySheet } from '../components/JourneySheet';
 import { PaperAlert } from '../components/paper/PaperAlert';
+import { OUTCOME_LOOK_LIT } from '../components/paper/outcomeLook';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
 import '../styles/client-profile.css'; import '../styles/client-profile-mobile.css';
@@ -31,6 +32,8 @@ import { useAboutMe } from '../../../shared/src/portrait/useAboutMe';
 import { hasPortraitData } from '../../../shared/src/portrait/portraitData';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
+/** Сбой загрузки — на нашей стороне: `Breath` на персике 45 (исходы служебных страниц, OUTCOME_LOOK). */
+const OUR_SIDE = OUTCOME_LOOK_LIT.our_side;
 
 interface Props {
   onOpenSettings?: () => void; onOpenTracker?: () => void; onTakeTest?: () => void;
@@ -99,7 +102,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
       {!shown && <ProfileSkeleton />}
 
       {shown && failed && (
-        <PaperAlert className="cpf-error" sign="leaf"
+        <PaperAlert className="cpf-error" sign={OUR_SIDE.sign} hue={OUR_SIDE.hue}
           title={tr('Не удалось загрузить часть данных. Обнови страницу.', 'Не удалось загрузить часть данных. Обновите страницу.')} />
       )}
 
