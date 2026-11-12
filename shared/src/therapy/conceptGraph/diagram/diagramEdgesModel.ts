@@ -1,10 +1,10 @@
 // Рёбра диаграммы — только из данных терапевта, ничего не дорисовывается:
 //   link   режим ⇄ схема (режим включает схему)         серая, стрелки с обеих сторон
 //   origin овал опыта → его схема                       серая
-//   blocks схема → таблетка потребности, посередине ✗   красная
-//   meets  Здоровый Взрослый → таблетка, посередине ✓   зелёная
+//   blocks схема → потребность ✗ (глина), meets Здоровый Взрослый → потребность ✓ (мох)
 import type { ConceptGraphModel } from '../conceptGraphTypes';
 import { center, collect } from './diagramLinks';
+import { NEED_LINK } from './diagramPaper';
 import { smooth, smoothSide, type Rect } from './diagramCurves';
 import type { CircleGeometry } from './diagramCircle';
 import { laneRoute, laneXs, type LaneItem } from './diagramLanes';
@@ -27,8 +27,8 @@ import type {
 const STYLE: Record<DiagramEdgeKind, { color: string; opacity: number }> = {
   link: { color: 'var(--text-sub)', opacity: 0.75 },
   origin: { color: 'var(--text-sub)', opacity: 0.7 },
-  blocks: { color: 'var(--accent-red)', opacity: 0.7 },
-  meets: { color: 'var(--accent-green)', opacity: 0.8 },
+  blocks: { color: NEED_LINK.blocks.line, opacity: 0.85 },
+  meets: { color: NEED_LINK.meets.line, opacity: 0.9 },
 };
 
 export function buildEdges(

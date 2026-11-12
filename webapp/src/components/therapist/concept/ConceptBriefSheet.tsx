@@ -2,8 +2,12 @@ import { useMemo } from 'react';
 import { useTr } from '../../../utils/addressForm';
 import type { ClientDetail } from '../clientSheetTypes';
 import { ConceptFullscreenSheet } from '../ConceptFullscreenSheet';
-import { DigestChips } from '../../../../../shared/src/therapy/conceptGraph/ConceptDigest';
-import { hueVar } from '../../../../../shared/src/therapy/conceptGraph/conceptChipStyle';
+import { DigestChips } from '../../../../../shared/src/therapy/conceptGraph/DigestChips';
+import { hueStyle } from '../../../lib/tone';
+import { SignArt } from '../../art/SignArt';
+import { modeSign } from '../../art/guideSignsModel';
+import { SignChip } from '../../paper/SignChip';
+import { BRIEF_LOOK } from './conceptSectionSigns';
 import {
   BRIEF_BLOCKS,
   buildConceptBrief,
@@ -13,10 +17,9 @@ import { useBriefBlocks } from './useBriefBlocks';
 
 export const BRIEF_TITLE = 'Главное';
 
-// Экран «Главное»: самое важное из концептуализации на одном экране — карточки
-// выбранных блоков сеткой, без прокрутки до фигур и полей. Какие блоки
-// показывать, терапевт отмечает чипами под шапкой (выбор запоминается на
-// устройстве — useBriefBlocks). Только чтение; данные те же, что в видах «Схема»
+// Экран «Главное»: самое важное из концептуализации на одном экране — листы выбранных блоков бенто
+// (три колонки на компьютере), без прокрутки до фигур и полей. Какие блоки показывать, терапевт
+// отмечает чипами под шапкой (выбор запоминается на устройстве — useBriefBlocks). Только чтение; данные те же, что в видах «Схема»
 // и «Поля», с черновиком поверх. Лист — общий ConceptFullscreenSheet.
 export function ConceptBriefSheet({ detail, onClose }: { detail: ClientDetail; onClose: () => void }) {
   const tr = useTr();
@@ -30,18 +33,7 @@ export function ConceptBriefSheet({ detail, onClose }: { detail: ClientDetail; o
         {tr('Что показывать — выбери, выбор запомнится.', 'Что показывать — выберите, выбор запомнится.')}
       </div>
       <div className="tcp-chips" role="group" aria-label="Что показывать">
-        {BRIEF_BLOCKS.map((b) => {
-          const on = ids.includes(b.id);
-          return (
-            <button
-              key={b.id} type="button" aria-pressed={on}
-              className={`ds-chip ds-chip--toggle${on ? ' is-on' : ''}`}
-              onClick={() => toggle(b.id)}
-            >
-              {b.label}
-            </button>
-          );
-        })}
+        {BRIEF_BLOCKS.map((b) => <SignChip key={b.id} label={b.label} on={ids.includes(b.id)} onToggle={() => toggle(b.id)} />)}
       </div>
     </div>
   );
@@ -58,10 +50,15 @@ export function ConceptBriefSheet({ detail, onClose }: { detail: ClientDetail; o
   );
 }
 
+// Блок — лист бумаги своей сущности со знаком у подписи (BRIEF_LOOK); потребности — нейтральный лист, цвет несут чипы.
 function BriefCard({ section: s }: { section: BriefSection }) {
+  const look = BRIEF_LOOK[s.id];
   return (
-    <section className={`ds-card ds-card--row tcp-brief-card${s.kind === 'text' ? ' tcp-brief-card--text' : ''}`} aria-label={s.label}>
-      <h3 className="ds-label tcp-brief-label">{s.label}</h3>
+    <section className={look.hue === undefined ? 'tcp-brief-card tcp-brief-card--plain' : 'pp-paper tcp-brief-card'} style={look.hue === undefined ? undefined : hueStyle(look.hue)} aria-label={s.label}>
+      <h3 className="ds-label tcp-brief-label">
+        <span className="tcp-sec-signs" aria-hidden="true">{look.signs.map((k) => <SignArt key={k} sign={k} size="row" />)}</span>
+        {s.label}
+      </h3>
       {s.empty ? (
         <div className="tcp-brief-empty">—</div>
       ) : s.kind === 'chips' ? (
@@ -71,8 +68,7 @@ function BriefCard({ section: s }: { section: BriefSection }) {
           {s.modes.map((m) => (
             <li key={m.modeId} className="tcp-brief-mode">
               <span className="tcp-brief-mode-head">
-                <span className="ds-dot tone-fill" style={hueVar(m.hue)} aria-hidden />
-                <b>{m.name}</b>
+                <b><SignArt sign={modeSign(m.modeId)} size="nav" />{m.name}</b>
                 <span className="ds-sub">{m.lane}</span>
               </span>
               {m.manifest && <div className="tcp-brief-mode-text">{m.manifest}</div>}

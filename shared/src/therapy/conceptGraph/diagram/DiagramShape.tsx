@@ -1,10 +1,10 @@
-import { colorMix } from '../../../utils/colorMix';
 import {
   CRITIC_PATH,
   PENTA_PATH,
   SHIELD_PATH,
   scalePath,
 } from '../../../modeMap/modeShapes';
+import { shapePaint } from './diagramPaper';
 import type { DiagramShape as Shape } from './diagramTypes';
 
 const ROUNDED_RADIUS = 14;
@@ -25,7 +25,7 @@ export function DiagramShapeSvg({
   shape,
   w,
   h,
-  color,
+  hue,
   top,
   open,
   faint,
@@ -34,20 +34,19 @@ export function DiagramShapeSvg({
   shape: Shape;
   w: number;
   h: number;
-  color: string;
+  /** Оттенок бумаги фигуры (nodeHue); без него — нейтральная бумага. */
+  hue?: number;
   /** Отступ сверху: бокс кнопки выше фигуры, чтобы зона нажатия была не меньше 44. */
   top: number;
   open?: boolean;
   /** Режим или схема без связей: контур бледнее. */
   faint?: boolean;
-  /** Заготовка пустой секции: без заливки, пунктиром. */
+  /** Заготовка пустой секции: тихая бумага без контура. */
   ghost?: boolean;
 }) {
   const common = {
-    fill: ghost ? 'none' : `color-mix(in srgb, ${color} 12%, var(--surface))`,
-    stroke: ghost ? colorMix(color, 70) : faint ? colorMix(color, 55) : color,
-    strokeWidth: open ? 3 : 1.5,
-    strokeDasharray: ghost ? '5 4' : undefined,
+    ...shapePaint(hue, faint),
+    strokeWidth: ghost ? 0 : open ? 3 : 1.5,
     strokeLinejoin: 'round' as const,
   };
   const path = PATHS[shape];

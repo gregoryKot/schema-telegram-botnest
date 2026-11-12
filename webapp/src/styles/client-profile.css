@@ -99,9 +99,6 @@
 .cpf-therapist-next { display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--text-sub); }
 /* «Схема случая» — своя строка во всю ширину карточки, под терапевтом (MyConceptRow). */
 .cpf-therapist-concept { flex-basis: 100%; border-top: 1px solid var(--paper-sunk); border-bottom: none; cursor: pointer; }
-/* Лист «Схема случая»: строка «откуда и зачем» под шапкой и даты над схемой. */
-.cpf-concept-lede { margin: 0; padding: var(--space-12) var(--space-20); border-bottom: 1px solid var(--paper-sunk); font-size: 14px; line-height: 1.5; color: var(--text-sub); }
-.cpf-concept-dates { margin: 0 0 var(--space-12); font-size: 13px; color: var(--text-faint); }
 /* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
 .cpf-former { padding: 22px 24px; border-radius: 20px; }
 

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { NEED_LINK } from './diagramPaper';
 import {
   RICH,
   curvePoints,
@@ -158,13 +159,13 @@ describe('рёбра: значки ✗ и ✓', () => {
 });
 
 describe('рёбра: стиль', () => {
-  it('✗ красная линия около 70%, ✓ зелёная, связь режим ⇄ схема серая', () => {
+  it('✗ линия глины, ✓ линия мха (тон контура, не алый и не ярко-зелёный), связь режим ⇄ схема серая', () => {
     const l = layoutOf(RICH, 1200);
     const block = l.edges.find((e) => e.kind === 'blocks')!;
-    expect(block.color).toBe('var(--accent-red)');
-    expect(block.opacity).toBeCloseTo(0.7, 1);
+    expect(block.color).toBe(NEED_LINK.blocks.line);
+    expect(block.opacity).toBeCloseTo(0.85, 2);
     expect(l.edges.find((e) => e.kind === 'meets')!.color).toBe(
-      'var(--accent-green)',
+      NEED_LINK.meets.line,
     );
     expect(l.edges.find((e) => e.kind === 'link')!.color).toBe(
       'var(--text-sub)',

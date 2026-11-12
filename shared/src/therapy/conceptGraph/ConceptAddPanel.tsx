@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { useTr } from '../../utils/addressForm';
 import { ConceptModePicker } from './ConceptModePicker';
 import { ConceptSchemaPicker } from './ConceptSchemaPicker';
-import { boxStyle, hintStyle } from './graphStyles';
 import { groupIdsOfLane } from './modeLanes';
 import type { AddSection } from './diagram/diagramTypes';
 
@@ -20,8 +19,8 @@ const TITLE: Record<AddSection, string> = {
 /**
  * Выбор для «+ режим» / «+ схема» в заголовке секции: тап ставит фигуру на
  * схему и снимает. Всплывает под заголовком секции (ConceptDiagram), в
- * картинку схемы не идёт. Режимы и схемы выбираются теми же общими пилюлями,
- * что в полях концептуализации.
+ * картинку схемы не идёт. Режимы и схемы выбираются теми же общими чипами по
+ * группам, что в полях концептуализации; вид — .cg-panel (concept-graph.css).
  */
 export function ConceptAddPanel({
   section,
@@ -49,23 +48,10 @@ export function ConceptAddPanel({
       ref={ref}
       role="dialog"
       aria-label={TITLE[section]}
-      style={{
-        ...boxStyle,
-        maxHeight: 'min(60vh, 480px)',
-        overflowY: 'auto',
-        boxShadow: '0 8px 28px rgba(0, 0, 0, 0.22)',
-      }}
+      className="cg-panel"
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 'var(--space-8)',
-          marginBottom: 'var(--space-8)',
-        }}
-      >
-        <div style={hintStyle}>
+      <div className="cg-panel-head">
+        <div className="cg-panel-hint">
           {tr(
             'Нажми, чтобы поставить на схему или убрать.',
             'Нажмите, чтобы поставить на схему или убрать.',
@@ -73,19 +59,8 @@ export function ConceptAddPanel({
         </div>
         <button
           type="button"
+          className="ds-btn ds-btn--secondary ds-btn--sm"
           onClick={onClose}
-          style={{
-            flexShrink: 0,
-            minHeight: 44,
-            padding: '0 14px',
-            borderRadius: 'var(--r-12)',
-            border: 'none',
-            background: 'rgba(var(--fg-rgb),0.07)',
-            color: 'var(--text)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
         >
           Готово
         </button>

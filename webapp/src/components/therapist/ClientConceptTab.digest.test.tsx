@@ -76,8 +76,10 @@ const isBefore = (a: Element, b: Element) =>
 // Строка сводки словами: плашки (2026-11) — через пробел, текст — как есть.
 const value = (label: string) => {
   const dd = within(digest()).getByText(label).nextElementSibling!;
-  const chips = Array.from(dd.querySelectorAll('span > span'));
-  return chips.length ? chips.map((c) => c.textContent).join(' ') : dd.textContent;
+  const chips = Array.from(dd.querySelectorAll('.cg-tag, .cg-caption, .cg-chips > .cg-mark'));
+  // значок-путь (✗, ✓, →) читается своим видом (data-mark): в тексте глифа нет
+  const mark = (c: Element) => (c.matches('.cg-mark') ? c : c.querySelector('.cg-mark'))?.getAttribute('data-mark');
+  return chips.length ? chips.map((c) => [mark(c), c.textContent].filter(Boolean).join(' ')).join(' ') : dd.textContent;
 };
 
 beforeEach(() => {
@@ -98,11 +100,14 @@ describe('ClientConceptTab: сводка «Коротко»', () => {
     await openTab(concept());
     expect(screen.getByRole('button', { name: 'Схема' }).getAttribute('aria-pressed')).toBe('true');
     expect(value('Схемы')).toBe('Неуспешность');
-    expect(value('Режимы')).toBe('Судья (Карающий Критик) → Здоровый Взрослый');
-    // схема — плашка в тоне домена (ds-chip tone-tint + --h), не текст через « · »
-    expect(within(digest()).getByText('Неуспешность').className).toBe('ds-chip tone-tint');
+    expect(value('Режимы')).toBe('Судья (Карающий Критик) arrow Здоровый Взрослый');
+    // схема — белый чип со знаком домена, не радуга заливок и не текст через « · »
+    expect(within(digest()).getByText('Неуспешность').className).toBe('cg-tag');
+    expect(within(digest()).getByText('Неуспешность').querySelector('.pp-art')).toBeTruthy();
+    // у метки строки — знак раздела
+    expect(within(digest()).getByText('Схемы').querySelector('.pp-art--row')).toBeTruthy();
     expect(value('Цикл')).toBe('Критика → Судья → уход в себя');
-    expect(value('Потребности')).toBe('✗ блокированы: Автономия ✓ есть опора: Границы'); // плашки через пробел (value)
+    expect(value('Потребности')).toBe('block блокированы: Автономия meet есть опора: Границы'); // плашки через пробел (value)
     expect(value('Цель')).toBe('Снизить тревогу перед работой');
     const figure = screen.getByRole('button', { name: 'Карающий Критик: связи' });
     expect(isBefore(head(), digest())).toBe(true);
@@ -115,7 +120,7 @@ describe('ClientConceptTab: сводка «Коротко»', () => {
   it('вид «Поля»: та же сводка под шапкой и до карточек полей', async () => {
     await openTab(concept());
     fireEvent.click(screen.getByRole('button', { name: 'Поля' }));
-    expect(value('Режимы')).toBe('Судья (Карающий Критик) → Здоровый Взрослый');
+    expect(value('Режимы')).toBe('Судья (Карающий Критик) arrow Здоровый Взрослый');
     expect(isBefore(head(), digest())).toBe(true);
     expect(isBefore(digest(), screen.getByText('Актуальные схемы'))).toBe(true);
   });

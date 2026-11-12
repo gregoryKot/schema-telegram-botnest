@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, CSSProperties } from 'react';
 import { DiagramNodeText, EMPTY_HINT } from './DiagramNodeText';
 import { DiagramShapeSvg } from './DiagramShape';
+import { nodeHue } from './diagramPaper';
 import type { DiagramNode } from './diagramTypes';
 
 /** Зона нажатия не меньше 44, даже если фигура ниже (таблетка потребности 38). */
@@ -44,9 +45,8 @@ function buttonProps(
 }
 
 /**
- * Одна фигура диаграммы. Режим, схема, овал опыта, потребность и заготовка
- * пустой секции — кнопки: тап открывает редактор, включает подсветку линий или
- * зовёт выбор. Без `onTap` (заготовка на схеме только для чтения) кнопка
+ * Одна фигура диаграммы. Режим, схема, овал опыта, потребность и заготовка пустой
+ * секции — кнопки: тап открывает редактор, подсвечивает линии или зовёт выбор. Без `onTap` (заготовка на схеме только для чтения) кнопка
  * выключена.
  */
 export function DiagramNodeView({
@@ -97,7 +97,7 @@ export function DiagramNodeView({
         w={node.w}
         h={node.h}
         top={dy}
-        color={node.color}
+        hue={nodeHue(node)}
         open={open || pressed}
         faint={node.empty}
         ghost={node.kind === 'placeholder'}

@@ -1,15 +1,74 @@
 /* Вкладка «Концептуализация»: шапка (ConceptTabHead, «Схема · Поля», «⋯»), строка
    статуса, «Показать клиенту», «Коротко», вид «Схема». Поля и «Главное» — в
    therapist-concept.css, откуда этот файл и подключается. */
-/* Сводка «Коротко»: отступ, который раньше давал инлайн-CARD. Раскладка строк — классами
-   skin.digest (ConceptDigest), заголовок и метка стоят вместе с ds-label: метка слева 104px,
-   плашки на узком экране переносятся под неё сами (flex-wrap + flex-basis). */
-.tcp-digest { margin-bottom: 16px; }
-.tcp-dg-title { margin: 0 0 var(--space-10); }
-.tcp-dg-list { margin: 0; display: grid; gap: var(--space-10); }
-.tcp-dg-row { display: flex; flex-wrap: wrap; gap: 4px 16px; }
-.tcp-dg-term { flex: 0 0 104px; line-height: 26px; }
-.tcp-dg-value { flex: 1 1 260px; min-width: 0; margin: 0; line-height: 1.5; }
+/* Сводка «Коротко» (b32): лист соломы; у метки строки слева знак раздела 44×24, сущности — белые
+   чипы со знаком (cg-tag), а не радуга заливок. Раскладка строк — классами skin.digest (ConceptDigest):
+   метка слева, плашки на узком экране переносятся под неё сами (flex-wrap + flex-basis). */
+.pp-paper.tcp-digest { --h: 70; margin-bottom: 20px; padding: 18px 22px 20px; }
+.ds-label.tcp-dg-title { margin: 0 0 12px; color: var(--text-sub); }
+.tcp-dg-list { margin: 0; display: grid; gap: 10px; }
+.tcp-dg-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 16px; }
+.ds-label.tcp-dg-term { flex: 0 0 172px; display: flex; align-items: center; gap: 10px; min-height: 30px; color: var(--text-sub); }
+.tcp-dg-value { flex: 1 1 260px; min-width: 0; margin: 0; padding-top: 3px; font-size: 15px; line-height: 1.5; }
+
+/* ── Живая бумага схемы случая (shared/conceptGraph, классы cg-*) ── */
+.cg-sign { display: inline-flex; flex: none; }
+.cg-sign--square .pp-art--square { width: 60px; height: auto; }
+/* Чип «только показать»: белая поверхность с тонкой кромкой, слева знак сущности. */
+.cg-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cg-tag {
+  display: inline-flex; align-items: center; gap: 6px; box-sizing: border-box; min-height: 28px; padding: 3px 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+  font-size: 13px; font-weight: 500; line-height: 1.3; color: var(--text); overflow-wrap: anywhere;
+}
+.cg-tag > .cg-sign { margin-left: -3px; }
+.cg-caption { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-sub); }
+.cg-mark { flex: none; color: var(--text-sub); }
+/* Выбор «+ режим / + схема»: белая панель, внутри — листы групп со знаком (SignGroup) и чипы. */
+.cg-panel {
+  box-sizing: border-box; min-width: 0; max-height: min(60vh, 480px); overflow-y: auto; padding: 12px;
+  border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+}
+.cg-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 10px 4px; }
+.cg-panel-hint { font-size: 12px; line-height: 1.5; color: var(--text-sub); }
+.cg-panel-head > .ds-btn { flex: none; }
+.cg-groups { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sg-rows.cg-pick-rows { flex-direction: row; flex-wrap: wrap; gap: 6px; padding: 10px; overflow: visible; }
+.cg-pick-rows--bare { display: flex; flex-wrap: wrap; gap: 6px; }
+.cg-group-title { margin-bottom: 6px; font-size: 12px; color: var(--text-sub); }
+/* Схемы режима одним рядом, без листов доменов. */
+.cg-groups--flat { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+.cg-groups--flat > div, .cg-groups--flat .cg-pick-rows--bare { display: contents; }
+/* Редактор режима или схемы: лист бумаги группы или домена, знак в шапке, поля белые. */
+.pp-paper.cg-editor { box-sizing: border-box; min-width: 0; padding: 18px 20px 20px; }
+.cg-editor-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.cg-editor-title { flex: 1 1 auto; min-width: 0; }
+.cg-editor-name { font-family: var(--serif); font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.cg-editor-sub { margin-top: 2px; font-size: 13px; color: var(--text-sub); }
+.cg-editor-head > .ds-btn { flex: none; }
+.cg-editor-body { display: flex; flex-direction: column; gap: 16px; }
+.ds-btn.cg-remove { align-self: flex-start; }
+.cg-editor .ds-btn--secondary:not(:disabled) { background: var(--surface); }
+.ds-chip.cg-all { margin-top: 6px; }
+/* Пустая схема: сцена и одна главная кнопка вместо пунктирных заготовок. */
+.cg-empty { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 24px 16px 40px; }
+.cg-empty-scene { display: block; width: 260px; max-width: 100%; }
+.cg-empty-scene .scn { display: block; width: 100%; height: auto; }
+/* Лист клиента «Схема случая» (MyConceptSheet): лист глины со знаком схем и строкой «откуда и зачем», даты над схемой. */
+.pp-paper.cg-my-hero { --h: 28; display: flex; align-items: center; gap: 16px; margin-bottom: 14px; padding: 14px 20px 14px 16px; }
+.cg-my-hero > .pp-art--square { flex: none; width: 60px; height: auto; }
+.cg-my-lede { margin: 0; max-width: 78ch; font-size: 15px; line-height: 1.5; color: var(--text-sub); text-wrap: pretty; }
+.cg-my-dates { margin: 0 0 12px; font-size: 13px; color: var(--text-sub); }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .pp-paper.tcp-digest { padding: 16px 16px 18px; }
+  .ds-label.tcp-dg-term { flex-basis: 100%; }
+  .tcp-dg-value { padding-top: 0; }
+  .pp-paper.cg-editor { padding: 16px 14px 18px; }
+  .cg-editor-name { font-size: 20px; }
+  .cg-sign--square .pp-art--square { width: 44px; }
+  .pp-paper.cg-my-hero { align-items: flex-start; padding: 14px 16px; gap: 12px; }
+  .cg-my-hero > .pp-art--square { width: 44px; }
+}
 
 /* ── Шапка вкладки ── */
 /* Компьютер (≥768): слева заголовок и подпись, справа статус, «Схема · Поля» и

@@ -30,10 +30,10 @@ export function MethodHint({
   return (
     <div
       style={{
-        margin: '0 0 var(--space-6)',
-        padding: 'var(--space-8) var(--space-12)',
-        borderRadius: 'var(--r-12)',
-        background: 'rgba(var(--fg-rgb),0.04)',
+        margin: '0 0 var(--space-8)',
+        padding: 'var(--space-12) var(--space-14)',
+        borderRadius: 'var(--r-14)',
+        background: 'color-mix(in srgb, var(--surface) 55%, transparent)',
       }}
     >
       <div style={labelStyle}>Обычно в методе</div>

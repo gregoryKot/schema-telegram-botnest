@@ -101,7 +101,13 @@ describe('ClientConceptTab: экран «Главное»', () => {
     expect(mockApi.trackEvent.mock.calls.filter((c) => c[0] === CONCEPT_BRIEF_OPEN_EVENT)).toHaveLength(1);
     const names = within(sheet()!).getAllByRole('region').map((r) => r.getAttribute('aria-label'));
     expect(names).toEqual(['Схемы', 'Режимы', 'Потребности', 'Переключение режимов', 'Цели терапии', 'Актуальные проблемы']);
-    expect(within(card('Схемы')).getByText('Неуспешность').className).toBe('ds-chip tone-tint');
+    expect(within(card('Схемы')).getByText('Неуспешность').className).toBe('cg-tag');
+    // лист бумаги своей сущности со знаком у подписи; потребности — нейтральный лист
+    expect(card('Схемы').className).toBe('pp-paper tcp-brief-card');
+    expect(card('Схемы').style.getPropertyValue('--h')).toBe('28');
+    expect(card('Режимы').style.getPropertyValue('--h')).toBe('240');
+    expect(card('Потребности').className).toBe('tcp-brief-card tcp-brief-card--plain');
+    for (const r of within(sheet()!).getAllByRole('region')) expect(r.querySelector('.tcp-brief-label .pp-art--row')).toBeTruthy();
     expect(within(card('Режимы')).getByText('Судья (Карающий Критик)')).toBeTruthy();
     expect(within(card('Режимы')).getByText('Ты опять всё испортил')).toBeTruthy();
     expect(within(card('Режимы')).getByText('Схемы: Неуспешность')).toBeTruthy();
