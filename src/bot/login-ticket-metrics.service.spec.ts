@@ -11,7 +11,11 @@ describe('LoginTicketMetricsService.getMetrics', () => {
       .fn()
       .mockResolvedValueOnce(rows)
       .mockResolvedValue([]);
-    const prisma = { $queryRaw: queryRaw } as never;
+    // Третья часть блока — приглашение добавить почту (login-offer-metrics.ts).
+    const prisma = {
+      $queryRaw: queryRaw,
+      analyticsEvent: { count: jest.fn().mockResolvedValue(0) },
+    } as never;
     return { service: new LoginTicketMetricsService(prisma), queryRaw };
   };
 
@@ -79,11 +83,16 @@ describe('LoginTicketMetricsService.getMetrics', () => {
       .fn()
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ signed_in: 9n, twofa: 1n, rejected: 0n }]);
+    const count = jest.fn().mockResolvedValue(3);
     const service = new LoginTicketMetricsService({
       $queryRaw: queryRaw,
+      analyticsEvent: { count },
     } as never);
     const text = await service.render();
     expect(text).toContain('Вошли одним касанием: 9');
+    // И строка приглашения добавить почту или VK ID (login_method_offer).
+    expect(text).toContain('Приглашение увидели: 3');
+    expect(count).toHaveBeenCalledTimes(3);
     const sql = (queryRaw.mock.calls[1][0] as string[]).join('?');
     expect(sql).toContain('"userId" IS NULL');
     expect(sql).toContain(`"name" = 'login_one_tap'`);

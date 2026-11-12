@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthOauthController } from './auth-oauth.controller';
-import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthLinkController } from './auth-link.controller';
+import { AuthEmailCodeController } from './auth-email-code.controller';
+import { EmailLinkCodeService } from './email-link-code.service';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthTicketController } from './auth-ticket.controller';
 import { AuthTicketHandoffController } from './auth-ticket-handoff.controller';
@@ -15,21 +16,17 @@ import { TicketLinkService } from './login-ticket/ticket-link.service';
 import { TicketDeviceService } from './login-ticket/ticket-device';
 import { Auth2faController } from './auth-2fa.controller';
 import { AuthFlowService } from './auth-flow.service';
-import { AuthOneTapController } from './auth-one-tap.controller';
-import { GoogleOneTapService } from './google-one-tap.service';
 import { EmailTokenService } from './email-token.service';
 import { CallerIdentityService } from './caller-identity';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
-import { TelegramDomainWatchdogService } from './telegram-domain-watchdog.service';
 import { TotpService } from './totp.service';
 import { TotpAttemptsService } from './totp-attempts';
 import { SecurityNoticeService } from './security-notice.service';
 import { StepUpService } from './step-up';
 import { EmailService } from './email.service';
 import { AuthProviderRegistry } from './providers/registry';
-import { GoogleProvider } from './providers/google.provider';
 import { TelegramProvider } from './providers/telegram.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
@@ -43,8 +40,8 @@ import { NotificationModule } from '../notification/notification.module';
   providers: [
     AuthService,
     AuthFlowService,
-    GoogleOneTapService,
     EmailTokenService,
+    EmailLinkCodeService,
     CallerIdentityService,
     JwtAuthGuard,
     OptionalJwtGuard,
@@ -55,12 +52,10 @@ import { NotificationModule } from '../notification/notification.module';
     TicketDeviceService,
     SecurityLogService,
     SecurityNoticeService,
-    TelegramDomainWatchdogService,
     TotpService,
     TotpAttemptsService,
     StepUpService, // его берёт StepUpGuard в @UseGuards
     EmailService,
-    GoogleProvider,
     TelegramProvider,
     VkProvider,
     MaxProvider,
@@ -69,10 +64,9 @@ import { NotificationModule } from '../notification/notification.module';
   controllers: [
     AuthController,
     AuthOauthController,
-    AuthOneTapController,
-    AuthTelegramController,
     AuthAccountController,
     AuthLinkController,
+    AuthEmailCodeController,
     AuthMaxController,
     AuthTicketController,
     AuthTicketHandoffController,
@@ -87,7 +81,7 @@ import { NotificationModule } from '../notification/notification.module';
     EmailService,
     TotpService, // второй фактор перед удалением аккаунта (api/)
     MaxProvider,
-    LoginTicketService, // карточка сверки в боте (TelegramModule)
+    LoginTicketService, // отказ на карточке привязки в боте (TelegramModule)
     TicketLinkService, // подтверждение объединения (telegram.link.service)
   ],
 })

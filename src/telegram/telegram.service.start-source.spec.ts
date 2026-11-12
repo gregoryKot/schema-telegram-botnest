@@ -158,3 +158,32 @@ describe('TelegramService — /start src_<slug> (атрибуция посева
     );
   });
 });
+
+// Вход на сайт через Telegram убран (2026-11): прежняя ссылка `login_<КОД>`
+// не подтверждает вход, а говорит, куда идти, и не глушит обычный /start.
+describe('TelegramService — /start login_<КОД> (прежняя ссылка входа)', () => {
+  it('отвечает, что вход закрыт, и показывает обычный онбординг', async () => {
+    const { fakeBot, service } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'start', {
+      from: { id: 42 },
+      payload: 'login_K7M2QX94',
+    });
+    expect(ctx.reply).toHaveBeenCalledWith(
+      expect.stringContaining('Вход на сайт через Telegram закрыт'),
+    );
+    expect(ctx.reply).toHaveBeenCalledWith(
+      expect.stringContaining('Соглашение'),
+      expect.anything(),
+    );
+  });
+
+  it('обычный /start про закрытый вход не говорит', async () => {
+    const { fakeBot, service } = makeDeps();
+    service.onModuleInit();
+    const ctx = await runCommand(fakeBot, 'start', { from: { id: 42 } });
+    expect(ctx.reply).not.toHaveBeenCalledWith(
+      expect.stringContaining('Вход на сайт через Telegram закрыт'),
+    );
+  });
+});

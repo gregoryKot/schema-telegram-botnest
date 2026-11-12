@@ -37,6 +37,8 @@ type Where = Record<string, unknown>;
 
 export function makeDeps() {
   const rows: Row[] = [];
+  // Аккаунты, у которых способ входа только Telegram (остальным хватает).
+  const telegramOnly = new Set<bigint>();
   let seq = 0;
   const providers = [
     {
@@ -119,6 +121,22 @@ export function makeDeps() {
   const prisma = {
     loginTicket,
     authProvider: {
+      // site-login.ts: «есть ли вход из MAX» и «есть ли вход кроме Telegram».
+      count: ({
+        where,
+      }: {
+        where: { userId: bigint; provider: string | { not: string } };
+      }) =>
+        Promise.resolve(
+          typeof where.provider === 'string'
+            ? providers.filter(
+                (p) =>
+                  p.userId === where.userId && p.provider === where.provider,
+              ).length
+            : telegramOnly.has(where.userId)
+              ? 0
+              : 1,
+        ),
       findFirst: ({ where }: { where: { userId: bigint; provider: string } }) =>
         Promise.resolve(
           providers.find(
@@ -156,11 +174,21 @@ export function makeDeps() {
     tickets,
   );
 
-  return { rows, prisma, auth, merge, securityLog, report, tickets, links };
+  return {
+    rows,
+    telegramOnly,
+    prisma,
+    auth,
+    merge,
+    securityLog,
+    report,
+    tickets,
+    links,
+  };
 }
 
-/** Билет входа «как из ярлыка»: хозяина нет, подтверждать будет бот. */
-export function startLogin(tickets: LoginTicketService, provider = 'telegram') {
+/** Билет входа «как из ярлыка»: хозяина нет, подтвердят в браузере. */
+export function startLogin(tickets: LoginTicketService, provider = 'vk') {
   return tickets.start({
     intent: 'login',
     provider,
@@ -205,6 +233,6 @@ describe('оснастка тестов билета', () => {
       }
     ).prisma.loginTicket.findUnique({ where: { id: rows[0].id } });
     found.provider = 'подменено';
-    expect(rows[0].provider).toBe('telegram');
+    expect(rows[0].provider).toBe('vk');
   });
 });

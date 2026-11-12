@@ -69,14 +69,26 @@ describe('PrivacyPage', () => {
 // D-4 / D-11 (аудит 2026-10): политика называет всех получателей данных и
 // честно описывает, где работает счётчик. Список — privacy/processors.ts.
 describe('PrivacyPage — получатели данных', () => {
-  it('называет Telegram, Google, Resend, iCloud, Zoom и Яндекс Метрику с назначением', () => {
+  it('называет Telegram, Resend, Cloudflare R2 и Яндекс Метрику с назначением', () => {
     render(<PrivacyPage />);
-    for (const name of ['Telegram (Telegram', 'Google LLC', 'Resend', 'Apple iCloud', 'Zoom', 'Cloudflare R2 (Cloudflare', 'Яндекс Метрика (ООО']) {
+    for (const name of ['Telegram (Telegram', 'Resend', 'Cloudflare R2 (Cloudflare', 'Яндекс Метрика (ООО']) {
       expect(screen.getAllByText(new RegExp(name.replace(/[()]/g, '\\$&'))).length).toBeGreaterThan(0);
     }
     expect(screen.getByText(/ссылки для входа и восстановления доступа/)).toBeTruthy();
-    expect(screen.getByText(/календарь Оператора/)).toBeTruthy();
-    expect(screen.getByText(/создание ссылки на видеовстречу/)).toBeTruthy();
+  });
+
+  // Запрос РКН №08-1063539 (2026-11): iCloud и Zoom данных клиента не получают,
+  // вход через Telegram на сайте убран — политика говорит то, что делает код.
+  it('Zoom и iCloud — без данных клиента; способы входа на сайте — почта и VK ID', () => {
+    const { container } = render(<PrivacyPage />);
+    const text = container.textContent ?? '';
+    expect(text).toContain('не передаёт сервису имя, контакт или иные данные клиента');
+    expect(text).toContain('В календарь Оператора (Apple iCloud) попадают только время и вид записи');
+    expect(text).not.toMatch(/имя клиента в названии встречи|имя, контакт, текст обращения и время встречи/);
+    expect(text).toContain('на сайте – вход по ссылке из письма или через VK ID, внутри MAX и Telegram – по подписи мессенджера');
+    expect(text).toContain('идентификатор Telegram – у тех, кто открывает приложение внутри Telegram');
+    expect(text).not.toMatch(/вход через Telegram или OAuth-провайдера/);
+    expect(text).toContain('для входа на сайт не используется');
   });
 
   it('про Метрику: только публичные страницы, в приложении и кабинете счётчик не работает', () => {
@@ -104,27 +116,19 @@ describe('PrivacyPage — бэкапы и cookie', () => {
     expect(screen.queryByText(/tg_pkce_verifier/)).toBeNull();
     expect(screen.queryByText(/Сессионные cookie/)).toBeNull();
     expect(screen.getByText('Refresh-token cookie (refresh_token, refresh_cross)')).toBeTruthy();
-    expect(screen.getByText('Cookie шагов входа (oauth_state, gsi_nonce, vk_pkce, tg_link_user, link_token, login_ticket)')).toBeTruthy();
+    expect(screen.getByText('Cookie шагов входа (oauth_state, vk_pkce, link_token, login_ticket)')).toBeTruthy();
     // Билет входа и PKCE VK (аудит 2026-11, S9 и S21): назначение и срок названы.
     expect(screen.getByText(/login_ticket – хеш кода устройства, начавшего вход по билету, живёт 5 минут/)).toBeTruthy();
     expect(screen.getByText(/vk_pkce – проверка входа через VK ID, живёт 10 минут/)).toBeTruthy();
   });
 });
 
-// Окно Google One Tap (2026-10-24): браузер обращается к Google уже при открытии
-// страницы входа, а скрипт Google может поставить там куку g_state. Политика
-// обязана это раскрывать — правка privacy/processors.ts или privacy/cookies.ts,
-// снявшая раскрытие, краснеет здесь.
-describe('PrivacyPage — окно «Продолжить как…» (Google One Tap)', () => {
-  it('Google: обращение при открытии страницы входа, данные учётной записи — при выборе входа', () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/при открытии страницы входа – IP-адрес, сведения о браузере и cookie Google/)).toBeTruthy();
-    expect(screen.getByText(/данные учётной записи сайт получает, только если выбран этот способ входа/)).toBeTruthy();
-  });
-
-  it('кука g_state скрипта Google названа в главе о cookie', () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/Cookie Google на странице входа \(g_state\)/)).toBeTruthy();
+// Вход через Google убран (2026-11, запрос РКН №08-1063539): страница входа к
+// Google не обращается, cookie g_state не ставится — политика их не называет.
+describe('PrivacyPage — входа через Google нет', () => {
+  it('ни получателя Google, ни его cookie в тексте политики', () => {
+    const { container } = render(<PrivacyPage />);
+    expect(container.textContent).not.toMatch(/Google|g_state|gsi_nonce/);
   });
 });
 

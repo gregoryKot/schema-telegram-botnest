@@ -1,18 +1,16 @@
-// Санитайзер meta для login_ticket_step. Пропускаем ТОЛЬКО {step, host} и
-// только из allow-list: свободный текст и PII в meta недопустимы (правило №7).
-//
-// Событие пишет исключительно сервер, а отчёт считает строки с userId IS NULL —
-// клиентская подделка в него не попадёт. Meta всё равно ограничиваем: нижний
-// слой не должен полагаться на то, что верхний не ошибётся.
+// Санитайзер meta событий входа: только поля из allow-list, без текста и PII
+// (правило №7). login_ticket_step пишет сервер (отчёт считает userId IS NULL).
 import {
   LOGIN_TICKET_HOSTS,
   LOGIN_TICKET_STEPS,
 } from '../analytics/login-ticket-steps.constants';
 import { ONE_TAP_OUTCOMES } from '../analytics/login-one-tap.constants';
+import { LOGIN_METHOD_OFFER_ACTIONS } from '../analytics/login-method-offer.constants';
 
 const STEP_SET = new Set<string>(LOGIN_TICKET_STEPS);
 const HOST_SET = new Set<string>(LOGIN_TICKET_HOSTS);
 const OUTCOME_SET = new Set<string>(ONE_TAP_OUTCOMES);
+const OFFER_SET = new Set<string>(LOGIN_METHOD_OFFER_ACTIONS);
 
 /** Ветка sanitizeMeta для событий входа (`login_*`); незнакомое — undefined. */
 export function sanitizeLoginMeta(
@@ -20,8 +18,10 @@ export function sanitizeLoginMeta(
   meta: Record<string, unknown>,
 ): Record<string, unknown> | undefined {
   if (name === 'login_ticket_step') return sanitizeLoginTicketMeta(meta);
-  // login_one_tap (окно Google): только исход из закрытого списка.
-  const outcome = meta.outcome;
+  // Карточка «добавь почту или VK ID» — действие; окно Google — исход.
+  const { action, outcome } = meta;
+  if (name === 'login_method_offer' && typeof action === 'string')
+    return OFFER_SET.has(action) ? { action } : undefined;
   if (name === 'login_one_tap' && typeof outcome === 'string')
     return OUTCOME_SET.has(outcome) ? { outcome } : undefined;
   return undefined;

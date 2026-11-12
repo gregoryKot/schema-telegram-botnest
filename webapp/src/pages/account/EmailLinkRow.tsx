@@ -1,5 +1,5 @@
-// Привязка email в кабинете: строка способа входа, «зачем» (почта — запасной
-// ключ), форма адреса и экран «письмо отправлено». После отправки не обещаем
+// Привязка email в кабинете: строка способа входа, «зачем» (почтой входят на сайт),
+// форма адреса и экран с кодом из письма. После отправки не обещаем
 // «письмо отправлено»: ответ одинаков для свободного и занятого адреса (B-16).
 import { useEffect, useRef, useState } from 'react';
 import { useTr } from '../../utils/addressForm';
@@ -7,6 +7,7 @@ import { EmailIcon, ProviderRow } from './ProviderRows';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
 import { sessionPost } from '../../components/stepUp/sessionRequest';
+import { EmailLinkCodeForm } from './EmailLinkCodeForm';
 
 export function EmailLinkRow({
   accessToken,
@@ -16,6 +17,7 @@ export function EmailLinkRow({
   onUnlink,
   unlinkBlocked,
   onError,
+  onLinked,
 }: {
   accessToken: string | null;
   linked: boolean;
@@ -26,6 +28,7 @@ export function EmailLinkRow({
   unlinkBlocked?: boolean;
   /** Ошибку показывает страница одним блоком на весь кабинет. */
   onError: (message: string | null) => void;
+  onLinked: () => void; // адрес привязан кодом из письма — перечитать способы входа
 }) {
   const tr = useTr();
   const [showForm, setShowForm] = useState(false);
@@ -72,23 +75,15 @@ export function EmailLinkRow({
           setValue('');
         }}
       />
-      {!linked && <p className="aa-email-why">Пригодится, если пропадёт доступ к Telegram или другому способу входа.</p>}
+      {!linked && <p className="aa-email-why">Почтой входят на сайт и в приложение на экране телефона. Пригодится и как запасной вход.</p>}
       {showForm &&
         !linked &&
         (sent ? (
           <div className="aa-email-sent">
             Если адрес свободен, письмо придёт в течение минуты на <b>{value}</b>.{' '}
-            {tr(
-              'Перейди по ссылке в письме — она привяжет email к аккаунту.',
-              'Перейдите по ссылке в письме — она привяжет email к аккаунту.',
-            )}
-            <button
-              className="aa-email-again"
-              onClick={() => {
-                setSent(false);
-                setValue('');
-              }}
-            >
+            {tr('В письме — код и ссылка. Введи код здесь или перейди по ссылке в этом же браузере.', 'В письме — код и ссылка. Введите код здесь или перейдите по ссылке в этом же браузере.')}
+            <EmailLinkCodeForm accessToken={accessToken} onLinked={onLinked} onError={onError} />
+            <button className="aa-email-again" onClick={() => { setSent(false); setValue(''); }}>
               Ввести другой email
             </button>
           </div>

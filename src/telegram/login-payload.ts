@@ -1,23 +1,22 @@
-// Разбор `/start login_<КОД>` — ссылки, которой приложение уводит человека
-// подтверждать вход в Telegram. Движок разбора общий с привязкой аккаунта
-// (ticket-code.ts), здесь остаётся только префикс и его обёртки.
-import { hasPrefix, parseTicketCode } from './ticket-code';
+// `/start login_<КОД>` — прежняя ссылка «Войти через Telegram» с сайта.
+//
+// Вход на сайт через Telegram убран в 2026-11 (запрос Роскомнадзора:
+// пользователей из России нельзя авторизовать через иностранный сервис). Бот
+// вход не подтверждает, но ссылка ещё доедет из старой сборки приложения:
+// говорим, куда идти, и показываем обычное приветствие.
+import { t, type AddressForm } from '../notification/address-form';
+import { hasPrefix } from './ticket-code';
 
-export { formatUserCode } from './ticket-code';
+/** true — payload прежней ссылки входа (любой, код не разбирается). */
+export const isLoginPayload = (payload: string | undefined): boolean =>
+  hasPrefix(payload, 'login_');
 
-const PREFIX = 'login_';
-
-/** Ссылка, по которой человек уходит подтверждать вход. */
-export function loginDeepLink(botUsername: string, code: string): string {
-  return `https://t.me/${botUsername}?start=${PREFIX}${code}`;
-}
-
-/** true — payload адресован входу (даже если код внутри негодный). */
-export function isLoginPayload(payload: string | undefined): boolean {
-  return hasPrefix(payload, PREFIX);
-}
-
-/** Код из payload или null, если это не вход либо код не той формы. */
-export function parseLoginCode(payload: string | undefined): string | null {
-  return parseTicketCode(payload, PREFIX);
+export function loginClosedText(form: AddressForm): string {
+  return t(
+    form,
+    'Вход на сайт через Telegram закрыт. Открой приложение здесь, в боте: ' +
+      'в «Аккаунте» добавь почту или VK ID — и входи ими на сайте. Записи на месте.',
+    'Вход на сайт через Telegram закрыт. Откройте приложение здесь, в боте: ' +
+      'в «Аккаунте» добавьте почту или VK ID — и входите ими на сайте. Записи на месте.',
+  );
 }

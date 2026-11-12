@@ -35,8 +35,8 @@
 //                   meta.quietShift — час попал в тихие часы. С клиента meta
 //                   отбрасывается, /stats считает только строки с quietShift.
 //   login_one_tap — вход через окно Google «Продолжить как…» (meta.outcome —
-//                   ONE_TAP_OUTCOMES, login-one-tap.constants.ts): пишет только
-//                   GoogleOneTapService, userId = null; /stats — блок входа.
+//                   ONE_TAP_OUTCOMES, login-one-tap.constants.ts): с 2026-11 не
+//                   пишется (вход через Google убран), имя — ради истории /stats.
 //   messenger_launch — сайт открыли в мессенджере и подпись сменилась на сессию
 //                   (meta.host + meta.platform, launch-platforms.constants.ts):
 //                   пишут ручки обмена telegram/webapp и max/webapp, userId = null

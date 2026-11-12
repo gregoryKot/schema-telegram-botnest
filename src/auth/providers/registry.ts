@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GoogleProvider } from './google.provider';
 import { TelegramProvider } from './telegram.provider';
 import { VkProvider } from './vk.provider';
 import { MaxProvider } from './max.provider';
@@ -14,13 +13,8 @@ import { AuthProviderHandler } from './types';
 export class AuthProviderRegistry {
   private readonly map = new Map<string, AuthProviderHandler>();
 
-  constructor(
-    google: GoogleProvider,
-    telegram: TelegramProvider,
-    vk: VkProvider,
-    max: MaxProvider,
-  ) {
-    for (const p of [google, telegram, vk, max]) this.map.set(p.id, p);
+  constructor(telegram: TelegramProvider, vk: VkProvider, max: MaxProvider) {
+    for (const p of [telegram, vk, max]) this.map.set(p.id, p);
   }
 
   get(id: string): AuthProviderHandler {
