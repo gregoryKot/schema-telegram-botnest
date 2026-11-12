@@ -113,6 +113,7 @@ describe('detectTherapySignal', () => {
       expect(s).toEqual({
         trigger: 'low_index',
         eyebrow: 'Три последних заполненных дня: индекс не выше 4',
+        days: [2, 3, 4],
       });
     });
 

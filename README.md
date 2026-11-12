@@ -4,7 +4,7 @@
 режимов, тест YSQ, практики, кабинет терапевта. Один бэкенд на NestJS + один
 фронтенд.
 
-- **Сайт** — [schemehappens.ru](https://schemehappens.ru) (`webapp/`, логин Google/Telegram/MAX, JWT). Кнопки бота в Telegram и MAX открывают этот же сайт (кабинет `/today`, вход по подписи мессенджера); старый адрес `/app/*` отвечает 302 в `/today`.
+- **Сайт** — [schemehappens.ru](https://schemehappens.ru) (`webapp/`, логин Telegram/VK/MAX/почта, JWT). Кнопки бота в Telegram и MAX открывают этот же сайт (кабинет `/today`, вход по подписи мессенджера); старый адрес `/app/*` отвечает 302 в `/today`.
 - **Telegram-бот** — уведомления, трекер, онбординг (`src/telegram/`)
 
 Данные общие: если `userId` совпадает, сайт, Telegram и MAX показывают одно и то же.

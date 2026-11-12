@@ -28,8 +28,6 @@ import type {
   GraphSchemaChip,
 } from './conceptGraphTypes';
 
-const text = (v: string | null | undefined): string => (v ?? '').trim();
-
 /** Имена потребностей нейтральны к форме обращения — она нужна только билдеру подсказок. */
 function needChips(ids: ReadonlySet<string>): GraphNeedChip[] {
   const data = getNeedData('ty');
@@ -145,8 +143,9 @@ export function buildConceptGraph(
   return {
     lanes,
     schemas: buildSchemas(src),
-    sequence: text(src.modeTransitions),
+    sequence: (src.modeTransitions ?? '').trim(),
     gaps: buildGaps(lanes, cards.length, tr),
     modeCount: cards.length,
+    needLinks: src.needLinks,
   };
 }

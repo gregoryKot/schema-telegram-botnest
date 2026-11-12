@@ -25,3 +25,20 @@ export function exchangeThrownText(err: unknown): string {
   const kind = err instanceof Error ? err.name : typeof err;
   return humanizeThrown(err, `Не удалось войти (${kind})`);
 }
+
+// На экран (слот `code` у TelegramRetry) — только короткий код: «Ошибка 401», без тела ответа (там сырой
+// JSON сервера, ревью b26). Полная строка по-прежнему уходит в отчёт useAuthFailureReport. Строки без кода
+// ответа (обрыв сети, «Не удалось войти (TypeError)») — человеческие и короткие, идут как есть.
+export function exchangeErrorCode(text: string): string {
+  const m = /^(Ошибка \d{3})(?::|$)/.exec(text);
+  return m ? m[1] : text;
+}
+
+// Лимит и авария сервера (429, 5xx) несут человеческий хвост («Слишком много попыток…») — он остаётся на
+// экране лидом; у 4xx хвост — сырое тело сервера, его человеку не показываем.
+export function exchangeErrorLead(text: string): string | null {
+  const m = /^Ошибка (\d{3}): (.+)$/s.exec(text);
+  if (!m) return null;
+  const status = Number(m[1]);
+  return status === 429 || status >= 500 ? m[2].trim() || null : null;
+}

@@ -43,11 +43,15 @@
 |------|----------------------|-----------------|
 | Мини-апп | заголовок `x-telegram-init-data` | HMAC initData, свежесть ≤ 1 ч |
 | Веб (JWT) | `Authorization: Bearer <jwt>` | подпись HS256, issuer/audience |
-| Telegram Login Widget | тело POST | HMAC по `SHA256(bot_token)` |
 
 Унифицирует всё `TelegramAuthGuard` (`src/api/telegram-auth.guard.ts`).
 
-Второй фактор (TOTP) спрашивается только на веб-путях (OAuth, почта, виджет).
+Входа через Telegram на сайте нет с 2026-11 (запрос РКН, п. 4 ч. 10 ст. 8
+149-ФЗ): ни виджета, ни `oauth.telegram.org`, ни подтверждения входа в боте, ни
+передачи сессии из Telegram в браузер. Что закрыто и почему —
+`src/auth/login-ticket/site-login.ts`; возвращать нельзя.
+
+Второй фактор (TOTP) спрашивается только на веб-путях (OAuth, почта).
 Вход через initData Telegram/MAX и одобрение привязки в мессенджере его не
 просят — «мессенджер = доверенное устройство». Это решение не показано на
 экране 2FA; открытый вопрос B-12 аудита 2026-10.
@@ -172,15 +176,15 @@
 - refresh-токен живёт в cookie: `httpOnly` + `secure` + `sameSite=strict` +
   `path=/api/auth`. Не ослаблять эти флаги.
 - Любой state-changing эндпоинт, опирающийся на ambient-cookie (`refresh`,
-  `logout`, `merge`, `telegram/widget`), требует `requireCsrf(req, ...)` —
+  `logout`, `merge`, `ticket/poll`), требует `requireCsrf(req, ...)` —
   проверку заголовка `x-requested-with`, который кросс-доменная форма выставить
   не может.
 - OAuth-флоу защищён cookie `oauth_state` (`sameSite=lax`, нужен для top-level
-  редиректа от Google/VK) + сверкой `state`.
-- Куки незаконченной привязки (`tg_link_user`, `link_token`) стираются вместе с
-  сессией (`clearCookies` в `src/auth/refresh-cookie.ts`: выход и 401 на refresh)
-  и анонимным `telegram/redirect`: иначе следующий вошедший на том же компьютере
-  привязался бы к чужому аккаунту (аудит 2026-11).
+  редиректа от VK) + сверкой `state`.
+- Кука незаконченной привязки (`link_token`) стирается вместе с сессией
+  (`clearCookies` в `src/auth/refresh-cookie.ts`: выход и 401 на refresh): иначе
+  следующий вошедший на том же компьютере привязался бы к чужому аккаунту
+  (аудит 2026-11).
 - Access-токен на вебе хранится **только в памяти** (React `useState`),
   **никогда** в `localStorage`/`sessionStorage`. localStorage уязвим к краже
   через XSS; httpOnly-cookie с refresh-токеном — нет.
@@ -263,7 +267,7 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
 - **Content-Security-Policy — есть, через helmet** (`src/infra/configure-app.ts`, HTTP-заголовком
   на все ответы Nest, включая статику webapp через `ServeStaticModule`). `helmet`
   с `useDefaults` даёт строгий базис, а мы переопределяем: `default-src 'self'`;
-  `script-src` — allowlist (`mc.yandex.ru`, `st.max.ru`, `accounts.google.com`;
+  `script-src` — allowlist (`mc.yandex.ru`, `st.max.ru`; хостов Google нет ни в одной директиве — вход через Google убран 2026-11;
   у каждого источника `script-src`/`connect-src`/`img-src` обязан быть потребитель —
   `src/security/csp-allowlist.invariants.spec.ts`);
   `connect-src`/`img-src`/`frame-src` — по месту; `object-src 'none'`;
@@ -280,8 +284,8 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
 - **Permissions-Policy — свой middleware** (`src/security/permissions-policy.ts`,
   helmet 8 этот заголовок не ставит). Запрещены целиком камера, микрофон,
   геопозиция, платежи, датчики, захват экрана, USB/HID/serial/bluetooth/MIDI.
-  Не запрещать то, чем пользуется код: `identity-credentials-get` (Google One
-  Tap через FedCM), `web-share`, `clipboard-write` — запрет ломает их молча.
+  Не запрещать то, чем пользуется код: `web-share`, `clipboard-write` — запрет
+  ломает их молча (`identity-credentials-get` запрещён с 2026-11: One Tap убран).
   Сверку запретов с API, которое зовут фронты, держит
   `src/security/permissions-policy.invariants.spec.ts`.
 - **Access-токен — только в памяти.** Хранится в React-state, не в
@@ -344,8 +348,10 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   денежные, учётные и админские маршруты считаются в Postgres —
   `@PersistentThrottle`.)
 - **PII в канале алертов владельцу** (аудит 2026-10, D-11): имя, контакт и
-  текст брони, заявка психолога уходят в Telegram, Yandex Cloud Postbox и iCloud (описание
-  события календаря). Процессоры названы в политике; строки экранируются
+  текст брони, заявка психолога уходят в Telegram и Yandex Cloud Postbox. В iCloud и Zoom
+  данные клиента не уходят (152-ФЗ, ч. 5 ст. 18): событие календаря — время и
+  тип записи (`src/booking/caldav-owner-event.ts`), комната Zoom — общее
+  название. Процессоры названы в политике; строки экранируются
   (C-1), URL с токенами в алерт не попадают (D-3).
 - **Данные формы записи живут до 12 месяцев** (находка L3 аудита 2026-07-20,
   решение владельца 2026-10-08). Разбор начинался с вопроса «удалять ли брони
@@ -417,10 +423,11 @@ React экранирует вывод по умолчанию, `dangerouslySetIn
   `check-cron-leader`) — запись прежнего «нет leader-election» устарела (аудит
   2026-11). Остаток риска — exempt-кроны из `scripts/cron-leader-baseline.json`,
   каждый с причиной идемпотентности.
-- **Google ID-token** проверяется локально по JWKS (`src/auth/providers/google-id-token.ts`)
-  с офлайн-фолбэком для redirect-потока (токен получен по TLS от Google); для
-  One Tap офлайн-путь запрещён (`google-one-tap-nonce.ts`). Запись про
-  `tokeninfo` устарела (аудит 2026-11).
+- **Прежний аккаунт Google открывается владельцу почты.** Вход через Google убран
+  (2026-11); аккаунт со строкой `AuthProvider(provider='google')` отдаётся тому, кто
+  подтвердил ссылкой ту же почту (`src/auth/email-login-user.ts`). Адрес у Google
+  был подтверждён (`email_verified`), но ящик мог сменить владельца — второй
+  фактор (TOTP) на этом входе спрашивается, как на любом входе по почте.
 - **merge-токен и `link_token` в URL** (query/fragment) — попадают в логи
   и историю браузера. TTL 10/15 мин ограничивает экспозицию.
 - **`VACUUM FULL` не выполняется** при удалении аккаунта — см. `CLAUDE.md`.

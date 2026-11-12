@@ -22,11 +22,11 @@ const spokeLength = (v: number) => Math.max(30, Math.round((72 * Math.min(10, Ma
 /** Ниже этой оценки потребности не хватило: полоска бледная и лежит без тени. */
 const SHORT_OF = 5;
 
-/** Колесо по оценкам (Колесо детства): полоска на потребность в порядке `values`; без оценки — полоски нет. */
+/** Колесо по оценкам (Колесо детства): полоска на потребность в порядке `values`, цвет — `fills` (цвет данных потребности); без оценки — полоски нет. */
 interface RatedSpoke { fill: string; i: number; v: number }
 
-function ChildhoodValues({ hue, values }: { hue: number; values: readonly (number | null)[] }) {
-  const rated = SPOKES.flatMap((fill, i): RatedSpoke[] => {
+function ChildhoodValues({ hue, values, fills = SPOKES }: { hue: number; values: readonly (number | null)[]; fills?: readonly string[] }) {
+  const rated = fills.flatMap((fill, i): RatedSpoke[] => {
     const v = values[i];
     return v == null ? [] : [{ fill, i, v }];
   });
@@ -50,8 +50,8 @@ function ChildhoodValues({ hue, values }: { hue: number; values: readonly (numbe
 
 /** Колесо детства. Без `values` — композиция лендинга (одной полоски не хватило); с `values` —
  *  полоски по оценкам 0–10 (длина — оценка/10, ниже 5 — бледная и без тени). */
-export function SceneChildhood({ hue = 45, values }: { hue?: number; values?: readonly (number | null)[] }) {
-  if (values) return <ChildhoodValues hue={hue} values={values} />;
+export function SceneChildhood({ hue = 45, values, fills }: { hue?: number; values?: readonly (number | null)[]; fills?: readonly string[] }) {
+  if (values) return <ChildhoodValues hue={hue} values={values} fills={fills} />;
   const last = SPOKES.length - 1;
   return (
     <SceneSvg hue={hue} patch={240} patchAt="tr" sheet="a">

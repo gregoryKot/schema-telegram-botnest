@@ -18,14 +18,14 @@ interface HeadProps {
   title: ReactNode;
   /** Справа в шапке: число строк группы. */
   aside?: ReactNode;
-  className?: string;
+  className?: string; as?: 'h2' | 'h3'; // h2 — группа прямо на странице («Справочник» терапевта)
 }
 
-export function SignGroupHead({ signs, title, aside, className }: HeadProps) {
+export function SignGroupHead({ signs, title, aside, className, as: Head = 'h3' }: HeadProps) {
   const many = signs.length > 1;
   const cls = ['sg-head', many && 'is-many', className].filter(Boolean).join(' ');
   return (
-    <h3 className={cls}>
+    <Head className={cls}>
       {!many && signs[0] && <span className="sg-sign" aria-hidden="true"><SignArt sign={signs[0]} size="square" /></span>}
       {many && (
         <span className="sg-signs" aria-hidden="true">
@@ -34,7 +34,7 @@ export function SignGroupHead({ signs, title, aside, className }: HeadProps) {
       )}
       <span className="ds-label sg-name">{glueIf(title)}</span>
       {aside !== undefined && <span className="sg-aside">{aside}</span>}
-    </h3>
+    </Head>
   );
 }
 
@@ -42,17 +42,17 @@ interface Props {
   look: SheetLook;
   /** Несколько знаков у подписи вместо `look.sign` (копинги справочника). */
   signs?: readonly SignKey[];
-  title: ReactNode;
-  aside?: ReactNode;
-  /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). */
-  rowsClassName?: string;
+  title?: ReactNode; // без подписи и знака лист стоит без шапки (техники «Справочника» терапевта)
+  aside?: ReactNode; label?: string; headAs?: 'h2' | 'h3'; // label — aria-label секции, headAs — уровень заголовка шапки
+  /** Класс белого списка строк (рецепты стенда и тесты ищут строки по нему). plain — тихая группа без листа и белой карточки (пикеры терапевта, g11 r1). */
+  rowsClassName?: string; plain?: boolean;
   children: ReactNode;
 }
 
-export function SignGroup({ look, signs, title, aside, rowsClassName, children }: Props) {
+export function SignGroup({ look, signs = look.sign ? [look.sign] : [], title, aside, label, headAs, rowsClassName, plain, children }: Props) {
   return (
-    <section className="pp-paper sg-group" style={{ '--h': look.hue } as CSSProperties}>
-      <SignGroupHead signs={signs ?? (look.sign ? [look.sign] : [])} title={title} aside={aside} />
+    <section className={plain ? 'sg-group sg-group--plain' : 'pp-paper sg-group'} aria-label={label} style={{ '--h': look.hue } as CSSProperties}>
+      {(title !== undefined || signs.length > 0) && <SignGroupHead signs={signs} title={title} aside={aside} as={headAs} />}
       <div className={rowsClassName ? `sg-rows ${rowsClassName}` : 'sg-rows'}>{children}</div>
     </section>
   );

@@ -1,6 +1,5 @@
-// Разделы плашки «Обычно в методе» (ConceptGuideHint, #995): техники «На
-// сессии» и задания «Между сессиями», у каждого пункта — история серым
-// («делали …», «давали …», guideHistory.ts). Вынесены из плашки по правилу №10.
+// Разделы плашки «Обычно в методе» (ConceptGuideHint, #995): техники и задания,
+// у пункта — история серым («делали …», «давали …», guideHistory.ts).
 import type { CSSProperties } from 'react';
 import type {
   BetweenSessionsItem,
@@ -8,22 +7,19 @@ import type {
 } from '../../schemaTherapy/guide';
 import type { ConceptGuideActions, GuideFrom } from './conceptGuide';
 import type { GuideNotes } from './guideHistory';
-import { hintStyle, labelStyle, wordBtn } from './graphStyles';
+import { hintStyle, labelStyle } from './graphStyles';
 import { JournalLink } from './JournalLink';
+import { rowBtn, techItem } from './guideHintStyles';
 
 const sectionStyle: CSSProperties = { marginTop: 'var(--space-8)' };
-// Пояснение и история — тихим серым.
 const subStyle: CSSProperties = { color: 'var(--text-sub)' };
 
-// «Дать заданием» стоит в своей строке, ей отрицательные поля не нужны.
 const assignBtn: CSSProperties = {
-  ...wordBtn,
-  margin: 0,
+  ...rowBtn,
   flexShrink: 0,
   color: 'var(--text-sub)',
 };
-
-/** «На сессии»: техника — слово-кнопка (без `actions` — текст), за ней «делали …» и «журнал →». */
+/** «На сессии»: техника — слово-кнопка (без `actions` — текст), за ней «делали …», «журнал →». */
 export function HintTechniques({
   techniques,
   from,
@@ -45,17 +41,17 @@ export function HintTechniques({
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '2px var(--space-10)',
+          gap: '0 var(--space-12)',
         }}
       >
         {techniques.map((t) => {
           const done = notes.technique(t.id);
           return (
-            <span key={t.id}>
+            <span key={t.id} style={techItem}>
               {actions ? (
                 <button
                   type="button"
-                  style={wordBtn}
+                  style={rowBtn}
                   onClick={() => actions.onOpenTechnique(t.id, from)}
                 >
                   {t.name}
@@ -63,10 +59,10 @@ export function HintTechniques({
               ) : (
                 <span style={{ color: 'var(--text)' }}>{t.name}</span>
               )}
-              {done && <span style={subStyle}> · {done}</span>}
+              {done && <span style={subStyle}>· {done}</span>}
               {done && actions?.onOpenJournal && (
                 <>
-                  <span style={subStyle}> · </span>
+                  <span style={subStyle}>·</span>
                   <JournalLink onClick={actions.onOpenJournal} />
                 </>
               )}

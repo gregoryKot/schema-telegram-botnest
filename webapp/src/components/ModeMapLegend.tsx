@@ -22,7 +22,7 @@ function Glyph({ shape, color }: { shape: string; color: string }) {
     oct:    'M4,1 L20,1 L23,4 L23,20 L20,23 L4,23 L1,20 L1,4 Z',
     penta:  'M12,1 L23,9 L19,23 L5,23 L1,9 Z',
     shield: 'M2,2 L22,2 L22,16 L12,23 L2,16 Z',
-    cloud:  'M6,18 Q2,18 2,14 Q2,9 7,9 Q6,3 12,3 Q16,1 19,4 Q23,4 23,9 Q23,18 18,18 Z',
+    cloud:  'M1,6 L23,6 L19.5,12 L23,18 L1,18 L4.5,12 Z', // лента триггера (modeMap/paperShapes.ts)
     blob:   BLOB_PATH,
   };
   return (

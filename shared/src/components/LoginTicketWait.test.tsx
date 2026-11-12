@@ -4,14 +4,15 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { LoginTicketWait } from './LoginTicketWait';
+import { loginTicketFailure } from '../auth/loginTicketFailure';
 
 afterEach(cleanup);
 
 const waiting = {
   kind: 'waiting' as const,
-  provider: 'telegram' as const,
+  provider: 'email' as const,
   code: 'K7M2QX94',
-  url: 'https://t.me/Bot?start=login_K7M2QX94',
+  url: '/api/auth/vk?ticket=K7M2QX94',
 };
 
 function renderOpened(state = waiting) {
@@ -55,10 +56,7 @@ describe('ожидание подтверждения', () => {
   // Аудит 2026-10 (гейт обращения): экран до входа — формы обращения ещё нет,
   // и «Подтвердите» показывало «вы» тому, кто выбрал «ты». Текст безличный.
   it.each([
-    [
-      'telegram',
-      'Осталось подтвердить вход в Telegram — там появится этот код:',
-    ],
+    ['email', 'Осталось подтвердить вход через почту. Код входа:'],
     ['vk', 'Осталось подтвердить вход через ВКонтакте. Код входа:'],
   ] as const)('%s: подсказка безличная, без «ты» и «вы»', (provider, text) => {
     const { container } = renderOpened({ ...waiting, provider });
@@ -105,5 +103,43 @@ describe('исходы', () => {
     render(<LoginTicketWait state={{ kind: 'denied' }} onRetry={onRetry} />);
     fireEvent.click(screen.getByRole('button'));
     expect(onRetry).toHaveBeenCalled();
+  });
+
+  it('исход без картинки-эмодзи: ни ⌛, ни 🛑 в тексте', () => {
+    for (const kind of ['denied', 'expired', 'failed'] as const) {
+      const { container } = render(
+        <LoginTicketWait state={{ kind }} onRetry={() => {}} />,
+      );
+      expect(container.textContent).not.toMatch(/[⌛🛑]/u);
+      cleanup();
+    }
+  });
+
+  it('фронтенд рисует исход сам (renderFailure) — тот же текст и тот же повтор', () => {
+    const onRetry = vi.fn();
+    render(
+      <LoginTicketWait
+        state={{ kind: 'expired' }}
+        onRetry={onRetry}
+        renderFailure={(f, retry) => (
+          <button
+            type="button"
+            onClick={retry}
+          >{`${f.kind}: ${f.text}`}</button>
+        )}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'expired: Время кода вышло.' }),
+    );
+    expect(onRetry).toHaveBeenCalled();
+  });
+
+  it('loginTicketFailure: исход только у отказа, истечения и сорванного старта', () => {
+    expect(loginTicketFailure({ kind: 'failed' })?.text).toBe(
+      'Не получилось начать вход.',
+    );
+    expect(loginTicketFailure({ kind: 'idle' })).toBeNull();
+    expect(loginTicketFailure(waiting)).toBeNull();
   });
 });

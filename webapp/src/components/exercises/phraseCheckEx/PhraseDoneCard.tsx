@@ -1,35 +1,16 @@
-import { ExDone } from '../ExScreen';
-import { hueStyle } from '../../../lib/tone';
-import { HUE_STRAIN, HUE_CARE } from '../exHue';
-import { PhraseCheckShare } from './PhraseCheckShare';
-import type { PhraseMarkId } from '../../../../../shared/src/phraseCheck/criteria';
+import { PhraseSaid } from './PhraseSaid';
+import { HealthyVoice } from '../../paper/HealthyVoice';
+import { glueSpaces } from '../../../../../shared/src/utils/typo';
 
-// Экран «готово»: было → стало, рядом дословно. Вёрстка — по образцу
-// ink-карточки BeliefDoneScreen (единый визуальный язык done-экранов упражнений
-// webapp), только с двумя цитатами вместо таблицы доказательств.
-export function PhraseDoneCard({
-  phrase,
-  rewrite,
-  marks,
-}: {
-  phrase: string;
-  rewrite: string;
-  marks: PhraseMarkId[];
-}) {
+// Итог разбора «было → стало» (b18) — две реплики на листе «готово»: голос критика белым листом со знаком
+// Looming (PhraseSaid), ответ — вставкой мха со знаком Together (HealthyVoice, тот же голос Здорового
+// Взрослого, что в дневнике режимов). Без ответа — одна реплика «Было».
+export function PhraseDoneCard({ phrase, rewrite }: { phrase: string; rewrite: string }) {
   const trimmedRewrite = rewrite.trim();
   return (
-    <>
-    <ExDone>
-      <div className="ex2-dlabel is-tone" style={hueStyle(HUE_STRAIN)}>Было</div>
-      <div className="ex2-quote ex2-quote--em">«{phrase}»</div>
-      {trimmedRewrite && (
-        <div style={hueStyle(HUE_CARE)}>
-          <div className="ex2-dlabel is-tone">Стало</div>
-          <div className="ex2-quote is-tone">«{trimmedRewrite}»</div>
-        </div>
-      )}
-    </ExDone>
-    <PhraseCheckShare phrase={phrase} marks={marks} rewrite={trimmedRewrite || undefined} />
-    </>
+    <div className="ex2-talk">
+      <PhraseSaid label="Было" text={phrase} />
+      {trimmedRewrite && <HealthyVoice label="Стало" text={`«${glueSpaces(trimmedRewrite)}»`} />}
+    </div>
   );
 }

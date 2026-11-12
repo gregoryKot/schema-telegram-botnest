@@ -193,9 +193,9 @@ export const FIELD_POLICY: Record<string, Record<string, Policy>> = {
     modeMapEdges: enc(`${TH}/concept-store.ts`),
     modeLinks: enc(`${TH}/concept-store.ts`),
     schemaLinks: enc(`${TH}/concept-store.ts`),
+    needLinks: enc(`${TH}/concept-needs.ts`), // колесо потребностей — свой писатель
     history: plain(
-      'контейнер снапшотов; чувствительные поля каждого снапшота ' +
-        'шифруются попольно (encryptConceptFields)',
+      'контейнер снапшотов; чувствительные поля снапшота шифруются попольно (encryptConceptFields)',
     ),
   },
   TherapistCustomMode: {

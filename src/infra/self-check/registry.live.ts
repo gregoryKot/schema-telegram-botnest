@@ -4,19 +4,16 @@ import { caldavProbe } from './probe-caldav';
 import { ciRunsProbe } from './probe-ci-runs';
 import { dependabotPrsProbe } from './probe-dependabot-prs';
 import { backupFreshnessProbe } from './probe-backup-freshness';
-import { googleOAuthProbe, vkOAuthProbe } from './probe-oauth-providers';
+import { vkOAuthProbe } from './probe-oauth-providers';
 import { deliveryProbes } from './registry.delivery';
-import { telegramDomainProbe } from './probe-telegram-domain';
 import { maxProbe } from './probe-max';
 
 /** Пробы с живым запросом во внешние площадки — не про нашу БД и конфигурацию. */
 export function liveIntegrationProbes(): Probe[] {
   return [
     ...telegramProbes(),
-    telegramDomainProbe(),
     maxProbe(),
     caldavProbe(),
-    googleOAuthProbe(),
     vkOAuthProbe(),
     ciRunsProbe(),
     dependabotPrsProbe(),

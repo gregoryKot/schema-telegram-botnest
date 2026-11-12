@@ -42,9 +42,14 @@ paths:
 
 ## Тестовые храповики и e2e (по итогам покрытия 2026-07-16)
 
-- **Coverage-храповик**: `scripts/check-coverage-ratchet.mjs` (CI-джоба
-  backend) — покрытие бэкенда не может снизиться; полы по каталогам в
-  `scripts/coverage-baseline.json`. Стало лучше — зафиксируй `--update`.
+- **Покрытие — фиксированный пол, а не гонка**: `scripts/check-coverage-ratchet.mjs`
+  (джоба backend) и `check-frontend-coverage-ratchet.mjs` краснеют ниже пола из
+  `scripts/coverage-baseline.json` и `scripts/frontend-coverage-baseline.json`;
+  жёсткие полы по каталогам — вход (`src/auth`), шифрование (`src/utils`), запись
+  и деньги (`src/booking`). Пол меняет владелец правкой файла; `--update` не
+  запускается. Тест пишется на новую логику и на шов, один уровень на одно
+  поведение; разметка, статический контент и стили тестом не покрываются, тест
+  ради процента не пишется.
 - **Новый контроллер/эндпоинт = e2e-смок на ownership**: тест в `test/`,
   что юзер А не видит данные юзера Б через HTTP (см. `app-ownership.e2e-spec.ts`;
   инфраструктура — `test/e2e-support/`, бут реального AppModule).

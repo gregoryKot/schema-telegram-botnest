@@ -35,11 +35,18 @@ describe('pp-head — заголовок слева, картинка справ
   });
 
   it.each([
-    'components/therapy/TalkSheet.tsx',
     'components/schemaSheets/SsHead.tsx', 'sections/practice/SelfHelpSheet.tsx',
   ])('%s: строка заголовка — pp-head', (f) => {
     expect(tsx(f)).toMatch(/className="pp-head[ "]/);
     expect(tsx(f)).not.toMatch(/cw-title-row|qe-head|ss-title-row/);
+  });
+
+  // b24 (2026-11): «Поговорить» — лист-герой неба (EntitySheet или фото автора), своей строки заголовка нет.
+  it('«Поговорить»: заголовок — в листе-герое, pp-head и своей строки заголовка нет', () => {
+    const f = tsx('components/therapy/TalkSheet.tsx');
+    expect(f).toMatch(/<EntitySheet look="therapist"/);
+    expect(f).toMatch(/<AuthorPhoto /);
+    expect(f).not.toMatch(/pp-head|cw-title-row|qe-head|ss-title-row/);
   });
 
   // b10a (2026-11): заголовок «Что на уме?» и знак — в листе-герое сущности, а не строкой над полем.

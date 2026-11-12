@@ -1,21 +1,93 @@
-/* Упражнение «Разбор фразы» и его история (PhraseCheckEx, phraseCheckEx/*).
-   Подключается из sheet-exercises.css. */
-/* ── Разбор фразы ─────────────────────────────────────────────────────── */
-.ex2-progress { height: 4px; border-radius: 2px; background: var(--line); margin-bottom: 28px; overflow: hidden; }
-.ex2-progress > i { display: block; height: 100%; border-radius: 2px; background: var(--accent); transition: width .2s; }
-.ex2-choice {
-  width: 100%; min-height: 48px; padding: 14px 18px; text-align: left; border-radius: 14px; cursor: pointer;
-  font: 14.5px/1.5 var(--sans); color: var(--text);
-  background: oklch(0.96 0.03 var(--h)); border: 1px solid oklch(0.88 0.05 var(--h));
-}
-.ex2-choice:hover { border-color: oklch(0.58 0.12 var(--h)); }
-.ex2-check { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; margin: 16px 0; border: 1px solid var(--line); border-radius: 14px; }
-.ex2-check.is-off { opacity: .5; }
-.ex2-check input { width: 20px; height: 20px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--accent); }
-.ex2-check label { font-size: 13px; line-height: 1.5; color: var(--text-sub); cursor: pointer; }
-.ex2-check label small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-faint); }
+/* Упражнение «Критик или забота?» и его история (PhraseCheckEx, phraseCheckEx/*). Подключается из
+   sheet-exercises.css. Оттенок голоса приходит в --h: критик — слива, забота — мох (phraseLook.ts). */
 
-/* ── Лист «Разбор фразы» (история) ────────────────────────────────────── */
+/* ── Бусины хода разбора на листе героя (PhraseBeads) ── */
+.ex2-beads { margin-top: 4px; }
+.ex2-beads > svg { display: block; width: 196px; max-width: 100%; height: auto; }
+
+/* ── Реплика критика: белый лист с тенью-слоем сливы, Literata курсивом (PhraseSaid) ── */
+.ex2-said {
+  box-sizing: border-box; margin: 0 7px 24px 0; padding: 18px 22px 20px; border-radius: 18px;
+  background: var(--surface); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
+}
+.ex2-said-text { margin: 0; font-family: var(--serif); font-style: italic; font-size: 22px; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; text-wrap: pretty; }
+.ex2-said--was { margin-bottom: 18px; padding: 14px 18px 16px; }
+.ex2-said--was .ex2-said-text { font-size: 18px; line-height: 1.4; }
+.ex2-said-label { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: var(--text-sub); }
+.ex2-said-label > .pp-art { flex: none; }
+
+/* ── Шаг приметы: одинаковые нейтральные варианты, без подсказки цветом ── */
+.ex2-choices { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.ex2-choice {
+  width: 100%; min-height: 56px; padding: 14px 18px; text-align: left; border-radius: 16px; cursor: pointer;
+  font: 15px/1.5 var(--sans); color: var(--text); background: var(--surface); border: 1px solid var(--line-strong);
+}
+/* Наведение — только у мыши: на таче :hover залипает на кнопке под пальцем и подсказывал ответ следующей приметы. */
+@media (hover: hover) { .ex2-choice:hover { border-color: var(--text-sub); background: var(--paper-tint); } }
+.ex2-choice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Шаг «переписать»: вердикт листом со знаком, поле «стало» с тенью мха ── */
+.ex2-verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: start; box-sizing: border-box; margin-bottom: 18px; padding: 18px 20px 20px 22px; border-radius: 20px; }
+.ex2-verdict-signs { grid-column: 2; grid-row: 1; display: flex; gap: 4px; }
+.ex2-verdict-signs > .pp-art { width: 64px; height: 35px; }
+.ex2-verdict-body { grid-column: 1; grid-row: 1; min-width: 0; }
+.ex2-verdict-body > .ds-label { display: block; margin-bottom: 6px; color: var(--text-sub); }
+.ex2-verdict .ex2-note-h { color: var(--text); }
+.ex2-verdict .ex2-note-body { color: var(--text-sub); }
+.ex2-now { margin: 0 7px 0 0; }
+.ex2-now > .ex2-said-label { margin-bottom: 8px; }
+.ex2-now .pa-field { min-height: calc(4 * 1.5em + 36px); }
+.ds-link.pa-quiet.ex2-open { display: inline-flex; align-items: center; padding: 0; font-size: 15px; color: var(--accent); }
+.ex2-check { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; margin: 18px 0 0; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); cursor: pointer; }
+.ex2-check > .pp-art { flex: none; margin-top: -1px; }
+.ex2-check input { width: 22px; height: 22px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--c-moss); cursor: inherit; }
+.ex2-check:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ex2-check-text { font-size: 14px; line-height: 1.5; color: var(--text); }
+.ex2-check-text small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-sub); }
+.ex2-check.is-off { background: transparent; cursor: default; }
+.ex2-check.is-off .ex2-check-text { color: var(--text-sub); }
+
+/* ── «было → стало»: итог и строки прошлых разборов ── */
+.ex2-talk { align-self: stretch; display: flex; flex-direction: column; gap: 10px; margin: 8px 0 4px; }
+.ex2-talk > .ex2-said { margin-bottom: 0; }
+/* На узком экране «Стало» — как «Было»: знак и подпись строкой, цитата во всю ширину под ними (в колонке
+   рядом со знаком первая строка оставалась из одного слова — ревью g6 r2). */
+@media (max-width: 360px) {
+  .ex2-talk .pa-voice { align-items: center; row-gap: 6px; }
+  .ex2-talk .pa-voice-body { display: contents; }
+  .ex2-talk .pa-voice-text { grid-column: 1 / -1; }
+}
+/* Прошлые разборы — общая строка ExPastRow (ex-done.css): фраза цитатой со знаком Looming, ниже «→ стало»
+   со знаком Together; в колонке подсказки шага «фраза» — отступом от наклейки. */
+.ex2-aside .ex2-past-list { margin-top: 20px; }
+.ex2-phrase-now { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; font-family: var(--serif); font-size: 15px; line-height: 1.45; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
+.ex2-phrase-now > .pp-art { flex: none; align-self: center; }
+
+/* ── Поделиться — тихими ссылками под главным действием (итог и лист прошлого разбора) ──
+   Обёртки ShareTwoOptions не сплющиваются (display: contents): лист шаринга — их сосед в том же блоке,
+   и без своего бокса он терял position: fixed и вставал в поток страницы. */
+.ex2-share { padding: 0 4px; }
+.ex2-share > div > .ds-btn.ds-btn--secondary { height: 44px; padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 14px; }
+.ex2-share > div > .ds-btn.ds-btn--secondary:hover { color: var(--accent-hi); }
+
+/* ── Лист «Разбор фразы» (история) ── */
+/* Найденные приметы (PhraseMarkPills, shared): бусина сливы и подпись, как у бусин хода разбора. */
+.ex2-mark-beads { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 14px 0 18px; padding: 0; list-style: none; }
+.ex2-mark-beads > li { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; line-height: 1.4; color: var(--text-sub); }
+.ex2-mark-beads > li::before { content: ''; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--c-plum); }
 .ex2-sheet-h { margin-bottom: 14px; }
-.ex2-sheet-quote.ds-card { margin-bottom: 12px; font-size: 14px; line-height: 1.5; color: var(--text-sub); background: var(--paper-tint); }
-.ex2-sheet-label { margin: 14px 0 8px; }
+.ex2-sheet-delete { margin-top: 8px; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  /* Узкий лист вердикта: знаки — строкой над надписью, текст — на всю ширину. */
+  .ex2-verdict { grid-template-columns: minmax(0, 1fr); }
+  .ex2-verdict-signs { grid-column: 1; }
+  .ex2-verdict-body { grid-row: 2; }
+  .ex2-verdict-signs > .pp-art { width: 52px; height: 28px; }
+  .ex2-said-text { font-size: 20px; }
+  .ex2-said--was .ex2-said-text { font-size: 17px; }
+}
+
+/* Ритм шага: заголовок после листа «Было» — отступом блока (~24px от сдвинутой тени), а не в 10px; заголовки
+   шагов разбора — ровными строками, без одного висящего слова («…сообщает или / судит?», ревью g6). */
+.ex2-said--was + .ex2-prompt-label { margin-top: 12px; }
+.ex2-said ~ .ex2-prompt-label { text-wrap: balance; }

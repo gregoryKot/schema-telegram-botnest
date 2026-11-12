@@ -107,7 +107,7 @@ export interface ModeMapNode {
     side?: 'A' | 'B';                      // чей режим на карте пары (Партнёр А / Б)
     schemaId?: string; schemaIds?: string[]; // схема фигуры «схема»/«опыт»; схемы режима — таблетки на фигуре (schemaId у режима — старая одна)
     needId?: string; diameter?: number;    // потребность таблетки; диаметр старого круга потребностей
-    wheel?: { period?: WheelPeriod; compare?: boolean; ratings?: Partial<Record<WheelPeriod, Record<string, number>>>; notes?: Partial<Record<WheelPeriod, Record<string, string>>> }; // колесо потребностей: оценки 0–10 и текст листа по периодам (modeMap/needWheel.ts)
+    wheel?: { period?: WheelPeriod; compare?: boolean; ratings?: Partial<Record<WheelPeriod, Record<string, number>>>; notes?: Partial<Record<WheelPeriod, Record<string, string>>> }; // колесо потребностей: в карте — вид (период, контур детства); оценки и текст — в концептуализации (needLinks), здесь остались у карт #1065 до переноса
     settle?: boolean;                      // свежая схема случая: после замера колонки раздвинутся по высоте (useSettleFresh), флаг снимется
   };
   width?: number; height?: number;

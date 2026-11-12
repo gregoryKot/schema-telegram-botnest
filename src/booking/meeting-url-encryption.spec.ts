@@ -214,9 +214,8 @@ describe('Booking.meetingUrl: запись и каждый читатель', ()
     )[0].data.meetingUrl;
     expect(saved).not.toContain('pwd=');
     expect(cryptoMod.decrypt(saved)).toBe(ZOOM);
-    expect(calDav.pushEvent.mock.calls[0]).toEqual([
-      expect.objectContaining({ location: ZOOM }),
-    ]);
+    // В iCloud ссылка на комнату не уходит: событие владельца обезличено.
+    expect(JSON.stringify(calDav.pushEvent.mock.calls[0])).not.toContain(ZOOM);
     expect(telegram.notifyAdmin.mock.calls[0][0]).toContain(ZOOM);
   });
 

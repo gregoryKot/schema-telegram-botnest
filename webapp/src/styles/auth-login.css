@@ -1,100 +1,136 @@
-/* Вход и 2FA (редизайн 2026-10, экраны a1–a3). Префикс al-. Страницы живут
-   вне AppShell, поэтому корень сам красит весь экран (light-lock). */
+/* Вход и 2FA (редизайн 2026-11, партия b26). Префикс al-. Оболочка — AuthShell: лист-герой
+   оттенка экрана (--h: вход 45, 2FA 240) и форма. Телефон и планшет — компактный герой сверху,
+   срез снизу; ≥1024 — разворот, герой слева, срез сбоку. Страницы живут вне AppShell: корень
+   сам красит экран (light-lock) и занимает всю ширину #root (flex-ряд, pageRoots.test.ts). */
 .al-root {
-  min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr;
+  flex: 1 1 auto; align-self: flex-start; width: 100%; min-width: 0; box-sizing: border-box;
+  min-height: 100vh; display: flex; flex-direction: column;
   background: var(--bg); color: var(--text); font-family: var(--sans);
 }
+@supports (min-height: 100dvh) { .al-root { min-height: 100dvh; } }
+
+/* Герой: знак продукта и слоган слева, картинка справа (компактно, до первого действия ≤ ~230px). */
 .al-hero {
-  background: var(--panel); color: var(--on-panel); padding: 48px 56px;
-  display: flex; flex-direction: column;
+  position: relative; z-index: 1; border-radius: 0; box-sizing: border-box;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand art" "pitch art";
+  align-items: start; column-gap: 12px; row-gap: 6px;
+  padding: calc(12px + var(--safe-top)) 16px 14px;
 }
-/* Знак — ссылка на главную сайта: зона 44px по высоте, отрицательные поля держат вёрстку. */
-.al-brand {
-  display: flex; align-items: center; gap: 10px; align-self: flex-start;
-  min-height: 44px; margin: -4px 0; color: inherit; text-decoration: none;
-}
-/* Знак — BrandMark; класс только меняет размер на телефоне. */
-.al-logo { width: 36px; height: 36px; }
-.al-brand-name { font-family: var(--serif); font-size: 19px; }
-.al-pitch { margin-top: auto; display: flex; flex-direction: column; gap: 20px; }
-.al-slogan { font-family: var(--serif); font-size: 56px; line-height: 1.05; font-weight: 400; margin: 0; }
+/* Знак — ссылка на главную сайта (ProductBrand, paper-app.css): здесь только место в сетке героя. */
+.pb-brand.al-brand { grid-area: brand; align-self: start; }
+.al-hero-art { grid-area: art; width: 132px; align-self: center; }
+/* Рамка сцены держит пропорцию холста 320×260 до того, как ленивый чанк сцены ляжет. */
+.al-scene { aspect-ratio: 320 / 260; width: 100%; }
+.al-2fa .al-hero-art { width: 64px; } /* 2FA — форма, а не сцена: знак компактно у бренда (принцип 1) */
+.al-2fa .al-hero-art .scn-sign { width: 100%; }
+.al-pitch { grid-area: pitch; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.al-slogan { font-family: var(--serif); font-size: 23px; line-height: 1.12; font-weight: 400; margin: 0; text-wrap: balance; }
 .al-slogan i { color: var(--accent); }
-.al-lead { font-size: 16px; line-height: 1.6; color: var(--on-panel-sub); max-width: 440px; margin: 0; }
-.al-art { display: flex; gap: 16px; margin-top: 40px; }
+.al-lead { display: none; font-size: 16px; line-height: 1.6; color: var(--text-sub); max-width: 440px; margin: 0; }
 
-.al-side { display: flex; align-items: center; justify-content: center; padding: 48px; }
-.al-form { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 14px; }
-.al-title { font-family: var(--serif); font-size: 40px; line-height: 1.1; font-weight: 400; margin: 0; }
-.al-sub { font-size: 15px; color: var(--text-sub); line-height: 1.5; margin: 0 0 10px; }
+/* Срез ножницами: лист героя выходит за край двумя слоями (authCut.ts), без размытия и тени. */
+.al-cut { position: absolute; display: block; pointer-events: none; }
+.al-cut--bottom { left: 0; top: 100%; width: 100%; height: 14px; }
+.al-cut--right { display: none; top: 0; left: 100%; width: 22px; height: 100%; }
+.al-cut-under { fill: oklch(0.85 0.05 var(--h)); }
+.al-cut-top { fill: oklch(0.915 0.03 var(--h)); }
 
-.al-btn, .al-btn-main {
-  display: flex; align-items: center; gap: 14px; padding: 0 22px; border-radius: 28px;
-  font: 600 15px var(--sans); text-decoration: none; cursor: pointer; box-sizing: border-box;
-  white-space: nowrap; width: 100%;
+.al-side { flex: 1 1 auto; display: flex; justify-content: center; padding: 30px 16px calc(32px + var(--safe-bottom)); min-width: 0; }
+.al-form { width: 100%; max-width: 440px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.al-title { font-family: var(--serif); font-size: 28px; line-height: 1.1; font-weight: 400; margin: 0; }
+.al-sub { font-size: 15px; color: var(--text-sub); line-height: 1.5; margin: 0 0 6px; text-wrap: pretty; }
+
+.al-btn-main {
+  display: flex; align-items: center; gap: 14px; padding: 0 20px; border-radius: 28px; min-width: 0;
+  font: 600 15px var(--sans); text-decoration: none; cursor: pointer; box-sizing: border-box; width: 100%;
 }
-.al-btn { height: 52px; background: var(--surface); border: 1px solid var(--line-strong); color: var(--text); }
-.al-btn:hover { border-color: var(--line-hover); }
-.al-btn-main { height: 56px; background: var(--accent); border: 0; color: var(--on-accent); font-weight: 700; }
+.al-btn-main { min-height: 54px; background: var(--accent); border: 0; color: var(--on-accent); font-weight: 700; }
 .al-btn-main:hover { background: var(--accent-hi); }
 .al-ico { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
 .al-vk { background: #0077FF; color: #fff; border-radius: 7px; font-size: 11px; font-weight: 700; }
-.al-badge {
-  margin-left: auto; font-size: 11px; font-weight: 700; background: var(--on-accent);
-  color: var(--accent); border-radius: 10px; padding: 3px 8px; /* на кнопке --accent — вывернутая пара: 7.72:1 */
-}
-.al-ticket { background: var(--paper-sunk); border-radius: 14px; padding: 12px 16px; margin-top: 6px; }
+.al-ticket { background: oklch(0.95 0.015 var(--h)); border-radius: 16px; padding: 6px 14px; }
 .al-ticket:empty { display: none; }
+.al-alert { width: 100%; }
 
 .al-linkbtn {
-  background: none; border: 0; padding: 0; min-height: 44px; display: inline-flex; align-items: center;
+  background: none; border: 0; padding: 0; min-height: 44px; display: inline-flex; align-items: center; align-self: flex-start;
   color: var(--text-sub); font: 13px var(--sans); text-decoration: underline; cursor: pointer;
 }
-.al-error { color: var(--err); font-size: 13px; margin: 0; }
 .al-note { color: var(--text-sub); font-size: 12px; line-height: 1.7; margin: 0; }
 .al-note a, .al-foot a { color: inherit; text-decoration: underline; }
 .al-foot { font-size: 13px; color: var(--text-sub); margin: 0; }
-.al-email-sent { padding: 14px 16px; background: var(--paper-tint); border-radius: 14px; }
+.al-foot--center { text-align: center; }
+.al-foot--center .al-linkbtn { align-self: auto; }
+.al-email-sent { padding: 14px 16px; background: oklch(0.95 0.015 var(--h)); border-radius: 16px; }
 .al-email-sent p { margin: 0 0 4px; font-size: 13px; color: var(--text-sub); }
 .al-email-sent p:first-child { font-size: 14px; font-weight: 600; color: var(--text); }
 .al-email { display: flex; flex-direction: column; gap: 8px; }
 .al-submit {
-  height: 52px; border-radius: 26px; border: 0; background: var(--accent); color: var(--on-accent);
+  min-height: 52px; border-radius: 26px; border: 0; background: var(--accent); color: var(--on-accent);
   font: 700 15px var(--sans); cursor: pointer; width: 100%;
 }
 .al-submit:disabled { opacity: .5; cursor: default; }
-.al-retry { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; gap: 16px; }
-.al-retry-help { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 320px; }
+/* Отправка ссылки на почту — второе действие экрана: залитая кнопка одна (ВКонтакте). */
+.al-submit--quiet { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
+
+/* Автовход в мессенджере не сработал (TelegramRetry): исход на PaperOutcome; помощь — под кнопкой. */
+.al-retry-help { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+/* Протухший вызов 2FA: обёртка role="alert" вокруг исхода — сама страница во всю ширину #root. */
+.al-expired { align-self: flex-start; flex: 1 1 auto; width: 100%; min-width: 0; display: flex; }
 
 /* 2FA */
-.al-2fa { min-height: 100vh; display: flex; justify-content: center; padding: 36px 24px; }
-.al-2fa-in { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 14px; padding-top: 24px; }
-.al-2fa-mark { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-family: var(--serif); font-size: 26px; }
-.al-2fa-title { font-family: var(--serif); font-size: 30px; line-height: 1.1; font-weight: 400; margin: 0; }
-.al-cells { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 8px; }
+.al-2fa-title { font-family: var(--serif); font-size: 28px; line-height: 1.1; font-weight: 400; margin: 0; }
+.al-cells { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .al-cell {
   height: 56px; border-radius: 12px; background: var(--surface); border: 1.5px solid var(--line-input);
   display: grid; place-items: center; font-family: var(--serif); font-size: 26px;
 }
-.al-cell.is-active { border-color: var(--accent); }
+/* Настоящий input прозрачный, outline снят глобально: фокус поля видно только по активной ячейке — кольцо
+   лишь пока поле в фокусе; без фокуса активная ячейка не выделена (ревью b26, доступность). */
+.al-cells:focus-within .al-cell.is-active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
 .al-cells-input {
   position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px;
   border: 0; background: none; cursor: text;
 }
 
-@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .al-root { grid-template-columns: 1fr; grid-template-rows: auto 1fr; background: var(--panel); }
-  .al-hero { padding: 24px 24px 28px; gap: 14px; }
-  .al-brand-name, .al-lead { display: none; }
-  .al-art { gap: 12px; margin-top: 4px; }
-  .al-art .pp-art { width: 72px; height: 40px; }
-  .al-logo { width: 40px; height: 40px; }
-  .al-brand { margin: -2px 0; }
-  .al-pitch { margin-top: 0; }
-  .al-slogan { font-size: 34px; line-height: 1.08; }
-  .al-side {
-    background: var(--bg); border-radius: 28px 28px 0 0; padding: 28px 22px; align-items: flex-start;
-  }
-  .al-title { font-size: 26px; }
-  .al-btn-main { height: 54px; padding: 0 20px; }
-  .al-btn { height: 50px; padding: 0 20px; }
+@media (max-width: 359px) {
+  .al-hero-art { width: 104px; }
+  .al-slogan { font-size: 21px; }
+  .al-btn-main { gap: 10px; padding: 0 14px; }
+}
+@media (min-width: 600px) and (max-width: 1023px) {
+  .al-hero { padding-left: 32px; padding-right: 32px; }
+  .al-hero-art { width: 168px; }
+  .al-2fa .al-hero-art { width: 72px; }
+  .al-slogan { font-size: 28px; }
+}
+
+/* Разворот: герой слева во всю высоту, срез бумаги сбоку, форма по центру справа. */
+@media (min-width: 1024px) {
+  .al-root { display: grid; grid-template-columns: minmax(0, 46fr) minmax(0, 54fr); }
+  .al-hero { display: flex; flex-direction: column; padding: 40px 56px 48px; }
+  .al-hero-art { width: min(100%, 400px); margin: auto 0; padding: 24px 0; align-self: center; }
+  /* 2FA — экран формы (принцип 1): полоса неба узкая, знак до ~120px, форма — по центру остального
+     (ревью b26: знак ~200px один на пустой небесной половине). */
+  .al-root.al-2fa { grid-template-columns: 340px minmax(0, 1fr); }
+  .al-2fa .al-hero { padding-left: 40px; padding-right: 40px; }
+  .al-2fa .al-hero-art { width: 176px; } /* у Limits поля внутри холста: слот 176 — сам знак ~120px (контрольное ревью: был ~81) */
+  .al-slogan { font-size: 44px; line-height: 1.06; }
+  .al-lead { display: block; }
+  .al-cut--bottom { display: none; }
+  .al-cut--right { display: block; }
+  .al-side { align-items: safe center; padding: 48px 56px 48px 80px; }
+  .al-side > .al-form { margin-block: auto; } /* безопасное центрирование: высокая форма — с верха */
+  .al-title { font-size: 40px; }
+  .al-2fa-title { font-size: 32px; }
+}
+
+/* Куки-баннер (CookieBanner, index.css — фиксирован снизу) закрывал на входе кнопки ВК и «Показать код
+   входа» на телефоне и слоган героя на компьютере (ревью b26). Пока он показан — снизу место на его высоту,
+   всё прокручивается из-под него; вид баннера не меняется. */
+@media (max-width: 1023px) {
+  body:has(.cookie-banner-wrap) .al-side { padding-bottom: calc(260px + var(--safe-bottom)); }
+}
+@media (min-width: 1024px) {
+  body:has(.cookie-banner-wrap) .al-hero { padding-bottom: 210px; }
 }

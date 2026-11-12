@@ -11,7 +11,7 @@ export type IconName =
   | 'undo' | 'redo' | 'minus' | 'plus' | 'fit' | 'auto' | 'grid' | 'zones'
   | 'layers' | 'bulb' | 'info' | 'download' | 'keyboard' | 'caret'
   | 'sparkle' | 'close' | 'search' | 'edit' | 'copy' | 'trash' | 'swap'
-  | 'image' | 'file' | 'compass' | 'map' | 'refresh' | 'reverse';
+  | 'image' | 'file' | 'compass' | 'map' | 'refresh' | 'reverse' | 'check';
 
 // Each entry is the inner markup of a 0 0 24 24 viewBox.
 const PATHS: Record<IconName, string> = {
@@ -41,7 +41,7 @@ const PATHS: Record<IconName, string> = {
   compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z m4-13-2.5 5.5L8 16l2.5-5.5z',
   map:     'm9 4-6 2.5v13L9 17l6 2.5 6-2.5v-13L15 7 9 4.5z M9 4.5v12.5 M15 7v12.5',
   refresh: 'M20 11a8 8 0 1 0-.6 4 M20 5v6h-6',
-  reverse: 'M9 5 4 9l5 4 M4 9h11a5 5 0 0 1 0 10h-2',
+  reverse: 'M9 5 4 9l5 4 M4 9h11a5 5 0 0 1 0 10h-2', check: 'm5 12.5 4.5 4.5L19 7.5',
 };
 
 // Some glyphs read better with a slightly thinner/rounder stroke.

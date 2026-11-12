@@ -89,7 +89,7 @@ export function AppOverlays({
         <Suspense fallback={null}>
           <ChildhoodWheelEx
             onBack={() => ov.setShowChildhoodWheel(false)}
-            onSaved={(r) => setChildhoodRatings(r)}
+            onSaved={setChildhoodRatings} onOpenToday={() => { ov.setTrackerTab('history'); ov.setShowTracker(true); }}
             onOpenSchemas={() => { ov.setShowChildhoodWheel(false); ov.openSchema({ tab: 'schemas' }); }}
           />
         </Suspense>

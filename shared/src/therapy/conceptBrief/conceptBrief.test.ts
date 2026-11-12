@@ -91,7 +91,9 @@ describe('buildConceptBrief', () => {
       ['modes', 'modes', false],
       ['problems', 'text', true],
     ]);
-    expect(s[0].items).toEqual([{ text: 'Неуспешность', hue: 70 }]);
+    expect(s[0].items).toEqual([
+      { text: 'Неуспешность', hue: 70, sign: 'domain_autonomy' },
+    ]);
     expect(s[1].modes).toEqual([
       {
         modeId: 'punitive_critic',

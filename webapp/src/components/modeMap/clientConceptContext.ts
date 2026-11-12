@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import type { ConceptModeLink, ConceptSchemaLink } from '../../../../shared/src/apiTypes';
 
 /** Что холсту нужно из концептуализации клиента: схемы, режимы и связь «режим ↔ схемы». */
-export interface ClientConcept { schemaIds: string[]; modeIds: string[]; modeLinks: ConceptModeLink[]; schemaLinks?: ConceptSchemaLink[] }
+export interface ClientConcept { schemaIds: string[]; modeIds: string[]; modeLinks: ConceptModeLink[]; schemaLinks?: ConceptSchemaLink[]; needLinks?: import('../../../../shared/src/therapy/conceptGraph/needLinks').ConceptNeedLink[] }
 /** null — ещё грузится или клиента нет; 'failed' — сбой (не равен «пусто»). */
 export type ClientConceptState = ClientConcept | null | 'failed';
 

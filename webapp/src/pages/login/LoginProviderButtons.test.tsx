@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
-// Вход на сайте по билету. Та же механика, что у мини-аппа (общий хук в
-// shared) — здесь проверяется, что сайт её действительно использует, а не
-// остался на прежнем редиректе: именно на сайте жила жалоба «Telegram
-// получается только со второй попытки».
+// Способы входа на странице /login: ВКонтакте (во вкладке — прямой вход, в
+// установленном приложении — по билету из общего хука shared). Входа через
+// Telegram на сайте нет — это и проверяется первым.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 
@@ -29,82 +28,64 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-async function renderReady(onSession = vi.fn()) {
-  render(<LoginProviderButtons onSession={onSession} />);
-  // Билет выписан — код уже в ссылке Telegram (на экране он свёрнут).
-  await waitFor(() =>
-    expect(
-      screen
-        .getByRole('link', { name: /Войти через Telegram/ })
-        .getAttribute('href'),
-    ).toContain('login_K7M2QX94'),
+const VK = /Войти через ВКонтакте/;
+
+function standalone() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((q: string) => ({ matches: q === '(display-mode: standalone)' })),
   );
-  return onSession;
 }
+afterEach(() => vi.unstubAllGlobals());
 
 describe('способы входа', () => {
-  it('Telegram ведёт в бота, а не на oauth.telegram.org', async () => {
-    await renderReady();
-    const href = screen
-      .getByRole('link', { name: /Войти через Telegram/ })
-      .getAttribute('href');
-    expect(href).toContain('t.me/');
-    expect(href).toContain('start=login_K7M2QX94');
-    expect(href).not.toContain('oauth.telegram.org');
-  });
+  // Запрос РКН №08-1063539 (2026-11): пользователей из России нельзя
+  // авторизовать на сайте через иностранный сервис. Ни кнопки Telegram, ни
+  // ссылки в бота, ни oauth.telegram.org — и в браузере, и в приложении с
+  // экрана «Домой».
+  it.each([['вкладка браузера', false], ['установленное приложение', true]])(
+    '%s: входа через Telegram и Google нет',
+    async (_name, pwa) => {
+      if (pwa) standalone();
+      render(<LoginProviderButtons onSession={vi.fn()} />);
+      if (pwa)
+        await waitFor(() =>
+          expect(screen.getByRole('link', { name: VK }).getAttribute('href')).toContain('ticket='),
+        );
+      expect(screen.queryByRole('link', { name: /Telegram/ })).toBeNull();
+      expect(document.body.innerHTML).not.toMatch(/telegram|t\.me|login_|google/i);
+    },
+  );
 
-  // 2026-10-03: во вкладке браузера билет для Google/VK не нужен — кука
-  // общая. По билету вход уходил в новое окно и кончался экраном «это вы?» с
-  // кодом, что владелец принял за поломку.
-  it('во вкладке браузера Google и ВКонтакте — прямой вход в той же вкладке, без билета', async () => {
-    await renderReady();
-    const google = screen.getByRole('link', { name: /Войти через Google/ });
-    const vk = screen.getByRole('link', { name: /Войти через ВКонтакте/ });
-    expect(google.getAttribute('href')).toBe('/api/auth/google');
+  // 2026-10-03: во вкладке браузера билет для VK не нужен — кука общая. По
+  // билету вход уходил в новое окно и кончался экраном «это вы?» с кодом, что
+  // владелец принял за поломку.
+  it('во вкладке браузера ВКонтакте — прямой вход в той же вкладке, без билета', () => {
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    const vk = screen.getByRole('link', { name: VK });
     expect(vk.getAttribute('href')).toBe('/api/auth/vk');
-    expect(google.getAttribute('target')).toBeNull();
     expect(vk.getAttribute('target')).toBeNull();
+    expect(startMock).not.toHaveBeenCalled();
   });
 
-  it('в установленном приложении Google и ВКонтакте несут код билета и открываются снаружи', async () => {
-    const matchMedia = vi.fn((q: string) => ({
-      matches: q === '(display-mode: standalone)',
-    }));
-    vi.stubGlobal('matchMedia', matchMedia);
-    try {
-      await renderReady();
-      const google = screen.getByRole('link', { name: /Войти через Google/ });
-      expect(google.getAttribute('href')).toBe('/api/auth/google?ticket=K7M2QX94');
-      expect(google.getAttribute('target')).toBe('_blank');
-      expect(
-        screen
-          .getByRole('link', { name: /Войти через ВКонтакте/ })
-          .getAttribute('href'),
-      ).toBe('/api/auth/vk?ticket=K7M2QX94');
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('Telegram открывается снаружи — страница остаётся ждать сессию', async () => {
-    await renderReady();
-    expect(
-      screen.getByRole('link', { name: /Войти через Telegram/ }).getAttribute('target'),
-    ).toBe('_blank');
-  });
-
-  it('билет выписывается один раз при открытии экрана', async () => {
-    await renderReady();
+  it('в установленном приложении ВКонтакте несёт код билета и открывается снаружи', async () => {
+    standalone();
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: VK }).getAttribute('href')).toBe(
+        '/api/auth/vk?ticket=K7M2QX94',
+      ),
+    );
+    expect(screen.getByRole('link', { name: VK }).getAttribute('target')).toBe('_blank');
+    // Билет один на экран и выписан под ВКонтакте — под Telegram сервер его не даст.
     expect(startMock).toHaveBeenCalledTimes(1);
-    expect(startMock).toHaveBeenCalledWith({
-      intent: 'login',
-      provider: 'telegram',
-      hostId: 'web',
-    });
+    expect(startMock).toHaveBeenCalledWith({ intent: 'login', provider: 'vk', hostId: 'web' });
   });
 });
 
-describe('исход', () => {
+describe('исход (установленное приложение)', () => {
+  beforeEach(standalone);
+
   it('подтверждён — сессия уходит наверх', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     pollMock.mockResolvedValue({
@@ -130,5 +111,19 @@ describe('исход', () => {
       expect(screen.getByText(/Доступ никто не получил/)).toBeTruthy(),
     );
     vi.useRealTimers();
+  });
+
+  // Аудит b26: сбой билета стоял часами-эмодзи посреди формы — теперь лист сбоя с повтором.
+  it('билет не выписался — сбой листом с повтором на месте кнопки, повтор возвращает ВКонтакте', async () => {
+    startMock.mockReset().mockRejectedValue(new Error('500'));
+    render(<LoginProviderButtons onSession={vi.fn()} />);
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toMatch(/Не\sполучилось начать вход/);
+    expect(alert.textContent).not.toMatch(/[⌛🛑]/u);
+    // Без кода билета ссылке вести некуда — кнопки нет, пока билет не выписан.
+    expect(screen.queryByRole('link', { name: /Войти через ВКонтакте/ })).toBeNull();
+    startMock.mockResolvedValue({ deviceCode: 'd'.repeat(64), userCode: 'K7M2QX94', expiresIn: 300, interval: 3 });
+    screen.getByRole('button', { name: 'Попробовать снова' }).click();
+    await waitFor(() => expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy());
   });
 });

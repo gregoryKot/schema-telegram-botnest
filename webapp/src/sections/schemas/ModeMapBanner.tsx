@@ -5,7 +5,7 @@ import { hueStyle } from '../../lib/tone';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { SignHero } from '../../components/paper/SignHero';
 import { glue } from '../../../../shared/src/utils/typo';
-
+import { Cluster } from '../../components/art/PaperArtSigns';
 const ModeMapViewer = lazy(() => import('../../components/ModeMapViewer').then(m => ({ default: m.ModeMapViewer })));
 
 const MODES = ENTITY_LOOK.modes;
@@ -28,10 +28,10 @@ export function ModeMapBanner({ count, onOpen }: { count: number; onOpen: () => 
 export function MyModeMapSheet({ onClose }: { onClose: () => void }) {
   const goBack = useHistorySheet(onClose);
   return (
-    <div className="cs-sheet">
+    <div className="cs-sheet mmv" style={hueStyle(MODES.hue)}>
       <div className="ds-sheet-head">
         <button type="button" onClick={goBack} className="ds-back"><GlyphArrowLeft /> Назад</button>
-        <h2 className="ds-h2">Карта режимов</h2>
+        <h2 className="ds-h2">Карта режимов</h2><Cluster size="row" />
       </div>
       <div className="cs-sheet-body">
         <Suspense fallback={null}><ModeMapViewer /></Suspense>

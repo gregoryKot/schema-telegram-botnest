@@ -17,7 +17,6 @@ export interface AuthErrorScreen {
 const NEW_LINK = { label: 'Запросить новую ссылку', href: EMAIL_FORM_PATH };
 const OTHER_WAY = { label: 'Другой способ входа', href: '/login' };
 const AUTH_ERROR_SCREENS: Record<string, AuthErrorScreen> = {
-  google_disabled: { title: 'Вход через Google отключён', action: OTHER_WAY },
   vk_disabled: { title: 'Вход через ВКонтакте отключён', action: OTHER_WAY },
   email_link_expired: { title: 'Ссылка устарела', action: NEW_LINK },
   email_network: { title: 'Нет связи', action: NEW_LINK, retryLead: (tr) => tr(
@@ -25,6 +24,19 @@ const AUTH_ERROR_SCREENS: Record<string, AuthErrorScreen> = {
     'Ссылка из письма ещё действует: проверьте интернет и нажмите «Повторить».',
   ) },
 };
+
+/** Исход листа `/auth/error` (docs/design/APP_2026-11.md, «Исходы служебных страниц»): подожди или
+ *  устарело — `wait` (ссылка истекла, лимит, нет связи, вход временно отключён); отказ — `limit`
+ *  (сервер отбил вход: 4xx кроме лимита); остальное, и неизвестный код, — сбой на нашей стороне. */
+export type AuthErrorOutcome = 'wait' | 'limit' | 'our_side';
+const WAIT_CODES = new Set(['email_link_expired', 'email_network', 'telegram_expired', 'google_disabled', 'vk_disabled', 'http_429']);
+
+export function authErrorOutcome(code: string | null): AuthErrorOutcome {
+  if (!code) return 'our_side';
+  if (WAIT_CODES.has(code)) return 'wait';
+  if (/^http_4\d\d$/.test(code)) return 'limit';
+  return 'our_side';
+}
 
 /** Экран для известного кода; прочие коды — общий «Вход не удался». */
 export function authErrorScreen(code: string | null): AuthErrorScreen | null {

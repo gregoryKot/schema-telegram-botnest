@@ -1,5 +1,5 @@
 // Форма сводки подтверждения merge — одна на всех потребителей: /account/merge
-// (OAuth-редирект), экран привязки мессенджера и XHR-линковка из /account.
+// (OAuth-редирект) и экран привязки мессенджера.
 //
 // twoFactorLost лежит РЯДОМ со счётчиками намеренно: второй фактор не
 // переезжает (merge-user-rules.ts, totpSecret: skip), и раньше об этом молчали
@@ -13,13 +13,3 @@ export interface MergeSummary {
   /** У источника 2FA включена, у цели — нет, значит защита пропадёт. */
   twoFactorLost: boolean;
 }
-
-/** Ответ линковки провайдера: либо привязали сразу, либо нужен merge. */
-export type LinkProviderResult =
-  | { ok: true }
-  | {
-      merge: true;
-      mergeToken: string;
-      summary: Record<string, number>;
-      twoFactorLost: boolean;
-    };

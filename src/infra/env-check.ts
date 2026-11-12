@@ -50,12 +50,6 @@ export const CROSS_CHECKS: CrossCheck[] = [
   ...HOST_CROSS_CHECKS,
   // Почта: ключи Postbox парой, с ними ADMIN_EMAIL и EMAIL_FROM.
   ...EMAIL_CROSS_CHECKS,
-  requiresToo(
-    'googleClientRequiresSecretAndRedirect',
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_SECRET',
-    'GOOGLE_REDIRECT_URI',
-  ),
   requiresToo('vkAppRequiresRedirect', 'VK_APP_ID', 'VK_REDIRECT_URI'),
   // M3 (аудит 2026-10): логин без паролей — подпись вебхука считалась бы от
   // пустого пароля и подделывалась бы любым желающим.

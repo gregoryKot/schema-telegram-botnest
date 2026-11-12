@@ -1,7 +1,7 @@
 import { NEED_ORDER, useNeedData } from '../../needs/needData';
 import { needColor } from '../../needs/needColors';
 import { ConceptToggleChip } from './ConceptToggleChip';
-import { NEED_HUE } from '../../theme/entityHue';
+import { needLook } from '../../theme/entityLook';
 import { labelStyle } from './graphStyles';
 
 /** Пять потребностей чипами: у схемы ✗ «блокирует», у Здорового Взрослого ✓ «уже умеет». */
@@ -22,13 +22,13 @@ export function ConceptNeedField({
   return (
     <div role="group" aria-label={label}>
       <div style={{ ...labelStyle, marginBottom: 6 }}>{label}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-6)' }}>
+      <div className="cg-pick-rows cg-pick-rows--bare">
         {NEED_ORDER.map((id) => (
           <ConceptToggleChip
             key={id}
             label={needData[id].name}
             color={needColor(id)}
-            hue={NEED_HUE[id]}
+            {...needLook(id)}
             active={needIds.includes(id)}
             onClick={() => toggle(id)}
           />

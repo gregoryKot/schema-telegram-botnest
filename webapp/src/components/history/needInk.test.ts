@@ -51,7 +51,7 @@ describe('needInk — цвет потребности в истории', () => 
 // потребности — 4.08–4.38:1 при норме 4.5:1. Контракт --need-text — ≥4.5:1 только к белому, к бумаге —
 // ≥3:1 для крупной цифры. Мелкий текст этим цветом стоит только на белом (селектор в ON_WHITE — осознанно),
 // на бумаге — --text/--text-sub.
-const ON_WHITE = new Set(['.sd-spark-score', '.ss-res-num']);
+const ON_WHITE = new Set(['.sd-spark-score', '.ss-res-num', '.sk-plan-need']); // .sk-plan-need — в белой .ds-card плана (PlanCard)
 const fontPx = (body: string) => Number(body.match(/font(?:-size)?\s*:[^;]*?([\d.]+)px/)?.[1] ?? 0);
 const PAPER_BG = /background(?:-color)?\s*:\s*oklch\(0\.9/;
 function smallNeedTextOnPaper(rules: Rule[]): string[] {

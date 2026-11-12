@@ -5,9 +5,6 @@ import type { DisclosureClasses } from '../../components/Disclosure';
  *  ConceptGraph → редактор → выбор → чип. Без контекста — инлайн-дефолты (conceptInlineStyles.ts). */
 export interface ConceptSkin {
   seg: { group: string; btn: string };
-  chip: string;
-  tag: string;
-  dot: string;
   label: string;
   link: string;
   card: string;

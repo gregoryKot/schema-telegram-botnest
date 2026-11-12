@@ -1,25 +1,25 @@
 import { api } from '../../api';
 import { ExScreen } from './ExScreen';
+import { WarmWordNote } from './WarmWordNote';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { getModeById } from '../../schemaTherapyData';
-import { SkeletonCard } from '../Skeleton';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
+import { Skeleton } from '../Skeleton';
+import { PaperAlert } from '../paper/PaperAlert';
+import { PaperEmpty } from '../art/PaperEmpty';
+import { ChildCare } from '../art/GuideSignsModes';
 import { useWarmWords } from '../../../../shared/src/warmWords/useWarmWords';
 import { pluralEntries } from '../../../../shared/src/share/shareTexts';
-import { WARM_SOURCE_LABEL, buildWarmWordsTexts, warmWordTitle } from '../../../../shared/src/warmWords/warmWordsText';
+import { buildWarmWordsTexts } from '../../../../shared/src/warmWords/warmWordsText';
 
-function fmtDate(d: Date): string {
-  return d.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
+/** Силуэт записок, пока слова грузятся: те же колонки и разная высота, а не три одинаковые плашки. */
+const SKELETON_HEIGHTS = [132, 104, 156];
 
 // «Тёплые слова» — свои же ответы Здорового Взрослого из дневника режимов и
 // карточек режимов и переписанные фразы, собранные в одном месте. Только
 // чтение: кризисная детекция была на этапе записи (правило №7 CLAUDE.md).
+// Вид (редизайн 2026-11, b18): герой — лист соломы со знаком ChildCare (ENTITY_LOOK.warm_words), слова —
+// записками тёплой бумаги (WarmWordNote): колонкой на телефоне, двумя-тремя на компьютере; пусто —
+// знак ChildCare с объяснением, откуда появятся слова (кнопка — после решения владельца, текстовый баг 4 b18); сбой — лист соломы (PaperAlert), а не жёлтая плашка.
 export function WarmWordsEx({ onBack }: { onBack: () => void }) {
   const text = buildWarmWordsTexts(useTr());
   const goBack = useHistorySheet(onBack);
@@ -27,7 +27,7 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
 
   return (
     <ExScreen
-      onBack={goBack} caution
+      onBack={goBack} caution look="warm_words"
       eyebrow="Ресурс"
       title={
         <>
@@ -38,52 +38,31 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       }
       lede={text.lede}
     >
-      {items === null && (
-        <div className="ex2-stack">
-          {[0, 1, 2].map((i) => (
-            <SkeletonCard key={i} height={92} />
-          ))}
-        </div>
-      )}
-
-      {failed && (
-        <div role="alert" className="ds-card ds-card--warn">
-          {text.failed}
-        </div>
-      )}
-
-      {!failed && items !== null && items.length === 0 && (
-        <p className="ds-empty">
-          {text.empty}
-        </p>
-      )}
-
-      {items !== null && items.length > 0 && (
-        <>
-          <div className="ds-sub ex2-count">
-            {items.length} {pluralEntries(items.length)}
+      {/* Одна колонка экрана во всех состояниях: пусто, загрузка, сбой и записки — та же ширина (ex-warm.css). */}
+      <div className="ex2-warm">
+        {items === null && !failed && (
+          <div className="ex2-notes" aria-hidden>
+            {SKELETON_HEIGHTS.map((h) => <Skeleton key={h} height={h} radius={20} />)}
           </div>
-          <div className="ex2-stack">
-            {items.map((item) => {
-              const mode = getModeById(item.modeId);
-              return (
-                <div key={item.key} className="ds-card ds-card--row">
-                  <div className="ex2-warm-head">
-                    <span className="ex2-warm-mode">
-                      {mode && <IdentityDot color={mode.groupColor} />}
-                      {warmWordTitle(item, mode?.name)}
-                    </span>
-                    <span className="ds-sub ex2-warm-when">
-                      {fmtDate(item.at)} · {WARM_SOURCE_LABEL[item.source]}
-                    </span>
-                  </div>
-                  <p className="ex2-body-text">{item.text}</p>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+        )}
+
+        {failed && <PaperAlert sign="child_care" title={text.failed} />}
+
+        {!failed && items !== null && items.length === 0 && (
+          <PaperEmpty art={ChildCare}>{text.empty}</PaperEmpty>
+        )}
+
+        {items !== null && items.length > 0 && (
+          <>
+            <div className="ex2-count">
+              {items.length} {pluralEntries(items.length)}
+            </div>
+            <div className="ex2-notes">
+              {items.map((item, i) => <WarmWordNote key={item.key} item={item} index={i} />)}
+            </div>
+          </>
+        )}
+      </div>
     </ExScreen>
   );
 }

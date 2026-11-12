@@ -1,21 +1,19 @@
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 
-// Выпадающее меню у кнопки. Рисуется fixed от якоря и прижимается к экрану,
-// чтобы его не обрезал контейнер и не вытолкнул правый край. Закрывается кликом
-// по невидимой подложке и Escape. Родилось в тулбаре карты режимов
-// (modeMap/ToolbarControls); меню «⋯ Ещё» вкладки «Концептуализация» — та же
-// механика, поэтому компонент один и живёт здесь (правило «одна механика — один
-// компонент»). role="menu" — меню действий: фокус уходит на первый пункт,
-// стрелки ходят по пунктам, Escape возвращает фокус якорю. Вид — ds-menu и
-// ds-backdrop из cabinet.css.
-export function Dropdown({ children, onClose, anchorRef, role, label, className, width = 220 }: {
+// Выпадающее меню у кнопки: fixed от якоря, прижато к экрану; закрывается кликом по
+// подложке и Escape. Одно на тулбар карты и «⋯ Ещё» концептуализации. role="menu" —
+// фокус на первый пункт, стрелки по пунктам, Escape возвращает фокус якорю.
+// portal — меню и подложка в body: якорь в своём контексте наложения (тулбар холста в
+// .react-flow) иначе оставляет меню ПОД соседями холста — статусом, «ушком» палитры.
+export function Dropdown({ children, onClose, anchorRef, role, label, className, width = 220, portal = false }: {
   children: ReactNode;
   onClose: () => void;
   anchorRef: RefObject<HTMLElement | null>;
   role?: 'menu';
   label?: string;
   className?: string;
-  width?: number; // ширина меню в px (по умолчанию 220); нужна для прижатия к краю экрана
+  width?: number; portal?: boolean; // ширина в px — для прижатия к краю экрана
 }) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -49,7 +47,7 @@ export function Dropdown({ children, onClose, anchorRef, role, label, className,
     const step = e.key === 'ArrowDown' ? 1 : -1;
     list[(i + step + list.length) % list.length].focus();
   };
-  return (
+  const menu = (
     <>
       <div role="button" tabIndex={0} aria-label="Закрыть" onClick={onClose}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
@@ -62,6 +60,7 @@ export function Dropdown({ children, onClose, anchorRef, role, label, className,
       )}
     </>
   );
+  return portal ? createPortal(menu, document.body) : menu;
 }
 
 const items = (el: HTMLElement | null) =>

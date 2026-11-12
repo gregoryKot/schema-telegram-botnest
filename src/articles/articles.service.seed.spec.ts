@@ -42,7 +42,6 @@ type ArticleRow = {
   content: string;
   date: Date;
   readMin: number;
-  heroImage: string | null;
   diagramKey: string | null;
 };
 
@@ -121,7 +120,7 @@ describe('ArticlesService.onModuleInit — сид и рефреш встроен
     expect(db._articles).toHaveLength(2);
   });
 
-  it('версия устарела → рефреш текста встроенных статей, heroImage админа сохраняется, чужие статьи не трогаются', async () => {
+  it('версия устарела → рефреш текста встроенных статей, чужие статьи не трогаются', async () => {
     const existingBuiltin: ArticleRow = {
       id: 1,
       slug: 'a-1',
@@ -130,7 +129,6 @@ describe('ArticlesService.onModuleInit — сид и рефреш встроен
       content: '<p>Старый контент</p>',
       date: new Date('2025-01-01'),
       readMin: 1,
-      heroImage: 'data:image/png;base64,admin-uploaded',
       diagramKey: 'duration',
     };
     const adminArticle: ArticleRow = {
@@ -141,7 +139,6 @@ describe('ArticlesService.onModuleInit — сид и рефреш встроен
       content: 'c',
       date: new Date('2025-06-01'),
       readMin: 2,
-      heroImage: null,
       diagramKey: null,
     };
     const db = makeDb([existingBuiltin, adminArticle], {
@@ -153,7 +150,6 @@ describe('ArticlesService.onModuleInit — сид и рефреш встроен
 
     const refreshed = db._articles.find((a) => a.slug === 'a-1')!;
     expect(refreshed.title).toBe('Статья 1 (сид v1)'); // текст обновлён
-    expect(refreshed.heroImage).toBe('data:image/png;base64,admin-uploaded'); // картинка сохранена
 
     // a-2 отсутствовал в таблице — должен быть создан (create, не update)
     expect(db._articles.some((a) => a.slug === 'a-2')).toBe(true);

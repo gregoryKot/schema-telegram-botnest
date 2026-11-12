@@ -11,8 +11,9 @@
 .sk-dialog-title { margin: 0 0 10px; }
 .sk-dialog-text { font-size: 14px; line-height: 1.6; color: var(--text-sub); margin: 0 0 24px; }
 .sk-dialog-error { margin: 0 0 16px; }
-.sk-dialog-actions { display: flex; gap: 10px; }
-.sk-dialog-actions > .ds-btn { flex: 1; }
+/* Кнопки переносятся, когда вдвоём не помещаются (320: «Остаться / Отключиться» вылезали за карточку); на 390 — в ряд, как было. */
+.sk-dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.sk-dialog-actions > .ds-btn { flex: 1 1 120px; }
 .ds-btn.sk-btn-danger:not(:disabled) { background: var(--accent-red); color: var(--on-accent-red); }
 .ds-btn.sk-btn-danger:hover:not(:disabled) { background: var(--accent-red); opacity: .9; }
 .sk-dialog-link { display: block; width: 100%; min-height: 44px; margin-top: 6px; }

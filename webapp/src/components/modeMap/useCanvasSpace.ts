@@ -25,7 +25,7 @@ export function useCanvasSpace() {
     const { domNode, transform: [tx, ty, zoom] } = store.getState();
     const pane = domNode?.getBoundingClientRect();
     if (!domNode || !pane || pane.width === 0 || pane.height === 0) return null;
-    const screen: Rect[] = [...domNode.querySelectorAll('.react-flow__panel')].map(el => {
+    const screen: Rect[] = [...domNode.querySelectorAll('.react-flow__panel'), ...(domNode.parentElement?.querySelectorAll('.mm2-statusbar') ?? [])].map(el => { // плашка статуса лежит поверх холста рядом с панелями
       const r = el.getBoundingClientRect();
       return { x: r.left - pane.left, y: r.top - pane.top, w: r.width, h: r.height };
     });

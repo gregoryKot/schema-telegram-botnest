@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 // Галочка «я понимаю, что …» перед необратимым переносом аккаунта. Одна на
 // оба экрана с этим эффектом — объединение по ссылке (MergePage) и привязка
 // мессенджера по коду (LinkDevicePage): кнопка подтверждения недоступна, пока
-// галочка не стоит. Зона нажатия — вся строка (`.as-check`, min-height 44px).
+// галочка не стоит. Зона нажатия — вся строка (`.am-check`, min-height 44px).
 export function AckCheck({
   checked,
   onChange,
@@ -16,7 +16,7 @@ export function AckCheck({
   children: ReactNode;
 }) {
   return (
-    <label className="as-check">
+    <label className="am-check">
       <input
         type="checkbox"
         checked={checked}

@@ -57,16 +57,7 @@ export function ConceptSchemaField({
         type="button"
         aria-pressed={showAll}
         onClick={() => setShowAll((v) => !v)}
-        style={{
-          minHeight: 44,
-          padding: '0 12px',
-          border: 'none',
-          background: 'transparent',
-          color: 'var(--accent)',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-        }}
+        className="ds-link cg-all"
       >
         Все схемы
       </button>

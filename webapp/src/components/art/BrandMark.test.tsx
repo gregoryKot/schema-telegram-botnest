@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { BrandMark } from './BrandMark';
 import { PAPER } from './paper';
-import { LoginHero } from '../../pages/login/LoginHero';
+import { LoginShell } from '../../pages/login/LoginShell';
 import { ServicePage } from '../../pages/service/ServicePage';
 import {
   ARC, ARC_D, BRAND_HEX, CORE, MARK_VIEW, STRIPE, STRIPE_D, TILE_RX, brandMarkSvg, markFit,
@@ -41,7 +41,7 @@ describe('BrandMark', () => {
   });
 
   it('вход и служебные страницы показывают знак, а не букву «В»', () => {
-    for (const ui of [<LoginHero />, <ServicePage>x</ServicePage>]) {
+    for (const ui of [<LoginShell>x</LoginShell>, <ServicePage>x</ServicePage>]) {
       const { container, unmount } = render(ui);
       expect(mark(container)).toBeTruthy();
       expect([...container.querySelectorAll('*')].some((el) => el.textContent === 'В')).toBe(false);
@@ -85,5 +85,13 @@ describe('геометрия знака', () => {
       expect(far(ARC.cx, ARC.cy, ARC.r + ARC.width / 2)).toBeLessThanOrEqual(safe);
       expect(far(CORE.cx, CORE.cy, CORE.r)).toBeLessThanOrEqual(safe);
     }
+  });
+});
+
+describe('BrandMark bare', () => {
+  it('без плитки: тот же знак, фона-плашки нет', () => {
+    const svg = mark(render(<BrandMark simple bare />).container);
+    expect(svg.querySelector('rect')).toBeNull();
+    expect(svg.querySelector('circle')).not.toBeNull();
   });
 });

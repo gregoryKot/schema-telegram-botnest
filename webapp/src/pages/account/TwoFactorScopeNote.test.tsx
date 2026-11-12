@@ -13,7 +13,8 @@ const NOTE = /Вход из приложения в Telegram или MAX идёт
 
 describe('TwoFactorSection — область действия 2FA', () => {
   it('текст содержит полный перечень входов, где код спрашивается, и оговорку про вход из мессенджеров', () => {
-    expect(SCOPE_TEXT).toContain('Google, VK, почту, виджет Telegram');
+    expect(SCOPE_TEXT).toContain('VK ID и почту');
+    expect(SCOPE_TEXT).not.toMatch(/виджет/);
     expect(SCOPE_TEXT).toMatch(NOTE);
   });
 
@@ -23,10 +24,10 @@ describe('TwoFactorSection — область действия 2FA', () => {
     expect(screen.getByText(NOTE)).toBeTruthy();
   });
 
-  it.each(['ty', 'vy'] as const)('форма «%s», 2FA включена: строка рядом с «✓ Включена»', (form) => {
+  it.each(['ty', 'vy'] as const)('форма «%s», 2FA включена: строка рядом с «Включена»', (form) => {
     render(withAddressForm(
       <TwoFactorSection accessToken="t" totp={{ enabled: true, recoveryCodesLeft: 3 }} onChanged={() => {}} />, form));
-    expect(screen.getByText(/✓ Включена/)).toBeTruthy();
+    expect(screen.getByText(/Включена\./)).toBeTruthy();
     expect(screen.getByText(NOTE)).toBeTruthy();
   });
 });

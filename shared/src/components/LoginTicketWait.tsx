@@ -18,6 +18,11 @@
 import { useState } from 'react';
 import { formatUserCode } from '../auth/loginTicketCode';
 import type { LoginTicketState } from '../auth/useLoginTicket';
+import {
+  loginTicketFailure,
+  type TicketFailureView,
+} from '../auth/loginTicketFailure';
+import { OutArrow } from './OutArrow';
 
 const SUB: React.CSSProperties = {
   fontSize: 14,
@@ -38,40 +43,25 @@ const LINK: React.CSSProperties = {
 };
 
 const PROVIDER_NAMES: Record<string, string> = {
-  telegram: 'Telegram',
-  google: 'Google',
   vk: 'ВКонтакте',
-  email: 'почте',
+  email: 'почту',
 };
 
 export function LoginTicketWait({
   state,
   onRetry,
+  renderFailure,
 }: {
   state: LoginTicketState;
   onRetry: () => void;
+  renderFailure?: TicketFailureView;
 }) {
-  if (state.kind === 'denied') {
+  const failure = loginTicketFailure(state);
+  if (failure) {
+    if (renderFailure) return <>{renderFailure(failure, onRetry)}</>;
     return (
       <div style={{ ...SUB, textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🛑</div>
-        Вход отклонён. Доступ никто не получил.
-        <div className="u-mt12">
-          <button type="button" onClick={onRetry} style={LINK}>
-            Попробовать снова
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (state.kind === 'expired' || state.kind === 'failed') {
-    return (
-      <div style={{ ...SUB, textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>⌛</div>
-        {state.kind === 'expired'
-          ? 'Время кода вышло.'
-          : 'Не получилось начать вход.'}
+        {failure.text}
         <div className="u-mt12">
           <button type="button" onClick={onRetry} style={LINK}>
             Попробовать снова
@@ -110,9 +100,7 @@ function WaitingCode({
   return (
     <div className="u-tc">
       <div style={SUB}>
-        {state.provider === 'telegram'
-          ? `Осталось подтвердить вход в ${where} — там появится этот код:`
-          : `Осталось подтвердить вход через ${where}. Код входа:`}
+        {`Осталось подтвердить вход через ${where}. Код входа:`}
       </div>
       <div
         style={{
@@ -135,7 +123,8 @@ function WaitingCode({
         rel="noopener noreferrer"
         style={LINK}
       >
-        Открыть ещё раз →
+        Открыть ещё раз
+        <OutArrow />
       </a>
     </div>
   );

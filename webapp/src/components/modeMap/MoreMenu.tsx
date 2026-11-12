@@ -28,7 +28,7 @@ export function MoreMenu({ empty, onSelectAll, onClear }: { empty: boolean; onSe
         <span className="mm2-more-dots" aria-hidden="true">⋯</span>
       </TbBtn>
       {open && (
-        <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Ещё" width={250}>
+        <Dropdown portal anchorRef={wrapRef} onClose={() => setOpen(false)} role="menu" label="Ещё" width={250}>
           <button type="button" role="menuitem" className="ds-menu-item mm2-more-item" disabled={empty}
             aria-keyshortcuts="Meta+A Control+A" onClick={pick(onSelectAll)}>
             Выделить всё<kbd className="mm2-kbd" aria-hidden="true">⌘A</kbd>

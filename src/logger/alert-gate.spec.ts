@@ -20,8 +20,8 @@ describe('AlertGate — анонимный подбюджет', () => {
     const gate = new AlertGate();
     const anon = Array.from({ length: 50 }, (_, i) =>
       gate.decide(
-        `Google id_token failed: ${'x'.repeat(i)}`,
-        'GoogleProvider',
+        `vk callback error: ${'x'.repeat(i)}`,
+        'AuthOauthController',
         T0,
       ),
     );
@@ -142,9 +142,7 @@ describe('AlertGate — денежные алерты', () => {
 // класс без строки в ANON_ALERT_CONTEXTS молча вернул бы его в основной бюджет.
 // Сверка по исходнику: импорт провайдеров тянет ESM-зависимости (jose).
 const CONTEXT_FILES: Record<string, string> = {
-  AuthFlowService: 'auth/auth-flow.service.ts',
   AuthOauthController: 'auth/auth-oauth.controller.ts',
-  GoogleProvider: 'auth/providers/google.provider.ts',
 };
 
 describe('ANON_ALERT_CONTEXTS ↔ имена классов', () => {

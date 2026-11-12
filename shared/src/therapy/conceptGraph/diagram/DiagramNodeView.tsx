@@ -1,9 +1,10 @@
 import type { ButtonHTMLAttributes, CSSProperties } from 'react';
 import { DiagramNodeText, EMPTY_HINT } from './DiagramNodeText';
 import { DiagramShapeSvg } from './DiagramShape';
+import { nodeHue } from './diagramPaper';
 import type { DiagramNode } from './diagramTypes';
 
-/** Зона нажатия не меньше 44, даже если фигура ниже (таблетка потребности 38). */
+/** Зона нажатия не меньше 44, даже если фигура ниже (таблетка потребности 36). */
 const MIN_HIT = 44;
 
 /** Что кнопка сообщает программам чтения с экрана — у каждого вида фигуры своё. */
@@ -13,8 +14,8 @@ function buttonProps(
   pressed?: boolean,
   readOnly?: boolean,
 ): ButtonHTMLAttributes<HTMLButtonElement> {
-  // Только чтение: тап по фигуре подсвечивает её линии, редактора нет; имя — текст фигуры.
-  if (readOnly && node.kind !== 'placeholder')
+  // Потребность и фигура без редактора (только чтение): тап подсвечивает линии, имя — текст.
+  if (node.kind === 'need' || (readOnly && node.kind !== 'placeholder'))
     return { 'aria-pressed': !!pressed };
   switch (node.kind) {
     case 'mode':
@@ -36,17 +37,14 @@ function buttonProps(
         'aria-label': `Как нарушалась потребность: схема ${node.name}`,
         'aria-expanded': !!open,
       };
-    case 'need':
-      return { 'aria-pressed': !!pressed };
     default:
       return {};
   }
 }
 
 /**
- * Одна фигура диаграммы. Режим, схема, овал опыта, потребность и заготовка
- * пустой секции — кнопки: тап открывает редактор, включает подсветку линий или
- * зовёт выбор. Без `onTap` (заготовка на схеме только для чтения) кнопка
+ * Одна фигура диаграммы. Режим, схема, овал опыта, потребность и заготовка пустой
+ * секции — кнопки: тап открывает редактор, подсвечивает линии или зовёт выбор. Без `onTap` (заготовка на схеме только для чтения) кнопка
  * выключена.
  */
 export function DiagramNodeView({
@@ -90,6 +88,8 @@ export function DiagramNodeView({
       onClick={onTap}
       disabled={!onTap}
       style={style}
+      title={node.title}
+      aria-label={node.title}
       {...buttonProps(node, open, pressed, readOnly)}
     >
       <DiagramShapeSvg
@@ -97,7 +97,7 @@ export function DiagramNodeView({
         w={node.w}
         h={node.h}
         top={dy}
-        color={node.color}
+        hue={nodeHue(node)}
         open={open || pressed}
         faint={node.empty}
         ghost={node.kind === 'placeholder'}

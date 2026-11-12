@@ -67,6 +67,17 @@ describe('e2e smoke: билет входа и привязка аккаунта 
         create: { id, firstName: 'E2E' },
       });
     }
+    // Способы входа (site-login.ts): A открыт в MAX, B входит почтой, у C —
+    // только Telegram: он проверяет, что личность из Telegram в браузер не едет.
+    for (const [userId, provider] of [
+      [USER_A, 'max'],
+      [USER_B, 'email'],
+      [USER_C, 'telegram'],
+    ] as const) {
+      await prisma.authProvider.create({
+        data: { userId, provider, providerId: `e2e-lt-${provider}-${userId}` },
+      });
+    }
     tokenA = signAccessToken(USER_A, secret());
     tokenB = signAccessToken(USER_B, secret());
     tokenC = signAccessToken(USER_C, secret());
@@ -110,14 +121,14 @@ describe('e2e smoke: билет входа и привязка аккаунта 
     expect(res.status).toBe(401);
   });
 
-  it('handoff: сессия из мессенджера уходит в браузер одним опросом, повтор — expired', async () => {
+  it('handoff: сессия из MAX уходит в браузер одним опросом, повтор — expired', async () => {
     const noAuth = await call(srv().post('/api/auth/ticket/handoff')).send({});
     expect(noAuth.status).toBe(401);
 
     const issued = await call(
       srv().post('/api/auth/ticket/handoff'),
       tokenA,
-    ).send({ hostId: 'telegram' });
+    ).send({ hostId: 'max' });
     expect(issued.status).toBe(200);
     expect(issued.body.deviceCode).toHaveLength(64);
     expect(issued.body.expiresIn).toBe(120);
@@ -133,6 +144,23 @@ describe('e2e smoke: билет входа и привязка аккаунта 
     expect(typeof first.body.accessToken).toBe('string');
 
     expect((await poll()).body.status).toBe('expired');
+  });
+
+  // Запрос Роскомнадзора 2026-11: вход на сайт через Telegram убран, а
+  // передача сессии из Telegram во внешний браузер — тот же вход.
+  it('handoff из Telegram закрыт: ни по hostId, ни аккаунту без входа из MAX', async () => {
+    const named = await call(
+      srv().post('/api/auth/ticket/handoff'),
+      tokenC,
+    ).send({ hostId: 'telegram' });
+    expect(named.status).toBe(400);
+
+    const lied = await call(
+      srv().post('/api/auth/ticket/handoff'),
+      tokenC,
+    ).send({ hostId: 'max' });
+    expect(lied.status).toBe(403);
+    expect(lied.body).not.toHaveProperty('deviceCode');
   });
 
   it('чужой код не подсматривается: preview на выдуманный код — отказ', async () => {
@@ -220,7 +248,7 @@ describe('e2e smoke: билет входа и привязка аккаунта 
     const issue = () =>
       app.get(LoginTicketService).start({
         intent: 'login',
-        provider: 'telegram',
+        provider: 'vk',
         requesterUserId: null,
         hostId: 'web',
         deviceLabel: 'iPhone · Safari',
@@ -229,11 +257,36 @@ describe('e2e smoke: билет входа и привязка аккаунта 
     it('роут выписывает билет БЕЗ авторизации — у просящего сессии ещё нет', async () => {
       const res = await call(srv().post('/api/auth/ticket/start')).send({
         intent: 'login',
-        provider: 'telegram',
+        provider: 'vk',
       });
       expect(res.status).toBe(200);
       expect(res.body.deviceCode).toHaveLength(64);
       expect(res.body.userCode).toHaveLength(8);
+    });
+
+    it('билет входа под Telegram не выписывается — на сайт через Telegram не входят', async () => {
+      const res = await call(srv().post('/api/auth/ticket/start')).send({
+        intent: 'login',
+        provider: 'telegram',
+      });
+      expect(res.status).toBe(400);
+      expect(res.body).not.toHaveProperty('deviceCode');
+    });
+
+    it('аккаунт только с Telegram вход в браузер не одобряет: сессия не выдана', async () => {
+      const { deviceCode, userCode } = await issue();
+      const approved = await call(
+        srv().post('/api/auth/ticket/confirm-login'),
+        tokenC,
+      ).send({ code: userCode });
+      expect(approved.status).toBe(200);
+      expect(approved.body.ok).toBe(false);
+
+      const polled = await call(srv().post('/api/auth/ticket/poll')).send({
+        deviceCode,
+      });
+      expect(polled.body.status).toBe('pending');
+      expect(polled.body.accessToken).toBeUndefined();
     });
 
     it('привязка без авторизации отбивается — привязывать не к чему', async () => {
@@ -244,10 +297,10 @@ describe('e2e smoke: билет входа и привязка аккаунта 
       expect(res.status).toBe(401);
     });
 
-    it('связка целиком: выписал контейнер → подтвердил мессенджер → сессию получил КОНТЕЙНЕР', async () => {
+    it('связка целиком: выписал контейнер → подтвердили в браузере → сессию получил КОНТЕЙНЕР', async () => {
       const { deviceCode, userCode } = await issue();
 
-      // Подтверждает бот — публичного HTTP-роута «одобрить вход» нет намеренно.
+      // Подтверждает экран сверки (confirm-login) сессией вошедшего.
       await app.get(LoginTicketService).approveLogin(userCode, USER_A);
 
       const res = await call(srv().post('/api/auth/ticket/poll')).send({

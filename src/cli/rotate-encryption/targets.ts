@@ -93,8 +93,7 @@ export const TARGETS: RotationTarget[] = [
   { name: 'therapistNote', fields: ['text'] },
   {
     name: 'clientConceptualization',
-    // history — вложенный JSON-массив снапшотов, ротируется отдельным блоком
-    // ниже (общий цикл трогает только строковые колонки).
+    // history — вложенные снапшоты: rotate-history.ts (общий цикл — только строки).
     fields: [
       'earlyExperience',
       'unmetNeeds',
@@ -109,6 +108,7 @@ export const TARGETS: RotationTarget[] = [
       'modeMapEdges',
       'modeLinks',
       'schemaLinks',
+      'needLinks',
     ],
   },
   // ── Достроено аудитом 2026-07-20 (H4): целые модели, которые ротация

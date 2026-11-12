@@ -21,48 +21,9 @@ import {
   type Tr,
 } from '../account/accountLinkText';
 
-const SUB: React.CSSProperties = {
-  fontSize: 13,
-  color: 'var(--text-sub)',
-  lineHeight: 1.6,
-};
-
-const TITLE: React.CSSProperties = {
-  fontSize: 15,
-  fontWeight: 600,
-  color: 'var(--text)',
-  marginBottom: 8,
-};
-
-const ACTION: React.CSSProperties = {
-  marginTop: 12,
-  minHeight: 44,
-  padding: '0 16px',
-  borderRadius: 'var(--r-12)',
-  border: 'none',
-  background: 'var(--accent)',
-  color: 'var(--on-accent)',
-  fontSize: 15,
-  fontWeight: 600,
-  cursor: 'pointer',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textDecoration: 'none',
-};
-
-const CODE: React.CSSProperties = {
-  fontSize: 24,
-  fontWeight: 700,
-  letterSpacing: 2,
-  margin: '10px 0',
-  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-  color: 'var(--text)',
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  padding: 0,
-};
+// Вид — классы alc-* (webapp/src/styles/auth-account.css), а не инлайн-стили: shared не
+// импортирует CSS, стили лежат у сайта, как у NeedsWheel (history.css). Действие — общая
+// залитая кнопка ds-btn: на /account она одна (docs/design/APP_2026-11.md, b27).
 
 export interface AccountLinkCardProps {
   target: LinkTarget;
@@ -99,14 +60,14 @@ export function AccountLinkCard({
   const copy$ = buildAccountLinkText(tr, target);
 
   if (state.kind === 'denied') {
-    return <div style={SUB}>{LINK_DENIED}</div>;
+    return <div className="alc-sub">{LINK_DENIED}</div>;
   }
   if (state.kind === 'expired' || state.kind === 'failed') {
     return (
-      <div style={SUB}>
+      <div className="alc-sub">
         {LINK_EXPIRED}
         <div>
-          <button type="button" onClick={onRetry} style={ACTION}>
+          <button type="button" onClick={onRetry} className="ds-btn alc-action">
             {LINK_RETRY}
           </button>
         </div>
@@ -117,22 +78,20 @@ export function AccountLinkCard({
   if (state.kind === 'waiting') {
     return (
       <div>
-        <div style={TITLE}>{copy$.title}</div>
-        <div style={SUB}>{copy$.waiting}</div>
+        <div className="alc-title">{copy$.title}</div>
+        <div className="alc-sub">{copy$.waiting}</div>
         <button
           type="button"
-          style={CODE}
+          className="alc-code"
           onClick={() => void copy(state.code)}
         >
           {formatUserCode(state.code)}
         </button>
-        <div style={SUB}>{copied ? LINK_COPIED : LINK_COPY_HINT}</div>
+        <div className="alc-sub">{copied ? LINK_COPIED : LINK_COPY_HINT}</div>
         {/* Полный адрес остаётся текстом: «открыть ещё раз» ходит тем же
             способом, который уже не сработал, и без адреса человек остался бы
             с восьмизначным кодом и без места, куда его ввести. */}
-        <div style={{ ...SUB, wordBreak: 'break-all', marginTop: 8 }}>
-          {state.url}
-        </div>
+        <div className="alc-sub alc-url">{state.url}</div>
       </div>
     );
   }
@@ -141,14 +100,14 @@ export function AccountLinkCard({
   // и заново сбросил бы экран в «начинаем». Хук такое наложение переживёт
   // (сверка поколения опроса), но лишний поход в сеть незачем.
   const starting = state.kind === 'starting';
-  const actionStyle: React.CSSProperties = starting
-    ? { ...ACTION, opacity: 0.6, cursor: 'default', pointerEvents: 'none' }
-    : ACTION;
+  const actionClass = starting
+    ? 'ds-btn alc-action is-starting'
+    : 'ds-btn alc-action';
   return (
     <div>
-      <div style={TITLE}>{copy$.title}</div>
-      <div style={SUB}>{copy$.what}</div>
-      <div style={{ ...SUB, marginTop: 8 }}>{copy$.next}</div>
+      <div className="alc-title">{copy$.title}</div>
+      <div className="alc-sub">{copy$.what}</div>
+      <div className="alc-sub alc-next">{copy$.next}</div>
       {href ? (
         <a
           href={href}
@@ -162,7 +121,7 @@ export function AccountLinkCard({
             onStart();
           }}
           aria-disabled={starting}
-          style={actionStyle}
+          className={actionClass}
         >
           {copy$.action}
         </a>
@@ -171,7 +130,7 @@ export function AccountLinkCard({
           type="button"
           onClick={onStart}
           disabled={starting}
-          style={actionStyle}
+          className={actionClass}
         >
           {copy$.action}
         </button>

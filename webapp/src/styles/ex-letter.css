@@ -1,14 +1,82 @@
-/* Упражнения «Письмо» и «Безопасное место» (LetterEx, SafePlaceEx).
-   Подключается из sheet-exercises.css. */
-/* ── Письмо, безопасное место ─────────────────────────────────────────── */
-.ex2-letter.ds-card { padding: 26px 30px; }
-.ex2-letter-hi { font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--text-faint); margin-bottom: 6px; }
-.ex2-letter textarea, .ex2-letter-text { width: 100%; box-sizing: border-box; font-family: var(--serif); font-size: 19px; line-height: 32px; color: var(--text); }
-.ex2-letter textarea { min-height: 240px; border: none; outline: none; background: transparent; resize: none; padding: 0; }
-.ex2-letter textarea::placeholder { color: var(--text-ghost); }
-.ex2-letter-text { white-space: pre-wrap; }
-.ex2-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 11.5px; color: var(--text-faint); }
-.ex2-scene.ds-card { display: flex; align-items: center; justify-content: center; min-height: 140px; margin-bottom: 28px; background: var(--paper-tint); text-align: center; }
-.ex2-scene-text { font-family: var(--serif); font-style: italic; font-size: 18px; line-height: 1.5; color: var(--text-sub); }
-.ex2-senses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 28px; }
-.ex2-sense-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+/* Упражнения «Письмо» и «Безопасное место» (LetterEx, LetterDone, SafePlaceEx, SafePlaceDone); рамка итога —
+   ExDonePage (ex-done.css). Подключается из sheet-exercises.css. Мелкий текст на цветной бумаге — --text-sub (APP_2026-11.md, принцип 6). */
+
+/* ── Письмо: белый лист с полями на втором листе сирени (тот же рецепт, что подложка сцен) ── */
+.ex2-letter {
+  --ex2-margin: color-mix(in srgb, var(--c-clay) 45%, transparent); --ex2-margin-x: 39px;
+  position: relative; isolation: isolate; box-sizing: border-box; margin: 6px 6px 8px 2px;
+  padding: 22px 24px 20px 56px; border-radius: 16px;
+}
+/* Белый лист (::after) и второй лист сирени под ним (::before): фон самого блока лёг бы под оба
+   отрицательных слоя, поэтому лист — тоже слой. Поля — линия глины на листе. */
+.ex2-letter::before, .ex2-letter::after { content: ''; position: absolute; inset: 0; border-radius: 16px; }
+.ex2-letter::before { z-index: -2; background: oklch(0.86 0.06 var(--h)); transform: translate(5px, 6px) rotate(1.2deg); }
+.ex2-letter::after {
+  z-index: -1; background-color: var(--surface);
+  background-image: linear-gradient(to right, transparent var(--ex2-margin-x), var(--ex2-margin) var(--ex2-margin-x) calc(var(--ex2-margin-x) + 2px), transparent calc(var(--ex2-margin-x) + 2px));
+}
+.ex2-letter:focus-within { --ex2-margin: color-mix(in srgb, var(--accent) 70%, transparent); }
+.ex2-letter-hi { margin-bottom: 4px; font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 32px; color: var(--text-sub); }
+.ex2-letter textarea, .ex2-letter-text { display: block; width: 100%; box-sizing: border-box; font-family: var(--serif); font-size: 19px; line-height: 32px; color: var(--text); }
+/* Линейки — фоном самого поля (тянутся с текстом), строка 32px — как кегль строки. */
+.ex2-letter textarea {
+  min-height: 288px; border: none; outline: none; resize: none; padding: 0; field-sizing: content;
+  background: repeating-linear-gradient(to bottom, transparent 0 31px, color-mix(in srgb, var(--c-slate) 18%, transparent) 31px 32px) local;
+}
+.ex2-letter textarea::placeholder { color: var(--text-faint); }
+.ex2-letter-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ex2-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-top: 14px; font-size: 12px; line-height: 1.5; color: var(--text-sub); }
+.ex2-alert.pa-alert { margin-top: 16px; }
+/* Итог: то же письмо на листе «готово» — начало курсивом (целиком — по «Изменить»), поля и второй лист те же. */
+.ex2-letter--sealed { --ex2-margin-x: 31px; align-self: stretch; margin: 8px 6px 4px 0; padding: 16px 18px 14px 48px; }
+.ex2-letter--sealed .ex2-letter-hi { font-size: 15px; line-height: 26px; }
+.ex2-letter--sealed .ex2-letter-text {
+  font-size: 17px; line-height: 27px; font-style: italic;
+  display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ex2-letter--sealed .ex2-meta { margin-top: 10px; }
+
+/* ── Безопасное место: вопросы, место полем-листом, чувства тетрадью ── */
+.ex2-ask { margin-bottom: 22px; }
+.ex2-ask-n { display: block; margin-bottom: 2px; font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-sub); }
+.ex2-ask .ex2-prompt-hint { margin-bottom: 12px; }
+.pa-field.ex2-place-input { font-size: 18px; padding: 14px 18px; }
+.ex2-senses {
+  display: flex; flex-direction: column; margin: 0 7px 8px 0; padding: 4px 20px; border-radius: 20px;
+  border: 1px solid var(--line); background: var(--surface); box-shadow: 6px 7px 0 oklch(0.88 0.04 var(--h));
+}
+.ex2-sense { display: flex; flex-direction: column; gap: 4px; padding: 14px 0 12px; border-bottom: 1px solid var(--paper-sunk); }
+.ex2-sense:last-child { border-bottom: 0; }
+.ex2-sense-head { display: flex; align-items: center; gap: 10px; }
+.ex2-sense-head .ds-label { color: var(--text-sub); }
+.ex2-sense-mark { display: block; flex: none; width: 34px; height: 22px; overflow: visible; }
+/* Поле чувства растёт с текстом от одной до трёх строк (field-sizing, как .pa-field); без поддержки — две строки
+   (rows). Без многоточия: подсказка «…мхом покрытый камень» и длинный ответ видны целиком (ревью g6). */
+.ex2-sense-input {
+  box-sizing: border-box; display: block; width: 100%; min-height: 44px; max-height: calc(3 * 1.4em + 12px); padding: 6px 0 6px 44px;
+  border: 0; outline: none; resize: none; field-sizing: content; overflow-wrap: anywhere;
+  background: transparent; font: 400 17px/1.4 var(--serif); color: var(--text);
+}
+.ex2-sense-input::placeholder { color: var(--text-faint); }
+.ex2-sense:focus-within { border-bottom-color: var(--accent); }
+/* Название места на листе героя — только в колонке разворота: на телефоне лист стоит над полем, и
+   строка, растущая при вводе, сдвигала бы поле под пальцем. */
+.ex2-haven-name { display: none; margin: 4px 0 0; font-family: var(--serif); font-style: italic; font-size: 19px; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; }
+@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
+  .pa-spread-side .ex2-haven-name { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+}
+/* Итог: сцена во всю ширину листа, место — Literata курсивом, чувства — строками, как стихи. */
+.pa-done[data-entity='safe_place'] .pa-done-scene > .scn { width: min(100%, 340px); }
+.ex2-haven-place { margin: 8px 0 2px; font-family: var(--serif); font-style: italic; font-size: 24px; line-height: 1.3; color: var(--text); overflow-wrap: anywhere; }
+.ex2-haven-lines { align-self: stretch; display: flex; flex-direction: column; gap: 14px; margin: 8px 0 4px; }
+.ex2-haven-line { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; }
+.ex2-haven-line .ex2-sense-mark { margin-top: 1px; }
+.ex2-haven-line .ds-label { color: var(--text-sub); }
+.ex2-haven-text { margin: 2px 0 0; font-family: var(--serif); font-size: 17px; line-height: 1.5; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .ex2-letter { --ex2-margin-x: 29px; padding: 18px 16px 16px 44px; }
+  .ex2-letter textarea { min-height: 224px; font-size: 18px; }
+  .pa-done[data-entity='safe_place'] .pa-done-scene > .scn { width: 100%; }
+  .ex2-senses { padding: 2px 16px; }
+  .ex2-sense-input { padding-left: 0; }
+}

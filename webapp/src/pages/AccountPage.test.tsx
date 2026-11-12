@@ -161,19 +161,22 @@ describe('AccountPage — загрузка', () => {
     renderPage();
     await screen.findByText('Аккаунт');
 
-    // Все 4 кнопки "Привязать" (google, telegram, vk, email), ни одной "Отвязать".
-    expect(screen.getAllByText('Привязать').length).toBe(4);
+    // Обе кнопки "Привязать" (vk, email), ни одной "Отвязать". Google и
+    // Telegram без привязки не показаны вовсе: входа через них на сайте нет (2026-11).
+    expect(screen.getAllByText('Привязать').length).toBe(2);
+    expect(screen.queryByText('Google')).toBeNull();
+    expect(screen.queryByText('Telegram')).toBeNull();
     expect(screen.queryByText('Отвязать')).toBeNull();
     expect(screen.getByText('не привязан')).toBeTruthy();
   });
 
   it('заголовок способов входа считает реальные привязки: «N из M»', async () => {
     renderPage();
-    await screen.findByText('0 из 4');
+    await screen.findByText('0 из 2');
     cleanup();
     meProviders = [{ provider: 'google', email: 'user@gmail.com', displayName: null }];
     renderPage();
-    await screen.findByText('1 из 4');
+    await screen.findByText('1 из 3'); // прежняя привязка Google — своя строка
     expect(screen.getByText('U')).toBeTruthy();
   });
 
@@ -434,41 +437,6 @@ describe('AccountPage — привязка email', () => {
   });
 });
 
-// П5 (симптом 2026-08-21): linkGoogle/linkVk запрашивают link-token ПЕРЕД
-// редиректом — без этой httpOnly-куки сервер не видит текущего пользователя,
-// и вместо привязки создаётся/логинится ДРУГОЙ аккаунт. linkTelegram этого
-// не делал — здесь регрессионный тест на то, что теперь делает, как соседи.
-describe('AccountPage — привязка Telegram', () => {
-  it('перед редиректом на /api/auth/telegram/redirect запрашивает link-token (как linkGoogle/linkVk)', async () => {
-    const originalHref = window.location.href;
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, href: '' },
-    });
-    try {
-      renderPage();
-      await screen.findByText('Аккаунт');
-
-      // Кнопки «Привязать» в порядке разметки: Google, Telegram, VK, Email.
-      fireEvent.click(screen.getAllByText('Привязать')[1]);
-
-      await waitFor(() =>
-        expect(
-          fetchMock.mock.calls.some(([url]: [string]) =>
-            String(url).includes('/api/auth/link-token'),
-          ),
-        ).toBe(true),
-      );
-      expect(window.location.href).toContain('/api/auth/telegram/redirect');
-    } finally {
-      Object.defineProperty(window, 'location', {
-        configurable: true,
-        value: { ...window.location, href: originalHref },
-      });
-    }
-  });
-});
-
 // Перенос данных из бота/мини-аппа: карточка живёт в AccountLinkSection
 // (её собственные тесты рядом с ней), страница отвечает за две вещи —
 // показать её тому, у кого второй аккаунт РЕАЛЬНО есть, и не показывать
@@ -612,7 +580,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   it('режим терапевта (therapist_mode=1) — в /cabinet', async () => {
     localStorage.setItem(THERAPIST_MODE_KEY, '1');
     await renderWithHomes();
-    fireEvent.click(screen.getByText('← Назад'));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     expect(await screen.findByText('дом кабинета')).toBeTruthy();
     expect(screen.queryByText('дом клиента')).toBeNull();
   });
@@ -620,7 +588,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   it.each([['0'], [null]])('режим клиента (therapist_mode=%s) — в /today', async (flag) => {
     if (flag !== null) localStorage.setItem(THERAPIST_MODE_KEY, flag);
     await renderWithHomes();
-    fireEvent.click(screen.getByText('← Назад'));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     expect(await screen.findByText('дом клиента')).toBeTruthy();
     expect(screen.queryByText('дом кабинета')).toBeNull();
   });
@@ -632,12 +600,32 @@ describe('AccountPage — шапка и заголовок (#906)', () => {
   it('«← Назад» — ds-back внутри ds-sheet-head; eyebrow «Аккаунт» над ds-h1', async () => {
     renderPage();
     await screen.findByText('Аккаунт');
-    const back = screen.getByRole('button', { name: '← Назад' });
+    const back = screen.getByRole('button', { name: 'Назад' });
     expect(back.className).toBe('ds-back');
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
     expect(screen.getByText('Аккаунт').className).toBe('ds-eyebrow');
     expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
     expect(document.querySelector('.aa-lead')!.className).toBe('ds-sub aa-lead'); // подзаголовок как в main, общего ds-lead нет
     expect(screen.getByText('Выйти со всех устройств').className).toBe('ds-link');
+  });
+});
+
+// b27: группа 2FA — силуэт только до первой загрузки. Включение 2FA перечитывает /api/auth/me;
+// силуэт на каждый refresh размонтировал бы секцию вместе с только что выданными резервными
+// кодами (стенд pages-account-2fa-codes — коды не появлялись).
+describe('AccountPage — включение 2FA', () => {
+  it('после включения резервные коды видны, хотя страница перечитала способы входа', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/api/auth/2fa/setup')) return Promise.resolve(jsonResponse(200, { qrDataUrl: 'data:,', otpauthUrl: 'otpauth://x' }));
+      if (url.includes('/api/auth/2fa/enable')) return Promise.resolve(jsonResponse(200, { recoveryCodes: ['aaaa-1111', 'bbbb-2222'] }));
+      return routeFetch(url, init);
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole('switch', { name: 'Двухфакторная защита' }));
+    fireEvent.change(await screen.findByLabelText('Код из приложения'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByText('Подтвердить'));
+    await screen.findByText('aaaa-1111');
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/auth/me')).length).toBe(2));
+    expect(screen.getByText('aaaa-1111')).toBeTruthy();
   });
 });

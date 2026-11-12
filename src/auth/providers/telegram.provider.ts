@@ -1,72 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
-import { AuthProviderHandler, ProviderIdentity } from './types';
+import { Injectable } from '@nestjs/common';
+import { AuthProviderHandler } from './types';
 
-// H3 аудита 2026-10: подписанный payload виджета — воспроизводимый вход:
-// он лежит в истории браузера (`#tgAuthResult`) и в логах прокси, и до
-// истечения окна его можно предъявить ещё раз. 24 часа были запасом «на
-// всякий случай»; живому входу хватает минут (виджет → POST сразу), поэтому
-// окно — 15 минут, с запасом на расхождение часов.
-export const TELEGRAM_AUTH_MAX_AGE_SEC = 900;
-
+// Telegram в реестре — только имя способа входа: строку AuthProvider создаёт
+// вход по подписи initData внутри Telegram (src/auth/telegram-init-data.ts),
+// отвязка идёт через реестр. Входа через Telegram на сайте нет с 2026-11
+// (запрос Роскомнадзора, п. 4 ч. 10 ст. 8 149-ФЗ): Login Widget, редирект на
+// oauth.telegram.org и проверка их подписи удалены — возвращать нельзя.
 @Injectable()
 export class TelegramProvider implements AuthProviderHandler {
   readonly id = 'telegram';
   readonly displayName = 'Telegram';
-
-  constructor(private readonly config: ConfigService) {}
-
-  // Telegram Login Widget — signed form-data from Telegram (no redirect step).
-  // Spec: https://core.telegram.org/widgets/login#checking-authorization
-  verifyClientData(data: Record<string, unknown>): ProviderIdentity {
-    const botToken = this.config.getOrThrow<string>('BOT_TOKEN').trim();
-    // Telegram Login Widget sends `id` and `auth_date` as NUMBERS in the
-    // JSON payload. Coerce everything non-null to string for the check-string
-    // — Telegram's HMAC is computed over string values.
-    const fields: Record<string, string> = {};
-    for (const [k, v] of Object.entries(data) as [
-      string,
-      string | number | boolean,
-    ][]) {
-      if (v == null) continue;
-      fields[k] = String(v);
-    }
-
-    const hash = fields['hash'];
-    if (!hash) throw new UnauthorizedException('Missing hash');
-    // Must be 64 hex chars — otherwise Buffer.from(hash,'hex') yields a
-    // wrong-length buffer and timingSafeEqual throws RangeError → 500.
-    if (!/^[0-9a-f]{64}$/i.test(hash))
-      throw new UnauthorizedException('Malformed hash');
-    delete fields['hash'];
-
-    const authDate = parseInt(fields['auth_date'] ?? '0', 10);
-    if (Date.now() / 1000 - authDate > TELEGRAM_AUTH_MAX_AGE_SEC)
-      throw new UnauthorizedException('Telegram auth data expired');
-
-    // Login Widget: secret_key = SHA256(bot_token).
-    const checkString = Object.keys(fields)
-      .sort()
-      .map((k) => `${k}=${fields[k]}`)
-      .join('\n');
-    const secretKey = crypto.createHash('sha256').update(botToken).digest();
-    const expectedHash = crypto
-      .createHmac('sha256', secretKey)
-      .update(checkString)
-      .digest('hex');
-
-    if (
-      !crypto.timingSafeEqual(
-        Buffer.from(hash, 'hex'),
-        Buffer.from(expectedHash, 'hex'),
-      )
-    ) {
-      throw new UnauthorizedException('Invalid Telegram signature');
-    }
-
-    const id = parseInt(fields['id'] ?? '', 10);
-    if (!id) throw new UnauthorizedException('Missing Telegram user id');
-    return { providerId: String(id), displayName: fields['first_name'] };
-  }
 }

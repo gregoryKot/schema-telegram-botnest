@@ -34,13 +34,13 @@ describe('ModeMapGuide — шаги «problem»', () => {
   it('без узлов ни один шаг не отмечен галочкой', () => {
     renderGuide({ nodes: [] });
     expect(screen.getByText('1. Триггер')).toBeTruthy();
-    expect(screen.queryByText('✓')).toBeNull();
+    expect(document.querySelector('.mm2-step-n.is-done')).toBeNull();
   });
 
   it('добавленный узел trigger отмечает соответствующий шаг ✓', () => {
     renderGuide({ nodes: [node('trigger')] });
     const btn = screen.getByText('1. Триггер').closest('button')!;
-    expect(btn.textContent).toContain('✓');
+    expect(btn.querySelector('.mm2-step-n.is-done svg')).toBeTruthy(); // галочка — знаком, не глифом
   });
 
   it('клик по невыполненному шагу зовёт onAdd с узлом нужного типа', () => {

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
-import { FIT, FONT, LINE } from './diagramMeasure';
+import { FIT, FONT, LINE, TITLE_MAX_LINES } from './diagramMeasure';
+import { DiagramNeedPill } from './DiagramNeedPill';
 import type { DiagramNode } from './diagramTypes';
 
 export const EMPTY_HINT = 'связи не заполнены';
@@ -24,30 +25,6 @@ function clamp(lines: number): CSSProperties {
   };
 }
 
-/** Таблетка потребности: одна строка; в узкой — кегль 11, чтобы «Привязанность» влезла. */
-function PillText({ node }: { node: DiagramNode }) {
-  return (
-    <span
-      style={{
-        position: 'absolute',
-        inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 8px',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        fontSize: node.w < 108 ? 11 : 12,
-        fontWeight: 600,
-        color: 'var(--text)',
-      }}
-    >
-      {node.label}
-    </span>
-  );
-}
-
 /** Подписи внутри фигуры: название, мелкая строка, подпись и текст терапевта. */
 export function DiagramNodeText({
   node,
@@ -57,21 +34,7 @@ export function DiagramNodeText({
   /** Смещение вниз: бокс кнопки выше фигуры. */
   top: number;
 }) {
-  if (node.kind === 'need') {
-    return (
-      <span
-        style={{
-          position: 'absolute',
-          left: 0,
-          top,
-          width: node.w,
-          height: node.h,
-        }}
-      >
-        <PillText node={node} />
-      </span>
-    );
-  }
+  if (node.kind === 'need') return <DiagramNeedPill node={node} top={top} />;
   const left = node.shape === 'rounded' && node.kind !== 'placeholder';
   const { kx, ky } = FIT[node.shape];
   return (
@@ -107,7 +70,7 @@ export function DiagramNodeText({
       {node.label && (
         <span
           style={{
-            ...clamp(2),
+            ...clamp(TITLE_MAX_LINES),
             fontSize: FONT.title,
             lineHeight: `${LINE.title}px`,
             fontWeight: 700,

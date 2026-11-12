@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService, TokenPair } from './auth.service';
 import { TotpService } from './totp.service';
 import { LinkSessionRequiredException } from './link-session-required.exception';
+import { resolveEmailLoginUser } from './email-login-user';
 // Адрес в EmailToken — PII, шифруется; лукап токена идёт по tokenHash.
 import { decrypt as decField } from '../utils/crypto';
 
@@ -91,11 +92,10 @@ export class EmailTokenService {
       return { kind: 'linked', purpose: row.purpose, userId: row.userId };
     }
 
-    // Имени у входа по почте нет: часть адреса до @ — это почта, а не имя, и
-    // открытым в User.firstName ей не место (S16, аудит 2026-11).
+    // Новый адрес: прежний аккаунт Google с этой почтой либо новый аккаунт.
     const userId =
       row.userId ??
-      (await this.auth.findOrCreateUserByProvider('email', rowEmail));
+      (await resolveEmailLoginUser(this.prisma, this.auth, rowEmail));
     if (await this.totp.isEnabled(userId)) {
       const challengeToken = this.auth.buildTotpChallengeToken(
         userId,

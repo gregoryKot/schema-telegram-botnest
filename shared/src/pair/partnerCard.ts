@@ -5,7 +5,7 @@
 export type Tone = 'good' | 'mid' | 'low';
 export type BarTone = Tone | 'none';
 
-export const PARTNER_BAR_MAX_PX = 24;
+export const PARTNER_BAR_MAX_PX = 36;
 const BAR_EMPTY_PX = 3;
 
 export function indexTone(v: number): Tone {

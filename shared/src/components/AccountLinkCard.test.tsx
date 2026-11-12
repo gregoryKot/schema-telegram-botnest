@@ -73,12 +73,18 @@ describe('приглашение', () => {
     expect(link.rel).toContain('noopener');
   });
 
-  it('текст на залитом акценте — токен --on-accent, а не белый литерал', () => {
+  it('действие — общая залитая кнопка ds-btn (цвета — токены cabinet.css), без инлайн-цветов', () => {
     // Белый темой не меняется: в тёмной теме акцент светлый, и пара разъезжалась.
+    // С b27 вид — классы (alc-*, auth-account.css), а не инлайн-стили.
     show();
     const btn = screen.getByText('Подключить Telegram');
-    expect(btn.style.background).toBe('var(--accent)');
-    expect(btn.style.color).toBe('var(--on-accent)');
+    expect(btn.className).toContain('ds-btn');
+    expect(btn.getAttribute('style')).toBeNull();
+  });
+
+  it('полный адрес — строкой, которая переносится, а не рвёт вёрстку на 320', () => {
+    show({ state: waiting });
+    expect(screen.getByText(waiting.url).className).toContain('alc-url');
   });
 
   it('без адреса — кнопка, которая начинает привязку', () => {
@@ -90,7 +96,7 @@ describe('приглашение', () => {
 
   it('пока билет выписывается — кнопка погашена, второй запрос не уходит', () => {
     const onStart = vi.fn();
-    show({ onStart, state: { kind: 'starting', provider: 'telegram' } });
+    show({ onStart, state: { kind: 'starting', provider: 'email' } });
     const btn = screen.getByText('Подключить Telegram');
     expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
@@ -104,7 +110,7 @@ describe('приглашение', () => {
     show({
       onStart,
       href: 'https://t.me/Bot?start=link_K7M2QX94',
-      state: { kind: 'starting', provider: 'telegram' },
+      state: { kind: 'starting', provider: 'email' },
     });
     const link = screen.getByText('Подключить Telegram');
     expect(link.getAttribute('aria-disabled')).toBe('true');

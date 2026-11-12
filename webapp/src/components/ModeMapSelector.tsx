@@ -12,9 +12,8 @@ import { RenameDeleteMenu } from './RenameDeleteMenu';
 import { MODE_MAP_TITLE_MAX } from '../../../shared/src/limits/textLimits';
 import { KIND_META } from './modeMap/mapKinds';
 import { MapKindPicker } from './modeMap/MapKindPicker';
+import { MapTabs } from './modeMap/MapTabs';
 import { useNewMap } from './modeMap/useNewMap';
-import { PaperEmpty } from './art/PaperEmpty';
-import { Cluster } from './art/PaperArtSigns';
 
 interface Props { clientId: UserId; initialMapId?: number }  // initialMapId: карта, которую открыть первой (иначе первая в списке)
 
@@ -118,29 +117,17 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
     <div className="mm2-fill">
       {/* Map selector bar — pill-style tabs */}
       <div className="mm2-bar">
-        <div className="ds-seg ds-seg--scroll" role="group" aria-label="Графические карты">
-          {maps.map(m => editingId === m.id ? (
-            <input
-              key={m.id}
-              ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
-              value={editTitle}
-              onChange={e => setEditTitle(e.target.value)}
-              onBlur={() => renameMap(m.id, editTitle)}
-              onKeyDown={e => { if (e.key === 'Enter') void renameMap(m.id, editTitle); /* сбой ловит сам: mapFail */ if (e.key === 'Escape') setEditingId(null); }}
-              className="ds-input ds-input--sm mm2-rename"
-            />
-          ) : (
-            <button
-              key={m.id} type="button"
-              aria-pressed={activeId === m.id}
-              onClick={() => selectMap(m.id)}
-              title={KIND_META[m.kind]?.label}
-              className={`ds-seg-btn${activeId === m.id ? ' is-active' : ''}`}
-            >
-              {m.title}
-            </button>
-          ))}
-        </div>
+        <MapTabs maps={maps} activeId={activeId} editingId={editingId} onSelect={id => void selectMap(id)} renderEdit={m => (
+          <input
+            key={m.id}
+            ref={titleRef} maxLength={MODE_MAP_TITLE_MAX}
+            value={editTitle}
+            onChange={e => setEditTitle(e.target.value)}
+            onBlur={() => renameMap(m.id, editTitle)}
+            onKeyDown={e => { if (e.key === 'Enter') void renameMap(m.id, editTitle); /* сбой ловит сам: mapFail */ if (e.key === 'Escape') setEditingId(null); }}
+            className="ds-input ds-input--sm mm2-rename"
+          />
+        )} />
         {activeMeta && <RenameDeleteMenu label="Действия с картой" deleteLabel="Удалить карту" onRename={() => startEdit(activeMeta)} onDelete={maps.length > 1 ? () => setDeleteTargetId(activeMeta.id) : undefined} />}
         <button ref={newBtnRef} onClick={() => setPickKind(o => !o)} disabled={creating} aria-busy={creating || undefined}
           className={`ds-btn ds-btn--secondary ds-btn--sm mm2-new${pickKind ? ' is-active' : ''}`}>
@@ -172,8 +159,11 @@ export function ModeMapSelector({ clientId, initialMapId }: Props) {
       <div ref={bodyRef} className="mm2-body">
         {loading && <ModeMapSkeleton />}
         {!loading && maps.length === 0 && (
-          <div className="mm2-center">
-            <PaperEmpty art={Cluster} title="Пока нет графических карт">{tr('Выбери тип первой карты', 'Выберите тип первой карты')}</PaperEmpty>
+          <div className="mm2-center mm2-center--kinds">{/* без знака у заголовка: Cluster уже стоит в плитке «Карта режимов» */}
+            <div className="mm2-kinds-head">
+              <p className="ds-list-title">Пока нет графических карт</p>
+              <p className="ds-empty">{tr('Выбери тип первой карты', 'Выберите тип первой карты')}</p>
+            </div>
             <div className="mm2-kinds">
               <MapKindPicker variant="cards" concept={newMap.concept} disabled={creating} onPick={createMap} />
             </div>

@@ -72,7 +72,8 @@ describe('WarmWordsEx', () => {
     renderSheet();
     await act(async () => {});
 
-    expect(screen.getByText(/Здесь пока пусто/)).toBeTruthy();
+    // Пусто — знак сущности (ChildCare, вариант pp-empty--sign), а не серая чашка по умолчанию (ревью g6).
+    expect(screen.getByText(/Здесь пока пусто/).closest('.pp-empty')!.classList.contains('pp-empty--sign')).toBe(true);
     expect(mockApi.trackEvent).toHaveBeenCalledWith('warm_words_open', {
       count: 0,
     });

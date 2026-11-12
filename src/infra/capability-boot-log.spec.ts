@@ -83,7 +83,7 @@ describe('logCapabilityReport', () => {
     const logger = fakeLogger();
     logCapabilityReport(logger, {
       ...ALL_CONFIGURED,
-      GOOGLE_REDIRECT_URI: 'https://schemalab.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemalab.ru/api/auth/vk/callback',
     });
     expect(logger.error).toHaveBeenCalledTimes(1);
     expect(String(logger.error.mock.calls[0][0])).toContain('OAuth');
@@ -95,7 +95,7 @@ describe('logCapabilityReport', () => {
     const logger = fakeLogger();
     logCapabilityReport(logger, {
       ...ALL_CONFIGURED,
-      GOOGLE_REDIRECT_URI: 'https://schemehappens.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
     });
     expect(logger.error).not.toHaveBeenCalled();
     expect(logger.log.mock.calls[0][0]).toContain('всё подключено');

@@ -1,7 +1,6 @@
 // Разбор `/start link_<КОД>`. Совпадение подстроки — не проверка имени
 // (правило №14): префикс и форма кода сверяются целиком.
 import { isLinkPayload, linkDeepLink, parseLinkCode } from './link-payload';
-import { parseLoginCode } from './login-payload';
 
 describe('parseLinkCode', () => {
   it('годный код разбирается', () => {
@@ -20,8 +19,7 @@ describe('parseLinkCode', () => {
     expect(isLinkPayload('xlink_ABCD2345')).toBe(false);
   });
 
-  it('код входа и код привязки разбираются РАЗНЫМИ ветками', () => {
-    expect(parseLoginCode('link_ABCD2345')).toBeNull();
+  it('прежняя ссылка входа привязкой не считается', () => {
     expect(parseLinkCode('login_ABCD2345')).toBeNull();
   });
 
