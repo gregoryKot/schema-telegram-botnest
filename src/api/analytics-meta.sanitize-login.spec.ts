@@ -90,3 +90,20 @@ describe('sanitizeMeta: login_one_tap', () => {
     });
   });
 });
+
+// Карточка «добавь почту или VK ID» внутри Telegram (2026-11): событие шлёт
+// клиент, из meta проходит только действие из закрытого списка.
+describe('sanitizeMeta: login_method_offer', () => {
+  it.each(['shown', 'open', 'later'])('пропускает действие «%s»', (action) => {
+    expect(
+      sanitizeMeta('login_method_offer', { action, email: 'a@b.c' }),
+    ).toEqual({ action });
+  });
+
+  it.each([{ action: 'hacked' }, { action: 1 }, {}, { outcome: 'signed_in' }])(
+    'чужое значение или поле — meta целиком отбрасывается: %j',
+    (meta) => {
+      expect(sanitizeMeta('login_method_offer', meta)).toBeUndefined();
+    },
+  );
+});

@@ -160,12 +160,6 @@ const VIOLATIONS_LEGACY: Record<string, string> = {
   'api/tracker.controller.ts:177':
     'inline-тип Record<string, number> (childhood-ratings) — ручная ' +
     'проверка по NEED_IDS в коде, но не DTO',
-  'auth/auth-link.controller.ts:47':
-    'inline-тип Record<string, unknown> (telegram widget link) — ' +
-    'комментарий в коде: whitelist сломает hash-верификацию Telegram',
-  'auth/auth-telegram.controller.ts:47':
-    'inline-тип Record<string, string> — подписанный Telegram-payload, ' +
-    'whitelist срежет поля и сломает hash-верификацию (комментарий в коде)',
   'booking/payment.controller.ts:65':
     "одиночное поле @Body('OutSum') — вебхук Robokassa",
   'booking/payment.controller.ts:66':
@@ -189,6 +183,6 @@ describe('трипваер: @Body() типизирован DTO с class-validato
   });
 
   it('VIOLATIONS_LEGACY не разросся сверх известного (может только сокращаться)', () => {
-    expect(Object.keys(VIOLATIONS_LEGACY).length).toBeLessThanOrEqual(6);
+    expect(Object.keys(VIOLATIONS_LEGACY).length).toBeLessThanOrEqual(4);
   });
 });

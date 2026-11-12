@@ -1,17 +1,17 @@
 import { useId } from 'react';
 import { displayUserCodeInput, normalizeUserCode, USER_CODE_LENGTH } from '../../../../shared/src/auth/userCodeEntry';
 
-// Поле сверки кода билета (S9, аудит 2026-11): человек набирает код с экрана
-// приложения, откуда входит, — из ссылки он не подставляется. Подсказка
-// «не совпадает» появляется, только когда код набран целиком. Тексты безличные:
-// экран сверки (AuthConfirmPage) живёт вне AddressFormProvider.
-export function TicketCodeField({ value, onChange, matches, disabled }: {
-  value: string; onChange: (v: string) => void; matches: boolean; disabled: boolean;
+// Поле восьмизначного кода. Сверка билета (S9, аудит 2026-11): человек набирает код с
+// экрана приложения, откуда входит; «не совпадает» — только когда код набран целиком.
+// Его же берёт привязка почты кодом из письма (EmailLinkCodeForm, своя подпись `label`).
+// Тексты безличные: экран сверки (AuthConfirmPage) живёт вне AddressFormProvider.
+export function TicketCodeField({ value, onChange, matches, disabled, label = 'Код из приложения' }: {
+  value: string; onChange: (v: string) => void; matches: boolean; disabled: boolean; label?: string;
 }) {
   const id = useId();
   return (
     <div className="as-field">
-      <label htmlFor={id} className="ds-label">Код из приложения</label>
+      <label htmlFor={id} className="ds-label">{label}</label>
       <input
         id={id}
         className="ds-input as-code-input"

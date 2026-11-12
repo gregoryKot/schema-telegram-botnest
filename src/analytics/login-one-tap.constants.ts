@@ -1,6 +1,6 @@
 // Исходы входа через окно Google One Tap (meta.outcome события login_one_tap).
-// Событие пишет только сервер (src/auth/google-one-tap.service.ts) с
-// userId = null; блок /stats — src/bot/one-tap-metrics.format.ts.
+// С 2026-11 (вход через Google убран) событие не пишет никто — список читает
+// историю: блок /stats (src/bot/one-tap-metrics.format.ts), ветка санитайзера.
 //
 // Одно имя с исходом внутри, а не три имени: счёт — один запрос, в allow-list
 // и санитайзере — одна запись (приём login_ticket_step).

@@ -1,39 +1,35 @@
-/* Строка задания (sections/practice/TaskRow): полоска «от терапевта», галочка, заметка,
-   статус. Общий ряд .cp-task — в client-practice.css, откуда этот файл и подключается. */
-.cp-task-bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--accent); }
-.ds-label.cp-task-from { color: var(--accent); margin-bottom: 4px; }
-.cp-task--done { opacity: .6; }
-.cp-task-check { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--ok-bg); color: var(--ok-ink); }
+/* Строка задания (sections/practice/TaskRow, b20): знак слева, текст с одной строкой меты, справа одна колонка —
+   шеврон/ссылка, круглая кнопка-галочка «Готово» или залитая галочка «сделано сегодня». Общий ряд .cp-task — в
+   client-practice.css, откуда этот файл и подключается. Красной полосы и капители «от терапевта» больше нет:
+   «от терапевта» — в мете со знаком Talk (APP_2026-11.md, b20). */
+.cp-task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin-top: var(--space-4); font-size: 13px; line-height: 1.4; color: var(--text-sub); }
+.cp-task-from { display: inline-flex; align-items: center; gap: 6px; }
 .cp-task-note { margin-top: var(--space-4); font-size: 13px; color: var(--ok-ink); }
-.cp-task-status { margin-top: var(--space-6); }
+.ds-badge.cp-task-status { padding: 1px 8px; }
+/* Сделано сегодня: знак бледнее, текст прежний — серая полупрозрачная строка читалась выключенной (аудит b20). */
+.cp-task--done > .pp-row-art { opacity: .5; }
 
-/* Телефон до 559px: «Готово» у задания — под текстом, а не сбоку. На 320 колонке текста оставалось ≈110px, на 390 —
-   ≈180px: «Заметить три момента…» шло столбиком в шесть строк (ревью g4 r2). Сетка по именованным областям, и своё
-   место у КАЖДОГО ребёнка строки: полоса «от терапевта» без места вставала в первую свободную ячейку — к правому
-   краю карточки (ревью g4 r6). Правило на самой строке, а не под .cp-page--phone: «Практики», «Все цели», «Задания»
-   (/more) и «Все задания» с «Сегодня» — одна строка. Колонки lead (полоса или галочка) и end (шеврон или ссылка) —
-   только при таком ребёнке: пустая колонка съела бы промежуток. Плотность строки (промежуток 12, поля 12/16, высота
-   от 56) — здесь же и тоже на самой строке: под .cp-page--phone она была только у «Практик», а в «Заданиях» (/more)
-   та же строка шла свободнее (ревью g4 r7). .ds-card в селекторе — сильнее .ds-card--row (cabinet.css); row-gap сетки
-   с :has сильнее gap плотности. Сверка — styles/taskRowGrid.test.tsx. */
+/* «Готово» у своего задания — круг 44 с галочкой: пустой круг = не сделано, залитый (ниже) = сделано. */
+.cp-task-done {
+  position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  width: 44px; height: 44px; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--text-sub);
+}
+.cp-task-done svg { width: 16px; height: 16px; }
+/* Слово «Готово» — имя кнопки для чтения с экрана, глазу хватает круга с галочкой. */
+.cp-task-done-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cp-task-done:hover, .cp-task-done:focus-visible { border-color: var(--c-moss); color: var(--c-moss-strong); }
+.cp-task-done:disabled { opacity: .55; cursor: default; }
+.cp-task-check {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; margin: 0 6px; border-radius: 50%; background: var(--c-moss); color: var(--on-accent);
+}
+.cp-task-check svg { width: 14px; height: 14px; }
+
+/* Телефон до 559px: плотность одна на «Практиках», «Заданиях» (/more) и «Все задания» с «Сегодня» — правило на самой
+   строке, а не под .cp-page--phone (ревью g4 r7). .ds-card в селекторе — сильнее .ds-card--row (cabinet.css).
+   Сверка — styles/taskRowGrid.test.tsx. */
 @media (max-width: 559px) {
   .ds-card.cp-task { gap: var(--space-12); min-height: 56px; padding: var(--space-12) var(--space-16); }
-  .ds-card.cp-task:has(> .ds-btn) {
-    display: grid; row-gap: var(--space-8);
-    grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "art body" "art btn";
-  }
-  .ds-card.cp-task:has(> .ds-btn):has(> .cp-task-bar, > .cp-task-check) {
-    grid-template-columns: auto 44px minmax(0, 1fr); grid-template-areas: "lead art body" "lead art btn";
-  }
-  .ds-card.cp-task:has(> .ds-btn):has(> .ds-chev, > .ds-link) {
-    grid-template-columns: 44px minmax(0, 1fr) auto; grid-template-areas: "art body end" "art btn end";
-  }
-  .ds-card.cp-task:has(> .ds-btn):has(> .cp-task-bar, > .cp-task-check):has(> .ds-chev, > .ds-link) {
-    grid-template-columns: auto 44px minmax(0, 1fr) auto; grid-template-areas: "lead art body end" "lead art btn end";
-  }
-  .cp-task:has(> .ds-btn) > .cp-task-bar, .cp-task:has(> .ds-btn) > .cp-task-check { grid-area: lead; }
-  .cp-task:has(> .ds-btn) > .pp-row-art { grid-area: art; align-self: start; }
-  .cp-task:has(> .ds-btn) > .cp-task-body { grid-area: body; }
-  .cp-task:has(> .ds-btn) > .ds-btn { grid-area: btn; justify-self: start; }
-  .cp-task:has(> .ds-btn) > .ds-chev, .cp-task:has(> .ds-btn) > .ds-link { grid-area: end; }
+  .ds-card.cp-task:has(> .cp-task-done) { padding-right: var(--space-8); }
 }

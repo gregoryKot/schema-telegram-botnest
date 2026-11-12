@@ -4,6 +4,9 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 
 vi.mock('../apiClient', () => ({ authedFetch: vi.fn() }));
 vi.mock('../api', () => ({ reportClientError: vi.fn() }));
+// Передача сессии в браузер — только из MAX; хост подменяем, чтобы проверить оба исхода.
+const hostId = vi.hoisted(() => ({ current: 'max' }));
+vi.mock('../../../shared/src/host', () => ({ getHost: () => ({ id: hostId.current }) }));
 import { authedFetch } from '../apiClient';
 import { reportClientError } from '../api';
 import { _resetInstallHandoffForTests, useInstallHandoff } from './useInstallHandoff';
@@ -17,6 +20,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.clearAllMocks();
   _resetInstallHandoffForTests();
+  hostId.current = 'max';
 });
 
 describe('useInstallHandoff', () => {
@@ -28,7 +32,19 @@ describe('useInstallHandoff', () => {
     const [path, init] = vi.mocked(authedFetch).mock.calls[0];
     expect(path).toBe('/api/auth/ticket/handoff');
     expect(init?.method).toBe('POST');
-    expect(JSON.parse(String(init?.body))).toEqual({ hostId: 'web' });
+    expect(JSON.parse(String(init?.body))).toEqual({ hostId: 'max' });
+  });
+
+  // Запрос РКН 2026-11: вход на сайт через Telegram убран, а сессия, переданная
+  // из Telegram во внешний браузер, — тот же вход. Код не запрашивается вовсе.
+  it.each(['telegram', 'web'])('хост %s: кода нет, сервер не дёргается', async (id) => {
+    hostId.current = id;
+    vi.mocked(authedFetch).mockResolvedValue(ok(CODE));
+    const { result } = renderHook(() => useInstallHandoff());
+    await act(async () => { await Promise.resolve(); });
+    expect(result.current.href).toMatch(/\/install$/);
+    expect(authedFetch).not.toHaveBeenCalled();
+    expect(reportClientError).not.toHaveBeenCalled();
   });
 
   it('ошибка — адрес без кода и сообщение об аварии', async () => {

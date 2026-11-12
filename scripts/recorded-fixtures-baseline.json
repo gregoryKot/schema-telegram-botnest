@@ -7,21 +7,6 @@
     "status": "exempt",
     "reason": "MAX initData проверяется тем же HMAC-алгоритмом, что и Telegram, но с токеном бота MAX — тест подписывает данные сам, реального initData от MAX-клиента в логах прода не сохранялось."
   },
-  "src/auth/providers/google-auth-url.ts": {
-    "status": "recorded",
-    "fixtures": [
-      "oauth-authorize-responses.json"
-    ],
-    "spec": "src/infra/self-check/probe-oauth-providers.spec.ts"
-  },
-  "src/auth/providers/google-id-token.ts": {
-    "status": "exempt",
-    "reason": "id_token JWT — синтетический payload через jose-мок (google-id-token.spec.ts); реальный Google id_token содержит email/sub живого пользователя и не может лежать в репозитории как фикстура без риска PII."
-  },
-  "src/auth/providers/google.provider.ts": {
-    "status": "exempt",
-    "reason": "Ответы Google OAuth token/userinfo endpoint в спеке — авторская форма по документации Google, не захваченный с прода вызов; учётные данные тестового аккаунта Google для записи недоступны."
-  },
   "src/auth/providers/max.provider.ts": {
     "status": "exempt",
     "reason": "Тонкая обёртка над verifyMaxInitData (max-init-data.ts) — сам разбор формата не делает, делегирует. Классифицирован отдельно, т.к. подпадает под явный путь providers/*.ts."
@@ -81,6 +66,10 @@
   "src/booking/caldav-health.ts": {
     "status": "exempt",
     "reason": "Трекер состояния (счётчики сбоев, пороги алерта) поверх уже классифицированных kind/detail — сам XML/HTTP-ответ площадки не разбирает. Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts."
+  },
+  "src/booking/caldav-owner-event.ts": {
+    "status": "exempt",
+    "reason": "Собирает ИСХОДЯЩЕЕ обезличенное событие владельца (поля для PUT в iCloud поверх caldav-event.util.ts), ответ площадки не разбирает. Классифицирован отдельно, т.к. подпадает под явный путь caldav-*.ts; состав исходящего тела пинит src/booking/foreign-egress.spec.ts."
   },
   "src/booking/caldav-parse-skips.ts": {
     "status": "exempt",

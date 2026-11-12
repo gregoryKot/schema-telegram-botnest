@@ -36,8 +36,8 @@ export class StartTicketDto {
   @IsIn(['login', 'link'])
   intent!: 'login' | 'link';
 
-  // Каким способом человек будет подтверждать. Влияет на текст и на то, какую
-  // строку AuthProvider искать у источника при привязке.
+  // Способ подтверждения; при привязке — чью строку AuthProvider искать у
+  // источника ('google' — только так: входа через Google нет, строки остались).
   @IsIn(['telegram', 'max', 'google', 'vk', 'email'])
   provider!: string;
 

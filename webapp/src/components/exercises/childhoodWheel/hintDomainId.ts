@@ -2,8 +2,8 @@ import { CHILDHOOD_SCHEMA_HINTS } from '../../../../../shared/src/childhoodWheel
 import type { NeedId } from '../../../../../shared/src/needs/types';
 import { SCHEMA_DOMAINS } from '../../../schemaTherapyData';
 
-/** id домена, к которому относится первая схема из подсказки; нет такой схемы — undefined. */
-export function hintDomainId(id: NeedId): string | undefined {
+/** Номер домена первой схемы подсказки (DomainArt: 1… по порядку SCHEMA_DOMAINS); нет такой схемы — 0. */
+export function hintDomainNum(id: NeedId): number {
   const first = CHILDHOOD_SCHEMA_HINTS[id].schemaIds[0];
-  return SCHEMA_DOMAINS.find((d) => d.schemas.some((s) => s.id === first))?.id;
+  return SCHEMA_DOMAINS.findIndex((d) => d.schemas.some((s) => s.id === first)) + 1;
 }

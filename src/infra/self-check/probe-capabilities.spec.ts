@@ -22,15 +22,15 @@ describe('oauthRedirectsProbe', () => {
 
   it('редирект ведёт на перенаправляемый (legacy) хост — не ok', async () => {
     const res = await oauthRedirectsProbe({
-      GOOGLE_REDIRECT_URI: 'https://schemalab.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemalab.ru/api/auth/vk/callback',
     }).run();
     expect(res.ok).toBe(false);
-    expect(res.detail).toContain('GOOGLE_REDIRECT_URI');
+    expect(res.detail).toContain('VK_REDIRECT_URI');
   });
 
   it('канонический адрес возврата — ok (контроль)', async () => {
     const res = await oauthRedirectsProbe({
-      GOOGLE_REDIRECT_URI: 'https://schemehappens.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
     }).run();
     expect(res.ok).toBe(true);
   });

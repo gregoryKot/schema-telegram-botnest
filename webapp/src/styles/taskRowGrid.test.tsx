@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
-// Строка задания на телефоне до 559px (task-row.css): у строки с «Готово» сетка — кнопка под текстом. Ревью g4 r6:
-// сетка ставила явно только знак, текст, кнопку и шеврон, а полоса «от терапевта» вставала в первую свободную
-// ячейку — к ПРАВОМУ краю карточки (в «Все цели» у задания терапевта с «Готово»). Сверка идёт через шов: строки
-// рендерит настоящий TaskRow во всех вариантах, совпадение селекторов — element.matches (jsdom понимает :has), CSS —
-// исходники каскада строки (client-practice.css и task-row.css). Каждый прямой ребёнок строки с «Готово» обязан
-// иметь своё место (grid-area из шаблона, который действует на эту строку, или явный grid-column). Строка та же
-// вне «Практик» («Задания» в /more, «Все задания» с «Сегодня»): сетка не зависит от .cp-page--phone. Живая
-// раскладка 320/360/390 — зонд стенда r6-task-grid (левый край полосы левее знака). Плотность строки (r7) — внизу файла.
+// Строка задания на телефоне до 559px (task-row.css). До b20 «Готово» у своего задания было кнопкой с текстом, и на
+// телефоне её уводили под текст сеткой по именованным областям (ревью g4 r2: на 320 текст шёл столбиком в шесть строк;
+// ревью g4 r6: полоса «от терапевта» без места в сетке вставала к правому краю). b20: «Готово» — круг 44 с галочкой
+// в той же правой колонке, что шеврон и галочка «сделано сегодня», полосы нет («от терапевта» — в мете): строка
+// остаётся рядом знак | текст | действие на любой ширине, сетка не нужна. Сверка идёт через шов: строки рендерит
+// настоящий TaskRow во всех вариантах, совпадение селекторов — element.matches, CSS — исходники каскада строки
+// (client-practice.css и task-row.css). Плотность строки (r7) — внизу файла.
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import type { ReactElement } from 'react';
@@ -29,30 +28,6 @@ function spec(sel: string): number {
   return n + (rest.match(/\.[\w-]+/g) ?? []).length;
 }
 
-const areasOf = (body: string): Set<string> | null => {
-  const m = /grid-template-areas\s*:\s*([^;]+)/.exec(body);
-  return m ? new Set(m[1].replace(/"/g, ' ').split(/\s+/).filter((a) => a && a !== '.')) : null;
-};
-
-/** Что не так с размещением детей строки в узкой сетке; [] — сетка не действует или каждому ребёнку есть место. */
-function gridProblems(rules: Rule[], row: Element): string[] {
-  const hit = (pred: (body: string) => boolean) => rules
-    .flatMap((r, i) => r.selectors.map((s) => ({ s, body: r.body, i })))
-    .filter((x) => pred(x.body) && row.matches(x.s))
-    .sort((a, b) => spec(a.s) - spec(b.s) || a.i - b.i);
-  if (!hit((b) => /display\s*:\s*grid/.test(b)).length) return [];
-  const tpl = hit((b) => areasOf(b) !== null).pop();
-  const areas = tpl ? areasOf(tpl.body)! : new Set<string>();
-  return [...row.children].flatMap((child) => {
-    const key = child.classList[0];
-    const place = rules.flatMap((r) => r.selectors.map((s) => ({ s, body: r.body })))
-      .filter((x) => /grid-(area|column)\s*:/.test(x.body) && child.matches(x.s)).pop();
-    if (!place) return [`${key}: нет места в сетке`];
-    const area = /grid-area\s*:\s*([\w-]+)/.exec(place.body)?.[1];
-    return area && !areas.has(area) ? [`${key}: области «${area}» нет в шаблоне строки`] : [];
-  });
-}
-
 const task = (over: Partial<UserTask> = {}): UserTask =>
   ({ id: 1, type: 'custom', text: 'Заметить три момента', done: null, assignedBy: null, ...over }) as UserTask;
 const noop = () => {};
@@ -66,61 +41,43 @@ const VARIANTS: [string, ReactElement][] = [
 ];
 const CONTEXTS: [string, string][] = [['«Практики» (.cp-page--phone)', 'ds-page cp-page cp-page--phone'], ['«Задания», «Все задания»', 'sk-list']];
 
-/** Ряд как есть и «что если» — та же строка с «Готово»: у каждого ребёнка любого варианта есть место. */
 function rows(el: ReactElement, wrap: string): Element[] {
   const { container } = render(<div className={wrap}>{el}</div>);
-  const row = container.querySelector('.cp-task')!;
-  if (row.querySelector(':scope > .ds-btn')) return [row];
-  const withBtn = row.cloneNode(true) as Element;
-  const btn = document.createElement('button');
-  btn.className = 'ds-btn ds-btn--sm';
-  withBtn.insertBefore(btn, withBtn.querySelector(':scope > .ds-chev, :scope > .ds-link'));
-  row.parentElement!.appendChild(withBtn);
-  return [row, withBtn];
+  return [container.querySelector('.cp-task')!];
 }
 
-describe('строка задания до 559px: место у каждого ребёнка', () => {
+describe('строка задания до 559px: знак | текст | действие в один ряд', () => {
   const rules = cascade();
 
   it('варианты дают всех прямых детей TaskRow — сверка не пустая', () => {
     const keys = new Set(VARIANTS.flatMap(([, el]) => rows(el, 'sk-list').flatMap((r) => [...r.children].map((c) => c.classList[0]))));
-    expect([...keys].sort()).toEqual(['cp-task-bar', 'cp-task-body', 'cp-task-check', 'ds-btn', 'ds-chev', 'ds-link', 'pp-row-art'].sort());
+    expect([...keys].sort()).toEqual(['cp-task-body', 'cp-task-check', 'cp-task-done', 'ds-chev', 'ds-link', 'pp-row-art'].sort());
+    cleanup();
   });
 
-  it.each(CONTEXTS)('%s: строка с «Готово» — в сетке, без потерянных детей', (_, wrap) => {
+  it.each(CONTEXTS)('%s: «Готово» — последний ребёнок ряда, сетка с кнопкой под текстом не действует', (_, wrap) => {
     for (const [name, el] of VARIANTS) {
-      for (const row of rows(el, wrap)) {
-        if (!row.querySelector(':scope > .ds-btn')) continue;
-        expect(rules.some((r) => /display\s*:\s*grid/.test(r.body) && r.selectors.some((s) => row.matches(s))), `${name}: сетка не действует`).toBe(true);
-        expect(gridProblems(rules, row), name).toEqual([]);
-      }
+      const [row] = rows(el, wrap);
+      const btn = row.querySelector(':scope > .cp-task-done');
+      if (btn) expect(row.lastElementChild, name).toBe(btn);
+      const grid = rules.filter((r) => /display\s*:\s*grid/.test(r.body) && r.selectors.some((s) => row.matches(s)));
+      expect(grid.map((r) => r.selectors.join(', ')), name).toEqual([]);
       cleanup();
     }
   });
 
-  it('полоса «от терапевта» — в первой колонке шаблона, слева от знака', () => {
-    const [row] = rows(VARIANTS[0][1], 'sk-list');
-    const tpl = rules.flatMap((r) => r.selectors.map((s) => ({ s, body: r.body })))
-      .filter((x) => areasOf(x.body) && row.matches(x.s)).sort((a, b) => spec(a.s) - spec(b.s)).pop()!;
-    expect(/grid-template-areas\s*:\s*"lead art /.test(tpl.body)).toBe(true);
+  it('«Готово» — круг 44×44 (тап-цель), в своей колонке не сжимается', () => {
+    const rule = readCss('task-row.css').find((r) => r.media === '' && r.selectors.includes('.cp-task-done'))!;
+    expect(rule.body).toMatch(/width:\s*44px/);
+    expect(rule.body).toMatch(/height:\s*44px/);
+    expect(rule.body).toMatch(/flex:\s*none/);
   });
 
-  it('контрольный образец: сетка r2 (полосе нет места) и место без области в шаблоне — сверка краснеет', () => {
-    const r2 = parseRules(`@media (max-width: 559px) {
-      .cp-page--phone .cp-task:has(> .ds-btn) { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; }
-      .cp-page--phone .cp-task:has(> .ds-btn) > .pp-row-art { grid-column: 1; grid-row: 1 / span 2; }
-      .cp-page--phone .cp-task:has(> .ds-btn) > .cp-task-body { grid-column: 2; grid-row: 1; }
-      .cp-page--phone .cp-task:has(> .ds-btn) > .ds-btn { grid-column: 2; grid-row: 2; }
-      .cp-page--phone .cp-task:has(> .ds-btn) > .ds-chev { grid-column: 3; grid-row: 1 / span 2; } }`);
-    const [row] = rows(VARIANTS[0][1], 'cp-page--phone');
-    expect(gridProblems(r2, row)).toEqual(['cp-task-bar: нет места в сетке']);
-    const noLead = parseRules(`@media (max-width: 559px) {
-      .ds-card.cp-task:has(> .ds-btn) { display: grid; grid-template-areas: "art body" "art btn"; }
-      .cp-task:has(> .ds-btn) > .cp-task-bar { grid-area: lead; }
-      .cp-task:has(> .ds-btn) > .pp-row-art { grid-area: art; }
-      .cp-task:has(> .ds-btn) > .cp-task-body { grid-area: body; }
-      .cp-task:has(> .ds-btn) > .ds-btn { grid-area: btn; } }`);
-    expect(gridProblems(noLead, row)).toEqual(['cp-task-bar: области «lead» нет в шаблоне строки']);
+  it('контрольный образец: сетка r6 (кнопка под текстом) на строке с «Готово» — сверка краснеет', () => {
+    const r6 = parseRules(`@media (max-width: 559px) {
+      .ds-card.cp-task:has(> .cp-task-done) { display: grid; grid-template-areas: "art body" "art btn"; } }`);
+    const [row] = rows(VARIANTS[1][1], 'sk-list');
+    expect(r6.filter((r) => /display\s*:\s*grid/.test(r.body) && r.selectors.some((s) => row.matches(s)))).toHaveLength(1);
   });
 });
 

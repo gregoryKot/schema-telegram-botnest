@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { FlowEdge, FlowNode } from '../modeMapFlow';
 import { convertToWheel } from './wheelConvert';
-import { WHEEL_CENTER_Y, WHEEL_PX } from './needWheel';
+import { WHEEL_CENTER_Y, WHEEL_NODE_W } from './needWheel';
 
 // Старый круг-рамка с таблетками → колесо (владелец 2026-11-10: «круг непонятно для чего»).
 const measured = { width: 112, height: 36 };
@@ -32,7 +32,7 @@ describe('convertToWheel', () => {
   it('круг становится колесом с центром на месте центра круга; заметка таблетки — в «Сейчас»', () => {
     const w = out.nodes.find((n) => n.id === 'hub')!;
     expect(w.data.wheel).toEqual({ period: 'now', notes: { now: { attachment: 'Ищет близости' } } });
-    expect(w.position).toEqual({ x: 170 - WHEEL_PX / 2, y: 170 - WHEEL_CENTER_Y });
+    expect(w.position).toEqual({ x: 170 - WHEEL_NODE_W / 2, y: 170 - WHEEL_CENTER_Y });
   });
 
   it('линии к таблеткам переходят к сектору своей потребности, в обе стороны; подпись линии сохраняется', () => {

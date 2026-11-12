@@ -1,4 +1,4 @@
-// Инцидент 2026-09-16: GOOGLE_REDIRECT_URI/VK_REDIRECT_URI указывали на
+// Инцидент 2026-09-16: GOOGLE_REDIRECT_URI (вход через Google убран 2026-11) и VK_REDIRECT_URI указывали на
 // старый домен (schemalab.ru) — редирект колбэка гонял запрос по кругу с
 // хостовым мидлваром main.ts. Проверка конфигурации при старте ловит это до
 // первой жалобы пользователя.
@@ -15,20 +15,18 @@ describe('findMisconfiguredOauthRedirects', () => {
   it('канонический адрес возврата — нет проблем (контроль)', () => {
     expect(
       findMisconfiguredOauthRedirects({
-        GOOGLE_REDIRECT_URI:
-          'https://schemehappens.ru/api/auth/google/callback',
         VK_REDIRECT_URI: 'https://schemehappens.ru/api/auth/vk/callback',
         WEBAPP_URL: 'https://schemehappens.ru',
       }),
     ).toEqual([]);
   });
 
-  it('GOOGLE_REDIRECT_URI на legacy-хосте — находит проблему', () => {
+  it('VK_REDIRECT_URI на legacy-хосте — находит проблему', () => {
     const issues = findMisconfiguredOauthRedirects({
-      GOOGLE_REDIRECT_URI: 'https://schemalab.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemalab.ru/api/auth/vk/callback',
     });
     expect(issues).toEqual([
-      { envVar: 'GOOGLE_REDIRECT_URI', host: 'schemalab.ru' },
+      { envVar: 'VK_REDIRECT_URI', host: 'schemalab.ru' },
     ]);
   });
 
@@ -41,7 +39,7 @@ describe('findMisconfiguredOauthRedirects', () => {
     ]);
   });
 
-  it('WEBAPP_URL на legacy-хосте — находит проблему (от него строятся редиректы колбэков Google/VK)', () => {
+  it('WEBAPP_URL на legacy-хосте — находит проблему (от него строятся редиректы колбэка VK)', () => {
     const issues = findMisconfiguredOauthRedirects({
       WEBAPP_URL: 'https://www.schemalab.ru',
     });
@@ -53,14 +51,14 @@ describe('findMisconfiguredOauthRedirects', () => {
   it('алиас-домен (kotlarewski.gr) — не мисконфиг', () => {
     expect(
       findMisconfiguredOauthRedirects({
-        GOOGLE_REDIRECT_URI: 'https://kotlarewski.gr/api/auth/google/callback',
+        VK_REDIRECT_URI: 'https://kotlarewski.gr/api/auth/vk/callback',
       }),
     ).toEqual([]);
   });
 
   it('битый URL — не роняет проверку, просто не считается проблемой хоста', () => {
     expect(
-      findMisconfiguredOauthRedirects({ GOOGLE_REDIRECT_URI: 'не-url' }),
+      findMisconfiguredOauthRedirects({ VK_REDIRECT_URI: 'не-url' }),
     ).toEqual([]);
   });
 });
@@ -72,7 +70,7 @@ describe('buildOauthRedirectCapability', () => {
 
   it('мисконфиг — on: false, offReason непустой', () => {
     const cap = buildOauthRedirectCapability({
-      GOOGLE_REDIRECT_URI: 'https://schemalab.ru/api/auth/google/callback',
+      VK_REDIRECT_URI: 'https://schemalab.ru/api/auth/vk/callback',
     });
     expect(cap.on).toBe(false);
     expect(cap.id).toBe('oauthRedirectSane');

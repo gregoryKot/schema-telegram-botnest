@@ -9,6 +9,7 @@ import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { SecurityLogService } from '../src/auth/security-log.service';
 import { AuthService } from '../src/auth/auth.service';
 import { signAccessToken } from './e2e-support/jwt';
+import { emailLinkCode } from '../src/auth/email-link-code';
 
 const hashToken = (raw: string): string =>
   crypto.createHash('sha256').update(raw).digest('hex');
@@ -31,25 +32,6 @@ function buildTelegramInitData(id: number, botToken: string): string {
     .digest();
   params.set('hash', hmacHex(secretKey, checkString));
   return params.toString();
-}
-
-// Reimplements verifyClientData's HMAC (Login Widget, different secret) —
-// this route runs signInOrLinkOrMerge, which checks totp.isEnabled().
-function buildTelegramWidgetPayload(
-  id: number,
-  botToken: string,
-): Record<string, string> {
-  const fields: Record<string, string> = {
-    id: String(id),
-    first_name: 'E2E',
-    auth_date: String(Math.floor(Date.now() / 1000)),
-  };
-  const checkString = Object.keys(fields)
-    .sort()
-    .map((k) => `${k}=${fields[k]}`)
-    .join('\n');
-  const secretKey = crypto.createHash('sha256').update(botToken).digest();
-  return { ...fields, hash: hmacHex(secretKey, checkString) };
 }
 
 function extractSetCookie(
@@ -90,11 +72,24 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
       .post('/api/auth/telegram/webapp')
       .send({ initData: buildTelegramInitData(telegramId, botToken()) });
 
-  const loginViaWidget = (telegramId: number) =>
-    request(app.getHttpServer())
-      .post('/api/auth/telegram/widget')
+  // Вход на сайте, который спрашивает второй фактор: ссылка из письма
+  // (входа виджетом Telegram на сайте нет с 2026-11).
+  const loginViaEmailLink = async (userId: bigint, raw: string) => {
+    await prisma.emailToken.create({
+      data: {
+        id: crypto.randomUUID(),
+        userId,
+        tokenHash: hashToken(raw),
+        email: 'e2e-2fa@example.com',
+        purpose: 'login',
+        expiresAt: new Date(Date.now() + 30 * 60_000),
+      },
+    });
+    return request(app.getHttpServer())
+      .post('/api/auth/email/consume')
       .set('x-requested-with', 'XMLHttpRequest')
-      .send(buildTelegramWidgetPayload(telegramId, botToken()));
+      .send({ token: raw });
+  };
 
   // Seeds a WebSession row like AuthService.issueTokens would (skips the throttle).
   function seedSession(
@@ -264,8 +259,16 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
 
   describe('2FA challenge path', () => {
     it('enabling TOTP gates login behind a challenge; wrong code rejected, right code issues tokens', async () => {
-      const login = await loginViaWidget(910_401);
-      const accessToken = login.body.accessToken;
+      // Сессия без похода в троттлёный telegram/webapp (шапка файла).
+      await prisma.user.upsert({
+        where: { id: 910_401n },
+        update: {},
+        create: { id: 910_401n, firstName: 'E2E' },
+      });
+      const accessToken = signAccessToken(
+        910_401n,
+        process.env.JWT_SECRET as string,
+      );
       const auth = `Bearer ${accessToken}`;
       const setup = await post('/api/auth/2fa/setup').set(
         'Authorization',
@@ -292,11 +295,11 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
         .send({ code: stepCode(-1) });
       expect(enable.status).toBe(200);
       expect(enable.body.recoveryCodes).toHaveLength(10);
-      // A fresh login (same widget route) now returns a challenge, not tokens.
-      const login2 = await loginViaWidget(910_401);
+      // A fresh login on the site (email link) now returns a challenge, not tokens.
+      const login2 = await loginViaEmailLink(910_401n, 'e2e-2fa-login-token');
       expect(login2.status).toBe(200);
-      expect(login2.body.totp).toBe(true);
       expect(login2.body.accessToken).toBeUndefined();
+      expect(extractSetCookie(login2, 'refresh_token')).toBeUndefined();
       const challengeToken = login2.body.challengeToken;
       const wrongCode = await post('/api/auth/2fa/challenge').send({
         challengeToken,
@@ -436,26 +439,11 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
-  describe('Google One Tap nonce (B-16)', () => {
-    it('GET nonce → кука gsi_nonce (httpOnly) + хеш секрета в теле, без кэша', async () => {
-      const res = await request(app.getHttpServer()).get(
-        '/api/auth/google/one-tap/nonce',
-      );
-      expect(res.status).toBe(200);
-      const cookie = extractSetCookie(res, 'gsi_nonce')!;
-      expect(cookie).toMatch(/HttpOnly/i);
-      expect(cookie).toMatch(/Path=\/api\/auth/);
-      const secret = extractCookieValue(res, 'gsi_nonce')!;
-      expect(res.body.nonce).toBe(hashToken(secret));
-      expect(res.headers['cache-control']).toContain('no-store');
-    });
-  });
-
-  // Рубильник Google/VK (2026-11): в e2e-окружении GOOGLE_*/VK_* не заданы —
+  // Рубильник VK (2026-11): в e2e-окружении VK_* не заданы —
   // ровно состояние «провайдер выключен». Раньше старт падал 500 на
   // getOrThrow; теперь — 302 на экран ошибки входа с понятной причиной.
   describe('старт OAuth без конфигурации провайдера', () => {
-    it.each(['google', 'vk'])(
+    it.each(['vk'])(
       'GET /api/auth/%s → 302 на /auth/error?reason=<id>_disabled, без куки state',
       async (provider) => {
         const res = await request(app.getHttpServer())
@@ -468,6 +456,93 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
         expect(extractSetCookie(res, 'oauth_state')).toBeFalsy();
       },
     );
+  });
+
+  // Вход через Google убран (2026-11, запрос РКН №08-1063539): ручек нет.
+  describe('входа через Google нет', () => {
+    it.each([
+      ['get', '/api/auth/google'],
+      ['get', '/api/auth/google/callback?code=x&state=y'],
+      ['get', '/api/auth/google/one-tap/nonce'],
+      ['post', '/api/auth/google/one-tap'],
+    ] as const)('%s %s → 404', async (method, path) => {
+      const res = await request(app.getHttpServer())
+        [method](path)
+        .set('Host', 'schemehappens.ru');
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // Вход через Telegram на сайте убран (2026-11, тот же запрос РКН): ни
+  // виджета, ни редиректа на oauth.telegram.org, ни привязки по его подписи.
+  // Внутри Telegram вход по initData (telegram/webapp) работает — тесты выше.
+  describe('входа через Telegram на сайте нет', () => {
+    it.each([
+      ['post', '/api/auth/telegram/widget'],
+      ['get', '/api/auth/telegram/redirect'],
+      ['post', '/api/auth/link/telegram'],
+    ] as const)('%s %s → 404', async (method, path) => {
+      const res = await request(app.getHttpServer())
+        [method](path)
+        .set('Host', 'schemehappens.ru')
+        .set('x-requested-with', 'XMLHttpRequest');
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // Привязка почты кодом из письма — путь для приложения внутри Telegram/MAX,
+  // где ссылка из письма открывается в другом браузере (email-link-code.ts).
+  describe('email/link-code: ownership', () => {
+    const OWNER = 910_601n;
+    const OTHER = 910_602n;
+    const RAW = 'e2e-link-code-token';
+    const bearer = (id: bigint) =>
+      `Bearer ${signAccessToken(id, process.env.JWT_SECRET as string)}`;
+    const confirm = (code: string, auth?: string) => {
+      const req = request(app.getHttpServer())
+        .post('/api/auth/email/link-code')
+        .set('x-requested-with', 'XMLHttpRequest');
+      return (auth ? req.set('Authorization', auth) : req).send({ code });
+    };
+    const linked = () =>
+      prisma.authProvider._rows.filter(
+        (r: any) =>
+          r.provider === 'email' && r.providerId === 'e2e-code@example.com',
+      );
+
+    it('без входа → 401; чужая сессия с верным кодом → 400; своя → привязано', async () => {
+      for (const id of [OWNER, OTHER]) {
+        await prisma.user.upsert({
+          where: { id },
+          update: {},
+          create: { id, firstName: 'E2E' },
+        });
+      }
+      await prisma.emailToken.create({
+        data: {
+          id: crypto.randomUUID(),
+          userId: OWNER,
+          tokenHash: hashToken(RAW),
+          email: 'e2e-code@example.com',
+          purpose: 'link_email_auth',
+          expiresAt: new Date(Date.now() + 30 * 60_000),
+        },
+      });
+      const code = emailLinkCode(hashToken(RAW));
+
+      expect((await confirm(code)).status).toBe(401);
+      expect((await confirm(code, bearer(OTHER))).status).toBe(400);
+      expect(linked()).toHaveLength(0);
+
+      const ok = await confirm(code, bearer(OWNER));
+      expect(ok.status).toBe(200);
+      expect(ok.body).toEqual({ linked: true });
+      // Сессию привязка не выдаёт — человек уже вошёл.
+      expect(extractSetCookie(ok, 'refresh_token')).toBeUndefined();
+      expect(linked().map((r: any) => r.userId)).toEqual([OWNER]);
+
+      expect((await confirm(code, bearer(OWNER))).status).toBe(400);
+    });
   });
 
   // Экран /account/merge берёт имя и сводку здесь, а не из query редиректа.

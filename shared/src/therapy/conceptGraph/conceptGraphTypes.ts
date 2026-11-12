@@ -1,6 +1,7 @@
 // Типы модели графической концептуализации (см. conceptGraphModel.ts).
 import type { ConceptModeLink, ConceptSchemaLink } from '../../apiTypes';
 import type { ConceptLane, CopingKind } from './modeLanes';
+import type { ConceptNeedLink } from './needLinks';
 
 export interface ConceptGraphSource {
   modeIds: string[];
@@ -8,6 +9,7 @@ export interface ConceptGraphSource {
   modeLinks: ConceptModeLink[];
   schemaLinks: ConceptSchemaLink[];
   modeTransitions?: string | null;
+  needLinks?: ConceptNeedLink[]; // колесо потребностей; у клиента его нет
 }
 
 export interface GraphSchemaChip {
@@ -16,10 +18,7 @@ export interface GraphSchemaChip {
   color: string;
 }
 
-export interface GraphNeedChip {
-  id: string;
-  name: string;
-}
+export type GraphNeedChip = Pick<GraphSchemaChip, 'id' | 'name'>;
 
 export interface GraphModeCard {
   modeId: string;
@@ -56,4 +55,5 @@ export interface ConceptGraphModel {
   sequence: string;
   gaps: { id: GapId; text: string }[];
   modeCount: number;
+  needLinks?: ConceptNeedLink[]; // проценты на таблетках круга (diagramNeedPct)
 }

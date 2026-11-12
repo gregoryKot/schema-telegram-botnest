@@ -24,15 +24,8 @@ const SET_BY_THIRD_PARTY: Record<
   string,
   { reason: string; stillTrue: () => boolean }
 > = {
-  g_state: {
-    reason:
-      'ставит скрипт Google на странице входа (окно «Продолжить как…», #863); ' +
-      'грузит его webapp/src/hooks/gsiScript.ts. Скрипт убран — убери и строку',
-    stillTrue: () =>
-      read('webapp/src/hooks/gsiScript.ts').includes(
-        'https://accounts.google.com/gsi/client',
-      ),
-  },
+  // Пусто с 2026-11: единственной записью была g_state — кука скрипта Google
+  // на странице входа; вход через Google убран, скрипт больше не грузится.
 };
 
 function read(rel: string): string {
@@ -71,8 +64,6 @@ describe('глава 10 политики ↔ куки бэкенда', () => {
       'refresh_token',
       'refresh_cross',
       'oauth_state',
-      'gsi_nonce',
-      'tg_link_user',
       'link_token',
     ]) {
       expect(code).toContain(n);
