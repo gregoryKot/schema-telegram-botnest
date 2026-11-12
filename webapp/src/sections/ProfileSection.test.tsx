@@ -113,10 +113,17 @@ describe('ProfileSection — чистый аккаунт (без хардкод-
     expect(screen.queryByText('Прогресс')).toBeNull();
     expect(document.querySelector('.cpf-streak-num')).toBeNull();
     expect(screen.queryByText('Достижения')).toBeNull();
-    expect(screen.queryByText('Мой путь', { selector: 'h2' })).toBeNull();
     expect(screen.getAllByRole('button', { name: 'Пройти тест' })).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'Пройти тест' }));
     expect(onTakeTest).toHaveBeenCalledTimes(1);
+  });
+
+  it('только практики и дыхание (профиль их не считает): под героем есть плитка «Мой путь», она открывает путь', async () => {
+    await act(async () => { renderSection(); });
+    expect(document.querySelector('.cpf-start')).not.toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Мои тёплые слова' })).toBeNull();
+    fireEvent.click(screen.getByText('Мой путь', { selector: 'h2' }));
+    await screen.findByTestId('journey-sheet');
   });
 
   it('серия прервалась — настоящий ноль серии, а не прочерк и не выдуманная цифра', async () => {

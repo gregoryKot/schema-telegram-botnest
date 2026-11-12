@@ -85,6 +85,16 @@ describe('ProfileSection × «Настроить экран»', () => {
     expect(screen.getByText('Достижения', { selector: 'h2' })).toBeTruthy();
   });
 
+  it('пустой профиль со скрытыми «Мой портрет» и «Мой путь» не остаётся пустым: герой начала на месте', async () => {
+    mockApi.getStreak.mockResolvedValue({ currentStreak: 0, longestStreak: 0, totalDays: 0, todayDone: false, weekDots: [] });
+    mockApi.getAchievements.mockResolvedValue([]);
+    mockApi.history.mockResolvedValue([]);
+    localStorage.setItem('screen_hidden_profile', '["portrait","journey"]');
+    await renderProfile();
+    expect(document.querySelector('.cpf-start')).not.toBeNull();
+    expect(screen.queryByText('Мой путь', { selector: 'h2' })).toBeNull();
+  });
+
   // Витрина (путь, портрет, тёплые слова) и «ритм дней» (серия, теплокарта) — группы блоков: место группы
   // на телефоне — место её первого видимого блока, плитки внутри витрины — в порядке листа.
   const tiles = () => [...document.querySelectorAll('.cpf-shelf-item')].map((el) => el.className.replace(/.*cpf-shelf-item--/, ''));

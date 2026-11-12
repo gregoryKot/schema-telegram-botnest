@@ -21,12 +21,14 @@ interface Props {
   blocks: SiteScreenBlocks;
   onOpenJourney: () => void;
   onTakeTest?: () => void;
+  /** Какие плитки вообще может показать экран (пустой профиль — только путь). */
+  allow?: (id: ShelfId) => boolean;
 }
 
-export function ProfileShelf({ aboutMe, blocks, onOpenJourney, onTakeTest }: Props) {
+export function ProfileShelf({ aboutMe, blocks, onOpenJourney, onTakeTest, allow = () => true }: Props) {
   const tr = useTr();
   const [sheet, setSheet] = useState(false);
-  const ids = visibleInOrder(SHELF_IDS, blocks, (id) => id !== 'warm_words' || aboutMe.warmWordsItems.length > 0);
+  const ids = visibleInOrder(SHELF_IDS, blocks, (id) => allow(id) && (id !== 'warm_words' || aboutMe.warmWordsItems.length > 0));
   const tile = (id: ShelfId) => {
     if (id === 'journey') {
       return (

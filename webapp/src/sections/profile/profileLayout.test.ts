@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groupOrder, isFreshProfile, SHELF_IDS, visibleInOrder } from './profileLayout';
+import { freshShelf, freshStartForced, groupOrder, isFreshProfile, SHELF_IDS, visibleInOrder } from './profileLayout';
 import type { ScreenBlockId } from '../../../../shared/src/screens/screenBlocks';
 
 const ZERO = { totalDays: 0, diaryCount: 0, ysqCount: 0, patterns: 0, warmWords: 0, earnedAchievements: 0 };
@@ -11,6 +11,18 @@ describe('isFreshProfile', () => {
   });
   it.each(Object.keys(ZERO))('одно ненулевое «%s» — профиль уже не пустой', (key) => {
     expect(isFreshProfile({ ...ZERO, [key]: 1 })).toBe(false);
+  });
+});
+
+describe('пустой профиль', () => {
+  it('из витрины остаётся только «Мой путь»', () => {
+    expect(SHELF_IDS.filter(freshShelf)).toEqual(['journey']);
+  });
+  it('герой начала встаёт без блока, только когда скрыты и портрет, и путь', () => {
+    const hidden = (ids: ScreenBlockId[]) => ({ isHidden: (id: ScreenBlockId) => ids.includes(id) });
+    expect(freshStartForced(hidden(['portrait', 'journey']))).toBe(true);
+    expect(freshStartForced(hidden(['portrait']))).toBe(false);
+    expect(freshStartForced(hidden([]))).toBe(false);
   });
 });
 

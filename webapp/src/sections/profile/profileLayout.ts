@@ -27,6 +27,16 @@ interface Order {
   isHidden: (id: ScreenBlockId) => boolean;
 }
 
+/** Плитки витрины пустого профиля: только «Мой путь» — шаги практик, дыхания и письма профиль не
+ *  считает, а путь их показывает, поэтому плитка пути стоит и под героем начала. */
+export const freshShelf = (id: ShelfId): boolean => id === 'journey';
+
+/** Пустой профиль со скрытыми и «Мой портрет», и «Мой путь»: герой начала встаёт без блока
+ *  «Настроить экран», иначе экран остался бы пустым. */
+export function freshStartForced(blocks: Pick<Order, 'isHidden'>): boolean {
+  return blocks.isHidden('portrait') && blocks.isHidden('journey');
+}
+
 /** Видимые блоки группы в порядке «Настроить экран»; `present` — у блока есть что показать. */
 export function visibleInOrder<T extends ScreenBlockId>(
   ids: readonly T[], blocks: Order, present: (id: T) => boolean = () => true,

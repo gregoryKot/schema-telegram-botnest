@@ -25,7 +25,7 @@ import { BestDayDialog } from './profile/BestDayDialog';
 import { ACHIEVEMENT_META } from './profile/profileMeta';
 import type { InsightsData, StreakData } from './profile/profileMeta';
 import { buildLevelMap } from './profile/profileModel';
-import { isFreshProfile } from './profile/profileLayout';
+import { freshShelf, freshStartForced, isFreshProfile } from './profile/profileLayout';
 import { badgeLook } from './profile/achievementBadgeLook';
 import { useAboutMe } from '../../../shared/src/portrait/useAboutMe';
 import { hasPortraitData } from '../../../shared/src/portrait/portraitData';
@@ -103,7 +103,14 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
           title={tr('Не удалось загрузить часть данных. Обнови страницу.', 'Не удалось загрузить часть данных. Обновите страницу.')} />
       )}
 
-      {shown && fresh && <ScreenBlock id="portrait" blocks={blocks} className="cpf-blk"><ProfileStart onTakeTest={onTakeTest} /></ScreenBlock>}
+      {shown && fresh && (
+        <>
+          {freshStartForced(blocks)
+            ? <div className="cpf-blk"><ProfileStart onTakeTest={onTakeTest} /></div>
+            : <ScreenBlock id="portrait" blocks={blocks} className="cpf-blk"><ProfileStart onTakeTest={onTakeTest} /></ScreenBlock>}
+          <ProfileShelf aboutMe={aboutMe} blocks={blocks} onOpenJourney={() => setJourneyOpen(true)} allow={freshShelf} />
+        </>
+      )}
 
       {shown && !fresh && (
         <>
