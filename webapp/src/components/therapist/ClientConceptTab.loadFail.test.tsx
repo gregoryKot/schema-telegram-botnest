@@ -54,7 +54,7 @@ function Harness() {
   return <ClientConceptTab detail={detail} />;
 }
 
-const FAILED = /Концептуализация не загрузилась/;
+const FAILED = /Концептуализация\sне\sзагрузилась/; // PaperAlert клеит короткие слова неразрывным пробелом
 
 beforeEach(() => {
   vi.clearAllMocks();

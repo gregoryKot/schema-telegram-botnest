@@ -98,10 +98,11 @@ describe('один токен разделителя', () => {
 });
 
 describe('цепочка режимов концептуализации', () => {
-  it('тело карточки узла объявлено для .tcp-node, а не только для первого', () => {
+  it('тело карточки узла объявлено для .tcp-node, а не только для первого; узел — лист бумаги группы без контура (b33)', () => {
     const css = cssText('therapist-concept.css');
-    const body = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((m) => m[1].trim() === '.tcp-node')?.[2] ?? '';
-    expect(body).toMatch(/border:/);
+    const body = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((m) => m[1].trim() === '.pp-paper.tcp-node')?.[2] ?? '';
+    expect(body).toMatch(/border-radius:/);
+    expect(body).not.toMatch(/border:/);
     expect(body).toMatch(/padding:/);
     expect(css).not.toMatch(/:first-child\s+\.tcp-node\s*\{[^}]*(border|padding|background)/);
   });

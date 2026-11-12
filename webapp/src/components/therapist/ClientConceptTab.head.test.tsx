@@ -246,14 +246,14 @@ describe('ширина под схему', () => {
     expect(root().classList.contains('tcp--graph')).toBe(true);
   });
 
-  it('провайдер сайта: сегмент ds-seg, активный вид ds-seg-btn is-active, сводка ds-card', async () => {
+  it('провайдер сайта: сегмент ds-seg, активный вид ds-seg-btn is-active, сводка — лист бумаги', async () => {
     await openTab();
     const group = screen.getByRole('group', { name: 'Вид концептуализации' });
     expect(group.classList.contains('ds-seg')).toBe(true);
     const active = within(group).getByRole('button', { name: 'Схема' });
     expect(active.classList.contains('ds-seg-btn')).toBe(true);
     expect(active.classList.contains('is-active')).toBe(true);
-    expect(screen.getByRole('region', { name: 'Коротко' }).classList.contains('ds-card')).toBe(true);
+    expect(screen.getByRole('region', { name: 'Коротко' }).className).toBe('pp-paper tcp-digest');
   });
 
   it('над схемой нет панели действий: кнопки только в листе «На весь экран»', async () => {

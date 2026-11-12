@@ -1,32 +1,30 @@
 import { MODE_GROUPS, SCHEMA_DOMAINS } from '../../../schemaTherapyData';
-import { DOMAIN_HUE, MODE_GROUP_HUE, hueStyle } from '../../../lib/tone';
-import { ConceptToggleChip } from '../../../../../shared/src/therapy/conceptGraph/ConceptToggleChip';
+import { domainLook, modeLook } from '../../../../../shared/src/theme/entityLook';
+import { ConceptTag } from '../../../../../shared/src/therapy/conceptGraph/conceptPaper';
 
-// Спокойный вид карточек «Поля»: только выбранное, без кнопок-переключателей.
-// Схемы — tint домена (как в полном выборе), режимы — tint группы.
+// Спокойный вид карточек «Поля»: только выбранное, без кнопок-переключателей — белые чипы со
+// знаком домена (схема) или группы режима, как в сводке «Коротко». Ничего не выбрано — ничего нет.
 export function SelectedSchemas({ ids }: { ids: string[] }) {
+  if (ids.length === 0) return null;
   return (
     <div className="tcp-chips">
       {SCHEMA_DOMAINS.flatMap((domain) =>
         domain.schemas
           .filter((s) => ids.includes(s.id))
-          .map((s) => (
-            <span key={s.id} className="ds-chip tone-tint" style={hueStyle(DOMAIN_HUE[domain.id])}>
-              {s.name}
-            </span>
-          )),
+          .map((s) => <ConceptTag key={s.id} sign={domainLook(domain.id)?.sign}>{s.name}</ConceptTag>),
       )}
     </div>
   );
 }
 
 export function SelectedModes({ ids }: { ids: string[] }) {
+  if (ids.length === 0) return null;
   return (
     <div className="tcp-chips">
       {MODE_GROUPS.flatMap((group) =>
         group.items
           .filter((m) => ids.includes(m.id))
-          .map((m) => <ConceptToggleChip key={m.id} readOnly active label={m.name} color={group.color} hue={MODE_GROUP_HUE[group.id]} />),
+          .map((m) => <ConceptTag key={m.id} sign={modeLook(m.id, group.id).sign}>{m.name}</ConceptTag>),
       )}
     </div>
   );

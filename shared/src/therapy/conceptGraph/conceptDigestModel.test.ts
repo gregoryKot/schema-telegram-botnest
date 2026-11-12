@@ -183,8 +183,12 @@ describe('buildConceptDigest: плашки', () => {
     const rows = digest(RICH, 'Снизить тревогу');
     expect(row(rows, 'schemas').kind).toBe('chips');
     expect(row(rows, 'schemas').items).toEqual([
-      { text: 'Покинутость / Нестабильность', hue: 28 },
-      { text: 'Неуспешность', hue: 70 },
+      {
+        text: 'Покинутость / Нестабильность',
+        hue: 28,
+        sign: 'domain_rejection',
+      },
+      { text: 'Неуспешность', hue: 70, sign: 'domain_autonomy' },
     ]);
     const modes = row(rows, 'modes').items;
     expect(modes.map((i) => i.text)).toEqual([

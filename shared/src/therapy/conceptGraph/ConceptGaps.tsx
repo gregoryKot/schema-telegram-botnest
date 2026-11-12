@@ -1,4 +1,3 @@
-import { colorMix } from '../../utils/colorMix';
 import type { ConceptGraphModel } from './conceptGraphTypes';
 
 /** Мягкие подсказки «чего не хватает» — не ошибки, а повод для разговора. */
@@ -21,8 +20,7 @@ export function ConceptGaps({ gaps }: { gaps: ConceptGraphModel['gaps'] }) {
             borderRadius: 'var(--r-12)',
             fontSize: 13,
             lineHeight: 1.5,
-            background: colorMix('var(--accent)', 8),
-            border: `1px solid ${colorMix('var(--accent)', 24)}`,
+            background: 'var(--paper-sunk)',
           }}
         >
           {g.text}

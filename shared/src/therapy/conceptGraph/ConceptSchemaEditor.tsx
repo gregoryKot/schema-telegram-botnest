@@ -1,22 +1,13 @@
-import { useEffect, useRef } from 'react';
 import type { ConceptSchemaLink } from '../../apiTypes';
 import { CONCEPT_SCHEMA_TEXT_MAX } from '../../limits/textLimits';
-import { colorMix } from '../../utils/colorMix';
+import { getSchemaById } from '../../schemaTherapy/schemaTherapyData';
+import { domainLook } from '../../theme/entityLook';
 import type { GraphSchemaCard } from './conceptGraphTypes';
 import { useSchemaGuide, type ConceptGuideActions } from './conceptGuide';
 import { ConceptGuideHint } from './ConceptGuideHint';
 import { ConceptNeedField } from './ConceptNeedField';
 import { ConceptTextField } from './ConceptTextField';
-import { boxStyle, hintStyle } from './graphStyles';
-
-const button = {
-  minHeight: 44,
-  padding: '0 14px',
-  borderRadius: 'var(--r-12)',
-  fontSize: 13,
-  fontWeight: 600,
-  cursor: 'pointer',
-} as const;
+import { ConceptEditorShell } from './ConceptEditorShell';
 
 /**
  * Редактор одной схемы: во что человек верит (виден на схеме случая), как
@@ -45,101 +36,45 @@ export function ConceptSchemaEditor({
   const set = (patch: Partial<ConceptSchemaLink>) =>
     onChangeLink({ ...link, ...patch });
   const method = useSchemaGuide(card.id);
-  // Редактор стоит под диаграммой, а схема может быть высоко над ним.
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    ref.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
-  }, []);
   return (
-    <section
-      ref={ref}
-      data-export-skip
-      aria-label={`Схема ${card.name}: редактор`}
-      style={{
-        ...boxStyle,
-        background: colorMix(card.color, 6),
-        boxShadow: `inset 4px 0 0 ${card.color}`,
-      }}
+    <ConceptEditorShell
+      look={domainLook(getSchemaById(card.id)?.domainId ?? '')}
+      label={`Схема ${card.name}: редактор`}
+      title={`Схема ${card.name}`}
+      sub={card.domain}
+      onClose={onClose}
+      onRemove={() => onRemove(card.id)}
+      removeLabel="Убрать схему из концептуализации"
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 'var(--space-8)',
-          marginBottom: 'var(--space-12)',
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>Схема {card.name}</div>
-          <div style={hintStyle}>{card.domain}</div>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            ...button,
-            border: 'none',
-            background: 'rgba(var(--fg-rgb),0.07)',
-            color: 'var(--text)',
-          }}
-        >
-          Готово
-        </button>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-16)',
-        }}
-      >
-        <ConceptTextField
-          label="Во что человек верит"
-          placeholder="Своими словами клиента: «Я верю, что мои переживания не имеют смысла…»"
-          hint="Этот текст виден на схеме"
-          max={CONCEPT_SCHEMA_TEXT_MAX}
-          value={link.belief}
-          onChange={(belief) => set({ belief })}
+      <ConceptTextField
+        label="Во что человек верит"
+        placeholder="Своими словами клиента: «Я верю, что мои переживания не имеют смысла…»"
+        hint="Этот текст виден на схеме"
+        max={CONCEPT_SCHEMA_TEXT_MAX}
+        value={link.belief}
+        onChange={(belief) => set({ belief })}
+      />
+      <ConceptTextField
+        label="Как нарушалась потребность"
+        placeholder="Детский опыт: что происходило, кто был рядом"
+        hint="Этот текст виден на схеме овалом над схемой"
+        max={CONCEPT_SCHEMA_TEXT_MAX}
+        value={link.origin}
+        onChange={(origin) => set({ origin })}
+      />
+      <ConceptNeedField
+        label="Какие потребности блокирует"
+        needIds={link.needIds}
+        onChange={(needIds) => set({ needIds })}
+      />
+      {method && (
+        <ConceptGuideHint
+          view={method}
+          from={{ kind: 'schema', id: card.id }}
+          actions={guide}
+          marks={link.done}
         />
-        <ConceptTextField
-          label="Как нарушалась потребность"
-          placeholder="Детский опыт: что происходило, кто был рядом"
-          hint="Этот текст виден на схеме овалом над схемой"
-          max={CONCEPT_SCHEMA_TEXT_MAX}
-          value={link.origin}
-          onChange={(origin) => set({ origin })}
-        />
-        <ConceptNeedField
-          label="Какие потребности блокирует"
-          needIds={link.needIds}
-          onChange={(needIds) => set({ needIds })}
-        />
-        {method && (
-          <ConceptGuideHint
-            view={method}
-            from={{ kind: 'schema', id: card.id }}
-            actions={guide}
-            marks={link.done}
-          />
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            onRemove(card.id);
-            onClose();
-          }}
-          style={{
-            ...button,
-            border: `1px solid ${colorMix('var(--accent-red)', 40)}`,
-            background: 'transparent',
-            color: 'var(--accent-red)',
-            alignSelf: 'flex-start',
-          }}
-        >
-          Убрать схему из концептуализации
-        </button>
-      </div>
-    </section>
+      )}
+    </ConceptEditorShell>
   );
 }

@@ -9,6 +9,8 @@ import { ConceptDiagram } from './diagram/ConceptDiagram';
 import { ConceptAddPanel } from './ConceptAddPanel';
 import type { AddSection } from './diagram/diagramTypes';
 import { ConceptGraphIntro } from './ConceptGraphIntro';
+import { ConceptGraphEmpty } from './ConceptGraphEmpty';
+import { openCards, type Open } from './conceptGraphOpen';
 import { ConceptGraphFooter } from './ConceptGraphFooter';
 import { ConceptModeEditor } from './ConceptModeEditor';
 import { ConceptSchemaEditor } from './ConceptSchemaEditor';
@@ -16,14 +18,11 @@ import { useTr } from '../../utils/addressForm';
 import type { ConceptGuideActions } from './conceptGuide';
 import { graphColumnStyle } from './graphStyles';
 
-type Open = { kind: 'mode' | 'schema'; id: string } | null;
-
 /**
  * Схема случая: диаграмма с кругом базовых потребностей в центре (схемы с
  * убеждением и опытом слева, режимы ещё левее, Здоровый Взрослый справа), под
- * ней редактор открытой фигуры, порядок смены режимов и мягкие подсказки
- * «чего не хватает». Пустая секция — часть картины, а не пробел. `guide` —
- * листы и задания подсказок терапевту (#995); без него плашка — только текст.
+ * ней редактор открытой фигуры, порядок смены режимов и подсказки «чего не хватает».
+ * Пустая схема — сцена и «Отметить схемы». `guide` — подсказки терапевту (#995).
  */
 export function ConceptGraph({
   source,
@@ -49,23 +48,14 @@ export function ConceptGraph({
   const [add, setAdd] = useState<AddSection | null>(null);
   const { markLinked, markSchemaLinked } = useConceptGraphTracking(track);
   const graph = buildConceptGraph(source, tr);
+  const empty = graph.modeCount === 0 && graph.schemas.length === 0;
 
-  const modeCard =
-    open?.kind === 'mode'
-      ? Object.values(graph.lanes)
-          .flat()
-          .find((c) => c.modeId === open.id)
-      : undefined;
-  const schemaCard =
-    open?.kind === 'schema'
-      ? graph.schemas.find((s) => s.id === open.id)
-      : undefined;
+  const { modeCard, schemaCard } = openCards(graph, open);
   const toggleOpen = (kind: 'mode' | 'schema', id: string) =>
     setOpen((cur) =>
       cur?.kind === kind && cur.id === id ? null : { kind, id },
     );
-  // Режим, снятый с карты, не должен «воскреснуть» открытым редактором при
-  // повторном добавлении.
+  // Снятый с карты режим не «воскресает» открытым редактором при повторном добавлении.
   const toggleMode = (modeId: string) => {
     if (open?.kind === 'mode' && open.id === modeId) setOpen(null);
     onToggleMode(modeId);
@@ -77,29 +67,35 @@ export function ConceptGraph({
 
   return (
     <div style={graphColumnStyle}>
-      <ConceptGraphIntro graph={graph} />
-      <ConceptDiagram
-        graph={graph}
-        edit={{
-          openId:
-            open && (modeCard || schemaCard) ? `${open.kind}:${open.id}` : null,
-          addOpen: add,
-          panel: add && (
-            <ConceptAddPanel
-              section={add}
-              modeIds={source.modeIds}
-              schemaIds={graph.schemas.map((s) => s.id)}
-              onToggleMode={toggleMode}
-              onToggleSchema={toggleSchema}
-              onClose={() => setAdd(null)}
-            />
-          ),
-          onOpenMode: (id) => toggleOpen('mode', id),
-          onOpenSchema: (id) => toggleOpen('schema', id),
-          onAdd: (section) =>
-            setAdd((cur) => (cur === section ? null : section)),
-        }}
-      />
+      <ConceptGraphIntro />
+      {empty && !add ? (
+        <ConceptGraphEmpty onStart={() => setAdd('schemas')} />
+      ) : (
+        <ConceptDiagram
+          graph={graph}
+          edit={{
+            openId:
+              open && (modeCard || schemaCard)
+                ? `${open.kind}:${open.id}`
+                : null,
+            addOpen: add,
+            panel: add && (
+              <ConceptAddPanel
+                section={add}
+                modeIds={source.modeIds}
+                schemaIds={graph.schemas.map((s) => s.id)}
+                onToggleMode={toggleMode}
+                onToggleSchema={toggleSchema}
+                onClose={() => setAdd(null)}
+              />
+            ),
+            onOpenMode: (id) => toggleOpen('mode', id),
+            onOpenSchema: (id) => toggleOpen('schema', id),
+            onAdd: (section) =>
+              setAdd((cur) => (cur === section ? null : section)),
+          }}
+        />
+      )}
       {modeCard && (
         <ConceptModeEditor
           key={modeCard.modeId}

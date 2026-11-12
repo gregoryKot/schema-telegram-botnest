@@ -1,18 +1,17 @@
 // Сводка «Коротко» концептуализации (#902): строки «что с клиентом» из модели
-// схемы случая — первое, что видно на вкладке сайта, до фигур схемы и карточек
-// полей. Чистая функция без React: порядок строк фиксирован (схемы → режимы →
-// цикл → потребности → цель), пустая строка опускается, пустая модель даёт [] —
-// тогда карточки нет вовсе. Строка несёт и плашки (`items`: схема в тоне
-// домена, режим в тоне группы, потребность в тоне домена), и склейку `text`
-// для экспорта и тестов: до правки 2026-11 строка была одним длинным текстом
-// через « · », и терапевт её не читал. Те же билдеры плашек берёт экран
-// «Главное» (conceptBrief.ts).
+// схемы случая — первое, что видно на вкладке сайта. Чистая функция без React:
+// порядок строк фиксирован (схемы → режимы → цикл → потребности → цель), пустая
+// строка опускается, пустая модель даёт [] — карточки нет. Строка несёт плашки
+// (`items`: у схемы знак домена, у режима — группы, у потребности — свой) и
+// склейку `text` для экспорта и тестов. Те же билдеры берёт экран «Главное».
 import { NEED_ORDER, getNeedData } from '../../needs/needData';
 import {
   getModeById,
   getSchemaById,
 } from '../../schemaTherapy/schemaTherapyData';
-import { DOMAIN_HUE, MODE_GROUP_HUE, NEED_HUE } from '../../theme/entityHue';
+import { MODE_GROUP_HUE } from '../../theme/entityHue';
+import { domainLook, modeLook, needLook } from '../../theme/entityLook';
+import type { SignKey } from '../../theme/entityLook';
 import type { ConceptGraphModel, GraphModeCard } from './conceptGraphTypes';
 
 export type DigestKey = 'schemas' | 'modes' | 'cycle' | 'needs' | 'goal';
@@ -21,6 +20,7 @@ export type DigestKey = 'schemas' | 'modes' | 'cycle' | 'needs' | 'goal';
 export interface DigestItem {
   text: string;
   hue?: number;
+  sign?: SignKey;
   plain?: 'arrow' | 'caption';
 }
 
@@ -78,7 +78,7 @@ export const modeHue = (modeId: string): number | undefined =>
 export function schemaItems({ schemas }: ConceptGraphModel): DigestItem[] {
   return schemas.map((s) => ({
     text: s.name,
-    hue: DOMAIN_HUE[getSchemaById(s.id)?.domainId ?? ''],
+    ...domainLook(getSchemaById(s.id)?.domainId ?? ''),
   }));
 }
 
@@ -86,7 +86,7 @@ export function schemaItems({ schemas }: ConceptGraphModel): DigestItem[] {
 export function modeItems({ lanes }: ConceptGraphModel): DigestItem[] {
   const chip = (m: GraphModeCard): DigestItem => ({
     text: modeName(m),
-    hue: modeHue(m.modeId),
+    ...modeLook(m.modeId, getModeById(m.modeId)?.groupId),
   });
   const main = [...lanes.child, ...lanes.critic, ...lanes.coping].map(chip);
   const healthy = lanes.healthy.map(chip);
@@ -100,7 +100,7 @@ export function needItems({ schemas, lanes }: ConceptGraphModel): DigestItem[] {
   const chips = (ids: Set<string>): DigestItem[] =>
     NEED_ORDER.filter((id) => ids.has(id)).map((id) => ({
       text: data[id].name,
-      hue: NEED_HUE[id],
+      ...needLook(id),
     }));
   const caption = (text: string): DigestItem => ({ text, plain: 'caption' });
   const blocked = chips(new Set(schemas.flatMap((s) => s.needIds)));
