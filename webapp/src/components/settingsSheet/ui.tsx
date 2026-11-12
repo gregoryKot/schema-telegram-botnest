@@ -10,6 +10,9 @@ const onKeyActivate = (fn: () => void) => (e: React.KeyboardEvent) => {
   if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
 };
 
+/** Событие на самой подложке окна, а не всплывшее из него: клик и Enter внутри окна его не закрывают. */
+const onBackdrop = (e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget;
+
 /** Галочка-знак вместо глифа «✓»: цвет — текущий текст (статус «Сохранено», выбранная строка, «Скопировано»). */
 export function Tick() {
   return (
@@ -87,15 +90,10 @@ export function InfoModal({ title, children, onClose }: { title: string; childre
   const titleId = useId();
   const close = () => goBack();
   return (
-    <div className="sheet-modal" onClick={close} role="button" tabIndex={-1} aria-label="Закрыть"
-      onKeyDown={onKeyActivate(close)}>
-      <div
-        {...a11y}
-        aria-labelledby={titleId}
-        className="sheet-modal-box"
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
-      >
+    <div className="sheet-modal" role="button" tabIndex={-1} aria-label="Закрыть"
+      onClick={e => { if (onBackdrop(e)) close(); }}
+      onKeyDown={e => { if (onBackdrop(e)) onKeyActivate(close)(e); }}>
+      <div {...a11y} aria-labelledby={titleId} className="sheet-modal-box">
         {/* glue: предлог не висит в конце строки («Данные и / конфиденциальность») */}
         <h2 id={titleId} className="dialog-title st-modal-title">{glue(title)}</h2>
         {children}

@@ -33,7 +33,7 @@ export function SettingsSkeleton({ navRows }: { navRows: number }) {
           {GROUPS.map((g, i) => (
             <div key={i} className="st-section">
               <div className="st-sec-head"><div className="ds-label st-skel-line"><Skeleton width={110} height={12} /></div></div>
-              {g === 'field' && <div className="st-row-name"><Skeleton width="100%" height={49} radius={12} /></div>}
+              {g === 'field' && <div className="st-row-name"><div className="st-skel-field"><Skeleton width="100%" height="100%" radius={12} /></div></div>}
               {g === 'seg' && <div className="st-body-block"><div className="st-skel-seg"><Skeleton width="100%" height="100%" radius={20} /></div></div>}
               {typeof g === 'number' && Array.from({ length: g }, (_, r) => <Row key={r} odd={r % 2 === 1} />)}
             </div>

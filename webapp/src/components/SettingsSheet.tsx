@@ -57,7 +57,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const goBack = useHistorySheet(onClose);
   const navigate = useNavigate();
   const dialogA11y = useDialogA11y();
-  const sub = useSubViewNav();
+  const { view: subView, open: openSub, close: closeSub, scrollRef } = useSubViewNav();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const therapy = useTherapyRelationSettings(userRole);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
@@ -94,9 +94,9 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   return (
     <>
       <div {...dialogA11y} className="settings-overlay st-overlay">
-        {settings && sub.view !== 'main' ? (
-          <SettingsSubScreen key={sub.view} title={SUB_TITLES[sub.view]} badge={badge} onClose={sub.close}>
-            {(done) => <SettingsSubView subView={sub.view as Exclude<SubView, 'main'>} settings={settings} patch={patch} onDone={done} />}
+        {settings && subView !== 'main' ? (
+          <SettingsSubScreen key={subView} title={SUB_TITLES[subView]} badge={badge} onClose={closeSub}>
+            {(done) => <SettingsSubView subView={subView as Exclude<SubView, 'main'>} settings={settings} patch={patch} onDone={done} />}
           </SettingsSubScreen>
         ) : (<>
           {/* Шапка: «назад» и статус сохранения; заголовок вида — в теле (в шапке на 320–390 он резался) */}
@@ -113,14 +113,14 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
                   </button>
                 ))}
               </div>
-              <div className="st-scroll" ref={sub.scrollRef}>
+              <div className="st-scroll" ref={scrollRef}>
                 <div className="settings-content-inner st-inner">
                   <h2 className="ds-h2 st-h">{SUB_TITLES.main}</h2>
                   {canSwitchMode && <ModeSection therapistMode={!!therapistMode}
                     onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} />}
                   <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
                   <AddressSection settings={settings} patch={patch} />
-                  <NotificationsSection settings={settings} tzLabel={timezoneLabel(settings.notifyTimezone)} patch={patch} openSubView={sub.open}
+                  <NotificationsSection settings={settings} tzLabel={timezoneLabel(settings.notifyTimezone)} patch={patch} openSubView={openSub}
                     leaveTo={(path) => goBack(() => navigate(path))} reloadSettings={reloadSettings} />
                   <AppearanceSection onSaved={flashSaved} />
                   {homeMode && <HomeScreenSection mode={homeMode} />}

@@ -7,12 +7,12 @@ import { useSubViewNav } from './useSubViewNav';
 afterEach(cleanup);
 
 function Harness() {
-  const sub = useSubViewNav();
-  if (sub.view !== 'main') return <button onClick={sub.close}>назад из {sub.view}</button>;
+  const { view, open, close, scrollRef } = useSubViewNav();
+  if (view !== 'main') return <button onClick={close}>назад из {view}</button>;
   return (
-    <div ref={sub.scrollRef} data-testid="scroll">
-      <div role="button" tabIndex={0} data-opens="time" onClick={() => sub.open('time')}>Время</div>
-      <div role="button" tabIndex={0} data-opens="tz" onClick={() => sub.open('tz')}>Часовой пояс</div>
+    <div ref={scrollRef} data-testid="scroll">
+      <button data-opens="time" onClick={() => open('time')}>Время</button>
+      <button data-opens="tz" onClick={() => open('tz')}>Часовой пояс</button>
     </div>
   );
 }
