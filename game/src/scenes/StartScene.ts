@@ -12,12 +12,13 @@ export class StartScene extends Phaser.Scene {
   create() {
     setTouchControls(false); // титул — тач-кнопки перекрывали «НАЧАТЬ»
     this.add.rectangle(W / 2, H / 2, W, H, 0x1a0800);
+    document.title = t('m_game_title'); // в index.html — русское имя, EN подменяет здесь
 
-    this.add.text(W / 2, 90, 'RUN THROUGH', {
+    this.add.text(W / 2, 90, t('m_title_top'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '26px', color: '#fff0d8',
       letterSpacing: 4,
     }).setOrigin(0.5);
-    this.add.text(W / 2, 130, 'YOUR MIND', {
+    this.add.text(W / 2, 130, t('m_title_bottom'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '26px', color: '#ff7733',
       letterSpacing: 4,
     }).setOrigin(0.5);
