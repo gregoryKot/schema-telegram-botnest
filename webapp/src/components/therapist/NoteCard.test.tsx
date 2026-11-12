@@ -39,18 +39,19 @@ describe('NoteCard', () => {
     expect(css).toMatch(/\.tb-note-head \{[^}]*grid-template-columns: 44px minmax\(0, 1fr\) auto/);
   });
 
-  // b31: знак и бумага — по типу записи (noteLook), а не одни камешки на мху у каждой карточки; r1 — без таблетки.
-  it('тень листа — бумага своего типа: благодарность 195, схема 28, режим 240; знак у схемы — не камешки; таблетки нет', () => {
-    const hueOf = (kind: NoteItem['kind']) => {
+  // b31: знак — по типу записи (noteLook), а не одни камешки у каждой карточки; r1 — без таблетки;
+  // r2 — строка общего листа: своей бумаги и тени тоном типа нет (радуга теней подряд).
+  it('знак — по типу (благодарность, схема, режим — три разных); у строки нет своего листа, оттенка и таблетки', () => {
+    const artOf = (kind: NoteItem['kind']) => {
       const { container } = render(<NoteCard item={{ ...item, kind }} expanded={false} onToggle={vi.fn()} />);
       expect(container.querySelector('.pp-tag')).toBeNull();
-      const tag = container.querySelector<HTMLElement>('.pp-leaf.tb-note')!;
+      const row = container.querySelector<HTMLElement>('.tb-note')!;
+      expect(row.classList.contains('pp-leaf')).toBe(false);
+      expect(row.style.getPropertyValue('--h')).toBe('');
       const art = container.querySelector('.pp-row-art')!.innerHTML;
       cleanup();
-      return { h: tag.style.getPropertyValue('--h'), art };
+      return art;
     };
-    const g = hueOf('gratitude'), s = hueOf('schema'), m = hueOf('mode');
-    expect([g.h, s.h, m.h]).toEqual(['195', '28', '240']);
-    expect(new Set([g.art, s.art, m.art]).size).toBe(3);
+    expect(new Set([artOf('gratitude'), artOf('schema'), artOf('mode')]).size).toBe(3);
   });
 });

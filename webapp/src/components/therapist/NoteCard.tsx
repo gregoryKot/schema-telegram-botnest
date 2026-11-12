@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { fmtDate } from '../../utils/format';
 import { pressable } from '../../utils/a11y';
 import { SignArt } from '../art/SignArt';
@@ -6,11 +5,12 @@ import { Pebbles } from '../art/PaperArt';
 import { noteLook } from './noteLook';
 import type { NoteItem } from './notesModel';
 
-// Запись клиента — как строка «Последних записей» «Обзора» (r1): лист .pp-leaf тоном типа, знак типа (noteLook), тип — тихо.
+// Запись клиента — строка общего листа «Записей клиента», как строка «Последних записей» «Обзора» (r2): знак типа
+// (noteLook), тип — тихо; своей бумаги и тени у строки нет — тень-слой у листа списка.
 export function NoteCard({ item, expanded, onToggle }: { item: NoteItem; expanded: boolean; onToggle: () => void }) {
   const look = noteLook(item.kind);
   return (
-    <div className="pp-leaf tb-note" style={{ '--h': look.hue } as CSSProperties} aria-expanded={expanded} {...pressable(onToggle)}>
+    <div className="tb-note" aria-expanded={expanded} {...pressable(onToggle)}>
       <div className="tb-note-head">
         <span className="pp-row-art" aria-hidden="true">{look.filled ? <Pebbles size="row" filled={3} /> : <SignArt sign={look.sign} size="row" />}</span>
         <div className="tb-note-main">

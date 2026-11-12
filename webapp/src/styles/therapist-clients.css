@@ -74,7 +74,7 @@
 }
 .tc-meta { display: flex; gap: 4px 12px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--text-sub); flex-wrap: wrap; }
 /* «в приложении» / «офлайн» — тихий текст без плашки (r1): офлайн-клиента отличает BrandMark в строке имени. */
-.tc-status { font-weight: 600; }
+.tc-status { font-weight: 400; color: var(--text-sub); } /* r2: обычное начертание — тише имени и даты встречи */
 .tc-sign { display: flex; flex: none; padding-top: 2px; }
 .tc-meeting {
   display: flex; align-items: center; gap: 10px;

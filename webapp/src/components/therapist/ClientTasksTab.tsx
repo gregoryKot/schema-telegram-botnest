@@ -61,13 +61,13 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
             <button onClick={() => onAssign()} className={phone ? 'ds-btn tb-mt16' : 'ds-btn ds-btn--secondary tb-mt16'}>Назначить первое задание</button>
           </div>
         ) : (
-          <div className="cp-task-list tb-task-list">
+          <div className="pp-leaf cp-task-list tb-task-list">
             {ordered.map(t => {
               const status = taskStatus(t, today);
-              // Раскладка — общая строка задания (task-row.css): знак, название со сроком и статусом, действия в слоте
-              // .cp-task-acts; в узком списке действия уходят второй строкой (ClientTasksTab.layout.test.tsx).
+              // Общая строка задания (task-row.css): знак, название со сроком и статусом, действия в слоте .cp-task-acts (узко —
+              // второй строкой, ClientTasksTab.layout.test.tsx); список — один лист .pp-leaf, строки через линию (r2).
               return (
-                <div key={t.id} className={`ds-card ds-card--row pp-leaf cp-task tb-task${status === 'done' ? ' cp-task--done' : ''}`}>
+                <div key={t.id} className={`ds-card ds-card--row cp-task tb-task${status === 'done' ? ' cp-task--done' : ''}`}>
                   <TaskArt task={t} />
                   <div className="cp-task-body">
                     <div className="cp-task-title tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>

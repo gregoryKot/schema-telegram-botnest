@@ -7,11 +7,12 @@
 /* ── Счётчики: плитки бумаги со знаком; не кнопки — реакции на наведение нет ── */
 /* Три плитки всегда в ряд: на 768 с меню минимум 180 ставил «Требуют внимания» одну во второй ряд. */
 .tt-counters { container: tt-counters / inline-size; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+/* Порядок один (r1): знак · число · подпись. На ≥768 (r2, M5) знак ~32px слева от числа в одну строку, подпись под
+   ними — плитка ~112px, как в «до»; было знак сверху, 156px и полплитки пусто. Телефон — сверху вниз (ниже). */
 .tt-counter {
-  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "sign" "num" "label";
-  align-items: start; row-gap: 10px; padding: 18px 20px 16px; border-radius: 20px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "sign num" "label label";
+  align-items: center; column-gap: 14px; row-gap: 10px; padding: 18px 20px 16px; border-radius: 20px;
 }
-/* Одна раскладка на всех ширинах (r1): знак · число · подпись сверху вниз — на 390, 768 и 1280 в одном порядке. */
 .tt-counter .ds-label { grid-area: label; color: var(--text-sub); }
 .tt-counter .ds-num { grid-area: num; font-size: 52px; line-height: 1; white-space: nowrap; }
 .tt-counter-sign { grid-area: sign; display: flex; }
@@ -48,7 +49,7 @@
 .tt-row-sub { font-size: 13px; color: var(--text-sub); }
 
 /* ── Списки: светлая бумага без обводки ───────────────────────────────── */
-.tt-list { background: var(--surface); border-radius: 20px; overflow: hidden; }
+.tt-list { background: var(--surface); border-radius: 20px; overflow: hidden; container: tt-list / inline-size; }
 .tt-act { grid-template-columns: 36px minmax(0, 1fr) minmax(48px, 120px) 44px auto; min-height: 44px; background: none; }
 /* Кольцо фокуса — внутрь строки: .tt-list режет всё, что снаружи (overflow: hidden ради скругления). */
 .tt-act:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
@@ -56,6 +57,23 @@
 .tt-act-name.tt-name { font-size: 14px; }
 /* Без светофора (r1): подпись — --text-sub, число — Literata --text, пропуск индекса — тихо. */
 .tt-act-status { font-size: 12px; color: var(--text-sub); }
+/* Узкий лист «Активности» (до 340px: 320/360, M4 r2): спарклайн уходит из-под бока имени в строку подписи давности
+   (справа, под индексом), шеврона нет (строка сама кнопка). Имени достаётся вся ширина до индекса — строка не выше,
+   чем на 390: было 4–5 строк текста при спарклайне сбоку. Селектор через .tt-list — сильнее телефонных .tt-act ниже. */
+@container tt-list (max-width: 340px) {
+  .tt-list > .tt-act {
+    grid-template-columns: 32px minmax(0, 1fr) 52px; grid-template-areas: "av name idx" "av status spark";
+    column-gap: 10px; row-gap: 4px; padding: 11px 16px;
+  }
+  .tt-list > .tt-act > .ds-avatar { grid-area: av; width: 32px; height: 32px; font-size: 11px; }
+  .tt-list > .tt-act > .tt-who { display: contents; }
+  .tt-list > .tt-act .tt-act-name { grid-area: name; }
+  .tt-list > .tt-act .tt-act-status { grid-area: status; }
+  .tt-list > .tt-act > .ds-spark { grid-area: spark; height: 16px; gap: 1px; align-self: end; }
+  .tt-list > .tt-act > .tt-idx { grid-area: idx; align-self: start; line-height: 1; }
+  .tt-list > .tt-act > .ds-chev { display: none; }
+}
+
 .tt-idx { font-family: var(--serif); font-size: 22px; text-align: right; color: var(--text); }
 .tt-idx.is-none { color: var(--text-sub); }
 .tt-attn {
@@ -81,7 +99,7 @@
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Три плитки в ряд — ~115px на плитку: та же раскладка, мельче. */
   .tt-counters { gap: 8px; }
-  .tt-counter { row-gap: 6px; padding: 12px; border-radius: 16px; }
+  .tt-counter { grid-template-columns: minmax(0, 1fr); grid-template-areas: "sign" "num" "label"; align-items: start; row-gap: 6px; padding: 12px; border-radius: 16px; }
   .tt-counter .ds-num { font-size: 28px; }
   .tt-counter-sign .pp-art { width: 44px; height: 24px; }
   .tt-denom { font-size: 14px; }

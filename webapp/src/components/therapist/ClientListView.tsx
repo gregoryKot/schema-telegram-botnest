@@ -16,17 +16,11 @@ import { ClientListHero } from './ClientListHero';
 import { CabinetEmpty } from './CabinetEmpty';
 import { CLAIM_SIGN, INVITE_SIGN } from './cabinetLook';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
+import { StatusFilter } from './StatusFilter';
 import type { useAddClient } from './useAddClient';
 import type { TasksBoard } from './useTasksBoard';
 import type { ClientTab } from './clientSheetTypes';
 import '../../styles/therapist-clients.css';
-
-const FILTERS: { key: RosterStatus; label: string }[] = [
-  { key: 'all', label: 'Все' },
-  { key: 'active', label: 'Активны' },
-  { key: 'wait', label: 'Не сегодня' }, // в боте, но сегодня без активности; «Ждут» путалось с «Ждут подключения»
-  { key: 'virtual', label: 'Офлайн' },
-];
 
 interface Props {
   animKey: number;
@@ -81,12 +75,7 @@ export function ClientListView({
                       onClick={() => { setListTab('kanban'); board.open(); }}>Задания</button>
             </div>
             {listTab === 'clients' && !noClients && (
-              <div className="ds-seg ds-seg--scroll">
-                {FILTERS.map(f => (
-                  <button key={f.key} className={`ds-seg-btn ${filterStatus === f.key ? 'is-active' : ''}`}
-                          onClick={() => setFilterStatus(f.key)}>{f.label}</button>
-                ))}
-              </div>
+              <StatusFilter value={filterStatus} onChange={setFilterStatus} />
             )}
           </div>
           {listTab === 'clients' && !noClients && (

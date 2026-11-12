@@ -48,16 +48,20 @@
 @media (max-width: 1023px) { .tb-tasks { grid-template-columns: minmax(0, 1fr); } }
 .tb-col { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 .tb-col--tight { gap: 12px; }
+/* Левая колонка «Заданий» — удобная ширина чтения (L11: на 1440–1920 строка тянулась до ~955px); r2 — вся колонка
+   (счётчик, список и «На сессиях») одной шириной, правые края совпадают. */
+.tb-tasks > .tb-col:first-child { max-width: 720px; }
 .tb-tab-title--art { display: flex; align-items: center; gap: 14px; }
 /* Счётчик — тихий заголовок без картинки: знак задания стоит у каждой строки ниже. */
 .tb-big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .tb-big-num { font-family: var(--serif); font-size: 32px; line-height: 1; }
 .tb-big-cap { font-size: 15px; color: var(--text-sub); }
-/* Список заданий — удобная ширина чтения (L11): на 1440–1920 строка растягивалась до ~955px, действия уезжали от текста. */
-.tb-task-list { max-width: 720px; }
-/* Строка задания — тот же белый лист .pp-leaf без рамки, что «Обзор» и карточка на доске (ревью r1). */
-/* В плотном списке тень-слой тоньше, чем у одиночного листа: шесть строк подряд не спорят с текстом. */
-.cp-task-list > .pp-leaf { box-shadow: 3px 4px 0 oklch(var(--pa-layer-lc) var(--h, 240)); }
+/* Один лист на весь список (r2), как «Последние записи» «Обзора» и «Активность» на «Сегодня»: белая бумага с тенью-слоем
+   неба (задания) у листа, строки внутри — без своей бумаги и тени, через тонкую линию. Шесть листов подряд с цветной
+   тенью давали шесть голубых полос. */
+.tb-task-list { gap: 0; }
+.tb-task-list > .ds-card.tb-task { background: none; border: 0; border-radius: 0; }
+.tb-task-list > .tb-task + .tb-task { border-top: 1px solid var(--paper-sunk); }
 /* Строка задания — общая .cp-task (task-row.css, слот .cp-task-acts); здесь только своё терапевта:
    название полным текстом, срок и тихий ярлык статуса (TaskStatusBadge paper) строкой под ним. Квадрат-«чекбокс»
    слева убран давно: он выглядел нажимаемым, а терапевт задание клиента не отмечает. */
@@ -69,20 +73,36 @@
 .tb-task.cp-task--done .tb-task-text { color: var(--text-sub); font-weight: 500; }
 .tb-task.cp-task--done .pp-row-art { opacity: .7; }
 .tb-task-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 6px; }
+/* Список уже 340px (320/360, r2): срок и ярлык статуса не помещаются в одну строку рядом с корзиной у всех строк —
+   ярлык прыгал (у одной строки рядом со сроком, у пяти — под ним). Ярлык всегда под сроком — одно место. */
+@container cp-task-list (max-width: 340px) {
+  .tb-task-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
 /* Корзина — круг 44 и на компьютере (ds-btn--icon там 40): тап-цель ≥44. */
 .ds-btn--icon.tb-del { width: 44px; height: 44px; }
-/* Шаблоны — плитки бумаги сущности со знаком (AssignTemplateTiles): 2×2 в узкой колонке, в ряд от 600px. */
+/* Шаблоны — плитки бумаги сущности со знаком (AssignTemplateTiles). Раскладка — по ширине плитки, а не экрана (r2):
+   2×2, только когда плитка шире ~170px (контейнер ≥350px), в ряд — от 600px; уже (правая колонка ~283px на 1280,
+   телефон 320) — одна колонка строк: знак и заголовок в строку, подпись под ними во всю ширину (1–2 строки, а не
+   столбик слов в половине колонки и «Схема-/карточка»). */
 .tb-tpls-box { container: tb-tpls / inline-size; }
-.tb-tpls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-@container tb-tpls (min-width: 600px) { .tb-tpls { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tb-tpls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .tb-tpl {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 44px; box-sizing: border-box;
-  padding: 14px 14px 16px; border: 0; border-radius: 16px; text-align: left; cursor: pointer; font-family: var(--sans);
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "art title" "sub sub";
+  align-items: center; column-gap: 12px; row-gap: 4px; min-height: 44px; box-sizing: border-box;
+  padding: 12px 14px 14px; border: 0; border-radius: 16px; text-align: left; cursor: pointer; font-family: var(--sans);
   transition: background .12s;
 }
+.tb-tpl-art { grid-area: art; justify-content: flex-start; }
+.tb-tpl-title { grid-area: title; }
+.tb-tpl-sub { grid-area: sub; }
+@container tb-tpls (min-width: 350px) {
+  .tb-tpls { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tb-tpl { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 14px 16px; }
+  .tb-tpl-art { margin-bottom: 2px; }
+}
+@container tb-tpls (min-width: 600px) { .tb-tpls { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (hover: hover) { .tb-tpl:hover { background: oklch(0.895 0.04 var(--h)); } }
 .tb-tpl:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.tb-tpl-art { justify-content: flex-start; margin-bottom: 2px; }
 .tb-tpl-title { font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--text); overflow-wrap: break-word; text-wrap: balance; }
 .tb-tpl-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); overflow-wrap: break-word; }
 /* «На сессиях» — журнал техник (#995, TechniqueJournalBlock): день слева один раз,
@@ -138,11 +158,13 @@
 /* ── Записи клиента ───────────────────────────────────────────────────── */
 /* Фильтр стоит первым в колонке ds-page: на ноутбуке — по ширине кнопок, на
    телефоне — во всю ширину одной строкой с прокруткой и маской у края (useTabsBar, ревью r1). */
-.tb-notes { display: flex; flex-direction: column; gap: 14px; }
-/* Запись — лист .pp-leaf тоном своего типа, как строка «Последних записей» «Обзора»: знак · заголовок и тип тихой
-   подписью · дата; текст и поля — под колонкой заголовка. */
-.tb-note { display: flex; flex-direction: column; gap: 8px; padding: 14px 18px; cursor: pointer; }
-.tb-note:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Один лист на список (r2) тоном дневника, как «Последние записи» «Обзора»; запись — строка внутри через тонкую линию:
+   знак типа · заголовок и тип тихой подписью · дата; текст и поля — под колонкой заголовка. */
+.tb-notes { display: flex; flex-direction: column; }
+.tb-notes > .tb-note + .tb-note { border-top: 1px solid var(--paper-sunk); }
+.tb-note { display: flex; flex-direction: column; gap: 6px; padding: 14px 20px; cursor: pointer; }
+/* Кольцо фокуса — внутрь строки: снаружи его перекрыла бы соседняя строка листа. */
+.tb-note:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .tb-note-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 12px; align-items: start; }
 .tb-note-head > .pp-row-art { padding-top: 2px; }
 .tb-note-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -168,7 +190,7 @@
   .tb-ysq-row > .tb-bar, .tb-ysq-head .tb-ysq-barcol { grid-row: 2; grid-column: 1 / -1; }
   .tb-ysq-head .tb-ysq-barcol { display: none; }
   .tb-fields { grid-template-columns: 1fr; }
-  .tb-note { padding: 12px 14px; }
+  .tb-note { padding: 12px 16px; }
   .tb-note-head { column-gap: 10px; }
   .tb-note > .tb-note-text, .tb-note > .tb-fields { margin-left: 0; }
 }

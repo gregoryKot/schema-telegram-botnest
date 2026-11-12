@@ -20,7 +20,8 @@ describe('ASSIGN_TEMPLATES', () => {
   it('плитки — бумага сущности со знаком, соседи по ряду и по колонке 2×2 не ближе 40°', () => {
     const h = ASSIGN_TEMPLATES.map(t => t.look.hue);
     expect(h).toEqual([28, 240, 290, 135]);
-    expect(ASSIGN_TEMPLATES.map(t => t.look.sign)).toEqual(['layers', 'cluster', 'sheets', 'haven']);
+    // r2: «Дневник режима» создаёт «Своё задание» — у плитки знак своего задания (Check), как у строки задания.
+    expect(ASSIGN_TEMPLATES.map(t => t.look.sign)).toEqual(['layers', 'check', 'sheets', 'haven']);
     const pairs: [number, number][] = [[0, 1], [1, 2], [2, 3], [0, 2], [1, 3]];
     for (const [a, b] of pairs) expect(hueGap(h[a], h[b]), `${a}-${b}`).toBeGreaterThanOrEqual(NEIGHBOUR_HUE_GAP);
   });

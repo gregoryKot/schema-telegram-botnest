@@ -72,11 +72,12 @@
 /* Полоса вкладок (ClientTabs, useTabsBar): за краем, где остались вкладки, — маска-градиент (не размытие),
    классы ставит прокрутка. position — чтобы offsetLeft вкладки считался от полосы. Счётчик — тихий: цифра
    цветом подписи, без плашки. */
-.tk-tabs, .tb-notes-filter { position: relative; --tk-fade: 40px; }
-/* Тот же механизм у фильтра «Записей клиента» (ClientNotesTab, useTabsBar; ревью r1). */
-.tk-tabs.is-fade-end, .tb-notes-filter.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start, .tb-notes-filter.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start.is-fade-end, .tb-notes-filter.is-fade-start.is-fade-end {
+.tk-tabs, .tk-fade-bar { position: relative; --tk-fade: 40px; }
+/* Тот же механизм у фильтров-полос .tk-fade-bar: «Записи клиента» (ClientNotesTab, r1) и статусы списка клиентов
+   (ClientListView, r2: на 320 «Офл…» обрезалось без маски). */
+.tk-tabs.is-fade-end, .tk-fade-bar.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start, .tk-fade-bar.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start.is-fade-end, .tk-fade-bar.is-fade-start.is-fade-end {
   -webkit-mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
   mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
 }
@@ -162,8 +163,15 @@
 .tk-meet .ds-link { color: var(--text-sub); text-underline-offset: 3px; }
 .tk-meet .ds-link:hover, .tk-meet .ds-link:focus-visible { color: var(--text); text-decoration: underline; }
 .tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
-/* Чип дня — тап-цель ≥44 и в ширину (L8): «Пн» был 36–38×44. */
+/* Чип дня — тап-цель ≥44 и в ширину (L8): «Пн» был 36–38×44. Невыбранный — белая бумага листа «Встреч», выбранный —
+   общая бумага .ds-chip--toggle.is-on (кромка, жирность), как выбранный чип у клиента (r2: бежевые чипы на небе). */
 .tk-days > .ds-chip--toggle { min-width: 44px; justify-content: center; }
+.tk-days > .ds-chip--toggle:not(.is-on) { background: var(--surface); border-color: transparent; }
+/* Мышь (1280: колонка ~240px): семь дней в ряд, без переноса 4+3; под пальцем — 44 в ширину и перенос. */
+@media (hover: hover) and (pointer: fine) {
+  .tk-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .tk-days > .ds-chip--toggle { min-width: 0; padding-inline: 0; }
+}
 /* «Приложение» офлайн-клиента (OfflineInviteCard) — белый лист с тенью-слоем неба (встречи терапевта), как
    заметка и записи, а не белая карточка с серой рамкой. */
 .tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) 240); }

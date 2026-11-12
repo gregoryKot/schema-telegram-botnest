@@ -1,13 +1,13 @@
 import type { CSSProperties } from 'react';
 import { inkVars } from '../history/needInk';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { deltaClass, fmtDelta, type YsqRow } from './ysqRows';
 
-// Таблица «Схемы» терапевта: обе величины критерия выраженности (средний балл
-// и доля «5–6») и отметка «выражена» — та же, по которой клиент видит схему в
-// «Выраженных схемах». Бар — по среднему баллу, как у клиента, цветом данных потребности домена (inkVars).
+// Таблица «Схемы» терапевта: средний балл, доля «5–6» и отметка «выражена» — как у клиента в «Выраженных схемах».
+// Бар — по среднему баллу цветом данных потребности домена (inkVars); лист .pp-leaf глины YSQ (r2).
 export function YSQTable({ rows, hasPrev }: { rows: YsqRow[]; hasPrev: boolean }) {
   return (
-    <div className="ds-card tb-ysq-card">
+    <div className="ds-card pp-leaf tb-ysq-card" style={{ '--h': ENTITY_LOOK.ysq.hue } as CSSProperties}>
       <div className="tb-ysq-row tb-ysq-head ds-label">
         <span>Схема</span>
         <span className="tb-ysq-barcol">Средний балл{hasPrev ? ' · сейчас и прошлый раз' : ''}</span>

@@ -61,3 +61,16 @@ describe('therapist-today.css: стрелка перехода на компью
     expect(phone).not.toMatch(/ds-chev/);
   });
 });
+
+// r2 (M4): на 320 строка «Активности» шла в 4–5 строк — спарклайн сбоку отнимал у имени и подписи ~90px.
+describe('therapist-today.css: узкий лист «Активности» (до 340px)', () => {
+  const at = css.indexOf('@container tt-list (max-width: 340px)');
+  const block = at < 0 ? '' : css.slice(at, css.indexOf('\n}', at));
+  it('лист — контейнер; имя во всю ширину до индекса, спарклайн — в строке подписи под индексом, шеврона нет', () => {
+    expect(rule(desk, '.tt-list')).toContain('container: tt-list / inline-size');
+    expect(block).toMatch(/grid-template-areas: "av name idx" "av status spark"/);
+    expect(block).toMatch(/\.tt-list > \.tt-act > \.ds-spark \{ grid-area: spark;/);
+    expect(block).toMatch(/\.tt-list > \.tt-act > \.ds-chev \{ display: none; \}/);
+  });
+});
+
