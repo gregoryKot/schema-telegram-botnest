@@ -71,7 +71,7 @@ describe('ClientTasksTab — задание офлайн-клиента', () => 
     render(<Harness initial={[task(3, { userId: -5 })]} clientId={-5} />);
     fireEvent.click(screen.getByText('Выполнено'));
     await waitFor(() => expect(mockApi.completeTask).toHaveBeenCalledWith(3, true));
-    await waitFor(() => expect(screen.getAllByText('Выполнено').some(n => n.className.includes('ds-badge'))).toBe(true));
+    await waitFor(() => expect(screen.getAllByText('Выполнено').some(n => n.className.includes('pp-tag'))).toBe(true));
   });
 
   it('клиенту с аккаунтом кнопки «Выполнено» нет — закрывает он сам', () => {

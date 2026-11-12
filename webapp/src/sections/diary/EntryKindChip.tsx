@@ -11,5 +11,5 @@ export function FeedSign({ look }: { look: FeedLook }) {
 
 /** Ярлык типа — тоном бумаги своего типа (`--h` карточки), без обводки и «конфетной» заливки. */
 export function EntryKindChip({ kind }: { kind: EntryKind }) {
-  return <span className="cd-kind">{ENTRY_KIND_LABEL[kind]}</span>;
+  return <span className="pp-tag cd-kind">{ENTRY_KIND_LABEL[kind]}</span>;
 }

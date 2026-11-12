@@ -43,7 +43,7 @@ describe('SessionArchive', () => {
   it('пустая история: «Заметок пока нет» со знаком сессии (Talk), без строки о срезе', () => {
     const { container } = render(<SessionArchive page={{ notes: [], total: 0 }} removeNote={vi.fn()} />);
     expect(screen.getByText('Заметок пока нет')).toBeTruthy();
-    expect(paperSignName(container.querySelector('.pp-empty svg'))).toBe('Talk');
+    expect(paperSignName(container.querySelector('.tb-empty-row svg'))).toBe('Talk');
     expect(screen.queryByRole('note')).toBeNull();
   });
 
