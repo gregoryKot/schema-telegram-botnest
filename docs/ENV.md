@@ -12,8 +12,9 @@
 Секреты (значения) сюда не попадают — только имена, обязательность и формат.
 
 Что проверяется дополнительно (не сводится к формату одной переменной) — кросс-проверки
-в `src/infra/env-check.ts` (`CROSS_CHECKS`): если задан `RESEND_API_KEY`, обязаны быть
-заданы `ADMIN_EMAIL` и `EMAIL_FROM`; если задан `GOOGLE_CLIENT_ID` — `GOOGLE_CLIENT_SECRET`
+в `src/infra/env-check.ts` (`CROSS_CHECKS`): ключи почты `POSTBOX_ACCESS_KEY_ID` и
+`POSTBOX_SECRET_ACCESS_KEY` задаются только парой, и вместе с ними обязаны быть
+заданы `ADMIN_EMAIL` и `EMAIL_FROM` (`src/infra/env-check.email.ts`); если задан `GOOGLE_CLIENT_ID` — `GOOGLE_CLIENT_SECRET`
 и `GOOGLE_REDIRECT_URI`; если задан `VK_APP_ID` — `VK_REDIRECT_URI`; если задан `ROBOKASSA_MERCHANT_LOGIN` — `ROBOKASSA_PASSWORD1`
 и `ROBOKASSA_PASSWORD2` (пустой пароль позволил бы подделать подпись вебхука); `ENCRYPTION_KEY_OLD`
 не должен совпадать с текущим `ENCRYPTION_KEY`; если задан `BACKUP_S3_BUCKET` — обязаны быть
@@ -62,9 +63,10 @@
 
 | Переменная | На проде | Формат | Назначение |
 |---|---|---|---|
-| `ADMIN_EMAIL` | опциональна | email | Почта владельца для писем о записях и резервных алертов — без неё, при заданном RESEND_API_KEY, письма молчат (инцидент 2026-09-15). |
+| `ADMIN_EMAIL` | опциональна | email | Почта владельца для писем о записях и резервных алертов — без неё, при заданных ключах Postbox, письма молчат (инцидент 2026-09-15). |
 | `EMAIL_FROM` | опциональна | nonEmpty | Адрес отправителя писем (magic-link, уведомления) — есть дефолт «Schema Happens <no-reply@schemehappens.ru>», если не задан. |
-| `RESEND_API_KEY` | опциональна | nonEmpty | Ключ Resend — без него почта пользователям и владельцу не отправляется (magic-link, письма о записях, резервные алерты). |
+| `POSTBOX_ACCESS_KEY_ID` | опциональна | accessKey | Идентификатор статического ключа доступа сервисного аккаунта Yandex Cloud с ролью postbox.sender — пара к POSTBOX_SECRET_ACCESS_KEY; без пары почта пользователям и владельцу не отправляется (вход по ссылке, письма о записях, резервные алерты). Где взять и как сменить — [RUNBOOKS.md](RUNBOOKS.md), раздел «Yandex Cloud Postbox — почта». |
+| `POSTBOX_SECRET_ACCESS_KEY` | опциональна | accessKey | Секретный ключ того же статического ключа доступа — вместе с POSTBOX_ACCESS_KEY_ID подписывает запросы на отправку писем в Yandex Cloud Postbox. Показывается в консоли один раз, при создании ключа. |
 
 ## Канал «Здоровый Взрослый»
 

@@ -14,7 +14,10 @@ const WITH_ISSUES: EnvCheckResult = {
   missing: ['BOT_TOKEN', 'ADMIN_ID'],
   invalid: [{ name: 'JWT_SECRET', problem: 'пустая строка' }],
   crossCheckIssues: [
-    { id: 'x', problem: 'RESEND_API_KEY задан, но не задан(ы) ADMIN_EMAIL' },
+    {
+      id: 'x',
+      problem: 'POSTBOX_ACCESS_KEY_ID задан, но не задан(ы) ADMIN_EMAIL',
+    },
   ],
 };
 
@@ -32,7 +35,7 @@ describe('formatEnvCheckLines', () => {
     expect(lines).toEqual([
       'не задано: BOT_TOKEN, ADMIN_ID',
       'неверный формат JWT_SECRET: пустая строка',
-      'RESEND_API_KEY задан, но не задан(ы) ADMIN_EMAIL',
+      'POSTBOX_ACCESS_KEY_ID задан, но не задан(ы) ADMIN_EMAIL',
     ]);
   });
 });

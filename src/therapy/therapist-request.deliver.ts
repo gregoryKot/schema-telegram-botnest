@@ -58,7 +58,7 @@ export async function deliverDecision(
   if (profile.email) {
     const m = decisionMessage(profile.form, decision, reason, 'email');
     try {
-      // send() без RESEND_API_KEY не бросает, а возвращает false (в проде ещё
+      // send() без ключей Postbox не бросает, а возвращает false (в проде ещё
       // и логирует error о мисконфиге). Письмо не принято — это недоставка:
       // идём к error с номером заявки, а не считаем решение доставленным.
       if (await d.email.send(profile.email, m.subject, m.text)) return;
@@ -66,7 +66,7 @@ export async function deliverDecision(
       d.logger.warn(`notifyApplicant: письмо не ушло: ${errMsg(e)}`);
     }
   }
-  // Дубль с error из EmailService (Resend упал) намеренный: тот не знает номера
+  // Дубль с error из EmailService (Postbox упал) намеренный: тот не знает номера
   // заявки, а владельцу нужно понять, кому писать. AlertLogger троттлит ключи.
   d.logger.error(
     `Решение по заявке #${requestId} (${decision}) не доставлено: ` +

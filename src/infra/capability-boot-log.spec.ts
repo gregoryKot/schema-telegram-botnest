@@ -10,7 +10,8 @@ function fakeLogger() {
 const ALL_CONFIGURED = {
   BOT_TOKEN: '123:abc',
   ADMIN_ID: '42',
-  RESEND_API_KEY: 're_test',
+  POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+  POSTBOX_SECRET_ACCESS_KEY: 'test-secret-not-a-real-key',
   ADMIN_EMAIL: 'admin@example.com',
   ZOOM_ACCOUNT_ID: 'z1',
   ZOOM_CLIENT_ID: 'z2',
@@ -46,7 +47,8 @@ describe('logCapabilityReport', () => {
     expect(logger.error).toHaveBeenCalledTimes(1);
     const msg = logger.error.mock.calls[0][0] as string;
     expect(msg).toContain('BOT_TOKEN');
-    expect(msg).toContain('RESEND_API_KEY');
+    expect(msg).toContain('POSTBOX_ACCESS_KEY_ID');
+    expect(msg).toContain('ADMIN_EMAIL');
     expect(msg).toMatch(/мертва/);
   });
 
@@ -55,7 +57,7 @@ describe('logCapabilityReport', () => {
     logCapabilityReport(logger, {});
     const infoMessages = logger.log.mock.calls.map((c) => String(c[0]));
     // Сам факт «алерты в Telegram/на почту не уходят» уже сказан в error()
-    // выше — эти две info-строки не дублируются (RESEND_API_KEY отдельно
+    // выше — эти две info-строки не дублируются (ключи Postbox отдельно
     // всё ещё легитимно всплывает как причина ВЫКЛЮЧЕННОЙ emailDelivery —
     // это другая возможность, не алерт-канал).
     expect(infoMessages.some((m) => m.includes('Алерты в Telegram'))).toBe(

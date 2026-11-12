@@ -8,7 +8,13 @@ import { formatSelfCheck } from './format';
 import { emailProbe, TRANSIENT_WINDOW_MS } from './probe-email';
 import { runProbes } from './runner';
 
-const ENV = { RESEND_API_KEY: 'resend-key-123', ADMIN_EMAIL: 'a@b.ru' };
+// Заглушки, не ключи.
+const SECRET = 'test-secret-not-a-real-key';
+const ENV = {
+  POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+  POSTBOX_SECRET_ACCESS_KEY: SECRET,
+  ADMIN_EMAIL: 'a@b.ru',
+};
 const H = 3_600_000;
 const NOW = 100 * H;
 
@@ -39,7 +45,15 @@ describe('emailProbe', () => {
     expect(res.ok).toBe(false);
     expect(res.detail).toContain('HTTP 403');
     expect(res.detail).toContain('2 ч назад');
-    expect(res.detail).not.toContain('resend-key-123');
+    expect(res.detail).not.toContain(SECRET);
+  });
+
+  it('задан только один из двух ключей Postbox — как «не настроено»', async () => {
+    noteAlertEmailResult({ ok: false, status: 403 }, NOW);
+    const half = { ...ENV, POSTBOX_SECRET_ACCESS_KEY: undefined };
+    const res = await emailProbe(half, () => NOW).run();
+    expect(res.ok).toBe(true);
+    expect(res.detail).toContain('не настроено');
   });
 
   it('постоянный отказ (401) не «стареет»: красный и через сутки', async () => {
@@ -79,7 +93,7 @@ describe('emailProbe', () => {
 
 // Шов (правило №14): настоящая отправка → настоящий снимок → настоящая проба →
 // настоящий отчёт /stats. Раньше проба читала только env и всегда отвечала ok.
-describe('шов: отказ Resend доходит до «Самопроверки»', () => {
+describe('шов: отказ Postbox доходит до «Самопроверки»', () => {
   const originalFetch = global.fetch;
   const originalEnv = { ...process.env };
   afterEach(() => {
@@ -88,14 +102,14 @@ describe('шов: отказ Resend доходит до «Самопроверк
     jest.restoreAllMocks();
   });
 
-  it('Telegram не принял, Resend ответил 403 → проба красная, /stats называет 403', async () => {
+  it('Telegram не принял, Postbox ответил 403 → проба красная, /stats называет 403', async () => {
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     process.env = { ...originalEnv, ...ENV, BOT_TOKEN: 't', ADMIN_ID: '1' };
     global.fetch = jest.fn((url: unknown) =>
       Promise.resolve(
         String(url).includes('telegram')
           ? { ok: false, status: 500 }
-          : { ok: false, status: 403 },
+          : new Response('Forbidden\n', { status: 403 }),
       ),
     );
 
@@ -106,6 +120,6 @@ describe('шов: отказ Resend доходит до «Самопроверк
     const report = formatSelfCheck({ ranAt: Date.now(), results });
     expect(report).toContain('Резервные алерты на почту');
     expect(report).toContain('403');
-    expect(report).not.toContain('resend-key-123');
+    expect(report).not.toContain(SECRET);
   });
 });

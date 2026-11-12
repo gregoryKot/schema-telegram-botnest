@@ -18,8 +18,16 @@ import { loadRecordedFixture } from '../test-support/recorded-fixture';
 
 const ORIGINAL_ENV = { ...process.env };
 const originalFetch = global.fetch;
+const POSTBOX = 'https://postbox.cloud.yandex.net/v2/email/outbound-emails';
+// Заглушки, не ключи: настоящих значений в репозитории нет.
+const POSTBOX_SECRET = 'test-secret-not-a-real-key';
+function setPostboxEnv() {
+  process.env.POSTBOX_ACCESS_KEY_ID = 'TEST_KEY_ID';
+  process.env.POSTBOX_SECRET_ACCESS_KEY = POSTBOX_SECRET;
+  process.env.ADMIN_EMAIL = 'admin@example.com';
+}
 
-/** Мок global.fetch с реальным telegram/resend-разбором по URL. */
+/** Мок global.fetch с реальным telegram/postbox-разбором по URL. */
 function mockFetch(
   handler: (url: string, init?: RequestInit) => { ok: boolean },
 ) {
@@ -86,10 +94,7 @@ describe('notifyAdminWithFallback', () => {
     process.env.BOT_TOKEN = 'test-token';
     process.env.ADMIN_ID = '777';
   }
-  function setEmailEnv() {
-    process.env.RESEND_API_KEY = 'resend-key';
-    process.env.ADMIN_EMAIL = 'admin@example.com';
-  }
+  const setEmailEnv = setPostboxEnv;
 
   it('Telegram отвечает ok → email не вызывается вовсе (одна попытка)', async () => {
     setTelegramEnv();
@@ -120,7 +125,7 @@ describe('notifyAdminWithFallback', () => {
 
     expect(calls).toEqual([
       `https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`,
-      'https://api.resend.com/emails',
+      POSTBOX,
     ]);
   });
 
@@ -142,10 +147,11 @@ describe('notifyAdminWithFallback', () => {
     expect(emailCalled).toBe(true);
   });
 
-  it('нет ни BOT_TOKEN/ADMIN_ID, ни RESEND_API_KEY/ADMIN_EMAIL → ничего не шлёт и не падает', async () => {
+  it('нет ни BOT_TOKEN/ADMIN_ID, ни ключей Postbox/ADMIN_EMAIL → ничего не шлёт и не падает', async () => {
     delete process.env.BOT_TOKEN;
     delete process.env.ADMIN_ID;
-    delete process.env.RESEND_API_KEY;
+    delete process.env.POSTBOX_ACCESS_KEY_ID;
+    delete process.env.POSTBOX_SECRET_ACCESS_KEY;
     delete process.env.ADMIN_EMAIL;
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
@@ -156,7 +162,25 @@ describe('notifyAdminWithFallback', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('Telegram не настроен, но email настроен → шлёт письмо через Resend', async () => {
+  // Подпись запроса собирается из пары ключей: с одним письмо не отправить.
+  it.each(['POSTBOX_ACCESS_KEY_ID', 'POSTBOX_SECRET_ACCESS_KEY'])(
+    'Telegram не настроен, из ключей Postbox нет %s → письмо не шлётся',
+    async (missing) => {
+      delete process.env.BOT_TOKEN;
+      delete process.env.ADMIN_ID;
+      setEmailEnv();
+      delete process.env[missing];
+      const fetchMock = jest.fn();
+      global.fetch = fetchMock;
+
+      await expect(
+        notifyAdminWithFallback('текст алерта'),
+      ).resolves.toBeUndefined();
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it('Telegram не настроен, но email настроен → шлёт письмо через Postbox', async () => {
     delete process.env.BOT_TOKEN;
     delete process.env.ADMIN_ID;
     setEmailEnv();
@@ -168,7 +192,7 @@ describe('notifyAdminWithFallback', () => {
 
     await notifyAdminWithFallback('текст алерта');
 
-    expect(seenUrls).toEqual(['https://api.resend.com/emails']);
+    expect(seenUrls).toEqual([POSTBOX]);
   });
 
   it('оба канала падают (fetch бросает всегда) — промис резолвится, ничего не летит наружу', async () => {
@@ -183,7 +207,7 @@ describe('notifyAdminWithFallback', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('email: заголовки и тело содержат ключ, получателя и очищенный от HTML-тегов текст', async () => {
+  it('email: запрос подписан ключом, в теле получатель и очищенный от HTML-тегов текст', async () => {
     delete process.env.BOT_TOKEN;
     delete process.env.ADMIN_ID;
     setEmailEnv();
@@ -196,13 +220,18 @@ describe('notifyAdminWithFallback', () => {
     await notifyAdminWithFallback('<b>жирный</b> текст', 'Тема письма');
 
     const headers = sentInit?.headers as Record<string, string>;
-    expect(headers.Authorization).toBe('Bearer resend-key');
+    expect(headers.authorization).toMatch(
+      /^AWS4-HMAC-SHA256 Credential=TEST_KEY_ID\/\d{8}\/ru-central1\/ses\/aws4_request, /,
+    );
+    expect(headers.authorization).not.toContain(POSTBOX_SECRET);
     const body = JSON.parse(sentInit?.body as string);
-    expect(body.to).toBe('admin@example.com');
-    expect(body.subject).toBe('Тема письма');
-    expect(body.text).toBe('жирный текст');
+    expect(body.Destination.ToAddresses).toEqual(['admin@example.com']);
+    expect(body.Content.Simple.Subject.Data).toBe('Тема письма');
+    expect(body.Content.Simple.Body.Text.Data).toBe('жирный текст');
   });
 
+  // Отправитель по умолчанию — тот же, что у писем пользователям (раньше у
+  // алертов был свой, «SchemeHappens <…>»): один DEFAULT_EMAIL_FROM транспорта.
   it('EMAIL_FROM не задан → используется дефолтный адрес отправителя', async () => {
     delete process.env.BOT_TOKEN;
     delete process.env.ADMIN_ID;
@@ -217,7 +246,9 @@ describe('notifyAdminWithFallback', () => {
     await notifyAdminWithFallback('текст');
 
     const body = JSON.parse(sentInit?.body as string);
-    expect(body.from).toBe('SchemeHappens <no-reply@schemehappens.ru>');
+    expect(body.FromEmailAddress).toBe(
+      'Schema Happens <no-reply@schemehappens.ru>',
+    );
   });
 
   describe('skipTelegram', () => {
@@ -225,8 +256,7 @@ describe('notifyAdminWithFallback', () => {
       // Инцидент 2026-08-09: алерт «Telegram не отвечает» уходил в Telegram.
       process.env.BOT_TOKEN = 'bot-token';
       process.env.ADMIN_ID = '42';
-      process.env.RESEND_API_KEY = 'key';
-      process.env.ADMIN_EMAIL = 'admin@example.com';
+      setPostboxEnv();
       const fetchMock = jest
         .fn()
         .mockResolvedValue({ ok: true, status: 200, text: async () => '{}' });
@@ -237,25 +267,29 @@ describe('notifyAdminWithFallback', () => {
       });
 
       const urls = fetchMock.mock.calls.map((c) => String(c[0]));
-      expect(urls).toEqual(['https://api.resend.com/emails']);
+      expect(urls).toEqual([POSTBOX]);
     });
   });
 });
 
-// Аудит 2026-10-11: sendEmail не смотрел ответ Resend — отозванный ключ, 403
+// Аудит 2026-10-11: sendEmail не смотрел ответ площадки — отозванный ключ, 403
 // и 429 считались доставкой и не оставляли ни строки в логе.
-describe('Resend не принял письмо', () => {
+describe('Postbox не принял письмо', () => {
   const SECRET_TEXT = 'секретный текст алерта admin@example.com';
+  // Тело отказа называет адрес: в лог оно попасть не должно.
+  const refused = (status: number) => () =>
+    Promise.resolve(
+      new Response('{"message":"bad admin@example.com"}', { status }),
+    );
 
-  function setup(resend: () => Promise<unknown>) {
+  function setup(postbox: () => Promise<unknown>) {
     process.env.BOT_TOKEN = 'tg-token';
     process.env.ADMIN_ID = '777';
-    process.env.RESEND_API_KEY = 'resend-key';
-    process.env.ADMIN_EMAIL = 'admin@example.com';
+    setPostboxEnv();
     global.fetch = jest.fn((url: unknown) =>
       String(url).includes('api.telegram.org')
         ? Promise.resolve({ ok: false, status: 500 })
-        : resend(),
+        : postbox(),
     );
     return {
       warn: jest.spyOn(Logger.prototype, 'warn').mockImplementation(),
@@ -266,9 +300,7 @@ describe('Resend не принял письмо', () => {
   it.each([401, 403, 422, 429, 500])(
     'HTTP %i: снимок не ok со статусом, warn без секретов, error не зовётся',
     async (status) => {
-      const { warn, error } = setup(() =>
-        Promise.resolve({ ok: false, status }),
-      );
+      const { warn, error } = setup(refused(status));
 
       await expect(
         notifyAdminWithFallback(SECRET_TEXT),
@@ -278,7 +310,7 @@ describe('Resend не принял письмо', () => {
       expect(warn).toHaveBeenCalledTimes(1);
       const line = String(warn.mock.calls[0][0]);
       expect(line).toContain(`HTTP ${status}`);
-      expect(line).not.toContain('resend-key');
+      expect(line).not.toContain(POSTBOX_SECRET);
       expect(line).not.toContain('admin@example.com');
       expect(line).not.toContain('секретный');
       // error ушёл бы через AlertLogger обратно в этот же фолбэк
@@ -287,12 +319,12 @@ describe('Resend не принял письмо', () => {
   );
 
   it('серия одинаковых отказов — одна строка в логе', async () => {
-    const { warn } = setup(() => Promise.resolve({ ok: false, status: 403 }));
+    const { warn } = setup(refused(403));
     await notifyAdminWithFallback('a');
     await notifyAdminWithFallback('b');
     await notifyAdminWithFallback('c');
     expect(warn.mock.calls.map((c) => String(c[0]))).toEqual([
-      'Резервный канал алертов (Resend) не принял письмо: HTTP 403',
+      'Резервный канал алертов (Postbox) не принял письмо: HTTP 403',
     ]);
   });
 
@@ -356,8 +388,7 @@ describe('notifyAdminWithFallback — ответ Telegram 429', () => {
   beforeEach(() => {
     process.env.BOT_TOKEN = 'test-token';
     process.env.ADMIN_ID = '777';
-    process.env.RESEND_API_KEY = 'resend-key';
-    process.env.ADMIN_EMAIL = 'admin@example.com';
+    setPostboxEnv();
   });
   afterEach(() => jest.useRealTimers());
 
@@ -373,6 +404,6 @@ describe('notifyAdminWithFallback — ответ Telegram 429', () => {
   it('срок дольше бюджета — не ждёт, сразу письмо', async () => {
     const calls = mockTelegram([{ ok: false, body: body429(120) }]);
     await notifyAdminWithFallback('алерт');
-    expect(calls).toEqual([TG, 'https://api.resend.com/emails']);
+    expect(calls).toEqual([TG, POSTBOX]);
   });
 });

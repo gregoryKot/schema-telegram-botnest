@@ -3,6 +3,7 @@
 import { ENV_REGISTRY } from './env-registry.entries';
 import { findMisconfiguredOauthRedirects } from '../auth/oauth-redirect-config';
 import { BACKUP_CROSS_CHECKS } from './env-check.backup';
+import { EMAIL_CROSS_CHECKS } from './env-check.email';
 import { HOST_CROSS_CHECKS } from './env-check.hosts';
 
 type Env = Record<string, string | undefined>;
@@ -47,10 +48,8 @@ function requiresToo(id: string, cause: string, ...deps: string[]): CrossCheck {
 export const CROSS_CHECKS: CrossCheck[] = [
   ...BACKUP_CROSS_CHECKS,
   ...HOST_CROSS_CHECKS,
-  // Инцидент 2026-09-15: пустой ADMIN_EMAIL при заданном RESEND_API_KEY —
-  // письма о записях молчали.
-  requiresToo('resendRequiresAdminEmail', 'RESEND_API_KEY', 'ADMIN_EMAIL'),
-  requiresToo('resendRequiresEmailFrom', 'RESEND_API_KEY', 'EMAIL_FROM'),
+  // Почта: ключи Postbox парой, с ними ADMIN_EMAIL и EMAIL_FROM.
+  ...EMAIL_CROSS_CHECKS,
   requiresToo(
     'googleClientRequiresSecretAndRedirect',
     'GOOGLE_CLIENT_ID',

@@ -1,6 +1,5 @@
 // Тело /admin/status без календарной части — вынесено из
-// booking-admin.controller.ts (правило №10: файл под храповиком размера не
-// растёт, а новой ручке отмены нужно место). Секретов в ответе нет.
+// booking-admin.controller.ts (правило №10: тот не растёт). Секретов нет.
 import { ConfigService } from '@nestjs/config';
 import { CalendarStatus } from './booking-admin.calendar';
 import { MeetingService } from './meeting.service';
@@ -24,7 +23,8 @@ export function buildAdminStatus(
     ...cal,
     calendarBlocking: config.get<string>('CALENDAR_BLOCK_SLOTS') === 'true',
     emailFallback:
-      !!config.get<string>('RESEND_API_KEY') &&
+      !!config.get<string>('POSTBOX_ACCESS_KEY_ID') &&
+      !!config.get<string>('POSTBOX_SECRET_ACCESS_KEY') &&
       !!config.get<string>('ADMIN_EMAIL'),
   };
 }

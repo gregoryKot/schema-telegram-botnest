@@ -1,16 +1,16 @@
 // Реестр возможностей, зависящих от конфигурации (щит, волна 8) — класс
 // «ветка, зависящая от конфигурации, деградирует МОЛЧА»: не хватает одной
 // env-переменной, и фича просто не работает, а никто в системе об этом не
-// узнаёт. Самый тяжёлый случай — src/utils/admin-alert.ts: без
-// BOT_TOKEN/ADMIN_ID И без RESEND_API_KEY/ADMIN_EMAIL КАЖДЫЙ алерт (события
-// безопасности, сбои платежей, сбои канала волн 2/3/7) улетает в никуда без
-// следа — это и есть позвоночник всех рантайм-наблюдателей щита.
+// узнаёт. Самый тяжёлый случай — src/utils/admin-alert.ts: без BOT_TOKEN/ADMIN_ID
+// И без ключей Postbox с ADMIN_EMAIL КАЖДЫЙ алерт (безопасность, платежи, сбои
+// канала) улетает в никуда — это позвоночник всех рантайм-наблюдателей щита.
 //
 // Чистая функция от env — для загрузочной сводки (capability-boot-log.ts) и
 // блока «Настройки» в /stats (src/bot/capability-metrics.format.ts). Гейт
 // scripts/check-capability-registry.mjs: файл с веткой «if (!config) return»
 // — либо в `files` ниже, либо в capability-registry-baseline.json.
 import { buildIntegrationCapabilities } from './capability-integrations';
+import { POSTBOX_ENV_VARS, postboxCredentials } from './postbox-mail';
 
 export interface CapabilityStatus {
   /** Слаг для тестов/сверки. */
@@ -38,7 +38,7 @@ export function buildCapabilityReport(
   env: Env = process.env,
 ): CapabilityStatus[] {
   const alertTelegram = has(env, 'BOT_TOKEN') && has(env, 'ADMIN_ID');
-  const alertEmail = has(env, 'RESEND_API_KEY') && has(env, 'ADMIN_EMAIL');
+  const alertEmail = !!postboxCredentials(env) && has(env, 'ADMIN_EMAIL');
   // Оба канала admin-alert.ts мертвы разом — сигнализация выключена целиком:
   // события безопасности, сбои платежей, сбои канала не долетят никуда.
   const alertDead = !alertTelegram && !alertEmail;
@@ -58,19 +58,19 @@ export function buildCapabilityReport(
       id: 'alertEmail',
       title: 'Резервные алерты админу на почту',
       on: alertEmail,
-      envVars: ['RESEND_API_KEY', 'ADMIN_EMAIL'],
+      envVars: [...POSTBOX_ENV_VARS, 'ADMIN_EMAIL'],
       offReason:
-        'Резервные алерты на почту не уходят: не заданы RESEND_API_KEY и/или ADMIN_EMAIL.',
+        'Резервные алерты на почту не уходят: не заданы ключи Postbox (POSTBOX_ACCESS_KEY_ID, POSTBOX_SECRET_ACCESS_KEY) и/или ADMIN_EMAIL.',
       files: ['src/utils/admin-alert.ts'],
       critical: alertDead,
     },
     {
       id: 'emailDelivery',
       title: 'Почта пользователям (magic-link, подтверждение адреса)',
-      on: has(env, 'RESEND_API_KEY'),
-      envVars: ['RESEND_API_KEY'],
+      on: !!postboxCredentials(env),
+      envVars: [...POSTBOX_ENV_VARS],
       offReason:
-        'Почта пользователям не отправляется: не задан RESEND_API_KEY.',
+        'Почта пользователям не отправляется: не заданы ключи Postbox (POSTBOX_ACCESS_KEY_ID и POSTBOX_SECRET_ACCESS_KEY).',
       files: ['src/auth/email.service.ts'],
       critical: false,
     },

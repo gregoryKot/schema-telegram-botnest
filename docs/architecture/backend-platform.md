@@ -12,6 +12,7 @@
   - `src/auth/jwt.guard.ts` — JwtAuthGuard и OptionalJwtGuard
   - `src/auth/merge.service.ts` — слияние аккаунтов: перенос данных source→target
   - `src/auth/providers/registry.ts` — реестр провайдеров; новый способ входа — сюда
+  - `src/auth/email.service.ts` — `EmailService`: письма входа и привязки адреса (тексты — `email.letters.ts`, `email-link.letter.ts`), письма владельцу (`sendAdminNotification`); отправляет транспорт `src/infra/postbox-mail.ts`
 - Связи: Prisma (User, AuthProvider, WebSession, EmailToken, LoginTicket), analytics, `src/utils/crypto.ts` (PII провайдеров), `src/infra/cron-leader.service.ts` (watchdog домена бота); экспорты AuthModule (AuthService, JwtAuthGuard, SecurityLogService, TotpService, MaxProvider, LoginTicketService, TicketLinkService) используют api/, booking/, therapy/, telegram/.
 - Подводные камни:
   - userId Telegram-пользователя = telegramId; веб-аккаунты (Google/VK/MAX/почта) получают id из [1e15, 9e15) (`src/auth/user-id-range.ts`, `isWebUserId`) — писать в Telegram-чат по такому id нельзя.
@@ -114,13 +115,14 @@
   - `src/infra/env-check.ts` — проверка env при старте + кросс-проверки `env-check.*.ts`
   - `src/infra/capability-report.ts` — реестр «фича молча выключена без env»
   - `src/infra/self-check/self-check.service.ts` — крон `43 * * * *` и прогон через 60 с после старта
-  - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live.ts`)
+  - `src/infra/self-check/registry.ts` — список проб (`registry.config|db|live|delivery.ts`)
+  - `src/infra/postbox-mail.ts` — единственный транспорт писем: Yandex Cloud Postbox (API как у AWS SES v2, подпись SigV4 из `s3-sigv4.ts`); `sendPostboxEmail`, `postboxCredentials`, `emailFrom`, разбор отказа `parsePostboxError`. Зовут `src/auth/email.service.ts` и `src/utils/admin-alert.ts`; пробы — `self-check/probe-postbox.ts` (ключ принят площадкой) и `self-check/probe-email.ts` (последнее реальное письмо, снимок `src/utils/alert-email-health.ts`); env — `env-registry.entries.postbox.ts`, кросс-проверки — `env-check.email.ts`
 - Остальные сервисы (по строке на группу):
   - `src/infra/self-check/state.ts` (снимок для `/health` и `/stats`), `src/infra/self-check/alert-dedup.ts` (DM по смене набора упавших — аренда `self-check-alert:*` в `CronLease`; база недоступна — память процесса, `alert-tracker.ts`), `src/infra/self-check/cron-lease-registry.ts` (аренды кронов ↔ исходники), `src/infra/self-check/process-lives.ts` (жизни прошлых процессов в `ProcessLife`: тик, пришедшийся на них, проба `cronLeases` судит, а не прощает рестартом)
   - `src/infra/db-outage.service.ts` — закрывает аварию БД и шлёт DM о восстановлении; `src/infra/session-retention.service.ts` — чистка WebSession/EmailToken
   - HTTP-края: `src/infra/trust-proxy.ts` (один хоп), `src/infra/request-host.ts` (хост из Host), `src/infra/canonical-host.ts` (301 на apex), `src/infra/body-limit.ts` и `src/infra/body-parsers.ts` (потолок тела 256 КБ), `src/infra/static-cache.ts`
   - Бэкапы: `src/infra/backup-config.ts`, `src/infra/backup-capability.ts`, `src/infra/s3-sigv4.ts` (типизированный вход в подпись SigV4 `deploy/s3-sign.cjs` — одна на приложение и `scripts/s3-api.sh`), `src/infra/s3-list-objects.ts` (проба свежести в Cloudflare R2; сам прогон — `deploy/backup-scheduler.cjs`)
-  - AlertLogger — вне infra: `src/logger/alert.logger.ts`; доставка — `src/utils/admin-alert.ts`
+  - AlertLogger — вне infra: `src/logger/alert.logger.ts`; доставка — `src/utils/admin-alert.ts` (Telegram, затем письмо через `src/infra/postbox-mail.ts`)
   - Троттлинг-хранилище — вне infra: `src/api/hybrid-throttle-storage.ts` + `src/api/postgres-throttle-storage.ts`
 - Связи: Prisma (CronLease, WebSession, EmailToken); `CronLeaderModule` — @Global, `claimRun` зовут кроны booking/, auth/, channel/, telegram/; `SelfCheckService` и `ThrottleHitModule` регистрируются в `src/app.module.ts`; `src/main.ts` вызывает boot-проверки env и capability; пробы читают `src/cli/rotate-encryption/delegates.ts` и `src/utils/alert-email-health.ts`.
 - Подводные камни:
@@ -151,7 +153,7 @@
   - `src/utils/crypto-record.ts` — encryptRecord/decryptRecord по `EncryptSchema`
   - `src/bot/encrypted-rows.ts` — `decryptRecord`/`read*` для ответа ручек записи: ответ create = GET той же записи, без шифротекста (сверка — `src/utils/encrypted-write-response.spec.ts`)
   - `src/utils/encryption-policy.ts` — `FIELD_POLICY`: каждое поле Prisma — enc или plain
-  - `src/utils/admin-alert.ts` — notifyAdminWithFallback: Telegram, затем e-mail
+  - `src/utils/admin-alert.ts` — notifyAdminWithFallback: Telegram, затем e-mail (транспорт — `src/infra/postbox-mail.ts`, итог письма — `src/utils/alert-email-health.ts`)
   - `src/utils/text-limits.ts` — пределы длины текста (лимит только в DTO `@MaxLength`)
   - `src/utils/calendar-day.ts` — валидатор `IsCalendarDay`: настоящий день `YYYY-MM-DD` в DTO (не `2026-02-31`), разбор в UTC (№25)
   - `src/utils/ysq.ts` — скоринг YSQ; `isYsqScoreActive` — единственный критерий «схема выражена» (средний от 4 или больше половины «5–6»), флаг `active` у каждой схемы в ответе — его читают экраны терапевта (`shared/src/therapy/ysqExpression.ts`)

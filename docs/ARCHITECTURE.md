@@ -38,6 +38,7 @@
 | Запрос упирается в таймаут БД, долгая операция | `src/prisma/statement-timeout.ts` (`withStatementTimeout`, `DB_STATEMENT_TIMEOUT_MS`) | data |
 | Команда или кнопка бота | `src/telegram/telegram.service.ts` и соседние `src/telegram/telegram.*.service.ts` (хендлеры регистрируются в `onModuleInit`) | telegram, texts |
 | Текст уведомления | `src/notification/notification.templates.ts`, форма ты/вы — `src/notification/address-form.ts` | texts |
+| Письмо: вход по ссылке, владельцу, резервный алерт; почтовая площадка | `src/auth/email.service.ts` (тексты — `src/auth/email.letters.ts`), `src/utils/admin-alert.ts`; транспорт Yandex Cloud Postbox — `src/infra/postbox-mail.ts`; что делать при отказе — [RUNBOOKS.md](RUNBOOKS.md), «Yandex Cloud Postbox — почта» | ops, texts |
 | Куда уходит уведомление (Telegram или в приложение) | `src/bot/notify-channel.ts` (выбор канала, одна функция на очередь и `GET /api/settings`), очередь — `src/telegram/telegram.schedule-queue.ts`, пуш — `src/push/push.service.ts` | backend-api, security |
 | Уведомления в приложение на сайте: тумблер «На этом устройстве», service worker | `webapp/src/push/` (`pushState.ts` — состояния, `pushSubscription.ts` — включение и отписка при выходе, `usePushDevice.ts`), строка — `webapp/src/components/settingsSheet/PushDeviceRow.tsx`, воркер — `webapp/public/sw.js` (без `fetch`: кэша нет), канал и тексты — `shared/src/settings/notifyReach.ts` | frontend, texts, ops |
 | Обращение ты/вы во фронте | `shared/src/utils/addressForm.ts` (`useTr`) | texts |

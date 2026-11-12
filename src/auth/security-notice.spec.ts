@@ -101,7 +101,7 @@ describe('SecurityNoticeService.deliver', () => {
 
   it('notify не бросает и не ждёт: сбой почты уходит в warn', async () => {
     const { svc, email } = makeService({ email: 'me@example.com' });
-    email.send.mockRejectedValue(new Error('resend down'));
+    email.send.mockRejectedValue(new Error('postbox down'));
     expect(() => svc.linked(7n, 'vk')).not.toThrow();
     await new Promise((r) => setImmediate(r));
     expect(email.send).toHaveBeenCalled();

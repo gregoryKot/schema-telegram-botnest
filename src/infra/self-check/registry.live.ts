@@ -5,7 +5,7 @@ import { ciRunsProbe } from './probe-ci-runs';
 import { dependabotPrsProbe } from './probe-dependabot-prs';
 import { backupFreshnessProbe } from './probe-backup-freshness';
 import { googleOAuthProbe, vkOAuthProbe } from './probe-oauth-providers';
-import { webPushProbe } from './probe-web-push';
+import { deliveryProbes } from './registry.delivery';
 import { telegramDomainProbe } from './probe-telegram-domain';
 import { maxProbe } from './probe-max';
 
@@ -21,6 +21,6 @@ export function liveIntegrationProbes(): Probe[] {
     ciRunsProbe(),
     dependabotPrsProbe(),
     backupFreshnessProbe(),
-    webPushProbe(),
+    ...deliveryProbes(),
   ];
 }

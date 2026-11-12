@@ -26,9 +26,9 @@ export function logCapabilityReport(
   if (isAlertChannelDead(report)) {
     logger.error(
       'Сигнализация мертва: ни Telegram (BOT_TOKEN/ADMIN_ID), ни почта ' +
-        '(RESEND_API_KEY/ADMIN_EMAIL) не настроены — единая точка алертов из ' +
-        'src/utils/admin-alert.ts молча теряет ВСЕ алерты (события безопасности, ' +
-        'сбои платежей, сбои канала). Задай хотя бы один канал.',
+        '(POSTBOX_ACCESS_KEY_ID/POSTBOX_SECRET_ACCESS_KEY/ADMIN_EMAIL) не ' +
+        'настроены — src/utils/admin-alert.ts молча теряет ВСЕ алерты ' +
+        '(безопасность, платежи, сбои канала). Задай хотя бы один канал.',
     );
   }
 

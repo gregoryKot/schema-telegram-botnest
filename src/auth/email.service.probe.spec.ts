@@ -1,6 +1,6 @@
 // Проба почты (src/infra/self-check/probe-email.ts) судит по снимку последней
-// отправки через Resend (src/utils/alert-email-health.ts). Письма входа и
-// привязки адреса идут тем же ключом, но до 2026-11 в снимок не писали:
+// отправки через Postbox (src/utils/alert-email-health.ts). Письма входа и
+// привязки адреса идут теми же ключами, но до 2026-11 в снимок не писали:
 // отозванный ключ ломал вход по почте, а проба оставалась зелёной, пока не
 // случится алерт (docs/open/security.md).
 import { Logger } from '@nestjs/common';
@@ -11,32 +11,32 @@ import {
   resetAlertEmailHealth,
 } from '../utils/alert-email-health';
 
-const env = { RESEND_API_KEY: 'test-key', ADMIN_EMAIL: 'owner@test.com' };
+// Заглушки, не ключи.
+const KEYS = {
+  POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+  POSTBOX_SECRET_ACCESS_KEY: 'test-secret-not-a-real-key',
+};
+const env = { ...KEYS, ADMIN_EMAIL: 'owner@test.com' };
 
 describe('EmailService.send — результат письма входа виден пробе почты', () => {
-  const origKey = process.env.RESEND_API_KEY;
-  let fetchSpy: jest.SpyInstance;
+  const origEnv = { ...process.env };
+  let fetchSpy: jest.SpiedFunction<typeof fetch>;
 
   beforeEach(() => {
     resetAlertEmailHealth();
-    process.env.RESEND_API_KEY = 'test-key';
-    fetchSpy = jest.spyOn(global, 'fetch' as any);
+    Object.assign(process.env, KEYS);
+    fetchSpy = jest.spyOn(global, 'fetch');
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
   });
   afterEach(() => {
     jest.restoreAllMocks();
     resetAlertEmailHealth();
-    if (origKey === undefined) delete process.env.RESEND_API_KEY;
-    else process.env.RESEND_API_KEY = origKey;
+    process.env = { ...origEnv };
   });
 
-  it('Resend отклонил письмо входа (403) — проба почты красная, в снимке статус ответа', async () => {
-    fetchSpy.mockResolvedValue({
-      ok: false,
-      status: 403,
-      text: async () => 'API key is invalid',
-    } as any);
+  it('Postbox отклонил письмо входа (403) — проба почты красная, в снимке статус ответа', async () => {
+    fetchSpy.mockResolvedValue(new Response('Forbidden\n', { status: 403 }));
     await expect(
       new EmailService().sendLoginLink('a@test.com', 'https://x/login?t=1'),
     ).rejects.toThrow('Email delivery failed');
@@ -59,7 +59,7 @@ describe('EmailService.send — результат письма входа ви�
   });
 
   it('принятое письмо входа — снимок зелёный, проба видит удачную отправку', async () => {
-    fetchSpy.mockResolvedValue({ ok: true, status: 200 } as any);
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 200 }));
     await new EmailService().sendLoginLink('a@test.com', 'https://x/login');
     expect(getAlertEmailHealth()).toMatchObject({ ok: true, status: null });
     const res = await emailProbe(env).run();
