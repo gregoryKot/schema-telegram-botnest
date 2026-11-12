@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, reportClientError } from '../api';
 import type { TherapyClientSummary, UserId } from '../api';
 import { TaskCreateSheet } from './TaskCreateSheet';
-import { SkeletonCard } from './Skeleton';
+import { OverviewSkeleton } from './therapist/CardSkeleton';
 import { ClientNotesTab } from './therapist/ClientNotesTab';
 import { ClientYSQTab } from './therapist/ClientYSQTab';
 import { useClientDetail } from './therapist/useClientDetail';
@@ -29,9 +29,11 @@ interface Props {
   onClose: () => void;
   backHandlerRef?: React.MutableRefObject<() => void>;
   onClientsChange?: (clients: TherapyClientSummary[]) => void;
+  /** Палитра «Перейти к…» — лупа в шапке списка (оболочка, ov.setCmdOpen). */
+  onOpenPalette?: () => void;
 }
 
-export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange }: Props) {
+export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpenClient, onClose: _onClose, backHandlerRef, onClientsChange: _onClientsChange, onOpenPalette }: Props) {
   // ─── Client list ──────────────────────────────────────────────────────────────
   const [clients, setClients] = useState<TherapyClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,12 +124,10 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           clients={clients}
           loading={loading}
           loadFailed={loadFailed}
-          listTab={listTab}
-          setListTab={setListTab}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
+          listTab={listTab} setListTab={setListTab}
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+          filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+          onSearch={onOpenPalette}
           board={board}
           openClient={detail.openClient}
           addClient={addClient}
@@ -144,7 +144,7 @@ export function TherapistClientSheet({ view, openClientRef, onViewChange, onOpen
           <div className="therapist-scroll therapist-scroll--tabs tk-tabs-body" key={clientTab}>
 
             {tabLoading ? (
-              <div className="tk-load" aria-hidden><SkeletonCard height={96} /><SkeletonCard /></div>
+              <div aria-hidden><OverviewSkeleton tab={clientTab} /></div>
             ) : <>
 
             {/* ── OVERVIEW ─────────────────────────────────────────────────────── */}

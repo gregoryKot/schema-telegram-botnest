@@ -48,20 +48,21 @@ describe('ClientTasksTab', () => {
 
   // QA 2026-11: квадрат 22×22 с рамкой акцента слева выглядел чекбоксом, но
   // на нажатие не отвечал — терапевт задание клиента не отмечает. Статус — один
-  // бейдж ds-badge справа, нажимаемого на вид квадрата нет.
-  it('статус задания — один бейдж ds-badge, квадрата-«чекбокса» нет', () => {
+  // тихий ярлык на бумаге (pp-tag, b31) под названием, нажимаемого на вид квадрата нет.
+  it('статус задания — один ярлык pp-tag, квадрата-«чекбокса» нет', () => {
     const detail = { clientTasks: [task(1, {}), task(2, { done: true, completedAt: '2026-10-05T10:00:00Z' })], setShowAssign: vi.fn() };
     const { container } = render(<ClientTasksTab detail={detail as unknown as ClientDetail} />);
     expect(container.querySelector('.tb-check')).toBeNull();
     const rows = [...container.querySelectorAll('.tb-task')];
     expect(rows).toHaveLength(2);
     for (const row of rows) {
-      expect(row.querySelectorAll('.ds-badge')).toHaveLength(1);
+      expect(row.querySelectorAll('.pp-tag')).toHaveLength(1);
+      expect(row.querySelector('.ds-badge')).toBeNull();
       expect(row.querySelector('[role="checkbox"], input[type="checkbox"]')).toBeNull();
       expect(row.firstElementChild?.className).toBe('pp-row-art'); // знак задания, дальше основной блок
-      expect(row.querySelector('.tb-task-main')).not.toBeNull();
+      expect(row.querySelector('.cp-task-body')).not.toBeNull();
     }
-    expect(rows.map(r => r.querySelector('.ds-badge')?.textContent)).toEqual(['В работе', 'Выполнено']);
+    expect(rows.map(r => r.querySelector('.pp-tag')?.textContent)).toEqual(['В работе', 'Выполнено']);
   });
 
   // Регрессия: терапевт видел сырой id режима «invincible_oc» вместо
@@ -217,7 +218,7 @@ describe('вкладки без заголовков, пустые состоя�
     expect(container.querySelector('.ds-h2')).toBeNull();
     expect(screen.getByText(/Запроси(те)? тест/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Запросить тест на схемы' })).toBeTruthy();
-    expect(container.querySelector('.ds-chip.tone-tint')).not.toBeNull();
+    expect(container.querySelector('.tb-tags .pp-tag')).not.toBeNull();
   });
 
   it('«Задания» без заданий — ds-empty', () => {
