@@ -8,6 +8,7 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './support/test';
 import { activeTask, doneTask, openClientTasks } from './support/clientTasks';
+import { cabinetTask, openTherapistTasks } from './support/therapistCabinet';
 
 const WRITE = 'Написать терапевту';
 const TALK = 'Поговорить с кем-то';
@@ -113,6 +114,52 @@ test.describe('браузерный smoke: связь с терапевтом', 
     await expect(activeTask(page, CLOSED_TASK.text)).toHaveCount(0);
     await expect(doneTask(page, OPEN_TASK.text)).toHaveCount(0);
   });
+
+  // b31: у терапевта строка задания офлайн-клиента была flex без переноса — на 390 название шло колонкой в букву,
+  // на 360/320 корзина и «Выполнено» уходили за край. jsdom раскладку не считает (ClientTasksTab.layout.test.tsx
+  // сверяет структуру и CSS) — живую геометрию проверяет браузер.
+  for (const width of [320, 390]) {
+    test(`терапевт, «Задания» на ${width}: название шире 60% строки, ничего не за правым краем`, async ({
+      page,
+      api,
+    }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openTherapistTasks(page, api, [
+        cabinetTask(
+          1,
+          'Каждый вечер перед сном записывать три ситуации, в которых включался Требовательный Критик',
+        ),
+        cabinetTask(
+          2,
+          'Самонаблюдение-за-автоматическими-мыслями-и-телесными-реакциями',
+        ),
+      ]);
+      const rows = page.locator('.cp-task-list > .cp-task');
+      await expect(rows).toHaveCount(2);
+      const boxes = await rows.evaluateAll((els) =>
+        els.map((row) => {
+          const r = row.getBoundingClientRect();
+          const title = row
+            .querySelector('.cp-task-title')!
+            .getBoundingClientRect();
+          const right = Math.max(
+            ...[...row.querySelectorAll('*')].map(
+              (e) => e.getBoundingClientRect().right,
+            ),
+          );
+          return { row: r.width, rowRight: r.right, title: title.width, right };
+        }),
+      );
+      for (const b of boxes) {
+        expect(b.title).toBeGreaterThanOrEqual(0.6 * b.row);
+        expect(b.right).toBeLessThanOrEqual(b.rowRight + 1);
+        expect(b.rowRight).toBeLessThanOrEqual(width);
+      }
+      await expect(
+        rows.first().getByRole('button', { name: 'Выполнено' }),
+      ).toBeInViewport();
+    });
+  }
 
   test('неверный код: ошибка видна, связи нет', async ({ page }) => {
     await page.goto('/today');

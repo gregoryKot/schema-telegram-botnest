@@ -94,6 +94,20 @@ function Harness({ initial }: { initial: string }) {
 }
 
 describe('SessionDateTimeFields', () => {
+  // b30: поля по-русски (lang="ru") — отображение браузера; отправляемое значение то же ISO.
+  it('поля дня и времени — lang="ru", значение по-прежнему ISO', () => {
+    render(<Harness initial="2026-10-27T18:30" />);
+    const date = screen.getByLabelText<HTMLInputElement>('День сессии');
+    const time = screen.getByLabelText<HTMLInputElement>(
+      'Время сессии, необязательно',
+    );
+    expect([date.lang, time.lang]).toEqual(['ru', 'ru']);
+    fireEvent.change(date, { target: { value: '2026-11-03' } });
+    const value = screen.getByTestId('value').textContent ?? '';
+    expect(value).toBe('2026-11-03T18:30');
+    expect(sessionToSave(value)).toBe(sessionToSave('2026-11-03T18:30'));
+  });
+
   it('показывает сохранённые день и время', () => {
     render(<Harness initial="2026-10-27T10:00:00" />);
     expect(screen.getByLabelText('День сессии')).toHaveProperty(

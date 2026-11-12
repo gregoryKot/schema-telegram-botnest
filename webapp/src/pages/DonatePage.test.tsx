@@ -11,6 +11,7 @@ vi.mock('../api', async () => {
   return { api: { donate: vi.fn() }, ApiError };
 });
 import { api, ApiError } from '../api';
+import { glueSpaces } from '../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>;
 
 function resetLocation() {
@@ -214,7 +215,7 @@ describe('DonatePage — возврат с оплаты (?donation=ok|fail)', ()
   it('?donation=ok: лист «спасибо» с главным действием «На главную», формы нет', () => {
     window.history.pushState({}, '', '/donate?donation=ok');
     const { container } = render(<DonatePage />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Спасибо за поддержку!');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(glueSpaces('Спасибо за поддержку!'));
     expect(container.querySelector('.pa-thanks')).toBeTruthy();
     const home = screen.getByRole('link', { name: 'На главную' });
     expect(home.getAttribute('href')).toBe('/');
