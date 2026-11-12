@@ -48,7 +48,7 @@ describe('check-frontend-coverage-ratchet.mjs', () => {
     }
   });
 
-  it('[webapp] рост покрытия — exit 0, предлагает зафиксировать прогресс', () => {
+  it('[webapp] рост покрытия — exit 0 и никакого «подними планку»', () => {
     const fake = makeFakeNpx();
     try {
       const res = runGate(
@@ -67,7 +67,8 @@ describe('check-frontend-coverage-ratchet.mjs', () => {
         },
       );
       expect(res.status).toBe(0);
-      expect(res.stdout).toContain('стало лучше');
+      expect(res.stdout).toContain('пол 80%');
+      expect(res.stdout + res.stderr).not.toContain('--update');
     } finally {
       fake.cleanup();
     }
@@ -154,5 +155,19 @@ describe('check-frontend-coverage-ratchet.mjs', () => {
     } finally {
       fake.cleanup();
     }
+  });
+
+  it('--update отклоняется: пол меняет владелец правкой файла', () => {
+    const res = runGate(
+      'check-frontend-coverage-ratchet.mjs',
+      {
+        'scripts/frontend-coverage-baseline.json': JSON.stringify({
+          webapp: { lines: 80, branches: 70 },
+        }),
+      },
+      { args: ['--update'] },
+    );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('фиксированный');
   });
 });

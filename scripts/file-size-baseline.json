@@ -1,4 +1,5 @@
 {
+  ".claude/hooks/context-guard.mjs": 110,
   ".claude/hooks/log-tool-use.mjs": 116,
   ".claude/hooks/session-start.mjs": 33,
   "deploy/app-exit.mjs": 72,
@@ -45,7 +46,7 @@
   "scripts/check-bundle-size-ratchet.mjs": 141,
   "scripts/check-capability-registry.mjs": 180,
   "scripts/check-color-drift.mjs": 248,
-  "scripts/check-coverage-ratchet.mjs": 192,
+  "scripts/check-coverage-ratchet.mjs": 144,
   "scripts/check-cron-leader-rules.mjs": 142,
   "scripts/check-cron-leader.mjs": 157,
   "scripts/check-css-link-order.mjs": 72,
@@ -62,7 +63,7 @@
   "scripts/check-eslint-ratchet.mjs": 137,
   "scripts/check-file-size-ratchet.mjs": 161,
   "scripts/check-filename-case.mjs": 94,
-  "scripts/check-frontend-coverage-ratchet.mjs": 164,
+  "scripts/check-frontend-coverage-ratchet.mjs": 140,
   "scripts/check-gate-exemptions.mjs": 239,
   "scripts/check-gendered-forms.mjs": 171,
   "scripts/check-glyph-controls.mjs": 147,

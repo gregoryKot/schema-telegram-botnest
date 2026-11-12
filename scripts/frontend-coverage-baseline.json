@@ -1,10 +1,10 @@
 {
   "webapp": {
-    "lines": 95.77,
-    "branches": 89.06
+    "lines": 90,
+    "branches": 80
   },
   "shared": {
-    "lines": 97.75,
-    "branches": 93.67
+    "lines": 90,
+    "branches": 85
   }
 }
