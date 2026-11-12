@@ -74,7 +74,8 @@
 | docker | `docker build` прод-образа (`push: false`, кэш gha) |
 | migrations | Postgres 16: `migrate deploy` дважды, `migrate diff` против schema.prisma, real-DB e2e |
 | perf | сид синтетики, EXPLAIN ANALYZE горячих путей, `check-query-plans.mjs` |
-| webapp | build, bundle-size, vitest+coverage, vitest под TZ Sydney, UI-гейты, npm audit |
+| webapp | build, bundle-size, vitest+coverage, UI-гейты, npm audit |
+| webapp-tz | vitest `webapp` под TZ Sydney — отдельной джобой, параллельно `webapp` |
 | shared | coverage-храповик и vitest под TZ Sydney для `shared/`, npm audit |
 | eslint | `check-eslint-ratchet.mjs` (ставит зависимости всех пакетов, prisma generate) |
 | browser-smoke | build webapp, `playwright test` (Chromium из `actions/cache`), трейс артефактом |
