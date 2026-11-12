@@ -5,7 +5,7 @@
 // повторный заход обязан показать СОХРАНЁННЫЙ результат, а не пятёрки, которые
 // при сохранении затёрли бы настоящие ответы (потеря данных, паритет 2026-10).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ChildhoodWheelEx } from './ChildhoodWheelEx';
 import { AddressFormContext } from '../../utils/addressForm';
@@ -110,7 +110,7 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
     mockApi.getChildhoodRatings.mockResolvedValue(SAVED);
     renderEx();
     await screen.findByText(/Среднее 6.4\/10/);
-    expect(screen.getByRole('button', { name: '✎ Изменить' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Изменить' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Оценить детство/ })).toBeNull();
     expect(mockApi.saveChildhoodRatings).not.toHaveBeenCalled();
   });
@@ -118,7 +118,7 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
   it('«Изменить» открывает ползунки с СОХРАНЁННЫМИ значениями, а не с пятёрками', async () => {
     mockApi.getChildhoodRatings.mockResolvedValue(SAVED);
     renderEx();
-    fireEvent.click(await screen.findByRole('button', { name: '✎ Изменить' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
     expect(screen.getAllByText('9', { selector: '.ex2-cw-value' }).length).toBe(1);
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 6.4\/10/);
@@ -129,7 +129,7 @@ describe('ChildhoodWheelEx — повторное открытие (read-after-w
   it('«Отмена» при правке возвращает к сохранённому результату и не пишет в БД', async () => {
     mockApi.getChildhoodRatings.mockResolvedValue(SAVED);
     renderEx();
-    fireEvent.click(await screen.findByRole('button', { name: '✎ Изменить' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Изменить' }));
     dragFirstTrackTo(200);
     fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
     await screen.findByText(/Среднее 6.4\/10/);
@@ -172,14 +172,14 @@ describe('ChildhoodWheelEx — результат и сохранение (read-
     expect(onSaved).toHaveBeenCalledWith({ attachment: 5, autonomy: 5, expression: 5, play: 5, limits: 5 });
   });
 
-  it('«✎ Изменить» возвращает на экран слайдеров с теми же значениями', async () => {
+  it('«Изменить» возвращает на экран слайдеров с теми же значениями', async () => {
     renderEx();
     await openFill();
     rateAll();
     fireEvent.click(screen.getByRole('button', { name: /Посмотреть результат/ }));
     await screen.findByText(/Среднее 5\/10/);
 
-    fireEvent.click(screen.getByRole('button', { name: '✎ Изменить' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
     expect(screen.getByRole('button', { name: /Посмотреть результат/ })).toBeTruthy();
   });
 
@@ -339,5 +339,30 @@ describe('ChildhoodWheelEx — ты/вы на заполнении', () => {
     await openFillAs('ty');
     expect(screen.getByText(/^Оцени пять базовых потребностей/)).toBeTruthy();
     expect(screen.getByText(/Оценивай не «как могло быть»/)).toBeTruthy();
+  });
+});
+
+// Редизайн b19: «Связать с сегодня» на результате — переход в «Историю» трекера. Колесо закрывается своим
+// goBack (запись листа снимается), и только потом хост открывает «Историю»: иначе запись колеса осталась бы в
+// истории браузера и «Назад» открыло бы его снова.
+describe('ChildhoodWheelEx — «Связать с сегодня» и загрузка', () => {
+  it('сначала закрывает колесо, затем открывает «Историю»', async () => {
+    mockApi.getChildhoodRatings.mockResolvedValue({ attachment: 2, autonomy: 8, expression: 6, play: 9, limits: 7 });
+    const order: string[] = [];
+    render(
+      <MemoryRouter>
+        <ChildhoodWheelEx onBack={() => order.push('back')} onOpenToday={() => order.push('today')} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: /Связать с\sсегодня/ }));
+    await waitFor(() => expect(order).toEqual(['back', 'today']));
+  });
+
+  it('пока оценки грузятся — силуэт пяти строк и место под сцену, а не пятёрки', () => {
+    mockApi.getChildhoodRatings.mockReturnValue(new Promise(() => {}));
+    renderEx();
+    expect(document.querySelectorAll('.chw-skel-row')).toHaveLength(5);
+    expect(document.querySelector('.chw-scene--skel')).not.toBeNull();
+    expect(document.querySelectorAll('.ex2-cw-track')).toHaveLength(0);
   });
 });

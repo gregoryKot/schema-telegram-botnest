@@ -4,17 +4,20 @@
 // (docs/INCIDENTS.md, 2026-10-31). Пока заметка грузится — силуэт опросника.
 import type { ReactNode } from 'react';
 import { api } from '../../api';
-import { Skeleton, SkeletonCard } from '../Skeleton';
+import { Skeleton } from '../Skeleton';
+import { PaperAlert } from '../paper/PaperAlert';
 import { useSavedNoteValues } from '../../../../shared/src/notes/useSavedNoteValues';
 import type { MyCardsKind } from '../../../../shared/src/pattern/useMyCards';
 
-// Силуэт опросника: тики вопросов, карточка вопроса, кнопка «Дальше».
+// Силуэт по форме вопросов (CardQuestions): полоски, «Вопрос N из M», вопрос, поле, кнопка «Дальше».
 function FlashcardSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Загружаю карточку">
-      <Skeleton height={6} radius={3} style={{ marginBottom: 'var(--space-12)' }} />
-      <SkeletonCard height={280} />
-      <Skeleton width={180} height={44} radius={22} style={{ marginTop: 'var(--space-12)', marginLeft: 'auto' }} />
+    <div className="ex2-skel" aria-busy="true" aria-label="Загружаю карточку">
+      <Skeleton height={5} radius={3} />
+      <Skeleton width={140} height={12} />
+      <Skeleton width="78%" height={28} />
+      <Skeleton height={132} radius={14} />
+      <Skeleton width={160} height={44} radius={22} style={{ marginLeft: 'auto' }} />
     </div>
   );
 }
@@ -22,18 +25,14 @@ function FlashcardSkeleton() {
 export function SavedNoteGate({ kind, id, preset, children }: {
   kind: MyCardsKind;
   id: string;
-  /** Значения от вызывающего (экран паттерна) — тогда без запроса. */
+  /** Значения от вызывающего (экран паттерна, правка после «готово») — тогда без запроса. */
   preset?: Record<string, string>;
   children: (initial: Record<string, string> | undefined) => ReactNode;
 }) {
   const saved = useSavedNoteValues(kind, id, api, preset);
   if (saved.loading) return <FlashcardSkeleton />;
   return (<>
-    {saved.failed && (
-      <p role="alert" className="ex2-fine">
-        Не получилось загрузить уже написанное в карточке. Оно не пропало: пустые поля его не сотрут.
-      </p>
-    )}
+    {saved.failed && <PaperAlert className="ex2-gate-alert" sign={kind === 'schema' ? 'layers' : 'cluster'} title="Не получилось загрузить уже написанное в карточке." text="Оно не пропало: пустые поля его не сотрут." />}
     {children(saved.values)}
   </>);
 }
