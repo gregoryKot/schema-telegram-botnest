@@ -14,6 +14,7 @@ const base: ConceptGraphMetrics = {
   brief30: 0,
   syncToMap30: 0,
   syncFromMap30: 0,
+  needsRated30: 0,
   guideModes30: 0,
   guideSchemas30: 0,
   guideTechniques30: 0,
@@ -148,6 +149,20 @@ describe('formatConceptGraphMetrics', () => {
     expect(onlyFrom).toContain('Холст дописывал в концептуализацию: 1 раз');
     expect(onlyFrom).not.toContain('Дописывали на карту');
     expect(onlyFrom).not.toMatch(/NaN|undefined|null|полей: 0/);
+  });
+
+  it('колесо потребностей на холсте: строка стоит, только когда его заполняли', () => {
+    const text = formatConceptGraphMetrics({ ...base, needsRated30: 4 });
+    expect(text).not.toContain('Пока никто');
+    expect(text).toContain('Колесо потребностей на холсте заполняли 4 раз');
+    expect(text).not.toMatch(/NaN|undefined|null/);
+    // Схемой пользовались, а колесо не трогали — строки нет совсем, а не «заполняли 0 раз».
+    const none = formatConceptGraphMetrics({ ...base, opens30: 5 });
+    expect(none).not.toContain('Колесо');
+  });
+
+  it('пустая БД не упоминает колесо потребностей', () => {
+    expect(formatConceptGraphMetrics({ ...base })).not.toContain('Колесо');
   });
 
   it('показ схемы клиенту: строки только о том, что было, — без «0 раз»', () => {

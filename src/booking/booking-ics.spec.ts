@@ -75,6 +75,42 @@ describe('buildBookingIcsText — контент без PII', () => {
     );
     expect(ics).toContain('TRIGGER:-PT60M\r\n');
   });
+
+  // Пин целиком: обезличивание события ВЛАДЕЛЬЦА в iCloud (caldav-owner-event.ts)
+  // клиентский файл не обедняет — ссылка управления и напоминание на месте.
+  it('файл клиента целиком — тот же, что до обезличивания события владельца', async () => {
+    const ics = await buildBookingIcsText(
+      makePrisma(CONFIRMED),
+      'tok-abc',
+      'https://kotlarewski.gr',
+    );
+    const lines = ics
+      .replace(/\r\n /g, '')
+      .split('\r\n')
+      .filter((l) => l && !l.startsWith('DTSTAMP:'));
+    expect(lines).toEqual([
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//schemehappens//booking//RU',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:Запись на сессии',
+      'BEGIN:VEVENT',
+      'UID:booking-42-client@schemehappens.ru',
+      'DTSTART:20260810T100000Z',
+      'DTEND:20260810T105000Z',
+      'SUMMARY:Встреча с Григорием Котляревским',
+      'DESCRIPTION:Посмотреть или отменить запись: https://kotlarewski.gr/booking/manage?token=tok-abc',
+      'URL:https://kotlarewski.gr/booking/manage?token=tok-abc',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Напоминание о встрече',
+      'TRIGGER:-PT60M',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ]);
+  });
 });
 
 describe('buildBookingIcsText — время в UTC', () => {

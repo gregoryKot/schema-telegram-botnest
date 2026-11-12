@@ -14,13 +14,9 @@ export interface OauthRedirectIssue {
 
 type Env = Record<string, string | undefined>;
 
-// GOOGLE_REDIRECT_URI/VK_REDIRECT_URI — явный redirect_uri провайдера.
-// WEBAPP_URL — от него строятся frontendBase-редиректы колбэков Google/VK.
-const REDIRECT_ENV_VARS = [
-  'GOOGLE_REDIRECT_URI',
-  'VK_REDIRECT_URI',
-  'WEBAPP_URL',
-];
+// VK_REDIRECT_URI — явный redirect_uri провайдера.
+// WEBAPP_URL — от него строятся frontendBase-редиректы колбэка VK.
+const REDIRECT_ENV_VARS = ['VK_REDIRECT_URI', 'WEBAPP_URL'];
 
 function badHost(raw: string | undefined): string | null {
   if (!raw?.trim()) return null; // провайдер не настроен — не наша забота
@@ -57,7 +53,7 @@ export function buildOauthRedirectCapability(
     offReason:
       'Адрес возврата OAuth ведёт на хост, который сервер сам редиректит ' +
       'дальше (legacy/www) — вход зациклится (ERR_TOO_MANY_REDIRECTS): ' +
-      'GOOGLE_REDIRECT_URI/VK_REDIRECT_URI/WEBAPP_URL указывают не на ' +
+      'VK_REDIRECT_URI/WEBAPP_URL указывают не на ' +
       'канонический хост.',
     files: ['src/auth/oauth-host.ts'],
     critical: false,

@@ -158,6 +158,7 @@ export const CONCEPT_BRIEF_OPEN_EVENT = 'concept_brief_open';
 // Строка связи над холстом «Графических карт» (#963): «Добавить на карту» (поля → холст) и запись с холста в поля.
 export const CONCEPT_SYNC_TO_MAP_EVENT = 'concept_sync_to_map';
 export const CONCEPT_SYNC_FROM_MAP_EVENT = 'concept_sync_from_map';
+export const CONCEPT_NEEDS_RATED_EVENT = 'concept_needs_rated'; // колесо потребностей на холсте (WheelProvider): первое за открытие сохранение с оценкой или текстом терапевта
 // Подсказки терапевту (#995, guide/useConceptGuide): лист режима, лист схемы, лист техники, «Дать заданием»,
 // «Делали сегодня» в листе техники (только постановка отметки, не снятие); журнал техник во вкладке «Задания» —
 // переход «журнал →» из подсказок и тап по строке журнала (лист техники). Только сайт.

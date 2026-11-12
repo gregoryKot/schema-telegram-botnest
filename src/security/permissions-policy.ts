@@ -24,6 +24,7 @@ export const PERMISSIONS_POLICY_DENY = [
   'geolocation',
   'gyroscope',
   'hid',
+  'identity-credentials-get',
   'magnetometer',
   'microphone',
   'midi',
@@ -38,8 +39,6 @@ export const PERMISSIONS_POLICY_DENY = [
  * значение — кто ею пользуется.
  */
 export const PERMISSIONS_POLICY_KEEP: Readonly<Record<string, string>> = {
-  // Google One Tap идёт через FedCM: use_fedcm_for_prompt в useGoogleOneTap.
-  'identity-credentials-get': 'webapp/src/hooks/useGoogleOneTap.ts',
   // «Поделиться»: navigator.share в shared/src/share и в обоих фронтах.
   'web-share': 'shared/src/share/shareImage.ts',
   // «Копировать»: navigator.clipboard в useCopyToClipboard и соседях.

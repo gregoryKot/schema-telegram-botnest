@@ -39,8 +39,7 @@ async function request(): Promise<Issued | null> {
     const data = (await res.json()) as HandoffResponse;
     return { code: data.deviceCode, expiresAt: Date.now() + data.expiresIn * 1000 };
   } catch (err) {
-    // Человеку ничего не показываем (страница установки откроется и без
-    // кода), но обработанная авария не должна быть немой (правило №14).
+    // Страница установки откроется и без кода, но авария не немая (№14).
     reportClientError({
       message: `install handoff: не получен код передачи сессии: ${err instanceof Error ? err.message : String(err)}`,
       section: 'install.handoff',
@@ -50,6 +49,8 @@ async function request(): Promise<Issued | null> {
 }
 
 function obtain(): Promise<Issued | null> {
+  // Только MAX: из Telegram сессию в браузер не передаём (site-login.ts, 2026-11).
+  if (getHost().id !== 'max') return Promise.resolve(null);
   if (usable(issued, Date.now())) return Promise.resolve(issued);
   if (!inflight) {
     inflight = request().then((i) => {
@@ -68,11 +69,10 @@ export function _resetInstallHandoffForTests(): void {
 }
 
 /**
- * Адрес страницы установки с одноразовым кодом передачи сессии: внешний
- * браузер (куда уводит кнопка внутри мессенджера) обменяет код на сессию и
- * откроется уже под этим же аккаунтом. До ответа сервера и при ошибке адрес
- * без кода: страница тогда просто попросит войти. Код живёт ~2 минуты, поэтому
- * за 10 с до истечения запрашиваем новый — один раз.
+ * Адрес страницы установки. В MAX — с одноразовым кодом передачи сессии:
+ * внешний браузер обменяет его на сессию того же аккаунта. В Telegram, на
+ * сайте, до ответа сервера и при ошибке — без кода: страница попросит войти.
+ * Код живёт ~2 минуты, за 10 с до истечения запрашиваем новый — один раз.
  */
 export function useInstallHandoff(): { href: string } {
   const [code, setCode] = useState<string | null>(() =>

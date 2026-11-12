@@ -1,5 +1,5 @@
 // Записи реестра env-переменных (см. env-registry.ts) — группа auth:
-// вход (Google/VK/MAX/Telegram), JWT, шифрование хранимых данных.
+// вход (VK/MAX/Telegram), JWT, шифрование хранимых данных.
 import { EnvVarSpec, formats } from './env-registry';
 
 export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
@@ -22,35 +22,10 @@ export const AUTH_ENV_ENTRIES: EnvVarSpec[] = [
     group: 'auth',
   },
   {
-    name: 'GOOGLE_CLIENT_ID',
-    purpose:
-      'OAuth client id входа через Google. Рубильник: без него (или без `GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`) вход через Google выключен — кнопка на `/login` остаётся, нажатие ведёт на экран «Вход через Google отключён» (`src/auth/oauth-provider-switch.ts`). Тот же id зашит в сборку сайта для окна «Продолжить как…» (`ARG VITE_GOOGLE_CLIENT_ID` в Dockerfile) — менять в обоих местах.',
-    requiredInProd: false,
-    format: formats.nonEmpty,
-    group: 'auth',
-  },
-  {
-    name: 'GOOGLE_CLIENT_SECRET',
-    purpose:
-      'OAuth client secret Google — без него обмен кода на токен падает.',
-    requiredInProd: false,
-    format: formats.nonEmpty,
-    group: 'auth',
-  },
-  {
-    name: 'GOOGLE_REDIRECT_URI',
-    purpose:
-      'Адрес возврата Google после входа — обязан вести на канонический хост ' +
-      '(инцидент 2026-09-16: старый хост давал ERR_TOO_MANY_REDIRECTS).',
-    requiredInProd: false,
-    format: formats.httpsUrl,
-    group: 'auth',
-  },
-  {
     name: 'JWT_SECRET',
     purpose:
       'Подписывает access/refresh/merge/2FA-challenge JWT и state входа сайта — ' +
-      'без него вход через Google/VK и merge аккаунтов не работает.',
+      'без него вход через VK и merge аккаунтов не работает.',
     requiredInProd: true,
     format: formats.secret32,
     group: 'auth',

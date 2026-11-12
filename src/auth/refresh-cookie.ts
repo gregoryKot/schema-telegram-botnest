@@ -13,7 +13,7 @@ interface CookieRes {
   clearCookie(name: string, opts: { path: string }): void;
 }
 
-const LINK_COOKIES = ['tg_link_user', 'link_token']; // незаконченная привязка
+const LINK_COOKIES = ['link_token']; // незаконченная привязка
 /** Стирает refresh-куку, метку кросс-сайтовой сессии и куки привязки: брошенная
  * привязка переживала выход — следующий на этом компьютере входил в чужой аккаунт
  * (аудит 2026-11). Общая точка для `logout` и 401 на `/api/auth/refresh`. */

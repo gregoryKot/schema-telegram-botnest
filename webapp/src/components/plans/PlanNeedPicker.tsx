@@ -1,14 +1,12 @@
 // Прямой путь к плану с пустого экрана «Планов» (QA 2026-11, B-М8): раньше
 // подпись обещала кнопку «Запланировать практику», которой нет, а настоящий
-// путь шёл через трекер и ответ «Совсем нет». Строка потребности открывает
-// тот же лист плана, что и трекер (PlanSheet).
+// путь шёл через трекер и ответ «Совсем нет». Плитка потребности открывает
+// тот же лист плана, что и трекер (PlanSheet). b20: плитки бумаги (NeedTiles),
+// а не белая таблица, — та же механика, что выбор потребности в «Что питает».
 import { useState } from 'react';
 import { useNeedData } from '../../needData';
-import { NEED_ORDER } from '../../../../shared/src/needs/types';
-import { NEED_HUE, hueStyle } from '../../lib/tone';
-import { pressable } from '../../utils/a11y';
 import { PlanSheet } from '../PlanSheet';
-import { NeedArt } from '../art/NeedArt';
+import { NeedTiles } from './NeedTiles';
 
 export function PlanNeedPicker({ onPlanned }: { onPlanned: () => void }) {
   const NEED_DATA = useNeedData();
@@ -16,16 +14,7 @@ export function PlanNeedPicker({ onPlanned }: { onPlanned: () => void }) {
   const picked = needId ? NEED_DATA[needId] : undefined;
   return (
     <>
-      <div className="ds-card ds-card--flush" role="group" aria-label="Потребность для плана">
-        {NEED_ORDER.filter(id => NEED_DATA[id]).map(id => (
-          <div key={id} className="ds-list-row ds-list-row--nav ds-list-row--hover"
-            style={hueStyle(NEED_HUE[id])} {...pressable(() => setNeedId(id))}>
-            <span className="pp-row-art"><NeedArt id={id} size="row" /></span>
-            <span className="ds-list-body"><span className="ds-list-title">{NEED_DATA[id].name}</span></span>
-            <span className="ds-chev" aria-hidden="true" />
-          </div>
-        ))}
-      </div>
+      <NeedTiles label="Потребность для плана" onPick={setNeedId} />
       {needId && picked && (
         <PlanSheet
           needId={needId}

@@ -69,7 +69,8 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
   it('своя цель — язык клиента: «Новая цель», «Выбери цель», «Поставить цель»', () => {
     renderSheet();
     expect(screen.getByText('Новая цель')).toBeTruthy();
-    expect(screen.getByText('цель', { selector: 'em' })).toBeTruthy();
+    // b20: вопрос одной строкой Literata в листе-шапке (было «Выбери» / курсивом «цель» в две строки).
+    expect(screen.getByRole('heading', { level: 1, name: 'Выбери цель' })).toBeTruthy();
     expect(screen.queryByText(/Назначить|Новое задание/)).toBeNull();
   });
 
@@ -87,8 +88,8 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
         </AddressFormContext.Provider>
       </MemoryRouter>,
     );
-    expect(screen.getByText('Выберите')).toBeTruthy();
-    expect(screen.queryByText('Выбери')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Выберите цель' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /Выбери / })).toBeNull();
     fireEvent.click(screen.getByText('Поставить цель'));
     expect(screen.queryByText('Выбери схему')).toBeNull(); // не должно быть тыкающей ошибки
     expect(screen.getByText('Выберите схему')).toBeTruthy();
@@ -118,6 +119,29 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
 
     await screen.findByText('Не удалось сохранить');
     expect(onCreated).not.toHaveBeenCalled();
+  });
+});
+
+// Ревью g6: схема выбирается тем же PickGroups, что режим (правило №3), — строкой .sd-mode-card, не своей «пилюлей».
+describe('TaskCreateSheet — выбор схемы общим списком групп', () => {
+  it('схема — строка .sd-mode-card, выбранная получает is-selected и уходит в задание', async () => {
+    mockApi.createTask.mockResolvedValue({ id: 1 });
+    const { container } = render(
+      <MemoryRouter>
+        <TaskCreateSheet defaultType="schema_intro" onCreated={vi.fn()} onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('.sk-pick, .sk-domain')).toBeNull();
+    const row = screen.getByText('Дефективность / Стыд').closest('.sd-mode-card')!;
+    expect(row).toBeTruthy();
+    expect(row.closest('.sd-groups')!.classList.contains('is-clamped')).toBe(true);
+    fireEvent.click(row);
+    expect(row.classList.contains('is-selected')).toBe(true);
+    expect(container.querySelectorAll('.sd-mode-card.is-selected')).toHaveLength(1);
+    fireEvent.click(screen.getByText('Поставить цель'));
+    await waitFor(() => expect(mockApi.createTask).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'schema_intro', text: 'defectiveness' }),
+    ));
   });
 });
 

@@ -238,7 +238,6 @@ describe('поллинг на шве: настоящий Telegraf против �
       stub,
       stub,
       stub,
-      stub,
     );
     service.onModuleInit();
 

@@ -31,9 +31,8 @@ import {
 } from './telegram.keyboards';
 // Ре-экспорт: telegram.notify-actions.service импортирует клавиатуру отсюда.
 export { buildWelcomeKeyboard };
-import { isLoginPayload } from './login-payload';
+import { isLoginPayload, loginClosedText } from './login-payload';
 import { isLinkPayload } from './link-payload';
-import { TelegramLoginService } from './telegram.login.service';
 import { TelegramLinkService } from './telegram.link.service';
 import { snoozeReminder, snoozeFailText } from './telegram.snooze';
 import { setupBotMenu } from './telegram.menu-setup';
@@ -75,7 +74,6 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
     private readonly practicesService: PracticesService,
     private readonly notificationService: NotificationService,
     private readonly analyticsEvents: AnalyticsService,
-    private readonly loginService: TelegramLoginService,
     private readonly linkService: TelegramLinkService,
   ) {}
 
@@ -163,14 +161,12 @@ export class TelegramService implements OnModuleInit, OnModuleDestroy {
             src: sourceSlug,
           });
         }
-        // Вход по диплинку из приложения. Раньше гейта согласия: человек уже
-        // соглашался при первом входе, а тут он ждёт подтверждения на другом
-        // экране — упереться здесь в стену согласия значило бы подвесить его.
+        // Прежняя ссылка «Войти через Telegram» (вход на сайт убран 2026-11):
+        // говорим, куда идти, и продолжаем обычный /start с кнопкой приложения.
         if (isLoginPayload(payload)) {
-          await this.loginService.handleStart(ctx, payload!, rawId);
-          return;
+          await ctx.reply(loginClosedText(await this.form(rawId)));
         }
-        // Как и вход, объединение идёт ДО гейта согласия: человек ждёт
+        // Объединение идёт ДО гейта согласия: человек ждёт
         // подтверждения на другом экране, и упереться здесь в соглашение
         // значит оставить тот экран висеть.
         if (isLinkPayload(payload)) {

@@ -81,7 +81,8 @@ const NON_THERAPEUTIC_ALLOWLIST: Record<string, string> = {
     'карта режимов: потребность и ответ Здорового Взрослого в узле — пишет терапевт, не клиент',
   // Колесо потребностей на холсте (2026-11): текст листа Farrell & Shaw по
   // потребности и периоду — заполняет терапевт о клиенте, как заметки узла.
-  'webapp/src/components/modeMap/WheelFields.tsx':
+  // Поле — в строке потребности панели (вынесена из WheelFields.tsx).
+  'webapp/src/components/modeMap/WheelNeedRow.tsx':
     'карта режимов: текст листа колеса потребностей — пишет терапевт, не клиент',
   // Терапевтская сторона — заметки специалиста о клиенте, не собственный
   // свободный текст клиента о своём состоянии.
@@ -116,7 +117,9 @@ const EXPECTED_CRISIS_FILES = [
   'webapp/src/components/flashcard/FlashcardSteps.tsx',
   'webapp/src/components/exercises/LetterEx.tsx',
   'webapp/src/components/exercises/BeliefCheckEx.tsx',
-  'webapp/src/components/exercises/FlashcardEx.tsx',
+  // Карточки схемы и режима (b17, 2026-11): вопросы со свободным текстом и детекция переехали
+  // из FlashcardEx.tsx в cardFlow/CardQuestions.tsx, экраны выбора и «готово» — без <textarea>.
+  'webapp/src/components/exercises/cardFlow/CardQuestions.tsx',
   // Дневниковые шиты — образец правильного пути (уже сделаны), санити-якорь
   // на случай, если грепы выше молча сломаются. В webapp форма дневника режимов
   // вынесена в ModeEntryForm — детекция живёт там (ModeEntrySheet теперь без
@@ -175,7 +178,8 @@ describe('трипваер: кризисная детекция для своб�
     // остались название и заметка, поэтому его запись тоже на месте.
     // 21 → 19 (2026-11): PlanSheet.tsx и TaskCreateSheet.tsx сняты — детекция
     // в них есть, запись «детекция не нужна» протухла (тест ниже).
-    // 19 → 20 (2026-11, колесо потребностей): modeMap/WheelFields.tsx — текст
+    // 19 → 20 (2026-11, колесо потребностей): modeMap/WheelNeedRow.tsx (до
+    // 2026-11-12 поле стояло в WheelFields.tsx — запись переехала за ним) — текст
     // листа «детский опыт / подростковый / как сейчас» по потребности; пишет
     // терапевт о клиенте на своём холсте (тот же класс, что NodeMeaningFields).
     expect(Object.keys(NON_THERAPEUTIC_ALLOWLIST).length).toBeLessThanOrEqual(
@@ -325,12 +329,9 @@ describe('трипваер: кризисная детекция для <input> �
   it('скан не ослеп: известные поля свободного текста попадают в выборку', () => {
     // Контрольный образец: без него сломанный разбор тегов дал бы пустую
     // выборку и зелёный тест выше.
-    for (const rel of [
-      'webapp/src/components/exercises/SafePlaceEx.tsx',
+    expect(FREE_INPUT_FILES).toContain(
       'webapp/src/components/exercises/beliefCheck/EviList.tsx',
-    ]) {
-      expect(FREE_INPUT_FILES).toContain(rel);
-    }
+    );
   });
 });
 

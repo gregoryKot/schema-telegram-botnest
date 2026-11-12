@@ -85,9 +85,13 @@ describe('PracticesScreen — список практик', () => {
   it('на чистом аккаунте (нет практик) показывает пустое состояние, не выдуманные карточки', async () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
-    expect(
-      await screen.findByText('Пока пусто — добавь первое действие ниже.'),
-    ).toBeTruthy();
+    const empty = await screen.findByText('Пока пусто — добавь первое действие ниже.');
+    // Ревью g6: под заголовком потребности с её знаком пустая строка — знак действия (Leaf), а не тот же
+    // знак потребности второй раз столбиком.
+    const box = empty.closest('.pp-empty')!;
+    expect(box.classList.contains('pp-empty--sign')).toBe(true);
+    const headArt = document.querySelector('.sk-feed-head .pp-row-art svg')!.innerHTML;
+    expect(box.querySelector('svg')!.innerHTML).not.toBe(headArt);
   });
 
   it('рендерит реальные практики из API, а не заглушку', async () => {

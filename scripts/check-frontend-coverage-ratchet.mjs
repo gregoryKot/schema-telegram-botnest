@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-// Фронтенд-coverage-храповик (TEST_IMPROVEMENT_PLAN.md, этап 2.1; по образцу
-// check-coverage-ratchet.mjs, бэкендового). До этого шага coverage фронтендов
-// вообще не гейтился в CI — джобы гоняли `npm test --prefix
-// <pkg>` без --coverage, число могло падать незаметно.
+// Пол покрытия сайта и shared/ — scripts/frontend-coverage-baseline.json.
+// Пол фиксированный: меняет владелец правкой файла.
 //
 // Гоняет `npx vitest run --coverage` в каждом пакете (webapp,
 // shared), читает <pkg>/coverage/coverage-summary.json (репортер
@@ -13,7 +11,7 @@
 // раздельные (webapp, shared) — каждая передаёт --package <имя>, чтобы не
 // гонять чужой пакет и не задваивать время джобы.
 import { spawnSync } from 'child_process';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 import { exitFlushed as exit, relayOutput } from './child-output.mjs';
 
@@ -22,6 +20,13 @@ const BASELINE_PATH = join(ROOT, 'scripts', 'frontend-coverage-baseline.json');
 const PACKAGES = ['webapp', 'shared'];
 
 const UPDATE = process.argv.includes('--update');
+if (UPDATE) {
+  console.error(
+    '❌ Пол покрытия фиксированный: его меняет владелец правкой ' +
+      'scripts/frontend-coverage-baseline.json, --update не поддерживается.',
+  );
+  process.exit(1);
+}
 const packageFlagIndex = process.argv.indexOf('--package');
 const requestedPackage =
   packageFlagIndex !== -1 ? process.argv[packageFlagIndex + 1] : null;
@@ -82,40 +87,25 @@ for (const pkg of packages) {
   current[pkg] = await runVitestCoverage(pkg);
 }
 
-if (UPDATE) {
-  const existing = existsSync(BASELINE_PATH)
-    ? JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
-    : {};
-  const next = { ...existing, ...current };
-  writeFileSync(BASELINE_PATH, JSON.stringify(next, null, 2) + '\n');
-  console.log(
-    `Бейслайн обновлён: ${Object.entries(current)
-      .map(([pkg, c]) => `${pkg} — lines ${c.lines}%, branches ${c.branches}%`)
-      .join('; ')}.`,
-  );
-  await exit(0);
-}
 
 let baseline;
 try {
   baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf8'));
 } catch {
   console.error(
-    'Нет бейслайна — сгенерируй: node scripts/check-frontend-coverage-ratchet.mjs --update',
+    'Нет бейслайна scripts/frontend-coverage-baseline.json — верни файл из git.',
   );
   await exit(1);
 }
 
 let hasFailure = false;
-let hasProgress = false;
 
 for (const pkg of packages) {
   const cur = current[pkg];
   const base = baseline[pkg];
   if (!base) {
     console.error(
-      `❌ [${pkg}] нет в бейслайне ${BASELINE_PATH} — сгенерируй: ` +
-        'node scripts/check-frontend-coverage-ratchet.mjs --update',
+      `❌ [${pkg}] нет в бейслайне ${BASELINE_PATH} — допиши пакет в файл.`,
     );
     hasFailure = true;
     continue;
@@ -134,31 +124,17 @@ for (const pkg of packages) {
     console.error(`❌ [${pkg}] coverage-храповик: покрытие просело.`);
     for (const f of failures) console.error(`   ${f}`);
     console.error(
-      'CLAUDE.md, правило «Тесты»: новый код с логикой приезжает с тестом — ' +
-        'покрытие не должно падать.\n' +
-        'Если снижение осознанное и оправдано — обсуди перед тем как обновлять ' +
-        'бейслайн: node scripts/check-frontend-coverage-ratchet.mjs --update',
+      'Покрытие ниже пола: допиши тест на новую логику. Пол меняет владелец ' +
+        'правкой scripts/frontend-coverage-baseline.json.',
     );
     continue;
   }
 
-  if (
-    cur.lines - base.lines > EPSILON ||
-    cur.branches - base.branches > EPSILON
-  ) {
-    hasProgress = true;
-    console.log(
-      `✓ [${pkg}] coverage-храповик: lines ${cur.lines}% (было ${base.lines}%), ` +
-        `branches ${cur.branches}% (было ${base.branches}%) — стало лучше, зафиксируй: ` +
-        'node scripts/check-frontend-coverage-ratchet.mjs --update',
-    );
-  } else {
-    console.log(
-      `✓ [${pkg}] coverage-храповик: lines ${cur.lines}% (без просадки), branches ${cur.branches}%`,
-    );
-  }
+  console.log(
+    `✓ [${pkg}] coverage-храповик: lines ${cur.lines}% (пол ${base.lines}%), ` +
+      `branches ${cur.branches}% (пол ${base.branches}%)`,
+  );
 }
 
 if (hasFailure) await exit(1);
-if (hasProgress) await exit(0);
 await exit(0);

@@ -29,7 +29,7 @@ import { BookingNotifyService } from '../src/booking/booking-notify.service';
 import { BookingConfirmRetryService } from '../src/booking/booking-confirm-retry.service';
 import { MeetingService } from '../src/booking/meeting.service';
 import { CalDavService } from '../src/booking/caldav.service';
-import { bookingEventUid } from '../src/booking/booking-confirm-run';
+import { bookingEventUid } from '../src/booking/caldav-owner-event';
 import { CronLeaderService } from '../src/infra/cron-leader.service';
 import { TelegramService } from '../src/telegram/telegram.service';
 import { EmailService } from '../src/auth/email.service';

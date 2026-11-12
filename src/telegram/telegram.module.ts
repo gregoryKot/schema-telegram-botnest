@@ -9,7 +9,6 @@ import { TelegramNotifyActionsService } from './telegram.notify-actions.service'
 import { TelegramNotifySettingsService } from './telegram.notify-settings.service';
 import { TelegramSummaryToggleService } from './telegram.summary-toggle.service';
 import { TelegramQuizService } from './telegram.quiz.service';
-import { TelegramLoginService } from './telegram.login.service';
 import { TelegramLinkService } from './telegram.link.service';
 import { TELEGRAM_PROVIDERS } from './telegram.providers';
 import { BotModule } from '../bot/bot.module';
@@ -25,7 +24,7 @@ import { PushModule } from '../push/push.module';
     NotificationModule,
     TherapyModule,
     AnalyticsModule,
-    // Билет входа: карточку сверки показывает бот (telegram.login.service).
+    // Билет привязки: карточку сверки показывает бот (telegram.link.service).
     AuthModule,
     PushModule, // очередь шлёт и уведомления в приложение
   ],
@@ -39,7 +38,6 @@ import { PushModule } from '../push/push.module';
     TelegramNotifySettingsService,
     TelegramSummaryToggleService,
     TelegramQuizService,
-    TelegramLoginService,
     TelegramLinkService,
     ...TELEGRAM_PROVIDERS,
     ...CHANNEL_PROVIDERS, // канал «ЗВ»: площадки, рассылка, расписание

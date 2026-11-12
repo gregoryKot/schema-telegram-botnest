@@ -136,6 +136,10 @@ describe('CONCEPT_EVENTS ⊆ ANALYTICS_EVENTS', () => {
     expect(CONCEPT_EVENTS).toContain('concept_sync_from_map');
   });
 
+  it('колесо потребностей на холсте — событие реестра (concept_needs_rated)', () => {
+    expect(CONCEPT_EVENTS).toContain('concept_needs_rated');
+  });
+
   it('подсказки терапевту — события реестра (concept_guide_*, #995)', () => {
     expect(CONCEPT_EVENTS).toContain('concept_guide_mode_open');
     expect(CONCEPT_EVENTS).toContain('concept_guide_schema_open');

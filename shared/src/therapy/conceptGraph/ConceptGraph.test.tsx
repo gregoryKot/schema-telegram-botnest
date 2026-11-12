@@ -66,12 +66,13 @@ const gapsButton = () =>
 const skipped = (el: Element) => el.closest('[data-export-skip]') !== null;
 
 describe('ConceptGraph: общий вид', () => {
-  it('«Как читать схему»: свёрнута и на пустой схеме, и на заполненной, открывается кликом; подсказки о пробелах — не в ней', () => {
+  it('«Как читать схему»: на пустой схеме её нет (появляется с диаграммой), на заполненной свёрнута и открывается кликом; подсказки о пробелах — не в ней', () => {
     const { unmount } = render(<Harness initial={{}} />);
-    expect(guideButton().getAttribute('aria-expanded')).toBe('false');
     expect(
-      screen.queryByText(/Схема случая: в центре базовые потребности/),
+      screen.queryByRole('button', { name: /Как читать схему/ }),
     ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Отметить схемы' }));
+    expect(guideButton().getAttribute('aria-expanded')).toBe('false');
     unmount();
 
     render(<Harness initial={{ modeIds: ['detached_protector'] }} />);
@@ -107,19 +108,9 @@ describe('ConceptGraph: общий вид', () => {
     expect(skipped(modeFigure('Отстранённый Защитник'))).toBe(false);
   });
 
-  it('пустая по режимам, но со схемой — не пустая: инструкция свёрнута', () => {
+  it('пустая по режимам, но со схемой — не пустая: инструкция свёрнута, вводный текст дословно — по клику', () => {
     render(<Harness initial={{ schemaIds: ['emotional_deprivation'] }} />);
     expect(guideButton().getAttribute('aria-expanded')).toBe('false');
-  });
-
-  it('пустая концептуализация: одна кнопка «Отметить схемы» вместо заготовок; вводный текст дословно — по клику, ни линий, ни подсказок', () => {
-    render(<Harness initial={{}} />);
-    expect(screen.getByRole('button', { name: 'Отметить схемы' })).toBeTruthy();
-    expect(document.querySelector('[data-concept-empty]')).toBeTruthy();
-    expect(
-      skipped(screen.getByRole('button', { name: 'Отметить схемы' })),
-    ).toBe(true);
-    expect(screen.queryByRole('button', { name: /не отмечен/ })).toBeNull();
     openGuide();
     expect(
       screen.getByText(
@@ -131,6 +122,19 @@ describe('ConceptGraph: общий вид', () => {
         'Нажми на схему или режим, чтобы записать текст — он появится на схеме. Карта меняется вместе с терапией — прошлые версии остаются в истории.',
       ),
     ).toBeTruthy();
+  });
+
+  it('пустая концептуализация: одна кнопка «Отметить схемы» вместо заготовок; ни «Как читать схему», ни линий, ни подсказок', () => {
+    render(<Harness initial={{}} />);
+    expect(screen.getByRole('button', { name: 'Отметить схемы' })).toBeTruthy();
+    expect(document.querySelector('[data-concept-empty]')).toBeTruthy();
+    expect(
+      skipped(screen.getByRole('button', { name: 'Отметить схемы' })),
+    ).toBe(true);
+    expect(screen.queryByRole('button', { name: /не отмечен/ })).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /Как читать схему/ }),
+    ).toBeNull();
     expect(edges()).toHaveLength(0);
     expect(screen.queryByRole('note')).toBeNull();
     expect(screen.queryByText(/Как режимы сменяют друг друга/)).toBeNull();

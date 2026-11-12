@@ -1,7 +1,7 @@
 // Признак свободного текста для кризисного трипваера: общий контрол
 // `<LimitedInput` (поле со счётчиком предела, shared/src/components/LimitedTextarea.tsx)
-// — тот же `<input>`. Поля EviList и SafePlaceEx, переведённые на него, иначе
-// выпали бы из src/security/crisis-path.invariants.spec.ts молча.
+// — тот же `<input>`. Поле EviList, переведённое на него, иначе
+// выпало бы из src/security/crisis-path.invariants.spec.ts молча.
 import { hasFreeTextInput, inputTags } from './free-text-inputs';
 
 describe('free-text-inputs: <LimitedInput> — поле свободного текста', () => {

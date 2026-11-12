@@ -25,8 +25,9 @@ const INTENTS = [
   {
     intent: 'login',
     start: (d: Deps) => startLogin(d.tickets),
-    approve: (d: Deps, code: string, who: bigint, via?: bigint) =>
-      d.tickets.approveLogin(code, who, via),
+    // Вход подтверждают только из браузера: карточки в боте у него нет.
+    approve: (d: Deps, code: string, who: bigint) =>
+      d.tickets.approveLogin(code, who),
   },
   {
     intent: 'link',
@@ -85,21 +86,6 @@ describe.each(INTENTS)('повторное подтверждение: $intent',
     await d.tickets.poll(deviceCode);
 
     await expect(c.approve(d, userCode, STRANGER)).rejects.toThrow(
-      'Код не найден или истёк',
-    );
-  });
-
-  it('после опроса: карточку показывали ему — ок, другому нажавшему — «не найден»', async () => {
-    const d = makeDeps();
-    const { userCode, deviceCode } = await c.start(d);
-    expect(await d.tickets.forConfirm(userCode, TG_USER)).not.toBeNull();
-    await c.approve(d, userCode, WEB_USER, TG_USER);
-    await d.tickets.poll(deviceCode);
-
-    await expect(
-      c.approve(d, userCode, WEB_USER, TG_USER),
-    ).resolves.not.toThrow();
-    await expect(c.approve(d, userCode, WEB_USER, 43n)).rejects.toThrow(
       'Код не найден или истёк',
     );
   });
@@ -179,5 +165,22 @@ describe('привязка: итог для вызывающего', () => {
     expect(d.merge.merge).toHaveBeenCalledTimes(1);
     expect(settled.filter((r) => r.status === 'rejected')).toHaveLength(1);
     expect(d.rows).toHaveLength(0);
+  });
+});
+
+describe('повторное подтверждение привязки в боте', () => {
+  it('после опроса: карточку показывали ему — ок, другому нажавшему — «не найден»', async () => {
+    const d = makeDeps();
+    const { userCode, deviceCode } = await startLink(d.tickets);
+    expect(await d.tickets.forConfirm(userCode, TG_USER)).not.toBeNull();
+    await d.links.approve(userCode, WEB_USER, undefined, TG_USER);
+    await d.tickets.poll(deviceCode);
+
+    await expect(
+      d.links.approve(userCode, WEB_USER, undefined, TG_USER),
+    ).resolves.not.toThrow();
+    await expect(
+      d.links.approve(userCode, WEB_USER, undefined, 43n),
+    ).rejects.toThrow('Код не найден или истёк');
   });
 });

@@ -1,10 +1,13 @@
 import { useId, useState, type ReactNode } from 'react';
 import type { ConceptGraphModel } from '../conceptGraphTypes';
 import { DiagramEdges } from './DiagramEdges';
+import { DiagramNeedsCircle } from './DiagramNeedsCircle';
 import { DiagramNodeView } from './DiagramNodeView';
+import { DiagramPeriodSwitch } from './DiagramPeriodSwitch';
 import { DiagramSectionHeader } from './DiagramSectionHeader';
 import { nodeOpacity, resolveFocus } from './diagramFocus';
 import { layoutConceptDiagram } from './diagramLayout';
+import { defaultNeedPeriod, type NeedPeriod } from './diagramNeedPct';
 import { HEAD_H } from './diagramSections';
 import type { AddSection, DiagramNode } from './diagramTypes';
 import { useContainerWidth } from './useContainerWidth';
@@ -16,7 +19,9 @@ const PANEL_MARGIN = 8;
  * Диаграмма случая: круг базовых потребностей в центре, слева схемы с
  * убеждением и опытом и ещё левее режимы, справа Здоровый Взрослый. Режим и
  * схема открывают свои редакторы, потребность включает подсветку своих линий
- * (✗ и ✓), заготовка пустой секции и «+» в заголовке зовут выбор.
+ * (✗ и ✓), заготовка пустой секции и «+» в заголовке зовут выбор. Таблетки
+ * потребностей показывают проценты колеса (`graph.needLinks`) за период,
+ * выбранный над подписью круга; выбор живёт здесь и не сохраняется.
  *
  * Без `edit` — только чтение (схема у клиента, ConceptGraphView): «+» нет,
  * заготовка не нажимается, а тап по любой фигуре подсвечивает её линии, как у
@@ -44,9 +49,10 @@ export function ConceptDiagram({
   const [ref, width] = useContainerWidth();
   const uid = useId().replace(/:/g, '');
   const [pressedId, setPressedId] = useState<string | null>(null);
-  const layout = layoutConceptDiagram(graph, width);
+  const [picked, setPeriod] = useState<NeedPeriod | null>(null);
+  const period = picked ?? defaultNeedPeriod(graph.needLinks);
+  const layout = layoutConceptDiagram(graph, width, period);
   const focus = resolveFocus(layout, pressedId, openId);
-  const { circle } = layout;
   const panelAt = layout.sections.find((s) => s.id === addOpen);
   const panelW = layout.wide ? PANEL_W : layout.width - 2 * PANEL_MARGIN;
 
@@ -75,26 +81,7 @@ export function ConceptDiagram({
         height={layout.height}
         style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}
       >
-        <circle
-          data-needs-circle
-          cx={circle.cx}
-          cy={circle.cy}
-          r={circle.r}
-          fill="var(--surface)"
-          stroke="var(--line-strong)"
-          strokeWidth={1.5}
-        />
-        <text
-          x={circle.cx}
-          y={layout.titleY}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize={12}
-          fontWeight={700}
-          fill="var(--text)"
-        >
-          {circle.title}
-        </text>
+        <DiagramNeedsCircle circle={layout.circle} titleY={layout.titleY} />
         <DiagramEdges edges={layout.edges} focus={focus} uid={uid} />
       </svg>
       {layout.sections.map((s) => (
@@ -119,6 +106,12 @@ export function ConceptDiagram({
           readOnly={!edit}
         />
       ))}
+      <DiagramPeriodSwitch
+        layout={layout}
+        links={graph.needLinks}
+        period={period}
+        onPeriod={setPeriod}
+      />
       {panelAt && (
         <div
           data-export-skip

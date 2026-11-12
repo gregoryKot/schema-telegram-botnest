@@ -51,12 +51,6 @@ export const CROSS_CHECKS: CrossCheck[] = [
   // письма о записях молчали.
   requiresToo('resendRequiresAdminEmail', 'RESEND_API_KEY', 'ADMIN_EMAIL'),
   requiresToo('resendRequiresEmailFrom', 'RESEND_API_KEY', 'EMAIL_FROM'),
-  requiresToo(
-    'googleClientRequiresSecretAndRedirect',
-    'GOOGLE_CLIENT_ID',
-    'GOOGLE_CLIENT_SECRET',
-    'GOOGLE_REDIRECT_URI',
-  ),
   requiresToo('vkAppRequiresRedirect', 'VK_APP_ID', 'VK_REDIRECT_URI'),
   // M3 (аудит 2026-10): логин без паролей — подпись вебхука считалась бы от
   // пустого пароля и подделывалась бы любым желающим.

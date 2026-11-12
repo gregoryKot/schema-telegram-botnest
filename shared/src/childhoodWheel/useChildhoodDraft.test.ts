@@ -4,7 +4,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import {
-  previewRatings,
   unratedHint,
   unratedNeeds,
   useChildhoodDraft,
@@ -56,11 +55,6 @@ describe('помощники черновика', () => {
       'expression',
       'play',
     ]);
-  });
-
-  it('previewRatings: неоценённая — пустой сектор, оценённая — как есть', () => {
-    expect(previewRatings(SAVED, ['play'])).toEqual({ ...SAVED, play: 0 });
-    expect(previewRatings(SAVED, [])).toEqual(SAVED);
   });
 
   it('unratedHint считает остаток из пяти', () => {

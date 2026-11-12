@@ -7,15 +7,6 @@
 // или экспорт в exports — сервис зарегистрирован, но недоступен зависящим
 // модулям (DI бросит только в рантайме, а не на этом тесте — здесь фиксируем
 // состав списка).
-// TelegramModule тянет TherapyModule → AuthModule → GoogleProvider → 'jose'
-// (чистый ESM-пакет, ts-jest его не парсит — см. тот же приём в
-// google.provider.spec.ts). Мокаем ниже уровнем, реальная JWKS-логика тут
-// не участвует — нужен только сам факт успешного импорта модуля.
-jest.mock('jose', () => ({
-  createRemoteJWKSet: jest.fn(() => 'FAKE_JWKS_SET'),
-  jwtVerify: jest.fn(),
-}));
-
 import { MODULE_METADATA } from '@nestjs/common/constants';
 import { TelegramModule } from './telegram.module';
 import { TelegramService } from './telegram.service';

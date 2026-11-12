@@ -184,4 +184,12 @@ describe('ExScreenSkeleton', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Назад к упражнениям' }));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
+
+  it('spread — силуэт разворотом: лист-герой в колонке SpreadLayout, строки — в основной (ревью g6)', () => {
+    const { container } = render(<ExScreenSkeleton onBack={() => {}} hue={290} spread />);
+    const body = container.querySelector('.ex2-body.ex2-body--spread[aria-hidden]')!;
+    expect(body.querySelector('.pa-spread > .pa-spread-side > .ex2-skel-hero')).toBeTruthy();
+    expect(body.querySelector('.pa-spread > .pa-spread-main .skel')).toBeTruthy();
+    expect(body.querySelector('.ex2-aside')).toBeNull();
+  });
 });

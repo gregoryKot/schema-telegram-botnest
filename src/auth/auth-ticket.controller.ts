@@ -2,8 +2,7 @@
 // Логика — в src/auth/login-ticket/, здесь только HTTP, охрана и троттлинг.
 //
 // Пришёл на место `api/auth/device-link` (тот же механизм, RFC 8628, просто
-// теперь ещё и для входа) — прежний контроллер удалён в этом же PR, чтобы не
-// осталось второго живого маршрута к той же логике (CLAUDE.md, правило №11).
+// теперь ещё и для входа); второго маршрута к той же логике нет (правило №11).
 //
 // Троттлинг тут важнее обычного. Короткий код можно перебирать, а флоу с кодом
 // исторически ломают социальной инженерией («введите код для проверки
@@ -31,6 +30,7 @@ import { deviceLabel } from './login-ticket/device-label';
 import { TicketDeviceService } from './login-ticket/ticket-device';
 import { StepUpGuard } from './step-up';
 import type { LinkPreview } from './login-ticket/login-ticket.types';
+import { assertSiteTicket } from './login-ticket/site-login';
 import {
   DeviceCodeDto,
   StartTicketDto,
@@ -79,6 +79,7 @@ export class AuthTicketController {
     if (body.intent === 'link' && !requesterUserId) {
       throw new UnauthorizedException('Привязка требует входа');
     }
+    assertSiteTicket(body.intent, body.provider); // вход — только почта и VK ID
     const ticket = await this.tickets.start({
       intent: body.intent,
       provider: body.provider,
@@ -108,9 +109,8 @@ export class AuthTicketController {
   }
 
   // ─── Шаг 3: человек подтвердил привязку в браузере ────────────────────────
-  // Вход (`intent: 'login'`) сюда не ходит: его подтверждает бот со сверкой
-  // кода, а OAuth — сервер в своём callback. Публичного роута «одобрить вход»
-  // не существует, и это намеренно.
+  // Вход (`intent: 'login'`) сюда не ходит: его подтверждает человек на
+  // экране сверки своей сессией (auth-login-confirm.controller.ts).
   @Post('approve')
   @UseGuards(JwtAuthGuard, StepUpGuard) // S12: мессенджер — способ входа
   @PersistentThrottleLimit(CODE_THROTTLE)

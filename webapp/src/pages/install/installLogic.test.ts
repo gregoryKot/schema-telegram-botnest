@@ -33,13 +33,18 @@ describe('loginNote', () => {
     for (const auth of [true, false]) {
       const n = loginNote('ios', auth);
       expect(n.ty).toContain('войти ещё раз');
-      expect(n.ty).toContain('Выбери «Войти через Telegram»');
-      expect(n.vy).toContain('Выберите «Войти через Telegram»');
+      expect(n.ty).toContain('Входи почтой или VK ID');
+      expect(n.vy).toContain('Входите почтой или VK ID');
+      // Входа через Telegram на сайте нет (2026-11) — обещать его нельзя.
+      expect(`${n.ty}${n.vy}`).not.toMatch(/через Telegram|в бота/);
     }
   });
   it('Android и компьютер: вошёл — данные на месте, аноним — вход в приложении', () => {
     expect(loginNote('android', true).vy).toContain('вашими данными');
     expect(loginNote('desktop', true).ty).toContain('твоими данными');
-    expect(loginNote('android', false).ty).toContain('Вход — после установки');
+    const anon = loginNote('android', false);
+    expect(anon.ty).toContain('Вход — после установки, в самом приложении: почтой или VK ID');
+    expect(anon.ty).toContain('Сначала добавь там');
+    expect(anon.vy).toContain('Сначала добавьте там');
   });
 });
