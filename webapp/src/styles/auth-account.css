@@ -170,7 +170,9 @@ details[open] > .aa-summary .aa-summary-chev { transform: rotate(180deg); }
 .am-row-sign { flex-shrink: 0; width: 44px; display: inline-flex; }
 .am-row-label { flex: 1; min-width: 0; }
 .am-row-n { font-family: var(--serif); font-size: 16px; }
-.am-field { display: flex; flex-direction: column; gap: 10px; max-width: 360px; }
+.am-field { display: flex; flex-direction: column; gap: 10px; }
+/* Абзац — на ширину колонки формы (контрольное ревью: был сжат до ~270px), ячейки кода и ошибка — своей ширины. */
+.am-field > :not(.am-lead):not(.al-linkbtn) { max-width: 360px; }
 .am-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; min-height: 44px; }
 .am-check input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); flex-shrink: 0; }
 .am-check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; } /* outline снят глобально */

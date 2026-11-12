@@ -114,7 +114,7 @@
      (ревью b26: знак ~200px один на пустой небесной половине). */
   .al-root.al-2fa { grid-template-columns: 340px minmax(0, 1fr); }
   .al-2fa .al-hero { padding-left: 40px; padding-right: 40px; }
-  .al-2fa .al-hero-art { width: 120px; }
+  .al-2fa .al-hero-art { width: 176px; } /* у Limits поля внутри холста: слот 176 — сам знак ~120px (контрольное ревью: был ~81) */
   .al-slogan { font-size: 44px; line-height: 1.06; }
   .al-lead { display: block; }
   .al-cut--bottom { display: none; }
