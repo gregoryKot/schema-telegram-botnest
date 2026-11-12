@@ -4,7 +4,7 @@
    светлую тему и растягиваются на всю ширину ряда #root (flex: 1). Язык — docs/design/APP_2026-11.md,
    b27: /account — рабочая форма без картинок, плоские группы с --panel-line, одна залитая кнопка
    (карточка «Данные из Telegram»); /link и /merge — лист-герой со сценой SceneMerge + форма. */
-.aa-root { --sheet-col: 880px; --sheet-pad: 32px; flex: 1 1 auto; min-width: 0; padding-top: var(--safe-top); min-height: 100vh; background: var(--bg); color: var(--text); width: 100%; box-sizing: border-box; }
+.aa-root { --sheet-col: 880px; --sheet-pad: 32px; flex: 1 1 auto; align-self: flex-start; min-width: 0; padding-top: var(--safe-top); min-height: 100vh; background: var(--bg); color: var(--text); width: 100%; box-sizing: border-box; }
 .aa-page { max-width: 880px; margin: 0 auto; padding: 32px 32px 56px; display: flex; flex-direction: column; gap: 28px; box-sizing: border-box; }
 .aa-head { display: flex; align-items: center; gap: 20px; min-width: 0; }
 .aa-head-text { flex: 1; min-width: 0; }
@@ -141,7 +141,7 @@ details[open] > .aa-summary .aa-summary-chev { transform: rotate(180deg); }
 
 /* ── /link и /account/merge: лист-герой со сценой + форма ─────────────────────────────── */
 .am-root {
-  flex: 1 1 auto; min-width: 0; width: 100%; box-sizing: border-box; min-height: 100vh;
+  flex: 1 1 auto; align-self: flex-start; min-width: 0; width: 100%; box-sizing: border-box; min-height: 100vh;
   padding: calc(24px + var(--safe-top)) 16px 40px; background: var(--bg); color: var(--text); font-family: var(--sans);
   display: flex; justify-content: center;
 }

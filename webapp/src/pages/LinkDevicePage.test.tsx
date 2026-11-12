@@ -17,7 +17,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LinkDevicePage } from './LinkDevicePage';
 import { useAuth } from '../auth/authContext';
 import { api, reportClientError } from '../api';
-import { resetLinkReportThrottle } from './merge/useLinkTicket';
+import { resetLinkReportThrottle } from './merge/linkPreviewReport';
 
 vi.mock('../auth/authContext', () => ({ useAuth: vi.fn() }));
 // getSettings — LinkDeviceContent ставит свой AddressFormProvider (страница

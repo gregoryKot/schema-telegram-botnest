@@ -2,7 +2,7 @@
    Префикс lg-. Корень — flex: 1 (#root — flex-ряд: без него страница липла к левому краю на 1280), колонка
    чтения 780 по центру; на ≥1100 рядом с текстом — липкое оглавление (колонка 240), уже — свёрнутое под
    вводной частью, раскрывается кнопкой. Типографика текста — инлайн-стили legalStyles/LegalLayout (как была). */
-.lg-root { flex: 1; width: 100%; min-width: 0; box-sizing: border-box; min-height: 100dvh; background: var(--bg); color: var(--text); }
+.lg-root { flex: 1; align-self: flex-start; width: 100%; min-width: 0; box-sizing: border-box; min-height: 100dvh; background: var(--bg); color: var(--text); }
 .lg-col { max-width: 780px; }
 .lg-doc { display: flex; flex-direction: column; gap: 32px; margin-top: 40px; }
 .lg-chapters { display: flex; flex-direction: column; gap: 40px; min-width: 0; }

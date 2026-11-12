@@ -169,7 +169,7 @@
    `center` уходило за верх окна — недостижимо. `safe center` + запасное `margin-block: auto` у содержимого:
    свободное место делится поровну, переполнение идёт только вниз и прокручивается с самого верха. */
 .pa-outcome {
-  flex: 1 1 auto; display: flex; align-items: safe center; justify-content: center; box-sizing: border-box; width: 100%;
+  flex: 1 1 auto; align-self: flex-start; display: flex; align-items: safe center; justify-content: center; box-sizing: border-box; width: 100%;
   min-height: 100vh; padding: 40px 24px; background: var(--bg); color: var(--text);
 }
 @supports (min-height: 100dvh) { .pa-outcome { min-height: 100dvh; } }

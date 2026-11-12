@@ -67,3 +67,13 @@ describe('корни страниц центрируют безопасно', ()
     expect(body('.x { display: flex; align-items: safe center; }', '.x')).not.toMatch(UNSAFE_CENTER);
   });
 });
+
+// #root — flex-ряд высотой 100vh: растянутый (stretch) корень держит ровно 100vh, а высокое содержимое
+// вылезает за него — нижние поля и тень листа срезались (ревью b26: /auth/confirm на 320). Корень растёт с
+// содержимым: align-self: flex-start при min-height окна.
+describe('корни страниц растут с содержимым', () => {
+  const rows = Object.entries(ROOTS).flatMap(([file, classes]) => classes.map((cls) => [file, cls] as const));
+  it.each(rows)('%s %s: align-self: flex-start', (file, cls) => {
+    expect(body(css(file), cls)).toMatch(/align-self:\s*flex-start/);
+  });
+});

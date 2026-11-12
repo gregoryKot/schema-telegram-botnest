@@ -10,10 +10,9 @@ export function BackLabel({ children }: { children: ReactNode }) {
 
 /** Строка шага с «→» между пунктами меню («меню → «Сохранить…» → …»): стрелка рисунком, для чтения с
  *  экрана — та же «→» (role=img), текст данных не меняется. */
-export function withStepArrows(text: string, fmt: (part: string) => string = (p) => p): ReactNode {
+export function StepText({ text, fmt = (p) => p }: { text: string; fmt?: (part: string) => string }) {
   const parts = text.split(' → ').map(fmt);
-  if (parts.length === 1) return parts[0];
-  return parts.flatMap((p, i) => i === 0 ? [p] : [
+  return <>{parts.flatMap((p, i) => i === 0 ? [p] : [
     <span key={i} className="nav-glyph nav-glyph--step" role="img" aria-label="→"><GlyphArrowRight /></span>, p,
-  ]);
+  ])}</>;
 }

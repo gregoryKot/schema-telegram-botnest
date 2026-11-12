@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, reportClientError } from '../../api';
-import { describeFailure } from '../../../../shared/src/api/describeFailure';
+import { api } from '../../api';
 import { useAuth } from '../../auth/authContext';
 import { useStepUpFetch } from '../../components/stepUp/stepUpContext';
 import { sessionPost } from '../../components/stepUp/sessionRequest';
@@ -9,7 +8,8 @@ import {
   ACCOUNT_LINK_CONFIRMED_EVENT,
   type AccountLinkHost,
 } from '../../../../shared/src/share/analytics';
-import { TicketHttpError, linkFailOutcome, type LinkFailOutcome } from './linkFailModel';
+import { TicketHttpError, type LinkFailOutcome } from './linkFailModel';
+import { reportLinkPreviewFailure } from './linkPreviewReport';
 
 export interface LinkPreview {
   provider: string;
@@ -21,26 +21,6 @@ export interface LinkPreview {
 }
 
 export type LinkPhase = 'ask' | 'done' | 'denied';
-
-const LINK_SECTION = 'link-device';
-const REPORT_WINDOW_MS = 60_000;
-let lastReportAt = -Infinity;
-
-/** Сводка билета не загрузилась — экран-тупик шлёт отчёт наверх (правило №14, check-dead-end-report), как
- *  подписка по ссылке: 4xx (код не найден, устарел, лимит) — ожидаемый исход wait, без отчёта; остальное —
- *  our_side с отчётом. В отчёте только статус или тип сбоя (describeFailure): ни кода билета, ни текста
- *  ответа. Троттлинг — не чаще раза в минуту на вкладку: ремаунт и смена токена не шлют повтор. */
-export function reportLinkPreviewFailure(e: unknown, now = Date.now()): LinkFailOutcome {
-  const outcome = linkFailOutcome(e);
-  if (outcome === 'our_side' && now - lastReportAt >= REPORT_WINDOW_MS) {
-    lastReportAt = now;
-    reportClientError({ message: `link preview failed: ${describeFailure(e)}`, section: LINK_SECTION });
-  }
-  return outcome;
-}
-
-/** Только для тестов: сброс окна троттлинга. */
-export function resetLinkReportThrottle() { lastReportAt = -Infinity; }
 
 // Билет привязки мессенджера (`intent: 'link'`) со стороны браузера: сводка, подтверждение, отказ.
 export function useLinkTicket(code: string) {
