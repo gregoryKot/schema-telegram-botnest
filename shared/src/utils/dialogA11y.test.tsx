@@ -122,29 +122,27 @@ describe('useDialogA11y', () => {
 
   it('кнопка-открыватель исчезла вместе с окном — фокус остаётся в слое-родителе, не на body', () => {
     // Как «Отключиться от терапевта»: подтверждение и его кнопка уходят одним коммитом.
-    function Sheet() {
+    function Sheet({ done = false }: { done?: boolean }) {
       const sheetProps = useDialogA11y();
-      const [step, setStep] = useState<'linked' | 'confirm' | 'done'>('linked');
+      const [asked, setAsked] = useState(false);
       return (
         <div {...sheetProps} data-testid="sheet">
-          {step === 'done' ? (
+          {done ? (
             <p>Отключено</p>
           ) : (
-            <button data-testid="ask" onClick={() => setStep('confirm')}>Отключиться</button>
+            <button data-testid="ask" onClick={() => setAsked(true)}>
+              Отключиться
+            </button>
           )}
-          {step === 'confirm' && (
-            <div {...{ onClick: () => setStep('done') }} data-testid="confirm">
-              <Dialog />
-            </div>
-          )}
+          {asked && !done && <Dialog />}
         </div>
       );
     }
-    const { getByTestId } = render(<Sheet />);
+    const { getByTestId, rerender } = render(<Sheet />);
     getByTestId('ask').focus();
     fireEvent.click(getByTestId('ask'));
     expect(document.activeElement).toBe(getByTestId('first'));
-    fireEvent.click(getByTestId('first'));
+    rerender(<Sheet done />);
     expect(document.activeElement).toBe(getByTestId('sheet'));
   });
 

@@ -40,8 +40,8 @@ export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
     // функцию, а повторная проверка внутри trapTab была бы недостижимой веткой.
     const container: HTMLElement = ref.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const parentLayer = container.parentElement?.closest<HTMLElement>('[role="dialog"]');
-
+    const parent =
+      container.parentElement?.closest<HTMLElement>('[role="dialog"]');
     const first = focusableIn(container)[0];
     (first ?? container).focus();
 
@@ -73,7 +73,7 @@ export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
       document.removeEventListener('keydown', trapTab);
       // Открыватель мог уйти из DOM вместе с окном — тогда фокус в слой-родитель, а не на body.
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
-      else if (parentLayer?.isConnected) parentLayer.focus();
+      else if (parent?.isConnected) parent.focus();
     };
   }, [layer]);
 
