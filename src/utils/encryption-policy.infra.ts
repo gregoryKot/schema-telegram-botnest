@@ -45,7 +45,6 @@ export const INFRA_FIELD_POLICY: Record<string, Record<string, Policy>> = {
     title: plain('публичный контент сайта'),
     description: plain('публичный контент сайта'),
     content: plain('публичный контент сайта'),
-    heroImage: ID,
     diagramKey: ID,
   },
   HealthyAdultPhrase: { text: plain('контент проекта, не данные юзера') },

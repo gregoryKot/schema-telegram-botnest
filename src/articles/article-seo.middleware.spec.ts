@@ -267,16 +267,13 @@ describe('ArticleSeoMiddleware', () => {
     expect(html).not.toContain('alert(1)');
   });
 
-  it('JSON-LD не содержит image, даже если в строке из БД есть heroImage', async () => {
-    const mw = makeMiddleware({
-      ...ARTICLE,
-      heroImage: 'data:image/jpeg;base64,AAAA',
-    });
+  it('JSON-LD статьи без image: обложку рисует сайт, картинки статьи в базе нет', async () => {
+    const mw = makeMiddleware(ARTICLE);
     const { req, res, getSent } = mockReqRes('/articles/skhemy-yanga-spisok');
     await mw.use(req, res, () => {});
-    const html = getSent()!;
-    expect(html).not.toContain('"image"');
-    expect(html).not.toContain('data:image/jpeg');
+    const jsonLd = /<script type="application\/ld\+json">([^<]+)<\/script>/.exec(getSent()!)?.[1] ?? '';
+    expect(jsonLd).toContain('"@type":"Article"');
+    expect(jsonLd).not.toContain('"image"');
   });
 });
 
