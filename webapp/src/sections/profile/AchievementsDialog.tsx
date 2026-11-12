@@ -15,7 +15,7 @@ interface Props {
 export function AchievementsDialog({ achievements, currentStreak, totalDays, onSelect, onClose }: Props) {
   const earned = achievements.filter(a => a.earned).length;
   return (
-    <Dialog label="Достижения" maxWidth={560} closeOnEscape onClose={onClose}>
+    <Dialog label="Достижения" maxWidth={680} closeOnEscape onClose={onClose}>
       <div className="cpf-paper-dlg cpf-paper-dlg--list">
         <div className="ds-head-row cpf-dlg-head">
           <h2 className="dialog-title cpf-dlg-title">Достижения</h2>

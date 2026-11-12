@@ -2,6 +2,7 @@ import type { Achievement } from '../../api';
 import { pressable } from '../../utils/a11y';
 import { ACHIEVEMENT_META } from './profileMeta';
 import { achievementProgress } from './profileModel';
+import { glue } from '../../../../shared/src/utils/typo';
 import { AchievementBadge } from './AchievementBadge';
 
 interface Props {
@@ -23,7 +24,7 @@ export function AchievementTile({ achievement: a, currentStreak, totalDays, onSe
       <AchievementBadge id={a.id} earned={a.earned} />
       <span className="cpf-ach-text">
         <span className="cpf-ach-title">{m.title}</span>
-        {progress ? <span className="cpf-ach-progress">{progress}</span> : <span className="cpf-ach-desc">{m.desc}</span>}
+        {progress ? <span className="cpf-ach-progress">{progress}</span> : <span className="cpf-ach-desc">{glue(m.desc)}</span>}
       </span>
     </div>
   );
