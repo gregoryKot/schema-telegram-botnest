@@ -78,9 +78,7 @@ describe('check-file-size-ratchet.mjs', () => {
     }
   });
 
-  // Регресс на конкретный случай: игра заморожена решением владельца
-  // (шапка скрипта) — гигантский файл под game/ не имеет права уронить CI.
-  it('огромный файл под game/ не считается — заморожен решением владельца', () => {
+  it('огромный файл под game/src — exit 1: игра под храповиком наравне с остальным кодом', () => {
     const res = runGate(
       'check-file-size-ratchet.mjs',
       {
@@ -89,10 +87,23 @@ describe('check-file-size-ratchet.mjs', () => {
       },
       { git: true },
     );
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('game/src/huge.ts: 500');
+  });
+
+  it('КОНТРОЛЬ: сборка игры (game/dist) не считается — exit 0', () => {
+    const res = runGate(
+      'check-file-size-ratchet.mjs',
+      {
+        'scripts/file-size-baseline.json': JSON.stringify({}),
+        'game/dist/assets/index.js': linesOfLength(500),
+      },
+      { git: true },
+    );
     expect(res.status).toBe(0);
   });
 
-  it('КОНТРОЛЬ: тот же по размеру файл вне game/ — по-прежнему exit 1', () => {
+  it('КОНТРОЛЬ: тот же по размеру файл в src/ — exit 1', () => {
     const res = runGate(
       'check-file-size-ratchet.mjs',
       {
@@ -121,7 +132,6 @@ describe('каждое исключение EXCLUDE распознаёт сво�
     'src/foo.spec.ts',
     'test/auth-flows.e2e-spec.ts',
     'webapp/src/foo.test.tsx',
-    'game/src/level.ts',
     'webapp/public/max-bridge.js',
   ];
 
@@ -138,6 +148,7 @@ describe('каждое исключение EXCLUDE распознаёт сво�
     const covered = (text: string) =>
       EXCLUDE.some((p) => new RegExp(p.source, p.flags).test(text));
     expect(covered('test/e2e-support/fake-prisma.ts')).toBe(false);
+    expect(covered('game/src/scenes/GameScene.ts')).toBe(false);
     expect(covered('src/auth/auth.service.ts')).toBe(false);
     expect(covered('webapp/src/components/Inspector.ts')).toBe(false);
     expect(covered('src/spec.ts')).toBe(false);

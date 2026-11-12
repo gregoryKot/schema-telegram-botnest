@@ -1,6 +1,15 @@
 {
-  "total": 0,
-  "errors": 0,
-  "warnings": 0,
-  "byRule": {}
+  "total": 1495,
+  "errors": 1492,
+  "warnings": 3,
+  "byRule": {
+    "prettier/prettier": 1474,
+    "@typescript-eslint/no-explicit-any": 3,
+    "@typescript-eslint/no-unsafe-assignment": 2,
+    "@typescript-eslint/no-unsafe-call": 6,
+    "@typescript-eslint/no-unsafe-member-access": 6,
+    "prefer-rest-params": 1,
+    "@typescript-eslint/no-unused-expressions": 1,
+    "@typescript-eslint/no-unused-vars": 2
+  }
 }
