@@ -20,6 +20,12 @@ interface Obj {
 }
 interface GameSceneLike {
   dead: boolean;
+  hitstop: number;
+  hearts: number;
+  frozen: boolean;
+  triggers: { fn(): void }[];
+  voices: { doAnswer(): void }[];
+  showBranch(next: string): void;
   player: { x: number; y: number; body: { reset(x: number, y: number): void } };
   gameOver(): void;
   time: { timeScale: number };
@@ -165,5 +171,91 @@ test.describe('игра: смок прод-сборки', () => {
     });
     expect(buttons.total).toBeGreaterThanOrEqual(2);
     expect(buttons.unlabelled, 'кнопка финала без подписи').toBe(0);
+  });
+
+  // Регрессии прогона логики (#1089): ждём состояние сцены, а не время.
+  const gs = (page: Page) =>
+    page.evaluate(() => {
+      const sc = (window as unknown as GameWindow).__gs!();
+      const { dead, hitstop, hearts, frozen } = sc;
+      return { x: sc.player.x, dead, hitstop, hearts, frozen };
+    });
+
+  test('гл.1: первый стоп-кадр гасит титул главы', async ({ page }) => {
+    await openGame(page, 'chapter1', 'Game');
+    await page.keyboard.down('ArrowRight');
+    await expect
+      .poll(async () => (await gs(page)).hitstop, { timeout: 30_000 })
+      .toBeGreaterThan(1e8);
+    await page.keyboard.up('ArrowRight');
+    const title = (await sceneTexts(page)).filter((t) =>
+      t.includes('ОБЫЧНЫЙ ДЕНЬ'),
+    );
+    expect(title).toEqual([]);
+  });
+
+  test('гл.3: падение в первую яму — на чекпоинт 1100, а не в начало', async ({
+    page,
+  }) => {
+    await openGame(page, 'chapter3', 'Game');
+    await page.evaluate(() => {
+      const sc = (window as unknown as GameWindow).__gs!();
+      sc.voices.forEach((v) => v.doAnswer()); // ворота отговорок открыты
+      sc.player.body.reset(1470, sc.player.y - 4);
+    });
+    // Пропасть → смерть или откат; жмём, пока кот снова не жив левее ямы.
+    const back = async () => {
+      await page.keyboard.press('Space');
+      const s = await gs(page);
+      return !s.dead && s.x < 1400 ? s.x : null;
+    };
+    await expect
+      .poll(back, { timeout: 30_000, intervals: [500] })
+      .not.toBeNull();
+    expect((await gs(page)).x).toBeGreaterThan(1050);
+  });
+
+  test('гл.3: вход по хешу не пишет прогресс, «дальше» на развилке — пишет', async ({
+    page,
+  }) => {
+    await openGame(page, 'chapter3', 'Game');
+    const saved = () =>
+      page.evaluate(() => localStorage.getItem('rtym_chapter'));
+    expect(await saved()).toBeNull();
+    await page.evaluate(() => {
+      const sc = (window as unknown as GameWindow).__gs!();
+      sc.showBranch('chapter3');
+      const go = sc.children.list.find(
+        (o) => o.type === 'Text' && !!o.text?.includes('путь Мистера'),
+      ) as unknown as { emit(e: string): void };
+      go.emit('pointerdown');
+    });
+    await expect.poll(saved).toBe('chapter3');
+  });
+
+  test('гл.1: раздражение жжёт и сквозь залипание', async ({ page }) => {
+    await openGame(page, 'chapter1', 'Game');
+    await page.evaluate(() => {
+      const sc = (window as unknown as GameWindow).__gs!();
+      sc.player.body.reset(1150, sc.player.y); // на земле перед ямой 1300–1520
+      sc.triggers[1].fn(); // раздражение у 1620 и стоп-кадр знакомства
+    });
+    // Кадр закрывает само нажатие Z (слушатель — через ~700 мс), и Z остаётся зажатой:
+    // раздражение подлетает быстрее, чем успели бы залипнуть отдельным нажатием.
+    const frameOpen = async () => {
+      await page.keyboard.up('KeyZ');
+      await page.keyboard.down('KeyZ');
+      return (await gs(page)).hitstop > 1e8;
+    };
+    await expect
+      .poll(frameOpen, { timeout: 30_000, intervals: [300] })
+      .toBe(false);
+    // Урон должен прийти именно в залипании: до него сердца целы.
+    await expect.poll(async () => (await gs(page)).frozen).toBe(true);
+    expect((await gs(page)).hearts).toBe(3);
+    await expect
+      .poll(async () => (await gs(page)).hearts, { timeout: 30_000 })
+      .toBeLessThan(3);
+    await page.keyboard.up('KeyZ');
   });
 });
