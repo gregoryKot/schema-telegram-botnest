@@ -10,7 +10,7 @@ export function ConceptGraphIntro({ graph }: { graph: ConceptGraphModel }) {
   return (
     <div data-export-skip>
       <Disclosure title="Как читать схему" defaultOpen={empty} classes={f}>
-        <ConceptGraphGuide />
+        <ConceptGraphGuide needLinks={graph.needLinks} />
       </Disclosure>
     </div>
   );

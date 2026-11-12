@@ -2,7 +2,7 @@ import type { FlowEdge, FlowNode } from '../modeMapFlow';
 import type { ModeMapNode } from '../../api';
 import { NEED_ORDER } from '../../../../shared/src/needs/needData';
 import { HUB_DIAMETER, nodesInsideHub } from './hubGeometry';
-import { WHEEL_CENTER_Y, WHEEL_PX, needHandle } from './needWheel';
+import { WHEEL_CENTER_Y, WHEEL_NODE_W, needHandle } from './needWheel';
 
 type Data = ModeMapNode['data'];
 const needOf = (n: FlowNode): string | undefined => {
@@ -26,7 +26,7 @@ export function convertToWheel(hubId: string, nodes: FlowNode[], edges: FlowEdge
   const d = (hub.data as Data).diameter ?? HUB_DIAMETER;
   const wheelHub: FlowNode = {
     ...hub,
-    position: { x: hub.position.x + d / 2 - WHEEL_PX / 2, y: hub.position.y + d / 2 - WHEEL_CENTER_Y },
+    position: { x: hub.position.x + d / 2 - WHEEL_NODE_W / 2, y: hub.position.y + d / 2 - WHEEL_CENTER_Y },
     data: { ...hub.data, wheel: { period: 'now', ...(Object.keys(notes).length ? { notes: { now: notes } } : {}) } },
   };
   const rewire = (e: FlowEdge): FlowEdge => {

@@ -1,68 +1,54 @@
 import type { CSSProperties } from 'react';
-import { Handle, Position } from '@xyflow/react';
 import { NeedsWheel } from '../../../../shared/src/components/NeedsWheel';
-import { IdentityDot } from '../../../../shared/src/components/IdentityDot';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
-import { NEED_ORDER, getNeedData } from '../../needData';
+import { needRatings } from '../../../../shared/src/therapy/conceptGraph/needLinks';
 import { needDataColor } from '../needDataColor';
 import { useNodeActions } from '../modeMapActions';
 import { NodeTools } from './nodeParts';
 import type { ModeNodeData } from './nodeStyle';
-import { PERIODS, WHEEL_PX, HEADER_H, WHEEL_NEED_EVENT, averageLabel, needHandle, pctLabel, ratingsOf, sectorPoint, wheelPeriod } from './needWheel';
+import { PERIODS, WHEEL_NEEDS, WHEEL_NODE_W, HEADER_H, WHEEL_NEED_EVENT, averageLabel, wheelPeriod } from './needWheel';
+import { SectorHandles, SectorLabels } from './WheelNodeParts';
+import { useWheelLegacyMove } from './useWheelLegacyMove';
+import { useWheel } from './wheelContext';
 import '../../styles/sheet-diary.css'; // классы колеса nw-* (history.css подключается только через него)
-
-const NAMES = getNeedData('ty'); // названия потребностей одинаковы в обеих формах обращения
-const NEEDS = NEED_ORDER.map((id) => ({ id, emoji: '', title: NAMES[id].name, chartLabel: NAMES[id].name }));
-
-// Ручка сектора: линия ✗/✓ подходит к своей потребности. Стоит на 0,6 радиуса —
-// при протяжке линии холст подхватывает ближайшую ручку (connectionRadius), то есть
-// сектор, над которым отпустили. Видна при наведении, как ручки других фигур.
-const handleStyle = (id: string): CSSProperties => {
-  const p = sectorPoint(id, 0.6);
-  return { left: p.x, top: p.y, width: 22, height: 22, background: 'transparent', border: 'none', transform: 'translate(-50%, -50%)' };
-};
 
 /**
  * Круг потребностей — колесо из пяти секторов (общий NeedsWheel, как колесо дня и
  * «Колесо детства»): сектор заполнен на столько, насколько потребность
  * удовлетворялась в выбранный период; контур поверх — детство для сравнения.
- * Подписи и проценты — легендой под колесом.
+ * Название и процент стоят у своего сектора. Оценки — из концептуализации клиента
+ * (useWheel): одно колесо на клиента; в карте узел хранит только вид. Без колеса
+ * клиента (карта у клиента, загрузка) — названия и «—».
  */
 export function NeedWheelNode({ id, data, selected }: { id: string; data: ModeNodeData; selected?: boolean }) {
   const actions = useNodeActions();
-  const w = data.wheel;
-  const period = wheelPeriod(w);
-  const ratings = ratingsOf(w, period);
-  const childhood = w?.compare && period !== 'child' ? ratingsOf(w, 'child') : {};
+  const wheel = useWheel();
+  const view = data.wheel;
+  const period = wheelPeriod(view);
+  const links = wheel?.links ?? [];
+  const ratings = needRatings(links, period);
+  const compare = !!view?.compare && period !== 'child';
   const label = PERIODS.find((p) => p.id === period)!;
+  useWheelLegacyMove(id, view);
+
   const focusNeed = (needId: string) => {
     actions?.edit(id);
     setTimeout(() => window.dispatchEvent(new CustomEvent(WHEEL_NEED_EVENT, { detail: needId })), 40);
   };
   return (
-    <div className={`mm2-wheel${selected ? ' is-selected' : ''}`} style={{ '--h': ENTITY_LOOK.tracker.hue, width: WHEEL_PX } as CSSProperties}>
+    <div className={`mm2-wheel${selected ? ' is-selected' : ''}`} style={{ '--h': ENTITY_LOOK.tracker.hue, width: WHEEL_NODE_W } as CSSProperties}>
       <NodeTools id={id} selected={selected} data={data} />
-      {NEED_ORDER.map((n) => (
-        <span key={n}>
-          <Handle type="target" position={Position.Top} id={needHandle(n)} className="mm-handle" style={handleStyle(n)} />
-          <Handle type="source" position={Position.Top} id={needHandle(n)} className="mm-handle" style={handleStyle(n)} />
-        </span>
-      ))}
+      <SectorHandles />
       <div className="mm2-wheel-head" style={{ height: HEADER_H }}>
         <span className="mm2-wheel-title">{data.label}</span>
       </div>
-      <NeedsWheel needs={NEEDS} ratings={ratings} childhoodRatings={childhood} ink={needDataColor}
-        onClickNeed={(n) => focusNeed(n.id)} center={{ label: label.center, value: averageLabel(ratings) }} />
-      <div className="mm2-wheel-legend">
-        {NEEDS.map((n) => (
-          <div key={n.id} data-need={n.id}>
-            <IdentityDot color={needDataColor(n.id)} size={8} />
-            <span className="mm2-wheel-name">{n.title}</span>
-            <b>{pctLabel(ratings[n.id])}</b>
-          </div>
-        ))}
+      <div className="mm2-wheel-art">
+        <NeedsWheel needs={WHEEL_NEEDS} ratings={ratings} childhoodRatings={compare ? needRatings(links, 'child') : {}} ink={needDataColor}
+          onClickNeed={(n) => focusNeed(n.id)} center={{ label: label.center, value: averageLabel(ratings) }} />
       </div>
-      {w?.compare && period !== 'child' && <div className="mm2-wheel-note">контур — детство</div>}
+      <SectorLabels ratings={ratings} onPick={focusNeed} />
+      {compare && <div className="mm2-wheel-note">контур — детство</div>}
+      {wheel?.failed && <div className="mm2-wheel-note" role="status">Концептуализация не загрузилась: процентов пока нет</div>}
     </div>
   );
 }
