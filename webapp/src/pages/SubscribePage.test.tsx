@@ -139,9 +139,12 @@ describe('SubscribePage — управление подпиской по ток�
     window.history.pushState({}, '', '/subscribe?token=tok1');
     render(<SubscribePage />);
 
-    await screen.findByText(/Не удалось загрузить подписку/);
+    await screen.findByText('Подписка не загрузилась');
     expect(screen.queryByText('Загружаем…')).toBeNull();
-    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось загрузить подписку/); // сбой объявляется сразу (ревью b28)
+    const alert = screen.getByRole('alert'); // сбой объявляется сразу (ревью b28)
+    // Заголовок короткий, причина — лидом: вся фраза в h1 давала пять строк на 390.
+    expect(alert.querySelector('h1')?.textContent).toBe('Подписка не загрузилась');
+    expect(alert.textContent).toContain('Возможно, истекла ссылка или нет соединения.');
   });
 
   // Экран-тупик шлёт отчёт наверх (правило №14, гейт check-dead-end-report):
@@ -151,7 +154,7 @@ describe('SubscribePage — управление подпиской по ток�
     window.history.pushState({}, '', '/subscribe?token=tok1');
     render(<SubscribePage />);
 
-    await screen.findByText(/Не удалось загрузить подписку/);
+    await screen.findByText('Подписка не загрузилась');
     expect(reportClientError).toHaveBeenCalledWith({ message: 'subscription load failed: HTTP 500', section: 'subscription' });
     expect(JSON.stringify(vi.mocked(reportClientError).mock.calls)).not.toContain('tok1');
   });
@@ -161,7 +164,7 @@ describe('SubscribePage — управление подпиской по ток�
     window.history.pushState({}, '', '/subscribe?token=tok1');
     render(<SubscribePage />);
 
-    await screen.findByText(/Не удалось загрузить подписку/);
+    await screen.findByText('Подписка не загрузилась');
     expect(reportClientError).not.toHaveBeenCalled();
   });
 
@@ -169,7 +172,7 @@ describe('SubscribePage — управление подпиской по ток�
     mockApi.getSubscriptionByToken.mockRejectedValue(new ApiError(code, 'x'));
     window.history.pushState({}, '', '/subscribe?token=tok1');
     const { container } = render(<SubscribePage />);
-    await screen.findByText(/Не удалось загрузить подписку/);
+    await screen.findByText('Подписка не загрузилась');
     expect(container.querySelector('.pa-outcome-card')?.getAttribute('data-sign')).toBe(sign);
     expect(screen.getByRole('link', { name: 'На главную' }).getAttribute('href')).toBe('/');
   });
@@ -193,7 +196,7 @@ describe('SubscribePage — управление подпиской по ток�
     Object.defineProperty(window, 'location', { configurable: true, value: { ...originalLocation, reload } });
     try {
       render(<SubscribePage />);
-      await screen.findByText(/Не удалось загрузить подписку/);
+      await screen.findByText('Подписка не загрузилась');
       fireEvent.click(screen.getByRole('button', { name: 'Обновить' }));
       expect(reload).toHaveBeenCalled();
     } finally {
@@ -207,7 +210,7 @@ describe('SubscribePage — управление подпиской по ток�
     render(<SubscribePage />);
 
     await screen.findByText('Подписка');
-    expect(screen.queryByText(/Не удалось загрузить подписку/)).toBeNull();
+    expect(screen.queryByText('Подписка не загрузилась')).toBeNull();
     // Кнопки «На главную» в управлении нет — на компьютере ссылка внизу (A9: token || ret !== 'ok').
     expect(screen.getAllByRole('link', { name: 'На главную' }).map((a) => a.className)).toEqual(['ds-back', 'ap-home']);
   });

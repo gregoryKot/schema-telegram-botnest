@@ -66,4 +66,15 @@ describe('stepUpHeader и тексты', () => {
     expect(vy.locked(1200)).toMatch(/попробуйте через 20 мин\.$/);
     expect(vy.title).toBe('Подтвердите, что это вы');
   });
+
+  it('лид резервного кода не просит код из приложения — в обеих формах', () => {
+    const ty = buildStepUpText((t) => t);
+    const vy = buildStepUpText((_ty, v) => v);
+    expect(ty.leadRecovery).toMatch(/Введи один из резервных кодов — каждый срабатывает один раз\.$/);
+    expect(vy.leadRecovery).toMatch(/Введите один из резервных кодов — каждый срабатывает один раз\.$/);
+    for (const c of [ty, vy]) {
+      expect(c.leadRecovery).not.toContain('аутентификатор');
+      expect(c.lead).toContain('аутентификатор');
+    }
+  });
 });

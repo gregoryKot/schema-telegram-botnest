@@ -60,6 +60,8 @@
     списком в разделах `### b24-more-bridge` и `### b25-settings` `docs/design/APP_2026-11.md`, ждут решения
     по словам.
 
+- ⬜ **Экран входа всегда на «ты»** — `/login` стоит вне `AddressFormProvider` (`webapp/src/App.tsx`), `useTr()` в `LoginPage.tsx`, `login/LoginConsentNote.tsx`, `login/LoginFormerNote.tsx` берёт дефолт контекста: человек с сохранённым «вы» (`readCachedForm`, `shared/src/utils/addressFormCache.ts`) после выхода видит «ты». Доказано: `LoginPage.test.tsx`, «без провайдера». Починка — контекст из кэша вокруг экрана входа.
+
 ## Идеи
 
 - **Холст → концептуализация — не делаем** (решено 2026-10-16, владелец доверил
