@@ -7,9 +7,8 @@ import { PracticeNoteSheet } from '../../components/therapist/guide/PracticeNote
 import { PaperAlert } from '../../components/paper/PaperAlert';
 import { Skeleton, SkeletonList } from '../../components/Skeleton';
 import { GuideReferenceList } from './GuideReferenceList';
-import {
-  REFERENCE_TABS, buildReference, referenceLayout, type ReferenceItem, type ReferenceTab,
-} from './guideReferenceModel';
+import { FadeSeg } from '../../components/FadeSeg';
+import { REFERENCE_TABS, buildReference, referenceLayout, type ReferenceItem, type ReferenceTab } from './guideReferenceModel';
 import { searchReference } from './guideReferenceSearch';
 
 // Открытия листов из «Справочника» — свои события, не concept_guide_* схемы случая.
@@ -66,7 +65,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
         placeholder="Найти по названию" aria-label="Найти в справочнике" className="ds-input ds-input--search"
       />
       {!searching && (
-        <div className="ds-seg ds-seg--scroll u-self-start" role="tablist" aria-label="Разделы справочника">
+        <FadeSeg className="u-self-start gr-seg" role="tablist" label="Разделы справочника" watch={tab}>
           {tabs.map((t) => (
             <button
               key={t.id} type="button" role="tab" aria-selected={tab === t.id}
@@ -75,7 +74,7 @@ function GuideReferenceLoaded({ texts }: { texts: Guide }) {
               {t.label}
             </button>
           ))}
-        </div>
+        </FadeSeg>
       )}
       {searching && found.length === 0
         ? <p className="ds-empty">Ничего не нашлось</p>

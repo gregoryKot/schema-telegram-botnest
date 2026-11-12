@@ -13,12 +13,10 @@ import type { TechniqueId } from '../../../../shared/src/schemaTherapy/guide';
 import { MODE_GROUPS } from '../../../../shared/src/schemaTherapy/content/modeGroups';
 import { SCHEMA_DOMAINS } from '../../../../shared/src/schemaTherapy/content/schemaDomains';
 import { domainLook, modeGroupLook, type SheetLook, type SignKey } from '../../../../shared/src/theme/entityLook';
-import {
-  modeGuideLook, practiceNoteLook, PRACTICE_HUE, schemaGuideLook, techniqueGuideLook, TECHNIQUES_HUE,
-} from '../../components/therapist/guide/guideLook';
+import { modeGuideLook, practiceNoteLook, PRACTICE_HUE, schemaGuideLook, techniqueGuideLook, TECHNIQUES_HUE } from '../../components/therapist/guide/guideLook';
+import { mergeCoping } from './guideReferenceCoping';
 
 export type ReferenceTab = 'modes' | 'schemas' | 'techniques' | 'practice';
-
 
 export const REFERENCE_TABS: { id: ReferenceTab; label: string }[] = [
   { id: 'modes', label: 'Режимы' },
@@ -44,6 +42,8 @@ export interface ReferenceGroup {
    *  строки группы его не повторяют. Без знака (техники, «Для терапевта») — знак у каждой строки свой. */
   look: SheetLook;
   items: ReferenceItem[];
+  /** Подгруппы одного листа (три копинга на листе неба): подпись и знак у каждой, `items` — все строки подряд. */
+  parts?: (Required<Pick<ReferenceGroup, 'key' | 'title' | 'look'>> & Pick<ReferenceGroup, 'items'>)[];
 }
 
 export type Reference = Record<ReferenceTab, ReferenceGroup[]>;
@@ -73,14 +73,14 @@ export function buildReference(texts: ReferenceTexts, tr: Tr): Reference {
     texts.buildSchemaDomainGuides(tr).flatMap((d) => d.schemas.map((s) => s.schemaId)),
   );
   return {
-    modes: nonEmpty(MODE_GROUPS.map((g) => ({
+    modes: mergeCoping(nonEmpty(MODE_GROUPS.map((g) => ({
       key: g.id,
       title: g.group,
       look: modeGroupLook(g.id),
       items: g.items
         .filter((m) => modeIds.has(m.id))
         .map((m) => ({ kind: 'mode' as const, id: m.id, name: m.name, sign: modeGuideLook(m.id).sign })),
-    }))),
+    })))),
     schemas: nonEmpty(SCHEMA_DOMAINS.map((d) => ({
       key: d.id,
       title: d.domain,

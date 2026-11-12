@@ -8,6 +8,10 @@ import { join } from 'node:path';
 import { NODE_PAPER_LC } from '../../../../shared/src/modeMap/nodePaperTone';
 import { shapePaint } from '../../../../shared/src/therapy/conceptGraph/diagram/diagramPaper';
 import { TYPE_HUE, nodeHue, nodePaper } from './nodePaper';
+import { isPlainPaper } from './plainPaper';
+import { toFlowNodes } from '../modeMapFlow';
+import { FIGURES } from './paletteModel';
+import { COLOR_PRESETS } from './editorStyles';
 
 describe('nodeHue — оттенок бумаги фигуры', () => {
   it('у каждого типа узла есть оттенок; режимы берут тон своей группы', () => {
@@ -98,5 +102,74 @@ describe('бумага узла одна на холст карт и схему 
     const css = readFileSync(join(__dirname, '../../styles/modemap-paper.css'), 'utf8');
     expect(css).toContain(`.mm2-lane-input {`);
     expect(css.match(/\.mm2-lane-input \{[^}]*border-color: oklch\(([\d. ]+) var\(--h\)\)/)?.[1]).toBe(NODE_PAPER_LC.line);
+  });
+});
+
+// Ревью вкуса r1 (b34): триггер (135) и Здоровый Взрослый (145) читались одной зелёной семьёй, опыт
+// детства и Отстранённый Защитник — оба небесные; «поведение» носило оттенок, будто сущность.
+describe('оттенки фигур не сливаются (ревью r1)', () => {
+  it('триггер — солома 70, опыт детства — персик 45, Здоровый Взрослый — мох 145, копинг — небо 240', () => {
+    expect(nodeHue('trigger', {})).toBe(70);
+    expect(nodeHue('origin', {})).toBe(45);
+    expect(nodeHue('healthy', {})).toBe(145);
+    expect(nodeHue('coping', {})).toBe(240);
+    // ни одна пара из четырёх не ближе 40° — на бумаге L 0.915 C 0.03 соседние 10° неразличимы
+    const hues = ['trigger', 'origin', 'healthy', 'coping', 'critic'].map((t) => TYPE_HUE[t]).sort((a, b) => a - b);
+    hues.slice(1).forEach((h, i) => expect(h - hues[i]).toBeGreaterThanOrEqual(25));
+  });
+
+  it('поведение — нейтральная бумага страницы с серым контуром (хрома ≤ 0.012), готовыми значениями без var()', () => {
+    const p = nodePaper('behavior', { label: 'П' });
+    expect(isPlainPaper('behavior', {})).toBe(true);
+    for (const c of Object.values(p.ink)) {
+      expect(c).not.toContain('var(');
+      expect(Number(c.match(/^oklch\([\d.]+ ([\d.]+) /)?.[1])).toBeLessThanOrEqual(0.012);
+    }
+    expect(Number(p.ink.fill.match(/^oklch\(([\d.]+) /)?.[1])).toBeGreaterThan(0.95);
+    expect(p.className).toBe('mm2-n');
+    // «Заливка» и «Полная» остаются различимыми ступенями той же серой бумаги
+    const fills = [{}, { filled: true }, { fillFull: true }].map((d) => nodePaper('behavior', { label: 'П', ...d }).ink.fill);
+    expect(new Set(fills).size).toBe(3);
+  });
+
+  it('цвет поведению выбран вручную — лист этого цвета, а не нейтральный', () => {
+    expect(isPlainPaper('behavior', { customColor: 'var(--c-plum)' })).toBe(false);
+    expect(nodePaper('behavior', { label: 'П', customColor: 'var(--c-plum)' }).ink.fill).toBe('oklch(0.915 0.03 310)');
+    expect(isPlainPaper('trigger', {})).toBe(false);
+  });
+});
+
+// Правило №4 (смена TYPE_COLORS / TYPE_HUE): цвет типа в узел не пишется — фигура без customColor
+// берёт бумагу по типу при каждом рисовании. Поэтому карта, сохранённая до смены оттенков, рисуется
+// так же, как узел, созданный сегодня; выбранный вручную цвет при этом не теряется.
+describe('старая сохранённая карта рисуется как новая', () => {
+  const saved = (type: string, data: Record<string, unknown> = {}) =>
+    toFlowNodes([{ id: 'old', type, position: { x: 0, y: 0 }, data: { label: 'Старый', ...data } } as never])[0];
+
+  it.each(['trigger', 'behavior', 'origin', 'need', 'needs', 'schema'] as const)('%s: узел из сохранённой карты (без цвета) — та же бумага, что у нового узла из палитры', (type) => {
+    const fresh = FIGURES.find((f) => f.type === type)!.draft();
+    expect(fresh.data.customColor).toBeUndefined(); // новая фигура цвет типа не хранит — нормализовать при чтении нечего
+    const old = saved(type);
+    expect(nodePaper(old.type!, old.data as never).ink).toEqual(nodePaper(fresh.type, fresh.data).ink);
+  });
+
+  it('цвет, выбранный вручную в старой карте, сохраняется: лист этого цвета, кружок «Цвет» — он же', () => {
+    for (const c of COLOR_PRESETS) {
+      const old = saved('trigger', { customColor: c });
+      expect(old.data.customColor).toBe(c);
+      expect(nodeHue('trigger', old.data as never)).not.toBeNull();
+    }
+    expect(nodePaper('trigger', saved('trigger', { customColor: 'var(--c-moss)' }).data as never).ink.fill).toBe('oklch(0.915 0.03 145)');
+    expect(nodePaper('origin', saved('origin', { customColor: 'var(--c-slate)' }).data as never).ink.fill).toBe('oklch(0.915 0.03 240)');
+  });
+
+  it('кружок «Цвет» по умолчанию: цвет типа — из набора редактора и той же семьи, что бумага; у нейтрального поведения кружок не подсвечен', () => {
+    const TOKEN = { 'var(--c-amber)': 70, 'var(--c-clay)': 45 } as Record<string, number>;
+    for (const type of ['trigger', 'origin']) {
+      expect(COLOR_PRESETS).toContain(TYPE_COLORS[type]);
+      expect(TOKEN[TYPE_COLORS[type]]).toBe(TYPE_HUE[type]);
+      expect(nodeHue(type, { customColor: TYPE_COLORS[type] })).toBe(nodeHue(type, {})); // тап по подсвеченному кружку бумагу не меняет
+    }
+    expect(COLOR_PRESETS).not.toContain(TYPE_COLORS.behavior);
   });
 });

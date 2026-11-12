@@ -25,25 +25,30 @@ describe('paletteModel — данные палитры холста', () => {
     expect(CATALOG_DOMAINS.map(d => d.domain)).toEqual([1, 2, 3, 4, 5]);
   });
 
-  it('режим — круг цвета фигуры на холсте, схема — слой цвета домена', () => {
+  it('режим — знак своей группы (или свой), схема — знак домена, как в «Справочнике»', () => {
     const child = CATALOG_MODE_GROUPS[0].items[0];
-    expect(child).toMatchObject({ mark: 'mode', color: TYPE_COLORS.child });
+    expect(child).toMatchObject({ mark: 'mode', sign: 'child_care', color: TYPE_COLORS.child });
+    expect(CATALOG_MODE_GROUPS[0].items.find(i => i.id === 'angry_child')!.sign).toBe('flare'); // свой знак режима (решение 6)
+    expect(CATALOG_MODE_GROUPS.map(g => g.items[0].sign)).toEqual(['child_care', 'looming', 'shield', 'shelter', 'yield', 'together']);
+    expect(CATALOG_DOMAINS.map(d => [...new Set(d.items.map(i => i.domain))])).toEqual([[1], [2], [3], [4], [5]]);
     const schema = CATALOG_DOMAINS[0].items[0];
     expect(schema.mark).toBe('schema');
     expect(schema.draft().data.customColor).toBe(schema.color);
   });
 
-  it('свой режим — тот же круг, цвет — тип фигуры, выбранный при создании', () => {
+  it('свой режим — знак группы по типу фигуры, выбранному при создании; тип «свой» — общий знак режимов', () => {
     const item = customItem(mode);
-    expect(item).toMatchObject({ name: 'Ворчун', mark: 'mode', color: TYPE_COLORS.healthy });
+    expect(item).toMatchObject({ name: 'Ворчун', mark: 'mode', sign: 'together', color: TYPE_COLORS.healthy });
+    expect(customItem({ ...mode, nodeType: 'custom' }).sign).toBe('cluster');
+    expect(customItem({ ...mode, nodeType: 'coping' }).sign).toBe('shield');
     expect(item.draft()).toMatchObject({ type: 'healthy', data: { label: 'Ворчун' } });
     expect(customItem({ ...mode, nodeType: 'coping' }).draft().data.copingSubtype).toBe('over');
   });
 
   it('режим и схема клиента: известный id — строка, неизвестный — null', () => {
-    expect(clientModeItem('punitive_critic')).toMatchObject({ name: 'Карающий Критик', mark: 'mode', color: TYPE_COLORS.critic });
+    expect(clientModeItem('punitive_critic')).toMatchObject({ name: 'Карающий Критик', mark: 'mode', sign: 'looming', color: TYPE_COLORS.critic });
     expect(clientModeItem('нет_такого')).toBeNull();
-    expect(clientSchemaItem('abandonment')).toMatchObject({ name: 'Покинутость / Нестабильность', mark: 'schema' });
+    expect(clientSchemaItem('abandonment')).toMatchObject({ name: 'Покинутость / Нестабильность', mark: 'schema', domain: 1 });
     expect(clientSchemaItem('нет_такой')).toBeNull();
   });
 

@@ -17,7 +17,7 @@ export function TemplatesMenu({ onInsert, onGenerate }: { onInsert: InsertGraph;
     <div ref={wrapRef} className="mm2-tb">
       <TbBtn label="Шаблоны и генерация" onClick={() => setOpen(o => !o)} active={open} caret><MMIcon name="layers" size={17} /></TbBtn>
       {open && (
-        <Dropdown anchorRef={wrapRef} onClose={() => setOpen(false)}>
+        <Dropdown portal anchorRef={wrapRef} onClose={() => setOpen(false)}>
           <div className="ds-label mm2-drop-head">Шаблоны</div>
           {TEMPLATES.map(t => (
             <button key={t.id} className="ds-menu-item"

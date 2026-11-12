@@ -80,7 +80,7 @@
 .mm2-lane.is-b { background: oklch(0.965 0.013 45); }
 /* Полоса подписей — под тулбаром (он слева сверху) и под плашкой статуса на узком холсте. */
 .mm2-lane-bar { position: absolute; top: 72px; left: 0; right: 0; display: flex; justify-content: center; z-index: 4; pointer-events: none; }
-@container mm2c (max-width: 759px) { .mm2-lane-bar { top: 116px; } }
+@container mm2c (max-width: 1099px) { .mm2-lane-bar { top: 116px; } }
 .mm2-lane-chips { display: flex; gap: 10px; align-items: center; pointer-events: all; }
 .mm2-lane-chip {
   display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 5px 14px; border: 0; border-radius: 12px; cursor: text;
@@ -91,6 +91,8 @@
 .mm2-lane-sep { color: var(--text-faint); }
 @media (pointer: coarse), (max-width: 767px) { .mm2-lane-chip { min-height: 44px; } }
 
-/* ── Телефон: вместо холста — спокойный лист неба режимов со знаком (ModeMapTab) ── */
-.mm2-center--note .pp-empty { max-width: 420px; padding: 20px 18px; border-radius: 20px; background: oklch(0.915 0.03 240); box-sizing: border-box; }
-.mm2-center--note .pp-empty .ds-empty { color: var(--text); }
+/* ── Телефон: вместо холста — тихая строка на бумаге страницы с маленьким знаком режимов (ModeMapTab).
+   Лист неба со знаком 72px подавал ограничение как приглашение (ревью вкуса r1). ── */
+.mm2-center.mm2-center--note { justify-content: flex-start; align-items: stretch; min-height: 0; padding: 20px 16px; text-align: left; }
+.mm2-center--note .pp-empty { align-items: flex-start; gap: 12px; max-width: 420px; }
+.mm2-center--note .pp-empty .pp-art--empty { flex: none; width: 36px; height: 20px; margin-top: 2px; }

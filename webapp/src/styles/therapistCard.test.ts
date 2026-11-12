@@ -151,15 +151,42 @@ describe('therapist-card.css: «Обзор» — компьютер и теле�
 // #962 давал ей там поле 16px вместо колонки кабинета. Шапка одна на все
 // вкладки; полоса карт над холстом встаёт в колонку с тем же полем, что у
 // шапки. Два места обязаны совпадать — сверка здесь (правило №4).
+// Бриф b34 сузил только ВЫСОТУ шапки на «Графических картах» (.tk-head--compact). Первая версия
+// модификатора перекладывала шапку сеткой в одну строку — имя уезжало вбок на 85px (1280) и
+// резалось на 768 (ревью вёрстки r1). Решение «шапка не прыгает вбок» соблюдено: модификатор
+// не трогает ни одного горизонтального свойства и не меняет раскладку строки имени.
 describe('therapist-card.css: шапка не прыгает между вкладками (2026-11-06)', () => {
   const col = block(css, `@media ${DESKTOP_MEDIA} {\n  .tk-tabs-body`);
+  const compact = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .flatMap((m) => m[1].split(',').map((sel) => [sel.trim(), m[2]] as const))
+    .filter(([sel]) => sel.startsWith('.tk-head--compact'));
 
   it('модификатора ширины у шапки нет: единственный .tk-head--compact («Графические карты», b34) меняет высоту, боковое поле не трогает', () => {
     const mods = [...css.matchAll(/\.tk-head--([\w-]+)/g)].map((m) => m[1]);
     expect(new Set(mods)).toEqual(new Set(['compact']));
     const own = decls(css, '.tk-head--compact');
     expect(own).toContain('padding-top');
-    expect(own).not.toMatch(/padding(-inline|-left|-right)?\s*:|margin/);
+    expect(own).not.toMatch(/padding(-inline|-left|-right)?\s*:|margin|display|grid|flex-direction/);
+  });
+
+  it('компактность — только по вертикали: раскладка строки имени та же, горизонтальных свойств нет', () => {
+    // Строка «аватар · имя · действия» и «← Все клиенты» над ней — как у обычной шапки: ни сетки, ни порядка, ни переноса.
+    expect(decls(css, '.tk-head--compact > .tk-head-row')).toBe('');
+    expect(decls(css, '.tk-head--compact .tk-head-row')).toBe('');
+    const HORIZONTAL = /(^|[;\s])(padding(-inline|-left|-right)?|margin(-inline|-left|-right)?|left|right|inset|grid[\w-]*|flex-direction|order|flex-wrap|min-width|max-width|justify-[\w-]+|position)\s*:/;
+    // Два осознанных исключения: аватар (ниже — сверка, что ширина места не изменилась) и отступ плашки от имени.
+    const ALLOWED = new Set(['.tk-head--compact .tk-avatar', '.tk-head--compact .tk-badges > *', '.tk-head--compact .tk-badges']);
+    for (const [sel, body] of compact) if (!ALLOWED.has(sel)) expect(`${sel} { ${body} }`).not.toMatch(HORIZONTAL);
+    // Модификатор не ветвится по ширине окна: одно поведение на 768, 1024 и 1280.
+    expect(css).not.toMatch(/@media[^{]*\{[^{}]*\.tk-head--compact/);
+  });
+
+  it('аватар меньше, но занимает ту же ширину: имя стоит на той же вертикали, что на остальных вкладках', () => {
+    const px = (d: string, prop: string) => Number(d.match(new RegExp(`(?:^|[;\\s])${prop}:\\s*(\\d+)px`))?.[1]);
+    const base = px(decls(css, '.tk-avatar'), 'width');
+    const small = decls(css, '.tk-head--compact .tk-avatar');
+    expect(base).toBe(56);
+    expect(px(small, 'width') + px(small, 'margin-right')).toBe(base);
   });
 
   // Компактная шапка прятала всю строку .tk-badges — вместе с плашкой «офлайн». Прячутся только

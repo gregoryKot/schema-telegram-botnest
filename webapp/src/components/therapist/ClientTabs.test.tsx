@@ -18,12 +18,12 @@ const detailWith = (clientTab: ClientTab) => ({
 }) as unknown as ClientDetail;
 
 describe('ClientTabs', () => {
-  it('активная вкладка прокручивается к центру полосы, смена вкладки — снова', () => {
+  it('активная вкладка доводится до видимой (nearest: уже видимая полосу не двигает), смена вкладки — снова', () => {
     const { rerender } = render(<ClientTabs detail={detailWith('overview')} />);
     rerender(<ClientTabs detail={detailWith('ysq')} />);
     const last = scrollIntoView.mock.instances[scrollIntoView.mock.instances.length - 1] as HTMLElement;
     expect(last.textContent).toContain('Схемы');
-    expect(scrollIntoView).toHaveBeenLastCalledWith(expect.objectContaining({ inline: 'center', block: 'nearest' }));
+    expect(scrollIntoView).toHaveBeenLastCalledWith(expect.objectContaining({ inline: 'nearest', block: 'nearest' }));
   });
 
   it('вкладка холстов — «Графические карты» между «Концептуализацией» и «Сессиями» (#963)', () => {

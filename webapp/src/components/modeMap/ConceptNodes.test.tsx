@@ -40,7 +40,7 @@ describe('ConceptNodes — схема и опыт', () => {
     expect(screen.queryByText(PILL)).toBeNull();
     const blob = screen.getByText('Мама часто уезжала').closest('.mm2-n') as HTMLElement;
     expect(blob.className).toContain('mm2-n--origin'); // радиус пятна — в styles/modemap-paper.css
-    expect(blob.style.getPropertyValue('--h')).toBe('240'); // бумага опыта детства — небо
+    expect(blob.style.getPropertyValue('--h')).toBe('45'); // бумага опыта детства — персик «Колеса детства»
     expect(container.querySelector('.react-flow__node-origin')).toBeTruthy();
   });
 
