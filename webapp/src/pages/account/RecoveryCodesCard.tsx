@@ -10,8 +10,8 @@ export function RecoveryCodesCard({ codes, onDone }: { codes: string[]; onDone: 
   const tr = useTr();
   const copy = useCopyToClipboard({ resetMs: 2500 });
   return (
-    <div className="ds-card aa-tfa">
-      <h2 className="ds-h3">Резервные коды</h2>
+    <section className="aa-group aa-tfa">
+      <div className="aa-group-head"><h2 className="ds-h3">Резервные коды</h2></div>
       <div className="aa-small">
         {tr(
           'Сохрани эти коды в надёжном месте, например в менеджере паролей. Каждый подходит один раз вместо кода из приложения, если потеряешь телефон.',
@@ -30,6 +30,6 @@ export function RecoveryCodesCard({ codes, onDone }: { codes: string[]; onDone: 
         </button>
       </div>
       <CopyFailedHint show={copy.failed} tr={tr} />
-    </div>
+    </section>
   );
 }

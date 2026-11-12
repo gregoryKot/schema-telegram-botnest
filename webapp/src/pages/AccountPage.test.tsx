@@ -641,3 +641,23 @@ describe('AccountPage — шапка и заголовок (#906)', () => {
     expect(screen.getByText('Выйти со всех устройств').className).toBe('ds-link');
   });
 });
+
+// b27: группа 2FA — силуэт только до первой загрузки. Включение 2FA перечитывает /api/auth/me;
+// силуэт на каждый refresh размонтировал бы секцию вместе с только что выданными резервными
+// кодами (стенд pages-account-2fa-codes — коды не появлялись).
+describe('AccountPage — включение 2FA', () => {
+  it('после включения резервные коды видны, хотя страница перечитала способы входа', async () => {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('/api/auth/2fa/setup')) return Promise.resolve(jsonResponse(200, { qrDataUrl: 'data:,', otpauthUrl: 'otpauth://x' }));
+      if (url.includes('/api/auth/2fa/enable')) return Promise.resolve(jsonResponse(200, { recoveryCodes: ['aaaa-1111', 'bbbb-2222'] }));
+      return routeFetch(url, init);
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole('switch', { name: 'Двухфакторная защита' }));
+    fireEvent.change(await screen.findByLabelText('Код из приложения'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByText('Подтвердить'));
+    await screen.findByText('aaaa-1111');
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/auth/me')).length).toBe(2));
+    expect(screen.getByText('aaaa-1111')).toBeTruthy();
+  });
+});

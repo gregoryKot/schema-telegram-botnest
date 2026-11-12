@@ -23,10 +23,10 @@ describe('TwoFactorSection — область действия 2FA', () => {
     expect(screen.getByText(NOTE)).toBeTruthy();
   });
 
-  it.each(['ty', 'vy'] as const)('форма «%s», 2FA включена: строка рядом с «✓ Включена»', (form) => {
+  it.each(['ty', 'vy'] as const)('форма «%s», 2FA включена: строка рядом с «Включена»', (form) => {
     render(withAddressForm(
       <TwoFactorSection accessToken="t" totp={{ enabled: true, recoveryCodesLeft: 3 }} onChanged={() => {}} />, form));
-    expect(screen.getByText(/✓ Включена/)).toBeTruthy();
+    expect(screen.getByText(/Включена\./)).toBeTruthy();
     expect(screen.getByText(NOTE)).toBeTruthy();
   });
 });

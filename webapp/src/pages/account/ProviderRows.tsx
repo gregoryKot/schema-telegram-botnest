@@ -63,7 +63,7 @@ export function ProviderRow({
           Отвязать
         </button>
       ) : onLink ? (
-        <button disabled={busy} onClick={onLink} className="ds-btn ds-btn--sm">
+        <button disabled={busy} onClick={onLink} className="ds-btn ds-btn--sm ds-btn--secondary">
           Привязать
         </button>
       ) : (
