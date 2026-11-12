@@ -55,3 +55,12 @@ label.cz-row { cursor: pointer; }
    что у строк «Ещё»; выключенный блок — знак бледный, подпись остаётся читаемой. */
 .cz-sign { align-self: center; transition: opacity .15s; }
 .cz-sign.is-off { opacity: .4; }
+
+/* «Настроить экран» (b21): строки между тонкими линиями, как ссылки внизу профиля, — без белой карточки
+   с серой рамкой. Поднятая ручкой строка — на сплошной бумаге, иначе под ней просвечивают соседи. */
+.cz-card.cz-list { background: none; border: 0; border-radius: 0; overflow: visible; border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line); }
+.cz-list > .cz-block { background: transparent; }
+.cz-list > .cz-block.is-lifted { background: var(--surface); }
+.cz-list .cz-row { padding-inline: 4px 8px; }
+/* 320: колонка подписи шире (иначе «поддерживающие» уезжало под тумблер). */
+@media (max-width: 359px) { .cz-list .cz-row { gap: 8px; padding-inline: 0 6px; } }
