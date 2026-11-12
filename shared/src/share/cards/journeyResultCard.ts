@@ -21,7 +21,6 @@ import {
   type PanelField,
 } from '../kit/fieldPanels';
 import type { JourneyResultPart } from '../../journey/journeyContent';
-import { isHealthyPart } from '../../journey/journeyLook';
 
 export interface JourneyResultCardData {
   label: string;
@@ -44,7 +43,7 @@ export function resultFields(
   return parts.slice(0, MAX_PARTS).map((p) => ({
     label: p.title ?? '',
     lines: measureClamp(canvas, p.text, textW, 14, MAX_LINES_PER_PART),
-    healthy: isHealthyPart(p.title),
+    healthy: Boolean(p.healthy),
   }));
 }
 

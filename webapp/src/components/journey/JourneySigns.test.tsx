@@ -87,7 +87,7 @@ describe('деталь шага', () => {
   it('шапка — лист сущности со знаком, «Здоровый Взрослый» — вставка мха', () => {
     const { container } = render(
       <JourneyItemDetail
-        detail={detail('mode_diary', [{ title: 'Ситуация', text: 'Опоздание' }, { title: 'Здоровый Взрослый', text: 'Пять минут' }])}
+        detail={detail('mode_diary', [{ title: 'Ситуация', text: 'Опоздание' }, { title: 'Здоровый Взрослый', text: 'Пять минут', healthy: true }])}
         subtitle={() => 'Карающий Критик'}
         onShare={vi.fn()}
         art={JOURNEY_DETAIL_ART}

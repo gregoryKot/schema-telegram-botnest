@@ -117,7 +117,7 @@ describe('buildJourneyResultParts', () => {
       }),
     ).toEqual([
       { title: 'Убеждение', text: 'Я всегда всё порчу' },
-      { title: 'Здоровый взгляд', text: 'Ошибка — часть обучения' },
+      { title: 'Здоровый взгляд', text: 'Ошибка — часть обучения', healthy: true },
     ]);
   });
 
@@ -179,7 +179,7 @@ describe('buildJourneyResultParts', () => {
       }),
     ).toEqual([
       { title: 'Триггеры', text: 'Критика от начальника' },
-      { title: 'Здоровый взгляд', text: 'Обратная связь — не приговор' },
+      { title: 'Здоровый взгляд', text: 'Обратная связь — не приговор', healthy: true },
       { title: 'Что помогает', text: 'Пауза перед ответом' },
     ]);
     expect(

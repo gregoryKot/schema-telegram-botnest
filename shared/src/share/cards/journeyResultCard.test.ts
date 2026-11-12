@@ -108,11 +108,11 @@ describe('drawJourneyResultCard', () => {
       sign: 'scales',
       parts: [
         { title: 'Убеждение', text: 'Со мной что-то не так' },
-        { title: 'Здоровый взгляд', text: 'Молчание — не приговор' },
+        { title: 'Здоровый взгляд', text: 'Молчание — не приговор', healthy: true },
       ],
     });
     const healthy = resultFields(canvas, [
-      { title: 'Здоровый взгляд', text: 'x' },
+      { title: 'Здоровый взгляд', text: 'x', healthy: true },
       { title: 'Ситуация', text: 'y' },
       { text: 'z' },
     ]);
