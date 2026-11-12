@@ -40,10 +40,10 @@ describe('SessionArchive', () => {
     expect(screen.getByText('Сессия 1')).toBeTruthy();
   });
 
-  it('пустая история: «Заметок пока нет» со знаком сессии (Talk), без строки о срезе', () => {
+  it('пустая история: «Заметок пока нет» со знаком заметки (Pebbles — как у формы и «Заметки сессии», r1), без строки о срезе', () => {
     const { container } = render(<SessionArchive page={{ notes: [], total: 0 }} removeNote={vi.fn()} />);
     expect(screen.getByText('Заметок пока нет')).toBeTruthy();
-    expect(paperSignName(container.querySelector('.tb-empty-row svg'))).toBe('Talk');
+    expect(paperSignName(container.querySelector('.tb-empty-row svg'))).toBe('Pebbles');
     expect(screen.queryByRole('note')).toBeNull();
   });
 

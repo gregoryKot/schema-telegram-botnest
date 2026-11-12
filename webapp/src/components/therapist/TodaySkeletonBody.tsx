@@ -18,7 +18,7 @@ export function TodaySkeletonBody({ label }: { label?: string }) {
       <div className="sks-counters">
         {SKELETON_COUNTER_HUES.map((hue) => (
           <div key={hue} className="pp-paper sks-counter" style={paper(hue)}>
-            <Skeleton width={44} height={24} radius={8} /><Skeleton width="60%" height={11} /><Skeleton width={48} height={30} radius={8} />
+            <Skeleton width={44} height={24} radius={8} /><Skeleton width={48} height={30} radius={8} /><Skeleton width="60%" height={11} />
           </div>
         ))}
       </div>

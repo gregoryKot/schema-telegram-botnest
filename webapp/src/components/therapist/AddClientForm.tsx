@@ -35,7 +35,7 @@ export function AddClientForm({ addClient }: Props) {
               <h2 className="tc-add-done-name">{addCreated.name}</h2>
             </div>
             <span className="tc-block-sign tc-add-done-sign" aria-hidden="true">
-              {invite ? <SignArt sign={INVITE_SIGN} size="row" /> : <BrandMark size={40} simple />}
+              {invite ? <SignArt sign={INVITE_SIGN} size="row" /> : <BrandMark size={40} simple bare />}
             </span>
           </div>
           {invite ? (
@@ -65,7 +65,7 @@ export function AddClientForm({ addClient }: Props) {
   }
 
   return (
-    <div className="tc-add">
+    <div className="pp-leaf tc-add">
       <input
         className="tc-add-name"
         id="add-client-name" ref={addInputRef}

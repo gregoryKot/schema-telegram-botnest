@@ -158,10 +158,10 @@ describe('TherapistTodaySection — сессии сегодня', () => {
 
     await waitFor(() => expect(screen.getAllByText('Клиент А').length).toBeGreaterThanOrEqual(1));
     expect(screen.getByText('14:30')).toBeTruthy();
-    // b29: лист неба «Сессий» — знак Talk один раз у заголовка, в строке сессии знака нет.
+    // b29, r1: лист неба «Сессий» без знака — Talk стоит один раз, у счётчика «Сессий сегодня»; в строке тоже нет.
     const sheet = document.querySelector('.tt-sessions') as HTMLElement;
     expect(sheet.style.getPropertyValue('--h')).toBe('240');
-    expect(sheet.querySelectorAll('svg')).toHaveLength(1);
+    expect(sheet.querySelectorAll('svg')).toHaveLength(0);
     expect(sheet.querySelector('.tt-session svg')).toBeNull();
   });
 

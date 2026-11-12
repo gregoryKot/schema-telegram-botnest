@@ -253,6 +253,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
   display: flex; align-items: center; justify-content: center; font-weight: 700;
 }
 .ds-avatar--serif { font-family: var(--serif); font-weight: 400; }
+/* Аватар клиента кабинета — кружок бумаги тона клиента с тенью-слоем (шапка карточки, список, «Сегодня», ревью r1):
+   один человек везде одной бумагой, без «конфетной» заливки; инициалы — --text. */
+.ds-avatar--paper { color: var(--text); background: oklch(0.915 0.03 var(--h)); box-shadow: 1px 2px 0 oklch(var(--pa-layer-lc) var(--h)); }
 .ds-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
 /* ── Тумблер (role="switch") ─────────────────────────────────────────────── */
@@ -301,6 +304,9 @@ button.ds-list-row, a.ds-list-row { width: 100%; box-sizing: border-box; border:
 .ds-spark > i.is-ok { background: var(--ok); }
 .ds-spark > i.is-warn { background: var(--warn); }
 .ds-spark > i.is-err { background: var(--err); }
+/* Спарклайн одними чернилами (без светофора, ревью r1): трекер карточки и «Активность» на «Сегодня»; пропуск — паз. */
+.ds-spark--ink > i { background: var(--text-muted); border-radius: 2px; }
+.ds-spark--ink > i.is-none { background: color-mix(in srgb, var(--text-sub) 22%, transparent); }
 .ds-idx-ok { color: var(--ok); }
 .ds-idx-warn { color: var(--warn); }
 .ds-idx-err { color: var(--err); }

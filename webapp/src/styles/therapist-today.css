@@ -8,33 +8,28 @@
 /* Три плитки всегда в ряд: на 768 с меню минимум 180 ставил «Требуют внимания» одну во второй ряд. */
 .tt-counters { container: tt-counters / inline-size; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .tt-counter {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label sign" "num sign";
-  align-items: end; column-gap: 12px; row-gap: 10px; padding: 18px 20px 16px; border-radius: 20px;
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "sign" "num" "label";
+  align-items: start; row-gap: 10px; padding: 18px 20px 16px; border-radius: 20px;
 }
-.tt-counter .ds-label { grid-area: label; align-self: start; color: var(--text-sub); }
+/* Одна раскладка на всех ширинах (r1): знак · число · подпись сверху вниз — на 390, 768 и 1280 в одном порядке. */
+.tt-counter .ds-label { grid-area: label; color: var(--text-sub); }
 .tt-counter .ds-num { grid-area: num; font-size: 52px; line-height: 1; white-space: nowrap; }
-.tt-counter-sign { grid-area: sign; display: flex; align-self: end; }
-.tt-counter-sign .pp-art { width: 84px; height: auto; }
+.tt-counter-sign { grid-area: sign; display: flex; }
+.tt-counter-sign .pp-art { width: 60px; height: 32px; }
 /* Цвет несёт только число «требуют внимания», и только когда оно больше нуля. */
 .tt-counter--warn .ds-num { color: var(--warn-ink); }
-.tt-denom { font-size: 22px; font-style: italic; color: var(--text-faint); }
-/* Узкое поле (768 с меню — плитка ~145px): знак под числом, иначе «2 / 6» рвалось на две строки. */
-@container tt-counters (max-width: 640px) {
-  .tt-counter { grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "num" "sign"; align-items: start; }
-  .tt-counter-sign .pp-art { width: 60px; height: 32px; }
-}
+/* «/ 6» — подпись на цветной бумаге: --text-sub (≥4.5:1), --text-faint на соломе и шалфее давал 4.36. */
+.tt-denom { font-size: 22px; font-style: italic; color: var(--text-sub); }
+@container tt-counters (max-width: 640px) { .tt-counter .ds-num { font-size: 40px; } }
 
 .tt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; align-items: start; }
 .tt-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
 .tt-sub { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .tt-reset { font: inherit; color: inherit; text-align: left; width: 100%; appearance: none; border: 0; cursor: pointer; }
 
-/* ── «Сессии сегодня»: лист неба, Talk у заголовка, белые строки ─────────── */
+/* ── «Сессии сегодня»: лист неба, белые строки. Знака у заголовка нет (r1): Talk уже у счётчика «Сессий сегодня». */
 .tt-sessions { display: flex; flex-direction: column; gap: 12px; padding: 18px 18px 18px; border-radius: 22px; }
-.tt-sessions-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-inline: 2px; }
-.tt-sessions-title { margin: 0; }
-.tt-sessions-sign { display: flex; flex: none; }
-.tt-sessions-sign .pp-art { width: 60px; height: 32px; }
+.tt-sessions-title { margin: 0; padding-inline: 2px; text-wrap: balance; }
 .tt-sessions > .ds-empty { padding-inline: 2px; }
 .tt-session-list { display: flex; flex-direction: column; gap: 8px; }
 .tt-session {
@@ -44,8 +39,8 @@
 .tt-time { font-family: var(--serif); font-size: 26px; }
 /* Колонка «имя + подпись» в сетке строки: min-width: 0, иначе имя распирает трек. */
 .tt-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-/* Имя в строке сессии и внимания — до двух строк по словам: «Константин Константинопольский-…» читается
-   целиком на 390, многоточие — только на третьей строке. Плотные строки активности — одной строкой. */
+/* Имя в строке сессии, внимания и активности — до двух строк по словам: «Константин Константинопольский-…»
+   читается целиком на 390, многоточие — только на третьей строке (r1: и в «Активности» — «Анна Сок…» на 320). */
 .tt-name {
   font-size: 16px; font-weight: 600; line-height: 1.3;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; text-overflow: ellipsis;
@@ -55,17 +50,18 @@
 /* ── Списки: светлая бумага без обводки ───────────────────────────────── */
 .tt-list { background: var(--surface); border-radius: 20px; overflow: hidden; }
 .tt-act { grid-template-columns: 36px minmax(0, 1fr) minmax(48px, 120px) 44px auto; min-height: 44px; background: none; }
-.tt-act .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
-.tt-act-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tt-act-status { font-size: 12px; color: var(--text-muted); }
-.tt-act-status.is-ok { color: var(--ok); }
-.tt-act-status.is-warn { color: var(--warn-ink); }
-.tt-idx { font-family: var(--serif); font-size: 22px; text-align: right; }
+/* Кольцо фокуса — внутрь строки: .tt-list режет всё, что снаружи (overflow: hidden ради скругления). */
+.tt-act:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.tt-act .ds-avatar, .tt-attn .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
+.tt-act-name.tt-name { font-size: 14px; }
+/* Без светофора (r1): подпись — --text-sub, число — Literata --text, пропуск индекса — тихо. */
+.tt-act-status { font-size: 12px; color: var(--text-sub); }
+.tt-idx { font-family: var(--serif); font-size: 22px; text-align: right; color: var(--text); }
+.tt-idx.is-none { color: var(--text-sub); }
 .tt-attn {
   display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center;
   min-height: 60px; padding: 10px 16px; border-radius: 14px; background: var(--surface);
 }
-.tt-attn .ds-avatar { width: 36px; height: 36px; font-size: 12px; }
 .tt-attn .tt-row-sub { color: var(--warn-ink); font-size: 12px; }
 .tt-attn-list { display: flex; flex-direction: column; gap: 8px; }
 @media (hover: hover) {
@@ -83,14 +79,10 @@
 }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  /* Три плитки в ряд — ~115px на плитку: знак сверху, число, подпись в две строки. */
-  .tt-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .tt-counter {
-    grid-template-columns: minmax(0, 1fr); grid-template-areas: "sign" "num" "label";
-    align-items: start; row-gap: 6px; padding: 12px; border-radius: 16px;
-  }
+  /* Три плитки в ряд — ~115px на плитку: та же раскладка, мельче. */
+  .tt-counters { gap: 8px; }
+  .tt-counter { row-gap: 6px; padding: 12px; border-radius: 16px; }
   .tt-counter .ds-num { font-size: 28px; }
-  .tt-counter-sign { align-self: start; }
   .tt-counter-sign .pp-art { width: 44px; height: 24px; }
   .tt-denom { font-size: 14px; }
   .tt-cols, .tt-col { gap: 24px; }
@@ -98,9 +90,17 @@
   .tt-session { grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; padding: 10px 12px; }
   /* Спарклайн — на минимум 48: трек minmax(48px, 120px) добирал свои 120
      раньше, чем доля 1fr имени, и имени оставалось ~38px. */
-  .tt-act { grid-template-columns: 36px minmax(0, 1fr) 48px 44px auto; gap: 10px; }
+  .tt-act { grid-template-columns: 36px minmax(0, 1fr) 48px 40px auto; gap: 10px; }
+  .tt-act .ds-spark { height: 22px; gap: 1px; }
   .tt-attn { padding: 10px 12px; }
   .tt-time { font-size: 21px; }
   .tt-name { font-size: 15px; font-weight: 700; }
   .tt-row-sub { font-size: 12px; }
+}
+/* 320: подпись «Требуют внимания» шире ячейки (~88px) — тот же капитель плотнее (L9). */
+@media (max-width: 359px) {
+  .tt-counter { padding: 12px 10px; }
+  .tt-counter .ds-label { font-size: 10.5px; letter-spacing: .03em; }
+  .tt-act { grid-template-columns: 32px minmax(0, 1fr) 40px 36px auto; gap: 8px; }
+  .tt-act .ds-avatar { width: 32px; height: 32px; font-size: 11px; }
 }

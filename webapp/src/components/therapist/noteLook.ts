@@ -6,7 +6,7 @@
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
 import { kindLook } from '../../sections/diary/feedLook';
 
-export interface NoteLook { hue: number; sign: SignKey; filled?: boolean }
+interface NoteLook { hue: number; sign: SignKey; filled?: boolean }
 
 /** Вид записи по её типу: `schema`, `mode`, `gratitude`, остальное — быстрая запись. */
 export function noteLook(type: string): NoteLook {

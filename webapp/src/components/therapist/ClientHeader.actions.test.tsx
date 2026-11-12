@@ -71,8 +71,9 @@ describe('«+ Задание / + Заметка»', () => {
     expect(row.className).toBe('tk-quick');
     const [assign, note] = within(row as HTMLElement).getAllByRole('button');
     expect([assign.textContent, note.textContent]).toEqual(['+ Задание', '+ Заметка']);
-    expect(assign.className).toContain('ds-btn--secondary');
-    expect(note.className).toContain('ds-btn--sm');
+    // «+ Задание» — одна залитая на 390 и 1280 (ревью r1), «+ Заметка» — вторичная.
+    expect(assign.className).toBe('ds-btn ds-btn--sm');
+    expect(note.className).toContain('ds-btn--secondary');
     fireEvent.click(assign);
     expect(setShowAssign).toHaveBeenCalledWith(true);
     fireEvent.click(note);

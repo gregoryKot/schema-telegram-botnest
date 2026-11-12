@@ -1,7 +1,5 @@
-// Полоса вкладок карточки клиента (ClientTabs, b30): на 390 вкладки уходят за правый край. Признак прокрутки —
-// маска-градиент у края, за которым есть ещё вкладки (классы is-fade-start / is-fade-end, therapist-card.css);
-// при открытии и смене вкладки полоса сама встаёт так, чтобы активная была по центру. Чистые функции — здесь,
-// эффект — в ClientTabs.tsx. Прокрутка — scrollLeft самой полосы: scrollIntoView двигал и предков (страницу).
+// Полоса вкладок карточки клиента (b30): маска у края, за которым есть вкладки (is-fade-start / is-fade-end,
+// therapist-card.css), и прокрутка активной к центру. Чистые функции — здесь, эффект — useTabsBar.ts.
 
 /** Допуск в пикселях: дробная прокрутка на экранах с dpr 2–3 не доходит до края ровно. */
 const EDGE = 2;
@@ -25,3 +23,5 @@ export function tabScrollTarget(tabLeft: number, tabWidth: number, clientWidth: 
 export function fadeClass({ start, end }: TabsFade): string {
   return `${start ? ' is-fade-start' : ''}${end ? ' is-fade-end' : ''}`;
 }
+/** Содержимое полосы выросло или сжалось больше допуска — снова к активной (эффект отработал до счётчиков и шрифта). */
+export const widthChanged = (prev: number, next: number): boolean => Math.abs(next - prev) > EDGE;

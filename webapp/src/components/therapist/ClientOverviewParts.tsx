@@ -13,7 +13,7 @@ import type { DiaryPreviewRow } from './clientOverviewModel';
  *  знаем — знак целиком (все камешки легли). */
 export function OverviewEntries({ entries, onAll }: { entries: DiaryPreviewRow[]; onAll: () => void }) {
   return (
-    <section className="tk-leaf" style={{ '--h': ENTITY_LOOK.diary.hue } as CSSProperties}>
+    <section className="pp-leaf tk-leaf" style={{ '--h': ENTITY_LOOK.diary.hue } as CSSProperties}>
       <div className="ds-head-row tk-card-head">
         <h2 className="ds-label tk-sec-label">Последние записи</h2>
         <button className="ds-link" onClick={onAll}>Все записи →</button>

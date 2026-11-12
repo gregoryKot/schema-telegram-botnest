@@ -8,7 +8,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
-const css = readFileSync(join(__dirname, 'therapist-card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const strip = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const css = strip('therapist-card.css');
+const cabinet = strip('cabinet.css');
+const paper = strip('paper.css');
 
 /** Тело первого блока, начинающегося с `head` (по балансу скобок). */
 function block(src: string, head: string): string {
@@ -61,8 +64,9 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
 
   it('аватар — бумага тона клиента (--h) с тенью сплошным слоем, без размытия; на телефоне 44×44', () => {
     expect(decls(css, '.tk-avatar.tone-tint')).toBe('');
-    expect(decls(css, '.tk-avatar')).toContain('oklch(0.915 0.03 var(--h))');
-    expect(decls(css, '.tk-avatar')).toMatch(/box-shadow: \d+px \d+px 0 /);
+    // Бумага и тень — общий .ds-avatar--paper (cabinet.css, ревью r1: тот же кружок в списке, на «Сегодня»).
+    expect(decls(cabinet, '.ds-avatar--paper')).toContain('oklch(0.915 0.03 var(--h))');
+    expect(decls(cabinet, '.ds-avatar--paper')).toMatch(/box-shadow: \d+px \d+px 0 /);
     expect(decls(phone, '.tk-avatar')).toContain('width: 44px');
     expect(decls(phone, '.tk-avatar')).toContain('height: 44px');
   });
@@ -75,10 +79,12 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(css).not.toContain('.tk-menu');
   });
 
-  it('шаг стопки листов — 20: у .tk-side и .tk-col, без телефонного переопределения', () => {
+  // Ревью r1: на телефоне шаг 16 у обеих колонок разом — «Обзор» на 390 не длиннее «до».
+  it('шаг стопки листов — 20 у .tk-side и .tk-col, на телефоне — 16 у обеих одним правилом', () => {
     expect(decls(css, '.tk-side')).toContain('gap: 20px');
     expect(decls(css, '.tk-col')).toContain('gap: 20px');
-    expect(decls(phone, '.tk-col')).toBe('');
+    expect(decls(phone, '.tk-col')).toBe('gap: 16px;');
+    expect(decls(phone, '.tk-side')).toBe('gap: 16px;');
   });
 
   it('цвета — только токенами и бумагой; размытия и тёмной акцентной карточки нет', () => {
@@ -125,7 +131,9 @@ describe('therapist-card.css: «Обзор» на бумаге (b30)', () => {
   });
 
   it('белый лист — тень сплошным сдвинутым слоем тоном бумаги, не размытием', () => {
-    expect(decls(css, '.tk-leaf')).toMatch(/box-shadow: 6px 7px 0 oklch\(var\(--pa-layer-lc\) var\(--h\)\)/);
+    // Один лист на кабинет — .pp-leaf (paper.css, ревью r1); .tk-leaf задаёт только поля.
+    expect(decls(paper, '.pp-leaf')).toMatch(/box-shadow: 6px 7px 0 oklch\(var\(--pa-layer-lc\) var\(--h, 240\)\)/);
+    expect(decls(css, '.tk-leaf')).not.toContain('box-shadow');
   });
 
   it('незаполненное во «Встречах» — тихо (--text-sub), без красного', () => {

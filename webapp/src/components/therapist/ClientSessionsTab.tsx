@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react';
 import '../../styles/therapist-tabs.css';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { todayStr } from '../../utils/format';
 import type { ClientDetail } from './clientSheetTypes';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
@@ -6,9 +8,7 @@ import { SESSION_NOTE_MAX } from '../../../../shared/src/limits/textLimits';
 import { SignHead } from './SignArt';
 import { SessionArchive } from './SessionArchive';
 
-interface Props {
-  detail: ClientDetail;
-}
+interface Props { detail: ClientDetail }
 
 export function ClientSessionsTab({ detail }: Props) {
   const { newNoteDate, setNewNoteDate, newNoteText, setNewNoteText, addNote, noteSaving, noteError, notesPage, removeNote } = detail;
@@ -16,7 +16,7 @@ export function ClientSessionsTab({ detail }: Props) {
   const save = () => { if (canSave) void addNote(); }; // addNote ловит сбой сам: noteError над списком
   return (
     <div className="ds-page tb-page--narrow">
-      <div className="ds-card tb-composer">
+      <div className="pp-leaf tb-composer" style={{ '--h': ENTITY_LOOK.note.hue } as CSSProperties}>
         <div className="tb-composer-head">
           <SignHead kind="pebbles" as="div" className="ds-h3">Новая заметка</SignHead>
           <input type="date" lang="ru" className="ds-input ds-input--sm" aria-label="Дата заметки" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)} />

@@ -1,6 +1,3 @@
 /* Знак слева от подписи блока кабинета терапевта (SignArt.tsx). Цвет — только в мотивах. */
 /* Класс не .sg-head: тот же класс у шапки SignGroup (sheet-schemas.css, margin и font: inherit) — b30 берёт SignGroup в «Обзор». */
 .ts-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.tc-task-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.tt-who--sign { display: flex; align-items: center; gap: 10px; }
-.tt-who--sign > .tt-who-text { min-width: 0; flex: 1; }

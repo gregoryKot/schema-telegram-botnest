@@ -7,12 +7,12 @@
 // карточка клиента (шапка, вкладки, две колонки «Обзора»). TherapistTodaySkeleton и ClientCardSkeleton
 // берут и сами экраны терапевта (b29, b30).
 // Стили — styles/shell-skeletons.css: «Сегодня» живёт в ленивом чанке, его CSS к силуэту ещё не приехал.
-import type { ReactNode } from 'react';
 import { hueStyle } from '../lib/tone';
 import { Strokes } from './art/PaperArt';
 import { Skeleton, ScreenSkeleton } from './Skeleton';
 import { DiaryFeedSkeleton } from '../sections/diary/DiaryFeedSkeleton';
 import { TodaySkeletonBody } from './therapist/TodaySkeletonBody';
+import { CardHeadSkeleton, OverviewSkeleton } from './therapist/CardSkeleton';
 import '../styles/shell-skeletons.css';
 /** Знак трекера без данных: пять пустых мест, как у неоценённого дня главной (правило .pp-strokes-values). */
 const EMPTY_DAY = [null, null, null, null, null];
@@ -29,8 +29,6 @@ function Head({ title = '60%' }: { title?: string }) {
 function Line({ kind, bars, h }: { kind: string; bars: (number | string)[]; h: number }) {
   return <span className={`sks-line sks-line--${kind}`}>{bars.map((w, i) => <Skeleton key={i} width={w} height={h} radius={h > 16 ? 8 : 6} />)}</span>;
 }
-/** Лист бумаги оттенка `h` с подписью-плашкой сверху (силуэт листа карточки клиента). */
-const Sheet = ({ h, children }: { h: number; children: ReactNode }) => <div className="pp-paper sks-paper sks-sheet" style={hueStyle(h)}><Skeleton width={110} height={11} />{children}</div>;
 /** Строки списка со знаком слева (лента, «Ещё», клиенты). */
 function Rows({ n }: { n: number }) {
   return (
@@ -103,20 +101,12 @@ export function TherapistTodaySkeleton() {
   );
 }
 
-/** Карточка клиента (b30): круг и имя, мета, вкладки; «Обзор» — цель (солома) и группа схем, «Встречи» (небо) и трекер. */
+/** Карточка клиента (b30, r1): шапка и «Обзор» по форме экрана — therapist/CardSkeleton.tsx. */
 export function ClientCardSkeleton() {
   return (
-    <div className="ds-page sks-page sks-wide" data-testid="client-card-skeleton">
-      <Skeleton width={110} height={13} />
-      <div className="sks-card-head">
-        <Skeleton width={56} height={56} radius={28} />
-        <div className="sks-col"><Skeleton width="44%" height={30} radius={8} /><Skeleton width="62%" height={12} /></div>
-      </div>
-      <div className="sks-tabs">{[64, 120, 112, 64, 72, 56].map((w, i) => <Skeleton key={i} width={w} height={14} />)}</div>
-      <div className="sks-two sks-two--overview">
-        <div className="sks-col"><Sheet h={70}><Skeleton width="86%" height={22} /><Skeleton width="58%" height={22} /></Sheet><Sheet h={28}><div className="sks-card"><Rows n={2} /></div></Sheet></div>
-        <div className="sks-col"><Sheet h={240}><Skeleton width="70%" height={20} /><Skeleton width="50%" height={14} /></Sheet><Sheet h={70}><Skeleton width={64} height={40} radius={8} /></Sheet></div>
-      </div>
+    <div className="sks-card-page" data-testid="client-card-skeleton">
+      <CardHeadSkeleton />
+      <OverviewSkeleton />
     </div>
   );
 }

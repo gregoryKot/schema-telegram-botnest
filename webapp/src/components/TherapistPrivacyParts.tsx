@@ -14,7 +14,7 @@ export function PrivacyItem({ title, text, hue, sign }: { title: string; text: s
   return (
     <div className="pp-paper sk-priv-item" style={{ '--h': hue } as CSSProperties}>
       <span className="sk-priv-item-sign" aria-hidden="true">
-        {sign === 'brand' ? <BrandMark size={28} simple /> : <SignArt sign={sign} size="row" />}
+        {sign === 'brand' ? <BrandMark size={28} simple bare /> : <SignArt sign={sign} size="row" />}
       </span>
       <div className="sk-priv-item-title">{title}</div>
       <div className="sk-priv-item-text">{text}</div>

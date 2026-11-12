@@ -22,9 +22,8 @@ interface Props {
 
 export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClient }: Props) {
   if (loadFailed) {
-    // Сбой ≠ пусто: без этой ветки отказ запроса рисовал бы терапевту
-    // пустую доску («Назначенных заданий пока нет») вместо явной ошибки.
-    return <PaperAlert sign="check" title="Не удалось загрузить задания" onRetry={onRetry} retryLabel="Попробовать ещё раз" />;
+    // Сбой ≠ пусто (иначе — пустая доска вместо ошибки). Знак — Cluster, как у сбоев «Сегодня» и «Клиентов» (r1).
+    return <PaperAlert sign="cluster" title="Не удалось загрузить задания" onRetry={onRetry} retryLabel="Попробовать ещё раз" />;
   }
   if (loading || !allTasks) {
     return (
@@ -40,8 +39,7 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
     );
   }
 
-  // Колонки — по той же модели статусов, что карточка клиента (taskModel):
-  // одно задание не может быть «Не вышло» на доске и «В работе» в карточке.
+  // Колонки — по модели статусов карточки (taskModel): «Не вышло» на доске = «Не вышло» в карточке.
   const today = todayStr();
   const flat = orderTasks(
     allTasks.flatMap(group => group.tasks.map(t => ({ ...t, clientName: group.clientName }))),
@@ -63,8 +61,8 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
     { key: 'failed', label: STATUS_LABEL.failed, items: flat.filter(t => t.status === 'failed') },
   ] as const;
 
-  // Колонка — бумага своего статуса (BOARD_COLUMN_LOOK: солома, шалфей с Check, персик); карточка —
-  // светлый лист со знаком типа задания (TaskSign, как у клиента), без Talk у каждой (баг брифа).
+  // Колонка — бумага статуса (BOARD_COLUMN_LOOK); карточка — светлый лист, знак типа (TaskSign) — в строке имени
+  // клиента, текст во всю ширину (r1); статус — тот же ярлык бумаги (TaskStatusBadge paper), что во вкладке «Задания».
   return (
     <div className="tc-kanban">
       {cols.map(col => {
@@ -79,12 +77,14 @@ export function KanbanView({ allTasks, loading, loadFailed, onRetry, onOpenClien
             {col.items.length === 0 && <div className="tc-dash">–</div>}
             {col.items.map(task => (
               <div key={task.id} className="tc-task" {...pressable(() => onOpenClient(task.userId))}>
-                <span className="tc-task-sign" aria-hidden="true"><TaskSign task={task} /></span>
-                <div className="tc-task-body">
-                  <div className="tc-task-client">{task.clientName}</div>
-                  <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
-                  <div className="tc-task-due">{taskMeta(task, task.status)}</div>
-                  {(task.status === 'overdue' || task.status === 'soon') && <TaskStatusBadge status={task.status} className="tc-task-flag" />}
+                <div className="tc-task-head">
+                  <span className="tc-task-sign" aria-hidden="true"><TaskSign task={task} /></span>
+                  <span className="tc-task-client">{task.clientName}</span>
+                </div>
+                <div className="tc-task-text">{resolveTaskDisplayText(task, 'full')}</div>
+                <div className="tc-task-meta">
+                  <span className="tc-task-due">{taskMeta(task, task.status)}</span>
+                  {(task.status === 'overdue' || task.status === 'soon') && <TaskStatusBadge status={task.status} paper />}
                 </div>
               </div>
             ))}

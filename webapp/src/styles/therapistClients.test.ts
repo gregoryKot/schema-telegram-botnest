@@ -21,10 +21,15 @@ describe('therapist-clients.css: имя в карточке клиента', () 
   });
   it('радужной полосы доменов нет; карточка — лист без обводки с тенью слоем', () => {
     expect(css).not.toMatch(/\.tc-bar\b/);
+    // Ревью r1: лист — общий .pp-leaf (paper.css, тот же у формы, «Ждут подключения» и листов карточки);
+    // у .tc-card — только раскладка, ни своей тени, ни обводки.
     const card = rule('.tc-card');
-    expect(card).toContain('background: var(--surface)');
-    expect(card).toMatch(/box-shadow: \d+px \d+px 0 oklch\(var\(--pa-layer-lc\) var\(--h\)\)/);
+    expect(card).not.toContain('box-shadow');
     expect(card).not.toContain('border:');
+    const paper = readFileSync(join(__dirname, 'paper.css'), 'utf8');
+    expect(paper).toMatch(/\.pp-leaf \{[^}]*background: var\(--surface\)[^}]*box-shadow: \d+px \d+px 0 oklch\(var\(--pa-layer-lc\) var\(--h, 240\)\)/);
+    const markup = readFileSync(join(__dirname, '../components/therapist/ClientCard.tsx'), 'utf8');
+    expect(markup).toContain('className="pp-leaf tc-card"');
   });
   it('лупа палитры видна только там, где нет строки .topbar (телефон)', () => {
     expect(rule('.tc-find')).toContain('display: none');

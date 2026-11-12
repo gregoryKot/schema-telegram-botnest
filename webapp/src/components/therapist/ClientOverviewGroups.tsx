@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { SheetLook } from '../../../../shared/src/theme/entityLook';
 import { SignGroup } from '../schemaSheets/SignGroup';
 
-export interface PaperGroupData {
+interface PaperGroupData {
   id: string;
   name: string;
   /** Бумага и знак группы: домен — domainLook, группа режимов — modeGroupLook. */

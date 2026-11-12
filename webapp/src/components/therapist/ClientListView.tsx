@@ -68,9 +68,9 @@ export function ClientListView({
       <div className="ds-page">
         <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} onSearch={onSearch} />
 
-        <CardClaimBanner claims={addClient.claims} rowClassName="tc-claim" art={signOf(CLAIM_SIGN)} failure={blockAlert(CLAIM_SIGN)} />
+        <CardClaimBanner claims={addClient.claims} rowClassName="pp-leaf tc-claim" art={signOf(CLAIM_SIGN)} failure={blockAlert(CLAIM_SIGN)} />
         {formVisible && <AddClientForm addClient={addClient} />}
-        <PendingInvitesList pending={addClient.pending} className="tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
+        <PendingInvitesList pending={addClient.pending} className="pp-leaf tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
 
         <div className="tc-toolbar">
           <div className="tc-modes">

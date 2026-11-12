@@ -18,9 +18,9 @@ describe('therapist-today.css: контраст на бумаге', () => {
   it('нет токенов --on-panel-* (их место только на ds-card--panel/--accent)', () => {
     expect(css).not.toMatch(/--on-panel-/);
   });
-  it('.tt-denom красится var(--text-faint)', () => {
+  it('.tt-denom красится var(--text-sub): на цветной бумаге --text-faint ниже 4.5:1 (ревью r1, L6)', () => {
     const m = css.match(/\.tt-denom\s*\{([^}]*)\}/);
-    expect(m?.[1]).toContain('color: var(--text-faint)');
+    expect(m?.[1]).toContain('color: var(--text-sub)');
   });
 });
 
@@ -29,11 +29,10 @@ describe('therapist-today.css: контраст на бумаге', () => {
 // overflow-wrap: anywhere рвал имя посреди слова. b29: плотная строка активности —
 // одной строкой с многоточием, строки сессий и внимания — до двух строк по словам.
 describe('therapist-today.css: имена в строках (QA 2026-11, b29)', () => {
-  it('.tt-act-name — одна строка с многоточием, без overflow-wrap: anywhere', () => {
-    const d = rule(desk, '.tt-act-name');
-    expect(d).toContain('white-space: nowrap');
-    expect(d).toContain('overflow: hidden');
-    expect(d).toContain('text-overflow: ellipsis');
+  it('имя в «Активности» — то же .tt-name (до двух строк), а не одна строка с многоточием (ревью r1, L4)', () => {
+    const rows = readFileSync(join(__dirname, '../sections/TherapistTodayLists.tsx'), 'utf8');
+    expect(rows).toContain('className="tt-name tt-act-name"');
+    expect(css).not.toMatch(/\.tt-act-name[^{]*\{[^}]*nowrap/);
     expect(css).not.toMatch(/overflow-wrap:\s*anywhere/);
   });
   it('.tt-name — до двух строк, многоточие только на третьей', () => {
@@ -46,7 +45,7 @@ describe('therapist-today.css: имена в строках (QA 2026-11, b29)', 
     expect(rule(desk, '.tt-who')).toContain('min-width: 0');
   });
   it('на телефоне спарклайн строки активности — на минимуме 48, имени отдаётся остаток', () => {
-    expect(rule(phone, '.tt-act')).toContain('grid-template-columns: 36px minmax(0, 1fr) 48px 44px auto');
+    expect(rule(phone, '.tt-act')).toContain('grid-template-columns: 36px minmax(0, 1fr) 48px 40px auto');
   });
 });
 

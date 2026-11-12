@@ -52,7 +52,7 @@ export function leadingDomain(schemaIds: string[]): string | null {
   return top.length === 1 ? top[0].domainId : null;
 }
 
-export type ClientSign =
+type ClientSign =
   | { kind: 'offline' }
   | { kind: 'domain'; domainId: string; hue: number };
 

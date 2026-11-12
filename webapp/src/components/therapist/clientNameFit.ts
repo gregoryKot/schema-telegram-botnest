@@ -6,7 +6,7 @@
 /** «Игорь Валентинович Преображенский» (33) встаёт в две строки ds-h2 и на 390 — длинным не считается. */
 const LONG = 40;
 
-export function isLongClientName(name: string): boolean {
+function isLongClientName(name: string): boolean {
   return name.trim().length > LONG;
 }
 

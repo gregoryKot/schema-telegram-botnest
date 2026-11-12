@@ -67,7 +67,7 @@ export function ClientTasksTab({ detail, onAssign, onTasksChanged, onOpenConcept
               // Раскладка — общая строка задания (task-row.css): знак, название со сроком и статусом, действия в слоте
               // .cp-task-acts; в узком списке действия уходят второй строкой (ClientTasksTab.layout.test.tsx).
               return (
-                <div key={t.id} className={`ds-card ds-card--row cp-task tb-task${status === 'done' ? ' cp-task--done' : ''}`}>
+                <div key={t.id} className={`ds-card ds-card--row pp-leaf cp-task tb-task${status === 'done' ? ' cp-task--done' : ''}`}>
                   <TaskArt task={t} />
                   <div className="cp-task-body">
                     <div className="cp-task-title tb-task-text">{resolveTaskDisplayText(t, 'full')}</div>

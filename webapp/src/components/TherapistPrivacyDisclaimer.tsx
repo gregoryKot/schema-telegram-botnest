@@ -1,13 +1,12 @@
 import { PrivacyArt, PrivacyItem } from './TherapistPrivacyParts';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { glueSpaces } from '../../../shared/src/utils/typo';
 import { markTherapistDisclaimerSeen } from './therapistDisclaimerSeen';
 import { PRIVACY_TILE_LOOK, type PrivacyTile } from './therapist/cabinetLook';
 import '../styles/sheet-tasks.css';
 
-interface Props {
-  onDone: () => void;
-}
+interface Props { onDone: () => void }
 
 /**
  * Первый вход в кабинет терапевта: короткий этический дисклеймер о том, что
@@ -39,7 +38,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
 
         <div className="sk-priv-head">
           <PrivacyArt />
-          <h1 className="ds-h2 sk-priv-title">Немного о заботе о клиентах</h1>
+          <h1 className="ds-h2 sk-priv-title">{glueSpaces('Немного о заботе о клиентах')}</h1>
           <p className="sk-priv-lead">
             {tr('Здесь будет твоя работа с людьми, которые тебе доверились. Одна маленькая привычка поможет бережно сохранить это доверие.', 'Здесь будет ваша работа с людьми, которые вам доверились. Одна маленькая привычка поможет бережно сохранить это доверие.')}
           </p>

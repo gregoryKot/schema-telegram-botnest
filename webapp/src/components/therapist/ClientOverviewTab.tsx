@@ -54,7 +54,7 @@ export function ClientOverviewTab({ selectedClient, detail }: Props) {
         )}
 
         {notes.length > 0 && (
-          <section className="tk-leaf" style={paper(ENTITY_LOOK.note.hue)}>
+          <section className="pp-leaf tk-leaf" style={paper(ENTITY_LOOK.note.hue)}>
             <div className="ds-head-row tk-card-head">
               <SignHead kind="pebbles" className="ds-label">Заметка сессии</SignHead>
               <button className="ds-link" onClick={() => setClientTab('sessions')}>Все заметки →</button>

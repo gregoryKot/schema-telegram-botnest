@@ -16,11 +16,9 @@ interface Props {
   onOpen: (client: TherapyClientSummary) => void;
 }
 
-// Карточка в «Все клиенты» (b29): светлый лист с тенью слоем бумаги ведущего домена (без домена —
-// небо терапевта), знак — DomainArt ведущего домена (как у клиента в «Моих паттернах»), у офлайн-клиента
-// — знак продукта; радужной полосы доменов больше нет. Имя переносится на вторую строку. Схемы — чипы
-// бумаги своего домена. Встреча — NextSessionLine, как в шапке карточки. На телефоне вместо футера
-// «Открыть →» — шеврон в строке имени (компактный список).
+// Карточка в «Все клиенты» (b29, r1): лист .pp-leaf с тенью бумаги ведущего домена (без домена — небо), аватар
+// .ds-avatar--paper; знак — DomainArt ведущего домена или BrandMark офлайн-клиента — в строке имени; «в приложении» /
+// «офлайн» — тихий текст без плашки. Схемы — чипы бумаги домена, встреча — NextSessionLine, как в шапке карточки.
 export function ClientCard({ client, today, onOpen }: Props) {
   const name = clientDisplayName(client);
   const status = clientStatus(client);
@@ -29,23 +27,25 @@ export function ClientCard({ client, today, onOpen }: Props) {
   const sign = clientSign(client);
   const layer = sign?.kind === 'domain' ? sign.hue : ENTITY_LOOK.therapist.hue;
   return (
-    <div className="tc-card" style={{ '--h': layer } as CSSProperties} {...pressable(() => onOpen(client))}>
+    <div className="pp-leaf tc-card" style={{ '--h': layer } as CSSProperties} {...pressable(() => onOpen(client))}>
       <div className="tc-top">
-        <div className="ds-avatar ds-avatar--serif tc-avatar" style={hueStyle(clientHue(client.telegramId))}>
+        <div className="ds-avatar ds-avatar--serif ds-avatar--paper tc-avatar" style={hueStyle(clientHue(client.telegramId))}>
           {clientAvatarInitials(client)}
         </div>
         <div className="tc-who">
-          <div className="tc-name">{name}</div>
+          <div className="tc-name-row">
+            <div className="tc-name">{name}</div>
+            {sign && (
+              <span className="tc-sign" aria-hidden="true" data-sign={sign.kind === 'domain' ? sign.domainId : 'offline'}>
+                {sign.kind === 'domain' ? <DomainMark domainId={sign.domainId} /> : <BrandMark size={28} simple bare />}
+              </span>
+            )}
+          </div>
           <div className="tc-meta">
-            <span className={status.inBot ? 'ds-badge ds-badge--ok' : 'ds-badge'}>{status.label}</span>
+            <span className="tc-status">{status.label}</span>
             {caption && <span>{caption}</span>}
           </div>
         </div>
-        {sign && (
-          <span className="tc-sign" aria-hidden="true" data-sign={sign.kind === 'domain' ? sign.domainId : 'offline'}>
-            {sign.kind === 'domain' ? <DomainMark domainId={sign.domainId} /> : <BrandMark size={28} simple />}
-          </span>
-        )}
         <span className="ds-chev tc-chev" aria-hidden="true" />
       </div>
       <NextSessionLine label={meeting} />

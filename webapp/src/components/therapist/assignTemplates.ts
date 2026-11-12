@@ -6,7 +6,7 @@ import { ENTITY_LOOK, type Look } from '../../../../shared/src/theme/entityLook'
 export interface AssignPreset { type: TaskType; text?: string }
 
 /** `look` — бумага и знак плитки: сущность, которую клиент получит заданием (ENTITY_LOOK; тот же знак, что TaskSign у клиента). */
-export interface AssignTemplate { title: string; sub: string; preset: AssignPreset; look: Look }
+interface AssignTemplate { title: string; sub: string; preset: AssignPreset; look: Look }
 
 const look = (id: keyof typeof ENTITY_LOOK): Look => ({ hue: ENTITY_LOOK[id].hue, sign: ENTITY_LOOK[id].sign });
 

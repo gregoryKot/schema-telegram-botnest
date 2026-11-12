@@ -20,33 +20,31 @@ const item: NoteItem = {
 };
 
 describe('NoteCard', () => {
-  it('заголовок — tb-note-title, дата сразу за ним — tb-note-date; клик по карточке зовёт onToggle', () => {
+  it('заголовок — tb-note-title, под ним тип тихой подписью, дата — в строке справа; клик по карточке зовёт onToggle', () => {
     const onToggle = vi.fn();
     render(<NoteCard item={item} expanded={false} onToggle={onToggle} />);
     const title = screen.getByText('Благодарность');
     expect(title.classList.contains('tb-note-title')).toBe(true);
-    expect(title.nextElementSibling?.classList.contains('tb-note-date')).toBe(true);
+    expect(title.nextElementSibling?.classList.contains('tb-note-type')).toBe(true);
+    expect(title.parentElement?.nextElementSibling?.classList.contains('tb-note-date')).toBe(true);
     fireEvent.click(title);
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it('therapist-tabs.css: заголовок переносится по слову, на телефоне — своей строкой, дата у правого края', () => {
+  it('therapist-tabs.css: заголовок переносится по слову в своей колонке сетки (знак · заголовок · дата)', () => {
     const css = readFileSync(join(__dirname, '../../styles/therapist-tabs.css'), 'utf8');
-    const phoneAt = css.indexOf(`@media ${PHONE_MEDIA}`);
-    expect(phoneAt).toBeGreaterThan(0);
-    const base = css.slice(0, phoneAt);
-    const phone = css.slice(phoneAt);
-    expect(base).toMatch(/\.tb-note-title \{[^}]*overflow-wrap: break-word/);
-    expect(base).not.toMatch(/\.tb-note-title \{[^}]*anywhere/);
-    expect(phone).toMatch(/\.tb-note-title \{[^}]*flex-basis: 100%/);
-    expect(phone).toMatch(/\.tb-note-date \{[^}]*margin-left: auto/);
+    expect(css.indexOf(`@media ${PHONE_MEDIA}`)).toBeGreaterThan(0);
+    expect(css).toMatch(/\.tb-note-title \{[^}]*overflow-wrap: break-word/);
+    expect(css).not.toMatch(/\.tb-note-title \{[^}]*anywhere/);
+    expect(css).toMatch(/\.tb-note-head \{[^}]*grid-template-columns: 44px minmax\(0, 1fr\) auto/);
   });
 
-  // b31: знак и ярлык — по типу записи (noteLook), а не одни камешки на мху у каждой карточки.
-  it('ярлык типа — бумага своего типа: благодарность 195, схема 28, режим 240; знак у схемы — не камешки', () => {
+  // b31: знак и бумага — по типу записи (noteLook), а не одни камешки на мху у каждой карточки; r1 — без таблетки.
+  it('тень листа — бумага своего типа: благодарность 195, схема 28, режим 240; знак у схемы — не камешки; таблетки нет', () => {
     const hueOf = (kind: NoteItem['kind']) => {
       const { container } = render(<NoteCard item={{ ...item, kind }} expanded={false} onToggle={vi.fn()} />);
-      const tag = container.querySelector<HTMLElement>('.pp-tag')!;
+      expect(container.querySelector('.pp-tag')).toBeNull();
+      const tag = container.querySelector<HTMLElement>('.pp-leaf.tb-note')!;
       const art = container.querySelector('.pp-row-art')!.innerHTML;
       cleanup();
       return { h: tag.style.getPropertyValue('--h'), art };

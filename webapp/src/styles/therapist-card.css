@@ -17,12 +17,11 @@
    правому краю, а «Концептуализация» стояла по центру. */
 .tk-sheet { background: var(--bg); }
 .tk-tabs-body { padding: 0; }
-.tk-load { padding: 40px var(--tk-gutter); display: flex; flex-direction: column; gap: 16px; max-width: var(--tk-max); box-sizing: border-box; }
 /* Клиента нет или список не загрузился — исход на бумаге у верха колонки (ClientCardFallback.tsx), а не по
    центру окна высотой 100vh: карточка живёт в прокрутке кабинета. Два класса — сильнее .pa-outcome. */
 .pa-outcome.tk-outcome { min-height: 0; align-items: flex-start; padding: 56px var(--tk-gutter) 48px; background: transparent; }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .tk-tabs-body > .tk-ov, .tk-tabs-body > .tk-load, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
+  .tk-tabs-body > .tk-ov, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
   .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   /* «Графические карты»: холст во всю ширину, полоса карт — в колонке, на одной вертикали с шапкой. */
@@ -37,11 +36,8 @@
 }
 .tk-head > .ds-back { align-self: flex-start; margin-bottom: -8px; }
 .tk-head-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-/* Аватар — кружок бумаги тона клиента (clientHue, как раньше) с тенью сплошным слоем, инициалы — --text. */
-.tk-avatar {
-  width: 56px; height: 56px; font-size: 21px; color: var(--text);
-  background: oklch(0.915 0.03 var(--h)); box-shadow: 3px 4px 0 oklch(var(--pa-layer-lc) var(--h));
-}
+/* Аватар — .ds-avatar--paper (cabinet.css: кружок бумаги тона клиента с тенью-слоем); здесь — размер. */
+.tk-avatar { width: 56px; height: 56px; font-size: 21px; box-shadow: 3px 4px 0 oklch(var(--pa-layer-lc) var(--h)); }
 .tk-ident { flex: 1; min-width: 260px; }
 /* Кегль имени — ds-h2; здесь только перенос: до двух строк по пробелам и дефису, целиком. Одной строкой с
    многоточием длинное имя («Константин Константинопольский-Задунайский») не было видно нигде (b30). */
@@ -57,6 +53,7 @@
 .tk-error { font-size: 12px; color: var(--err); }
 .tk-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; white-space: nowrap; }
 .tk-meta { font-size: 13px; color: var(--text-sub); white-space: normal; }
+.tk-offline { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-sub); }
 /* Строка «Встреча» (NextSessionLine) в шапке — своей строкой под метой, без
    подложки списка клиентов: акцент здесь только у даты. */
 .tk-head .tc-meeting { flex-basis: 100%; }
@@ -70,13 +67,16 @@
    встают в колонку кабинета, под «← Все клиенты» (правило — в блоке ≥768
    выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
 
+/* Кольцо фокуса вкладки — внутрь (L2): полоса прокручивается (overflow-x: auto) и режет всё за своим краем. */
+.tk-tabs .ds-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 8px; }
 /* Полоса вкладок (ClientTabs, useTabsBar): за краем, где остались вкладки, — маска-градиент (не размытие),
    классы ставит прокрутка. position — чтобы offsetLeft вкладки считался от полосы. Счётчик — тихий: цифра
    цветом подписи, без плашки. */
-.tk-tabs { position: relative; --tk-fade: 40px; }
-.tk-tabs.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
-.tk-tabs.is-fade-start.is-fade-end {
+.tk-tabs, .tb-notes-filter { position: relative; --tk-fade: 40px; }
+/* Тот же механизм у фильтра «Записей клиента» (ClientNotesTab, useTabsBar; ревью r1). */
+.tk-tabs.is-fade-end, .tb-notes-filter.is-fade-end { -webkit-mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to right, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start, .tb-notes-filter.is-fade-start { -webkit-mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); mask-image: linear-gradient(to left, black calc(100% - var(--tk-fade)), transparent); }
+.tk-tabs.is-fade-start.is-fade-end, .tb-notes-filter.is-fade-start.is-fade-end {
   -webkit-mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
   mask-image: linear-gradient(to right, transparent, black var(--tk-fade), black calc(100% - var(--tk-fade)), transparent);
 }
@@ -106,13 +106,19 @@
 .tk-groups-box { container: tk-groups / inline-size; min-width: 0; }
 .tk-groups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
 @container tk-groups (min-width: 520px) { .tk-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Узкая колонка (телефон): группа компактнее (ревью r1, «Обзор» на 390 был на 11% длиннее «до») — знак 44 в строке
+   подписи, поля листа и строк меньше; строка схемы ≤56px. Вид SignGroup клиента не меняется (правило — здесь). */
+@container tk-groups (max-width: 519px) {
+  .tk-groups { gap: 8px; }
+  .tk-groups .sg-group { padding: 8px 10px 10px; border-radius: 18px; }
+  .tk-groups .sg-head { margin: 2px 2px 6px; gap: 10px; }
+  .tk-groups .sg-sign, .tk-groups .sg-sign .pp-art--square { width: 44px; }
+  .tk-groups .tk-item { padding: 8px 12px; }
+}
 .tk-item { padding: 11px 14px; font-size: 14px; font-weight: 500; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; }
 .tk-item + .tk-item { border-top: 1px solid var(--paper-sunk); }
-/* Белый лист с тенью сплошным слоем тоном сущности (--h у листа): заметка сессии, последние записи. */
-.tk-leaf {
-  padding: 18px 20px; border-radius: 20px; background: var(--surface); min-width: 0;
-  box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h));
-}
+/* Белый лист .pp-leaf (paper.css) тоном сущности: заметка сессии, последние записи; здесь — поля. */
+.tk-leaf { padding: 18px 20px; }
 .tk-note-text { font-size: 14px; line-height: 1.7; color: var(--text-sub); max-width: 720px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .tk-note-date { margin-top: 6px; }
 /* Строка записи: знак типа 44×24, заголовок и тихая строка «тип + фрагмент», дата справа. */
@@ -140,6 +146,8 @@
 .tk-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 /* «Встречи» — один лист неба, три строки через тонкую линию; Talk — у первой строки. */
 .tk-meet { padding: 6px 20px; }
+/* Подписи на цветной бумаге — --text-sub (L6): --text-faint .ds-label на небе 4.33:1, на соломе 4.29:1. */
+.tk-meet .ds-label, .tk-goal .ds-label, .tk-track .ds-label { color: var(--text-sub); }
 .tk-meet-row { padding: 14px 0; }
 .tk-meet-row + .tk-meet-row { border-top: 1px solid var(--paper-sunk); }
 .tk-meet-row > .ds-label { margin: 0; }
@@ -149,8 +157,13 @@
 .tk-edit-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 .tk-edit-form .ds-input { background: var(--surface); }
 .tk-edit-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.tk-start { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.tk-start { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; margin-top: 8px; }
+/* «Изменить →» / «Указать →» во «Встречах» — тихие (ревью r1): три акцентных ссылки подряд спорили с датой. */
+.tk-meet .ds-link { color: var(--text-sub); text-underline-offset: 3px; }
+.tk-meet .ds-link:hover, .tk-meet .ds-link:focus-visible { color: var(--text); text-decoration: underline; }
 .tk-days { display: flex; flex-wrap: wrap; gap: var(--space-6); }
+/* Чип дня — тап-цель ≥44 и в ширину (L8): «Пн» был 36–38×44. */
+.tk-days > .ds-chip--toggle { min-width: 44px; justify-content: center; }
 /* «Приложение» офлайн-клиента (OfflineInviteCard) — белый лист с тенью-слоем неба (встречи терапевта), как
    заметка и записи, а не белая карточка с серой рамкой. */
 .tk-side > .ds-card { border-color: transparent; border-radius: 20px; box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) 240); }
@@ -161,15 +174,19 @@
 .tk-index-num { font: 400 52px/1 var(--serif); letter-spacing: -0.02em; color: var(--text); }
 .tk-delta { font-size: 12px; font-weight: 600; color: var(--text-sub); }
 .ds-spark.tk-spark { height: 40px; gap: 5px; margin-top: 14px; }
-.ds-spark.tk-spark > i { background: var(--text-muted); border-radius: 2px; }
-.ds-spark.tk-spark > i.is-none { background: color-mix(in srgb, var(--text-sub) 22%, transparent); }
 .tk-spark-sub { margin-top: 6px; }
 .tk-track-part > .ds-label { margin: 0; }
 .tk-needs { display: flex; flex-direction: column; margin-top: 10px; border-radius: 14px; background: var(--surface); }
 .tk-need { display: grid; grid-template-columns: 24px minmax(0, 1fr) 48px 16px; gap: 8px; align-items: center; padding: 9px 12px; font-size: 13px; }
+/* Колонка сайдбара ~200px (1024–1280): «Выражение чувств» не влезает рядом со шкалой — шкала встаёт под подпись (L3). */
+.tk-needs { container: tk-needs / inline-size; }
+@container tk-needs (max-width: 300px) {
+  .tk-need { grid-template-columns: 24px minmax(0, 1fr) 16px; grid-template-areas: "sign name val" ". bar bar"; row-gap: 6px; }
+  .tk-need-sign { grid-area: sign; } .tk-need-name { grid-area: name; } .tk-need b { grid-area: val; } .tk-need-bar { grid-area: bar; }
+}
 .tk-need + .tk-need { border-top: 1px solid var(--paper-sunk); }
 .tk-need-sign { display: flex; }
-.tk-need-name { min-width: 0; color: var(--text); }
+.tk-need-name { min-width: 0; color: var(--text); overflow-wrap: break-word; }
 .tk-need-bar { height: 6px; border-radius: 3px; background: var(--paper-sunk); overflow: hidden; }
 .tk-need-bar > span { display: block; height: 100%; border-radius: 3px; background: var(--need-ink); }
 .tk-need b { text-align: right; color: var(--need-text); }
@@ -189,10 +206,18 @@
      («Константинопольский-/Задунайский») и видна целиком; обычное — две строки ds-h2, шапка не растёт. */
   .tk-name--long { -webkit-line-clamp: 4; }
   .tk-badges { gap: 6px; }
-  .tk-ov { padding: 20px 16px 24px; gap: 24px; }
+  /* «Обзор» на 390 — не длиннее «до» (ревью r1: было +11%): плотнее промежутки, строки списков и «Встречи». */
+  .tk-ov { padding: 20px 16px 24px; gap: 16px; }
+  .tk-col, .tk-side { gap: 16px; }
+  .tk-card-head { margin-bottom: 8px; }
+  .tk-meet-row { padding: 10px 0; }
+  .tk-track { gap: 14px; padding: 16px 16px 18px; }
+  .ds-spark.tk-spark { height: 32px; margin-top: 10px; }
+  .tk-entry { padding: 9px 0; }
   .tk-alias-input { font-size: 22px; width: 100%; }
-  .tk-goal { padding: 16px 18px; }
+  .tk-goal { padding: 14px 16px; }
   .tk-text { font-size: 16px; }
-  .tk-leaf { padding: 16px; box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) var(--h)); }
+  .tk-leaf { padding: 14px 16px; }
+  .tk-side > .ds-card { box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) 240); }
   .pa-outcome.tk-outcome { padding: 16px 16px 24px; }
 }

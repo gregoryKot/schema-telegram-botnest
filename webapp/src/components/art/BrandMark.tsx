@@ -10,14 +10,14 @@ import { PAPER } from './paper';
 
 const MARK_STYLE = { display: 'block', flexShrink: 0 } as const;
 
-/** `simple` — без полоски фона, для 16–24 px: там она рассыпается в шум. */
-export function BrandMark({ size = 32, simple = false, className }: { size?: number; simple?: boolean; className?: string }) {
+/** `simple` — без полоски фона (16–24 px: рассыпается в шум); `bare` — без плитки, знак прямо на бумаге листа (r1). */
+export function BrandMark({ size = 32, simple = false, bare = false, className }: { size?: number; simple?: boolean; bare?: boolean; className?: string }) {
   return (
     <svg className={className ? `light-lock ${className}` : 'light-lock'} style={MARK_STYLE}
          width={size} height={size} viewBox={`0 0 ${MARK_VIEW} ${MARK_VIEW}`}
          aria-hidden="true" focusable="false" data-brand-mark={simple ? 'simple' : 'full'}>
       {/* Плитка — бумага страницы (--bg). */}
-      <rect width={MARK_VIEW} height={MARK_VIEW} rx={TILE_RX} fill="var(--bg)" />
+      {!bare && <rect width={MARK_VIEW} height={MARK_VIEW} rx={TILE_RX} fill="var(--bg)" />}
       {!simple && <path d={STRIPE_D} fill={PAPER.sage} />}
       <g transform={fitTransform(markFit(simple))}>
         <path d={ARC_D} fill="none" stroke={PAPER.moss} strokeWidth={ARC.width} strokeLinecap="round" />

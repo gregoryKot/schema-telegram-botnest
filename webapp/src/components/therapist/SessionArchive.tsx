@@ -27,8 +27,8 @@ export function SessionArchive({ page, removeNote }: { page: TherapistNotesPage;
       <div className="ds-label tb-archive-label">Архив · {total} {pluralRu(total, 'заметка', 'заметки', 'заметок')}</div>
       <NotesTruncationHint page={page} />
       {notes.length === 0 ? (
-        // Пусто — тихо: знак встреч строкой и текст, без большой картинки рядом с формой «Новая заметка».
-        <p className="ds-empty tb-empty-row"><Sign kind="talk" />Заметок пока нет</p>
+        // Пусто — тихо: знак строкой и текст; знак — Pebbles, как у формы и «Заметки сессии» на «Обзоре» (r1).
+        <p className="ds-empty tb-empty-row"><Sign kind="pebbles" />Заметок пока нет</p>
       ) : (
         notes.map(note => (
           <div key={note.id} className="tb-tl-row">

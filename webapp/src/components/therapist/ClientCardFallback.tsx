@@ -1,10 +1,8 @@
-// Вид «карточка клиента», когда карточки нет (состояние — clientCardState.ts):
-// силуэт карточки (ClientCardSkeleton — тот же, что у оболочки по адресу), пока список
-// клиентов грузится; иначе — исход на бумаге (PaperOutcome, APP_2026-11.md «Исходы служебных
-// страниц»): не найден — как 404, `Cup` на соломе; сбой — «на нашей стороне», `Breath` на персике.
-// Лист — у верха колонки кабинета (tk-outcome), а не по центру всего окна.
+// Вид «карточка клиента», когда карточки нет (clientCardState.ts): силуэт (CardSkeleton — тот же, что у оболочки),
+// пока список грузится; иначе — исход на бумаге (PaperOutcome, APP_2026-11.md «Исходы служебных страниц»): не найден —
+// как 404, `Cup` на соломе; сбой — «на нашей стороне», `Breath` на персике; у верха колонки (tk-outcome).
 import { useTr } from '../../utils/addressForm';
-import { ClientCardSkeleton } from '../ShellSkeletons';
+import { CardHeadSkeleton, OverviewSkeleton } from './CardSkeleton';
 import { PaperOutcome } from '../paper/PaperOutcome';
 import type { ClientCardState } from './clientCardState';
 import '../../styles/therapist-card.css';
@@ -18,8 +16,10 @@ export function ClientCardFallback({ state, onBack }: Props) {
   const tr = useTr();
   if (state === 'loading') {
     return (
-      <div className="therapist-scroll therapist-scroll--client" aria-hidden>
-        <ClientCardSkeleton />
+      // Шапка над прокручиваемым телом (therapist-scroll--tabs): силуэт выше окна не режется overflow: hidden.
+      <div className="therapist-scroll therapist-scroll--client" aria-hidden data-testid="client-card-skeleton">
+        <CardHeadSkeleton />
+        <div className="therapist-scroll therapist-scroll--tabs"><OverviewSkeleton /></div>
       </div>
     );
   }

@@ -87,3 +87,14 @@ describe('геометрия знака', () => {
     }
   });
 });
+
+describe('bare — без плитки (ревью r1)', () => {
+  it('без bare плитка-бумага есть, с bare — нет, дуга и круг остаются', () => {
+    const tiled = render(<BrandMark simple />).container.querySelector('svg')!;
+    expect(tiled.querySelector('rect')).not.toBeNull();
+    cleanup();
+    const bare = render(<BrandMark simple bare />).container.querySelector('svg')!;
+    expect(bare.querySelector('rect')).toBeNull();
+    expect(bare.querySelector('circle')).not.toBeNull();
+  });
+});

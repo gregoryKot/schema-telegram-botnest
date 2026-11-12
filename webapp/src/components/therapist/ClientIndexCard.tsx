@@ -22,7 +22,7 @@ export function ClientIndexCard({ todayIndex, history }: Props) {
       </div>
       {bars.length > 0 && (
         <>
-          <div className="ds-spark tk-spark" aria-hidden>
+          <div className="ds-spark ds-spark--ink tk-spark" aria-hidden>
             {bars.map((b, i) => (
               <i key={i} className={b.level === 'none' ? 'is-none' : undefined} style={{ height: b.heightPct > 0 ? `${b.heightPct}%` : undefined }} />
             ))}

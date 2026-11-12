@@ -36,7 +36,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
     <div className="tk-head">
       <button className="ds-back" onClick={() => switchView('list')}>← Все клиенты</button>
       <div className="tk-head-row">
-        <div className="ds-avatar ds-avatar--serif tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
+        <div className="ds-avatar ds-avatar--serif ds-avatar--paper tk-avatar" style={hueStyle(clientHue(selectedClient.telegramId))}>
           {clientAvatarInitials(selectedClient)}
         </div>
         <div className="tk-ident">
@@ -55,7 +55,7 @@ export function ClientHeader({ selectedClient, detail, switchView }: Props) {
           <ClientHeaderBadges client={selectedClient} />
         </div>
         <div className="tk-actions">
-          {!phone && <ClientQuickActions detail={detail} primary />}
+          {!phone && <ClientQuickActions detail={detail} />}
           <RenameDeleteMenu label="Действия с карточкой" deleteLabel="Удалить клиента" onRename={startRename} onDelete={requestDeleteClient} deleteBusy={deleteLoading} />
         </div>
       </div>
