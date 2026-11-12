@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 // Таймлайн «Моего пути»: группы месяцев, каждая запись — кликабельная кнопка
-// с эмодзи/названием/датой (+ подпись, если subtitle её вернул). Клик зовёт
-// onOpenItem с исходным item.
+// со знаком от площадки (rowArt)/названием/датой (+ подпись, если subtitle её вернул). Клик зовёт
+// onOpenItem с исходным item. Эмодзи journeyMeta в ленту не идут — ни с rowArt, ни без него.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { JourneyTimeline } from './JourneyTimeline';
-import { groupJourneyByMonth, type JourneyItem } from './journeyMeta';
+import {
+  JOURNEY_TYPE_META,
+  groupJourneyByMonth,
+  type JourneyItem,
+} from './journeyMeta';
 
 afterEach(() => {
   cleanup();
@@ -17,7 +21,7 @@ const ITEMS: JourneyItem[] = [
 ];
 
 describe('JourneyTimeline', () => {
-  it('рендерит записи с эмодзи, названием и датой', () => {
+  it('рендерит записи с названием и датой', () => {
     const groups = groupJourneyByMonth(ITEMS, new Date('2026-07-21'));
     render(
       <JourneyTimeline
@@ -73,5 +77,43 @@ describe('JourneyTimeline', () => {
       ),
     ).not.toThrow();
     expect(screen.getByText('Запись')).toBeTruthy();
+  });
+
+  it('без rowArt строка без картинки и без эмодзи; шеврон — SVG, не глиф', () => {
+    const all = Object.keys(JOURNEY_TYPE_META).map((type, i) => ({
+      type,
+      at: '2026-07-21T10:00:00Z',
+      id: i,
+    }));
+    const { container } = render(
+      <JourneyTimeline
+        groups={groupJourneyByMonth(all, new Date('2026-07-21'))}
+        subtitle={() => null}
+        onOpenItem={vi.fn()}
+      />,
+    );
+    expect(container.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(container.textContent).not.toContain('›');
+    expect(container.querySelectorAll('.jr-row svg.jr-chev').length).toBe(
+      all.length,
+    );
+  });
+
+  it('rowArt площадки получает каждую строку и встаёт в неё', () => {
+    const rowArt = vi.fn((item: JourneyItem) => (
+      <i data-testid="art">{item.type}</i>
+    ));
+    render(
+      <JourneyTimeline
+        groups={groupJourneyByMonth(ITEMS, new Date('2026-07-21'))}
+        subtitle={() => null}
+        onOpenItem={vi.fn()}
+        rowArt={rowArt}
+      />,
+    );
+    expect(screen.getAllByTestId('art').map((n) => n.textContent)).toEqual([
+      'gratitude',
+      'tracker_day',
+    ]);
   });
 });

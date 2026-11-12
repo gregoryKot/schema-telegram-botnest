@@ -7,6 +7,7 @@
 // только после того, как загрузка закончилась — тест ловит рассинхрон, если
 // кто-то покажет части ДО того, как fetch реально отработал.
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { JOURNEY_TYPE_META } from './journeyMeta';
 import {
   render,
   screen,
@@ -115,7 +116,7 @@ describe('JourneyItemDetail', () => {
         'Здесь без записанного текста — только сам факт этого шага.',
       ),
     ).toBeNull();
-    expect(container.querySelectorAll('div').length).toBeGreaterThan(1);
+    expect(container.querySelectorAll('.jr-detail-skel > span').length).toBe(3);
   });
 
   it('без частей — поясняющий текст «только сам факт этого шага»', () => {
@@ -160,5 +161,70 @@ describe('JourneyItemDetail', () => {
     expect(close).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText('Поделиться карточкой'));
     expect(onShare).toHaveBeenCalledTimes(1);
+  });
+
+  const detailOf = (
+    item: typeof ITEM,
+    parts: { title?: string; text: string }[],
+  ) => ({
+    item,
+    parts,
+    loading: false,
+    open: vi.fn(),
+    close: vi.fn(),
+  });
+
+  it('шапка и голос Здорового Взрослого — от площадки; остальные поля — подпись и текст без цвета', () => {
+    const head = vi.fn(() => <div data-testid="head" />);
+    const voice = vi.fn((title: string, text: string) => (
+      <div data-testid="voice">
+        {title}: {text}
+      </div>
+    ));
+    const { container } = render(
+      <JourneyItemDetail
+        detail={detailOf({ type: 'mode_diary', at: '2026-07-21T10:00:00Z' }, [
+          { title: 'Ситуация', text: 'Опоздание' },
+          { title: 'Мысли', text: 'Я всё порчу' },
+          { title: 'Здоровый Взрослый', text: 'Пять минут — это пять минут.' },
+        ])}
+        subtitle={() => 'Карающий Критик'}
+        onShare={vi.fn()}
+        art={{ head, voice }}
+      />,
+    );
+    expect(head).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'mode_diary' }),
+      'Дневник режимов',
+      expect.stringContaining('· Карающий Критик'),
+    );
+    expect(screen.getByTestId('voice').textContent).toBe(
+      'Здоровый Взрослый: Пять минут — это пять минут.',
+    );
+    expect(screen.getByText('Ситуация').className).toContain('ds-label');
+    expect(screen.getByText(/порчу/).textContent).toBe('Я\u00a0всё порчу');
+    // текст пользователя — пробелы после коротких слов склеены, как в ленте «Записей» (glueSpaces)
+    expect(screen.getByText(/Опоздание/).textContent).toBe('Опоздание');
+    // ни цветных полос слева, ни неоновых подписей
+    expect(container.innerHTML).not.toMatch(/border-left|#[0-9a-f]{6}/i);
+  });
+
+  it('в детали нет эмодзи — ни с шапкой площадки, ни без неё; одна залитая кнопка', () => {
+    for (const type of Object.keys(JOURNEY_TYPE_META)) {
+      const { container } = render(
+        <JourneyItemDetail
+          detail={detailOf({ type, at: '2026-07-21T10:00:00Z' }, [
+            { text: 'x' },
+          ])}
+          subtitle={() => null}
+          onShare={vi.fn()}
+        />,
+      );
+      expect(container.textContent, type).not.toMatch(
+        /\p{Extended_Pictographic}/u,
+      );
+      expect(container.querySelectorAll('.ds-btn').length).toBe(1);
+      cleanup();
+    }
   });
 });

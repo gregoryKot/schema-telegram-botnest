@@ -93,7 +93,7 @@
 | `shared/src/history/` | CTA «Записаться» в истории; линия недели — `sparkline.ts` (`weekWindow`, `sparklineGeometry`: одна кривая у строки «Недели» и листа «Динамика потребности», пустой день — разрыв, не ноль; `sparkRuns`, `sparkMarks` — отрезки и одиночные дни); `needTrend.ts` — направление и «к предыдущей неделе» по окну недели (нет прошлой недели — строки сравнения нет); `wheelCenter` — индекс в центре колеса |
 | `shared/src/hooks/` | useYsqTest и YSQ-скоринг, `ysqProgressStore` (незаконченный тест YSQ: запись прогресса + событие окну — «Продолжить (N из 116)» без перезагрузки), useConfetti, useLongPress, useDragReorder, `useConfirmedAction` (действие только после подтверждения), `useHorizontalSwipe` (свайп трекера; касание внутри `[role="group"]` — шкала — не листает) |
 | `shared/src/host/` | абстракция хоста: telegram, max, web (`getHost`, safezone) |
-| `shared/src/journey/` | «Мой путь»: лента активности, периоды, детали |
+| `shared/src/journey/` | «Мой путь»: лента активности, периоды, детали; вид шага (знак и бумага ENTITY_LOOK) — `journeyLook.ts`, рисунки знаков приходят от сайта инъекцией (`kit` в `JourneyView`, `art` в `JourneyItemDetail` — `webapp/src/components/journey/webJourneyKit.ts`) |
 | `shared/src/limits/` | `textLimits`: зеркало лимитов длины текста бэка |
 | `shared/src/map/` | «Карта себя»: вью-модель и входы |
 | `shared/src/mode/` | режимы: карточки, тест, подсказки, пояснения потоков |

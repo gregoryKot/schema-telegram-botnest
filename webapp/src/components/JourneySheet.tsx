@@ -1,5 +1,5 @@
-// «Мой путь» (webapp) — обёртка над общими useJourney/JourneyView (правило №3):
-// fixed-оверлей с useHistorySheet, заголовок, шаринг.
+// «Мой путь» (webapp) — обёртка над общими useJourney/JourneyView (правило №3): fixed-оверлей с
+// useHistorySheet, заголовок, шаринг (тихая ссылка: залитой кнопки на листе ленты нет, b22-journey).
 import '../styles/sheet-diary.css';
 import { useRef } from 'react';
 import { useHistorySheet } from '../hooks/useHistorySheet';
@@ -11,10 +11,9 @@ import { getModeById, getSchemaById } from '../schemaTherapyData';
 import { JourneyView } from '../../../shared/src/journey/JourneyView';
 import { useJourneyShare } from '../../../shared/src/journey/journeyShare';
 import { useJourney, makeJourneyProps } from '../../../shared/src/journey/useJourney';
-import { Sheets } from './art/PaperArt';
-import { WEB_JOURNEY_HEROES } from './journey/webJourneyHeroes';
+import { WEB_JOURNEY_KIT } from './journey/webJourneyKit';
 import { botShortUrl } from '../utils/botConfig';
-import { ShareIcon } from '../../../shared/src/share/ShareIcon';
+import { ShareLink } from '../share/ShareLink';
 import { useJourneyDetail } from '../../../shared/src/journey/JourneyItemDetail';
 import { JourneyDetailLayer } from './journey/JourneyDetailLayer';
 import { useJourneyDelete } from '../../../shared/src/journey/journeyDelete';
@@ -52,13 +51,7 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
           <>
             <div className="ds-head-row sd-journey-head">
               <h1 className="ds-h1 sd-journey-title">Мой путь</h1>
-              <Sheets size="row" />
-              {j.total > 0 && (
-                <button onClick={sh.shareSummary} className="ds-btn ds-btn--secondary ds-btn--sm">
-                  <ShareIcon size={15} />
-                  Поделиться
-                </button>
-              )}
+              {j.total > 0 && <ShareLink onClick={sh.shareSummary} />}
             </div>
 
             <JourneyView
@@ -67,18 +60,14 @@ export function JourneySheet({ onClose }: { onClose: () => void }) {
               subtitle={jp.subtitle}
               onOpenItem={detail.open}
               onShareFeed={sh.shareFeed}
-              heroes={WEB_JOURNEY_HEROES}
+              kit={WEB_JOURNEY_KIT}
               skeleton={
-                // Форма — как у реального JourneyView: hero-итог + счётчик +
-                // строки ленты (JourneyTimeline минимальная высота строки —
-                // 52px, shared/src/journey/JourneyTimeline.tsx).
-                <>
-                  <Skeleton height={96} radius={16} />
-                  <div className="sd-skel-gap" />
-                  <Skeleton height={64} radius={16} />
-                  <div className="sd-skel-gap" />
-                  <SkeletonList rows={5} height={52} radius={16} />
-                </>
+                // Форма — как у JourneyView: лист-герой, плитки 2×3, строки ленты 56px (journey.css).
+                <div className="jr-skel">
+                  <Skeleton height={232} radius={24} />
+                  <div className="jr-stats">{[0, 1, 2, 3, 4, 5].map((k) => <Skeleton key={k} height={92} radius={18} />)}</div>
+                  <SkeletonList rows={5} height={56} radius={16} />
+                </div>
               }
             />
           </>

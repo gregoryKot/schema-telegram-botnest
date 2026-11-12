@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
-// Герой «Моего пути» сайта: editorial-вёрстка (без градиента и эмодзи),
-// связка WEB_JOURNEY_HEROES (пропс `heroes` в JourneyView) и сквозной путь JourneyView →
-// герой сайта. Мини-апп берёт градиентный JourneyHero.
+// Герой «Моего пути» сайта (b22-journey): лист неба 240 со сценой SceneJourney и числом шагов из данных,
+// пусто — ScenePathStart; связка WEB_JOURNEY_KIT (пропс `kit` в JourneyView), знаки строк и плиток —
+// по ENTITY_LOOK, деталь — шапка EntitySheet сущности и голос Здорового Взрослого мхом; эмодзи нигде.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { WEB_JOURNEY_HEROES } from './webJourneyHeroes';
+import { WEB_JOURNEY_KIT } from './webJourneyKit';
 import { JourneyView } from '../../../../shared/src/journey/JourneyView';
 import type { JourneyState } from '../../../../shared/src/journey/useJourney';
 
@@ -15,11 +15,15 @@ const tr = (ty: string, vy: string) => `${ty}|${vy}`;
 describe('WebJourneyHero', () => {
   it('показывает реальный итог, пояснение и зовёт onShareFeed', () => {
     const onShareFeed = vi.fn();
-    const { Hero } = WEB_JOURNEY_HEROES;
+    const { Hero } = WEB_JOURNEY_KIT;
     const { container } = render(
       <Hero total={12} explainer="Собирается здесь." onShareFeed={onShareFeed} />,
     );
-    expect(screen.getByText('12')).toBeTruthy();
+    expect(screen.getByText('12').className).toBe('jr-hero-num');
+    const sheet = container.querySelector('.jr-hero') as HTMLElement;
+    expect(sheet.style.getPropertyValue('--h')).toBe('240');
+    // сцена стопки листов: листов столько, сколько даёт число шагов (не пусто)
+    expect(container.querySelectorAll('.jr-hero-scene [data-sheet]').length).toBeGreaterThan(1);
     expect(screen.getByText('Собирается здесь.')).toBeTruthy();
     fireEvent.click(screen.getByText(/Поделиться лентой шагов/));
     expect(onShareFeed).toHaveBeenCalledTimes(1);
@@ -29,7 +33,7 @@ describe('WebJourneyHero', () => {
   });
 
   it('total=0 остаётся «0», а не пропадает', () => {
-    const { Hero } = WEB_JOURNEY_HEROES;
+    const { Hero } = WEB_JOURNEY_KIT;
     render(<Hero total={0} explainer="Пояснение" onShareFeed={vi.fn()} />);
     expect(screen.getByText('0')).toBeTruthy();
   });
@@ -37,12 +41,13 @@ describe('WebJourneyHero', () => {
 
 describe('WebJourneyEmptyHero', () => {
   it('пустое состояние слева, без эмодзи, обе формы обращения через tr()', () => {
-    const { EmptyHero } = WEB_JOURNEY_HEROES;
+    const { EmptyHero } = WEB_JOURNEY_KIT;
     const { container } = render(
       <EmptyHero tr={tr} explainer="Здесь копится путь." />,
     );
     expect(screen.getByText('Путь ещё впереди')).toBeTruthy();
-    const text = screen.getByText(/Здесь копится путь/).textContent;
+    expect(container.querySelectorAll('.jr-hero-scene [data-blank]').length).toBe(3);
+    const text = screen.getByText(/Здесь копится путь/).textContent!.replace(/\u00a0/g, ' ');
     expect(text).toContain('Начни с трекера');
     expect(text).toContain('Начните с трекера');
     expect(container.textContent).not.toContain('🧭');
@@ -71,7 +76,7 @@ describe('JourneyView на сайте', () => {
         subtitle={() => null}
         onOpenItem={vi.fn()}
         onShareFeed={vi.fn()}
-        heroes={WEB_JOURNEY_HEROES}
+        kit={WEB_JOURNEY_KIT}
         skeleton={<div />}
       />
     );

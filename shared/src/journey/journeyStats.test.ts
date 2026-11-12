@@ -69,7 +69,14 @@ describe('statRowsFromItems', () => {
 
   it('незнакомый с фронта тип не роняет сводку', () => {
     const rows = statRowsFromItems([{ type: 'новый_тип_с_бэка' }]);
-    expect(rows).toEqual([{ emoji: '•', label: 'новый_тип_с_бэка', count: 1 }]);
+    expect(rows).toEqual([
+      {
+        type: 'новый_тип_с_бэка',
+        emoji: '•',
+        label: 'новый_тип_с_бэка',
+        count: 1,
+      },
+    ]);
   });
 });
 
@@ -87,9 +94,14 @@ describe('journeyStatRows — быстрые практики', () => {
       stopSessions: 1,
     });
     expect(rows).toEqual([
-      { emoji: '🌬', label: 'Дыхательные практики', count: 4 },
-      { emoji: '🌍', label: 'Заземление', count: 2 },
-      { emoji: '🛑', label: 'Техника «Стоп»', count: 1 },
+      {
+        type: 'breathing',
+        emoji: '🌬',
+        label: 'Дыхательные практики',
+        count: 4,
+      },
+      { type: 'grounding', emoji: '🌍', label: 'Заземление', count: 2 },
+      { type: 'stop', emoji: '🛑', label: 'Техника «Стоп»', count: 1 },
     ]);
   });
 

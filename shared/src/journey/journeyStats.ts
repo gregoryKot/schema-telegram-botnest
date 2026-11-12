@@ -1,17 +1,13 @@
-// Счётчики «сколько чего сделано» для hero/мини-карточек и карточки-сводки
-// «Моего пути». Вынесено из journeyMeta (лимит размера файла, правило №10).
-//
-// Подписи занятий живут ЗДЕСЬ в единственном реестре STAT_LABELS: сводка за
-// всё время считается по серверным counts, а сводка за период — по видимым
-// записям ленты, и называть одно и то же занятие они обязаны одинаково
-// (правило №4 — сверка реестров закрыта тестом journeyStats.test.ts).
-import {
-  type JourneyCounts,
-  type JourneyItemType,
-  JOURNEY_TYPE_META,
-} from './journeyMeta';
+// Счётчики «сколько чего сделано» «Моего пути»: плитки экрана и карточка-сводка. Подписи — единственный
+// реестр STAT_LABELS: сводка за всё время (серверные counts) и за период (записи ленты) называют занятие
+// одинаково (правило №4, journeyStats.test.ts). Знак плитки — journeyStatLook по `type`; `emoji` — только
+// canvas-карточке итогов (shared/src/share, партия b23b).
+import type { JourneyCounts, JourneyItemType } from './journeyMeta';
+import { JOURNEY_TYPE_META } from './journeyMeta';
+import { CHILDHOOD_STAT } from './journeyLook';
 
 export interface JourneyStatRow {
+  type: string; // колесо детства — CHILDHOOD_STAT
   emoji: string;
   label: string;
   count: number;
@@ -42,6 +38,7 @@ export const STAT_LABELS: Record<JourneyItemType, string> = {
 };
 
 const row = (type: JourneyItemType, count: number): JourneyStatRow => ({
+  type,
   emoji: JOURNEY_TYPE_META[type].emoji,
   label: STAT_LABELS[type],
   count,
@@ -69,6 +66,7 @@ export function journeyStatRows(counts: JourneyCounts): JourneyStatRow[] {
     row('safe_place', counts.safePlace ? 1 : 0),
     // Колесо детства — единственное занятие без записи в ленте: только счётчик.
     {
+      type: CHILDHOOD_STAT,
       emoji: '🎡',
       label: 'Колесо детства',
       count: counts.childhoodDone ? 1 : 0,
@@ -104,6 +102,7 @@ export function statRowsFromItems(
         ? JOURNEY_TYPE_META[type as JourneyItemType]
         : { emoji: '•' };
       return {
+        type,
         emoji: meta.emoji,
         label: known ? STAT_LABELS[type as JourneyItemType] : type,
         count,

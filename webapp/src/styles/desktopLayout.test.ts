@@ -42,6 +42,7 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
   'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560
   'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'], // во всю колонку 400
+  'journey/JourneyItemDetail.tsx': ['content', '.ds-btn.jr-share'], // shared: «Поделиться карточкой» — на телефоне во всю ширину, на ≥768 по тексту
 };
 function lgDecisionOk(rules: Rule[], kind: 'own' | 'stretch' | 'content', sel: string): boolean {
   const mine = rules.filter((r) => r.selectors.includes(sel) && !isPhone(r.media) && !isTouch(r.media));

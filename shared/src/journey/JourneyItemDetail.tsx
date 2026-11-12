@@ -1,14 +1,17 @@
-// Детальный просмотр записи «Моего пути»: тап по шагу → открыть и прочитать
-// ВСЁ, что сохранено (без обрезки, все поля), с кнопкой поделиться внутри.
-// Единственная копия для обоих фронтендов (правило №3). Обёртка — per-frontend.
+// Детальный просмотр записи «Моего пути»: тап по шагу → открыть и прочитать ВСЁ, что сохранено (без
+// обрезки, все поля), с одной залитой «Поделиться карточкой». Шапку (лист бумаги сущности со знаком,
+// EntitySheet) и голос Здорового Взрослого (HealthyVoice) даёт площадка — shared не импортирует webapp;
+// без них — заголовок и спокойная подпись поля. Поля — подпись ds-label и текст, без цветных полос.
+// На ≥1024 шапка слева липнет, поля справа (pa-spread). Классы — webapp/src/styles/journey.css.
 import { useCallback, useState, type ReactNode } from 'react';
 import {
   type JourneyItem,
-  JOURNEY_GROUP_COLORS,
   formatJourneyDay,
   journeyTypeMeta,
 } from './journeyMeta';
 import type { JourneyResultPart } from './journeyContent';
+import { isHealthyPart } from './journeyLook';
+import { glueSpaces } from '../utils/typo';
 
 export interface JourneyDetailState {
   item: JourneyItem | null;
@@ -49,143 +52,85 @@ export function useJourneyDetail(
   return { item, parts, loading, open, close };
 }
 
+export interface JourneyDetailArt {
+  /** Шапка шага: label — название типа, line — дата и уточнение. */
+  head?: (item: JourneyItem, label: string, line: string) => ReactNode;
+  /** Поле-голос Здорового Взрослого («Здоровый взгляд», «Здоровый Взрослый»). */
+  voice?: (title: string, text: string) => ReactNode;
+}
+
 export function JourneyItemDetail({
   detail,
   subtitle,
   onShare,
   deleteButton,
+  art = {},
 }: {
   detail: JourneyDetailState;
   subtitle: (item: JourneyItem) => string | null;
   onShare: () => void;
   deleteButton?: ReactNode;
+  art?: JourneyDetailArt;
 }) {
   const { item, parts, loading, close: onBack } = detail;
   if (!item) return null;
-  const meta = journeyTypeMeta(item.type);
-  const hex = JOURNEY_GROUP_COLORS[meta.group].hex;
+  const { label } = journeyTypeMeta(item.type);
   const sub = subtitle(item);
+  const line = formatJourneyDay(item.at) + (sub ? ` · ${sub}` : '');
 
   return (
-    <div>
-      <button
-        onClick={onBack}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'var(--text-sub)',
-          fontSize: 14,
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-          padding: '0 12px 0 0',
-          minHeight: 44,
-          marginBottom: 6, // палец: было 57×29 (QA мобильной версии 2026-11, М1)
-        }}
-      >
+    <div className="jr-detail">
+      <button type="button" className="ds-back jr-back" onClick={onBack}>
         ← Назад
       </button>
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          marginBottom: 16,
-        }}
-      >
-        <span style={{ fontSize: 38, lineHeight: 1 }}>{meta.emoji}</span>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
-            {meta.label}
-          </div>
-          <div style={{ fontSize: 12.5, color: 'var(--text-sub)' }}>
-            {formatJourneyDay(item.at)}
-            {sub ? ` · ${sub}` : ''}
+      <div className="pa-spread jr-spread">
+        <div className="pa-spread-side">
+          {art.head?.(item, label, line) ?? (
+            <div className="jr-detail-head">
+              <h2 className="jr-detail-title">{label}</h2>
+              <p className="jr-detail-line">{line}</p>
+            </div>
+          )}
+        </div>
+        <div className="pa-spread-main">
+          {loading ? (
+            <div className="jr-detail-skel" aria-hidden="true">
+              {[92, 70, 84].map((w) => (
+                <span key={w} style={{ width: `${w}%` }} />
+              ))}
+            </div>
+          ) : parts.length === 0 ? (
+            <p className="jr-note">
+              Здесь без записанного текста — только сам факт этого шага.
+            </p>
+          ) : (
+            <div className="jr-fields">
+              {parts.map((p, i) =>
+                p.title && art.voice && isHealthyPart(p.title) ? (
+                  <div key={i}>{art.voice(p.title, p.text)}</div>
+                ) : (
+                  <div key={i} className="jr-field">
+                    {p.title && (
+                      <div className="ds-label jr-field-label">{p.title}</div>
+                    )}
+                    <div className="jr-field-text">{glueSpaces(p.text)}</div>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+          <div className="jr-detail-actions">
+            <button
+              type="button"
+              className="ds-btn ds-btn--lg jr-share"
+              onClick={onShare}
+            >
+              Поделиться карточкой
+            </button>
+            {deleteButton}
           </div>
         </div>
       </div>
-
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {[92, 70, 84].map((w, i) => (
-            <div
-              key={i}
-              style={{
-                height: 14,
-                width: `${w}%`,
-                borderRadius: 6,
-                background: 'rgba(var(--fg-rgb),0.08)',
-              }}
-            />
-          ))}
-        </div>
-      ) : parts.length === 0 ? (
-        <div
-          style={{
-            fontSize: 13.5,
-            color: 'var(--text-faint)',
-            lineHeight: 1.6,
-          }}
-        >
-          Здесь без записанного текста — только сам факт этого шага.
-        </div>
-      ) : (
-        parts.map((p, i) => (
-          <div
-            key={i}
-            style={{
-              borderLeft: `2px solid ${hex}`,
-              paddingLeft: 12,
-              marginBottom: 16,
-            }}
-          >
-            {p.title && (
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: hex,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
-                  marginBottom: 5,
-                }}
-              >
-                {p.title}
-              </div>
-            )}
-            <div
-              style={{
-                fontSize: 14,
-                color: 'var(--text)',
-                lineHeight: 1.6,
-                whiteSpace: 'pre-wrap',
-              }}
-            >
-              {p.text}
-            </div>
-          </div>
-        ))
-      )}
-
-      <button
-        onClick={onShare}
-        style={{
-          marginTop: 8,
-          width: '100%',
-          padding: '13px 0',
-          borderRadius: 14,
-          border: 'none',
-          fontFamily: 'inherit',
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer',
-          background: `color-mix(in srgb, ${hex} 20%, transparent)`,
-          color: hex,
-        }}
-      >
-        Поделиться карточкой
-      </button>
-      {deleteButton}
     </div>
   );
 }
