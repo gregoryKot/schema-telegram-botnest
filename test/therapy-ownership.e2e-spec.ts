@@ -21,6 +21,7 @@ import request from 'supertest';
 import { buildTestApp, TestApp } from './e2e-support/build-test-app';
 import { signAccessToken } from './e2e-support/jwt';
 import { cleanupOwnershipFixtures } from './e2e-support/cleanup-fixtures';
+import { CONCEPT_NEED_NOTE_MAX } from '../src/therapy/dto/concept-needs.dto';
 
 describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => {
   let app: INestApplication;
@@ -385,7 +386,11 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
       { needLinks: [link({ ratings: { now: 11 } })] },
       { needLinks: [link({ ratings: { teen: 7.5 } })] },
       { needLinks: [{ needId: 'safety', ratings: { now: 5 } }] },
-      { needLinks: [link({ notes: { now: 'ж'.repeat(1001) } })] },
+      {
+        needLinks: [
+          link({ notes: { now: 'ж'.repeat(CONCEPT_NEED_NOTE_MAX + 1) } }),
+        ],
+      },
       { needLinks: Array.from({ length: 6 }, () => link({})) },
     ];
     for (const body of bodies)
