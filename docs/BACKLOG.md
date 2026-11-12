@@ -63,6 +63,10 @@
   (`webapp/src/components/landing-kit-hooks.ts`) читает `localStorage.getItem('app_theme')`
   без `try`; при запрете хранилища браузер бросает на чтении. Доказано чтением кода,
   в браузере не воспроизводилось.
+- ⬜ **«Справочник» терапевта на 1280 в WebKit: колонки групп делятся неровно** —
+  `.gr-list--groups { columns: 2 }` (`webapp/src/styles/guide-reference.css`): в WebKit последняя
+  группа стоит примерно на 780 px при высоте списка около 2070, в Chromium — в самом низу.
+  Доказано числами прогона `browser-smoke` (проект `webkit-iphone`), в Safari глазами не смотрели.
 
 ## Идеи
 

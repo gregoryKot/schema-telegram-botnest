@@ -133,10 +133,15 @@ for (const size of WIDE) {
     expect(scrollHeight).toBeGreaterThan(clientHeight);
     expect(['auto', 'scroll']).toContain(overflowY);
 
-    // В мобильном WebKit колеса нет (Playwright бросает), а toBeInViewport на окне шире экрана
-    // айфона даёт 0 у видимой строки — листаем сам контейнер и сверяем рамки строки, списка и окна.
+    // В мобильном WebKit колеса нет (Playwright бросает), а две колонки групп он делит иначе: последняя
+    // группа не внизу. Ставим её к нижнему краю списка и сверяем рамки строки, списка и окна.
     if (isMobile) {
-      await scroller.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+      await last.evaluate((el) => {
+        const list = el.closest('.page')!;
+        list.scrollTop +=
+          el.getBoundingClientRect().bottom -
+          list.getBoundingClientRect().bottom;
+      });
       await expect
         .poll(() =>
           last.evaluate((el) => {
