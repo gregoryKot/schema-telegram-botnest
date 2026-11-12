@@ -165,7 +165,9 @@ describe('исходы', () => {
   // failed — билет не выписан: «никто не подтвердил вовремя» здесь неправда.
   it('failed — «код не создан», а не «не успели»; expired — наоборот', () => {
     const failed = show({ state: { kind: 'failed' } }).container.textContent;
-    expect(failed).toContain('Код не создан — сервер не ответил. Ничего не изменилось.');
+    expect(failed).toContain(
+      'Код не создан — сервер не ответил. Ничего не изменилось.',
+    );
     expect(failed).not.toContain('вовремя');
     cleanup();
     const expired = show({ state: { kind: 'expired' } }).container.textContent;

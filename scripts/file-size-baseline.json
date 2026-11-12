@@ -148,7 +148,7 @@
   "scripts/webvisor-fields-scan.mjs": 109,
   "shared/src/about/aboutData.ts": 59,
   "shared/src/account/accountDeletion.ts": 67,
-  "shared/src/account/accountLinkText.ts": 73,
+  "shared/src/account/accountLinkText.ts": 74,
   "shared/src/account/deleteAccountTotp.ts": 67,
   "shared/src/account/linkTarget.ts": 56,
   "shared/src/account/siteLoginOffer.ts": 56,
