@@ -10,6 +10,7 @@ import { SubscribeForm } from './subscribe/SubscribeForm';
 import { PayHero, PayLayout, PaySkeleton } from './subscribe/PayLayout';
 import { periodLabel, type SubscriptionOption as Opt } from './subscribe/subscribeDiscount';
 import { dropUrlParam } from '../utils/dropUrlParam';
+import { BackLabel } from '../components/NavGlyphs';
 
 type Sub = { status: string; period: string; amount: number; nextChargeAt: string | null };
 
@@ -59,7 +60,7 @@ export function SubscribePage() {
     } catch { setStatus('error'); }
   };
 
-  const home = { label: '← На главную', href: '/' };
+  const home = { label: <BackLabel>На главную</BackLabel>, href: '/' };
   if (token) {
     // Управление. Отменена — лист «спасибо»; сбой — исход на весь экран (404 — ссылка устарела, «подожди»;
     // остальное — сбой на нашей стороне). Безлично, без useTr (check-second-person.mjs).

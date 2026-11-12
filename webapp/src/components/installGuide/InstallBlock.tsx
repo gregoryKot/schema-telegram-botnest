@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { glue } from '../../../../shared/src/utils/typo';
 import type { InstallPlatform } from '../../utils/pwaInstall';
 import { INSTALL_STEPS } from './installSteps';
+import { withStepArrows } from '../NavGlyphs';
 
 // Шаги «значок на экран» карточками — одна механика на лендинг (AppInstallSection: три платформы рядом)
 // и /install (InstallPage: шаги своей платформы). Текст — из INSTALL_STEPS, строки склеены glue (короткое
@@ -26,7 +27,7 @@ export function InstallBlock({ platforms, look }: { platforms: readonly InstallP
             <p className={c.title}>{b.title}</p>
             <p className={c.meta}>{b.browser}</p>
             <ol className={c.list}>
-              {b.steps.map((s) => <li key={s}>{glue(s)}</li>)}
+              {b.steps.map((s) => <li key={s}>{withStepArrows(s, glue)}</li>)}
             </ol>
           </div>
         );

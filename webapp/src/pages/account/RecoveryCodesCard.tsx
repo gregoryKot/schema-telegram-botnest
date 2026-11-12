@@ -1,6 +1,7 @@
 import { useTr } from '../../utils/addressForm';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
+import { OkMark } from './OkMark';
 
 // Резервные коды сразу после включения двухфакторной защиты — показываются
 // один раз. Вынесено из TwoFactorSection.tsx (правило №10). QA 2026-11 (М7):
@@ -23,7 +24,7 @@ export function RecoveryCodesCard({ codes, onDone }: { codes: string[]; onDone: 
       </div>
       <div className="aa-actions">
         <button onClick={() => void copy.copy(codes.join('\n'))} className="ds-btn ds-btn--secondary">
-          {copy.copied ? '✓ Скопировано' : 'Скопировать коды'}
+          {copy.copied ? <><OkMark />Скопировано</> : 'Скопировать коды'}
         </button>
         <button onClick={onDone} className="ds-btn ds-btn--secondary">
           Готово, коды сохранены

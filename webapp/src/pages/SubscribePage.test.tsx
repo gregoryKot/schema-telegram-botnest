@@ -171,7 +171,7 @@ describe('SubscribePage — управление подпиской по ток�
     const { container } = render(<SubscribePage />);
     await screen.findByText(/Не удалось загрузить подписку/);
     expect(container.querySelector('.pa-outcome-card')?.getAttribute('data-sign')).toBe(sign);
-    expect(screen.getByRole('link', { name: '← На главную' }).getAttribute('href')).toBe('/');
+    expect(screen.getByRole('link', { name: 'На главную' }).getAttribute('href')).toBe('/');
   });
 
   it('загрузка по ссылке — силуэт управления, а не «Загружаем…» текстом', () => {
@@ -209,7 +209,7 @@ describe('SubscribePage — управление подпиской по ток�
     await screen.findByText('Подписка');
     expect(screen.queryByText(/Не удалось загрузить подписку/)).toBeNull();
     // Кнопки «На главную» в управлении нет — на компьютере ссылка внизу (A9: token || ret !== 'ok').
-    expect(screen.getAllByRole('link', { name: '← На главную' }).map((a) => a.className)).toEqual(['ds-back', 'ap-home']);
+    expect(screen.getAllByRole('link', { name: 'На главную' }).map((a) => a.className)).toEqual(['ds-back', 'ap-home']);
   });
 });
 
@@ -325,7 +325,7 @@ describe('SubscribePage — шапка и кнопки (#906)', () => {
     expect((container.querySelector('.pa-outcome') as HTMLElement).style.getPropertyValue('--h')).toBe('70');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Подписка скоро');
     expect(screen.getByRole('link', { name: 'Разовый донат' }).className).toContain('ds-btn ds-btn--lg');
-    expect(screen.getByRole('link', { name: '← На главную' }).getAttribute('href')).toBe('/');
+    expect(screen.getByRole('link', { name: 'На главную' }).getAttribute('href')).toBe('/');
     expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn')).toBeNull();
   });
 
@@ -339,10 +339,10 @@ describe('SubscribePage — шапка и кнопки (#906)', () => {
 
   it('форма: шапка над разворотом, лист-герой со сценой, CTA — ds-btn--accent ds-btn--lg', async () => {
     await renderLoaded();
-    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
+    const back = screen.getAllByRole('link', { name: 'На главную' })[0];
     expect(back.className).toBe('ds-back');
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
-    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу колонки формы, шапка скрыта
+    expect(screen.getAllByRole('link', { name: 'На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу колонки формы, шапка скрыта
     expect(screen.getByRole('button', { name: /Оформить за/ }).className).toContain('ds-btn ds-btn--accent ds-btn--lg');
     expect(document.querySelectorAll('.ap-sheet svg.pl2-final-corner--a, .ap-sheet svg.pl2-final-corner--b')).toHaveLength(2);
   });

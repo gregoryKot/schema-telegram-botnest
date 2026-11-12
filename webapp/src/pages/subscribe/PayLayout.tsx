@@ -1,6 +1,6 @@
 // Каркас /subscribe и /donate (docs/design/APP_2026-11.md, b28; принцип 4 — лист-герой + форма): лист
 // соломы (70 — подписка и донат) со сценой FinalCorners вместо одинокого Leaf, рядом форма. На ≥1024 —
-// разворот SpreadLayout (лист слева, липкий), уже — лист сверху, форма под ним. «← На главную»: на
+// разворот SpreadLayout (лист слева, липкий), уже — лист сверху, форма под ним. «На главную» (стрелка — BackLabel): на
 // телефоне — шапкой (ds-sheet-head/ds-back, #906), на компьютере — последней строкой колонки формы.
 // Страницы публичные, без useTr: тексты безличные, их передаёт страница.
 import type { CSSProperties, ReactNode } from 'react';
@@ -9,6 +9,7 @@ import { FinalCorners } from '../../components/art/SceneParts';
 import { EntitySheet } from '../../components/paper/EntitySheet';
 import { SpreadLayout } from '../../components/paper/SpreadLayout';
 import { Skeleton } from '../../components/Skeleton';
+import { BackLabel } from '../../components/NavGlyphs';
 
 export interface PayHeroProps { label: ReactNode; title: ReactNode; lead: ReactNode }
 
@@ -24,10 +25,10 @@ export function PayHero({ label, title, lead }: PayHeroProps) {
 export function PayLayout({ hero, children, home = true }: { hero: ReactNode; children: ReactNode; home?: boolean }) {
   return (
     <div className="light-lock ap-page">
-      <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back">← На главную</a></div>
+      <div className="ds-sheet-head ds-sheet-head--page"><a href="/" className="ds-back"><BackLabel>На главную</BackLabel></a></div>
       <SpreadLayout className="ap-main" side={hero}>
         {children}
-        {home && <a href="/" className="ap-home">← На главную</a>}
+        {home && <a href="/" className="ap-home"><BackLabel>На главную</BackLabel></a>}
       </SpreadLayout>
     </div>
   );

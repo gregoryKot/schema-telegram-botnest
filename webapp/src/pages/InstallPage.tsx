@@ -14,6 +14,7 @@ import { InstallFrame } from './install/InstallFrame';
 import { isAndroidWebView, loginNote } from './install/installLogic';
 import { useHandoffExchange } from './install/useHandoffExchange';
 import { CabinetLink } from './install/CabinetLink';
+import { withStepArrows } from '../components/NavGlyphs';
 
 type Action = 'shown' | 'add' | 'added' | 'handoff_ok' | 'handoff_failed';
 // Страницу видят и анонимы: событие идёт публичным путём (userId = null).
@@ -94,10 +95,10 @@ function MainScreen({ onInstalled }: { onInstalled: () => void }) {
   const webView = platform === 'android' && isAndroidWebView(navigator.userAgent);
   const hint = (
     <p className="ip-hint">
-      {tr(
+      {withStepArrows(tr(
         'Страница открылась внутри Telegram или другого приложения? Открой её в Chrome (iPhone — в Safari): меню ⋯ → «Открыть в браузере».',
         'Страница открылась внутри Telegram или другого приложения? Откройте её в Chrome (iPhone — в Safari): меню ⋯ → «Открыть в браузере».',
-      )}
+      ))}
     </p>
   );
 

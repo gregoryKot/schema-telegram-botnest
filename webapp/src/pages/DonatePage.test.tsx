@@ -189,7 +189,7 @@ describe('DonatePage — форма обращения', () => {
 describe('DonatePage — каркас и кнопки (#906, b28)', () => {
   it('«← На главную» — ds-back внутри ds-sheet-head и ap-home внизу; h1 в листе-герое; CTA — ds-btn--lg', () => {
     const { container } = render(<DonatePage />);
-    const back = screen.getAllByRole('link', { name: '← На главную' });
+    const back = screen.getAllByRole('link', { name: 'На главную' });
     expect(back.map((a) => a.className)).toEqual(['ds-back', 'ap-home']);
     expect(back[0].parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
     const hero = container.querySelector('.pa-spread-side .ap-sheet')!;

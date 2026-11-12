@@ -19,6 +19,7 @@ import { useProviderActions } from './account/useProviderActions';
 import { PROVIDER_NAMES } from './account/providerNames';
 import { accountBackPathFromStorage } from './account/accountBackPath';
 import '../styles/auth-account.css';
+import { BackLabel } from '../components/NavGlyphs';
 
 // Форма без картинок (APP_2026-11.md, b27): плоские группы, одна залитая кнопка — «Данные из Telegram».
 export function AccountPage() {
@@ -38,7 +39,7 @@ export function AccountPage() {
   return (
     <div className="aa-root light-lock">
       <div className="ds-sheet-head ds-sheet-head--page">
-        <button type="button" className="ds-back" onClick={() => navigate(accountBackPathFromStorage())}>← Назад</button>
+        <button type="button" className="ds-back" onClick={() => navigate(accountBackPathFromStorage())}><BackLabel>Назад</BackLabel></button>
       </div>
       <div className="aa-page">
         <div className="aa-head">

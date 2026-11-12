@@ -5,6 +5,7 @@ import { RecoveryCodesCard } from './RecoveryCodesCard';
 import { OkMark } from './OkMark';
 import { TotpCodeField } from './TotpCodeField';
 import { FieldError } from '../../components/paper/FieldError';
+import { GlyphChevron } from '../../components/exercises/ExGlyphs';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 // Секция двухфакторной аутентификации (TOTP), вынесена из AccountPage.tsx (правило №10).
@@ -142,7 +143,7 @@ export function TwoFactorSection({
           </div>
           {otpauthUrl && (
             <details className="aa-small">
-              <summary className="u-pointer">Не сканируется QR? Ввести секрет вручную</summary>
+              <summary className="u-pointer aa-summary">Не сканируется QR? Ввести секрет вручную<span className="aa-summary-chev" aria-hidden="true"><GlyphChevron /></span></summary>
               <div className="aa-secret">{otpauthUrl}</div>
             </details>
           )}

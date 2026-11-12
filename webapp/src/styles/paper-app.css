@@ -249,3 +249,8 @@
   .pa-outcome-body { padding: 22px 20px 24px; }
   .pa-outcome-title { font-size: 28px; }
 }
+
+/* ── Стрелки навигации рисунком (NavGlyphs): «Назад», «На главную», «→» в шагах ── */
+.nav-glyph { display: inline-flex; flex-shrink: 0; vertical-align: -2px; margin-inline-end: 6px; }
+.ds-back > .nav-glyph { margin-inline-end: 0; } /* у ds-back свой gap */
+.nav-glyph--step { margin-inline: 4px; }

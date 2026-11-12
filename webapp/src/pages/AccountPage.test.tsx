@@ -612,7 +612,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   it('режим терапевта (therapist_mode=1) — в /cabinet', async () => {
     localStorage.setItem(THERAPIST_MODE_KEY, '1');
     await renderWithHomes();
-    fireEvent.click(screen.getByText('← Назад'));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     expect(await screen.findByText('дом кабинета')).toBeTruthy();
     expect(screen.queryByText('дом клиента')).toBeNull();
   });
@@ -620,7 +620,7 @@ describe('AccountPage — «← Назад» ведёт в дом текущег
   it.each([['0'], [null]])('режим клиента (therapist_mode=%s) — в /today', async (flag) => {
     if (flag !== null) localStorage.setItem(THERAPIST_MODE_KEY, flag);
     await renderWithHomes();
-    fireEvent.click(screen.getByText('← Назад'));
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
     expect(await screen.findByText('дом клиента')).toBeTruthy();
     expect(screen.queryByText('дом кабинета')).toBeNull();
   });
@@ -632,7 +632,7 @@ describe('AccountPage — шапка и заголовок (#906)', () => {
   it('«← Назад» — ds-back внутри ds-sheet-head; eyebrow «Аккаунт» над ds-h1', async () => {
     renderPage();
     await screen.findByText('Аккаунт');
-    const back = screen.getByRole('button', { name: '← Назад' });
+    const back = screen.getByRole('button', { name: 'Назад' });
     expect(back.className).toBe('ds-back');
     expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
     expect(screen.getByText('Аккаунт').className).toBe('ds-eyebrow');
