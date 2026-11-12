@@ -5,14 +5,13 @@ import { SignArt } from '../../components/art/SignArt';
 import { hueStyle } from '../../lib/tone';
 import '../../styles/auth-service.css';
 
-// Оболочка рабочих служебных страниц вне AppShell (сверка входа, привязка, объединение, установка):
+// Оболочка рабочей служебной страницы вне AppShell (сверка входа /auth/confirm):
 // белый лист по центру с тенью-слоем тоном бумаги и знаком «Всё по схеме» сверху — ссылкой на главную.
 // `look` — полоса бумаги экрана со знаком справа (сверка входа: Limits на небе); без него — шапка
 // без картинки. Исходы (готово, отказ, устарело, сбой) рисует не она, а PaperOutcome
 // (docs/design/APP_2026-11.md, «Исходы служебных страниц»). Корень сам красит экран (light-lock) и
 // занимает всю ширину #root (pageRoots.test.ts). Обращений к читателю нет: часть страниц — до входа.
-// Знак — SignArt, не SignHero: оболочку берут страницы главного потока (MergePage), а SignHero тянет
-// sceneKit и переставляет CSS-чанки (check-css-link-order).
+// Знак — SignArt, не SignHero: SignHero тянет sceneKit и переставляет CSS-чанки (check-css-link-order).
 export function ServicePage({ children, width, look }: { children: ReactNode; width?: number; look?: Look }) {
   return (
     <div className="light-lock as-root" style={hueStyle(look?.hue)}>

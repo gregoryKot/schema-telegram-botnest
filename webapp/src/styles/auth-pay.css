@@ -21,7 +21,7 @@
 .ap-sheet .pl2-final-corner--a { position: absolute; left: auto; right: 18px; bottom: 0; width: 84px; height: auto; }
 .ap-sheet .pl2-final-corner--b { position: absolute; left: auto; right: 14px; top: 14px; width: 92px; height: auto; }
 .ap-lead { display: block; }
-.ap-skel { flex: 1; display: flex; min-width: 0; } /* обёртка силуэта — тоже корень в flex-ряду #root */
+.ap-skel { flex: 1; width: 100%; display: flex; min-width: 0; } /* обёртка силуэта — тоже корень в flex-ряду #root */
 .ap-skel-sheet { display: flex; flex-direction: column; gap: 12px; min-height: 150px; }
 
 .ap-honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
