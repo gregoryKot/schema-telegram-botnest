@@ -32,7 +32,7 @@
   "prisma.config.js": 7,
   "scripts/agent-docs-fs.mjs": 59,
   "scripts/agent-docs-rules.mjs": 167,
-  "scripts/agent/precheck-lib.mjs": 134,
+  "scripts/agent/precheck-lib.mjs": 135,
   "scripts/agent/precheck-tree.mjs": 87,
   "scripts/agent/precheck.mjs": 120,
   "scripts/agent/session-report.mjs": 121,
