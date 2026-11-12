@@ -1,6 +1,6 @@
 /* «Поставить цель» / «Новое задание» (TaskCreateSheet, taskCreate/*, b20): шапка — лист «задания», типы — плитки
    бумаги своей сущности со знаком (3 в ряд, на телефоне 2), выбранная — тон глубже, сдвинутый слой и печать-галочка;
-   выбор схемы — группы доменов на их бумаге; «Поставить цель» закреплена внизу листа. Подключает TaskCreateSheet
+   выбор схемы и режима — общий PickGroups (sheet-diary.css); «Поставить цель» закреплена внизу листа. Подключает TaskCreateSheet
    после sheet-tasks.css (каркас .sk-sheet, .sk-page, .sk-field — plans.css). */
 .sk-create-head .pa-sheet-label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -23,24 +23,6 @@
 .sk-tpl-label { font-size: 15px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
 .sk-tpl-sub { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
 .sk-tpl-time { margin-top: auto; padding-top: 6px; font-size: 12px; font-weight: 600; color: var(--text-sub); white-space: nowrap; }
-
-/* Схемы по доменам: бумага домена, DomainArt у подписи, строки — белые без знака, выбранная — бумага глубже. */
-.sk-domains { display: flex; flex-direction: column; gap: 12px; container: sk-domains / inline-size; }
-.pp-paper.sk-domain { padding: 12px; border-radius: 18px; }
-.sk-domain-head { display: flex; align-items: center; gap: 10px; margin: 2px 4px 10px; font: inherit; }
-.sk-domain-head .ds-label { color: var(--text-sub); }
-.sk-domain-rows { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
-@container sk-domains (min-width: 600px) { .sk-domain-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.sk-pick {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; box-sizing: border-box;
-  padding: 10px 14px; border: 0; border-radius: 12px; background: var(--surface); color: var(--text);
-  font-family: var(--sans); font-size: 14px; line-height: 1.35; text-align: left; cursor: pointer;
-}
-.sk-pick.is-on { background: oklch(0.87 0.05 var(--h)); font-weight: 600; }
-.sk-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.sk-pick-name { min-width: 0; overflow-wrap: anywhere; }
-.sk-pick-check { display: inline-flex; flex: none; visibility: hidden; }
-.sk-pick.is-on .sk-pick-check { visibility: visible; }
 
 /* Главная кнопка — полосой внизу листа, по колонке страницы. */
 .sk-submit-bar { flex: none; border-top: 1px solid var(--paper-sunk); background: var(--bg); }

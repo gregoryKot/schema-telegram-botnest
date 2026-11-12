@@ -12,6 +12,8 @@
   padding: 22px 0 12px; border-bottom: 1px solid var(--paper-sunk);
 }
 .ex2-cw-row > :nth-child(n + 4) { grid-column: 1 / -1; }
+/* У последней строки линии нет: под ней разделитель кнопок (.ex2-foot) — одна линейка, а не две в 50px (ревью g6). */
+.ex2-cw-row:has(+ :not(.ex2-cw-row)) { border-bottom: 0; }
 .ex2-cw-label { font-size: 16px; font-weight: 600; line-height: 1.3; color: var(--text); }
 .ex2-cw-q { margin-top: 10px; font-size: 14px; line-height: 1.5; color: var(--text-sub); }
 .ex2-cw-value { font-family: var(--serif); font-size: 28px; line-height: 1; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--need-text); }

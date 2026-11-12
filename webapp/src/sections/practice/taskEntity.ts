@@ -1,8 +1,9 @@
 // Сущность задания по тому, куда оно ведёт: знак строки TaskSign и плитка типа в «Поставить цель» (taskOptions.ts)
 // берут одну карту. Таблица — литералами рядом с потребителем, сверка с `taskRouteEntity` из shared/src/theme
-// (TaskRow.test.tsx): рантайм-вызов `taskRouteEntity` в модулях заданий уносил ExScreen в свой чанк — его CSS
-// вставал до index.css и правила упражнений проигрывали `.ds-label` (check-css-link-order, сведение g6;
-// docs/open/frontend-ux.md, «Рантайм-импорт entityLook»).
+// (taskEntity.test.ts): рантайм-вызов `taskRouteEntity` в модулях заданий уносил ExScreen в свой чанк — его CSS
+// вставал до index.css и правила упражнений проигрывали `.ds-label` (check-css-link-order, сведение g6; в ревью
+// g6 r1 перепроверено сборкой — и с глифами из ExGlyphs вместо ExScreen; docs/open/frontend-ux.md,
+// «Рантайм-импорт entityLook»).
 import type { UserTask } from '../../api';
 import { taskRoute, type TaskExercise, type TaskRoute } from '../../../../shared/src/tasks/taskRoute';
 import type { EntityId } from '../../../../shared/src/theme/entityLook';

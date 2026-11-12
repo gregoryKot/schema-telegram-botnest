@@ -1,11 +1,13 @@
 // Итог «Безопасного места» (SafePlaceEx, b18) — экран, к которому возвращаются в тревоге, а не квитанция:
 // лист «готово» на шалфее со сценой SceneHaven крупно (все описанные элементы проявлены), под ней — само
 // место Literata курсивом и описанные чувства строками, как стихи (метка элемента сцены, подпись, текст).
-// «Закрыть» — залитая, «Изменить» — тихая ссылка. Рамку экрана (ex2-screen, ExBar) рисует SafePlaceEx.
+// «Закрыть» — залитая, «Изменить» — тихая ссылка. Рамка — общая ExDonePage (без колонки «прошлых»: место одно);
+// useHistorySheet — в SafePlaceEx (onClose — его goBack).
 import type { ReactNode } from 'react';
 import { DoneSheet } from '../paper/DoneSheet';
 import { HavenSenseMark, SceneHaven } from '../art/SceneHaven';
 import { SENSES } from './safePlaceText';
+import { ExDonePage } from './ExDonePage';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 
 export function SafePlaceDone({ overview, senses, title, lede, onEdit, onClose }: {
@@ -19,7 +21,7 @@ export function SafePlaceDone({ overview, senses, title, lede, onEdit, onClose }
   const described = SENSES.filter((s) => senses[s.k].trim());
   const shown = Object.fromEntries(described.map((s) => [s.k, true]));
   return (
-    <div className="ex2-done-page">
+    <ExDonePage onBack={onClose}>
       <DoneSheet entity="safe_place" scene={<SceneHaven place={Boolean(overview.trim())} senses={shown} />} titleAs="h1"
         label="Безопасное место · сохранено" title={title} sub={lede}
         primary={{ label: 'Закрыть', onClick: onClose }} secondary={{ label: 'Изменить', onClick: onEdit }}>
@@ -36,6 +38,6 @@ export function SafePlaceDone({ overview, senses, title, lede, onEdit, onClose }
           ))}
         </div>
       </DoneSheet>
-    </div>
+    </ExDonePage>
   );
 }

@@ -1,6 +1,6 @@
 // Бумага силуэта упражнения — из ENTITY_LOOK, а не своим числом на месте (APP_2026-11.md, принцип 9).
 import { describe, it, expect } from 'vitest';
-import { exerciseHue } from './exerciseHue';
+import { exerciseHue, exerciseSpread } from './exerciseHue';
 import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 
 describe('exerciseHue', () => {
@@ -12,5 +12,14 @@ describe('exerciseHue', () => {
   it('карточки схемы и режима — бумага своей семьи, с выбранным id и без', () => {
     expect(exerciseHue({ ex: 'schema' })).toBe(ENTITY_LOOK.schema_card.hue);
     expect(exerciseHue({ ex: 'mode', id: 'punitive_critic' })).toBe(ENTITY_LOOK.mode_card.hue);
+  });
+
+  it('разворот — у письма, места, проверки и карточки с выбранным id; выбор, разбор, тёплые слова — без', () => {
+    for (const ex of ['belief', 'letter', 'safe'] as const) expect(exerciseSpread({ ex }), ex).toBe(true);
+    expect(exerciseSpread({ ex: 'schema', id: 'defectiveness' })).toBe(true);
+    expect(exerciseSpread({ ex: 'mode', id: 'punitive_critic' })).toBe(true);
+    expect(exerciseSpread({ ex: 'schema' })).toBe(false);
+    expect(exerciseSpread({ ex: 'mode' })).toBe(false);
+    for (const ex of ['warm', 'phrase', 'flashcard', 'ysq'] as const) expect(exerciseSpread({ ex }), ex).toBe(false);
   });
 });

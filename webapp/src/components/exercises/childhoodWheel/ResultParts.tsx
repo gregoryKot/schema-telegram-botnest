@@ -1,3 +1,4 @@
+import { glue } from '../../../../../shared/src/utils/typo';
 import type { CSSProperties } from 'react';
 import { useTr } from '../../../utils/addressForm';
 import { NeedArt } from '../../art/NeedArt';
@@ -45,7 +46,7 @@ export function NextToday({ onOpen }: { onOpen?: () => void }) {
     <>
       <span className="chw-next-body">
         <span className="ds-label chw-next-label">Что дальше</span>
-        <span className="chw-next-title">Связать с сегодня</span>
+        <span className="chw-next-title">{glue('Связать с сегодня')}</span>
         <span className="chw-next-text">
           {tr(
             'Открой дневник за последнюю неделю и сравни – какие потребности сегодня просели больше всего. Часто это те же зоны.',

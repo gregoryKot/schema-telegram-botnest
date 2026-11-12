@@ -5,7 +5,7 @@
 import { haptic } from '../../haptic';
 import { hueStyle } from '../../lib/tone';
 import { SignArt } from '../art/SignArt';
-import { GlyphCheck } from '../exercises/ExScreen';
+import { GlyphCheck } from '../exercises/ExGlyphs';
 import type { TaskOption, TaskType } from './taskOptions';
 
 export function TaskTypeTiles({ options, value, onPick }: { options: TaskOption[]; value: TaskType; onPick: (t: TaskType) => void }) {

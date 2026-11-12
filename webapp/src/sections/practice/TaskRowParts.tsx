@@ -5,7 +5,7 @@ import { useState } from 'react';
 import type { UserTask } from '../../api';
 import { fmtDate } from '../../utils/format';
 import { SignArt } from '../../components/art/SignArt';
-import { GlyphCheck } from '../../components/exercises/ExScreen';
+import { GlyphCheck } from '../../components/exercises/ExGlyphs';
 import { TaskStatusBadge } from '../../components/TaskStatusBadge';
 import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
 

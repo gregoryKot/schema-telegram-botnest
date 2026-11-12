@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
-import { ExBar } from './ExBar';
-import { useExBackLabel } from './exBackLabel';
 import { SafePlaceDone } from './SafePlaceDone';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useSavingAction } from '../../hooks/useSavingAction';
@@ -15,14 +13,15 @@ import { hueStyle } from '../../lib/tone';
 import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
 import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
-import { ENTITY_LOOK, PAPER_HUE } from '../../../../shared/src/theme/entityLook';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { ExHint, ExHintList, ExHintSub, ExHintText } from './ExHint';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
-import { LimitedInput, LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
+import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { SENSES, SAFE_PLACE_FIELD_MAX, buildSafePlaceDescription } from './safePlaceText';
 
 // Вид (редизайн 2026-11, b18): герой — лист шалфея со сценой SceneHaven: место собирается из того, что
 // описано (назвал место — своя часть в рамке, каждое чувство — свой элемент), на компьютере — разворот,
-// сцена растёт слева, пока заполняются поля справа. «Совет» и «Можно» — одной наклейкой соломы; номера
+// сцена растёт слева, пока заполняются поля справа. «Совет» и «Можно» — общая ExHint (на телефоне свёрнута); номера
 // вопросов — над вопросом, а не колонкой; чувства — тетрадью, а не четырьмя карточками. Итог — SafePlaceDone.
 export function SafePlaceEx({
   onBack,
@@ -33,7 +32,6 @@ export function SafePlaceEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const backLabel = useExBackLabel();
   const [draft] = useState(() => restoreDraft<{ overview: string; senses: Record<string, string> }>(EXERCISE_DRAFT_KEYS.safePlace));
   const [overview, setOverview] = useState(draft?.overview ?? '');
   const [senses, setSenses] = useState<Record<string, string>>({ see: '', hear: '', feel: '', smell: '', ...draft?.senses });
@@ -64,15 +62,12 @@ export function SafePlaceEx({
 
   if (done) {
     return (
-      <div className="ex2-screen">
-        <ExBar onBack={goBack} label={backLabel} sticky />
-        <SafePlaceDone overview={overview} senses={senses} onEdit={() => setDone(false)} onClose={goBack}
-          title={<>{tr('Твоё', 'Ваше')} <span className="it">безопасное место.</span></>}
-          lede={tr(
-            'Возвращайся сюда, когда станет тревожно. Закрой глаза. Прочти. Побудь.',
-            'Возвращайтесь сюда, когда станет тревожно. Закройте глаза. Прочтите. Побудьте.',
-          )} />
-      </div>
+      <SafePlaceDone overview={overview} senses={senses} onEdit={() => setDone(false)} onClose={goBack}
+        title={<>{tr('Твоё', 'Ваше')} <span className="it">безопасное место.</span></>}
+        lede={tr(
+          'Возвращайся сюда, когда станет тревожно. Закрой глаза. Прочти. Побудь.',
+          'Возвращайтесь сюда, когда станет тревожно. Закройте глаза. Прочтите. Побудьте.',
+        )} />
     );
   }
 
@@ -95,20 +90,11 @@ export function SafePlaceEx({
         'Опишите место, где вам спокойно – реальное или воображаемое. Чтобы было куда вернуться мысленно, когда становится тревожно.',
       )}
       aside={
-        <div className="pp-paper ex2-sticker" style={hueStyle(PAPER_HUE.straw)}>
-          <div className="ds-label">Совет</div>
-          <h3 className="ex2-note-h">Конкретика важнее красоты</h3>
-          <p className="ex2-note-body">
-            «Дача у бабушки, веранда, скрипящие половицы» работает лучше, чем
-            «прекрасный лес». Чем больше деталей – тем легче вернуться.
-          </p>
-          <div className="ds-label ex2-sticker-next">Можно</div>
-          <ul className="ex2-note-list">
-            <li>Реальное место – комната, лес, пляж</li>
-            <li>Воображаемое – придуманный мир</li>
-            <li>Воспоминание – момент из жизни</li>
-          </ul>
-        </div>
+        <ExHint label="Совет" title="Конкретика важнее красоты">
+          <ExHintText>«Дача у бабушки, веранда, скрипящие половицы» работает лучше, чем «прекрасный лес». Чем больше деталей – тем легче вернуться.</ExHintText>
+          <ExHintSub>Можно</ExHintSub>
+          <ExHintList items={['Реальное место – комната, лес, пляж', 'Воображаемое – придуманный мир', 'Воспоминание – момент из жизни']} />
+        </ExHint>
       }
     >
       <div className="ex2-safe" style={hueStyle(ENTITY_LOOK.safe_place.hue)}>
@@ -136,7 +122,8 @@ export function SafePlaceEx({
           </p>
         </div>
         {/* Чувства — тетрадью на белом листе: метка элемента сцены (пустым тоном, пока поле пусто), подпись
-            и поле без своей рамки; подпись связана с полем, а не только плейсхолдером. */}
+            и поле без своей рамки; подпись связана с полем, а не только плейсхолдером. Поле — textarea с той же
+            механикой, что «Что это за место?» (field-sizing, 1–3 строки): подсказка и ответ читаются целиком. */}
         <div className="ex2-senses">
           {SENSES.map((s) => (
             <div key={s.k} className="ex2-sense">
@@ -144,7 +131,7 @@ export function SafePlaceEx({
                 <HavenSenseMark sense={s.k} on={described[s.k]} />
                 <label className="ds-label" htmlFor={`safe-place-${s.k}`}>{s.label}</label>
               </span>
-              <LimitedInput id={`safe-place-${s.k}`} max={SAFE_PLACE_FIELD_MAX} className="ex2-sense-input" value={senses[s.k]}
+              <LimitedTextarea id={`safe-place-${s.k}`} max={SAFE_PLACE_FIELD_MAX} rows={2} className="ex2-sense-input" value={senses[s.k]}
                 onChange={(e) => update(s.k, e.target.value)} placeholder={s.ph} />
             </div>
           ))}

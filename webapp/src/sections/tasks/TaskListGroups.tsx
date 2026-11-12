@@ -8,7 +8,7 @@ import type { UserTask } from '../../api';
 import { TaskRow } from '../practice/TaskRow';
 import { TaskSign } from '../practice/TaskSign';
 import type { TaskGroups } from '../practice/taskListModel';
-import { GlyphChevron } from '../../components/exercises/ExScreen';
+import { GlyphChevron } from '../../components/exercises/ExGlyphs';
 import { fmtDate, momentDayKey } from '../../utils/format';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { taskStatus } from '../../../../shared/src/tasks/taskStatus';
@@ -26,7 +26,10 @@ interface Props {
 
 export function TaskListGroups({ groups, today, phone, onOpen, onComplete }: Props) {
   const active = groups.therapist.length + groups.mine.length;
-  const [doneOpen, setDoneOpen] = useState(active === 0);
+  // Хранится только явный выбор человека: «свёрнуто, пока есть активные» считается на каждом рендере —
+  // отметил «Готово» у последнего активного, и история раскрывается сама, а не остаётся пустым заголовком.
+  const [toggled, setToggled] = useState<boolean | null>(null);
+  const doneOpen = toggled ?? active === 0;
   const row = (t: UserTask, cta: string) => (
     <TaskRow key={t.id} task={t} mark={t.assignedBy !== null} compact={phone} cta={cta}
       status={taskStatus(t, today)} onOpen={() => onOpen(t)} onComplete={() => onComplete(t)} />
@@ -54,7 +57,7 @@ export function TaskListGroups({ groups, today, phone, onOpen, onComplete }: Pro
       )}
       {groups.done.length > 0 && (
         <section className="sk-group sk-task-group sk-done-group">
-          <button type="button" className="sk-done-toggle" aria-expanded={doneOpen} onClick={() => setDoneOpen(v => !v)}>
+          <button type="button" className="sk-done-toggle" aria-expanded={doneOpen} onClick={() => setToggled(!doneOpen)}>
             <span className="sk-group-title">Выполнено</span>
             <span className="ds-sub">{groups.done.length}</span>
             <span className="sk-done-chev" aria-hidden="true"><GlyphChevron up={doneOpen} /></span>

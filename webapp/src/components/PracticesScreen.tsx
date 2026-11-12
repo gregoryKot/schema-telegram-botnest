@@ -17,10 +17,10 @@ import { PaperEmpty } from './art/PaperEmpty';
 import { NeedArt } from './art/NeedArt';
 import { EntitySheet } from './paper/EntitySheet';
 import { PaperAlert } from './paper/PaperAlert';
-import { GlyphArrowLeft } from './exercises/ExScreen';
+import { GlyphArrowLeft } from './exercises/ExGlyphs';
 import { NeedTiles } from './plans/NeedTiles';
 import { NourishRow, NeedScore } from './plans/NourishParts';
-import type { ArtProps } from './art/paper';
+import { Leaf } from './art/PaperArtSigns';
 import { pluralRu } from '../../../shared/src/utils/pluralRu';
 import { NEED_ORDER } from '../../../shared/src/needs/types';
 import '../styles/sheet-tasks.css';
@@ -29,10 +29,6 @@ const NEED_NAMES: Record<string, string> = {
   attachment: 'Привязанность', autonomy: 'Автономия',
   expression: 'Выражение чувств', play: 'Спонтанность', limits: 'Границы',
 };
-/** Пусто у потребности — её знак, а не чашка (PaperEmpty art): компонент на потребность создаётся один раз. */
-const NEED_EMPTY_ART = Object.fromEntries(NEED_IDS.map(id => [id, function NeedEmptyArt({ size }: ArtProps) {
-  return <NeedArt id={id} size={size} />;
-}]));
 
 interface Props {
   onClose: () => void;
@@ -42,7 +38,8 @@ interface Props {
 // «Что меня питает» (b20): шапка — лист «Что питает» (мох 145 + Leaf из ENTITY_LOOK) с объяснением «откуда и зачем»;
 // выбор потребности — пять плиток бумаги NEED_HUE (NeedTiles, та же механика, что на пустых «Планах») с оценкой за
 // сегодня полоской, а не цифрой без подписи; под ними — открытая потребность: знак, название, счётчик, подсказка
-// по оценке строкой (была розовая плашка, похожая на ошибку), действия — строки с Leaf, «удалить» — тихой ссылкой.
+// по оценке строкой (была розовая плашка, похожая на ошибку), действия — строки с Leaf, «удалить» — тихой ссылкой;
+// пусто — тот же Leaf действия, а не второй знак потребности под её заголовком (ревью g6).
 export function PracticesScreen({ onClose, onOpenTracker }: Props) {
   const NEED_DATA = useNeedData();
   const tr = useTr();
@@ -117,7 +114,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
           </>} />
 
           <NeedTiles label="Потребность" value={needId} onPick={id => { setNeedIdx(Math.max(0, NEED_IDS.indexOf(id))); setInput(''); }}
-            meta={id => ratings[id] !== undefined && <NeedScore score={ratings[id]} />} />
+            meta={id => ratings[id] !== undefined && <NeedScore id={id} score={ratings[id]} />} />
 
           <section className="sk-group sk-feed-need">
             <div className="sk-feed-head">
@@ -138,7 +135,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             ) : !practices ? (
               <div aria-hidden="true"><SkeletonList rows={3} height={56} /></div>
             ) : practices.length === 0 ? (
-              <PaperEmpty art={NEED_EMPTY_ART[needId]}>{tr('Пока пусто — добавь первое действие ниже.', 'Пока пусто — добавьте первое действие ниже.')}</PaperEmpty>
+              <PaperEmpty art={Leaf}>{tr('Пока пусто — добавь первое действие ниже.', 'Пока пусто — добавьте первое действие ниже.')}</PaperEmpty>
             ) : (
               <div className="sk-list">
                 {practices.map(p => (

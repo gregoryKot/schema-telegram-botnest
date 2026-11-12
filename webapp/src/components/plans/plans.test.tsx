@@ -6,6 +6,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { planWhen, reminderHour } from './planDoneModel';
 import { NeedTiles } from './NeedTiles';
 import { NeedScore } from './NourishParts';
+import { inkVars } from '../history/needInk';
 import { REMINDER_OPTIONS } from '../../../../shared/src/practices/usePlanSheetState';
 
 afterEach(cleanup);
@@ -48,11 +49,17 @@ describe('NeedTiles', () => {
 
 describe('NeedScore', () => {
   it('оценка — полоской длины n/10, число — для чтения с экрана; вне шкалы — прижата', () => {
-    const { container, rerender } = render(<NeedScore score={6} />);
+    const { container, rerender } = render(<NeedScore id="attachment" score={6} />);
     const bar = container.querySelector('.sk-need-score') as HTMLElement;
     expect(bar.getAttribute('aria-label')).toBe('6/10');
     expect(bar.style.getPropertyValue('--score')).toBe('60%');
-    rerender(<NeedScore score={14} />);
+    rerender(<NeedScore id="attachment" score={14} />);
     expect((container.querySelector('.sk-need-score') as HTMLElement).getAttribute('aria-label')).toBe('10/10');
+  });
+  it('полоска — цвет данных своей потребности (inkVars), а не нейтральный --text-sub (ревью g6)', () => {
+    const { container } = render(<NeedScore id="limits" score={5} />);
+    const bar = container.querySelector('.sk-need-score') as HTMLElement;
+    expect(bar.style.getPropertyValue('--need-ink')).toBe(inkVars('limits')['--need-ink']);
+    expect(bar.style.getPropertyValue('--need-ink')).not.toBe('var(--text-sub)');
   });
 });

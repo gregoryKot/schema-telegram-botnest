@@ -37,7 +37,9 @@ describe('волна 3 (#906): один примитив на механику',
   it('sheet-tasks.css: палитра команд переехала, .sk-cmd- нет', () => {
     expect(read('sheet-tasks.css')).not.toContain('.sk-cmd-');
   });
-  it.each(['ex2-pick-arrow', 'ex2-pick-name', 'ex2-empty', 'ex2-chip'])('sheet-exercises.css: нет .%s', (cls) => {
+  // Ревью g6: правила, у которых после b17–b19 не осталось потребителей (и строки прошлого ex2-hist — ExPastRow).
+  it.each(['ex2-pick-arrow', 'ex2-pick-name', 'ex2-empty', 'ex2-chip', 'ex2-prompt-num', 'ex2-err', 'ex2-stack', 'ex2-body-text',
+    'ex2-tint', 'ex2-note-list', 'ex2-hist-row', 'ex2-hist-date', 'ex2-hist-snip'])('sheet-exercises.css: нет .%s', (cls) => {
     expect(hasClass(read('sheet-exercises.css'), cls)).toBe(false);
   });
   it('sheet-exercises.css: контейнер .ex2-chips остался', () => {

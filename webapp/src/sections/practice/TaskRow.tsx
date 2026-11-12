@@ -1,7 +1,7 @@
 import { pressable } from '../../utils/a11y';
 import type { UserTask } from '../../api';
 import { TaskProgressBar } from '../../components/TaskProgressBar';
-import { GlyphCheck } from '../../components/exercises/ExScreen';
+import { GlyphCheck } from '../../components/exercises/ExGlyphs';
 import type { TaskStatus } from '../../../../shared/src/tasks/taskStatus';
 import { resolveTaskDisplayText } from '../../../../shared/src/tasks/taskTitle';
 import { glueSpaces } from '../../../../shared/src/utils/typo';

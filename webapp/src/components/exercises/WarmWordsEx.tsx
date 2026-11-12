@@ -6,6 +6,7 @@ import { useTr } from '../../utils/addressForm';
 import { Skeleton } from '../Skeleton';
 import { PaperAlert } from '../paper/PaperAlert';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { ChildCare } from '../art/GuideSignsModes';
 import { useWarmWords } from '../../../../shared/src/warmWords/useWarmWords';
 import { pluralEntries } from '../../../../shared/src/share/shareTexts';
 import { buildWarmWordsTexts } from '../../../../shared/src/warmWords/warmWordsText';
@@ -18,7 +19,7 @@ const SKELETON_HEIGHTS = [132, 104, 156];
 // чтение: кризисная детекция была на этапе записи (правило №7 CLAUDE.md).
 // Вид (редизайн 2026-11, b18): герой — лист соломы со знаком ChildCare (ENTITY_LOOK.warm_words), слова —
 // записками тёплой бумаги (WarmWordNote): колонкой на телефоне, двумя-тремя на компьютере; пусто —
-// чашка с объяснением, откуда появятся слова; сбой — лист соломы (PaperAlert), а не жёлтая плашка.
+// знак ChildCare с объяснением, откуда появятся слова (кнопка — после решения владельца, текстовый баг 4 b18); сбой — лист соломы (PaperAlert), а не жёлтая плашка.
 export function WarmWordsEx({ onBack }: { onBack: () => void }) {
   const text = buildWarmWordsTexts(useTr());
   const goBack = useHistorySheet(onBack);
@@ -37,28 +38,31 @@ export function WarmWordsEx({ onBack }: { onBack: () => void }) {
       }
       lede={text.lede}
     >
-      {items === null && !failed && (
-        <div className="ex2-notes" aria-hidden>
-          {SKELETON_HEIGHTS.map((h) => <Skeleton key={h} height={h} radius={20} />)}
-        </div>
-      )}
-
-      {failed && <PaperAlert sign="child_care" title={text.failed} />}
-
-      {!failed && items !== null && items.length === 0 && (
-        <PaperEmpty>{text.empty}</PaperEmpty>
-      )}
-
-      {items !== null && items.length > 0 && (
-        <>
-          <div className="ex2-count">
-            {items.length} {pluralEntries(items.length)}
+      {/* Одна колонка экрана во всех состояниях: пусто, загрузка, сбой и записки — та же ширина (ex-warm.css). */}
+      <div className="ex2-warm">
+        {items === null && !failed && (
+          <div className="ex2-notes" aria-hidden>
+            {SKELETON_HEIGHTS.map((h) => <Skeleton key={h} height={h} radius={20} />)}
           </div>
-          <div className="ex2-notes">
-            {items.map((item, i) => <WarmWordNote key={item.key} item={item} index={i} />)}
-          </div>
-        </>
-      )}
+        )}
+
+        {failed && <PaperAlert sign="child_care" title={text.failed} />}
+
+        {!failed && items !== null && items.length === 0 && (
+          <PaperEmpty art={ChildCare}>{text.empty}</PaperEmpty>
+        )}
+
+        {items !== null && items.length > 0 && (
+          <>
+            <div className="ex2-count">
+              {items.length} {pluralEntries(items.length)}
+            </div>
+            <div className="ex2-notes">
+              {items.map((item, i) => <WarmWordNote key={item.key} item={item} index={i} />)}
+            </div>
+          </>
+        )}
+      </div>
     </ExScreen>
   );
 }

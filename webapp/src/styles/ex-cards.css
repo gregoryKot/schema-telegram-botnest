@@ -39,8 +39,7 @@
 }
 .ds-btn.ex2-portrait-cta { margin-top: 22px; width: 100%; min-height: 48px; }
 
-/* ── Итог карточки (CardDone): лист «готово», под ним диалог и написанное тихим списком ── */
-.ex2-card-done > .ex2-dialog { margin: 4px 0 0; }
+/* ── Итог карточки (CardDone, рамка ExDonePage): справа (на телефоне — под листом) диалог и написанное тихим списком ── */
 .ex2-answers { display: flex; flex-direction: column; border-radius: 18px; background: var(--surface); overflow: hidden; }
 .ex2-answer { padding: 14px 18px 16px; }
 .ex2-answer + .ex2-answer { border-top: 1px solid var(--paper-sunk); }
@@ -51,5 +50,13 @@
   .ex2-voice { margin-right: 20px; padding: 14px 56px 16px 16px; }
   .ex2-voice-text { font-size: 19px; }
   .ex2-dialog-reply.pa-voice { margin-left: 20px; }
-  .ex2-card-done.sd-done-page { padding: 20px 16px 96px; }
+}
+
+/* Пояснение «что это за карточка» (первый вопрос): на ≥1024 — в колонке разворота над подсказкой, на
+   телефоне и планшете — после формы, как у мастера дневника (diary-wizard.css): подсказка ExHint стоит
+   свёрнутой строкой до поля, а абзац пояснения не отодвигает поле за сгиб. */
+@media (max-width: 1023px) {
+  .pa-spread:has(.ex2-aside > .sd-explainer) > .pa-spread-side,
+  .pa-spread:has(.ex2-aside > .sd-explainer) > .pa-spread-side > .ex2-aside { display: contents; }
+  .pa-spread:has(.ex2-aside > .sd-explainer) > .pa-spread-main { order: 2; }
 }

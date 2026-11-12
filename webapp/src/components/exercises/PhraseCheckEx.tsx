@@ -8,14 +8,14 @@
 // (правило №7). Строки истории кликабельны — открывают PhraseHistoryCard
 // с правкой ответа (паритет с miniapp, гейт паритета фич правило №16).
 // Вид (редизайн 2026-11, b18): герой — лист сливы со сценой двух голосов (ScenePhrase), со второго шага
-// компактнее и без подводки; ход — девять бусин на листе (PhraseBeads); подсказка — наклейкой соломы
-// (на телефоне — после шага); итог — PhraseDoneScreen в той же рамке экрана.
+// компактнее и без подводки; ход — девять бусин на листе (PhraseBeads); подсказка — общая ExHint (на
+// телефоне — свёрнутой строкой после шага); итог — PhraseDoneScreen в общей рамке ExDonePage.
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import type { PhraseCheckEntry } from '../../api';
 import { ExScreen } from './ExScreen';
-import { ExBar } from './ExBar';
-import { useExBackLabel } from './exBackLabel';
+import { ExPastList } from './ExDonePage';
+import { ExHint, ExHintText } from './ExHint';
 import { PhraseStartStep } from './phraseCheckEx/PhraseStartStep';
 import { PhraseMarkStep } from './phraseCheckEx/PhraseMarkStep';
 import { PhraseRewriteStep } from './phraseCheckEx/PhraseRewriteStep';
@@ -26,11 +26,9 @@ import { PhraseBeads } from './phraseCheckEx/PhraseBeads';
 import { ScenePhrase } from '../art/ScenePhrase';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { hueStyle } from '../../lib/tone';
 import { PHRASE_CRITERIA } from '../../../../shared/src/phraseCheck/criteria';
 import { usePhraseCheckState } from '../../../../shared/src/phraseCheck/usePhraseCheckState';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
-import { PAPER_HUE } from '../../../../shared/src/theme/entityLook';
 
 const TOTAL_STEPS = PHRASE_CRITERIA.length + 2; // фраза + 9 примет + переписать
 
@@ -43,7 +41,6 @@ export function PhraseCheckEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const backLabel = useExBackLabel();
   const {
     phrase, setPhrase, markIndex, setMarkIndex, marks,
     rewrite, setRewrite, inWarmWords, setInWarmWords, answer, reset, clearDraft,
@@ -111,24 +108,20 @@ export function PhraseCheckEx({
     />
   );
   const pastRows = pastEntries.length > 0 && (
-    <section className="ex2-past-list">
-      <div className="ds-label">Прошлые разборы · {history.length}</div>
+    <ExPastList label={<>Прошлые разборы · {history.length}</>}>
       <PhraseHistoryRows entries={pastEntries} onOpen={setOpenHistoryId} showRewrite />
-    </section>
+    </ExPastList>
   );
 
   if (done) {
     return (
       <>
-        <div className="ex2-screen">
-          <ExBar onBack={goBack} label={backLabel} sticky />
-          <PhraseDoneScreen phrase={phrase.trim()} rewrite={rewrite} marks={marks} past={pastEntries} total={history.length}
-            onOpenPast={setOpenHistoryId} onAgain={again} onClose={goBack}
-            lede={tr(
-              'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
-              'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
-            )} />
-        </div>
+        <PhraseDoneScreen phrase={phrase.trim()} rewrite={rewrite} marks={marks} past={pastEntries} total={history.length}
+          onOpenPast={setOpenHistoryId} onAgain={again} onClose={goBack}
+          lede={tr(
+            'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
+            'Голос, который помогает, ставится тренировкой. Даже просто заметить приметы — уже работа.',
+          )} />
         {historyOverlay}
       </>
     );
@@ -157,10 +150,7 @@ export function PhraseCheckEx({
       ) : undefined}
       aside={
         <>
-          <div className="pp-paper ex2-sticker" style={hueStyle(PAPER_HUE.straw)}>
-            <div className="ds-label">{asideCard.title}</div>
-            <p className="ex2-note-body">{asideCard.body}</p>
-          </div>
+          <ExHint key={markIndex} title={asideCard.title}><ExHintText>{asideCard.body}</ExHintText></ExHint>
           {markIndex < 0 && pastRows}
         </>
       }

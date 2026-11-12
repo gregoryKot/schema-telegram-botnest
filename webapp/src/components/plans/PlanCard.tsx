@@ -6,7 +6,7 @@ import type { CSSProperties, Dispatch, SetStateAction } from 'react';
 import { api, type PracticePlan } from '../../api';
 import { useNeedData } from '../../needData';
 import { NeedArt } from '../art/NeedArt';
-import { GlyphCheck, GlyphX } from '../exercises/ExScreen';
+import { GlyphCheck, GlyphX } from '../exercises/ExGlyphs';
 import { inkVars } from '../history/needInk';
 import { planDateLabel } from '../../../../shared/src/practices/plansCopy';
 import { glueSpaces } from '../../../../shared/src/utils/typo';

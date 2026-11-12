@@ -56,7 +56,7 @@ describe('NextToday', () => {
   it('с переходом — кнопка со стрелкой, тап зовёт переход', () => {
     const onOpen = vi.fn();
     const { container } = render(<NextToday onOpen={onOpen} />);
-    fireEvent.click(screen.getByRole('button', { name: /Связать с сегодня/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Связать с\sсегодня/ }));
     expect(onOpen).toHaveBeenCalledTimes(1);
     expect(container.querySelector('.pp-arrow')).not.toBeNull();
   });
@@ -64,7 +64,7 @@ describe('NextToday', () => {
   it('без перехода — тот же лист, но не кнопка и без стрелки', () => {
     const { container } = render(<NextToday />);
     expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.getByText('Связать с сегодня')).toBeTruthy();
+    expect(screen.getByText(/Связать с\sсегодня/)).toBeTruthy();
     expect(container.querySelector('.pp-arrow')).toBeNull();
   });
 });

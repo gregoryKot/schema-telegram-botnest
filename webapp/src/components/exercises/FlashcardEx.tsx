@@ -3,7 +3,7 @@ import { api } from '../../api';
 import { ExScreen } from './ExScreen';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { DiaryAside } from '../diary/DiaryStepCard';
+import { ExHint, ExHintText } from './ExHint';
 import { ModeGroupList } from '../diary/ModeGroupList';
 import { buildModeIntroExplainer } from '../../../../shared/src/mode/modeFlowExplainers';
 import { buildSchemaIntroExplainer } from '../../../../shared/src/schema/schemaFlowExplainers';
@@ -11,7 +11,6 @@ import { buildModeIntroQuestions } from '../../../../shared/src/mode/modeIntroQu
 import { getModeCard } from '../../../../shared/src/mode/modeCards';
 import { MODE_CARD_SAVED_EVENT } from '../../../../shared/src/share/analytics';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
-import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { SCHEMA_QUESTIONS } from './flashcardQuestions';
 import { ModePortrait } from './ModePortrait';
 import { PickGroups } from './PickGroups';
@@ -40,7 +39,7 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: E
     return (
       <ExScreen onBack={goBack} caution cautionAt="head" look="schema_card" eyebrow={exerciseCard('schema').eyebrow} title="Карточка схемы"
         lede={tr('Выбери одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.', 'Выберите одну из схем. Семь вопросов, чтобы увидеть её во весь рост: триггеры, голос, истоки, реальность, поддержка.')}
-        aside={<DiaryAside hue={ENTITY_LOOK.schema_card.hue} eyebrow="Зачем это" title="Назвать – значит вернуть себе власть" text={tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')} />}
+        aside={<ExHint label="Зачем это" title="Назвать – значит вернуть себе власть"><ExHintText>{tr('Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о тебе».', 'Схема работает в тени. Когда мы её называем – она становится паттерном, а не «правдой о вас».')}</ExHintText></ExHint>}
       >
         <PickGroups clamp groups={SCHEMA_PICK_GROUPS} onPick={id => { card.reset(); setPicked(findSchema(id)); }} />
       </ExScreen>
@@ -55,11 +54,11 @@ export function SchemaEx({ onBack, initialSchemaId, onComplete, initialData }: E
     <ExScreen onBack={goBack} caution={Boolean(initialSchemaId)} look={picked.look} spread compact={!first}
       eyebrow={picked.group} title={picked.name} lede={first ? picked.desc : undefined}
       heroFoot={<CardHeroLinks changeLabel="Сменить схему" onChange={() => setPicked(null)} />}
-      aside={<CardAside explainer={first ? buildSchemaIntroExplainer(tr) : undefined} hue={picked.look.hue} eyebrow="Совет" title="Без правильных ответов"
+      aside={<CardAside explainer={first ? buildSchemaIntroExplainer(tr) : undefined} eyebrow="Совет" title="Без правильных ответов"
         text={tr('Пиши коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.', 'Пишите коротко, своими словами – даже одно предложение полезнее, чем идеальный абзац.')} />}
     >
       <SavedNoteGate kind="schema" id={picked.id} preset={card.values}>{initial => (
-        <CardQuestions initial={initial} questions={SCHEMA_QUESTIONS} hue={picked.look.hue} step={card.step} onStep={card.setStep} onSaved={card.saved}
+        <CardQuestions initial={initial} questions={SCHEMA_QUESTIONS} hue={picked.look.hue} sign="layers" step={card.step} onStep={card.setStep} onSaved={card.saved}
           onSave={async data => { await api.saveSchemaNote({ schemaId: picked.id, ...data }); onComplete?.(); }} />
       )}</SavedNoteGate>
     </ExScreen>
@@ -78,7 +77,7 @@ export function ModeEx({ onBack, initialModeId, onComplete, initialData }: ExPro
     return (
       <ExScreen onBack={goBack} caution cautionAt="head" look="mode_card" eyebrow={exerciseCard('mode').eyebrow} title="Карточка режима"
         lede="Режим – это эмоциональное состояние, которое включается целиком. Описать его – значит научиться его узнавать в моменте."
-        aside={<DiaryAside hue={ENTITY_LOOK.mode_card.hue} eyebrow="Совет" title={tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')} text="Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент." />}
+        aside={<ExHint label="Совет" title={tr('Начни с того, что чаще включается', 'Начните с того, что чаще включается')}><ExHintText>Не обязательно работать с трудным режимом. Иногда полезнее описать Здорового Взрослого – чтобы было что искать в себе в трудный момент.</ExHintText></ExHint>}
       >
         <ModeGroupList modeId="" onPick={id => { card.reset(); setShowPortrait(!localStorage.getItem(portraitSeenKey(id))); setPicked(findMode(id)); }} />
       </ExScreen>
@@ -99,14 +98,14 @@ export function ModeEx({ onBack, initialModeId, onComplete, initialData }: ExPro
       eyebrow={picked.group} title={picked.name} lede={portrait ? portrait.about : first ? picked.desc : undefined}
       heroFoot={<CardHeroLinks changeLabel="Сменить режим" onChange={() => setPicked(null)}
         about={!portrait && modeCard ? { sign: picked.look.sign, onClick: () => setShowPortrait(true) } : undefined} />}
-      aside={!portrait && <CardAside explainer={first ? buildModeIntroExplainer(tr) : undefined} hue={picked.look.hue} eyebrow="Подсказка"
+      aside={!portrait && <CardAside explainer={first ? buildModeIntroExplainer(tr) : undefined} eyebrow="Подсказка"
         title={tr('Говори в настоящем', 'Говорите в настоящем')} text="«Когда я в этом режиме – я чувствую…» работает лучше, чем абстрактные описания." />}
     >
       {portrait
         ? <ModePortrait card={portrait} hue={picked.look.hue} sign={picked.look.sign} ctaLabel={seen ? 'Назад к вопросам →' : undefined}
             onStart={() => { localStorage.setItem(portraitSeenKey(picked.id), '1'); setShowPortrait(false); }} />
         : <SavedNoteGate kind="mode" id={picked.id} preset={card.values}>{initial => (
-            <CardQuestions initial={initial} questions={questions} hue={picked.look.hue} step={card.step} onStep={card.setStep} onSaved={card.saved}
+            <CardQuestions initial={initial} questions={questions} hue={picked.look.hue} sign="cluster" step={card.step} onStep={card.setStep} onSaved={card.saved}
               onSave={async data => {
                 await api.saveModeNote({ modeId: picked.id, ...data });
                 api.trackEvent(MODE_CARD_SAVED_EVENT, { modeId: picked.id, filledFields: Object.values(data).filter(v => v.trim()).length });

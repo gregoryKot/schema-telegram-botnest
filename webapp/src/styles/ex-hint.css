@@ -1,0 +1,13 @@
+/* Подсказка упражнения (ExHint) — одна на группу: тихая раскрывашка sd-why (note-sheet.css, вид проверки
+   убеждения), на компьютере раскрыта, на телефоне — строкой «подпись · заголовок ⌄» до поля (принцип 5:
+   шапка до первого поля на 390 — не выше ~230px). Здесь — пустая подпись и тело. Подключается из
+   sheet-exercises.css. Мелкий текст — --text-sub (принцип 6). */
+.ex2-hint > .ds-fold-btn { min-height: 48px; }
+.ex2-hint > .ds-fold-btn > .ds-label:empty { display: none; }
+.ex2-hint-body { padding-bottom: 14px; }
+.ex2-hint-body > :last-child { margin-bottom: 0; }
+.ex2-hint-text { margin: 0 0 10px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
+.ex2-hint-sub { margin: 16px 0 6px; color: var(--text-sub); }
+.ex2-hint-list { margin: 0 0 10px; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
+/* Колонка справа (экран без разворота): подсказка не липнет отдельно от «прошлых» под ней. */
+.ex2-aside > .ex2-hint + * { margin-top: 20px; }

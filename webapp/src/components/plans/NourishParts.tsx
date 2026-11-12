@@ -4,6 +4,7 @@
 // цифры во вкладке без подписи).
 import type { CSSProperties } from 'react';
 import { SignArt } from '../art/SignArt';
+import { inkVars } from '../history/needInk';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 
 export function NourishRow({ text, pending, onDelete }: { text: string; pending: boolean; onDelete: () => void }) {
@@ -18,11 +19,12 @@ export function NourishRow({ text, pending, onDelete }: { text: string; pending:
   );
 }
 
-/** Оценка за сегодня полоской; число — для чтения с экрана. */
-export function NeedScore({ score }: { score: number }) {
+/** Оценка за сегодня полоской цвета данных потребности (inkVars — тот же цвет, что в колесе и на шкале трекера);
+ *  число — для чтения с экрана. */
+export function NeedScore({ id, score }: { id: string; score: number }) {
   const v = Math.max(0, Math.min(10, score));
   return (
-    <span className="sk-need-score" role="img" aria-label={`${v}/10`} style={{ '--score': `${v * 10}%` } as CSSProperties}>
+    <span className="sk-need-score" role="img" aria-label={`${v}/10`} style={{ ...inkVars(id), '--score': `${v * 10}%` } as CSSProperties}>
       <i />
     </span>
   );

@@ -126,6 +126,20 @@ describe('AllTasksOverlay — группы, пусто, загрузка', () =>
     expect(history.hidden).toBe(false);
   });
 
+  // Ревью g6: свёрнутость считалась один раз при монтировании — отметил «Готово» у последнего активного, и
+  // оставался один свёрнутый заголовок «Выполнено» без строк.
+  it('последнее активное закрыто (перерендер с tasks=[]) — строки истории видны сами', () => {
+    const props = { onClose: vi.fn(), onOpen: vi.fn(), onComplete: vi.fn(), onAdd: vi.fn() };
+    const hist = [task({ id: 3, text: 'Готовая', done: true })];
+    const { rerender } = render(
+      <MemoryRouter><AllTasksOverlay title="Все задания" tasks={[task({ id: 1, text: 'Своя' })]} taskHistory={hist} {...props} /></MemoryRouter>,
+    );
+    expect((document.querySelector('.sk-done-group .sk-list') as HTMLElement).hidden).toBe(true);
+    rerender(<MemoryRouter><AllTasksOverlay title="Все задания" tasks={[]} taskHistory={[...hist, task({ id: 1, text: 'Своя', done: true })]} {...props} /></MemoryRouter>);
+    expect((document.querySelector('.sk-done-group .sk-list') as HTMLElement).hidden).toBe(false);
+    expect(screen.getByRole('button', { name: /Выполнено/ }).getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('только история — «Выполнено» раскрыто сразу', () => {
     renderOverlay([], [task({ id: 3, text: 'Готовая', done: true })]);
     expect(screen.getByRole('button', { name: /Выполнено/ }).getAttribute('aria-expanded')).toBe('true');
@@ -137,6 +151,8 @@ describe('AllTasksOverlay — группы, пусто, загрузка', () =>
     expect(screen.getByText(/Поставь цель и иди к ней/)).toBeTruthy();
     expect(screen.getAllByRole('button', { name: '+ Поставить цель' })).toHaveLength(1);
     expect(document.querySelector('.sk-group-title')).toBeNull();
+    // Ревью g6: пустой лист «задания» — в полный рост со сценой (Sprout с Check), а не полоса со знаком в углу.
+    expect(document.querySelector('.sk-tasks-empty-sheet.pa-sheet--scene > .pa-sheet-art svg.scn')).toBeTruthy();
   });
 
   it('загрузка: силуэт строк вместо «пусто»', () => {

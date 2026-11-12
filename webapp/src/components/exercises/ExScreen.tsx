@@ -74,22 +74,31 @@ export function ExScreen({ onBack, backLabel, ...body }: ExScreenProps) {
 }
 
 // ── Силуэт упражнения, пока грузится чанк (TaskExerciseHost): лист-герой сразу на бумаге упражнения (hue —
-// exerciseHue хоста), место знака справа, поле, на ≥901 — колонка подсказки; «Назад» — onBack хоста.
-export function ExScreenSkeleton({ onBack, hue }: { onBack: () => void; hue?: number }) {
+// exerciseHue хоста), место знака, поле; «Назад» — onBack хоста. Форма — как у самого упражнения: spread —
+// разворот (на ≥1024 высокий лист слева, строки справа), иначе — на ≥901 колонка подсказки справа.
+export function ExScreenSkeleton({ onBack, hue, spread }: { onBack: () => void; hue?: number; spread?: boolean }) {
   const hostBackLabel = useExBackLabel();
+  const hero = (
+    <div className="pp-paper pa-sheet ex2-skel-hero" style={{ '--h': hue ?? 70 } as CSSProperties}>
+      <div className="pa-sheet-body"><Skeleton width={120} height={12} /><Skeleton width="62%" height={30} /><Skeleton width="86%" height={14} /></div>
+      <div className="pa-sheet-art"><Skeleton height={88} radius={16} /></div>
+    </div>
+  );
   return (
     <div className="ex2-screen">
       <ExBar onBack={onBack} label={hostBackLabel} sticky />
-      <div className="ex2-body" aria-hidden>
-        <div className="ex2-main ex2-skel">
-          <div className="pp-paper pa-sheet ex2-skel-hero" style={{ '--h': hue ?? 70 } as CSSProperties}>
-            <div className="pa-sheet-body"><Skeleton width={120} height={12} /><Skeleton width="62%" height={30} /><Skeleton width="86%" height={14} /></div>
-            <div className="pa-sheet-art"><Skeleton height={88} radius={16} /></div>
-          </div>
-          <SkeletonCard height={220} />
+      {spread ? (
+        <div className="ex2-body ex2-body--spread" aria-hidden>
+          <SpreadLayout side={hero}>
+            <div className="ex2-skel"><SkeletonCard height={220} /><Skeleton width={180} height={44} radius={22} /></div>
+          </SpreadLayout>
         </div>
-        <aside className="ex2-aside ex2-skel-aside"><SkeletonCard height={180} /></aside>
-      </div>
+      ) : (
+        <div className="ex2-body" aria-hidden>
+          <div className="ex2-main ex2-skel">{hero}<SkeletonCard height={220} /></div>
+          <aside className="ex2-aside ex2-skel-aside"><SkeletonCard height={180} /></aside>
+        </div>
+      )}
     </div>
   );
 }

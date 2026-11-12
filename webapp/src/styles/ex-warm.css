@@ -1,7 +1,9 @@
 /* Упражнение «Тёплые слова» (WarmWordsEx, WarmWordNote). Подключается из sheet-exercises.css.
    Записки тёплой бумаги колонками разной высоты: на телефоне одна, с 640 — две, на широком экране — три
    (колонка экрана шире 720 только у этого экрана: записки, а не форма). */
-.ex2-body--single:has(.ex2-notes) { grid-template-columns: minmax(0, 980px); }
+/* Ширина колонки — одна во всех состояниях (пусто, загрузка, сбой, записки): шапка не прыгает с 720 на 980,
+   когда появляется первая запись (ревью g6). */
+.ex2-body--single:has(.ex2-warm) { grid-template-columns: minmax(0, 980px); }
 .ex2-count { margin: 0 0 14px; font-size: 13px; color: var(--text-sub); }
 .ex2-notes { column-count: 1; column-gap: 16px; }
 .ex2-notes > * { break-inside: avoid; margin-bottom: 16px; }
@@ -14,4 +16,4 @@
 .ex2-warm-by { display: flex; flex-direction: column; min-width: 0; }
 .ex2-warm-mode { font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--text); }
 .ex2-warm-when { font-size: 12px; line-height: 1.4; color: var(--text-sub); }
-@media (max-width: 767px) { .ex2-warm-text { font-size: 18px; } }
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .ex2-warm-text { font-size: 18px; } }

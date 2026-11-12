@@ -8,7 +8,7 @@ import { glueSpaces } from '../../../shared/src/utils/typo';
 import '../styles/sheet-tracker.css';
 import { BottomSheetShell } from './BottomSheetShell';
 import { EntitySheet } from './paper/EntitySheet';
-import { GlyphCheck } from './exercises/ExScreen';
+import { GlyphCheck } from './exercises/ExGlyphs';
 
 interface Props {
   plan: PracticePlan;

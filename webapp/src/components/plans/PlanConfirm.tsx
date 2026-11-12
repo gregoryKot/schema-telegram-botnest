@@ -8,7 +8,7 @@
 // наклейка соломы, время — плитки в ряд (на телефоне 2×2) с галочкой у выбранной, «Сохранить план» — залитая во
 // всю колонку, «.ics» — под ней; ритм — зазор 24 между полями (блоки слипались).
 import type { CSSProperties } from 'react';
-import { GlyphCheck } from '../exercises/ExScreen';
+import { GlyphCheck } from '../exercises/ExGlyphs';
 import { useTr } from '../../utils/addressForm';
 import { NEED_HUE, hueStyle } from '../../lib/tone';
 import type { NeedId } from '../../../../shared/src/needs/types';

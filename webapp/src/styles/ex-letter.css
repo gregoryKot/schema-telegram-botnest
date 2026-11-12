@@ -1,16 +1,5 @@
-/* Упражнения «Письмо» и «Безопасное место» (LetterEx, LetterDone, SafePlaceEx, SafePlaceDone)
-   и страница итога упражнения партии b18 (ex2-done-page: ещё «Критик или забота?»).
-   Подключается из sheet-exercises.css. Мелкий текст на цветной бумаге — --text-sub (APP_2026-11.md, принцип 6). */
-
-/* ── Наклейка соломы: «С чего начать» и подсказка, «Совет» и «Можно» — один лист, а не две карточки ── */
-.ex2-sticker { box-sizing: border-box; padding: 20px 22px 22px; border-radius: 20px; }
-.ex2-sticker > .ds-label { display: block; margin-bottom: 8px; color: var(--text-sub); }
-.ex2-sticker .ex2-note-h { color: var(--text); }
-.ex2-sticker .ex2-note-list li::before { color: var(--text-sub); }
-.ex2-sticker > .ds-label.ex2-sticker-next { margin-top: 18px; }
-@media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) {
-  .pa-spread-side .ex2-sticker { margin: 4px 6px 0 4px; transform: rotate(-0.8deg); }
-}
+/* Упражнения «Письмо» и «Безопасное место» (LetterEx, LetterDone, SafePlaceEx, SafePlaceDone); рамка итога —
+   ExDonePage (ex-done.css). Подключается из sheet-exercises.css. Мелкий текст на цветной бумаге — --text-sub (APP_2026-11.md, принцип 6). */
 
 /* ── Письмо: белый лист с полями на втором листе сирени (тот же рецепт, что подложка сцен) ── */
 .ex2-letter {
@@ -47,29 +36,6 @@
 }
 .ex2-letter--sealed .ex2-meta { margin-top: 10px; }
 
-/* ── Страница итога (LetterDone, SafePlaceDone, PhraseDoneScreen): лист «готово» по центру, рядом — прошлые ── */
-.ex2-done-page {
-  display: grid; grid-template-columns: minmax(0, 540px); justify-content: center; align-items: start; gap: 28px 48px;
-  box-sizing: border-box; padding: 32px clamp(16px, 4vw, 56px) 96px;
-}
-.ex2-done-page .pa-done { margin: 0; }
-.ex2-done-page .pa-done-title .it { font-style: italic; }
-.ex2-done-side { display: flex; flex-direction: column; min-width: 0; }
-.ex2-done-side > .ds-label { margin-bottom: 4px; color: var(--text-sub); }
-@media (min-width: 1024px) {
-  .ex2-done-page--side { grid-template-columns: minmax(0, 540px) 300px; }
-  .ex2-done-side { position: sticky; top: 88px; padding-top: 8px; }
-}
-@media (max-width: 767px) { .ex2-done-page { padding-top: 16px; padding-bottom: 72px; } }
-.ex2-past { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); }
-.ex2-past > .pp-art { margin-top: 2px; }
-.ex2-past-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ex2-past-date { font-size: 12px; color: var(--text-sub); font-variant-numeric: tabular-nums; }
-.ex2-past-snip {
-  font-family: var(--serif); font-style: italic; font-size: 15px; line-height: 1.45; color: var(--text);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-
 /* ── Безопасное место: вопросы, место полем-листом, чувства тетрадью ── */
 .ex2-ask { margin-bottom: 22px; }
 .ex2-ask-n { display: block; margin-bottom: 2px; font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--text-sub); }
@@ -84,9 +50,12 @@
 .ex2-sense-head { display: flex; align-items: center; gap: 10px; }
 .ex2-sense-head .ds-label { color: var(--text-sub); }
 .ex2-sense-mark { display: block; flex: none; width: 34px; height: 22px; overflow: visible; }
+/* Поле чувства растёт с текстом от одной до трёх строк (field-sizing, как .pa-field); без поддержки — две строки
+   (rows). Без многоточия: подсказка «…мхом покрытый камень» и длинный ответ видны целиком (ревью g6). */
 .ex2-sense-input {
-  box-sizing: border-box; width: 100%; min-height: 40px; padding: 4px 0 4px 44px; border: 0; outline: none;
-  background: transparent; font: 400 17px/1.4 var(--serif); color: var(--text); text-overflow: ellipsis;
+  box-sizing: border-box; display: block; width: 100%; min-height: 44px; max-height: calc(3 * 1.4em + 12px); padding: 6px 0 6px 44px;
+  border: 0; outline: none; resize: none; field-sizing: content; overflow-wrap: anywhere;
+  background: transparent; font: 400 17px/1.4 var(--serif); color: var(--text);
 }
 .ex2-sense-input::placeholder { color: var(--text-faint); }
 .ex2-sense:focus-within { border-bottom-color: var(--accent); }
@@ -104,7 +73,7 @@
 .ex2-haven-line .ex2-sense-mark { margin-top: 1px; }
 .ex2-haven-line .ds-label { color: var(--text-sub); }
 .ex2-haven-text { margin: 2px 0 0; font-family: var(--serif); font-size: 17px; line-height: 1.5; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
-@media (max-width: 767px) {
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .ex2-letter { --ex2-margin-x: 29px; padding: 18px 16px 16px 44px; }
   .ex2-letter textarea { min-height: 224px; font-size: 18px; }
   .pa-done[data-entity='safe_place'] .pa-done-scene > .scn { width: 100%; }

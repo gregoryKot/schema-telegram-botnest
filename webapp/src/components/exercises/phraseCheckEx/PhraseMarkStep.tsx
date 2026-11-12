@@ -21,7 +21,9 @@ export function PhraseMarkStep({
     <>
       <PhraseSaid text={phrase} />
       <div className="ex2-prompt-label ex2-prompt-label--sm">{c.question}</div>
-      <div className="ex2-choices">
+      {/* key — новые кнопки на каждой примете: иначе React переиспользует те же, и залипший на таче hover
+          (или фокус) прошлого ответа ложится подсказкой на вариант следующей приметы (ревью g6). */}
+      <div className="ex2-choices" key={index}>
         <button type="button" className="ex2-choice" onClick={() => onAnswer(c.id, false)}>{c.care}</button>
         <button type="button" className="ex2-choice" onClick={() => onAnswer(c.id, true)}>{c.critic}</button>
       </div>

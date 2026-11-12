@@ -122,6 +122,29 @@ describe('TaskCreateSheet — сохранение своей цели', () => {
   });
 });
 
+// Ревью g6: схема выбирается тем же PickGroups, что режим (правило №3), — строкой .sd-mode-card, не своей «пилюлей».
+describe('TaskCreateSheet — выбор схемы общим списком групп', () => {
+  it('схема — строка .sd-mode-card, выбранная получает is-selected и уходит в задание', async () => {
+    mockApi.createTask.mockResolvedValue({ id: 1 });
+    const { container } = render(
+      <MemoryRouter>
+        <TaskCreateSheet defaultType="schema_intro" onCreated={vi.fn()} onClose={vi.fn()} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('.sk-pick, .sk-domain')).toBeNull();
+    const row = screen.getByText('Дефективность / Стыд').closest('.sd-mode-card')!;
+    expect(row).toBeTruthy();
+    expect(row.closest('.sd-groups')!.classList.contains('is-clamped')).toBe(true);
+    fireEvent.click(row);
+    expect(row.classList.contains('is-selected')).toBe(true);
+    expect(container.querySelectorAll('.sd-mode-card.is-selected')).toHaveLength(1);
+    fireEvent.click(screen.getByText('Поставить цель'));
+    await waitFor(() => expect(mockApi.createTask).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'schema_intro', text: 'defectiveness' }),
+    ));
+  });
+});
+
 function renderFor(props: Partial<React.ComponentProps<typeof TaskCreateSheet>>) {
   return render(
     <MemoryRouter>

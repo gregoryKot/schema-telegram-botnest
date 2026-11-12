@@ -87,11 +87,13 @@
 .chw-hints > .ds-label { margin: 0 0 8px; }
 .chw-hints-lede { margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: var(--text-sub); }
 .chw-hint { padding: 18px 20px 20px; margin-bottom: 14px; border-radius: 20px; }
-.chw-hint-head { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; align-items: center; margin-bottom: 14px; }
+.chw-hint-head { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; row-gap: 2px; align-items: center; margin-bottom: 14px; }
 .chw-hint-sign { grid-row: 1 / span 2; align-self: start; margin-top: 2px; }
-.chw-hint-name { font-size: 16px; font-weight: 600; color: var(--text); }
+/* Имя и оценка — одной строкой, пока влезают; не влезли (320) — оценка переносится под имя, а не наезжает на него. */
+.chw-hint-title { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 12px; row-gap: 2px; min-width: 0; }
+.chw-hint-name { min-width: 0; overflow-wrap: anywhere; font-size: 16px; font-weight: 600; color: var(--text); }
 .chw-hint-score { font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--text-sub); }
-.chw-hint-domain { grid-column: 2 / -1; display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.4; color: var(--text-sub); }
+.chw-hint-domain { grid-column: 2; display: flex; align-items: center; gap: 6px; font-size: 13px; line-height: 1.4; color: var(--text-sub); }
 .chw-hint-domain-art { flex: none; display: inline-flex; }
 .chw-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chw-chip {

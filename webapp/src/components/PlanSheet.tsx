@@ -14,7 +14,7 @@ import { PlanConfirm } from './plans/PlanConfirm';
 import { PlanDone } from './plans/PlanDone';
 import { PaperAlert } from './paper/PaperAlert';
 import { SignArt } from './art/SignArt';
-import { glueSpaces } from '../../../shared/src/utils/typo';
+import { glue, glueSpaces } from '../../../shared/src/utils/typo';
 
 interface Props {
   needId: string;
@@ -39,6 +39,8 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
   } = state;
   const look = needLook(needId as NeedId);
   const pick = phase === 'pick';
+  // Пояснение листа плана (до b20 — подпись белой карточки «Потребность») — подписью листа-героя (ревью g6).
+  const pickLede = <>{glue('Потребность восстанавливается через маленькое конкретное действие')}<br />{glue('Один маленький конкретный шаг – уже много.')}</>;
 
   return (
     <ExScreen
@@ -52,7 +54,7 @@ export function PlanSheet({ needId, needLabel, onClose, onSaved }: Props) {
         ? tr('Что сделаешь завтра?', 'Что сделаете завтра?')
         : <>Запланировать<br /><span className="sk-title-step">{selectedText.length > 30 ? selectedText.slice(0, 30) + '…' : selectedText}</span></>
       }
-      lede={pick ? 'Один маленький конкретный шаг – уже много.' : undefined}
+      lede={pick ? pickLede : undefined}
     >
       {pick && (
         <div className="sk-plan-pick">

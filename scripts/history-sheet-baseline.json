@@ -71,13 +71,9 @@
     "reason": "Выбор режима на рамке ExScreen: шаг потоков ModeEntrySheet.tsx и QuickEntrySheet.tsx, в каждом useHistorySheet вызван один раз; onBack приходит пропом (goBack родителя).",
     "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
   },
-  "webapp/src/components/exercises/cardFlow/CardDone.tsx": {
-    "reason": "«Карточка сохранена» карточек схемы и режима на рамке экрана упражнения (ex2-screen + ExBar, лист DoneSheet): шаг SchemaEx/ModeEx (FlashcardEx.tsx), где useHistorySheet вызван один раз; «Назад» и «Закрыть» приходят пропом onClose (goBack).",
-    "since": "b17-ex-cards, 2026-11"
-  },
-  "webapp/src/components/exercises/beliefCheck/BeliefDoneScreen.tsx": {
-    "reason": "Экран «Готово» проверки убеждения на рамке экрана упражнения (ex2-screen + ExBar, лист DoneSheet): шаг BeliefCheckEx.tsx, где useHistorySheet вызван один раз; «Назад» приходит пропом goBack.",
-    "since": "гейт рамок ExScreen/BottomSheetShell, 2026-11"
+  "webapp/src/components/exercises/ExDonePage.tsx": {
+    "reason": "Общая рамка итога упражнения (ex2-screen + ExBar, лист DoneSheet и колонка «прошлых»): её берут CardDone, BeliefDoneScreen, LetterDone, SafePlaceDone и PhraseDoneScreen — шаги своих упражнений (FlashcardEx, BeliefCheckEx, LetterEx, SafePlaceEx, PhraseCheckEx), где useHistorySheet вызван один раз; «Назад» приходит пропом onBack (goBack упражнения). Хук в рамке дал бы вторую запись истории.",
+    "since": "g6-exercises-fix r1, 2026-11"
   },
   "webapp/src/components/exercises/childhoodWheel/ChildhoodFill.tsx": {
     "reason": "Шаг заполнения «Колеса детства» на рамке ExScreen: поток ChildhoodWheelEx.tsx, где useHistorySheet вызван один раз; onBack приходит пропом goBack.",

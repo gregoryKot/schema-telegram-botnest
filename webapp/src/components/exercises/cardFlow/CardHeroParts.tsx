@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { GlyphArrowLeft } from '../ExGlyphs';
 import { SignArt } from '../../art/SignArt';
-import { DiaryAside } from '../../diary/DiaryStepCard';
+import { ExHint, ExHintText } from '../ExHint';
 import type { SignKey } from '../../../../../shared/src/theme/entityLook';
 import { glue } from '../../../../../shared/src/utils/typo';
 
@@ -22,16 +22,17 @@ export function CardHeroLinks({ changeLabel, onChange, about }: {
   );
 }
 
-/** Подсказка вопросов карточки — как у мастера дневника (DiaryAside): на ≥1024 в колонке разворота
- *  под листом, на телефоне — после формы (diary-wizard.css, «Разворот мастера»), шапка до поля не
- *  растёт. Пояснение «что это за карточка» — только на первом вопросе. */
-export function CardAside({ explainer, hue, eyebrow, title, text }: {
-  explainer?: string; hue: number; eyebrow: string; title: ReactNode; text: ReactNode;
+/** Подсказка вопросов карточки — общая ExHint упражнений: на ≥1024 раскрыта в колонке разворота под
+ *  листом, на телефоне — свёрнутой строкой до поля, шапка до поля не растёт (принцип 5). Пояснение «что
+ *  это за карточка» — только на первом вопросе: на ≥1024 над подсказкой, на телефоне — после формы
+ *  (ex-cards.css), как у мастера дневника. */
+export function CardAside({ explainer, eyebrow, title, text }: {
+  explainer?: string; eyebrow: string; title: ReactNode; text: ReactNode;
 }) {
   return (
     <>
       {explainer && <p className="sd-explainer">{glue(explainer)}</p>}
-      <DiaryAside hue={hue} eyebrow={eyebrow} title={title} text={text} />
+      <ExHint label={eyebrow} title={title}><ExHintText>{text}</ExHintText></ExHint>
     </>
   );
 }

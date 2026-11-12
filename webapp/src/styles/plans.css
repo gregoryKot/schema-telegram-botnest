@@ -50,7 +50,7 @@
 .sk-need-sign .pp-art--row { width: 56px; height: 30px; }
 .sk-need-name { font-size: 14px; font-weight: 600; line-height: 1.25; overflow-wrap: break-word; }
 .sk-need-score { display: block; width: 100%; height: 4px; margin-top: auto; border-radius: 2px; background: color-mix(in srgb, var(--text) 12%, transparent); overflow: hidden; }
-.sk-need-score > i { display: block; width: var(--score); height: 100%; border-radius: 2px; background: var(--text-sub); }
+.sk-need-score > i { display: block; width: var(--score); height: 100%; border-radius: 2px; background: var(--need-ink); }
 
 /* ── Лист плана ── */
 .sk-plan-pick, .sk-plan-confirm { display: flex; flex-direction: column; gap: 24px; }

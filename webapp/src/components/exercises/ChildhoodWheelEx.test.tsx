@@ -354,7 +354,7 @@ describe('ChildhoodWheelEx — «Связать с сегодня» и загр�
         <ChildhoodWheelEx onBack={() => order.push('back')} onOpenToday={() => order.push('today')} />
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole('button', { name: /Связать с сегодня/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Связать с\sсегодня/ }));
     await waitFor(() => expect(order).toEqual(['back', 'today']));
   });
 

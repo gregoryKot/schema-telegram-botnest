@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { ExScreenSkeleton } from '../../components/exercises/ExScreen';
 import { ExBackLabelContext, EX_BACK_DEFAULT } from '../../components/exercises/exBackLabel';
 import type { OpenExercise } from './useTaskLauncher';
-import { exerciseHue } from './exerciseHue';
+import { exerciseHue, exerciseSpread } from './exerciseHue';
 
 // Упражнения поверх экрана — один набор на «Сегодня» и «Практику». Каждое упражнение
 // само полноэкранное и само держит «Назад» через useHistorySheet; onComplete
@@ -29,7 +29,7 @@ export function TaskExerciseHost({ open, onBack, onComplete, onOpenTracker, back
   if (!open) return null;
   return (
     <ExBackLabelContext.Provider value={backLabel}>
-    <Suspense fallback={<ExScreenSkeleton onBack={onBack} hue={exerciseHue(open)} />}>
+    <Suspense fallback={<ExScreenSkeleton onBack={onBack} hue={exerciseHue(open)} spread={exerciseSpread(open)} />}>
       {open.ex === 'belief' && <BeliefCheckEx onBack={onBack} onComplete={onComplete} />}
       {open.ex === 'schema' && <SchemaEx onBack={onBack} initialSchemaId={open.id} onComplete={onComplete} />}
       {open.ex === 'mode' && <ModeEx onBack={onBack} initialModeId={open.id} onComplete={onComplete} />}

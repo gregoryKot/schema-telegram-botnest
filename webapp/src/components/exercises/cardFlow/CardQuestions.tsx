@@ -10,6 +10,7 @@ import { PaperAlert } from '../../paper/PaperAlert';
 import { LimitedTextarea } from '../../../../../shared/src/components/LimitedTextarea';
 import { NOTE_CARD_FIELD_MAX } from '../../../../../shared/src/limits/textLimits';
 import type { Q } from '../flashcardQuestions';
+import type { SignKey } from '../../../../../shared/src/theme/entityLook';
 
 // Вопросы карточки схемы или режима (SchemaEx/ModeEx): полоски вопросов тоном домена или группы,
 // вопрос на бумаге страницы — цветная бумага у листа-героя над ним (APP_2026-11.md, принцип 4):
@@ -17,8 +18,10 @@ import type { Q } from '../flashcardQuestions';
 // Шаг держит экран: лист-герой со второго вопроса компактнее.
 // Аудит 2026-08-22 (находка №2): сохранение с состоянием отправки, защитой от двойного нажатия
 // и видимым сбоем — человек должен понимать, приняли ли нажатие.
-export function CardQuestions({ questions, hue, step, onStep, initial, onSave, onSaved }: {
+export function CardQuestions({ questions, hue, sign, step, onStep, initial, onSave, onSaved }: {
   questions: Q[]; hue: number; step: number; onStep: (n: number) => void;
+  /** Знак карточки у сбоя сохранения — тот же, что у сбоя загрузки (SavedNoteGate): Layers или Cluster. */
+  sign: SignKey;
   initial?: Record<string, string>;
   onSave: (data: Record<string, string>) => Promise<void>;
   onSaved: (data: Record<string, string>) => void;
@@ -48,7 +51,7 @@ export function CardQuestions({ questions, hue, step, onStep, initial, onSave, o
       <LimitedTextarea max={NOTE_CARD_FIELD_MAX} ref={areaRef} className="ds-textarea sd-area" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
     </section>
     {detectCrisisAny(...Object.values(data)) && <CrisisCard surface="flashcard" />}
-    {isLast && error && <PaperAlert title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')} />}
+    {isLast && error && <PaperAlert sign={sign} title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')} />}
     <div className="ex2-foot">
       <button className="ds-btn ex2-ghost" disabled={step === 0} onClick={() => onStep(Math.max(0, step - 1))}><GlyphArrowLeft /> Назад</button>
       <span className="ex2-spacer" />

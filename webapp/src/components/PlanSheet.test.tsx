@@ -86,6 +86,14 @@ describe('PlanSheet — свой текст', () => {
     expect(screen.getByText('Что планируете?')).toBeTruthy();
   });
 
+  // Ревью g6: пояснение листа плана пропало вместе с белой карточкой aside в b20 — вернулось подписью листа-героя.
+  it('шаг выбора: пояснение «Потребность восстанавливается…» и «Один маленький шаг» — подписью листа', async () => {
+    await act(async () => renderSheet({ needId: 'nonexistent_need' }, 'ty'));
+    const sub = screen.getByText(/Потребность\s+восстанавливается\s+через\s+маленькое\s+конкретное\s+действие/);
+    expect(sub.closest('.pa-sheet')).toBeTruthy();
+    expect(sub.textContent).toMatch(/Один\s+маленький\s+конкретный\s+шаг\s+–\s+уже\s+много\./);
+  });
+
   it('форма «ты» по умолчанию показывает «Что планируешь?»', async () => {
     await act(async () => renderSheet({ needId: 'nonexistent_need' }, 'ty'));
     expect(screen.getByText('Что планируешь?')).toBeTruthy();

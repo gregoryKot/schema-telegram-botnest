@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../api';
 import { ExScreen, GlyphCheck } from './ExScreen';
-import { ExBar } from './ExBar';
-import { useExBackLabel } from './exBackLabel';
 import { LetterDone } from './LetterDone';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
@@ -15,7 +13,8 @@ import { letterLines, wordsLabel } from './letterWords';
 import { EXERCISE_DRAFT_KEYS } from '../../utils/drafts';
 import { restoreDraft, useDraftAutosave } from '../../../../shared/src/utils/useDraftAutosave';
 import { exerciseCard } from '../../../../shared/src/exercises/exerciseCatalog';
-import { ENTITY_LOOK, PAPER_HUE } from '../../../../shared/src/theme/entityLook';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
+import { ExHint, ExHintList, ExHintSub, ExHintText } from './ExHint';
 import { LimitedTextarea } from '../../../../shared/src/components/LimitedTextarea';
 import { LETTER_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 
@@ -23,9 +22,9 @@ import { LETTER_TEXT_MAX } from '../../../../shared/src/limits/textLimits';
 const [TITLE_HEAD, ...TITLE_TAIL] = exerciseCard('letter').title.split(' ');
 
 // Вид (редизайн 2026-11, b18): герой — лист сирени письма со сценой SceneLetter (строки — только
-// написанные), разворот на компьютере; «С чего начать» и подсказка — одной наклейкой соломы (на
-// телефоне — до письма, а не после «Запечатать»); письмо — белый лист с полями на втором листе
-// сирени; сбой — PaperAlert, текст остаётся в поле. Итог — LetterDone в той же рамке экрана.
+// написанные), разворот на компьютере; «С чего начать» и подсказка — общая ExHint (на телефоне — свёрнутой
+// строкой до письма, а не после «Запечатать»); письмо — белый лист с полями на втором листе
+// сирени; сбой — PaperAlert, текст остаётся в поле. Итог — LetterDone в общей рамке ExDonePage.
 export function LetterEx({
   onBack,
   onComplete,
@@ -35,7 +34,6 @@ export function LetterEx({
 }) {
   const tr = useTr();
   const goBack = useHistorySheet(onBack);
-  const backLabel = useExBackLabel();
   const [text, setText] = useState(() => restoreDraft<{ text: string }>(EXERCISE_DRAFT_KEYS.letter)?.text ?? '');
   const [done, setDone] = useState(false);
   const [sealing, setSealing] = useState(false);
@@ -82,11 +80,8 @@ export function LetterEx({
 
   if (done) {
     return (
-      <div className="ex2-screen">
-        <ExBar onBack={goBack} label={backLabel} sticky />
-        <LetterDone text={text} others={pastLetters.filter((l) => l.id !== sealedId)} onEdit={() => setDone(false)} onClose={goBack}
-          lede={tr('Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернись к нему через неделю и перечитай вслух.', 'Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернитесь к нему через неделю и перечитайте вслух.')} />
-      </div>
+      <LetterDone text={text} others={pastLetters.filter((l) => l.id !== sealedId)} onEdit={() => setDone(false)} onClose={goBack}
+        lede={tr('Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернись к нему через неделю и перечитай вслух.', 'Письмо — тоже работа, и порой самая важная. Оно лежит в разделе «Мой путь»: вернитесь к нему через неделю и перечитайте вслух.')} />
     );
   }
 
@@ -107,20 +102,14 @@ export function LetterEx({
         'Мысленно сядьте рядом со своим внутренним ребёнком — тем, кому тогда было трудно. В схема-терапии эту часть называют Уязвимым Ребёнком. Скажите то, что тогда важно было услышать.',
       )}
       aside={
-        <div className="pp-paper ex2-sticker" style={hueStyle(PAPER_HUE.straw)}>
-          <div className="ds-label">С чего начать</div>
-          <h3 className="ex2-note-h">Три вопроса перед тем как писать</h3>
-          <ul className="ex2-note-list">
-            <li>Какой момент из детства – самый трудный?</li>
-            <li>Какие были чувства тогда? Чего не хватало?</li>
-            <li>Что он должен был услышать – но не услышал?</li>
-          </ul>
-          <div className="ds-label ex2-sticker-next">Подсказка</div>
-          <p className="ex2-note-body">
+        <ExHint label="С чего начать" title="Три вопроса перед тем как писать">
+          <ExHintList items={['Какой момент из детства – самый трудный?', 'Какие были чувства тогда? Чего не хватало?', 'Что он должен был услышать – но не услышал?']} />
+          <ExHintSub>Подсказка</ExHintSub>
+          <ExHintText>
             {tr('Не редактируй, пиши как идёт. Если становится слишком тяжело — остановись и просто посиди.',
               'Не редактируйте, пишите как идёт. Если становится слишком тяжело — остановитесь и просто посидите.')}
-          </p>
-        </div>
+          </ExHintText>
+        </ExHint>
       }
     >
       <div className="ex2-letter" style={hueStyle(ENTITY_LOOK.letter.hue)}>

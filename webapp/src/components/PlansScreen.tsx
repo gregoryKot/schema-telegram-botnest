@@ -11,7 +11,7 @@ import { PlanNeedPicker } from './plans/PlanNeedPicker';
 import { PlanCard } from './plans/PlanCard';
 import { EntitySheet } from './paper/EntitySheet';
 import { PaperAlert } from './paper/PaperAlert';
-import { GlyphArrowLeft } from './exercises/ExScreen';
+import { GlyphArrowLeft } from './exercises/ExGlyphs';
 import { useNotifyReach } from '../../../shared/src/settings/useNotifyReach';
 
 interface Props {

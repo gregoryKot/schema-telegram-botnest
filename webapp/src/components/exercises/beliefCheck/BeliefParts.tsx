@@ -3,9 +3,8 @@
 // BeliefCheckEx.tsx и EviList.tsx (правило №7: файл с полем — файл с детекцией).
 import { PAPER } from '../../art/paper';
 import { DiaryTicks } from '../../diary/DiaryStepCard';
-import { NeedFold } from '../../NeedFold';
-import { isPhoneLayout } from '../../../utils/phoneLayout';
-import { glue, glueSpaces } from '../../../../../shared/src/utils/typo';
+import { ExHint, ExHintList, ExHintText } from '../ExHint';
+import { glueSpaces } from '../../../../../shared/src/utils/typo';
 
 export type EviSide = 'for' | 'against';
 
@@ -32,16 +31,15 @@ export function BeliefProgress({ steps, step, completed, hue, onJump }: {
   );
 }
 
-/** Подсказка шага: на компьютере раскрыта в колонке разворота под листом, на телефоне — свёрнутой
- *  строкой между листом и полем (принцип 5; механика раскрытия — общая NeedFold, вид — sd-why).
- *  Подписи-капители нет: «Шаг N из 4» уже стоит у полосок, заголовок подсказки — Literata. */
+/** Подсказка шага — общая ExHint (на компьютере раскрыта в колонке разворота под листом, на телефоне —
+ *  свёрнутой строкой между листом и полем, принцип 5). Подписи-капители нет: «Шаг N из 4» уже стоит у
+ *  полосок, заголовок подсказки — Literata. */
 export function BeliefHint({ hint }: { hint: { title: string; body: string; list: string[] } }) {
   return (
-    <NeedFold className="sd-why ex2-belief-hint" title="" defaultOpen={!isPhoneLayout()}
-      sub={<span className="sd-why-title">{glue(hint.title)}</span>}>
-      <p className="sd-why-body">{glue(hint.body)}</p>
-      <ul className="ex2-belief-hint-list">{hint.list.map((x) => <li key={x}>{glue(x)}</li>)}</ul>
-    </NeedFold>
+    <ExHint title={hint.title}>
+      <ExHintText>{hint.body}</ExHintText>
+      <ExHintList items={hint.list} />
+    </ExHint>
   );
 }
 

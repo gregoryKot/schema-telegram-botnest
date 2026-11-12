@@ -54,6 +54,7 @@ export default defineConfig({
         'tracker-fit.spec.ts',
         'screen-customize.spec.ts',
         'sheet-scroll.spec.ts',
+        'wheel-fit.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },

@@ -10,12 +10,17 @@
 .sk-tasks-spread .pa-spread-main { gap: 28px; }
 .sk-tasks-empty { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 560px; margin: 0 auto; }
 .sk-tasks-empty .ds-btn { align-self: stretch; }
-/* Пусто на компьютере и планшете — лист колонкой, знак сверху крупно (как лист разворота): полоса 560 со знаком
-   в углу читалась строкой, а не пустым состоянием раздела. Сдвиг знака — поле его холста, как у .pa-spread-side. */
+/* Пусто — лист «задания» в полный рост: сцена (Sprout с Check) сверху во всю ширину листа, под ней название и
+   подпись, ниже одна кнопка; и на телефоне, а не узкой полосой со знаком в углу (ревью g6, принцип 1). */
+.sk-tasks-empty .pa-sheet.sk-tasks-empty-sheet { grid-template-columns: minmax(0, 1fr); row-gap: 12px; padding: 20px 24px 26px; }
+/* Колонка и строка сцены заданы явно: на листе ≤440 общий лист ставит картинку во вторую колонку (paper-app.css) —
+   здесь она сверху во всю ширину, иначе название ложилось на сцену, а подпись сжималась в столбик по слову. */
+.sk-tasks-empty .pa-sheet.sk-tasks-empty-sheet > .pa-sheet-art { order: -1; grid-column: 1; grid-row: 1; justify-self: center; width: min(100%, 280px); }
+.sk-tasks-empty .pa-sheet.sk-tasks-empty-sheet > .pa-sheet-art > .scn { width: 100%; }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .sk-tasks-empty { margin-top: 4vh; }
-  .sk-tasks-empty .pa-sheet { grid-template-columns: minmax(0, 1fr); row-gap: 16px; padding: 32px 36px 36px; }
-  .sk-tasks-empty .pa-sheet-art { order: -1; justify-self: start; justify-content: flex-start; width: 180px; margin-left: -20px; }
+  .sk-tasks-empty .pa-sheet.sk-tasks-empty-sheet { row-gap: 16px; padding: 28px 36px 36px; }
+  .sk-tasks-empty .pa-sheet.sk-tasks-empty-sheet > .pa-sheet-art { width: min(100%, 340px); }
   .sk-tasks-empty .pa-sheet-title { font-size: 34px; }
 }
 

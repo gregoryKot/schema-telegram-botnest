@@ -34,7 +34,8 @@ export function PhraseWarmToggle({ rewrite, checked, onChange }: {
 }) {
   const hasRewrite = Boolean(rewrite.trim());
   return (
-    <div className={'ex2-check' + (hasRewrite ? '' : ' is-off')}>
+    // Вся карточка — подпись флажка: нажимается любая точка (знак и поля тоже), зона ≥44 без смены вида (ревью g6).
+    <label className={'ex2-check' + (hasRewrite ? '' : ' is-off')} htmlFor="phrase-check-warm-words">
       <input
         id="phrase-check-warm-words"
         type="checkbox"
@@ -43,12 +44,12 @@ export function PhraseWarmToggle({ rewrite, checked, onChange }: {
         onChange={(e) => onChange(e.target.checked)}
       />
       <SignArt sign={ENTITY_LOOK.warm_words.sign} size="row" />
-      <label htmlFor="phrase-check-warm-words">
+      <span className="ex2-check-text">
         Добавить в «Тёплые слова»
         <small>
           Будет лежать вместе с другими словами поддержки — перечитать, когда снова накроет.
         </small>
-      </label>
-    </div>
+      </span>
+    </label>
   );
 }

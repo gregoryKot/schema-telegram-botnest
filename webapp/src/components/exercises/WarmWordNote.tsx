@@ -6,6 +6,7 @@ import { hueStyle } from '../../lib/tone';
 import { getModeById } from '../../schemaTherapyData';
 import { warmNoteLook } from './warmWordsLook';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
+import { keepHyphenWords } from '../../../../shared/src/utils/keepHyphenWords';
 import type { WarmWordsItem } from '../../../../shared/src/warmWords/collectWarmWords';
 import { WARM_SOURCE_LABEL, warmWordTitle } from '../../../../shared/src/warmWords/warmWordsText';
 
@@ -21,7 +22,7 @@ export function WarmWordNote({ item, index }: { item: WarmWordsItem; index: numb
   const look = warmNoteLook(item, index);
   return (
     <article className="pp-paper ex2-warm-note" style={hueStyle(look.hue)}>
-      <p className="ex2-warm-text">{glueSpaces(item.text)}</p>
+      <p className="ex2-warm-text">{keepHyphenWords(glueSpaces(item.text))}</p>
       <div className="ex2-warm-meta">
         <SignArt sign={look.sign} size="row" />
         <div className="ex2-warm-by">

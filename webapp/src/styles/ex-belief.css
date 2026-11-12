@@ -1,18 +1,16 @@
 /* Упражнение «Проверка убеждения» (BeliefCheckEx, beliefCheck/*). Подключается из sheet-exercises.css.
-   Шаг — как у мастера дневника (sd-ticks, sd-step-q, sd-area — diary-wizard.css), подсказка — тихая
-   раскрывашка sd-why (note-sheet.css); здесь — своё: камешки чаш, доводы, сводка, итог. */
+   Шаг — как у мастера дневника (sd-ticks, sd-step-q, sd-area — diary-wizard.css), подсказка — общая ExHint
+   (ex-hint.css); здесь — своё: камешки чаш, доводы, сводка, итог. */
 .ex2-belief { display: flex; flex-direction: column; gap: 12px; }
 .ex2-belief-progress { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
-.ex2-belief-progress > .sd-ticks { margin-bottom: 4px; }
+/* Зазор под полосками ≥10px: зона нажатия полоски (.sd-tick, margin-block −10px) не уходит под «Шаг N из 4». */
+.ex2-belief-progress > .sd-ticks { margin-bottom: 6px; }
 .ex2-belief-step { color: var(--text-sub); }
 .ex2-belief-quote { font-style: italic; }
 /* Живые весы на листе-герое крупнее знака: камешки доводов должны читаться и на полосе второго шага. */
 .ex2-hero.pa-sheet > .pa-sheet-art:has(> .ex2-belief-scales) { width: 112px; }
 @media (min-width: 1024px) and (min-height: 501px), (min-width: 1024px) and (pointer: fine) { .pa-spread-side .ex2-hero.pa-sheet > .pa-sheet-art:has(> .ex2-belief-scales) { width: 220px; } }
 .ex2-belief > .ex2-foot { margin-top: 12px; }
-/* Подсказка шага: подписи-капители нет — заголовок Literata (BeliefHint). */
-.ex2-belief-hint > .ds-fold-btn > .ds-label:empty { display: none; }
-.ex2-belief-hint-list { margin: -6px 0 14px; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); }
 
 /* ── Камешек чаши (Pebble): «за» — мох, «против» — глина, как на весах листа-героя ── */
 .ex2-pebble { flex: none; width: 16px; height: 11px; }
@@ -38,15 +36,12 @@
 .ds-textarea.ex2-reframe { min-height: calc(7.5em + 26px); field-sizing: content; font-family: var(--serif); font-size: 18px; line-height: 1.5; }
 
 /* ── Итог (BeliefDoneScreen): следующий шаг со знаком схем и прошлые проверки ── */
-.ex2-next { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; padding: 14px 18px 16px 14px; border-radius: 18px; }
+/* «Что попробовать дальше» — плоским блоком: перехода к карточке схемы нет, бумага-карточка выглядела бы нажимаемой. */
+.ex2-next { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; padding: 2px 0 0; }
 .ex2-next-sign { display: flex; padding-top: 2px; }
 .ex2-next-label { color: var(--text-sub); }
 .ex2-next-title { margin: 4px 0; font: 400 20px/1.25 var(--serif); color: var(--text); }
 .ex2-next-text { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-sub); }
-.ex2-belief-past { padding: 14px 18px 4px; }
-.ex2-belief-past-head { margin-bottom: 2px; color: var(--text-sub); }
-.ex2-belief-past .ex2-hist-row:last-child { border-bottom: 0; }
-.ex2-belief-past .ex2-hist-date { color: var(--text-sub); }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   /* Главная кнопка шага — во всю ширину отдельной строкой, «Назад» — над ней слева. */
