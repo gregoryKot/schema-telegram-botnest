@@ -1,7 +1,11 @@
 // Сводная карточка дневника: тип, число записей, дата первой записи.
 // Приватный текст записей в картинку НЕ попадает — только счётчики.
+// Лист персика дневника со знаком Pebbles (ENTITY_LOOK diary); цвет и эмодзи
+// дневника на картинку не идут — эмодзи остаётся только в тексте шаринга.
 import {
+  CARD_LOOK,
   FOOTER_H,
+  STAT_TILE_H,
   beginCard,
   header,
   headerHeight,
@@ -12,10 +16,11 @@ import {
 import { pluralEntries } from '../shareTexts';
 
 export interface DiaryCardData {
-  emoji: string;
+  /** Эмодзи дневника — только для текста шаринга, на картинку не идёт. */
+  emoji?: string;
   title: string;
-  /** CSS-переменная или hex */
-  color: string;
+  /** Цвет дневника на сайте; лист карточки — бумага дневника (CARD_LOOK.diary). */
+  color?: string;
   count: number;
   /** «3 мая» — дата первой записи (null, если нет) */
   since: string | null;
@@ -37,20 +42,22 @@ export function earliestDateLabel(
 
 export function drawDiaryCard(canvas: HTMLCanvasElement, d: DiaryCardData) {
   const subtitle = d.since ? `веду с ${d.since}` : undefined;
-  const H = headerHeight(1, Boolean(subtitle)) + 12 + 66 + 16 + FOOTER_H;
-  const c = beginCard(canvas, H, { accent: d.color, accent2: 'var(--accent)' });
+  const H =
+    headerHeight(1, Boolean(subtitle)) + 4 + STAT_TILE_H + 14 + FOOTER_H;
+  const c = beginCard(canvas, H, { hue: CARD_LOOK.diary.hue });
 
   const contentY = header(c, {
     eyebrow: 'Дневник',
-    title: `${d.emoji} ${d.title}`,
+    title: d.title,
     subtitle,
+    sign: CARD_LOOK.diary.sign,
   });
 
   const tiles: StatTile[] = [
     { label: 'Записей', value: String(d.count), hint: pluralEntries(d.count) },
   ];
   if (d.since) tiles.push({ label: 'Первая запись', value: d.since });
-  drawStatTiles(c, tiles, contentY + 12);
+  drawStatTiles(c, tiles, contentY + 4);
 
   footer(c, d.title);
 }

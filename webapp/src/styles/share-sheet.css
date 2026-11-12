@@ -1,8 +1,17 @@
-/* Лист шаринга карточки (ShareCardSheet, WeeklyCardSheet). Подключается сборником sheet-diary.css. */
-.sd-canvas { margin-bottom: 18px; }
-.sd-canvas-el { display: block; width: 100%; height: auto; }
+/* Лист шаринга карточки (ShareCardSheet, WeeklyCardSheet). Подключается сборником sheet-diary.css.
+   Превью — сам лист бумаги карточки (canvas рисует страницу, лист и тень-вырезку), без белой рамки.
+   Высота превью ограничена так, что «Поделиться» и «Скопировать текст» видны без прокрутки:
+   окно листа — 90vh, всё, что не превью (поля, заголовок, две кнопки), — --sd-chrome. */
+.sd-canvas { --sd-chrome: 262px; display: flex; justify-content: center; margin: 0 0 16px; }
+.sd-canvas-el {
+  display: block; width: auto; height: auto; max-width: min(100%, 400px);
+  max-height: calc(90vh - var(--sd-chrome)); max-height: calc(90dvh - var(--sd-chrome));
+}
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
+  .sd-canvas { --sd-chrome: 298px; }
+}
 .sd-share-title { margin-bottom: 4px; }
-.sd-share-sub { margin-bottom: 16px; }
+.sd-share-sub { margin-bottom: 14px; }
 .sd-pre {
   font: 12px/1.6 var(--sans); color: var(--text-sub); background: var(--paper-sunk); border-radius: 12px;
   padding: 12px 14px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; margin: 0 0 14px; user-select: all;

@@ -16,7 +16,8 @@ export interface ModeEntryCardData {
   /** CSS-переменная или hex — резолвится китом */
   color: string;
   name: string;
-  emoji: string;
+  /** Эмодзи режима — на картинку не идёт (знак вместо эмодзи). */
+  emoji?: string;
   /** слова Здорового Взрослого — пишет клиент сам */
   healthyResponse: string;
 }
@@ -28,9 +29,11 @@ export function drawModeEntryCard(
   drawSchemaCard(canvas, {
     domain: 'Голос Здорового Взрослого',
     domainColor: d.color,
-    name: `${d.emoji} ${d.name}`,
+    name: d.name,
     desc: d.healthyResponse,
     footerLabel: 'Дневник режимов',
+    // Голос Здорового Взрослого — знак здоровых режимов (MODE_GROUP_SIGN.healthy).
+    sign: 'together',
   });
 }
 

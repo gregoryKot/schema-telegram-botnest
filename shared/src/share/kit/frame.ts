@@ -1,6 +1,6 @@
-// Рамка share-карточки: фон со свечением, шапка (эйбрау → заголовок →
-// подпись), плашки-панели и брендовый футер. Всё, что делает карточку
-// «карточкой», живёт здесь — сами карточки только раскладывают содержимое.
+// Рамка share-карточки на бумаге: лист оттенка сущности (paperFrame.ts), знак сущности, светлые
+// плашки и подвал со знаком продукта; шапка — header.ts. Карточки только раскладывают
+// содержимое между шапкой и подвалом, в полях [CARD_PAD, W − CARD_PAD].
 import {
   CARD_PAD,
   CARD_W,
@@ -9,31 +9,43 @@ import {
   resolveCardTheme,
   type CardTheme,
 } from './theme';
-import { clampLines, wrapLines } from './text';
-import { paintGlow } from './glow';
 import { drawBrandMark } from './brandMark';
+import { INK, inkAlpha, inkOf } from './ink';
+import {
+  SHEET,
+  hueFromColor,
+  hueInkHex,
+  paintSheet,
+  paperHex,
+  sunkHex,
+} from './paperFrame';
+import { canvasSign, drawSign, signHeight } from './signs';
 
 export interface Card {
   ctx: CanvasRenderingContext2D;
   W: number;
   H: number;
   th: CardTheme;
-  /** Цвет карточки: эйбрау, свечение фона, акценты содержимого. */
+  /** Оттенок бумаги листа. */
+  hue: number;
+  /** Бумага листа и тон глубже (пустая клетка, паз) — значениями. */
+  paper: string;
+  sunk: string;
+  /** Читаемые чернила оттенка: эйбрау, номера, крупные числа. */
   accent: string;
-  /** Второй цвет градиентов (по умолчанию — акцент темы). */
+  /** Вторые чернила — подпись. Поле для карточек, ещё не переведённых на лист (b23b). */
   accent2: string;
 }
 
-/** Высота футера с отступом — карточки закладывают её в расчёт высоты. */
-export const FOOTER_H = 62;
+/** Высота подвала с полем листа — карточки закладывают её в расчёт высоты. */
+export const FOOTER_H = 74;
 
 export interface CardOpts {
-  /** Основной цвет карточки ('#hex' или 'var(--accent-blue)'). */
+  /** Оттенок бумаги (ENTITY_LOOK); без него — ближайший к accent. */
+  hue?: number;
+  /** Цвет сущности старых вызовов ('#hex' или 'var(--c-rose)') — по нему выбирается бумага. */
   accent?: string;
-  /** Второй цвет для градиентов фона. */
   accent2?: string;
-  /** false — ровный цвет темы без градиента и свечений (editorial-карточки). */
-  glow?: boolean;
 }
 
 /** Межбуквенный интервал (в браузерах без поддержки — молча игнорируется). */
@@ -41,7 +53,7 @@ export function tracking(ctx: CanvasRenderingContext2D, px: number) {
   (ctx as unknown as { letterSpacing: string }).letterSpacing = `${px}px`;
 }
 
-/** Настраивает канвас (DPR, фон со свечением, рамка) и возвращает контекст. */
+/** Настраивает канвас (DPR), кладёт лист бумаги и возвращает контекст карточки. */
 export function beginCard(
   canvas: HTMLCanvasElement,
   H: number,
@@ -52,57 +64,53 @@ export function beginCard(
   canvas.height = H * DPR;
   const ctx = canvas.getContext('2d')!;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
-  const th = resolveCardTheme();
-  const accent = th.color(opts.accent ?? th.accent);
-  const accent2 = th.color(opts.accent2 ?? th.accent);
-  const c: Card = { ctx, W, H, th, accent, accent2 };
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(0, 0, W, H, 26);
-  ctx.clip();
-
-  if (opts.glow === false) {
-    ctx.fillStyle = th.bg;
-    ctx.fillRect(0, 0, W, H);
-  } else paintGlow(ctx, c);
-  ctx.restore();
-
-  // Тонкая рамка — карточка не сливается с фоном мессенджера
-  ctx.strokeStyle = th.fg(th.isLight ? 0.1 : 0.12);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(0.5, 0.5, W - 1, H - 1, 26);
-  ctx.stroke();
-
-  return c;
+  const hue = opts.hue ?? hueFromColor(opts.accent);
+  paintSheet(ctx, W, H, hue);
+  return {
+    ctx,
+    W,
+    H,
+    th: resolveCardTheme(),
+    hue,
+    paper: paperHex(hue),
+    sunk: sunkHex(hue),
+    accent: hueInkHex(hue),
+    accent2: INK.sub,
+  };
 }
 
-/** Полупрозрачная плашка под блок содержимого. */
+/** Светлая плашка на листе (плитка, цитата): бумага светлее, без рамки и тени. */
 export function panel(
   c: Card,
   x: number,
   y: number,
   w: number,
   h: number,
-  radius = 18,
+  radius = 14,
 ) {
-  const { ctx, th } = c;
-  ctx.fillStyle = th.fg(th.isLight ? 0.045 : 0.05);
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, radius);
-  ctx.fill();
-  ctx.strokeStyle = th.fg(th.isLight ? 0.07 : 0.07);
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  c.ctx.fillStyle = 'rgba(255, 253, 249, 0.62)';
+  c.ctx.beginPath();
+  c.ctx.roundRect(x, y, w, h, radius);
+  c.ctx.fill();
+}
+
+/** Знак сущности на листе по ключу; ключа нет в canvas-таблице — ничего. Возвращает высоту. */
+export function sign(
+  c: Card,
+  key: string,
+  x: number,
+  y: number,
+  w: number,
+): number {
+  const k = canvasSign(key);
+  if (!k) return 0;
+  drawSign(c.ctx, k, x, y, w);
+  return signHeight(k, w);
 }
 
 /**
- * Эмодзи на канвасе. Рисуется отдельным примитивом не для красоты: цветной
- * глиф наследует альфу текущей заливки, и если перед ним рисовали плашку или
- * градиент (панель, медальон), эмодзи выцветает до призрака. Здесь состояние
- * канваса изолировано, а цвет нужен только монохромным глифам (⚖️ и подобные).
+ * Эмодзи на канвасе — только для карточек следующей партии (b23b: достижения, «Мой путь»,
+ * приглашения), которые ещё не получили знаков. Новые карточки рисуют знак (`sign`).
  */
 export function drawEmoji(
   c: Card,
@@ -113,18 +121,17 @@ export function drawEmoji(
   o: { align?: CanvasTextAlign; alpha?: number } = {},
 ) {
   const { ctx } = c;
-  const align = o.align ?? 'left';
   ctx.save();
   ctx.globalAlpha = o.alpha ?? 1;
-  ctx.fillStyle = c.th.fg(0.95);
+  ctx.fillStyle = INK.text;
   ctx.font = `${size}px serif`;
-  ctx.textAlign = align;
+  ctx.textAlign = o.align ?? 'left';
   ctx.fillText(emoji, x, y);
   ctx.restore();
 }
 
-export function divider(c: Card, y: number, alpha = 0.08) {
-  c.ctx.strokeStyle = c.th.fg(alpha);
+export function divider(c: Card, y: number, alpha = 0.12) {
+  c.ctx.strokeStyle = inkAlpha(alpha);
   c.ctx.lineWidth = 1;
   c.ctx.beginPath();
   c.ctx.moveTo(CARD_PAD, y);
@@ -140,8 +147,8 @@ export function sectionLabel(
   color?: string,
 ): number {
   const { ctx } = c;
-  ctx.font = cardFont(10, 'bold');
-  ctx.fillStyle = color ?? c.th.fg(0.38);
+  ctx.font = cardFont(10.5, 'bold');
+  ctx.fillStyle = color ? inkOf(color) : INK.sub;
   ctx.textAlign = 'left';
   tracking(ctx, 0.9);
   ctx.fillText(text.toUpperCase(), CARD_PAD, y);
@@ -149,107 +156,43 @@ export function sectionLabel(
   return y + 18;
 }
 
-export interface HeaderOpts {
-  /** Рубрика над заголовком — цветом карточки. */
-  eyebrow?: string;
-  title: string;
-  subtitle?: string;
-}
-
-/** Высота шапки от верха карточки — чистая (нужна для расчёта высоты). */
-export function headerHeight(titleLines: number, subtitle?: boolean): number {
-  return 62 + titleLines * 29 + (subtitle ? 22 : 0) + 14;
-}
-
-/** Шапка: рубрика с точкой, заголовок (до 2 строк), подпись. Возвращает Y. */
-export function header(c: Card, o: HeaderOpts): number {
-  const { ctx, th } = c;
-  const maxW = c.W - CARD_PAD * 2;
-
-  if (o.eyebrow) {
-    ctx.fillStyle = c.accent;
-    ctx.beginPath();
-    ctx.arc(CARD_PAD + 3, 43, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.font = cardFont(10, 'bold');
-    ctx.textAlign = 'left';
-    tracking(ctx, 1);
-    ctx.fillText(o.eyebrow.toUpperCase(), CARD_PAD + 14, 47);
-    tracking(ctx, 0);
-  }
-
-  ctx.font = cardFont(23, 'bold');
-  const lines = clampLines(
-    wrapLines((s) => ctx.measureText(s).width, o.title, maxW),
-    2,
-  );
-  let y = o.eyebrow ? 80 : 58;
-  for (const line of lines) {
-    ctx.fillStyle = th.fg(0.96);
-    ctx.font = cardFont(23, 'bold');
-    ctx.fillText(line, CARD_PAD, y);
-    y += 29;
-  }
-
-  if (o.subtitle) {
-    ctx.font = cardFont(12.5);
-    ctx.fillStyle = th.fg(0.44);
-    ctx.fillText(o.subtitle, CARD_PAD, y - 4);
-    y += 18;
-  }
-  return y + 14;
-}
-
 // Канал проекта — брендовая подпись карточек (захардкожен по всему проекту).
 // Бот-ссылка в текст шаринга идёт отдельно через botShortUrl каждого фронта.
 const BRAND = '@SchemeHappens';
 
 export interface FooterOpts {
-  /** Своя брендовая строка слева: без знака продукта, спокойным цветом. */
+  /** Своя брендовая строка слева: без знака продукта. */
   brand?: string;
 }
 
-/** Футер: брендовая метка со ссылкой слева, подпись карточки справа. */
+/** Подвал: знак продукта и @SchemeHappens слева, подпись карточки справа. */
 export function footer(c: Card, label: string, o: FooterOpts = {}) {
-  const { ctx, th } = c;
-  const y = c.H - 38;
-
-  divider(c, y - 24, 0.07);
-
+  const { ctx } = c;
+  const y = c.H - SHEET.y - SHEET.dy - 26;
+  ctx.textAlign = 'left';
   if (o.brand) {
-    ctx.font = cardFont(11.5);
-    ctx.fillStyle = th.fg(0.55);
-    ctx.textAlign = 'left';
-    ctx.fillText(o.brand, CARD_PAD, y + 1);
+    ctx.font = cardFont(12);
+    ctx.fillStyle = INK.sub;
+    ctx.fillText(o.brand, CARD_PAD, y);
   } else {
-    drawLogoBrand(c, y);
+    drawBrandMark(ctx, CARD_PAD, y - 16, 22, true);
+    ctx.font = cardFont(12, 'bold');
+    ctx.fillStyle = INK.sub;
+    ctx.fillText(BRAND, CARD_PAD + 30, y);
   }
-
   if (label) {
-    ctx.font = cardFont(11);
-    ctx.fillStyle = th.fg(0.32);
+    ctx.font = cardFont(11.5);
+    ctx.fillStyle = INK.sub;
     ctx.textAlign = 'right';
-    ctx.fillText(label, c.W - CARD_PAD, y + 1);
+    ctx.fillText(label, c.W - CARD_PAD, y);
   }
   ctx.textAlign = 'left';
-}
-
-/** Фирменная метка: знак продукта (20 px — простой, без полоски) и @SchemeHappens. */
-function drawLogoBrand(c: Card, y: number) {
-  const { ctx, th } = c;
-  drawBrandMark(ctx, CARD_PAD, y - 13, 20, true);
-
-  ctx.font = cardFont(11.5, 'bold');
-  ctx.fillStyle = th.fg(0.5);
-  ctx.textAlign = 'left';
-  ctx.fillText(BRAND, CARD_PAD + 28, y + 1);
 }
 
 /**
  * Высоты панелей-строк и суммарная высота столбика: каждая панель — обёрнутый
  * текст плюс вертикальные отступы, между панелями зазор. Один расчёт для всех
- * карточек-списков (благодарность, шаги практики) — раньше он копировался
- * в каждую и попадал в jscpd-храповик.
+ * карточек-списков (благодарность, шаги практики).
  */
 export function panelStack(
   lineCounts: number[],

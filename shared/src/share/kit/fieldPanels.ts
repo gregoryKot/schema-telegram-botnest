@@ -1,5 +1,6 @@
 import { panel, sectionLabel, type Card } from './frame';
 import { CARD_PAD, cardFont } from './theme';
+import { INK } from './ink';
 
 /**
  * Стопка блоков «подпись + панель с текстом» — общая механика карточек, где
@@ -38,7 +39,7 @@ export function fieldPanelsHeight(fields: PanelField[]): number {
 
 /** Рисует стопку сверху вниз от `y` и возвращает Y под последней панелью. */
 export function fieldPanels(c: Card, fields: PanelField[], y: number): number {
-  const { ctx, th } = c;
+  const { ctx } = c;
   const panelW = c.W - CARD_PAD * 2;
 
   for (const f of fields) {
@@ -47,7 +48,7 @@ export function fieldPanels(c: Card, fields: PanelField[], y: number): number {
     panel(c, CARD_PAD, y, panelW, panelH, 16);
 
     ctx.font = cardFont(14);
-    ctx.fillStyle = th.fg(0.85);
+    ctx.fillStyle = INK.text;
     ctx.textAlign = 'left';
     let ty = y + PANEL_PAD_IN + 11;
     for (const line of f.lines) {

@@ -3,12 +3,10 @@
 // (шаринг из детального вида записи).
 // Возвращает готовые пропсы для per-frontend ShareCardSheet.
 import { useMemo, useState } from 'react';
-import { NEED_COLORS } from '../needs/needColors';
 import {
   type JourneyItem,
   type JourneyPeriod,
   JOURNEY_GROUP_COLORS,
-  JOURNEY_NEED_EMOJI,
   JOURNEY_NEED_NAMES,
   JOURNEY_PERIOD_SUBTITLE,
   JOURNEY_PERIOD_TITLE,
@@ -26,9 +24,9 @@ import { drawJourneyTotalsCard } from '../share/cards/journeyTotalsCard';
 import { type JourneyStatRow, statRowsFromItems } from './journeyStats';
 import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
 import {
-  drawNeedsRadarCard,
-  type NeedsRadarRow,
-} from '../share/cards/needsRadarCard';
+  drawNeedsDayCard,
+  type NeedsDayRow,
+} from '../share/cards/needsDayCard';
 import {
   buildYsqProfile,
   drawYsqProfileCard,
@@ -47,25 +45,24 @@ export type JourneyShareState =
   | { kind: 'feed' }
   | { kind: 'item'; item: JourneyItem; result: JourneyResult | null };
 
-/** Строки радара из оценок дня трекера — порядок как в NEED_COLORS/JOURNEY_NEED_NAMES.
+/** Строки карточки дня из оценок трекера — порядок как в JOURNEY_NEED_NAMES.
  * Пропущенная потребность не превращается в ноль (правило «никаких заглушек»).
  * Чистая (тест: пустые/частичные оценки). */
 export function journeyRadarRows(
   ratings: Record<string, number> | undefined,
-): NeedsRadarRow[] {
+): NeedsDayRow[] {
   return Object.keys(JOURNEY_NEED_NAMES).map((id) => {
     const value = ratings?.[id];
     return {
-      emoji: JOURNEY_NEED_EMOJI[id],
+      id,
       label: JOURNEY_NEED_NAMES[id],
-      color: NEED_COLORS[id] ?? '#888',
       value: value ?? null,
       valueText: value !== undefined ? String(value) : '—',
     };
   });
 }
 
-/** Индекс дня для центра радара — среднее по отмеченным, «—» без оценок. Чистая. */
+/** Индекс дня карточки — среднее по отмеченным, «—» без оценок. Чистая. */
 export function journeyRadarIndex(
   ratings: Record<string, number> | undefined,
 ): string {
@@ -141,8 +138,8 @@ export function buildJourneySharePayload(
   const hex = JOURNEY_GROUP_COLORS[meta.group].hex;
   const day = formatJourneyDay(share.item.at);
   const shareText = journeyItemShareText(meta.emoji, meta.label, link);
-  // День трекера — не текстовая строка «Привязанность — 7 · …», а радар
-  // потребностей (та же карточка, что у дня/недели трекера).
+  // День трекера — не текстовая строка «Привязанность — 7 · …», а столбики
+  // потребностей (та же карточка, что у дня трекера).
   if (share.item.type === 'tracker_day' && share.result?.ratings) {
     const ratings = share.result.ratings;
     const data = {
@@ -152,12 +149,10 @@ export function buildJourneySharePayload(
       rows: journeyRadarRows(ratings),
       center: { value: journeyRadarIndex(ratings), caption: 'индекс' },
       footerLabel: 'Мой путь',
-      accent: 'var(--accent-blue)',
-      accent2: 'var(--accent)',
     };
     return {
       title: 'Результат',
-      draw: (canvas) => drawNeedsRadarCard(canvas, data),
+      draw: (canvas) => drawNeedsDayCard(canvas, data),
       shareText,
       filename: 'journey-result.png',
       eventKind: 'journey_item',
