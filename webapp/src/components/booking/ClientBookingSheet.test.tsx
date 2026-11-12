@@ -169,3 +169,30 @@ describe('ClientBookingSheet', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });
+
+describe('ClientBookingSheet — фокус клавиатуры', () => {
+  it('открытие переносит фокус в лист, Tab с последнего элемента возвращается на первый, закрытие — к вызвавшей кнопке', async () => {
+    const opener = document.createElement('button');
+    document.body.append(opener);
+    opener.focus();
+    const view = render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <ClientBookingSheet onClose={vi.fn()} onBooked={vi.fn()} writeUrl={null} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Запись на сессию' });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    const close = screen.getByRole('button', { name: '← Закрыть' });
+    expect(document.activeElement).toBe(close);
+    await screen.findByRole('button', { name: '16:00' });
+    const all = [...dialog.querySelectorAll<HTMLElement>('button, a[href]')];
+    all.at(-1)!.focus();
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+    view.unmount();
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+});

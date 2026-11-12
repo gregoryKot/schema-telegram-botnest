@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api, type BookingSlot, type ClientBookResult } from '../../api';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useDialogA11y } from '../../../../shared/src/utils/dialogA11y';
+import { glue } from '../../../../shared/src/utils/typo';
 import { useTr } from '../../utils/addressForm';
 import { ExternalLink } from '../../host/ExternalLink';
 import { Skeleton } from '../Skeleton';
@@ -39,6 +41,7 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
   writeUrl: string | null;
 }) {
   const goBack = useHistorySheet(onClose);
+  const dialogA11y = useDialogA11y(); // фокус на «Закрыть», Tab внутри листа, возврат к кнопке записи
   const tr = useTr();
   const copy = buildClientBookingCopy(tr);
   const [tz, setTz] = useClientTimeZone();
@@ -64,17 +67,18 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
     }
   };
 
-  const write = writeUrl && <ExternalLink href={writeUrl} className="ds-link">{copy.write}</ExternalLink>;
+  const writeLink = (cls: string) => writeUrl && <ExternalLink href={writeUrl} className={cls}>{copy.write}</ExternalLink>;
+  const write = writeLink('ds-link');
   let body: React.ReactNode;
   if (phase.kind === 'pay' || phase.kind === 'done') {
     body = (
       <section className="cbk-result ym-hide-content" aria-live="polite">
         <h2 className="ds-h3">{phase.kind === 'pay' ? copy.payTitle : copy.doneTitle}: {sessionWhen(phase.startsAt, tz)}</h2>
-        {phase.kind === 'pay' && <p className="cbk-note">{copy.payNote}</p>}
+        {phase.kind === 'pay' && <p className="cbk-note">{glue(copy.payNote)}</p>}
         {phase.kind === 'pay' && phase.res.paymentUrl && (
           <ExternalLink href={phase.res.paymentUrl} className="ds-btn ds-btn--lg">{copy.pay}</ExternalLink>
         )}
-        <p className="cbk-note">{copy.manageNote}</p>
+        <p className="cbk-note">{glue(copy.manageNote)}</p>
         <ExternalLink href={phase.res.manageUrl} className="ds-link">{copy.manage}</ExternalLink>
       </section>
     );
@@ -83,7 +87,7 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
   } else if (slots === null) {
     body = <SlotsSkeleton />;
   } else if (slots.length === 0) {
-    body = <div className="cbk-actions cbk-empty"><PaperEmpty>{copy.empty}</PaperEmpty>{write}</div>;
+    body = <div className="cbk-actions cbk-empty"><PaperEmpty>{glue(copy.empty)}</PaperEmpty>{writeLink('ds-btn ds-btn--secondary cbk-empty-write')}</div>;
   } else {
     body = (
       <>
@@ -97,19 +101,19 @@ export function ClientBookingSheet({ onClose, onBooked, writeUrl }: {
               {phase.kind === 'sending' ? copy.sending : copy.submit(localTimeLabel(slot.startsAt, tz))}
             </button>
             <p className="cbk-offer">
-              {copy.offerLead}<ExternalLink href="/offer" className="u-link">оферты</ExternalLink> и{' '}
+              {glue(copy.offerLead)}<ExternalLink href="/offer" className="u-link">оферты</ExternalLink> и{' '}
               <ExternalLink href="/privacy" className="u-link">политики конфиденциальности</ExternalLink>.
             </p>
           </div>
         ) : (
-          <p className="cbk-note">{copy.pickTime}</p>
+          <p className="cbk-note">{glue(copy.pickTime)}</p>
         )}
       </>
     );
   }
 
   return (
-    <div className="u-sheet cbk-sheet" role="dialog" aria-modal="true" aria-label={copy.title}>
+    <div {...dialogA11y} className="u-sheet cbk-sheet" aria-label={copy.title}>
       <div className="ds-sheet-head ds-sheet-head--page cbk-head">
         <button type="button" className="ds-back" onClick={goBack}>{copy.close}</button>
       </div>
@@ -127,15 +131,17 @@ function FailNote({ text }: { text: string }) {
   return <PaperAlert sign="talk" title={lead} text={rest || undefined} />;
 }
 
-/** Силуэт ленты слотов: строка дней и сетка времени — по форме BookingSlotsSection (чипы 44, билет под ними). */
+/** Силуэт ленты слотов по форме BookingSlotsSection: чипы дня (лента), две строки про часовой пояс, чипы времени
+ *  той же ширины и скругления, что настоящие (перенос ряда совпадает на любой ширине), строка цены. */
 function SlotsSkeleton() {
   return (
     <div className="cbk-skel" aria-hidden>
-      <Skeleton width="34%" height={12} />
-      <div className="cbk-skel-row cbk-skel-row--days">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={112} height={44} radius={999} />)}</div>
-      <Skeleton width="22%" height={12} />
-      <div className="cbk-skel-row">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={74} height={44} radius={999} />)}</div>
-      <Skeleton width="70%" height={14} />
+      <Skeleton width={96} height={12} />
+      <div className="cbk-skel-row cbk-skel-row--days">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={130} height={44} radius={8} />)}</div>
+      <Skeleton width={56} height={12} style={{ marginTop: 12 }} />
+      <div className="cbk-skel-tz"><Skeleton width={230} height={10} /><Skeleton width={150} height={10} /></div>
+      <div className="cbk-skel-row">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={88} height={44} radius={8} />)}</div>
+      <Skeleton width="70%" height={14} style={{ marginTop: 12 }} />
     </div>
   );
 }

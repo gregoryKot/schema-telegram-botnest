@@ -11,6 +11,7 @@ import { useHistorySheet } from '../../hooks/useHistorySheet';
 import type { CSSProperties } from 'react';
 import { useDialogA11y } from '../../../../shared/src/utils/dialogA11y';
 import { trackTherapyNudge } from './trackTherapyNudge';
+import { glueBridge } from './bridgeTypo';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import '../../styles/client-why.css';
 import '../../styles/therapy-bridge.css';
@@ -50,7 +51,7 @@ export function TalkSheet({ place, trigger, onClose }: Props) {
             <AuthorPhoto className="th-talk-photo" />
             <div className="th-talk-text">
               <div className="ds-eyebrow th-talk-label">{t.sheetEyebrow}</div>
-              <h1 className="th-talk-title">{glue(t.sheetTitle)}</h1>
+              <h1 className="th-talk-title">{glueBridge(t.sheetTitle)}</h1>
               <p className="th-talk-lead">{glue(t.sheetP)}</p>
             </div>
           </div>

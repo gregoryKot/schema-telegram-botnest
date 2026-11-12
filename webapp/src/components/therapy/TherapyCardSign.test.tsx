@@ -15,11 +15,17 @@ describe('TherapyCardSign', () => {
     expect(html(<TherapyCardSign />)).toBe(html(<SignArt sign="talk" size="row" />));
   });
 
-  it('низкий индекс — три полоски по индексам дней сигнала, от раннего к свежему', () => {
+  it('низкий индекс — три полоски одного тона по индексам дней сигнала, от раннего к свежему', () => {
     const { container } = render(<TherapyCardSign signal={{ trigger: 'low_index', eyebrow: 'x', days: [2, 3.4, 4] }} />);
-    const rects = [...container.querySelectorAll('.th-card-days rect')];
+    expect(container.querySelector('svg')!.getAttribute('class')).toContain('pp-art--row');
+    const rects = [...container.querySelectorAll('rect')];
     expect(rects.map((r) => r.getAttribute('data-value'))).toEqual(['2', '3.4', '4']);
-    expect(rects.every((r) => r.getAttribute('data-rated') === 'yes')).toBe(true);
+    // Дни, а не потребности: один тон; выше индекс — выше полоска, низ на общей линии.
+    expect(new Set(rects.map((r) => r.getAttribute('fill'))).size).toBe(1);
+    const h = rects.map((r) => Number(r.getAttribute('height')));
+    expect(h[0]).toBeLessThan(h[1]);
+    expect(h[1]).toBeLessThan(h[2]);
+    expect(new Set(rects.map((r) => Number(r.getAttribute('y')) + Number(r.getAttribute('height')))).size).toBe(1);
   });
 
   it('низкий индекс без значений — обезличенные полоски, не выдуманные оценки', () => {

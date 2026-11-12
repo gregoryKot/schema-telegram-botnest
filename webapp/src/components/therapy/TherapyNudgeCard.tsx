@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { ModeDiaryEntry } from '../../../../shared/src/types';
 import { isBridgeCardHidden } from '../../../../shared/src/therapy/bridge/therapyBridgeState';
-import { SkeletonCard } from '../Skeleton';
+import { Skeleton } from '../Skeleton';
 import { TherapyBridgeCard } from './TherapyBridgeCard';
 import { PAPER_HUE } from '../../../../shared/src/theme/entityLook';
 import { TherapyCardFrame } from './TherapyCardFrame';
@@ -36,7 +36,7 @@ export function TherapyNudgeCard({
   if (target.hidden) return null;
   // Пока история не пришла — силуэт карточки, не спокойная версия с ложным показом.
   // Спокойную карточку скрыли («Скрыть») — силуэта нет: чаще всего на его месте будет пусто.
-  if (!ready) return isBridgeCardHidden() ? null : <SkeletonCard height={188} radius={20} />;
+  if (!ready) return isBridgeCardHidden() ? null : <Skeleton height="var(--th-card-h)" radius={20} style={{ maxWidth: 720 }} />;
   if (!signal) return <TherapyBridgeCard place="home_card" />;
 
   return (

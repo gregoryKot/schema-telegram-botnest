@@ -26,6 +26,7 @@ export function TherapyBridgeCard({ place }: { place: 'home_card' | 'practice' }
       title={t.cardTitleCalm}
       target={target}
       hue={PAPER_HUE.sage}
+      quiet={place === 'practice'}
       sign={<TherapyCardSign />}
       extra={
         <button

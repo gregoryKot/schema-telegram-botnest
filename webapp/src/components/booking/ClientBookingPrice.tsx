@@ -29,7 +29,7 @@ export function ClientBookingPrice({ tz, tr, price, when }: {
     : price ? <p className="cbk-note">{glue(clientPriceNote(price))}</p> : null;
   return (
     <>
-      {when ? <SessionTicket className="ym-hide-content" when={when}>{note}</SessionTicket> : note}
+      {when ? <SessionTicket row className="ym-hide-content" when={when}>{note}</SessionTicket> : note}
       <CurrencyChoice tz={tz} labelStyle={fieldLabel} tr={tr} />
     </>
   );

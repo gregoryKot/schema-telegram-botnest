@@ -47,7 +47,7 @@ export function useMoreRows(d: MoreRowsDeps): { rows: Row[]; sheet: ReactNode } 
         ? [{ id: 'talk', art: TALK, title: bridge.moreTherapistTitle, sub: bridge.moreTherapistSub, onClick: target.open }]
         : [{ id: 'talk', art: TALK, title: bridge.moreTalkTitle, sub: bridge.moreTalkSub, onClick: target.open }];
   const rows: Row[] = [
-    { id: 'why', art: <BrandMark size={28} simple />, title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: d.onOpenWhy },
+    { id: 'why', art: <BrandMark size={36} simple bare className="cm-why-sign" />, title: 'Зачем это всё', sub: 'Откуда это и что даёт каждое действие', onClick: d.onOpenWhy },
     { id: 'tasks', art: sign('check'), title: 'Задания', sub: 'От терапевта и свои цели', onClick: d.onOpenTasks, badge: newTasks },
     { id: 'schemas', art: sign('layers'), title: 'Мои паттерны', sub: 'Схемы и режимы', onClick: () => d.onNavigate('schemas'), phoneOnly: true },
     // Единственный постоянный вход в «Карту себя»: иначе её видно только после разбора (CaseDoneScreen).

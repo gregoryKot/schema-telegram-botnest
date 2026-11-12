@@ -8,17 +8,19 @@ import '../../styles/client-booking.css';
  * своя бронь) и лист записи (выбранное окно). Строка «когда» остаётся целой для чтения с экрана и копирования
  * («Вс, 15 ноя · 18:00»): разделитель скрыт только глазу. Цвет выреза — бумага под билетом (--cbk-cut).
  */
-export function SessionTicket({ when, label, className, children }: {
+export function SessionTicket({ when, label, className, row, children }: {
   /** Готовая строка «когда» (nextSessionLabel, sessionWhen) — формат задаёт место, билет его не меняет. */
   when: string;
   label?: ReactNode;
   className?: string;
+  /** Лист записи: билет во всю колонку и всегда в ряд (день и время слева, цена справа), и на 320. */
+  row?: boolean;
   children?: ReactNode;
 }) {
   const { day, sep, time } = ticketWhen(when);
   const body = label || children;
   return (
-    <div className={className ? `cbk-ticket-box ${className}` : 'cbk-ticket-box'}>
+    <div className={['cbk-ticket-box', row && 'cbk-ticket-box--row', !children && 'cbk-ticket-box--label', className].filter(Boolean).join(' ')}>
       <div className={body ? 'cbk-ticket' : 'cbk-ticket cbk-ticket--stub'}>
         <p className="cbk-ticket-when">
           <span className="cbk-ticket-day">{day}</span>

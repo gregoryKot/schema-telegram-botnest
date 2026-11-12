@@ -38,8 +38,10 @@ function ClientTherapistCard({ relation, partnerName }: { relation: TherapyRelat
         </div>
         <span className="cpf-therapist-sign" aria-hidden="true"><SignArt sign={ENTITY_LOOK.therapist.sign} size="row" /></span>
       </div>
-      {next && <SessionTicket when={nextSessionLabel(next)} label="Следующая сессия" />}
-      <ClientBookingBlock overview={overview} onBooked={reload} writeUrl={relation.partnerId == null ? null : telegramChatUrl(relation.partnerId)} />
+      <div className="cpf-therapist-session">
+        {next && <SessionTicket when={nextSessionLabel(next)} label="Следующая сессия" />}
+        <ClientBookingBlock overview={overview} onBooked={reload} writeUrl={relation.partnerId == null ? null : telegramChatUrl(relation.partnerId)} />
+      </div>
       {relation.conceptSharedAt && <MyConceptRow />}
     </section>
   );

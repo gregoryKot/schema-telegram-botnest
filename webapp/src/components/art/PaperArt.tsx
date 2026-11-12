@@ -11,6 +11,7 @@
 import { PAPER, pebblesLaid, type ArtProps } from './paper';
 import { PaperSvg as Svg } from './PaperSvg';
 import { ValueStrokes } from './ValueStrokes';
+import { ratingShare } from '../../../../shared/src/needs/ratingShare';
 
 export interface StrokeMark { id: string; dense: boolean }
 const STROKE_PAPER = [PAPER.moss, PAPER.sage, PAPER.brown, PAPER.clay, PAPER.sage];
@@ -20,9 +21,12 @@ const STROKE_TILT = [-6, 3, -2, 5, -4];
  * Пять полосок цветной бумаги. `marks` — по одной на потребность: плотная или бледная. `values` —
  * оценки дня в порядке NEED_ORDER (0–10, null — не оценена): разметка ValueStrokes, та же, что у
  * сегодняшнего листа SceneCheckIn (длина по оценке от кружка 16 до 84, низ на одной линии; пустое
- * место — бледный тон своей потребности с кромкой). `even` — ровный день, без наклона.
+ * место — бледный тон своей потребности с кромкой). `even` — ровный день, без наклона. `days` — индексы дней
+ * подряд (0–10, от раннего к свежему; сигнал моста — три дня): полоски одной глины на общей линии земли,
+ * высота по индексу, холст строки 120×64 — это дни, а не потребности, цветов потребностей нет.
  */
-export function Strokes({ marks, values, even, size }: ArtProps & { marks?: StrokeMark[]; values?: readonly (number | null)[]; even?: boolean }) {
+export function Strokes({ marks, values, even, days, size }: ArtProps & { marks?: StrokeMark[]; values?: readonly (number | null)[]; even?: boolean; days?: readonly number[] }) {
+  if (days) return <DayStrokes days={days.slice(0, 5)} size={size} />;
   const tilt = (i: number, y: number) => (even ? undefined : `rotate(${STROKE_TILT[i]} ${16 + i * 22} ${y})`);
   if (values) {
     return (
@@ -42,6 +46,18 @@ export function Strokes({ marks, values, even, size }: ArtProps & { marks?: Stro
           transform={tilt(i, 50)}
         />
       ))}
+    </Svg>
+  );
+}
+
+function DayStrokes({ days, size }: ArtProps & { days: readonly number[] }) {
+  const x0 = 60 - (days.length * 24 - 8) / 2;
+  return (
+    <Svg size={size} viewBox="0 0 120 64">
+      {days.map((v, i) => {
+        const h = 16 + Math.round(ratingShare(v) * 40);
+        return <rect key={i} data-value={v} x={x0 + i * 24} y={60 - h} width="16" height={h} rx="8" fill={PAPER.clay} />;
+      })}
     </Svg>
   );
 }
@@ -112,16 +128,16 @@ export function Sheets({ size }: ArtProps) {
 }
 
 /** Слои — схема под схемой, паттерны родом из детства. */
-/** `probe` — тест на схемы: верхний слой приподнят и помечен точкой бумаги страницы — слой проверяют. */
+/** `probe` — тест на схемы: верхний слой поднят одним краем (зазор ~3px в строке) и помечен точкой бумаги страницы — слой проверяют. */
 export function Layers({ size, probe }: ArtProps & { probe?: boolean }) {
   return (
     <Svg size={size} viewBox="0 0 120 64">
       <rect x="10" y="40" width="100" height="16" rx="8" fill={PAPER.sage} />
       <rect x="22" y="24" width="76" height="16" rx="8" fill={PAPER.moss} />
       {probe ? (
-        <g data-probe="yes" transform="rotate(-9 36 20)">
-          <rect x="36" y="4" width="48" height="16" rx="8" fill={PAPER.clay} />
-          <circle cx="72" cy="12" r="4" fill="var(--bg)" />
+        <g data-probe="yes" transform="rotate(-14 60 13)">
+          <rect x="36" y="5" width="48" height="16" rx="8" fill={PAPER.clay} />
+          <circle cx="71" cy="13" r="5.5" fill="var(--bg)" />
         </g>
       ) : (
         <rect x="36" y="8" width="48" height="16" rx="8" fill={PAPER.clay} />

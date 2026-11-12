@@ -15,22 +15,27 @@
 .cbk-actions, .cbk-result { display: flex; flex-direction: column; gap: 12px; align-items: stretch; }
 .cbk-actions .ds-btn, .cbk-result .ds-btn { width: 100%; text-align: center; }
 .cbk-empty { align-items: flex-start; gap: 14px; }
-.cbk-empty .ds-link { min-height: 44px; display: inline-flex; align-items: center; }
+.cbk-actions .ds-btn.cbk-empty-write { width: auto; text-decoration: none; }
 .cbk-skel { display: flex; flex-direction: column; gap: 12px; }
 .cbk-skel-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.cbk-skel-row > * { flex: none; }
 .cbk-skel-row--days { flex-wrap: nowrap; overflow: hidden; margin-right: -20px; }
-.cbk-skel-row--days > * { flex: none; }
+.cbk-skel-tz { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 4px; }
 
-/* Чипы дня и времени (SignChip): зона 44 на любой ширине, подпись не рвётся. */
-.ds-chip.cbk-chip { flex: none; min-height: 44px; padding-right: 14px; font-size: 14px; white-space: nowrap; }
-.ds-chip.cbk-chip:not(.pa-chip--mark) { padding-left: 14px; }
+/* Чипы дня и времени (SignChip): зона 44 на любой ширине, подпись не рвётся. Ширина чипа до и после выбора
+   одна: место галочки (слот 24 + зазор 6) у невыбранного отдано полям поровну, жирность не меняется — иначе
+   выбранный чип раздвигал ряд, и на 320 последний слот падал на вторую строку под пальцем. */
+.ds-chip.cbk-chip { flex: none; min-height: 44px; padding-left: 6px; padding-right: 14px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.ds-chip.cbk-chip:not(.pa-chip--mark) { padding-left: 25px; padding-right: 25px; }
 /* Лента дней на телефоне листается и уходит под правый край экрана (поле листа отдано ленте): обрезанный
    чип режет край экрана, а не невидимая граница колонки. С 768 дни встают сеткой в несколько рядов. */
-.cbk-days { display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px 0 0; padding: 0 20px 4px 0; scrollbar-width: none; }
+.cbk-days { display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px 0 0; padding: 0 28px 4px 0; scrollbar-width: none; }
 .cbk-days::-webkit-scrollbar { display: none; }
 
 /* Карточка «Терапевт» профиля: ближайшая бронь и кнопка записи под строкой терапевта. */
 .cbk-card { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.cpf-therapist-session { display: flex; flex-direction: column; gap: 16px; }
+.cpf-therapist-session:empty { display: none; }
 .cbk-card-status { font-size: 13px; line-height: 1.4; color: var(--text-sub); }
 
 /* ── «Билетик» сессии (SessionTicket) ──────────────────────────────────────
@@ -67,19 +72,35 @@
 .ds-link.cbk-ticket-link { position: relative; margin-top: 2px; }
 .cbk-ticket-link::after { content: ''; position: absolute; inset: -12px -8px; }
 /* Узкий билет (≤360 в карточке профиля, длинная строка цены): корешок сверху, отрыв — горизонтальный. */
+/* Лист записи: билет во всю колонку, как кнопка под ним, и всегда в ряд. */
+.cbk-ticket-box--row { max-width: none; }
+/* Одна подпись без статуса («Следующая сессия»): узкий билет — день, время и подпись компактно, без пустой половины. */
+.cbk-ticket-box--label { max-width: 300px; }
 @container cbk-ticket-box (max-width: 340px) {
-  .cbk-ticket:not(.cbk-ticket--stub) { grid-template-columns: minmax(0, 1fr); }
-  .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when { flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 10px; border-right: 0; border-bottom: 2px dashed var(--panel-line); }
-  .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when::before { top: auto; bottom: -9px; right: auto; left: -8px; }
-  .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when::after { bottom: -9px; right: -8px; }
+  .cbk-ticket-box--row .cbk-ticket-when { min-width: 0; padding: 10px 12px 11px 14px; }
+  .cbk-ticket-box--row .cbk-ticket-day { font-size: 17px; }
+  .cbk-ticket-box--row .cbk-ticket-body { padding: 10px 12px 10px 14px; }
+  .cbk-ticket-box--row .cbk-note { font-size: 13px; line-height: 1.45; }
+}
+@container cbk-ticket-box (max-width: 340px) {
+  .cbk-ticket-box:not(.cbk-ticket-box--row) > .cbk-ticket:not(.cbk-ticket--stub) { grid-template-columns: minmax(0, 1fr); }
+  .cbk-ticket-box:not(.cbk-ticket-box--row) > .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when { flex-direction: row; justify-content: flex-start; align-items: baseline; gap: 10px; border-right: 0; border-bottom: 2px dashed var(--panel-line); }
+  .cbk-ticket-box:not(.cbk-ticket-box--row) > .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when::before { top: auto; bottom: -9px; right: auto; left: -8px; }
+  .cbk-ticket-box:not(.cbk-ticket-box--row) > .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when::after { bottom: -9px; right: -8px; }
 }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .cbk-inner { padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
-  .cbk-days { margin-right: -16px; padding-right: 16px; }
+  /* Признак прокрутки: правый край ленты тает (маска, не размытие) — даже когда срез совпал с границей чипа. */
+  .cbk-days { margin-right: -16px; padding-right: 28px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
   .cbk-skel-row--days { margin-right: -16px; }
 }
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .cbk-days { flex-wrap: wrap; overflow: visible; margin-right: 0; padding-right: 0; }
+  /* Карточка «Терапевт»: кнопка записи — в строку с билетом, справа от него. */
+  .cpf-therapist-session { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 16px 24px; }
+  .cpf-therapist-session > .cbk-ticket-box { flex: 0 1 300px; }
+  .cpf-therapist-session > .cbk-card { flex: 1 1 auto; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 16px 24px; }
+  .cpf-therapist-session > .cbk-card > .cbk-ticket-box { flex: 0 1 440px; }
   .cbk-skel-row--days { flex-wrap: wrap; margin-right: 0; }
 }

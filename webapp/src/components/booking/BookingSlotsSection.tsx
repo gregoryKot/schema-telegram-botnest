@@ -58,7 +58,7 @@ export function BookingSlotsSection({ slots, tz, onTzChange, day, onDayChange, s
         <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 8px' }}>
           {timeZoneCaption(tz, undefined, tr('твоему', 'вашему'))} <TimeZonePicker tz={tz} onChange={onTzChange} tr={tr} />
         </p>
-        <div className="u-wrap8">
+        <div className={paper ? 'u-wrap8 cbk-times' : 'u-wrap8'}>
           {daySlots.map((s) => (
             <Pick key={s.startsAt} active={slot?.startsAt === s.startsAt} onClick={() => {
               trackGoalOnce('booking_start');
