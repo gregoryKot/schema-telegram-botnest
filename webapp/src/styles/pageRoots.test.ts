@@ -13,7 +13,7 @@ const ROOTS: Record<string, readonly string[]> = {
   'auth-login.css': ['.al-root', '.al-expired'], // вход и 2FA (AuthShell), протухший вызов 2FA
   'auth-service.css': ['.as-root'], // служебные страницы (ServicePage, ServiceLoading)
   'auth-account.css': ['.aa-root', '.am-root'], // /account; /link и /account/merge (MergeSpread)
-  'auth-pay.css': ['.ap-page', '.ap-skel'], // подписка и донат (PayLayout), силуэт загрузки
+  'auth-pay.css': ['.ap-page', '.ap-skel', '.ap-failed'], // подписка и донат (PayLayout), силуэт загрузки, сбой загрузки
   'install-page.css': ['.ip-root'], // /install (InstallFrame)
   'legal.css': ['.lg-root'], // юридические страницы (LegalPage)
   'paper-app.css': ['.pa-outcome'], // исходы: 404, /auth/error, автовход в мессенджере, сбои

@@ -141,6 +141,7 @@ describe('SubscribePage — управление подпиской по ток�
 
     await screen.findByText(/Не удалось загрузить подписку/);
     expect(screen.queryByText('Загружаем…')).toBeNull();
+    expect(screen.getByRole('alert').textContent).toMatch(/Не удалось загрузить подписку/); // сбой объявляется сразу (ревью b28)
   });
 
   // Экран-тупик шлёт отчёт наверх (правило №14, гейт check-dead-end-report):

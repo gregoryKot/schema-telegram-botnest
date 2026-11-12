@@ -64,7 +64,7 @@ export function SubscribePage() {
     // Управление. Отменена — лист «спасибо»; сбой — исход на весь экран (404 — ссылка устарела, «подожди»;
     // остальное — сбой на нашей стороне). Безлично, без useTr (check-second-person.mjs).
     if (cancelled) return <ThanksSheet eyebrow="Подписка" title="Подписка отменена" lead="Спасибо, что были с проектом. Оформить снова можно в любой момент." action={{ label: 'Оформить снова', href: '/subscribe' }} link={home} />;
-    if (subFailed) return <PaperOutcome outcome={subFailed} eyebrow="Подписка" title="Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения." action={{ label: 'Обновить', onClick: () => window.location.reload() }} link={home} />;
+    if (subFailed) return <div className="ap-failed" role="alert"><PaperOutcome outcome={subFailed} eyebrow="Подписка" title="Не удалось загрузить подписку — возможно, истекла ссылка или нет соединения." action={{ label: 'Обновить', onClick: () => window.location.reload() }} link={home} /></div>;
     if (!sub) return <PaySkeleton shape="manage" />;
     const state = sub.status === 'active' ? 'активна' : sub.status === 'past_due' ? 'проблема с оплатой' : sub.status;
     return (
