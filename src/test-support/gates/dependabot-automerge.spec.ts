@@ -38,13 +38,13 @@ function workflowViolations(text: string): string[] {
   return bad;
 }
 
-/** npm-записи dependabot.yml: [каталог, день, время]. */
+/** Записи dependabot.yml: экосистема, каталог, день, время. */
 const schedules = (text: string) =>
   stripComments(text)
     .split(/^ {2}- package-ecosystem: /m)
     .slice(1)
-    .filter((e) => e.startsWith('npm'))
     .map((e) => ({
+      eco: /^\S+/.exec(e)?.[0] ?? '',
       dir: /^ {4}directory: (\S+)/m.exec(e)?.[1] ?? '',
       day: /^ {6}day: (\w+)/m.exec(e)?.[1] ?? '',
       time: /^ {6}time: (\S+)/m.exec(e)?.[1] ?? '',
@@ -55,7 +55,7 @@ function scheduleViolations(text: string): string[] {
   const auto = schedules(text).filter((e) => e.dir !== '/game');
   const bad = auto
     .filter((e) => !e.day || !e.time)
-    .map((e) => `${e.dir}: нет day или time`);
+    .map((e) => `${e.eco} ${e.dir}: нет day или time`);
   const days = auto.map((e) => e.day).filter(Boolean);
   if (new Set(days).size !== days.length) bad.push('дни совпадают');
   return bad;
@@ -69,7 +69,7 @@ describe('автомерж бот-PR Dependabot', () => {
     expect(workflowViolations(real)).toEqual([]);
   });
 
-  it('настоящий dependabot.yml: у автомержимых пакетов разные дни', () => {
+  it('настоящий dependabot.yml: у автомержимых записей разные дни', () => {
     const config = read('dependabot.yml');
     expect(schedules(config).map((e) => e.dir)).toEqual(
       expect.arrayContaining(['/', '/webapp', '/shared', '/game']),
@@ -112,7 +112,7 @@ describe('автомерж бот-PR Dependabot', () => {
         entry('/shared', ''),
       ].join('');
       expect(scheduleViolations(cfg)).toEqual([
-        '/shared: нет day или time',
+        'npm /shared: нет day или time',
         'дни совпадают',
       ]);
     });

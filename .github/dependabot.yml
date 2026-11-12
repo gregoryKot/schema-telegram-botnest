@@ -16,14 +16,9 @@
 #  - мажор, который осознанно не берём, — в `ignore:` с причиной и условием
 #    возврата (решения владельца — docs/open/ci-tests.md, «Мажоры зависимостей»).
 #
-# Кто мержит. Зелёный minor/patch — сам: .github/workflows/dependabot-automerge.yml
-# включает auto-merge (решение владельца; сверка — dependabot-automerge.spec.ts).
-# Поэтому у корня, /webapp и /shared разные дни и тихий час (05:00 UTC): под
-# `strict` первый мерж делает остальные бот-PR отставшими, а отставший PR бот
-# перебазирует только в прогон своего расписания.
-# Красный бот-PR (нужна правка кода, бандл-храповик webapp), мажоры и /game
-# доводит агент: гейты для бота не ослаблены (правило №15), порядок —
-# docs/open/audit-2026-10.md, «Dependabot: доводка бот-PR».
+# Зелёный minor/patch мержит сам dependabot-automerge.yml; дни записей разные,
+# час тихий: под `strict` бот-PR, открытые разом, блокируют друг друга.
+# Красный бот-PR, мажоры и /game доводит агент — docs/open/audit-2026-10.md.
 #
 # Ошибка в этом файле CI не роняет: Dependabot молча перестаёт работать, а
 # причина видна только в Insights → Dependency graph → Dependabot. После
@@ -141,3 +136,5 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: '05:00'

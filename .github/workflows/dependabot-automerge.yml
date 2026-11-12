@@ -16,7 +16,8 @@ permissions:
 
 jobs:
   automerge:
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    # Событие от самого бота: пуш человека в ветку бота auto-merge не включает.
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     # Запись нужна, чтобы включить auto-merge; мержит GitHub, когда ruleset доволен.
