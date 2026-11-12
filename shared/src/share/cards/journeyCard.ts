@@ -15,6 +15,7 @@ import {
   wrapClamp,
 } from '../cardKit';
 import { slipSign } from '../kit/slipSign';
+import { glueSpaces } from '../../utils/typo';
 import {
   formatJourneyDay,
   journeyTypeMeta,
@@ -76,9 +77,10 @@ export function drawJourneyCard(
   title = 'Мой путь',
   subtitle?: string,
 ) {
-  const sub =
-    subtitle ??
-    `${total} ${pluralEntries(total)} заботы о себе · последние шаги`;
+  // Короткий предлог не висит в конце строки подписи («заботы о / себе»).
+  const sub = glueSpaces(
+    subtitle ?? `${total} ${pluralEntries(total)} заботы о себе · последние шаги`,
+  );
   const look = CARD_LOOK.journey;
   const head = { eyebrow: 'Мой путь', title, subtitle: sub, sign: look.sign };
   const lines = headerLines(canvas.getContext('2d')!, head);
