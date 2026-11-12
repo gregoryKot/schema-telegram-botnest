@@ -100,7 +100,7 @@ export function AuthConfirmPage() {
   if (phase === 'denied') return <TicketDenied><ToAppLink /></TicketDenied>;
 
   return (
-    <ServicePage>
+    <ServicePage look={{ hue: 240, sign: 'limits' }}>
       <div className="as-body">
         <div className="ds-eyebrow">Вход по коду</div>
         {/* Безлично: страница вне AddressFormProvider, формы взять неоткуда (как DonatePage). */}

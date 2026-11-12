@@ -38,7 +38,7 @@ describe('AuthErrorPage — чужой текст из адреса', () => {
     const { container } = renderAt(`?reason=${encodeURIComponent(evil)}`);
     expect(container.textContent).not.toContain('8-900');
     expect(container.textContent).not.toContain('заблокирован');
-    expect(container.querySelector('.as-reason')).toBeNull();
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
     expect(screen.getByText('Вход не удался')).toBeTruthy();
     expect(screen.getByText('Попробуй ещё раз или напиши нам в Telegram.')).toBeTruthy();
     expect(reportedMessages()).toHaveLength(1);
@@ -57,7 +57,7 @@ describe('AuthErrorPage — известные коды', () => {
   it('vk_failed: человеческое пояснение, код для поддержки, код в отчёте', () => {
     const { container } = renderAt('?reason=vk_failed');
     expect(screen.getByText(/Вход через ВКонтакте не прошёл/)).toBeTruthy();
-    expect(container.querySelector('.as-reason')?.textContent).toBe('vk_failed');
+    expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('vk_failed');
     expect(reportedMessages()[0]).toMatch(/хост=web, .*, vk_failed$/);
   });
 
@@ -73,12 +73,25 @@ describe('AuthErrorPage — известные коды', () => {
     cleanup();
     const { container } = renderAt('?reason=http_403');
     expect(screen.getByText('Попробуй ещё раз или напиши нам в Telegram.')).toBeTruthy();
-    expect(container.querySelector('.as-reason')?.textContent).toBe('http_403');
+    expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('http_403');
+  });
+
+  // b26: лист исхода по коду — устаревшая ссылка «подожди» (Cup), отказ сервера — граница (Limits);
+  // залитая кнопка одна, «Написать» — тихой ссылкой.
+  it('исход по коду и одна залитая кнопка', () => {
+    const { container } = renderAt('?reason=email_link_expired');
+    expect(container.querySelector('.pa-outcome-card')?.getAttribute('data-sign')).toBe('cup');
+    expect(container.querySelectorAll('.ds-btn')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Запросить новую ссылку' }).className).toContain('ds-btn');
+    expect(screen.getByRole('link', { name: 'Написать' }).className).toContain('pa-quiet');
+    cleanup();
+    const { container: refused } = renderAt('?reason=http_403');
+    expect(refused.querySelector('.pa-outcome-card')?.getAttribute('data-sign')).toBe('limits');
   });
 
   it('без причины — ни блока с кодом, ни отчёта', () => {
     const { container } = renderAt('');
-    expect(container.querySelector('.as-reason')).toBeNull();
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
     expect(reportClientError).not.toHaveBeenCalled();
   });
 });
@@ -91,7 +104,7 @@ describe('AuthErrorPage — ссылка из письма', () => {
     const { container } = renderAt('?reason=email_link_expired');
     expect(screen.getByRole('heading').textContent).toBe('Ссылка устарела');
     expect(screen.getByText(/открывается только один раз\. Запроси новую\./)).toBeTruthy();
-    expect(container.querySelector('.as-reason')).toBeNull();
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
     const link = screen.getByText('Запросить новую ссылку') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/login?via=email');
     expect(reportedMessages()[0]).toMatch(/, email_link_expired$/);
@@ -120,7 +133,7 @@ describe('AuthErrorPage — провайдер выключен', () => {
     expect(screen.getByText(/временно отключён/)).toBeTruthy();
     const link = screen.getByText('Другой способ входа') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/login');
-    expect(container.querySelector('.as-reason')).toBeNull();
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
     expect(reportedMessages()[0]).toMatch(/, google_disabled$/);
   });
 

@@ -26,6 +26,19 @@ const AUTH_ERROR_SCREENS: Record<string, AuthErrorScreen> = {
   ) },
 };
 
+/** Исход листа `/auth/error` (docs/design/APP_2026-11.md, «Исходы служебных страниц»): подожди или
+ *  устарело — `wait` (ссылка истекла, лимит, нет связи, вход временно отключён); отказ — `limit`
+ *  (сервер отбил вход: 4xx кроме лимита); остальное, и неизвестный код, — сбой на нашей стороне. */
+export type AuthErrorOutcome = 'wait' | 'limit' | 'our_side';
+const WAIT_CODES = new Set(['email_link_expired', 'email_network', 'telegram_expired', 'google_disabled', 'vk_disabled', 'http_429']);
+
+export function authErrorOutcome(code: string | null): AuthErrorOutcome {
+  if (!code) return 'our_side';
+  if (WAIT_CODES.has(code)) return 'wait';
+  if (/^http_4\d\d$/.test(code)) return 'limit';
+  return 'our_side';
+}
+
 /** Экран для известного кода; прочие коды — общий «Вход не удался». */
 export function authErrorScreen(code: string | null): AuthErrorScreen | null {
   return code && Object.prototype.hasOwnProperty.call(AUTH_ERROR_SCREENS, code)

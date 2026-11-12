@@ -6,15 +6,8 @@ import { resolvePersonalSite } from './utils/personalSite';
 import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
 import { TokenBridge } from './auth/TokenBridge';
-import { LoginPage } from './pages/LoginPage';
-import { AuthErrorPage } from './pages/AuthErrorPage';
-import { AuthCallback } from './pages/AuthCallback';
-import { AuthConfirmPage } from './pages/AuthConfirmPage';
-import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
-import { LinkDevicePage } from './pages/LinkDevicePage';
-import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { ScrollLock } from './hooks/ScrollLock';
@@ -28,6 +21,14 @@ import { ArticlesListPage, ArticlePage } from './pages/ArticlesPage';
 import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
+import { LoginPage } from './pages/LoginPage'; // вход и служебные — после прочих: их PaperOutcome (sceneKit) иначе переставляет CSS-чанки (b26)
+import { AuthErrorPage } from './pages/AuthErrorPage';
+import { AuthCallback } from './pages/AuthCallback';
+import { AuthConfirmPage } from './pages/AuthConfirmPage';
+import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
+import { LinkDevicePage } from './pages/LinkDevicePage';
+import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
+import { NotFoundPage } from './pages/NotFoundPage';
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 import { DonatePage } from './pages/DonatePage';
@@ -129,13 +130,12 @@ const appRoutes = [
           { path: '/cabinet',           element: null },
           { path: '/cabinet/:clientId', element: null },
           { path: '/cabinet/:clientId/:tab', element: null }, // вкладка карточки (therapist/clientTabRoute)
-          { path: '*',                  element: <Navigate to="/today" replace /> },
         ],
       },
     ],
   },
+  { path: '*',               element: <NotFoundPage /> }, // 404 гостю и вошедшему (b26), а не молча на вход или в «Сегодня»
 ];
-
 // ── Domain detection + router ────────────────────────────────────────────────
 // Домен и роутер считаются при первом рендере, а не при импорте модуля: App.test
 // подменяет адрес и рендерит App без пересборки всего графа (docs/open/ci-tests.md).

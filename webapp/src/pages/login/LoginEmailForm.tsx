@@ -71,7 +71,7 @@ export function LoginEmailForm({ setError }: { setError: (e: string | null) => v
         value={value}
         onChange={e => setValue(e.target.value)}
       />
-      <button type="submit" disabled={loading} className="al-submit">
+      <button type="submit" disabled={loading} aria-busy={loading || undefined} className="al-submit al-submit--quiet">
         {loading ? 'Отправляем…' : 'Отправить ссылку'}
       </button>
       <button type="button" className="al-linkbtn" onClick={() => { setShow(false); setError(null); }}>
