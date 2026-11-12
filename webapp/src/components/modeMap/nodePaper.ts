@@ -4,15 +4,17 @@ import { getSchemaById } from '../../schemaTherapyData';
 import { needColor } from '../../../../shared/src/needs/needColors';
 import { NODE_PAPER_LC as P } from '../../../../shared/src/modeMap/nodePaperTone';
 import type { ModeNodeData } from './nodeStyle';
+import { isPlainPaper, PLAIN_HUE, PLAIN_TONES } from './plainPaper';
 
 // Бумага фигуры холста (docs/design/APP_2026-11.md, b34): заливка — бумага оттенка сущности,
 // контур — тот же оттенок тоном глубже, тень — сплошной сдвинутый слой. Оттенок и цвета считает
 // этот файл (paperInk), CSS (.mm2-n в styles/modemap-paper.css) берёт их переменными. Режим берёт тон своей группы,
-// схема — домена, потребность — свой; триггер — шалфей «Что случилось», поведение — солома, опыт детства — небо.
+// схема — домена, потребность — свой; триггер — солома (шалфей 135 сливался со Здоровым Взрослым 145), опыт детства —
+// персик «Колеса детства» (небо сливалось с копингами); поведение — нейтральная бумага без оттенка (plainPaper.ts).
 // Знаки типа (палитра, легенда) красит токен той же семьи — TYPE_COLORS в modeMapData.ts.
 export const TYPE_HUE: Record<string, number> = {
-  trigger: 135, child: 28, critic: 310, coping: 240, healthy: 145, custom: 195,
-  behavior: 70, schema: 28, origin: 240, need: 70, needs: 70,
+  trigger: 70, child: 28, critic: 310, coping: 240, healthy: 145, custom: 195,
+  behavior: PLAIN_HUE, schema: 28, origin: 45, need: 70, needs: 70,
 };
 
 /** Цвета из «Цвет» редактора узла (COLOR_PRESETS) — те же листы бумаги, а не отдельная палитра. */
@@ -42,9 +44,7 @@ export function nodeHue(type: string, d: PaperData): number | null {
 }
 
 const STROKE_PX: Record<string, number> = { thin: 1, normal: 1.5, bold: 3 };
-
 export interface PaperInk { fill: string; line: string; shade: string }
-
 // Три состояния заливки: бумага, плотнее («Заливка»), сплошной тон со светлым текстом. [L C] лица, контура и тени; бумага и контур — общие со схемой случая (P).
 const TONES = {
   paper: [P.fill, P.line, P.shade],
@@ -59,18 +59,18 @@ const OWN = { paper: [16, 62, 34], filled: [30, 62, 40], full: [88, 100, 40] } a
  * рисует SVG-контур вне страницы, и переменные там не разрешаются — контур выходил чёрным.
  * Единственное место чисел бумаги узла: CSS (.mm2-n) только берёт --n-fill / --n-line / --n-shade.
  */
-export function paperInk(hue: number | null, own: string | undefined, d: Pick<ModeNodeData, 'filled' | 'fillFull'>): PaperInk {
+export function paperInk(hue: number | null, own: string | undefined, d: Pick<ModeNodeData, 'filled' | 'fillFull'>, plain = false): PaperInk {
   const state = d.fillFull ? 'full' : d.filled ? 'filled' : 'paper';
   const [fill, line, shade] = hue === null
     ? OWN[state].map((pct) => `color-mix(in oklch, ${own} ${pct}%, white)`)
-    : TONES[state].map((lc) => `oklch(${lc} ${hue})`);
+    : (plain ? PLAIN_TONES : TONES)[state].map((lc) => `oklch(${lc} ${hue})`);
   return { fill, line, shade };
 }
 
 /** Класс и переменные бумаги для корня фигуры (оттенок или свой цвет, заливка, выделение, толщина контура) и те же цвета для SVG-контура. */
 export function nodePaper(type: string, d: ModeNodeData, selected?: boolean, extra = ''): { className: string; style: CSSProperties; ink: PaperInk; stroke: number } {
   const hue = nodeHue(type, d);
-  const ink = paperInk(hue, d.customColor, d);
+  const ink = paperInk(hue, d.customColor, d, isPlainPaper(type, d));
   if (selected) ink.line = 'var(--accent)';
   const stroke = STROKE_PX[d.strokeWidth ?? 'normal'] ?? 1.5;
   const vars: Record<string, string | number> = { '--n-fill': ink.fill, '--n-line': ink.line, '--n-shade': ink.shade, '--n-sw': `${stroke}px` };

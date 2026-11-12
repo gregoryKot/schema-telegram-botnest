@@ -7,7 +7,7 @@ import type { CatalogGroup } from './paletteModel';
 const draft = { id: 'x', type: 'schema' as const, data: { label: 'S' } };
 const group: CatalogGroup = {
   id: 'g', title: 'Группа', hint: 'Группа полностью', total: 2,
-  items: [{ id: 'i', name: 'Пункт', hint: 'что это', mark: 'mode', color: 'var(--c-teal)', draft: () => draft }],
+  items: [{ id: 'i', name: 'Пункт', hint: 'что это', mark: 'mode', sign: 'looming', color: 'var(--c-teal)', draft: () => draft }],
 };
 const base = { group, art: <svg data-testid="art" />, onToggle: vi.fn(), onAdd: vi.fn() };
 
@@ -25,11 +25,11 @@ describe('PaletteGroup', () => {
     expect(onToggle).toHaveBeenCalledWith('g');
   });
 
-  it('знак группы — в колонке знака заголовка; строка — свой маленький знак, имя и подсказка', () => {
+  it('знак группы — в колонке знака заголовка; строка — маленький знак группы 24×14, имя и подсказка', () => {
     const { container } = render(<PaletteGroup {...base} open />);
     expect(container.querySelector('.mm2-pal-head .mm2-pal-mark [data-testid="art"]')).not.toBeNull();
     const row = screen.getByText('Пункт').closest('button')!;
-    expect(row.querySelector('.mm2-pal-mark svg[data-mark="mode"]')).not.toBeNull();
+    expect(row.querySelector('.mm2-pal-mark svg.pp-art--nav')).not.toBeNull();
     expect(row.getAttribute('title')).toBe('Пункт — что это');
   });
 

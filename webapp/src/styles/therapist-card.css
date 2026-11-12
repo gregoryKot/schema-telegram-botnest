@@ -26,6 +26,8 @@
   /* «Графические карты»: холст во всю ширину, полоса карт — в колонке, на одной вертикали с шапкой. */
   .tk-tabs-body .mm2-bar, .tk-tabs-body .mm2-create-err { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); }
 }
+/* Пустые «Графические карты» на узком окне: плитки типов 3 + 2 встают в поле шапки (sheet-modemap.css). */
+@media (min-width: 768px) and (max-width: 1023px) { .tk-tabs-body .mm2-center--kinds { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); } }
 
 /* ── Шапка ───────────────────────────────────────────────────────────────── */
 .tk-head {
@@ -60,25 +62,21 @@
    встают в колонку кабинета, под «← Все клиенты» (правило — в блоке ≥768
    выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
 
-/* Компактная шапка — только «Графические карты» на компьютере и планшете (useClientHead.ts, b34):
-   одна строка «← Все клиенты · аватар · имя · плашки-состояния · действия», без статуса и «Встречи»
-   (плашка «офлайн» остаётся: без неё не видно, что клиент без приложения) — высота уходит
-   холсту (на 1280×900 шапка занимала 230px из 900). Боковое поле то же, что у обычной шапки:
-   вбок при смене вкладки ничего не прыгает. На узком окне «← Все клиенты» остаётся своей строкой. */
-.tk-head--compact { padding-top: 6px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 20px; align-items: center; }
-.tk-head--compact > .ds-back { margin: 0; align-self: center; }
-.tk-head--compact > .tk-head-row { gap: 12px; flex-wrap: nowrap; min-height: 44px; }
-.tk-head--compact > .ds-tabs, .tk-head--compact > .tk-error { grid-column: 1 / -1; }
-.tk-head--compact .tk-avatar { width: 32px; height: 32px; font-size: 13px; }
+/* Компактная шапка — только «Графические карты» на компьютере и планшете (useClientHead.ts, b34).
+   Компактность — ТОЛЬКО по вертикали (решение владельца 2026-11-06 «шапка не прыгает вбок»): раскладка
+   та же, что у обычной шапки, — «← Все клиенты» над строкой «аватар · имя · действия», тот же перенос
+   действий на узком окне, то же поле. Убраны статус и «Встреча» (плашка «офлайн» остаётся в строке
+   имени: без неё не видно, что клиент без приложения), сжаты отступы и аватар. Аватар меньше, но
+   занимает ту же ширину (48 + 8 = 56): имя стоит на той же вертикали, что на остальных вкладках. */
+.tk-head--compact { padding-top: 6px; gap: 6px; }
+.tk-head--compact > .ds-back { margin-block: -8px -12px; }
+.tk-head--compact .tk-avatar { width: 48px; height: 48px; font-size: 18px; margin-right: 8px; }
 /* Отступ — у самой плашки, а не gap строки: пустая строка плашек не отнимает ширину у имени. */
-.tk-head--compact .tk-ident { min-width: 0; display: flex; align-items: center; }
+.tk-head--compact .tk-ident { display: flex; align-items: center; }
 .tk-head--compact .tk-badges { margin-top: 0; flex: none; flex-wrap: nowrap; gap: 0; }
 .tk-head--compact .tk-badges > * { margin-left: 10px; }
 .tk-head--compact .tk-badges > .tk-meta, .tk-head--compact .tk-badges > .tc-meeting { display: none; }
 .tk-head--compact .tk-actions .ds-btn { min-height: 36px; height: 36px; }
-@media (max-width: 1099px) {
-  .tk-head--compact > .ds-back, .tk-head--compact > .tk-head-row { grid-column: 1 / -1; }
-}
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
 /* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.

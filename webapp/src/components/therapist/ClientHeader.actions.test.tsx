@@ -236,8 +236,9 @@ describe('шапка: имя и встреча', () => {
 // картах» она уходила во всю ширину (tk-head--wide), и при переходе на любую
 // другую вкладку прыгала вбок. Теперь шапка одна на все вкладки, а в колонку
 // под неё встаёт полоса карт (therapist-card.css, сверка — therapistCard.test.ts).
-// С b34 (docs/design/APP_2026-11.md) на «Графических картах» шапка компактная по высоте
-// (.tk-head--compact: одна строка, высота — холсту); боковое поле то же, вбок ничего не прыгает.
+// Бриф b34 (docs/design/APP_2026-11.md) сузил на «Графических картах» только ВЫСОТУ шапки
+// (.tk-head--compact: без статуса и «Встречи», меньше отступы). Раскладка та же: «← Все клиенты»
+// над строкой «аватар · имя · действия», порядок в DOM один — решение «не прыгает вбок» соблюдено.
 describe('шапка одна на все вкладки', () => {
   const TABS: ClientTab[] = ['overview', 'concept', 'sessions', 'tasks', 'ysq', 'client_notes'];
   it.each(TABS)('%s — тот же класс .tk-head без модификаторов', (clientTab) => {
@@ -250,5 +251,11 @@ describe('шапка одна на все вкладки', () => {
     expect(head.className).toBe('tk-head tk-head--compact');
     expect(head.querySelector('.tk-actions')).toBeTruthy();
     expect(head.querySelector('.ds-tabs')).toBeTruthy();
+    const order = (el: Element) => [...el.children].map((c) => c.className.split(' ')[0]);
+    cleanup();
+    renderHeader(detailOf({ clientTab: 'overview' }));
+    const plain = screen.getByText('← Все клиенты').closest('.tk-head')!;
+    expect(order(head)).toEqual(order(plain));
+    expect(order(head.querySelector('.tk-head-row')!)).toEqual(order(plain.querySelector('.tk-head-row')!));
   });
 });

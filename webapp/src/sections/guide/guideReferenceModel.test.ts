@@ -128,3 +128,47 @@ describe('searchReference', () => {
     expect(searchReference(ref, 'щщщ')).toEqual([]);
   });
 });
+
+// Ревью вкуса r1: три листа копингов одного неба 240 стояли соседями — сплошное голубое поле.
+// Теперь лист один, подгрупп три: подписи, знаки и порядок строк — прежние.
+describe('копинги — один лист с тремя подгруппами', () => {
+  const coping = buildReference(texts({
+    buildModeGuides: () => [
+      mode('vulnerable_child'), mode('compliant_surrenderer'), mode('detached_protector'), mode('angry_protector'),
+      mode('overcontroller'), mode('self_aggrandiser'), mode('healthy_adult'),
+    ],
+  }), tr);
+
+  it('три группы копингов сведены в один лист неба без общей подписи и знака; соседние группы — как были', () => {
+    expect(coping.modes.map((g) => g.key)).toEqual(['child', 'coping', 'healthy']);
+    const sheet = coping.modes[1];
+    expect(sheet.title).toBeUndefined();
+    expect(sheet.look).toEqual({ hue: 240 });
+    expect(coping.modes[0].parts).toBeUndefined();
+  });
+
+  it('у подгруппы — прежняя подпись группы и её знак; строки в порядке реестра, общий список — те же строки подряд', () => {
+    const sheet = coping.modes[1];
+    expect(sheet.parts!.map((p) => [p.title, p.look.sign])).toEqual([
+      ['Копинг: Капитуляция', 'yield'], ['Копинг: Избегание', 'shelter'], ['Копинг: Гиперкомпенсация', 'shield'],
+    ]);
+    expect(sheet.parts!.map((p) => p.items.map((i) => i.id))).toEqual([
+      ['compliant_surrenderer'], ['detached_protector', 'angry_protector'], ['self_aggrandiser', 'overcontroller'],
+    ]);
+    expect(sheet.items).toEqual(sheet.parts!.flatMap((p) => p.items));
+  });
+
+  it('копинг одного стиля — тоже лист с подгруппой (подпись стиля не теряется); без копингов листа нет', () => {
+    const one = buildReference(texts({ buildModeGuides: () => [mode('detached_protector')] }), tr).modes;
+    expect(one.map((g) => g.key)).toEqual(['coping']);
+    expect(one[0].parts!.map((p) => p.title)).toEqual(['Копинг: Избегание']);
+    expect(buildReference(texts(), tr).modes.some((g) => g.parts)).toBe(false);
+  });
+
+  it('поиск: найденный копинг остаётся на листе с подписью и знаком своей подгруппы', () => {
+    const found = searchReference(coping, 'защитник');
+    expect(found.map((g) => [g.key, g.title, g.look.sign, g.look.hue])).toEqual([['modes:coping_avoidance', 'Копинг: Избегание', 'shelter', 240]]);
+    expect(found[0].items.map((i) => i.id)).toEqual(['detached_protector', 'angry_protector']);
+    expect(found[0].parts).toBeUndefined();
+  });
+});

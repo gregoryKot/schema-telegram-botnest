@@ -6,11 +6,23 @@
 .gr-wrap { container-type: inline-size; }
 .gr-list { display: flex; flex-direction: column; gap: 16px; }
 .gr-column { display: flex; flex-direction: column; gap: var(--space-16); }
+/* Вкладки справочника на телефоне: на 390 четыре вкладки входят целиком (поля кнопок уже, без хвоста
+   прокрутки — до этого «Для терапевта» срезалась на 9px у края); на 320 лента прокручивается и край
+   затухает (FadeSeg). */
+@media (max-width: 399px) {
+  .gr-seg > .ds-seg-btn { padding-inline: 10px; }
+  .gr-seg.ds-seg--scroll::after { content: none; }
+}
 /* Строка со знаком: знак у названия, название с сутью, шеврон по центру. */
 .gr-row { grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; min-height: 56px; }
 .gr-row > .pp-row-art { padding-top: 1px; }
 .gr-row > .ds-chev { align-self: center; }
 .gr-row .ds-list-sub { line-height: 1.45; }
+/* Лист с подгруппами (три копинга на одном листе неба): общий белый список снят, у подгруппы своя шапка
+   (знак 44, как у трёх знаков копингов справочника клиента) и свой белый список. */
+.sg-rows.gr-parts { gap: 14px; border-radius: 0; background: none; overflow: visible; }
+.gr-part-head.sg-head { margin-bottom: 8px; }
+.gr-part-head .sg-sign, .gr-part-head .sg-sign .pp-art--square { width: 44px; }
 /* Силуэт загрузки: подпись и строки группы — в тех же колонках, что листы. */
 .gr-skel-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; break-inside: avoid; }
 

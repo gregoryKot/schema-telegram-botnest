@@ -39,8 +39,10 @@
 
 /* ── Палитра холста (ModeMapPalette, modeMap/Palette*.tsx) ──
    Одна сетка: колонка знака 28px (знак группы или маленький знак строки) и колонка текста.
-   Один кегль 14px, имена в одну строку с многоточием (полное — в title), без жирных
-   заголовков и разделителей между группами; число и шеврон — тихие. Язык знаков —
+   Один кегль 14px; имя строки, не вошедшее в 177px («Перфекционист-Гиперконтролёр», «Жёсткие
+   стандарты / Придирчивость»), переносится на вторую строку, а не режется многоточием (полное — и
+   в title); без жирных заголовков и разделителей между группами; число и шеврон — тихие. Знак
+   строки — как в «Справочнике»: группа режимов и домен схем 24×14 (PaletteRow). Язык знаков —
    docs/design/PAPER_2026-11.md. */
 .ds-card.mm2-pal { --pal-mark: 28px; width: 240px; flex-shrink: 0; display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; padding: 0; background: var(--surface); }
 /* Редактор: палитра (или её ушко) | холст | панель свойств. Ушко — PaletteEar: кружок на краю раскрытой
@@ -69,12 +71,13 @@
 .mm2-pal-head { min-height: 40px; cursor: pointer; }
 .mm2-pal-head:not(.is-static), .mm2-pal-more { padding-right: 8px; } /* у шеврона своё поле внутри 12px */
 .mm2-pal-head.is-static { cursor: default; }
-.mm2-pal-item { min-height: 36px; cursor: pointer; }
+.mm2-pal-item { min-height: 36px; padding-block: 6px; cursor: pointer; }
 .mm2-pal-head:hover:not(.is-static), .mm2-pal-item:hover, .mm2-pal-more:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .mm2-pal-mark { width: var(--pal-mark); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .mm2-pal .pp-art--row { width: var(--pal-mark); height: 15px; }
 .mm2-mark { display: block; width: 20px; height: 20px; flex-shrink: 0; }
-.mm2-pal-head-name, .mm2-pal-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm2-pal-head-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mm2-pal-item-name { flex: 1; min-width: 0; overflow: hidden; overflow-wrap: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .mm2-pal-head-name { font-weight: 500; }
 .mm2-pal-head-n { margin-left: -4px; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .mm2-pal-chev { margin: 0 -2px 0 -4px; color: var(--text-faint); transition: transform .15s; }
@@ -158,7 +161,7 @@
 .mm2-chips.is-tight { gap: 5px; margin: 0; }
 /* Чипы панели — листки бумаги: тихий невыбранный, выбранный — шалфей с галочкой (знак — маской, цветом текста). */
 .mm2-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 11px; border-radius: 12px; font: 12px var(--sans); cursor: pointer; border: 0; background: var(--paper-tint); color: var(--text-sub); }
-.mm2-chip.is-active { background: oklch(0.915 0.03 135); color: var(--text); }
+.mm2-chip.is-active { --h: 135; background: oklch(0.915 0.03 var(--h)); color: var(--text); }
 .mm2-chip.is-active::before {
   content: ''; flex-shrink: 0; width: 11px; height: 11px; background: var(--ok);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
@@ -190,17 +193,17 @@
 .mm2-wp-head b { font-variant-numeric: tabular-nums; }
 .mm2-wp-head .ds-link { margin-left: auto; font-size: 12px; }
 .ds-btn.mm2-hint-btn { width: 100%; min-height: 36px; margin-top: 4px; font-size: 12.5px; }
-.mm2-sugg { margin-bottom: 14px; padding: 10px 11px; border-radius: 14px; background: oklch(0.915 0.03 70); }
+.mm2-sugg { margin-bottom: 14px; padding: 10px 11px; border-radius: 14px; --h: 70; background: oklch(0.915 0.03 var(--h)); }
 .mm2-sugg-head { display: flex; align-items: center; margin-bottom: 7px; }
 .mm2-sugg-head .ds-label { margin: 0; flex: 1; }
 .mm2-sugg-head button { width: 32px; height: 32px; margin: -8px -6px -8px 0; border: none; background: none; color: var(--text-faint); font-size: 14px; cursor: pointer; }
 .ds-btn.mm2-del { margin-top: auto; height: 40px; font-size: 12.5px; color: var(--err); }
 
 /* ── Подсказка «Спросить себя» ── */
-.mm2-hint { background: oklch(0.915 0.03 70); border-radius: 14px; padding: 10px 11px; margin-bottom: 14px; } /* лист соломы, как «Коротко» схемы случая */
+.mm2-hint { --h: 70; background: oklch(0.915 0.03 var(--h)); border-radius: 14px; padding: 10px 11px; margin-bottom: 14px; } /* лист соломы, как «Коротко» схемы случая */
 .mm2-hint .ds-label { display: flex; align-items: center; gap: 5px; color: var(--accent); margin-bottom: 6px; }
 .mm2-hint-q { display: flex; gap: 6px; width: 100%; min-height: 32px; padding: 4px; border: none; border-radius: 8px; background: none; cursor: pointer; text-align: left; font: 11.5px/1.35 var(--sans); color: var(--text-sub); }
-.mm2-hint-q:hover { background: oklch(0.955 0.018 70); }
+.mm2-hint-q:hover { background: oklch(0.895 0.04 var(--h)); } /* тон бумаги под курсором — как у .pp-square:hover (paper.css) */
 .mm2-hint-q span { color: var(--accent); flex-shrink: 0; }
 
 /* ── Гид, легенда ── */
@@ -236,7 +239,7 @@
 .mm2-step.is-click { cursor: pointer; }
 .mm2-step.is-click:hover { background: color-mix(in srgb, var(--paper-tint) 60%, var(--surface)); }
 .mm2-step-n { flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; background: var(--paper-sunk); color: var(--text-faint); }
-.mm2-step-n.is-done { background: oklch(0.915 0.03 135); color: var(--ok); } /* шаг сделан — листок шалфея с галочкой */
+.mm2-step-n.is-done { --h: 135; background: oklch(0.915 0.03 var(--h)); color: var(--ok); } /* шаг сделан — листок шалфея с галочкой */
 .mm2-step-n.is-click { background: var(--paper-tint); color: var(--accent); }
 .mm2-step-t { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
 .mm2-step-t.is-done { color: var(--text); }
@@ -258,7 +261,7 @@
 /* Поле 16px — у вьюера; в карточке клиента полоса стоит в колонке кабинета, под шапкой (therapist-card.css). */
 .mm2-bar { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; flex-shrink: 0; min-height: 56px; }
 .mm2-rename { width: 140px; flex-shrink: 0; }
-.mm2-bar > .ds-seg { min-width: 0; }
+.mm2-bar > .ds-seg { min-width: 0; margin-right: 6px; } /* зазор до «…»: обрезанная вкладка не упирается в кнопку */
 .mm2-bar > .ds-seg:empty { display: none; } /* карт ещё нет — пустая подложка сегмента не рисуется */
 /* Растяжение сегмента на всю полосу — только телефон; на компьютере он по содержимому. */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) { .mm2-bar > .ds-seg { flex: 1 1 auto; } }
@@ -287,7 +290,7 @@
 .mm2-kind-card .pp-art { order: 2; width: 84px; height: 45px; }
 .mm2-kind-card:disabled { cursor: default; }
 .mm2-kind-card:disabled > * { opacity: .5; }
-.mm2-kind-card:disabled:hover { background: oklch(0.915 0.03 var(--h)); }
+.mm2-kind-card:disabled:hover { background: oklch(0.915 0.03 var(--h)); } /* та же бумага .pp-paper: недоступная плитка под курсором не темнеет */
 @media (max-width: 1279px) {
   .mm2-kinds { grid-template-columns: repeat(6, minmax(0, 95px)); gap: 10px; padding: 0 12px; }
   .mm2-kind-card.pp-square { padding: 16px 12px 14px; }
@@ -295,17 +298,27 @@
   .mm2-kind-card { grid-column: span 2; }
   .mm2-kind-card:nth-child(4) { grid-column: 2 / span 2; }
 }
-/* Уже 1024 (планшет с открытым меню — колонка 528) три плитки в ряд узки для «Концептуализации»: 2 + 2 + 1 по центру. */
+/* Уже 1024 (планшет с открытым меню — колонка 528): те же 3 + 2, плитки во всю колонку с полем шапки
+   (а не 2 + 2 + 1 узкой стопкой); «Концептуализация» входит в плитку 148px кеглем 13 при поле 8. */
 @media (max-width: 1023px) {
-  .mm2-kinds { grid-template-columns: repeat(4, minmax(0, 120px)); }
-  .mm2-kind-card.pp-square { min-height: 168px; }
-  .mm2-kind-card:nth-child(4) { grid-column: span 2; }
-  .mm2-kind-card:nth-child(5) { grid-column: 2 / span 2; }
+  .mm2-kinds { grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 0; }
+  .mm2-center--kinds { padding-inline: 16px; } /* в карточке клиента — поле шапки (therapist-card.css) */
+  .mm2-kind-card.pp-square { min-height: 168px; padding: 14px 8px 12px; }
+  .mm2-kind-card .mm2-kind-name { font-size: 13px; }
+  .mm2-kind-card .mm2-kind-hint { font-size: 12px; }
+  .mm2-kind-card .pp-art { width: 64px; height: 34px; }
 }
+/* Пустые «Графические карты»: заголовок без знака (знак режимов уже в плитке «Карта режимов»), блок —
+   от верха вкладки, а не по центру высоты (над ним оставалось ~200px пустоты). */
+.mm2-center--kinds { justify-content: flex-start; box-sizing: border-box; padding-top: 28px; }
+.mm2-kinds-head { display: flex; flex-direction: column; gap: 4px; }
+.mm2-kinds-head > p { margin: 0; }
 .mm2-create-err { margin: 0; padding: 6px 16px; font-size: 12.5px; color: var(--err); flex-shrink: 0; }
 /* Статус холста (ModeMapCanvas): связь с концептуализацией (ConceptSyncLine, #963) и сохранение — тихая
    плашка поверх холста, а не этаж над ним: высота отдана холсту (b34). Справа от тулбара, пока холст
-   широкий; на узком (палитра и панель свойств по бокам, планшет) — строкой под тулбаром, от левого края:
+   широкий (от 1100: справа от тулбара остаётся ≥600px — строка связи входит целиком); уже (ноутбук 1280
+   с палитрой — холст 780, панель свойств, планшет) — строкой под тулбаром, от левого края, во всю ширину:
+   в 258px справа от тулбара текст резался до «Нет на карте 9 из кон…» при пустом холсте под ним;
    до 2026-11 статус в правом углу наезжал там на тулбар (скриншот владельца), поэтому место выбирает
    ширина холста (контейнер mm2c), а не окна. Одна линия: текст режет многоточие (все имена — в title
    и по тапу, .is-open), кнопки и статус сохранения не сжимаются. Пустая плашка не рисуется. */
@@ -315,13 +328,13 @@
   border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
 }
 .mm2-statusbar:not(:has(> *)), .mm2-statusbar:has(> .mm2-save:only-child:empty) { display: none; }
-@container mm2c (max-width: 759px) {
+@container mm2c (max-width: 1099px) {
   .mm2-statusbar { top: 69px; left: 15px; right: auto; max-width: calc(100% - 30px); min-height: 36px; }
 }
 @container mm2c (max-width: 479px) { .mm2-statusbar { top: 105px; } } /* тулбар перенёсся во вторую строку */
 @media (pointer: coarse) {
-  .mm2-statusbar { min-height: 54px; }
-  @container mm2c (max-width: 1019px) { .mm2-statusbar { top: 77px; min-height: 44px; } }
+  .mm2-statusbar { min-height: 54px; max-width: calc(100% - 620px); } /* тулбар под пальцем шире: кнопки 44 */
+  @container mm2c (max-width: 1099px) { .mm2-statusbar { top: 77px; min-height: 44px; max-width: calc(100% - 30px); } }
   @container mm2c (max-width: 619px) { .mm2-statusbar { top: 125px; } }
 }
 .mm2-save { margin-left: auto; flex-shrink: 0; white-space: nowrap; }
@@ -343,7 +356,7 @@ button.mm2-sync-text { min-height: 44px; margin: -12px 0; padding: 0; border: no
 .mm2-canvas:has(.mm2-guide:not(.is-min)) > .mm2-canvas-empty { padding-right: 310px; }
 /* Узкий холст: плашка статуса стоит строкой под тулбаром — подсказки не поднимаются на неё, а пустое
    состояние встаёт под плашку, над подсказками (им остаётся низ холста). */
-@container mm2c (max-width: 759px) {
+@container mm2c (max-width: 1099px) {
   .ds-card.mm2-guide { max-height: calc(100cqh - 126px); }
   .mm2-canvas:has(.mm2-guide:not(.is-min)) > .mm2-canvas-empty { padding: 122px 24px 0; justify-content: flex-start; }
   .mm2-canvas:has(> .mm2-canvas-empty) .ds-card.mm2-guide { max-height: calc(100cqh - 250px); }

@@ -26,7 +26,7 @@ export function DownloadMenu({ nodes, open, onToggle, onClose }: Props) {
       <TbBtn label="Скачать карту (PNG / PDF)" onClick={onToggle}
         active={open} caret disabled={nodes.length === 0}><MMIcon name="download" size={17} /></TbBtn>
       {open && (
-        <Dropdown anchorRef={wrapRef} onClose={onClose}>
+        <Dropdown portal anchorRef={wrapRef} onClose={onClose}>
           <button disabled={exporting} onClick={() => onExportPng()} className="ds-menu-item">Картинка PNG</button>
           <button disabled={exporting} onClick={() => onExportPdf()} className="ds-menu-item">Документ PDF</button>
           {exportError && (

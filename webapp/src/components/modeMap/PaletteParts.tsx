@@ -1,7 +1,8 @@
-// Строка и заголовок палитры холста — одна сетка на всю палитру: колонка знака
-// (28px: знак группы или маленький знак строки) и колонка текста. Имя в одну
-// строку с многоточием, полное — в подсказке (title). Стили — sheet-modemap.css.
+// Строка и заголовок палитры холста — одна сетка: колонка знака (28px) и колонка текста. Знак строки, как в
+// «Справочнике»: режим — знак группы 24×14, схема — знак домена; фигура — свой знак. Длинное имя — в две строки.
 import type { ReactNode } from 'react';
+import { DomainArt } from '../art/DomainArt';
+import { GuideSignArt } from '../art/GuideSigns';
 import { MMIcon } from '../modeMapIcons';
 import type { Draft } from './modeDraft';
 import { startNodeDrag } from './nodeDrag';
@@ -13,24 +14,22 @@ export function PaletteRow({ item, onAdd }: { item: PaletteItem; onAdd: (node: D
   return (
     <button onClick={() => onAdd(item.draft())} draggable onDragStart={e => startNodeDrag(e, item.draft())}
       className="mm2-pal-item" title={item.hint ? `${item.name} — ${item.hint}` : item.name}>
-      <span className="mm2-pal-mark"><PaletteMark kind={item.mark} color={item.color} /></span>
+      <span className="mm2-pal-mark">
+        {item.sign ? <GuideSignArt sign={item.sign} size="nav" /> : item.domain ? <DomainArt domain={item.domain} size="nav" />
+          : item.mark !== 'mode' && <PaletteMark kind={item.mark} color={item.color} />}
+      </span>
       <span className="mm2-pal-item-name">{item.name}</span>
     </button>
   );
 }
 
 interface HeadProps {
-  /** Знак группы (svg размера row) — в колонке знака. */
-  art: ReactNode;
+  art: ReactNode; // знак группы (svg размера row) — в колонке знака
   title: string;
-  /** Полное имя группы, если подпись короче. */
-  hint?: string;
+  hint?: string; // полное имя группы, если подпись короче
   count?: number;
-  /** Есть onToggle — заголовок сворачивает группу (кнопка с шевроном). */
-  open?: boolean;
-  onToggle?: () => void;
-  /** Тихое действие справа (только у заголовка без сворачивания: кнопку в кнопку не вложить). */
-  children?: ReactNode;
+  open?: boolean; onToggle?: () => void; // есть onToggle — заголовок сворачивает группу (кнопка с шевроном)
+  children?: ReactNode; // тихое действие справа (только у заголовка без сворачивания: кнопку в кнопку не вложить)
 }
 
 /** Заголовок секции палитры: знак, подпись, серое число и тонкий шеврон. */
