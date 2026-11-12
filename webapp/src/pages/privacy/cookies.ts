@@ -10,7 +10,7 @@ export type CookieRow = [string, string];
 
 export const TECHNICAL_COOKIES: readonly CookieRow[] = [
   ['Refresh-token cookie (refresh_token, refresh_cross)', 'Автоматическое обновление сессии. Хранится до 30 дней или до выхода из системы.'],
-  ['Cookie шагов входа (oauth_state, vk_pkce, tg_link_user, link_token, login_ticket)', 'Временные: действуют только на время входа или привязки способа входа к учётной записи. vk_pkce – проверка входа через VK ID, живёт 10 минут; login_ticket – хеш кода устройства, начавшего вход по билету, живёт 5 минут; остальные живут не дольше 10 минут.'],
+  ['Cookie шагов входа (oauth_state, vk_pkce, link_token, login_ticket)', 'Временные: действуют только на время входа или привязки способа входа к учётной записи. vk_pkce – проверка входа через VK ID, живёт 10 минут; login_ticket – хеш кода устройства, начавшего вход по билету, живёт 5 минут; остальные живут не дольше 10 минут.'],
 ];
 
 export const ANALYTICS_COOKIES: readonly CookieRow[] = [

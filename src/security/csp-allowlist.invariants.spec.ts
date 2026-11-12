@@ -1,6 +1,6 @@
 // Аудит 2026-10-11 («Мелочь»): script-src разрешал https://telegram.org, хотя
 // ни одна страница скриптов оттуда не грузит — telegram-web-app.js отдаём
-// сами, вход через Telegram идёт переходом на oauth.telegram.org. Мёртвая
+// сами (входа через Telegram на сайте нет с 2026-11). Мёртвая
 // запись allowlist — лишняя дверь: чужой скрипт с этого домена исполнился бы.
 //
 // Сверка от настоящего заголовка (helmet с helmetOptions, через HTTP): у
@@ -66,7 +66,7 @@ describe('CSP: у каждого внешнего источника есть п
     expect(orphanOrigins(got!, sources)).toEqual([]);
   });
 
-  it('script-src не пускает telegram.org: SDK свой, вход — переходом', async () => {
+  it('script-src не пускает telegram.org: SDK мини-приложения свой', async () => {
     const got = (await directives()).get('script-src');
     expect(got).not.toContain('https://telegram.org');
     // А потребители соседних записей по-прежнему видны сверке.
@@ -79,6 +79,23 @@ describe('CSP: у каждого внешнего источника есть п
   it('ни одна директива CSP не пускает хосты Google', async () => {
     const all = [...(await directives()).values()].flat();
     expect(all.filter((v) => /google|gstatic/i.test(v))).toEqual([]);
+  });
+
+  // Тот же запрос: вход через Telegram на сайте убран. Ни скрипт, ни запрос, ни
+  // iframe с telegram.org / oauth.telegram.org CSP не пропускает. Единственное
+  // место, где хост Telegram законен, — frame-ancestors: это право Telegram Web
+  // встроить мини-приложение, а не право страницы обратиться к Telegram.
+  it('хосты Telegram есть только в frame-ancestors; чужих фреймов нет', async () => {
+    const all = await directives();
+    const outside = [...all.entries()]
+      .filter(([name]) => name !== 'frame-ancestors')
+      .flatMap(([, values]) => values);
+    expect(outside.filter((v) => /telegram/i.test(v))).toEqual([]);
+    expect(all.get('frame-src')).toEqual(["'none'"]);
+    // Контроль: проверка не слепа — в frame-ancestors Telegram Web есть.
+    expect(all.get('frame-ancestors')!.some((v) => /telegram/i.test(v))).toBe(
+      true,
+    );
   });
 
   it('контроль: источник без потребителя краснеет, подстрока не спасает', () => {

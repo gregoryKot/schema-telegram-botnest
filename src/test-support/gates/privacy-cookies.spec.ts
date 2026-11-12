@@ -64,7 +64,6 @@ describe('глава 10 политики ↔ куки бэкенда', () => {
       'refresh_token',
       'refresh_cross',
       'oauth_state',
-      'tg_link_user',
       'link_token',
     ]) {
       expect(code).toContain(n);

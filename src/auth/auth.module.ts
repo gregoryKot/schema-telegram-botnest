@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthOauthController } from './auth-oauth.controller';
-import { AuthTelegramController } from './auth-telegram.controller';
 import { AuthAccountController } from './auth-account.controller';
 import { AuthLinkController } from './auth-link.controller';
+import { AuthEmailCodeController } from './auth-email-code.controller';
+import { EmailLinkCodeService } from './email-link-code.service';
 import { AuthMaxController } from './auth-max.controller';
 import { AuthTicketController } from './auth-ticket.controller';
 import { AuthTicketHandoffController } from './auth-ticket-handoff.controller';
@@ -20,7 +21,6 @@ import { CallerIdentityService } from './caller-identity';
 import { JwtAuthGuard, OptionalJwtGuard } from './jwt.guard';
 import { MergeService } from './merge.service';
 import { SecurityLogService } from './security-log.service';
-import { TelegramDomainWatchdogService } from './telegram-domain-watchdog.service';
 import { TotpService } from './totp.service';
 import { TotpAttemptsService } from './totp-attempts';
 import { SecurityNoticeService } from './security-notice.service';
@@ -41,6 +41,7 @@ import { NotificationModule } from '../notification/notification.module';
     AuthService,
     AuthFlowService,
     EmailTokenService,
+    EmailLinkCodeService,
     CallerIdentityService,
     JwtAuthGuard,
     OptionalJwtGuard,
@@ -51,7 +52,6 @@ import { NotificationModule } from '../notification/notification.module';
     TicketDeviceService,
     SecurityLogService,
     SecurityNoticeService,
-    TelegramDomainWatchdogService,
     TotpService,
     TotpAttemptsService,
     StepUpService, // его берёт StepUpGuard в @UseGuards
@@ -64,9 +64,9 @@ import { NotificationModule } from '../notification/notification.module';
   controllers: [
     AuthController,
     AuthOauthController,
-    AuthTelegramController,
     AuthAccountController,
     AuthLinkController,
+    AuthEmailCodeController,
     AuthMaxController,
     AuthTicketController,
     AuthTicketHandoffController,
@@ -81,7 +81,7 @@ import { NotificationModule } from '../notification/notification.module';
     EmailService,
     TotpService, // второй фактор перед удалением аккаунта (api/)
     MaxProvider,
-    LoginTicketService, // карточка сверки в боте (TelegramModule)
+    LoginTicketService, // отказ на карточке привязки в боте (TelegramModule)
     TicketLinkService, // подтверждение объединения (telegram.link.service)
   ],
 })

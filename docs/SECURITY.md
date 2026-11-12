@@ -43,11 +43,15 @@
 |------|----------------------|-----------------|
 | Мини-апп | заголовок `x-telegram-init-data` | HMAC initData, свежесть ≤ 1 ч |
 | Веб (JWT) | `Authorization: Bearer <jwt>` | подпись HS256, issuer/audience |
-| Telegram Login Widget | тело POST | HMAC по `SHA256(bot_token)` |
 
 Унифицирует всё `TelegramAuthGuard` (`src/api/telegram-auth.guard.ts`).
 
-Второй фактор (TOTP) спрашивается только на веб-путях (OAuth, почта, виджет).
+Входа через Telegram на сайте нет с 2026-11 (запрос РКН, п. 4 ч. 10 ст. 8
+149-ФЗ): ни виджета, ни `oauth.telegram.org`, ни подтверждения входа в боте, ни
+передачи сессии из Telegram в браузер. Что закрыто и почему —
+`src/auth/login-ticket/site-login.ts`; возвращать нельзя.
+
+Второй фактор (TOTP) спрашивается только на веб-путях (OAuth, почта).
 Вход через initData Telegram/MAX и одобрение привязки в мессенджере его не
 просят — «мессенджер = доверенное устройство». Это решение не показано на
 экране 2FA; открытый вопрос B-12 аудита 2026-10.
@@ -172,15 +176,15 @@
 - refresh-токен живёт в cookie: `httpOnly` + `secure` + `sameSite=strict` +
   `path=/api/auth`. Не ослаблять эти флаги.
 - Любой state-changing эндпоинт, опирающийся на ambient-cookie (`refresh`,
-  `logout`, `merge`, `telegram/widget`), требует `requireCsrf(req, ...)` —
+  `logout`, `merge`, `ticket/poll`), требует `requireCsrf(req, ...)` —
   проверку заголовка `x-requested-with`, который кросс-доменная форма выставить
   не может.
 - OAuth-флоу защищён cookie `oauth_state` (`sameSite=lax`, нужен для top-level
   редиректа от VK) + сверкой `state`.
-- Куки незаконченной привязки (`tg_link_user`, `link_token`) стираются вместе с
-  сессией (`clearCookies` в `src/auth/refresh-cookie.ts`: выход и 401 на refresh)
-  и анонимным `telegram/redirect`: иначе следующий вошедший на том же компьютере
-  привязался бы к чужому аккаунту (аудит 2026-11).
+- Кука незаконченной привязки (`link_token`) стирается вместе с сессией
+  (`clearCookies` в `src/auth/refresh-cookie.ts`: выход и 401 на refresh): иначе
+  следующий вошедший на том же компьютере привязался бы к чужому аккаунту
+  (аудит 2026-11).
 - Access-токен на вебе хранится **только в памяти** (React `useState`),
   **никогда** в `localStorage`/`sessionStorage`. localStorage уязвим к краже
   через XSS; httpOnly-cookie с refresh-токеном — нет.

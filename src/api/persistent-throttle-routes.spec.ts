@@ -6,6 +6,7 @@ import { PublicEventsController } from './public-events.controller';
 import { Auth2faController } from '../auth/auth-2fa.controller';
 import { AuthAccountController } from '../auth/auth-account.controller';
 import { AuthLinkController } from '../auth/auth-link.controller';
+import { AuthEmailCodeController } from '../auth/auth-email-code.controller';
 import { AuthLoginConfirmController } from '../auth/auth-login-confirm.controller';
 import { AuthTicketController } from '../auth/auth-ticket.controller';
 import { TherapyConnectionController } from '../therapy/therapy-connection.controller';
@@ -126,9 +127,9 @@ const DB_ROUTES: Route[] = [
     20,
   ],
   [
-    'POST /api/auth/link/:provider',
-    AuthLinkController,
-    AuthLinkController.prototype.linkProvider,
+    'POST /api/auth/email/link-code',
+    AuthEmailCodeController,
+    AuthEmailCodeController.prototype.confirm,
     5,
     20,
   ],

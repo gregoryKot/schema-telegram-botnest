@@ -66,19 +66,41 @@ function makeCtl() {
 describe('POST ticket/start', () => {
   it('вход без сессии разрешён — ради него механизм и сделан', async () => {
     const { start, tickets } = makeCtl();
-    const res = await start(
-      { intent: 'login', provider: 'telegram' },
-      makeReq(),
-    );
+    const res = await start({ intent: 'login', provider: 'vk' }, makeReq());
 
     expect(res.userCode).toBe('K7M2QX94');
     expect(tickets.start).toHaveBeenCalledWith({
       intent: 'login',
-      provider: 'telegram',
+      provider: 'vk',
       requesterUserId: null,
       hostId: 'web',
       deviceLabel: 'iPhone · Safari',
     });
+  });
+
+  // Запрос Роскомнадзора 2026-11: на сайт через Telegram не входят. Билет
+  // входа под подтверждение в боте (и под любой способ, которого на сайте
+  // нет) не выписывается; привязка уже вошедшего — выписывается (ниже).
+  it.each(['telegram', 'max', 'google'])(
+    'вход с provider=%s — 400, билет не выписан',
+    async (provider) => {
+      const { start, tickets } = makeCtl();
+      await expect(
+        start({ intent: 'login', provider }, makeReq()),
+      ).rejects.toThrow('Этим способом на сайт не входят');
+      expect(tickets.start).not.toHaveBeenCalled();
+    },
+  );
+
+  it('привязка Telegram уже вошедшим — выписывается', async () => {
+    const { start, tickets } = makeCtl();
+    await start(
+      { intent: 'link', provider: 'email' },
+      makeReq({ webUser: { userId: 555n } } as Partial<Request>),
+    );
+    expect(tickets.start).toHaveBeenCalledWith(
+      expect.objectContaining({ intent: 'link', requesterUserId: 555n }),
+    );
   });
 
   it('привязка без сессии — 401: привязывать не к чему', async () => {
@@ -103,7 +125,7 @@ describe('POST ticket/start', () => {
   it('билет ВХОДА не наследует чужую сессию, даже если она есть', async () => {
     const { start, tickets } = makeCtl();
     await start(
-      { intent: 'login', provider: 'google' },
+      { intent: 'login', provider: 'vk' },
       makeReq({ webUser: { userId: 555n } } as Partial<Request>),
     );
     // Иначе вход «под другим аккаунтом» на общем устройстве молча вернул бы
@@ -133,10 +155,7 @@ describe('POST ticket/start', () => {
 
   it('hostId берётся из тела, когда контейнер его назвал', async () => {
     const { start, tickets } = makeCtl();
-    await start(
-      { intent: 'login', provider: 'telegram', hostId: 'max' },
-      makeReq(),
-    );
+    await start({ intent: 'login', provider: 'vk', hostId: 'max' }, makeReq());
     expect(tickets.start).toHaveBeenCalledWith(
       expect.objectContaining({ hostId: 'max' }),
     );

@@ -7,9 +7,9 @@ export interface ProviderIdentity {
   displayName?: string; // ляжет открытым в User.firstName — только имя (S16)
 }
 
-// Single abstraction for auth providers. Implement either an OAuth pair
-// (buildAuthUrl + exchangeCode) for redirect-based flows, or
-// verifyClientData for client-signed payloads (Telegram widget, Apple JWT, …).
+// Single abstraction for auth providers: an OAuth pair (buildAuthUrl +
+// exchangeCode) for redirect-based flows. Провайдер без них (Telegram, MAX) —
+// только имя способа входа: его подпись проверяется внутри мессенджера.
 export interface AuthProviderHandler {
   readonly id: string; // 'google' | 'telegram' | 'vk' | …
   readonly displayName: string;
@@ -22,9 +22,6 @@ export interface AuthProviderHandler {
   buildAuthUrl?(state: string, nonce?: string, forceChooser?: boolean): string;
   issueNonce?(res: Response): string;
   exchangeCode?(code: string): Promise<ProviderIdentity>;
-  // Direct client-data verification (no redirect)
-  verifyClientData?(data: Record<string, unknown>): ProviderIdentity;
-
   // Origin, на который провайдер возвращает пользователя (redirect_uri). Кука
   // oauth_state обязана жить на ЭТОМ хосте — иначе колбэк её не увидит.
   callbackOrigin?(): string;

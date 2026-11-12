@@ -14,7 +14,7 @@ function renderMethods(providers: AccountProvider[]) {
   render(
     <SignInMethods
       providers={providers} loading={false} busy={false} accessToken="t"
-      onLink={{ telegram: vi.fn(), vk: vi.fn() }} onUnlink={vi.fn()} onError={vi.fn()}
+      onLink={{ vk: vi.fn() }} onUnlink={vi.fn()} onError={vi.fn()} onLinked={vi.fn()}
     />,
   );
 }
@@ -51,5 +51,26 @@ describe('SignInMethods — отвязка', () => {
     const row = screen.getByText('Google').closest('.aa-row') as HTMLElement;
     expect(within(row).getByRole('button', { name: 'Отвязать' })).toBeTruthy();
     expect(within(row).queryByText('Привязать')).toBeNull();
+  });
+
+  // Вход через Telegram на сайте убран (2026-11, тот же запрос): привязать его
+  // отсюда нельзя — ни виджета, ни перехода на oauth.telegram.org; прежняя
+  // привязка (аккаунт из бота) видна и отвязывается.
+  it('Telegram: без привязки строки и «Привязать» нет, с привязкой — «Отвязать»', () => {
+    renderMethods([p('email')]);
+    expect(screen.queryByText('Telegram')).toBeNull();
+    // «Привязать» осталась только у ВКонтакте (почта уже привязана).
+    expect(screen.getAllByRole('button', { name: 'Привязать' })).toHaveLength(1);
+    cleanup();
+    renderMethods([p('telegram'), p('email')]);
+    const row = screen.getByText('Telegram').closest('.aa-row') as HTMLElement;
+    expect(within(row).getByRole('button', { name: 'Отвязать' })).toBeTruthy();
+    expect(within(row).queryByText('Привязать')).toBeNull();
+  });
+
+  it('только Telegram: счётчик «1 из 3» — почта и VK ID ещё не добавлены', () => {
+    renderMethods([p('telegram')]);
+    expect(screen.getByText('1 из 3')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Привязать' })).toHaveLength(2);
   });
 });

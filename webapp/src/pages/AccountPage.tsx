@@ -57,8 +57,8 @@ export function AccountPage() {
         <div className="aa-cols">
           <SignInMethods
             providers={providers} loading={loading} busy={actions.busy} accessToken={accessToken}
-            onLink={{ telegram: actions.linkTelegram, vk: actions.linkVk }}
-            onUnlink={actions.setUnlinkProvider} onError={setError}
+            onLink={{ vk: actions.linkVk }}
+            onUnlink={actions.setUnlinkProvider} onError={setError} onLinked={() => { void refresh(); }}
           />
           <div className="aa-col">
             <TwoFactorSection accessToken={accessToken} totp={totp} onChanged={refresh} />

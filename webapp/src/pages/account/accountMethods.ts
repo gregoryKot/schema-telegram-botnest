@@ -1,13 +1,13 @@
 import type { AccountProvider } from './ProviderRows';
 
 /**
- * «N из M» в заголовке способов входа. MAX и Google (вход убран в 2026-11) в
- * списке только когда привязаны — «Привязать» у них нет; M — число строк.
+ * «N из M» в заголовке способов входа. MAX, Telegram и Google (входа на сайт через два
+ * последних нет с 2026-11) — в списке только привязанные, без «Привязать»; M — число строк.
  */
 export function countMethods(providers: AccountProvider[]): { linked: number; total: number } {
   const has = (id: AccountProvider['provider']) => providers.some((p) => p.provider === id);
-  const rows = ['telegram', 'vk', 'email'] as const;
-  const extra = (['max', 'google'] as const).filter(has).length;
+  const rows = ['vk', 'email'] as const;
+  const extra = (['max', 'telegram', 'google'] as const).filter(has).length;
   return { linked: rows.filter(has).length + extra, total: rows.length + extra };
 }
 

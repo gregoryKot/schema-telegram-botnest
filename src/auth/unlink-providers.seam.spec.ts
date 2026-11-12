@@ -17,7 +17,6 @@ import { TelegramProvider } from './providers/telegram.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
 import type { AuthService } from './auth.service';
-import type { MergeService } from './merge.service';
 import type { SecurityLogService } from './security-log.service';
 import type { SecurityNoticeService } from './security-notice.service';
 
@@ -33,7 +32,7 @@ function cabinetProviderIds(): string[] {
 function build() {
   const config = {} as unknown as ConfigService;
   const registry = new AuthProviderRegistry(
-    new TelegramProvider(config),
+    new TelegramProvider(),
     new VkProvider(config),
     new MaxProvider(config),
   );
@@ -45,7 +44,6 @@ function build() {
   const controller = new AuthLinkController(
     auth as unknown as AuthService,
     registry,
-    {} as unknown as MergeService,
     { log: jest.fn() } as unknown as SecurityLogService,
     notice as unknown as SecurityNoticeService,
   );

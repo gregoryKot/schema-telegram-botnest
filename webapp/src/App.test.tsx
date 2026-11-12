@@ -262,10 +262,10 @@ describe('App — защищённые маршруты (RequireAuth)', () => {
 
 describe('App — страница ошибки входа (/auth/error)', () => {
   it('показывает известный код причины из query-параметра (S20: только из словаря)', async () => {
-    stubLocation({ pathname: '/auth/error', search: '?reason=telegram_no_data', href: 'http://localhost/auth/error?reason=telegram_no_data' });
+    stubLocation({ pathname: '/auth/error', search: '?reason=vk_failed', href: 'http://localhost/auth/error?reason=vk_failed' });
     const App = await loadApp();
     render(<App />);
-    await screen.findByText('telegram_no_data');
+    await screen.findByText('vk_failed');
     expect(screen.getByText('Вход не удался')).toBeTruthy();
   });
 

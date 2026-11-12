@@ -54,6 +54,5 @@ export function useProviderActions(
   return {
     busy, unlinkProvider, setUnlinkProvider, performUnlink,
     linkVk: () => linkVia('/api/auth/vk'),
-    linkTelegram: () => linkVia('/api/auth/telegram/redirect'),
   };
 }

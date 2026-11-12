@@ -39,11 +39,6 @@
     "reason": "Вход по подписи initData (HMAC токеном бота): подпись не перебирается, подделка уходит в suspicious_initdata. Вход открывается на каждом запуске мини-аппа, запись в Postgres на каждый запуск не нужна.",
     "since": "#708"
   },
-  "POST /api/auth/telegram/widget": {
-    "status": "exempt",
-    "reason": "Вход по подписи Telegram Login Widget (HMAC токеном бота): подпись не перебирается. Запись в Postgres на каждый вход через виджет не нужна.",
-    "since": "#708"
-  },
   "POST /api/auth/ticket/poll": {
     "status": "exempt",
     "reason": "Опрос раз в ~1,5 с с 32-байтным секретом deviceCode (randomBytes(32)): перебор нереален. Запись в Postgres на каждый опрос удвоила бы нагрузку на БД ради нулевой защиты.",

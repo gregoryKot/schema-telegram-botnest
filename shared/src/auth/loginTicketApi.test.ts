@@ -30,7 +30,7 @@ describe('createLoginTicketApi', () => {
 
     const res = await api.start({
       intent: 'login',
-      provider: 'telegram',
+      provider: 'vk',
       hostId: 'web',
     });
 
@@ -41,7 +41,7 @@ describe('createLoginTicketApi', () => {
     expect(init.headers['x-requested-with']).toBe('ticket');
     expect(JSON.parse(init.body)).toEqual({
       intent: 'login',
-      provider: 'telegram',
+      provider: 'vk',
       hostId: 'web',
     });
   });
@@ -76,7 +76,7 @@ describe('createLoginTicketApi', () => {
     await expect(
       createLoginTicketApi('').start({
         intent: 'login',
-        provider: 'telegram',
+        provider: 'vk',
         hostId: 'h',
       }),
     ).rejects.toMatchObject({ status: 503 });

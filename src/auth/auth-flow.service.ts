@@ -190,9 +190,6 @@ export class AuthFlowService {
   ticketFromState(state: string): string | null {
     return readOAuthTicket(this.stateSecret(), state);
   }
-  readLinkState(raw: string | null | undefined): bigint | null {
-    return readOAuthState(this.stateSecret(), raw);
-  }
 
   // ─── OAuth helpers ────────────────────────────────────────────────────────
   // Новый провайдер: файл + регистрация + свои @Get(id), @Get(id + '/callback')
@@ -228,7 +225,7 @@ export class AuthFlowService {
     res.redirect(handler.buildAuthUrl(state, handler.issueNonce?.(res), force));
   }
 
-  // Хост колбэка провайдера; фолбэк WEBAPP_URL — для verifyClientData-флоу без callbackOrigin.
+  // Хост колбэка провайдера; фолбэк WEBAPP_URL — для провайдера без callbackOrigin.
   private callbackOrigin(handler: AuthProviderHandler): string {
     return (
       handler.callbackOrigin?.() ??

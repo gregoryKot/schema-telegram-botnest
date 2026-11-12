@@ -2,13 +2,13 @@
 //
 // Зачем механизм. Установленное приложение (ярлык на телефоне) живёт в
 // ОТДЕЛЬНОЙ банке кук, не связанной с браузером. Пока вход был обычным
-// редиректом, он уходил на `accounts.google.com` или `oauth.telegram.org` —
-// адреса вне scope приложения, — и система отдавала их внешнему браузеру.
+// редиректом, он уходил на страницу провайдера — адрес вне scope
+// приложения, — и система отдавала его внешнему браузеру.
 // Сессия выдавалась ТАМ, а приложение, из которого человек вышел, оставалось
 // на экране входа навсегда (разбор 2026-08-28).
 //
 // Билет разрывает эту связь: контейнер держит длинный секрет у себя, человек
-// подтверждает вход где угодно — в боте, во внешнем браузере, — и контейнер
+// подтверждает вход во внешнем браузере (почтой или VK ID), — и контейнер
 // ЗАБИРАЕТ сессию опросом. Куда бы ни ушёл человек, сессия возвращается ровно
 // туда, где вход начался.
 //
@@ -32,6 +32,7 @@ import { claimApproval, loadForApproval } from './ticket-approval';
 import { assertTicketViewer, claimTicketView } from './ticket-viewer';
 import { LoginTicketReport } from './login-ticket.report';
 import { issueHandoff, type HandoffInput } from './ticket-handoff';
+import { assertSiteAccount } from './site-login';
 import type { StartTicketInput } from './ticket-start.types';
 import type {
   TicketForConfirm,
@@ -132,20 +133,12 @@ export class LoginTicketService {
         return null;
       });
     if (!row || row.consumedAt || row.deniedAt || row.expiresAt < new Date()) {
-      // Строку нашли, но она мертва — человек открыл ссылку поздно. Это самый
-      // частый «не успел», и считать его надо здесь: до liveByUserCode такой
-      // код не доходит. Несуществующий код не считаем вовсе — иначе перебор
-      // сам себе рисовал бы статистику.
-      //
-      // НО consumedAt — это УСПЕХ (приложение уже забрало сессию опросом), а
-      // не «не успел»: повторный тап диплинка после удачного входа не должен
-      // капать в too_late и портить воронку (разбор 2026-08-31).
-      if (row && row.intent === 'login' && !row.consumedAt)
-        this.report.step('too_late', row.hostId);
       return null;
     }
-    // Короткий код handoff не показывают: пришедший с ним — перебор.
-    if (row.intent === 'handoff') return null;
+    // Бот показывает только привязку. Вход он не подтверждает с 2026-11
+    // (site-login.ts) — шаги воронки `bot_opened` и `too_late` больше не
+    // пишутся; короткий код handoff не показывают вовсе.
+    if (row.intent !== 'link') return null;
     // Карточку закрепляем за первым увидевшим; остальным код «не найден».
     const mine = await claimTicketView(
       this.prisma,
@@ -154,7 +147,6 @@ export class LoginTicketService {
       viewerTelegramId,
     );
     if (!mine) return null;
-    if (row.intent === 'login') this.report.step('bot_opened', row.hostId);
     return {
       userCode: userCode.trim().toUpperCase(),
       intent: row.intent as TicketIntent,
@@ -164,22 +156,20 @@ export class LoginTicketService {
   }
 
   /**
-   * Подтверждение входа (`intent: 'login'`): билет получает хозяина, и опрос
-   * выдаст сессию именно этого аккаунта. Привязка идёт другим путём —
-   * TicketLinkService, там нужен перенос данных.
+   * Подтверждение входа (`intent: 'login'`) из браузера, где человек вошёл
+   * почтой или VK ID: билет получает хозяина, и опрос выдаст сессию именно
+   * этого аккаунта. Бот вход не подтверждает (site-login.ts). Привязка идёт
+   * другим путём — TicketLinkService, там нужен перенос данных.
    */
-  async approveLogin(
-    userCode: string,
-    approvedUserId: bigint,
-    viaTelegramId?: bigint,
-  ): Promise<void> {
+  async approveLogin(userCode: string, approvedUserId: bigint): Promise<void> {
+    await assertSiteAccount(this.prisma, approvedUserId);
     // Идемпотентность (разбор 2026-08-31, аудит 2026-10): повторный тап «это
     // я» тем же человеком — НЕ ошибка, ни до опроса, ни после него: раньше
     // бот рисовал ложный провал поверх успеха. ЧУЖОЙ занятый код — отказ.
     const row = await loadForApproval(
       { prisma: this.prisma, tickets: this },
       userCode,
-      { userId: approvedUserId, intent: 'login', via: viaTelegramId },
+      { userId: approvedUserId, intent: 'login' },
     );
     if (!row) return;
     if ((await claimApproval(this.prisma, row, approvedUserId)) === 'repeat') {

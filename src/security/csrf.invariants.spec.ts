@@ -138,8 +138,8 @@ describe('CSRF-трипваер auth-контроллеры', () => {
 
   it('гейт ловит факт. код, а не слово «crossSite» в комментарии (сэндбокс)', () => {
     // Контрольный "законный" образец: комментарий с crossSite:false и
-    // жёстко false в коде — не должен триггерить (реальный кейс
-    // auth-telegram.controller.ts).
+    // жёстко false в коде — не должен триггерить (так писал удалённый
+    // контроллер входа виджетом Telegram).
     const commentOnly = `
       // crossSite:false — виджет постится с нашей же страницы (fetch), не iframe.
       setRefreshCookie(res, outcome.tokens.refreshToken, 30 * 24 * 3600, false);
@@ -267,9 +267,9 @@ describe('CSRF-трипваер auth-контроллеры', () => {
       ).length;
       offenders.push(...unguardedWriters(code).map((h) => `${f}: ${h}`));
     }
-    // санити: telegram/webapp, max/webapp, ticket/poll, widget, merge, 2fa…
-    // (было 8: восьмым ставил куку recovery/confirm, убранный в #864).
-    expect(writers).toBeGreaterThanOrEqual(7);
+    // санити: telegram/webapp, max/webapp, ticket/poll, merge, 2fa…
+    // (было 8: recovery/confirm убран в #864, вход виджетом Telegram — в 2026-11).
+    expect(writers).toBeGreaterThanOrEqual(6);
     expect(offenders).toEqual([]);
   });
 

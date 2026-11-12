@@ -78,41 +78,52 @@ describe('start — контейнер просит билет', () => {
 describe('forConfirm — что бот покажет человеку', () => {
   it('отдаёт подпись устройства и намерение, но не хеши и не чужой userId', async () => {
     const { tickets } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
 
     const card = await tickets.forConfirm(userCode);
     expect(card).toEqual({
       userCode,
-      intent: 'login',
-      deviceLabel: 'iPhone · Safari',
-      hostId: 'web',
+      intent: 'link',
+      deviceLabel: '',
+      hostId: 'max',
     });
   });
 
   it('код набран строчными и с пробелами — принимается', async () => {
     const { tickets } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
     expect(
       await tickets.forConfirm(`  ${userCode.toLowerCase()} `),
     ).not.toBeNull();
   });
 
+  // Вход бот не подтверждает (site-login.ts): билет входа ему не виден, как
+  // будто кода нет, и за нажавшим не закрепляется.
+  it('билет ВХОДА боту не показывается и за увидевшим не закрепляется', async () => {
+    const { tickets, rows, report } = makeDeps();
+    const { userCode } = await startLogin(tickets);
+    (report.step as jest.Mock).mockClear();
+    expect(await tickets.forConfirm(userCode, TG_USER)).toBeNull();
+    expect(rows[0].shownToTelegramId).toBeNull();
+    expect(report.step).not.toHaveBeenCalled();
+  });
+
   it('чужой код — null, ничего не подсказывая о том, чего нет', async () => {
     const { tickets } = makeDeps();
-    await startLogin(tickets);
+    await startLink(tickets);
     expect(await tickets.forConfirm('ZZZZZZZZ')).toBeNull();
   });
 
   it('просроченный билет не показывается', async () => {
     const { tickets, rows } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
     rows[0].expiresAt = new Date(Date.now() - 1000);
     expect(await tickets.forConfirm(userCode)).toBeNull();
   });
 
   it('уже отклонённый билет не показывается второй раз', async () => {
     const { tickets } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
     await tickets.deny(userCode);
     expect(await tickets.forConfirm(userCode)).toBeNull();
   });
@@ -285,16 +296,15 @@ describe('события пути входа', () => {
     expect((report.step as jest.Mock).mock.calls).toEqual([]);
   });
 
-  it('связка целиком: открыли в боте → подтвердили → приложение впустило', async () => {
+  it('связка целиком: просили код → подтвердили в браузере → приложение впустило', async () => {
     const { tickets, report } = makeDeps();
     const { deviceCode, userCode } = await startLogin(tickets);
 
-    await tickets.forConfirm(userCode);
     await tickets.approveLogin(userCode, TG_USER);
     await tickets.poll(deviceCode);
 
     const steps = (report.step as jest.Mock).mock.calls.map(([s]) => s);
-    expect(steps).toEqual(['issued', 'bot_opened', 'confirmed', 'taken']);
+    expect(steps).toEqual(['issued', 'confirmed', 'taken']);
   });
 
   it('«это не я» пишется отказом, а не молчанием', async () => {
@@ -304,15 +314,18 @@ describe('события пути входа', () => {
     expect(report.step).toHaveBeenCalledWith('denied', 'web');
   });
 
-  it('мёртвый код, открытый в боте, считается «не успели»', async () => {
-    // Главный случай «не успел»: до approve такой код вообще не доходит, и
-    // считать его больше негде.
+  // Шаги «открыли в боте» и «не успели» писал только телеграм-путь входа,
+  // убранный в 2026-11: новые строки не пишутся, отчёт читает историю.
+  it('бот шагов воронки входа больше не пишет — ни на живом коде, ни на мёртвом', async () => {
     const { tickets, rows, report } = makeDeps();
     const { userCode } = await startLogin(tickets);
-    rows[0].expiresAt = new Date(Date.now() - 1000);
+    (report.step as jest.Mock).mockClear();
 
-    await expect(tickets.forConfirm(userCode)).resolves.toBeNull();
-    expect(report.step).toHaveBeenCalledWith('too_late', 'web');
+    await tickets.forConfirm(userCode, TG_USER);
+    rows[0].expiresAt = new Date(Date.now() - 1000);
+    await expect(tickets.forConfirm(userCode, TG_USER)).resolves.toBeNull();
+
+    expect(report.step).not.toHaveBeenCalled();
   });
 
   it('несуществующий код не считается вовсе — перебор не рисует статистику', async () => {
@@ -320,21 +333,6 @@ describe('события пути входа', () => {
 
     await expect(tickets.forConfirm('ZZZZZZZZ')).resolves.toBeNull();
     expect((report.step as jest.Mock).mock.calls).toEqual([]);
-  });
-
-  it('повторный тап диплинка ПОСЛЕ успеха (consumed) — не «не успели»', async () => {
-    // Разбор 2026-08-31: consumedAt — это успех (сессию уже забрали опросом).
-    // Telegram переоткрывает /start на каждый тап; такой повтор не должен
-    // капать в too_late и портить воронку.
-    const { tickets, rows, report } = makeDeps();
-    const { userCode } = await startLogin(tickets);
-    rows[0].consumedAt = new Date();
-
-    await expect(tickets.forConfirm(userCode)).resolves.toBeNull();
-    expect((report.step as jest.Mock).mock.calls).not.toContainEqual([
-      'too_late',
-      'web',
-    ]);
   });
 
   it('повторный опрос не задваивает «впустило»', async () => {
@@ -375,7 +373,7 @@ describe('LoginTicketService — границы под мутационным з
 
   it('expiresAt ровно «сейчас» — билет ещё жив во всех трёх входах (<, не <=)', async () => {
     const { tickets, rows } = makeDeps();
-    const { userCode, deviceCode } = await startLogin(tickets);
+    const { userCode, deviceCode } = await startLink(tickets);
     jest.useFakeTimers({ now: T, doNotFake: ['nextTick', 'queueMicrotask'] });
     rows[0].expiresAt = new Date(T);
     expect(await tickets.forConfirm(userCode)).not.toBeNull();
@@ -386,7 +384,7 @@ describe('LoginTicketService — границы под мутационным з
 
   it('код с пробелами и в нижнем регистре: карточка отдаёт его нормализованным', async () => {
     const { tickets, rows } = makeDeps();
-    const { userCode } = await startLogin(tickets);
+    const { userCode } = await startLink(tickets);
     const card = await tickets.forConfirm(` ${userCode.toLowerCase()}  `);
     expect(card?.userCode).toBe(userCode);
     await tickets.deny(`  ${userCode.toLowerCase()} `);
@@ -451,5 +449,32 @@ describe('LoginTicketService — границы под мутационным з
     expect(warn).toHaveBeenCalledWith(
       'ticket approve skipped: Код не найден или истёк',
     );
+  });
+});
+
+// Запрос Роскомнадзора 2026-11: на сайт через Telegram не входят. Одобрить
+// билет входа (экран сверки в браузере) может только аккаунт, у которого есть
+// способ входа кроме Telegram, — иначе личность из Telegram уехала бы в браузер.
+describe('approveLogin — аккаунт только с Telegram на сайт не впускает', () => {
+  it('отказ: билет не подтверждён, опрос сессию не выдаёт', async () => {
+    const { tickets, rows, telegramOnly, auth } = makeDeps();
+    telegramOnly.add(TG_USER);
+    const { userCode, deviceCode } = await startLogin(tickets);
+
+    await expect(tickets.approveLogin(userCode, TG_USER)).rejects.toThrow(
+      'Этот аккаунт открывается в Telegram',
+    );
+    expect(await tickets.approveLoginIfPossible(userCode, TG_USER)).toBe(false);
+    expect(rows[0].approvedUserId).toBeNull();
+    expect((await tickets.poll(deviceCode)).status).toBe('pending');
+    expect(auth.issueTokens).not.toHaveBeenCalled();
+  });
+
+  it('контроль: тот же аккаунт с почтой или VK ID — подтверждает', async () => {
+    const { tickets, rows } = makeDeps();
+    const { userCode, deviceCode } = await startLogin(tickets);
+    await tickets.approveLogin(userCode, TG_USER);
+    expect(rows[0].approvedUserId).toBe(TG_USER);
+    expect((await tickets.poll(deviceCode)).status).toBe('linked');
   });
 });

@@ -15,18 +15,15 @@ export function helmetOptions(): HelmetOptions {
         // st.max.ru — мост мини-приложения MAX (их документация требует
         // грузить его с этого CDN). Без него мост молча не загрузится, а
         // приложение внутри MAX решит, что открыто в обычном браузере.
-        // telegram.org не нужен: SDK отдаём сами, вход в Telegram — переходом.
+        // telegram.org не нужен: SDK мини-приложения (telegram-web-app.js) отдаём сами.
         scriptSrc: ["'self'", 'https://mc.yandex.ru', 'https://st.max.ru'],
-        connectSrc: [
-          "'self'",
-          'https://mc.yandex.ru',
-          'https://oauth.telegram.org',
-        ],
+        connectSrc: ["'self'", 'https://mc.yandex.ru'],
         imgSrc: ["'self'", 'data:', 'https://mc.yandex.ru', 'https://t.me'],
-        // oauth.telegram.org — iframe кнопки Telegram Login Widget. Хостов
-        // Google здесь нет намеренно: вход через Google убран (2026-11, запрос
-        // РКН), страница входа к Google не обращается (csp-allowlist.invariants.spec.ts).
-        frameSrc: ['https://oauth.telegram.org'],
+        // Чужих фреймов на страницах нет. Хостов Google и Telegram (в том
+        // числе oauth.telegram.org — виджет и редирект входа) здесь нет
+        // намеренно: вход через них на сайте убран (2026-11, запрос РКН),
+        // страница входа к ним не обращается (csp-allowlist.invariants.spec.ts).
+        frameSrc: ["'none'"],
         // Кто имеет право встроить нас в свой iframe — реестр площадок
         // src/security/embedders.ts: MAX и Telegram Web (web.telegram.org, Web
         // K/A) открывают мини-приложение именно так, поэтому одного 'self' мало:

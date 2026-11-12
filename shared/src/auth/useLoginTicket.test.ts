@@ -13,7 +13,7 @@ import {
 } from './useLoginTicket';
 import type { LoginTicketApi } from './loginTicketApi';
 
-const DEPS = { botUsername: 'SchemeHappensBot', apiBase: '' };
+const DEPS = { apiBase: '' };
 
 function makeApi(over: Partial<LoginTicketApi> = {}) {
   return {
@@ -44,12 +44,6 @@ beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
 afterEach(() => vi.useRealTimers());
 
 describe('loginUrl', () => {
-  it('Telegram — диплинк в чат бота, код внутри payload', () => {
-    expect(loginUrl('telegram', 'K7M2QX94', DEPS)).toBe(
-      'https://t.me/SchemeHappensBot?start=login_K7M2QX94',
-    );
-  });
-
   it('ВКонтакте — редирект бэкенда с кодом билета', () => {
     expect(loginUrl('vk', 'K7M2QX94', DEPS)).toBe(
       '/api/auth/vk?ticket=K7M2QX94',
@@ -69,19 +63,19 @@ describe('begin — выписка билета', () => {
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
 
     expect(api.start).toHaveBeenCalledWith({
       intent: 'login',
-      provider: 'telegram',
+      provider: 'vk',
       hostId: 'web',
     });
     expect(result.current.state).toEqual({
       kind: 'waiting',
-      provider: 'telegram',
+      provider: 'vk',
       code: 'K7M2QX94',
-      url: 'https://t.me/SchemeHappensBot?start=login_K7M2QX94',
+      url: '/api/auth/vk?ticket=K7M2QX94',
     });
   });
 
@@ -92,7 +86,7 @@ describe('begin — выписка билета', () => {
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
 
     expect(result.current.state).toEqual({ kind: 'failed' });
@@ -108,7 +102,7 @@ describe('begin — выписка билета', () => {
     const { result, reportError } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
 
     expect(reportError).toHaveBeenCalledWith({
@@ -130,7 +124,7 @@ describe('begin — выписка билета', () => {
     const { result, reportError } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
 
     expect(reportError).toHaveBeenCalledWith({
@@ -152,7 +146,7 @@ describe('begin — выписка билета', () => {
     const { result, reportError } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
 
     const sent = JSON.stringify(reportError.mock.calls);
@@ -163,7 +157,7 @@ describe('begin — выписка билета', () => {
   it('удачная выписка ничего не сообщает', async () => {
     const { result, reportError } = setup(makeApi());
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     expect(reportError).not.toHaveBeenCalled();
   });
@@ -184,7 +178,7 @@ describe('опрос', () => {
     const { result, onSession } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
@@ -200,7 +194,7 @@ describe('опрос', () => {
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1500);
@@ -216,7 +210,7 @@ describe('опрос', () => {
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1500);
@@ -238,7 +232,7 @@ describe('опрос', () => {
     const { result, onSession } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1500);
@@ -266,7 +260,7 @@ describe('опрос', () => {
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
@@ -292,7 +286,7 @@ describe('опрос', () => {
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900);
@@ -310,7 +304,7 @@ describe('опрос', () => {
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     act(() => result.current.reset());
 
@@ -326,7 +320,7 @@ describe('опрос', () => {
     const { result, unmount } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     unmount();
     await act(async () => {
@@ -351,7 +345,7 @@ describe('отступ при ошибках и наложение входов'
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -381,7 +375,7 @@ describe('отступ при ошибках и наложение входов'
     const { result } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
@@ -413,7 +407,7 @@ describe('отступ при ошибках и наложение входов'
     const { result } = setup(api);
 
     await act(async () => {
-      const p1 = result.current.begin('telegram');
+      const p1 = result.current.begin('vk');
       const p2 = result.current.begin('vk');
       await Promise.all([p1, p2]);
     });
@@ -451,7 +445,7 @@ describe('крайние случаи', () => {
     const { result, onSession } = setup(makeApi({ poll }));
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1500);
@@ -472,7 +466,7 @@ describe('крайние случаи', () => {
     const { result, onSession } = setup(api);
 
     await act(async () => {
-      await result.current.begin('telegram');
+      await result.current.begin('vk');
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1500);
@@ -499,7 +493,7 @@ describe('крайние случаи', () => {
 
     let pending!: Promise<unknown>;
     act(() => {
-      pending = result.current.begin('telegram');
+      pending = result.current.begin('vk');
     });
     unmount();
     await act(async () => {
@@ -527,7 +521,7 @@ describe('крайние случаи', () => {
 
     let pending!: Promise<unknown>;
     act(() => {
-      pending = result.current.begin('telegram');
+      pending = result.current.begin('vk');
     });
     const before = result.current.state;
     unmount();
