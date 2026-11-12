@@ -16,7 +16,10 @@ const display = /display: '([^']+)'/.exec(hotlines)?.[1];
 const tel = /tel: '([^']+)'/.exec(hotlines)?.[1];
 
 const messages = read('game/src/i18n/messages.ts');
-const scene = read('game/src/scenes/GameScene.ts');
+// Сцена разбита на движок и сцен-скрипты: номер и вызовы живут в game/src/scenes/game/.
+const scene = ['GameScene.ts', 'game/cta.ts', 'game/death.ts']
+  .map((f) => read(`game/src/scenes/${f}`))
+  .join('\n');
 
 describe('кризисная строка игры', () => {
   it('источник правды читается', () => {
