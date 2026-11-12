@@ -26,13 +26,13 @@ const PAGES: Spec[] = [
     name: 'подписка',
     path: '/subscribe',
     ready: (p) => p.getByRole('heading', { name: 'Подписка скоро' }),
-    centered: '.ds-page',
+    centered: '.pa-outcome-card', // подписка выключена — лист исхода PaperOutcome (b28)
   },
   {
     name: 'пожертвование',
     path: '/donate',
     ready: (p) => p.getByRole('heading', { name: 'Поддержать проект' }),
-    centered: '.ds-page',
+    centered: '.ap-main', // колонка PayLayout (b28)
   },
   {
     name: 'аккаунт',
