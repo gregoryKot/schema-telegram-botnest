@@ -5,30 +5,24 @@ import { IS_TOUCH } from './controls';
 import type { DoorKind } from './chapters';
 
 // ════════════════════════════════════════════════════════════════════════════
-//  Двери Акта II. Дверь — не враг, а ВЫБОР: войти можно в любую (E / тап),
-//  разница — в последствиях. Неверные двери после попытки запираются
-//  («уже пробовал»). Вся драма главы — здесь, не в боях.
+//  Дверь Акта II — к терапевту. Не враг, а выбор: войти (E / тап) мешают
+//  только голоса-отговорки. Вся драма главы — здесь, не в боях.
 // ════════════════════════════════════════════════════════════════════════════
 
 const FONT = '"Press Start 2P", "Courier New", monospace';
 
 interface DoorStyle {
   w: number; h: number; leaf: number; frame: number; glow: number;
-  label: MsgKey; labelColor: string; sub?: MsgKey;
+  label: MsgKey; labelColor: string;
 }
 
 const STYLE: Record<DoorKind, DoorStyle> = {
-  home: { w: 76, h: 118, leaf: 0x4a3424, frame: 0x6a4a32, glow: 0xffd9a0,
-    label: 'm_door_home', labelColor: '#ffd9a0' },
-  guru: { w: 86, h: 134, leaf: 0x2a0a3a, frame: 0xff2fd6, glow: 0xff2fd6,
-    label: 'm_door_guru', labelColor: '#ff8af0', sub: 'm_door_guru_sub' },
   therapist: { w: 72, h: 112, leaf: 0x1e2a24, frame: 0x4a6a5a, glow: 0x88ffcc,
     label: 'm_door_therapist', labelColor: '#a8e8d0' },
 };
 
 export class Door {
   taken = false;
-  locked = false;
   private isNear = false;
   private label: Phaser.GameObjects.Text;
   private glow: Phaser.GameObjects.Ellipse;
@@ -37,7 +31,7 @@ export class Door {
 
   constructor(
     private scene: Phaser.Scene, readonly kind: DoorKind, readonly x: number,
-    private onEnter: (d: Door) => void, private onLockedTry: () => void,
+    private onEnter: (d: Door) => void,
     maxX?: number, // правый край мира: вывеска не должна уходить за кадр
   ) {
     const st = STYLE[kind];
@@ -53,13 +47,6 @@ export class Door {
     this.label = scene.add.text(x, GROUND_Y - st.h - 18, t(st.label), {
       fontFamily: FONT, fontSize: '10px', color: st.labelColor, align: 'center',
     }).setOrigin(0.5, 1).setDepth(6);
-    if (st.sub) {
-      const sub = scene.add.text(x, GROUND_Y - st.h - 6, t(st.sub), {
-        fontFamily: FONT, fontSize: '7px', color: st.labelColor, align: 'center',
-      }).setOrigin(0.5, 1).setDepth(6).setAlpha(0.9);
-      // неон «Гуру-Экспресс» мигает — кричащая реклама
-      scene.tweens.add({ targets: [this.label, sub], alpha: { from: 1, to: 0.35 }, duration: 420, yoyo: true, repeat: -1 });
-    }
     this.prompt = scene.add.text(x, GROUND_Y - st.h - 44, t(IS_TOUCH ? 'm_tap_door_enter' : 'm_e_door_enter'), {
       fontFamily: FONT, fontSize: '9px', color: '#fff0d8',
       backgroundColor: 'rgba(10,8,20,0.72)', padding: { x: 5, y: 4 },
@@ -75,22 +62,12 @@ export class Door {
 
   update(_dt: number, playerX: number) {
     this.isNear = this.near(playerX);
-    const show = this.isNear && !this.taken && !this.locked;
+    const show = this.isNear && !this.taken;
     this.prompt.setAlpha(Phaser.Math.Linear(this.prompt.alpha, show ? 0.95 : 0, 0.12));
-  }
-
-  lock() {
-    this.locked = true;
-    this.leaf.setFillStyle(0x1a141e); this.glow.setAlpha(0.25);
-    this.label.setAlpha(0.4);
-    this.scene.add.text(this.x, GROUND_Y - 54, t('m_door_tried_short'), {
-      fontFamily: FONT, fontSize: '8px', color: '#7f74a4', align: 'center',
-    }).setOrigin(0.5).setDepth(6).setAngle(-8);
   }
 
   tryEnter() {
     if (this.taken) return;
-    if (this.locked) { this.onLockedTry(); return; }
     this.taken = true;
     this.onEnter(this);
   }

@@ -3,7 +3,7 @@ import type { MsgKey } from './i18n';
 
 // Акт II: двери-выборы на дороге. home/guru — копинг-ловушки с последствиями,
 // therapist — цель главы (вход = кабинет, финал воронки).
-export type DoorKind = 'home' | 'guru' | 'therapist';
+export type DoorKind = 'therapist';
 
 // A chapter = pure data. The Game scene is the engine; chapters are config.
 export interface TriggerDef {
@@ -40,7 +40,7 @@ export interface ChapterConfig {
   overwhelmSay: MsgKey;
   next?: string;            // глава после развязки; нет — в начало
   branch?: string;          // конец Акта I: экран-развилка (CTA в терапию ИЛИ продолжить в эту главу)
-  doors?: { kind: DoorKind; x: number }[]; // Акт II «Выбор»: три двери на дороге
+  doors?: { kind: DoorKind; x: number }[]; // Акт II: дверь терапевта на дороге
 }
 
 const G = GROUND_Y;

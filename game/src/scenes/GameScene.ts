@@ -385,7 +385,7 @@ export class GameScene extends Phaser.Scene {
   private buildDoors() {
     if (!this.chapter.doors?.length) return;
     for (const cfg of this.chapter.doors)
-      this.doors.push(new Door(this, cfg.kind, cfg.x, d => this.onDoorEnter(d), () => undefined, this.chapter.arenaW));
+      this.doors.push(new Door(this, cfg.kind, cfg.x, d => this.onDoorEnter(d), this.chapter.arenaW));
     // заслоны: (x голоса, реплики, ответ) — гейт чуть дальше голоса
     const blocks: { x: number; lines: MsgKey[]; answer: MsgKey }[] = [
       { x: 880,  lines: ['m_exc_pass', 'm_exc_later'],        answer: 'm_ans_later' },
@@ -1207,7 +1207,7 @@ export class GameScene extends Phaser.Scene {
     audio.setIntensity(1);
     for (let i = 0; i < this.chapter.overwhelmAnx; i++) this.spawnAnx(this.player.x + (i - 1) * 200 + Phaser.Math.Between(-40, 40), 1);
     this.say(this.chapter.overwhelmSay, 3200);
-    // The day collapses → the realization (sage hook for next build)
+    // The day collapses → the realization
     this.time.delayedCall(3600, () => {
       if (this.dead) return;
       this.cameras.main.fade(1400, 8, 6, 16);
@@ -1263,7 +1263,7 @@ export class GameScene extends Phaser.Scene {
         this.input.keyboard!.once('keydown', go);
         this.input.once('pointerdown', go);
       } else {
-        this.showCta();
+        this.scene.start('Start'); // следующей главы нет — в меню
       }
     };
     // Развязка идёт по таймеру, но её можно листать: тап/клавиша показывает следующую
@@ -1324,108 +1324,6 @@ export class GameScene extends Phaser.Scene {
     donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
     donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
     this.addCrisisLine(440 * ky, 154);
-  }
-
-  // Враг = режим схема-терапии — называем в момент узнавания (без лекции)
-  private modeName(): string {
-    if (this.chapter.id === 'chapter1') return t('m_this_is_the_punitive_parent_a');
-    if (this.chapter.id === 'chapter2') return t('m_this_is_the_detached_protector_it');
-    return '';
-  }
-  private modeShort(): string {
-    if (this.chapter.id === 'chapter1') return t('m_punitive_parent');
-    if (this.chapter.id === 'chapter2') return t('m_detached_protector');
-    return t('m_anxiety_2');
-  }
-
-  // ── КОНТАКТ-проблеск: впервые не бей/беги/уступи, а останься рядом ──────────
-  private contactGlimpse(onDone: () => void) {
-    const cx = W / 2, cy = H / 2, font = '"Press Start 2P", "Courier New", monospace';
-    const last = !this.chapter.next; // финал — дверь распахнута; иначе короткий проблеск-семя
-    // тёплый проблеск + силуэт «тени» (критика) рядом
-    const warm = this.add.graphics().setScrollFactor(0).setDepth(154).setAlpha(0);
-    warm.fillStyle(0xffd9a0, 0.12); warm.fillCircle(cx, cy + 30, 220);
-    warm.fillStyle(0xffd9a0, 0.08); warm.fillCircle(cx, cy + 30, 320);
-    const shadow = this.add.sprite(cx, cy + 60, 'cat_idle').setOrigin(0.5, 1).setScale(2).setTint(0x2a1d3a).setAlpha(0).setScrollFactor(0).setDepth(155).play('p-idle');
-    const ask = this.add.text(cx, 120, t('m_fought_ran_gave_in_it_s'),
-      { fontFamily: font, fontSize: '12px', color: '#ffe0b0', align: 'center', lineSpacing: 10,
-        backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 14, y: 10 } })
-      .setOrigin(0.5, 0).setScrollFactor(0).setDepth(156).setAlpha(0);
-    const prompt = this.add.text(cx, H - 70, t(IS_TOUCH ? 'm_tap_turn_to_it' : 'm_e_click_turn_to_it'),
-      { fontFamily: font, fontSize: '11px', color: '#88ffcc', backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 10, y: 7 } })
-      .setOrigin(0.5).setScrollFactor(0).setDepth(156).setAlpha(0);
-    this.tweens.add({ targets: [warm, shadow], alpha: { from: 0, to: 1 }, duration: 1000 });
-    this.tweens.add({ targets: ask, alpha: 1, duration: 900, delay: 600 });
-    this.tweens.add({ targets: prompt, alpha: 0.9, duration: 600, delay: 1600 });
-
-    let done = false;
-    const meet = () => {
-      if (done) return; done = true;
-      track('contact_glimpse', { chapter: this.chapter.id }); // «дошёл до момента узнавания»
-      this.input.keyboard!.off('keydown', meet);
-      audio.pickup();
-      this.cameras.main.flash(500, 60, 50, 30);
-      this.tweens.add({ targets: prompt, alpha: 0, duration: 300 });
-      // тень не исчезает — становится маленькой и садится рядом, а не сверху
-      this.tweens.add({ targets: shadow, scale: 1, x: cx + 70, y: cy + 50, duration: 900, ease: 'Quad.Out' });
-      this.tweens.add({ targets: warm, alpha: 1.6, duration: 900, yoyo: true });
-      ask.setText(this.modeName() + t(last
-        ? 'm_you_turned_and_it_sat_beside'
-        : 'm_you_turned_and_it_s_beside'));
-      this.time.delayedCall(last ? 3200 : 2600, () => {
-        this.tweens.add({ targets: [warm, shadow, ask], alpha: 0, duration: 700,
-          onComplete: () => { [warm, shadow, ask, prompt].forEach(o => o.destroy()); onDone(); } });
-      });
-    };
-    // даём прочитать, потом ловим ввод
-    this.time.delayedCall(1700, () => {
-      this.input.keyboard!.once('keydown', meet);
-      this.input.once('pointerdown', meet);
-    });
-  }
-
-  // Мост в реальную терапию — карточка-результат + воронка + виральность
-  private showCta() {
-    track('demo_end', { chapter: this.chapter.id });
-    trackEvent('game_cta_shown', { from: 'ending' });
-    const ky = H / 540, font = '"Press Start 2P", "Courier New", monospace';
-    const mk = (y: number, text: string, size: number, color: string, depth = 153) =>
-      this.add.text(W / 2, y * ky, text, { fontFamily: font, fontSize: `${size}px`, color, align: 'center', lineSpacing: 9 })
-        .setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0);
-
-    // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
-    const top  = mk(196, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
-    const lbl  = mk(244, t('m_your_biggest_enemy'), 10, '#9a8fb8');
-    const mode = mk(282, this.modeShort(), 16, '#ff8aa6');
-    const sub  = mk(336, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
-
-    const ctaTxt = mk(404, t('m_learn_about_schema_therapy'), 11, '#88ffcc', 154);
-    const cta = this.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
-      .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const shareTxt = mk(452, t('m_share'), 10, '#c0b8e8', 154);
-    const share = this.add.rectangle(W / 2, 452 * ky, shareTxt.width + 30, 34, 0x241d3a)
-      .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-    const menu = mk(498, t('m_or_back_to_menu'), 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
-
-    this.tweens.add({ targets: [top], alpha: 1, duration: 800 });
-    this.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
-    this.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 1100 });
-    this.tweens.add({ targets: [ctaTxt, cta], alpha: 1, duration: 700, delay: 1600 });
-    this.tweens.add({ targets: [shareTxt, share], alpha: 1, duration: 700, delay: 2000 });
-    this.tweens.add({ targets: menu, alpha: 0.7, duration: 700, delay: 2400 });
-
-    cta.on('pointerover', () => cta.setFillStyle(0x1d4536));
-    cta.on('pointerout', () => cta.setFillStyle(0x153028));
-    cta.on('pointerdown', () => { trackEvent('game_cta_click', { from: 'ending' }); window.open('https://schemehappens.ru/?from=game', '_blank'); });
-    share.on('pointerover', () => share.setFillStyle(0x322a52));
-    share.on('pointerout', () => share.setFillStyle(0x241d3a));
-    share.on('pointerdown', () => {
-      trackEvent('game_share', { from: 'ending' });
-      const url = 'https://schemehappens.ru/game/?src=share';
-      const text = t('m_share_text', { enemy: this.modeShort() });
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
-    });
-    menu.on('pointerdown', () => this.scene.start('Start'));
   }
 
   // Кризисная строка: игра нарочно доводит до «сил не осталось» — рядом обязан быть
