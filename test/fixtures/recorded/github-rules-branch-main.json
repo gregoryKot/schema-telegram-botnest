@@ -76,6 +76,10 @@
         {
           "context": "webapp",
           "integration_id": 15368
+        },
+        {
+          "context": "webapp-tz",
+          "integration_id": 15368
         }
       ]
     },

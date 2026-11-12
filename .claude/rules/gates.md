@@ -174,6 +174,10 @@ coverage-бейслайны — по 20. Просить
   `src/test-support/gates/main-ruleset.spec.ts`; живой ruleset и настройки
   слияния с копией сверяет ночью `scripts/check-live-ruleset.mjs` (джоба
   `live-ruleset` в `nightly.yml`).
+  Тем же PR правятся список джоб в `src/test-support/gates/job-timeouts.spec.ts`
+  и записанный ответ GitHub `test/fixtures/recorded/github-rules-branch-main.json`
+  (правка — в его `.meta.json`): с копией его сверяет
+  `src/test-support/gates/live-ruleset.spec.ts`.
 - **Параллельные миграции текстово не конфликтуют, но применяются по времени** —
   вторая обязана быть корректной поверх первой, а не поверх того `main`, от
   которого её писали.
