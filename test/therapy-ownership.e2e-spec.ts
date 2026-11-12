@@ -35,7 +35,10 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
   const T2 = 4_000_000_000_000_002n;
   const C1 = 4_000_000_000_000_003n;
   const C1_ID = Number(C1);
-  const ALL_USER_IDS = [T1, T2, C1];
+  // C2 — клиент без связей: чужой для карты C1; в самом конце файла — клиент T2.
+  const C2 = 4_000_000_000_000_006n;
+  const C2_ID = Number(C2);
+  const ALL_USER_IDS = [T1, T2, C1, C2];
 
   beforeAll(async () => {
     ({ app, prisma } = await buildTestApp());
@@ -72,6 +75,7 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     await prisma.user.create({ data: { id: T1, role: 'THERAPIST' } });
     await prisma.user.create({ data: { id: T2, role: 'THERAPIST' } });
     await prisma.user.create({ data: { id: C1, role: 'CLIENT' } });
+    await prisma.user.create({ data: { id: C2, role: 'CLIENT' } });
 
     // Реальный invite→join HTTP-флоу — как в проде, не прямая вставка связи.
     const t1 = agentAs(T1);
@@ -447,6 +451,63 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     await agentAs(T1).patch(share, { shared: false });
   });
 
+  // ─── Сценарий 5в: оценки колеса клиент видит на своей карте, заметки — нет ─
+  // GET my-mode-maps/:mapId отдаёт needRatings, когда на карте лежит колесо.
+
+  const wheelNode = (wheel: object) => ({
+    id: 'w',
+    type: 'needs',
+    position: { x: 0, y: 0 },
+    data: { label: 'Потребности', wheel },
+  });
+  const c1MapId = async (): Promise<number> =>
+    (await agentAs(T1).get(`/api/therapy/mode-maps/${C1_ID}`)).body[0].id;
+
+  it('T1 положил колесо на карту → C1 видит на ней оценки, заметок листа нет', async () => {
+    const mapId = await c1MapId();
+    const c1 = agentAs(C1);
+    // Колеса на карте ещё нет — оценок нет, хотя в концептуализации они лежат.
+    const before = await c1.get(`/api/therapy/my-mode-maps/${mapId}`);
+    expect([before.status, before.body.needRatings]).toEqual([200, []]);
+
+    // У старых карт заметки листа лежали прямо в узле — клиенту не уходят и они.
+    const put = await agentAs(T1).patch(`/api/therapy/mode-maps/map/${mapId}`, {
+      nodes: [
+        wheelNode({
+          period: 'now',
+          compare: true,
+          notes: { now: { attachment: 'старая заметка в узле' } },
+        }),
+      ],
+    });
+    expect(put.status).toBe(200);
+
+    const res = await c1.get(`/api/therapy/my-mode-maps/${mapId}`);
+    expect(res.status).toBe(200);
+    // Оценка 0 — это оценка, а не «пусто».
+    expect(res.body.needRatings).toEqual([
+      { needId: 'attachment', ratings: { child: 2, teen: 4, now: 7 } },
+      { needId: 'play', ratings: { now: 0 } },
+    ]);
+    expect(res.body.nodes[0].data.wheel).toEqual({
+      period: 'now',
+      compare: true,
+    });
+    expect(JSON.stringify(res.body)).not.toMatch(
+      /мама часто уезжала|есть близкая подруга|старая заметка в узле|"notes"/,
+    );
+  });
+
+  it('чужой клиент C2 карту C1 по id не получает — 403, ни оценок, ни заметок', async () => {
+    const mapId = await c1MapId();
+    const res = await agentAs(C2).get(`/api/therapy/my-mode-maps/${mapId}`);
+    expect(res.status).toBe(403);
+    expect(res.body).not.toHaveProperty('needRatings');
+    expect(JSON.stringify(res.body)).not.toMatch(
+      /ratings|мама часто уезжала|есть близкая подруга|старая заметка в узле/i,
+    );
+  });
+
   // ─── Сценарий 6: задачи не текут между терапевтами ────────────────────────
 
   it('T2 не видит задачу T1→C1 ни через tasks/all, ни через tasks/client/:clientId', async () => {
@@ -562,5 +623,53 @@ describe('e2e smoke: therapy ownership isolation (therapist ↔ client)', () => 
     expect(
       res.body.notes.some((n: { text: string }) => n.text === 'срез-0'),
     ).toBe(false);
+  });
+
+  // Последним в файле: сценарий заводит и рвёт связь T2↔C2.
+  it('клиент отключился от терапевта → карта закрыта, оценок колеса с ней нет', async () => {
+    const t2 = agentAs(T2);
+    const c2 = agentAs(C2);
+    const invite = await t2.post('/api/therapy/invite');
+    expect(invite.status).toBeLessThan(300);
+    const join = await c2.post('/api/therapy/join', { code: invite.body.code });
+    expect(join.body).toEqual({ ok: true });
+
+    const created = await t2.post(`/api/therapy/mode-maps/${C2_ID}`, {
+      title: 'Карта T2↔C2',
+    });
+    expect(created.status).toBeLessThan(300);
+    const mapUrl = `/api/therapy/my-mode-maps/${created.body.id}`;
+    const put = await t2.patch(
+      `/api/therapy/mode-maps/map/${created.body.id}`,
+      { nodes: [wheelNode({ period: 'now' })] },
+    );
+    expect(put.status).toBe(200);
+    const saved = await t2.post(
+      `/api/therapy/conceptualization/${C2_ID}/needs`,
+      {
+        needLinks: [
+          {
+            needId: 'limits',
+            ratings: { now: 3 },
+            notes: { now: 'заметка T2' },
+          },
+        ],
+      },
+    );
+    expect(saved.status).toBe(201);
+
+    const open = await c2.get(mapUrl);
+    expect(open.status).toBe(200);
+    expect(open.body.needRatings).toEqual([
+      { needId: 'limits', ratings: { now: 3 } },
+    ]);
+    expect(JSON.stringify(open.body)).not.toContain('заметка T2');
+
+    const left = await c2.delete('/api/therapy/relation');
+    expect([left.status, left.body]).toEqual([200, { ok: true }]);
+    const closed = await c2.get(mapUrl);
+    expect(closed.status).toBe(403);
+    expect(closed.body).not.toHaveProperty('needRatings');
+    expect(JSON.stringify(closed.body)).not.toMatch(/заметка T2|ratings/i);
   });
 });
