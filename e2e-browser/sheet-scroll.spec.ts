@@ -133,13 +133,26 @@ for (const size of WIDE) {
     expect(scrollHeight).toBeGreaterThan(clientHeight);
     expect(['auto', 'scroll']).toContain(overflowY);
 
-    // Колеса у мобильного WebKit нет (Playwright бросает) — там листаем сам контейнер.
+    // В мобильном WebKit колеса нет (Playwright бросает), а toBeInViewport на окне шире экрана
+    // айфона даёт 0 у видимой строки — листаем сам контейнер и сверяем рамки строки, списка и окна.
     if (isMobile) {
       await scroller.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+      await expect
+        .poll(() =>
+          last.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            const s = el.closest('.page')!.getBoundingClientRect();
+            const low = Math.min(s.bottom, window.innerHeight);
+            return r.top >= s.top - 1 && r.bottom <= low + 1
+              ? 'видна'
+              : `вне: строка ${r.top}–${r.bottom}, список ${s.top}–${s.bottom}, окно ${window.innerHeight}`;
+          }),
+        )
+        .toBe('видна');
     } else {
       await page.mouse.move(size.width - 200, size.height / 2);
       await page.mouse.wheel(0, scrollHeight);
+      await expect(last).toBeInViewport({ ratio: 1 });
     }
-    await expect(last).toBeInViewport({ ratio: 1 });
   });
 }
