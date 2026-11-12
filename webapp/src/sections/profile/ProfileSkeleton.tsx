@@ -15,8 +15,14 @@ export function ProfileSkeleton() {
           <Skeleton height={190} radius={16} />
         </div>
       </div>
-      <div className="cpf-skel-badges">
-        {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} width={54} height={54} radius={14} />)}
+      {/* Достижения по форме блока: значок и две строки текста, сеткой как cpf-ach-grid */}
+      <div className="cpf-ach-grid cpf-skel-ach">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="cpf-ach">
+            <Skeleton width={54} height={54} radius={14} />
+            <span className="cpf-ach-text"><Skeleton width="70%" height={13} radius={6} /><Skeleton width="95%" height={11} radius={6} /></span>
+          </div>
+        ))}
       </div>
     </div>
   );

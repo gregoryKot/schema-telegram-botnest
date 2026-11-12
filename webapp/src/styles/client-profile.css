@@ -2,7 +2,8 @@
    цветной бумаги, «ритм дней» одним блоком между линиями, значки достижений на своей бумаге. */
 .cpf-page { max-width: 1100px; }
 .cpf-skeleton { display: flex; flex-direction: column; gap: 20px; }
-.cpf-skel-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; padding-top: 10px; }
+.cpf-skel-ach { padding-top: 10px; }
+.cpf-skel-ach .cpf-ach-text { flex: 1; gap: 6px; }
 @media (min-width: 1024px) {
   .cpf-skeleton .cpf-rhythm--two .cpf-rhythm-row { grid-template-columns: minmax(0, 1fr) minmax(0, 470px); }
 }
@@ -97,10 +98,12 @@
 .cpf-heat-days { display: none; }
 .cpf-heat-grid { grid-auto-flow: column; grid-template-rows: repeat(7, auto); }
 /* Оттенки мха: уровень 1 — --c-moss (3.8:1 к бумаге страницы), дальше глубже к тексту. Пустой день — бумага. */
-.cpf-heat { aspect-ratio: 1; border-radius: 4px; background: var(--paper-sunk); }
-.cpf-heat--1 { background: var(--c-moss); }
-.cpf-heat--2 { background: var(--c-moss-strong); }
-.cpf-heat--3 { background: color-mix(in srgb, var(--c-moss-strong) 66%, var(--text)); }
+/* Пустой день — тон глубже бумаги листа на любом оттенке (как PAPER.hollow), а не --paper-sunk (1.1:1);
+   уровни — мох бледный, мох, мох глубокий: соседние уровни различимы. */
+.cpf-heat { aspect-ratio: 1; border-radius: 4px; background: color-mix(in srgb, var(--text) 13%, transparent); }
+.cpf-heat--1 { background: color-mix(in srgb, var(--c-moss) 50%, transparent); }
+.cpf-heat--2 { background: var(--c-moss); }
+.cpf-heat--3 { background: var(--c-moss-strong); }
 .cpf-heat.is-future { visibility: hidden; }
 .cpf-heat-legend { display: flex; gap: 6px; align-items: center; justify-content: flex-end; font-size: 12px; color: var(--text-faint); }
 .cpf-heat-legend .cpf-heat { width: 12px; height: 12px; aspect-ratio: auto; border-radius: 3px; }
