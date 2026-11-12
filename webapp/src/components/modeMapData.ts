@@ -3,14 +3,14 @@ import type { ModeMapNode } from '../api';
 
 export type NodeType = ModeMapNode['type'];
 
-// Colours are palette tokens (index.css); coping subtypes share ONE colour (clay), told apart by SHAPE.
+// Цвет знака типа (палитра, легенда, выбор формы) — токен той же семьи, что бумага фигуры (modeMap/nodePaper.ts, TYPE_HUE); три копинга — один цвет, различает форма.
 export const TYPE_COLORS: Record<string, string> = {
-  trigger:  'var(--c-slate)',
-  child:    'var(--c-teal)',
-  critic:   'var(--c-rose)',
-  coping:   'var(--c-clay)',
+  trigger:  'var(--c-moss)',
+  child:    'var(--c-clay)',
+  critic:   'var(--c-plum)',
+  coping:   'var(--c-slate)',
   healthy:  'var(--c-moss)',
-  custom:   'var(--c-plum)',
+  custom:   'var(--c-teal)',
   behavior: 'var(--c-ochre)',
   schema:   'var(--accent-red)', origin: 'var(--accent-blue)',  // схема случая на холсте (conceptToModeMap):
   need:     'var(--c-amber)',    needs:  'var(--c-amber)',      // схема, опыт, потребность, круг потребностей

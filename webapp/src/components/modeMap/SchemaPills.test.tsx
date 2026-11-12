@@ -88,10 +88,14 @@ describe('SchemaPills — схемы клиента на узле режима',
     expect(screen.getByText('Недоверие / Ожидание жестокого обращения')).toBeTruthy();
   });
 
-  it('текст таблетки — тон домена, подмешанный к --text (контраст ≥4.5:1 в обеих темах)', () => {
+  it('таблетка тихая: без цвета в style, домен — оттенком точки (--h), текст красит класс (--text-sub)', () => {
     renderPills(concept([link('vulnerable_child', ['abandonment'])]));
     const pill = screen.getByText('Покинутость / Нестабильность').parentElement as HTMLElement;
-    expect(pill.getAttribute('style')).toMatch(/color: color-mix\(in srgb, #[0-9a-f]{6} 60%, var\(--text\)\)/i);
+    expect(pill.className).toBe('mm2-pill');
+    expect(pill.style.getPropertyValue('--h')).toBe('28'); // домен «Нарушение связи и отвержение»
+    expect(pill.style.color).toBe('');
+    expect(pill.style.background).toBe('');
+    expect(pill.querySelector('i[aria-hidden="true"]')).toBeTruthy();
   });
 
   it('связи другого режима не показываются', () => {

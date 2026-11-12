@@ -20,14 +20,14 @@ export function ShapePreview({ opt, active }: { opt: ShapeOption; active: boolea
   return (
     <svg width={22} height={22} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
       {opt.isCloud ? (
-        <path d="M6,18 Q2,18 2,14 Q2,9 7,9 Q6,3 12,3 Q16,1 19,4 Q23,4 23,9 Q23,18 18,18 Z"
+        <path d="M1,6 L23,6 L19.5,12 L23,18 L1,18 L4.5,12 Z"
           fill={fill} stroke={stroke} strokeWidth={sw} />
       ) : opt.isCircle ? (
         <circle cx={12} cy={12} r={10.5} fill={fill} stroke={stroke} strokeWidth={sw} />
       ) : opt.copingSubtype === 'surr' || opt.type === 'need' ? (
         <rect x={1} y={6} width={22} height={12} rx={6} fill={fill} stroke={stroke} strokeWidth={sw} />
       ) : opt.type === 'behavior' ? (
-        <path d="M2,4 L18,4 L22,12 L18,20 L2,20 Z" fill={fill} stroke={stroke} strokeWidth={sw} />
+        <path d="M2,20 L2,12 L8.5,12 L8.5,8 L15.5,8 L15.5,4 L22,4 L22,20 Z" fill={fill} stroke={stroke} strokeWidth={sw} />
       ) : key ? (
         <path d={paths[key]} fill={fill} stroke={stroke} strokeWidth={sw} />
       ) : (
