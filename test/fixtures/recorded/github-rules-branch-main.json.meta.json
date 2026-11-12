@@ -1,6 +1,6 @@
 {
   "source": "GitHub REST API, репозиторий gregoryKot/schema-telegram-botnest — GET /repos/{owner}/{repo}/rules/branches/main (правила, действующие на ветке main; только активные ruleset)",
   "recordedAt": "2026-11-08",
-  "how": "записано из сессии агента командой `gh api repos/gregoryKot/schema-telegram-botnest/rules/branches/main`, HTTP 200 (с токеном GitHub App прокси песочницы; по документации GitHub эндпоинт отвечает и без токена, если ресурс публичный)",
-  "redacted": "ничего — ответ целиком, только переформатирован с отступами; персональных данных и секретов в нём нет (имя ruleset, id, имена проверок CI)"
+  "how": "записано из сессии агента командой `gh api repos/gregoryKot/schema-telegram-botnest/rules/branches/main`, HTTP 200 (с токеном GitHub App прокси песочницы; по документации GitHub эндпоинт отвечает и без токена, если ресурс публичный). 2026-11-12 в список обязательных проверок руками дописана строка `webapp-tz` по образцу соседних: джоба появилась в ci.yml и в копии ruleset, а на GitHub владелец добавляет её после мержа (правило №13); GitHub такого ответа ещё не давал",
+  "redacted": "ничего не скрыто — ответ целиком, переформатирован с отступами и дополнен строкой `webapp-tz` (см. how); персональных данных и секретов в нём нет (имя ruleset, id, имена проверок CI)"
 }
