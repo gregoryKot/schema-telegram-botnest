@@ -53,21 +53,60 @@
   .pp-square.sks-square { min-height: 0; padding: 28px 30px 26px 32px; border-radius: 28px; }
 }
 
-/* Кабинет терапевта: место сцены Talk в шапке; счётчики — плашки тоном панели, как загрузка самого
-   экрана (TherapistTodaySection), и по его сетке (therapist-today.css): на 768 с меню — 2+1, колонки
-   списков — одна, пока поле уже ~800. Бумагу счётчиков включит b29 вместе с экраном. */
-.sks-scene { display: block; }
-.sks-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); grid-auto-rows: 116px; gap: 16px; }
+/* Кабинет терапевта, «Сегодня» (TodaySkeletonBody, b29): плитки бумаги счётчиков и лист неба сессий по
+   сетке экрана (therapist-today.css): три плитки в ряд, колонки списков — одна, пока поле уже ~800. */
+.sks-today-th { display: flex; flex-direction: column; gap: 32px; }
+/* Плитка счётчика на ≥768 (r2): знак слева от числа, подпись под ними — та же раскладка и высота, что .tt-counter. */
+.sks-counters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 112px; gap: 16px; }
+.sks-counter {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: space-between; align-items: center;
+  column-gap: 14px; padding: 18px 20px 16px; box-sizing: border-box;
+}
+.sks-counter > :last-child { grid-column: 1 / -1; }
+.sks-sessions { padding: 20px 20px 16px; border-radius: 22px; gap: 12px; }
+.sks-session { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 0 16px; border-radius: 14px; background: var(--surface); }
 .sks-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 .sks-two--today { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 32px; }
 .sks-two .sks-col { gap: 14px; }
-.sks-two--overview { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
-.sks-card-head { display: flex; align-items: center; gap: 16px; }
-.sks-tabs { display: flex; gap: 22px; padding-bottom: 12px; border-bottom: 1px solid var(--paper-sunk); overflow: hidden; }
+/* Карточка клиента (CardSkeleton.tsx, r1 L5): шапка — те же поля и высоты, что .tk-head (therapist-card.css):
+   компьютер 232px, телефон 219px; тело — сетка .tk-ov (колонка и сайдбар clamp(260px, 30%, 340px) с 1024). */
+.sks-card-top {
+  display: flex; flex-direction: column; gap: 22px; background: var(--paper-tint); border-bottom: 1px solid var(--line);
+  padding: 28px calc(var(--tk-center) + var(--tk-gutter)) 0;
+}
+.sks-card-back { display: flex; align-items: center; justify-content: space-between; height: 44px; margin-bottom: -8px; }
+.sks-card-head { display: flex; align-items: center; gap: 18px; height: 88px; }
+.sks-card-head > .sks-col { gap: 8px; }
+.sks-tabs { display: flex; align-items: center; gap: 22px; height: 35px; overflow: hidden; }
+.sks-ov {
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(260px, 30%, 340px); align-items: start; gap: 48px;
+  margin-left: var(--tk-center); max-width: var(--tk-max); padding: 40px var(--tk-gutter) 64px; box-sizing: border-box;
+}
+.sks-ov > .sks-col { gap: 20px; }
+.sks-ov--tab { grid-template-columns: minmax(0, 1fr); max-width: 900px; }
+.sks-ov-quick { display: none; gap: 8px; }
+.sks-ov-goal { min-height: 181px; }
+.sks-ov-group { min-height: 220px; }
+.sks-ov-meet { min-height: 322px; }
+.sks-ov-track { min-height: 300px; }
+.sks-row--tight { min-height: 44px; }
+/* Лист вкладки без обводки (заметки, задания) — белый, как .pp-leaf экрана. */
+.sks-leaf { border-radius: 20px; background: var(--surface); }
+@media (max-width: 1023px) { .sks-ov { grid-template-columns: minmax(0, 1fr); gap: 32px; } }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .sks-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 96px; gap: 8px; }
-  .sks-two, .sks-two--overview { grid-template-columns: minmax(0, 1fr); }
-  .sks-tabs { gap: 18px; }
+  .sks-today-th { gap: 24px; }
+  .sks-counters { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 124px; gap: 8px; }
+  .sks-counter { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; padding: 12px; }
+  .sks-two { grid-template-columns: minmax(0, 1fr); }
+  .sks-card-top { padding: 6px 16px 0; gap: 12px; }
+  .sks-card-back { margin-bottom: 0; }
+  .sks-card-head { gap: 12px; height: 100px; }
+  .sks-card-head > .skel:first-child { width: 44px !important; height: 44px !important; }
+  .sks-tabs { gap: 20px; height: 44px; }
+  .sks-ov { padding: 20px 16px 24px; gap: 16px; margin-left: 0; }
+  .sks-ov > .sks-col { gap: 16px; }
+  .sks-ov-quick { display: flex; }
+  .sks-ov-goal { min-height: 244px; }
   .sks-row { padding: 10px 14px; }
 }
 

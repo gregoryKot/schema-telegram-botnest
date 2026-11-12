@@ -10,19 +10,17 @@ import { PendingInvitesList } from '../../../../shared/src/therapy/PendingInvite
 import { CardClaimBanner } from '../../../../shared/src/therapy/CardClaimBanner';
 import { ClientCard } from './ClientCard';
 import { PaperEmpty } from '../art/PaperEmpty';
+import { PaperAlert } from '../paper/PaperAlert';
+import { SignArt } from '../art/SignArt';
 import { ClientListHero } from './ClientListHero';
+import { CabinetEmpty } from './CabinetEmpty';
+import { CLAIM_SIGN, INVITE_SIGN } from './cabinetLook';
 import { filterRoster, sortRoster, type RosterStatus } from './rosterModel';
+import { StatusFilter } from './StatusFilter';
 import type { useAddClient } from './useAddClient';
 import type { TasksBoard } from './useTasksBoard';
 import type { ClientTab } from './clientSheetTypes';
 import '../../styles/therapist-clients.css';
-
-const FILTERS: { key: RosterStatus; label: string }[] = [
-  { key: 'all', label: 'Все' },
-  { key: 'active', label: 'Активны' },
-  { key: 'wait', label: 'Не сегодня' }, // в боте, но сегодня без активности; «Ждут» путалось с «Ждут подключения»
-  { key: 'virtual', label: 'Офлайн' },
-];
 
 interface Props {
   animKey: number;
@@ -39,11 +37,16 @@ interface Props {
   board: TasksBoard;
   openClient: (client: TherapyClientSummary, tab?: ClientTab) => void;
   addClient: ReturnType<typeof useAddClient>;
+  /** Палитра «Перейти к…» — кнопка-лупа в шапке на телефоне (у оболочки там нет строки .topbar). */
+  onSearch?: () => void;
 }
+
+const signOf = (sign: typeof INVITE_SIGN) => <span className="tc-block-sign" aria-hidden="true"><SignArt sign={sign} size="row" /></span>;
+const blockAlert = (sign: typeof INVITE_SIGN) => (text: string) => <PaperAlert sign={sign} title={text} />;
 
 export function ClientListView({
   animKey, clients, loading, loadFailed, listTab, setListTab, searchQuery, setSearchQuery,
-  filterStatus, setFilterStatus, board, openClient, addClient,
+  filterStatus, setFilterStatus, board, openClient, addClient, onSearch,
 }: Props) {
   const tr = useTr();
   // Пустой список — онбординг: форма открыта сразу. Созданного клиента не
@@ -57,11 +60,11 @@ export function ClientListView({
   return (
     <div className="therapist-scroll therapist-scroll--list" key={`list-${animKey}`} style={{ animation: 'fade-in 0.22s ease' }}>
       <div className="ds-page">
-        <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} />
+        <ClientListHero count={clients.length} formVisible={formVisible} onToggle={() => addClient.setOpen(v => !v)} onSearch={onSearch} />
 
-        <CardClaimBanner claims={addClient.claims} />
+        <CardClaimBanner claims={addClient.claims} rowClassName="pp-leaf tc-claim" art={signOf(CLAIM_SIGN)} failure={blockAlert(CLAIM_SIGN)} />
         {formVisible && <AddClientForm addClient={addClient} />}
-        <PendingInvitesList pending={addClient.pending} className="tc-pending" />
+        <PendingInvitesList pending={addClient.pending} className="pp-leaf tc-pending" art={signOf(INVITE_SIGN)} failure={blockAlert(INVITE_SIGN)} />
 
         <div className="tc-toolbar">
           <div className="tc-modes">
@@ -71,16 +74,11 @@ export function ClientListView({
               <button role="tab" aria-selected={listTab === 'kanban'} className={`ds-seg-btn ${listTab === 'kanban' ? 'is-active' : ''}`}
                       onClick={() => { setListTab('kanban'); board.open(); }}>Задания</button>
             </div>
-            {listTab === 'clients' && (
-              <div className="ds-seg ds-seg--scroll">
-                {FILTERS.map(f => (
-                  <button key={f.key} className={`ds-seg-btn ${filterStatus === f.key ? 'is-active' : ''}`}
-                          onClick={() => setFilterStatus(f.key)}>{f.label}</button>
-                ))}
-              </div>
+            {listTab === 'clients' && !noClients && (
+              <StatusFilter value={filterStatus} onChange={setFilterStatus} />
             )}
           </div>
-          {listTab === 'clients' && (
+          {listTab === 'clients' && !noClients && (
             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                    placeholder="Найти клиента" aria-label="Найти клиента" className="ds-input ds-input--search tc-search" />
           )}
@@ -103,15 +101,15 @@ export function ClientListView({
         {listTab === 'clients' && (
           loading ? (
             <div className="tc-grid" aria-hidden>
-              {[0, 1, 2].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={20} />)}
+              {[0, 1, 2, 3].map(i => <Skeleton key={i} height="var(--tc-card-h)" radius={20} />)}
             </div>
           ) : loadFailed ? (
             // Сбой ≠ пусто: полный ростер не должен выглядеть как «клиентов нет».
-            <div className="tc-error">
-              {tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')}
-            </div>
+            <PaperAlert sign="cluster" className="tc-error"
+              title={tr('Не удалось загрузить клиентов. Проверь соединение и обнови страницу', 'Не удалось загрузить клиентов. Проверьте соединение и обновите страницу')} />
           ) : clients.length === 0 ? (
-            <PaperEmpty>{tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')}</PaperEmpty>
+            // Пустой список — одна сцена кабинета; главное действие — открытая форма выше.
+            <CabinetEmpty text={tr('Введи имя клиента выше, чтобы добавить первую карточку', 'Введите имя клиента выше, чтобы добавить первую карточку')} />
           ) : filtered.length === 0 ? (
             <PaperEmpty>Ничего не найдено</PaperEmpty>
           ) : (

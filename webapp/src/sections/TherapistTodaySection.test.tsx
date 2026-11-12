@@ -56,6 +56,9 @@ describe('TherapistTodaySection — пустой аккаунт (без хард
     expect(screen.getByText('Сессий не запланировано').classList.contains('ds-empty')).toBe(true);
     // Блок сводной статистики скрыт вовсе на пустом списке — не «0/0».
     expect(screen.queryByText('Активны сегодня')).toBeNull();
+    // b29: одно состояние — одна сцена кабинета; пустые подсписки без своих картинок (было три чашки).
+    expect(document.querySelectorAll('svg.scn')).toHaveLength(1);
+    expect(document.querySelectorAll('.pp-empty')).toHaveLength(0);
     // Аудит 2026-11, U11: у нового терапевта пустой экран вёл в никуда.
     fireEvent.click(screen.getByRole('button', { name: 'Добавить клиента' }));
     expect(onAddClient).toHaveBeenCalledTimes(1);
@@ -77,7 +80,7 @@ describe('TherapistTodaySection — пустой аккаунт (без хард
       .mockResolvedValueOnce([client({ telegramId: 1, name: 'Иван', todayIndex: 7 })]);
     render(<TherapistTodaySection displayName={null} onOpenClient={vi.fn()} />);
 
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Клиенты не загрузились/);
+    expect((await screen.findByRole('alert')).textContent!.replace(/\u00a0/g, ' ')).toMatch(/Клиенты не загрузились/);
     expect(screen.queryByText(/Клиентов пока нет|Нет клиентов/)).toBeNull();
     expect(screen.queryByText('Сессий не запланировано')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
@@ -101,13 +104,15 @@ describe('TherapistTodaySection — реальные данные клиенто
     expect(screen.getByText('7,2')).toBeTruthy();
     expect(screen.getByText('активность сегодня')).toBeTruthy();
     expect(screen.getByText('активность вчера')).toBeTruthy();
-    // Счётчики — ds-card--row с подписью ds-label (#906), без своего радиуса;
-    // список активности — та же карточка-строка, радиус не инлайном.
+    // Счётчики (b29) — плитки бумаги со знаком: подпись ds-label, оттенок — в --h плитки;
+    // список активности — светлый лист .tt-list, вид не инлайном.
     const counter = screen.getByText('Активны сегодня');
     expect(counter.classList.contains('ds-label')).toBe(true);
-    expect(counter.closest('.ds-card')!.classList.contains('ds-card--row')).toBe(true);
-    const list = screen.getByText('Активность клиентов').parentElement!.querySelector('.ds-card--flush')!;
-    expect(list.classList.contains('ds-card--row')).toBe(true);
+    const tile = counter.closest('.tt-counter') as HTMLElement;
+    expect(tile.classList.contains('pp-paper')).toBe(true);
+    expect(tile.style.getPropertyValue('--h')).toBe('135');
+    expect(tile.querySelector('.tt-counter-sign svg')).not.toBeNull();
+    const list = screen.getByText('Активность клиентов').parentElement!.querySelector('.tt-list')!;
     expect(list.getAttribute('style')).toBeNull();
   });
 
@@ -153,6 +158,11 @@ describe('TherapistTodaySection — сессии сегодня', () => {
 
     await waitFor(() => expect(screen.getAllByText('Клиент А').length).toBeGreaterThanOrEqual(1));
     expect(screen.getByText('14:30')).toBeTruthy();
+    // b29, r1: лист неба «Сессий» без знака — Talk стоит один раз, у счётчика «Сессий сегодня»; в строке тоже нет.
+    const sheet = document.querySelector('.tt-sessions') as HTMLElement;
+    expect(sheet.style.getPropertyValue('--h')).toBe('240');
+    expect(sheet.querySelectorAll('svg')).toHaveLength(0);
+    expect(sheet.querySelector('.tt-session svg')).toBeNull();
   });
 
   it('nextSession в будущем НЕ показывает клиента в "Сессии сегодня", даже если meetingDays совпадает', async () => {
