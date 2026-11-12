@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ThanksSheet } from './ThanksSheet';
+import { glueSpaces } from '../../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 
 afterEach(cleanup);
 
@@ -21,7 +22,7 @@ describe('ThanksSheet', () => {
 
   it('надпись, h1, лид и главное действие-ссылка', () => {
     render(<ThanksSheet eyebrow="Подписка" title="Спасибо за поддержку!" lead="Подписка оформлена." action={{ label: 'На главную', href: '/' }} />);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Спасибо за поддержку!');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(glueSpaces('Спасибо за поддержку!'));
     expect(screen.getByText('Подписка')).toBeTruthy();
     expect(screen.getByText('Подписка оформлена.')).toBeTruthy();
     const a = screen.getByRole('link', { name: 'На главную' });
