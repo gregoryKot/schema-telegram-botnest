@@ -28,7 +28,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
         <SRow title="Загрузка..." />
       ) : therapyRelation?.status === 'active' ? (
         <div className="st-body-block">
-          <div className="ds-h3">{therapistConnectedTitle(therapyRelation.partnerName)}</div>
+          <div className="st-strong">{therapistConnectedTitle(therapyRelation.partnerName)}</div>
           {join.joined && <p className="st-text" role="status">{joinDoneText(therapyRelation.partnerName, tr, true)}</p>}
           <div className="st-rows st-rows--ruled">
             <SRow title={CARDS.title} sub={CARDS.sub} right={<Toggle label={CARDS.title} on={!!settings.therapistShareCards} onClick={() => patch({ therapistShareCards: !settings.therapistShareCards })} />} />

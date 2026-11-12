@@ -1,5 +1,4 @@
 import type { UserSettings } from '../../api';
-import { SignChip } from '../paper/SignChip';
 import { Tick } from './ui';
 import { HOURS, FREQ_LABELS, QUIET_PRESETS, pad } from '../../../../shared/src/settings/constants';
 import { timezoneOptions } from '../../../../shared/src/settings/timezones';
@@ -15,7 +14,8 @@ interface Props {
 
 // Подэкраны выбора (время, частота, тихие часы, пояс): тап по варианту
 // сохраняет его и возвращает на главный экран настроек. Вид (b25): часы — чипы-листы,
-// выбранный — бумага с галочкой (SignChip); списки — плоские строки через линию, у выбранной
+// выбранный — бумага с галочкой в углу (вид чипа SignChip — ds-chip--toggle pa-chip; галочка не сдвигает подпись:
+// на 320 чип 66px, слот знака SignChip в него не влезает); списки — плоские строки через линию, у выбранной
 // галочка-знак. Заголовок подэкрана рисует SettingsSheet в начале тела.
 export function SettingsSubView({ subView, settings, patch, onDone }: Props) {
   const choose = (update: Partial<UserSettings>) => async () => { await patch(update); onDone(); };
@@ -28,9 +28,15 @@ export function SettingsSubView({ subView, settings, patch, onDone }: Props) {
   if (subView === 'time') {
     return (
       <div className="st-hours">
-        {HOURS.map(h => (
-          <SignChip key={h} label={`${pad(h)}:00`} on={h === settings.notifyLocalHour} onToggle={choose({ notifyLocalHour: h })} />
-        ))}
+        {HOURS.map(h => {
+          const on = h === settings.notifyLocalHour;
+          return (
+            <button key={h} type="button" aria-pressed={on} onClick={choose({ notifyLocalHour: h })}
+              className={`ds-chip ds-chip--toggle pa-chip${on ? ' is-on' : ''}`}>
+              {on && <span className="st-hours-tick"><Tick /></span>}{pad(h)}:00
+            </button>
+          );
+        })}
       </div>
     );
   }

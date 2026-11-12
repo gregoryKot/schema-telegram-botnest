@@ -52,8 +52,7 @@ export function DataSection({ onResign }: { onResign?: () => Promise<void> | voi
 
       {/* ── Privacy modal ── */}
       {showPrivacy && (
-        <InfoModal onClose={() => setShowPrivacy(false)}>
-          <h2 className="dialog-title st-modal-title">Данные и конфиденциальность</h2>
+        <InfoModal title="Данные и конфиденциальность" onClose={() => setShowPrivacy(false)}>
           {[
             { title: 'Что хранится', text: privacyStorageText('аккаунту') },
             { title: 'Передача третьим лицам', text: PRIVACY_NO_SHARE_TEXT },

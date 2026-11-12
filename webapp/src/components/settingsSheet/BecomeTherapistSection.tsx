@@ -69,10 +69,10 @@ export function BecomeTherapistSection() {
           </div>
         ) : (
           <div className="st-form">
-            <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
-            <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3} placeholder="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />
-            <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} className="ds-input" />
-            <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2} placeholder="Сообщение (необязательно)" className="ds-textarea" />
+            <input value={reqFullName} onChange={e => setReqFullName(e.target.value)} placeholder="ФИО" aria-label="ФИО" maxLength={LIM.THERAPIST_REQUEST_NAME_MAX} className="ds-input" />
+            <LimitedTextarea max={LIM.THERAPIST_REQUEST_QUAL_MAX} value={reqQual} onChange={e => setReqQual(e.target.value)} rows={3} placeholder="Квалификация: образование, направление, опыт, сертификаты" aria-label="Квалификация: образование, направление, опыт, сертификаты" className="ds-textarea" />
+            <input value={reqContacts} onChange={e => setReqContacts(e.target.value)} placeholder="Контакты: сайт, @telegram, b17 и т.д." aria-label="Контакты: сайт, @telegram, b17 и т.д." maxLength={LIM.THERAPIST_REQUEST_CONTACTS_MAX} className="ds-input" />
+            <LimitedTextarea max={LIM.THERAPIST_REQUEST_MESSAGE_MAX} value={reqMsg} onChange={e => setReqMsg(e.target.value)} rows={2} placeholder="Сообщение (необязательно)" aria-label="Сообщение (необязательно)" className="ds-textarea" />
             {reqError && <div className="st-err">{reqError}</div>}
             <div className="st-modal-actions">
               <button className="ds-btn ds-btn--secondary" onClick={() => { setShowReqForm(false); setReqError(''); }}>

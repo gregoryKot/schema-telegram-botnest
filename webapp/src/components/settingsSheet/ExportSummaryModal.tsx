@@ -25,8 +25,7 @@ export function ExportSummaryModal({
       ? 'Не скопировалось — текст выше'
       : 'Скопировать';
   return (
-    <InfoModal onClose={onClose}>
-      <h2 className="dialog-title st-modal-title">Сводка для терапевта</h2>
+    <InfoModal title="Сводка для терапевта" onClose={onClose}>
       <pre className="st-pre">
         {text}
       </pre>

@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { useState } from 'react';
 import { SRow, Toggle, ChevronVal, InfoModal } from './ui';
 
 afterEach(() => {
@@ -119,7 +120,7 @@ describe('ChevronVal', () => {
 describe('InfoModal', () => {
   it('рендерит children', () => {
     render(
-      <MemoryRouter><InfoModal onClose={() => {}}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={() => {}}>
         <div>Содержимое модалки</div>
       </InfoModal></MemoryRouter>,
     );
@@ -129,7 +130,7 @@ describe('InfoModal', () => {
   it('клик по фону зовёт onClose', async () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
@@ -140,7 +141,7 @@ describe('InfoModal', () => {
   it('клик внутри модалки не зовёт onClose (stopPropagation)', () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Клик внутри</div>
       </InfoModal></MemoryRouter>,
     );
@@ -151,7 +152,7 @@ describe('InfoModal', () => {
   it('Enter/Space на фоне зовут onClose', async () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
@@ -164,7 +165,7 @@ describe('InfoModal', () => {
   it('внутри окна есть кнопка «Закрыть», она зовёт onClose один раз', async () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
@@ -172,3 +173,39 @@ describe('InfoModal', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });
+
+// Ревью b25: окно — диалог, а не «presentation»: фокус внутрь, имя по заголовку, возврат фокуса на вызвавшую кнопку.
+describe('InfoModal — диалог', () => {
+  function Opener() {
+    const [open, setOpen] = useState(false);
+    return (
+      <MemoryRouter>
+        <button onClick={() => setOpen(true)}>Пояснение</button>
+        {open && <InfoModal title="Данные и конфиденциальность" onClose={() => setOpen(false)}><p>Тело</p></InfoModal>}
+      </MemoryRouter>
+    );
+  }
+  it('role="dialog", aria-modal, имя — заголовок (предлог приклеен неразрывным пробелом), фокус внутри', () => {
+    render(<Opener />);
+    screen.getByText('Пояснение').focus();
+    fireEvent.click(screen.getByText('Пояснение'));
+    const dialog = screen.getByRole('dialog', { name: /Данные и\sконфиденциальность/ });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.querySelector('h2')!.textContent).toBe('Данные и\u00a0конфиденциальность');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+  it('Tab с последней кнопки остаётся в окне; после закрытия фокус возвращается на вызвавшую кнопку', async () => {
+    render(<Opener />);
+    const opener = screen.getByText('Пояснение');
+    opener.focus();
+    fireEvent.click(opener);
+    const close = screen.getByText('Закрыть', { selector: 'button' });
+    close.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    fireEvent.click(close);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(document.activeElement).toBe(opener);
+  });
+});
+

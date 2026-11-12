@@ -23,10 +23,11 @@
 .cbk-skel-tz { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 4px; }
 
 /* Чипы дня и времени (SignChip): зона 44 на любой ширине, подпись не рвётся. Ширина чипа до и после выбора
-   одна: место галочки (слот 24 + зазор 6) у невыбранного отдано полям поровну, жирность не меняется — иначе
+   одна: место галочки (слот 20 + зазор 4) у невыбранного отдано полям поровну, жирность не меняется — иначе
    выбранный чип раздвигал ряд, и на 320 последний слот падал на вторую строку под пальцем. */
-.ds-chip.cbk-chip { flex: none; min-height: 44px; padding-left: 6px; padding-right: 14px; font-size: 14px; font-weight: 500; white-space: nowrap; }
-.ds-chip.cbk-chip:not(.pa-chip--mark) { padding-left: 25px; padding-right: 25px; }
+.ds-chip.cbk-chip { flex: none; min-height: 44px; gap: 4px; padding-left: 3px; padding-right: 9px; font-size: 14px; font-weight: 500; white-space: nowrap; }
+.ds-chip.cbk-chip:not(.pa-chip--mark) { padding-left: 18px; padding-right: 18px; }
+.cbk-chip > .pa-chip-sign { width: 20px; }
 /* Лента дней на телефоне листается и уходит под правый край экрана (поле листа отдано ленте): обрезанный
    чип режет край экрана, а не невидимая граница колонки. С 768 дни встают сеткой в несколько рядов. */
 .cbk-days { display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px 0 0; padding: 0 28px 4px 0; scrollbar-width: none; }

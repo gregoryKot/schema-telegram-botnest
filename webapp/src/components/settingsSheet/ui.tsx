@@ -1,5 +1,8 @@
 import '../../styles/sheet-settings.css';
+import { useId } from 'react';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
+import { useDialogA11y } from '../../../../shared/src/utils/dialogA11y';
+import { glue } from '../../../../shared/src/utils/typo';
 
 // Примитивы SettingsSheet (правило №10): вид — st-* из sheet-settings.css + ds-*;
 // label у Toggle — имя switch для скринридера, обычно заголовок его строки SRow.
@@ -37,13 +40,15 @@ export function SSection({ id, label, hint, help, children }: {
   );
 }
 
-export function SRow({ title, sub, right, onClick, danger }: {
+export function SRow({ title, sub, right, onClick, danger, opens }: {
   title: string; sub?: React.ReactNode; right?: React.ReactNode;
   onClick?: () => void; danger?: boolean;
+  /** Подэкран, который открывает строка: по этой метке лист возвращает на неё фокус (useSubViewNav). */
+  opens?: string;
 }) {
   const cls = `ds-list-row ds-list-row--nav ds-list-row--inset${onClick ? ' ds-list-row--hover' : ''}${danger ? ' ds-list-row--danger' : ''}`;
   return (
-    <div className={cls} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}
+    <div className={cls} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} data-opens={opens}
       onKeyDown={onClick ? onKeyActivate(onClick) : undefined}>
       <div className="ds-list-body">
         <div className="ds-list-title">{title}</div>
@@ -74,19 +79,25 @@ export function ChevronVal({ text }: { text: string }) {
   );
 }
 
-export function InfoModal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+export function InfoModal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   // Вложенный уровень над листом настроек: «Назад» закрывает только окно (QA 2026-11, C-З2).
   const goBack = useHistorySheet(onClose);
+  // Окно — диалог: фокус внутрь, Tab не уходит в лист под ним, при закрытии фокус возвращается на вызвавшую кнопку.
+  const a11y = useDialogA11y();
+  const titleId = useId();
   const close = () => goBack();
   return (
-    <div className="sheet-modal" onClick={close} role="button" tabIndex={0} aria-label="Закрыть"
+    <div className="sheet-modal" onClick={close} role="button" tabIndex={-1} aria-label="Закрыть"
       onKeyDown={onKeyActivate(close)}>
       <div
-        role="presentation"
+        {...a11y}
+        aria-labelledby={titleId}
         className="sheet-modal-box"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); } }}
       >
+        {/* glue: предлог не висит в конце строки («Данные и / конфиденциальность») */}
+        <h2 id={titleId} className="dialog-title st-modal-title">{glue(title)}</h2>
         {children}
         {/* Закрыть можно было только кликом мимо или Escape — у «Сводки для
             терапевта» и пояснений не было кнопки (QA 2026-11, М11). */}

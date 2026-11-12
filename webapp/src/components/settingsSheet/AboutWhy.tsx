@@ -5,7 +5,7 @@
 import { useAddressForm } from '../../utils/addressForm';
 import { getAboutText, NEEDS_EXPLAINER } from '../../../../shared/src/about/aboutData';
 import { NEED_ORDER } from '../../../../shared/src/needs/types';
-import { glue } from '../../../../shared/src/utils/typo';
+import { glueSpaces } from '../../../../shared/src/utils/typo';
 import { NeedArt } from '../art/NeedArt';
 
 export function AboutWhy() {
@@ -13,7 +13,7 @@ export function AboutWhy() {
   return (
     <div className="st-about-why">
       {paragraphs.map((p, i) => (
-        <p key={i} className="st-about-p">{glue(p)}</p>
+        <p key={i} className="st-about-p">{glueSpaces(p)}</p>
       ))}
       <div className="ds-label st-needs-label">Пять потребностей</div>
       <ul className="st-needs">
@@ -22,7 +22,7 @@ export function AboutWhy() {
             <span className="pp-row-art" aria-hidden="true"><NeedArt id={NEED_ORDER[i]} size="row" /></span>
             <div className="st-need-body">
               <div className="st-need-name">{n.name}</div>
-              <p className="st-text">{glue(n.text)}</p>
+              <p className="st-text">{glueSpaces(n.text)}</p>
             </div>
           </li>
         ))}

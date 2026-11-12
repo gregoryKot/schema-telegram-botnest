@@ -51,12 +51,12 @@ export function Strokes({ marks, values, even, days, size }: ArtProps & { marks?
 }
 
 function DayStrokes({ days, size }: ArtProps & { days: readonly number[] }) {
-  const x0 = 60 - (days.length * 24 - 8) / 2;
+  const x0 = 60 - (days.length * 30 - 10) / 2;
   return (
     <Svg size={size} viewBox="0 0 120 64">
       {days.map((v, i) => {
-        const h = 16 + Math.round(ratingShare(v) * 40);
-        return <rect key={i} data-value={v} x={x0 + i * 24} y={60 - h} width="16" height={h} rx="8" fill={PAPER.clay} />;
+        const h = 20 + Math.round(ratingShare(v) * 40);
+        return <rect key={i} data-value={v} x={x0 + i * 30} y={62 - h} width="20" height={h} rx="10" fill={PAPER.clay} />;
       })}
     </Svg>
   );

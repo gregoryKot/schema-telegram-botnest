@@ -25,7 +25,7 @@ export function AboutSheet({ onClose }: { onClose: () => void }) {
   const dialogA11y = useDialogA11y();
   return (
     <div {...dialogA11y} className="u-sheet st-about" aria-label="О приложении">
-      <div className="ds-sheet-head ds-sheet-head--page"><button type="button" className="ds-back" onClick={goBack}>← Закрыть</button></div>
+      <div className="ds-sheet-head"><button type="button" className="ds-back" onClick={goBack}>← Закрыть</button></div>
       <div className="st-about-inner">
         <div className="pp-paper st-about-hero" style={hueStyle(HERO_HUE)}>
           <h1 className="st-about-title">Зачем это всё</h1>

@@ -52,7 +52,7 @@ export function NotificationsSection({ settings, tzLabel, patch, openSubView, le
       {channel && (reminders || summary) && (
         <NotifyScheduleRows settings={settings} patch={patch} openSubView={openSubView} />
       )}
-      <SRow title="Часовой пояс" sub="От него считается «сегодня» и час напоминаний" right={<ChevronVal text={tzLabel} />} onClick={() => openSubView('tz')} />
+      <SRow title="Часовой пояс" sub="От него считается «сегодня» и час напоминаний" right={<ChevronVal text={tzLabel} />} opens="tz" onClick={() => openSubView('tz')} />
     </SSection>
   );
 }

@@ -9,12 +9,14 @@
   position: fixed; inset: 0; z-index: 80; background: var(--bg);
   display: flex; flex-direction: column; overflow: hidden;
 }
-html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel-line: var(--line-strong); } /* тёмная тема своего --panel-line не задаёт */
 .st-toast { display: inline-flex; align-items: center; gap: 4px; opacity: 0; transition: opacity .3s; }
 .st-toast.is-on { opacity: 1; }
-.st-toast.is-err { background: color-mix(in srgb, var(--accent-red) 12%, transparent); color: var(--accent-red); }
+.st-toast.is-err { background: color-mix(in srgb, var(--accent-red) 12%, transparent); color: color-mix(in srgb, var(--accent-red) 80%, var(--text)); } /* --accent-red на этой плашке — 4.30:1 */
 .st-tick { flex-shrink: 0; width: 14px; height: 14px; }
 .st-body { flex: 1; display: flex; min-height: 0; }
+/* Подэкран — свой уровень (SubScreen.tsx): та же шапка и то же тело, пустая колонка оглавления держит место. */
+.st-level { flex: 1; display: flex; flex-direction: column; min-height: 0; outline: none; }
+.st-strong { font-size: 16px; font-weight: 600; color: var(--text); }
 .st-scroll { flex: 1; overflow-y: auto; }
 .st-inner { box-sizing: border-box; padding: 28px 28px 80px; display: flex; flex-direction: column; gap: 32px; }
 .st-inner--sub { gap: 20px; }
@@ -27,6 +29,12 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
   color: var(--text-muted); transition: background .12s, color .12s;
 }
 .settings-sidenav-item.st-navitem:hover { background: var(--paper-tint); color: var(--text); }
+@media (pointer: coarse) { .settings-sidenav-item.st-navitem { min-height: 44px; } }
+/* Силуэт загрузки (SettingsSkeleton): плашки в ячейках будущих пунктов, строк и полей */
+.st-skel-nav { display: flex; align-items: center; box-sizing: border-box; }
+.st-skel-nav:hover { background: none; }
+.st-skel-line { display: flex; align-items: center; }
+.st-skel-seg { height: 50px; }
 
 /* Группа: ярлык, пояснение, линия; строки — без рамок и теней */
 .st-section { display: flex; flex-direction: column; scroll-margin-top: 16px; }
@@ -78,8 +86,11 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
 .st-row-name .ds-input { flex: 1 1 200px; min-width: 0; }
 
 /* Подвиды выбора: часы — чипы-листы (SignChip: выбранный — бумага с галочкой), списки — плоские строки */
-.st-hours { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.st-hours > .ds-chip { justify-content: center; font-size: 14px; border-radius: 12px; }
+.st-hours { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.st-hours > .ds-chip { position: relative; justify-content: center; min-height: 44px; padding-left: 4px; padding-right: 4px; font-size: 14px; border-radius: 12px; }
+/* Галочка выбранного часа — в углу чипа: подпись не сдвигается и ширина чипа не меняется (на 320 чип 66px). */
+.st-hours-tick { position: absolute; top: 3px; right: 4px; display: inline-flex; color: var(--c-moss-strong); }
+.st-hours-tick > .st-tick { width: 11px; height: 11px; }
 .st-sub { display: flex; flex-direction: column; gap: 12px; }
 .st-opts { display: flex; flex-direction: column; border-top: 1px solid var(--panel-line); }
 .st-opts > .ds-list-row:last-child { border-bottom: 1px solid var(--panel-line); }
@@ -89,7 +100,8 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
 .st-pause { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--panel-line); }
 
 /* Модалки (InfoModal): плоско на бумаге окна — блоки через линию, без «коробки в коробке» */
-.st-modal-title { margin: 0 0 16px; text-wrap: balance; }
+.st-modal-title { margin: 0 0 16px; text-wrap: balance; overflow-wrap: break-word; }
+@media (max-width: 360px) { .st-modal-title { font-size: 22px; } } /* «конфиденциальность» шире колонки окна на 320 */
 .st-modal-title--danger { color: var(--accent-red); margin-bottom: 8px; }
 .st-info { padding: 14px 0; border-top: 1px solid var(--panel-line); }
 .st-info:last-of-type { border-bottom: 1px solid var(--panel-line); margin-bottom: 16px; }
@@ -112,9 +124,12 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .st-inner--sub { max-width: 560px; }
   .st-body-block > .ds-seg--full { align-self: flex-start; }
-  .st-hours { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
-@media (min-width: 1024px) { .st-inner { padding: 32px 40px 80px; } } /* с оглавлением слева; на планшете (768–1023) оглавления нет — поля уже */
+@media (min-width: 1024px) {
+  .st-inner { padding: 32px 40px 80px; }
+  /* Пункт оглавления докручивает и последние группы заголовком к верху: запас снизу — высота окна без шапки и группы. */
+  .st-inner:not(.st-inner--sub) { padding-bottom: max(80px, calc(100vh - 300px)); }
+} /* с оглавлением слева; на планшете (768–1023) оглавления нет — поля уже */
 .st-block { width: 100%; }
 .st-modal-close { margin-top: 10px; }
 .st-center { text-align: center; }
@@ -125,11 +140,12 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
 .st-invite, .st-pending { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .st-pending > .st-invite { align-self: stretch; }
 .st-invite-label { font-size: 14px; font-weight: 600; color: var(--text); }
+.st-invite > .st-actions { align-self: stretch; }
 .st-invite-field {
-  align-self: stretch; box-sizing: border-box; padding: 12px 14px; border-radius: 12px;
+  align-self: stretch; box-sizing: border-box; min-width: 0; padding: 12px 14px; border-radius: 12px;
   background: var(--surface); border: 1px solid var(--panel-line);
-  font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text);
-  word-break: break-all; user-select: all;
+  font: 14px/1.5 var(--sans); color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all;
 }
 .st-invite-copy > .st-tick { margin-right: 6px; }
 
@@ -142,10 +158,12 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
 .st-pair-num { font-family: var(--serif); font-size: 40px; letter-spacing: -0.02em; line-height: 1.1; }
 .st-pair-num small { font-size: 15px; color: var(--text-sub); }
 .st-pc-week { display: flex; flex-direction: column; gap: 4px; }
-.st-pc-bars { display: flex; gap: 4px; align-items: flex-end; height: 40px; }
-.st-pc-bar { display: block; flex: 1; border-radius: var(--r-4); background: oklch(0.82 0.04 var(--h)); }
-.st-pc-days { display: flex; gap: 4px; }
-.st-pc-day { flex: 1; min-height: 14px; text-align: center; font-size: 11px; line-height: 14px; color: var(--text-sub); }
+/* Поле графика 40px (PARTNER_BAR_MAX_PX = 36); столбик не шире 28 — на широкой карточке не плашка. Пустой день —
+   бумага темнее листа (1.7:1): полоска видна, но не спорит с данными. */
+.st-pc-bars { display: flex; gap: 6px; align-items: flex-end; height: 40px; }
+.st-pc-bar { display: block; flex: 1; max-width: 28px; border-radius: var(--r-4); background: oklch(0.75 0.045 var(--h)); }
+.st-pc-days { display: flex; gap: 6px; }
+.st-pc-day { flex: 1; max-width: 28px; min-height: 14px; text-align: center; font-size: 11px; line-height: 14px; color: var(--text-sub); }
 .st-pc-tone--good { color: var(--accent-green); }
 .st-pc-tone--mid { color: var(--accent-yellow); }
 .st-pc-tone--low { color: var(--accent-red); }
@@ -162,10 +180,10 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
 .st-info-b { color: var(--text); font-weight: 600; }
 
 /* «О приложении» (AboutSheet.tsx): лист-рассказ — герой на бумаге со сценой, потребности строками со знаком */
-.u-sheet.u-sheet.st-about { --sheet-col: 640px; --sheet-pad: 32px; display: flex; flex-direction: column; align-items: center; }
-.st-about > .ds-sheet-head { width: 100%; }
+.u-sheet.u-sheet.st-about { display: flex; flex-direction: column; align-items: center; }
+.st-about > .ds-sheet-head { width: 100%; position: sticky; top: 0; z-index: 1; } /* та же шапка-полоса, что у листа настроек */
 .st-about-inner {
-  box-sizing: border-box; width: 100%; max-width: 640px; padding: 24px 32px calc(48px + env(safe-area-inset-bottom));
+  box-sizing: border-box; width: 100%; max-width: 600px; padding: 24px 32px calc(48px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 20px;
 }
 .st-about-hero { display: grid; grid-template-columns: minmax(0, 1fr) 200px; align-items: center; gap: 16px; padding: 24px 24px 24px 32px; border-radius: 24px; }
@@ -181,6 +199,10 @@ html[data-theme="dark"] .st-overlay, html[data-theme="dark"] .st-about { --panel
 .st-links { display: flex; flex-direction: column; border-top: 1px solid var(--panel-line); }
 .st-links > .ds-list-row:last-child { border-bottom: 1px solid var(--panel-line); }
 .st-link-to { font-size: 14px; color: var(--accent); text-align: right; white-space: nowrap; }
+@media (max-width: 360px) { /* адрес — под подписью: в строку подпись рвалась («Канал о схема-/терапии») */
+  .st-links > .ds-list-row { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .st-link-to { text-align: left; }
+}
 .st-done { width: 100%; margin-top: var(--space-8); } /* форма кнопки — ds-btn--lg; здесь ширина во всю колонку листа (и на компьютере) */
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .st-about-inner { padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }

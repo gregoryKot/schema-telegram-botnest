@@ -9,7 +9,7 @@ describe('glueBridge', () => {
     'Нести это в одиночку не обязательно',
   ])('«это» держится со следующим словом, слова те же: %s', (text) => {
     const got = glueBridge(text);
-    expect(got).toContain('Нести это\u00a0в\u00a0одиночку');
+    expect(got).toContain('Нести\u00a0это\u00a0в\u00a0одиночку');
     expect(plain(got)).toBe(text);
   });
 

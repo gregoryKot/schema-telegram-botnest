@@ -1226,6 +1226,29 @@ describe('SettingsSheet — шапка листа (#906)', () => {
   });
 });
 
+// Ревью b25: корень и шапка листа — одни узлы до и после загрузки, подэкран — свой уровень истории.
+describe('SettingsSheet — фокус и уровни', () => {
+  it('фокус на «← Закрыть» переживает смену силуэта содержимым', async () => {
+    render(<MemoryRouter><SettingsSheet onClose={vi.fn()} /></MemoryRouter>);
+    const before = screen.getByRole('button', { name: '← Закрыть' });
+    expect(document.activeElement).toBe(before);
+    await screen.findByText('Настройки');
+    expect(screen.getByRole('button', { name: '← Закрыть' })).toBe(before);
+    expect(document.activeElement).toBe(before);
+  });
+  it('Escape в подэкране возвращает на главный вид: лист открыт, фокус на строке, открывшей подэкран', async () => {
+    const onClose = vi.fn();
+    render(<MemoryRouter><SettingsSheet onClose={onClose} /></MemoryRouter>);
+    await screen.findByText('Настройки');
+    fireEvent.click(screen.getByRole('button', { name: /Часовой пояс/ }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: '← Назад' })));
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    await screen.findByText('Настройки');
+    expect(onClose).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Часовой пояс/ }));
+  });
+});
+
 // ── Загрузка: силуэт по форме, а не спиннер (правило скелетонов; docs/open/backend.md) ──
 describe('SettingsSheet — пока настройки грузятся', () => {
   it('силуэт листа без спиннера; «Закрыть» уже работает', async () => {
