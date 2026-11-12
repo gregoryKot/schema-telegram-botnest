@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useDialogLayer, type LayerOpts } from './dialogStack';
 
 // Диалоговая семантика модалок (К4 дизайн-аудита 2026-08): один хук в
@@ -33,12 +33,18 @@ export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
   const ref = useRef<HTMLDivElement>(null);
   const layer = useDialogLayer(opts);
 
+  // Слой снимается в layout-фазе, вместе с DOM: пассивная очистка отстаёт от коммита, и снятое
+  // с экрана несворачиваемое окно ещё держало Escape — лист под ним его не получал.
+  useLayoutEffect(() => layer.join(), [layer]);
+
   useEffect(() => {
     if (!ref.current) return;
     // Отдельный const с точным типом: TS не переносит сужение во вложенную
     // функцию, а повторная проверка внутри trapTab была бы недостижимой веткой.
     const container: HTMLElement = ref.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Запасная цель возврата фокуса: слой, внутри которого открыто это окно.
+    const parentLayer = container.parentElement?.closest<HTMLElement>('[role="dialog"]');
 
     const first = focusableIn(container)[0];
     (first ?? container).focus();
@@ -65,15 +71,14 @@ export function useDialogA11y(opts: LayerOpts = {}): DialogA11yProps {
         firstItem.focus();
       }
     }
-    const leave = layer.join();
     document.addEventListener('keydown', trapTab);
 
     return () => {
       document.removeEventListener('keydown', trapTab);
-      leave();
-      // Диалог мог закрыться из-за размонтирования всего дерева (переход
-      // экрана) — элемент, куда возвращаем фокус, может уже быть не в DOM.
+      // Элемент, куда возвращаем фокус, мог уйти из DOM вместе с окном (действие убрало свою
+      // кнопку) — тогда фокус остаётся в слое-родителе, а не падает на body.
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      else if (parentLayer?.isConnected) parentLayer.focus();
     };
   }, [layer]);
 

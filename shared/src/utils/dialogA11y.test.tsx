@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useDialogA11y } from './dialogA11y';
 import { useDialogLayer } from './dialogStack';
 
@@ -118,6 +118,34 @@ describe('useDialogA11y', () => {
 
     expect(() => unmount()).not.toThrow();
     expect(document.activeElement).not.toBe(opener);
+  });
+
+  it('кнопка-открыватель исчезла вместе с окном — фокус остаётся в слое-родителе, не на body', () => {
+    // Как «Отключиться от терапевта»: подтверждение и его кнопка уходят одним коммитом.
+    function Sheet() {
+      const sheetProps = useDialogA11y();
+      const [step, setStep] = useState<'linked' | 'confirm' | 'done'>('linked');
+      return (
+        <div {...sheetProps} data-testid="sheet">
+          {step === 'done' ? (
+            <p>Отключено</p>
+          ) : (
+            <button data-testid="ask" onClick={() => setStep('confirm')}>Отключиться</button>
+          )}
+          {step === 'confirm' && (
+            <div {...{ onClick: () => setStep('done') }} data-testid="confirm">
+              <Dialog />
+            </div>
+          )}
+        </div>
+      );
+    }
+    const { getByTestId } = render(<Sheet />);
+    getByTestId('ask').focus();
+    fireEvent.click(getByTestId('ask'));
+    expect(document.activeElement).toBe(getByTestId('first'));
+    fireEvent.click(getByTestId('first'));
+    expect(document.activeElement).toBe(getByTestId('sheet'));
   });
 
   it('при размонтировании возвращает фокус на элемент, с которого открыли диалог', () => {
@@ -297,6 +325,20 @@ describe('useDialogA11y — стек диалогов', () => {
     getByTestId('low-3').focus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(document.activeElement).toBe(getByTestId('low-1'));
+  });
+
+  // Пассивная очистка эффекта отстаёт от коммита: между ними снятое окно держало Escape.
+  it('окно снято с экрана — Escape в том же коммите уже не его (слой уходит вместе с DOM)', () => {
+    const seen: boolean[] = [];
+    function PressOnMount() {
+      useLayoutEffect(() => {
+        seen.push(!escape());
+      }, []);
+      return null;
+    }
+    const { rerender } = render(<Layer id="held" holdEscape />);
+    rerender(<PressOnMount />);
+    expect(seen).toEqual([false]);
   });
 
   it('вложенный диалог, смонтированный в одном коммите с родителем, считается верхним', () => {
