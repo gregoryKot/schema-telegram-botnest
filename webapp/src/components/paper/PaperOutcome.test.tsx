@@ -34,7 +34,8 @@ describe('PaperOutcome', () => {
       <PaperOutcome outcome="our_side" eyebrow="Сбой" title="Что-то пошло не так" lead="Мы уже знаем"
         action={{ label: 'Обновить', onClick: onAction }} link={{ label: 'На главную', onClick: onLink }} code="код: 7f3a" />,
     );
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Что-то пошло не так');
+    // Короткое слово держится со следующим неразрывным пробелом (glueSpaces, ревью r1 L12: «Карточка не⏎открылась»).
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Что-то пошло не\u00a0так');
     expect(screen.getByText('Сбой').className).toContain('ds-eyebrow');
     expect(screen.getByText('Мы уже знаем').className).toBe('pa-outcome-lead');
     const action = screen.getByRole('button', { name: 'Обновить' });

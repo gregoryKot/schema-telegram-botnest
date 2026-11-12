@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { buildYsqRows, fmtDelta, deltaClass } from './ysqRows';
+import { buildYsqRows, fmtDelta, deltaClass, domainNeedId } from './ysqRows';
+import { NEED_ORDER } from '../../../../shared/src/needs/types';
+import { DOMAIN_HUE, NEED_HUE } from '../../../../shared/src/theme/entityHue';
 
 type S = { id: string; pct5plus: number; avg?: number; active?: boolean };
 const run = (scores: S[]) => ({ id: 1, completedAt: '2026-10-01T10:00:00Z', scores });
@@ -57,5 +59,24 @@ describe('fmtDelta / deltaClass', () => {
     expect(deltaClass(1)).toBe('is-up');
     expect(deltaClass(0)).toBe('is-zero');
     expect(deltaClass(null)).toBe('is-zero');
+  });
+});
+
+// b31: полоса балла и линия динамики у терапевта — цвет данных потребности домена, как полоски результата
+// YSQ у клиента (решение 7). Домен и потребность делят оттенок бумаги — сверка, что пара находится у каждого.
+describe('domainNeedId', () => {
+  it('каждый домен — своя потребность того же оттенка, все пять разные', () => {
+    const needs = Object.keys(DOMAIN_HUE).map((d) => domainNeedId(d));
+    expect(new Set(needs).size).toBe(5);
+    for (const [d, n] of Object.keys(DOMAIN_HUE).map((d) => [d, domainNeedId(d)] as const)) {
+      expect(n && NEED_ORDER.includes(n)).toBeTruthy();
+      expect(NEED_HUE[n!]).toBe(DOMAIN_HUE[d]);
+    }
+    expect(domainNeedId('rejection')).toBe('attachment');
+    expect(domainNeedId('vigilance')).toBe('play');
+  });
+  it('нет домена или неизвестный — без потребности (без выдуманного цвета)', () => {
+    expect(domainNeedId(null)).toBeNull();
+    expect(domainNeedId('nope')).toBeNull();
   });
 });

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TherapistPrivacyDisclaimer } from './TherapistPrivacyDisclaimer';
+import { paperSignName } from '../test-support/paperSign';
 import { THERAPIST_DISCLAIMER_KEY } from './therapistDisclaimerSeen';
 import { AddressFormContext } from '../utils/addressForm';
 
@@ -32,6 +33,18 @@ describe('TherapistPrivacyDisclaimer', () => {
     expect(screen.getByText('Немного о заботе о клиентах')).toBeTruthy();
     expect(screen.getByText(/не вносить настоящие имена/)).toBeTruthy();
     expect(screen.getByText('Шифрование')).toBeTruthy();
+  });
+
+  it('гарантии — плитки бумаги 2×2 со знаком: шифрование Limits 240, доступ Talk 135, вход BrandMark 70, удаление Check 45', () => {
+    renderDisclaimer();
+    const tile = (title: string) => screen.getByText(title).closest('.sk-priv-item') as HTMLElement;
+    const hue = (title: string) => tile(title).style.getPropertyValue('--h');
+    expect(['Шифрование', 'Только твой доступ', 'Защищённый вход', 'Полное удаление'].map(hue)).toEqual(['240', '135', '70', '45']);
+    expect(paperSignName(tile('Только твой доступ').querySelector('svg'))).toBe('Talk');
+    expect(paperSignName(tile('Полное удаление').querySelector('svg'))).toBe('Check');
+    expect(tile('Защищённый вход').querySelector('[data-brand-mark]')).not.toBeNull();
+    // Одна сцена на экран — сцена кабинета у заголовка.
+    expect(document.querySelectorAll('svg.scn')).toHaveLength(1);
   });
 
   it('«Спасибо, буду иметь в виду» ставит флаг «показано» и зовёт onDone', () => {
