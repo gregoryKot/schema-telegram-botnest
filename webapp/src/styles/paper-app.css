@@ -151,6 +151,8 @@
    на новую строку переносится только «Повторить». */
 .pa-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; box-sizing: border-box; padding: 14px 16px 14px 18px; border-radius: 16px; }
 .pa-alert-sign { display: inline-flex; flex-shrink: 0; opacity: .55; }
+.pa-alert-sign.is-solid { opacity: 1; }
+.pa-alert-sign.is-solid > svg { width: 28px; } /* холст чашки 56×48 в строке 24 — ровно 28: текст не съезжает */
 .pa-alert-body { flex: 1 1 140px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 /* pretty: фраза сбоя не кончается висячим словом — вторая («…попробуй ещё / раз.» на 360, ревью g3 r6) и первая
    («…изменение / задания.» на 390, ревью g4 r6). */
@@ -257,3 +259,10 @@
 .nav-glyph { display: inline-flex; flex-shrink: 0; vertical-align: -2px; margin-inline-end: 6px; }
 .ds-back > .nav-glyph { margin-inline-end: 0; } /* у ds-back свой gap */
 .nav-glyph--step { margin-inline: 4px; }
+
+/* ── Знак продукта ссылкой на главную (ProductBrand): вход, 2FA, /link, /merge, /install ── */
+.pb-brand { display: flex; align-items: center; gap: 10px; width: fit-content; min-height: 44px; color: inherit; text-decoration: none; }
+.pb-mark { display: inline-flex; flex-shrink: 0; }
+/* На фоне страницы — плитка бумаги экрана под знаком: тот же вид, что знак на листе героя входа (36 = 30 + 3·2). */
+.pb-mark--plate { padding: 3px; border-radius: 11px; background: oklch(0.915 0.03 var(--h)); }
+.pb-name { font-family: var(--serif); font-size: 17px; }

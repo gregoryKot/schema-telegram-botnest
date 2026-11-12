@@ -43,7 +43,7 @@ export function MergePage() {
 
       {needCode && <SourceTotpField code={code} onChange={setCode} disabled={busy} />}
 
-      {error && <PaperAlert title={error} sign="limits" />}
+      {error && <PaperAlert title={error} sign="cup" />}
 
       <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy}>
         Я понимаю, что данные второго аккаунта необратимо переедут, а сам тот аккаунт будет удалён.

@@ -5,7 +5,7 @@
 // 2FA (небо и знак Limits). Страница живёт вне AppShell: корень сам красит экран (light-lock)
 // и занимает всю ширину #root (flex-ряд, pageRoots.test.ts).
 import type { ReactNode } from 'react';
-import { BrandMark } from '../../components/art/BrandMark';
+import { ProductBrand } from '../../components/paper/ProductBrand';
 import { hueStyle } from '../../lib/tone';
 import { cutPath, cutViewBox } from './authCut';
 import '../../styles/auth-login.css';
@@ -32,10 +32,7 @@ export function AuthShell({ hue, art, pitch, className, children }: {
   return (
     <div className={`light-lock al-root${className ? ` ${className}` : ''}`} style={hueStyle(hue)}>
       <aside className="pp-paper al-hero">
-        <a href="/" className="al-brand" aria-label="На главную" title="На главную">
-          <BrandMark size={36} className="al-logo" />
-          <span className="al-brand-name">Всё по схеме</span>
-        </a>
+        <ProductBrand className="al-brand" />
         <div className="al-hero-art" aria-hidden="true">{art}</div>
         {pitch && <div className="al-pitch">{pitch}</div>}
         <AuthCut side="right" />

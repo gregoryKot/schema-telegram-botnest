@@ -27,9 +27,16 @@ export interface PaperAlertProps {
 }
 
 export function PaperAlert({ title, text, sign, hue = 70, onRetry, retryLabel = 'Повторить', retrying, role = 'alert', className }: PaperAlertProps) {
+  // Cup — бумага на бумаге: бледным на соломе его не видно (ревью b26). Вариант мотива с плашкой и
+  // контуром, в полную силу и по ширине чашки — без пустого поля слева от текста.
+  const solid = sign === 'cup';
   return (
     <div className={className ? `pp-paper pa-alert ${className}` : 'pp-paper pa-alert'} role={role} style={{ '--h': hue } as CSSProperties}>
-      {sign && <span className="pa-alert-sign" aria-hidden="true"><SignArt sign={sign} size="row" /></span>}
+      {sign && (
+        <span className={solid ? 'pa-alert-sign is-solid' : 'pa-alert-sign'} aria-hidden="true">
+          <SignArt sign={sign} size="row" plate={solid ? 'surface' : undefined} />
+        </span>
+      )}
       <div className="pa-alert-body">
         <p className="pa-alert-title">{glueIf(title)}</p>
         {text && <p className="pa-alert-text">{glueIf(text)}</p>}

@@ -1,5 +1,5 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { BrandMark } from '../../components/art/BrandMark';
+import { lazy, Suspense, type CSSProperties, type ReactNode } from 'react';
+import { ProductBrand } from '../../components/paper/ProductBrand';
 import '../../styles/auth-account.css';
 
 // Сцена — своим чанком (принцип 11): место под неё зарезервировано рамкой листа (.am-hero, пропорция
@@ -12,12 +12,9 @@ const SceneMerge = lazy(() => import('../../components/art/SceneMerge'));
 // Обращений к читателю не содержит: тексты передаёт страница.
 export function MergeSpread({ children }: { children: ReactNode }) {
   return (
-    <div className="light-lock am-root">
+    <div className="light-lock am-root" style={{ '--h': 240 } as CSSProperties}>
       <div className="am-spread">
-        <a href="/" className="am-brand" aria-label="На главную" title="На главную">
-          <BrandMark size={28} />
-          <span className="am-brand-name">Всё по схеме</span>
-        </a>
+        <ProductBrand plate className="am-brand" />
         <div className="am-hero">
           <Suspense fallback={null}><SceneMerge hue={240} /></Suspense>
         </div>

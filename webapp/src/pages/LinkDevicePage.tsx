@@ -103,7 +103,7 @@ function LinkDeviceContent({ code }: { code: string }) {
 
           {preview.twoFactorLost && <TwoFactorLossNote />}
 
-          {error && <PaperAlert title={error} sign="limits" />}
+          {error && <PaperAlert title={error} sign="cup" />}
 
           <AckCheck checked={acknowledged} onChange={setAcknowledged} disabled={busy !== null}>
             {linkAckText(messenger, preview.sameAccount)}

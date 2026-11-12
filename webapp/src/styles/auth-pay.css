@@ -57,6 +57,11 @@
 /* ── Суммы доната: чипы бумаги (SignChip) ───────────────────────────────── */
 .ap-sums { display: flex; flex-wrap: wrap; gap: 8px; }
 .ap-sums > .ds-chip { min-height: 44px; }
+/* Узкий телефон: четыре суммы не влезают в ряд — сетка 2×2, а не одинокий чип на второй строке (ревью b28). */
+@media (max-width: 379px) {
+  .ap-sums { display: grid; grid-template-columns: 1fr 1fr; }
+  .ap-sums > .ds-chip { justify-content: center; }
+}
 
 /* ── Согласие, перечень, ссылки ─────────────────────────────────────────── */
 .ap-consent { display: flex; gap: 12px; align-items: flex-start; min-height: 44px; font-size: 13px; line-height: 1.5; color: var(--text-sub); cursor: pointer; }

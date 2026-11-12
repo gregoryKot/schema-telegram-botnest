@@ -46,7 +46,7 @@ export function AccountLinkSection({
   onLinked,
 }: {
   providers: AccountProvider[];
-  /** Провайдеры ещё грузятся — карточка показывает силуэт, а не пустоту. */
+  /** Провайдеры ещё грузятся — карточки нет (кому её показывать, ещё неизвестно). */
   loading?: boolean;
   /** Аккаунты объединились — странице пора перечитать способы входа. */
   onLinked: () => void;
@@ -107,7 +107,9 @@ export function AccountLinkSection({
   const pending = !broken && state.kind !== 'waiting';
   const href = state.kind === 'waiting' ? state.url : undefined;
 
-  if (!loading && !target) return null;
+  // Пока способы входа грузятся — плашки нет (ревью b27): у большинства Telegram привязан, и силуэт плашки
+  // после загрузки исчезал — двойной скачок. Силуэт карточки — только пока выписывается билет.
+  if (loading || !target) return null;
 
   return (
     <section className="pp-paper aa-link" style={hueStyle(240)}>
@@ -117,7 +119,7 @@ export function AccountLinkSection({
           opened || broken ? state : ({ kind: 'idle' } as LoginTicketState)
         }
         tr={tr}
-        loading={loading || pending}
+        loading={pending}
         renderSkeleton={() => <CardSkeleton />}
         href={href}
         onStart={() => {

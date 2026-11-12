@@ -20,6 +20,7 @@
 .as-head--paper { border-radius: 0; padding: 14px 24px 14px 30px; min-height: 104px; box-sizing: border-box; }
 .as-head-sign { width: 88px; flex-shrink: 0; }
 .as-main { padding: 22px 30px 30px; }
+.as-title { text-wrap: balance; } /* «Это свой вход в / приложение?» — без висячего слова (ревью b26) */
 /* Знак — ссылка на главную сайта: по ширине содержимого, зона 44px по высоте при знаке 28px. */
 .as-brand {
   display: flex; align-items: center; gap: 10px; width: fit-content;
