@@ -6,8 +6,8 @@ const linkSt: React.CSSProperties = {
   background: 'none', border: 'none', padding: 0, fontSize: 12,
   color: 'var(--text-faint)', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit',
 };
-/** Зона нажатия 44 без смены вида: поле вокруг строки-ссылки и такой же отрицательный отступ. */
-const hitSt: React.CSSProperties = { ...linkSt, padding: '15px 8px', margin: '-15px -8px', position: 'relative' };
+/** Зона ≥44 без смены вида; вниз не дальше 8px (отступ абзаца) — чипы времени не перекрыты, остальное вверх. */
+const hitSt: React.CSSProperties = { ...linkSt, padding: '24px 8px 8px', margin: '-24px -8px -8px', position: 'relative' };
 
 /**
  * «не ваш часовой пояс?» — раскрывает выбор из словаря популярных поясов.

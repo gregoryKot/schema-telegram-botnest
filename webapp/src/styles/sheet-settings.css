@@ -189,6 +189,12 @@
 /* «О приложении» (AboutSheet.tsx): лист-рассказ — герой на бумаге со сценой, потребности строками со знаком */
 .u-sheet.u-sheet.st-about { display: flex; flex-direction: column; align-items: center; }
 .st-about > .ds-sheet-head { width: 100%; position: sticky; top: 0; z-index: 1; } /* та же шапка-полоса, что у листа настроек */
+/* Телефон: .u-sheet держит padding-top --safe-top и прокручивается сам — шапка липнет под статус-бар,
+   а полосу над ней закрывает сплошной фон (без blur и прозрачности). Условие то же, что у .u-sheet (utilities.css). */
+@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .st-about > .ds-sheet-head { top: var(--safe-top); }
+  .st-about > .ds-sheet-head::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--safe-top); background: var(--bg); }
+}
 .st-about-inner {
   box-sizing: border-box; width: 100%; max-width: 600px; padding: 24px 32px calc(48px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 20px;

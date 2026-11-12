@@ -90,9 +90,9 @@ export function InfoModal({ title, children, onClose }: { title: string; childre
   const titleId = useId();
   const close = () => goBack();
   return (
-    <div className="sheet-modal" role="button" tabIndex={-1} aria-label="Закрыть"
-      onClick={e => { if (onBackdrop(e)) close(); }}
-      onKeyDown={e => { if (onBackdrop(e)) onKeyActivate(close)(e); }}>
+    // Подложка — не кнопка (role=button схлопывал диалог внутри в одну кнопку для скринридера):
+    // клавиатуре — «Закрыть» и Escape, мыши и пальцу — клик мимо окна.
+    <div className="sheet-modal" role="presentation" onClick={e => { if (onBackdrop(e)) close(); }}>
       <div {...a11y} aria-labelledby={titleId} className="sheet-modal-box">
         {/* glue: предлог не висит в конце строки («Данные и / конфиденциальность») */}
         <h2 id={titleId} className="dialog-title st-modal-title">{glue(title)}</h2>

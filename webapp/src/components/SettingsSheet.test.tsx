@@ -1027,7 +1027,7 @@ describe('SettingsSheet — «Конфиденциальность»: модал
     await renderSheet();
     fireEvent.click(screen.getByText('Конфиденциальность'));
     await screen.findByText('Данные и конфиденциальность');
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sheet-modal')!);
     await waitFor(() => expect(screen.queryByText('Данные и конфиденциальность')).toBeNull());
   });
 });
@@ -1192,7 +1192,7 @@ describe('SettingsSheet — карточки-приглашения и мода�
     fireEvent.click(screen.getByText('Скопировать'));
     await screen.findByText('Скопировано');
 
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sheet-modal')!);
     await waitFor(() => expect(screen.queryByText('текст сводки')).toBeNull());
   });
 });

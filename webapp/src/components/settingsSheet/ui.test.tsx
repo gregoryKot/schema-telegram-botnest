@@ -134,8 +134,20 @@ describe('InfoModal', () => {
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sheet-modal')!);
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('подложка не кнопка: role не button, диалог не схлопывается в неё для скринридера', () => {
+    render(
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={() => {}}>
+        <div>Тело</div>
+      </InfoModal></MemoryRouter>,
+    );
+    const back = document.querySelector('.sheet-modal')!;
+    expect(back.getAttribute('role')).not.toBe('button');
+    expect(back.getAttribute('tabindex')).toBeNull();
+    expect(back.contains(screen.getByRole('dialog'))).toBe(true);
   });
 
   it('клик внутри модалки не зовёт onClose (stopPropagation)', () => {
@@ -149,14 +161,14 @@ describe('InfoModal', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('Enter/Space на фоне зовут onClose', async () => {
+  it('Escape с клавиатуры зовёт onClose', async () => {
     const onClose = vi.fn();
     render(
       <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
-    fireEvent.keyDown(screen.getByLabelText('Закрыть'), { key: 'Enter' });
+    fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
