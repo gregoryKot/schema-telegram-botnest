@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
-// ui.tsx — презентационные примитивы SettingsSheet (SRow/Toggle/SmallToggle/
+// ui.tsx — презентационные примитивы SettingsSheet (SRow/Toggle/
 // ChevronVal/InfoModal), вынесены из SettingsSheet.tsx (правило №10). Прямые
 // тесты каждого примитива и его веток — сам SettingsSheet использует их
 // только косвенно.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { SRow, Toggle, SmallToggle, ChevronVal, InfoModal } from './ui';
+import { useState } from 'react';
+import { SRow, Toggle, ChevronVal, InfoModal } from './ui';
 
 afterEach(() => {
   cleanup();
@@ -108,39 +109,6 @@ describe('Toggle', () => {
   });
 });
 
-describe('SmallToggle', () => {
-  it('label становится именем switch для скринридера', () => {
-    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
-    expect(screen.getByRole('switch', { name: 'Мои схемы и тест' }).getAttribute('aria-checked')).toBe('true');
-  });
-
-  it('on=false — aria-checked false', () => {
-    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={() => {}} />);
-    expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false');
-  });
-
-  it('on=true — aria-checked true', () => {
-    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={() => {}} />);
-    expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true');
-  });
-
-  it('клик зовёт onClick', () => {
-    const onClick = vi.fn();
-    render(<SmallToggle label="Мои схемы и тест" on={false} onClick={onClick} />);
-    fireEvent.click(screen.getByRole('switch'));
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('Enter/Space зовут onClick', () => {
-    const onClick = vi.fn();
-    render(<SmallToggle label="Мои схемы и тест" on={true} onClick={onClick} />);
-    fireEvent.keyDown(screen.getByRole('switch'), { key: 'Enter' });
-    expect(onClick).toHaveBeenCalledTimes(1);
-    fireEvent.keyDown(screen.getByRole('switch'), { key: ' ' });
-    expect(onClick).toHaveBeenCalledTimes(2);
-  });
-});
-
 describe('ChevronVal', () => {
   it('текст и стрелка рендерятся', () => {
     const { container } = render(<ChevronVal text="Значение" />);
@@ -152,7 +120,7 @@ describe('ChevronVal', () => {
 describe('InfoModal', () => {
   it('рендерит children', () => {
     render(
-      <MemoryRouter><InfoModal onClose={() => {}}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={() => {}}>
         <div>Содержимое модалки</div>
       </InfoModal></MemoryRouter>,
     );
@@ -162,18 +130,30 @@ describe('InfoModal', () => {
   it('клик по фону зовёт onClose', async () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sheet-modal')!);
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+  });
+
+  it('подложка не кнопка: role не button, диалог не схлопывается в неё для скринридера', () => {
+    render(
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={() => {}}>
+        <div>Тело</div>
+      </InfoModal></MemoryRouter>,
+    );
+    const back = document.querySelector('.sheet-modal')!;
+    expect(back.getAttribute('role')).not.toBe('button');
+    expect(back.getAttribute('tabindex')).toBeNull();
+    expect(back.contains(screen.getByRole('dialog'))).toBe(true);
   });
 
   it('клик внутри модалки не зовёт onClose (stopPropagation)', () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Клик внутри</div>
       </InfoModal></MemoryRouter>,
     );
@@ -181,14 +161,14 @@ describe('InfoModal', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('Enter/Space на фоне зовут onClose', async () => {
+  it('Escape с клавиатуры зовёт onClose', async () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
-    fireEvent.keyDown(screen.getByLabelText('Закрыть'), { key: 'Enter' });
+    fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
@@ -197,7 +177,7 @@ describe('InfoModal', () => {
   it('внутри окна есть кнопка «Закрыть», она зовёт onClose один раз', async () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter><InfoModal onClose={onClose}>
+      <MemoryRouter><InfoModal title="Заголовок окна" onClose={onClose}>
         <div>Тело</div>
       </InfoModal></MemoryRouter>,
     );
@@ -205,3 +185,39 @@ describe('InfoModal', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 });
+
+// Ревью b25: окно — диалог, а не «presentation»: фокус внутрь, имя по заголовку, возврат фокуса на вызвавшую кнопку.
+describe('InfoModal — диалог', () => {
+  function Opener() {
+    const [open, setOpen] = useState(false);
+    return (
+      <MemoryRouter>
+        <button onClick={() => setOpen(true)}>Пояснение</button>
+        {open && <InfoModal title="Данные и конфиденциальность" onClose={() => setOpen(false)}><p>Тело</p></InfoModal>}
+      </MemoryRouter>
+    );
+  }
+  it('role="dialog", aria-modal, имя — заголовок (предлог приклеен неразрывным пробелом), фокус внутри', () => {
+    render(<Opener />);
+    screen.getByText('Пояснение').focus();
+    fireEvent.click(screen.getByText('Пояснение'));
+    const dialog = screen.getByRole('dialog', { name: /Данные и\sконфиденциальность/ });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.querySelector('h2')!.textContent).toBe('Данные и\u00a0конфиденциальность');
+    expect(dialog.contains(document.activeElement)).toBe(true);
+  });
+  it('Tab с последней кнопки остаётся в окне; после закрытия фокус возвращается на вызвавшую кнопку', async () => {
+    render(<Opener />);
+    const opener = screen.getByText('Пояснение');
+    opener.focus();
+    fireEvent.click(opener);
+    const close = screen.getByText('Закрыть', { selector: 'button' });
+    close.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+    fireEvent.click(close);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(document.activeElement).toBe(opener);
+  });
+});
+

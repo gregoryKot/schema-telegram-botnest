@@ -87,3 +87,11 @@ describe('геометрия знака', () => {
     }
   });
 });
+
+describe('BrandMark bare', () => {
+  it('без плитки: тот же знак, фона-плашки нет', () => {
+    const svg = mark(render(<BrandMark simple bare />).container);
+    expect(svg.querySelector('rect')).toBeNull();
+    expect(svg.querySelector('circle')).not.toBeNull();
+  });
+});

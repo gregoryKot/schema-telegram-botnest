@@ -7,6 +7,7 @@ import { useInstallHandoff } from '../../hooks/useInstallHandoff';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { detectInstallPlatform, subscribeAppInstalled } from '../../utils/pwaInstall';
 import { INSTALL_STEPS } from '../installGuide/installSteps';
+import { glue } from '../../../../shared/src/utils/typo';
 import { SSection } from './ui';
 import type { HomeIconMode } from './homeIconMode';
 
@@ -57,7 +58,7 @@ function BrowserBody() {
         <div>
           <div className="st-text st-text--faint">{guide.title}. {guide.browser}</div>
           <ol className="st-steps">
-            {guide.steps.map(s => <li key={s}>{s}</li>)}
+            {guide.steps.map(s => <li key={s}>{glue(s)}</li>)}
           </ol>
         </div>
       )}

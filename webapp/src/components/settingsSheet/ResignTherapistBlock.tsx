@@ -1,23 +1,17 @@
 import { useState } from 'react';
 import { useTr } from '../../utils/addressForm';
+import { SRow } from './ui';
 
-// «Перестать быть специалистом» с подтверждением — блок раздела «Режим»
-// (ModeSection). До 2026-11 стоял в «Оформлении»: отказ от роли — про режим, не
-// про вид листа. После «Снять роль» родитель закрывает лист и уводит в /today.
+// «Перестать быть специалистом» с подтверждением — тихая опасная строка раздела «Данные»
+// (DataSection), перед «Удалить аккаунт»: опасные действия стоят вместе внизу листа (b25).
+// Раньше была первой заметной кнопкой листа, в «Режиме». После «Снять роль» родитель
+// закрывает лист и уводит в /today.
 export function ResignTherapistBlock({ onResign }: { onResign: () => Promise<void> | void }) {
   const tr = useTr();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  if (!confirm) return (
-    <div className="st-body-block">
-      <div className="st-actions">
-        <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setConfirm(true)}>
-          Перестать быть специалистом
-        </button>
-      </div>
-    </div>
-  );
+  if (!confirm) return <SRow title="Перестать быть специалистом" danger onClick={() => setConfirm(true)} />;
   return (
     <div className="st-body-block">
       <div className="st-text">

@@ -5,6 +5,7 @@ import { useHistorySheet } from '../hooks/useHistorySheet';
 import { api, type UserSettings } from '../api';
 import { SettingsSkeleton } from './settingsSheet/SettingsSkeleton';
 import { useSaveBadge } from './settingsSheet/useSaveBadge';
+import { SaveBadge } from './settingsSheet/SaveBadge';
 import { scrollIntoViewSafe } from '../../../shared/src/utils/scrollIntoView';
 import { useDialogA11y } from '../../../shared/src/utils/dialogA11y';
 import { ShareCardSheet } from '../share/ShareCardSheet';
@@ -17,6 +18,8 @@ import { ModeSection } from './settingsSheet/ModeSection';
 import { BecomeTherapistSection } from './settingsSheet/BecomeTherapistSection';
 import { DataSection } from './settingsSheet/DataSection';
 import { SettingsSubView, type SubView } from './settingsSheet/SubViews';
+import { SettingsSubScreen } from './settingsSheet/SubScreen';
+import { useSubViewNav } from './settingsSheet/useSubViewNav';
 import { NotificationsSection } from './settingsSheet/NotificationsSection';
 import { NameSection, AddressSection } from './settingsSheet/NameAddressSections';
 import { MyTherapistSection, CabinetSection } from './settingsSheet/TherapistSections';
@@ -24,6 +27,7 @@ import { PartnerSection } from './settingsSheet/PartnerSection';
 import { ShareSection, AboutSection } from './settingsSheet/ShareAboutSections';
 import { HomeScreenSection } from './settingsSheet/HomeScreenSection';
 import { homeIconMode } from './settingsSheet/homeIconMode';
+import { settingsNav } from './settingsSheet/settingsNav';
 
 // Дефолты на случай, если api.getSettings() отказал — экран не должен
 // зависнуть на Loader, показываем безопасные значения.
@@ -53,7 +57,7 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const goBack = useHistorySheet(onClose);
   const navigate = useNavigate();
   const dialogA11y = useDialogA11y();
-  const [subView, setSubView] = useState<SubView>('main');
+  const { view: subView, open: openSub, close: closeSub, scrollRef } = useSubViewNav();
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const therapy = useTherapyRelationSettings(userRole);
   const [pairShare, setPairShare] = useState<{ code: string; url: string } | null>(null);
@@ -79,81 +83,59 @@ export function SettingsSheet({ onClose, userRole, displayName, onNameChanged, o
   const scrollTo = (id: string) => scrollIntoViewSafe(document.getElementById(id), { block: 'start' });
 
   const isTherapist = userRole === 'THERAPIST';
+  const canSwitchMode = isTherapist && onSetTherapistMode;
   const homeMode = homeIconMode();
-  const navItems = [
-    ...(isTherapist && onSetTherapistMode ? [{ id: 's-mode', label: 'Режим' }] : []),
-    { id: 's-appearance', label: 'Оформление' },
-    ...(homeMode ? [{ id: 's-home', label: 'Значок на экране' }] : []),
-    { id: 's-name', label: 'Имя' },
-    { id: 's-notifications', label: 'Уведомления' },
-    { id: 's-address', label: 'Обращение' }, // раздел был, строки в оглавлении не было (QA 2026-11, М10)
-    ...(!isTherapist ? [
-      { id: 's-therapist', label: 'Мой терапевт' },
-      { id: 's-specialist', label: 'Специалист' },
-    ] : [
-      { id: 's-cabinet', label: 'Кабинет' },
-    ]),
-    { id: 's-partner', label: 'Партнёр' },
-    { id: 's-share', label: 'Поделиться' },
-    { id: 's-about', label: 'О приложении' },
-    { id: 's-data', label: 'Данные' },
-  ];
+  const navItems = settingsNav({ therapist: isTherapist, modeSwitch: !!canSwitchMode, homeIcon: !!homeMode });
 
-  if (!settings) return <div {...dialogA11y} className="settings-overlay st-overlay"><SettingsSkeleton onClose={goBack} /></div>;
+  const badge = <SaveBadge on={badgeOn} outcome={outcome} />;
 
-  const tzLabel = timezoneLabel(settings.notifyTimezone);
-
+  // Один корень листа и одна шапка на загрузку и готовый вид: фокус, поставленный useDialogA11y на
+  // «← Закрыть», не теряется, когда силуэт сменяется содержимым. Подэкран — свой уровень (SubScreen).
   return (
     <>
       <div {...dialogA11y} className="settings-overlay st-overlay">
-
-        {/* ── Header ── */}
-        <div className="ds-sheet-head">
-          <button type="button" className="ds-back" onClick={subView !== 'main' ? () => setSubView('main') : goBack}>
-            ← {subView !== 'main' ? 'Назад' : 'Закрыть'}
-          </button>
-          <h2 className="ds-h2">{SUB_TITLES[subView]}</h2>
-          <span className={`ds-badge ${outcome === 'err' ? 'st-toast is-err' : 'ds-badge--ok st-toast'}${badgeOn ? ' is-on' : ''}`}>
-            {outcome === 'err' ? 'Не сохранилось' : 'Сохранено ✓'}
-          </span>
-        </div>
-
-        {/* ── Body ── */}
-        <div className="st-body">
-          {subView === 'main' && (
-            <div className="settings-sidenav">
-              {navItems.map(n => (
-                <button key={n.id} onClick={() => scrollTo(n.id)} className="settings-sidenav-item st-navitem">
-                  {n.label}
-                </button>
-              ))}
+        {settings && subView !== 'main' ? (
+          <SettingsSubScreen key={subView} title={SUB_TITLES[subView]} badge={badge} onClose={closeSub}>
+            {(done) => <SettingsSubView subView={subView as Exclude<SubView, 'main'>} settings={settings} patch={patch} onDone={done} />}
+          </SettingsSubScreen>
+        ) : (<>
+          {/* Шапка: «назад» и статус сохранения; заголовок вида — в теле (в шапке на 320–390 он резался) */}
+          <div className="ds-sheet-head">
+            <button type="button" className="ds-back" onClick={goBack}>← Закрыть</button>
+            {badge}
+          </div>
+          {!settings ? <SettingsSkeleton navRows={navItems.length} /> : (
+            <div className="st-body">
+              <div className="settings-sidenav">
+                {navItems.map(n => (
+                  <button key={n.id} data-target={n.id} onClick={() => scrollTo(n.id)} className="settings-sidenav-item st-navitem">
+                    {n.label}
+                  </button>
+                ))}
+              </div>
+              <div className="st-scroll" ref={scrollRef}>
+                <div className="settings-content-inner st-inner">
+                  <h2 className="ds-h2 st-h">{SUB_TITLES.main}</h2>
+                  {canSwitchMode && <ModeSection therapistMode={!!therapistMode}
+                    onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} />}
+                  <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
+                  <AddressSection settings={settings} patch={patch} />
+                  <NotificationsSection settings={settings} tzLabel={timezoneLabel(settings.notifyTimezone)} patch={patch} openSubView={openSub}
+                    leaveTo={(path) => goBack(() => navigate(path))} reloadSettings={reloadSettings} />
+                  <AppearanceSection onSaved={flashSaved} />
+                  {homeMode && <HomeScreenSection mode={homeMode} />}
+                  {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
+                  {isTherapist && <CabinetSection rel={therapy} onOpenTherapistCabinet={onOpenTherapistCabinet} />}
+                  <PartnerSection pair={pair} />
+                  <ShareSection />
+                  {!isTherapist && <BecomeTherapistSection />}
+                  <AboutSection />
+                  <DataSection onResign={canSwitchMode ? onResignTherapist : undefined} />
+                </div>
+              </div>
             </div>
           )}
-
-          <div className="st-scroll">
-            <div className="settings-content-inner st-inner">
-              {subView !== 'main' && (
-                <SettingsSubView subView={subView} settings={settings} patch={patch} onDone={() => setSubView('main')} />
-              )}
-
-              {subView === 'main' && (<>
-                {isTherapist && onSetTherapistMode && <ModeSection therapistMode={!!therapistMode}
-                  onSelect={(on) => goBack(() => onSetTherapistMode(on))} onOpenAccount={() => goBack(() => navigate('/account'))} onResign={onResignTherapist} />}
-                <AppearanceSection onSaved={flashSaved} />
-                {homeMode && <HomeScreenSection mode={homeMode} />}
-                <NameSection value={editName} onChange={setEditName} displayName={displayName} onNameChanged={onNameChanged} onSaved={flashSaved} />
-                <NotificationsSection settings={settings} tzLabel={tzLabel} patch={patch} openSubView={setSubView}
-                  leaveTo={(path) => goBack(() => navigate(path))} reloadSettings={reloadSettings} />
-                <AddressSection settings={settings} patch={patch} />
-                {!isTherapist && <MyTherapistSection rel={therapy} settings={settings} patch={patch} />}
-                {!isTherapist && <BecomeTherapistSection />}
-                {isTherapist && <CabinetSection rel={therapy} onOpenTherapistCabinet={onOpenTherapistCabinet} />}
-                <PartnerSection pair={pair} />
-                <ShareSection /><AboutSection /><DataSection />
-              </>)}
-            </div>
-          </div>
-        </div>
+        </>)}
       </div>
 
       {/* ── Карточка-приглашение в пару ── */}

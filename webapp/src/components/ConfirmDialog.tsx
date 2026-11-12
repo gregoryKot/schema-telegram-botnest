@@ -1,4 +1,5 @@
 import { Dialog } from './Dialog';
+import { glueIf } from '../../../shared/src/utils/typo';
 
 // Ж4 (аудит 2026-08): единый стилизованный диалог подтверждения — раньше три
 // места (отвязка провайдера в AccountPage, удаление карты режимов в
@@ -42,7 +43,7 @@ export function ConfirmDialog({
       onClose={busy ? undefined : onCancel}
       closeOnEscape
     >
-      <h2 className="ds-h2 sk-dialog-title">{title}</h2>
+      <h2 className="ds-h2 sk-dialog-title">{glueIf(title)}</h2>
       <div className="sk-dialog-text">{message}</div>
       {error && (
         <div role="alert" className="sk-error sk-dialog-error">

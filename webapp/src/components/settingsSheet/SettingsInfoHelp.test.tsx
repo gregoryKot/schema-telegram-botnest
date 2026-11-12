@@ -22,7 +22,7 @@ describe('SettingsInfoHelp', () => {
     fireEvent.click(screen.getByLabelText('Пояснение'));
     expect(screen.getByText('Зачем уведомления')).toBeTruthy();
     expect(screen.getByText('Итоги дня')).toBeTruthy();
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sheet-modal')!);
     await waitFor(() => expect(screen.queryByText('Зачем уведомления')).toBeNull());
   });
 

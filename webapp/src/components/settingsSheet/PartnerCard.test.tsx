@@ -63,8 +63,11 @@ describe('PartnerCard — недельные столбики', () => {
     const { container } = setup(make({ partnerWeekAvgs: avgs }));
     expect(container.querySelectorAll('.st-pc-bar')).toHaveLength(7);
     expect(screen.getAllByText('сег')).toHaveLength(1);
-    const last = container.querySelectorAll('.st-pc-bar')[6];
-    expect(last.textContent).toBe('сег');
+    // Подписи дней — отдельным рядом под столбиками: подпись в самом столбике поднимала его над остальными.
+    expect(container.querySelector('.st-pc-bars')!.textContent).toBe('');
+    const days = container.querySelectorAll('.st-pc-day');
+    expect(days).toHaveLength(7);
+    expect(days[6].textContent).toBe('сег');
   });
 });
 
