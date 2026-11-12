@@ -131,6 +131,7 @@ export class GameScene extends Phaser.Scene {
   private finalApproach = false;
   private sessionLines: Phaser.GameObjects.Text[] = []; // реплики кабинета гл.4 — гасим перед CTA
   private frameQueue: [MsgKey, MsgKey][] = [];      // стоп-кадры, пришедшие, пока открыт другой (два триггера подряд)
+  private titleCard: Phaser.GameObjects.Text[] = [];  // титул главы — гасим, если первый стоп-кадр пришёл раньше
 
   constructor() { super('Game'); }
 
@@ -185,7 +186,6 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, -H, ARENA_W, H * 3);
     this.cameras.main.fadeIn(600, 8, 6, 16);
     this.showTitleCard();
-    unlockChapter(this.chapter.id);
     if (!trackedStarts.has(this.chapter.id)) { // рестарты после смерти — не «старт»
       trackedStarts.add(this.chapter.id);
       trackEvent('game_chapter_start', { chapter: this.chapter.id });
@@ -206,8 +206,13 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.5).setScrollFactor(0).setDepth(120).setAlpha(0);
     const t1 = mk(170, t(this.chapter.title).toUpperCase(), 24, '#fff0d8');
     const t2 = mk(208, t(this.chapter.tagline), 11, '#9a8fb8');
+    this.titleCard = [t1, t2];
     this.tweens.add({ targets: [t1, t2], alpha: 1, duration: 700, delay: 350 });
-    this.tweens.add({ targets: [t1, t2], alpha: 0, duration: 800, delay: 3200, onComplete: () => { t1.destroy(); t2.destroy(); } });
+    this.tweens.add({ targets: [t1, t2], alpha: 0, duration: 800, delay: 3200, onComplete: () => this.dropTitleCard() });
+  }
+  private dropTitleCard() {
+    for (const o of this.titleCard) { this.tweens.killTweensOf(o); o.destroy(); }
+    this.titleCard = [];
   }
 
   // ── Atmosphere — inside a restless mind ─────────────────────────────────────
@@ -364,7 +369,7 @@ export class GameScene extends Phaser.Scene {
       player: () => this.player,
       frozen: () => this.frozen,
       dashing: () => this.dashing,
-      damage: (fromX) => { if (this.invuln <= 0) this.damage(fromX); },
+      damage: (fromX, throughFreeze) => { if (this.invuln <= 0) this.damage(fromX, throughFreeze); },
       sayOnce: (k, t, d) => this.sayOnce(k, t, d),
       burst: (x, y, c, n, sp) => this.burst(x, y, c, n, sp),
       hitstop: (ms) => this.doHitstop(ms),
@@ -745,6 +750,7 @@ export class GameScene extends Phaser.Scene {
     // Кадр уже открыт (два триггера в одном рывке): не рисовать поверх, а показать следом
     if (this.hitstop > 1e8) { this.frameQueue.push([title, text]); return; }
     this.hitstop = 9e9; // update() стоит, пока не отпустим
+    this.dropTitleCard(); // титул главы иначе просвечивает сквозь затемнение и ложится на текст кадра
     // update стоит, но физика Phaser — нет: тормозим игрока, иначе он улетает
     const pb = this.player.body as Phaser.Physics.Arcade.Body;
     pb.setVelocity(0, 0); pb.setAllowGravity(false); pb.moves = false;
@@ -1332,7 +1338,7 @@ export class GameScene extends Phaser.Scene {
     book.on('pointerdown', () => openCta('act1', 'booking'));
     goTxt.on('pointerover', () => goTxt.setColor('#d8c8ec'));
     goTxt.on('pointerout', () => goTxt.setColor('#9b8fbf'));
-    goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); this.scene.restart({ chapter: nextChapter }); });
+    goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); unlockChapter(nextChapter); this.scene.restart({ chapter: nextChapter }); });
     donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
     donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
     donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
@@ -1453,12 +1459,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ── Damage / lives ─────────────────────────────────────────────────────────
-  private damage(fromX: number) {
+  private damage(fromX: number, throughFreeze = false) {
     if (this.assistInvuln) return; // ассист «не умирать»
     if (this.finalApproach) return; // у двери терапевта кнопки погашены — и урона нет, тень только шепчет
     if (this.overwhelmed) return;    // «навалилось разом» — декорация финала: смерть тут отменяла развязку
     // копинг «сохраняет в моменте»: пока залип (зона) — урон не проходит
-    if (this.frozen) { this.sayOnce('frz_safe', 'm_while_zoned_out_they_can_t', 2600); return; }
+    if (this.frozen && !throughFreeze) { this.sayOnce('frz_safe', 'm_while_zoned_out_they_can_t', 2600); return; }
     this.hidePlay();
     this.invuln = 1100; this.hearts -= 1; this.updateHearts();
     this.doHitstop(70); this.cameras.main.shake(220, 0.014); this.cameras.main.flash(140, 120, 20, 40); audio.hurt();
