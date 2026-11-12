@@ -9,7 +9,7 @@ import {
   drawJourneyCard,
   type JourneyCardRow,
 } from './journeyCard';
-import { headerHeight } from '../cardKit';
+import { INK, headerHeight, sunkHex } from '../cardKit';
 import { JOURNEY_LOOK } from '../../journey/journeyLook';
 
 function mockCtx() {
@@ -80,6 +80,15 @@ describe('buildJourneyCardRows', () => {
     expect(row).toMatchObject({ hue: 310, sign: 'need_play' });
   });
 
+  it('благодарность — вариант Pebbles filled (n), заметка дня — без варианта', () => {
+    const [g, note] = buildJourneyCardRows([
+      { type: 'gratitude', at: '2026-07-01' },
+      { type: 'note', at: '2026-07-01' },
+    ]);
+    expect(g).toMatchObject({ sign: 'pebbles', n: 1 });
+    expect(note.n).toBeUndefined();
+  });
+
   it('дефолтный максимум — 8 строк; незнакомый тип — без знака', () => {
     const items = Array.from({ length: 20 }, () => ({
       type: 'future_type',
@@ -121,6 +130,16 @@ describe('drawJourneyCard', () => {
         12,
       ),
     ).not.toThrow();
+  });
+
+  it('бумажка оттенка самого листа (режимы на небе) — тон глубже своей бумаги, не белая', () => {
+    const ctx = mockCtx();
+    const fills: string[] = [];
+    ctx.fill.mockImplementation(() => fills.push(ctx.fillStyle));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    drawJourneyCard(document.createElement('canvas'), [{ ...ROW, hue: 240, sign: 'cluster' }], 1);
+    expect(fills).toContain(sunkHex(240));
+    expect(fills).not.toContain(INK.surface);
   });
 
   it('пустой путь — «пока нет ни одного шага», не падает', () => {

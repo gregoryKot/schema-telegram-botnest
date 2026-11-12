@@ -59,7 +59,7 @@ function paintPrim(
     if (path) ctx.fill(path);
     else ctx.fill();
   }
-  if ((p.t === 'path' || p.t === 'rect') && p.stroke) {
+  if ((p.t === 'path' || p.t === 'rect' || p.t === 'ellipse') && p.stroke) {
     ctx.strokeStyle = over ?? PAPER_INK[p.stroke];
     ctx.lineWidth = p.sw ?? 1;
     ctx.lineCap = 'round';

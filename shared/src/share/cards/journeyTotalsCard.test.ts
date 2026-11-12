@@ -10,7 +10,7 @@ import {
   JOURNEY_TOTALS_MAX_ROWS,
 } from './journeyTotalsCard';
 import type { JourneyStatRow } from '../../journey/journeyStats';
-import { headerHeight } from '../cardKit';
+import { headerHeight, hueInkHex, paperHex } from '../cardKit';
 
 function mockCtx() {
   return {
@@ -131,6 +131,15 @@ describe('drawJourneyTotalsCard', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx2);
     drawJourneyTotalsCard(canvas, [stat('Что-то новое', 4, 'future')], 4);
     expect(withSign).toBeGreaterThan(ctx2.save.mock.calls.length);
+  });
+
+  it('строка — знак на бумажке своего занятия, полоса — чернилами оттенка занятия', () => {
+    const ctx = mockCtx();
+    const fills: string[] = [];
+    ctx.fill.mockImplementation(() => fills.push(ctx.fillStyle));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
+    drawJourneyTotalsCard(document.createElement('canvas'), [stat('Дыхание', 4, 'breathing'), stat('Трекер', 2)], 6);
+    expect(fills).toEqual(expect.arrayContaining([paperHex(195), hueInkHex(195), paperHex(70), hueInkHex(70)]));
   });
 
   it('свои title/subtitle (сводка за период) переопределяют заголовок по умолчанию', () => {

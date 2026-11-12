@@ -9,13 +9,18 @@
 import type { Look, SignKey } from '../theme/entityLook';
 import type { JourneyItem, JourneyItemType } from './journeyMeta';
 
-/** ENTITY_LOOK[JOURNEY_ENTITY[type]] — знак и бумага сущности шага. */
-export const JOURNEY_LOOK: Readonly<Record<JourneyItemType, Look>> = {
+/** Вид шага: бумага и знак; `n` — вариант мотива по счёту (countedSigns.ts). */
+export type JourneyLook = Look & { n?: number };
+
+/** ENTITY_LOOK[JOURNEY_ENTITY[type]] — знак и бумага сущности шага. Благодарность — `Pebbles filled`
+ *  (решение владельца №2): лёг один камешок, два — гнёзда, как у тега «Благодарность»; «Заметка дня» —
+ *  обычные три камешка. Сколько «спасибо» в записи, лента не знает — поэтому знак, а не данные. */
+export const JOURNEY_LOOK: Readonly<Record<JourneyItemType, JourneyLook>> = {
   tracker_day: { hue: 70, sign: 'strokes' },
   note: { hue: 70, sign: 'pebbles' },
   schema_diary: { hue: 28, sign: 'layers' },
   mode_diary: { hue: 240, sign: 'cluster' },
-  gratitude: { hue: 195, sign: 'pebbles' },
+  gratitude: { hue: 195, sign: 'pebbles', n: 1 },
   practice: { hue: 145, sign: 'leaf' },
   plan_done: { hue: 135, sign: 'check' },
   ysq: { hue: 28, sign: 'layers' },
@@ -50,7 +55,7 @@ const MODE_STEP = new Set(['mode_diary', 'mode_note']);
 export function journeyItemLook(
   item: Pick<JourneyItem, 'type' | 'needId' | 'modeId'>,
   modeSign?: (modeId: string) => SignKey,
-): Look | null {
+): JourneyLook | null {
   if (!Object.hasOwn(JOURNEY_LOOK, item.type)) return null;
   const look = JOURNEY_LOOK[item.type as JourneyItemType];
   if (
@@ -65,7 +70,7 @@ export function journeyItemLook(
 }
 
 /** Вид плитки счётчика: сущность занятия; колесо детства — своя сущность. */
-export const journeyStatLook = (type: string): Look | null =>
+export const journeyStatLook = (type: string): JourneyLook | null =>
   type === CHILDHOOD_STAT ? CHILDHOOD_LOOK : journeyItemLook({ type });
 
 /** Поля-голос Здорового Взрослого (вставка мха в детали) — те же, что в ленте «Записей» (entryRows.ts). */

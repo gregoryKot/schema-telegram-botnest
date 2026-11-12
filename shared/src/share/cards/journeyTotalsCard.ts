@@ -1,25 +1,23 @@
 // Карточка итогов «Моего пути» (b23b): лист неба «Моего пути», число шагов Literata крупно,
-// затем занятия по убыванию строками «знак → занятие → число» (знак — journeyStatLook, тот же,
-// что у плитки счётчика в приложении) с тихой полосой чернилами листа относительно самого
-// частого. Дополняет карточку-ленту (journeyCard). Строки — totalsCardRows (чистая, с тестами).
+// затем занятия по убыванию строками «знак на бумажке → занятие → число» (вид — journeyStatLook, тот
+// же, что у плитки счётчика в приложении) с тихой полосой чернилами оттенка занятия относительно
+// самого частого. Дополняет карточку-ленту (journeyCard). Строки — totalsCardRows (чистая, с тестами).
 import {
   CARD_PAD,
   CARD_LOOK,
   FOOTER_H,
   INK,
   beginCard,
-  canvasSign,
   cardFont,
   footer,
   header,
   headerLines,
+  hueInkHex,
   progressBar,
   serifFont,
-  sign,
-  signHeight,
   wrapClamp,
-  type Card,
 } from '../cardKit';
+import { slipSign } from '../kit/slipSign';
 import type { JourneyStatRow } from '../../journey/journeyStats';
 import { journeyStatLook } from '../../journey/journeyLook';
 
@@ -28,9 +26,8 @@ export const JOURNEY_TOTALS_MAX_ROWS = 8;
 const HERO_H = 92;
 const ROW_H = 46;
 const REST_H = 24;
-const SIGN_W = 36;
-const SIGN_BOX = 22;
-const LABEL_X = CARD_PAD + SIGN_W + 14;
+const SLIP = { w: 52, h: 34, signW: 36, signBox: 22 };
+const LABEL_X = CARD_PAD + SLIP.w + 14;
 
 /** Верхние строки + максимум (для полосок) + «и ещё N» хвостом. Чистая. */
 export function totalsCardRows(stats: JourneyStatRow[]): {
@@ -62,16 +59,6 @@ export interface JourneyTotalsOpts {
   title?: string;
   /** «за последние 30 дней · сколько чего накопилось» — если сводка за период. */
   subtitle?: string;
-}
-
-/** Знак занятия, вписанный в строку; знака нет — пустое место (без выдуманной картинки). */
-function rowSign(c: Card, type: string, y: number) {
-  const key = canvasSign(journeyStatLook(type)?.sign);
-  if (!key) return;
-  const h0 = signHeight(key, SIGN_W);
-  const w = h0 > SIGN_BOX ? (SIGN_W * SIGN_BOX) / h0 : SIGN_W;
-  const h = signHeight(key, w);
-  sign(c, key, CARD_PAD + (SIGN_W - w) / 2, y - 8 - h / 2, w);
 }
 
 export function drawJourneyTotalsCard(
@@ -116,7 +103,8 @@ export function drawJourneyTotalsCard(
   const measure = (s: string) => ctx.measureText(s).width;
   let y = listTop;
   for (const row of shown) {
-    rowSign(c, row.type, y);
+    const rowLook = journeyStatLook(row.type);
+    slipSign(c, rowLook, CARD_PAD, y - 8 - SLIP.h / 2, SLIP);
     ctx.font = serifFont(19);
     const countW = measure(String(row.count));
     ctx.fillStyle = INK.text;
@@ -137,7 +125,7 @@ export function drawJourneyTotalsCard(
       y + 11,
       W - CARD_PAD - LABEL_X,
       max > 0 ? row.count / max : 0,
-      c.accent,
+      rowLook ? hueInkHex(rowLook.hue) : c.accent,
       4,
     );
     y += ROW_H;

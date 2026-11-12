@@ -8,17 +8,13 @@ import {
   INK,
   CARD_LOOK,
   beginCard,
-  canvasSign,
   cardFont,
   footer,
   header,
   headerLines,
-  paperSlip,
-  sign,
-  signHeight,
   wrapClamp,
-  type Card,
 } from '../cardKit';
+import { slipSign } from '../kit/slipSign';
 import {
   formatJourneyDay,
   journeyTypeMeta,
@@ -36,6 +32,8 @@ export interface JourneyCardRow {
   /** Бумага и знак сущности шага; незнакомый тип — null (тихая бумажка без знака). */
   hue: number | null;
   sign: string | null;
+  /** Вариант мотива по счёту (благодарность — `Pebbles filled`). */
+  n?: number;
 }
 
 /** Готовые строки для карточки-ленты: вид шага — journeyItemLook. Чистая. */
@@ -50,6 +48,7 @@ export function buildJourneyCardRows(
       day: formatJourneyDay(item.at),
       hue: look?.hue ?? null,
       sign: look?.sign ?? null,
+      ...(look?.n !== undefined ? { n: look.n } : {}),
     };
   });
 }
@@ -68,24 +67,6 @@ export function journeyCardHeight(
 ): number {
   const bodyH = rows.length ? rows.length * ROW_H : 44;
   return headH + bodyH + 8 + FOOTER_H;
-}
-
-/** Знак шага на бумажке своей сущности; знака нет — тихая бумажка листа. */
-function drawRowSlip(c: Card, row: JourneyCardRow, y: number) {
-  const key = canvasSign(row.sign ?? undefined);
-  if (row.hue === null || !key) {
-    paperSlip(c, CARD_PAD, y, SLIP_W, SLIP_H, c.hue, {
-      r: 10,
-      fill: c.sunk,
-      shadow: false,
-    });
-    return;
-  }
-  paperSlip(c, CARD_PAD, y, SLIP_W, SLIP_H, row.hue, { r: 10 });
-  const h0 = signHeight(key, SIGN_W);
-  const w = h0 > SIGN_BOX ? (SIGN_W * SIGN_BOX) / h0 : SIGN_W;
-  const h = signHeight(key, w);
-  sign(c, key, CARD_PAD + (SLIP_W - w) / 2, y + (SLIP_H - h) / 2, w);
 }
 
 export function drawJourneyCard(
@@ -119,7 +100,8 @@ export function drawJourneyCard(
   const measure = (s: string) => ctx.measureText(s).width;
   rows.forEach((row, i) => {
     const y = top + i * ROW_H;
-    drawRowSlip(c, row, y);
+    const look = row.hue !== null && row.sign ? { hue: row.hue, sign: row.sign, n: row.n } : null;
+    slipSign(c, look, CARD_PAD, y, { w: SLIP_W, h: SLIP_H, signW: SIGN_W, signBox: SIGN_BOX });
     ctx.textAlign = 'left';
     ctx.font = cardFont(15);
     ctx.fillStyle = INK.text;

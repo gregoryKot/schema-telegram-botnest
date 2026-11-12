@@ -34,7 +34,16 @@ describe('литеральные таблицы вида сверены с ENTIT
         { hue: ENTITY_LOOK[e].hue, sign: ENTITY_LOOK[e].sign },
       ]),
     );
-    expect(JOURNEY_LOOK).toEqual(want);
+    const hueSign = Object.fromEntries(
+      Object.entries(JOURNEY_LOOK).map(([type, l]) => [type, { hue: l.hue, sign: l.sign }]),
+    );
+    expect(hueSign).toEqual(want);
+  });
+
+  it('благодарность — Pebbles filled (лёг один камешок), «Заметка дня» — обычные камешки', () => {
+    expect(JOURNEY_LOOK.gratitude).toMatchObject({ sign: 'pebbles', n: 1 });
+    expect(JOURNEY_LOOK.note.n).toBeUndefined();
+    expect(journeyStatLook('gratitude')?.n).toBe(1);
   });
 
   it('JOURNEY_NEED_LOOK — needLook каждой потребности; колесо детства — его сущность', () => {

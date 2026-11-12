@@ -69,8 +69,8 @@ describe('знаки canvas = SVG-мотивы сайта', () => {
     expect(svg.prims.map(strip)).toEqual(kit.prims.map((p) => strip(kitPrim(p))));
   });
 
-  it.each([['strokes', 2], ['strokes', 3], ['strokes', 4], ['strokes', 7], ['sheets', 2], ['sheets', 4]] as const)(
-    'вариант по счёту %s × %i (значки достижений) = countedDrawing',
+  it.each([['strokes', 2], ['strokes', 3], ['strokes', 4], ['strokes', 7], ['sheets', 2], ['sheets', 4], ['pebbles', 0], ['pebbles', 1]] as const)(
+    'вариант по счёту %s × %i (значки достижений, благодарность) = countedDrawing',
     (key, n) => {
       const svg = svgPrims(key, n);
       const kit = countedDrawing(key, n)!;

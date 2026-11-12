@@ -5,8 +5,7 @@
 // Здесь только компоненты (fast refresh); связка в пропсы kit/art — webJourneyKit.ts.
 import type { JourneyItem } from '../../../../shared/src/journey/journeyMeta';
 import type { JourneyStatRow } from '../../../../shared/src/journey/journeyStats';
-import { journeyItemLook, journeyStatLook } from '../../../../shared/src/journey/journeyLook';
-import type { Look } from '../../../../shared/src/theme/entityLook';
+import { journeyItemLook, journeyStatLook, type JourneyLook } from '../../../../shared/src/journey/journeyLook';
 import { glueSpaces } from '../../../../shared/src/utils/typo';
 import { hueStyle } from '../../lib/tone';
 import { SignArt } from '../art/SignArt';
@@ -15,13 +14,13 @@ import { HealthyVoice } from '../paper/HealthyVoice';
 import { modeLookById } from '../diary/modeLookById';
 
 const modeSign = (modeId: string) => modeLookById(modeId).sign;
-const itemLook = (item: JourneyItem): Look | null => journeyItemLook(item, modeSign);
+const itemLook = (item: JourneyItem): JourneyLook | null => journeyItemLook(item, modeSign);
 
 /** Знак строки ленты; незнакомый тип — пустая бумажка (строки стоят ровно), без выдуманного знака. */
-export function JourneySign({ look }: { look: Look | null }) {
+export function JourneySign({ look }: { look: JourneyLook | null }) {
   return (
     <span className="pp-row-art jr-sign" style={look ? hueStyle(look.hue) : undefined} data-sign={look?.sign} aria-hidden="true">
-      {look && <SignArt sign={look.sign} size="row" />}
+      {look && <SignArt sign={look.sign} count={look.n} size="row" />}
     </span>
   );
 }
@@ -35,7 +34,7 @@ export function JourneyStat({ row }: { row: JourneyStatRow }) {
   const look = journeyStatLook(row.type);
   return (
     <div className="pp-paper jr-stat" style={look ? hueStyle(look.hue) : undefined}>
-      <span className="jr-stat-sign" aria-hidden="true">{look && <SignArt sign={look.sign} size="row" />}</span>
+      <span className="jr-stat-sign" aria-hidden="true">{look && <SignArt sign={look.sign} count={look.n} size="row" />}</span>
       <span className="jr-stat-num">{row.count}</span>
       <span className="jr-stat-label">{row.label}</span>
     </div>

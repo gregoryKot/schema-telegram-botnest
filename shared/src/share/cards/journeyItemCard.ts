@@ -9,13 +9,13 @@ import {
   INK,
   SERIF,
   beginCard,
-  canvasSign,
   cardFont,
+  drawDrawing,
+  drawingHeight,
   footer,
+  lookDrawing,
   measureClamp,
   serifFont,
-  sign,
-  signHeight,
   tracking,
 } from '../cardKit';
 
@@ -27,6 +27,8 @@ export interface JourneyItemCardData {
   /** Бумага и знак сущности шага (journeyItemLook); незнакомый тип — null. */
   hue: number | null;
   sign: string | null;
+  /** Вариант мотива по счёту (благодарность — `Pebbles filled`). */
+  n?: number;
 }
 
 const EYEBROW_Y = 54;
@@ -55,11 +57,11 @@ export function drawJourneyItemCard(
   canvas: HTMLCanvasElement,
   data: JourneyItemCardData,
 ) {
-  const key = canvasSign(data.sign ?? undefined);
+  const art = data.sign ? lookDrawing({ sign: data.sign, n: data.n }) : null;
   const maxW = CARD_W - CARD_PAD * 2;
   const title = measureClamp(canvas, data.label, maxW, 28, 2, undefined, SERIF);
   const sub = data.sub ? measureClamp(canvas, data.sub, maxW, 14, 2) : [];
-  const H = journeyItemCardHeight(Boolean(key), title.length, sub.length);
+  const H = journeyItemCardHeight(Boolean(art), title.length, sub.length);
   const c = beginCard(canvas, H, { hue: data.hue ?? CARD_LOOK.journey.hue });
   const { ctx } = c;
   const cx = c.W / 2;
@@ -71,14 +73,14 @@ export function drawJourneyItemCard(
   ctx.fillText('МОЙ ПУТЬ', cx, EYEBROW_Y);
   tracking(ctx, 0);
 
-  if (key) {
-    const h0 = signHeight(key, ART_W);
+  if (art) {
+    const h0 = drawingHeight(art, ART_W);
     const w = h0 > ART_BOX ? (ART_W * ART_BOX) / h0 : ART_W;
-    const h = signHeight(key, w);
-    sign(c, key, cx - w / 2, ART_TOP + (ART_BOX - h) / 2, w);
+    const h = drawingHeight(art, w);
+    drawDrawing(ctx, art, cx - w / 2, ART_TOP + (ART_BOX - h) / 2, w);
   }
 
-  let y = ART_TOP + (key ? ART_BOX : 0) + 50;
+  let y = ART_TOP + (art ? ART_BOX : 0) + 50;
   ctx.textAlign = 'center';
   ctx.font = serifFont(28);
   ctx.fillStyle = INK.text;

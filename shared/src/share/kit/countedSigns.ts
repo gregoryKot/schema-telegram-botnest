@@ -1,7 +1,7 @@
-// Вариант мотива по счёту — значки достижений (ENTITY_LOOK, «Достижения»: серии — `Strokes` всё
-// плотнее, 10 и 50 дней — `Sheets` стопкой). Не новый знак: те же полоски и листы, их число растёт.
-// Одна геометрия на значок профиля (SVG, SignArt `count`) и canvas-карточки (signs.ts lookDrawing);
-// сверка SVG = таблица — webapp/src/share/signsCanvas.test.ts.
+// Вариант мотива по счёту (не новый знак): значки достижений — серии `Strokes` всё плотнее, 10 и 50
+// дней — `Sheets` стопкой; благодарность — `Pebbles filled`, легло n камешков, остальные — гнёзда.
+// Одна геометрия на SVG (SignArt `count`) и canvas-карточки (signs.ts lookDrawing); сверка SVG =
+// таблица — webapp/src/share/signsCanvas.test.ts.
 import type { PaperName } from './ink';
 import type { SignDrawing, SignPrim } from './signTable';
 
@@ -31,7 +31,22 @@ function sheetsFan(n: number): SignDrawing {
   return { view: [120, 64], prims };
 }
 
-const COUNTED = { strokes: { min: 2, max: 7, draw: strokesRow }, sheets: { min: 2, max: 4, draw: sheetsFan } } as const;
+const PEBBLES = [[24, 36, 'moss'], [60, 34, 'brown'], [96, 30, 'clay']] as const;
+
+/** Легло n камешков; гнездо — пустой тон с кромкой своего цвета (как [data-laid="no"] в paper.css). */
+function pebblesLaid(n: number): SignDrawing {
+  const prims = PEBBLES.map(([cx, cy, color], i): SignPrim => ({
+    t: 'ellipse', cx, cy, rx: 20, ry: 13, rot: [-18, cx, cy],
+    ...(i < n ? { fill: color } : { fill: 'hollow', stroke: color, sw: 4 }),
+  }));
+  return { view: [120, 64], prims };
+}
+
+const COUNTED = {
+  strokes: { min: 2, max: 7, draw: strokesRow },
+  sheets: { min: 2, max: 4, draw: sheetsFan },
+  pebbles: { min: 0, max: 3, draw: pebblesLaid },
+} as const;
 
 /** Рисунок знака с числом фигур; знак без варианта по счёту или число вне диапазона — null (обычный знак). */
 export function countedDrawing(sign: string, n: number | undefined): SignDrawing | null {

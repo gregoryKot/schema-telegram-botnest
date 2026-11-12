@@ -10,7 +10,7 @@
 import type { ReactElement } from 'react';
 import type { SignKey } from '../../../../shared/src/theme/entityLook';
 import type { ArtProps } from './paper';
-import { Cup, Strokes } from './PaperArt';
+import { Cup, Pebbles, Strokes } from './PaperArt';
 import { Check, Leaf, Wheel, type CheckPlate } from './PaperArtSigns';
 import { Limits, NeedArt } from './NeedArt';
 import { DomainArt } from './DomainArt';
@@ -37,8 +37,10 @@ const BY_KEY: Record<SignKey, Art> = {
 };
 
 /** Знак по ключу; ключа нет в реестре (данные с сервера, старая запись) — ничего, без выдуманной картинки.
- *  `count` — вариант мотива по счёту (значки достижений, countedSigns.ts); у знака без варианта не читается. */
+ *  `count` — вариант мотива по счёту (countedSigns.ts: полоски и листы значков, камешки благодарности);
+ *  у знака без варианта не читается. */
 export function SignArt({ sign, size, plate, count }: ArtProps & { sign: SignKey; plate?: CheckPlate; count?: number }) {
+  if (sign === 'pebbles' && count !== undefined) return <Pebbles size={size} filled={count} />;
   const counted = countedDrawing(sign, count);
   if (counted) return <CountedSign drawing={counted} size={size} />;
   const Art = Object.hasOwn(BY_KEY, sign) ? BY_KEY[sign] : null;

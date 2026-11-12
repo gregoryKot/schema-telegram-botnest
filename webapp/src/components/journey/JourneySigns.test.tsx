@@ -45,6 +45,19 @@ describe('знак строки ленты', () => {
     expect(sign({ type: 'practice', at: AT, needId: 'play' })).toEqual(['need_play', '310']);
   });
 
+  it('благодарность — Pebbles filled (два гнезда), «Заметка дня» — три камешка; на плитке счётчика так же', () => {
+    const laidNo = (el: Element) => el.querySelectorAll('[data-laid="no"]').length;
+    const g = render(<JourneyRowSign item={{ type: 'gratitude', at: AT }} />).container;
+    expect(laidNo(g)).toBe(2);
+    cleanup();
+    const n = render(<JourneyRowSign item={{ type: 'note', at: AT }} />).container;
+    expect(laidNo(n)).toBe(0);
+    expect(n.querySelectorAll('ellipse')).toHaveLength(3);
+    cleanup();
+    const t = render(<JourneyStat row={{ type: 'gratitude', emoji: '', label: 'Благодарности', count: 2 }} />).container;
+    expect(laidNo(t)).toBe(2);
+  });
+
   it('незнакомый тип — пустая бумажка без знака', () => {
     const { container } = render(<JourneySign look={null} />);
     const s = container.querySelector('.jr-sign') as HTMLElement;
