@@ -23,7 +23,7 @@ import { drawJourneyTotalsCard } from '../share/cards/journeyTotalsCard';
 import { drawJourneyCard } from '../share/cards/journeyCard';
 import { drawJourneyItemCard } from '../share/cards/journeyItemCard';
 import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
-import { drawNeedsRadarCard } from '../share/cards/needsRadarCard';
+import { drawNeedsDayCard } from '../share/cards/needsDayCard';
 import { drawYsqProfileCard } from '../share/cards/ysqProfileCard';
 
 vi.mock('../share/cards/journeyTotalsCard', async (importOriginal) => {
@@ -46,10 +46,10 @@ vi.mock('../share/cards/journeyResultCard', async (importOriginal) => {
     await importOriginal<typeof import('../share/cards/journeyResultCard')>();
   return { ...actual, drawJourneyResultCard: vi.fn() };
 });
-vi.mock('../share/cards/needsRadarCard', async (importOriginal) => {
+vi.mock('../share/cards/needsDayCard', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../share/cards/needsRadarCard')>();
-  return { ...actual, drawNeedsRadarCard: vi.fn() };
+    await importOriginal<typeof import('../share/cards/needsDayCard')>();
+  return { ...actual, drawNeedsDayCard: vi.fn() };
 });
 vi.mock('../share/cards/ysqProfileCard', async (importOriginal) => {
   const actual =
@@ -305,7 +305,7 @@ describe('buildJourneySharePayload — payload.draw делегирует в пр
     );
   });
 
-  it('item tracker_day с ratings: рисует drawNeedsRadarCard, не drawJourneyResultCard', () => {
+  it('item tracker_day с ratings: рисует drawNeedsDayCard, не drawJourneyResultCard', () => {
     const share: JourneyShareState = {
       kind: 'item',
       item: { type: 'tracker_day', at: '2026-07-20' },
@@ -320,7 +320,7 @@ describe('buildJourneySharePayload — payload.draw делегирует в пр
       link,
     );
     payload.draw(fakeCanvas);
-    expect(drawNeedsRadarCard).toHaveBeenCalledWith(
+    expect(drawNeedsDayCard).toHaveBeenCalledWith(
       fakeCanvas,
       expect.objectContaining({
         eyebrow: 'Трекер потребностей',

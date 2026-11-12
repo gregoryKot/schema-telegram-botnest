@@ -39,5 +39,5 @@ export async function shareOutcome(
 /** Подпись главной кнопки шита: скачанная картинка — видимое «сохранена». */
 export function shareButtonLabel(sharing: boolean, saved: boolean): string {
   if (sharing) return 'Готовлю картинку…';
-  return saved ? '✓ Картинка сохранена' : 'Поделиться';
+  return saved ? 'Картинка сохранена' : 'Поделиться';
 }
