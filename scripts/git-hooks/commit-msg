@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+// commit-msg: коммит — одна строка-заголовок и трейлеры, тела нет.
+// Тела коммитов никто не читает, а пишет их модель самыми дорогими токенами.
+const { readFileSync } = require('node:fs');
+
+const MAX_SUBJECT = 120;
+const MAX_TRAILERS = 4;
+const TRAILER = /^[A-Za-z][A-Za-z-]*: \S/;
+const GIT_MADE = /^(Merge |Revert |fixup! |squash! )/;
+
+function check(text) {
+  const cut = text.split(/^# -{24} >8 -{24}$/m)[0];
+  const lines = cut.split('\n').filter((l) => !l.startsWith('#'));
+  const subject = (lines.shift() ?? '').trim();
+  if (GIT_MADE.test(subject)) return [];
+  const rest = lines.map((l) => l.trim()).filter(Boolean);
+  const body = rest.filter((l) => !TRAILER.test(l));
+  const errors = [];
+  if (!subject) errors.push('пустой заголовок');
+  if ([...subject].length > MAX_SUBJECT) {
+    errors.push(`заголовок ${[...subject].length} знаков, предел ${MAX_SUBJECT}`);
+  }
+  if (body.length) errors.push(`тело коммита (${body.length} строк) не пишется`);
+  if (rest.length - body.length > MAX_TRAILERS) errors.push(`трейлеров больше ${MAX_TRAILERS}`);
+  return errors;
+}
+
+const errors = check(readFileSync(process.argv[2], 'utf8'));
+if (errors.length) {
+  console.error(`❌ commit-msg: ${errors.join('; ')}.`);
+  console.error('   Коммит — одна строка и трейлеры. Причины и детали — строкой в описании PR.');
+  process.exit(1);
+}
