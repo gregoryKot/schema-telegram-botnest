@@ -1,22 +1,16 @@
-// Знак записи клиента у терапевта по типу (APP_2026-11.md, b30/b31): тот же вид, что в ленте «Записи» клиента
-// (sections/diary/feedLook.ts) — дневник схем `Layers` 28, дневник режимов `Cluster` 240 (группа режима в строке
-// терапевта не показывается: тип различает знак), благодарность `Pebbles filled` 195, быстрая запись `Pebbles` 45.
-// Оттенок и знак — из ENTITY_LOOK, а не на месте. Сигнатуру делят «Обзор» (b30) и вкладка «Записи клиента» (b31).
-import { ENTITY_LOOK, type EntityId, type SignKey } from '../../../../shared/src/theme/entityLook';
-
-export type NoteType = 'schema' | 'mode' | 'gratitude' | 'quick';
+// Вид записи клиента у терапевта (вкладка «Записи клиента», b31): знак и бумага по типу — те же, что в ленте
+// «Записей» у клиента (sections/diary/feedLook.ts, ENTITY_LOOK; принцип 10 — терапевт и клиент говорят одними
+// знаками). Дневник и карточка схем — Layers на глине 28, режимов — Cluster на небе 240 (тип, а не группа режима,
+// как в ленте), благодарность — Pebbles на бирюзе 195 (не мох 145 старого DIARY_HUE.gratitude) с камешками-данными,
+// быстрая запись и всё неизвестное — Pebbles на персике 45.
+import type { SignKey } from '../../../../shared/src/theme/entityLook';
+import { kindLook } from '../../sections/diary/feedLook';
 
 export interface NoteLook { hue: number; sign: SignKey; filled?: boolean }
 
-const ENTITY: Record<NoteType, EntityId> = {
-  schema: 'diary_schema',
-  mode: 'diary_mode',
-  gratitude: 'gratitude',
-  quick: 'diary',
-};
-
-/** Вид строки записи по типу; благодарность — камешки закрашены (вариант мотива Pebbles). */
-export function noteLook(type: NoteType): NoteLook {
-  const { hue, sign } = ENTITY_LOOK[ENTITY[type]];
-  return type === 'gratitude' ? { hue, sign, filled: true } : { hue, sign };
+/** Вид записи по её типу: `schema`, `mode`, `gratitude`, остальное — быстрая запись. */
+export function noteLook(type: string): NoteLook {
+  if (type === 'schema' || type === 'mode') return kindLook(type);
+  if (type === 'gratitude') return { ...kindLook('gratitude'), filled: true };
+  return kindLook('thought');
 }

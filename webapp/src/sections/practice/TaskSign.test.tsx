@@ -24,9 +24,15 @@ describe('TaskSign', () => {
     ]);
     expect(set.size).toBe(6);
   });
-  it('одинаковые маршруты — один знак: дневник схем = дневник, тест = слои, упражнение = «сделано»', () => {
+  it('одинаковые маршруты — один знак: дневник схем = дневник, тест = слои', () => {
     expect(html('schema_diary')).toBe(html('diary_streak'));
     expect(html('ysq_test')).toBe(html('schema_intro'));
-    expect(html('belief_check')).toBe(html('custom'));
+  });
+  // ENTITY_LOOK, строка «Цель, задание»: у упражнения — знак своей сущности, как у клиента в «Практиках»
+  // (b31: терапевт и клиент говорят одними знаками), а не «сделано».
+  it('упражнение — знак своей сущности: убеждение, письмо, безопасное место, «Мне плохо» различаются и не «сделано»', () => {
+    const ex = ['belief_check', 'letter_to_self', 'safe_place', 'flashcard'].map((t) => html(t));
+    expect(new Set(ex).size).toBe(4);
+    for (const s of ex) expect(s).not.toBe(html('custom'));
   });
 });

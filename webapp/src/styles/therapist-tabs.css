@@ -22,17 +22,20 @@
 .tb-archive-label { margin-bottom: 20px; }
 .tb-tl-row { display: grid; grid-template-columns: 80px 1fr; gap: 24px; }
 .tb-tl-rail { display: flex; flex-direction: column; align-items: center; }
+/* Номер сессии — круг бумаги неба (встречи терапевта, ENTITY_LOOK «Кабинет терапевта»), тёмная цифра;
+   линия между кругами — тихая, цвета утопленной бумаги. */
 .tb-tl-dot {
-  width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--on-accent);
+  --h: 240; width: 52px; height: 52px; border-radius: 50%; background: oklch(0.915 0.03 var(--h)); color: var(--text);
   font-family: var(--serif); font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.tb-tl-line { flex: 1; width: 2px; background: var(--line-input); margin: 8px 0; }
+.tb-tl-line { flex: 1; width: 2px; background: var(--paper-sunk); margin: 8px 0; }
+.tb-empty-row { display: flex; align-items: center; gap: 10px; margin: 0; }
 .tb-tl-row:last-child .tb-tl-line { visibility: hidden; }
 .tb-tl-body { padding-bottom: 36px; min-width: 0; }
 .tb-tl-head { display: flex; gap: 12px; align-items: center; }
 .tb-tl-date { font-size: 16px; font-weight: 700; }
 .tb-tl-text { font-size: 15px; line-height: 1.7; color: var(--text-sub); margin-top: 8px; max-width: 640px; white-space: pre-wrap; overflow-wrap: anywhere; }
-/* «Удалить заметку» — ds-btn--icon (круг 40, на телефоне 44). Отрицательные
+/* «Удалить заметку» — ds-btn--icon + .tb-del (круг 44 на любой ширине, виден всегда). Отрицательные
    поля по вертикали не дают кругу растянуть строку даты — та же идея, что у
    hitboxStyle: зона нажатия ≥44 без роста разметки. */
 .tb-tl-del { margin-left: auto; margin-block: -8px; }
@@ -43,27 +46,32 @@
 .tb-col { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
 .tb-col--tight { gap: 12px; }
 .tb-tab-title--art { display: flex; align-items: center; gap: 14px; }
-.tb-big { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.tb-big-num { font-size: 56px; }
-.tb-big-cap { font-size: 16px; color: var(--text-sub); }
-.tb-task-list { display: flex; flex-direction: column; gap: 10px; }
-.tb-task { display: flex; align-items: center; gap: 14px; }
-.tb-task.is-done { opacity: .6; }
-.tb-task.is-done .tb-task-text { text-decoration: line-through; }
-.tb-task-main { flex: 1; min-width: 0; }
-.tb-task-text { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
-.tb-task-main .tb-meta { margin-top: 3px; }
-/* Статус задания — один бейдж ds-badge справа (taskModel.STATUS_BADGE).
-   Квадрат-«чекбокс» слева убран: он выглядел нажимаемым, а терапевт задание
-   клиента не отмечает. */
+/* Счётчик — тихий заголовок без картинки: знак задания стоит у каждой строки ниже. */
+.tb-big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tb-big-num { font-family: var(--serif); font-size: 32px; line-height: 1; }
+.tb-big-cap { font-size: 15px; color: var(--text-sub); }
+/* Строка задания — общая .cp-task (task-row.css, слот .cp-task-acts); здесь только своё терапевта:
+   название полным текстом, срок и тихий ярлык статуса (TaskStatusBadge paper) строкой под ним. Квадрат-«чекбокс»
+   слева убран давно: он выглядел нажимаемым, а терапевт задание клиента не отмечает. */
+.tb-task-text { font-weight: 600; line-height: 1.4; }
+.cp-task--done .tb-task-text { text-decoration: line-through; }
+.tb-task-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 6px; }
+/* Корзина — круг 44 и на компьютере (ds-btn--icon там 40): тап-цель ≥44. */
+.ds-btn--icon.tb-del { width: 44px; height: 44px; }
+/* Шаблоны — плитки бумаги сущности со знаком (AssignTemplateTiles): 2×2 в узкой колонке, в ряд от 600px. */
+.tb-tpls-box { container: tb-tpls / inline-size; }
+.tb-tpls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@container tb-tpls (min-width: 600px) { .tb-tpls { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .tb-tpl {
-  border-radius: 16px; padding: 16px 18px; cursor: pointer; min-height: 44px; box-sizing: border-box;
-  display: flex; flex-direction: column; gap: 6px; transition: transform .12s;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 44px; box-sizing: border-box;
+  padding: 14px 14px 16px; border: 0; border-radius: 16px; text-align: left; cursor: pointer; font-family: var(--sans);
+  transition: background .12s;
 }
-.tb-tpl:hover { transform: translateY(-1px); }
-.tb-tpl-head { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; }
-.tb-tpl-head span:last-child { font-size: 18px; }
-.tb-tpl-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); }
+@media (hover: hover) { .tb-tpl:hover { background: oklch(0.895 0.04 var(--h)); } }
+.tb-tpl:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tb-tpl-art { justify-content: flex-start; margin-bottom: 2px; }
+.tb-tpl-title { font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--text); overflow-wrap: break-word; }
+.tb-tpl-sub { font-size: 13px; line-height: 1.45; color: var(--text-sub); overflow-wrap: break-word; }
 /* «На сессиях» — журнал техник (#995, TechniqueJournalBlock): день слева один раз,
    справа строки-кнопки «Техника — Режим» (зона 44 по высоте); подчёркнутое
    название — как техника в листе подсказок (.tcp-guide-link). */
@@ -85,6 +93,8 @@
 }
 
 /* ── YSQ ──────────────────────────────────────────────────────────────── */
+.tb-ysq-paper { padding: 20px; max-width: 640px; box-sizing: border-box; }
+.tb-ysq-paper .ds-empty { color: var(--text-sub); }
 .tb-ysq-card { padding: 8px 24px; }
 .tb-ysq-row {
   display: grid; grid-template-columns: minmax(110px, 240px) 1fr 56px 48px 48px; gap: 16px;
@@ -93,14 +103,14 @@
 .tb-ysq-row:last-child { border-bottom: none; }
 .tb-ysq-head { font-size: 11px; padding: 12px 0; border-bottom: 1px solid var(--paper-sunk); }
 .tb-ysq-name { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; color: var(--text-sub); }
-/* Выраженная схема — как у клиента: имя и бар цветом домена, отметка «выражена». */
+/* Выраженная схема — как у клиента: бар цветом данных потребности домена (inkVars), отметка «выражена». */
 .tb-ysq-row.is-active .tb-ysq-name { font-weight: 700; color: var(--text); }
 .tb-ysq-row:not(.is-active):not(.tb-ysq-head) .tb-bar-fill { background: var(--text-ghost); }
-.tb-ysq-mark { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.tb-ysq-mark { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600; white-space: nowrap; color: var(--need-text); }
 .tb-ysq-note { padding: 12px 0 8px; font-size: 12px; color: var(--text-faint); }
 .tb-bar { position: relative; height: 14px; background: var(--paper-tint); border-radius: 7px; }
 .tb-bar-prev { position: absolute; left: 0; top: 0; bottom: 0; border-right: 2px solid var(--text-ghost); box-sizing: border-box; }
-.tb-bar-fill { position: absolute; left: 0; top: 3px; bottom: 3px; border-radius: 4px; }
+.tb-bar-fill { position: absolute; left: 0; top: 3px; bottom: 3px; border-radius: 4px; background: var(--need-ink); }
 .tb-ysq-val { font-size: 14px; font-weight: 700; }
 .tb-ysq-pct { font-size: 13px; color: var(--text-sub); }
 .tb-ysq-row:not(.is-active) .tb-ysq-val { color: var(--text-sub); font-weight: 500; }
@@ -131,6 +141,9 @@
   .tb-tab-h, .tb-tab-title--desk { display: none; }
   .tb-tab-title--art { align-items: flex-start; }
   .tb-notes-head { display: contents; } /* фильтр — прямой ребёнок страницы, как без заголовка */
+  /* Фильтр типов переносится, а не уезжает за край: на 390 «Благодарность» обрезалась справа без признака
+     прокрутки (b31). */
+  .ds-seg.tb-notes-filter { flex-wrap: wrap; overflow: visible; border-radius: 16px; }
   .tb-tl-row { grid-template-columns: 52px 1fr; gap: 14px; }
   .tb-tl-dot { width: 44px; height: 44px; font-size: 18px; }
   .tb-ysq-card { padding: 4px 16px; }

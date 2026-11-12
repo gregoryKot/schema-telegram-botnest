@@ -52,7 +52,8 @@ describe('needInk — цвет потребности в истории', () => 
 // ≥3:1 для крупной цифры. Мелкий текст этим цветом стоит только на белом (селектор в ON_WHITE — осознанно),
 // на бумаге — --text/--text-sub.
 // .tk-need b — оценка потребности в «Обзоре» терапевта: строки на белом списке .tk-needs внутри листа соломы (b30).
-const ON_WHITE = new Set(['.sd-spark-score', '.ss-res-num', '.tk-need b']);
+// .tb-ysq-mark — «выражена» в таблице YSQ терапевта (b31): строка таблицы на белой карточке ds-card.
+const ON_WHITE = new Set(['.sd-spark-score', '.ss-res-num', '.tk-need b', '.tb-ysq-mark']);
 const fontPx = (body: string) => Number(body.match(/font(?:-size)?\s*:[^;]*?([\d.]+)px/)?.[1] ?? 0);
 const PAPER_BG = /background(?:-color)?\s*:\s*oklch\(0\.9/;
 function smallNeedTextOnPaper(rules: Rule[]): string[] {

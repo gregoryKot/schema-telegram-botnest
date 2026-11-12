@@ -41,4 +41,18 @@ describe('NoteCard', () => {
     expect(phone).toMatch(/\.tb-note-title \{[^}]*flex-basis: 100%/);
     expect(phone).toMatch(/\.tb-note-date \{[^}]*margin-left: auto/);
   });
+
+  // b31: знак и ярлык — по типу записи (noteLook), а не одни камешки на мху у каждой карточки.
+  it('ярлык типа — бумага своего типа: благодарность 195, схема 28, режим 240; знак у схемы — не камешки', () => {
+    const hueOf = (kind: NoteItem['kind']) => {
+      const { container } = render(<NoteCard item={{ ...item, kind }} expanded={false} onToggle={vi.fn()} />);
+      const tag = container.querySelector<HTMLElement>('.pp-tag')!;
+      const art = container.querySelector('.pp-row-art')!.innerHTML;
+      cleanup();
+      return { h: tag.style.getPropertyValue('--h'), art };
+    };
+    const g = hueOf('gratitude'), s = hueOf('schema'), m = hueOf('mode');
+    expect([g.h, s.h, m.h]).toEqual(['195', '28', '240']);
+    expect(new Set([g.art, s.art, m.art]).size).toBe(3);
+  });
 });

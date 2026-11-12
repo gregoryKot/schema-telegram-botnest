@@ -1,23 +1,19 @@
-// Знак записи у терапевта — тот же, что в ленте «Записи» клиента (принцип 10): сверка с ENTITY_LOOK и feedLook.
-import { describe, it, expect } from 'vitest';
-import { noteLook } from './noteLook';
+import { describe, expect, it } from 'vitest';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { kindLook } from '../../sections/diary/feedLook';
+import { noteLook } from './noteLook';
 
+// docs/open/frontend-ux.md (закрыто b31): NoteCard терапевта стоял на старом DIARY_HUE.gratitude = 145 (мох).
 describe('noteLook', () => {
-  it('дневник схем — Layers на глине, дневник режимов — Cluster на небе', () => {
+  it('знак и бумага по типу — как в ленте «Записей» клиента (ENTITY_LOOK)', () => {
     expect(noteLook('schema')).toEqual({ hue: 28, sign: 'layers' });
     expect(noteLook('mode')).toEqual({ hue: 240, sign: 'cluster' });
+    expect(noteLook('gratitude')).toEqual({ hue: ENTITY_LOOK.gratitude.hue, sign: 'pebbles', filled: true });
+    expect(noteLook('thought')).toEqual({ hue: ENTITY_LOOK.diary.hue, sign: 'pebbles' });
+    for (const k of ['schema', 'mode', 'gratitude', 'thought'] as const) expect(noteLook(k).hue).toBe(kindLook(k).hue);
   });
-
-  it('благодарность — Pebbles filled на бирюзе, быстрая запись — Pebbles на персике', () => {
-    expect(noteLook('gratitude')).toEqual({ hue: 195, sign: 'pebbles', filled: true });
-    expect(noteLook('quick')).toEqual({ hue: 45, sign: 'pebbles' });
-  });
-
-  it('оттенки и знаки совпадают с лентой клиента (feedLook)', () => {
-    expect(noteLook('schema')).toMatchObject(kindLook('schema'));
-    expect(noteLook('gratitude')).toMatchObject(kindLook('gratitude'));
-    expect(noteLook('quick')).toMatchObject(kindLook('thought'));
-    expect(noteLook('mode')).toMatchObject(kindLook('mode'));
+  it('благодарность — бирюза 195, не мох 145; неизвестный тип — быстрая запись', () => {
+    expect(noteLook('gratitude').hue).toBe(195);
+    expect(noteLook('что-то новое')).toEqual(noteLook('thought'));
   });
 });

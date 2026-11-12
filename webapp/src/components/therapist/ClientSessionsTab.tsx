@@ -19,7 +19,7 @@ export function ClientSessionsTab({ detail }: Props) {
       <div className="ds-card tb-composer">
         <div className="tb-composer-head">
           <SignHead kind="pebbles" as="div" className="ds-h3">Новая заметка</SignHead>
-          <input type="date" className="ds-input ds-input--sm" aria-label="Дата заметки" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)} />
+          <input type="date" lang="ru" className="ds-input ds-input--sm" aria-label="Дата заметки" value={newNoteDate || todayStr()} onChange={e => setNewNoteDate(e.target.value)} />
         </div>
         <LimitedTextarea
           max={SESSION_NOTE_MAX}

@@ -1,9 +1,10 @@
-import { DOMAIN_HUE, hueStyle } from '../../lib/tone';
+import type { CSSProperties } from 'react';
+import { inkVars } from '../history/needInk';
 import { deltaClass, fmtDelta, type YsqRow } from './ysqRows';
 
 // Таблица «Схемы» терапевта: обе величины критерия выраженности (средний балл
 // и доля «5–6») и отметка «выражена» — та же, по которой клиент видит схему в
-// «Выраженных схемах». Бар — по среднему баллу, как у клиента.
+// «Выраженных схемах». Бар — по среднему баллу, как у клиента, цветом данных потребности домена (inkVars).
 export function YSQTable({ rows, hasPrev }: { rows: YsqRow[]; hasPrev: boolean }) {
   return (
     <div className="ds-card tb-ysq-card">
@@ -15,14 +16,14 @@ export function YSQTable({ rows, hasPrev }: { rows: YsqRow[]; hasPrev: boolean }
         <span className="tb-r">Δ</span>
       </div>
       {rows.map(r => (
-        <div key={r.id} className={`tb-ysq-row${r.active ? ' is-active' : ''}`} style={hueStyle(r.domainId ? DOMAIN_HUE[r.domainId] : undefined)}>
+        <div key={r.id} className={`tb-ysq-row${r.active ? ' is-active' : ''}`} style={inkVars(r.needId ?? '') as CSSProperties}>
           <span className="tb-ysq-name">
             {r.name}
-            {r.active && <span className="tb-ysq-mark tone-ink">выражена</span>}
+            {r.active && <span className="tb-ysq-mark">выражена</span>}
           </span>
           <div className="tb-bar">
             {r.prevBarPct != null && <div className="tb-bar-prev" style={{ width: `${r.prevBarPct}%` }} />}
-            <div className="tb-bar-fill tone-fill" style={{ width: `${r.barPct}%` }} />
+            <div className="tb-bar-fill" style={{ width: `${r.barPct}%` }} />
           </div>
           <span className="tb-ysq-val tb-r">{r.avgLabel}</span>
           <span className="tb-ysq-pct tb-r">{r.pct}%</span>

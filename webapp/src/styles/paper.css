@@ -94,6 +94,14 @@
    уезжало вправо, шеврон на вторую строку (выбор потребности для плана, 2026-11-06). */
 .ds-list-row--nav:has(> .pp-row-art) { grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 14px; align-items: center; }
 
+/* ── Ярлык на бумаге: тип записи, статус задания — тоном бумаги своей сущности (--h), без обводки
+   и «конфетной» заливки. Ленты «Записей» клиента (EntryKindChip) и вкладки карточки у терапевта. */
+.pp-tag {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px;
+  background: oklch(0.915 0.03 var(--h, 70)); font: 600 12px/1 var(--sans); color: var(--text); white-space: nowrap;
+}
+.pp-tag.is-strong { font-weight: 700; }
+
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .pp-square { padding: 20px 18px 16px; min-height: 216px; }
   .pp-art--hero { width: 96px; height: 80px; }

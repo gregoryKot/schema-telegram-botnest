@@ -37,3 +37,30 @@
   .cp-task:has(> .ds-btn) > .ds-btn { grid-area: btn; justify-self: start; }
   .cp-task:has(> .ds-btn) > .ds-chev, .cp-task:has(> .ds-btn) > .ds-link { grid-area: end; }
 }
+
+/* Строка задания со слотом действий .cp-task-acts (вкладка «Задания» карточки клиента у терапевта: «Выполнено»,
+   корзина; статус — ярлыком под названием). Список .cp-task-list — контейнер: раскладка по ширине самого списка,
+   а не экрана (на 768 с меню колонка уже 560). Узкий список — сетка: знак и название на всю строку, действия второй
+   строкой под текстом. До b31 строка терапевта была flex без переноса с overflow-wrap: anywhere: на 390 название
+   шло колонкой в букву, на 360/320 корзина и «Выполнено» уходили за край. Слово не рвётся посередине (break-word,
+   без hyphens — см. client-practice.css). Сверка — therapist/ClientTasksTab.layout.test.tsx и e2e-browser/therapy-smoke.spec.ts. */
+.cp-task-list { display: flex; flex-direction: column; gap: 10px; container: cp-task-list / inline-size; }
+.cp-task-list .cp-task-title { overflow-wrap: break-word; }
+.cp-task-acts { display: flex; align-items: center; gap: var(--space-8); flex-shrink: 0; }
+/* Узкий список: тело строки раскрывается в сетку (display: contents) — название во всю ширину справа от знака,
+   под ним срок и статус, ниже действия; одна корзина (у клиента с аккаунтом «Выполнено» нет) встаёт в строку срока
+   справа, а не одна на целую строку. */
+@container cp-task-list (max-width: 559px) {
+  .ds-card.cp-task:has(> .cp-task-acts) {
+    display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center;
+    grid-template-areas: "art title title" ". meta meta" ". acts acts";
+    column-gap: var(--space-12); row-gap: var(--space-6); padding: var(--space-12) var(--space-16);
+  }
+  .ds-card.cp-task:has(> .cp-task-acts > :only-child) { grid-template-areas: "art title title" ". meta acts"; }
+  .cp-task:has(> .cp-task-acts) > .pp-row-art { grid-area: art; align-self: start; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-body { display: contents; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-body > .cp-task-title { grid-area: title; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-body > :not(.cp-task-title) { grid-area: meta; margin-top: 0; }
+  .cp-task:has(> .cp-task-acts) > .cp-task-acts { grid-area: acts; flex-wrap: wrap; }
+  .cp-task-acts > :last-child:not(:only-child) { margin-left: auto; }
+}
