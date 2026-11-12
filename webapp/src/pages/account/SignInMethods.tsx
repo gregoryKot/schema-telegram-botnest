@@ -1,18 +1,19 @@
 import { Skeleton } from '../../components/Skeleton';
 import { canUnlink, countMethods } from './accountMethods';
 import { EmailLinkRow } from './EmailLinkRow';
+import type { EmailLinkNotice } from './emailLinkNotice';
 import { GoogleIcon, MaxIcon, ProviderRow, TelegramIcon, VkIcon, type AccountProvider, type ProviderId } from './ProviderRows';
 
-/** Карточка «Способы входа N из M»: строки провайдеров + привязка email. */
+/** Группа «Способы входа N из M»: строки провайдеров + привязка email (плоская, без карточки). */
 export function SignInMethods({
-  providers, loading, busy, accessToken, onLink, onUnlink, onError, onLinked,
+  providers, loading, busy, accessToken, onLink, onUnlink, emailNotice = null, onLinked,
 }: {
   providers: AccountProvider[];
   loading: boolean; busy: boolean;
   accessToken: string | null;
   onLink: { vk: () => void };
   onUnlink: (id: ProviderId) => void;
-  onError: (m: string | null) => void;
+  emailNotice?: EmailLinkNotice | null;
   onLinked: () => void;
 }) {
   const find = (id: ProviderId) => providers.find((p) => p.provider === id);
@@ -21,14 +22,13 @@ export function SignInMethods({
   const only = (id: ProviderId) => !canUnlink(providers, id);
 
   return (
-    <div className="ds-card aa-card">
-      <div className="aa-card-head">
+    <section className="aa-group">
+      <div className="aa-group-head">
         <h2 className="ds-h3">Способы входа</h2>
         {!loading && <span className="ds-sub">{linked} из {total}</span>}
       </div>
       {loading ? (
-        // Силуэт будущих строк: иконка, название, кнопка (не крутилка).
-        <div aria-hidden>
+        <div className="aa-methods" aria-hidden>
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="aa-row">
               <Skeleton width={36} height={36} radius={10} />
@@ -57,9 +57,9 @@ export function SignInMethods({
           )}
           <EmailLinkRow accessToken={accessToken} linked={!!find('email')} busy={busy}
             email={find('email')?.email} unlinkBlocked={only('email')}
-            onUnlink={() => onUnlink('email')} onError={onError} onLinked={onLinked} />
+            onUnlink={() => onUnlink('email')} notice={emailNotice} onLinked={onLinked} />
         </div>
       )}
-    </div>
+    </section>
   );
 }

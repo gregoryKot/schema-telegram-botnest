@@ -24,6 +24,19 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
   const pendingUrl = data ? pendingInviteUrl(data) : '';
   const freshUrl = data ? freshInviteUrl(inviteUrl, data) : '';
 
+  // «Позвать в пару» залита, пока пары нет; при паре или ждущей ссылке приглашение — второстепенное действие.
+  const quietInvite = !!data && (data.partners.length > 0 || !!data.pendingCode);
+  const actions = data && (
+    <>
+      {canCreateInvite(data) && (
+        <button className={`ds-btn ds-btn--sm${quietInvite ? ' ds-btn--secondary' : ''}`} onClick={handleCreateInvite} disabled={loading}>
+          {inviteButtonLabel({ loading, createError, hasPartners: data.partners.length > 0, hasPending: !!data.pendingCode })}
+        </button>
+      )}
+      <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setJoinView('join')}>Ввести код</button>
+    </>
+  );
+
   return (
     <SSection id="s-partner" label="Партнёр" help={<SettingsInfoHelp infoKey="pair" />} hint={scopeHint}>
       <div className="st-body-block">
@@ -53,15 +66,9 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
               <PartnerCard key={p.code} partner={p} confirmLeaveCode={confirmLeaveCode}
                 setConfirmLeaveCode={setConfirmLeaveCode} onLeave={handleLeave} leaveError={leaveError === p.code} />
             ))}
-            {data.pendingCode && <PendingInvite label={pendingLabel} url={pendingUrl} onCancel={() => void handleLeave(data.pendingCode!)} failed={leaveError === data.pendingCode} />}
-            <div className="st-actions">
-              {canCreateInvite(data) && (
-                <button className="ds-btn ds-btn--sm" onClick={handleCreateInvite} disabled={loading}>
-                  {inviteButtonLabel({ loading, createError, hasPartners: data.partners.length > 0, hasPending: !!data.pendingCode })}
-                </button>
-              )}
-              <button className="ds-btn ds-btn--sm ds-btn--secondary" onClick={() => setJoinView('join')}>Ввести код</button>
-            </div>
+            {data.pendingCode
+              ? <PendingInvite label={pendingLabel} url={pendingUrl} actions={actions} onCancel={() => void handleLeave(data.pendingCode!)} failed={leaveError === data.pendingCode} />
+              : <div className="st-actions">{actions}</div>}
             {freshUrl && <PartnerInviteLink label={copyLabel} url={freshUrl} />}
           </>
         )}

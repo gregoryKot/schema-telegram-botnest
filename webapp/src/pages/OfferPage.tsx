@@ -1,22 +1,17 @@
 import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL } from '../legal/operator';
 import { Doc, Chapter, P, Ul, Table } from '../legal/LegalLayout';
-import { column, backLink, eyebrow, h1, lead, inlineLink } from '../legal/legalStyles';
+import { inlineLink } from '../legal/legalStyles';
+import { LegalPage } from '../legal/LegalPage';
 
 const EFFECTIVE_DATE = '31 октября 2026 г.';
 
 export function OfferPage() {
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={column}>
-        <a href="/" style={backLink}>← На главную</a>
-
-        <p style={eyebrow}>Редакция от {EFFECTIVE_DATE}</p>
-        <h1 style={h1}>Публичная оферта</h1>
-        <p style={lead}>
+    <LegalPage date={EFFECTIVE_DATE} title="Публичная оферта" lead={<>
           Настоящий документ является публичной офертой в соответствии со ст. 437 Гражданского
           кодекса Российской Федерации и содержит все существенные условия договора
           возмездного оказания консультационных услуг.
-        </p>
+        </>}>
         <div style={{ background: 'rgba(var(--fg-rgb),.04)', border: '1px solid var(--line)', borderRadius: 'var(--r-12)', padding: '16px 20px', marginTop: 24 }}>
           <p style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.7, margin: 0 }}>
             <strong className="u-fg">Важно.</strong> Услуги, описанные в настоящей оферте, являются
@@ -274,7 +269,6 @@ export function OfferPage() {
           </Chapter>
 
         </Doc>
-      </div>
-    </div>
+    </LegalPage>
   );
 }

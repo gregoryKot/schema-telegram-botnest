@@ -1,12 +1,11 @@
 import type { ConceptModeLink } from '../../apiTypes';
-import { IdentityDot } from '../../components/IdentityDot';
 import {
   getModeById,
   getSchemaById,
 } from '../../schemaTherapy/schemaTherapyData';
-import { DOMAIN_HUE, MODE_GROUP_HUE } from '../../theme/entityHue';
-import { hueVar } from './conceptChipStyle';
-import { EYEBROW, LINK_BTN, MODE_NAME, schemaTag } from './conceptInlineStyles';
+import { domainLook, modeLook } from '../../theme/entityLook';
+import { EYEBROW, LINK_BTN, MODE_NAME } from './conceptInlineStyles';
+import { ConceptSign, ConceptTag } from './conceptPaper';
 import { useConceptSkin } from './conceptSkin';
 import { findModeLink, normalizeModeLinks } from './modeLinks';
 
@@ -72,29 +71,14 @@ export function ModeSchemasList({
             }}
           >
             <span style={MODE_NAME}>
-              {skin ? (
-                <span
-                  className={skin.dot}
-                  style={hueVar(MODE_GROUP_HUE[mode.groupId])}
-                />
-              ) : (
-                <IdentityDot color={mode.groupColor} size={7} />
-              )}
+              <ConceptSign sign={modeLook(mode.id, mode.groupId).sign} />
               {label}
             </span>
             {schemas.length > 0 ? (
               schemas.map((s) => (
-                <span
-                  key={s.id}
-                  className={skin?.tag}
-                  style={
-                    skin
-                      ? hueVar(DOMAIN_HUE[s.domainId])
-                      : schemaTag(s.domainColor)
-                  }
-                >
+                <ConceptTag key={s.id} sign={domainLook(s.domainId)?.sign}>
                   {s.name}
-                </span>
+                </ConceptTag>
               ))
             ) : (
               <>

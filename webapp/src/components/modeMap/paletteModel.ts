@@ -1,7 +1,7 @@
-// Данные палитры холста (ModeMapPalette): блок клиента, фигуры, каталог и поиск.
-// Чистые функции без JSX: какой знак у строки и какого он цвета, решается здесь,
-// рисуют PaletteMark (строки) и PaletteCatalog (знаки групп). Цвет строки — цвет
-// фигуры на холсте: режим — цвет типа узла (TYPE_COLORS), схема — цвет домена.
+// Данные палитры холста (ModeMapPalette): блок клиента, фигуры, каталог и поиск. Чистые функции без JSX:
+// какой знак у строки, решается здесь, рисуют PaletteRow и PaletteCatalog. Строка режима — знак его группы
+// (или свой: modeSign), строка схемы — знак домена, как в «Справочнике»; фигура — свой знак цвета типа (PaletteMark).
+import { modeGroupSign, modeSign, schemaDomain, type GuideSign } from '../art/guideSignsModel';
 import type { TherapistCustomMode } from '../../api';
 import { getModeById, MODE_GROUPS, SCHEMA_DOMAINS, type ModeGroup, type SchemaDomain } from '../../schemaTherapyData';
 import { COPING_KIND_LABEL } from '../../../../shared/src/therapy/conceptGraph/modeLanes';
@@ -13,17 +13,17 @@ import { nodeTexts } from './nodeTexts';
 import { schemaDraft, schemaNode } from './schemaDraft';
 import { matchCustomModes, matchDomainSchemas, matchGroupItems, matchesWords } from './paletteSearch';
 
-/** Знак строки: режим — круг, схема — два слоя, у фигур — свой знак (PaletteMark). */
+/** Вид строки: режим (знак группы — `sign`), схема (знак домена — `domain`, у фигуры «Схема» — два слоя), у фигур — свой знак (PaletteMark). */
 export type MarkKind = 'mode' | 'schema' | 'trigger' | 'behavior' | 'origin' | 'need' | 'needs';
-
-export interface PaletteItem { id: string; name: string; hint?: string; mark: MarkKind; color: string; draft: () => Draft }
+export interface PaletteItem { id: string; name: string; hint?: string; mark: MarkKind; color: string; draft: () => Draft; sign?: GuideSign; domain?: number }
+// Знак своего режима терапевта — по типу фигуры, выбранному при создании; «свой» — общий знак режимов.
+const TYPE_GROUP: Record<string, string> = { child: 'child', critic: 'critic', healthy: 'healthy', coping: 'coping_overcompensation' };
 
 /** Группа каталога: группа режимов (знак группы) или домен схем (domain — номер для DomainArt). */
 export interface CatalogGroup { id: string; title: string; hint: string; total: number; items: PaletteItem[]; domain?: number }
 
 // Клинический порядок: детские → критики → копинги → здоровые.
 const GROUP_ORDER = ['child', 'critic', 'coping_overcompensation', 'coping_avoidance', 'coping_surrender', 'healthy'];
-
 /** Короткие подписи групп: «Копинг: Гиперкомпенсация» не входит в строку палитры; полное имя — в подсказке. */
 export const GROUP_LABEL: Record<string, string> = {
   child: 'Детские',
@@ -37,11 +37,11 @@ export const GROUP_LABEL: Record<string, string> = {
 const modeItem = (group: ModeGroup) => (i: ModeGroup['items'][number]): PaletteItem => {
   const meta = GROUP_TO_TYPE[group.id];
   const extra = meta.copingSubtype ? { copingSubtype: meta.copingSubtype } : {};
-  return { id: i.id, name: i.name, hint: i.short, mark: 'mode', color: meta.color, draft: () => makeModeNode(i.id, meta.type, i.name, extra) };
+  return { id: i.id, name: i.name, hint: i.short, mark: 'mode', sign: modeSign(i.id), color: meta.color, draft: () => makeModeNode(i.id, meta.type, i.name, extra) };
 };
 
 const schemaItem = (d: SchemaDomain) => (s: SchemaDomain['schemas'][number]): PaletteItem =>
-  ({ id: s.id, name: s.name, hint: s.desc, mark: 'schema', color: d.color, draft: () => schemaNode(s.id, s.name, d.color) });
+  ({ id: s.id, name: s.name, hint: s.desc, mark: 'schema', domain: schemaDomain(s.id), color: d.color, draft: () => schemaNode(s.id, s.name, d.color) });
 
 const SORTED_GROUPS = MODE_GROUPS.filter(g => GROUP_TO_TYPE[g.id])
   .sort((a, b) => GROUP_ORDER.indexOf(a.id) - GROUP_ORDER.indexOf(b.id));
@@ -63,7 +63,7 @@ export const CATALOG_TOTAL = [...CATALOG_MODE_GROUPS, ...CATALOG_DOMAINS].reduce
 export function customItem(m: TherapistCustomMode): PaletteItem {
   const type = m.nodeType as NodeType;
   const draft = (): Draft => ({ id: `cm_${m.id}_${Date.now()}`, type, data: { label: m.name, ...(type === 'coping' ? { copingSubtype: 'over' as const } : {}) } });
-  return { id: `cm_${m.id}`, name: m.name, hint: 'Свой режим', mark: 'mode', color: TYPE_COLORS[type] ?? TYPE_COLORS.custom, draft };
+  return { id: `cm_${m.id}`, name: m.name, hint: 'Свой режим', mark: 'mode', sign: modeGroupSign(TYPE_GROUP[type]), color: TYPE_COLORS[type] ?? TYPE_COLORS.custom, draft };
 }
 
 /** Режим из концептуализации клиента; неизвестный id — null. */
@@ -74,7 +74,7 @@ export function clientModeItem(modeId: string): PaletteItem | null {
   const name = meta?.name ?? lib?.name ?? modeId;
   const extra = meta?.copingSubtype ? { copingSubtype: meta.copingSubtype } : {};
   const color = meta?.color ?? lib?.groupColor ?? TYPE_COLORS.custom;
-  return { id: modeId, name, hint: 'Из концептуализации клиента', mark: 'mode', color, draft: () => makeModeNode(modeId, meta?.type ?? 'custom', name, extra) };
+  return { id: modeId, name, hint: 'Из концептуализации клиента', mark: 'mode', sign: modeSign(modeId), color, draft: () => makeModeNode(modeId, meta?.type ?? 'custom', name, extra) };
 }
 
 /** Схема из концептуализации клиента; неизвестный id — null. */
@@ -82,7 +82,7 @@ export function clientSchemaItem(schemaId: string): PaletteItem | null {
   const d = schemaDraft(schemaId);
   if (!d) return null;
   const color = d.data.customColor ?? TYPE_COLORS.schema;
-  return { id: schemaId, name: d.data.label, hint: 'Схема из концептуализации клиента', mark: 'schema', color, draft: () => schemaDraft(schemaId) ?? d };
+  return { id: schemaId, name: d.data.label, hint: 'Схема из концептуализации клиента', mark: 'schema', domain: schemaDomain(schemaId), color, draft: () => schemaDraft(schemaId) ?? d };
 }
 
 type FigureType = Exclude<MarkKind, 'mode'>;

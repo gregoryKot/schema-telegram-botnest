@@ -87,7 +87,7 @@ describe('InstallPage — передача сессии', () => {
     renderPage();
     await waitFor(() => expect(events()).toContain('handoff_failed'));
     expect(setAccessToken).not.toHaveBeenCalled();
-    expect(document.querySelectorAll('.as-steps li').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('.ib-steps li').length).toBeGreaterThan(0);
   });
 
   it('сетевая ошибка poll — handoff_failed', async () => {
@@ -127,7 +127,7 @@ describe('InstallPage — экраны', () => {
     const { rerender } = renderPage();
     rerender(<MemoryRouter><InstallPage /></MemoryRouter>);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('на телефоне');
-    expect(document.querySelectorAll('.as-steps li').length).toBe(3);
+    expect(document.querySelectorAll('.ib-steps li').length).toBe(3);
     expect(screen.getByText(/Откройте её в Chrome \(iPhone — в Safari\)/)).toBeTruthy();
     expect(screen.getByText(/Входите почтой или VK ID/)).toBeTruthy();
     expect(events().filter((a) => a === 'shown')).toHaveLength(1);
@@ -137,8 +137,8 @@ describe('InstallPage — экраны', () => {
   it('Android WebView: подсказка про браузер стоит выше шагов', () => {
     stubUa(`${ANDROID.replace('Pixel 7)', 'Pixel 7; wv)')}`);
     const { container } = renderPage();
-    const hint = container.querySelector('.as-hint')!;
-    const steps = container.querySelector('.as-steps')!;
+    const hint = container.querySelector('.ip-hint')!;
+    const steps = container.querySelector('.ib-steps')!;
     expect(hint.compareDocumentPosition(steps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -156,7 +156,7 @@ describe('InstallPage — экраны', () => {
     stubUa(ANDROID);
     const prompt = catchInstallPrompt();
     renderPage();
-    expect(document.querySelector('.as-steps')).toBeNull();
+    expect(document.querySelector('.ib-steps')).toBeNull();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Установить приложение' })); });
     expect(prompt).toHaveBeenCalledTimes(1);
     expect(events()).toContain('add');

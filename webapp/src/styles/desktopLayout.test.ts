@@ -14,7 +14,7 @@ const WIDE = /(^|;|\s)width:\s*100%/;
 /** Телефонная раскладка примитивов: растяжение на колонку — только ≤767 (на компьютере по содержимому). */
 const PHONE_ONLY: [string, RegExp][] = [['.ds-btn--lg', WIDE], ['.ds-seg--full', WIDE]];
 /** Примитивы и раскладки, у которых на ≥768 обязано быть своё правило; ':файл' — искать только в нём, по точному селектору. */
-const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-thing', '.cm-page > .ds-card--flush', '.ap-main--state'];
+const NEED_DESKTOP = ['.ds-sheet-head--page:cabinet.css', '.ds-seg--full:cabinet.css', '.cw-thing', '.cm-page > .ds-card--flush', '.pa-spread.ap-main'];
 /** Скрытие телефонных элементов: display: none только под точным ≤767. */
 const PHONE_HIDDEN: [string, string][] = [['concept-graph.css', '.tcp-head-title'], ['concept-graph.css', '.tcp-more-txt']];
 /** Обёртки и правила компьютера, при которых телефон обязан остаться как в main: [селектор, вне медиа, только под ≥768]. */
@@ -22,7 +22,7 @@ const C = /display:\s*contents/;
 const PHONE_SAME: [string, RegExp | null, RegExp | null][] = [
   ['.cp-open-card', C, null], // дыхание: обёртка не в flex-gap (внутри — лист .qb, правила для .ds-card в ней нет)
   ['.tcp-head-actions', C, /display:\s*inline-flex/], ['.tb-tab-title .ds-sub', null, /margin/],
-  ['.ap-home', /display:\s*none/, /display:\s*inline-flex/], ['.ap-donate-shell', C, /display:\s*flex/],
+  ['.ap-home', /display:\s*none/, /display:\s*inline-flex/],
 ];
 
 /** Каждый потребитель ds-btn--lg решает ширину на ≥768: own — своё width: 100%, stretch — колонка растягивает, content — по содержимому. */
@@ -35,15 +35,21 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/paper/PaperOutcome.tsx': ['own', '.ds-btn.pa-outcome-action'], // во всю карточку исхода 440
   'components/ErrorBoundary.tsx': ['own', '.ds-btn.pa-outcome-action'], // своя кнопка в листе исхода (под ней «Детали»)
   'components/AuthGateViews.tsx': ['own', '.ds-btn.pa-outcome-action'], // занятая «Проверяем…» в листе исхода
+  // b26: своя кнопка в листе исхода (children PaperOutcome) — то же правило во всю карточку
+  'pages/AuthErrorPage.tsx': ['own', '.ds-btn.pa-outcome-action'],
+  'pages/NotFoundPage.tsx': ['own', '.ds-btn.pa-outcome-action'],
+  'pages/login/TelegramRetry.tsx': ['own', '.ds-btn.pa-outcome-action'],
+  'pages/service/TicketNotFound.tsx': ['own', '.ds-btn.pa-outcome-action'],
   'components/practice/BreathActions.tsx': ['stretch', '.qb-actions'], // лист дыхания: колонка, на широком листе — строкой
   'components/practice/QuickStepBody.tsx': ['stretch', '.qs-actions'], // пошаговый лист: «Дальше» во всю ширину, как DoneSheet
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
   'sections/profile/ProfileStart.tsx': ['content', '.cpf-start-cta'], // пустой профиль: кнопка по тексту, на телефоне — во всю ширину
   'sections/today/TrackerBlock.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину колонки
-  'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
-  'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560
-  'pages/SubscribePage.tsx': ['own', '.ap-main--state .ds-btn--lg'], // во всю колонку 400
+  'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-main .ds-btn--lg'], // во всю колонку формы (PayLayout)
+  'pages/subscribe/CancelControl.tsx': ['own', '.ap-main .ds-btn--lg'],
+  'pages/DonatePage.tsx': ['own', '.ap-main .ds-btn--lg'],
+  'pages/InstallPage.tsx': ['own', '.ds-btn.ip-cta'], // во всю колонку шагов /install
   'sections/today/AllTasksOverlay.tsx': ['own', '.sk-wide-btn'], // «+ Поставить цель» во всю колонку листа «задания» (b20)
   'components/plans/PlanConfirm.tsx': ['own', '.sk-ics'], // «Сохранить план» и календарь — во всю колонку разворота (b20)
   'components/TaskCreateSheet.tsx': ['content', '.sk-submit .ds-btn'], // полоса внизу листа: справа по содержимому (b20)
@@ -93,23 +99,18 @@ describe('компьютер ≥768 не наследует телефонную
 describe('auth-pay.css: страницы подписки и доната на компьютере', () => {
   const ap = readCss('auth-pay.css');
   const desk = (sel: string) => ap.find((x) => isDesktop(x.media) && x.selectors.includes(sel))?.body.replace(/\s+/g, ' ') ?? '';
-  it('на ≥768 state — колонка 400 и всё по центру, donate — карточка 560; боковой padding 0 (иначе .ds-page съедает колонку)', () => {
-    for (const [sel, w] of [['.ds-page.ap-main--state', 400], ['.ap-page--donate .ds-page.ap-main', 560]] as const) {
-      for (const re of [new RegExp(`max-width: ${w}px`), /margin: auto/, /padding-left: 0/, /padding-right: 0/]) expect(desk(sel)).toMatch(re);
-    }
-    expect(desk('.ds-page.ap-main--state')).toMatch(/align-items: center; text-align: center/);
-    expect(desk('.ap-donate-shell')).toMatch(/padding: 40px; border-radius: 28px/);
+  // b28: каркас PayLayout — лист соломы и форма; колонка 640 по центру, на ≥1024 — разворот 1088.
+  it('на ≥768 колонка формы — своё правило (поля страницы), на ≥1024 — разворот 1088', () => {
+    expect(desk('.pa-spread.ap-main')).toMatch(/padding: 56px 32px 48px/);
+    const wide = ap.find((r) => /min-width: 1024px/.test(r.media) && r.selectors.includes('.pa-spread.ap-main'))?.body ?? '';
+    expect(wide).toMatch(/max-width: 1088px/);
   });
-  it('на ≥768 у state, donate и form шапка скрыта, «← На главную» показан внизу', () => {
-    const pages = ['state', 'donate', 'form'];
+  it('на ≥768 шапка скрыта, «← На главную» показан внизу колонки формы', () => {
     const hid = ap.filter((r) => r.selectors.some((s) => s.includes('.ds-sheet-head--page')) && /display:\s*none/.test(r.body));
     expect(hid.every((r) => isDesktop(r.media))).toBe(true);
-    expect(hid.flatMap((r) => r.selectors).sort()).toEqual(pages.map((p) => `.ap-page--${p} .ds-sheet-head--page`).sort());
+    expect(hid.flatMap((r) => r.selectors)).toEqual(['.ap-page .ds-sheet-head--page']);
     const shown = ap.filter((r) => isDesktop(r.media) && /display:\s*inline-flex/.test(r.body)).flatMap((r) => r.selectors);
-    for (const p of pages) expect(shown).toContain(`.ap-page--${p} .ap-home`);
-  });
-  it('форма на ≥768: у левой колонки .ap-info верхний отступ 88 (шапка скрыта, 56 + 32 как до волн)', () => {
-    expect(desk('.ap-page--form .ap-info')).toMatch(/padding-top: 88px/);
+    expect(shown).toContain('.ap-page .ap-home');
   });
   it('client-more.css: правила .cm-page — только через ребёнка (.cm-page > …), листы внутри страницы не затрагиваются', () => {
     const leaks = readCss('client-more.css').flatMap((r) => r.selectors).filter((s) => /\.cm-page\s+[^>\s]/.test(s));

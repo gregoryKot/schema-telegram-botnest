@@ -1,15 +1,21 @@
-import type { MutableRefObject, ReactNode } from 'react';
+import type { CSSProperties, MutableRefObject, ReactNode } from 'react';
 import type { BetweenSessionsItem, TechniqueGuide, TechniqueId } from '../../../../../shared/src/schemaTherapy/guide';
 import type { GuideHintView } from '../../../../../shared/src/therapy/conceptGraph/conceptGuide';
 import type { GuideNotes } from '../../../../../shared/src/therapy/conceptGraph/guideHistory';
-import { GuideSignArt } from '../../art/GuideSigns';
+import type { SheetLook } from '../../../../../shared/src/theme/entityLook';
+import { SignArt } from '../../art/SignArt';
 import { TECHNIQUE_SIGN } from '../../art/guideSignsModel';
+import { SignHero } from '../../paper/SignHero';
 import { NeedFold } from '../../NeedFold';
 import { ConceptFullscreenSheet, type SheetBack } from '../ConceptFullscreenSheet';
 import { GuideSection, GuideSources } from './GuideSection';
-import { GUIDE_COLUMN, guideTextStyle } from './guideStyles';
+import { GuidePoints, GuideVoice } from './GuidePoints';
 import { TechniqueDoneNote } from './TechniqueMarkRow';
 import '../../../styles/therapist-guide.css';
+
+/** Ширина колонки листа подсказок на планшете (на телефоне лист уже, на компьютере — панель справа): строка ~70 знаков,
+ *  а не во всю ширину окна. То же число — max-width у .gd-page (therapist-guide.css). */
+const GUIDE_COLUMN = 680;
 
 /** Раздел под «Подробнее»: подпись и абзац или своё содержимое (копинг схемы). Пустой не рисуется. */
 export interface GuideMorePart { title: string; text?: string; children?: ReactNode }
@@ -20,7 +26,9 @@ interface PageProps {
   title: string;
   /** Суть одной-двумя фразами — подпись героя. */
   lede: string;
-  art: ReactNode;
+  /** Вид листа (guideLook.ts): бумага группы, домена или раздела — квадратик под знаком героя и лист «Как это звучит»;
+   *  без знака герой стоит без картинки, без вида (неизвестная схема) — бумага реплики по умолчанию. */
+  look?: SheetLook | null;
   onClose: () => void;
   /** Пункты «Подробнее» из текста раздела (`more`). */
   more?: string[];
@@ -35,21 +43,21 @@ interface PageProps {
 /**
  * Каркас листа подсказок (#995, пилот живого языка 2026-11) — один на листы техники,
  * режима, схемы и «Для терапевта»: в шапке подпись и «Закрыть», герой бумажной аппликации
- * (заголовок Literata, суть, знак справа — docs/design/PAPER_2026-11.md), свои разделы листа,
+ * (заголовок Literata, суть, справа знак с тенью-вырезкой на квадратике бумаги группы или домена — SignHero), свои разделы листа,
  * «Подробнее» (закрыто по умолчанию, NeedFold) и мелко «Источники». Шапка и
  * содержимое стоят в одной колонке. Оболочка — ConceptFullscreenSheet `panel`
  * (useHistorySheet, «Назад» браузера закрывает лист): на компьютере — панель справа над
  * затемнённым «Справочником» или схемой случая, на телефоне — весь экран.
  */
-export function GuidePage({ label, title, lede, art, onClose, more = [], moreParts = [], sources, backRef, children }: PageProps) {
+export function GuidePage({ label, title, lede, look, onClose, more = [], moreParts = [], sources, backRef, children }: PageProps) {
   const items = more.filter((m) => m.trim());
   const parts = moreParts.filter((p) => p.children || p.text?.trim());
   return (
     <ConceptFullscreenSheet title={title} label={label} column={GUIDE_COLUMN} closeLabel="Закрыть" onClose={onClose} backRef={backRef} panel>
-      <div className="gd-page" style={{ maxWidth: GUIDE_COLUMN }}>
+      <div className="gd-page" style={look ? { '--h': look.hue } as CSSProperties : undefined}>
         <div className="gd-hero">
           <h2 className="pp-hero-title">{title}</h2>
-          {art}
+          {look?.sign && <span className="pp-paper gd-hero-art"><SignHero sign={look.sign} /></span>}
           {lede.trim() && <p className="pp-hero-text">{lede}</p>}
         </div>
         {children}
@@ -64,35 +72,6 @@ export function GuidePage({ label, title, lede, art, onClose, more = [], morePar
         <GuideSources text={sources} />
       </div>
     </ConceptFullscreenSheet>
-  );
-}
-
-/** «Как это звучит»: реплики терапевта на цветной бумаге; кавычки ставит лист, в данных их нет. */
-export function GuideVoice({ lines = [] }: { lines?: string[] }) {
-  const said = lines.filter((l) => l.trim());
-  if (said.length === 0) return null;
-  return (
-    <section aria-label="Как это звучит" className="pp-paper gd-voice">
-      <h3 className="ds-label" style={{ margin: 0 }}>Как это звучит</h3>
-      {said.map((line, i) => <blockquote key={i} className="gd-voice-line">«{line}»</blockquote>)}
-    </section>
-  );
-}
-
-/** Пункт списка: строка или подпись канала работы над строкой. */
-export type GuidePoint = string | { lead: string; text: string };
-
-/** Шаги (`ordered`: крупный номер слева) или главные пункты (кружок-маркер). */
-export function GuidePoints({ items, ordered }: { items: GuidePoint[]; ordered?: boolean }) {
-  const List = ordered ? 'ol' : 'ul';
-  return (
-    <List className={ordered ? 'gd-steps' : 'gd-points'}>
-      {items.map((item, i) => (
-        <li key={i}>
-          {typeof item === 'string' ? item : <><span className="gd-lead">{item.lead}</span>{item.text}</>}
-        </li>
-      ))}
-    </List>
   );
 }
 
@@ -148,8 +127,8 @@ function GuideTechniques({ techniques, onOpen, notes, onOpenJournal }: {
       <ul className="tcp-guide-list">
         {techniques.map((t) => (
           <li key={t.id} className="gd-tech">
-            <span className="pp-row-art"><GuideSignArt sign={TECHNIQUE_SIGN[t.id]} size="row" /></span>
-            <div style={{ minWidth: 0 }}>
+            <span className="pp-row-art"><SignArt sign={TECHNIQUE_SIGN[t.id]} size="row" /></span>
+            <div className="gd-min">
               <button type="button" className="tcp-guide-link" onClick={() => onOpen(t.id)}>{t.name}</button>
               <div className="ds-sub">{t.summary}</div>
               <TechniqueDoneNote text={notes?.technique(t.id)} onOpenJournal={onOpenJournal} />
@@ -173,8 +152,8 @@ function GuideBetweenSessions({ items, onAssign, notes }: {
           const sub = item.kind === 'task' ? item.note : item.text;
           return (
             <li key={`${i}:${item.title}`} className="tcp-guide-task">
-              <div style={{ minWidth: 0 }}>
-                <div style={{ ...guideTextStyle, fontWeight: 600 }}>{item.title}</div>
+              <div className="gd-min">
+                <div className="gd-text gd-text--strong">{item.title}</div>
                 {sub && <div className="ds-sub">{sub}</div>}
                 <GuideNote text={notes?.task(item)} />
               </div>

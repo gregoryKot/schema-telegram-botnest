@@ -265,7 +265,7 @@ describe('ProfileSection — терапевт: следующая сессия',
       expect(screen.getByText('Терапевт')).toBeTruthy();
       expect(screen.getByText('Анна')).toBeTruthy();
       // Чт, 3 сен · 14:30 (2026-09-03 — четверг).
-      expect(screen.getByText(/Чт, 3 сен · 14:30/)).toBeTruthy();
+      expect(document.querySelector('.cbk-ticket-when')?.textContent).toBe('Чт, 3 сен · 14:30');
     } finally {
       vi.useRealTimers();
     }

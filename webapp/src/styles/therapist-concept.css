@@ -9,23 +9,31 @@
 .tcp-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .tcp-fill { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
 .tcp-anchors { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+/* Тихий чип-якорь; заполненный раздел — бумага соломы с галочкой (принцип 5), не заливка. */
 .tcp-anchor {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 10px;
-  background: var(--paper-sunk); border: none; border-radius: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; box-sizing: border-box; padding: 6px 10px;
+  background: none; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
   font: 13px var(--sans); color: var(--text-sub); white-space: nowrap;
 }
-.tcp-anchor:hover { background: var(--line); }
+.tcp-anchor:hover { background: var(--paper-sunk); }
+.tcp-anchor.is-filled { background: oklch(0.915 0.03 70); border-color: transparent; color: var(--text); font-weight: 600; }
+.tcp-anchor.is-filled:hover { background: oklch(0.895 0.04 70); }
 
 /* ── Раздел ── */
 .tcp-sec { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; min-width: 0; }
-.tcp-sec-head { display: flex; gap: 18px; align-items: baseline; }
+.tcp-sec-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 14px; }
+.tcp-sec-head > .ds-label { line-height: 28px; }
+/* Знак раздела строчного размера; у «Стилей совладания» три знака копингов вплотную. */
+.tcp-sec-signs { display: inline-flex; align-items: center; flex: none; gap: 2px; min-height: 28px; }
+.tcp-sec-text { flex: 1 1 240px; min-width: 0; }
 .tcp-sec-hint { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
 .tcp-stack { display: flex; flex-direction: column; gap: 14px; }
 .tcp-pickers { display: flex; flex-direction: column; gap: 28px; }
-.tcp-domain { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
 .tcp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 /* Шапка карточки выбора: заголовок слева, «Изменить / Готово» справа. */
-.tcp-pick-head { align-items: center; margin-bottom: 16px; flex-wrap: nowrap; }
+.tcp-pick-head { align-items: center; flex-wrap: nowrap; }
+/* Свёрнутая пустая карточка — только шапка; выбранное или выбор встают под ней с отступом. */
+.tcp-pick > .tcp-pick-head ~ * { margin-top: 16px; }
 .tcp-pick-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; min-width: 0; }
 .tcp-pick-head .ds-btn { flex-shrink: 0; }
 
@@ -45,18 +53,15 @@
 
 /* ── Совладание ── */
 .tcp-coping { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
-.tcp-cop { display: flex; flex-direction: column; gap: 2px; }
+.pp-paper.tcp-cop { --h: 240; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 16px; }
 
 /* ── Режимы ── */
 .tcp-chain { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-.tcp-chain-item { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.tcp-arrow { color: var(--text-faint); font-size: 20px; width: 20px; text-align: center; flex-shrink: 0; }
+.tcp-chain-item { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
+.tcp-arrow { display: inline-flex; align-items: center; justify-content: center; width: 20px; flex-shrink: 0; }
 .tcp-chain-item:first-child .tcp-node { margin-left: 0; }
-.tcp-node {
-  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px;
-  border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
-}
-.tcp-node-kind { display: inline-flex; align-items: center; gap: 6px; }
+.pp-paper.tcp-node { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 14px; }
+.ds-label.tcp-node-kind { display: inline-flex; align-items: center; gap: 6px; color: var(--text-sub); }
 
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-fields { gap: 40px; }
@@ -71,29 +76,45 @@
   .tcp-chain-item { flex-direction: column; align-items: stretch; }
   .tcp-arrow { transform: rotate(90deg); align-self: center; }
 }
-/* Пункт меню в две строки: название и подсказка под ним (подсказка переносится): ширина 220 — у .ds-menu, тап-цель 44 — у .ds-menu-item. */
-.tcp-menu .ds-menu-item { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; line-height: 1.3; }
+/* Пункт меню: иконка действия слева, справа название и подсказка под ним (подсказка переносится): ширина 220 — у .ds-menu, тап-цель 44 — у .ds-menu-item. */
+.tcp-menu .ds-menu-item { align-items: flex-start; gap: 8px; padding: 8px 10px; line-height: 1.3; }
+.tcp-menu-icon { margin-top: 1px; color: var(--text-sub); }
+.tcp-menu-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tcp-menu-hint { font-size: 11px; line-height: 1.35; color: var(--text-faint); white-space: normal; }
-/* Раскрывашки — общий ds-fold (cabinet.css), подпись — ds-label без своего кегля. */
-.tcp-folds { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; max-width: 880px; }
+/* Раскрывашки — общий ds-fold (NeedFold) строками одной ds-card: между ними тонкая линия, своей рамки у строки нет. */
+.ds-card.tcp-folds { margin-top: 40px; max-width: 880px; padding: 4px 8px; }
+.ds-fold.tcp-fold { background: none; border: 0; border-radius: 0; }
+.ds-fold.tcp-fold + .tcp-fold { border-top: 1px solid var(--paper-sunk); }
+/* «Ещё N» сверки с YSQ: короткая ссылка, зона нажатия 44×44. */
+.ds-link.tcp-ysq-more { min-width: 44px; min-height: 44px; text-align: left; }
 
 /* ── «Главное»: кнопка в шапке и экран с самым важным (2026-11) ── */
 .tcp-brief-btn { height: 44px; padding: 0 16px; }
 .tcp-brief-pick { display: flex; flex-direction: column; gap: 10px; padding: 12px 20px 14px; border-bottom: 1px solid var(--paper-sunk); } /* разделитель — --paper-sunk, не --line (oneStyle.test) */
-/* Сетка карточек: на ноутбуке 2–3 колонки, чтобы всё выбранное встало в один экран; текстовые блоки шире. */
-.tcp-brief-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; max-width: 1280px; }
-.tcp-brief-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.tcp-brief-card--text { grid-column: 1 / -1; }
-.tcp-brief-label { margin: 0; }
-.tcp-brief-text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-.tcp-brief-empty, .tcp-brief-none { color: var(--text-faint); }
-.tcp-brief-modes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.tcp-brief-mode { display: flex; flex-direction: column; gap: 3px; font-size: 14px; line-height: 1.45; }
-.tcp-brief-mode-head { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Тихий фильтр «Что показывать»: невыбранный чип — приглушённый текст без рамки и подложки, выбранный — бумага с галочкой. */
+.ds-chip.pa-chip.tcp-brief-chip:not(.is-on) { background: transparent; border-color: transparent; color: var(--text-sub); }
+.ds-chip.pa-chip.tcp-brief-chip:not(.is-on):hover { background: var(--paper-sunk); }
+/* Бенто: карточки колонками — три на компьютере, две на планшете, одна на телефоне; по колонкам их раскладывает
+   briefColumns.ts (следующая — в самую короткую), поэтому под коротким листом нет пустоты во всю высоту соседа. */
+.tcp-brief-grid { display: flex; align-items: flex-start; gap: 16px; max-width: 1400px; }
+.tcp-brief-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.tcp-brief-card { display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; min-width: 0; padding: 18px 20px 20px; border-radius: 20px; }
+.tcp-brief-card--plain { background: var(--surface); border: 1px solid var(--line); }
+.ds-label.tcp-brief-label { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--text-sub); }
+.tcp-brief-text { font-size: 17px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tcp-brief-empty, .tcp-brief-none { color: var(--text-sub); }
+.tcp-brief-card .cg-chips { gap: 8px; }
+.tcp-brief-card .cg-tag { min-height: 34px; padding: 4px 12px; font-size: 15px; }
+.tcp-brief-card .cg-caption { font-size: 15px; }
+.tcp-brief-modes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.tcp-brief-mode { display: flex; flex-direction: column; gap: 3px; font-size: 17px; line-height: 1.45; }
+/* Знак группы — на плашке бумаги группы в строке имени: имя переносится следом, вид режима — за ним. */
+.tcp-brief-mode-head > b { margin-right: 8px; }
+.tcp-brief-mode-sign { --h: 70; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 24px; margin-right: 8px; border-radius: 8px; background: oklch(0.915 0.03 var(--h)); vertical-align: -6px; }
 .tcp-brief-mode-text { color: var(--text-sub); }
+.tcp-brief-mode .ds-sub { color: var(--text-sub); }
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
   .tcp-brief-btn { padding: 0 12px; }
   .tcp-brief-pick { padding: 10px 16px 12px; }
-  .tcp-brief-grid { grid-template-columns: 1fr; }
-  .tcp-brief-card--text { grid-column: auto; }
+  .tcp-brief-card { padding: 16px 16px 18px; }
 }

@@ -1,6 +1,4 @@
-// Карточка «данные из Telegram лежат отдельно» в кабинете сайта.
-//
-// Своей механики тут нет: билет, тексты, разметка и решение «кому вообще
+// Карточка «данные из Telegram лежат отдельно» в кабинете сайта, на листе неба (b27). Своей механики тут нет: билет, тексты, разметка и решение «кому вообще
 // показывать» живут в shared и общие с мини-аппом (правило №3 и «одна
 // механика — один компонент»). Здесь — только то, что у сайта своё: сессия
 // webapp, ссылка в бота и событие аналитики.
@@ -23,6 +21,7 @@ import { botUsername } from '../../utils/botConfig';
 import { useAuth } from '../../auth/authContext';
 import { useTr } from '../../utils/addressForm';
 import { Skeleton } from '../../components/Skeleton';
+import { hueStyle } from '../../lib/tone';
 import type { AccountProvider } from './ProviderRows';
 
 // authedFetch, а не голый fetch: intent 'link' сервер без сессии отбивает —
@@ -47,7 +46,7 @@ export function AccountLinkSection({
   onLinked,
 }: {
   providers: AccountProvider[];
-  /** Провайдеры ещё грузятся — карточка показывает силуэт, а не пустоту. */
+  /** Провайдеры ещё грузятся — карточки нет (кому её показывать, ещё неизвестно). */
   loading?: boolean;
   /** Аккаунты объединились — странице пора перечитать способы входа. */
   onLinked: () => void;
@@ -107,17 +106,19 @@ export function AccountLinkSection({
   const pending = !broken && state.kind !== 'waiting';
   const href = state.kind === 'waiting' ? state.url : undefined;
 
-  if (!loading && !target) return null;
+  // Пока способы входа грузятся — плашки нет (ревью b27): у большинства Telegram привязан, и силуэт плашки
+  // после загрузки исчезал — двойной скачок. Силуэт карточки — только пока выписывается билет.
+  if (loading || !target) return null;
 
   return (
-    <div className="card-elevated" style={{ padding: 20, marginBottom: 16 }}>
+    <section className="pp-paper aa-link" style={hueStyle(240)}>
       <AccountLinkCard
         target={target}
         state={
           opened || broken ? state : ({ kind: 'idle' } as LoginTicketState)
         }
         tr={tr}
-        loading={loading || pending}
+        loading={pending}
         renderSkeleton={() => <CardSkeleton />}
         href={href}
         onStart={() => {
@@ -131,6 +132,6 @@ export function AccountLinkSection({
           void begin(sourceProvider);
         }}
       />
-    </div>
+    </section>
   );
 }

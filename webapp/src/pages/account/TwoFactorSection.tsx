@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { API_BASE } from '../../utils/apiBase'; import { useTr } from '../../utils/addressForm';
 import { TwoFactorScopeNote } from './TwoFactorScopeNote';
 import { RecoveryCodesCard } from './RecoveryCodesCard';
+import { OkMark } from './OkMark';
+import { TotpCodeField } from './TotpCodeField';
+import { FieldError } from '../../components/paper/FieldError';
+import { GlyphChevron } from '../../components/exercises/ExGlyphs';
 import { humanizeThrown, readHumanError } from '../../../../shared/src/api/humanizeError';
 
 // Секция двухфакторной аутентификации (TOTP), вынесена из AccountPage.tsx (правило №10).
@@ -81,17 +85,13 @@ export function TwoFactorSection({
     else if (setupOpen) cancelSetup();
     else void startSetup();
   };
-  const codeInput = (
-    <input
-      value={code} onChange={e => setCode(e.target.value)}
-      placeholder="123456" inputMode="numeric" autoComplete="one-time-code"
-      className="ds-input aa-code-input"
-    />
-  );
+  const codeInput = (allowRecovery: boolean) =>
+    <TotpCodeField value={code} onChange={setCode} disabled={busy} error={error} allowRecovery={allowRecovery} />;
+  const withInput = (totp.enabled && disableMode) || (!totp.enabled && setupOpen && !!qrDataUrl);
 
   return (
-    <div className="ds-card aa-tfa">
-      <div className="aa-tfa-head">
+    <section className="aa-group aa-tfa">
+      <div className="aa-group-head">
         <h2 className="ds-h3" id="aa-tfa-title">Двухфакторная защита</h2>
         <button
           type="button" role="switch" aria-checked={totp.enabled} aria-labelledby="aa-tfa-title"
@@ -111,7 +111,7 @@ export function TwoFactorSection({
 
       {totp.enabled && !disableMode && (
         <div className="aa-recovery-row">
-          <span style={{ color: 'var(--ok-ink)' }}>✓ Включена.</span>
+          <span className="aa-on"><OkMark />Включена.</span>
           <span className="muted">Резервных кодов осталось: {totp.recoveryCodesLeft}</span>
         </div>
       )}
@@ -119,12 +119,12 @@ export function TwoFactorSection({
       {totp.enabled && disableMode && (
         <div className="aa-stack">
           <div className="aa-small">{tr('Введи текущий код из приложения, чтобы отключить:', 'Введите текущий код из приложения, чтобы отключить:')}</div>
-          {codeInput}
+          {codeInput(true)}
           <div className="aa-actions">
-            <button onClick={disable} disabled={busy || !code.trim()} className="ds-btn">
+            <button onClick={disable} disabled={busy || !code.trim()} className="ds-btn ds-btn--secondary" aria-busy={busy || undefined}>
               {busy ? 'Отключаю…' : 'Отключить'}
             </button>
-            <button onClick={cancelDisable} disabled={busy} className="ds-btn ds-btn--secondary">
+            <button onClick={cancelDisable} disabled={busy} className="ds-link aa-quiet">
               Отмена
             </button>
           </div>
@@ -143,23 +143,23 @@ export function TwoFactorSection({
           </div>
           {otpauthUrl && (
             <details className="aa-small">
-              <summary className="u-pointer">Не сканируется QR? Ввести секрет вручную</summary>
+              <summary className="u-pointer aa-summary">Не сканируется QR? Ввести секрет вручную<span className="aa-summary-chev" aria-hidden="true"><GlyphChevron /></span></summary>
               <div className="aa-secret">{otpauthUrl}</div>
             </details>
           )}
-          {codeInput}
+          {codeInput(false)}
           <div className="aa-actions">
-            <button onClick={confirm} disabled={busy || !code.trim()} className="ds-btn">
+            <button onClick={confirm} disabled={busy || !code.trim()} className="ds-btn ds-btn--secondary" aria-busy={busy || undefined}>
               {busy ? 'Проверяю…' : 'Подтвердить'}
             </button>
-            <button onClick={cancelSetup} disabled={busy} className="ds-btn ds-btn--secondary">
+            <button onClick={cancelSetup} disabled={busy} className="ds-link aa-quiet">
               Отмена
             </button>
           </div>
         </div>
       )}
 
-      {error && <div className="aa-fail">{error}</div>}
-    </div>
+      {error && !withInput && <FieldError>{error}</FieldError>}
+    </section>
   );
 }

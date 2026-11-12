@@ -274,7 +274,36 @@ describe('App — страница ошибки входа (/auth/error)', () =>
     const App = await loadApp();
     const { container } = render(<App />);
     await screen.findByText('Вход не удался');
-    expect(container.querySelector('.as-reason')).toBeNull();
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
+  });
+});
+
+// b26: неизвестный адрес продуктового хоста — экран 404 с одной кнопкой, а не молчаливый уход
+// гостя на вход и вошедшего в «Сегодня» под чужим адресом. Известные старые пути — по-прежнему редирект.
+describe('App — 404 (маршрут *)', () => {
+  it('гостю — «Такой страницы нет» и кнопка на главную', async () => {
+    stubLocation({ pathname: '/no-such-page-xyz', href: 'http://localhost/no-such-page-xyz' });
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Такой страницы нет' });
+    expect(screen.getByRole('link', { name: 'На главную' }).getAttribute('href')).toBe('/');
+    expect(screen.queryByRole('link', { name: /Войти через Google/ })).toBeNull();
+  });
+
+  it('вошедшему — кнопка в приложение (/today); глубокий путь кабинета — тоже 404', async () => {
+    fetchMock.mockImplementation((url: string) => Promise.resolve(
+      String(url).includes('/api/auth/refresh') ? jsonResponse(200, { accessToken: 'tok', expiresIn: 900 }) : jsonResponse(401, {}),
+    ));
+    stubLocation({ pathname: '/cabinet/1/notes/extra', href: 'http://localhost/cabinet/1/notes/extra' });
+    render(<App />);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'В приложение' }).getAttribute('href')).toBe('/today'));
+    expect(screen.getByRole('heading', { name: 'Такой страницы нет' })).toBeTruthy();
+  });
+
+  it('визитка: неизвестный путь по-прежнему уводит на главную визитки', async () => {
+    stubLocation({ hostname: 'kotlarewski.example', pathname: '/no-such-page-xyz', href: 'http://kotlarewski.example/no-such-page-xyz' });
+    render(<App />);
+    await waitFor(() => expect(screen.getAllByText('Григорий Котляревский').length).toBeGreaterThan(0));
+    expect(screen.queryByRole('heading', { name: 'Такой страницы нет' })).toBeNull();
   });
 });
 

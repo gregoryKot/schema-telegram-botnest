@@ -4,13 +4,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { ConceptModeLink } from '../../apiTypes';
 import { ModeSchemasList } from './ModeSchemasList';
 import { ConceptSkinContext, type ConceptSkin } from './conceptSkin';
-import { DOMAIN_HUE, MODE_GROUP_HUE } from '../../theme/entityHue';
+import { withPaper } from './conceptPaper.test-helpers';
 
 const SKIN: ConceptSkin = {
   seg: { group: 'sk-seg', btn: 'sk-seg-btn' },
-  chip: 'sk-chip',
-  tag: 'sk-tag',
-  dot: 'sk-dot',
   label: 'sk-label',
   link: 'sk-link',
   card: 'sk-card',
@@ -91,31 +88,32 @@ describe('ModeSchemasList', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('со skin: ярлык, точка группы, теги доменов и ссылка — классами, без цветного инлайна', () => {
+  it('на сайте: ярлык и ссылка — классами skin, у режима знак группы, схемы — белые чипы со знаком домена, без цветного инлайна', () => {
     const onGo = vi.fn();
     render(
       <ConceptSkinContext.Provider value={SKIN}>
-        <ModeSchemasList
-          activeModeIds={['punitive_critic', 'vulnerable_child']}
-          modeLinks={[
-            link({ schemaIds: ['failure'] }),
-            link({ modeId: 'vulnerable_child' }),
-          ]}
-          onGoToGraph={onGo}
-        />
+        {withPaper(
+          <ModeSchemasList
+            activeModeIds={['punitive_critic', 'vulnerable_child']}
+            modeLinks={[
+              link({ schemaIds: ['failure'] }),
+              link({ modeId: 'vulnerable_child' }),
+            ]}
+            onGoToGraph={onGo}
+          />,
+        )}
       </ConceptSkinContext.Provider>,
     );
     expect(screen.getByText('Схемы за режимами').className).toBe('sk-label');
-    const dot = screen
-      .getByText('Карающий Критик')
-      .querySelector('.sk-dot') as HTMLElement;
-    expect(dot.style.getPropertyValue('--h')).toBe(
-      String(MODE_GROUP_HUE.critic),
-    );
+    expect(
+      screen
+        .getByText('Карающий Критик')
+        .querySelector('[data-sign="looming"]'),
+    ).toBeTruthy();
     const tag = screen.getByText('Неуспешность');
-    expect(tag.className).toBe('sk-tag');
-    expect(tag.style.getPropertyValue('--h')).toBe(String(DOMAIN_HUE.autonomy));
-    expect(tag.style.background).toBe('');
+    expect(tag.className).toBe('cg-tag');
+    expect(tag.getAttribute('style')).toBeNull();
+    expect(tag.querySelector('[data-sign="domain_autonomy"]')).toBeTruthy();
     const link2 = screen.getByRole('button', { name: /привязать/ });
     expect(link2.className).toBe('sk-link');
     expect(link2.getAttribute('style')).toBeNull();

@@ -6,6 +6,8 @@ const linkSt: React.CSSProperties = {
   background: 'none', border: 'none', padding: 0, fontSize: 12,
   color: 'var(--text-faint)', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit',
 };
+/** Зона ≥44 без смены вида; вниз не дальше 8px (отступ абзаца) — чипы времени не перекрыты, остальное вверх. */
+const hitSt: React.CSSProperties = { ...linkSt, padding: '24px 8px 8px', margin: '-24px -8px -8px', position: 'relative' };
 
 /**
  * «не ваш часовой пояс?» — раскрывает выбор из словаря популярных поясов.
@@ -16,7 +18,7 @@ export function TimeZonePicker({ tz, onChange, tr = VY }: { tz: string; onChange
 
   if (!open) {
     return (
-      <button type="button" style={linkSt} onClick={() => setOpen(true)}>
+      <button type="button" style={hitSt} onClick={() => setOpen(true)}>
         {tr('не твой часовой пояс?', 'не ваш часовой пояс?')}
       </button>
     );

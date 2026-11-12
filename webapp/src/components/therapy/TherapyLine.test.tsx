@@ -26,7 +26,7 @@ describe('TherapyLine', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Поговорить →' }));
     expect(track).toHaveBeenLastCalledWith('diary_done', 'open', undefined);
     expect(screen.getByRole('dialog')).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Нести это в одиночку не обязательно');
+    expect(screen.getByRole('heading', { level: 1 }).textContent?.replace(/\u00a0/g, ' ')).toBe('Нести это в одиночку не обязательно');
   });
 
   it('терапевт подключён: строка про встречи вместо переданной, ссылка «Написать терапевту →» на его контакт, событие write', () => {

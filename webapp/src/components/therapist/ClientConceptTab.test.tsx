@@ -179,6 +179,7 @@ describe('ClientConceptTab: переключатель «Схема · Поля�
 
   it('вид «Поля»: режим выбирается общим пикером и уходит в modeIds автосохранения', async () => {
     await openTab(concept({ modeIds: [], modeLinks: [] }));
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить: Карта режимов' })); // пустой выбор свёрнут (b33)
     fireEvent.click(screen.getByRole('button', { name: /Уязвимый Ребёнок/ }));
     await waitFor(() => expect(saved()).toBeTruthy(), { timeout: 2500 });
     expect(saved().modeIds).toEqual(['vulnerable_child']);

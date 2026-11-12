@@ -17,7 +17,9 @@ describe('TherapistGuideSection: тексты не загрузились', () =
     const { container } = render(<MemoryRouter><TherapistGuideSection /></MemoryRouter>);
     expect(container.querySelector('.skel')).not.toBeNull();
     const alert = await screen.findByRole('alert');
-    expect(alert.textContent).toContain('Справочник не загрузился');
+    // лист сбоя PaperAlert склеивает короткие слова неразрывным пробелом (glueIf)
+    expect(alert.textContent?.replace(/\u00a0/g, ' ')).toContain('Справочник не загрузился. Обычно помогает ещё одна попытка');
+    expect(alert.classList.contains('pa-alert')).toBe(true);
     expect(container.querySelector('.skel')).toBeNull();
     expect(screen.queryByRole('tablist')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));

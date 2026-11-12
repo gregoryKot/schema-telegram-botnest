@@ -25,6 +25,8 @@
   .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   /* «Графические карты»: холст во всю ширину, полоса карт — в колонке, на одной вертикали с шапкой. */
   .tk-tabs-body .mm2-bar, .tk-tabs-body .mm2-create-err { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); }
+  /* Пустые «Графические карты» на узком окне: плитки типов 3 + 2 встают в поле шапки (sheet-modemap.css). */
+  @media (max-width: 1023px) { .tk-tabs-body .mm2-center--kinds { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); } }
 }
 
 /* ── Шапка ───────────────────────────────────────────────────────────────── */
@@ -59,6 +61,22 @@
    во всю ширину, а полоса карт над ним (.mm2-bar) и строка ошибки создания
    встают в колонку кабинета, под «← Все клиенты» (правило — в блоке ≥768
    выше: на телефоне холста нет). Сверка полей — therapistCard.test.ts. */
+
+/* Компактная шапка — только «Графические карты» на компьютере и планшете (useClientHead.ts, b34).
+   Компактность — ТОЛЬКО по вертикали (решение владельца 2026-11-06 «шапка не прыгает вбок»): раскладка
+   та же, что у обычной шапки, — «← Все клиенты» над строкой «аватар · имя · действия», тот же перенос
+   действий на узком окне, то же поле. Убраны статус и «Встреча» (плашка «офлайн» остаётся в строке
+   имени: без неё не видно, что клиент без приложения), сжаты отступы и аватар. Аватар меньше, но
+   занимает ту же ширину (48 + 8 = 56): имя стоит на той же вертикали, что на остальных вкладках. */
+.tk-head--compact { padding-top: 6px; gap: 6px; }
+.tk-head--compact > .ds-back { margin-block: -8px -12px; }
+.tk-head--compact .tk-avatar { width: 48px; height: 48px; font-size: 18px; margin-right: 8px; }
+/* Отступ — у самой плашки, а не gap строки: пустая строка плашек не отнимает ширину у имени. */
+.tk-head--compact .tk-ident { display: flex; align-items: center; }
+.tk-head--compact .tk-badges { margin-top: 0; flex: none; flex-wrap: nowrap; gap: 0; }
+.tk-head--compact .tk-badges > * { margin-left: 10px; }
+.tk-head--compact .tk-badges > .tk-meta, .tk-head--compact .tk-badges > .tc-meeting { display: none; }
+.tk-head--compact .tk-actions .ds-btn { min-height: 36px; height: 36px; }
 
 /* ── Обзор ───────────────────────────────────────────────────────────────── */
 /* Основная колонка забирает ширину, сайдбар (сессия, дни, действия) — узкий.

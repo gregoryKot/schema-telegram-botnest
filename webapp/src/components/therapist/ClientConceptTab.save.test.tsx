@@ -98,6 +98,7 @@ describe('ClientConceptTab: видимое сохранение (#879)', () => {
     await openTab();
     expect(statusText()).toBe('');
 
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить: Актуальные схемы' })); // пустой выбор свёрнут (b33)
     fireEvent.click(screen.getByText('Эмоциональная депривация'));
     expect(statusText()).toBe('Изменения ещё не сохранены');
 
@@ -116,6 +117,7 @@ describe('ClientConceptTab: видимое сохранение (#879)', () => {
     mockApi.saveConceptualization.mockRejectedValueOnce(new Error('network down'));
     await openTab();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить: Актуальные схемы' })); // пустой выбор свёрнут (b33)
     fireEvent.click(screen.getByText('Эмоциональная депривация'));
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(mockApi.saveConceptualization).toHaveBeenCalledTimes(1);
@@ -144,6 +146,7 @@ describe('ClientConceptTab: причина отказа сохранения', (
   ])('%s — причина в строке статуса, «Повторить» на месте', async (_case, err, text) => {
     mockApi.saveConceptualization.mockRejectedValueOnce(err);
     await openTab();
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить: Актуальные схемы' })); // пустой выбор свёрнут (b33)
     fireEvent.click(screen.getByText('Эмоциональная депривация'));
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
     expect(screen.getByRole('alert').textContent).toBe(`${text}Повторить`);
