@@ -43,24 +43,27 @@ const ach = (hue: number, sign: SignKey, n?: number): AchievementLook =>
  * чанки (+20 КБ JS, CSS не в том порядке). Серия — полосок всё больше (7 — плотный ряд), дни
  * всего — листов больше (вариант мотива, countedSigns.ts). Сверка — cardLook.test.ts.
  */
-export const ACHIEVEMENT_CARD_LOOK: Readonly<Record<string, AchievementLook>> = {
-  first_day: ach(45, 'pebbles'),
-  streak_3: ach(70, 'strokes', 2),
-  streak_7: ach(70, 'strokes', 3),
-  streak_14: ach(70, 'strokes', 4),
-  streak_30: ach(70, 'strokes', 5),
-  streak_100: ach(70, 'strokes', 7),
-  total_10: ach(240, 'sheets', 2),
-  total_50: ach(240, 'sheets', 4),
-  high_day: ach(195, 'leaf'),
-  all_above7: ach(45, 'wheel'),
-  comeback: ach(70, 'child_care'),
-  growth: ach(70, 'need_autonomy'),
-  pair_connected: ach(28, 'need_attachment'),
-};
+export const ACHIEVEMENT_CARD_LOOK: Readonly<Record<string, AchievementLook>> =
+  {
+    first_day: ach(45, 'pebbles'),
+    streak_3: ach(70, 'strokes', 2),
+    streak_7: ach(70, 'strokes', 3),
+    streak_14: ach(70, 'strokes', 4),
+    streak_30: ach(70, 'strokes', 5),
+    streak_100: ach(70, 'strokes', 7),
+    total_10: ach(240, 'sheets', 2),
+    total_50: ach(240, 'sheets', 4),
+    high_day: ach(195, 'leaf'),
+    all_above7: ach(45, 'wheel'),
+    comeback: ach(70, 'child_care'),
+    growth: ach(70, 'need_autonomy'),
+    pair_connected: ach(28, 'need_attachment'),
+  };
 
 /** Вид значка достижения; незнакомое — null (значок без выдуманного знака). */
-export const achievementCardLook = (id: string | undefined): AchievementLook | null =>
+export const achievementCardLook = (
+  id: string | undefined,
+): AchievementLook | null =>
   id && Object.hasOwn(ACHIEVEMENT_CARD_LOOK, id)
     ? ACHIEVEMENT_CARD_LOOK[id]
     : null;

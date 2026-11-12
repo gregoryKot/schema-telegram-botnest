@@ -10,7 +10,9 @@ export function useCardFontsReady(): boolean {
   useEffect(() => {
     let alive = true;
     const retryWhenLoaded = () =>
-      document.fonts?.ready?.then(() => (alive ? loadCardFonts() : false)).then((ok) => alive && ok && setReady(true));
+      document.fonts?.ready
+        ?.then(() => (alive ? loadCardFonts() : false))
+        .then((ok) => alive && ok && setReady(true));
     void loadCardFonts().then((ok) => {
       if (!alive) return;
       if (ok) setReady(true);

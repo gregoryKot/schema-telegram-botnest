@@ -19,14 +19,23 @@ const gap = (a: number, b: number) => {
 
 function permutations(n: number): number[][] {
   if (n <= 1) return [[...Array(n).keys()]];
-  return permutations(n - 1).flatMap((p) => Array.from({ length: n }, (_, i) => [...p.slice(0, i), n - 1, ...p.slice(i)]));
+  return permutations(n - 1).flatMap((p) =>
+    Array.from({ length: n }, (_, i) => [
+      ...p.slice(0, i),
+      n - 1,
+      ...p.slice(i),
+    ]),
+  );
 }
 
 export const MIN_NEIGHBOR_GAP = 40;
 
 /** Плитки в порядке, где меньше всего соседей ближе MIN_NEIGHBOR_GAP; при равенстве — ближе к
  *  исходному порядку (по убыванию числа). Без оттенка (незнакомое занятие) — соседство не считается. */
-export function spreadStatTiles<T>(tiles: readonly T[], hueOf: (t: T) => number | undefined): T[] {
+export function spreadStatTiles<T>(
+  tiles: readonly T[],
+  hueOf: (t: T) => number | undefined,
+): T[] {
   const n = tiles.length;
   if (n < 2 || n > 6) return [...tiles];
   const pairs = [...gridPairs(n, 2), ...gridPairs(n, 3)];
@@ -34,9 +43,17 @@ export function spreadStatTiles<T>(tiles: readonly T[], hueOf: (t: T) => number 
   let bestScore = [Infinity, Infinity];
   for (const perm of permutations(n)) {
     const hues = perm.map((i) => hueOf(tiles[i]));
-    const close = pairs.filter(([a, b]) => hues[a] !== undefined && hues[b] !== undefined && gap(hues[a]!, hues[b]!) < MIN_NEIGHBOR_GAP).length;
+    const close = pairs.filter(
+      ([a, b]) =>
+        hues[a] !== undefined &&
+        hues[b] !== undefined &&
+        gap(hues[a], hues[b]) < MIN_NEIGHBOR_GAP,
+    ).length;
     const drift = perm.reduce((s, orig, pos) => s + Math.abs(orig - pos), 0);
-    if (close < bestScore[0] || (close === bestScore[0] && drift < bestScore[1])) {
+    if (
+      close < bestScore[0] ||
+      (close === bestScore[0] && drift < bestScore[1])
+    ) {
       best = perm;
       bestScore = [close, drift];
     }

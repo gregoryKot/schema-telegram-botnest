@@ -29,7 +29,11 @@ describe('countedDrawing — вариант мотива по счёту', () =>
     expect(countedDrawing('pebbles', 3)).toEqual(CANVAS_SIGNS.pebbles);
     const one = countedDrawing('pebbles', 1)!.prims;
     expect(one.map((p) => p.fill)).toEqual(['moss', 'hollow', 'hollow']);
-    expect(one.map((p) => (p.t === 'ellipse' ? p.stroke : null))).toEqual([undefined, 'brown', 'clay']);
+    expect(one.map((p) => (p.t === 'ellipse' ? p.stroke : null))).toEqual([
+      undefined,
+      'brown',
+      'clay',
+    ]);
   });
 
   it('знак без варианта, число вне диапазона, ключ прототипа — null', () => {

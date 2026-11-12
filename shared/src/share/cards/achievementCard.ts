@@ -69,7 +69,13 @@ export function drawAchievementCard(
   const drawing = lookDrawing(look);
   if (drawing) {
     const art = achievementArtSize(drawing);
-    drawDrawing(ctx, drawing, cx - art.w / 2, ART_TOP + (ART_BOX - art.h) / 2, art.w);
+    drawDrawing(
+      ctx,
+      drawing,
+      cx - art.w / 2,
+      ART_TOP + (ART_BOX - art.h) / 2,
+      art.w,
+    );
   }
 
   ctx.textAlign = 'center';

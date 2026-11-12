@@ -3,7 +3,13 @@
 // вправо-вниз, без градиентов), шапка Literata со знаком справа, подвал со знаком продукта.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { beginCard, footer, hueGap, paperSlip } from './frame';
-import { glueSubtitle, header, headerHeight, headerLines, measureHeader } from './header';
+import {
+  glueSubtitle,
+  header,
+  headerHeight,
+  headerLines,
+  measureHeader,
+} from './header';
 import { CARD_PAD, SERIF } from './theme';
 import { SHEET, layerHex, paperHex, hueFromColor } from './paperFrame';
 import { INK } from './ink';

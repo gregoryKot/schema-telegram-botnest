@@ -1,14 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { MIN_NEIGHBOR_GAP, spreadStatTiles } from './journeyStatOrder';
 
-const gap = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+const gap = (a: number, b: number) =>
+  Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
 /** Соседи в сетке 2 и 3 колонки. */
 const closeNeighbors = (hues: number[]) => {
   let close = 0;
   for (const cols of [2, 3])
     hues.forEach((h, i) => {
-      if ((i + 1) % cols && i + 1 < hues.length && gap(h, hues[i + 1]) < MIN_NEIGHBOR_GAP) close++;
-      if (i + cols < hues.length && gap(h, hues[i + cols]) < MIN_NEIGHBOR_GAP) close++;
+      if (
+        (i + 1) % cols &&
+        i + 1 < hues.length &&
+        gap(h, hues[i + 1]) < MIN_NEIGHBOR_GAP
+      )
+        close++;
+      if (i + cols < hues.length && gap(h, hues[i + cols]) < MIN_NEIGHBOR_GAP)
+        close++;
     });
   return close;
 };

@@ -79,7 +79,8 @@ export function drawJourneyCard(
 ) {
   // Короткий предлог не висит в конце строки подписи («заботы о / себе»).
   const sub = glueSpaces(
-    subtitle ?? `${total} ${pluralEntries(total)} заботы о себе · последние шаги`,
+    subtitle ??
+      `${total} ${pluralEntries(total)} заботы о себе · последние шаги`,
   );
   const look = CARD_LOOK.journey;
   const head = { eyebrow: 'Мой путь', title, subtitle: sub, sign: look.sign };
@@ -102,8 +103,16 @@ export function drawJourneyCard(
   const measure = (s: string) => ctx.measureText(s).width;
   rows.forEach((row, i) => {
     const y = top + i * ROW_H;
-    const look = row.hue !== null && row.sign ? { hue: row.hue, sign: row.sign, n: row.n } : null;
-    slipSign(c, look, CARD_PAD, y, { w: SLIP_W, h: SLIP_H, signW: SIGN_W, signBox: SIGN_BOX });
+    const look =
+      row.hue !== null && row.sign
+        ? { hue: row.hue, sign: row.sign, n: row.n }
+        : null;
+    slipSign(c, look, CARD_PAD, y, {
+      w: SLIP_W,
+      h: SLIP_H,
+      signW: SIGN_W,
+      signBox: SIGN_BOX,
+    });
     ctx.textAlign = 'left';
     ctx.font = cardFont(15);
     ctx.fillStyle = INK.text;

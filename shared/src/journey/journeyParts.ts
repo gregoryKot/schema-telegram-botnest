@@ -24,10 +24,16 @@ const EXCERPT = 220;
 const cut = (s: string): string =>
   s.length > EXCERPT ? `${s.slice(0, EXCERPT).trimEnd()}…` : s;
 
-const part = (text: string | null | undefined, title?: string): JourneyResultPart[] =>
+const part = (
+  text: string | null | undefined,
+  title?: string,
+): JourneyResultPart[] =>
   text?.trim() ? [{ title, text: cut(text.trim()) }] : [];
 /** Поле-голос Здорового Взрослого — с меткой (вставка мха в детали и на карточке). */
-const healthy = (text: string | null | undefined, title: string): JourneyResultPart[] =>
+const healthy = (
+  text: string | null | undefined,
+  title: string,
+): JourneyResultPart[] =>
   part(text, title).map((p) => ({ ...p, healthy: true as const }));
 
 /**
@@ -152,7 +158,13 @@ export function buildJourneyDetailParts(
   if (fields) {
     return fields.flatMap(([k, title, mark]) =>
       str(k).trim()
-        ? [{ title: title || undefined, text: str(k).trim(), ...(mark === 'healthy' ? { healthy: true as const } : {}) }]
+        ? [
+            {
+              title: title || undefined,
+              text: str(k).trim(),
+              ...(mark === 'healthy' ? { healthy: true as const } : {}),
+            },
+          ]
         : [],
     );
   }

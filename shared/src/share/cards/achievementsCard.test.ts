@@ -46,14 +46,21 @@ describe('drawAchievementsCard', () => {
   });
 
   it('силуэт неполученного значка читается на пазу: ≥3:1 (WCAG 1.4.11) на любом листе', () => {
-    const lin = (c: number) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
+    const lin = (c: number) =>
+      c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4;
     const lum = (hex: string) => {
       const n = parseInt(hex.slice(1), 16);
-      return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+      return (
+        0.2126 * lin((n >> 16) & 255) +
+        0.7152 * lin((n >> 8) & 255) +
+        0.0722 * lin(n & 255)
+      );
     };
     for (const h of [25, 45, 70, 135, 195, 240, 310]) {
       const [a, b] = [lum(silhouetteHex(h)), lum(sunkHex(h))];
-      expect((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)).toBeGreaterThanOrEqual(3);
+      expect(
+        (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+      ).toBeGreaterThanOrEqual(3);
     }
   });
 

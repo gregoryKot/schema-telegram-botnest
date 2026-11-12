@@ -71,14 +71,17 @@ function paintPrim(
 }
 
 /** Рисунок вида: вариант по счёту (`n`, значки достижений), иначе знак по ключу; нет ни того, ни другого — null. */
-export function lookDrawing(look: { sign: string; n?: number } | null | undefined): SignDrawing | null {
+export function lookDrawing(
+  look: { sign: string; n?: number } | null | undefined,
+): SignDrawing | null {
   if (!look) return null;
   const key = canvasSign(look.sign);
   return countedDrawing(look.sign, look.n) ?? (key ? CANVAS_SIGNS[key] : null);
 }
 
 /** Высота рисунка шириной w по пропорции его холста. */
-export const drawingHeight = (d: SignDrawing, w: number): number => (w * d.view[1]) / d.view[0];
+export const drawingHeight = (d: SignDrawing, w: number): number =>
+  (w * d.view[1]) / d.view[0];
 
 /** Рисунок: левый верхний угол (x, y), ширина w, высота — по пропорции холста. */
 export function drawDrawing(
@@ -105,5 +108,5 @@ export function drawSign(
   w: number,
   paint: SignPaint = {},
 ) {
-  drawDrawing(ctx, CANVAS_SIGNS[key] as SignDrawing, x, y, w, paint);
+  drawDrawing(ctx, CANVAS_SIGNS[key], x, y, w, paint);
 }

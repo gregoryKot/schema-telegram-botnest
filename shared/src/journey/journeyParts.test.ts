@@ -117,7 +117,11 @@ describe('buildJourneyResultParts', () => {
       }),
     ).toEqual([
       { title: 'Убеждение', text: 'Я всегда всё порчу' },
-      { title: 'Здоровый взгляд', text: 'Ошибка — часть обучения', healthy: true },
+      {
+        title: 'Здоровый взгляд',
+        text: 'Ошибка — часть обучения',
+        healthy: true,
+      },
     ]);
   });
 
@@ -179,7 +183,11 @@ describe('buildJourneyResultParts', () => {
       }),
     ).toEqual([
       { title: 'Триггеры', text: 'Критика от начальника' },
-      { title: 'Здоровый взгляд', text: 'Обратная связь — не приговор', healthy: true },
+      {
+        title: 'Здоровый взгляд',
+        text: 'Обратная связь — не приговор',
+        healthy: true,
+      },
       { title: 'Что помогает', text: 'Пауза перед ответом' },
     ]);
     expect(
@@ -228,11 +236,21 @@ describe('buildJourneyDetailParts', () => {
 
   it('голос Здорового Взрослого — по метке поля, а не по подписи: «Здоровое поведение» без метки', () => {
     const marked = (type: string, entry: Record<string, string>) =>
-      buildJourneyDetailParts(type, entry).filter((p) => p.healthy).map((p) => p.title);
-    expect(marked('schema_diary', { healthyView: 'а', healthyBehavior: 'б' })).toEqual(['Здоровый взгляд']);
-    expect(marked('mode_diary', { healthyResponse: 'а', actualNeed: 'б' })).toEqual(['Здоровый Взрослый']);
-    expect(marked('belief_check', { reframe: 'а', belief: 'б' })).toEqual(['Здоровый взгляд']);
-    expect(marked('schema_note', { healthyView: 'а', behavior: 'б' })).toEqual(['Здоровый взгляд']);
+      buildJourneyDetailParts(type, entry)
+        .filter((p) => p.healthy)
+        .map((p) => p.title);
+    expect(
+      marked('schema_diary', { healthyView: 'а', healthyBehavior: 'б' }),
+    ).toEqual(['Здоровый взгляд']);
+    expect(
+      marked('mode_diary', { healthyResponse: 'а', actualNeed: 'б' }),
+    ).toEqual(['Здоровый Взрослый']);
+    expect(marked('belief_check', { reframe: 'а', belief: 'б' })).toEqual([
+      'Здоровый взгляд',
+    ]);
+    expect(marked('schema_note', { healthyView: 'а', behavior: 'б' })).toEqual([
+      'Здоровый взгляд',
+    ]);
   });
 
   it('gratitude в детальном виде — все пункты, а не только три', () => {

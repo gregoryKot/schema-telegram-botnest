@@ -29,7 +29,14 @@ export type SignPrim =
         rx: number;
       })
   | (Paint & { t: 'circle'; cx: number; cy: number; r: number })
-  | (Paint & Stroked & { t: 'ellipse'; cx: number; cy: number; rx: number; ry: number })
+  | (Paint &
+      Stroked & {
+        t: 'ellipse';
+        cx: number;
+        cy: number;
+        rx: number;
+        ry: number;
+      })
   | (Paint & Stroked & { t: 'path'; d: string; join?: 'round' });
 
 export interface SignDrawing {

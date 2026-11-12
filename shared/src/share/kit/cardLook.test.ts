@@ -29,7 +29,10 @@ describe('CARD_LOOK', () => {
 describe('ACHIEVEMENT_CARD_LOOK', () => {
   it('оттенок и знак = ACHIEVEMENT_LOOK значка (правило №4)', () => {
     const hueSign = Object.fromEntries(
-      Object.entries(ACHIEVEMENT_CARD_LOOK).map(([id, l]) => [id, { hue: l.hue, sign: l.sign }]),
+      Object.entries(ACHIEVEMENT_CARD_LOOK).map(([id, l]) => [
+        id,
+        { hue: l.hue, sign: l.sign },
+      ]),
     );
     expect(hueSign).toEqual(ACHIEVEMENT_LOOK);
   });
@@ -38,24 +41,37 @@ describe('ACHIEVEMENT_CARD_LOOK', () => {
     'у достижения %s есть рисунок на canvas (с вариантом по счёту)',
     (_id, look) => {
       expect(lookDrawing(look)).not.toBeNull();
-      if (look.n !== undefined) expect(countedDrawing(look.sign, look.n)?.prims).toHaveLength(look.n);
+      if (look.n !== undefined)
+        expect(countedDrawing(look.sign, look.n)?.prims).toHaveLength(look.n);
     },
   );
 
   it('у двух достижений нет одинакового значка: знак и число фигур различаются', () => {
-    const keys = Object.values(ACHIEVEMENT_CARD_LOOK).map((l) => `${l.sign}:${l.n ?? ''}`);
+    const keys = Object.values(ACHIEVEMENT_CARD_LOOK).map(
+      (l) => `${l.sign}:${l.n ?? ''}`,
+    );
     expect(new Set(keys).size).toBe(keys.length);
   });
 
   it('серия: полосок больше к длинной серии; дни всего: листов больше', () => {
     const n = (id: string) => achievementCardLook(id)?.n ?? 0;
-    const series = ['streak_3', 'streak_7', 'streak_14', 'streak_30', 'streak_100'].map(n);
+    const series = [
+      'streak_3',
+      'streak_7',
+      'streak_14',
+      'streak_30',
+      'streak_100',
+    ].map(n);
     expect([...series].sort((a, b) => a - b)).toEqual(series);
     expect(n('total_50')).toBeGreaterThan(n('total_10'));
   });
 
   it('незнакомое достижение — без знака', () => {
-    expect(achievementCardLook('streak_7')).toEqual({ hue: 70, sign: 'strokes', n: 3 });
+    expect(achievementCardLook('streak_7')).toEqual({
+      hue: 70,
+      sign: 'strokes',
+      n: 3,
+    });
     expect(achievementCardLook('hasOwnProperty')).toBeNull();
     expect(achievementCardLook(undefined)).toBeNull();
   });

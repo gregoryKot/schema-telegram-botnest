@@ -186,7 +186,11 @@ describe('JourneyItemDetail', () => {
         detail={detailOf({ type: 'mode_diary', at: '2026-07-21T10:00:00Z' }, [
           { title: 'Ситуация', text: 'Опоздание' },
           { title: 'Мысли', text: 'Я всё порчу' },
-          { title: 'Здоровый Взрослый', text: 'Пять минут — это пять минут.', healthy: true },
+          {
+            title: 'Здоровый Взрослый',
+            text: 'Пять минут — это пять минут.',
+            healthy: true,
+          },
         ])}
         subtitle={() => 'Карающий Критик'}
         onShare={vi.fn()}

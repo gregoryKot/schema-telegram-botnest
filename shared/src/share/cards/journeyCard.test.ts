@@ -137,7 +137,11 @@ describe('drawJourneyCard', () => {
     const fills: string[] = [];
     ctx.fill.mockImplementation(() => fills.push(ctx.fillStyle));
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    drawJourneyCard(document.createElement('canvas'), [{ ...ROW, hue: 240, sign: 'cluster' }], 1);
+    drawJourneyCard(
+      document.createElement('canvas'),
+      [{ ...ROW, hue: 240, sign: 'cluster' }],
+      1,
+    );
     expect(fills).toContain(sunkHex(240));
     expect(fills).not.toContain(INK.surface);
   });

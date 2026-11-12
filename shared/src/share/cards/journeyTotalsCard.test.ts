@@ -138,8 +138,19 @@ describe('drawJourneyTotalsCard', () => {
     const fills: string[] = [];
     ctx.fill.mockImplementation(() => fills.push(ctx.fillStyle));
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx);
-    drawJourneyTotalsCard(document.createElement('canvas'), [stat('Дыхание', 4, 'breathing'), stat('Трекер', 2)], 6);
-    expect(fills).toEqual(expect.arrayContaining([paperHex(195), hueInkHex(195), paperHex(70), hueInkHex(70)]));
+    drawJourneyTotalsCard(
+      document.createElement('canvas'),
+      [stat('Дыхание', 4, 'breathing'), stat('Трекер', 2)],
+      6,
+    );
+    expect(fills).toEqual(
+      expect.arrayContaining([
+        paperHex(195),
+        hueInkHex(195),
+        paperHex(70),
+        hueInkHex(70),
+      ]),
+    );
   });
 
   it('свои title/subtitle (сводка за период) переопределяют заголовок по умолчанию', () => {

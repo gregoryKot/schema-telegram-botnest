@@ -41,10 +41,14 @@ const SCREENS: Screen[] = [
     open: 'Настроить экран',
     key: 'screen_hidden_profile',
     // Чистый аккаунт видит пустой профиль — лист начала пути без блоков (b21, isFreshProfile): три отмеченных дня.
-    setup: (api) => api.overrides.set('GET /api/streak', {
-      currentStreak: 1, longestStreak: 2, totalDays: 3, todayDone: true,
-      weekDots: [true, true, false, false, false, false, false],
-    }),
+    setup: (api) =>
+      api.overrides.set('GET /api/streak', {
+        currentStreak: 1,
+        longestStreak: 2,
+        totalDays: 3,
+        todayDone: true,
+        weekDots: [true, true, false, false, false, false, false],
+      }),
     blocks: (p) => [
       p.getByRole('heading', { name: 'Мой путь', level: 2 }),
       p.getByRole('heading', { name: 'Мой портрет' }),

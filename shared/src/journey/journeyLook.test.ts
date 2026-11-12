@@ -34,7 +34,10 @@ describe('литеральные таблицы вида сверены с ENTIT
       ]),
     );
     const hueSign = Object.fromEntries(
-      Object.entries(JOURNEY_LOOK).map(([type, l]) => [type, { hue: l.hue, sign: l.sign }]),
+      Object.entries(JOURNEY_LOOK).map(([type, l]) => [
+        type,
+        { hue: l.hue, sign: l.sign },
+      ]),
     );
     expect(hueSign).toEqual(want);
   });

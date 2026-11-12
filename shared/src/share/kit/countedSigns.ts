@@ -5,7 +5,13 @@
 import type { PaperName } from './ink';
 import type { SignDrawing, SignPrim } from './signTable';
 
-const STROKE_PAPER: readonly PaperName[] = ['moss', 'sage', 'brown', 'clay', 'sage'];
+const STROKE_PAPER: readonly PaperName[] = [
+  'moss',
+  'sage',
+  'brown',
+  'clay',
+  'sage',
+];
 const STROKE_TILT = [-6, 3, -2, 5, -4];
 const SHEET_PAPER: readonly PaperName[] = ['sage', 'brown', 'clay', 'moss'];
 
@@ -16,7 +22,16 @@ function strokesRow(n: number): SignDrawing {
   const x0 = (120 - ((n - 1) * step + w)) / 2;
   const prims = Array.from({ length: n }, (_, i): SignPrim => {
     const x = x0 + i * step;
-    return { t: 'rect', x, y: 8, w, h: 84, rx: w / 2, fill: STROKE_PAPER[i % 5], rot: [STROKE_TILT[i % 5], x + w / 2, 50] };
+    return {
+      t: 'rect',
+      x,
+      y: 8,
+      w,
+      h: 84,
+      rx: w / 2,
+      fill: STROKE_PAPER[i % 5],
+      rot: [STROKE_TILT[i % 5], x + w / 2, 50],
+    };
   });
   return { view: [120, 100], prims };
 }
@@ -26,17 +41,35 @@ function sheetsFan(n: number): SignDrawing {
   const prims = Array.from({ length: n }, (_, i): SignPrim => {
     const t = i / (n - 1);
     const x = 22 + 36 * t;
-    return { t: 'rect', x, y: 8, w: 40, h: 52, rx: 6, fill: SHEET_PAPER[i % 4], rot: [-12 + 18 * t, x + 20, 34] };
+    return {
+      t: 'rect',
+      x,
+      y: 8,
+      w: 40,
+      h: 52,
+      rx: 6,
+      fill: SHEET_PAPER[i % 4],
+      rot: [-12 + 18 * t, x + 20, 34],
+    };
   });
   return { view: [120, 64], prims };
 }
 
-const PEBBLES = [[24, 36, 'moss'], [60, 34, 'brown'], [96, 30, 'clay']] as const;
+const PEBBLES = [
+  [24, 36, 'moss'],
+  [60, 34, 'brown'],
+  [96, 30, 'clay'],
+] as const;
 
 /** Легло n камешков; гнездо — пустой тон с кромкой своего цвета (как [data-laid="no"] в paper.css). */
 function pebblesLaid(n: number): SignDrawing {
   const prims = PEBBLES.map(([cx, cy, color], i): SignPrim => ({
-    t: 'ellipse', cx, cy, rx: 20, ry: 13, rot: [-18, cx, cy],
+    t: 'ellipse',
+    cx,
+    cy,
+    rx: 20,
+    ry: 13,
+    rot: [-18, cx, cy],
     ...(i < n ? { fill: color } : { fill: 'hollow', stroke: color, sw: 4 }),
   }));
   return { view: [120, 64], prims };
@@ -49,7 +82,10 @@ const COUNTED = {
 } as const;
 
 /** Рисунок знака с числом фигур; знак без варианта по счёту или число вне диапазона — null (обычный знак). */
-export function countedDrawing(sign: string, n: number | undefined): SignDrawing | null {
+export function countedDrawing(
+  sign: string,
+  n: number | undefined,
+): SignDrawing | null {
   if (n === undefined || !Object.hasOwn(COUNTED, sign)) return null;
   const v = COUNTED[sign as keyof typeof COUNTED];
   return Number.isInteger(n) && n >= v.min && n <= v.max ? v.draw(n) : null;

@@ -138,7 +138,11 @@ export function buildJourneySharePayload(
   const meta = journeyTypeMeta(share.item.type);
   // Вид шага на карточке — знак и бумага сущности (journeyLook), как строка ленты и шапка детали.
   const look = journeyItemLook(share.item);
-  const view = { hue: look?.hue ?? null, sign: look?.sign ?? null, ...(look?.n !== undefined ? { n: look.n } : {}) };
+  const view = {
+    hue: look?.hue ?? null,
+    sign: look?.sign ?? null,
+    ...(look?.n !== undefined ? { n: look.n } : {}),
+  };
   const day = formatJourneyDay(share.item.at);
   const shareText = journeyItemShareText(
     journeyShareEmoji(share.item.type),

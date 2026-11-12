@@ -49,7 +49,8 @@ const textWidth = (c: { W: number }, o: HeaderOpts) =>
   (o.sign && canvasSign(o.sign) ? HEADER_SIGN_W + SIGN_GAP : 0);
 
 /** Подпись: «·» не начинает строку и не висит в её конце — держится со словами по обе стороны. */
-export const glueSubtitle = (s: string): string => s.replace(/ · /g, '\u00a0·\u00a0');
+export const glueSubtitle = (s: string): string =>
+  s.replace(/ · /g, '\u00a0·\u00a0');
 
 /** Строки шапки под шрифт карточки: заголовок до 2 строк, подпись до subtitleLines. */
 export function headerLines(ctx: CanvasRenderingContext2D, o: HeaderOpts) {
@@ -63,7 +64,10 @@ export function headerLines(ctx: CanvasRenderingContext2D, o: HeaderOpts) {
   const title = clampLines(wrapLines(measure, glueSpaces(o.title), maxW), 2);
   ctx.font = cardFont(13.5);
   const sub = o.subtitle
-    ? clampLines(wrapLines(measure, glueSubtitle(o.subtitle), maxW), o.subtitleLines ?? 3)
+    ? clampLines(
+        wrapLines(measure, glueSubtitle(o.subtitle), maxW),
+        o.subtitleLines ?? 3,
+      )
     : [];
   return { title, sub, height: headerHeight(title.length, sub.length) };
 }

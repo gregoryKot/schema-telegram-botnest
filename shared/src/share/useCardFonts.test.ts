@@ -12,9 +12,19 @@ afterEach(() => {
 
 function stubFonts(loadedAfterMs: number) {
   let loaded = false;
-  const ready = new Promise<void>((r) => setTimeout(() => { loaded = true; r(); }, loadedAfterMs));
-  const load = vi.fn(() => (loaded ? Promise.resolve([{}]) : new Promise<never>(() => {})));
-  Object.defineProperty(document, 'fonts', { value: { load, ready }, configurable: true });
+  const ready = new Promise<void>((r) =>
+    setTimeout(() => {
+      loaded = true;
+      r();
+    }, loadedAfterMs),
+  );
+  const load = vi.fn(() =>
+    loaded ? Promise.resolve([{}]) : new Promise<never>(() => {}),
+  );
+  Object.defineProperty(document, 'fonts', {
+    value: { load, ready },
+    configurable: true,
+  });
 }
 
 describe('useCardFontsReady', () => {
@@ -22,9 +32,13 @@ describe('useCardFontsReady', () => {
     vi.useFakeTimers();
     stubFonts(2500);
     const { result } = renderHook(() => useCardFontsReady());
-    await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1600);
+    });
     expect(result.current).toBe(false);
-    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
     expect(result.current).toBe(true);
   });
 

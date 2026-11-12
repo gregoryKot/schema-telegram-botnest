@@ -76,7 +76,8 @@ export function JourneyView({
         )}
       </p>
     );
-  if (total === 0) return <EmptyHero tr={tr} explainer={explainer} onStart={onStart} />;
+  if (total === 0)
+    return <EmptyHero tr={tr} explainer={explainer} onStart={onStart} />;
 
   return (
     <div className="pa-spread jr-spread">
@@ -86,7 +87,10 @@ export function JourneyView({
       <div className="pa-spread-main">
         {/* Счётчики «сколько чего» — плитки бумаги со знаком занятия */}
         <div className="jr-stats">
-          {spreadStatTiles(stats.slice(0, JOURNEY_STAT_TILES), (s) => journeyStatLook(s.type)?.hue).map((s) => (
+          {spreadStatTiles(
+            stats.slice(0, JOURNEY_STAT_TILES),
+            (s) => journeyStatLook(s.type)?.hue,
+          ).map((s) => (
             <Stat key={s.label} row={s} />
           ))}
         </div>
