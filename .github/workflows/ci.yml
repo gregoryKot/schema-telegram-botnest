@@ -1012,6 +1012,9 @@ jobs:
       - run: npm run build --prefix webapp
         env:
           VITE_BOT_USERNAME: SchemeHappensBot
+      # Игра — проект game в playwright.config.ts (e2e-browser/game-smoke.spec.ts).
+      - run: npm ci --prefix game
+      - run: npm run build --prefix game
       - name: версия Playwright для ключа кэша браузера
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
