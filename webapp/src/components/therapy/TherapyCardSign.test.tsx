@@ -18,7 +18,7 @@ describe('TherapyCardSign', () => {
   it('низкий индекс — три полоски одного тона по индексам дней сигнала, от раннего к свежему', () => {
     const { container } = render(<TherapyCardSign signal={{ trigger: 'low_index', eyebrow: 'x', days: [2, 3.4, 4] }} />);
     expect(container.querySelector('svg')!.getAttribute('class')).toContain('pp-art--row');
-    const rects = [...container.querySelectorAll('rect')];
+    const rects = [...container.querySelectorAll('rect[data-value]')];
     expect(rects.map((r) => r.getAttribute('data-value'))).toEqual(['2', '3.4', '4']);
     // Дни, а не потребности: один тон; выше индекс — выше полоска, низ на общей линии.
     expect(new Set(rects.map((r) => r.getAttribute('fill'))).size).toBe(1);

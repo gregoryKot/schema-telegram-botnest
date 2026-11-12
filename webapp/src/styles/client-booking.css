@@ -60,7 +60,7 @@
 .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when { border-right: 2px dashed var(--panel-line); }
 .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when::before,
 .cbk-ticket:not(.cbk-ticket--stub) > .cbk-ticket-when::after {
-  content: ''; position: absolute; right: -9px; width: 16px; height: 16px; border-radius: 50%; background: var(--cbk-cut, var(--bg));
+  content: ''; position: absolute; right: -9px; width: 16px; height: 16px; border-radius: 50%; background: var(--cbk-cut);
 }
 .cbk-ticket-when::before { top: -8px; }
 .cbk-ticket-when::after { bottom: -8px; }

@@ -51,12 +51,18 @@ export function Strokes({ marks, values, even, days, size }: ArtProps & { marks?
 }
 
 function DayStrokes({ days, size }: ArtProps & { days: readonly number[] }) {
-  const x0 = 60 - (days.length * 30 - 10) / 2;
+  const x0 = 60 - (days.length * 30 - 14) / 2;
+  // Бледная дорожка во всю высоту за каждой полоской: видно, что день низкий, а не «три точки».
   return (
     <Svg size={size} viewBox="0 0 120 64">
       {days.map((v, i) => {
-        const h = 20 + Math.round(ratingShare(v) * 40);
-        return <rect key={i} data-value={v} x={x0 + i * 30} y={62 - h} width="20" height={h} rx="10" fill={PAPER.clay} />;
+        const h = 10 + Math.round(ratingShare(v) * 46);
+        return (
+          <g key={i}>
+            <rect x={x0 + i * 30} y={4} width="16" height="56" rx="8" fill={PAPER.clay} fillOpacity="0.22" />
+            <rect data-value={v} x={x0 + i * 30} y={60 - h} width="16" height={h} rx="8" fill={PAPER.clay} />
+          </g>
+        );
       })}
     </Svg>
   );

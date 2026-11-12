@@ -138,10 +138,10 @@ function SlotsSkeleton() {
     <div className="cbk-skel" aria-hidden>
       <Skeleton width={96} height={12} />
       <div className="cbk-skel-row cbk-skel-row--days">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={116} height={44} radius={8} />)}</div>
-      <Skeleton width={56} height={12} style={{ marginTop: 12 }} />
+      <div className="u-mt12"><Skeleton width={56} height={12} /></div>
       <div className="cbk-skel-tz"><Skeleton width={230} height={10} /><Skeleton width={150} height={10} /></div>
       <div className="cbk-skel-row">{[0, 1, 2, 3].map((i) => <Skeleton key={i} width={74} height={44} radius={8} />)}</div>
-      <Skeleton width="70%" height={14} style={{ marginTop: 12 }} />
+      <div className="u-mt12"><Skeleton width="70%" height={14} /></div>
     </div>
   );
 }
