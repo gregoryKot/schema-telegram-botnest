@@ -3,7 +3,6 @@ import { ExScreen } from './ExScreen';
 import { WarmWordNote } from './WarmWordNote';
 import { useHistorySheet } from '../../hooks/useHistorySheet';
 import { useTr } from '../../utils/addressForm';
-import { pressable } from '../../utils/a11y';
 import { Skeleton } from '../Skeleton';
 import { PaperAlert } from '../paper/PaperAlert';
 import { PaperEmpty } from '../art/PaperEmpty';
@@ -18,9 +17,10 @@ const SKELETON_HEIGHTS = [132, 104, 156];
 // «Тёплые слова» — свои же ответы Здорового Взрослого из дневника режимов и
 // карточек режимов и переписанные фразы, собранные в одном месте. Только
 // чтение: кризисная детекция была на этапе записи (правило №7 CLAUDE.md).
-// Вид: герой — лист соломы со знаком ChildCare (ENTITY_LOOK.warm_words), слова — записками тёплой бумаги
-// (WarmWordNote); пусто — знак ChildCare, откуда появятся слова, и ссылка в карточку режима; сбой — PaperAlert.
-export function WarmWordsEx({ onBack, onOpenModeCard }: { onBack: () => void; onOpenModeCard?: () => void }) {
+// Вид (редизайн 2026-11, b18): герой — лист соломы со знаком ChildCare (ENTITY_LOOK.warm_words), слова —
+// записками тёплой бумаги (WarmWordNote): колонкой на телефоне, двумя-тремя на компьютере; пусто —
+// знак ChildCare с объяснением, откуда появятся слова (кнопка — после решения владельца, текстовый баг 4 b18); сбой — лист соломы (PaperAlert), а не жёлтая плашка.
+export function WarmWordsEx({ onBack }: { onBack: () => void }) {
   const text = buildWarmWordsTexts(useTr());
   const goBack = useHistorySheet(onBack);
   const { items, failed } = useWarmWords(api);
@@ -29,7 +29,13 @@ export function WarmWordsEx({ onBack, onOpenModeCard }: { onBack: () => void; on
     <ExScreen
       onBack={goBack} caution look="warm_words"
       eyebrow="Ресурс"
-      title={<>Тёплые<br /><span className="it">слова</span></>}
+      title={
+        <>
+          Тёплые
+          <br />
+          <span className="it">слова</span>
+        </>
+      }
       lede={text.lede}
     >
       {/* Одна колонка экрана во всех состояниях: пусто, загрузка, сбой и записки — та же ширина (ex-warm.css). */}
@@ -43,9 +49,7 @@ export function WarmWordsEx({ onBack, onOpenModeCard }: { onBack: () => void; on
         {failed && <PaperAlert sign="child_care" title={text.failed} />}
 
         {!failed && items !== null && items.length === 0 && (
-          <PaperEmpty art={ChildCare}>
-            {text.empty}{onOpenModeCard && <> <span {...pressable(() => goBack(onOpenModeCard))} className="ds-link ds-link--inline">{text.openModeCard}</span></>}
-          </PaperEmpty>
+          <PaperEmpty art={ChildCare}>{text.empty}</PaperEmpty>
         )}
 
         {items !== null && items.length > 0 && (

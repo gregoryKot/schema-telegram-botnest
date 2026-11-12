@@ -132,7 +132,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
             className="ds-input ds-input--search"
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder={userRole === 'THERAPIST' && !screenShare ? 'Клиент, страница, действие…' : 'Найти страницу или действие…'}
+            placeholder={screenShare ? 'Найти страницу или действие…' : 'Найти клиента, страницу или действие…'}
           />
         </div>
         {/* «Показ экрана»: одна строка почему клиентов нет — без второй «Ничего не найдено» под ней. */}

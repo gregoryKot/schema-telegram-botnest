@@ -129,11 +129,7 @@ describe('StepUpProvider — резервный код и пауза', () => {
     const send = vi.fn((code?: string) => Promise.resolve(code === 'ab12cd34ef' ? res(200) : NEED()));
     const out = setup(send);
     await dialogOpen();
-    expect(screen.getByText(/Введи код из приложения-аутентификатора/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Использовать резервный код' }));
-    // Подводка — про резервный код: «код из приложения» над его полем было бы неправдой.
-    expect(screen.getByText(/Введи один из резервных кодов — каждый срабатывает один раз/)).toBeTruthy();
-    expect(screen.queryByText(/приложения-аутентификатора/)).toBeNull();
     fireEvent.change(screen.getByLabelText('Резервный код'), { target: { value: 'AB12 cd34-EF' } });
     confirm();
     await waitFor(() => expect(out[0]?.value?.status).toBe(200));

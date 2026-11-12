@@ -5,7 +5,7 @@ import type { NeedExtra, Tr } from '../types';
 // удалённом мини-аппе; сайт берёт его отсюда.
 export const buildLimits = (tr: Tr): NeedExtra => ({
   name: 'Границы',
-  short: 'Границы',
+  short: 'Предел',
   subtitle: 'Реалистичные границы и самоконтроль',
   emoji: '⚖️',
   hint: 'самоуважение · самоконтроль · уважение других',

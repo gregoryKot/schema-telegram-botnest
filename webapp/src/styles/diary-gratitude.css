@@ -34,7 +34,7 @@
 .sd-grat-add-glyph { display: inline-flex; justify-content: center; color: oklch(0.47 0.07 var(--h)); }
 .sd-grat-error { margin-top: 12px; }
 .sd-grat-it { font-style: italic; }
-.sd-grat-nowrap { white-space: nowrap; } /* хвост заголовка «… – спасибо» — одной строкой (GratitudeTitle) */
+.sd-grat-nowrap { white-space: nowrap; } /* хвост заголовка «сегодня – спасибо» — одной строкой (GratitudeTitle) */
 /* Знак-герой Pebbles filled: камешек, который ещё не лёг, — гнездо своего цвета без тени-вырезки
    (одно правило [data-laid="no"] в paper.css — и для строки ленты, чипа и сцены «Записано»). */
 /* Разворот уже 1024: «Почему это работает» (DiaryAside, .sd-aside) — после тетради, а не между листом

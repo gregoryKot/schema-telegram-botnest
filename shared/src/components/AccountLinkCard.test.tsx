@@ -161,19 +161,6 @@ describe('исходы', () => {
     fireEvent.click(screen.getByText('Начать заново'));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
-
-  it('failed — код не создан: об этом и сказано, а не «не подтвердили вовремя»', () => {
-    show({ state: { kind: 'failed' } });
-    expect(
-      screen.getByText(
-        'Код не создан — сервер не ответил. Ничего не изменилось.',
-      ),
-    ).toBeTruthy();
-    expect(screen.queryByText(/не подтвердил вовремя/)).toBeNull();
-    cleanup();
-    show({ state: { kind: 'expired' } });
-    expect(screen.getByText('Код никто не подтвердил вовремя.')).toBeTruthy();
-  });
 });
 
 describe('формы обращения', () => {

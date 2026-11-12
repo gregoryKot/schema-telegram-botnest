@@ -47,7 +47,7 @@ export function ModeEntry({ entry, onDelete }: { entry: ModeDiaryEntry; onDelete
           remove={<DeleteBtn onClick={onDelete} />}
         />
       ) : entry.actualNeed && (
-        <div className="cd-entry-meta">Что было нужно: {entry.actualNeed.slice(0, 80)}</div>
+        <div className="cd-entry-meta">что было нужно › {entry.actualNeed.slice(0, 80)}</div>
       )}
     </EntryShell>
   );
@@ -67,7 +67,7 @@ export function GratitudeEntry({ entry, onDelete }: { entry: GratitudeDiaryEntry
             {(open ? entry.items : entry.items.slice(0, 2)).map((item, i) => (
               <li key={i}><span className="cd-grat-num">{String(i + 1).padStart(2, '0')}</span>{item}</li>
             ))}
-            {!open && n > 2 && <li className="cd-grat-more">ещё {n - 2}</li>}
+            {!open && n > 2 && <li className="cd-grat-more"><span className="cd-grat-num">···</span>ещё {n - 2}</li>}
           </ul>
           {open && <EntryMore share={<GratitudeShare items={entry.items} dateLabel={fmtDayMonth(entry.date)} />} remove={<DeleteBtn onClick={onDelete} />} />}
         </>

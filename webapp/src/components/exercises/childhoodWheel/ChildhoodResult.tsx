@@ -38,7 +38,7 @@ export function ChildhoodResult({
   return (
     <ExScreen
       onBack={onBack} spread look="childhood_wheel" heroArt={<WheelScene ratings={ratings} className="chw-scene--hero" />}
-      eyebrow="Истоки · сохранено"
+      eyebrow="Колесо детства · сохранено"
       title={title}
       lede={`Среднее ${avg}/10.${lowIds.length ? ` ${lowIds.length} ${pluralRu(lowIds.length, 'зона', 'зоны', 'зон')} ниже 5 – это места, где могли сформироваться схемы.` : ''}`}
     >

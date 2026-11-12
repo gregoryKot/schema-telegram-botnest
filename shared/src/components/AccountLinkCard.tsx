@@ -17,7 +17,6 @@ import {
   LINK_COPY_HINT,
   LINK_DENIED,
   LINK_EXPIRED,
-  LINK_FAILED,
   LINK_RETRY,
   type Tr,
 } from '../account/accountLinkText';
@@ -35,7 +34,8 @@ export interface AccountLinkCardProps {
   onRetry: () => void;
   /**
    * Скелетон рисует ФРОНТ: примитив живёт у каждого свой, а shared не имеет
-   * права импортировать из webapp — зависимость смотрит в другую сторону.
+   * права импортировать из webapp — зависимость смотрит
+   * в другую сторону.
    */
   renderSkeleton?: () => ReactNode;
   /** Провайдеры ещё грузятся — показываем силуэт, а не пустоту и не спиннер. */
@@ -59,13 +59,13 @@ export function AccountLinkCard({
   if (!target) return null;
   const copy$ = buildAccountLinkText(tr, target);
 
-  if (state.kind === 'denied')
+  if (state.kind === 'denied') {
     return <div className="alc-sub">{LINK_DENIED}</div>;
-  // failed — код не создан вовсе: «не подтвердили вовремя» про него было бы неправдой.
+  }
   if (state.kind === 'expired' || state.kind === 'failed') {
     return (
       <div className="alc-sub">
-        {state.kind === 'failed' ? LINK_FAILED : LINK_EXPIRED}
+        {LINK_EXPIRED}
         <div>
           <button type="button" onClick={onRetry} className="ds-btn alc-action">
             {LINK_RETRY}

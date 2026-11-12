@@ -74,8 +74,8 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
     }
   };
 
-  const isToday = date === todayStr();
-  const dateLabel = isToday ? 'сегодня' : fmtDateLong(date);
+  const dateLabel = date === todayStr() ? 'сегодня' : fmtDateLong(date);
+
   return (
     <ExScreen
       onBack={goBack}
@@ -84,7 +84,7 @@ export function GratitudeEntrySheet({ initialItem, onClose, date, existingItems,
       heroArt={<GratitudePebbles filled={filled.length} />}
       spread
       eyebrow={`Дневник благодарности · ${dateLabel}`}
-      title={<GratitudeTitle today={isToday} />}
+      title={<GratitudeTitle />}
       lede={<GratitudeLede />}
       aside={<GratitudeWhy hue={HUE} />}
     >
