@@ -16,8 +16,8 @@ function detect(): Lang {
     const saved = localStorage.getItem(KEY);
     if (saved === 'en' || saved === 'ru') return saved;
   } catch { /* приватный режим */ }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tg = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.language_code as string | undefined;
+  type TgWindow = { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { language_code?: string } } } } };
+  const tg = (window as unknown as TgWindow).Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
   const code = (tg || navigator.language || 'ru').toLowerCase();
   return code.startsWith('en') ? 'en' : 'ru';
 }

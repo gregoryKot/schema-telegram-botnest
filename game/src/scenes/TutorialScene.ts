@@ -525,10 +525,9 @@ export class TutorialScene extends Phaser.Scene {
     });
   }
 
-  private updateColleague(dt: number) {
+  private updateColleague(_dt: number) {
     const c = this.colleague; if (!c || !c.active) return;
     c.setAngle(Math.sin(this.t * 0.04) * 9); // трясётся от звона
-    const d = Math.abs(this.player.x - c.x);
     if (this.colBubble?.active) {
       this.colBubble.x = c.x; this.colBubble.y = c.y - 70 + Math.sin(this.t * 0.04) * 3;
       this.colBubble.setText(t((['m_ring_ring_ring', 'm_wake_up', 'm_riiing'] as const)[Math.floor(this.t / 1400) % 3]));

@@ -100,7 +100,7 @@
 | `scripts/` | Гейты CI `scripts/check-*.mjs`, их бейслайны, merge-драйверы, хуки git (`scripts/git-hooks/`, ставит `scripts/setup-git-hooks.mjs`), бэкапы |
 | `deploy/` | Супервизор контейнера, бэкапы (`backup-scheduler.cjs`), Cloudflare Worker (`deploy/threads-relay/`) |
 | `docs/` | Документация: индекс — [docs/README.md](README.md), открытое — `docs/open/`, архив — `docs/archive/` |
-| `game/` | Игра (Phaser), заморожена: не трогать без прямой просьбы |
+| `game/` | Игра (Phaser): под eslint- и размер-храповиками (`game/eslint.config.js`); движок — `scenes/GameScene.ts`, сцен-скрипты — `scenes/game/*` |
 | `assets/` | Шрифты для карточек шаринга и корневой сертификат для MAX (`assets/ca/russian-trusted-root.pem`) |
 
 ## Модули бэкенда (`src/`)

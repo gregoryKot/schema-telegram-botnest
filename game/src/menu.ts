@@ -96,7 +96,7 @@ export function setupMenu(game: Phaser.Game) {
     window.location.href = 'https://schemehappens.ru/donate';
   });
   window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.preventDefault(); overlay.classList.contains('visible') ? close() : open(); }
+    if (e.key === 'Escape') { e.preventDefault(); if (overlay.classList.contains('visible')) close(); else open(); }
   });
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   musicBtn.addEventListener('click', () => { audio.setMusicEnabled(!audio.isMusicEnabled()); syncToggles(); });

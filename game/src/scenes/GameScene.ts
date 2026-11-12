@@ -38,7 +38,6 @@ const DASH_MS   = 170;
 const DASH_CD   = 480;
 const ATTACK_MS = 170;
 const ATTACK_CD = 300;
-const ATTACK_RANGE = 72;
 const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
 const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
 // тень-критик выкрикивает это постоянно (голос Карающего Критика)
@@ -1332,7 +1331,7 @@ export class GameScene extends Phaser.Scene {
     const ln = this.add.text(W / 2, y, t('m_crisis_line'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: IS_TOUCH ? '9px' : '10px', color: '#a89fd0', align: 'center',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0).setInteractive({ useHandCursor: true });
-    ln.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); window.location.href = CRISIS_TEL; });
+    ln.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: { stopPropagation(): void }) => { ev.stopPropagation(); window.location.href = CRISIS_TEL; });
     this.tweens.add({ targets: ln, alpha: 0.9, duration: 600, delay: 900 });
     return ln;
   }
@@ -1384,7 +1383,7 @@ export class GameScene extends Phaser.Scene {
           backgroundColor: 'rgba(70,50,12,0.75)', padding: { x: 10, y: 6 } })
           .setOrigin(0.5).setScrollFactor(0).setDepth(201).setAlpha(0).setInteractive({ useHandCursor: true });
         this.tweens.add({ targets: noDmg, alpha: 0.95, duration: 600, delay: 300 });
-        noDmg.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
+        noDmg.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: { stopPropagation(): void }) => {
           ev.stopPropagation();
           setAssist('invuln', true); this.assistInvuln = true;
           cleanup(); this.respawnAtCheckpoint();

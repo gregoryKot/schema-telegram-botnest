@@ -88,8 +88,9 @@ describe('гейт: eslint-храповик, полный режим — нар�
       expect(calls).toContain('src');
       expect(calls).toContain('webapp');
       expect(calls.some((c) => c.split(' ').includes('README.md'))).toBe(true);
-      // Замороженное и чужое не линтуется; точечные каталоги — тоже.
-      expect(calls.join('\n')).not.toMatch(/node_modules|game|\.claude/);
+      // Игра линтуется наравне; чужое и точечные каталоги — нет.
+      expect(calls).toContain('game');
+      expect(calls.join('\n')).not.toMatch(/node_modules|\.claude/);
       // Сумма 1 (src) + 1 (webapp) = 2 против бейслайна 1 — рост.
       expect(res.status).toBe(1);
       expect(res.stderr).toContain('1 → 2');

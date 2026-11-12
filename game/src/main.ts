@@ -40,7 +40,7 @@ function start() {
   if (started) return;
   started = true;
   const game = new Phaser.Game(config);
-  (window as any).__game = game;
+  (window as unknown as { __game?: Phaser.Game }).__game = game;
   setupMenu(game);
   initTouchControls();
   initAnalytics();

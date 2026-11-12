@@ -12,6 +12,7 @@
 //     src/security/analytics-sync.invariants.spec.ts, поля meta режет
 //     src/analytics/game-events.constants.ts.
 const YM_ID = 109568051;
+type Ym = ((...args: unknown[]) => void) & { a?: IArguments[]; l?: number };
 let ready = false;
 
 /** События, которые уезжают на бэкенд (парный реестр — GAME_EVENTS на бэке). */
@@ -44,17 +45,19 @@ function initMetrika() {
   try {
     if (localStorage.getItem('cookie_consent') !== 'all') return;
   } catch { return; }
-  const w = window as unknown as { ym?: any; __ym_loaded?: boolean };
+  const w = window as unknown as { ym?: Ym; __ym_loaded?: boolean };
   if (w.__ym_loaded) { ready = true; return; }
   w.__ym_loaded = true;
-  w.ym = w.ym || function (this: void) { (w.ym.a = w.ym.a || []).push(arguments); };
-  w.ym.l = Date.now();
+  // eslint-disable-next-line prefer-rest-params -- штатная заглушка Метрики копит именно arguments
+  const ym: Ym = w.ym || function (this: void) { (ym.a = ym.a || []).push(arguments); };
+  w.ym = ym;
+  ym.l = Date.now();
   const s = document.createElement('script');
   s.async = true;
   s.src = `https://mc.yandex.ru/metrika/tag.js?id=${YM_ID}`;
   document.head.appendChild(s);
-  w.ym(YM_ID, 'init', { defer: true }); // без webvisor — в игре он не нужен
-  w.ym(YM_ID, 'hit', window.location.href);
+  ym(YM_ID, 'init', { defer: true }); // без webvisor — в игре он не нужен
+  ym(YM_ID, 'hit', window.location.href);
   ready = true;
 }
 
@@ -69,7 +72,7 @@ function entrySource(): string {
 /** Цель Метрики без записи на бэкенд (excuse_answered, donate_click и т.п.). */
 export function track(goal: string, params?: Record<string, unknown>) {
   if (!ready) return;
-  (window as unknown as { ym?: any }).ym?.(YM_ID, 'reachGoal', goal, params);
+  (window as unknown as { ym?: Ym }).ym?.(YM_ID, 'reachGoal', goal, params);
 }
 
 /** Событие воронки: на бэкенд всегда, в Метрику — если у него есть цель. */
