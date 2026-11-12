@@ -14,7 +14,7 @@ import { MyConceptRow } from './MyConceptRow';
 // пустоты сообщение о бывшем терапевте (решение владельца 2026-10-22). Терапевт
 // показал схему случая — строка «Схема случая» (MyConceptRow) под записью.
 export function TherapistCard({ relation }: { relation: TherapyRelationInfo | null }) {
-  if (!relation) return <FormerTherapistNote load={api.getFormerTherapist} enabled className="ds-card cpf-former" />;
+  if (!relation) return <FormerTherapistNote load={api.getFormerTherapist} enabled className="pp-paper cpf-former" />;
   if (relation.role !== 'client' || !relation.partnerName) return null;
   return <ClientTherapistCard relation={relation} partnerName={relation.partnerName} />;
 }

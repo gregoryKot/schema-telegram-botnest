@@ -29,6 +29,8 @@ interface Screen {
   key: string; // ключ uiPrefs, куда ложатся скрытые
   tab?: string; // вкладка «Паттернов» (только телефон)
   phoneOnly?: boolean;
+  /** Данные клиента поверх чистого аккаунта (форма сервера), без которых блоков экрана нет. */
+  setup?: (api: StubApiHandle) => void;
   blocks: (page: Page) => Locator[]; // что видно до и не видно после
 }
 
@@ -38,6 +40,11 @@ const SCREENS: Screen[] = [
     path: '/profile',
     open: 'Настроить экран',
     key: 'screen_hidden_profile',
+    // Чистый аккаунт видит пустой профиль — лист начала пути без блоков (b21, isFreshProfile): три отмеченных дня.
+    setup: (api) => api.overrides.set('GET /api/streak', {
+      currentStreak: 1, longestStreak: 2, totalDays: 3, todayDone: true,
+      weekDots: [true, true, false, false, false, false, false],
+    }),
     blocks: (p) => [
       p.getByRole('heading', { name: 'Мой путь', level: 2 }),
       p.getByRole('heading', { name: 'Мой портрет' }),
@@ -80,7 +87,8 @@ const SCREENS: Screen[] = [
   },
 ];
 
-async function openScreen(page: Page, s: Screen) {
+async function openScreen(page: Page, s: Screen, api: StubApiHandle) {
+  s.setup?.(api);
   await page.goto(s.path);
   if (s.tab) await page.getByRole('tab', { name: s.tab }).click();
 }
@@ -132,7 +140,7 @@ for (const vp of VIEWPORTS) {
         api,
       }) => {
         api.settings.uiPrefs = { ...OTHER_DEVICE };
-        await openScreen(page, s);
+        await openScreen(page, s, api);
         await expectShown(page, s, true); // контроль: без него «пропало» доказывает пустой экран
         const hidden = await hideAll(page, s);
         expect(hidden).toBeGreaterThan(0);
@@ -157,7 +165,7 @@ test.describe('«Настроить экран»: сервер не принял
     const s = SCREENS[0];
     api.settings.uiPrefs = { ...OTHER_DEVICE };
     api.settings.failWrites = true;
-    await openScreen(page, s);
+    await openScreen(page, s, api);
     await expectShown(page, s, true);
     const hidden = await hideAll(page, s);
     await expect

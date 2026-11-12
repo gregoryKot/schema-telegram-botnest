@@ -32,6 +32,7 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
                   key={id}
                   title={meta.label}
                   sub={meta.sub}
+                  sign={meta.sign}
                   on={!hidden.includes(id)}
                   onToggle={() => toggle(id)}
                   handle={phone ? drag.handleProps(id, meta.label, range) : undefined}

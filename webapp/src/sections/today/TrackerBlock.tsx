@@ -7,6 +7,7 @@ import type { ArtProps } from '../../components/art/paper';
 import { SignScene } from '../../components/art/SceneParts';
 import type { TrackerSummary } from './todayFeedModel';
 import { dayStrokeValues } from '../../../../shared/src/needs/dayStrokes';
+import { glue } from '../../../../shared/src/utils/typo';
 import { trackerCta } from './trackerCta';
 
 // Полоски дня — знак трекера с данными (Strokes values): высота — оценка, пустое место — тон
@@ -37,7 +38,7 @@ export function TrackerBlock({ ratings, tracker, meta, onClick }: Props) {
       <span className="pp-hero">
         <span className="pp-hero-body">
           <span className="ds-label">Трекер</span>
-          <span className="pp-hero-title">{tr('Как ты сегодня?', 'Как вы сегодня?')}</span>
+          <span className="pp-hero-title">{glue(tr('Как ты сегодня?', 'Как вы сегодня?'))}</span>
           <span className="pp-hero-text">Пять потребностей. Одна минута для себя.</span>
           <span className="pp-meta">{meta}</span>
         </span>

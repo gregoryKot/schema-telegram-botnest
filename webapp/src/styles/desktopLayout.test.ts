@@ -38,6 +38,7 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/practice/QuickStepBody.tsx': ['stretch', '.qs-actions'], // пошаговый лист: «Дальше» во всю ширину, как DoneSheet
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
+  'sections/profile/ProfileStart.tsx': ['content', '.cpf-start-cta'], // пустой профиль: кнопка по тексту, на телефоне — во всю ширину
   'sections/today/TrackerBlock.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину колонки
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-pay .ds-btn--lg'],
   'pages/DonatePage.tsx': ['own', '.ap-donate .ds-btn--lg'], // во всю карточку 560
