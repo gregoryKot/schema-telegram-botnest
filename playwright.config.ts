@@ -36,8 +36,7 @@ export default defineConfig({
   // Проекты за одним CI-прогоном `npx playwright test` (ci.yml и nightly.yml,
   // джоба browser-smoke, без фильтра по проекту):
   //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts тоже: ему нужен baseURL 4173);
-  //  - webkit-iphone — замеры телефона и снимки экранов в WebKit на iPhone 13: вёрстка,
-  //    проверенная только в Chromium, ломалась на айфоне, и находил это владелец.
+  //  - webkit-iphone — замеры телефона и снимки экранов в WebKit на iPhone 13.
   projects: [
     {
       name: 'webapp',
