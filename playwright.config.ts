@@ -52,7 +52,7 @@ export default defineConfig({
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
     },
-    //  - game — прод-сборка игры game/ (база /game/, сборка `npm run build --prefix game`).
+    //  - game — тоже под этим прогоном: прод-сборка игры game/ (база /game/, сборка `npm run build --prefix game`).
     {
       name: 'game',
       testMatch: ['game-smoke.spec.ts'],
