@@ -59,8 +59,6 @@
   - текстовые баги партий (дата в билете двух форматов, «Специалист» / «Стать специалистом» и другие) —
     списком в разделах `### b24-more-bridge` и `### b25-settings` `docs/design/APP_2026-11.md`, ждут решения
     по словам.
-- ⬜ **Мигающий тест `SiteAccessCard.test.tsx:59`** — `expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', …)` стоит сразу после `findByText`, а событие шлёт `useEffect` (`webapp/src/components/SiteAccessCard.tsx`): под нагрузкой полного прогона вызовов 0. Доказано красной джобой `webapp` в #1081 (дифф теста не касается). Починка — `waitFor` вокруг проверки.
-
 
 ## Идеи
 
