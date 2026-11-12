@@ -26,7 +26,7 @@ describe('MeetingDaysCard', () => {
 
   it('дней нет — «Не указаны» и «Указать →»', () => {
     render(<MeetingDaysCard selectedClient={client([])} detail={detailOf()} />);
-    expect(screen.getByText('Не указаны').className).toBe('ds-empty');
+    expect(screen.getByText('Не указаны').className).toBe('tk-meet-none');
     expect(screen.getByText('Указать →')).toBeTruthy();
   });
 

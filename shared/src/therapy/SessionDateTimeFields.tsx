@@ -2,9 +2,9 @@ import type { CSSProperties, Ref } from 'react';
 import { joinSession, splitSession } from './sessionInput';
 
 // Поля «следующей сессии»: день и необязательное время — один компонент на
-// оба фронтенда (правило «одна механика — один компонент»). Почему не одно
-// datetime-local — в шапке sessionInput.ts. Оформление полей задаёт экран
-// (`className` в webapp, `style` в мини-аппе).
+// оба фронтенда (правило «одна механика — один компонент»); почему не datetime-local —
+// sessionInput.ts. Оформление задаёт экран (`className`/`style`); `lang="ru"` — день и
+// время по-русски, значение то же ISO (b30, сверка — sessionInput.test.tsx).
 export function SessionDateTimeFields({
   value,
   onChange,
@@ -19,13 +19,13 @@ export function SessionDateTimeFields({
   dateRef?: Ref<HTMLInputElement>;
 }) {
   const { date, time } = splitSession(value);
+  const field = { className, style, lang: 'ru' };
   return (
     <>
       <input
         type="date"
         aria-label="День сессии"
-        className={className}
-        style={style}
+        {...field}
         ref={dateRef}
         value={date}
         onChange={(e) => onChange(joinSession(e.target.value, time))}
@@ -33,8 +33,7 @@ export function SessionDateTimeFields({
       <input
         type="time"
         aria-label="Время сессии, необязательно"
-        className={className}
-        style={style}
+        {...field}
         value={time}
         onChange={(e) => onChange(joinSession(date, e.target.value))}
       />

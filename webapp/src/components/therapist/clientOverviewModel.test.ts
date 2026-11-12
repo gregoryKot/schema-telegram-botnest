@@ -23,11 +23,11 @@ describe('summarizeModes', () => {
 });
 
 describe('needBars', () => {
-  it('нормирует оценку в %, помечает ≤4, пропускает отсутствующие', () => {
+  it('нормирует оценку в %, пропускает отсутствующие; светофора «≤4» нет (b30: цвет — потребности)', () => {
     const bars = needBars({ attachment: 4, autonomy: 7, limits: 12 });
     expect(bars.map((b) => b.id)).toEqual(['attachment', 'autonomy', 'limits']);
-    expect(bars[0]).toMatchObject({ widthPct: 40, low: true });
-    expect(bars[1]).toMatchObject({ widthPct: 70, low: false });
+    expect(bars[0]).toEqual({ id: 'attachment', label: 'Привязанность', hue: 28, value: 4, widthPct: 40 });
+    expect(bars[1]).toMatchObject({ widthPct: 70 });
     expect(bars[2].widthPct).toBe(100);
   });
   it('нет данных → пусто', () => {
@@ -61,6 +61,7 @@ describe('diaryPreview', () => {
     ], 2);
     expect(rows).toHaveLength(2);
     expect(rows[0].typeLabel).toBe('Схема-дневник');
+    expect(rows.map((r) => r.type)).toEqual(['schema', 'mode']);
     expect(rows[0].title).toMatch(/ \+1$/);
     expect(rows[1].typeLabel).toBe('Режим-дневник');
     expect(rows[1].title.length).toBeGreaterThan(0);
