@@ -8,8 +8,8 @@ import type { CSSProperties } from 'react';
 export const TABLE_ROW_COLUMNS = 'min(220px, 38%) minmax(0, 1fr)';
 
 // Поля страницы сужаются на телефоне: 40px с каждой стороны оставляли тексту
-// 310px из 390.
-export const column: CSSProperties = { maxWidth: 780, margin: '0 auto', padding: '64px clamp(20px, 6vw, 40px) 96px' };
+// 310px из 390. Ширину колонки (780, с оглавлением на ≥1100 — шире) задаёт styles/legal.css (.lg-col).
+export const column: CSSProperties = { margin: '0 auto', padding: '64px clamp(20px, 6vw, 40px) 96px' };
 // «← На главную» (тут, «Статьи», «Отзывы»): 44 по высоте — было 85×20 (QA мобильной версии 2026-11, М1).
 export const backLink: CSSProperties = { fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, marginBottom: 32 };
 export const eyebrow: CSSProperties = { fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' };

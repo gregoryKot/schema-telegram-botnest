@@ -184,31 +184,41 @@ describe('DonatePage — форма обращения', () => {
   });
 });
 
-// #906: страница прижата к верху — шапка «← На главную» на ds-sheet-head/ds-back,
-// eyebrow + ds-h1 слева, CTA — ds-btn--lg; центрирующих .ap-page--center/.ap-card нет.
-describe('DonatePage — шапка и кнопки (#906)', () => {
-  it('«← На главную» — ds-back внутри ds-sheet-head, заголовок ds-h1, CTA — ds-btn--lg', () => {
+// #906 → b28: «← На главную» — шапкой ds-sheet-head/ds-back на телефоне и строкой ap-home в колонке формы на
+// компьютере; герой — лист соломы со сценой (PayHero), h1 в нём; CTA — одна залитая ds-btn--lg.
+describe('DonatePage — каркас и кнопки (#906, b28)', () => {
+  it('«← На главную» — ds-back внутри ds-sheet-head и ap-home внизу; h1 в листе-герое; CTA — ds-btn--lg', () => {
     const { container } = render(<DonatePage />);
-    const back = screen.getAllByRole('link', { name: '← На главную' })[0];
-    expect(back.className).toBe('ds-back');
-    expect(screen.getAllByRole('link', { name: '← На главную' })[1].className).toBe('ap-home'); // на компьютере — внизу, шапка скрыта
-    // Карточка 560 на компьютере: герой, форма и «← На главную» последней строкой; на телефоне обёртка — display: contents.
-    const shell = container.querySelector('.ap-main > .ap-donate-shell')!;
-    expect([...shell.children].map((e) => e.className)).toEqual(['ap-hero', 'ds-card ap-donate', 'ap-home']);
-    expect(container.querySelector('.ap-lead')!.className).toBe('ds-sub ap-lead'); // подзаголовок как в main
-    expect(back.parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
-    expect(screen.getByRole('heading', { level: 1 }).classList.contains('ds-h1')).toBe(true);
+    const back = screen.getAllByRole('link', { name: '← На главную' });
+    expect(back.map((a) => a.className)).toEqual(['ds-back', 'ap-home']);
+    expect(back[0].parentElement!.className).toBe('ds-sheet-head ds-sheet-head--page');
+    const hero = container.querySelector('.pa-spread-side .ap-sheet')!;
+    expect(hero.contains(screen.getByRole('heading', { level: 1 }))).toBe(true);
+    expect(hero.querySelectorAll('svg.pl2-final-corner--a, svg.pl2-final-corner--b')).toHaveLength(2); // сцена вместо одинокого Leaf
+    expect(hero.querySelector('.ap-lead')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Поддержать 500/ }).classList.contains('ds-btn--lg')).toBe(true);
-    expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn, .ap-donate-cta')).toBeNull();
+    expect(container.querySelectorAll('.ds-btn--accent')).toHaveLength(1); // одна залитая кнопка
+    expect(container.querySelector('.ap-page--center, .ap-card, .ap-btn, .ap-donate-cta, .ap-donate-shell')).toBeNull();
+  });
+
+  it('суммы — чипы бумаги: выбранная с галочкой и aria-pressed', () => {
+    render(<DonatePage />);
+    const on = screen.getByRole('button', { name: '500 ₽' });
+    expect(on.getAttribute('aria-pressed')).toBe('true');
+    expect(on.querySelector('[data-sign="check"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '200 ₽' }).getAttribute('aria-pressed')).toBe('false');
   });
 });
 
 describe('DonatePage — возврат с оплаты (?donation=ok|fail)', () => {
-  it('?donation=ok: благодарность и ссылка на главную, формы нет', () => {
+  it('?donation=ok: лист «спасибо» с главным действием «На главную», формы нет', () => {
     window.history.pushState({}, '', '/donate?donation=ok');
-    render(<DonatePage />);
+    const { container } = render(<DonatePage />);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Спасибо за поддержку!');
-    expect(screen.getAllByRole('link', { name: '← На главную' }).length).toBeGreaterThan(0);
+    expect(container.querySelector('.pa-thanks')).toBeTruthy();
+    const home = screen.getByRole('link', { name: 'На главную' });
+    expect(home.getAttribute('href')).toBe('/');
+    expect(home.className).toContain('ds-btn');
     expect(screen.queryByRole('button', { name: '1000 ₽' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Поддержать/ })).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
@@ -217,7 +227,7 @@ describe('DonatePage — возврат с оплаты (?donation=ok|fail)', ()
   it('?donation=fail: alert об отказе, заголовок и форма на месте', () => {
     window.history.pushState({}, '', '/donate?donation=fail');
     render(<DonatePage />);
-    expect(screen.getByRole('alert').textContent).toContain('Оплата не прошла');
+    expect(screen.getByRole('alert').textContent!.replace(/\u00a0/g, ' ')).toContain('Оплата не прошла'); // glue: неразрывные пробелы
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Поддержать проект');
     expect(screen.getByRole('button', { name: '1000 ₽' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Поддержать 500/ })).toBeTruthy();

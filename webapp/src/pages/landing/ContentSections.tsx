@@ -1,11 +1,11 @@
 import React from 'react';
+import { glueSpaces } from '../../../../shared/src/utils/typo';
 import { useReveal, DARK_BG, INK_ON_DARK } from '../../components/landing-kit-hooks';
 import { EDUCATION, WORK_THEMES, TRUST, BOUNDARIES } from './constants';
 import { BentoCard } from './cards';
 import { CRISIS_HOTLINES } from '../../../../shared/src/utils/crisisMarkers';
 
-// Статические секции лендинга (маркетинг, без состояния страницы). Вынесено
-// из LandingPage.tsx (правило №10). Каждая секция сама держит reveal-ref.
+// Статические секции лендинга (маркетинг, без состояния страницы), вынесены из LandingPage.tsx (правило №10); reveal-ref — у каждой секции.
 
 export function WorkSection() {
   const ref = useReveal() as React.RefObject<HTMLElement>;
@@ -158,7 +158,7 @@ export function BoundariesSection() {
               {BOUNDARIES.map(b => (
                 <div key={b} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <span style={{ color: 'var(--accent-orange)', fontSize: 15, flexShrink: 0, lineHeight: 1.6 }}>→</span>
-                  <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{b}</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-sub)', lineHeight: 1.6 }}>{glueSpaces(b)}</span>
                 </div>
               ))}
               <p style={{ fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.7, margin: '8px 0 0', paddingTop: 16, borderTop: '1px solid var(--line)' }}>

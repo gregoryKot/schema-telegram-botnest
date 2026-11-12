@@ -1,7 +1,7 @@
 // Полноэкранный исход (docs/design/APP_2026-11.md, «Исходы служебных страниц»): лист по центру — полоса
 // бумаги исхода со знаком крупно (тень-вырезка), надпись, заголовок, лид, одна кнопка, тихая ссылка, «код
 // для поддержки». Для загрузки кабинета, ErrorBoundary, RouteErrorScreen, ConnectionTrouble, ServicePage,
-// 404, /link, /merge, «спасибо». Страница может жить вне оболочки кабинета — лист всегда светлый (light-lock).
+// 404, /link, /merge, «спасибо» (ThanksSheet: своя сцена в полосе — art). Страница может жить вне оболочки кабинета — лист всегда светлый (light-lock).
 import type { ReactNode } from 'react';
 import type { Look, OutcomeId } from '../../../../shared/src/theme/entityLook';
 import { hueStyle } from '../../lib/tone';
@@ -20,7 +20,7 @@ export interface PaperOutcomeProps {
   code?: ReactNode;
   /** Своё содержимое между лидом и кнопкой (поле кода, список). */
   children?: ReactNode;
-  className?: string;
+  className?: string; /** Своя сцена в полосе вместо знака (лист «спасибо» ThanksSheet — FinalCorners); знак остаётся в data-sign. */ art?: ReactNode;
 }
 
 function ActionView({ action, cls }: { action: OutcomeAction; cls: string }) {
@@ -29,12 +29,12 @@ function ActionView({ action, cls }: { action: OutcomeAction; cls: string }) {
     : <button type="button" className={cls} onClick={action.onClick}>{action.label}</button>;
 }
 
-export function PaperOutcome({ outcome, eyebrow, title, lead, action, link, code, children, className }: PaperOutcomeProps) {
+export function PaperOutcome({ outcome, eyebrow, title, lead, action, link, code, children, className, art }: PaperOutcomeProps) {
   const { hue, sign } = typeof outcome === 'string' ? OUTCOME_LOOK_LIT[outcome] : outcome; // литералы — outcomeLook.ts
   return (
     <div className={`light-lock pa-outcome${className ? ` ${className}` : ''}`} style={hueStyle(hue)}>
       <div className="pa-outcome-card" data-sign={sign}>
-        <div className="pp-paper pa-outcome-band" aria-hidden="true"><SignHero sign={sign} /></div>
+        <div className="pp-paper pa-outcome-band" aria-hidden="true">{art ?? <SignHero sign={sign} />}</div>
         <div className="pa-outcome-body">
           {eyebrow && <span className="ds-eyebrow pa-outcome-eyebrow">{eyebrow}</span>}
           <h1 className="pa-outcome-title">{title}</h1>

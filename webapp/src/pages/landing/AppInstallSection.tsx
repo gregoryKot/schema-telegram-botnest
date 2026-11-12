@@ -4,7 +4,7 @@ import { Cta } from './BrandKit';
 import { PaperBand } from './PaperBand';
 import { glue } from '../../../../shared/src/utils/typo';
 import { SceneHomeScreen } from '../../components/art/LandingScenesMore';
-import { INSTALL_STEPS } from '../../components/installGuide/installSteps';
+import { InstallBlock } from '../../components/installGuide/InstallBlock';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { hideInstallOffers, subscribeAppInstalled } from '../../utils/pwaInstall';
 import { useHostId } from '../../host/useHostId';
@@ -38,20 +38,7 @@ export function AppInstallSection() {
           <div className="pl2-app-art"><SceneHomeScreen /></div>
         </div>
         <div className="pl2-3 pl2-3--above-actions">
-          {(['ios', 'android', 'desktop'] as const).map((p) => {
-            const b = INSTALL_STEPS[p];
-            return (
-              <div key={p} className="ds-card pl2-card pl2-install">
-                <p className="pl2-card-title">{b.title}</p>
-                <p className="pl2-card-meta">{b.browser}</p>
-                <ol className="pl2-card-list">
-                  {b.steps.map((s) => (
-                    <li key={s}>{glue(s)}</li>
-                  ))}
-                </ol>
-              </div>
-            );
-          })}
+          <InstallBlock platforms={['ios', 'android', 'desktop']} look="landing" />
         </div>
         <div className="pl2-actions">
           <Cta href="/today" size="lg">Открыть приложение</Cta>

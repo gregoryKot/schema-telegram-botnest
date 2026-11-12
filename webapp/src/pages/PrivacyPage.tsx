@@ -2,24 +2,19 @@ import { OPERATOR_NAME, OPERATOR_INN, OPERATOR_EMAIL, OPERATOR_PD_REGISTRY_NO } 
 import { FOREIGN_PROCESSORS, METRIKA_PROCESSOR, processorLine } from './privacy/processors';
 import { ANALYTICS_COOKIES, TECHNICAL_COOKIES } from './privacy/cookies';
 import { Doc, Chapter, P, Ul, Table } from '../legal/LegalLayout';
-import { column, backLink, eyebrow, h1, lead, inlineLink } from '../legal/legalStyles';
+import { inlineLink } from '../legal/legalStyles';
+import { LegalPage } from '../legal/LegalPage';
 
 const EFFECTIVE_DATE = '8 ноября 2026 г.';
 const SITE_URL       = 'schemehappens.ru';
 
 export function PrivacyPage() {
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh' }}>
-      <div style={column}>
-        <a href="/" style={backLink}>← На главную</a>
-
-        <p style={eyebrow}>Редакция от {EFFECTIVE_DATE}</p>
-        <h1 style={h1}>Политика конфиденциальности</h1>
-        <p style={lead}>
+    <LegalPage date={EFFECTIVE_DATE} title="Политика конфиденциальности" lead={<>
           Настоящая политика составлена в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ
           «О персональных данных» и регулирует обработку персональных данных, которые
           собираются через сайты <strong>kotlarewski.gr и {SITE_URL}</strong> и веб-приложение «Всё по схеме».
-        </p>
+        </>}>
 
         <Doc>
 
@@ -236,7 +231,6 @@ export function PrivacyPage() {
           </Chapter>
 
         </Doc>
-      </div>
-    </div>
+    </LegalPage>
   );
 }
