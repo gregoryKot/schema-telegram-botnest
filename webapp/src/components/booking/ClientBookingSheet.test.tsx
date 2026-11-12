@@ -54,7 +54,7 @@ describe('ClientBookingSheet', () => {
   it('открытие — событие client_booking_opened и объяснение «откуда и что после оплаты»', async () => {
     renderSheet('ty');
     expect(mockApi.trackEvent).toHaveBeenCalledWith('client_booking_opened');
-    expect(screen.getByText(/из календаря терапевта/).textContent).toContain('время останется за тобой');
+    expect(screen.getByText(/из календаря терапевта/).textContent?.replace(/\u00a0/g, ' ')).toContain('время останется за тобой');
     await screen.findByText('Выбери день');
   });
 
@@ -164,8 +164,35 @@ describe('ClientBookingSheet', () => {
     renderSheet('ty');
     fireEvent.click(await screen.findByRole('button', { name: '16:00' }));
     fireEvent.click(screen.getByRole('button', { name: 'Записаться на 16:00' }));
-    expect((await screen.findByRole('alert')).textContent).toBe('Это время только что заняли — выбери другое.');
+    expect((await screen.findByRole('alert')).textContent?.replace(/\u00a0/g, ' ')).toBe('Это время только что заняли — выбери другое.');
     fireEvent.click(screen.getByRole('button', { name: '16:00' }));
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('ClientBookingSheet — фокус клавиатуры', () => {
+  it('открытие переносит фокус в лист, Tab с последнего элемента возвращается на первый, закрытие — к вызвавшей кнопке', async () => {
+    const opener = document.createElement('button');
+    document.body.append(opener);
+    opener.focus();
+    const view = render(
+      <MemoryRouter>
+        <AddressFormContext.Provider value={{ form: 'vy', setForm: vi.fn() }}>
+          <ClientBookingSheet onClose={vi.fn()} onBooked={vi.fn()} writeUrl={null} />
+        </AddressFormContext.Provider>
+      </MemoryRouter>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Запись на сессию' });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    const close = screen.getByRole('button', { name: '← Закрыть' });
+    expect(document.activeElement).toBe(close);
+    await screen.findByRole('button', { name: '16:00' });
+    const all = [...dialog.querySelectorAll<HTMLElement>('button, a[href]')];
+    all.at(-1)!.focus();
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(close);
+    view.unmount();
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
   });
 });

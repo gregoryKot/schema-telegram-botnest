@@ -1,7 +1,7 @@
 // Логика записи клиента из приложения (#546): ближайшая бронь, её статус,
 // исход «Записаться». Время — в зоне смотрящего, проверяется во всех зонах.
 import { describe, it, expect } from 'vitest';
-import { bookOutcome, bookingStatusNote, nextBooking, sessionWhen } from './clientBookingModel';
+import { bookOutcome, bookingStatusNote, nextBooking, sessionWhen, leadAndRest } from './clientBookingModel';
 import type { ClientBookingView } from '../../api';
 import { forEachTimeZone } from '../../../../shared/src/utils/timeZone.test-helpers';
 
@@ -54,5 +54,16 @@ describe('bookOutcome', () => {
   it('ссылка на оплату — к оплате; без неё — запись подтверждена', () => {
     expect(bookOutcome({ paymentUrl: 'https://auth.robokassa.ru/x' })).toBe('pay');
     expect(bookOutcome({ paymentUrl: null })).toBe('done');
+  });
+});
+
+describe('leadAndRest — фраза сбоя на заголовок и продолжение', () => {
+  it.each([
+    ['Расписание не загрузилось. Закрой и открой запись ещё раз чуть позже.', 'Расписание не загрузилось.', 'Закрой и открой запись ещё раз чуть позже.'],
+    ['Запись не сохранилась: сбой на нашей стороне. Напиши терапевту.', 'Запись не сохранилась:', 'сбой на нашей стороне. Напиши терапевту.'],
+    ['Это время только что заняли — выбери другое.', 'Это время только что заняли — выбери другое.', ''],
+  ])('%s', (text, lead, rest) => {
+    expect(leadAndRest(text)).toEqual([lead, rest]);
+    expect([lead, rest].filter(Boolean).join(' ')).toBe(text);
   });
 });

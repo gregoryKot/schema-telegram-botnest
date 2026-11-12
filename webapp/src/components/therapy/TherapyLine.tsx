@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { TherapyNudgePlace } from '../../../../shared/src/analytics/therapyNudge';
 import { ExternalLink } from '../../host/ExternalLink';
+import { glue } from '../../../../shared/src/utils/typo';
 import { trackTherapyNudge } from './trackTherapyNudge';
 import { useTherapyBridgeTexts } from './useTherapyBridgeTexts';
 import { useTherapyTarget } from './useTherapyTarget';
@@ -29,7 +30,7 @@ export function TherapyLine({ place, text, className }: Props) {
   return (
     <>
       <p className={className ? `th-line ${className}` : 'th-line'}>
-        {target.connected ? t.lineTherapist : text}{' '}
+        {glue(target.connected ? t.lineTherapist : text)}{' '}
         {target.write ? (
           <ExternalLink className="th-link" href={target.write.url} onClick={target.write.onClick}>
             {t.linkWrite}

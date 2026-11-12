@@ -61,7 +61,7 @@ describe('weekBars', () => {
   });
   it('высота пропорциональна индексу и не выходит за максимум', () => {
     expect(weekBars([10])[0].px).toBe(PARTNER_BAR_MAX_PX);
-    expect(weekBars([5])[0].px).toBe(12);
+    expect(weekBars([5])[0].px).toBe(PARTNER_BAR_MAX_PX / 2);
     expect(weekBars([99])[0].px).toBe(PARTNER_BAR_MAX_PX);
   });
 });

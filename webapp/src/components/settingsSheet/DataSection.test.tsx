@@ -79,7 +79,7 @@ describe('DataSection — конфиденциальность: модалка',
     fireEvent.click(screen.getByText('Конфиденциальность'));
     await screen.findByText('Данные и конфиденциальность');
 
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    fireEvent.click(document.querySelector('.sheet-modal')!);
     await waitFor(() => expect(screen.queryByText('Данные и конфиденциальность')).toBeNull());
   });
 

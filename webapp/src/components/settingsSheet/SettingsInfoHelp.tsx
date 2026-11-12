@@ -18,8 +18,7 @@ export function SettingsInfoHelp({ infoKey }: { infoKey: SettingsInfoKey }) {
         <span className="st-help-in" style={hit.inner}>?</span>
       </button>
       {open && (
-        <InfoModal onClose={() => setOpen(false)}>
-          <h2 className="dialog-title st-modal-title">{title}</h2>
+        <InfoModal title={title} onClose={() => setOpen(false)}>
           {paragraphs.map((p, i) => (
             <p key={i} className="st-text st-mb10">
               <InfoParts parts={p.parts} boldClassName="st-info-b" />

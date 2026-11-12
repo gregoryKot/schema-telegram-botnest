@@ -1,4 +1,4 @@
-import { InfoModal } from './ui';
+import { InfoModal, Tick } from './ui';
 import { useCopyToClipboard } from '../../../../shared/src/utils/useCopyToClipboard';
 
 // Модалка «Сводка для терапевта»: текст сводки плюс кнопка копирования.
@@ -20,17 +20,16 @@ export function ExportSummaryModal({
 }) {
   const copy = useCopyToClipboard();
   const label = copy.copied
-    ? '✓ Скопировано'
+    ? <><Tick />Скопировано</>
     : copy.failed
       ? 'Не скопировалось — текст выше'
       : 'Скопировать';
   return (
-    <InfoModal onClose={onClose}>
-      <h2 className="dialog-title st-modal-title">Сводка для терапевта</h2>
+    <InfoModal title="Сводка для терапевта" onClose={onClose}>
       <pre className="st-pre">
         {text}
       </pre>
-      <button className={`ds-btn ds-btn--secondary${copy.failed ? ' st-btn-danger' : ''} st-block`} onClick={() => void copy.copy(text)}>
+      <button className={`ds-btn${copy.failed ? ' ds-btn--secondary st-btn-danger' : ''} st-block`} onClick={() => void copy.copy(text)}>
         {label}
       </button>
     </InfoModal>

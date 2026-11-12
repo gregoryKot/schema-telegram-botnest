@@ -49,7 +49,7 @@ describe('PartnerSection — несколько партнёров', () => {
 describe('PartnerSection — ждём партнёра', () => {
   it('ждущее приглашение: ссылка для повторной отправки, кнопки создания нет', () => {
     render(<PartnerSection pair={pairOf({ partners: [], pendingCode: 'WAIT1', pendingUrl: URL })} />);
-    expect(screen.getByText('⏳ Ждём партнёра')).toBeTruthy();
+    expect(screen.getByText('Ждём партнёра')).toBeTruthy();
     expect(screen.getByText(URL)).toBeTruthy();
     expect(screen.getByText('Скопировать ссылку')).toBeTruthy();
     expect(screen.queryByText('Позвать в пару')).toBeNull();
@@ -59,7 +59,7 @@ describe('PartnerSection — ждём партнёра', () => {
 
   it('ждущее приглашение без ссылки от сервера: ссылки нет, но «Новая ссылка» и отмена остаются', () => {
     render(<PartnerSection pair={pairOf({ partners: [], pendingCode: 'WAIT1' })} />);
-    expect(screen.getByText('⏳ Ждём партнёра')).toBeTruthy();
+    expect(screen.getByText('Ждём партнёра')).toBeTruthy();
     expect(screen.queryByText('Скопировать ссылку')).toBeNull();
     expect(screen.getByText('Новая ссылка')).toBeTruthy();
     expect(screen.getByText('Отменить приглашение')).toBeTruthy();
