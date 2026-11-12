@@ -6,7 +6,7 @@
 // путь через localStorage, rememberLaunchParam).
 //
 // Один модуль на ключ: пишут RequireAuth, LinkDevicePage и привязка способа
-// входа; забирают экран входа, 2FA и колбэки (OAuth, Telegram, письмо).
+// входа; забирают экран входа, 2FA и колбэки (OAuth, письмо).
 import { useCallback, useRef } from 'react';
 import { LAUNCH_KEYS } from '../../../shared/src/host/startParam';
 

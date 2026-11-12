@@ -7,6 +7,7 @@ import { reportClientError } from '../api';
 import { LoginProviderButtons } from './login/LoginProviderButtons';
 import { LoginHero } from './login/LoginHero';
 import { LoginEmailForm } from './login/LoginEmailForm';
+import { LoginFormerNote } from './login/LoginFormerNote';
 import { TelegramRetry } from './login/TelegramRetry';
 import { LoginConsentNote } from './login/LoginConsentNote';
 import { exchangeErrorText, exchangeThrownText } from './login/exchangeError';
@@ -15,8 +16,6 @@ import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/s
 import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
 import { useAfterLoginPath } from '../auth/returnTo';
 import '../styles/auth-login.css';
-
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 export function LoginPage() {
   const { isAuthenticated, setAccessToken } = useAuth();
@@ -39,6 +38,10 @@ export function LoginPage() {
   }, [isAuthenticated, navigate, afterLogin]);
 
   const [miniAppLoading, setMiniAppLoading] = useState(false);
+  const enter = (accessToken: string, expiresIn: number) => {
+    setAccessToken(accessToken, expiresIn);
+    navigate(afterLogin(), { replace: true });
+  };
   // Сломанный вход обязан быть слышен нам, а не только виден пользователю
   // (инцидент 2026-08-08). Парная правка к AppErrorScreen мини-аппа; отчёт
   // уходит и для обычного веб-логина.
@@ -68,8 +71,7 @@ export function LoginPage() {
       });
       if (!res.ok) { setError(await exchangeErrorText(res)); return; }
       const { accessToken, expiresIn } = await res.json() as { accessToken: string; expiresIn: number };
-      setAccessToken(accessToken, expiresIn);
-      navigate(afterLogin(), { replace: true });
+      enter(accessToken, expiresIn);
     } catch (e) {
       setError(exchangeThrownText(e));
     } finally {
@@ -93,27 +95,13 @@ export function LoginPage() {
           <p className="al-sub" role={deleted ? 'status' : undefined}>
             {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
               ? 'Вход устарел — данные на месте, нужно войти заново'
-              : 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram'}
+              : 'Войдите, чтобы продолжить'}
           </p>
 
-          <LoginProviderButtons
-            onSession={(token, expiresIn) => {
-              setAccessToken(token, expiresIn);
-              navigate(afterLogin(), { replace: true });
-            }}
-          />
-
-          {/* Прежний путь через oauth.telegram.org остался вторым способом:
-              не требует установленного Telegram, но при первом визите просит
-              телефон и код. */}
-          <button
-            className="al-linkbtn"
-            onClick={() => { window.location.href = `${API_BASE}/api/auth/telegram/redirect`; }}
-          >
-            Войти через Telegram другим способом
-          </button>
+          <LoginProviderButtons onSession={enter} />
 
           <LoginEmailForm setError={setError} />
+          <LoginFormerNote />
 
           {error && <p className="al-error">{error}</p>}
 

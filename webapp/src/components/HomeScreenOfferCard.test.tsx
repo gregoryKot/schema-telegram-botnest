@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 vi.mock('../api', () => ({ api: { trackEvent: vi.fn() }, reportClientError: vi.fn() }));
 vi.mock('../apiClient', () => ({ authedFetch: vi.fn() }));
@@ -34,19 +34,20 @@ describe('HomeScreenOfferCard', () => {
     expect(api.trackEvent).not.toHaveBeenCalled();
   });
 
-  it('в Telegram на Android: показ, openLink на /install с кодом и снуз на неделю', async () => {
+  // Из Telegram сессию в браузер не передаём (вход на сайт через Telegram
+  // убран, 2026-11): адрес без кода, сервер не дёргается.
+  it('в Telegram на Android: показ, openLink на /install БЕЗ кода и снуз на неделю', async () => {
     const openLink = vi.fn();
     installTelegram({ platform: 'android', openLink });
     render(<HomeScreenOfferCard />);
     expect(api.trackEvent).toHaveBeenCalledWith('home_screen_offer', { action: 'shown', surface: 'today' });
     expect(screen.getByText(/открывается без Telegram/)).toBeTruthy();
 
-    // Адрес с кодом приезжает после ответа сервера; до него — без кода.
-    await waitFor(() => expect(authedFetch).toHaveBeenCalled());
     await act(async () => { await Promise.resolve(); });
+    expect(authedFetch).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Установить приложение' }));
     expect(openLink).toHaveBeenCalledTimes(1);
-    expect(String(openLink.mock.calls[0][0])).toMatch(new RegExp(`/install#h=${CODE}$`));
+    expect(String(openLink.mock.calls[0][0])).toMatch(/\/install$/);
     expect(api.trackEvent).toHaveBeenCalledWith('home_screen_offer', { action: 'add', surface: 'today' });
     expect(Number(localStorage.getItem(MEMORY_KEY))).toBeGreaterThan(Date.now());
     expect(screen.queryByText('Установить приложение')).toBeNull();

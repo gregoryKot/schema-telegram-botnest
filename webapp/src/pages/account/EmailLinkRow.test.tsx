@@ -20,6 +20,7 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
+const onLinked = vi.fn();
 
 /** Ошибку показывает страница — здесь её крошечный дублёр, чтобы проверять
  *  «видно текстом», а не только вызов колбэка. */
@@ -43,12 +44,14 @@ function Harness({
         busy={false}
         onUnlink={vi.fn()}
         onError={setError}
+        onLinked={onLinked}
       />
     </AddressFormContext.Provider>
   );
 }
 
 beforeEach(() => {
+  onLinked.mockReset();
   fetchMock = vi.fn(() => Promise.resolve(jsonResponse(200, {})));
   vi.stubGlobal('fetch', fetchMock);
 });
@@ -65,7 +68,7 @@ describe('EmailLinkRow — когда видна форма', () => {
     render(<Harness />);
     expect(
       screen.getByText(
-        'Пригодится, если пропадёт доступ к Telegram или другому способу входа.',
+        'Почтой входят на сайт и в приложение на экране телефона. Пригодится и как запасной вход.',
       ),
     ).toBeTruthy();
   });
@@ -163,8 +166,58 @@ describe('EmailLinkRow — отправка письма', () => {
     });
     fireEvent.click(screen.getByText('Отправить'));
 
-    await screen.findByText(/Перейдите по ссылке в письме/);
-    expect(screen.queryByText(/Перейди по ссылке в письме/)).toBeNull();
+    await screen.findByText(/Введите код здесь или перейдите по ссылке/);
+    expect(screen.queryByText(/Введи код здесь или перейди по ссылке/)).toBeNull();
+  });
+});
+
+// Привязка кодом из письма (2026-11): внутри Telegram/MAX ссылка из письма
+// открывается в другом браузере, где аккаунт не открыт, — код вводят здесь.
+describe('EmailLinkRow — код из письма', () => {
+  const CODE_URL = '/api/auth/email/link-code';
+  async function toCodeForm() {
+    render(<Harness />);
+    fireEvent.click(screen.getByText('Привязать'));
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'me@example.com' },
+    });
+    fireEvent.click(screen.getByText('Отправить'));
+    return (await screen.findByLabelText('Код из письма')) as HTMLInputElement;
+  }
+  const submit = () => fireEvent.click(screen.getAllByRole('button', { name: 'Привязать' }).at(-1)!);
+  const codeCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).includes(CODE_URL));
+
+  it('неполный код не отправляется; полный уходит с сессией и CSRF, успех — onLinked', async () => {
+    const input = await toCodeForm();
+    fireEvent.change(input, { target: { value: 'k7m2' } });
+    expect(screen.getAllByRole<HTMLButtonElement>('button', { name: 'Привязать' }).at(-1)!.disabled).toBe(true);
+
+    // Код набран как в письме — с дефисом и строчными: уходит нормализованным.
+    fireEvent.change(input, { target: { value: 'k7m2-qx94' } });
+    expect(input.value).toBe('K7M2-QX94');
+    submit();
+    await waitFor(() => expect(onLinked).toHaveBeenCalledTimes(1));
+    const [, init] = codeCalls()[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ code: 'K7M2QX94' });
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer tok123');
+    expect(headers['x-requested-with']).toBe('webapp');
+  });
+
+  it('код не подошёл — текст сервера виден, onLinked не зовётся, форма на месте', async () => {
+    const input = await toCodeForm();
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes(CODE_URL)
+          ? jsonResponse(400, { message: 'Код не подошёл или истёк' })
+          : jsonResponse(200, {}),
+      ),
+    );
+    fireEvent.change(input, { target: { value: 'ZZZZZZZZ' } });
+    submit();
+    await screen.findByText('Код не подошёл или истёк');
+    expect(onLinked).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Код из письма')).toBeTruthy();
   });
 });
 

@@ -5,25 +5,25 @@ import {
   formatLoginTicket,
 } from './login-ticket-metrics.format';
 import { OneTapMetrics, formatOneTap } from './one-tap-metrics.format';
+import { formatLoginOffer, loadLoginOffer } from './login-offer-metrics';
 
 // Счётчики пути входа по билету для /stats. Событие пишет только
 // LoginTicketService (src/auth/login-ticket/login-ticket.report.ts), всегда
 // с userId = null — фильтр ниже поэтому обязателен, а не декоративен:
 // /api/event открыт авторизованным клиентам, и без него отчёт о здоровье
-// входа мог бы накрутить любой из них.
-//
-// Свой домен — свой файл (правило №10), образец — auth-health-metrics.service.
+// входа мог бы накрутить любой из них. Образец — auth-health-metrics.service.
 @Injectable()
 export class LoginTicketMetricsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Готовый текстовый блок для /stats: вход по коду + окно Google One Tap. */
+  /** Блок /stats: вход по коду, окно Google (история), приглашение добавить почту. */
   async render(): Promise<string> {
-    const [ticket, oneTap] = await Promise.all([
+    const [ticket, oneTap, offer] = await Promise.all([
       this.getMetrics(),
       this.getOneTap(),
+      loadLoginOffer(this.prisma),
     ]);
-    return `${formatLoginTicket(ticket)}\n\n${formatOneTap(oneTap)}`;
+    return `${formatLoginTicket(ticket)}\n\n${formatOneTap(oneTap)}\n\n${formatLoginOffer(offer)}`;
   }
 
   /** Входы через окно Google за неделю — те же правила: только userId IS NULL. */

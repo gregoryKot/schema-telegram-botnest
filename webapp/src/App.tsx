@@ -10,7 +10,6 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthErrorPage } from './pages/AuthErrorPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { AuthConfirmPage } from './pages/AuthConfirmPage';
-import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
 import { AccountPage } from './pages/AccountPage';
 import { MergePage } from './pages/MergePage';
 import { LinkDevicePage } from './pages/LinkDevicePage';
@@ -105,7 +104,6 @@ const appRoutes = [
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
   { path: '/auth/confirm',   element: <AuthConfirmPage /> },
-  { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
   { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
   { path: '/auth/error',     element: <AuthErrorPage /> },
   { path: '/link',           element: <LinkDevicePage /> },

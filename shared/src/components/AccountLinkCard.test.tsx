@@ -90,7 +90,7 @@ describe('приглашение', () => {
 
   it('пока билет выписывается — кнопка погашена, второй запрос не уходит', () => {
     const onStart = vi.fn();
-    show({ onStart, state: { kind: 'starting', provider: 'telegram' } });
+    show({ onStart, state: { kind: 'starting', provider: 'email' } });
     const btn = screen.getByText('Подключить Telegram');
     expect(btn.disabled).toBe(true);
     fireEvent.click(btn);
@@ -104,7 +104,7 @@ describe('приглашение', () => {
     show({
       onStart,
       href: 'https://t.me/Bot?start=link_K7M2QX94',
-      state: { kind: 'starting', provider: 'telegram' },
+      state: { kind: 'starting', provider: 'email' },
     });
     const link = screen.getByText('Подключить Telegram');
     expect(link.getAttribute('aria-disabled')).toBe('true');

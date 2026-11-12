@@ -3,7 +3,8 @@
 // ручка принимала только id из AuthProviderRegistry (google, telegram, vk,
 // max) и отвечала 400 «Unknown provider» — почту отвязать было нельзя.
 // Тесты стояли по обе стороны шва, но не на нём (docs/INCIDENTS.md, класс 7
-// «Тест не на шве»). Здесь: ключи словаря кабинета (PROVIDER_NAMES, читаем
+// «Тест не на шве»). С 2026-11 то же про google: вход через Google убран и
+// обработчика в реестре нет, но строки остались — кабинет их отвязывает. Здесь: ключи словаря кабинета (PROVIDER_NAMES, читаем
 // как текст) против настоящего контроллера с настоящим реестром провайдеров.
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -12,22 +13,12 @@ import type { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import { AuthLinkController } from './auth-link.controller';
 import { AuthProviderRegistry } from './providers/registry';
-import { GoogleProvider } from './providers/google.provider';
 import { TelegramProvider } from './providers/telegram.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
 import type { AuthService } from './auth.service';
-import type { MergeService } from './merge.service';
 import type { SecurityLogService } from './security-log.service';
 import type { SecurityNoticeService } from './security-notice.service';
-
-// jose — сторонний ESM-пакет, который тянет google-id-token; сама проверка
-// токенов здесь не участвует, провайдеры остаются настоящими.
-jest.mock('jose', () => ({
-  createRemoteJWKSet: jest.fn(),
-  jwtVerify: jest.fn(),
-  decodeJwt: jest.fn(),
-}));
 
 function cabinetProviderIds(): string[] {
   const src = readFileSync(
@@ -41,8 +32,7 @@ function cabinetProviderIds(): string[] {
 function build() {
   const config = {} as unknown as ConfigService;
   const registry = new AuthProviderRegistry(
-    new GoogleProvider(config),
-    new TelegramProvider(config),
+    new TelegramProvider(),
     new VkProvider(config),
     new MaxProvider(config),
   );
@@ -54,7 +44,6 @@ function build() {
   const controller = new AuthLinkController(
     auth as unknown as AuthService,
     registry,
-    {} as unknown as MergeService,
     { log: jest.fn() } as unknown as SecurityLogService,
     notice as unknown as SecurityNoticeService,
   );

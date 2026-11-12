@@ -3,7 +3,7 @@
 // бы, что правку внесут в одну, а вторая тихо останется старой.
 //
 // Суть: приложение НЕ уходит подтверждать вход само. Оно открывает подтверждение
-// СНАРУЖИ (ссылка в бота или страница провайдера в браузере) и остаётся жить,
+// СНАРУЖИ (страница провайдера в браузере; при привязке — бот) и остаётся жить,
 // опрашивая сервер. Поэтому сессия и возвращается в тот контейнер, где вход
 // начался, — установленное приложение не видит куку внешнего браузера, и до
 // билета вход оттуда был невозможен в принципе (разбор 2026-08-28).
@@ -15,8 +15,6 @@ export interface LoginTicketDeps {
   api: LoginTicketApi;
   /** Где открыт контейнер — уезжает на сервер для подписи устройства и метрик. */
   hostId: string;
-  /** Имя бота для ссылки `t.me/<bot>?start=login_<КОД>`. */
-  botUsername: string;
   /** Куда бить за OAuth: обычно '' (тот же origin) или VITE_API_URL. */
   apiBase: string;
   /** Сессия получена — фронт кладёт её к себе (setAccessToken / adoptSession). */
@@ -31,7 +29,7 @@ export interface LoginTicketDeps {
   urlFor?: (
     provider: LoginProvider,
     code: string,
-    deps: { botUsername: string; apiBase: string },
+    deps: { apiBase: string },
   ) => string;
   /** Куда уводит контейнер, у которого обычных ссылок нет (мини-апп). */
   openExternally?: (url: string) => void;
@@ -75,11 +73,10 @@ const MAX_BACKOFF_STEPS = 5; // потолок 2^5 = 32× базовой пау�
 export function loginUrl(
   provider: LoginProvider,
   code: string,
-  deps: { botUsername: string; apiBase: string },
+  deps: { apiBase: string },
 ): string {
-  if (provider === 'telegram') {
-    return `https://t.me/${deps.botUsername}?start=login_${code}`;
-  }
+  // Только страница провайдера в браузере: ссылки входа в бота нет с 2026-11
+  // (на сайт через Telegram не входят, src/auth/login-ticket/site-login.ts).
   // Код едет параметром, а сервер прячет его внутрь подписанного `state` —
   // подменяемый код позволил бы направить чужую свежую сессию в свой билет.
   return `${deps.apiBase}/api/auth/${provider}?ticket=${encodeURIComponent(code)}`;

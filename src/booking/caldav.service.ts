@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { buildVcalendar, CalEvent } from './caldav-event.util';
+import { buildOwnerVcalendar, OwnerCalEvent } from './caldav-owner-event';
 import { discoverCalendarUrl, listCalendars } from './caldav-discovery';
 import { busyQueryXml, Interval } from './caldav-busy';
 import { readBusy } from './caldav-busy-read';
@@ -74,8 +74,8 @@ export class CalDavService {
     return this.discovery;
   }
 
-  /** Create or update the calendar event for a booking. Returns the iCloud UID, or null. */
-  async pushEvent(ev: CalEvent): Promise<string | null> {
+  /** Create or update the (client-data-free) calendar event for a booking. Returns the iCloud UID, or null. */
+  async pushEvent(ev: OwnerCalEvent): Promise<string | null> {
     if (!this.enabled) return null;
     const base = await this.getBase();
     if (!base) return null;
@@ -87,7 +87,7 @@ export class CalDavService {
           Authorization: this.auth,
           'Content-Type': 'text/calendar; charset=utf-8',
         },
-        body: buildVcalendar([ev]),
+        body: buildOwnerVcalendar(ev),
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) {

@@ -169,7 +169,9 @@ describe('/stats на реальном Postgres: каждый сырой зап�
     for (const n of Object.values(oneTap))
       expect(Number.isInteger(n)).toBe(true);
     if (oneTap.signedIn + oneTap.twofa + oneTap.rejected === 0)
-      expect(product).toContain('За неделю через окно не входили.');
+      expect(product).toContain(
+        'За неделю через окно не входили: вход через Google убран.',
+      );
     // Пустое состояние (правило №8): без шквала строк про него нет.
     expect(product).not.toContain('Повторные отчёты с одного устройства');
     expect(product).not.toContain(
