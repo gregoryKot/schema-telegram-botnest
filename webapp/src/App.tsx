@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, type ComponentType } from 'react';
 import { applyPersonalSiteChrome } from './utils/domainChrome';
 import { savedTheme } from './utils/theme';
 import { resolvePersonalSite } from './utils/personalSite';
@@ -7,7 +7,6 @@ import { MetrikaTracker } from './components/MetrikaTracker';
 import { AuthProvider } from './auth/AuthProvider';
 import { TokenBridge } from './auth/TokenBridge';
 import { AccountPage } from './pages/AccountPage';
-import { MergePage } from './pages/MergePage';
 import { AppShell } from './components/AppShell';
 import { CookieBanner } from './components/CookieBanner';
 import { ScrollLock } from './hooks/ScrollLock';
@@ -22,21 +21,26 @@ import { TestsPage } from './pages/tests/TestsPage';
 import { QuizPage } from './pages/tests/QuizPage';
 import { ReviewsPage } from './pages/ReviewsPage';
 import { LoginPage } from './pages/LoginPage'; // вход и служебные — после прочих: их PaperOutcome (sceneKit) иначе переставляет CSS-чанки (b26)
-import { AuthErrorPage } from './pages/AuthErrorPage';
 import { AuthCallback } from './pages/AuthCallback';
-import { AuthConfirmPage } from './pages/AuthConfirmPage';
 import { TelegramWidgetCallback } from './pages/TelegramWidgetCallback';
-import { LinkDevicePage } from './pages/LinkDevicePage';
-import { TwoFactorChallengePage } from './pages/TwoFactorChallengePage';
-import { NotFoundPage } from './pages/NotFoundPage';
 // Lazy: pulls in the TipTap WYSIWYG editor, which shouldn't bloat the main bundle every visitor downloads just for the public site.
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
-import { DonatePage } from './pages/DonatePage';
 import { BookingPaidRoute } from './components/booking/BookingPaidRoute';
 const BookingLinkPage = lazy(() => import('./pages/BookingLinkPage').then(m => ({ default: m.BookingLinkPage }))); // не в главном чанке: страница по ссылке
 const SubscribePage = lazy(() => import('./pages/SubscribePage').then(m => ({ default: m.SubscribePage }))); // не в главном чанке: редкая страница по ссылке
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then(m => ({ default: m.PrivacyPage }))); // юридические тексты — редкие страницы, ~20 КБ текста
 const OfferPage = lazy(() => import('./pages/OfferPage').then(m => ({ default: m.OfferPage })));
+
+// Редкие экраны по ссылке (служебные, /link, объединение, 2FA, донат, 404) — ленивыми маршрутами, не в
+// главном чанке (бандл-храповик, b26–b28); вход (/login) остаётся в нём — первый экран.
+const lazyRoute = (load: () => Promise<ComponentType>) => async () => ({ Component: await load() });
+const linkRoute = lazyRoute(async () => (await import('./pages/LinkDevicePage')).LinkDevicePage);
+const mergeRoute = lazyRoute(async () => (await import('./pages/MergePage')).MergePage);
+const donateRoute = lazyRoute(async () => (await import('./pages/DonatePage')).DonatePage);
+const notFoundRoute = lazyRoute(async () => (await import('./pages/NotFoundPage')).NotFoundPage);
+const authConfirmRoute = lazyRoute(async () => (await import('./pages/AuthConfirmPage')).AuthConfirmPage);
+const authErrorRoute = lazyRoute(async () => (await import('./pages/AuthErrorPage')).AuthErrorPage);
+const twoFactorRoute = lazyRoute(async () => (await import('./pages/TwoFactorChallengePage')).TwoFactorChallengePage);
 
 if (savedTheme() === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); // saved theme before first render; без try хранилище роняло модуль — белый экран (E10)
 
@@ -82,7 +86,7 @@ const personalRoutes = [
   // /subscribe и /donate — на .light-lock + styles/auth-pay.css (PR #740):
   // .light-lock сам переопределяет акцент, страницы осознанно продуктовые.
   { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
-  { path: '/donate',         element: <DonatePage /> },
+  { path: '/donate',         lazy: donateRoute },
   { path: '*',               element: <Navigate to="/" replace /> },
 ];
 
@@ -94,7 +98,7 @@ const appRoutes = [
   { path: '/tests',          element: <TestsPage /> },
   { path: '/tests/:quizId',  element: <QuizPage /> },
   { path: '/subscribe',      element: <Suspense fallback={null}><SubscribePage /></Suspense> },
-  { path: '/donate',         element: <DonatePage /> },
+  { path: '/donate',         lazy: donateRoute },
   // Юрстраницы — на обоих хостах (инцидент 2026-10-22); сверка: sitemap.middleware.spec.ts.
   { path: '/privacy',        element: <PrivacyPage /> },
   { path: '/offer',          element: <OfferPage /> },
@@ -105,17 +109,17 @@ const appRoutes = [
   { path: '/articles-admin', element: <Navigate to="/admin" replace /> },
   { path: '/login',          element: <LoginPage /> },
   { path: '/auth/callback',  element: <AuthCallback /> },
-  { path: '/auth/confirm',   element: <AuthConfirmPage /> },
+  { path: '/auth/confirm',   lazy: authConfirmRoute },
   { path: '/auth/telegram',  element: <TelegramWidgetCallback /> },
-  { path: '/auth/2fa',       element: <TwoFactorChallengePage /> },
-  { path: '/auth/error',     element: <AuthErrorPage /> },
-  { path: '/link',           element: <LinkDevicePage /> },
+  { path: '/auth/2fa',       lazy: twoFactorRoute },
+  { path: '/auth/error',     lazy: authErrorRoute },
+  { path: '/link',           lazy: linkRoute },
   { path: '/install',        lazy: async () => ({ Component: (await import('./pages/InstallPage')).InstallPage }) }, // рекламная посадочная: не в главном чанке
   {
     element: <RequireAuth />,
     children: [
       { path: '/account',       element: <AccountPage /> },
-      { path: '/account/merge', element: <MergePage /> },
+      { path: '/account/merge', lazy: mergeRoute },
       {
         element: <AppShell />,
         children: [
@@ -134,7 +138,7 @@ const appRoutes = [
       },
     ],
   },
-  { path: '*',               element: <NotFoundPage /> }, // 404 гостю и вошедшему (b26), а не молча на вход или в «Сегодня»
+  { path: '*',               lazy: notFoundRoute }, // 404 гостю и вошедшему (b26), а не молча на вход или в «Сегодня»
 ];
 // ── Domain detection + router ────────────────────────────────────────────────
 // Домен и роутер считаются при первом рендере, а не при импорте модуля: App.test
