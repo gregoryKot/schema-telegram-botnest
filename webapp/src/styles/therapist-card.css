@@ -25,9 +25,9 @@
   .tk-tabs-body > .page-inner-wide { margin: 0 0 0 var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
   /* «Графические карты»: холст во всю ширину, полоса карт — в колонке, на одной вертикали с шапкой. */
   .tk-tabs-body .mm2-bar, .tk-tabs-body .mm2-create-err { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); }
+  /* Пустые «Графические карты» на узком окне: плитки типов 3 + 2 встают в поле шапки (sheet-modemap.css). */
+  @media (max-width: 1023px) { .tk-tabs-body .mm2-center--kinds { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); } }
 }
-/* Пустые «Графические карты» на узком окне: плитки типов 3 + 2 встают в поле шапки (sheet-modemap.css). */
-@media (min-width: 768px) and (max-width: 1023px) { .tk-tabs-body .mm2-center--kinds { padding-inline: calc(var(--tk-center) + var(--tk-gutter)); } }
 
 /* ── Шапка ───────────────────────────────────────────────────────────────── */
 .tk-head {
