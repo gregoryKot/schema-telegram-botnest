@@ -1,93 +1,98 @@
-// Карточка одного шага из «Моего пути» (выполненная практика, запись
-// дневника, тест…): медальон с эмодзи цвета группы по центру, название,
-// уточнение (потребность/режим/схема) и дата. Композиция центрированная —
-// вместо header() эйбрау рисуется вручную по центру.
+// Карточка одного шага «Моего пути» (b23b): лист сущности шага, её знак крупно по центру (вид —
+// journeyItemLook, как шапка детали в приложении), название Literata, уточнение (потребность,
+// режим, схема) и дата тихими подписями. Незнакомый тип — небо «Моего пути» без знака.
 import {
-  drawEmoji,
+  CARD_W,
+  CARD_PAD,
+  CARD_LOOK,
   FOOTER_H,
+  INK,
+  SERIF,
   beginCard,
-  footer,
+  canvasSign,
   cardFont,
+  footer,
+  measureClamp,
+  serifFont,
+  sign,
+  signHeight,
   tracking,
-  withAlpha,
 } from '../cardKit';
 
 export interface JourneyItemCardData {
-  emoji: string;
   label: string;
   /** Потребность/режим/схема — может отсутствовать */
   sub: string | null;
   day: string;
-  hex: string;
+  /** Бумага и знак сущности шага (journeyItemLook); незнакомый тип — null. */
+  hue: number | null;
+  sign: string | null;
 }
 
-const EYEBROW_Y = 44;
-const MED_R = 48;
-const MED_TOP_GAP = 24;
-const LABEL_GAP = 40;
-const SUB_GAP = 26;
-const DAY_GAP = 22;
-const BOTTOM_PAD = 30;
+const EYEBROW_Y = 54;
+const ART_TOP = 80;
+const ART_BOX = 112;
+const ART_W = 170;
+const TITLE_LH = 34;
+const SUB_LH = 20;
 
-/** Высота карточки — чистая формула (зависит только от наличия уточнения). */
-export function journeyItemCardHeight(hasSub: boolean): number {
-  const medBottom = EYEBROW_Y + MED_TOP_GAP + MED_R * 2;
-  const labelY = medBottom + LABEL_GAP;
-  const afterLabelY = hasSub ? labelY + SUB_GAP : labelY;
-  return afterLabelY + DAY_GAP + BOTTOM_PAD + FOOTER_H;
+/** Высота карточки по числу строк названия и уточнения — чистая формула. */
+export function journeyItemCardHeight(
+  hasArt: boolean,
+  titleLines: number,
+  subLines: number,
+): number {
+  const titleY = ART_TOP + (hasArt ? ART_BOX : 0) + 50;
+  const subEnd =
+    titleY +
+    (titleLines - 1) * TITLE_LH +
+    subLines * SUB_LH +
+    (subLines ? 6 : 0);
+  return subEnd + 28 + 26 + FOOTER_H;
 }
 
 export function drawJourneyItemCard(
   canvas: HTMLCanvasElement,
   data: JourneyItemCardData,
 ) {
-  const hasSub = Boolean(data.sub);
-  const H = journeyItemCardHeight(hasSub);
-  const c = beginCard(canvas, H, {
-    accent: data.hex,
-    accent2: 'var(--accent)',
-  });
-  const { ctx, W, th } = c;
+  const key = canvasSign(data.sign ?? undefined);
+  const maxW = CARD_W - CARD_PAD * 2;
+  const title = measureClamp(canvas, data.label, maxW, 28, 2, undefined, SERIF);
+  const sub = data.sub ? measureClamp(canvas, data.sub, maxW, 14, 2) : [];
+  const H = journeyItemCardHeight(Boolean(key), title.length, sub.length);
+  const c = beginCard(canvas, H, { hue: data.hue ?? CARD_LOOK.journey.hue });
+  const { ctx } = c;
+  const cx = c.W / 2;
 
-  // Эйбрау по центру — header() тут не подходит (композиция центрированная)
-  ctx.font = cardFont(10, 'bold');
-  ctx.fillStyle = c.accent;
   ctx.textAlign = 'center';
-  tracking(ctx, 1);
-  ctx.fillText('МОЙ ПУТЬ', W / 2, EYEBROW_Y);
+  ctx.font = cardFont(10.5, 'bold');
+  ctx.fillStyle = c.accent;
+  tracking(ctx, 1.1);
+  ctx.fillText('МОЙ ПУТЬ', cx, EYEBROW_Y);
   tracking(ctx, 0);
 
-  const cx = W / 2;
-  const cy = EYEBROW_Y + MED_TOP_GAP + MED_R;
-
-  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, MED_R);
-  grad.addColorStop(0, withAlpha(data.hex, 0.28));
-  grad.addColorStop(1, withAlpha(data.hex, 0.04));
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(cx, cy, MED_R, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = withAlpha(data.hex, 0.35);
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  drawEmoji(c, data.emoji, cx, cy + 15, 42, { align: 'center' });
-
-  const labelY = cy + MED_R + LABEL_GAP;
-  ctx.font = cardFont(22, 'bold');
-  ctx.fillStyle = th.fg(0.95);
-  ctx.fillText(data.label, cx, labelY);
-
-  let y = labelY;
-  if (data.sub) {
-    y += SUB_GAP;
-    ctx.font = cardFont(13);
-    ctx.fillStyle = th.fg(0.55);
-    ctx.fillText(data.sub, cx, y);
+  if (key) {
+    const h0 = signHeight(key, ART_W);
+    const w = h0 > ART_BOX ? (ART_W * ART_BOX) / h0 : ART_W;
+    const h = signHeight(key, w);
+    sign(c, key, cx - w / 2, ART_TOP + (ART_BOX - h) / 2, w);
   }
-  y += DAY_GAP;
-  ctx.font = cardFont(11.5);
-  ctx.fillStyle = th.fg(0.38);
+
+  let y = ART_TOP + (key ? ART_BOX : 0) + 50;
+  ctx.textAlign = 'center';
+  ctx.font = serifFont(28);
+  ctx.fillStyle = INK.text;
+  title.forEach((line, i) => ctx.fillText(line, cx, y + i * TITLE_LH));
+  y += (title.length - 1) * TITLE_LH;
+
+  ctx.font = cardFont(14);
+  ctx.fillStyle = INK.sub;
+  sub.forEach((line, i) => {
+    y += SUB_LH + (i === 0 ? 6 : 0);
+    ctx.fillText(line, cx, y);
+  });
+  y += 28;
+  ctx.font = cardFont(12.5);
   ctx.fillText(data.day, cx, y);
 
   ctx.textAlign = 'left';

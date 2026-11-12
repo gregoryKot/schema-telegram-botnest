@@ -1,165 +1,154 @@
-// Карточка-приглашение (пара / клиент терапевта): крупный код + подпись.
-// Приватных данных нет — только код приглашения.
+// Карточка-приглашение (b23b) — лист своего вида (INVITE_LOOK): в приложение — знак продукта
+// крупно на персике и пять полосок потребностей (мотив Strokes цветами данных); в пару — код
+// «билетиком»: светлый билет с тенью-вырезкой, корешок со знаком привязанности за перфорацией;
+// от терапевта — знак Talk крупно на небе. Приватных данных нет — только код; ссылка уходит
+// текстом рядом с картинкой (по картинке не ткнуть).
 import {
   CARD_W,
   CARD_PAD,
   FOOTER_H,
+  INK,
+  INVITE_LOOK,
+  NEED_INK_ORDER,
   beginCard,
-  footer,
-  drawWrapped,
-  measureWrap,
-  clampLines,
   cardFont,
+  drawWrapped,
+  footer,
+  header,
+  headerLines,
+  measureClamp,
+  needDataInk,
+  paperSlip,
+  sign,
+  signHeight,
   tracking,
-  withAlpha,
   type Card,
+  type InviteKind,
 } from '../cardKit';
+import { drawBrandMark } from '../kit/brandMark';
 
 export interface InviteCardData {
+  /** Вид приглашения: лист и знак (INVITE_LOOK). */
+  kind: InviteKind;
   /** «Приглашение в пару» / «Приглашение от терапевта» */
   title: string;
-  /** Код, который вводит второй человек. Нет кода — рисуются эмодзи. */
+  /** Код, который вводит второй человек, — билетом. */
   code?: string;
-  /**
-   * Визуал вместо кода: одно эмодзи — медальон, несколько — ряд плиток.
-   * Ссылку-приглашение на картинку не выносим: по ней нельзя ткнуть, она
-   * уходит текстом рядом с картинкой.
-   */
-  emojis?: string[];
-  /** Подпись под кодом — что сделать (1-2 строки) */
+  /** Подпись — что сделать (до 3 строк). */
   hint: string;
 }
 
-const EYEBROW_Y = 44;
-const TITLE_Y = 78;
-const CODE_TOP = 100;
-const CODE_H = 76;
-const HINT_LINE_H = 20;
-const HINT_GAP = 30;
-const HINT_MAX_LINES = 3;
+const HINT_LH = 20;
+const HINT_MAX = 3;
+const HERO_H: Record<InviteKind, number> = {
+  app: 150,
+  pair: 104,
+  therapist: 104,
+};
+const TICKET_H = 96;
+const STUB_W = 96;
 
-/**
- * Визуал приглашения без кода: одно эмодзи — медальон, несколько — ряд
- * тонированных плиток (пять потребностей говорят сами за себя).
- */
-function drawInviteEmojis(c: Card, emojis: string[], top: number) {
-  const { ctx, th, W } = c;
-  const cx = W / 2;
-  const midY = top + CODE_H / 2;
+/** Пять полосок потребностей цветами данных (мотив Strokes, как «Зачем это всё»). */
+const NEED_FILLS = NEED_INK_ORDER.map((id) => needDataInk(id));
+
+function drawAppHero(c: Card, y: number) {
+  const mark = 128;
+  const strokesW = 150;
+  const gap = 22;
+  const x0 = (c.W - mark - gap - strokesW) / 2;
+  drawBrandMark(c.ctx, x0, y + 6, mark);
+  const sh = signHeight('strokes', strokesW);
+  sign(c, 'strokes', x0 + mark + gap, y + 6 + (mark - sh) / 2, strokesW, {
+    fills: NEED_FILLS,
+  });
+}
+
+/** Билет с кодом: светлая бумага, полукруглые вырезы кромки и перфорация перед корешком. */
+function drawTicket(c: Card, code: string, y: number) {
+  const { ctx } = c;
+  const x = CARD_PAD;
+  const w = c.W - CARD_PAD * 2;
+  paperSlip(c, x, y, w, TICKET_H, c.hue, { r: 14, fill: INK.surface });
+  const perfX = x + STUB_W;
+  // Вырезы сверху и снизу у линии отрыва — бумагой листа, сплошным цветом.
+  ctx.fillStyle = c.paper;
+  for (const cy of [y, y + TICKET_H]) {
+    ctx.beginPath();
+    ctx.arc(perfX, cy, 9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Перфорация — ряд точек тоном глубже листа.
+  ctx.fillStyle = c.sunk;
+  for (let py = y + 18; py <= y + TICKET_H - 16; py += 10) {
+    ctx.beginPath();
+    ctx.arc(perfX, py, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const look = INVITE_LOOK.pair;
+  const sw = 84;
+  sign(
+    c,
+    look.sign,
+    x + (STUB_W - sw) / 2,
+    y + (TICKET_H - signHeight(look.sign, sw)) / 2,
+    sw,
+  );
+  // Код — крупно по центру отрывной части; длинный — мельче, в поле билета.
+  const areaX = perfX + 14;
+  const areaW = x + w - areaX - 16;
+  let size = 34;
+  ctx.font = cardFont(size, 'bold');
+  tracking(ctx, 2);
+  while (size > 16 && ctx.measureText(code).width > areaW) {
+    size -= 2;
+    ctx.font = cardFont(size, 'bold');
+  }
+  ctx.fillStyle = INK.text;
   ctx.textAlign = 'center';
+  ctx.fillText(code, areaX + areaW / 2, y + TICKET_H / 2 + size * 0.36);
+  tracking(ctx, 0);
+  ctx.textAlign = 'left';
+}
 
-  if (emojis.length <= 1) {
-    const r = 40;
-    const glow = ctx.createRadialGradient(cx, midY, 0, cx, midY, r);
-    glow.addColorStop(0, withAlpha(c.accent, 0.28));
-    glow.addColorStop(1, withAlpha(c.accent, 0.04));
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(cx, midY, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = withAlpha(c.accent, 0.35);
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.font = '38px serif';
-    ctx.fillStyle = th.fg(0.95);
-    ctx.fillText(emojis[0] ?? '🤝', cx, midY + 14);
-    return;
-  }
-
-  const TILE = 52;
-  const GAP = 8;
-  const rowW = emojis.length * TILE + (emojis.length - 1) * GAP;
-  let x = cx - rowW / 2;
-  for (const emoji of emojis) {
-    ctx.fillStyle = withAlpha(c.accent, th.isLight ? 0.12 : 0.16);
-    ctx.beginPath();
-    ctx.roundRect(x, midY - TILE / 2, TILE, TILE, 15);
-    ctx.fill();
-    ctx.font = '25px serif';
-    ctx.fillStyle = th.fg(0.95);
-    ctx.fillText(emoji, x + TILE / 2, midY + 9);
-    x += TILE + GAP;
-  }
+/** Высота карточки: шапка (её высота), герой своего вида, подпись. Чистая. */
+export function inviteCardHeight(
+  kind: InviteKind,
+  headH: number,
+  hintLines: number,
+): number {
+  return headH + HERO_H[kind] + 22 + hintLines * HINT_LH + 8 + FOOTER_H;
 }
 
 export function drawInviteCard(canvas: HTMLCanvasElement, d: InviteCardData) {
-  const maxW = CARD_W - CARD_PAD * 2;
-  const hintLines = clampLines(
-    measureWrap(canvas, d.hint, maxW, 13),
-    HINT_MAX_LINES,
+  const look = INVITE_LOOK[d.kind];
+  const head = { eyebrow: 'Приглашение', title: d.title };
+  const lines = headerLines(canvas.getContext('2d')!, head);
+  const hint = measureClamp(
+    canvas,
+    d.hint,
+    CARD_W - CARD_PAD * 2,
+    14,
+    HINT_MAX,
   );
-  const H =
-    CODE_TOP +
-    CODE_H +
-    HINT_GAP +
-    hintLines.length * HINT_LINE_H +
-    20 +
-    FOOTER_H;
+  const H = inviteCardHeight(d.kind, lines.height, hint.length);
+  const c = beginCard(canvas, H, { hue: look.hue });
+  const top = header(c, head, lines);
 
-  const c = beginCard(canvas, H, {
-    accent: 'var(--accent)',
-    accent2: 'var(--accent-blue)',
-  });
-  const { ctx, th, W } = c;
-  const cx = W / 2;
-
-  ctx.font = cardFont(10, 'bold');
-  ctx.fillStyle = c.accent;
-  ctx.textAlign = 'center';
-  tracking(ctx, 1);
-  ctx.fillText('ПРИГЛАШЕНИЕ', cx, EYEBROW_Y);
-  tracking(ctx, 0);
-
-  ctx.font = cardFont(20, 'bold');
-  ctx.fillStyle = th.fg(0.95);
-  ctx.fillText(d.title, cx, TITLE_Y);
-
-  if (!d.code) {
-    drawInviteEmojis(c, d.emojis ?? [], CODE_TOP);
-    drawWrapped(c, d.hint, cx, CODE_TOP + CODE_H + HINT_GAP, maxW, {
-      size: 13,
-      color: th.fg(0.55),
-      lineH: HINT_LINE_H,
-      maxLines: HINT_MAX_LINES,
-      align: 'center',
-    });
-    ctx.textAlign = 'left';
-    footer(c, 'Приглашение');
-    return;
+  if (d.kind === 'app') drawAppHero(c, top);
+  else if (d.code) drawTicket(c, d.code, top);
+  else {
+    // Знак вида крупно (~160px): от терапевта — Talk на небе.
+    const w = 160;
+    const h = signHeight(look.sign, w);
+    sign(c, look.sign, (c.W - w) / 2, top + (HERO_H[d.kind] - h) / 2, w);
   }
 
-  // Код — крупно, в плашке с пунктирной рамкой.
-  ctx.font = cardFont(34, 'bold');
-  const codeW = ctx.measureText(d.code).width;
-  const boxW = Math.min(maxW, codeW + 56);
-  const boxX = cx - boxW / 2;
-
-  ctx.fillStyle = th.fg(0.05);
-  ctx.beginPath();
-  ctx.roundRect(boxX, CODE_TOP, boxW, CODE_H, 16);
-  ctx.fill();
-
-  ctx.strokeStyle = c.accent;
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([6, 5]);
-  ctx.beginPath();
-  ctx.roundRect(boxX, CODE_TOP, boxW, CODE_H, 16);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = c.accent;
-  tracking(ctx, 2);
-  ctx.fillText(d.code, cx, CODE_TOP + CODE_H / 2 + 12);
-  tracking(ctx, 0);
-
-  drawWrapped(c, d.hint, cx, CODE_TOP + CODE_H + HINT_GAP, maxW, {
-    size: 13,
-    color: th.fg(0.55),
-    lineH: HINT_LINE_H,
-    maxLines: HINT_MAX_LINES,
-    align: 'center',
+  const hintY = top + HERO_H[d.kind] + 36;
+  drawWrapped(c, d.hint, CARD_PAD, hintY, CARD_W - CARD_PAD * 2, {
+    size: 14,
+    color: INK.sub,
+    lineH: HINT_LH,
+    maxLines: HINT_MAX,
   });
-
-  ctx.textAlign = 'left';
   footer(c, 'Приглашение');
 }

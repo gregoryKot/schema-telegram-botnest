@@ -1,14 +1,12 @@
 // Счётчики «сколько чего сделано» «Моего пути»: плитки экрана и карточка-сводка. Подписи — единственный
 // реестр STAT_LABELS: сводка за всё время (серверные counts) и за период (записи ленты) называют занятие
-// одинаково (правило №4, journeyStats.test.ts). Знак плитки — journeyStatLook по `type`; `emoji` — только
-// canvas-карточке итогов (shared/src/share, партия b23b).
+// одинаково (правило №4, journeyStats.test.ts). Знак плитки и строки карточки итогов — journeyStatLook по `type`.
 import type { JourneyCounts, JourneyItemType } from './journeyMeta';
 import { JOURNEY_TYPE_META } from './journeyMeta';
 import { CHILDHOOD_STAT } from './journeyLook';
 
 export interface JourneyStatRow {
   type: string; // колесо детства — CHILDHOOD_STAT
-  emoji: string;
   label: string;
   count: number;
 }
@@ -39,7 +37,6 @@ export const STAT_LABELS: Record<JourneyItemType, string> = {
 
 const row = (type: JourneyItemType, count: number): JourneyStatRow => ({
   type,
-  emoji: JOURNEY_TYPE_META[type].emoji,
   label: STAT_LABELS[type],
   count,
 });
@@ -67,7 +64,6 @@ export function journeyStatRows(counts: JourneyCounts): JourneyStatRow[] {
     // Колесо детства — единственное занятие без записи в ленте: только счётчик.
     {
       type: CHILDHOOD_STAT,
-      emoji: '🎡',
       label: 'Колесо детства',
       count: counts.childhoodDone ? 1 : 0,
     },
@@ -98,12 +94,8 @@ export function statRowsFromItems(
   return [...counts.entries()]
     .map(([type, count]) => {
       const known = type in JOURNEY_TYPE_META;
-      const meta = known
-        ? JOURNEY_TYPE_META[type as JourneyItemType]
-        : { emoji: '•' };
       return {
         type,
-        emoji: meta.emoji,
         label: known ? STAT_LABELS[type as JourneyItemType] : type,
         count,
       };

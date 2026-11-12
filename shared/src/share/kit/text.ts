@@ -2,13 +2,17 @@
 import { cardFont } from './theme';
 import type { Card } from './frame';
 
-/** Чистый перенос по словам. measure — ширина строки в px при нужном шрифте. */
+/** Чистый перенос по словам. measure — ширина строки в px при нужном шрифте. Неразрывный пробел
+ *  (glueSpaces: предлог со следующим словом) строку не рвёт. */
 export function wrapLines(
   measure: (s: string) => number,
   text: string,
   maxW: number,
 ): string[] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
+  const words = text
+    .trim()
+    .split(/[^\S\u00a0]+/)
+    .filter(Boolean);
   if (words.length === 0) return [];
   const lines: string[] = [];
   let line = words[0];

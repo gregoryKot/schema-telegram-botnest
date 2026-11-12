@@ -11,16 +11,18 @@ import { botShortUrl } from '../utils/botConfig';
 import { Dialog } from './Dialog';
 
 interface Props {
+  /** id достижения — знак и оттенок значка на карточке (achievementCardLook). */
+  id: string;
   meta: AchievementMeta;
   onClose: () => void;
 }
 
-export function AchievementDetail({ meta, onClose }: Props) {
+export function AchievementDetail({ id, meta, onClose }: Props) {
   const goBack = useHistorySheet(onClose);
   const [showShare, setShowShare] = useState(false);
   const draw = useCallback(
-    (canvas: HTMLCanvasElement) => drawAchievementCard(canvas, meta),
-    [meta],
+    (canvas: HTMLCanvasElement) => drawAchievementCard(canvas, { ...meta, id }),
+    [meta, id],
   );
 
   return (

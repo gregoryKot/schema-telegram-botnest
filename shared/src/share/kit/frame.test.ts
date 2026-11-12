@@ -2,8 +2,8 @@
 // Рамка карточки на бумаге: лист оттенка сущности на втором листе тоном глубже (сдвиг
 // вправо-вниз, без градиентов), шапка Literata со знаком справа, подвал со знаком продукта.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { beginCard, footer } from './frame';
-import { header, headerHeight, measureHeader } from './header';
+import { beginCard, footer, hueGap, paperSlip } from './frame';
+import { header, headerHeight, headerLines, measureHeader } from './header';
 import { CARD_PAD, SERIF } from './theme';
 import { SHEET, layerHex, paperHex, hueFromColor } from './paperFrame';
 import { INK } from './ink';
@@ -102,5 +102,44 @@ describe('footer', () => {
     footer(c, '', { brand: '@Channel' });
     expect(texts(ctx)).toEqual(['@Channel']);
     expect(ctx.arc).not.toHaveBeenCalled();
+  });
+});
+
+describe('paperSlip — бумажка с тенью-вырезкой', () => {
+  it('второй лист тоном глубже со сдвигом, сверху бумага своего оттенка', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    const c = beginCard(canvas, 300, { hue: 240 });
+    const fills: string[] = [];
+    ctx.fill.mockImplementation(() => fills.push(ctx.fillStyle));
+    paperSlip(c, 40, 40, 60, 40, 70);
+    expect(fills).toEqual([layerHex(70), paperHex(70)]);
+  });
+
+  it('оттенок самого листа — светлая бумажка (иначе сливается); без тени — один слой', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    const c = beginCard(canvas, 300, { hue: 240 });
+    const fills: string[] = [];
+    ctx.fill.mockImplementation(() => fills.push(ctx.fillStyle));
+    paperSlip(c, 40, 40, 60, 40, 240);
+    paperSlip(c, 40, 40, 60, 40, 70, { fill: c.sunk, shadow: false });
+    expect(fills).toEqual([layerHex(240), INK.surface, c.sunk]);
+  });
+
+  it('шапка: короткий предлог уходит со своим словом; pre — рисуются строки замера', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    const o = { title: 'Приглашение от терапевта' };
+    const lines = headerLines(canvas.getContext('2d')!, o);
+    expect(lines.title).toEqual(['Приглашение', 'от терапевта']);
+    const c = beginCard(canvas, 300, { hue: 240 });
+    ctx.printed.length = 0;
+    const pre = { ...lines, title: ['Один'], height: 99 };
+    expect(header(c, o, pre)).toBe(99);
+    expect(texts(ctx)).toEqual(['Один']);
+  });
+
+  it('hueGap — расстояние по кругу оттенков', () => {
+    expect(hueGap(25, 28)).toBe(3);
+    expect(hueGap(350, 10)).toBe(20);
+    expect(hueGap(70, 240)).toBe(170);
   });
 });

@@ -15,11 +15,12 @@ import {
   SHEET,
   hueFromColor,
   hueInkHex,
+  layerHex,
   paintSheet,
   paperHex,
   sunkHex,
 } from './paperFrame';
-import { canvasSign, drawSign, signHeight } from './signs';
+import { canvasSign, drawSign, signHeight, type SignPaint } from './signs';
 
 export interface Card {
   ctx: CanvasRenderingContext2D;
@@ -33,8 +34,6 @@ export interface Card {
   sunk: string;
   /** Читаемые чернила оттенка: эйбрау, номера, крупные числа. */
   accent: string;
-  /** Вторые чернила — подпись. Поле для карточек, ещё не переведённых на лист (b23b). */
-  accent2: string;
 }
 
 /** Высота подвала с полем листа — карточки закладывают её в расчёт высоты. */
@@ -45,7 +44,6 @@ export interface CardOpts {
   hue?: number;
   /** Цвет сущности старых вызовов ('#hex' или 'var(--c-rose)') — по нему выбирается бумага. */
   accent?: string;
-  accent2?: string;
 }
 
 /** Межбуквенный интервал (в браузерах без поддержки — молча игнорируется). */
@@ -75,7 +73,6 @@ export function beginCard(
     paper: paperHex(hue),
     sunk: sunkHex(hue),
     accent: hueInkHex(hue),
-    accent2: INK.sub,
   };
 }
 
@@ -101,33 +98,50 @@ export function sign(
   x: number,
   y: number,
   w: number,
+  paint?: SignPaint,
 ): number {
   const k = canvasSign(key);
   if (!k) return 0;
-  drawSign(c.ctx, k, x, y, w);
+  drawSign(c.ctx, k, x, y, w, paint);
   return signHeight(k, w);
 }
 
+/** Расстояние между оттенками по кругу, 0–180. */
+export const hueGap = (a: number, b: number) => {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+};
+
 /**
- * Эмодзи на канвасе — только для карточек следующей партии (b23b: достижения, «Мой путь»,
- * приглашения), которые ещё не получили знаков. Новые карточки рисуют знак (`sign`).
+ * Бумажка оттенка hue на листе — плитка значка, подложка знака строки, билет: бумага с
+ * тенью-вырезкой (второй лист тоном глубже, сдвинут вправо-вниз), как .pp-paper сайта.
+ * fill — своя бумага вместо бумаги оттенка (светлый билет); shadow: false — тихая бумага без
+ * второго листа (неполученный значок). Бумажка оттенка самого листа (ближе 25°) иначе сливалась
+ * бы с ним — она светлая (--surface) на втором листе своего оттенка.
  */
-export function drawEmoji(
+export function paperSlip(
   c: Card,
-  emoji: string,
   x: number,
   y: number,
-  size: number,
-  o: { align?: CanvasTextAlign; alpha?: number } = {},
+  w: number,
+  h: number,
+  hue: number,
+  o: { r?: number; fill?: string; shadow?: boolean } = {},
 ) {
   const { ctx } = c;
-  ctx.save();
-  ctx.globalAlpha = o.alpha ?? 1;
-  ctx.fillStyle = INK.text;
-  ctx.font = `${size}px serif`;
-  ctx.textAlign = o.align ?? 'left';
-  ctx.fillText(emoji, x, y);
-  ctx.restore();
+  const r = o.r ?? 12;
+  const d = Math.max(3, Math.round(Math.min(w, h) * 0.06));
+  if (o.shadow !== false) {
+    ctx.fillStyle = layerHex(hue);
+    ctx.beginPath();
+    ctx.roundRect(x + d, y + d, w, h, r);
+    ctx.fill();
+  }
+  ctx.fillStyle =
+    o.fill ?? (hueGap(hue, c.hue) < 25 ? INK.surface : paperHex(hue));
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fill();
 }
 
 export function divider(c: Card, y: number, alpha = 0.12) {

@@ -171,7 +171,7 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
 
       {/* Achievement detail overlay (share-карточка внутри) */}
       {selectedAchievement && ACHIEVEMENT_META[selectedAchievement] && (
-        <AchievementDetail
+        <AchievementDetail id={selectedAchievement}
           meta={ACHIEVEMENT_META[selectedAchievement]}
           onClose={() => setSelectedAchievement(null)}
         />

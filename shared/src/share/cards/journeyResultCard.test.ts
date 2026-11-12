@@ -4,11 +4,15 @@
 // свободного текста живёт на вводе (правило №7 CLAUDE.md), здесь только
 // раскладка — с частью без заголовка (title опущен) и с несколькими частями.
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { drawJourneyResultCard } from './journeyResultCard';
+import { drawJourneyResultCard, resultFields } from './journeyResultCard';
+import { canvasWithMockCtx, printedText } from './canvas.test-helpers';
 
 function mockCtx() {
   return {
     scale: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    ellipse: vi.fn(),
     save: vi.fn(),
     restore: vi.fn(),
     beginPath: vi.fn(),
@@ -46,10 +50,10 @@ describe('drawJourneyResultCard', () => {
     const canvas = document.createElement('canvas');
     expect(() =>
       drawJourneyResultCard(canvas, {
-        emoji: '🌱',
         label: 'Дневник благодарности',
         day: '3 мая',
-        hex: '#4fd18b',
+        hue: 195,
+        sign: 'pebbles',
         parts: [
           { title: 'Что было', text: 'Утреннему кофе' },
           { text: 'Без заголовка тоже работает' },
@@ -65,10 +69,10 @@ describe('drawJourneyResultCard', () => {
     const canvas = document.createElement('canvas');
     expect(() =>
       drawJourneyResultCard(canvas, {
-        emoji: '📓',
         label: 'Дневник схем',
         day: '3 мая',
-        hex: '#8f86ff',
+        hue: 195,
+        sign: 'pebbles',
         parts: [
           { title: 'A', text: '1' },
           { title: 'B', text: '2' },
@@ -86,12 +90,38 @@ describe('drawJourneyResultCard', () => {
     const canvas = document.createElement('canvas');
     expect(() =>
       drawJourneyResultCard(canvas, {
-        emoji: '📓',
         label: 'Дневник схем',
         day: '3 мая',
-        hex: '#8f86ff',
+        hue: 195,
+        sign: 'pebbles',
         parts: [],
       }),
     ).not.toThrow();
+  });
+
+  it('«Здоровый взгляд» — вставка мха с подписью мха, остальные поля — светлые плашки', () => {
+    const { canvas, ctx } = canvasWithMockCtx();
+    drawJourneyResultCard(canvas, {
+      label: 'Проверка убеждения',
+      day: '3 мая',
+      hue: 70,
+      sign: 'scales',
+      parts: [
+        { title: 'Убеждение', text: 'Со мной что-то не так' },
+        { title: 'Здоровый взгляд', text: 'Молчание — не приговор' },
+      ],
+    });
+    const healthy = resultFields(canvas, [
+      { title: 'Здоровый взгляд', text: 'x' },
+      { title: 'Ситуация', text: 'y' },
+      { text: 'z' },
+    ]);
+    expect(healthy.map((f) => [f.label, f.healthy])).toEqual([
+      ['Здоровый взгляд', true],
+      ['Ситуация', false],
+      ['', false],
+    ]);
+    expect(printedText(ctx)).toContain('ЗДОРОВЫЙ ВЗГЛЯД');
+    expect(printedText(ctx)).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 });

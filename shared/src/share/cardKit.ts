@@ -23,8 +23,9 @@ export {
   beginCard,
   footer,
   divider,
-  drawEmoji,
   panel,
+  paperSlip,
+  hueGap,
   panelStack,
   sectionLabel,
   sign,
@@ -40,6 +41,7 @@ export {
   headerLines,
   measureHeader,
   type HeaderOpts,
+  type HeaderLines,
 } from './kit/header';
 
 export {
@@ -48,6 +50,7 @@ export {
   paperHex,
   layerHex,
   sunkHex,
+  silhouetteHex,
   hueInkHex,
   hueFromColor,
   loadCardFonts,
@@ -60,14 +63,25 @@ export {
   inkAlpha,
   needDataInk,
   needTextInk,
+  NEED_INK_ORDER,
 } from './kit/ink';
 export {
   drawSign,
   signHeight,
   canvasSign,
   type CanvasSignKey,
+  type SignPaint,
 } from './kit/signs';
-export { CARD_LOOK, DAY_DONE_HUE, type CardEntity } from './kit/cardLook';
+export {
+  CARD_LOOK,
+  DAY_DONE_HUE,
+  ACHIEVEMENT_CARD_LOOK,
+  achievementCardLook,
+  INVITE_LOOK,
+  type CardEntity,
+  type CardLook,
+  type InviteKind,
+} from './kit/cardLook';
 
 export {
   wrapLines,

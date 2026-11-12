@@ -1,34 +1,91 @@
-// Карточка «Мой путь» — лента последних шагов ПО ВРЕМЕНИ: вертикальная
-// рельса-таймлайн, на ней узлы цвета группы, дата слева от рельсы, эмодзи и
-// название — справа. Итог («N шагов») — в подзаголовке. Строки готовит
-// buildJourneyCardRows (чистая, тестируется без canvas).
+// Карточка «Мой путь» — лента последних шагов по времени (b23b): строка — знак сущности шага на
+// бумажке её оттенка (journeyItemLook, тот же вид, что строка ленты в приложении), название и
+// дата тихой подписью. Лист — небо «Моего пути» со знаком Sheets. Итог («N шагов») — в подписи.
+// Строки готовит buildJourneyCardRows (чистая, тестируется без canvas).
 import {
-  drawEmoji,
   CARD_PAD,
   FOOTER_H,
+  INK,
+  CARD_LOOK,
   beginCard,
-  header,
-  headerHeight,
-  footer,
+  canvasSign,
   cardFont,
-  withAlpha,
+  footer,
+  header,
+  headerLines,
+  paperSlip,
+  sign,
+  signHeight,
+  wrapClamp,
+  type Card,
 } from '../cardKit';
-import type { JourneyCardRow } from '../../journey/journeyMeta';
+import {
+  formatJourneyDay,
+  journeyTypeMeta,
+  type JourneyItem,
+} from '../../journey/journeyMeta';
+import { journeyItemLook } from '../../journey/journeyLook';
 import { pluralEntries } from '../shareTexts';
 
 // Больше строк карточка не вмещает — buildJourneyCardRows режет по нему.
 export const JOURNEY_CARD_MAX_ROWS = 8;
 
-const ROW_H = 46;
-const RAIL_X = CARD_PAD + 70;
+export interface JourneyCardRow {
+  label: string;
+  day: string;
+  /** Бумага и знак сущности шага; незнакомый тип — null (тихая бумажка без знака). */
+  hue: number | null;
+  sign: string | null;
+}
 
-/** Высота карточки — чистая формула (тестируется без canvas). */
+/** Готовые строки для карточки-ленты: вид шага — journeyItemLook. Чистая. */
+export function buildJourneyCardRows(
+  items: readonly JourneyItem[],
+  max = JOURNEY_CARD_MAX_ROWS,
+): JourneyCardRow[] {
+  return items.slice(0, max).map((item) => {
+    const look = journeyItemLook(item);
+    return {
+      label: journeyTypeMeta(item.type).label,
+      day: formatJourneyDay(item.at),
+      hue: look?.hue ?? null,
+      sign: look?.sign ?? null,
+    };
+  });
+}
+
+const ROW_H = 54;
+const SLIP_W = 60;
+const SLIP_H = 40;
+const SIGN_W = 42;
+const SIGN_BOX = 28;
+const TEXT_X = CARD_PAD + SLIP_W + 16;
+
+/** Высота карточки по высоте шапки (headerLines) — чистая формула (тестируется без canvas). */
 export function journeyCardHeight(
   rows: readonly unknown[],
-  subtitle?: string,
+  headH: number,
 ): number {
   const bodyH = rows.length ? rows.length * ROW_H : 44;
-  return headerHeight(1, Boolean(subtitle)) + bodyH + 16 + FOOTER_H;
+  return headH + bodyH + 8 + FOOTER_H;
+}
+
+/** Знак шага на бумажке своей сущности; знака нет — тихая бумажка листа. */
+function drawRowSlip(c: Card, row: JourneyCardRow, y: number) {
+  const key = canvasSign(row.sign ?? undefined);
+  if (row.hue === null || !key) {
+    paperSlip(c, CARD_PAD, y, SLIP_W, SLIP_H, c.hue, {
+      r: 10,
+      fill: c.sunk,
+      shadow: false,
+    });
+    return;
+  }
+  paperSlip(c, CARD_PAD, y, SLIP_W, SLIP_H, row.hue, { r: 10 });
+  const h0 = signHeight(key, SIGN_W);
+  const w = h0 > SIGN_BOX ? (SIGN_W * SIGN_BOX) / h0 : SIGN_W;
+  const h = signHeight(key, w);
+  sign(c, key, CARD_PAD + (SLIP_W - w) / 2, y + (SLIP_H - h) / 2, w);
 }
 
 export function drawJourneyCard(
@@ -41,67 +98,36 @@ export function drawJourneyCard(
   const sub =
     subtitle ??
     `${total} ${pluralEntries(total)} заботы о себе · последние шаги`;
-  const H = journeyCardHeight(rows, sub);
-  const c = beginCard(canvas, H, {
-    accent: 'var(--accent-green)',
-    accent2: 'var(--accent-blue)',
-  });
-  const { ctx, th } = c;
+  const look = CARD_LOOK.journey;
+  const head = { eyebrow: 'Мой путь', title, subtitle: sub, sign: look.sign };
+  const lines = headerLines(canvas.getContext('2d')!, head);
+  const H = journeyCardHeight(rows, lines.height);
+  const c = beginCard(canvas, H, { hue: look.hue });
+  const { ctx } = c;
 
-  const contentY = header(c, { eyebrow: 'Мой путь', title, subtitle: sub });
+  const top = header(c, head, lines);
 
   if (!rows.length) {
-    ctx.font = cardFont(13);
-    ctx.fillStyle = th.fg(0.4);
-    ctx.fillText('Пока нет ни одного шага', CARD_PAD, contentY + 18);
+    ctx.font = cardFont(14);
+    ctx.fillStyle = INK.sub;
+    ctx.fillText('Пока нет ни одного шага', CARD_PAD, top + 18);
     footer(c, 'Мой путь');
     return;
   }
 
-  const top = contentY + 4;
-  const nodeY = rows.map((_, i) => top + i * ROW_H + ROW_H / 2);
-
-  // Рельса — градиент от акцента к второму цвету, полупрозрачная
-  const grad = ctx.createLinearGradient(
-    0,
-    nodeY[0],
-    0,
-    nodeY[nodeY.length - 1],
-  );
-  grad.addColorStop(0, withAlpha(c.accent, 0.35));
-  grad.addColorStop(1, withAlpha(c.accent2, 0.35));
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(RAIL_X, nodeY[0]);
-  ctx.lineTo(RAIL_X, nodeY[nodeY.length - 1]);
-  ctx.stroke();
-
+  const textW = c.W - CARD_PAD - TEXT_X;
+  const measure = (s: string) => ctx.measureText(s).width;
   rows.forEach((row, i) => {
-    const mid = nodeY[i];
-
-    // Дата слева — right-align к рельсе
-    ctx.font = cardFont(10.5);
-    ctx.fillStyle = th.fg(0.4);
-    ctx.textAlign = 'right';
-    ctx.fillText(row.day, RAIL_X - 12, mid + 4);
-
-    // Узел: подложка цвета фона (рельса не просвечивает) + точка группы
-    ctx.fillStyle = th.bg;
-    ctx.beginPath();
-    ctx.arc(RAIL_X, mid, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = row.hex;
-    ctx.beginPath();
-    ctx.arc(RAIL_X, mid, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Эмодзи + название справа от рельсы
+    const y = top + i * ROW_H;
+    drawRowSlip(c, row, y);
     ctx.textAlign = 'left';
-    drawEmoji(c, row.emoji, RAIL_X + 16, mid + 6, 16);
-    ctx.font = cardFont(14, 'bold');
-    ctx.fillStyle = th.fg(0.9);
-    ctx.fillText(row.label, RAIL_X + 40, mid + 5);
+    ctx.font = cardFont(15);
+    ctx.fillStyle = INK.text;
+    const [label] = wrapClamp(measure, row.label, textW, 1);
+    ctx.fillText(label ?? '', TEXT_X, y + 17);
+    ctx.font = cardFont(12);
+    ctx.fillStyle = INK.sub;
+    ctx.fillText(row.day, TEXT_X, y + 35);
   });
 
   footer(c, 'Мой путь');

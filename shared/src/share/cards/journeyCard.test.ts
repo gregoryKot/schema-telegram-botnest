@@ -1,15 +1,23 @@
 // @vitest-environment jsdom
-// Карточка-лента «Мой путь»: journeyCardHeight — чистая формула высоты,
-// drawJourneyCard — раскладка с рельсой и без единого шага (пустое
-// состояние, правило «никаких заглушек» — пустой путь показывает поясняющую
-// строку, а не нулевые узлы).
+// Карточка-лента «Мой путь» (b23b): buildJourneyCardRows — вид шага из journeyItemLook,
+// journeyCardHeight — чистая формула высоты, drawJourneyCard — строки со знаками на бумажках
+// и пустое состояние (правило «никаких заглушек» — пустой путь показывает поясняющую строку).
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { journeyCardHeight, drawJourneyCard } from './journeyCard';
-import type { JourneyCardRow } from '../../journey/journeyMeta';
+import {
+  buildJourneyCardRows,
+  journeyCardHeight,
+  drawJourneyCard,
+  type JourneyCardRow,
+} from './journeyCard';
+import { headerHeight } from '../cardKit';
+import { JOURNEY_LOOK } from '../../journey/journeyLook';
 
 function mockCtx() {
   return {
     scale: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    ellipse: vi.fn(),
     save: vi.fn(),
     restore: vi.fn(),
     beginPath: vi.fn(),
@@ -40,32 +48,78 @@ afterEach(() => {
 });
 
 const ROW: JourneyCardRow = {
-  emoji: '🌱',
-  label: 'Дневник благодарности',
+  label: 'Благодарность',
   day: '3 мая',
-  hex: '#4fd18b',
+  hue: 195,
+  sign: 'pebbles',
 };
+const HEAD = headerHeight(1, 1);
+
+describe('buildJourneyCardRows', () => {
+  it('режет по максимуму; знак и бумага — вид шага (journeyItemLook), без эмодзи и hex', () => {
+    const rows = buildJourneyCardRows(
+      Array.from({ length: 12 }, (_, i) => ({
+        type: 'plan_done',
+        at: `2026-07-${String(i + 1).padStart(2, '0')}`,
+      })),
+      8,
+    );
+    expect(rows).toHaveLength(8);
+    expect(rows[0]).toEqual({
+      label: 'Шаг по плану',
+      day: '1 июля',
+      hue: JOURNEY_LOOK.plan_done.hue,
+      sign: JOURNEY_LOOK.plan_done.sign,
+    });
+  });
+
+  it('шаг на одну потребность — бумага и знак потребности', () => {
+    const [row] = buildJourneyCardRows([
+      { type: 'practice', at: '2026-07-01', needId: 'play' },
+    ]);
+    expect(row).toMatchObject({ hue: 310, sign: 'need_play' });
+  });
+
+  it('дефолтный максимум — 8 строк; незнакомый тип — без знака', () => {
+    const items = Array.from({ length: 20 }, () => ({
+      type: 'future_type',
+      at: '2026-07-01',
+    }));
+    const rows = buildJourneyCardRows(items);
+    expect(rows).toHaveLength(8);
+    expect(rows[0]).toMatchObject({ label: 'Запись', hue: null, sign: null });
+  });
+});
 
 describe('journeyCardHeight', () => {
   it('без строк — компактная (одна поясняющая строка вместо списка)', () => {
-    expect(journeyCardHeight([])).toBeLessThan(journeyCardHeight([ROW, ROW]));
+    expect(journeyCardHeight([], HEAD)).toBeLessThan(
+      journeyCardHeight([ROW, ROW], HEAD),
+    );
   });
 
-  it('высота растёт с числом строк', () => {
-    expect(journeyCardHeight([ROW, ROW, ROW])).toBeGreaterThan(
-      journeyCardHeight([ROW]),
+  it('высота растёт с числом строк и с ростом шапки', () => {
+    expect(journeyCardHeight([ROW, ROW, ROW], HEAD)).toBeGreaterThan(
+      journeyCardHeight([ROW], HEAD),
+    );
+    expect(journeyCardHeight([ROW], HEAD + 19)).toBe(
+      journeyCardHeight([ROW], HEAD) + 19,
     );
   });
 });
 
 describe('drawJourneyCard', () => {
-  it('со строками — рисует рельсу и узлы, не падает', () => {
+  it('со строками — рисует строки, не падает', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
       mockCtx(),
     );
     const canvas = document.createElement('canvas');
     expect(() =>
-      drawJourneyCard(canvas, [ROW, { ...ROW, label: 'Трекер' }], 12),
+      drawJourneyCard(
+        canvas,
+        [ROW, { ...ROW, label: 'Трекер', hue: null, sign: null }],
+        12,
+      ),
     ).not.toThrow();
   });
 
