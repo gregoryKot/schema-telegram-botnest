@@ -443,7 +443,7 @@ env(safe-area-inset-bottom)` перебит шортхендом `padding` че�
 `game/src/audio.ts:152`; `game/src/scenes/StartScene.ts:26-30`;
 `game/src/controls.ts:8-14`; `game/src/i18n/index.ts:20-22`.
 
-**К10 · низкая · Мёртвый код, которого не видит ни один гейт.**
+**К10 · низкая · Мёртвый код, которого не видит ни один гейт.** *Закрыто #1092: мёртвое удалено, `game/` под eslint- и размер-храповиками.*
 `ui/CardOverlay.ts`, `data/content.ts`, `donate.ts`, `contactGlimpse`,
 `showCta`, `Door.lock`, `LEDGE.stage/glass`, `dog_idle/dog_walk.png`,
 `constants.C`, `LEVEL_W`, `PHYS.enemyPatrol/enemySpeed/respawnDelay`,
