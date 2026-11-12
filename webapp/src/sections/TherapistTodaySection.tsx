@@ -46,7 +46,7 @@ export function TherapistTodaySection({ displayName, onOpenClient, onAddClient }
       <div className="ds-page tt-page animate-fade">
         <TherapistTodayHead displayName={displayName} />
         <div role="alert" className="ds-card tt-failed">
-          <p className="ds-empty">{tr('Клиенты не загрузились. Проверь связь и попробуй ещё раз', 'Клиенты не загрузились. Проверьте связь и попробуйте ещё раз')}</p>
+          <p className="ds-empty">{tr('Клиенты не загрузились. Проверь связь и попробуй ещё раз.', 'Клиенты не загрузились. Проверьте связь и попробуйте ещё раз.')}</p>
           <button type="button" className="ds-btn ds-btn--sm ds-btn--secondary" onClick={retry}>Повторить</button>
         </div>
       </div>

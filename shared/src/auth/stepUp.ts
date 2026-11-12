@@ -1,13 +1,9 @@
-// Подтверждение кодом 2FA перед привязкой и отвязкой способов входа (S12,
-// аудит 2026-11; бэкенд — `src/auth/step-up.ts`, `src/auth/totp-attempts.ts`).
-// У аккаунта с включённым TOTP ручки привязки отвечают 403
-// `{reason:'totp_required'}`, пока в запросе нет заголовка `x-totp-code`
-// (6 цифр или резервный код); 429 `{reason:'totp_locked', retryAfter}` — много
-// неверных кодов, дальше принимается только резервный. Аккаунту без 2FA сервер
-// этих ответов не шлёт — для него запрос проходит как раньше.
+// Подтверждение кодом 2FA перед привязкой и отвязкой способов входа (бэкенд — `src/auth/step-up.ts`,
+// `src/auth/totp-attempts.ts`). У аккаунта с включённым TOTP ручки привязки отвечают 403 `{reason:'totp_required'}`,
+// пока в запросе нет заголовка `x-totp-code` (6 цифр или резервный код); 429 `{reason:'totp_locked', retryAfter}` —
+// много неверных кодов, дальше принимается только резервный. Аккаунту без 2FA сервер этих ответов не шлёт.
 //
-// Здесь — часть без React: разбор ответа, заголовок и тексты (правило №3).
-// Окно ввода и повтор запроса — `webapp/src/components/stepUp/`.
+// Здесь — часть без React: разбор ответа, заголовок и тексты (правило №3). Окно — `webapp/src/components/stepUp/`.
 import { TOTP_REQUIRED_REASON } from '../account/deleteAccountTotp';
 import type { Tr } from '../account/accountLinkText';
 
@@ -22,10 +18,7 @@ export type StepUpVerdict =
   /** Код из приложения на паузе; резервный принимается. */
   | { kind: 'locked'; retryAfterS: number | null };
 
-interface StepUpBody {
-  reason?: unknown;
-  retryAfter?: unknown;
-}
+type StepUpBody = { reason?: unknown; retryAfter?: unknown };
 
 // Тело читаем с копии: ответ «pass» вызывающий разберёт сам.
 async function bodyOf(res: Response): Promise<StepUpBody | null> {
@@ -69,6 +62,8 @@ export function lockedFor(retryAfterS: number | null): string {
 export interface StepUpCopy {
   title: string;
   lead: string;
+  /** Вместо lead, когда окно принимает резервный код: про приложение там уже неправда. */
+  leadRecovery: string;
   wrong: string;
   locked: (retryAfterS: number | null) => string;
 }
@@ -79,6 +74,10 @@ export function buildStepUpText(tr: Tr): StepUpCopy {
     lead: tr(
       'У тебя включена двухфакторная защита: способ входа меняется только с кодом. Введи код из приложения-аутентификатора.',
       'У вас включена двухфакторная защита: способ входа меняется только с кодом. Введите код из приложения-аутентификатора.',
+    ),
+    leadRecovery: tr(
+      'У тебя включена двухфакторная защита: способ входа меняется только с кодом. Введи один из резервных кодов — каждый срабатывает один раз.',
+      'У вас включена двухфакторная защита: способ входа меняется только с кодом. Введите один из резервных кодов — каждый срабатывает один раз.',
     ),
     wrong: tr(
       'Код не подошёл. Проверь его и попробуй ещё раз.',

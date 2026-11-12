@@ -109,7 +109,7 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
               {copied
                 ? '✓ Скопировано'
                 : sharing
-                  ? 'Подготовка...'
+                  ? 'Подготовка…'
                   : 'Поделиться'}
             </button>
           </div>

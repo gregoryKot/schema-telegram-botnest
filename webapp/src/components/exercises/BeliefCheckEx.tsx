@@ -116,8 +116,8 @@ export function BeliefCheckEx({ onBack, onComplete }: { onBack: () => void; onCo
           <LimitedTextarea max={EXERCISE_TEXT_MAX} ref={reframeRef} className="ds-textarea ex2-reframe" rows={5} value={reframe}
             onChange={(e) => setReframe(e.target.value)} placeholder="Иногда я действительно ошибаюсь, но это не значит что я всегда всё порчу…" />
           {detectCrisisAny(reframe) && <CrisisCard surface="belief_check" />}
-          {saveError && <PaperAlert sign="scales" title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')} />}
-          {foot(<button className="ds-btn" disabled={!reframe.trim() || saving} onClick={saveAll}>{saving ? 'Сохраняю...' : <>Сохранить и закрыть <GlyphCheck /></>}</button>, 2)}
+          {saveError && <PaperAlert sign="scales" title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз.', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз.')} />}
+          {foot(<button className="ds-btn" disabled={!reframe.trim() || saving} onClick={saveAll}>{saving ? 'Сохраняю…' : <>Сохранить и закрыть <GlyphCheck /></>}</button>, 2)}
         </>)}
       </div>
     </ExScreen>

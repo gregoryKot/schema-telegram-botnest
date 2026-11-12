@@ -125,7 +125,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
             {(isLow || isMid) && (
               <p className="sk-feed-hint">
                 {isLow
-                  ? <>Сегодня <b>{NEED_NAMES[needId]}</b> на {todayScore}/10 – хороший момент чтобы что-то сделать для этой потребности.</>
+                  ? <>Сегодня <b>{NEED_NAMES[needId]}</b> на {todayScore}/10 – хороший момент, чтобы что-то сделать для этой потребности.</>
                   : <>Сегодня {NEED_NAMES[needId]} – {todayScore}/10. Есть куда расти.</>}
               </p>
             )}
@@ -155,7 +155,7 @@ export function PracticesScreen({ onClose, onOpenTracker }: Props) {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') void handleAdd(); /* сбой ловит сам: тост ошибки */ }}
-                placeholder="Добавить действие..."
+                placeholder="Добавить действие…"
                 maxLength={PRACTICE_TEXT_MAX}
                 className="ds-input"
               />

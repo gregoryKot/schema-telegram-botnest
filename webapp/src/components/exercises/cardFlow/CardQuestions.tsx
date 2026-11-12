@@ -51,7 +51,7 @@ export function CardQuestions({ questions, hue, sign, step, onStep, initial, onS
       <LimitedTextarea max={NOTE_CARD_FIELD_MAX} ref={areaRef} className="ds-textarea sd-area" rows={5} value={data[q.key]} onChange={e => setData(d => ({ ...d, [q.key]: e.target.value }))} placeholder={q.placeholder} />
     </section>
     {detectCrisisAny(...Object.values(data)) && <CrisisCard surface="flashcard" />}
-    {isLast && error && <PaperAlert sign={sign} title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')} />}
+    {isLast && error && <PaperAlert sign={sign} title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз.', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз.')} />}
     <div className="ex2-foot">
       <button className="ds-btn ex2-ghost" disabled={step === 0} onClick={() => onStep(Math.max(0, step - 1))}><GlyphArrowLeft /> Назад</button>
       <span className="ex2-spacer" />

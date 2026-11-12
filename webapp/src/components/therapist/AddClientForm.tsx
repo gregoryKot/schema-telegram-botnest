@@ -41,7 +41,7 @@ export function AddClientForm({ addClient }: Props) {
               <p className="ds-sub">Карточка с этим именем появится в списке, когда клиент подключится. До этого — в блоке «Ждут подключения».</p>
             </div>
           ) : (
-            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без привязки к боту.</p>
+            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без аккаунта в приложении.</p>
           )}
           <div className="tc-actions">
             <button className={`ds-btn ds-btn--sm${invite ? ' ds-btn--secondary' : ''}`} onClick={resetAddClient}>Добавить ещё</button>

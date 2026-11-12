@@ -38,7 +38,7 @@ export function ModePickerSheet({
     <SsSheet onBack={goBack} barRight={<PickDone count={ids.length} onClick={goBack} />}>
       <SsHead
         look="modes" compact title="Мои режимы"
-        lede={tr('Выбери режимы которые ты замечаешь у себя. Выбор сохраняется сразу.', 'Выберите режимы которые вы замечаете у себя. Выбор сохраняется сразу.')}
+        lede={tr('Выбери режимы, которые ты замечаешь у себя. Выбор сохраняется сразу.', 'Выберите режимы, которые вы замечаете у себя. Выбор сохраняется сразу.')}
       />
       <SignGroup look={START_LOOK} title="С чего начать">
         {POPULAR_MODE_IDS.map(id => {

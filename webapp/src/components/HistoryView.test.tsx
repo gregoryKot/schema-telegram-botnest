@@ -249,14 +249,14 @@ describe('HistoryView — день с реальными данными', () => 
     await act(async () => {
       renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } }, 'ty');
     });
-    expect(screen.getByText('Нажми на потребность — узнаешь что делать')).toBeTruthy();
+    expect(screen.getByText('Нажми на потребность — узнаешь, что делать')).toBeTruthy();
   });
 
   it('подсказка над трекером звучит в форме «вы» (текст общий с miniapp, Ж9)', async () => {
     await act(async () => {
       renderView({ history: HISTORY, currentRatings: { attachment: 8, autonomy: 7 } }, 'vy');
     });
-    expect(screen.getByText('Нажмите на потребность — узнаете что делать')).toBeTruthy();
+    expect(screen.getByText('Нажмите на потребность — узнаете, что делать')).toBeTruthy();
   });
 });
 

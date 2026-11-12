@@ -33,8 +33,8 @@ describe('DiaryEmptyExplainer (webapp) — пустой архив объясн�
     const text = plain(container);
     expect(text).toContain('Пока ни одной записи');
     expect(text).toContain('главный инструмент схема-терапии');
-    expect(text).toContain('Схема —'); // что такое схема
-    expect(text).toContain('Режим —'); // что такое режим
+    expect(text).toContain('СхемаТак в схема-терапии называют'); // что такое схема
+    expect(text).toContain('РежимСостояние, которое включается'); // что такое режим
     expect(text).toContain('3–5 записей'); // результат и срок
   });
 
@@ -42,8 +42,8 @@ describe('DiaryEmptyExplainer (webapp) — пустой архив объясн�
     const { container } = renderWithForm(<DiaryEmptyExplainer filter="diary" />, 'ty');
     const text = plain(container);
     expect(text).toContain('Записей дневника пока нет');
-    expect(text).toContain('Схема —');
-    expect(text).toContain('Режим —');
+    expect(text).toContain('СхемаТак в схема-терапии называют');
+    expect(text).toContain('РежимСостояние, которое включается');
     expect(text).toContain('кнопка «Записать» выше');
   });
 
@@ -53,8 +53,8 @@ describe('DiaryEmptyExplainer (webapp) — пустой архив объясн�
     expect(text).toContain('Отметок трекера пока нет');
     expect(text).toContain('Трекер — пять коротких вопросов');
     expect(text).toContain('плитка «Трекер» на главной');
-    expect(text).not.toContain('Схема —');
-    expect(text).not.toContain('Режим —');
+    expect(text).not.toContain('СхемаТак в схема-терапии называют');
+    expect(text).not.toContain('РежимСостояние, которое включается');
   });
 
   it('форма «вы»: без «ты»-форм во всех фильтрах', () => {
