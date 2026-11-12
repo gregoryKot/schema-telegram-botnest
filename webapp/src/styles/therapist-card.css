@@ -20,6 +20,7 @@
 /* Клиента нет или список не загрузился — исход на бумаге у верха колонки (ClientCardFallback.tsx), а не по
    центру окна высотой 100vh: карточка живёт в прокрутке кабинета. Два класса — сильнее .pa-outcome. */
 .pa-outcome.tk-outcome { min-height: 0; align-items: flex-start; padding: 56px var(--tk-gutter) 48px; background: transparent; }
+.pa-outcome.tk-outcome > .pa-outcome-card { margin-block: 0; } /* у верха колонки: .pa-outcome-card центрирует margin-block: auto */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
   .tk-tabs-body > .tk-ov, .tk-tabs-body > .ds-page { margin-left: var(--tk-center); padding-inline: var(--tk-gutter); }
   .therapist-scroll--list > .ds-page { margin-left: var(--tk-center); max-width: var(--tk-max); padding-inline: var(--tk-gutter); }
