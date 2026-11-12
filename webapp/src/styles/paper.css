@@ -48,6 +48,16 @@
 .pp-meta { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--accent); }
 .pp-meta--skeleton { display: block; height: 11px; width: 55%; border-radius: var(--r-6); background: var(--surface-3); }
 
+/* ── Белый лист с тенью сплошным слоем тоном сущности (--h у листа; нет — небо 240): строка задания, запись,
+   форма, карточка клиента, «Ждут подключения». Один класс на кабинет терапевта (ревью r1: тот же лист жил
+   копией в четырёх файлах); без обводки и размытия. Поля — у потребителя. ───────────────────────────────── */
+.pp-leaf {
+  background: var(--surface); border-radius: 20px; box-sizing: border-box; min-width: 0;
+  box-shadow: 6px 7px 0 oklch(var(--pa-layer-lc) var(--h, 240));
+}
+/* Строка-карточка (ds-card: раскладка строки задания .cp-task держится на ней) листом — без серой рамки. */
+.ds-card.pp-leaf { border-color: transparent; }
+
 /* ── Картинки: размер по месту ──────────────────────────────────────────── */
 .pp-art { display: block; flex-shrink: 0; }
 .pp-art--hero { width: 112px; height: 94px; }
@@ -94,7 +104,16 @@
    уезжало вправо, шеврон на вторую строку (выбор потребности для плана, 2026-11-06). */
 .ds-list-row--nav:has(> .pp-row-art) { grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 14px; align-items: center; }
 
+/* ── Ярлык на бумаге: тип записи, статус задания — тоном бумаги своей сущности (--h), без обводки
+   и «конфетной» заливки. Ленты «Записей» клиента (EntryKindChip) и вкладки карточки у терапевта. */
+.pp-tag {
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px;
+  background: oklch(0.915 0.03 var(--h, 70)); font: 600 12px/1 var(--sans); color: var(--text); white-space: nowrap;
+}
+.pp-tag.is-strong { font-weight: 700; }
+
 @media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
+  .pp-leaf { box-shadow: 4px 5px 0 oklch(var(--pa-layer-lc) var(--h, 240)); }
   .pp-square { padding: 20px 18px 16px; min-height: 216px; }
   .pp-art--hero { width: 96px; height: 80px; }
 }

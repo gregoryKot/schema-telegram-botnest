@@ -13,6 +13,7 @@ vi.mock('../api', () => ({ reportClientError: vi.fn() }));
 import { reportClientError } from '../api';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { AuthErrorPage } from './AuthErrorPage';
+import { glueSpaces } from '../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 
 function renderAt(search: string, form: AddressForm = 'ty') {
   window.history.replaceState(null, '', `/auth/error${search}`);
@@ -140,7 +141,7 @@ describe('AuthErrorPage — провайдер выключен', () => {
   // Вход через Google убран (2026-11): его кодов сервер больше не ставит.
   it('google_disabled — неизвестная причина: общий экран', () => {
     renderAt('?reason=google_disabled');
-    expect(screen.getByRole('heading').textContent).toBe('Вход не удался');
+    expect(screen.getByRole('heading').textContent).toBe(glueSpaces('Вход не удался'));
   });
 
   it('vk_disabled в форме «вы» — тот же безличный текст', () => {

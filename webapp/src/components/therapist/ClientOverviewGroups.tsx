@@ -1,53 +1,44 @@
 import type { ReactNode } from 'react';
-import { hueStyle } from '../../lib/tone';
-import { SignHead, type SignKind } from './SignArt';
+import type { SheetLook } from '../../../../shared/src/theme/entityLook';
+import { SignGroup } from '../schemaSheets/SignGroup';
 
-export interface ToneGroup {
+interface PaperGroupData {
   id: string;
   name: string;
-  hue: number;
+  /** Бумага и знак группы: домен — domainLook, группа режимов — modeGroupLook. */
+  look: SheetLook;
   items: { id: string; name: string }[];
 }
 
 interface Props {
   label: string;
-  /** Знак слева от подписи. */
-  sign: SignKind;
   /** Правый слот шапки: счётчик («4 в работе») … */
   sub?: string;
   /** … или ссылка-действие («Редактировать →»). */
   action?: ReactNode;
-  groups: ToneGroup[];
-  /** Раскладка на компьютере (≥768): плитки (схемы) или колонки с верхней чертой (режимы). Телефон — строки. */
-  layout: 'tiles' | 'cols';
+  groups: PaperGroupData[];
 }
 
-// Карточка «Обзора» со строками по группам — домены схем, группы режимов
-// (#906): подпись капителью, имя группы — ds-sub, элемент — точка тона +
-// название. Цвет сущности только точкой: ни плиток с заливкой, ни цветных
-// рамок, один акцент на экран. На компьютере (≥768) те же группы — плитки по
-// три в ряд (схемы) и колонки (режимы), как в макете; тон — тонкая подложка и
-// верхняя черта, не заливка (therapist-card.css).
-export function ToneGroupsCard({ label, sign, sub, action, groups, layout }: Props) {
+// Секция «Обзора» с группами — домены схем, группы режимов (b30, принцип 10): та же группа на бумаге, что у
+// клиента в «Моих паттернах» и в «Справочнике» (SignGroup: лист домена или группы, знак 60 у подписи, белый
+// список строк). Подпись секции — ds-label без своего знака: знаки несут группы. Колонки — по ширине самой
+// колонки «Обзора» (контейнер .tk-groups-box, therapist-card.css), а не окна.
+export function PaperGroups({ label, sub, action, groups }: Props) {
   return (
-    <section className="ds-card">
+    <section className="tk-sec">
       <div className="ds-head-row tk-card-head">
-        <SignHead kind={sign} className="ds-label">{label}</SignHead>
+        <h2 className="ds-label tk-sec-label">{label}</h2>
         {sub && <span className="ds-sub">{sub}</span>}
         {action}
       </div>
-      <div className={`tk-groups tk-groups--${layout}`}>
-        {groups.map(g => (
-          <div key={g.id} className="tk-group" style={hueStyle(g.hue)}>
-            <div className="ds-sub">{g.name}</div>
-            {g.items.map(i => (
-              <div key={i.id} className="tk-item">
-                <span className="ds-dot tone-fill" style={hueStyle(g.hue)} aria-hidden />
-                {i.name}
-              </div>
-            ))}
-          </div>
-        ))}
+      <div className="tk-groups-box">
+        <div className="tk-groups">
+          {groups.map(g => (
+            <SignGroup key={g.id} look={g.look} title={g.name} rowsClassName="tk-rows">
+              {g.items.map(i => <div key={i.id} className="tk-item">{i.name}</div>)}
+            </SignGroup>
+          ))}
+        </div>
       </div>
     </section>
   );

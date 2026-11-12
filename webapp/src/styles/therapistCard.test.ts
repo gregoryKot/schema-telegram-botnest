@@ -1,14 +1,17 @@
 // @vitest-environment node
-// Тихая карточка клиента (#906, волна 1): закреплённой панели действий на
-// телефоне нет, плиток с заливкой, кавычки-глифа и локальных копий примитивов
-// нет, кегль имени — ds-h2, аватар — tint. CSS в jsdom не исполняется, поэтому
+// Карточка клиента (#906, волна 1; живая бумага — b30): закреплённой панели действий на
+// телефоне нет, кавычки-глифа и локальных копий примитивов нет, кегль имени — ds-h2
+// без своего размера, аватар — бумага тона клиента. CSS в jsdom не исполняется, поэтому
 // сверяем строки therapist-card.css (приём safeTop.test.ts).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PHONE_MEDIA, DESKTOP_MEDIA } from '../utils/phoneLayout';
 
-const css = readFileSync(join(__dirname, 'therapist-card.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const strip = (f: string) => readFileSync(join(__dirname, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+const css = strip('therapist-card.css');
+const cabinet = strip('cabinet.css');
+const paper = strip('paper.css');
 
 /** Тело первого блока, начинающегося с `head` (по балансу скобок). */
 function block(src: string, head: string): string {
@@ -38,6 +41,8 @@ const GONE = [
   '.tk-actions-main', '.tk-head--quiet-actions', '.tk-back', '.tk-edit', '.tk-name-row',
   '.tk-tile', '.tk-tile-title', '.tk-tile-item', '.tk-tiles', '.tk-quote', '.tk-goal-text', '.tk-mode-col', '.tk-modes',
   '.tk-card-label', '.tk-next-edit', '.tk-next-sub', '.tk-action', '.tk-actions-grid', '.tk-hint', '.tk-block', '.tk-day',
+  // b30: цветные квадратики-буллеты, плитки доменов с подложкой и колонки режимов с чертой ушли в SignGroup.
+  '.tk-group', '.tk-groups--tiles', '.tk-groups--cols', '.tk-missing', '.tk-missing-text',
 ];
 
 describe('therapist-card.css: тихая карточка клиента (#906)', () => {
@@ -51,17 +56,17 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(css).not.toMatch(new RegExp(`${cls.replace(/[.-]/g, '\\$&')}(?![\\w-])`));
   });
 
-  it('кегль имени задаёт ds-h2: у .tk-name только перенос', () => {
-    for (const d of [decls(css, '.tk-name'), decls(phone, '.tk-name')]) {
+  it('кегль имени задаёт ds-h2/ds-h3: у .tk-name только перенос', () => {
+    for (const d of [decls(css, '.tk-name'), decls(phone, '.tk-name'), decls(phone, '.tk-name--long')]) {
       expect(d).not.toContain('font');
-      expect(d).not.toContain('font-size');
     }
-    expect(decls(css, '.tk-name')).toContain('text-overflow: ellipsis');
-    expect(decls(phone, '.tk-name')).toContain('-webkit-line-clamp: 2');
   });
 
-  it('аватар — tint тона клиента держит примитив .ds-avatar.tone-tint (cabinet.css), локальной копии нет; на телефоне 44×44', () => {
+  it('аватар — бумага тона клиента (--h) с тенью сплошным слоем, без размытия; на телефоне 44×44', () => {
     expect(decls(css, '.tk-avatar.tone-tint')).toBe('');
+    // Бумага и тень — общий .ds-avatar--paper (cabinet.css, ревью r1: тот же кружок в списке, на «Сегодня»).
+    expect(decls(cabinet, '.ds-avatar--paper')).toContain('oklch(0.915 0.03 var(--h))');
+    expect(decls(cabinet, '.ds-avatar--paper')).toMatch(/box-shadow: \d+px \d+px 0 /);
     expect(decls(phone, '.tk-avatar')).toContain('width: 44px');
     expect(decls(phone, '.tk-avatar')).toContain('height: 44px');
   });
@@ -74,21 +79,17 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
     expect(css).not.toContain('.tk-menu');
   });
 
-  it('шаг стопки карточек — 16: у .tk-side и .tk-col, без телефонного переопределения', () => {
-    expect(decls(css, '.tk-side')).toContain('gap: 16px');
-    expect(decls(css, '.tk-col')).toContain('gap: 16px');
-    expect(decls(phone, '.tk-col')).toBe('');
+  // Ревью r1: на телефоне шаг 16 у обеих колонок разом — «Обзор» на 390 не длиннее «до».
+  it('шаг стопки листов — 20 у .tk-side и .tk-col, на телефоне — 16 у обеих одним правилом', () => {
+    expect(decls(css, '.tk-side')).toContain('gap: 20px');
+    expect(decls(css, '.tk-col')).toContain('gap: 20px');
+    expect(decls(phone, '.tk-col')).toBe('gap: 16px;');
+    expect(decls(phone, '.tk-side')).toBe('gap: 16px;');
   });
 
-  it('цель терапии — Manrope 15 обычным текстом; цвета — только токенами и тонами', () => {
-    const text = decls(css, '.tk-text');
-    expect(text).toContain('15px');
-    expect(text).toContain('var(--sans)');
+  it('цвета — только токенами и бумагой; размытия и тёмной акцентной карточки нет', () => {
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
-  });
-
-  it('текст на акцентной карточке красит примитив .ds-card--accent (cabinet.css) — локальных правил нет', () => {
-    expect(css).not.toMatch(/\.tk-side \.ds-card--accent/);
+    expect(css).not.toMatch(/blur|backdrop-filter|ds-card--accent/);
   });
 });
 
@@ -96,14 +97,17 @@ describe('therapist-card.css: тихая карточка клиента (#906)'
 // длинное слово заметки сессии уезжало за правый край карточки на телефоне,
 // две кнопки сайдбара на 1280 падали в два ряда разной ширины.
 describe('therapist-card.css: имя, заметка, действия сайдбара (QA 2026-11)', () => {
-  it('имя не рвётся посреди слова: без overflow-wrap: anywhere; ноутбук — строка с многоточием, телефон — две строки', () => {
-    for (const d of [decls(css, '.tk-name'), decls(phone, '.tk-name')]) {
+  // b30: одной строкой с многоточием длинное имя не было видно целиком нигде — теперь перенос.
+  it('имя не рвётся посреди слова и переносится: ноутбук — две строки, телефон — длинное до четырёх', () => {
+    for (const d of [decls(css, '.tk-name'), decls(phone, '.tk-name--long')]) {
       expect(d).not.toContain('anywhere');
       expect(d).not.toContain('word-break');
     }
-    expect(decls(css, '.tk-name')).toContain('white-space: nowrap');
-    expect(decls(css, '.tk-name')).toContain('overflow: hidden');
-    expect(decls(phone, '.tk-name')).toContain('-webkit-line-clamp: 2');
+    expect(decls(css, '.tk-name')).not.toContain('nowrap');
+    expect(decls(css, '.tk-name')).toContain('-webkit-line-clamp: 2');
+    expect(decls(phone, '.tk-name--long')).toContain('-webkit-line-clamp: 4');
+    // Кнопки шапки не сжимают имя: блок действий не сжимается, имя берёт остаток.
+    expect(decls(css, '.tk-actions')).toContain('flex: none');
   });
 
   it('заметка сессии на «Обзоре» переносит длинное слово, как .tb-note-text', () => {
@@ -118,32 +122,35 @@ describe('therapist-card.css: имя, заметка, действия сайд�
   });
 });
 
-// Регрессия 2026-11-04: «сайт выглядел как компьютерная версия, а стал как
-// мобильник». «Обзор» на ≥768 возвращает раскладку макета; строки в одной
-// карточке и 15px — только телефон.
-describe('therapist-card.css: «Обзор» — компьютер и телефон (регрессия 2026-11-04)', () => {
-  const desk = block(css, `@media ${DESKTOP_MEDIA} {\n  .tk-goal`);
-
-  it('на ≥768: цель — 24px с засечками (макет REDESIGN_2026-10: Literata 24px), схемы — плитки до 3 в ряд, режимы — колонки с верхней чертой', () => {
-    expect(decls(desk, '.tk-goal .tk-text')).toMatch(/24px\/1\.4 var\(--serif\)/);
-    expect(decls(desk, '.tk-groups')).toContain('display: grid');
-    expect(decls(desk, '.tk-groups--tiles')).toContain('/ 3)');
-    expect(decls(desk, '.tk-groups--cols')).toContain('/ 3)');
-    expect(decls(desk, '.tk-groups--cols .tk-group')).toContain('border-top: 3px solid');
+// b30: «Обзор» — живая бумага. Группы схем и режимов — SignGroup в две колонки по ширине самой колонки
+// (контейнер), «Встречи» — лист неба, трекер — лист соломы; белые листы — тень сплошным слоем.
+describe('therapist-card.css: «Обзор» на бумаге (b30)', () => {
+  it('группы — колонки по контейнеру, а не по окну', () => {
+    expect(decls(css, '.tk-groups-box')).toContain('container: tk-groups / inline-size');
+    expect(css).toMatch(/@container tk-groups \(min-width: 520px\) \{ \.tk-groups \{ grid-template-columns: repeat\(2/);
   });
 
-  it('сплошных заливок нет: плитка — тонкая подложка и рамка, не tone-fill/tone-soft', () => {
-    expect(css).not.toMatch(/tone-soft|tone-fill/);
-    expect(decls(desk, '.tk-groups--tiles .tk-group')).toContain('border: 1px solid');
+  it('белый лист — тень сплошным сдвинутым слоем тоном бумаги, не размытием', () => {
+    // Один лист на кабинет — .pp-leaf (paper.css, ревью r1); .tk-leaf задаёт только поля.
+    expect(decls(paper, '.pp-leaf')).toMatch(/box-shadow: 6px 7px 0 oklch\(var\(--pa-layer-lc\) var\(--h, 240\)\)/);
+    expect(decls(css, '.tk-leaf')).not.toContain('box-shadow');
   });
 
-  it('сетка групп и крупная цель объявлены только под ≥768; в базе и на телефоне — строки и 15px', () => {
-    const outside = css.replace(desk, '');
-    expect(outside).not.toMatch(/\.tk-groups--|grid-template-columns: repeat\(auto-fill/);
-    expect(decls(outside, '.tk-groups')).toContain('flex-direction: column');
-    expect(decls(outside, '.tk-text')).toContain('15px');
-    expect(decls(phone, '.tk-goal .tk-text')).toBe('');
-    expect(decls(phone, '.tk-groups')).toBe('');
+  it('незаполненное во «Встречах» — тихо (--text-sub), без красного', () => {
+    expect(decls(css, '.tk-meet-none')).toContain('color: var(--text-sub)');
+    expect(decls(css, '.tk-meet-none')).not.toMatch(/err|red|accent/);
+  });
+
+  it('потребность — цвет данных из inkVars: полоска --need-ink, число --need-text; красного «≤4» нет', () => {
+    expect(decls(css, '.tk-need-bar > span')).toContain('var(--need-ink)');
+    expect(decls(css, '.tk-need b')).toContain('var(--need-text)');
+    expect(css).not.toContain('is-low');
+  });
+
+  it('полоса вкладок: маска-градиент у края с невидимыми вкладками, счётчик без плашки', () => {
+    expect(decls(css, '.tk-tabs.is-fade-end')).toContain('mask-image: linear-gradient');
+    expect(decls(css, '.tk-tabs.is-fade-start')).toContain('mask-image: linear-gradient');
+    expect(decls(css, '.ds-count.tk-count')).toContain('background: none');
   });
 });
 
