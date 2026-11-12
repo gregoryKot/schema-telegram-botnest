@@ -20,8 +20,7 @@
 // QA 2026-11: вопрос трекера «Принимал ли ты… Действовал…» местоимения перед
 // глаголом не несёт — его ловит пара tr('ты','вы'), gendered-forms-tr-pairs.mjs.
 //
-// Снизил счётчик — зафиксируй, чтобы файл нельзя было засорить снова:
-//   node scripts/check-gendered-forms.mjs --update
+// Снизил счётчик — зафиксируй: node scripts/check-gendered-forms.mjs --update
 // Посмотреть, что именно насчитано: --verbose
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
@@ -35,6 +34,7 @@ const UPDATE = process.argv.includes('--update');
 const VERBOSE = process.argv.includes('--verbose');
 
 const SCAN_DIRS = ['src', 'webapp/src', 'shared/src'];
+const SCAN_FILES = ['game/src/i18n/messages.ts']; // тексты игры — только в каталоге
 
 function walk(dir, acc = []) {
   let entries;
@@ -63,8 +63,8 @@ function walk(dir, acc = []) {
 function main() {
 const counts = {};
 const details = {};
-for (const dir of SCAN_DIRS) {
-  for (const file of walk(dir)) {
+for (const files of [...SCAN_DIRS.map((d) => walk(d)), SCAN_FILES]) {
+  for (const file of files) {
     let src;
     try {
       src = readFileSync(join(ROOT, file), 'utf8');
