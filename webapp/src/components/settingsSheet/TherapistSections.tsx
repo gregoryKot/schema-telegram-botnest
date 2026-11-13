@@ -25,7 +25,7 @@ export function MyTherapistSection({ rel, settings, patch }: {
   return (
     <SSection id="s-therapist" label="Мой терапевт" help={<SettingsInfoHelp infoKey="therapist" />} hint={therapistSectionHint(therapyRelation?.status === 'active')}>
       {therapyRelation === undefined ? (
-        <SRow title="Загрузка..." />
+        <SRow title="Загрузка…" />
       ) : therapyRelation?.status === 'active' ? (
         <div className="st-body-block">
           <div className="st-strong">{therapistConnectedTitle(therapyRelation.partnerName)}</div>

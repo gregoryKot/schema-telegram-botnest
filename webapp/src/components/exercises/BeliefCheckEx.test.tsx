@@ -212,7 +212,7 @@ describe('BeliefCheckEx — сохранение: отказ сети виден
     walkToLastStep();
     fireEvent.click(screen.getByText(/Сохранить и закрыть/));
     await screen.findByText(
-      'Не удалось сохранить. Проверь связь и попробуй ещё раз',
+      'Не удалось сохранить. Проверь связь и попробуй ещё раз.',
     );
     cleanup();
     localStorage.clear(); // отказ оставил черновик — второй заход с чистого листа
@@ -228,7 +228,7 @@ describe('BeliefCheckEx — сохранение: отказ сети виден
     walkToLastStep();
     fireEvent.click(screen.getByText(/Сохранить и закрыть/));
     await screen.findByText(
-      'Не удалось сохранить. Проверьте связь и попробуйте ещё раз',
+      'Не удалось сохранить. Проверьте связь и попробуйте ещё раз.',
     );
   });
 });

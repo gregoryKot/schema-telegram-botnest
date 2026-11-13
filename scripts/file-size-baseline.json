@@ -94,7 +94,7 @@
   "scripts/check-schema-terms.mjs": 136,
   "scripts/check-second-person.mjs": 185,
   "scripts/check-silent-catch.mjs": 246,
-  "scripts/check-spelling.mjs": 119,
+  "scripts/check-spelling.mjs": 107,
   "scripts/check-tap-targets.mjs": 156,
   "scripts/check-telegram-chat-id.mjs": 110,
   "scripts/check-timer-cleanup.mjs": 81,

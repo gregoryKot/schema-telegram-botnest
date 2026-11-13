@@ -438,7 +438,7 @@ describe('TrackerOverlay — бэкафилл прошлой даты', () => {
     renderOverlay({ date: '2026-07-10' });
     const sk = screen.getByRole('status', { name: 'Загружаются оценки дня' });
     expect(sk.querySelectorAll('.skel').length).toBe(10); // лист: надпись, название, две строки; вопрос; пять ответов
-    expect(screen.queryByText('Загрузка...')).toBeNull();
+    expect(screen.queryByText('Загрузка…')).toBeNull();
     expect(mockApi.ratings).toHaveBeenCalledWith('2026-07-10');
   });
 

@@ -68,7 +68,7 @@ export function StepResponse({ tr, response, reflection, setReflection, onNext, 
         max={EXERCISE_TEXT_MAX}
         value={reflection}
         onChange={e => setReflection(e.target.value)}
-        placeholder="Что хочется сказать себе..."
+        placeholder="Что хочется сказать себе…"
         rows={3}
         className="pa-field sk-fc-field"
       />
@@ -128,7 +128,7 @@ export function StepAction({ tr, need, action, setAction, onSave, ...c }: Common
         max={EXERCISE_TEXT_MAX}
         value={action}
         onChange={e => setAction(e.target.value)}
-        placeholder="Написать другу, выйти подышать, обнять подушку..."
+        placeholder="Написать другу, выйти подышать, обнять подушку…"
         rows={3}
         className="pa-field sk-fc-field"
       />

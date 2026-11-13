@@ -55,7 +55,7 @@ export function CheckInSheet({ plan, needLabel, onDone }: Props) {
             Не вышло
           </button>
           <button onClick={() => checkin(true)} disabled={saving} className="ds-btn">
-            {saving ? 'Сохранение...' : <>Да, получилось <GlyphCheck /></>}
+            {saving ? 'Сохранение…' : <>Да, получилось <GlyphCheck /></>}
           </button>
         </div>
         {error && (

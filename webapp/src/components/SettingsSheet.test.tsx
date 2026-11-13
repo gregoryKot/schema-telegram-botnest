@@ -235,12 +235,12 @@ describe('SettingsSheet — удаление аккаунта: ошибка API'
 
 describe('SettingsSheet — экспорт данных для терапевта', () => {
   it('клик по «Сводка для терапевта» вызывает api.getExport и показывает текст в модалке', async () => {
-    mockApi.getExport.mockResolvedValue({ text: 'Экспорт: 30 дней данных...' });
+    mockApi.getExport.mockResolvedValue({ text: 'Экспорт: 30 дней данных…' });
     await renderSheet();
 
     fireEvent.click(screen.getByText('Сводка для терапевта'));
 
-    await screen.findByText('Экспорт: 30 дней данных...');
+    await screen.findByText('Экспорт: 30 дней данных…');
     expect(mockApi.getExport).toHaveBeenCalledTimes(1);
   });
 
@@ -320,7 +320,7 @@ describe('SettingsSheet — сохранение переключателя ви
 
     fireEvent.click(toggle);
 
-    // Оптимистичное состояние сразу включается...
+    // Оптимистичное состояние сразу включается…
     await waitFor(() =>
       expect(toggle.getAttribute('aria-checked')).toBe('true'),
     );

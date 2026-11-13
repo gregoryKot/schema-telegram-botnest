@@ -80,6 +80,8 @@
   - заголовок карточки моста на 320 — четыре строки (`.th-card-title`, там же);
   - Escape на главном листе настроек закрывает его, а фокус падает на `body`, а не на строку «Настройки»
     (`webapp/src/components/SettingsSheet.tsx`; зонд клавиатуры, 390 и 1280);
+  - после «Подключиться» в «Мой терапевт» фокус падает на `body`: кнопка уходит вместе с формой кода, окна при этом нет
+    (`webapp/src/components/settingsSheet/TherapistSections.tsx`; журнал клавиш в `e2e-browser/therapy-smoke.spec.ts`: `activeElement` — BODY);
   - у поля «Имя» в настройках нет подписи для скринридера (`webapp/src/components/settingsSheet/NameAddressSections.tsx`);
   - гонка «Escape + ответ сохранения» в подэкране настроек может закрыть весь лист: ветка Escape в
     `webapp/src/hooks/useHistorySheet.ts` не ставит `closing.current` (выведено из кода, не воспроизводилось);
