@@ -44,6 +44,7 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'components/practice/QuickStepBody.tsx': ['stretch', '.qs-actions'], // пошаговый лист: «Дальше» во всю ширину, как DoneSheet
   'components/therapy/TalkSheet.tsx': ['stretch', '.th-sheet-acts'],
   'sections/schemas/MineGroupsList.tsx': ['stretch', '.cs-block'],
+  'sections/profile/ProfileStart.tsx': ['content', '.cpf-start-cta'], // пустой профиль: кнопка по тексту, на телефоне — во всю ширину
   'sections/today/TrackerBlock.tsx': ['stretch', '.pp-block'], // блок трекера — колонка pp-block во всю ширину колонки
   'pages/subscribe/SubscribeForm.tsx': ['own', '.ap-main .ds-btn--lg'], // во всю колонку формы (PayLayout)
   'pages/subscribe/CancelControl.tsx': ['own', '.ap-main .ds-btn--lg'],
@@ -52,6 +53,8 @@ const LG: Record<string, ['own' | 'stretch' | 'content', string]> = {
   'sections/today/AllTasksOverlay.tsx': ['own', '.sk-wide-btn'], // «+ Поставить цель» во всю колонку листа «задания» (b20)
   'components/plans/PlanConfirm.tsx': ['own', '.sk-ics'], // «Сохранить план» и календарь — во всю колонку разворота (b20)
   'components/TaskCreateSheet.tsx': ['content', '.sk-submit .ds-btn'], // полоса внизу листа: справа по содержимому (b20)
+  'components/journey/WebJourneyHero.tsx': ['content', '.ds-btn.jr-hero-cta'], // пустой «Мой путь»: «Оценить день» по тексту на ≥768
+  'journey/JourneyItemDetail.tsx': ['content', '.ds-btn.jr-share'], // shared: «Поделиться карточкой» — на телефоне во всю ширину, на ≥768 по тексту
 };
 function lgDecisionOk(rules: Rule[], kind: 'own' | 'stretch' | 'content', sel: string): boolean {
   const mine = rules.filter((r) => r.selectors.includes(sel) && !isPhone(r.media) && !isTouch(r.media));

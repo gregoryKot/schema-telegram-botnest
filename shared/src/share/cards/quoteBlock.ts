@@ -4,10 +4,11 @@
 import {
   CARD_W,
   CARD_PAD,
+  INK,
+  hueInkHex,
   panel,
   sectionLabel,
-  measureWrap,
-  clampLines,
+  measureClamp,
   cardFont,
   type Card,
 } from '../cardKit';
@@ -16,9 +17,10 @@ export const QUOTE_LINE_H = 20;
 export const QUOTE_PAD_IN = 14;
 export const QUOTE_LABEL_BLOCK = 22;
 
-/** Цвета голосов — одинаковые на обеих карточках. */
-export const VOICE_CRITIC = '#f2777a';
-export const VOICE_CARE = '#7ad19b';
+/** Цвета голосов — одинаковые на обеих карточках: критик — слива (310, «Критик или
+ *  забота?»), забота — мох здоровых режимов (145); чернила, читаемые мелкой подписью. */
+export const VOICE_CRITIC = hueInkHex(310);
+export const VOICE_CARE = hueInkHex(145);
 
 /** Реплика в кавычках, перенесённая по ширине панели и обрезанная по лимиту. */
 export function quoteLines(
@@ -28,7 +30,7 @@ export function quoteLines(
   maxLines: number,
 ): string[] {
   const textW = CARD_W - CARD_PAD * 2 - QUOTE_PAD_IN * 2;
-  return clampLines(measureWrap(canvas, `«${text}»`, textW, size), maxLines);
+  return measureClamp(canvas, `«${text}»`, textW, size, maxLines);
 }
 
 /** Высота панели под уже перенесённые строки (нужна для расчёта карточки). */
@@ -52,14 +54,14 @@ export interface QuoteBlockOpts {
 /** Рисует блок и возвращает новый y. */
 export function drawQuoteBlock(c: Card, y: number, o: QuoteBlockOpts): number {
   const lineH = o.lineH ?? QUOTE_LINE_H;
-  const { ctx, th } = c;
+  const { ctx } = c;
   const panelW = c.W - CARD_PAD * 2;
   let top = sectionLabel(c, o.label, y + 4, o.color);
   const h = quoteBlockHeight(o.lines, lineH);
   panel(c, CARD_PAD, top, panelW, h, 16);
 
   ctx.font = cardFont(o.size);
-  ctx.fillStyle = th.fg(0.85);
+  ctx.fillStyle = INK.text;
   ctx.textAlign = 'left';
   let ty = top + QUOTE_PAD_IN + 11;
   for (const line of o.lines) {
@@ -68,4 +70,12 @@ export function drawQuoteBlock(c: Card, y: number, o: QuoteBlockOpts): number {
   }
   top += h + o.gap;
   return top;
+}
+
+/** Метка-камешек приметы вместо глифа «•» (полный разбор фразы). */
+export function markDot(c: Card, x: number, y: number, color: string) {
+  c.ctx.fillStyle = color;
+  c.ctx.beginPath();
+  c.ctx.arc(x, y, 3, 0, Math.PI * 2);
+  c.ctx.fill();
 }

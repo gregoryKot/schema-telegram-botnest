@@ -110,7 +110,7 @@ export function PatternSheet({
       {showShare && item && (
         <ShareCardSheet
           title={PATTERN_SHARE_TITLE[kind]}
-          draw={(canvas) => drawNoteCard(canvas, { color: meta.color, title: meta.name, subtitle: meta.subtitle, fields: item.cardFields })}
+          draw={(canvas) => drawNoteCard(canvas, { color: meta.color, title: meta.name, subtitle: meta.subtitle, fields: item.cardFields, hue: look.hue, sign: look.sign })}
           shareText={patternShareText(kind, meta.name, botShortUrl)}
           filename={`${kind}-card.png`}
           eventKind={kind}

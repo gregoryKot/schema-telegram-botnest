@@ -177,11 +177,11 @@ describe('WeeklyCardSheet — шаринг: отказ показывает те
     await waitFor(() =>
       expect(writeText).toHaveBeenCalledWith('Сводка за неделю: индекс 6.4'),
     );
-    // «✓ Скопировано» может показаться и на основной кнопке «Поделиться»
+    // «Скопировано» с галочкой может показаться и на основной кнопке «Поделиться»
     // (тот же отказ шаринга параллельно копирует текст в кнопке-фолбэке
     // хендлера) — проверяем не единственность, а что копирование видно.
     await waitFor(() =>
-      expect(screen.getAllByText('✓ Скопировано').length).toBeGreaterThan(0),
+      expect(screen.getAllByText('Скопировано').length).toBeGreaterThan(0),
     );
 
     vi.unstubAllGlobals();

@@ -39,6 +39,7 @@
 
 ## Следующее
 
+- ⬜ **DM из `alarm` не уходит: в репозитории нет секретов `BOT_TOKEN`/`ADMIN_ID`** — шаг DM в джобе `alarm` (`.github/workflows/prod-smoke.yml`, `nightly.yml`) краснеет на каждом `created`/`reminder`; `gh api repos/gregoryKot/schema-telegram-botnest/actions/secrets` → `total_count: 0` (2026-11-13). Секреты заводит владелец, действие — в `docs/open/owner.md`.
 - ⬜ **Имя автора в заголовках статей на schemehappens.ru** — осознанно не тронуто в задаче «убрать имя из вкладки продукта»: сервер отдаёт статьям `<title>` «… – Григорий Котляревский» на обоих хостах (`src/articles/article-seo.middleware.ts:19,99`); вкладка после загрузки показывает «… | schemehappens.ru» (`ArticlesPage.tsx`), но поисковая выдача видит имя. Нужно решение владельца: продукту — суффикс «Всё по схеме», визитке — имя.
 - ⬜ **РКН: убрать данные о состоянии и свободный текст из сообщений в Telegram** — сейчас туда уходят оценки потребностей (`src/notification/notification.templates*.ts`), текст плана практики и задания терапевта, текст запроса клиента в карточках заявок (`src/booking/booking-notify.format.ts`, `src/booking/intro-lead.format.ts`) и 300 знаков ошибок (`src/logger/alert.logger.ts`); политика п. 3.5 обещает обратное. Нужно до подачи ответа на запрос РКН №08-1063539 (до 19.11.2026), см. `docs/open/owner.md`, пункт «РКН».
 - ⬜ **CI и nightly гоняют Postgres 16, прод — 17.5** — `postgres:16` и `postgresql-client-16` в `.github/workflows/ci.yml` (`migrations`, `browser-live`) и `nightly.yml` (`backup-restore` и др.); версия прода — из лога планировщика бэкапа 2026-11-13 (`server version: 17.5`). Миграции и восстановление проверяются не на той версии, а дамп pg_dump 17 в Postgres 16 не заливается (`SET transaction_timeout`, #789).
@@ -119,6 +120,12 @@
 - ⬜ **Хвост текстовых правок 2026-11-12** — осознанно не сделано в PR текстов:
   - три точки вместо «…» в репликах игры (`game/src/i18n/messages.ts`, ~20 строк; `grep -n '[а-яё]\.\.\.'`):
     правило `ellipsis` в `scripts/spelling-rules.mjs` игру пропускает — есть ли знак «…» в пиксельном шрифте, не проверено.
+- ⬜ **Хвост редизайна профиля и «Моего пути» (#1070)** — баги, найденные ревью и не починенные в партии:
+  - диалоги «Достижения» и «Лучший день» не кладут запись в историю: браузерная «Назад» уводит со страницы
+    профиля (`webapp/src/sections/profile/AchievementsDialog.tsx`, `BestDayDialog.tsx`; стенд
+    `profile-achievements-dialog`);
+  - листы «Мой путь» и «Мой портрет» без `role="dialog"` и перевода фокуса — диктор не узнаёт об открытом
+    листе (`webapp/src/components/JourneySheet.tsx`, `webapp/src/sections/profile/PortraitSheet.tsx`).
 
 ## Идеи
 

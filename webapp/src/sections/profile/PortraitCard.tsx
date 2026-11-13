@@ -1,20 +1,19 @@
-// Карточка «Мой портрет» в профиле: бары по пяти потребностям, итог теста на
-// схемы и дельта с прошлого прохождения. Данные — buildPortrait (shared);
-// активность схем здесь не пересчитывается (правило №4). Пустое состояние
-// отвечает «откуда и зачем» (правило «Онбординг»). Вся карточка — одно
-// действие (открыть лист); «Пройти тест» — вложенная кнопка с stopPropagation.
-// Тексты и расчёт — shared/src/portrait.
+// Плитка «Мой портрет» на витрине профиля: бумага и знак ENTITY_LOOK.portrait, подпись «откуда и
+// зачем» (с данными) или объяснение пустого портрета, внизу итог «N схем · M режимов» из данных.
+// Вся плитка открывает лист; полосы потребностей, дата теста и дельта — в листе (PortraitSheet).
+// Пусто — вложенная «Пройти тест» (stopPropagation): лист не открывается; схемы отмечены, теста не было —
+// «Пройти тест на схемы →» под итогом. Тексты — shared/src/portrait.
 import type { MouseEvent } from 'react';
 import { useTr } from '../../utils/addressForm';
-import { fmtDate, momentDayKey } from '../../utils/format';
-import { pressable } from '../../utils/a11y';
+import { ENTITY_LOOK } from '../../../../shared/src/theme/entityLook';
 import { hasPortraitData, type Portrait } from '../../../../shared/src/portrait/portraitData';
-import { portraitTexts, portraitTotalsText, portraitDeltaText } from '../../../../shared/src/portrait/portraitTexts';
-import { CardTitle } from './CardTitle';
-import { PortraitNeedBar } from './PortraitNeedBar';
+import { portraitTexts, portraitTotalsText } from '../../../../shared/src/portrait/portraitTexts';
+import { glue } from '../../../../shared/src/utils/typo';
+import { ShelfTile } from './ShelfTile';
 
 interface Props {
   portrait: Portrait;
+  /** Последний тест на схемы; нет — у портрета с данными приглашение пройти тест. */
   ysqCompletedAt: string | null;
   onOpenSheet: () => void;
   onTakeTest?: () => void;
@@ -24,41 +23,15 @@ export function PortraitCard({ portrait, ysqCompletedAt, onOpenSheet, onTakeTest
   const tr = useTr();
   const txt = portraitTexts(tr);
   const hasData = hasPortraitData(portrait);
-  const maxCount = Math.max(1, ...portrait.needs.map((n) => n.count));
-  const deltaText = portraitDeltaText(portrait.delta);
   const takeTest = (e: MouseEvent) => { e.stopPropagation(); onTakeTest?.(); };
-
+  const link = (label: string) => onTakeTest && <button type="button" className="ds-link cpf-tile-link" onClick={takeTest}>{label}</button>;
+  // Схемы отмечены вручную, теста не было — под итогом приглашение пройти тест.
+  const foot = hasData
+    ? <span className="cpf-tile-metas"><span className="pp-meta">{portraitTotalsText(portrait)}</span>{!ysqCompletedAt && link(txt.takeTestArrow)}</span>
+    : link(txt.takeTest);
   return (
-    <section {...pressable(onOpenSheet)} aria-label={txt.title} className="ds-card ds-card--hover cpf-card">
-      <div className="ds-head-row">
-        <CardTitle sign="portrait">{txt.title}</CardTitle>
-        <span className="ds-sub">{hasData && <>{portraitTotalsText(portrait)} </>}<span className="ds-chev" aria-hidden="true" /></span>
-      </div>
-      <div className="cpf-hint">{txt.hint}</div>
-
-      {!hasData && (
-        <>
-          <div className="ds-sub">{txt.emptyCard}</div>
-          {onTakeTest && <button type="button" className="ds-btn ds-btn--secondary cpf-cta" onClick={takeTest}>{txt.takeTest}</button>}
-        </>
-      )}
-
-      {hasData && (
-        <div className="cpf-bars">
-          {portrait.needs.map((n) => <PortraitNeedBar key={n.id} n={n} maxCount={maxCount} />)}
-        </div>
-      )}
-
-      {hasData && ysqCompletedAt && (
-        <div className="cpf-foot">
-          <span className="ds-sub">Тест на схемы · {fmtDate(momentDayKey(ysqCompletedAt))}</span>
-          {deltaText && <span className={`cpf-delta${(portrait.delta ?? 0) < 0 ? ' is-better' : ''}`}>{deltaText}</span>}
-        </div>
-      )}
-
-      {hasData && !ysqCompletedAt && onTakeTest && (
-        <button type="button" className="ds-link cpf-foot-link" onClick={takeTest}>{txt.takeTestArrow}</button>
-      )}
-    </section>
+    <ShelfTile look={ENTITY_LOOK.portrait} title={txt.title} label={txt.title} onOpen={onOpenSheet} foot={foot || undefined}>
+      {glue(hasData ? txt.hint : txt.emptyCard)}
+    </ShelfTile>
   );
 }
