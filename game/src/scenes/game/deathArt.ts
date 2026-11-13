@@ -44,7 +44,7 @@ export function drawDeathArt(
       sleeping ? 5 : 0,
     )
     .setOrigin(0.5, 1)
-    .setScale(sleeping ? k : 1.5 * k)
+    .setScale(1.5 * k) // поза в кадре 48, как у кота
     .setFlipX(true);
   objs.push(cat);
   for (const o of objs) {

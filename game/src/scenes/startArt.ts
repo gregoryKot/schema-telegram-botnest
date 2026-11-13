@@ -43,7 +43,7 @@ export function drawStartArt(scene: Phaser.Scene): Phaser.GameObjects.Sprite {
     .setDepth(3);
   const sleep = () => {
     if (scene.textures.exists('cat_sleep'))
-      cat.setTexture('cat_sleep', 5).setScale(k);
+      cat.setTexture('cat_sleep', 5).setScale(1.5 * k);
   };
   if (scene.textures.exists('cat_sleep')) sleep();
   else {
