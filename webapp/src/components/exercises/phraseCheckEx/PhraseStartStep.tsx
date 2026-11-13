@@ -19,7 +19,7 @@ export function PhraseStartStep({ phrase, setPhrase, fieldRef, onNext }: {
   return (
     <>
       <label className="ex2-prompt-label" htmlFor="phrase-check-phrase">Что сказал внутренний голос?</label>
-      <p className="ex2-prompt-hint">Дословно, теми же словами. Дальше проверим её по девяти приметам.</p>
+      <p className="ex2-prompt-hint">Дословно, теми же словами. Дальше проверим фразу по девяти приметам.</p>
       <div className="ex2-now" style={hueStyle(CRITIC_LOOK.hue)}>
         <LimitedTextarea
           id="phrase-check-phrase"

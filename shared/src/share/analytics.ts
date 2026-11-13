@@ -52,15 +52,15 @@ export type JourneyDeletableType = 'belief_check' | 'letter' | 'flashcard';
 // meta { place } — блок об авторе / подвал / ответ FAQ / экран результата
 // мини-теста. Страницы видят только гости, событие анонимное — через
 // api.trackPublicEvent (userId = null). Парный allow-list
-// (PRACTICE_LINK_PLACES) — src/analytics/analytics.constants.ts, при
-// добавлении места синхронь оба.
+// (PRACTICE_LINK_PLACES) — src/analytics/analytics.constants.ts (синхронно).
 export const PRACTICE_LINK_CLICK_EVENT = 'practice_link_click';
+// Лендинг открыт кнопкой финала игры (?from=game), без meta; пара — GAME_EVENTS.
+export const GAME_APP_ARRIVE_EVENT = 'game_app_arrive';
 export type PracticeLinkPlace =
   'author' | 'footer' | 'faq' | 'quiz' | 'ysq_result';
 // Сохранение карточки-портрета режима («Знакомство с режимом»): meta
 // { modeId, filledFields } — сколько из 7 полей заполнено. Парный allow-list
-// (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts (бэкенд, агент Б
-// контракта mode-intro-card на момент написания ещё не подключил его сюда).
+// (ANALYTICS_EVENTS) — src/analytics/analytics.constants.ts.
 export const MODE_CARD_SAVED_EVENT = 'mode_card_saved';
 
 // Сохранение записи дневника режимов: meta { filledFields 0..7, filledHealthy }.

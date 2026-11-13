@@ -36,7 +36,7 @@ describe('«Мне плохо»: карточка шага без второго
 
   it('шаг 2: карточка от детекции — со своим знаком в разметке, обе линии на месте; Heart героя шага — рядом', () => {
     toResponse();
-    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), { target: { value: CRISIS } });
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе…'), { target: { value: CRISIS } });
     expect(cardSign(card())).not.toBeNull();
     for (const h of CRISIS_HOTLINES) expect(screen.getByText(h.display)).toBeTruthy();
     expect(document.querySelector('.sk-fc-spread .sk-fc-step > .pa-sheet-art svg')).not.toBeNull();
@@ -47,7 +47,7 @@ describe('«Мне плохо»: карточка шага без второго
     toResponse();
     fireEvent.click(screen.getByText('Дальше →'));
     fireEvent.click(screen.getByText('Привязанность'));
-    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку...'), { target: { value: CRISIS } });
+    fireEvent.change(screen.getByPlaceholderText('Написать другу, выйти подышать, обнять подушку…'), { target: { value: CRISIS } });
     expect(cardSign(card())).not.toBeNull();
     expect(card().closest('.sk-fc-spread')!.querySelector('.sk-fc-step > .pa-sheet-art')).not.toBeNull();
   });
@@ -74,7 +74,7 @@ describe('«Мне плохо»: карточка шага без второго
 
   it('телефон: кризисная карточка шага — не signless (знак в разметке без героя рядом)', () => {
     toResponse();
-    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе...'), { target: { value: CRISIS } });
+    fireEvent.change(screen.getByPlaceholderText('Что хочется сказать себе…'), { target: { value: CRISIS } });
     const art = card().firstElementChild!.querySelector(':scope > span[aria-hidden="true"]') as HTMLElement;
     expect(art.querySelector('svg')).not.toBeNull();
     expect(art.closest('.sk-fc-step')).toBeNull();

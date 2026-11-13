@@ -41,7 +41,7 @@ export function PartnerSection({ pair }: { pair: PairMechanics }) {
     <SSection id="s-partner" label="Партнёр" help={<SettingsInfoHelp infoKey="pair" />} hint={scopeHint}>
       <div className="st-body-block">
         {!data && !loadError ? (
-          <div className="st-text st-text--faint">Загрузка...</div>
+          <div className="st-text st-text--faint">Загрузка…</div>
         ) : !data ? (
           // Сбой getPair() не должен выглядеть как «нет партнёра»: подключённый
           // пользователь на сетевой ошибке увидел бы «пригласить друга».

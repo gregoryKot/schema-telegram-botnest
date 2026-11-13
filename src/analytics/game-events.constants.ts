@@ -1,3 +1,5 @@
+import { ctaTargetMeta } from './game-cta.constants';
+
 /**
  * События третьего фронтенда — игры (`game/`, Phaser). Игра никого не
  * авторизует: все её события анонимны (`userId = null`) и идут уже
@@ -14,8 +16,7 @@
  * текста в игре нет вовсе, только перечислимые поля ниже.
  */
 
-// Разрешённые имена событий игры (спредятся в ANALYTICS_EVENTS и
-// PUBLIC_ANALYTICS_EVENTS — analytics.constants.ts).
+// Имена событий игры (спредятся в (PUBLIC_)ANALYTICS_EVENTS).
 export const GAME_EVENTS = [
   'game_open', // открыл страницу игры (meta.src)
   'game_start', // нажал «начать» в меню (без meta)
@@ -24,9 +25,10 @@ export const GAME_EVENTS = [
   'game_chapter_start', // начал главу (meta.chapter)
   'game_chapter_done', // дошёл до конца главы (meta.chapter)
   'game_cta_shown', // увидел приглашение к терапии (meta.from)
-  'game_cta_click', // нажал приглашение (meta.from)
+  'game_cta_click', // нажал приглашение (meta.from, meta.to)
   'game_share', // нажал «поделиться» (meta.from)
   'game_over', // экран «сил не осталось» (meta.chapter)
+  'game_app_arrive', // лендинг открыт кнопкой финала (?from=game), без meta
 ] as const;
 export type GameEventName = (typeof GAME_EVENTS)[number];
 
@@ -40,15 +42,13 @@ export const GAME_CHAPTERS = [
 export type GameChapter = (typeof GAME_CHAPTERS)[number];
 
 // Место приглашения к терапии (meta.from для game_cta_*/game_share):
-//   act1    — развилка после главы 2;
-//   cabinet — финал главы 4 (полный прогон);
-//   ending  — запасной финал (не добрался до полного прогона).
+//   act1 — развилка после главы 2; cabinet — финал главы 4 (полный прогон);
+//   ending — запасной финал (не добрался до полного прогона).
 export const GAME_CTA_PLACES = ['act1', 'cabinet', 'ending'] as const;
 export type GameCtaPlace = (typeof GAME_CTA_PLACES)[number];
 
 // Откуда открыли игру (meta.src для game_open):
-//   site   — переход с сайта;
-//   bot    — переход из бота;
+//   site — переход с сайта; bot — переход из бота (команда /game);
 //   share  — по ссылке от друга (см. game_share);
 //   direct — открыл без метки в ссылке;
 //   other  — метка есть, но незнакомая (рассинхрон/будущее расширение).
@@ -108,11 +108,11 @@ export function sanitizeGameMeta(
     name === 'game_share'
   ) {
     const from = meta?.from;
-    return typeof from === 'string' && GAME_CTA_PLACE_SET.has(from)
-      ? { from }
-      : null;
+    if (typeof from !== 'string' || !GAME_CTA_PLACE_SET.has(from)) return null;
+    return name === 'game_cta_click'
+      ? { from, ...ctaTargetMeta(meta) }
+      : { from };
   }
-  // game_start / game_tutorial_done / game_tutorial_skip — без meta, любые
-  // присланные поля отбрасываются.
+  // Остальные — без meta, присланные поля отбрасываются.
   return {};
 }

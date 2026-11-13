@@ -52,7 +52,7 @@ export function TherapistTodaySection({ displayName, onOpenClient, onAddClient }
       <div className="ds-page tt-page animate-fade">
         <TherapistTodayHead displayName={displayName} />
         <PaperAlert sign="cluster" onRetry={retry}
-          title={tr('Клиенты не загрузились. Проверь связь и попробуй ещё раз', 'Клиенты не загрузились. Проверьте связь и попробуйте ещё раз')} />
+          title={tr('Клиенты не загрузились. Проверь связь и попробуй ещё раз.', 'Клиенты не загрузились. Проверьте связь и попробуйте ещё раз.')} />
       </div>
     );
   }

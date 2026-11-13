@@ -12,7 +12,7 @@ export function NoteLoadState({ status, onRetry }: { status: Exclude<DayNoteStat
   if (status === 'error') {
     return (
       <PaperAlert sign="pebbles" title="Заметка не загрузилась."
-        text="Поле откроется после загрузки, чтобы новое не легло поверх сохранённого" onRetry={onRetry} />
+        text="Поле откроется после загрузки, чтобы новое не легло поверх сохранённого." onRetry={onRetry} />
     );
   }
   return (

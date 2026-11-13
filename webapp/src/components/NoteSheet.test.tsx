@@ -39,7 +39,7 @@ afterEach(() => {
 describeCrisisField('webapp/src/components/NoteSheet.tsx', {
   open: renderSheet,
   enter: (text) =>
-    fireEvent.change(screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...'), {
+    fireEvent.change(screen.getByPlaceholderText('Что происходило сегодня? Любая мысль…'), {
       target: { value: text },
     }),
 });
@@ -51,7 +51,7 @@ describe('NoteSheet — загрузка существующей заметки
     mockApi.getNote.mockResolvedValue({ text: 'Вчера был трудный разговор', tags: [] });
     await act(async () => { renderSheet(); });
 
-    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement;
+    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль…') as HTMLTextAreaElement;
     await waitFor(() => expect(textarea.value).toBe('Вчера был трудный разговор'));
   });
 
@@ -65,7 +65,7 @@ describe('NoteSheet — загрузка существующей заметки
 
 // Аудит 2026-11, E7: поле до загрузки принимало ввод, поздний ответ его затирал;
 // сбой загрузки давал пустую форму, и «Сохранить» перетирало заметку на сервере.
-const PLACEHOLDER = 'Что происходило сегодня? Любая мысль...';
+const PLACEHOLDER = 'Что происходило сегодня? Любая мысль…';
 function deferred<T>() {
   let resolve!: (v: T) => void;
   let reject!: (e: unknown) => void;
@@ -128,7 +128,7 @@ describe('NoteSheet — сохранение', () => {
   it('успешное сохранение вызывает api.saveNote с обрезанным текстом и датой', async () => {
     mockApi.saveNote.mockResolvedValue(undefined);
     await act(async () => { renderSheet(); });
-    fireEvent.change(screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...'), {
+    fireEvent.change(screen.getByPlaceholderText('Что происходило сегодня? Любая мысль…'), {
       target: { value: '  заметка с пробелами  ' },
     });
 
@@ -140,7 +140,7 @@ describe('NoteSheet — сохранение', () => {
   it('ошибка api.saveNote показывает сообщение, а не тишину, и не закрывает лист', async () => {
     mockApi.saveNote.mockRejectedValue(new Error('network down'));
     await act(async () => { renderSheet(); });
-    fireEvent.change(screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...'), {
+    fireEvent.change(screen.getByPlaceholderText('Что происходило сегодня? Любая мысль…'), {
       target: { value: 'заметка' },
     });
 
@@ -148,7 +148,7 @@ describe('NoteSheet — сохранение', () => {
 
     await screen.findByText('Не удалось сохранить. Попробуй ещё раз.');
     // Лист не закрылся — текст всё ещё в textarea.
-    expect((screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement).value).toBe('заметка');
+    expect((screen.getByPlaceholderText('Что происходило сегодня? Любая мысль…') as HTMLTextAreaElement).value).toBe('заметка');
   });
 });
 
@@ -157,7 +157,7 @@ describe('NoteSheet — сохранение', () => {
 describe('NoteSheet — предел длины', () => {
   it('textarea.maxLength = предел из shared, счётчик «N/предел» виден с первого знака', async () => {
     await act(async () => { renderSheet(); });
-    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement;
+    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль…') as HTMLTextAreaElement;
     expect(textarea.maxLength).toBe(DAY_NOTE_MAX);
     expect(screen.getByText(`0/${DAY_NOTE_MAX}`)).toBeTruthy();
     fireEvent.change(textarea, { target: { value: 'три' } });
@@ -174,7 +174,7 @@ describe('NoteSheet — слитая заметка длиннее предел�
     mockApi.getNote.mockResolvedValue({ text: merged, tags: [] });
     mockApi.saveNote.mockResolvedValue(undefined);
     await act(async () => { renderSheet(); });
-    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль...') as HTMLTextAreaElement;
+    const textarea = screen.getByPlaceholderText('Что происходило сегодня? Любая мысль…') as HTMLTextAreaElement;
     await waitFor(() => expect(textarea.value).toBe(merged));
     expect(textarea.maxLength).toBe(900);
     const edited = 'в' + merged.slice(1);

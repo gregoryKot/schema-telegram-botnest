@@ -16,6 +16,7 @@ import { hasAuthSeen } from '../../../shared/src/auth/authSeen';
 import { ACCOUNT_DELETED_TEXT, useAccountDeletedNotice } from '../../../shared/src/account/accountDeletion';
 import { useLoginConsentMark } from '../hooks/useLoginConsentMark';
 import { useAfterLoginPath } from '../auth/returnTo';
+import { useTr } from '../utils/addressForm';
 import '../styles/auth-login.css';
 
 export function LoginPage() {
@@ -24,6 +25,7 @@ export function LoginPage() {
   const location = useLocation();
   const afterLogin = useAfterLoginPath(); // адрес, с которого увели на вход (E14)
   useLoginConsentMark();
+  const tr = useTr();
   // В5: после провала OAuth AuthCallback уводит сюда с ?error=no_token (читаем один раз).
   const [error, setError] = useState<string | null>(() =>
     new URLSearchParams(location.search).get('error') === 'no_token'
@@ -84,20 +86,17 @@ export function LoginPage() {
     }
   };
 
-  if (isTelegramContext) {
-    return <TelegramRetry loading={miniAppLoading} error={error} onRetry={retryTelegramAuth} />;
-  }
+  if (isTelegramContext) return <TelegramRetry loading={miniAppLoading} error={error} onRetry={retryTelegramAuth} />;
 
   return (
     <LoginShell>
       <div className="ds-eyebrow">Вход</div>
       <h1 className="al-title">Всё по схеме</h1>
-      {/* Новичку и человеку с истёкшей сессией нужно сказать разное
-          (парная правка к LoginScreen мини-аппа, правило №3). */}
+      {/* Новичку и человеку с истёкшей сессией нужно сказать разное. */}
       <p className="al-sub" role={deleted ? 'status' : undefined}>
         {deleted ? ACCOUNT_DELETED_TEXT : hasAuthSeen()
           ? 'Вход устарел — данные на месте, нужно войти заново'
-          : 'Войдите, чтобы продолжить'}
+          : tr('Войди, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram', 'Войдите, чтобы продолжить. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram')}
       </p>
 
       {errorAt === 'providers' && errorAlert}

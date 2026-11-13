@@ -129,11 +129,26 @@ describe('StepUpProvider — резервный код и пауза', () => {
     const send = vi.fn((code?: string) => Promise.resolve(code === 'ab12cd34ef' ? res(200) : NEED()));
     const out = setup(send);
     await dialogOpen();
+    expect(screen.getByText(/Введи код из приложения-аутентификатора/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Использовать резервный код' }));
+    // Подводка — про резервный код: «код из приложения» над его полем было бы неправдой.
+    expect(screen.getByText(/Введи один из резервных кодов — каждый срабатывает один раз/)).toBeTruthy();
+    expect(screen.queryByText(/приложения-аутентификатора/)).toBeNull();
     fireEvent.change(screen.getByLabelText('Резервный код'), { target: { value: 'AB12 cd34-EF' } });
     confirm();
     await waitFor(() => expect(out[0]?.value?.status).toBe(200));
     expect(send).toHaveBeenLastCalledWith('ab12cd34ef');
+  });
+
+  it('лид следует за режимом поля: резервный код — без просьбы открыть приложение, и обратно', async () => {
+    setup(vi.fn().mockResolvedValue(NEED()), 'vy');
+    const dialog = await dialogOpen();
+    expect(dialog.textContent).toContain('Введите код из приложения-аутентификатора.');
+    fireEvent.click(screen.getByRole('button', { name: 'Использовать резервный код' }));
+    expect(dialog.textContent).toContain('Введите один из резервных кодов — каждый срабатывает один раз.');
+    expect(dialog.textContent).not.toContain('аутентификатор');
+    fireEvent.click(screen.getByRole('button', { name: 'Ввести код из приложения' }));
+    expect(dialog.textContent).toContain('Введите код из приложения-аутентификатора.');
   });
 
   it('429 totp_locked — текст про паузу, поле сразу резервного кода', async () => {

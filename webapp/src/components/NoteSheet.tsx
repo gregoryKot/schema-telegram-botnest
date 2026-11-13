@@ -85,7 +85,7 @@ export function NoteSheet({ date, onClose }: Props) {
           alwaysCount
           value={text}
           onChange={e => { setDirty(true); setText(e.target.value); }}
-          placeholder="Что происходило сегодня? Любая мысль..."
+          placeholder="Что происходило сегодня? Любая мысль…"
           aria-label="Запись"
           rows={6}
           className="pa-field sd-note-area"

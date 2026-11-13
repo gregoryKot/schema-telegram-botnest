@@ -66,7 +66,7 @@
 | check-schema-terms.mjs | неканонические термины схема-терапии в текстах | — | нет | checks |
 | check-second-person.mjs | захардкоженные императивы и «вы»-формы вне tr(), тексты бэкенда | `scripts/second-person-baseline.json` | да | webapp |
 | check-silent-catch.mjs | `.catch(() => {})`, глушащий ошибку сети | `scripts/silent-catch-baseline.json` | да | backend |
-| check-spelling.mjs | орфография видимых строк («оффлайн» → «офлайн»); комментарии и тесты не смотрит | — | нет | checks |
+| check-spelling.mjs | орфография видимых строк («оффлайн» → «офлайн», три точки после буквы → «…»; игру правило многоточия пропускает); комментарии и тесты не смотрит | — | нет | checks |
 | check-tap-targets.mjs | интерактивный элемент, у которого обе стороны меньше 44px — инлайн-размер или CSS-класс (с зоной `::before` отрицательным inset; `tap-targets-css.mjs`) | `scripts/tap-targets-baseline.json` | да | webapp |
 | check-utility-inline.mjs | инлайновый `style={{…}}`, набор которого точно совпадает с классом-утилитой `shared/src/theme/utilities.css` | `scripts/utility-inline-baseline.json` | да | webapp |
 | check-telegram-chat-id.mjs | отправка в Telegram (`sendMessage`/`sendTg`/`sendBounded`/`chat_id:`) по адресу, приведённому из `userId`/`user.id`, вне `src/auth/telegram-identity.ts` и `src/bot/account.service.ts` (класс #456) | — | нет | checks |
@@ -99,6 +99,6 @@ npx prisma generate                                # после любых пр�
 npx prisma migrate dev                             # создать миграцию на dev-БД
 npx prisma migrate deploy                          # применить миграции (в CI на пустой БД, дважды)
 npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code   # дрейф схемы и миграций
-npm run smoke                                      # playwright test (сначала собрать webapp)
+npm run smoke                                      # playwright test (сначала собрать webapp); без WebKit — npx playwright test --project=webapp
 node scripts/check-<имя>.mjs [--update]            # любой гейт; --update только если флаг есть в таблице выше
 ```

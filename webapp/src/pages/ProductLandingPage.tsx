@@ -12,6 +12,8 @@ import { ProductHero } from './landing/ProductHero';
 import { HowSection } from './landing/HowSection';
 import { FeaturesSection } from './landing/FeaturesSection';
 import { AuthorSection } from './landing/AuthorSection';
+import { GameTeaser } from './landing/GameTeaser';
+import { useGameArrival } from './landing/useGameArrival';
 import { AppInstallSection } from './landing/AppInstallSection';
 import { AUTHOR_SITE, trackPracticeClick } from './landing/practiceLink';
 import { ProductMobileMenu } from './landing/ProductMobileMenu';
@@ -22,10 +24,8 @@ import { glue } from '../../../shared/src/utils/typo';
 import { PaperBand } from './landing/PaperBand';
 import '../styles/product-landing.css';
 
-// Продуктовый лендинг «Всё по схеме» — главная app-домена (schemehappens.ru), тот же язык
-// «бумажной аппликации», что у кабинета (docs/design/PAPER_2026-11.md): полосы цветной бумаги
-// (PaperBand), плитки, крупные сцены (components/art/LandingScenes*.tsx), обложки статей
-// (ArticleCard). Вид — styles/product-landing*.css, корень на .light-lock. Текст —
+// Продуктовый лендинг «Всё по схеме» (schemehappens.ru), язык «бумажной аппликации» кабинета
+// (docs/design/PAPER_2026-11.md). Вид — styles/product-landing*.css, корень на .light-lock. Текст —
 // src/articles/home-landing.content.ts (он же в #root для робота без JS), вид — productContent.ts.
 export function ProductLandingPage() {
   const { isAuthenticated } = useAuth();
@@ -34,6 +34,7 @@ export function ProductLandingPage() {
   const entry = entryCta(isAuthenticated);
 
   useEffect(() => { document.title = 'Всё по схеме — инструмент схема-терапии'; }, []);
+  useGameArrival();
 
   return (
     <div className="light-lock pl2-root">
@@ -62,8 +63,7 @@ export function ProductLandingPage() {
       <HowSection />
       <FeaturesSection />
 
-      {/* ── Значок на экран (PWA) ── */}
-      <AppInstallSection />
+      <AppInstallSection />{/* значок на экран (PWA) */}
 
       {/* ── Доверие: три плитки цветной бумаги со знаками кабинета ── */}
       <section className="pl2-sec">
@@ -72,8 +72,8 @@ export function ProductLandingPage() {
         </div>
       </section>
 
-      {/* ── Кто это делает ── */}
-      <AuthorSection />
+      <AuthorSection />{/* кто это делает */}
+      <GameTeaser />
 
       {/* ── Статьи ── */}
       {articles && articles.length > 0 && (

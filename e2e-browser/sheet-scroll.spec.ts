@@ -105,6 +105,7 @@ for (const size of WIDE) {
   test(`${size.name}: «Справочник» терапевта прокручивается до последней группы`, async ({
     page,
     api,
+    isMobile,
   }) => {
     for (const [key, body] of THERAPIST) api.overrides.set(key, body);
     await page.addInitScript(() => {
@@ -132,8 +133,31 @@ for (const size of WIDE) {
     expect(scrollHeight).toBeGreaterThan(clientHeight);
     expect(['auto', 'scroll']).toContain(overflowY);
 
-    await page.mouse.move(size.width - 200, size.height / 2);
-    await page.mouse.wheel(0, scrollHeight);
-    await expect(last).toBeInViewport({ ratio: 1 });
+    // В мобильном WebKit колеса нет (Playwright бросает), а две колонки групп он делит иначе: последняя
+    // группа не внизу. Ставим её к нижнему краю списка и сверяем рамки строки, списка и окна.
+    if (isMobile) {
+      await last.evaluate((el) => {
+        const list = el.closest('.page')!;
+        list.scrollTop +=
+          el.getBoundingClientRect().bottom -
+          list.getBoundingClientRect().bottom;
+      });
+      await expect
+        .poll(() =>
+          last.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            const s = el.closest('.page')!.getBoundingClientRect();
+            const low = Math.min(s.bottom, window.innerHeight);
+            return r.top >= s.top - 1 && r.bottom <= low + 1
+              ? 'видна'
+              : `вне: строка ${r.top}–${r.bottom}, список ${s.top}–${s.bottom}, окно ${window.innerHeight}`;
+          }),
+        )
+        .toBe('видна');
+    } else {
+      await page.mouse.move(size.width - 200, size.height / 2);
+      await page.mouse.wheel(0, scrollHeight);
+      await expect(last).toBeInViewport({ ratio: 1 });
+    }
   });
 }

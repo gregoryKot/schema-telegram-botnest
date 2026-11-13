@@ -127,8 +127,8 @@ describe('PartnerSection — загрузка и сбой', () => {
     fireEvent.click(screen.getByText('Повторить'));
     expect(pair.retryLoad).toHaveBeenCalled();
   });
-  it('пока грузится — «Загрузка...»', () => {
+  it('пока грузится — «Загрузка…»', () => {
     render(<PartnerSection pair={pairOf(null)} />);
-    expect(screen.getByText('Загрузка...')).toBeTruthy();
+    expect(screen.getByText('Загрузка…')).toBeTruthy();
   });
 });
