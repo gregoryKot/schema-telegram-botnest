@@ -98,13 +98,13 @@ describe('LoginPage — подзаголовок в форме человека'
         </MemoryRouter>
       </AddressFormContext.Provider>,
     );
-    expect(screen.getByText(sub)).toBeTruthy();
+    expect(screen.getByText(`${sub}. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram`)).toBeTruthy();
     expect(screen.getByTestId('login-consent-note').textContent).toMatch(consent);
   });
 
   it('без провайдера (так живёт /login) весь экран в одной форме', () => {
     renderPage();
-    expect(screen.getByText('Войди, чтобы продолжить')).toBeTruthy();
+    expect(screen.getByText(/^Войди, чтобы продолжить\. Вход через Telegram/)).toBeTruthy();
     expect(screen.getByTestId('login-consent-note').textContent).toMatch(/подтверждаешь/);
   });
 });
