@@ -1571,7 +1571,7 @@
   "src/therapy/former-therapist-info.ts": 86,
   "src/therapy/mode-map-kinds.ts": 20,
   "src/therapy/mode-maps.controller.ts": 198,
-  "src/therapy/mode-maps.service.ts": 187,
+  "src/therapy/mode-maps.service.ts": 185,
   "src/therapy/relation-end-reason.ts": 15,
   "src/therapy/relation-url-code.ts": 29,
   "src/therapy/relation-where.ts": 16,
