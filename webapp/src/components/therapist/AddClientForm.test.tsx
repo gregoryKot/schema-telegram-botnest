@@ -124,6 +124,17 @@ describe('AddClientForm — приглашение: код отдельно, о�
     expect(await screen.findByText('Клиент добавлен')).toBeTruthy();
     expect(mockApi.createTherapyInvite).not.toHaveBeenCalled();
   });
+
+  it('сбой создания — тихий лист PaperAlert без «Повторить»: повтор — та же «Создать карточку»', async () => {
+    mockApi.addVirtualClient.mockRejectedValue(new Error('500'));
+    render(<Host />);
+    fireEvent.change(screen.getByLabelText('Имя клиента'), { target: { value: 'Пётр' } });
+    await act(async () => { fireEvent.click(screen.getByText('Создать карточку')); });
+    const alert = await screen.findByRole('alert');
+    expect(alert.classList.contains('pa-alert')).toBe(true);
+    expect(screen.queryByText('Повторить')).toBeNull();
+    expect(screen.getByText('Создать карточку')).toBeTruthy();
+  });
 });
 
 // Аудит 2026-10-11: сервер ограничил имя офлайн-клиента (@MaxLength), поле
