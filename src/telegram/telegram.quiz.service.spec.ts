@@ -1,9 +1,8 @@
-// Мини-тесты в боте: список → интро → вопросы → результат, всё stateless
-// через callback_data. Проверяем и связку «прошёл тест → событие аналитики»
-// (правило №8), и устойчивость к мусорному callback_data.
+// Мини-тесты в боте: список → интро → кнопка в приложение. Ответов и
+// результата в чате нет; проверяем и старые кнопки вопросов.
 import { Logger } from '@nestjs/common';
 import { TelegramQuizService } from './telegram.quiz.service';
-import { ERROR_RETRY } from './telegram.constants';
+import { APP_URL, ERROR_RETRY } from './telegram.constants';
 import {
   makeFakeBot,
   runAction,
@@ -25,7 +24,6 @@ const keyboardData = (ctx: any): string[] => {
 describe('TelegramQuizService', () => {
   let fakeBot: FakeBot;
   let botService: { getUserSettings: jest.Mock };
-  let analytics: { track: jest.Mock };
 
   const boot = (addressForm: string | null = null) => {
     fakeBot = makeFakeBot();
@@ -34,11 +32,9 @@ describe('TelegramQuizService', () => {
         .fn()
         .mockResolvedValue(addressForm === null ? null : { addressForm }),
     };
-    analytics = { track: jest.fn().mockResolvedValue(undefined) };
     const service = new TelegramQuizService(
       fakeBot.bot,
       botService as any,
-      analytics as any,
       { canonicalUserId: jest.fn(async (id: number) => BigInt(id)) } as any,
     );
     service.onModuleInit();
@@ -64,59 +60,25 @@ describe('TelegramQuizService', () => {
     expect((ctx.reply as jest.Mock).mock.calls[0][0]).toContain('Мини-тесты');
   });
 
-  it('интро отвечает «что это и зачем» и ведёт на первый вопрос', async () => {
+  it('интро отвечает «что это и зачем» и ведёт в приложение', async () => {
     boot();
     const ctx = await runAction(fakeBot, 'qz:i:drives');
     expect(flat(ctx)).toContain('схема-терапии');
     expect(flat(ctx)).toContain('вопросов');
-    expect(keyboardData(ctx)).toContain('qz:q:drives:0:');
+    expect(keyboardData(ctx)).toContain(`${APP_URL}/tests/drives`);
+    expect(keyboardData(ctx).some((d) => d.startsWith('qz:q:'))).toBe(false);
   });
 
-  it('первый шаг: answerCbQuery ДО похода в БД, quiz_started записан', async () => {
+  // РКН, #1135: ответы и результат в Telegram не ездят.
+  it('кнопка старого вопроса не принимает ответы: только «пройти в приложении»', async () => {
     boot();
-    const ctx = await runAction(fakeBot, 'qz:q:drives:0:');
-    const answerOrder = (ctx.answerCbQuery as jest.Mock).mock
-      .invocationCallOrder[0];
-    const dbOrder = botService.getUserSettings.mock.invocationCallOrder[0];
-    expect(answerOrder).toBeLessThan(dbOrder);
-    expect(flat(ctx)).toContain('вопрос 1 из 7');
-    // Полные тексты вариантов — в СООБЩЕНИИ (кнопки Telegram режут длинное),
-    // кнопки — короткие номера (прод-скрин 2026-07-26).
-    expect(flat(ctx)).toContain('Нормальные люди уже на пробежке');
-    const rows = (ctx.editMessageText as jest.Mock).mock.calls[0][1]
-      .reply_markup.inline_keyboard;
-    expect(rows[0].map((b: any) => b.text)).toEqual(['1️⃣', '2️⃣', '3️⃣', '4️⃣']);
-    expect(analytics.track).toHaveBeenCalledWith(BigInt(1), 'quiz_started', {
-      quiz: 'drives',
-      src: 'bot',
-    });
-  });
-
-  it('полное прохождение даёт результат и событие quiz_completed', async () => {
-    boot();
-    // 7 ответов «за Здорового Взрослого» — в drives это всегда последний
-    // вариант, но найдём индексы честно, через сами кнопки.
-    let picks = '';
-    for (let n = 0; n < 7; n++) {
-      const ctx = await runAction(fakeBot, `qz:q:drives:${n}:${picks}`);
-      const adult = keyboardData(ctx).find((d) =>
-        d.startsWith(`qz:q:drives:${n + 1}:`),
-      );
-      expect(adult).toBeDefined();
-      // Список кнопок повторяет порядок options; берём последнюю опцию (adult).
-      const optionButtons = keyboardData(ctx).filter((d) =>
-        d.startsWith(`qz:q:drives:${n + 1}:`),
-      );
-      picks = optionButtons[optionButtons.length - 1].split(':')[4];
-    }
-    const ctx = await runAction(fakeBot, `qz:q:drives:7:${picks}`);
-    expect(flat(ctx)).toContain('Здоровый Взрослый');
-    expect(flat(ctx)).toContain('не диагноз');
-    expect(analytics.track).toHaveBeenCalledWith(BigInt(1), 'quiz_completed', {
-      quiz: 'drives',
-      result: 'adult',
-      src: 'bot',
-    });
+    const ctx = await runAction(fakeBot, 'qz:q:drives:3:012');
+    expect(ctx.answerCbQuery).toHaveBeenCalled();
+    expect(flat(ctx)).toContain('в приложении');
+    expect(flat(ctx)).not.toContain('вопрос 4');
+    expect(keyboardData(ctx)).toContain(`${APP_URL}/tests/drives`);
+    const ctx2 = await runAction(fakeBot, 'qz:q:nosuch:0:');
+    expect(flat(ctx2)).toContain('устарела');
   });
 
   it('форма «вы» из настроек меняет текст списка и результата', async () => {
@@ -124,18 +86,6 @@ describe('TelegramQuizService', () => {
     const ctx = await runAction(fakeBot, 'qz:list');
     expect(flat(ctx)).toContain('Выбирайте');
     expect(flat(ctx)).not.toContain('Выбирай:');
-  });
-
-  it('битый callback_data (шаг ≠ числу ответов, чужой id) не роняет и не пишет событий', async () => {
-    boot();
-    const ctx1 = await runAction(fakeBot, 'qz:q:drives:2:9');
-    expect(flat(ctx1)).toContain('устарела');
-    const ctx2 = await runAction(fakeBot, 'qz:q:nosuch:0:');
-    expect(flat(ctx2)).toContain('устарела');
-    // Ответ с индексом вне вариантов (в drives их 4 → «9» невалиден).
-    const ctx3 = await runAction(fakeBot, 'qz:q:drives:1:9');
-    expect(flat(ctx3)).toContain('устарела');
-    expect(analytics.track).not.toHaveBeenCalled();
   });
 
   it('ошибка БД не роняет хендлер: форма падает в «ты», сбой уходит в лог', async () => {
@@ -157,7 +107,6 @@ describe('TelegramQuizService', () => {
     ['command', 'tests'],
     ['action', 'qz:list'],
     ['action', 'qz:i:critic'],
-    ['action', 'qz:q:critic:0:'],
   ])(
     'сбой резолвера аккаунта (%s %s) — человек получает исход',
     async (kind, name) => {
@@ -168,7 +117,6 @@ describe('TelegramQuizService', () => {
       new TelegramQuizService(
         fakeBot.bot,
         { getUserSettings: jest.fn() } as any,
-        { track: jest.fn() } as any,
         {
           canonicalUserId: jest.fn().mockRejectedValue(new Error('db down')),
         } as any,

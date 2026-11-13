@@ -1,40 +1,17 @@
-// Топ-ап покрытия notification.templates.ts (было 65%/52% — самый большой
-// непокрытый блок 305-452: donate_reminder, anniversary_*, practice_reminder/
-// missed, low_streak_insight, task_assigned, pair_activity, ysq_requested;
-// плюс ветки reminder 194,197-198,200,212). notification.templates.spec.ts уже
-// покрывает reminder-кнопки/стрик/лапсинг — здесь только пробелы, без дублей.
-import {
-  renderTemplate,
-  renderLowStreakInsight,
-} from './notification.templates';
+// Шаблоны notification.templates*.ts: reminder-payload, донат, годовщины,
+// практики, Помощь, задание, пара, YSQ. Данных о состоянии и текстов
+// пользователя в шаблонах нет (РКН, #1135) — общий гейт: notification.no-state-data.spec.ts.
+import { renderTemplate } from './notification.templates';
 
 describe('renderTemplate — reminder: строки, зависящие от payload', () => {
-  it('yesterdayAvg добавляет строку "Вчера индекс был N.N"', () => {
+  it('старый payload (yesterdayAvg, lowestNeed) не читается — текст без оценок и потребностей', () => {
     const result = renderTemplate('reminder', {
       yesterdayAvg: 6.5,
-      variant: 0,
-    })!;
-    expect(result.text).toContain('Вчера индекс был 6.5.');
-  });
-
-  it('lowestNeed + lowestNeedId → подсказка с практикой ("Попробуй: ...")', () => {
-    const result = renderTemplate('reminder', {
       lowestNeed: 'Автономия',
       lowestNeedId: 'autonomy',
-      seed: 0,
       variant: 0,
     })!;
-    expect(result.text).toContain('Автономия просит внимания.');
-    expect(result.text).toMatch(/Попробуй:/);
-  });
-
-  it('только lowestNeed без lowestNeedId → короткая фраза без практики', () => {
-    const result = renderTemplate('reminder', {
-      lowestNeed: 'Автономия',
-      variant: 0,
-    })!;
-    expect(result.text).toContain('Обрати внимание на Автономия.');
-    expect(result.text).not.toMatch(/Попробуй:/);
+    expect(result.text).not.toMatch(/Вчера индекс|6\.5|Автономия|Попробуй/);
   });
 
   it('gamified + approachingStreak → строка про веху', () => {
@@ -54,18 +31,6 @@ describe('renderTemplate — reminder: строки, зависящие от pay
       variant: 0,
     })!;
     expect(result.text).toContain('🔥 Серия: 1 день подряд.');
-  });
-
-  it('onBreak=true скрывает "вчера" и подсказку по потребности', () => {
-    const result = renderTemplate('reminder', {
-      onBreak: true,
-      yesterdayAvg: 6.5,
-      lowestNeed: 'Автономия',
-      lowestNeedId: 'autonomy',
-      variant: 0,
-    })!;
-    expect(result.text).not.toContain('Вчера индекс был');
-    expect(result.text).not.toContain('просит внимания');
   });
 });
 
@@ -114,109 +79,79 @@ describe('renderTemplate — anniversary_*', () => {
 });
 
 describe('renderTemplate — practice_reminder / practice_missed', () => {
-  it('practice_reminder без practiceText → null', () => {
-    expect(renderTemplate('practice_reminder', {})).toBeNull();
-  });
+  const callbacks = (r: any): string[] =>
+    r.keyboard.reply_markup.inline_keyboard
+      .flat()
+      .map((b: any) => b.callback_data)
+      .filter(Boolean);
 
-  it('practice_reminder с planId — кнопки "Сделано"/"Не получилось"', () => {
+  it('practice_reminder: постоянный текст, без plan_done и текста плана из старого payload', () => {
     const result = renderTemplate('practice_reminder', {
       practiceText: 'подышать 5 минут',
       planId: 42,
     })!;
-    const cbs = (result.keyboard as any).reply_markup.inline_keyboard
-      .flat()
-      .map((b: any) => b.callback_data)
-      .filter(Boolean);
-    expect(cbs).toEqual(['plan_done:42', 'plan_skip:42']);
-    expect(result.text).toContain('подышать 5 минут');
+    expect(result.text).not.toContain('подышать');
+    expect(callbacks(result)).toEqual([]);
   });
 
-  it('practice_reminder без planId — только кнопка открыть дневник', () => {
-    const result = renderTemplate('practice_reminder', {
-      practiceText: 'подышать 5 минут',
-    })!;
-    const cbs = (result.keyboard as any).reply_markup.inline_keyboard
-      .flat()
-      .map((b: any) => b.callback_data)
-      .filter(Boolean);
-    expect(cbs).toEqual([]);
+  it('practice_missed: день недели — из таблицы по индексу, без индекса — «Вчера»', () => {
+    const named = renderTemplate('practice_missed', { weekday: 5 })!;
+    expect(named.text).toContain('План на пятницу');
+    const yesterday = renderTemplate('practice_missed', {})!;
+    expect(yesterday.text).toContain('Вчера был план');
+    expect(yesterday.text).toContain('как получилось?');
+    expect(callbacks(yesterday)).toEqual([]);
   });
 
-  it('practice_missed без practiceText → null', () => {
-    expect(renderTemplate('practice_missed', {})).toBeNull();
-  });
-
-  it('practice_missed с planId — кнопки "Всё-таки сделано"/"Не вышло"', () => {
+  it('practice_missed: строка в weekday и текст плана из старого payload не рендерятся', () => {
     const result = renderTemplate('practice_missed', {
+      weekday: 'на пятницу',
+      day: 'на пятницу',
       practiceText: 'написать письмо',
       planId: 7,
     })!;
-    const cbs = (result.keyboard as any).reply_markup.inline_keyboard
-      .flat()
-      .map((b: any) => b.callback_data)
-      .filter(Boolean);
-    expect(cbs).toEqual(['plan_done:7', 'plan_skip:7']);
-    expect(result.text).toContain('Как получилось?');
+    expect(result.text).not.toContain('письмо');
+    expect(result.text).toContain('Вчера был план');
   });
 });
 
 describe('renderTemplate — low_streak_insight', () => {
-  it('без text → null', () => {
-    expect(renderTemplate('low_streak_insight', {})).toBeNull();
+  it('постоянный текст в обеих формах, кнопки «Помощь» и запись всегда', () => {
+    const ty = renderTemplate('low_streak_insight', {}, 'ty')!;
+    const vy = renderTemplate('low_streak_insight', {}, 'vy')!;
+    expect(ty.text).toContain('Загляни');
+    expect(vy.text).toContain('Загляните');
+    expect((ty.keyboard as any).reply_markup.inline_keyboard.length).toBe(2);
   });
 
-  it('showBooking=true — добавляет кнопку записи на сессию', () => {
+  it('старый payload (text про потребность, showBooking) не читается', () => {
     const result = renderTemplate('low_streak_insight', {
-      text: 'Автономия невысокая уже 10 дней',
-      showBooking: true,
-    })!;
-    const rows = (result.keyboard as any).reply_markup.inline_keyboard;
-    expect(rows.length).toBe(2);
-  });
-
-  it('showBooking=false — только кнопка раздела Помощь', () => {
-    const result = renderTemplate('low_streak_insight', {
-      text: 'Автономия невысокая',
+      text: 'Автономия уже 10 дней невысокая',
       showBooking: false,
     })!;
-    const rows = (result.keyboard as any).reply_markup.inline_keyboard;
-    expect(rows.length).toBe(1);
+    expect(result.text).not.toContain('Автономия');
+    expect((result.keyboard as any).reply_markup.inline_keyboard.length).toBe(
+      2,
+    );
   });
 });
 
 describe('renderTemplate — task_assigned', () => {
-  it('без text → null', () => {
-    expect(renderTemplate('task_assigned', {})).toBeNull();
+  it('без payload — постоянный текст про приложение, кнопка на раздел заданий', () => {
+    const result = renderTemplate('task_assigned', {})!;
+    expect(result.text).toContain('в приложении');
+    expect(JSON.stringify(result.keyboard)).toContain('startapp=tasks"');
   });
 
-  it('известный needId добавляет строку "Потребность: ..."', () => {
+  it('старый payload (text, needId, dueDate) не читается, taskId — в ссылку', () => {
     const result = renderTemplate('task_assigned', {
       text: 'Понаблюдай за собой',
       needId: 'autonomy',
-    })!;
-    expect(result.text).toContain('Потребность: Автономия');
-  });
-
-  it('неизвестный needId — строка не добавляется', () => {
-    const result = renderTemplate('task_assigned', {
-      text: 'Понаблюдай за собой',
-      needId: 'not_a_real_need',
-    })!;
-    expect(result.text).not.toContain('Потребность:');
-  });
-
-  it('dueDate добавляет строку "Срок: D Month" (timezone-safe, полдень UTC)', () => {
-    const result = renderTemplate('task_assigned', {
-      text: 'Задание',
       dueDate: '2026-07-20',
+      taskId: 9,
     })!;
-    expect(result.text).toContain('Срок: 20 июля');
-  });
-
-  it('без needId/dueDate — только базовый текст', () => {
-    const result = renderTemplate('task_assigned', { text: 'Задание' })!;
-    expect(result.text).not.toContain('Потребность:');
-    expect(result.text).not.toContain('Срок:');
+    expect(result.text).not.toMatch(/Понаблюдай|Автономия|июля|Срок/);
+    expect(JSON.stringify(result.keyboard)).toContain('startapp=tasks_9');
   });
 });
 
@@ -243,22 +178,5 @@ describe('renderTemplate — pair_activity / ysq_requested', () => {
     const result = renderTemplate('ysq_requested', {}, 'vy')!;
     expect(result.text).toContain('Ваш терапевт просит вас');
     expect(result.text).toContain('ваши схемы');
-  });
-});
-
-describe('renderLowStreakInsight', () => {
-  it('daysBelowThreshold >= 10 — showBooking, кнопка записи на сессию', () => {
-    const result = renderLowStreakInsight('⚖️', 'Границы', 12);
-    const rows = (result.keyboard as any).reply_markup.inline_keyboard;
-    expect(rows.length).toBe(2);
-    expect(result.text).toContain('Это может быть паттерн');
-  });
-
-  it('daysBelowThreshold < 10 — без записи на сессию, форма "ты"/"вы"', () => {
-    const ty = renderLowStreakInsight('⚖️', 'Границы', 5, 'ty');
-    const vy = renderLowStreakInsight('⚖️', 'Границы', 5, 'vy');
-    expect((ty.keyboard as any).reply_markup.inline_keyboard.length).toBe(1);
-    expect(ty.text).toContain('попробуй');
-    expect(vy.text).toContain('попробуйте');
   });
 });

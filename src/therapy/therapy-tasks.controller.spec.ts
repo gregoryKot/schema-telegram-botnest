@@ -146,14 +146,7 @@ describe('TherapyTasksController.createTask', () => {
     const res = await controller.createTask(makeReq(7n), body);
     expect(relations.assertHasClient).toHaveBeenCalledWith(7n, 5n);
     expect(tasks.createTask).toHaveBeenCalledWith(5n, body, 7n);
-    expect(tasks.scheduleTaskNotification).toHaveBeenCalledWith(5n, {
-      type: 'reading',
-      text: 'почитать главу',
-      needId: 'safety',
-      dueDate: '2026-08-01',
-      // id созданного задания — кнопка уведомления открывает его (U2).
-      taskId: 1,
-    });
+    expect(tasks.scheduleTaskNotification).toHaveBeenCalledWith(5n, 1); // id задания: кнопка открывает его (U2)
     expect(res).toEqual({ id: 1, text: 'задача' });
   });
 

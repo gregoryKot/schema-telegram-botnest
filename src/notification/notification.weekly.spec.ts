@@ -1,18 +1,13 @@
 // Хвост волны 3: у поясов, где день плана — завтрашний (Владивосток +10,
-// Магадан +11), обход в 00:00 UTC идёт в субботу утром. Сводка недели
-// собиралась без субботнего вечера и с окном «до местного сегодня», а
-// «Вчера был план» в воскресном сообщении говорил о пятнице
-// (notification.weekly.ts). Москва — контроль: у неё всё как раньше.
+// Магадан +11), обход в 00:00 UTC идёт в субботу утром: сводка недели ставится
+// по дню плана (воскресенье), а «Вчера был план» не говорит о пятнице
+// (notification.weekly.ts). Москва — контроль. Текст плана и оценки в очередь
+// не кладутся (РКН, #1135).
 import {
   NotificationPlannerService,
   type PlannerUser,
 } from './notification.planner.service';
-import {
-  missedPlanDay,
-  refreshWeeklyOnFill,
-  type WeeklyFillDeps,
-} from './notification.weekly';
-import { renderTemplate } from './notification.templates';
+import { missedPlanWeekday } from './notification.weekly';
 
 const VLADIVOSTOK = 'Asia/Vladivostok'; // +10
 const MAGADAN = 'Asia/Magadan'; // +11
@@ -88,12 +83,11 @@ describe('сводка недели: окно — по дню плана чел�
         makeUser({ notifyTimezone: tz, notifyLocalHour: hour }),
         at,
       );
-      expect(swapReminder.mock.calls.map((c) => c[1])).toEqual(['weekly']);
-      expect(analytics.getWeeklyStats).toHaveBeenCalledWith(
-        42n,
-        tz,
-        '2026-11-08',
-      );
+      // Сводка без payload: средние и тренды не считаются и в очередь не идут.
+      expect(swapReminder.mock.calls.map((c) => [c[1], c[3]])).toEqual([
+        ['weekly', undefined],
+      ]);
+      expect(analytics.getWeeklyStats).not.toHaveBeenCalled();
     },
   );
 });
@@ -103,12 +97,12 @@ describe('невыполненный план: день назван своим 
   // последний завершённый местный день — четверг (позавчера для субботы).
   it.each([
     // tz, проверяемый день, как назван в сообщении
-    [VLADIVOSTOK, '2026-11-05', 'на четверг'],
-    [MAGADAN, '2026-11-05', 'на четверг'],
+    [VLADIVOSTOK, '2026-11-05', 4], // четверг
+    [MAGADAN, '2026-11-05', 4],
     [MOSCOW, '2026-11-05', undefined],
   ])(
-    '%s: план за последний завершённый день %s → «%s»',
-    async (tz, checked, day) => {
+    '%s: план за последний завершённый день %s → день недели %s',
+    async (tz, checked, weekday) => {
       const hour = tz === MOSCOW ? 21 : 8;
       const { svc, swapReminder, practices } = makePlanner(false);
       await svc.planDay(
@@ -117,98 +111,14 @@ describe('невыполненный план: день назван своим 
       );
       expect(practices.getMissedPlans).toHaveBeenCalledWith(42n, checked);
       expect(swapReminder.mock.calls.map((c) => [c[1], c[3]])).toEqual([
-        ['practice_missed', { practiceText: 'Позвонить другу', day }],
+        ['practice_missed', { weekday }],
       ]);
     },
   );
 
-  it('шаблон: день из payload, без него — «Вчера»', () => {
-    const fri = renderTemplate(
-      'practice_missed',
-      { practiceText: 'Позвонить другу', day: 'на пятницу' },
-      'ty',
-    );
-    expect(fri?.text).toContain('🎯 План на пятницу:');
-    const plain = renderTemplate(
-      'practice_missed',
-      { practiceText: 'Позвонить другу' },
-      'vy',
-    );
-    expect(plain?.text).toContain('🎯 Вчера был план:');
-  });
-
-  it('missedPlanDay: накануне дня отправки — шаблонное «Вчера», раньше — день недели', () => {
-    expect(missedPlanDay('2026-11-07', '2026-11-08')).toBeUndefined();
-    expect(missedPlanDay('2026-11-06', '2026-11-08')).toBe('на пятницу');
-    expect(missedPlanDay('2026-11-03', '2026-11-05')).toBe('на вторник');
-  });
-});
-
-describe('refreshWeeklyOnFill: субботнее заполнение освежает сводку на воскресенье', () => {
-  function deps(pending = true) {
-    const d = {
-      analyticsService: {
-        getWeeklyStats: jest.fn().mockResolvedValue([]),
-        getBestDayOfWeek: jest.fn().mockResolvedValue(null),
-      },
-      botService: { getNeeds: () => [] },
-      notificationService: {
-        hasPending: jest.fn().mockResolvedValue(pending),
-        refreshPending: jest.fn().mockResolvedValue(undefined),
-      },
-      logger: { error: jest.fn() },
-    };
-    return d as typeof d & WeeklyFillDeps;
-  }
-
-  it('суббота, сводка стоит — текст пересобран с окном до воскресенья', async () => {
-    const d = deps();
-    await refreshWeeklyOnFill(d, 42n, VLADIVOSTOK, '2026-11-07', 'vy');
-    expect(d.analyticsService.getWeeklyStats).toHaveBeenCalledWith(
-      42n,
-      VLADIVOSTOK,
-      '2026-11-08',
-    );
-    expect(d.notificationService.refreshPending).toHaveBeenCalledWith(
-      42n,
-      'weekly',
-      { text: expect.any(String) },
-    );
-  });
-
-  it('сводки нет — ничего не считаем', async () => {
-    const d = deps(false);
-    await refreshWeeklyOnFill(d, 42n, VLADIVOSTOK, '2026-11-07', 'ty');
-    expect(d.notificationService.hasPending).toHaveBeenCalledWith(
-      42n,
-      'weekly',
-    );
-    expect(d.analyticsService.getWeeklyStats.mock.calls).toEqual([]);
-    expect(d.notificationService.refreshPending.mock.calls).toEqual([]);
-  });
-
-  it.each([
-    ['пятница', '2026-11-06'],
-    [
-      'воскресенье — день плана (Москва: обход уже собрал её ночью)',
-      '2026-11-08',
-    ],
-  ])('%s — не трогаем', async (_n, today) => {
-    const d = deps();
-    await refreshWeeklyOnFill(d, 42n, MOSCOW, today, 'ty');
-    expect(d.notificationService.hasPending.mock.calls).toEqual([]);
-    expect(d.notificationService.refreshPending.mock.calls).toEqual([]);
-  });
-
-  it('сбой базы — строка в лог, заполнение не падает', async () => {
-    const d = deps();
-    d.notificationService.hasPending.mockRejectedValue(new Error('db down'));
-    await expect(
-      refreshWeeklyOnFill(d, 42n, MAGADAN, '2026-11-07', 'ty'),
-    ).resolves.toBeUndefined();
-    expect(d.logger.error).toHaveBeenCalledWith(
-      'refreshWeeklyOnFill failed',
-      expect.objectContaining({ message: 'db down' }),
-    );
+  it('missedPlanWeekday: накануне дня отправки — шаблонное «Вчера», раньше — номер дня недели', () => {
+    expect(missedPlanWeekday('2026-11-07', '2026-11-08')).toBeUndefined();
+    expect(missedPlanWeekday('2026-11-06', '2026-11-08')).toBe(5); // пятница
+    expect(missedPlanWeekday('2026-11-03', '2026-11-05')).toBe(2); // вторник
   });
 });

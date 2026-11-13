@@ -86,23 +86,20 @@ afterEach(() => {
 });
 
 describe('TelegramService — plan_(done|skip):<id>', () => {
-  it('plan_done:42 — done=true, checkinPlan(userId, 42, true), правит сообщение', async () => {
-    const { service, fakeBot, practicesService } = makeDeps();
-    service.onModuleInit();
-    const ctx = await runAction(fakeBot, 'plan_done:42');
-    expect(ctx.answerCbQuery).toHaveBeenCalled();
-    expect(practicesService.checkinPlan).toHaveBeenCalledWith(1n, 42, true);
-    expect(ctx.editMessageText).toHaveBeenCalledWith(
-      expect.stringContaining('Отлично'),
-    );
-  });
-
-  it('plan_skip:7 — done=false, checkinPlan(userId, 7, false)', async () => {
-    const { service, fakeBot, practicesService } = makeDeps();
-    service.onModuleInit();
-    await runAction(fakeBot, 'plan_skip:7');
-    expect(practicesService.checkinPlan).toHaveBeenCalledWith(1n, 7, false);
-  });
+  // Отметка плана через Telegram снята (РКН, #1135): старая кнопка ведёт в приложение.
+  it.each(['plan_done:42', 'plan_skip:7'])(
+    '%s — ответ «в приложении», план не отмечается, клавиатура — открыть приложение',
+    async (data) => {
+      const { service, fakeBot, practicesService } = makeDeps();
+      service.onModuleInit();
+      const ctx = await runAction(fakeBot, data);
+      expect(ctx.answerCbQuery).toHaveBeenCalledWith(
+        'Отметить можно в приложении',
+      );
+      expect(practicesService.checkinPlan).not.toHaveBeenCalled();
+      expect(ctx.editMessageReplyMarkup).toHaveBeenCalled();
+    },
+  );
 
   it('мусорный callback_data (не число) не матчится ни на один action', async () => {
     const { service, fakeBot } = makeDeps();

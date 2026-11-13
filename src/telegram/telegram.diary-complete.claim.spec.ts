@@ -12,7 +12,6 @@ import {
 } from './telegram.diary-complete';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationCadenceService } from '../notification/notification.cadence.service';
-import { decryptPayload } from '../notification/notification-payload.crypto';
 import { createFakeTable } from '../test-support/fake-prisma.spec-helper';
 
 const NEED = {
@@ -75,9 +74,7 @@ function make() {
     queue._rows.filter(
       (r) => r.type === type && r.sentAt == null && r.cancelledAt == null,
     );
-  const text = (row: { payload?: unknown }) =>
-    (decryptPayload(row.payload) as { text: string }).text;
-  return { deps, live, text, getRatings };
+  return { deps, live, getRatings };
 }
 
 describe('заполнение трекера: захват дня (E16)', () => {
@@ -93,8 +90,8 @@ describe('заполнение трекера: захват дня (E16)', () =>
     expect(live('streak_7')).toHaveLength(1);
   });
 
-  it('правка оценки после заполнения — та же сводка со свежим текстом', async () => {
-    const { deps, live, text, getRatings } = make();
+  it('правка оценки после заполнения — та же сводка, без оценок в payload', async () => {
+    const { deps, live, getRatings } = make();
     await runDiaryComplete(deps, 1n, NOON);
     getRatings.mockResolvedValue({ attachment: 9 });
 
@@ -102,8 +99,9 @@ describe('заполнение трекера: захват дня (E16)', () =>
 
     const [summary] = live('summary');
     expect(live('summary')).toHaveLength(1);
-    expect(text(summary)).toContain('9/10');
-    // Время сводки не съехало: правка освежает текст, а не перепланирует.
+    // Оценки в очередь не попадают (РКН, #1135).
+    expect(JSON.stringify(summary.payload ?? null)).not.toContain('9');
+    // Время сводки не съехало: правка не перепланирует.
     expect((summary.sendAt as Date).toISOString()).toBe(
       '2026-07-16T18:00:00.000Z',
     );

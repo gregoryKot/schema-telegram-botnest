@@ -106,11 +106,6 @@ export class PlansController {
         uid(req),
         'practice_reminder',
         sendAt,
-        {
-          practiceText: body.practiceText.trim(),
-          needId: body.needId,
-          planId: plan.id,
-        },
       );
     }
     return plan;
