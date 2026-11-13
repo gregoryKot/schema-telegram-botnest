@@ -3,33 +3,37 @@ import { api, reportClientError } from '../api';
 import type { Achievement, TherapyRelationInfo } from '../api';
 import { TherapyNote } from '../components/TherapyNote';
 import { JourneySheet } from '../components/JourneySheet';
-import { Skeleton } from '../components/Skeleton';
+import { PaperAlert } from '../components/paper/PaperAlert';
+import { OUTCOME_LOOK_LIT } from '../components/paper/outcomeLook';
 import { useTr } from '../utils/addressForm';
 import { AchievementDetail } from '../components/AchievementDetail';
-import { pressable } from '../utils/a11y';
 import '../styles/client-profile.css'; import '../styles/client-profile-mobile.css';
 import { DeleteAccountDialog } from '../components/DeleteAccountDialog';
 import { ProfileHeader } from './profile/ProfileHeader';
-import { ProfileCounters } from './profile/ProfileCounters';
-import { StreakCard } from './profile/StreakCard';
-import { ActivityHeatmap } from './profile/ActivityHeatmap';
+import { ProfileShelf } from './profile/ProfileShelf';
+import { RhythmBlock } from './profile/RhythmBlock';
+import { ProfileStart } from './profile/ProfileStart';
+import { ProfileSkeleton } from './profile/ProfileSkeleton';
 import { AchievementsCard } from './profile/AchievementsCard';
 import { AchievementsDialog } from './profile/AchievementsDialog';
 import { PatternsCard } from './profile/PatternsCard';
 import { TherapistCard } from './profile/TherapistCard';
 import { ProfileLinks } from './profile/ProfileLinks';
-import { ProfileAboutBlock } from './profile/ProfileAboutBlock';
 import { ScreenBlock } from '../components/customize/ScreenBlock';
 import { ScreenCustomizeHost } from '../components/customize/ScreenCustomizeHost';
 import { useScreenBlocks } from '../components/customize/useScreenBlocks';
 import { BestDayDialog } from './profile/BestDayDialog';
-import { CardTitle } from './profile/CardTitle';
 import { ACHIEVEMENT_META } from './profile/profileMeta';
 import type { InsightsData, StreakData } from './profile/profileMeta';
 import { buildLevelMap } from './profile/profileModel';
+import { freshShelf, freshStartForced, isFreshProfile } from './profile/profileLayout';
+import { achievementCardLook } from '../../../shared/src/share/kit/cardLook';
 import { useAboutMe } from '../../../shared/src/portrait/useAboutMe';
+import { hasPortraitData } from '../../../shared/src/portrait/portraitData';
 
 export const DEFAULT_SECTION_KEY = 'default_section';
+/** Сбой загрузки — на нашей стороне: `Breath` на персике 45 (исходы служебных страниц, OUTCOME_LOOK). */
+const OUR_SIDE = OUTCOME_LOOK_LIT.our_side;
 
 interface Props {
   onOpenSettings?: () => void; onOpenTracker?: () => void; onTakeTest?: () => void;
@@ -47,7 +51,6 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [insights, setInsights]         = useState<InsightsData | null>(null);
   const [ready, setReady]               = useState(false);
   const [levels, setLevels]             = useState<Map<string, number>>(new Map());
-
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<string | null>(null);
@@ -58,19 +61,13 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
   const [ysqCount, setYsqCount] = useState<number>(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Refresh → back to loading. State is adjusted during render (not in an effect) to stay off
-  // set-state-in-effect; on mount these already start null/false.
+  // Refresh → back to loading. State is adjusted during render (not in an effect) to stay off set-state-in-effect.
   const [seenRefresh, setSeenRefresh] = useState(refreshKey);
   if (refreshKey !== seenRefresh) {
-    setSeenRefresh(refreshKey);
-    setReady(false);
-    setStreak(null);
-    setAchievements(null);
-    setInsights(null);
-    setLoadError(false);
+    setSeenRefresh(refreshKey); setReady(false); setStreak(null); setAchievements(null); setInsights(null); setLoadError(false);
   }
 
-  // Сбой любого фетча (и дневников useAboutMe) виден баннером, а не молчаливыми нулями.
+  // Сбой любого фетча (и дневников useAboutMe) виден PaperAlert, а не молчаливыми нулями.
   useEffect(() => {
     Promise.all([
       api.getStreak().then(setStreak),
@@ -83,12 +80,17 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     ]).catch(() => setLoadError(true)).finally(() => setReady(true));
   }, [refreshKey]);
 
-  const shown = ready && aboutMe.diaries !== 'loading';
+  // Силуэт держится, пока не готово всё: пустой профиль от полного отличается только по всем данным сразу.
+  const shown = ready && aboutMe.diaries !== 'loading' && aboutMe.portraitReady && aboutMe.warmWordsReady;
   const failed = loadError || aboutMe.diaries === 'failed';
   const diaryCount = aboutMe.schemaEntries.length + aboutMe.modeEntries.length + gratitudeCount;
   const activeDates = useMemo(() => new Set(levels.keys()), [levels]);
   const currentStreak = streak?.currentStreak ?? 0;
   const totalDays     = streak?.totalDays ?? 0;
+  const fresh = !failed && isFreshProfile({
+    totalDays, diaryCount, ysqCount, warmWords: aboutMe.warmWordsItems.length, earnedAchievements: achievements?.filter(a => a.earned).length ?? 0,
+    patterns: (hasPortraitData(aboutMe.portrait) ? 1 : 0) + aboutMe.portrait.totalModes,
+  });
   const hasInsights   = insights && insights.weeklyStats.some(s => s.avg !== null);
   const hasAchievementsCard = !!achievements && !blocks.isHidden('achievements');
   const showInsights = !!hasInsights && !blocks.isHidden('insights');
@@ -97,43 +99,26 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
     <div className="ds-page cpf-page animate-fade">
       <ProfileHeader displayName={displayName} totalDays={totalDays} onCustomize={blocks.openByGear} onOpenSettings={onOpenSettings} />
 
-      {!shown && (
-        <div className="cpf-skeleton">{[110, 96, 160].map((h, i) => <Skeleton key={i} height={h} radius={20} />)}</div>
-      )}
+      {!shown && <ProfileSkeleton />}
 
       {shown && failed && (
-        <div role="alert" className="cpf-error">
-          {tr('Не удалось загрузить часть данных. Обнови страницу.', 'Не удалось загрузить часть данных. Обновите страницу.')}
-        </div>
+        <PaperAlert className="cpf-error" sign={OUR_SIDE.sign} hue={OUR_SIDE.hue}
+          title={tr('Не удалось загрузить часть данных. Обнови страницу.', 'Не удалось загрузить часть данных. Обновите страницу.')} />
       )}
 
-      {shown && (
+      {shown && fresh && (
         <>
-          <ScreenBlock id="journey" blocks={blocks} className="cpf-blk">
-            <section {...pressable(() => setJourneyOpen(true))} className="ds-card ds-card--hover cpf-card cpf-journey">
-              <div className="ds-head-row">
-                <CardTitle sign="journey">Мой путь</CardTitle>
-                <span className="ds-chev" aria-hidden="true" />
-              </div>
-              <div className="ds-sub">
-                {tr(
-                  'Вся твоя история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
-                  'Вся ваша история в одном месте: трекер, дневники, практики и тесты — и красивая карточка, чтобы поделиться.',
-                )}
-              </div>
-            </section>
-          </ScreenBlock>
+          {freshStartForced(blocks)
+            ? <div className="cpf-blk"><ProfileStart onTakeTest={onTakeTest} /></div>
+            : <ScreenBlock id="portrait" blocks={blocks} className="cpf-blk"><ProfileStart onTakeTest={onTakeTest} /></ScreenBlock>}
+          <ProfileShelf aboutMe={aboutMe} blocks={blocks} onOpenJourney={() => setJourneyOpen(true)} allow={freshShelf} />
+        </>
+      )}
 
-          <ProfileCounters streak={currentStreak} totalDays={totalDays} diaryCount={diaryCount} ysqCount={ysqCount} />
-          {streak !== null && <ScreenBlock id="streak" blocks={blocks} className="cpf-blk"><StreakCard streak={streak} onOpenTracker={onOpenTracker} /></ScreenBlock>}
-          {activeDates.size > 0 && (
-            <ScreenBlock id="heatmap" blocks={blocks} className="cpf-blk">
-              <ActivityHeatmap levels={levels} activeDates={activeDates} totalDays={totalDays} />
-            </ScreenBlock>
-          )}
-
-          <ProfileAboutBlock aboutMe={aboutMe} onTakeTest={onTakeTest} blocks={blocks} />
-
+      {shown && !fresh && (
+        <>
+          <ProfileShelf aboutMe={aboutMe} blocks={blocks} onOpenJourney={() => setJourneyOpen(true)} onTakeTest={onTakeTest} />
+          <RhythmBlock blocks={blocks} streak={streak} levels={levels} activeDates={activeDates} diaryCount={diaryCount} ysqCount={ysqCount} onOpenTracker={onOpenTracker} />
           {(hasAchievementsCard || showInsights) && (
             <div className="cpf-duo">
               {hasAchievementsCard && achievements && (
@@ -148,41 +133,28 @@ export function ProfileSection({ onOpenSettings, onOpenTracker, refreshKey, disp
               )}
             </div>
           )}
-
-          <TherapistCard relation={relation} />
         </>
       )}
+
+      {shown && <TherapistCard relation={relation} />}
 
       <TherapyNote compact />
 
       {shown && <ProfileLinks onOpenSettings={onOpenSettings} onDeleteAccount={() => setShowDeleteConfirm(true)} />}
 
-      {/* Список прячем, пока открыта деталь (когда-то — из-за драки двух
-          фокус-ловушек; теперь трап у верхнего слоя, dialogStack) */}
+      {/* Список прячем, пока открыта деталь (трап у верхнего слоя, dialogStack) */}
       {showAchievements && achievements && !selectedAchievement && (
-        <AchievementsDialog
-          achievements={achievements}
-          currentStreak={currentStreak}
-          totalDays={totalDays}
-          onSelect={setSelectedAchievement}
-          onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }}
-        />
+        <AchievementsDialog achievements={achievements} currentStreak={currentStreak} totalDays={totalDays}
+          onSelect={setSelectedAchievement} onClose={() => { setShowAchievements(false); setSelectedAchievement(null); }} />
       )}
 
-      {/* Achievement detail overlay (share-карточка внутри) */}
       {selectedAchievement && ACHIEVEMENT_META[selectedAchievement] && (
-        <AchievementDetail
-          meta={ACHIEVEMENT_META[selectedAchievement]}
-          onClose={() => setSelectedAchievement(null)}
-        />
+        <AchievementDetail id={selectedAchievement} meta={ACHIEVEMENT_META[selectedAchievement]} look={achievementCardLook(selectedAchievement)} onClose={() => setSelectedAchievement(null)} />
       )}
 
       {showBestDayInfo && <BestDayDialog onClose={() => setShowBestDayInfo(false)} />}
-
-      {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} />}
-
+      {journeyOpen && <JourneySheet onClose={() => setJourneyOpen(false)} onOpenTracker={onOpenTracker} />}
       {showDeleteConfirm && <DeleteAccountDialog onClose={() => setShowDeleteConfirm(false)} />}
-
       <ScreenCustomizeHost blocks={blocks} />
     </div>
   );

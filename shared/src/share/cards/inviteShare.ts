@@ -19,17 +19,14 @@ export interface InviteSharePayload {
   eventKind: ShareCardKind;
 }
 
-// Эмодзи пяти потребностей — тот же порядок, что в трекере и на радаре.
-const NEED_EMOJIS = ['🤝', '🧭', '💬', '🎉', '⚖️'];
-
 /** Приглашение в приложение без обещаний результата: сайт в тексте, бот (`botLink`) второй строкой. */
 export function appInviteShare(botLink: string): InviteSharePayload {
   return {
     title: 'Пригласить друга',
     draw: (canvas) =>
       drawInviteCard(canvas, {
+        kind: 'app',
         title: 'Всё по схеме',
-        emojis: NEED_EMOJIS,
         hint: 'Трекер пяти базовых эмоциональных потребностей: что за день их наполнило, а что оставило пустым',
       }),
     shareText: appInviteShareText(botLink),
@@ -51,6 +48,7 @@ export function pairInviteShare(
     title: 'Пригласить в пару',
     draw: (canvas) =>
       drawInviteCard(canvas, {
+        kind: 'pair',
         title: 'Приглашение в пару',
         code,
         hint: 'Ввести этот код в приложении — и отмечать потребности вместе',
@@ -69,8 +67,8 @@ export function therapistInviteShare(
     title: 'Приглашение клиенту',
     draw: (canvas) =>
       drawInviteCard(canvas, {
+        kind: 'therapist',
         title: 'Приглашение от терапевта',
-        emojis: ['🤝'],
         hint: 'Ссылка или код из сообщения подключат приложение к терапевту — отметки и записи можно смотреть вместе на сессиях',
       }),
     shareText: therapistInviteShareText(invite),

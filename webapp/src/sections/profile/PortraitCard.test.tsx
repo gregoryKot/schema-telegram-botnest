@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-// Карточка «Мой портрет» в профиле сайта: пустое состояние объясняет «откуда
-// и зачем» и ведёт на тест; с данными — полосы по пяти потребностям, итог и
-// дельта; вся карточка — одно действие, вложенная кнопка теста не открывает лист.
+// Плитка «Мой портрет» на витрине профиля: пустое состояние объясняет «откуда
+// и зачем» и ведёт на тест; с данными — подпись и итог из данных (полосы, дата
+// теста и дельта — в листе, PortraitTestLine.test); вся плитка — одно действие,
+// вложенная кнопка теста не открывает лист.
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { AddressFormContext } from '../../utils/addressForm';
@@ -39,33 +40,29 @@ describe('PortraitCard — пусто', () => {
   it('форма «вы» — без «ты»', () => {
     renderCard({}, 'vy');
     expect(screen.getByText(/Здесь соберётся ваш портрет/)).toBeTruthy();
-    expect(screen.getByText(/ваших активных схем/)).toBeTruthy();
+    expect(screen.queryByText(/твой|твоих/)).toBeNull();
+  });
+
+  it('плитка — бумага и знак ENTITY_LOOK.portrait, заголовок h2', () => {
+    renderCard();
+    const tile = screen.getByLabelText('Мой портрет');
+    expect(tile.classList.contains('pp-paper')).toBe(true);
+    expect(tile.getAttribute('style')).toContain('--h: 135');
+    expect(screen.getByRole('heading', { level: 2, name: 'Мой портрет' })).toBeTruthy();
+    expect(tile.querySelector('.cpf-tile-art svg.pp-art')).not.toBeNull();
   });
 });
 
 describe('PortraitCard — с данными', () => {
   const portrait = buildPortrait({ manualSchemaIds: ['abandonment', 'mistrust'], myModeIds: ['vulnerable_child'] });
 
-  it('показывает пять строк потребностей, итог и дату теста', () => {
+  it('с данными: подпись «откуда и зачем» и итог из данных; полос и даты теста на плитке нет', () => {
     renderCard({ portrait, ysqCompletedAt: '2026-08-01T10:00:00.000Z' });
-    expect(portrait.needs).toHaveLength(5);
-    for (const n of portrait.needs) expect(screen.getByText(n.label)).toBeTruthy();
-    expect(screen.getByText(/2 схемы · 1 режим/)).toBeTruthy();
-    expect(screen.getByText(/Тест на схемы · /)).toBeTruthy();
-  });
-
-  it('дельта: улучшение со знаком минус, рост с плюсом, ноль и null скрыты', () => {
-    const at = '2026-08-01T10:00:00.000Z';
-    const { unmount } = render(
-      <PortraitCard portrait={{ ...portrait, delta: -2 }} ysqCompletedAt={at} onOpenSheet={vi.fn()} />,
-    );
-    expect(screen.getByText('-2 с прошлого теста')).toBeTruthy();
-    unmount();
-    const r2 = render(<PortraitCard portrait={{ ...portrait, delta: 3 }} ysqCompletedAt={at} onOpenSheet={vi.fn()} />);
-    expect(screen.getByText('+3 с прошлого теста')).toBeTruthy();
-    r2.unmount();
-    render(<PortraitCard portrait={{ ...portrait, delta: 0 }} ysqCompletedAt={at} onOpenSheet={vi.fn()} />);
-    expect(screen.queryByText(/с прошлого теста/)).toBeNull();
+    expect(screen.getByText(/Сколько твоих активных схем/)).toBeTruthy();
+    expect(screen.getByText('2 схемы · 1 режим')).toBeTruthy();
+    expect(document.querySelector('.cpf-bar')).toBeNull();
+    expect(screen.queryByText(/Тест на схемы · /)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Пройти тест/ })).toBeNull();
   });
 
   it('вся карточка открывает лист', () => {

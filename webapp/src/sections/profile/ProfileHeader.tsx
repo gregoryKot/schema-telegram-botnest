@@ -2,6 +2,7 @@ import { useTr } from '../../utils/addressForm';
 import { Leaf } from '../../components/art/PaperArtSigns';
 import { SettingsGear, CustomizeLink } from '../../components/customize/CustomizeGear';
 import { clientHue, hueStyle } from '../../lib/tone';
+import { glue } from '../../../../shared/src/utils/typo';
 import { avatarInitial, daysWord } from './profileModel';
 
 interface Props { displayName: string | null | undefined; totalDays: number; onCustomize: () => void; onOpenSettings?: () => void }
@@ -21,7 +22,7 @@ export function ProfileHeader({ displayName, totalDays, onCustomize, onOpenSetti
         {(name || totalDays > 0) && (
           <div className="ds-sub cpf-head-sub">
             {name && <span className="cpf-head-name">{name}</span>}{name && totalDays > 0 ? ' · ' : ''}
-            {totalDays > 0 && <>{totalDays} {daysWord(totalDays)} {tr('с тобой', 'с вами')} в приложении</>}
+            {totalDays > 0 && glue(`${totalDays} ${daysWord(totalDays)} ${tr('с тобой', 'с вами')} в приложении`)}
           </div>
         )}
       </div>

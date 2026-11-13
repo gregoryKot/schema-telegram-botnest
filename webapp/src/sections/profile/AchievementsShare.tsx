@@ -14,8 +14,8 @@ export function AchievementsShare({ achievements }: { achievements: Achievement[
   const [open, setOpen] = useState(false);
   const earned = achievements.filter((a) => a.earned).length;
   const draw = useCallback(
-    // Эмодзи в мете нет — карточка рисует пустой медальон.
-    (canvas: HTMLCanvasElement) => drawAchievementsCard(canvas, achievements.filter((a) => ACHIEVEMENT_META[a.id]).map((a) => ({ emoji: '', earned: a.earned }))),
+    // Значок — знак и оттенок достижения (achievementCardLook), неполученный — силуэтом.
+    (canvas: HTMLCanvasElement) => drawAchievementsCard(canvas, achievements.filter((a) => ACHIEVEMENT_META[a.id]).map((a) => ({ id: a.id, earned: a.earned }))),
     [achievements],
   );
   if (earned === 0) return null;

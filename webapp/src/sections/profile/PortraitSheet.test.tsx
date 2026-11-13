@@ -101,6 +101,25 @@ describe('PortraitSheet', () => {
     expect(mockApi.trackEvent).toHaveBeenCalledWith('profile_pattern_open', { kind: 'mode' });
   });
 
+  it('герой — лист портрета со сценой: слои над потребностью — по её схемам из данных', async () => {
+    renderSheet(aboutMe(['abandonment', 'mistrust'], []));
+    await waitFor(() => expect(mockApi.getSchemaNotes).toHaveBeenCalled());
+    const scene = document.querySelector('.pa-sheet svg.scn');
+    expect(scene).not.toBeNull();
+    // «Покинутость» и «Недоверие» стоят за привязанностью: два слоя у неё, у остальных — ни одного.
+    expect(scene!.querySelectorAll(':scope > [data-need="attachment"] [data-layer]')).toHaveLength(2);
+    expect(scene!.querySelectorAll(':scope > [data-need]:not([data-need="attachment"]) [data-layer]')).toHaveLength(0);
+  });
+
+  it('строки схем и режимов — со знаком домена и группы, без цветной точки и эмодзи', async () => {
+    renderSheet(aboutMe(['abandonment'], ['vulnerable_child']));
+    await screen.findAllByText(/карточка пока пустая/);
+    const rows = [...document.querySelectorAll('.cpf-prow')];
+    expect(rows).toHaveLength(2);
+    for (const r of rows) expect(r.querySelector('.pp-row-art svg.pp-art')).not.toBeNull();
+    for (const glyph of ['🤝', '🧭', '💬', '🎉', '⚖', '▼', '▲']) expect(document.body.textContent).not.toContain(glyph);
+  });
+
   it('«Назад» закрывает лист', async () => {
     const onClose = vi.fn();
     renderSheet(aboutMe(['abandonment'], []), onClose);

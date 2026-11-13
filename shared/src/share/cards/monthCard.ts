@@ -1,13 +1,17 @@
 // Карточка месяца: сетка активности за последние 4 недели (7×4) + счётчики.
 // Чистая подготовка сетки (buildMonthGrid) тестируется без canvas.
+// Лист соломы трекера, клетки — оттенки мха, как теплокарта «Активности» профиля.
 import {
+  CARD_LOOK,
   FOOTER_H,
+  PAPER_INK,
+  INK,
+  STAT_TILE_H,
   beginCard,
   header,
   headerHeight,
   footer,
   cardFont,
-  withAlpha,
   drawStatTiles,
   type StatTile,
 } from '../cardKit';
@@ -33,12 +37,25 @@ export function buildMonthGrid(
   return { cells, activeDays: cells.filter(Boolean).length };
 }
 
-const CELL = 40;
-const GAP = 10;
+const CELL = 38;
+const GAP = 8;
 const GRID_W = 7 * CELL + 6 * GAP;
 const GRID_H = 4 * CELL + 3 * GAP;
-const WEEKDAY_ROW_H = 24;
+const WEEKDAY_ROW_H = 22;
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+/** Клетка дня с записью — мох (--c-moss, оттенок теплокарты профиля), сплошной, без свечения:
+ *  светлый тон теплокарты .cpf-heat--2 на соломе читался ярко-зелёным пятном. */
+const HEAT_ON = PAPER_INK.moss;
+
+/** Высота карточки месяца — чистая. */
+export const monthCardHeight = () =>
+  headerHeight(1, true) +
+  WEEKDAY_ROW_H +
+  GRID_H +
+  20 +
+  STAT_TILE_H +
+  14 +
+  FOOTER_H;
 
 export function drawMonthCard(
   canvas: HTMLCanvasElement,
@@ -46,55 +63,37 @@ export function drawMonthCard(
   totalDays: number,
   rangeLabel: string,
 ) {
-  const H =
-    headerHeight(1, true) + WEEKDAY_ROW_H + GRID_H + 20 + 66 + 16 + FOOTER_H;
-  const c = beginCard(canvas, H, {
-    accent: 'var(--accent-blue)',
-    accent2: 'var(--accent)',
+  const c = beginCard(canvas, monthCardHeight(), {
+    hue: CARD_LOOK.tracker.hue,
   });
-  const { ctx, th } = c;
+  const { ctx } = c;
 
   const contentY = header(c, {
     eyebrow: 'Трекер потребностей',
     title: 'Мой месяц',
     subtitle: rangeLabel,
+    sign: CARD_LOOK.tracker.sign,
   });
 
   const gx = (c.W - GRID_W) / 2;
 
-  ctx.font = cardFont(9, 'bold');
-  ctx.fillStyle = th.fg(0.3);
+  ctx.font = cardFont(10, 'bold');
+  ctx.fillStyle = INK.sub;
   ctx.textAlign = 'center';
   WEEKDAYS.forEach((label, i) => {
-    const wx = gx + i * (CELL + GAP) + CELL / 2;
-    ctx.fillText(label, wx, contentY + 9);
+    ctx.fillText(label, gx + i * (CELL + GAP) + CELL / 2, contentY + 9);
   });
   ctx.textAlign = 'left';
 
+  // Клетки — бумага: день с записью — мох, пустой — тон бумаги глубже.
   const gy = contentY + WEEKDAY_ROW_H;
   grid.cells.forEach((on, i) => {
-    const col = i % 7;
-    const row = Math.floor(i / 7);
-    const x = gx + col * (CELL + GAP);
-    const y = gy + row * (CELL + GAP);
-    if (on) {
-      ctx.save();
-      ctx.shadowColor = withAlpha(c.accent, 0.5);
-      ctx.shadowBlur = 10;
-      const grad = ctx.createLinearGradient(x, y, x, y + CELL);
-      grad.addColorStop(0, c.accent);
-      grad.addColorStop(1, withAlpha(c.accent, 0.72));
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.roundRect(x, y, CELL, CELL, 10);
-      ctx.fill();
-      ctx.restore();
-    } else {
-      ctx.fillStyle = th.fg(0.06);
-      ctx.beginPath();
-      ctx.roundRect(x, y, CELL, CELL, 10);
-      ctx.fill();
-    }
+    const x = gx + (i % 7) * (CELL + GAP);
+    const y = gy + Math.floor(i / 7) * (CELL + GAP);
+    ctx.fillStyle = on ? HEAT_ON : c.sunk;
+    ctx.beginPath();
+    ctx.roundRect(x, y, CELL, CELL, 9);
+    ctx.fill();
   });
 
   const tiles: StatTile[] = [

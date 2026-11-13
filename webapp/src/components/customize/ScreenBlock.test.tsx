@@ -17,6 +17,11 @@ describe('ScreenBlock', () => {
     expect(screen.queryByText('карта')).toBeNull();
   });
 
+  it('пустой блок (when=false) не рисует и обёртку: без лишнего зазора на странице', () => {
+    const { container } = render(<ScreenBlock id="streak" when={false} className="cpf-blk" blocks={{ ...base, hold: () => undefined }}>серия</ScreenBlock>);
+    expect(container.innerHTML).toBe('');
+  });
+
   it('место блока — номер в порядке, начиная с 1; класс экрана сохраняется', () => {
     render(<ScreenBlock id="streak" className="cpf-blk" blocks={{ ...base, hold: () => undefined }}>серия</ScreenBlock>);
     const el = screen.getByText('серия');
