@@ -12,10 +12,9 @@
 //                   числа meta.suppressed/unlogged (client-error-log-gate.ts).
 //   signup_source — атрибуция посева, meta.src — слаг из SIGNUP_SOURCES. Пишет
 //                   только бот в /start, когда payload — deep-link `src_<slug>`
-//                   (parseSourceSlug, src/telegram/start-source.ts), и ровно
-//                   один раз — при первом касании нового юзера (до гейта
-//                   согласия, чтобы видеть и конверсию в «принял соглашение»).
-//                   Возвращающийся по той же ссылке повторно не считается.
+//                   (parseSourceSlug, src/telegram/start-source.ts), один раз —
+//                   при первом касании нового юзера (до гейта согласия: видна и
+//                   конверсия в «принял соглашение»); повтор по ссылке не считается.
 //   data_export   — выгрузка своих данных (152-ФЗ/GDPR, GET /api/account/export);
 //                   meta.tables/meta.rows.
 //   notify_queue_tick — итог прогона очереди уведомлений бота: только числа
@@ -35,8 +34,9 @@
 //                   meta.quietShift — час попал в тихие часы. С клиента meta
 //                   отбрасывается, /stats считает только строки с quietShift.
 //   login_one_tap — вход через окно Google «Продолжить как…» (meta.outcome —
-//                   ONE_TAP_OUTCOMES, login-one-tap.constants.ts): с 2026-11 не
-//                   пишется (вход через Google убран), имя — ради истории /stats.
+//                   login-one-tap.constants.ts): с 2026-11 не пишется (вход
+//                   через Google убран), имя — ради истории /stats.
+//   login_oauth   — вход через VK ID и Яндекс ID: login-oauth.constants.ts.
 //   messenger_launch — сайт открыли в мессенджере и подпись сменилась на сессию
 //                   (meta.host + meta.platform, launch-platforms.constants.ts):
 //                   пишут ручки обмена telegram/webapp и max/webapp, userId = null
@@ -62,16 +62,16 @@ export const SERVER_EVENTS = [
   'crawler_visits',
   'reminder_snoozed',
   'login_one_tap',
+  'login_oauth',
   'messenger_launch',
   'messenger_launch_failed',
   'ysq_data_deleted',
 ] as const;
 
 // meta этих событий пишет только сервер: «Напомню через час» — бот, запуск в
-// мессенджере и его отказ — ручки обмена подписи, стёртый тест схем —
-// DELETE /api/ysq-data. sanitizeMeta отбрасывает их meta с клиента целиком,
-// /stats считает только строки с meta — подделка через /api/event в отчёт не
-// попадает.
+// мессенджере и его отказ — ручки обмена подписи, стёртый тест схем — DELETE
+// /api/ysq-data. sanitizeMeta отбрасывает их meta с клиента целиком, /stats
+// считает только строки с meta — подделка через /api/event туда не попадает.
 export const SERVER_META_EVENTS: ReadonlySet<string> = new Set([
   'messenger_launch',
   'messenger_launch_failed',

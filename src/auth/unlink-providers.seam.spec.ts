@@ -16,6 +16,7 @@ import { AuthProviderRegistry } from './providers/registry';
 import { TelegramProvider } from './providers/telegram.provider';
 import { VkProvider } from './providers/vk.provider';
 import { MaxProvider } from './providers/max.provider';
+import { YandexProvider } from './providers/yandex.provider';
 import type { AuthService } from './auth.service';
 import type { SecurityLogService } from './security-log.service';
 import type { SecurityNoticeService } from './security-notice.service';
@@ -35,6 +36,7 @@ function build() {
     new TelegramProvider(),
     new VkProvider(config),
     new MaxProvider(config),
+    new YandexProvider(config),
   );
   const auth = { unlinkProvider: jest.fn().mockResolvedValue(undefined) };
   const notice = {
@@ -55,13 +57,14 @@ const req = { webUser: { userId: 'u1' }, ip: '1.1.1.1' } as unknown as Request;
 describe('ручка отвязки принимает всё, что отвязывает кабинет', () => {
   const ids = cabinetProviderIds();
 
-  it('из PROVIDER_NAMES вытащены все пять способов входа', () => {
+  it('из PROVIDER_NAMES вытащены все шесть способов входа', () => {
     expect([...ids].sort()).toEqual([
       'email',
       'google',
       'max',
       'telegram',
       'vk',
+      'yandex',
     ]);
   });
 

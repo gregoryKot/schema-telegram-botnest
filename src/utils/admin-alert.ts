@@ -1,12 +1,13 @@
-// Последняя линия оповещения админа: Telegram, при отказе — e-mail (Resend).
+// Последняя линия оповещения админа: Telegram, при отказе — e-mail (Postbox).
 // Без DI (читает env): работает и в AlertLogger, созданном раньше контейнера.
 // Ничего не бросает и не логирует уровнем error — он вернулся бы через
 // AlertLogger в этот же фолбэк. Итог письма — в alert-email-health.ts.
-// Env: BOT_TOKEN, ADMIN_ID · RESEND_API_KEY, ADMIN_EMAIL, EMAIL_FROM
+// Env: BOT_TOKEN, ADMIN_ID · ключи Postbox (infra/postbox-mail.ts), ADMIN_EMAIL
 import {
   noteAlertEmailError,
   noteAlertEmailResponse,
 } from './alert-email-health';
+import * as postbox from '../infra/postbox-mail';
 import { practiceOwnerTelegramId } from './practice-owner';
 import { sendOnce } from '../telegram/telegram.send-once';
 
@@ -72,26 +73,19 @@ async function postMessage(token: string, chatId: number, text: string) {
 }
 
 async function sendEmail(subject: string, text: string): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const credentials = postbox.postboxCredentials();
   const to = process.env.ADMIN_EMAIL;
-  const from =
-    process.env.EMAIL_FROM ?? 'SchemeHappens <no-reply@schemehappens.ru>';
-  if (!apiKey || !to) return;
+  if (!credentials || !to) return;
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from,
+    const res = await postbox.sendPostboxEmail(
+      {
+        from: postbox.emailFrom(),
         to,
         subject,
         text: text.replace(/<[^>]+>/g, ''),
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
+      },
+      { credentials },
+    );
     noteAlertEmailResponse(res);
   } catch (e) {
     noteAlertEmailError(e);

@@ -258,14 +258,16 @@ model DiaryDraft {
   @@id([userId, type])
 }
 
-// Способ входа → userId: telegram | vk | max | email | google.
+// Способ входа → userId: telegram | vk | yandex | max | email | google.
 // google — только прежние строки: вход через Google убран 2026-11, строки не
 // удаляются (по их почте человек входит ссылкой — src/auth/email-login-user.ts).
+// Аккаунт ищется только по паре (provider, providerId): совпавшая почта VK или
+// Яндекса аккаунты не склеивает (решение владельца 2026-11-12).
 model AuthProvider {
   id          Int      @id @default(autoincrement())
   userId      BigInt
-  provider    String   // 'telegram' | 'vk' | 'max' | 'email' | 'google' (прежние строки)
-  providerId  String   // telegramId, id VK/MAX, адрес почты (email) или Google sub
+  provider    String   // 'telegram' | 'vk' | 'yandex' | 'max' | 'email' | 'google' (прежние строки)
+  providerId  String   // telegramId, id VK/Яндекса/MAX, адрес почты (email) или Google sub
   email       String?
   displayName String?
   createdAt   DateTime @default(now())

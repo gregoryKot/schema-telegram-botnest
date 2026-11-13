@@ -92,6 +92,19 @@ describe('POST ticket/start', () => {
     },
   );
 
+  // 2026-11: Яндекс ID — третий способ, которым билет входа подтверждают в
+  // браузере (установленное приложение открывает /api/auth/yandex?ticket=…).
+  it('билет входа под Яндекс выписывается; под Telegram — по-прежнему нет', async () => {
+    const { start, tickets } = makeCtl();
+    await start({ intent: 'login', provider: 'yandex' }, makeReq());
+    expect(tickets.start).toHaveBeenCalledWith(
+      expect.objectContaining({ intent: 'login', provider: 'yandex' }),
+    );
+    await expect(
+      start({ intent: 'login', provider: 'telegram' }, makeReq()),
+    ).rejects.toThrow('Этим способом на сайт не входят');
+  });
+
   it('привязка Telegram уже вошедшим — выписывается', async () => {
     const { start, tickets } = makeCtl();
     await start(

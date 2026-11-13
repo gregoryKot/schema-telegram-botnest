@@ -30,7 +30,7 @@ describe('formatEnvCheckReport', () => {
       crossCheckIssues: [
         {
           id: 'x',
-          problem: 'RESEND_API_KEY задан, но не задан(ы) ADMIN_EMAIL',
+          problem: 'POSTBOX_ACCESS_KEY_ID задан, но не задан(ы) ADMIN_EMAIL',
         },
       ],
     });
@@ -40,7 +40,7 @@ describe('formatEnvCheckReport', () => {
       '• неверный формат ADMIN_ID: не похоже на Telegram id',
     );
     expect(text).toContain(
-      '• RESEND_API_KEY задан, но не задан(ы) ADMIN_EMAIL',
+      '• POSTBOX_ACCESS_KEY_ID задан, но не задан(ы) ADMIN_EMAIL',
     );
   });
 });

@@ -1,6 +1,6 @@
 // Форматтер блока «Настройки» в /stats: полное состояние (пустое — в смысле
 // «нечего показать»), частичная деградация и мёртвая сигнализация одной
-// строкой (правило №8: язык простой, без RESEND_API_KEY-жаргона в описании
+// строкой (правило №8: язык простой, без жаргона переменных в описании
 // критичности).
 import { formatCapabilityReport } from './capability-metrics.format';
 import { buildCapabilityReport } from '../infra/capability-report';
@@ -8,7 +8,8 @@ import { buildCapabilityReport } from '../infra/capability-report';
 const ALL_CONFIGURED = {
   BOT_TOKEN: '123:abc',
   ADMIN_ID: '42',
-  RESEND_API_KEY: 're_test',
+  POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+  POSTBOX_SECRET_ACCESS_KEY: 'test-secret-not-a-real-key',
   ADMIN_EMAIL: 'admin@example.com',
   ZOOM_ACCOUNT_ID: 'z1',
   ZOOM_CLIENT_ID: 'z2',
@@ -53,7 +54,8 @@ describe('formatCapabilityReport', () => {
       buildCapabilityReport({
         BOT_TOKEN: '123:abc',
         ADMIN_ID: '42',
-        RESEND_API_KEY: 're_test',
+        POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+        POSTBOX_SECRET_ACCESS_KEY: 'test-secret-not-a-real-key',
         ADMIN_EMAIL: 'admin@example.com',
       }),
     );

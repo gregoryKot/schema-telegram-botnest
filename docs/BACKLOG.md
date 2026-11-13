@@ -45,6 +45,34 @@
   Generative AI performance (Search Console). Без первого замера правки GEO
   (robots, sitemap из БД, список статей для робота) проверить нечем.
 
+- ⬜ **Хвост входа через Яндекс ID и почты Postbox (#1100)** — найдено по ходу задачи и не починено:
+  - политика не называет получателями VK ID (ООО «В Контакте») и MAX, хотя вход через них есть
+    (`webapp/src/pages/privacy/processors.ts`; grep «ВКонтакте|VK ID» по `webapp/src/pages/privacy` находит
+    только способы входа, не получателей);
+  - тексты бота «почту или VK ID» не знают про Яндекс ID (`src/telegram/login-payload.ts:18-20`, заголовок и
+    пустое состояние `src/bot/login-offer-metrics.ts`);
+  - колбэк провайдера со снятыми env отвечает `<id>_failed` и пишет error-лог «Configuration key … does not
+    exist» (DM владельцу): рубильник `OAUTH_PROVIDER_ENV` закрывает только старт входа
+    (`src/auth/oauth-callback.service.ts`; так же было у VK);
+  - проба `email` считает любой 400 постоянным отказом, включая суточную квоту Postbox
+    (`LimitExceededException`): красная до следующего удачного письма (`src/infra/self-check/probe-email.ts`);
+  - имя отправителя с не-ASCII символами в `EMAIL_FROM` не кодируется по RFC 2047
+    (`src/infra/postbox-mail.ts`; значение по умолчанию и прода — латиница);
+  - зелёный исход живых проб `postbox` (400 на подписанный запрос без письма) и `yandexOAuth` (ответ на
+    код-пустышку) — гипотезы по документации: сверить на проде и дозаписать ответы в
+    `test/fixtures/recorded/postbox-send-email-denied.json` и `yandex-id-oauth.json`;
+  - `scripts/check-capability-registry.mjs` не видит ветку `if (!credentials) return`: регэксп ловит только
+    token/apiKey/secret/`process.env.X`;
+  - `scripts/robot-phrases-patterns.mjs:21`: `являет(?:ся|ются)` не ловит «являются»;
+  - тесты `webapp` и `shared` не проходят проверку типов: `npx tsc --noEmit -p shared` падает на
+    `apiCacheRules*.test.ts` и `LoginTicketWait.test.tsx:52`;
+  - `docs/RUNBOOKS.md`, раздел «VK ID»: «без переменных — 500 на getOrThrow» и «PKCE-verifier из JWT_SECRET»
+    устарели;
+  - `test/fixtures/recorded/README.md`, «Текущий состав»: нет `vk-id-authorize-state.json`,
+    `oauth-authorize-responses.json` и ряда других фикстур;
+  - `src/security/install-openssl.spec.ts` и `install-pg-client.spec.ts` красные на macOS: `deploy/*.sh` зовёт
+    GNU `sed -i`.
+
 - ⬜ **Хвост редизайна «Ещё», моста и настроек (#1073)** — баги, найденные ревью и не починенные в партии:
   - скелетон сигнальной карточки моста ниже самой карточки на 28–37px — список под ней прыгает
     (`webapp/src/components/therapy/TherapyNudgeCard.tsx`, `--th-card-h` в `webapp/src/styles/therapy-bridge.css`;
@@ -110,6 +138,7 @@
 ## Сделано
 
 - ✅ **Хвост редизайна кабинета терапевта (#1072)** — кнопки приглашений и сверки — `ds-btn` (обводочная, «Отозвать»/«Нет» — `ds-link`), сбой «Создать» — `PaperAlert` без «Повторить», «Повторить» у сбоя «Клиентов» (`loadRoster`, тест `TherapistClientSheet.retry.test.tsx`), палитра ⌘K — `ds-avatar--paper` и подпись `--text-sub`.
+- ✅ **Вход через Яндекс ID и письма через Yandex Cloud Postbox вместо Resend** — владелец 2026-11-12 по запросу Роскомнадзора №08-1063539: российский способ входа вместо убранных Google и Telegram, письма входа и уведомления владельцу — через российский сервис. Кнопка «Войти через Яндекс» на `/login`, привязка в «Аккаунте», политика называет Postbox и Яндекс ID российскими получателями; Resend убран из кода, env и политики (#1100).
 - ✅ **Текстовые баги аудита и партий редизайна** — владелец 2026-11-12 одобрил список: запятые, «…» вместо трёх точек (гейт `check-spelling`, правило `ellipsis`), точки в конце сбоев, «ёлочки» в советах, заголовок благодарности по дню записи, «Границы», «Спонтанность», «индекс 7,2», вход, 2FA с резервным кодом, палитра ⌘K, ссылка в пустых «Тёплых словах». Короткое тире «–» остаётся (решение 11 в `docs/design/APP_2026-11.md`).
 - ✅ **Клиент видит проценты колеса потребностей на своей карте** — владелец 2026-11-12. Оценки приходят вместе с картой (`needRatings` в `my-mode-maps/:mapId`), текст листа с сервера не уходит; подробности — `docs/AUDIT_MODEMAP_2026-11.md`. PR #1082.
 - ✅ **Мелкие обновления зависимостей мержатся сами** — владелец 2026-11-12: за три недели ни один из 15 бот-PR Dependabot не был смержен, агент обновлял те же пакеты руками. Patch и minor при зелёном CI уезжают сами, мажоры и игра ждут агента (#1083).

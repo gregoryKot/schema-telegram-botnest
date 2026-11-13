@@ -2,7 +2,10 @@
 // ТОЛЬКО известные значения из allow-list, всё остальное отбрасывать целиком.
 // Свободный текст и PII в meta недопустимы (правило №7), и молчаливый пропуск
 // незнакомого поля превратил бы отчёт о входе в дыру для чужих данных.
-import { sanitizeLoginTicketMeta } from './analytics-meta.sanitize-login';
+import {
+  sanitizeLoginMeta,
+  sanitizeLoginTicketMeta,
+} from './analytics-meta.sanitize-login';
 import { sanitizeMeta } from './analytics-meta.sanitize';
 import {
   LOGIN_TICKET_HOSTS,
@@ -106,4 +109,46 @@ describe('sanitizeMeta: login_method_offer', () => {
       expect(sanitizeMeta('login_method_offer', meta)).toBeUndefined();
     },
   );
+});
+
+// login_oauth пишет сервер (src/auth/oauth-login.report.ts), с клиента оно в
+// отчёт не попадает (у клиентской строки есть userId). Ветка — на случай
+// запроса руками: в базу доедут только провайдер и исход из закрытых списков.
+describe('login_oauth — вход через VK ID и Яндекс ID', () => {
+  it('ветка login_* доводит событие до санитайзера', () => {
+    expect(
+      sanitizeLoginMeta('login_oauth', {
+        provider: 'yandex',
+        outcome: 'signed_up',
+      }),
+    ).toEqual({ provider: 'yandex', outcome: 'signed_up' });
+  });
+
+  it('через общий sanitizeMeta: лишние поля срезаны', () => {
+    expect(
+      sanitizeMeta('login_oauth', {
+        provider: 'vk',
+        outcome: 'linked',
+        email: 'kot@example.com',
+        providerId: '42',
+      }),
+    ).toEqual({ provider: 'vk', outcome: 'linked' });
+  });
+
+  it.each([
+    ['провайдер не из списка', { provider: 'google', outcome: 'signed_in' }],
+    ['исход не из списка', { provider: 'yandex', outcome: 'failed' }],
+    ['пустая meta', {}],
+  ])('%s — не пишем ничего', (_name, meta) => {
+    expect(sanitizeMeta('login_oauth', meta)).toBeUndefined();
+  });
+
+  it('контроль: незнакомое login_*-событие по-прежнему отбрасывается', () => {
+    expect(
+      sanitizeLoginMeta('login_unknown', {
+        provider: 'yandex',
+        outcome: 'signed_in',
+      }),
+    ).toBeUndefined();
+  });
 });

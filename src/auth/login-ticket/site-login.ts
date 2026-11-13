@@ -9,12 +9,12 @@
 //     аккаунт, у которого есть способ входа кроме Telegram;
 //   - передача сессии во внешний браузер (`handoff`) — только из MAX.
 // Привязка (`intent: 'link'`) остаётся: её начинает человек, уже вошедший на
-// сайт почтой или VK ID.
+// сайт почтой, VK ID или Яндекс ID.
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 /** Способы, которыми билет входа подтверждают в браузере. */
-export const SITE_TICKET_PROVIDERS = ['vk', 'email'] as const;
+export const SITE_TICKET_PROVIDERS = ['vk', 'yandex', 'email'] as const;
 
 /** Билет входа выписывают только под подтверждение в браузере. */
 export function assertSiteTicket(intent: string, provider: string): void {
