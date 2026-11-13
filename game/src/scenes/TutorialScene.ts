@@ -5,6 +5,7 @@ import { touch, IS_TOUCH, setTouchControls } from '../controls';
 import { trackEvent } from '../analytics';
 import { t, type MsgKey } from '../i18n';
 import { placeProp } from '../props';
+import { addGlow, HUD_STROKE } from '../look';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ПРОЛОГ — знакомство с Мистером и управлением. Четыре сценки, у каждой одна
@@ -100,8 +101,7 @@ export class TutorialScene extends Phaser.Scene {
     // сцена-«прихожая»: тёплый полумрак, пятно света на котике
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x18142a, 0x18142a, 0x2e2440, 0x2e2440, 1, 1, 1, 1);
-    bg.fillRect(0, 0, W, H);
-    bg.fillStyle(0xffe9c0, 0.07); bg.fillEllipse(W / 2, GROUND_Y, 520, 250);
+    bg.fillRect(0, 0, W, H); addGlow(this, W / 2, GROUND_Y, 620, 300, 0xffe9c0, 0.12, 0);
     // пол — деревянная текстура (как дома в главах), а не плоский прямоугольник
     const TW = 16 * S;
     for (let fx = -TW; fx <= W + TW; fx += TW)
@@ -128,17 +128,17 @@ export class TutorialScene extends Phaser.Scene {
     // реально загрузилась — иначе .play() по пустой анимации роняет update-цикл
     // и игра «зависает» (так вешалось ОТВЛЕКИСЬ без клубка).
     this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
     this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
-    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
     // выпад атаки — тот же спрайт, что в игре (cat_dash), грузится в фоне
     this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setScale(0.26).setDepth(11).setVisible(false);
+    this.lungeSprite = this.add.sprite(0, 0, this.textures.exists('cat_dash') ? 'cat_dash' : 'cat_idle', 0).setOrigin(0.5, 1).setDepth(11).setVisible(false);
     this.paused = false;
     this.dim = this.add.rectangle(W / 2, H / 2, W, H, 0x06040e, 0).setDepth(48);
     this.contHint = this.add.text(W / 2, IS_TOUCH ? H - 210 : H - 100, t(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next'),
-      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#88ffcc',
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc',
         backgroundColor: 'rgba(8,6,18,0.7)', padding: { x: 8, y: 5 } }).setOrigin(0.5).setDepth(50).setAlpha(0);
     this.narr = this.add.text(W / 2, 104, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '13px', color: '#fff0d8', align: 'center', lineSpacing: 14, wordWrap: { width: W - 90 },
       backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 16, y: 12 } })
@@ -147,20 +147,20 @@ export class TutorialScene extends Phaser.Scene {
     this.prompt = this.add.text(W / 2, IS_TOUCH ? 62 : H - 56, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#88ffcc', align: 'center', wordWrap: { width: W - 80 },
       backgroundColor: 'rgba(8,6,18,0.82)', padding: { x: 12, y: 8 } })
       .setOrigin(0.5).setDepth(50);
-    this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
+    this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 8, y: 5 } }).setOrigin(0.5, 1).setDepth(45).setAlpha(0);
 
     // жизни — как в игре; учим, что каждый «способ справиться» их тратит
     // жизни — В ТОЧНОСТИ как в игре (тот же размер/цвет/позиция)
     this.hearts = 3; this.hurtT = 0;
-    this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577' })
+    this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577', ...HUD_STROKE })
       .setScrollFactor(0).setDepth(60);
     this.updateHearts();
 
-    const skip = this.add.text(W - 78, 16, t('m_skip'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
+    const skip = this.add.text(W - 78, 16, t('m_skip'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0' })
       .setOrigin(1, 0).setDepth(60).setInteractive({ useHandCursor: true });
     skip.on('pointerover', () => skip.setColor('#fff0d8'));
-    skip.on('pointerout', () => skip.setColor('#6a5f8a'));
+    skip.on('pointerout', () => skip.setColor('#a89fd0'));
     skip.on('pointerdown', () => { trackEvent('game_tutorial_skip'); this.scene.start('Intro'); }); // манифест видят и те, кто пропустил
 
     this.input.keyboard!.resetKeys(); // залипшие клавиши после смены сцены/alt-tab
@@ -520,7 +520,7 @@ export class TutorialScene extends Phaser.Scene {
       // рядом с котом (после рывка он у правой стены, а будильник на 305 был вне удара — тап «в воздух»)
       const ax = Phaser.Math.Clamp(this.player.x + (this.player.flipX ? -140 : 140), 90, W - 90);
       this.colleague = this.add.sprite(ax, GROUND_Y - 4, 'prop_alarm').setOrigin(0.5, 1).setScale(0.15).setDepth(8);
-      this.colBubble = this.add.text(0, 0, t('m_ring_ring_ring'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
+      this.colBubble = this.add.text(0, 0, t('m_ring_ring_ring'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#1a1020',
         backgroundColor: '#ffd870', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
   }
@@ -570,7 +570,7 @@ export class TutorialScene extends Phaser.Scene {
         .setFlipX(true).setDepth(8);
       this.safeAnim('nei-idle', 'nei_idle', 0, 3, 6, -1);
       if (this.anims.exists('nei-idle')) this.neighbor.play('nei-idle');
-      this.neiBubble = this.add.text(0, 0, t('m_you_won_t_refuse_will_you'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#1a1020',
+      this.neiBubble = this.add.text(0, 0, t('m_you_won_t_refuse_will_you'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#1a1020',
         backgroundColor: '#e8b8d0', padding: { x: 7, y: 4 } }).setOrigin(0.5, 1).setDepth(45);
     });
   }
@@ -602,7 +602,7 @@ export class TutorialScene extends Phaser.Scene {
       this.time.delayedCall(2200, () => { this.sleepSprite.setVisible(false); this.player.setVisible(true); });
     }
     const ok = this.add.text(this.player.x, this.player.y - 66, t('m_sure_bring_your_plant_over'),
-      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#b8a8d0' }).setOrigin(0.5).setDepth(46);
+      { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#b8a8d0' }).setOrigin(0.5).setDepth(46);
     this.tweens.add({ targets: ok, y: ok.y - 20, alpha: 0, duration: 1800, onComplete: () => ok.destroy() });
     this.tweens.add({ targets: n, x: n.x + 200, alpha: 0, duration: 900, delay: 500, onComplete: () => n.destroy() });
     // уступка тоже стоит сил — показываем минус жизни
