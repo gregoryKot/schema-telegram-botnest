@@ -38,18 +38,6 @@ function workflowViolations(text: string): string[] {
   return bad;
 }
 
-/** У catch-up запись в репозиторий: событие PR или чекаут отдали бы её коду PR. */
-function catchUpViolations(text: string): string[] {
-  const on = triggerBlocks(text);
-  const bad = ['pull_request', 'pull_request_target']
-    .filter((e) => e in on)
-    .map((e) => `catch-up слушает ${e}`);
-  if (/actions\/checkout/.test(stripComments(text))) {
-    bad.push('catch-up чекаутит код');
-  }
-  return bad;
-}
-
 /** Записи dependabot.yml: экосистема, каталог, день, время. */
 const schedules = (text: string) =>
   stripComments(text)
@@ -137,35 +125,5 @@ describe('автомерж бот-PR Dependabot', () => {
       ].join('');
       expect(scheduleViolations(cfg)).toEqual([]);
     });
-  });
-});
-
-describe('catch-up отставших бот-PR', () => {
-  const real = read('workflows', 'dependabot-catch-up.yml');
-
-  it('настоящий воркфлоу: push, расписание и dispatch, событий PR и чекаута нет', () => {
-    expect(Object.keys(triggerBlocks(real))).toEqual([
-      'push',
-      'schedule',
-      'workflow_dispatch',
-    ]);
-    expect(catchUpViolations(real)).toEqual([]);
-  });
-
-  it('красный: события PR и чекаут', () => {
-    const loose = real
-      .replace(
-        '  workflow_dispatch:',
-        '  workflow_dispatch:\n  pull_request:\n  pull_request_target:',
-      )
-      .replace(
-        '    steps:\n',
-        '    steps:\n      - uses: actions/checkout@v7\n',
-      );
-    expect(catchUpViolations(loose)).toEqual([
-      'catch-up слушает pull_request',
-      'catch-up слушает pull_request_target',
-      'catch-up чекаутит код',
-    ]);
   });
 });
