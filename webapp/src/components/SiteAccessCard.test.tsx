@@ -56,7 +56,7 @@ describe('SiteAccessCard', () => {
     show();
     await screen.findByText('Добавь вход для сайта', {}, SLOW);
     expect(screen.getByText(/вход через Telegram закрыт — туда входят почтой или VK ID/)).toBeTruthy();
-    expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'shown' });
+    await waitFor(() => expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'shown' }), SLOW);
 
     fireEvent.click(screen.getByRole('button', { name: ACTION }));
     expect(api.trackEvent).toHaveBeenCalledWith('login_method_offer', { action: 'open' });
