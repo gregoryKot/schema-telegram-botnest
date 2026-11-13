@@ -180,4 +180,32 @@ describe('ForeignScrubCommand: разовая чистка iCloud и Zoom', () =
     expect(text).toContain('лимит запросов');
     expect(topics.get('111')).not.toBe(ZOOM_TOPIC);
   });
+
+  it('команду запускает только ADMIN_ID: чужому — отказ и ни одного запроса', async () => {
+    const prev = process.env.ADMIN_ID;
+    process.env.ADMIN_ID = '1';
+    let handler: (ctx: unknown) => Promise<void> = async () => undefined;
+    const bot = { command: (_: string, h: typeof handler) => (handler = h) };
+    const cmd = new ForeignScrubCommand(
+      bot as never,
+      prisma,
+      new CalDavService(config),
+      new MeetingService(prisma, config),
+    );
+    cmd.pauseMs = 0;
+    cmd.onModuleInit();
+    const replies: string[] = [];
+    const ctx = (id: number) => ({
+      from: { id },
+      message: { text: '/scrub_foreign go' },
+      reply: async (t: string) => void replies.push(t),
+    });
+    await handler(ctx(2));
+    expect(replies).toEqual(['⛔ Нет доступа']);
+    expect(calls).toEqual([]);
+    await handler(ctx(1)); // контроль: владелец запускает
+    expect(replies[1]).toContain('Запущено');
+    if (prev === undefined) delete process.env.ADMIN_ID;
+    else process.env.ADMIN_ID = prev;
+  });
 });
