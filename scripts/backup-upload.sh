@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ежесуточный зашифрованный бэкап Postgres → Cloudflare R2 (S3-совместимое
+# Ежесуточный зашифрованный бэкап Postgres → Yandex Object Storage (S3-совместимое
 # хранилище).
 #
 # Запускает планировщик deploy/backup-scheduler.cjs (его поднимает
@@ -15,16 +15,16 @@
 #                           ХРАНИТЬ ЕЩЁ И ВНЕ AMVERA (менеджер паролей): без
 #                           ключа бэкап не расшифровать — а Amvera при аварии
 #                           может не отдать и env.
-#   BACKUP_S3_ENDPOINT      https://<id аккаунта>.r2.cloudflarestorage.com
+#   BACKUP_S3_ENDPOINT      https://storage.yandexcloud.net
 #   BACKUP_S3_BUCKET        имя приватного бакета
 #   BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY
-#                           API-токен R2 с правом Object Read & Write только на
+#                           статический ключ сервисного аккаунта с правом Object Read & Write только на
 #                           этот бакет (чтение нужно чистке и скачиванию при
 #                           аварии, scripts/backup-fetch-latest.sh)
 # Необязательные:
 #   BACKUP_RETENTION_DAYS   сколько дней хранить (по умолчанию и не больше 30,
 #                           минимум 7)
-#   BACKUP_S3_REGION        регион подписи (по умолчанию auto — так требует R2)
+#   BACKUP_S3_REGION        регион подписи (по умолчанию ru-central1 — регион Yandex Object Storage)
 #   SKIP_UPLOAD=1           режим репетиции restore (nightly.yml, джоба
 #                           backup-restore, и src/infra/backup-restore.spec.ts):
 #                           переменные хранилища не нужны, файл кладётся в
@@ -43,7 +43,7 @@
 # BACKUP_RETENTION_DAYS дней и старше (по дате в имени) — право на удаление
 # данных доезжает до бэкапов, а не копится вечно. Потолок 30 дней — обещание
 # политики конфиденциальности (глава 6): данные, удалённые из базы, исчезают из
-# копий за 30 дней. Версионирования у бакета R2 нет: удалённый файл удалён
+# копий за 30 дней. Версионирования у бакета Yandex Object Storage нет: удалённый файл удалён
 # целиком.
 #
 # Вывод: последняя строка stdout — `[backup] ok <файл>`; при сбое stderr

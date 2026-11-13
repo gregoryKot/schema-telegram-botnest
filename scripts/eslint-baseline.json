@@ -1,12 +1,12 @@
 {
-  "total": 1491,
-  "errors": 1488,
+  "total": 1405,
+  "errors": 1402,
   "warnings": 3,
   "byRule": {
-    "prettier/prettier": 1470,
+    "prettier/prettier": 1385,
     "@typescript-eslint/no-explicit-any": 3,
     "@typescript-eslint/no-unsafe-assignment": 2,
-    "@typescript-eslint/no-unsafe-call": 6,
+    "@typescript-eslint/no-unsafe-call": 5,
     "@typescript-eslint/no-unsafe-member-access": 6,
     "prefer-rest-params": 1,
     "@typescript-eslint/no-unused-expressions": 1,

@@ -136,7 +136,7 @@ EXPLAIN с записанного SQL (`test/perf/run-plans.ts`) и гейт
   `node deploy/entrypoint.mjs`, он зовёт `migrate deploy` до старта приложения
   (`start:prod` из package.json контейнер не запускает).
 - **Дампы и бэкапы БД никогда не кладутся в репозиторий** — он публичный.
-  Бэкапы — только через `scripts/backup-upload.sh` во внешнее хранилище (Cloudflare R2).
+  Бэкапы — только через `scripts/backup-upload.sh` во внешнее хранилище (Yandex Object Storage).
 - **Предел запроса — 30 с на каждый запрос** (`statement_timeout` сессии пула,
   `src/prisma/statement-timeout.ts`; порог согласован владельцем 2026-10-22,
   аудит 2026-10). Долгий легитимный путь берёт `withStatementTimeout(prisma, мс,

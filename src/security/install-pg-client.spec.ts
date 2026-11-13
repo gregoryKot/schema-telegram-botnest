@@ -1,5 +1,5 @@
-// Установка клиента Postgres 16 в runtime-образ (deploy/install-pg-client.sh,
-// аудит D-2): без pg_dump/psql зашифрованные бэкапы в R2 просто не запустятся,
+// Установка клиента Postgres 17 в runtime-образ (deploy/install-pg-client.sh,
+// аудит D-2): без pg_dump/psql зашифрованные бэкапы в Yandex Object Storage просто не запустятся,
 // а образ с ними «молча без клиента» — тот же класс, что инцидент 2026-08-08
 // с openssl (сеть билдера Amvera до зарубежных хостов отваливается).
 //
@@ -69,7 +69,7 @@ function sandbox(opts: {
       `while [ $# -gt 0 ]; do [ "$1" = -o ] && { echo KEY > "$2"; }; shift; done`,
     ].join('\n'),
   );
-  const ver = opts.pgVersion ?? '16.4';
+  const ver = opts.pgVersion ?? '17.5';
   stub('pg_dump', `echo "pg_dump (PostgreSQL) ${ver}"`);
   stub('psql', `echo "psql (PostgreSQL) ${ver}"`);
   stub('sleep', 'exit 0');
@@ -116,7 +116,7 @@ function sandbox(opts: {
 }
 
 describe('deploy/install-pg-client.sh', () => {
-  it('сеть в порядке — репозиторий PGDG для bookworm, ключ в signed-by, ставит postgresql-client-16', () => {
+  it('сеть в порядке — репозиторий PGDG для bookworm, ключ в signed-by, ставит postgresql-client-17', () => {
     const s = sandbox({ failures: 0 });
     expect(s.run().code).toBe(0);
     const list = readFileSync(s.pgdgList, 'utf8');
@@ -129,7 +129,7 @@ describe('deploy/install-pg-client.sh', () => {
     );
     const apt = readFileSync(s.aptLog, 'utf8');
     expect(apt).toContain(
-      'install -y --no-install-recommends postgresql-client-16',
+      'install -y --no-install-recommends postgresql-client-17',
     );
     expect(apt).toContain(
       'install -y --no-install-recommends ca-certificates curl',
@@ -156,22 +156,23 @@ describe('deploy/install-pg-client.sh', () => {
   it('все попытки провалились — падает громко, образ без клиента не собирается', () => {
     const { code, out } = sandbox({ failures: 99 }).run();
     expect(code).toBe(1);
-    expect(out).toContain('клиент Postgres 16 не поставлен');
+    expect(out).toContain('клиент Postgres 17 не поставлен');
   });
 
   it('ключ репозитория не скачался ни разу — тоже падает', () => {
     expect(sandbox({ failures: 0, keyFetchFails: true }).run().code).toBe(1);
   });
 
-  // Версия обязана быть 16: pg_dump отказывается снимать дамп с сервера новее себя.
-  it('«поставился» клиент не той версии (15) — падает', () => {
-    const { code, out } = sandbox({ failures: 0, pgVersion: '15.8' }).run();
+  // Мажор = сервер прода (Postgres 17.5): pg_dump отказывается снимать дамп с
+  // сервера новее себя — клиент 16 на проде падал «server version mismatch».
+  it('«поставился» клиент 16 (старше сервера прода) — падает', () => {
+    const { code, out } = sandbox({ failures: 0, pgVersion: '16.16' }).run();
     expect(code).toBe(1);
-    expect(out).toContain('не 16-й версии');
+    expect(out).toContain('не 17-й версии');
   });
 
-  it('контроль: версия 16.14 принимается (проверка не слишком строга)', () => {
-    expect(sandbox({ failures: 0, pgVersion: '16.14' }).run().code).toBe(0);
+  it('контроль: версия 17.7 принимается (проверка не слишком строга)', () => {
+    expect(sandbox({ failures: 0, pgVersion: '17.7' }).run().code).toBe(0);
   });
 });
 
