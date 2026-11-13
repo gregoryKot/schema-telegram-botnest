@@ -157,6 +157,13 @@ describe('карточка ссылки: продукт в файле, визи�
     });
   });
 
+  it('заголовок вкладки: в файле — продукт без имени автора, у визитки — свой', () => {
+    const titleOf = (page: string) => /<title>([^<]*)<\/title>/.exec(page)?.[1];
+    expect(titleOf(source)).toBe('Всё по схеме — инструмент схема-терапии');
+    expect(titleOf(source)).not.toMatch(/Котляревск/i);
+    expect(titleOf(practicePreviewHtml(source))).toBe(PRACTICE_PREVIEW.title);
+  });
+
   it('визитка подменяет каждый тег карточки (тег из файла не пропал)', () => {
     const swapped = metaIn(practicePreviewHtml(source));
     for (const [attr, key, field] of CARD) {
