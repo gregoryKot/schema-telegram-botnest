@@ -167,6 +167,7 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
     untouched(s);
     expect(logged).toHaveBeenCalledWith(
       'yandex callback error: yandex auth denied: access_denied',
+      expect.any(Error),
     );
   });
 
@@ -176,6 +177,7 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
     untouched(s);
     expect(logged).toHaveBeenCalledWith(
       'yandex callback error: yandex auth denied: unknown',
+      expect.any(Error),
     );
   });
 
@@ -183,7 +185,10 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
     const s = setup();
     await s.run({ state: STATE });
     untouched(s);
-    expect(logged).toHaveBeenCalledWith('yandex callback error: Missing code');
+    expect(logged).toHaveBeenCalledWith(
+      'yandex callback error: Missing code',
+      expect.any(Error),
+    );
   });
 
   it('нет state — обмена нет, кука не трогается', async () => {
@@ -191,7 +196,10 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
     await s.run({ code: CODE });
     untouched(s);
     expect(s.res.clearCookie).not.toHaveBeenCalled();
-    expect(logged).toHaveBeenCalledWith('yandex callback error: Missing state');
+    expect(logged).toHaveBeenCalledWith(
+      'yandex callback error: Missing state',
+      expect.any(Error),
+    );
   });
 
   it('state не совпал с кукой — обмена нет, кука остаётся', async () => {
@@ -201,6 +209,7 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
     expect(s.res.clearCookie).not.toHaveBeenCalled();
     expect(logged).toHaveBeenCalledWith(
       expect.stringContaining('OAuth state mismatch'),
+      expect.any(Error),
     );
   });
 
@@ -210,6 +219,7 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
     untouched(s);
     expect(logged).toHaveBeenCalledWith(
       expect.stringContaining('OAuth state mismatch: кука не пришла'),
+      expect.any(Error),
     );
   });
 
@@ -234,6 +244,7 @@ describe('OAuthCallbackService.complete — отказы ведут на yandex_
     expect(s.res.redirect).toHaveBeenCalledWith(FAILED);
     expect(logged).toHaveBeenCalledWith(
       'yandex callback error: Yandex token error: invalid_grant (HTTP 400)',
+      expect.any(Error),
     );
   });
 

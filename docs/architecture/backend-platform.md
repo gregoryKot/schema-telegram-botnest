@@ -133,7 +133,7 @@
   - Троттлинг-хранилище — вне infra: `src/api/hybrid-throttle-storage.ts` + `src/api/postgres-throttle-storage.ts`
 - Связи: Prisma (CronLease, WebSession, EmailToken); `CronLeaderModule` — @Global, `claimRun` зовут кроны booking/, auth/, channel/, telegram/; `SelfCheckService` и `ThrottleHitModule` регистрируются в `src/app.module.ts`; `src/main.ts` вызывает boot-проверки env и capability; пробы читают `src/cli/rotate-encryption/delegates.ts` и `src/utils/alert-email-health.ts`.
 - Подводные камни:
-  - `logger.error(...)` в проде = DM админу и e-mail (AlertLogger шлёт только первый аргумент, с троттлингом): в нём ни секретов, ни клиентского текста; ожидаемые сбои — `warn`.
+  - `logger.error(...)` в проде = DM админу и e-mail с троттлингом: в DM только место (контекст логгера), тип ошибки (имя класса и `code` из Error или stack-строки среди аргументов) и id; полный текст — в stdout строкой `[alert <id>] …` (`src/logger/alert-text.ts`, РКН #1135). Ошибку передавать вторым аргументом — иначе тип «—»; в логе всё равно ни секретов, ни клиентского текста; ожидаемые сбои — `warn`.
   - Новый `@Cron` с записью/рассылкой берёт `claimRun` (иначе дубль на втором инстансе; исключения — `scripts/cron-leader-baseline.json`) и вносится в `src/infra/self-check/cron-lease-registry.ts`; новая env — в `env-registry.entries.*.ts` (гейт `scripts/check-env-registry.mjs`), фича, выключаемая отсутствием env, — в `src/infra/capability-report.ts` (гейт `scripts/check-capability-registry.mjs`).
 
 ### `src/prisma/`
