@@ -104,6 +104,7 @@
 | `deploy/` | Супервизор контейнера, бэкапы (`backup-scheduler.cjs`), Cloudflare Worker (`deploy/threads-relay/`) |
 | `docs/` | Документация: индекс — [docs/README.md](README.md), открытое — `docs/open/`, архив — `docs/archive/` |
 | `game/` | Игра (Phaser): под eslint- и file-size-храповиками; смок — `e2e-browser/game-smoke.spec.ts` |
+| `game/art/` | Генератор пиксель-арта игры (Python + Pillow): `cd game/art && python3 build.py [--install]` → превью в `out/`, ассеты в `game/src/assets/` (пол — `game/src/ground.ts`, слои улицы — `loadStreetLayers` в `game/src/decor.ts`); бриф — `docs/GAME_ART_BRIEF.md` |
 | `assets/` | Шрифты для карточек шаринга и корневой сертификат для MAX (`assets/ca/russian-trusted-root.pem`) |
 
 ## Модули бэкенда (`src/`)
