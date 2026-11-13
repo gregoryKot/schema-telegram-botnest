@@ -4,10 +4,9 @@
 // истины — код бэкенда: что именно уходит каждому, написано по
 // `src/infra/postbox-mail.ts` (Yandex Cloud Postbox; через него шлют письма
 // `src/auth/email.service.ts` и `src/utils/admin-alert.ts`),
-// `src/auth/providers/yandex.provider.ts` (вход через Яндекс ID),
-// `scripts/backup-upload.sh` (Cloudflare R2; срок копий сверяет
-// `src/test-support/gates/backup-retention-policy.spec.ts`). Новая интеграция,
-// которой передаются данные пользователя, — новая строка здесь в том же PR.
+// `src/auth/providers/yandex.provider.ts` (вход через Яндекс ID), `scripts/backup-upload.sh`
+// (Yandex Object Storage; срок копий сверяет `src/test-support/gates/backup-retention-policy.spec.ts`).
+// Новая интеграция с данными пользователя — новая строка здесь в том же PR.
 // Resend не используется с 2026-11 (запрос РКН №08-1063539): письма за рубеж
 // больше не уходят. Apple iCloud и Zoom получателями НЕ являются с 2026-11
 // (тот же запрос): в календарь уходит только время и тип записи
@@ -33,11 +32,6 @@ export const FOREIGN_PROCESSORS: readonly Processor[] = [
     name: 'Telegram (Telegram Messenger Inc.)',
     purpose: 'работа бота и приложения внутри Telegram, доставка сообщений бота и уведомлений; для входа на сайт не используется',
     data: 'идентификатор и имя пользователя; в сообщениях бота Оператору – имя, контакт, текст обращения и время записи на консультацию, а также IP-адрес и идентификаторы пользователя в уведомлениях безопасности',
-  },
-  {
-    name: 'Cloudflare R2 (Cloudflare, Inc.)',
-    purpose: 'хранение резервных копий базы данных для восстановления после сбоя',
-    data: 'полная копия базы, зашифрованная ключом Оператора до отправки; ключа у сервиса нет, прочитать копию он не может',
   },
 ];
 
@@ -65,7 +59,13 @@ export const YANDEX_ID_PROCESSOR: Processor = {
   data: 'сервис узнаёт о входе на сайт Оператора; Оператор получает от него идентификатор аккаунта, адрес электронной почты и имя',
 };
 
-export const DOMESTIC_PROCESSORS: readonly Processor[] = [POSTBOX_PROCESSOR, YANDEX_ID_PROCESSOR];
+export const OBJECT_STORAGE_PROCESSOR: Processor = {
+  name: 'Yandex Object Storage (ООО «Яндекс.Облако»)',
+  purpose: 'хранение резервных копий базы данных для восстановления после сбоя',
+  data: 'полная копия базы, зашифрованная ключом Оператора до отправки; ключа у сервиса нет, прочитать копию он не может; копии хранятся не дольше 30 дней',
+};
+
+export const DOMESTIC_PROCESSORS: readonly Processor[] = [POSTBOX_PROCESSOR, OBJECT_STORAGE_PROCESSOR, YANDEX_ID_PROCESSOR];
 
 export function processorLine(p: Processor): string {
   return `${p.name} – ${p.purpose} (${p.data})`;

@@ -89,10 +89,10 @@ describe('listObjects — поддельный S3', () => {
   it('адрес: path-style, без двойного слеша, параметры в каноническом порядке', () => {
     const cfg = {
       ...backupS3Config(s3.env()),
-      endpoint: 'https://acc.r2.cloudflarestorage.com/',
+      endpoint: 'https://storage.yandexcloud.net/',
     };
     expect(listUrl(cfg, 'schemehappens-', 'a/b+c=').toString()).toBe(
-      `https://acc.r2.cloudflarestorage.com/${FAKE_S3_BUCKET}?continuation-token=a%2Fb%2Bc%3D&list-type=2&prefix=schemehappens-`,
+      `https://storage.yandexcloud.net/${FAKE_S3_BUCKET}?continuation-token=a%2Fb%2Bc%3D&list-type=2&prefix=schemehappens-`,
     );
   });
 });

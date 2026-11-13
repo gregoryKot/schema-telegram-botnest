@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   DOMESTIC_PROCESSORS, FOREIGN_PROCESSORS, MEETING_NOTE, METRIKA_PROCESSOR,
-  POSTBOX_PROCESSOR, YANDEX_ID_PROCESSOR, processorLine,
+  OBJECT_STORAGE_PROCESSOR, POSTBOX_PROCESSOR, YANDEX_ID_PROCESSOR, processorLine,
 } from './processors';
 
 describe('processors', () => {
@@ -15,8 +15,14 @@ describe('processors', () => {
     }
   });
 
-  it('иностранные получатели — ровно Telegram и Cloudflare R2', () => {
-    expect(FOREIGN_PROCESSORS.map((p) => p.name.split(' (')[0])).toEqual(['Telegram', 'Cloudflare R2']);
+  it('иностранные получатели — ровно Telegram', () => {
+    expect(FOREIGN_PROCESSORS.map((p) => p.name.split(' (')[0])).toEqual(['Telegram']);
+  });
+
+  it('Cloudflare и R2 нигде нет: копии базы остаются в России', () => {
+    const all = JSON.stringify([FOREIGN_PROCESSORS, DOMESTIC_PROCESSORS, METRIKA_PROCESSOR, MEETING_NOTE]);
+    expect(all).not.toMatch(/cloudflare|\bR2\b/i);
+    expect(OBJECT_STORAGE_PROCESSOR.data).toContain('не дольше 30 дней');
   });
 
   // Запрос РКН №08-1063539 (2026-11): письма шлёт российский Yandex Cloud
@@ -27,10 +33,11 @@ describe('processors', () => {
     expect(all).not.toMatch(/resend|plus five five/i);
   });
 
-  it('российские получатели — ровно Yandex Cloud Postbox и Яндекс ID, у каждого своё юрлицо', () => {
-    expect(DOMESTIC_PROCESSORS).toEqual([POSTBOX_PROCESSOR, YANDEX_ID_PROCESSOR]);
+  it('российские получатели — Postbox, Object Storage и Яндекс ID, у каждого своё юрлицо', () => {
+    expect(DOMESTIC_PROCESSORS).toEqual([POSTBOX_PROCESSOR, OBJECT_STORAGE_PROCESSOR, YANDEX_ID_PROCESSOR]);
     expect(DOMESTIC_PROCESSORS.map((p) => p.name)).toEqual([
       'Yandex Cloud Postbox (ООО «Яндекс.Облако»)',
+      'Yandex Object Storage (ООО «Яндекс.Облако»)',
       'Яндекс ID (ООО «Яндекс»)',
     ]);
   });
