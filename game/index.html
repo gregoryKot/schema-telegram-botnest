@@ -104,6 +104,8 @@
       text-align: center;
     }
     #rotate-hint .phone-icon { font-size: 44px; animation: rot 1.6s ease-in-out infinite; }
+    #rotate-hint .rotate-title { color: #fff0d8; font-size: 18px; line-height: 1.5; }
+    #rotate-hint { padding: 0 24px; line-height: 1.8; color: #c8bff0; font-size: 12px; }
     @keyframes rot { 0%, 30% { transform: rotate(0deg); } 70%, 100% { transform: rotate(90deg); } }
     @media (orientation: portrait) and (pointer: coarse) {
       #rotate-hint { display: flex; }
@@ -137,7 +139,7 @@
     }
     #menu-overlay {
       position: fixed; inset: 0; z-index: 110;
-      background: rgba(5,5,16,0.88); backdrop-filter: blur(4px);
+      background: rgba(5,5,16,0.94);
       display: none; align-items: center; justify-content: center; padding: 16px;
     }
     #menu-overlay.visible { display: flex; }
@@ -169,7 +171,8 @@
   <!-- Поверни телефон (только тач + портрет) -->
   <div id="rotate-hint">
     <div class="phone-icon">📱</div>
-    <div>ПОВЕРНИ ТЕЛЕФОН<br>играем в альбомной</div>
+    <div class="rotate-title">Сквозь голову</div>
+    <div>поверни телефон — игра идёт в альбомной</div>
   </div>
 
   <!-- Mobile touch controls -->
