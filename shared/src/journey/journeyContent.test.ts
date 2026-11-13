@@ -70,7 +70,7 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
     );
     expect(result?.parts).toEqual([
       { title: 'Ситуация', text: 'вторая' },
-      { title: 'Здоровый взгляд', text: 'взгляд' },
+      { title: 'Здоровый взгляд', text: 'взгляд', healthy: true },
     ]);
   });
 
@@ -226,7 +226,7 @@ describe('fetchJourneyResult — сохранил → нашёл по id', () =>
     );
     expect(result?.parts).toEqual([
       { title: 'Убеждение', text: 'Я всё испорчу' },
-      { title: 'Здоровый взгляд', text: 'Я могу ошибаться' },
+      { title: 'Здоровый взгляд', text: 'Я могу ошибаться', healthy: true },
     ]);
   });
 

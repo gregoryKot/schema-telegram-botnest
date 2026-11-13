@@ -63,15 +63,13 @@ describe('buildPortrait — потребности: порядок, подпис
     ]);
     const attachment = p.needs.find((n) => n.id === 'attachment')!;
     expect(attachment.label).toBe('Привязанность');
-    expect(attachment.emoji).toBe('🤝');
     expect(attachment.color).toBe(toneHex(NEED_HUE.attachment));
   });
 
-  it('у каждой из пяти потребностей есть непустая подпись и эмодзи — реестры не разъехались', () => {
+  it('у каждой из пяти потребностей есть непустая подпись — реестры не разъехались', () => {
     const p = buildPortrait(empty);
     for (const n of p.needs) {
       expect(n.label).toBeTruthy();
-      expect(n.emoji).toBeTruthy();
       expect(n.color).toBeTruthy();
     }
   });

@@ -8,10 +8,10 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { JourneySheet } from './JourneySheet';
-import { WEB_JOURNEY_HEROES } from './journey/webJourneyHeroes';
+import { WEB_JOURNEY_KIT } from './journey/webJourneyKit';
 
 // Какой набор героев сверять: подставляется тестом после импорта обёртки.
-const HEROES_PROBE: { value: unknown } = { value: null };
+const KIT_PROBE: { value: unknown } = { value: null };
 const shareFeed = vi.fn();
 const shareSummary = vi.fn();
 const shareItem = vi.fn();
@@ -31,14 +31,14 @@ vi.mock('../../../shared/src/journey/journeyShare', () => ({
 vi.mock('../../../shared/src/journey/JourneyView', () => ({
   JourneyView: ({
     onShareFeed,
-    heroes,
+    kit,
   }: {
     onShareFeed: () => void;
-    heroes: unknown;
+    kit: unknown;
   }) => (
     <div>
       Лента пути
-      <span data-testid="journey-heroes">{String(heroes === HEROES_PROBE.value)}</span>
+      <span data-testid="journey-kit">{String(kit === KIT_PROBE.value)}</span>
       <button onClick={onShareFeed}>Поделиться лентой</button>
     </div>
   ),
@@ -70,10 +70,10 @@ function renderSheet(onClose = vi.fn()) {
 }
 
 describe('JourneySheet — список', () => {
-  it('передаёт в JourneyView героев своей площадки пропсом (а не чужих)', () => {
-    HEROES_PROBE.value = WEB_JOURNEY_HEROES;
+  it('передаёт в JourneyView вёрстку своей площадки пропсом kit (а не чужую)', () => {
+    KIT_PROBE.value = WEB_JOURNEY_KIT;
     renderSheet();
-    expect(screen.getByTestId('journey-heroes').textContent).toBe('true');
+    expect(screen.getByTestId('journey-kit').textContent).toBe('true');
   });
 
   it('без выбранной записи показывает заголовок и ленту пути', () => {
@@ -91,7 +91,10 @@ describe('JourneySheet — список', () => {
   it('с записями (total>0) кнопка «Поделиться» показывается и зовёт shareSummary', () => {
     mockTotal = 3;
     renderSheet();
-    fireEvent.click(screen.getByText('Поделиться'));
+    const share = screen.getByRole('button', { name: 'Поделиться' });
+    // тихая ссылка, не залитая кнопка: залитой на листе ленты нет (b22-journey)
+    expect(share.className).toContain('ds-link');
+    fireEvent.click(share);
     expect(shareSummary).toHaveBeenCalled();
   });
 

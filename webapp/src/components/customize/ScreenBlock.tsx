@@ -6,6 +6,9 @@ interface Props {
   id: ScreenBlockId;
   blocks: Pick<SiteScreenBlocks, 'isHidden' | 'hold' | 'orderedIds'>;
   className?: string;
+  /** Есть ли что показать: false — блока нет вовсе, без пустой обёртки (её зазор вставал вторым у
+   *  «Тёплых слов» без фраз, b21). Решает экран по своим данным, а не по `null` от ребёнка. */
+  when?: boolean;
   children: ReactNode;
 }
 
@@ -14,8 +17,8 @@ interface Props {
 // экран» на его строке. Место блока в порядке — переменная --blk-o (на
 // телефоне её читает css экрана и ставит в `order`; на десктопе порядок не
 // меняется).
-export function ScreenBlock({ id, blocks, className, children }: Props) {
-  if (blocks.isHidden(id)) return null;
+export function ScreenBlock({ id, blocks, className, when = true, children }: Props) {
+  if (!when || blocks.isHidden(id)) return null;
   const hold = blocks.hold(id);
   const style = { ...hold?.style, '--blk-o': blocks.orderedIds.indexOf(id) + 1 } as CSSProperties;
   return (

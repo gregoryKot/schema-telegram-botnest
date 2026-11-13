@@ -37,14 +37,16 @@ const gamma = (x: number): number => {
   return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
 };
 
-/** '#rrggbb' для oklch(0.58 0.12 h) — тот же цвет, что у .tone-fill. */
-export function toneHex(h: number): string {
+/** '#rrggbb' для oklch(l c h) — sRGB-значение того же цвета, что даёт CSS (canvas шаринга и
+ *  старые webview не понимают oklch() в fillStyle). Вне охвата sRGB канал обрезается. */
+export function oklchHex(lightness: number, chroma: number, h: number): string {
   const rad = (h * Math.PI) / 180;
-  const a = 0.12 * Math.cos(rad);
-  const b = 0.12 * Math.sin(rad);
-  const l = Math.pow(0.58 + 0.3963377774 * a + 0.2158037573 * b, 3);
-  const m = Math.pow(0.58 - 0.1055613458 * a - 0.0638541728 * b, 3);
-  const s = Math.pow(0.58 - 0.0894841775 * a - 1.291485548 * b, 3);
+  const a = chroma * Math.cos(rad);
+  const b = chroma * Math.sin(rad);
+  const L = lightness;
+  const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3);
+  const m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3);
+  const s = Math.pow(L - 0.0894841775 * a - 1.291485548 * b, 3);
   const rgb = [
     4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
     -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
@@ -60,4 +62,9 @@ export function toneHex(h: number): string {
       )
       .join('')
   );
+}
+
+/** '#rrggbb' для oklch(0.58 0.12 h) — тот же цвет, что у .tone-fill. */
+export function toneHex(h: number): string {
+  return oklchHex(0.58, 0.12, h);
 }
