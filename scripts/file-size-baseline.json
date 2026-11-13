@@ -48,7 +48,7 @@
   "game/src/menu.ts": 115,
   "game/src/progress.ts": 19,
   "game/src/props.ts": 91,
-  "game/src/rotate.ts": 19,
+  "game/src/rotate.ts": 20,
   "game/src/scenes/BootScene.ts": 164,
   "game/src/scenes/game/cabinet.ts": 183,
   "game/src/scenes/game/cta.ts": 119,
