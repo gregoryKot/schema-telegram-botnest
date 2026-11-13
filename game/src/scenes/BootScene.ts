@@ -54,12 +54,14 @@ export class BootScene extends Phaser.Scene {
     if (!this.essentialsReady()) { this.armRetry(); return; }
     this.advanced = true;
     if (this.watchdog) clearTimeout(this.watchdog);
-    // Flow: Start → Intro → Game. Dev shortcut: #game jumps straight to a chapter.
+    // Flow: Start → Intro → Game. Хеш — вход в сцену напрямую (смок e2e-browser/game-smoke.spec.ts).
     const hash = window.location.hash.slice(1).toLowerCase();
     if (hash === 'game' || hash.startsWith('chapter'))
       this.scene.start('Game', { chapter: hash.startsWith('chapter') ? hash : 'chapter1' });
     else if (hash === 'tutorial')
       this.scene.start('Tutorial');
+    else if (hash === 'intro')
+      this.scene.start('Intro');
     else
       this.scene.start('Start');
   }
