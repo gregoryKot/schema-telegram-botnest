@@ -123,9 +123,8 @@ jobs:
         run: |
           # SPA-fallback отдаёт 200 с HTML сайта на ЛЮБОЙ путь, поэтому
           # различает только маркер тела. Маркер — узел, куда main.ts монтирует
-          # Phaser, а не заголовок: имя игры меняют (дважды менялось), узел —
-          # нет. Сверку с game/index.html держит src/test-support/gates/
-          # game-smoke-marker.spec.ts: переименование ломает PR, не смок.
+          # Phaser, а не заголовок: имя игры меняют, узел — нет. Сверку с
+          # game/index.html держит src/test-support/gates/game-smoke-marker.spec.ts.
           body=$($CURL https://schemehappens.ru/game/)
           echo "$body" | grep -qF 'id="game-container"'
 

@@ -1,8 +1,6 @@
-// Гейт: маркер игры в шаге `/game/` смока прода (prod-smoke.yml) совпадает с
-// game/index.html (правило №20, инцидент 2026-11-13: переименование игры в
-// #1096 покрасило смок живого прода на «Schema Runner», смок красный ~14 ч).
-// Правила — game-smoke-marker.ts; здесь оба исхода на образцах и прогон по
-// настоящим файлам.
+// Гейт: маркер шага `/game/` смока прода есть в game/index.html и нет в
+// webapp/index.html. Правила — game-smoke-marker.ts; здесь оба исхода на
+// образцах и прогон по настоящим файлам.
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { gameMarkerProblems, gameSmokeMarker } from './game-smoke-marker';
