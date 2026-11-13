@@ -1,11 +1,29 @@
 // Карточка недели трекера потребностей; числа — fmtIndex. Чистые расчёты
 // (calcWeekAvg, weekIndex, weekRange, buildWeeklyShareText) экспортируются для тестов.
-import { NEED_COLORS } from '../../needs/needColors';
+// Лист соломы трекера: семь маленьких листов-дней (weekSheets.ts) с пятью полосками по оценкам, индекс
+// недели и средние по потребностям строками, серия — числом (без эмодзи).
 import type { Need, DayHistory } from '../../types';
 import { fmtIndex } from '../../needs/dayIndex';
 import { fmtDate } from '../../utils/format';
-import { drawNeedsRadarCard } from './needsRadarCard';
+import { drawWeekSheets, WEEK_SHEETS_H } from './weekSheets';
 import { pluralDays } from '../../utils/celebrationText';
+import {
+  CARD_LOOK,
+  CARD_PAD,
+  FOOTER_H,
+  INK,
+  NEED_ROW_H,
+  STAT_TILE_H,
+  beginCard,
+  cardFont,
+  drawNeedRow,
+  drawStatTiles,
+  footer,
+  header,
+  headerHeight,
+  serifFont,
+  type StatTile,
+} from '../cardKit';
 
 export function calcWeekAvg(
   history: DayHistory[],
@@ -55,6 +73,25 @@ export function buildWeeklyShareText(
   return `Трекер потребностей · ${range}\n\n${rows}\n\nИндекс: ${idxStr}/10${streakSuffix}\n\n${link}`;
 }
 
+const INDEX_H = 70;
+
+/** Высота карточки недели — чистая формула от числа потребностей и плиток. */
+export function weeklyCardHeight(
+  needCount: number,
+  hasRange: boolean,
+  tiles: number,
+): number {
+  return (
+    headerHeight(1, hasRange) +
+    WEEK_SHEETS_H +
+    INDEX_H +
+    needCount * NEED_ROW_H +
+    (tiles ? 14 + STAT_TILE_H : 0) +
+    12 +
+    FOOTER_H
+  );
+}
+
 export function drawWeeklyCard(
   canvas: HTMLCanvasElement,
   needs: Need[],
@@ -62,39 +99,51 @@ export function drawWeeklyCard(
   streak: number,
 ) {
   const idx = weekIndex(needs, history);
-  drawNeedsRadarCard(canvas, {
+  const range = weekRange(history);
+  const tiles: StatTile[] = [
+    {
+      label: 'Дней отмечено',
+      value: String(history.length),
+      hint: pluralDays(history.length),
+    },
+    ...(streak > 0
+      ? [{ label: 'Серия', value: String(streak), hint: pluralDays(streak) }]
+      : []),
+  ];
+  const H = weeklyCardHeight(needs.length, Boolean(range), tiles.length);
+  const c = beginCard(canvas, H, { hue: CARD_LOOK.tracker.hue });
+  const { ctx } = c;
+  const top = header(c, {
     eyebrow: 'Трекер потребностей',
     title: 'Моя неделя',
-    subtitle: weekRange(history),
-    rows: needs.map((n) => {
-      const avg = calcWeekAvg(history, n.id);
-      return {
-        emoji: n.emoji,
-        label: n.chartLabel,
-        color: NEED_COLORS[n.id] ?? '#888',
-        value: avg,
-        valueText: fmtIndex(avg),
-      };
-    }),
-    center: { value: fmtIndex(idx), caption: 'индекс' },
-    tiles: [
-      {
-        label: 'Дней отмечено',
-        value: String(history.length),
-        hint: pluralDays(history.length),
-      },
-      ...(streak > 0
-        ? [
-            {
-              label: 'Серия',
-              value: `${streak} 🔥`,
-              color: 'var(--accent-orange)',
-            },
-          ]
-        : []),
-    ],
-    footerLabel: 'Трекер потребностей',
-    accent: 'var(--accent)',
-    accent2: 'var(--accent-blue)',
+    subtitle: range || undefined,
+    sign: CARD_LOOK.tracker.sign,
   });
+
+  drawWeekSheets(c, needs, history, top);
+
+  let y = top + WEEK_SHEETS_H;
+  ctx.font = serifFont(40);
+  ctx.fillStyle = INK.text;
+  ctx.fillText(fmtIndex(idx), CARD_PAD, y + 50);
+  const w = ctx.measureText(fmtIndex(idx)).width;
+  ctx.font = cardFont(13);
+  ctx.fillStyle = INK.sub;
+  ctx.fillText('индекс', CARD_PAD + w + 10, y + 50);
+  y += INDEX_H;
+
+  for (const n of needs) {
+    const avg = calcWeekAvg(history, n.id);
+    drawNeedRow(
+      c,
+      { id: n.id, label: n.chartLabel, value: avg, valueText: fmtIndex(avg) },
+      y,
+    );
+    y += NEED_ROW_H;
+  }
+  if (tiles.length) drawStatTiles(c, tiles, y + 14);
+
+  footer(c, 'Трекер потребностей');
 }
+
+export { weekDays, type WeekDay } from './weekSheets';

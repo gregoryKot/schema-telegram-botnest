@@ -18,7 +18,7 @@ const META: AchievementMeta = { title: 'Неделя подряд', desc: 'Се�
 function renderDetail(onClose = vi.fn()) {
   return render(
     <MemoryRouter>
-      <AchievementDetail meta={META} onClose={onClose} />
+      <AchievementDetail id="streak_7" meta={META} onClose={onClose} />
     </MemoryRouter>,
   );
 }

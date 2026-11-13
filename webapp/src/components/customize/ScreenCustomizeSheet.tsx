@@ -24,7 +24,7 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
       {() => (
         <>
           <ReorderHint tr={tr} phone={phone} />
-          <div className="cz-card">
+          <div className="cz-card cz-list">
             {ids.map((id) => {
               const meta = BLOCK_META[id]!;
               return (
@@ -32,6 +32,7 @@ export function ScreenCustomizeSheet({ blocks }: { blocks: ScreenBlocksApi }) {
                   key={id}
                   title={meta.label}
                   sub={meta.sub}
+                  sign={meta.sign}
                   on={!hidden.includes(id)}
                   onToggle={() => toggle(id)}
                   handle={phone ? drag.handleProps(id, meta.label, range) : undefined}

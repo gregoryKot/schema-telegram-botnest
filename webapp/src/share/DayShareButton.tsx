@@ -12,37 +12,17 @@ interface Props {
   ratings: Record<string, number>;
   /** Дата карточки (YYYY-MM-DD); по умолчанию сегодня */
   date?: string;
-  /** Текстовая кнопка без рамки — для экранов, где «Поделиться» не главное действие. */
-  plain?: boolean;
-  className?: string; // вид задаёт экран своим классом (строка «Готово» трекера) — без инлайн-стиля
+  /** Вид кнопки задаёт экран своим классом (строка «Готово» трекера, `.tq-go-row--share`). */
+  className: string;
 }
 
-export function DayShareButton({ needs, ratings, date, plain, className }: Props) {
+export function DayShareButton({ needs, ratings, date, className }: Props) {
   const [open, setOpen] = useState(false);
   const share = useDayShare(needs, ratings, date, botShortUrl);
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className={className}
-        style={className ? undefined : {
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 'var(--space-8)',
-          padding: plain ? '0 12px' : '13px 28px',
-          minHeight: plain ? 44 : undefined,
-          borderRadius: 'var(--r-10)',
-          border: plain ? 'none' : '1px solid var(--line)',
-          background: 'transparent',
-          color: plain ? 'var(--text-sub)' : 'var(--text)',
-          fontSize: plain ? 14 : 15,
-          fontWeight: 600,
-          fontFamily: 'inherit',
-          cursor: 'pointer',
-        }}
-      >
+      <button type="button" onClick={() => setOpen(true)} className={className}>
         <ShareIcon />
         Поделиться днём
       </button>

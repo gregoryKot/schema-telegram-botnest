@@ -1,9 +1,14 @@
-/* Клиент · Профиль. Префикс cpf-. */
+/* Клиент · Профиль. Префикс cpf-. Язык живой бумаги (b21, docs/design/APP_2026-11.md): витрина плиток
+   цветной бумаги, «ритм дней» одним блоком между линиями, значки достижений на своей бумаге. */
 .cpf-page { max-width: 1100px; }
-.cpf-card { display: flex; flex-direction: column; gap: 14px; padding: 22px 24px; border-radius: 20px; }
-.cpf-skeleton { display: flex; flex-direction: column; gap: 12px; }
-.cpf-error { font-size: 13px; color: var(--err); }
+.cpf-skeleton { display: flex; flex-direction: column; gap: 20px; }
+.cpf-skel-ach { padding-top: 10px; }
+.cpf-skel-ach .cpf-ach-text { flex: 1; gap: 6px; }
+@media (min-width: 1024px) {
+  .cpf-skeleton .cpf-rhythm--two .cpf-rhythm-row { grid-template-columns: minmax(0, 1fr) minmax(0, 470px); }
+}
 .cpf-label { margin-bottom: 10px; }
+.cpf-title { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
 
 /* Шапка (#906), один состав на любой ширине: аватар, надпись / заголовок / подпись,
    справа «Настроить экран» и шестерёнка «Настройки». Действия переносятся второй
@@ -18,63 +23,140 @@
 .cpf-head-name { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .cpf-head .ds-h1 i { font-style: italic; color: var(--accent); }
 .cpf-head-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
-.cpf-heat-days { display: none; }
 
-.cpf-counters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-.cpf-counter.pp-paper { --h: 70; }
-.cpf-counter { border-radius: 18px; padding: 18px 20px; }
-.cpf-counter-num { font-size: 44px; }
-.cpf-counter-label { font-size: 12px; margin-top: 8px; opacity: .8; }
+/* ── Пустой профиль: лист начала пути и одна кнопка (ProfileStart) ─────────────────────────── */
+.cpf-start { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 300px); align-items: center; column-gap: 32px; }
+.cpf-start-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.cpf-start-cta { align-self: flex-start; margin-top: 8px; }
+@media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) { .cpf-start-cta { width: auto; } }
+.cpf-start-art .scn { display: block; width: 100%; height: auto; }
 
+/* ── Витрина: плитки «Мой путь», «Мой портрет», «Мои тёплые слова» (ProfileShelf) ──────────── */
+.cpf-shelf { --cpf-tile-h: 232px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cpf-shelf--n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cpf-shelf--n1 { grid-template-columns: minmax(0, 1fr); }
+.cpf-shelf-item { display: flex; min-width: 0; }
+.cpf-tile { flex: 1; min-width: 0; margin: 0; }
+.cpf-tile-title { margin: 0; font-weight: 400; color: var(--text); }
+.cpf-tile-text { display: flex; flex-direction: column; gap: 8px; }
+.cpf-tile-quote { font-family: var(--serif); font-size: 17px; line-height: 1.4; color: var(--text); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.cpf-tile-source { font-size: 13px; color: var(--text-sub); }
+.cpf-tile-art { display: block; margin-top: auto; padding-top: 6px; }
+.cpf-tile-art .pp-art { width: 112px; height: 60px; }
+.cpf-tile-metas { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.cpf-tile-link { min-height: 44px; padding: 0; text-align: left; }
+/* Плитка во всю ширину строки (одна плитка; третья на планшете; все на телефоне — mobile.css):
+   текст слева, знак справа на всю высоту текста, стрелка внизу. */
+@media (max-width: 1023px) {
+  .cpf-shelf--n3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cpf-shelf--n3 > :last-child { grid-column: 1 / -1; }
+  .cpf-shelf--n3 > :last-child .cpf-tile { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 24px; row-gap: 8px; }
+  .cpf-shelf--n3 > :last-child .cpf-tile > :not(.cpf-tile-art) { grid-column: 1; }
+  .cpf-shelf--n3 > :last-child .cpf-tile > .cpf-tile-art { grid-column: 2; grid-row: 1 / 3; align-self: center; margin: 0; padding: 0; }
+  .cpf-shelf--n3 > :last-child .cpf-tile > .cpf-tile-foot { grid-column: 1 / -1; }
+}
+.cpf-shelf--n1 .cpf-tile { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 24px; row-gap: 8px; }
+.cpf-shelf--n1 .cpf-tile > :not(.cpf-tile-art) { grid-column: 1; }
+.cpf-shelf--n1 .cpf-tile > .cpf-tile-art { grid-column: 2; grid-row: 1 / 3; align-self: center; margin: 0; padding: 0; }
+.cpf-shelf--n1 .cpf-tile > .cpf-tile-foot { grid-column: 1 / -1; }
+
+/* ── Ритм дней: счётчики, серия, теплокарта — один блок между линиями (RhythmBlock) ────────── */
+.cpf-rhythm { gap: 24px; }
+.cpf-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cpf-counter { padding: 2px 20px; border-left: 1px solid var(--panel-line); }
+.cpf-counter:first-child { padding-left: 0; border-left: 0; }
+.cpf-counter-num { font-size: 40px; }
+.cpf-counter-label { font-size: 13px; margin-top: 6px; color: var(--text-sub); }
+.cpf-rhythm-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.cpf-rhythm-row > * { order: var(--blk-o); min-width: 0; }
+@media (min-width: 1024px) {
+  .cpf-rhythm--two .cpf-rhythm-row { grid-template-columns: minmax(0, 1fr) auto; column-gap: 48px; align-items: start; }
+}
+
+.cpf-streak-card, .cpf-heat-card { display: flex; flex-direction: column; gap: 14px; }
 .cpf-streak-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .cpf-streak-main { display: flex; align-items: baseline; gap: 12px; }
 .cpf-streak-num { font-size: 56px; color: var(--text); }
-.cpf-streak-num.is-done { color: var(--accent); }
+.cpf-streak-num.is-done { color: var(--c-moss-strong); }
 .cpf-streak-cap { font-size: 13px; font-weight: 600; color: var(--text-sub); line-height: 1.2; white-space: pre-line; }
 .cpf-streak-side { display: flex; gap: 20px; text-align: center; }
 .cpf-streak-val { font-family: var(--serif); font-size: 22px; line-height: 1; color: var(--text); margin-bottom: 4px; }
 .cpf-week { display: flex; gap: 6px; }
 .cpf-week-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+/* Серия — мохом, как теплокарта: день есть — полоска цвета данных (≥3:1 к бумаге), сегодня — глубже. */
 .cpf-week-bar { width: 100%; height: 6px; border-radius: 3px; background: var(--paper-sunk); }
-.cpf-week-bar.is-done { background: var(--accent-hot); opacity: .6; }
-.cpf-week-bar.is-today.is-done { opacity: 1; }
-.cpf-week-name { font-size: 10px; color: var(--text-faint); }
-.cpf-week-name.is-today { color: var(--accent); font-weight: 700; }
+.cpf-week-bar.is-done { background: var(--c-moss); }
+.cpf-week-bar.is-today.is-done { background: var(--c-moss-strong); }
+.cpf-week-name { font-size: 11px; color: var(--text-faint); }
+.cpf-week-name.is-today { color: var(--c-moss-strong); font-weight: 700; }
 .cpf-cta { width: 100%; justify-content: center; min-height: 44px; }
 
 .cpf-heat-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .cpf-heat-wrap { display: flex; flex-direction: column; gap: 6px; }
 .cpf-heat-months, .cpf-heat-grid { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 4px; }
-.cpf-heat-months span { font-size: 10px; color: var(--text-faint); white-space: nowrap; overflow: visible; line-height: 12px; }
+.cpf-heat-months span { font-size: 11px; color: var(--text-faint); white-space: nowrap; overflow: visible; line-height: 13px; }
+.cpf-heat-days { display: none; }
 .cpf-heat-grid { grid-auto-flow: column; grid-template-rows: repeat(7, auto); }
-.cpf-heat { aspect-ratio: 1; border-radius: 4px; background: var(--paper-sunk); }
-.cpf-heat--1 { background: oklch(0.85 0.06 var(--h)); }
-.cpf-heat--2 { background: oklch(0.7 0.11 var(--h)); }
-.cpf-heat--3 { background: oklch(0.52 0.14 var(--h)); }
+/* Оттенки мха: уровень 1 — --c-moss (3.8:1 к бумаге страницы), дальше глубже к тексту. Пустой день — бумага. */
+/* Пустой день — тон глубже бумаги листа на любом оттенке (как PAPER.hollow), а не --paper-sunk (1.1:1);
+   уровни — мох бледный, мох, мох глубокий: соседние уровни различимы. */
+.cpf-heat { aspect-ratio: 1; border-radius: 4px; background: color-mix(in srgb, var(--text) 13%, transparent); }
+.cpf-heat--1 { background: color-mix(in srgb, var(--c-moss) 50%, transparent); }
+.cpf-heat--2 { background: var(--c-moss); }
+.cpf-heat--3 { background: var(--c-moss-strong); }
 .cpf-heat.is-future { visibility: hidden; }
-.cpf-heat-legend { display: flex; gap: 6px; align-items: center; justify-content: flex-end; font-size: 11px; color: var(--text-faint); }
+.cpf-heat-legend { display: flex; gap: 6px; align-items: center; justify-content: flex-end; font-size: 12px; color: var(--text-faint); }
 .cpf-heat-legend .cpf-heat { width: 12px; height: 12px; aspect-ratio: auto; border-radius: 3px; }
 
-.cpf-duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; align-items: start; }
-.cpf-ach-grid, .cpf-dlg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-.cpf-ach { border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px; background: var(--paper-sunk); color: var(--text-sub); opacity: .7; }
-.cpf-ach.tone-tint { opacity: 1; }
-.cpf-ach--dlg { text-align: center; }
+/* ── Достижения и паттерны: секции без карточек, значки на своей бумаге ─────────────────────── */
+.cpf-duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px 40px; align-items: start; }
+/* Линия над секцией не нужна: блок «ритма» выше уже закрыт своей линией (pp-block), две подряд читались рамкой. */
+.cpf-sec { display: flex; flex-direction: column; gap: 16px; padding: 10px 0 6px; }
+.cpf-sec--btn { cursor: pointer; }
+.cpf-ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }
+/* Диалог «Достижения»: на телефоне — столбец, шире — две колонки с нормальной строкой описания;
+   значок и название сверху строки — названия соседей на одной линии при описании в 1 и 2 строки. */
+.cpf-dlg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 16px; }
+.cpf-dlg-grid > .cpf-ach--dlg { align-items: flex-start; }
+.cpf-ach { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cpf-ach-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cpf-ach-title { font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--text); }
+.cpf-ach-desc { font-size: 12px; line-height: 1.3; color: var(--text-faint); }
+.cpf-ach:not(.is-earned) .cpf-ach-title { color: var(--text-sub); font-weight: 600; }
+.cpf-ach-progress { font-size: 12px; font-weight: 700; color: var(--c-moss-strong); }
+.cpf-ach-more { display: none; }
+.cpf-ach--dlg { padding: 8px; margin: -2px; border-radius: 14px; }
 .cpf-ach--dlg.is-earned { cursor: pointer; }
-.cpf-ach-title { font-size: 13px; font-weight: 700; line-height: 1.3; }
-.cpf-ach-desc { font-size: 11px; line-height: 1.3; }
-.cpf-ach-progress { font-size: 11px; font-weight: 600; color: var(--accent); }
+.cpf-ach--dlg.is-earned:hover { background: var(--paper-sunk); }
+/* Значок: бумага оттенка знака и сплошной сдвинутый слой под ней («бумага на бумаге»); не получено —
+   силуэт: тихая бумага, знак одним тоном, без слоя. */
+.cpf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 14px; background: oklch(0.915 0.03 var(--h)); box-shadow: 4px 5px 0 oklch(0.8 0.06 var(--h)); }
+.cpf-badge .pp-art { width: 42px; height: 24px; }
+.cpf-badge.is-locked { background: var(--paper-sunk); box-shadow: none; }
+.cpf-badge.is-locked svg [fill]:not([fill="none"]) { fill: color-mix(in srgb, var(--text-faint) 80%, var(--paper-sunk)); fill-opacity: 1; }
+.cpf-badge.is-locked svg [stroke]:not([stroke="none"]) { stroke: color-mix(in srgb, var(--text-faint) 80%, var(--paper-sunk)); }
+
+/* Диалоги на бумаге: окно Dialog прозрачно, лист — обёртка (cpf-paper-dlg) со сдвинутым слоем. */
+.sk-dialog-box:has(> .cpf-paper-dlg) { padding: 0 12px 12px 0; background: transparent; border: 0; box-shadow: none; }
+.cpf-paper-dlg { padding: 28px 24px; border-radius: 20px; box-shadow: 10px 11px 0 oklch(0.8 0.06 var(--h)); }
+.cpf-paper-dlg--best { --h: 135; }
+.cpf-paper-dlg--list { background: var(--bg); color: var(--text); box-shadow: 10px 11px 0 var(--paper-sunk); }
 .cpf-dlg-head { margin-bottom: 20px; }
 .cpf-dlg-title { margin: 0; }
+.cpf-dlg-count { margin-right: auto; }
 .cpf-dlg-p { margin-bottom: 12px; }
 .cpf-dlg-p0 { margin-bottom: 0; }
+.cpf-ach-detail { display: flex; flex-direction: column; align-items: center; }
+.cpf-ach-detail-art { width: 168px; margin: 0 auto 14px; }
+.cpf-ach-detail-title { font-size: 30px; }
 
 .cpf-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Паттерны: лучший день — шалфей, тяжелее — роза; бумага без обводки. Полоса — цвет данных потребности (--nd). */
 .cpf-pills { display: flex; flex-wrap: wrap; gap: var(--space-8); }
-.cpf-pill { display: flex; align-items: center; gap: var(--space-6); padding: var(--space-8) var(--space-12); border-radius: var(--r-12); border: 1px solid; }
-.cpf-pill.is-best { background: color-mix(in srgb, var(--warn) 12%, transparent); border-color: color-mix(in srgb, var(--warn) 28%, transparent); color: var(--warn-ink); }
-.cpf-pill.is-worst { background: color-mix(in srgb, var(--err) 10%, transparent); border-color: color-mix(in srgb, var(--err) 22%, transparent); color: var(--err); }
-.cpf-pill-key { font-size: 12px; color: var(--text-muted); margin-bottom: var(--space-2); }
+.cpf-pill { display: flex; align-items: center; gap: var(--space-6); padding: var(--space-10) var(--space-14); border-radius: var(--r-12); }
+.cpf-pill.is-best { --h: 135; }
+.cpf-pill.is-worst { --h: 25; }
+.cpf-pill-key { font-size: 12px; color: var(--text-sub); margin-bottom: var(--space-2); }
 .cpf-pill-val { font-size: 15px; }
 .cpf-progs { display: flex; flex-direction: column; gap: var(--space-14); }
 .cpf-prog { display: flex; flex-direction: column; gap: var(--space-6); }
@@ -84,12 +166,9 @@
 .cpf-prog-val.is-down { color: var(--err); }
 .cpf-prog-val.is-flat { color: var(--text-faint); }
 .cpf-prog-track { height: 6px; border-radius: var(--r-4); background: var(--paper-sunk); overflow: hidden; }
-.cpf-prog-fill { height: 100%; border-radius: var(--r-4); }
-.cpf-prog-fill.is-up { background: var(--ok); }
-.cpf-prog-fill.is-down { background: var(--accent-hot); }
-.cpf-prog-fill.is-flat { background: var(--text-faint); }
+.cpf-prog-fill { height: 100%; border-radius: var(--r-4); background: var(--nd); }
 .cpf-help { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; padding: 0; cursor: pointer; margin: -13px; }
-.cpf-help-dot { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--paper-sunk); color: var(--text-sub); font-size: 11px; font-weight: 600; }
+.cpf-help-dot { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: oklch(0.85 0.05 var(--h)); color: var(--text-sub); font-size: 11px; font-weight: 600; }
 
 /* Карточка «Терапевт» (b24): лист неба (ENTITY_LOOK.therapist), шапка — буква, имя, знак Talk один раз;
    ниже колонкой — билет сессии (SessionTicket, client-booking.css), кнопка записи, строка «Схема случая». */
@@ -106,51 +185,39 @@
 /* Бывший терапевт (FormerTherapistNote): сообщение вместо карточки «Терапевт». */
 .cpf-former { padding: 22px 24px; border-radius: 20px; }
 
-.cpf-delete { padding-top: 20px; border-top: 1px solid var(--paper-sunk); }
+/* Ссылки внизу профиля (телефон) и удаление аккаунта. */
+.cpf-links { border-top: 1px solid var(--panel-line); border-bottom: 1px solid var(--panel-line); }
+.cpf-links > .ds-list-row + .ds-list-row { border-top: 1px solid var(--paper-sunk); }
+.cpf-delete { padding-top: 20px; }
 
-@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .cpf-card, .cpf-former { padding: 16px; border-radius: 18px; }
-  .cpf-avatar { width: 56px; height: 56px; font-size: 20px; }
-  .cpf-head { gap: 12px 14px; }
-  .cpf-head .pp-art--hero { width: 72px; height: 60px; }
-  .cpf-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .cpf-counter { padding: 12px; border-radius: 14px; }
-  .cpf-counter-num { font-size: 30px; }
-  .cpf-counter-label { font-size: 11px; }
-  .cpf-heat-months, .cpf-heat-grid { gap: 3px; }
-  .cpf-heat { border-radius: 3px; }
-}
-
-/* Мой портрет / Тёплые слова / лист портрета */
-.cpf-hint { font-size: 12px; color: var(--text-faint); line-height: 1.4; }
-.cpf-bars { display: flex; flex-direction: column; gap: var(--space-10); }
+/* ── Лист «Мой портрет» ───────────────────────────────────────────────────────────────────── */
+.cpf-testline { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--text-sub); }
+.cpf-delta { font-weight: 700; color: var(--text-sub); }
+.cpf-delta.is-better { color: var(--c-moss-strong); }
 .cpf-bar { display: flex; align-items: center; gap: var(--space-10); flex: 1; min-width: 0; }
-.cpf-bar-name { width: 150px; flex-shrink: 0; display: flex; align-items: center; gap: var(--space-6); font-size: 13px; color: var(--text-sub); }
+.cpf-bar-name { width: 196px; flex-shrink: 0; display: flex; align-items: center; gap: var(--space-8); font-size: 14px; color: var(--text); }
+.cpf-bar-sign { display: inline-flex; width: 44px; justify-content: center; flex: none; }
 .cpf-bar-track { flex: 1; height: 8px; border-radius: var(--r-4); background: var(--paper-sunk); overflow: hidden; }
-.cpf-bar-fill { height: 100%; border-radius: var(--r-4); transition: width .4s ease; }
-.cpf-bar-n { width: 16px; text-align: right; font-size: 12px; font-weight: 700; color: var(--text); }
+.cpf-bar-fill { height: 100%; border-radius: var(--r-4); background: var(--nd); transition: width .4s ease; }
+.cpf-bar-n { width: 16px; text-align: right; font-size: 13px; font-weight: 700; color: var(--text); }
 .cpf-bar-n.is-zero { color: var(--text-faint); }
-.cpf-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; padding-top: var(--space-12); border-top: 1px solid var(--paper-sunk); }
-.cpf-delta { font-size: 12px; font-weight: 700; color: var(--text-sub); }
-.cpf-delta.is-better { color: var(--ok); }
-.cpf-foot-link { align-self: flex-start; min-height: 44px; }
-.cpf-warm-text { font-family: var(--serif); font-size: 17px; line-height: 1.45; color: var(--text); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-.cpf-needrows { display: flex; flex-direction: column; margin-bottom: var(--space-12); }
-.cpf-needrow { display: flex; align-items: center; gap: var(--space-8); width: 100%; min-height: 44px; padding: var(--space-6) var(--space-2); background: none; border: none; cursor: pointer; text-align: left; font: inherit; color: inherit; }
-.cpf-needrow-chev { font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
-.cpf-needrow-text { margin: 0 0 var(--space-12); line-height: 1.6; }
+.cpf-needrows { display: flex; flex-direction: column; margin-bottom: var(--space-20); }
+.cpf-needrow { display: flex; align-items: center; gap: var(--space-8); width: 100%; min-height: 48px; padding: var(--space-6) var(--space-2); background: none; border: none; border-bottom: 1px solid var(--paper-sunk); cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.cpf-needrow-chev { display: inline-flex; width: 12px; height: 12px; color: var(--text-faint); flex-shrink: 0; }
+.cpf-needrow-chev svg { width: 12px; height: 12px; }
+.cpf-needrow-text { margin: var(--space-8) 0 var(--space-12) 52px; line-height: 1.6; }
 .cpf-sheet-empty { margin: 0 0 var(--space-16); line-height: 1.6; }
-.cpf-sheet-lists { display: flex; flex-direction: column; gap: var(--space-16); }
-.cpf-prow { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.cpf-sheet-lists { display: flex; flex-direction: column; gap: var(--space-24); }
+.cpf-plist { display: flex; flex-direction: column; gap: var(--space-8); }
+.cpf-plist-title { margin: 0; }
+.cpf-plist-rows { border-top: 1px solid var(--panel-line); }
+.cpf-plist-rows > .cpf-prow { border-bottom: 1px solid var(--paper-sunk); }
+.cpf-prow { grid-template-columns: 44px minmax(0, 1fr) auto auto; column-gap: 12px; }
 .cpf-prow > .ds-chev { grid-column: -1; }
-.cpf-dlg-count { margin-right: auto; }
-@media (max-width: 767px), (pointer: coarse) and (max-height: 500px) {
-  .cpf-bar-name { width: 148px; font-size: 14px; white-space: nowrap; }
-}
 
-/* Компьютер: у карточек-переходов («Мой путь», «Мой портрет», «Достижения») справа «→», как до волн; телефон — «›». */
+/* Компьютер: у секции достижений справа «→», как до волн; телефон — «›». */
 @media (min-width: 768px) and (min-height: 501px), (min-width: 768px) and (pointer: fine) {
-  .cpf-card > .ds-head-row .ds-chev:empty::before { content: '→'; }
+  .cpf-sec > .ds-head-row .ds-chev:empty::before { content: '→'; }
 }
 
 /* «Активность» на компьютере (#925): клетка — квадрат 22px, сетка и подписи месяцев стоят у левого края в тех же
@@ -161,4 +228,8 @@
   .cpf-heat-months { grid-auto-rows: auto; }
   .cpf-heat-legend { justify-content: flex-start; }
 }
-.cpf-title { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* Сцена портрета в герое листа на узком листе — крупнее знака (96): пять полосок со слоями читают, а не узнают. */
+@container pa-sheet (max-width: 440px) {
+  .pa-sheet.pa-sheet--scene:has(.scn-portrait) > .pa-sheet-art { width: 132px; }
+}

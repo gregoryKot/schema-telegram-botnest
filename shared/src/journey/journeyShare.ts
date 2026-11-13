@@ -3,32 +3,30 @@
 // (шаринг из детального вида записи).
 // Возвращает готовые пропсы для per-frontend ShareCardSheet.
 import { useMemo, useState } from 'react';
-import { NEED_COLORS } from '../needs/needColors';
 import {
   type JourneyItem,
   type JourneyPeriod,
-  JOURNEY_GROUP_COLORS,
-  JOURNEY_NEED_EMOJI,
   JOURNEY_NEED_NAMES,
   JOURNEY_PERIOD_SUBTITLE,
   JOURNEY_PERIOD_TITLE,
-  buildJourneyCardRows,
   formatJourneyDay,
   journeyTypeMeta,
   sortJourneyItems,
 } from './journeyMeta';
 import {
   JOURNEY_CARD_MAX_ROWS,
+  buildJourneyCardRows,
   drawJourneyCard,
 } from '../share/cards/journeyCard';
+import { journeyItemLook } from './journeyLook';
 import { drawJourneyItemCard } from '../share/cards/journeyItemCard';
 import { drawJourneyTotalsCard } from '../share/cards/journeyTotalsCard';
 import { type JourneyStatRow, statRowsFromItems } from './journeyStats';
 import { drawJourneyResultCard } from '../share/cards/journeyResultCard';
 import {
-  drawNeedsRadarCard,
-  type NeedsRadarRow,
-} from '../share/cards/needsRadarCard';
+  drawNeedsDayCard,
+  type NeedsDayRow,
+} from '../share/cards/needsDayCard';
 import {
   buildYsqProfile,
   drawYsqProfileCard,
@@ -37,6 +35,7 @@ import { buildYsqShareText, ysqCardHeadline } from '../share/cards/ysqCard';
 import type { JourneyResult } from './journeyContent';
 import {
   journeyItemShareText,
+  journeyShareEmoji,
   journeyShareText,
   pluralEntries,
 } from '../share/shareTexts';
@@ -47,26 +46,25 @@ export type JourneyShareState =
   | { kind: 'feed' }
   | { kind: 'item'; item: JourneyItem; result: JourneyResult | null };
 
-/** Строки радара из оценок дня трекера — порядок как в NEED_COLORS/JOURNEY_NEED_NAMES.
+/** Строки карточки «Мой день» (пять столбиков, needsDayCard) из оценок трекера — порядок как в JOURNEY_NEED_NAMES.
  * Пропущенная потребность не превращается в ноль (правило «никаких заглушек»).
  * Чистая (тест: пустые/частичные оценки). */
-export function journeyRadarRows(
+export function journeyDayRows(
   ratings: Record<string, number> | undefined,
-): NeedsRadarRow[] {
+): NeedsDayRow[] {
   return Object.keys(JOURNEY_NEED_NAMES).map((id) => {
     const value = ratings?.[id];
     return {
-      emoji: JOURNEY_NEED_EMOJI[id],
+      id,
       label: JOURNEY_NEED_NAMES[id],
-      color: NEED_COLORS[id] ?? '#888',
       value: value ?? null,
       valueText: value !== undefined ? String(value) : '—',
     };
   });
 }
 
-/** Индекс дня для центра радара — среднее по отмеченным, «—» без оценок. Чистая. */
-export function journeyRadarIndex(
+/** Индекс дня карточки — среднее по отмеченным, «—» без оценок. Чистая. */
+export function journeyDayIndex(
   ratings: Record<string, number> | undefined,
 ): string {
   const vals = Object.keys(JOURNEY_NEED_NAMES)
@@ -138,26 +136,34 @@ export function buildJourneySharePayload(
     };
   }
   const meta = journeyTypeMeta(share.item.type);
-  const hex = JOURNEY_GROUP_COLORS[meta.group].hex;
+  // Вид шага на карточке — знак и бумага сущности (journeyLook), как строка ленты и шапка детали.
+  const look = journeyItemLook(share.item);
+  const view = {
+    hue: look?.hue ?? null,
+    sign: look?.sign ?? null,
+    ...(look?.n !== undefined ? { n: look.n } : {}),
+  };
   const day = formatJourneyDay(share.item.at);
-  const shareText = journeyItemShareText(meta.emoji, meta.label, link);
-  // День трекера — не текстовая строка «Привязанность — 7 · …», а радар
-  // потребностей (та же карточка, что у дня/недели трекера).
+  const shareText = journeyItemShareText(
+    journeyShareEmoji(share.item.type),
+    meta.label,
+    link,
+  );
+  // День трекера — не текстовая строка «Привязанность — 7 · …», а столбики
+  // потребностей (та же карточка, что у дня трекера).
   if (share.item.type === 'tracker_day' && share.result?.ratings) {
     const ratings = share.result.ratings;
     const data = {
       eyebrow: 'Трекер потребностей',
       title: 'Мой день',
       subtitle: day,
-      rows: journeyRadarRows(ratings),
-      center: { value: journeyRadarIndex(ratings), caption: 'индекс' },
+      rows: journeyDayRows(ratings),
+      center: { value: journeyDayIndex(ratings), caption: 'индекс' },
       footerLabel: 'Мой путь',
-      accent: 'var(--accent-blue)',
-      accent2: 'var(--accent)',
     };
     return {
       title: 'Результат',
-      draw: (canvas) => drawNeedsRadarCard(canvas, data),
+      draw: (canvas) => drawNeedsDayCard(canvas, data),
       shareText,
       filename: 'journey-result.png',
       eventKind: 'journey_item',
@@ -179,13 +185,7 @@ export function buildJourneySharePayload(
   }
   // Есть содержимое → карточка-результат с текстом; нет — карточка шага.
   if (share.result?.parts.length) {
-    const data = {
-      emoji: meta.emoji,
-      label: meta.label,
-      day,
-      hex,
-      parts: share.result.parts,
-    };
+    const data = { label: meta.label, day, ...view, parts: share.result.parts };
     return {
       title: 'Результат',
       draw: (canvas) => drawJourneyResultCard(canvas, data),
@@ -194,13 +194,7 @@ export function buildJourneySharePayload(
       eventKind: 'journey_item',
     };
   }
-  const data = {
-    emoji: meta.emoji,
-    label: meta.label,
-    sub: subtitle(share.item),
-    day,
-    hex,
-  };
+  const data = { label: meta.label, sub: subtitle(share.item), day, ...view };
   return {
     title: 'Шаг пути',
     draw: (canvas) => drawJourneyItemCard(canvas, data),

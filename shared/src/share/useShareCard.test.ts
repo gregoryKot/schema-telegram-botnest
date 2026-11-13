@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createRef } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { useShareCard } from './useShareCard';
+import { resetCardFontsForTest } from './kit/paperFrame';
 
 const shareCanvasImage = vi.hoisted(() => vi.fn());
 vi.mock('./shareImage', () => ({ shareCanvasImage }));
@@ -36,6 +37,44 @@ function setup(over: Partial<Parameters<typeof useShareCard>[0]> = {}) {
 beforeEach(() => {
   shareCanvasImage.mockReset();
   writeText.mockClear();
+});
+
+describe('useShareCard — шрифты карточки', () => {
+  it('рисует сразу и перерисовывает, когда Literata загрузилась (сохранил → перерисовал)', async () => {
+    resetCardFontsForTest();
+    const load = vi.fn().mockResolvedValue([{}]);
+    Object.defineProperty(document, 'fonts', {
+      value: { load },
+      configurable: true,
+    });
+    const draw = vi.fn();
+    setup({ draw });
+    expect(draw).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(load).toHaveBeenCalledWith(
+      expect.stringContaining('Literata'),
+      expect.any(String),
+    );
+    expect(draw).toHaveBeenCalledTimes(2);
+  });
+
+  it('шрифт не нашёлся (пустой список) — второй отрисовки нет', async () => {
+    resetCardFontsForTest();
+    Object.defineProperty(document, 'fonts', {
+      value: { load: vi.fn().mockResolvedValue([]) },
+      configurable: true,
+    });
+    const draw = vi.fn();
+    setup({ draw });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(draw).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('useShareCard', () => {
@@ -118,7 +157,8 @@ describe('useShareCard', () => {
 
     await act(() => hook.result.current.share());
 
-    expect(hook.result.current.shareLabel).toBe('✓ Картинка сохранена');
+    expect(hook.result.current.shareLabel).toBe('Картинка сохранена');
+    expect(hook.result.current.saved).toBe(true);
     expect(hook.result.current.showText).toBe(false);
     expect(track).toHaveBeenCalledWith('share_result', {
       kind: 'day',

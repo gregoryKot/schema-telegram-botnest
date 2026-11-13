@@ -31,7 +31,8 @@ describe('checkinLook — плитка чек-ина', () => {
     expect(by('Одиноко / страшно')).toEqual({ hue: 28, sign: 'child_care' });
     expect(by('Хочу отключиться')).toEqual({ hue: 240, sign: 'shelter' });
     expect(by('Соглашаюсь, хотя не хочу')).toEqual({ hue: 240, sign: 'yield' });
-    expect(by('Контролирую / превосхожу')).toEqual({ hue: 240, sign: 'shield' });
+    expect(by('Доказываю, что я лучше')).toEqual({ hue: 240, sign: 'shield' });
+    expect(by('Держу всё под контролем')).toEqual({ hue: 240, sign: 'shield' });
     expect(by('Спокойно и устойчиво')).toEqual({ hue: 145, sign: 'together' });
   });
 
@@ -56,6 +57,11 @@ describe('checkinTiles — знак у первой плитки серии', ()
 
   it('свой знак и разные знаки соседей остаются: Flare рядом с ChildCare, три копинга — три знака', () => {
     expect([sign('Одиноко / страшно'), sign('Злюсь / несправедливо')]).toEqual(['child_care', 'flare']);
-    expect([sign('Хочу отключиться'), sign('Соглашаюсь, хотя не хочу'), sign('Контролирую / превосхожу')]).toEqual(['shelter', 'yield', 'shield']);
+    expect([sign('Хочу отключиться'), sign('Соглашаюсь, хотя не хочу'), sign('Доказываю, что я лучше')]).toEqual(['shelter', 'yield', 'shield']);
+  });
+
+  it('гиперкомпенсация — два режима: Самовозвеличиватель и Гиперконтролёр, знак у первого', () => {
+    const over = tiles.filter((t) => t.item.group === 'coping_overcompensation');
+    expect(over.map((t) => [t.item.mode, t.sign])).toEqual([['Самовозвеличиватель', 'shield'], ['Гиперконтролёр', null]]);
   });
 });
