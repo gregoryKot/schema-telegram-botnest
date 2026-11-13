@@ -12,6 +12,8 @@ import {
   buildWeeklyShareText,
 } from '../../../shared/src/share/cards/weeklyCard';
 import { shareCanvasImage } from '../../../shared/src/share/shareImage';
+import { useCardFontsReady } from '../../../shared/src/share/useCardFonts';
+import { CheckIcon } from '../../../shared/src/share/ShareIcon';
 import {
   SHARE_CARD_EVENT,
   SHARE_RESULT_EVENT,
@@ -48,12 +50,14 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
       .catch(() => reportClientError({ message: 'weekly card streak load failed', section: 'weeklyCard' }));
   }, []);
 
+  const fontsReady = useCardFontsReady(); // шрифты карточки пришли — перерисовать
+
   useEffect(() => {
     if (!canvasRef.current || history.length === 0) return;
     try {
       drawWeeklyCard(canvasRef.current, needs, history, streak);
     } catch { reportClientError({ message: 'weekly card draw failed', section: 'weeklyCard' }); } // не роняем экран
-  }, [needs, history, streak]);
+  }, [needs, history, streak, fontsReady]);
 
   async function handleShare() {
     if (!canvasRef.current) return;
@@ -95,19 +99,20 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
         <p className="ds-empty">Нет данных за неделю</p>
       ) : (
         <>
-          <div className="ds-card ds-card--flush sd-canvas">
+          <div className="sd-canvas">
             <canvas ref={canvasRef} className="sd-canvas-el" />
           </div>
 
-          <div className="sd-foot">
+          <div className="sd-foot sd-foot--card">
             <span className="sd-spacer" />
             <button
               onClick={handleShare}
               disabled={sharing}
               className={'ds-btn' + (copied ? ' sd-btn-ok' : '')}
             >
+              {copied && <CheckIcon size={17} />}
               {copied
-                ? '✓ Скопировано'
+                ? 'Скопировано'
                 : sharing
                   ? 'Подготовка…'
                   : 'Поделиться'}
@@ -132,7 +137,8 @@ export function WeeklyCardSheet({ needs, history, onClose }: Props) {
             onClick={() => void copyFallback(fallbackText)}
             className={'ds-btn ds-btn--secondary sd-wide' + (fallbackCopied ? ' is-ok' : '')}
           >
-            {fallbackCopied ? '✓ Скопировано' : 'Скопировать'}
+            {fallbackCopied && <CheckIcon size={17} />}
+            {fallbackCopied ? 'Скопировано' : 'Скопировать'}
           </button>
         </BottomSheetShell>
       )}

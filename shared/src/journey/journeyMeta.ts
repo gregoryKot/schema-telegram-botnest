@@ -19,7 +19,6 @@ export type JourneyGroup =
   'tracker' | 'diary' | 'practice' | 'test' | 'exercise' | 'cards';
 
 export interface JourneyTypeMeta {
-  emoji: string;
   label: string;
   group: JourneyGroup;
 }
@@ -28,27 +27,23 @@ export interface JourneyTypeMeta {
 // (src/bot/journey.service.ts) — тип ниже произведён из этих ключей,
 // поэтому единственное место правки на фронте — этот объект.
 export const JOURNEY_TYPE_META = {
-  tracker_day: { emoji: '📊', label: 'Трекер потребностей', group: 'tracker' },
-  note: { emoji: '📝', label: 'Заметка дня', group: 'tracker' },
-  schema_diary: { emoji: '📔', label: 'Схемный дневник', group: 'diary' },
-  mode_diary: { emoji: '🎭', label: 'Дневник режимов', group: 'diary' },
-  gratitude: { emoji: '🌱', label: 'Благодарность', group: 'diary' },
-  practice: { emoji: '🌿', label: 'Что меня питает', group: 'practice' },
-  plan_done: { emoji: '✅', label: 'Шаг по плану', group: 'practice' },
-  ysq: { emoji: '📋', label: 'Тест схем', group: 'test' },
-  belief_check: { emoji: '⚖️', label: 'Проверка убеждения', group: 'exercise' },
-  letter: { emoji: '✉️', label: LETTER, group: 'exercise' },
-  flashcard: { emoji: '🆘', label: 'Кризисная карточка', group: 'exercise' },
-  safe_place: { emoji: '🏝', label: 'Безопасное место', group: 'exercise' },
-  schema_note: { emoji: '🧩', label: 'Карточка схемы', group: 'cards' },
-  mode_note: { emoji: '🎪', label: 'Карточка режима', group: 'cards' },
-  breathing: { emoji: '🌬', label: 'Дыхание', group: 'exercise' },
-  grounding: {
-    emoji: '🌍',
-    label: 'Заземление 5-4-3-2-1',
-    group: 'exercise',
-  },
-  stop: { emoji: '🛑', label: 'Техника «Стоп»', group: 'exercise' },
+  tracker_day: { label: 'Трекер потребностей', group: 'tracker' },
+  note: { label: 'Заметка дня', group: 'tracker' },
+  schema_diary: { label: 'Схемный дневник', group: 'diary' },
+  mode_diary: { label: 'Дневник режимов', group: 'diary' },
+  gratitude: { label: 'Благодарность', group: 'diary' },
+  practice: { label: 'Что меня питает', group: 'practice' },
+  plan_done: { label: 'Шаг по плану', group: 'practice' },
+  ysq: { label: 'Тест схем', group: 'test' },
+  belief_check: { label: 'Проверка убеждения', group: 'exercise' },
+  letter: { label: LETTER, group: 'exercise' },
+  flashcard: { label: 'Кризисная карточка', group: 'exercise' },
+  safe_place: { label: 'Безопасное место', group: 'exercise' },
+  schema_note: { label: 'Карточка схемы', group: 'cards' },
+  mode_note: { label: 'Карточка режима', group: 'cards' },
+  breathing: { label: 'Дыхание', group: 'exercise' },
+  grounding: { label: 'Заземление 5-4-3-2-1', group: 'exercise' },
+  stop: { label: 'Техника «Стоп»', group: 'exercise' },
 } satisfies Record<string, JourneyTypeMeta>;
 
 export type JourneyItemType = keyof typeof JOURNEY_TYPE_META;
@@ -92,11 +87,7 @@ export interface JourneyData {
   items: JourneyItem[];
 }
 
-const UNKNOWN_META: JourneyTypeMeta = {
-  emoji: '✨',
-  label: 'Запись',
-  group: 'exercise',
-};
+const UNKNOWN_META: JourneyTypeMeta = { label: 'Запись', group: 'exercise' };
 
 /** Мета типа с фолбэком: новый тип с бэка не роняет и не прячет ленту. */
 export function journeyTypeMeta(type: string): JourneyTypeMeta {
@@ -116,20 +107,6 @@ export const JOURNEY_FILTERS: Array<{
   { id: 'exercise', label: 'Упражнения' },
   { id: 'cards', label: 'Карточки' },
 ];
-
-// Цвет группы: css — переменная для UI (есть в обоих фронтендах),
-// hex — тот же цвет для canvas-карточек (canvas не резолвит var()).
-export const JOURNEY_GROUP_COLORS: Record<
-  JourneyGroup,
-  { css: string; hex: string }
-> = {
-  tracker: { css: 'var(--accent-blue)', hex: '#60a5fa' },
-  diary: { css: 'var(--accent)', hex: '#a78bfa' },
-  practice: { css: 'var(--accent-green)', hex: '#34d399' },
-  test: { css: 'var(--accent-yellow)', hex: '#facc15' },
-  exercise: { css: 'var(--accent-orange)', hex: '#fb923c' },
-  cards: { css: 'var(--accent-indigo)', hex: '#818cf8' },
-};
 
 // Период ленты живёт в journeyPeriod (правило №10) — реэкспорт сохраняет
 // единственный вход для фронтендов.
@@ -170,17 +147,6 @@ export const JOURNEY_NEED_NAMES: Record<string, string> = {
   expression: 'Выражение чувств',
   play: 'Спонтанность',
   limits: 'Границы',
-};
-
-// Эмодзи потребностей для радара трекера в «Моём пути» — та же пятёрка,
-// что и JOURNEY_NEED_NAMES/NEED_COLORS (shared/src/needs/needColors.ts). Реестр-сверка
-// (правило №4) — journeyMeta.test.ts.
-export const JOURNEY_NEED_EMOJI: Record<string, string> = {
-  attachment: '🤝',
-  autonomy: '🧭',
-  expression: '💬',
-  play: '🎉',
-  limits: '⚖️',
 };
 
 export interface JourneySubtitleSources {
@@ -261,27 +227,4 @@ export function groupJourneyByMonth(
 /** «21 июля» без года — для компактной строки таймлайна. Чистая. */
 export function formatJourneyDay(at: string): string {
   return formatDateString(at, { day: 'numeric', month: 'long' });
-}
-
-export interface JourneyCardRow {
-  emoji: string;
-  label: string;
-  day: string;
-  hex: string;
-}
-
-/** Готовые строки для canvas-карточки «лента по времени». Чистая. */
-export function buildJourneyCardRows(
-  items: readonly JourneyItem[],
-  max = 8,
-): JourneyCardRow[] {
-  return items.slice(0, max).map((item) => {
-    const meta = journeyTypeMeta(item.type);
-    return {
-      emoji: meta.emoji,
-      label: meta.label,
-      day: formatJourneyDay(item.at),
-      hex: JOURNEY_GROUP_COLORS[meta.group].hex,
-    };
-  });
 }

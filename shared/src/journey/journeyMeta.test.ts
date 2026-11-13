@@ -12,31 +12,26 @@ import {
   formatJourneyDate,
   formatJourneyDay,
   groupJourneyByMonth,
-  buildJourneyCardRows,
-  JOURNEY_GROUP_COLORS,
 } from './journeyMeta';
 import { forEachTimeZone } from '../utils/timeZone.test-helpers';
 
 describe('JOURNEY_TYPE_META — быстрые практики', () => {
-  it('breathing: эмодзи, подпись, группа exercise', () => {
+  it('breathing: подпись и группа exercise (без эмодзи — знак шага в journeyLook)', () => {
     expect(JOURNEY_TYPE_META.breathing).toEqual({
-      emoji: '🌬',
       label: 'Дыхание',
       group: 'exercise',
     });
   });
 
-  it('grounding: эмодзи, подпись, группа exercise', () => {
+  it('grounding: подпись и группа exercise (без эмодзи — знак шага в journeyLook)', () => {
     expect(JOURNEY_TYPE_META.grounding).toEqual({
-      emoji: '🌍',
       label: 'Заземление 5-4-3-2-1',
       group: 'exercise',
     });
   });
 
-  it('stop: эмодзи, подпись, группа exercise', () => {
+  it('stop: подпись и группа exercise (без эмодзи — знак шага в journeyLook)', () => {
     expect(JOURNEY_TYPE_META.stop).toEqual({
-      emoji: '🛑',
       label: 'Техника «Стоп»',
       group: 'exercise',
     });
@@ -50,7 +45,6 @@ describe('JOURNEY_TYPE_META — быстрые практики', () => {
 
   it('незнакомый тип с бэка → нейтральный фолбэк, лента не падает', () => {
     expect(journeyTypeMeta('совсем_новый_тип')).toEqual({
-      emoji: '✨',
       label: 'Запись',
       group: 'exercise',
     });
@@ -202,38 +196,5 @@ describe('groupJourneyByMonth', () => {
 
   it('пустая лента → без единой группы (не [{label: undefined}])', () => {
     expect(groupJourneyByMonth([], now)).toEqual([]);
-  });
-});
-
-describe('buildJourneyCardRows', () => {
-  it('режет по максимуму и подставляет эмодзи/подпись/цвет группы', () => {
-    const rows = buildJourneyCardRows(
-      Array.from({ length: 12 }, (_, i) => ({
-        type: 'plan_done',
-        at: `2026-07-${String(i + 1).padStart(2, '0')}`,
-      })),
-      8,
-    );
-    expect(rows).toHaveLength(8);
-    expect(rows[0]).toEqual({
-      emoji: '✅',
-      label: 'Шаг по плану',
-      day: '1 июля',
-      hex: JOURNEY_GROUP_COLORS.practice.hex,
-    });
-  });
-
-  it('дефолтный максимум — 8 строк даже если записей больше', () => {
-    const items = Array.from({ length: 20 }, () => ({
-      type: 'note',
-      at: '2026-07-01',
-    }));
-    expect(buildJourneyCardRows(items)).toHaveLength(8);
-  });
-
-  it('записей меньше максимума — отдаёт все', () => {
-    expect(
-      buildJourneyCardRows([{ type: 'note', at: '2026-07-01' }], 8),
-    ).toHaveLength(1);
   });
 });

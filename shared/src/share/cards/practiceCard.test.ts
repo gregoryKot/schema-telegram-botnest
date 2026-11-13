@@ -5,36 +5,7 @@
 // проверяем, что рисование не падает и высота канваса посчиталась (>0).
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { drawPracticeCard, type PracticeCardData } from './practiceCard';
-
-function mockCtx() {
-  return {
-    scale: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    fillRect: vi.fn(),
-    fillText: vi.fn(),
-    roundRect: vi.fn(),
-    arc: vi.fn(),
-    clip: vi.fn(),
-    // Появились с редизайном карточек (share/kit/frame.ts): рамка ставит
-    // трансформацию под devicePixelRatio и рисует радиальные подсветки.
-    setTransform: vi.fn(),
-    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
-    measureText: vi.fn((s: string) => ({ width: s.length * 7 })),
-    fillStyle: '',
-    strokeStyle: '',
-    font: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-  };
-}
+import { mockCardCtx as mockCtx } from './canvas.test-helpers';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -82,5 +53,39 @@ describe('drawPracticeCard', () => {
     const withoutCount = document.createElement('canvas');
     drawPracticeCard(withoutCount, PRACTICE, null);
     expect(withCount.height).toBeGreaterThan(withoutCount.height);
+  });
+});
+
+describe('practiceLook — лист своей практики', () => {
+  it('дыхание — бирюза и Breath, заземление и «Стоп» — свои, незнакомая — дыхание', async () => {
+    const { practiceLook } = await import('./practiceCard');
+    expect(practiceLook('breathing')).toEqual({ hue: 195, sign: 'breath' });
+    expect(practiceLook('grounding')).toEqual({ hue: 135, sign: 'grounded' });
+    expect(practiceLook('stop')).toEqual({ hue: 70, sign: 'pause' });
+    expect(practiceLook(undefined)).toEqual({ hue: 195, sign: 'breath' });
+  });
+
+  it('лид переносится целиком: все слова лида на карточке', async () => {
+    const { canvasWithMockCtx } = await import('./canvas.test-helpers');
+    const { drawPracticeCard } = await import('./practiceCard');
+    const { canvas, ctx } = canvasWithMockCtx();
+    const lead =
+      'Вдох короче выдоха — так тело получает сигнал, что опасности нет';
+    drawPracticeCard(
+      canvas,
+      {
+        id: 'breathing',
+        emoji: '🌬',
+        title: 'Дыхание 4-4-6',
+        subtitle: lead,
+        steps: [],
+      },
+      null,
+    );
+    const sub = ctx.printed
+      .filter((p) => p.font.startsWith('13.5px'))
+      .map((p) => p.text)
+      .join(' ');
+    expect(sub).toBe(lead);
   });
 });

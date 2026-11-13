@@ -5,23 +5,28 @@
 // отправили.
 // Персональные данные — только агрегаты (средние баллы по схемам), без ответов
 // на отдельные вопросы.
-//
+// Лист глины схем со знаком Layers; группа — знак потребности, полосы — цвет данных.
 // Чистая логика (подписи, группировка, высота) отделена от canvas-отрисовки и
 // покрыта тестами (ysqProfileCard.test.ts).
 import {
+  CARD_LOOK,
   CARD_PAD,
   CARD_W,
   FOOTER_H,
+  INK,
   beginCard,
   header,
   headerHeight,
+  headerLines,
   footer,
   cardFont,
+  inkAlpha,
+  needDataInk,
+  needTextInk,
+  sign,
   tracking,
   progressBar,
-  measureWrap,
 } from '../cardKit';
-import { NEED_COLORS } from '../../needs/needColors';
 import { SCHEMAS, DOMAIN_ORDER, NEED_LABELS } from '../../hooks/ysqSchemas';
 import { isSchemaScoreActive, avgBarPct } from '../../hooks/ysqScoring';
 
@@ -34,7 +39,7 @@ export interface YsqProfileRow {
 export interface YsqProfileDomain {
   needId: string;
   label: string;
-  /** hex-цвет потребности (NEED_COLORS) — общий для шапки группы и её баров. */
+  /** Цвет данных потребности (палитра данных) — общий для её баров. */
   color: string;
   rows: YsqProfileRow[];
 }
@@ -71,7 +76,7 @@ export function buildYsqProfile(
   return DOMAIN_ORDER.map((needId) => ({
     needId,
     label: NEED_LABELS[needId],
-    color: NEED_COLORS[needId] ?? '#a78bfa',
+    color: needDataInk(needId) ?? INK.sub,
     rows: SCHEMAS.filter((s) => s.needId === needId)
       .map((s) => {
         const sc = scores[s.name] ?? { pct5plus: 0, avg: 0 };
@@ -93,7 +98,8 @@ const NAME_W = 150;
 const BAR_X = CARD_PAD + NAME_W + 8;
 const BAR_W = CARD_W - CARD_PAD - 34 - BAR_X;
 const ROW_H = 26;
-const GROUP_HEAD_H = 26;
+const GROUP_HEAD_H = 30;
+const GROUP_SIGN_W = 36;
 const GROUP_GAP = 8;
 // Пояснительная строка под шапкой («средний балл от 1 до 6 · …»).
 const HINT_H = 30;
@@ -130,26 +136,21 @@ export function drawYsqProfileCard(
   domains: YsqProfileDomain[],
   opts: YsqProfileCardOpts,
 ) {
-  const titleLines = Math.min(
-    2,
-    measureWrap(canvas, opts.headline, CARD_W - CARD_PAD * 2, 23, 'bold')
-      .length,
-  );
-  const H = ysqProfileCardHeight(domains, Boolean(opts.dateLabel), titleLines);
-  const c = beginCard(canvas, H, {
-    accent: 'var(--accent)',
-    accent2: 'var(--accent-blue)',
-  });
-  const { ctx, th } = c;
-
-  const contentY = header(c, {
+  const head = {
     eyebrow: 'Тест на схемы',
     title: opts.headline,
     subtitle: opts.dateLabel ?? undefined,
-  });
+    sign: CARD_LOOK.ysq.sign,
+  };
+  const titleLines = headerLines(canvas.getContext('2d')!, head).title.length;
+  const H = ysqProfileCardHeight(domains, Boolean(opts.dateLabel), titleLines);
+  const c = beginCard(canvas, H, { hue: CARD_LOOK.ysq.hue });
+  const { ctx } = c;
 
-  ctx.font = cardFont(10.5);
-  ctx.fillStyle = th.fg(0.4);
+  const contentY = header(c, head);
+
+  ctx.font = cardFont(11);
+  ctx.fillStyle = INK.sub;
   ctx.textAlign = 'left';
   ctx.fillText(
     domains.length
@@ -160,8 +161,8 @@ export function drawYsqProfileCard(
   );
 
   if (domains.length === 0) {
-    ctx.font = cardFont(13);
-    ctx.fillStyle = th.fg(0.55);
+    ctx.font = cardFont(13.5);
+    ctx.fillStyle = INK.text;
     ctx.fillText(
       'По ответам ни одна схема не выделилась',
       CARD_PAD,
@@ -177,12 +178,12 @@ export function drawYsqProfileCard(
   // Пунктир порога «4 из 6» с меткой; закрашенная часть бара ложится поверх,
   // так что линия видна только там, куда бар не дотянулся.
   const thresholdX = BAR_X + (avgBarPct(4) / 100) * BAR_W;
-  ctx.font = cardFont(9);
-  ctx.fillStyle = th.fg(0.35);
+  ctx.font = cardFont(10);
+  ctx.fillStyle = INK.sub;
   ctx.textAlign = 'center';
   ctx.fillText('4', thresholdX, chartTop - 4);
   ctx.textAlign = 'left';
-  ctx.strokeStyle = th.fg(0.16);
+  ctx.strokeStyle = inkAlpha(0.22);
   ctx.lineWidth = 1;
   ctx.setLineDash([3, 4]);
   ctx.beginPath();
@@ -193,20 +194,18 @@ export function drawYsqProfileCard(
 
   let y = chartTop;
   for (const d of domains) {
-    ctx.beginPath();
-    ctx.arc(CARD_PAD + 3, y + 13, 3, 0, Math.PI * 2);
-    ctx.fillStyle = d.color;
-    ctx.fill();
-    ctx.font = cardFont(10, 'bold');
-    ctx.fillStyle = th.fg(0.6);
+    // Шапка группы — знак потребности, которую питает домен, и её имя.
+    sign(c, `need_${d.needId}`, CARD_PAD, y + 4, GROUP_SIGN_W);
+    ctx.font = cardFont(10.5, 'bold');
+    ctx.fillStyle = INK.sub;
     tracking(ctx, 0.6);
-    ctx.fillText(d.label.toUpperCase(), CARD_PAD + 12, y + 16);
+    ctx.fillText(d.label.toUpperCase(), CARD_PAD + GROUP_SIGN_W + 8, y + 17);
     tracking(ctx, 0);
     y += GROUP_HEAD_H;
 
     for (const r of d.rows) {
-      ctx.font = cardFont(11.5, 'bold');
-      ctx.fillStyle = th.fg(0.92);
+      ctx.font = cardFont(12, 'bold');
+      ctx.fillStyle = INK.text;
       ctx.textAlign = 'left';
       ctx.fillText(r.label, CARD_PAD, y + 15);
 
@@ -219,8 +218,8 @@ export function drawYsqProfileCard(
         d.color,
       );
 
-      ctx.font = cardFont(11, 'bold');
-      ctx.fillStyle = d.color;
+      ctx.font = cardFont(11.5, 'bold');
+      ctx.fillStyle = needTextInk(d.needId);
       ctx.textAlign = 'right';
       ctx.fillText(
         r.avg >= 1 ? r.avg.toFixed(1) : '—',
