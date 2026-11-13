@@ -141,7 +141,7 @@ export function SafePlaceEx({
         <CrisisCard surface="safe_place" />
       )}
       {error && (
-        <PaperAlert sign="haven" className="ex2-alert" title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз')} />
+        <PaperAlert sign="haven" className="ex2-alert" title={tr('Не удалось сохранить. Проверь связь и попробуй ещё раз.', 'Не удалось сохранить. Проверьте связь и попробуйте ещё раз.')} />
       )}
       <div className="ex2-foot">
         <span className="ex2-spacer" />

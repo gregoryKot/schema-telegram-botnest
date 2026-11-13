@@ -247,7 +247,8 @@ describe('BookingAdminController.status', () => {
   it('отражает конфиг robokassaTest/emailFallback из ConfigService', async () => {
     const { controller } = makeController({
       ROBOKASSA_IS_TEST: 'true',
-      RESEND_API_KEY: 'k',
+      POSTBOX_ACCESS_KEY_ID: 'k',
+      POSTBOX_SECRET_ACCESS_KEY: 's',
       ADMIN_EMAIL: 'a@b.ru',
     });
     const status = await controller.status(ADMIN_KEY);

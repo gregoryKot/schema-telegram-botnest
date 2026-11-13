@@ -16,6 +16,7 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthContext, type AuthState } from '../auth/authContext';
+import { AddressFormContext } from '../utils/addressForm';
 import { LoginPage } from './LoginPage';
 import { rememberReturnTo, AUTH_RETURN_KEY } from '../auth/returnTo';
 import { wipeAfterAccountDeletion } from '../../../shared/src/account/accountDeletion';
@@ -82,6 +83,32 @@ function DiaryProbe() {
   return <div>diary-page {useLocation().search}</div>;
 }
 
+// Подзаголовок берёт форму там же, где строки согласия ниже (useTr), а не стоит на «вы» один.
+describe('LoginPage — подзаголовок в форме человека', () => {
+  it.each([
+    ['ty', 'Войди, чтобы продолжить', /подтверждаешь/],
+    ['vy', 'Войдите, чтобы продолжить', /подтверждаете/],
+  ] as const)('форма %s: «%s», согласие — в той же форме', (form, sub, consent) => {
+    render(
+      <AddressFormContext.Provider value={{ form, setForm: vi.fn() }}>
+        <MemoryRouter initialEntries={['/login']}>
+          <AuthContext.Provider value={authValue()}>
+            <LoginPage />
+          </AuthContext.Provider>
+        </MemoryRouter>
+      </AddressFormContext.Provider>,
+    );
+    expect(screen.getByText(`${sub}. Вход через Telegram открывает тот же аккаунт, что в боте и приложении в Telegram`)).toBeTruthy();
+    expect(screen.getByTestId('login-consent-note').textContent).toMatch(consent);
+  });
+
+  it('без провайдера (так живёт /login) весь экран в одной форме', () => {
+    renderPage();
+    expect(screen.getByText(/^Войди, чтобы продолжить\. Вход через Telegram/)).toBeTruthy();
+    expect(screen.getByTestId('login-consent-note').textContent).toMatch(/подтверждаешь/);
+  });
+});
+
 // QA 2026-11, К2: после удаления аккаунта экран входа писал «Вход устарел —
 // данные на месте»: человек решал, что удаление не прошло.
 describe('LoginPage — сразу после удаления аккаунта', () => {
@@ -117,9 +144,10 @@ describe('LoginPage — уже вошедший пользователь', () =>
 });
 
 describe('LoginPage — обычный браузер (не Telegram)', () => {
-  it('показывает способы входа сайта: ВКонтакте и почту', () => {
+  it('показывает способы входа сайта: ВКонтакте, Яндекс и почту', () => {
     renderPage();
     expect(screen.getByRole('link', { name: /Войти через ВКонтакте/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Войти через Яндекс/ }).getAttribute('href')).toBe('/api/auth/yandex');
     expect(screen.getByRole('button', { name: /email/i })).toBeTruthy();
   });
 
@@ -136,7 +164,7 @@ describe('LoginPage — обычный браузер (не Telegram)', () => {
       /api\/auth\/telegram|api\/auth\/google|oauth\.telegram|start=login_/,
     );
     expect(screen.getByTestId('login-google-note').textContent).toContain('с той же почтой');
-    expect(screen.getByTestId('login-telegram-note').textContent).toContain('почту или VK ID');
+    expect(screen.getByTestId('login-telegram-note').textContent).toContain('почту, VK ID или Яндекс ID');
     // Во вкладке браузера билет входа не выписывается — страница молчит.
     expect(fetchMock).not.toHaveBeenCalled();
   });

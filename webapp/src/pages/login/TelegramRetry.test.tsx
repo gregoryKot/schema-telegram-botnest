@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { TelegramRetry } from './TelegramRetry';
+import { glueSpaces } from '../../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 
 afterEach(cleanup);
 
@@ -18,10 +19,10 @@ describe('TelegramRetry', () => {
 
   it('повтор идёт: кнопка занята, заголовок на месте', () => {
     render(<TelegramRetry loading error={null} onRetry={() => {}} />);
-    const btn = screen.getByRole('button', { name: 'Загрузка...' }) as HTMLButtonElement;
+    const btn = screen.getByRole('button', { name: 'Загрузка…' }) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
     expect(btn.getAttribute('aria-busy')).toBe('true');
-    expect(screen.getByRole('heading', { name: 'Не удалось войти автоматически' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: glueSpaces('Не удалось войти автоматически') })).toBeTruthy();
   });
 
   it('слот кода — «Ошибка 401», без тела ответа', () => {

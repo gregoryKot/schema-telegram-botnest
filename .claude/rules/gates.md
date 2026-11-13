@@ -44,7 +44,7 @@ OOM у лимита кучи ~2 ГБ в контейнере агента (PR #8
 - Снизил размер — зафиксируй прогресс, чтобы файл нельзя было снова
   раздуть: `node scripts/check-file-size-ratchet.mjs --update`. Долг
   (файлы сверх 300) заморожен в бейслайне и обязан таять, а не расти.
-- Исключения: `game/` (заморожён), `dist/`, `*.spec/.test`, `*.d.ts`,
+- Исключения: `dist/`, `*.spec/.test`, `*.d.ts`,
   vendor. Крупный дата-файл (контент) — осознанное исключение через
   `--update`, видно в диффе PR.
 - Гейт, упёршийся в потолок, дробится на движок + модуль правил
@@ -174,6 +174,10 @@ coverage-бейслайны — по 20. Просить
   `src/test-support/gates/main-ruleset.spec.ts`; живой ruleset и настройки
   слияния с копией сверяет ночью `scripts/check-live-ruleset.mjs` (джоба
   `live-ruleset` в `nightly.yml`).
+  Тем же PR правятся список джоб в `src/test-support/gates/job-timeouts.spec.ts`
+  и записанный ответ GitHub `test/fixtures/recorded/github-rules-branch-main.json`
+  (правка — в его `.meta.json`): с копией его сверяет
+  `src/test-support/gates/live-ruleset.spec.ts`.
 - **Параллельные миграции текстово не конфликтуют, но применяются по времени** —
   вторая обязана быть корректной поверх первой, а не поверх того `main`, от
   которого её писали.

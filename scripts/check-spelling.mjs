@@ -16,36 +16,22 @@
 // ищут видимую строку и чинятся вместе с ней, а в фикстурах законны любые
 // имена («Оффлайн Иван» в данных теста — не текст интерфейса).
 //
-// Новое правило — строка в RULES плюс образец и контрольный образец в
+// Новое правило — строка в RULES (spelling-rules.mjs) плюс образец и контрольный образец в
 // src/test-support/gates/spelling.spec.ts.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { stripComments } from './gate-strip-comments.mjs';
+import { RULES } from './spelling-rules.mjs';
 
 const ROOT = join(import.meta.dirname, '..');
 
 // Тексты продукта: бэкенд (бот, уведомления, письма), оба фронтенда, shared, игра.
-const SCAN_DIRS = [
-  'src',
-  'webapp/src',
-  'shared/src',
-  'game/src',
-];
+const SCAN_DIRS = ['src', 'webapp/src', 'shared/src', 'game/src'];
 const EXT_RE = /\.(ts|tsx|js|mjs)$/;
 const SKIP_FILE_RE = /\.(spec|test)\.(ts|tsx|js|mjs)$|\.d\.ts$/;
 // Инфраструктура тестов: фикстуры и хелперы, пользователю не показываются.
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'test-support']);
-
-export const RULES = [
-  {
-    id: 'oflain',
-    // «оффлайн», «Оффлайн-клиент», «оффлайновый», «ОФФЛАЙН».
-    pattern: /оффлайн/giu,
-    canonical: 'офлайн',
-    hint: 'По словарю — «офлайн» с одной «ф», как «онлайн».',
-  },
-];
 
 function walk(dir, acc = []) {
   let entries;
@@ -71,12 +57,14 @@ function walk(dir, acc = []) {
   return acc;
 }
 
-export function scanText(text) {
+/** `file` — путь от корня: по нему правило с `skip` пропускает свою слепую зону. */
+export function scanText(text, file = '') {
   const found = [];
   stripComments(text, false)
     .split('\n')
     .forEach((line, i) => {
       for (const rule of RULES) {
+        if (rule.skip?.test(file)) continue;
         for (const m of line.matchAll(rule.pattern)) {
           found.push({ ln: i + 1, rule, text: m[0] });
         }
@@ -95,7 +83,7 @@ function main() {
     } catch {
       continue;
     }
-    for (const f of scanText(text)) found.push({ file, ...f });
+    for (const f of scanText(text, file)) found.push({ file, ...f });
   }
 
   if (found.length) {

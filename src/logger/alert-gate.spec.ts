@@ -21,7 +21,7 @@ describe('AlertGate — анонимный подбюджет', () => {
     const anon = Array.from({ length: 50 }, (_, i) =>
       gate.decide(
         `vk callback error: ${'x'.repeat(i)}`,
-        'AuthOauthController',
+        'OAuthCallbackService',
         T0,
       ),
     );
@@ -49,12 +49,12 @@ describe('AlertGate — анонимный подбюджет', () => {
     for (let i = 0; i < ANON_BUDGET + 4; i++)
       gate.decide(
         `vk callback error: ${'q'.repeat(i)}`,
-        'AuthOauthController',
+        'OAuthCallbackService',
         T0,
       );
     const next = gate.decide(
       'vk callback error: свежая',
-      'AuthOauthController',
+      'OAuthCallbackService',
       T0 + 61_000,
     );
     expect(next).toEqual({
@@ -142,7 +142,7 @@ describe('AlertGate — денежные алерты', () => {
 // класс без строки в ANON_ALERT_CONTEXTS молча вернул бы его в основной бюджет.
 // Сверка по исходнику: импорт провайдеров тянет ESM-зависимости (jose).
 const CONTEXT_FILES: Record<string, string> = {
-  AuthOauthController: 'auth/auth-oauth.controller.ts',
+  OAuthCallbackService: 'auth/oauth-callback.service.ts',
 };
 
 describe('ANON_ALERT_CONTEXTS ↔ имена классов', () => {

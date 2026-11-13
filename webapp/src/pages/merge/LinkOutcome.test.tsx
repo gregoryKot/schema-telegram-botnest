@@ -5,6 +5,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { AddressFormContext } from '../../utils/addressForm';
 import { LinkOutcome } from './LinkOutcome';
+import { glueSpaces } from '../../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -38,14 +39,14 @@ describe('LinkOutcome', () => {
 
   it('denied: доступа никто не получил, мессенджер назван, выход в аккаунт', () => {
     renderOutcome(<LinkOutcome kind="denied" messenger="Telegram" />);
-    expect(screen.getByRole('heading', { name: 'Доступ никто не получил' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: glueSpaces('Доступ никто не получил') })).toBeTruthy();
     expect(screen.getByText(/приложение в Telegram не получило доступ/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'В аккаунт' })).toBeTruthy();
   });
 
   it('wait: текст ошибки — заголовок, знак Cup, без «Повторить»', () => {
     renderOutcome(<LinkOutcome kind="wait" messenger="MAX" error="Код не найден или истёк" />);
-    expect(screen.getByRole('heading', { name: 'Код не найден или истёк' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: glueSpaces('Код не найден или истёк') })).toBeTruthy();
     expect(sign()).toBe('cup');
     expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull();
     expect(screen.getByRole('button', { name: 'В аккаунт' })).toBeTruthy();

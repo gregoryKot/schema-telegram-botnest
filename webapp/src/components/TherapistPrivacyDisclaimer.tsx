@@ -1,12 +1,12 @@
 import { PrivacyArt, PrivacyItem } from './TherapistPrivacyParts';
 import { useHistorySheet } from '../hooks/useHistorySheet';
 import { useTr } from '../utils/addressForm';
+import { glueSpaces } from '../../../shared/src/utils/typo';
 import { markTherapistDisclaimerSeen } from './therapistDisclaimerSeen';
+import { PRIVACY_TILE_LOOK, type PrivacyTile } from './therapist/cabinetLook';
 import '../styles/sheet-tasks.css';
 
-interface Props {
-  onDone: () => void;
-}
+interface Props { onDone: () => void }
 
 /**
  * Первый вход в кабинет терапевта: короткий этический дисклеймер о том, что
@@ -16,6 +16,16 @@ interface Props {
 export function TherapistPrivacyDisclaimer({ onDone }: Props) {
   const goBack = useHistorySheet(onDone);
   const tr = useTr();
+
+  // Тексты гарантий — те же; порядок плиток 2×2 задаёт PRIVACY_TILE_LOOK (соседние — дальше 40°).
+  const items: Record<PrivacyTile, [string, string]> = {
+    encrypt: ['Шифрование',
+      'Всё чувствительное — заметки, записи о сессиях, дневники — хранится в зашифрованном виде (AES-256-GCM). Ключ лежит отдельно от базы, поэтому даже при её утечке прочитать данные без него невозможно.'],
+    access: [tr('Только твой доступ', 'Только ваш доступ'), tr('Данные каждого клиента видишь только ты — они привязаны к твоему аккаунту и не пересекаются с чужими.', 'Данные каждого клиента видите только вы — они привязаны к вашему аккаунту и не пересекаются с чужими.')],
+    login: ['Защищённый вход',
+      'Вход подтверждает сервис, через который он сделан: Telegram, MAX, Google, VK или почта. Попытки подделать сессию мы отслеживаем и отклоняем.'],
+    delete: ['Полное удаление', tr('Если решишь удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.', 'Если решите удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.')],
+  };
 
   function acknowledge() {
     markTherapistDisclaimerSeen();
@@ -28,7 +38,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
 
         <div className="sk-priv-head">
           <PrivacyArt />
-          <h1 className="ds-h2 sk-priv-title">Немного о заботе о клиентах</h1>
+          <h1 className="ds-h2 sk-priv-title">{glueSpaces('Немного о заботе о клиентах')}</h1>
           <p className="sk-priv-lead">
             {tr('Здесь будет твоя работа с людьми, которые тебе доверились. Одна маленькая привычка поможет бережно сохранить это доверие.', 'Здесь будет ваша работа с людьми, которые вам доверились. Одна маленькая привычка поможет бережно сохранить это доверие.')}
           </p>
@@ -47,7 +57,7 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
           по ним нельзя будет понять, о ком речь.
         </p>
 
-        <div className="ds-card sk-priv-note tone-soft">
+        <div className="sk-priv-note">
           На этом стоят и этические кодексы психологов —{' '}
           <span className="sk-priv-em">РПО</span> и{' '}
           <span className="sk-priv-em">APA (стандарт 6.02)</span>:
@@ -60,15 +70,8 @@ export function TherapistPrivacyDisclaimer({ onDone }: Props) {
         </p>
 
         <div className="sk-priv-list">
-          {[
-            ['Шифрование',
-              'Всё чувствительное — заметки, записи о сессиях, дневники — хранится в зашифрованном виде (AES-256-GCM). Ключ лежит отдельно от базы, поэтому даже при её утечке прочитать данные без него невозможно.'],
-            [tr('Только твой доступ', 'Только ваш доступ'), tr('Данные каждого клиента видишь только ты — они привязаны к твоему аккаунту и не пересекаются с чужими.', 'Данные каждого клиента видите только вы — они привязаны к вашему аккаунту и не пересекаются с чужими.')],
-            ['Защищённый вход',
-              'Вход подтверждается подписью Telegram, а попытки подделать сессию мы отслеживаем и отклоняем.'],
-            ['Полное удаление', tr('Если решишь удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.', 'Если решите удалить аккаунт — данные стираются насовсем, без «скрытых» копий про запас.')],
-          ].map(([title, text]) => (
-            <PrivacyItem key={title} title={title} text={text} />
+          {PRIVACY_TILE_LOOK.map(({ key, hue, sign }) => (
+            <PrivacyItem key={key} title={items[key][0]} text={items[key][1]} hue={hue} sign={sign} />
           ))}
         </div>
 

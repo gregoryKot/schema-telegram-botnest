@@ -71,8 +71,9 @@ describe('«+ Задание / + Заметка»', () => {
     expect(row.className).toBe('tk-quick');
     const [assign, note] = within(row as HTMLElement).getAllByRole('button');
     expect([assign.textContent, note.textContent]).toEqual(['+ Задание', '+ Заметка']);
-    expect(assign.className).toContain('ds-btn--secondary');
-    expect(note.className).toContain('ds-btn--sm');
+    // «+ Задание» — одна залитая на 390 и 1280 (ревью r1), «+ Заметка» — вторичная.
+    expect(assign.className).toBe('ds-btn ds-btn--sm');
+    expect(note.className).toContain('ds-btn--secondary');
     fireEvent.click(assign);
     expect(setShowAssign).toHaveBeenCalledWith(true);
     fireEvent.click(note);
@@ -220,12 +221,14 @@ describe('подтверждение удаления и «Назад» брау
 });
 
 describe('шапка: имя и встреча', () => {
-  it('имя — заголовок ds-h2, аватар — tint с инициалами, корень без модификаторов панели', () => {
+  it('имя — заголовок ds-h2, аватар — кружок бумаги тона клиента с инициалами (b30), корень без модификаторов панели', () => {
     const { container } = renderHeader(detailOf());
     const name = screen.getByRole('heading', { name: 'Анна' });
     expect(name.className).toContain('ds-h2');
     const avatar = container.querySelector('.ds-avatar')!;
-    expect(avatar.className).toContain('tone-tint');
+    expect(avatar.className).toContain('tk-avatar');
+    expect(avatar.className).not.toContain('tone-tint');
+    expect((avatar as HTMLElement).style.getPropertyValue('--h')).not.toBe('');
     expect(avatar.textContent).toBe('А');
     expect(container.querySelector('.tk-head')!.className).toBe('tk-head');
     expect(container.querySelector('.tk-actions-main')).toBeNull();

@@ -16,7 +16,7 @@ import {
   normalizeIntroLead,
 } from './intro-lead.format';
 
-// Потолок на ответ формы: Telegram/Resend могут висеть, а человек ждёт ответа.
+// Потолок на ответ формы: Telegram/Postbox могут висеть, а человек ждёт ответа.
 // Заявка к этому моменту уже в БД; недоставленное подберёт повтор.
 const DELIVERY_TIMEOUT_MS = 10_000;
 function withTimeout(p: Promise<boolean>, ms: number): Promise<boolean> {

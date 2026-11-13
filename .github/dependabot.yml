@@ -16,10 +16,10 @@
 #  - мажор, который осознанно не берём, — в `ignore:` с причиной и условием
 #    возврата (решения владельца — docs/open/ci-tests.md, «Мажоры зависимостей»).
 #
-# ВАЖНО про зелёность бот-PR. CI красит их по построению, и это не поломка:
-#  - PR с правкой зависимостей webapp может упереться в бандл-храповик.
-# Гейты для бота не ослаблены (правило №15). Доводка — вручную, порядок в
-# docs/open/audit-2026-10.md, «Dependabot: доводка бот-PR».
+# Зелёный minor/patch мержит сам dependabot-automerge.yml, отставший от main
+# подтягивает dependabot-catch-up.yml; дни записей разные, час тихий: под
+# `strict` бот-PR, открытые разом, блокируют друг друга.
+# Красный бот-PR, мажоры и /game доводит агент — docs/open/audit-2026-10.md.
 #
 # Ошибка в этом файле CI не роняет: Dependabot молча перестаёт работать, а
 # причина видна только в Insights → Dependency graph → Dependabot. После
@@ -33,6 +33,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: tuesday
+      time: '05:00'
     open-pull-requests-limit: 8
     groups:
       backend-minor-patch:
@@ -68,6 +70,8 @@ updates:
     directory: /webapp
     schedule:
       interval: weekly
+      day: wednesday
+      time: '05:00'
     open-pull-requests-limit: 5
     groups:
       webapp-minor-patch:
@@ -91,6 +95,8 @@ updates:
     directory: /shared
     schedule:
       interval: weekly
+      day: thursday
+      time: '05:00'
     open-pull-requests-limit: 5
     groups:
       shared-minor-patch:
@@ -131,3 +137,5 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: '05:00'

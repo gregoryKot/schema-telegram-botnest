@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { W, H } from '../constants';
 import { setTouchControls, IS_TOUCH } from '../controls';
 import { t, type MsgKey } from '../i18n';
+import { unlockChapter } from '../progress';
 
 // Текст появляется построчно, затем кнопка «Начать путь»
 const SLIDES = [
@@ -95,7 +96,7 @@ export class IntroScene extends Phaser.Scene {
     btn.on('pointerover', () => { btn.fillColor = 0x3a2a8f; btnTxt.setColor('#fff0d8'); });
     btn.on('pointerout',  () => { btn.fillColor = 0x3a1500; btnTxt.setColor('#ff7733'); });
     let started = false;
-    const go = () => { if (started) return; started = true; this.scene.start('Game'); };
+    const go = () => { if (started) return; started = true; unlockChapter('chapter1'); this.scene.start('Game'); };
     btn.on('pointerdown', go);
 
     // Пропуск: пробел/ввод, а на таче — тап по фону (после первой строки, чтобы не проскочить случайно)

@@ -124,7 +124,7 @@ export function DeleteAccountConfirm({
           fontFamily: 'inherit',
         }}
       >
-        {deleting ? 'Удаляем...' : 'Да, удалить всё навсегда'}
+        {deleting ? 'Удаляем…' : 'Да, удалить всё навсегда'}
       </button>
     </div>
   );

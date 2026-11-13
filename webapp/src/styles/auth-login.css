@@ -48,6 +48,7 @@
 .al-btn-main:hover { background: var(--accent-hi); }
 .al-ico { width: 28px; height: 28px; display: grid; place-items: center; flex-shrink: 0; }
 .al-vk { background: #0077FF; color: #fff; border-radius: 7px; font-size: 11px; font-weight: 700; }
+.al-ya { background: #FC3F1D; color: #fff; border-radius: 50%; font-size: 15px; font-weight: 700; }
 .al-ticket { background: oklch(0.95 0.015 var(--h)); border-radius: 16px; padding: 6px 14px; }
 .al-ticket:empty { display: none; }
 .al-alert { width: 100%; }
@@ -70,7 +71,7 @@
   font: 700 15px var(--sans); cursor: pointer; width: 100%;
 }
 .al-submit:disabled { opacity: .5; cursor: default; }
-/* Отправка ссылки на почту — второе действие экрана: залитая кнопка одна (ВКонтакте). */
+/* Отправка ссылки на почту — второе действие экрана: залиты только кнопки сервисов (ВКонтакте, Яндекс). */
 .al-submit--quiet { background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); }
 
 /* Автовход в мессенджере не сработал (TelegramRetry): исход на PaperOutcome; помощь — под кнопкой. */

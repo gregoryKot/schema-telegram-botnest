@@ -13,6 +13,7 @@ vi.mock('../api', () => ({ reportClientError: vi.fn() }));
 import { reportClientError } from '../api';
 import { AddressFormContext, type AddressForm } from '../utils/addressForm';
 import { AuthErrorPage } from './AuthErrorPage';
+import { glueSpaces } from '../../../shared/src/utils/typo'; // заголовок PaperOutcome склеивает короткие слова
 
 function renderAt(search: string, form: AddressForm = 'ty') {
   window.history.replaceState(null, '', `/auth/error${search}`);
@@ -60,6 +61,17 @@ describe('AuthErrorPage — известные коды', () => {
     expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('vk_failed');
     expect(reportedMessages()[0]).toMatch(/хост=web, .*, vk_failed$/);
   });
+
+  it.each([['ty', /Попробуй ещё раз или выбери другой способ/], ['vy', /Попробуйте ещё раз или выберите другой способ/]] as const)(
+    'yandex_failed (%s): называет Яндекс, код для поддержки и в отчёте',
+    (form, tail) => {
+      const { container } = renderAt('?reason=yandex_failed', form);
+      expect(screen.getByText(/Вход через Яндекс не прошёл/)).toBeTruthy();
+      expect(screen.getByText(tail)).toBeTruthy();
+      expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('yandex_failed');
+      expect(reportedMessages()[0]).toMatch(/, yandex_failed$/);
+    },
+  );
 
   it('email_link_expired в форме «вы» — без «ты»-строк', () => {
     const { container } = renderAt('?reason=email_link_expired', 'vy');
@@ -137,10 +149,20 @@ describe('AuthErrorPage — провайдер выключен', () => {
     expect(reportedMessages()[0]).toMatch(/, vk_disabled$/);
   });
 
+  it.each(['ty', 'vy'] as const)('yandex_disabled (%s): свой заголовок, безличный текст, кнопка на /login', (form) => {
+    const { container } = renderAt('?reason=yandex_disabled', form);
+    expect(screen.getByRole('heading').textContent).toBe('Вход через Яндекс отключён');
+    expect(screen.getByText(/Вход через Яндекс временно отключён\. Другой способ — почта/)).toBeTruthy();
+    expect((screen.getByText('Другой способ входа') as HTMLAnchorElement).getAttribute('href')).toBe('/login');
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
+    expect(container.textContent).not.toMatch(/Попробуй|напиши/);
+    expect(reportedMessages()[0]).toMatch(/, yandex_disabled$/);
+  });
+
   // Вход через Google убран (2026-11): его кодов сервер больше не ставит.
   it('google_disabled — неизвестная причина: общий экран', () => {
     renderAt('?reason=google_disabled');
-    expect(screen.getByRole('heading').textContent).toBe('Вход не удался');
+    expect(screen.getByRole('heading').textContent).toBe(glueSpaces('Вход не удался'));
   });
 
   it('vk_disabled в форме «вы» — тот же безличный текст', () => {

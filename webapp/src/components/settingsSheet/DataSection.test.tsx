@@ -287,13 +287,13 @@ describe('DataSection — скачать мои данные', () => {
     mockAuthedFetch.mockRejectedValue(new Error('network down'));
     renderWithForm('ty');
     fireEvent.click(screen.getByText('Скачать мои данные'));
-    await screen.findByText('Не удалось скачать файл. Проверь связь и попробуй ещё раз');
+    await screen.findByText('Не удалось скачать файл. Проверь связь и попробуй ещё раз.');
     cleanup();
 
     mockAuthedFetch.mockRejectedValue(new Error('network down'));
     renderWithForm('vy');
     fireEvent.click(screen.getByText('Скачать мои данные'));
-    await screen.findByText('Не удалось скачать файл. Проверьте связь и попробуйте ещё раз');
+    await screen.findByText('Не удалось скачать файл. Проверьте связь и попробуйте ещё раз.');
   });
 
   it('после успешного скачивания видно, чего ждать, — а не молчаливый возврат кнопки', async () => {

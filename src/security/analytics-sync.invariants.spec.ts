@@ -79,6 +79,10 @@ const BACKEND_ONLY: Record<string, string> = {
     'QuizPage.tsx), а не api.trackEvent; дублируется прямым server-side ' +
     'track() из бота (telegram.quiz.service.ts)',
   quiz_completed: 'та же причина, что и quiz_started — QuizPage.tsx + бот',
+  game_app_arrive:
+    'константа GAME_APP_ARRIVE_EVENT (shared/src/share/analytics.ts), шлёт ' +
+    'лендинг через api.trackPublicEvent, когда его открыла кнопка финала ' +
+    'игры (?from=game) — webapp/src/pages/landing/useGameArrival.ts',
   practice_link_click:
     'шлётся только через api.trackPublicEvent (анонимный клик с ' +
     'лендинга, practiceLink.ts), не через api.trackEvent',
@@ -231,6 +235,11 @@ const BACKEND_ONLY: Record<string, string> = {
     'токена окна Google (src/auth/google-one-tap.service.ts), userId = null. ' +
     'Исход (вошёл / второй фактор / не принят) знает только сервер; слать его ' +
     'с фронта значило бы открыть отчёт о входе для накрутки через /api/event',
+  login_oauth:
+    'серверное событие: пишет общий хвост OAuth-колбэков после входа через ' +
+    'VK ID или Яндекс ID (src/auth/oauth-login.report.ts), userId = null. ' +
+    'Исход (вход / новый аккаунт / привязка) знает только сервер; с фронта ' +
+    'событие открыло бы отчёт о входе для накрутки через /api/event',
   messenger_launch:
     'серверное событие: пишут ручки обмена подписи на сессию telegram/webapp ' +
     'и max/webapp (src/auth/auth-account.controller.ts, auth-max.controller.ts), ' +
@@ -361,7 +370,10 @@ describe('трипваер: имена событий фронта ⊆ allow-lis
     // HTTP-запрос, число стёртых попыток видно только в транзакции.
     // 49 — asset_recovered (инцидент 2026-11-04, #928): шлёт скрипт из
     // webapp/public, а не бандл; FRONTEND_DIRS его не видят по устройству.
-    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(49);
+    // 50 — login_oauth (2026-11, вход через VK ID и Яндекс ID): серверное —
+    // вход завершает колбэк площадки, у фронта такого действия нет.
+    // 51 — game_app_arrive (#1091): константа, шлёт лендинг через trackPublicEvent.
+    expect(Object.keys(BACKEND_ONLY).length).toBeLessThanOrEqual(51);
   });
 });
 

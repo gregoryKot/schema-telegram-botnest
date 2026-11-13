@@ -379,7 +379,7 @@ describe('ProfileSection — действия', () => {
     fireEvent.click(screen.getByText('Удалить'));
     fireEvent.click(screen.getByText('Да, удалить всё навсегда'));
     await waitFor(() => expect(mockApi.deleteAllUserData).toHaveBeenCalledTimes(1));
-    // Кнопка снова активна — повтор возможен...
+    // Кнопка снова активна — повтор возможен…
     await waitFor(() => expect(screen.getByText('Удалить')).toBeTruthy());
     // ...и рядом сказано, что произошло и что данные на месте.
     const alert = await screen.findByRole('alert');

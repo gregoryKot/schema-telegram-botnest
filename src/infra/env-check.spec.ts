@@ -76,21 +76,67 @@ describe('checkEnv', () => {
   });
 
   describe('кросс-проверки', () => {
-    it('RESEND_API_KEY задан без ADMIN_EMAIL/EMAIL_FROM — обе проблемы', () => {
-      const result = checkEnv({ ...ALL_VALID, RESEND_API_KEY: 're_x' });
+    // Заглушки, не ключи.
+    const POSTBOX_KEYS = {
+      POSTBOX_ACCESS_KEY_ID: 'TEST_KEY_ID',
+      POSTBOX_SECRET_ACCESS_KEY: 'test-secret-not-a-real-key',
+    };
+
+    it('ключи Postbox заданы без ADMIN_EMAIL/EMAIL_FROM — обе проблемы', () => {
+      const result = checkEnv({ ...ALL_VALID, ...POSTBOX_KEYS });
       const ids = result.crossCheckIssues.map((i) => i.id);
-      expect(ids).toContain('resendRequiresAdminEmail');
-      expect(ids).toContain('resendRequiresEmailFrom');
+      expect(ids).toContain('postboxRequiresAdminEmail');
+      expect(ids).toContain('postboxRequiresEmailFrom');
+      expect(ids).not.toContain('postboxKeysComeInPair');
     });
 
-    it('RESEND_API_KEY + ADMIN_EMAIL + EMAIL_FROM все заданы — проблем нет', () => {
+    it('ключи Postbox + ADMIN_EMAIL + EMAIL_FROM все заданы — проблем нет', () => {
       const result = checkEnv({
         ...ALL_VALID,
-        RESEND_API_KEY: 're_x',
+        ...POSTBOX_KEYS,
         ADMIN_EMAIL: 'a@b.ru',
         EMAIL_FROM: 'Bot <no-reply@b.ru>',
       });
       expect(result.crossCheckIssues).toEqual([]);
+      expect(result.invalid).toEqual([]);
+    });
+
+    // Подпись запроса собирается из пары: один ключ без другого — почта
+    // выключена, и это ошибка конфигурации в обе стороны.
+    it.each([
+      ['POSTBOX_ACCESS_KEY_ID', 'POSTBOX_SECRET_ACCESS_KEY'],
+      ['POSTBOX_SECRET_ACCESS_KEY', 'POSTBOX_ACCESS_KEY_ID'],
+    ])('задан только %s — проблема называет недостающий %s', (set, missing) => {
+      const result = checkEnv({
+        ...ALL_VALID,
+        [set]: 'x',
+        ADMIN_EMAIL: 'a@b.ru',
+        EMAIL_FROM: 'Bot <no-reply@b.ru>',
+      });
+      expect(result.crossCheckIssues).toEqual([
+        {
+          id: 'postboxKeysComeInPair',
+          problem: `${set} задан, но не задан(ы) ${missing} — без пары ключей письма не уходят`,
+        },
+      ]);
+    });
+
+    it('почта не настроена вовсе (ни ключей, ни адресов) — проблем нет, старт не падает', () => {
+      expect(checkEnv(ALL_VALID, 'production').crossCheckIssues).toEqual([]);
+      expect(
+        checkEnv({ ...ALL_VALID, ADMIN_EMAIL: 'a@b.ru' }).crossCheckIssues,
+      ).toEqual([]);
+    });
+
+    it('ключ Postbox с пробелом внутри — неверный формат', () => {
+      const result = checkEnv({
+        ...ALL_VALID,
+        ...POSTBOX_KEYS,
+        POSTBOX_SECRET_ACCESS_KEY: 'two words',
+      });
+      expect(result.invalid.map((i) => i.name)).toEqual([
+        'POSTBOX_SECRET_ACCESS_KEY',
+      ]);
     });
 
     it('VK_APP_ID без VK_REDIRECT_URI — проблема', () => {
@@ -98,6 +144,48 @@ describe('checkEnv', () => {
       expect(result.crossCheckIssues.map((i) => i.id)).toContain(
         'vkAppRequiresRedirect',
       );
+    });
+
+    // Яндекс ID: задан ClientID — обязаны быть секрет и адрес возврата, иначе
+    // рубильник держит вход выключенным, а владелец думает, что настроил его.
+    const YANDEX_ID = '11c76b6012374a5c8ad05acaeca11895';
+
+    it('YANDEX_CLIENT_ID без секрета и адреса возврата — одна проблема с обоими именами', () => {
+      const result = checkEnv({ ...ALL_VALID, YANDEX_CLIENT_ID: YANDEX_ID });
+      const issue = result.crossCheckIssues.find(
+        (i) => i.id === 'yandexIdRequiresSecretAndRedirect',
+      );
+      expect(issue?.problem).toContain('YANDEX_CLIENT_SECRET');
+      expect(issue?.problem).toContain('YANDEX_REDIRECT_URI');
+      expect(result.invalid).toEqual([]);
+    });
+
+    it('полный набор Яндекс ID — без проблем; без переменных вовсе — тоже (вход просто выключен)', () => {
+      const full = checkEnv(
+        {
+          ...ALL_VALID,
+          YANDEX_CLIENT_ID: YANDEX_ID,
+          YANDEX_CLIENT_SECRET: 'secret',
+          YANDEX_REDIRECT_URI:
+            'https://schemehappens.ru/api/auth/yandex/callback',
+        },
+        'production',
+      );
+      expect(full).toEqual({ missing: [], invalid: [], crossCheckIssues: [] });
+      expect(checkEnv(ALL_VALID, 'production').missing).toEqual([]);
+    });
+
+    it('YANDEX_CLIENT_ID не по форме и адрес возврата по http — неверный формат', () => {
+      const result = checkEnv({
+        ...ALL_VALID,
+        YANDEX_CLIENT_ID: 'client id',
+        YANDEX_CLIENT_SECRET: 'secret',
+        YANDEX_REDIRECT_URI: 'http://schemehappens.ru/api/auth/yandex/callback',
+      });
+      expect(result.invalid.map((i) => i.name).sort()).toEqual([
+        'YANDEX_CLIENT_ID',
+        'YANDEX_REDIRECT_URI',
+      ]);
     });
 
     it('ROBOKASSA_MERCHANT_LOGIN без паролей — одна проблема с обоими именами (M3)', () => {

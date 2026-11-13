@@ -3,6 +3,9 @@ import { CLIENT_NAME_MAX } from '../../../../shared/src/limits/textLimits';
 import { CopyFailedHint } from '../../../../shared/src/components/CopyFailedHint';
 import { InviteCodeBox } from '../../../../shared/src/therapy/InviteCodeBox';
 import type { useAddClient } from './useAddClient';
+import { SignArt } from '../art/SignArt';
+import { BrandMark } from '../art/BrandMark';
+import { INVITE_SIGN } from './cabinetLook';
 import '../../styles/therapist-clients.css';
 
 interface Props {
@@ -10,6 +13,8 @@ interface Props {
 }
 
 // Открыта ли форма, решает useAddClient (`open`): «Добавить ещё» её оставляет, «к списку» сворачивает.
+// Вид (b29): форма — светлый лист с тенью слоем неба; итог — лист неба терапевта, у имени знак: приглашение —
+// Talk (разговор, в который зовут), офлайн-карточка — знак продукта (BrandMark), как в списке клиентов.
 export function AddClientForm({ addClient }: Props) {
   const {
     name: addName, setName: setAddName,
@@ -22,10 +27,17 @@ export function AddClientForm({ addClient }: Props) {
   if (addCreated) {
     const invite = addCreated.invite;
     return (
-      <div className="tc-add">
+      <div className="pp-paper tc-add tc-add--done">
         <div className="tc-add-done">
-          <div className="ds-eyebrow">{invite ? 'Приглашение создано' : 'Клиент добавлен'}</div>
-          <h2 className="tc-add-done-name">{addCreated.name}</h2>
+          <div className="tc-add-done-head">
+            <div className="tc-add-done-title">
+              <div className="ds-eyebrow">{invite ? 'Приглашение создано' : 'Клиент добавлен'}</div>
+              <h2 className="tc-add-done-name">{addCreated.name}</h2>
+            </div>
+            <span className="tc-block-sign tc-add-done-sign" aria-hidden="true">
+              {invite ? <SignArt sign={INVITE_SIGN} size="row" /> : <BrandMark size={40} simple bare />}
+            </span>
+          </div>
           {invite ? (
             <div>
               <div className="ds-label">Ссылка-приглашение</div>
@@ -41,7 +53,7 @@ export function AddClientForm({ addClient }: Props) {
               <p className="ds-sub">Карточка с этим именем появится в списке, когда клиент подключится. До этого — в блоке «Ждут подключения».</p>
             </div>
           ) : (
-            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без привязки к боту.</p>
+            <p className="ds-sub">Добавлен как офлайн-клиент — записи и концептуализация без аккаунта в приложении.</p>
           )}
           <div className="tc-actions">
             <button className={`ds-btn ds-btn--sm${invite ? ' ds-btn--secondary' : ''}`} onClick={resetAddClient}>Добавить ещё</button>
@@ -53,7 +65,7 @@ export function AddClientForm({ addClient }: Props) {
   }
 
   return (
-    <div className="tc-add">
+    <div className="pp-leaf tc-add">
       <input
         className="tc-add-name"
         id="add-client-name" ref={addInputRef}

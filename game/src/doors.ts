@@ -6,8 +6,7 @@ import type { DoorKind } from './chapters';
 
 // ════════════════════════════════════════════════════════════════════════════
 //  Двери Акта II. Дверь — не враг, а ВЫБОР: войти можно в любую (E / тап),
-//  разница — в последствиях. Неверные двери после попытки запираются
-//  («уже пробовал»). Вся драма главы — здесь, не в боях.
+//  разница — в последствиях. Вся драма главы — здесь, не в боях.
 // ════════════════════════════════════════════════════════════════════════════
 
 const FONT = '"Press Start 2P", "Courier New", monospace';
@@ -28,7 +27,6 @@ const STYLE: Record<DoorKind, DoorStyle> = {
 
 export class Door {
   taken = false;
-  locked = false;
   private isNear = false;
   private label: Phaser.GameObjects.Text;
   private glow: Phaser.GameObjects.Ellipse;
@@ -37,7 +35,7 @@ export class Door {
 
   constructor(
     private scene: Phaser.Scene, readonly kind: DoorKind, readonly x: number,
-    private onEnter: (d: Door) => void, private onLockedTry: () => void,
+    private onEnter: (d: Door) => void,
     maxX?: number, // правый край мира: вывеска не должна уходить за кадр
   ) {
     const st = STYLE[kind];
@@ -75,22 +73,12 @@ export class Door {
 
   update(_dt: number, playerX: number) {
     this.isNear = this.near(playerX);
-    const show = this.isNear && !this.taken && !this.locked;
+    const show = this.isNear && !this.taken;
     this.prompt.setAlpha(Phaser.Math.Linear(this.prompt.alpha, show ? 0.95 : 0, 0.12));
-  }
-
-  lock() {
-    this.locked = true;
-    this.leaf.setFillStyle(0x1a141e); this.glow.setAlpha(0.25);
-    this.label.setAlpha(0.4);
-    this.scene.add.text(this.x, GROUND_Y - 54, t('m_door_tried_short'), {
-      fontFamily: FONT, fontSize: '8px', color: '#7f74a4', align: 'center',
-    }).setOrigin(0.5).setDepth(6).setAngle(-8);
   }
 
   tryEnter() {
     if (this.taken) return;
-    if (this.locked) { this.onLockedTry(); return; }
     this.taken = true;
     this.onEnter(this);
   }

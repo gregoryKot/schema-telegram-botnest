@@ -15,6 +15,10 @@ export const OPTIONAL_AUTH_BY_DESIGN: Record<string, string> = {
     'старт входа через VK: ничего не проверяет и данных не отдаёт — ' +
     'подписывает state (с linkUserId, если сессия есть), кладёт его в куку ' +
     '(плюс PKCE) и отвечает 302 на провайдера; сверяет vkCallback',
+  'auth/auth-oauth.controller.ts:yandexRedirect':
+    'старт входа через Яндекс ID (2026-11), как vkRedirect: подписывает state ' +
+    '(с linkUserId, если есть кука link_token), кладёт его в куку и отвечает ' +
+    '302 на провайдера; сверяет yandexCallback',
   'auth/auth-ticket.controller.ts:start':
     'билет входа для контейнера: выдаёт device-код, троттлинг по IP; ' +
     'intent link без сессии — 401, вход сессию не наследует',
