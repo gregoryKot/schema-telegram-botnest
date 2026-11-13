@@ -2,11 +2,12 @@
 import Phaser from 'phaser';
 import { W, H, GROUND_Y } from '../../constants';
 import { audio } from '../../audio';
-import { IS_TOUCH } from '../../controls';
+import { IS_TOUCH, setTouchControls } from '../../controls';
 import { t } from '../../i18n';
 import { getAssist, setAssist } from '../../assist';
 import { trackEvent } from '../../analytics';
 import { addCrisisLine } from './cta';
+import { drawDeathArt } from './deathArt';
 import type { GameScene } from '../GameScene';
 
 export function gameOver(s: GameScene) {
@@ -21,20 +22,13 @@ export function gameOver(s: GameScene) {
   trackEvent('game_over', { chapter: s.chapter.id });
   audio.stopMusic();
   // сразу гасим хаос (огромные тучи и пр.) чёрной шторой — иначе он лезет в кадр
-  const cover = s.add
-    .rectangle(W / 2, H / 2, W, H, 0x06040e)
-    .setScrollFactor(0)
-    .setDepth(150)
-    .setAlpha(0);
+  const cover = s.add.rectangle(W / 2, H / 2, W, H, 0x06040e).setScrollFactor(0).setDepth(150).setAlpha(0);
   s.tweens.add({ targets: cover, alpha: 1, duration: 700 });
+  const art = drawDeathArt(s, 151);
+  setTouchControls(false); // кнопки перекрывали «тап — ещё раз»
   const font = '"Press Start 2P", "Courier New", monospace';
   const txt = s.add
-    .text(W / 2, H / 2 - 16, t('m_this_can_t_go_on'), {
-      fontFamily: font,
-      fontSize: '20px',
-      color: '#ff7799',
-      letterSpacing: 2,
-    })
+    .text(W / 2, H / 2 - 16, t('m_this_can_t_go_on'), { fontFamily: font, fontSize: '20px', color: '#ff7799', letterSpacing: 2 })
     .setOrigin(0.5)
     .setScrollFactor(0)
     .setDepth(200)
@@ -65,6 +59,7 @@ export function gameOver(s: GameScene) {
       .setAlpha(0);
     s.tweens.add({ targets: [t2, hint], alpha: 0.9, duration: 600 });
     const overlay: Phaser.GameObjects.GameObject[] = [
+      ...art,
       cover,
       txt,
       t2,
@@ -122,6 +117,7 @@ export function gameOver(s: GameScene) {
 // Смерть — не вся глава заново: открытые гейты, собранные ✦ и ответы отговоркам остаются.
 function respawnAtCheckpoint(s: GameScene) {
   s.dead = false;
+  setTouchControls(true);
   s.hearts = getAssist().extraLives ? s.MAX_HEARTS : 3;
   s.updateHearts();
   s.invuln = 1500;
