@@ -17,6 +17,8 @@ const tel = /tel: '([^']+)'/.exec(hotlines)?.[1];
 
 const messages = read('game/src/i18n/messages.ts');
 const scene = read('game/src/scenes/GameScene.ts');
+// экран смерти живёт отдельным модулем сцены
+const screens = scene + read('game/src/scenes/game/death.ts');
 
 describe('кризисная строка игры', () => {
   it('источник правды читается', () => {
@@ -39,6 +41,6 @@ describe('кризисная строка игры', () => {
 
   it('строка стоит на экране смерти и на обеих финальных CTA', () => {
     // одно объявление хелпера + три вызова: gameOver, showBranch, showTherapyCta
-    expect(scene.match(/addCrisisLine\(/g)).toHaveLength(4);
+    expect(screens.match(/addCrisisLine\(/g)).toHaveLength(4);
   });
 });
