@@ -8,8 +8,8 @@
 **Безопасность — аудит 2026-10** (реестр и детали:
 [security/AUDIT_FINDINGS.md](../security/AUDIT_FINDINGS.md), «Фаза 4»; решения по
 хвостам — [SECURITY.md](../SECURITY.md) §13):
-- **Владельцу, бэкапы базы в R2:** бакет и API-токен Cloudflare R2
-  (пошагово в [RUNBOOKS.md](../RUNBOOKS.md), «Cloudflare R2 — бэкапы базы») и
+- **Владельцу, бэкапы базы в Yandex Object Storage:** бакет и статический ключ
+  сервисного аккаунта Yandex Cloud (пошагово в [RUNBOOKS.md](../RUNBOOKS.md), «Yandex Object Storage — бэкапы базы») и
   `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`,
   `BACKUP_S3_SECRET_ACCESS_KEY`, `BACKUP_ENCRYPTION_KEY` (отдельный от ключа полей)
   в переменных окружения Amvera (форматы — `docs/ENV.md`). Без них планировщик

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Клиент Postgres 16 (pg_dump/psql) + curl для зашифрованных бэкапов в R2
+# Клиент Postgres 16 (pg_dump/psql) + curl для зашифрованных бэкапов в Yandex Object Storage
 # (scripts/backup-upload.sh, deploy/backup-scheduler.cjs). Ставится только в
 # runtime-стадии образа.
 #
@@ -77,7 +77,7 @@ if [ -z "$installed" ]; then
 fi
 
 # Проверяем, а не верим коду возврата: нужна именно 16-я версия обоих клиентов
-# и работающий curl (им бэкап ходит в R2).
+# и работающий curl (им бэкап ходит в Yandex Object Storage).
 pg_dump --version | grep -q " $PG_MAJOR[. ]" || { echo "install-pg-client: pg_dump не $PG_MAJOR-й версии" >&2; exit 1; }
 psql --version | grep -q " $PG_MAJOR[. ]" || { echo "install-pg-client: psql не $PG_MAJOR-й версии" >&2; exit 1; }
 curl --version >/dev/null || exit 1

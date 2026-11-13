@@ -85,7 +85,7 @@ describe('backup-upload.sh → S3 (поддельный сервер, подпи
     expect(res.stdout.trim().split('\n').pop()).toBe(`[backup] ok ${names[0]}`);
   });
 
-  it('запросы по контракту S3: PUT path-style, подпись SigV4 c регионом auto, x-amz-content-sha256 = SHA-256 тела', async () => {
+  it('запросы по контракту S3: PUT path-style, подпись SigV4 c регионом ru-central1, x-amz-content-sha256 = SHA-256 тела', async () => {
     await run();
     const puts = s3.requests.filter((r) => r.method === 'PUT');
     expect(puts.map((r) => r.path).sort()).toEqual(
@@ -93,7 +93,7 @@ describe('backup-upload.sh → S3 (поддельный сервер, подпи
     );
     for (const put of puts) {
       expect(put.headers.authorization).toMatch(
-        /^AWS4-HMAC-SHA256 Credential=\w+\/\d{8}\/auto\/s3\/aws4_request, SignedHeaders=[^,]*x-amz-content-sha256/,
+        /^AWS4-HMAC-SHA256 Credential=\w+\/\d{8}\/ru-central1\/s3\/aws4_request, SignedHeaders=[^,]*x-amz-content-sha256/,
       );
       expect(put.headers['x-amz-content-sha256']).toBe(
         createHash('sha256').update(put.body).digest('hex'),
