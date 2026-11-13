@@ -6,7 +6,9 @@ import {
   SubscriptionService,
   SUBSCRIPTION_INVID_BASE,
 } from './subscription.service';
+import { Logger } from '@nestjs/common';
 import { subscriptionUpdateMany } from '../test-support/subscription-update-many';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 function makePrisma() {
   const subs = new Map<number, any>();
@@ -91,7 +93,7 @@ function makeService(
   } = {},
 ) {
   const prisma = makePrisma();
-  const calls = { alerts: [] as string[] };
+  const calls = { alerts: [] as string[], emails: [] as string[] };
   const robokassa = {
     enabled: opts.robokassaEnabled ?? true,
     buildPaymentUrl: jest.fn(),
@@ -102,6 +104,11 @@ function makeService(
   const notify = {
     alertAdmin: jest.fn((msg: string) => {
       calls.alerts.push(msg);
+    }),
+    // Карточка оплаты — в оба канала; в alerts — то, что видно в Telegram.
+    notifyAdminBoth: jest.fn((html: { telegram: string; email: string }) => {
+      calls.alerts.push(html.telegram);
+      calls.emails.push(html.email);
     }),
   };
   const config = {
@@ -183,7 +190,7 @@ describe('SubscriptionService.markChargePaidByInvId — сверка суммы 
 });
 
 describe('SubscriptionService.markChargePaidByInvId — алерты об активации содержат ровно ожидаемое', () => {
-  it('есть email И telegramId → в алерте оба маркера присутствуют', async () => {
+  it('есть email И telegramId → в Telegram их нет, в письме — оба', async () => {
     const { service, prisma, calls } = makeService();
     const sub = await prisma.subscription.create({
       data: {
@@ -199,8 +206,11 @@ describe('SubscriptionService.markChargePaidByInvId — алерты об акт
     });
     await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + charge.id);
     const alert = calls.alerts[calls.alerts.length - 1];
-    expect(alert).toContain('client@mail.ru');
-    expect(alert).toContain('tg:55');
+    expect(alert).not.toContain('client@mail.ru');
+    expect(alert).not.toContain('tg:55');
+    expect(alert).toContain('в письме на почте');
+    expect(calls.emails.at(-1)).toContain('client@mail.ru');
+    expect(calls.emails.at(-1)).toContain('tg:55');
   });
 
   it('нет ни email, ни telegramId → в алерте НЕТ маркеров 📬/tg: (LogicalOperator-ветки выключены)', async () => {
@@ -213,8 +223,11 @@ describe('SubscriptionService.markChargePaidByInvId — алерты об акт
     });
     await service.markChargePaidByInvId(SUBSCRIPTION_INVID_BASE + charge.id);
     const alert = calls.alerts[calls.alerts.length - 1];
-    expect(alert).not.toContain('📬');
-    expect(alert).not.toContain('tg:');
+    expect(alert).not.toContain('📧');
+    for (const text of [alert, calls.emails.at(-1)]) {
+      expect(text).not.toContain('📬');
+      expect(text).not.toContain('tg:');
+    }
   });
 
   it('period=year → алерт содержит "₽/год", period=month → "₽/мес" (EqualityOperator в тернарнике алерта)', async () => {
@@ -328,10 +341,10 @@ describe('SubscriptionService.chargeDue — точные аргументы вы
     });
   });
 
-  it('тело ошибки от Robokassa обрезается в алерте до 150 символов (MethodExpression .slice)', async () => {
-    const longBody = 'X'.repeat(500);
+  it('ответ Robokassa в Telegram-алерт не попадает — только в warn-лог приложения', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     const { service, prisma, calls } = makeService({
-      chargeRecurringResult: { ok: false, body: longBody },
+      chargeRecurringResult: { ok: false, body: PII.robokassa },
     });
     await prisma.subscription.create({
       data: {
@@ -345,10 +358,12 @@ describe('SubscriptionService.chargeDue — точные аргументы вы
     });
     await service.chargeDue();
     const alert = calls.alerts[calls.alerts.length - 1];
-    // 'X'.repeat(150) — ровно обрезанный кусок тела должен присутствовать,
-    // а полное 500-символьное тело — нет (иначе алерт Telegram переполнится).
-    expect(alert).toContain('X'.repeat(150));
-    expect(alert).not.toContain('X'.repeat(151));
+    expect(alert).toContain('Не удалось списать подписку');
+    expect(alert).toContain('Ответ Robokassa — в логе приложения');
+    expectNoMarkers(alert);
+    const logged = warn.mock.calls.map((c) => String(c[0]));
+    expect(logged.some((l) => l.includes(PII.robokassa))).toBe(true);
+    warn.mockRestore();
   });
 
   it('due.length===0 → this.logger.log НЕ вызывается со сводкой "Processed" (ConditionalExpression)', async () => {

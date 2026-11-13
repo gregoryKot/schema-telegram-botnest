@@ -152,17 +152,21 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     expect(email.sendAdminNotification).not.toHaveBeenCalled();
   });
 
-  it('уведомляет админа "Запись подтверждена" с именем/контактом/временем клиента — в ОБА канала', async () => {
+  it('«Запись подтверждена» — в ОБА канала: имя и контакт только в письме, в Telegram их нет', async () => {
     const { service, telegram, email } = makeService();
     await service.onConfirmed(booking({ meetingUrl: 'x' }));
     const text = telegram.notifyAdmin.mock.calls[0][0] as string;
     expect(text).toContain('Запись подтверждена');
-    expect(text).toContain('Мария');
-    expect(text).toContain('@maria');
-    // Правило 2026-09-15: почта уходит ВСЕГДА, а не только при сбое Telegram.
+    expect(text).not.toContain('Мария');
+    expect(text).not.toContain('@maria');
+    // Почта уходит ВСЕГДА, а не только при сбое Telegram, и несёт данные клиента.
     expect(email.sendAdminNotification).toHaveBeenCalledWith(
       'Запись подтверждена',
       expect.stringContaining('Мария'),
+    );
+    expect(email.sendAdminNotification).toHaveBeenCalledWith(
+      'Запись подтверждена',
+      expect.stringContaining('@maria'),
     );
   });
 
@@ -251,13 +255,17 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     expect(dm).toContain(ROOM_REPLACED);
   });
 
-  it('source (атрибуция лида) попадает в уведомление с HTML-экранированием', async () => {
-    const { service, telegram } = makeService();
+  it('source (атрибуция лида) — в письме с HTML-экранированием, в Telegram его нет', async () => {
+    const { service, telegram, email } = makeService();
     await service.onConfirmed(
       booking({ meetingUrl: 'x', source: 'site/#a ← <b>ref</b>' }),
     );
     const text = telegram.notifyAdmin.mock.calls[0][0] as string;
-    expect(text).toContain('Откуда: site/#a ← &lt;b&gt;ref&lt;/b&gt;');
+    expect(text).not.toContain('Откуда');
+    expect(email.sendAdminNotification).toHaveBeenCalledWith(
+      'Запись подтверждена',
+      expect.stringContaining('Откуда: site/#a ← &lt;b&gt;ref&lt;/b&gt;'),
+    );
   });
 
   it('без source строки «Откуда» в уведомлении нет (старые брони)', async () => {
@@ -273,9 +281,11 @@ describe('BookingNotifyService.onConfirmed — линк на встречу и C
     calDav.pushEvent.mockResolvedValueOnce(null);
     await service.onConfirmed(booking({ meetingUrl: 'x' }));
     expect(telegram.notifyAdmin).toHaveBeenCalledTimes(2);
-    expect(telegram.notifyAdmin.mock.calls[1][0]).toContain(
-      'НЕ попала в Apple Calendar',
-    );
+    const warn = telegram.notifyAdmin.mock.calls[1][0] as string;
+    expect(warn).toContain('НЕ попала в Apple Calendar');
+    // Номер брони и время — да, имя клиента — нет.
+    expect(warn).toContain('бронь #');
+    expect(warn).not.toContain('Мария');
     expect(email.sendAdminNotification).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining('Apple Calendar'),

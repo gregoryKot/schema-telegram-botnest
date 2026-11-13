@@ -6,7 +6,9 @@ import { CalDavService } from './caldav.service';
 import { MeetingService } from './meeting.service';
 import { EmailService } from '../auth/email.service';
 import { awaitingPaymentTitle, cancelledNotice } from './booking-admin-note';
-import { bookingCardText, subjectFromTitle } from './booking-notify.format';
+import { subjectFromTitle } from './booking-notify.format';
+import { bookingNotice } from './booking-owner-card';
+import { noticeChannels, type OwnerNotice } from '../utils/owner-card';
 import type { PriceFields } from './booking-notify.price';
 import { SessionType } from '@prisma/client';
 import { CronLeaderService, LEASE_WINDOW } from '../infra/cron-leader.service';
@@ -103,32 +105,29 @@ export class BookingNotifyService {
       sendAdmin: (title: string, b: PlainBooking) => this.sendAdmin(title, b),
     };
     const now = Date.now();
-    await remindWindow(
-      deps,
-      now + 24 * 3_600_000,
-      'reminder24SentAt',
-      'завтра',
-    );
-    await remindWindow(
-      deps,
-      now + 2 * 3_600_000,
-      'reminder2SentAt',
-      'через 2 часа',
-    );
+    const H = 3_600_000;
+    await remindWindow(deps, now + 24 * H, 'reminder24SentAt', 'завтра');
+    await remindWindow(deps, now + 2 * H, 'reminder2SentAt', 'через 2 часа');
   }
 
   // Разделение (2026-09-15): события брони — оба канала всегда (деньги/
   // заявки); alertAdmin — Telegram-first, почта как запасной ход.
   private async sendAdmin(title: string, b: PlainBooking): Promise<void> {
-    const subject = subjectFromTitle(title);
-    await this.notifyAdminBoth(bookingCardText(title, b), subject);
+    await this.notifyAdminBoth(
+      bookingNotice(title, b),
+      subjectFromTitle(title),
+    );
   }
 
-  /** Событие брони или потерянный лид — оба канала сразу, независимо от исхода Telegram. */
-  async notifyAdminBoth(html: string, subject: string): Promise<void> {
-    const plain = html.replace(/<[^>]+>/g, '');
+  /** Оба канала сразу; Telegram — без данных человека, письмо — полное (OwnerNotice). */
+  async notifyAdminBoth(
+    text: string | OwnerNotice,
+    subject: string,
+  ): Promise<void> {
+    const { telegram, email } = noticeChannels(text);
+    const plain = email.replace(/<[^>]+>/g, '');
     await Promise.all([
-      this.telegram.notifyAdmin(html),
+      this.telegram.notifyAdmin(telegram),
       this.email
         .sendAdminNotification(subject, plain)
         .catch((e) => this.logger.error('Critical admin e-mail failed', e)),

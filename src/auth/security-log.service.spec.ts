@@ -14,6 +14,7 @@
 // auth-failure.report.ts) — тесты бюджета детерминированы, без реальных
 // таймеров.
 import type { Logger as LoggerType } from '@nestjs/common';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 // Мок доставки — `mock`-префикс, чтобы фабрика jest.mock могла на него
 // сослаться; фабрика вызывается заново на каждую свежую загрузку модулей
@@ -211,7 +212,8 @@ describe('SecurityLogService — redaction', () => {
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
     expect(text).not.toContain('raw-refresh-value');
-    expect(text).toContain('[redacted]');
+    // В DM — только поля из DM_FIELDS: вычищенное туда не попадает вовсе.
+    expect(text).not.toContain('refreshToken');
   });
 
   it('converts BigInt fields to strings so JSON.stringify never throws', () => {
@@ -300,26 +302,52 @@ describe('SecurityLogService — DM-бюджет по имени события'
   // появляться. Точный toBe (не toContain) нужен, чтобы поймать мутанта,
   // подменяющего '' (пустую ветку тернарника) на непустую строку — toContain
   // такую подмену не ловит, если сам искомый текст не задет.
-  it('первый DM в свежем окне: точный текст — заголовок + поля через \\n, без хвоста подавления', async () => {
+  it('первый DM в свежем окне: точный текст — заголовок, id, время, без хвоста подавления', async () => {
     const service = new SecurityLogService(() => 0);
-    // Поля — из белого списка (security-log-redact.ts): тест про СКЛЕЙКУ
-    // текста, и незарегистрированный ключ подменил бы значение на
-    // `[redacted]`, проверяя вычистку вместо формата.
-    service.log('csrf_blocked', { endpoint: 'refresh', ip: '203.0.113.7' });
+    // ip, путь и свободный текст остаются в логе: в DM — id и время.
+    service.log('csrf_blocked', {
+      userId: 5,
+      endpoint: 'refresh',
+      ip: '203.0.113.7',
+    });
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
-    expect(text).toBe('🔐 csrf_blocked\nendpoint: refresh\nip: 203.0.113.7');
+    expect(text).toBe(
+      '🔐 csrf_blocked\nuserId: 5\nвремя: 01.01.1970, 03:00 МСК\nПодробности — в логе приложения.',
+    );
   });
 
   it('значение длиннее 80 символов обрезается в DM (защита от раздутого/injection-подобного значения)', async () => {
     const service = new SecurityLogService(() => 0);
-    const longValue = 'x'.repeat(200);
-    // `detail` — то самое разрешённое поле со свободным текстом, которое в
-    // проде и может оказаться длинным (конфликт подписок при merge).
-    service.log('csrf_blocked', { detail: longValue });
+    service.log('csrf_blocked', { event: 'x'.repeat(200) });
     await flush();
     const text = mockedNotify.mock.calls[0][0] as string;
-    expect(text).toBe(`🔐 csrf_blocked\ndetail: ${'x'.repeat(80)}`);
+    expect(text).toContain(`\nevent: ${'x'.repeat(80)}\n`);
+    expect(text).not.toContain('x'.repeat(81));
+  });
+
+  // Сигнал в Telegram: ни ip, ни user-agent, ни путь, ни квалификация из
+  // заявки терапевта (`summary`) — даже под разрешёнными для лога ключами.
+  it('данные человека из маркеров в DM не попадают; лог хранит их как раньше', async () => {
+    const service = new SecurityLogService(() => 0);
+    service.log('therapist_request_submitted', {
+      userId: 7,
+      requestId: 3,
+      ip: PII.ip,
+      ua: PII.ua,
+      path: PII.path,
+      endpoint: PII.path,
+      summary: PII.qualification,
+      detail: PII.message,
+      reason: PII.error,
+      telegramId: PII.telegramId,
+    });
+    await flush();
+    const text = mockedNotify.mock.calls[0][0] as string;
+    expectNoMarkers(text);
+    expect(text).toContain('userId: 7');
+    expect(text).toContain('requestId: 3');
+    expect(logSpy.mock.calls[0][0]).toContain(PII.ip);
   });
 
   it('разные имена событий не делят один бюджет', async () => {

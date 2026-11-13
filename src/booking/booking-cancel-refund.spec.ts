@@ -64,8 +64,11 @@ describe('cancelledTitle', () => {
 describe('cancelledNotice', () => {
   it('оплаченная: карточка + подсказка про чек, тема письма — с возвратом', () => {
     const { html, subject } = cancelledNotice(booking({ paidAt: PAID_AT }));
-    expect(html).toContain('Мария');
-    expect(html).toContain('аннулируйте чек');
+    // Имя — только в письме; подсказка про чек — в обоих каналах.
+    expect(html.email).toContain('Мария');
+    expect(html.telegram).not.toContain('Мария');
+    expect(html.email).toContain('аннулируйте чек');
+    expect(html.telegram).toContain('аннулируйте чек');
     expect(subject).toMatch(
       /^Запись отменена — оплачена, нужен возврат, 4\s000 ₽$/,
     );
@@ -73,7 +76,8 @@ describe('cancelledNotice', () => {
 
   it('неоплаченная: без подсказки, тема прежняя', () => {
     const { html, subject } = cancelledNotice(booking());
-    expect(html).not.toContain('возврат');
+    expect(html.telegram).not.toContain('возврат');
+    expect(html.email).not.toContain('возврат');
     expect(subject).toBe('Запись отменена');
   });
 });

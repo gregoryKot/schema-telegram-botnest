@@ -3,7 +3,9 @@
 // chargeRecurring/subscriptionCharge.create, обрезка тела ошибки в алерте,
 // логирование итоговой сводки.
 import { SubscriptionService } from './subscription.service';
+import { Logger } from '@nestjs/common';
 import { subscriptionUpdateMany } from '../test-support/subscription-update-many';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 function makePrisma() {
   const subs = new Map<number, any>();
@@ -77,6 +79,10 @@ function makeService(
   const notify = {
     alertAdmin: jest.fn((msg: string) => {
       calls.alerts.push(msg);
+    }),
+    // Карточка оплаты — в оба канала; в alerts — то, что видно в Telegram.
+    notifyAdminBoth: jest.fn((html: { telegram: string }) => {
+      calls.alerts.push(html.telegram);
     }),
   };
   const config = {
@@ -166,10 +172,10 @@ describe('SubscriptionService.chargeDue — точные аргументы вы
     });
   });
 
-  it('тело ошибки от Robokassa обрезается в алерте до 150 символов (MethodExpression .slice)', async () => {
-    const longBody = 'X'.repeat(500);
+  it('ответ Robokassa в Telegram-алерт не попадает — только в warn-лог приложения', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     const { service, prisma, calls } = makeService({
-      chargeRecurringResult: { ok: false, body: longBody },
+      chargeRecurringResult: { ok: false, body: PII.robokassa },
     });
     await prisma.subscription.create({
       data: {
@@ -183,10 +189,12 @@ describe('SubscriptionService.chargeDue — точные аргументы вы
     });
     await service.chargeDue();
     const alert = calls.alerts[calls.alerts.length - 1];
-    // 'X'.repeat(150) — ровно обрезанный кусок тела должен присутствовать,
-    // а полное 500-символьное тело — нет (иначе алерт Telegram переполнится).
-    expect(alert).toContain('X'.repeat(150));
-    expect(alert).not.toContain('X'.repeat(151));
+    expect(alert).toContain('Не удалось списать подписку');
+    expect(alert).toContain('Ответ Robokassa — в логе приложения');
+    expectNoMarkers(alert);
+    const logged = warn.mock.calls.map((c) => String(c[0]));
+    expect(logged.some((l) => l.includes(PII.robokassa))).toBe(true);
+    warn.mockRestore();
   });
 
   // Аудит 2026-10-11 (booking-cas): пометка списания failed — только с

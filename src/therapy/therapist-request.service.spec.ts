@@ -195,8 +195,14 @@ describe('TherapistRequestService.submit', () => {
     expect(url).toBe('https://api.telegram.org/bottest-bot-token/sendMessage');
     const body = JSON.parse(opts.body);
     expect(body.chat_id).toBe(ADMIN_ID);
-    expect(body.text).toContain(INPUT.fullName);
-    expect(body.text).toContain(INPUT.contacts);
+    // Карточка — номер заявки; ФИО и контакты — только в письме владельцу.
+    expect(body.text).toContain(`#${requests[0].id}`);
+    expect(body.text).not.toContain(INPUT.fullName);
+    expect(body.text).not.toContain(INPUT.contacts);
+    const mail = (adminAlert.notifyAdminWithFallback as jest.Mock).mock.calls;
+    expect(mail).toHaveLength(1);
+    expect(mail[0][0]).toContain(INPUT.fullName);
+    expect(mail[0][0]).toContain(INPUT.contacts);
     expect(body.reply_markup.inline_keyboard[0]).toEqual([
       { text: '✅ Approve', callback_data: `treq:approve:${requests[0].id}` },
       { text: '❌ Reject', callback_data: `treq:reject:${requests[0].id}` },

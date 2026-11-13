@@ -22,7 +22,12 @@ function makeService(opts: { robokassaEnabled: boolean; appUrl?: string }) {
       }),
     },
   };
-  const notify = { alertAdmin: jest.fn(async () => undefined) };
+  const notify = {
+    alertAdmin: jest.fn(async () => undefined),
+    notifyAdminBoth: jest.fn(
+      async (_h: { telegram: string; email: string }, _s: string) => undefined,
+    ),
+  };
   const robokassa = {
     enabled: opts.robokassaEnabled,
     buildPaymentUrl: jest.fn(
@@ -80,8 +85,8 @@ describe('DonationService.create — Robokassa выключена (dev)', () => 
       }),
     );
     // markPaid шлёт админу карточку доната — подтверждает, что paid-путь реально прошёл.
-    expect(notify.alertAdmin).toHaveBeenCalledTimes(1);
-    expect(notify.alertAdmin.mock.calls[0][0]).toContain('300 ₽');
+    expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
+    expect(notify.notifyAdminBoth.mock.calls[0][0].telegram).toContain('300 ₽');
   });
 
   it('source по умолчанию — "app", неизвестное значение source тоже схлопывается в "app"', async () => {

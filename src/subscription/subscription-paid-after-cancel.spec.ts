@@ -2,6 +2,7 @@ import {
   reportPaidAfterCancel,
   subscriptionPaidAfterCancelAlert,
 } from './subscription-paid-after-cancel';
+import { PII, expectNoMarkers } from '../test-support/pii-markers';
 
 const SUB = {
   id: 7,
@@ -12,28 +13,45 @@ const SUB = {
 };
 
 describe('subscriptionPaidAfterCancelAlert', () => {
-  it('содержит номер подписки, сумму, платёж, контакты и что делать', () => {
+  it('оба канала: номер подписки, сумма, платёж и что делать; контакты — только в письме', () => {
     const { html, subject } = subscriptionPaidAfterCancelAlert(
       SUB,
       { id: 11 },
       300,
     );
-    expect(html).toContain('#7');
-    expect(html).toContain('Оплачено: 300 ₽ (платёж #11, подписка 300 ₽/мес)');
-    expect(html).toContain('a@b.ru');
-    expect(html).toContain('tg:42');
-    expect(html).toContain('Верните деньги');
+    for (const text of [html.telegram, html.email]) {
+      expect(text).toContain('#7');
+      expect(text).toContain(
+        'Оплачено: 300 ₽ (платёж #11, подписка 300 ₽/мес)',
+      );
+      expect(text).toContain('Верните деньги');
+    }
+    expect(html.email).toContain('a@b.ru');
+    expect(html.email).toContain('tg:42');
+    expect(html.telegram).not.toContain('a@b.ru');
+    expect(html.telegram).not.toContain('tg:');
+    expect(html.telegram).toContain('в письме на почте');
     expect(subject).toBe('Деньги за подписку #7 получены, а подписка отменена');
   });
 
-  it('email экранируется (его вводит подписчик, уходит как HTML)', () => {
+  it('email и Telegram ID из маркеров: в Telegram ни одного', () => {
+    const { html } = subscriptionPaidAfterCancelAlert(
+      { ...SUB, email: PII.email, telegramId: PII.telegramId },
+      { id: 11 },
+      300,
+    );
+    expectNoMarkers(html.telegram);
+    expect(html.email).toContain(PII.email);
+  });
+
+  it('email в письме экранируется (его вводит подписчик)', () => {
     const { html } = subscriptionPaidAfterCancelAlert(
       { ...SUB, email: '<a href="x">y</a>' },
       { id: 1 },
       300,
     );
-    expect(html).not.toContain('<a href');
-    expect(html).toContain('&lt;a href');
+    expect(html.email).not.toContain('<a href');
+    expect(html.email).toContain('&lt;a href');
   });
 
   it('пустая сумма и нет контактов: без NaN/undefined/null и лишних строк', () => {
@@ -41,9 +59,11 @@ describe('subscriptionPaidAfterCancelAlert', () => {
       { ...SUB, email: null, telegramId: null, period: 'year' },
       { id: 1 },
     );
-    expect(html).toContain('сумма не указана');
-    expect(html).toContain('₽/год');
-    expect(html).not.toMatch(/NaN|undefined|null|tg:|📬/);
+    expect(html.telegram).toContain('сумма не указана');
+    expect(html.telegram).toContain('₽/год');
+    for (const text of [html.telegram, html.email]) {
+      expect(text).not.toMatch(/NaN|undefined|null|tg:|📬|📧/);
+    }
   });
 });
 
@@ -58,7 +78,7 @@ describe('reportPaidAfterCancel', () => {
     );
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
     const [html, subject] = notify.notifyAdminBoth.mock.calls[0] as any[];
-    expect(html).toContain('#7');
+    expect(html.telegram).toContain('#7');
     expect(subject).toContain('подписка отменена');
   });
 });

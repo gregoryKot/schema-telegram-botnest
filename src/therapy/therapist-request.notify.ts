@@ -4,8 +4,13 @@ import { AccountService } from '../bot/account.service';
 import { EmailService } from '../auth/email.service';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { practiceOwnerTelegramId } from '../utils/practice-owner';
-import { escapeHtml as he } from '../utils/escape-html';
 import { DecisionRequest, deliverDecision } from './therapist-request.deliver';
+import {
+  decisionKeyboard,
+  therapistRequestCard,
+  therapistRequestEmail,
+  type TherapistRequestFull,
+} from './therapist-request.card';
 
 // Телеграм-уведомления заявки на роль терапевта, вынесены из
 // TherapistRequestService (правило №10 CLAUDE.md — лимит размера файла).
@@ -21,12 +26,10 @@ export class TherapistRequestNotifyService {
 
   // Raw Telegram Bot API call. Avoids depending on Telegraf instance and
   // the circular-import that would create (TelegramModule ↔ TherapyModule).
-  // Uses HTML parse_mode to avoid legacy Markdown parse errors for arbitrary
-  // user input (names, contacts, etc. may contain *, _, ., -, (, ) etc.).
-  // Returns true only when Telegram accepted the message. Callers that must
-  // reach the admin (notifyAdmin) fall back to e-mail when this returns false —
-  // e.g. after a bot migration the admin hasn't opened the new bot yet, so the
-  // DM fails and the request would otherwise vanish silently.
+  // Uses HTML parse_mode (applicant decisions carry an escaped reason).
+  // Returns true only when Telegram accepted the message (false — e.g. after a
+  // bot migration the admin hasn't opened the new bot yet); the applicant's
+  // decision then falls back to e-mail, the request itself is always e-mailed.
   private async sendTg(
     chatId: number | bigint,
     text: string,
@@ -73,74 +76,33 @@ export class TherapistRequestNotifyService {
     return practiceOwnerTelegramId();
   }
 
-  async notifyAdmin(req: {
-    id: number;
-    userId: bigint;
-    fullName: string;
-    qualification: string;
-    contacts: string;
-    message: string | null;
-  }) {
+  /**
+   * Заявка владельцу: письмо с данными — всегда (без него решать не на чем),
+   * Telegram — карточка без данных заявителя, с кнопками решения.
+   */
+  async notifyAdmin(req: TherapistRequestFull & { createdAt?: Date | null }) {
+    const subject = `🩺 Заявка на роль терапевта #${req.id}`;
+    const mailed = notifyAdminWithFallback(
+      therapistRequestEmail(req),
+      subject,
+      { skipTelegram: true },
+    );
     if (!this.adminId) {
-      // Без ADMIN_ID пуш невозможен — но заявку всё равно надо доставить.
       this.logger.error(
-        'notifyAdmin: ADMIN_ID not set — falling back to email',
+        'notifyAdmin: ADMIN_ID not set — request in e-mail only',
       );
-      await notifyAdminWithFallback(
-        this.adminPlainText(req),
-        `🩺 Заявка на роль терапевта #${req.id}`,
-      );
+      await mailed;
       return;
     }
-    // HTML mode: escape user-supplied text to avoid parse errors.
-    const text =
-      `🩺 <b>Заявка на роль терапевта</b> #${req.id}\n\n` +
-      `<b>Имя:</b> ${he(req.fullName)}\n` +
-      `<b>Квалификация:</b> ${he(req.qualification)}\n` +
-      `<b>Контакты:</b> ${he(req.contacts)}\n` +
-      (req.message ? `<b>Сообщение:</b> ${he(req.message)}\n` : '') +
-      `<b>Telegram ID:</b> <code>${req.userId}</code>\n\n` +
-      `Список заявок: /zayavki`;
-    const delivered = await this.sendTg(this.adminId, text, {
-      inline_keyboard: [
-        [
-          { text: '✅ Approve', callback_data: `treq:approve:${req.id}` },
-          { text: '❌ Reject', callback_data: `treq:reject:${req.id}` },
-        ],
-      ],
-    });
-    // Пуш не дошёл (напр. после переезда бота админ ещё не нажал Start) —
-    // гарантированная доставка через e-mail, чтобы заявка не потерялась.
-    if (!delivered) {
+    const text = `${therapistRequestCard(req)}\n\nСписок заявок: /zayavki`;
+    const [delivered] = await Promise.all([
+      this.sendTg(this.adminId, text, decisionKeyboard(req.id)),
+      mailed,
+    ]);
+    if (!delivered)
       this.logger.error(
-        `notifyAdmin: Telegram DM to admin failed for request #${req.id} — falling back to email`,
+        `notifyAdmin: Telegram DM to admin failed for request #${req.id} — e-mail only`,
       );
-      await notifyAdminWithFallback(
-        this.adminPlainText(req),
-        `🩺 Заявка на роль терапевта #${req.id}`,
-      );
-    }
-  }
-
-  // Только для ADMIN_ID (см. notifyAdmin выше) — фолбэк-DM/e-mail владельцу,
-  // addressForm обычного пользователя тут ни при чём.
-  private adminPlainText(req: {
-    id: number;
-    userId: bigint;
-    fullName: string;
-    qualification: string;
-    contacts: string;
-    message: string | null;
-  }): string {
-    return (
-      `Новая заявка на роль терапевта #${req.id}\n\n` +
-      `Имя: ${req.fullName}\n` +
-      `Квалификация: ${req.qualification}\n` +
-      `Контакты: ${req.contacts}\n` +
-      (req.message ? `Сообщение: ${req.message}\n` : '') +
-      `Telegram ID: ${req.userId}\n\n` +
-      `Одобрить/отклонить: открой бот и напиши /zayavki`
-    );
   }
 
   // Решение заявителю: Telegram → письмо → logger.error (см. deliver.ts).

@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { EmailService } from '../auth/email.service';
 import { encryptRecord } from '../utils/crypto';
+import { errorKind } from '../utils/owner-card';
 import { INTRO_LEAD_SCHEMA } from './intro-lead.schema';
 import {
   IntroLeadFields,
@@ -28,14 +29,10 @@ function withTimeout(p: Promise<boolean>, ms: number): Promise<boolean> {
 }
 
 /**
- * Заявка с формы знакомства на визитке (POST /api/booking).
- *
- * Раньше заявка жила только в уведомлениях (fire-and-forget DM + письмо):
- * мертвы оба канала — человек оставил имя и контакт, а следа нет (глобальный
- * аудит 2026-10-11). Теперь порядок как у броней (booking.create.ts): запись в
- * БД, потом уведомления с отчётом об исходе, факт доставки по каждому каналу
- * хранится в строке, недоставленное досылает крон
- * (intro-lead-redelivery.service.ts).
+ * Заявка с формы знакомства на визитке (POST /api/booking). Порядок как у
+ * броней (booking.create.ts): запись в БД, потом уведомления с отчётом об
+ * исходе; факт доставки по каналу хранится в строке, недоставленное досылает
+ * крон (intro-lead-redelivery.service.ts).
  */
 @Injectable()
 export class IntroLeadService {
@@ -69,38 +66,38 @@ export class IntroLeadService {
       return this.submitUnsaved(lead, err);
     }
     this.logger.log('New intro lead saved');
-    await this.deliver(id, introLeadMessages(lead));
+    await this.deliver(id, introLeadMessages(lead, id));
     return { ok: true };
   }
 
   /**
    * Запись не удалась. Лид уходит админу обоими каналами с пометкой «не
-   * сохранилась в базе»; дошёл хоть один — человеку ответ «принято» (повтор
-   * породил бы дубль), не дошёл ни один — честная ошибка, а не ложный успех.
+   * сохранилась в базе». Имя и контакт несёт только письмо: дошло — человеку
+   * «принято» (повтор породил бы дубль), не дошло — честная ошибка.
    */
   private async submitUnsaved(
     lead: IntroLeadFields,
     err: unknown,
   ): Promise<{ ok: true }> {
-    // В лог — только тип и код ошибки: текст ошибки Prisma может нести значения полей (PII).
-    const code = (err as { code?: string })?.code ?? '';
-    const kind = err instanceof Error ? err.name : typeof err;
-    // Стабильный текст без цифр в начале — троттлинг AlertLogger по ключу.
+    // Только тип и код ошибки: её текст может нести значения полей (PII).
     this.logger.error(
-      `Intro lead create failed, lead alerted: ${kind} ${code}`,
+      `Intro lead create failed, lead alerted: ${errorKind(err)}`,
     );
-    const sent = await this.deliver(null, introLeadMessages(lead, 'unsaved'));
-    if (sent.tg || sent.email) return { ok: true };
+    const msg = introLeadMessages(lead, null, 'unsaved');
+    const sent = await this.deliver(null, msg);
+    if (sent.email) return { ok: true };
     throw new ServiceUnavailableException('Заявка не принята');
   }
 
-  /** Отправка в оба канала. id=null — строки нет, флаги писать некуда. */
+  /** Отправка в оба канала. id=null — строки нет, флаги писать некуда; tgDone — DM уже дошёл. */
   async deliver(
     id: number | null,
     msg: IntroLeadMessages,
+    tgDone = false,
   ): Promise<{ tg: boolean; email: boolean }> {
+    const sendTg = () => this.telegram.notifyAdmin(msg.tg);
     const [tg, email] = await Promise.all([
-      this.channel(id, 'tg', () => this.telegram.notifyAdmin(msg.tg)),
+      tgDone || this.channel(id, 'tg', sendTg),
       this.channel(id, 'email', () =>
         this.email.sendAdminNotification(msg.subject, msg.email),
       ),

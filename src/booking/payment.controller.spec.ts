@@ -184,12 +184,13 @@ describe('PaymentController.handleResult — booking (обычный InvId-ди�
     expect(res).toBe('OK7');
     expect(notify.notifyAdminBoth).toHaveBeenCalledTimes(1);
     const [html, subject] = notify.notifyAdminBoth.mock.calls[0] as unknown as [
-      string,
+      { telegram: string; email: string },
       string,
     ];
-    expect(html).toContain('#7');
-    expect(html).toContain('Мария');
-    expect(html).toContain('4000 ₽');
+    expect(html.telegram).toContain('#7');
+    expect(html.telegram).toContain('4000 ₽');
+    expect(html.telegram).not.toContain('Мария'); // имя — только в письме
+    expect(html.email).toContain('Мария');
     expect(subject).toBe('Деньги получены, а брони #7 нет');
     expect(notify.alertAdmin).not.toHaveBeenCalled(); // один сигнал, не два
   });

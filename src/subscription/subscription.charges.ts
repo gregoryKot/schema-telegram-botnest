@@ -5,7 +5,10 @@ import { BookingNotifyService } from '../booking/booking-notify.service';
 import { SubPeriod } from '../booking/booking.config';
 import { decryptRecord, EncryptSchema } from '../utils/crypto';
 import { SUBSCRIPTION_INVID_BASE } from './subscription.constants';
-import { escapeHtml } from '../utils/escape-html';
+import {
+  chargeFailedText,
+  subscriptionChargedAlert,
+} from './subscription-owner-card';
 import { moneyAlert } from '../logger/money-alert';
 import { activatePaidCharge } from './subscription.charge-activate';
 import { markChargeFailed } from './subscription.charge-failed';
@@ -16,8 +19,7 @@ import {
 } from './subscription.charge-guards';
 
 // Списания по подписке: подтверждение оплаченного charge из вебхука и
-// почасовой прогон due-подписок. Вынесено из subscription.service.ts
-// (правило №10) — сервис оставляет тонкие делегаты.
+// почасовой прогон due-подписок (сервис оставляет тонкие делегаты).
 
 const SCHEMA: EncryptSchema = { strings: ['email'] };
 const MAX_FAILS = 3; // after this many failed recurring charges → past_due
@@ -85,12 +87,8 @@ export async function markChargePaid(
     await reportPaidAfterCancel(deps, plain, charge, paidAmount);
     return { ok: true };
   }
-  await deps.notify.alertAdmin(
-    `${charge.isFirst ? '🎉 <b>Новая подписка</b>' : '🔁 <b>Продление подписки</b>'} ${sub.amount} ₽/${sub.period === 'year' ? 'год' : 'мес'}` +
-      // M1 (аудит 2026-10): email вводит подписчик, уходит админу как HTML.
-      (plain.email ? `\n📬 ${escapeHtml(plain.email)}` : '') +
-      (sub.telegramId ? `\n👤 tg:${sub.telegramId}` : ''),
-  );
+  const alert = subscriptionChargedAlert(plain, charge);
+  await deps.notify.notifyAdminBoth(alert.html, alert.subject);
   deps.logger.log(
     `Subscription ${sub.id} ${charge.isFirst ? 'ACTIVATED' : 'RENEWED'} → next ${next.toISOString()}`,
   );
@@ -166,8 +164,10 @@ export async function chargeDue(deps: ChargeDeps) {
         );
         continue;
       }
+      // Ответ Robokassa — в лог (warn: error ушёл бы владельцу в Telegram).
+      deps.logger.warn(`Subscription ${sub.id}: charge failed: ${res.body}`);
       await deps.notify.alertAdmin(
-        `⚠️ <b>Не удалось списать подписку #${sub.id}</b> (${fails}/${MAX_FAILS})\n${res.body.slice(0, 150)}`,
+        chargeFailedText(sub.id, charge.id, fails, MAX_FAILS),
       );
     }
   }

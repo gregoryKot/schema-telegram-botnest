@@ -76,7 +76,7 @@ describe('IntroLeadRedeliveryService.redeliver', () => {
     expect(telegram.notifyAdmin).not.toHaveBeenCalled();
   });
 
-  it('берёт только недоставленные, не обезличенные, до 5 попыток, от 5 минут до 7 дней', async () => {
+  it('берёт заявки без доставленного письма, не обезличенные, до 5 попыток, от 5 минут до 7 дней', async () => {
     const { service, prisma, cronLeader } = make();
     await service.redeliver(NOW);
     expect(cronLeader.claimRun).toHaveBeenCalledWith(
@@ -86,7 +86,6 @@ describe('IntroLeadRedeliveryService.redeliver', () => {
     );
     expect(prisma.introLead.findMany).toHaveBeenCalledWith({
       where: {
-        tgDeliveredAt: null,
         emailDeliveredAt: null,
         anonymizedAt: null,
         deliveryAttempts: { lt: 5 },
@@ -101,8 +100,8 @@ describe('IntroLeadRedeliveryService.redeliver', () => {
   });
 
   it('шлёт расшифрованную заявку с пометкой повтора, считает попытку до отправки, отмечает доставку', async () => {
-    const { service, prisma, telegram, calls } = make({
-      rows: [row()],
+    const { service, prisma, telegram, email, calls } = make({
+      rows: [row({ tgDeliveredAt: null })],
       mail: false,
     });
     await expect(service.redeliver(NOW)).resolves.toBe(1);
@@ -112,13 +111,29 @@ describe('IntroLeadRedeliveryService.redeliver', () => {
     });
     const text = telegram.notifyAdmin.mock.calls[0] as unknown as [string];
     expect(text[0]).toContain('Повторная отправка');
-    expect(text[0]).toContain('Ира');
-    expect(text[0]).toContain('@ira');
+    expect(text[0]).toContain('#3');
+    expect(text[0]).not.toContain('Ира'); // имя и контакт — только в письме
+    expect(text[0]).not.toContain('@ira');
+    expect(email.sendAdminNotification).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining('@ira'),
+    );
     expect(prisma.introLead.update).toHaveBeenLastCalledWith({
       where: { id: 3 },
       data: { tgDeliveredAt: expect.any(Date) },
     });
     expect(calls).toEqual(expect.arrayContaining(['tg', 'email']));
+  });
+
+  // Данные человека несёт только письмо: DM дошёл, письмо нет — досылаем
+  // письмо, а второй DM «первая не дошла» не шлём.
+  it('DM уже дошёл, письмо нет — повтор только письмом', async () => {
+    const { service, telegram, email } = make({
+      rows: [row({ tgDeliveredAt: new Date(NOW.getTime() - 10 * MIN) })],
+    });
+    await expect(service.redeliver(NOW)).resolves.toBe(1);
+    expect(telegram.notifyAdmin).not.toHaveBeenCalled();
+    expect(email.sendAdminNotification).toHaveBeenCalledTimes(1);
   });
 
   it('строка с пустыми (стёртыми) полями не шлётся', async () => {

@@ -5,17 +5,17 @@ import { MeetingService } from './meeting.service';
 import { encrypt } from '../utils/crypto';
 import { ownerEventFor } from './caldav-owner-event';
 import { formatTime, subjectFromTitle } from './booking-notify.format';
-import { CONFIRMED_SUBJECT, confirmedCardText } from './booking-confirmed-card';
+import { CONFIRMED_SUBJECT, confirmedNotice } from './booking-confirmed-card';
 import type { PlainBooking } from './booking-notify.service';
+import { ADMIN_PANEL_URL, type OwnerNotice } from '../utils/owner-card';
 
-// Тело onConfirmed: ссылка на встречу, событие календаря, флаг, DM админу. Из
-// booking-notify.service.ts (правило №10), аудит 2026-10-11, security#21.
+// Тело onConfirmed: ссылка на встречу, событие календаря, флаг, DM владельцу.
 
 export interface ConfirmRunDeps {
   prisma: PrismaService;
   meeting: MeetingService;
   calDav: CalDavService;
-  notifyAdminBoth: (html: string, subject: string) => Promise<void>;
+  notifyAdminBoth: (t: string | OwnerNotice, subj: string) => Promise<void>;
 }
 
 /**
@@ -88,12 +88,12 @@ export async function runConfirmEffects(
   });
   // 0 строк: параллельный проход уже довёл и уведомил, либо бронь отменена.
   if (claimed.count === 0) return;
-  await d.notifyAdminBoth(confirmedCardText(b, replaced), CONFIRMED_SUBJECT);
+  await d.notifyAdminBoth(confirmedNotice(b, replaced), CONFIRMED_SUBJECT);
   // CalDAV настроен, но запись не удалась — тоже событие брони: оба канала.
   if (d.calDav.enabled && !uid) {
     const title = '⚠ <b>Подтверждена, но НЕ попала в Apple Calendar</b>';
     await d.notifyAdminBoth(
-      `${title}\n${formatTime(b.startsAt)} · ${b.clientName}\nДобавьте в календарь вручную.`,
+      `${title}\n${formatTime(b.startsAt)} · бронь #${b.id}\nСобытие стоит добавить в календарь вручную. Бронь: ${ADMIN_PANEL_URL}`,
       subjectFromTitle(title),
     );
   }
