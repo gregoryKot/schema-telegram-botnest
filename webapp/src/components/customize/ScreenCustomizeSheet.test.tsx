@@ -29,6 +29,15 @@ describe('ScreenCustomizeSheet', () => {
     expect(screen.getByRole('switch', { name: 'Тест на схемы' }).getAttribute('aria-checked')).toBe('true');
   });
 
+  it('у строки блока — знак BLOCK_META.sign; у выключенного блока он бледный', () => {
+    setup();
+    const signs = [...document.querySelectorAll('.cz-block .cz-sign')];
+    expect(signs).toHaveLength(2);
+    expect(signs.every((s) => s.querySelector('svg.pp-art'))).toBe(true);
+    expect(signs[0].classList.contains('is-off')).toBe(true);
+    expect(signs[1].classList.contains('is-off')).toBe(false);
+  });
+
   it('тумблер зовёт toggle с id блока', () => {
     const blocks = setup();
     fireEvent.click(screen.getByRole('switch', { name: 'Тест на схемы' }));

@@ -6,7 +6,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { JourneyView, type JourneyViewProps } from './JourneyView';
-import type { JourneyHeroes } from './journeyHeroes';
+import type { JourneyKit } from './journeyKit';
+import type { JourneyStatRow } from './journeyStats';
 import type { JourneyState } from './useJourney';
 import type { JourneyItem } from './journeyMeta';
 
@@ -16,9 +17,9 @@ afterEach(() => {
   cleanup();
 });
 
-// Героя передаёт обёртка площадки пропсом (journeyHeroes.ts) — как
+// Вёрстку передаёт обёртка площадки пропсом (journeyHeroes.ts) — как
 // JourneySheet сайта; здесь — минимальная заглушка с теми же текстами.
-const STUB_HEROES: JourneyHeroes = {
+const STUB_KIT: JourneyKit = {
   Hero: ({ total, onShareFeed }) => (
     <div>
       <span>{total}</span>
@@ -32,12 +33,21 @@ const STUB_HEROES: JourneyHeroes = {
       <div>{explainer}</div>
     </div>
   ),
+  Stat: ({ row }) => (
+    <div data-testid="stat">
+      {row.count} {row.label}
+    </div>
+  ),
+  Chip: ({ label, on, onToggle }) => (
+    <button aria-pressed={on} onClick={onToggle}>
+      {label}
+    </button>
+  ),
 };
 
 const View = (
-  p: Omit<JourneyViewProps, 'heroes'> &
-    Partial<Pick<JourneyViewProps, 'heroes'>>,
-) => <JourneyView heroes={STUB_HEROES} {...p} />;
+  p: Omit<JourneyViewProps, 'kit'> & Partial<Pick<JourneyViewProps, 'kit'>>,
+) => <JourneyView kit={STUB_KIT} {...p} />;
 
 function baseState(overrides: Partial<JourneyState> = {}): JourneyState {
   return {
@@ -109,30 +119,31 @@ describe('JourneyView — герой от площадки', () => {
       total,
       items: total ? [{ type: 'gratitude', at: '2026-07-21T10:00:00Z' }] : [],
     });
-  const view = (total: number, heroes: JourneyViewProps['heroes']) => (
+  const view = (total: number, kit: JourneyViewProps['kit']) => (
     <View
       tr={tr}
       j={state(total)}
       subtitle={() => null}
       onOpenItem={vi.fn()}
       onShareFeed={vi.fn()}
-      heroes={heroes}
+      kit={kit}
       skeleton={<div />}
     />
   );
 
   it('переданный компонент получает total, пустой — пояснение; свой не мешает телу экрана', () => {
-    const heroes = {
+    const kit = {
+      ...STUB_KIT,
       Hero: ({ total }: { total: number }) => <div>свой герой {total}</div>,
       EmptyHero: ({ explainer }: { explainer: string }) => (
         <div>свой пустой: {explainer.slice(0, 7)}</div>
       ),
     };
-    render(view(7, heroes));
+    render(view(7, kit));
     expect(screen.getByText('свой герой 7')).toBeTruthy();
     expect(screen.getByText('Неделя')).toBeTruthy();
     cleanup();
-    render(view(0, heroes));
+    render(view(0, kit));
     expect(screen.getByText(/свой пустой: Всё, чт/)).toBeTruthy();
   });
 });
@@ -149,7 +160,14 @@ describe('JourneyView — заполненный путь', () => {
           data: { counts: {} as never, items: [ITEM] },
           total: 5,
           items: [ITEM],
-          stats: [{ emoji: '🌱', label: 'Благодарности', count: 5 }],
+          stats: [
+            {
+              type: 'gratitude',
+              emoji: '🌱',
+              label: 'Благодарности',
+              count: 5,
+            },
+          ],
         })}
         subtitle={() => null}
         onOpenItem={vi.fn()}
@@ -247,5 +265,60 @@ describe('JourneyView — заполненный путь', () => {
     expect(onOpenItem).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'gratitude' }),
     );
+  });
+});
+
+describe('JourneyView — плитки счётчиков 2×3', () => {
+  it('показывает не больше шести самых частых занятий, без эмодзи на экране', () => {
+    const stats: JourneyStatRow[] = Array.from({ length: 8 }, (_, i) => ({
+      type: `t${i}`,
+      emoji: '🌱',
+      label: `Занятие ${i}`,
+      count: 10 - i,
+    }));
+    const item: JourneyItem = { type: 'gratitude', at: '2026-07-21T10:00:00Z' };
+    const { container } = render(
+      <View
+        tr={tr}
+        j={baseState({
+          data: { counts: {} as never, items: [item] },
+          total: 60,
+          items: [item],
+          stats,
+        })}
+        subtitle={() => null}
+        onOpenItem={vi.fn()}
+        onShareFeed={vi.fn()}
+        skeleton={<div />}
+      />,
+    );
+    expect(screen.getAllByTestId('stat').map((n) => n.textContent)).toEqual(
+      stats.slice(0, 6).map((s) => `${s.count} ${s.label}`),
+    );
+    expect(container.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
+  });
+
+  it('выбранный период и группа — чип в состоянии «включён»', () => {
+    const item: JourneyItem = { type: 'gratitude', at: '2026-07-21T10:00:00Z' };
+    render(
+      <View
+        tr={tr}
+        j={baseState({
+          data: { counts: {} as never, items: [item] },
+          total: 1,
+          items: [item],
+          period: 'week',
+          group: 'diary',
+        })}
+        subtitle={() => null}
+        onOpenItem={vi.fn()}
+        onShareFeed={vi.fn()}
+        skeleton={<div />}
+      />,
+    );
+    const on = screen
+      .getAllByRole('button', { pressed: true })
+      .map((b) => b.textContent);
+    expect(on).toEqual(['Неделя', 'Дневники']);
   });
 });
