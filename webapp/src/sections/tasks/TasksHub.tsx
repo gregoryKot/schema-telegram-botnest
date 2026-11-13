@@ -75,7 +75,7 @@ export function TasksHub({ onClose, onOpenTracker, onOpenDiaries, onOpenChildhoo
           onClose={() => setShowTaskCreate(false)}
         />
       )}
-      <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} backLabel="Назад" />
+      <TaskExerciseHost open={launcher.open} onBack={launcher.close} onComplete={launcher.complete} onOpenTracker={onOpenTracker} onOpenExercise={launcher.openExercise} backLabel="Назад" />
     </>
   );
 }
