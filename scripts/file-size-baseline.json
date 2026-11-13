@@ -29,7 +29,7 @@
   "e2e-browser/support/therapistCabinet.ts": 99,
   "eslint.a11y-labels.mjs": 29,
   "eslint.config.mjs": 137,
-  "playwright.config.ts": 82,
+  "playwright.config.ts": 101,
   "prisma.config.js": 7,
   "scripts/agent-docs-fs.mjs": 59,
   "scripts/agent-docs-rules.mjs": 167,

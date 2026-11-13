@@ -28,9 +28,10 @@ export default defineConfig({
   fullyParallel: false,
   reporter: [['list']],
   use: commonUse,
-  // Проекты за одним CI-прогоном `npx playwright test` (nightly.yml, джоба
-  // browser-smoke, без фильтра по проекту):
-  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts тоже: ему нужен baseURL 4173).
+  // Проекты за одним CI-прогоном `npx playwright test` (ci.yml и nightly.yml,
+  // джоба browser-smoke, без фильтра по проекту):
+  //  - webapp — сайт schemehappens.ru, десктопный Chromium (a11y-smoke.spec.ts тоже: ему нужен baseURL 4173);
+  //  - webkit-iphone — замеры телефона и снимки экранов в WebKit на iPhone 13.
   projects: [
     {
       name: 'webapp',
@@ -49,8 +50,26 @@ export default defineConfig({
         'screen-customize.spec.ts',
         'sheet-scroll.spec.ts',
         'wheel-fit.spec.ts',
+        'telegram-dark.spec.ts',
       ],
       use: { ...commonUse, baseURL: 'http://127.0.0.1:4173' },
+    },
+    {
+      name: 'webkit-iphone',
+      testMatch: [
+        'today-fit.spec.ts',
+        'tracker-fit.spec.ts',
+        'sheet-scroll.spec.ts',
+        'page-rhythm.spec.ts',
+        'phone-screens.spec.ts',
+      ],
+      use: {
+        trace: 'retain-on-failure',
+        ...devices['iPhone 13'],
+        baseURL: 'http://127.0.0.1:4173',
+        // Пусто: иначе проект унаследует путь к Chromium из общего `use`.
+        launchOptions: {},
+      },
     },
     //  - game — тоже под этим прогоном: прод-сборка игры game/ (база /game/, сборка `npm run build --prefix game`).
     {
