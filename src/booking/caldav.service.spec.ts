@@ -308,18 +308,18 @@ describe('CalDavService.removeEvent', () => {
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: true, status: 200 }),
     ) as any;
-    await svc.removeEvent('booking-9@x');
+    await expect(svc.removeEvent('booking-9@x')).resolves.toBe('deleted');
     const [url, init] = (global.fetch as jest.Mock).mock.calls[0];
     expect(url).toBe('https://p1.icloud.com/cal/booking-9@x.ics');
     expect(init.method).toBe('DELETE');
   });
 
-  it('404 (уже удалено) не считается ошибкой — не бросает', async () => {
+  it('404 (уже удалено) — «missing», не ошибка и не бросает', async () => {
     const svc = makeService({ APPLE_CALDAV_URL: 'https://p1.icloud.com/cal/' });
     global.fetch = jest.fn(() =>
       Promise.resolve({ ok: false, status: 404 }),
     ) as any;
-    await expect(svc.removeEvent('x')).resolves.toBeUndefined();
+    await expect(svc.removeEvent('x')).resolves.toBe('missing');
   });
 
   it('сетевая ошибка — перехватывается, не бросает наружу', async () => {
@@ -327,7 +327,7 @@ describe('CalDavService.removeEvent', () => {
     global.fetch = jest.fn(() => {
       throw new Error('down');
     }) as any;
-    await expect(svc.removeEvent('x')).resolves.toBeUndefined();
+    await expect(svc.removeEvent('x')).resolves.toBe('failed');
   });
 });
 
