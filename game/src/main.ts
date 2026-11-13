@@ -8,6 +8,8 @@ import { setupMenu } from './menu';
 import { initTouchControls } from './controls';
 import { initAnalytics } from './analytics';
 import { audio } from './audio';
+import { loadHeavySprites } from './loadHeavy';
+import { pauseInPortrait } from './rotate';
 import { W, H, PHYS } from './constants';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -43,28 +45,10 @@ function start() {
   (window as any).__game = game;
   setupMenu(game);
   initTouchControls();
+  pauseInPortrait(game);
   initAnalytics();
   audio.unlockOnFirstGesture(); // тач-кнопки — HTML вне канваса; ловим жест на документе
   loadHeavySprites(game);       // тяжёлые спрайты — в фоне, не блокируя меню
-}
-
-// Догружаем тяжёлые спрайты отдельным чанком, пока пользователь в меню/интро.
-// Кладём прямо в глобальный TextureManager (общий для всех сцен). Сцены, если
-// спрайт ещё не доехал, создают анимацию при первом использовании (safeAnim).
-function loadHeavySprites(game: Phaser.Game) {
-  import('./sprites-heavy')
-    .then(({ HEAVY_SHEETS }) => {
-      for (const [key, s] of Object.entries(HEAVY_SHEETS)) {
-        if (game.textures.exists(key)) continue;
-        const img = new Image();
-        img.onload = () => {
-          if (!game.textures.exists(key))
-            game.textures.addSpriteSheet(key, img, { frameWidth: s.fw, frameHeight: s.fh });
-        };
-        img.src = s.url; // data-URI из чанка — без сетевого запроса
-      }
-    })
-    .catch(() => { /* чанк не доехал — safeAnim guard'ы покроют */ });
 }
 
 Promise.all([

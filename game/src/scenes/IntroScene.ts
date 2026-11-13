@@ -38,27 +38,27 @@ export class IntroScene extends Phaser.Scene {
     // Тонкая декоративная линия сверху
     const line = this.add.graphics();
     line.fillStyle(0xff7733, 0.3);
-    line.fillRect(W / 2 - 80, 50, 160, 1);
+    line.fillRect(W / 2 - 80, IS_TOUCH ? 20 : 50, 160, 1);
 
     // Заголовок главы
-    this.add.text(W / 2, 70, t(slide.title as MsgKey).toUpperCase(), {
+    this.add.text(W / 2, IS_TOUCH ? 36 : 70, t(slide.title as MsgKey).toUpperCase(), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px',
-      color: '#aa4411', letterSpacing: 6,
+      color: '#ff7733', letterSpacing: 6,
     }).setOrigin(0.5);
 
     // Подзаголовок
-    this.add.text(W / 2, 105, t(slide.subtitle as MsgKey), {
+    this.add.text(W / 2, IS_TOUCH ? 62 : 105, t(slide.subtitle as MsgKey), {
       fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '18px',
       color: '#fff0d8', letterSpacing: 1,
     }).setOrigin(0.5);
 
     // Линия под заголовком
     line.fillStyle(0xff7733, 0.15);
-    line.fillRect(W / 2 - 200, 130, 400, 1);
+    line.fillRect(W / 2 - 200, IS_TOUCH ? 80 : 130, 400, 1);
 
     // Текст — построчно с анимацией появления; на таче канвас ниже (H=384) — раскладка от высоты,
     // иначе кнопка ложилась на текст, а последняя строка уходила за кадр
-    const startY = IS_TOUCH ? 96 : 160;
+    const startY = IS_TOUCH ? 100 : 160;
     const lineH = IS_TOUCH ? 18 : 26;
     const btnY = Math.min(H - 40, startY + slide.lines.length * lineH + 30);
 

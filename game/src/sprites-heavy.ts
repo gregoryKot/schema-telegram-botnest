@@ -8,9 +8,9 @@ import catSleepUrl from './assets/cat_sleep.png';
 import catDashUrl  from './assets/cat_dash.png';
 import neiIdleUrl  from './assets/nei_idle.png';
 
-export const HEAVY_SHEETS: Record<string, { url: string; fw: number; fh: number }> = {
-  cat_play:  { url: catPlayUrl,  fw: 257, fh: 257 },
-  cat_sleep: { url: catSleepUrl, fw: 190, fh: 190 },
-  cat_dash:  { url: catDashUrl,  fw: 269, fh: 269 },
+export const HEAVY_SHEETS: Record<string, { url: string; fw: number; fh: number; out?: number }> = {
+  cat_play:  { url: catPlayUrl,  fw: 257, fh: 257, out: 64 }, // out — сторона кадра в игре
+  cat_sleep: { url: catSleepUrl, fw: 190, fh: 190, out: 56 },
+  cat_dash:  { url: catDashUrl,  fw: 269, fh: 269, out: 70 },
   nei_idle:  { url: neiIdleUrl,  fw: 48,  fh: 48 }, // соседка (пёс-коллега заменён будильником)
 };

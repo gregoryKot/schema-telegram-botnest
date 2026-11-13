@@ -8,6 +8,7 @@ import { unlockChapter } from '../../progress';
 import { track, trackEvent } from '../../analytics';
 import { openCta } from '../../therapyCta';
 import { addCrisisLine } from './cta';
+import { addGlow } from '../../look';
 import type { GameScene } from '../GameScene';
 
 export function onDoorEnter(s: GameScene) {
@@ -55,8 +56,7 @@ export function sessionScene(s: GameScene) {
   const room = s.add.rectangle(W / 2, H / 2, W, H, 0x171008).setScrollFactor(0).setDepth(deep).setAlpha(0);
   s.tweens.add({ targets: room, alpha: 1, duration: 900 });
   const gfx = s.add.graphics().setScrollFactor(0).setDepth(deep + 1).setAlpha(0);
-  gfx.fillStyle(0xffd9a0, 0.10); gfx.fillEllipse(W * 0.72, H * 0.36, 300, 220);   // свет лампы
-  gfx.fillStyle(0x2a2014, 1); gfx.fillRect(0, H - 64, W, 64);                     // пол
+    gfx.fillStyle(0x2a2014, 1); gfx.fillRect(0, H - 64, W, 64);                     // пол
   const objs: Phaser.GameObjects.GameObject[] = [gfx];
   const put = (key: string, x: number, w: number) => {
     if (!s.textures.exists(key)) return null;
@@ -65,7 +65,8 @@ export function sessionScene(s: GameScene) {
     objs.push(img); return img;
   };
   put('prop_couch', W * 0.30, 240);
-  put('prop_lamp', W * 0.74, 64);
+  const lamp = put('prop_lamp', W * 0.74, 64); // свет — мягким градиентом у абажура
+  if (lamp) objs.push(addGlow(s, W * 0.74, lamp.y - lamp.displayHeight * 0.85, 220, 200, 0xffd080, 0.2, deep + 1).setScrollFactor(0).setAlpha(0));
   put('prop_plant', W * 0.92, 70);
   // Мистер и терапевт — просто сидят. никого не надо бить.
   const mister = s.add.sprite(W * 0.26, H - 64, 'cat_idle').setOrigin(0.5, 1)
@@ -147,12 +148,12 @@ function showTherapyCta(s: GameScene) {
   const cta = s.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
   // вторая кнопка тише главной: честная подпись, без рамки
-  const book = mk(320, t('m_book_therapist'), 9, '#9b8fbf').setInteractive({ useHandCursor: true });
-  const shareTxt = mk(360, t('m_share'), 10, '#c0b8e8');
+  const book = mk(320, t('m_book_therapist'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const shareTxt = mk(360, t('m_share'), 11, '#c0b8e8');
   const share = s.add.rectangle(W / 2, 360 * ky, shareTxt.width + 30, 34, 0x241d3a)
     .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(deep).setAlpha(0).setInteractive({ useHandCursor: true });
-  const donTxt = mk(404, t('m_support_game'), 9, '#7a6fa0').setInteractive({ useHandCursor: true });
-  const menu = mk(442, t('m_or_back_to_menu'), 9, '#5a4f7a').setInteractive({ useHandCursor: true });
+  const donTxt = mk(404, t('m_support_game'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
+  const menu = mk(442, t('m_or_back_to_menu'), 11, '#9b8fbf').setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: top, alpha: 1, duration: 800, delay: 300 });
   s.tweens.add({ targets: sum, alpha: 1, duration: 700, delay: 1200 });
@@ -175,7 +176,7 @@ function showTherapyCta(s: GameScene) {
     window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(t('m_share_road'))}`, '_blank');
   });
   donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
-  donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
+  donTxt.on('pointerout', () => donTxt.setColor('#9b8fbf'));
   donTxt.on('pointerdown', () => { track('donate_click', { source: 'cabinet' }); window.open('https://schemehappens.ru/donate', '_blank'); });
   menu.on('pointerdown', () => s.scene.start('Start'));
   addCrisisLine(s, 486 * ky, deep + 1);
