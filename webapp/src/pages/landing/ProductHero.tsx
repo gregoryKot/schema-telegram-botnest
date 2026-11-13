@@ -36,7 +36,7 @@ export function ProductHero({ entry, isAuthenticated }: { entry: ReturnType<type
             <Cta href={entry.href} size="lg">{entry.main}</Cta>
             <Cta href="/tests" variant="ghost" size="lg">Мини-тесты без регистрации</Cta>
           </div>
-          {!isAuthenticated && <p className="pl2-fine">Вход через ВКонтакте или email · регистрация не нужна</p>}
+          {!isAuthenticated && <p className="pl2-fine">Вход через ВКонтакте, Яндекс или email · регистрация не нужна</p>}
         </div>
         <div className="pl2-in pl2-in--late pl2-hero-art">
           <HeroCollage />

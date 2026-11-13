@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ProviderRow, GoogleIcon, TelegramIcon, VkIcon, MaxIcon } from './ProviderRows';
+import { ProviderRow, GoogleIcon, TelegramIcon, VkIcon, YandexIcon, MaxIcon } from './ProviderRows';
 import { ONLY_METHOD_NOTE } from './accountMethods';
 
 const css = readFileSync(join(__dirname, '../../styles/auth-account.css'), 'utf8');
@@ -19,6 +19,7 @@ describe('ProviderRow — значок и пояснение единствен�
     ['Google', GoogleIcon],
     ['Telegram', TelegramIcon],
     ['VK', VkIcon],
+    ['Яндекс', YandexIcon],
     ['MAX', MaxIcon],
   ])('плитка значка %s не сжимается (flexShrink: 0)', (_name, Icon) => {
     const { container } = render(<Icon />);

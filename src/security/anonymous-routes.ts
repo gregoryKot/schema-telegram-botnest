@@ -25,6 +25,9 @@ export const ANONYMOUS_BY_DESIGN: Record<string, string> = {
   'auth/auth-oauth.controller.ts:vkCallback':
     'возврат с VK: подписанный state + кука oauth_state (double-submit) и ' +
     'PKCE, код обменивается на сервере; сессии до колбэка нет',
+  'auth/auth-oauth.controller.ts:yandexCallback':
+    'возврат с Яндекс ID (2026-11): подписанный state + кука oauth_state ' +
+    '(double-submit), обмен кода на сервере с секретом; сессии до колбэка нет',
   'auth/auth-ticket.controller.ts:poll':
     'контейнер забирает сессию по длинному device-коду (RFC 8628): код и ' +
     'есть доказательство, CSRF-заголовок, троттлинг по IP',

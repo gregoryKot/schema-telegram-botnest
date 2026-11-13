@@ -4,8 +4,8 @@
 // кто угодно, и этот текст стоял на нашей странице под нашим знаком.
 //
 // Откуда коды (сверять при добавлении нового редиректа на `/auth/error`):
-// - `<провайдер>_failed` — `src/auth/auth-oauth.controller.ts` (`vk_failed`);
-//   id провайдеров — `src/auth/providers/*.provider.ts`;
+// - `<провайдер>_failed` — колбэки OAuth в `src/auth/auth-oauth.controller.ts`
+//   (`vk_failed`, `yandex_failed`); id провайдеров — `src/auth/providers/*.provider.ts`;
 // - `<провайдер>_disabled` — `src/auth/oauth-provider-switch.ts` (env провайдера
 //   снят: рубильник входа; сверку словаря держит `oauth-provider-switch.spec.ts`);
 // - `email_link_expired` — `src/auth/email-callback-redirect.ts` и
@@ -30,6 +30,8 @@ const providerDisabled = (name: string) => () =>
 const AUTH_ERROR_TEXTS: Record<string, (tr: Tr) => string> = {
   vk_failed: providerFailed('ВКонтакте'),
   vk_disabled: providerDisabled('ВКонтакте'),
+  yandex_failed: providerFailed('Яндекс'),
+  yandex_disabled: providerDisabled('Яндекс'),
   max_failed: providerFailed('MAX'),
   email_link_expired: (tr) =>
     tr(

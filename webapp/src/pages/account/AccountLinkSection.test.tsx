@@ -117,6 +117,16 @@ describe('AccountLinkSection — кому показывается', () => {
     expect(JSON.parse(init.body as string).provider).toBe('vk');
   });
 
+  // Аккаунт, созданный входом через Яндекс: источник — его строка AuthProvider.
+  // С 'email' по умолчанию сервер искал бы привязку, которой у аккаунта нет.
+  it('вход через Яндекс — билет называет источником yandex', async () => {
+    renderSection([provider('yandex')]);
+
+    await findLink();
+    const [, init] = mockedFetch.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string).provider).toBe('yandex');
+  });
+
   it('Telegram уже привязан — не показывает ничего и не тратит билет', async () => {
     const { container } = renderSection([
       provider('google'),

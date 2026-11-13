@@ -439,11 +439,11 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
     });
   });
 
-  // Рубильник VK (2026-11): в e2e-окружении VK_* не заданы —
-  // ровно состояние «провайдер выключен». Раньше старт падал 500 на
+  // Рубильник VK и Яндекса (2026-11): в e2e-окружении VK_* и YANDEX_* не
+  // заданы — ровно состояние «провайдер выключен». Раньше старт падал 500 на
   // getOrThrow; теперь — 302 на экран ошибки входа с понятной причиной.
   describe('старт OAuth без конфигурации провайдера', () => {
-    it.each(['vk'])(
+    it.each(['vk', 'yandex'])(
       'GET /api/auth/%s → 302 на /auth/error?reason=<id>_disabled, без куки state',
       async (provider) => {
         const res = await request(app.getHttpServer())
@@ -456,6 +456,70 @@ describe('e2e smoke: auth-flows (cookie/CSRF/refresh/logout/2FA)', () => {
         expect(extractSetCookie(res, 'oauth_state')).toBeFalsy();
       },
     );
+  });
+
+  // Вход через Яндекс ID (2026-11). Настоящий обмен кода здесь не пройти
+  // (площадка внешняя) — он на записанных ответах в src/auth/providers и
+  // src/auth/oauth-callback.seam.spec.ts. Через HTTP проверяется то, чего
+  // юнит не видит: маршруты примонтированы, DTO запроса и глобальный
+  // ValidationPipe не отвечают 400 на то, что присылает площадка, а любой
+  // отказ колбэка — это экран ошибки входа, а не JSON и не 500.
+  describe('вход через Яндекс ID', () => {
+    const FAILED = 'https://schemehappens.ru/auth/error?reason=yandex_failed';
+    const get = (url: string) =>
+      request(app.getHttpServer()).get(url).set('Host', 'schemehappens.ru');
+
+    it('старт с билетом входа из приложения — тот же рубильник, без куки state', async () => {
+      const res = await get('/api/auth/yandex?ticket=K7M2QX94');
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe(
+        'https://schemehappens.ru/auth/error?reason=yandex_disabled',
+      );
+      expect(extractSetCookie(res, 'oauth_state')).toBeFalsy();
+    });
+
+    it('колбэк той же формы, что присылает Яндекс (state, code, cid), — 302 на yandex_failed, не 400', async () => {
+      const res = await get(
+        `/api/auth/yandex/callback?state=a.b-c_d.e&code=abcdefgh12345678&cid=${'c'.repeat(26)}`,
+      );
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe(FAILED);
+      expect(extractSetCookie(res, 'refresh_token')).toBeFalsy();
+    });
+
+    it('колбэк с отказом площадки и без параметров вовсе — тот же экран', async () => {
+      const denied = await get(
+        '/api/auth/yandex/callback?error=access_denied&error_description=User%20denied%20access&state=a.b.c',
+      );
+      expect(denied.status).toBe(302);
+      expect(denied.headers.location).toBe(FAILED);
+
+      const empty = await get('/api/auth/yandex/callback');
+      expect(empty.status).toBe(302);
+      expect(empty.headers.location).toBe(FAILED);
+    });
+
+    it('незнакомый параметр срезается; повторённый code — 400 от DTO, до обмена не доходит', async () => {
+      const extra = await get(
+        '/api/auth/yandex/callback?state=s&code=c&scope=login:email&new_param=1',
+      );
+      expect(extra.status).toBe(302);
+      expect(extra.headers.location).toBe(FAILED);
+
+      const repeated = await get(
+        '/api/auth/yandex/callback?state=s&code=a&code=b',
+      );
+      expect(repeated.status).toBe(400);
+    });
+
+    it('билет входа под Яндекс выписывается (подтверждение — в браузере)', async () => {
+      const res = await post('/api/auth/ticket/start').send({
+        intent: 'login',
+        provider: 'yandex',
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.userCode).toHaveLength(8);
+    });
   });
 
   // Вход через Google убран (2026-11, запрос РКН №08-1063539): ручек нет.
