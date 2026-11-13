@@ -39,7 +39,7 @@
   - `npm run build --prefix game` (`prebuild` = `i18n:check`), копия в webapp/dist/game/;
   - `npm prune --production`.
 - Стадия runtime:
-  - openssl, `postgresql-client` 16 из PGDG и curl (`deploy/install-pg-client.sh`), `NODE_ENV=production`;
+  - openssl, `postgresql-client` 17 из PGDG (мажор сервера прода) и curl (`deploy/install-pg-client.sh`), `NODE_ENV=production`;
   - копируются `package*.json`, прод `node_modules`, `dist`, `prisma/`, `prisma.config.js`, webapp/dist, `assets/`, `BUILD_INFO`;
   - `deploy/` копируется целиком (в нём и `s3-sign.cjs`, его `require`-ит `dist/infra/s3-sigv4.js`), из `scripts/` только `backup-upload.sh`, `restore-backup.sh`, `backup-fetch-latest.sh`, `s3-api.sh`;
   - `USER node`; `HEALTHCHECK` смотрит тело `/health` на `"status":"ok"`, а не код ответа;

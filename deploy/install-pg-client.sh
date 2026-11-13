@@ -1,10 +1,10 @@
 #!/bin/sh
-# Клиент Postgres 16 (pg_dump/psql) + curl для зашифрованных бэкапов в Yandex Object Storage
+# Клиент Postgres 17 (pg_dump/psql) + curl для зашифрованных бэкапов в Yandex Object Storage
 # (scripts/backup-upload.sh, deploy/backup-scheduler.cjs). Ставится только в
 # runtime-стадии образа.
 #
-# Версия обязана быть 16: pg_dump отказывается снимать дамп с сервера новее
-# себя, а Postgres у нас 16. В Debian bookworm свой пакет — 15, поэтому
+# Версия — мажор сервера прода (Amvera CNPG — Postgres 17.5): pg_dump отказывается
+# снимать дамп с сервера новее себя. В Debian bookworm свой пакет — 15, поэтому
 # репозиторий PGDG (официальный apt.postgresql.org). Ключ репозитория — .asc
 # в signed-by (apt в bookworm читает ASCII-armored ключ напрямую, gnupg не нужен).
 #
@@ -27,7 +27,7 @@ PGDG_MIRROR_URL=${PGDG_MIRROR_URL:-https://mirror.yandex.ru/mirrors/postgresql/p
 PGDG_LIST=${PGDG_LIST:-/etc/apt/sources.list.d/pgdg.list}
 PGDG_KEY=${PGDG_KEY:-/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc}
 OS_RELEASE=${OS_RELEASE:-/etc/os-release}
-PG_MAJOR=16
+PG_MAJOR=17
 
 CODENAME=$(. "$OS_RELEASE" && echo "${VERSION_CODENAME:-}")
 if [ -z "$CODENAME" ]; then

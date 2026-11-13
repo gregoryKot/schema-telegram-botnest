@@ -69,7 +69,7 @@ RUN npm prune --production
 FROM node:22-slim
 COPY deploy/install-openssl.sh /tmp/
 RUN sh /tmp/install-openssl.sh && rm /tmp/install-openssl.sh
-# pg_dump/psql 16 и curl — для зашифрованных бэкапов в Yandex Object Storage (deploy/backup-scheduler.cjs
+# pg_dump/psql 17 и curl — для зашифрованных бэкапов в Yandex Object Storage (deploy/backup-scheduler.cjs
 # → scripts/backup-upload.sh). Только в runtime: в build-стадии они не нужны.
 COPY deploy/install-pg-client.sh /tmp/
 RUN sh /tmp/install-pg-client.sh && rm /tmp/install-pg-client.sh
