@@ -22,7 +22,7 @@ describe('ProfileHeader', () => {
     const h1 = screen.getByRole('heading', { level: 1 });
     expect(h1.textContent).toBe('Мой путь');
     expect(h1.className).toContain('ds-h1');
-    expect(container.querySelector('.cpf-head-sub')?.textContent).toBe('Аня · 21 день с тобой в приложении');
+    expect(container.querySelector('.cpf-head-sub')?.textContent?.replace(/\u00a0/g, ' ')).toBe('Аня · 21 день с тобой в приложении');
     // Имя — отдельной строкой с многоточием: длинное имя без пробелов уходило за край (QA мобильной 2026-11, М5).
     expect(container.querySelector('.cpf-head-name')?.textContent).toBe('Аня');
   });
@@ -43,7 +43,7 @@ describe('ProfileHeader', () => {
 
   it('дни склоняются; без имени — только дни, без дней — только имя, без того и другого подписи нет', () => {
     const { container, rerender } = render(<ProfileHeader displayName={null} totalDays={2} onCustomize={() => {}} />);
-    expect(container.querySelector('.cpf-head-sub')?.textContent).toBe('2 дня с тобой в приложении');
+    expect(container.querySelector('.cpf-head-sub')?.textContent?.replace(/\u00a0/g, ' ')).toBe('2 дня с тобой в приложении');
     rerender(<ProfileHeader displayName="Аня" totalDays={0} onCustomize={() => {}} />);
     expect(container.querySelector('.cpf-head-sub')?.textContent).toBe('Аня');
     rerender(<ProfileHeader displayName={null} totalDays={0} onCustomize={() => {}} />);

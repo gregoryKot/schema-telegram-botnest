@@ -1,13 +1,12 @@
 import type { CSSProperties } from 'react';
 import { todayStr } from '../../../../shared/src/utils/format';
-import { hueStyle } from '../../lib/tone';
 import { MonthShareButton } from './heatmapShare';
-import { PROFILE_HUE } from './profileMeta';
 import { buildHeatWeeks, monthLabels } from './profileModel';
 import { useHeatWeeks } from './useHeatWeeks';
 
 interface Props { levels: Map<string, number>; activeDates: Set<string>; totalDays: number }
 
+// Клетки — оттенки мха (данные ≥3:1 к бумаге страницы, client-profile.css), подписи — --text-faint (≥4.5:1).
 // Подписи строк (пн–вс) через одну — только на телефоне (css), как в мини-аппе.
 const DAY_LABELS = ['пн', '', 'ср', '', 'пт', '', 'вс'];
 
@@ -16,7 +15,7 @@ export function ActivityHeatmap({ levels, activeDates, totalDays }: Props) {
   const weeks = buildHeatWeeks(levels, todayStr(), weekCount); // местный день, каждый рендер (E5)
   const labels = monthLabels(weeks);
   return (
-    <section className="ds-card cpf-card cpf-heat-card" style={hueStyle(PROFILE_HUE)}>
+    <div className="cpf-heat-card">
       <div className="ds-head-row">
         <h2 className="ds-h3">Активность</h2>
         <div className="cpf-heat-tools">
@@ -43,6 +42,6 @@ export function ActivityHeatmap({ levels, activeDates, totalDays }: Props) {
         {[0, 1, 2, 3].map(l => <span key={l} className={`cpf-heat${l > 0 ? ` cpf-heat--${l}` : ''}`} />)}
         больше
       </div>
-    </section>
+    </div>
   );
 }

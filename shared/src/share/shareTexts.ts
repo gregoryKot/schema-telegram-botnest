@@ -4,6 +4,7 @@
 import { pluralDays } from '../utils/celebrationText';
 import { HEALTHY_ADULT_CHANNEL_SHORT_URL } from './channelLinks';
 import { THERAPIST_SEES_BY_DEFAULT } from '../therapy/therapistLinkCopy';
+import type { JourneyItemType } from '../journey/journeyMeta';
 
 export function pluralEntries(n: number): string {
   if (n % 10 === 1 && n % 100 !== 11) return 'запись';
@@ -131,6 +132,37 @@ export function journeyShareText(
         : '🧭 Мой путь';
   return `${head}: ${count} ${pluralEntries(count)} заботы о себе — дневники, практики, тесты.\n\n${link}`;
 }
+
+/**
+ * Эмодзи в начале ТЕКСТА сообщения о шаге «Моего пути» (не картинки: карточка рисует знак
+ * сущности, journeyLook.ts). Жил в JOURNEY_TYPE_META.emoji; карточки ушли на знаки (b23b),
+ * а текст шаринга дизайн-партия не меняет — эмодзи переехали сюда, к тексту, без правки слов.
+ */
+export const JOURNEY_SHARE_EMOJI: Readonly<Record<JourneyItemType, string>> = {
+  tracker_day: '📊',
+  note: '📝',
+  schema_diary: '📔',
+  mode_diary: '🎭',
+  gratitude: '🌱',
+  practice: '🌿',
+  plan_done: '✅',
+  ysq: '📋',
+  belief_check: '⚖️',
+  letter: '✉️',
+  flashcard: '🆘',
+  safe_place: '🏝',
+  schema_note: '🧩',
+  mode_note: '🎪',
+  breathing: '🌬',
+  grounding: '🌍',
+  stop: '🛑',
+};
+
+/** Эмодзи текста шага; незнакомый тип с бэка — «✨», как прежний фолбэк журнала. */
+export const journeyShareEmoji = (type: string): string =>
+  Object.hasOwn(JOURNEY_SHARE_EMOJI, type)
+    ? JOURNEY_SHARE_EMOJI[type as JourneyItemType]
+    : '✨';
 
 /** Один шаг из ленты «Мой путь» (выполненная практика, запись дневника…). */
 export function journeyItemShareText(

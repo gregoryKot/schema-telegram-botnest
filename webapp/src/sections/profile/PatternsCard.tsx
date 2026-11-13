@@ -1,4 +1,7 @@
 import { hitboxStyle } from '../../utils/hitbox';
+import { SignArt } from '../../components/art/SignArt';
+import { needDataStyle } from '../../components/needDataColor';
+import { BLOCK_META } from '../../../../shared/src/screens/screenBlocks';
 import { NEED_NAMES } from './profileMeta';
 import type { InsightsData } from './profileMeta';
 import { trendKind, TREND_SYMBOL, patternBarPercent } from './profileModel';
@@ -7,16 +10,20 @@ const TREND_TEXT = { up: 'растёт', down: 'снижается', flat: 'де
 
 interface Props { insights: InsightsData; onBestDayInfo: () => void }
 
-// Две «таблетки» (лучший день / тяжелее) и строки «потребность — среднее ↑» с полосой — как в мини-аппе.
+// Две плашки бумаги (лучший день — шалфей, тяжелее — роза) и строки «потребность — среднее ↑» с полосой
+// цветом данных потребности (needDataStyle, палитра данных); знак блока — BLOCK_META.insights.
 export function PatternsCard({ insights, onBestDayInfo }: Props) {
   const showDays = (insights.bestDayOfWeek || insights.worstDayOfWeek) && insights.totalDays >= 7;
   return (
-    <section className="ds-card cpf-card">
-      <h2 className="ds-h3">Паттерны</h2>
+    <section className="cpf-sec">
+      <span className="cpf-title">
+        <span className="pp-row-art" aria-hidden="true"><SignArt sign={BLOCK_META.insights?.sign ?? 'layers'} size="row" /></span>
+        <h2 className="ds-h3">Паттерны</h2>
+      </span>
       {showDays && (
         <div className="cpf-pills">
           {insights.bestDayOfWeek && (
-            <div className="cpf-pill is-best">
+            <div className="pp-paper cpf-pill is-best">
               <div>
                 <div className="cpf-pill-key">лучший день</div>
                 <b className="cpf-pill-val">{insights.bestDayOfWeek}</b>
@@ -28,7 +35,7 @@ export function PatternsCard({ insights, onBestDayInfo }: Props) {
             </div>
           )}
           {insights.worstDayOfWeek && (
-            <div className="cpf-pill is-worst">
+            <div className="pp-paper cpf-pill is-worst">
               <div>
                 <div className="cpf-pill-key">тяжелее</div>
                 <b className="cpf-pill-val">{insights.worstDayOfWeek}</b>
@@ -41,7 +48,7 @@ export function PatternsCard({ insights, onBestDayInfo }: Props) {
         {insights.weeklyStats.filter(s => s.avg !== null).map(s => {
           const k = trendKind(s.trend);
           return (
-            <div key={s.needId} className="cpf-prog">
+            <div key={s.needId} className="cpf-prog" style={needDataStyle(s.needId)}>
               <div className="cpf-prog-head">
                 <span className="cpf-prog-name">{NEED_NAMES[s.needId]}</span>
                 <span className={`cpf-prog-val is-${k}`}>

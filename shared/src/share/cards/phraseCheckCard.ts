@@ -4,7 +4,15 @@
 // хочется перечитывать и не стыдно показать.
 //
 // Только по явному тапу, с превью (ShareCardSheet) — как у записи режима.
-import { FOOTER_H, beginCard, header, headerHeight, footer } from '../cardKit';
+import {
+  CARD_LOOK,
+  FOOTER_H,
+  beginCard,
+  header,
+  headerLines,
+  footer,
+  type HeaderOpts,
+} from '../cardKit';
 import {
   QUOTE_LABEL_BLOCK,
   VOICE_CARE,
@@ -32,10 +40,16 @@ export function drawPhraseCheckCard(
   canvas: HTMLCanvasElement,
   d: PhraseCheckCardData,
 ) {
+  // Лист сливы «Критик или забота?» со знаком Looming (ENTITY_LOOK phrase_check).
+  const head: HeaderOpts = {
+    eyebrow: 'Критик или забота',
+    title: 'Одна фраза — два голоса',
+    sign: CARD_LOOK.phrase_check.sign,
+  };
   const was = quoteLines(canvas, d.phrase, TEXT_SIZE, MAX_LINES);
   const now = quoteLines(canvas, d.rewrite, TEXT_SIZE, MAX_LINES);
   const H =
-    headerHeight(1, false) +
+    headerLines(canvas.getContext('2d')!, head).height +
     QUOTE_LABEL_BLOCK +
     quoteBlockHeight(was, LINE_H) +
     BLOCK_GAP +
@@ -44,11 +58,8 @@ export function drawPhraseCheckCard(
     10 +
     FOOTER_H;
 
-  const c = beginCard(canvas, H, { accent: VOICE_CARE });
-  let y = header(c, {
-    eyebrow: 'Критик или забота',
-    title: 'Одна фраза — два голоса',
-  });
+  const c = beginCard(canvas, H, { hue: CARD_LOOK.phrase_check.hue });
+  let y = header(c, head);
 
   const opts = { size: TEXT_SIZE, lineH: LINE_H, gap: BLOCK_GAP };
   y = drawQuoteBlock(c, y, {

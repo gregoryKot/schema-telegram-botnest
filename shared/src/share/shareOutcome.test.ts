@@ -61,7 +61,7 @@ describe('shareOutcome', () => {
 describe('shareButtonLabel', () => {
   it('подготовка важнее «сохранена»; скачанная картинка — видимый итог', () => {
     expect(shareButtonLabel(true, true)).toBe('Готовлю картинку…');
-    expect(shareButtonLabel(false, true)).toBe('✓ Картинка сохранена');
+    expect(shareButtonLabel(false, true)).toBe('Картинка сохранена');
     expect(shareButtonLabel(false, false)).toBe('Поделиться');
   });
 });

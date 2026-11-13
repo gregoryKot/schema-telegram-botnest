@@ -4,7 +4,7 @@
 // Кейсы зеркалили тест удалённого мини-аппа — это отдельный
 // прямой тест той же shared-функции, не перенос существующего теста.
 import { describe, it, expect } from 'vitest';
-import { wrapLines, clampLines, cardFont } from './cardKit';
+import { wrapLines, clampLines, wrapClamp, cardFont, SANS } from './cardKit';
 
 const measure = (s: string) => s.length * 10;
 
@@ -36,6 +36,13 @@ describe('wrapLines', () => {
   it('схлопывает множественные пробелы и переводы строк', () => {
     expect(wrapLines(measure, 'a  b\nc', 1000)).toEqual(['a b c']);
   });
+
+  it('неразрывный пробел строку не рвёт: предлог уходит со своим словом', () => {
+    expect(wrapLines(measure, 'Приглашение от терапевта', 150)).toEqual([
+      'Приглашение',
+      'от терапевта',
+    ]);
+  });
 });
 
 describe('clampLines', () => {
@@ -57,14 +64,29 @@ describe('clampLines', () => {
 
 describe('cardFont', () => {
   it('без веса — обычный шрифт', () => {
-    expect(cardFont(14)).toBe(
-      '14px -apple-system, BlinkMacSystemFont, sans-serif',
-    );
+    expect(cardFont(14)).toBe(`14px ${SANS}`);
+    expect(SANS.startsWith("'Manrope'")).toBe(true);
   });
 
   it('bold — с префиксом bold', () => {
-    expect(cardFont(14, 'bold')).toBe(
-      'bold 14px -apple-system, BlinkMacSystemFont, sans-serif',
+    expect(cardFont(14, 'bold')).toBe(`bold 14px ${SANS}`);
+  });
+});
+
+describe('wrapClamp — многоточие в поле', () => {
+  const measure = (s: string) => s.length * 10;
+  it('последняя строка с «…» не шире поля: слова снимаются с конца', () => {
+    const lines = wrapClamp(
+      measure,
+      'вдох короче выдоха так тело получает сигнал что опасность прошла',
+      100,
+      2,
     );
+    expect(lines).toHaveLength(2);
+    expect(lines[1].endsWith('…')).toBe(true);
+    for (const l of lines) expect(measure(l)).toBeLessThanOrEqual(100);
+  });
+  it('текст влезает — без многоточия', () => {
+    expect(wrapClamp(measure, 'коротко', 100, 2)).toEqual(['коротко']);
   });
 });

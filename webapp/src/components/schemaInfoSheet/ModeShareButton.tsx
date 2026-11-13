@@ -23,7 +23,7 @@ export function ModeShareButton({ group, color, name, feel, desc }: {
         name,
         desc,
         belief: `Чувствуется как: ${feel}`,
-        footerLabel: 'Режимы',
+        footerLabel: 'Режимы', sign: 'cluster',
       }),
     [group, color, name, desc, feel],
   );

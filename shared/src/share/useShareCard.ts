@@ -10,6 +10,7 @@ import {
   type ShareCardKind,
 } from './analytics';
 import { useCopyToClipboard } from '../utils/useCopyToClipboard';
+import { useCardFontsReady } from './useCardFonts';
 
 export interface ShareCardOpts {
   draw: (canvas: HTMLCanvasElement) => void;
@@ -28,6 +29,8 @@ export interface ShareCardState {
   /** Копирование в буфер не удалось — кнопка должна показать отказ. */
   failed: boolean;
   shareLabel: string; // «Поделиться» / «Готовлю картинку…» / «Картинка сохранена»
+  /** Картинка скачана вместо шэра — кнопка рисует галочку вместо стрелки. */
+  saved: boolean;
   /** Системный шэр не сработал: показываем текст, который можно скопировать. */
   showText: boolean;
   closeText: () => void;
@@ -51,6 +54,8 @@ export function useShareCard(
   const text = o.fallbackText ?? o.shareText;
 
   const { draw } = o;
+  // Шрифты карточки приходят позже первого кадра — тогда перерисовываем (useCardFonts.ts).
+  const fontsReady = useCardFontsReady();
   useEffect(() => {
     if (!canvasRef.current) return;
     try {
@@ -58,7 +63,7 @@ export function useShareCard(
     } catch (e) {
       console.error('share card draw failed', e);
     }
-  }, [draw, canvasRef]);
+  }, [draw, canvasRef, fontsReady]);
 
   const doCopy = useCallback(() => copy(text), [copy, text]);
 
@@ -83,6 +88,7 @@ export function useShareCard(
     copied,
     failed,
     shareLabel: shareButtonLabel(sharing, outcome === 'downloaded'),
+    saved: !sharing && outcome === 'downloaded',
     showText: outcome === 'failed',
     closeText: () => setOutcome(null),
     text,
