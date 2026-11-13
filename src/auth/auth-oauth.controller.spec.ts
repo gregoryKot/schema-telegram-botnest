@@ -220,7 +220,10 @@ describe('AuthOauthController.vkCallback', () => {
     expect(resMocks.redirect).toHaveBeenCalledWith(
       `${WEBAPP_URL}/auth/error?reason=vk_failed`,
     );
-    expect(err).toHaveBeenCalledWith(expect.stringContaining('VK PKCE'));
+    expect(err).toHaveBeenCalledWith(
+      expect.stringContaining('VK PKCE'),
+      expect.any(Error),
+    );
     err.mockRestore();
   });
 
@@ -294,7 +297,10 @@ describe('AuthOauthController.vkCallback', () => {
       makeReq({ cookies: { oauth_state: 'state-1' } } as Partial<Request>),
       res,
     );
-    expect(err).toHaveBeenCalledWith(`vk callback error: ${logged}`);
+    expect(err).toHaveBeenCalledWith(
+      `vk callback error: ${logged}`,
+      expect.any(Error),
+    );
     err.mockRestore();
   });
 

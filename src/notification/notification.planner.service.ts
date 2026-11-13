@@ -7,15 +7,13 @@ import {
 import { BotService } from '../bot/bot.service';
 import { BotAnalyticsService } from '../bot/bot.analytics.service';
 import { PracticesService } from '../bot/practices.service';
-import { renderLowStreakInsight } from './notification.templates';
-import { missedPlanDay, weeklyPayload } from './notification.weekly';
+import { missedPlanWeekday } from './notification.weekly';
 import {
   addDaysLocal,
   daysBetweenLocal,
   localDateString,
   nextSendAt,
 } from './notification.time';
-import { normalizeAddressForm } from './address-form';
 
 export interface PlannerUser extends CadenceUser {
   notifyLocalHour: number;
@@ -114,17 +112,9 @@ export class NotificationPlannerService {
     ) {
       const insight = await this.analytics.getProfileInsight(uid);
       if (insight) {
-        const needs = this.botService.getNeeds();
-        const strongest = needs.find(
-          (n) => n.id === insight.strongest,
-        )?.chartLabel;
-        const weakest = needs.find((n) => n.id === insight.weakest)?.chartLabel;
+        // В очередь — только число дней: оценок и потребностей там нет (РКН, #1135).
         await this.notifications.swapReminder(uid, 'value_recap', sendAt, {
           totalDays: insight.totalDays,
-          strongest,
-          strongestAvg: insight.strongestAvg,
-          weakest,
-          weakestAvg: insight.weakestAvg,
         });
       }
       return;
@@ -138,16 +128,8 @@ export class NotificationPlannerService {
       daysSince < 7 &&
       !(await this.notifications.hasPending(uid, 'weekly'))
     ) {
-      // Окно — по дню плана; субботнее заполнение освежит (notification.weekly.ts).
-      const deps = { analytics: this.analytics, botService: this.botService };
-      const payload = await weeklyPayload(
-        deps,
-        uid,
-        tz,
-        planDate,
-        user.addressForm,
-      );
-      await this.notifications.swapReminder(uid, 'weekly', sendAt, payload);
+      // Сводка недели без payload: текст в Telegram постоянный (РКН, #1135).
+      await this.notifications.swapReminder(uid, 'weekly', sendAt);
       return;
     }
 
@@ -198,20 +180,19 @@ export class NotificationPlannerService {
       missed.length > 0 &&
       !(await this.notifications.hasPending(uid, 'practice_missed'))
     ) {
-      const text = missed.map((p) => p.practiceText).join(', ');
+      // Текст плана в очередь не кладём (РКН, #1135) — только день недели.
       await this.notifications.swapReminder(uid, 'practice_missed', sendAt, {
-        practiceText: text,
-        day: missedPlanDay(yesterday, planDate),
+        weekday: missedPlanWeekday(yesterday, planDate),
       });
       return;
     }
 
-    await this.scheduleLowStreakInsight(uid, hour, tz, now, user.addressForm);
+    await this.scheduleLowStreakInsight(uid, hour, tz, now);
   }
 
-  /** Умное напоминание: вчерашний индекс + западающая потребность + серия.
+  /** Напоминание: серия (оценок и потребностей в payload нет — РКН, #1135).
    *  gamified=true добавляет позитивную срочность («ещё день до вехи»).
-   *  daysSince≥3 → мягкий «перерыв-осознающий» тон без императива и без данных «за вчера».
+   *  daysSince≥3 → мягкий «перерыв-осознающий» тон без императива.
    *  ignoredCount>0 или перерыв → показываем полный набор кнопок саморегуляции,
    *  иначе — компактный (открыть + «реже»), чтобы напоминание не выглядело простынёй кнопок. */
   async scheduleReminder(
@@ -223,24 +204,10 @@ export class NotificationPlannerService {
     daysSince = 0,
     ignoredCount = 0,
   ) {
-    const [streak, weeklyStats, history, seq] = await Promise.all([
+    const [streak, seq] = await Promise.all([
       this.analytics.getConsecutiveDays(userId, tz),
-      this.analytics.getWeeklyStats(userId, tz),
-      this.analytics.getHistoryRatings(userId, 2, tz),
       this.cadence.nextReminderSeq(userId),
     ]);
-    const yesterday = history.find((_, i) => i === 1);
-    const yesterdayAvg = yesterday
-      ? Object.values(yesterday.ratings).reduce((s, v) => s + v, 0) /
-        Object.values(yesterday.ratings).length
-      : undefined;
-    const lowest = weeklyStats
-      .filter((s) => s.avg !== null)
-      .sort((a, b) => (a.avg ?? 10) - (b.avg ?? 10))[0];
-    const lowestNeed = lowest
-      ? this.botService.getNeeds().find((n) => n.id === lowest.needId)
-          ?.chartLabel
-      : undefined;
     // Ротация текста — по монотонному счётчику отправленных напоминаний (seq),
     // а не по календарному дню: при фиксированном интервале dayIndex % N совпадал
     // и юзер видел один и тот же текст подряд (инцидент со скриншотом 2026-07-15).
@@ -252,12 +219,7 @@ export class NotificationPlannerService {
       : undefined;
     const payload = {
       streak,
-      // На перерыве данные «за вчера» бессмысленны (вчера записи не было) — не тащим их.
-      yesterdayAvg: onBreak ? undefined : yesterdayAvg,
-      lowestNeedId: onBreak ? undefined : lowest?.needId,
-      lowestNeed: onBreak ? undefined : lowestNeed,
       variant: seq % 5,
-      seed: seq % 3,
       gamified,
       approachingStreak,
       onBreak,
@@ -278,30 +240,16 @@ export class NotificationPlannerService {
     notifyLocalHour: number,
     tz: string,
     now: Date,
-    addressForm?: string | null,
   ) {
-    const [lowNeeds3, lowNeeds10] = await Promise.all([
-      this.analytics.getLowStreakNeeds(userId, 5, 3, tz),
-      this.analytics.getLowStreakNeeds(userId, 5, 10, tz),
-    ]);
-    const lowNeeds = lowNeeds10.length > 0 ? lowNeeds10 : lowNeeds3;
+    const lowNeeds = await this.analytics.getLowStreakNeeds(userId, 5, 3, tz);
     if (lowNeeds.length === 0) return;
     if (await this.notifications.hasPending(userId, 'low_streak_insight'))
       return;
-
-    const showBooking = lowNeeds10.length > 0;
-    const need = this.botService.getNeeds().find((n) => n.id === lowNeeds[0])!;
-    const { text } = renderLowStreakInsight(
-      need.emoji,
-      need.chartLabel,
-      showBooking ? 10 : 3,
-      normalizeAddressForm(addressForm),
-    );
+    // Повод — только условие; в очереди ни потребности, ни числа дней (РКН, #1135).
     await this.notifications.swapReminder(
       userId,
       'low_streak_insight',
       nextSendAt(notifyLocalHour, tz, now),
-      { text, showBooking },
     );
   }
 }

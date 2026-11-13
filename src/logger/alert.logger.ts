@@ -1,6 +1,7 @@
 import { ConsoleLogger } from '@nestjs/common';
 import { notifyAdminWithFallback } from '../utils/admin-alert';
 import { AlertGate } from './alert-gate';
+import { alertFacts, serverAlertText, type AlertFacts } from './alert-text';
 import { isDbUnreachable, dbOutage, DB_ALERT_SUBJECT } from './db-outage';
 
 export class AlertLogger extends ConsoleLogger {
@@ -9,32 +10,29 @@ export class AlertLogger extends ConsoleLogger {
   private readonly gate = new AlertGate();
 
   error(message: unknown, ...optionalParams: unknown[]) {
-    super.error(message, ...optionalParams);
-    // Контекст — последний строковый аргумент: так его передаёт
-    // `new Logger(X.name).error(…)`. Без него — собственный контекст логгера.
-    const last = optionalParams[optionalParams.length - 1];
-    this.alert(
-      typeof message === 'string' ? message : JSON.stringify(message),
-      typeof last === 'string' ? last : this.context,
-    );
+    // В DM — место, тип и id без текста ошибки (РКН, #1135); полный текст —
+    // в stdout с тем же id. Разбор аргументов — ./alert-text.ts.
+    const facts = alertFacts(message, optionalParams, this.context);
+    super.error(facts.logLine, ...optionalParams);
+    this.alert(facts);
   }
 
-  private alert(message: string, context: string | undefined) {
+  private alert(facts: AlertFacts) {
     // Недоступность БД (инцидент 2026-08-31) рассыпается на десятки разных по
     // тексту сообщений — по ключу их не свести, и шторм проходит мимо обоих
     // троттлов ниже. Ветка ведёт всю аварию как ОДНУ (см. ./db-outage.ts).
-    if (isDbUnreachable(message)) {
-      const { text } = dbOutage.note(message);
+    if (isDbUnreachable(facts.text)) {
+      const { text } = dbOutage.note(facts.text);
       if (text) void notifyAdminWithFallback(text, DB_ALERT_SUBJECT);
       return;
     }
 
-    const verdict = this.gate.decide(message, context);
+    const verdict = this.gate.decide(facts.text, facts.context);
     if (!verdict.send) return;
 
-    // Telegram first, e-mail fallback. Fire-and-forget — never throws.
+    // Telegram first, e-mail fallback с тем же текстом. Never throws.
     void notifyAdminWithFallback(
-      `🚨 Ошибка на сервере\n${message.slice(0, 300)}${verdict.tail}`,
+      serverAlertText(facts) + verdict.tail,
       '🚨 Ошибка на сервере SchemeHappens',
     );
   }

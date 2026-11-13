@@ -7,19 +7,16 @@ import {
   NotificationType,
 } from '../notification/notification.service';
 import { NotificationCadenceService } from '../notification/notification.cadence.service';
-import { buildSummaryText } from '../notification/notification.templates';
 import {
   localDateString,
   utcInstantForLocalHour,
 } from '../notification/notification.time';
-import { normalizeAddressForm } from '../notification/address-form';
 import { cancelOnFill } from '../notification/notification.fill-cancel';
-import { refreshWeeklyOnFill } from '../notification/notification.weekly';
 import { maybeNotifyPairPartners } from './telegram.pair-activity';
 export { maybeNotifyPairPartners } from './telegram.pair-activity';
 
 // Что происходит после заполнения трекера: сводка дня, «с возвращением»,
-// вехи (серии/онбординг/годовщины), сигнал напарнику, свежая сводка недели.
+// вехи (серии/онбординг/годовщины), сигнал напарнику.
 // Вынесено из telegram.schedule.service.ts (правило №10). R2 (аудит 2026-11,
 // Р1): сводка, вехи и «с возвращением» слушаются тумблера «Итоги дня»
 // (notifySummaryEnabled), напоминания — «Напоминаний» (notifyEnabled).
@@ -55,22 +52,6 @@ async function scheduleMilestone(
   }
 }
 
-/** Текст сводки дня из текущих оценок. */
-async function summaryText(
-  deps: DiaryCompleteDeps,
-  userId: bigint,
-  tz: string,
-  addressForm: string | null | undefined,
-): Promise<string> {
-  const ratings = await deps.botService.getRatings(userId);
-  return buildSummaryText(
-    deps.botService.getNeeds(),
-    ratings,
-    tz,
-    normalizeAddressForm(addressForm),
-  );
-}
-
 export async function runDiaryComplete(
   deps: DiaryCompleteDeps,
   userId: bigint,
@@ -79,18 +60,10 @@ export async function runDiaryComplete(
   const settings = await deps.botService.getUserSettings(userId);
   const tz = settings?.notifyTimezone ?? 'Europe/Moscow';
   const todayStr = localDateString(tz, now);
-  // Сводка на завтра собрана обходом раньше конца дня (notification.weekly.ts).
-  await refreshWeeklyOnFill(deps, userId, tz, todayStr, settings?.addressForm);
   // E16 (аудит 2026-11): две параллельные «последние оценки» обе видели день
   // заполненным, и сводок выходило две. День забирает один условный UPDATE;
-  // повторное заполнение того же дня (правка оценки) только освежает текст
-  // уже стоящей сводки — второй строки и второго празднования нет.
-  if (!(await deps.cadenceService.claimFillDay(userId, todayStr))) {
-    if (settings?.notifySummaryEnabled === false) return;
-    const text = await summaryText(deps, userId, tz, settings?.addressForm);
-    await deps.notificationService.refreshPending(userId, 'summary', { text });
-    return;
-  }
+  // повторное заполнение того же дня (правка оценки) ничего не добавляет.
+  if (!(await deps.cadenceService.claimFillDay(userId, todayStr))) return;
   const nextContact = await deps.cadenceService.registerFill(userId, now);
   // Напоминания до дня следующего контакта и все «давно не заходил» (R4, E13).
   await cancelOnFill(deps.notificationService, userId, tz, now, nextContact);
@@ -103,13 +76,12 @@ export async function runDiaryComplete(
   );
   if (settings?.notifySummaryEnabled === false) return;
 
-  const text = await summaryText(deps, userId, tz, settings?.addressForm);
   // Час прошёл — +5 мин: вехи (сейчас) уйдут раньше сводки (следующий тик).
   const hour = settings?.notifyLocalHour ?? 21;
   const todaySendAt = utcInstantForLocalHour(todayStr, hour, tz);
   const sendAt =
     todaySendAt > now ? todaySendAt : new Date(now.getTime() + 5 * 60_000);
-  await deps.notificationService.schedule(userId, 'summary', sendAt, { text });
+  await deps.notificationService.schedule(userId, 'summary', sendAt);
 
   const total = await deps.analyticsService.getTotalDaysFilled(userId);
 
@@ -123,16 +95,8 @@ export async function runDiaryComplete(
       !sentToday &&
       !(await deps.notificationService.hasPending(userId, 'comeback'))
     ) {
-      // Value-based возврат: добавляем зеркало собственных данных (сильнейшая потребность).
-      const insight = await deps.analyticsService.getProfileInsight(userId);
-      const strongestNeed = insight
-        ? deps.botService.getNeeds().find((n) => n.id === insight.strongest)
-            ?.chartLabel
-        : undefined;
       await deps.notificationService.schedule(userId, 'comeback', now, {
         totalDays: total,
-        strongestNeed,
-        strongestAvg: insight?.strongestAvg,
       });
     }
     return;
