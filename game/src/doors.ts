@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GROUND_Y } from './constants';
 import { t, type MsgKey } from './i18n';
 import { IS_TOUCH } from './controls';
+import { addGlow } from './look';
 import type { DoorKind } from './chapters';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -29,7 +30,7 @@ export class Door {
   taken = false;
   private isNear = false;
   private label: Phaser.GameObjects.Text;
-  private glow: Phaser.GameObjects.Ellipse;
+  private glow: Phaser.GameObjects.Image;
   private prompt: Phaser.GameObjects.Text;
   private leaf: Phaser.GameObjects.Rectangle;
 
@@ -45,21 +46,20 @@ export class Door {
     this.leaf = scene.add.rectangle(x, GROUND_Y - st.h / 2, st.w, st.h, st.leaf).setDepth(5)
       .setInteractive({ useHandCursor: true });
     scene.add.circle(x + st.w / 2 - 12, GROUND_Y - st.h / 2, 4, st.glow, 0.9).setDepth(6);
-    // тёплый свет из-под двери и вывеска
-    this.glow = scene.add.ellipse(x, GROUND_Y - 2, st.w + 60, 16, st.glow, 0.14).setDepth(4);
+    this.glow = addGlow(scene, x, GROUND_Y - 4, st.w + 90, 34, st.glow, 0.22, 4); // тёплый свет из-под двери
     scene.tweens.add({ targets: this.glow, alpha: { from: 0.7, to: 1 }, duration: 900, yoyo: true, repeat: -1 });
     this.label = scene.add.text(x, GROUND_Y - st.h - 18, t(st.label), {
-      fontFamily: FONT, fontSize: '10px', color: st.labelColor, align: 'center',
+      fontFamily: FONT, fontSize: '11px', color: st.labelColor, align: 'center',
     }).setOrigin(0.5, 1).setDepth(6);
     if (st.sub) {
       const sub = scene.add.text(x, GROUND_Y - st.h - 6, t(st.sub), {
-        fontFamily: FONT, fontSize: '7px', color: st.labelColor, align: 'center',
+        fontFamily: FONT, fontSize: '11px', color: st.labelColor, align: 'center',
       }).setOrigin(0.5, 1).setDepth(6).setAlpha(0.9);
       // неон «Гуру-Экспресс» мигает — кричащая реклама
       scene.tweens.add({ targets: [this.label, sub], alpha: { from: 1, to: 0.35 }, duration: 420, yoyo: true, repeat: -1 });
     }
     this.prompt = scene.add.text(x, GROUND_Y - st.h - 44, t(IS_TOUCH ? 'm_tap_door_enter' : 'm_e_door_enter'), {
-      fontFamily: FONT, fontSize: '9px', color: '#fff0d8',
+      fontFamily: FONT, fontSize: '11px', color: '#fff0d8',
       backgroundColor: 'rgba(10,8,20,0.72)', padding: { x: 5, y: 4 },
     }).setOrigin(0.5, 1).setDepth(9).setAlpha(0);
     // дверь стоит у самого конца улицы — вывеску и подсказку прижимаем к краю мира
@@ -103,11 +103,11 @@ export class ExcuseVoice {
     private onAnswer: (v: ExcuseVoice) => void,
   ) {
     this.bubble = scene.add.text(x, y, '', {
-      fontFamily: FONT, fontSize: '9px', color: '#bfe0ff', align: 'center',
+      fontFamily: FONT, fontSize: '11px', color: '#bfe0ff', align: 'center',
       backgroundColor: 'rgba(14,10,26,0.8)', padding: { x: 7, y: 6 },
     }).setOrigin(0.5, 1).setDepth(46).setAlpha(0).setInteractive({ useHandCursor: true });
     this.hint = scene.add.text(x, y + 14, t(IS_TOUCH ? 'm_tap_answer' : 'm_e_answer'), {
-      fontFamily: FONT, fontSize: '7px', color: '#88ffcc',
+      fontFamily: FONT, fontSize: '11px', color: '#88ffcc',
     }).setOrigin(0.5, 0).setDepth(46).setAlpha(0);
     this.bubble.on('pointerdown', () => this.doAnswer());
   }

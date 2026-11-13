@@ -91,7 +91,7 @@ function showRealization(s: GameScene) {
         .text(W / 2, H - 28, t('m_next_chapter', { title, act }), {
           fontFamily: '"Press Start 2P", "Courier New", monospace',
           fontSize: '11px',
-          color: '#5a4f7a',
+          color: '#a89fd0',
         })
         .setOrigin(0.5)
         .setScrollFactor(0)
