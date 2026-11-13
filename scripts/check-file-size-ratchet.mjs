@@ -14,8 +14,6 @@
 // Исторический долг заморожен в бейслайне и обязан таять: снизил размер —
 // зафиксируй прогресс, чтобы файл нельзя было снова раздуть:
 //   node scripts/check-file-size-ratchet.mjs --update
-//
-// game/ исключён — заморожен решением владельца (как в eslint-храповике).
 import { spawnSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
@@ -31,7 +29,7 @@ const NEW_FILE_LIMIT = 300;
 
 const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 // Что не считаем кодом проекта: vendor, сборки, декларации, тесты (растут
-// законно вместе с покрытием), заморозенная игра. Экспорт — ради теста гейта.
+// законно вместе с покрытием). Экспорт — ради теста гейта.
 export const EXCLUDE = [
   /(^|\/)node_modules\//,
   /(^|\/)dist\//,
@@ -46,7 +44,6 @@ export const EXCLUDE = [
   // refresh-токена). Инфраструктура тестов (test/e2e-support/**, фикстуры)
   // под гейтом остаётся: это обычные модули, они обязаны дробиться.
   /[.-](spec|test)\.(ts|tsx|js|jsx)$/,
-  /(^|\/)game\//,
   /(^|\/)webapp\/public\//,
 ];
 function listFiles() {

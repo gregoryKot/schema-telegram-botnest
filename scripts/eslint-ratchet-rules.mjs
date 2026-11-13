@@ -7,10 +7,9 @@ import { readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { join } from 'path';
 
-// Каталоги верхнего уровня, которые не линтуются: node_modules — чужой код,
-// game/ — заморожен решением владельца (дублируется --ignore-pattern game/**).
+// Каталоги верхнего уровня, которые не линтуются: node_modules — чужой код.
 // Точечные каталоги (.claude, .stryker-tmp, …) отсекаются по точке.
-const SKIP_DIRS = new Set(['node_modules', 'game']);
+const SKIP_DIRS = new Set(['node_modules']);
 
 /** Полный режим: один запуск eslint на каждый каталог верхнего уровня плюс
  * один на файлы в корне. Запуск по всему дереву разом держит в памяти
