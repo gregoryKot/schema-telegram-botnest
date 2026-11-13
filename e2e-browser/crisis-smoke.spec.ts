@@ -33,7 +33,7 @@ async function openPracticesCatalog(page: import('@playwright/test').Page) {
   const catalogItem = page.getByRole('button', { name: /^Что питает/ });
   await catalogItem.waitFor();
   await catalogItem.click();
-  const input = page.getByPlaceholder('Добавить действие...');
+  const input = page.getByPlaceholder('Добавить действие…');
   await input.waitFor();
   return input;
 }

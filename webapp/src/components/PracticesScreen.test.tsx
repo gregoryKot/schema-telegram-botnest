@@ -123,7 +123,7 @@ describe('PracticesScreen — список практик', () => {
     ratingsMock.mockResolvedValue({ attachment: 3 });
     renderScreen();
     expect(
-      await screen.findByText(/хороший момент чтобы что-то сделать/),
+      await screen.findByText(/хороший момент, чтобы что-то сделать/),
     ).toBeTruthy();
   });
 });
@@ -135,7 +135,7 @@ describe('PracticesScreen — добавление практики', () => {
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
 
     const input = screen.getByPlaceholderText(
-      'Добавить действие...',
+      'Добавить действие…',
     ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Прогулка 20 минут' } });
     fireEvent.click(screen.getByText('+ Добавить'));
@@ -157,7 +157,7 @@ describe('PracticesScreen — добавление практики', () => {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
 
-    const input = screen.getByPlaceholderText('Добавить действие...');
+    const input = screen.getByPlaceholderText('Добавить действие…');
     fireEvent.change(input, { target: { value: 'Что-то' } });
     fireEvent.click(screen.getByText('+ Добавить'));
 
@@ -239,7 +239,7 @@ describeCrisisField('webapp/src/components/PracticesScreen.tsx', {
     renderScreen();
     await waitFor(() => expect(getPractices).toHaveBeenCalled());
   },
-  enter: (text) => fireEvent.change(screen.getByPlaceholderText('Добавить действие...'), { target: { value: text } }),
+  enter: (text) => fireEvent.change(screen.getByPlaceholderText('Добавить действие…'), { target: { value: text } }),
 });
 
 describe('PracticesScreen — ты/вы', () => {

@@ -7,7 +7,9 @@
 // строке и молчит на чистом дереве. Каждое сужение области — комментарии,
 // тесты, test-support — идёт в паре с контрольным образцом (правило №15):
 // та же ошибка в видимой строке рядом обязана краснеть.
-import { runGate } from './gate-sandbox';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { REAL_SCRIPTS_DIR, runGate } from './gate-sandbox';
 
 const GATE = 'check-spelling.mjs';
 const OK = '✓ орфография видимых строк';
@@ -71,6 +73,46 @@ describe('check-spelling.mjs', () => {
 
     const bad = runGate(GATE, { 'src/therapy/x.ts': fixture });
     expect(bad.status).toBe(1);
+  });
+
+  it('три точки после русской буквы — exit 1 с «…»; «…», spread и одинокое «...» — exit 0', () => {
+    const bad = runGate(GATE, {
+      'webapp/src/g.tsx': 'export const G = () => <p>Загрузка...</p>;\n',
+      'src/bot/h.ts':
+        'export const t = (n: number) => `Начинаю рассылку для ${n} пользователей...`;\n',
+    });
+    expect(bad.status).toBe(1);
+    expect(bad.stderr).toContain('webapp/src/g.tsx:1');
+    expect(bad.stderr).toContain('src/bot/h.ts:1');
+    expect(bad.stderr).toContain('«…»');
+
+    const ok = runGate(GATE, {
+      'webapp/src/g.tsx':
+        "const имена = ['а'];\nexport const все = [...имена, 'Загрузка…'];\nexport const busy = (s: boolean) => (s ? '...' : 'Сохранить');\n",
+    });
+    expect(ok.status).toBe(0);
+    expect(ok.stdout).toContain(OK);
+  });
+
+  it('игра вне области многоточия — exit 0; та же строка в webapp — exit 1; «оффлайн» в игре ловится', () => {
+    const line = "export const m = { ru: 'ЗАГРУЗКА...' };\n";
+    const ok = runGate(GATE, { 'game/src/i18n/m.ts': line });
+    expect(ok.status).toBe(0);
+    expect(ok.stdout).toContain(OK);
+    expect(runGate(GATE, { 'webapp/src/m.ts': line }).status).toBe(1);
+    expect(
+      runGate(GATE, { 'game/src/i18n/m.ts': "export const m = 'оффлайн';\n" })
+        .status,
+    ).toBe(1);
+  });
+
+  it('правила живут в scripts/spelling-rules.mjs — оба на месте (движок их импортирует)', () => {
+    const rules = readFileSync(
+      join(REAL_SCRIPTS_DIR, 'spelling-rules.mjs'),
+      'utf8',
+    );
+    expect(rules).toContain("id: 'oflain'");
+    expect(rules).toContain("id: 'ellipsis'");
   });
 
   it('словарные «офлайн» и «онлайн» — exit 0', () => {

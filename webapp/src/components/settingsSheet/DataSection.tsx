@@ -38,7 +38,7 @@ export function DataSection({ onResign }: { onResign?: () => Promise<void> | voi
       )}
       {dataExport.status === 'error' && (
         <div role="alert" className="st-err">
-          {tr('Не удалось скачать файл. Проверь связь и попробуй ещё раз', 'Не удалось скачать файл. Проверьте связь и попробуйте ещё раз')}
+          {tr('Не удалось скачать файл. Проверь связь и попробуй ещё раз.', 'Не удалось скачать файл. Проверьте связь и попробуйте ещё раз.')}
         </div>
       )}
       {dataExport.status === 'unsupported' && (
