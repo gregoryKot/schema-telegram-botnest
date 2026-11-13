@@ -39,12 +39,24 @@ type Pr = {
   n: number;
   auto?: boolean;
   behind?: number;
-  checks?: (string | null)[];
+  /** Итог проверки; `in_progress` — прогон ещё идёт. */
+  checks?: string[];
   update?: Reply;
+  comment?: Reply;
+  comments?: { login: string; at: string }[];
 };
 
 const branch = (n: number) => `dependabot/npm_and_yarn/pkg-${n}`;
 const json = (v: unknown): Reply => ({ out: JSON.stringify(v) });
+const http = (code: number): Reply => ({
+  code: 1,
+  err: `gh: Something (HTTP ${code})\n`,
+});
+const HEAD_DATE = '2026-11-13T10:00:00Z';
+const check = (c: string) =>
+  c === 'in_progress'
+    ? { status: c, conclusion: null }
+    : { status: 'completed', conclusion: c };
 
 function replies(prs: Pr[]): [string, Reply][] {
   const list = prs.map(({ n, auto = true }) => ({
@@ -53,17 +65,30 @@ function replies(prs: Pr[]): [string, Reply][] {
     headRefOid: `old${n}`,
     autoMergeRequest: auto ? { mergeMethod: 'SQUASH' } : null,
   }));
-  const perPr = prs.flatMap(
-    ({ n, behind = 3, checks = ['success'], update }): [string, Reply][] => [
-      [`compare/main\\.\\.\\.old${n}$`, json({ behind_by: behind })],
-      [
-        `commits/old${n}/check-runs`,
-        json({ check_runs: checks.map((conclusion) => ({ conclusion })) }),
-      ],
-      [`pulls/${n}/update-branch`, update ?? json({ message: 'Updating' })],
-      [`^pr view ${n} `, json({ headRefOid: `new${n}` })],
+  const perPr = prs.flatMap((pr): [string, Reply][] => [
+    [`compare/main\\.\\.\\.old${pr.n}$`, json({ behind_by: pr.behind ?? 3 })],
+    [
+      `commits/old${pr.n}/check-runs`,
+      json({ check_runs: (pr.checks ?? ['success']).map(check) }),
     ],
-  );
+    [`pulls/${pr.n}/update-branch`, pr.update ?? json({ message: 'ok' })],
+    [`^pr view ${pr.n} `, json({ headRefOid: `new${pr.n}` })],
+    [
+      `commits/old${pr.n}$`,
+      json({ commit: { committer: { date: HEAD_DATE } } }),
+    ],
+    [
+      `issues/${pr.n}/comments`,
+      json(
+        (pr.comments ?? []).map(({ login, at }) => ({
+          user: { login },
+          body: '@dependabot recreate',
+          created_at: at,
+        })),
+      ),
+    ],
+    [`^pr comment ${pr.n} `, pr.comment ?? {}],
+  ]);
   return [['^pr list ', json(list)], ...perPr, ['^workflow run ci\\.yml ', {}]];
 }
 
@@ -93,12 +118,15 @@ function run(...prs: Pr[]) {
   const calls = existsSync(log)
     ? readFileSync(log, 'utf8').split('\n').filter(Boolean)
     : [];
-  const writes = calls.filter((c) => /-X PUT|^workflow run/.test(c));
+  const writes = calls.filter((c) =>
+    /-X PUT|^workflow run|^pr comment/.test(c),
+  );
   return { status: r.status, out: `${r.stdout}${r.stderr}`, calls, writes };
 }
 
 const put = (n: number) =>
   `api -X PUT repos/o/r/pulls/${n}/update-branch -f expected_head_sha=old${n}`;
+const recreate = (n: number) => `pr comment ${n} --body @dependabot recreate`;
 const caughtUp = (n: number) => [
   put(n),
   `workflow run ci.yml --ref ${branch(n)}`,
@@ -106,7 +134,7 @@ const caughtUp = (n: number) => [
 
 describe('dependabot-catch-up.yml: шаг с поддельным gh', () => {
   it('зелёный отставший: update-branch по старой голове, затем ci.yml на ветке бота', () => {
-    const r = run({ n: 7, checks: ['success', 'skipped', null] });
+    const r = run({ n: 7, checks: ['success', 'skipped', 'neutral'] });
     expect(r.status).toBe(0);
     expect(r.calls[0]).toMatch(
       /^pr list --author app\/dependabot --state open /,
@@ -118,6 +146,7 @@ describe('dependabot-catch-up.yml: шаг с поддельным gh', () => {
     ['не отстаёт от main', { n: 7, behind: 0 }, 'не отстаёт'],
     ['failure на голове', { n: 7, checks: ['success', 'failure'] }, 'красные'],
     ['timed_out на голове', { n: 7, checks: ['timed_out'] }, 'красные'],
+    ['проверки идут', { n: 7, checks: ['success', 'in_progress'] }, 'ещё идут'],
   ])('контроль: %s — ни одного пишущего вызова', (_l, pr, says) => {
     const r = run(pr);
     expect(r.status).toBe(0);
@@ -133,17 +162,39 @@ describe('dependabot-catch-up.yml: шаг с поддельным gh', () => {
   });
 
   it('422 от update-branch: пропуск без аварии, CI не запускается', () => {
-    const err = 'gh: Validation Failed (HTTP 422)\n';
-    const r = run({ n: 7, update: { code: 1, err } });
+    const r = run({ n: 7, update: http(422) });
     expect(r.status).toBe(0);
     expect(r.writes).toEqual([put(7)]);
   });
 
+  it('отказ 403: просит бота пересобрать, без dispatch', () => {
+    const r = run({ n: 7, update: http(403) });
+    expect(r.status).toBe(0);
+    expect(r.out).toContain('отказал (HTTP 403), попросил бота пересобрать');
+    expect(r.writes).toEqual([put(7), recreate(7)]);
+  });
+
+  it('отказ 403, наш запрос новее головы — второй раз не просит', () => {
+    const late = { login: 'github-actions[bot]', at: '2026-11-13T11:00:00Z' };
+    const r = run({ n: 7, update: http(403), comments: [late] });
+    expect(r.status).toBe(0);
+    expect(r.out).toContain('уже запрошена');
+    expect(r.writes).toEqual([put(7)]);
+  });
+
+  it('контроль: наш запрос старше головы, свежий — чужой: просит снова', () => {
+    const comments = [
+      { login: 'github-actions[bot]', at: '2026-11-13T09:00:00Z' },
+      { login: 'someone', at: '2026-11-13T11:00:00Z' },
+    ];
+    const r = run({ n: 7, update: http(403), comments });
+    expect(r.writes).toEqual([put(7), recreate(7)]);
+  });
+
   it('сбой одного PR не валит остальные, но красит джобу', () => {
-    const err = 'gh: Server Error (HTTP 500)\n';
-    const r = run({ n: 1, update: { code: 1, err } }, { n: 2 });
+    const r = run({ n: 1, update: http(500), comment: http(500) }, { n: 2 });
     expect(r.status).toBe(1);
     expect(r.out).toContain('::error::#1');
-    expect(r.writes).toEqual([put(1), ...caughtUp(2)]);
+    expect(r.writes).toEqual([put(1), recreate(1), ...caughtUp(2)]);
   });
 });

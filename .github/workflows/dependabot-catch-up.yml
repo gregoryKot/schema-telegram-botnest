@@ -38,17 +38,37 @@ jobs:
         run: |
           set -euo pipefail
           # Разбор ответов — jq здесь, а не --jq у gh: тест подменяет только gh.
+          recreate() {
+            local n=$1 sha=$2 why=$3 since asked
+            since=$(gh api "repos/$GH_REPO/commits/$sha" | jq -er .commit.committer.date) || return 1
+            # Не чаще раза на голову: наш запрос новее коммита головы ещё ждёт бота.
+            asked=$(gh api "repos/$GH_REPO/issues/$n/comments?since=$since&per_page=100" |
+              jq -e --arg since "$since" '[.[] | select(.user.login == "github-actions[bot]"
+                and (.body | startswith("@dependabot recreate")) and .created_at > $since)] | length') || return 1
+            if [ "$asked" != 0 ]; then
+              echo "#$n: update-branch отказал ($why), пересборка у бота уже запрошена"
+              return 0
+            fi
+            gh pr comment "$n" --body '@dependabot recreate' || return 1
+            echo "#$n: update-branch отказал ($why), попросил бота пересобрать"
+          }
           catch_up() {
-            local n=$1 ref=$2 sha=$3 head=$3 behind red out
+            local n=$1 ref=$2 sha=$3 new=$3 behind checks red pending out
             behind=$(gh api "repos/$GH_REPO/compare/main...$sha" | jq -er .behind_by) || return 1
             if [ "$behind" = 0 ]; then
               echo "#$n: не отстаёт от main"
               return 0
             fi
-            red=$(gh api "repos/$GH_REPO/commits/$sha/check-runs?per_page=100" |
-              jq -e '[.check_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out")] | length') || return 1
+            checks=$(gh api "repos/$GH_REPO/commits/$sha/check-runs?per_page=100") || return 1
+            red=$(jq -e '[.check_runs[] | select(.conclusion == "failure" or .conclusion == "timed_out")] | length' <<<"$checks") || return 1
             if [ "$red" != 0 ]; then
               echo "#$n: красные проверки — ждёт агента"
+              return 0
+            fi
+            # Идущий прогон по устаревшей голове не плодим: подтянет следующий пуш или расписание.
+            pending=$(jq -e '[.check_runs[] | select(.status != "completed")] | length' <<<"$checks") || return 1
+            if [ "$pending" != 0 ]; then
+              echo "#$n: проверки ещё идут"
               return 0
             fi
             if ! out=$(gh api -X PUT "repos/$GH_REPO/pulls/$n/update-branch" -f expected_head_sha="$sha" 2>&1); then
@@ -57,21 +77,23 @@ jobs:
                 echo "#$n: update-branch отказал, пропуск: $out"
                 return 0
               fi
+              # Иной отказ (у GITHUB_TOKEN нет права workflows): пересобирает сам бот, его пуш запустит CI.
               echo "$out"
-              return 1
+              recreate "$n" "$sha" "$(grep -om1 'HTTP [0-9]*' <<<"$out" || echo 'без кода HTTP')"
+              return
             fi
             for _ in $(seq 12); do
-              head=$(gh pr view "$n" --json headRefOid | jq -er .headRefOid) || return 1
-              [ "$head" != "$sha" ] && break
+              new=$(gh pr view "$n" --json headRefOid | jq -er .headRefOid) || return 1
+              [ "$new" != "$sha" ] && break
               sleep 5
             done
-            if [ "$head" = "$sha" ]; then
+            if [ "$new" = "$sha" ]; then
               echo "#$n: голова не сменилась за 60 с, CI не запущен"
               return 1
             fi
             # Пуш от GITHUB_TOKEN не запускает pull_request-прогон, а dispatch запускает.
             gh workflow run ci.yml --ref "$ref" || return 1
-            echo "#$n: отставал на $behind, подтянут ($sha → $head), ci.yml запущен"
+            echo "#$n: отставал на $behind, подтянут ($sha → $new), ci.yml запущен"
           }
           prs=$(gh pr list --author app/dependabot --state open --limit 100 \
             --json number,headRefName,headRefOid,autoMergeRequest)
