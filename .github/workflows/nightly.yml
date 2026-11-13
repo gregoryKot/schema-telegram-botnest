@@ -220,7 +220,7 @@ jobs:
   # замокан — смок про фронт, контракт с бэком держат HTTP-e2e и контрактный
   # тест api-мока.
   #
-  # Движок: Chromium (webapp).
+  # Движки: Chromium (проект webapp) и WebKit на iPhone 13 (проект webkit-iphone).
   browser-smoke:
     runs-on: ubuntu-26.04
     timeout-minutes: 15
@@ -241,11 +241,11 @@ jobs:
       # Игра — проект game в playwright.config.ts (e2e-browser/game-smoke.spec.ts).
       - run: npm ci --prefix game
       - run: npm run build --prefix game
-      # На раннере GitHub предустановленных браузеров нет — ставим Chromium с
-      # системными зависимостями. Путь к нему конфиг выбирает сам по факту
-      # наличия файла: предустановленного нет, берётся скачанный.
-      - run: npx playwright install --with-deps chromium
-      - name: браузерный smoke прод-сборки (Chromium)
+      # На раннере GitHub предустановленных браузеров нет — ставим Chromium и
+      # WebKit с системными зависимостями. Путь к Chromium конфиг выбирает сам по
+      # факту наличия файла: предустановленного нет, берётся скачанный.
+      - run: npx playwright install --with-deps chromium webkit
+      - name: браузерный smoke прод-сборки (Chromium и WebKit)
         run: npx playwright test
       - name: трейс упавшего смока артефактом
         if: failure()
