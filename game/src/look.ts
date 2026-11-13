@@ -25,11 +25,18 @@ function ensureTexture(scene: Phaser.Scene) {
 
 /** Пятно мягкого света: центр (x, y), полуоси w/2 × h/2, цвет и яркость в центре. */
 export function addGlow(
-  scene: Phaser.Scene, x: number, y: number, w: number, h: number,
-  color: number, alpha: number, depth: number,
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: number,
+  alpha: number,
+  depth: number,
 ): Phaser.GameObjects.Image {
   ensureTexture(scene);
-  return scene.add.image(x, y, KEY)
+  return scene.add
+    .image(x, y, KEY)
     .setDisplaySize(w, h)
     .setTint(color)
     .setAlpha(alpha)
