@@ -29,11 +29,11 @@ export function showBranch(s: GameScene, nextChapter: string) {
   const cta = s.add.rectangle(W / 2, 276 * ky, ctaTxt.width + 40, 42, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
   // Вторая, тише — запись к терапевту
-  const book = mk(320, t('m_book_therapist'), 9, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const book = mk(320, t('m_book_therapist'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
   // Продолжить — смотреть путь Мистера дальше
-  const goTxt = mk(358, t('m_or_keep_going_with_mister'), 10, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
+  const goTxt = mk(358, t('m_or_keep_going_with_mister'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
   // Поддержать игру донатом
-  const donTxt = mk(398, t('m_support_game'), 9, '#7a6fa0', 154).setInteractive({ useHandCursor: true });
+  const donTxt = mk(398, t('m_support_game'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: [top], alpha: 1, duration: 800 });
   s.tweens.add({ targets: [sub], alpha: 1, duration: 700, delay: 600 });
@@ -52,7 +52,7 @@ export function showBranch(s: GameScene, nextChapter: string) {
   goTxt.on('pointerout', () => goTxt.setColor('#9b8fbf'));
   goTxt.on('pointerdown', () => { track('continue', { to: nextChapter }); unlockChapter(nextChapter); s.scene.restart({ chapter: nextChapter }); });
   donTxt.on('pointerover', () => donTxt.setColor('#ffd86a'));
-  donTxt.on('pointerout', () => donTxt.setColor('#7a6fa0'));
+  donTxt.on('pointerout', () => donTxt.setColor('#9b8fbf'));
   donTxt.on('pointerdown', () => { track('donate_click', { source: 'act1_branch' }); window.open('https://schemehappens.ru/donate', '_blank'); });
   addCrisisLine(s, 440 * ky, 154);
 }
@@ -74,17 +74,17 @@ export function showCta(s: GameScene) {
 
   // Карточка-результат: «твой главный враг» = режим (виральный крючок, п.7)
   const top  = mk(196, t('m_you_ran_through_your_own_mind'), 12, '#d8c8ec');
-  const lbl  = mk(244, t('m_your_biggest_enemy'), 10, '#9a8fb8');
+  const lbl  = mk(244, t('m_your_biggest_enemy'), 11, '#a89fd0');
   const mode = mk(282, modeShort(s), 16, '#ff8aa6');
   const sub  = mk(336, t('m_you_can_t_beat_it_alone'), 11, '#a8e8d0');
 
   const ctaTxt = mk(404, t('m_try_in_app'), 11, '#88ffcc', 154);
   const cta = s.add.rectangle(W / 2, 404 * ky, ctaTxt.width + 34, 38, 0x153028)
     .setStrokeStyle(2, 0x88ffcc).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-  const shareTxt = mk(452, t('m_share'), 10, '#c0b8e8', 154);
+  const shareTxt = mk(452, t('m_share'), 11, '#c0b8e8', 154);
   const share = s.add.rectangle(W / 2, 452 * ky, shareTxt.width + 30, 34, 0x241d3a)
     .setStrokeStyle(1, 0x6a5aaf).setScrollFactor(0).setDepth(153).setAlpha(0).setInteractive({ useHandCursor: true });
-  const menu = mk(498, t('m_or_back_to_menu'), 9, '#5a4f7a', 154).setInteractive({ useHandCursor: true });
+  const menu = mk(498, t('m_or_back_to_menu'), 11, '#9b8fbf', 154).setInteractive({ useHandCursor: true });
 
   s.tweens.add({ targets: [top], alpha: 1, duration: 800 });
   s.tweens.add({ targets: [lbl, mode], alpha: 1, duration: 700, delay: 500 });
@@ -111,7 +111,7 @@ export function showCta(s: GameScene) {
 // выход (правило №7 CLAUDE.md). Тихая, но кликабельная: tel-ссылка.
 export function addCrisisLine(s: GameScene, y: number, depth: number) {
   const ln = s.add.text(W / 2, y, t('m_crisis_line'), {
-    fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: IS_TOUCH ? '9px' : '10px', color: '#a89fd0', align: 'center',
+    fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0', align: 'center',
   }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0).setInteractive({ useHandCursor: true });
   ln.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev.stopPropagation(); window.location.href = CRISIS_TEL; });
   s.tweens.add({ targets: ln, alpha: 0.9, duration: 600, delay: 900 });

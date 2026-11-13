@@ -48,7 +48,7 @@ export function storyFrame(s: GameScene, title: MsgKey, text: MsgKey) {
   const hint = s.add
     .text(W / 2, H - 60, t(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next'), {
       fontFamily: '"Press Start 2P", "Courier New", monospace',
-      fontSize: '9px',
+      fontSize: '11px',
       color: '#88ffcc',
     })
     .setOrigin(0.5)

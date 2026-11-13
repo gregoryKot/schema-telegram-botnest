@@ -12,6 +12,7 @@ import { t, type MsgKey } from '../i18n';
 import { getAssist } from '../assist';
 import { track, trackEvent } from '../analytics';
 import { gameOver } from './game/death';
+import { addGlow, HUD_STROKE } from '../look';
 import { storyFrame } from './game/frames';
 import { beginOverwhelm } from './game/ending';
 import { onDoorEnter, beginFinalApproach, restoreCopingButtons, sessionScene } from './game/cabinet';
@@ -108,7 +109,7 @@ export class GameScene extends Phaser.Scene {
   private playSprite!: Phaser.GameObjects.Sprite;
   private sleepSprite!: Phaser.GameObjects.Sprite;
   private lungeSprite!: Phaser.GameObjects.Sprite; // атака — выпад с красными штрихами
-  private playerLight!: Phaser.GameObjects.Graphics;
+  private playerLight!: Phaser.GameObjects.Image;
 
   hitstop = 0;
   private exhaustion = 0;                          // спираль: копинг + время → мир враждебнее
@@ -201,10 +202,10 @@ export class GameScene extends Phaser.Scene {
   // Титульная карточка: где ты и какое у этого места настроение
   private showTitleCard() {
     const mk = (y: number, text: string, size: number, color: string) =>
-      this.add.text(W / 2, y, text, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, letterSpacing: 3, align: 'center' })
+      this.add.text(W / 2, y, text, { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: `${size}px`, color, letterSpacing: 3, align: 'center', ...HUD_STROKE, wordWrap: { width: W - 48 } })
         .setOrigin(0.5).setScrollFactor(0).setDepth(120).setAlpha(0);
     const t1 = mk(170, t(this.chapter.title).toUpperCase(), 24, '#fff0d8');
-    const t2 = mk(208, t(this.chapter.tagline), 11, '#9a8fb8');
+    const t2 = mk(208, t(this.chapter.tagline), 11, '#d8c8ec');
     this.titleCard = [t1, t2];
     this.tweens.add({ targets: [t1, t2], alpha: 1, duration: 700, delay: 350 });
     this.tweens.add({ targets: [t1, t2], alpha: 0, duration: 800, delay: 3200, onComplete: () => this.dropTitleCard() });
@@ -222,9 +223,8 @@ export class GameScene extends Phaser.Scene {
     g.fillGradientStyle(pal.skyTop, pal.skyTop, pal.skyBot, pal.skyBot, 1, 1, 1, 1);
     g.fillRect(0, 0, W, H);
     // distant glow lighting the play zone
-    const glow = this.add.graphics().setScrollFactor(0).setDepth(-8);
-    glow.fillStyle(pal.glow1, 0.30); glow.fillEllipse(W / 2, GROUND_Y - 10, W * 1.6, 320);
-    glow.fillStyle(pal.glow2, 0.22); glow.fillEllipse(W / 2, GROUND_Y - 10, W * 1.0, 220);
+    addGlow(this, W / 2, GROUND_Y - 10, W * 1.8, 420, pal.glow1, 0.30, -8).setScrollFactor(0);
+    addGlow(this, W / 2, GROUND_Y - 10, W * 1.1, 260, pal.glow2, 0.22, -8).setScrollFactor(0);
     // drifting "thought" motes (parallax)
     for (let layer = 0; layer < 2; layer++) {
       const depth = layer === 0 ? -7 : -3;
@@ -502,9 +502,7 @@ export class GameScene extends Phaser.Scene {
     for (const r of this.platColliders) this.physics.add.collider(this.player, r);
 
     // soft light pool — keeps the cat readable in the dark, "your small light"
-    this.playerLight = this.add.graphics().setDepth(1);
-    this.playerLight.fillStyle(0xffe9c0, 0.10); this.playerLight.fillCircle(0, 0, 90);
-    this.playerLight.fillStyle(0xffe9c0, 0.07); this.playerLight.fillCircle(0, 0, 130);
+    this.playerLight = addGlow(this, 0, 0, 260, 260, 0xffe9c0, 0.14, 1);
 
     this.slash = this.add.graphics().setDepth(11);
     // cat_play/cat_sleep/cat_dash — необязательные спрайты (грузятся отдельными
@@ -512,24 +510,24 @@ export class GameScene extends Phaser.Scene {
     // иначе .play() по пустой анимации роняет update-цикл и игра «зависает».
     this.safeAnim('p-play', 'cat_play', 0, 5, 7, -1);
     this.safeAnim('p-sleep', 'cat_sleep', 0, 5, 6, 0);
-    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setScale(0.24).setDepth(10).setVisible(false);
-    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setScale(0.3).setDepth(10).setVisible(false);
+    this.playSprite = this.add.sprite(0, 0, 'cat_play', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
+    this.sleepSprite = this.add.sprite(0, 0, 'cat_sleep', 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
     this.safeAnim('p-lunge', 'cat_dash', 1, 5, 24, 0);
-    this.lungeSprite = this.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setScale(0.26).setDepth(11).setVisible(false);
-    this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '10px', color: '#fff0d8',
+    this.lungeSprite = this.add.sprite(0, 0, 'cat_dash', 5).setOrigin(0.5, 1).setDepth(11).setVisible(false);
+    this.bubble = this.add.text(0, 0, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#fff0d8',
       backgroundColor: 'rgba(16,12,30,0.88)', padding: { x: 9, y: 5 }, align: 'center' })
       .setOrigin(0.5, 1).setDepth(45).setAlpha(0);
   }
 
   private buildHUD() {
-    this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577' })
+    this.heartsText = this.add.text(18, 14, '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '24px', color: '#ff5577', ...HUD_STROKE })
       .setScrollFactor(0).setDepth(100);
     this.updateHearts();
     // счётчик воспоминаний — только если они есть в главе
-    this.memText = this.add.text(18, 48, this.memTotal ? `✦ 0/${this.memTotal}` : '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '12px', color: '#ffd870' })
+    this.memText = this.add.text(18, 48, this.memTotal ? `✦ 0/${this.memTotal}` : '', { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '14px', color: '#ffd86a', ...HUD_STROKE })
       .setScrollFactor(0).setDepth(100);
     if (!IS_TOUCH)
-      this.add.text(W / 2, H - 20, t('m_x_fight_z_avoid_tap_dash'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '9px', color: '#6a5f8a' })
+      this.add.text(W / 2, H - 20, t('m_x_fight_z_avoid_tap_dash'), { fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px', color: '#a89fd0', ...HUD_STROKE })
         .setOrigin(0.5, 1).setScrollFactor(0).setDepth(100);
   }
   updateHearts() {
@@ -565,7 +563,7 @@ export class GameScene extends Phaser.Scene {
     this.critic = { img, size: 1, struck: 0, alive: true };
     // тень постоянно выкрикивает упрёки — её не заткнуть
     this.criticBubble = this.add.text(0, 0, '', {
-      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '8px',
+      fontFamily: '"Press Start 2P", "Courier New", monospace', fontSize: '11px',
       color: '#ff8aa6', backgroundColor: 'rgba(18,6,18,0.72)', padding: { x: 6, y: 4 }, align: 'center',
     }).setOrigin(0.5, 1).setDepth(46).setAlpha(0);
     this.criticSayT = 2200; // первый упрёк почти сразу
