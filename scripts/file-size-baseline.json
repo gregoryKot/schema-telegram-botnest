@@ -47,7 +47,7 @@
   "game/src/progress.ts": 19,
   "game/src/props.ts": 91,
   "game/src/scenes/BootScene.ts": 164,
-  "game/src/scenes/GameScene.ts": 1599,
+  "game/src/scenes/GameScene.ts": 1423,
   "game/src/scenes/IntroScene.ts": 107,
   "game/src/scenes/StartScene.ts": 77,
   "game/src/scenes/TutorialScene.ts": 650,
