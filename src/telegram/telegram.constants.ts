@@ -17,9 +17,8 @@ export const BOT_USERNAME = (process.env.BOT_USERNAME ?? '')
 export const MINIAPP_APP_NAME = process.env.MINIAPP_APP_NAME ?? 'diary';
 export const CABINET_URL = `${APP_URL}/today`;
 export const CABINET_HELP_URL = `${APP_URL}/practice`;
-// Ссылки запуска кабинета: кнопка web_app открывает адрес как есть, сайт разбирает
-// `?startapp=` (shared/src/host/startParam.ts) — «Задания», задание по id, тест на схемы.
-// Уведомление о задании вело на «Сегодня», где заданий нет (аудит 2026-11, U2).
+// Ссылки запуска кабинета: сайт разбирает `?startapp=` (shared/src/host/startParam.ts) —
+// «Задания», задание по id, тест на схемы (уведомление о задании вело на «Сегодня»).
 export const CABINET_YSQ_URL = `${CABINET_URL}?startapp=ysq`;
 export const cabinetTasksUrl = (taskId?: number): string =>
   `${CABINET_URL}?startapp=${taskId ? `tasks_${taskId}` : 'tasks'}`;
@@ -28,6 +27,7 @@ export const cabinetTasksUrl = (taskId?: number): string =>
 export const BOT_COMMANDS = [
   { command: 'start', description: 'Открыть «Всё по схеме» 🧠' },
   { command: 'tests', description: 'Мини-тесты на 2 минуты 🎲' },
+  { command: 'game', description: 'Игра «Сквозь голову» 🎮' },
   { command: 'settings', description: 'Настройки уведомлений ⚙️' },
   { command: 'donate', description: 'Поддержать проект 💛' },
   { command: 'about', description: 'О приложении и авторе ℹ️' },

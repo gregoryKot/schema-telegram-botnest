@@ -2,7 +2,8 @@
 //
 // Пустое состояние проверяется первым и намеренно: на чистой базе отчёт не
 // должен показывать «0/NaN/мусор» — правило №8 требует именно этого.
-import { formatGameMetrics, type GameMetrics } from './game-metrics.format';
+import { formatGameMetrics } from './game-metrics.format';
+import type { GameMetrics } from './game-metrics.tally';
 import {
   GAME_CHAPTERS,
   GAME_CTA_PLACES,
@@ -37,6 +38,8 @@ const EMPTY: GameMetrics = {
   ctaShown: 0,
   ctaClicks: 0,
   ctaClicksByPlace: emptyPlaces(),
+  ctaClicksByTarget: { app: 0, booking: 0 },
+  appArrivals: 0,
   shares: 0,
 };
 
@@ -67,6 +70,8 @@ describe('полный отчёт', () => {
     ctaShown: 40,
     ctaClicks: 15,
     ctaClicksByPlace: { act1: 10, cabinet: 5, ending: 0 },
+    ctaClicksByTarget: { app: 9, booking: 4 },
+    appArrivals: 7,
     shares: 8,
   };
 
@@ -97,6 +102,14 @@ describe('полный отчёт', () => {
       'Приглашение к терапии: увидели 40, нажали 15 (после первой части 10, в кабинете 5)',
     );
     expect(out).not.toContain('в запасном финале');
+  });
+
+  it('показывает, куда вела кнопка финала, и сколько дошли до сайта', () => {
+    const out = formatGameMetrics(FULL);
+    expect(out).toContain(
+      'Куда нажали: в приложение 9, на запись к терапевту 4',
+    );
+    expect(out).toContain('Пришли из игры на сайт: 7');
   });
 
   it('показывает шаринг', () => {
@@ -139,6 +152,18 @@ describe('частичный отчёт', () => {
     // deaths без стартов — историческая аномалия (глава открылась старой
     // версией клиента), started === 0 у всех — весь блок «Главы» пропущен.
     expect(out).not.toContain('Главы (');
+  });
+
+  it('клики без отметки цели (старая игра) — без строки «Куда нажали»', () => {
+    const out = formatGameMetrics({ ...EMPTY, ctaShown: 2, ctaClicks: 1 });
+    expect(out).toContain('нажали 1');
+    expect(out).not.toContain('Куда нажали');
+  });
+
+  it('только приход на сайт из игры — блок не пустой', () => {
+    const out = formatGameMetrics({ ...EMPTY, appArrivals: 2 });
+    expect(out).toContain('Пришли из игры на сайт: 2');
+    expect(out).not.toContain('никто не открывал');
   });
 
   it('нажали «начать» без прохождения/пропуска обучения — без суффикса про обучение', () => {
