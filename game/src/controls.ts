@@ -29,6 +29,8 @@ class TouchState {
     this.just[a] = false;
     return v;
   }
+  /** забыть нажатия, сделанные до нового кадра текста, — иначе они его сразу пролистают */
+  drain() { this.just = { jump: false, hit: false, avoid: false, fawn: false }; }
 }
 
 export const touch = new TouchState();

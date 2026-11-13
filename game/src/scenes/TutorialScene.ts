@@ -57,7 +57,6 @@ export class TutorialScene extends Phaser.Scene {
   private bubbleT = 0;
   private step: Step = 'meet';
   private t = 0;
-  private said = new Set<string>();
   private narrContinue: (() => void) | null = null; // листать текст по тач-кнопке
 
   // жизни (как в игре — учим, что копинг их тратит)
@@ -67,7 +66,7 @@ export class TutorialScene extends Phaser.Scene {
   // dash
   private pile: Phaser.GameObjects.Container | null = null;
   private pileSpr: Phaser.GameObjects.Sprite | null = null;
-  private dashed = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
+  private dashed = false; private dashHold = false; private dashT = 0; private dashCd = 0; private dashDir = 1;
   private neiSayT = 0; private neiLine = 0;
   private wrongCd = 0; private lastWrong = -1; // объяснения «не та кнопка» — троттлинг + без повтора
   private holdT = 0; // сколько держат ИЗБЕГАЙ: долгий тап новичка — ещё не «залип»
@@ -93,8 +92,8 @@ export class TutorialScene extends Phaser.Scene {
 
   create() {
     setTouchControls(true); // геймплей — тач-кнопки нужны
-    this.step = 'meet'; this.t = 0; this.said = new Set(); this.holdT = 0; this.finished = false;
-    this.moved = 0; this.jumped = false; this.pile = null; this.dashed = false;
+    this.step = 'meet'; this.t = 0; this.holdT = 0; this.finished = false;
+    this.moved = 0; this.jumped = false; this.pile = null; this.dashed = false; this.dashHold = false;
     this.worries = []; this.calmT = 0; this.colleague = null; this.colBubble = null;
     this.neighbor = null; this.neiBubble = null;
 
@@ -242,6 +241,7 @@ export class TutorialScene extends Phaser.Scene {
     // небольшая задержка, чтобы случайный зажатый input не проскочил текст
     this.time.delayedCall(700, () => {
       if (!this.paused) return;
+      touch.drain(); // тап, сделанный до кадра, не листает его вслепую
       this.input.keyboard!.once('keydown', go);
       this.input.once('pointerdown', go);
       this.narrContinue = go; // тап по тач-кнопке (HTML вне канваса) тоже листает
@@ -298,15 +298,16 @@ export class TutorialScene extends Phaser.Scene {
     // на кадре нажатия — это рывок, не залипание (иначе frozen гасит рывок)
     this.frozen = avoidHeld && !dash && onGround && this.dashT <= 0;
     this.holdT = this.frozen ? this.holdT + dt : 0;
-    // залип (ИЗБЕГАЙ держать) там, где это не работает — объясняем почему; но не за долгий тап новичка
-    if (this.frozen && this.holdT > 400 && (this.step === 'dash' || this.step === 'fight' || this.step === 'fawn')) this.wrongTry('freeze');
+    if (!avoidHeld) this.dashHold = false;
+    // залип (ИЗБЕГАЙ держать) там, где это не работает — объясняем почему; но не за долгий тап, начавшийся рывком
+    if (this.frozen && this.holdT > 400 && !this.dashHold && (this.step === 'dash' || this.step === 'fight' || this.step === 'fawn')) this.wrongTry('freeze');
     if (fawn) this.onFawn();
 
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.attackCd > 0) this.attackCd -= dt;
 
     if (dash && this.dashCd <= 0 && !this.frozen) {
-      this.dashT = 170; this.dashCd = 480;
+      this.dashT = 170; this.dashCd = 480; this.dashHold = true;
       this.dashDir = left && !right ? -1 : right ? 1 : this.player.flipX ? -1 : 1;
       audio.dash();
       this.onDash();
@@ -496,7 +497,8 @@ export class TutorialScene extends Phaser.Scene {
       this.calmT += dt;
       this.worries.forEach(w => w.setAlpha(Math.max(0.15, 1 - this.calmT / 1900)));
       if (this.calmT > 2000 && this.worries.some(w => w.active)) {
-        this.worries.forEach(w => { this.tweens.add({ targets: w, alpha: 0, scale: 0, duration: 400, onComplete: () => w.destroy() }); });
+        const gone = this.worries; this.worries = []; // иначе пока гаснут — успех и beginFight на каждом кадре
+        gone.forEach(w => { this.tweens.add({ targets: w, alpha: 0, scale: 0, duration: 400, onComplete: () => w.destroy() }); });
         this.say('m_the_yarn_matters_more_and_the', 2600);
         audio.freeze();
         this.time.delayedCall(1600, () => this.beginFight());
@@ -539,7 +541,10 @@ export class TutorialScene extends Phaser.Scene {
     if (this.step !== 'fight') { this.wrongTry('hit'); return; }
     if (!this.colleague?.active) return;
     // удар — аура вокруг кота (как в игре), а не узкий конус спереди
-    if (Math.hypot(this.colleague.x - this.player.x, this.colleague.y - (this.player.y - 22)) > 104) { this.sayOnce('alarm_far', 'm_come_closer', 2000); return; }
+    if (Math.hypot(this.colleague.x - this.player.x, this.colleague.y - (this.player.y - 22)) > 104) {
+      if (this.wrongCd <= 0) { this.wrongCd = 900; this.say('m_come_closer', 2000); } // каждый промах, не только первый
+      return;
+    }
     audio.hit();
     this.cameras.main.shake(220, 0.015);
     const c = this.colleague; this.colleague = null;
@@ -617,6 +622,7 @@ export class TutorialScene extends Phaser.Scene {
     trackEvent('game_tutorial_done');
     this.setNarr('m_fight_avoid_surrender_should_be_enough');
     this.setPrompt(IS_TOUCH ? 'm_tap_next' : 'm_any_key_next');
+    touch.drain(); // запоздалый тап УСТУПИ не перелистывает финал
     this.input.once('pointerdown', () => this.goIntro());
     this.input.keyboard!.once('keydown', () => this.goIntro());
   }
@@ -626,7 +632,6 @@ export class TutorialScene extends Phaser.Scene {
   private setNarr(s: MsgKey | '') { this.narr.setText(s === '' ? '' : t(s)); }
   private setPrompt(s: MsgKey | '') { this.prompt.setText(s === '' ? '' : t(s)); }
   private say(text: MsgKey, dur: number) { this.bubble.setText(t(text)).setAlpha(1); this.bubbleT = dur; }
-  private sayOnce(key: string, text: MsgKey, dur: number) { if (this.said.has(key)) return; this.said.add(key); this.say(text, dur); }
   // нажал «не ту» кнопку в этой сценке — объясняем, почему не сработает (разные варианты)
   private wrongTry(action: string) {
     const pool = WRONG[this.step]?.[action];
