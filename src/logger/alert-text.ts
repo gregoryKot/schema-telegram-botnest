@@ -8,8 +8,8 @@ import { isMoneyAlert } from './money-alert';
 
 export const SERVER_ALERT_TITLE = '🚨 Ошибка на сервере';
 
-/** Контекст логгера — имя класса: без пробелов, `@` и переводов строки. */
-const PLACE = /^[A-Za-z_$][\w$.-]{0,79}$/;
+/** Имя класса из ≥2 частей (`BookingService`, `OAuthCallbackService`); одно слово — «—». */
+const PLACE = /^(?=.{2,80}$)(?=.*[a-z])[A-Z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$/;
 /** Имя класса ошибки: `TypeError`, `PrismaClientKnownRequestError`, `HttpException`. */
 const ERROR_CLASS = /^(?:[A-Z][\w$]*(?:Error|Exception)|Error)$/;
 /** Код ошибки: `P2002`, `ECONNREFUSED`, `ERR_INVALID_URL`. */
