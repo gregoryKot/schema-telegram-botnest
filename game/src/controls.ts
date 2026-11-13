@@ -25,12 +25,10 @@ class TouchState {
   press(a: JustAction) { this.just[a] = true; }
   /** just-pressed: вернёт true один раз на нажатие */
   consume(a: JustAction): boolean {
-    const v = this.just[a];
-    this.just[a] = false;
+    const v = this.just[a]; this.just[a] = false;
     return v;
   }
-  /** забыть нажатия, сделанные до нового кадра текста, — иначе они его сразу пролистают */
-  drain() { this.just = { jump: false, hit: false, avoid: false, fawn: false }; }
+  drain() { this.just = { jump: false, hit: false, avoid: false, fawn: false }; } // нажатия до нового кадра текста
 }
 
 export const touch = new TouchState();
