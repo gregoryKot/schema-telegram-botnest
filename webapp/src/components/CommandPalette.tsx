@@ -67,7 +67,7 @@ export function CommandPalette({ onNavigate, onClose, userRole, therapistMode, o
   const rows = useMemo<CmdRow[]>(() => {
     const clientRows: CmdRow[] = screenShare ? [] : clients.map(c => ({
       label: clientDisplayName(c),
-      ...(isActiveToday(c) ? { sub: 'Активность сегодня', activeToday: true } : { sub: clientStatus(c).label }),
+      ...(isActiveToday(c) ? { sub: 'Активность сегодня' } : { sub: clientStatus(c).label }),
       hint: 'Открыть карточку',
       mark: { initials: clientAvatarInitials(c), hue: clientHue(c.telegramId) },
       search: clientDisplayName(c),

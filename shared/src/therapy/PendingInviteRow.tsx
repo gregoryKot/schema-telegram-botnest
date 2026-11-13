@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTr } from '../utils/addressForm';
 import { useCopyToClipboard } from '../utils/useCopyToClipboard';
 import { CopyFailedHint } from '../components/CopyFailedHint';
-import { inviteButtonStyle, inviteCodeStyle } from './InviteCodeBox';
+import { inviteCodeStyle } from './InviteCodeBox';
 import type { TherapyInvite } from './therapyInvites';
 
 // Строка блока «Ждут подключения» (PendingInvitesList): кто приглашён, код,
@@ -10,6 +10,8 @@ import type { TherapyInvite } from './therapyInvites';
 // подтверждением прямо в строке — отозванный код перестаёт работать, и
 // случайный тап по нему не должен ломать приглашение, отправленное клиенту.
 const muted = { fontSize: 12, color: 'var(--text-sub)' } as const;
+const quiet = 'ds-btn ds-btn--sm ds-btn--secondary'; // кнопки — ds-btn сайта, не своя плашка
+const failedStyle = { ...muted, color: 'var(--accent-red)', marginTop: 6 };
 
 /** Момент окончания — в зоне читателя (правило №25): «до 2 ноября». */
 export function inviteExpiryLabel(expiresAt: string): string {
@@ -58,7 +60,8 @@ export function PendingInviteRow({
             </span>
             <button
               type="button"
-              style={{ ...inviteButtonStyle, color: 'var(--accent-red)' }}
+              className={quiet}
+              style={{ color: 'var(--accent-red)' }}
               onClick={() => {
                 setConfirming(false);
                 onRevoke();
@@ -68,7 +71,7 @@ export function PendingInviteRow({
             </button>
             <button
               type="button"
-              style={inviteButtonStyle}
+              className={quiet}
               onClick={() => setConfirming(false)}
             >
               Оставить
@@ -78,21 +81,21 @@ export function PendingInviteRow({
           <>
             <button
               type="button"
-              style={inviteButtonStyle}
+              className={quiet}
               onClick={() => void code.copy(invite.code)}
             >
               {code.copied ? '✓ Код скопирован' : 'Скопировать код'}
             </button>
             <button
               type="button"
-              style={inviteButtonStyle}
+              className={quiet}
               onClick={() => void link.copy(invite.url)}
             >
               {link.copied ? '✓ Ссылка скопирована' : 'Скопировать ссылку'}
             </button>
             <button
               type="button"
-              style={{ ...inviteButtonStyle, background: 'transparent' }}
+              className="ds-link"
               onClick={() => setConfirming(true)}
             >
               Отозвать
@@ -102,10 +105,7 @@ export function PendingInviteRow({
       </div>
       <CopyFailedHint show={code.failed || link.failed} />
       {revokeFailed && (
-        <div
-          role="alert"
-          style={{ fontSize: 12, color: 'var(--accent-red)', marginTop: 6 }}
-        >
+        <div role="alert" style={failedStyle}>
           {tr(
             'Не удалось отозвать. Попробуй ещё раз',
             'Не удалось отозвать. Попробуйте ещё раз',
