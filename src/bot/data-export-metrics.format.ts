@@ -1,4 +1,3 @@
-import { EVENT_RETENTION_DAYS } from '../analytics/analytics-retention';
 import { plural } from './plural';
 
 // Блок «Забирают свои данные» для /stats (правило №8). Событие data_export —
@@ -7,13 +6,13 @@ import { plural } from './plural';
 //
 // Зачем блок: эндпоинт не проверить «на глаз» — он либо молча отдаёт всё, либо
 // молча ломается на части таблиц. Рост числа выгрузок или тишина месяцами —
-// оба сигнала стоит видеть заранее. «За всё время» тут нет: события старше
-// EVENT_RETENTION_DAYS удаляет pruneOld (analytics.service.ts).
+// оба сигнала стоит видеть заранее. Окно — всё время: pruneOld событие не
+// удаляет (KEPT_UNTIL_ACCOUNT_DELETION), оно уходит только с аккаунтом.
 
 export interface DataExportMetrics {
-  /** Сколько раз выгружали за EVENT_RETENTION_DAYS дней (старше — удалено). */
+  /** Сколько раз выгружали за всё время (у живых аккаунтов). */
   totalExports: number;
-  /** Сколько разных людей выгружали за то же окно. */
+  /** Сколько разных людей выгружали за всё время. */
   totalUsers: number;
   /** За последние 30 дней. */
   exports30: number;
@@ -31,8 +30,7 @@ function lastSeenLabel(days: number): string {
 /** Текстовый блок для /stats. Чистая функция. */
 export function formatDataExportMetrics(m: DataExportMetrics): string {
   const lines = ['📤 <b>Забирают свои данные</b>'];
-  const n = EVENT_RETENTION_DAYS;
-  const period = `За последние ${n} ${plural(n, 'день', 'дня', 'дней')}`;
+  const period = 'За всё время';
   if (m.totalExports === 0) {
     lines.push(`${period} выгрузку данных никто не запрашивал.`);
     return lines.join('\n');
