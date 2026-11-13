@@ -113,7 +113,7 @@
   - Связь брони с аккаунтом — только у записи из приложения (`Booking.userId`): удаление аккаунта отвязывает (`src/bot/account.delete.ts`), слияние переносит (`USER_OWNED_TABLES`), выгрузка — `src/account/export-policy.booking.ts`.
   - Статус (HELD→CONFIRMED→CANCELLED/COMPLETED) меняется только CAS: `updateMany` с текущим статусом в WHERE, эффекты — по `count===1`; создание — под `pg_advisory_xact_lock` (`src/booking/booking-slot-lock.ts`); HELD сгорает по крону раз в минуту под leader-lease.
   - Один вебхук `/api/payment/result` роутит по диапазону InvId (подписки, донаты, брони); без настроенной Robokassa в проде платный путь отдаёт 503 (`src/booking/payment-guard.ts`); PII брони зашифрована (`src/booking/booking.schema.ts`) и затирается через 12 мес.
-  - iCloud и Zoom — зарубежные базы (152-ФЗ, ч. 5 ст. 18): данные клиента туда не уходят, исходящие запросы целиком пинит `src/booking/foreign-egress.spec.ts`. Кто придёт, владелец видит в карточке брони (Telegram, почта) и в админке записи.
+  - iCloud и Zoom — зарубежные базы (152-ФЗ, ч. 5 ст. 18): данные клиента туда не уходят, исходящие запросы целиком пинит `src/booking/foreign-egress.spec.ts`. Созданное до обезличивания чистит разовая админ-команда `/scrub_foreign` (`go` — боевой прогон): `src/booking/foreign-scrub.command.ts`, движок `foreign-scrub.ts`, Zoom — `zoom-room.ts`. Кто придёт, владелец видит в карточке брони (Telegram, почта) и в админке записи.
 
 ### `src/infra/`
 Операционный каркас: leader-election кронов, проверка env и реестр возможностей при старте, самопроверка прода (пробы), ретеншен, HTTP-края (прокси, хост, тело), конфиг бэкапов в R2.
