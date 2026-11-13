@@ -39,7 +39,6 @@ const DASH_MS   = 170;
 const DASH_CD   = 480;
 const ATTACK_MS = 170;
 const ATTACK_CD = 300;
-const ATTACK_RANGE = 72;
 const ATTACK_AURA = 104; // радиус удара вокруг кота — бьёт всё рядом, не только спереди
 const ANX_SCALE = 0.42;  // спрайт тучи широкий — ужимаем до размера как в обучении
 // тень-критик выкрикивает это постоянно (голос Карающего Критика)
@@ -391,7 +390,7 @@ export class GameScene extends Phaser.Scene {
   private buildDoors() {
     if (!this.chapter.doors?.length) return;
     for (const cfg of this.chapter.doors)
-      this.doors.push(new Door(this, cfg.kind, cfg.x, d => this.onDoorEnter(d), () => undefined, this.chapter.arenaW));
+      this.doors.push(new Door(this, cfg.kind, cfg.x, d => this.onDoorEnter(d), this.chapter.arenaW));
     // заслоны: (x голоса, реплики, ответ) — гейт чуть дальше голоса
     const blocks: { x: number; lines: MsgKey[]; answer: MsgKey }[] = [
       { x: 880,  lines: ['m_exc_pass', 'm_exc_later'],        answer: 'm_ans_later' },
@@ -1220,7 +1219,7 @@ export class GameScene extends Phaser.Scene {
     audio.setIntensity(1);
     for (let i = 0; i < this.chapter.overwhelmAnx; i++) this.spawnAnx(this.player.x + (i - 1) * 200 + Phaser.Math.Between(-40, 40), 1);
     this.say(this.chapter.overwhelmSay, 3200);
-    // The day collapses → the realization (sage hook for next build)
+    // The day collapses → the realization
     this.time.delayedCall(3600, () => {
       if (this.dead) return;
       this.cameras.main.fade(1400, 8, 6, 16);
