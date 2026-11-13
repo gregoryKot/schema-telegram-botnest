@@ -1,11 +1,11 @@
 // Итог пробы свежести бэкапов, когда они не настроены или настроены не до
 // конца (probe-backup-freshness.ts). Выключены вовсе — штатно: копии делает
-// платформа (Amvera), R2 — по желанию.
+// платформа (Amvera), Yandex Object Storage — по желанию.
 import { backupConfigState, missingBackupVars } from './backup-config';
 
 type Env = Record<string, string | undefined>;
 
-/** null — настроены полностью, можно идти в R2. */
+/** null — настроены полностью, можно идти в Yandex Object Storage. */
 export function backupMisconfigResult(
   env: Env,
 ): { ok: boolean; detail: string } | null {
