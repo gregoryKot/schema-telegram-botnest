@@ -45,8 +45,6 @@ export function renderSoftTemplate(
   switch (type) {
     case 'comeback': {
       const totalDays = payload?.totalDays as number | undefined;
-      const strongest = payload?.strongestNeed as string | undefined;
-      const strongestAvg = payload?.strongestAvg as number | undefined;
       const daysLine =
         totalDays && totalDays > 1
           ? t(
@@ -55,54 +53,28 @@ export function renderSoftTemplate(
               `\nВсего у вас уже ${totalDays} ${pluralDays(totalDays)} наблюдений. Они никуда не делись.`,
             )
           : '';
-      // Value-based штрих: зеркало собственных данных, а не просто «я есть».
-      const valueLine =
-        strongest && strongestAvg !== undefined
-          ? t(
-              form,
-              `\nТвоя опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`,
-              `\nВаша опора всё это время — ${strongest.toLowerCase()} (в среднем ${strongestAvg.toFixed(1)}).`,
-            )
-          : '';
       return {
         text:
           t(
             form,
             'С возвращением. Ты снова здесь — это главное.',
             'С возвращением. Вы снова здесь — это главное.',
-          ) +
-          daysLine +
-          valueLine,
+          ) + daysLine,
       };
     }
 
-    // День 14 без записей: возврат через зеркало СОБСТВЕННЫХ данных, а не «я есть».
-    // Заполняет окно между dormant_7 и reengagement_30.
+    // День 14 без записей: напоминание, что записи на месте. Оценок и средних
+    // в Telegram нет (РКН, #1135) — только число дней наблюдений.
     case 'value_recap': {
       const totalDays = payload?.totalDays as number | undefined;
-      const strongest = payload?.strongest as string | undefined;
-      const strongestAvg = payload?.strongestAvg as number | undefined;
-      const weakest = payload?.weakest as string | undefined;
-      const weakestAvg = payload?.weakestAvg as number | undefined;
-      if (
-        !strongest ||
-        !weakest ||
-        strongestAvg === undefined ||
-        weakestAvg === undefined
-      )
-        return null;
       const daysPart = totalDays
-        ? t(
-            form,
-            `За ${totalDays} ${pluralDays(totalDays)} наблюдений `,
-            `За ${totalDays} ${pluralDays(totalDays)} наблюдений `,
-          )
-        : 'За это время ';
+        ? `За ${totalDays} ${pluralDays(totalDays)} наблюдений`
+        : 'За это время';
       return {
         text: t(
           form,
-          `${daysPart}у тебя сложилась картина: ${strongest.toLowerCase()} — твоя опора (в среднем ${strongestAvg.toFixed(1)}), ${weakest.toLowerCase()} чаще проседала (${weakestAvg.toFixed(1)}).\n\nЭто твои данные, и они остаются твоими в любой день. Открыть трекер снова — когда появится интерес.`,
-          `${daysPart}у вас сложилась картина: ${strongest.toLowerCase()} — ваша опора (в среднем ${strongestAvg.toFixed(1)}), ${weakest.toLowerCase()} чаще проседала (${weakestAvg.toFixed(1)}).\n\nЭто ваши данные, и они остаются вашими в любой день. Открыть трекер снова — когда появится интерес.`,
+          `${daysPart} у тебя сложилась картина. Это твои данные, и они остаются твоими в любой день. Открыть её в приложении можно, когда появится интерес.`,
+          `${daysPart} у вас сложилась картина. Это ваши данные, и они остаются вашими в любой день. Открыть её в приложении можно, когда появится интерес.`,
         ),
         keyboard: Markup.inlineKeyboard([[openDiaryButton]]),
       };

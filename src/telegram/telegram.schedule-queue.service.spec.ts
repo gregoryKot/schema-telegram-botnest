@@ -81,6 +81,13 @@ async function runTick(service: TelegramScheduleService): Promise<void> {
 }
 
 beforeEach(() => {
+  // Спек про механику очереди, не про тексты: шаблоны статичны (РКН, #1135) —
+  // подставляем рендер «text из payload», чтобы различать отправки.
+  jest
+    .spyOn(templates, 'renderTemplate')
+    .mockImplementation((_type, payload) =>
+      typeof payload?.text === 'string' ? { text: payload.text } : null,
+    );
   jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
   // Фейковые таймеры на весь блок: отправка в очереди ограничена таймером
   // на 15 с (telegram.send-bounded.ts) — без фейковых таймеров этот реальный

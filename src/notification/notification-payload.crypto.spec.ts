@@ -40,7 +40,7 @@ describe('NotificationService — шифрование payload', () => {
     expect(JSON.stringify(stored)).not.toContain('Иванова');
   });
 
-  it('practice_reminder: practiceText шифруется', async () => {
+  it('строка очереди со старым practiceText шифруется', async () => {
     const { svc, table } = makeSvc();
     await svc.schedule(5n, 'practice_reminder', new Date(), {
       practiceText: 'Позвонить сестре',
@@ -61,7 +61,8 @@ describe('NotificationService — шифрование payload', () => {
       'task_assigned',
       due.payload as Record<string, unknown>,
     );
-    expect(tpl?.text).toContain('Напиши письмо маме');
+    // Шаблон старый text не читает (РКН, #1135).
+    expect(tpl?.text).not.toContain('письмо');
   });
 
   it('старая строка с открытым текстом читается как есть', async () => {
