@@ -1,12 +1,16 @@
 import type { AccountProvider } from './ProviderRows';
 
+/** Сервисы со своей кнопкой «Привязать»: строка есть всегда, порядок — как на экране входа. */
+export const OAUTH_METHODS = ['vk', 'yandex'] as const;
+export type OAuthMethod = (typeof OAUTH_METHODS)[number];
+
 /**
  * «N из M» в заголовке способов входа. MAX, Telegram и Google (входа на сайт через два
  * последних нет с 2026-11) — в списке только привязанные, без «Привязать»; M — число строк.
  */
 export function countMethods(providers: AccountProvider[]): { linked: number; total: number } {
   const has = (id: AccountProvider['provider']) => providers.some((p) => p.provider === id);
-  const rows = ['vk', 'email'] as const;
+  const rows = [...OAUTH_METHODS, 'email'] as const;
   const extra = (['max', 'telegram', 'google'] as const).filter(has).length;
   return { linked: rows.filter(has).length + extra, total: rows.length + extra };
 }

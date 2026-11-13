@@ -14,7 +14,7 @@ describe('missingLinkTarget', () => {
   });
 
   describe('на сайте', () => {
-    it.each([['google'], ['vk'], ['email']])(
+    it.each([['google'], ['vk'], ['yandex'], ['email']])(
       'вход только через %s — предлагаем подключить Telegram',
       (p) => {
         expect(missingLinkTarget({ providers: [p], hostId: 'web' })).toBe(

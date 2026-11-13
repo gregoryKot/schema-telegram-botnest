@@ -62,6 +62,17 @@ describe('AuthErrorPage — известные коды', () => {
     expect(reportedMessages()[0]).toMatch(/хост=web, .*, vk_failed$/);
   });
 
+  it.each([['ty', /Попробуй ещё раз или выбери другой способ/], ['vy', /Попробуйте ещё раз или выберите другой способ/]] as const)(
+    'yandex_failed (%s): называет Яндекс, код для поддержки и в отчёте',
+    (form, tail) => {
+      const { container } = renderAt('?reason=yandex_failed', form);
+      expect(screen.getByText(/Вход через Яндекс не прошёл/)).toBeTruthy();
+      expect(screen.getByText(tail)).toBeTruthy();
+      expect(container.querySelector('.pa-outcome-code')?.textContent).toBe('yandex_failed');
+      expect(reportedMessages()[0]).toMatch(/, yandex_failed$/);
+    },
+  );
+
   it('email_link_expired в форме «вы» — без «ты»-строк', () => {
     const { container } = renderAt('?reason=email_link_expired', 'vy');
     expect(screen.getByText(/Запросите новую\./)).toBeTruthy();
@@ -136,6 +147,16 @@ describe('AuthErrorPage — провайдер выключен', () => {
     expect(link.getAttribute('href')).toBe('/login');
     expect(container.querySelector('.pa-outcome-code')).toBeNull();
     expect(reportedMessages()[0]).toMatch(/, vk_disabled$/);
+  });
+
+  it.each(['ty', 'vy'] as const)('yandex_disabled (%s): свой заголовок, безличный текст, кнопка на /login', (form) => {
+    const { container } = renderAt('?reason=yandex_disabled', form);
+    expect(screen.getByRole('heading').textContent).toBe('Вход через Яндекс отключён');
+    expect(screen.getByText(/Вход через Яндекс временно отключён\. Другой способ — почта/)).toBeTruthy();
+    expect((screen.getByText('Другой способ входа') as HTMLAnchorElement).getAttribute('href')).toBe('/login');
+    expect(container.querySelector('.pa-outcome-code')).toBeNull();
+    expect(container.textContent).not.toMatch(/Попробуй|напиши/);
+    expect(reportedMessages()[0]).toMatch(/, yandex_disabled$/);
   });
 
   // Вход через Google убран (2026-11): его кодов сервер больше не ставит.

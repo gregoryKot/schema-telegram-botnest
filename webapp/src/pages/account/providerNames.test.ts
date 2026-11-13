@@ -5,6 +5,7 @@ describe('providerName', () => {
   it('настоящие id бэкенда → человеческие имена', () => {
     expect(providerName('google')).toBe('Google');
     expect(providerName('vk')).toBe('ВКонтакте');
+    expect(providerName('yandex')).toBe('Яндекс');
     expect(providerName('telegram')).toBe('Telegram');
     expect(providerName('max')).toBe('MAX');
     expect(providerName('email')).toBe('Email');
@@ -19,6 +20,6 @@ describe('providerName', () => {
   });
 
   it('словарь покрывает каждый способ входа', () => {
-    expect(Object.keys(PROVIDER_NAMES).sort()).toEqual(['email', 'google', 'max', 'telegram', 'vk']);
+    expect(Object.keys(PROVIDER_NAMES).sort()).toEqual(['email', 'google', 'max', 'telegram', 'vk', 'yandex']);
   });
 });

@@ -38,7 +38,7 @@ export class StartTicketDto {
 
   // Способ подтверждения; при привязке — чью строку AuthProvider искать у
   // источника ('google' — только так: входа через Google нет, строки остались).
-  @IsIn(['telegram', 'max', 'google', 'vk', 'email'])
+  @IsIn(['telegram', 'max', 'google', 'vk', 'yandex', 'email'])
   provider!: string;
 
   // Где открыт контейнер. Только для подписи устройства и метрик — правами не

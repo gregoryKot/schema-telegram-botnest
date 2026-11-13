@@ -11,10 +11,14 @@ describe('LoginTicketMetricsService.getMetrics', () => {
       .fn()
       .mockResolvedValueOnce(rows)
       .mockResolvedValue([]);
-    // Третья часть блока — приглашение добавить почту (login-offer-metrics.ts).
+    // Хвост блока — входы через VK и Яндекс и приглашение добавить почту
+    // (oauth-login-metrics.ts, login-offer-metrics.ts).
     const prisma = {
       $queryRaw: queryRaw,
-      analyticsEvent: { count: jest.fn().mockResolvedValue(0) },
+      analyticsEvent: {
+        count: jest.fn().mockResolvedValue(0),
+        groupBy: jest.fn().mockResolvedValue([]),
+      },
     } as never;
     return { service: new LoginTicketMetricsService(prisma), queryRaw };
   };
@@ -84,12 +88,20 @@ describe('LoginTicketMetricsService.getMetrics', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ signed_in: 9n, twofa: 1n, rejected: 0n }]);
     const count = jest.fn().mockResolvedValue(3);
+    const groupBy = jest.fn().mockResolvedValue([
+      {
+        meta: { provider: 'yandex', outcome: 'signed_in' },
+        _count: { _all: 4 },
+      },
+    ]);
     const service = new LoginTicketMetricsService({
       $queryRaw: queryRaw,
-      analyticsEvent: { count },
+      analyticsEvent: { count, groupBy },
     } as never);
     const text = await service.render();
     expect(text).toContain('Вошли одним касанием: 9');
+    // Входы через внешние сервисы (login_oauth) — в том же разделе отчёта.
+    expect(text).toContain('Вход через Яндекс: вошли 4 раза');
     // И строка приглашения добавить почту или VK ID (login_method_offer).
     expect(text).toContain('Приглашение увидели: 3');
     expect(count).toHaveBeenCalledTimes(3);
