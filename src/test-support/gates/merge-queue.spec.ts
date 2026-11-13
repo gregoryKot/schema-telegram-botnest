@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { createServer, IncomingMessage, Server, ServerResponse } from 'http';
 import { AddressInfo } from 'net';
 import { join } from 'path';
+import { importExport } from './pattern-loader';
 import { stripComments, triggerBlocks } from './workflow-yaml';
 
 const ROOT = process.cwd();
@@ -50,8 +51,12 @@ type Pr = {
   sha?: string;
 };
 
+// Сколько очередь ждёт мержа свежего зелёного PR — из самого модуля правил.
+const GRACE_MS = Number(
+  importExport('merge-queue-plan.mjs', 'GREEN_GRACE_MS', '(v) => v'),
+);
 let seq = 1;
-const OLD = new Date(Date.now() - 60 * 60_000).toISOString();
+const OLD = new Date(Date.now() - GRACE_MS - 60_000).toISOString();
 const checks = (conclusion: string, at = OLD): CheckRun[] =>
   CONTEXTS.map((name) => ({
     id: seq++,
@@ -223,7 +228,9 @@ describe('merge-queue.mjs: один PR за раз', () => {
     expect(approved()).toEqual(idsOf('sha-12-up', 0, 1));
     expect(out).toContain('#9: отстаёт на 3, обязательные проверки — red');
     expect(out).toContain('#11: отстаёт на 2, обязательные проверки — missing');
-    expect(out).toContain('подтянут (sha-12 → sha-12-up), одобрено прогонов: 2');
+    expect(out).toContain(
+      'подтянут (sha-12 → sha-12-up), одобрено прогонов: 2',
+    );
   });
 
   it('перезапуск зелёный после красного — не красный', async () => {
@@ -243,7 +250,7 @@ describe('merge-queue.mjs: один PR за раз', () => {
     expect(out).toContain('#3 в работе');
   });
 
-  it('только что позеленевший свежий ждёт мержа, зависший дольше 10 минут очередь не держит', async () => {
+  it('только что позеленевший свежий ждёт мержа, зависший дольше GREEN_GRACE_MS очередь не держит', async () => {
     const now = checks('success', new Date().toISOString());
     setup([
       { n: 3, behind: 0, checks: now },
@@ -355,7 +362,8 @@ describe('merge-queue.yml: запись есть, кода PR нет', () => {
       .map((e) => `слушает ${e}`);
     const body = stripComments(text);
     if (/^\s+ref:/m.test(body)) bad.push('чекаут с ref: — код не main');
-    if (!body.includes('node scripts/merge-queue.mjs')) bad.push('не тот скрипт');
+    if (!body.includes('node scripts/merge-queue.mjs'))
+      bad.push('не тот скрипт');
     return bad;
   };
 
@@ -371,7 +379,10 @@ describe('merge-queue.yml: запись есть, кода PR нет', () => {
 
   it('красный: события PR и чекаут головы PR', () => {
     const loose = real
-      .replace('  workflow_dispatch:', '  pull_request:\n  pull_request_target:\n  workflow_dispatch:')
+      .replace(
+        '  workflow_dispatch:',
+        '  pull_request:\n  pull_request_target:\n  workflow_dispatch:',
+      )
       .replace(
         '          persist-credentials: false',
         '          persist-credentials: false\n          ref: ${{ github.event.workflow_run.head_sha }}',
