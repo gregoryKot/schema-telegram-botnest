@@ -54,7 +54,7 @@ export function StepUpDialog({ view, onSubmit, onClosed }: {
     <div className="light-lock">
       <Dialog label={copy.title} onClose={view.busy ? undefined : goBack} closeOnEscape={!view.busy} zIndex={400}>
         <StepUpTitle title={copy.title} />
-        <p className="sk-dialog-text">{copy.lead}</p>
+        <p className="sk-dialog-text">{recovery ? copy.leadRecovery : copy.lead}</p>
         <form onSubmit={submit} className="al-form">
           <CodeEntry recovery={recovery} onToggle={toggle} value={code} onChange={setCode} disabled={view.busy}
                      label="Код из приложения" inputRef={inputRef} error={error} />

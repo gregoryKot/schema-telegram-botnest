@@ -17,6 +17,7 @@ import {
   LINK_COPY_HINT,
   LINK_DENIED,
   LINK_EXPIRED,
+  LINK_FAILED,
   LINK_RETRY,
   type Tr,
 } from '../account/accountLinkText';
@@ -65,7 +66,7 @@ export function AccountLinkCard({
   if (state.kind === 'expired' || state.kind === 'failed') {
     return (
       <div className="alc-sub">
-        {LINK_EXPIRED}
+        {state.kind === 'failed' ? LINK_FAILED : LINK_EXPIRED}
         <div>
           <button type="button" onClick={onRetry} className="ds-btn alc-action">
             {LINK_RETRY}
