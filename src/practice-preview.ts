@@ -1,15 +1,9 @@
-// Карточка ссылки (Telegram, VK, MAX, мессенджеры): og:* и twitter:* в <head>.
-// Оба хоста отдают один webapp/dist/index.html, а краулер превью JS не
-// исполняет — что в файле, то и в карточке. До 2026-11 в файле стояла карточка
-// визитки (фото автора, «kotlarewski.gr» на обложке), и ссылка на продукт
-// schemehappens.ru выглядела как ссылка на визитку.
-//
-// Теперь файл несёт карточку продукта (schemehappens.ru — хост приложения,
-// правило №19: у него путей без счёта), а визитка kotlarewski.gr подменяет её
-// на свою на каждой своей странице: practiceIndexMiddleware (страницы из
-// PRACTICE_PAGES) и ArticleSeoMiddleware (статьи на алиасе). <title>,
-// description и JSON-LD не трогаем — какой хост «дом» автора, решает владелец
-// (docs/open/owner.md, «Автор описан на двух хостах»).
+// Карточка ссылки (og:*, twitter:*) и <title>: оба хоста отдают один
+// webapp/dist/index.html, краулер превью JS не исполняет. В файле — продукт
+// (schemehappens.ru, правило №19), визитка kotlarewski.gr подменяет на своё на
+// каждой своей странице: practiceIndexMiddleware (PRACTICE_PAGES) и
+// ArticleSeoMiddleware (статьи на алиасе). Имя автора во вкладке — только у
+// визитки. Description и JSON-LD не трогаем (docs/open/owner.md, «Автор описан на двух хостах»).
 
 /** Карточка визитки. Обложка того же размера, что у продукта (1200×630):
  *  og:image:width/height в файле общие — сверка в practice-index-html.spec. */
@@ -39,6 +33,10 @@ const PRACTICE_TAGS: readonly (readonly [string, string, string])[] = [
  *  целиком (`og:image"`, не `og:image:alt`); тега нет — строка как есть,
  *  спек ловит это на настоящем index.html. */
 export function practicePreviewHtml(html: string): string {
+  const titled = html.replace(
+    /<title>[^<]*<\/title>/,
+    `<title>${PRACTICE_PREVIEW.title}</title>`,
+  );
   return PRACTICE_TAGS.reduce(
     (out, [attr, key, value]) =>
       out.replace(
@@ -46,6 +44,6 @@ export function practicePreviewHtml(html: string): string {
         (_tag, gap: string) =>
           `<meta ${attr}="${key}"${gap}content="${value}" />`,
       ),
-    html,
+    titled,
   );
 }

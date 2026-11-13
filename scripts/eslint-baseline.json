@@ -1,9 +1,9 @@
 {
-  "total": 1405,
-  "errors": 1402,
+  "total": 1344,
+  "errors": 1341,
   "warnings": 3,
   "byRule": {
-    "prettier/prettier": 1385,
+    "prettier/prettier": 1325,
     "@typescript-eslint/no-explicit-any": 3,
     "@typescript-eslint/no-unsafe-assignment": 2,
     "@typescript-eslint/no-unsafe-call": 5,

@@ -1,10 +1,10 @@
 #!/bin/bash
-# Скачивает из хранилища бэкапов (Cloudflare R2, S3-API) самый свежий
+# Скачивает из хранилища бэкапов (Yandex Object Storage, S3-API) самый свежий
 # зашифрованный бэкап Postgres и его контрольную сумму — первая половина
 # аварийного восстановления: вторая, scripts/restore-backup.sh, расшифровывает
 # и заливает файл в базу. Нужен, когда основная база недоступна и поднимать
 # прод приходится из ночного бэкапа (scripts/backup-upload.sh кладёт его в
-# бакет): docs/RUNBOOKS.md, «Cloudflare R2 — бэкапы базы».
+# бакет): docs/RUNBOOKS.md, «Yandex Object Storage — бэкапы базы».
 #
 # Использование:
 #   BACKUP_S3_ENDPOINT=… BACKUP_S3_BUCKET=… BACKUP_S3_ACCESS_KEY_ID=… \

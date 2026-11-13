@@ -33,7 +33,6 @@
 /* Подпись не режется краем: не влезла рядом с именем — встаёт строкой ниже и переносится там
    (лист на телефоне: «вдох короче выдоха — сигнал телу, что опасности нет» уходила за экран). */
 .cmd-sub { min-width: 0; color: var(--text-sub); text-wrap: pretty; }
-.cmd-sub.is-ok { color: var(--ok); }
 .cmd-hint { flex-shrink: 0; font-size: 12px; }
 .cmd-note { margin: 0; padding: 14px 16px 6px; }
 .cmd-empty { padding: 18px 16px 8px; }

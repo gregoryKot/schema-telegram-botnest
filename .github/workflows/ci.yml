@@ -541,7 +541,7 @@ jobs:
       # на тех же строках красная под чужим ключом и зелёная под своим.
       - name: e2e нечитаемые данные (маркер и проба) на реальном Postgres
         run: npx jest --config ./test/jest-e2e.json --runInBand test/encryption-readable.e2e-spec.ts
-      # Аренда прогона бэкапа в R2 (deploy/backup-scheduler.cjs, аудит D-2): тот же
+      # Аренда прогона бэкапа (deploy/backup-scheduler.cjs, аудит D-2): тот же
       # атомарный INSERT … ON CONFLICT, но через настоящий psql — драйвер и
       # квотирование :'переменных' проверяет только живая база. psql 16 ставит
       # шаг «клиент Postgres 16 из PGDG» в начале джобы.

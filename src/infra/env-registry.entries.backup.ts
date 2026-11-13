@@ -1,8 +1,7 @@
 // Записи реестра env-переменных (см. env-registry.ts) — бэкапы БД в
-// S3-совместимое хранилище Cloudflare R2 (аудит D-2). Читаются планировщиком
-// deploy/backup-scheduler.cjs и скриптами scripts/backup-upload.sh,
-// scripts/backup-fetch-latest.sh (вход — scripts/s3-api.sh); в src/** их видят
-// проба самопроверки и реестр возможностей (backup-config.ts). Группа — infra.
+// Yandex Object Storage (аудит D-2). Читаются deploy/backup-scheduler.cjs и
+// scripts/backup-*.sh (вход — scripts/s3-api.sh); в src/** их видят проба
+// самопроверки и реестр возможностей (backup-config.ts). Группа — infra.
 import { EnvVarSpec, formats } from './env-registry';
 import {
   BACKUP_RETENTION_MAX_DAYS as MAX,
@@ -21,17 +20,19 @@ const retentionDays = (value: string): string | null => {
     : `больше ${MAX} дней — политика конфиденциальности обещает ${MAX}, скрипт бэкапа хранит ${MAX}`;
 };
 
-/** Адрес хранилища без бакета: скрипты сами дописывают `/<бакет>/<файл>`. */
+/** Только Yandex Object Storage, без бакета: копия не должна уехать за рубеж молча. */
 const s3Endpoint = (value: string): string | null => {
   const notUrl = formats.httpsUrl(value);
   if (notUrl) return notUrl;
   const url = new URL(value);
-  return url.pathname.replace(/\/+$/, '') === '' && !url.search
+  return url.origin === 'https://storage.yandexcloud.net' &&
+    url.pathname.replace(/\/+$/, '') === '' &&
+    !url.search
     ? null
-    : 'ожидался адрес без пути и параметров (`https://<id аккаунта>.r2.cloudflarestorage.com`)';
+    : 'ожидался только `https://storage.yandexcloud.net` (без пути)';
 };
 
-/** Имя бакета по правилам S3/R2: 3–63 символа, строчные буквы, цифры, дефис. */
+/** Имя бакета по правилам S3/Yandex Object Storage: 3–63 символа, строчные буквы, цифры, дефис. */
 const bucketName = (value: string): string | null =>
   /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(value)
     ? null
@@ -65,8 +66,8 @@ export const BACKUP_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'BACKUP_S3_ACCESS_KEY_ID',
     purpose:
-      'Access Key ID API-токена Cloudflare R2 (Object Read & Write только на ' +
-      'бакет бэкапов) — пара к BACKUP_S3_SECRET_ACCESS_KEY.',
+      'Идентификатор статического ключа сервисного аккаунта Yandex Cloud ' +
+      '(права только на бакет бэкапов) — пара к BACKUP_S3_SECRET_ACCESS_KEY.',
     requiredInProd: false,
     format: accessKey,
     group: 'infra',
@@ -74,8 +75,8 @@ export const BACKUP_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'BACKUP_S3_BUCKET',
     purpose:
-      'Имя приватного бакета R2 для зашифрованных бэкапов БД — без него ' +
-      'бэкапы не запускаются (deploy/backup-scheduler.cjs).',
+      'Имя приватного бакета Yandex Object Storage для зашифрованных бэкапов ' +
+      'БД — без него бэкапы не запускаются (deploy/backup-scheduler.cjs).',
     requiredInProd: false,
     format: bucketName,
     group: 'infra',
@@ -83,8 +84,7 @@ export const BACKUP_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'BACKUP_S3_ENDPOINT',
     purpose:
-      'Адрес S3-API хранилища бэкапов без бакета: ' +
-      'https://<id аккаунта>.r2.cloudflarestorage.com.',
+      'Адрес S3-API без бакета: только https://storage.yandexcloud.net (за рубеж копия не уходит).',
     requiredInProd: false,
     format: s3Endpoint,
     group: 'infra',
@@ -92,8 +92,8 @@ export const BACKUP_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'BACKUP_S3_REGION',
     purpose:
-      'Регион в подписи запросов к хранилищу — по умолчанию auto (так требует ' +
-      'R2); менять только при переезде на другое S3-хранилище.',
+      'Регион в подписи запросов к Yandex Object Storage — по умолчанию ' +
+      'ru-central1; задавать не нужно.',
     requiredInProd: false,
     format: formats.nonEmpty,
     group: 'infra',
@@ -101,7 +101,7 @@ export const BACKUP_ENV_ENTRIES: EnvVarSpec[] = [
   {
     name: 'BACKUP_S3_SECRET_ACCESS_KEY',
     purpose:
-      'Secret Access Key API-токена R2 — вместе с BACKUP_S3_ACCESS_KEY_ID, ' +
+      'Секретная часть статического ключа сервисного аккаунта Yandex Cloud — вместе с BACKUP_S3_ACCESS_KEY_ID, ' +
       'BACKUP_S3_ENDPOINT, BACKUP_S3_BUCKET и BACKUP_ENCRYPTION_KEY включает ' +
       'бэкапы БД.',
     requiredInProd: false,
