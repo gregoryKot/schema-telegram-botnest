@@ -42,10 +42,9 @@ describe('toPushPayload — шаблон очереди → payload пуша', (
   it('task_assigned: ведёт к самому заданию — путь с startapp=tasks_<id>', () => {
     const { push } = fromTemplate('task_assigned', {
       taskId: 42,
-      text: 'Записать три ситуации',
     });
     expect(push.url).toBe('/today?startapp=tasks_42');
-    expect(push.body).toContain('Записать три ситуации');
+    expect(push.body).toContain('Новое задание от терапевта');
     expect(push.tag).toBe('task_assigned');
   });
 
